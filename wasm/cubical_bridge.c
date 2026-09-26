@@ -295,6 +295,15 @@ uint32_t cb_normalize(uint32_t token, uint32_t term) {
     return cc_kernel_normalize(s->kernel, term);
 }
 
+/* A term the page derived by instructions, and so knows to be well typed:
+ * the page keeps that list; the kernel only computes. */
+uint32_t cb_normalize_derived(uint32_t token, uint32_t term) {
+    browser_session *s = lookup(token);
+    if (!s || !term) return 0;
+    cc_kernel_clear_error(s->kernel);
+    return cc_kernel_normalize(s->kernel, term);
+}
+
 uint32_t cb_node(uint32_t token, uint32_t term, unsigned field) {
     browser_session *s = lookup(token);
     cc_term_kind kind;
@@ -424,6 +433,24 @@ unsigned cb_convertible(uint32_t token, uint32_t a, uint32_t b, uint32_t steps) 
     return equal ? 1 : 0;
 }
 
+/* The syntax services below return 0 on failure and leave the kernel's
+ * error, such as an expired deadline, for the caller to read and clear. */
+/* Syntax only: a term with an endpoint substituted for a dimension. */
+uint32_t cb_endpoint_term(uint32_t token, uint32_t term, uint32_t dimension, unsigned endpoint) {
+    browser_session *s = lookup(token);
+    if (!s) return 0;
+    return cc_kernel_endpoint_term(s->kernel, term, dimension, endpoint);
+}
+
+/* The arena's size: field 0 its nodes, field 1 its bytes. */
+uint32_t cb_arena(uint32_t token, unsigned field) {
+    browser_session *s = lookup(token);
+    if (!s) return 0;
+    size_t nodes = 0, bytes = 0;
+    cc_kernel_arena(s->kernel, &nodes, &bytes);
+    return (uint32_t)(field ? bytes : nodes);
+}
+
 /* A symbol id shared by no name the kernel or the page has given out. */
 uint32_t cb_fresh_symbol(uint32_t token) {
     browser_session *s = lookup(token);
@@ -433,18 +460,14 @@ uint32_t cb_fresh_symbol(uint32_t token) {
 uint32_t cb_rename(uint32_t token, uint32_t term, unsigned dimension, uint32_t from, uint32_t to) {
     browser_session *s = lookup(token);
     if (!s) return 0;
-    cc_term renamed = cc_kernel_rename(s->kernel, term, dimension != 0, from, to);
-    if (!renamed) cc_kernel_clear_error(s->kernel);
-    return renamed;
+    return cc_kernel_rename(s->kernel, term, dimension != 0, from, to);
 }
 
 /* Syntax only: Equiv(a, b) as the Glue rules state it. */
 uint32_t cb_equiv_type(uint32_t token, uint32_t a, uint32_t b) {
     browser_session *s = lookup(token);
     if (!s) return 0;
-    cc_term type = cc_kernel_equiv_type(s->kernel, a, b);
-    if (!type) cc_kernel_clear_error(s->kernel);
-    return type;
+    return cc_kernel_equiv_type(s->kernel, a, b);
 }
 
 uint32_t cb_judgement_count(uint32_t token) {

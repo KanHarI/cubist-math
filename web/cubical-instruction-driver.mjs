@@ -8,6 +8,8 @@
 // checks every instruction; a wrong search only fails, it cannot prove
 // anything.
 import { InstructionGraph } from "./cubical-instructions.mjs";
+import { KernelError } from "./cubical-kernel.mjs";
+import { freeDimensionMask } from "./cubical-syntax.mjs";
 
 const TERM_BINDERS = new Set(["Pi", "Lam", "Sigma", "W"]);
 // Nodes whose payload is an interval or face formula.
@@ -23,6 +25,16 @@ const CONSTRUCTORS = new Set(["U", "Pi", "Lam", "Sigma", "Pair", "Nat", "Zero", 
 const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma" };
 // Steps after which a comparison the oracle finds true computes normal forms.
 const LONG_COMPUTATION = 64;
+// A scope maps term symbols to entries; under this key, the mask of the
+// interval dimensions live in it.
+const LIVE = "dims";
+const liveIn = scope => scope.get(LIVE) ?? 0n;
+const withLive = (scope, dimension) => new Map(scope).set(LIVE, liveIn(scope) | 1n << BigInt(dimension));
+// Scopes of several judgements together: their entries, and every live dimension.
+const joinScopes = (...scopes) => new Map([...scopes.flatMap(scope => [...scope]),
+  [LIVE, scopes.reduce((mask, scope) => mask | liveIn(scope), 0n)]]);
+// The children of a dimension binder that it binds.
+const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: [0] };
 
 export class InstructionDriver {
   constructor(kernel, { graph = new InstructionGraph(kernel), fuel = 20000, guideSteps = 20000 } = {}) {
@@ -37,21 +49,40 @@ export class InstructionDriver {
     this.statements = new Map();
     this.scopes = new Map();
     this.scopeKeys = new WeakMap();
+    this.mentions = new Map();
     this.derived = new Map();
     this.stable = new Set();
     this.equalities = new Map();
     this.alphaMemo = new Map();
+    this.contextScopes = new Map();
     this.chainIds = new WeakMap();
     this.chainNumbers = new Map();
+    this.freeDims = new Map();
+    this.pruned = new Map();
   }
 
   // The judgement `expression : type` for a checked term and its type, in a
   // context of [symbol, type] assumptions, each over the ones before it.
-  check(expression, type, context = []) {
-    const scope = new Map();
-    for (const [symbol, assumption] of context)
-      scope.set(symbol, this.bind(symbol, this.asType(this.derive(assumption, scope))));
+  // `dimensions` is the mask of the interval dimensions the terms may use.
+  check(expression, type, context = [], dimensions = 0n) {
+    const scope = this.contextScope(context, dimensions);
     return this.convertTo(this.derive(expression, scope), this.asType(this.derive(type, scope)));
+  }
+  // The judgement for a term alone, at the type its derivation gives it.
+  infer(expression, context = [], dimensions = 0n) {
+    return this.derive(expression, this.contextScope(context, dimensions));
+  }
+  // A context's scope: each assumption bound at its type, derived in order;
+  // the same context gives the same scope.
+  contextScope(context, dimensions) {
+    const key = `${dimensions}|${context.map(([symbol, type]) => `${symbol}:${type}`).join(",")}`;
+    if (!this.contextScopes.has(key)) {
+      const scope = new Map([[LIVE, dimensions]]);
+      for (const [symbol, assumption] of context)
+        scope.set(symbol, this.bind(symbol, this.asType(this.derive(assumption, scope))));
+      this.contextScopes.set(key, scope);
+    }
+    return this.contextScopes.get(key);
   }
 
   node(handle) {
@@ -82,13 +113,26 @@ export class InstructionDriver {
     const context = this.statement(id).context, key = context.join(",");
     if (!this.scopes.has(key)) {
       const scope = new Map();
+      let live = 0n;
       for (const entry of context) {
         const info = this.graph.entry(entry);
-        if (!info.dimension) scope.set(info.symbol, entry);
+        if (info.dimension) live |= 1n << BigInt(info.symbol);
+        else scope.set(info.symbol, entry);
       }
-      this.scopes.set(key, scope);
+      this.scopes.set(key, scope.set(LIVE, live));
     }
     return this.scopes.get(key);
+  }
+  // Whether the type of a variable in scope mentions a dimension.
+  typesMention(scope, dimension) {
+    const key = `${this.scopeKey(scope)}|${dimension}`;
+    if (!this.mentions.has(key))
+      this.mentions.set(key, [...scope].some(([symbol, entry]) => symbol !== LIVE &&
+        this.statement(this.graph.entry(entry).source).context.some(other => {
+          const info = this.graph.entry(other);
+          return info.dimension && info.symbol === dimension;
+        })));
+    return this.mentions.get(key);
   }
   scopeKey(scope) {
     if (!this.scopeKeys.has(scope)) this.scopeKeys.set(scope, [...scope].map(([symbol, entry]) => `${symbol}:${entry}`).sort().join(","));
@@ -98,7 +142,14 @@ export class InstructionDriver {
   freshSymbol(stem) {
     const counters = this.kernel.freshNames ??= new Map(), suffix = (counters.get(stem) ?? 0) + 1;
     counters.set(stem, suffix);
-    return this.kernel.symbol(`${stem}'${suffix}`);
+    return this.kernel.symbol(this.variant(stem, suffix));
+  }
+  // A name made up for a binder, remembered with its stem, so that displays
+  // can show the stem again where nothing can tell the two apart.
+  variant(stem, suffix) {
+    const name = `${stem}'${suffix}`;
+    (this.kernel.variantStems ??= new Map()).set(name, stem);
+    return name;
   }
   // An interval index no judgement among `ids` has in its context, so none of
   // their terms uses it.
@@ -138,6 +189,7 @@ export class InstructionDriver {
       try {
         const name = `${stem}'${suffix}`, entry = this.graph.extend(type, name);
         counters.set(stem, suffix);
+        this.variant(stem, suffix);
         if (key) variants.set(key, name);
         return entry;
       } catch (error) { if (!/already names/.test(error.message)) throw error; }
@@ -154,7 +206,16 @@ export class InstructionDriver {
 
   deriveNode(handle, scope) {
     const g = this.graph, n = this.node(handle), [a, b, c, d] = n.children;
+    // A dimension binder whose index is live outside it is renamed first,
+    // when its parts could not tell the two apart: a composition's faces are
+    // outside it, and a variable's type may mention the outer one. Otherwise
+    // it keeps its index, so that the derived term is the source's.
+    if (underBinder[n.kind] && liveIn(scope) & 1n << BigInt(n.payload) &&
+        (!["Path", "PLam"].includes(n.kind) || this.typesMention(scope, n.payload)))
+      return this.derive(this.renameBinder(n, liveIn(scope)), scope);
+    const bound = underBinder[n.kind] ? withLive(scope, n.payload) : scope;
     const derive = (child, inner = scope) => this.derive(child, inner);
+    const within = child => this.derive(child, bound);
     switch (n.kind) {
     case "U": return g.universe(n.payload);
     case "Nat": return g.nat();
@@ -245,15 +306,15 @@ export class InstructionDriver {
       return g.sumElim(motive, branches[0], branches[1], value);
     }
     case "Path": {
-      const dimension = g.dimension(n.payload), family = this.asType(derive(a));
+      const dimension = g.dimension(n.payload), family = this.asType(within(a));
       return g.path(dimension, family, this.convertTo(derive(b), g.endpoint(family, dimension, 0)),
         this.convertTo(derive(c), g.endpoint(family, dimension, 1)));
     }
     case "PLam": {
       // At its own family, so that the derived term is the source's: the
       // kernel annotates a path lambda with its body's type.
-      const dimension = g.dimension(n.payload), body = derive(b);
-      return g.pathLambda(dimension, a ? this.convertTo(body, this.asType(derive(a))) : body);
+      const dimension = g.dimension(n.payload), body = within(b);
+      return g.pathLambda(dimension, a ? this.convertTo(body, this.asType(within(a))) : body);
     }
     case "PApp": {
       const path = this.shape(this.focus(derive(a), "type"), "Path");
@@ -266,27 +327,24 @@ export class InstructionDriver {
       // comp^i A [φ ↦ u] a0: each tube, already restricted to its face, is
       // checked against the family there, and shown equal to the base at 0.
       // hcomp is the same box, over a type that does not vary along i.
-      const dimension = g.dimension(n.payload), family = this.asType(derive(a));
+      const dimension = g.dimension(n.payload);
+      const family = this.asType(n.kind === "HComp" ? derive(a) : within(a));
       const base = this.convertTo(derive(c), g.endpoint(family, dimension, 0));
       // Where a tube's face meets an earlier tube's, the two agree there.
       let system = g.system(dimension, family, base);
       const tubes = [];
-      for (let tube = b; tube; tube = this.node(tube).children[1]) {
-        const { payload: face, children: [term] } = this.node(tube);
-        const { clauses } = this.kernel.inspectFormula(face);
-        if (!clauses.length) {
+      for (const { face, term, clause } of this.clauses(b, 1)) {
+        if (!clause) {
           // The face 0, as a substitution can leave it: the tube is never used.
-          system = g.systemTube(system, face, derive(term), 0);
+          system = g.systemTube(system, face, within(term), 0);
           tubes.push(null);
           continue;
         }
-        if (clauses.length > 1) throw unsupported("A tube on a face of several clauses");
-        const [clause] = clauses;
         const restricted = this.restrict(family, clause);
-        const value = this.convertTo(derive(term), restricted);
+        const value = this.convertTo(within(term), restricted);
         const start = this.focus(g.refl(g.endpoint(value, dimension, 0)), "other");
         const end = this.focus(g.refl(this.restrict(base, clause)), "other");
-        if (!this.agree(start, end)) throw new Error("A composition tube disagrees with its base.");
+        if (!this.agree(start, end)) throw new Error("Composition tube disagrees with its base.");
         const adjacency = g.transitivity(start.ref.id, g.symmetry(end.ref.id));
         system = g.systemTube(system, face, value, adjacency);
         tubes.forEach((earlier, position) => {
@@ -301,7 +359,7 @@ export class InstructionDriver {
     case "Trans": {
       // transp^i A φ a0: on each clause of φ, the base itself is a tube, at
       // the family there, which is constant.
-      const dimension = g.dimension(n.payload), family = this.asType(derive(a));
+      const dimension = g.dimension(n.payload), family = this.asType(within(a));
       const base = this.convertTo(derive(c), g.endpoint(family, dimension, 0));
       const face = this.node(b).payload, { clauses } = this.kernel.inspectFormula(face);
       let system = g.system(dimension, family, base);
@@ -323,20 +381,16 @@ export class InstructionDriver {
       const base = this.asType(derive(a));
       let system = g.glueBase(base);
       const pieces = [];
-      for (let piece = b; piece; piece = this.node(piece).children[2]) {
-        const { payload: face, children: [T, e] } = this.node(piece);
-        const { clauses } = this.kernel.inspectFormula(face);
-        if (!clauses.length) {
+      for (const { face, term: [T, e], clause } of this.clauses(b, 2, true)) {
+        if (!clause) {
           system = g.gluePiece(system, face, this.asType(derive(T)), derive(e));
           pieces.push(null);
           continue;
         }
-        if (clauses.length > 1) throw unsupported("A Glue piece on a face of several clauses");
-        const [clause] = clauses;
         const type = this.asType(derive(T)), target = this.restrict(base, clause);
         const equivalenceType = this.graph.equivType(this.statement(type).term, this.statement(target).term);
         const equivalence = this.convertTo(derive(e),
-          this.asType(this.derive(equivalenceType, new Map([...this.scope(type), ...this.scope(target)]))));
+          this.asType(this.derive(equivalenceType, joinScopes(this.scope(type), this.scope(target)))));
         system = g.gluePiece(system, face, type, equivalence);
         pieces.forEach((earlier, position) => {
           const overlap = earlier && [clause[0] | earlier.clause[0], clause[1] | earlier.clause[1]];
@@ -355,20 +409,19 @@ export class InstructionDriver {
       const base = this.convertTo(derive(b), this.evidence(this.focus(annotation, "term", [0])));
       let system = g.glueTermBase(annotation, base);
       const values = [];
-      for (let tube = c, path = [1]; tube; tube = this.node(tube).children[1], path = [...path, 2]) {
-        const { payload: face, children: [t] } = this.node(tube);
-        const { clauses } = k.inspectFormula(face);
-        if (!clauses.length) {
+      let path = [1];
+      for (const { term: t, clause } of this.clauses(c, 1)) {
+        const here = path;
+        path = [...path, 2];
+        if (!clause) {
           system = g.glueTermPiece(system, derive(t), 0);
           values.push(null);
           continue;
         }
-        if (clauses.length > 1) throw unsupported("A Glue value on a face of several clauses");
-        const [clause] = clauses;
-        const value = this.convertTo(derive(t), this.evidence(this.focus(annotation, "term", [...path, 0])));
-        const equivalence = this.subterm(this.focus(annotation, "term", [...path, 1]));
+        const value = this.convertTo(derive(t), this.evidence(this.focus(annotation, "term", [...here, 0])));
+        const equivalence = this.subterm(this.focus(annotation, "term", [...here, 1]));
         const image = this.derive(k.term("App", 0, k.term("Fst", 0, equivalence), this.statement(value).term),
-          new Map([...this.scope(annotation), ...this.scope(value)]));
+          joinScopes(this.scope(annotation), this.scope(value)));
         const start = this.focus(g.refl(image), "other"), end = this.focus(g.refl(this.restrict(base, clause)), "other");
         if (!this.agree(start, end)) throw new Error("A Glue value's image disagrees with the base.");
         system = g.glueTermPiece(system, value, g.transitivity(start.ref.id, g.symmetry(end.ref.id)));
@@ -414,7 +467,7 @@ export class InstructionDriver {
       const left = this.convertTo(derive(b), this.asType(derive(point("PushLeft", A, "a"), own)));
       const right = this.convertTo(derive(c), this.asType(derive(point("PushRight", B, "b"), own)));
       const [l, r] = [left, right].map(id => this.statement(id).term);
-      const joint = new Map([...own, ...this.scope(left), ...this.scope(right)]);
+      const joint = joinScopes(own, this.scope(left), this.scope(right));
       const dimension = this.freeDimension([motive.ref.id, left, right]), x = this.freshSymbol("c");
       const at = k.formula("interval", [[1n << BigInt(dimension), 0n]]), cv = k.term("Var", x);
       const bridge = k.term("Pi", x, C, k.term("Path", dimension, k.term("App", 0, M, k.term("PushPath", at, P, cv)),
@@ -434,6 +487,49 @@ export class InstructionDriver {
     const y = this.focus(g.refl(this.restrict(theirs, overlap)), "other");
     if (!this.agree(x, y)) throw new Error("Two pieces disagree where their faces meet.");
     return g.transitivity(x.ref.id, g.symmetry(y.ref.id));
+  }
+
+  // A system's parts, one per clause of each face, in order, each restricted
+  // to its clause, as the term checker splits and restricts them. A part on a
+  // single clause keeps its face, and one already restricted is unchanged.
+  // `next` is the child chaining the parts; with `pair`, a part is its first
+  // two children (a Glue piece's type and equivalence), otherwise its first.
+  *clauses(chain, next, pair = false) {
+    for (let part = chain; part; part = this.node(part).children[next]) {
+      const { payload: face, children } = this.node(part);
+      const term = pair ? [children[0], children[1]] : children[0];
+      const { clauses } = this.kernel.inspectFormula(face);
+      if (!clauses.length) { yield { face, term, clause: null }; continue; }
+      for (const clause of clauses) {
+        const restrict = handle => this.restrictSyntax(handle, clause);
+        yield { face: clauses.length === 1 ? face : this.kernel.formula("face", [clause]),
+          term: pair ? term.map(restrict) : restrict(term), clause };
+      }
+    }
+  }
+  // Raw syntax with a clause's endpoints substituted for its dimensions.
+  restrictSyntax(handle, [positive, negative]) {
+    for (let dim = 0n; (positive | negative) >> dim; dim++) {
+      const bit = 1n << dim;
+      if ((positive | negative) & bit) handle = this.graph.endpointTerm(handle, Number(dim), positive & bit ? 1 : 0);
+    }
+    return handle;
+  }
+  // A dimension binder moved to an index not live around it. A composition's
+  // faces are in the outer cube: only its tubes' bodies are renamed.
+  renameBinder(n, live) {
+    let fresh = 0;
+    while (live & 1n << BigInt(fresh)) fresh++;
+    if (fresh >= 64) throw new Error("No interval dimension is free for a binder.");
+    const rename = handle => this.graph.rename(handle, true, n.payload, fresh);
+    const tubes = chain => {
+      if (!chain) return 0;
+      const tube = this.node(chain);
+      return this.kernel.term("Tube", tube.payload, rename(tube.children[0]), tubes(tube.children[1]));
+    };
+    const children = n.children.map((child, index) => !child || !underBinder[n.kind].includes(index) ? child
+      : (n.kind === "Comp" || n.kind === "HComp") && index === 1 ? tubes(child) : rename(child));
+    return this.kernel.term(n.kind, fresh, ...children);
   }
 
   // A constructor's annotation as a type former of the given kind: the
@@ -528,6 +624,7 @@ export class InstructionDriver {
         if (this.graph.entry(entry).symbol !== n.payload) return null;
         scope = new Map(scope).set(n.payload, entry);
       }
+      if (underBinder[n.kind]?.includes(child)) scope = withLive(scope, n.payload);
       term = n.children[child];
     }
     return scope;
@@ -556,14 +653,20 @@ export class InstructionDriver {
     if (this.alpha(found, wanted)) return judgement;
     const a = this.focus(judgement, "type"), b = this.focus(g.refl(evidence), "other");
     const budget = { left: this.fuel };
+    // A type mismatch, as the kernel reports one: the two types as they were.
+    // Running out of time or budget is no answer, and is passed on as it is.
+    const mismatch = error => ["budget", "deadline"].includes(error?.kind) ? error
+      : Object.assign(new KernelError("Type mismatch.", "mismatch"), { mismatch: { found, expected: wanted }, search: error?.message });
     if (!this.agree(a, b, null, null, budget)) {
       // Too long, or stuck: compare normal forms, when they can be computed.
       try { for (const focus of [a, b]) this.reduce(focus, { path: [], rule: "normalize" }); }
-      catch (error) { throw new Error(`The search could not show two types equal: ${error.message}`); }
+      catch (error) { throw mismatch(error); }
     }
     if (!this.alpha(this.subterm(a), this.subterm(b))) {
       // Universes and families of universes are cumulative.
-      const lifted = g.lift(a.ref.id, g.side(b.ref.id, "other"));
+      let lifted;
+      try { lifted = g.lift(a.ref.id, g.side(b.ref.id, "other")); }
+      catch (error) { throw mismatch(error); }
       return g.convert(lifted, g.symmetry(b.ref.id));
     }
     return g.convert(a.ref.id, g.symmetry(b.ref.id));
@@ -573,15 +676,20 @@ export class InstructionDriver {
   // false, or null when it cannot tell. Bound names that differ are renamed
   // on the right first, innermost binder first. A guide for the search only.
   equal(x, y, terms, dims) {
-    for (const [bindings, dimension] of [[terms, false], [dims, true]]) {
-      const renamed = new Set();
-      for (let binding = bindings; binding && y; binding = binding.next) {
-        if (renamed.has(binding.right)) continue;
-        renamed.add(binding.right);
-        if (binding.left !== binding.right) y = this.graph.rename(y, dimension, binding.right, binding.left);
+    try {
+      for (const [bindings, dimension] of [[terms, false], [dims, true]]) {
+        const renamed = new Set();
+        for (let binding = bindings; binding; binding = binding.next) {
+          if (renamed.has(binding.right)) continue;
+          renamed.add(binding.right);
+          if (binding.left !== binding.right) y = this.graph.rename(y, dimension, binding.right, binding.left);
+        }
       }
+    } catch (error) {
+      // Out of time is passed on; a name that cannot be renamed leaves no answer.
+      if (error?.kind === "deadline") throw error;
+      return null;
     }
-    if (!y) return null;
     const key = `${x},${y}`;
     if (!this.equalities.has(key)) this.equalities.set(key, this.graph.convertible(x, y, this.guideSteps));
     return this.equalities.get(key);
@@ -595,43 +703,59 @@ export class InstructionDriver {
     // an eta expansion that a step contracts again, so without this the same
     // attempt would repeat until the budget ran out.
     const failed = new Set();
-    for (let taken = 0; ; taken++) {
-      if (--budget.left < 0) return false;
-      const x = this.subterm(a), y = this.subterm(b);
-      if (this.alpha(x, y, terms, dims)) return true;
-      // A long closed computation, such as a numeral's arithmetic: once the
-      // term checker's conversion finds the two equal, compute both normal
-      // forms, one instruction each, rather than step by step. Each step
-      // rebuilds the judgement's term; a normal form is computed once, in C.
-      // Open terms keep to lazy steps: their normal forms can be enormous.
-      if (taken === LONG_COMPUTATION && this.closed(a) && this.closed(b) && this.equal(x, y, terms, dims) === true &&
-          this.normalizeBoth(a, b, terms, dims))
-        return true;
-      const nx = this.node(x), ny = this.node(y);
-      if (nx.kind === ny.kind && !failed.has(`${x},${y}`) && this.sameHead(nx, ny, terms, dims) &&
-          this.partsEqual(nx, ny, terms, dims)) {
-        if (this.agreeParts(a, b, nx, terms, dims, budget)) return true;
-        failed.add(`${x},${y}`);
+    // A long closed computation, such as a numeral's arithmetic: unless the
+    // term checker's conversion finds the two different, compute both normal
+    // forms, one instruction each, rather than step by step. Each step
+    // rebuilds the judgement's term; a normal form is computed once, in C.
+    // Open terms keep to lazy steps: their normal forms can be enormous.
+    //
+    // Congruence splits a computation into many short comparisons, often
+    // under a binder, where terms are open. So steps are counted over the
+    // whole comparison. Past the limit, an open comparison inside a closed
+    // one gives up, and the closed one tries normal forms. Each closed
+    // comparison tries once; when that fails, the steps go on as before.
+    let untried = this.closed(a) && this.closed(b);
+    if (untried) budget.untried = (budget.untried ?? 0) + 1;
+    try {
+      for (;; budget.taken = (budget.taken ?? 0) + 1) {
+        if (--budget.left < 0) return false;
+        const x = this.subterm(a), y = this.subterm(b);
+        if (this.alpha(x, y, terms, dims)) return true;
+        if ((budget.taken ?? 0) >= LONG_COMPUTATION) {
+          if (untried) {
+            untried = false; budget.untried--;
+            if (this.equal(x, y, terms, dims) !== false && this.normalizeBoth(a, b, terms, dims)) return true;
+          } else if (budget.untried) return false;
+        }
+        const nx = this.node(x), ny = this.node(y);
+        if (nx.kind === ny.kind && !failed.has(`${x},${y}`) && this.sameHead(nx, ny, terms, dims) &&
+            this.partsEqual(nx, ny, terms, dims)) {
+          if (this.agreeParts(a, b, nx, terms, dims, budget)) return true;
+          // A comparison inside gave up for an enclosing closed one to try
+          // normal forms: congruence has not failed, and may be tried again.
+          if (budget.untried && budget.taken >= LONG_COMPUTATION) continue;
+          failed.add(`${x},${y}`);
+        }
+        // Computation before unfolding: beta, iota, path and face steps first.
+        // Then unfold the later definition, as it is likely defined through the
+        // other, and both when they are the same (lazy delta reduction).
+        // A congruence attempt that failed may have rewritten parts: read again.
+        const x2 = this.subterm(a), y2 = this.subterm(b);
+        const left = this.headStep(x2), right = this.headStep(y2);
+        if (left && left.rule !== "delta") { this.reduce(a, left); continue; }
+        if (right && right.rule !== "delta") { this.reduce(b, right); continue; }
+        if (left && right) {
+          const order = this.definitionAt(x2, left) - this.definitionAt(y2, right);
+          if (order >= 0) this.reduce(a, left);
+          if (order <= 0) this.reduce(b, right);
+          continue;
+        }
+        if (left) { this.reduce(a, left); continue; }
+        if (right) { this.reduce(b, right); continue; }
+        if (this.whnf(a) || this.whnf(b) || this.eta(a, b)) continue;
+        return false;
       }
-      // Computation before unfolding: beta, iota, path and face steps first.
-      // Then unfold the later definition, as it is likely defined through the
-      // other, and both when they are the same (lazy delta reduction).
-      // A congruence attempt that failed may have rewritten parts: read again.
-      const x2 = this.subterm(a), y2 = this.subterm(b);
-      const left = this.headStep(x2), right = this.headStep(y2);
-      if (left && left.rule !== "delta") { this.reduce(a, left); continue; }
-      if (right && right.rule !== "delta") { this.reduce(b, right); continue; }
-      if (left && right) {
-        const order = this.definitionAt(x2, left) - this.definitionAt(y2, right);
-        if (order >= 0) this.reduce(a, left);
-        if (order <= 0) this.reduce(b, right);
-        continue;
-      }
-      if (left) { this.reduce(a, left); continue; }
-      if (right) { this.reduce(b, right); continue; }
-      if (this.whnf(a) || this.whnf(b) || this.eta(a, b)) continue;
-      return false;
-    }
+    } finally { if (untried) budget.untried--; }
   }
   // Whether the focused subterm has no free term variable: its judgement has
   // none in context, and the position is under no term binder.
@@ -767,8 +891,12 @@ export class InstructionDriver {
   // Terms are shared graphs, not trees: a subterm met twice under the same
   // renaming is compared once, and a term against itself under binders each
   // named as on the other side needs no comparison. Without both, a term
-  // such as refl(refl(… refl(0))) takes time exponential in its depth.
+  // such as refl(refl(… refl(0))) takes time exponential in its depth. The
+  // renaming of dimensions is cut to those the two terms mention, so that
+  // a subterm met under many binders is still compared once.
   alpha(x, y, terms = null, dims = null) {
+    if (dims) dims = this.prune(dims, freeDimensionMask(this.kernel, x, this.freeDims),
+      freeDimensionMask(this.kernel, y, this.freeDims));
     if (x === y && this.unrenamed(terms) && this.unrenamed(dims)) return true;
     if (!x || !y) return x === y;
     const key = `${x},${y},${this.chainId(terms)},${this.chainId(dims)}`, known = this.alphaMemo.get(key);
@@ -783,6 +911,21 @@ export class InstructionDriver {
     }
     this.alphaMemo.set(key, equal);
     return equal;
+  }
+  // A renaming of dimensions without the pairs neither side mentions: no
+  // lookup from either side can reach those, as names bound inside are
+  // found first. Equal cuts are one object, so they share memo keys.
+  prune(bindings, left, right) {
+    if (!bindings) return null;
+    const key = `${this.chainId(bindings)},${left},${right}`;
+    let result = this.pruned.get(key);
+    if (result === undefined) {
+      const next = this.prune(bindings.next, left, right);
+      const used = (left >> BigInt(bindings.left) & 1n) || (right >> BigInt(bindings.right) & 1n);
+      result = !used ? next : next === bindings.next ? bindings : { left: bindings.left, right: bindings.right, next };
+      this.pruned.set(key, result);
+    }
+    return result;
   }
   // Whether a renaming maps every name to itself: odd ids are identities.
   unrenamed(bindings) { return !bindings || this.chainId(bindings) % 2 === 1; }

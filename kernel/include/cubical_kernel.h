@@ -299,10 +299,16 @@ bool cc_kernel_convertible(cc_kernel *, cc_term, cc_term, uint64_t steps);
 /* Syntax only, for the same search: a term with a free name, or dimension,
  * renamed, avoiding capture. */
 cc_term cc_kernel_rename(cc_kernel *, cc_term, bool dimension, uint32_t from, uint32_t to);
+/* Syntax only, for the same search: a term with 0 or 1 substituted for a free
+ * dimension, as a face restricts a tube before it is typed. */
+cc_term cc_kernel_endpoint_term(cc_kernel *, cc_term, uint32_t dimension, unsigned endpoint);
 /* A symbol no term of this kernel has used or will be given by the kernel's
  * own fresh names: clients naming new binders or entries allocate here, so
  * their names and the kernel's never share an id. */
 uint32_t cc_kernel_fresh_symbol(cc_kernel *);
+/* The term arena's size: its nodes, and the bytes it and the kernel's tables
+ * occupy. */
+void cc_kernel_arena(const cc_kernel *, size_t *nodes, size_t *bytes);
 
 /* Reading the graph. Judgement ids run from 1 to count - 1, premises first.
  * Kind 1 is typing, 2 equality and 3 a composition system; other is 0 but

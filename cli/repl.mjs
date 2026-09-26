@@ -126,7 +126,7 @@ async function execute(line) {
         program.checker.assumptionLabels.get(name) ?? name))].sort().join(", ") || "none"}`);
     }
     else {
-      const checked = program.checker.syntax.check(view.expression, view.type, view.context.map(e => [e.name, e.type]), new Map(view.dimensions ?? []));
+      const checked = program.checker.checkView(view.expression, view.type, view.context.map(e => [e.name, e.type]), new Map(view.dimensions ?? []));
       console.log(assemblyText(kernelAssembly(program, view, checked)));
     }
     return;

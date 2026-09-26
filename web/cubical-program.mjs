@@ -461,7 +461,7 @@ export class CubicalProgram {
     }
     const assumptions = this.checker.requiredAssumptions(term, expected, context.map(([, type]) => type));
     context = [...assumptions, ...context];
-    const checked = this.kernel.withUnfoldingHints(unfoldingHints, () => this.checker.syntax.check(term, expected, context, dimensions));
+    const checked = this.checker.checkView(term, expected, context, dimensions);
     if (normalize) checked.term = this.checker.syntax.decode(this.kernel.normalize(checked.expression), dimensions);
     const bindings = this.declarationBindings.get(binding) ?? [];
     const aliases = (local?.aliases ?? []).map(alias => ({ ...alias, binding: `${local.referencePrefix ?? local.module}__local_${alias.start}` }));

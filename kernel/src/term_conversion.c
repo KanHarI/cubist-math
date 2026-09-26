@@ -443,6 +443,16 @@ static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms
     return !k->error[0] && equal;
 }
 
+cc_term cc_kernel_endpoint_term(cc_kernel *k, cc_term term, uint32_t dimension, unsigned endpoint) {
+    if (!k || k->error[0] || !term || term >= k->count)
+        return 0;
+    if (dimension >= CC_DIMENSIONS || endpoint > 1)
+        return ck_fail(k, "An endpoint substitution needs a dimension and 0 or 1."), 0;
+    k->budget = k->operation_budget;
+    k->recursion = 0;
+    return ck_endpoint_term(k, term, dimension, endpoint);
+}
+
 cc_term cc_kernel_rename(cc_kernel *k, cc_term term, bool dimension, uint32_t from, uint32_t to) {
     if (!k || k->error[0] || !term || term >= k->count)
         return 0;

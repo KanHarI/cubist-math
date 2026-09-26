@@ -335,10 +335,11 @@ test("kernel rejections are classified by kind, and speculative checks answer wi
   assert.equal(checker.attempt(T.zero, T.unit).failure, "mismatch");
   assert.equal(checker.equal(T.zero, T.succ(T.zero)), false);
   // Set C's deadline directly so this exercises C, not the JS preflight guard.
+  // The term is new: a judgement derived earlier is reused without work.
   module._cb_deadline_ms(k.handle, .01);
   let until = performance.now() + 2;
   while (performance.now() < until) { /* let the native deadline expire */ }
-  assert.equal(checker.attempt(T.succ(T.zero), T.nat).failure, "deadline");
+  assert.equal(checker.attempt(T.succ(T.succ(T.zero)), T.nat).failure, "deadline");
   module._cb_deadline_ms(k.handle, 0);
   // Running out of time is no answer: equal() must not report inequality.
   k.setDeadline(0.001);

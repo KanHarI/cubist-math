@@ -1,7 +1,8 @@
 # Kernel instructions: a THTH-style forward kernel
 
 Status: on the `kernel-instructions` branch. The instruction kernel is the
-trusted kernel; the term checker is an untrusted elaborator beside it.
+trusted kernel, and elaboration checks every term through it. The term
+checker remains only as an untrusted guide for the search, its conversion.
 
 - Stage 1 is implemented: `kernel/src/instructions.c`, tested by
   `kernel/tests/test_instructions.c`.
@@ -21,6 +22,10 @@ trusted kernel; the term checker is an untrusted elaborator beside it.
   in the proof pages, the REPL, the CLI, the benchmark and the tests, and each
   tactic's check is derived as the tactic runs. See
   [Stage 4](#stage-4-the-trusted-kernel) below.
+- Stage 5 is implemented: the term checker leaves elaboration. The driver
+  derives source syntax itself, and every check and query the elaborator
+  makes is derived by the instruction kernel. See
+  [Stage 5](#stage-5-the-term-checker-leaves-elaboration) below.
 - Every one of the archive's 3938 definitions is admitted this way, and so
   are the first proof and `library/naturals`. Every derived term is its
   source syntax, annotations included. The benchmark page measures it, and
@@ -243,8 +248,9 @@ every implicit reduction are now the untrusted term checker's alone.
 
 ## The driver
 
-`InstructionDriver` replays a checked term as instructions, one per node. Where
-a rule needs two types to agree, it makes them agree without trust:
+`InstructionDriver` derives a term's source syntax as instructions, one per
+node. Where a rule needs two types to agree, it makes them agree without
+trust:
 
 - by congruence on common heads, when their parts are equal, and never twice
   on the same two terms: a failed attempt can leave an eta expansion that a
@@ -283,14 +289,20 @@ algebraic modules. Before comparing parts under binders, it renames the right
 side's bound names to match the left's. Every step it then takes is still an
 instruction the kernel checks.
 
-After 64 steps on two closed subterms the query finds equal, such as a
-numeral's arithmetic, the driver normalizes both, one instruction each:
-single steps each rebuild the judgement's term, and a factorial's took 1.1M
-arena nodes where 62k now do. Open terms keep to lazy steps, since their
+After 64 steps in one comparison, two closed subterms the query does not
+find different, such as a numeral's arithmetic, are normalized, one
+instruction each: single steps each rebuild the judgement's term, and a
+factorial's took 1.1M arena nodes where 58k now do. Steps are counted over the
+whole comparison, since congruence splits a computation into many short
+ones, often under a binder. Past the limit, a comparison of open subterms
+inside a closed one gives up, and the closed one tries normal forms, once;
+if that fails, the steps go on. Open terms keep to lazy steps, since their
 normal forms can be enormous. A path lambda applied at a compound interval
 formula contracts its body's computing head first, before the formula is
 substituted; the driver's alpha comparison is memoized over the shared term
-graph, since walking it as a tree is exponential in its depth.
+graph, since walking it as a tree is exponential in its depth. Its renaming
+of dimensions is first cut to the dimensions the two terms mention, so a
+subterm met under many different binders is still compared once.
 
 A binder's variant name, when its own is taken at another type, is
 remembered by name and type and used again, and the kernel reuses an entry at
@@ -331,8 +343,8 @@ The Elaboration panels show the same derivation in THTH's form:
 - each reduction step names its rule, position and subterm;
 - exact's ascription is marked as the elaborator's.
 
-If a derivation cannot be shown, a panel falls back to the derivation
-reconstructed from the term checker's trace (#36).
+If a derivation cannot be shown, a panel shows the reason; since Stage 5
+there is no term checker's trace to fall back to.
 
 ## Costs and risks
 
@@ -369,7 +381,9 @@ reconstructed from the term checker's trace (#36).
    - the whole archive checks in instruction mode.
 4. **Tactics issue instructions directly**, and the term checker leaves the
    trusted kernel. Unfolding hints leave the kernel. Done; see below.
-5. **Performance:** an untrusted native search module if JavaScript is too
+5. **The term checker leaves elaboration:** the driver derives source syntax
+   itself. Done; see below.
+6. **Performance:** an untrusted native search module if JavaScript is too
    slow; certificate compaction; content hashes for exported certificates.
 
 ## Stage 4: the trusted kernel
@@ -391,8 +405,8 @@ and the declaration's admission reuses those derivations. A term the kernel
 cannot derive fails at the tactic that checked it, with its source position.
 The elaborator's queries (`infer`, `nf`, `equal`, `expect`, speculative checks)
 steer elaboration: about 180,000 `infer` and 170,000 `nf` calls on the archive
-against 7,300 committed checks. They are answered by the term checker alone
-and are not evidence, as the driver's own conversion query is not. The driver
+against 7,300 committed checks. In Stage 4 they were answered by the term checker
+alone and were not evidence; Stage 5 derives them too. The driver
 lives on the kernel and is dropped after each admission, at the end of each
 declaration's transaction and at each inspection, so no search depends on
 another declaration's.
@@ -407,10 +421,50 @@ take 20 s, against about 10 s for the term checker alone; the admissions themsel
 take 2.3 s, because the tactics' derivations are reused. The JS test suite
 takes 61 s, up from 34 s.
 
-**Not done:** the term checker still elaborates, and tactics still build
-terms rather than judgements. Tactics that build judgements, with the
-term checker removed from elaboration too, would need the driver to
-elaborate raw syntax itself.
+**Not done** in Stage 4: the term checker still elaborated, and the driver
+derived its output. Stage 5 removes it.
+
+## Stage 5: the term checker leaves elaboration
+
+**Raw syntax.** The elaborator hands the driver the source syntax, not the
+term checker's output, and the driver does what the term checker did before
+it:
+
+- it restores a constructor's annotation after reducing it, and derives a
+  path lambda at its own family, so that the derived term is the source's;
+- it splits a composition's faces into clauses and restricts each tube to
+  its clause, with an equality on each overlap;
+- it tracks the live interval dimensions in each scope, and moves a
+  dimension binder to a free index when its parts could not tell it from a
+  live one: a composition's faces lie outside its binder, and a variable's
+  type may mention the outer dimension. Otherwise a binder keeps its index,
+  so derived types stay the source's, and sharing survives;
+- it names apart a binder whose name another entry has at another type.
+  Displays show the source's name again wherever nothing in the body can
+  tell the two apart.
+
+**Everything is derived.** `check`, `infer`, `equal`, `expect` and speculative
+checks all go through the driver, and the term checker's check count during
+elaboration is zero. What remains of it is its conversion, the search's
+guide, and the kernel's own reduction (`Whnf`, `Normalize`), which is trusted
+computation. A mismatch is reported as the term checker reported it, "Type
+mismatch", with the two types; running out of time or budget is passed on as
+such; any other refusal begins "Instruction kernel:". The Elaboration panels
+have no other derivation to fall back to: a declaration whose view cannot be
+derived shows the reason.
+
+**Deadlines.** Each instruction polls the declaration's deadline, and a
+derivation polls it before reusing an earlier judgement. The syntax services
+(`rename`, `endpointTerm`, `equivType`) now report the kernel's error rather
+than a zero handle.
+
+**Costs.** Deriving raw syntax exposed two caches keyed by more than they
+depend on. Decoding a result was cached per whole dimension context, and the
+driver's alpha comparison per whole renaming. A tower of 32 nested path
+lambdas then took exponential time and ran out of memory. Both are now keyed
+by the dimensions the terms mention, and the tower checks in 50 ms. With a
+5 s limit per declaration, the archive's 3761 declarations check in 25 s,
+against 20 s in Stage 4. The JS test suite takes 76 s, up from 61 s.
 
 ## Decisions
 
@@ -425,3 +479,5 @@ elaborate raw syntax itself.
 6. The instruction kernel is the trusted kernel: only `Define` admits a
    definition, and only admitted definitions can be looked up. The term
    checker and the unfolding hints are untrusted elaboration aids.
+7. Elaboration checks nothing with the term checker. Its conversion is a
+   search aid only; `CubicalSyntax.check` keeps it reachable for tests.

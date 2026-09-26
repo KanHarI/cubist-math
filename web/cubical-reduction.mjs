@@ -101,10 +101,10 @@ export function reductionStep(term, kind, definition) {
 // their endpoints are definitionally equal. Merely sharing a type is not enough.
 export function checkReduction(program, view, side, term) {
   if (!["expression", "type"].includes(side)) throw new Error("Unknown reduction target.");
-  const { syntax } = program.checker, context = view.context.map(x => [x.name, x.type]);
+  const checker = program.checker, context = view.context.map(x => [x.name, x.type]);
   const dimensions = new Map(view.dimensions ?? []);
-  return program.kernel.withUnfoldingHints(view.unfoldingHints ?? [], () => {
-    const original = syntax.check(view[side], null, context, dimensions);
+  {
+    const original = checker.checkView(view[side], null, context, dimensions);
     const used = new Set(dimensions.keys()), seen = new WeakSet();
     const collect = value => {
       if (!value || typeof value !== "object" || seen.has(value)) return;
@@ -113,14 +113,14 @@ export function checkReduction(program, view, side, term) {
     };
     collect(view[side]); collect(term); collect(original.type);
     let dim = "workbenchReduction"; while (used.has(dim)) dim += "_";
-    syntax.check({ tag: "PLam", dim, family: original.type, body: view[side] },
+    checker.checkView({ tag: "PLam", dim, family: original.type, body: view[side] },
       { tag: "Path", dim, family: original.type, left: view[side], right: term }, context, dimensions);
     const candidate = { ...view, [side]: term };
-    const checked = syntax.check(candidate.expression, candidate.type, context, dimensions);
-    // C may report the inferred type using its earlier alias. The explicitly
-    // supplied candidate type was checked too; retain the user's reduced form.
+    const checked = checker.checkView(candidate.expression, candidate.type, context, dimensions);
+    // The derivation may report the type through an earlier alias. The
+    // candidate type was checked too; retain the user's reduced form.
     return { view: { ...candidate, expression: checked.term }, checked };
-  });
+  }
 }
 
 export function reduceView(program, view, side, kind, path = null) {

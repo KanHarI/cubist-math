@@ -45,13 +45,14 @@ export class InstructionGraph {
     this.kernel.assertOpen();
     const code = typeof name === "number" ? name : instructions.indexOf(name);
     while (operands.length < 4) operands.push(0);
-    const id = this.module._cb_instr(this.kernel.handle, code, ...operands.map(operand => operand >>> 0)) >>> 0;
-    if (!id) {
-      const error = this.kernel.failure(`${name} failed.`);
-      this.module._cb_clear_error(this.kernel.handle);
-      throw error;
-    }
-    return id;
+    return this.answer(this.module._cb_instr(this.kernel.handle, code, ...operands.map(operand => operand >>> 0)), `${name} failed.`);
+  }
+  // A handle, or the kernel's error thrown and cleared: 0 is never a result.
+  answer(handle, fallback) {
+    if (handle >>> 0) return handle >>> 0;
+    const error = this.kernel.failure(fallback);
+    this.module._cb_clear_error(this.kernel.handle);
+    throw error;
   }
   position(path) {
     this.module._cb_position_clear(this.kernel.handle);
@@ -141,12 +142,16 @@ export class InstructionGraph {
   }
   // Syntax only: Equiv(a, b) as the Glue rules state it.
   equivType(a, b) {
-    const type = this.module._cb_equiv_type(this.kernel.handle, a, b) >>> 0;
-    if (!type) throw new Error("Could not build an equivalence type.");
-    return type;
+    return this.answer(this.module._cb_equiv_type(this.kernel.handle, a, b), "Could not build an equivalence type.");
+  }
+  // Syntax only: a term with 0 or 1 substituted for a free dimension.
+  endpointTerm(term, dimension, endpoint) {
+    return this.answer(this.module._cb_endpoint_term(this.kernel.handle, term, dimension, endpoint), "Could not substitute an endpoint.");
   }
   // Syntax only, for the same search: a free name or dimension renamed.
-  rename(term, dimension, from, to) { return this.module._cb_rename(this.kernel.handle, term, dimension ? 1 : 0, from, to) >>> 0; }
+  rename(term, dimension, from, to) {
+    return this.answer(this.module._cb_rename(this.kernel.handle, term, dimension ? 1 : 0, from, to), "Could not rename.");
+  }
   get count() { return this.module._cb_judgement_count(this.kernel.handle) >>> 0; }
   get entryCount() { return this.module._cb_entry_count(this.kernel.handle) >>> 0; }
   // A judgement: its statement, the instruction that derived it, and its

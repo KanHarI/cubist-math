@@ -4,8 +4,68 @@ import { interval as I } from "./dist/cubical-runtime/lattice.mjs";
 import { NameSupply } from "./dist/cubical-runtime/names.mjs";
 import { sourceText } from "./cubical-source-text.mjs";
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
+import { KernelError } from "./cubical-kernel.mjs";
 
 const speculativeFailures = new Set(["mismatch", "budget", "deadline"]);
+
+// Binder names the instruction driver made up, such as x'1 for a context
+// entry named apart from another x, taken back to their stems for display
+// wherever the stem occurs nowhere in the binder's body, so nothing in it
+// can tell the two apart. Syntax is shared, so each pass is memoized.
+const TERM_BINDERS = new Set(["Pi", "Lam", "Sigma", "W"]);
+class SourceNames {
+  constructor(stems) { this.stems = stems; this.results = new WeakMap(); this.mentions = new Map(); this.renamed = new Map(); }
+  memo(table, key) {
+    if (!table.has(key)) table.set(key, new WeakMap());
+    return table.get(key);
+  }
+  // Whether a name occurs in syntax, free or bound.
+  occurs(value, name) {
+    if (!value || typeof value !== "object") return false;
+    const seen = this.memo(this.mentions, name);
+    if (!seen.has(value)) seen.set(value, value.name === name || Object.values(value).some(field => this.occurs(field, name)));
+    return seen.get(value);
+  }
+  // Free occurrences of a variable renamed; the new name occurs nowhere.
+  rename(value, from, to) {
+    if (!value || typeof value !== "object") return value;
+    const done = this.memo(this.renamed, `${from}\u0000${to}`);
+    if (!done.has(value)) {
+      let result = value;
+      if (value.tag === "Var" && value.name === from) result = { ...value, name: to };
+      else {
+        // A binder of the same name hides the variable in its body.
+        const shadowed = TERM_BINDERS.has(value.tag) && value.name === from;
+        const copy = Array.isArray(value) ? [] : {};
+        let changed = false;
+        for (const [key, field] of Object.entries(value)) {
+          copy[key] = shadowed && key === "body" ? field : this.rename(field, from, to);
+          changed ||= copy[key] !== field;
+        }
+        if (changed) result = copy;
+      }
+      done.set(value, result);
+    }
+    return done.get(value);
+  }
+  apply(value) {
+    if (!value || typeof value !== "object") return value;
+    if (!this.results.has(value)) {
+      let current = value;
+      const stem = TERM_BINDERS.has(value.tag) && this.stems.get(value.name);
+      if (stem && !this.occurs(value.body, stem))
+        current = { ...value, name: stem, body: this.rename(value.body, value.name, stem) };
+      const copy = Array.isArray(current) ? [] : {};
+      let changed = current !== value;
+      for (const [key, field] of Object.entries(current)) {
+        copy[key] = this.apply(field);
+        changed ||= copy[key] !== field;
+      }
+      this.results.set(value, changed ? copy : value);
+    }
+    return this.results.get(value);
+  }
+}
 const namedBinders = new Set(["Var", "Pi", "Lam", "Sigma", "W"]);
 
 // For messages only: reduce beta-redexes, within a budget, and give generated
@@ -205,9 +265,55 @@ export class NativeCubicalElaborator {
     }
     return { locals, goal: show(shown.first), built: built ? show(shown.second) : null };
   }
+  // Every check and every inference is a derivation by the instruction
+  // kernel: the term the elaborator wrote, at the type it expects, over its
+  // context. The result is the derived term and its type, in the elaborator's
+  // names; a failure is a mismatch (or a budget or deadline) as the kernel
+  // reports one, and a speculative check reads it as an answer. The term
+  // checker is not consulted.
   checkSyntax(term, expected, context, dimensions, describe = true) {
-    try { return this.syntax.check(term, expected, [...this.context(context)], dimensions); }
+    try { return this.derived(term, expected, context, dimensions); }
     catch (error) { throw describe ? this.describeMismatch(error, dimensions) : error; }
+  }
+  derived(term, expected, context, dimensions) {
+    // A judgement derived earlier is reused without work, so the deadline is
+    // polled here too, not only by the instructions the search issues.
+    this.kernel.checkDeadline();
+    const driver = this.driver, graph = driver.graph, before = graph.count;
+    const assumptions = [...this.context(context)].map(([name, type]) =>
+      [this.kernel.symbol(name), this.syntax.encode(type, dimensions)]);
+    const mask = this.dimensionMask(dimensions), raw = this.syntax.encode(term, dimensions);
+    let judgement;
+    try {
+      judgement = expected ? driver.check(raw, this.syntax.encode(expected, dimensions), assumptions, mask)
+        : driver.infer(raw, assumptions, mask);
+    } catch (error) {
+      // The kernel's own errors pass as they are: a mismatch, or running out
+      // of time or budget. Anything else is the instruction kernel's refusal.
+      if (error instanceof KernelError && ["mismatch", "budget", "deadline"].includes(error.kind)) throw error;
+      throw Object.assign(new KernelError(`Instruction kernel: ${error.message}`, error.kind ?? "other"), { mismatch: error.mismatch });
+    }
+    // An assumption the driver had to name apart takes its own name back.
+    let { term: expression, type } = graph.judgement(judgement);
+    for (const [symbol, entry] of driver.contextScope(assumptions, mask)) {
+      if (typeof symbol !== "number") continue;
+      const own = graph.entry(entry).symbol;
+      if (own !== symbol) {
+        expression = graph.rename(expression, false, own, symbol);
+        type = graph.rename(type, false, own, symbol);
+      }
+    }
+    const arena = this.kernel.arena(), derivedHandles = this.kernel.derivedHandles ??= new Set();
+    derivedHandles.add(expression).add(type);
+    const names = this.kernel.variantStems?.size ? this.sourceNames ??= new SourceNames(this.kernel.variantStems) : null;
+    const display = value => names ? names.apply(value) : value;
+    return { expression, typeHandle: type, term: display(this.syntax.decode(expression, dimensions)),
+      type: display(this.syntax.decode(type, dimensions)), checkingSteps: graph.count - before,
+      arenaNodes: arena.nodes, arenaBytes: arena.bytes };
+  }
+  // A check over a context given as [name, type] pairs, for inspection.
+  checkView(term, expected, context = [], dimensions = new Map()) {
+    return this.checkSyntax(term, expected, new Map(context), dimensions);
   }
   infer(term, context = new Map(), dimensions = this.dimensions) {
     const checked = this.checkSyntax(term, null, context, dimensions);
@@ -215,16 +321,9 @@ export class NativeCubicalElaborator {
     return { term: checked.term, type: checked.type, native: { ok: true,
       arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, unfoldingHints: [...this.kernel.unfoldingHints], axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()] } };
   }
-  // A committed check, one a tactic builds its proof from, is also derived by
-  // the instruction kernel at once, so the tactic issues its instructions as
-  // it runs, and a term the kernel cannot derive fails at that tactic. A
-  // speculative check (describe = false, from attempt) and the elaborator's
-  // queries (infer, nf, equal, expect) are answered by the term checker
-  // alone: they steer elaboration and are not evidence.
-  check(term, expected, context = new Map(), dimensions = this.dimensions, describe = true, commit = describe) {
+  check(term, expected, context = new Map(), dimensions = this.dimensions, describe = true) {
     const checked = this.checkSyntax(term, expected, context, dimensions, describe);
     this.steps += checked.checkingSteps;
-    if (commit) this.issue(checked, context, dimensions);
     return checked.term;
   }
   dimensionMask(dimensions) {
@@ -236,23 +335,6 @@ export class NativeCubicalElaborator {
   // every module's checker shares: its caches hold judgements and handles, so
   // a declaration transaction's finish drops it.
   get driver() { return this.kernel.instructionDriver ??= new InstructionDriver(this.kernel); }
-  issue(checked, context, dimensions) {
-    // Each assumption's type as the term checker elaborated it in its
-    // telescope (annotations reconstructed, faces split), once per driver.
-    const driver = this.driver, elaborated = driver.contextTypes ??= new Map(), mask = this.dimensionMask(dimensions);
-    const assumptions = [];
-    let key = "";
-    for (const [name, type] of this.context(context)) {
-      const symbol = this.kernel.symbol(name), raw = this.syntax.encode(type, dimensions);
-      key += `${symbol}:${raw},`;
-      if (!elaborated.has(key)) elaborated.set(key, this.kernel.check(raw, 0, assumptions, mask).expression);
-      assumptions.push([symbol, elaborated.get(key)]);
-    }
-    try { driver.check(checked.expression, checked.typeHandle, assumptions); }
-    catch (error) {
-      throw Object.assign(new Error(`Instruction kernel: ${error.message}`), { kind: error.kind ?? "other" });
-    }
-  }
   ascribe(term, type, names = this.names) {
     // Application of the identity at the declared type retains that exact
     // signature in the kernel's inferred result. The next native check checks
@@ -293,7 +375,7 @@ export class NativeCubicalElaborator {
     // equal() continues to ask for definitional equality.
     const name = names.fresh("expected");
     // A query, not a proof step: nothing is issued to the instruction kernel.
-    this.check({ tag: "Var", name }, expected, new Map(context).set(name, actual), dimensions, true, false);
+    this.check({ tag: "Var", name }, expected, new Map(context).set(name, actual), dimensions);
   }
   define(name, term, type) {
     const assumptions = this.requiredAssumptions(term, type);
@@ -310,18 +392,18 @@ export class NativeCubicalElaborator {
     for (const parameter of assumptions.keys()) result = { tag: "App", fn: result, arg: { tag: "Var", name: parameter } };
     return result;
   }
-  // The instruction kernel admits every definition. The term checker, which
-  // is untrusted, elaborates the body: it reconstructs annotations and splits
-  // faces into clauses. The instruction driver then derives the checked body
-  // at its type, one kernel instruction per rule, and Define registers the
-  // closed judgement. Nothing the term checker says is taken as evidence; a
-  // body the instruction kernel cannot derive is not a definition.
+  // The instruction kernel admits every definition. The instruction driver
+  // derives the body's source syntax at its type, one kernel instruction per
+  // rule, restoring annotations and splitting faces into clauses, and Define
+  // registers the closed judgement. The term checker's conversion guides the
+  // search and is never evidence; a body the instruction kernel cannot derive
+  // is not a definition.
   admit(name, body, signature) {
-    const checked = this.kernel.check(body, signature), started = performance.now();
+    const started = performance.now();
     const driver = this.driver, graph = driver.graph, before = graph.count;
     let reference;
     try {
-      const judgement = driver.check(checked.expression, checked.type);
+      const judgement = driver.check(body, signature);
       reference = graph.judgement(graph.define(name, judgement)).term;
     } catch (error) {
       throw Object.assign(new Error(`Instruction kernel: ${error.message}`), { kind: error.kind ?? "other" });

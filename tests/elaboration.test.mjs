@@ -80,20 +80,21 @@ test("the elaboration view shows each declaration's type, term and the kernel's 
   assert.equal(program.kernel.optimizations?.reuseChecks ?? true, true);
 });
 
-test("a declaration outside instruction mode shows the kernel's traced check instead", async t => {
+test("a declaration the instruction kernel cannot derive shows why, not a derivation", async t => {
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
   await program.check("def Suspension(A : U0) := Pushout(A, Unit, Unit, fun (a : A) => tt, fun (a : A) => tt);\n", "suspension");
-  // Whatever the driver cannot derive yet; here, it is made to fail.
+  // Whatever the driver cannot derive; here, it is made to fail.
   const check = InstructionDriver.prototype.check;
-  InstructionDriver.prototype.check = () => { throw new Error("Pushout is not in instruction mode yet."); };
+  InstructionDriver.prototype.check = () => { throw new Error("The search could not derive this."); };
   let suspension;
   try { [suspension] = elaboration(program, "suspension"); }
   finally { InstructionDriver.prototype.check = check; }
-  assert.equal(suspension.derivation.source, "trace");
-  assert.match(suspension.derivation.reason, /Pushout is not in instruction mode yet/);
-  assert.ok(suspension.derivation.steps.length > 0);
-  // In instruction mode, the same declaration's derivation is the driver's.
+  // There is no other derivation to show: the term checker no longer checks,
+  // and the declaration's view is itself derived.
+  assert.equal(suspension.derivation, undefined);
+  assert.match(suspension.reason, /^Instruction kernel: The search could not derive this/);
   const [derived] = elaboration(program, "suspension");
-  assert.notEqual(derived.derivation.source, "trace");
+  assert.ok(derived.derivation.steps.length > 0);
+  assert.equal(derived.derivation.reason, undefined);
 });

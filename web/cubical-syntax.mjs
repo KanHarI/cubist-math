@@ -3,12 +3,56 @@ import { dimensionContextKey } from "./dist/cubical-runtime/syntax-graph.mjs";
 // Lossless syntax transport between named cubical ASTs and C arena handles.
 // This layer never decides typing or equality. Every checked result comes
 // from CubicalKernel.check; shared input objects retain shared arena nodes.
+// The dimensions free in a node, as a bit mask, memoized in `memo`. A path
+// application's kernel annotation is not counted: neither decoding nor the
+// driver's alpha equality reads it.
+export function freeDimensionMask(kernel, id, memo) {
+  if (!id) return 0n;
+  let mask = memo.get(id);
+  if (mask !== undefined) return mask;
+  const { kind: tag, payload, children: c } = kernel.node(id);
+  const free = child => freeDimensionMask(kernel, child, memo);
+  const bound = child => free(child) & ~(1n << BigInt(payload));
+  const formula = f => kernel.inspectFormula(f).clauses.reduce((m, [p, n]) => m | p | n, 0n);
+  // A list of faces, each with the parts it guards.
+  const system = (chain, parts) => {
+    let m = 0n;
+    for (let link = chain; link;) {
+      const n = kernel.node(link);
+      m |= formula(n.payload) | parts(n.children);
+      link = n.children[tag === "Glue" ? 2 : 1];
+    }
+    return m;
+  };
+  switch (tag) {
+    case "Path": mask = bound(c[0]) | free(c[1]) | free(c[2]); break;
+    case "PLam": mask = bound(c[0]) | bound(c[1]); break;
+    case "PApp": mask = formula(payload) | free(c[0]); break;
+    case "PushPath": mask = formula(payload) | free(c[0]) | free(c[1]); break;
+    case "Trans": mask = bound(c[0]) | formula(kernel.node(c[1]).payload) | free(c[2]); break;
+    case "Comp": case "HComp":
+      mask = (tag === "HComp" ? free(c[0]) : bound(c[0])) | system(c[1], ([body]) => bound(body)) | free(c[2]); break;
+    case "Glue": mask = free(c[0]) | system(c[1], ([type, equiv]) => free(type) | free(equiv)); break;
+    case "GlueTerm": mask = free(c[0]) | free(c[1]) | system(c[2], ([term]) => free(term)); break;
+    default: mask = c.reduce((m, child) => m | free(child), 0n);
+  }
+  memo.set(id, mask);
+  return mask;
+}
 export class CubicalSyntax {
   constructor(kernel) {
     this.kernel = kernel;
+    this.reset();
+  }
+  // Handles move when a checkpoint is committed or rolled back: the caches
+  // keyed by them are dropped then.
+  reset() {
     this.encoded = new WeakMap();
     this.decoded = new Map();
+    this.free = new Map();
   }
+  // The dimensions free in a node, as a bit mask (freeDimensionMask).
+  freeDimensions(id) { return freeDimensionMask(this.kernel, id, this.free); }
   formula(value, sort, dimensions) {
     const clauses = value.map(clause => {
       let positive = 0n, negative = 0n;
@@ -113,6 +157,12 @@ export class CubicalSyntax {
     });
   }
   decode(id, dimensions = new Map()) {
+    // A node's decoding depends only on the names of its free dimensions, so
+    // it is decoded, and cached, under those alone. A binder inside may then
+    // reuse the name of a dimension the node does not mention.
+    const free = this.freeDimensions(id);
+    if ([...dimensions.values()].some(index => !(free & 1n << BigInt(index))))
+      dimensions = new Map([...dimensions].filter(([, index]) => free & 1n << BigInt(index)));
     const cacheKey = JSON.stringify([id,dimensionContextKey(dimensions)]);
     if (this.decoded.has(cacheKey)) return this.decoded.get(cacheKey);
     const { kind: tag, payload, children: c } = this.kernel.node(id);

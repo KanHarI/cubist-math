@@ -35,6 +35,9 @@ static bool ready(cc_kernel *k) {
         return false;
     k->budget = k->operation_budget;
     k->recursion = 0;
+    /* The deadline bounds instructions as it bounds checking. */
+    if (!ck_tick(k, true))
+        return false;
     if (k->fact_count)
         return true;
     cc_fact *facts = reserve(k, k->facts, &k->fact_capacity, 1, sizeof *facts);

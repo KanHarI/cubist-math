@@ -101,6 +101,11 @@ export class CubicalKernel {
       this.module._cb_step_budget(this.handle, Number(this.stepBudget & 0xffffffffn), Number(this.stepBudget >> 32n));
     }
   }
+  // The term arena's size.
+  arena() {
+    this.assertOpen();
+    return { nodes: this.module._cb_arena(this.handle, 0) >>> 0, bytes: this.module._cb_arena(this.handle, 1) >>> 0 };
+  }
   error() {
     return this.module.UTF8ToString(this.module._cb_error(this.handle));
   }
@@ -196,7 +201,10 @@ export class CubicalKernel {
   normalize(checkedHandle) {
     this.assertOpen();
     uint32(checkedHandle, "Checked handle");
-    const id = this.withGrowingBudget(() => this.module._cb_normalize(this.handle, checkedHandle)) >>> 0;
+    // A handle the instruction kernel derived is well typed as well.
+    const derived = this.derivedHandles?.has(checkedHandle);
+    const id = this.withGrowingBudget(() => derived ? this.module._cb_normalize_derived(this.handle, checkedHandle)
+      : this.module._cb_normalize(this.handle, checkedHandle)) >>> 0;
     if (!id) throw this.failure("Normalize an expression or type from the most recent successful check.");
     return id;
   }

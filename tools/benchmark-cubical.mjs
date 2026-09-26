@@ -1,6 +1,6 @@
 // Temporary migration benchmark. Each source declaration gets one shared
-// wall deadline for elaboration, C checking and the instruction kernel's
-// derivation, excluding import discovery.
+// wall deadline for elaboration and the instruction kernel's derivations,
+// excluding import discovery.
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { cpus } from "node:os";
@@ -29,7 +29,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     },
   });
   Object.assign(report, { revision, dirty, runtime: process.version, cpu: cpus()[0]?.model,
-    complete: true, method: "One session; source order with imports checked once. Each declaration is checked by the term checker and then derived again by the instruction kernel, both within its deadline. Warm dependencies; transient arena terms and judgements compacted between declarations; no normalization request. Deadline polled cooperatively in JS and C. Universe templates counted separately." });
+    complete: true, method: "One session; source order with imports checked once. Each declaration is elaborated with every check derived by the instruction kernel as it runs, and admitted by Define, within its deadline. Warm dependencies; transient arena terms and judgements compacted between declarations; no normalization request. Deadline polled cooperatively in JS and C. Universe templates counted separately." });
   await mkdir(new URL("../build/", import.meta.url), { recursive: true });
   await writeFile(new URL("../build/cubical-benchmark.json", import.meta.url), JSON.stringify(report, null, 2) + "\n");
   if (!selected.length || args.includes("--publish")) {

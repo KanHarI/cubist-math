@@ -157,7 +157,7 @@ $("assembly-download").onclick = () => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 function validate(term = view.expression) {
-  checked = program.kernel.withUnfoldingHints(view.unfoldingHints ?? [], () => program.checker.syntax.check(term, view.type, view.context.map(x => [x.name, x.type]), new Map(view.dimensions ?? [])));
+  checked = program.checker.checkView(term, view.type, view.context.map(x => [x.name, x.type]), new Map(view.dimensions ?? []));
   view.expression = checked.term;
   assemblyView = null;
   enableReductions(true); $("check").disabled = false;
@@ -212,10 +212,8 @@ function reduce(side, kind, path = null) {
     let result;
     if (kind === "normalize") {
       const dimensions = new Map(view.dimensions ?? []);
-      const term = program.kernel.withUnfoldingHints(view.unfoldingHints ?? [], () => {
-        const original = program.checker.syntax.check(view[side], null, view.context.map(x => [x.name, x.type]), dimensions);
-        return program.checker.syntax.decode(program.kernel.normalize(original.expression), dimensions);
-      });
+      const original = program.checker.checkView(view[side], null, view.context.map(x => [x.name, x.type]), dimensions);
+      const term = program.checker.syntax.decode(program.kernel.normalize(original.expression), dimensions);
       result = { ...checkReduction(program, view, side, term), change: { rule: "Normalized", name: side } };
     } else result = reduceView(program, view, side, kind, path);
     if (!result.change) {
@@ -282,7 +280,7 @@ try {
     : program.inspect(payload.binding);
   selected = view.name;
   if (payload.side === "type") {
-    const type = program.checker.syntax.check(view.type, null, view.context.map(x => [x.name, x.type]), new Map(view.dimensions ?? []));
+    const type = program.checker.checkView(view.type, null, view.context.map(x => [x.name, x.type]), new Map(view.dimensions ?? []));
     view = { ...view, expression: type.term, type: type.type, folded: view.folded ? { ...view.folded, expression: view.folded.type, type: type.type } : null };
   }
   validate(); display();
