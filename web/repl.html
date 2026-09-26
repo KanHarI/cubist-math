@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Try Cubist one entry at a time: define names, ask for types and evaluate terms, each checked by the kernel." />
+    <title>Cubist · REPL</title>
+    <link rel="stylesheet" href="language.css" />
+    <link rel="stylesheet" href="repl.css" />
+  </head>
+  <body class="repl-page">
+    <a class="skip-link" href="#repl">Skip to the REPL</a>
+    <header>
+      <a class="brand" href="index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="proof.html">Proof workspace</a>
+        <a href="workbench.html">Kernel workbench</a>
+        <a href="language.html">Language reference</a>
+        <a href="repl.html" aria-current="page">REPL</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">CHECKED ONE ENTRY AT A TIME</p>
+        <h1>REPL</h1>
+        <p class="lead">Define names, ask for types and evaluate terms. The kernel checks each entry as a small file that imports the entries before it.</p>
+      </div>
+      <div id="repl"></div>
+      <section class="repl-commands" aria-labelledby="repl-commands-title">
+        <h2 id="repl-commands-title">Commands</h2>
+        <table>
+          <tr><td><code>let x := 7;</code></td><td>Define a name. Any declaration of a file works too: <code>def</code> with a proof block, <code>opaque def</code>, <code>simp_rule</code>.</td></tr>
+          <tr><td><code>typeof x;</code></td><td>The type of a term: <code>Nat</code>.</td></tr>
+          <tr><td><code>evaluate x;</code></td><td>The value of a term: <code>7</code>. A term alone is evaluated too.</td></tr>
+          <tr><td><code>import naturals;</code></td><td>Load a module. <code>naturals</code> provides <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code>.</td></tr>
+          <tr><td><code>help</code></td><td>List the commands.</td></tr>
+        </table>
+        <p>Enter runs an entry. Shift+Enter adds a line, and so does Enter while a bracket is open, so a proof block can be typed as in a file. ↑ and ↓ recall earlier entries. An entry that does not check changes nothing.</p>
+        <p>To use the names of a proof, open it in the <a href="proof.html">proof workspace</a>: the console under it has them loaded. The <a href="language.html">language reference</a> describes every construct, and each of its pages has a REPL bar at the bottom.</p>
+      </section>
+    </main>
+    <footer>Cubist · REPL · <a href="language.html">Language reference</a> · <a href="proof.html">Proof workspace</a></footer>
+    <script type="module" src="repl.mjs"></script>
+  </body>
+</html>

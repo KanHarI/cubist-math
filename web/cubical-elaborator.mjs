@@ -111,14 +111,14 @@ export class NativeCubicalElaborator {
     } catch { /* Keep the kernel's message. */ }
     return error;
   }
-  displayText(term) {
+  displayText(term, width = 160) {
     // Definitions show their source names, without the module prefix, and
     // assumptions their labels.
     this.displaySymbols ??= new Proxy({}, { get: (_, name) => typeof name !== "string" ? undefined
       : this.assumptionLabels.has(name) ? { name: this.assumptionLabels.get(name), kind: "axiom" }
       : name.includes("__") && !name.startsWith("__") ? { name: name.slice(name.indexOf("__") + 2) } : undefined });
     const text = sourceText(displayTerm(term), this.displaySymbols);
-    return text.length > 160 ? `${text.slice(0, 159)}…` : text;
+    return text.length > width ? `${text.slice(0, width - 1)}…` : text;
   }
   checkSyntax(term, expected, context, dimensions, describe = true) {
     try { return this.syntax.check(term, expected, [...this.context(context)], dimensions); }

@@ -8,10 +8,14 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 import { cubicalText } from "../web/cubical-notation.mjs";
 import { kernelAssembly, assemblyText } from "../web/cubical-assembly.mjs";
 import { reduceView } from "../web/cubical-reduction.mjs";
+import { ReplSession, replStatements } from "../web/repl-session.mjs";
 const help = `Cubist Math — cubical C kernel
-  check MODULE|FILE.cubist  Check source and imports
+  let NAME := TERM;        Define a name; def and any other declaration work too
+  typeof TERM;             Show the type of a term
+  evaluate TERM;           Show the value of a closed term that uses no assumption
+  import MODULE;           Load a module into the session
+  check MODULE|FILE.cubist  Check source and imports; later entries see its names
   inspect NAME             Show a checked expression, context, type and assumptions
-  evaluate EXPRESSION      Normalize a closed expression that uses no assumption
   assembly NAME            Show the native kernel opcode graph
   beta [expression|type]   Perform one checked beta reduction
   delta [expression|type]  Unfold one named definition, checked by C
@@ -19,7 +23,11 @@ const help = `Cubist Math — cubical C kernel
   help                     Show this reference
   quit                     Exit
 
+Each entry is checked by the kernel as a small module on top of the ones
+before it. An entry continues on the next line while a bracket is open.
+
 Noninteractive: node cli/repl.mjs check euclid
+                node cli/repl.mjs "import naturals; evaluate 2 + 3;"
 Optimizations: --[no-]share-syntax, --[no-]reuse-checks, --[no-]compact-paths`;
 const args = process.argv.slice(2), optimizations = {};
 const command = [];
@@ -29,7 +37,7 @@ for (const arg of args) {
   else command.push(arg);
 }
 const module = await createCubical();
-let program, view, binding, checkedModule, evaluations = 0;
+let program, view, binding, checkedModule, session = null, sessionProgram = null;
 // The rebuilt library comes first; the archived first library is the fallback.
 const readSource = async name => {
   for (const root of ["../library/", "../archive/first-library/"]) {
@@ -43,9 +51,26 @@ function show() {
   for (const entry of shown.context) console.log(`${entry.label ?? entry.name} : ${cubicalText(entry.type, view.symbols)}`);
   console.log(`${view.name}\nExpression: ${cubicalText(shown.reference ?? shown.expression, view.symbols)}\nType: ${cubicalText(shown.type, view.symbols)}`);
 }
+// Entries run in a session over the checked module, or over an empty program
+// before any check. A new check keeps the session: its entries are replayed.
+async function replSession() {
+  if (program && session?.program !== program)
+    session = session ? await session.rebase(program, checkedModule) : new ReplSession(program, { base: checkedModule });
+  else if (!session) {
+    sessionProgram = new CubicalProgram(module, readSource, { optimizations });
+    session = new ReplSession(sessionProgram);
+  }
+  return session;
+}
+const commands = new Set(["help", "--help", "-h", "quit", "exit", "check", "inspect", "assembly", "beta", "delta", "export"]);
 async function execute(line) {
   const [operation, ...parts] = line.trim().split(/\s+/), value = parts.join(" ");
   if (!operation) return;
+  if (!commands.has(operation)) {
+    for (const { kind, text } of await (await replSession()).run(line))
+      (kind === "error" ? console.error : console.log)(text);
+    return;
+  }
   if (["help", "--help", "-h"].includes(operation)) { console.log(help); return; }
   if (["quit", "exit"].includes(operation)) return false;
   if (operation === "check") {
@@ -71,17 +96,6 @@ async function execute(line) {
     return;
   }
   if (!program) throw Error("Check a source first.");
-  if (operation === "evaluate") {
-    if (!value) throw Error("evaluate requires an expression.");
-    // The checked module is cached, so this checks only the directive. Both
-    // sides are the same term, so the directive reports its normal form.
-    const scratch = `evaluate_${++evaluations}`;
-    const result = await program.check(`import ${checkedModule};\nevaluate ${value} expecting ${value};`, scratch);
-    const gap = program.gaps.find(item => item.module === scratch);
-    if (gap) throw Error(gap.reason);
-    console.log(result.evaluations.find(item => item.module === scratch).value);
-    return;
-  }
   if (["inspect", "assembly"].includes(operation)) {
     const matches = Object.values(program.symbols).filter(item => item.name === value);
     if (matches.length > 1) throw Error(`Ambiguous name; use a qualified binding: ${matches.map(item => item.binding).join(", ")}`);
@@ -116,12 +130,21 @@ try {
   else {
     console.log(help);
     const input = createInterface({ input: process.stdin, output: process.stdout, terminal: process.stdin.isTTY });
+    const prompt = text => { if (process.stdin.isTTY) { input.setPrompt(text); input.prompt(); } };
+    // An entry with an open bracket, such as a proof block, continues.
+    let pending = "";
+    prompt("cubist> ");
     try {
       for await (const line of input) {
-        try { if (await execute(line) === false) break; }
+        pending += (pending ? "\n" : "") + line;
+        if (replStatements(pending).depth > 0) { prompt("...     "); continue; }
+        const entry = pending;
+        pending = "";
+        try { if (await execute(entry) === false) break; }
         catch (error) { console.error(error.message); }
+        prompt("cubist> ");
       }
     } finally { input.close(); }
   }
 } catch (error) { console.error(error.message); process.exitCode = 1; }
-finally { program?.dispose(); }
+finally { program?.dispose(); sessionProgram?.dispose(); }

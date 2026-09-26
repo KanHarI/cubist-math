@@ -6,6 +6,7 @@
     <meta name="description" content="A proof block builds a term one statement at a time. Each statement extends the context, changes the goal, or closes it." />
     <title>Cubist · 4. Proof blocks</title>
     <link rel="stylesheet" href="../language.css" />
+    <link rel="stylesheet" href="../repl.css" />
   </head>
   <body>
     <a class="skip-link" href="#reference">Skip to chapter</a>
@@ -15,6 +16,7 @@
         <a href="../proof.html">Proof workspace</a>
         <a href="../workbench.html">Kernel workbench</a>
         <a href="../language.html">Language reference</a>
+        <a href="../repl.html">REPL</a>
       </nav>
     </header>
     <main>
@@ -341,5 +343,6 @@ def pointwise(A B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
     </main>
     <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
     <script type="module" src="examples.mjs"></script>
+    <script type="module" src="repl-dock.mjs"></script>
   </body>
 </html>

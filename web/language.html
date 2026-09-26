@@ -6,6 +6,8 @@
     <meta name="description" content="Cubist language reference: files, terms, proof blocks, universes, induction, equality and paths, rewriting, cubical paths, conversion, assumptions and computability." />
     <title>Cubist · Language reference</title>
     <link rel="stylesheet" href="language.css" />
+    <link rel="stylesheet" href="repl.css" />
+    <script type="module" src="reference/repl-dock.mjs"></script>
     <script>
       // Sections of the former single-page reference now live in chapters.
       const moved = {
@@ -52,6 +54,7 @@
         <a href="proof.html">Proof workspace</a>
         <a href="workbench.html">Kernel workbench</a>
         <a href="language.html" aria-current="page">Language reference</a>
+        <a href="repl.html">REPL</a>
       </nav>
     </header>
     <main>
@@ -67,6 +70,7 @@
         <ul>
           <li><strong>In the browser:</strong> write and check proofs in the <a href="proof.html">proof workspace</a>. <a href="reference/checking.html#inspection">Chapter 11</a> explains editing, checking and the inspector, and the workspace’s <a href="proof.html#language-guide">quick reference</a> summarizes the syntax.</li>
           <li><strong>From the command line:</strong> <code>node cli/repl.mjs check FILE.cubist</code> checks a file with the same kernel. See <a href="reference/checking.html#cli">the command-line checker</a> and the <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/cli.md">CLI guide</a> for setup and commands.</li>
+          <li><strong>In the REPL:</strong> try terms and declarations one at a time, each checked by the kernel: on the <a href="repl.html">REPL page</a>, in the console under every proof in the workspace, where the proof’s names are loaded, or in the REPL bar at the bottom of these pages. <code>let x := 7;</code> defines, <code>typeof x;</code> shows a type and <code>evaluate x;</code> a value.</li>
           <li><strong>Kernel terms:</strong> the <a href="workbench.html">kernel workbench</a> shows checked terms, their context, reductions and native opcode assembly.</li>
           <li><strong>New to Cubist:</strong> start with <a href="reference/types.html">chapter 1, types and values</a>, then <a href="reference/first-proof.html">a first proof</a>. Every example in this reference is checked by the test suite; incorrect examples show their error message as a <code>// Error:</code> comment.</li>
           <li><strong>Inspect any example:</strong> examples are also checked in your browser as you read. Click a name in one to see its checked kernel term, type and context, in the same inspector as the proof workspace; <em>Open in workspace</em> lets you edit and run it.</li>

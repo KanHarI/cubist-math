@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
+import { ReplSession, replTranscript } from "../web/repl-session.mjs";
 import { budget } from "./timing.mjs";
 import { referenceExamples, statedErrors, transcript } from "./reference-pages.mjs";
 
@@ -16,7 +17,10 @@ import { referenceExamples, statedErrors, transcript } from "./reference-pages.m
 //                                           the example's `// Error: …` comments;
 //   data-check="excerpt" data-module="m"    the text is quoted from library module m;
 //   data-check="fragment" data-reason="…"   an unchecked sketch, with the reason;
-//   data-check="cli" data-files="a,b"      a command-line session, run for real.
+//   data-check="cli" data-files="a,b"      a command-line session, run for real;
+//   data-check="repl"                      a REPL transcript, run on top of the
+//                                           accepted example before it on the page
+//                                           (data-base="none": on an empty program).
 // An accepted example with data-name="a" on the same page is the file a.cubist
 // of a session. An example without a declared check fails this test.
 const chapters = (await readdir(new URL("../web/reference/", import.meta.url))).filter(name => name.endsWith(".html")).sort();
@@ -67,7 +71,27 @@ async function runSession(example, named) {
   } finally { await rm(directory, { recursive: true, force: true }); }
 }
 
-async function verify(example, index, named = new Map()) {
+// Each entry's results must be exactly the transcript's lines after it.
+async function runRepl({ label, text, attrs }, base) {
+  const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
+  try {
+    let session = new ReplSession(program);
+    if (attrs["data-base"] !== "none") {
+      assert.ok(base, `${label}: a REPL example follows the accepted example it runs on`);
+      const result = await program.check(base, "example");
+      assert.ok(result.complete, `${label}: the example before it should check`);
+      session = new ReplSession(program, { base: "example" });
+    }
+    for (const { input, results } of replTranscript(text)) {
+      const actual = (await session.run(input)).flatMap(result => result.text.split("\n"));
+      const message = `${label}: \`${input}\` gives ${JSON.stringify(actual)}`;
+      assert.equal(actual.length, results.length, message);
+      results.forEach((line, i) => assert.match(actual[i], linePattern(line), message));
+    }
+  } finally { program.dispose(); }
+}
+
+async function verify(example, index, named = new Map(), base = null) {
   const { attrs, text, label } = example;
   const kind = attrs["data-check"];
   assert.ok(!("data-error" in attrs), `${label}: state the error as an \`// Error:\` comment, not data-error`);
@@ -93,6 +117,8 @@ async function verify(example, index, named = new Map()) {
     assert.ok(attrs["data-reason"], `${label}: an unchecked fragment states its data-reason`);
   } else if (kind === "cli") {
     await runSession(example, named);
+  } else if (kind === "repl") {
+    await runRepl(example, base);
   } else {
     assert.fail(`${label} has no declared check (data-check="${kind ?? ""}")`);
   }
@@ -106,11 +132,13 @@ test("every language reference example declares and passes its check", async t =
     const examples = referenceExamples(file, source);
     const named = new Map(examples.filter(example => example.attrs["data-name"] && example.attrs["data-check"] === "accept")
       .map(example => [example.attrs["data-name"], example.text]));
+    let base = null;
     for (const example of examples) {
       // Report every failing example at once, not only the first.
-      try { await verify(example, index++, named); }
+      try { await verify(example, index++, named, base); }
       catch (error) { problems.push(error.message.split("\n")[0] + (error.actual ? ` ${JSON.stringify(error.actual)}` : "")); }
       counts[example.attrs["data-check"]] = (counts[example.attrs["data-check"]] ?? 0) + 1;
+      if (example.attrs["data-check"] === "accept") base = example.text;
     }
   }
   assert.ok(index > 0, "the references contain examples");
@@ -139,6 +167,16 @@ test("the harness distinguishes accepted, rejected, excerpted and unmarked examp
   assert.deepEqual(statedErrors("  // Error: first part\n  //   second part\nx;  // Error: other\n  //   not a continuation"),
     ["first part second part", "other"]);
   await assert.rejects(verify({ ...accepted, text: "def wrong : 0 = 1 { exact refl(0); }" }, 5), /should check/);
+});
+
+test("the harness replays REPL transcripts on the example before them", async () => {
+  const transcriptOf = text => ({ label: "sample.html:1", attrs: { "data-check": "repl" }, text });
+  const base = "def two := succ(succ(0));";
+  await verify(transcriptOf("> typeof two;\nNat\n> let three := succ(two);\nthree : Nat\n> three\n3"), 0, new Map(), base);
+  await assert.rejects(verify(transcriptOf("> evaluate two;\n3"), 1, new Map(), base), /gives \["2"\]/);
+  await assert.rejects(verify(transcriptOf("> evaluate two;"), 2, new Map(), base), /gives \["2"\]/);
+  await assert.rejects(verify(transcriptOf("> evaluate two;\n2"), 3), /follows the accepted example/);
+  await verify({ ...transcriptOf("> evaluate succ(1);\n2"), attrs: { "data-check": "repl", "data-base": "none" } }, 4);
 });
 
 test("the harness runs command-line sessions against named examples", async () => {
