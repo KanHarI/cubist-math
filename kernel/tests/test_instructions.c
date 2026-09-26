@@ -280,6 +280,20 @@ int main(void) {
     cc_judgement_id at_start = OK(cc_instr_endpoint(k, push, i, 0));
     assert(kind(other_of(STEP(OK(cc_instr_refl(k, at_start)), CC_STEP_IOTA, ROOT))) == CC_PUSH_LEFT);
     rejects(cc_instr_step(k, OK(cc_instr_refl(k, push)), 1, ROOT, CC_STEP_IOTA), "Iota needs");
+    /* Homogeneous composition, over the pushout; not over Nat. */
+    cc_judgement_id box = OK(cc_instr_system(k, j2, pushout, inl));
+    box = OK(cc_instr_system_tube(k, box, faces[0], inl, OK(cc_instr_refl(k, inl))));
+    cc_judgement_id hcomp = OK(cc_instr_hcomp(k, box));
+    assert(kind(term_of(hcomp)) == CC_HCOMP && type_of(hcomp) == term_of(pushout));
+    rejects(cc_instr_hcomp(k, system), "pushout types");
+    /* Transport along a constant family: its tubes are the base on each clause. */
+    cc_judgement_id moved = OK(cc_instr_trans(k, box, faces[0]));
+    assert(kind(term_of(moved)) == CC_TRANS && type_of(moved) == term_of(pushout));
+    rejects(cc_instr_trans(k, box, faces[1]), "clauses, in order");
+    cc_judgement_id still = OK(cc_instr_system_tube(k, OK(cc_instr_system(k, j2, pushout, inl)), always, inl,
+                                                     OK(cc_instr_refl(k, inl))));
+    cc_judgement_id unmoved = OK(cc_instr_trans(k, still, always));
+    assert(other_of(STEP(OK(cc_instr_refl(k, unmoved)), CC_STEP_FACE, ROOT)) == term_of(inl));
 
     /* The W type of trees with Unit many children at each label: W(x : Unit). Unit.
      * A tree whose children are one tree, and W recursion computing on sup. */

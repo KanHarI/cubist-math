@@ -1133,6 +1133,65 @@ cc_judgement_id cc_instr_push_elim(cc_kernel *k, cc_judgement_id motive_id, cc_j
                   make(k, CC_PI, z, P, app(k, p.term, ck_var(k, z)), 0, 0), context);
 }
 
+cc_judgement_id cc_instr_hcomp(cc_kernel *k, cc_judgement_id system_id) {
+    cc_judgement_id found;
+    if (!begin(k, (cc_derivation){.rule = CC_INSTR_HCOMP, .premise = {system_id}}, NULL, 0, &found))
+        return found;
+    cc_fact s = {0};
+    uint32_t context = 0;
+    if (!premise(k, system_id, CC_FACT_SYSTEM, &s))
+        return 0;
+    if (s.pending)
+        return ck_fail(k, "The last tube must first be shown to agree with the tubes it overlaps."), 0;
+    cc_node comp = k->nodes[s.term];
+    if (ck_free_dims(k, comp.child[0]) & (UINT64_C(1) << comp.payload))
+        return ck_fail(k, "A homogeneous composition's type may not use its dimension."), 0;
+    cc_term head = ck_whnf(k, comp.child[0]);
+    if (!head || k->nodes[head].kind != CC_PUSHOUT)
+        return k->error[0] ? 0 : (ck_fail(k, "Homogeneous composition is for pushout types."), 0);
+    cc_entry_id dimension = dimension_entry(k, comp.payload);
+    if (!dimension || !discharge(k, s.context, &dimension, 1, &context))
+        return 0;
+    return typing(k, make(k, CC_HCOMP, comp.payload, comp.child[0], comp.child[1], comp.child[2], 0), s.type, context);
+}
+
+cc_judgement_id cc_instr_trans(cc_kernel *k, cc_judgement_id system_id, cc_formula_id face) {
+    cc_judgement_id found;
+    if (!begin(k, (cc_derivation){.rule = CC_INSTR_TRANS, .premise = {system_id}, .operand = {face}}, NULL, 0, &found))
+        return found;
+    cc_fact s = {0};
+    uint32_t context = 0, dims = 0;
+    if (!premise(k, system_id, CC_FACT_SYSTEM, &s))
+        return 0;
+    if (s.pending)
+        return ck_fail(k, "The last tube must first be shown to agree with the tubes it overlaps."), 0;
+    const cc_formula *phi = cc_kernel_get_formula(k, face);
+    if (!phi || phi->sort != CC_FACE)
+        return ck_fail(k, "A transport's face is a face formula."), 0;
+    cc_node comp = k->nodes[s.term];
+    size_t clause = 0;
+    for (cc_term cursor = comp.child[1]; cursor; cursor = k->nodes[cursor].child[1], ++clause) {
+        const cc_formula *own = cc_kernel_get_formula(k, k->nodes[cursor].payload);
+        if (clause >= phi->length || own->length != 1 || own->clauses[0].positive != phi->clauses[clause].positive ||
+            own->clauses[0].negative != phi->clauses[clause].negative)
+            return ck_fail(k, "A transport's tubes are its face's clauses, in order."), 0;
+        if (!same(k, k->nodes[cursor].child[0], ck_restrict(k, comp.child[2], phi->clauses[clause]),
+                  "A transport's tube is its base on the face."))
+            return 0;
+    }
+    if (clause != phi->length)
+        return ck_fail(k, "A transport's tubes are its face's clauses, in order."), 0;
+    cc_term head = ck_whnf(k, comp.child[0]);
+    if (!head || k->nodes[head].kind != CC_PUSHOUT)
+        return k->error[0] ? 0 : (ck_fail(k, "Transport is for pushout type families."), 0);
+    cc_entry_id dimension = dimension_entry(k, comp.payload);
+    if (!dimension || !formula_context(k, phi, &dims) || !discharge(k, s.context, &dimension, 1, &context) ||
+        !merge(k, context, dims, &context))
+        return 0;
+    cc_term tube = make(k, CC_TUBE, face, comp.child[2], 0, 0, 0);
+    return typing(k, make(k, CC_TRANS, comp.payload, comp.child[0], tube, comp.child[2], 0), s.type, context);
+}
+
 /* ---- Definitions -------------------------------------------------------- */
 
 cc_judgement_id cc_instr_define(cc_kernel *k, uint32_t symbol, cc_judgement_id closed) {
@@ -1458,6 +1517,11 @@ static cc_term contract(cc_kernel *k, cc_term term, cc_step_rule rule) {
                     !face->clauses[0].negative)
                     return ck_endpoint_term(k, tube.child[0], n.payload, 1);
             }
+        }
+        if (n.kind == CC_TRANS && n.child[1]) {
+            const cc_formula *face = cc_kernel_get_formula(k, k->nodes[n.child[1]].payload);
+            if (face && face->length == 1 && !face->clauses[0].positive && !face->clauses[0].negative)
+                return n.child[2];
         }
         return ck_fail(k, "A face step needs a composition with a tube on a face that holds."), 0;
     }

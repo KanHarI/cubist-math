@@ -246,9 +246,10 @@ export class InstructionDriver {
       if (point.endpoint !== undefined) return g.pathApply(path, 0, point.endpoint);
       return g.pathAt(path, n.payload);
     }
-    case "Comp": {
+    case "Comp": case "HComp": {
       // comp^i A [φ ↦ u] a0: each tube, already restricted to its face, is
       // checked against the family there, and shown equal to the base at 0.
+      // hcomp is the same box, over a type that does not vary along i.
       const dimension = g.dimension(n.payload), family = this.asType(derive(a));
       const base = this.convertTo(derive(c), g.endpoint(family, dimension, 0));
       // Where a tube's face meets an earlier tube's, the two agree there.
@@ -282,7 +283,25 @@ export class InstructionDriver {
         });
         tubes.push({ clause, value });
       }
-      return g.comp(system);
+      return n.kind === "HComp" ? g.hcomp(system) : g.comp(system);
+    }
+    case "Trans": {
+      // transp^i A φ a0: on each clause of φ, the base itself is a tube, at
+      // the family there, which is constant.
+      const dimension = g.dimension(n.payload), family = this.asType(derive(a));
+      const base = this.convertTo(derive(c), g.endpoint(family, dimension, 0));
+      const face = this.node(b).payload, { clauses } = this.kernel.inspectFormula(face);
+      let system = g.system(dimension, family, base);
+      clauses.forEach((clause, index) => {
+        const value = this.convertTo(this.restrict(base, clause), this.restrict(family, clause));
+        system = g.systemTube(system, this.kernel.formula("face", [clause]), value, g.refl(this.restrict(base, clause)));
+        for (let earlier = 0; earlier < index; earlier++) {
+          const other = clauses[earlier], overlap = [clause[0] | other[0], clause[1] | other[1]];
+          if (overlap[0] & overlap[1]) continue;
+          system = g.systemOverlap(system, earlier, g.refl(this.restrict(base, overlap)));
+        }
+      });
+      return g.trans(system, face);
     }
     case "Pushout": {
       // The maps are a pair C → A, C → B, derived as that type's syntax.
@@ -600,7 +619,7 @@ export class InstructionDriver {
     }
     // A composition with a tube on a face that holds is that tube at 1. Any
     // other composition computes by its type, which only Whnf takes.
-    case "Comp": case "HComp":
+    case "Comp": case "HComp": case "Trans":
       for (let tube = n.children[1]; tube; tube = this.node(tube).children[1]) {
         const { clauses } = this.kernel.inspectFormula(this.node(tube).payload);
         if (clauses.length === 1 && !clauses[0][0] && !clauses[0][1]) return { path: [], rule: "face" };

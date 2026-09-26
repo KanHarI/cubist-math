@@ -13,19 +13,14 @@ which it does not change:
 - Stage 3 is under way: paths at any interval formula (`PathAt`),
   composition, with an equality on each overlap of two tubes' faces
   (`System`, `SystemTube`, `SystemOverlap`, `Comp`), pushouts
-  (`Pushout`, `PushPoint`, `PushPath`, `PushElim`), and W types (`W`, `Sup`,
-  `WElim`).
+  (`Pushout`, `PushPoint`, `PushPath`, `PushElim`), W types (`W`, `Sup`,
+  `WElim`), and homogeneous composition and transport (`HComp`, `Trans`).
 - In instruction mode, the first proof checks, and so does all of
   `library/naturals`. So does every one of the 41 definitions behind the
-  archive's Euclid theorem, and 3929 of the archive's 3938 definitions
+  archive's Euclid theorem, and 3930 of the archive's 3938 definitions
   (99.8%), in 18 s for the whole archive; `node tools/instruction-coverage.mjs`
   measures it again. Every derived term is its source syntax, annotations
-  included. The rest need kernel rules, not search:
-
-  | Need | Definitions |
-  | --- | --- |
-  | Glue | 8 |
-  | `HComp` | 1 |
+  included. The other 8 need Glue: univalence and what is proved with it.
 
 ## Goal
 
@@ -157,6 +152,12 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
     and until each has its equality, the kernel neither adds a tube nor
     closes the system. The term checker asks the same, of its conversion.
   - `Comp` closes the system into `comp … : A(1)` and discharges `i`.
+  - `HComp` closes it into `hcomp^i A [φ ↦ u] a0 : A` when the family does
+    not vary along `i`, and `Trans` into `transp^i A φ a0 : A(1)` when its
+    tubes are the base on each clause of `φ`, at the family there, which is
+    constant on `φ`. As in the term checker, both are for pushout types,
+    which each reads off the family's weak head. `Face` takes a transport
+    whose face holds to its base.
   - `PathAt` applies a path at any interval formula, such as `1 - i`.
 - **Pushouts** (CHM §3.3.5): `Pushout` forms `Pushout(C, A, B, (f, g))`
   from `C, A, B : U` and the maps, a pair `C → A`, `C → B`. `PushPoint` gives
@@ -323,8 +324,8 @@ reconstructed from the term checker's trace (#36).
 3. **W types and the cubical rules**, under way:
    - done: paths at any interval formula;
    - done: composition, with an equality on each overlap of two faces;
-   - done: pushouts and W types;
-   - remaining: `HComp`, `Trans` and `Glue`;
+   - done: pushouts, W types, `HComp` and `Trans`;
+   - remaining: `Glue`;
    - remaining: the archive checks in instruction mode.
 4. **Tactics issue instructions directly**, and the term checker leaves the
    trusted kernel. Unfolding hints leave the kernel.

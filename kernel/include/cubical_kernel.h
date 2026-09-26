@@ -114,7 +114,7 @@ typedef enum {
     CC_INSTR_SYMMETRY, CC_INSTR_TRANSITIVITY, CC_INSTR_CONVERT, CC_INSTR_LIFT, CC_INSTR_ENDPOINT,
     CC_INSTR_PATH_AT, CC_INSTR_SYSTEM, CC_INSTR_SYSTEM_TUBE, CC_INSTR_COMP, CC_INSTR_SYSTEM_OVERLAP,
     CC_INSTR_PUSHOUT, CC_INSTR_PUSH_POINT, CC_INSTR_PUSH_PATH, CC_INSTR_PUSH_ELIM,
-    CC_INSTR_W, CC_INSTR_SUP, CC_INSTR_W_ELIM
+    CC_INSTR_W, CC_INSTR_SUP, CC_INSTR_W_ELIM, CC_INSTR_HCOMP, CC_INSTR_TRANS
 } cc_instruction;
 typedef enum {
     CC_STEP_BETA = 1,  /* App(Lam(x. b), a) to b[a/x] */
@@ -129,7 +129,8 @@ typedef enum {
                         * composition, transport, Glue and pushouts compute,
                         * and lambdas contract by eta */
     CC_STEP_FACE       /* a composition with a tube on a face that holds, to
-                        * that tube at the end of the composition's dimension */
+                        * that tube at the end of the composition's dimension;
+                        * a transport on a face that holds, to its base */
 } cc_step_rule;
 
 cc_judgement_id cc_instr_universe(cc_kernel *, uint32_t level);           /* ⊢ U(l) : U(l+1) */
@@ -191,6 +192,15 @@ cc_judgement_id cc_instr_system_tube(cc_kernel *, cc_judgement_id system, cc_for
 cc_judgement_id cc_instr_system_overlap(cc_kernel *, cc_judgement_id system, uint32_t position,
                                         cc_judgement_id agreement);
 cc_judgement_id cc_instr_comp(cc_kernel *, cc_judgement_id system);
+/* HComp closes a system whose family A does not use its dimension into the
+ * homogeneous composition hcomp^i A [φ ↦ u] a0 : A. As in the term checker, A
+ * must be a pushout type: its weak head, which involves no choice. */
+cc_judgement_id cc_instr_hcomp(cc_kernel *, cc_judgement_id system);
+/* Trans closes into transp^i A φ a0 : A(1) a system whose tubes are the base
+ * a0 restricted to each clause of the face φ, in order: on φ the family is
+ * constant, which each tube's typing shows. The family must be a pushout
+ * type, as in the term checker. */
+cc_judgement_id cc_instr_trans(cc_kernel *, cc_judgement_id system, cc_formula_id face);
 /* Pushouts (CHM §3.3.5). Pushout gives Pushout(C, A, B, maps) : U from
  * C, A, B : U and maps : Σ(f : C → A). C → B. PushPoint gives inl(a) or inr(b)
  * of a pushout type P (right selects inr); PushPath gives push^r(c) : P for
