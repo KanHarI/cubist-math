@@ -308,10 +308,11 @@ accidents. Results go into the table as they arrive.
 
 **Baselines**, without which no ablation means anything:
 
-- the heuristic driver as it stands, with and without the oracle
-  (`node tools/instruction-coverage.mjs --no-oracle`; on 2026-09-26 the
-  archive checked in 33 s with it and 62 s without, with three
-  declarations out of kernel budget without it);
+- the heuristic driver as it stands, with its own guide and with the
+  term checker's conversion as the guide (`node tools/instruction-coverage.mjs`
+  and `--oracle`; on 2026-09-27 the archive checked in 37 s and 34.9 s,
+  and without any guide on 2026-09-26 in 62 s, with three declarations out
+  of kernel budget);
 - a uniform random policy under the same search, to measure how much the
   search alone does;
 - a linear policy over the syntactic features with no attention, the

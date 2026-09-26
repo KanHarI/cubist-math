@@ -34,9 +34,10 @@ that changes the plan.
   are the first proof and `library/naturals`. Every derived term is its
   source syntax, annotations included. The benchmark page measures it, and
   `node tools/instruction-coverage.mjs` derives every stored definition
-  again: as of 2026-09-26 all but one, `group_homomorphisms.group_hom_laws_prop`,
-  whose second derivation by a fresh driver fails with "The argument has
-  the wrong type" although its admission succeeded. That is open.
+  again: all 3938 with the driver's own guide. With the term checker's
+  conversion as the guide instead (`--oracle`), one second derivation,
+  `group_homomorphisms.group_hom_laws_prop`'s, fails with "The argument has
+  the wrong type".
 
 ## Goal
 
@@ -287,23 +288,34 @@ Where a function's domain and its argument's type must agree, both are
 rewritten in place, toward a common form.
 
 **Search aids.** The kernel offers queries that decide nothing:
-`cc_kernel_convertible` answers whether the term checker's conversion finds
-two terms equal, within a budget of 20,000 steps; `cc_kernel_rename` renames a
-free name; `cc_kernel_equiv_type` builds `Equiv(A, B)` as syntax; and
-`cc_kernel_fresh_symbol` allocates symbols, so the driver's names and the
-kernel's never share an id.
+`cc_kernel_whnf` gives a term's weak head normal form within a step budget,
+or nothing when it or a nested computation runs out; `cc_kernel_rename`
+renames a free name; `cc_kernel_equiv_type` builds `Equiv(A, B)` as syntax;
+and `cc_kernel_fresh_symbol` allocates symbols, so the driver's names and the
+kernel's never share an id. `cc_kernel_convertible`, the term checker's
+conversion within a budget of 20,000 steps, is asked only with the `oracle`
+option, for comparison.
 
-The driver asks the first query only where the answer changes its choice: on a
+**The guide.** Whether two terms are equal, the driver answers itself (K1.4,
+2026-09-27): it compares them lazily through their weak head normal forms,
+the kernel's trusted reduction asked as a query. They are equal when
+alpha-equal before or after taking heads; different when the heads are
+constructors or neutral terms that differ, since normal forms are unique;
+unknown when eta could relate them, a head is a cubical construction, or its
+fuel runs out (400 pairs of subterms per question, 4000 kernel steps per
+head). A path at an endpoint of its annotated type is that endpoint, as the
+path step takes it, with nothing computed: otherwise a head would unfold a
+whole proof. The driver asks only where the answer changes its choice: on a
 common head that could also be reduced. Where the head reduces by computation
 (beta, iota, path or face), it reduces unless the parts are known equal;
 where only unfolding a definition would, it compares parts not known to
-differ. Nearly all of the query's cost was in answers that ran out of budget,
-so 20,000 steps rather than 200,000 halved the admission time of the
-algebraic modules. Before comparing parts under binders, it renames the right
-side's bound names to match the left's. Every step it then takes is still an
-instruction the kernel checks.
+differ. Every step it then takes is still an instruction the kernel checks.
 
-After 64 steps in one comparison, two closed subterms the query does not
+With the guide the archive checks in 37 s and every definition derives again
+in 13.9 s; with the term checker's conversion as the guide, 34.9 s and
+10.1 s, with the one failure above.
+
+After 64 steps in one comparison, two closed subterms the guide does not
 find different, such as a numeral's arithmetic, are normalized, one
 instruction each: single steps each rebuild the judgement's term, and a
 factorial's took 1.1M arena nodes where 58k now do. Steps are counted over the
@@ -504,8 +516,8 @@ builder of a pushout's bridge type (`ck_pushout_bridge_type`) in
 - the typing rules (`ck_check`, `ck_infer` in `check_*.c`), reachable through
   `cc_kernel_check` for `CubicalSyntax.check`, which only tests use;
 - the conversion strategy (`ck_convertible` in `term_conversion.c`) and the
-  unfolding hints, reachable through `cc_kernel_convertible`, the driver's
-  search aid;
+  unfolding hints, reachable through `cc_kernel_convertible`, which the
+  driver asks only with its `oracle` option;
 - `cc_kernel_define`, whose definitions `Lookup` refuses.
 
 The JavaScript reference checker (`lib/cubical/core.mjs`) is in the same
@@ -518,16 +530,15 @@ instructions and as the driver's search, once; the term checker's rules and
 the reference checker stay at today's fragment. An error or an exhausted
 budget from the conversion oracle is "not known" to the driver, which then
 searches on its own. The oracle retires when the driver no longer benefits
-from it: `node tools/instruction-coverage.mjs --no-oracle` measures the
-archive with the oracle switched off, and phase 4 of the
-[learned search](learned-search.md) design aims at that independence. On
-2026-09-26 the driver still needed it: without the oracle the archive
-checked in 62 s against 33 s, three declarations ran out of kernel budget
+from it. On 2026-09-26 it still did: without it the archive checked in 62 s
+against 33 s, three declarations ran out of kernel budget
 (`finite_subgroup_fixed_degree_upper_bound`, `f4_base_field_is_f2` and
 `f2_embedded_compositum_is_f2`) and five dependents went untranslated, and
-deriving every definition again took 34 s against 10 s. The work plan's
-K1.4 closes that gap before the language side of G0 lands. At the
-retirement the three trusted functions move to their own file, and
+deriving every definition again took 34 s against 10 s. The driver's own
+guide (above) closed that gap on 2026-09-27 (work plan K1.4), and is now the
+default: the driver no longer asks the term checker anything. What remains
+is its retirement, a separate change: the three trusted functions move to
+their own file, and
 `check_*.c`, the rest of `term_conversion.c` and `unfolding_hints.c` are
 deleted, together with `cc_kernel_check`, `cc_kernel_convertible` and
 `cc_kernel_define`. Stage 6 stays conditional on JavaScript being too slow.

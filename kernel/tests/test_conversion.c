@@ -68,8 +68,38 @@ static void conversion_cache(void) {
     cc_kernel_free(k);
 }
 
+/* A scan for free names cut short by the budget answers "not free" without
+ * looking. The syntax memo records nothing while an error is set, so the same
+ * question with budget enough gets the true answer, and substitution still
+ * renames a binder that would capture. */
+static void cut_short_scans_are_forgotten(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term deep = ck_var(k, 7);
+    cc_term at_three = ck_make(k, CC_PAPP, ck_interval_variable(k, 3), ck_var(k, 8), 0, 0, 0);
+    for (unsigned i = 0; i < 200; ++i) {
+        deep = ck_make(k, CC_SUCC, 0, deep, 0, 0, 0);
+        at_three = ck_make(k, CC_SUCC, 0, at_three, 0, 0, 0);
+    }
+    k->budget = 50;
+    assert(!ck_term_free(k, deep, 7) && k->error[0]);
+    cc_kernel_clear_error(k);
+    k->budget = 50;
+    assert(ck_free_dims(k, at_three) == 0 && k->error[0]);
+    cc_kernel_clear_error(k);
+    k->budget = UINT64_C(1000000);
+    assert(ck_term_free(k, deep, 7));
+    assert(ck_free_dims(k, at_three) == UINT64_C(1) << 3);
+    /* Substituting it under a binder named 7 renames the binder. */
+    cc_term binder = ck_make(k, CC_LAM, 7, ck_make(k, CC_NAT, 0, 0, 0, 0, 0), ck_var(k, 9), 0, 0);
+    cc_term substituted = ck_substitute(k, binder, 9, deep);
+    assert(substituted && k->nodes[substituted].payload != 7);
+    cc_kernel_free(k);
+}
+
 int main(void) {
     conversion_cache();
+    cut_short_scans_are_forgotten();
     cc_kernel *k = cc_kernel_new();
     assert(k);
     k->budget = UINT64_C(1000000);

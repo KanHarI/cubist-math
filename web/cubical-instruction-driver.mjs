@@ -29,6 +29,19 @@ const CONSTRUCTORS = new Set(["U", "Pi", "Lam", "LPi", "LLam", "Sigma", "Pair", 
 const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma", LLam: "LPi" };
 // Steps after which a comparison the oracle finds true computes normal forms.
 const LONG_COMPUTATION = 64;
+// The guide (InstructionDriver.guide): how many pairs of subterms one
+// question may compare, and the kernel steps each weak head may take.
+const GUIDE_FUEL = 400, GUIDE_HEAD_STEPS = 4000;
+// Weak heads that are constructors: two of different kinds never agree.
+const RIGID = new Set(["U", "Pi", "Sigma", "W", "LPi", "Nat", "Zero", "Succ", "Unit", "Point", "Void", "Sum",
+  "Inl", "Inr", "Path", "Sup", "Pushout", "PushLeft", "PushRight", "Lam", "LLam", "PLam", "Pair"]);
+// Constructors that eta relates to a neutral term of their type.
+const ETA_CONSTRUCTORS = new Set(["Lam", "LLam", "PLam", "Pair"]);
+// Neutral weak heads: variables and eliminations stuck on one.
+const NEUTRAL = new Set(["Var", "App", "LApp", "Fst", "Snd", "NatRec", "SumRec", "UnitRec", "WRec", "PApp", "Abort"]);
+// The child that is only a constructor's annotation: two equal terms may
+// carry different annotations, so a difference there proves nothing.
+const ANNOTATION = { Pair: 0, Inl: 0, Inr: 0, Sup: 0, PushLeft: 0, PushRight: 0, Abort: 0, Lam: 0 };
 // A scope maps term symbols to entries; under this key, the mask of the
 // interval dimensions live in it.
 const LIVE = "dims";
@@ -42,13 +55,13 @@ const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: 
 
 export class InstructionDriver {
   constructor(kernel, { graph = new InstructionGraph(kernel), fuel = 20000, guideSteps = 20000,
-                        oracle = kernel.conversionOracle ?? true } = {}) {
+                        oracle = kernel.conversionOracle ?? false } = {}) {
     this.kernel = kernel;
     this.graph = graph;
     this.fuel = fuel;
     this.guideSteps = guideSteps;
-    // Whether the term checker's conversion guides the search. Without it,
-    // every comparison it would have answered is "cannot tell".
+    // Whether the term checker's conversion guides the search instead of the
+    // driver's own guide (guide, below).
     this.oracle = oracle;
     this.nodes = new Map();
     // Judgements never change, so reads are cached; so are the scopes of
@@ -61,6 +74,9 @@ export class InstructionDriver {
     this.derived = new Map();
     this.stable = new Set();
     this.equalities = new Map();
+    // The guide's answers and the weak heads it asked for.
+    this.guesses = new Map();
+    this.heads = new Map();
     this.alphaMemo = new Map();
     this.contextScopes = new Map();
     this.chainIds = new WeakMap();
@@ -687,11 +703,12 @@ export class InstructionDriver {
     return g.convert(a.ref.id, g.symmetry(b.ref.id));
   }
 
-  // Whether two subterms are equal, by the term checker's conversion: true,
-  // false, or null when it cannot tell. Bound names that differ are renamed
-  // on the right first, innermost binder first. A guide for the search only.
+  // Whether two subterms are equal: true, false, or null when it cannot tell.
+  // A guide for the search only. Without the oracle it is the driver's own
+  // guide; with it, the term checker's conversion, after bound names that
+  // differ are renamed on the right, innermost binder first.
   equal(x, y, terms, dims) {
-    if (!this.oracle) return null;
+    if (!this.oracle) return this.guide(x, y, terms, dims, { left: GUIDE_FUEL });
     try {
       for (const [bindings, dimension] of [[terms, false], [dims, true]]) {
         const renamed = new Set();
@@ -709,6 +726,66 @@ export class InstructionDriver {
     const key = `${x},${y}`;
     if (!this.equalities.has(key)) this.equalities.set(key, this.graph.convertible(x, y, this.guideSteps));
     return this.equalities.get(key);
+  }
+
+  // The driver's own guide: two terms compared lazily through their weak head
+  // normal forms, the kernel's trusted reduction asked as a query. Equal when
+  // alpha-equal before or after taking heads; different when the heads are
+  // constructors or neutral terms that differ, since normal forms are unique;
+  // unknown when eta could relate them, a head is a cubical construction, or
+  // the fuel runs out. Shared by one question: `fuel.left` pairs.
+  guide(x, y, terms, dims, fuel) {
+    if (this.alpha(x, y, terms, dims)) return true;
+    if (--fuel.left < 0) return null;
+    const key = `${x},${y},${this.chainId(terms)},${this.chainId(dims)}`;
+    if (this.guesses.has(key)) return this.guesses.get(key);
+    // A path at an endpoint of its annotated type is that endpoint, as the
+    // path step takes it, with nothing computed.
+    const ex = this.annotatedEndpoint(x), ey = this.annotatedEndpoint(y);
+    if (ex || ey) {
+      const answer = this.guide(ex || x, ey || y, terms, dims, fuel);
+      if (answer !== null || fuel.left >= 0) this.guesses.set(key, answer);
+      return answer;
+    }
+    const hx = this.headOf(x), hy = this.headOf(y);
+    let answer = null;
+    if (hx && hy) answer = (hx !== x || hy !== y) && this.alpha(hx, hy, terms, dims) ? true
+      : this.compareHeads(this.node(hx), this.node(hy), terms, dims, fuel);
+    // An answer cut short by the fuel is not kept: another question may have more.
+    if (answer !== null || fuel.left >= 0) this.guesses.set(key, answer);
+    return answer;
+  }
+  annotatedEndpoint(term) {
+    const n = this.node(term);
+    if (n.kind !== "PApp" || !n.children[1]) return 0;
+    const point = this.point(n.payload), type = this.node(n.children[1]);
+    return point.endpoint !== undefined && type.kind === "Path" ? type.children[1 + point.endpoint] : 0;
+  }
+  headOf(term) {
+    if (!this.heads.has(term)) this.heads.set(term, this.graph.head(term, GUIDE_HEAD_STEPS));
+    return this.heads.get(term);
+  }
+  compareHeads(nx, ny, terms, dims, fuel) {
+    const known = n => RIGID.has(n.kind) || NEUTRAL.has(n.kind);
+    if (nx.kind !== ny.kind) {
+      if ((ETA_CONSTRUCTORS.has(nx.kind) && !RIGID.has(ny.kind)) || (ETA_CONSTRUCTORS.has(ny.kind) && !RIGID.has(nx.kind)))
+        return null;
+      return known(nx) && known(ny) ? false : null;
+    }
+    if (!known(nx)) return null;
+    if (!this.sameHead(nx, ny, terms, dims)) return nx.kind === "PApp" ? null : false;
+    let all = true;
+    for (let i = 0; i < this.parts(nx); i++) {
+      const a = nx.children[i], b = ny.children[i];
+      if (!a || !b) { if (a !== b) all = false; continue; }
+      let innerTerms = terms, innerDims = dims;
+      if (TERM_BINDERS.has(nx.kind) && i === 1) innerTerms = { left: nx.payload, right: ny.payload, next: terms };
+      if (dimensionBound(nx.kind, i)) innerDims = { left: nx.payload, right: ny.payload, next: dims };
+      const answer = this.guide(a, b, innerTerms, innerDims, fuel);
+      if (answer === false && ANNOTATION[nx.kind] !== i) return false;
+      if (answer !== true) all = false;
+    }
+    return all ? true : null;
   }
 
   // Rewrite two focused subterms until they are alpha-equal: compare common

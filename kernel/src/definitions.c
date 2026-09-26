@@ -57,5 +57,7 @@ cc_term cc_kernel_whnf(cc_kernel *k, cc_term term) {
         return 0;
     k->budget = k->operation_budget;
     k->recursion = 0;
-    return ck_whnf(k, term);
+    /* A head computed while a nested computation failed is no answer. */
+    cc_term head = ck_whnf(k, term);
+    return k->error[0] ? 0 : head;
 }

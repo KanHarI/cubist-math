@@ -47,8 +47,10 @@ export class CubicalKernel {
     this.unfoldingHints = [];
     this.definitions = new Map();
     // Whether instruction drivers on this session consult the term checker's
-    // conversion as a search aid (web/cubical-instruction-driver.mjs).
-    this.conversionOracle = true;
+    // conversion as a search aid rather than their own guide, which compares
+    // weak head normal forms (web/cubical-instruction-driver.mjs). For
+    // comparison only: the guide needs no term checker.
+    this.conversionOracle = false;
   }
   assertOpen() {
     if (!this.handle) throw new Error("Cubical kernel session is disposed.");
