@@ -280,7 +280,7 @@ def wrong_sum : 2 + 2 = 5 {
           </section>
           <section id="tour-dependent">
             <h2>Dependent types: <code>forall</code> and <code>exists</code></h2>
-            <p>A function’s result type can depend on its argument. <code>forall x : A. B</code> is the type of functions that take any <code>x : A</code> and return a value of <code>B</code>, where <code>B</code> may mention <code>x</code>. <code>A -> B</code> is the special case where it does not. The dot ends the type of <code>x</code>, and the body follows it. Several names can share the type, as parameters do: <code>forall x, y : A. B</code>.</p>
+            <p>A function’s result type can depend on its argument. <code>forall x : A. B</code> is the type of functions that take any <code>x : A</code> and return a value of <code>B</code>, where <code>B</code> may mention <code>x</code>. <code>A -> B</code> is the special case where it does not; the chapter on equality proves <a href="paths.html#exists-and"><code>(forall x : A. B) =[U0] (A -> B)</code></a>. The dot ends the type of <code>x</code>, and the body follows it. Several names can share the type, as parameters do: <code>forall x, y : A. B</code>.</p>
             <pre><code data-check="accept">// `and` binds tighter than `-&gt;`, so `A -&gt; A and A` means `A -&gt; (A and A)`.
 def duplicate : forall A : U0. A -&gt; A and A {
   exact fun (A : U0, a : A) =&gt; (a, a);
