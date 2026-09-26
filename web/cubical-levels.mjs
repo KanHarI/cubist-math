@@ -23,6 +23,23 @@ export function levelText(level) {
   }
 }
 
+// Names such as U3 and UU0 spell universe constants (G0 §1.4), so a numbered
+// variable never shows that way: the U stem numbered 1 shows as U_1.
+export function numberedName(stem, index) {
+  return /^U+$/.test(stem) ? `${stem}_${index}` : `${stem}${index}`;
+}
+
+// A level with each universe variable renamed, for printing under the same
+// renaming as the term around it.
+export function renameLevel(level, rename) {
+  switch (level?.tag) {
+    case "Var": return { ...level, name: rename(level.name) };
+    case "LSucc": return { ...level, level: renameLevel(level.level, rename) };
+    case "LMax": return { ...level, left: renameLevel(level.left, rename), right: renameLevel(level.right, rename) };
+    default: return level;
+  }
+}
+
 // A universe as the source writes it (G0 §1.4): U0 and U3 in tier 0, UU0
 // and UU3 in tier 1, one more U per tier; a universe variable by its name;
 // next(E) for a successor and max(E, F) for a maximum.

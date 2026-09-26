@@ -82,7 +82,13 @@ c : (data : D) (positions : P1 … Pn) (dims : I^d) -> S_k(index terms) [boundar
 the kernel generates them and the elaborator knows their meaning.
 
 **Universe levels.** A sort's level is the maximum of the levels of its
-indices, data, arities and parameters. With G0 these are level expressions.
+indices, data and arities; parameters count only through those types (G0
+specification, Q6), so `Trunc(A)` stays in `A`'s universe. With G0 these are
+level expressions.
+
+**Universe binders in examples.** Examples below write `A : U` with `U`
+unbound. They presuppose the implicit universe binders of ergonomics
+milestone 5; under L1.1 each reads `(U < UU0, A : U)`.
 
 ## 2. Generated rules
 

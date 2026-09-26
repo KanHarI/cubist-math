@@ -30,7 +30,6 @@ test("Artin classification and the finite normal separable correspondence are ch
   const axioms = p.symbols["galois_intermediate_roundtrip__finite_galois_correspondence"].axioms
     .map(id => p.checker.assumptionLabels.get(id)).sort();
   assert.deepEqual(axioms, [
-    "LEM(U0)", "Truncate(U0)", "Truncate(U1)", "TruncateElim(U0)",
-    "TruncateElim(U1)", "TruncateIntro(U0)", "TruncateProp(U0)",
+    "LEM", "Truncate", "TruncateElim", "TruncateIntro", "TruncateProp",
   ]);
 });

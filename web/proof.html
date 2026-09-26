@@ -174,7 +174,6 @@
           <p id="inspect-description" class="description"></p>
           <div id="rewrite-trace" hidden></div>
           <button id="freeze-simp" hidden>Replace with simp only</button>
-          <div id="inspect-universes" hidden></div>
           <a id="view-source" class="source-link" hidden>View source →</a>
           <div id="inspect-axioms" class="axiom-dependencies"></div>
           <div id="locals"></div>
@@ -183,7 +182,6 @@
             <p id="kernel-inference" class="hint"></p>
             <button id="open-kernel-assembly" hidden disabled>Open kernel AST ↗</button>
             <div id="kernel-premises"></div>
-            <section id="kernel-specialization" class="specialization" hidden></section>
             <label for="kernel-view">Representation</label>
             <select id="kernel-view">
               <option value="notation">Kernel notation (folded)</option>
@@ -230,14 +228,14 @@
           a blank source line separates a section comment from a declaration.
         </p>
         <p>
-          <code>U0</code>, <code>U1</code>, <code>U2</code> and <code>U3</code>
-          name universes, with <code>U0 : U1</code>. A parameter
-          <code>U : Universe</code> accepts a universe argument.
-          Inspect a template and select U0–U3 to see its checked specialization.
-          <code>Equiv(U, A, B)</code> and <code>IsEquiv(U, A, B, f)</code>
-          work at that universe. <code>Choice(U0)</code>, <code>LEM(U0)</code>
-          (excluded middle) and <code>Truncate(U1)</code> specialize the library
-          assumptions to a universe.
+          <code>U0</code>, <code>U1</code>, … name universes, with
+          <code>U0 : U1</code>; <code>UU0</code> is the universe above all of
+          them. A parameter <code>U &lt; UU0</code> is a universe variable: the
+          definition is checked once, for every universe below <code>UU0</code>,
+          and a use such as <code>Equiv(U0, A, B)</code> instantiates it.
+          <code>Choice(U0, …)</code>, <code>LEM(U0, …)</code> (excluded middle)
+          and <code>Truncate(U1, …)</code> use the library's assumptions, each
+          one generic over the universes below <code>UU0</code>.
           <code>ua(U, A, B, e)</code> turns an equivalence into a path of types, and
           <code>UnivalenceBeta</code> computes transport along it. Like
           <code>FunExt(U, A, B, f, g, h)</code>, they are constructions, not assumptions.

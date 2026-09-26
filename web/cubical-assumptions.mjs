@@ -7,8 +7,8 @@ const app=(fn,...args)=>args.reduce((fn,arg)=>({tag:'App',fn,arg}),fn);
 const path=(A,x,y)=>({tag:'Path',dim:'axiom_path',family:A,left:x,right:y});
 const prop=A=>pi('prop_x',A,pi('prop_y',A,path(A,V('prop_x'),V('prop_y'))));
 const set=A=>pi('set_x',A,pi('set_y',A,prop(path(A,V('set_x'),V('set_y')))));
-// One schema builder drives both specialization and explanatory display. The
-// symbolic U used in the display is elaborator notation, never a kernel term.
+// The type of each assumption at a universe; truncate() gives the truncation
+// at that universe.
 function assumptionType(name, universe, truncate) {
   const A=V('A'), B=V('B'), P=V('P');
   const mere=T=>app(truncate(),T);
@@ -24,17 +24,18 @@ function assumptionType(name, universe, truncate) {
   }else throw Error(`Unsupported library assumption: ${name}`);
   return type;
 }
-export function libraryAssumption(checker,name,level,context=new Map()) {
-  const key=`${name}_U${level}`;
-  if(checker.libraryAssumptions.has(key))return checker.libraryAssumptions.get(key);
-  const type=assumptionType(name,U(level),()=>libraryAssumption(checker,'Truncate',level,context));
-  const value=checker.assume(`__assumption_${key}`,type,new Set(context.keys()));
-  checker.assumptionOrigins.set(value.name, {
-    kind: 'universe-specialized-assumption', schema: name, universe: `U${level}`, level,
-    schemaType: assumptionType(name,V('U'),()=>app(V('Truncate'),V('U'))),
-    implementation: 'web/cubical-assumptions.mjs',
-  });
-  checker.libraryAssumptions.set(key,value);
-  checker.assumptionLabels.set(value.name,`${name}(U${level})`);
+// Each assumption is one entry, generic over the universes below UU0 (G0):
+// LEM : forall U < UU0. forall A : U. …, used at a universe by instantiation.
+// None has an instance at UU0 or above. Truncate keeps the archive's
+// signature, into U0, until H1's universe-preserving Trunc replaces it.
+export function libraryAssumption(checker,name,context=new Map()) {
+  if(checker.libraryAssumptions.has(name))return checker.libraryAssumptions.get(name);
+  const level='assumption_level',universe=U(V(level));
+  const truncate=()=>({tag:'LApp',fn:libraryAssumption(checker,'Truncate',context),level:V(level)});
+  const type={tag:'LPi',name:level,body:assumptionType(name,universe,truncate)};
+  const value=checker.assume(`__assumption_${name}`,type,new Set(context.keys()));
+  checker.assumptionOrigins.set(value.name,{kind:'generic-assumption',name,implementation:'web/cubical-assumptions.mjs'});
+  checker.libraryAssumptions.set(name,value);
+  checker.assumptionLabels.set(value.name,name);
   return value;
 }

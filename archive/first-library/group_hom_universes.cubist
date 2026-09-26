@@ -3,20 +3,20 @@ import group_universes;
 // A homomorphism stores its map and multiplication law. Identity and inverse
 // preservation are consequences, not additional fields of the record.
 def GroupHomLawsAt(
-  U : Universe, G, H : GroupAt(U), f : group_carrier_at(U, G) -> group_carrier_at(U, H)
+  U < UU0, G, H : GroupAt(U), f : group_carrier_at(U, G) -> group_carrier_at(U, H)
 ) :=
   forall x : group_carrier_at(U, G). forall y : group_carrier_at(U, G).
   f(group_multiply_at(U, G, x, y)) = group_multiply_at(U, H, f(x), f(y));
 
-def GroupHomAt(U : Universe, G, H : GroupAt(U)) :=
+def GroupHomAt(U < UU0, G, H : GroupAt(U)) :=
   exists f : group_carrier_at(U, G) -> group_carrier_at(U, H). GroupHomLawsAt(U, G, H, f);
 
-def group_hom_map_at(U : Universe, G, H : GroupAt(U), h : GroupHomAt(U, G, H)) :=
+def group_hom_map_at(U < UU0, G, H : GroupAt(U), h : GroupHomAt(U, G, H)) :=
   unpack h as (f, law) return (group_carrier_at(U, G) -> group_carrier_at(U, H)) {
     f;
   };
 
-def group_hom_multiply_at(U : Universe, G, H : GroupAt(U), h : GroupHomAt(U, G, H)) :
+def group_hom_multiply_at(U < UU0, G, H : GroupAt(U), h : GroupHomAt(U, G, H)) :
   GroupHomLawsAt(U, G, H, group_hom_map_at(U, G, H, h)) {
   exact pair_induction(
     (fun (k : GroupHomAt(U, G, H)) => GroupHomLawsAt(U, G, H, group_hom_map_at(U, G, H, k))),
@@ -26,7 +26,7 @@ def group_hom_multiply_at(U : Universe, G, H : GroupAt(U), h : GroupHomAt(U, G, 
   );
 }
 
-def group_is_set_at(U : Universe, G : GroupAt(U)) :
+def group_is_set_at(U < UU0, G : GroupAt(U)) :
   forall x : group_carrier_at(U, G). forall y : group_carrier_at(U, G). forall p : x = y.
   forall q : x = y. p = q {
   obtain (set, associative, left, right, inverses) := group_laws_at(U, G);
@@ -36,7 +36,7 @@ def group_is_set_at(U : Universe, G : GroupAt(U)) :
 // Multiplication preservation is proposition-valued because group carriers
 // are sets. Function extensionality here is computed by cubical paths.
 def group_hom_laws_prop_at(
-  U : Universe, G, H : GroupAt(U), f : group_carrier_at(U, G) -> group_carrier_at(U, H),
+  U < UU0, G, H : GroupAt(U), f : group_carrier_at(U, G) -> group_carrier_at(U, H),
   p, q : GroupHomLawsAt(U, G, H, f)
 ) :
   p = q {
@@ -50,7 +50,7 @@ def group_hom_laws_prop_at(
 // Pointwise equal homomorphisms are equal as complete records, including
 // their law fields. No separate proof-irrelevance axiom is used.
 def group_hom_ext_at(
-  U : Universe, G, H : GroupAt(U), h, k : GroupHomAt(U, G, H),
+  U < UU0, G, H : GroupAt(U), h, k : GroupHomAt(U, G, H),
   same : (
     forall x : group_carrier_at(U, G).
     group_hom_map_at(U, G, H, h, x) = group_hom_map_at(U, G, H, k, x)
@@ -74,7 +74,7 @@ def group_hom_ext_at(
   exact path i => (p @ i, square @ i);
 }
 
-def group_hom_identity_at(U : Universe, G : GroupAt(U)) : GroupHomAt(U, G, G) {
+def group_hom_identity_at(U < UU0, G : GroupAt(U)) : GroupHomAt(U, G, G) {
   exact (
     (fun (x : group_carrier_at(U, G)) => x),
     (fun (x, y : group_carrier_at(U, G)) => refl(group_multiply_at(U, G, x, y)))
@@ -83,7 +83,7 @@ def group_hom_identity_at(U : Universe, G : GroupAt(U)) : GroupHomAt(U, G, G) {
 
 // Composition is in traversal order: h followed by k.
 def group_hom_compose_at(
-  U : Universe, G, H, K : GroupAt(U), h : GroupHomAt(U, G, H), k : GroupHomAt(U, H, K)
+  U < UU0, G, H, K : GroupAt(U), h : GroupHomAt(U, G, H), k : GroupHomAt(U, H, K)
 ) :
   GroupHomAt(U, G, K) {
   let f := group_hom_map_at(U, G, H, h);
@@ -101,7 +101,7 @@ def group_hom_compose_at(
 
 // Check packaging against abstract carriers before specializing to quotients.
 def group_hom_object_at(
-  U : Universe, A : U, oneA : A, mA : A -> A -> A, lawsA : GroupLawsAt(U, A, oneA, mA), B : U,
+  U < UU0, A : U, oneA : A, mA : A -> A -> A, lawsA : GroupLawsAt(U, A, oneA, mA), B : U,
   oneB : B, mB : B -> B -> B, lawsB : GroupLawsAt(U, B, oneB, mB), f : A -> B,
   multiply : (forall x : A. forall y : A. f(mA(x, y)) = mB(f(x), f(y)))
 ) :

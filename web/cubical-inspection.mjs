@@ -40,7 +40,7 @@ export function foldedInspection(view, aliases = []) {
     const result = {};
     if (!root) cache.set(term, result);
     for (const [field, value] of Object.entries(term)) {
-      const binds = (field === "body" && ["Pi", "Sigma", "Lam", "W"].includes(term.tag))
+      const binds = (field === "body" && ["Pi", "Sigma", "Lam", "W", "LPi", "LLam"].includes(term.tag))
         || ["Path", "PLam", "Comp", "HComp", "Trans"].includes(term.tag);
       result[field] = visit(value, false, binds ? new Set(bound).add(term.name ?? term.dim) : bound);
     }

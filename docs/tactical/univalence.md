@@ -26,9 +26,10 @@ at `x`. A separate path-induction lemma identifies that evaluation of
 law directly. Neither law is a separate postulate, and beta is propositional
 equality, not a new kernel reduction rule.
 
-All four interfaces accept `U0`, `U1`, etc., or a parameter `U : Universe`.
-The fully expanded axiom signature avoids requiring a successor operation on
-universe variables. At a named universe it is definitionally equal to the
+All four interfaces accept `U0`, `U1`, etc., or a universe variable
+`U < UU0`, but not `UU0` or above. `ua` and `UnivalenceBeta` are each one
+generic definition over `U < UU0`. The fully expanded axiom signature avoids
+requiring a successor operation on universe variables. At a named universe it is definitionally equal to the
 `IsEquiv` expression above, as checked in `tests/universes.test.mjs`.
 
 ## Names and migration

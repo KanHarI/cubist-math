@@ -2,10 +2,10 @@
 // refactor of the untrusted elaborator can be shown to change nothing:
 // - every declaration's status, checked term and type (hashed up to bound
 //   names), assumptions, displayed type and rewrite work;
-// - every other checked definition, such as universe specializations;
+// - every other checked definition, such as a generic builtin's;
 // - every inspector record: source site, role, description, freeze edit and
 //   the hashed term in its local context;
-// - the template link sites and evaluation results.
+// - evaluation results.
 //   node tools/elaboration-fingerprint.mjs [--write FILE] [--compare FILE] [--examples] [module ...]
 // Without module names, every archive/first-library module is recorded.
 // --examples adds the checked design examples under docs/examples.
@@ -16,7 +16,6 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 import { canonicalHasher } from "./proof-migration.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
-const LINKS = "__fingerprint_links";
 
 // A local term is hashed closed over its context and dimensions, so the
 // generated names of its free variables do not matter, only their positions.
@@ -36,7 +35,7 @@ export async function elaborationFingerprint({ modules, readSource }) {
     const helper = name => /__unfolding_\d+$/.test(name) && views.has(name);
     let hash;
     hash = canonicalHasher({ definitionName: name => helper(name) ? `helper:${hash(views.get(name).term)}` : name });
-    const declarations = {}, definitions = {}, references = {}, links = {};
+    const declarations = {}, definitions = {}, references = {};
     for (const [binding, symbol] of Object.entries(program.symbols)) {
       if (binding.startsWith("fingerprint__")) continue;
       const view = views.get(binding);
@@ -48,15 +47,6 @@ export async function elaborationFingerprint({ modules, readSource }) {
         references: program.declarationReferences.get(binding)?.map(({ start, binding }) =>
           `${start}:${helper(binding) ? "helper" : binding}`) ?? null };
     }
-    // Inspecting a template elaborates its body at the selected levels.
-    const inspections = {};
-    for (const binding of program.templates.keys()) {
-      const levels = program.symbols[binding].templateParameters.map(() => 0);
-      try {
-        const view = program.inspect(binding, { universes: levels });
-        inspections[binding] = { expression: hash(view.expression), type: hash(view.type), typeText: view.typeText };
-      } catch (error) { inspections[binding] = { error: error.message }; }
-    }
     for (const [binding, view] of views) if (!program.symbols[binding] && !helper(binding))
       definitions[binding] = { term: hash(view.term), type: hash(view.type) };
     for (const [binding, view] of program.views) {
@@ -65,8 +55,7 @@ export async function elaborationFingerprint({ modules, readSource }) {
         node: { name: node.name, start: node.start, end: node.end, role: node.role ?? null,
           description: node.description ?? null, expansion: node.expansion ?? null,
           expansionIndex: node.expansionIndex ?? null, traceParent: node.traceParent ?? null,
-          isBinding: !!node.isBinding, expressionSite: !!node.expressionSite,
-          schemaBinding: node.schemaBinding ?? null, universes: node.universes ?? null },
+          isBinding: !!node.isBinding, expressionSite: !!node.expressionSite },
         symbol: { name: symbol.name, role: symbol.role, description: symbol.description ?? null,
           freeze: symbol.freeze ?? null, definitionStart: symbol.definitionStart ?? null,
           rewriteSteps: symbol.rewriteSteps?.map(step => step.binding) ?? null },
@@ -75,20 +64,8 @@ export async function elaborationFingerprint({ modules, readSource }) {
         term: hash(closed(view.term, view.context, view.dimensions)),
       };
     }
-    // Template link sites are computed only for a main module. Check each
-    // module with a template again as a main module under another name.
-    for (const module of modules) {
-      if (![...program.templates.keys()].some(binding => binding.startsWith(`${module}__`))) continue;
-      const main = `${module}${LINKS}`, before = program.links.length;
-      await program.check(await readSource(module), main);
-      links[module] = program.links.slice(before).filter(link => link.templateBinding).map(link => ({
-        name: link.name, start: link.start, end: link.end, role: link.role,
-        template: link.templateBinding.slice(main.length + 2), offset: link.templateOffset,
-        expansion: link.templateExpansion ?? null }));
-    }
-    return { declarations, definitions, inspections, references, links,
-      evaluations: program.evaluations.filter(item => !item.module.endsWith(LINKS)),
-      gaps: program.gaps.filter(gap => !gap.module.endsWith(LINKS)).map(gap => ({ ...gap })) };
+    return { declarations, definitions, references, evaluations: program.evaluations,
+      gaps: program.gaps.map(gap => ({ ...gap })) };
   } finally { program.dispose(); }
 }
 

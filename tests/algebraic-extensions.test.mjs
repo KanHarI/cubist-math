@@ -11,7 +11,7 @@ const create = t => {
   t.after(() => p.dispose());
   return p;
 };
-const allowed = /^(LEM\(U0\)|Truncate(?:Intro|Prop|Elim)?\(U[01]\))$/;
+const allowed = /^(LEM|Truncate(?:Intro|Prop|Elim)?)$/;
 
 test("finite algebraic extensions, actual splitting fields, normality and general separable embedding counts are checked", async t => {
   const p = create(t);
@@ -39,7 +39,7 @@ test("finite algebraic extensions, actual splitting fields, normality and genera
   }
   // The intermediate finite-choice construction is constructive. Univalence
   // transports the resulting count; it is not an extra axiom in this kernel.
-  assert.ok(p.symbols.finite_dependent_counts__finite_mere_choice.axioms.every(id => /^Truncate(?:Intro|Prop|Elim)?\(U0\)$/.test(p.checker.assumptionLabels.get(id))));
+  assert.ok(p.symbols.finite_dependent_counts__finite_mere_choice.axioms.every(id => /^Truncate(?:Intro|Prop|Elim)?$/.test(p.checker.assumptionLabels.get(id))));
 
   const negative = create(t);
   const invalid = await negative.check(`import embedding_counts;

@@ -1,5 +1,5 @@
 import { cubicalText } from "./cubical-notation.mjs";
-import { universeText } from "./cubical-levels.mjs";
+import { numberedName, renameLevel, universeText } from "./cubical-levels.mjs";
 
 // Print a checked term in Cubist source syntax, for messages and the command
 // line: `A -> B`, `forall x : A. B`, `A and B`, `exists x : A. B`, `A or B`,
@@ -79,7 +79,7 @@ export function sourceText(term, symbols = {}, limit = 4000) {
   // A bound name that also occurs in `outside` gets a numbered variant.
   const apart = (name, outside, whole) => {
     if (!mentions(outside, name)) return name;
-    for (let i = 1; ; i++) if (!mentions(whole, `${name}${i}`)) return `${name}${i}`;
+    for (let i = 1; ; i++) if (!mentions(whole, numberedName(name, i))) return numberedName(name, i);
   };
   const show = t => print(t)[0];
   const sub = (t, needed) => { const [text, level] = print(t); return level < needed ? `(${text})` : text; };
@@ -89,7 +89,9 @@ export function sourceText(term, symbols = {}, limit = 4000) {
   function print(t) {
     if (--budget < 0) return atom("…");
     switch (t?.tag) {
-      case "U": return atom(universeText(t.level));
+      case "U": return atom(universeText(renameLevel(t.level, name => renames.get(name) ?? label(name))));
+      // A universe variable's bound, in place of a context entry's type.
+      case "LBound": return atom(universeText({ tag: "LConst", tier: t.tier, value: 0 }));
       case "Nat": case "Unit": case "Void": return atom(t.tag);
       case "Point": return atom("tt");
       case "Zero": case "Succ": {

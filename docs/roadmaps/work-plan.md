@@ -203,7 +203,7 @@ navigation, every link and anchor, the redirects and the error catalogue.
 | K1.2 | G0 in the instruction kernel: level nodes and arithmetic, level entries, `LevelPi`, `LevelLambda`, `LevelApply`, symbolic `Lift`, level-Π composition, ABI, sanitizers (done) | Kernel G0 | K1.1 | L |
 | K1.3 | G0 in the driver and bridges: deriving level binders and instantiations, agreement of universes by level normal form, decoding, serialization (done; its source cases move with L1.1) | Kernel G0 | K1.2 | M |
 | K1.4 | The driver derives the archive unaided: its congruence and unfolding choices without the conversion oracle, with no declaration over the limit and at most half again the guided time (done: the driver's own guide, 37 s against 34.9 s, every definition derived again) | Kernel instructions | — | M |
-| L1.1 | Universe binders, level expressions, removal of templates | Kernel G0 (language part) | K1.3, K1.4 | L |
+| L1.1 | Universe binders, level expressions, removal of templates (done: every archive template checks generically) | Kernel G0 (language part) | K1.3, K1.4 | L |
 | L1.2 | Goal and proof-construction layer (core done) | HoTT A5 | — | L |
 | L1.3 | Deterministic fuel; residual goals in diagnostics | HoTT A4, A6 | L1.2 for A6 | M |
 | L1.4 | Folded path vocabulary; congruence through constructors | HoTT A1, A2 | L1.2 | L |
@@ -223,8 +223,9 @@ every open question answered or deferred to the
   or through the driver, and the canonicity fixture computes instantiated
   closed results.
 
-**L1.1 Universe binders and levels.** It depends on K1.3, because the
-elaborator checks only through the instruction kernel's driver.
+**L1.1 Universe binders and levels.** Done on 2026-09-27. It depended on
+K1.3, because the elaborator checks only through the instruction kernel's
+driver.
 - `U < UU0` elaborates to a kernel level binder, and `Universe` leaves the
   language. Universe constants of every tier carry an index.
 - Source gains `next(U)` and `max(U, V)`.
@@ -232,8 +233,14 @@ elaborator checks only through the instruction kernel's driver.
   are removed.
 - The inspector shows level arguments.
 - **Archive recheck:** every archive template is checked generically, and
-  those that only worked at particular levels are listed.
+  those that only worked at particular levels are listed. All 43 check
+  generically, so the list is empty; the archive checks 3,804 declarations
+  with no gap.
 - The universe chapter of the reference is rewritten.
+- Also done: `rw` and `simp` use generic lemmas, matching the universe where
+  the rewritten side has it as a bare variable (specification §4.3); the
+  specification's source cases run by ID in `tests/universe-generic.test.mjs`,
+  with the property tests for Lemma 5 and for composition at a level Π.
 
 **L1.2 Goal and proof-construction layer** (A5). The core was done on
 2026-09-25 in PRs #12, #13, #15, #17 and #18, with identical checked terms
@@ -443,7 +450,8 @@ release. Exact syntax remains proposed until its implementation milestone.
 
 Stage 0 is settled: I0.1 is deferred, because work continues off `main` on
 `proof-ergonomics-roadmap`; I0.2, I0.3, I0.4, L0.1 and D0.1 are done; and
-D0.2's chapters 5 and 6 and the quick reference wait for L1.1 and stage 2.
+D0.2's chapter 6 and the quick reference wait for stage 2; chapter 5,
+universes, was rewritten with L1.1.
 Of stage 1, K1.1 and the core of L1.2 are done, and the instruction kernel
 is merged.
 
@@ -453,7 +461,8 @@ Next, as of 2026-09-26:
    and `match`, `Id`, computation notation and the rebuild. K1.2 and K1.3,
    the kernel's and the driver's halves, are done, and so is K1.4: the
    driver steers by its own guide, which reads level syntax, instead of the
-   term checker's conversion. L1.1, the language, is next.
+   term checker's conversion. L1.1, the language, is done too, so G0 is
+   complete and H1 is the main track's next item.
 2. Optional, standing alone: phases 1 and 2 of the
    [learned search](learned-search.md) design, the driver's explicit
    options and the kernel cost of each instruction; phases 3 to 5 wait for

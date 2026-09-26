@@ -41,7 +41,7 @@
           <div class="table-scroll"><table>
             <thead><tr><th>Opcode</th><th>Number</th><th>Operands</th><th>Payload</th><th>THTH rule</th></tr></thead>
             <tbody>
-          <tr><td><code>CC_U</code></td><td>1</td><td>—</td><td>universe level</td><td><code>UIntro</code></td></tr>
+          <tr><td><code>CC_U</code></td><td>1</td><td>level</td><td>—</td><td><code>UIntro</code></td></tr>
           <tr><td><code>CC_VAR</code></td><td>2</td><td>—</td><td>symbol</td><td><code>Vble</code></td></tr>
           <tr><td><code>CC_PI</code></td><td>3</td><td>domain, body</td><td>bound symbol</td><td><code>PiForm</code></td></tr>
           <tr><td><code>CC_LAM</code></td><td>4</td><td>domain, body</td><td>bound symbol</td><td><code>PiIntro</code></td></tr>
@@ -83,6 +83,13 @@
           <tr><td><code>CC_PUSH_ELIM</code></td><td>40</td><td>motive, left, right, bridge</td><td>—</td><td class="tbd">To be written.</td></tr>
           <tr><td><code>CC_HCOMP</code></td><td>41</td><td>type, tubes, base</td><td>dimension</td><td><code>HComp</code></td></tr>
           <tr><td><code>CC_TRANS</code></td><td>42</td><td>family, face tube, base</td><td>dimension</td><td><code>Transp</code></td></tr>
+          <tr><td><code>CC_LBOUND</code></td><td>43</td><td>—</td><td>tier of the bound (<code>UU0</code> is 1)</td><td>The type of a level entry <code>x &lt; ω</code></td></tr>
+          <tr><td><code>CC_LCONST</code></td><td>44</td><td>—</td><td>tier · 65536 + index</td><td>A level constant: <code>U3</code>, <code>UU0</code></td></tr>
+          <tr><td><code>CC_LSUCC</code></td><td>45</td><td>level</td><td>count, at least 1</td><td>A level plus a count: <code>next(U)</code></td></tr>
+          <tr><td><code>CC_LMAX</code></td><td>46</td><td>left, right</td><td>—</td><td>The larger level: <code>max(U, V)</code></td></tr>
+          <tr><td><code>CC_LPI</code></td><td>47</td><td>bound, body</td><td>bound symbol</td><td><code>LevelPi</code></td></tr>
+          <tr><td><code>CC_LLAM</code></td><td>48</td><td>bound, body</td><td>bound symbol</td><td><code>LevelLambda</code></td></tr>
+          <tr><td><code>CC_LAPP</code></td><td>49</td><td>function, level</td><td>—</td><td><code>LevelApply</code></td></tr>
             </tbody>
           </table></div>
         </section>
@@ -121,6 +128,7 @@
               <tr><td><code>Beta</code>, <code>Delta</code>, <code>Iota</code>, <code>PathBeta</code>, <code>Face</code>, <code>Whnf</code>, <code>Normalize</code></td><td>One contraction at a highlighted position of a judgement’s term, other side, or type: a function applied to its argument, a definition unfolded, an eliminator on a constructor, a path at a point, a composition with a tube on a face that holds (to that tube at the end), a weak head normal form (where composition, transport and Glue compute), or a normal form. The position and the subterm follow the step.</td></tr>
               <tr><td><code>HighSubs</code></td><td>A highlighted subterm replaced, given an equality for it.</td></tr>
               <tr><td><code>Conv</code>, <code>Lift</code></td><td><code>t : B</code> from <code>t : A</code> and <code>A ≡ B</code>, or for a larger universe.</td></tr>
+              <tr><td><code>LevelPi</code>, <code>LevelLambda</code>, <code>LevelApply</code></td><td>Universe levels (G0): the type <code>Π (x &lt; ω). B</code> of a declaration generic over universes below <code>UU0</code>, its term <code>λ (x &lt; ω). t</code>, and its instance at a level below ω. A level entry <code>x &lt; ω</code> binds the variable; <code>Beta</code> and <code>Eta</code> apply to level abstractions too. Levels are compared by normal form, never as terms.</td></tr>
               <tr><td><code>Family</code>, <code>Domain</code>, <code>Endpoint</code></td><td>The parts of a <code>Π</code> or <code>Σ</code> type as types; a judgement at an endpoint of a dimension.</td></tr>
               <tr><td><code>CompBase</code>, <code>CompTube</code>, <code>CompOverlap</code>, <code>Comp</code>, <code>HComp</code>, <code>Transp</code></td><td>A composition <code>comp^i A [φ ↦ u] a0 : A(1)</code>, built one tube at a time: each tube is checked against the family on its face, with an equality showing it starts at the base there, and one showing it agrees with each earlier tube where their faces meet. The same box closes into a homogeneous composition over a type that does not vary, or a transport whose tubes are its base.</td></tr>
               <tr><td><code>GlueBase</code>, <code>GluePiece</code>, <code>GlueOverlap</code>, <code>GlueForm</code>, <code>GlueIntro</code>, <code>GlueElim</code></td><td>A Glue type <code>Glue [φ ↦ (T, e)] A</code>, built one piece at a time: a type on a face with an equivalence to the base there, agreeing with each earlier piece where their faces meet; a Glue term, a value for each piece whose image is the base on its face; and unglue. Univalence is built from these.</td></tr>
@@ -128,7 +136,7 @@
               <tr><td><code>PushoutForm</code>, <code>PushoutIntro</code>, <code>PushoutPath</code>, <code>PushoutElim</code></td><td>A pushout of <code>A ← C → B</code>, its points <code>inl(a)</code> and <code>inr(b)</code>, the path <code>push(c)</code> between <code>inl(f(c))</code> and <code>inr(g(c))</code>, and its dependent eliminator; <code>Iota</code> computes the eliminator on a point or a path.</td></tr>
             </tbody>
           </table></div>
-          <p class="tbd">The instructions cover universes, functions, pairs, natural numbers, the unit and empty types, sums, paths at any interval formula, composition, transport, pushouts, W types and Glue, and so every definition in the library and the archive, univalence included.</p>
+          <p class="tbd">The instructions cover universes and universe-generic definitions, functions, pairs, natural numbers, the unit and empty types, sums, paths at any interval formula, composition, transport, pushouts, W types and Glue, and so every definition in the library and the archive, univalence included.</p>
         </section>
         <section id="conversion">
           <h2>Conversion</h2>

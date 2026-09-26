@@ -198,7 +198,7 @@ function renderElaboration(panel, declarations) {
       for (const step of declaration.steps) {
         const item = element("li");
         const goal = element("div", "elaboration-goal");
-        goal.append(sourceCode(step.locals.map(local => `${local.name} : ${local.type}`).join(", ")), element("span", "turnstile", " ⊢ "), sourceCode(step.goal));
+        goal.append(sourceCode(step.locals.map(local => `${local.name} ${local.relation ?? ":"} ${local.type}`).join(", ")), element("span", "turnstile", " ⊢ "), sourceCode(step.goal));
         const built = element("div", "elaboration-built");
         built.append(element("span", "maps-to", "builds "), sourceCode(step.built));
         item.append(sourceCode(step.text), goal, built);

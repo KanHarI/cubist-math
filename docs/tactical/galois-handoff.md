@@ -410,5 +410,4 @@ Current focused commands:
 npm test -- tests/dimension.test.mjs tests/linear-algebra.test.mjs
 node tools/benchmark-cubical.mjs extension_degree --limit-ms=100
 node tests/statement.browser.mjs
-node tests/cubical-specialization.browser.mjs
 ```

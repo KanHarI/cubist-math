@@ -148,17 +148,21 @@ available for proof-producing source tools.
 
 ## Modules and validation
 
-### Explicit universe specialization
+### Universes and universe variables
 
-`U0` denotes U0; `U1`, `U2`, and `U3` denote the next universes.
-Definitions with an `A : U0` parameter still require a small type. The
-universe argument can also be a parameter declared as `U : Universe`.
-For example, `def identity(U : Universe, A : U, x : A) = x;` is checked once
-and can be specialized as `identity(U0)` or `identity(U2)`. `Universe` is a
-universe-parameter sort, not an unrestricted ordinary type parameter.
+`U0` denotes U0; `U1`, `U2`, `U3` and so on denote the next universes, and
+`UU0`, `UU1`, … the larger family above all of them. Definitions with an
+`A : U0` parameter still require a small type. A universe variable, bound as
+`U < UU0`, makes a declaration generic: `def identity(U < UU0, A : U, x : A) := x;`
+is checked once, for every universe, and used as `identity(U0)` or
+`identity(U2, U1, U0)`. Universe arguments are explicit and lie below `UU0`.
+`next(U)` and `max(U, V)` build universes from others, and `forall U < UU0. B`
+and `fun (U < UU0) => t` bind a universe variable in a type or a term. See the
+[Universes chapter](../../web/reference/universes.html).
 
-The following functions specialize the library principles and their derived
-operations. See [the single-axiom univalence development](../tactical/univalence.md).
+The following functions are the library principles and their derived
+operations, each generic over `U < UU0`. See
+[the single-axiom univalence development](../tactical/univalence.md).
 
 ```text
 Truncate(U, A)
@@ -175,13 +179,14 @@ UnivalenceBeta(U)(A, B, equivalence, x)
 UnivalenceEta(U)(A, B, path)
 ```
 
-Each universe specialization is a first-class function. The two application
+Each instance at a universe is a first-class function. The two application
 styles above are interchangeable. `Choice` still requires setness of the
 index type and every fiber and returns only a truncated section.
 `Univalence` asserts that the canonical `idtoequiv` map is an equivalence.
 `ua` is its derived inverse: it accepts `Equiv(U, A, B)` and returns
 `A =[U] B`. `UnivalenceBeta` and `UnivalenceEta` are derived theorems,
-not separate axioms. All these operations also accept `U : Universe`.
+not separate axioms. All these operations also accept a universe variable.
+A result's assumptions are listed by name, once each: `LEM`, not `LEM(U0)`.
 
 `Equiv(U, A, B)` and `IsEquiv(U, A, B, f)` in `paths.cubist` are ordinary
 universe-parameterized definitions. `x =[T] y` explicitly selects the carrier

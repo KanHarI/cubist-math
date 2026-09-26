@@ -36,7 +36,8 @@ A successful check prints the declaration and kernel-step counts and exits with
 status 0. Parse errors, missing imports, or unchecked declarations exit nonzero.
 There is no `axiom` declaration: a source file cannot add assumptions. Each
 `evaluate` directive's result is printed after the counts.
-Universe templates are checked through their concrete instantiations.
+A declaration with a universe variable `U < UU0` is checked once, for every
+universe.
 
 To import another custom source, put `helpers.cubist` beside `example.cubist`
 and write `import helpers;`. Imports resolve beside the root file first, then

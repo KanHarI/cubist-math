@@ -34,23 +34,15 @@ const selection = [
 ];
 const modules = [...new Set(selection.map(([module]) => module))];
 const readSource = name => readFile(new URL(`archive/first-library/${cubicalSourceFile(name)}`, root), "utf8");
-// A universe template has no single checked translation. Measure each selected
-// template through its U0 specialization instead.
-const firstDomain = declaration => declaration.params[0]?.type ?? declaration.value?.domain;
-const specializations = [];
-for (const module of modules) for (const declaration of parse(await readSource(module)).declarations) {
-  const domain = firstDomain(declaration), name = declaration.name.text;
-  if (domain?.kind === "name" && domain.name === "Universe"
-    && selection.some(([m, n]) => m === module && n === name)) specializations.push([module, name, "U0"]);
-}
-
+// A universe-generic definition (G0) is one checked declaration, measured
+// like any other.
 const observations = new Map();
 let current = null;
 const program = new CubicalProgram(await createCubical(), readSource, {
   collectReferences: false,
   onDeclarationStart(module, syntax, checker) {
     current = { binding: `${module}__${syntax.name.text}`, started: performance.now(),
-      steps: checker.steps, queries: 0, retries: 0, finalCheckSteps: 0, specializationSteps: 0 };
+      steps: checker.steps, queries: 0, retries: 0, finalCheckSteps: 0 };
   },
   onDeclaration(module, _syntax, result, checker) {
     observations.set(`${module}__${result.name}`, {
@@ -58,7 +50,6 @@ const program = new CubicalProgram(await createCubical(), readSource, {
       elapsedMs: +(performance.now() - current.started).toFixed(3),
       nativeCheckingSteps: checker.steps - current.steps,
       finalCheckSteps: current.finalCheckSteps,
-      specializationSteps: current.specializationSteps,
       nativeQueries: current.queries,
       budgetRetries: current.retries,
       rewriteWork: result.rewriteWork,
@@ -79,62 +70,36 @@ program.kernel.withGrowingBudget = operation => {
     return operation();
   });
 };
-// Separate universe specialization and the declaration's closing check from
-// elaboration queries. The closing check is the context-free infer call that
+// Separate the declaration's closing check from elaboration queries. The closing check is the context-free infer call that
 // immediately precedes the translator's define.
 const checker = program.checker, infer = checker.infer, define = checker.define;
-const specialize = checker.specializeSchema;
-let specializing = 0, lastContextFreeSteps = 0;
+let lastContextFreeSteps = 0;
 checker.infer = function (term, context) {
   const before = this.steps, result = infer.call(this, term, context);
-  if (context === undefined && !specializing) lastContextFreeSteps = this.steps - before;
+  if (context === undefined) lastContextFreeSteps = this.steps - before;
   return result;
 };
 checker.define = function (...args) {
   if (current) current.finalCheckSteps = lastContextFreeSteps;
   return define.apply(this, args);
 };
-// A specialization is checked once per session and then reused, so also
-// record the inclusive cost of each first specialization and its trigger.
-const specializationCosts = new Map();
-checker.specializeSchema = function (name, levels, elaborate) {
-  const key = `${name}__${levels.map(level => `U${level}`).join("_")}`;
-  const cached = this.schemaSpecializations.has(key), before = this.steps;
-  specializing++;
-  try { return specialize.call(this, name, levels, elaborate); }
-  finally {
-    specializing--;
-    const steps = this.steps - before;
-    if (!cached && !specializationCosts.has(key))
-      specializationCosts.set(key, { steps, triggeredBy: current?.binding ?? null });
-    if (current && !specializing) current.specializationSteps += steps;
-  }
-};
-
 // Fresh session: the whole import graph, checked once in a new kernel.
-const specializationSource = suffix => specializations.map(([, name, level]) =>
-  `def ${name}_${level}${suffix} = ${name}(${level});`).join("\n");
-const fresh = await program.check(`${modules.map(module => `import ${module};`).join("\n")}
-${specializationSource("")}`, "hott_baseline");
+const fresh = await program.check(modules.map(module => `import ${module};`).join("\n"), "hott_baseline");
 if (!fresh.complete) throw new Error(`Baseline did not fully check: ${JSON.stringify(fresh.gaps)}`);
 const freshObservations = new Map(observations);
-const freshTemplates = Object.values(program.symbols).filter(symbol => symbol.template).length;
 observations.clear();
 
 // Reused session: check each selected module's source again in the same,
-// already populated kernel, then specialize the reused templates.
+// already populated kernel.
 for (const module of modules) {
   const reused = await program.check(await readSource(module), `${module}_reused`);
   if (!reused.complete) throw new Error(`Reused ${module} did not fully check.`);
 }
-await program.check(`${[...new Set(specializations.map(([module]) => module))]
-  .map(module => `import ${module}_reused;`).join("\n")}
-${specializationSource("_reused")}`, "hott_baseline_reused");
 
 const assumptionLabel = binding => program.checker.assumptionLabels.get(binding) ?? binding;
 const row = (module, name) => {
   const binding = `${module}__${name}`, info = program.symbols[binding];
-  if (!info?.verified && !info?.template) throw new Error(`Unchecked baseline ${binding}`);
+  if (!info?.verified) throw new Error(`Unchecked baseline ${binding}`);
   return { info, fresh: freshObservations.get(binding),
     reused: observations.get(`${module}_reused__${name}`) };
 };
@@ -144,17 +109,7 @@ const selected = await Promise.all(selection.map(async ([module, name]) => {
   if (!declaration) throw new Error(`Missing baseline declaration ${module}.${name}`);
   const text = source.slice(declaration.start, declaration.end);
   const { info, fresh: freshRow, reused } = row(module, name);
-  const specialization = specializations.find(([m, n]) => m === module && n === name);
-  const typed = specialization ? program.symbols[`hott_baseline__${name}_${specialization[2]}`] : info;
-  const measured = specialization ? {
-    template: true, specializedAt: specialization[2],
-    firstSpecialization: {
-      fresh: specializationCosts.get(`${module}__${name}__${specialization[2]}`) ?? null,
-      reused: specializationCosts.get(`${module}_reused__${name}__${specialization[2]}`) ?? null,
-    },
-    fresh: freshObservations.get(`hott_baseline__${name}_${specialization[2]}`),
-    reused: observations.get(`hott_baseline_reused__${name}_${specialization[2]}_reused`),
-  } : { template: false, fresh: freshRow, reused };
+  const typed = info, measured = { fresh: freshRow, reused };
   return { module, name, sourcePath: `archive/first-library/${cubicalSourceFile(module)}`,
     sourceSha256: createHash("sha256").update(source).digest("hex"),
     declarationSha256: createHash("sha256").update(text).digest("hex"),
@@ -167,12 +122,11 @@ const git = args => execFileSync("git", args, { cwd: fileURLToPath(root), encodi
 const snapshot = {
   version: 1, generatedAt: new Date().toISOString(), revision: git(["rev-parse", "HEAD"]),
   dirty: !!git(["status", "--porcelain"]), runtime: process.version, cpu: cpus()[0]?.model,
-  method: "The fresh session checks the selected modules' import graph once in a new kernel, with references disabled and declaration transactions. The reused session then checks each selected module's source again, under a new module name, in the same kernel. Native checking steps count every checker query during a declaration. Final-check steps are the translator's closing check; specialization steps are spent inside universe specialization; the rest is elaboration. The kernel's own re-check during definition is not reported to JavaScript. Native queries count calls into the kernel; budget retries count queries repeated after the growing step budget was exhausted. Arena values snapshot the kernel at the final check and are cumulative. Elapsed times are one observation. Tokens exclude comments, whitespace and EOF. A template is measured through a declaration that names its U0 specialization; that specialization may already be cached, so firstSpecialization records the inclusive steps of the first specialization in each session and the declaration that triggered it. foldedType stays null until A1 introduces folded signatures.",
+  method: "The fresh session checks the selected modules' import graph once in a new kernel, with references disabled and declaration transactions. The reused session then checks each selected module's source again, under a new module name, in the same kernel. Native checking steps count every checker query during a declaration. Final-check steps are the translator's closing check; the rest is elaboration. The kernel's own re-check during definition is not reported to JavaScript. Native queries count calls into the kernel; budget retries count queries repeated after the growing step budget was exhausted. Arena values snapshot the kernel at the final check and are cumulative. Elapsed times are one observation. Tokens exclude comments, whitespace and EOF. A universe-generic definition is measured as one declaration. foldedType stays null until A1 introduces folded signatures.",
   unmeasured: ["kernel re-check during definition", "peak temporary arena", "retained arena delta",
     "generated proof DAG size", "repeated-run variance", "prelude cost (no prelude before A1)"],
   graph: { modules: Object.keys(program.sources).length,
-    checked: [...freshObservations.values()].filter(o => o.status === "checked-native-cubical").length,
-    templates: freshTemplates },
+    checked: [...freshObservations.values()].filter(o => o.status === "checked-native-cubical").length },
   selected,
 };
 program.dispose();

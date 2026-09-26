@@ -13,8 +13,14 @@ levels under binders; and composition at a level Π. `test_instructions.c`
 checks the kernel-level acceptance cases by their IDs. K1.3's driver half is
 implemented too (section 4.2): the driver derives level binders and
 instantiations, compares levels by normal form under renaming, takes level
-`Beta` and `Eta` steps, and the renderers print level quantification. The
-source cases of section 5 need L1.1's syntax, and move with it.
+`Beta` and `Eta` steps, and the renderers print level quantification.
+L1.1 is implemented too (section 4.3), so G0 is complete: `U < UU0` binders,
+universe constants of every tier, `next` and `max`, generic builtins and
+assumptions, and generic rewriting. The source cases of section 5 run by ID
+in `tests/universe-generic.test.mjs`, with the two property tests of 4.2. All
+43 archive templates check generically. Two details differ from 4.3, as
+noted there: the migration verifier needs no rename table, and the matching
+of a generic rule's level is spelled out.
 
 ## Revision
 
@@ -1241,7 +1247,14 @@ C kernel's `test_levels.c`. With L1.1:
 - **Generic rules.** Rule environments, caches and goal contexts key on level
   variables instead of specializations. Rewriting with a generic rule matches
   a level argument only when the rule's level is a variable. Anything harder
-  waits for milestone 5.
+  waits for milestone 5. *As implemented* (`lib/cubical/proof-rewrite.mjs`):
+  the level is matched where the rewritten side has it bare, as `U` or
+  `f(U)`. Otherwise it is the least level holding the arguments of matched
+  parameters `A : U`, or `U0` when neither the statement nor a parameter
+  mentions it. A rule whose rewritten side has the level inside `next` or
+  `max`, or leaves it undetermined, is an error that asks for the universe
+  argument. `rw` takes a generic equality with no term parameters, as it
+  takes closed equalities.
 
 **Removed:**
 
@@ -1284,7 +1297,9 @@ the elaborator could build the same closed body at a UU-tier constant.
 - **Dependency names.** Dependency names change from `Choice(U0)` to
   `Choice` (Q4). The migration verifier maps old per-level names to the
   generic name with a fixed table, so the rename does not count as a change
-  of assumptions. The computability examples in
+  of assumptions. *As implemented:* no table is needed, because the verifier
+  elaborates the original and the edited source with the same elaborator,
+  so both sides already use the generic names. The computability examples in
   `web/reference/assumptions.html` and the help text in `web/proof.html`
   quote `LEM(U0), Truncate(U0)`, and the reference harness checks those
   messages, so they are updated with it.

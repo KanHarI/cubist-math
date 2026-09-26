@@ -3,6 +3,7 @@ import { T, substituteTerm } from "./dist/cubical-runtime/core.mjs";
 import { interval as I } from "./dist/cubical-runtime/lattice.mjs";
 import { NameSupply } from "./dist/cubical-runtime/names.mjs";
 import { sourceText } from "./cubical-source-text.mjs";
+import { numberedName } from "./cubical-levels.mjs";
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { KernelError } from "./cubical-kernel.mjs";
 
@@ -12,7 +13,7 @@ const speculativeFailures = new Set(["mismatch", "budget", "deadline"]);
 // entry named apart from another x, taken back to their stems for display
 // wherever the stem occurs nowhere in the binder's body, so nothing in it
 // can tell the two apart. Syntax is shared, so each pass is memoized.
-const TERM_BINDERS = new Set(["Pi", "Lam", "Sigma", "W"]);
+const TERM_BINDERS = new Set(["Pi", "Lam", "Sigma", "W", "LPi", "LLam"]);
 class SourceNames {
   constructor(stems) { this.stems = stems; this.results = new WeakMap(); this.mentions = new Map(); this.renamed = new Map(); }
   memo(table, key) {
@@ -66,7 +67,7 @@ class SourceNames {
     return this.results.get(value);
   }
 }
-const namedBinders = new Set(["Var", "Pi", "Lam", "Sigma", "W"]);
+const namedBinders = new Set(["Var", "Pi", "Lam", "Sigma", "W", "LPi", "LLam"]);
 
 // For messages only: reduce beta-redexes, within a budget, and give generated
 // names back their source stems (`A3` → `A`, `native10` → `x`) where no two
@@ -91,8 +92,10 @@ export function betaReduce(term, budget = 256) {
   return beta(term);
 }
 
-const stem = name => name.startsWith("__") ? name : /^native\d+$/.test(name) ? "x" : name.replace(/\d+$/, "") || name;
-const binders = new Set(["Pi", "Lam", "Sigma", "W"]);
+// U_1 has the stem U: the separator only keeps it apart from the constant U1.
+const stem = name => name.startsWith("__") ? name : /^native\d+$/.test(name) ? "x"
+  : name.replace(/\d+$/, "").replace(/^(U+)_$/, "$1") || name;
+const binders = new Set(["Pi", "Lam", "Sigma", "W", "LPi", "LLam"]);
 
 // Each binder shows its stem, n for n11, unless a binder around it already
 // shows that name or its body uses the name for another variable; then it
@@ -126,7 +129,7 @@ function scopedNames(term, limit = 2000) {
       const others = new Set([...free(t.body)].filter(name => name !== t.name).map(name => shownAs.get(name) ?? name));
       const taken = candidate => inScope.has(candidate) || others.has(candidate);
       let name = stem(t.name);
-      for (let index = 1; taken(name); index++) name = `${stem(t.name)}${index}`;
+      for (let index = 1; taken(name); index++) name = numberedName(stem(t.name), index);
       for (const [key, value] of Object.entries(t))
         result[key] = key === "body" ? go(value, new Map(shownAs).set(t.name, name), new Set(inScope).add(name))
           : key === "name" ? name : go(value, shownAs, inScope);
@@ -186,8 +189,7 @@ export class NativeCubicalElaborator {
     this.assumptionLabels = new Map();
     this.assumptionOrigins = new Map();
     this.definitionViews = new Map();
-    this.schemaSpecializations = new Map();
-    this.schemaSourceNames = new Map();
+    this.genericDefinitions = new Map();
     this.scopeDefinitions = new Set();
   }
   context(local = new Map()) { return new Map([...this.assumptions, ...local]); }
@@ -212,7 +214,7 @@ export class NativeCubicalElaborator {
       if (memo.has(term)) return memo.get(term);
       const result = new Set();
       if (term.tag === "Var") result.add(term.name);
-      else if (["Pi", "Lam", "Sigma", "W"].includes(term.tag)) {
+      else if (["Pi", "Lam", "Sigma", "W", "LPi", "LLam"].includes(term.tag)) {
         for (const name of free(term.domain)) result.add(name);
         for (const name of free(term.body)) if (name !== term.name) result.add(name);
       } else for (const child of Object.values(term)) for (const name of free(child)) result.add(name);
@@ -260,7 +262,8 @@ export class NativeCubicalElaborator {
     let shown = displayTerm(chained, reduce ? 256 : 0);
     const locals = [];
     while (locals.length < context.size && shown.tag === "Pi") {
-      locals.push({ name: shown.name, type: show(shown.domain) });
+      // A universe variable's entry is its bound: U < UU0.
+      locals.push({ name: shown.name, type: show(shown.domain), relation: shown.domain?.tag === "LBound" ? "<" : ":" });
       shown = shown.body;
     }
     return { locals, goal: show(shown.first), built: built ? show(shown.second) : null };
@@ -414,15 +417,13 @@ export class NativeCubicalElaborator {
     this.kernel.definitions.set(name, reference);
     return { reference, admission: { ms: +(performance.now() - started).toFixed(3), judgements: graph.count - before } };
   }
-  specializeSchema(name, levels, elaborate) {
-    const key = `${name}__${levels.map(level => `U${level}`).join("_")}`;
-    if (this.schemaSpecializations.has(key)) return this.schemaSpecializations.get(key);
-    // A concrete universe instantiation is a closed function, even if it was
-    // requested from inside another proof. Check and name that function once;
-    // ordinary application still checks every subsequent argument and result.
+  // A universe-generic definition the elaborator builds, such as ua's: checked
+  // and named once, and instantiated at each use.
+  genericDefinition(name, elaborate) {
+    if (this.genericDefinitions.has(name)) return this.genericDefinitions.get(name);
     const term = elaborate(), checked = this.infer(term);
-    const value = NativeCubicalElaborator.prototype.define.call(this, key, checked.term, checked.type);
-    this.schemaSpecializations.set(key, value);
+    const value = NativeCubicalElaborator.prototype.define.call(this, name, checked.term, checked.type);
+    this.genericDefinitions.set(name, value);
     return value;
   }
   scopedUnfolding(names, elaborate, context, expected = null, dimensions = this.dimensions, supply = this.names) {

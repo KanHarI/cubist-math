@@ -10,7 +10,6 @@ import { cubicalSourceFile } from "./cubical-sources.mjs";
 import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
 
 export function category(result, elapsedMs, limitMs) {
-  if (result.template) return "template";
   if (result.blockedBy) return "blocked";
   if (result.failure === "deadline" || elapsedMs > limitMs) return "optimize";
   return result.status === "checked-native-cubical" ? "checked" : "failed";
@@ -71,7 +70,7 @@ export async function benchmark({ modules = [...sourceModules, ...cubicalSourceM
     return { version: 1, generatedAt: new Date().toISOString(), limitMs, optimizations: program.kernel.optimizations,
       elapsedSeconds: +((performance.now() - started) / 1000).toFixed(2),
       modules: Object.keys(program.sources).length - 1, declarations,
-      counts: Object.fromEntries(["checked", "optimize", "blocked", "failed", "template"].map(c =>
+      counts: Object.fromEntries(["checked", "optimize", "blocked", "failed"].map(c =>
         [c, declarations.filter(d => d.category === c).length])),
       importErrors: program.gaps.filter(g => !g.name) };
   } finally { program.dispose(); }

@@ -55,7 +55,8 @@ target statement or a supplied theorem parameter as an already proved result.
 - [Kernel extensions for computation](cubical-kernel-roadmap.md): planning
   only. Changes to the trusted kernel, each a set of instructions, governed
   by the requirement that computability is expressible and preserved:
-  - G0, universe-generic checking with `Uω` only as a type;
+  - G0, universe-generic checking over tiered universes (done: K1.2–K1.4 and
+    L1.1);
   - H1–H4, one signature mechanism for inductive, indexed, higher and
     inductive-inductive types;
   - G2's resizing policy, certified interval normalization and optional

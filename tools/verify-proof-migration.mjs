@@ -49,7 +49,7 @@ let failures = 0;
 for (const report of reports) {
   failures += report.failures.length;
   console.log(`${report.failures.length ? "FAIL" : "ok  "} ${report.module}${changed.has(report.module) ? "" : " (dependent)"}: ${report.identical} identical, ` +
-    `${report.typesPreserved} with preserved types, ${report.templates} templates`);
+    `${report.typesPreserved} with preserved types`);
   for (const { name, reason } of report.failures) console.log(`       ${name}: ${reason}`);
   for (const note of report.notes ?? []) console.log(`       note: ${note}`);
 }

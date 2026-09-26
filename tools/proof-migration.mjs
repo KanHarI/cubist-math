@@ -5,8 +5,7 @@
 //   the names of bound variables and generated helpers;
 // - "types": every public type is the same by kernel conversion and every
 //   declaration keeps the same assumptions. Proof witnesses may change.
-// A template has no single checked term, so it is compared through a
-// specialization at the least universe levels at which the original checks.
+// A universe-generic definition is one checked term, compared like any other.
 import { createHash } from "node:crypto";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
@@ -14,7 +13,7 @@ import { CubicalDeclarationTransaction } from "../web/cubical-transaction.mjs";
 import { parse } from "../web/mathscript/parser.mjs";
 
 const SHADOW = "__migration_check";
-const termBinders = new Set(["Pi", "Lam", "Sigma", "W"]);
+const termBinders = new Set(["Pi", "Lam", "Sigma", "W", "LPi", "LLam"]);
 // Which fields a dimension binder scopes, matching the core syntax rules.
 const dimensionScope = { Path: ["family"], PLam: ["family", "body"], Comp: ["family", "system"],
   HComp: ["system"], Trans: ["family"] };
@@ -117,17 +116,6 @@ function mapDefinitions(rename) {
   return map;
 }
 
-const universeParameters = declaration => {
-  let count = 0;
-  for (const parameter of declaration.params) {
-    if (parameter.type?.kind !== "name" || parameter.type.name !== "Universe") break;
-    count++;
-  }
-  if (!declaration.params.length) for (let value = declaration.value; value?.domain?.kind === "name"
-    && value.domain.name === "Universe"; value = value.body) count += value.names?.length ?? 1;
-  return count;
-};
-
 // modules: names of the library modules to compare, normally the edited
 // modules and every module that imports one of them. Each compared module is
 // checked again under a shadow name whose imports of compared modules are
@@ -135,7 +123,7 @@ const universeParameters = declaration => {
 // readOriginal/readEdited return module source text. Returns one report per
 // module; `failures` lists every declaration that does not meet the level.
 export async function verifyMigration({ modules, readOriginal, readEdited, level = "identical",
-  maxUniverse = 2, typeTimeLimitMs = 10000 } = {}) {
+  typeTimeLimitMs = 10000 } = {}) {
   if (!["identical", "types"].includes(level)) throw new Error(`Unknown verification level: ${level}`);
   const compared = new Set(modules), shadowOf = module => `${module}${SHADOW}`;
   const editedSources = new Map();
@@ -216,7 +204,7 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
       const edited = await program.check(await editedSource(module), shadow);
       const editedOutputs = edited.outputs.filter(output => output.binding.startsWith(`${shadow}__`));
       const originalOutputs = Object.values(program.symbols).filter(symbol => symbol.sourceModule === module);
-      const report = { module, identical: 0, typesPreserved: 0, templates: 0, failures: [] };
+      const report = { module, identical: 0, typesPreserved: 0, failures: [] };
       reports.push(report);
       const fail = (name, reason) => report.failures.push({ name, reason });
       if (!original.complete && program.gaps.some(gap => gap.module === module))
@@ -256,38 +244,12 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
         if (same) report.typesPreserved++;
         else fail(name, through.length ? `${reason} It mentions changed definitions from: ${through.join(", ")}.` : reason);
       };
-      const source = parse(await readEdited(module));
       for (const symbol of originalOutputs) {
         const output = editedOutputs.find(item => item.name === symbol.name);
         if (!output) continue;
         if (symbol.verified && !output.verified) { fail(symbol.name, `No longer checks: ${output.reason}`); continue; }
-        if (!symbol.verified && !symbol.template) continue;
-        if (!symbol.template) {
-          compare(symbol.name, views.get(symbol.binding), views.get(output.binding), symbol.binding, output.binding);
-          continue;
-        }
-        // Specialize both versions at the least levels where the original checks.
-        report.templates++;
-        const declaration = source.declarations.find(item => item.name.text === symbol.name);
-        const count = declaration ? universeParameters(declaration) : 1;
-        let specialized = false;
-        for (let level = 0; level <= maxUniverse && !specialized; level++) {
-          const levels = Array(count).fill(`U${level}`).join(", ");
-          const probe = `probe_${symbol.name}_${level}`;
-          const beforeModule = `${module}${SHADOW}_probe_original_${symbol.name}_${level}`;
-          const afterModule = `${module}${SHADOW}_probe_edited_${symbol.name}_${level}`;
-          await program.check(`import ${module};\ndef ${probe} := ${symbol.name}(${levels});`, beforeModule);
-          if (!program.symbols[`${beforeModule}__${probe}`]?.verified) continue;
-          await program.check(`import ${shadow};\ndef ${probe} := ${symbol.name}(${levels});`, afterModule);
-          specialized = true;
-          if (!program.symbols[`${afterModule}__${probe}`]?.verified) {
-            fail(symbol.name, `Specialization at ${levels} no longer checks.`); break;
-          }
-          const key = `__${Array(count).fill(`U${level}`).join("_")}`;
-          compare(symbol.name, views.get(`${symbol.binding}${key}`), views.get(`${shadow}__${symbol.name}${key}`),
-            `${beforeModule}__${probe}`, `${afterModule}__${probe}`);
-        }
-        if (!specialized) report.notes = [...(report.notes ?? []), `${symbol.name}: no specialization up to U${maxUniverse} checks; not compared.`];
+        if (!symbol.verified) continue;
+        compare(symbol.name, views.get(symbol.binding), views.get(output.binding), symbol.binding, output.binding);
       }
     }
     return reports;

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Types of types, and declarations that work at every universe." />
+    <meta name="description" content="Types of types, universe variables, and declarations checked once for every universe." />
     <title>Cubist · 5. Universes</title>
     <link rel="stylesheet" href="../language.css" />
     <link rel="stylesheet" href="../repl.css" />
@@ -23,7 +23,7 @@
       <div class="introduction">
         <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 5</p>
         <h1>Universes</h1>
-        <p class="lead">Types of types, and declarations that work at every universe.</p>
+        <p class="lead">Types of types, universe variables, and declarations checked once for every universe.</p>
       </div>
       <div class="reference-layout">
         <aside class="contents" aria-label="Chapters and sections">
@@ -46,21 +46,95 @@
           <h2>In this chapter</h2>
           <ul class="sections">
             <li><a href="#universes">Universes</a></li>
+            <li><a href="#universe-variables">Universe variables</a></li>
+            <li><a href="#universe-expressions">next and max</a></li>
+            <li><a href="#large-universes">UU0 and larger universes</a></li>
+            <li><a href="#generic-library">Univalence and assumptions</a></li>
+            <li><a href="#generic-rewriting">Rewriting with generic lemmas</a></li>
+            <li><a href="#inspecting-generic">Inspecting generic declarations</a></li>
           </ul>
         </aside>
         <article id="reference">
-          <p class="note status">This chapter describes today’s universe templates. They will be replaced by definitions that are checked once for every universe (stage 1 of the work plan), and this chapter will be rewritten then.</p>
           <section id="universes">
             <h2>Universes</h2>
-            <p><code>U0</code> denotes U₀; <code>U1</code>, <code>U2</code>, and <code>U3</code> denote U₁, U₂, and U₃. In particular <code>U0 : U1</code>. Smaller types can be lifted to larger universes; a larger type cannot be silently lowered.</p>
+            <p><code>U0</code> denotes U₀, the universe of small types such as <code>Nat</code>. <code>U1</code>, <code>U2</code>, <code>U3</code> and so on denote the larger universes U₁, U₂, U₃. Each universe is a type in the next one, so <code>U0 : U1</code>. A smaller type is also a type of every larger universe: a type is lifted, never silently lowered.</p>
             <pre><code data-check="accept">def large_identity(A : U1, x : A) := x;
 def lifted_unit := typed(U1, Unit);
-def identity(U : Universe, A : U, x : A) := x;
+def small_in_large : U1 := U0;</code></pre>
+            <pre><code data-check="reject">def small_identity(A : U0, x : A) := x;
+def lowered := small_identity(U0, Nat);
+// Error: Type mismatch: found U1, expected U0.</code></pre>
+          </section>
+          <section id="universe-variables">
+            <h2>Universe variables</h2>
+            <p>A declaration with <code>A : U0</code> works only for small types. To work at every universe, bind a <strong>universe variable</strong> with <code>U &lt; UU0</code>, read “U is a universe below UU0”. Inside the declaration, <code>U</code> is a universe like <code>U0</code>, so <code>A : U</code> is a type of that universe. The declaration is checked once, for every universe at the same time.</p>
+            <pre><code data-check="accept">def identity(U &lt; UU0, A : U, x : A) : A := x;
+def three := identity(U0, Nat, 3);
 def small_identity := identity(U0);
 def universe_identity := identity(U2, U1, U0);</code></pre>
-            <p>A declaration with <code>A : U0</code> remains restricted to small types. Write <code>U : Universe</code> to parameterize a declaration over a universe. This makes the declaration a <strong>template</strong>: the elaborator makes a separate, specialized copy for each universe it is used at, and the kernel checks that copy. The argument must be a universe, not an arbitrary type. Universe arguments are explicit; the compiler does not infer them. Several universe parameters can be grouped, as in <code>(U V : Universe, A : U, B : V)</code>. A family may need an explicit lift, such as <code>fun (a : A) =&gt; typed(U1, Unit)</code>.</p>
-            <p>When inspecting a universe template, choose <code>U0</code>, <code>U1</code>, <code>U2</code>, or <code>U3</code> for each universe parameter. The inspector checks that specialization and shows its expression, type, and local context. Names inside the template use the selected universes too. Workbench transfers preserve the selection and display names such as <code>GroupAt_U0</code>; the generic declaration remains a template.</p>
+            <p>A use passes the universe explicitly as the first argument, as in <code>identity(U0, Nat, 3)</code>. The compiler does not infer universe arguments. The argument must be a universe: <code>U3</code>, a universe variable in scope, or a <a href="#universe-expressions">universe expression</a>. Several universe variables can share a bound: <code>(U, V &lt; UU0, A : U, B : V)</code>.</p>
+            <p>A universe variable can also be bound in a type or a function: <code>forall U &lt; UU0. B</code> and <code>fun (U &lt; UU0) =&gt; t</code>. In a proof block, <code>intro</code> introduces it like any other binder.</p>
+            <pre><code data-check="accept">def endo : forall U &lt; UU0. U -&gt; U := fun (U &lt; UU0, A : U) =&gt; A -&gt; A;
+def generic_identity : forall U &lt; UU0. forall A : U. A -&gt; A {
+  intro U;
+  intro A;
+  intro a;
+  exact a;
+}
+def reverse(U &lt; UU0, A : U, x, y : A, p : x = y) : y = x {
+  exact sym(p);
+}</code></pre>
+            <p>A universe variable stands for an arbitrary universe, so it is not a type of any fixed universe. <code>U</code> itself lives in the next universe, <code>next(U)</code>.</p>
+            <pre><code data-check="reject">def fixed(U &lt; UU0, f : U2 -&gt; Nat) : Nat := f(U);
+// Error: Type mismatch: found next(U), expected U2.</code></pre>
+            <p>The word <code>Universe</code> is gone. A parameter written <code>U : Universe</code> is now written <code>U &lt; UU0</code>.</p>
+            <pre><code data-check="reject">def old_identity(U : Universe, A : U, x : A) := x;
+// Error: Universe was removed: bind a universe variable as U &lt; UU0.</code></pre>
+          </section>
+          <section id="universe-expressions">
+            <h2>next and max</h2>
+            <p>Two functions build universes from others. <code>next(U)</code> is the universe just above <code>U</code>, so <code>U : next(U)</code>. <code>max(U, V)</code> is the larger of <code>U</code> and <code>V</code>. They apply to universes only: <code>next(Nat)</code> is an error.</p>
+            <pre><code data-check="accept">def type_of(U &lt; UU0) : next(U) := U;
+def both(U, V &lt; UU0, A : U, B : V) : max(U, V) := A and B;
+def one_level_up(U &lt; UU0, A : U) : next(U) := A;</code></pre>
+            <pre><code data-check="reject">def not_a_universe(U &lt; UU0) := next(Nat);
+// Error: Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).</code></pre>
+            <p>The checker compares universe expressions by value: <code>max(U, U)</code> is <code>U</code>, <code>next(max(U, V))</code> is <code>max(next(U), next(V))</code>, and <code>max(U, U0)</code> is <code>U</code>.</p>
+          </section>
+          <section id="large-universes">
+            <h2>UU0 and larger universes</h2>
+            <p><code>UU0</code> is the universe above every <code>U0</code>, <code>U1</code>, <code>U2</code>, …. <code>UU1</code>, <code>UU2</code> and so on follow it, each containing the previous one. They are ordinary types, and cumulativity crosses from one family to the other.</p>
+            <pre><code data-check="accept">def every_small_universe : UU0 := U7;
+def larger : UU1 := UU0;</code></pre>
+            <p>The bound of a universe variable is always <code>UU0</code>. A universe argument must lie below <code>UU0</code>, so a generic declaration is used at <code>U0</code>, <code>U1</code>, …, or a universe variable, but not at <code>UU0</code> itself.</p>
+            <pre><code data-check="reject">def identity(U &lt; UU0, A : U, x : A) : A := x;
+def too_large(T : UU0, x : T) := identity(UU0, T, x);
+// Error: A universe argument must lie below UU0</code></pre>
+            <pre><code data-check="reject">def wrong_bound(U &lt; UU1, A : U) := A;
+// Error: A universe variable's bound must be UU0, as in U &lt; UU0.</code></pre>
+            <p>Names made of <code>U</code>s followed by digits, such as <code>U1</code> and <code>UU2</code>, are universes. They cannot name a variable or a declaration. A name such as <code>UU</code> or <code>U_1</code> is an ordinary name.</p>
+            <pre><code data-check="reject">def UU2 := Nat;  // Error: UU2 is a universe constant; choose another name.</code></pre>
+          </section>
+          <section id="generic-library">
+            <h2>Univalence and assumptions</h2>
+            <p>The builtins that take a universe argument are generic in the same way: <code>ua</code>, <code>UnivalenceBeta</code> and <code>FunExt</code> are each one definition, used at any universe below <code>UU0</code>. So are the logical assumptions <code>Truncate</code>, <code>LEM</code> and <code>Choice</code> and their companions. A result that uses <code>LEM</code> at <code>U0</code> and at <code>U1</code> depends on one assumption, listed once as <code>LEM</code> (<a href="assumptions.html">chapter 11</a>).</p>
+            <pre><code data-check="accept">import paths;
+def small_path(A, B : U0, e : Equiv(U0, A, B)) : A = B := ua(U0, A, B, e);
+def large_path(A, B : U1, e : Equiv(U1, A, B)) : A = B := ua(U1, A, B, e);</code></pre>
             <p><code>IsProp(A)</code>, <code>IsSet(A)</code>, and <code>Equiv(U, A, B)</code> are library definitions, not new sorts or language keywords. In particular, <code>IsSet(A)</code> says that any two identity proofs between the same elements agree.</p>
+          </section>
+          <section id="generic-rewriting">
+            <h2>Rewriting with generic lemmas</h2>
+            <p><code>rw</code> and <code>simp</code> accept a generic lemma without its universe argument. The universe is found by matching, where the rewritten side contains it as a plain variable, as in <code>Id(U, A)</code>. When the lemma does not mention its universe, any universe will do. Otherwise, supply the universe yourself, as in <code>simp only [lemma(U2)]</code>.</p>
+            <pre><code data-check="accept">def Id(U &lt; UU0, A : U) := A;
+def id_unfold(U &lt; UU0, A : U) : Id(U, A) = A := refl(A);
+def unfolded(A : U3) : Id(U3, Id(U3, A)) = A {
+  simp only [id_unfold];
+}</code></pre>
+          </section>
+          <section id="inspecting-generic">
+            <h2>Inspecting generic declarations</h2>
+            <p>The inspector shows a generic declaration as the kernel checked it. A universe binder is written <code>Π (U &lt; ω)</code> in a type and <code>λ (U &lt; ω)</code> in a term, where ω is the kernel’s name for <code>UU0</code>. A use shows its universe argument, as in <code>identity(U0, Nat, 3)</code>. The statement summary lists <code>U &lt; UU0</code> with the other parameters.</p>
           </section>
           <nav class="pager" aria-label="Chapter navigation">
             <a class="previous" href="proof-blocks.html">← 4. Proof blocks</a>

@@ -6,6 +6,10 @@ milestones 6 and 7; nothing is implemented yet. It builds on
 (kernel roadmap item H, stages H1–H4) and on
 [G0](cubical-kernel-roadmap.md) (universe-generic checking).
 
+Examples write `A : U` with `U` unbound. They presuppose the implicit
+universe binders of ergonomics milestone 5; under L1.1 each reads
+`(U < UU0, A : U)`.
+
 Every feature here is untrusted elaboration. Each one produces kernel
 signatures, eliminator applications and ordinary checked terms, and needs no
 kernel rule beyond the design it builds on. Each section states what the

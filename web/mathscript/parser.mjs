@@ -44,7 +44,18 @@ export function parse(source, typeOnly = false) {
     const t = take();
     if (t.text === "EOF" || !/^[A-Za-z_][A-Za-z_0-9]*$/.test(t.text))
       throw Object.assign(new Error("Expected a name."), { offset: t.start });
+    // U0, UU3 and the like name universes: they cannot be bound or declared.
+    if (/^U+[0-9]+$/.test(t.text))
+      throw Object.assign(new Error(`${t.text} is a universe constant; choose another name.`), { offset: t.start });
     return t;
+  }
+  // A binder's type, or a universe binder's bound: `x : A` or `U < UU0`.
+  function binderType(example) {
+    if (peek() === "<") { take("<"); return { bound: expr() }; }
+    if (peek() !== ":")
+      throw Object.assign(new Error(`Expected ':' or '<', found '${peek()}', as in ${example}.`), { offset: ts[i].start });
+    take(":");
+    return { type: expr() };
   }
   // Names that share a type are separated by commas: (n, m : Nat).
   function sharedNames(example = "(n, m : Nat)") {
@@ -208,9 +219,8 @@ export function parse(source, typeOnly = false) {
         take("(");
         while (true) {
           const names = sharedNames();
-          take(":");
-          const domain = expr();
-          binders.push({ names, domain });
+          const { type: domain, bound } = binderType("fun (U < UU0, A : U) => …");
+          binders.push({ names, domain, bound });
           if (peek() !== ",") break;
           take(",");
         }
@@ -226,15 +236,17 @@ export function parse(source, typeOnly = false) {
         a = {
           kind: binder.names.length === 1 ? "lambda" : "binderGroup",
           ...(binder.names.length === 1 ? {name:binder.names[0]} : {names:binder.names}),
-          binderKind:"lambda",domain: binder.domain, body:a, start:t.start, end:a.end,
+          binderKind:"lambda",domain: binder.domain, ...(binder.bound ? { bound: binder.bound } : {}),
+          body:a, start:t.start, end:a.end,
           // Only the outer expression owns the single source `fun` token.
           ...(index ? {generatedBinder:true} : {keyword:{start:t.start,end:t.end}}),
         };
       }
     } else if (t.text === "forall" || t.text === "exists") {
       const names = sharedNames(`${t.text} n, m : Nat. P(n, m)`);
-      take(":");
-      const domain = expr();
+      const { type: domain, bound } = binderType(`${t.text} n : Nat. P(n)`);
+      if (bound && t.text === "exists")
+        throw Object.assign(new Error("Only forall and fun bind a universe variable: exists has no level form."), { offset: t.start });
       // `.` ends the type: forall n : Nat. P(n). A space follows it, so a
       // tight x.y stays free for projections.
       if (peek() !== ".")
@@ -246,7 +258,7 @@ export function parse(source, typeOnly = false) {
       a = {
         kind: names.length === 1 ? t.text : "binderGroup",
         ...(names.length === 1 ? {name:names[0]} : {names}),
-        binderKind:t.text, domain, body, start:t.start, end:body.end,
+        binderKind:t.text, domain, ...(bound ? { bound } : {}), body, start:t.start, end:body.end,
         keyword:{start:t.start,end:t.end},
       };
     } else if (t.text === "(") {
@@ -608,10 +620,9 @@ export function parse(source, typeOnly = false) {
       if (peek() !== ")") {
         while (true) {
           const names = sharedNames();
-          take(":");
-          const type = expr();
+          const { type, bound } = binderType("(U < UU0, A : U)");
           const group = params.length;
-          for (const p of names) params.push({ name:p, type, group });
+          for (const p of names) params.push({ name:p, ...(bound ? { bound } : { type }), group });
           if (peek() !== ",") break;
           take(",");
         }
@@ -626,11 +637,12 @@ export function parse(source, typeOnly = false) {
       for (let j = params.length - 1; j >= 0;) {
         const group = params[j].group, members = [];
         while (j >= 0 && params[j].group === group) members.unshift(params[j--]);
+        const binder = members[0].bound ? { bound: members[0].bound } : { domain: members[0].type };
         value = members.length === 1
-          ? {kind:"lambda",name:members[0].name,domain:members[0].type,body:value,
+          ? {kind:"lambda",name:members[0].name,...binder,body:value,
               start:members[0].name.start,end:value.end}
           : {kind:"binderGroup",binderKind:"lambda",names:members.map(p=>p.name),
-              domain:members[0].type,body:value,start:members[0].name.start,end:value.end};
+              ...binder,body:value,start:members[0].name.start,end:value.end};
       }
       declarations.push({
         kind: t.text,

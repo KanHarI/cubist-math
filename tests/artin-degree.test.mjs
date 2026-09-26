@@ -23,5 +23,5 @@ test("Artin fixed-field degree theorem is checked for a merely finite automorphi
 
   const axioms = p.symbols["artin_degree__artin_fixed_field_degree"].axioms
     .map(id => p.checker.assumptionLabels.get(id)).sort();
-  assert.deepEqual(axioms, ["LEM(U0)", "Truncate(U0)", "TruncateElim(U0)", "TruncateIntro(U0)", "TruncateProp(U0)"]);
+  assert.deepEqual(axioms, ["LEM", "Truncate", "TruncateElim", "TruncateIntro", "TruncateProp"]);
 });

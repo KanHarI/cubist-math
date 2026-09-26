@@ -1,5 +1,4 @@
 import { splitInspectionContext } from "./cubical-context.mjs";
-import { renderSpecialization } from "./cubical-specialization.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
 import createCubical from "./dist/cubical.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
@@ -29,7 +28,6 @@ function display(updateSyntax = true) {
     $("syntax").value = syntax ?? syntaxDisplayLimitMessage;
     $("check").disabled = syntax === null;
   }
-  renderSpecialization($("specialization"), view);
   if (assembly || kernelGraph) {
     $("more-reduction-sites").hidden = true;
     if (assembly) displayAssembly(); else displayGraph();
@@ -104,7 +102,6 @@ function displayAssembly() {
     row.append(name, math);
     return row;
   }));
-  renderSpecialization($("specialization"), view, { listing, jump: jumpAssembly });
   renderAssembly($("assembly-listing"), listing, { jump: jumpAssembly,
     expand: (id, body) => { expandedDefinitions.add(id); assemblyFocus.unshift(body); displayAssembly(); jumpAssembly(body); },
     inspect: binding => inspect(binding) });
@@ -275,9 +272,7 @@ try {
   });
   await program.check(payload.source, payload.main, progress => { $("status").textContent = `Rechecking source · ${progress.completed} declarations`; });
   // Ignore supplied expression/type claims. Reconstruct from replayed source.
-  view = payload.templateInspection
-    ? program.inspect(payload.templateInspection.binding, payload.templateInspection)
-    : program.inspect(payload.binding);
+  view = program.inspect(payload.binding);
   selected = view.name;
   if (payload.side === "type") {
     const type = program.checker.checkView(view.type, null, view.context.map(x => [x.name, x.type]), new Map(view.dimensions ?? []));

@@ -1,4 +1,4 @@
-import { universeText } from "./cubical-levels.mjs";
+import { renameLevel, universeText } from "./cubical-levels.mjs";
 // Display the native checked syntax itself. Definition references stay named;
 // this does not reconstruct an unchecked expression from Cubist source.
 export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = false } = {}) {
@@ -81,9 +81,12 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (t.tag === "DisplayRef") return { ...name(t.name), contextBinding: t.binding, local: true };
     if (t.tag === "DefRef") return { ...name(symbols[t.name]?.name ?? t.name), binding: t.name };
     if (t.tag === "Var") return { ...name(label(t.name)), local: symbols[t.name]?.kind !== "axiom",
-      ...(symbols[t.name]?.kind === "axiom" ? { binding: t.name, axiomNotation: t.name.startsWith("__assumption_Truncate_U") ? "truncation" : undefined }
+      ...(symbols[t.name]?.kind === "axiom" ? { binding: t.name, axiomNotation: t.name === "__assumption_Truncate" ? "truncation" : undefined }
         : symbols[t.name]?.binding ? { contextBinding: symbols[t.name].binding } : {}) };
-    if (t.tag === "U") return { kind: "Universe", level: t.level };
+    if (t.tag === "U") return { kind: "Universe", level: renameLevel(t.level, label) };
+    // The bound of a universe variable x < UU0, which a context entry has in
+    // place of a type: shown as the bound's universe.
+    if (t.tag === "LBound") return { kind: "Universe", level: { tag: "LConst", tier: t.tier, value: 0 } };
     if (["Nat", "Unit", "Void"].includes(t.tag)) return name(t.tag);
     if (t.tag === "Zero") return { kind: "Number", value: 0 };
     if (t.tag === "Point") return name("⋆");
@@ -105,11 +108,12 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
       if (paths && t.tag === "App") return { kind: "Call", fn: child(t.fn, "fn"), args: [child(t.arg, "arg")] };
       const args = []; let fn = t;
       while ((fn.tag === "App" || fn.tag === "LApp") && remaining-- > 0) {
-        args.unshift(fn.tag === "App" ? visit(fn.arg) : { kind: "Universe", level: fn.level });
+        args.unshift(fn.tag === "App" ? visit(fn.arg) : { kind: "Universe", level: renameLevel(fn.level, label) });
         fn = fn.fn;
       }
       const head = visit(fn);
-      if (head.axiomNotation === "truncation") head.truncationArgument = 0;
+      // Truncate(U, A) is written ‖A‖: the universe argument comes first.
+      if (head.axiomNotation === "truncation") head.truncationArgument = 1;
       return { kind: "Call", fn: head, args };
     }
     if (t.tag === "Pair" && paths) return call("pair", [child(t.as, "as"), child(t.first, "first"), child(t.second, "second")]);
