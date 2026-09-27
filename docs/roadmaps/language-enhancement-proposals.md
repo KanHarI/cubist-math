@@ -29,7 +29,7 @@ constraint set.
 cannot be written with `max` and `next` alone, without an unwanted increase
 in level.
 
-**Reference.** [G0 specification](g0-universe-specification.md), Q7.
+**Reference.** [G0 specification](historical/g0-universe-specification.md), Q7.
 
 ## E2. Generic definitions and builtins at tier 1
 
@@ -57,5 +57,5 @@ function extensionality or a generic library definition at a type in `UU0`.
 Step 1 is enough for a result that needs only the builtins. Step 2 is needed
 when a library definition must serve both tiers.
 
-**Reference.** [G0 specification](g0-universe-specification.md), section 1.5
+**Reference.** [G0 specification](historical/g0-universe-specification.md), section 1.5
 and Q10.

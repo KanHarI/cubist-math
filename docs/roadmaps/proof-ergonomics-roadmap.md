@@ -1,6 +1,6 @@
 # Simplification and shorter proofs in Cubist
 
-Status: first release delivered, 2026-09-25. Milestones 0–3 check through
+Status reviewed 2026-09-27: first release delivered on 2026-09-25. Milestones 0–3 check through
 the native kernel: grouped binders and introductions, both `have` forms,
 `rfl`, `calc`, `rw`, `simp` and `simpa` with explicit, registered and named rule
 sets, `simp at h as h2`, bounded conditional equality rules, checked type-path
@@ -8,6 +8,10 @@ transport, and the "Replace with simp only" action. Milestone 4's cubical
 shorthand (`path i =>`, `p @ i`, `ext`, `along`, `apd_path`, `over`) shipped
 early. A review on 2026-09-25 fixed four elaborator bugs and an older
 name-capture bug; see the [implementation checkpoint](../tactical/proof-ergonomics-handoff.md).
+
+The shared goal layer's core and motive abstraction are delivered (HoTT A5),
+as are G0's checked universe binders and milestone 8's core computability
+features. Argument inference, theories and inductive declarations remain open.
 
 The remaining dependent, cubical, induction and shared elaboration work moved
 to the [HoTT and cubical automation roadmap](hott-automation-roadmap.md), and
@@ -28,7 +32,8 @@ proposals.
 
 **Restructured later on 2026-09-25.**
 - The first library was migrated to the new syntax: tiers 1–2, merged in PRs
-  #2–#4. It is now to be archived and rebuilt; its results are recorded in
+  #2–#4. It is archived, and the new library starts with `library/naturals`;
+  its results are recorded in
   [library-results.md](../library-results.md).
 - This roadmap adopted milestones 6–8:
   - 6: theories, which replace the planned records, notation and sections;
@@ -413,13 +418,15 @@ Delivered here ahead of that work: `path i =>`, `p @ i`, `ext x;`,
 - [ ] Add named arguments and `_` holes for values determined by a known
   function type, supplied arguments, or the expected result type. Implement
   scoped metavariables, occurs checks, and unresolved-hole diagnostics.
-  Builds on the HoTT roadmap's goal layer (A5). Needed by kernel H2: indexed
+  Builds on the HoTT roadmap's goal layer (A5). This is work-plan L4.1a,
+  scheduled before the first new `match` release. Also needed by H2: indexed
   families are impractical without implicit indices, as in
   `cons(x, k + n, append(A, k, n, rest, ys))`.
 - [ ] Add opt-in implicit binders, and infer level arguments where
   constraints determine them. After G0, universes are level expressions, and
   this item absorbs HoTT A9. Retain a way to supply every implicit argument
-  explicitly. Reject ambiguous inference and universe lowering.
+  explicitly. Reject ambiguous inference and universe lowering. This is
+  L4.1b; it follows L4.1a and G0 without waiting for indexed-family kernels.
 - [ ] Add `apply theorem;` and `refine term;` with visible subgoals and explicit
   witness obligations. Reuse the goal machinery (HoTT A5) rather than inventing
   assumed inhabitants for missing arguments.
@@ -438,14 +445,20 @@ Structures are theories used for their models
 Models, homomorphisms, identity, notation and sections need no kernel change.
 Initial and free models need milestone 7 and kernel H.
 
+Release L2.4 covers the core models, homomorphisms, isomorphisms, named fields,
+notation, sections and `extends`. It uses HoTT A8's projections and D0a's
+checked h-level definitions; automatic evidence uses the later D1 solver.
+Generated structure identity is a separate L2.4b
+release through HoTT F1 and its prerequisites; it does not gate core theories.
+
 - [ ] `theory` declarations: sorts with h-levels, operations with notation,
   laws, and `extends`. They generate:
   - `T.Model` as a Σ record with named fields and eta;
   - `T.Hom`;
   - `T.Iso`;
-  - `T.equality : (M = N) ≃ T.Iso(M, N)`, generated through HoTT F1's
-    structure identity machinery;
-  - `T.Displayed`.
+  - in L2.4b, `T.equality : (M = N) ≃ T.Iso(M, N)`, generated through HoTT
+    F1's structure identity machinery;
+  - in L2.4b, supported `T.Displayed` and coherence interfaces.
 
   Projections use HoTT A8's syntax.
 - [ ] Scoped notation declared by a theory and opened with `open M`. Keep the
@@ -465,7 +478,7 @@ General typeclass search, implicit coercion networks, unrestricted higher-order
 unification and broad proof search remain deferred. Structure scope stays
 explicit.
 
-Completion:
+Completion, with generated identity required for L2.4b:
 - a ring lemma takes one model argument and uses its notation;
 - group structure identity is a generated instance, not a development;
 - the forgetful map of an `extends` theory is generated;
@@ -476,8 +489,10 @@ Completion:
 This is the language of the [kernel design](higher-inductive-types-design.md#5-language)
 and of the [feature proposal](inductive-language-features.md). Releases follow
 kernel stages H1–H3. The first release also needs HoTT A5 (motive
-abstraction), D0a and D1's first slice (h-level evidence), and milestone 5's
-holes.
+abstraction) and milestone 5's scoped holes and named arguments (L4.1a).
+Explicit matching is L2.2a; automatic clauses in L2.2b additionally need
+D0a and D1's first slice (h-level evidence). Implicit binders and level
+inference (L4.1b) are a separate release.
 
 - [ ] `inductive` declarations:
   - parameters, and indices after the colon;
@@ -503,7 +518,9 @@ holes.
   - reflexive equations deleted only with a setness proof;
   - coverage with impossible branches.
 - [ ] Views: `match … using view` with any checked eliminator. This absorbs
-  HoTT B5. Presentations are views derived from an equivalence.
+  HoTT B5. Presentations are views derived from an equivalence. L2.7 needs
+  the minimum D0b/F2 slice that supplies checked equivalences and transfer
+  maps; broad transfer automation is a later extension.
 - [ ] Canonical quotients: `quotient … canonical f`, represented by normal
   forms, with the quotient interface as a view.
 - [ ] `deriving`:
@@ -513,7 +530,10 @@ holes.
   - `irrelevance`;
   - `ind_prop` and `rec`.
 - [ ] Nested declarations through strictly positive type constructors,
-  elaborated as mutual declarations.
+  elaborated through a specified, sound signature translation. General mutual
+  lowering waits for the required H3/H4 fragment. An earlier H1 subset needs
+  its own supported grammar, positivity argument and rejection tests; nested
+  syntax alone does not make a multi-sort signature admissible.
 - [ ] Legacy eliminator syntax (`induction … as … return`, the current
   expression `match`, `unpack`) stays parseable, so the archive keeps
   checking. The rebuilt library and the new reference use only `match`.
@@ -530,16 +550,19 @@ Completion, per release:
   `code_meridian` holds by `rfl`.
 - **H2:** `Vec`, `Fin`, well-typed syntax and `Id` are declared. `J` on
   `refl` holds by `rfl`, and `head` needs no `nil` branch.
-- **H3:** `Real = initial CauchyStructure` is declared. `neg` is defined with
-  its companion, and `neg_neg` needs only the point clauses.
+- **H3:** a small context/type signature with genuinely dependent set/prop
+  companion sorts and a joint interpreter computes a closed example. The
+  `Real = initial CauchyStructure` and companion `neg`/`neg_neg` example
+  remains deferred mathematical integration work.
 
 At every release, non-structural calls, uncovered constructors, boundary
 mismatches and missing h-level evidence are rejected with precise messages.
 
 ### 8. Computability as a checked property
 
-Every item but the fourth was done on 2026-09-25 (work plan L0.1). The done
-items are documented in the language reference's Computability section.
+The core was done on 2026-09-25 (work plan L0.1). The remaining extensions
+are split into L2.9a/b below. Delivered items are documented in the language
+reference's Computability section.
 
 - [x] Track each declaration's non-computing dependencies: user axioms,
   excluded middle, choice, resizing and any postulate. Compute them from the
@@ -550,15 +573,18 @@ items are documented in the language reference's Computability section.
   shown but is not a non-computing dependency. The marker arrives with H1.
 - [x] `evaluate term expecting value;`, a checked normal-form test, and the
   CLI's `evaluate EXPRESSION` command.
-- [ ] Patterns with holes on the expected side of `evaluate`, and witness
-  readout from normalized truncations in the CLI's `evaluate` command. Both
-  wait for H1, while truncation is still an assumption.
+- [ ] L2.9a: patterns with holes on the expected side of `evaluate`, with
+  an explicit matching contract and mismatch diagnostics. This does not
+  inherently depend on H1.
+- [ ] L2.9b: witness readout from closed normalized truncations in the CLI's
+  `evaluate` command. This needs native H1 truncation and G2's policy;
+  it does not introduce a source eliminator from `Trunc(A)` to `A`.
 - [x] Guarantee that evaluation always unfolds definitions and ignores
   unfolding hints. (`opaque def`, which changed nothing, has been removed.)
 - [x] Recheck every `computable` and `evaluate` in CI. The migration
   verifier compares non-computing dependencies.
 
-The remaining item needs H1.
+Only the truncation readout extension needs H1.
 
 ## Integration map
 
@@ -571,7 +597,7 @@ The remaining item needs H1.
 | [kernel adapter](../../web/cubical-kernel.mjs), [syntax codec](../../web/cubical-syntax.mjs) | Preserve native checking, handle ownership, and dimensions through generated terms. |
 | [path library](../../archive/first-library/paths.cubist), [path-over builders](../../lib/cubical/path-over.mjs) | Reuse proved congruence, composition, and transport constructions. |
 | New: declaration elaborator and `match` compiler | `inductive`/`theory` to H's signature normal form; motive abstraction, index unification, coverage, structural recursion and obligations to eliminator applications (milestones 6–7). |
-| New: computability tracking | Non-computing dependencies, `computable` and `evaluate` (milestone 8). |
+| Existing computability tracking | Preserve non-computing dependencies, `computable` and `evaluate`; add expected-value patterns and native truncation readout (milestone 8). |
 | [language reference](../../web/language.html), [CLI guide](../guides/cli.md), browser inspector | Document delivered syntax; show goals, inferred arguments, rewrite witnesses, generated eliminators, boundary diagrams and non-computing dependencies. The reference is rewritten into chapters with checked examples (see the [work plan](work-plan.md)). |
 
 New helper modules and test files should be introduced with the milestone that

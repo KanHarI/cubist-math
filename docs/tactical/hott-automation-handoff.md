@@ -1,5 +1,12 @@
 # HoTT automation implementation checkpoint
 
+Current status, 2026-09-27: A7 and A5's goal-layer core are delivered. The
+remaining A5 metadata and tactic clients, deterministic fuel and further
+automation are scheduled in the [work plan](../roadmaps/work-plan.md).
+G0 removed templates and per-universe specialization, so the measurements
+below describe the 2026-09-25 runtime and need a fresh baseline before fuel
+defaults are chosen. The dated handoff below records the A7 release only.
+
 Date: 2026-09-25. This is the implementation handoff for the
 [HoTT and cubical automation roadmap](../roadmaps/hott-automation-roadmap.md).
 A7, the baseline and regressions, is complete. Every other milestone is still

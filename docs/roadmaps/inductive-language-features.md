@@ -1,7 +1,8 @@
 # Language features for theories, inductive and higher inductive declarations
 
 Status: adopted on 2026-09-25 by [ergonomics](proof-ergonomics-roadmap.md)
-milestones 6 and 7; nothing is implemented yet. It builds on
+milestones 6 and 7; the declarations proposed here remain unimplemented.
+G0 and the shared goal-layer core are delivered as of 2026-09-27. It builds on
 [the higher inductive-inductive type design](higher-inductive-types-design.md)
 (kernel roadmap item H, stages H1–H4) and on
 [G0](cubical-kernel-roadmap.md) (universe-generic checking).
@@ -136,6 +137,11 @@ operations and laws; `fold` is its eliminator with constant motives.
 - H3 (inductive-inductive): `CauchyStructure`, `CwF`.
 
 Models and homomorphisms need no stage at all, because they are records.
+The first core theory release is work-plan L2.4: named records, explicit
+homomorphisms, notation, sections and extensions. Generated identity and
+displayed/coherence interfaces are L2.4b and require the supported HoTT F1
+fragment. `initial` and `free` additionally require the applicable H stage;
+an arbitrary polymorphic operation record does not qualify for them.
 
 **Computability.** `fold` computes on constructors, and models are records
 with eta. A closed `interpret(t)` for closed syntax `t` normalizes: the
@@ -355,6 +361,10 @@ checked declarations:
   positive type constructor, as in `node(children : List(Tree(A)))`. The
   elaborator translates this to a mutual declaration, together with a
   generated equivalence between the auxiliary type and `List(Tree(A))`.
+  That proposal exceeds H1/H2's one-sort fragment: set/prop companions need
+  H3, and untruncated companions may need H4. Work-plan L4.3 first specifies
+  an admissible lowering; any earlier H1 subset needs a one-sort translation
+  and its own acceptance cases.
 - **Sections over models.** `section (R : CommRing.Model) { open R; … }`
   shares the model and its notation across lemmas. This replaces milestone
   6's separate section feature.
