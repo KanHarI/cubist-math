@@ -153,7 +153,7 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
         if (!close && trailing && preceding && declarationEnds.has(preceding.end)) docs.push(hard);
         previous = null; continue;
       }
-      const itemStart = ["def", "construction", "simp_rule", "simp_set"].includes(text)
+      const itemStart = ["def", "construction", "simp_rule", "simp_set", "inductive"].includes(text)
         || itemStarts.has(token.start);
       if (!close && itemStart && previous && !(previous.text === "computable" && text === "def")) {
         flush(); docs.push(hard, hard); previous = null;

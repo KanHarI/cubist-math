@@ -47,7 +47,8 @@ self.onmessage = async ({ data: { id, command, args } }) => {
     if (command === "check") {
       const replBefore = replQueue;
       const run = (async () => {
-        const next = new CubicalProgram(module, readSource(args.module, args.place), { optimizations: args.optimizations });
+        const next = new CubicalProgram(module, readSource(args.module, args.place),
+          { optimizations: args.optimizations, experimental: args.experimental ?? [] });
         let checked;
         try { checked = await next.check(args.source, args.module ?? "current", progress => self.postMessage({ id, progress })); }
         catch (error) { next.dispose(); throw error; }
@@ -60,7 +61,7 @@ self.onmessage = async ({ data: { id, command, args } }) => {
     } else if (command === "elaborate") {
       // A source of its own, checked apart from the proof: every declaration's
       // steps, terms and native opcode trees.
-      const scratch = new CubicalProgram(module, readSource(args.module, args.place));
+      const scratch = new CubicalProgram(module, readSource(args.module, args.place), { experimental: args.experimental ?? [] });
       try {
         await scratch.check(args.source, args.module ?? "current");
         result = elaboration(scratch, args.module ?? "current");

@@ -57,6 +57,54 @@ export function parse(source, typeOnly = false) {
     take(":");
     return { type: expr() };
   }
+  // A parenthesized telescope of binder groups, `(n, m : Nat, U < UU0)`,
+  // each name with its group. Universe binders only where `universes`.
+  function parameters(example, universes) {
+    take("(");
+    const params = [];
+    if (peek() !== ")") {
+      while (true) {
+        const names = sharedNames();
+        const { type, bound } = binderType(example);
+        if (bound && !universes)
+          throw Object.assign(new Error("A constructor's arguments are terms; bind universes in the declaration's header."),
+            { offset: names[0].start });
+        const group = params.length;
+        for (const p of names) params.push({ name: p, ...(bound ? { bound } : { type }), group });
+        if (peek() !== ",") break;
+        take(",");
+      }
+    }
+    take(")");
+    return params;
+  }
+  // The result position of an inductive header: an h-level modifier, a
+  // universe, or a modifier and then a universe (`prop U`). The words type,
+  // set, prop and trunc are keywords only here, as its first word.
+  function sortResult() {
+    let modifier = null;
+    const word = peek(), start = ts[i].start;
+    if (["type", "set", "prop"].includes(word)) {
+      const token = take();
+      modifier = { kind: word, start: token.start, end: token.end };
+    } else if (word === "trunc" && ts[i + 1].text === "(") {
+      const token = take();
+      take("(");
+      const negative = peek() === "-";
+      if (negative) take();
+      const number = take();
+      if (!/^[0-9]+$/.test(number.text))
+        throw Object.assign(new Error("trunc takes an integer level n ≥ -1, as in trunc(1)."), { offset: number.start });
+      const level = (negative ? -1 : 1) * Number(number.text);
+      if (level < -1)
+        throw Object.assign(new Error("trunc(n) needs n ≥ -1: prop is trunc(-1), set is trunc(0)."), { offset: number.start });
+      modifier = { kind: "trunc", level, start: token.start, end: take(")").end };
+    }
+    const universe = peek() === "{" ? null : expr();
+    if (!modifier && !universe)
+      throw Object.assign(new Error("After ':' give an h-level, a universe or both, as in : prop U."), { offset: start });
+    return { modifier, universe, start };
+  }
   // Names that share a type are separated by commas: (n, m : Nat).
   function sharedNames(example = "(n, m : Nat)") {
     const names = [name()];
@@ -616,13 +664,34 @@ export function parse(source, typeOnly = false) {
       const directive = { kind: "evaluate", value, expected, start: t.start, end };
       directives.push(directive); items.push(directive); continue;
     }
+    // `inductive T(params) : R { constructors }` declares a type (H1; the
+    // specification's section 9). R is an h-level, a universe or both.
+    if (t.text === "inductive") {
+      const n = name(), params = peek() === "(" ? parameters("(U < UU0, A : U)", true) : [];
+      let result = null;
+      if (peek() === ":") { take(":"); result = sortResult(); }
+      take("{");
+      const constructors = [];
+      while (peek() !== "}") {
+        if (peek() === "EOF") throw Object.assign(new Error("Expected '}' to close the inductive declaration."), { offset: ts[i].start });
+        const c = name(), args = peek() === "(" ? parameters("(n : Nat)", false) : [];
+        let type = null;
+        if (peek() === ":") { take(":"); type = expr(); }
+        const end = take(";").end;
+        constructors.push({ kind: "constructor", name: c, params: args, type, start: c.start, end });
+      }
+      const end = take("}").end;
+      declarations.push({ kind: "inductive", name: n, params, result, constructors, start: t.start, end });
+      items.push(declarations.at(-1));
+      continue;
+    }
     // `computable def` asserts that the checked result uses no assumption.
     const computable = t.text === "computable" && peek() === "def";
     const modifierStart = computable ? t.start : undefined;
     if (computable) t = take();
     if (t.text !== "def")
       throw Object.assign(new Error(t.text === "import" ? "Imports must come before declarations."
-        : "Expected a declaration or directive: def, computable def, evaluate, simp_rule or simp_set."), {
+        : "Expected a declaration or directive: def, computable def, inductive, evaluate, simp_rule or simp_set."), {
         offset: t.start,
       });
     const n = name(),

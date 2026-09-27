@@ -145,10 +145,11 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (t.tag === "Sort") {
       const args = [...(t.levels ?? []).map(level => ({ kind: "Universe", level: renameLevel(level, label) })),
         ...(t.parameters ?? []).map((parameter, index) => child(parameter, "parameters", index))];
-      return args.length ? call(t.signature, args) : name(t.signature);
+      const sortName = symbols[t.signature]?.name ?? t.signature;
+      return args.length ? call(sortName, args) : name(sortName);
     }
     if (t.tag === "Con") return name(t.name ?? `constructor ${t.index}`);
-    if (t.tag === "Elim") return call(`${t.signature}.elim`, [child(t.motive, "motive"),
+    if (t.tag === "Elim") return call(`${symbols[t.signature]?.name ?? t.signature}.elim`, [child(t.motive, "motive"),
       ...t.clauses.map((clause, index) => child(clause, "clauses", index))]);
     const fields = { NatRec: ["motive", "zero", "step", "value"], UnitRec: ["motive", "point", "value"],
       SumRec: ["motive", "left", "right", "value"], WRec: ["motive", "step", "value"],

@@ -3,6 +3,7 @@ import { CubicalKernel } from "./cubical-kernel.mjs";
 import { NativeCubicalElaborator } from "./cubical-elaborator.mjs";
 import { Translator } from "./dist/cubical-runtime/translate.mjs";
 import {emptySimpRegistry,mergeSimpRegistries} from "./dist/cubical-runtime/simp-registry.mjs";
+import { substituteTerm } from "./dist/cubical-runtime/core.mjs";
 import { parse } from "./mathscript/parser.mjs";
 import { leadingDocumentation } from "./mathscript/documentation.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
@@ -17,11 +18,18 @@ const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${
 // an earlier checked reference. Unsupported declarations never become axioms.
 export class CubicalProgram {
   constructor(module, readSource, { onDeclarationStart, onDeclaration, collectReferences = true, optimizations = {}, manageTransactions = true,
-    searchFuel, declarationFuel } = {}) {
+    searchFuel, declarationFuel, experimental = [] } = {}) {
     // Fuel limits (lib/cubical/fuel.mjs), for a measurement or a test; the defaults otherwise.
     this.fuelLimits = { searchFuel, declarationFuel };
     this.kernel = new CubicalKernel(module);
     this.kernel.setOptimizations(optimizations);
+    // Kernel extensions under review, such as "h1" for declared types (the
+    // H1 specification's experimental mode, 5.7). Their results carry the
+    // `kernel extension` marker.
+    const unknown = experimental.filter(name => name !== "h1");
+    if (unknown.length) throw new Error(`Unknown experimental kernel extension: ${unknown.join(", ")}. The one under review is h1.`);
+    this.experimental = [...experimental];
+    this.kernel.setExtensions({ h1: experimental.includes("h1") });
     this.checker = new NativeCubicalElaborator(this.kernel);
     this.readSource = readSource;
     this.onDeclarationStart = onDeclarationStart; this.onDeclaration = onDeclaration;
@@ -200,7 +208,10 @@ export class CubicalProgram {
         const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified,
           status: d.status, reason, errorStart: d.errorStart, errorEnd: d.errorEnd,
           rewriteWork: d.rewriteWork, searchFuel: d.searchFuel, failure: d.failure ?? null,
-          unfoldingHints: d.native?.unfoldingHints ?? [], axioms: d.native?.axioms ?? [], start: syntax.start, end: syntax.end,
+          unfoldingHints: d.native?.unfoldingHints ?? [], axioms: d.native?.axioms ?? [],
+          // Kernel extensions under review that the result relies on, such as
+          // H1; shown apart from assumptions, and computable accepts them.
+          extensions: d.native?.extensions ?? [], start: syntax.start, end: syntax.end,
           definitionStart: syntax.start, description: leadingDocumentation(text, syntax.start)?.text ?? "",
           ...(name === main ? {} : { sourceModule: name, sourceName: d.name }),
           // A universe variable's source name stands for U(x): it names x.
@@ -230,6 +241,28 @@ export class CubicalProgram {
       evaluations: this.evaluations, directiveFuel: this.directiveFuel,
       complete: outputs.length > 0 && outputs.every(d => d.verified)
         && !this.gaps.some(gap=>gap.directive) && failedHere.size === 0, sources: this.sources };
+  }
+  // A declared type's signature as the kernel admitted it (the H1
+  // specification's 6.5): its former, h-level, recorded universe parameters,
+  // and each constructor's normal form, with its data, positions and
+  // dimensions. Null for a name that is not a declared type.
+  signature(binding) {
+    const record = this.kernel.signatures.get(binding);
+    if (!record) return null;
+    const info = this.kernel.signature(record.index), syntax = this.checker.syntax;
+    const symbols = info.symbols.map(symbol => this.kernel.symbolName(symbol));
+    // The sort and the earlier constructors appear in constructor types as
+    // the admission's variables; they are shown by their declared names.
+    const name = this.symbols[binding]?.name ?? binding;
+    const shown = [[info.sort, name], ...info.constructors.map((c, index) => [c.symbol, record.constructors[index]])]
+      .map(([symbol, display]) => [this.kernel.symbolName(symbol), { tag: "Var", name: display }]);
+    const display = term => shown.reduce((t, [from, to]) => substituteTerm(t, from, to), syntax.decode(term));
+    return { name, binding, former: syntax.decode(info.former),
+      modifier: info.modifier === 0 ? "type" : info.modifier === 1 ? "prop" : info.modifier === 2 ? "set" : `trunc(${info.modifier - 2})`,
+      recorded: symbols.slice(0, info.levels).filter((_, j) => info.recorded >> j & 1),
+      extensions: info.experimental ? ["H1"] : [],
+      constructors: info.constructors.map((c, index) => ({ name: record.constructors[index], type: display(c.type),
+        data: c.data, positions: c.positions, dimensions: c.dimensions, generated: c.generated })) };
   }
   // Each proof statement of a module: where it is, the goal it faced, with the
   // names in scope, and the term it built. The rest of the block's proof

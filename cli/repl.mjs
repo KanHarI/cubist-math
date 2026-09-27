@@ -33,12 +33,16 @@ before it. An entry continues on the next line while a bracket is open.
 
 Noninteractive: node cli/repl.mjs check euclid
                 node cli/repl.mjs "import naturals; evaluate 2 + 3;"
-Optimizations: --[no-]share-syntax, --[no-]reuse-checks, --[no-]compact-paths`;
-const args = process.argv.slice(2), optimizations = {};
+Optimizations: --[no-]share-syntax, --[no-]reuse-checks, --[no-]compact-paths
+Kernel extensions under review: --experimental=h1 admits declared types
+(inductive), and results that use them carry the marker kernel extension: H1.`;
+const args = process.argv.slice(2), optimizations = {}, experimental = [];
 const command = [];
 for (const arg of args) {
   const match = arg.match(/^--(no-)?(share-syntax|reuse-checks|compact-paths)$/);
+  const extension = arg.match(/^--experimental=([a-z0-9,]+)$/);
   if (match) optimizations[{ "share-syntax": "shareSyntax", "reuse-checks": "reuseChecks", "compact-paths": "compactPaths" }[match[2]]] = !match[1];
+  else if (extension) experimental.push(...extension[1].split(","));
   else command.push(arg);
 }
 const module = await createCubical();
@@ -63,7 +67,7 @@ async function replSession() {
   if (program && session?.program !== program)
     session = session ? await session.rebase(program, checkedModule) : new ReplSession(program, { base: checkedModule, modules: importable });
   else if (!session) {
-    sessionProgram = new CubicalProgram(module, sourceReader(), { optimizations });
+    sessionProgram = new CubicalProgram(module, sourceReader(), { optimizations, experimental });
     session = new ReplSession(sessionProgram, { modules: importable });
   }
   return session;
@@ -95,7 +99,7 @@ async function execute(line) {
     const source = file ? await readFile(resolve(value), "utf8") : await imports(value);
     const main = basename(value, ".cubist");
     program?.dispose(); view = null; binding = null;
-    program = new CubicalProgram(module, imports, { optimizations });
+    program = new CubicalProgram(module, imports, { optimizations, experimental });
     const result = await program.check(source, main);
     if (!result.complete) throw Error(JSON.stringify(result.gaps, null, 2));
     checkedModule = main;
@@ -109,12 +113,28 @@ async function execute(line) {
     const matches = Object.values(program.symbols).filter(item => item.name === value);
     if (matches.length > 1) throw Error(`Ambiguous name; use a qualified binding: ${matches.map(item => item.binding).join(", ")}`);
     binding = matches[0]?.binding ?? value;
+    const signature = operation === "inspect" && program.signature(binding);
+    if (signature) {
+      // A declared type: its signature in normal form, as the kernel admitted it.
+      const text = term => program.checker.displayText(term, 400);
+      console.log(`inductive ${signature.name} : ${text(signature.former)} (${signature.modifier})`);
+      if (signature.recorded.length) console.log(`Recorded universe parameters: ${signature.recorded.join(", ")}`);
+      for (const c of signature.constructors)
+        console.log(`  ${c.name} : ${text(c.type)}  [${c.data} data, ${c.positions} positions, `
+          + `${c.dimensions} dimensions${c.generated ? ", generated" : ""}]`);
+      console.log(`Kernel extensions: ${signature.extensions.join(", ") || "none"}`);
+      view = null;
+      return;
+    }
     view = program.inspect(binding);
     if (operation === "inspect") {
       show();
       const assumptions = program.symbols[binding]?.axioms;
       if (assumptions) console.log(`Assumptions: ${[...new Set(assumptions.map(name =>
         program.checker.assumptionLabels.get(name) ?? name))].sort().join(", ") || "none"}`);
+      // Kernel extensions under review are listed apart: they are not assumptions.
+      const extensions = program.symbols[binding]?.extensions ?? [];
+      if (extensions.length) console.log(`Kernel extensions: ${extensions.map(name => `kernel extension: ${name}`).join(", ")}`);
     }
     else {
       const checked = program.checker.checkView(view.expression, view.type, view.context.map(e => [e.name, e.type]), new Map(view.dimensions ?? []));

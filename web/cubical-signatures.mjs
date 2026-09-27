@@ -19,7 +19,9 @@ export function modifierCode(modifier) {
 }
 
 // A signature in normal form, over cubical syntax (web/cubical-syntax.mjs):
-//   name          the sort's name
+//   name          the name the signature is registered under
+//   sort          the variable naming the sort in constructor types; the
+//                 name by default
 //   levels        its universe parameters, [{ name, recorded }], in order; a
 //                 recorded one is carried by instances, an erased one read
 //                 from their parameters (section 1.1)
@@ -27,8 +29,9 @@ export function modifierCode(modifier) {
 //                 parameters before it
 //   level         the sort's universe level, over the levels
 //   modifier      "type" (the default), "set", "prop" or { trunc: n }
-//   constructors  [{ name, type }], each type over the levels, the
-//                 parameters, the sort's name and the constructors before it
+//   constructors  [{ name, type, display }], each type over the levels, the
+//                 parameters, the sort's variable and the constructors before
+//                 it; `display` is the name shown, the name by default
 // Returns the registered record: { name, index, constructors, spec }, with
 // the generated squash constructor last when the sort is truncated.
 export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel),
@@ -54,8 +57,9 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
   for (const entry of [...levelEntries].reverse()) former = g.levelPi(entry, former);
   const recorded = levels.reduce((mask, level, j) => mask | (level.recorded ? 1 << j : 0), 0);
   // The sort's entry names it; a variant name when another entry has it.
-  const sort = driver.bind(kernel.symbol(spec.name), universe);
-  scope = new Map(scope).set(kernel.symbol(spec.name), sort);
+  const sortSymbol = kernel.symbol(spec.sort ?? spec.name);
+  const sort = driver.bind(sortSymbol, universe);
+  scope = new Map(scope).set(sortSymbol, sort);
   let signature = g.signatureBegin(former, modifierCode(spec.modifier), g.entry(sort).name, recorded);
   for (const { name, type } of spec.constructors ?? []) {
     // A constructor's type lives in the sort's universe; one derived lower
@@ -66,7 +70,7 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
     scope = new Map(scope).set(kernel.symbol(name), entry);
   }
   const index = g.signatureClose(signature);
-  const constructors = (spec.constructors ?? []).map(c => c.name);
+  const constructors = (spec.constructors ?? []).map(c => c.display ?? c.name);
   if (kernel.signature(index).constructors.length > constructors.length) constructors.push("squash");
   const record = Object.freeze({ name: spec.name, index, constructors: Object.freeze(constructors), spec });
   kernel.signatures.set(spec.name, record);
