@@ -126,6 +126,15 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
       return row(["Name", "Call"].includes(node.fn.kind) ? fn : fenced(fn), fenced(row(...args)));
     }
     if (node.kind === "Pair") return row(operator("⟨"), visit(node.left), operator(","), visit(node.right), operator("⟩"));
+    // A projection p.1 or p.2, as the source writes it. Forms that are not
+    // atoms are parenthesized before the dot.
+    if (node.kind === "Projection") {
+      const value = visit(node.value), dot = operator(".");
+      dot.setAttribute("lspace", "0"); dot.setAttribute("rspace", "0");
+      const atomic = ["Name", "Number", "Universe", "Call", "Pair", "Projection", "NatElim"].includes(node.value.kind)
+        || (node.value.kind === "Identity" && identitySugar);
+      return row(atomic ? value : fenced(value), dot, element("mn", String(node.index)));
+    }
     if (node.kind === "Identity") {
       if (identitySugar) {
         // Keep the carrier explicit, including for nested identities. This is

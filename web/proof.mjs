@@ -8,7 +8,7 @@ import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proof-navigation.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
-import { numeralExpansion, tokenStyle } from "./source-tokens.mjs";
+import { numeralAt, tokenStyle } from "./source-tokens.mjs";
 import { libraryModules } from "./mathscript/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
 import { createReplConsole } from "./repl-console.mjs";
@@ -493,7 +493,7 @@ function renderSource() {
         code.append(link);
       } else {
         const info = linkMap.get(start);
-        const expansion = (last.mode === "mathematical" ? numeralExpansion(text) : null) ?? info?.expansion;
+        const expansion = (last.mode === "mathematical" ? numeralAt(line, token.index, text) : null) ?? info?.expansion;
         const style = tokenStyle(text, expansion);
         if (info) {
           const button = document.createElement("button");

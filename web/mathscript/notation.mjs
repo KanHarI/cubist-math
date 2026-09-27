@@ -42,6 +42,7 @@ export function notationFromSyntax(node, globals = new Map(), bound = new Set())
     return call(visit(node.fn), node.args.map(n => visit(n)));
   }
   if (node.kind === "pair") return { kind: "Pair", left: visit(node.left), right: visit(node.right) };
+  if (node.kind === "projection") return { kind: "Projection", index: node.index, value: visit(node.value) };
   if (node.kind === "binary") {
     const left = visit(node.left), right = visit(node.right);
     const kind = { and: "Product", or: "Sum", "->": "Arrow", "=": "Equality" }[node.operator];

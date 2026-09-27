@@ -52,6 +52,8 @@
             <li><a href="#let"><code>let</code></a></li>
             <li><a href="#obtain"><code>obtain</code></a></li>
             <li><a href="#cases"><code>cases</code></a></li>
+            <li><a href="#show"><code>show</code></a></li>
+            <li><a href="#suffices"><code>suffices</code></a></li>
             <li><a href="#changing-the-goal">Changing the goal</a></li>
             <li><a href="#where-blocks-go">Where blocks can appear</a></li>
           </ul>
@@ -62,7 +64,7 @@
             <p>A proof block is the body of a block declaration: <code>def name(params) : T { … }</code>. It starts with the goal <code>T</code> and a context holding the parameters. Each statement does one of three things:</p>
             <ul>
               <li>it <strong>extends the context</strong> and continues with the same goal: <code>let</code>, <code>have</code>, <code>obtain</code>;</li>
-              <li>it <strong>changes the goal</strong> and continues with the new one: <code>intro</code>, <code>rw</code>, <code>simp</code>, <code>ext</code>;</li>
+              <li>it <strong>changes the goal</strong> and continues with the new one: <code>intro</code>, <code>show</code>, <code>suffices</code>, <code>rw</code>, <code>simp</code>, <code>ext</code>;</li>
               <li>it <strong>closes the goal</strong> and ends the block: <code>exact</code>, <code>cases</code>, <code>rfl</code>, <code>calc</code>, <code>simpa</code>, <code>over</code>.</li>
             </ul>
             <pre><code data-check="accept">def swap_product(A, B : U0) : (A and B) -&gt; (B and A) {
@@ -96,6 +98,8 @@
                 <tr><td><code>let name := term;</code></td><td>Extends the context</td><td><a href="#let">let</a></td></tr>
                 <tr><td><code>obtain (a, b) := pair;</code></td><td>Extends the context</td><td><a href="#obtain">obtain</a></td></tr>
                 <tr><td><code>cases value { left x => { … } right y => { … } }</code></td><td>Closes</td><td><a href="#cases">cases</a></td></tr>
+                <tr><td><code>show T;</code></td><td>Changes the goal to a type equal to it by computation</td><td><a href="#show">show</a></td></tr>
+                <tr><td><code>suffices h : T by term;</code>, <code>suffices h : T by { … }</code></td><td>Changes the goal to <code>T</code></td><td><a href="#suffices">suffices</a></td></tr>
                 <tr><td><code>rfl;</code></td><td>Closes</td><td><a href="rewriting.html#rfl">reflexivity</a></td></tr>
                 <tr><td><code>calc { … }</code></td><td>Closes</td><td><a href="rewriting.html#calc">chains</a></td></tr>
                 <tr><td><code>rw [p];</code></td><td>Changes the goal</td><td><a href="rewriting.html#rw">rewriting</a></td></tr>
@@ -307,6 +311,67 @@ def default(value : Unit or Unit) : Shape(value) {
   };
 }</code></pre>
           </section>
+          <section id="show">
+            <h2><code>show</code></h2>
+            <p><code>show T;</code> restates the goal as <code>T</code>, which must be equal to the goal by computation, as described in <a href="conversion.html#conversion">conversion</a>. The statements after it prove <code>T</code>. Their proof is a proof of the goal as it was, so <code>show</code> adds nothing to the proof. Use it to unfold a definition in the goal, to see a computed form of it, or to record what the goal is at a point of a long proof.</p>
+            <pre><code data-check="accept">def Endo(A : U0) := A -&gt; A;
+
+def identity_endo(A : U0) : Endo(A) {
+  show A -&gt; A;
+  intro a;
+  exact a;
+}
+
+def first_of_pair(n : Nat) : typed(Nat and Nat, (n, 0)).1 = n {
+  show n = n;
+  rfl;
+}</code></pre>
+            <p>A type that is only provably equal to the goal is not enough. <code>n + 0</code> and <code>n</code> are equal by a proof, not by computation:</p>
+            <pre><code data-check="reject">import naturals;
+
+def plus_zero(n : Nat) : n + 0 = n {
+  show n = n;  // Error: show requires a type equal to the goal by computation: found n = n, expected n + 0 = n.
+  rfl;
+}</code></pre>
+            <p>A statement after <code>show</code> proves the restated goal:</p>
+            <pre><code data-check="reject">def restated_only(A : U0) : A -&gt; A {
+  show A -&gt; A;  // Error: show left the goal unproved; add a following proof statement.
+}</code></pre>
+          </section>
+          <section id="suffices">
+            <h2><code>suffices</code></h2>
+            <p><code>suffices h : T by term;</code> reasons backwards. <code>term</code> proves the goal from a hypothesis <code>h : T</code>, and the statements after it prove <code>T</code>. The name <code>h</code> is in scope only in <code>term</code>. The proof built is the function <code>fun (h : T) =&gt; term</code> applied to the proof of <code>T</code>. The proof after <code>by</code> can also be a block: <code>suffices h : T by { … }</code>.</p>
+            <pre><code data-check="accept">def contrapositive(A, B : U0, f : A -&gt; B, not_b : B -&gt; Void) : A -&gt; Void {
+  intro a;
+  suffices b : B by not_b(b);
+  exact f(a);
+}
+
+def through_a_block(A, B, C : U0, f : A -&gt; B, g : B -&gt; C, a : A) : C {
+  suffices b : B by {
+    exact g(b);
+  }
+  exact f(a);
+}</code></pre>
+            <p>In <code>contrapositive</code>, the goal after <code>intro a</code> is <code>Void</code>. <code>not_b(b)</code> proves it from <code>b : B</code>, so what remains is <code>B</code>, which <code>f(a)</code> proves.</p>
+            <p>The proof after <code>by</code> proves the goal, not <code>T</code>:</p>
+            <pre><code data-check="reject">def backwards(A, B : U0, f : A -&gt; B, a : A) : B {
+  suffices x : A by x;  // Error: Type mismatch: found A, expected B.
+  exact a;
+}</code></pre>
+            <p><code>suffices</code> needs a name for its hypothesis, a proof after <code>by</code>, and a following statement that proves <code>T</code>:</p>
+            <pre><code data-check="reject">def unnamed(A, B : U0, f : A -&gt; B, a : A) : B {
+  suffices A by f(a);  // Error: suffices names its hypothesis: suffices h : T by term;
+  exact a;
+}</code></pre>
+            <pre><code data-check="reject">def no_proof(A, B : U0, f : A -&gt; B, a : A) : B {
+  suffices x : A;  // Error: suffices needs a proof of the goal from x after by: suffices x : T by term;
+  exact a;
+}</code></pre>
+            <pre><code data-check="reject">def nothing_after(A, B : U0, f : A -&gt; B) : B {
+  suffices x : A by f(x);  // Error: suffices left the stated goal unproved; add a following proof statement.
+}</code></pre>
+          </section>
           <section id="changing-the-goal">
             <h2>Changing the goal</h2>
             <p><code>rw</code>, <code>simp</code> and <code>ext</code> replace the goal with a new one and continue. Some of them finish the block when the new goal holds by computation; the chapters on <a href="rewriting.html#rw">rewriting</a> and <a href="cubical.html#ext">function extensionality</a> say when. Otherwise, a following statement proves the new goal.</p>
@@ -328,7 +393,7 @@ def pointwise(A, B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
           </section>
           <section id="where-blocks-go">
             <h2>Where blocks can appear</h2>
-            <p>A block can appear as the body of a block declaration, of <code>have</code>, of each <code>cases</code> branch, of a <code>calc</code> step, and of <code>over</code>. A block is not an expression: to use a proof inside a term, prove it first with <code>have</code>, or move it into its own declaration.</p>
+            <p>A block can appear as the body of a block declaration, of <code>have</code>, of each <code>cases</code> branch, of a <code>calc</code> step, of <code>over</code>, and after the <code>by</code> of <code>suffices</code>. A block is not an expression: to use a proof inside a term, prove it first with <code>have</code>, or move it into its own declaration.</p>
             <pre><code data-check="reject">def block_as_term : Nat and Nat {
   exact ({ exact 0; }, 1);  // Error: Expected an expression, found '{'.
 }</code></pre>
