@@ -173,7 +173,8 @@ def needs_arguments : U0 := List;
   refused(get("Twice"), /a is already a constructor of Twice/);
   refused(get("orphan"), /Untranslated name: nil/);
   refused(get("needs_type"), /nil needs an expected type, to know which List\(…\) it builds/);
-  refused(get("needs_arguments"), /List takes its arguments: List\(U, A\)/);
+  // Alone, List is its former, a function: not a type in U0.
+  refused(get("needs_arguments"), /Type mismatch: found forall U < UU0\. U -> U, expected U0/);
 });
 
 test("a failed declaration leaves its names untranslated and nothing admitted", async t => {
@@ -219,4 +220,46 @@ def loop_n : typed(Sq(U0, N), b) = b := l;
 def square : PathP(fun (i : Interval) => loop_n @ i = loop_n @ i, loop_n, loop_n) := s;
 `);
   for (const name of ["Sq", "loop_n", "square"]) ok(get(name));
+});
+
+test("constructor types are beta-reduced before they are classified and admitted", async t => {
+  const { get } = await check(t, `${naturals}
+inductive C { b; l : typed(C, b) = b; }
+inductive Beta : U0 { mk(x : (fun (X : U0) => N)(Beta)); }
+def made : Beta := mk(zero);
+`);
+  // The ascription's identity redex would not be a constructor expression,
+  // and the redex that mentions Beta is data, of type N.
+  for (const name of ["C", "Beta", "made"]) ok(get(name));
+});
+
+test("binders written in a constructor's result are its arguments", async t => {
+  const { program, get } = await check(t, `${naturals}
+inductive M { z; s : M -> M; w : N -> M; }
+def one : M := s(z);
+def lifted : M := w(succ(zero));
+`);
+  for (const name of ["M", "one", "lifted"]) ok(get(name));
+  const shape = program.kernel.signature(program.kernel.signatures.get("main__M").index).constructors;
+  assert.deepEqual(shape.map(c => [c.data, c.positions]), [[0, 0], [0, 1], [1, 0]]);
+});
+
+test("a type former used as a value is a lambda over its universes and parameters", async t => {
+  const { get } = await check(t, `${naturals}${lists}
+inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }
+def former : forall U < UU0. next(U) := Pointed;
+def list_former : forall U < UU0. U -> U := List;
+def applied : List(U0, N) = list_former(U0, N) { rfl; }
+`);
+  for (const name of ["former", "list_former", "applied"]) ok(get(name));
+});
+
+test("without an expected type, a constructor's instance is read from a position argument", async t => {
+  const { get } = await check(t, `${naturals}${lists}
+def prepend(xs : List(U0, N)) := cons(zero, xs);
+def still_needs := nil;
+`);
+  ok(get("prepend"));
+  assert.equal(get("prepend").type, "(List(N) → List(N))");
+  refused(get("still_needs"), /nil needs an expected type/);
 });
