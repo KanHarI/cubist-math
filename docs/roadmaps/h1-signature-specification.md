@@ -93,8 +93,9 @@ A fourth review found two consistency defects, now fixed:
 
 ## Decisions
 
-The user decided these open questions on 2026-09-27. Section 11 records
-each as decided.
+The user decided every open question on 2026-09-27, and section 11
+records each as decided. Q8, Q15 and Q16 were decided as below; Q1–Q7,
+Q9–Q14 and Q17 were accepted as recommended.
 
 - **Q16: finite levels only.** The conservative first release. Instances
   read and carry finite levels. The native sum, W and pushout instructions
@@ -119,8 +120,8 @@ each as decided.
 ## 0. Relation to the adopted design and to G0
 
 The design fixes one signature format for H1–H4. For H1 this document makes
-seven choices precise. Each is an open question in section 11 with a
-recommendation.
+seven choices precise. Each is a question in section 11, decided as
+recommended.
 
 | Design statement | H1 as specified here | Why |
 | --- | --- | --- |
@@ -1820,7 +1821,10 @@ support module where it computes:
 
 ## 11. Open questions
 
-| Question | Recommendation |
+Every question below was decided on 2026-09-27: Q8, Q15 and Q16 as the
+Decisions section records, and the others as recommended.
+
+| Question | Decision |
 | --- | --- |
 | Q1. Formal composition for data sorts | None |
 | Q2. Heterogeneous formal composition along parameter lines | No; Coquand–Huber–Mörtberg's split |
@@ -1843,7 +1847,7 @@ support module where it computes:
 **Q1. Formal composition for data sorts.** The design gives every sort one
 formal composition that pushes through constructors when it can. A formal
 element that also pushes is not confluent with its eliminator, and whether
-it pushes changes under substitution (4.3, D2). *Recommended:* data sorts
+it pushes changes under substitution (4.3, D2). *Decided, as recommended:* data sorts
 have no formal composition; composition pushes through equal heads and is
 otherwise neutral, exactly as `Nat`, sums and W types compute today, which
 keeps K2.4's comparison exact.
@@ -1851,7 +1855,7 @@ keeps K2.4's comparison exact.
 **Q2. Heterogeneous formal composition along parameters.** The design's
 `fcomp` runs along a line of parameters and indices. With parameters only,
 the eliminator's motive is over the sort at fixed parameters, so an `fcomp`
-joining two parameter values could not be eliminated. *Recommended:* H1 uses
+joining two parameter values could not be eliminated. *Decided, as recommended:* H1 uses
 formal `hcomp` at fixed parameters and computes transport, as
 Coquand–Huber–Mörtberg and the kernel's pushouts do. The heterogeneous form
 returns in H2 along index lines, where the motive ranges over indices.
@@ -1859,26 +1863,26 @@ returns in H2 along index lines, where the motive ranges over indices.
 **Q3. What boundaries may contain.** The design allows formal compositions
 in boundaries. No H1 example needs them. With constructor expressions only,
 clause types follow by substitution (Lemma H1), and the correction walls of
-3.5 need no composition in the boundary. *Recommended:* constructor
+3.5 need no composition in the boundary. *Decided, as recommended:* constructor
 expressions only; revisit with a concrete use.
 
 **Q4. Partial boundaries.** A boundary on some faces only, such as
 `c(i) [i = 0 ↦ a]`, would need cubical extension types in the kernel, which
-it lacks. *Recommended:* cube boundaries only. Every example of 1.8 has one.
+it lacks. *Decided, as recommended:* cube boundaries only. Every example of 1.8 has one.
 
 **Q5. How constructors take dimensions.** The alternative is a node carrying
-`d` interval formulas, as `PushPath` carries one. *Recommended:* path-valued
+`d` interval formulas, as `PushPath` carries one. *Decided, as recommended:* path-valued
 constructors. Boundary reduction is then the existing path step, overlap
 agreement is typing, and the driver reuses its path handling.
 
 **Q6. The eliminator's form.** Native `NatRec` is saturated with its value;
-`PushElim` is a function. *Recommended:* a function node carrying the motive
+`PushElim` is a function. *Decided, as recommended:* a function node carrying the motive
 and every clause, applied by `Apply`, with `Iota` on the saturated form. A
 level-quantified constant cannot serve, because the motive's universe must
 range over UU tiers too (2.4).
 
 **Q7. Who computes the sort's level.** The kernel cannot infer principal
-levels, so it cannot check a maximum. *Recommended:* the former's type
+levels, so it cannot check a maximum. *Decided, as recommended:* the former's type
 declares `ℓ`; the kernel checks that every constructor type lives in `U(ℓ)`,
 which bounds every data type and arity. The user may write it in the
 header (9); otherwise the elaborator declares the least level. The
@@ -1911,30 +1915,30 @@ G0 Q1's rule stays unchanged for generic definitions and assumptions.
 
 **Q9. Cube and infinitary positions.** The `set` squash needs path
 positions, and W-like constructors in higher sorts need infinitary ones.
-*Recommended:* admit both (D4, D5).
+*Decided, as recommended:* admit both (D4, D5).
 
 **Q10. Are signatures generative.** Two textually identical declarations
-could be one type or two. *Recommended:* generative: each admission is a new
+could be one type or two. *Decided, as recommended:* generative: each admission is a new
 sort, as each definition is a new constant. Identification is a theorem.
 
 **Q11. `Unit` and `Void`.** They are not in K2.4's oracle list.
-*Recommended:* keep them native. Declaring them for comparison is allowed,
+*Decided, as recommended:* keep them native. Declaring them for comparison is allowed,
 and retiring them is a later, separate decision.
 
 **Q12. Resizing.** The first draft proposed raising universes for the tower
 and the unions. Review showed the tower's remedy cannot close: quantifying
 over `A → U1` puts membership in `U2`. The union of independent sets has
 the same shape. The measured roots now have the seven remedy groups of 8.4,
-none a resizing assumption. *Recommended:* no resizing assumption in the
+none a resizing assumption. *Decided, as recommended:* no resizing assumption in the
 rebuilt foundation. Apply 8.4 when those areas are rebuilt. `PropResizing`
 stays unused unless a rebuilt result proves to need it.
 
 **Q13. Where the experimental gate lives.** In the elaborator only, or in the
-kernel too. *Recommended:* in the kernel, so no client can admit a signature
+kernel too. *Decided, as recommended:* in the kernel, so no client can admit a signature
 by accident before review.
 
 **Q14. Specialised reduction after retirement.** Generic reduction may be
-slower than the hand-coded rules (design open question 4). *Recommended:*
+slower than the hand-coded rules (design open question 4). *Decided, as recommended:*
 decide from X5's measurements; specialised paths, if any, must be observably
 identical to the generic rules and tested against them.
 
@@ -1974,7 +1978,7 @@ conservative first release.
 **Q17. Declarations that assert a large proposition is small.** Groups 4
 and 5 of 8.4 state that the union of a large family, or the impredicatively
 defined tower, is small. No universe choice makes that true predicatively.
-*Recommended:* for the tower, the predicative construction: an indexed
+*Decided, as recommended:* for the tower, the predicative construction: an indexed
 inductive family at H2, with the two declarations waiting for it. For the
 unions, an explicit smallness hypothesis, discharged from `LEM` by the one
 consumer that already uses it. The alternative for both, proving the

@@ -186,11 +186,11 @@ has an explicit spelling.
 
 | ID | Package | Depends on | Size |
 | --- | --- | --- | --- |
-| K2.1 | Precise H1 signature fragment and soundness note; review gates release. Drafted in the [H1 specification](h1-signature-specification.md), awaiting review | G0 specification | L |
+| K2.1 | Precise H1 signature fragment and soundness note; review gates release. Drafted in the [H1 specification](h1-signature-specification.md); every question decided on 2026-09-27; awaiting approval, which opens K2.2 behind the experimental gate. Default admission and release wait for the open proofs D1, D4, D5 and Lemma H2 | G0 specification | L |
 | K2.2 | H1 instructions: signature admission, constructors, composition, eliminators and steps | K1.2, K2.1 | XL |
 | K2.3 | H1 driver, bridges, signature serialization and generated-rule derivation | K1.3, K2.2 | L |
 | K2.4 | Differential fixtures for native and declared Nat/sum/W/pushout; then retirement | K2.3; explicit representation/comparison contract | M |
-| K2.5 | G2 truncation/resizing policy and migration ledger. Policy and measured ledger drafted in the [H1 specification](h1-signature-specification.md#8-k25-truncation-and-resizing-g2), awaiting review | K2.1; implementation with K2.3/L2.1 | M |
+| K2.5 | G2 truncation/resizing policy and migration ledger. Policy and measured ledger in the [H1 specification](h1-signature-specification.md#8-k25-truncation-and-resizing-g2); no resizing assumption (Q12) and the 8.4 remedy groups (Q17) decided on 2026-09-27; awaiting approval | K2.1; implementation with K2.3/L2.1 | M |
 | L2.1 | One-sort `inductive` declarations and signature diagnostics | K2.3 | L |
 | L2.2a | Explicit `match`, motives, structural recursion and path clauses | L2.1, L1.2; relevant L1.2r metadata; L4.1a improves the release without gating it | L |
 | L2.2b | Automatic clauses and explicit `obligations` | L2.2a, L2.5b; checked h-level evidence | M |
