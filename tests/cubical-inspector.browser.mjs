@@ -161,16 +161,16 @@ try {
   assert.match(groupType, /GroupIso/);
   assert.doesNotMatch(groupType, /G\d|H\d/);
   await page.locator("#toggle-kernel-body").click();
-  const derived = page.locator('#kernel-expression [data-name="ua[U1]"]');
-  await derived.click(); await inspected("ua[U1]");
+  const derived = page.locator('#kernel-expression [data-name="ua"]').first();
+  await derived.click(); await inspected("ua");
   assert.match(await page.locator("#inspect-description").textContent(), /introduces no axiom/);
 
   await openProof("field_logic", "FieldExists");
   assert.match(await page.locator("#kernel-expression").textContent(), /‖/);
   await page.locator("#kernel-truncation-sugar").uncheck();
   assert.match(await page.locator("#kernel-expression").textContent(), /Truncate/);
-  await page.locator('#kernel-expression [data-name="Truncate(U1)"]').click();
-  await inspected("Truncate(U1)");
+  await page.locator('#kernel-expression [data-name="Truncate"]').first().click();
+  await inspected("Truncate");
 
   await openProof("cubical_paths", "reverse_twice");
   await page.locator('.source-line').filter({ hasText: "fun (i : Interval) => p @ flip(i)" }).locator('[data-name="p"]').click();
@@ -279,10 +279,10 @@ try {
   assert.match(await page.locator("#editor").inputValue(),/simp only \[nat_add_zero\];/);
   assert.equal(await page.locator("#diagnostic").isVisible(),false);
   if(!await page.locator("#editor").isVisible()) await page.locator("#edit-mode").click();
-  await page.locator("#editor").fill(`def generic_calc(U : Universe, x : Nat) : x = x {
+  await page.locator("#editor").fill(`def generic_calc(U < UU0, x : Nat) : x = x {
       calc { x = x by refl(x); }
     }
-    def generic_simp(U : Universe, f : Nat -> Nat, n : Nat, h : f(n) = n) : f(n) = n {
+    def generic_simp(U < UU0, f : Nat -> Nat, n : Nat, h : f(n) = n) : f(n) = n {
       simp [h];
     }`);
   await page.locator("#check").click(); await idle();
@@ -291,25 +291,25 @@ try {
   await page.locator('#read-source button[data-name="by"]').click(); await inspected("calc step 1");
   await page.locator('#read-source button[data-name="simp"]').click(); await inspected("simp");
   assert.equal(await page.locator("#rewrite-trace button").count(),1);
-  assert.equal(await page.locator("#freeze-simp").isVisible(),false);
-  const templateTransfer=await page.evaluate(async()=>{
+  // One check covers every level, so a generic proof is offered the edit too.
+  assert.equal(await page.locator("#freeze-simp").isVisible(),true);
+  const genericTransfer=await page.evaluate(async()=>{
     const [{default:createCubical},{CubicalProgram},{saveWorkbenchTransfer}]=await Promise.all([
       import("/dist/cubical.mjs"),import("/cubical-program.mjs"),import("/workbench-transfer.mjs")]);
     const source=`import primes;
-      def generic(U : Universe, n : Nat) : n + 0 = n {
+      def generic(U < UU0, n : Nat) : n + 0 = n {
         calc { n + 0 = n by nat_add_zero(n); }
       }`;
     const program=new CubicalProgram(await createCubical(),async name=>
       (await fetch(`/archive/first-library/${name}.cubist`)).text());
     try {
-      await program.check(source,"browser_template_calc");
-      program.inspect("browser_template_calc__generic",{universes:[0]});
+      const result=await program.check(source,"browser_generic_calc");
       const offset=source.indexOf("by nat_add_zero");
-      const binding=`browser_template_calc__generic__inspect_U0__local_${offset}_calculation_step_1`;
-      return saveWorkbenchTransfer(program.export(binding));
+      const step=result.links.find(link=>link.start===offset&&link.role==="calculation step");
+      return saveWorkbenchTransfer(program.export(step.binding));
     } finally {program.dispose();}
   });
-  await page.goto(`http://127.0.0.1:${port}/workbench.html?transfer=${templateTransfer}`);
+  await page.goto(`http://127.0.0.1:${port}/workbench.html?transfer=${genericTransfer}`);
   await page.waitForFunction(()=>document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
   assert.equal(await page.locator("#name").textContent(),"calc step 1");
   assert.match(await page.locator("#type").textContent(),/=/);
@@ -332,5 +332,5 @@ try {
   assert.equal(await page.locator("#check").isDisabled(),true);
   assert.ok((await page.locator("#expression").textContent()).length>0);
   assert.deepEqual(errors, []);
-  console.log("PASS cubical inspector: folding, navigation, simp trace/freeze, template transfer, bounded raw syntax, and workbench editing");
+  console.log("PASS cubical inspector: folding, navigation, simp trace/freeze, generic transfer, bounded raw syntax, and workbench editing");
 } finally { await browser?.close(); server.kill(); }

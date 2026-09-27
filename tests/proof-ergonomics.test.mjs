@@ -33,54 +33,30 @@ test("short arithmetic, cubical and dependent examples elaborate to native axiom
   }
 });
 
-test("generic proof tactics link their checked specialization witnesses from source",async t=>{
-  const source=`def generic_calc(U : Universe, x : Nat) : x = x { calc { x = x by refl(x); } }
-    def generic_rw(U : Universe, x, y : Nat, p : x = y) : x = y { rw [p]; }
-    def generic_simp(U : Universe, f : Nat -> Nat, n : Nat, h : f(n) = n) : f(n) = n { simp [h]; }`;
+test("generic proof tactics link their checked witnesses from source",async t=>{
+  const source=`def generic_calc(U < UU0, x : Nat) : x = x { calc { x = x by refl(x); } }
+    def generic_rw(U < UU0, x, y : Nat, p : x = y) : x = y { rw [p]; }
+    def generic_simp(U < UU0, f : Nat -> Nat, n : Nat, h : f(n) = n) : f(n) = n { simp [h]; }`;
   const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import.");});
   t.after(()=>program.dispose());
   const result=await program.check(source,"generic_tactic_links");
-  assert.ok(result.outputs.every(output=>output.template));
+  assert.ok(result.outputs.every(output=>output.verified),JSON.stringify(result.gaps));
   for(const [keyword,role] of [["calc","calculation witness"],["rw","rewrite witness"],
     ["simp","simplification witness"],["by","calculation step"]]) {
     const offset=source.indexOf(`${keyword} `,source.indexOf("{"));
     const link=result.links.find(item=>item.start===offset&&item.role===role);
     assert.ok(link,`${keyword} source link`);
-    const view=program.inspect(link.binding,{universes:[1]});
+    const view=program.inspect(link.binding);
     assert.equal(view.type.tag,"Path",keyword);
-    assert.deepEqual(view.templateInspection.universes,[1]);
-    if(keyword==="by") assert.deepEqual(view.templateInspection.expansion,
-      {role:"calculation step",index:1});
     if(keyword==="simp") {
+      // One check covers every level, so a generic proof is offered the same
+      // edit as a concrete one.
+      assert.equal(link.freeze?.text,"simp only [h];");
       const witness=view.symbols[view.name];
       assert.match(witness.description,/Checked simplification/);
-      assert.equal(witness.freeze,null);
-      assert.equal(witness.rewriteSteps.length,1);
-      assert.equal(program.inspect(witness.rewriteSteps[0].binding).type.tag,"Path");
+      assert.equal(link.rewriteSteps.length,1);
+      assert.equal(program.inspect(link.rewriteSteps[0].binding).type.tag,"Path");
     }
-  }
-});
-
-test("a template simplification cannot freeze rules needed at another universe",async t=>{
-  const source=`def level_sensitive(U : Universe, f : U2 -> Nat,
-    h0 : f(U0) = 0, h1 : f(U1) = 0) : f(U) = 0 { simp [h0, h1]; }
-    def at_zero(f : U2 -> Nat, h0 : f(U0) = 0, h1 : f(U1) = 0) : f(U0) = 0 {
-      exact level_sensitive(U0, f, h0, h1);
-    }
-    def at_one(f : U2 -> Nat, h0 : f(U0) = 0, h1 : f(U1) = 0) : f(U1) = 0 {
-      exact level_sensitive(U1, f, h0, h1);
-    }`;
-  const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import.");});
-  t.after(()=>program.dispose());
-  const result=await program.check(source,"template_freeze_levels");
-  assert.deepEqual(result.outputs.map(output=>output.verified),[false,true,true]);
-  const link=result.links.find(item=>item.role==="simplification witness");
-  assert.ok(link);
-  for(const level of [0,1]) {
-    const view=program.inspect(link.binding,{universes:[level]});
-    assert.equal(view.type.tag,"Path");
-    assert.equal(view.symbols[view.name].freeze,null);
-    assert.equal(view.symbols[view.name].rewriteSteps.length,1);
   }
 });
 
@@ -192,7 +168,7 @@ test("incomplete grouped binders and introductions fail without hanging the pars
       {encoding:"utf8",timeout:budget(1000)});
     assert.equal(child.error,undefined,source);
     assert.notEqual(child.status,0,source);
-    assert.match(child.stderr,/Expected (a name\.|[':;]+, found 'EOF'\.)/,source);
+    assert.match(child.stderr,/Expected (a name\.|[':;]+(?: or '<')?, found 'EOF')/,source);
   }
 });
 
@@ -523,10 +499,10 @@ test("a quantified rule with an incompatible parameter type leaves later rules a
   assert.ok(result.outputs.every(output=>output.axioms.length===0));
 });
 
-test("universe templates retain their defining simplification sets during use and inspection",async t=>{
+test("generic definitions keep their defining simplification sets when used",async t=>{
   const modules={rules:`import primes;
     simp_set units := [nat_add_zero];
-    def generic(U : Universe, n : Nat) : n + 0 = n { simp only [units]; }
+    def generic(U < UU0, n : Nat) : n + 0 = n { simp only [units]; }
   `};
   const program=new CubicalProgram(await createCubical(),
     module=>modules[module]??readLibrary(module));
@@ -534,14 +510,14 @@ test("universe templates retain their defining simplification sets during use an
   const result=await program.check(`import rules;
     simp_set units := [];
     def use(n : Nat) : n + 0 = n { exact generic(U0,n); }
-  `,"template_rule_scope");
+  `,"generic_rule_scope");
   assert.equal(result.complete,true,JSON.stringify(result.gaps));
   assert.deepEqual(result.outputs[0].axioms,[]);
-  assert.equal(program.inspect("rules__generic",{universes:[0]}).type.tag,"Pi");
+  assert.equal(program.inspect("rules__generic").type.tag,"LPi");
 });
 
-test("imported template failures select the caller and name the definition site",async t=>{
-  const library=`// ${".".repeat(200)}\ndef broken__rule(U : Universe, n : Nat) : n = n {\n simp only [0];\n}`;
+test("an imported generic definition that fails is reported in its own module",async t=>{
+  const library=`// ${".".repeat(200)}\ndef broken__rule(U < UU0, n : Nat) : n = n {\n simp only [0];\n}`;
   const source="import rules;\ndef use := broken__rule(U0, 0);\ndef good := 0;";
   const program=new CubicalProgram(await createCubical(),name=>{
     if(name==="rules")return library;
@@ -550,12 +526,11 @@ test("imported template failures select the caller and name the definition site"
   t.after(()=>program.dispose());
   const result=await program.check(source,"client");
   assert.deepEqual(result.outputs.map(output=>output.verified),[false,true]);
-  const failed=result.outputs[0];
-  assert.equal(failed.errorStart,source.indexOf("broken__rule"));
-  assert.equal(failed.errorEnd,source.indexOf("broken__rule")+"broken__rule".length);
-  assert.match(failed.reason,/In template rules\.broken__rule: .* at 3:13/);
-  assert.ok(failed.errorEnd<=source.length);
-  assert.equal(result.gaps[0].start,failed.errorStart);
+  assert.match(result.outputs[0].reason,/Untranslated dependency: broken__rule/);
+  const [broken]=result.gaps;
+  assert.deepEqual([broken.module,broken.name],["rules","broken__rule"]);
+  assert.match(broken.reason,/at 3:13$/);
+  assert.equal(library.slice(broken.start,broken.end),"0");
 });
 
 test("freeze is withheld when removing a rule changes conditional premise search",async t=>{
@@ -738,41 +713,42 @@ test("a multi-binder fun source link inspects the complete closed function",asyn
   }
 });
 
-test("grouped universe parameters specialize like separate universe binders",async t=>{
+test("grouped universe binders elaborate like separate ones",async t=>{
   const program=new CubicalProgram(await createCubical(),readLibrary);
   t.after(()=>program.dispose());
   const result=await program.check(`
-    def separate(U : Universe, V : Universe, A : U, B : V, x : A, y : B) := x;
-    def grouped(U, V : Universe, A : U, B : V, x : A, y : B) := x;
+    def separate(U < UU0, V < UU0, A : U, B : V, x : A, y : B) := x;
+    def grouped(U, V < UU0, A : U, B : V, x : A, y : B) := x;
     def use_separate := separate(U0, U1, Nat, U0, 0, Nat);
     def use_grouped := grouped(U0, U1, Nat, U0, 0, Nat);
   `,"grouped_universes");
   assert.equal(result.complete,true,JSON.stringify(result.gaps));
-  assert.deepEqual(result.outputs.map(item=>item.template),[true,true,false,false]);
-  assert.deepEqual(result.outputs.slice(2).map(item=>item.verified),[true,true]);
-  assert.equal(program.inspect("grouped_universes__grouped",{universes:[0,1]}).type.tag,"Pi");
+  assert.ok(result.outputs.every(item=>item.verified));
+  const [separate,grouped]=["separate","grouped"].map(name=>program.inspect(`grouped_universes__${name}`).typeText);
+  assert.equal(grouped,separate);
+  assert.match(grouped,/^Π \(U < ω\), Π \(V < ω\), /);
 });
 
-test("consecutive mixed universe groups specialize and inspect every parameter",async t=>{
+test("consecutive mixed universe groups bind and inspect every parameter",async t=>{
   const program=new CubicalProgram(await createCubical(),readLibrary);
   t.after(()=>program.dispose());
   const source=`
-    def mixed(U : Universe, V, W : Universe, A : U, B : V, x : A, y : B) := x;
-    def multiple(U, V : Universe, W, X : Universe, A : U, B : W, x : A, y : B) := x;
+    def mixed(U < UU0, V, W < UU0, A : U, B : V, x : A, y : B) := x;
+    def multiple(U, V < UU0, W, X < UU0, A : U, B : W, x : A, y : B) := x;
     def use_mixed := mixed(U0, U0, U0, Nat, Nat, 0, 0);
     def use_multiple := multiple(U0, U0, U0, U0, Nat, Nat, 0, 0);
   `;
   const result=await program.check(source,"mixed_universes");
   assert.equal(result.complete,true,JSON.stringify(result.gaps));
-  assert.deepEqual(result.outputs.slice(0,2).map(item=>item.templateParameters),
-    [["U","V","W"],["U","V","W","X"]]);
-  assert.deepEqual(result.outputs.slice(2).map(item=>item.verified),[true,true]);
-  assert.equal(program.inspect("mixed_universes__mixed",{universes:[0,1,2]}).type.tag,"Pi");
-  assert.equal(program.inspect("mixed_universes__multiple",{universes:[0,1,2,3]}).type.tag,"Pi");
-  const binder=result.links.find(item=>item.role==="template reference"
-    &&item.start===source.indexOf("V, W : Universe"));
+  assert.ok(result.outputs.every(item=>item.verified));
+  const levels=type=>{let n=0; while(type.tag==="LPi"){n++;type=type.body;} return n;};
+  assert.equal(levels(program.inspect("mixed_universes__mixed").type),3);
+  assert.equal(levels(program.inspect("mixed_universes__multiple").type),4);
+  const binder=result.links.find(item=>item.start===source.indexOf("V, W < UU0"));
   assert.ok(binder);
-  assert.equal(program.inspect(binder.binding,{universes:[0,1,2]}).expression.level,1);
+  const view=program.inspect(binder.binding);
+  assert.equal(view.expression.tag,"U");
+  assert.equal(view.context.find(entry=>entry.name===view.expression.level.name).label,"V");
 });
 
 test("rw skips an unsupported left occurrence to reach an eligible right one",async t=>{
@@ -788,53 +764,50 @@ test("rw skips an unsupported left occurrence to reach an eligible right one",as
   assert.ok(result.outputs.every(item=>item.verified&&item.axioms.length===0));
 });
 
-test("template inspection keeps calc endpoints separate from step witnesses",async t=>{
+test("generic calc endpoints stay separate from step witnesses",async t=>{
   const program=new CubicalProgram(await createCubical(),readLibrary);
   t.after(()=>program.dispose());
   const source=`import primes;
-    def generic(U : Universe, n : Nat) : n + 0 = n {
+    def generic(U < UU0, n : Nat) : n + 0 = n {
       calc { n + 0 = n by nat_add_zero(n); }
     }`;
-  const result=await program.check(source,"template_calc");
+  const result=await program.check(source,"generic_calc");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
   const offset=source.indexOf("n + 0 = n by");
-  const link=result.links.find(item=>item.role==="template reference"&&item.start===offset);
-  assert.ok(link);
-  assert.equal(program.inspect(link.binding).type.tag,"Nat");
+  const endpoint=result.links.find(item=>item.start===offset&&item.name==="n");
+  assert.ok(endpoint);
+  assert.equal(program.inspect(endpoint.binding).type.tag,"Nat");
   // The step's checked path belongs to its `by` keyword, not its left endpoint.
   const byOffset=source.indexOf("by nat_add_zero");
-  const step=`template_calc__generic__inspect_U0__local_${byOffset}_calculation_step_1`;
-  const stepView=program.inspect(step);
+  const step=result.links.find(item=>item.start===byOffset&&item.role==="calculation step");
+  assert.ok(step);
+  const stepView=program.inspect(step.binding);
   assert.equal(stepView.type.tag,"Path");
-  const symbol=program.localSymbols[step];
-  assert.deepEqual(symbol.templateExpansion,{role:"calculation step",index:1});
-  assert.equal(program.inspect(symbol.templateBinding,{universes:symbol.universes,
-    offset:symbol.templateOffset,expansion:symbol.templateExpansion}).type.tag,"Path");
-  const payload=program.export(step);
-  assert.deepEqual(payload.templateInspection.expansion,{role:"calculation step",index:1});
+  const payload=program.export(step.binding);
   const replay=new CubicalProgram(await createCubical(),name=>payload.sources[name]);
   t.after(()=>replay.dispose());
   await replay.check(payload.source,payload.main);
-  const restored=replay.inspect(payload.templateInspection.binding,payload.templateInspection);
-  assert.equal(restored.name,step);
+  const restored=replay.inspect(payload.binding);
+  assert.equal(restored.name,step.binding);
   assert.deepEqual(restored.type,stepView.type);
 });
 
-test("template references include ext and simplified hypothesis binders and uses",async t=>{
+test("generic proofs link ext and simplified hypothesis binders and uses",async t=>{
   const program=new CubicalProgram(await createCubical(),readLibrary);
   t.after(()=>program.dispose());
   const source=`
-    def ext_case(U : Universe, f : Nat -> Nat) : f = f {
+    def ext_case(U < UU0, f : Nat -> Nat) : f = f {
       ext x; exact refl(f(x));
     }
-    def simp_case(U : Universe, x : Nat, h : x = x) : x = x {
+    def simp_case(U < UU0, x : Nat, h : x = x) : x = x {
       simp only [] at h as h2; exact h2;
     }
   `;
-  const result=await program.check(source,"template_proof_locals");
+  const result=await program.check(source,"generic_proof_locals");
   assert.equal(result.complete,true,JSON.stringify(result.gaps));
   for(const [snippet,name] of [["ext x","x"],["as h2","h2"],["exact h2","h2"]]) {
     const offset=source.indexOf(snippet)+snippet.lastIndexOf(name);
-    const link=result.links.find(item=>item.role==="template reference"&&item.start===offset);
+    const link=result.links.find(item=>item.name===name&&item.start===offset);
     assert.ok(link,`Missing source link for ${snippet}`);
     const view=program.inspect(link.binding);
     assert.equal(view.symbols[view.name].name,name);
@@ -843,22 +816,22 @@ test("template references include ext and simplified hypothesis binders and uses
     const replay=new CubicalProgram(await createCubical(),module=>payload.sources[module]);
     t.after(()=>replay.dispose());
     await replay.check(payload.source,payload.main);
-    assert.deepEqual(replay.inspect(payload.templateInspection.binding,payload.templateInspection).type,view.type);
+    assert.deepEqual(replay.inspect(payload.binding).type,view.type);
   }
 });
 
-test("normal program checking rolls back a failed universe specialization",async t=>{
+test("a failed use of a generic definition leaves the definition and later uses intact",async t=>{
   const program=new CubicalProgram(await createCubical(),readLibrary);
   t.after(()=>program.dispose());
   const result=await program.check(`
-    def identity(U : Universe, A : U, x : A) := x;
+    def identity(U < UU0, A : U, x : A) := x;
     def before := identity(U0, Nat, 0);
     def failed : 0 = 1 { exact identity(U1, U0, Nat); }
     def after := identity(U0, Nat, 1);
   `,"transaction");
-  assert.deepEqual(result.outputs.map(d=>d.verified),[false,true,false,true]);
-  assert.ok(program.kernel.definitions.has("transaction__identity__U0"));
-  assert.equal(program.kernel.definitions.has("transaction__identity__U1"),false);
+  assert.deepEqual(result.outputs.map(d=>d.verified),[true,true,false,true]);
+  assert.ok(program.kernel.definitions.has("transaction__identity"));
+  assert.equal(program.kernel.definitions.has("transaction__failed"),false);
 });
 
 test("a late declaration observer error rolls back its native definition",async t=>{
@@ -1253,7 +1226,7 @@ test("each calc by keyword links to its checked step in an ordinary declaration"
   }
 });
 
-test("concrete declarations and templates link tactics from the parser's keyword sites",async t=>{
+test("concrete and universe-generic declarations link tactics from the parser's keyword sites",async t=>{
   const declarations=parameters=>`
     def calc_site(${parameters}x, y : Nat, p : x = y) : x = y { calc { x = y by p; } }
     def rw_site(${parameters}x, y : Nat, p : x = y) : x = y { rw [p]; }
@@ -1273,7 +1246,7 @@ test("concrete declarations and templates link tactics from the parser's keyword
   };
   const concrete=await sites(declarations(""),"concrete_sites");
   assert.deepEqual(concrete.map(site=>site[0]),["calc","calc step 1","rw","simp"]);
-  assert.deepEqual(await sites(declarations("U : Universe, "),"template_sites"),concrete);
+  assert.deepEqual(await sites(declarations("U < UU0, "),"generic_sites"),concrete);
 });
 
 test("a parenthesized binder links from its keyword like an unparenthesized one",async t=>{

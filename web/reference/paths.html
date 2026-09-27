@@ -187,7 +187,7 @@ def respects(A : U0, C : A -&gt; U0, f : forall a : A. C(a), x, y : A, p : x = y
 }</code></pre>
             <pre><code data-check="reject">def not_a_universe(A : U0, x, y : A, p : x = y,
     C : forall b : A. (x = b) -&gt; U0, c : C(x, refl(x))) : C(y, p) {
-  // Error: Based induction needs concrete universes.
+  // Error: Based induction needs universes.
   exact based_induction(Nat, U0, A, x, C, c, y, p);
 }</code></pre>
           </section>

@@ -23,3 +23,11 @@ test("statement fragments retain explicit equality and skip comments without hid
   assert.equal(text(statement.conclusion), "x =[A] x");
   assert.equal(sourceStatement("def a := 0;", parse("def a := 0;").declarations[0]), null);
 });
+
+test("a universe parameter's bound is summarized like a parameter's type", () => {
+  const source = "def id(U < UU0, A : U, a : A) : A := a;";
+  const statement = sourceStatement(source, parse(source).declarations[0]);
+  assert.deepEqual(statement.parameters.map(p => `${text(p.name)} ${p.relation} ${text(p.type)}`),
+    ["U < UU0", "A : U", "a : A"]);
+  assert.equal(text(statement.conclusion), "A");
+});

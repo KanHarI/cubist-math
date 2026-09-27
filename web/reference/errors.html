@@ -50,6 +50,7 @@
             <li><a href="#name-errors">Names and declarations</a></li>
             <li><a href="#type-errors">Types and terms</a></li>
             <li><a href="#block-errors">Proof blocks</a></li>
+            <li><a href="#universe-errors">Universes</a></li>
             <li><a href="#path-errors">Equality and paths</a></li>
             <li><a href="#rewriting-errors">Equational reasoning and simplification</a></li>
             <li><a href="#cubical-errors">Cubical paths</a></li>
@@ -72,7 +73,7 @@
                 <tr><td data-message="Imports must come before declarations.">“Imports must come before declarations.”</td><td>Move every <code>import</code> to the start of the file.</td><td><a href="first-proof.html#files">files</a></td></tr>
                 <tr><td data-message="Unexpected character">“Unexpected character <var>c</var>”</td><td>Source is ASCII. Write <code>-></code>, <code>forall</code> and <code>exists</code> instead of symbols.</td><td><a href="first-proof.html#names">names</a></td></tr>
                 <tr><td data-message="Expected a name.">“Expected a name.”</td><td>A name cannot start with a digit.</td><td><a href="first-proof.html#names">names</a></td></tr>
-                <tr><td data-message="Expected ':', found">“Expected ':', found <var>token</var>”</td><td>Every parameter needs a type, after a colon.</td><td><a href="first-proof.html#parameters">parameters</a></td></tr>
+                <tr><td data-message="Expected ':' or '&lt;', found">“Expected ':' or '&lt;', found <var>token</var>”</td><td>Every parameter needs a type, after a colon, or, for a universe variable, a bound after <code>&lt;</code>.</td><td><a href="first-proof.html#parameters">parameters</a></td></tr>
                 <tr><td data-message="Write := to give a value">“Write := to give a value: …”</td><td>A binding (<code>def</code>, <code>have</code>, <code>let</code>, <code>obtain</code>, <code>simp_set</code>) gives its value with <code>:=</code>; <code>=</code> is the equality type. The message shows the form to use.</td><td><a href="first-proof.html#declarations">declarations</a></td></tr>
                 <tr><td data-message="Expected ';', found">“Expected ';', found <var>token</var>”</td><td>A missing semicolon, reported at the next token.</td><td><a href="first-proof.html#declarations">declarations</a></td></tr>
                 <tr><td data-message="Separate names with commas">“Separate names with commas: (n, m : Nat)”</td><td>Names that share a type are separated by commas, in parameters, <code>fun</code> binders and after <code>forall</code> or <code>exists</code>.</td><td><a href="types.html#tour-parameters">several parameters</a></td></tr>
@@ -132,6 +133,19 @@
               </tbody>
             </table></div>
           </section>
+          <section id="universe-errors">
+            <h2>Universes</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr><td data-message="Universe was removed: bind a universe variable as U &lt; UU0.">“Universe was removed: bind a universe variable as U &lt; UU0.”</td><td>Write <code>U &lt; UU0</code> where the source had <code>U : Universe</code>.</td><td><a href="universes.html#universe-variables">universe variables</a></td></tr>
+                <tr><td data-message="A universe variable's bound must be UU0, as in U &lt; UU0.">“A universe variable's bound must be UU0, as in U &lt; UU0.”</td><td>Only <code>UU0</code> bounds a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
+                <tr><td data-message="A universe argument must lie below UU0">“A universe argument must lie below UU0: …”</td><td>A generic declaration was used at <code>UU0</code> or above. Use <code>U0</code>, <code>U1</code>, … or a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
+                <tr><td data-message="Expected a universe:">“Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).”</td><td>A type or a term stands where a universe is required, such as <code>next(Nat)</code>.</td><td><a href="universes.html#universe-expressions">next and max</a></td></tr>
+                <tr><td data-message="is a universe constant; choose another name.">“<var>name</var> is a universe constant; choose another name.”</td><td>Names such as <code>U1</code> and <code>UU2</code> are universes.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
+              </tbody>
+            </table></div>
+          </section>
           <section id="path-errors">
             <h2>Equality and paths</h2>
             <div class="table-scroll"><table>
@@ -142,7 +156,7 @@
                 <tr><td data-message="Transport endpoints do not match.">“Transport endpoints do not match.”</td><td>The stated endpoints must be the path’s, in order. Transport backwards along <code>sym(p)</code>.</td><td><a href="paths.html#transport">transport</a></td></tr>
                 <tr><td data-message="transport requires a path.">“transport requires a path.”</td><td>The fourth argument must be a path.</td><td><a href="paths.html#transport">transport</a></td></tr>
                 <tr><td data-message="Path induction endpoints/carrier do not match.">“Path induction endpoints/carrier do not match.”</td><td>The type and endpoints passed to <code>path_induction</code> must be the path’s.</td><td><a href="paths.html#path-induction">path induction</a></td></tr>
-                <tr><td data-message="Based induction needs concrete universes.">“Based induction needs concrete universes.”</td><td>The first two arguments of <code>based_induction</code> are universes.</td><td><a href="paths.html#path-induction">path induction</a></td></tr>
+                <tr><td data-message="Based induction needs universes.">“Based induction needs universes.”</td><td>The first two arguments of <code>based_induction</code> are universes.</td><td><a href="paths.html#path-induction">path induction</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -191,7 +205,8 @@
               <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
                 <tr><td data-message="No checked definition to unfold:">“No checked definition to unfold: <var>name</var>”</td><td>Hints name top-level checked definitions only.</td><td><a href="conversion.html#unfolding-hints">unfolding hints</a></td></tr>
-                <tr><td data-message="Logical assumptions require a concrete universe and an explicit native context.">“Logical assumptions require a concrete universe and an explicit native context.”</td><td>A library assumption was used without its universe argument. Write <code>Truncate(U0, A)</code>.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
+                <tr><td data-message="Logical assumptions require a universe and an explicit native context.">“Logical assumptions require a universe and an explicit native context.”</td><td>A library assumption was used without its universe argument. Write <code>Truncate(U0, A)</code>.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
+                <tr><td data-message="holds only for universes below UU0.">“<var>name</var> holds only for universes below UU0.”</td><td>A library assumption was used at <code>UU0</code> or above. It is generic over the universes below <code>UU0</code> only.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
                 <tr><td data-message="Too many arguments to">“Too many arguments to <var>name</var>.”</td><td>A library assumption got more arguments than its type allows.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
                 <tr><td data-message="This computable declaration depends on non-computing assumptions:">“This computable declaration depends on non-computing assumptions: …”</td><td>The declaration uses an assumption, directly or through a definition. The message names the chain. Replace that step, or drop <code>computable</code>.</td><td><a href="assumptions.html#computable">computable</a></td></tr>
                 <tr><td data-message="The evaluated term depends on non-computing assumptions:">“The evaluated term depends on non-computing assumptions: …”</td><td><code>evaluate</code> accepts only terms that use no assumption.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>

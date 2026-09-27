@@ -338,14 +338,17 @@ test("Glue: univalence derives, and so does a Glue term over its Glue type", asy
       stack.push(...judgement.premises);
     }
   };
-  for (const name of ["builtin__ua__U0", "builtin__UnivalenceBeta__U0"]) {
+  for (const name of ["builtin__ua", "builtin__UnivalenceBeta"]) {
     const { value, type } = kernel.definition(kernel.definitions.get(name));
     derive(value, type);
   }
   for (const rule of ["glueBase", "gluePiece", "glueOverlap", "glue", "unglue"]) assert.ok(rules.has(rule), rule);
   // λA B e (a : A). <i> glue(e(a), [i = 0 ↦ a, i = 1 ↦ e(a)]) : ua's line,
-  // built on the Glue type in ua's body; the term checker accepts it first.
-  let body = kernel.definition(kernel.definitions.get("builtin__ua__U0")).value;
+  // built on the Glue type in the body of the generic ua instantiated at U0
+  // (level β); the term checker, which knows closed levels only, accepts it
+  // first.
+  const generic = kernel.definition(kernel.definitions.get("builtin__ua")).value;
+  let body = kernel.head(kernel.term("LApp", 0, generic, kernel.term("LConst", 0)));
   const binders = [];
   while (kernel.node(body).kind === "Lam") { binders.push(kernel.node(body)); body = kernel.node(body).children[1]; }
   const line = kernel.node(body), glue = line.children[1];

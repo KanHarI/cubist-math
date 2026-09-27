@@ -36,10 +36,12 @@ const readLibrary = name => readFile(new URL(`../library/${name}.cubist`, import
 const squash = text => text.replace(/\s+/g, " ").trim();
 
 async function check(text, name) {
-  const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
+  const program = new CubicalProgram(await createCubical(), readLibrary);
   try {
     const result = await program.check(text, name);
-    const failures = result.outputs.filter(output => !output.verified && !output.template)
+    // The page's worker posts the whole result, goal displays included.
+    structuredClone(result);
+    const failures = result.outputs.filter(output => !output.verified)
       .map(output => `${output.name}: ${output.reason}`);
     const gaps = program.gaps.map(gap => `${gap.module ?? "?"}${gap.name ? `.${gap.name}` : ""}: ${gap.reason}`);
     return { failures: [...failures, ...gaps] };

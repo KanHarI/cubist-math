@@ -103,7 +103,9 @@ export class InstructionDriver {
     if (!this.contextScopes.has(key)) {
       const scope = new Map([[LIVE, dimensions]]);
       for (const [symbol, assumption] of context)
-        scope.set(symbol, this.bind(symbol, this.asType(this.derive(assumption, scope))));
+        // A universe variable (G0) is a level entry, typed by its bound.
+        scope.set(symbol, this.node(assumption).kind === "LBound" ? this.graph.levelEntry(symbol)
+          : this.bind(symbol, this.asType(this.derive(assumption, scope))));
       this.contextScopes.set(key, scope);
     }
     return this.contextScopes.get(key);

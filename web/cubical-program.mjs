@@ -2,11 +2,9 @@ import { sourceStatement } from "./cubical-statement.mjs";
 import { CubicalKernel } from "./cubical-kernel.mjs";
 import { NativeCubicalElaborator } from "./cubical-elaborator.mjs";
 import { Translator } from "./dist/cubical-runtime/translate.mjs";
-import { Scope } from "./dist/cubical-runtime/elaboration.mjs";
 import {emptySimpRegistry,mergeSimpRegistries} from "./dist/cubical-runtime/simp-registry.mjs";
 import { parse } from "./mathscript/parser.mjs";
 import { leadingDocumentation } from "./mathscript/documentation.mjs";
-import { tacticSite, calcStepSite } from "./mathscript/link-sites.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
 import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notation.mjs";
 import { checkReduction, simplifyTypeApplications } from "./cubical-reduction.mjs";
@@ -31,8 +29,6 @@ export class CubicalProgram {
     this.modules = new Map(); this.symbols = {}; this.views = new Map();
     this.sourceAsts = new Map();
     this.simpRegistries = new Map();
-    this.templates = new Map();
-    this.templateSelections = new Map();
     this.gaps = []; this.evaluations = []; this.links = []; this.sources = {}; this.completed = 0;
     // Proof statements of each checked module, with their goals (see steps()).
     this.moduleSteps = new Map();
@@ -44,7 +40,6 @@ export class CubicalProgram {
       binding, name: this.checker.assumptionLabels.get(binding) ?? binding, kind: "axiom", role: "explicit axiom",
       verified: true, type: cubicalText(type, this.symbols), axioms: [binding],
       description: "An explicit logical assumption from the library. Its full signature is shown in the Axioms section.",
-      specialization: this.checker.assumptionOrigins.get(binding),
     }]));
   }
   async check(source, main = "current", onProgress = () => {}) {
@@ -139,9 +134,9 @@ export class CubicalProgram {
             this.declarationReferences.set(`${name}__${result.name}`, references);
             for (const item of pending) {
               if (!Number.isInteger(item.node.start)) continue;
-              let head = item.term; while (head.tag === "App") head = head.fn;
+              let head = item.term; while (head.tag === "App" || head.tag === "LApp") head = head.fn;
               const source = item.aliases?.find(alias => alias.name === item.node.name && alias.term === item.term);
-              const definition = head.tag === "DefRef" && !source && !item.node.schemaBinding && !item.node.expressionSite;
+              const definition = head.tag === "DefRef" && !source && !item.node.expressionSite;
               const binding = definition ? head.name : `${name}__local_${item.node.start}${
                 expansionSuffix(item.node.role,item.node.expansionIndex)}`;
               references.push({ start: item.node.start, binding });
@@ -149,8 +144,6 @@ export class CubicalProgram {
               if (!definition) this.localSymbols[binding] = { binding, name: item.node.name,
                 role: item.node.role ?? (item.term.tag === "Var" ? "Local assumption" : "Local definition"), verified: true,
                 expansion: item.node.expansion, description: item.node.description,
-                schemaBinding: item.node.schemaBinding,
-                universes: item.node.universes,
                 definitionStart: source?.start ?? item.node.start,
                 ...(name === main ? {} : { sourceModule: name, sourceName: declaration.name.text }) };
               if (name === main) {
@@ -185,85 +178,20 @@ export class CubicalProgram {
       for (const d of result.declarations) {
         const syntax = byName.get(d.name), binding = `${name}__${d.name}`;
         const verified = d.status === "checked-native-cubical";
-        const template = !!d.template, reason = verified ? d.reason : failure(d.reason);
-        const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified, template,
+        const reason = verified ? d.reason : failure(d.reason);
+        const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified,
           status: d.status, reason, errorStart: d.errorStart, errorEnd: d.errorEnd,
           rewriteWork: d.rewriteWork,
           unfoldingHints: d.native?.unfoldingHints ?? [], axioms: d.native?.axioms ?? [], start: syntax.start, end: syntax.end,
           definitionStart: syntax.start, description: leadingDocumentation(text, syntax.start)?.text ?? "",
           ...(name === main ? {} : { sourceModule: name, sourceName: d.name }),
+          // A universe variable's source name stands for U(x): it names x.
           type: verified ? cubicalText(d.type, { ...this.symbols, ...Object.fromEntries(
-            (this.declarationBindings.get(binding) ?? []).filter(item => item.term.tag === "Var")
-              .map(item => [item.term.name, { name: item.node.name }])) }) : reason };
+            (this.declarationBindings.get(binding) ?? []).map(item => [item.term.tag === "Var" ? item.term.name
+              : item.term.tag === "U" && item.term.level?.tag === "Var" ? item.term.level.name : null, { name: item.node.name }])
+              .filter(([variable]) => variable)) }) : reason };
         this.symbols[binding] = info;
-        if (template) {
-          const schema = result.env.get(d.name);
-          schema.parameterSite = syntax.value?.kind === "lambda" ? syntax.value.name
-            : syntax.value?.kind === "binderGroup" ? syntax.value.names[0]
-            : syntax.params[0].name;
-          this.templates.set(binding, schema);
-          info.templateParameters = [schema.parameter];
-          let body = schema.body;
-          while (body?.kind === "lambda" && body.domain?.kind === "name" && body.domain.name === "Universe") {
-            info.templateParameters.push(body.name.text); body = body.body;
-          }
-          if (name === main && this.collectReferences) {
-            const nodes = [], binders = new Set(info.templateParameters);
-            const visit = node => {
-              if (!node || typeof node !== "object") return;
-              // The elaborator's tactic sites (link-sites.mjs). Expression
-              // sites are not listed: some operators and binders, such as a
-              // face formula's `and`, are never elaborated as terms.
-              const tactic = tacticSite(node);
-              if (tactic) {
-                nodes.push(tactic);
-                if (node.kind === "calc") node.steps.forEach((step,index) => {
-                  const site = calcStepSite(step,index);
-                  nodes.push({...site,expansion:{role:site.role,index:site.expansionIndex}});
-                });
-              }
-              if (["let", "obtain"].includes(node.kind)) {
-                const bind = pattern => {
-                  if (!pattern || typeof pattern !== "object") return;
-                  if (pattern.kind === "name") binders.add(pattern.name);
-                  Object.values(pattern).forEach(bind);
-                };
-                bind(node.target);
-              }
-              if (node.kind === "name") nodes.push(node);
-              if (node.kind === "binderGroup") for (const name of node.names) {
-                binders.add(name.text);
-                nodes.push({ ...name, name: name.text });
-              }
-              // Proof tactics bind names outside the ordinary lambda/name fields.
-              for (const name of [node.kind === "ext" ? node.variable : null,
-                node.kind === "simpOnly" ? node.as : null]) if (name?.text) {
-                binders.add(name.text);
-                nodes.push({ ...name, name: name.text });
-              }
-              if (node.name?.text && node !== syntax) {
-                binders.add(node.name.text);
-                nodes.push({ ...node.name, name: node.name.text });
-              }
-              Object.values(node).forEach(visit);
-            };
-            visit(syntax.value ?? syntax);
-            const seen = new Set();
-            for (const node of nodes) {
-              if (!Number.isInteger(node.start) || seen.has(node.start) ||
-                !(node.role || schema.env.has(node.name) || binders.has(node.name))) continue;
-              seen.add(node.start);
-              const reference = `${binding}__reference_${node.start}`;
-              this.templateSelections.set(reference, { binding, offset: node.start,
-                expansion:node.expansion });
-              this.links.push({ name: node.name, binding: reference, start: node.start, end: node.end,
-                role: node.role ?? "template reference", templateBinding: binding,
-                templateOffset: node.start, ...(node.expansion ? {templateExpansion:node.expansion} : {}),
-                templateParameters: info.templateParameters, definitionStart: node.start });
-            }
-          }
-        }
-        if (!verified && !template) this.gaps.push({ module: name, name: d.name,
+        if (!verified) this.gaps.push({ module: name, name: d.name,
           reason, start: d.errorStart, end: d.errorEnd });
         if (name === main) this.links.push({ ...info, start: syntax.name.start, end: syntax.name.end });
       }
@@ -272,21 +200,6 @@ export class CubicalProgram {
       return result.env;
     };
     await load(main, source);
-    for (const info of Object.values(this.localSymbols)) {
-      const schema = this.symbols[info.schemaBinding];
-      if (!schema) continue;
-      info.definitionStart = schema.definitionStart;
-      info.sourceName = schema.name;
-      info.sourceModule = schema.sourceModule;
-      info.templateBinding = info.schemaBinding;
-      info.templateParameters = schema.templateParameters;
-      for (const link of this.links) if (link.binding === info.binding) Object.assign(link, {
-        sourceName: info.sourceName, sourceModule: info.sourceModule,
-        definitionStart: info.definitionStart, description: info.description,
-        templateBinding: info.templateBinding, templateParameters: info.templateParameters,
-        universes: info.universes,
-      });
-    }
     const all = Object.values(this.symbols), outputs = all.filter(d => !d.sourceModule);
     this.main = main;
     // Goals are shown on demand; posting the result to the page reads them.
@@ -297,7 +210,7 @@ export class CubicalProgram {
       imports: all.filter(d => d.sourceModule), symbols: [...all, ...Object.values(this.assumptionSymbols())], assumptionLabels: Object.fromEntries(this.checker.assumptionLabels), declarations: outputs, links: this.links,
       declarationCount: total, instructionCount: this.checker.steps, axiomCount: new Set(outputs.flatMap(d => d.axioms)).size, gaps: this.gaps,
       evaluations: this.evaluations,
-      complete: outputs.length > 0 && outputs.every(d => d.verified || d.template)
+      complete: outputs.length > 0 && outputs.every(d => d.verified)
         && !this.gaps.some(gap=>gap.directive), sources: this.sources };
   }
   // Each proof statement of a module: where it is, the goal it faced, with the
@@ -342,112 +255,17 @@ export class CubicalProgram {
     }
   }
   generatedSymbols() {
-    const specializations = new Map();
-    for (const key of this.checker.schemaSpecializations.keys()) {
-      const match = key.match(/^(.*)__((?:U\d+)(?:_U\d+)*)$/), schema = match && this.symbols[match[1]];
-      if (schema?.template) specializations.set(key, {
-        name: `${schema.name}_${match[2]}`,
-        role: "universe specialization", templateBinding: schema.binding,
-        templateParameters: schema.templateParameters, universes: match[2].split("_").map(level => Number(level.slice(1))),
-        sourceModule: schema.sourceModule, sourceName: schema.name, definitionStart: schema.definitionStart,
-      });
-    }
     return Object.fromEntries([...this.kernel.definitions.keys()].filter(binding => !this.symbols[binding]).map(binding => [binding, {
-      binding, name: binding.replace(/^builtin__(.*?)__(U\d+)$/, "$1[$2]"),
+      binding, name: binding.replace(/^builtin__/, ""),
       role: "Derived kernel definition", verified: true,
       description: "An ordinary definition checked by cubical C. Its body is available below; it introduces no axiom.",
-      ...specializations.get(binding),
     }]));
   }
-  inspect(binding, { normalize = false, universes, offset, expansion } = {}) {
+  inspect(binding, { normalize = false } = {}) {
     // An inspection elaborates outside any declaration's transaction: its
     // instructions start from a driver of their own.
     this.kernel.instructionDriver = null;
-    if (this.templateSelections.has(binding)) {
-      const selection = this.templateSelections.get(binding);
-      return this.inspect(selection.binding, { normalize, universes, offset: selection.offset,
-        expansion:selection.expansion });
-    }
     const info = this.symbols[binding], local = this.views.get(binding);
-    if (info?.template) {
-      const parameters = info.templateParameters;
-      const levels = universes ?? parameters.map(() => 0);
-      if (!Array.isArray(levels) || levels.length !== parameters.length ||
-        !levels.every(level => Number.isInteger(level) && level >= 0 && level <= 3))
-        throw new Error("Select U0, U1, U2, or U3 for each universe parameter.");
-      const instance = `${binding}__inspect_${levels.map(level => `U${level}`).join("_")}`;
-      if (!this.views.has(instance)) {
-        const references = [];
-        const schema = this.templates.get(binding);
-        // A template edit is never offered (see freeze:null below), so skip
-        // the simplification replays that would compute one.
-        const translator = new Translator({ normalize: false, checker: this.checker,
-          simpRegistry:schema.simpRegistry,moduleName:schema.moduleName,freezeSuggestions:false,
-          onReference: (node, term, context, dimensions, aliases) => references.push({ node, term, context, dimensions, aliases }) });
-        const scope = new Map(schema.env);
-        scope.set(schema.parameter, { tag: "U", level: levels[0] });
-        references.push({ node: { ...schema.parameterSite, name: schema.parameter, role: "universe argument" },
-          term: { tag: "U", level: levels[0] }, context: new Map(), dimensions: new Map(), aliases: [] });
-        let body = schema.body;
-        for (let i = 1; i < levels.length; i++) {
-          references.push({ node: { ...body.name, name: body.name.text, role: "universe argument" },
-            term: { tag: "U", level: levels[i] }, context: new Map(), dimensions: new Map(), aliases: [] });
-          scope.set(body.name.text, { tag: "U", level: levels[i] }); body = body.body;
-        }
-        const unit = translator.unit({ source: this.sources[info.sourceModule ?? this.main] });
-        const term = translator.term(body, new Scope(unit, new Map(), scope), null);
-        // Inspection must check even a specialization never used by a proof.
-        this.checker.infer(term);
-        this.declarationBindings.set(instance, references.filter(item => item.node.isBinding));
-        this.views.set(instance, { term, context: new Map(), dimensions: new Map(), aliases: [], referencePrefix: instance,
-          module: info.sourceModule ?? this.main, templateInspection: { binding, universes: [...levels] } });
-        this.localSymbols[instance] = { binding: instance, name: `${info.name}_${levels.map(level => `U${level}`).join("_")}`,
-          role: "universe specialization", verified: true, sourceModule: info.sourceModule,
-          sourceName: info.name, definitionStart: info.definitionStart,
-          templateBinding: binding, templateParameters: parameters, universes: [...levels] };
-        for (const item of references) {
-          if (!Number.isInteger(item.node.start)) continue;
-          const name = `${instance}__local_${item.node.start}${expansionSuffix(item.node.role,item.node.expansionIndex)}`;
-          const expansion=item.node.expansionIndex
-            ? {role:item.node.role,index:item.node.expansionIndex} : undefined;
-          this.views.set(name, { ...item, module: info.sourceModule ?? this.main, referencePrefix: instance,
-            templateInspection: { binding, universes: [...levels], offset: item.node.start,
-              ...(expansion ? { expansion } : {}) } });
-          const target = this.symbols[item.node.schemaBinding] ?? (item.term.tag === "DefRef" ? this.symbols[item.term.name] : null);
-          this.localSymbols[name] = { binding: name, name: item.node.name,
-            role: item.node.role ?? (item.term.tag === "Var" ? "Local assumption" : "Local definition"), verified: true,
-            // A template edit changes every universe specialization. Its
-            // witness here was checked only at the selected level, so it
-            // cannot certify a source-wide simplification edit.
-            description:item.node.description,freeze:null,
-            traceParent:item.node.traceParent,
-            sourceModule: target?.sourceModule ?? info.sourceModule, sourceName: target?.name ?? info.name,
-            definitionStart: target?.definitionStart ?? item.node.start,
-            templateBinding: binding, templateParameters: parameters, universes: [...levels],
-            templateOffset: item.node.start, ...(expansion ? {templateExpansion:expansion} : {}) };
-        }
-        for (const item of references) if (item.node.role === "simplification witness") {
-          const witness = this.localSymbols[`${instance}__local_${item.node.start}`];
-          witness.rewriteSteps = references.filter(step => step.node.role === "simplification step"
-            && step.node.traceParent === item.node.start).map(step => {
-            const symbol = this.localSymbols[`${instance}__local_${step.node.start}${
-              expansionSuffix(step.node.role,step.node.expansionIndex)}`];
-            return {name:symbol.name,binding:symbol.binding,role:symbol.role,
-              description:symbol.description,start:step.node.start,end:step.node.end,
-              templateBinding:binding,templateParameters:parameters,universes:[...levels],
-              templateOffset:step.node.start,templateExpansion:symbol.templateExpansion};
-          });
-        }
-      }
-      if (expansion && (!Number.isInteger(offset) || typeof expansion.role !== "string"
-        || !Number.isSafeInteger(expansion.index) || expansion.index < 1))
-        throw new Error("Invalid template expansion selection.");
-      const selected = offset === undefined ? instance
-        : `${instance}__local_${offset}${expansionSuffix(expansion?.role,expansion?.index)}`;
-      if (offset !== undefined && !this.views.has(selected))
-        throw new Error("No checked term is available for this position in the selected specialization.");
-      return this.inspect(selected, { normalize });
-    }
     if (info && !info.verified) throw new Error(info.reason);
     let term, expected = null, context = [], dimensions = new Map(), unfoldingHints = [];
     if (local) { term = local.term; context = [...local.context]; dimensions = local.dimensions; unfoldingHints = local.unfoldingHints ?? []; }
@@ -467,44 +285,21 @@ export class CubicalProgram {
     const aliases = (local?.aliases ?? []).map(alias => ({ ...alias, binding: `${local.referencePrefix ?? local.module}__local_${alias.start}` }));
     const symbols = { ...this.symbols, ...this.localSymbols, ...this.generatedSymbols(), ...this.assumptionSymbols() };
     const variableNames = Object.fromEntries([
-      ...[...(this.checker.schemaSourceNames.get(binding) ?? [])].map(([variable, name]) => ({ term: { tag: "Var", name: variable }, name })),
       ...bindings.map(item => ({ term: item.term, name: item.node.name, binding: `${local?.referencePrefix ?? info?.sourceModule ?? this.main}__local_${item.node.start}` })),
       ...aliases,
-    ].filter(alias => alias.term.tag === "Var").reverse().map(alias => [alias.term.name, { name: alias.name, binding: alias.binding }]));
+    // A universe variable's source name stands for the universe U(x), so it
+    // names the level variable x.
+    ].map(alias => ({ ...alias, variable: alias.term.tag === "Var" ? alias.term.name
+      : alias.term.tag === "U" && alias.term.level?.tag === "Var" ? alias.term.level.name : null }))
+      .filter(alias => alias.variable).reverse().map(alias => [alias.variable, { name: alias.name, binding: alias.binding }]));
     for (const [name, value] of Object.entries(variableNames)) symbols[name] = { ...value, local: true };
-    const view = { backend: "cubical", name: binding, templateInspection: local?.templateInspection,
+    const view = { backend: "cubical", name: binding,
       unfoldingHints, expression: checked.term, type: checked.type,
       expressionText: cubicalText(checked.term, this.symbols), typeText: cubicalText(checked.type, this.symbols),
       dimensions: [...dimensions], context: context.map(([name, type]) => ({ name,
         label: variableNames[name]?.name ?? this.checker.assumptionLabels.get(name) ?? name,
         binding: variableNames[name]?.binding ?? (this.checker.assumptions.has(name) ? name : null), type })), symbols,
       checkingSteps: checked.checkingSteps, reductionSteps: checked.reductionSteps, axioms: [...assumptions.keys()] };
-    // Origin is explanatory metadata, kept separate from checked term syntax.
-    // Record only literal calls in parsed source; these links do not claim to
-    // represent the kernel's dependency graph or every generic instantiation.
-    const origin = this.checker.assumptionOrigins.get(binding);
-    if (origin) {
-      const mentions = [];
-      for (const [module, source] of Object.entries(this.sources)) {
-        for (const declaration of this.sourceAsts.get(module).declarations) {
-          const seen = new WeakSet();
-          const visit = node => {
-            if (!node || typeof node !== "object" || seen.has(node)) return;
-            seen.add(node);
-            if (node.kind === "call" && node.fn?.kind === "name" && node.fn.name === origin.schema
-              && node.args.length && source.slice(node.args[0].start, node.args[0].end) === origin.universe) {
-              mentions.push({ module, declaration: declaration.name.text,
-                expression: source.slice(node.start, node.end),
-                universe: source.slice(node.args[0]?.start, node.args[0]?.end) });
-              return;
-            }
-            Object.values(node).forEach(visit);
-          };
-          visit(declaration);
-        }
-      }
-      view.specialization = { ...origin, binding, mentions };
-    }
     view.sourceBinding = aliases.find(alias => alias.term === local?.term)?.binding;
     const simplifiedType = simplifyTypeApplications(view.type);
     const presentation = simplifiedType === view.type ? view
@@ -521,8 +316,10 @@ export class CubicalProgram {
       if (!view.statement) {
         let conclusion = cubicalMathTree(view.folded.type, symbols), raw = view.folded.type;
         const parameters = [];
-        while (conclusion.kind === "Pi") {
-          parameters.push({ name: [{ text: conclusion.name, binding: symbols[raw.name]?.binding }], type: cubicalTextParts(conclusion.domain) });
+        while (conclusion.kind === "Pi" || conclusion.kind === "LevelPi") {
+          const level = conclusion.kind === "LevelPi";
+          parameters.push({ name: [{ text: conclusion.name, binding: symbols[raw.name]?.binding }], relation: level ? "<" : ":",
+            type: level ? [{ text: "UU0" }] : cubicalTextParts(conclusion.domain) });
           conclusion = conclusion.body;
           raw = raw.body;
         }
@@ -541,7 +338,6 @@ export class CubicalProgram {
     return { format: "thth-cubical", version: 1, main: this.main,
       source: this.metadata.source, sources: this.sources, binding, side,
       // Syntax is informational. Import must replay the supplied source first.
-      ...(view ? { expression: view.expression, type: view.type, context: view.context,
-        templateInspection: view.templateInspection } : {}) };
+      ...(view ? { expression: view.expression, type: view.type, context: view.context } : {}) };
   }
 }

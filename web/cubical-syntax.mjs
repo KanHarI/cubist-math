@@ -138,6 +138,8 @@ export class CubicalSyntax {
       // bound is always ω, LBound(1), in this version.
       case "LPi": case "LLam": result = node(k.symbol(term.name), k.term("LBound", 1), child(term.body)); break;
       case "LApp": result = node(0, child(term.fn), this.encodeLevel(term.level)); break;
+      // A universe variable's bound, as the type of its context entry.
+      case "LBound": result = node(term.tier ?? 1); break;
       default: throw new Error(`Unsupported cubical syntax: ${term.tag}`);
     }
     if (!this.encoded.has(term)) this.encoded.set(term, new Map());
@@ -210,6 +212,7 @@ export class CubicalSyntax {
       case "U": result.level = this.decodeLevel(c[0]); break;
       case "LPi": case "LLam": Object.assign(result, { name: this.kernel.symbolName(payload), body: child(1) }); break;
       case "LApp": Object.assign(result, { fn: child(0), level: this.decodeLevel(c[1]) }); break;
+      case "LBound": result.tier = payload; break;
       case "Var": result.name = this.kernel.symbolName(payload); break;
       case "Nat": case "Zero": case "Unit": case "Point": case "Void": break;
       case "Pi": case "Lam": case "Sigma": case "W":

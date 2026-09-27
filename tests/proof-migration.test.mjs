@@ -14,7 +14,7 @@ def evaluated(A : U0, x, y : A, p : x = y) := at(p, 0);
 def two : 1 + 1 = 2 {
   exact refl(2);
 }
-def mirror(U : Universe, A : U, x, y : A, p : x = y) : y = x {
+def mirror(U < UU0, A : U, x, y : A, p : x = y) : y = x {
   exact path(fun (i : Interval) => A, fun (i : Interval) => at(p, flip(i)));
 }
 `;
@@ -50,8 +50,8 @@ test("syntax that elaborates to the same terms verifies as identical", async () 
   const report = await verify(original.replace("exact transport(C, 0 + 0, 0, p, v);", "exact along C by p from v;")
     .replace("at(p, 0)", "p @ 0").replace("at(p, flip(i))", "p @ flip(i)"), "identical");
   assert.deepEqual(report.failures, []);
+  // mirror is universe-generic: one definition, compared like the others.
   assert.equal(report.identical, 4);
-  assert.equal(report.templates, 1);
 });
 
 test("a changed proof passes only the type level, and a changed statement fails", async () => {

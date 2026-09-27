@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 const labels = { checked: "1 · Checked within deadline", optimize: "2 · Needs optimization",
-  blocked: "3 · Blocked", failed: "4 · Needs fixing", template: "Universe template" };
+  blocked: "3 · Blocked", failed: "4 · Needs fixing" };
 let report, lastText, worker, localRun = false;
 function link(row) {
   const a = document.createElement("a");
@@ -13,7 +13,7 @@ function renderRows() {
   const rows = report.declarations.filter(row => (!category || row.category === category)
     && `${row.module}.${row.name} ${row.reason ?? ""} ${row.rootBlocker ?? ""}`.toLowerCase().includes(query));
   // Put actionable failures and timeouts first, then the slowest entries in each category.
-  const rank = { optimize: 0, failed: 1, blocked: 2, checked: 3, template: 4 };
+  const rank = { optimize: 0, failed: 1, blocked: 2, checked: 3 };
   rows.sort((a, b) => rank[a.category] - rank[b.category] || b.elapsedMs - a.elapsedMs);
   const fragment = document.createDocumentFragment();
   const bindings = new Map(report.declarations.map(row => [row.binding, row]));
@@ -41,7 +41,7 @@ function renderReport() {
     const counts = report.counts ?? Object.fromEntries(Object.keys(labels).map(c => [c, report.declarations.filter(d => d.category === c).length]));
     const total = report.total ?? report.declarations.length;
     $("status").textContent = `${report.complete ? "Completed" : "Running"} · ${new Date(report.generatedAt).toLocaleString()} · ${report.modules ?? "…"} modules · ${total} declarations${report.elapsedSeconds ? ` · ${report.elapsedSeconds}s elapsed` : ""}${report.revision ? ` · ${report.revision.slice(0, 8)}${report.dirty ? " + working changes" : ""}` : ""}`;
-    $("progress").max = Math.max(1, total - (counts.template ?? 0)); $("progress").value = counts.checked ?? 0;
+    $("progress").max = Math.max(1, total); $("progress").value = counts.checked ?? 0;
     $("counts").replaceChildren(...Object.entries(labels).map(([key, label]) => {
       const button = document.createElement("button"), number = document.createElement("strong");
       number.textContent = (counts[key] ?? 0).toLocaleString(); button.append(number, label);

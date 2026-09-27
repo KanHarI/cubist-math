@@ -7,8 +7,7 @@ export class CubicalDeclarationTransaction {
     this.sizes = new Map([
       [kernel.definitions,kernel.definitions.size],
       [checker.definitionViews,checker.definitionViews.size],
-      [checker.schemaSpecializations,checker.schemaSpecializations.size],
-      [checker.schemaSourceNames,checker.schemaSourceNames.size],
+      [checker.genericDefinitions,checker.genericDefinitions.size],
       [checker.scopeDefinitions,checker.scopeDefinitions.size],
       [checker.assumptions,checker.assumptions.size],
       [checker.assumptionLabels,checker.assumptionLabels.size],

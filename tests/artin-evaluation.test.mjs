@@ -32,7 +32,7 @@ test("evaluation vectors of distinct embeddings separate coefficients", async t 
     "artin_fixed_evaluation__finite_subgroup_evaluation_basis",
   ]) assert.equal(p.symbols[name]?.verified, true, name);
 
-  const allowed = ["LEM(U0)", "Truncate(U0)", "TruncateElim(U0)", "TruncateIntro(U0)", "TruncateProp(U0)"];
+  const allowed = ["LEM", "Truncate", "TruncateElim", "TruncateIntro", "TruncateProp"];
   for (const name of [
     "artin_evaluation_matrix__embedding_evaluation_rank_step",
     "artin_evaluation_basis__distinct_embeddings_evaluation_basis",

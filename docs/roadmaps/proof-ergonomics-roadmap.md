@@ -66,8 +66,8 @@ tuple patterns; and equality operations including `refl`, `sym`, `trans`,
 The [language reference](../../web/language.html) is the current syntax authority.
 There is bounded equality-premise simplification, but no general proposition
 premise solver, `apply`, or general implicit argument
-syntax. Universe parameters are explicitly specialized by the elaborator until
-the kernel's G0 makes universe-generic definitions checked kernel terms.
+syntax. Since G0, a universe variable `U < UU0` is a kernel binder: a generic
+definition is one checked kernel term, and universe arguments are explicit.
 
 The checker already computes and unfolds definitions on demand, and
 `with unfolding [names] { expression }` supplies a selective conversion
@@ -211,7 +211,7 @@ dependencies. Univalence and truncation rules must likewise retain their
 dependency reports. A simplifier must not silently add classical choice,
 excluded middle, or new axioms to an otherwise constructive proof.
 
-Cache keys must account for the local context, universe specialization, live
+Cache keys must account for the local context, universe variables, live
 dimensions and faces, rule set, and unfolding policy. Cached results include
 their proof witnesses; never identify two witnesses solely because their
 endpoints match. Preserve native handle ownership and invalidate caches after
@@ -243,8 +243,8 @@ A box marked moved names the item's new owner.
   existing introductions, preserving an inspectable context at each binder.
 - [x] Add grouped typed binders, such as `(x, y : A)`, and multi-binder lambdas.
   Add expected-type lambda binders only where the expected function type gives
-  an unambiguous domain. Consecutive `Universe` parameters in declarations
-  also specialize correctly when grouped.
+  an unambiguous domain. Grouped universe variables, as in
+  `(U, V < UU0, A : U)`, bind like separate ones.
 - [x] Add `have h := term;` when its type can already be inferred, plus
   `have h : T := term;` as shorthand for an existing `have`/`exact` block.
   The distinct assignment token avoids ambiguity with equality inside `T`.
@@ -350,8 +350,8 @@ for this release.
   duplicate registration handling, priorities, and deterministic tie-breaking.
   Checked registrations and named sets now flow through imports, with sorted
   default rules and an error for ambiguous imported set names. A reviewed
-  library default set remains open and stays in this roadmap. Universe templates capture the rule environment
-  at their definition, including for later specialization and inspection.
+  library default set remains open and stays in this roadmap. A generic
+  declaration is elaborated once, in the rule environment of its definition.
 - [x] Add `simp;`, `simp [rules];`, local exclusions, and broader `simpa`
   modes backed by registered sets. These forms and explicit `without [rules]`
   exclusions work for homogeneous equality goals. For other type-valued goals,

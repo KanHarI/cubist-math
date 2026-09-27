@@ -9,7 +9,7 @@ def moved(x, y : Nat, p : x = y, q : y = x) : x = x {
   rw [p];
   exact q;
 }
-def mirror(U : Universe, A : U, x, y : A, p : x = y) : y = x {
+def mirror(U < UU0, A : U, x, y : A, p : x = y) : y = x {
   exact path(fun (i : Interval) => A, fun (i : Interval) => at(p, flip(i)));
 }
 def mirror_nat := mirror(U0, Nat);
@@ -17,15 +17,14 @@ def mirror_nat := mirror(U0, Nat);
 const fingerprint = source => elaborationFingerprint({ modules: ["fingerprint_fixture"],
   readSource: async name => { if (name !== "fingerprint_fixture") throw Error(`Unexpected import: ${name}`); return source; } });
 
-test("elaboration fingerprints are stable and record checked terms, inspector records and template links", async () => {
+test("elaboration fingerprints are stable and record checked terms and inspector records", async () => {
   const [first, second] = [await fingerprint(fixture), await fingerprint(fixture)];
   assert.deepEqual(compareFingerprints(first, second), []);
   assert.equal(first.declarations.fingerprint_fixture__two.status, "checked-native-cubical");
-  assert.match(first.declarations.fingerprint_fixture__mirror.reason, /^Universe schema/);
-  assert.ok(first.definitions.fingerprint_fixture__mirror__U0);
-  assert.ok(first.inspections.fingerprint_fixture__mirror.type);
+  // A universe-generic definition is one checked declaration (G0).
+  assert.equal(first.declarations.fingerprint_fixture__mirror.status, "checked-native-cubical");
+  assert.ok(first.declarations.fingerprint_fixture__mirror.term);
   assert.ok(Object.values(first.references).some(item => item.node.role === "rewrite witness"));
-  assert.ok(first.links.fingerprint_fixture.some(link => link.template === "mirror"));
 });
 
 test("elaboration fingerprints detect a changed proof term and a changed source site", async () => {

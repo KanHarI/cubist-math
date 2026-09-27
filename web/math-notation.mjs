@@ -23,8 +23,7 @@ export function independentBinderGroups(tree, enabled = true) {
 
 export function isTruncationApplication(node) {
   return node.kind === "Call" && node.fn.kind === "Name" && node.fn.axiomNotation === "truncation"
-    && ((node.fn.axiomParameter !== undefined && node.args.length === 2)
-      || (node.fn.truncationArgument === 0 && node.args.length === 1));
+    && node.fn.truncationArgument !== undefined && node.args.length === node.fn.truncationArgument + 1;
 }
 
 // Native MathML provides mathematical typesetting without a CDN, TeX input,
@@ -117,7 +116,7 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
     }
     if (node.kind === "Call") {
       if (truncationSugar && isTruncationApplication(node)) {
-        const formula = row(reference(operator("‖"), node.fn), visit(node.args[node.fn.truncationArgument ?? 1]), reference(operator("‖"), node.fn));
+        const formula = row(reference(operator("‖"), node.fn), visit(node.args[node.fn.truncationArgument]), reference(operator("‖"), node.fn));
         formula.dataset.truncationSugar = "true";
         return formula;
       }

@@ -92,7 +92,7 @@ export function judgementGraph(program, view, checked = null, { limit = 1500, ex
     terms.forEach((entry, index) => { if (!shownNames.has(entry)) shownNames.set(entry, shown.locals[index]?.name); });
     const names = judgement.context.map(entry => {
       const info = entries.get(entry), index = terms.indexOf(entry);
-      return info.dimension ? `${info.name} : 𝕀` : `${shown.locals[index]?.name ?? info.name} : ${shown.locals[index]?.type ?? "…"}`;
+      return info.dimension ? `${info.name} : 𝕀` : `${shown.locals[index]?.name ?? info.name} ${shown.locals[index]?.relation ?? ":"} ${shown.locals[index]?.type ?? "…"}`;
     });
     return { scope: `{${names.join(", ")}}`, entries: judgement.context.map((entry, index) => ({ entry, text: names[index] })),
       first: shown.goal, second: shown.built };
@@ -128,7 +128,7 @@ export function judgementGraph(program, view, checked = null, { limit = 1500, ex
     const shown = checker.displayGoal(scope, { tag: "Unit" }, null, 240, cubicalText, false);
     const locals = [...shown.locals];
     info.fragment = [...needed.map(item => item.dimension ? `${item.name} : 𝕀` : locals.shift()).map(local =>
-      typeof local === "string" ? local : `${local.name} : ${local.type}`), `${locals.at(-1)?.name ?? info.name} : ${locals.at(-1)?.type ?? "…"}`];
+      typeof local === "string" ? local : `${local.name} ${local.relation} ${local.type}`), `${locals.at(-1)?.name ?? info.name} ${locals.at(-1)?.relation ?? ":"} ${locals.at(-1)?.type ?? "…"}`];
     if (!shownNames.has(info.id)) shownNames.set(info.id, locals.at(-1)?.name);
   }
   for (const info of entries.values()) info.shown = info.dimension ? info.name : shownNames.get(info.id) ?? info.name;

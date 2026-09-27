@@ -72,7 +72,7 @@
               <li>A <code>simp</code> also shows its rewrite trace: each rule that fired, the checked path it produced, and any premise proofs found for conditional rules.</li>
               <li>A multi-binder <code>fun</code>, <code>forall</code> or <code>exists</code> opens the whole checked term. Names bound by <code>ext</code> or <code>simp … at h as h2</code> link to their types like any other local name.</li>
             </ul>
-            <p><strong>Replace with simp only</strong> turns a checked <code>simp</code>, <code>simpa</code> or <code>simp at</code> into a <code>simp only</code> list of the rules that actually fired, in their original order. Before offering it, the elaborator reruns the simplification with just those rules and requires the same remaining goal and an equivalent proof. After the edit, the source is checked again. The action is withheld when it cannot guarantee the same result: when a used imported rule has no name in scope, when a set name would shadow a rule name, when premise search would change, and for a universe template, because one level’s check does not cover the others.</p>
+            <p><strong>Replace with simp only</strong> turns a checked <code>simp</code>, <code>simpa</code> or <code>simp at</code> into a <code>simp only</code> list of the rules that actually fired, in their original order. Before offering it, the elaborator reruns the simplification with just those rules and requires the same remaining goal and an equivalent proof. After the edit, the source is checked again. The action is withheld when it cannot guarantee the same result: when a used imported rule has no name in scope, when a set name would shadow a rule name, and when premise search would change. A universe-generic declaration is offered it like any other: one check covers every universe.</p>
           </section>
           <section id="cli">
             <h2>The command-line checker</h2>
@@ -124,9 +124,9 @@ Assumptions: none
 6
 &gt; inspect recover
 sample__recover
-Assumptions: LEM(U0), Truncate(U0), TruncateElim(U0)
+Assumptions: LEM, Truncate, TruncateElim
 &gt; evaluate recover
-The evaluated term depends on non-computing assumptions: LEM(U0), Truncate(U0), TruncateElim(U0). Path to LEM(U0): recover (sample) → double_negation (classical) → LEM(U0).</code></pre>
+The evaluated term depends on non-computing assumptions: LEM, Truncate, TruncateElim. Path to LEM: recover (sample) → double_negation (classical) → LEM.</code></pre>
             <p>Lines starting with <code>&gt;</code> are typed commands; the other lines are output. The inspected name is shown with its module, as <code>sample__double</code>. Use that qualified form when a short name is ambiguous. <code>inspect</code> lists the assumptions a declaration uses, or <code>none</code>. <code>evaluate</code> follows the rules of the <a href="assumptions.html#evaluate">evaluate directive</a>: a term that uses an assumption is refused, with the path through which the first one enters.</p>
             <p><code>beta</code> and <code>delta</code> reduce the first applicable occurrence in the inspected expression, or in its type. The kernel checks the result. The workbench can choose a particular occurrence instead.</p>
             <pre><code data-check="cli" data-files="sample">$ node cli/repl.mjs

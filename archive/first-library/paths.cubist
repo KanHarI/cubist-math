@@ -1,24 +1,24 @@
 // Cubical path foundations. Reversal and function action are pointwise;
 // composition and its laws use checked square and cube fillings.
-def inverse(U : Universe, A : U, x, y : A, p : x = y) := sym(p);
+def inverse(U < UU0, A : U, x, y : A, p : x = y) := sym(p);
 
-def concatenate(U : Universe, A : U, x, y, z : A, p : x = y, q : y = z) := trans(p, q);
+def concatenate(U < UU0, A : U, x, y, z : A, p : x = y, q : y = z) := trans(p, q);
 
 // Applying a function to a path, defined by equality induction.
-def ap(U : Universe, A, B : U, f : A -> B, x, y : A, p : x = y) := cong(f, p);
+def ap(U < UU0, A, B : U, f : A -> B, x, y : A, p : x = y) := cong(f, p);
 
 // Half-adjoint equivalence: an inverse, two homotopies and their triangle law.
 // The triangle is essential for general types; inverse data alone is not IsEquiv.
-def IsEquiv(U : Universe, A, B : U, f : A -> B) :=
+def IsEquiv(U < UU0, A, B : U, f : A -> B) :=
   exists g : B -> A. exists eta : (forall x : A. g(f(x)) = x).
   exists epsilon : (forall y : B. f(g(y)) = y). forall x : A. cong(f, eta(x)) = epsilon(f(x));
 
-def Equiv(U : Universe, A, B : U) := exists f : A -> B. IsEquiv(U, A, B, f);
+def Equiv(U < UU0, A, B : U) := exists f : A -> B. IsEquiv(U, A, B, f);
 
 // For a set-valued codomain, equality proofs are unique, so the triangle law
 // follows from the supplied inverse homotopies. This is constructive at any U.
 def equiv_from_inverse_into_set(
-  U : Universe, A, B : U,
+  U < UU0, A, B : U,
   setB : (forall x : B. forall y : B. forall p : x = y. forall q : x = y. p = q), f : A -> B, g : B
   -> A, eta : (forall x : A. g(f(x)) = x), epsilon : (forall y : B. f(g(y)) = y)
 ) :
@@ -357,7 +357,7 @@ def transport_decoder(
 // Based path induction, with explicit universes for the carrier and motive.
 // This one principle covers both small and higher identity systems.
 def based_induction(
-  U, V : Universe, A : U, origin : A, C : (forall x : A. (origin = x) -> V),
+  U, V < UU0, A : U, origin : A, C : (forall x : A. (origin = x) -> V),
   c : C(origin, refl(origin)), x : A, p : origin = x
 ) :=
   path_induction(

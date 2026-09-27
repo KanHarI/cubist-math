@@ -42,7 +42,7 @@ export const builtinForms = new Set([
   "W", "sup", "wrec",
   "Interval", "path", "PathP", "at", "comp", "face", "flip", "meet", "join",
   "Pushout", "push_left", "push_right", "push_path", "pushout_induction",
-  "Nat", "Unit", "Void", "Universe", "tt", "succ", "refl", "absurd",
+  "Nat", "Unit", "Void", "next", "max", "tt", "succ", "refl", "absurd",
   "sym", "trans", "cong", "transport", "apd", "apd_path", "Eq", "typed",
   "induct", "unpack", "pair_induction", "unit_induction", "path_induction",
   "Choice", "LEM", "FunExt", "Truncate",
@@ -58,6 +58,6 @@ export const numeralExpansion = text => /^[0-9]+$/.test(text) && Number(text) >=
 // Keywords and language-provided forms share one palette; notation is a
 // macro, unless it stands for itself.
 export const tokenStyle = (text, expansion) =>
-  keywords.has(text) || builtinForms.has(text) || /^U[0-9]+$/.test(text) ? "keyword"
+  keywords.has(text) || builtinForms.has(text) || /^U+[0-9]+$/.test(text) ? "keyword"
     : expansion && expansion !== text ? "macro" : "";
 

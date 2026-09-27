@@ -25,7 +25,7 @@ test("finite families of distinct field embeddings and extension loops are linea
     "artin_loop_independence__distinct_extension_loops_independent",
   ]) assert.equal(p.symbols[name]?.verified, true, name);
 
-  const allowed = ["LEM(U0)", "Truncate(U0)", "TruncateElim(U0)"].sort();
+  const allowed = ["LEM", "Truncate", "TruncateElim"].sort();
   for (const name of [
     "artin_finite_relations__distinct_field_embeddings_independent",
     "artin_loop_independence__distinct_extension_loops_independent",

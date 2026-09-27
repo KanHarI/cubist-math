@@ -27,8 +27,8 @@ def ordinary(P : U0, prop : Proposition(P), nn : (P -> Void) -> Void) : P {
 }
 `, t);
   assert.equal(outcome.successor, true);
-  assert.match(outcome.uses_lem, /depends on non-computing assumptions: LEM\(U0\), Truncate\(U0\), TruncateElim\(U0\)/);
-  assert.match(outcome.uses_lem, /Path to LEM\(U0\): double_negation \(classical\) → LEM\(U0\)/);
+  assert.match(outcome.uses_lem, /depends on non-computing assumptions: LEM, Truncate, TruncateElim/);
+  assert.match(outcome.uses_lem, /Path to LEM: double_negation \(classical\) → LEM/);
   // A rejected declaration is not committed, so its dependents are blocked.
   assert.match(outcome.after_failure, /Untranslated dependency: uses_lem/);
   // Without the modifier the same proof is accepted, with its assumptions reported.
@@ -49,7 +49,7 @@ evaluate 2 + 2 expecting tt;
     [["at line 4", "4"], ["at line 6", "0b10001111"]]);
   assert.equal(gaps.length, 3);
   assert.match(gaps[0], /^evaluate at line 5: The term evaluates to 4, not 5\.$/);
-  assert.match(gaps[1], /^evaluate at line 7: The evaluated term depends on non-computing assumptions: .*LEM\(U0\)/);
+  assert.match(gaps[1], /^evaluate at line 7: The evaluated term depends on non-computing assumptions: .*LEM/);
   assert.match(gaps[2], /^evaluate at line 8: The evaluated term has type .*, but the expected value has type /);
   assert.equal(result.complete, false, "a failed evaluation makes the module incomplete");
 });

@@ -93,13 +93,14 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
 
 ## Items
 
-- [ ] **G0. Check universe-generic definitions once, over tiered universes.**
-  Today a declaration with a `U : Universe` parameter is a template. The
-  elaborator specializes it at each universe where it is used, and the kernel
-  checks only those copies. So a generic result is never itself a checked term,
-  and it is unchecked at every level no one has used yet. G0 makes universe
-  variables genuine kernel binders and checks each generic definition once, for
-  every level.
+- [x] **G0. Check universe-generic definitions once, over tiered universes.**
+  Done: the kernel in K1.2, the driver in K1.3 and K1.4, and the language in
+  L1.1. Before G0, a declaration with a `U : Universe` parameter was a
+  template. The elaborator specialized it at each universe where it was used,
+  and the kernel checked only those copies. So a generic result was never
+  itself a checked term, and it was unchecked at every level no one had used
+  yet. G0 makes universe variables genuine kernel binders and checks each
+  generic definition once, for every level.
   - **Specification.** [g0-universe-specification.md](g0-universe-specification.md) (K1.1, revised on 2026-09-25 for tiered universes): rules, consistency note, acceptance cases and open questions.
   - **Tiered universes.** Universes are indexed by ordinals below ω². The
     constants are `U0, U1, …` (level `n`), `UU0, UU1, …` (level `ω + n`),
@@ -191,7 +192,8 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
       directly in `test_instructions.c`, source cases through the driver.
     - Recheck the archived library's templates generically. Record each one
       that only checked at particular levels, rather than weakening the rules
-      to accept it.
+      to accept it. Result (L1.1): all 43 check generically, so the record is
+      empty.
 - [ ] **H. Inductive signatures: one mechanism for inductive, indexed, higher
   and inductive-inductive types.** The kernel checks a signature normal form
   and generates the rules. The
@@ -252,7 +254,7 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
 - [ ] **G2. Resizing policy, applied by H1.** The archived library's
   [assumption schema](../../web/cubical-assumptions.mjs) declares
   `Truncate : U_l -> U0`, which includes universe lowering. `Trunc` at H1 is
-  universe-preserving (`Trunc : ∀ U : Uω, U → U`) and provides no resizing.
+  universe-preserving (`Trunc(U < UU0, A : U) : U`) and provides no resizing.
   - The rebuilt library uses no resizing. Where the archive relied on it
     (`small_mere_eliminate`, large predicates, predicate-encoded quotients),
     the rebuild states results at the universe they need. Only if a result

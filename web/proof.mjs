@@ -1,5 +1,4 @@
 import { splitInspectionContext } from "./cubical-context.mjs";
-import { renderSpecialization } from "./cubical-specialization.mjs";
 import { cubicalSourceFile } from "./cubical-sources.mjs";
 import { proofChoices as choices, proofTopics, proofsInTopic } from "./proof-library.mjs";
 import { proofRequestWatchdog } from "./proof-watchdog.mjs";
@@ -401,7 +400,7 @@ function renderResult() {
   for (const output of last.outputs) {
     const line = document.createElement("div");
     line.append(
-      output.template ? "Universe template " : output.verified === false && last.backend === "cubical" ? "Not checked " : output.kind === "axiom" ? "Axiom " : last.mode !== "construction" || output.verified
+      output.verified === false && last.backend === "cubical" ? "Not checked " : output.kind === "axiom" ? "Axiom " : last.mode !== "construction" || output.verified
         ? "Verified "
         : "Checked ",
     );
@@ -546,7 +545,6 @@ function renderWitnessDetails(info) {
   };
 }
 async function inspect(info, remember = true) {
-  const previousUniverses = selected?.universes;
   if (remember && selected) {
     history.push(selected);
     if (history.length > 60) history.shift();
@@ -565,26 +563,6 @@ async function inspect(info, remember = true) {
   $("inspect-parameters-list").replaceChildren();
   renderType(info.kind === "goal" ? info.step.goal : (info.type ?? ""));
   renderWitnessDetails(info);
-  const templateBinding = info.template ? info.binding : info.templateBinding;
-  const universeControls = $("inspect-universes");
-  universeControls.replaceChildren(); universeControls.hidden = !templateBinding;
-  if (templateBinding) {
-    const parameters = info.templateParameters ?? ["U"];
-    info.universes ??= parameters.map((_, index) => previousUniverses?.[index] ?? 0);
-    for (const [index, parameter] of parameters.entries()) {
-      const label = document.createElement("label"), select = document.createElement("select");
-      label.textContent = `Universe ${parameter} `;
-      select.setAttribute("aria-label", `Universe ${parameter}`);
-      for (let level = 0; level <= 3; level++) select.add(new Option(`U${level}`, String(level)));
-      select.value = String(info.universes[index]);
-      select.onchange = () => {
-        const universes = [...info.universes]; universes[index] = Number(select.value);
-        inspect({ ...info, universes }, false);
-      };
-      label.append(select); universeControls.append(label);
-    }
-    $("inspect-description").textContent = `Inspecting ${info.name} at ${info.universes.map(level => `U${level}`).join(", ")}. This specialization is checked by cubical C; the generic definition remains a template.`;
-  }
   sourceLink(info);
   $("inspect-axioms").replaceChildren();
   $("locals").replaceChildren();
@@ -627,37 +605,22 @@ async function inspect(info, remember = true) {
       button.className = "local";
       button.append(document.createTextNode(local.name));
       const type = document.createElement("small");
-      type.textContent = local.type;
+      type.textContent = local.relation === "<" ? `< ${local.type}` : local.type;
       button.append(type);
       button.onclick = () =>
         inspect({ ...local, kind: "value", role: "Local assumption" });
       $("locals").append(button);
     }
   } else {
-    if (last.backend === "cubical" && info.verified === false && !templateBinding) {
+    if (last.backend === "cubical" && info.verified === false) {
       $("kernel-details").hidden = true;
       $("kernel-terms").hidden = true;
-      $("inspect-description").textContent = info.template
-        ? `Library universe template. Each concrete specialization is checked by cubical C when used. ${info.description ?? ""}`
-        : `Not checked by cubical C: ${info.reason}`;
+      $("inspect-description").textContent = `Not checked by cubical C: ${info.reason}`;
       return;
     }
     try {
-      const view = await request("inspect", { binding: templateBinding ?? info.binding,
-        ...(templateBinding ? { universes: info.universes, offset: info.templateOffset,
-          expansion: info.templateExpansion } : {}) });
+      const view = await request("inspect", { binding: info.binding });
       if (sequence !== inspectSerial) return;
-      if (templateBinding) {
-        const checkedInfo = view.symbols[view.name];
-        if (checkedInfo) {
-          sourceLink(checkedInfo);
-          if (info.templateOffset !== undefined) {
-            renderWitnessDetails(checkedInfo);
-            $("inspect-description").prepend(document.createTextNode(
-              `Inspecting at ${info.universes.map(level=>`U${level}`).join(", ")}. `));
-          }
-        }
-      }
       if (view.statement) renderStatement(view);
       else renderType(view.typeText, Object.values(view.symbols));
       renderKernel(view);
@@ -690,7 +653,7 @@ function renderStatement(view) {
     const name = document.createElement("span"), type = document.createElement("span");
     append(name, parameter.name);
     append(type, parameter.type);
-    row.append(name, " : ", type);
+    row.append(name, ` ${parameter.relation} `, type);
     $("inspect-parameters-list").append(row);
   }
 }
@@ -734,7 +697,6 @@ function renderKernel(view) {
   renderCubicalKernel(view);
 }
 function renderCubicalKernel(view) {
-  renderSpecialization($("kernel-specialization"), view);
   $("open-kernel-assembly").hidden = false;
   $("open-kernel-assembly").disabled = false;
   const mode = $("kernel-view").value, raw = mode === "raw", folded = mode === "notation";
@@ -773,7 +735,8 @@ function renderCubicalKernel(view) {
     button.className = "reference"; button.textContent = entry.label; button.dataset.name = entry.label;
     button.disabled = !entry.binding;
     button.onclick = () => navigation.inspect(view.symbols[entry.binding]);
-    label.append(button, " : ");
+    // A universe variable's entry is its bound: U < UU0.
+    label.append(button, entry.type?.tag === "LBound" ? " < " : " : ");
     const value = document.createElement("div"); value.className = "kernel-term kernel-context-type";
     render(value, entry.type); row.append(label, value); $(list).append(row);
   }

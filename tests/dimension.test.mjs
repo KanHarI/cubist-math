@@ -44,10 +44,10 @@ test("finite dimensions include zero, are unique for arbitrary bases, and need n
   for (const name of ["coordinate_elimination__pivot_reduced_injective", "linear_constructions__linear_kernel_injective"])
     assert.deepEqual(axioms(program, name), [], name);
   const assumptions = axioms(program, "finite_dimension__finite_dimension_invariance");
-  assert.ok(assumptions.includes("LEM(U0)"), JSON.stringify(assumptions));
-  assert.ok(assumptions.every(name => /^(LEM\(U0\)|Truncate(?:Intro|Prop|Elim)?\(U0\))$/.test(name)), JSON.stringify(assumptions));
+  assert.ok(assumptions.includes("LEM"), JSON.stringify(assumptions));
+  assert.ok(assumptions.every(name => /^(LEM|Truncate(?:Intro|Prop|Elim)?)$/.test(name)), JSON.stringify(assumptions));
   for (const name of ["dimension__finite_dimensional_prop", "dimension__dimension_unique", "dimension__dimension_linear_iso", "dimension__dimension_path"])
-    assert.ok(axioms(program, name).every(name => /^(LEM\(U0\)|Truncate(?:Intro|Prop|Elim)?\(U0\))$/.test(name)), name);
+    assert.ok(axioms(program, name).every(name => /^(LEM|Truncate(?:Intro|Prop|Elim)?)$/.test(name)), name);
 });
 
 test("extension degree is positive, has identity degree one, and respects univalent extension equality", async t => {
@@ -68,7 +68,7 @@ test("extension degree is positive, has identity degree one, and respects unival
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
   assert.deepEqual(result.gaps, []);
   for (const name of ["extension_degree__extension_degree_unique", "extension_degree__extension_degree_iso", "extension_degree__extension_dimension_not_zero"])
-    assert.ok(axioms(program, name).every(name => /^(LEM\(U0\)|Truncate(?:Intro|Prop|Elim)?\(U0\))$/.test(name)), name);
+    assert.ok(axioms(program, name).every(name => /^(LEM|Truncate(?:Intro|Prop|Elim)?)$/.test(name)), name);
 });
 
 test("the product basis and numerical tower law check for arbitrary fields and a commuting triangle", async t => {
@@ -94,8 +94,8 @@ test("the product basis and numerical tower law check for arbitrary fields and a
   assert.deepEqual(result.gaps, []);
   for (const name of ["scalar_restriction__field_tower_basis", "extension_degree__field_tower_basis_triangle"])
     assert.deepEqual(axioms(program, name), [], name);
-  assert.ok(axioms(program, "extension_degree__extension_degree_tower").every(name => /^Truncate(?:Intro|Prop|Elim)?\(U0\)$/.test(name)));
-  assert.ok(axioms(program, "extension_degree__tower_law").every(name => /^(LEM\(U0\)|Truncate(?:Intro|Prop|Elim)?\(U0\))$/.test(name)));
+  assert.ok(axioms(program, "extension_degree__extension_degree_tower").every(name => /^Truncate(?:Intro|Prop|Elim)?$/.test(name)));
+  assert.ok(axioms(program, "extension_degree__tower_law").every(name => /^(LEM|Truncate(?:Intro|Prop|Elim)?)$/.test(name)));
   checked(program, "extension_degree__finite_extension_tower");
 });
 

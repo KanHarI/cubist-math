@@ -140,7 +140,7 @@ export class ReplSession {
     if (result.error) return [{ kind: "error", text: result.error }];
     const clean = reason => position ? reason : reason.replace(/ at \d+:\d+$/, "");
     return [
-      ...result.declarations.filter(info => !info.verified && !info.template)
+      ...result.declarations.filter(info => !info.verified)
         .map(info => ({ kind: "error", text: clean(info.reason) })),
       ...result.gaps.filter(gap => gap.directive || !gap.name).map(gap => ({ kind: "error", text: clean(gap.reason) })),
     ];
@@ -153,7 +153,7 @@ export class ReplSession {
 
   async declare(body, text) {
     const result = await this.entry(body), failures = this.failures(result);
-    const defined = (result.declarations ?? []).filter(info => info.verified || info.template);
+    const defined = (result.declarations ?? []).filter(info => info.verified);
     if (defined.length || !failures.length && !result.error) this.advance(result, text);
     return [
       ...defined.map(info => ({ kind: "defined", text: `${info.name} : ${this.typeText(info)}` })),

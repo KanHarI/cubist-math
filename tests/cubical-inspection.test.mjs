@@ -123,7 +123,7 @@ test("axiom labels and derived cubical helpers remain inspectable", async t => {
   const view = program.inspect("sample__Mere");
   const tree = cubicalMathTree(view.folded.expression, view.symbols);
   assert.equal(tree.body.fn.axiomNotation, "truncation");
-  assert.equal(tree.body.fn.truncationArgument, 0);
+  assert.equal(tree.body.fn.truncationArgument, 1);
   assert.equal(program.inspect(tree.body.fn.binding).expression.tag, "Var");
   const ordinary = cubicalMathTree(variable("Truncate"), { Truncate: { name: "Truncate" } });
   assert.equal(ordinary.axiomNotation, undefined);

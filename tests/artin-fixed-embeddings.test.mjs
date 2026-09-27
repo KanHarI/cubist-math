@@ -33,5 +33,5 @@ test("a finite automorphism subgroup gives distinct embeddings over its fixed fi
     assert.deepEqual(p.symbols[`artin_fixed_embeddings__${name}`].axioms, [], name);
   const countAxioms = p.symbols.artin_fixed_embeddings__fixed_subgroup_distinct_embeddings.axioms
     .map(id => p.checker.assumptionLabels.get(id)).sort();
-  assert.deepEqual(countAxioms, ["Truncate(U0)", "TruncateElim(U0)", "TruncateIntro(U0)", "TruncateProp(U0)"].sort());
+  assert.deepEqual(countAxioms, ["Truncate", "TruncateElim", "TruncateIntro", "TruncateProp"].sort());
 });
