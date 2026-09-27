@@ -542,6 +542,9 @@ cc_term cc_kernel_relocated(const cc_kernel *, cc_term);
  * Trans(dimension; pushout-family,face-tube,base) binds only the family.
  * Trans's single face-tube stores phi; its term is discarded and rebuilt as base.
  * DefRef(registry-index) refers only to a previously checked definition.
+ * Declared types (H1): Sort(signature-index; parameters, recorded-levels),
+ * each a List(item, next) with zero terminating it, both absent for a
+ * signature's own sort; Con(constructor-number; instance). Elim is F5's.
  * Nat/Zero/Unit/Point/Void have no children. Missing children must be zero.
  * The checker discards an untrusted PApp's optional second child (annotation).
  */

@@ -2114,6 +2114,13 @@ bool ck_instr_ready(cc_kernel *k) { return ready(k); }
 bool ck_instr_begin(cc_kernel *k, cc_derivation how, const uint8_t *position, size_t depth, cc_judgement_id *found) {
     return begin(k, how, position, depth, found);
 }
+bool ck_instr_begin_stateful(cc_kernel *k, cc_derivation how) {
+    if (!ready(k))
+        return false;
+    k->pending = how;
+    k->pending_position = NULL;
+    return true;
+}
 cc_judgement_id ck_instr_publish(cc_kernel *k, uint32_t kind, cc_term term, cc_term other, cc_term type,
                                  uint32_t context) {
     return publish(k, kind, term, other, type, context);
@@ -2146,7 +2153,10 @@ bool cc_kernel_judgement(const cc_kernel *k, cc_judgement_id id, cc_judgement_in
     if (!k || !info || !id || id >= k->fact_count)
         return false;
     cc_fact f = k->facts[id];
-    *info = (cc_judgement_info){f.kind, f.term, f.other, f.type, (cc_instruction)f.how.rule,
+    /* An instance in progress keeps its parameters' types in other, which
+     * only its own instructions read. */
+    cc_term other = f.kind == CC_FACT_INSTANCE ? 0 : f.other;
+    *info = (cc_judgement_info){f.kind, f.term, other, f.type, (cc_instruction)f.how.rule,
         {f.how.premise[0], f.how.premise[1], f.how.premise[2], f.how.premise[3]}, f.how.entry,
         {f.how.operand[0], f.how.operand[1]}, f.how.depth ? k->positions + f.how.position : NULL, f.how.depth};
     return true;

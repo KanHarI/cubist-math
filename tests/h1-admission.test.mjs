@@ -1,6 +1,6 @@
-// Declared types (H1), families F1 and F6, through the WASM bridge: the
+// Declared types (H1), families F1, F2 and F6, through the WASM bridge: the
 // extension gate, admission one constructor at a time, the generated squash,
-// and refusals reported as kernel errors. The C tests in
+// instances and their constructors, and refusals reported as kernel errors. The C tests in
 // kernel/tests/test_signatures.c cover the acceptance cases in full.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -35,6 +35,7 @@ test("natural numbers and the circle are admitted one constructor at a time", t 
   const u0 = g.universe(syntax.encodeLevel(0));
   // inductive N { zero; succ(n : N); }
   let sig = g.signatureBegin(u0, 0, "N");
+  assert.equal(g.judgement(sig).kind, "signature");
   const s = g.extend(u0, "N");
   sig = g.signatureConstructor(sig, g.variable(s), "zero");
   g.extend(g.variable(s), "zero");
@@ -78,4 +79,41 @@ test("a truncation gets the generated squash, and an erased parameter stays out 
   const holder = g.signatureBegin(g.levelPi(x, g.pi(a, next)), 0, "Holder");
   const h = g.extend(next, "Holder"), b = g.extend(ux, "B");
   assert.throws(() => g.signatureConstructor(holder, g.pi(b, g.variable(h)), "hold"), /erased universe parameter/);
+});
+
+test("instances of admitted signatures give their constructors", t => {
+  const { kernel, syntax, g } = session(t);
+  kernel.setExtensions({ h1: true });
+  const u0 = g.universe(syntax.encodeLevel(0));
+  // inductive N { zero; succ(n : N); }: with no parameters, SortBegin completes it.
+  let sig = g.signatureBegin(u0, 0, "N");
+  const s = g.extend(u0, "N");
+  sig = g.signatureConstructor(sig, g.variable(s), "zero");
+  sig = g.signatureConstructor(sig, g.pi(g.extend(g.variable(s), "n"), g.variable(s)), "succ");
+  const n = g.sortBegin(g.signatureClose(sig));
+  assert.equal(g.judgement(n).kind, "typing");
+  const one = g.apply(g.construct(n, 1), g.construct(n, 0));
+  assert.equal(g.judgement(one).type, g.judgement(n).term);
+  assert.throws(() => g.construct(n, 2), /no such constructor/);
+  // Trunc(U < UU0, A : U) : prop { point(a : A); } at Nat: in progress, then complete.
+  const x = g.level("x"), ux = g.universe(syntax.encodeLevel({ tag: "Var", name: "x" }));
+  const a = g.extend(ux, "A");
+  let trunc = g.signatureBegin(g.levelPi(x, g.pi(a, ux)), 1, "Trunc");
+  const ts = g.extend(ux, "Trunc");
+  trunc = g.signatureConstructor(trunc, g.pi(g.extend(g.variable(a), "a"), g.variable(ts)), "point");
+  const started = g.sortBegin(g.signatureClose(trunc));
+  assert.equal(g.judgement(started).kind, "instance");
+  assert.throws(() => g.construct(started, 0), /Expected a typing judgement/);
+  const truncNat = g.sortParameter(started, g.nat());
+  assert.equal(g.judgement(truncNat).type, g.judgement(u0).term);
+  assert.equal(g.judgement(g.apply(g.construct(truncNat, 0), g.zero())).type, g.judgement(truncNat).term);
+  // Pointed(U < UU0) : next(U) { pt(X : U, x : X); }: its level is recorded.
+  const y = g.level("y"), uy = g.universe(syntax.encodeLevel({ tag: "Var", name: "y" }));
+  const next = g.universe(syntax.encodeLevel({ tag: "LSucc", count: 1, level: { tag: "Var", name: "y" } }));
+  let pointed = g.signatureBegin(g.levelPi(y, next), 0, "Pointed", 1);
+  const ps = g.extend(next, "Pointed"), carrier = g.extend(uy, "X");
+  pointed = g.signatureConstructor(pointed, g.pi(carrier, g.pi(g.extend(g.variable(carrier), "element"), g.variable(ps))), "pt");
+  const p0 = g.sortLevel(g.sortBegin(g.signatureClose(pointed)), syntax.encodeLevel(0));
+  assert.equal(g.judgement(p0).type, g.judgement(g.universe(syntax.encodeLevel(1))).term);
+  assert.equal(g.judgement(g.construct(p0, 0)).rule, "construct");
 });

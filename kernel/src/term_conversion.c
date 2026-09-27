@@ -452,6 +452,18 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
      * of the node's identity, which the generic comparison would ignore. */
     if ((left.kind == CC_SORT || left.kind == CC_CON || left.kind == CC_ELIM) && left.payload != right.payload)
         return false;
+    /* An instance's recorded levels are levels, equal by normal form as a
+     * universe's are. */
+    if (left.kind == CC_SORT) {
+        if (!alpha(k, left.child[0], right.child[0], terms, dims, children_mode))
+            return false;
+        cc_term l = left.child[1], r = right.child[1];
+        for (; l && r; l = k->nodes[l].child[1], r = k->nodes[r].child[1])
+            if (k->nodes[l].kind != CC_LIST || k->nodes[r].kind != CC_LIST ||
+                !level_alpha(k, k->nodes[l].child[0], k->nodes[r].child[0], terms))
+                return false;
+        return !l && !r;
+    }
     for (unsigned i = 0; i < ck_arity(left.kind); ++i)
         if (!alpha(k, left.child[i], right.child[i], terms, dims, children_mode))
             return false;

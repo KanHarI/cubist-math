@@ -212,7 +212,7 @@ export class InstructionGraph {
     const context = [];
     for (let index = 0, entry; (entry = this.module._cb_judgement_context(this.kernel.handle, id, index) >>> 0); index++)
       context.push(entry);
-    const judgement = { id, kind: ["", "typing", "equality", "system"][kind], term: field(1), type: field(3), rule,
+    const judgement = { id, kind: ["", "typing", "equality", "system", "signature", "instance"][kind], term: field(1), type: field(3), rule,
       premises: [5, 6, 7, 8].map(field).filter(Boolean), entry: field(9), operands: [field(10), field(11)], context };
     if (kind === 2) judgement.other = field(2);
     if (rule === "step" || rule === "replace") {
