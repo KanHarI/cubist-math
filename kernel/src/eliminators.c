@@ -209,12 +209,15 @@ static cc_term lifted(cc_kernel *k, cc_term eliminator, cc_term instance, cc_ter
  * q̄_j := λ ys. elim^{C_j}(q_j(ys)) and the annotations of R̄. When weak, the
  * argument is first taken to its weak head, and an hcomp eliminates by 3.7's
  * rule for formal composition. */
-cc_term ck_eliminate(cc_kernel *k, cc_term eliminator, cc_term argument, bool weak) {
+cc_term ck_eliminate(cc_kernel *k, cc_term eliminator, cc_term argument, bool weak, bool *reduced) {
+    *reduced = false;
     cc_term value = weak ? ck_whnf(k, argument) : argument;
     if (!value)
         return 0;
-    if (weak && k->nodes[value].kind == CC_HCOMP)
+    if (weak && k->nodes[value].kind == CC_HCOMP) {
+        *reduced = true;
         return ck_pushout_eliminate_hcomp(k, eliminator, value);
+    }
     cc_formula_id formulas[CC_CONSTRUCTOR_DIMENSIONS];
     uint32_t depth = 0;
     cc_term head = value;
@@ -284,5 +287,125 @@ cc_term ck_eliminate(cc_kernel *k, cc_term eliminator, cc_term argument, bool we
     }
     if (!reduct || (depth && !type))
         return 0;
+    *reduced = true;
     return depth ? ck_apply_at(k, reduct, type, formulas, depth) : reduct;
+}
+
+/* ---- Instructions ----------------------------------------------------------- */
+
+static bool eliminator_fact(cc_kernel *k, cc_judgement_id id, cc_fact *out, uint32_t *given) {
+    if (!id || id >= cc_kernel_judgement_count(k))
+        return ck_fail(k, "Unknown judgement.");
+    cc_judgement_info info;
+    if (!cc_kernel_judgement(k, id, &info) || info.kind != CC_FACT_ELIMINATOR)
+        return ck_fail(k, "Expected an eliminator in progress.");
+    *out = k->facts[id];
+    *given = (uint32_t)out->pending;
+    return true;
+}
+
+/* The clauses so far, in order, from an eliminator's reversed list. */
+static uint32_t clauses_of(cc_kernel *k, cc_term reversed, cc_term *out) {
+    cc_term backwards[CC_SIGNATURE_CONSTRUCTORS];
+    uint32_t n = 0;
+    for (cc_term cursor = reversed; cursor && n < CC_SIGNATURE_CONSTRUCTORS; cursor = k->nodes[cursor].child[1])
+        backwards[n++] = k->nodes[cursor].child[0];
+    for (uint32_t i = 0; i < n; ++i)
+        out[i] = backwards[n - 1 - i];
+    return n;
+}
+
+/* The next clause's type, or, with every clause given, Π (z : I). M(z). */
+static cc_term expected(cc_kernel *k, cc_term instance, cc_term motive, const cc_term *clauses, uint32_t given) {
+    const cc_signature *s = ck_instance_signature(k, instance);
+    if (!s)
+        return 0;
+    if (given < s->constructor_count)
+        return ck_clause_type(k, instance, motive, clauses, given);
+    uint32_t z = ck_fresh_symbol(k);
+    return ck_make(k, CC_PI, z, instance, app(k, motive, var(k, z)), 0, 0);
+}
+
+static cc_judgement_id in_progress(cc_kernel *k, cc_term instance, cc_term motive, cc_term reversed, uint32_t given,
+                                   uint32_t context) {
+    const cc_signature *s = ck_instance_signature(k, instance);
+    cc_term clauses[CC_SIGNATURE_CONSTRUCTORS];
+    uint32_t n = clauses_of(k, reversed, clauses);
+    cc_term type = s ? expected(k, instance, motive, clauses, n) : 0;
+    uint32_t index = s ? k->nodes[instance].payload : 0;
+    cc_term term = type ? ck_make(k, CC_ELIM, index, motive, reversed, 0, 0) : 0;
+    cc_judgement_id id = term ? ck_instr_publish(k, CC_FACT_ELIMINATOR, term, instance, type, context) : 0;
+    if (id)
+        k->facts[id].pending = given;
+    return id;
+}
+
+cc_judgement_id cc_instr_eliminator(cc_kernel *k, cc_judgement_id motive_id) {
+    cc_judgement_id found;
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_ELIMINATOR, .premise = {motive_id}}, NULL, 0, &found))
+        return found;
+    cc_fact m = {0};
+    if (!ck_instr_premise(k, motive_id, CC_FACT_TYPING, &m))
+        return 0;
+    cc_node family = k->nodes[m.type];
+    if (family.kind != CC_PI || k->nodes[family.child[1]].kind != CC_U || k->nodes[family.child[0]].kind != CC_SORT)
+        return ck_fail(k, "An eliminator's motive is a family of types over an instance of a declared type: "
+                          "Π (z : S(as)). U(l)."), 0;
+    if (!ck_instance_signature(k, family.child[0]))
+        return 0;
+    return in_progress(k, family.child[0], m.term, 0, 0, m.context);
+}
+
+cc_judgement_id cc_instr_eliminator_clause(cc_kernel *k, cc_judgement_id eliminator, cc_judgement_id clause) {
+    cc_judgement_id found;
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_ELIMINATOR_CLAUSE, .premise = {eliminator, clause}},
+                        NULL, 0, &found))
+        return found;
+    cc_fact e = {0}, c = {0};
+    uint32_t given = 0, context = 0;
+    if (!eliminator_fact(k, eliminator, &e, &given) || !ck_instr_premise(k, clause, CC_FACT_TYPING, &c))
+        return 0;
+    const cc_signature *s = ck_instance_signature(k, e.other);
+    if (!s)
+        return 0;
+    if (given >= s->constructor_count)
+        return ck_fail(k, "The eliminator has a clause for every constructor; close it."), 0;
+    /* The clause's type is ClauseType_k, compared as written (3.6). */
+    if (!ck_alpha_equal(k, c.type, e.type)) {
+        if (!k->error[0]) {
+            k->mismatch_found = c.type;
+            k->mismatch_expected = e.type;
+            ck_fail_as(k, CC_ERROR_MISMATCH, "The clause's type is not the constructor's clause type: its "
+                                             "boundaries must be the displayed boundaries of 3.6.");
+        }
+        return 0;
+    }
+    cc_node elim = k->nodes[e.term];
+    cc_term reversed = ck_make(k, CC_LIST, 0, c.term, elim.child[1], 0, 0);
+    if (!reversed || !ck_instr_merge(k, e.context, c.context, &context))
+        return 0;
+    return in_progress(k, e.other, elim.child[0], reversed, given + 1, context);
+}
+
+cc_judgement_id cc_instr_eliminator_close(cc_kernel *k, cc_judgement_id eliminator) {
+    cc_judgement_id found;
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_ELIMINATOR_CLOSE, .premise = {eliminator}}, NULL, 0, &found))
+        return found;
+    cc_fact e = {0};
+    uint32_t given = 0;
+    if (!eliminator_fact(k, eliminator, &e, &given))
+        return 0;
+    const cc_signature *s = ck_instance_signature(k, e.other);
+    if (!s)
+        return 0;
+    if (given < s->constructor_count)
+        return ck_fail(k, "The eliminator lacks a clause: every constructor, the squash included, needs one."), 0;
+    cc_node elim = k->nodes[e.term];
+    cc_term clauses[CC_SIGNATURE_CONSTRUCTORS];
+    uint32_t n = clauses_of(k, elim.child[1], clauses);
+    cc_term list = 0;
+    for (uint32_t i = n; i-- > 0 && !k->error[0];)
+        list = ck_make(k, CC_LIST, 0, clauses[i], list, 0, 0);
+    cc_term term = ck_make(k, CC_ELIM, elim.payload, elim.child[0], list, 0, 0);
+    return term ? ck_instr_publish(k, CC_FACT_TYPING, term, 0, e.type, e.context) : 0;
 }

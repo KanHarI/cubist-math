@@ -39,7 +39,8 @@ typedef struct {
  * entries, sorted by creation; an entry records the context its own type
  * needs, so every set is closed under dependencies. Context set zero is the
  * empty context; fact and entry zero are invalid. */
-enum { CC_FACT_TYPING = 1, CC_FACT_EQUALITY = 2, CC_FACT_SYSTEM = 3, CC_FACT_SIGNATURE = 4, CC_FACT_INSTANCE = 5 };
+enum { CC_FACT_TYPING = 1, CC_FACT_EQUALITY = 2, CC_FACT_SYSTEM = 3, CC_FACT_SIGNATURE = 4, CC_FACT_INSTANCE = 5,
+       CC_FACT_ELIMINATOR = 6 };
 typedef struct {
     uint32_t rule;
     uint32_t premise[4];
@@ -325,8 +326,8 @@ cc_term ck_sort_composition(cc_kernel *, cc_term term, cc_term family, cc_term s
 cc_term ck_apply_at(cc_kernel *, cc_term t, cc_term type, const cc_formula_id *formulas, uint32_t count);
 /* Elimination of declared types (F5, eliminators.c): elim applied to an
  * argument, by Iota on a constructor and, when weak, on the weak head of the
- * argument, hcomp included; the argument's application otherwise. */
-cc_term ck_eliminate(cc_kernel *, cc_term eliminator, cc_term argument, bool weak);
+ * argument, hcomp included; the application itself, not reduced, otherwise. */
+cc_term ck_eliminate(cc_kernel *, cc_term eliminator, cc_term argument, bool weak, bool *reduced);
 cc_term ck_clause_type(cc_kernel *, cc_term instance, cc_term motive, const cc_term *clauses, uint32_t constructor);
 cc_term ck_endpoint_term(cc_kernel *, cc_term, unsigned, unsigned);
 cc_formula_id ck_interval_variable(cc_kernel *, unsigned);

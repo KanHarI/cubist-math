@@ -453,6 +453,11 @@ uint32_t cb_instr(uint32_t token, unsigned op, uint32_t a, uint32_t b, uint32_t 
     case CC_INSTR_SORT_LEVEL: return cc_instr_sort_level(k, a, b);
     case CC_INSTR_SORT_PARAMETER: return cc_instr_sort_parameter(k, a, b);
     case CC_INSTR_CONSTRUCT: return cc_instr_construct(k, a, b);
+    /* Eliminator(motive); EliminatorClause(eliminator, clause);
+     * EliminatorClose(eliminator). */
+    case CC_INSTR_ELIMINATOR: return cc_instr_eliminator(k, a);
+    case CC_INSTR_ELIMINATOR_CLAUSE: return cc_instr_eliminator_clause(k, a, b);
+    case CC_INSTR_ELIMINATOR_CLOSE: return cc_instr_eliminator_close(k, a);
     }
     s->error = "Unknown instruction.";
     return 0;

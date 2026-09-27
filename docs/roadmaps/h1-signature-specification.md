@@ -1300,6 +1300,11 @@ shared with pushouts.
 - `Iota` computes a saturated eliminator application on a saturated
   constructor, at dimensions or not (3.7). `Whnf` computes it on `hcomp`.
 
+- The eliminator in progress is a judgement of a new kind, 6, whose type is
+  the next clause's `ClauseType_k`, and, with every clause given, the
+  eliminator's type: the driver reads what to prove next. It is an ordinary
+  derivation, cached like any other; `Step` and `Replace` refuse it.
+
 **Rejections, each a test:** a motive over a non-sort, or over an open
 signature; a clause of the wrong type; a path clause whose endpoints are not
 the displayed boundary (the "clause that misses its point clauses" of the

@@ -194,7 +194,8 @@ typedef enum {
     CC_INSTR_GLUE_TERM_BASE, CC_INSTR_GLUE_TERM_PIECE, CC_INSTR_GLUE_TERM, CC_INSTR_UNGLUE,
     CC_INSTR_LEVEL_PI, CC_INSTR_LEVEL_LAMBDA, CC_INSTR_LEVEL_APPLY,
     CC_INSTR_SIGNATURE_BEGIN, CC_INSTR_SIGNATURE_CONSTRUCTOR, CC_INSTR_SIGNATURE_CLOSE,
-    CC_INSTR_SORT_BEGIN, CC_INSTR_SORT_LEVEL, CC_INSTR_SORT_PARAMETER, CC_INSTR_CONSTRUCT
+    CC_INSTR_SORT_BEGIN, CC_INSTR_SORT_LEVEL, CC_INSTR_SORT_PARAMETER, CC_INSTR_CONSTRUCT,
+    CC_INSTR_ELIMINATOR, CC_INSTR_ELIMINATOR_CLAUSE, CC_INSTR_ELIMINATOR_CLOSE
 } cc_instruction;
 typedef enum {
     CC_STEP_BETA = 1,  /* App(Lam(x. b), a) to b[a/x] */
@@ -409,6 +410,21 @@ cc_judgement_id cc_instr_sort_begin(cc_kernel *, uint32_t signature);
 cc_judgement_id cc_instr_sort_level(cc_kernel *, cc_judgement_id instance, cc_term level);
 cc_judgement_id cc_instr_sort_parameter(cc_kernel *, cc_judgement_id instance, cc_judgement_id parameter);
 cc_judgement_id cc_instr_construct(cc_kernel *, cc_judgement_id instance, uint32_t constructor);
+/* Elimination (family F5, sections 3.6, 3.7 and 5.6). Eliminator opens an
+ * eliminator from a motive M : Π (z : I). U(l) over a complete instance I:
+ * an eliminator judgement (kind 6) whose type is the next clause's type,
+ * ClauseType_k(M, m_1 … m_{k-1}), computed by substitution: the arguments,
+ * each position's displayed type, and the displayed result, whose boundaries
+ * show positions by their displayed variables and earlier constructors by
+ * their clauses. EliminatorClause adds the next clause, a judgement at
+ * exactly that type, up to bound names; EliminatorClose, with every
+ * constructor's clause given, the squash's included, gives
+ *   Elim(M, ms) : Π (z : I). M(z).
+ * Iota computes it on a constructor, at dimensions or not, and Whnf also on
+ * a formal composition. */
+cc_judgement_id cc_instr_eliminator(cc_kernel *, cc_judgement_id motive);
+cc_judgement_id cc_instr_eliminator_clause(cc_kernel *, cc_judgement_id eliminator, cc_judgement_id clause);
+cc_judgement_id cc_instr_eliminator_close(cc_kernel *, cc_judgement_id eliminator);
 /* Γ, i ⊢ t : T gives Γ ⊢ t[e/i] : T[e/i] at an endpoint e: interval
  * substitution preserves typing. No other entry may depend on i. */
 cc_judgement_id cc_instr_endpoint(cc_kernel *, cc_judgement_id, cc_entry_id dimension, unsigned endpoint);
@@ -461,7 +477,8 @@ void cc_kernel_arena(const cc_kernel *, size_t *nodes, size_t *bytes);
 
 /* Reading the graph. Judgement ids run from 1 to count - 1, premises first.
  * Kind 1 is typing, 2 equality, 3 a composition system, 4 an open
- * signature and 5 an instance in progress; other is 0 but for an equality.
+ * signature, 5 an instance in progress and 6 an eliminator in progress;
+ * other is 0 but for an equality.
  * Premises are
  * judgements, in the instruction's argument order, and entry the context
  * entry the instruction bound or used. Operands: a universe level, a
