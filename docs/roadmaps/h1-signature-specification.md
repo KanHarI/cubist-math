@@ -94,8 +94,8 @@ A fourth review found two consistency defects, now fixed:
 ## Decisions
 
 The user decided every open question on 2026-09-27, and section 11
-records each as decided. Q8, Q15 and Q16 were decided as below; Q1–Q7,
-Q9–Q14 and Q17 were accepted as recommended.
+records each as decided. Q8, Q15, Q16 and Q18 were decided as below;
+Q1–Q7, Q9–Q14 and Q17 were accepted as recommended.
 
 - **Q16: finite levels only.** The conservative first release. Instances
   read and carry finite levels. The native sum, W and pushout instructions
@@ -116,6 +116,11 @@ Q9–Q14 and Q17 were accepted as recommended.
   `: next(U)`, or `: prop U` together with an h-level. A written universe
   is the declared level, checked as an upper bound; without one, the least
   level is inferred. When in doubt, the user writes the universe.
+- **Q18: truncation levels in HoTT's numbering.** A sort may be truncated
+  at any level `n ≥ -1`, written `trunc(n)`; `prop` is `trunc(-1)`, `set` is
+  `trunc(0)`, and `type` is untruncated (1.6). The header words `type`,
+  `set`, `prop` and `trunc` are contextual: keywords only in the result
+  position, ordinary names elsewhere (9).
 
 ## 0. Relation to the adopted design and to G0
 
@@ -134,7 +139,7 @@ recommended.
 | G0 2.12: generated constants are level-abstracted, as `Trunc : Π (x < ω). Π (A : U(x)). U(x)`; G0 Q1: instances at different levels are distinct | Per universe parameter (Q8, decided). An *erased* parameter, which only bounds parameter types, is read from the parameters' judgements, so instances are one term at every universe. A *recorded* parameter, which occurs in a constructor type or cannot be read, is carried by instances, and instances at different levels are distinct, as G0 Q1 decided. Every level is finite (Q16, decided) | The native formers are level-erased, and the archive relies on it (7.2). A sort built from its parameters alone does not depend on the universe it is viewed in (D9). A sort that stores types of its own level does, and is standard universe polymorphism (D8). |
 
 Everything else follows the design: one signature format, positions as
-cubes, generated squash constructors for `set` and `prop`, clause typing
+cubes, a generated squash constructor for each truncation level, clause typing
 through the partial eliminator, computation on every constructor and on
 formal compositions, and staged trust.
 
@@ -142,8 +147,10 @@ formal compositions, and staged trust.
 
 - **Fragment.** One sort, uniform parameters (level and term), no indices.
   Constructors are checked in order. Each takes data, then positions, and has
-  zero or more dimensions with a cube boundary. The sort is `type`, `set` or
-  `prop`; the last two append generated squash constructors.
+  zero or more dimensions with a cube boundary. The sort is untruncated
+  (`type`) or truncated at a level `n ≥ -1` in HoTT's numbering (`trunc(n)`,
+  with `prop` and `set` for -1 and 0); a truncated sort appends one
+  generated squash constructor.
 - **Constructors are path-valued.** A constructor with `d` dimensions has a
   `d`-fold iterated path type whose endpoints are its boundary. It is applied
   at dimensions by path application. At an endpoint it reduces to its
@@ -354,17 +361,38 @@ cannot be formed. Rejection tests cover both.
 
 ### 1.6 H-level modifiers
 
-`type` adds nothing. `prop` and `set` append one generated constructor after
-the user constructors:
+The modifier is a truncation level in HoTT's numbering: `trunc(n)` for an
+integer `n ≥ -1`, or untruncated (Q18). `prop` is `trunc(-1)`, `set` is
+`trunc(0)` and `type` is untruncated; `trunc(1)` makes a groupoid.
+
+`type` adds nothing. `trunc(n)` appends one generated constructor after the
+user constructors. Write `B_0 := s` and `B_{k+1}(y, z) := Path(B_k, y, z)`
+for `y, z : B_k`, a type of `k`-dimensional cells between the previous pair.
+The squash of level `n` takes a pair of parallel cells at every depth from
+`0` to `n + 1`, and makes the last pair equal:
 
 ```text
-prop:  squash : Π (y, z : s). Path(i; s, y, z)
-set:   squash : Π (y, z : s). Π (u, v : Path(s, y, z)). Path(i; Path(j; s, y, z), u, v)
+trunc(n):  squash : Π (y_0, z_0 : B_0). Π (y_1, z_1 : B_1(y_0, z_0)). …
+                      Π (y_{n+1}, z_{n+1} : B_{n+1}(y_n, z_n)). B_{n+2}(y_{n+1}, z_{n+1})
+prop:      squash : Π (y, z : s). Path(i; s, y, z)
+set:       squash : Π (y, z : s). Π (u, v : Path(s, y, z)). Path(i; Path(j; s, y, z), u, v)
 ```
 
-They are ordinary constructors of the normal form, with positions and a cube
-boundary. The elaborator knows their meaning for automatic clauses (L2.2b).
-A user constructor cannot mention them, since they come last.
+The squash of `trunc(1)` takes `y, z : s`, `u, v : y = z` and `r, t : u = v`,
+and has three dimensions.
+
+Each is an ordinary constructor of the normal form: its positions are cubes
+of depth `0` to `n + 1`, and it has `n + 2` dimensions with a cube boundary.
+A user constructor cannot mention it, since it comes last.
+
+The elaborator knows its meaning for automatic clauses (L2.2b). The squash
+clause of an eliminator is an `(n + 2)`-dimensional cube in the motive, and
+it is generated from a proof that the motive's fibres have truncation level
+`n`. The library's h-level definitions (HoTT roadmap D0a) count from `IsProp`
+at 0, so the elaborator asks for level `n + 1` there. Written by hand, a
+squash clause is practical for `prop` and `set` only. A first implementation
+may therefore admit `prop` and `set`, and enable the other levels together
+with automatic clauses; the rules are the same for every `n`.
 
 ### 1.7 What H1 excludes
 
@@ -742,7 +770,8 @@ comp^i S(as(i)) [φ ↦ u] u_0  is neutral otherwise
 
 ### 3.4 Kan structure of a higher sort
 
-A higher sort has a constructor with `d_k ≥ 1` or modifier `set` or `prop`.
+A higher sort has a constructor with `d_k ≥ 1`, or a truncation modifier
+(`trunc(n)`, `prop` or `set`).
 
 - **Formal homogeneous composition.** `hcomp^i S(as) [φ ↦ u] u_0 : S(as)`,
   at fixed parameters, is canonical. On a face that holds it reduces to that
@@ -950,7 +979,7 @@ and no indices.
 | D1 | A general schema, where Coquand–Huber–Mörtberg treat examples | Steps 2–6 of 4.2 are uniform in the signature. The only signature-specific facts used are the constructor order (for restriction), the cube boundary's typing (for overlaps) and positivity (for the inductive definition). | Argued. **Open obligation:** the model construction written out for the whole schema |
 | D2 | Data sorts have no formal composition | Composition by recursion on constructors is CCHM's treatment of natural numbers and the kernel's of sums and W types. Adding a formal `hcomp` that also pushes would break confluence: `elim` of a pushed and of a formal composition differ (clause of compositions against composition of clauses). | A conditional outline, found valid in review; standard for the three hand-coded types |
 | D3 | Transport with boundary correction for `d ≥ 1` | 3.5 generalises the pushout rule. The walls agree on overlaps because boundary pieces agree on corners, and the result restricts to the transport of each boundary piece. | The local wall calculation was found valid in review. Its stability under substitution belongs to Lemma H2, which is open |
-| D4 | Cube positions (paths as arguments), needed by `set` squash | In step 2 a cube position is an element of the carrier at a higher cube with its boundary: still strictly positive. | Argued. **Open obligation:** well-foundedness of the definition when positions live at higher cubes, written out |
+| D4 | Cube positions (paths as arguments), needed by the squash of every level `n ≥ 0`, at cube depth up to `n + 1` | In step 2 a cube position is an element of the carrier at a higher cube with its boundary: still strictly positive. | Argued. **Open obligation:** well-foundedness of the definition when positions live at higher cubes of every depth, written out |
 | D5 | Infinitary positions in higher sorts | Step 4's inductive definition allows infinitary generating clauses; the metatheory needs the corresponding well-founded trees, which ZFC provides. | Argued. **Open obligation:** the infinitary inductive definition over cubes, with restriction, written out |
 | D6 | Path-valued constructors | A presentation of dimension arguments: `c @ r` is the constructor at `r`. It changes no rule of the model. | A conditional outline, found valid in review |
 | D7 | Motives in any universe, including UU tiers | The eliminator is defined in the model at fixed parameter values, and a motive's universe plays no role in its definition. | A conditional outline, found valid in review |
@@ -1124,7 +1153,8 @@ Tags 1–49 keep their numbers. New kinds are appended:
 
 ### 5.2 Family F1: admission
 
-- `SignatureBegin(former, modifier, sort symbol, classification)`: from a
+- `SignatureBegin(former, modifier, sort symbol, classification)`, where the
+  modifier is a truncation level `n ≥ -1` or untruncated: from a
   closed judgement `⊢ F : U(…)` whose term `F` is
   `Π (xs < ω). Π (ps : Ps). U(ℓ)`, open a signature. The binder symbols of `F`
   name the admission context's level and parameter entries, and the sort
@@ -1144,8 +1174,9 @@ Tags 1–49 keep their numbers. New kinds are appended:
   rejected. The driver presents `T_k` with such redexes contracted.
 - `SignatureBegin` also checks the former type: every erased parameter has
   a determining occurrence (1.1). A recorded parameter needs none.
-- `SignatureClose(signature)`: append the generated squash constructors for
-  the modifier, mark it admitted, and return its index. Later instructions
+- `SignatureClose(signature)`: append the generated squash constructor of
+  1.6 for the modifier's truncation level, if any, mark it admitted, and
+  return its index. Later instructions
   name an admitted signature by its index, as `Lookup` names a definition.
 - The later tier-parametric proposal would add, at `SignatureBegin`, that
   the former judgement end in its closing prenex, and at `SignatureClose`,
@@ -1211,7 +1242,8 @@ annotation. `Whnf` and `Normalize` reduce it by the signature.
 **Rejections and tests:** `HComp` at a data sort; transport of a data sort by
 `Trans`; a composition with a neutral tube in a data sort stays neutral; a
 closed transport of `merid(a)` along a nonconstant parameter line reduces to
-the corrected `hcomp` of 3.5; the same for the 2-dimensional `set` squash.
+the corrected `hcomp` of 3.5; the same for the 2-dimensional `set` squash
+and the 3-dimensional squash of `trunc(1)`.
 
 ### 5.6 Family F5: elimination
 
@@ -1618,10 +1650,11 @@ form. It is untrusted; the kernel checks the result.
   The result position `R` after the colon is one of:
 
   ```text
-  R  ::=  m  |  E  |  m E          m ::= type | set | prop
+  R  ::=  m  |  E  |  m E          m ::= type | set | prop | trunc(n)
   ```
 
-  where `E` is a universe expression, as L1.1 defines it: a constant of any
+  where `n` is an integer `≥ -1` in HoTT's numbering (1.6) and `E` is a
+  universe expression, as L1.1 defines it: a constant of any
   tier, a universe parameter, `next(E)` or `max(E, F)`. Examples:
   `inductive Pointed1 : U1 { pt(X : U0, x : X); }`, and
   `inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }`. Indexed
@@ -1634,8 +1667,8 @@ form. It is untrusted; the kernel checks the result.
     `U1`. A universe above the least level is allowed, and the sort then
     lives there: `inductive Flag : U1 { on; off; }` is a type in `U1`, not
     in `U0`. When in doubt, the user writes the universe.
-  - **`type`, `set` and `prop` alone, or no annotation, infer the least
-    level** of 2.1 from the inferred types of the data and arities, as
+  - **A modifier alone, `type`, `set`, `prop` or `trunc(n)`, or no
+    annotation, infers the least level** of 2.1 from the inferred types of the data and arities, as
     today.
   - **An h-level and a universe together**, `m E`, give both: the modifier
     `m` and the declared level `E`. `type U1` means the same as `U1`. The
@@ -1645,6 +1678,17 @@ form. It is untrusted; the kernel checks the result.
     with its universe written, while
     `inductive Small(A : U1) : prop U0 { point(a : A); }` is rejected as
     lowering at `point`: it would be the resizing that K2.5 excludes.
+    `inductive Gpd(U < UU0, A : U) : trunc(1) U { point(a : A); }` is the
+    groupoid truncation.
+  - **Contextual words.** `type`, `set`, `prop` and `trunc` are keywords
+    only as the first word of the result position, and ordinary names
+    everywhere else. The archive uses `prop` 226 times, `set` 37 times and
+    `type` 47 times as names, and the library 19, 1 and 3 times, so they are
+    not reserved. In the result position they always mean the modifier, so a
+    universe parameter may not be named `type`, `set`, `prop` or `trunc`; the
+    error names the parameter. The highlighter marks them as keywords in that
+    position only. `trunc(-2)`, or a level that is not an integer literal, is
+    rejected with a message stating the allowed levels.
   - **Classifying universe parameters.** L2.1 proposes each universe
     parameter as erased or recorded by the occurrence check of 1.1, on the
     constructor types after lowering, and the kernel checks it (5.2). A
@@ -1697,6 +1741,7 @@ and the driver, with L2.1. All run with the H1 extension on, except T1.
 | A14 | `SignatureClose` twice; `Construct` on an open signature | Reject | Signature state |
 | A15 | infinitary: `Cantor { leaf; node(f : Nat → s); squash … : set }` | Accept | D5 |
 | A16 | a positional argument of path type given as `⟨i⟩ c_1 @ i` | Accept | Path abstraction as a positional argument (1.4) |
+| A17 | `Gpd(A)`, modifier `trunc(1)`, with `point : Π (a : A). s` | Accept | The generated squash of 1.6 has positions of cube depth 0 to 2 and three dimensions |
 
 ### 10.2 Universes and substitution
 
@@ -1732,6 +1777,7 @@ and the driver, with L2.1. All run with the H1 extension on, except T1.
 | V28 | source: `inductive Flag : U1 { on; off; }`; `Flag : U1`; `Flag : U0` | Accept; Accept; Reject | A written universe above the least level is where the sort lives (9) |
 | V29 | source: `inductive Tr(U < UU0, A : U) : prop U { point(a : A); }`; `inductive Small(A : U1) : prop U0 { point(a : A); }` | Accept; Reject at `point` | An h-level with a written universe; lowering would be resizing (9, K2.5) |
 | V30 | source: `inductive Lifted(U < UU0) : U { mk; }`; `Lifted(U0)` and `Lifted(U1)` convertible | Accept, `U` recorded; Reject | A parameter only in the written universe cannot be read, so it is recorded (9) |
+| V31 | source: `inductive Gpd(U < UU0, A : U) : trunc(1) U { point(a : A); }`; `inductive T(prop < UU0) : prop { t; }`; `inductive B : trunc(-2) { b; }`; `def prop(x : Nat) : Nat := x;` | Accept; Reject naming the parameter; Reject stating the allowed levels; Accept | Q18 and the contextual words of 9 |
 
 ### 10.3 Constructors and boundaries
 
@@ -1774,6 +1820,7 @@ and the driver, with L2.1. All run with the H1 extension on, except T1.
 | E8 | a missing clause; an extra clause; a `prop` sort eliminated without its squash clause | Reject all |
 | E9 | a motive over `Trunc(A)` used on `Trunc(B)` for a different `B` | Reject |
 | E10 | a motive into `UU0` for `S1` | Accept |
+| E11 | `Gpd`'s eliminator into a family of groupoids, with the squash clause from h-level evidence (L2.2b) | Accept; computes on `point` |
 
 ### 10.6 Trust controls
 
@@ -1824,8 +1871,8 @@ support module where it computes:
 
 ## 11. Open questions
 
-Every question below was decided on 2026-09-27: Q8, Q15 and Q16 as the
-Decisions section records, and the others as recommended.
+Every question below was decided on 2026-09-27: Q8, Q15, Q16 and Q18 as
+the Decisions section records, and the others as recommended.
 
 | Question | Decision |
 | --- | --- |
@@ -1846,6 +1893,7 @@ Decisions section records, and the others as recommended.
 | Q15. Level-dependent signatures | Decided: admitted, with the parameter recorded |
 | Q16. Instances at tier-1 levels | Decided: finite levels only; native sum, W and pushout kept for tier-1 arguments; the tier-parametric extension a later proposal |
 | Q17. Declarations that assert a large proposition is small | A hypothesis, `LEM` where present, or H2's inductive tower (new) |
+| Q18. Truncation levels | Decided: `trunc(n)` for `n ≥ -1` in HoTT's numbering; `prop`, `set` and `type` for -1, 0 and untruncated |
 
 **Q1. Formal composition for data sorts.** The design gives every sort one
 formal composition that pushes through constructors when it can. A formal
@@ -1987,3 +2035,13 @@ unions, an explicit smallness hypothesis, discharged from `LEM` by the one
 consumer that already uses it. The alternative for both, proving the
 statement from `LEM` directly, would add `LEM` to declarations that do not
 use it today.
+
+**Q18. Truncation levels.** 1.6 first generated only the `prop` and `set`
+squash constructors, which are levels -1 and 0 of one pattern. *Decided:*
+the modifier is `trunc(n)` for any integer `n ≥ -1`, in HoTT's numbering, so
+`trunc(1)` is a groupoid; `prop`, `set` and `type` name levels -1, 0 and
+untruncated. The kernel generates the squash for any `n`, and D4 must cover
+positions of every cube depth. Levels from 1 up are usable once automatic
+clauses exist (L2.2b), and a first implementation may enable them then. The
+elaborator translates to the library's numbering, which counts from
+`IsProp` at 0, by adding one.
