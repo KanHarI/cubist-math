@@ -33,6 +33,23 @@ try {
     await page.goto(`http://127.0.0.1:${port}/proof.html?proof=${proof}&name=${name}`);
     await idle(); await inspected(name);
   };
+  // An example opened in the workspace keeps its source in #source=… while the
+  // quick reference's links scroll and move focus, so a reload reopens it.
+  const example = Buffer.from("def kept_after_reload : Nat := 7;").toString("base64")
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  await page.goto(`http://127.0.0.1:${port}/proof.html?example=1#source=${example}`); await idle();
+  await page.locator("#guide-link").click();
+  assert.equal(await page.locator("#language-guide").getAttribute("open"), "");
+  await page.locator('.quick-topics a[href="#quick-paths"]').click();
+  assert.equal(new URL(page.url()).hash, `#source=${example}`, "a topic link keeps the example's source");
+  assert.equal(await page.evaluate(() => document.activeElement?.id), "quick-paths");
+  assert.ok(await page.locator("#quick-paths").evaluate(heading => heading.getBoundingClientRect().top < innerHeight));
+  await page.locator('.quick-topics a[href="#quick-universes"]').focus();
+  await page.keyboard.press("Enter");
+  assert.equal(await page.evaluate(() => document.activeElement?.id), "quick-universes", "Enter moves focus to the topic");
+  assert.equal(new URL(page.url()).hash, `#source=${example}`);
+  await page.reload(); await idle();
+  assert.match(await page.locator("#editor").inputValue(), /kept_after_reload/);
   await openProof("suspension", "S1");
   for (const name of ["Suspension", "north", "south", "meridian", "suspension_induction", "suspension_meridian_beta"]) {
     const link = page.locator(`#read-source button[data-name="${name}"]`).first();
