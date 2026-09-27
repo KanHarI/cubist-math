@@ -37,12 +37,15 @@ async function measure(name, source, readSource) {
     const declarations = [...result.imports, ...result.outputs];
     const most = Object.fromEntries(kinds.map(kind => [kind, { spent: 0, declaration: null }]));
     let searches = 0, queries = { spent: 0, declaration: null };
-    for (const d of declarations) {
-      const fuel = d.searchFuel;
+    // Declarations, and directives: evaluate, and simp_rule and simp_set,
+    // whose registration searches each rule's pattern.
+    const spenders = [...declarations.map(d => ({ name: d.binding, fuel: d.searchFuel })),
+      ...(result.directiveFuel ?? []).map(d => ({ name: `${d.module}: ${d.kind} ${d.name}`, fuel: d.searchFuel }))];
+    for (const { name: spender, fuel } of spenders) {
       if (!fuel) continue;
       searches += fuel.searches;
-      for (const kind of kinds) if (fuel.most[kind] > most[kind].spent) most[kind] = { spent: fuel.most[kind], declaration: d.binding };
-      if (fuel.queries > queries.spent) queries = { spent: fuel.queries, declaration: d.binding };
+      for (const kind of kinds) if (fuel.most[kind] > most[kind].spent) most[kind] = { spent: fuel.most[kind], declaration: spender };
+      if (fuel.queries > queries.spent) queries = { spent: fuel.queries, declaration: spender };
     }
     return { name, declarations: declarations.length, checked: declarations.filter(d => d.verified).length,
       gaps: result.gaps.length, searches, most, declarationQueries: queries,
@@ -104,8 +107,9 @@ const report = {
   revision: git(["rev-parse", "HEAD"]), modified: git(["status", "--porcelain", "--untracked-files=no"]) !== "",
   machine: { node: process.version, platform: `${os.platform()} ${os.arch()}`, cpu: os.cpus()[0]?.model ?? null },
   method: "Each workload is checked in a new kernel with its imports, references off and declaration transactions on, "
-    + "with every search's fuel unlimited. A search's spending is read from its declaration's record: how many searches ran "
-    + "and the most any one spent of each kind; a declaration's queries include its searches'. Fuel counts are deterministic; "
+    + "with every search's fuel unlimited. A search's spending is read from the record of its declaration or directive "
+    + "(evaluate, simp_rule, simp_set): how many searches ran and the most any one spent of each kind; a declaration's "
+    + "queries include its searches', its closing check and its admission. Fuel counts are deterministic; "
     + "seconds, kernel steps and peak memory are one run's observations on this machine.",
   rule: "Each default is four times the most any search spent, rounded up to 1, 2 or 5 times a power of ten; "
     + "for a kind with its own bound inside one search, at least four times that bound.",

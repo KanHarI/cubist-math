@@ -222,3 +222,96 @@ def commuted(a, b : Nat) : a + b = b + a {
   assert.deepEqual(reported, checked);
   for (const reason of Object.values(reported)) assert.match(reason, /Remaining goal: /);
 });
+
+test("a declaration's closing check and admission, and an evaluation, are on fuel", async t => {
+  const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
+  t.after(() => program.dispose());
+  const result = await program.check("def x := 0;\nevaluate x expecting 0;\n", "fuel_example");
+  assert.ok(result.outputs[0].searchFuel.queries >= 2, JSON.stringify(result.outputs[0].searchFuel));
+  const evaluation = result.directiveFuel.find(directive => directive.kind === "evaluate");
+  assert.ok(evaluation.searchFuel.queries >= 2, JSON.stringify(evaluation));
+  // A declaration whose fuel cannot cover its admission fails as fuel.
+  const tight = await check(t, "def x := 0;\n", { declarationFuel: { queries: 1 } });
+  assert.equal(tight.x.failure, "fuel");
+});
+
+test("a search's own questions and rewrites are on its fuel", async t => {
+  const outputs = await check(t, `import naturals;
+
+def nothing(n : Nat) : n = n {
+  simp only [];
+}
+def rewritten(n, m : Nat, h : n = m) : n + 0 = m {
+  rw [nat_add_zero(n)];
+  exact h;
+}
+def targeted(n, m : Nat, h : n = m) : n + 0 = m {
+  rw [nat_add_zero(n)] at lhs;
+  exact h;
+}
+`);
+  // Reading the goal's endpoints is the search's question.
+  assert.ok(outputs.nothing.searchFuel.most.queries > 0, JSON.stringify(outputs.nothing.searchFuel));
+  for (const name of ["rewritten", "targeted"]) {
+    assert.equal(outputs[name].status, "checked-native-cubical", name);
+    assert.equal(outputs[name].searchFuel.most.rewrites, 1, name);
+  }
+});
+
+test("registering simplification rules is a search, recorded on its directive", async t => {
+  const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
+  t.after(() => program.dispose());
+  const result = await program.check("import naturals;\n\nsimp_rule nat_add_zero priority 10;\nsimp_set units := [nat_add_zero, nat_add_succ];\n", "fuel_example");
+  const rule = result.directiveFuel.find(directive => directive.kind === "simp_rule");
+  const set = result.directiveFuel.find(directive => directive.kind === "simp_set");
+  assert.equal(rule.searchFuel.searches, 1);
+  assert.equal(set.searchFuel.searches, 2);
+  assert.ok(rule.searchFuel.most.nodes > 0 && set.searchFuel.most.queries > 0);
+  // The baseline includes these records.
+  const fixture = JSON.parse(await read("tests/fixtures/search-fuel.json"));
+  assert.match(fixture.method, /simp_rule/);
+});
+
+test("simpa out of fuel names the phase that stopped, where it stopped, and how far the supplied type got", async t => {
+  const source = `import naturals;
+
+def stopped(n, m : Nat, h : n + 0 = m) : m + 0 = n {
+  simpa only [nat_add_zero] using h;
+}
+`;
+  // The supplied type simplifies within the fuel; the goal's search runs out.
+  const late = await check(t, source, { searchFuel: { ...SEARCH_FUEL, candidates: 7 } });
+  assert.equal(late.stopped.failure, "fuel");
+  assert.match(late.stopped.reason, /^simpa ran out of search fuel: 7 candidate rules tried\. Simplifying the goal stopped at m \+ 0 = n\. .* The supplied type had simplified to n = m\. 1 rewrite changed the left side, using nat_add_zero\./);
+  // The supplied type's search runs out first.
+  const early = await check(t, source, { searchFuel: { ...SEARCH_FUEL, candidates: 1 } });
+  assert.match(early.stopped.reason, /^simpa ran out of search fuel: 1 candidate rules tried\. Simplifying the supplied type stopped at n \+ 0 = m\./);
+  assert.doesNotMatch(early.stopped.reason, /Remaining goal/);
+});
+
+test("the kernel's step budget is a safety bound outside the determinism guarantee", async t => {
+  // Warm caches make a question cheaper, so near its budget the same query
+  // can fail cold and pass warm. That is reported as the kernel's exhaustion,
+  // never as fuel; the default budget (MAX_QUERY_STEPS) is far above what
+  // checked proofs use, and there both sessions answer.
+  const { CubicalKernel } = await import("../web/cubical-kernel.mjs");
+  const { CubicalSyntax } = await import("../web/cubical-syntax.mjs");
+  const session = async () => {
+    const kernel = new CubicalKernel(await createCubical());
+    t.after(() => kernel.dispose());
+    kernel.stepBudget = 1n; kernel.module._cb_step_budget(kernel.handle, 1, 0);
+    kernel.maxQuerySteps = 16n;
+    return { kernel, syntax: new CubicalSyntax(kernel) };
+  };
+  const nat = { tag: "Nat" }, id = { tag: "Lam", name: "x", domain: nat, body: { tag: "Var", name: "x" } };
+  const nest = depth => { let term = { tag: "Zero" }; for (let i = 0; i < depth; i++) term = { tag: "App", fn: id, arg: term }; return term; };
+  const cold = await session();
+  assert.throws(() => cold.kernel.head(cold.syntax.encode(nest(8))), error => error.kind === "budget");
+  const warm = await session();
+  warm.kernel.head(warm.syntax.encode(nest(4)));
+  assert.ok(warm.kernel.head(warm.syntax.encode(nest(8))), "the warm session answers what the cold one could not");
+  for (const roomy of [await session(), await session()]) {
+    roomy.kernel.maxQuerySteps = 1280000000n;
+    assert.ok(roomy.kernel.head(roomy.syntax.encode(nest(8))));
+  }
+});

@@ -33,6 +33,8 @@ export class CubicalProgram {
     this.sourceAsts = new Map();
     this.simpRegistries = new Map();
     this.gaps = []; this.evaluations = []; this.links = []; this.sources = {}; this.completed = 0;
+    // What each directive (evaluate, simp_rule, simp_set) spent (fuel.mjs).
+    this.directiveFuel = [];
     // Proof statements of each checked module, with their goals (see steps()).
     this.moduleSteps = new Map();
     this.failedImports = new Map();
@@ -171,6 +173,7 @@ export class CubicalProgram {
       const result = translator.translate(text, env);
       this.simpRegistries.set(name,result.simpRegistry);
       for(const directive of result.directives??[]) {
+        this.directiveFuel.push({ module: name, kind: directive.kind, name: directive.name, searchFuel: directive.searchFuel ?? null });
         if(directive.status!=="checked")
           this.gaps.push({module:name,name:`${directive.kind} ${directive.name}`,
             reason:directive.reason,directive:true});
@@ -213,7 +216,7 @@ export class CubicalProgram {
       get steps() { return steps ??= program.steps(main); }, backend: "cubical", mode: "mathematical", source, outputs,
       imports: all.filter(d => d.sourceModule), symbols: [...all, ...Object.values(this.assumptionSymbols())], assumptionLabels: Object.fromEntries(this.checker.assumptionLabels), declarations: outputs, links: this.links,
       declarationCount: total, instructionCount: this.checker.steps, axiomCount: new Set(outputs.flatMap(d => d.axioms)).size, gaps: this.gaps,
-      evaluations: this.evaluations,
+      evaluations: this.evaluations, directiveFuel: this.directiveFuel,
       complete: outputs.length > 0 && outputs.every(d => d.verified)
         && !this.gaps.some(gap=>gap.directive), sources: this.sources };
   }
