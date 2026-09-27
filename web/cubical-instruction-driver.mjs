@@ -175,10 +175,12 @@ export class InstructionDriver {
   contextScope(context, dimensions) {
     const key = `${dimensions}|${context.map(([symbol, type]) => `${symbol}:${type}`).join(",")}`;
     if (!this.contextScopes.has(key)) {
-      const scope = new Map([[LIVE, dimensions]]);
+      // A new scope for each assumption: a scope is a memo key for the
+      // derivations made in it (scopeKey), so it never changes once used.
+      let scope = new Map([[LIVE, dimensions]]);
       for (const [symbol, assumption] of context)
         // A universe variable (G0) is a level entry, typed by its bound.
-        scope.set(symbol, this.node(assumption).kind === "LBound" ? this.graph.levelEntry(symbol)
+        scope = new Map(scope).set(symbol, this.node(assumption).kind === "LBound" ? this.graph.levelEntry(symbol)
           : this.bind(symbol, this.asType(this.derive(assumption, scope))));
       this.contextScopes.set(key, scope);
     }
