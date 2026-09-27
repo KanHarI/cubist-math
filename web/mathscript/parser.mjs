@@ -4,12 +4,12 @@ export function tokenize(source) {
     throw new Error("Source exceeds 1 MB.");
   const tokens = [];
   const re =
-    /\s+|\/\/[^\n]*|(?:<=|=>|->)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[\[\](){}:,;+*<=>]|./gy;
+    /\s+|\/\/[^\n]*|(?:<=|=>|->|:=|<-)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[\[\](){}:,;.+*<=>@]|./gy;
   for (const match of source.matchAll(re)) {
     const text = match[0];
     if (/^\s|^\/\//.test(text)) continue;
     if (
-      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|=>|->|[\[\](){}:,;+*<=>])$/.test(text)
+      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|=>|->|:=|<-|[\[\](){}:,;.+*<=>@])$/.test(text)
     )
       throw Object.assign(new Error(`Unexpected character ${text}`), {
         offset: match.index,
@@ -34,11 +34,36 @@ export function parse(source, typeOnly = false) {
     if (t.text !== "EOF") i++;
     return t;
   }
+  // A binding gives a name its value with `:=`; `=` is the equality type.
+  const binds = () => peek() === ":=";
+  function define(form) {
+    if (binds()) return take();
+    throw Object.assign(new Error(`Write := to give a value: ${form}`), { offset: ts[i].start });
+  }
   function name() {
     const t = take();
-    if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(t.text))
+    if (t.text === "EOF" || !/^[A-Za-z_][A-Za-z_0-9]*$/.test(t.text))
       throw Object.assign(new Error("Expected a name."), { offset: t.start });
+    // U0, UU3 and the like name universes: they cannot be bound or declared.
+    if (/^U+[0-9]+$/.test(t.text))
+      throw Object.assign(new Error(`${t.text} is a universe constant; choose another name.`), { offset: t.start });
     return t;
+  }
+  // A binder's type, or a universe binder's bound: `x : A` or `U < UU0`.
+  function binderType(example) {
+    if (peek() === "<") { take("<"); return { bound: expr() }; }
+    if (peek() !== ":")
+      throw Object.assign(new Error(`Expected ':' or '<', found '${peek()}', as in ${example}.`), { offset: ts[i].start });
+    take(":");
+    return { type: expr() };
+  }
+  // Names that share a type are separated by commas: (n, m : Nat).
+  function sharedNames(example = "(n, m : Nat)") {
+    const names = [name()];
+    while (peek() === ",") { take(","); names.push(name()); }
+    if (/^[A-Za-z_]/.test(peek()) && peek() !== "EOF")
+      throw Object.assign(new Error(`Separate names with commas: ${example}`), { offset: ts[i].start });
+    return names;
   }
   const prec = {
     "->": 1,
@@ -49,6 +74,7 @@ export function parse(source, typeOnly = false) {
     "<=": 4,
     "+": 5,
     "*": 6,
+    "@": 7,
   };
   // Tuples are notation for right-associated binary dependent pairs. Preserve
   // the delimiter locations for macro inspection; elaboration sees only pairs.
@@ -173,35 +199,67 @@ export function parse(source, typeOnly = false) {
         start: t.start,
         end,
       };
-    } else if (t.text === "fun") {
-      take("(");
-      const n = name();
-      take(":");
-      const domain = expr();
-      take(")");
+    } else if (t.text === "path" && /^[A-Za-z_][A-Za-z_0-9]*$/.test(peek()) && ts[i + 1]?.text === "=>") {
+      const dimension = name();
       take("=>");
       const body = expr();
-      a = {
-        kind: "lambda",
-        name: n,
-        domain,
-        body,
-        start: t.start,
-        end: body.end,
-      };
+      a = { kind: "pathLambda", dimension, body, start: t.start, end: body.end };
+    } else if (t.text === "along") {
+      const family = expr();
+      take("by");
+      const path = expr();
+      take("from");
+      const value = expr();
+      a = { kind:"along", family, path, value, start:t.start, end:value.end };
+    } else if (t.text === "fun") {
+      const binders = [];
+      // Binder groups are one comma-separated list, like parameters:
+      // fun (x, y : A, b : B) => body.
+      if (peek() === "(") {
+        take("(");
+        while (true) {
+          const names = sharedNames();
+          const { type: domain, bound } = binderType("fun (U < UU0, A : U) => …");
+          binders.push({ names, domain, bound });
+          if (peek() !== ",") break;
+          take(",");
+        }
+        take(")");
+        if (peek() === "(")
+          throw Object.assign(new Error("Separate binder groups with commas: fun (a : A, b : B) => …"), { offset: ts[i].start });
+      }
+      if (!binders.length) binders.push({ names: [name()], domain: null });
+      take("=>");
+      a = expr();
+      for (let index=binders.length-1;index>=0;index--) {
+        const binder=binders[index];
+        a = {
+          kind: binder.names.length === 1 ? "lambda" : "binderGroup",
+          ...(binder.names.length === 1 ? {name:binder.names[0]} : {names:binder.names}),
+          binderKind:"lambda",domain: binder.domain, ...(binder.bound ? { bound: binder.bound } : {}),
+          body:a, start:t.start, end:a.end,
+          // Only the outer expression owns the single source `fun` token.
+          ...(index ? {generatedBinder:true} : {keyword:{start:t.start,end:t.end}}),
+        };
+      }
     } else if (t.text === "forall" || t.text === "exists") {
-      const n = name();
-      take(":");
-      const domain = expr();
-      take(",");
+      const names = sharedNames(`${t.text} n, m : Nat. P(n, m)`);
+      const { type: domain, bound } = binderType(`${t.text} n : Nat. P(n)`);
+      if (bound && t.text === "exists")
+        throw Object.assign(new Error("Only forall and fun bind a universe variable: exists has no level form."), { offset: t.start });
+      // `.` ends the type: forall n : Nat. P(n). A space follows it, so a
+      // tight x.y stays free for projections.
+      if (peek() !== ".")
+        throw Object.assign(new Error(`End ${t.text}'s type with a dot: ${t.text} n : Nat. P(n)`), { offset: ts[i].start });
+      const dot = take(".");
+      if (!/\s/.test(source[dot.end] ?? " "))
+        throw Object.assign(new Error(`Write a space after the . that ends ${t.text}'s type: ${t.text} n : Nat. P(n)`), { offset: dot.start });
       const body = expr();
       a = {
-        kind: t.text,
-        name: n,
-        domain,
-        body,
-        start: t.start,
-        end: body.end,
+        kind: names.length === 1 ? t.text : "binderGroup",
+        ...(names.length === 1 ? {name:names[0]} : {names}),
+        binderKind:t.text, domain, ...(bound ? { bound } : {}), body, start:t.start, end:body.end,
+        keyword:{start:t.start,end:t.end},
       };
     } else if (t.text === "(") {
       a = tuple(t, expr(), () => expr());
@@ -248,7 +306,7 @@ export function parse(source, typeOnly = false) {
       }
       const right = expr(p + (["->", "and", "or"].includes(operator) ? 0 : 1));
       a = {
-        kind: "binary",
+        kind: operator === "@" ? "pathApply" : "binary",
         operator,
         operatorStart: operatorToken.start,
         operatorEnd: operatorToken.end,
@@ -291,32 +349,148 @@ export function parse(source, typeOnly = false) {
       const t = take();
       let s;
       if (t.text === "intro") {
-        const n = name(),
-          end = take(";");
-        s = { kind: "intro", name: n, start: t.start, end: end.end };
+        // intro m, n; takes several inputs, named in order.
+        const names = [name()];
+        while (peek() === ",") { take(","); names.push(name()); }
+        if (/^[A-Za-z_]/.test(peek()) && peek() !== "EOF")
+          throw Object.assign(new Error("Separate names with commas: intro m, n;"), { offset: ts[i].start });
+        const end = take(";");
+        s = names.map(n => ({ kind: "intro", name: n, start: t.start, end: end.end }));
       } else if (t.text === "let" || t.text === "obtain") {
         const target = pattern();
         if (t.text === "let" && target.kind !== "name")
           throw Object.assign(new Error("Use obtain to unpack a pair."), {
             offset: target.start,
           });
-        take("=");
+        define(t.text === "let" ? "let name := term;" : "obtain (a, b) := pair;");
         const value = expr();
         const e = take(";");
         s = { kind: t.text, target, value, start: t.start, end: e.end };
       } else if (t.text === "have") {
         const n = name();
-        take(":");
-        const type = expr(),
-          body = block();
-        s = {
-          kind: "have",
-          name: n,
-          type,
-          body,
-          start: t.start,
-          end: ts[i - 1].end,
-        };
+        if (peek() === "=") define("have name := term;");
+        if (binds()) {
+          take();
+          const value = expr(), end = take(";");
+          s = { kind: "haveValue", name: n, value, start: t.start, end: end.end };
+        } else {
+          take(":");
+          const type = expr();
+          if (peek() === ":=") {
+            take(":=");
+            const value = expr(), end = take(";");
+            s = { kind: "haveValue", name: n, type, value, start: t.start, end: end.end };
+          } else {
+            const body = block();
+            s = { kind: "have", name: n, type, body, start: t.start, end: ts[i - 1].end };
+          }
+        }
+      } else if (t.text === "rfl") {
+        const end = take(";");
+        s = { kind: "rfl", start: t.start, end: end.end };
+      } else if (t.text === "ext") {
+        const variable = name(), end = take(";");
+        s = { kind: "ext", variable, start: t.start, end: end.end };
+      } else if (t.text === "over") {
+        const family=expr();
+        take("along");
+        const path=expr();
+        take("by");
+        const body=block();
+        s = {kind:"over",family,path,body,start:t.start,end:ts[i-1].end};
+      } else if (t.text === "calc") {
+        take("{");
+        const steps = [];
+        while (peek() !== "}") {
+          const left = expr(5);
+          take("=");
+          const right = expr();
+          // The `by` keyword is the source site of this step's checked path.
+          const by = take("by");
+          const proof = peek() === "{" ? { kind: "block", body: block() } : { kind: "term", value: expr() };
+          if (proof.kind === "term") take(";");
+          steps.push({ left, right, proof, by: { start: by.start, end: by.end },
+            start: left.start, end: ts[i - 1].end });
+        }
+        const end = take("}");
+        s = { kind: "calc", steps, start: t.start, end: end.end };
+      } else if (t.text === "rw") {
+        take("[");
+        const rules = [];
+        if (peek() !== "]") while (true) {
+          const reverse = peek() === "<-";
+          const reverseToken = reverse ? take("<-") : null;
+          const value = expr();
+          rules.push({ value, reverse, start: reverseToken?.start ?? value.start, end: value.end });
+          if (peek() !== ",") break;
+          take(",");
+        }
+        take("]");
+        if (!rules.length) throw Object.assign(new Error("rw requires a path."), { offset: t.start });
+        let target = null, occurrence = 1;
+        if (peek() === "at") {
+          take("at");
+          target = take().text;
+          if (!["lhs", "rhs"].includes(target))
+            throw Object.assign(new Error("rw target must be lhs or rhs."), { offset: ts[i - 1].start });
+        }
+        if (peek() === "occurrence") {
+          take("occurrence");
+          const count = take();
+          occurrence = Number(count.text);
+          if (!Number.isSafeInteger(occurrence) || occurrence < 1)
+            throw Object.assign(new Error("rw occurrence must be a positive integer."), { offset: count.start });
+        }
+        const end = take(";");
+        s = { kind: "rw", rules, target, occurrence, start: t.start, end: end.end };
+      } else if (t.text === "simp" || t.text === "simpa") {
+        const only=peek()==="only";
+        if(only)take("only");
+        const rules = [];
+        if(peek()==="[") {
+          take("[");
+          if (peek() !== "]") while (true) {
+            const reverse = peek() === "<-";
+            const reverseToken = reverse ? take("<-") : null;
+            const value = expr();
+            rules.push({value, reverse, start:reverseToken?.start ?? value.start, end:value.end});
+            if (peek() !== ",") break;
+            take(",");
+          }
+          take("]");
+        } else if(only) {
+          throw Object.assign(new Error("simp only requires an explicit rule list."),{offset:ts[i].start});
+        }
+        const without=[];
+        if(peek()==="without") {
+          if(only)throw Object.assign(new Error("simp only cannot exclude rules."),{offset:ts[i].start});
+          take("without");take("[");
+          if(peek()!=="]")while(true) {
+            without.push(name());
+            if(peek()!==",")break;
+            take(",");
+          }
+          take("]");
+        }
+        const witnesses=[];
+        if(peek()==="with") {
+          take("with");take("[");
+          if(peek()!=="]")while(true) {
+            witnesses.push(name());
+            if(peek()!==",")break;
+            take(",");
+          }
+          take("]");
+        }
+        let at=null,as=null;
+        if(t.text==="simp"&&peek()==="at") {
+          take("at");at=name();take("as");as=name();
+        }
+        const using = t.text === "simpa" ? (take("using"),expr()) : null;
+        const end = take(";");
+        s = {kind:t.text === "simpa" ? "simpaOnly" : "simpOnly", rules, only,without,witnesses,
+          ...(at?{at,as}:{}),
+          ...(using?{using}:{}), start:t.start, end:end.end};
       } else if (t.text === "exact") {
         const value = expr(),
           e = take(";");
@@ -346,11 +520,14 @@ export function parse(source, typeOnly = false) {
       } else
         throw Object.assign(
           new Error(
-            `Expected intro, let, obtain, have, cases, or exact; found '${t.text}'.`,
+            `Expected a proof statement; found '${t.text}'.`,
           ),
           { offset: t.start },
         );
-      statements.push(s);
+      const parsed = [s].flat();
+      // A statement's leading token is its keyword, a source link site.
+      for (const statement of parsed) statement.keyword = { start: t.start, end: t.end };
+      statements.push(...parsed);
     }
     take("}");
     depth--;
@@ -361,7 +538,7 @@ export function parse(source, typeOnly = false) {
     take("EOF");
     return result;
   }
-  const declarations = [];
+  const declarations = [],items=[],directives=[];
   let module = null;
   const imports = [];
   while (peek() === "import") {
@@ -373,21 +550,60 @@ export function parse(source, typeOnly = false) {
   }
   while (peek() !== "EOF") {
     let t = take();
-    const opaque = t.text === "opaque";
-    if (opaque) t = take("def");
-    if (!["def", "axiom"].includes(t.text))
-      throw Object.assign(new Error("Expected def or axiom."), {
+    if(t.text==="simp_rule") {
+      const rule=name();
+      let priority=0;
+      if(peek()==="priority") {
+        take("priority");
+        const number=take();
+        priority=Number(number.text);
+        if(!Number.isSafeInteger(priority)||priority<0||priority>1000)
+          throw Object.assign(new Error("simp_rule priority must be an integer from 0 to 1000."),{offset:number.start});
+      }
+      const end=take(";").end;
+      const directive={kind:"simp_rule",rule,priority,start:t.start,end};
+      directives.push(directive);items.push(directive);continue;
+    }
+    if(t.text==="simp_set") {
+      const set=name();define("simp_set name := [rules];");take("[");
+      const rules=[];
+      if(peek()!=="]")while(true) {
+        rules.push(name());
+        if(peek()!==",")break;
+        take(",");
+      }
+      take("]");
+      const end=take(";").end;
+      const directive={kind:"simp_set",name:set,rules,start:t.start,end};
+      directives.push(directive);items.push(directive);continue;
+    }
+    // `evaluate term expecting value;` is a checked computation test.
+    if (t.text === "evaluate") {
+      const value = expr();
+      take("expecting");
+      const expected = expr();
+      const end = take(";").end;
+      const directive = { kind: "evaluate", value, expected, start: t.start, end };
+      directives.push(directive); items.push(directive); continue;
+    }
+    // `computable def` asserts that the checked result uses no assumption.
+    const computable = t.text === "computable" && peek() === "def";
+    const modifierStart = computable ? t.start : undefined;
+    if (computable) t = take();
+    if (t.text !== "def")
+      throw Object.assign(new Error(t.text === "import" ? "Imports must come before declarations."
+        : "Expected a declaration or directive: def, computable def, evaluate, simp_rule or simp_set."), {
         offset: t.start,
       });
     const n = name(),
       params = [];
-    if (peek() === "=" && t.text !== "axiom") {
-      take("=");
+    if (binds()) {
+      take();
       const value = expr();
       const end = take(";").end;
       declarations.push({
         kind: t.text,
-        opaque,
+        ...(computable ? { computable, modifierStart } : {}),
         name: n,
         value,
         valueStart: value.start,
@@ -396,39 +612,41 @@ export function parse(source, typeOnly = false) {
         params,
         start: t.start,
         end,
-      });
+      });items.push(declarations.at(-1));
       continue;
     }
     if (peek() === "(") {
       take("(");
       if (peek() !== ")") {
         while (true) {
-          const p = name();
-          take(":");
-          params.push({ name: p, type: expr() });
+          const names = sharedNames();
+          const { type, bound } = binderType("(U < UU0, A : U)");
+          const group = params.length;
+          for (const p of names) params.push({ name:p, ...(bound ? { bound } : { type }), group });
           if (peek() !== ",") break;
           take(",");
         }
       }
       take(")");
     }
-    if (peek() === "=" && t.text !== "axiom") {
-      take("=");
+    if (binds()) {
+      take();
       let value = expr();
       const valueStart = value.start, valueEnd = value.end;
       const end = take(";").end;
-      for (const p of [...params].reverse())
-        value = {
-          kind: "lambda",
-          name: p.name,
-          domain: p.type,
-          body: value,
-          start: p.name.start,
-          end: value.end,
-        };
+      for (let j = params.length - 1; j >= 0;) {
+        const group = params[j].group, members = [];
+        while (j >= 0 && params[j].group === group) members.unshift(params[j--]);
+        const binder = members[0].bound ? { bound: members[0].bound } : { domain: members[0].type };
+        value = members.length === 1
+          ? {kind:"lambda",name:members[0].name,...binder,body:value,
+              start:members[0].name.start,end:value.end}
+          : {kind:"binderGroup",binderKind:"lambda",names:members.map(p=>p.name),
+              ...binder,body:value,start:members[0].name.start,end:value.end};
+      }
       declarations.push({
         kind: t.text,
-        opaque,
+        ...(computable ? { computable, modifierStart } : {}),
         name: n,
         value,
         valueStart,
@@ -437,22 +655,36 @@ export function parse(source, typeOnly = false) {
         params: [],
         start: t.start,
         end,
-      });
+      });items.push(declarations.at(-1));
       continue;
     }
+    if (peek() === "=") define("def name := term;");
     take(":");
     const type = expr();
-    const body = t.text === "axiom" ? (take(";"), null) : block();
+    // `def name : T := term;` states the type of a term; it is the block
+    // `{ exact term; }`.
+    if (peek() === ":=") {
+      const assign = take(":="), value = expr(), end = take(";").end;
+      declarations.push({
+        kind: t.text, ...(computable ? { computable, modifierStart } : {}), name: n, params, type,
+        body: [{ kind: "exact", value, start: assign.start, end }], typedValue: true, start: t.start, end,
+      });items.push(declarations.at(-1));
+      continue;
+    }
+    if (peek() === ";" && type.kind === "binary" && type.operator === "=")
+      throw Object.assign(new Error("Write := to give a value: def name : T := term; here `=` read as an equality type"), { offset: type.operatorStart });
+    const body = block();
     declarations.push({
       kind: t.text,
-      opaque,
+      ...(computable ? { computable, modifierStart } : {}),
       name: n,
       params,
       type,
       body,
       start: t.start,
       end: ts[i - 1].end,
-    });
+    });items.push(declarations.at(-1));
   }
-  return { module, imports, declarations };
+  return { module, imports, declarations,
+    ...(directives.length?{directives,items}:{}) };
 }

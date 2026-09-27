@@ -1,0 +1,96 @@
+import quotient_descent;
+import identity_systems;
+
+// Pointwise logical comparison of two class predicates is a proposition.
+// This is smaller than choosing a path between the predicates.
+def QuotientComparison(A : U1, relation : A -> A -> U0, q, r : SetQuotient(A, relation)) :=
+  forall a : A.
+  FieldIff(quotient_predicate(A, relation, q, a), quotient_predicate(A, relation, r, a));
+
+def quotient_comparison_prop(
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation),
+  q, r : SetQuotient(A, relation)
+) :
+  FieldProp(QuotientComparison(A, relation, q, r)) {
+  let P := quotient_predicate(A, relation, q);
+  let Q := quotient_predicate(A, relation, r);
+  let propP := quotient_predicate_prop(A, relation, laws, q);
+  let propQ := quotient_predicate_prop(A, relation, laws, r);
+  exact field_forall_prop(
+    A, (fun (a : A) => typed(U1, FieldIff(P(a), Q(a)))),
+    (
+      fun (a : A) => field_sigma_prop(
+        P(a) -> Q(a), (fun (f : P(a) -> Q(a)) => typed(U1, Q(a) -> P(a))),
+        field_forall_prop(P(a), (fun (p : P(a)) => typed(U1, Q(a))), (fun (p : P(a)) => propQ(a))),
+        (
+          fun (f : P(a) -> Q(a)) => field_forall_prop(
+            Q(a), (fun (q : Q(a)) => typed(U1, P(a))), (fun (q : Q(a)) => propP(a))
+          )
+        )
+      )
+    )
+  );
+}
+
+def quotient_path_comparison(
+  A : U1, relation : A -> A -> U0, q, r : SetQuotient(A, relation), p : q = r
+) :
+  QuotientComparison(A, relation, q, r) {
+  intro a;
+  let family := fun (s : SetQuotient(A, relation)) => quotient_predicate(A, relation, s, a);
+  exact (
+    (fun (x : family(q)) => along family by p from x),
+    (fun (y : family(r)) => along family by sym(p) from y)
+  );
+}
+
+def quotient_comparison_path(
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation),
+  q, r : SetQuotient(A, relation), same : QuotientComparison(A, relation, q, r)
+) :
+  q = r {
+  exact quotient_ext(
+    A, relation, q, r,
+    field_predicate_ext(
+      A, quotient_predicate(A, relation, q), quotient_predicate(A, relation, r),
+      quotient_predicate_prop(A, relation, laws, q), quotient_predicate_prop(A, relation, laws, r),
+      same
+    )
+  );
+}
+
+// A weakly constant endomap of each path space gives setness by Hedberg's
+// argument. No decidable equality, representative choice, or resizing is used.
+def quotient_is_set(A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation)) :
+  FieldSet(SetQuotient(A, relation)) {
+  let choose :=
+    fun (q, r : SetQuotient(A, relation), p : q = r) => quotient_comparison_path(
+      A, relation, laws, q, r, quotient_path_comparison(A, relation, q, r, p)
+    );
+  exact constant_paths_are_set(
+    SetQuotient(A, relation), choose,
+    (
+      fun (q, r : SetQuotient(A, relation), p, s : q = r) => cong(
+        quotient_comparison_path(A, relation, laws, q, r),
+        quotient_comparison_prop(
+          A, relation, laws, q, r, quotient_path_comparison(A, relation, q, r, p),
+          quotient_path_comparison(A, relation, q, r, s)
+        )
+      )
+    )
+  );
+}
+
+// Dependent functions into sets are a set. The square is pointwise: both
+// path coordinates are retained, rather than postulating proof irrelevance.
+def dependent_functions_are_set(A : U1, B : A -> U1, setB : (forall a : A. FieldSet(B(a)))) :
+  FieldSet(forall a : A. B(a)) {
+  intro f, g, p, q;
+  exact path j => path(
+    fun (i : Interval) => forall a : A. B(a),
+    fun (i : Interval, a : A) => setB(
+      a, f(a), g(a), cong((fun (h : (forall a : A. B(a))) => h(a)), p),
+      cong((fun (h : (forall a : A. B(a))) => h(a)), q)
+    ) @ j @ i
+  );
+}

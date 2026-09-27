@@ -1,0 +1,27 @@
+// DESIGN FIXTURE: unsupported syntax; PR 11 exploration, not release-one API.
+// This specifies a lexical notation pack using existing checked projections.
+import field_vector_spaces;
+
+// 'notation' declares expansion templates, not hidden parameters/instances.
+notation field_ops(F : AlgebraicField) {
+  infix + := af_add(af_carrier(F), af_operations(F));
+  infix * := af_mul(af_carrier(F), af_operations(F));
+  alias zero := af_zero(af_carrier(F), af_operations(F));
+  alias one := af_one(af_carrier(F), af_operations(F));
+}
+
+// A signature-level scope covers its return type and proof, after F is bound.
+def field_add_zero(F : AlgebraicField, x : af_carrier(F))
+  with notation field_ops(F) : x + zero = x {
+  exact group_unit_right(FieldAdditiveGroup(F), x);
+}
+
+// Hypothesized expansion using current syntax (checked in the companion
+// current/scoped-algebra.cubist):
+// def field_add_zero(F : AlgebraicField, x : af_carrier(F)) :
+//   af_add(af_carrier(F), af_operations(F), x,
+//     af_zero(af_carrier(F), af_operations(F))) = x {
+//   exact group_unit_right(FieldAdditiveGroup(F), x);
+// }
+// Numerals retain their current Nat interpretation. This proposal gives
+// explicit names zero/one; numeric literal overloading is a separate decision.

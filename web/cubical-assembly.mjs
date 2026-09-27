@@ -1,8 +1,9 @@
+import { levelText } from "./cubical-levels.mjs";
 // Read the native arena directly. Source names are labels only; they never
 // replace handles, payloads, or constructor operands in this listing.
 import { cubicalKinds } from "./cubical-kernel.mjs";
 
-const operandNames = {
+export const operandNames = {
   Pi: ["domain", "body"], Lam: ["domain", "body"], Sigma: ["domain", "body"], W: ["domain", "body"],
   App: ["function", "argument"], Pair: ["type", "first", "second"], Fst: ["pair"], Snd: ["pair"], Succ: ["value"],
   NatRec: ["motive", "zero", "step", "value"], Path: ["family", "left", "right"], PLam: ["family", "body"],
@@ -14,9 +15,11 @@ const operandNames = {
   GlueTerm: ["Glue type", "base", "tubes"], Unglue: ["Glue type", "value"],
   Pushout: ["center", "left", "right", "maps"], PushLeft: ["pushout", "value"], PushRight: ["pushout", "value"],
   PushPath: ["pushout", "value"], PushElim: ["motive", "left", "right", "bridge"],
+  U: ["level"], LSucc: ["level"], LMax: ["left", "right"], LApp: ["function", "level"],
+  LPi: ["bound", "body"], LLam: ["bound", "body"],
   HComp: ["type", "tubes", "base"], Trans: ["family", "face tube", "base"],
 };
-const opcodeName = kind => "CC_" + ({ GlueSystem: "GLUE_SYSTEM", GlueTerm: "GLUE_TERM",
+export const opcodeName = kind => "CC_" + ({ GlueSystem: "GLUE_SYSTEM", GlueTerm: "GLUE_TERM",
   PushLeft: "PUSH_LEFT", PushRight: "PUSH_RIGHT", PushPath: "PUSH_PATH", PushElim: "PUSH_ELIM" }[kind] ?? kind.toUpperCase());
 
 export function kernelAssembly(program, view, checked, { limit = 400, expanded = [], focus = [] } = {}) {
@@ -41,7 +44,9 @@ export function kernelAssembly(program, view, checked, { limit = 400, expanded =
       const name = kernel.symbolName(native.payload), label = view.symbols[name]?.name;
       node.annotation = `symbol #${native.payload}: ${label && label !== name ? `${label} (${name})` : name}`;
     } else if (["Path", "PLam", "Comp", "HComp", "Trans"].includes(native.kind)) node.annotation = `dimension #${native.payload}`;
-    else if (native.kind === "U") node.annotation = `universe level ${native.payload}`;
+    else if (native.kind === "U") node.annotation = "universe; its level is operand a";
+    else if (native.kind === "LConst") node.annotation = `level ${levelText({ tag: "LConst", tier: native.payload >>> 16, value: native.payload & 0xffff })}`;
+    else if (native.kind === "LSucc") node.annotation = `level successor: + ${native.payload}`;
     else if (["PApp", "PushPath", "Tube", "GlueSystem"].includes(native.kind)) {
       node.formula = native.payload;
       if (!formulas.has(native.payload)) {
@@ -62,7 +67,7 @@ export function kernelAssembly(program, view, checked, { limit = 400, expanded =
     }
     nodes.push(node); queue.push(...native.children.filter(Boolean));
   }
-  return { roots, context, specialization: view.expression.tag === "Var" && view.expression.name === view.specialization?.binding ? view.specialization : null, dimensions: [...dimensions], nodes, formulas: [...formulas.values()],
+  return { roots, context, dimensions: [...dimensions], nodes, formulas: [...formulas.values()],
     pending: new Set(queue.filter(id => id && !seen.has(id))).size };
 }
 
@@ -71,12 +76,6 @@ export function assemblyText(listing) {
     ...listing.roots.map(root => `; ${root.label}: %${root.handle}`),
     ...listing.context.map(entry => `; Context #${entry.symbol} ${entry.label} (${entry.name}) : %${entry.handle}`),
     ...listing.dimensions.map(([name, slot]) => `; Interval ${name}: dimension #${slot}`), ""];
-  if (listing.specialization) {
-    const origin = listing.specialization;
-    lines.push(`; Elaborator specialization: ${origin.schema}(U), U := ${origin.universe}.`,
-      `; The resulting ${origin.schema}(${origin.universe}) is an explicit context assumption (CC_VAR).`,
-      "; No universe-generic kernel term or CC_APP for the universe argument is claimed.", "");
-  }
   for (const node of listing.nodes) {
     lines.push(`%${node.id} = ${node.mnemonic} [${node.opcode}] payload=${node.payload} `
       + node.operands.map(operand => `${operand.slot}=${operand.handle ? "%" + operand.handle : "0"}`).join(" ")

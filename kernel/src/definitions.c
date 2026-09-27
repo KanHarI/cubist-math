@@ -30,7 +30,7 @@ cc_term cc_kernel_define(cc_kernel *k, uint32_t symbol, cc_term value, cc_term e
     if (!reference)
         return 0;
     /* Publish only after checking and all allocations have succeeded. */
-    k->definitions[index] = (cc_definition){symbol, checked.expression, checked.type};
+    k->definitions[index] = (cc_definition){symbol, checked.expression, checked.type, false};
     ++k->definition_count;
     return reference;
 }
@@ -57,5 +57,7 @@ cc_term cc_kernel_whnf(cc_kernel *k, cc_term term) {
         return 0;
     k->budget = k->operation_budget;
     k->recursion = 0;
-    return ck_whnf(k, term);
+    /* A head computed while a nested computation failed is no answer. */
+    cc_term head = ck_whnf(k, term);
+    return k->error[0] ? 0 : head;
 }

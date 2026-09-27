@@ -180,6 +180,17 @@ pre {
 #inspect-description {
   font-size: 13px;
 }
+#rewrite-trace:not([hidden]) {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+}
+#rewrite-trace button {
+  text-align: left;
+}
+#freeze-simp:not([hidden]) {
+  margin: 6px 0 12px;
+}
 .result {
   margin-top: 16px;
   padding: 14px 18px;
@@ -602,13 +613,6 @@ select {
   .workspace.inspector-wide { grid-template-columns: minmax(0, 1fr) minmax(480px, 48vw); }
 }
 
-.specialization { border: 1px solid #ccd8cc; border-radius: .5rem; padding: 1rem; margin: 1rem 0; overflow-wrap: anywhere; }
-.specialization-route { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.specialization details { margin: .75rem 0; }
-.specialization .kernel-term { overflow-x: auto; }
-#inspect-universes:not([hidden]) { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
-#inspect-universes label { flex: 1; min-width: 100px; }
-#inspect-universes select { display: block; width: 100%; margin-top: 6px; }
 
 #inspect-parameters {
   margin: 0 0 16px;
@@ -622,4 +626,36 @@ select {
   font-family: ui-monospace, monospace;
   font-size: 0.9em;
   overflow-wrap: anywhere;
+}
+
+/* Embedded in a reference page: only the checked source and the inspector. */
+body.embedded > header, body.embedded .introduction, body.embedded .toolbar,
+body.embedded .compiler-options, body.embedded #source-notice, body.embedded #development-note,
+body.embedded #puncture-note, body.embedded #complex-note, body.embedded #language-guide,
+body.embedded footer, body.embedded #repl-panel { display: none; }
+body.embedded main { padding-top: 12px; }
+body.embedded .workspace { grid-template-columns: minmax(0, 1fr); }
+
+/* The checked term comes first in the inspector: context, expression, type. */
+#kernel-terms { margin: 4px 0 18px; }
+#kernel-terms[hidden] { display: none; }
+/* Embedded, the inspector comes before the source it inspects. */
+body.embedded .workspace > .inspector { order: -1; }
+
+/* A macro's expansion, shown at once on hover or focus (token-tips.mjs). */
+.token-tip {
+  position: fixed;
+  z-index: 60;
+  max-width: min(36rem, calc(100vw - 16px));
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: #23342d;
+  color: #f6f7f3;
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 18%);
+}
+.token-tip[hidden] {
+  display: none;
 }

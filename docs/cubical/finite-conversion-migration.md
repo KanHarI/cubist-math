@@ -3,7 +3,7 @@
 The native editions of `permutations`, `binomial_pascal`, and
 `kernel_quotient_image` preserve their original public theorem statements and
 assumptions. The legacy sources remain unchanged. The frontend source registry
-must select the corresponding files under `web/proofs/`.
+must select the corresponding files under `archive/first-library/`.
 
 ## Permutations
 

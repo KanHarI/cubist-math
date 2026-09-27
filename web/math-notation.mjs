@@ -1,3 +1,4 @@
+import { levelText } from "./cubical-levels.mjs";
 const mathNamespace = "http://www.w3.org/1998/Math/MathML";
 
 // This is shorthand for an unchanged ordered sequence of Pi/Sigma binders,
@@ -22,8 +23,7 @@ export function independentBinderGroups(tree, enabled = true) {
 
 export function isTruncationApplication(node) {
   return node.kind === "Call" && node.fn.kind === "Name" && node.fn.axiomNotation === "truncation"
-    && ((node.fn.axiomParameter !== undefined && node.args.length === 2)
-      || (node.fn.truncationArgument === 0 && node.args.length === 1));
+    && node.fn.truncationArgument !== undefined && node.args.length === node.fn.truncationArgument + 1;
 }
 
 // Native MathML provides mathematical typesetting without a CDN, TeX input,
@@ -93,7 +93,8 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
       return node.axiomParameter === undefined ? symbol
         : element("msub", symbol, element("mtext", `Axiom ${node.axiomParameter}`));
     }
-    if (node.kind === "Universe") return element("msub", element("mi", "𝒰"), element("mn", String(node.level)));
+    if (node.kind === "Universe")
+      return element("msub", element("mi", "𝒰"), element(typeof node.level === "number" ? "mn" : "mi", levelText(node.level)));
     if (node.kind === "NatElim") {
       const scope = row(operator("["), element("mi", node.names[0]), operator(","), element("mi", node.names[1]), operator("]"));
       return row(element("msub", element("mi", "nat.elim"), scope),
@@ -101,6 +102,9 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
     }
     if (node.kind === "Scope") return row(operator("["), element("mtext", node.names.join(", ")), operator("]"), operator("."), visit(node.body));
     if (node.kind === "Number") return element("mn", String(node.value));
+    if (node.kind === "LevelPi" || node.kind === "LevelLambda")
+      return row(operator(node.kind === "LevelPi" ? "Π" : "λ"), fenced(row(element("mi", node.name), operator("<"), element("mi", "ω"))),
+        operator(node.kind === "LevelPi" ? "," : "."), visit(node.body));
     if (["Pi", "Sigma", "Lambda"].includes(node.kind)) {
       if (node.kind === "Lambda") return row(operator("λ"), node.domain
         ? fenced(row(element("mi", node.name), operator(":"), visit(node.domain))) : element("mi", node.name), operator("."), visit(node.body));
@@ -112,7 +116,7 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
     }
     if (node.kind === "Call") {
       if (truncationSugar && isTruncationApplication(node)) {
-        const formula = row(reference(operator("‖"), node.fn), visit(node.args[node.fn.truncationArgument ?? 1]), reference(operator("‖"), node.fn));
+        const formula = row(reference(operator("‖"), node.fn), visit(node.args[node.fn.truncationArgument]), reference(operator("‖"), node.fn));
         formula.dataset.truncationSugar = "true";
         return formula;
       }

@@ -1,0 +1,97 @@
+import field_scale_limits;
+
+// Widening a two-sided order ball preserves closeness.
+def field_close_enlarge(
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y, delta, epsilon : F,
+  smaller : FieldLe(F, lt, delta, epsilon), close : FieldClose(F, addF, lt, x, y, delta)
+) :
+  FieldClose(F, addF, lt, x, y, epsilon) {
+  obtain (positiveOne, translate, scale, weakScale, ltLe, rest) := arithmetic;
+  obtain (upper, lower) := close;
+  let upperRadius :=
+    order_le_add(
+      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, y, y, delta, epsilon,
+      order_le_refl(F, lt, order, y), smaller
+    );
+  let lowerRadius :=
+    order_le_add(
+      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, x, x, delta, epsilon,
+      order_le_refl(F, lt, order, x), smaller
+    );
+  exact (
+    ltLe(x, addF(y, delta), addF(y, epsilon), upper, upperRadius),
+    ltLe(y, addF(x, delta), addF(x, epsilon), lower, lowerRadius)
+  );
+}
+
+// An actual common positive radius without comparing r and s or deciding
+// which is smaller. Choose delta with delta*(r+s) < r*s, then cancel r+s.
+def field_common_positive_radius(
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
+  inverses : FieldInverses(F, zero, one, mulF, lt), r, s : F, positiveR : lt(zero, r),
+  positiveS : lt(zero, s)
+) :
+  exists delta : F. lt(zero, delta) and FieldLe(F, lt, delta, r) and FieldLe(F, lt, delta, s) {
+  obtain (positiveOne, translate, scale, weakScale, ltLe, rest) := arithmetic;
+  let nonnegativeR :=
+    ordered_lt_implies_le(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, r, positiveR
+    );
+  let nonnegativeS :=
+    ordered_lt_implies_le(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, s, positiveS
+    );
+  let total := addF(r, s);
+  let positiveTotal :=
+    ordered_positive_plus_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, r, s, positiveR, nonnegativeS
+    );
+  let nonnegativeTotal :=
+    ordered_lt_implies_le(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, total, positiveTotal
+    );
+  let product := mulF(r, s);
+  let positiveProduct :=
+    field_positive_product(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, r, s, positiveR, positiveS
+    );
+  obtain (delta, positiveDelta, small) := field_small_scaled_radius(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, total, nonnegativeTotal,
+    product, positiveProduct
+  );
+  let rBelow :=
+    order_le_add_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, r, s, nonnegativeS
+    );
+  let sBelow :=
+    along FieldLe(F, lt, s) by ring_add_comm(F, zero, one, addF, mulF, negF, ring, s, r) from order_le_add_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, s, r, nonnegativeR
+    );
+  let belowR :=
+    along((fun (v : F) => FieldLe(F, lt, v, mulF(total, r)))) by ring_mul_comm(
+      F, zero, one, addF, mulF, negF, ring, s, r
+    ) from weakScale(s, total, r, sBelow, nonnegativeR);
+  let boundR :=
+    along FieldLe(F, lt, product) by ring_mul_comm(F, zero, one, addF, mulF, negF, ring, total, r) from belowR;
+  let boundS :=
+    along FieldLe(F, lt, product) by ring_mul_comm(F, zero, one, addF, mulF, negF, ring, total, s) from weakScale(
+      r, total, s, rBelow, nonnegativeS
+    );
+  obtain (scaleR, cancelR) := scale(delta, r, total, positiveTotal);
+  obtain (scaleS, cancelS) := scale(delta, s, total, positiveTotal);
+  exact (
+    delta, positiveDelta,
+    ordered_lt_implies_le(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, delta, r,
+      cancelR(ltLe(mulF(delta, total), product, mulF(r, total), small, boundR))
+    ),
+    ordered_lt_implies_le(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, delta, s,
+      cancelS(ltLe(mulF(delta, total), product, mulF(s, total), small, boundS))
+    )
+  );
+}

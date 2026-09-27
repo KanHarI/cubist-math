@@ -12,8 +12,7 @@ bool ck_type(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dims,
     if (!sort || k->nodes[sort].kind != CC_U)
         return ck_fail(k, "Expected a universe-valued type.");
     *type = checked.expression;
-    *level = k->nodes[sort].payload;
-    return true;
+    return ck_universe_number(k, sort, level);
 }
 
 bool ck_check(cc_kernel *k, cc_term raw, cc_term expected, const cc_context *ctx,
@@ -31,12 +30,16 @@ static bool infer(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dim
         return ck_fail(k, "Invalid term handle.");
     cc_node n = k->nodes[raw];
     switch (n.kind) {
-    case CC_U:
-        if (n.payload == UINT32_MAX)
-            return ck_fail(k, "Universe successor overflow.");
+    case CC_U: {
+        uint32_t level;
+        if (!ck_universe_number(k, raw, &level))
+            return false;
+        if (level >= CC_LEVEL_MAX)
+            return ck_fail(k, "A universe level exceeds the kernel's bound.");
         result->expression = raw;
-        result->type = ck_make(k, CC_U, n.payload + 1, 0, 0, 0, 0);
+        result->type = ck_universe_at(k, level + 1);
         return result->type != 0;
+    }
     case CC_DEFREF:
         if (!n.payload || n.payload >= k->definition_count)
             return ck_fail(k, "Unknown checked definition reference.");
@@ -70,6 +73,12 @@ static bool infer(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dim
     case CC_GLUE_SYSTEM:
     case CC_TUBE:
         return ck_fail(k, "A partial tube is not a standalone term.");
+    case CC_LBOUND:
+        return ck_fail(k, "A bound is not a term.");
+    case CC_LCONST: case CC_LSUCC: case CC_LMAX:
+        return ck_fail(k, "A level is not a term.");
+    case CC_LPI: case CC_LLAM: case CC_LAPP:
+        return ck_fail(k, "The term checker has no rules for level quantification.");
     }
     return ck_fail(k, "Unsupported term constructor.");
 }
@@ -82,13 +91,34 @@ bool ck_infer(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dims,
         --k->recursion;
         return ck_fail(k, "Native reference recursion depth exceeded.");
     }
-    bool success = ck_inference_get(k, raw, ctx, dims, result) || infer(k, raw, ctx, dims, result);
+    bool success = ck_inference_get(k, raw, ctx, dims, result);
+    if (success) ck_trace(k, CC_TRACE_REUSED, raw, result->expression, result->type);
+    else {
+        ck_trace(k, CC_TRACE_INFER, raw, 0, 0);
+        ++k->trace_depth;
+        success = infer(k, raw, ctx, dims, result);
+        --k->trace_depth;
+        bool checked = success && !k->error[0];
+        ck_trace(k, CC_TRACE_INFERRED, raw, checked ? result->expression : 0, checked ? result->type : 0);
+    }
     if (success && !k->error[0]) {
         ck_inference_put(k, raw, ctx, dims, *result);
         ck_inference_put(k, result->expression, ctx, dims, *result);
     }
     --k->recursion;
     return success && !k->error[0];
+}
+
+void cc_kernel_arena(const cc_kernel *k, size_t *nodes, size_t *bytes) {
+    *nodes = k ? k->count - 1 : 0;
+    *bytes = !k ? 0 : k->capacity * (sizeof(cc_node) + sizeof(cc_term)) +
+                      k->definition_capacity * sizeof(cc_definition) +
+                      (k->syntax_memo ? CC_SYNTAX_MEMO_SIZE * sizeof(cc_syntax_memo) : 0) +
+                      (k->alpha_memo ? CC_ALPHA_MEMO_SIZE * sizeof(cc_alpha_memo) : 0) +
+                      (k->alpha_scopes ? CC_ALPHA_MEMO_SIZE * sizeof(cc_alpha_scope) : 0) +
+                      (k->interned ? k->intern_capacity * sizeof(cc_term) : 0) +
+                      (k->contexts ? CC_CHECK_MEMO_SIZE * sizeof(cc_context_memo) : 0) +
+                      (k->inferred ? CC_CHECK_MEMO_SIZE * sizeof(cc_infer_memo) : 0);
 }
 
 bool cc_kernel_check_in_cube(cc_kernel *k, cc_term raw, cc_term expected,
@@ -116,7 +146,7 @@ bool cc_kernel_check_in_cube(cc_kernel *k, cc_term raw, cc_term expected,
         if (!success)
             break;
         uint32_t level;
-        cc_term type;
+        cc_term type = 0;
         success = ck_type(k, assumptions[i].type, ctx, dimensions, &type, &level);
         if (!success)
             break;
@@ -143,15 +173,7 @@ bool cc_kernel_check_in_cube(cc_kernel *k, cc_term raw, cc_term expected,
         result->expression = checked.expression;
         result->type = checked.type;
         result->normal = 0; /* Normalization is an explicit inspector operation. */
-        result->arena_nodes = k->count - 1;
-        result->arena_bytes = k->capacity * (sizeof(cc_node) + sizeof(cc_term)) +
-                              k->definition_capacity * sizeof(cc_definition) +
-                              (k->syntax_memo ? CC_SYNTAX_MEMO_SIZE * sizeof(cc_syntax_memo) : 0) +
-                              (k->alpha_memo ? CC_ALPHA_MEMO_SIZE * sizeof(cc_alpha_memo) : 0) +
-                              (k->alpha_scopes ? CC_ALPHA_MEMO_SIZE * sizeof(cc_alpha_scope) : 0) +
-                              (k->interned ? CC_INTERN_SIZE * sizeof(cc_term) : 0) +
-                              (k->contexts ? CC_CHECK_MEMO_SIZE * sizeof(cc_context_memo) : 0) +
-                              (k->inferred ? CC_CHECK_MEMO_SIZE * sizeof(cc_infer_memo) : 0);
+        cc_kernel_arena(k, &result->arena_nodes, &result->arena_bytes);
         result->checking_steps = k->checking_steps;
         result->reduction_steps = k->reduction_steps;
         success = !k->error[0];

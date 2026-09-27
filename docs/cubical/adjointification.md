@@ -1,7 +1,7 @@
 # Preserving the supplied inverse and section during adjointification
 
 `lib/cubical/adjointification.mjs` derives the small path-algebra
-helpers used by `web/proofs/equivalence_from_inverse.cubist`. The source proof
+helpers used by `archive/first-library/equivalence_from_inverse.cubist`. The source proof
 keeps `f`, `g`, and `eta` and changes only the counit to
 
 ```

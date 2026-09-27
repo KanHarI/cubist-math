@@ -18,8 +18,8 @@ test("target selection keeps the full suite opt-in by omission and forwards Node
 });
 
 test("proof selection deduplicates module names and paths without enabling full regressions", () => {
-  const selected = selectTests(["field_products", "--module=field_products", "web/proofs/field_products.cubist"]);
-  assert.deepEqual(selected.proofs, [resolve(projectRoot, "web/proofs/field_products.cubist")]);
+  const selected = selectTests(["field_products", "--module=field_products", "archive/first-library/field_products.cubist"]);
+  assert.deepEqual(selected.proofs, [resolve(projectRoot, "archive/first-library/field_products.cubist")]);
   assert.deepEqual(selected.tests, [resolve(projectRoot, "tests/cubical-modules.test.mjs")]);
   assert.throws(() => selectTests(["--module"]), /needs/);
   assert.throws(() => selectTests(["--test-name-pattern"]), /needs/);
@@ -47,9 +47,9 @@ test("compiler optimizations default on with independent ordered CLI overrides",
 test("selected proofs load only transitive imports and tolerate cycles for compiler diagnostics", async t => {
   const root = await mkdtemp(join(tmpdir(), "mathscript-imports-"));
   t.after(() => rm(root, { recursive: true, force: true }));
-  await mkdir(join(root, "web/proofs"), { recursive: true });
-  await writeFile(join(root, "web/proofs/a.cubist"), "import b; def a = tt;");
-  await writeFile(join(root, "web/proofs/b.cubist"), "// import missing;\nimport a; def b = tt;");
+  await mkdir(join(root, "archive/first-library"), { recursive: true });
+  await writeFile(join(root, "archive/first-library/a.cubist"), "import b; def a := tt;");
+  await writeFile(join(root, "archive/first-library/b.cubist"), "// import missing;\nimport a; def b := tt;");
   const path = join(root, "root.cubist");
   await writeFile(path, "import a; def root : Unit { exact tt; }");
   const loaded = await loadProof(path, root);
@@ -66,13 +66,13 @@ test("changed-proof selection includes staged, unstaged and untracked files only
     assert.equal(result.status, 0, result.stderr);
   };
   git("init", "-q");
-  await writeFile(join(root, "tracked.cubist"), "def initial = tt;\n");
+  await writeFile(join(root, "tracked.cubist"), "def initial := tt;\n");
   git("add", "tracked.cubist");
   git("-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit", "-qm", "fixture");
-  await writeFile(join(root, "tracked.cubist"), "def modified = tt;\n");
-  await writeFile(join(root, "staged.cubist"), "def staged = tt;\n");
+  await writeFile(join(root, "tracked.cubist"), "def modified := tt;\n");
+  await writeFile(join(root, "staged.cubist"), "def staged := tt;\n");
   git("add", "staged.cubist");
-  await writeFile(join(root, "untracked space.cubist"), "def untracked = tt;\n");
+  await writeFile(join(root, "untracked space.cubist"), "def untracked := tt;\n");
   await writeFile(join(root, "unrelated.mjs"), "// not a proof\n");
   assert.deepEqual(changedProofs(root).sort(), ["staged.cubist", "tracked.cubist", "untracked space.cubist"]);
   assert.equal(selectTests(["--changed"], { root }).proofs.length, 3);

@@ -1,5 +1,6 @@
 /* Machine-readable native test adapter. WASM callers use the same C API
  * directly, without this line protocol. Exactly one query is accepted:
+ * V abi-version (first; a client built for another encoding is refused)
  * F sort length (positive-mask negative-mask)*
  * N kind payload child0 child1 child2 child3
  * D symbol value-handle expected-type-handle (appends a term alias)
@@ -31,7 +32,27 @@ static void formula(const cc_formula *f) {
     putchar(']');
 }
 
+/* This adapter emits checked syntax as a graph. JSON has no object sharing,
+ * so later visits point to the first occurrence of a native handle. */
+static unsigned char *printed_terms;
+static size_t printed_capacity;
 static void term(cc_kernel *k, cc_term t, unsigned depth);
+/* A level: a number when it is a tier-0 constant, as before G0, and
+ * otherwise an object in the shapes web/cubical-syntax.mjs decodes. */
+static void level(cc_kernel *k, cc_term t, unsigned depth) {
+    cc_term_kind kind;
+    uint32_t payload;
+    cc_term ch[4];
+    if (!t || depth > 1024 || !cc_kernel_node(k, t, &kind, &payload, ch)) { fputs("null", stdout); return; }
+    if (kind == CC_LCONST && payload <= CC_LEVEL_MAX) printf("%u", payload);
+    else if (kind == CC_LCONST) printf("{\"tag\":\"LConst\",\"tier\":%u,\"value\":%u}", payload >> 16, payload & 0xffffu);
+    else if (kind == CC_VAR) printf("{\"tag\":\"Var\",\"name\":\"v%u\"}", payload);
+    else if (kind == CC_LSUCC) { printf("{\"tag\":\"LSucc\",\"count\":%u,\"level\":", payload); level(k, ch[0], depth + 1); putchar('}'); }
+    else if (kind == CC_LMAX) {
+        fputs("{\"tag\":\"LMax\",\"left\":", stdout); level(k, ch[0], depth + 1);
+        fputs(",\"right\":", stdout); level(k, ch[1], depth + 1); putchar('}');
+    } else fputs("null", stdout);
+}
 static void field(cc_kernel *k, const char *name, cc_term t, unsigned depth) {
     printf(",\"%s\":", name);
     term(k, t, depth + 1);
@@ -39,16 +60,28 @@ static void field(cc_kernel *k, const char *name, cc_term t, unsigned depth) {
 static void term(cc_kernel *k, cc_term t, unsigned depth) {
     static const char *tags[] = {"", "U", "Var", "Pi", "Lam", "App", "Sigma", "Pair", "Fst", "Snd",
         "Nat", "Zero", "Succ", "NatRec", "Unit", "Point", "Path", "PLam", "PApp", "Comp", "Tube",
-        "Void", "Abort", "W", "Sup", "WRec", "Sum", "Inl", "Inr", "SumRec", "UnitRec", "Glue", "GlueSystem", "GlueTerm", "Unglue", "Ref", "Pushout", "PushLeft", "PushRight", "PushPath", "PushElim", "HComp", "Trans"};
+        "Void", "Abort", "W", "Sup", "WRec", "Sum", "Inl", "Inr", "SumRec", "UnitRec", "Glue", "GlueSystem", "GlueTerm", "Unglue", "Ref", "Pushout", "PushLeft", "PushRight", "PushPath", "PushElim", "HComp", "Trans",
+        "LBound", "LConst", "LSucc", "LMax", "LPi", "LLam", "LApp"};
     cc_term_kind kind;
     uint32_t payload;
     cc_term ch[4];
-    if (depth > 1024 || !cc_kernel_node(k, t, &kind, &payload, ch)) {
+    if (!t || t >= printed_capacity || depth > 1024 ||
+        !cc_kernel_node(k, t, &kind, &payload, ch)) {
         fputs("null", stdout);
         return;
     }
-    printf("{\"tag\":\"%s\"", tags[kind]);
-    if (kind == CC_U) printf(",\"level\":%u", payload);
+    if (printed_terms[t]) {
+        printf("{\"$ref\":%u}", t);
+        return;
+    }
+    printed_terms[t] = 1;
+    printf("{\"$id\":%u,\"tag\":\"%s\"", t, tags[kind]);
+    if (kind == CC_U) {
+        fputs(",\"level\":", stdout);
+        level(k, ch[0], depth + 1);
+        putchar('}');
+        return;
+    }
     if (kind == CC_DEFREF) {
         uint32_t symbol;
         if (cc_kernel_definition(k, t, &symbol, NULL, NULL))
@@ -182,7 +215,24 @@ int main(void) {
     aliases terms = {0}, formulas = {0};
     char command;
     int status = 1;
+    bool versioned = false;
     while (scanf(" %c", &command) == 1) {
+        /* The client states the encoding it was built for, before any syntax. */
+        if (command == 'V' && !versioned) {
+            unsigned version;
+            if (scanf(" %u", &version) != 1 || version != CC_KERNEL_ABI_VERSION) {
+                fprintf(stderr, "kernel-cli: the client's syntax encoding is not ABI version %u.\n", CC_KERNEL_ABI_VERSION);
+                status = 3;
+                break;
+            }
+            versioned = true;
+            continue;
+        }
+        if (!versioned) {
+            fprintf(stderr, "kernel-cli: the first line must state ABI version %u.\n", CC_KERNEL_ABI_VERSION);
+            status = 3;
+            break;
+        }
         if (command == 'N') {
             unsigned kind, payload, a, b, c, d;
             if (scanf(" %u %u %u %u %u %u", &kind, &payload, &a, &b, &c, &d) != 6)
@@ -272,10 +322,22 @@ int main(void) {
                         break;
                     }
                 }
+                cc_term highest = result.type > (normalize ? result.normal : result.expression)
+                    ? result.type : (normalize ? result.normal : result.expression);
+                printed_capacity = (size_t)highest + 1;
+                printed_terms = calloc(printed_capacity, 1);
+                if (!printed_terms) {
+                    fputs("{\"ok\":false,\"error\":\"Native output allocation failed.\"}\n", stdout);
+                    status = 0;
+                    break;
+                }
                 fputs("{\"ok\":true,\"type\":", stdout); term(k, result.type, 0);
                 fputs(",\"normal\":", stdout); term(k, normalize ? result.normal : result.expression, 0);
                 printf(",\"arenaNodes\":%zu,\"arenaBytes\":%zu", result.arena_nodes, result.arena_bytes);
                 printf(",\"checkingSteps\":%" PRIu64 ",\"reductionSteps\":%" PRIu64 "}\n", result.checking_steps, result.reduction_steps);
+                free(printed_terms);
+                printed_terms = NULL;
+                printed_capacity = 0;
             } else printf("{\"ok\":false,\"error\":\"%s\"}\n", cc_kernel_error(k));
             status = 0;
             break;
@@ -285,6 +347,7 @@ int main(void) {
     free(terms.items);
     free(formulas.items);
     free(assumptions);
+    free(printed_terms);
     cc_kernel_free(k);
     return status;
 }

@@ -40,3 +40,7 @@ cubical source before building on it.
 - [Earlier univalence axiom presentation](univalence.md)
 
 Current cubical implementation notes remain in [../cubical/](../cubical/).
+# Language tooling
+
+- [Proof ergonomics implementation checkpoint](proof-ergonomics-handoff.md): checked `rw`, `calc`, registered `simp`/`simpa`, and cubical path conveniences; inference and theories remain open.
+- [HoTT automation implementation checkpoint](hott-automation-handoff.md): A7 regressions, canonicity fixture and historical measurements; A5 core is delivered, with remaining goal-layer work scheduled in the active plan.

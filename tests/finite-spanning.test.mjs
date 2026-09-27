@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 const module = await createCubical();
-const readSource = name => readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+const readSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
 const create = t => { const p = new CubicalProgram(module, readSource, { collectReferences: false }); t.after(() => p.dispose()); return p; };
 const assumptions = (p, name) => { const s = p.symbols[name]; assert.equal(s?.verified, true, name); return s.axioms.map(id => p.checker.assumptionLabels.get(id)); };
 
@@ -20,14 +20,14 @@ test("finite spanning families contain an indexed subfamily basis without choice
   `, "spanning_regression");
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
   for (const name of ["finite_linear_lifts__finite_linear_lift", "spanning_subfamilies__finite_spanning_subfamily_basis", "finite_spanning__finite_spanning_basis"])
-    assert.ok(assumptions(p, name).every(a => /^(LEM\(U0\)|Truncate(?:Intro|Prop|Elim)?\(U0\))$/.test(a)), name);
+    assert.ok(assumptions(p, name).every(a => /^(LEM|Truncate(?:Intro|Prop|Elim)?)$/.test(a)), name);
 });
 
 test("arbitrary finite subspaces have bases and finiteness descends both ways in a tower", async t => {
   const p = create(t);
   const result = await p.check(`import subspace_carriers;
     import finite_towers;
-    def subspace_basis(K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V), S : Subspace(K, V)) : Mere(exists n : Nat, FiniteBasis(K, SubspaceVectorSpace(K, V, S), n)) {
+    def subspace_basis(K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V), S : Subspace(K, V)) : Mere(exists n : Nat. FiniteBasis(K, SubspaceVectorSpace(K, V, S), n)) {
       exact finite_subspace_basis(K, V, finite, S);
     }
     def tower_converse(K : AlgebraicField, L : AlgebraicField, M : AlgebraicField,
@@ -38,7 +38,7 @@ test("arbitrary finite subspaces have bases and finiteness descends both ways in
   `, "finite_tower_regression");
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
   for (const name of ["subspace_carriers__finite_subspace_basis", "finite_towers__finite_extension_tower_iff"])
-    assert.ok(assumptions(p, name).every(a => /^(LEM\(U0\)|Truncate(?:Intro|Prop|Elim)?\(U0\))$/.test(a)), name);
+    assert.ok(assumptions(p, name).every(a => /^(LEM|Truncate(?:Intro|Prop|Elim)?)$/.test(a)), name);
   assert.deepEqual(assumptions(p, "subspace_carriers__SubspaceVectorSpace"), []);
 });
 

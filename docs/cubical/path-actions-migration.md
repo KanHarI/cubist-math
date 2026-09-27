@@ -1,7 +1,7 @@
 # Native source edition of path actions
 
-`web/proofs/path_actions.cubist` keeps the public helper names and types
-from `web/proofs/path_actions.cubist`. The legacy source remains unchanged.
+`archive/first-library/path_actions.cubist` keeps the public helper names and types
+from `archive/first-library/path_actions.cubist`. The legacy source remains unchanged.
 The native edition uses explicit checked cubical operations rather than strict
 identity-eliminator computation.
 

@@ -8,7 +8,8 @@ const indent = body => ({ kind: "indent", body });
 // A paragraph packs complete phrases, instead of breaking every separator when
 // the whole statement exceeds the width. Nested delimiters still have groups.
 const flow = body => ({ kind: "flow", body });
-const punctuation = new Set([",", ";", ")", "]", "}"]);
+// A quantifier's `.` ends its type like a comma: no space before, a break after.
+const punctuation = new Set([",", ".", ";", ")", "]", "}"]);
 const operators = new Set(["=", "->", "=>", "+", "*", "<", "<=", "and", "or"]);
 
 function render(document, width) {
@@ -66,7 +67,13 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
   const construction = tokens[0]?.text === "construction";
   const syntax = construction ? null : parse(source);
   const declarationEnds = new Set(syntax?.declarations.map(node => node.end) ?? []);
-  // A binder's short domain is one phrase: `forall f : A -> B,` must not
+  // `computable` and `evaluate` are ordinary names except where the parser
+  // found a top-level modifier or directive.
+  const itemStarts = new Set([
+    ...(syntax?.declarations ?? []).map(node => node.modifierStart).filter(Number.isInteger),
+    ...(syntax?.directives ?? []).filter(node => node.kind === "evaluate").map(node => node.start),
+  ]);
+  // A binder's short domain is one phrase: `forall f : A -> B.` must not
   // split the arrow merely because the surrounding theorem is long.
   const domains = [];
   const expressionBlockEnds = new Set();
@@ -79,9 +86,9 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
     // Only declaration/let assignments introduce an indented right-hand side.
     // An equality inside an annotated definition's type is not an assignment.
     const valueStart = node.valueStart ?? (node.kind === "let" ? node.value?.start : undefined);
-    if (valueStart !== undefined && tokenBefore.get(valueStart)?.text === "=")
+    if (valueStart !== undefined && tokenBefore.get(valueStart)?.text === ":=")
       assignmentTokens.add(tokenBefore.get(valueStart).start);
-    if (node.type && ["def", "axiom", "have"].includes(node.kind)) {
+    if (node.type && ["def", "have"].includes(node.kind)) {
       annotationStarts.add(node.type.start);
       const next = tokenAfter.get(node.type.end);
       if (next?.text === "{") proofBodyStarts.add(next.start);
@@ -143,13 +150,15 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
         if (!close && trailing && preceding && declarationEnds.has(preceding.end)) docs.push(hard);
         previous = null; continue;
       }
-      if (!close && ["def", "axiom", "opaque", "construction"].includes(text) && previous && previous.text !== "opaque") {
+      const itemStart = ["def", "construction", "simp_rule", "simp_set"].includes(text)
+        || itemStarts.has(token.start);
+      if (!close && itemStart && previous && !(previous.text === "computable" && text === "def")) {
         flush(); docs.push(hard, hard); previous = null;
       }
       const space = previous && !punctuation.has(text) && !["(", "["].includes(previous.text)
         && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or"].includes(previous.text) || [")", "]"].includes(previous.text) || previous.text === "}" && expressionBlockEnds.has(previous.end)))
         && !(text === "[" && previous.text === "=");
-      if (space && previous.text !== ",") {
+      if (space && ![",", "."].includes(previous.text)) {
         if (annotationStarts.has(token.start)) annotation = statement.length;
         else if (proofBodyStarts.has(token.start)) proofBody = statement.length;
         else if (assignmentTokens.has(previous.start) && assignment < 0) assignment = statement.length;
@@ -183,7 +192,7 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
         }
       } else {
         statement.push(text);
-        if (text === ",") statement.push(line);
+        if (text === "," || text === ".") statement.push(line);
         previous = token;
       }
     }

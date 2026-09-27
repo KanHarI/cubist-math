@@ -1,5 +1,4 @@
 import { splitInspectionContext } from "./cubical-context.mjs";
-import { renderSpecialization } from "./cubical-specialization.mjs";
 import { cubicalSourceFile } from "./cubical-sources.mjs";
 import { proofChoices as choices, proofTopics, proofsInTopic } from "./proof-library.mjs";
 import { proofRequestWatchdog } from "./proof-watchdog.mjs";
@@ -8,24 +7,49 @@ import { axiomLabels } from "./axiom-labels.mjs";
 import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proof-navigation.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
+import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
+import { numeralExpansion, tokenStyle } from "./source-tokens.mjs";
+import { libraryModules } from "./mathscript/modules.mjs";
+import { enableTokenTips } from "./token-tips.mjs";
+import { createReplConsole } from "./repl-console.mjs";
 
 const query = new URLSearchParams(location.search);
 const backend = "cubical";
-const proofId = choices.some((p) => p.id === query.get("proof"))
-  ? query.get("proof")
+// A reference example is not a library proof: its source comes from the URL
+// fragment (#source=…), or, when embedded in a reference page, by message.
+const exampleMode = query.has("example"), embedded = exampleMode && query.has("embed");
+// A module of the rebuilt library opens like a proof, from library/.
+const libraryModule = !exampleMode && libraryModules.includes(query.get("proof"));
+const proofId = exampleMode ? "reference_example"
+  : libraryModule || choices.some((p) => p.id === query.get("proof")) ? query.get("proof")
   : "euclid";
-const sourceURL = `proofs/${choices.find((p) => p.id === proofId).file ?? cubicalSourceFile(proofId)}`;
+const choice = choices.find((p) => p.id === proofId);
+const sourceURL = exampleMode ? null
+  : libraryModule ? `library/${proofId}.cubist`
+  : `archive/first-library/${choice.file ?? cubicalSourceFile(proofId)}`;
 const snapshot = readProofNavigation(query.get("restore"));
 let restoring = snapshot?.proof === proofId ? snapshot : null;
 const crossFileBack = restoring?.back ?? query.get("back");
-const response = await fetch(sourceURL, { cache: "no-store" });
-if (!response.ok) throw new Error("Unable to load source: " + sourceURL);
-const original = await response.text();
+function exampleSource() {
+  const encoded = new URLSearchParams(location.hash.slice(1)).get("source");
+  if (!encoded) return "";
+  try { return new TextDecoder().decode(Uint8Array.from(atob(encoded.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0))); }
+  catch { return ""; }
+}
+let original;
+if (exampleMode) original = exampleSource();
+else {
+  const response = await fetch(sourceURL, { cache: "no-store" });
+  if (!response.ok) throw new Error("Unable to load source: " + sourceURL);
+  original = await response.text();
+}
+document.body.classList.toggle("embedded", embedded);
 let savedDraft = null,
   previousDraft = null,
   sourceNotice = "";
 try {
-  const stored = sessionStorage.getItem("mathscript:" + proofId);
+  // An example always opens with the source it was given.
+  const stored = exampleMode ? null : sessionStorage.getItem("mathscript:" + proofId);
   if (stored) {
     let record;
     try {
@@ -74,12 +98,17 @@ for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) {
   $(id).checked = true;
   try { $(id).checked = localStorage.getItem("mathscript:" + id) !== "false"; } catch {}
 }
-$("proof-title").textContent = choices.find((p) => p.id === proofId).title;
-$("development-note").hidden = !choices.find((p) => p.id === proofId).realDevelopment;
-$("puncture-note").hidden = !choices.find((p) => p.id === proofId).punctureDevelopment;
-$("complex-note").hidden = !choices.find((p) => p.id === proofId).complexDevelopment;
-$("source-file").href = sourceURL;
-$("source-file").textContent = `web/${sourceURL}`;
+$("proof-title").textContent = choice?.title ?? (libraryModule ? `Library: ${proofId}` : "Reference example");
+$("development-note").hidden = !choice?.realDevelopment;
+$("puncture-note").hidden = !choice?.punctureDevelopment;
+$("complex-note").hidden = !choice?.complexDevelopment;
+$("archive-note").hidden = exampleMode || libraryModule;
+$("source-file").hidden = exampleMode;
+$("repository-source").hidden = exampleMode;
+if (sourceURL) {
+  $("source-file").href = sourceURL;
+  $("source-file").textContent = `web/${sourceURL}`;
+}
 $("repository-source").href =
   `proof.html?proof=${encodeURIComponent(proofId)}&source=repo`;
 $("source-notice").textContent = sourceNotice;
@@ -114,7 +143,7 @@ function showTopic(topic) {
   if (proofs.some(item => item.id === proofId)) $("proof-picker").value = proofId;
   $("proof-count").textContent = `${proofs.length} proofs`;
 }
-$("proof-topic").value = choices.find(item => item.id === proofId).topic;
+$("proof-topic").value = choice?.topic ?? proofTopics[0].id;
 showTopic($("proof-topic").value);
 $("proof-topic").onchange = () => showTopic($("proof-topic").value);
 function rememberDraft() {
@@ -208,6 +237,20 @@ function request(command, args = {}) {
     worker.postMessage({ id, command, args });
   });
 }
+let focusOffset = null, queuedExample = null;
+// Check an example sent by the embedding reference page, then inspect the
+// name the reader clicked.
+async function runExample({ source, offset }) {
+  if (!ready) { queuedExample = { source, offset }; return; }
+  queuedExample = null;
+  $("editor").value = source;
+  focusOffset = Number.isInteger(offset) ? offset : null;
+  await check();
+}
+if (embedded) addEventListener("message", ({ data, origin }) => {
+  if (origin !== location.origin || data?.type !== "cubist-inspect" || typeof data.source !== "string") return;
+  runExample(data);
+});
 async function check() {
   showChecking(true);
   if (await refreshCompiler()) return;
@@ -235,8 +278,15 @@ async function check() {
       window.scrollTo(0, saved.scroll ?? 0);
     } else {
       const fallback = result.outputs.at(-1);
-      if (info ?? fallback) await inspect(decorate(info ?? fallback), false);
-      if (info) revealSource(info);
+      // An embedding page asks for the name at a source offset.
+      const focus = focusOffset === null ? null : [...result.links].filter(link => link.start === focusOffset)
+        .sort((a, b) => a.end - a.start - (b.end - b.start))[0];
+      focusOffset = null;
+      if (focus) await inspect({ ...decorate(focus), line: result.source.slice(0, focus.start).split("\n").length }, false);
+      else if (info ?? fallback) await inspect(decorate(info ?? fallback), false);
+      // Embedded, the inspector is on top and the source below stays in place.
+      if (focus && !embedded) revealSource(focus);
+      else if (info) revealSource(info);
     }
     rememberDraft();
   } catch (e) {
@@ -350,7 +400,7 @@ function renderResult() {
   for (const output of last.outputs) {
     const line = document.createElement("div");
     line.append(
-      output.template ? "Universe template " : output.verified === false && last.backend === "cubical" ? "Not checked " : output.kind === "axiom" ? "Axiom " : last.mode !== "construction" || output.verified
+      output.verified === false && last.backend === "cubical" ? "Not checked " : output.kind === "axiom" ? "Axiom " : last.mode !== "construction" || output.verified
         ? "Verified "
         : "Checked ",
     );
@@ -370,52 +420,6 @@ function renderResult() {
   detail.textContent = `${last.instructionCount.toLocaleString()} checked instructions. ${last.axiomCount ? last.axiomCount + " explicit axioms in this module." : "No axioms."}`;
   $("result").append(detail);
 }
-const keywords = new Set([
-  "import",
-  "def",
-  "forall",
-  "exists",
-  "and",
-  "or",
-  "let",
-  "obtain",
-  "intro",
-  "have",
-  "cases",
-  "left",
-  "right",
-  "exact",
-  "private",
-  "export",
-  "verify",
-  "with",
-  "unfolding",
-  "axiom",
-  "opaque",
-  "axioms",
-  "allow",
-  "none",
-  "intro",
-  "induction",
-  "zero",
-  "succ",
-  "fun",
-  "match",
-  "return",
-  "as",
-]);
-// Language-provided forms share the keyword palette; ordinary library and
-// user-defined functions retain the green reference style.
-const builtinForms = new Set([
-  "W", "sup", "wrec",
-  "Interval", "path", "PathP", "at", "comp", "face", "flip", "meet", "join",
-  "Pushout", "push_left", "push_right", "push_path", "pushout_induction",
-  "Nat", "Unit", "Void", "Universe", "tt", "succ", "refl", "absurd",
-  "sym", "trans", "cong", "transport", "apd", "Eq", "typed", "unfold",
-  "induct", "unpack", "pair_induction", "unit_induction", "path_induction",
-  "Choice", "LEM", "FunExt", "Truncate",
-  "TruncateIntro", "TruncateProp", "TruncateElim", "Univalence", "UnivalenceBeta", "UnivalenceEta", "ua", "idtoequiv",
-]);
 function renderSource() {
   $("read-source").replaceChildren();
   if (!last) return;
@@ -486,17 +490,16 @@ function renderSource() {
         code.append(link);
       } else {
         const info = linkMap.get(start);
-        const expansion = last.mode === "mathematical" && /^[0-9]+$/.test(text) && Number(text) <= 256
-          ? "succ(".repeat(Number(text)) + "0" + ")".repeat(Number(text))
-          : info?.expansion;
-        const style = keywords.has(text) || builtinForms.has(text) || /^U[0-9]+$/.test(text)
-          ? "keyword" : expansion ? "macro" : "";
+        const expansion = (last.mode === "mathematical" ? numeralExpansion(text) : null) ?? info?.expansion;
+        const style = tokenStyle(text, expansion);
         if (info) {
           const button = document.createElement("button");
           button.className = `reference${style ? " " + style : ""}`;
           button.textContent = text;
-          button.title = expansion ? `${text} expands to ${expansion}` : `Inspect ${text}`;
-          if (expansion) button.setAttribute("aria-label", button.title);
+          if (expansion && expansion !== text) {
+            button.dataset.tip = `${text} expands to ${expansion}`;
+            button.setAttribute("aria-label", button.dataset.tip);
+          } else button.title = `Inspect ${text}`;
           button.dataset.name = text;
           button.onclick = () =>
             inspect({ ...decorate(info), line: index + 1 });
@@ -505,7 +508,7 @@ function renderSource() {
           const span = document.createElement("span");
           span.className = style;
           span.textContent = text;
-          if (expansion) span.title = `${text} expands to ${expansion}`;
+          if (expansion && expansion !== text) span.dataset.tip = `${text} expands to ${expansion}`;
           code.append(span);
         } else code.append(document.createTextNode(text));
       }
@@ -516,8 +519,32 @@ function renderSource() {
     offset += line.length + 1;
   }
 }
+function renderWitnessDetails(info) {
+  $("inspect-description").textContent = info.description ?? "";
+  const trace=$("rewrite-trace");
+  trace.replaceChildren();trace.hidden=!info.rewriteSteps?.length;
+  for(const step of info.rewriteSteps??[]) {
+    const button=document.createElement("button");
+    button.className="reference";
+    button.textContent=step.description;
+    button.onclick=()=>inspect(decorate(step));
+    trace.append(button);
+  }
+  const freeze=$("freeze-simp");
+  freeze.hidden=!info.freeze;
+  freeze.disabled=dirty();
+  freeze.onclick=async()=>{
+    const edit=info.freeze;
+    if(!edit||!last||dirty()||last.source.slice(edit.start,edit.end)!==edit.original) {
+      diagnostic(Error("Recheck the current source before replacing this simplification."));
+      return;
+    }
+    $("editor").value=last.source.slice(0,edit.start)+edit.text+last.source.slice(edit.end);
+    $("editor").dispatchEvent(new Event("input",{bubbles:true}));
+    await check();
+  };
+}
 async function inspect(info, remember = true) {
-  const previousUniverses = selected?.universes;
   if (remember && selected) {
     history.push(selected);
     if (history.length > 60) history.shift();
@@ -535,31 +562,12 @@ async function inspect(info, remember = true) {
   $("inspect-parameters").open = false;
   $("inspect-parameters-list").replaceChildren();
   renderType(info.kind === "goal" ? info.step.goal : (info.type ?? ""));
-  $("inspect-description").textContent = info.description ?? "";
-  const templateBinding = info.template ? info.binding : info.templateBinding;
-  const universeControls = $("inspect-universes");
-  universeControls.replaceChildren(); universeControls.hidden = !templateBinding;
-  if (templateBinding) {
-    const parameters = info.templateParameters ?? ["U"];
-    info.universes ??= parameters.map((_, index) => previousUniverses?.[index] ?? 0);
-    for (const [index, parameter] of parameters.entries()) {
-      const label = document.createElement("label"), select = document.createElement("select");
-      label.textContent = `Universe ${parameter} `;
-      select.setAttribute("aria-label", `Universe ${parameter}`);
-      for (let level = 0; level <= 3; level++) select.add(new Option(`U${level}`, String(level)));
-      select.value = String(info.universes[index]);
-      select.onchange = () => {
-        const universes = [...info.universes]; universes[index] = Number(select.value);
-        inspect({ ...info, universes }, false);
-      };
-      label.append(select); universeControls.append(label);
-    }
-    $("inspect-description").textContent = `Inspecting ${info.name} at ${info.universes.map(level => `U${level}`).join(", ")}. This specialization is checked by cubical C; the generic definition remains a template.`;
-  }
+  renderWitnessDetails(info);
   sourceLink(info);
   $("inspect-axioms").replaceChildren();
   $("locals").replaceChildren();
   $("kernel-details").hidden = info.kind === "goal";
+  $("kernel-terms").hidden = info.kind === "goal";
   $("kernel-details").open = true;
   $("open-kernel-expression").disabled = true;
   $("open-kernel-type").disabled = true;
@@ -597,28 +605,22 @@ async function inspect(info, remember = true) {
       button.className = "local";
       button.append(document.createTextNode(local.name));
       const type = document.createElement("small");
-      type.textContent = local.type;
+      type.textContent = local.relation === "<" ? `< ${local.type}` : local.type;
       button.append(type);
       button.onclick = () =>
         inspect({ ...local, kind: "value", role: "Local assumption" });
       $("locals").append(button);
     }
   } else {
-    if (last.backend === "cubical" && info.verified === false && !templateBinding) {
+    if (last.backend === "cubical" && info.verified === false) {
       $("kernel-details").hidden = true;
-      $("inspect-description").textContent = info.template
-        ? `Library universe template. Each concrete specialization is checked by cubical C when used. ${info.description ?? ""}`
-        : `Not checked by cubical C: ${info.reason}`;
+      $("kernel-terms").hidden = true;
+      $("inspect-description").textContent = `Not checked by cubical C: ${info.reason}`;
       return;
     }
     try {
-      const view = await request("inspect", { binding: templateBinding ?? info.binding,
-        ...(templateBinding ? { universes: info.universes, offset: info.templateOffset } : {}) });
+      const view = await request("inspect", { binding: info.binding });
       if (sequence !== inspectSerial) return;
-      if (templateBinding) {
-        const checkedInfo = view.symbols[view.name];
-        if (checkedInfo) sourceLink(checkedInfo);
-      }
       if (view.statement) renderStatement(view);
       else renderType(view.typeText, Object.values(view.symbols));
       renderKernel(view);
@@ -626,7 +628,8 @@ async function inspect(info, remember = true) {
       if (sequence === inspectSerial) diagnostic(e);
     }
   }
-  if (matchMedia("(max-width:1150px)").matches)
+  if (embedded) scrollTo(0, 0);
+  else if (matchMedia("(max-width:1150px)").matches)
     $("inspect-name").scrollIntoView({ block: "center" });
 }
 function renderStatement(view) {
@@ -650,7 +653,7 @@ function renderStatement(view) {
     const name = document.createElement("span"), type = document.createElement("span");
     append(name, parameter.name);
     append(type, parameter.type);
-    row.append(name, " : ", type);
+    row.append(name, ` ${parameter.relation} `, type);
     $("inspect-parameters-list").append(row);
   }
 }
@@ -694,7 +697,6 @@ function renderKernel(view) {
   renderCubicalKernel(view);
 }
 function renderCubicalKernel(view) {
-  renderSpecialization($("kernel-specialization"), view);
   $("open-kernel-assembly").hidden = false;
   $("open-kernel-assembly").disabled = false;
   const mode = $("kernel-view").value, raw = mode === "raw", folded = mode === "notation";
@@ -724,7 +726,7 @@ function renderCubicalKernel(view) {
   }
   const render = (target, term) => {
     target.classList.toggle("typeset", !raw);
-    if (raw) target.textContent = JSON.stringify(term, null, 2);
+    if (raw) target.textContent = boundedSyntaxJson(term) ?? syntaxDisplayLimitMessage;
     else renderMathNotation(target, cubicalMathTree(term, view.symbols, kernelDisplayLimit), navigation);
   };
   for (const [list, entries] of [["kernel-context-list", context], ["kernel-axioms-list", axioms]]) for (const entry of entries) {
@@ -733,7 +735,8 @@ function renderCubicalKernel(view) {
     button.className = "reference"; button.textContent = entry.label; button.dataset.name = entry.label;
     button.disabled = !entry.binding;
     button.onclick = () => navigation.inspect(view.symbols[entry.binding]);
-    label.append(button, " : ");
+    // A universe variable's entry is its bound: U < UU0.
+    label.append(button, entry.type?.tag === "LBound" ? " < " : " : ");
     const value = document.createElement("div"); value.className = "kernel-term kernel-context-type";
     render(value, entry.type); row.append(label, value); $(list).append(row);
   }
@@ -769,7 +772,9 @@ $("kernel-view").onchange = () => { if (checkedKernelView) renderKernel(checkedK
 $("kernel-truncation-sugar").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 $("kernel-group-binders").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 $("kernel-identity-sugar").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
-async function openKernelWorkbench(side, representation = "math") {
+// The workbench opens on the kernel graph: the judgements the instruction
+// kernel derives for the term.
+async function openKernelWorkbench(side, representation = "graph") {
   if (!checkedKernelView) return;
   const binding = checkedKernelView.name;
   const folded = $("kernel-view").value === "notation" && !!checkedKernelView.folded?.verified?.[side];
@@ -894,7 +899,11 @@ async function startWorker(version = undefined) {
     if (data.ready) {
       ready = true;
       refreshStatus();
-      check();
+      // Embedded, the page checks what the embedding page sends.
+      if (embedded) {
+        parent.postMessage({ type: "cubist-ready" }, location.origin);
+        if (queuedExample) runExample(queuedExample);
+      } else check();
       return;
     }
     const p = pending.get(data.id);
@@ -933,5 +942,12 @@ addEventListener("focus", () => {
 });
 addEventListener("pageshow", (event) => {
   if (event.persisted) refreshCompiler().catch(diagnostic);
+});
+enableTokenTips();
+// The console runs over the last checked version of this file.
+if (!embedded) createReplConsole($("repl"), {
+  label: "Console input: a Cubist term or declaration",
+  run: input => request("repl", { input }),
+  reset: () => request("repl-reset", {}),
 });
 await startWorker();

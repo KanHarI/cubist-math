@@ -1,0 +1,103 @@
+import field_magnitude;
+import complete_fields;
+
+// Turn a weak magnitude estimate and a strict radius bound into closeness.
+def field_magnitude_small_close(
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, radius, epsilon : F,
+  bound : FieldMagnitudeBound(F, negF, lt, x, radius), small : lt(radius, epsilon)
+) :
+  FieldClose(F, addF, lt, x, zero, epsilon) {
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  obtain (upper, lower) := bound;
+  let less := leLt(x, radius, epsilon, upper, small);
+  let negLess := leLt(negF(x), radius, epsilon, lower, small);
+  obtain (shiftForward, shiftBackward) := translate(negF(x), epsilon, x);
+  let shifted :=
+    along lt(addF(negF(x), x)) by ring_add_comm(F, zero, one, addF, mulF, negF, ring, epsilon, x) from shiftForward(
+      negLess
+    );
+  exact (
+    along lt(x) by sym(ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon)) from less,
+    along((fun (v : F) => lt(v, addF(x, epsilon)))) by ring_add_inverse(
+      F, zero, one, addF, mulF, negF, ring, x
+    ) from shifted
+  );
+}
+
+def field_close_translate(
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y, epsilon, shift : F,
+  close : FieldClose(F, addF, lt, x, y, epsilon)
+) :
+  FieldClose(F, addF, lt, addF(shift, x), addF(shift, y), epsilon) {
+  obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
+  obtain (upper, lower) := close;
+  have shiftLess : forall u : F. forall v : F. lt(u, v) -> lt(addF(shift, u), addF(shift, v)) {
+    intro u, v, less;
+    obtain (forward, backward) := translate(u, v, shift);
+    let first :=
+      along((fun (a : F) => lt(a, addF(v, shift)))) by ring_add_comm(
+        F, zero, one, addF, mulF, negF, ring, u, shift
+      ) from forward(less);
+    exact along lt(addF(shift, u)) by ring_add_comm(F, zero, one, addF, mulF, negF, ring, v, shift) from first;
+  }
+  exact (
+    along lt(addF(shift, x)) by sym(
+      ring_add_assoc(F, zero, one, addF, mulF, negF, ring, shift, y, epsilon)
+    ) from shiftLess(x, addF(y, epsilon), upper),
+    along lt(addF(shift, y)) by sym(
+      ring_add_assoc(F, zero, one, addF, mulF, negF, ring, shift, x, epsilon)
+    ) from shiftLess(y, addF(x, epsilon), lower)
+  );
+}
+
+def field_magnitude_perturbation_close(
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y, error, radius, epsilon : F,
+  computes : y = addF(x, error), bound : FieldMagnitudeBound(F, negF, lt, error, radius),
+  small : lt(radius, epsilon)
+) :
+  FieldClose(F, addF, lt, y, x, epsilon) {
+  let close :=
+    field_magnitude_small_close(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, error, radius, epsilon, bound,
+      small
+    );
+  let shifted :=
+    field_close_translate(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, error, zero, epsilon, x, close
+    );
+  let unitRemoved :=
+    along((fun (v : F) => FieldClose(F, addF, lt, addF(x, error), v, epsilon))) by ring_add_zero_right(
+      F, zero, one, addF, mulF, negF, ring, x
+    ) from shifted;
+  exact along((fun (v : F) => FieldClose(F, addF, lt, v, x, epsilon))) by sym(computes) from unitRemoved;
+}
+
+// A bound tending to zero forces the bounded error to tend to zero.
+def field_magnitude_squeeze(
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), errors, radii : Nat -> F,
+  bounds : (forall n : Nat. FieldMagnitudeBound(F, negF, lt, errors(n), radii(n))),
+  vanishes : FieldConverges(F, zero, addF, lt, radii, zero)
+) :
+  FieldConverges(F, zero, addF, lt, errors, zero) {
+  intro epsilon, positive;
+  obtain (bound, close) := vanishes(epsilon, positive);
+  have tail : forall n : Nat. IndexLE(bound, n) -> FieldClose(F, addF, lt, errors(n), zero, epsilon) {
+    intro n, large;
+    obtain (upper, lower) := close(n, large);
+    let small :=
+      along lt(radii(n)) by ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon) from upper;
+    exact field_magnitude_small_close(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, errors(n), radii(n), epsilon,
+      bounds(n), small
+    );
+  }
+  exact (bound, tail);
+}

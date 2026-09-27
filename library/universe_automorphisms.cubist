@@ -1,0 +1,219 @@
+// Excluded middle for U0 holds exactly when there merely is an automorphism F
+// of U0 with F(Unit) equivalent to Void (Booij, Escardó, Lumsdaine and
+// Shulman, "Parametricity, automorphisms of the universe, and excluded
+// middle", 2016). Without the truncations both directions use no assumption.
+// Paths, equivalences and propositions still come from the archive until the
+// rebuilt foundations replace them.
+import classical_axioms;
+import classical;
+import equivalence_from_inverse;
+
+// The HoTT book's form of excluded middle: every proposition is decided.
+def PropositionsDecidable := forall P : U0. Proposition(P) -> Decidable(P);
+
+def automorphism_map(e : Equiv(U1, U0, U0)) : U0 -> U0 {
+  exact unpack e as (f, rest) return (U0 -> U0) { f; };
+}
+
+// An automorphism of U0 that sends Unit to an empty type.
+def UnitToVoidAutomorphism :=
+  exists e : Equiv(U1, U0, U0). Equiv(U0, automorphism_map(e, Unit), Void);
+
+computable def unit_is_prop : Proposition(Unit) {
+  intro x, y;
+  exact unit_induction(
+    fun (v : Unit) => v = y, unit_induction(fun (w : Unit) => tt = w, refl(tt), y), x
+  );
+}
+
+// An inhabited proposition is Unit.
+computable def inhabited_is_unit(P : U0, prop : Proposition(P), p : P) : P = Unit {
+  exact ua(
+    U0, P, Unit, equiv_from_inverse(
+      U0, P, Unit, fun (x : P) => tt, fun (u : Unit) => p, fun (x : P) => prop(p, x),
+      fun (u : Unit) => unit_is_prop(tt, u)
+    )
+  );
+}
+
+// Two empty types are equal.
+computable def empty_types_equal(A, B : U0, a : A -> Void, b : B -> Void) : A = B {
+  exact ua(
+    U0, A, B, equiv_from_inverse(
+      U0, A, B, fun (x : A) => absurd(a(x)), fun (y : B) => absurd(b(y)),
+      fun (x : A) => absurd(a(x)), fun (y : B) => absurd(b(y))
+    )
+  );
+}
+
+// From an automorphism to excluded middle. If P holds then P = Unit, so
+// F(P) = F(Unit), which is empty.
+computable def holds_then_image_empty(
+  F : U0 -> U0, empty : F(Unit) -> Void, P : U0, prop : Proposition(P), p : P
+) : F(P) -> Void {
+  intro x;
+  exact empty(along((fun (T : U0) => T)) by cong(F, inhabited_is_unit(P, prop, p)) from x);
+}
+
+// If F(P) is empty then F(P) = F(Unit); the inverse G gives P = Unit.
+computable def image_empty_then_holds(
+  F, G : U0 -> U0, eta : forall X : U0. G(F(X)) = X, empty : F(Unit) -> Void, P : U0,
+  none : F(P) -> Void
+) : P {
+  have same : P = Unit := trans(
+    sym(eta(P)), trans(cong(G, empty_types_equal(F(P), F(Unit), none, empty)), eta(Unit))
+  );
+  exact along((fun (T : U0) => T)) by sym(same) from tt;
+}
+
+// So P is equivalent to the negation F(P) -> Void, and is stable under
+// double negation.
+computable def stable_from_swap(
+  s : UnitToVoidAutomorphism, P : U0, prop : Proposition(P), nn : (P -> Void) -> Void
+) : P {
+  obtain (e, zero) := s;
+  obtain (f, g, eta, rest) := e;
+  obtain (empty, laws) := zero;
+  exact image_empty_then_holds(
+    f, g, eta, empty, P,
+    fun (x : f(P)) => nn(fun (p : P) => holds_then_image_empty(f, empty, P, prop, p, x))
+  );
+}
+
+// Such an automorphism decides every proposition, with no assumption.
+computable def decided_from_swap(s : UnitToVoidAutomorphism) : PropositionsDecidable {
+  intro P, prop;
+  exact stable_from_swap(
+    s, Decidable(P), decision_is_prop(P, prop),
+    fun (no : Decidable(P) -> Void) => no(right(fun (p : P) => no(left(p))))
+  );
+}
+
+def excluded_middle_from_swap(t : Truncate(U1, UnitToVoidAutomorphism)) : ExcludedMiddle(U0) {
+  intro A, nn;
+  exact TruncateElim(
+    U1, UnitToVoidAutomorphism, Truncate(U0, A), TruncateProp(U0, A),
+    fun (s : UnitToVoidAutomorphism) => stable_from_swap(
+      s, Truncate(U0, A), TruncateProp(U0, A),
+      fun (none : Truncate(U0, A) -> Void) => nn(fun (a : A) => none(TruncateIntro(U0, A, a)))
+    ), t
+  );
+}
+
+// From excluded middle to an automorphism: negate every proposition and fix
+// every other type.
+def decided_from_excluded_middle(lem : ExcludedMiddle(U0)) : PropositionsDecidable {
+  intro P, prop;
+  exact TruncateElim(
+    U0, Decidable(P), Decidable(P), decision_is_prop(P, prop), fun (d : Decidable(P)) => d,
+    lem(Decidable(P), fun (no : Decidable(P) -> Void) => no(right(fun (p : P) => no(left(p)))))
+  );
+}
+
+def NegateProposition(X : U0, decision : Decidable(Proposition(X))) : U0 {
+  exact match decision return U0 {
+    left prop => X -> Void;
+    right other => X;
+  };
+}
+
+computable def double_negation_equiv(decide : PropositionsDecidable, X : U0, prop : Proposition(X)) :
+  Equiv(U0, (X -> Void) -> Void, X) {
+  let forth := fun (nn : (X -> Void) -> Void) => match decide(X, prop) return X {
+    left x => x;
+    right no => absurd(nn(no));
+  };
+  let back := fun (x : X) => fun (k : X -> Void) => k(x);
+  exact equiv_from_inverse(
+    U0, (X -> Void) -> Void, X, forth, back,
+    fun (nn : (X -> Void) -> Void) => negation_is_prop(X -> Void, back(forth(nn)), nn),
+    fun (x : X) => prop(forth(back(x)), x)
+  );
+}
+
+// Negating twice returns X: a negation is always a proposition, and a
+// proposition is its own double negation.
+computable def negate_twice_at(
+  decide : PropositionsDecidable, X : U0, first : Decidable(Proposition(X))
+) :
+  forall second : Decidable(Proposition(NegateProposition(X, first))).
+  NegateProposition(NegateProposition(X, first), second) = X {
+  exact match first as d return (
+    forall second : Decidable(Proposition(NegateProposition(X, d))).
+    NegateProposition(NegateProposition(X, d), second) = X
+  ) {
+    left prop => fun (second : Decidable(Proposition(X -> Void))) => match second as s return (
+      NegateProposition(X -> Void, s) = X
+    ) {
+      left negated => ua(U0, (X -> Void) -> Void, X, double_negation_equiv(decide, X, prop));
+      right other => absurd(other(negation_is_prop(X)));
+    };
+    right other => fun (second : Decidable(Proposition(X))) => match second as s return (
+      NegateProposition(X, s) = X
+    ) {
+      left prop => absurd(other(prop));
+      right same => refl(X);
+    };
+  };
+}
+
+computable def decide_proposition(decide : PropositionsDecidable, X : U0) :
+  Decidable(Proposition(X)) {
+  exact decide(Proposition(X), is_prop_prop(X));
+}
+
+computable def swap_map(decide : PropositionsDecidable, X : U0) : U0 {
+  exact NegateProposition(X, decide_proposition(decide, X));
+}
+
+computable def swap_involution(decide : PropositionsDecidable, X : U0) :
+  swap_map(decide, swap_map(decide, X)) = X {
+  exact negate_twice_at(
+    decide, X, decide_proposition(decide, X), decide_proposition(decide, swap_map(decide, X))
+  );
+}
+
+computable def swap_equiv(decide : PropositionsDecidable) : Equiv(U1, U0, U0) {
+  exact equiv_from_inverse(
+    U1, U0, U0, swap_map(decide), swap_map(decide), swap_involution(decide),
+    swap_involution(decide)
+  );
+}
+
+computable def negated_unit_empty : Equiv(U0, Unit -> Void, Void) {
+  exact equiv_from_inverse(
+    U0, Unit -> Void, Void, fun (k : Unit -> Void) => k(tt), fun (v : Void) => fun (u : Unit) => v,
+    fun (k : Unit -> Void) => absurd(k(tt)), fun (v : Void) => absurd(v)
+  );
+}
+
+computable def negate_unit_at(decision : Decidable(Proposition(Unit))) :
+  Equiv(U0, NegateProposition(Unit, decision), Void) {
+  exact match decision as d return Equiv(U0, NegateProposition(Unit, d), Void) {
+    left prop => negated_unit_empty;
+    right other => absurd(other(unit_is_prop));
+  };
+}
+
+// Deciding every proposition gives the automorphism, with no assumption.
+computable def swap_from_decided(decide : PropositionsDecidable) : UnitToVoidAutomorphism {
+  exact (swap_equiv(decide), negate_unit_at(decide_proposition(decide, Unit)));
+}
+
+def swap_from_excluded_middle(lem : ExcludedMiddle(U0)) : Truncate(U1, UnitToVoidAutomorphism) {
+  exact TruncateIntro(
+    U1, UnitToVoidAutomorphism, swap_from_decided(decided_from_excluded_middle(lem))
+  );
+}
+
+// LEM_U0 <-> || exists F : U0 ~ U0. F(Unit) ~ Void ||.
+def excluded_middle_iff_universe_swap :
+  (ExcludedMiddle(U0) -> Truncate(U1, UnitToVoidAutomorphism))
+  and (Truncate(U1, UnitToVoidAutomorphism) -> ExcludedMiddle(U0)) {
+  exact (swap_from_excluded_middle, excluded_middle_from_swap);
+}
+
+// Under the library's LEM assumption the automorphism exists outright.
+def universe_swap_from_assumption : UnitToVoidAutomorphism {
+  exact swap_from_decided(decided_from_excluded_middle(excluded_middle_assumed(U0)));
+}

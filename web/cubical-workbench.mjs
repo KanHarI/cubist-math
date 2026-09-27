@@ -1,13 +1,14 @@
 import { splitInspectionContext } from "./cubical-context.mjs";
-import { renderSpecialization } from "./cubical-specialization.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
 import createCubical from "./dist/cubical.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
 import { readWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
+import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
 import { renderMathNotation } from "./math-notation.mjs";
 import { reduceView, checkReduction, reductionRule, termAtPath } from "./cubical-reduction.mjs";
 import { kernelAssembly, assemblyText, renderAssembly } from "./cubical-assembly.mjs";
+import { judgementGraph, renderJudgementGraph } from "./cubical-graph-view.mjs";
 const $ = id => document.getElementById(id), history = [];
 let program, view, checked, selected, reductionMode = null, reductionLimit = 5000;
 let assemblyLimit = 400, assemblyView = null, listing = null, assemblyFocus = [], expandedDefinitions = new Set();
@@ -15,17 +16,22 @@ const enableReductions = enabled => document.querySelectorAll("[data-reduction]"
 const options = () => ({ resolve: binding => view.symbols[binding], inspect: info => inspect(info.binding),
   identitySugar: $("identity-sugar").checked, truncationSugar: $("truncation-sugar").checked });
 function display(updateSyntax = true) {
-  const assembly = $("workbench-view").value === "assembly";
-  $("mathematical-view").hidden = assembly;
+  const mode = $("workbench-view").value, assembly = mode === "assembly", kernelGraph = mode === "graph";
+  $("mathematical-view").hidden = mode !== "math";
   $("assembly-view").hidden = !assembly;
-  document.querySelectorAll("[data-math-option]").forEach(element => { element.hidden = assembly; });
+  $("graph-view").hidden = !kernelGraph;
+  document.querySelectorAll("[data-math-option]").forEach(element => { element.hidden = mode !== "math"; });
   $("name").textContent = view.symbols[selected]?.name ?? selected ?? "Edited expression";
   $("back").disabled = !history.length;
-  if (updateSyntax) $("syntax").value = JSON.stringify(view.expression, null, 2);
-  renderSpecialization($("specialization"), view);
-  if (assembly) {
+  if (updateSyntax) {
+    const syntax = boundedSyntaxJson(view.expression);
+    $("syntax").value = syntax ?? syntaxDisplayLimitMessage;
+    $("check").disabled = syntax === null;
+  }
+  if (assembly || kernelGraph) {
     $("more-reduction-sites").hidden = true;
-    displayAssembly(); return;
+    if (assembly) displayAssembly(); else displayGraph();
+    return;
   }
   const display = $("fold-names").checked ? view.folded ?? foldedInspection(view) : view;
   $("name").textContent = view.symbols[selected]?.name ?? selected ?? "Edited expression";
@@ -81,14 +87,21 @@ function display(updateSyntax = true) {
 function displayAssembly() {
   if (!checked) {
     listing = null; $("assembly-listing").replaceChildren();
-    $("assembly-status").textContent = "Return to Mathematical view and check the edited expression before inspecting its assembly.";
+    $("assembly-status").textContent = "Return to Mathematical view and check the edited expression before inspecting its AST.";
     $("assembly-more").hidden = true; $("assembly-download").disabled = true; return;
   }
   if (assemblyView !== view) {
     assemblyView = view; assemblyLimit = 400; assemblyFocus = []; expandedDefinitions = new Set();
   }
   listing = kernelAssembly(program, view, checked, { limit: assemblyLimit, focus: assemblyFocus, expanded: expandedDefinitions });
-  renderSpecialization($("specialization"), view, { listing, jump: jumpAssembly });
+  // The term and its type, typeset, above the nodes that store them.
+  $("assembly-math").replaceChildren(...[["Term", view.expression], ["Type", view.type]].map(([label, term]) => {
+    const row = document.createElement("div"), name = document.createElement("span"), math = document.createElement("div");
+    row.className = "assembly-math-row"; name.textContent = label; math.className = "kernel-term typeset";
+    renderMathNotation(math, cubicalMathTree(term, view.symbols, 1200), options());
+    row.append(name, math);
+    return row;
+  }));
   renderAssembly($("assembly-listing"), listing, { jump: jumpAssembly,
     expand: (id, body) => { expandedDefinitions.add(id); assemblyFocus.unshift(body); displayAssembly(); jumpAssembly(body); },
     inspect: binding => inspect(binding) });
@@ -96,6 +109,32 @@ function displayAssembly() {
     + (listing.pending ? ` · ${listing.pending.toLocaleString()} discovered operands remain; show more or follow a handle.` : ". Named definitions can be expanded individually.");
   $("assembly-more").hidden = !listing.pending;
   $("assembly-download").disabled = false;
+}
+// The judgement graph of the checked view, derived in instruction mode. A
+// definition's body is derived on request, as its lookup's premise.
+let graphView = null, graphExpanded = new Set();
+function displayGraph(focus = null) {
+  $("graph-listing").replaceChildren();
+  if (!checked) {
+    $("graph-status").textContent = "Return to Mathematical view and check the edited expression before deriving its judgement graph.";
+    return;
+  }
+  if (graphView !== view) { graphView = view; graphExpanded = new Set(); }
+  try {
+    const graph = judgementGraph(program, view, checked, { expanded: graphExpanded });
+    const rendered = renderJudgementGraph($("graph-listing"), graph, {
+      jumpNode: handle => { $("workbench-view").value = "assembly"; display(false); jumpAssembly(handle); },
+      expand: reference => { graphExpanded.add(reference); displayGraph(reference); },
+    });
+    const defined = focus && graph.rows.find(row => row.definition?.reference === focus)?.definition.root;
+    if (defined) rendered.jump(defined);
+    const steps = graph.rows.filter(row => row.rule === "step").length;
+    const plural = (count, word) => `${count.toLocaleString()} ${word}${count === 1 ? "" : "s"}`;
+    $("graph-status").textContent = `${plural(graph.rows.length, "judgement")}, ${plural(steps, "highlighted step")}; `
+      + `#${graph.root} is the conclusion.` + (graph.truncated ? " Only part of the graph is shown." : "");
+  } catch (error) {
+    $("graph-status").textContent = `The instruction kernel could not derive this view: ${error.message}`;
+  }
 }
 function jumpAssembly(handle) {
   let row = $(`assembly-node-${handle}`);
@@ -111,11 +150,11 @@ $("assembly-more").onclick = () => { assemblyLimit *= 2; displayAssembly(); };
 $("assembly-download").onclick = () => {
   if (!listing) return;
   const url = URL.createObjectURL(new Blob([assemblyText(listing)], { type: "text/plain" }));
-  const link = document.createElement("a"); link.href = url; link.download = `${selected ?? "kernel"}.assembly.txt`; link.click();
+  const link = document.createElement("a"); link.href = url; link.download = `${selected ?? "kernel"}.ast.txt`; link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 function validate(term = view.expression) {
-  checked = program.kernel.withUnfoldingHints(view.unfoldingHints ?? [], () => program.checker.syntax.check(term, view.type, view.context.map(x => [x.name, x.type]), new Map(view.dimensions ?? [])));
+  checked = program.checker.checkView(term, view.type, view.context.map(x => [x.name, x.type]), new Map(view.dimensions ?? []));
   view.expression = checked.term;
   assemblyView = null;
   enableReductions(true); $("check").disabled = false;
@@ -159,6 +198,7 @@ $("syntax").oninput = () => {
   if (wasSelecting) display(false);
   $("reduction-status").textContent = "";
   checked = null; enableReductions(false);
+  $("check").disabled = false;
   $("status").textContent = "Edited syntax is not checked; displayed terms show the last checked version.";
 };
 $("check").onclick = () => { try { validate(JSON.parse($("syntax").value)); view.folded = null; display(); } catch (error) { failure(error); } };
@@ -169,10 +209,8 @@ function reduce(side, kind, path = null) {
     let result;
     if (kind === "normalize") {
       const dimensions = new Map(view.dimensions ?? []);
-      const term = program.kernel.withUnfoldingHints(view.unfoldingHints ?? [], () => {
-        const original = program.checker.syntax.check(view[side], null, view.context.map(x => [x.name, x.type]), dimensions);
-        return program.checker.syntax.decode(program.kernel.normalize(original.expression), dimensions);
-      });
+      const original = program.checker.checkView(view[side], null, view.context.map(x => [x.name, x.type]), dimensions);
+      const term = program.checker.syntax.decode(program.kernel.normalize(original.expression), dimensions);
       result = { ...checkReduction(program, view, side, term), change: { rule: "Normalized", name: side } };
     } else result = reduceView(program, view, side, kind, path);
     if (!result.change) {
@@ -215,11 +253,12 @@ $("more-reduction-sites").onclick = () => { if (reductionMode) { reductionLimit 
 addEventListener("keydown", event => { if (event.key === "Escape" && reductionMode) $("unhighlight").click(); });
 try {
   const params = new URLSearchParams(location.search);
-  if (params.get("view") === "assembly") $("workbench-view").value = "assembly";
+  const requested = params.get("view") === "ast" ? "assembly" : params.get("view");
+  if (["assembly", "graph"].includes(requested)) $("workbench-view").value = requested;
   const key = params.get("transfer");
   const payload = key ? await readWorkbenchTransfer(key) : {
     format: "thth-cubical", version: 1, main: "workbench", sources: {},
-    source: "def identity(n : Nat) = n; def example = identity(2);",
+    source: "def identity(n : Nat) := n; def example := identity(2);",
     binding: "workbench__example", side: "expression",
   };
   if (payload.format !== "thth-cubical" || payload.version !== 1) throw new Error("Unsupported cubical transfer format.");
@@ -233,13 +272,10 @@ try {
   });
   await program.check(payload.source, payload.main, progress => { $("status").textContent = `Rechecking source · ${progress.completed} declarations`; });
   // Ignore supplied expression/type claims. Reconstruct from replayed source.
-  view = payload.templateInspection
-    ? program.inspect(payload.templateInspection.binding, { universes: payload.templateInspection.universes,
-        offset: payload.templateInspection.offset })
-    : program.inspect(payload.binding);
+  view = program.inspect(payload.binding);
   selected = view.name;
   if (payload.side === "type") {
-    const type = program.checker.syntax.check(view.type, null, view.context.map(x => [x.name, x.type]), new Map(view.dimensions ?? []));
+    const type = program.checker.checkView(view.type, null, view.context.map(x => [x.name, x.type]), new Map(view.dimensions ?? []));
     view = { ...view, expression: type.term, type: type.type, folded: view.folded ? { ...view.folded, expression: view.folded.type, type: type.type } : null };
   }
   validate(); display();

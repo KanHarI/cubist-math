@@ -2,12 +2,18 @@
  * Handle zero denotes absence/failure, never a type or term. */
 #include "term_internal.h"
 
-bool ck_fail(cc_kernel *k, const char *message) {
+/* The first error of an operation is kept, with its class. */
+bool ck_fail_as(cc_kernel *k, cc_error_kind kind, const char *message) {
     if (!k->error[0]) {
         strncpy(k->error, message, sizeof k->error - 1);
         k->error[sizeof k->error - 1] = '\0';
+        k->error_kind = kind;
     }
     return false;
+}
+
+bool ck_fail(cc_kernel *k, const char *message) {
+    return ck_fail_as(k, CC_ERROR_OTHER, message);
 }
 
 bool ck_tick(cc_kernel *k, bool checking) {
@@ -18,7 +24,7 @@ bool ck_tick(cc_kernel *k, bool checking) {
         if (!ck_deadline(k)) return false;
     }
     if (!k->budget)
-        return ck_fail(k, "Kernel checking/reduction budget exhausted.");
+        return ck_fail_as(k, CC_ERROR_BUDGET, "Kernel checking/reduction budget exhausted.");
     --k->budget;
     if (checking)
         ++k->checking_steps;
@@ -29,13 +35,15 @@ bool ck_tick(cc_kernel *k, bool checking) {
 
 unsigned ck_arity(cc_term_kind kind) {
     switch (kind) {
-    case CC_DEFREF: case CC_U: case CC_VAR: case CC_NAT: case CC_ZERO: case CC_UNIT: case CC_POINT: case CC_VOID:
+    case CC_DEFREF: case CC_VAR: case CC_NAT: case CC_ZERO: case CC_UNIT: case CC_POINT: case CC_VOID:
+    case CC_LBOUND: case CC_LCONST:
         return 0;
-    case CC_SUCC: case CC_FST: case CC_SND:
+    case CC_U: case CC_SUCC: case CC_FST: case CC_SND: case CC_LSUCC:
         return 1;
     case CC_PI: case CC_LAM: case CC_APP: case CC_SIGMA: case CC_PLAM: case CC_PAPP:
     case CC_TUBE: case CC_ABORT: case CC_W: case CC_SUM: case CC_INL: case CC_INR:
     case CC_GLUE: case CC_UNGLUE: case CC_PUSH_LEFT: case CC_PUSH_RIGHT: case CC_PUSH_PATH:
+    case CC_LMAX: case CC_LPI: case CC_LLAM: case CC_LAPP:
         return 2;
     case CC_PAIR: case CC_PATH: case CC_COMP: case CC_SUP: case CC_WREC: case CC_UNITREC:
     case CC_GLUE_SYSTEM: case CC_GLUE_TERM: case CC_HCOMP: case CC_TRANS:
@@ -59,10 +67,42 @@ cc_kernel *cc_kernel_new(void) {
     return k;
 }
 
+void ck_trace(cc_kernel *k, cc_trace_kind kind, uint32_t a, uint32_t b, uint32_t c) {
+    if (!k->trace || k->trace_mute) return;
+    if (k->trace_count < k->trace_capacity)
+        k->trace[k->trace_count] = (cc_trace_event){ kind, k->trace_depth, a, b, c };
+    if (k->trace_count < SIZE_MAX) ++k->trace_count;
+}
+
+bool cc_kernel_trace_start(cc_kernel *k, size_t capacity) {
+    if (!k || !capacity) return false;
+    cc_kernel_trace_stop(k);
+    k->trace = calloc(capacity, sizeof *k->trace);
+    if (!k->trace) return false;
+    k->trace_capacity = capacity;
+    return true;
+}
+
+void cc_kernel_trace_stop(cc_kernel *k) {
+    if (!k) return;
+    free(k->trace);
+    k->trace = NULL;
+    k->trace_count = k->trace_capacity = 0;
+    k->trace_depth = k->trace_mute = 0;
+}
+
+size_t cc_kernel_trace_count(const cc_kernel *k) { return k ? k->trace_count : 0; }
+
+bool cc_kernel_trace_event(const cc_kernel *k, size_t index, cc_trace_event *event) {
+    if (!k || !k->trace || !event || index >= k->trace_count || index >= k->trace_capacity) return false;
+    *event = k->trace[index];
+    return true;
+}
+
 void cc_kernel_set_optimizations(cc_kernel *k, unsigned flags) {
     if (!k) return;
     k->optimizations = flags & (CC_SHARE_SYNTAX | CC_REUSE_CHECKS);
-    if (!(flags & CC_SHARE_SYNTAX)) { free(k->interned); k->interned = NULL; }
+    if (!(flags & CC_SHARE_SYNTAX)) { free(k->interned); k->interned = NULL; k->intern_capacity = k->intern_used = 0; }
     if (!(flags & CC_REUSE_CHECKS)) ck_clear_check_cache(k);
 }
 
@@ -73,6 +113,14 @@ void cc_kernel_set_step_budget(cc_kernel *k, uint64_t steps) {
 void cc_kernel_free(cc_kernel *k) {
     if (!k)
         return;
+    free(k->trace);
+    free(k->facts);
+    free(k->entries);
+    free(k->context_sets);
+    free(k->context_items);
+    free(k->positions);
+    free(k->derivations);
+    free(k->entry_index);
     for (size_t i = 1; i < k->formula_count; ++i)
         cc_clear(&k->formulas[i]);
     free(k->relocation);
@@ -94,6 +142,51 @@ const char *cc_kernel_error(const cc_kernel *k) {
     return k ? k->error : "Kernel allocation failed.";
 }
 
+cc_error_kind cc_kernel_error_kind(const cc_kernel *k) {
+    if (!k) return CC_ERROR_OTHER;
+    return k->error[0] ? k->error_kind : CC_ERROR_NONE;
+}
+
+bool cc_kernel_mismatch(const cc_kernel *k, cc_term *found, cc_term *expected) {
+    if (!k || !found || !expected || !k->error[0] || k->error_kind != CC_ERROR_MISMATCH)
+        return false;
+    *found = k->mismatch_found;
+    *expected = k->mismatch_expected;
+    return true;
+}
+
+static uint32_t node_hash(cc_term_kind kind, uint32_t payload, const cc_term children[4]) {
+    uint32_t hash = (uint32_t)kind;
+    hash = (hash ^ payload) * UINT32_C(16777619);
+    for (unsigned i = 0; i < 4; ++i) hash = (hash ^ children[i]) * UINT32_C(16777619);
+    return hash;
+}
+
+/* Index a live node. A slot holding a discarded handle is free again. */
+void ck_intern(cc_kernel *k, cc_term term) {
+    if (!k->interned) return;
+    size_t mask = k->intern_capacity - 1;
+    cc_node n = k->nodes[term];
+    size_t slot = node_hash(n.kind, n.payload, n.child) & mask;
+    while (k->interned[slot] && k->interned[slot] < k->count && k->interned[slot] != term)
+        slot = (slot + 1) & mask;
+    if (!k->interned[slot]) ++k->intern_used;
+    k->interned[slot] = term;
+}
+
+/* Keep the table at most half full, counting tombstones. A failed
+ * allocation drops the index: sharing affects space, never judgements. */
+static void intern_reserve(cc_kernel *k) {
+    if (k->interned && (k->intern_used + 1) * 2 <= k->intern_capacity) return;
+    size_t capacity = CC_INTERN_MINIMUM;
+    while (capacity < 4 * k->count && capacity < SIZE_MAX / 8) capacity *= 2;
+    free(k->interned);
+    k->interned = calloc(capacity, sizeof *k->interned);
+    k->intern_capacity = k->interned ? capacity : 0;
+    k->intern_used = 0;
+    for (size_t i = 1; i < k->count; ++i) ck_intern(k, (cc_term)i);
+}
+
 cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
                 cc_term a, cc_term b, cc_term c, cc_term d) {
     if (!k || k->error[0])
@@ -102,6 +195,10 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
     cc_term children[] = {a, b, c, d};
     if (arity > 4)
         return ck_fail(k, "Unknown term constructor."), 0;
+    /* ABI 1 kept a universe's level in its payload; ABI 2 keeps it in a child.
+     * A payload here is a client built for the old encoding. */
+    if (kind == CC_U && payload)
+        return ck_fail(k, "A universe's level is its child; its payload must be zero."), 0;
     for (unsigned i = 0; i < 4; ++i) {
         bool optional = (kind == CC_PAPP && i == 1) ||
                         (kind == CC_TUBE && i == 1) ||
@@ -112,18 +209,19 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
         if (children[i] >= k->count || (i >= arity && children[i]))
             return ck_fail(k, "Invalid syntax child handle."), 0;
     }
-    /* Intern only identical syntax. Every child and payload is compared after
+    /* Identical syntax is one node. Every child and payload is compared after
      * hashing, so collisions affect performance, never term identity. */
-    if ((k->optimizations & CC_SHARE_SYNTAX) && !k->interned) k->interned = calloc(CC_INTERN_SIZE, sizeof *k->interned);
-    uint32_t hash = (uint32_t)kind;
-    hash = (hash ^ payload) * UINT32_C(16777619);
-    for (unsigned i = 0; i < 4; ++i) hash = (hash ^ children[i]) * UINT32_C(16777619);
-    size_t slot = hash % CC_INTERN_SIZE;
-    if (k->interned && k->interned[slot]) {
-        cc_term existing = k->interned[slot];
-        cc_node node = k->nodes[existing];
-        if (node.kind == kind && node.payload == payload &&
-            !memcmp(node.child, children, sizeof children)) return existing;
+    if (k->optimizations & CC_SHARE_SYNTAX) {
+        intern_reserve(k);
+        size_t mask = k->intern_capacity - 1;
+        for (size_t slot = k->interned ? node_hash(kind, payload, children) & mask : 0;
+             k->interned && k->interned[slot]; slot = (slot + 1) & mask) {
+            cc_term existing = k->interned[slot];
+            if (existing >= k->count) continue;
+            cc_node node = k->nodes[existing];
+            if (node.kind == kind && node.payload == payload && !memcmp(node.child, children, sizeof children))
+                return existing;
+        }
     }
     unsigned depth = 1;
     for (unsigned i = 0; i < arity; ++i)
@@ -155,7 +253,7 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
             return ck_fail(k, "Term symbol space exhausted."), 0;
         k->next_symbol = payload + 1;
     }
-    if (k->interned) k->interned[slot] = result;
+    ck_intern(k, result);
     return result;
 }
 
@@ -214,6 +312,10 @@ uint32_t ck_fresh_symbol(cc_kernel *k) {
         return 0;
     }
     return k->next_symbol++;
+}
+
+uint32_t cc_kernel_fresh_symbol(cc_kernel *k) {
+    return k ? ck_fresh_symbol(k) : 0;
 }
 
 void cc_kernel_clear_error(cc_kernel *k) {

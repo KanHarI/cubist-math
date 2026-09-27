@@ -11,7 +11,7 @@ concrete declarations checked, zero slow, blocked, or failed declarations**, and
 
 The cubical kernel is now the sole checker. Its C sources live under `kernel/`,
 and its supporting modules under `lib/cubical/`. Canonical sources are
-`web/proofs/*.cubist`; the old parallel editions and Id/J implementation have
+`archive/first-library/*.cubist`; the old parallel editions and Id/J implementation have
 been removed. The public website is https://cubist.kanhar.art.
 
 ## What changed

@@ -6,10 +6,11 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 import { cubicalSourceFile } from "../web/cubical-sources.mjs";
 import { foldedInspection } from "../web/cubical-inspection.mjs";
 import { cubicalMathTree } from "../web/cubical-notation.mjs";
+import { boundedSyntaxJson } from "../web/cubical-json.mjs";
 import { simplifyTypeApplications } from "../web/cubical-reduction.mjs";
 
 const module = await createCubical();
-const readSource = name => readFile(new URL(`../web/proofs/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
+const readSource = name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
 const variable = name => ({ tag: "Var", name });
 const nat = { tag: "Nat" };
 
@@ -98,14 +99,31 @@ test("notation preserves dependency and distinguishes renamed shadowing variable
   assert.equal(cubicalMathTree({ tag: "Sigma", name: "x", domain: nat, body: variable("x") }).kind, "Sigma");
 });
 
+test("path notation and raw syntax display stay bounded on shared terms", () => {
+  let shared = nat;
+  for (let i = 0; i < 28; i++) shared = { tag: "App", fn: shared, arg: shared };
+  const constant = { tag: "PLam", dim: "i", family: shared, body: variable("x") };
+  assert.equal(cubicalMathTree(constant, {}, 1).fn.name, "refl");
+  assert.equal(cubicalMathTree({ tag: "Path", dim: "i", family: shared,
+    left: variable("x"), right: variable("x") }, {}, 1).kind, "Identity");
+  const varying = { tag: "PApp", path: variable("p"), arg: [["i:0"]] };
+  assert.equal(cubicalMathTree({ tag: "Path", dim: "i", family: varying,
+    left: variable("x"), right: variable("x") }).fn.name, "PathP");
+  assert.equal(boundedSyntaxJson(shared), null);
+  assert.equal(boundedSyntaxJson(nat), JSON.stringify(nat, null, 2));
+  let deep = nat;
+  for (let i = 0; i < 600; i++) deep = { tag: "Succ", value: deep };
+  assert.equal(boundedSyntaxJson(deep), null);
+});
+
 test("axiom labels and derived cubical helpers remain inspectable", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  const result = await program.check("def Mere(A : U1) = Truncate(U1, A); def refl_nat(n : Nat) : n = n { exact refl(n); }", "sample");
+  const result = await program.check("def Mere(A : U1) := Truncate(U1, A); def refl_nat(n : Nat) : n = n { exact refl(n); }", "sample");
   assert.equal(result.complete, true);
   const view = program.inspect("sample__Mere");
   const tree = cubicalMathTree(view.folded.expression, view.symbols);
   assert.equal(tree.body.fn.axiomNotation, "truncation");
-  assert.equal(tree.body.fn.truncationArgument, 0);
+  assert.equal(tree.body.fn.truncationArgument, 1);
   assert.equal(program.inspect(tree.body.fn.binding).expression.tag, "Var");
   const ordinary = cubicalMathTree(variable("Truncate"), { Truncate: { name: "Truncate" } });
   assert.equal(ordinary.axiomNotation, undefined);
@@ -113,7 +131,7 @@ test("axiom labels and derived cubical helpers remain inspectable", async t => {
 
 test("a let alias preserves the original local's name and does not leak to later declarations", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  const source = "def zero = 0; def aliases(n : Nat) : n = n { let m = n; exact refl(n); } def after = zero;";
+  const source = "def zero := 0; def aliases(n : Nat) : n = n { let m := n; exact refl(n); } def after := zero;";
   const result = await program.check(source, "aliases");
   assert.equal(result.complete, true);
   const n = result.links.filter(link => link.name === "n").at(-1);

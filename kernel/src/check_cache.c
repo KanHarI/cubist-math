@@ -5,6 +5,7 @@
 #include "term_internal.h"
 
 cc_context ck_extend(cc_kernel *k, uint32_t name, cc_term type, const cc_context *previous) {
+    ck_trace(k, CC_TRACE_EXTEND, name, type, 0);
     uint64_t parent = previous ? previous->identity : 0;
     if (!k->contexts) k->contexts = calloc(CC_CHECK_MEMO_SIZE, sizeof *k->contexts);
     size_t slot = ((parent * UINT64_C(1099511628211) ^ name) * UINT64_C(1099511628211) ^ type) % CC_CHECK_MEMO_SIZE;

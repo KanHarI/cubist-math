@@ -4,7 +4,8 @@ This is the sole trusted checker for Cubist Math. It implements cumulative
 universes, dependent functions and pairs, Nat, Unit, Void, sums, dependent W
 induction, interval paths and composition, Glue, and computational pushouts.
 Suspension is derived from pushouts. The website and CLI use this code through
-WebAssembly; source modules live in `web/proofs/*.cubist`.
+WebAssembly; the archived first library's source modules live in
+`archive/first-library/*.cubist`.
 
 ## Reading the mathematics in the code
 
@@ -31,6 +32,7 @@ WebAssembly; source modules live in `web/proofs/*.cubist`.
 | `src/equivalence_terms.c` | Derived contractible-fiber types and identity equivalence |
 | `src/check_glue.c` | Checked gluing equivalences, boundaries and overlap coherence |
 | `src/glue_compute.c` | Glue composition and derived universe composition |
+| `src/levels.c` | Universe levels: normal forms, equality and order by arithmetic (G0 §2.4) |
 | `src/check_composition.c` | Restricted contexts, partial boundaries and all overlaps |
 | `src/composition_compute.c` | Derived filling and constructor-specific composition |
 | `tests/lattice_cli.c` | Inert test input, separate from the trusted algebra |
@@ -56,9 +58,15 @@ The first representation supports 64 distinct dimensions, including dimension
 63. Dimension 64 is rejected, never masked to zero. This is a documented native
 implementation restriction, not a restriction of cubical type theory. Dynamic
 bitsets or a sparse dimension representation are required before removing it.
-Universe levels are explicit unsigned integers, with checked successor and
-maximum. There is no term-level Universe erasure; the frontend instantiates level schemas
-at explicit universe arguments. Cumulative upward inclusion is not downward resizing.
+A universe carries its level as a child: a level expression over constants
+`ω·tier + n` below ω², successors, maxima and variables (G0). Levels are
+compared by normal form, so equality and cumulativity are arithmetic, never
+search; `CC_LEVEL_MAX` and `CC_TIER_MAX` bound them. No rule binds a level
+variable yet, and the frontend still instantiates universe schemas at explicit
+universe arguments. The term checker takes universes at closed finite levels
+only. Cumulative upward inclusion is not downward resizing. The syntax
+encoding has an ABI version, `cc_kernel_abi_version()`; the JavaScript loader
+and `kernel-cli` refuse a client written for another.
 
 ## Running the checks
 

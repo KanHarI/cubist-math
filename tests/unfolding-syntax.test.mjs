@@ -42,12 +42,12 @@ test("hint lists accept names only and braces contain exactly one expression", (
 });
 
 test("formatting preserves scoped blocks, comments, postfix calls and tuples", () => {
-  const source = `def result = with unfolding [identity, wrapper] {
+  const source = `def result := with unfolding [identity, wrapper] {
 // A scoped strategy.
 with unfolding [inner] { (identity, (wrapper, inner)) }
 };
-def application = with unfolding [identity] { identity }(0);
-def sum = with unfolding [] { 0 } + 1;`;
+def application := with unfolding [identity] { identity }(0);
+def sum := with unfolding [] { 0 } + 1;`;
   for (const printWidth of [40, 80, 100]) {
     const formatted = formatMathScript(source, { printWidth });
     assert.equal(expandedSyntax(parse(formatted)), expandedSyntax(parse(source)));
@@ -60,12 +60,12 @@ def sum = with unfolding [] { 0 } + 1;`;
 });
 
 test("both language references and keyword styling describe the scoped syntax", async () => {
-  for (const file of ["proof.html", "language.html"]) {
+  for (const file of ["proof.html", "reference/conversion.html"]) {
     const text = await readFile(new URL(`../web/${file}`, import.meta.url), "utf8");
     assert.match(text, /with unfolding \[/);
     assert.doesNotMatch(text, /with_unfolding\(/);
   }
-  const viewer = await readFile(new URL("../web/proof.mjs", import.meta.url), "utf8");
+  const viewer = await readFile(new URL("../web/source-tokens.mjs", import.meta.url), "utf8");
   const keywords = viewer.slice(viewer.indexOf("const keywords ="), viewer.indexOf("const builtinForms ="));
   assert.match(keywords, /"with"/);
   assert.match(keywords, /"unfolding"/);
@@ -74,7 +74,7 @@ test("both language references and keyword styling describe the scoped syntax", 
 test("migrated native proof scopes format without changing their expanded syntax", async () => {
   for (const name of ["binomial_pascal", "embedded_composita", "f4_embedded_composita",
     "f4_embedding_images", "group_univalence", "kernel_quotient_image", "permutations", "structured_sets"]) {
-    const source = await readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+    const source = await readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
     assert.doesNotMatch(source, /with_unfolding\(/, name);
     const formatted = formatMathScript(source);
     assert.equal(expandedSyntax(parse(formatted)), expandedSyntax(parse(source)), name);

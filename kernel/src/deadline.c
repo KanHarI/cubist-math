@@ -20,5 +20,5 @@ void cc_kernel_set_deadline_ms(cc_kernel *k, double duration_ms) {
 }
 bool ck_deadline(cc_kernel *k) {
     return !k->deadline_ms || now_ms() < k->deadline_ms
-        || ck_fail(k, "Declaration time limit exceeded.");
+        || ck_fail_as(k, CC_ERROR_DEADLINE, "Declaration time limit exceeded.");
 }

@@ -97,12 +97,12 @@ also separate future targets.
 
 | Existing material to audit | Potential reuse | What it does not yet supply |
 | --- | --- | --- |
-| [Prime arithmetic](../../web/proofs/primes.cubist) and [finite counting](../tactical/finite_counting.md) | Prime predicates, finite sums, finite collections | A complete analytic prime-counting interface; audit unique factorization rather than assuming Euclid's theorem supplies it |
+| [Prime arithmetic](../../archive/first-library/primes.cubist) and [finite counting](../tactical/finite_counting.md) | Prime predicates, finite sums, finite collections | A complete analytic prime-counting interface; audit unique factorization rather than assuming Euclid's theorem supplies it |
 | [Real-number roadmap](reals-roadmap.md) | Ordered-field and completeness interfaces | A completed concrete real model with all required certificates |
-| [Limits](../tactical/analysis_limits.md), [field asymptotics](../../web/proofs/field_asymptotics.cubist) | Convergence, eventual closeness, limit uniqueness | General relative big-O/little-o calculus, exp/log, or real powers |
+| [Limits](../tactical/analysis_limits.md), [field asymptotics](../../archive/first-library/field_asymptotics.cubist) | Convergence, eventual closeness, limit uniqueness | General relative big-O/little-o calculus, exp/log, or real powers |
 | [Complex-analysis checkpoint](../tactical/complex_analysis_handoff.md) | Complex algebra, curves, finite contour sums, affine integral results | Holomorphic/meromorphic function theory, general contour integration, residues, or quantitative contour-shift estimates |
 | [Circle](../tactical/circle_fundamental_group.md) and [puncture homotopy](../tactical/puncture_homotopy.md) | Integer winding and abstract loop/period algebra | A proved bridge from geometric complex contours to those homotopy types |
-| [Formal series](../../web/proofs/formal_series.cubist) | Coefficient manipulation | Convergence, analytic evaluation, or Dirichlet-series differentiation |
+| [Formal series](../../archive/first-library/formal_series.cubist) | Coefficient manipulation | Convergence, analytic evaluation, or Dirichlet-series differentiation |
 
 This is a substantial analytic development. Completing finite Galois theory,
 Great Picard, or the fundamental theorem of algebra is not a dependency of

@@ -1,14 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
-import { CubicalKernel } from "../web/cubical-kernel.mjs";
+import { CubicalKernel, KernelError } from "../web/cubical-kernel.mjs";
 import { CubicalSyntax } from "../web/cubical-syntax.mjs";
 import { NativeCubicalElaborator } from "../web/cubical-elaborator.mjs";
 import { T, Checker } from "../lib/cubical/core.mjs";
 import { interval as I, face as F } from "../lib/cubical/lattice.mjs";
 import { identityEquivalence } from "../lib/cubical/equivalence.mjs";
 import { Translator } from "../lib/cubical/translate.mjs";
+import { Scope, SourceUnit } from "../lib/cubical/elaboration.mjs";
+import { Goal, reflexivity } from "../lib/cubical/proof-goals.mjs";
+import { abstractMotive } from "../lib/cubical/motives.mjs";
 import { readFile } from "node:fs/promises";
+import { InstructionGraph } from "../web/cubical-instructions.mjs";
+import { levelText, universeText } from "../web/cubical-levels.mjs";
 
 const module = await createCubical();
 function session(t) {
@@ -105,7 +110,7 @@ test("the actual W binary source checks entirely in cubical WASM", async t => {
     try { return { ok: true, ...syntax.check(term, expected, context) }; }
     catch (error) { return { ok: false, error: error.message }; }
   };
-  const source = await readFile(new URL("../web/proofs/binary_naturals.cubist", import.meta.url), "utf8");
+  const source = await readFile(new URL("../archive/first-library/binary_naturals.cubist", import.meta.url), "utf8");
   const result = new Translator({ normalize: false, nativeCheck }).translate(source);
   assert.equal(result.declarations.length, 13);
   for (const declaration of result.declarations)
@@ -119,10 +124,10 @@ test("dependent pair induction checks its motive and both branch arguments nativ
   const k = session(t), checker = new NativeCubicalElaborator(k);
   const translator = new Translator({ normalize: false, checker });
   const result = translator.translate(`
-    def second(A : U0, B : A -> U0, p : (exists x : A, B(x))) =
-      pair_induction((fun (q : (exists x : A, B(x))) => B(unpack q as (a, b) return A { a; })),
+    def second(A : U0, B : A -> U0, p : (exists x : A. B(x))) :=
+      pair_induction((fun (q : (exists x : A. B(x))) => B(unpack q as (a, b) return A { a; })),
         (fun (a : A) => fun (b : B(a)) => b), p);
-    def wrong(p : Nat and Nat) = pair_induction(
+    def wrong(p : Nat and Nat) := pair_induction(
       (fun (q : Nat and Nat) => Nat), (fun (a : Nat) => fun (b : Unit) => a), p);
   `);
   assert.equal(result.declarations[0].status, "checked-native-cubical", result.declarations[0].reason);
@@ -149,7 +154,7 @@ test("native elaboration checks all manual factorial sources while retaining che
   const translator = new Translator({ normalize: false, checker });
   let env = new Map(), last;
   for (const name of ["binary_naturals", "binary_arithmetic", "binary_induction", "radix_naturals", "radix_arithmetic", "radix_factorial"]) {
-    const source = await readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+    const source = await readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
     const result = translator.translate(source, env);
     env = result.env;
     for (const declaration of result.declarations) {
@@ -178,7 +183,7 @@ test("the existing Nat factorial theorem checks cubically without a million-succ
   // Those separate declarations are explicitly rejected as untranslated;
   // no assumptions are registered in their place.
   for (const name of ["primes", "binary_naturals", "binary_arithmetic", "binary_induction", "binary_equivalence", "binary_arithmetic_correct"]) {
-    const source = await readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+    const source = await readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
     const result = translator.translate(source, env);
     env = result.env;
     for (const d of result.declarations) {
@@ -238,17 +243,17 @@ test("open cubes check dependent contexts and preserve dimension names across de
 test("Cubist expresses cubical paths, composition and pushout induction with checked boundaries", async t => {
   const kernel = session(t), checker = new NativeCubicalElaborator(kernel);
   const translator = new Translator({ checker, normalize: false });
-  const source = await readFile(new URL("../web/proofs/cubical_paths.cubist", import.meta.url), "utf8");
-  const library = translator.translate(await readFile(new URL("../web/proofs/suspension_types.cubist", import.meta.url), "utf8"));
+  const source = await readFile(new URL("../archive/first-library/cubical_paths.cubist", import.meta.url), "utf8");
+  const library = translator.translate(await readFile(new URL("../archive/first-library/suspension_types.cubist", import.meta.url), "utf8"));
   assert.ok(library.declarations.every(d => d.status === "checked-native-cubical"));
   const result = translator.translate(source, library.env);
   assert.deepEqual(result.declarations.filter(d => d.status !== "checked-native-cubical"), []);
   assert.equal(result.declarations.length, 15);
   const invalid = translator.translate(`
-    def escaped = path(fun (i : Interval) => Nat, fun (i : Interval) => i);
+    def escaped := path(fun (i : Interval) => Nat, fun (i : Interval) => i);
     def wrong : 0 = 1 { exact path(fun (i : Interval) => Nat, fun (i : Interval) => 0); }
-    def malformed = comp(fun (i : Interval) => Nat, 0, face(i, 0, fun (j : Interval) => 0));
-    def bad_bridge = pushout_induction(fun (p : Susp(Unit)) => Nat,
+    def malformed := comp(fun (i : Interval) => Nat, 0, face(i, 0, fun (j : Interval) => 0));
+    def bad_bridge := pushout_induction(fun (p : Susp(Unit)) => Nat,
       fun (a : Unit) => 0, fun (b : Unit) => 1,
       fun (a : Unit) => refl(0), push_left(Susp(Unit), tt));
   `, result.env);
@@ -278,14 +283,14 @@ test("WASM round trips pushout boxes and corrected transport across changing map
 test("source-defined suspension induction uses a proved PathP bridge", async t => {
   const kernel = session(t), checker = new NativeCubicalElaborator(kernel);
   const translator = new Translator({ checker, normalize: false });
-  const library = translator.translate(await readFile(new URL("../web/proofs/suspension_types.cubist", import.meta.url), "utf8"));
+  const library = translator.translate(await readFile(new URL("../archive/first-library/suspension_types.cubist", import.meta.url), "utf8"));
   assert.ok(library.declarations.every(d => d.status === "checked-native-cubical"));
   const result = translator.translate(`
-    def C = Suspension(Unit);
-    def family(p : C) = Unit;
-    def unique(u : Unit) = unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
-    def boundary(a : Unit) = unique(transport(family, north(Unit), south(Unit), meridian(Unit, a), tt));
-    def collapse(p : C) = suspension_induction(Unit, family, tt, tt, boundary, p);
+    def C := Suspension(Unit);
+    def family(p : C) := Unit;
+    def unique(u : Unit) := unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
+    def boundary(a : Unit) := unique(transport(family, north(Unit), south(Unit), meridian(Unit, a), tt));
+    def collapse(p : C) := suspension_induction(Unit, family, tt, tt, boundary, p);
     def point_beta : collapse(north(Unit)) = tt { exact refl(tt); }
     def bridge_beta(a : Unit) :
       apd(collapse, north(Unit), south(Unit), meridian(Unit, a)) = boundary(a) {
@@ -321,4 +326,108 @@ test("browser dimension allocation reuses slots without capturing outer coordina
   const line = T.line("j", T.nat, T.at(p, I.variable("outside")));
   const checked = syntax.check(line, null, [["p", P]], new Map([["outside", 0]]));
   assert.throws(() => syntax.check(checked.term, null, [["p", P]]), /dimension/);
+});
+
+test("kernel rejections are classified by kind, and speculative checks answer with values", t => {
+  const k = session(t), checker = new NativeCubicalElaborator(k);
+  const nat = k.term("Nat"), zero = k.term("Zero");
+  assert.throws(() => k.check(zero, k.term("Unit")), error => error instanceof KernelError && error.kind === "mismatch");
+  assert.throws(() => k.check(k.term("Var", k.symbol("free")), nat), error => error.kind === "other");
+  assert.equal(checker.attempt(T.zero, T.nat).ok, true);
+  assert.equal(checker.attempt(T.zero, T.unit).failure, "mismatch");
+  assert.equal(checker.equal(T.zero, T.succ(T.zero)), false);
+  // Set C's deadline directly so this exercises C, not the JS preflight guard.
+  // The term is new: a judgement derived earlier is reused without work.
+  module._cb_deadline_ms(k.handle, .01);
+  let until = performance.now() + 2;
+  while (performance.now() < until) { /* let the native deadline expire */ }
+  assert.equal(checker.attempt(T.succ(T.succ(T.zero)), T.nat).failure, "deadline");
+  module._cb_deadline_ms(k.handle, 0);
+  // Running out of time is no answer: equal() must not report inequality.
+  k.setDeadline(0.001);
+  until = performance.now() + 2;
+  while (performance.now() < until) { /* let the JavaScript deadline expire */ }
+  assert.equal(checker.attempt(T.zero, T.nat).failure, "deadline");
+  assert.throws(() => checker.equal(T.zero, T.zero), error => error instanceof KernelError && error.kind === "deadline");
+  k.setDeadline();
+  assert.equal(checker.equal(T.zero, T.zero), true);
+});
+
+test("the core checker classifies a mismatch like the native kernel", () => {
+  const checker = new Checker();
+  assert.equal(checker.attempt(T.zero, T.nat).ok, true);
+  const result = checker.attempt(T.zero, T.unit);
+  assert.equal(result.failure, "mismatch");
+  assert.match(result.error.message, /Type mismatch/);
+});
+
+test("the native kernel checks an elimination through an abstracted motive", t => {
+  const checker = new NativeCubicalElaborator(session(t)), v = T.variable;
+  const sum = T.sum(v("A"), v("B")), same = value => T.path("i", sum, value, value);
+  // s : A + B and h : s = s; the goal s = s is proved by cases on s.
+  const scope = [["A", T.universe(0)], ["B", T.universe(0)], ["s", sum], ["h", same(v("s"))]]
+    .reduce((scope, [name, type]) => scope.bind(name, type), new Scope(new SourceUnit({ checker })));
+  const goal = new Goal(same(v("s")), scope), motive = abstractMotive(goal, [v("s")]);
+  assert.deepEqual(motive.generalized.map(hypothesis => hypothesis.name), ["h"]);
+  const branch = (side, domain) => {
+    const name = scope.fresh(side), inner = scope.bind(name, domain), value = T[side](sum, v(name));
+    const { transition } = motive.introduce(motive.instance([value], inner));
+    return T.lam(name, domain, transition.rebuild(reflexivity(transition.next)));
+  };
+  const proof = motive.apply(T.sumrec(motive.term, branch("inl", v("A")), branch("inr", v("B")), v("s")));
+  assert.doesNotThrow(() => scope.check(proof, goal.target));
+  // A branch proof of the unrefined goal is rejected.
+  const unrefined = T.lam("a", v("A"), T.lam("h2", same(v("s")), T.variable("h2")));
+  assert.throws(() => scope.check(motive.apply(T.sumrec(motive.term, unrefined, branch("inr", v("B")), v("s"))),
+    goal.target), error => error instanceof KernelError);
+});
+
+test("G0: the module's ABI version is checked, and a universe carries its level as a child", t => {
+  // A module built for another encoding is refused before any syntax is made.
+  assert.throws(() => new CubicalKernel({ ...module, _cb_abi_version: () => 1 }), /ABI version 1, but this code expects version 2/);
+  assert.throws(() => new CubicalKernel({ _cb_new: module._cb_new }), /ABI version 1/);
+  const k = session(t), syntax = new CubicalSyntax(k);
+  // Tier-0 levels stay numbers; other constants are objects.
+  const u3 = syntax.encode({ tag: "U", level: 3 }), uu3 = { tag: "U", level: { tag: "LConst", tier: 1, value: 3 } };
+  assert.equal(k.node(u3).payload, 0);
+  assert.equal(k.node(k.node(u3).children[0]).kind, "LConst");
+  assert.deepEqual(syntax.decode(u3), { tag: "U", level: 3 });
+  assert.deepEqual(syntax.decode(syntax.encode(uu3)), uu3);
+  assert.throws(() => k.term("U", 3), /payload must be zero/);
+  // The instruction kernel takes a level to normal form: U(max(1, 0)) is U1.
+  const g = new InstructionGraph(k), one = syntax.encodeLevel(1);
+  const max = syntax.encodeLevel({ tag: "LMax", left: 1, right: 0 });
+  const u1 = g.judgement(g.universe(one));
+  assert.equal(g.judgement(g.universe(max)).term, u1.term);
+  assert.deepEqual(syntax.decode(u1.type), { tag: "U", level: 2 });
+  // Cumulativity crosses tiers: Nat : U0 ≤ UU0, but UU0 is not in U5.
+  const uu0 = g.universe(syntax.encodeLevel({ tag: "LConst", tier: 1, value: 0 }));
+  assert.deepEqual(syntax.decode(g.judgement(g.lift(g.nat(), uu0)).type), { tag: "U", level: { tag: "LConst", tier: 1, value: 0 } });
+  assert.throws(() => g.lift(uu0, g.universe(syntax.encodeLevel(5))), /not included/);
+  assert.throws(() => g.universe(syntax.encodeLevel(0xffff)), /exceeds the kernel's bound/);
+  // Levels print in kernel and source notation.
+  assert.deepEqual([levelText({ tag: "LConst", tier: 1, value: 2 }), levelText({ tag: "LConst", tier: 2, value: 0 }),
+    levelText({ tag: "LMax", left: { tag: "Var", name: "x" }, right: 1 }), levelText({ tag: "LSucc", count: 1, level: { tag: "Var", name: "x" } })],
+    ["ω + 2", "ω·2", "max(x, 1)", "x + 1"]);
+  assert.deepEqual([universeText(3), universeText({ tag: "LConst", tier: 1, value: 3 }), universeText({ tag: "LConst", tier: 2, value: 0 })],
+    ["U3", "UU3", "UUU0"]);
+});
+
+test("G0: level entries and level quantification through the instruction wrapper and the codec", t => {
+  const k = session(t), syntax = new CubicalSyntax(k), g = new InstructionGraph(k);
+  const x = g.level("x"), ux = g.universe(syntax.encodeLevel({ tag: "Var", name: "x" }));
+  assert.throws(() => g.variable(x), /not a term/);
+  // λ (x < ω). U(x) : Π (x < ω). U(x + 1), and its instance at 2 is U(2) : U(3).
+  const family = g.levelLambda(x, ux);
+  assert.deepEqual(syntax.decode(g.judgement(family).term),
+    { tag: "LLam", name: "x", body: { tag: "U", level: { tag: "Var", name: "x" } } });
+  const atTwo = g.judgement(g.levelApply(family, syntax.encodeLevel(2)));
+  assert.deepEqual(syntax.decode(atTwo.type), { tag: "U", level: 3 });
+  assert.throws(() => g.levelApply(family, syntax.encodeLevel({ tag: "LConst", tier: 1, value: 0 })), /finite/);
+  // Π (x < ω). U(x) lives in UU0.
+  const statement = g.judgement(g.levelPi(x, ux));
+  assert.equal(statement.context.length, 0);
+  assert.deepEqual(syntax.decode(statement.type), { tag: "U", level: { tag: "LConst", tier: 1, value: 0 } });
+  const generic = { tag: "LPi", name: "y", body: { tag: "U", level: { tag: "LSucc", count: 1, level: { tag: "Var", name: "y" } } } };
+  assert.deepEqual(syntax.decode(syntax.encode(generic)), generic);
 });

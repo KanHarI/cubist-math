@@ -8,6 +8,23 @@ html { scroll-padding-top: 24px; }
 .contents ol { margin: 0; padding-left: 20px; }
 .contents li { margin: 7px 0; font-size: 13px; }
 .contents a { text-underline-offset: 3px; }
+.contents { max-height: calc(100vh - 48px); overflow-y: auto; }
+.contents h2 a { color: inherit; text-decoration: none; }
+.contents ul { margin: 0; padding-left: 18px; }
+.contents h2 + ol + h2 { margin-top: 22px; }
+.contents .current a { color: #1f3b2a; font-weight: 700; text-decoration: none; }
+.status { margin-top: 0; }
+.pager { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; margin-top: 48px; padding-top: 18px; border-top: 1px solid #d7e0d7; font-size: 14px; }
+.pager .next { margin-left: auto; text-align: right; }
+.using { padding-bottom: 8px; }
+.using ul { max-width: 80ch; padding-left: 22px; }
+.using li { margin: 9px 0; line-height: 1.6; }
+.chapter-index { padding-bottom: 36px; }
+.chapter-index ol { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px 28px; margin: 0; padding-left: 22px; }
+.chapter-index li { max-width: none; }
+.chapter-index li a { font-weight: 600; color: #346447; text-underline-offset: 3px; }
+.chapter-index li span { display: block; margin-top: 4px; color: #526459; font-size: 14px; line-height: 1.55; }
+#examples { padding-bottom: 60px; }
 article { min-width: 0; }
 article section { margin-bottom: 40px; }
 article h2 { padding-bottom: 10px; border-bottom: 1px solid #d7e0d7; font-size: 25px; }
@@ -28,7 +45,7 @@ dt { margin-top: 16px; font-weight: 600; }
 dd { margin: 5px 0 0; }
 @media (max-width: 850px) {
   .reference-layout { grid-template-columns: minmax(0, 1fr); gap: 28px; }
-  .contents { position: static; }
+  .contents { position: static; max-height: none; }
   .contents ol { columns: 2; column-gap: 28px; }
   .contents li { break-inside: avoid; }
 }
@@ -36,3 +53,90 @@ dd { margin: 5px 0 0; }
   .contents ol { columns: 1; }
   pre { padding: 12px; }
 }
+
+/* Inspectable examples: names the checker links open the kernel inspector. On
+   wide screens the open inspector takes its width from the page, which moves
+   left beside it; on narrow screens it covers the page. */
+:root { --drawer-width: 100vw; }
+@media (min-width: 1100px) {
+  :root { --drawer-width: min(760px, 48vw); }
+  body.inspector-open { padding-right: var(--drawer-width); }
+}
+/* Source highlighting, as in the proof workspace's Read view. */
+pre code .keyword { color: #735689; font-weight: 600; }
+pre code .macro { color: #98531c; font-weight: 600; text-decoration-line: underline; text-decoration-style: dotted;
+  text-decoration-color: #cba888; text-underline-offset: 3px; }
+pre code .comment { color: #7c8d80; }
+.example-token { padding: 0; border: 0; border-radius: 2px; background: transparent; font: inherit; line-height: inherit;
+  cursor: pointer; color: #216142; text-decoration: underline; text-decoration-color: #abc3a7; text-underline-offset: 3px; }
+.example-token.keyword { text-decoration-color: #b7a7c4; }
+.example-token:hover, .example-token:focus-visible { background: #dcedd4; outline: none; }
+.example-module { color: inherit; text-decoration-color: #9fb89b; text-underline-offset: 3px; }
+.example-module:hover, .example-module:focus-visible { background: #dcedd4; outline: none; }
+.example-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; margin: -10px 0 18px;
+  font-size: 12px; color: #627468; }
+.example-bar a { color: #346447; }
+.inspector-drawer { position: fixed; top: 0; right: 0; z-index: 20; width: var(--drawer-width); height: 100vh;
+  display: grid; grid-template-rows: auto 1fr; background: #fff; border-left: 1px solid #d7e0d7;
+  box-shadow: -8px 0 24px rgb(30 50 35 / 12%); }
+.inspector-drawer[hidden] { display: none; }
+.drawer-head { display: flex; align-items: center; gap: 16px; padding: 10px 16px; border-bottom: 1px solid #d7e0d7; font-size: 14px; }
+.drawer-head strong { margin-right: auto; }
+.drawer-head a { color: #346447; }
+.inspector-drawer iframe { width: 100%; height: 100%; border: 0; }
+
+/* A macro's expansion, shown at once on hover or focus (token-tips.mjs). */
+.token-tip {
+  position: fixed;
+  z-index: 60;
+  max-width: min(36rem, calc(100vw - 16px));
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: #23342d;
+  color: #f6f7f3;
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 18%);
+}
+.token-tip[hidden] {
+  display: none;
+}
+
+/* An example's Elaboration panel (examples.mjs), collapsed until opened. */
+details.elaboration { margin: -8px 0 22px; border: 1px solid #dce2dc; border-radius: 8px; background: #fbfcfa; }
+details.elaboration > summary { padding: 10px 16px; cursor: pointer; font-weight: 600; color: #346447; }
+details.elaboration[open] > summary { border-bottom: 1px solid #e3e8e1; }
+.elaboration-body { padding: 4px 16px 12px; }
+.elaboration-legend { color: #5f7066; font-size: .92em; }
+.elaboration-declaration { margin-top: 14px; }
+.elaboration-declaration h4 { margin: 0 0 6px; }
+.elaboration-stages { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px 16px; margin: 0; align-items: baseline; }
+.elaboration-stages .keyword { color: #735689; font-weight: 600; }
+.elaboration-stages .macro { color: #98531c; font-weight: 600; }
+.elaboration-stages dt { font-weight: 600; color: #5f7066; }
+.elaboration-stages dd { margin: 0; min-width: 0; }
+.elaboration-stages pre { margin: 0; padding: 10px 12px; }
+.elaboration-steps { margin: 0; padding-left: 1.4em; }
+.elaboration-steps li { margin-bottom: 8px; }
+.elaboration-steps code, .elaboration-stages dd > code { font-size: .88em; }
+.elaboration-goal, .elaboration-built { padding-left: .5em; color: #3d4d45; overflow-wrap: anywhere; }
+.turnstile, .maps-to { color: #5f7066; }
+.opcode { color: #735689; font-weight: 600; }
+.elaboration-checked { margin: 8px 0 0; color: #346447; }
+.elaboration-error { color: #a3322b; }
+@media (max-width: 640px) { .elaboration-stages { grid-template-columns: minmax(0, 1fr); } }
+.tbd { color: #7c8d80; font-style: italic; }
+.kernel-derivation { margin-top: 4px; }
+.derivation { margin: 0; padding: 10px 12px; list-style: none; border: 1px solid #e3e8e1; border-radius: 6px; background: white;
+  font: .82em/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-x: auto; }
+.derivation-step { margin-bottom: 6px; }
+.derivation-comment { color: #7c8d80; white-space: pre-wrap; overflow-wrap: anywhere; }
+.derivation-rule { white-space: nowrap; }
+.derivation-number { display: inline-block; min-width: 2.2em; text-align: right; color: #8a978f; }
+.derivation-added { margin-left: 1em; padding: 0 6px; border-radius: 4px; background: #f3ece2; color: #98531c; font: .92em ui-sans-serif, system-ui, sans-serif; }
+.derivation-scaffold .derivation-comment, .derivation-scaffold .opcode { opacity: .75; }
+.derivation-note { color: #8a978f; font-size: .92em; }
+.derivation-at { color: #7a4a00; white-space: normal; overflow-wrap: anywhere; }
+.derivation-equal { color: #346447; font-weight: 600; }
+.derivation-different { color: #a3322b; font-weight: 600; }

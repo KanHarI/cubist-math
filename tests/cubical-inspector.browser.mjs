@@ -81,6 +81,10 @@ try {
   const workbench = await popup;
   workbench.on("pageerror", error => errors.push(error.message));
   await workbench.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
+  // It opens on the kernel graph, the instruction kernel's derivation.
+  assert.equal(await workbench.locator("#workbench-view").inputValue(), "graph");
+  await workbench.locator("#graph-listing .graph-row").first().waitFor();
+  await workbench.locator("#workbench-view").selectOption("math");
   assert.equal(await workbench.locator("#expression").textContent(), "Divides(succ(succ(i)),m)");
   assert.match(await workbench.locator("#context").textContent(), /n :Nat/);
   await workbench.locator("#fold-names").uncheck();
@@ -115,9 +119,28 @@ try {
   const operand = assemblyBench.locator(".assembly-table .assembly-reference").first();
   const handle = await operand.getAttribute("data-handle"); await operand.click();
   assert.equal(await assemblyBench.locator(".assembly-table tr.selected").getAttribute("id"), `assembly-node-${handle}`);
+  // The kernel graph derives the view again in instruction mode, and its
+  // node links lead back into the assembly's syntax graph.
+  await assemblyBench.locator("#workbench-view").selectOption("graph");
+  assert.match(await assemblyBench.locator("#graph-status").textContent(), /^\d+ judgements?, \d+ highlighted steps?; #\d+ is the conclusion\.$/);
+  // hd is a local definition over n : Nat, derived with its context entry.
+  assert.match(await assemblyBench.locator(".graph-row.graph-root .graph-statement").textContent(),
+    /^\{n : Nat\} ⊢ snd\(snd\(prime_divisor_exists\(.*\)\)\) : Divides\(/);
+  // A lookup's definition is derived on request, as the lookup's premise, or
+  // says which rule it still needs.
+  const rows = await assemblyBench.locator(".graph-row").count();
+  const expand = assemblyBench.locator(".graph-expand").first();
+  const name = (await expand.textContent()).replace("Derive the body of ", "");
+  await expand.click();
+  const outcome = assemblyBench.locator(".graph-definition", { hasText: new RegExp(`^(${name} is defined by #\\d+|The body of ${name} is not in instruction mode yet)`) });
+  assert.equal(await outcome.count(), 1);
+  assert.ok(await assemblyBench.locator(".graph-row").count() >= rows);
+  await assemblyBench.locator(".graph-row.graph-root .graph-node").first().click();
+  assert.equal(await assemblyBench.locator("#workbench-view").inputValue(), "assembly");
+  assert.equal(await assemblyBench.locator(".assembly-table tr.selected").count(), 1);
   const downloaded = assemblyBench.waitForEvent("download");
   await assemblyBench.locator("#assembly-download").click();
-  assert.match((await downloaded).suggestedFilename(), /\.assembly\.txt$/);
+  assert.match((await downloaded).suggestedFilename(), /\.ast\.txt$/);
   await assemblyBench.locator("#workbench-view").selectOption("math");
   assert.equal(await assemblyBench.locator("#mathematical-view").isVisible(), true);
   assert.equal(await assemblyBench.locator("#type").textContent(), "Divides(succ(succ(i)),m)");
@@ -138,36 +161,37 @@ try {
   assert.match(groupType, /GroupIso/);
   assert.doesNotMatch(groupType, /G\d|H\d/);
   await page.locator("#toggle-kernel-body").click();
-  const derived = page.locator('#kernel-expression [data-name="ua[U1]"]');
-  await derived.click(); await inspected("ua[U1]");
+  const derived = page.locator('#kernel-expression [data-name="ua"]').first();
+  await derived.click(); await inspected("ua");
   assert.match(await page.locator("#inspect-description").textContent(), /introduces no axiom/);
 
   await openProof("field_logic", "FieldExists");
   assert.match(await page.locator("#kernel-expression").textContent(), /‖/);
   await page.locator("#kernel-truncation-sugar").uncheck();
   assert.match(await page.locator("#kernel-expression").textContent(), /Truncate/);
-  await page.locator('#kernel-expression [data-name="Truncate(U1)"]').click();
-  await inspected("Truncate(U1)");
+  await page.locator('#kernel-expression [data-name="Truncate"]').first().click();
+  await inspected("Truncate");
 
   await openProof("cubical_paths", "reverse_twice");
-  await page.locator('.source-line').filter({ hasText: "fun (i : Interval) => at(p," }).locator('[data-name="p"]').click();
+  await page.locator('.source-line').filter({ hasText: "fun (i : Interval) => p @ flip(i)" }).locator('[data-name="p"]').click();
   await inspected("p");
   assert.match(await page.locator("#kernel-context-list").textContent(), /Interval coordinates/);
   await page.setViewportSize({ width: 600, height: 900 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator("#edit-mode").click();
-  await page.locator("#editor").fill(`def N = Nat;
-    def IdentityType(A : U0) = A;
-    def Alias = IdentityType(N);
-    def id(n : Nat) = n;
-    def value = typed(Alias, id(0));`);
+  await page.locator("#editor").fill(`def N := Nat;
+    def IdentityType(A : U0) := A;
+    def Alias := IdentityType(N);
+    def id(n : Nat) := n;
+    def value := typed(Alias, id(0));`);
   await page.locator("#check").click(); await idle(); await inspected("value");
   const reductionPopup = page.waitForEvent("popup");
   await page.locator("#open-kernel-expression").click();
   const reductionBench = await reductionPopup;
   reductionBench.on("pageerror", error => errors.push(error.message));
   await reductionBench.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
+  await reductionBench.locator("#workbench-view").selectOption("math");
   const chooseReduction = async (side, kind, path = []) => {
     const before = await reductionBench.locator("#syntax").inputValue();
     await reductionBench.locator(`#${kind}-${side}`).click();
@@ -240,6 +264,73 @@ try {
   assert.equal(await reductionBench.locator("#syntax").inputValue(), '{"tag":"Succ","value":{"tag":"Zero"}}');
   assert.equal(await reductionBench.locator("[data-reduction]:enabled").count(), 0);
   await reductionBench.close();
+  await page.locator("#edit-mode").click();
+  await page.locator("#editor").fill(`import primes;
+    simp_rule nat_add_zero;
+    def frozen(n : Nat) : n + 0 = n { simp; }
+  `);
+  await page.locator("#check").click(); await idle();
+  await page.locator('#read-source button[data-name="simp"]').click(); await inspected("simp");
+  assert.equal(await page.locator("#rewrite-trace button").count(),1);
+  await page.locator("#rewrite-trace button").click(); await inspected("simp step 1");
+  await page.locator("#back").click(); await inspected("simp");
+  assert.equal(await page.locator("#freeze-simp").isVisible(),true);
+  await page.locator("#freeze-simp").click(); await idle();
+  assert.match(await page.locator("#editor").inputValue(),/simp only \[nat_add_zero\];/);
+  assert.equal(await page.locator("#diagnostic").isVisible(),false);
+  if(!await page.locator("#editor").isVisible()) await page.locator("#edit-mode").click();
+  await page.locator("#editor").fill(`def generic_calc(U < UU0, x : Nat) : x = x {
+      calc { x = x by refl(x); }
+    }
+    def generic_simp(U < UU0, f : Nat -> Nat, n : Nat, h : f(n) = n) : f(n) = n {
+      simp [h];
+    }`);
+  await page.locator("#check").click(); await idle();
+  await page.locator('#read-source button[data-name="calc"]').click(); await inspected("calc");
+  assert.match(await page.locator("#kernel-type").textContent(),/=/);
+  await page.locator('#read-source button[data-name="by"]').click(); await inspected("calc step 1");
+  await page.locator('#read-source button[data-name="simp"]').click(); await inspected("simp");
+  assert.equal(await page.locator("#rewrite-trace button").count(),1);
+  // One check covers every level, so a generic proof is offered the edit too.
+  assert.equal(await page.locator("#freeze-simp").isVisible(),true);
+  const genericTransfer=await page.evaluate(async()=>{
+    const [{default:createCubical},{CubicalProgram},{saveWorkbenchTransfer}]=await Promise.all([
+      import("/dist/cubical.mjs"),import("/cubical-program.mjs"),import("/workbench-transfer.mjs")]);
+    const source=`import primes;
+      def generic(U < UU0, n : Nat) : n + 0 = n {
+        calc { n + 0 = n by nat_add_zero(n); }
+      }`;
+    const program=new CubicalProgram(await createCubical(),async name=>
+      (await fetch(`/archive/first-library/${name}.cubist`)).text());
+    try {
+      const result=await program.check(source,"browser_generic_calc");
+      const offset=source.indexOf("by nat_add_zero");
+      const step=result.links.find(link=>link.start===offset&&link.role==="calculation step");
+      return saveWorkbenchTransfer(program.export(step.binding));
+    } finally {program.dispose();}
+  });
+  await page.goto(`http://127.0.0.1:${port}/workbench.html?transfer=${genericTransfer}`);
+  await page.waitForFunction(()=>document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
+  assert.equal(await page.locator("#name").textContent(),"calc step 1");
+  assert.match(await page.locator("#type").textContent(),/=/);
+  const sharedTransfer=await page.evaluate(async()=>{
+    const [{default:createCubical},{CubicalProgram},{saveWorkbenchTransfer}]=await Promise.all([
+      import("/dist/cubical.mjs"),import("/cubical-program.mjs"),import("/workbench-transfer.mjs")]);
+    let source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
+    for(let i=1;i<=28;i++)source+=`let T${i} := F(T${i-1},T${i-1});`;
+    source+="have h : forall x : T28. x = x { intro x; exact path i => x; } rfl; }";
+    const program=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");});
+    try {
+      const result=await program.check(source,"browser_shared_inspection");
+      const h=result.links.find(link=>link.name==="h");
+      return saveWorkbenchTransfer(program.export(h.binding));
+    } finally {program.dispose();}
+  });
+  await page.goto(`http://127.0.0.1:${port}/workbench.html?transfer=${sharedTransfer}`);
+  await page.waitForFunction(()=>document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
+  assert.match(await page.locator("#syntax").inputValue(),/Raw syntax exceeds the display limit/);
+  assert.equal(await page.locator("#check").isDisabled(),true);
+  assert.ok((await page.locator("#expression").textContent()).length>0);
   assert.deepEqual(errors, []);
-  console.log("PASS cubical inspector: folding, names, navigation, reading controls, axiom links, and workbench editing");
+  console.log("PASS cubical inspector: folding, navigation, simp trace/freeze, generic transfer, bounded raw syntax, and workbench editing");
 } finally { await browser?.close(); server.kill(); }

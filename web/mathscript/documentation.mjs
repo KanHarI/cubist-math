@@ -5,8 +5,8 @@
 export function leadingDocumentation(source, declarationStart) {
   const lineStart = source.lastIndexOf("\n", declarationStart - 1) + 1;
   const prefix = source.slice(lineStart, declarationStart);
-  // Mathematical parsing points at `def` after the optional `opaque` keyword.
-  if (!/^[\t ]*(?:opaque[\t ]+)?$/.test(prefix)) return null;
+  // Mathematical parsing points at `def`.
+  if (!/^[\t ]*$/.test(prefix)) return null;
   let start = lineStart, end = lineStart;
   const lines = [];
   while (end > 0) {

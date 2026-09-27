@@ -34,12 +34,14 @@ node cli/repl.mjs check example.cubist
 
 A successful check prints the declaration and kernel-step counts and exits with
 status 0. Parse errors, missing imports, or unchecked declarations exit nonzero.
-An explicitly declared axiom is a permitted assumption, not a proof of that axiom.
-Universe templates are checked through their concrete instantiations.
+There is no `axiom` declaration: a source file cannot add assumptions. Each
+`evaluate` directive's result is printed after the counts.
+A declaration with a universe variable `U < UU0` is checked once, for every
+universe.
 
 To import another custom source, put `helpers.cubist` beside `example.cubist`
 and write `import helpers;`. Imports resolve beside the root file first, then
-in the bundled `web/proofs/` library. This same root directory is used for
+in the rebuilt `library/`, then in the archived `archive/first-library/`. This same root directory is used for
 transitive imports; nested module directories are not supported. No extension
 appears in an import statement. A local module can intentionally shadow a
 bundled module of the same name.
@@ -67,7 +69,10 @@ export self_equal.json
 quit
 ```
 
-`inspect` shows context, expression, and type. `assembly` lists the actual native
+`inspect` shows context, expression, type, and the assumptions the declaration
+uses, or `none`. The language
+reference's [checking chapter](../../web/reference/checking.html#cli) shows
+checked sessions. `assembly` lists the actual native
 opcodes and operands. Use a qualified binding such as `example__self_equal`
 when a short name is ambiguous. `beta` or `delta` reduces the first applicable
 occurrence in the expression (or `type`); the native checker validates the
@@ -76,6 +81,34 @@ result. The browser workbench supports choosing a particular occurrence.
 `export` saves replayable source and inspection metadata for the selected
 original declaration. It does not save an interactive reduction history.
 The CLI does not yet provide an import command for this JSON format.
+
+## Try terms in the REPL
+
+A line that is not a command is a REPL entry. The kernel checks each entry as a
+small module that imports the entries before it; after `check`, entries also
+see the checked module's names.
+
+```text
+let x := 7;          x : Nat
+typeof x;            Nat
+evaluate x;          7
+import naturals;     Imported naturals.
+x + 3 * 4            19
+```
+
+`let` and `def` define names, and any declaration of a file works. `typeof`
+prints a type. `evaluate`, or a term alone, prints the normal form of a closed
+term that uses no assumption; a term that uses one is refused with the chain
+through which it enters. An entry continues on the next line while a bracket
+is open, so a proof block is one entry. A rejected entry changes nothing.
+Entries also work noninteractively:
+
+```sh
+node cli/repl.mjs "import naturals; evaluate 2 + 3;"
+```
+
+The same REPL runs in the browser, on `repl.html`, under each proof in the
+workspace, and at the bottom of the language reference's pages.
 
 ## Optimization controls
 

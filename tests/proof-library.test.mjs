@@ -8,7 +8,7 @@ import { parse } from "../web/mathscript/parser.mjs";
 test("every bundled import is available to the browser worker", async () => {
   const available = new Set([...sourceModules, ...cubicalSourceModules]);
   await Promise.all([...available].map(async name => {
-    const source = await readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+    const source = await readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
     for (const dependency of parse(source).imports) {
       assert.ok(available.has(dependency), `${name} imports unregistered module ${dependency}`);
     }
@@ -27,5 +27,5 @@ test("every proof is reachable through exactly one nonempty browsing topic", asy
   });
   assert.deepEqual(grouped.sort(), proofChoices.map(p => p.id).sort());
   for (const source of sourceModules) assert.ok(proofChoices.some(p => p.id === source), source);
-  await Promise.all(proofChoices.map(p => access(new URL(`../web/proofs/${p.file ?? p.id + ".cubist"}`, import.meta.url))));
+  await Promise.all(proofChoices.map(p => access(new URL(`../archive/first-library/${p.file ?? p.id + ".cubist"}`, import.meta.url))));
 });

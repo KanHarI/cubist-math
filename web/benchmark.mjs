@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 const labels = { checked: "1 · Checked within deadline", optimize: "2 · Needs optimization",
-  blocked: "3 · Blocked", failed: "4 · Needs fixing", template: "Universe template" };
+  blocked: "3 · Blocked", failed: "4 · Needs fixing" };
 let report, lastText, worker, localRun = false;
 function link(row) {
   const a = document.createElement("a");
@@ -13,18 +13,23 @@ function renderRows() {
   const rows = report.declarations.filter(row => (!category || row.category === category)
     && `${row.module}.${row.name} ${row.reason ?? ""} ${row.rootBlocker ?? ""}`.toLowerCase().includes(query));
   // Put actionable failures and timeouts first, then the slowest entries in each category.
-  const rank = { optimize: 0, failed: 1, blocked: 2, checked: 3, template: 4 };
+  const rank = { optimize: 0, failed: 1, blocked: 2, checked: 3 };
   rows.sort((a, b) => rank[a.category] - rank[b.category] || b.elapsedMs - a.elapsedMs);
   const fragment = document.createDocumentFragment();
   const bindings = new Map(report.declarations.map(row => [row.binding, row]));
   for (const row of rows) {
     const tr = document.createElement("tr"); tr.dataset.category = row.category;
-    const cells = Array.from({ length: 4 }, () => document.createElement("td"));
+    const cells = Array.from({ length: 5 }, () => document.createElement("td"));
+    const ms = value => `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })} ms`;
     cells[0].append(link(row)); cells[1].textContent = labels[row.category];
-    cells[2].textContent = `${row.elapsedMs.toLocaleString(undefined, { maximumFractionDigits: 1 })} ms`;
-    cells[3].textContent = row.reason ?? "Native kernel check passed.";
+    cells[2].textContent = ms(row.elapsedMs);
+    // The instruction kernel's derivation, in reports that record it.
+    cells[3].textContent = row.instructionMs == null ? "—"
+      : `${ms(row.instructionMs)}${row.instructionJudgements != null ? ` · ${row.instructionJudgements.toLocaleString()} judgements` : ""}`;
+    cells[4].textContent = row.reason ?? (row.instructionJudgements != null
+      ? "Checked, and derived by the instruction kernel." : "Native kernel check passed.");
     const root = bindings.get(row.rootBlocker);
-    if (root) { const small = document.createElement("small"); small.append("Root blocker: ", link(root)); cells[3].append(small); }
+    if (root) { const small = document.createElement("small"); small.append("Root blocker: ", link(root)); cells[4].append(small); }
     tr.append(...cells); fragment.append(tr);
   }
   $("entries").replaceChildren(fragment);
@@ -36,7 +41,7 @@ function renderReport() {
     const counts = report.counts ?? Object.fromEntries(Object.keys(labels).map(c => [c, report.declarations.filter(d => d.category === c).length]));
     const total = report.total ?? report.declarations.length;
     $("status").textContent = `${report.complete ? "Completed" : "Running"} · ${new Date(report.generatedAt).toLocaleString()} · ${report.modules ?? "…"} modules · ${total} declarations${report.elapsedSeconds ? ` · ${report.elapsedSeconds}s elapsed` : ""}${report.revision ? ` · ${report.revision.slice(0, 8)}${report.dirty ? " + working changes" : ""}` : ""}`;
-    $("progress").max = Math.max(1, total - (counts.template ?? 0)); $("progress").value = counts.checked ?? 0;
+    $("progress").max = Math.max(1, total); $("progress").value = counts.checked ?? 0;
     $("counts").replaceChildren(...Object.entries(labels).map(([key, label]) => {
       const button = document.createElement("button"), number = document.createElement("strong");
       number.textContent = (counts[key] ?? 0).toLocaleString(); button.append(number, label);

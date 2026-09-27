@@ -68,19 +68,11 @@ def identity(A : U0, x : A) = x;
 Consecutive comment lines form a paragraph; an empty `//` line starts another
 paragraph. A physical blank line separates a file or section comment from a
 declaration. Trailing comments are not used as documentation for the next
-declaration. This also works for proof blocks, axioms, opaque definitions and
-construction declarations. Documentation is displayed as plain text and does
-not change the checked proof.
+declaration. This also works for proof blocks and construction declarations.
+Documentation is displayed as plain text and does not change the checked proof.
 
-The parser also accepts `opaque def`; the current cubical backend checks and
-unfolds it exactly like `def`:
-
-```text
-opaque def Permutations(n : Nat) = Bijection(Fin(n), Fin(n));
-opaque def successor(n : Nat) = succ(n);
-def folded = successor(1);
-def opened = unfold(folded); // 2
-```
+Every definition unfolds wherever conversion needs its value; there is no way
+to keep one folded.
 
 Named definitions retain their checked bodies, which conversion can unfold
 when necessary to compare types. Function application still computes by beta
@@ -96,7 +88,7 @@ view its source. An imported but unused axiom does not appear in that result's
 list. The module-wide count is displayed separately. The CLI's `show` command
 also lists dependencies.
 
-Types include `forall x : A, B`, `exists x : A, B`, `A -> B`, `A and B`, and
+Types include `forall x : A. B`, `exists x : A. B`, `A -> B`, `A and B`, and
 `A or B`. A pair is `(a, b)`. Its expected type supplies the dependent family;
 `typed(T, expression)` provides an annotation where inference needs one.
 A tuple `(a, b, c, d)` is a macro for `(a, (b, (c, d)))`; the same notation
@@ -110,7 +102,7 @@ to see the binary-pair expansion or click to inspect the checked tuple.
 `x = x`; `absurd(impossible)` eliminates a proof of `Void` into the expected type.
 
 Blocks support `intro`, `let`, `obtain`, `have`, `cases`, and `exact`. See
-[Euclid](../../web/proofs/euclid.cubist) for the complete short argument. Induction
+[Euclid](../../archive/first-library/euclid.cubist) for the complete short argument. Induction
 expressions carry an explicit motive:
 
 ```text
@@ -150,23 +142,27 @@ induction and introduce no axiom. `refl(x)` supplies the reflexive path `x = x`.
 Equality induction is available as
 `path_induction(A, motive, reflexive_case, x, y, equality)`, where the motive is a
 function of two endpoints and their equality proof. The foundational symmetry,
-transitivity, and congruence proofs in [primes.cubist](../../web/proofs/primes.cubist)
+transitivity, and congruence proofs in [primes.cubist](../../archive/first-library/primes.cubist)
 show its use. The lower-level `induct`, `cases`, and `unpack` function forms remain
 available for proof-producing source tools.
 
 ## Modules and validation
 
-### Explicit universe specialization
+### Universes and universe variables
 
-`U0` denotes U0; `U1`, `U2`, and `U3` denote the next universes.
-Definitions with an `A : U0` parameter still require a small type. The
-universe argument can also be a parameter declared as `U : Universe`.
-For example, `def identity(U : Universe, A : U, x : A) = x;` is checked once
-and can be specialized as `identity(U0)` or `identity(U2)`. `Universe` is a
-universe-parameter sort, not an unrestricted ordinary type parameter.
+`U0` denotes U0; `U1`, `U2`, `U3` and so on denote the next universes, and
+`UU0`, `UU1`, … the larger family above all of them. Definitions with an
+`A : U0` parameter still require a small type. A universe variable, bound as
+`U < UU0`, makes a declaration generic: `def identity(U < UU0, A : U, x : A) := x;`
+is checked once, for every universe, and used as `identity(U0)` or
+`identity(U2, U1, U0)`. Universe arguments are explicit and lie below `UU0`.
+`next(U)` and `max(U, V)` build universes from others, and `forall U < UU0. B`
+and `fun (U < UU0) => t` bind a universe variable in a type or a term. See the
+[Universes chapter](../../web/reference/universes.html).
 
-The following functions specialize the library principles and their derived
-operations. See [the single-axiom univalence development](../tactical/univalence.md).
+The following functions are the library principles and their derived
+operations, each generic over `U < UU0`. See
+[the single-axiom univalence development](../tactical/univalence.md).
 
 ```text
 Truncate(U, A)
@@ -183,13 +179,14 @@ UnivalenceBeta(U)(A, B, equivalence, x)
 UnivalenceEta(U)(A, B, path)
 ```
 
-Each universe specialization is a first-class function. The two application
+Each instance at a universe is a first-class function. The two application
 styles above are interchangeable. `Choice` still requires setness of the
 index type and every fiber and returns only a truncated section.
 `Univalence` asserts that the canonical `idtoequiv` map is an equivalence.
 `ua` is its derived inverse: it accepts `Equiv(U, A, B)` and returns
 `A =[U] B`. `UnivalenceBeta` and `UnivalenceEta` are derived theorems,
-not separate axioms. All these operations also accept `U : Universe`.
+not separate axioms. All these operations also accept a universe variable.
+A result's assumptions are listed by name, once each: `LEM`, not `LEM(U0)`.
 
 `Equiv(U, A, B)` and `IsEquiv(U, A, B, f)` in `paths.cubist` are ordinary
 universe-parameterized definitions. `x =[T] y` explicitly selects the carrier
@@ -261,7 +258,7 @@ calculation blocks, implicit arguments, and editor completion are future work.
 A named proposition can be used directly as a definition's result type:
 
 ```text
-def InfinitelyManyPrimes = forall n : Nat, exists p : Nat, Prime(p) and n < p;
+def InfinitelyManyPrimes = forall n : Nat. exists p : Nat. Prime(p) and n < p;
 
 def euclid : InfinitelyManyPrimes {
   intro n;
@@ -271,7 +268,7 @@ def euclid : InfinitelyManyPrimes {
 
 `intro n;` opens the outer `forall` (or implication) of the checked goal, including through a definition name. It records the new local assumption and remaining goal for source inspection. The kernel checks the resulting function against the named proposition.
 
-For a goal `forall A : U0, IsSet(A) -> IsSet(A)`, `intro A;` introduces
+For a goal `forall A : U0. IsSet(A) -> IsSet(A)`, `intro A;` introduces
 `A : U0`, then `intro setA;` introduces `setA : IsSet(A)`. The remaining goal
 is `IsSet(A)`, proved by `exact setA;`. The identifier `setA` is a name you
 choose; its type is inferred from the next input of the goal. `IsSet` comes
@@ -289,7 +286,7 @@ are skipped. Run it again and it makes no further changes.
 
 ```sh
 npm run linearize:mathscript -- --check
-npm run linearize:mathscript -- web/proofs/circle_group_identity.cubist
+npm run linearize:mathscript -- archive/first-library/circle_group_identity.cubist
 ```
 
 `--check` reports remaining candidates without writing and exits nonzero if

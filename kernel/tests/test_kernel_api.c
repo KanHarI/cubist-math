@@ -2,6 +2,7 @@
 #include "cubical_kernel.h"
 #include <assert.h>
 #include <stdio.h>
+#include <time.h>
 
 static cc_term_kind kind(cc_kernel *k, cc_term term) {
     cc_term_kind result;
@@ -108,7 +109,7 @@ static void open_cube(void) {
     assert(k);
     cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
     cc_term unit = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
-    cc_term universe = cc_kernel_term(k, CC_U, 0, 0, 0, 0, 0);
+    cc_term universe = cc_kernel_term(k, CC_U, 0, cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
     cc_term family_type = cc_kernel_term(k, CC_PATH, 1, universe, nat, unit, 0);
     cc_term family = cc_kernel_term(k, CC_VAR, 100, 0, 0, 0, 0);
     cc_formula i;
@@ -131,9 +132,146 @@ static void open_cube(void) {
     cc_kernel_free(k);
 }
 
+/* Callers classify a rejection by its kind, never by its message. */
+static void error_kinds(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term unit = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
+    cc_term zero = cc_kernel_term(k, CC_ZERO, 0, 0, 0, 0, 0);
+    cc_term free_var = cc_kernel_term(k, CC_VAR, 17, 0, 0, 0, 0);
+    cc_term large = zero;
+    for (unsigned i = 0; i < 64; ++i) large = cc_kernel_term(k, CC_SUCC, 0, large, 0, 0, 0);
+    cc_checked_result result;
+    assert(cc_kernel_error_kind(k) == CC_ERROR_NONE);
+    assert(!cc_kernel_check(k, zero, unit, NULL, 0, &result));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_MISMATCH);
+    cc_term found = 0, expected = 0;
+    assert(cc_kernel_mismatch(k, &found, &expected));
+    assert(cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0) == 0); /* no construction while an error is set */
+    cc_kernel_clear_error(k);
+    assert(cc_kernel_error_kind(k) == CC_ERROR_NONE);
+    assert(!cc_kernel_mismatch(k, &found, &expected));
+    /* The recorded pair is the type of 0 and the type it had to match. */
+    cc_checked_result as_nat, as_unit;
+    assert(cc_kernel_check(k, zero, nat, NULL, 0, &as_nat));
+    assert(cc_kernel_check(k, unit, 0, NULL, 0, &as_unit));
+    assert(!cc_kernel_check(k, zero, unit, NULL, 0, &result));
+    assert(cc_kernel_mismatch(k, &found, &expected));
+    cc_kernel_clear_error(k);
+    cc_checked_result found_view, expected_view;
+    assert(cc_kernel_check(k, found, 0, NULL, 0, &found_view));
+    assert(cc_kernel_check(k, expected, 0, NULL, 0, &expected_view));
+    assert(found_view.expression == as_nat.type);
+    assert(expected_view.expression == unit);
+    assert(!cc_kernel_check(k, free_var, nat, NULL, 0, &result));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_OTHER);
+    assert(cc_kernel_check(k, zero, nat, NULL, 0, &result));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_NONE);
+    cc_kernel_set_step_budget(k, 16);
+    assert(!cc_kernel_check(k, large, nat, NULL, 0, &result));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_BUDGET);
+    cc_kernel_set_step_budget(k, UINT64_C(1) << 40);
+    cc_kernel_set_deadline_ms(k, 0.01);
+    for (clock_t start = clock(); clock() - start < CLOCKS_PER_SEC / 100;) { /* let it expire */ }
+    assert(!cc_kernel_check(k, large, nat, NULL, 0, &result));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_DEADLINE);
+    cc_kernel_set_deadline_ms(k, 0);
+    assert(cc_kernel_check(k, large, nat, NULL, 0, &result));
+    assert(cc_kernel_error_kind(NULL) == CC_ERROR_OTHER);
+    cc_kernel_free(k);
+}
+
+/* A trace records the rules as they run, and never changes a judgement. */
+static bool traced(const cc_kernel *k, cc_trace_kind kind, uint32_t a, cc_trace_event *found) {
+    cc_trace_event event;
+    for (size_t i = 0; cc_kernel_trace_event(k, i, &event); ++i)
+        if (event.kind == kind && (!a || event.a == a)) { if (found) *found = event; return true; }
+    return false;
+}
+
+static void trace_events(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term unit = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
+    cc_term var = cc_kernel_term(k, CC_VAR, 5, 0, 0, 0, 0);
+    cc_term identity = cc_kernel_term(k, CC_LAM, 5, nat, var, 0, 0);
+    cc_term arrow = cc_kernel_term(k, CC_PI, 5, nat, nat, 0, 0);
+    cc_checked_result result;
+    assert(cc_kernel_trace_start(k, 256));
+    assert(cc_kernel_check(k, identity, arrow, NULL, 0, &result));
+    cc_trace_event event;
+    /* Entering the binder: the domain is inferred, the context gains 5 : Nat,
+     * and the body is inferred one level deeper. */
+    assert(traced(k, CC_TRACE_INFER, identity, &event) && event.depth == 0);
+    assert(traced(k, CC_TRACE_EXTEND, 5, &event) && event.b);
+    assert(traced(k, CC_TRACE_INFER, var, &event) && event.depth == 1);
+    assert(traced(k, CC_TRACE_INFERRED, identity, &event) && event.b && event.c);
+    assert(traced(k, CC_TRACE_CONVERT, 0, &event) && event.c == 1);
+    /* Checking again reuses the cached judgement. */
+    assert(cc_kernel_trace_start(k, 256));
+    assert(cc_kernel_check(k, identity, arrow, NULL, 0, &result));
+    assert(traced(k, CC_TRACE_REUSED, identity, NULL));
+    /* A rejection is still a rejection, with the failed conversion recorded. */
+    cc_term zero = cc_kernel_term(k, CC_ZERO, 0, 0, 0, 0, 0);
+    assert(cc_kernel_trace_start(k, 256));
+    assert(!cc_kernel_check(k, zero, unit, NULL, 0, &result));
+    assert(traced(k, CC_TRACE_CONVERT, 0, &event) && event.c == 0);
+    cc_kernel_clear_error(k);
+    /* Events beyond the capacity are counted, not kept. */
+    assert(cc_kernel_trace_start(k, 1));
+    assert(cc_kernel_check(k, zero, nat, NULL, 0, &result));
+    assert(cc_kernel_trace_count(k) > 1);
+    assert(cc_kernel_trace_event(k, 0, &event) && !cc_kernel_trace_event(k, 1, &event));
+    /* Stopped, nothing is recorded. */
+    cc_kernel_trace_stop(k);
+    assert(cc_kernel_check(k, identity, arrow, NULL, 0, &result));
+    assert(cc_kernel_trace_count(k) == 0 && !cc_kernel_trace_event(k, 0, &event));
+    assert(!cc_kernel_trace_start(k, 0));
+    cc_kernel_free(k);
+}
+
+/* The syntax hash graph is exact: identical syntax has one handle, beyond
+ * any cache size, after a rollback reuses handles, and after compaction. */
+static void exact_sharing(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    enum { MANY = 100000 };
+    cc_term first = cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0);
+    for (uint32_t level = 1; level < MANY; ++level)
+        assert(cc_kernel_term(k, CC_LCONST, level, 0, 0, 0, 0) == first + level);
+    for (uint32_t level = 0; level < MANY; level += 997)
+        assert(cc_kernel_term(k, CC_LCONST, level, 0, 0, 0, 0) == first + level);
+
+    cc_kernel_checkpoint(k);
+    cc_term discarded = cc_kernel_term(k, CC_LCONST, MANY, 0, 0, 0, 0);
+    cc_kernel_rollback(k);
+    cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
+    assert(nat == discarded);
+    cc_term again = cc_kernel_term(k, CC_LCONST, MANY, 0, 0, 0, 0);
+    assert(again != nat && cc_kernel_term(k, CC_LCONST, MANY, 0, 0, 0, 0) == again);
+    assert(cc_kernel_term(k, CC_LCONST, 7, 0, 0, 0, 0) == first + 7);
+
+    cc_kernel_checkpoint(k);
+    assert(cc_kernel_term(k, CC_LCONST, MANY + 1, 0, 0, 0, 0));
+    cc_term zero = cc_kernel_term(k, CC_ZERO, 0, 0, 0, 0, 0);
+    cc_term one = cc_kernel_term(k, CC_SUCC, 0, zero, 0, 0, 0);
+    cc_term reference = cc_kernel_define(k, 500, one, nat);
+    assert(reference && cc_kernel_commit_checkpoint(k));
+    cc_term value;
+    assert(cc_kernel_definition(k, cc_kernel_relocated(k, reference), NULL, &value, NULL));
+    zero = cc_kernel_term(k, CC_ZERO, 0, 0, 0, 0, 0);
+    assert(cc_kernel_term(k, CC_SUCC, 0, zero, 0, 0, 0) == value);
+    cc_kernel_free(k);
+}
+
 int main(void) {
+    trace_events();
     checked_definitions();
+    exact_sharing();
     open_cube();
+    error_kinds();
     cc_kernel *kernel = cc_kernel_new();
     assert(kernel);
     cc_term nat = cc_kernel_term(kernel, CC_NAT, 0, 0, 0, 0, 0);

@@ -1,0 +1,51 @@
+// Checked arithmetic ergonomics examples.
+// Current checked counterparts: ../current/arithmetic.cubist.
+import primes;
+
+// calc retains the listed witnesses and their composition order.
+def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
+  calc {
+    (n + 0) + 0 = n + 0 by nat_add_zero(n + 0);
+    _ = n by nat_add_zero(n);
+  }
+}
+
+// Nested calculation step + fixed-codomain congruence.
+// Occurrences count eligible preorder matches in the chosen endpoint.
+def add_zero_under_function(B : U0, f : Nat -> B, n : Nat) : f((n + 0) + 0) = f(n) {
+  calc {
+    f((n + 0) + 0) = f(n + 0) by {
+      rw [nat_add_zero(n + 0)] at lhs occurrence 1;
+    }
+    _ = f(n) by {
+      rw [nat_add_zero(n)] at lhs occurrence 1;
+    }
+  }
+}
+
+// Rewriting may close by conversion; no unreachable trailing rfl.
+def insert_zero(n : Nat) : n = n + 0 {
+  rw [<- nat_add_zero(n)] at lhs;
+}
+
+// The rule parameter is obtained from each matched subject.
+def add_zero_twice_simp(n : Nat) : (n + 0) + 0 = n {
+  simp only [nat_add_zero];
+}
+
+// A genuinely residual goal: after simplification this is n = m.
+def residual_goal(n : Nat, m : Nat, h : n = m) : (n + 0) + 0 = m {
+  simp only [nat_add_zero];
+  exact h;
+}
+
+// Typed have uses := to disambiguate the equality type.
+def named_step(n : Nat) : (n + 0) + 0 = n {
+  have h : n + 0 = n := nat_add_zero(n);
+  exact trans(nat_add_zero(n + 0), h);
+}
+
+// simpa checks the supplied term against both simplified endpoint pairs.
+def simpa_add_zero(n : Nat) : n + 0 = n {
+  simpa only [nat_add_zero] using refl(n);
+}

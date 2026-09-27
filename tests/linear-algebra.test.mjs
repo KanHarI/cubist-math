@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 const module = await createCubical();
-const readSource = name => readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+const readSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
 const create = t => {
   const program = new CubicalProgram(module, readSource, { collectReferences: false });
   t.after(() => program.dispose()); return program;
@@ -85,7 +85,7 @@ test("spans are least subspaces and independent chains have bounds, including em
       exact independent_union_least(K, V, Void, empty_family(K, V), empty_chain(K, V), EmptyIndependentSubset(K, V),
         (fun (i : Void) => typed(IndependentIncluded(K, V, empty_family(K, V, i), EmptyIndependentSubset(K, V)), absurd(i))));
     }
-    def large_constant_family(K : AlgebraicField, V : VectorSpace(K), A : U0) = EmptyIndependentSubset(K, V);
+    def large_constant_family(K : AlgebraicField, V : VectorSpace(K), A : U0) := EmptyIndependentSubset(K, V);
     def large_constant_chain(K : AlgebraicField, V : VectorSpace(K)) :
       PredicateChain(U0, vector_carrier(K, V), (fun (A : U0) => independent_members(K, V, large_constant_family(K, V, A)))) {
       intro A; intro B;
@@ -94,7 +94,7 @@ test("spans are least subspaces and independent chains have bounds, including em
         IndependentIncluded(K, V, EmptyIndependentSubset(K, V), EmptyIndependentSubset(K, V)),
         left(independent_inclusion_refl(K, V, EmptyIndependentSubset(K, V))));
     }
-    def large_union(K : AlgebraicField, V : VectorSpace(K)) =
+    def large_union(K : AlgebraicField, V : VectorSpace(K)) :=
       IndependentUnion(K, V, U0, large_constant_family(K, V), large_constant_chain(K, V));
   `, "chain_regression");
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
@@ -140,9 +140,9 @@ test("the general basis theorem derives maximality from choice, with its exact a
   assert.ok(assumptions("bourbaki_witt__bourbaki_witt").every(name => /^(Truncate|LEM)/.test(name)));
   assert.ok(assumptions("independent_extension__adjoin_independent").every(name => /^(Truncate|LEM)/.test(name)));
   const basisAxioms = assumptions("vector_basis_existence__vector_space_has_basis");
-  assert.ok(basisAxioms.includes("Choice(U1)"), JSON.stringify(basisAxioms));
-  assert.ok(basisAxioms.includes("LEM(U0)"), JSON.stringify(basisAxioms));
-  assert.ok(basisAxioms.every(name => /^(Choice\(U1\)|LEM\(U0\)|Truncate(?:Intro|Prop|Elim)?\(U[01]\))$/.test(name)), JSON.stringify(basisAxioms));
+  assert.ok(basisAxioms.includes("Choice"), JSON.stringify(basisAxioms));
+  assert.ok(basisAxioms.includes("LEM"), JSON.stringify(basisAxioms));
+  assert.ok(basisAxioms.every(name => /^(Choice|LEM|Truncate(?:Intro|Prop|Elim)?)$/.test(name)), JSON.stringify(basisAxioms));
   assert.deepEqual(assumptions("general_basis_regression__any_vector_space"), basisAxioms);
 });
 

@@ -29,7 +29,7 @@ source inspector to retain its names and return navigation.
 
 ```sh
 npm test -- euclid                       # Selected source and its imports
-npm test -- web/proofs/circle.cubist
+npm test -- archive/first-library/circle.cubist
 npm test -- --changed                    # Modified .cubist sources
 npm test -- tests/cubical-program.test.mjs
 npm test                                # Final regression and corpus check
@@ -46,12 +46,12 @@ while checking that the expanded AST is unchanged. Add `-- --check` for a dry ru
 ## Code and documentation
 
 - [`docs/README.md`](docs/README.md): documentation index and where to resume each development.
-- [`kernel/`](kernel/README.md): the trusted C checker, with one file per group of rules.
+- [`kernel/`](kernel/README.md): the trusted C kernel. Its typing rules are the instructions in `src/instructions.c`, with one file per group of computation rules; the old term checker remains as the search's untrusted oracle.
 - [`docs/guides/cli.md`](docs/guides/cli.md): custom proofs, imports, commands, and CLI limitations.
 - [`docs/guides/kernel.md`](docs/guides/kernel.md): a mathematician's guide to reading the kernel.
-- [`lib/cubical/`](lib/cubical): elaboration, inert native adapters, and an independent JavaScript reference used in tests.
-- [`web/proofs/`](web/proofs): the canonical `.cubist` mathematical library.
-- [`web/language.html`](web/language.html): the full source language reference.
+- [`lib/cubical/`](lib/cubical): elaboration, inert native adapters, and an independent JavaScript reference checker used in tests (not extended for new kernel features).
+- [`archive/first-library/`](archive/first-library): the archived first `.cubist` library, still checked in CI. A rebuilt library replaces it area by area; see [`docs/library-results.md`](docs/library-results.md) and the [work plan](docs/roadmaps/work-plan.md).
+- [`web/language.html`](web/language.html): the source language reference, one page per chapter under `web/reference/`.
 - [`docs/tactical/galois-handoff.md`](docs/tactical/galois-handoff.md) and [`docs/roadmaps/complex-analysis-roadmap.md`](docs/roadmaps/complex-analysis-roadmap.md): unfinished mathematical developments and resumption notes.
 
 ## Resuming development

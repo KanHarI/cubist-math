@@ -8,19 +8,28 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 test("removed theorem declarations are rejected in both source forms", () => {
   for (const source of [
     "theorem identity(A : U0, x : A) = x;",
-    "theorem identity : forall A : U0, A -> A { intro A; intro x; exact x; }",
+    "theorem identity : forall A : U0. A -> A { intro A; intro x; exact x; }",
   ]) {
-    assert.throws(() => parse(source), /Expected def or axiom/);
-    assert.throws(() => formatMathScript(source), /Expected def or axiom/);
+    assert.throws(() => parse(source), /Expected a declaration or directive/);
+    assert.throws(() => formatMathScript(source), /Expected a declaration or directive/);
   }
+});
+
+test("axiom and opaque are not declarations, and imports come first", () => {
+  assert.throws(() => parse("axiom assumed : Nat;"), /Expected a declaration or directive: def, computable def/);
+  assert.throws(() => parse("opaque def boxed := 0;"), /Expected a declaration or directive: def, computable def/);
+  assert.throws(() => parse("def zero_again := 0;\nimport primes;"), /^Error: Imports must come before declarations\.$/);
+  // `axiom` and `opaque` are ordinary names elsewhere.
+  assert.equal(parse("def axiom(n : Nat) := n;").declarations[0].name.text, "axiom");
+  assert.equal(parse("def opaque(n : Nat) := n;").declarations[0].name.text, "opaque");
 });
 
 test("definitions check constructions and proofs and expose their checked bodies", async t => {
   const program = new CubicalProgram(await createCubical(), async () => "");
   t.after(() => program.dispose());
   const result = await program.check(`
-    def identity(A : U0, x : A) = x;
-    def identity_proof : forall A : U0, A -> A {
+    def identity(A : U0, x : A) := x;
+    def identity_proof : forall A : U0. A -> A {
       intro A; intro x; exact x;
     }
     def computes : identity_proof(Nat, 0) = identity(Nat, 0) { exact refl(0); }

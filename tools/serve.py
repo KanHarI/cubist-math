@@ -8,12 +8,26 @@ from urllib.parse import parse_qs, quote, urlsplit
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent / "web"
+REPOSITORY = Path(__file__).resolve().parent.parent
+ROOT = REPOSITORY / "web"
+# Libraries live outside web/; the site serves them under /archive/ and /library/.
+ARCHIVE = REPOSITORY / "archive"
+LIBRARY = REPOSITORY / "library"
 
 
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
+
+    def translate_path(self, path):
+        request = urlsplit(path).path
+        for prefix, root in (("/archive", ARCHIVE), ("/library", LIBRARY)):
+            if request == prefix or request.startswith(prefix + "/"):
+                candidate = (root / request[len(prefix):].lstrip("/")).resolve()
+                if candidate == root or root in candidate.parents:
+                    return str(candidate)
+                return str(root / "__outside__")
+        return super().translate_path(path)
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-store")
@@ -22,7 +36,7 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.split("?")[0] == "/mathscript-version":
             paths = sorted((ROOT / "mathscript").glob("*.mjs"))
-            paths += sorted((ROOT / "proofs").rglob("*.cubist"))
+            paths += sorted(ARCHIVE.rglob("*.cubist")) + sorted(LIBRARY.rglob("*.cubist"))
             paths += [Path(__file__)]
             paths += sorted(ROOT.glob("cubical-*.mjs"))
             paths += sorted((ROOT / "dist/cubical-runtime").glob("*.mjs"))

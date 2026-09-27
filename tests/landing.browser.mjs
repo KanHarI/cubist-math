@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { chromium, webkit } from "playwright";
 import { proofChoices } from "../web/proof-library.mjs";
+import { libraryModules } from "../web/mathscript/modules.mjs";
 
 const server = spawn("python3", [fileURLToPath(new URL("../tools/serve.py", import.meta.url)), "--port", "0"],
   { stdio: ["ignore", "pipe", "pipe"] });
@@ -32,13 +33,17 @@ try {
   assert.equal(response.status(), 200);
   assert.match(await page.title(), /Proof highlights/);
   assert.equal(await page.locator("h1").count(), 1);
+  // The language reference comes first, then the proof library.
+  assert.deepEqual(await page.locator(".introduction .browse-link").evaluateAll(links => links.map(link => link.getAttribute("href"))),
+    ["language.html", "proof.html"]);
   const links = await page.locator(".proof-card[href], .proof-card-main").evaluateAll(cards => cards.map(card => card.href));
-  assert.equal(links.length, 8);
-  // Every card points to a registered source and to a real theorem in that source.
+  assert.equal(links.length, 9);
+  // Every card points to a registered source, in the library or the archive,
+  // and to a real theorem in that source.
   for (const link of links) {
-    const query = new URL(link).searchParams;
-    assert.ok(proofChoices.some(p => p.id === query.get("proof")));
-    const source = await page.request.get(`${base}/proofs/${query.get("proof")}.cubist`);
+    const query = new URL(link).searchParams, library = libraryModules.includes(query.get("proof"));
+    assert.ok(library || proofChoices.some(p => p.id === query.get("proof")));
+    const source = await page.request.get(`${base}/${library ? "library" : "archive/first-library"}/${query.get("proof")}.cubist`);
     assert.equal(source.status(), 200);
     assert.ok((await source.text()).includes(`def ${query.get("name")}`));
   }
@@ -85,9 +90,13 @@ try {
       for (const name of ["GroupIso", "CircleLoopGroup", "IntegerGroup"])
         assert.equal(await page.locator(`#kernel-type [data-name="${name}"]`).count(), 1);
       assert.doesNotMatch(await page.locator("#kernel-view-note").textContent(), /unavailable/);
-      const tuple = page.locator('#read-source .reference.macro[data-name="("][title*="winding, (integer_loop"]').first();
+      const tuple = page.locator('#read-source .reference.macro[data-name="("][data-tip*="winding, (integer_loop"]').first();
       assert.equal(await tuple.count(), 1);
-      assert.match(await tuple.getAttribute("title"), /winding, \(integer_loop, \(integer_loop_winding/);
+      // The expansion shows at once on hover, without the browser's title delay.
+      await tuple.hover();
+      const tip = page.locator(".token-tip");
+      assert.equal(await tip.isVisible(), true);
+      assert.match(await tip.textContent(), /winding, \(integer_loop, \(integer_loop_winding/);
       await tuple.click();
       assert.equal(await page.locator("#inspect-kind").textContent(), "tuple macro");
       assert.match(await page.locator("#inspect-description").textContent(), /Expands to \(winding, \(integer_loop/);
@@ -97,6 +106,13 @@ try {
     assert.match(await page.title(), /Proof highlights/);
   }
   if (!groupOnly) {
+    // The library card opens its module at the named theorem.
+    await page.locator('.proof-card[href*="proof=universe_automorphisms&"]').click();
+    await idle();
+    assert.equal(await page.locator("#proof-title").textContent(), "Library: universe_automorphisms");
+    assert.equal(await page.locator("#inspect-name").textContent(), "excluded_middle_iff_universe_swap");
+    assert.equal(await page.locator("#diagnostic").isVisible(), false);
+    assert.match(await page.locator("#inspect-type").textContent(), /ExcludedMiddle/);
     await page.goto(`${base}/proof.html?proof=group_first_isomorphism&name=group_first_isomorphism`);
     await idle();
     await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
@@ -131,7 +147,7 @@ try {
     await popup.close();
   }
   assert.deepEqual(errors, []);
-  console.log(`PASS proof landing: root, eight highlights, destinations, ${groupOnly ? "group identity" : "workbench transfer"}, mobile (${process.env.THTH_BROWSER ?? "chromium"})`);
+  console.log(`PASS proof landing: root, nine highlights, destinations, ${groupOnly ? "group identity" : "workbench transfer"}, mobile (${process.env.THTH_BROWSER ?? "chromium"})`);
 } finally {
   await browser?.close();
   server.kill();

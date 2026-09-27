@@ -1,8 +1,61 @@
 # Simplification and shorter proofs in Cubist
 
-Status: planning only, 2026-09-23. No implementation is claimed by this roadmap.
-The next step is milestone 0. This document covers language tooling; it does
-not resume any mathematical roadmap. All new syntax below is proposed syntax.
+Status reviewed 2026-09-27: first release delivered on 2026-09-25. Milestones 0–3 check through
+the native kernel: grouped binders and introductions, both `have` forms,
+`rfl`, `calc`, `rw`, `simp` and `simpa` with explicit, registered and named rule
+sets, `simp at h as h2`, bounded conditional equality rules, checked type-path
+transport, and the "Replace with simp only" action. Milestone 4's cubical
+shorthand (`path i =>`, `p @ i`, `ext`, `along`, `apd_path`, `over`) shipped
+early. A review on 2026-09-25 fixed four elaborator bugs and an older
+name-capture bug; see the [implementation checkpoint](../tactical/proof-ergonomics-handoff.md).
+
+The shared goal layer's core and motive abstraction are delivered (HoTT A5),
+as are G0's checked universe binders and milestone 8's core computability
+features. Argument inference, theories and inductive declarations remain open.
+
+The remaining dependent, cubical, induction and shared elaboration work moved
+to the [HoTT and cubical automation roadmap](hott-automation-roadmap.md), and
+kernel-facing interval work to the [kernel roadmap](cubical-kernel-roadmap.md).
+Each open item below names its new owner. This roadmap keeps:
+- general argument inference with `apply` and `refine` (milestone 5);
+- theories, structures and notation (milestone 6);
+- inductive declarations and pattern matching (milestone 7);
+- computability as a checked property (milestone 8).
+
+Milestones 5–7 build on the HoTT roadmap's goal layer (A5).
+The [computation notation roadmap](computation-notation-roadmap.md) builds on
+their inference, structures and matching for monadic `do` and arrow blocks;
+it owns that planned extension and requires no new kernel rule.
+This document covers language tooling and does not resume any mathematical
+roadmap. Examples below not yet covered by the checked sample files remain
+proposals.
+
+**Restructured later on 2026-09-25.**
+- The first library was migrated to the new syntax: tiers 1–2, merged in PRs
+  #2–#4. It is archived, and the new library starts with `library/naturals`;
+  its results are recorded in
+  [library-results.md](../library-results.md).
+- This roadmap adopted milestones 6–8:
+  - 6: theories, which replace the planned records, notation and sections;
+  - 7: inductive declarations and pattern matching;
+  - 8: computability as a checked property.
+- Milestones 6 and 7 follow the [language feature
+  proposal](inductive-language-features.md). They depend on the kernel's G0
+  and item H ([kernel roadmap](cubical-kernel-roadmap.md),
+  [design](higher-inductive-types-design.md)).
+- The [work plan](work-plan.md) sequences all roadmaps.
+
+Continue with the [PR-sized implementation plan](proof-ergonomics-implementation-plan.md)
+and its [checked and exploratory sample files](../examples/proof-ergonomics/README.md).
+That plan specifies reconstruction APIs, matching/occurrence semantics,
+transactions, measurements, and cubical notation priorities. It brings
+expected-type paths and pointwise equality forward without requiring general
+argument inference.
+
+The subsequent [HoTT and cubical automation roadmap](hott-automation-roadmap.md)
+records why the current simplifier cannot reach path operations. It now owns
+the remaining dependent, cubical and goal-derived induction work below; see
+its [changes to the ergonomics plan](hott-automation-roadmap.md#changes-to-the-ergonomics-plan).
 
 ## Objective and current foundation
 
@@ -11,23 +64,26 @@ and checked by the existing cubical C kernel. Deliver a useful simplifier in
 small increments, together with features that remove repeated arguments,
 nested equality chains, and repeated structure projections.
 
-Today the language has `intro`, `let`, `obtain`, `have`, `cases`, and `exact`;
-explicit lambdas and induction motives; tuple patterns; and equality operations
-including `refl`, `sym`, `trans`, `cong`, `transport`, and `apd`.
+The language has `intro`, `let`, `obtain`, `have`, `cases`, `exact`, `rfl`,
+`calc`, `rw`, registered `simp` and `simpa`, and explicit `only` modes; typed and expected-type lambdas;
+tuple patterns; and equality operations including `refl`, `sym`, `trans`,
+`cong`, `transport`, and `apd`.
 The [language reference](../../web/language.html) is the current syntax authority.
-There is no `simp`, `rewrite`, `apply`, or `calc` tactic and no implicit argument
-syntax. Universe parameters are explicitly specialized by the elaborator.
+There is bounded equality-premise simplification, but no general proposition
+premise solver, `apply`, or general implicit argument
+syntax. Since G0, a universe variable `U < UU0` is a kernel binder: a generic
+definition is one checked kernel term, and universe arguments are explicit.
 
-The checker already computes and unfolds definitions on demand.
-`unfold(term)` explicitly normalizes a term and its type;
-`with unfolding [names] { expression }` supplies a selective conversion strategy.
-Neither uses arbitrary equality lemmas as rewrite rules. Preserve this
+The checker already computes and unfolds definitions on demand, and
+`with unfolding [names] { expression }` supplies a selective conversion
+strategy. (An explicit `unfold(term)` existed before the cubical kernel and
+was removed with it.) Neither uses arbitrary equality lemmas as rewrite rules. Preserve this
 distinction: theorem simplification constructs paths; conversion remains the
 kernel's existing judgment of computational equality.
 
 For example, addition recurses on its first argument, so `0 + n` computes to
 `n`. The proof that `n + 0 = n` is the existing
-[`nat_add_zero`](../../web/proofs/primes.cubist) lemma. Applying that lemma
+[`nat_add_zero`](../../archive/first-library/primes.cubist) lemma. Applying that lemma
 automatically inside a larger expression is an initial simplifier use case.
 
 Lean supplies useful precedents for a registry of simplification lemmas and an
@@ -42,7 +98,16 @@ and [simplification versus rewriting](https://lean-lang.org/doc/reference/latest
 Put automation in the parser and elaborator. Its output is ordinary core
 syntax, validated by the native checker before a declaration is accepted.
 No simplifier result, JavaScript equality comparison, cache entry, or rule
-attribute becomes a new trusted proof rule.
+attribute becomes a new trusted proof rule. No convenience adds an assumption
+either: every result that uses no truncation or other assumption must remain
+computable by the kernel
+([HoTT invariant 10](hott-automation-roadmap.md#invariants-added-to-the-ergonomics-requirements)).
+
+Large interval expressions need a separate elaborator-to-kernel improvement,
+certified interval normalization, now [G5 in the kernel roadmap](cubical-kernel-roadmap.md#items).
+Until then, the native clause and work limits make exponential distribution
+fail promptly, and the elaborator simplifies constant-path reversal before
+checking.
 
 Use a shared rewriting service for `rw`, `calc`, `simp`, and `simpa`:
 
@@ -60,6 +125,16 @@ type from `G` to `G'` needs a checked reconstruction `G' -> G`; an actual path
 of types can supply that map through transport. A goal stack records those
 reconstructions, local contexts, source locations, and any unresolved subgoals.
 No declaration may escape with unresolved metavariables or subgoals.
+
+Pattern matching (milestone 7) keeps the same boundary. Structural recursion
+and coverage are checked by the untrusted elaborator, which compiles `match` to
+applications of kernel-generated eliminators. The kernel never trusts a
+termination or coverage checker; a non-structural call is rejected before
+checking. Computability is expressible and preserved (milestone 8):
+
+- no convenience adds a non-computing dependency;
+- automatic clauses use proved h-level evidence;
+- unfolding hints never hide computational content from evaluation.
 
 Keep automatic computation demand-driven. Preserve named references and shared
 subterms; do not fully unfold the library to discover matches. Specify which
@@ -141,7 +216,7 @@ dependencies. Univalence and truncation rules must likewise retain their
 dependency reports. A simplifier must not silently add classical choice,
 excluded middle, or new axioms to an otherwise constructive proof.
 
-Cache keys must account for the local context, universe specialization, live
+Cache keys must account for the local context, universe variables, live
 dimensions and faces, rule set, and unfolding policy. Cached results include
 their proof witnesses; never identify two witnesses solely because their
 endpoints match. Preserve native handle ownership and invalidate caches after
@@ -149,25 +224,39 @@ relevant source or imported rule changes.
 
 ## Milestones
 
-Dependencies: 0 -> 1 -> 2 -> 3. Milestone 4 extends the supported cubical and
-dependent fragment. Milestone 5 adds general argument inference on top of the
-goal machinery from 1. Milestone 6 follows evidence from real proof migrations.
-Small syntax conveniences in 0 can ship independently of the simplifier.
+Milestones 0–3 form the delivered first release. Milestone 4 and the
+extensionality items moved to the HoTT roadmap. The remaining items build on
+the HoTT roadmap's goal layer (A5):
+- milestone 5's inference is needed before indexed families;
+- milestone 6's theories use A8's projections and F1's structure identity;
+- milestone 7 follows kernel stages H1–H3;
+- milestone 8 can start at once.
+
+A box marked moved names the item's new owner.
 
 ### 0. Establish examples and remove straightforward repetition
 
-- [ ] Select representative proofs from `primes`, `paths`, `finite_counting`,
+- [ ] Select representative proofs from `primes`, `paths`, `finite_dependent_counts`,
   `group_operations`, and `field_vector_spaces`. Record source token counts,
   repeated explicit parameters, checking time, kernel steps, and arena usage.
   Keep the original public statements and assumption lists as a baseline.
-- [ ] Add grouped introductions, such as `intro A x h;`, by expansion to
+  The selected graph now records tokens, elapsed time, native checking steps,
+  rewrite candidate work and final-check arena snapshots; parameter repetition,
+  per-declaration arena deltas and signature/assumption inventories remain.
+  The HoTT roadmap's baseline (A7) extends this measurement.
+- [x] Add grouped introductions, such as `intro A, x, h;`, by expansion to
   existing introductions, preserving an inspectable context at each binder.
-- [ ] Add grouped typed binders, such as `(x y : A)`, and multi-binder lambdas.
+- [x] Add grouped typed binders, such as `(x, y : A)`, and multi-binder lambdas.
   Add expected-type lambda binders only where the expected function type gives
-  an unambiguous domain.
-- [ ] Add `have h = term;` when its type can already be inferred, plus
-  `have h : T = term;` as shorthand for an existing `have`/`exact` block.
-- [ ] Define source spans and formatter behavior for each expansion.
+  an unambiguous domain. Grouped universe variables, as in
+  `(U, V < UU0, A : U)`, bind like separate ones.
+- [x] Add `have h := term;` when its type can already be inferred, plus
+  `have h : T := term;` as shorthand for an existing `have`/`exact` block.
+  The distinct assignment token avoids ambiguity with equality inside `T`.
+- [x] Define source spans and formatter behavior for each expansion. The
+  formatter preserves the tokens and expanded syntax of every new form, and
+  each form links to its checked term. Computing link sites in one place moved
+  to HoTT A5.
 
 Completion: conveniences elaborate to the same core meaning as their expanded
 forms; shadowing, dependent binders, comments, formatting, and source inspection
@@ -175,16 +264,21 @@ work. Publish measured examples without claiming an unmeasured percentage gain.
 
 ### 1. Explicit rewriting and calculation chains
 
-- [ ] Introduce the goal/reconstruction representation and a rewrite service
-  initially accepting fully instantiated homogeneous equality proofs.
-- [ ] Add `rw [p];` and `rw [<- p];`, with rules applied in listed order.
+- [x] Moved to HoTT A5: introduce the goal/reconstruction representation.
+  Done in PR #15: `rw`, `simp`, `simpa`, `ext`, `intro`, `over` and premise
+  search build their proofs through one plan interface in
+  `lib/cubical/proof-goals.mjs`.
+- [x] Add `rw [p];` and `rw [<- p];`, with rules applied in listed order.
   Initially rewrite the first eligible occurrence in a documented traversal;
   add an explicit occurrence selector before supporting complicated targets.
-- [ ] Support rewriting equality endpoints and ordinary applications with a
-  fixed result type. Report unsupported dependent positions precisely.
-- [ ] Add `rfl;` to close goals whose endpoints are definitionally equal.
+- [x] Support rewriting equality endpoints and ordinary applications with a
+  fixed result type. Report unsupported dependent positions precisely. `rw`
+  reports a match in a dependent position, and the simplifier skips one.
+  Pointing at the subterm needs source spans on core terms (HoTT A5); other
+  constructors are HoTT A2.
+- [x] Add `rfl;` to close goals whose endpoints are definitionally equal.
   `rw` leaves a goal unless it can close it by this rule.
-- [ ] Add `calc` for homogeneous equality chains, elaborating each step against
+- [x] Add `calc` for homogeneous equality chains, elaborating each step against
   its endpoint types and composing checked paths. Inequality and mixed-relation
   chains are a later extension requiring registered composition lemmas.
 
@@ -208,24 +302,32 @@ the previous checked state intact.
 
 ### 2. Minimal useful simplifier: explicit rule lists
 
-- [ ] Add `simp only [rules];` on equality goals. First permit instantiated
+- [x] Add `simp only [rules];` on equality goals. First permit instantiated
   proofs, then universally quantified equality lemmas through a restricted
   matcher. Infer parameters from the matched side and its checked type; require
   explicit arguments when inference is ambiguous. Full implicit syntax is
   not a prerequisite.
-- [ ] Traverse supported subterms from children to parents, rewrite in a
+- [x] Traverse supported subterms from children to parents, rewrite in a
   deterministic order, and repeat until stable or a resource limit is reached.
   Reuse congruence and path composition from milestone 1.
-- [ ] Return checked endpoint witnesses, then close by conversion if possible.
+- [x] Return checked endpoint witnesses, then close by conversion if possible.
   Otherwise retain a reconstructed residual goal for the next statement.
-  Diagnose an unfinished block with that residual goal.
-- [ ] Bound rewrite count, matching work, generated term size, and elapsed
-  work; support worker cancellation. Detect repeated states and report the
-  rules involved. A loop or exhausted budget never counts as success.
+  Diagnose an unfinished block with that residual goal. Printing the goal in
+  that diagnostic moved to HoTT A6.
+- [ ] Moved to HoTT A4 and A6: bound rewrite count, matching work, generated
+  term size, and elapsed work; support worker cancellation. Detect repeated
+  states and report the rules involved. A loop or exhausted budget never
+  counts as success. Rewrite count, traversal, candidates, term size and
+  premise search are bounded and recorded per declaration, and each tactic's
+  time limit covers only its own search. Deterministic fuel, cancellation and
+  naming the rules in a cycle remain.
 - [ ] Keep associativity, commutativity, distributivity, and expanding
   definitions out of automatic default normalization. Explicit cyclic lists
-  must still terminate with a useful failure.
-- [ ] Show used lemmas and intermediate equalities in the inspector.
+  must still terminate with a useful failure. Cyclic lists fail with a cycle
+  diagnostic. No library default rules are registered yet, so this remains a
+  review criterion for the first default set (milestone 3).
+- [x] Show used lemmas and intermediate equalities in the inspector. Each
+  simplifier rewrite now exposes its checked path and selected rule.
 
 Proposed example, after quantified-rule matching lands:
 
@@ -245,92 +347,246 @@ for this release.
 
 ### 3. Imported rule sets, conditional rules, and `simpa`
 
-- [ ] Add explicit metadata registering an already checked equality lemma.
+- [x] Add explicit metadata registering an already checked equality lemma.
   Since Cubist uses `def` for proofs and constructions, classify registrations
   by their checked type. Keep requests to unfold a definition distinct from
   requests to rewrite by a path; settle exact attribute syntax here.
 - [ ] Define module export/import behavior, qualified identities, local scope,
   duplicate registration handling, priorities, and deterministic tie-breaking.
-  Begin with a small reviewed default set; provide named domain-specific sets.
-- [ ] Add `simp;`, `simp [rules];`, local exclusions, and `simpa only [rules]
-  using term;`. `simpa` checks a reconstruction from the supplied term's type
-  to the original goal, and fails if any obligation remains.
-- [ ] Permit conditional rules only when every premise gets an actual checked
-  witness. Initially discharge by an explicitly selected local hypothesis,
-  conversion/reflexivity, or bounded recursive simplification; prevent recursive
-  self-justification. Witnesses used by the conclusion must be retained.
-- [ ] Add `simp only [h] at hypothesis;` first for hypotheses with no downstream
-  dependencies, or bind a fresh simplified copy. Defer dependent replacement
-  to milestone 4. Local hypotheses enter the rule set only when selected.
-- [ ] Offer an action that replaces an exploratory `simp` invocation with an
-  explicit `simp only` list of the lemmas actually used.
+  Checked registrations and named sets now flow through imports, with sorted
+  default rules and an error for ambiguous imported set names. A reviewed
+  library default set remains open and stays in this roadmap. A generic
+  declaration is elaborated once, in the rule environment of its definition.
+- [x] Add `simp;`, `simp [rules];`, local exclusions, and broader `simpa`
+  modes backed by registered sets. These forms and explicit `without [rules]`
+  exclusions work for homogeneous equality goals. For other type-valued goals,
+  `simp` rewrites along checked paths of types and transports the following
+  proof back; `simpa` simplifies the supplied proof type and goal, transports
+  between them, and checks the result. Rewriting is limited to the root and
+  ordinary fixed-codomain applications. Proposition-specific maps are deferred
+  to HoTT D1; dependent contexts moved to HoTT A2 and E1. Arbitrary logical
+  equivalences are never turned into paths of types.
+- [x] Permit conditional rules only when every premise gets an actual checked
+  witness. Explicitly selected local equality witnesses and reflexive premises
+  work, with witnesses retained in the instantiated theorem application.
+  A homogeneous equality premise may also be simplified by other selected
+  rules, to depth two within the enclosing search's time limit. Each premise
+  is searched once per simplification; after 64 searches, conditional rules
+  whose premise is not already known do not fire. Active rules are excluded
+  from their own premise search; every resulting premise witness is checked
+  before theorem application. General proposition premises are deferred to
+  HoTT D1.
+- [x] Add `simp only [h] at hypothesis;` first for hypotheses with no downstream
+  dependencies, or bind a fresh simplified copy. The implemented
+  `simp only [rules] at h as h2;` binds a checked fresh equality copy and keeps
+  `h`; dependent replacement remains in milestone 4. Local hypotheses enter
+  the rule set only when selected.
+- [x] Offer an action that replaces an exploratory `simp` invocation with an
+  explicit `simp only` list of the lemmas actually used. The inspector offers
+  the action only when every used rule has a name in the current source scope;
+  the edited source is checked again immediately. Removing unused rules must
+  reproduce the same residual goals and constructed proof up to conversion
+  before the action appears. Later proof steps may depend on a particular path,
+  whether it came from `simp at`, `simp`, or `simpa`.
 
 Completion: imports cannot leak local rules; unrelated unused rules add no
 axiom dependencies to a proof; changes to a rule invalidate affected results;
 explicit lists reproduce the proof's success. Traces explain failed premises
 and rule choices without requiring authors to inspect kernel opcodes.
 
-### 4. Dependent rewriting and cubical extensions
+### 4. Dependent rewriting and cubical extensions (moved)
 
-- [ ] Support selected dependent applications and pairs using transport and
-  checked congruence lemmas. Rebuild changed local telescopes and the final
-  goal together; preserve the original context for reconstruction.
-- [ ] Add rewriting under binders with correct freshness and the necessary
-  checked extensionality construction. Support dependent paths through the
-  existing `PathP`/transport bridge.
-- [ ] Curate separate path, transport, and structure simplification sets.
-  Choose an orientation per family of laws; do not install both directions of
-  the path/transport equivalence as automatic rules.
-- [ ] Add proposition-specific goal transformations only with the required
-  maps and `IsProp` evidence. Make set-specific rules explicitly require
-  `IsSet`. Keep type equivalence and type equality operations distinct.
-- [ ] Extend supported cubical constructors individually, preserving faces,
-  higher inductive boundaries, and coherence witnesses.
+This milestone moved to the [HoTT roadmap](hott-automation-roadmap.md), which
+reorders it around folded path operations, transport fillers and checked
+library laws. Its requirements and completion criteria still apply there.
 
-Completion: dependent transport examples shorten without losing their path
-witnesses; nontrivial circle loops survive simplification; mismatched fibers,
-invalid faces, and unjustified proof irrelevance are rejected. Existing
-univalence, path-over, and higher inductive examples continue to check with
-their recorded assumptions.
+| Item | HoTT roadmap |
+| --- | --- |
+| Dependent applications, pairs and rebuilt telescopes | A2, E1, and B1's `subst` |
+| Dependent paths through the `PathP`/transport bridge | E0 and E1 |
+| Rewriting under binders | Not yet scheduled: A2 excludes binder bodies until a binder-aware traversal exists |
+| Path, transport and structure simplification sets | A1, then C1–C2, classified by A7's conversion fixture |
+| Proposition- and set-specific transformations | D0a–D2 (h-level templates, solver and subtype extensionality) |
+| Cubical constructors | E2 squares and bounded boundary-filling experiments |
+
+Delivered here ahead of that work: `path i =>`, `p @ i`, `ext x;`,
+`along C by p from v`, `apd_path(f, p)`, `over C along p by { … }`, and
+`simp`/`simpa` transport along checked paths of types.
 
 ### 5. Inferred arguments and goal-directed proof construction
 
 - [ ] Add named arguments and `_` holes for values determined by a known
   function type, supplied arguments, or the expected result type. Implement
   scoped metavariables, occurs checks, and unresolved-hole diagnostics.
-- [ ] Add opt-in implicit binders and infer universe specializations where
-  constraints determine them. Retain explicit specialization and a way to
-  supply every implicit argument. Reject ambiguous inference and universe
-  lowering; do not silently change existing explicit signatures.
+  Builds on the HoTT roadmap's goal layer (A5). This is work-plan L4.1a,
+  scheduled in stage 1; it improves the first new `match` release without
+  gating it. Also needed by H2: indexed
+  families are impractical without implicit indices, as in
+  `cons(x, k + n, append(A, k, n, rest, ys))`.
+- [ ] Add opt-in implicit binders, and infer level arguments where
+  constraints determine them. After G0, universes are level expressions, and
+  this item absorbs HoTT A9. Retain a way to supply every implicit argument
+  explicitly. Reject ambiguous inference and universe lowering. This is
+  L4.1b; it follows L4.1a and G0 without waiting for indexed-family kernels.
 - [ ] Add `apply theorem;` and `refine term;` with visible subgoals and explicit
-  witness obligations. Reuse the goal machinery rather than inventing assumed
-  inhabitants for missing arguments.
-- [ ] Add induction and case blocks whose motives come from the goal when
-  uniquely recoverable; retain explicit motives and generalization controls
-  for dependent arguments. Add `constructor`/witness conveniences as ordinary
-  pair or sum construction, respecting truncation elimination restrictions.
+  witness obligations. Reuse the goal machinery (HoTT A5) rather than inventing
+  assumed inhabitants for missing arguments.
+- [ ] Goal-derived induction is milestone 7's `match`; `Path` induction
+  remains HoTT B1. `constructor`/witness conveniences stay here, as ordinary
+  pair or sum construction respecting truncation elimination restrictions.
 
 Completion: representative algebra proofs omit repeated carrier and endpoint
 arguments; inspectors reveal inferred arguments; ambiguity has a local remedy;
 CLI and browser agree; every goal and metavariable is solved before acceptance.
 
-### 6. Structures, notation, and targeted automation
+### 6. Theories, structures and notation
 
-Prioritize these suggestions using the baseline and migration results:
+Structures are theories used for their models
+([proposal §1](inductive-language-features.md#1-theories-one-declaration-for-structures-initial-models-and-universal-properties)).
+Models, homomorphisms, identity, notation and sections need no kernel change.
+Initial and free models need milestone 7 and kernel H.
 
-| Feature | Repetition removed | Design constraint |
-| --- | --- | --- |
-| Named record fields and record literals | Repeated nested projections and positional tuples for fields, groups, and maps | Elaborate to the existing dependent pair representation; honor field dependencies and retain expanded views. |
-| Scoped notation for a chosen structure | Repeated `field_add(K, ...)`-style calls | Make the structure explicit in scope and inspectable; preserve current natural-number operators. |
-| Sections with shared parameters | Repeating carriers, structure data, and assumptions on each local lemma | Generalize declarations deterministically, including dependencies appearing in types; expose resulting signatures. |
-| `ext` with selected lemmas | Repeated function/structure equality boilerplate | Use checked extensionality or structure identity lemmas, with their assumptions and coherence obligations. |
-| Expected-type completion and lemma suggestions | Repeated manual searches and parameter assembly | Suggestions insert checkable source and show the resulting obligations. |
-| Algebraic normalization | Long polynomial or commutative algebra calculations | Separate from generic `simp`; produce checked certificates for a specified algebraic structure. |
+Release L2.4 covers the core models, homomorphisms, isomorphisms, named fields,
+notation, sections and `extends`. It uses HoTT A8's projections and D0a's
+checked h-level definitions; automatic evidence uses the later D1 solver.
+Generated structure identity is a separate L2.4b
+release through HoTT F1 and its prerequisites; it does not gate core theories.
+
+- [ ] `theory` declarations: sorts with h-levels, operations with notation,
+  laws, and `extends`. They generate:
+  - `T.Model` as a Σ record with named fields and eta;
+  - `T.Hom`;
+  - `T.Iso`;
+  - in L2.4b, `T.equality : (M = N) ≃ T.Iso(M, N)`, generated through HoTT
+    F1's structure identity machinery;
+  - in L2.4b, supported `T.Displayed` and coherence interfaces.
+
+  Projections use HoTT A8's syntax.
+- [ ] Scoped notation declared by a theory and opened with `open M`. Keep the
+  current natural-number operators.
+- [ ] `section (M : T.Model) { … }`: shared models and parameters,
+  generalized deterministically, including dependencies that occur in types.
+  Resulting signatures are shown.
+- [ ] `initial T` and `free T on A` with `fold`, `fold_unique` and
+  `universal`. These need milestone 7 and kernel H: H1 for single-sort
+  theories, H3 for theories such as `CauchyStructure` and `CwF`.
+- [ ] Algebraic normalization targets `CommRing.Model` and similar models. It
+  is separate from generic `simp` and produces checked certificates.
+- [ ] Expected-type completion and lemma suggestions insert checkable source
+  and show the resulting obligations.
 
 General typeclass search, implicit coercion networks, unrestricted higher-order
-unification, and broad proof search are deferred until concrete examples
-justify their complexity. Prefer explicit structure scope and predictable
-inference in the first releases.
+unification and broad proof search remain deferred. Structure scope stays
+explicit.
+
+Completion, with generated identity required for L2.4b:
+- a ring lemma takes one model argument and uses its notation;
+- group structure identity is a generated instance, not a development;
+- the forgetful map of an `extends` theory is generated;
+- incorrect homomorphism preservation is rejected.
+
+### 7. Inductive declarations and pattern matching
+
+This is the language of the [kernel design](higher-inductive-types-design.md#5-language)
+and of the [feature proposal](inductive-language-features.md). Releases follow
+kernel stages H1–H3. The first release also needs HoTT A5 (motive
+abstraction). Milestone 5's scoped holes and named arguments (L4.1a) improve
+it but do not gate it: explicit matching accepts explicit motives and
+arguments. Explicit matching is L2.2a; automatic clauses in L2.2b additionally need
+D0a and D1's first slice (h-level evidence). Implicit binders and level
+inference (L4.1b) are a separate release.
+
+- [ ] `inductive` declarations:
+  - parameters, and indices after the colon;
+  - h-levels, with setness proved from the generated path characterization
+    before a squash constructor is added;
+  - path constructors as equalities, `PathP` or `cell` face systems;
+  - companion sorts with `with`, relations with notation, and argument
+    bundles.
+
+  The elaborator produces H's signature normal form, and errors name the
+  offending argument or face.
+- [ ] `match`:
+  - an expression and a closing proof statement;
+  - several scrutinees, inferred motives with index generalization, and
+    optional `as … return`;
+  - structural recursion by name, across companion functions;
+  - clauses for path constructors that bind interval variables;
+  - automatic clauses for proposition-valued goals and set targets;
+  - `obligations` blocks, with one respect proof per argument for quotients
+    into sets.
+- [ ] Dependent pattern matching on indexed families without K:
+  - index unification by generated injectivity and disjointness;
+  - reflexive equations deleted only with a setness proof;
+  - coverage with impossible branches.
+- [ ] Views: `match … using view` with any checked eliminator. This absorbs
+  HoTT B5. Presentations are views derived from an equivalence. L2.7 needs
+  the minimum D0b/F2 slice that supplies checked equivalences and transfer
+  maps; broad transfer automation is a later extension.
+- [ ] Canonical quotients: `quotient … canonical f`, represented by normal
+  forms, with the quotient interface as a view.
+- [ ] `deriving`:
+  - `paths` (encode–decode characterization);
+  - `decidable_equality`;
+  - `universal`;
+  - `irrelevance`;
+  - `ind_prop` and `rec`.
+- [ ] Nested declarations through strictly positive type constructors,
+  elaborated through a specified, sound signature translation. General mutual
+  lowering waits for the required H3/H4 fragment. An earlier H1 subset needs
+  its own supported grammar, positivity argument and rejection tests; nested
+  syntax alone does not make a multi-sort signature admissible.
+- [ ] Legacy eliminator syntax (`induction … as … return`, the current
+  expression `match`, `unpack`) stays parseable, so the archive keeps
+  checking. The rebuilt library and the new reference use only `match`.
+- [ ] Remove the `cases` statement once `match` is released. `cases` never
+  refines its goal, and `match` supersedes it. Its 24 uses in 11 archive
+  modules are first rewritten to `match`, checked by the migration verifier.
+  Then the parser, elaborator, formatter, highlighter, reference chapter 3
+  and the error tables drop it.
+
+Completion, per release:
+
+- **H1:** natural numbers, lists, W types, suspensions, the circle, `Trunc`
+  and `Quotient` are declared and matched. The circle's `code` computes, and
+  `code_meridian` holds by `rfl`.
+- **H2:** `Vec`, `Fin`, well-typed syntax and `Id` are declared. `J` on
+  `refl` holds by `rfl`, and `head` needs no `nil` branch.
+- **H3:** a small context/type signature with genuinely dependent set/prop
+  companion sorts and a joint interpreter computes a closed example. The
+  `Real = initial CauchyStructure` and companion `neg`/`neg_neg` example
+  remains deferred mathematical integration work.
+
+At every release, non-structural calls, uncovered constructors, boundary
+mismatches and missing h-level evidence are rejected with precise messages.
+
+### 8. Computability as a checked property
+
+The core was done on 2026-09-25 (work plan L0.1). The remaining extensions
+are split into L2.9a/b below. Delivered items are documented in the language
+reference's Computability section.
+
+- [x] Track each declaration's non-computing dependencies: user axioms,
+  excluded middle, choice, resizing and any postulate. Compute them from the
+  checked dependency graph, and show them in the inspector and CLI. These are
+  the existing assumption lists; the CLI's `inspect` now prints them.
+- [x] `computable def …`. The checker rejects the declaration unless the set
+  is empty, and names the dependency chain. A `kernel extension: Hn` marker is
+  shown but is not a non-computing dependency. The marker arrives with H1.
+- [x] `evaluate term expecting value;`, a checked normal-form test, and the
+  CLI's `evaluate EXPRESSION` command.
+- [ ] L2.9a: patterns with holes on the expected side of `evaluate`, with
+  an explicit matching contract and mismatch diagnostics. This does not
+  inherently depend on H1.
+- [ ] L2.9b: witness readout from closed normalized truncations in the CLI's
+  `evaluate` command. This needs native H1 truncation and G2's policy;
+  it does not introduce a source eliminator from `Trunc(A)` to `A`.
+- [x] Guarantee that evaluation always unfolds definitions and ignores
+  unfolding hints. (`opaque def`, which changed nothing, has been removed.)
+- [x] Recheck every `computable` and `evaluate` in CI. The migration
+  verifier compares non-computing dependencies.
+
+Only the truncation readout extension needs H1.
 
 ## Integration map
 
@@ -341,12 +597,14 @@ inference in the first releases.
 | [native elaborator](../../web/cubical-elaborator.mjs) | Native type/conversion queries, scoped contexts, checked witnesses, and dependency tracking. |
 | [program](../../web/cubical-program.mjs), [modules](../../web/mathscript/modules.mjs) | Rule registration, import identity, invalidation, and source inspection records. |
 | [kernel adapter](../../web/cubical-kernel.mjs), [syntax codec](../../web/cubical-syntax.mjs) | Preserve native checking, handle ownership, and dimensions through generated terms. |
-| [path library](../../web/proofs/paths.cubist), [path-over builders](../../lib/cubical/path-over.mjs) | Reuse proved congruence, composition, and transport constructions. |
-| [language reference](../../web/language.html), [CLI guide](../guides/cli.md), browser inspector | Document delivered syntax; show goals, inferred arguments, and rewrite witnesses. |
+| [path library](../../archive/first-library/paths.cubist), [path-over builders](../../lib/cubical/path-over.mjs) | Reuse proved congruence, composition, and transport constructions. |
+| New: declaration elaborator and `match` compiler | `inductive`/`theory` to H's signature normal form; motive abstraction, index unification, coverage, structural recursion and obligations to eliminator applications (milestones 6–7). |
+| Existing computability tracking | Preserve non-computing dependencies, `computable` and `evaluate`; add expected-value patterns and native truncation readout (milestone 8). |
+| [language reference](../../web/language.html), [CLI guide](../guides/cli.md), browser inspector | Document delivered syntax; show goals, inferred arguments, rewrite witnesses, generated eliminators, boundary diagrams and non-computing dependencies. The reference is rewritten into chapters with checked examples (see the [work plan](work-plan.md)). |
 
 New helper modules and test files should be introduced with the milestone that
-needs them. No new C kernel rule is expected; any proposed kernel change needs
-a separate justification beyond convenience of elaboration.
+needs them. This roadmap adds no C kernel rule. Milestones 6–7 rely on the
+kernel roadmap's G0 and H, which carry their own justification and review.
 
 ## Validation and completion
 
@@ -367,8 +625,8 @@ Use existing checks as applicable, adding focused tests for each implementation:
 ```sh
 npm test -- tests/cubical-program.test.mjs
 npm test -- tests/unfolding-syntax.test.mjs
-npm test -- web/proofs/primes.cubist
-npm test -- web/proofs/paths.cubist
+npm test -- archive/first-library/primes.cubist
+npm test -- archive/first-library/paths.cubist
 npm run test:browser
 make lint
 npm test
@@ -387,9 +645,11 @@ does not destroy the benefit of folded definitions. Set numerical performance
 budgets from that baseline and record results, rather than promising speculative
 speedups or proof-size reductions.
 
-The first useful release is milestones 1 and 2 plus their inspection and tests.
+The first useful release is milestones 1 and 2 plus their inspection and tests;
+it was delivered together with milestones 0 and 3 on 2026-09-25.
 The broader roadmap is complete when imported rules, dependent support,
-argument inference, and the selected conveniences have documented semantics,
-representative library migrations, and the required validation. Update the
+argument inference, theories, inductive declarations and computability
+checking have documented semantics, uses in the rebuilt library, and the
+required validation. Update the
 checkboxes and add a tactical handoff when implementation starts, recording
 the supported fragment, assumptions, commands run, and next unfinished item.

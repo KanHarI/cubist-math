@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Identity types, their basic operations, and path induction." />
+    <title>Cubist · 7. Equality and paths</title>
+    <link rel="stylesheet" href="../language.css" />
+    <link rel="stylesheet" href="../repl.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to chapter</a>
+    <header>
+      <a class="brand" href="../index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="../proof.html">Proof workspace</a>
+        <a href="../workbench.html">Kernel workbench</a>
+        <a href="../language.html">Language reference</a>
+        <a href="../repl.html">REPL</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 7</p>
+        <h1>Equality and paths</h1>
+        <p class="lead">Identity types, their basic operations, and path induction.</p>
+      </div>
+      <div class="reference-layout">
+        <aside class="contents" aria-label="Chapters and sections">
+          <h2><a href="../language.html">Chapters</a></h2>
+          <ol class="chapters">
+            <li><a href="types.html">Types and values</a></li>
+            <li><a href="first-proof.html">A first proof and files</a></li>
+            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="universes.html">Universes</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
+            <li class="current"><a href="paths.html" aria-current="page">Equality and paths</a></li>
+            <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
+            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
+            <li><a href="conversion.html">Conversion and unfolding</a></li>
+            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="errors.html">Error messages</a></li>
+          </ol>
+          <h2>In this chapter</h2>
+          <ul class="sections">
+            <li><a href="#paths">Two kinds of equality</a></li>
+            <li><a href="#carriers">Carriers</a></li>
+            <li><a href="#path-operations">Operations on paths</a></li>
+            <li><a href="#transport">Transport</a></li>
+            <li><a href="#path-induction">Path induction</a></li>
+            <li><a href="#paths-library">The paths library</a></li>
+          </ul>
+        </aside>
+        <article id="reference">
+          <section id="paths">
+            <h2>Two kinds of equality</h2>
+            <p><code>x = y</code> is the <strong>identity type</strong>: its elements are paths from <code>x</code> to <code>y</code>, and a proof of <code>x = y</code> is such a path. It is a type like any other, so paths between paths are stated with another identity type.</p>
+            <p>Two notions of “equal” appear throughout the reference:</p>
+            <ul>
+              <li><strong>Definitional equality</strong> (conversion): two terms compute to the same normal form, as <code>0 + n</code> and <code>n</code> do. The checker uses it silently. It is never a proposition you state or prove. See <a href="conversion.html#conversion">conversion</a>.</li>
+              <li><strong>Propositional equality</strong>: a path <code>p : x = y</code>, which must be constructed, as for <code>n + 0 = n</code>. Using it to replace <code>x</code> by <code>y</code> takes an explicit operation: <code>transport</code>, <code>cong</code>, <code>rw</code> or <code>simp</code>.</li>
+            </ul>
+            <p><code>refl(x)</code> is the path from <code>x</code> to itself. It proves <code>x = y</code> exactly when <code>x</code> and <code>y</code> are definitionally equal, so it connects the two notions:</p>
+            <pre><code data-check="accept">def zero_is_zero : 0 = 0 {
+  exact refl(0);
+}
+
+def numeral_is_successors : succ(succ(0)) = 2 {
+  exact refl(2);
+}
+
+def path_between_paths(A : U0, x : A) : refl(x) = refl(x) {
+  exact refl(refl(x));
+}</code></pre>
+            <pre><code data-check="reject">def zero_is_one : 0 = 1 {
+  exact refl(0);  // Error: Type mismatch: found 0 = 0, expected 0 = 1.
+}</code></pre>
+          </section>
+          <section id="carriers">
+            <h2>Carriers</h2>
+            <p>The <strong>carrier</strong> of an equality is the type both sides belong to. <code>x = y</code> infers it. <code>x =[T] y</code> states it: both endpoints must have type <code>T</code>. This is the same identity type, not a cast or an assertion of definitional equality.</p>
+            <pre><code data-check="accept">def explicit_carrier(A : U0, x : A) : x =[A] x {
+  exact refl(x);
+}
+
+def reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
+  exact sym(p);
+}</code></pre>
+            <p>In <code>A =[U1] B</code>, the endpoints are types and the carrier is a universe. Equalities between different types come from univalence; see <a href="assumptions.html#univalence">extensionality and univalence</a>. The carrier must be the type of both endpoints:</p>
+            <pre><code data-check="reject">def wrong_carrier(x : Nat) : x =[Unit] x {
+  exact refl(x);  // Error: Type mismatch: found Nat, expected Unit.
+}</code></pre>
+            <p id="exists-and">Types that are definitionally equal need no univalence: <code>refl</code> proves them equal. When <code>B</code> does not mention <code>a</code>, <code>exists a : A. B</code> is a pair of an <code>a : A</code> and a value of <code>B</code>, whatever <code>a</code> is. That is the same type as <code>A and B</code>. In the same way, when <code>B</code> does not mention <code>x</code>, <code>forall x : A. B</code> is the type of functions from <code>A</code> to <code>B</code>, <code>A -> B</code>:</p>
+            <pre><code data-check="accept">def exists_is_and(A : U0, B : U0) : (exists a : A. B) =[U0] (A and B) {
+  exact refl(A and B);
+}
+
+def forall_is_arrow(A : U0, B : U0) : (forall x : A. B) =[U0] (A -&gt; B) {
+  exact refl(A -&gt; B);
+}</code></pre>
+          </section>
+          <section id="path-operations">
+            <h2>Operations on paths</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Operation</th><th>Data and result</th></tr></thead>
+              <tbody>
+                <tr><td><code>refl(x)</code></td><td><code>x = x</code></td></tr>
+                <tr><td><code>sym(p)</code></td><td>For <code>p : x =[T] y</code>, the reversed path <code>y =[T] x</code></td></tr>
+                <tr><td><code>trans(p, q)</code></td><td>For <code>p : x = y</code> and <code>q : y = z</code>, the composite <code>x = z</code></td></tr>
+                <tr><td><code>cong(f, p)</code></td><td>For <code>f : A -> B</code> and <code>p : x = y</code>, the path <code>f(x) = f(y)</code></td></tr>
+                <tr><td><code>transport(C, x, y, p, value)</code></td><td>For <code>p : x = y</code> and <code>value : C(x)</code>, an element of <code>C(y)</code>. See <a href="#transport">transport</a>.</td></tr>
+                <tr><td><code>apd(f, x, y, p)</code></td><td>For <code>f : forall a : A. C(a)</code>, a proof of <code>transport(C, x, y, p, f(x)) = f(y)</code></td></tr>
+                <tr><td><code>apd_path(f, p)</code></td><td>The same fact as a dependent path. See <a href="cubical.html#dependent-paths">dependent paths</a>.</td></tr>
+              </tbody>
+            </table></div>
+            <p>These are built into the language and need no import. They build cubical paths pointwise and use no assumption.</p>
+            <pre><code data-check="accept">def reverse_path(A : U0, x, y : A, p : x = y) : y = x {
+  exact sym(p);
+}
+
+def join_paths(A : U0, x, y, z : A, p : x = y, q : y = z) : x = z {
+  exact trans(p, q);
+}
+
+def map_path(A, B : U0, f : A -&gt; B, x, y : A, p : x = y) : f(x) = f(y) {
+  exact cong(f, p);
+}
+
+def apply_path(A, B : U0, f, g : A -&gt; B, p : f = g, a : A) : f(a) = g(a) {
+  exact cong(fun (h : A -&gt; B) =&gt; h(a), p);
+}</code></pre>
+            <p><code>trans</code> needs the first path to end where the second starts:</p>
+            <pre><code data-check="reject">def gap_between(A : U0, x, y, z, w : A, p : x = y, q : z = w) : x = w {
+  exact trans(p, q);  // Error: Path endpoints do not match.
+}</code></pre>
+            <pre><code data-check="reject">def not_a_path(f : Nat -&gt; Nat, n : Nat) : f(n) = f(n) {
+  exact cong(f, n);  // Error: cong requires a path.
+}</code></pre>
+            <p><code>cong</code> needs a function with a fixed result type. For a dependent function, <code>f(x)</code> and <code>f(y)</code> have different types, so <code>f(x) = f(y)</code> does not type-check the way <code>cong</code> needs; use <code>apd</code> or <code>apd_path</code>:</p>
+            <pre><code data-check="reject">def dependent_cong(A : U0, C : A -&gt; U0, f : forall a : A. C(a), x, y : A, p : x = y) : f(x) = f(y) {
+  exact cong(f, p);  // Error: Type mismatch: found C(y), expected C(x).
+}</code></pre>
+            <p>Some inferred pair projections do not keep enough equality information for <code>sym</code>, <code>trans</code> or <code>cong</code>. In that case, state the path first with <code>have p : x = y := term;</code>.</p>
+          </section>
+          <section id="transport">
+            <h2>Transport</h2>
+            <p><code>transport(C, x, y, p, value)</code> moves <code>value : C(x)</code> along <code>p : x = y</code> to an element of <code>C(y)</code>. The shorter <code>along C by p from value</code> reads <code>x</code> and <code>y</code> from the type of <code>p</code>. In both forms the family <code>C</code> is written explicitly; it is never inferred.</p>
+            <pre><code data-check="accept">def move(A : U0, C : A -&gt; U0, x, y : A, p : x = y, v : C(x)) : C(y) {
+  exact transport(C, x, y, p, v);
+}
+
+def move_along(A : U0, C : A -&gt; U0, x, y : A, p : x = y, v : C(x)) : C(y) {
+  exact along C by p from v;
+}
+
+def respects(A : U0, C : A -&gt; U0, f : forall a : A. C(a), x, y : A, p : x = y) :
+  transport(C, x, y, p, f(x)) = f(y) {
+  exact apd(f, x, y, p);
+}</code></pre>
+            <p>The stated endpoints must be the path’s endpoints, in order:</p>
+            <pre><code data-check="reject">def backwards(A : U0, C : A -&gt; U0, x, y : A, p : x = y, v : C(y)) : C(x) {
+  exact transport(C, y, x, p, v);  // Error: Transport endpoints do not match.
+}</code></pre>
+            <pre><code data-check="reject">def not_a_path(C : Nat -&gt; U0, v : C(0)) : C(0) {
+  exact transport(C, 0, 0, 0, v);  // Error: transport requires a path.
+}</code></pre>
+            <p>To move backwards, transport along <code>sym(p)</code>.</p>
+          </section>
+          <section id="path-induction">
+            <h2>Path induction</h2>
+            <p><code>path_induction(A, motive, base, x, y, p)</code> is the eliminator of the identity type. The motive takes <code>a, b : A</code> and <code>q : a = b</code> and returns a type. The base case takes <code>a : A</code> and proves <code>motive(a, a, refl(a))</code>. The result proves <code>motive(x, y, p)</code>. Informally: to prove something about every path, it is enough to prove it for reflexivity, provided both endpoints are free to vary. It uses no assumption.</p>
+            <pre><code data-check="accept">def symmetric(A : U0, x, y : A, p : x = y) : y = x {
+  exact path_induction(A, fun (a, b : A, q : a = b) =&gt; b = a,
+    fun (a : A) =&gt; refl(a), x, y, p);
+}</code></pre>
+            <p><code>based_induction(U, V, A, x, motive, base, y, p)</code> fixes the left endpoint <code>x</code>. The motive takes <code>b : A</code> and <code>q : x = b</code>. The base proves <code>motive(x, refl(x))</code>, and the result proves <code>motive(y, p)</code>. <code>U</code> is the universe of <code>A</code> and <code>V</code> that of the motive, both written as concrete universes.</p>
+            <pre><code data-check="accept">def based(A : U0, x, y : A, p : x = y,
+    C : forall b : A. (x = b) -&gt; U0, c : C(x, refl(x))) : C(y, p) {
+  exact based_induction(U0, U0, A, x, C, c, y, p);
+}</code></pre>
+            <pre><code data-check="reject">def swapped_endpoints(A : U0, x, y : A, p : x = y) : x = y {
+  // Error: Path induction endpoints/carrier do not match.
+  exact path_induction(A, fun (a, b : A, q : a = b) =&gt; a = b,
+    fun (a : A) =&gt; refl(a), y, x, p);
+}</code></pre>
+            <pre><code data-check="reject">def not_a_universe(A : U0, x, y : A, p : x = y,
+    C : forall b : A. (x = b) -&gt; U0, c : C(x, refl(x))) : C(y, p) {
+  // Error: Based induction needs universes.
+  exact based_induction(Nat, U0, A, x, C, c, y, p);
+}</code></pre>
+          </section>
+          <section id="paths-library">
+            <h2>The paths library</h2>
+            <p><code>import paths;</code> provides named forms and laws: <code>inverse</code>, <code>concatenate</code> and <code>ap</code> for <code>sym</code>, <code>trans</code> and <code>cong</code>, and laws such as <code>inverse_left</code>, <code>right_unit</code> and <code>path_associative</code>. Some take a <a href="universes.html#universes">universe argument</a> first.</p>
+            <pre><code data-check="accept">import paths;
+
+def reversed(A : U0, x, y : A, p : x = y) : y = x {
+  exact inverse(U0, A, x, y, p);
+}
+
+def cancel(A : U0, x, y : A, p : x = y) : trans(sym(p), p) = refl(y) {
+  exact inverse_left(A, x, y, p);
+}</code></pre>
+            <p>The laws are propositional: <code>trans(sym(p), p)</code> is not definitionally <code>refl(y)</code>, so <code>refl</code> does not prove it.</p>
+          </section>
+
+          <nav class="pager" aria-label="Chapter navigation">
+            <a class="previous" href="induction.html">← 6. Natural numbers and inductive types</a>
+            <a class="next" href="rewriting.html">8. Equational reasoning and simplification →</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+    <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
+    <script type="module" src="examples.mjs"></script>
+    <script type="module" src="repl-dock.mjs"></script>
+  </body>
+</html>

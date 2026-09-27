@@ -5,7 +5,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 
 const module = await createCubical();
-const readSource = name => readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+const readSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
 
 test("evaluation vectors of distinct embeddings separate coefficients", async t => {
   const p = new CubicalProgram(module, readSource, { collectReferences: false });
@@ -32,7 +32,7 @@ test("evaluation vectors of distinct embeddings separate coefficients", async t 
     "artin_fixed_evaluation__finite_subgroup_evaluation_basis",
   ]) assert.equal(p.symbols[name]?.verified, true, name);
 
-  const allowed = ["LEM(U0)", "Truncate(U0)", "TruncateElim(U0)", "TruncateIntro(U0)", "TruncateProp(U0)"];
+  const allowed = ["LEM", "Truncate", "TruncateElim", "TruncateIntro", "TruncateProp"];
   for (const name of [
     "artin_evaluation_matrix__embedding_evaluation_rank_step",
     "artin_evaluation_basis__distinct_embeddings_evaluation_basis",

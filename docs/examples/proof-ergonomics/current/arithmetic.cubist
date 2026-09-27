@@ -1,0 +1,16 @@
+import primes;
+
+// Current expansion for a two-step calc or simp only [nat_add_zero].
+def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
+  exact trans(nat_add_zero(n + 0), nat_add_zero(n));
+}
+
+// A fixed-codomain application needs congruence as well as rewriting.
+def add_zero_under_function(B : U0, f : Nat -> B, n : Nat) : f((n + 0) + 0) = f(n) {
+  exact cong(f, add_zero_twice(n));
+}
+
+// An explicitly reversed rule is a path with its orientation retained.
+def insert_zero(n : Nat) : n = n + 0 {
+  exact sym(nat_add_zero(n));
+}

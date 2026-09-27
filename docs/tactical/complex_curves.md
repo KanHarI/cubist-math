@@ -30,10 +30,10 @@ continuity, first on the entire scalar line and then on the unit interval.
 
 | Module | Checked result |
 | --- | --- |
-| [field_affine](../../web/proofs/field_affine.cubist) | Canonical lattice magnitude bounds, bounds on parameter differences, the affine increment identity, and the resulting closeness estimate. |
-| [field_interval](../../web/proofs/field_interval.cubist) | Closed interval parameters, their bounds, and endpoint constructors. |
-| [complex_affine](../../web/proofs/complex_affine.cubist) | A canonical coordinate box and constructive uniform continuity of `z + t*e`. |
-| [complex_curves](../../web/proofs/complex_curves.cubist) | Restriction to interval curves; uniform continuity and endpoints of `a + t*(-a+b)`; avoidance of zero for `z + t*e` when `normSquared(e) < normSquared(z)`. |
+| [field_affine](../../archive/first-library/field_affine.cubist) | Canonical lattice magnitude bounds, bounds on parameter differences, the affine increment identity, and the resulting closeness estimate. |
+| [field_interval](../../archive/first-library/field_interval.cubist) | Closed interval parameters, their bounds, and endpoint constructors. |
+| [complex_affine](../../archive/first-library/complex_affine.cubist) | A canonical coordinate box and constructive uniform continuity of `z + t*e`. |
+| [complex_curves](../../archive/first-library/complex_curves.cubist) | Restriction to interval curves; uniform continuity and endpoints of `a + t*(-a+b)`; avoidance of zero for `z + t*e` when `normSquared(e) < normSquared(z)`. |
 
 The continuity theorem has no supplied modulus or coordinate bound:
 both are constructed. Completeness of the scalars is not needed for these
@@ -43,7 +43,7 @@ kernel operation.
 
 ## Ordered sampling and variation
 
-The checked [variation proof](../../web/proofs/complex_curve_variation.cubist)
+The checked [variation proof](../../archive/first-library/complex_curve_variation.cubist)
 now constructs weights for `gamma(t) = z + t*e` on every finite ordered
 sampling of the unit interval. Let `r = max(re(e), -re(e))` and
 `s = max(im(e), -im(e))`. For consecutive parameters `u <= v`, the real
@@ -51,9 +51,9 @@ and imaginary increments have magnitude bounds `(v-u)*r` and `(v-u)*s`.
 Their combined total is at most `r+s`, independently of the number of
 samples. Repeated parameters and an empty edge list are included.
 
-[interval_weights](../../web/proofs/interval_weights.cubist) proves the exact
+[interval_weights](../../archive/first-library/interval_weights.cubist) proves the exact
 telescoping identity `sum((v-u)*L) = (last-first)*L` and the upper bound
-by a nonnegative `L`. [affine_variation](../../web/proofs/affine_variation.cubist)
+by a nonnegative `L`. [affine_variation](../../archive/first-library/affine_variation.cubist)
 supplies the individual magnitude estimates under `IntervalOrderedSamples`.
 This ordering condition is essential: telescoping alone does not make
 signed increments into magnitude bounds. The complex theorem constructs
@@ -70,9 +70,9 @@ refining partitions with mesh tending to zero remains to be constructed.
 
 ## Contour sums on parameter samples
 
-[sample_maps](../../web/proofs/sample_maps.cubist) maps vertices and tags through
+[sample_maps](../../archive/first-library/sample_maps.cubist) maps vertices and tags through
 a curve and proves that evaluating the mapped samples agrees with evaluating
-the pulled-back edge expression. [parameter_contours](../../web/proofs/parameter_contours.cubist)
+the pulled-back edge expression. [parameter_contours](../../archive/first-library/parameter_contours.cubist)
 defines the latter explicitly as
 
 ```text
@@ -85,17 +85,17 @@ exact finite change-of-tags identity. These algebraic results are axiom-free.
 There is no requirement that the curve be injective: weights remain functions
 of the parameters, even if the curve revisits a complex point.
 
-[parameter_contour_bounds](../../web/proofs/parameter_contour_bounds.cubist),
-[parameter_contour_estimates](../../web/proofs/parameter_contour_estimates.cubist), and
-[parameter_contour_limits](../../web/proofs/parameter_contour_limits.cubist)
+[parameter_contour_bounds](../../archive/first-library/parameter_contour_bounds.cubist),
+[parameter_contour_estimates](../../archive/first-library/parameter_contour_estimates.cubist), and
+[parameter_contour_limits](../../archive/first-library/parameter_contour_limits.cubist)
 prove the coordinate error estimates and transfer of limits for this
-parameter domain. [parameter_increment_bounds](../../web/proofs/parameter_increment_bounds.cubist)
+parameter domain. [parameter_increment_bounds](../../archive/first-library/parameter_increment_bounds.cubist)
 packages the separately proved real and imaginary increment bounds for use
 by those estimates.
 
-[curve_contour_estimates](../../web/proofs/curve_contour_estimates.cubist) connects
+[curve_contour_estimates](../../archive/first-library/curve_contour_estimates.cubist) connects
 `ComplexCurveVariation` to the finite mapped complex sums. The separate
-[curve_contour_limits](../../web/proofs/curve_contour_limits.cubist) then proves
+[curve_contour_limits](../../archive/first-library/curve_contour_limits.cubist) then proves
 the limit-transfer results. In particular,
 `affine_curve_contour_tag_independent_limit` supplies the proved variation
 certificate for `z + t*e`, so no extra variation assumption appears in its
@@ -122,12 +122,12 @@ every ordered sampling, including repeated vertices and zero edges.
 
 | Module | Checked result |
 | --- | --- |
-| [interval_tag_bounds](../../web/proofs/interval_tag_bounds.cubist) | Two tags in one sufficiently short interval are close. Endpoint bounds are inclusive; the mesh bound is strict. |
-| [sample_tagged](../../web/proofs/sample_tagged.cubist) | Finite tag conditions and explicit endpoint tag lists with their condition proofs. |
-| [interval_sampling](../../web/proofs/interval_sampling.cubist) | Admissibility, mesh conditions, the derived ordering, and admissible endpoint tags. |
-| [parameter_tag_sampling](../../web/proofs/parameter_tag_sampling.cubist) | Lifts local tag estimates to the complete sampled tag-error certificate. |
-| [uniform_curve_tags](../../web/proofs/uniform_curve_tags.cubist) | Uniform continuity of the sampled values produces a positive mesh threshold controlling all admissible tag errors. |
-| [curve_tag_stability](../../web/proofs/curve_tag_stability.cubist) | A positive mesh threshold making any two admissible contour sums on the same vertices epsilon-close, with affine and endpoint-tag specializations. |
+| [interval_tag_bounds](../../archive/first-library/interval_tag_bounds.cubist) | Two tags in one sufficiently short interval are close. Endpoint bounds are inclusive; the mesh bound is strict. |
+| [sample_tagged](../../archive/first-library/sample_tagged.cubist) | Finite tag conditions and explicit endpoint tag lists with their condition proofs. |
+| [interval_sampling](../../archive/first-library/interval_sampling.cubist) | Admissibility, mesh conditions, the derived ordering, and admissible endpoint tags. |
+| [parameter_tag_sampling](../../archive/first-library/parameter_tag_sampling.cubist) | Lifts local tag estimates to the complete sampled tag-error certificate. |
+| [uniform_curve_tags](../../archive/first-library/uniform_curve_tags.cubist) | Uniform continuity of the sampled values produces a positive mesh threshold controlling all admissible tag errors. |
+| [curve_tag_stability](../../archive/first-library/curve_tag_stability.cubist) | A positive mesh threshold making any two admissible contour sums on the same vertices epsilon-close, with affine and endpoint-tag specializations. |
 
 The estimate first constructs a positive value-error radius `delta` with
 `delta*L < epsilon`. Uniform continuity of `integrand(curve(t))` supplies a
@@ -145,7 +145,7 @@ rule; they use neither excluded middle nor choice.
 
 ## Finite subdivisions of coarse intervals
 
-[affine_refinement](../../web/proofs/affine_refinement.cubist) now compares one
+[affine_refinement](../../archive/first-library/affine_refinement.cubist) now compares one
 coarse contribution with an arbitrary finite subdivision of that interval.
 For `curve(t) = z + t*slope`, put
 
@@ -170,24 +170,24 @@ width factor is retained so that errors can later be summed across coarse
 cells without multiplying the bound by their count.
 
 The coarse tag need not belong to every fine subinterval.
-[interval_refinement](../../web/proofs/interval_refinement.cubist) instead proves
+[interval_refinement](../../archive/first-library/interval_refinement.cubist) instead proves
 that all fine tags belong to the outer interval, then uses continuity on
-that common interval. [parameter_refinement](../../web/proofs/parameter_refinement.cubist)
+that common interval. [parameter_refinement](../../archive/first-library/parameter_refinement.cubist)
 proves that repeating the coarse tag makes the fine sum telescope exactly,
 and computes the error when those repeated tags are changed to the fine tags.
-[sample_refinement_tags](../../web/proofs/sample_refinement_tags.cubist) supplies
+[sample_refinement_tags](../../archive/first-library/sample_refinement_tags.cubist) supplies
 the finite containment and repeated-tag proofs. The algebraic identities use
 no axioms; the affine estimate depends only on `lib_Trunc` in the scalar
 order interface, without excluded middle or choice.
 
-[sample_subdivisions](../../web/proofs/sample_subdivisions.cubist) represents a
+[sample_subdivisions](../../archive/first-library/sample_subdivisions.cubist) represents a
 separate subdivision for every edge of a coarse partition. Its flattening
 theorem constructs one actual sample list with the same outer endpoints and
 sum equal to the sum of the per-edge contributions. Adjacent pieces carry
 equality witnesses for their shared endpoint; zero-edge pieces are allowed
 only with equal endpoints. This theorem is axiom-free.
 
-[affine_partition_refinement](../../web/proofs/affine_partition_refinement.cubist)
+[affine_partition_refinement](../../archive/first-library/affine_partition_refinement.cubist)
 now combines these results across an entire partition. Given uniform continuity
 along the affine curve and `delta > 0`, it constructs one positive mesh threshold.
 For any coarse partition below that mesh, with a coarse tag in each interval
@@ -203,17 +203,17 @@ ComplexBoxBound(error, delta * (outer width * L)).
 The conclusion concerns the original mapped complex contour sums, and keeps
 the equality to the supplied subdivisions. There is no factor for the number
 of coarse edges or refined samples. The zero-edge case is included.
-[interval_subdivisions](../../web/proofs/interval_subdivisions.cubist) states the
+[interval_subdivisions](../../archive/first-library/interval_subdivisions.cubist) states the
 geometric admissibility conditions and telescopes the local radii.
-[complex_subdivision_estimates](../../web/proofs/complex_subdivision_estimates.cubist)
+[complex_subdivision_estimates](../../archive/first-library/complex_subdivision_estimates.cubist)
 constructs and adds the error witnesses using
-[complex_perturbations](../../web/proofs/complex_perturbations.cubist).
-[sample_subdivision_conditions](../../web/proofs/sample_subdivision_conditions.cubist)
+[complex_perturbations](../../archive/first-library/complex_perturbations.cubist).
+[sample_subdivision_conditions](../../archive/first-library/sample_subdivision_conditions.cubist)
 maps finite families of conditions, without choice or truncating their witnesses.
 The global affine estimate depends only on the existing `lib_Trunc` in the
 order interface.
 
-[interval_bisection](../../web/proofs/interval_bisection.cubist) now constructs a
+[interval_bisection](../../archive/first-library/interval_bisection.cubist) now constructs a
 midpoint between any weakly ordered interval endpoints. Both new widths are
 proved equal to half the original width, including degenerate intervals.
 It builds the actual two-edge subdivision and verifies its left endpoint
@@ -221,7 +221,7 @@ tags. The ordered-field theorem supplies halving from the inverse of two;
 there is no supplied midpoint oracle or choice assumption. Its additional
 truncation introduction/elimination dependencies come from that existing
 halving construction.
-[sample_join_conditions](../../web/proofs/sample_join_conditions.cubist) proves
+[sample_join_conditions](../../archive/first-library/sample_join_conditions.cubist) proves
 that concatenating subdivisions with matching endpoints preserves their tag
 conditions, including empty prefixes and suffixes. This axiom-free result
 will keep the samples admissible when the bisections are iterated.
@@ -232,20 +232,20 @@ These are subdivisions of the curve's parameter, not equal arc-length pieces.
 Their contour sums sample the integrand on each small interval and multiply
 by the curve's complex displacement across that interval.
 
-[dyadic_sampling](../../web/proofs/dyadic_sampling.cubist) now recursively bisects
+[dyadic_sampling](../../archive/first-library/dyadic_sampling.cubist) now recursively bisects
 both half-intervals and joins their samples. At depth `n` the result has
 exactly `2^n` edges, admissible tags, and every edge's width is bounded by
 `n` halvings of the original width. Empty-width intervals are included.
-[dyadic_mesh](../../web/proofs/dyadic_mesh.cubist) converts this weak width bound
+[dyadic_mesh](../../archive/first-library/dyadic_mesh.cubist) converts this weak width bound
 into the existing strict mesh predicate whenever the scalar bound is smaller
 than the requested mesh. Its condition maps preserve the actual sample data.
 
-[dyadic_width_bounds](../../web/proofs/dyadic_width_bounds.cubist) proves
+[dyadic_width_bounds](../../archive/first-library/dyadic_width_bounds.cubist) proves
 `(n + 1) * refined_width <= original_width`.
-[dyadic_decay](../../web/proofs/dyadic_decay.cubist) combines that estimate with
+[dyadic_decay](../../archive/first-library/dyadic_decay.cubist) combines that estimate with
 positive reciprocals and Archimedeanness to prove that arbitrarily small
 dyadic widths merely exist. No excluded middle or choice is used.
-[fine_interval_samples](../../web/proofs/fine_interval_samples.cubist) then proves
+[fine_interval_samples](../../archive/first-library/fine_interval_samples.cubist) then proves
 that every weakly ordered interval has admissible dyadic samples below any
 positive mesh, again with mere existence. Midpoints, tags, widths and counts
 are derived; no partition oracle is an input.
@@ -256,15 +256,15 @@ existing `FieldCauchy` interface asks for actual moduli, so using it will need
 an explicit modulus or a separately justified conversion. The proof never
 eliminates a truncation directly into the sampling data.
 
-[dyadic_tails](../../web/proofs/dyadic_tails.cubist) proves that these widths
+[dyadic_tails](../../archive/first-library/dyadic_tails.cubist) proves that these widths
 decrease with the natural index. Once a width is below a tolerance, every
 later width remains below it. Archimedeanness therefore gives a merely
 existing bound for the entire tail, not just one small sample.
-[fine_interval_tails](../../web/proofs/fine_interval_tails.cubist) constructs
+[fine_interval_tails](../../archive/first-library/fine_interval_tails.cubist) constructs
 admissible samples below the requested mesh at every later level. The family
 comes from recursive bisection, so no choice of samples is needed.
 
-[dyadic_convergence](../../web/proofs/dyadic_convergence.cubist) also checks actual
+[dyadic_convergence](../../archive/first-library/dyadic_convergence.cubist) also checks actual
 `FieldConverges` convergence of the scalar widths to zero when an
 `ArchimedeanBounds` function is supplied. That stronger datum returns an
 actual natural witness for each field element; it is explicitly separate
@@ -273,37 +273,37 @@ With ordinary Archimedeanness, only the per-tolerance tail existence is
 claimed. These lemmas introduce neither excluded middle nor choice.
 
 Joining refinement families is now checked in
-[subdivision_join](../../web/proofs/subdivision_join.cubist): the actual per-edge
+[subdivision_join](../../archive/first-library/subdivision_join.cubist): the actual per-edge
 subdivisions concatenate with an exact identity for their ordered sum.
-[Endpoint transport](../../web/proofs/subdivision_transport.cubist) and
-[condition preservation](../../web/proofs/subdivision_join_conditions.cubist)
+[Endpoint transport](../../archive/first-library/subdivision_transport.cubist) and
+[condition preservation](../../archive/first-library/subdivision_join_conditions.cubist)
 handle the dependent endpoint types without assuming equality of their
-proofs. [subdivision_refinement](../../web/proofs/subdivision_refinement.cubist)
+proofs. [subdivision_refinement](../../archive/first-library/subdivision_refinement.cubist)
 combines two such refinement certificates when both the coarse and fine
 halves are joined. These results are axiom-free and require no commutativity
 of the sum. The certificate identifies sums for the specified edge function;
 it does not identify arbitrary sample lists merely because their sums agree.
 
-[dyadic_data](../../web/proofs/dyadic_data.cubist) exposes the actual recursively
+[dyadic_data](../../archive/first-library/dyadic_data.cubist) exposes the actual recursively
 constructed samples, with checked equations for the initial edge and the
 join of two sampled halves. The data-producing definitions are transparent
 so these equations compute. The midpoint and its bounds are projections
 of the same constructed witness, not independently chosen points.
-[dyadic_refinement](../../web/proofs/dyadic_refinement.cubist) now proves that
+[dyadic_refinement](../../archive/first-library/dyadic_refinement.cubist) now proves that
 level `n + k` refines level `n`: it constructs the per-edge subdivisions,
 proves their tags are admissible, and identifies their ordered total with
 the actual finer sum. This holds for any monoid-valued edge function;
 commutativity, excluded middle, and choice are not required.
 
-[subdivision_tagged_zip](../../web/proofs/subdivision_tagged_zip.cubist) combines
+[subdivision_tagged_zip](../../archive/first-library/subdivision_tagged_zip.cubist) combines
 coarse-edge bounds and admissibility of the actual per-edge refinements.
-[dyadic_refinement_mesh](../../web/proofs/dyadic_refinement_mesh.cubist) applies
+[dyadic_refinement_mesh](../../archive/first-library/dyadic_refinement_mesh.cubist) applies
 this to obtain the mesh hypotheses required by the analytic estimates.
-[curve_refinement_estimates](../../web/proofs/curve_refinement_estimates.cubist)
+[curve_refinement_estimates](../../archive/first-library/curve_refinement_estimates.cubist)
 transfers an estimate for a constructed flattening to the specified fine
 samples, using their exact sum identity rather than identifying sample lists.
 
-[dyadic_contour_estimates](../../web/proofs/dyadic_contour_estimates.cubist) now
+[dyadic_contour_estimates](../../archive/first-library/dyadic_contour_estimates.cubist) now
 proves an actual cross-level bound: for a uniformly continuous integrand along
 an affine curve, each positive `delta` supplies one positive mesh such that
 all dyadic levels `n` meeting that mesh and all refinements `n + k` differ by
@@ -313,12 +313,12 @@ estimate, with the supplied field and continuity assumptions explicit.
 
 ## Constructed affine dyadic integrals
 
-[complex_refinement_cauchy](../../web/proofs/complex_refinement_cauchy.cubist)
+[complex_refinement_cauchy](../../archive/first-library/complex_refinement_cauchy.cubist)
 proves the common-refinement argument: compare levels `m` and `n` through
 `m + n`, using half the requested tolerance for each comparison. The resulting
 bound is an actual natural number, as required by `ComplexCauchy`.
 
-[affine_dyadic_limits](../../web/proofs/affine_dyadic_limits.cubist) applies this
+[affine_dyadic_limits](../../archive/first-library/affine_dyadic_limits.cubist) applies this
 to the actual sums, using the proved mesh estimate and dyadic width decay.
 It requires `ArchimedeanBounds`, which supplies actual natural witnesses;
 the merely existential `Archimedean` field property is not silently strengthened.
@@ -326,40 +326,40 @@ Uniform continuity supplies a mesh for the requested integrand error, and
 the natural bound for the shrinking width supplies the sampling index.
 Zero segment length is covered without deciding whether it is zero.
 
-[affine_integrals](../../web/proofs/affine_integrals.cubist) then applies
+[affine_integrals](../../archive/first-library/affine_integrals.cubist) then applies
 `CauchyComplete` coordinatewise to construct `affine_dyadic_integral`, proves
 its convergence and uniqueness, and proves that changing the witnesses for
 inverses, Archimedean bounds, uniform continuity or completeness leaves the
 value unchanged. No convergence assumption about the sums appears as an input
 to this construction. No excluded middle, choice, or new kernel rule is used.
 
-[affine_integral_midpoint](../../web/proofs/affine_integral_midpoint.cubist)
+[affine_integral_midpoint](../../archive/first-library/affine_integral_midpoint.cubist)
 proves that the integral from `a` to `b` is the sum of the integrals over its
 two constructed half-intervals, along the same affine curve. It uses the exact
-finite join equation from [curve_sample_sums](../../web/proofs/curve_sample_sums.cubist)
+finite join equation from [curve_sample_sums](../../archive/first-library/curve_sample_sums.cubist)
 and uniqueness of limits; it does not assume additivity of integrals.
 
-[affine_integral_constants](../../web/proofs/affine_integral_constants.cubist)
+[affine_integral_constants](../../archive/first-library/affine_integral_constants.cubist)
 proves the normalization formula: integrating a constant `c` gives
 `c * (curve(b) - curve(a))`. Constant uniform continuity is constructed, and
 the finite sums already have exactly this value by telescoping. Uniqueness
 identifies their constructed integral with it.
 
-[affine_integral_linearity](../../web/proofs/affine_integral_linearity.cubist)
+[affine_integral_linearity](../../archive/first-library/affine_integral_linearity.cubist)
 proves additivity in the integrand, multiplication by a fixed complex scalar,
 and equality of integrals when the integrands agree along the curve. The sum
 and scaled integrands receive constructed continuity witnesses; those
 properties are not extra hypotheses. The proof uses the corresponding
-finite identities in [curve_integrand_sums](../../web/proofs/curve_integrand_sums.cubist)
+finite identities in [curve_integrand_sums](../../archive/first-library/curve_integrand_sums.cubist)
 and uniqueness of limits. Equality along the curve needs no equality of the
 whole functions and no function-extensionality axiom.
 
-[field_uniform_radii](../../web/proofs/field_uniform_radii.cubist) constructs a
+[field_uniform_radii](../../archive/first-library/field_uniform_radii.cubist) constructs a
 common positive input tolerance without choosing the smaller of two numbers:
 for positive `r,s`, choose positive `delta` with `delta*(r+s) < r*s` and cancel
 the positive factor `r+s` to bound `delta` by both. This supports
-[addition of uniformly continuous curves](../../web/proofs/complex_uniform_operations.cubist).
-[Scalar continuity](../../web/proofs/complex_scalar_continuity.cubist) uses
+[addition of uniformly continuous curves](../../archive/first-library/complex_uniform_operations.cubist).
+[Scalar continuity](../../archive/first-library/complex_scalar_continuity.cubist) uses
 coordinate magnitude bounds and the positive denominator in the existing
 scaled-radius construction, so it includes the zero coefficient without
 a zero test. It also proves preservation of convergence under fixed complex

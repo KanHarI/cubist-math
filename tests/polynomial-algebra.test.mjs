@@ -4,9 +4,9 @@ import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 const module = await createCubical();
-const readSource = name => readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+const readSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
 const create = t => { const p = new CubicalProgram(module, readSource, { collectReferences: false }); t.after(() => p.dispose()); return p; };
-const allowed = /^(LEM\(U0\)|Truncate(?:Intro|Prop|Elim)?\(U0\))$/;
+const allowed = /^(LEM|Truncate(?:Intro|Prop|Elim)?)$/;
 const checkedWithoutNewAxioms = (p, name) => {
   const s = p.symbols[name];
   assert.equal(s?.verified, true, name);

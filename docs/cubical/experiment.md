@@ -147,7 +147,7 @@ CCHM theorem that `unglue` is an equivalence (contractible fibers), uniqueness o
 contractibility witnesses, and the total-space formulation of univalence:
 
 ```text
-forall A : U_l, IsContr(Sigma X : U_l, Equiv(X, A))
+forall A : U_l. IsContr(Sigma, X : U_l, Equiv(X, A))
 ```
 
 The final theorem is closed in the native checker. Its identity-equivalence

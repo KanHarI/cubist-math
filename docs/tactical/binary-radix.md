@@ -72,7 +72,7 @@ factorial proof merely to identify the target numeral.
 
 `factorial(10) = nat_3628800` is checked without constructing a unary chain of
 3,628,800 successors. `nat_3628800` names the binary-to-Nat evaluation expression.
-The original `factorial` definition is now boxed (`opaque def`), with the same
+The original `factorial` definition is now boxed as a named `def`, with the same
 checked body; no replacement factorial or new equation is postulated. Decoder
 functions also stay boxed. Computation is requested through proved equations.
 

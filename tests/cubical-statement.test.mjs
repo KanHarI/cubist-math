@@ -6,7 +6,7 @@ import { readFile } from "node:fs/promises";
 const text = parts => parts.map(part => part.text).join("");
 
 test("source summaries separate the conclusion from named parameters without elaboration artifacts", async () => {
-  const source = await readFile(new URL("../web/proofs/complex_deformation.cubist", import.meta.url), "utf8");
+  const source = await readFile(new URL("../archive/first-library/complex_deformation.cubist", import.meta.url), "utf8");
   const declaration = parse(source).declarations.find(d => d.name.text === "complex_deformation_at_one");
   const statement = sourceStatement(source, declaration, [{ start: declaration.params[0].name.start, binding: "local_F" }]);
   assert.equal(text(statement.conclusion), "complex_linear_deformation(F, addF, mulF, one, z, error) = complex_add(F, addF, z, error)");
@@ -21,5 +21,13 @@ test("statement fragments retain explicit equality and skip comments without hid
     =[A] x { exact refl(x); }`;
   const statement = sourceStatement(source, parse(source).declarations[0]);
   assert.equal(text(statement.conclusion), "x =[A] x");
-  assert.equal(sourceStatement("def a = 0;", parse("def a = 0;").declarations[0]), null);
+  assert.equal(sourceStatement("def a := 0;", parse("def a := 0;").declarations[0]), null);
+});
+
+test("a universe parameter's bound is summarized like a parameter's type", () => {
+  const source = "def id(U < UU0, A : U, a : A) : A := a;";
+  const statement = sourceStatement(source, parse(source).declarations[0]);
+  assert.deepEqual(statement.parameters.map(p => `${text(p.name)} ${p.relation} ${text(p.type)}`),
+    ["U < UU0", "A : U", "a : A"]);
+  assert.equal(text(statement.conclusion), "A");
 });

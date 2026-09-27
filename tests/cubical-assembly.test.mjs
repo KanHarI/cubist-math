@@ -7,9 +7,9 @@ import { kernelAssembly, assemblyText } from "../web/cubical-assembly.mjs";
 const module = await createCubical();
 async function fixture(t) {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  const result = await program.check(`def N = Nat; def id(n : Nat) = n;
-    def twice = id(id(0)); def annotated = typed(N, 0);
-    def along(A : U0, x : A, y : A, p : x = y) =
+  const result = await program.check(`def N := Nat; def id(n : Nat) := n;
+    def twice := id(id(0)); def annotated := typed(N, 0);
+    def along(A : U0, x : A, y : A, p : x = y) :=
       path(fun (i : Interval) => A, fun (i : Interval) => at(p, i));`, "assembly");
   assert.equal(result.complete, true);
   return program;
@@ -75,35 +75,31 @@ test("open interval contexts and full 64-bit formula masks survive assembly insp
   assert.match(assemblyText(listing), /Interval i: dimension #63/);
 });
 
-test("universe axiom specialization records provenance without inventing a kernel application", async t => {
+test("a generic assumption is one kernel entry, and each use is a level application", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  const result = await program.check(`def choice0 = Choice(U0); def choice1 = Choice(U1);
-    def truncate1 = Truncate(U1); def identity(n : Nat) = n;`, "specialization");
+  const result = await program.check(`def choice0 := Choice(U0); def choice1 := Choice(U1);
+    def truncate1 := Truncate(U1);`, "generic");
   assert.equal(result.complete, true);
+  // The command line and the workbench check through the instruction kernel;
+  // the term checker has no level rules.
+  const view = program.inspect("__assumption_Choice");
+  const checked = program.checker.checkView(view.expression, view.type, view.context.map(entry => [entry.name, entry.type]), new Map(view.dimensions));
+  assert.equal(view.expression.tag, "Var");
+  assert.equal(view.type.tag, "LPi");
+  const listing = kernelAssembly(program, view, checked);
+  assert.equal(program.kernel.node(listing.roots[0].handle).kind, "Var");
+  assert.equal(program.kernel.node(listing.roots.find(root => root.label === "Checked type").handle).kind, "LPi");
   for (const level of [0, 1]) {
-    const binding = `__assumption_Choice_U${level}`;
-    const { view, checked } = checkedView(program, binding);
-    assert.equal(view.expression.tag, "Var");
-    assert.equal(view.specialization.schema, "Choice");
-    assert.equal(view.specialization.universe, `U${level}`);
-    assert.deepEqual(view.specialization.mentions.map(use => use.declaration), [`choice${level}`]);
-    assert.equal(view.specialization.schemaType.domain.tag, "Var");
-    assert.equal(view.specialization.schemaType.domain.name, "U");
-    assert.equal(view.type.domain.tag, "U");
-    assert.equal(view.type.domain.level, level);
-    const listing = kernelAssembly(program, view, checked);
-    assert.equal(program.kernel.node(listing.roots[0].handle).kind, "Var");
-    assert.match(assemblyText(listing), new RegExp(`Elaborator specialization: Choice\\(U\\), U := U${level}`));
-    assert.match(assemblyText(listing), /No universe-generic kernel term or CC_APP/);
-    assert.equal(program.kernel.node(listing.roots.find(root => root.label === "Checked type").handle).kind, "Pi");
+    const use = program.inspect(`generic__choice${level}`).expression;
+    assert.equal(use.tag, "LApp");
+    assert.deepEqual([use.fn, use.level], [{ tag: "Var", name: "__assumption_Choice" }, level]);
   }
-  const truncation = program.inspect("__assumption_Truncate_U1");
-  assert.equal(truncation.specialization.schemaType.body.tag, "U");
-  assert.equal(truncation.specialization.schemaType.body.level, 0, "schema display preserves fixed codomain");
-  assert.equal(truncation.type.body.level, 0);
-  assert.equal(program.inspect("specialization__identity").specialization, undefined);
-  const { view, checked } = checkedView(program, "__assumption_Choice_U0");
-  const edited = { ...view, expression: { tag: "Nat" } };
-  const editedCheck = program.checker.syntax.check(edited.expression);
-  assert.equal(kernelAssembly(program, edited, editedCheck).specialization, null, "edits must not inherit stale axiom origin");
+  // One assumption, whatever levels it is used at (G0 Q4).
+  // Choice's statement mentions Truncate.
+  const labels = name => program.symbols[name].axioms.map(id => program.checker.assumptionLabels.get(id)).sort();
+  assert.deepEqual(labels("generic__choice0"), ["Choice", "Truncate"]);
+  assert.deepEqual(labels("generic__choice1"), ["Choice", "Truncate"]);
+  // Truncate keeps the archive's resizing signature until H1 (G0 Q5).
+  const truncation = program.inspect("generic__truncate1").type;
+  assert.deepEqual([truncation.tag, truncation.domain, truncation.body], ["Pi", { tag: "U", level: 1 }, { tag: "U", level: 0 }]);
 });

@@ -14,8 +14,11 @@ export function notationFromSyntax(node, globals = new Map(), bound = new Set())
     } : {}) });
   const call = (fn, args) => ({ kind: "Call", fn, args });
   if (node.kind === "name") {
-    if (!bound.has(node.name) && /^U[0-9]+$/.test(node.name))
-      return { kind: "Universe", level: Number(node.name.slice(1)) };
+    // U3 is a universe of tier 0; UU0, UUU2 and so on are of higher tiers.
+    if (!bound.has(node.name) && /^U+[0-9]+$/.test(node.name)) {
+      const tier = /^U+/.exec(node.name)[0].length - 1, value = Number(node.name.slice(tier + 1));
+      return { kind: "Universe", level: tier ? { tag: "LConst", tier, value } : value };
+    }
     return name(node.name);
   }
   if (node.kind === "number") return { kind: "Number", value: node.value };

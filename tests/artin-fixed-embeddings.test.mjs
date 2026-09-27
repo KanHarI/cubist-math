@@ -5,7 +5,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 
 const module = await createCubical();
-const readSource = name => readFile(new URL(`../web/proofs/${name}.cubist`, import.meta.url), "utf8");
+const readSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
 
 test("a finite automorphism subgroup gives distinct embeddings over its fixed field", async t => {
   const p = new CubicalProgram(module, readSource, { collectReferences: false });
@@ -33,5 +33,5 @@ test("a finite automorphism subgroup gives distinct embeddings over its fixed fi
     assert.deepEqual(p.symbols[`artin_fixed_embeddings__${name}`].axioms, [], name);
   const countAxioms = p.symbols.artin_fixed_embeddings__fixed_subgroup_distinct_embeddings.axioms
     .map(id => p.checker.assumptionLabels.get(id)).sort();
-  assert.deepEqual(countAxioms, ["Truncate(U0)", "TruncateElim(U0)", "TruncateIntro(U0)", "TruncateProp(U0)"].sort());
+  assert.deepEqual(countAxioms, ["Truncate", "TruncateElim", "TruncateIntro", "TruncateProp"].sort());
 });

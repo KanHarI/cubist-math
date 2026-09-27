@@ -1,5 +1,6 @@
 // Temporary migration benchmark. Each source declaration gets one shared
-// wall deadline for elaboration and C checking, excluding import discovery.
+// wall deadline for elaboration and the instruction kernel's derivations,
+// excluding import discovery.
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { cpus } from "node:os";
@@ -21,14 +22,14 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const revision = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   const dirty = !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim();
   const report = await benchmark({ limitMs, optimizations, ...(selected.length ? { modules: selected } : {}),
-    readSource: name => readFile(new URL(`../web/proofs/${cubicalSourceFile(name)}`, import.meta.url), "utf8"),
+    readSource: name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8"),
     onResult: row => {
       if (verbose || row.category === "optimize" || row.category === "failed")
         console.log(`${row.category.padEnd(8)} ${row.elapsedMs.toFixed(1)}ms ${row.module}.${row.name}${row.reason ? ` — ${row.reason}` : ""}`);
     },
   });
   Object.assign(report, { revision, dirty, runtime: process.version, cpu: cpus()[0]?.model,
-    complete: true, method: "One session; source order with imports checked once. Warm dependencies; transient arena terms compacted between declarations; no normalization request. Deadline polled cooperatively in JS and C. Universe templates counted separately." });
+    complete: true, method: "One session; source order with imports checked once. Each declaration is elaborated with every check derived by the instruction kernel as it runs, and admitted by Define, within its deadline. Warm dependencies; transient arena terms and judgements compacted between declarations; no normalization request. Deadline polled cooperatively in JS and C." });
   await mkdir(new URL("../build/", import.meta.url), { recursive: true });
   await writeFile(new URL("../build/cubical-benchmark.json", import.meta.url), JSON.stringify(report, null, 2) + "\n");
   if (!selected.length || args.includes("--publish")) {

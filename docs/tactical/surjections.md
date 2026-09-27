@@ -5,19 +5,19 @@ Run `make serve`, then open
 The same proof is available in the CLI:
 
 ```text
-prove web/proofs/surjections.cubist
+prove archive/first-library/surjections.cubist
 check EverySurjectionHasRightInverse every_surjection_has_right_inverse
 ```
 
-The [Cubist source](../../web/proofs/surjections.cubist) proves the usual
+The [Cubist source](../../archive/first-library/surjections.cubist) proves the usual
 set-theoretic statement using the existing library axiom of choice (`AOC`):
 
 ```text
-forall A : U0, forall B : U0, IsSet(A) -> IsSet(B) ->
-  forall f : A -> B, Surjective(A, B, f) -> Mere(RightInverse(A, B, f))
+forall A : U0. forall B : U0. IsSet(A) -> IsSet(B) ->
+  forall f : A -> B. Surjective(A, B, f) -> Mere(RightInverse(A, B, f))
 ```
 
-Here `Fiber(A, B, f, y)` is `exists x : A, f(x) = y`;
+Here `Fiber(A, B, f, y)` is `exists x : A. f(x) = y`;
 `Surjective(A, B, f)` says each fiber is merely inhabited. A
 `RightInverse(A, B, f)` consists of `g : B -> A` with the pointwise law
 `f(g(y)) = y`. `Mere` denotes propositional truncation: the conclusion asserts
