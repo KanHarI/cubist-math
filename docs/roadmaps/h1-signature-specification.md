@@ -660,7 +660,8 @@ counts index types too (G0 2.12).
   `max(x, ω)`, which is valid only while `x` is finite, and its instances read
   finite levels only (Q16).
 - **Undetermined level parameters.** A level parameter that ends no
-  parameter's type is rejected (1.1).
+  parameter's type cannot be read from the parameters, so it is recorded
+  (1.1, V30). Proposing it as erased is rejected (V14).
 - **The former is not a term.** A declared type used as a function, such as
   `Trunc` unapplied, is the elaborator's eta-expansion
   `fun (U < UU0, A : U) => Trunc(A)`: a G0 generic definition of type
@@ -1760,7 +1761,7 @@ and the driver, with L2.1. All run with the H1 extension on, except T1.
 | V11 | instantiating a generic definition that mentions `Trunc(A)` at `x + 1`, and reducing `elim` on `point` | Accept | Level substitution leaves the instance unchanged (2.4) |
 | V12 | `Wrap(x < ω) : U(x + 1) { wrap(B : U(x)); }` | Accept, `x` recorded | Level-dependent (Q15, decided) |
 | V13 | `Mixed(x < ω, A : U(x), B : UU0) { mk(a : A, b : B); }`; `Mixed(A, B)` for `A : U(3)`; for `A : UU0` | Accept, not tier-parametric; Accept; Reject | A tier-1 constant bounds the instances to finite levels (Q16) |
-| V14 | a level parameter that ends no parameter's type | Reject | Undetermined (1.1) |
+| V14 | a level parameter that ends no parameter's type, proposed as erased | Reject | An erased parameter needs a determining occurrence (1.1); left to the classification it is recorded (V30) |
 | V15 | `Both(x < ω, A, B : U(x)) { mk(a : A, b : B); }` at `A : U(0)` and `B : U(1)`; the same after lifting `A` to `U(1)` | Reject; Accept | Conflicting reads of one level parameter (3.1) |
 | V16 | `(λ (x < ω). Trunc(U(x))) {0}` and its `Beta` reduct `Trunc(U(0))`; `point(Nat)` at both; an eliminator of `Trunc(U(x))` with motive into `U(x + 1)`, instantiated at `0` | Accept; convertible; Accept; the motive lands in `U(1)` | Level substitution recurses through parameters and motives (2.4) |
 | V17 | `Tag(A : UU0) : U0 { here; }` and `Outer(x < ω, A : U(x)) : U0 { wrap(t : Tag(A)); }`; `Outer(Nat)`; `Outer(UU0)`; `Outer(A)` for `A : UU0` | Accept, and not tier-parametric under the extension (rules 2 and 3); Accept; Reject; Reject | A bound hidden in a referenced signature's parameter type (2.3) |
