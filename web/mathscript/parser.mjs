@@ -191,38 +191,42 @@ export function parse(source, typeOnly = false) {
         end,
       };
     } else if (t.text === "match") {
+      // `match v [as z] [return T] { c(xs) i => body; … }`: a clause per
+      // constructor, its arguments in parentheses, then its dimensions. The
+      // legacy match on a sum, `left x => …; right y => …;`, keeps its fields.
       const value = expr();
-      let motiveName = null;
-      if (peek() === "as") {
-        take("as");
-        motiveName = name();
-      }
-      take("return");
-      const type = expr();
+      let motiveName = null, type = null;
+      if (peek() === "as") { take("as"); motiveName = name(); }
+      if (peek() === "return") { take("return"); type = expr(); }
+      else if (motiveName) throw Object.assign(new Error("Give the motive after as: match v as z return T { … }."), { offset: ts[i].start });
       take("{");
-      take("left");
-      const left = name();
-      take("=>");
-      const leftBody = expr();
-      take(";");
-      take("right");
-      const right = name();
-      take("=>");
-      const rightBody = expr();
-      take(";");
+      const clauses = [];
+      while (peek() !== "}") {
+        if (peek() === "EOF") throw Object.assign(new Error("Expected '}' to close the match."), { offset: ts[i].start });
+        const constructor = name();
+        let args = null;
+        if (peek() === "(") {
+          take("(");
+          args = [];
+          if (peek() !== ")") {
+            args.push(name());
+            while (peek() === ",") { take(","); args.push(name()); }
+          }
+          take(")");
+        }
+        const names = [];
+        while (peek() !== "=>") names.push(name());
+        take("=>");
+        const body = expr();
+        const end = take(";").end;
+        clauses.push({ kind: "clause", constructor, args, names, body, start: constructor.start, end });
+      }
       const end = take("}").end;
-      a = {
-        kind: "match",
-        motiveName,
-        value,
-        type,
-        left,
-        leftBody,
-        right,
-        rightBody,
-        start: t.start,
-        end,
-      };
+      a = { kind: "match", motiveName, value, type, clauses, start: t.start, end };
+      if (clauses.length === 2 && clauses[0].constructor.text === "left" && clauses[1].constructor.text === "right"
+          && clauses.every(clause => !clause.args && clause.names.length === 1))
+        Object.assign(a, { left: clauses[0].names[0], leftBody: clauses[0].body,
+          right: clauses[1].names[0], rightBody: clauses[1].body });
     } else if (t.text === "unpack" && peek() !== "(") {
       const value = expr();
       take("as");
@@ -343,6 +347,14 @@ export function parse(source, typeOnly = false) {
         }
         const end = take(")");
         a = { kind: "call", fn: a, args, start: a.start, end: end.end };
+        continue;
+      }
+      // A qualified name, T.squash, is tight too: a name, a dot and a name.
+      if (a.kind === "name" && peek() === "." && ts[i - 1].end === ts[i].start
+          && /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text) && ts[i + 1].start === ts[i].end) {
+        take(".");
+        const member = take();
+        a = { kind: "name", name: `${a.name}.${member.text}`, start: a.start, end: member.end };
         continue;
       }
       // A projection p.1 or p.2 is tight: no space on either side of the dot.
