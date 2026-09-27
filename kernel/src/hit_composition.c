@@ -207,7 +207,7 @@ static cc_term result_type(cc_kernel *k, cc_term type, const cc_term *arguments,
 
 /* t @ r_1 … @ r_d, each application annotated with the type of the path it
  * applies (3.2): the path step and Whnf read boundaries there. */
-static cc_term apply_at(cc_kernel *k, cc_term t, cc_term type, const cc_formula_id *formulas, uint32_t count) {
+cc_term ck_apply_at(cc_kernel *k, cc_term t, cc_term type, const cc_formula_id *formulas, uint32_t count) {
     for (uint32_t l = 0; l < count && t && type; ++l) {
         cc_node path = k->nodes[type];
         if (path.kind != CC_PATH)
@@ -283,7 +283,7 @@ static cc_term sort_transport(cc_kernel *k, cc_term term, cc_term family, cc_ter
     components(k, moved, count, moved_arguments);
     components(k, line, count, line_arguments);
     cc_term target_type = ck_constructor_type(k, target, constructor);
-    cc_term v = apply_at(k, point, result_type(k, target_type, moved_arguments, count), formulas, depth);
+    cc_term v = ck_apply_at(k, point, result_type(k, target_type, moved_arguments, count), formulas, depth);
     cc_term along_point = ck_apply_components(k, family, constructor, line, count);
     cc_term along_type = result_type(k, type, line_arguments, count);
     unsigned h = ck_fresh_dimension(k, ck_free_dims(k, term) | (UINT64_C(1) << dim));
@@ -297,7 +297,7 @@ static cc_term sort_transport(cc_kernel *k, cc_term term, cc_term family, cc_ter
             cc_formula_id pieces[CC_CONSTRUCTOR_DIMENSIONS];
             memcpy(pieces, formulas, depth * sizeof *pieces);
             pieces[l] = constant(k, e);
-            cc_term piece = apply_at(k, along_point, along_type, pieces, depth);
+            cc_term piece = ck_apply_at(k, along_point, along_type, pieces, depth);
             cc_term correction = piece ? substitute(k, squeeze(k, dim, family, phi, piece), dim, reverse) : 0;
             cc_formula_id face = endpoint(k, formulas[l], e);
             if (!correction || !face)

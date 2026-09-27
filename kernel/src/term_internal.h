@@ -320,6 +320,14 @@ cc_term ck_telescope(cc_kernel *, cc_term type, uint32_t count);
 cc_term ck_tuple(cc_kernel *, cc_term telescope, const cc_term *arguments, uint32_t count);
 cc_term ck_apply_components(cc_kernel *, cc_term instance, uint32_t constructor, cc_term tuple, uint32_t count);
 cc_term ck_sort_composition(cc_kernel *, cc_term term, cc_term family, cc_term system);
+/* t @ r_1 … @ r_d, each application annotated with the type of the path it
+ * applies, read from t's type (hit_composition.c). */
+cc_term ck_apply_at(cc_kernel *, cc_term t, cc_term type, const cc_formula_id *formulas, uint32_t count);
+/* Elimination of declared types (F5, eliminators.c): elim applied to an
+ * argument, by Iota on a constructor and, when weak, on the weak head of the
+ * argument, hcomp included; the argument's application otherwise. */
+cc_term ck_eliminate(cc_kernel *, cc_term eliminator, cc_term argument, bool weak);
+cc_term ck_clause_type(cc_kernel *, cc_term instance, cc_term motive, const cc_term *clauses, uint32_t constructor);
 cc_term ck_endpoint_term(cc_kernel *, cc_term, unsigned, unsigned);
 cc_formula_id ck_interval_variable(cc_kernel *, unsigned);
 cc_formula_id ck_endpoint_face(cc_kernel *, unsigned, unsigned);
