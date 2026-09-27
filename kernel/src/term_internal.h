@@ -229,6 +229,10 @@ bool ck_tick(cc_kernel *, bool checking);
  * recursion depth to the caller, as each entry point did before. */
 enum { CC_WORK_NONE, CC_WORK_INSTRUCTION, CC_WORK_QUERY };
 void ck_operation(cc_kernel *, unsigned phase);
+void ck_standalone(cc_kernel *);
+/* cc_kernel_formula without leaving the current operation: for the kernel's
+ * own use inside an operation. */
+cc_formula_id ck_formula(cc_kernel *, const cc_formula *);
 /* cc_kernel_check_in_cube without starting an operation: define's check. */
 bool ck_check_in_cube(cc_kernel *, cc_term raw, cc_term expected, const cc_assumption *, size_t count,
                       uint64_t dimensions, cc_checked_result *);

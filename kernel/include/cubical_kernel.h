@@ -78,7 +78,9 @@ void cc_kernel_set_step_budget(cc_kernel *, uint64_t steps);
  *
  * The counters only grow. No operation, error, checkpoint, rollback or
  * commit resets them, so the difference between two readings is the work in
- * between, rejected and failed work included. An operation retried with a
+ * between, rejected and failed work included. A public function that starts
+ * no operation, such as building syntax or setting unfolding hints, charges
+ * an error it records to neither kind. An operation retried with a
  * larger budget counts each time it runs, as its work is done again.
  *   instructions       instructions started, whether accepted, answered from
  *                      the memo or rejected. One issued while an error is

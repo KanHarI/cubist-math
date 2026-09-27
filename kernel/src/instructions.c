@@ -920,7 +920,7 @@ cc_judgement_id cc_instr_path_apply(cc_kernel *k, cc_judgement_id path_id, cc_en
     cc_formula point;
     cc_init(&point, CC_INTERVAL);
     cc_status status = dimension ? cc_generator(&point, i.symbol, true) : endpoint ? cc_one(&point) : CC_OK;
-    cc_formula_id argument = status == CC_OK ? cc_kernel_formula(k, &point) : 0;
+    cc_formula_id argument = status == CC_OK ? ck_formula(k, &point) : 0;
     cc_term result = argument ? ck_dimension_substitute(k, type.child[0], type.payload, &point) : 0;
     cc_clear(&point);
     if (status != CC_OK)
@@ -1375,6 +1375,7 @@ cc_judgement_id cc_instr_trans(cc_kernel *k, cc_judgement_id system_id, cc_formu
 cc_term cc_kernel_equiv_type(cc_kernel *k, cc_term a, cc_term b) {
     if (!k || !a || !b || a >= k->count || b >= k->count)
         return 0;
+    ck_standalone(k);
     return ck_equiv_type(k, a, b);
 }
 
@@ -1760,7 +1761,7 @@ cc_judgement_id cc_instr_eta(cc_kernel *k, cc_judgement_id typing_id) {
             return 0;
         cc_formula point;
         cc_init(&point, CC_INTERVAL);
-        cc_formula_id argument = cc_generator(&point, fresh, true) == CC_OK ? cc_kernel_formula(k, &point) : 0;
+        cc_formula_id argument = cc_generator(&point, fresh, true) == CC_OK ? ck_formula(k, &point) : 0;
         cc_term family = argument ? ck_dimension_substitute(k, type.child[0], type.payload, &point) : 0;
         cc_clear(&point);
         if (!family)

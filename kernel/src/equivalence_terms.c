@@ -68,8 +68,8 @@ cc_term ck_identity_equiv(cc_kernel *k, cc_term type) {
                  cc_generator(&vj, j, true) == CC_OK && cc_meet(&meet, &vi, &vj) == CC_OK;
     cc_formula_id at_i = 0, at_meet = 0;
     if (valid) {
-        at_i = cc_kernel_formula(k, &vi);
-        at_meet = cc_kernel_formula(k, &meet);
+        at_i = ck_formula(k, &vi);
+        at_meet = ck_formula(k, &meet);
     } else
         ck_fail(k, "Singleton contraction interval allocation failed.");
     cc_clear(&vi);

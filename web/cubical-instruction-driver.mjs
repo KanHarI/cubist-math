@@ -81,12 +81,14 @@ const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: 
 // A failed normalize or descend may have rewritten the sides, so the point
 // is listed again, without them.
 //
-// A chooser is { name, rank(point), observe?(point, move, outcome) }. rank
-// yields moves of point.moves, best first; the driver makes each in turn
-// until one applies, and the comparison fails when none does. observe hears
-// each move's outcome: "agreed", "progress", "stuck" (it changed nothing),
-// "changed" (it failed and may have rewritten the sides) or "deferred" (a
-// comparison inside gave up for an enclosing closed one to normalize).
+// A chooser is { name, rank(point), observe?(point, move, outcome, error) }.
+// rank yields moves of point.moves, best first; the driver makes each in
+// turn until one applies, and the comparison fails when none does. observe
+// hears each move's outcome: "agreed", "progress", "stuck" (it changed
+// nothing), "changed" (it failed and may have rewritten the sides),
+// "deferred" (a comparison inside gave up for an enclosing closed one to
+// normalize) or "error" (it threw `error`, such as the kernel running out of
+// budget or time, which ends the comparison).
 // A point is { driver, a, b, x, y, nx, ny, terms, dims, moves, round, taken,
 // depth }: the foci, their subterms and nodes when the point was reached,
 // the bound names that correspond, the moves, the listing's number at this
@@ -915,7 +917,14 @@ export class InstructionDriver {
       let changed = false;
       for (const move of this.chooser.rank(point)) {
         if (!point.moves.includes(move)) throw new Error(`The chooser ${this.chooser.name} chose a move that is not open.`);
-        const outcome = this.move(point, move, budget);
+        let outcome;
+        try { outcome = this.move(point, move, budget); }
+        catch (error) {
+          // The move's work is done, and observers hear of it; the error
+          // ends the comparison as before.
+          this.chooser.observe?.(point, move, "error", error);
+          throw error;
+        }
         this.chooser.observe?.(point, move, outcome);
         if (outcome === "stuck") continue;
         if (outcome === "changed") { changed = true; break; }

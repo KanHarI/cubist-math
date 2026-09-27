@@ -43,7 +43,8 @@ const known = /^--(limit-ms|trajectories|select|modules|report)=|^--oracle$/;
 const unknown = process.argv.slice(2).find(arg => !known.test(arg));
 if (unknown) throw new Error(`Unknown option: ${unknown}`);
 
-const git = args => { try { return execFileSync("git", args, { encoding: "utf8" }).trim(); } catch { return null; } };
+const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+const git = args => { try { return execFileSync("git", args, { cwd: projectRoot, encoding: "utf8" }).trim(); } catch { return null; } };
 const environment = {
   revision: git(["rev-parse", "HEAD"]), modified: git(["status", "--porcelain", "--untracked-files=no"]) !== "",
   node: process.version, platform: `${os.platform()} ${os.arch()}`, cpu: os.cpus()[0]?.model ?? null,
@@ -84,7 +85,7 @@ for (const [name, reference] of kernel.definitions) {
   } finally { kernel.setDeadline(); }
   const ms = performance.now() - started, work = workSince(before, kernel.work());
   addWork(total, work);
-  derivations.push({ name, ms, steps: kernelSteps(work), derived: outcome === "derived" });
+  derivations.push({ name, ms, steps: kernelSteps(work), derived: outcome === "derived", outcome, work });
   trajectories?.write(JSON.stringify({ definition: name, outcome, ms: Math.round(ms), work, points }) + "\n");
 }
 if (trajectories) await new Promise(resolve => trajectories.end(resolve));
@@ -106,6 +107,11 @@ const report = {
   seconds: Number((derivations.reduce((sum, d) => sum + d.ms, 0) / 1000).toFixed(1)),
   work: total, search: search.counts,
   memory: { peakRssMiB: Math.round(process.resourceUsage().maxRSS / 1024), arenaNodes: arena.nodes, arenaMiB: Math.round(arena.bytes / 2 ** 20) },
+  // Every definition derived again, failed ones included, as rows of `fields`.
+  perDefinition: { fields: ["name", "outcome", "ms", "instructions", "rejected", "instructionSteps", "queries", "failedQueries",
+    "querySteps", "exhausted", "deadlines"],
+    rows: derivations.map(d => [d.name, d.outcome, Number(d.ms.toFixed(1)), d.work.instructions, d.work.rejected,
+      d.work.instructionSteps, d.work.queries, d.work.failedQueries, d.work.querySteps, d.work.exhausted, d.work.deadlines]) },
   slowest: top("ms", d => ({ name: d.name, ms: Math.round(d.ms) })),
   costliest: top("steps", d => ({ name: d.name, steps: d.steps })),
   failures: Object.fromEntries(Object.entries(failures).sort((a, b) => b[1].length - a[1].length)),

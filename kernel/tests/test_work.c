@@ -156,6 +156,29 @@ int main(void) {
     assert(stopped.deadlines == 1 && stopped.failed_queries == 1 && !stopped.exhausted);
     cc_kernel_clear_error(k);
 
+    /* A public function that starts no operation charges its error to
+     * nothing, however recently an instruction or a query ran. */
+    OK(cc_instr_nat(k));
+    before = now();
+    for (int repeat = 0; repeat < 5; ++repeat) {
+        assert(!cc_kernel_set_unfolding_hints(k, NULL, 1));
+        assert(cc_kernel_error(k)[0]);
+        cc_kernel_clear_error(k);
+        assert(!cc_kernel_term(k, CC_SUCC, 0, 0, 0, 0, 0));
+        cc_kernel_clear_error(k);
+        assert(!cc_kernel_equiv_type(k, 0x7fffffff, 1));
+    }
+    cc_work_counters standalone = since(before);
+    assert(!memcmp(&standalone, &(cc_work_counters){0}, sizeof standalone));
+    cc_kernel_normalize(k, numeral(1));
+    before = now();
+    assert(!cc_kernel_set_unfolding_hints(k, NULL, 1));
+    cc_work_counters after_query = since(before);
+    assert(!after_query.failed_queries && !after_query.rejected);
+    cc_kernel_clear_error(k);
+    cc_work_counters total = now();
+    assert(total.rejected <= total.instructions && total.failed_queries <= total.queries);
+
     cc_kernel_free(k);
     puts("kernel work counters: ok");
     return 0;
