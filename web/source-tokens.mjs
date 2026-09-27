@@ -52,7 +52,7 @@ export const builtinForms = new Set([
 
 // One source token: a comment, an operator, a binary literal, a name, a
 // numeral, whitespace, or any other single character.
-export const tokenPattern = /\/\/.*|(?:<=|->|=>|:=)|0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[+*<=>]|\s+|./g;
+export const tokenPattern = /\/\/.*|(?:<=|->|=>|:=|\+\+)|0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[+*<=>&|]|\s+|./g;
 // A numeral is notation for repeated successors; 0 is the constructor itself.
 export const numeralExpansion = text => /^[0-9]+$/.test(text) && Number(text) >= 1 && Number(text) <= 256
   ? "succ(".repeat(Number(text)) + "0" + ")".repeat(Number(text)) : null;

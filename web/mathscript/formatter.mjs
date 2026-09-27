@@ -10,7 +10,7 @@ const indent = body => ({ kind: "indent", body });
 const flow = body => ({ kind: "flow", body });
 // A quantifier's `.` ends its type like a comma: no space before, a break after.
 const punctuation = new Set([",", ".", ";", ")", "]", "}"]);
-const operators = new Set(["=", "->", "=>", "+", "*", "<", "<=", "and", "or"]);
+const operators = new Set(["=", "->", "=>", "++", "+", "*", "&", "|", "<", "<=", "and", "or"]);
 
 function render(document, width) {
   let output = "", column = 0;
@@ -78,14 +78,16 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
   const domains = [];
   const expressionBlockEnds = new Set();
   const assignmentTokens = new Set(), annotationStarts = new Set(), proofBodyStarts = new Set();
-  // A projection's dot is tight on both sides: p.1, never p. 1.
-  const projectionDots = new Set();
+  // A projection's dot is tight on both sides: p.1, never p. 1. A prefix minus
+  // is tight before its operand: -p, never - p.
+  const projectionDots = new Set(), prefixMinus = new Set();
   const tokenBefore = new Map(tokens.map((token, index) => [token.start, tokens[index - 1]]));
   const tokenAfter = new Map(tokens.map((token, index) => [token.end, tokens[index + 1]]));
   function visit(node) {
     if (!node || typeof node !== "object") return;
     if (node.kind === "withUnfolding") expressionBlockEnds.add(node.end);
     if (node.kind === "projection") projectionDots.add(node.dot.start);
+    if (node.kind === "unary") prefixMinus.add(node.operatorStart);
     // Only declaration/let assignments introduce an indented right-hand side.
     // An equality inside an annotated definition's type is not an assignment.
     const valueStart = node.valueStart ?? (node.kind === "let" ? node.value?.start : undefined);
@@ -159,6 +161,7 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
         flush(); docs.push(hard, hard); previous = null;
       }
       const space = previous && !punctuation.has(text) && !["(", "["].includes(previous.text)
+        && !prefixMinus.has(previous.start)
         && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or"].includes(previous.text) || [")", "]"].includes(previous.text) || previous.text === "}" && expressionBlockEnds.has(previous.end)))
         && !(text === "[" && previous.text === "=");
       if (space && ![",", "."].includes(previous.text)) {

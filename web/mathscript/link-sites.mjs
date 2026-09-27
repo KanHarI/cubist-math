@@ -26,12 +26,12 @@ export function calcStepSite(step, index) {
     role: "calculation step", expansionIndex: index + 1 };
 }
 
-// A logical operator or a binder keyword links to the checked expression, and
+// A logical or path operator or a binder keyword links to the checked expression, and
 // a projection's index to the projection.
 export function expressionSite(node) {
   if (node.kind === "projection")
     return { name: `.${node.index}`, start: node.digit.start, end: node.digit.end };
-  if (node.kind === "binary" && ["=", "->", "and", "or"].includes(node.operator))
+  if ((node.kind === "binary" && ["=", "->", "and", "or", "++"].includes(node.operator)) || node.kind === "unary")
     return { name: node.operator, start: node.operatorStart, end: node.operatorEnd };
   if (node.keyword && ["lambda", "forall", "exists", "binderGroup"].includes(node.kind)) {
     const binder = node.binderKind ?? node.kind;
