@@ -241,3 +241,28 @@ test("displays name instances, constructors and eliminators as the source does",
   const double = elim("N", lam("z", N, N), [zero, lam("m", N, lam("h", N, succ(succ(v("h")))))]);
   assert.equal(cubicalText(shown(app(double, zero))), "N.elim(λ (z : N). N, zero, λ (m : N). λ (h : N). succ(succ(h)))(zero)");
 });
+
+test("higher constructors: the torus and the sphere are admitted, and their faces compute", t => {
+  const { admit, check } = session(t);
+  // inductive Torus { b; p, q : b = b; surf : Path(i; Path(j; Torus, p @ i, p @ i), q, q); }
+  const square = (family, left, right) => ({ tag: "Path", dim: "j", family, left, right });
+  admit({ name: "Torus", constructors: [{ name: "b", type: v("Torus") },
+    { name: "p", type: path(v("Torus"), v("b"), v("b")) }, { name: "q", type: path(v("Torus"), v("b"), v("b")) },
+    { name: "surf", type: path(square(v("Torus"), at(v("p"), "i"), at(v("p"), "i")), v("q"), v("q")) }] });
+  const T = sort("Torus"), p = con(T, 1), q = con(T, 2), surf = con(T, 3);
+  // surf @ 0 is q, and surf @ i @ 0 is p @ i: the square's faces.
+  check(line(T, at(q, "i")), path(T, atEnd(atEnd(surf, 0), 0), atEnd(atEnd(surf, 0), 1)));
+  const face = { tag: "PApp", path: at(surf, "i"), arg: [] };
+  check({ tag: "PLam", dim: "i", family: T, body: at(p, "i") }, path(T, atEnd(p, 0), atEnd(p, 1)));
+  check({ tag: "PLam", dim: "i", family: T, body: face }, path(T, con(T, 0), con(T, 0)));
+  // inductive S2 { base; surf : Path(i; Path(j; S2, base, base), ⟨j⟩ base, ⟨j⟩ base); }
+  const constant = { tag: "PLam", dim: "j", family: v("S2"), body: v("base") };
+  admit({ name: "S2", constructors: [{ name: "base", type: v("S2") },
+    { name: "surf", type: path(square(v("S2"), v("base"), v("base")), constant, constant) }] });
+  const S2 = sort("S2");
+  // surf @ 0 is ⟨j⟩ base, so surf @ 0 @ 1 is base.
+  check(line(S2, con(S2, 0)), path(S2, atEnd(atEnd(con(S2, 1), 0), 1), con(S2, 0)));
+  // A boundary naming a later constructor, or the sort in an arity, is refused.
+  assert.throws(() => admit({ name: "Ahead", constructors: [{ name: "a", type: path(v("Ahead"), v("b"), v("b")) },
+    { name: "b", type: v("Ahead") }] }), /Unbound variable b/);
+});
