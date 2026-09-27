@@ -1,12 +1,16 @@
 # One-sort signatures (H1): rules, soundness note and truncation policy
 
-Status: draft for review; not implemented. Written on 2026-09-27 as work-plan
-items K2.1 (the H1 fragment and its soundness note) and K2.5 (G2's truncation
-and resizing policy, with its migration ledger). It is the contract that K2.2
-(instructions), K2.3 (driver and bridges), K2.4 (differential fixtures) and
-L2.1 (the `inductive` declaration) implement. Default admission and release
-wait for review of section 4. Until then, H1 runs only in the experimental
-mode of section 5.7, and its results carry the `kernel extension: H1` marker.
+Status: approved on 2026-09-27 for implementation; not implemented. Written
+on 2026-09-27 as work-plan items K2.1 (the H1 fragment and its soundness
+note) and K2.5 (G2's truncation and resizing policy, with its migration
+ledger). Every open question is decided (see Decisions). It is the contract
+that K2.2 (instructions), K2.3 (driver and bridges), K2.4 (differential
+fixtures) and L2.1 (the `inductive` declaration) implement; work on them
+proceeds on the `h1-signatures` branch. Default admission and release wait
+for the open proofs of section 4 (D1, D4, D5 and Lemma H2) and for each
+K2.2 family's classification into the cases of 2.3. Until then, H1 runs
+only in the experimental mode of section 5.7, and its results carry the
+`kernel extension: H1` marker.
 
 It refines the adopted
 [higher inductive-inductive type design](higher-inductive-types-design.md)
