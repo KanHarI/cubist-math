@@ -35,6 +35,7 @@ test("natural numbers and the circle are admitted one constructor at a time", t 
   const u0 = g.universe(syntax.encodeLevel(0));
   // inductive N { zero; succ(n : N); }
   let sig = g.signatureBegin(u0, 0, "N");
+  assert.equal(g.judgement(sig).kind, "signature");
   const s = g.extend(u0, "N");
   sig = g.signatureConstructor(sig, g.variable(s), "zero");
   g.extend(g.variable(s), "zero");

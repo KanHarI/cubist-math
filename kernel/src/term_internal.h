@@ -209,6 +209,9 @@ struct cc_kernel {
  * in their own files. */
 bool ck_instr_ready(cc_kernel *);
 bool ck_instr_begin(cc_kernel *, cc_derivation, const uint8_t *position, size_t depth, cc_judgement_id *found);
+/* Begin an instruction whose result depends on the signature table, which
+ * changes: it is never answered from the derivation cache. */
+bool ck_instr_begin_stateful(cc_kernel *, cc_derivation);
 cc_judgement_id ck_instr_publish(cc_kernel *, uint32_t kind, cc_term term, cc_term other, cc_term type,
                                  uint32_t context);
 bool ck_instr_premise(cc_kernel *, cc_judgement_id, uint32_t kind, cc_fact *);

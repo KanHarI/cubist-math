@@ -2114,6 +2114,13 @@ bool ck_instr_ready(cc_kernel *k) { return ready(k); }
 bool ck_instr_begin(cc_kernel *k, cc_derivation how, const uint8_t *position, size_t depth, cc_judgement_id *found) {
     return begin(k, how, position, depth, found);
 }
+bool ck_instr_begin_stateful(cc_kernel *k, cc_derivation how) {
+    if (!ready(k))
+        return false;
+    k->pending = how;
+    k->pending_position = NULL;
+    return true;
+}
 cc_judgement_id ck_instr_publish(cc_kernel *k, uint32_t kind, cc_term term, cc_term other, cc_term type,
                                  uint32_t context) {
     return publish(k, kind, term, other, type, context);

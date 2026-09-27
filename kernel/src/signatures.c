@@ -161,6 +161,7 @@ static bool mentions(shape *sh, cc_term t) {
 }
 
 static bool endpoint(shape *sh, cc_term e, unsigned depth);
+static bool cube(shape *sh, cc_term c, uint32_t *depth, unsigned guard, unsigned nesting);
 
 /* E' ::= E | λ (y : A). E', a positional argument under its arity's binders. */
 static bool positional(shape *sh, cc_term e, unsigned depth) {
@@ -177,6 +178,22 @@ static bool positional(shape *sh, cc_term e, unsigned depth) {
     return positional(sh, n.child[1], depth + 1);
 }
 
+/* A type a boundary carries: a path abstraction's family or a path
+ * application's annotation, which must be a cube over the sort. */
+static bool carried(shape *sh, cc_term type, unsigned depth) {
+    cc_kernel *k = sh->k;
+    if (!type)
+        return true;
+    cc_term end = type;
+    for (unsigned guard = 0; node(k, end).kind == CC_PATH && guard <= CC_CONSTRUCTOR_DIMENSIONS; ++guard)
+        end = node(k, end).child[0];
+    if (node(k, end).kind != CC_VAR || node(k, end).payload != sh->signature->sort_symbol)
+        return fail(k, "A path abstraction or application in a boundary carries a type that is not a cube over the "
+                       "sort (section 1.4).");
+    uint32_t ignored = 0;
+    return cube(sh, type, &ignored, 0, depth);
+}
+
 static bool data_term(shape *sh, cc_term t) {
     if (mentions(sh, t))
         return fail(sh->k, "A boundary applies a position or constructor to data terms only: terms that mention "
@@ -186,16 +203,20 @@ static bool data_term(shape *sh, cc_term t) {
 
 /* E ::= q_j(us) | c_m(us, Es') | E @ r | ⟨i⟩ E: constructor expressions over
  * the positions and the earlier constructors. No composition, transport or
- * other operation of the sort occurs (Q3). */
+ * other operation of the sort occurs (Q3), in the expression or in the types
+ * it carries: a path abstraction's family and a path application's
+ * annotation, whose endpoints the path step exposes, are cubes as well. */
 static bool endpoint(shape *sh, cc_term e, unsigned depth) {
     cc_kernel *k = sh->k;
     if (depth > 256)
         return fail(k, "A boundary is nested too deeply.");
+    if (!ck_tick(k, true))
+        return false;
     cc_node n = node(k, e);
     if (n.kind == CC_PLAM)
-        return endpoint(sh, n.child[1], depth + 1);
+        return carried(sh, n.child[0], depth + 1) && endpoint(sh, n.child[1], depth + 1);
     if (n.kind == CC_PAPP)
-        return endpoint(sh, n.child[0], depth + 1);
+        return carried(sh, n.child[1], depth + 1) && endpoint(sh, n.child[0], depth + 1);
     if (n.kind == CC_COMP || n.kind == CC_HCOMP || n.kind == CC_TRANS)
         return fail(k, "A boundary may not contain a composition, hcomp or transport (section 1.4, Q3).");
     cc_term arguments[CC_CONSTRUCTOR_ARGUMENTS];
@@ -235,11 +256,13 @@ static bool endpoint(shape *sh, cc_term e, unsigned depth) {
 }
 
 /* C ::= s | Path(i; C, E, E): a cube over the sort, of depth the number of
- * path binders. */
-static bool cube(shape *sh, cc_term c, uint32_t *depth, unsigned guard) {
+ * path binders. Nesting counts the boundaries it sits in. */
+static bool cube(shape *sh, cc_term c, uint32_t *depth, unsigned guard, unsigned nesting) {
     cc_kernel *k = sh->k;
     if (guard > CC_CONSTRUCTOR_DIMENSIONS)
         return fail(k, "A constructor has too many dimensions, or a position too deep a cube.");
+    if (nesting > 256)
+        return fail(k, "A boundary is nested too deeply.");
     cc_node n = node(k, c);
     if (n.kind == CC_VAR && n.payload == sh->signature->sort_symbol) {
         *depth = 0;
@@ -247,7 +270,8 @@ static bool cube(shape *sh, cc_term c, uint32_t *depth, unsigned guard) {
     }
     if (n.kind == CC_PATH) {
         uint32_t inner = 0;
-        if (!cube(sh, n.child[0], &inner, guard + 1) || !endpoint(sh, n.child[1], 0) || !endpoint(sh, n.child[2], 0))
+        if (!cube(sh, n.child[0], &inner, guard + 1, nesting) || !endpoint(sh, n.child[1], nesting) ||
+            !endpoint(sh, n.child[2], nesting))
             return false;
         *depth = inner + 1;
         return true;
@@ -283,7 +307,7 @@ static bool constructor_shape(shape *sh, cc_term t, cc_constructor *out) {
                     return fail(k, "A position's arity is too long.");
                 body = binder.child[1];
             }
-            if (!cube(sh, body, &depth, 0))
+            if (!cube(sh, body, &depth, 0, 0))
                 return false;
             sh->position_symbols[sh->positions] = n.payload;
             sh->position_arities[sh->positions++] = arity;
@@ -296,7 +320,7 @@ static bool constructor_shape(shape *sh, cc_term t, cc_constructor *out) {
         t = n.child[1];
     }
     uint32_t dimensions = 0;
-    if (!cube(sh, t, &dimensions, 0))
+    if (!cube(sh, t, &dimensions, 0, 0))
         return false;
     out->data = data;
     out->positions = sh->positions;
@@ -332,11 +356,11 @@ static cc_term codomain_end(const cc_kernel *k, cc_term t) {
 
 cc_judgement_id cc_instr_signature_begin(cc_kernel *k, cc_judgement_id former_id, uint32_t modifier,
                                          uint32_t sort_symbol, uint32_t recorded) {
-    cc_judgement_id found;
-    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_SIGNATURE_BEGIN, .premise = {former_id},
-                                           .operand = {sort_symbol, recorded}, .entry = modifier},
-                        NULL, 0, &found))
-        return found;
+    /* Each admission is a new sort (Q10), and the gate and the table change:
+     * never the cached result of an identical call. */
+    if (!ck_instr_begin_stateful(k, (cc_derivation){.rule = CC_INSTR_SIGNATURE_BEGIN, .premise = {former_id},
+                                                    .operand = {sort_symbol, recorded}, .entry = modifier}))
+        return 0;
     if (!(k->extensions & CC_EXTENSION_H1))
         return fail(k, "Declared types are a kernel extension under review (H1); the kernel admits them only when "
                        "the extension is enabled."), 0;
@@ -400,6 +424,10 @@ cc_judgement_id cc_instr_signature_begin(cc_kernel *k, cc_judgement_id former_id
             return fail(k, "An erased universe parameter needs a determining occurrence: a parameter whose type ends in "
                            "U(x) (section 1.1). Otherwise it is recorded."), 0;
     }
+    /* The fresh-symbol supply passes the sort symbol, as it does a
+     * constructor's, so that no generated name takes it. */
+    if (!ck_var(k, sort_symbol))
+        return 0;
     uint32_t index = 0;
     cc_signature *s = new_signature(k, &index);
     if (!s)
@@ -474,11 +502,9 @@ static bool admission_context(cc_kernel *k, const cc_signature *s, uint32_t cont
 
 cc_judgement_id cc_instr_signature_constructor(cc_kernel *k, cc_judgement_id signature_id, cc_judgement_id type_id,
                                                uint32_t symbol) {
-    cc_judgement_id found;
-    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_SIGNATURE_CONSTRUCTOR,
-                                           .premise = {signature_id, type_id}, .operand = {symbol}},
-                        NULL, 0, &found))
-        return found;
+    if (!ck_instr_begin_stateful(k, (cc_derivation){.rule = CC_INSTR_SIGNATURE_CONSTRUCTOR,
+                                                    .premise = {signature_id, type_id}, .operand = {symbol}}))
+        return 0;
     cc_fact sf = {0}, tf = {0};
     uint32_t index = 0;
     cc_signature *s = NULL;
@@ -497,7 +523,7 @@ cc_judgement_id cc_instr_signature_constructor(cc_kernel *k, cc_judgement_id sig
     for (uint32_t i = 0; i < s->level_count + s->parameter_count; ++i)
         if (s->symbols[i] == symbol)
             return fail(k, "A constructor's symbol must be new to the signature."), 0;
-    if (!admission_context(k, s, tf.context, symbol))
+    if (!admission_context(k, s, tf.context, symbol) || !ck_var(k, symbol))
         return 0;
     cc_constructor c = {.symbol = symbol, .type = tf.term};
     if (!constructor_shape(&sh, tf.term, &c))
