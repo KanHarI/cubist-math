@@ -1,0 +1,224 @@
+// Deterministic fuel and residual goals (HoTT roadmap A4 and A6; work plan
+// L1.3): tactic searches spend counted fuel, the same in a fresh session and
+// a reused one; fuel, the kernel's steps and the time limit fail apart; and an
+// unfinished rw, simp, simpa or calc says where it stopped.
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile, mkdtemp, writeFile, rm } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import createCubical from "../web/dist/cubical.mjs";
+import { CubicalProgram } from "../web/cubical-program.mjs";
+import { SEARCH_FUEL, DECLARATION_FUEL, SearchFuel, SearchFuelExhausted } from "../lib/cubical/fuel.mjs";
+
+const read = path => readFile(new URL(`../${path}`, import.meta.url), "utf8");
+// Modules resolve as in the CLI: the rebuilt library first, then the archive.
+const readLibrary = name => read(`library/${name}.cubist`)
+  .catch(error => { if (error.code !== "ENOENT") throw error; return read(`archive/first-library/${name}.cubist`); });
+
+async function check(t, source, options = {}, warmup = []) {
+  const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false, ...options });
+  t.after(() => program.dispose());
+  for (const [name, text] of warmup) await program.check(text, name);
+  const result = await program.check(source, "fuel_example");
+  return Object.fromEntries(result.outputs.filter(output => output.binding.startsWith("fuel_example__"))
+    .map(output => [output.name, output]));
+}
+
+const tactics = `import naturals;
+
+def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
+  simp only [nat_add_zero];
+}
+def rewritten(n, m : Nat, h : n = m) : n + 0 = m {
+  rw [nat_add_zero(n)];
+  exact h;
+}
+def through(n, m : Nat, h : n + 0 = m) : n = m {
+  simpa only [nat_add_zero] using h;
+}
+def chain(n : Nat) : (n + 0) + 0 = n {
+  calc {
+    (n + 0) + 0 = n + 0 by nat_add_zero(n + 0);
+    _ = n by nat_add_zero(n);
+  }
+}
+def commuted(a, b : Nat) : a + b = b + a {
+  simp only [nat_add_comm];
+}
+def growing(n, m : Nat, h : n = m) : n = m + 0 {
+  simp only [<- nat_add_zero];
+  exact h;
+}
+`;
+const fuelOf = outputs => Object.fromEntries(Object.entries(outputs).map(([name, output]) =>
+  [name, { status: output.status, reason: output.reason ?? null, failure: output.failure, fuel: output.searchFuel }]));
+
+test("the default fuel is the recorded baseline's, several times what any measured search spent", async () => {
+  const fixture = JSON.parse(await read("tests/fixtures/search-fuel.json"));
+  assert.deepEqual({ ...SEARCH_FUEL }, fixture.defaults.search);
+  assert.deepEqual({ ...DECLARATION_FUEL }, fixture.defaults.declaration);
+  for (const [kind, { spent }] of Object.entries(fixture.most))
+    assert.ok(SEARCH_FUEL[kind] >= 4 * Math.max(spent, fixture.floors[kind] ?? 0), kind);
+  assert.ok(DECLARATION_FUEL.queries >= 4 * fixture.declarationQueries.spent);
+  // What was measured, and how.
+  assert.ok(fixture.revision && fixture.method && fixture.machine.node);
+  assert.ok(fixture.workloads.some(workload => workload.name === "archive" && workload.gaps === 0));
+});
+
+test("fuel counts questions, not time: a fresh session and a reused one spend the same", async t => {
+  const fresh = fuelOf(await check(t, tactics));
+  // The reused session has checked other proofs first: the kernel's caches
+  // are warm, and its step budget has been used.
+  const warmup = [["warm_arithmetic", await read("docs/examples/proof-ergonomics/implemented/arithmetic.cubist")],
+    ["warm_registered", await read("docs/examples/proof-ergonomics/implemented/registered-simp.cubist")]];
+  const reused = fuelOf(await check(t, tactics, {}, warmup));
+  assert.deepEqual(reused, fresh);
+  // The inspector's records, and the replays behind its freeze suggestions,
+  // spend fuel of their own: every view spends the same.
+  assert.deepEqual(fuelOf(await check(t, tactics, { collectReferences: true })), fresh);
+  // Every tactic spent fuel, and the checked ones were within it.
+  for (const name of ["add_zero_twice", "rewritten", "through", "chain"]) assert.equal(fresh[name].status, "checked-native-cubical", name);
+  assert.ok(fresh.add_zero_twice.fuel.searches >= 1 && fresh.add_zero_twice.fuel.most.candidates > 0);
+  assert.ok(fresh.chain.fuel.queries > 0, "calc asks the kernel, and the declaration counts it");
+});
+
+test("a search out of fuel stops the same way in every session, with the fuel it ran out of and where", async t => {
+  const limits = { searchFuel: { ...SEARCH_FUEL, candidates: 3 } };
+  const fresh = fuelOf(await check(t, tactics, limits));
+  const reused = fuelOf(await check(t, tactics, limits,
+    [["warm_arithmetic", await read("docs/examples/proof-ergonomics/implemented/arithmetic.cubist")]]));
+  assert.deepEqual(reused, fresh);
+  assert.equal(fresh.growing.failure, "fuel");
+  assert.match(fresh.growing.reason, /^simp ran out of search fuel: 3 candidate rules tried\. Remaining goal: n \+ 0 \+ 0 = m \+ 0\. 2 rewrites changed the left side, using nat_add_zero\./);
+  // A search that needs less still checks.
+  assert.equal(fresh.rewritten.status, "checked-native-cubical");
+});
+
+test("a declaration's fuel bounds every kernel question it asks, its searches' included", async t => {
+  const outputs = await check(t, "def reflexive(n : Nat) : n = n {\n  rfl;\n}\n", { declarationFuel: { queries: 1 } });
+  assert.equal(outputs.reflexive.failure, "fuel");
+  assert.match(outputs.reflexive.reason, /^The declaration's elaboration ran out of search fuel: 1 kernel queries\./);
+  const roomy = await check(t, "def reflexive(n : Nat) : n = n {\n  rfl;\n}\n");
+  assert.equal(roomy.reflexive.status, "checked-native-cubical");
+});
+
+test("fuel, the kernel's steps and the time limit are three kinds of failure", async t => {
+  const source = "import naturals;\n\ndef twice(n : Nat) : (n + 0) + 0 = n {\n  simp only [nat_add_zero];\n}\n";
+  const fuel = await check(t, source, { searchFuel: { ...SEARCH_FUEL, queries: 1 } });
+  assert.equal(fuel.twice.failure, "fuel");
+  // The kernel's own budget per operation: every instruction of this
+  // declaration may take one step.
+  let program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false,
+    onDeclarationStart(module) { if (module === "fuel_example") { program.kernel.stepBudget = 1n; program.kernel.module._cb_step_budget(program.kernel.handle, 1, 0); } } });
+  t.after(() => program.dispose());
+  const steps = (await program.check(source, "fuel_example")).outputs[0];
+  assert.equal(steps.failure, "budget");
+  assert.match(steps.reason, /budget exhausted/);
+  // The safety timeout.
+  const timed = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false,
+    onDeclarationStart(module) { if (module === "fuel_example") timed.kernel.setDeadline(0.000001); } });
+  t.after(() => timed.dispose());
+  const late = (await timed.check(source, "fuel_example")).outputs[0];
+  assert.equal(late.failure, "deadline");
+  assert.match(late.reason, /Declaration time limit exceeded/);
+});
+
+test("unfinished rw, simp, simpa and calc show the remaining goal, the side that changed and the rules that fired", async t => {
+  const outputs = await check(t, `import naturals;
+
+def simp_unfinished(n, m : Nat) : n + 0 = m {
+  simp only [nat_add_zero];
+}
+def simp_nothing(n, m : Nat) : n = m {
+  simp only [nat_add_zero];
+}
+def rw_unfinished(n, m : Nat) : n + 0 = m {
+  rw [nat_add_zero(n)];
+}
+def rw_missing(n : Nat) : (n + 0) + (n + 0) = (n + 0) + n {
+  rw [nat_add_zero(n)] at lhs occurrence 3;
+}
+def simpa_mismatch(n, m : Nat, h : n + 0 = m) : m = n {
+  simpa only [nat_add_zero] using h;
+}
+def calc_end(n : Nat) : n + 0 = succ(n) {
+  calc {
+    n + 0 = n by nat_add_zero(n);
+  }
+}
+def calc_step(n, m : Nat) : n + 0 = n {
+  calc {
+    n + 0 = n by nat_add_zero(n);
+    m = n by nat_add_zero(n);
+  }
+}
+def commuted(a, b : Nat) : a + b = b + a {
+  simp only [nat_add_comm];
+}
+def growing(n, m : Nat, h : n = m) : n = m + 0 {
+  simp only [<- nat_add_zero];
+  exact h;
+}
+`);
+  const reason = name => outputs[name].reason;
+  assert.match(reason("simp_unfinished"), /unresolved equality goal; add a following proof statement\. Remaining goal: n = m\. 1 rewrite changed the left side, using nat_add_zero\./);
+  assert.match(reason("simp_nothing"), /Remaining goal: n = m\. No rule fired\./);
+  assert.match(reason("rw_unfinished"), /^rw left an unresolved equality goal; add a following proof statement\. Remaining goal: n = m\. 1 rewrite changed the left side, using nat_add_zero\(n\)\./);
+  assert.match(reason("rw_missing"), /^Rewrite occurrence 3 was not found \(2 eligible matches\)\. Remaining goal: n \+ 0 \+ \(n \+ 0\) = n \+ 0 \+ n\./);
+  assert.match(reason("simpa_mismatch"), /Simplifying the supplied type: 1 rewrite changed the left side, using nat_add_zero\. Simplifying the goal: No rule fired\./);
+  assert.match(reason("calc_end"), /^calc final endpoint does not match the goal\. The chain ends at n; the goal's right side is succ\(n\)\./);
+  assert.match(reason("calc_step"), /^calc step left endpoint does not match the preceding endpoint\. The step starts at m; the chain so far ends at n\./);
+  // A cycle names the rules that make it.
+  assert.match(reason("commuted"), /^Simplification cycle detected in the selected rules\. nat_add_comm returned the goal to where it was 2 rewrites earlier\. Remaining goal: a \+ b = b \+ a\./);
+  // A bound says where the search stopped; a long goal is cut short.
+  assert.match(reason("growing"), /^Simplification rewrite budget exceeded\. Remaining goal: n \+ 0 \+ 0 .*… 64 rewrites changed the left side, using nat_add_zero\./);
+});
+
+test("fuel: a closed search's spending counts toward its declaration, and only an open one's limits apply", () => {
+  const declaration = new SearchFuel("The declaration's elaboration", { queries: 3 }, { declaration: true });
+  const search = new SearchFuel("simp", { ...SEARCH_FUEL, queries: 2 }, { parent: declaration });
+  search.spend("queries"); search.spend("queries");
+  // The search's third query is over its limit: it is refused before it
+  // reaches the declaration's count.
+  assert.throws(() => search.spend("queries"), error => error instanceof SearchFuelExhausted && error.kind === "fuel" && error.fuel === "queries");
+  assert.deepEqual([search.used.queries, declaration.used.queries], [3, 2]);
+  search.close();
+  // Rebuilding the proof after the search: no longer the search's, still the declaration's.
+  search.spend("queries");
+  assert.deepEqual([search.used.queries, declaration.used.queries], [3, 3]);
+  assert.throws(() => search.spend("queries"), /declaration's elaboration ran out of search fuel: 3 kernel queries/);
+});
+
+test("the CLI reports the same residual goals as the checker the browser runs", async t => {
+  const source = `import naturals;
+
+def simp_unfinished(n, m : Nat) : n + 0 = m {
+  simp only [nat_add_zero];
+}
+
+def rw_unfinished(n, m : Nat) : n + 0 = m {
+  rw [nat_add_zero(n)];
+}
+
+def commuted(a, b : Nat) : a + b = b + a {
+  simp only [nat_add_comm];
+}
+`;
+  const directory = await mkdtemp(join(tmpdir(), "cubist-fuel-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  await writeFile(join(directory, "residual.cubist"), source);
+  const cli = fileURLToPath(new URL("../cli/repl.mjs", import.meta.url));
+  const run = spawnSync(process.execPath, [cli, "check", "residual.cubist"], { cwd: directory, encoding: "utf8", timeout: 120000 });
+  assert.equal(run.status, 1, run.stderr);
+  // A failed check lists its gaps on stderr.
+  const reported = Object.fromEntries(JSON.parse(run.stderr.slice(run.stderr.indexOf("["))).map(gap => [gap.name, gap.reason]));
+  // The browser's worker runs CubicalProgram on the same runtime modules.
+  const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
+  t.after(() => program.dispose());
+  const checked = Object.fromEntries((await program.check(source, "residual")).outputs.map(output => [output.name, output.reason]));
+  assert.deepEqual(reported, checked);
+  for (const reason of Object.values(reported)) assert.match(reason, /Remaining goal: /);
+});

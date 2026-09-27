@@ -318,9 +318,9 @@ the previous checked state intact.
   term size, and elapsed work; support worker cancellation. Detect repeated
   states and report the rules involved. A loop or exhausted budget never
   counts as success. Rewrite count, traversal, candidates, term size and
-  premise search are bounded and recorded per declaration, and each tactic's
-  time limit covers only its own search. Deterministic fuel, cancellation and
-  naming the rules in a cycle remain.
+  premise search are bounded and recorded per declaration. Since HoTT A4 and
+  A6 (2026-09-27), each search spends deterministic fuel instead of a time
+  limit, and a cycle names its rules; worker cancellation remains.
 - [ ] Keep associativity, commutativity, distributivity, and expanding
   definitions out of automatic default normalization. Explicit cyclic lists
   must still terminate with a useful failure. Cyclic lists fail with a cycle

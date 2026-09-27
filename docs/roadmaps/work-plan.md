@@ -138,7 +138,7 @@ property tests remain regressions, not next actions.
 | --- | --- | --- | --- |
 | L1.2 | A5 core goal and proof-construction layer | Delivered | — |
 | L1.2r | Remaining A5 plan metadata and clients: faces, filling, source spans; index/companion motives with H2/H3 | Extend the delivered core with each consuming feature | L |
-| L1.3 | Deterministic fuel and residual-goal diagnostics (HoTT A4/A6), on learned-search phases 1–2 (explicit driver options and cumulative kernel work, delivered 2026-09-27) | L1.2; A7 baseline | M |
+| L1.3 | Deterministic fuel and residual-goal diagnostics (HoTT A4/A6), on learned-search phases 1–2. Delivered 2026-09-27; worker cancellation remains | L1.2; A7 baseline | M |
 | L1.4 | Folded path vocabulary and constructor congruence (A1/A2) | L1.1, L1.2; A4 fuel for bounded search | L |
 | L1.5 | Σ projections `p.1`/`p.2`, `show`, `suffices`; separate `Path` induction/`subst` slice (A8/B4/B1) | L1.2; B1 uses A1b's checked induction construction | M |
 | L4.1a | Known-signature application elaboration, named arguments and scoped `_` holes | L1.1, L1.2; L1.3 fuel for inference search | M |
@@ -163,11 +163,13 @@ has an explicit spelling.
   fail before kernel admission. The inspector shows inferred arguments.
 - Fuel counts traversal, candidates, failed attempts, reconstruction,
   native queries and retries. Specify cache/reset accounting so fresh and
-  reused sessions agree. Native budgets already exist; the missing work is
-  hard cumulative limits and deterministic frontend accounting. Deadlines
-  remain separately reported safety timeouts. The cumulative kernel-work
-  counters of learned-search phase 2 (`cc_kernel_work`, delivered) are the
-  native half of this accounting; frontend fuel counts on top of them.
+  reused sessions agree. Deadlines remain separately reported safety
+  timeouts. Done (L1.3): searches and declarations spend counted fuel
+  (`lib/cubical/fuel.mjs`), which counts questions rather than the kernel's
+  steps, so warm caches change nothing; a query's growing step budget is
+  capped and restored after it; the defaults are recorded with their
+  measurement in `tests/fixtures/search-fuel.json`. The kernel-work counters
+  (`cc_kernel_work`) measure the steps behind the questions.
 - A1 uses level-generic checked definitions. Reintroducing per-universe
   specialization would undo L1.1. A2 initially excludes binder bodies;
   binder-aware rewriting remains a separately scoped extension.
@@ -348,8 +350,10 @@ Use the existing canonicity and false-equality fixtures, archive coverage and
 strict migration checks as applicable. Kernel/ABI changes also require native
 tests and sanitizers. Performance comparisons record revision, workload,
 limits, total checking time, kernel work and memory; historical timings are
-observations, not current guarantees. Rebaseline after G0 before setting new
-fuel defaults; old specialization-cost fields no longer describe the runtime.
+observations, not current guarantees. Fuel defaults come from the post-G0
+baseline in `tests/fixtures/search-fuel.json`; rerun
+`node tools/search-fuel-baseline.mjs --write` when workloads change. The A7
+baseline's specialization-cost fields no longer describe the runtime.
 
 D0.2 and D2.1 advance with their features, including indexed/companion syntax.
 Update the reference, roadmap status, index and tactical checkpoint together.

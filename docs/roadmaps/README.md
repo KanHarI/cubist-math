@@ -48,10 +48,11 @@ target statement or a supplied theorem parameter as an already proved result.
     adds PR-sized steps, lowering contracts, cubical notation proposals, and
     checked current-language sample expansions.
 - [HoTT and cubical proof automation](hott-automation-roadmap.md):
-  - Delivered: A7 (baseline, regressions and canonicity fixture) and the A5
-    goal-layer core; see the
+  - Delivered: A7 (baseline, regressions and canonicity fixture), the A5
+    goal-layer core, and A4/A6 deterministic fuel with residual-goal
+    diagnostics; see the
     [checkpoint](../tactical/hott-automation-handoff.md).
-  - Planned: remaining goal-layer metadata/clients, fuel and diagnostics; folded path operations;
+  - Planned: remaining goal-layer metadata/clients; folded path operations;
     `Path` induction; type-directed `ext`; transport and path-algebra rules;
     h-levels and their solver; identity systems; dependent paths and
     squares; structure identity and transfer.
