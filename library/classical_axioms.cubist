@@ -1,0 +1,23 @@
+// The statements of the two classical assumptions, as types. The checker
+// provides LEM and Choice as constants with no computation rule; these
+// definitions name their types, so that a result can take excluded middle or
+// choice as a hypothesis, or state an equivalence with it.
+
+// Excluded middle: a type that is not empty is merely inhabited. For a
+// proposition P, Truncate(U, P) is P, so this says that every proposition
+// holds or fails.
+def ExcludedMiddle(U < UU0) := forall A : U. ((A -> Void) -> Void) -> Truncate(U, A);
+
+// The axiom of choice, for a set A and a family B of sets over it: if every
+// B(x) is merely inhabited, then there is merely a function selecting an
+// element of each.
+def AxiomOfChoice(U < UU0) :=
+  forall A : U. forall B : A -> U.
+  (forall x, y : A. forall p, q : x = y. p = q) ->
+  (forall a : A. forall x, y : B(a). forall p, q : x = y. p = q) ->
+  (forall a : A. Truncate(U, B(a))) -> Truncate(U, forall a : A. B(a));
+
+// The constants have exactly these types.
+def excluded_middle_assumed(U < UU0) : ExcludedMiddle(U) := LEM(U);
+
+def axiom_of_choice_assumed(U < UU0) : AxiomOfChoice(U) := Choice(U);

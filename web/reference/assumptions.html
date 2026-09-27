@@ -107,6 +107,18 @@ def generic(U &lt; UU0, A : U) := Truncate(U, A);</code></pre>
 def no_universe(A : U0) := Truncate(A);</code></pre>
             <pre><code data-check="reject">// Error: Too many arguments to TruncateIntro.
 def extra_argument(A : U0, a : A) := TruncateIntro(U0, A, a, a);</code></pre>
+            <h3 id="assumption-statements">The statements as types</h3>
+            <p>The library module <code>classical_axioms</code> names the types of the two classical assumptions, for every universe <code>U &lt; UU0</code>: <code>ExcludedMiddle(U)</code> is the type of <code>LEM(U)</code>, and <code>AxiomOfChoice(U)</code> is the type of <code>Choice(U)</code>. A result can take excluded middle as a parameter of that type, and the assumption is supplied only where the result is used:</p>
+            <pre><code data-check="accept">import classical_axioms;
+
+def merely_under(lem : ExcludedMiddle(U0), A : U0, nn : (A -&gt; Void) -&gt; Void) : Truncate(U0, A) {
+  exact lem(A, nn);
+}
+
+def merely_assumed(A : U0, nn : (A -&gt; Void) -&gt; Void) : Truncate(U0, A) {
+  exact merely_under(LEM(U0), A, nn);
+}</code></pre>
+            <p>Only <code>merely_assumed</code> uses <code>LEM</code>; <code>merely_under</code> uses only <code>Truncate</code>, which its statement mentions. A result can also state an equivalence with excluded middle: the library’s <a href="../proof.html?proof=universe_automorphisms&amp;name=excluded_middle_iff_universe_swap"><code>universe_automorphisms</code></a> proves that <code>ExcludedMiddle(U0)</code> holds exactly when there merely is an automorphism of <code>U0</code> sending <code>Unit</code> to <code>Void</code>.</p>
           </section>
           <section id="univalence">
             <h2>Extensionality and univalence compute</h2>

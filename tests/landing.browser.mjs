@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { chromium, webkit } from "playwright";
 import { proofChoices } from "../web/proof-library.mjs";
+import { libraryModules } from "../web/mathscript/modules.mjs";
 
 const server = spawn("python3", [fileURLToPath(new URL("../tools/serve.py", import.meta.url)), "--port", "0"],
   { stdio: ["ignore", "pipe", "pipe"] });
@@ -36,12 +37,13 @@ try {
   assert.deepEqual(await page.locator(".introduction .browse-link").evaluateAll(links => links.map(link => link.getAttribute("href"))),
     ["language.html", "proof.html"]);
   const links = await page.locator(".proof-card[href], .proof-card-main").evaluateAll(cards => cards.map(card => card.href));
-  assert.equal(links.length, 8);
-  // Every card points to a registered source and to a real theorem in that source.
+  assert.equal(links.length, 9);
+  // Every card points to a registered source, in the library or the archive,
+  // and to a real theorem in that source.
   for (const link of links) {
-    const query = new URL(link).searchParams;
-    assert.ok(proofChoices.some(p => p.id === query.get("proof")));
-    const source = await page.request.get(`${base}/archive/first-library/${query.get("proof")}.cubist`);
+    const query = new URL(link).searchParams, library = libraryModules.includes(query.get("proof"));
+    assert.ok(library || proofChoices.some(p => p.id === query.get("proof")));
+    const source = await page.request.get(`${base}/${library ? "library" : "archive/first-library"}/${query.get("proof")}.cubist`);
     assert.equal(source.status(), 200);
     assert.ok((await source.text()).includes(`def ${query.get("name")}`));
   }
@@ -104,6 +106,13 @@ try {
     assert.match(await page.title(), /Proof highlights/);
   }
   if (!groupOnly) {
+    // The library card opens its module at the named theorem.
+    await page.locator('.proof-card[href*="proof=universe_automorphisms&"]').click();
+    await idle();
+    assert.equal(await page.locator("#proof-title").textContent(), "Library: universe_automorphisms");
+    assert.equal(await page.locator("#inspect-name").textContent(), "excluded_middle_iff_universe_swap");
+    assert.equal(await page.locator("#diagnostic").isVisible(), false);
+    assert.match(await page.locator("#inspect-type").textContent(), /ExcludedMiddle/);
     await page.goto(`${base}/proof.html?proof=group_first_isomorphism&name=group_first_isomorphism`);
     await idle();
     await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
@@ -138,7 +147,7 @@ try {
     await popup.close();
   }
   assert.deepEqual(errors, []);
-  console.log(`PASS proof landing: root, eight highlights, destinations, ${groupOnly ? "group identity" : "workbench transfer"}, mobile (${process.env.THTH_BROWSER ?? "chromium"})`);
+  console.log(`PASS proof landing: root, nine highlights, destinations, ${groupOnly ? "group identity" : "workbench transfer"}, mobile (${process.env.THTH_BROWSER ?? "chromium"})`);
 } finally {
   await browser?.close();
   server.kill();
