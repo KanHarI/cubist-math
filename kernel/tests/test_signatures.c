@@ -820,6 +820,47 @@ static cc_term commutes(cc_judgement_id transported, cc_entry_id dim, unsigned e
     return direct;
 }
 
+/* A normal form outside any instruction. */
+static cc_term normal(cc_term t) {
+    ck_standalone(k);
+    cc_term result = ck_normal(k, t);
+    assert(result);
+    return result;
+}
+
+/* Each correction wall of a transport's hcomp starts, at h = 0, on the
+ * hcomp's base: on its face r = ε, the wall at 0 and the base restricted
+ * there normalize alike. The wall on φ, the empty face here, is skipped. */
+static void walls_start_on_base(cc_term box) {
+    unsigned h = payload(box);
+    cc_term base = child(box, 2);
+    unsigned checked = 0;
+    for (cc_term cursor = child(box, 1); cursor; cursor = child(cursor, 1)) {
+        const cc_formula *face = cc_kernel_get_formula(k, payload(cursor));
+        if (!face->length)
+            continue;
+        assert(face->length == 1);
+        cc_clause clause = face->clauses[0];
+        assert(!(clause.positive & clause.negative) && __builtin_popcountll(clause.positive | clause.negative) == 1);
+        unsigned dim = (unsigned)__builtin_ctzll(clause.positive | clause.negative), end = clause.positive ? 1 : 0;
+        ck_standalone(k);
+        cc_term wall = ck_endpoint_term(k, ck_endpoint_term(k, child(cursor, 0), h, 0), dim, end);
+        cc_term restricted = ck_endpoint_term(k, base, dim, end);
+        assert(ck_alpha_equal(k, normal(wall), normal(restricted)));
+        ++checked;
+    }
+    assert(checked);
+}
+
+/* The argument a constructor application's i-th, under its path applications. */
+static cc_term constructor_argument(cc_term t, uint32_t index, uint32_t count) {
+    while (kind(t) == CC_PAPP)
+        t = child(t, 0);
+    for (uint32_t m = count; m-- > index + 1;)
+        t = child(t, 0);
+    return child(t, 1);
+}
+
 /* The squash of a truncated signature at an instance, applied to variables
  * y_s, z_s : B_s, B_{s+1} = Path(B_s, y_s, z_s), and then at the dimensions. */
 static cc_judgement_id squash_at(cc_judgement_id instance, uint32_t steps, uint32_t symbols,
@@ -907,6 +948,11 @@ static void kan(void) {
     assert(kind(corrected) == CC_HCOMP && tubes(corrected) == 3);
     cc_term base = child(corrected, 2);
     assert(kind(base) == CC_PAPP && kind(child(base, 0)) == CC_APP && payload(child(child(base, 0), 0)) == 2);
+    /* Its argument is a moved along e @ i, derived independently, and each
+     * wall starts on the base. */
+    cc_term moved_a = reduct(OK(cc_instr_comp(k, OK(cc_instr_system(k, i, e_i, a0)))), CC_STEP_NORMALIZE);
+    assert(ck_alpha_equal(k, normal(constructor_argument(base, 0, 1)), moved_a));
+    walls_start_on_base(corrected);
     assert(ck_alpha_equal(k, commutes(transported, j, 0), north_end));
     assert(ck_alpha_equal(k, commutes(transported, j, 1), south_end));
 
@@ -921,6 +967,11 @@ static void kan(void) {
         cc_judgement_id carried = OK(cc_instr_trans(k, OK(cc_instr_system(k, i, along, squash)), nowhere()));
         cc_term box = reduct(carried, CC_STEP_WHNF);
         assert(kind(box) == CC_HCOMP && tubes(box) == 2 * steps + 1);
+        walls_start_on_base(box);
+        /* The first argument, y_0, is moved along the line. */
+        cc_judgement_id y0 = var(OK(cc_instr_extend(k, from, KAN_Y + 10 * t)));
+        cc_term moved_y0 = reduct(OK(cc_instr_comp(k, OK(cc_instr_system(k, i, along, y0)))), CC_STEP_NORMALIZE);
+        assert(ck_alpha_equal(k, normal(constructor_argument(child(box, 2), 0, 2 * steps)), moved_y0));
         for (uint32_t l = 0; l < steps; ++l)
             for (unsigned end_point = 0; end_point < 2; ++end_point)
                 commutes(carried, dims[l], end_point);
