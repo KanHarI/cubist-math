@@ -9,7 +9,10 @@ Moving these documents does not change their recorded status or resume paused wo
 ## Plan
 
 - [Work plan](roadmaps/work-plan.md): staged, dependency-ordered work across the
-  kernel, the language, the library rebuild and the language reference.
+  language, its kernel support and the language reference. Broad mathematical
+  rebuilding is deferred.
+- [Historical plans and specifications](roadmaps/historical/README.md):
+  completed work, including the implemented G0 universe specification.
 - [Results of the first library](library-results.md): the frontier and iconic
   theorems of the archived library in mathematical English, with their
   logical assumptions. It is the specification the rebuild starts from.
@@ -31,7 +34,8 @@ Moving these documents does not change their recorded status or resume paused wo
 ## Mathematical roadmaps
 
 The Galois, complex-analysis and RH developments belong to the first library.
-They stay paused until the rebuild reaches their prerequisites.
+They and broad library rebuilding stay paused during the language work;
+finishing a language milestone does not automatically resume them.
 
 | Development | Roadmap | Checkpoint and supporting notes |
 | --- | --- | --- |
@@ -49,19 +53,21 @@ They stay paused until the rebuild reaches their prerequisites.
   composition, with explicit structures and checked elaboration.
 - [Simplification and shorter proofs](roadmaps/proof-ergonomics-roadmap.md):
   - Delivered: rewriting, calculations, `simp`/`simpa` and cubical path
-    syntax.
+    syntax, dependency tracking, `computable` and exact-value `evaluate`.
   - Remaining: argument inference, theories, inductive declarations with
-    pattern matching, and computability checking.
+    pattern matching, expected-value patterns and closed truncation readout.
   - See the [implementation plan](roadmaps/proof-ergonomics-implementation-plan.md)
     and [checked/proposed examples](examples/proof-ergonomics/README.md).
 - [HoTT and cubical proof automation](roadmaps/hott-automation-roadmap.md):
-  - Delivered: A7 (baseline, regressions and canonicity fixture); see the
+  - Delivered: A7 (baseline, regressions and canonicity fixture) and the A5
+    goal-layer core; see the
     [checkpoint](tactical/hott-automation-handoff.md).
-  - Planned: path operations, path induction, transport, h-levels, dependent
+  - Planned: remaining goal-layer work, fuel/diagnostics, path operations,
+    path induction, transport, h-levels, dependent
     paths, structure identity and transfer.
 - [Kernel extensions for computation](roadmaps/cubical-kernel-roadmap.md):
-  planning only. G0 (universe-generic checking), then H1–H4 (inductive
-  signatures), under the requirement that computability is expressible and
+  G0 (universe-generic checking) delivered; H1–H4 (inductive signatures) and
+  optional extensions planned, under the requirement that computability is expressible and
   preserved. Its [conversion probes](examples/hott-automation/README.md)
   record what the kernel already computes and which laws it rejects.
 

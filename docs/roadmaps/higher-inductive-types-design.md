@@ -317,10 +317,12 @@ partiality monad, surreal numbers and the syntax of type theory.
     without a squash clause;
   - index-level mismatches;
   - a use of a later constructor.
-- **Provisional marker.** Until a stage's soundness note is reviewed, a result
-  that uses a type admitted only by that stage lists `kernel extension:
-  stage Hn` among its dependencies. It still computes, because this is not an
-  axiom, but the trust extension stays visible.
+- **Provisional marker.** Before a stage's soundness note is reviewed, its
+  implementation and fixtures require an explicitly enabled experimental
+  mode. Results list `kernel extension: stage Hn` among their transitive
+  dependencies. They still compute, because the marker is not an axiom;
+  default admission and release require review. Test marker propagation
+  separately from non-computing assumptions.
 
 ## 5. Language
 

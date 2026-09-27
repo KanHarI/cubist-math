@@ -1,6 +1,9 @@
 # Requirements for a full Galois theory development
 
-Status: finite Galois development active (2026-09-23); Artin's theorem and the core finite correspondence are checked.
+Status: paused during language development (reviewed 2026-09-27).
+Artin's theorem and the core finite correspondence are checked in the
+archived first library. The remaining work below is deferred; see the
+[active work plan](work-plan.md#deferred-library-backlog).
 See the [development checkpoint](../tactical/galois-handoff.md) for the remaining finite milestones and validation, and
 [polynomial algebra](../tactical/polynomial-algebra.md) for the new checked statements.
 Finite basis extraction, finite subspace bases, both directions of tower

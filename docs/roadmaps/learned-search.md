@@ -1,10 +1,13 @@
 # Learned search for the instruction driver
 
-Status: a design, nothing implemented. It builds on the instruction kernel
+Status: optional research design, reviewed on 2026-09-27; its chooser,
+telemetry and learning phases are unimplemented. It builds on the instruction
+kernel
 ([kernel-instructions.md](kernel-instructions.md)), whose driver searches for
 conversion steps in JavaScript, and it reuses the ideas of the original THTH
 (2023–2025: a Rust opcode driver and PyTorch models over its ASTs). The
 second half of this note says which of THTH's architectures carry over.
+No language release or kernel feature depends on this experiment.
 
 ## Why this search suits learning
 
@@ -12,32 +15,44 @@ The instruction kernel makes reinforcement learning unusually clean:
 
 - **The kernel is the referee.** An action is legal only if the kernel
   accepts the instruction. An equality goal is closed only when its two sides
-  are alpha-equal. Rollback is a checkpoint. Reward hacking is impossible,
-  and soundness is untouched: the network is as untrusted as the driver.
-- **The environment is fast.** The whole archive derives in 14 s, so a laptop
-  runs millions of kernel-checked steps an hour.
+  are alpha-equal. Rollback is a checkpoint. Kernel acceptance preserves
+  soundness; rewards and resource accounting still need checks against
+  misleading optimization. The network is as untrusted as the driver.
+- **There is a working baseline.** The K1.4 measurement before L1.1 checked
+  the archive with the driver's own guide in 37 s, against 34.9 s with the
+  old conversion oracle. The 2026-09-27 review at `fabb174` recorded zero
+  gaps, a 30.7 s archive check and all 3,916 stored definitions re-derived
+  in 10.7 s with the default guide. These are single-run observations,
+  not training-throughput measurements; rerun them for each comparison.
 - **The graphs are the tensors.** The syntax hash graph is the network's
   input, and the judgement hash graph is its output: THTH's two graphs again.
 
 ## What to optimize
 
-Coverage is the wrong target: of the 138 archive definitions that do not
-derive, 134 wait on kernel rules (pushouts, overlapping faces, W types, Glue,
-`HComp`) and 4 on search. Two objectives are real:
+The driver already derives the archive, including pushouts, W types, Glue
+and `HComp`. Its own guide is the default; K1.4 delivered independence from
+the old conversion oracle. Coverage must remain unchanged. The experiment
+has two objectives:
 
 1. **Cheaper derivations.** Highlighted steps instead of normalizing whole
-   types (decision 4 of the instruction kernel). The heuristic driver never
-   optimizes derivation cost.
-2. **Independence from the oracle.** The driver's congruence choice consults
-   `cc_kernel_convertible`, the term checker's conversion, as a search aid. A
-   learned value head can replace it, so the driver stops depending on the
-   old reduction machinery for guidance.
+   types (decision 4 of the instruction kernel), where measurements show a
+   lower total cost than the current heuristic.
+2. **Cheaper guidance.** Compare a learned chooser with the driver's own
+   guide, including the cost of inference. The optional
+   `cc_kernel_convertible` guide remains a historical comparison while it is
+   available; replacing it is no longer an outstanding prerequisite.
 
 **The cost must be kernel effort, not instruction count.** Priced by
-instructions, a policy learns "always `Normalize`" in one step. The kernel
-resets its operation counter from `operation_budget` at every instruction,
-so the work of one instruction is exactly measurable; the bridge should
-expose it. `Normalize` then prices itself out where a short step would do.
+instructions, a policy can prefer `Normalize` solely because it takes one
+instruction. The kernel resets its remaining budget from `operation_budget`
+at instruction entry. That reset alone does not define a complete cost:
+specify which work consumes the budget, whether nested operations reset it,
+and how failures, retries and queries are charged before exposing telemetry.
+Use cumulative counters whose deltas survive errors and rollback, and test
+their accounting against direct instruction calls. Include failed search,
+guide queries, inference time and cache/session state in the comparison;
+measure end-to-end checking time as well as kernel effort. Share this work
+with L1.3's deterministic-fuel accounting.
 
 ## The decision problem
 
@@ -48,14 +63,16 @@ kind. Learning enters only where two types must agree, the driver's `agree`.
   and the entries' types.
 - **Actions.** At a node on one side: `beta`, `iota`, `path`, `delta`,
   `whnf`, eta expansion, or descend (congruence at that node). At the goal:
-  `symmetry` and `normalize`. Legality is syntactic (a `beta` needs an
-  application of a lambda, a `delta` a definition reference), so masking
-  needs no kernel call.
-- **Episode.** One `agree` call. Descending makes the parts independent
-  subgoals, each its own episode, as in HyperTree Proof Search; a goal
-  closes when all of them do.
+  `symmetry` and `normalize`. Syntactic masks remove obvious mismatches
+  (a `beta` needs an application of a lambda, a `delta` a definition
+  reference); the kernel checks the remaining side conditions.
+- **Episode.** One `agree` call. Descending creates subgoals with the
+  appropriate binder and face contexts; a goal closes when all its parts
+  do. Define shared budgets, rollback and reconstruction before treating
+  subgoals as separate training episodes.
 - **Reward.** The kernel cost of the instructions issued, negative, plus a
-  bonus on closing. A failed episode pays the fuel it burned.
+  bonus on closing. A failed episode pays the fuel it burned; splitting a
+  goal cannot multiply the closing bonus.
 - **Terminal test.** Alpha equality, from the kernel.
 
 ## The network
@@ -100,7 +117,11 @@ Relational, never identities, so the net transfers to modules it never saw:
 - depth, the child slot under the parent (THTH's relation to parent), and
   which side or sides reach the node.
 
-No linear position, and no symbol or definition ids.
+No linear position, and no symbol or definition ids. Goal-relative features
+(the opposite side, sharing between sides, root depth, binder distance and
+parent position) enter only the goal stage. A shared node can have several
+parents and occur at several depths; the tensorizer must represent those
+relations without inventing a unique occurrence.
 
 ### Heads
 
@@ -124,14 +145,16 @@ with nothing relevant attends to nothing.
 
 ### Two stages
 
-1. **Subtree stage, memoized.** Two layers using only the first three heads.
-   A token's output then depends only on its subterm, so it is computed once
-   per interned node and cached for the life of the kernel, exactly like
-   hash-consing. A branch point encodes only nodes it has never seen; the
-   session amortizes the rest, and common types and lemmas are embedded once.
-2. **Goal stage.** Two layers with every head. This is where "what am I being
-   compared against" enters, through the cross-side and ancestor heads, and
-   where near-matches that become equal after a few steps get learned.
+1. **Subtree stage, memoized.** Two layers using intrinsic node features
+   and relations entirely within that subtree. Outside context entries,
+   root-relative positions and other-side features cannot enter this stage.
+   Cache by kernel session, immutable node content and model/feature version;
+   invalidate on rollback if handles can be reused, and bound cache memory.
+   Compare cached and fresh embeddings across goals and binder contexts.
+   Reuse is valid only after those outputs agree.
+2. **Goal stage.** Two layers with every head, adding the context, occurrence
+   and opposite-side features above. Binder-to-occurrence relations spanning
+   the goal belong here. This stage is recomputed for each goal.
 
 ### Output heads
 
@@ -145,19 +168,16 @@ with nothing relevant attends to nothing.
 
 ### Size and cost
 
-| | Width 64, four layers |
-| --- | --- |
-| Parameters | about 120k (four layers of 25k, plus 20k of embeddings and heads) |
-| Weights as float32 JSON | under 500 KB |
-| A goal of 30 tokens | a few ms in plain JavaScript, under 1 ms with WASM SIMD |
-| A goal of 100 tokens | about 20 ms in plain JavaScript, a few with WASM SIMD |
+Width 64 and four layers are a starting configuration. Parameter count,
+serialized weight size, memory use and inference latency remain unmeasured;
+text JSON does not have the size of packed float32 data. Measure these on
+actual goal-size distributions in the CLI and browser before deployment.
 
-Attention is quadratic in tokens, which is fine at these sizes (THTH capped
-expressions at 254 nodes on an H100). The net decides only at branch points
-where the heuristic is unsure, as AlphaGo used its slow policy. There is
-also an offline mode: search once for a cheap derivation of each definition
-and keep the instruction list as a certificate, so checking never pays for
-the network.
+Attention is quadratic in tokens. Set token and memory limits with a
+deterministic heuristic fallback. A chooser may run only at selected branch
+points if that improves total checking time. An optional offline mode could
+retain instruction certificates; it needs versioned serialization and
+replay checks before claiming that checking avoids network inference.
 
 ### The first draft, kept as the control
 
@@ -181,26 +201,30 @@ same edges, and the same heads, with message passing in place of attention.
     kernel cost of the resulting instructions.
   - Random walks: legal random instructions over `InstructionGraph`, THTH's
     random walker over its opcode driver. They give typed terms for
-    pretraining and convertible pairs by construction: a term and its
-    reducts are equal, terms from different walks mostly are not, and the
-    oracle labels the rest.
-  - Split by module, held out, or the numbers mean nothing.
+    pretraining and positive conversion pairs by construction: a term and
+    its reducts are equal. Terms from different walks are unlabeled until
+    checked; different generation histories are not negative evidence.
+  - Preserve three outcomes from budgeted guidance: equal, different and
+    unknown. Exhaustion, errors and syntax unsupported by the old oracle
+    (including G0) remain unknown and are excluded from binary labels.
+  - Split by module and audit shared imported trajectories to avoid leaking
+    held-out goals. Separate training, validation and final test modules.
 - **Objectives.**
   - Imitation: cross-entropy on the expert's choice.
   - Value: closes-within-budget, and the log of the remaining cost.
-  - Auxiliary labels the kernel gives for free, which teach the subtree
-    stage semantics rather than syntax: whether two subterms are convertible
-    (contrastive, labeled by the budgeted oracle), the head kind after
-    `whnf` (one instruction), and whether one term is a witness of another
-    (THTH's judgement recognition, read off the judgement graph).
-- **Expert iteration.** Search with the policy as prior and the value in
-  place of the oracle; keep every derivation cheaper than the heuristic's;
-  retrain on those; repeat. This is AlphaZero's loop, and HyperTree Proof
-  Search's on and-or goals.
+  - Auxiliary labels from checked results: positive conversion certificates,
+    definitive negative comparisons within the guide's supported fragment,
+    the head kind after a successful `whnf`, and known witness judgements
+    from the graph. Charge label-generation work and preserve unknowns.
+    Absence from the judgement graph does not establish a negative witness.
+- **Expert iteration.** Search with the policy as prior and compare value
+  guidance with the current heuristic; retain cheaper checked derivations
+  from training modules, retrain and repeat. Validation chooses the model;
+  final test trajectories never enter training.
 - **Tooling.** PyTorch for training with dense masks and
   `scaled_dot_product_attention`; no graph library and no custom kernel at
-  this scale. Weights export to JSON. Inference is a few hundred lines of
-  `Float32Array` code in the driver, and WASM SIMD only if it matters.
+  this scale. Prototype weight export and `Float32Array` inference in the
+  driver; consider WASM SIMD after measuring the prototype.
 
 ## Phases
 
@@ -209,22 +233,24 @@ same edges, and the same heads, with message passing in place of attention.
    show the options, and the policy plugs in later.
 2. **Logging and cost.** The bridge exposes the kernel cost of each
    instruction; the coverage tool logs trajectories and reports total cost
-   per definition. This is the baseline.
+   per definition, including unsuccessful attempts and guide queries. Pin
+   revision, machine, budgets and cache/session mode. This is the baseline.
 3. **Imitation and ablations.** Train the network on the logs; measure
-   agreement with the heuristic on the held-out modules. Run the ablation
-   table below at this phase, where a run is minutes, and fix the
-   architecture before expert iteration.
+   agreement with the heuristic on validation modules. Run the ablation
+   table below and choose the architecture before final test evaluation.
 4. **Expert iteration** on derivation cost, measured on the held-out modules
    against the heuristic, with the oracle switched off.
 5. **Deployment.** The chooser in the driver, the options in the workbench,
    and the offline certificate mode.
 
-Phases 1 and 2 are a day or two and stand on their own. The experiment is a
-week, and it may not beat the heuristic on the current corpus, which is why
-cost, not coverage, is the objective. The search space grows a lot with
-pushouts, Glue and `HComp` (stage 3 of the instruction kernel), and that is
-when hand heuristics stop scaling; the experiment pays off most after stage
-3 lands.
+Phases 1 and 2 stand on their own as driver inspection and measurement work;
+the [work plan](work-plan.md#stage-1-goals-diagnostics-and-inference)
+schedules them with L1.3, whose deterministic fuel is the same cost
+accounting. Phases 3–5 wait for evidence that search choices account for enough cost to
+justify learning. Instruction-kernel stage 3, including pushouts, Glue and
+`HComp`, has already landed; it supplies existing benchmark cases. Future
+declared inductive types may supply more cases, but their delivery does not
+wait for learned search. No schedule or speedup is established yet.
 
 ## What THTH's architectures offer
 
@@ -238,12 +264,13 @@ into the starting hypothesis; many of these may be ablated away, and the
 
 - **Topological attention**, one boolean mask per head and sample, built from
   ancestor, descendant, parent, child and binder relations, with a custom
-  CUDA kernel for it. This is the core of the design above. It beats plain
-  message passing here: the ancestor and descendant heads reach a whole spine
-  in one layer, where a graph network needs one layer per hop, and a cross
+  CUDA kernel for it. This is the core hypothesis above. The ancestor and
+  descendant heads reach a whole spine in one layer, where a graph network
+  needs one layer per hop, and a cross
   side head is just one more mask. The masks are THTH's
   `transformer_heads_config.py` with the output and mixed variants dropped,
-  since nothing is decoded.
+  since nothing is decoded. Whether that improves cost or accuracy over
+  message passing remains an ablation result to measure.
 - **Artificial binder nodes** (`LAMBDA_1`, `PI_1`, `IND_NAT_1`, …), tokens
   for bound variables that occurrences attend to. Here they are the context
   entries, which the instruction kernel already has.
@@ -276,8 +303,8 @@ into the starting hypothesis; many of these may be ablated away, and the
   with THTH's judgement and context banks as retrieval memory (the
   `rag_latent_space_config`) finds relevant lemmas for tactics; and **term
   generation**, where the top-down decoder proposes motives for induction or
-  targets for `Replace`. Both are stage 4 of the instruction kernel, when
-  tactics issue instructions directly.
+  targets for `Replace`. These are separate future tactic experiments;
+  instruction-kernel stage 4 is already delivered and requires neither.
 - **The register-machine agent** (`RegistersDriver`): judgement and
   context-fragment registers, banks, highlight switches, moves between them,
   `RunOpcode` reading operands from fixed registers, and win conditions
@@ -319,8 +346,9 @@ accidents. Results go into the table as they arrive.
   cheapest learned baseline.
 
 **Metrics**, on the held-out modules: derivation cost against the heuristic,
-coverage (must not drop), agreement with the expert at branch points, and
-time per branch point.
+coverage (must not drop), agreement with the expert at branch points,
+inference latency, total checking time and peak memory. Report unknown
+labels and budget failures separately.
 
 | Piece | Ablation | Should matter for | Result |
 | --- | --- | --- | --- |
@@ -340,6 +368,7 @@ time per branch point.
 | Random-walk data | the corpus alone | pretraining the subtree stage | |
 | Width and depth | 32 against 64; two layers against four | everything, at cost | |
 
-The oracle switch is the main experiment rather than an ablation: the value
-head replaces `cc_kernel_convertible` only if held-out cost and coverage
-hold with it off.
+The main deployment gate is improvement over the default heuristic with
+the old oracle off: held-out coverage must hold, and measured total cost
+must improve after inference and failed search are included. Otherwise keep
+the heuristic; phases 1 and 2 remain useful independently.

@@ -1,6 +1,6 @@
 # Proof ergonomics: implementation plan and executable design examples
 
-Implementation checkpoint: 2026-09-25. This refines the
+Implementation checkpoint reviewed 2026-09-27. This refines the
 [roadmap](proof-ergonomics-roadmap.md). The [example directory](../examples/proof-ergonomics/README.md)
 pairs explicit current programs with native-checked new syntax. The remaining
 scoped algebra fixture ends in `.cubist.proposed` and is exploratory. Read the
@@ -16,12 +16,16 @@ dependent path conveniences before attempting dependent context replacement.
 Keep general inference, rule search, and structure elaboration separate enough
 to measure their costs independently.
 
-Status on 2026-09-25: PRs 1 and 3–7 are delivered. PR 2's declaration
-transactions are delivered; its single-goal transitions moved to the
-[HoTT roadmap](hott-automation-roadmap.md)'s goal layer (A5). PR 8 is delivered
+Status on 2026-09-27: PRs 1 and 3–7 have delivered their first syntax releases;
+the remaining fuel, cancellation and diagnostics work belongs to HoTT A4/A6.
+PR 2's declaration transactions and core single-goal transitions are delivered
+through the [HoTT roadmap](hott-automation-roadmap.md)'s goal layer (A5).
+PR 8 is delivered
 except general proposition premises, deferred to HoTT D1. PR 10 moved to the
-HoTT roadmap (A5, B1, E1). PRs 9 and 11 remain here; they follow HoTT A5, and
-PR 11 also follows its projections and structure descriptions (A8, F1). These
+HoTT roadmap (A5, B1, E1). PR 9 remains open and follows the delivered A5
+core. PR 11 is superseded by theories; its core follows projections (A8),
+while generated identity follows
+structure descriptions (F1). These
 are dependency-sized work packages, not estimates of elapsed development time.
 
 Update, 2026-09-25: the roadmap adopted milestones 6–8, summarized below. The
@@ -31,7 +35,17 @@ record sections below remain design input for theories.
   records and sections.
 - **Milestone 7:** inductive declarations and pattern matching.
 - **Milestone 8:** computability checking.
-The handoff records the exact supported fragment.
+Milestone 8's core computability checking and G0's universe-generic definitions
+are delivered. The first library is archived; `library/naturals` begins the
+new library. The handoff records the original proof-ergonomics release;
+the roadmaps and work plan track subsequent deliveries and remaining work.
+
+PR 9 is split into L4.1a (scoped holes and named arguments, an input to the
+first new `match` release rather than its gate) and L4.1b (implicit binders
+and level inference). Core
+theories are L2.4; generated structure identity is the separate L2.4b through
+HoTT F1. Presentations in L2.7 also need the minimum D0b/F2 slice for checked
+equivalences and transfer maps.
 
 ## What the current code actually provides
 
@@ -42,8 +56,8 @@ The handoff records the exact supported fragment.
 | `sym`, `trans`, and `cong` preserve compact signatures using a checked identity application; [`path-algebra.mjs`](../../lib/cubical/path-algebra.mjs) supplies inert path builders | Factor shared builders and checked signature wrappers; do not independently reimplement their semantics for tactics. |
 | Ordinary application propagates argument types, but eagerly infers its growing application spine | Add application-spine elaboration with a known signature before adding broad inference. Repeated native inference may otherwise consume any savings from shorter source. |
 | `path`/`PathP`/`comp` bind dimensions separately from terms; `FunExt` already constructs a cubical path of functions | Expected-type path notation and pointwise equality can be small elaborator extensions with ordinary core output. |
-| [`CubicalProgram`](../../web/cubical-program.mjs) records source references, qualified definitions, universe specializations, and assumptions | Automation traces need new records for transitions and generated witnesses; existing reference records alone are insufficient. |
-| [`benchmark-runner.mjs`](../../web/benchmark-runner.mjs) owns native checkpoint/rollback/compaction and JS cache cleanup | Extract reusable declaration transactions. Ordinary translation catches errors but does not provide the benchmark's full transaction behavior. Do not promise statement rollback merely because an error is caught. |
+| [`CubicalProgram`](../../web/cubical-program.mjs) records source references, qualified definitions, level arguments, and assumptions; [`proof-goals.mjs`](../../lib/cubical/proof-goals.mjs) supplies shared transitions | The core is delivered; filling, restricted-face contexts and persistent construction records remain in HoTT A5. |
+| [`cubical-transaction.mjs`](../../web/cubical-transaction.mjs) supplies native checkpoint/rollback/compaction and JS cache cleanup to declaration checking | Reusable declaration transactions are delivered. Extend their cleanup for each new generated declaration or cache; statement rollback is a separate contract. |
 | [`build-cubical-runtime.mjs`](../../tools/build-cubical-runtime.mjs) explicitly lists copied runtime modules | Add every new shared module to that list. Never edit generated `web/dist` copies as a second implementation. |
 
 The roadmap's `finite_counting` module no longer exists. Use
@@ -63,9 +77,9 @@ particularly `finite_uniform_fiber_count`, for its finite-counting baseline.
 | 6. Expected-type cubical notation | 2; independent of 4–5 | `path i => e`, `p @ i`, and `ext x;` for homogeneous equality of dependent functions. Preserve the explicit two-argument `path`. | Native-checked path, pointwise and naturality-square examples, wrong faces and captured dimensions rejected; nested path source inspection. |
 | 7. Directed dependent movement | 6 | `along C by p from v`, direct `apd_path(f,p)`, expected-type `over C along p by { ... }` transport bridge. | Match the checked dependent examples; bridge work occurs only on request; loop-dependent transport and inverse laws retain witnesses. |
 | 8. Rule environments and broader `simpa` | 5b | Checked registrations, imported/named sets, deterministic priorities, explicit exclusions, fresh simplified equality-hypothesis copies, conditional equality rules with selected/reflexive witnesses, depth-two checked equality-premise simplification, checked type-path transport for `simp`/`simpa`, lexical rule scope for universe templates, and a residual-goal-validated freeze action are implemented. General proposition premises and map-based proposition simplification remain. | Deterministic imports, no leaked local rules, minimal assumptions, false premises rejected, freeze-to-used-rules action. |
-| 9. Scoped argument inference | 2, evidence from 5b/6 | Named arguments, scoped term metavariables, restricted unification, `_`, opt-in implicit binders, then universe constraints. | Omitted endpoint/carrier examples, occurs/scope checks, ambiguous universes rejected, inspector shows solved arguments. |
+| 9. Scoped argument inference | 2, evidence from 5b/6; G0 for inferred levels | L4.1a: named arguments, scoped term metavariables, restricted unification and `_`; an input to the first new `match`, not its gate. L4.1b: opt-in implicit binders and determined level arguments. | Omitted endpoint/carrier examples, occurs/scope checks, ambiguous universes rejected, inspector shows solved arguments. |
 | 10. Multiple goals and dependent rewriting | 7, 9 | `apply`/`refine`, expected motives, selected dependent congruence and telescope reconstruction. Constructor-specific cubical support follows separately. | Recheck all downstream hypotheses; transport proof-dependent indices; reject unsupported HIT boundaries; no unsolved term reaches native encoding. |
-| 11. Structure views and selected automation (superseded by roadmap milestone 6, theories) | 8, 9, migration evidence | Lexical notation packs and named views of existing Sigma structures, then records/sections; certified algebra normalization separately. | Field/group examples preserve expanded signatures and assumptions; nested scopes restore notation; no global instance search. |
+| 11. Structure views and selected automation (superseded by roadmap milestone 6, theories) | G0, A8 and D0a for core theories; D1 for automatic evidence; F1 and its prerequisites for generated identity | L2.4 supplies models, named fields, notation and sections; L2.4b adds generated structure identity. Certified algebra normalization is separate. | Model examples preserve expanded signatures and assumptions; nested scopes restore notation; generated identity has its own acceptance gate. |
 
 Each PR includes its parser/formatter, native acceptance/rejection, and source
 inspection coverage. Add its syntax to `web/language.html` only when delivered.

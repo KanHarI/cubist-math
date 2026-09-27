@@ -1,8 +1,11 @@
 # Universe-generic checking (G0): rules and consistency
 
-Status: specification for review. Written on 2026-09-25 as work-plan item
-K1.1, and revised the same day with the user's decisions on tiered
-universes. It specifies [kernel roadmap](cubical-kernel-roadmap.md) item G0.
+Status: implemented and archived on 2026-09-27. Written on 2026-09-25 as
+work-plan item K1.1 and revised with the decisions on tiered universes.
+This remains the normative specification of completed
+[kernel roadmap](../cubical-kernel-roadmap.md) item G0. Later extensions
+belong to the active [work plan](../work-plan.md) and proposals; historical
+implementation instructions below are not outstanding tasks.
 K1.2 (the instruction kernel), K1.3 (the driver and bridges) and L1.1
 (language) implement it, and section 5 is their acceptance list. K1.2 is
 implemented (section 4.1): the level node kinds and the arithmetic of 2.4 in
@@ -39,7 +42,7 @@ universe. This revision applies four decisions:
 
 Q2 and Q3 are resolved by these decisions. The remaining questions were
 answered on 2026-09-25: Q1, Q4, Q5, Q6, Q8 and Q9 as recommended. Q7 and Q10
-are deferred as [language enhancement proposals](language-enhancement-proposals.md)
+are deferred as [language enhancement proposals](../language-enhancement-proposals.md)
 E1 and E2 (section 6).
 
 Revised again on 2026-09-26: the instruction kernel is the trusted kernel
@@ -381,7 +384,7 @@ Sub      Γ ⊢ t : A    Γ ⊢ B : U(ℓ)    A ≤ B      ⟹  Γ ⊢ t : B
   `U(n) ≤ U(ω) ≤ U(ω + 1) ≤ … ≤ U(ω·2) ≤ …`. So `U(n) : U(ω)` for every `n`,
   and `x < ω ⊢ U(x) : U(ω)`.
 - Cumulativity is subsumption, as today
-  ([cumulativity.md](../cubical/cumulativity.md)). There are no lift terms,
+  ([cumulativity.md](../../cubical/cumulativity.md)). There are no lift terms,
   and two universes are convertible only when their levels are equal.
 - Examples: `U(x) : U(x + 1)`, `U(x) : U(max(x + 1, y))`, `Nat : U(x)` and
   `U(x) : U(ω)`. But not `U(x) : U(x)`, not `U(x) : U(1)`, and not
@@ -985,7 +988,7 @@ So G0 has canonicity whenever CCHM_{ω²} has it, and in the same sense.
 The instruction kernel implements section 2 once: each rule is an
 instruction, and the driver's search issues them (K1.3). The term checker's
 rules and the JavaScript reference checker are not extended, as the
-[work plan](work-plan.md#the-instruction-kernel-and-this-plan) records.
+[work plan](../work-plan.md#the-instruction-kernel-and-this-plan) records.
 The conversion oracle behind `cc_kernel_convertible` therefore answers level
 syntax with an error, which the driver treats as "not known" and searches
 on its own.
@@ -1317,11 +1320,12 @@ the elaborator could build the same closed body at a UU-tier constant.
 translation can be developed against K1.2's instructions in tests, but the
 template removal and the archive recheck land only after K1.3.
 
-### 4.4 Documents and examples to update when L1.1 lands
+### 4.4 Documents and examples updated with L1.1
 
-These still use `U : Universe` or `Uω` syntax, or describe templates. This
-revision changes only this specification and the G0 item of the kernel
-roadmap.
+This was the migration checklist for sources that used `U : Universe`,
+`Uω` or elaborator templates when the specification was written. L1.1
+updated the executable language and reference. Dated historical notes retain
+their original terminology; the list is retained as implementation history.
 
 - `docs/roadmaps/cubical-kernel-roadmap.md`: the G2 item
   (`Trunc : ∀ U : Uω, U → U`).
@@ -1611,7 +1615,7 @@ should drop "parameters" when H is next edited. Read literally, it puts
 **Q7. Level constraints.** Should declarations be able to state constraints
 between level variables, such as `x < y`, as Coq allows? A binder's bound is
 not such a constraint. *Deferred:* not in G0; recorded as proposal E1 in
-the [language enhancement proposals](language-enhancement-proposals.md).
+the [language enhancement proposals](../language-enhancement-proposals.md).
 Unconstrained variables with `max` and successor express every signature we
 know of, as in
 `Group(U) : next(U)` and quotients at `max(U, V)`. Constraints would bring in
@@ -1640,6 +1644,6 @@ copy at a constant level. Cumulativity limits the cost: a definition at
 `UU0` also accepts every type in `U(n)`. *Deferred:* not in this version.
 No result needs it yet, so a universe argument of tier 1 or above is
 rejected, including by the computing builtins. Proposal E2 in the
-[language enhancement proposals](language-enhancement-proposals.md) records
+[language enhancement proposals](../language-enhancement-proposals.md) records
 both the extension of 1.5 and building builtin bodies at a UU-tier constant,
 to be taken up when a library result needs them.

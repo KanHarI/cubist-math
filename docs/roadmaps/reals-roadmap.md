@@ -1,10 +1,13 @@
 # Real-number roadmap
 
-Status: restructured on 2026-09-25 for the rebuild of the library. The first
+Status: paused during language development (reviewed 2026-09-27);
+restructured on 2026-09-25 for the rebuild of the library. The first
 library's development is described below, under "The first library's
 development", and is archived with that library. Its results are summarized in
 [library-results.md](../library-results.md#analysis). This roadmap owns the
-rebuilt number systems; the [work plan](work-plan.md) schedules them.
+rebuilt number systems; they are deferred in the
+[work plan](work-plan.md#deferred-library-backlog) as B5.1–B5.2, and no
+language milestone resumes them automatically.
 
 ## Plan for the rebuilt library
 

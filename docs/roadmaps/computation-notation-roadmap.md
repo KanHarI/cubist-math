@@ -1,8 +1,10 @@
 # Computation notation: monadic do and arrows
 
-Status: planned on 2026-09-25. No notation or supporting interfaces in this
-roadmap are implemented. Code blocks are proposed syntax or schematic
-signatures, not checked examples. Existing proofs cited below are evidence
+Status: planned on 2026-09-25; reviewed on 2026-09-27. No notation or
+supporting interfaces in this roadmap are implemented. G0, the core
+goal/scope layer and computability checking are available prerequisites.
+Code blocks are proposed syntax or schematic signatures, not checked
+examples. Existing proofs cited below are evidence
 for the work, not implementations of it.
 
 This extends the [language feature proposal](inductive-language-features.md)
@@ -336,16 +338,25 @@ equal or force all monadic terms through extra product environments.
 ## 6. Milestones and gates
 
 All milestones below are unfinished. N2 and N4 are implementations within
-one design; N4 need not wait for every mathematical instance in N3.
+one design. N3a delivers pattern support; N3b records future mathematical
+instances and gates no language release. The current priority is language
+features, using small checked fixtures and existing archive examples.
 
 | ID | Work | Dependencies | Acceptance |
 | --- | --- | --- | --- |
 | N0 | Record explicit mathematical baselines and proposed blocks | Existing archive; design only for new examples | Span closure, free substitution and an arrow example have stated types, assumptions and expected expansions; measure existing proofs without claiming unmeasured savings |
-| N1 | Checked operation/law records and Kleisli construction | N0; G0 for generic universes; ergonomics 6 for record syntax | Full universe-correct signatures and laws; function, identity-monad and Kleisli instances check; no reliance on generating an initial model of a monad theory |
-| N2 | Monadic `do` parser, elaboration, diagnostics, formatting and inspection | N1; HoTT A5; ergonomics 5 argument inference | Variable binds, local definitions, final computations and `pure`; representative explicit expansions agree; selected dependencies remain visible |
-| N3 | Exhaustive patterns and mathematical monad instances | N2; ergonomics 7 matching; H1 foundations and free constructions for the relevant instances | Rebuilt span closure and one free-algebra substitution example check; witness escape and refutable binds fail; closed computable examples pass `evaluate` |
-| N4 | Basic `proc` and arrow environment lowering | N1; HoTT A5; ergonomics 5 | Function and Kleisli comparisons check; a basic-arrow example works without `ArrowApply`; invalid local arrow selection fails; environments are inspectable |
+| N1 | Checked operation/law records and Kleisli construction | N0; G0 (done); L2.4 core theories and records | Full universe-correct signatures and laws; function, identity-monad and Kleisli instances check; no reliance on generating an initial model of a monad theory |
+| N2 | Monadic `do` parser, elaboration, diagnostics, formatting and inspection | N1; L1.2 goal/scope core (done); L4.1a scoped holes/named application arguments; L4.1b implicit binders/level inference | Variable binds, local definitions, final computations and `pure`; representative explicit expansions agree; selected dependencies remain visible |
+| N3a | Exhaustive bind patterns | N2; L2.2 checked matching | Product and dependent-pair patterns preserve scope and dependencies; refutable binds and result-type escape fail; small computable examples pass `evaluate` |
+| N3b | Future mathematical monad instances | N2; N3a where patterns are used; H1/K2.5 native truncation, L2.6 free constructions and deferred B4.1 span prerequisites as needed | Rebuilt span closure and one free-algebra substitution example check; witness escape fails; closed computable examples pass `evaluate`; no language release waits for this milestone |
+| N4 | Basic `proc` and arrow environment lowering | N1; L1.2 goal/scope core (done); L4.1a and L4.1b | Function and Kleisli comparisons check; a basic-arrow example works without `ArrowApply`; invalid local arrow selection fails; environments are inspectable |
 | N5 | Explicit choice and dynamic application extensions | N4; N1's checked extension laws | Branching requests choice only when needed; dynamic application requests `app`; Kleisli examples agree with corresponding `do` blocks |
+
+N1 uses L2.4's core record and theory facilities. Automatic structure
+identity, free models and concrete algebra developments are separate work.
+N0 may cite the archived span proof and specify future substitution examples
+without rebuilding their mathematics. N2 and N4 retain a fully explicit
+argument spelling alongside inference; their release tests cover both.
 
 **N4 example beyond the monadic interface.** Start with static optional
 functions `Hom(A, B) = Option(A -> B)`. Composition propagates absence;
@@ -388,8 +399,8 @@ what `evaluate` can promise. Publish the chosen examples and measurements.
 The [language proposal](inductive-language-features.md) assigns monadic
 blocks tier 2 and the broader arrow capabilities tier 3 within this shared
 design. Ergonomics milestones 5–7 provide inference, structures and
-matching; milestone 8 supplies computability checks. The HoTT roadmap owns
-the shared goal and scope machinery. This roadmap adds no kernel stage and
+matching; milestone 8's core computability checks are delivered as L0.1.
+The HoTT roadmap owns the shared goal and scope machinery. This roadmap adds no kernel stage and
 does not make arrow notation a prerequisite for the library rebuild.
 
 ## Open decisions

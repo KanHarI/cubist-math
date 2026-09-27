@@ -7,7 +7,10 @@ target statement or a supplied theorem parameter as an already proved result.
 ## Plan and designs
 
 - [Work plan](work-plan.md): the staged, dependency-ordered plan across all
-  roadmaps. Start here.
+  roadmaps. Start here. The active scope is language features and their
+  kernel support; concrete mathematical development is paused.
+- [Historical plans and specifications](historical/README.md): completed
+  work, currently G0. Its specification remains linked as a contract.
 - [Higher inductive-inductive types](higher-inductive-types-design.md): the
   adopted kernel design. One signature format covers data, indexed, higher
   and inductive-inductive types, with computability expressible and
@@ -36,24 +39,26 @@ target statement or a supplied theorem parameter as an already proved result.
   mathematical examples, and staged elaboration without new kernel rules.
 - [Simplification and shorter proofs](proof-ergonomics-roadmap.md):
   - Delivered: `rw`, `calc`, `rfl`, `simp`/`simpa` with registered rule sets
-    and conditional rules, and cubical path shorthand.
+    and conditional rules, cubical path shorthand, dependency tracking,
+    `computable` and exact-value `evaluate`.
   - Remaining: argument inference and `apply`/`refine` (5), theories (6),
-    inductive declarations and pattern matching (7), and computability as a
-    checked property (8).
+    inductive declarations and pattern matching (7), plus expected-value
+    patterns and closed truncation readout from milestone 8.
   - The [concrete implementation plan](proof-ergonomics-implementation-plan.md)
     adds PR-sized steps, lowering contracts, cubical notation proposals, and
     checked current-language sample expansions.
 - [HoTT and cubical proof automation](hott-automation-roadmap.md):
-  - Delivered: A7 (baseline, regressions and canonicity fixture); see the
+  - Delivered: A7 (baseline, regressions and canonicity fixture) and the A5
+    goal-layer core; see the
     [checkpoint](../tactical/hott-automation-handoff.md).
-  - Planned: the goal layer, fuel and diagnostics; folded path operations;
+  - Planned: remaining goal-layer metadata/clients, fuel and diagnostics; folded path operations;
     `Path` induction; type-directed `ext`; transport and path-algebra rules;
     h-levels and their solver; identity systems; dependent paths and
     squares; structure identity and transfer.
   - B0, B2, B5, F3 and A9 are superseded by the kernel's item H and
     ergonomics milestone 7.
-- [Kernel extensions for computation](cubical-kernel-roadmap.md): planning
-  only. Changes to the trusted kernel, each a set of instructions, governed
+- [Kernel extensions for computation](cubical-kernel-roadmap.md): G0 delivered;
+  H and the other extensions planned. Each is a set of instructions, governed
   by the requirement that computability is expressible and preserved:
   - G0, universe-generic checking over tiered universes (done: K1.2–K1.4 and
     L1.1);
@@ -64,10 +69,11 @@ target statement or a supplied theorem parameter as an already proved result.
 
 ## Mathematics
 
-The first library is to be archived and rebuilt. The Galois,
-complex-analysis and RH roadmaps describe developments in that library. They
-stay paused until the rebuild reaches their prerequisites; the
-[work plan](work-plan.md) marks where each resumes.
+The first library is archived. The Galois, complex-analysis and RH roadmaps
+describe unfinished developments in it. They and the broad library rebuild
+remain paused while language work proceeds. Language milestones do not
+automatically resume mathematics; the [work plan](work-plan.md) retains the
+deferred backlog.
 
 - [Galois theory](galois-roadmap.md): Artin's theorem and the core finite
   correspondence were checked in the first library. The correspondence takes

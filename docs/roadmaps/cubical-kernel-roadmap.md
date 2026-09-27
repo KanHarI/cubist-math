@@ -1,6 +1,8 @@
 # Kernel extensions for computation in Cubist
 
-Status: planning only, restructured on 2026-09-25. These items were split
+Status: reviewed on 2026-09-27. G0 is delivered; H1–H4, G2's native
+truncation migration and the optional kernel extensions remain planned.
+These items were split
 out of the [HoTT and cubical automation roadmap](hott-automation-roadmap.md),
 whose milestones A–F build on the existing kernel. G1–G5 keep their labels so
 that references remain valid, although G1–G3 are now superseded.
@@ -101,7 +103,7 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
   itself a checked term, and it was unchecked at every level no one had used
   yet. G0 makes universe variables genuine kernel binders and checks each
   generic definition once, for every level.
-  - **Specification.** [g0-universe-specification.md](g0-universe-specification.md) (K1.1, revised on 2026-09-25 for tiered universes): rules, consistency note, acceptance cases and open questions.
+  - **Specification.** [G0 specification](historical/g0-universe-specification.md) (K1.1, implemented and archived on 2026-09-27): rules, consistency note and acceptance cases. E1/E2 remain separate deferred proposals.
   - **Tiered universes.** Universes are indexed by ordinals below ω². The
     constants are `U0, U1, …` (level `n`), `UU0, UU1, …` (level `ω + n`),
     `UUU0, UUU1, …` (level `ω·2 + n`), and so on, one more `U` per tier. A
@@ -230,10 +232,12 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
       its soundness note is new work.
   - **H4. Several sorts, some untruncated.** Adopt only for a concrete use.
   - **Trust controls at every stage.**
-    - A soundness note, reviewed before the stage's gate opens.
-    - Until then, results that use a type the stage admits carry a
-      `kernel extension: Hn` dependency. It is visible, but it is not a
-      non-computing dependency.
+    - A specified fragment before implementation, and a soundness note
+      reviewed before default admission or release. Experiments and fixtures
+      may run before review only in an explicitly enabled experimental mode.
+    - Until review, experimental results carry a `kernel extension: Hn`
+      dependency. Test its transitive propagation. It is visible, but it is
+      not a non-computing dependency.
     - Negative tests: positivity, boundaries that disagree on overlaps,
       boundary clauses, h-level misuse, index levels, forward references.
     - A canonicity statement, with fixture additions.
@@ -244,7 +248,10 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
     - The canonicity fixture computes the stage's showcase:
       - H1: the winding number of a loop in a declared circle;
       - H2: `J` on `refl` by `rfl`, and a vector append evaluated;
-      - H3: a rational within 10⁻³ of √2 read from a closed real.
+      - H3: a closed computation through genuinely dependent set/prop
+        companion sorts and their joint eliminator, using a small
+        context/type/interpreter fixture. The rational approximation to √2
+        remains a later integration example when reals work resumes.
 - [ ] **G1. Superseded by H1.** Computational truncation and set quotients are
   the declarations `Trunc` and `Quotient` at H1, with truncation also derivable
   as the quotient by the total relation. The three designs G1 compared are

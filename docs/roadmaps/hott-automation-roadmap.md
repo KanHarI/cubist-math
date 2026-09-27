@@ -1,8 +1,10 @@
 # HoTT and cubical abstractions and automation in Cubist
 
-Status: A7 delivered on 2026-09-25 (see the
-[implementation checkpoint](../tactical/hott-automation-handoff.md)); the other
-milestones are planned. Revised after two design reviews on 2026-09-24 and a
+Status reviewed 2026-09-27: A7 and A5's core goal, scope and reconstruction
+layer are delivered, including motive abstraction for several scrutinees.
+A5's remaining work and the other milestones are open. The
+[implementation checkpoint](../tactical/hott-automation-handoff.md) records A7's
+baseline. Revised after two design reviews on 2026-09-24 and a
 restructuring on 2026-09-25. The second review added library-first milestones:
 several targets follow from computation the kernel already performs, before
 any new tactic. The milestones below are proposed work; existing
@@ -20,7 +22,8 @@ kernel-extension investigation, G, now has its own
 mathematical roadmaps.
 
 **Restructured later on 2026-09-25.**
-- The first library is to be archived and rebuilt; its notable results are
+- The first library is archived, and the new library starts with
+  `library/naturals`; its notable results are
   recorded in [library-results.md](../library-results.md).
 - The kernel roadmap adopted G0 (universe-generic checking) and item H
   (inductive signatures, stages H1–H4), from the
@@ -39,9 +42,9 @@ Consequences here:
 The [work plan](work-plan.md) sequences this roadmap with the others.
 
 **Terminology.** "Universe template" below means a universe-generic
-definition. Until G0 these are elaborator templates, specialized per
-universe. After G0 they are level-generic kernel definitions checked once.
-Items that ask for templates ask for the latter in the rebuild.
+definition. G0 is delivered: these are level-generic kernel definitions
+checked once, with explicit level arguments. Per-universe specialization was
+removed. Historical measurements retain their original template terminology.
 
 Read the [proof ergonomics checkpoint](../tactical/proof-ergonomics-handoff.md)
 first: it records the supported fragment this roadmap starts from.
@@ -181,8 +184,8 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
 
 - [ ] **A1. Folded path vocabulary.** Elaborate `refl`, `sym`, `trans`, `cong`,
   `transport`, `apd_path`, `path_induction` and `based_induction` to
-  applications of reserved checked definitions, specialized by the full vector
-  of universe levels in use (carrier, codomain and motive as applicable).
+  applications of reserved level-generic checked definitions, with explicit
+  level arguments for the carrier, codomain and motive as applicable.
   Each definition's body is the syntax the builtin emits today. Deliver it in
   three parts: A1a folds `refl`, `sym`, `trans` and `cong`, with E0's
   dependent reversal and congruence; A1b folds `transport`, `apd_path` and both
@@ -190,9 +193,9 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
   - Arithmetic sources such as [primes](../../archive/first-library/primes.cubist) use
     these builtins without importing `paths`. The definitions therefore belong
     to a session prelude with a stable logical operation identity across imports.
-    Register specializations lazily through declaration transactions; rollback
-    must invalidate their native handles and all dependent caches. A later use
-    reinstantiates the same logical identity. Test a failed first use followed
+    Register each generic definition lazily through declaration transactions;
+    rollback must invalidate its native handle and all dependent caches. A
+    later use recreates the same logical identity. Test a failed first use followed
     by a successful use, and different import orders.
   - Kernel conversion unfolds definitions on demand, so equalities such as
     `sym(sym(p)) ≡ p` still hold. Match the logical operation and compatible
@@ -211,8 +214,9 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     different body: path induction applied to a Π-motive, rather than the
     builtin's connection `comp`. A1b removes or renames one of them before a
     stable logical identity exists.
-  - Reuse the specialization mechanism of the existing `builtin__ua__U<n>`
-    definitions (`specializeSchema`), including its transaction behavior.
+  - Reuse the checked generic-definition mechanism of `builtin__ua`
+    (`genericDefinition` and `LevelApply`), including its transaction behavior.
+    Do not reintroduce the per-universe specialization removed by G0.
   - A1c: register the library wrappers `inverse`, `concatenate` and `ap` as
     matching aliases, so that a rule stated with either spelling matches. The
     syntax is to be settled, for example `simp_alias concatenate;`.
@@ -251,7 +255,7 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
   The existing one-hole check already detects dependency. For example, it
   reports a pair component whose sibling's type depends on it; E1 handles that
   case. Memoize simplification of shared DAG nodes within the same context,
-  dimensions, faces, universe specialization, rule environment and unfolding
+  dimensions, faces, level arguments, rule environment and unfolding
   policy. Reuse the witness as well as the result. Explicit occurrence selection
   must still distinguish different occurrences of a shared node.
   - (H) With H1, every constructor application is one uniform kernel node, so
@@ -315,7 +319,7 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
   with Σ extensionality, hypothesis substitution, inspection and persistent
   frozen output. Extract telescope abstraction independently of any tactic so
   registered eliminators and structure descriptions can reuse it.
-  - Interim state: [proof-goals.mjs](../../lib/cubical/proof-goals.mjs)
+  - Delivered core: [proof-goals.mjs](../../lib/cubical/proof-goals.mjs)
     defines `Goal`, a target at a scope (term and interval context), and
     `Transition`: a goal, the goal that remains, a plan and the search trace.
     Plan steps are composition, transport, congruence, abstraction and lemma
@@ -946,7 +950,8 @@ separate work.
     `T.equality : (M = N) ≃ T.Iso(M, N)`
     ([theories](inductive-language-features.md#1-theories-one-declaration-for-structures-initial-models-and-universal-properties)).
     Its descriptions are generated from theory declarations rather than
-    written separately.
+    written separately. This is work-plan L2.4b, following core theories
+    (L2.4); core models and scoped notation do not wait for generated identity.
 - [ ] **F2. Maps and equivalences for transfer.** Build a checked library API
   before adding `transfer e;`, reusing D0b's identity, inverse, composition,
   product and Π/Σ combinators and h-level preservation lemmas. Add sums and
@@ -964,7 +969,9 @@ separate work.
     transferred data and rejection of a wrong map or missing preservation law.
     Do not promise judgmental `idtoequiv(refl)` from the representation change.
   - (H) Presentations (milestone 7), which match on one type with an
-    equivalent type's constructors, reuse these maps.
+    equivalent type's constructors, reuse these maps. The minimum D0b/F2
+    equivalence and transfer slice is therefore an explicit prerequisite of
+    L2.7; general `transfer` automation can follow separately.
 - [ ] **F3. Superseded by H1 and ergonomics milestone 7.** Higher inductive
   declarations are native kernel signatures rather than elaborations into
   pushouts. They have generated constructors, eliminators with

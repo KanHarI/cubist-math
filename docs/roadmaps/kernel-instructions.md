@@ -2,8 +2,10 @@
 
 Status: merged into `proof-ergonomics-roadmap` on 2026-09-26 (PR #38). The
 instruction kernel is the trusted kernel, and elaboration checks every term
-through it. The term checker remains only as an untrusted guide for the
-search, its conversion; see [what remains of it](#what-remains-of-the-term-checker).
+through it. Since K1.4 on 2026-09-27 the driver uses its own guide by
+default; the old conversion oracle is available only for comparison. Its
+retirement and conditional stage 6 remain open; see
+[what remains of it](#what-remains-of-the-term-checker).
 Every later kernel item (G0, H) is a set of instructions; the
 [work plan](work-plan.md#the-instruction-kernel-and-this-plan) records how
 that changes the plan.
@@ -30,14 +32,14 @@ that changes the plan.
   derives source syntax itself, and every check and query the elaborator
   makes is derived by the instruction kernel. See
   [Stage 5](#stage-5-the-term-checker-leaves-elaboration) below.
-- Every one of the archive's 3938 definitions is admitted this way, and so
-  are the first proof and `library/naturals`. Every derived term is its
-  source syntax, annotations included. The benchmark page measures it, and
-  `node tools/instruction-coverage.mjs` derives every stored definition
-  again: all 3938 with the driver's own guide. With the term checker's
-  conversion as the guide instead (`--oracle`), one second derivation,
-  `group_homomorphisms.group_hom_laws_prop`'s, fails with "The argument has
-  the wrong type".
+- The review run at `fabb174` on 2026-09-27 reports zero archive gaps and
+  re-derives all 3,916 stored definitions with the driver's own guide
+  (`node tools/instruction-coverage.mjs`): 30.7 s for the archive check and
+  10.7 s for the second derivation. These are one run's observations.
+  Every derived term is its source syntax, annotations included. The
+  first proof and `library/naturals` also use this admission path.
+  The coverage report's import-only `complete` flag and exit status need
+  the reporting correction tracked as I1.3 in the work plan.
 
 ## Goal
 
@@ -311,9 +313,12 @@ common head that could also be reduced. Where the head reduces by computation
 where only unfolding a definition would, it compares parts not known to
 differ. Every step it then takes is still an instruction the kernel checks.
 
-With the guide the archive checks in 37 s and every definition derives again
-in 13.9 s; with the term checker's conversion as the guide, 34.9 s and
-10.1 s, with the one failure above.
+The K1.4 measurement before L1.1 recorded 37 s for the archive check and
+13.9 s for re-derivation; with the old conversion oracle, 34.9 s and 10.1 s.
+In that comparison, the oracle run failed one second derivation,
+`group_homomorphisms.group_hom_laws_prop`, with "The argument has the wrong
+type". The current default-guide observation is recorded above; this
+review did not rerun the optional oracle comparison.
 
 After 64 steps in one comparison, two closed subterms the guide does not
 find different, such as a numeral's arithmetic, are normalized, one

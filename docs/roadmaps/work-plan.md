@@ -1,480 +1,417 @@
-# Work plan: kernel, language, library rebuild and reference
+# Work plan: language features and their kernel support
 
-Status: plan of 2026-09-25, after merging PRs #2–#4 into
-`proof-ergonomics-roadmap`; revised on 2026-09-26, when the instruction
-kernel became the trusted kernel (PR #38). It sequences these documents:
-- the [kernel roadmap](cubical-kernel-roadmap.md): G0, H1–H4, each now a
-  set of instructions (see
-  [the instruction kernel and this plan](#the-instruction-kernel-and-this-plan));
-- the [instruction kernel](kernel-instructions.md), delivered, and the
-  [learned search](learned-search.md) design that builds on it;
-- the [proof ergonomics roadmap](proof-ergonomics-roadmap.md): milestones 5–8;
-- the [HoTT automation roadmap](hott-automation-roadmap.md);
-- the [computation notation roadmap](computation-notation-roadmap.md), an
-  additional language track with milestones N0–N5;
-- the [reals roadmap](reals-roadmap.md);
-- the two adopted designs,
-  [higher inductive-inductive types](higher-inductive-types-design.md) and
-  [theories and inductive declarations](inductive-language-features.md).
+Status: reviewed against `fabb174` on 2026-09-27, after PRs #46–#48, and
+revised the same day: K2.1 is the main track, learned-search phases 1–2 are
+scheduled with L1.3, and L4.1a no longer gates explicit matching.
+This is the scheduling authority for the linked roadmaps. Package IDs from
+the earlier plan are retained; their stage numbers do not impose dependencies.
+Sizes (S < M < L < XL) describe relative scope, not elapsed time.
 
-The rebuild's specification is [library-results.md](../library-results.md).
+**Current scope.** Advance the language, elaborator, tooling and the kernel
+features they require. Use small checked programs and the archived library
+as acceptance evidence. Broad library rebuilding, real/complex analysis,
+Galois theory and RH are paused. Reaching a language milestone does not
+resume those developments. Their old B-package IDs are retained in the
+[deferred library backlog](#deferred-library-backlog).
 
-**Governing requirement.** Computability is expressible and preserved. Every
-stage's acceptance includes the canonicity fixture. Every rebuilt result that
-can compute is marked `computable`, and its computations are tested with
-`evaluate`.
+**Governing requirement.** Computability is expressible and preserved.
+Every applicable release extends the canonicity fixture; results with no
+non-computing dependencies use `computable` and closed `evaluate` examples.
+A new syntax form must elaborate completely through the instruction driver.
 
-**Sizes** are relative (S < M < L < XL): dependency-sized work packages, not
-time estimates. **IDs:** K = kernel, L = language and elaborator, B = library
-rebuild, D = reference and documentation, I = infrastructure. Every package
-lands with its tests. A kernel package is a set of instructions in
-`kernel/src/instructions.c`, together with the driver's search for them.
+## Current status
+
+| Area | Delivered | Still open |
+| --- | --- | --- |
+| Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default | Retiring the old checker APIs and their test clients; explicit driver options and per-instruction cost telemetry (learned-search phases 1–2, with L1.3); optional performance/certificate work |
+| G0 universes | K1.1–K1.4 and L1.1; `U < UU0`, `next`, `max`, generic builtins and rewriting; all 43 former templates check generically | E1 level constraints and E2 higher-tier generic definitions remain deferred proposals |
+| Proof ergonomics | Grouped binders, `have`, `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand | General inference, `apply`/`refine`, folded path rules, broader dependent rewriting |
+| Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | Face-aware plans, filling/source-span records, tactic integration, indexed and companion motives |
+| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection | Expected-value patterns and closed truncation readout; H-stage dependency markers |
+| Declarations | Existing built-in types and explicit eliminators | H1–H4, `theory`, user `inductive`, general `match`, views, derived declarations |
+| Computation notation | Design only | N0–N5; no `do`/`proc` syntax or interfaces delivered |
+| Reference and library | Checked-reference harness; universe chapter rewritten; `library/naturals`, `classical_axioms`, `universe_automorphisms` | Induction chapter rewrite and quick-reference expansion; these three modules are not completion of a rebuild wave |
+
+Evidence lives in `tests/universe-generic.test.mjs`,
+`tests/proof-ergonomics.test.mjs`, `tests/computability.test.mjs`,
+`lib/cubical/tests/proof-goals.test.mjs`, `lib/cubical/tests/motives.test.mjs`,
+`tests/reference-examples.test.mjs` and `tests/library.test.mjs`.
+HoTT's gated probes still reject constructor descent and folded-path cases;
+A1/A2 are not complete. The motive abstraction service has no source-level
+`match` client yet.
+
+The completed [G0 specification](historical/g0-universe-specification.md)
+is kept in `historical/`; its rules remain the contract for later features.
+The [historical index](historical/README.md) records the archival decision.
+Other roadmaps still contain open work, including the instruction kernel's
+cleanup and conditional stage 6.
 
 ## Overview
 
-| Stage | Theme | Gate to leave the stage |
+| Stage | Language outcome | Release gate |
 | --- | --- | --- |
-| 0 | Consolidate: merge, archive, computability tracking, reference harness | Archive checked in CI; `computable` and `evaluate` available; reference examples checked |
-| 1 | Universes (G0) and the goal layer | G0 reviewed; every acceptance case passes through the instruction kernel; archive templates rechecked generically |
-| 2 | One-sort inductive signatures (H1) and the first language release | H1 soundness note reviewed; the hand-coded instructions agree with H1's generated ones; `inductive`/`match`/theories released |
-| 3 | Rebuild wave 1: foundations, numbers, counting, order, homotopy types, groups | Hull and iconic results of those areas re-proved |
-| 4 | Indexed families (H2), inference, rebuild wave 2: algebra, fields, Galois | `Id` with J on `refl`; implicit arguments; wave 2 results re-proved |
-| 5 | Inductive-inductive types (H3), reals and analysis | H3 soundness note reviewed, or the fallback taken; Cauchy reals instance; analysis rebuilt |
-| 6 | On demand: H4, G4, G5; resume the paused mathematical roadmaps | Per item |
+| 0 | Delivered baseline and reference | Preserve existing checks; finish independent documentation cleanup |
+| 1 | Predictable goals, diagnostics and inference | Scoped holes resolve or report local errors; counted fuel and residual goals; CLI/browser agreement |
+| 2 | One-sort declarations, basic theories and matching | Reviewed H1 rules, explicit and automatic clauses, checked theory records; differential and canonicity fixtures |
+| 3 | Derived interfaces, views and proof automation | Supported structure identity/transfer fragments and closed computational examples |
+| 4 | Indexed declarations | `Vec`, `Id`, impossible branches and a small typed evaluator; no axiom K |
+| 5 | Inductive-inductive language | Reviewed H3 fragment and a small companion-sort interpreter |
+| 6 | Optional extensions | A concrete use and a separate acceptance gate for each |
 
-Stages overlap wherever dependencies allow. For example, stage 1's tooling
-packages (HoTT A1, A2, A4, A6) continue alongside stage 2.
+L4.1 inference is scheduled in stage 1 despite its retained ID. Core theories
+can progress alongside H1: records need no new kernel rule. N1/N2/N4 need
+neither initial models nor a rebuilt algebra library.
 
 ## The instruction kernel and this plan
 
-Since 2026-09-26 the trusted kernel is the
-[instruction kernel](kernel-instructions.md): a THTH-style forward kernel
-whose typing rules are instructions, issued one at a time by an untrusted
-driver (`web/cubical-instruction-driver.mjs`). The term checker that was
-the trusted kernel when this plan was written is now the driver's untrusted
-conversion oracle, and the JavaScript reference checker
-(`lib/cubical/core.mjs`) serves only tests and, as a syntax library, the
-path builders. This changes what a kernel package is and how it is accepted.
+The trusted checker is the [instruction kernel](kernel-instructions.md).
+The untrusted driver is `web/cubical-instruction-driver.mjs`; its own guide
+has been the default since K1.4. The old conversion oracle is comparison
+only (`node tools/instruction-coverage.mjs --oracle`). The C term checker
+and JavaScript reference checker are not extended to new language features.
 
-- **A kernel package is instructions.** G0 and each stage of H add
-  instructions to `kernel/src/instructions.c` and teach the driver to issue
-  them: the formation, introduction and elimination rules, and the `Step`
-  rules (`Beta`, `Iota`, `Face`, `Whnf`, `Normalize`) that give them
-  computation. Nothing lands in the reference checker or in the term
-  checker's rules first. Each kernel package is one implementation,
-  reviewed once.
-- **The term checker and the reference checker stay at today's fragment.**
-  Neither is extended to levels or to declared inductive types. An error or
-  an exhausted budget from the conversion oracle is "not known" to the
-  driver, which then searches on its own, as it already does where the
-  oracle runs out of budget. The reference checker keeps its tests for the
-  CCHM fragment. Their retirement is a separate decision, taken when the
-  driver no longer benefits from the oracle. On 2026-09-26 it still did:
-  without the oracle the archive checked in 62 s against 33 s, and three
-  declarations ran out of kernel budget. After L1.1 most generic terms
-  carry level syntax the oracle cannot read, so K1.4 below, the driver
-  deriving the archive unaided, preceded L1.1. K1.4 is done: the driver's
-  own guide compares weak head normal forms, the archive checks in 37 s
-  against 34.9 s with the oracle, and the guide is the default
-  (`node tools/instruction-coverage.mjs --oracle` compares). The
-  retirement can now be taken as its own change. At the retirement the
-  three trusted functions still in those files, alpha equality and
-  syntactic cumulativity in `term_conversion.c` and the pushout bridge type
-  in `check_pushout.c`, move to their own file, and the rest of
-  `check_*.c`, `term_conversion.c` and `unfolding_hints.c` is deleted.
-- **"Both checkers agree" becomes four checks.** The specification's
-  acceptance cases run through the instruction kernel: kernel-level cases
-  are issued directly in `kernel/tests/test_instructions.c`, and source
-  cases go through the driver in the JavaScript tests. The archive derives
-  again under `node tools/instruction-coverage.mjs`, and the migration
-  verifier compares its judgements. The canonicity fixture computes the
-  stage's showcase. Each generated rule has a rejection test.
-- **H1's differential oracle is the hand-coded instructions.** `Nat`, sums,
-  W types and pushouts keep their instructions until the generic signature
-  mechanism agrees with them on the kernel tests and on the archive. Then
-  they retire, as the design intended for the term checker's rules.
-- **The driver is part of every language package.** Where a plan below says
-  the elaborator checks a term, the driver derives it. A feature the driver
-  cannot derive is not a feature.
+Each kernel package adds instructions in `kernel/src/instructions.c`, their
+computation rules and driver support. Acceptance includes:
 
-## Stage 0: consolidate
+1. Direct instruction acceptance/rejection cases in the C tests and source
+   cases through the driver; malformed signatures and scope violations fail.
+2. The archive checks and every stored definition derives again under
+   `node tools/instruction-coverage.mjs` with the default guide.
+3. Applicable canonicity computations pass, including formal compositions.
+4. ABI, syntax encoding/decoding, inspection, checkpoint/rollback and cache
+   invalidation cover new node and signature forms.
 
-| ID | Package | Owner | Depends on | Size |
-| --- | --- | --- | --- | --- |
-| I0.1 | Merge `proof-ergonomics-roadmap` into `main` (deferred: work continues off `main`) | — | Maintainer decision | S |
-| I0.2 | Archive the first library (done) | Plan | — | M |
-| I0.3 | Start the new library tree (done: `library/naturals`) | Plan | I0.2 | S |
-| I0.4 | Remove local scratch state (done) | — | — | S |
-| L0.1 | Non-computing dependencies, `computable`, `evaluate` (done) | Ergonomics 8 | — | M |
-| D0.1 | Checked-example harness for the reference (done) | Plan | — | S |
-| D0.2 | Reference chapters for the stable language (all but chapters 5–6 rewritten) | Plan | D0.1 | L |
+Ordinary source migrations retain strict public-type and assumption checks.
+H1's replacement of primitive types needs an explicit representation map:
+primitive syntax and generic signature applications are not automatically
+convertible. K2.4 must specify comparison fixtures before retiring anything.
+G2's deliberate universe/assumption changes have a separate reviewed ledger;
+weakening the ordinary migration verifier is not an acceptance strategy.
 
-**I0.2 Archive the first library.** Done on 2026-09-25, working off `main`
-(I0.1 is deferred by choice).
-- **Move.** The 367 sources moved from `web/proofs/` to
-  `archive/first-library/` with history preserved. They are a closed world
-  under their own source root, so rebuilt modules can reuse their names.
-- **Code paths.** The CLI, tests, tools, benchmark and corpus checks, and the
-  browser loaders read from the new root.
-- **Serving.** The dev server maps `/archive/…` to the directory, and the
-  Pages build copies it into the site. Proof pages say they show the archived
-  library, with a link to the results catalog.
-- **Checks.**
-  - `npm test`: the archive checks 3,761 declarations and 43 templates, with
-    none failed or blocked.
-  - `npm run test:browser`, the landing test, and the site build with
-    `npm run test:site` all pass.
+**I1.2, optional checker retirement (M).** K1.4 removes the runtime dependency,
+but deletion also requires migrating test-only clients and bridge exports.
+Move the trusted alpha-equality, syntactic-cumulativity and pushout bridge
+helpers out of the old checker files, preserve required syntax builders,
+and check the remaining call graph before removing old APIs. This is not a
+gate for H1, inference or theories. Native search, certificate compaction and
+exported content hashes remain conditional stage-6 work.
 
-**I0.3 Start the new library tree.** Create the rebuilt library's root,
-proposed `library/`, served the same way as the archive.
-- Its areas mirror `library-results.md`, starting with a placeholder module
-  per area and the site's topic index.
-- Layout rules: one theme per module, and no helper duplicated across
-  modules.
+## Stage 0: delivered baseline and remaining documentation
 
-**I0.4 Remove local scratch state.** Delete the unmerged `migration-curated`
-branch and the scratch directories `.migration/` and `.catalog/`. The
-curated pass's findings are recorded in the ergonomics handoff.
+| ID | Package | Status / next obligation |
+| --- | --- | --- |
+| I0.1 | Merge the development branch into `main` | Deferred maintainer decision; work is on `proof-ergonomics-roadmap` |
+| I0.2 | Archive the first library | Done: 367 sources in `archive/first-library/`; keep it as regression evidence |
+| I0.3 | Start `library/` | Done: three modules listed above; broader topic coverage is deferred |
+| I0.4 | Remove local scratch state | Recorded done on 2026-09-25 |
+| L0.1 | Non-computing dependencies, `computable`, `evaluate` | Done; extensions have explicit L2.9 packages below |
+| D0.1 | Checked-reference harness | Done: accept/reject examples, excerpts, CLI and REPL transcripts; sketches must be labelled |
+| D0.2 | Reference chapters and quick reference | Chapter 5 done with G0; rewrite chapter 6 with H1; expand `proof.html` now without waiting for H1 |
 
-**L0.1 Non-computing dependencies, `computable`, `evaluate`.** Done on
-2026-09-25. The existing assumption lists already are the non-computing
-dependencies: they are computed from the checked term and every definition it
-mentions. The CLI's `inspect` now prints them.
-- `computable def` rejects a declaration that
-  uses an assumption. The error names every assumption and one chain of
-  definitions to the first.
-- `evaluate term expecting value;` checks that a closed term uses no
-  assumption and compares normal forms. The CLI has an `evaluate EXPRESSION`
-  command.
-- The migration verifier already failed a declaration whose assumptions
-  changed.
-- The canonicity fixture marks its results `computable` and has an
-  `evaluate` check. Tests: `tests/computability.test.mjs`,
-  `tests/cli.test.mjs`, and the reference's Computability examples.
-- Deferred to H1: patterns with holes after `expecting`, and witness readout
-  from truncations, which are still assumptions.
+The harness is active; `data-check` markers are not inert. Its acceptance
+allows explicitly labelled fragments, so a passing harness does not claim
+that every design sketch executes.
 
-**D0.1 Checked-example harness.** Done on 2026-09-25 as
-`tests/reference-examples.test.mjs`. It found that the reference documented
-`unfold(term)`, which was removed with the cubical kernel; that passage now
-describes conversion instead. A test extracts every code block from the
-reference pages. It checks those marked `accept` and requires those marked
-`reject` to fail with their stated message. Today's `data-check` markers are
-inert, so every current example is unverified. Acceptance: all current
-examples run under the harness, with failures fixed or removed.
+**I1.1, module resolution parity (S, before new multi-module fixtures).**
+Specify archive-isolated checks and library-first checks explicitly. Currently
+`tools/test-selection.mjs` resolves selected-proof imports only from the
+archive, while the CLI and `tests/library.test.mjs` support the rebuilt
+library. Add a shared resolution contract and tests for same-name modules,
+local imports and source-root selection. This prevents a feature fixture
+from exercising different dependencies in the CLI and test runner.
 
-**D0.2 Reference chapters.** The reference is one page per chapter under
-`web/reference/`, with `language.html` as the index. Anchors of the former
-single page redirect to their chapters. The split and the rewrite of every chapter
-but 5 and 6 were done on 2026-09-25. Each chapter has several checked
-examples per construct, including rejected ones. A rejected example states
-every error it causes as a `// Error:` comment on the failing line, and the
-harness checks both directions. Command-line sessions are run against the
-real CLI. The chapters are:
-1. Types and values (new: the basic types before the first proof);
-2. A first proof and files (rewritten);
-3. Terms, functions and pairs (rewritten);
-4. Proof blocks (rewritten);
-5. Universes;
-6. Natural numbers and inductive types;
-7. Equality and paths (rewritten);
-8. Equational reasoning and simplification (rewritten);
-9. Cubical paths, pushouts and suspensions (rewritten);
-10. Conversion and opacity (rewritten);
-11. Assumptions and computability (rewritten);
-12. Checking and inspection (rewritten);
-13. Error messages (rewritten).
+**I1.3, coverage acceptance reporting (S).** The coverage tool uses an
+import-only root, so `CubicalProgram.complete` is false even with no gaps
+(it requires a local output). The tool also prints failures without setting
+a failing exit code. Define success from checked imports, zero gaps and
+`derived === definitions`, and fail the command on a real coverage loss.
+Until then inspect the report rather than treating exit code 0 alone as
+the gate. The review run found zero gaps and 3,916/3,916 derived definitions.
 
-Chapters 5 and 6 describe today's syntax and are rewritten in stages 1–2.
-Writing the chapters against the checker found documented features that do
-not exist, among them user `axiom` declarations and a univalence axiom:
-function extensionality and univalence are constructions that compute.
-Chapter 12 catalogues every error message the examples show, and a test
-keeps the catalogue and the examples in agreement. Remaining: the quick
-reference in `proof.html` becomes one checked example per construct, each
-linking to its chapter. `tests/reference-structure.test.mjs` checks the
-navigation, every link and anchor, the redirects and the error catalogue.
+## Stage 1: goals, diagnostics and inference
 
-## Stage 1: universes and the goal layer
+G0 (K1.1–K1.4, L1.1) is complete. Its source acceptance cases and level
+property tests remain regressions, not next actions.
 
-| ID | Package | Owner | Depends on | Size |
-| --- | --- | --- | --- | --- |
-| K1.1 | G0 rule specification and consistency note (done) | Kernel G0 | — | M |
-| K1.2 | G0 in the instruction kernel: level nodes and arithmetic, level entries, `LevelPi`, `LevelLambda`, `LevelApply`, symbolic `Lift`, level-Π composition, ABI, sanitizers (done) | Kernel G0 | K1.1 | L |
-| K1.3 | G0 in the driver and bridges: deriving level binders and instantiations, agreement of universes by level normal form, decoding, serialization (done; its source cases move with L1.1) | Kernel G0 | K1.2 | M |
-| K1.4 | The driver derives the archive unaided: its congruence and unfolding choices without the conversion oracle, with no declaration over the limit and at most half again the guided time (done: the driver's own guide, 37 s against 34.9 s, every definition derived again) | Kernel instructions | — | M |
-| L1.1 | Universe binders, level expressions, removal of templates (done: every archive template checks generically) | Kernel G0 (language part) | K1.3, K1.4 | L |
-| L1.2 | Goal and proof-construction layer (core done) | HoTT A5 | — | L |
-| L1.3 | Deterministic fuel; residual goals in diagnostics | HoTT A4, A6 | L1.2 for A6 | M |
-| L1.4 | Folded path vocabulary; congruence through constructors | HoTT A1, A2 | L1.2 | L |
-| L1.5 | Σ projections `p.1`/`p.2`; `induction p;` from the goal; `show` and `suffices` | HoTT A8, B1, B4 | L1.2 | M |
-
-**K1.1–K1.3.** K1.1 was done on 2026-09-25: the
-[G0 specification](g0-universe-specification.md) (PRs #10 and #16), with
-every open question answered or deferred to the
-[language enhancement proposals](language-enhancement-proposals.md).
-- Implement tiered universe constants below ω² (`U0…`, `UU0…`, `UUU0…`),
-  level binders `U < UU0`, level quantification as a type with its pointwise
-  composition rule, capture-avoiding level substitution, and symbolic
-  cumulativity across tiers, as the instructions of section 4.1 of the
-  specification.
-- Acceptance is G0's list in the kernel roadmap: every case of the
-  specification's section 5 passes through the instruction kernel, directly
-  or through the driver, and the canonicity fixture computes instantiated
-  closed results.
-
-**L1.1 Universe binders and levels.** Done on 2026-09-27. It depended on
-K1.3, because the elaborator checks only through the instruction kernel's
-driver.
-- `U < UU0` elaborates to a kernel level binder, and `Universe` leaves the
-  language. Universe constants of every tier carry an index.
-- Source gains `next(U)` and `max(U, V)`.
-- Specialization, per-universe builtins and per-universe assumption schemas
-  are removed.
-- The inspector shows level arguments.
-- **Archive recheck:** every archive template is checked generically, and
-  those that only worked at particular levels are listed. All 43 check
-  generically, so the list is empty; the archive checks 3,804 declarations
-  with no gap.
-- The universe chapter of the reference is rewritten.
-- Also done: `rw` and `simp` use generic lemmas, matching the universe where
-  the rewritten side has it as a bare variable (specification §4.3); the
-  specification's source cases run by ID in `tests/universe-generic.test.mjs`,
-  with the property tests for Lemma 5 and for composition at a level Π.
-
-**L1.2 Goal and proof-construction layer** (A5). The core was done on
-2026-09-25 in PRs #12, #13, #15, #17 and #18, with identical checked terms
-for the whole archive. The remaining A5 items are in the HoTT roadmap. The
-review's elaborator items, all done:
-- one name supply;
-- result values instead of message matching;
-- one computation of link sites;
-- an explicit elaboration context;
-- motive abstraction for several scrutinees, with dependent-hypothesis
-  generalization, as `match` needs (`lib/cubical/motives.mjs`).
-
-**L1.4 Path vocabulary and constructor congruence** (A1, A2). Include the
-curated pass's findings:
-- constructor descent, which H1 makes uniform;
-- a statement-level `with unfolding`;
-- beta-reduction after full-context `cong` rules.
-
-## Stage 2: one-sort inductive signatures and the first language release
-
-| ID | Package | Owner | Depends on | Size |
-| --- | --- | --- | --- | --- |
-| K2.1 | H specification and H1 soundness note | Kernel H1 | K1.1 | L |
-| K2.2 | H1 as instructions: the signature normal form admitted, and the generated formation, constructor, formal-composition and eliminator rules with their steps | Kernel H1 | K1.2, K2.1 | XL |
-| K2.3 | H1 in the driver: declared signatures, search over the generated rules, clause splitting | Kernel H1 | K1.3, K2.2 | L |
-| K2.4 | Differential oracle against the hand-coded `Nat`, sum, W and pushout instructions; retire them when they agree | Kernel H1 | K2.3 | M |
-| L2.1 | `inductive` declarations for one sort | Ergonomics 7 | K2.3 | L |
-| L2.2 | `match`, recursion, path clauses, automatic clauses, obligations | Ergonomics 7 | L1.2, L2.1, L2.5 | XL |
-| L2.3 | Derived declarations: `paths`, `decidable_equality`, `universal`, `ind_prop`, `rec` | Ergonomics 7 | L2.2 | L |
-| L2.4 | Theories: models, homomorphisms, notation, sections, `extends` | Ergonomics 6 | L1.1 | L |
-| L2.5 | h-level definitions and the first `hlevel` slice | HoTT D0a, D1 | L1.2 | M |
-| L2.6 | `initial T` and `free T on A` with `fold` | Ergonomics 6 | L2.2, L2.4 | M |
-| L2.7 | Canonical quotients, views and presentations | Ergonomics 7 | L2.2 | L |
-| L2.8 | Squares and `cell` syntax | HoTT E2 | L2.1 | M |
-| D2.1 | Reference chapters for the new language | Plan | L2.1–L2.7 | L |
-
-**K2.2 H1 as instructions.**
-- A `Signature` instruction that admits the normal form: data, positions as
-  cubes, dimensions, boundaries and positivity. It is checked once, and the
-  driver elaborates readable declarations into it (L2.1).
-- Instructions for the generated formation rules and constructors, and
-  `Iota` steps for boundary reductions.
-- One formal composition per sort, as an instruction; `Whnf` pushes it
-  through constructors.
-- Transport along parameters with boundary correction.
-- The eliminator, with clause typing through the partial eliminator, and its
-  computation as `Iota` steps.
-- The provisional `kernel extension: H1` marker.
-
-**K2.4 Differential oracle.**
-- Declare natural numbers, sums, W types and pushouts generically.
-- Compare typing, reduction and composition with the hand-coded
-  instructions on the kernel tests and, through the driver, on the archive:
-  the same definitions derive, with the same judgements up to the names of
-  the rules.
-- Measure checking time.
-- Acceptance: they agree, and any performance gap is recorded. Then the
-  hand-coded instructions retire.
-
-**Showcase acceptance for the stage:**
-- a declared circle whose loop has winding number 1 by computation;
-- `code_meridian` by `rfl`;
-- `Trunc` and `Quotient` declared, with dependent eliminators;
-- a canonical rational printed in lowest terms by `evaluate`.
-
-**Theories** (L2.4, L2.6):
-- ring lemmas take one `CommRing.Model`;
-- `T.equality` follows once HoTT F1 lands;
-- until then, identity is proved per theory by hand.
-
-**Pattern matching** (L2.2) uses the motive abstraction from L1.2, so a
-`match` refines its goal in each branch. Once it is released, the `cases`
-statement is removed: its 24 uses in 11 archive modules are rewritten to
-`match` under the migration verifier, and then the parser, elaborator,
-formatter, highlighter and reference drop it.
-
-## Stage 3: rebuild wave 1
-
-This wave starts once L2.2 and L2.4 have their first release. Each module
-re-proves the hull and iconic results of its area in
-[library-results.md](../library-results.md), in the new syntax, with
-`computable` and `evaluate` where the results compute.
-
-| ID | Area | Main results | Needs |
+| ID | Package | Depends on | Size |
 | --- | --- | --- | --- |
-| B3.1 | Foundations | Path algebra; equivalences (D0b); h-levels; Hedberg; structure identity through theories; quotients and truncation as declarations; choice gives sections | L2.2–L2.5, HoTT D0b |
-| B3.2 | Numbers | Nat; Euclid; integers (inductive, with presentations); binary and base-b numerals with transport by univalence | L2.2, L2.7 |
-| B3.3 | Finite types and counting | Cardinality uniqueness; functions and permutations counted; binomial types; finite choice | B3.1, B3.2 |
-| B3.4 | Order | Cantor–Schröder–Bernstein; Bourbaki–Witt; Zorn | B3.1 |
-| B3.5 | Homotopy types | π₁(S¹) ≅ ℤ as groups; degree and no retraction; bouquets and punctures; the non-abelian twice-punctured plane | B3.1, B3.2, L2.8, HoTT F4 |
-| B3.6 | Groups | Group theory; subgroup lattice; quotient groups; first isomorphism theorem; S₃ | B3.1, L2.4, L2.6 |
+| L1.2 | A5 core goal and proof-construction layer | Delivered | — |
+| L1.2r | Remaining A5 plan metadata and clients: faces, filling, source spans; index/companion motives with H2/H3 | Extend the delivered core with each consuming feature | L |
+| L1.3 | Deterministic fuel and residual-goal diagnostics (HoTT A4/A6), with learned-search phases 1–2: explicit driver options and per-instruction kernel cost | L1.2; A7 baseline | M |
+| L1.4 | Folded path vocabulary and constructor congruence (A1/A2) | L1.1, L1.2; A4 fuel for bounded search | L |
+| L1.5 | Σ projections `p.1`/`p.2`, `show`, `suffices`; separate `Path` induction/`subst` slice (A8/B4/B1) | L1.2; B1 uses A1b's checked induction construction | M |
+| L4.1a | Known-signature application elaboration, named arguments and scoped `_` holes | L1.1, L1.2; L1.3 fuel for inference search | M |
+| L4.1b | Opt-in implicit binders and level-argument inference | L4.1a | M |
+| L4.4 | `apply`, `refine`, pair/sum witness conveniences with visible goals | L4.1a; L4.1b for implicit arguments | M |
+| L2.5a | Checked h-level definitions (HoTT D0a) | L1.1; small foundation module | S |
+| L2.5b | First `hlevel` solver slice (HoTT D1) | L2.5a, L1.2, L1.3 fuel | M |
 
-Tooling runs alongside this wave:
-- HoTT B1 (`Path` induction), B3 (`ext` on Σ and the universe), C1–C3
-  (conversion catalogue, transport rules, path algebra) and D2–D4, as the
-  wave needs them;
-- ergonomics milestone 5's holes, needed by stage 4.
+L4.1a/b together retain the old L4.1 scope; L2.5a/b retain L2.5.
+Inference is not blocked by H2. L4.1a improves the first general `match`
+release without gating it: explicit matching accepts explicit motives and
+arguments. Implicit indices are required for the indexed release. Decide only
+constraints determined by supplied arguments and expected types; E1's
+user-declared level constraints remain deferred. Every implicit argument
+has an explicit spelling.
 
-Acceptance:
-- every listed result is re-proved;
-- nothing uses a non-computing dependency the archive's version did not
-  need;
-- winding numbers and numeral conversions pass `evaluate`;
-- the site's topic pages switch from the archive to the rebuilt modules.
+**Acceptance details:**
 
-## Stage 4: indexed families, inference and rebuild wave 2
+- Application spines use known signatures rather than repeated whole-spine
+  inference. Metavariables have scope, occurs checks and deterministic
+  solutions; ambiguous levels, escaping dimensions and unresolved holes
+  fail before kernel admission. The inspector shows inferred arguments.
+- Fuel counts traversal, candidates, failed attempts, reconstruction,
+  native queries and retries. Specify cache/reset accounting so fresh and
+  reused sessions agree. Native budgets already exist; the missing work is
+  hard cumulative limits and deterministic frontend accounting. Deadlines
+  remain separately reported safety timeouts. The per-instruction kernel
+  cost that learned-search phase 2 exposes is this same accounting: deliver
+  the bridge's cost counter and the driver's explicit options (phase 1) with
+  L1.3, not twice.
+- A1 uses level-generic checked definitions. Reintroducing per-universe
+  specialization would undo L1.1. A2 initially excludes binder bodies;
+  binder-aware rewriting remains a separately scoped extension.
+- B1 is derived cubical `Path` induction. It must not promise judgmental
+  computation for arbitrary neutral motives; H2's `Id`/J has its own gate.
+- Finish each A5 remainder when its client needs it. Basic projections,
+  `show` and `suffices` do not wait for all indexed or companion motives.
 
-| ID | Package | Owner | Depends on | Size |
-| --- | --- | --- | --- | --- |
-| K4.1 | H2 soundness note: index-line matching and its stability, formal composition along indices | Kernel H2 | K2.1 | L |
-| K4.2 | H2 as instructions and in the driver; `Id` with J on `refl` and its comparison with `Path` | Kernel H2, G3 | K2.3, K4.1 | L |
-| L4.1 | Implicit binders, `_` holes, level inference | Ergonomics 5 | L1.2 | L |
-| L4.2 | Dependent matching without K; coverage; impossible branches | Ergonomics 7 | K4.2, L2.3, L4.1 | L |
-| L4.3 | Nested declarations | Ergonomics 7 | L2.1 | M |
-| L4.4 | `apply` and `refine` | Ergonomics 5 | L4.1 | M |
+## Stage 2: one-sort signatures, basic theories and matching
 
-**Rebuild wave 2:**
-
-| ID | Area | Main results | Needs |
+| ID | Package | Depends on | Size |
 | --- | --- | --- | --- |
-| B4.1 | Linear algebra | Vector spaces as a theory; every vector space has a basis; invariance of dimension; spanning families contain bases | B3.4 (Zorn), L2.4 |
-| B4.2 | Polynomials | Integral domain; division; Bézout; principal ideals; roots bound; residue fields; adjoining roots | B3.2, B4.1 |
-| B4.3 | Rationals | Canonical quotient; ordered field; Archimedean property (reals R1) | B3.2, L2.7 |
-| B4.4 | Fields and Galois theory | F₂ and F₄; tower law; splitting fields; embedding counts; Dedekind–Artin; Artin; the fundamental theorem; Galois groups as loops | B4.1, B4.2, B3.6 |
+| K2.1 | Precise H1 signature fragment and soundness note; review gates release | G0 specification | L |
+| K2.2 | H1 instructions: signature admission, constructors, composition, eliminators and steps | K1.2, K2.1 | XL |
+| K2.3 | H1 driver, bridges, signature serialization and generated-rule derivation | K1.3, K2.2 | L |
+| K2.4 | Differential fixtures for native and declared Nat/sum/W/pushout; then retirement | K2.3; explicit representation/comparison contract | M |
+| K2.5 | G2 truncation/resizing policy and migration ledger | K2.1; implementation with K2.3/L2.1 | M |
+| L2.1 | One-sort `inductive` declarations and signature diagnostics | K2.3 | L |
+| L2.2a | Explicit `match`, motives, structural recursion and path clauses | L2.1, L1.2; relevant L1.2r metadata; L4.1a improves the release without gating it | L |
+| L2.2b | Automatic clauses and explicit `obligations` | L2.2a, L2.5b; checked h-level evidence | M |
+| L2.3 | Supported `deriving`: `paths`, `decidable_equality`, `irrelevance`, `ind_prop`, `rec`; `universal` slice | L2.2; `universal` also uses L2.4/L2.6 | L |
+| L2.4 | Core theories: named model records, explicit homomorphisms/isomorphisms, scoped notation, sections, `extends` | L1.1, L1.5 projections, L2.5a for h-level fields | L |
+| L2.6 | Single-sort `initial T`, `free T on A`, `fold`, checked uniqueness/universal interface | L2.2, L2.4; H1-admissible signature | M |
+| L2.8 | Squares and `cell` face syntax with boundary inspection (HoTT E2) | L2.1; face/source metadata from L1.2r | M |
+| L2.9a | Expected-value patterns for `evaluate` | L0.1; own pattern contract and L4.1a infrastructure | S |
+| L2.9b | Closed truncation witness readout | Native H1 `Trunc`, K2.5, L0.1 | M |
+| D2.1 | Checked reference, formatter and inspection for each released construct | Corresponding package, including L2.8/L2.9 | L |
 
-The [Galois roadmap](galois-roadmap.md) resumes here. Its next items must be
-restated against the rebuilt modules first.
+L2.2 means both slices when another package needs automatic clauses.
+Explicit matching can land before automatic clause search. The theories
+release accepts explicit fields and arguments; L4.1b improves its notation
+without making records depend on H1. Generated `T.equality` and richer
+`T.Displayed`/coherence support have separate gates in stage 3.
 
-Showcase acceptance: `Vec` and a typed-syntax evaluator are declared, and
-`evaluate` runs the evaluator; `head` needs no `nil` branch.
+**Specify before implementing H1:** the admitted grammar and positivity,
+constructor ordering, substitution under levels and dimensions, overlaps,
+formal composition, parameter transport and dependent eliminator clauses.
+Split K2.2/K2.3 into reviewable instruction families with rejection tests,
+then demonstrate their integration. The specified fragment precedes the
+implementation; experiments and fixtures may precede review in an explicitly
+enabled experimental mode. Default admission and release require the reviewed
+soundness note. While review is pending, experimental results carry
+`kernel extension: H1`; test its transitive provenance separately from
+non-computing assumptions. A design sketch is not a reviewed soundness note.
 
-## Stage 5: inductive-inductive types, reals and analysis
+Universe fixtures cover phantom parameters, stored data, arities, indices
+and quotient relations: parameters contribute only through those types.
+Reject lowering and mismatched level instances; preserve G0's distinction
+between a sort's universe and its parameter telescope's universe.
 
-| ID | Package | Owner | Depends on | Size |
-| --- | --- | --- | --- | --- |
-| K5.1 | H3 soundness note | Kernel H3 | K4.1 | XL (new work) |
-| K5.2 | H3 as instructions and in the driver | Kernel H3 | K4.2, K5.1 | XL |
-| L5.1 | Companion sorts and functions; relations; bundles; theories with inductive-inductive initial models | Ergonomics 6–7 | K5.2, L2.6 | L |
-| B5.1 | Cauchy reals: `initial CauchyStructure`, operations by fold, `CompleteOrderedField` model | Reals R2–R3 | L5.1, B4.3 | XL |
-| B5.2 | Analysis: limits, complex numbers, integration along segments, periods | Reals R2; complex-analysis roadmap | B5.1 | XL |
-| B5.3 | Syntax of type theory as `initial CwF`, with a computable interpreter | Showcase | L5.1 | L |
+**K2.5/G2.** Native `Trunc(U, A) : U` preserves the universe. The archive's
+`Truncate : U -> U0` has resizing and is not a drop-in replacement. Keep
+legacy assumptions available to archive checks until each intentional
+migration is justified. Record changed public universes, removed assumptions
+and affected consumers; do not add resizing to the rebuilt foundation.
+The ordinary migration check stays strict for unrelated changes.
 
-**Research gate at K5.1.** If the H3 soundness note does not converge, take
-the reals roadmap's fallback: Dedekind reals (R4), which need only H1.
-Analysis (B5.2) is written against the `CompleteOrderedField` theory, so it
-does not change when the carrier does.
+**Release fixtures:** declared Nat/list, W and pushout comparisons;
+a circle with computed winding number 1 and `code_meridian` by `rfl`;
+`Trunc` and set quotient with checked dependent elimination; a tiny theory
+whose law and homomorphism preservation are checked; and rejected bad
+boundaries, nonstructural recursion, missing clauses and missing h-level
+proofs. These fixtures need only their small foundation dependencies.
+A canonical rational is a later library example, not the H1 gate.
 
-Showcase acceptance: `evaluate` reads a rational within 10⁻³ of √2 from a
-closed real.
+`evaluate` patterns require a specified matching language and clear mismatch
+messages; they do not inherently require H1. Truncation readout does require
+native truncation and is a closed evaluation tool, not a source eliminator
+`Trunc(A) -> A`.
 
-The complex-analysis roadmap resumes here, restated against the rebuilt
-modules.
+After general `match` is released, migrate the archive's `cases` uses under
+the strict verifier before removing that statement from parser, formatter,
+highlighter and reference. Legacy explicit eliminators remain parseable.
+
+## Stage 3: derived interfaces, views and automation
+
+These packages provide the language's small checked foundation. They do not
+require rebuilding whole mathematical areas.
+
+| ID | Package | Depends on | Size |
+| --- | --- | --- | --- |
+| L3.1 | Canonical equivalence interface (HoTT D0b) | G0; existing checked equivalence constructions | M |
+| L3.2 | Σ/universe `ext`, property-field closure, contractibility combinators (B3/D2/D4 slices) | L1.2, L2.5, L3.1 as required by each slice | L |
+| L2.4b | Theory identity and displayed/coherence interfaces for an explicit supported grammar (HoTT F1) | L2.4, L3.1, L3.2; D3 only for identity-system registration | L |
+| L3.3 | Minimum checked transfer maps for views/presentations (HoTT F2) | L3.1; C2 for paths built through `ua` | M |
+| L2.7 | Checked eliminator views, canonical quotients, presentations | L2.2, L3.1/L3.3 for equivalence-based views; L2.5 for setness | L |
+
+L2.3 and L2.4b must state which signatures they support and report obligations
+for the rest. A law field is not automatically proof irrelevant. Setness
+cannot rely circularly on a squash clause whose omission it is meant to
+justify. Test nonidentity carrier equivalences and reject incorrect operation
+preservation. Full higher coherence and unrestricted derivation remain open.
+
+Use small finite normal-form and product-swap examples for L2.7, with closed
+computations and rejected wrong maps. Arbitrary binder rewriting, general
+transfer automation, algebraic normalization, expected-type completion and
+lemma suggestions remain explicitly deferred; none is silently included in
+the core theories release.
+
+## Stage 4: indexed families
+
+| ID | Package | Depends on | Size |
+| --- | --- | --- | --- |
+| K4.1 | H2 soundness note: index-line matching and stability under faces | K2.1; H1 computation contract | L |
+| K4.2 | H2 instructions/driver, formal composition along indices, `Id` and J | K2.3, K4.1 | L |
+| L4.2 | Dependent matching without K, coverage, impossible branches | K4.2, L2.3's path-characterization slice, L4.1a/b; indexed L1.2r motives | L |
+| L4.3 | Nested declarations: specify an admissible lowering first | H3/H4 if lowering introduces companion sorts; an H1 subset needs its own one-sort translation | M |
+
+Acceptance: `Vec`, `Fin`, `Id`, vector append and a small typed-syntax
+evaluator are declared; `J` on `refl` computes, and `head` needs no `nil`
+branch. Reflexive index equations can be erased only with the required
+setness proof. Distinguish this from derived `Path` induction.
+
+L4.3 formerly depended only on L2.1. That was insufficient: the proposed
+translation creates mutual declarations, beyond H1's one-sort fragment.
+No general nested-declaration release is promised at H2.
+
+## Stage 5: inductive-inductive language
+
+| ID | Package | Depends on | Size |
+| --- | --- | --- | --- |
+| K5.1 | H3 soundness note, including induction-induction and partial eliminators | K4.1; stabilized H1/H2 rules | XL |
+| K5.2 | H3 instructions, driver and declared set/prop companion sorts | K4.2, K5.1 | XL |
+| L5.1 | Companion functions/motives, relations, bundles, inductive-inductive initial models | K5.2, L2.6; companion L1.2r motives | L |
+
+H3 is a research gate. First specify a small context/type signature and a
+computable interpreter that exercise genuine dependent companion sorts and
+joint elimination; ordinary mutual data alone do not test H3. This replaces
+the active requirement to build Cauchy reals and extract an approximation to
+√2. The reals example remains deferred mathematical acceptance, not evidence
+already supplied by a syntax fixture. If H3's note does not converge, H1/H2
+language releases remain useful and continue independently.
 
 ## Stage 6: on demand
 
-- **H4**, several untruncated sorts: only when a concrete development needs
-  it.
-- **G4**, transport regularity for declared data types: when
-  `transport_constant` corrections become a measurable cost.
-- **G5**, certified interval normalization: when compact interval formulas
-  block proofs.
-- HoTT C4 and E1, E3, E4; HoTT F1 and F2 beyond what theories and
-  presentations need.
-- The RH roadmap, after stage 5.
+- H4: several sorts with untruncated sorts, only with a concrete use.
+- G4 transport regularity; G5 certified interval normalization, when measured
+  proof costs justify them.
+- HoTT C4/E1/E3/E4, fuller identity systems, binder-aware rewriting, transfer
+  automation and theory morphisms, each with an explicit fragment and gate.
+- E1/E2 universe enhancements remain in their proposal document.
+- Learned-search phases 3–5 and native search/certificate work are optional.
+  Phases 1–2, the driver's explicit options and measured per-instruction
+  cost, are scheduled with L1.3 in stage 1; that baseline must include
+  failed queries, model overhead and session/cache effects. Training waits
+  for it.
 
 ## Computation notation track
 
-The [monadic do and arrow roadmap](computation-notation-roadmap.md) adds
-explicitly scoped computation blocks. Its milestones fit alongside the
-existing stages; they add no kernel work or gates to the rebuild:
+The [computation roadmap](computation-notation-roadmap.md) owns N0–N5.
+The exact syntax remains proposed; none is delivered.
 
-- **N0, mathematical baselines:** can start with the archive and design
-  examples. Record span closure, free-algebra substitution and a basic-arrow
-  example before changing syntax.
-- **N1, checked interfaces:** after L1.1 (G0) and L2.4 (records/theories).
-  Universe-correct operation and law records are the common foundation.
-- **N2, monadic do, and N4, basic arrows:** after N1, L1.2 (goal layer) and
-  L4.1 (argument inference). The two forms can proceed independently over
-  the shared interfaces; N4 does not wait for all monad instances.
-- **N3, patterns and mathematical instances:** follows N2 and the relevant
-  matching/library work. Native truncation uses B3.1; free-algebra
-  substitution uses L2.6; rebuilt span closure uses B4.1.
-- **N5, choice and dynamic arrow application:** follows N4 with explicit
-  checked capability extensions. Probability instances wait for their
-  finite-distribution and rational arithmetic library; partiality waits
-  for H3. Neither is a prerequisite for the initial notation releases.
+- **N0:** explicit baselines can start now. Preserve archived span closure as
+  evidence; use identity/function/static-option fixtures for language work.
+- **N1:** checked operations and law records after G0 and L2.4's core record
+  slice. No initial model or generated structure identity is required.
+- **N2 and N4:** monadic `do` and basic `proc` after N1, the goal layer and
+  L4.1a/b. They proceed independently; full mathematical instances do not
+  gate the first notation releases.
+- **N3a:** exhaustive patterns after N2 and the relevant matching service.
+  Small pair/sum fixtures prove scope, rejection of refutable binds and
+  absence of witness escape.
+- **N3b:** native truncation and free-algebra examples after H1/L2.6; rebuilt
+  span closure only when library development is resumed. These are separate
+  instance gates, not prerequisites for N3a or N4.
+- **N5:** explicit choice and dynamic application after N4 and checked
+  capability laws. Probability and partiality instances remain deferred.
 
-Reference examples, rejected programs and a tactical handoff accompany each
-release. Exact syntax remains proposed until its implementation milestone.
+## Release checks and documentation
 
-## Documentation track, across stages
+Every language package includes parser/formatter round trips, original source
+spans, generated-term inspection, native acceptance/rejection, and browser/CLI
+agreement. Transactions discard failed generated declarations, rules and
+signature registrations; import changes invalidate affected caches. Complete
+terms contain no unresolved goals or metavariables.
 
-- The reference chapters (D0.2) are updated with each release:
-  - universes after L1.1;
-  - `inductive`, `match` and theories after stage 2 (D2.1);
-  - indexed families after stage 4;
-  - inductive-inductive types after stage 5.
+Use the existing canonicity and false-equality fixtures, archive coverage and
+strict migration checks as applicable. Kernel/ABI changes also require native
+tests and sanitizers. Performance comparisons record revision, workload,
+limits, total checking time, kernel work and memory; historical timings are
+observations, not current guarantees. Rebaseline after G0 before setting new
+fuel defaults; old specialization-cost fields no longer describe the runtime.
 
-  Every example is checked by the harness (D0.1). Rejected examples keep
-  their expected messages.
-- Each kernel stage adds a tactical handoff: the supported fragment, the
-  soundness note, commands run, and the next obligation.
-- `library-results.md` gains a column recording where each result lives in
-  the rebuilt library, and when.
+D0.2 and D2.1 advance with their features, including indexed/companion syntax.
+Update the reference, roadmap status, index and tactical checkpoint together.
+A roadmap moves to `historical/` only when its scope is complete; a completed
+milestone does not retire a document with open work. Update incoming and
+outgoing links when moving it. Specifications remain linked where normative.
+
+## Deferred library backlog
+
+The [results catalog](../library-results.md) and mathematical roadmaps retain
+the long-term targets. These packages are not active dependencies or language
+release gates:
+
+| Retained IDs | Deferred work |
+| --- | --- |
+| B3.1–B3.6 | Full foundations, numbers, finite counting, order, homotopy types and groups rebuild |
+| B4.1–B4.4 | Linear algebra, polynomials, rationals, fields and Galois rebuild |
+| B5.1–B5.2 | Cauchy/Dedekind reals and analysis |
+| B5.3 | Full `initial CwF` development and interpreter; L5.1 instead requires a smaller H3 fixture first |
+| Later mathematical roadmaps | Complex analysis, Galois continuation and RH; no automatic resumption |
+
+Small h-level/equivalence definitions and language acceptance fixtures are
+part of their owning language packages. They do not commit to proving all
+results from the corresponding library area.
+
+## Planning corrections in this review
+
+- Refresh completed G0, computability, goal-core and reference status; keep
+  partial features distinct from delivered ones.
+- Move holes/inference before their matching and notation clients; make
+  fuel, projections and h-level dependencies explicit.
+- Separate core theories from F1 identity, explicit matching from automatic
+  clauses, and notation patterns from large mathematical instances.
+- Schedule G2 policy, H1 representation comparison, minimum view/transfer
+  support, `irrelevance`, `evaluate` extensions, module-resolution parity
+  and a reliable coverage-command exit status.
+- Remove unsupported H1 mutual-type assumptions from nested declarations.
+- Replace mathematical rebuild gates with small language fixtures, preserving
+  the paused mathematical backlog and H3's research gate.
+- Same-day revision: name K2.1 as the main track; schedule learned-search
+  phases 1–2 with L1.3, since deterministic fuel and per-instruction cost
+  are one accounting; make L4.1a an input to explicit matching rather than
+  its gate, because every implicit argument has an explicit spelling.
 
 ## First actions
 
-Stage 0 is settled: I0.1 is deferred, because work continues off `main` on
-`proof-ergonomics-roadmap`; I0.2, I0.3, I0.4, L0.1 and D0.1 are done; and
-D0.2's chapter 6 and the quick reference wait for stage 2; chapter 5,
-universes, was rewritten with L1.1.
-Of stage 1, K1.1 and the core of L1.2 are done, and the instruction kernel
-is merged.
+1. **Main track: K2.1**, the H1 signature fragment and soundness note, with
+   K2.5's truncation and resizing policy. It depends on nothing open and
+   gates K2.2, the largest package in the plan.
+2. Alongside: L1.3 deterministic budgets and diagnostics together with
+   learned-search phases 1–2, which share its cost accounting; and L1.5,
+   the small goal conveniences.
+3. Between those, the small items: the quick reference (D0.2),
+   module-resolution parity (I1.1) and coverage reporting (I1.3). Rebaseline
+   current generic declarations for fuel accounting.
+4. Build L4.1a, then L4.1b/L4.4; start L2.5a/b and core theories (L2.4) as
+   their projection/fuel prerequisites land.
+5. Implement H1 instruction families and driver support, explicit matching,
+   then automatic clauses and their canonicity/differential acceptance.
+6. Advance N0/N1, then N2/N4 alongside derived declarations and views. H2
+   follows H1's stable rules; H3 waits for its reviewed research result.
 
-Next, as of 2026-09-26:
-
-1. **G0**, the main track. It gates H1, theories, inductive declarations
-   and `match`, `Id`, computation notation and the rebuild. K1.2 and K1.3,
-   the kernel's and the driver's halves, are done, and so is K1.4: the
-   driver steers by its own guide, which reads level syntax, instead of the
-   term checker's conversion. L1.1, the language, is done too, so G0 is
-   complete and H1 is the main track's next item.
-2. Optional, standing alone: phases 1 and 2 of the
-   [learned search](learned-search.md) design, the driver's explicit
-   options and the kernel cost of each instruction; phases 3 to 5 wait for
-   their numbers. The retirement of the term checker and the reference
-   checker, now that nothing in the driver asks them, is a separate
-   decision.
-3. Also alongside, small self-contained language packages that need only
-   the goal layer: L1.5 (Σ projections, `induction p;`, `show` and
-   `suffices`) and L1.3 (deterministic fuel, residual goals in
-   diagnostics). Search limits are still elapsed time, so a result can
-   differ by machine.
-4. Then L4.1, argument inference, which theories, matching on indexed
-   families and do-notation all need and which waits for G0 only for level
-   inference; and L2.5, the h-level definitions and the first `hlevel`
-   slice, which milestone 7's automatic clauses need.
+Checker retirement and learned-search phases 3–5 may proceed separately;
+neither blocks this language sequence. Concrete mathematical development
+remains paused.
