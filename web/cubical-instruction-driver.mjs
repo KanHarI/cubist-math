@@ -24,8 +24,10 @@ const unsupported = kind => new Error(`${kind} is not in instruction mode yet.`)
 const dimensionBound = (kind, i) => kind === "PLam" || ((kind === "Path" || kind === "Trans") && i === 0) ||
   (kind === "Comp" && i < 2) || (kind === "HComp" && i === 1);
 // Weak heads that only compute by eta, or not at all.
+// A declared type's instance, constructor and eliminator are weak heads too
+// (H1): a constructor applied computes only under an eliminator.
 const CONSTRUCTORS = new Set(["U", "Pi", "Lam", "LPi", "LLam", "Sigma", "Pair", "Nat", "Zero", "Succ", "Unit", "Point", "Void",
-  "Sum", "Inl", "Inr", "Path", "PLam", "W", "Sup", "Pushout", "PushLeft", "PushRight"]);
+  "Sum", "Inl", "Inr", "Path", "PLam", "W", "Sup", "Pushout", "PushLeft", "PushRight", "Sort", "Con", "Elim", "List"]);
 // The type former a constructor's eta expansion needs.
 const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma", LLam: "LPi" };
 // Steps after which a comparison the oracle finds true computes normal forms.
@@ -40,15 +42,20 @@ const FUEL = 20000, ORACLE_STEPS = 20000;
 export const searchLimits = Object.freeze({ fuel: FUEL, longComputation: LONG_COMPUTATION, guideFuel: GUIDE_FUEL,
   guideHeadSteps: GUIDE_HEAD_STEPS, oracleSteps: ORACLE_STEPS });
 // Weak heads that are constructors: two of different kinds never agree.
+// An instance of a declared type is one (H1); so is a list of its parameters.
 const RIGID = new Set(["U", "Pi", "Sigma", "W", "LPi", "Nat", "Zero", "Succ", "Unit", "Point", "Void", "Sum",
-  "Inl", "Inr", "Path", "Sup", "Pushout", "PushLeft", "PushRight", "Lam", "LLam", "PLam", "Pair"]);
+  "Inl", "Inr", "Path", "Sup", "Pushout", "PushLeft", "PushRight", "Lam", "LLam", "PLam", "Pair", "Sort", "List"]);
 // Constructors that eta relates to a neutral term of their type.
 const ETA_CONSTRUCTORS = new Set(["Lam", "LLam", "PLam", "Pair"]);
-// Neutral weak heads: variables and eliminations stuck on one.
-const NEUTRAL = new Set(["Var", "App", "LApp", "Fst", "Snd", "NatRec", "SumRec", "UnitRec", "WRec", "PApp", "Abort"]);
+// Neutral weak heads: variables and eliminations stuck on one. A declared
+// type's constructor and eliminator count here, not as rigid heads: each is
+// a function, or a path, which eta relates to a lambda. Two constructors of
+// different numbers still differ, and so does a constructor from a variable.
+const NEUTRAL = new Set(["Var", "App", "LApp", "Fst", "Snd", "NatRec", "SumRec", "UnitRec", "WRec", "PApp", "Abort",
+  "Con", "Elim"]);
 // The child that is only a constructor's annotation: two equal terms may
 // carry different annotations, so a difference there proves nothing.
-const ANNOTATION = { Pair: 0, Inl: 0, Inr: 0, Sup: 0, PushLeft: 0, PushRight: 0, Abort: 0, Lam: 0 };
+const ANNOTATION = { Pair: 0, Inl: 0, Inr: 0, Sup: 0, PushLeft: 0, PushRight: 0, Abort: 0, Lam: 0, Con: 0 };
 // A scope maps term symbols to entries; under this key, the mask of the
 // interval dimensions live in it.
 const LIVE = "dims";
@@ -583,8 +590,112 @@ export class InstructionDriver {
         k.term("App", 0, r, k.term("App", 0, k.term("Snd", 0, maps), cv))));
       return g.pushElim(motive.ref.id, left, right, this.convertTo(derive(d), this.asType(derive(bridge, joint))));
     }
+    // Declared types (H1; the specification's section 6.1).
+    case "Sort": return this.instance(n, scope);
+    case "Con": {
+      // Constructor k of an instance, at the type the kernel gives it.
+      const instance = this.asType(derive(a));
+      if (this.node(this.statement(instance).term).kind !== "Sort") throw new Error("A constructor names an instance of a declared type.");
+      return g.construct(instance, n.payload);
+    }
+    case "Elim": {
+      // A motive Π (z : S(as)). U(l), then each clause at the type the
+      // kernel computes for it, ClauseType_k, which the eliminator judgement
+      // in progress carries as its type.
+      const motive = this.focus(this.shape(this.focus(derive(a), "type"), "Pi"), "type");
+      this.shape(this.child(motive, 0), "Sort");
+      this.shape(this.child(motive, 1), "U");
+      if (this.node(this.subterm(this.child(motive, 0))).payload !== n.payload)
+        throw new Error("The eliminator's motive is over another declared type.");
+      let eliminator = g.eliminator(motive.ref.id);
+      for (let clause = b; clause; clause = this.node(clause).children[1]) {
+        const expected = this.evidence(this.focus(eliminator, "type"));
+        eliminator = g.eliminatorClause(eliminator, this.convertTo(derive(this.node(clause).children[0]), expected));
+      }
+      return g.eliminatorClose(eliminator);
+    }
     default: throw unsupported(n.kind);
     }
+  }
+
+  // An admitted signature as the kernel records it, read once per driver.
+  signatureInfo(index) {
+    const infos = this.signatureInfos ??= new Map();
+    if (!infos.has(index)) infos.set(index, this.kernel.signature(index));
+    return infos.get(index);
+  }
+  // The former Π (xs < ω). Π (ps : Ps). U(ℓ) of a signature, read as its
+  // level symbols and its parameters' types, each over the earlier ones.
+  telescope(info) {
+    let term = info.former;
+    const levels = [], types = [];
+    for (let j = 0; j < info.levels; j++, term = this.node(term).children[1]) {
+      if (this.node(term).kind !== "LPi") throw new Error("A signature's former binds its universe parameters first.");
+      levels.push(this.node(term).payload);
+    }
+    for (let i = 0; i < info.parameters; i++, term = this.node(term).children[1]) {
+      if (this.node(term).kind !== "Pi") throw new Error("A signature's former binds its parameters after its levels.");
+      types.push(this.node(term).children[0]);
+    }
+    return { levels, types };
+  }
+  // S{ls}(as): an instance of an admitted signature (the specification's
+  // sections 3.1 and 6.1). The kernel checks each parameter's type against
+  // the telescope's, with the levels and the earlier parameters substituted,
+  // up to bound names: so each parameter is converted to exactly that type.
+  // The types come from applying an entry of the former's type to the
+  // levels and the parameters, as an application would.
+  //
+  // A recorded level is given. An erased one is read from the parameters
+  // whose telescope type ends in U(x), each reduced to that shape first; the
+  // largest reading is used, and the lower parameters are lifted to it, as
+  // the kernel asks.
+  instance(n, scope) {
+    const g = this.graph, info = this.signatureInfo(n.payload), { levels: symbols, types } = this.telescope(info);
+    const list = cell => cell ? [this.node(cell).children[0], ...list(this.node(cell).children[1])] : [];
+    const given = list(n.children[1]), parameters = list(n.children[0]);
+    if (parameters.length !== info.parameters) throw new Error("An instance takes each of its signature's parameters.");
+    const derived = parameters.map(parameter => this.derive(parameter, scope));
+    // The Π binders a telescope type has before its end, and that end.
+    const shapeOf = type => {
+      let depth = 0;
+      for (; this.node(type).kind === "Pi"; depth++) type = this.node(type).children[1];
+      return { depth, end: this.node(type) };
+    };
+    let recorded = 0;
+    for (let j = 0; j < info.levels; j++) recorded += info.recorded >> j & 1;
+    if (given.length !== recorded) throw new Error("An instance gives each recorded universe parameter its level, and no other.");
+    const levels = [];
+    for (let j = 0, r = 0; j < info.levels; j++) {
+      if (info.recorded >> j & 1) {
+        levels.push(given[r++]);
+        continue;
+      }
+      let read = 0;
+      types.forEach((type, i) => {
+        const { depth, end } = shapeOf(type);
+        if (end.kind !== "U" || this.node(end.children[0]).kind !== "Var" || this.node(end.children[0]).payload !== symbols[j]) return;
+        let focus = this.focus(derived[i], "type");
+        for (let d = 0; d < depth; d++) { this.shape(focus, "Pi"); focus = this.child(focus, 1); }
+        this.shape(focus, "U");
+        derived[i] = focus.ref.id;
+        const level = this.node(this.subterm(focus)).children[0];
+        read = read ? this.kernel.term("LMax", 0, read, level) : level;
+      });
+      if (!read) throw new Error("An erased universe parameter has no parameter to read it from.");
+      levels.push(read);
+    }
+    let fn = g.variable(this.freshEntry(this.asType(this.derive(info.former, new Map([[LIVE, 0n]]))), "S"));
+    for (const level of levels) fn = g.levelApply(this.shape(this.focus(fn, "type"), "LPi"), level);
+    let instance = g.sortBegin(n.payload);
+    for (const level of given) instance = g.sortLevel(instance, level);
+    derived.forEach(parameter => {
+      const type = this.focus(this.shape(this.focus(fn, "type"), "Pi"), "type");
+      const converted = this.convertTo(parameter, this.evidence(this.child(type, 0)));
+      instance = g.sortParameter(instance, converted);
+      fn = g.apply(type.ref.id, converted);
+    });
+    return instance;
   }
 
   // Two typing judgements agree where two faces meet: an equality between
@@ -1012,14 +1123,23 @@ export class InstructionDriver {
     if (x.kind === "Var") return this.sameName(x.payload, y.payload, terms);
     if (x.kind === "U") return this.levelsEqual(x.children[0], y.children[0], terms);
     if (x.kind === "LApp") return this.levelsEqual(x.children[1], y.children[1], terms);
+    // An instance: its signature, and its recorded levels by normal form.
+    if (x.kind === "Sort") {
+      if (x.payload !== y.payload) return false;
+      let a = x.children[1], b = y.children[1];
+      for (; a && b; a = this.node(a).children[1], b = this.node(b).children[1])
+        if (!this.levelsEqual(this.node(a).children[0], this.node(b).children[0], terms)) return false;
+      return !a && !b;
+    }
     if (FORMULA_PAYLOADS.has(x.kind)) return this.sameFormula(x.payload, y.payload, dims);
     if (TERM_BINDERS.has(x.kind) || ["PLam", "Path", "Comp", "HComp", "Trans"].includes(x.kind)) return true;
     return x.payload === y.payload;
   }
   nodeHandle(node) { return node.id; }
   // The operand slots compared: all but a path application's annotation, a
-  // universe's level and an instantiation's level, which sameHead compares.
-  parts(n) { return n.kind === "U" ? 0 : n.kind === "PApp" || n.kind === "LApp" ? 1 : 4; }
+  // universe's level, an instantiation's level and an instance's recorded
+  // levels, which sameHead compares.
+  parts(n) { return n.kind === "U" ? 0 : n.kind === "PApp" || n.kind === "LApp" || n.kind === "Sort" ? 1 : 4; }
   // Two levels are equal when their normal forms are (G0 §2.4), each variable
   // bound on the way down named by its binder, so that the levels of
   // λ (x < ω). U(max(x, z)) and λ (y < ω). U(max(z, y)) agree though their
@@ -1089,6 +1209,10 @@ export class InstructionDriver {
         const kind = this.node(n.children[1]).kind;
         return ["PushLeft", "PushRight", "PushPath"].includes(kind) ? iota : under(1, this.headStep(n.children[1]));
       }
+      // A declared type's eliminator computes on a constructor applied to
+      // its arguments and at its dimensions (H1). A constructor at an
+      // endpoint is its boundary first, by the path step inside.
+      if (fn === "Elim") return this.constructed(n.children[1]) ? iota : under(1, this.headStep(n.children[1]));
       return under(0, this.headStep(n.children[0]));
     }
     // A pushout path at an endpoint is a point.
@@ -1134,6 +1258,16 @@ export class InstructionDriver {
       return null;
     default: return null;
     }
+  }
+
+  // Whether a term is a declared type's constructor applied, at dimensions
+  // that are not endpoints: c(ts, qs) @ rs.
+  constructed(term) {
+    let n = this.node(term);
+    for (; n.kind === "PApp"; n = this.node(n.children[0]))
+      if (this.point(n.payload).endpoint !== undefined) return false;
+    for (; n.kind === "App"; n = this.node(n.children[0]));
+    return n.kind === "Con";
   }
 
   // Alpha equality, as the kernel decides it without reducing: bound names

@@ -1,6 +1,8 @@
 # One-sort signatures (H1): rules, soundness note and truncation policy
 
-Status: approved on 2026-09-27 for implementation; not implemented. Written
+Status: approved on 2026-09-27 for implementation. K2.2's six instruction
+families are implemented on the `h1-signatures` branch, and K2.3's driver
+support is in progress there (section 6). Written
 on 2026-09-27 as work-plan items K2.1 (the H1 fragment and its soundness
 note) and K2.5 (G2's truncation and resizing policy, with its migration
 ledger). Every open question is decided (see Decisions). It is the contract
@@ -1360,6 +1362,30 @@ whose type is not the displayed squash boundary.
   K1.4 guide answers "different" for distinct constructor heads and "unknown"
   for `hcomp` and transport heads.
 
+**Implementation.** Admission is `admitSignature` in
+`web/cubical-signatures.mjs`: from a normal form over cubical syntax it
+issues the instructions above, and registers the signature by name, with
+its constructor names, the generated squash named `squash`. The driver
+(`web/cubical-instruction-driver.mjs`) derives the three node kinds:
+
+- An instance converts each parameter to exactly the telescope's type,
+  because `SortParameter` compares types up to bound names only. It obtains
+  that type by applying a fresh entry of the former's type to the levels and
+  the earlier parameters, as an application's argument is checked. An
+  erased level is read from every parameter whose telescope type ends in
+  `U(x)`, each first reduced to that shape, and the largest reading is used,
+  so the lower parameters are lifted to it.
+- An eliminator converts each clause to the type the eliminator in progress
+  carries, `ClauseType_k`.
+- For the search, an instance is a rigid head whose recorded levels compare
+  by normal form. A constructor and an eliminator are neutral heads rather
+  than rigid ones: each is a function or a path, which eta relates to a
+  lambda. The guide still answers "different" for constructors of different
+  numbers, and for a constructor against a variable.
+
+`tests/h1-driver.test.mjs` covers these, checking that the search takes
+`Iota`, `Path` and `Whnf` steps where this section says it does.
+
 ### 6.2 Bridges and serialization
 
 - `web/cubical-syntax.mjs`, `web/cubical-kernel.mjs` and
@@ -1371,6 +1397,16 @@ whose type is not the displayed squash boundary.
 - The renderers (`web/cubical-notation.mjs`, `web/cubical-source-text.mjs`,
   `web/math-notation.mjs`) print sorts, constructors at dimensions and
   eliminators with their clauses.
+
+**Implementation.** `web/cubical-syntax.mjs` encodes `Sort`, `Con` and
+`Elim`, naming a signature as it was registered, and decodes them with
+their names. The kernel wrapper's `signatures` map holds the records, and a
+declaration's transaction removes those a rollback frees. The renderers
+print an instance as its name applied to its recorded levels and
+parameters, `Pointed(U0)` or `List(N)`, a constructor by its name, and an
+eliminator as `N.elim(motive, clauses…)` until `match` gives it a source
+form. `lib/cubical/native.mjs` and the JavaScript reference checker are not
+extended, as the work plan decided.
 
 ### 6.3 Transactions and caches
 

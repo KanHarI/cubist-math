@@ -52,6 +52,10 @@ export class CubicalKernel {
     this.maxQuerySteps = MAX_QUERY_STEPS;
     this.unfoldingHints = [];
     this.definitions = new Map();
+    // Admitted signatures of declared types (H1), by name: each record's
+    // kernel index, constructor names and normal form in source terms
+    // (web/cubical-signatures.mjs). A rollback removes those it admitted.
+    this.signatures = new Map();
     // Whether instruction drivers on this session consult the term checker's
     // conversion as a search aid rather than their own guide, which compares
     // weak head normal forms (web/cubical-instruction-driver.mjs). For
