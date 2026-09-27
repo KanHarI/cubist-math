@@ -113,6 +113,27 @@ def pointwise(A : U0, f : A -> A) : f = f {
   assert.deepEqual((await check(typed.source, "types")).failures, []);
 });
 
+test("a rewrite under a projection keeps the projected operand whole", async () => {
+  const source = `def applied(p, q : Nat and Nat, e : p = q) : Nat := at(e, 0).1;
+def moved(x, y : Nat, e : x = y, v : Nat and Unit) : Nat := transport(fun (n : Nat) => Nat and Unit, x, y, e, v).1;
+def picked : Nat := (fun (x : Nat) => fun (y : Nat) => typed(Nat and Nat, (x, y)))(1, 2).2;
+`;
+  const identical = rewriteModule(source, { rewrites: identicalRewrites });
+  assert.deepEqual(identical.applied, { "path-apply": 1, along: 1, fun: 1 });
+  // e @ 0.1 would read as e @ (0.1), which is no interval coordinate.
+  assert.match(identical.source, /:= \(e @ 0\)\.1;/);
+  assert.match(identical.source, /:= \(along \(fun \(n : Nat\) => Nat and Unit\) by e from v\)\.1;/);
+  assert.match(identical.source, /:= \(fun \(x, y : Nat\) => typed\(Nat and Nat, \(x, y\)\)\)\(1, 2\)\.2;/);
+  const [report] = await verifyMigration({ modules: ["projection_fixture"], level: "identical",
+    readOriginal: name => name === "projection_fixture" ? source : library(name),
+    readEdited: async () => formatMathScript(identical.source) });
+  assert.deepEqual(report.failures, []);
+  assert.equal(report.identical, 3);
+  // A library wrapper becomes a call, which a projection applies to as it is.
+  const wrapped = rewriteModule("def w := concatenate(U0, A, x, y, z, p, q).1;\n", { rewrites: typePreservingRewrites });
+  assert.equal(wrapped.source, "def w := trans(p, q).1;\n");
+});
+
 test("dependents are checked against edited definitions they mention", async () => {
   const originals = {
     // n + 0 does not reduce for a variable n, so the edited pick is not

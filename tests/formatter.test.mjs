@@ -48,6 +48,20 @@ def block(A,B:U0,a:A,f:A->B):B{suffices x:A by{exact f(x);}exact a;}
   assert.equal(formatMathScript(formatted), formatted);
 });
 
+test("a projection of a block expression keeps its dot on the closing brace", () => {
+  const source = `def a(n : Nat) : Nat := induction n as k return Nat and Nat { zero => (0, 0); succ h => h; }.1;
+def b(v : Unit or Unit) : Nat := match v return Nat and Nat { left x => (0, 0); right y => (1, 1); }.2;
+def c(p : Nat and Nat) : Nat := unpack p as (x, y) return Nat and Nat { (y, x); }.1;
+def d(n : Nat, v : Unit or Unit) : Nat and Nat := (induction n as k return Nat and Nat { zero => (0, 0); succ h => h; }.1,
+  match v return Nat and Nat { left x => (0, 0); right y => (1, 1); }.2);
+`;
+  const formatted = formatMathScript(source);
+  assert.equal(formatted.match(/\n *\}\.[12][;,)]/g)?.length, 5, formatted);
+  assert.doesNotMatch(formatted, /\}\s+\./);
+  assert.deepEqual(semantic(parse(formatted)), semantic(parse(source)));
+  assert.equal(formatMathScript(formatted), formatted);
+});
+
 test("invalid input is rejected instead of rewritten", () => {
   assert.throws(() => formatMathScript("def x := (0;"));
   assert.throws(() => formatMathScript("def x := 0;", { printWidth: 0 }));

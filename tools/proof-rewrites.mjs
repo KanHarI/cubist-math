@@ -55,6 +55,8 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
   }
   function childContext(node, key) {
     if (node.kind === "call") return key === "fn" ? "callee" : "delimited";
+    // A projection's operand binds as tightly as a callee: (e @ 0).1.
+    if (node.kind === "projection") return "callee";
     if (["pair", "exact", "let", "obtain", "have", "haveValue", "over", "along", "rw", "simpOnly",
       "simpaOnly", "show", "suffices", "lambda", "binderGroup", "forall", "exists", "pathLambda", "withUnfolding"].includes(node.kind))
       return "delimited";

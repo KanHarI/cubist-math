@@ -180,7 +180,9 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
           if (!(all[position]?.comment && !source.slice(previous.end, all[position].start).includes("\n"))) {
             flush(); docs.push(hard, hard); previous = null;
           }
-        } else if (text === "{" && !expressionBlockEnds.has(previous.end) && all[position] && ![";", ",", ")", "]", "}"].includes(all[position].text) && !all[position].comment) {
+        } else if (text === "{" && !expressionBlockEnds.has(previous.end) && all[position] && ![";", ",", ")", "]", "}"].includes(all[position].text)
+            // A projection of a block expression, as in induction … { … }.1, keeps its dot tight.
+            && !projectionDots.has(all[position].start) && !all[position].comment) {
           flush(); docs.push(hard); previous = null;
         }
       } else if (text === ";") {
