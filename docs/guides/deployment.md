@@ -31,6 +31,17 @@ To check a deployed site, run `npm run test:site -- https://cubist.kanhar.art/`.
 The smoke test opens the landing page, Euclid, the F₄ Galois correspondence, and
 the kernel workbench, checking the real worker and WASM checker.
 
+## Checks
+
+The kernel workflow (`.github/workflows/ci.yml`) runs its full matrix only for
+pull requests into `main`. Work is grouped on other branches and merged into
+`main` together, so those branches' pull requests run no CI; check them
+locally with `npm test`, `npm run test:browser`, `make -C kernel test` and
+`make lint`. To run the workflow on another branch, use
+`gh workflow run ci.yml --ref BRANCH`. A newer push to a pull request cancels
+its older run. After a merge, the website workflow checks `main` again
+(`npm test` and the site test) before publishing.
+
 ## Domain
 
 GitHub repository Settings → Pages uses **GitHub Actions** as the build source
