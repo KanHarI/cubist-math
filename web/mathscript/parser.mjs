@@ -297,6 +297,18 @@ export function parse(source, typeOnly = false) {
         a = { kind: "call", fn: a, args, start: a.start, end: end.end };
         continue;
       }
+      // A projection p.1 or p.2 is tight: no space on either side of the dot.
+      // A quantifier's dot is followed by a space, so it never reads as one.
+      if (peek() === "." && ts[i - 1].end === ts[i].start && /^[0-9]+$/.test(ts[i + 1].text)
+          && ts[i + 1].start === ts[i].end) {
+        const dot = take("."), digit = take();
+        if (digit.text !== "1" && digit.text !== "2")
+          throw Object.assign(new Error("A pair has only the projections .1 and .2. A tuple nests pairs to the right: the third component of (a, b, c) is .2.2."), { offset: digit.start });
+        a = { kind: "projection", value: a, index: Number(digit.text),
+          dot: { start: dot.start, end: dot.end }, digit: { start: digit.start, end: digit.end },
+          start: a.start, end: digit.end };
+        continue;
+      }
       const p = prec[peek()];
       if (p === undefined || p < min) break;
       const operatorToken = take(), operator = operatorToken.text;
@@ -385,6 +397,24 @@ export function parse(source, typeOnly = false) {
             s = { kind: "have", name: n, type, body, start: t.start, end: ts[i - 1].end };
           }
         }
+      } else if (t.text === "show") {
+        // show T; restates the goal as a type equal to it by computation.
+        const type = expr(), end = take(";");
+        s = { kind: "show", type, start: t.start, end: end.end };
+      } else if (t.text === "suffices") {
+        // suffices h : T by proof; proves the goal from h : T, and the
+        // statements after it prove T. The proof is a term or a block.
+        if (!/^[A-Za-z_]/.test(peek()) || peek() === "EOF" || ts[i + 1].text !== ":")
+          throw Object.assign(new Error("suffices names its hypothesis: suffices h : T by term;"), { offset: ts[i].start });
+        const n = name();
+        take(":");
+        const type = expr();
+        if (peek() !== "by")
+          throw Object.assign(new Error(`suffices needs a proof of the goal from ${n.text} after by: suffices ${n.text} : T by term;`), { offset: ts[i].start });
+        const by = take("by");
+        const proof = peek() === "{" ? { kind: "block", body: block() } : { kind: "term", value: expr() };
+        const end = proof.kind === "term" ? take(";").end : ts[i - 1].end;
+        s = { kind: "suffices", name: n, type, proof, by: { start: by.start, end: by.end }, start: t.start, end };
       } else if (t.text === "rfl") {
         const end = take(";");
         s = { kind: "rfl", start: t.start, end: end.end };

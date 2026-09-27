@@ -2,6 +2,7 @@
 
 Status reviewed 2026-09-27: A7 and A5's core goal, scope and reconstruction
 layer are delivered, including motive abstraction for several scrutinees.
+A8 (projections) and B4 (`show`, `suffices`) were delivered the same day.
 A5's remaining work and the other milestones are open. The
 [implementation checkpoint](../tactical/hott-automation-handoff.md) records A7's
 baseline. Revised after two design reviews on 2026-09-24 and a
@@ -428,13 +429,15 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     `field_pair_path_decode` hold by conversion and now use `rfl`, with
     unchanged public types and assumptions; the other 18 equality statements
     need their proofs.
-- [ ] **A8. Σ projections with inferred families.** Add projection syntax, for
-  example `p.1` and `p.2`, elaborating to the core `First` and `Second` with
-  the family read from the checked type of `p`. The library spells projections
-  through eight helpers that take the family explicitly, with 1,283 calls
-  (`field_snd`, `field_fst`, `sigma_first`, …); each helper converts to the
-  corresponding projection. A2's matcher then sees one head per projection.
-  Keep the helpers during migration.
+- [x] **A8. Σ projections with inferred families.** Delivered on 2026-09-27
+  (work plan L1.5): `p.1` and `p.2` elaborate to the kernel's `Fst` and `Snd`,
+  with the family read from the checked type of `p`. The archive spells
+  projections through eight helpers that take the family explicitly, with
+  1,283 calls (`field_snd`, `field_fst`, `sigma_first`, …); each helper
+  converts to the corresponding projection, which
+  `tests/projections-show-suffices.test.mjs` checks by `rfl`. A2's matcher then
+  sees one head per projection. The archive keeps its helpers; the paused
+  rebuild would use projections.
 - [ ] **A9. Superseded by G0 and ergonomics milestone 5.** G0 removes
   templates. Omitted universe arguments become level arguments, inferred from
   level constraints by milestone 5's argument inference. The inspector still
@@ -521,10 +524,12 @@ expression forms such as `induction n as k return C { … }`.
     unrelated maps never qualify.
 
   Equality of paths remains a nested `path` or an E2 square.
-- [ ] **B4. `show` and `suffices`.** `show T;` replaces the goal by a
-  convertible type, checked by conversion. `suffices h : T by term;` (or a
-  block) proves the goal from `h`, then continues with goal `T`.
-  Reconstruction uses only conversion or application.
+- [x] **B4. `show` and `suffices`.** Delivered on 2026-09-27 (work plan
+  L1.5). `show T;` replaces the goal by a convertible type, checked by
+  conversion. `suffices h : T by term;` (or a block) proves the goal from `h`,
+  then continues with goal `T`. Reconstruction uses only conversion or
+  application: `show` adds no step, and `suffices` applies the checked
+  function `fun (h : T) => term` to the proof of `T` through A5's lemma step.
 - [ ] **B5. Superseded by H1 and ergonomics milestone 7.** Generated
   eliminators need no registry, because the kernel signature is the
   description. What remains of B5 is views, which milestone 7 owns: checked

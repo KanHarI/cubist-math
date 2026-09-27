@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { numeralExpansion, tokenStyle } from "../web/source-tokens.mjs";
+import { numeralAt, numeralExpansion, projectionIndex, tokenStyle } from "../web/source-tokens.mjs";
 
 test("numerals from 1 are notation for successors; 0 is the constructor itself", () => {
   assert.equal(numeralExpansion("3"), "succ(succ(succ(0)))");
@@ -12,4 +12,17 @@ test("numerals from 1 are notation for successors; 0 is the constructor itself",
   assert.equal(tokenStyle("0", "0"), "");
   assert.equal(tokenStyle("(", "(1, (2, 3))"), "macro");
   assert.equal(tokenStyle("exact", null), "keyword");
+});
+
+test("a projection's index is not a numeral, and show and suffices are keywords", () => {
+  const source = "exact (p.1, q.2.1, 1);";
+  const at = text => source.indexOf(text);
+  assert.equal(projectionIndex(source, at("1,")), true);
+  assert.equal(numeralAt(source, at("1,"), "1"), null);
+  assert.equal(numeralAt(source, source.lastIndexOf("1"), "1"), "succ(0)");
+  assert.equal(numeralAt(source, at("2."), "2"), null);
+  // A quantifier's dot is followed by a space, so a numeral after it expands.
+  assert.equal(numeralAt("forall n : Nat. 1 = n", 16, "1"), "succ(0)");
+  assert.equal(tokenStyle("show", null), "keyword");
+  assert.equal(tokenStyle("suffices", null), "keyword");
 });

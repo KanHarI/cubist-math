@@ -78,11 +78,14 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
   const domains = [];
   const expressionBlockEnds = new Set();
   const assignmentTokens = new Set(), annotationStarts = new Set(), proofBodyStarts = new Set();
+  // A projection's dot is tight on both sides: p.1, never p. 1.
+  const projectionDots = new Set();
   const tokenBefore = new Map(tokens.map((token, index) => [token.start, tokens[index - 1]]));
   const tokenAfter = new Map(tokens.map((token, index) => [token.end, tokens[index + 1]]));
   function visit(node) {
     if (!node || typeof node !== "object") return;
     if (node.kind === "withUnfolding") expressionBlockEnds.add(node.end);
+    if (node.kind === "projection") projectionDots.add(node.dot.start);
     // Only declaration/let assignments introduce an indented right-hand side.
     // An equality inside an annotated definition's type is not an assignment.
     const valueStart = node.valueStart ?? (node.kind === "let" ? node.value?.start : undefined);
@@ -192,7 +195,7 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
         }
       } else {
         statement.push(text);
-        if (text === "," || text === ".") statement.push(line);
+        if (text === "," || (text === "." && !projectionDots.has(token.start))) statement.push(line);
         previous = token;
       }
     }

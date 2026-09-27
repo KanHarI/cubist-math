@@ -3,7 +3,7 @@ import { numberedName, renameLevel, universeText } from "./cubical-levels.mjs";
 
 // Print a checked term in Cubist source syntax, for messages and the command
 // line: `A -> B`, `forall x : A. B`, `A and B`, `exists x : A. B`, `A or B`,
-// `x = y`, `p @ i`, `fun (x, y : A) => b`, `f(a, b)`, `(a, b)`, `left(a)`, `tt`,
+// `x = y`, `p @ i`, `fun (x, y : A) => b`, `f(a, b)`, `(a, b)`, `p.1`, `left(a)`, `tt`,
 // numerals and binary numerals, and `+`, `*`, `<`, `<=` for the arithmetic
 // library. Forms without a source spelling fall back to the inspector's
 // notation. Parentheses follow the
@@ -167,8 +167,7 @@ export function sourceText(term, symbols = {}, limit = 4000) {
       case "W": return atom(`W(${show(t.domain)}, ${show({ tag: "Lam", name: t.name, domain: t.domain, body: t.body })})`);
       case "Sup": return atom(`sup(${show(t.as)}, ${show(t.label)}, ${show(t.children)})`);
       case "Abort": return atom(`absurd(${show(t.impossible)})`);
-      case "Fst": return atom(`first(${show(t.pair)})`);
-      case "Snd": return atom(`second(${show(t.pair)})`);
+      case "Fst": case "Snd": return atom(`${sub(t.pair, LEVEL.atom)}.${t.tag === "Fst" ? 1 : 2}`);
       case "Path":
         // An equality: a path whose type does not vary along it.
         if (!varies(t.family, t.dim))

@@ -98,12 +98,23 @@ or rule. Three-or-more-component tuple delimiters have macro styling; hover
 to see the binary-pair expansion or click to inspect the checked tuple.
 `f(a, b, c)` remains curried application; pass a tuple as `f((a, b, c))`.
 
+`p.1` and `p.2` project a pair. For `p : exists x : A. B(x)`, `p.1 : A` and
+`p.2 : B(p.1)`; the family comes from the checked type of `p`, and the
+projections are the kernel's own, so `(a, b).1` computes to `a` and
+`p = (p.1, p.2)` holds by `refl`. The dot is tight on both sides, unlike the
+dot that ends a quantifier's type. Only `.1` and `.2` exist: the third
+component of a tuple `(a, b, c)` is `.2.2`.
+
 `left(value)` and `right(value)` introduce a disjunction. `refl(x)` proves
 `x = x`; `absurd(impossible)` eliminates a proof of `Void` into the expected type.
 
 Blocks support `intro`, `let`, `obtain`, `have`, `cases`, and `exact`. See
-[Euclid](../../archive/first-library/euclid.cubist) for the complete short argument. Induction
-expressions carry an explicit motive:
+[Euclid](../../archive/first-library/euclid.cubist) for the complete short argument.
+`show T;` restates the goal as a type equal to it by computation; it adds
+nothing to the proof. `suffices h : T by term;` proves the goal from a
+hypothesis `h : T`, and the statements after it prove `T`; the proof after
+`by` may also be a block. Its proof is `fun (h : T) => term` applied to the
+proof of `T`. Induction expressions carry an explicit motive:
 
 ```text
 induction n as k return C(k) {

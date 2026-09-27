@@ -25,7 +25,7 @@ A new syntax form must elaborate completely through the instruction driver.
 | --- | --- | --- |
 | Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default | Retiring the old checker APIs and their test clients; explicit driver options and per-instruction cost telemetry (learned-search phases 1–2, with L1.3); optional performance/certificate work |
 | G0 universes | K1.1–K1.4 and L1.1; `U < UU0`, `next`, `max`, generic builtins and rewriting; all 43 former templates check generically | E1 level constraints and E2 higher-tier generic definitions remain deferred proposals |
-| Proof ergonomics | Grouped binders, `have`, `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand | General inference, `apply`/`refine`, folded path rules, broader dependent rewriting |
+| Proof ergonomics | Grouped binders, `have`, `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand; Σ projections `p.1`/`p.2`, `show` and `suffices` (L1.5) | General inference, `apply`/`refine`, folded path rules, broader dependent rewriting, `Path` induction (B1) |
 | Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | Face-aware plans, filling/source-span records, tactic integration, indexed and companion motives |
 | Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection | Expected-value patterns and closed truncation readout; H-stage dependency markers |
 | Declarations | Existing built-in types and explicit eliminators | H1–H4, `theory`, user `inductive`, general `match`, views, derived declarations |
@@ -139,7 +139,7 @@ property tests remain regressions, not next actions.
 | L1.2r | Remaining A5 plan metadata and clients: faces, filling, source spans; index/companion motives with H2/H3 | Extend the delivered core with each consuming feature | L |
 | L1.3 | Deterministic fuel and residual-goal diagnostics (HoTT A4/A6), with learned-search phases 1–2: explicit driver options and per-instruction kernel cost | L1.2; A7 baseline | M |
 | L1.4 | Folded path vocabulary and constructor congruence (A1/A2) | L1.1, L1.2; A4 fuel for bounded search | L |
-| L1.5 | Σ projections `p.1`/`p.2`, `show`, `suffices`; separate `Path` induction/`subst` slice (A8/B4/B1) | L1.2; B1 uses A1b's checked induction construction | M |
+| L1.5 | Σ projections `p.1`/`p.2`, `show`, `suffices` (A8/B4): delivered 2026-09-27. Open: the separate `Path` induction/`subst` slice (B1) | L1.2; B1 uses A1b's checked induction construction | M |
 | L4.1a | Known-signature application elaboration, named arguments and scoped `_` holes | L1.1, L1.2; L1.3 fuel for inference search | M |
 | L4.1b | Opt-in implicit binders and level-argument inference | L4.1a | M |
 | L4.4 | `apply`, `refine`, pair/sum witness conveniences with visible goals | L4.1a; L4.1b for implicit arguments | M |

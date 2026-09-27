@@ -125,7 +125,7 @@ try {
   assert.match(await assemblyBench.locator("#graph-status").textContent(), /^\d+ judgements?, \d+ highlighted steps?; #\d+ is the conclusion\.$/);
   // hd is a local definition over n : Nat, derived with its context entry.
   assert.match(await assemblyBench.locator(".graph-row.graph-root .graph-statement").textContent(),
-    /^\{n : Nat\} ⊢ snd\(snd\(prime_divisor_exists\(.*\)\)\) : Divides\(/);
+    /^\{n : Nat\} ⊢ prime_divisor_exists\(.*\)\.2\.2 : Divides\(/);
   // A lookup's definition is derived on request, as the lookup's premise, or
   // says which rule it still needs.
   const rows = await assemblyBench.locator(".graph-row").count();

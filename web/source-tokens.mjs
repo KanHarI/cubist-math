@@ -16,6 +16,7 @@ export const keywords = new Set([
   "right",
   "exact",
   "rfl", "calc", "rw", "simp", "simpa", "simp_rule", "simp_set", "priority", "only", "without", "using", "by", "occurrence", "ext", "over", "along", "from",
+  "show", "suffices",
   "private",
   "export",
   "verify",
@@ -55,6 +56,11 @@ export const tokenPattern = /\/\/.*|(?:<=|->|=>|:=)|0b[01]+|[A-Za-z_][A-Za-z_0-9
 // A numeral is notation for repeated successors; 0 is the constructor itself.
 export const numeralExpansion = text => /^[0-9]+$/.test(text) && Number(text) >= 1 && Number(text) <= 256
   ? "succ(".repeat(Number(text)) + "0" + ")".repeat(Number(text)) : null;
+// The index of a projection p.1 is not a numeral: it follows a dot that is
+// tight on both sides, as the parser requires.
+export const projectionIndex = (source, start) => source[start - 1] === "." && /\S/.test(source[start - 2] ?? " ");
+// The expansion of the numeral at `start` in `source`, if it is one.
+export const numeralAt = (source, start, text) => projectionIndex(source, start) ? null : numeralExpansion(text);
 // Keywords and language-provided forms share one palette; notation is a
 // macro, unless it stands for itself.
 export const tokenStyle = (text, expansion) =>

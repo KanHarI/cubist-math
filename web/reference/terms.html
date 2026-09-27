@@ -64,8 +64,8 @@
               <tbody>
                 <tr><td><code>A -> B</code></td><td>Functions, and implication</td><td><code>fun (a : A) => b</code>, or <code>intro a;</code></td><td>Application <code>f(a)</code></td></tr>
                 <tr><td><code>forall x : A. B(x)</code></td><td>Dependent functions, <span class="math">Π<sub>x:A</sub> B(x)</span></td><td>The same as for <code>-></code></td><td>Application <code>f(a) : B(a)</code></td></tr>
-                <tr><td><code>A and B</code></td><td>Pairs, <span class="math">A × B</span></td><td><code>(a, b)</code></td><td><code>obtain</code>, <code>unpack</code></td></tr>
-                <tr><td><code>exists x : A. B(x)</code></td><td>Dependent pairs, <span class="math">Σ<sub>x:A</sub> B(x)</span></td><td><code>(witness, evidence)</code></td><td><code>obtain</code>, <code>unpack</code>, <code>pair_induction</code></td></tr>
+                <tr><td><code>A and B</code></td><td>Pairs, <span class="math">A × B</span></td><td><code>(a, b)</code></td><td>Projections <code>p.1</code>, <code>p.2</code>; <code>obtain</code>, <code>unpack</code></td></tr>
+                <tr><td><code>exists x : A. B(x)</code></td><td>Dependent pairs, <span class="math">Σ<sub>x:A</sub> B(x)</span></td><td><code>(witness, evidence)</code></td><td>Projections <code>p.1 : A</code>, <code>p.2 : B(p.1)</code>; <code>obtain</code>, <code>unpack</code>, <code>pair_induction</code></td></tr>
                 <tr><td><code>A or B</code></td><td>Disjoint sums, <span class="math">A + B</span></td><td><code>left(a)</code>, <code>right(b)</code></td><td><code>match</code>, <code>cases</code></td></tr>
                 <tr><td><code>Unit</code></td><td>The one-element type</td><td><code>tt</code></td><td><code>unit_induction</code></td></tr>
                 <tr><td><code>Void</code></td><td>The empty type, falsehood</td><td>None</td><td><code>absurd</code></td></tr>
@@ -173,7 +173,22 @@ def one := first_of_three((1, 2, 3));</code></pre>
 }</code></pre>
             <p>The formatter, <code>npm run format:cubist</code>, writes right-nested pairs as flat tuples and checks that the expanded syntax is unchanged. <code>npm run linearize:cubist -- --check</code> lists such pairs without changing any file.</p>
             <h3 id="using-pairs">Using a pair</h3>
-            <p>There are no projection functions. In a proof block, <a href="proof-blocks.html#obtain"><code>obtain</code></a> names the components. In a term, <code>unpack pair as (a, b) return T { body; }</code> does the same, where the result type <code>T</code> does not mention <code>a</code> or <code>b</code>:</p>
+            <p><code>p.1</code> and <code>p.2</code> are the components of a pair <code>p</code>. For <code>p : exists x : A. B(x)</code>, <code>p.1 : A</code> is the witness and <code>p.2 : B(p.1)</code> is the evidence about it. The dot is tight, with no space on either side. Projections apply to any term of a pair type, such as <code>f(x).2</code>, and they chain: the components of <code>t : A and B and C</code> are <code>t.1</code>, <code>t.2.1</code> and <code>t.2.2</code>.</p>
+            <pre><code data-check="accept">def witness(P : Nat -&gt; U0, e : exists n : Nat. P(n)) : Nat := e.1;
+
+def evidence(P : Nat -&gt; U0, e : exists n : Nat. P(n)) : P(e.1) := e.2;
+
+def swap_pair(A, B : U0, p : A and B) : B and A := (p.2, p.1);
+
+def last_of_three(t : Nat and Unit and Nat) : Nat := t.2.2;</code></pre>
+            <p>Projections compute. A projection of a pair is its component, and every pair is the pair of its projections, so <code>p = (p.1, p.2)</code> holds by <code>refl</code>:</p>
+            <pre><code data-check="accept">def pair_of_projections(A, B : U0, p : A and B) : p = (p.1, p.2) := refl(p);
+
+evaluate typed(Nat and Nat, (2, 5)).2 expecting 5;</code></pre>
+            <p>Only a pair has projections, and it has two. A projection of anything else is reported at the projection:</p>
+            <pre><code data-check="reject">def not_a_pair(n : Nat) : Nat := n.1;  // Error: Projection .1 requires a dependent pair; found a value of type Nat.</code></pre>
+            <pre><code data-check="reject">def third(t : Nat and Nat and Nat) : Nat := t.3;  // Error: A pair has only the projections .1 and .2.</code></pre>
+            <p>In a proof block, <a href="proof-blocks.html#obtain"><code>obtain</code></a> names the components instead. In a term, <code>unpack pair as (a, b) return T { body; }</code> does the same, where the result type <code>T</code> does not mention <code>a</code> or <code>b</code>:</p>
             <pre><code data-check="accept">def first_number(pair : Nat and Nat) :=
   unpack pair as (a, b) return Nat { a; };
 
@@ -301,7 +316,7 @@ def unit_on_the_right := typed(Nat or Unit, right(tt));</code></pre>
             <h2>Precedence</h2>
             <p>From tightest to loosest:</p>
             <ol>
-              <li>application <code>f(a)</code>;</li>
+              <li>application <code>f(a)</code> and projection <code>p.1</code>, from left to right, so <code>f(a).2(b)</code> applies the second component of <code>f(a)</code> to <code>b</code>;</li>
               <li>interval application <code>p @ i</code>;</li>
               <li><code>*</code>;</li>
               <li><code>+</code>;</li>
@@ -324,7 +339,7 @@ def and_before_or(A, B, C : U0, x : A and B or C) : (A and B) or C {
 def chained : 1 &lt; 2 &lt; 3 {
   exact tt;  // Error: Type mismatch: found U0, expected Nat.
 }</code></pre>
-            <p>In the source reader, keywords and built-in forms such as <code>succ</code> are purple, and named functions are green. Numerals, tuples and arithmetic are notation: they are amber with a dotted underline. Hover over one to see its expansion; <code>2</code> shows <code>succ(succ(0))</code> and <code>a + b</code> shows <code>add(a, b)</code>.</p>
+            <p>In the source reader, keywords and built-in forms such as <code>succ</code> are purple, and named functions are green. Numerals, tuples and arithmetic are notation: they are amber with a dotted underline. Hover over one to see its expansion; <code>2</code> shows <code>succ(succ(0))</code> and <code>a + b</code> shows <code>add(a, b)</code>. The index of a projection, as in <code>p.2</code>, is not a numeral.</p>
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">

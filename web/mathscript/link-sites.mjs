@@ -9,6 +9,8 @@ const tactics = new Map([
   ["rw", ["rw", "rewrite witness"]],
   ["simpOnly", ["simp", "simplification witness"]],
   ["simpaOnly", ["simpa", "simplification witness"]],
+  ["show", ["show", "restated goal"]],
+  ["suffices", ["suffices", "goal reduction"]],
 ]);
 
 export function tacticSite(statement) {
@@ -24,8 +26,11 @@ export function calcStepSite(step, index) {
     role: "calculation step", expansionIndex: index + 1 };
 }
 
-// A logical operator or a binder keyword links to the checked expression.
+// A logical operator or a binder keyword links to the checked expression, and
+// a projection's index to the projection.
 export function expressionSite(node) {
+  if (node.kind === "projection")
+    return { name: `.${node.index}`, start: node.digit.start, end: node.digit.end };
   if (node.kind === "binary" && ["=", "->", "and", "or"].includes(node.operator))
     return { name: node.operator, start: node.operatorStart, end: node.operatorEnd };
   if (node.keyword && ["lambda", "forall", "exists", "binderGroup"].includes(node.kind)) {

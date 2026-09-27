@@ -10,12 +10,12 @@ export const identicalRewrites = ["path-apply", "along", "intro", "have", "param
 export const typePreservingRewrites = ["wrappers", "rfl", "path-lambda", "ext"];
 
 const statementKinds = new Set(["intro", "let", "obtain", "have", "haveValue", "cases", "exact", "rfl",
-  "calc", "rw", "simpOnly", "simpaOnly", "ext", "over"]);
+  "calc", "rw", "simpOnly", "simpaOnly", "ext", "over", "show", "suffices"]);
 const spanned = value => value && typeof value === "object" && Number.isInteger(value.start) && Number.isInteger(value.end);
 const identifiers = text => new Set(text.match(/[A-Za-z_][A-Za-z_0-9]*/g) ?? []);
 const squash = text => text.replace(/\s+/g, " ").trim();
 // Operands that bind at least as tightly as application need no parentheses.
-const atomic = node => ["name", "call", "number", "binaryNumber", "pathApply"].includes(node.kind);
+const atomic = node => ["name", "call", "number", "binaryNumber", "pathApply", "projection"].includes(node.kind);
 
 export function rewriteModule(source, { rewrites = identicalRewrites, skip = new Set() } = {}) {
   const enabled = new Set(rewrites);
@@ -56,7 +56,7 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
   function childContext(node, key) {
     if (node.kind === "call") return key === "fn" ? "callee" : "delimited";
     if (["pair", "exact", "let", "obtain", "have", "haveValue", "over", "along", "rw", "simpOnly",
-      "simpaOnly", "lambda", "binderGroup", "forall", "exists", "pathLambda", "withUnfolding"].includes(node.kind))
+      "simpaOnly", "show", "suffices", "lambda", "binderGroup", "forall", "exists", "pathLambda", "withUnfolding"].includes(node.kind))
       return "delimited";
     if (node.kind === undefined && key === "value") return "delimited";
     return "operand";

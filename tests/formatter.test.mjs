@@ -33,6 +33,21 @@ def equality := 0 =[Nat] 0; // keep this comment
   assert.equal(formatMathScript(formatted, { printWidth: 40 }), formatted);
 });
 
+test("projections stay tight, and show and suffices are statements", () => {
+  const source = `def swap(A,B:U0,p:A and B):B and A:=(p.2,p.1);
+def nested(t:Nat and Nat and Nat,f:Nat->Nat and Nat):Nat:=f(t.2.1).2;
+def reduce(A,B:U0,a:A,f:A->B):B{show B;suffices x:A by f(x);exact a;}
+def block(A,B:U0,a:A,f:A->B):B{suffices x:A by{exact f(x);}exact a;}
+`;
+  const formatted = formatMathScript(source);
+  assert.match(formatted, /:= \(p\.2, p\.1\);/);
+  assert.match(formatted, /f\(t\.2\.1\)\.2;/);
+  assert.match(formatted, /\n  show B;\n  suffices x : A by f\(x\);\n  exact a;\n/);
+  assert.match(formatted, /\n  suffices x : A by \{\n    exact f\(x\);\n  \}\n  exact a;\n/);
+  assert.deepEqual(semantic(parse(formatted)), semantic(parse(source)));
+  assert.equal(formatMathScript(formatted), formatted);
+});
+
 test("invalid input is rejected instead of rewritten", () => {
   assert.throws(() => formatMathScript("def x := (0;"));
   assert.throws(() => formatMathScript("def x := 0;", { printWidth: 0 }));

@@ -119,7 +119,8 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (t.tag === "Pair" && paths) return call("pair", [child(t.as, "as"), child(t.first, "first"), child(t.second, "second")]);
     if (t.tag === "Pair") return { kind: "Pair", left: child(t.first, "first"), right: child(t.second, "second") };
     if (t.tag === "Sum") return { kind: "Sum", left: child(t.left, "left"), right: child(t.right, "right") };
-    if (["Fst", "Snd"].includes(t.tag)) return call(t.tag.toLowerCase(), [child(t.pair, "pair")]);
+    // Projections as the source writes them: p.1 and p.2.
+    if (["Fst", "Snd"].includes(t.tag)) return { kind: "Projection", index: t.tag === "Fst" ? 1 : 2, value: child(t.pair, "pair") };
     if (t.tag === "Path" && !depends(t.family, t.dim))
       return { kind: "Identity", carrier: child(t.family, "family"), left: child(t.left, "left"), right: child(t.right, "right") };
     if (t.tag === "Path") return call("PathP", [{ kind: "Lambda", name: t.dim, body: child(t.family, "family") }, child(t.left, "left"), child(t.right, "right")]);
@@ -155,6 +156,9 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
 export function cubicalTextParts(tree) {
   const literal = text => [{ text }];
   const join = (parts, separator) => parts.flatMap((part, index) => index ? [...literal(separator), ...part] : part);
+  // Binders extend to the right, so a projection of one needs parentheses;
+  // every other form prints as an atom or inside its own parentheses.
+  const projectable = t => !["Lambda", "Pi", "Sigma", "Scope", "LevelPi", "LevelLambda"].includes(t.kind);
   const show = t => {
     if (t.kind === "Name") return [{ text: t.name, binding: t.contextBinding ?? t.binding }];
     if (t.kind === "Number") return literal(String(t.value));
@@ -168,6 +172,8 @@ export function cubicalTextParts(tree) {
     if (t.kind === "Scope") return [...literal(`[${t.names.join(", ")}]. `), ...show(t.body)];
     if (t.kind === "LevelPi") return [...literal(`Π (${t.name} < ω), `), ...show(t.body)];
     if (t.kind === "LevelLambda") return [...literal(`λ (${t.name} < ω). `), ...show(t.body)];
+    if (t.kind === "Projection") return [...(projectable(t.value) ? show(t.value)
+      : [...literal("("), ...show(t.value), ...literal(")")]), ...literal(`.${t.index}`)];
     const operator = { Arrow: "→", Product: "×", Sum: "+", Pair: "," }[t.kind];
     return [...literal("("), ...show(t.left), ...literal(` ${operator} `), ...show(t.right), ...literal(")")];
   };
