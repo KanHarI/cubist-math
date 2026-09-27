@@ -211,231 +211,521 @@
       <details id="language-guide" class="help panel">
         <summary>Language quick reference</summary>
         <p>
-          <a href="language.html"><strong>Full language reference →</strong></a>
-          — syntax, worked examples, paths, universes, and axiom signatures.
+          One checked example for each construct, linked to its chapter of the
+          <a href="language.html"><strong>language reference</strong></a>. Each example is
+          checked when it scrolls into view. Click a name in it to inspect its kernel term,
+          or open it in the workspace.
         </p>
-        <p>
-          <code>def name(params) := term;</code> defines a term with an inferred
-          type. <code>def name(params) : T { … }</code> checks a proof of
-          <code>T</code>. Use <code>def</code> for both constructions and proofs.
-          Parameters have explicit types; consecutive ones may share a type, as in
-          <code>(A, B : U0, x, y : A)</code>. Imports come first: <code>import paths;</code>.
-          Comments start with <code>//</code>.
-        </p>
-        <p>
-          <code>//</code> comments immediately above a declaration become its
-          inspector description. An empty <code>//</code> line separates paragraphs;
-          a blank source line separates a section comment from a declaration.
-        </p>
-        <p>
-          <code>U0</code>, <code>U1</code>, … name universes, with
-          <code>U0 : U1</code>; <code>UU0</code> is the universe above all of
-          them. A parameter <code>U &lt; UU0</code> is a universe variable: the
-          definition is checked once, for every universe below <code>UU0</code>,
-          and a use such as <code>Equiv(U0, A, B)</code> instantiates it.
-          <code>Choice(U0, …)</code>, <code>LEM(U0, …)</code> (excluded middle)
-          and <code>Truncate(U1, …)</code> use the library's assumptions, each
-          one generic over the universes below <code>UU0</code>.
-          <code>ua(U, A, B, e)</code> turns an equivalence into a path of types, and
-          <code>UnivalenceBeta</code> computes transport along it. Like
-          <code>FunExt(U, A, B, f, g, h)</code>, they are constructions, not assumptions.
-        </p>
-        <p>
-          <code>x =[T] y</code> means equality of <code>x</code> and
-          <code>y</code> as elements of <code>T</code>; plain <code>x = y</code>
-          infers that carrier. In particular, <code>A =[U] B</code> is equality
-          of types <code>A : U</code> and <code>B : U</code> in universe
-          <code>U</code>.
-        </p>
-        <p>
-          <code>refl(x)</code> proves <code>x = x</code>, and any <code>x = y</code>
-          whose sides compute to the same value. The built-in
-          <code>sym(p)</code> reverses
-          <code>p : x =[T] y</code> to give <code>y =[T] x</code>;
-          <code>trans(p, q)</code> joins paths <code>x = y</code> and
-          <code>y = z</code>; <code>cong(f, p)</code> gives
-          <code>f(x) = f(y)</code>. These are checked path operations,
-          with no additional axioms. See <a href="reference/paths.html#paths">equality and paths</a>.
-        </p>
-        <p>
-          <code>intro name;</code> (or <code>intro x, y, h;</code> for several) introduces the next input or assumption from
-          the current goal. For <code>forall x : A. B</code>, it names an input
-          of type <code>A</code>; for <code>P -> Q</code>, it names evidence of
-          <code>P</code> and leaves <code>Q</code> to prove. The type comes from
-          the goal, including when the goal is a named definition.
-        </p>
-        <pre data-check="accept">import sets;
-def use_assumption : forall A : U0. IsSet(A) -&gt; IsSet(A) {
-  intro A;       // A : U0
-  intro setA;    // setA : IsSet(A)
-  exact setA;
-}</pre>
-        <p>
-          Here <code>IsSet</code> is defined in the <code>sets</code> module:
-          equality proofs between the same two elements agree. Click an
-          introduced name to see its type, or a line number to inspect the goal
-          and local assumptions.
-        </p>
-        <p>
-          <code>let</code> names a term · <code>obtain</code> unpacks an
-          existential or pair · <code>have h : T { … }</code> proves a local claim ·
-          <code>have h := term;</code> names an inferred proof ·
-          <code>have h : T := term;</code> checks and names one ·
-          <code>cases</code> splits an <code>or</code> ·
-          <code>exact</code> supplies the result ·
-          <code>absurd</code> eliminates a contradiction.
-        </p>
-        <p>
-          Types use <code>forall x : A. B</code>, <code>exists x : A. B</code>,
-          <code>and</code>, <code>or</code>, and <code>-></code>. Natural-number
-          expressions use <code>+</code>, <code>*</code>, <code>=</code>,
-          <code>&lt;</code>, and <code>&lt;=</code>.
-        </p>
-        <p>
-          With <code>import binary_naturals;</code>, <code>0b110</code> denotes
-          six in <code>BinaryNat</code>, using one W constructor per bit.
-          Hover to see its constructor expansion. Decimal literals such as
-          <code>6</code> remain unary <code>Nat</code>; conversion is explicit.
-        </p>
-        <p>
-          <code>W(A, B)</code> forms well-founded trees with labels in
-          <code>A</code> and children indexed by <code>B(label)</code>.
-          <code>sup(T, label, children)</code> builds a tree;
-          <code>wrec(T, motive, step, tree)</code> performs dependent induction.
-          See <a href="reference/induction.html#w-types">W types and binary numbers</a>.
-        </p>
-        <p>
-          <code>forall</code> is a dependent function (Π); <code>exists</code>
-          is a dependent pair (Σ) with an actual witness. <code>A and B</code>
-          is a product; <code>A or B</code> is a disjoint sum, displayed as
-          <code>A + B</code> in kernel notation. Mere existence requires
-          truncation; <code>exists</code> does not truncate automatically.
-        </p>
-        <pre data-check="accept">def identity(A : U0, x : A) := x;
-def pair := typed(Nat and Nat, (0, 1));
-def either := typed(Unit or Nat, left(tt));
-def pair_first : Nat {
-  obtain (a, b) := pair;
-  have result : Nat { exact a; }
-  exact result;
-}</pre>
-        <p>
-          <code>fun (x : A) => body</code> constructs a function;
-          <code>fun (x, y : A) => body</code> and <code>fun (a : A, b : B) => body</code>
-          take several arguments, and <code>fun x => body</code> reads the domain from
-          an expected function type. <code>f(a, b)</code> means <code>f(a)(b)</code>.
-          <code>(a, b, c, d)</code> expands to <code>(a, (b, (c, d)))</code>;
-          <code>obtain (a, b, c, d) := value;</code> unpacks that same shape.
-          Hover over tuple parentheses to see the macro expansion.
-          <code>typed(T, term)</code> supplies an expected type for pairs and
-          injections. <code>exact</code>, <code>cases</code>, <code>rfl</code>,
-          <code>calc</code>, <code>simpa</code> and <code>over</code> finish a block;
-          no further statements follow them in that block.
-        </p>
-        <p>
-          <code>import primes;</code> checks the mathematical source of the
-          arithmetic library.
-          <code
-            >induction n as k return C { zero => base; succ ih => step; }</code
-          >
-          handles natural-number induction. <code>match</code> and
-          <code>unpack</code>
-          handle case analysis and pairs. Click notation or a numeral to inspect
-          its meaning. The kernel audit entries retain the complete original
-          instruction histories.
-        </p>
-        <p>
-          In <code>induction n as k return C(k)</code>, the zero branch proves
-          <code>C(0)</code>. The successor branch has predecessor
-          <code>k : Nat</code> and hypothesis <code>ih : C(k)</code>, and proves
-          <code>C(succ(k))</code>. For a result depending on a whole pair, use
-          <code>pair_induction(motive, branch, pair)</code>.
-        </p>
-        <p>
-          <code>transport(C, x, y, p, value)</code>
-          moves <code>value : C(x)</code> along <code>p : x = y</code> into
-          <code>C(y)</code>; <code>along C by p from value</code> is the same with
-          the endpoints read from <code>p</code>.
-        </p>
-        <p>
-          <strong>Equational reasoning.</strong>
-          <code>rfl;</code> closes an equality whose sides compute to the same value.
-          <code>calc { a = b by p; _ = c by q; }</code> chains steps; <code>_</code>
-          is the previous right side, and a step may be proved by a nested
-          <code>by { … }</code> block.
-          <code>rw [p, &lt;- q] at lhs occurrence 2;</code> rewrites with
-          instantiated equalities such as <code>nat_add_zero(n)</code>, in order;
-          <code>&lt;-</code> rewrites right to left, and occurrences count
-          left side then right. If the new goal holds by computation, <code>rw</code>
-          closes the block; otherwise a following statement proves it.
-        </p>
-        <pre data-check="accept">import primes;
-def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
-  calc {
-    (n + 0) + 0 = n + 0 by nat_add_zero(n + 0);
-    _ = n by nat_add_zero(n);
-  }
+        <nav class="quick-topics" aria-label="Quick reference topics">
+          <a href="#quick-declarations">Declarations and files</a>
+          <a href="#quick-terms">Types and terms</a>
+          <a href="#quick-blocks">Proof blocks</a>
+          <a href="#quick-universes">Universes</a>
+          <a href="#quick-induction">Natural numbers and inductive types</a>
+          <a href="#quick-paths">Equality and paths</a>
+          <a href="#quick-rewriting">Equational reasoning and simplification</a>
+          <a href="#quick-cubical">Cubical paths, pushouts and suspensions</a>
+          <a href="#quick-conversion">Conversion and unfolding</a>
+          <a href="#quick-assumptions">Assumptions and computability</a>
+        </nav>
+        <h3 id="quick-declarations">Declarations and files</h3>
+        <div class="quick-entry" id="quick-def">
+          <h4><code>def</code></h4>
+          <p><code>def name(params) := term;</code> infers the type; <code>def name(params) : T := term;</code> states it; <code>def name(params) : T { … }</code> proves <code>T</code> in a block. Use <code>def</code> for constructions and proofs alike.
+            <a href="reference/first-proof.html#declarations">A first proof and files →</a></p>
+          <pre><code data-check="accept">def four : Nat := 4;
+
+def add_two(n : Nat) := succ(succ(n));
+
+def add_two_to_two : add_two(2) = four {
+  exact refl(4);
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-parameters">
+          <h4>Parameters and application</h4>
+          <p>Every parameter has a type, and consecutive ones may share it, as in <code>(A, B : U0, x, y : A)</code>. <code>f(a, b)</code> means <code>f(a)(b)</code>, so supplying some arguments gives a function of the rest.
+            <a href="reference/first-proof.html#parameters">A first proof and files →</a></p>
+          <pre><code data-check="accept">def pick_second(A, B : U0, x, y : A, b : B) := y;
+
+def picked := pick_second(Nat, Unit, 1, 2, tt);
+
+def from_one := pick_second(Nat, Unit, 1);</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-files">
+          <h4>Imports and descriptions</h4>
+          <p>Imports come first. Comments start with <code>//</code>; those directly above a declaration become its description in the inspector, and an empty <code>//</code> line separates paragraphs.
+            <a href="reference/first-proof.html#files">A first proof and files →</a></p>
+          <pre><code data-check="accept">import naturals;
+
+// Seven, as a sum.
+//
+// The inspector shows this description.
+def seven := 3 + 4;</code></pre>
+        </div>
+        <h3 id="quick-terms">Types and terms</h3>
+        <div class="quick-entry" id="quick-functions">
+          <h4>Functions: <code>fun</code></h4>
+          <p><code>fun (x : A) =&gt; body</code> constructs a function, and <code>fun (x, y : A) =&gt; body</code> takes several arguments. <code>fun x =&gt; body</code> reads the domain from an expected function type.
+            <a href="reference/terms.html#functions">Terms, functions and pairs →</a></p>
+          <pre><code data-check="accept">def twice(A : U0, f : A -&gt; A) := fun (x : A) =&gt; f(f(x));
+
+def add_two := twice(Nat, fun n =&gt; succ(n));</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-forall">
+          <h4>Dependent functions: <code>forall</code></h4>
+          <p><code>forall x : A. B</code> is a dependent function type (Π): its result type may mention the input. <code>A -&gt; B</code> is the case where it does not.
+            <a href="reference/terms.html#dependent-functions">Terms, functions and pairs →</a></p>
+          <pre><code data-check="accept">def apply_at_zero(P : Nat -&gt; U0, f : forall n : Nat. P(n)) : P(0) {
+  exact f(0);
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-pairs">
+          <h4>Pairs, tuples and <code>exists</code></h4>
+          <p><code>A and B</code> is a product and <code>exists x : A. B</code> a dependent pair (Σ) with an actual witness. <code>(a, b, c)</code> abbreviates <code>(a, (b, c))</code>; hover the parentheses to see the expansion.
+            <a href="reference/terms.html#tuples">Terms, functions and pairs →</a></p>
+          <pre><code data-check="accept">def triple : Nat and Unit and Nat {
+  exact (1, tt, 2);
 }
+
+def two_exists : exists n : Nat. n = 2 {
+  exact (2, refl(2));
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-unpack">
+          <h4>Using a pair: <code>unpack</code></h4>
+          <p><code>unpack p as (a, b) return T { … }</code> takes a pair apart in a term. For a result that depends on the whole pair, use <code>pair_induction</code>.
+            <a href="reference/terms.html#using-pairs">Terms, functions and pairs →</a></p>
+          <pre><code data-check="accept">def first_number(pair : Nat and Nat) :=
+  unpack pair as (a, b) return Nat { a; };</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-sums">
+          <h4>Sums: <code>or</code>, <code>left</code>, <code>right</code></h4>
+          <p><code>A or B</code> is a disjoint sum, shown as <code>A + B</code> in kernel notation. <code>left(a)</code> and <code>right(b)</code> inject into it.
+            <a href="reference/terms.html#sums">Terms, functions and pairs →</a></p>
+          <pre><code data-check="accept">def on_the_left := typed(Unit or Nat, left(tt));
+
+def on_the_right : Unit or Nat {
+  exact right(3);
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-match">
+          <h4>Case analysis: <code>match</code></h4>
+          <p><code>match value return T { left a =&gt; …; right b =&gt; …; }</code> computes by cases on a sum. With <code>as z</code>, the result type may depend on the value.
+            <a href="reference/terms.html#match">Terms, functions and pairs →</a></p>
+          <pre><code data-check="accept">def to_number(value : Unit or Nat) := match value return Nat {
+  left u =&gt; 0;
+  right n =&gt; n;
+};</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-unit-void">
+          <h4><code>Unit</code> and <code>Void</code></h4>
+          <p><code>tt : Unit</code> is the one value of <code>Unit</code>. <code>Void</code> has none, and <code>absurd(v)</code> turns an impossible <code>v : Void</code> into any type.
+            <a href="reference/terms.html#unit-and-void">Terms, functions and pairs →</a></p>
+          <pre><code data-check="accept">def from_void(A : U0, impossible : Void) : A {
+  exact absurd(impossible);
+}
+
+def unit_is_tt(u : Unit) : u = tt {
+  exact unit_induction(fun (v : Unit) =&gt; v = tt, refl(tt), u);
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-numbers">
+          <h4>Numbers</h4>
+          <p>Decimal literals are unary <code>Nat</code>. With <code>import naturals;</code>, <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> compute.
+            <a href="reference/terms.html#numbers">Terms, functions and pairs →</a></p>
+          <pre><code data-check="accept">import naturals;
+
+def two_times_three : 2 * 3 = 6 {
+  exact refl(6);
+}
+
+def two_below_three : 2 &lt; 3 {
+  exact tt;
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-typed">
+          <h4>Stating a type: <code>typed</code></h4>
+          <p><code>typed(T, term)</code> supplies an expected type, for pairs, injections and functions whose domain is not written.
+            <a href="reference/terms.html#typed">Terms, functions and pairs →</a></p>
+          <pre><code data-check="accept">def successor := typed(Nat -&gt; Nat, fun n =&gt; succ(n));</code></pre>
+        </div>
+        <h3 id="quick-blocks">Proof blocks</h3>
+        <div class="quick-entry" id="quick-intro">
+          <h4><code>intro</code></h4>
+          <p>Introduces the next input of a <code>forall</code> goal, or the assumption of an implication; <code>intro x, y, h;</code> introduces several. Click a line number in the workspace to see the goal.
+            <a href="reference/proof-blocks.html#intro">Proof blocks →</a></p>
+          <pre><code data-check="accept">def curry(A, B, C : U0) : ((A and B) -&gt; C) -&gt; A -&gt; B -&gt; C {
+  intro f, a, b;
+  exact f((a, b));
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-exact">
+          <h4><code>exact</code></h4>
+          <p>Supplies a term of the goal's type and finishes the block. Like <code>cases</code>, <code>rfl</code>, <code>calc</code> and <code>simpa</code>, nothing follows it in its block.
+            <a href="reference/proof-blocks.html#exact">Proof blocks →</a></p>
+          <pre><code data-check="accept">def identity_function(A : U0) : A -&gt; A {
+  exact fun (a : A) =&gt; a;
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-have">
+          <h4><code>have</code></h4>
+          <p><code>have h := term;</code> names an inferred proof, <code>have h : T := term;</code> checks one, and <code>have h : T { … }</code> proves a local claim in a block.
+            <a href="reference/proof-blocks.html#have">Proof blocks →</a></p>
+          <pre><code data-check="accept">def three_ways(n : Nat) : n = n {
+  have p := refl(n);
+  have q : n = n := p;
+  have r : n = n {
+    exact q;
+  }
+  exact r;
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-let">
+          <h4><code>let</code></h4>
+          <p>Names a term for the rest of the block. The name stands for the term itself, so the checker sees through it.
+            <a href="reference/proof-blocks.html#let">Proof blocks →</a></p>
+          <pre><code data-check="accept">def see_through(n : Nat) : succ(n) = succ(n) {
+  let m := succ(n);
+  exact refl(m);
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-obtain">
+          <h4><code>obtain</code></h4>
+          <p>Unpacks a pair or an existential into its parts, with the same tuple shape as <code>(a, b, c)</code>.
+            <a href="reference/proof-blocks.html#obtain">Proof blocks →</a></p>
+          <pre><code data-check="accept">def witness(t : exists n : Nat. (n = n) and Unit) : Nat {
+  obtain (n, same, u) := t;
+  exact n;
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-cases">
+          <h4><code>cases</code></h4>
+          <p>Splits a sum into one block per side.
+            <a href="reference/proof-blocks.html#cases">Proof blocks →</a></p>
+          <pre><code data-check="accept">def swap_sum(A, B : U0, value : A or B) : B or A {
+  cases value {
+    left a =&gt; { exact right(a); }
+    right b =&gt; { exact left(b); }
+  }
+}</code></pre>
+        </div>
+        <h3 id="quick-universes">Universes</h3>
+        <div class="quick-entry" id="quick-universe-constants">
+          <h4>Universe constants</h4>
+          <p><code>U0 : U1 : U2</code> and so on; each universe also lives in every larger one. <code>UU0</code> lies above all of them, and <code>UU1</code> above that.
+            <a href="reference/universes.html#universes">Universes →</a></p>
+          <pre><code data-check="accept">def large_identity(A : U1, x : A) := x;
+
+def small_in_large : U1 := U0;
+
+def every_small_universe : UU0 := U7;</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-universe-variables">
+          <h4>Universe variables: <code>U &lt; UU0</code></h4>
+          <p>A parameter <code>U &lt; UU0</code> ranges over the universes below <code>UU0</code>. The definition is checked once, for all of them, and a use such as <code>identity(U0, …)</code> instantiates it.
+            <a href="reference/universes.html#universe-variables">Universes →</a></p>
+          <pre><code data-check="accept">def identity(U &lt; UU0, A : U, x : A) : A := x;
+
+def three := identity(U0, Nat, 3);
+
+def small_identity := identity(U0);</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-universe-expressions">
+          <h4><code>next</code> and <code>max</code></h4>
+          <p><code>next(U)</code> is the universe above <code>U</code>, and <code>max(U, V)</code> the larger of two.
+            <a href="reference/universes.html#universe-expressions">Universes →</a></p>
+          <pre><code data-check="accept">def type_of(U &lt; UU0) : next(U) := U;
+
+def both(U, V &lt; UU0, A : U, B : V) : max(U, V) := A and B;</code></pre>
+        </div>
+        <h3 id="quick-induction">Natural numbers and inductive types</h3>
+        <div class="quick-entry" id="quick-induction">
+          <h4><code>induction</code></h4>
+          <p><code>induction n as k return C { zero =&gt; …; succ ih =&gt; …; }</code>: the zero branch gives <code>C(0)</code>, and the successor branch turns <code>ih : C(k)</code> into <code>C(succ(k))</code>.
+            <a href="reference/induction.html#induction">Natural numbers and inductive types →</a></p>
+          <pre><code data-check="accept">def copy(n : Nat) := induction n as k return Nat {
+  zero =&gt; 0;
+  succ previous =&gt; succ(previous);
+};
+
+def copy_two : copy(2) = 2 {
+  exact refl(2);
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-w-types">
+          <h4>W types</h4>
+          <p><code>W(A, B)</code> holds well-founded trees with a label <code>a : A</code> and a child for each <code>b : B(a)</code>. <code>sup(T, a, children)</code> builds one, and <code>wrec</code> recurses over them.
+            <a href="reference/induction.html#w-types">Natural numbers and inductive types →</a></p>
+          <pre><code data-check="accept">def Label := Unit or Unit;
+
+def Arity(tag : Label) := match tag return U0 {
+  left leaf =&gt; Void;
+  right node =&gt; Unit;
+};
+
+def Chain := W(Label, Arity);
+
+def leaf := sup(Chain, typed(Label, left(tt)), fun (v : Void) =&gt; typed(Chain, absurd(v)));
+
+def grow(c : Chain) := sup(Chain, typed(Label, right(tt)), fun (u : Unit) =&gt; c);</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-binary">
+          <h4>Binary literals</h4>
+          <p>After <code>import binary_naturals;</code>, <code>0b110</code> is six in <code>BinaryNat</code>, one W constructor per bit. Hover it to see the expansion. Decimal literals stay unary.
+            <a href="reference/induction.html#w-types">Natural numbers and inductive types →</a></p>
+          <pre><code data-check="accept">import binary_naturals;
+
+def six : BinaryNat := 0b110;</code></pre>
+        </div>
+        <h3 id="quick-paths">Equality and paths</h3>
+        <div class="quick-entry" id="quick-equality">
+          <h4>Equality and <code>refl</code></h4>
+          <p><code>x =[T] y</code> is equality in <code>T</code>, and <code>x = y</code> infers the carrier. <code>refl(x)</code> proves <code>x = x</code>, and any equality whose sides compute to the same value.
+            <a href="reference/paths.html#carriers">Equality and paths →</a></p>
+          <pre><code data-check="accept">def explicit_carrier(A : U0, x : A) : x =[A] x {
+  exact refl(x);
+}
+
+def by_computation : succ(succ(0)) = 2 {
+  exact refl(2);
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-path-operations">
+          <h4><code>sym</code>, <code>trans</code> and <code>cong</code></h4>
+          <p><code>sym(p)</code> reverses a path, <code>trans(p, q)</code> joins two, and <code>cong(f, p)</code> maps one through <code>f</code>. They are checked constructions, not axioms.
+            <a href="reference/paths.html#path-operations">Equality and paths →</a></p>
+          <pre><code data-check="accept">def join_and_map(A, B : U0, f : A -&gt; B, x, y, z : A, p : x = y, q : y = z) : f(z) = f(x) {
+  exact sym(cong(f, trans(p, q)));
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-transport">
+          <h4><code>transport</code> and <code>along</code></h4>
+          <p><code>transport(C, x, y, p, v)</code> moves <code>v : C(x)</code> along <code>p : x = y</code> into <code>C(y)</code>. <code>along C by p from v</code> is the same, with the endpoints read from <code>p</code>.
+            <a href="reference/paths.html#transport">Equality and paths →</a></p>
+          <pre><code data-check="accept">def move(A : U0, C : A -&gt; U0, x, y : A, p : x = y, v : C(x)) : C(y) {
+  exact along C by p from v;
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-path-induction">
+          <h4>Path induction</h4>
+          <p><code>path_induction</code> proves a statement about every path from the case of <code>refl</code>.
+            <a href="reference/paths.html#path-induction">Equality and paths →</a></p>
+          <pre><code data-check="accept">def symmetric(A : U0, x, y : A, p : x = y) : y = x {
+  exact path_induction(A, fun (a, b : A, q : a = b) =&gt; b = a,
+    fun (a : A) =&gt; refl(a), x, y, p);
+}</code></pre>
+        </div>
+        <h3 id="quick-rewriting">Equational reasoning and simplification</h3>
+        <div class="quick-entry" id="quick-rfl">
+          <h4><code>rfl</code></h4>
+          <p>Closes an equality whose two sides compute to the same value.
+            <a href="reference/rewriting.html#rfl">Equational reasoning →</a></p>
+          <pre><code data-check="accept">import naturals;
+
+def successor_first(n, m : Nat) : succ(n) + m = succ(n + m) {
+  rfl;
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-calc">
+          <h4><code>calc</code></h4>
+          <p>Chains equalities; <code>_</code> is the previous right side. A step is proved <code>by</code> a term or a nested block.
+            <a href="reference/rewriting.html#calc">Equational reasoning →</a></p>
+          <pre><code data-check="accept">import naturals;
+
+def through(a, b : Nat, p : a = b) : a + 0 = b {
+  calc {
+    a + 0 = a by nat_add_zero(a);
+    _ = b by p;
+  }
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-rw">
+          <h4><code>rw</code></h4>
+          <p>Rewrites the goal with instantiated equalities, in order; <code>&lt;-</code> rewrites right to left, and <code>at lhs occurrence 2</code> picks one place. A goal that then holds by computation is closed.
+            <a href="reference/rewriting.html#rw">Equational reasoning →</a></p>
+          <pre><code data-check="accept">import naturals;
+
 def rewrite_then_finish(n, m : Nat, h : n = m) : n + 0 = m {
   rw [nat_add_zero(n)];   // goal: n = m
   exact h;
-}</pre>
-        <p>
-          <strong>Simplification.</strong>
-          <code>simp only [nat_add_zero];</code> rewrites with the listed rules
-          everywhere, repeatedly, inferring quantified arguments by matching.
-          <code>simpa only [rules] using h;</code> simplifies both the goal and
-          the type of <code>h</code>, then uses <code>h</code>. On a goal that is a type,
-          such as <code>P(n + 0)</code>, <code>simp</code> rewrites the type and
-          transports the proof back. Top-level <code>simp_rule lemma priority 10;</code>
-          registers a default rule and <code>simp_set units := [lemma];</code> names a set;
-          both carry through imports. Then <code>simp;</code> uses the defaults,
-          <code>simp [units];</code> adds to them, <code>simp without [lemma];</code>
-          drops one, <code>simp [units] at h as h2;</code> adds a simplified copy of
-          <code>h</code>, and <code>simp with [h];</code> supplies a premise for a
-          conditional rule. Cycles such as commutativity are rejected; instantiate
-          them instead. Prefer <code>simp only</code> in library proofs; click a
-          <code>simp</code> to see its trace or replace it with the equivalent
-          <code>simp only</code> list. See
-          <a href="reference/rewriting.html#equational">equational reasoning</a> and
-          <a href="reference/rewriting.html#simp">simplification</a>.
-        </p>
-        <p>
-          <strong>Cubical paths.</strong>
-          <code>path(fun (i : Interval) =&gt; A, fun (i : Interval) =&gt; body)</code>
-          constructs a path, and <code>at(p, i)</code> evaluates it at a coordinate.
-          Where a path type is expected, <code>path i =&gt; body</code> reads the family
-          from it, and <code>p @ i</code> abbreviates <code>at(p, i)</code>.
-          <code>ext x;</code> reduces <code>f = g</code> to <code>f(x) = g(x)</code>
-          without an axiom. <code>apd_path(f, p)</code> is the dependent path of a
-          dependent function over <code>p</code>, and
-          <code>over C along p by { … }</code> proves a <code>PathP</code> goal from an
-          equality after transport.
-          <code>Pushout(S, A, B, f, g)</code> glues along the two maps.
-          <code>Suspension</code>, <code>north</code>, <code>south</code>, and <code>meridian</code>
-          are ordinary definitions from <code>import suspension_types;</code>.
-          See <a href="reference/cubical.html#cubical">cubical paths and pushouts</a> and the
-          <a href="proof.html?proof=cubical_paths">checked examples</a>.
-        </p>
-        <p>
-          Named definitions have checked bodies that the checker can unfold.
-          Conversion unfolds them as it needs them. In the native cubical backend,
-          <code>with unfolding [alias, another_alias] { expression }</code> suggests which
-          checked definitions to unfold while elaborating the enclosed expression.
-          The compiler can retain a checked helper for this block so the enclosing
-          proof can reuse it without expanding it again.
-          It does not assume an equality or normalize the whole proof.
-          There is no <code>axiom</code> declaration: a source file cannot add assumptions.
-          Truncation, choice and excluded middle are the explicit library assumptions; see
-          <a href="reference/assumptions.html#axioms">their signatures and restrictions</a>.
-          Function extensionality and univalence compute; see
-          <a href="reference/assumptions.html#univalence">extensionality and univalence</a>.
-          <code>computable def</code> requires a declaration to use no assumption, and
-          <code>evaluate term expecting value;</code> checks what a closed term computes to;
-          see <a href="reference/assumptions.html#computability">computability</a>.
-        </p>
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-simp">
+          <h4><code>simp only</code></h4>
+          <p>Rewrites with the listed rules everywhere, repeatedly, finding their arguments by matching. Click a <code>simp</code> in the workspace to see its trace.
+            <a href="reference/rewriting.html#simp">Equational reasoning →</a></p>
+          <pre><code data-check="accept">import naturals;
+
+def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
+  simp only [nat_add_zero];
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-simpa">
+          <h4><code>simpa</code></h4>
+          <p>Simplifies both the goal and the type of a hypothesis, then uses the hypothesis.
+            <a href="reference/rewriting.html#simpa">Equational reasoning →</a></p>
+          <pre><code data-check="accept">import naturals;
+
+def simpa_example(n, m : Nat, h : n + 0 = m) : n = m + 0 {
+  simpa only [nat_add_zero] using h;
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-simp-registration">
+          <h4><code>simp_rule</code> and <code>simp_set</code></h4>
+          <p><code>simp_rule</code> registers a default rule and <code>simp_set</code> names a set; both carry through imports. Then <code>simp;</code> uses the defaults, and <code>simp [set] at h as h2;</code> adds a simplified copy of <code>h</code>.
+            <a href="reference/rewriting.html#simp-registration">Equational reasoning →</a></p>
+          <pre><code data-check="accept">import naturals;
+
+simp_rule nat_add_zero priority 10;
+simp_set units := [nat_add_zero];
+
+def by_default(n : Nat) : (n + 0) + 0 = n {
+  simp;
+}
+
+def simplified_copy(n, m : Nat, h : n + 0 = m) : n = m {
+  simp [units] at h as h2;   // h2 : n = m
+  exact h2;
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-simp-conditional">
+          <h4>Conditional rules</h4>
+          <p>A rule with a premise fires when <code>simp with [h];</code> supplies it.
+            <a href="reference/rewriting.html#simp-conditional">Equational reasoning →</a></p>
+          <pre><code data-check="accept">import naturals;
+
+def zero_if(n : Nat, h : n = 0) : n + 0 = 0 {
+  calc {
+    n + 0 = n by nat_add_zero(n);
+    _ = 0 by h;
+  }
+}
+
+simp_rule zero_if priority 20;
+
+def conditional(n : Nat, h : n = 0) : n + 0 = 0 {
+  simp with [h];
+}</code></pre>
+        </div>
+        <h3 id="quick-cubical">Cubical paths, pushouts and suspensions</h3>
+        <div class="quick-entry" id="quick-path-shorthand">
+          <h4><code>path i =&gt;</code> and <code>p @ i</code></h4>
+          <p>A path is a function of an interval coordinate. Where a path type is expected, <code>path i =&gt; body</code> builds one, and <code>p @ i</code> evaluates <code>p</code> at <code>i</code>.
+            <a href="reference/cubical.html#cubical-shorthand">Cubical paths →</a></p>
+          <pre><code data-check="accept">def reverse(A : U0, x, y : A, p : x = y) : y = x {
+  exact path i =&gt; p @ flip(i);
+}
+
+def at_the_start(A : U0, x, y : A, p : x = y) : p @ 0 = x {
+  exact refl(x);
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-ext">
+          <h4><code>ext</code></h4>
+          <p>Reduces <code>f = g</code> to <code>f(x) = g(x)</code>, without an axiom.
+            <a href="reference/cubical.html#ext">Cubical paths →</a></p>
+          <pre><code data-check="accept">def pointwise_path(A, B : U0, f, g : A -&gt; B, h : (forall x : A. f(x) = g(x))) : f = g {
+  ext x;
+  exact h(x);
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-dependent-paths">
+          <h4>Dependent paths: <code>PathP</code> and <code>apd_path</code></h4>
+          <p><code>PathP(family, a, b)</code> is a path over a family of types. <code>apd_path(f, p)</code> is the dependent path of a dependent function over <code>p</code>, and <code>over C along p by { … }</code> proves one from an equality after transport.
+            <a href="reference/cubical.html#dependent-paths">Cubical paths →</a></p>
+          <pre><code data-check="accept">def section_path(A : U0, C : A -&gt; U0, f : (forall a : A. C(a)), x, y : A, p : x = y) :
+  PathP(fun (i : Interval) =&gt; C(p @ i), f(x), f(y)) {
+  exact apd_path(f, p);
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-composition">
+          <h4>Composition: <code>comp</code></h4>
+          <p><code>comp(family, base, walls…)</code> fills from coordinate 0 to 1, starting at the base. A wall <code>face(i, 0, …)</code> fixes the side where another coordinate is 0. With no walls, <code>comp</code> is transport.
+            <a href="reference/cubical.html#composition">Cubical paths →</a></p>
+          <pre><code data-check="accept">def join(A : U0, x, y, z : A, p : x = y, q : y = z) : x = z {
+  exact path i =&gt; comp(fun (j : Interval) =&gt; A, p @ i,
+    face(i, 0, fun (j : Interval) =&gt; x),
+    face(i, 1, fun (j : Interval) =&gt; q @ j));
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-pushouts">
+          <h4>Pushouts</h4>
+          <p><code>Pushout(S, A, B, f, g)</code> glues <code>A</code> and <code>B</code> along the two maps from <code>S</code>: <code>push_path</code> joins the images of each <code>s : S</code>.
+            <a href="reference/cubical.html#pushouts">Cubical paths →</a></p>
+          <pre><code data-check="accept">def TwoPoints := Pushout(Nat, Unit, Unit, fun (n : Nat) =&gt; tt, fun (n : Nat) =&gt; tt);
+
+def west := push_left(TwoPoints, tt);
+
+def east := push_right(TwoPoints, tt);
+
+def bridge(n : Nat) : west = east {
+  exact push_path(TwoPoints, n);
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-suspensions">
+          <h4>Suspensions</h4>
+          <p><code>Suspension</code>, <code>north</code>, <code>south</code> and <code>meridian</code> are ordinary definitions from <code>import suspension_types;</code>, built as pushouts.
+            <a href="reference/cubical.html#suspensions">Cubical paths →</a></p>
+          <pre><code data-check="accept">import suspension_types;
+
+def pole_path(A : U0, a : A) : north(A) = south(A) {
+  exact meridian(A, a);
+}</code></pre>
+        </div>
+        <h3 id="quick-conversion">Conversion and unfolding</h3>
+        <div class="quick-entry" id="quick-unfolding">
+          <h4><code>with unfolding</code></h4>
+          <p>Definitions unfold as conversion needs them. <code>with unfolding [name] { expression }</code> suggests which to unfold while elaborating the expression; it assumes nothing.
+            <a href="reference/conversion.html#unfolding-hints">Conversion and unfolding →</a></p>
+          <pre><code data-check="accept">def identity(n : Nat) := n;
+
+def identity_zero : identity(0) = 0 {
+  exact with unfolding [identity] { refl(0) };
+}</code></pre>
+        </div>
+        <h3 id="quick-assumptions">Assumptions and computability</h3>
+        <div class="quick-entry" id="quick-axioms">
+          <h4>Truncation, excluded middle and choice</h4>
+          <p>There is no <code>axiom</code> declaration. <code>Truncate</code>, <code>LEM</code> and <code>Choice</code> are the library's explicit assumptions, each generic over the universes below <code>UU0</code>.
+            <a href="reference/assumptions.html#axioms">Assumptions and computability →</a></p>
+          <pre><code data-check="accept">def merely(A : U0, a : A) : Truncate(U0, A) {
+  exact TruncateIntro(U0, A, a);
+}
+
+def excluded_middle(A : U0, nn : (A -&gt; Void) -&gt; Void) : Truncate(U0, A) {
+  exact LEM(U0, A, nn);
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-univalence">
+          <h4>Function extensionality and univalence</h4>
+          <p><code>FunExt</code>, <code>ua</code> and <code>UnivalenceBeta</code> are constructions that compute, not assumptions.
+            <a href="reference/assumptions.html#univalence">Assumptions and computability →</a></p>
+          <pre><code data-check="accept">computable def extensional(A : U0, B : A -&gt; U0, f, g : forall a : A. B(a),
+    h : forall a : A. f(a) = g(a)) : f = g {
+  exact FunExt(U0, A, B, f, g, h);
+}</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-computable">
+          <h4><code>computable def</code></h4>
+          <p>Rejects the declaration if it uses an assumption, directly or through a definition.
+            <a href="reference/assumptions.html#computable">Assumptions and computability →</a></p>
+          <pre><code data-check="accept">import naturals;
+
+computable def double(n : Nat) := n + n;</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-evaluate">
+          <h4><code>evaluate</code></h4>
+          <p><code>evaluate term expecting value;</code> checks what a closed term computes to. The term may use no assumption.
+            <a href="reference/assumptions.html#evaluate">Assumptions and computability →</a></p>
+          <pre><code data-check="accept">import naturals;
+
+def double(n : Nat) := n + n;
+
+evaluate double(3) expecting 6;</code></pre>
+        </div>
       </details>
     </main>
     <script type="module" src="proof.mjs?version=kernel-math-notation-1"></script>
+    <script type="module" src="reference/examples.mjs"></script>
   </body>
 </html>
