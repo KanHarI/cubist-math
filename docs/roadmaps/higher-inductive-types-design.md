@@ -8,7 +8,9 @@ on G0 (universe-generic checking). The existing literature informed this
 design without bounding it; the choices that depart from it are listed in the
 section on departures. The language features built on it are proposed in
 [inductive-language-features.md](inductive-language-features.md), which
-ergonomics milestones 6 and 7 adopt.
+ergonomics milestones 6 and 7 adopt. The
+[H1 specification](h1-signature-specification.md), a draft for review, makes
+stage H1 precise; its section 0 lists where it narrows this design.
 
 ## Goals
 
