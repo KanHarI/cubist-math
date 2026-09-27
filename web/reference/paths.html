@@ -107,8 +107,8 @@ def forall_is_arrow(A : U0, B : U0) : (forall x : A. B) =[U0] (A -&gt; B) {
               <thead><tr><th>Operation</th><th>Data and result</th></tr></thead>
               <tbody>
                 <tr><td><code>refl(x)</code></td><td><code>x = x</code></td></tr>
-                <tr><td><code>sym(p)</code></td><td>For <code>p : x =[T] y</code>, the reversed path <code>y =[T] x</code></td></tr>
-                <tr><td><code>trans(p, q)</code></td><td>For <code>p : x = y</code> and <code>q : y = z</code>, the composite <code>x = z</code></td></tr>
+                <tr><td><code>sym(p)</code>, or <code>-p</code></td><td>For <code>p : x =[T] y</code>, the reversed path <code>y =[T] x</code></td></tr>
+                <tr><td><code>trans(p, q)</code>, or <code>p ++ q</code></td><td>For <code>p : x = y</code> and <code>q : y = z</code>, the composite <code>x = z</code></td></tr>
                 <tr><td><code>cong(f, p)</code></td><td>For <code>f : A -> B</code> and <code>p : x = y</code>, the path <code>f(x) = f(y)</code></td></tr>
                 <tr><td><code>transport(C, x, y, p, value)</code></td><td>For <code>p : x = y</code> and <code>value : C(x)</code>, an element of <code>C(y)</code>. See <a href="#transport">transport</a>.</td></tr>
                 <tr><td><code>apd(f, x, y, p)</code></td><td>For <code>f : forall a : A. C(a)</code>, a proof of <code>transport(C, x, y, p, f(x)) = f(y)</code></td></tr>
@@ -130,6 +130,14 @@ def map_path(A, B : U0, f : A -&gt; B, x, y : A, p : x = y) : f(x) = f(y) {
 
 def apply_path(A, B : U0, f, g : A -&gt; B, p : f = g, a : A) : f(a) = g(a) {
   exact cong(fun (h : A -&gt; B) =&gt; h(a), p);
+}</code></pre>
+            <p><code>-p</code> and <code>p ++ q</code> are notation for <code>sym(p)</code> and <code>trans(p, q)</code>, and check to the same paths. <code>-</code> binds tighter than <code>@</code>, so <code>-p @ i</code> is <code>(-p) @ i</code>; <code>++</code> binds looser than <code>+</code> and tighter than <code>=</code>, and groups to the left, as a <a href="rewriting.html#calc">calc chain</a> does: <code>p ++ q ++ r</code> is <code>trans(trans(p, q), r)</code>.</p>
+            <pre><code data-check="accept">def round_trip(A : U0, x, y, z : A, p : x = y, q : y = z) : x = x {
+  exact p ++ q ++ -q ++ -p;
+}
+
+def notation_is_trans(A : U0, x, y, z : A, p : x = y, q : y = z) : -p ++ p ++ q = trans(trans(sym(p), p), q) {
+  exact refl(trans(trans(sym(p), p), q));
 }</code></pre>
             <p><code>trans</code> needs the first path to end where the second starts:</p>
             <pre><code data-check="reject">def gap_between(A : U0, x, y, z, w : A, p : x = y, q : z = w) : x = w {

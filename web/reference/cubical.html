@@ -58,7 +58,7 @@
           <section id="cubical">
             <h2>Paths as functions of the interval</h2>
             <p>In cubical type theory, a path <code>p : x = y</code> in <code>A</code> is a function from an abstract interval into <code>A</code>. Its value at <code>0</code> is definitionally <code>x</code> and its value at <code>1</code> is <code>y</code>. Many path proofs can therefore be written directly, as functions of an interval coordinate, instead of by path induction.</p>
-            <p><code>fun (i : Interval) => …</code> binds a coordinate inside the forms below. <code>Interval</code> is not a type: it belongs to no universe and cannot be the domain of an ordinary function. A coordinate can be <code>0</code>, <code>1</code>, a bound coordinate <code>i</code>, <code>flip(i)</code> (the reversal <span class="math">1 − i</span>), <code>meet(i, j)</code> (minimum) or <code>join(i, j)</code> (maximum).</p>
+            <p><code>fun (i : Interval) => …</code> binds a coordinate inside the forms below. <code>Interval</code> is not a type: it belongs to no universe and cannot be the domain of an ordinary function. A coordinate can be <code>0</code>, <code>1</code>, a bound coordinate <code>i</code>, <code>-i</code> (the reversal <span class="math">1 − i</span>), <code>i &amp; j</code> (the minimum, or meet) or <code>i | j</code> (the maximum, or join). <code>&amp;</code> binds tighter than <code>|</code>, and both tighter than <code>@</code>: <code>p @ -i &amp; j | k</code> is <code>p @ (((-i) &amp; j) | k)</code>. The forms <code>flip(i)</code>, <code>meet(i, j)</code> and <code>join(i, j)</code> say the same. The kernel inspector prints meets and joins as <span class="math">∧</span> and <span class="math">∨</span>.</p>
             <div class="table-scroll"><table>
               <thead><tr><th>Form</th><th>Meaning</th></tr></thead>
               <tbody>
@@ -77,12 +77,12 @@ def value_at_zero(A : U0, x, y : A, p : x = y) : p @ 0 = x {
 
 def to_start(A : U0, x, y : A, p : x = y) :
   PathP(fun (j : Interval) =&gt; x = p @ j, refl(x), p) {
-  exact path j =&gt; path i =&gt; p @ meet(i, j);
+  exact path j =&gt; path i =&gt; p @ i &amp; j;
 }</code></pre>
-            <p><code>value_at_zero</code> holds by computation. In <code>to_start</code>, the square <code>p @ meet(i, j)</code> is <code>refl(x)</code> at <code>j = 0</code> and <code>p</code> at <code>j = 1</code>. The kernel checks every endpoint:</p>
+            <p><code>value_at_zero</code> holds by computation. In <code>to_start</code>, the square <code>p @ i &amp; j</code> is <code>refl(x)</code> at <code>j = 0</code> and <code>p</code> at <code>j = 1</code>. The kernel checks every endpoint:</p>
             <pre><code data-check="reject">def wrong_direction(A : U0, x, y : A, p : x = y) : x = y {
   // Error: Type mismatch: found p @ 1 = p @ 0, expected x = y.
-  exact path i =&gt; p @ flip(i);
+  exact path i =&gt; p @ -i;
 }</code></pre>
             <p>A coordinate is not a term, and <code>Interval</code> is not a type:</p>
             <pre><code data-check="reject">def coordinate_as_term(A : U0, x : A) : x = x {
@@ -105,7 +105,7 @@ def to_start(A : U0, x, y : A, p : x = y) :
               </tbody>
             </table></div>
             <pre><code data-check="accept">def reverse_again(A : U0, x, y : A, p : x = y) : y = x {
-  exact path i =&gt; p @ flip(i);
+  exact path i =&gt; p @ -i;
 }
 
 def constant_path(A : U0, x : A) : x = x {
