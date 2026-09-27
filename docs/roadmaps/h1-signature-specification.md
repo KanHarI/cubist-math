@@ -78,6 +78,19 @@ admitted a hidden bound, in the constructor of a parameter-free signature
   declaration uses today. Rejection fixture V19 covers the new
   counterexample.
 
+A fourth review found two consistency defects, now fixed:
+
+- **The walk's coverage** (2.3, 5.2). The closed former judgement ends in
+  a prenex of `LevelPi` and `Pi`, in `U(ω)`, which rules 1 and 2 would
+  reject. The walk now starts below that prenex, from the parameter types'
+  judgements, `U(ℓ)` and the constructor judgements, and still refuses
+  level quantification within them.
+- **τ's guarantees under the conservative option** (7.2–7.4). They hold
+  for finite-tier declarations only. A mixed-tier call, such as
+  `big_id(Nat, small)` with `big_id(A : UU0, x : A or A)`, has no image,
+  and the migration verifier rejects it (fixture X8). No such call exists
+  today.
+
 ## 0. Relation to the adopted design and to G0
 
 The design fixes one signature format for H1–H4. For H1 this document makes
@@ -423,13 +436,28 @@ counts index types too (G0 2.12).
 
   *The check.* A signature's own text does not show every bound: the two
   counterexamples below hide one in a type the signature uses. So the kernel
-  checks the admission derivation itself. At `SignatureClose` it walks the
-  recorded premises of the former type's judgement and of every
-  `SignatureConstructor` judgement, and requires:
+  checks the admission derivation itself, below the signature's own
+  closing prenex. The closed former judgement that `SignatureBegin` takes
+  ends in one `LevelPi` per level parameter and one `Pi` per term
+  parameter, above the universe `U(ℓ)`. That prenex only closes the
+  telescope, and it lives in `U(ω)` whenever a level parameter occurs, so
+  the walk does not visit it. With the extension, `SignatureBegin` requires
+  the former judgement to end in exactly that prenex. The walk starts from:
 
-  1. no `LevelPi`, `LevelLambda` or `LevelApply` instruction;
-  2. no level of tier 1 or above in the term or the type of any judgement
-     in the derivation;
+  - for each term parameter, the judgement that its type is a type: the
+    source judgement recorded by `Extend` for the entry that the
+    corresponding prenex `Pi` discharges;
+  - the judgement `U(ℓ) : U(ℓ + 1)` below the prenex;
+  - every `SignatureConstructor` judgement.
+
+  From these it follows premises and the source judgements of the entries
+  it meets, and visits each judgement once. It requires, of every judgement
+  it visits:
+
+  1. no `LevelPi`, `LevelLambda` or `LevelApply` instruction: level
+     quantification used within a parameter type or a constructor type is
+     still refused, only the closing prenex is exempt;
+  2. no level of tier 1 or above in its term or its type;
   3. every signature whose instance, constructor or eliminator occurs is
      itself tier-parametric, by its recorded flag. A signature with no
      parameters is no exception: its flag comes from the same check on its
@@ -444,10 +472,12 @@ counts index types too (G0 2.12).
   signature bounded; L2.1's driver derives with least levels, and the
   inspector shows the flag.
 
-  *Sufficiency, proved here in outline.* Let `D` be the checked derivation,
-  and `ρ` any assignment of ordinals below ω² to the level parameters. Then
-  `D[ρ]` is a valid derivation, by induction on `D`, instruction by
-  instruction:
+  *Sufficiency, proved here in outline.* Let `D` be the walked judgements:
+  the derivations of the parameter types, of `U(ℓ)` and of the constructor
+  types. Those are what an instance needs; formation reads the telescope
+  directly, so the closing prenex plays no part. Let `ρ` be any assignment
+  of ordinals below ω² to the level parameters. Then `D[ρ]` is a valid
+  derivation, by induction on `D`, instruction by instruction:
 
   - (i) formation of `Π`, `Σ`, path types, sums, W types, pushouts and
     universes: the conclusion's level is the maximum or successor of the
@@ -1010,10 +1040,12 @@ Tags 1–49 keep their numbers. New kinds are appended:
 - `SignatureClose(signature)`: append the generated squash constructors for
   the modifier, mark it admitted, and return its index. Later instructions
   name an admitted signature by its index, as `Lookup` names a definition.
-- With Q16's extension, `SignatureClose` also records whether the signature
-  is tier-parametric, by walking the premises of its admission derivation
-  with the three rules of 2.3, and consulting the recorded flag of each
-  signature the derivation uses. The walk visits each judgement once.
+- With Q16's extension, `SignatureBegin` also requires the former judgement
+  to end in its closing prenex, and `SignatureClose` records whether the
+  signature is tier-parametric. It walks the judgements 2.3 lists, below
+  that prenex, with the three rules of 2.3, and consults the recorded flag
+  of each signature the derivation uses. The walk visits each judgement
+  once.
 
 The admission context's entries are ordinary entries, made by `Level` and
 `Extend`, and the constructor types are derived by ordinary instructions. A
@@ -1201,41 +1233,64 @@ declared for comparison; retiring them is a separate decision (Q11).
 
 - τ is a map on terms. Native formers carry no level, and neither do
   declared instances (3.1), so τ adds no level and involves no coercion or
-  lifting: `τ(Sum(A, B)) = Plus(τ(A), τ(B))`. With Q16's extension τ is
-  purely syntactic. Without it, τ also reads, from the derivation, whether
-  an instance would read a tier-1 level, and leaves such a use native
-  (UU-tier arguments, below).
-- τ is the identity on every other node, and commutes with binders,
-  substitution, level substitution and interval substitution.
-- **Native equalities across universes translate to the same equalities.**
-  A native term used at several universes is one term, and so is its image.
-  In the example of 2.3, `small : Nat or Nat` built at `U0` and passed to
+  lifting: `τ(Sum(A, B)) = Plus(τ(A), τ(B))`. τ is the identity on every
+  other node.
+- **Native and declared forms are not convertible.** `Nat` and `N` are
+  different types. No conversion rule, no `Lift` and no coercion relates
+  them, and a term mixing them is a type error. Migration is a rewrite by
+  τ, checked by the strict migration verifier.
+- **Native equalities across universes, at finite levels.** A native term
+  used at several universes is one term, and so is its image. In the
+  example of 2.3, `small : Nat or Nat` built at `U0` and passed to
   `sum_id(U1, Nat, …)` translates to `small : Plus(N, N)` passed where
   `sum_id`'s parameter type `A or A` has become `Plus(A, A)` with `A := N`.
   The two types are the same term, `Plus(N, N)`, so the application checks,
   as native. A native `Lift` translates to a `Lift` of the image, with the
   same levels.
-- **UU-tier arguments.** `def big_sum(A, B : UU0) : UU0 := A or B;` checks
-  natively. What τ does with it depends on Q16.
-  - *Without the extension*, the recommended first release: `Plus(A, B)`
-    would read `ω`, which is refused, so τ keeps a native sum, W type or
-    pushout whose instance would read a tier-1 level. It maps every other
-    one. `Nat` has no parameters and always maps.
-  - *With the extension*: the four declared counterparts are
-    tier-parametric, since their derivations use only their parameters,
-    universes at their level parameters, `Π`, `Σ`, projections and path
-    types. `Plus(A, B)` then reads `ω` and lives in `UU0`, and every native
-    use has an image.
-  - No archive or library declaration uses a tier-1 universe as a type:
-    all 43 archive mentions of `UU0` are universe binders `U < UU0`. So the
-    choice changes nothing that exists today.
-- τ preserves typing and conversion when every native rule has a declared
-  counterpart that commutes with τ. That is what X1–X3 test, rule by rule;
-  X4, X6 and X7 test it on the archive and on the two examples above.
-- **Native and declared forms are not convertible.** `Nat` and `N` are
-  different types. No conversion rule, no `Lift` and no coercion relates
-  them, and a term mixing them is a type error. Migration is a syntactic
-  rewrite by τ, checked by the strict migration verifier.
+
+What τ guarantees depends on Q16, because a native former may occur at an
+argument in a tier-1 universe. Call a declaration *finite-tier* when
+neither it nor anything it uses, transitively, contains a native sum, W
+type or pushout whose instance would read a tier-1 level.
+
+- **With the extension**, the four declared counterparts are
+  tier-parametric: their derivations use only their parameters, universes
+  at their level parameters, `Π`, `Σ`, projections and path types. τ is
+  then purely syntactic and total. It commutes with binders, substitution,
+  level substitution and interval substitution everywhere. A native use at
+  a tier-1 argument has an image: `def big_sum(A, B : UU0) : UU0 := A or B;`
+  becomes `Plus(A, B)`, reading `ω`, in `UU0`.
+- **Without it**, the recommended first release, an instance cannot read a
+  tier-1 level. τ then keeps each native sum, W type or pushout whose
+  instance would read one, and maps every other occurrence; `Nat` has no
+  parameters and always maps. Which occurrences stay native depends on the
+  levels in the derivation. So τ commutes with substitution only on
+  finite-tier declarations, where every level read stays finite before and
+  after substitution, and its guarantees are stated for them only:
+  - on finite-tier declarations, τ preserves typing and conversion, native
+    equalities across universes and `Lift`, as above;
+  - a declaration that is not finite-tier keeps its tier-1 occurrences
+    native. A *mixed-tier call*, which passes a finite-tier term where a
+    native tier-1 type is expected, has no image. For example:
+
+    ```text
+    def big_id(A : UU0, x : A or A) : A or A := x;
+    def small : Nat or Nat := left(0);
+    def call := big_id(Nat, small);
+    ```
+
+    `call` checks natively. After τ, `big_id`'s parameter type stays the
+    native `A or A`, which becomes `Nat or Nat` with `Nat` mapped to `N`,
+    while `small` has type `Plus(N, N)`. The application fails, and the
+    migration verifier reports it; it does not migrate the declaration in
+    part (X8);
+  - no archive or library declaration uses a tier-1 universe as a type:
+    all 43 archive mentions of `UU0`, and the library's 4, are universe
+    binders `U < UU0`. So every existing declaration is finite-tier, and
+    no mixed-tier call exists.
+
+Under either option, X1–X3 test the preservation rule by rule, and X4, X6,
+X7 and X8 test it on the archive and on the examples above.
 
 ### 7.3 Differential fixtures
 
@@ -1246,18 +1301,22 @@ declared for comparison; retiring them is a separate decision (Q11).
 | X3 | Composition, homogeneous composition and transport at each type, including pushout bridges | Reducts related by τ |
 | X4 | The archive, elaborated with declared forms for the four types (a driver option) | 0 gaps; every stored definition derives again; each declaration's assumptions unchanged; canonicity fixture and `evaluate` results equal |
 | X5 | Cost of X4 against the native run: archive check time, re-derivation time, kernel steps, arena peak | Recorded with revision, machine and limits |
-| X6 | Native terms used at two universes: `sum_id(U1, Nat, small)` of 2.3, and the same with W, pushout and `Nat`-valued generic definitions instantiated at `U2` | Native and image both check; the image is one instance term at both universes |
+| X6 | Native terms used at two finite universes: `sum_id(U1, Nat, small)` of 2.3, and the same with W, pushout and `Nat`-valued generic definitions instantiated at `U2` | Under both options, native and image both check; the image is one instance term at both universes |
 | X7 | Native formers at UU-tier arguments: `big_sum`, and a W type and a pushout over types in `UU0` | Without Q16's extension, τ leaves them native and they check unchanged; with it, native and image both check and the image lives in `UU0` |
+| X8 | A mixed-tier call: `big_id(Nat, small)` of 7.2, and the same through a W type and a pushout | Without Q16's extension, the image fails to check and the migration verifier rejects the declaration, naming the call; with it, native and image both check |
 
 ### 7.4 Retirement criterion
 
 The hand-coded instructions retire in one change when:
 
-1. X1–X4, X6 and X7 pass;
+1. X1–X4 and X6–X8 pass;
 2. X5's gap is recorded, and either accepted by the maintainer or closed by
    specialised reduction paths for hot signatures (Q14);
 3. the archive is migrated by τ under the strict verifier, with every
-   public type equal after τ and every assumption list unchanged.
+   public type equal after τ and every assumption list unchanged. Without
+   Q16's extension, this requires every archive declaration to be
+   finite-tier (7.2), which they all are today; a declaration that is not
+   is left on native formers and reported, not migrated in part.
 
 What the change removes depends on Q16:
 
@@ -1269,10 +1328,10 @@ What the change removes depends on Q16:
   pushout instructions stay for arguments at tier-1 levels, and the
   elaborator emits the declared forms everywhere else. They stay trusted
   code, and X1–X3 stay as their regression tests. A native and a declared
-  sum of the same components are then different types. That matters only
-  when a definition whose parameter is typed at a tier-1 universe is
-  applied to small types, which nothing does today (7.2). Adopting the
-  extension later retires them without changing any finite-level term.
+  sum of the same components are then different types, so τ's guarantees
+  cover finite-tier declarations only, and a mixed-tier call has no image
+  (7.2, X8). Nothing does that today. Adopting the extension later retires
+  the three formers without changing any finite-level term.
 
 `Unit` and `Void` stay in both cases (Q11).
 
@@ -1592,7 +1651,7 @@ The work plan's H1 release fixtures, each in the canonicity fixture or its
 support module where it computes:
 
 - the declared `N`, `List`, `Tree` and `Push` compared with the native forms
-  (X1–X4, X6, X7);
+  (X1–X4, X6–X8);
 - a declared circle with winding number 1, by `rfl` and by `evaluate` (E1);
 - `code_meridian` by `rfl` (E2);
 - `Trunc` and `Quotient` with checked dependent elimination (E3, E4);
