@@ -179,6 +179,29 @@ int main(void) {
     cc_work_counters total = now();
     assert(total.rejected <= total.instructions && total.failed_queries <= total.queries);
 
+    /* A valid construction by a standalone helper takes steps of the budget
+     * the last operation left, and counts none of them, on a fresh kernel
+     * and after an instruction ran out of its budget. */
+    cc_kernel *fresh = cc_kernel_new();
+    cc_term n = cc_kernel_term(fresh, CC_NAT, 0, 0, 0, 0, 0);
+    assert(cc_kernel_equiv_type(fresh, n, n));
+    cc_work_counters untouched;
+    cc_kernel_work(fresh, &untouched);
+    assert(!memcmp(&untouched, &(cc_work_counters){0}, sizeof untouched));
+    cc_kernel_free(fresh);
+    cc_judgement_id another = OK(cc_instr_refl(k, OK(cc_instr_apply(k, identity, OK(cc_instr_succ(k, OK(cc_instr_zero(k))))))));
+    cc_kernel_set_step_budget(k, 1);
+    assert(!cc_instr_step(k, another, 1, NULL, 0, CC_STEP_NORMALIZE));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_BUDGET);
+    cc_kernel_clear_error(k);
+    before = now();
+    cc_term nat_syntax = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_kernel_equiv_type(k, nat_syntax, nat_syntax);
+    cc_kernel_clear_error(k);
+    cc_work_counters spent_nothing = since(before);
+    assert(!memcmp(&spent_nothing, &(cc_work_counters){0}, sizeof spent_nothing));
+    cc_kernel_set_step_budget(k, 10000000);
+
     cc_kernel_free(k);
     puts("kernel work counters: ok");
     return 0;
