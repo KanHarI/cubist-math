@@ -419,7 +419,8 @@ Delivered here ahead of that work: `path i =>`, `p @ i`, `ext x;`,
   function type, supplied arguments, or the expected result type. Implement
   scoped metavariables, occurs checks, and unresolved-hole diagnostics.
   Builds on the HoTT roadmap's goal layer (A5). This is work-plan L4.1a,
-  scheduled before the first new `match` release. Also needed by H2: indexed
+  scheduled in stage 1; it improves the first new `match` release without
+  gating it. Also needed by H2: indexed
   families are impractical without implicit indices, as in
   `cons(x, k + n, append(A, k, n, rest, ys))`.
 - [ ] Add opt-in implicit binders, and infer level arguments where
@@ -489,8 +490,9 @@ Completion, with generated identity required for L2.4b:
 This is the language of the [kernel design](higher-inductive-types-design.md#5-language)
 and of the [feature proposal](inductive-language-features.md). Releases follow
 kernel stages H1–H3. The first release also needs HoTT A5 (motive
-abstraction) and milestone 5's scoped holes and named arguments (L4.1a).
-Explicit matching is L2.2a; automatic clauses in L2.2b additionally need
+abstraction). Milestone 5's scoped holes and named arguments (L4.1a) improve
+it but do not gate it: explicit matching accepts explicit motives and
+arguments. Explicit matching is L2.2a; automatic clauses in L2.2b additionally need
 D0a and D1's first slice (h-level evidence). Implicit binders and level
 inference (L4.1b) are a separate release.
 

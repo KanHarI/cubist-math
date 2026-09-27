@@ -1,6 +1,8 @@
 # Work plan: language features and their kernel support
 
-Status: reviewed against `fabb174` on 2026-09-27, after PRs #46–#48.
+Status: reviewed against `fabb174` on 2026-09-27, after PRs #46–#48, and
+revised the same day: K2.1 is the main track, learned-search phases 1–2 are
+scheduled with L1.3, and L4.1a no longer gates explicit matching.
 This is the scheduling authority for the linked roadmaps. Package IDs from
 the earlier plan are retained; their stage numbers do not impose dependencies.
 Sizes (S < M < L < XL) describe relative scope, not elapsed time.
@@ -21,7 +23,7 @@ A new syntax form must elaborate completely through the instruction driver.
 
 | Area | Delivered | Still open |
 | --- | --- | --- |
-| Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default | Retiring the old checker APIs and their test clients; optional performance/certificate work |
+| Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default | Retiring the old checker APIs and their test clients; explicit driver options and per-instruction cost telemetry (learned-search phases 1–2, with L1.3); optional performance/certificate work |
 | G0 universes | K1.1–K1.4 and L1.1; `U < UU0`, `next`, `max`, generic builtins and rewriting; all 43 former templates check generically | E1 level constraints and E2 higher-tier generic definitions remain deferred proposals |
 | Proof ergonomics | Grouped binders, `have`, `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand | General inference, `apply`/`refine`, folded path rules, broader dependent rewriting |
 | Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | Face-aware plans, filling/source-span records, tactic integration, indexed and companion motives |
@@ -135,7 +137,7 @@ property tests remain regressions, not next actions.
 | --- | --- | --- | --- |
 | L1.2 | A5 core goal and proof-construction layer | Delivered | — |
 | L1.2r | Remaining A5 plan metadata and clients: faces, filling, source spans; index/companion motives with H2/H3 | Extend the delivered core with each consuming feature | L |
-| L1.3 | Deterministic fuel and residual-goal diagnostics (HoTT A4/A6) | L1.2; A7 baseline | M |
+| L1.3 | Deterministic fuel and residual-goal diagnostics (HoTT A4/A6), with learned-search phases 1–2: explicit driver options and per-instruction kernel cost | L1.2; A7 baseline | M |
 | L1.4 | Folded path vocabulary and constructor congruence (A1/A2) | L1.1, L1.2; A4 fuel for bounded search | L |
 | L1.5 | Σ projections `p.1`/`p.2`, `show`, `suffices`; separate `Path` induction/`subst` slice (A8/B4/B1) | L1.2; B1 uses A1b's checked induction construction | M |
 | L4.1a | Known-signature application elaboration, named arguments and scoped `_` holes | L1.1, L1.2; L1.3 fuel for inference search | M |
@@ -145,8 +147,9 @@ property tests remain regressions, not next actions.
 | L2.5b | First `hlevel` solver slice (HoTT D1) | L2.5a, L1.2, L1.3 fuel | M |
 
 L4.1a/b together retain the old L4.1 scope; L2.5a/b retain L2.5.
-Inference is not blocked by H2. The first general `match` release needs
-L4.1a; implicit indices are required for the indexed release. Decide only
+Inference is not blocked by H2. L4.1a improves the first general `match`
+release without gating it: explicit matching accepts explicit motives and
+arguments. Implicit indices are required for the indexed release. Decide only
 constraints determined by supplied arguments and expected types; E1's
 user-declared level constraints remain deferred. Every implicit argument
 has an explicit spelling.
@@ -161,7 +164,10 @@ has an explicit spelling.
   native queries and retries. Specify cache/reset accounting so fresh and
   reused sessions agree. Native budgets already exist; the missing work is
   hard cumulative limits and deterministic frontend accounting. Deadlines
-  remain separately reported safety timeouts.
+  remain separately reported safety timeouts. The per-instruction kernel
+  cost that learned-search phase 2 exposes is this same accounting: deliver
+  the bridge's cost counter and the driver's explicit options (phase 1) with
+  L1.3, not twice.
 - A1 uses level-generic checked definitions. Reintroducing per-universe
   specialization would undo L1.1. A2 initially excludes binder bodies;
   binder-aware rewriting remains a separately scoped extension.
@@ -180,7 +186,7 @@ has an explicit spelling.
 | K2.4 | Differential fixtures for native and declared Nat/sum/W/pushout; then retirement | K2.3; explicit representation/comparison contract | M |
 | K2.5 | G2 truncation/resizing policy and migration ledger | K2.1; implementation with K2.3/L2.1 | M |
 | L2.1 | One-sort `inductive` declarations and signature diagnostics | K2.3 | L |
-| L2.2a | Explicit `match`, motives, structural recursion and path clauses | L2.1, L1.2, L4.1a; relevant L1.2r metadata | L |
+| L2.2a | Explicit `match`, motives, structural recursion and path clauses | L2.1, L1.2; relevant L1.2r metadata; L4.1a improves the release without gating it | L |
 | L2.2b | Automatic clauses and explicit `obligations` | L2.2a, L2.5b; checked h-level evidence | M |
 | L2.3 | Supported `deriving`: `paths`, `decidable_equality`, `irrelevance`, `ind_prop`, `rec`; `universal` slice | L2.2; `universal` also uses L2.4/L2.6 | L |
 | L2.4 | Core theories: named model records, explicit homomorphisms/isomorphisms, scoped notation, sections, `extends` | L1.1, L1.5 projections, L2.5a for h-level fields | L |
@@ -303,9 +309,11 @@ language releases remain useful and continue independently.
 - HoTT C4/E1/E3/E4, fuller identity systems, binder-aware rewriting, transfer
   automation and theory morphisms, each with an explicit fragment and gate.
 - E1/E2 universe enhancements remain in their proposal document.
-- Learned search and native search/certificate work are optional. For learned
-  search, expose choices and measured costs first; include failed queries,
-  model overhead and session/cache effects. Training waits for that baseline.
+- Learned-search phases 3–5 and native search/certificate work are optional.
+  Phases 1–2, the driver's explicit options and measured per-instruction
+  cost, are scheduled with L1.3 in stage 1; that baseline must include
+  failed queries, model overhead and session/cache effects. Training waits
+  for it.
 
 ## Computation notation track
 
@@ -381,20 +389,29 @@ results from the corresponding library area.
 - Remove unsupported H1 mutual-type assumptions from nested declarations.
 - Replace mathematical rebuild gates with small language fixtures, preserving
   the paused mathematical backlog and H3's research gate.
+- Same-day revision: name K2.1 as the main track; schedule learned-search
+  phases 1–2 with L1.3, since deterministic fuel and per-instruction cost
+  are one accounting; make L4.1a an input to explicit matching rather than
+  its gate, because every implicit argument has an explicit spelling.
 
 ## First actions
 
-1. Finish independent reference cleanup, specify module-resolution parity
-   and correct coverage reporting (D0.2/I1.1/I1.3). Rebaseline current generic
-   declarations for fuel accounting.
-2. In parallel: L1.3 deterministic budgets/diagnostics, L1.5 small goal
-   conveniences, and K2.1/K2.5 H1 rules plus truncation migration policy.
-3. Build L4.1a, then L4.1b/L4.4; start L2.5a/b and core theories (L2.4) as
+1. **Main track: K2.1**, the H1 signature fragment and soundness note, with
+   K2.5's truncation and resizing policy. It depends on nothing open and
+   gates K2.2, the largest package in the plan.
+2. Alongside: L1.3 deterministic budgets and diagnostics together with
+   learned-search phases 1–2, which share its cost accounting; and L1.5,
+   the small goal conveniences.
+3. Between those, the small items: the quick reference (D0.2),
+   module-resolution parity (I1.1) and coverage reporting (I1.3). Rebaseline
+   current generic declarations for fuel accounting.
+4. Build L4.1a, then L4.1b/L4.4; start L2.5a/b and core theories (L2.4) as
    their projection/fuel prerequisites land.
-4. Implement H1 instruction families and driver support, explicit matching,
+5. Implement H1 instruction families and driver support, explicit matching,
    then automatic clauses and their canonicity/differential acceptance.
-5. Advance N0/N1, then N2/N4 alongside derived declarations and views. H2
+6. Advance N0/N1, then N2/N4 alongside derived declarations and views. H2
    follows H1's stable rules; H3 waits for its reviewed research result.
 
-Checker retirement and learned search may proceed separately; neither blocks
-this language sequence. Concrete mathematical development remains paused.
+Checker retirement and learned-search phases 3–5 may proceed separately;
+neither blocks this language sequence. Concrete mathematical development
+remains paused.

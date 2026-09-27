@@ -243,8 +243,10 @@ same edges, and the same heads, with message passing in place of attention.
 5. **Deployment.** The chooser in the driver, the options in the workbench,
    and the offline certificate mode.
 
-Phases 1 and 2 stand on their own as driver inspection and measurement work.
-Phases 3–5 wait for evidence that search choices account for enough cost to
+Phases 1 and 2 stand on their own as driver inspection and measurement work;
+the [work plan](work-plan.md#stage-1-goals-diagnostics-and-inference)
+schedules them with L1.3, whose deterministic fuel is the same cost
+accounting. Phases 3–5 wait for evidence that search choices account for enough cost to
 justify learning. Instruction-kernel stage 3, including pushouts, Glue and
 `HComp`, has already landed; it supplies existing benchmark cases. Future
 declared inductive types may supply more cases, but their delivery does not
