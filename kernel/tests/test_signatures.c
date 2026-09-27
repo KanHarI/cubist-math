@@ -367,6 +367,11 @@ static void instances(void) {
     cc_judgement_id tree = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_parameter(k,
         OK(cc_instr_sort_begin(k, tree_signature)), nat)), OK(cc_instr_lambda(k, tn, nat))));
     assert(type_of(tree) == term_of(universe(lconst(0))));
+    /* An instance in progress is not rewritten: a copy would lose its count
+     * of the arguments supplied, and a later argument would be dropped. */
+    cc_judgement_id half_tree = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, tree_signature)), nat));
+    REJECTS(cc_instr_step(k, half_tree, 0, NULL, 0, CC_STEP_WHNF), "not rewritten");
+    REJECTS(cc_instr_replace(k, half_tree, 0, (const uint8_t[]){0, 0}, 2, OK(cc_instr_refl(k, nat))), "not rewritten");
     cc_term sup = type_of(OK(cc_instr_construct(k, tree, 0)));
     cc_term position = child(child(sup, 1), 0);
     assert(kind(child(sup, 0)) == CC_NAT && kind(position) == CC_PI && kind(child(position, 0)) == CC_APP);

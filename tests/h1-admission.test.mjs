@@ -104,6 +104,7 @@ test("instances of admitted signatures give their constructors", t => {
   const started = g.sortBegin(g.signatureClose(trunc));
   assert.equal(g.judgement(started).kind, "instance");
   assert.throws(() => g.construct(started, 0), /Expected a typing judgement/);
+  assert.throws(() => g.step(started, "term", [], "whnf"), /not rewritten/);
   const truncNat = g.sortParameter(started, g.nat());
   assert.equal(g.judgement(truncNat).type, g.judgement(u0).term);
   assert.equal(g.judgement(g.apply(g.construct(truncNat, 0), g.zero())).type, g.judgement(truncNat).term);
