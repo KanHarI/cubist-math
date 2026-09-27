@@ -10,16 +10,42 @@ mode of section 5.7, and its results carry the `kernel extension: H1` marker.
 
 It refines the adopted
 [higher inductive-inductive type design](higher-inductive-types-design.md)
-for its first stage, and it keeps the level contract of the
-[G0 specification](historical/g0-universe-specification.md) (its sections
-2.12 and 6, Q1 and Q6). The [work plan](work-plan.md) schedules the packages.
-Where this document narrows or departs from the design, section 0 says so and
-section 11 asks for a decision.
+for its first stage. It keeps the level rules of the
+[G0 specification](historical/g0-universe-specification.md), and revisits two
+of G0's statements about declared types: the level-abstracted constants of
+its section 2.12, and Q1's distinct instances. The
+[work plan](work-plan.md) schedules the packages. Where this document narrows
+or departs from the design or from G0, section 0 says so and section 11 asks
+for a decision.
 
-## 0. Relation to the adopted design
+## Revisions after review
+
+A review of the first draft (PR #53) found one blocking and four further
+defects. This version corrects them:
+
+- **Level-erased instances** (2.3, 3.1, 5.3, 7.2). The native formers carry
+  no level, and the archive relies on it: a generic definition instantiated
+  at `U1` accepts a sum built at `U0`. Level-abstracted declared constants
+  could not translate that. Instances of a declared sort now carry no level,
+  and H1 admits only level-parametric signatures, where this is sound (D9).
+- **Path abstraction in boundaries** (1.4). `S2`'s outer endpoints are
+  `⟨j⟩ base`, which the first grammar could not generate.
+- **Commit keeps signatures** (5.1). `cc_kernel_commit_checkpoint` keeps new
+  definitions and relocates their syntax; admitted signatures are kept the
+  same way. Only rollback removes them.
+- **UU-tier arguments** (2.3, 7.2). Native formers accept them. A
+  level-parametric signature may now be instantiated at every tier.
+- **The ledger's remedies** (8.3, 8.4). Raising the tower's quantifier moves
+  membership up a universe each time, and the same holds for the union of
+  independent sets. Those remedies are replaced, and the Cauchy root is
+  identified as an artifact of a wrapper's fixed universe.
+- **Open obligations** (4.3, 4.5) are marked as such for D1, D4, D5 and
+  Lemma H2.
+
+## 0. Relation to the adopted design and to G0
 
 The design fixes one signature format for H1–H4. For H1 this document makes
-six choices precise. Each is an open question in section 11 with a
+seven choices precise. Each is an open question in section 11 with a
 recommendation.
 
 | Design statement | H1 as specified here | Why |
@@ -30,6 +56,7 @@ recommendation.
 | Boundaries are systems on faces of the constructor's dimensions | Boundaries are cube boundaries: a piece on both faces of every dimension (Q4) | A cube boundary is an iterated path type, which the kernel already has. Partial boundaries would need extension types. |
 | Constructors take dimension arguments | A constructor with dimensions is a function into an iterated path type, applied at interval formulas by path application (Q5) | Boundary reduction is then the kernel's existing path step, and overlap agreement is typing. |
 | A sort's level is the maximum of its data and arity levels | The former's type declares the level; the kernel checks that every constructor type lives in that universe, and the elaborator declares the least such level (Q7) | The instruction kernel does not infer principal levels. |
+| G0 2.12: generated constants are level-abstracted, as `Trunc : Π (x < ω). Π (A : U(x)). U(x)`; G0 Q1: instances at different levels are distinct | Instances carry no level. A sort instance, a constructor and an eliminator are one term at every universe, and the levels are read from the parameters' judgements. H1 admits only level-parametric signatures, whose constructor types mention no level parameter (Q8, Q15, Q16) | The native formers are level-erased, and the archive relies on it (7.2). A sort built from its parameters alone does not depend on the universe it is viewed in (D9). |
 
 Everything else follows the design: one signature format, positions as
 cubes, generated squash constructors for `set` and `prop`, clause typing
@@ -63,28 +90,36 @@ formal compositions, and staged trust.
   motive.
 - **Universes.** A sort lives in the universe its former's type declares, and
   every data type and arity must fit in it. Parameters count only through
-  those types. Lowering and mismatched level instances are rejected.
+  those types. Lowering is rejected.
+- **Level-erased instances.** Level parameters type the parameters only, and
+  never occur in a constructor type. An instance `S(a⃗)` carries no level:
+  its universe is read from the parameters' judgements, at any tier, so one
+  term serves every universe, as native sums do.
 - **Trust.** Admission requires the kernel's H1 extension flag until review.
   Results carry `kernel extension: H1` transitively; it is visible, and it is
   not a non-computing dependency.
 - **Differential oracle (K2.4).** `Nat`, sums, W types and pushouts are
-  declared as signatures and compared with the hand-coded instructions by an
-  explicit translation. Native and declared forms are different types; no
-  conversion relates them.
+  declared as signatures and compared with the hand-coded instructions by a
+  syntactic, level-free translation. Native and declared forms are different
+  types; no conversion relates them.
 - **Truncation (K2.5, G2).** `Trunc` is universe-preserving and has no
   resizing. The archive keeps its legacy assumptions. Measured on the archive,
   a universe-preserving truncation breaks 47 of 3,804 declarations, from 8
-  roots; their remedies need no resizing assumption (section 8).
+  roots. No remedy needs a resizing assumption: two declarations wait for
+  H2's inductive families, four take an explicit smallness hypothesis that
+  their one consumer discharges from `LEM`, and the rest need restatement or
+  nothing (section 8).
 
 ## Notation
 
 | Symbol | Meaning |
 | --- | --- |
-| `S` | the sort being declared; also its instance `S {ℓ⃗} a⃗` when parameters are clear |
-| `x⃗` | the signature's level parameters, each `x < ω` |
+| `S` | the sort being declared; also its instance `S(a⃗)` at parameters `a⃗` |
+| `x⃗` | the signature's level parameters; they type the parameters, and each instance reads them from its parameters' judgements |
+| `ρ` | the levels read at an instance, one per level parameter |
 | `p⃗ : P⃗` | the signature's term parameters, a telescope over `x⃗` |
 | `ℓ` | the sort's level, a level expression over `x⃗` |
-| `c_1 … c_n` | constructors, in order; `c_k` also names the constant after admission |
+| `c_1 … c_n` | constructors, in order; `c_k` also names the constructor at an instance |
 | `t⃗ : D⃗` | a constructor's data telescope |
 | `q⃗ : Q⃗` | a constructor's positions |
 | `A` | an arity, the domain of a position |
@@ -110,21 +145,32 @@ modifier, and an ordered list of constructors.
 
 ### 1.1 Parameters
 
-- The telescope starts with level parameters `x⃗ < ω`, then term parameters
-  `p⃗ : P⃗`, each type well formed over the ones before. This matches G0's
-  prenex universe parameters (G0 Q8).
+- The telescope starts with level parameters `x⃗`, then term parameters
+  `p⃗ : P⃗`, each type well formed over the ones before. At admission the
+  telescope is presented as G0's prenex level binders `x⃗ < ω` (G0 Q8).
+- **Level-parametric.** A level parameter occurs only in the parameter types,
+  never in a constructor type `T_k`. The constructors are therefore built
+  from the parameters' values alone, which is what makes level-erased
+  instances sound (D9). A signature that stores a type of a parameter level,
+  such as `wrap(B : U(x))`, is level-dependent and excluded from H1 (Q15).
+- **Determined.** Every level parameter occurs as the whole universe at the
+  end of some parameter's type, as in `A : U(x)` or `B : L → U(y)`; `U(x + 1)`
+  and `U(max(x, y))` do not count. Each instance reads the level there, from
+  that parameter's judgement, as a level expression (3.1). A level parameter
+  with no such occurrence is rejected.
+- **No tier-1 constants.** A signature with level parameters mentions no
+  universe of tier 1 or above (Q16). With that restriction its instances may
+  be at any level of any tier (2.3). A signature may instead be stated at
+  fixed levels of any tier, with no level parameters.
 - Parameters are uniform: every occurrence of `S` inside the signature is at
   the declared parameters. A constructor cannot mention `S` at other
   arguments; that is an index, which is H2.
-- A signature may also be stated at fixed levels, including UU-tier levels,
-  with no level parameters. A level-generic signature ranges over small
-  universes only, like generic definitions (G0 2.12, Q10).
 
 ### 1.2 Constructor normal form
 
 The kernel accepts a constructor type `T_k` only in this shape. `s` is the
 sort entry and `c_1 … c_{k-1}` are the entries of the earlier constructors
-(section 5.3).
+(section 5.2).
 
 ```text
 T_k  ::= Π (t_1 : D_1) … Π (t_a : D_a). Π (q_1 : Q_1) … Π (q_b : Q_b). R
@@ -174,14 +220,20 @@ An endpoint `E` of `R` or of a position's cube is a *constructor expression*:
 E ::= q_j(u⃗)                          a position applied to data terms at its arity
    |  c_m(u⃗, E⃗')                       an earlier constructor, data terms then positional arguments
    |  E @ r                            path application at an interval formula
-E' ::= E  |  λ (y : A). E'  |  ⟨i⟩ E'    positional arguments: under the arity's binders and a cube's dimensions
+   |  ⟨i⟩ E                            path abstraction: a cube of one more dimension
+E' ::= E  |  λ (y : A). E'             positional arguments, under the arity's binders
 ```
 
 - `u⃗` are *data terms*: any terms that mention no `s`, constructor or
   position. They may mention parameters, data, arity variables, and
-  dimensions of enclosing paths.
+  dimensions in scope.
 - `r` is any interval formula over the dimensions in scope: the enclosing
-  paths' dimensions of the result or of the position's cube.
+  paths' dimensions of the result or of the position's cube, and those bound
+  by `⟨i⟩`.
+- `⟨i⟩ E` is typed by the ordinary `PathLambda` instruction, as a path from
+  `E[i := 0]` to `E[i := 1]`. It supplies the 1-cubes that a boundary of
+  dimension two or more needs, such as `S2`'s outer endpoints `⟨j⟩ base`, and
+  positional arguments of path type.
 - No composition, transport, `hcomp` or other operation of type `s` occurs in
   an endpoint (Q3).
 - **Cube boundaries.** A constructor with `d` dimensions has a piece on both
@@ -222,12 +274,18 @@ A user constructor cannot mention them, since they come last.
 - Non-uniform parameters: an index in disguise, H2.
 - Arities that depend on positions (design open question 1).
 - Partial boundaries, and boundaries with compositions (Q3, Q4).
+- Level-dependent signatures, whose constructor types mention a level
+  parameter (Q15), and tier-1 constants in a signature with level parameters
+  (Q16).
 - Induction-recursion (design open question 2).
 
 ### 1.8 Examples in normal form
 
 Level parameters are written `x`, `y`, `z`; `U(x)` is the universe. `Path(S, a, b)`
-abbreviates `Path(i; S, a, b)` when `i` is not used.
+abbreviates `Path(i; S, a, b)` when `i` is not used. The former type is the
+signature's presentation at admission; an instance carries no level (3.1).
+Every example is level-parametric: no constructor type mentions `x`, `y` or
+`z`.
 
 | Declaration | Former type | Constructors |
 | --- | --- | --- |
@@ -245,8 +303,9 @@ abbreviates `Path(i; S, a, b)` when `i` is not used.
 In `Torus`, the inner path over `j` runs from `p @ i` to `p @ i`, and the
 outer endpoints are `q`. They agree at the four corners, `b`, by the typing
 of the path types: `q : Path(s, b, b)` must have the type
-`Path(j; s, p @ 0, p @ 0)`, which the path step reduces to it. In
-`Pushout`, `fst(m)(c)` is a data term.
+`Path(j; s, p @ 0, p @ 0)`, which the path step reduces to it. In `S2`, the
+outer endpoints `⟨j⟩ base` are path abstractions (1.4). In `Pushout`,
+`fst(m)(c)` is a data term.
 
 ## 2. Universes and substitution
 
@@ -263,8 +322,9 @@ of the path types: `q : Path(s, b, b)` must have the type
   type or arity mentions contributes nothing.
 - The kernel checks `ℓ` as an upper bound. The elaborator declares the least
   level: the maximum of the inferred levels of the data types and arities,
-  and `0` when there are none (Q7). With G0's Q1 this keeps one instance in
-  practice: `Trunc {0} A` for `A : U(0)`.
+  and `0` when there are none (Q7).
+- An instance `S(a⃗)` lives in `U(ℓ[ρ])`, where `ρ` is read from the
+  parameters' judgements (3.1). `Trunc(A)` for `A : U(x)` lives in `U(x)`.
 
 ### 2.2 Fixtures by case
 
@@ -275,39 +335,67 @@ of the path types: `q : Path(s, b, b)` must have the type
 | Arity | `W(x, y < ω, L : U(x), B : L → U(y))` | `U(max(x, y))`: `B(l)` is an arity |
 | Relation | `Quotient(x, y < ω, A : U(x), R : A → A → U(y))` | `U(max(x, y))`: `r : R(a, b)` is data of `glue` |
 | Large parameter only | `Tag(A : U(1)) { here; }` | `U(0)` |
+| Tier 1 through parameters | `Pair(A, B)` for `A, B : UU0` | `UU0`: both level parameters read `ω` |
 | Tier 1 at fixed levels | `Big(A : UU0) { wrap(a : A); }` | `UU0` |
 
 Indices, the fifth case the work plan lists, arrive with H2; the rule then
 counts index types too (G0 2.12).
 
-### 2.3 Rejections
+### 2.3 Instances and rejections
 
+- **One term at every universe.** `Trunc(A)` is one term. It is typed at
+  `U(ℓ[ρ])` for the levels `ρ` read from `A`'s judgement, and a derivation
+  that first lifts `A` types it higher; cumulativity relates the two. So
+  `point(a)`, built where `A : U(0)`, is a term of `Trunc(A)` where a generic
+  definition sees `A : U(1)`. The native sums behave this way today:
+
+  ```text
+  def sum_id(U < UU0, A : U, x : A or A) : A or A := x;
+  def small : Nat or Nat := left(0);
+  def lifted : Nat or Nat := sum_id(U1, Nat, small);
+  ```
+
+  checks, and its translation (7.2) must check too. For declared sorts this
+  replaces G0 Q1's distinct instances (Q8).
+- **Instances at every tier.** A level parameter may read any level below
+  ω², including UU tiers: `Pair(A, B)` for `A, B : UU0` lives in `UU0`, as the
+  native `A or B` does. This is sound for a level-parametric signature with
+  no tier-1 constant. Every level in its admission derivation then has a
+  tier-0 normal form: a constant plus an offset per variable. G0's Lemma 2
+  decides an inequality between such forms coefficient by coefficient: the
+  constants, and each variable's offset. A coefficientwise inequality holds
+  at every ordinal assignment below ω² too, because `x ↦ x + n` and `max`
+  are monotone on ordinals, and equal normal forms stay equal. So every
+  level side condition of the admission stays true at the instance (D9).
 - **Lowering.** A constructor type that needs a level above `ℓ` cannot be
   derived at `U(ℓ)`, since no instruction lowers a universe. Example:
   `Small(x < ω, A : U(x)) : U(0) { wrap(a : A); }` is rejected at `wrap`.
-- **Mismatched instances.** `S {ℓ⃗} a⃗` and `S {ℓ⃗'} a⃗` are different types
-  unless `ℓ⃗` and `ℓ⃗'` have equal normal forms (G0 Q1). So `point {0} A a` is
-  not a term of `Trunc {1} A`, even for `A : U(0)`. Cumulativity lifts
-  `Trunc {0} A : U(0)` to `U(1)` as a type; it does not identify the two
-  instances.
-- **Levels at the former.** `Trunc {ω}` is rejected by `LevelApply`, which
-  requires a finite level. A signature at UU-tier levels is written at fixed
-  levels (1.1).
-- **The former's universe is not the sort's.** The former's type is a level
-  quantification: `Π (x < ω). Π (A : U(x)). U(x)` lives in `U(ω)`. An instance
-  `Trunc {x} A` lives in `U(x)`. G0 keeps these apart, and so does H1.
+- **Level-dependent signatures.** `Wrap(x < ω) : U(x + 1) { wrap(B : U(x)); }`
+  is rejected: `x` occurs in a constructor type. Its elements store types of
+  level `x`, so its instances at different levels differ, and erasing the
+  level would identify them (Q15).
+- **Tier-1 constants with level parameters.**
+  `Mixed(x < ω, A : U(x), B : UU0) { mk(a : A, b : B); }` is rejected. G0's
+  normal form absorbs `x` into `ω` in `max(x, ω)`, which fails once `x` reads
+  a level of tier 1 (Q16). Such a signature is stated at fixed levels.
+- **Undetermined level parameters.** A level parameter that ends no
+  parameter's type is rejected (1.1).
+- **The former is not a term.** A declared type used as a function, such as
+  `Trunc` unapplied, is the elaborator's eta-expansion
+  `fun (U < UU0, A : U) => Trunc(A)`: a G0 generic definition of type
+  `Π (x < ω). Π (A : U(x)). U(x)`, in `U(ω)`. The instance inside it carries
+  no level.
 
 ### 2.4 Level substitution
 
-- A signature's recorded types mention `x⃗` free. The constants `S`, `c_k`
-  are level quantifications over `x⃗`, and `LevelApply` substitutes finite
-  levels with G0's capture-avoiding substitution (G0 2.8). No H1 rule reads a
-  level, so Lemma 5 of G0 extends: reduction commutes with level
-  instantiation of generated constants.
+- Instance terms carry no level, so G0's level substitution acts only on the
+  parameters' types. Instantiating a generic definition that mentions
+  `Trunc(A)`, with `A : U(x)`, leaves the instance term unchanged, and G0's
+  Lemma 5 extends trivially. No H1 rule reads a level.
 - The eliminator's motive may land in `U(l')` for any `l'`, including a
   level variable and a UU-tier constant. The eliminator is therefore a node,
   not a level-quantified constant: a constant would bind the motive's level
-  below `ω` (5.2).
+  below `ω` (5.6).
 
 ### 2.5 Dimension substitution and stability
 
@@ -324,14 +412,29 @@ counts index types too (G0 2.12).
 
 ### 3.1 Formation
 
-`Former(S) : Π (x⃗ < ω). Π (p⃗ : P⃗). U(ℓ)`. An instance `S {ℓ⃗} a⃗` is built by
-`LevelApply` and `Apply` and lives in `U(ℓ[x⃗ := ℓ⃗])`.
+An instance `S(a⃗) : U(ℓ[ρ])` is formed from judgements `a_i : P_i[ρ, a_<i]`,
+one per term parameter, in order:
+
+- each level parameter reads its level `ρ(x)` at its determining occurrence:
+  the universe at the end of the corresponding parameter judgement's type;
+- every parameter judgement's type must then be exactly `P_i` with `ρ` and
+  the earlier parameters substituted, up to alpha equality. When two
+  occurrences of a level parameter would read different levels, the
+  judgement is refused, and the driver lifts the lower parameter first;
+- the term records the signature and the term parameters only. It carries no
+  level.
+
+The levels may be of any tier (2.3). A derivation that lifts a parameter
+first reads a higher `ρ`, and types the same term in a higher universe.
 
 ### 3.2 Constructors and boundary reduction
 
-- `c_k : Π (x⃗ < ω). Π (p⃗ : P⃗). T_k[s := S {x⃗} p⃗, c_m := c_m {x⃗} p⃗]`.
-- A saturated application `c_k {ℓ⃗} a⃗ u⃗ e⃗` is canonical. With `d_k ≥ 1` it is a
-  path, and `(c_k … ) @ r_1 … @ r_d` with no `r_l` an endpoint is canonical.
+- At an instance `I = S(a⃗)`, the constructor `c_k` is the term `Con(k; I)`, of
+  type `T_k[s := I, p⃗ := a⃗, c_m := Con(m; I)]`. No level is substituted, since
+  `T_k` mentions no level parameter (1.1).
+- A saturated application `Con(k; I)(u⃗, e⃗)`, written `c_k(a⃗)(u⃗, e⃗)` below, is
+  canonical. With `d_k ≥ 1` it is a path, and `(c_k … ) @ r_1 … @ r_d` with no
+  `r_l` an endpoint is canonical.
 - **Boundary reduction.** `(c_k …) @ 0` and `(c_k …) @ 1` reduce to the
   endpoints of its type: by the existing `Path` step, which reads the path
   application's type annotation, and by weak head reduction, which reads the
@@ -448,7 +551,8 @@ clause:
 ⟦q_j(u⃗)⟧          :=  q̄_j(u⃗)
 ⟦c_m(u⃗, E⃗')⟧       :=  m_m(u⃗, E⃗', ⟦E⃗'⟧')
 ⟦E @ r⟧           :=  ⟦E⟧ @ r
-⟦λ (y : A). E'⟧'  :=  λ (y : A). ⟦E'⟧'           ⟦⟨i⟩ E'⟧' := ⟨i⟩ ⟦E'⟧'
+⟦⟨i⟩ E⟧           :=  ⟨i⟩ ⟦E⟧
+⟦E⟧'              :=  ⟦E⟧                          ⟦λ (y : A). E'⟧' := λ (y : A). ⟦E'⟧'
 ```
 
 **Clause type.** With `c := c_k(a⃗)(t⃗, q⃗)`:
@@ -520,9 +624,13 @@ declarations to this base. The claims below are relative to it.
 This follows the design's proposed route (design §4), restricted to one sort
 and no indices.
 
-1. **Level decomposition.** By G0's decomposition lemma (G0 3.2) a
-   level-generic signature is interpreted separately at each assignment of
-   levels. Every H1 obligation is therefore argued at fixed levels.
+1. **Levels.** A level-parametric signature's constructor types mention no
+   level parameter, so the construction below takes only the parameters'
+   values `⟦a⃗⟧` as input. The levels `ρ` read at an instance only name a
+   universe `U_α` that contains the result, and 2.3 shows each such `α` is
+   large enough. So one presheaf interprets the instance at every `ρ`, and
+   cumulativity by subsumption relates the universes (D9). Every other H1
+   obligation is argued at fixed parameter values.
 2. **Carrier.** For fixed parameters `a⃗` in a context `Γ`, define the
    presheaf `⟦S(a⃗)⟧` over cubes as the least family of sets closed under:
    - a constructor `c_k` applied to an element of its argument telescope at
@@ -561,14 +669,15 @@ and no indices.
 
 | # | Departure | Argument | Status |
 | --- | --- | --- | --- |
-| D1 | A general schema, where Coquand–Huber–Mörtberg treat examples | Steps 2–6 of 4.2 are uniform in the signature. The only signature-specific facts used are the constructor order (for restriction), the cube boundary's typing (for overlaps) and positivity (for the inductive definition). | New argument; to be reviewed |
-| D2 | Data sorts have no formal composition | Composition by recursion on constructors is CCHM's treatment of natural numbers and the kernel's of sums and W types. Adding a formal `hcomp` that also pushes would break confluence: `elim` of a pushed and of a formal composition differ (clause of compositions against composition of clauses). | Standard for the three hand-coded types; general case argued |
-| D3 | Transport with boundary correction for `d ≥ 1` | 3.5 generalises the pushout rule. The walls agree on overlaps because boundary pieces agree on corners, and the result restricts to the transport of each boundary piece. | New for `d ≥ 2`; to be reviewed |
-| D4 | Cube positions (paths as arguments), needed by `set` squash | In step 2 a cube position is an element of the carrier at a higher cube with its boundary: still strictly positive. | Argued |
-| D5 | Infinitary positions in higher sorts | Step 4's inductive definition allows infinitary generating clauses; the metatheory needs the corresponding well-founded trees, which ZFC provides. | Argued |
-| D6 | Path-valued constructors | A presentation of dimension arguments: `c @ r` is the constructor at `r`. It changes no rule of the model. | Argued |
-| D7 | Motives in any universe, including UU tiers | The eliminator is defined in the model at each fixed level, and a motive's universe plays no role in its definition. | Argued |
-| D8 | Level-generic signatures | G0's decomposition (G0 3.2, 2.12): no H1 rule reads a level. | Argued; relies on G0 |
+| D1 | A general schema, where Coquand–Huber–Mörtberg treat examples | Steps 2–6 of 4.2 are uniform in the signature. The only signature-specific facts used are the constructor order (for restriction), the cube boundary's typing (for overlaps) and positivity (for the inductive definition). | Argued. **Open obligation:** the model construction written out for the whole schema |
+| D2 | Data sorts have no formal composition | Composition by recursion on constructors is CCHM's treatment of natural numbers and the kernel's of sums and W types. Adding a formal `hcomp` that also pushes would break confluence: `elim` of a pushed and of a formal composition differ (clause of compositions against composition of clauses). | A conditional outline, found valid in review; standard for the three hand-coded types |
+| D3 | Transport with boundary correction for `d ≥ 1` | 3.5 generalises the pushout rule. The walls agree on overlaps because boundary pieces agree on corners, and the result restricts to the transport of each boundary piece. | The local wall calculation was found valid in review. Its stability under substitution belongs to Lemma H2, which is open |
+| D4 | Cube positions (paths as arguments), needed by `set` squash | In step 2 a cube position is an element of the carrier at a higher cube with its boundary: still strictly positive. | Argued. **Open obligation:** well-foundedness of the definition when positions live at higher cubes, written out |
+| D5 | Infinitary positions in higher sorts | Step 4's inductive definition allows infinitary generating clauses; the metatheory needs the corresponding well-founded trees, which ZFC provides. | Argued. **Open obligation:** the infinitary inductive definition over cubes, with restriction, written out |
+| D6 | Path-valued constructors | A presentation of dimension arguments: `c @ r` is the constructor at `r`. It changes no rule of the model. | A conditional outline, found valid in review |
+| D7 | Motives in any universe, including UU tiers | The eliminator is defined in the model at fixed parameter values, and a motive's universe plays no role in its definition. | A conditional outline, found valid in review |
+| D8 | Level-generic signatures | No H1 rule reads a level, and G0's level substitution acts only on the parameters' types (2.4). | A conditional outline, found valid in review; relies on G0 |
+| D9 | Level-erased instances, at every tier | The constructor types mention no level parameter, so the carrier, its Kan structure and its eliminator are built from `⟦a⃗⟧` alone (4.2, step 1). Cumulative universes are nested by subsumption, so one presheaf lies in every `U_α` that is large enough, and 2.3's tier-0 argument shows each level read at an instance is. This is the condition under which Timany and Sozeau make instances of a Coq inductive cumulative. | Argued; new in this revision, to be reviewed |
 
 **Lemma H1 (clause typing is the partial eliminator).** For a constructor
 expression `E` over positions `q⃗` and earlier constructors, and the
@@ -576,7 +685,10 @@ substitution `σ := [q̄ := λ y⃗. elim^{C}(q(y⃗))]`, `⟦E⟧σ ≡ elim^{C
 steps. Proof: induction on `E`. For `q_j(u⃗)`, both sides are
 `elim(q_j(u⃗))`. For `c_m(u⃗, E⃗')`, the right side takes one `Iota` step to
 `m_m(u⃗, E⃗', elim(E⃗'))`, which is the left side by induction. Path
-application commutes with both sides. Status: proved here in outline.
+application commutes with both sides. For `⟨i⟩ E`, the right side is
+`⟨i⟩ elim^{C}((⟨i⟩ E) @ i)`, which a `Path` step takes to `⟨i⟩ elim^{C}(E)`,
+the left side by induction. Status: proved here in outline; found valid in
+review as a conditional outline.
 
 **Lemma H2 (stability).** Every rule of 3.3–3.7 commutes with substitution
 of interval formulas for dimensions, and of level expressions for level
@@ -587,8 +699,10 @@ endpoint" and "a face holds"; when one becomes true, the boundary and face
 rules apply, and the correction walls of 3.5 are built so that the result
 restricts to the boundary (3.5, case 2). Data-sort composition gains a redex
 under substitution only when a neutral tube becomes a constructor, which
-is a new reduction, not a changed one. Status: argued; the full check is an
-obligation.
+is a new reduction, not a changed one. Level substitution changes no
+instance term (2.4). Status: argued. **Open obligation:** the full case
+analysis, rule by rule, including the corrected transport of 3.5 under
+substitution of formulas into `r⃗` and `φ`.
 
 ### 4.4 Canonicity
 
@@ -640,8 +754,10 @@ marker.
 | Overlap agreement of cube boundaries follows from typing | Proved here: it is the typing of the iterated path type (1.4) |
 | Clause typing agrees with the partial eliminator | Proved here in outline (Lemma H1) |
 | Reduction is stable under dimension and level substitution | Argued (Lemma H2); the full case analysis is an **open obligation** |
-| The model of 4.2 for the whole schema | Argued from Coquand–Huber–Mörtberg's construction (D1–D8); **not written out** |
-| Transport with boundary correction for `d ≥ 2` | Argued (D3); **to be reviewed**, with the property tests of section 10 |
+| The model of 4.2 for the whole schema | Argued from Coquand–Huber–Mörtberg's construction (D1–D9); the construction written out is an **open obligation** (D1) |
+| Well-foundedness of the carrier with cube and infinitary positions | Argued (D4, D5); written out is an **open obligation** |
+| Transport with boundary correction for `d ≥ 2` | The local wall calculation is checked (D3); its stability is Lemma H2's open obligation; property tests in section 10 |
+| Level-erased instances are sound, at every tier | Argued (D9); the tier-0 inequality argument is proved here (2.3) |
 | Confluence of the generated rules with the existing ones | Argued at boundaries (3.7); the full critical-pair check is an **open obligation** |
 | Canonicity for H1 | Argued (4.4), relative to the assumed baseline |
 | Consistency and canonicity of the baseline, pushouts included | **Assumed**, as in G0 3.6 |
@@ -678,6 +794,13 @@ marker.
 - Kaposi, Kovács, *Signatures and Induction Principles for Higher
   Inductive-Inductive Types*, LMCS 16, 2020. Signatures for the whole H
   family; H1's signatures are a subclass.
+- Timany, Sozeau, *Cumulative Inductive Types in Coq*, FSCD 2018. Instances
+  of an inductive at different levels related when the levels only bound
+  parameters: the condition D9 relies on.
+- The Univalent Foundations Program, *Homotopy Type Theory*, 2013, §3.5 and
+  Exercise 3.10: excluded middle at `U(ℓ + 1)` makes the propositions of
+  `U(ℓ)` and `U(ℓ + 1)` equivalent. The ledger's `LEM`-dependent remedies use
+  it (8.4).
 
 ## 5. K2.2: instruction families
 
@@ -691,22 +814,29 @@ Tags 1–49 keep their numbers. New kinds are appended:
 
 | Tag | Kind | Payload and children |
 | --- | --- | --- |
-| 50 | `CC_SORT_REF` | payload: signature index; no children. The former constant. |
-| 51 | `CC_CON_REF` | payload: constructor index in the kernel's constructor table; no children. A constructor constant. |
+| 50 | `CC_SORT` | payload: signature index; child 0: the term parameters, as a list. An instance `S(a⃗)`, with no level. |
+| 51 | `CC_CON` | payload: constructor number; child 0: the instance. The constructor `Con(k; I)`, a function of its data and positions. |
 | 52 | `CC_ELIM` | payload: signature index; child 0: motive; child 1: clause list. A function on the sort. |
-| 53 | `CC_CLAUSE` | child 0: a clause; child 1: the next cell, or 0. |
+| 53 | `CC_LIST` | child 0: an item; child 1: the next cell, or 0. Parameter and clause lists. |
 
 - `CC_HCOMP` and `CC_TRANS` keep their layout. Their family may be any higher
   sort instance, not only a pushout.
 - **Signature table.** Each entry records: its state (open or admitted); the
-  former's type; the level and parameter binder symbols; the sort symbol and
-  level `ℓ`; the h-level modifier; and, per constructor, its symbol, its type
-  `T_k` over the admission symbols, the split between data and positions,
-  each position's arity length and cube depth, and `d_k`. The constructor
-  table maps a constructor index to its signature and position.
-- Tables are truncated with the syntax arena on rollback and on
-  `commit_checkpoint`, as definitions are. An admitted signature is never
-  modified.
+  former's type; the level and parameter binder symbols; each level
+  parameter's determining occurrence; the sort symbol and level `ℓ`; the
+  h-level modifier; and, per constructor, its symbol, its type `T_k` over the
+  admission symbols, the split between data and positions, each position's
+  arity length and cube depth, and `d_k`.
+- **Rollback** removes every signature opened or admitted since the
+  checkpoint, as it removes definitions.
+- **Commit keeps admitted signatures.** `cc_kernel_commit_checkpoint` keeps
+  new definitions: it roots their values and types, compacts the rest, and
+  relocates the survivors (`kernel/src/checkpoint.c`). A signature admitted
+  since the checkpoint is kept the same way: its former type, parameter types
+  and constructor types are roots of the compaction, and its recorded
+  handles are relocated with the definitions'. Commit refuses while a
+  signature is open, since the judgements it depends on are truncated.
+- An admitted signature is never modified.
 
 ### 5.2 Family F1: admission
 
@@ -718,16 +848,19 @@ Tags 1–49 keep their numbers. New kinds are appended:
 - `SignatureConstructor(signature, type, symbol)`: from `Γ ⊢ T_k : U(ℓ)`, where
   every entry of `Γ` is a level or parameter entry of the signature (by symbol,
   at an alpha-equal type), the sort entry, or an earlier constructor's entry
-  at its recorded type: check the shape and positivity of 1.2–1.5, and record
-  `c_k`. The universe must be exactly `U(ℓ)`, compared by level normal form;
+  at its recorded type: check the shape and positivity of 1.2–1.5, check that
+  `T_k` mentions no level parameter (1.1), and record `c_k`. The universe
+  must be exactly `U(ℓ)`, compared by level normal form;
   the driver lifts below it. The check reads the syntax as written, with no
   reduction: a data type written `(λ (X : U(0)). Nat)(s)` mentions `s` and is
   rejected. The driver presents `T_k` with such redexes contracted.
+- `SignatureBegin` also checks the former type: every level parameter has a
+  determining occurrence (1.1), and, when there are level parameters, no
+  universe of tier 1 or above occurs.
 - `SignatureClose(signature)`: append the generated squash constructors for
-  the modifier, mark the signature admitted, and return
-  `⊢ S : Π (x⃗ < ω). Π (p⃗ : P⃗). U(ℓ)`.
-- `Former(sort reference)` and `Constructor(sort reference, k)` recall an
-  admitted signature's constants, as `Lookup` recalls a definition.
+  the modifier, mark the signature admitted, and return its index. Later
+  instructions name an admitted signature by that index, as `Lookup` names a
+  definition.
 
 The admission context's entries are ordinary entries, made by `Level` and
 `Extend`, and the constructor types are derived by ordinary instructions. A
@@ -739,17 +872,24 @@ constructor judgement with a foreign entry, or an entry at another type; a
 universe other than `U(ℓ)`; each positivity and shape violation of 1.3 and
 1.4, a composition in an endpoint included; data after a position; an
 arity mentioning a position; a self or forward reference
-(1.5); admission while the H1 extension is disabled (5.7); `SignatureClose`
-twice; any use of an open signature's constants.
+(1.5); a level parameter in a constructor type; an undetermined level
+parameter; a tier-1 universe in a signature with level parameters;
+admission while the H1 extension is disabled (5.7); `SignatureClose`
+twice; any use of an open signature.
 
-### 5.3 Family F2: formers and constructors
+### 5.3 Family F2: instances and constructors
 
-`Former` and `Constructor` give constants. Instances and applications use
-`LevelApply` and `Apply`. Constructors at dimensions use `PathApply` and
-`PathAt`. No other new instruction is needed.
+- `SortBegin(signature)` starts an instance, and `SortParameter(instance, a)`
+  adds the next parameter judgement. After the last, the judgement is
+  `S(a⃗) : U(ℓ[ρ])`, with `ρ` read as 3.1 describes.
+- `Construct(instance, k)` gives `Con(k; I) : T_k[s := I, p⃗ := a⃗, c_m := Con(m; I)]`.
+- Applications use `Apply`. Constructors at dimensions use `PathApply` and
+  `PathAt`.
 
-**Rejections:** a constructor index out of range; a reference to an open or
-rolled-back signature; applications at mismatched level instances (2.3).
+**Rejections:** a parameter judgement whose type is not the telescope's
+under `ρ`; two occurrences of a level parameter that read different levels;
+a constructor number out of range; a reference to an open or rolled-back
+signature.
 
 ### 5.4 Family F3: boundary reduction
 
@@ -826,14 +966,18 @@ whose type is not the displayed squash boundary.
   derivation, lifts it to `U(ℓ)` when needed, then `SignatureConstructor`,
   and adds the entry `c_k` for the next one. It issues `SignatureClose` last.
   Admission runs inside a declaration transaction.
-- **Terms.** Instances, constructors and applications derive through
-  `Former`, `Constructor`, `LevelApply`, `Apply`, `PathApply` and `PathAt`.
-  An eliminator derives through `Eliminator`, one `EliminatorClause` per
-  clause, `EliminatorClose` and `Apply`. The driver makes each clause's type
-  agree with `ClauseType_k` by its usual conversion search.
-- **Conversion search.** Former and constructor spines are rigid heads:
-  equal heads compare arguments by congruence, and different constructors
-  are different. An eliminator applied to a constructor takes an `Iota`
+- **Terms.** Instances derive through `SortBegin` and one `SortParameter` per
+  parameter; constructors through `Construct`, `Apply`, `PathApply` and
+  `PathAt`. An eliminator derives through `Eliminator`, one
+  `EliminatorClause` per clause, `EliminatorClose` and `Apply`. The driver
+  makes each clause's type agree with `ClauseType_k` by its usual conversion
+  search.
+- **Levels at instances.** Where two occurrences of a level parameter would
+  read different levels, the driver lifts the lower parameter judgement
+  first. It never adds a level to an instance term.
+- **Conversion search.** Instances and constructors are rigid heads: equal
+  heads compare parameters and arguments by congruence, and different
+  constructors are different. An eliminator applied to a constructor takes an `Iota`
   step. A constructor at an endpoint takes a `Path` step. Composition,
   transport and `hcomp` elimination go through `Whnf`, as pushouts do. The
   K1.4 guide answers "different" for distinct constructor heads and "unknown"
@@ -885,11 +1029,11 @@ type, and each clause's displayed boundary, as the design's section 5 asks.
 | --- | --- | --- |
 | `Nat`, `zero`, `succ(n)` | `N : U(0)`; `zero`; `succ(n : s)` | |
 | `NatRec(M, z, s, n)` | `elim_{M, [z, s]}(n)` | the native step is `Π (n). Π (h : M(n)). M(succ(n))`, the clause type |
-| `Sum(A, B)`, `inl`, `inr` | `Plus {x, y} A B`; `inl(a : A)`, `inr(b : B)` | `x`, `y` from the native premises' universes |
+| `Sum(A, B)`, `inl`, `inr` | `Plus(A, B)`; `inl(a : A)`, `inr(b : B)` | no level, as native |
 | `SumRec(M, l, r, v)` | `elim_{M, [l, r]}(v)` | |
-| `W(x : L). B`, `sup(l, c)` | `Tree {x, y} L (λ x. B)`; `sup(l : L, c : Π (b : B(l)). s)` | the arity is `(λ x. B)(l)`, one `Beta` from `B[l/x]` |
+| `W(x : L). B`, `sup(l, c)` | `Tree(L, λ x. B)`; `sup(l : L, c : Π (b : B(l)). s)` | the arity is `(λ x. B)(l)`, one `Beta` from `B[l/x]` |
 | `WRec(M, step, v)` | `elim_{M, [step]}(v)` | same clause shape up to that `Beta` |
-| `Pushout(C, A, B, m)` and its points and paths | `Push {x, y, z} C A B m`; `inl`, `inr`, `push(c) : Path(s, inl(fst(m)(c)), inr(snd(m)(c)))` | one maps parameter, as native; `push^r(c)` is `push(c) @ r` |
+| `Pushout(C, A, B, m)` and its points and paths | `Push(C, A, B, m)`; `inl`, `inr`, `push(c) : Path(s, inl(fst(m)(c)), inr(snd(m)(c)))` | one maps parameter, as native; `push^r(c)` is `push(c) @ r` |
 | `PushElim(M, l, r, b)` | `λ (z). elim_{M, [l, r, b]}(z)` | native is unapplied; `App(PushElim, z)` maps to the saturated eliminator |
 | `HComp`, `Trans` at a pushout | the same nodes at `Push` | |
 
@@ -898,12 +1042,27 @@ declared for comparison; retiring them is a separate decision (Q11).
 
 ### 7.2 The translation τ
 
-- τ is defined on derivations, not raw syntax: the level arguments of a
-  declared instance come from the universes of the native instruction's
-  premises. A native `Sum(A, B)` derived from `A : U(0)`, `B : U(1)` maps to
-  `Plus {0, 1} A B`.
+- τ is a syntactic map on terms. Native formers carry no level, and neither
+  do declared instances (3.1), so τ needs no level and involves no coercion
+  or lifting: `τ(Sum(A, B)) = Plus(τ(A), τ(B))`.
 - τ is the identity on every other node, and commutes with binders,
-  substitution and interval substitution.
+  substitution, level substitution and interval substitution.
+- **Native equalities across universes translate to the same equalities.**
+  A native term used at several universes is one term, and so is its image.
+  In the example of 2.3, `small : Nat or Nat` built at `U0` and passed to
+  `sum_id(U1, Nat, …)` translates to `small : Plus(N, N)` passed where
+  `sum_id`'s parameter type `A or A` has become `Plus(A, A)` with `A := N`.
+  The two types are the same term, `Plus(N, N)`, so the application checks,
+  as native. A native `Lift` translates to a `Lift` of the image, with the
+  same levels.
+- **UU-tier arguments.** `def big_sum(A, B : UU0) : UU0 := A or B;` checks
+  natively. Its image `Plus(A, B)` reads both level parameters as `ω` and
+  lives in `UU0` (2.3). The four declared counterparts have no tier-1
+  constant, so every native use at any tier has an image, and no native
+  former is kept for UU-tier cases.
+- τ preserves typing and conversion when every native rule has a declared
+  counterpart that commutes with τ. That is what X1–X3 test, rule by rule;
+  X4, X6 and X7 test it on the archive and on the two examples above.
 - **Native and declared forms are not convertible.** `Nat` and `N` are
   different types. No conversion rule, no `Lift` and no coercion relates
   them, and a term mixing them is a type error. Migration is a syntactic
@@ -918,12 +1077,14 @@ declared for comparison; retiring them is a separate decision (Q11).
 | X3 | Composition, homogeneous composition and transport at each type, including pushout bridges | Reducts related by τ |
 | X4 | The archive, elaborated with declared forms for the four types (a driver option) | 0 gaps; every stored definition derives again; each declaration's assumptions unchanged; canonicity fixture and `evaluate` results equal |
 | X5 | Cost of X4 against the native run: archive check time, re-derivation time, kernel steps, arena peak | Recorded with revision, machine and limits |
+| X6 | Native terms used at two universes: `sum_id(U1, Nat, small)` of 2.3, and the same with W, pushout and `Nat`-valued generic definitions instantiated at `U2` | Native and image both check; the image is one instance term at both universes |
+| X7 | Native formers at UU-tier arguments: `big_sum`, and a W type and a pushout over types in `UU0` | Native and image both check; the image lives in `UU0` |
 
 ### 7.4 Retirement criterion
 
 The hand-coded instructions retire in one change when:
 
-1. X1–X4 pass;
+1. X1–X4, X6 and X7 pass;
 2. X5's gap is recorded, and either accepted by the maintainer or closed by
    specialised reduction paths for hot signatures (Q14);
 3. the archive is migrated by τ under the strict verifier, with every
@@ -946,10 +1107,11 @@ inductive Quotient(U, V < UU0, A : U, R : A -> A -> V) : set {
 }
 ```
 
-- `Trunc : Π (x < ω). Π (A : U(x)). U(x)`, universe-preserving by 2.1.
-- `Quotient {x, y} A R : U(max(x, y))`: its level accounts for the carrier
-  and the relation. A small quotient stays small, without the archive's
-  predicate encoding.
+- `Trunc(A) : U(x)` for `A : U(x)`, universe-preserving by 2.1, at every level
+  and tier (2.3). The instance carries no level.
+- `Quotient(A, R) : U(max(x, y))` for `A : U(x)` and `R : A → A → U(y)`: its
+  level accounts for the carrier and the relation. A small quotient stays
+  small, without the archive's predicate encoding.
 - The eliminator into any universe replaces `TruncateElim`, which the archive
   restricts to propositions in the argument's universe. The largest group of
   the archive's resizing, 22 of 47 declarations, works around that
@@ -962,20 +1124,26 @@ inductive Quotient(U, V < UU0, A : U, R : A -> A -> V) : set {
 
 1. **No resizing in the rebuilt foundation.** The rebuilt library states
    each result at the universe it needs. Implicit downward resizing is
-   rejected: `Trunc {1} A : U(0)` is not derivable (acceptance G1).
+   rejected: for `A : U(1)`, `Trunc(A) : U(0)` is not derivable (acceptance
+   G1).
 2. **A resizing assumption only by name.** If a rebuilt result genuinely
    needs resizing, it uses an assumption named `PropResizing`, reported as a
    non-computing dependency like `LEM`. The ledger below finds no such need
    in the archive.
-3. **Legacy assumptions stay for the archive.** `Truncate`, `TruncateIntro`,
+3. **Resizing from `LEM` where `LEM` is already present.** Excluded middle at
+   `U(ℓ + 1)` makes every proposition of `U(ℓ + 1)` equivalent to one of
+   `U(ℓ)` (HoTT book, Exercise 3.10). A declaration that already depends on
+   `LEM` may resize through it. That adds no assumption, and the declaration
+   never computed anyway.
+4. **Legacy assumptions stay for the archive.** `Truncate`, `TruncateIntro`,
    `TruncateProp`, `TruncateElim`, `LEM` and `Choice` keep their generic
    signatures (G0 Q5) while any archived module uses them. The archive keeps
    checking unchanged.
-4. **`LEM` and `Choice` are restated over `Trunc`** when the rebuilt library
+5. **`LEM` and `Choice` are restated over `Trunc`** when the rebuilt library
    adopts it. They remain non-computing assumptions.
-5. **The ordinary migration check stays strict.** Intentional changes of
-   public universes or assumption lists are allowed only through the ledger
-   of 8.5.
+6. **The ordinary migration check stays strict.** Intentional changes of
+   public universes, hypotheses or assumption lists are allowed only through
+   the ledger of 8.5.
 
 ### 8.3 Measurements
 
@@ -1016,11 +1184,11 @@ others. Eight fail directly; 39 fail only through them.
 | Root | Module | Why it fails | Dependents | `LEM`; `Choice` |
 | --- | --- | --- | --- | --- |
 | `small_mere_eliminate` | `field_logic` | Its proof eliminates `Truncate(U0, A)` into `FieldExists(P) : U0` for `P : U1`, which needs `FieldExists(P)` small | 21, in 10 other modules | 5; 0 |
-| `predicate_union_upper`, `predicate_union_least` | `predicate_chains` | `PredicateUnion(I : U1, A, P, x) := FieldExists(exists i : I. P(i, x))` is a predicate `A → U0` only by resizing | 0 | 0; 0 |
+| `predicate_union_upper`, `predicate_union_least` | `predicate_chains` | `PredicateUnion(I : U1, A, P, x) := FieldExists(exists i : I. P(i, x))` is a predicate `A → U0` only by resizing: the union of a large family | 0 | 0; 0 |
 | `directed_union_independent` | `independent_unions` | Uses `PredicateUnion` as a small predicate | 5 | 0; 0 |
-| `tower_induction_large` | `bourbaki_tower` | `TowerMember` is `FieldExists(forall P : A → U0. …)`, impredicative, and `FieldExists(P(y))` must be a small predicate | 8 | 7; 0 |
-| `no_maximal_strict_successor` | `zorn_chain_complete` | `FieldExists(StrictlyAbove(A, le, x))` for `A : U1` used at `U0` | 2 | 3; 2 |
-| `CauchyQuotient`, `cauchy_same_equivalence` | `cauchy_quotient` | `CauchySame` must be a relation into `U0` for the predicate-encoded `SetQuotient` | 3 | 0; 0 |
+| `tower_induction_large` | `bourbaki_tower` | `TowerMember` is `FieldExists(forall P : A → U0. …)`: impredicative, since it quantifies over all small predicates on `A : U1`. `FieldExists(P(y))` must be a small predicate | 8 | 7; 0 |
+| `no_maximal_strict_successor` | `zorn_chain_complete` | `FieldExists(StrictlyAbove(A, le, x))`, a proposition about `A : U1`, used at `U0` | 2 | 3; 2 |
+| `CauchyQuotient`, `cauchy_same_equivalence` | `cauchy_quotient` | `EventualClose` truncates a small proposition, over `Nat` and `Q : U0`, with `FieldExists`, whose universe argument is fixed at `U1`. So `CauchySame` becomes a relation into `U1`, where the predicate-encoded `SetQuotient` needs `U0` | 3 | 0; 0 |
 
 The dependents column counts declarations whose first failed dependency leads
 to that root; the `LEM` and `Choice` column counts the root's whole group. Of
@@ -1032,21 +1200,45 @@ truncation-dependent, all check with the universe-preserving signature.
 
 ### 8.4 The ledger's remedies
 
-None needs a resizing assumption.
+The 47 declarations fall into seven groups by remedy. None needs a resizing
+assumption.
 
-| Root | Public change | Remedy |
-| --- | --- | --- |
-| `small_mere_eliminate` | None: its statement is unchanged | Eliminate `Trunc(A)` directly into `P : U1`: the native eliminator's motive may land in any universe. Its 21 dependents are unaffected. |
-| `PredicateUnion` group | `PredicateUnion(I, A, P) : A → U1` | State inclusion, independence and chains for predicates at a universe variable, `A → U` with `U < UU0`, which G0 makes a single definition |
-| `TowerMember` group | `TowerMember : A → U1` | State tower membership and its induction at `U1`, or define the tower as an inductive predicate once H2 admits indexed families |
-| `no_maximal_strict_successor` | Its hypothesis and result at `U1` | State at `U1`; `LEM` is generic over small universes (G0 D1) |
-| `CauchyQuotient` group | `CauchySame` into `U1`; the quotient stays at `U1` | Use the native `Quotient`, whose level `max(0, 1) = 1` equals the predicate encoding's |
+A remedy that only raises a universe does not work where a large object
+must itself be small. Two groups have that shape. The Bourbaki–Witt tower
+quantifies over all small predicates on `A : U1`. Quantifying over
+`A → U1` instead puts membership in `U2`, and the tower's uses then need
+`A → U2`, with no fixed point. Likewise, the union of a large chain of
+small independent sets is large, and a poset of larger sets has larger
+chains. Those groups take a different remedy.
+
+| Group | Declarations | Remedy | Public change | Assumptions |
+| --- | --- | --- | --- | --- |
+| 1 | `small_mere_eliminate` and its 21 dependents | Eliminate `Trunc(A)` directly into `P : U1`: the native eliminator's motive may land in any universe | None | None added |
+| 2 | `CauchyQuotient`, `cauchy_same_equivalence` and 3 dependents | Truncate the small proposition in `EventualClose` at its own universe, as `truncation.Mere` does. `CauchySame` stays a relation into `U0` | None | None added |
+| 3 | `predicate_union_upper`, `predicate_union_least`, `directed_union_independent`, `chain_union_independent` | State inclusion, unions and independence for predicates at a universe variable, `A → U` with `U < UU0`, with the union one universe up. These lemmas only relate a union to its members | `PredicateUnion(I, A, P) : A → U1`; the lemmas generic over the predicates' universe | None added |
+| 4 | `IndependentUnion`, `independent_union_upper`, `independent_union_least`, `independent_chain_complete` | They assert that the union of a large chain of small independent predicates is an element of `IndependentSubset`, whose elements are small. Take that smallness as an explicit hypothesis. Their one consumer, `vector_space_has_basis`, already depends on `LEM` and `Choice`, and discharges it through `LEM` (8.2, item 3) | One added hypothesis each | None added; `LEM` stays in the consumer only |
+| 5 | `tower_induction_large`, `tower_relative_induction` | Wait for H2. Define the tower as an indexed inductive family `Tower : A → prop`, generated by the step and chain-supremum closure. Its eliminator into any universe proves both, predicatively, with no resizing and no assumption | `TowerMember : A → U1`, since the index type `A : U1` counts (G0 2.12). `tower_member_prop`, `tower_contains`, `tower_step`, `tower_sup`, `TowerStable` and `tower_stable_prop` in `bourbaki_tower` are restated over `Tower`. The two wait for H2 | None added |
+| 6 | `bourbaki_witt`, `tower_is_chain`, `tower_is_stable`, `tower_separation`, `tower_stable_step`, `tower_stable_sup`, `no_strict_successor_function` | They use the tower as a small chain, since `ChainComplete` supplies suprema of small chains only. They already depend on `LEM`: resize tower membership through it. Where they use `tower_relative_induction`, resize its large motive the same way and use the small induction `tower_contains`, so they do not wait for group 5 | None | None added |
+| 7 | `no_maximal_strict_successor`, `zorn_chain_complete`, `vector_space_has_basis` | Resize `StrictlyAbove(A, le, x)` and the maximal-element proposition through `LEM`, which all three already use | None | None added |
+
+In total, of the 47:
+
+| Remedy | Declarations |
+| --- | --- |
+| A new proof only | 22 |
+| Truncation at the proposition's own universe | 5 |
+| Generic restatement, the union one universe up | 4 |
+| An explicit smallness hypothesis | 4 |
+| Resizing through the `LEM` they already use | 10 |
+| Waiting for H2's indexed families | 2 |
+
+Group 5 is the only place where H1 alone does not suffice.
 
 ### 8.5 Ledger format and verifier (K2.5 implementation)
 
 - A reviewed ledger file lists each intentional change: module, declaration,
-  old public type, new public type, assumptions removed, assumptions
-  retained, and the remedy.
+  old public type, new public type, hypotheses added, assumptions removed,
+  assumptions retained, and the remedy group of 8.4.
 - When a module migrates from the legacy assumptions to `Trunc`, the
   migration verifier accepts a changed public type or assumption list only
   for a declaration listed with exactly that change. Every other change
@@ -1076,6 +1268,10 @@ form. It is untrusted; the kernel checks the result.
 - **Errors** name the offending argument: `T` in negative position, a use
   before declaration, a composition in a boundary, or a boundary face that
   disagrees, shown with both sides.
+- **Uses.** `Trunc(U, A)`, with an explicit universe argument as in L1.1,
+  checks `A : U` and elaborates to the instance `Trunc(A)`, which carries no
+  level. A header whose constructor types would mention a universe parameter
+  is rejected as level-dependent (Q15), naming the argument.
 - **Generated names.** `T.squash` for the modifier's constructor; the
   eliminator is reached through `match` (L2.2), and `T.rec` and
   `T.ind_prop` are L2.3's.
@@ -1091,7 +1287,7 @@ and the driver, with L2.1. All run with the H1 extension on, except T1.
 | ID | Case | Verdict | Reason |
 | --- | --- | --- | --- |
 | A1 | `N`, `List`, `W`, `Push`, `Susp`, `S1` of 1.8 | Accept | Normal form |
-| A2 | `Torus` and `S2` | Accept | Two dimensions; corners agree by typing |
+| A2 | `Torus`, and `S2` with outer endpoints `⟨j⟩ base` | Accept | Two dimensions; corners agree by typing; path abstraction in endpoints (1.4) |
 | A3 | `Trunc` (`prop`) and `Quotient` (`set`) | Accept | Generated squash constructors of 1.6 |
 | A4 | `bad(f : s → Nat) : s` | Reject | `s` in data |
 | A5 | `bad(f : (s → Nat) → s) : s` | Reject | `s` in an arity |
@@ -1103,24 +1299,29 @@ and the driver, with L2.1. All run with the H1 extension on, except T1.
 | A11 | kernel: `c : Π (x : s). Π (n : Nat). s`; source: `c(x : T, n : Nat)` | Reject; Accept as `c(n : Nat, x : T)` | The kernel requires data first; L2.1 reorders (1.2) |
 | A12 | a data argument `(λ (z : s). zero)(x)` in a boundary | Reject | A data term may not mention `s` or a position |
 | A13 | `SignatureConstructor` with a foreign entry, or with `s` at another universe | Reject | Admission context |
-| A14 | `SignatureClose` twice; `Constructor` on an open signature | Reject | Signature state |
+| A14 | `SignatureClose` twice; `Construct` on an open signature | Reject | Signature state |
 | A15 | infinitary: `Cantor { leaf; node(f : Nat → s); squash … : set }` | Accept | D5 |
+| A16 | a positional argument of path type given as `⟨i⟩ c_1 @ i` | Accept | Path abstraction as a positional argument (1.4) |
 
 ### 10.2 Universes and substitution
 
 | ID | Case | Verdict | Reason |
 | --- | --- | --- | --- |
-| V1 | `x < ω, A : U(x) ⊢ Trunc {x} A : U(x)`; the same at `U(x + 1)` by `Lift` | Accept; Accept | Universe-preserving |
-| V2 | `Box {x} A : U(0)` for every `x` (2.2) | Accept | Phantom parameter |
-| V3 | `Pair {x, y} A B : U(max(x, y))`; `: U(x)` | Accept; Reject | Stored data |
-| V4 | `Tree {x, y} L B : U(max(x, y))` | Accept | Arity counts |
-| V5 | `Quotient {x, y} A R : U(max(x, y))`; `: U(x)` | Accept; Reject | The relation counts |
+| V1 | `x < ω, A : U(x) ⊢ Trunc(A) : U(x)`; the same at `U(x + 1)` by `Lift` | Accept; Accept | Universe-preserving |
+| V2 | `Box(A) : U(0)` for `A : U(x)`, every `x` (2.2) | Accept | Phantom parameter |
+| V3 | `Pair(A, B) : U(max(x, y))`; `: U(x)` | Accept; Reject | Stored data |
+| V4 | `Tree(L, B) : U(max(x, y))` | Accept | Arity counts |
+| V5 | `Quotient(A, R) : U(max(x, y))`; `: U(x)` | Accept; Reject | The relation counts |
 | V6 | `Small(x < ω, A : U(x)) : U(0) { wrap(a : A); }` | Reject | Lowering |
-| V7 | `point {0} A a : Trunc {1} A` for `A : U(0)` | Reject | Mismatched instances (Q8) |
-| V8 | `Trunc {ω}` | Reject | `LevelApply` needs a finite level |
-| V9 | the former `Trunc : Π (x < ω). Π (A : U(x)). U(x) : U(ω)` | Accept | The former's universe is not the sort's |
+| V7 | source: `sum_id`, `small` and `lifted` of 2.3 with a declared sum; the same with `point(a)` passed to a generic definition at `U1` | Accept both | One instance term at every universe (Q8) |
+| V8 | `Trunc(A)` and `Pair(A, B)` for `A, B : UU0` | Accept, in `UU0` | Level parameters read tier-1 levels (2.3) |
+| V9 | the elaborator's `fun (U < UU0, A : U) => Trunc(A) : Π (x < ω). Π (A : U(x)). U(x)`, in `U(ω)` | Accept | A declared type used as a function |
 | V10 | `Big(A : UU0) { wrap(a : A); } : UU0`; its eliminator into `UU1` | Accept | Fixed tier-1 signature; any motive universe |
-| V11 | instantiating `Trunc` at `x + 1` inside a generic definition and reducing `elim` on `point` | Accept | Level substitution commutes (2.4) |
+| V11 | instantiating a generic definition that mentions `Trunc(A)` at `x + 1`, and reducing `elim` on `point` | Accept | Level substitution leaves the instance unchanged (2.4) |
+| V12 | `Wrap(x < ω) : U(x + 1) { wrap(B : U(x)); }` | Reject | Level-dependent (Q15) |
+| V13 | `Mixed(x < ω, A : U(x), B : UU0) { mk(a : A, b : B); }` | Reject | Tier-1 constant with a level parameter (Q16) |
+| V14 | a level parameter that ends no parameter's type | Reject | Undetermined (1.1) |
+| V15 | `Both(x < ω, A, B : U(x)) { mk(a : A, b : B); }` at `A : U(0)` and `B : U(1)`; the same after lifting `A` to `U(1)` | Reject; Accept | Conflicting reads of one level parameter (3.1) |
 
 ### 10.3 Constructors and boundaries
 
@@ -1141,8 +1342,8 @@ and the driver, with L2.1. All run with the H1 extension on, except T1.
 | K2 | composition in `Plus` with an `inl` base and a neutral tube | Neutral |
 | K3 | `HComp` at `N` | Reject: no formal composition for data sorts |
 | K4 | `hcomp` in `S1` with a tube on a face that holds | `Face` gives the tube at 1 |
-| K5 | transport of `point(a)` in `Trunc {0} (A(i))` along a line of types | `point(transp a)` |
-| K6 | transport of `merid(a) @ r` in `Susp {0} (A(i))` along `ua` of a closed equivalence | The `hcomp` of 3.5; its faces reduce to the transported poles |
+| K5 | transport of `point(a)` in `Trunc(A(i))` along a line of types | `point(transp a)` |
+| K6 | transport of `merid(a) @ r` in `Susp(A(i))` along `ua` of a closed equivalence | The `hcomp` of 3.5; its faces reduce to the transported poles |
 | K7 | transport of the `set` squash of `Quotient` along a line in the carrier | The 2-dimensional correction of 3.5, with walls agreeing at the corners |
 | K8 | transport of an `hcomp` | Commutes (3.5, case 3) |
 | K9 | composition in `S1` along a constant line | `hcomp` of the transported base |
@@ -1161,7 +1362,7 @@ and the driver, with L2.1. All run with the H1 extension on, except T1.
 | E6 | a clause of the wrong type | Reject |
 | E7 | a `loop` clause whose endpoints are not the `base` clause | Reject |
 | E8 | a missing clause; an extra clause; a `prop` sort eliminated without its squash clause | Reject all |
-| E9 | a motive over `Trunc {1} A` used on `Trunc {0} A` | Reject |
+| E9 | a motive over `Trunc(A)` used on `Trunc(B)` for a different `B` | Reject |
 | E10 | a motive into `UU0` for `S1` | Accept |
 
 ### 10.6 Trust controls
@@ -1172,14 +1373,18 @@ and the driver, with L2.1. All run with the H1 extension on, except T1.
 | T2 | a definition using `S1` carries `kernel extension: H1`; one using that definition carries it too | Accept, marker listed |
 | T3 | `computable def` using `S1` | Accept |
 | T4 | `computable def` using `S1` and `LEM` | Reject, naming `LEM` only |
-| T5 | rollback after admission: the signature, its constants and its JavaScript record are gone; a later admission reuses nothing | Accept |
+| T5 | rollback after admission: the signature, its instances and its JavaScript record are gone; a later admission reuses nothing | Accept |
+| T6 | commit after admission: the signature survives, its recorded types are relocated, and instances formed after the commit check and compute | Accept |
+| T7 | commit while a signature is open | Refused |
 
 ### 10.7 Truncation policy
 
 | ID | Case | Verdict |
 | --- | --- | --- |
-| G1 | `Trunc {1} A : U(0)` | Reject: no downward resizing |
+| G1 | `Trunc(A) : U(0)` for `A : U(1)` | Reject: no downward resizing |
 | G2 | `small_mere_eliminate`'s statement proved with `Trunc`'s eliminator into `U(1)` | Accept, with no assumption |
+| G5 | `CauchySame` with `EventualClose` truncating at `U0` | A relation into `U0`, with no assumption (8.4, group 2) |
+| G6 | propositional resizing from `LEM` at `U1`, as 8.2 item 3 uses it | Accept, depending on `LEM` only |
 | G3 | the archive with its legacy assumptions after H1 lands | Unchanged: 3,804 declarations, 0 gaps |
 | G4 | the migration verifier on a ledger-listed change, and on the same change unlisted | Accept; Reject |
 
@@ -1189,7 +1394,7 @@ The work plan's H1 release fixtures, each in the canonicity fixture or its
 support module where it computes:
 
 - the declared `N`, `List`, `Tree` and `Push` compared with the native forms
-  (X1–X4);
+  (X1–X4, X6, X7);
 - a declared circle with winding number 1, by `rfl` and by `evaluate` (E1);
 - `code_meridian` by `rfl` (E2);
 - `Trunc` and `Quotient` with checked dependent elimination (E3, E4);
@@ -1200,7 +1405,7 @@ support module where it computes:
 
 | ID | Input | Verdict |
 | --- | --- | --- |
-| R1 | malformed `CC_SORT_REF`, `CC_CON_REF`, `CC_ELIM` or `CC_CLAUSE` nodes; indices out of range | Reject; inspection stays inert |
+| R1 | malformed `CC_SORT`, `CC_CON`, `CC_ELIM` or `CC_LIST` nodes; indices out of range | Reject; inspection stays inert |
 | R2 | a signature at the constructor or argument limit, and one above it | Accept; Reject |
 | R3 | a constructor with cube depth 8 and arity 64 | Accept within budget |
 | R4 | a client with ABI version 2 | Refused |
@@ -1217,13 +1422,16 @@ support module where it computes:
 | Q5. How constructors take dimensions | Path-valued constructors |
 | Q6. The eliminator's form | A function node with every clause |
 | Q7. Who computes the sort's level | Declared, checked as a bound; the elaborator declares the least |
-| Q8. Level irrelevance across instances | Still no |
+| Q8. Level irrelevance across instances | Yes, by level-erased instances of level-parametric signatures (revised) |
 | Q9. Cube and infinitary positions in higher sorts | Admit both |
 | Q10. Are signatures generative | Yes |
 | Q11. `Unit` and `Void` | Keep native |
-| Q12. Resizing | No assumption; restate the eight roots |
+| Q12. Resizing | No resizing assumption; the seven remedy groups of 8.4 (revised) |
 | Q13. Where the experimental gate lives | In the kernel |
 | Q14. Specialised reduction after retirement | Decide from X5 |
+| Q15. Level-dependent signatures | Excluded from H1 (new) |
+| Q16. Tier-1 constants with level parameters | Excluded from H1 (new) |
+| Q17. Declarations that assert a large proposition is small | A hypothesis, `LEM` where present, or H2's inductive tower (new) |
 
 **Q1. Formal composition for data sorts.** The design gives every sort one
 formal composition that pushes through constructors when it can. A formal
@@ -1269,11 +1477,17 @@ which bounds every data type and arity; the elaborator declares the least
 level. The alternative, a kernel-computed level, would need principal-level
 inference in the kernel.
 
-**Q8. Level irrelevance across instances.** G0 decided that `Trunc {0} A` and
-`Trunc {1} A` are distinct (G0 Q1) and asked to revisit at H1. The ledger
-found no archive result that needs them identified once each result is
-stated at its own universe. *Recommended:* still no. The rule would need its
-own soundness argument.
+**Q8. Level irrelevance across instances.** G0 decided that instances of a
+generic type at different levels are distinct (G0 Q1), and asked to
+revisit at H1. The first draft kept that. Review showed it cannot stand for
+the types K2.4 replaces. The native formers carry no level, and a generic
+definition instantiated at `U1` accepts a sum built at `U0` (2.3). Distinct
+declared instances could not translate that without coercions that break
+definitional equalities. *Recommended:* yes, by construction. Instances of
+a level-parametric signature carry no level, so they are one term at every
+universe. D9 argues soundness, which is Timany and Sozeau's condition for
+cumulative inductive types. G0 Q1's rule stays for generic definitions and
+assumptions, which are not signatures.
 
 **Q9. Cube and infinitary positions.** The `set` squash needs path
 positions, and W-like constructors in higher sorts need infinitary ones.
@@ -1287,11 +1501,13 @@ sort, as each definition is a new constant. Identification is a theorem.
 *Recommended:* keep them native. Declaring them for comparison is allowed,
 and retiring them is a later, separate decision.
 
-**Q12. Resizing.** The measured roots of 8.3 all have remedies without
-resizing (8.4). *Recommended:* no resizing assumption in the rebuilt
-foundation; restate the eight roots as 8.4 proposes when their areas are
-rebuilt. `PropResizing` stays unused unless a rebuilt result proves to need
-it.
+**Q12. Resizing.** The first draft proposed raising universes for the tower
+and the unions. Review showed the tower's remedy cannot close: quantifying
+over `A → U1` puts membership in `U2`. The union of independent sets has
+the same shape. The measured roots now have the seven remedy groups of 8.4,
+none a resizing assumption. *Recommended:* no resizing assumption in the
+rebuilt foundation. Apply 8.4 when those areas are rebuilt. `PropResizing`
+stays unused unless a rebuilt result proves to need it.
 
 **Q13. Where the experimental gate lives.** In the elaborator only, or in the
 kernel too. *Recommended:* in the kernel, so no client can admit a signature
@@ -1301,3 +1517,31 @@ by accident before review.
 slower than the hand-coded rules (design open question 4). *Recommended:*
 decide from X5's measurements; specialised paths, if any, must be observably
 identical to the generic rules and tested against them.
+
+**Q15. Level-dependent signatures.** A signature whose constructor types
+mention a level parameter, such as `wrap(B : U(x))`, stores types of that
+level. Its instances at different levels are different types, so they
+would need explicit level arguments and G0 Q1's distinct instances. No H1
+example, and none of K2.4's types, is level-dependent. *Recommended:*
+exclude them from H1. Stating such a type at fixed levels remains possible.
+Revisit with a concrete use, together with how explicit and erased
+instances would coexist.
+
+**Q16. Tier-1 constants with level parameters.** G0's normal form absorbs a
+level variable into a tier-1 constant, as in `max(x, ω) = ω`. That is valid
+only while `x` is finite, and level-erased instances may read tier-1 levels.
+*Recommended:* exclude tier-1 constants from signatures with level
+parameters, which keeps every admission derivation in tier-0 normal forms
+(2.3). A signature that needs one is stated at fixed levels. The
+alternative, bounding the levels such a signature may read, would need
+G0's extension to bounds above `UU0` (G0 1.5).
+
+**Q17. Declarations that assert a large proposition is small.** Groups 4
+and 5 of 8.4 state that the union of a large family, or the impredicatively
+defined tower, is small. No universe choice makes that true predicatively.
+*Recommended:* for the tower, the predicative construction: an indexed
+inductive family at H2, with the two declarations waiting for it. For the
+unions, an explicit smallness hypothesis, discharged from `LEM` by the one
+consumer that already uses it. The alternative for both, proving the
+statement from `LEM` directly, would add `LEM` to declarations that do not
+use it today.
