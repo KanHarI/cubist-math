@@ -55,8 +55,9 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
   }
   function childContext(node, key) {
     if (node.kind === "call") return key === "fn" ? "callee" : "delimited";
-    // A projection's operand binds as tightly as a callee: (e @ 0).1.
-    if (node.kind === "projection") return "callee";
+    // A projection's operand binds as tightly as a callee: (e @ 0).1. So does
+    // a prefix minus's: -(e @ 0), never -e @ 0, which is (-e) @ 0.
+    if (node.kind === "projection" || node.kind === "unary") return "callee";
     if (["pair", "exact", "let", "obtain", "have", "haveValue", "over", "along", "rw", "simpOnly",
       "simpaOnly", "show", "suffices", "lambda", "binderGroup", "forall", "exists", "pathLambda", "withUnfolding"].includes(node.kind))
       return "delimited";
