@@ -8,7 +8,7 @@ import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proof-navigation.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
-import { numeralExpansion, tokenStyle } from "./source-tokens.mjs";
+import { numeralAt, tokenStyle } from "./source-tokens.mjs";
 import { libraryModules } from "./mathscript/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
 import { createReplConsole } from "./repl-console.mjs";
@@ -257,7 +257,10 @@ async function check() {
   $("diagnostic").hidden = true;
   const source = $("editor").value;
   try {
-    const result = await request("check", { source, module: proofId, optimizations: compilerOptimizations() });
+    // Where the source came from decides where its imports are found
+    // (module-resolution.mjs): an archive proof imports only from the archive.
+    const place = exampleMode ? null : libraryModule ? "library" : "archive";
+    const result = await request("check", { source, module: proofId, place, optimizations: compilerOptimizations() });
     last = result;
     history.length = 0;
     renderSource();
@@ -490,7 +493,7 @@ function renderSource() {
         code.append(link);
       } else {
         const info = linkMap.get(start);
-        const expansion = (last.mode === "mathematical" ? numeralExpansion(text) : null) ?? info?.expansion;
+        const expansion = (last.mode === "mathematical" ? numeralAt(line, token.index, text) : null) ?? info?.expansion;
         const style = tokenStyle(text, expansion);
         if (info) {
           const button = document.createElement("button");
@@ -862,10 +865,25 @@ $("file").onchange = async () => {
 $("expand-kernel").onclick = () => {
   if (checkedKernelView) { kernelDisplayLimit *= 4; renderKernel(checkedKernelView); }
 };
+// Links within the page, to the quick reference and its topics, scroll to
+// their target and move focus there without replacing the URL's fragment:
+// an example's source lives in #source=…, and reloading or sharing the URL
+// must reopen it. A modified click keeps the browser's own behavior.
+function followInPageLink(event) {
+  const link = event.target instanceof Element ? event.target.closest('a[href^="#"]') : null;
+  if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const target = document.getElementById(link.getAttribute("href").slice(1));
+  if (!target) return;
+  event.preventDefault();
+  $("language-guide").open ||= target === $("language-guide") || $("language-guide").contains(target);
+  const focus = target.matches("details") ? target.querySelector("summary") : target;
+  if (!focus.matches("a[href], button, input, select, textarea, summary, [tabindex]")) focus.setAttribute("tabindex", "-1");
+  target.scrollIntoView({ block: "start" });
+  focus.focus({ preventScroll: true });
+}
 $("guide-link").href = "#language-guide";
-$("guide-link").onclick = () => {
-  $("language-guide").open = true;
-};
+$("guide-link").addEventListener("click", followInPageLink);
+$("language-guide").addEventListener("click", followInPageLink);
 let workerVersion = null;
 async function serverVersion() {
   try {

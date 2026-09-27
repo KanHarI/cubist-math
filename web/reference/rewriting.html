@@ -196,6 +196,7 @@ def no_third(n : Nat) : (n + 0) + (n + 0) = (n + 0) + n {
 
 def unfinished(n, m : Nat) : n + 0 = m {
   // Error: rw left an unresolved equality goal; add a following proof statement.
+  //   Remaining goal: n = m. 1 rewrite changed the left side, using nat_add_zero(n).
   rw [nat_add_zero(n)];
 }</code></pre>
             <pre><code data-check="reject">import naturals;
@@ -256,8 +257,10 @@ def undetermined(n : Nat) : n = n + 0 {
 
 def unfinished(n, m : Nat) : n + 0 = m {
   // Error: simp only left an unresolved equality goal; add a following proof statement.
+  //   Remaining goal: n = m. 1 rewrite changed the left side, using nat_add_zero.
   simp only [nat_add_zero];
 }</code></pre>
+            <p>An unfinished <code>rw</code>, <code>simp</code>, <code>simpa</code> or <code>calc</code> says where it stopped: the remaining goal, which side its rewrites changed and the rules that fired, or for <code>calc</code> the endpoints that do not meet. A long goal is cut short with “…”.</p>
             <pre><code data-check="reject">import naturals;
 
 def no_rules(n : Nat) : n + 0 = n {
@@ -271,13 +274,18 @@ def no_rules(n : Nat) : n + 0 = n {
               <li>The pass repeats until no rule applies.</li>
             </ol>
             <p>Traversal reaches the same positions as <a href="#rw"><code>rw</code></a>. A match in a dependent argument is skipped, so it never stops simplification elsewhere or a goal that already holds. If the goal is left unsolved, the error says that such matches were skipped.</p>
-            <p>Commutativity-style rules such as <code>forall x y, x + y = y + x</code> rewrite their own output back into their input. The simplifier detects the repeated state and fails. Instantiate such rules at specific arguments instead, as in <code>nat_add_comm(a, b)</code>.</p>
+            <p>Commutativity-style rules such as <code>forall x y, x + y = y + x</code> rewrite their own output back into their input. The simplifier detects the repeated state and fails, naming the rules that brought the goal back. Instantiate such rules at specific arguments instead, as in <code>nat_add_comm(a, b)</code>.</p>
             <pre><code data-check="reject">import naturals;
 
 def commuted(a, b : Nat) : a + b = b + a {
-  simp only [nat_add_comm];  // Error: Simplification cycle detected in the selected rules.
+  // Error: Simplification cycle detected in the selected rules. nat_add_comm returned
+  //   the goal to where it was 2 rewrites earlier.
+  simp only [nat_add_comm];
 }</code></pre>
-            <p>There are also fixed resource bounds: 64 rewrites, 512 visited nodes and 8,192 match candidates per traversal, a bound on generated term size, and a one-second time limit on the rule search itself. The limit does not include elaborating the rules you list, the statements after <code>simp</code> or <code>rw</code>, or the steps of a <code>calc</code>. Exceeding a bound is a failure that names the budget. Here the reversed rule turns every number <code>x</code> into <code>x + 0</code>, forever:</p>
+            <p>There are also fixed bounds. One simplification makes at most 64 rewrites and 64 premise searches, each traversal visits at most 512 subterms and tries at most 8,192 match candidates, and generated terms have a size bound.</p>
+            <p>Each search also spends counted fuel: <code>rw</code>’s search for one rule, one simplification, or the two of <code>simpa</code>. It counts subterms visited, candidate rules tried, rewrites, premise searches, term nodes walked and kernel queries. The defaults are several times what any checked proof in this reference, the rebuilt library or the archive spends. A declaration also has fuel of its own for all the kernel queries it asks. That covers elaborating the rules you list, the statements after a search and the steps of a <code>calc</code>.</p>
+            <p>Fuel counts work, never time, so a proof checks or fails the same way on every machine and in every session. Two other limits fail separately and say so. The kernel bounds its own steps per operation (“Kernel checking/reduction budget exhausted.”), and a checker may set a time limit per declaration (“Declaration time limit exceeded.”).</p>
+            <p>Exceeding a bound or the fuel is a failure that names it and shows the goal where the search stopped. Here the reversed rule turns every number <code>x</code> into <code>x + 0</code>, forever:</p>
             <pre><code data-check="reject">import naturals;
 
 def growing(n, m : Nat, h : n = m) : n = m + 0 {

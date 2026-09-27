@@ -14,6 +14,9 @@ export const cubicalKinds = [
 // kernel/include/cubical_kernel.h). Version 2 keeps a universe's level in a
 // level child rather than its payload.
 export const CUBICAL_ABI_VERSION = 2;
+// The most kernel steps one query may take, after its budget has doubled from
+// the session's (10M by default) on each exhaustion: a hard, declared limit.
+export const MAX_QUERY_STEPS = 1280000000n;
 
 // A rejected kernel request. `kind` classifies it, from cc_error_kind, so no
 // caller needs to read the message: "mismatch" (a type is not convertible to
@@ -44,6 +47,8 @@ export class CubicalKernel {
     this.symbolNames = new Map();
     this.nextSymbol = 1;
     this.stepBudget = 10000000n;
+    // The most steps one query may grow to (withGrowingBudget).
+    this.maxQuerySteps = MAX_QUERY_STEPS;
     this.unfoldingHints = [];
     this.definitions = new Map();
     // Whether instruction drivers on this session consult the term checker's
@@ -104,16 +109,35 @@ export class CubicalKernel {
     this.setUnfoldingHints(names);
     try { return operation(); } finally { this.setUnfoldingHints(previous); }
   }
+  // A query that runs out of its step budget is run again with twice the
+  // budget, up to maxQuerySteps, and then fails as the kernel's exhaustion
+  // ("budget"). The session's budget is restored afterwards, so one query's
+  // growth never gives another, or an instruction, more steps: every
+  // operation's budget is the same in a fresh session and a reused one.
   withGrowingBudget(operation) {
-    for (;;) {
-      this.checkDeadline();
-      const result = operation();
-      if (result || this.errorKind() !== "budget") return result;
-      const largest = (1n << 64n) - 1n;
-      if (this.stepBudget === largest) return result;
-      this.stepBudget = this.stepBudget > largest / 2n ? largest : this.stepBudget * 2n;
-      this.module._cb_step_budget(this.handle, Number(this.stepBudget & 0xffffffffn), Number(this.stepBudget >> 32n));
-    }
+    let budget = this.stepBudget;
+    const set = steps => this.module._cb_step_budget(this.handle, Number(steps & 0xffffffffn), Number(steps >> 32n));
+    try {
+      for (;;) {
+        this.checkDeadline();
+        const result = operation();
+        if (result || this.errorKind() !== "budget" || budget >= this.maxQuerySteps) return result;
+        budget = budget * 2n > this.maxQuerySteps ? this.maxQuerySteps : budget * 2n;
+        set(budget);
+      }
+    } finally { if (budget !== this.stepBudget) set(this.stepBudget); }
+  }
+  // The kernel's cumulative work (cc_kernel_work in
+  // kernel/include/cubical_kernel.h): instructions and queries started, their
+  // steps of budget, and their failures. The counters only grow, through
+  // errors and rollbacks too, so the difference of two readings is the work
+  // done in between. A step is the unit of the per-operation step budget.
+  work() {
+    this.assertOpen();
+    if (!this.module._cb_work) throw new Error("This cubical kernel module has no work counters. Rebuild it with `make wasm`.");
+    const field = index => this.module._cb_work(this.handle, index);
+    return { instructions: field(0), rejected: field(1), instructionSteps: field(2), queries: field(3),
+      failedQueries: field(4), querySteps: field(5), exhausted: field(6), deadlines: field(7) };
   }
   // The term arena's size.
   arena() {

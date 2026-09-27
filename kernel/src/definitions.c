@@ -7,13 +7,14 @@
 cc_term cc_kernel_define(cc_kernel *k, uint32_t symbol, cc_term value, cc_term expected) {
     if (!k || k->error[0])
         return 0;
+    ck_operation(k, CC_WORK_QUERY);
     for (size_t i = 1; i < k->definition_count; ++i)
         if (k->definitions[i].symbol == symbol)
             return ck_fail(k, "Definition symbol is already registered."), 0;
     if (k->definition_count >= UINT32_MAX)
         return ck_fail(k, "Definition handle space exhausted."), 0;
     cc_checked_result checked;
-    if (!cc_kernel_check(k, value, expected, NULL, 0, &checked))
+    if (!ck_check_in_cube(k, value, expected, NULL, 0, 0, &checked))
         return 0;
     if (k->definition_count >= k->definition_capacity) {
         size_t capacity = k->definition_capacity ? 2 * k->definition_capacity : 64;
@@ -55,7 +56,7 @@ bool cc_kernel_definition(const cc_kernel *k, cc_term reference, uint32_t *symbo
 cc_term cc_kernel_whnf(cc_kernel *k, cc_term term) {
     if (!k || !term || term >= k->count || k->error[0])
         return 0;
-    k->budget = k->operation_budget;
+    ck_operation(k, CC_WORK_QUERY);
     k->recursion = 0;
     /* A head computed while a nested computation failed is no answer. */
     cc_term head = ck_whnf(k, term);

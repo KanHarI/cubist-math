@@ -1,0 +1,733 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-27T10:14:55.908Z",
+  "revision": "78aebba92f817eb21e421413f540d508e01c2a1e",
+  "modified": true,
+  "machine": {
+    "node": "v24.13.0",
+    "platform": "darwin arm64",
+    "cpu": "Apple M3 Pro"
+  },
+  "method": "Each workload is checked in a new kernel with its imports, references off and declaration transactions on, with every search's fuel unlimited. A search's spending is read from the record of its declaration or directive (evaluate, simp_rule, simp_set): how many searches ran and the most any one spent of each kind; a declaration's queries include its searches', its closing check and its admission. Fuel counts are deterministic; seconds, kernel steps and peak memory are one run's observations on this machine.",
+  "rule": "Each default is four times the most any search spent, rounded up to 1, 2 or 5 times a power of ten; for a kind with its own bound inside one search, at least four times that bound.",
+  "floors": {
+    "premises": 64,
+    "rewrites": 64
+  },
+  "peakRssMiB": 1056,
+  "workloads": [
+    {
+      "name": "archive",
+      "declarations": 3804,
+      "checked": 3804,
+      "gaps": 0,
+      "searches": 22,
+      "most": {
+        "visits": {
+          "spent": 62,
+          "declaration": "ring_laws__ring_distribute_left"
+        },
+        "candidates": {
+          "spent": 242,
+          "declaration": "ring_laws__ring_distribute_left"
+        },
+        "rewrites": {
+          "spent": 6,
+          "declaration": "ordered_fields__field_add_cancel"
+        },
+        "premises": {
+          "spent": 0,
+          "declaration": null
+        },
+        "nodes": {
+          "spent": 315,
+          "declaration": "ring_laws__ring_distribute_left"
+        },
+        "queries": {
+          "spent": 302,
+          "declaration": "ring_laws__ring_distribute_left"
+        }
+      },
+      "declarationQueries": {
+        "spent": 2081,
+        "declaration": "complex_contour_bounds__complex_contour_tag_error_variation_bound"
+      },
+      "seconds": 27.2,
+      "kernelSteps": 188623390
+    },
+    {
+      "name": "library",
+      "declarations": 182,
+      "checked": 182,
+      "gaps": 0,
+      "searches": 0,
+      "most": {
+        "visits": {
+          "spent": 0,
+          "declaration": null
+        },
+        "candidates": {
+          "spent": 0,
+          "declaration": null
+        },
+        "rewrites": {
+          "spent": 0,
+          "declaration": null
+        },
+        "premises": {
+          "spent": 0,
+          "declaration": null
+        },
+        "nodes": {
+          "spent": 0,
+          "declaration": null
+        },
+        "queries": {
+          "spent": 0,
+          "declaration": null
+        }
+      },
+      "declarationQueries": {
+        "spent": 453,
+        "declaration": "equivalence_from_inverse__homotopy_self"
+      },
+      "seconds": 0.4,
+      "kernelSteps": 412531
+    },
+    {
+      "name": "docs/examples/hott-automation/conversion-laws.cubist",
+      "declarations": 322,
+      "checked": 322,
+      "gaps": 0,
+      "searches": 0,
+      "most": {
+        "visits": {
+          "spent": 0,
+          "declaration": null
+        },
+        "candidates": {
+          "spent": 0,
+          "declaration": null
+        },
+        "rewrites": {
+          "spent": 0,
+          "declaration": null
+        },
+        "premises": {
+          "spent": 0,
+          "declaration": null
+        },
+        "nodes": {
+          "spent": 0,
+          "declaration": null
+        },
+        "queries": {
+          "spent": 0,
+          "declaration": null
+        }
+      },
+      "declarationQueries": {
+        "spent": 233,
+        "declaration": "finite__fin_decidable"
+      },
+      "seconds": 0.9,
+      "kernelSteps": 4886339
+    },
+    {
+      "name": "docs/examples/hott-automation/cubical-probes.cubist",
+      "declarations": 71,
+      "checked": 71,
+      "gaps": 0,
+      "searches": 0,
+      "most": {
+        "visits": {
+          "spent": 0,
+          "declaration": null
+        },
+        "candidates": {
+          "spent": 0,
+          "declaration": null
+        },
+        "rewrites": {
+          "spent": 0,
+          "declaration": null
+        },
+        "premises": {
+          "spent": 0,
+          "declaration": null
+        },
+        "nodes": {
+          "spent": 0,
+          "declaration": null
+        },
+        "queries": {
+          "spent": 0,
+          "declaration": null
+        }
+      },
+      "declarationQueries": {
+        "spent": 450,
+        "declaration": "primes__bounded_least_search"
+      },
+      "seconds": 0.1,
+      "kernelSteps": 128839
+    },
+    {
+      "name": "docs/examples/hott-automation/canonicity.cubist",
+      "declarations": 266,
+      "checked": 266,
+      "gaps": 0,
+      "searches": 0,
+      "most": {
+        "visits": {
+          "spent": 0,
+          "declaration": null
+        },
+        "candidates": {
+          "spent": 0,
+          "declaration": null
+        },
+        "rewrites": {
+          "spent": 0,
+          "declaration": null
+        },
+        "premises": {
+          "spent": 0,
+          "declaration": null
+        },
+        "nodes": {
+          "spent": 0,
+          "declaration": null
+        },
+        "queries": {
+          "spent": 0,
+          "declaration": null
+        }
+      },
+      "declarationQueries": {
+        "spent": 450,
+        "declaration": "primes__bounded_least_search"
+      },
+      "seconds": 0.9,
+      "kernelSteps": 6391136
+    },
+    {
+      "name": "docs/examples/proof-ergonomics/implemented/arithmetic.cubist",
+      "declarations": 46,
+      "checked": 46,
+      "gaps": 0,
+      "searches": 9,
+      "most": {
+        "visits": {
+          "spent": 13,
+          "declaration": "docs/examples/proof-ergonomics/implemented/arithmetic.cubist__add_zero_twice_simp"
+        },
+        "candidates": {
+          "spent": 13,
+          "declaration": "docs/examples/proof-ergonomics/implemented/arithmetic.cubist__add_zero_twice_simp"
+        },
+        "rewrites": {
+          "spent": 2,
+          "declaration": "docs/examples/proof-ergonomics/implemented/arithmetic.cubist__add_zero_twice_simp"
+        },
+        "premises": {
+          "spent": 0,
+          "declaration": null
+        },
+        "nodes": {
+          "spent": 48,
+          "declaration": "docs/examples/proof-ergonomics/implemented/arithmetic.cubist__add_zero_twice_simp"
+        },
+        "queries": {
+          "spent": 23,
+          "declaration": "docs/examples/proof-ergonomics/implemented/arithmetic.cubist__add_zero_twice_simp"
+        }
+      },
+      "declarationQueries": {
+        "spent": 450,
+        "declaration": "primes__bounded_least_search"
+      },
+      "seconds": 0.1,
+      "kernelSteps": 67985
+    },
+    {
+      "name": "docs/examples/proof-ergonomics/implemented/cubical.cubist",
+      "declarations": 4,
+      "checked": 4,
+      "gaps": 0,
+      "searches": 0,
+      "most": {
+        "visits": {
+          "spent": 0,
+          "declaration": null
+        },
+        "candidates": {
+          "spent": 0,
+          "declaration": null
+        },
+        "rewrites": {
+          "spent": 0,
+          "declaration": null
+        },
+        "premises": {
+          "spent": 0,
+          "declaration": null
+        },
+        "nodes": {
+          "spent": 0,
+          "declaration": null
+        },
+        "queries": {
+          "spent": 0,
+          "declaration": null
+        }
+      },
+      "declarationQueries": {
+        "spent": 29,
+        "declaration": "docs/examples/proof-ergonomics/implemented/cubical.cubist__pointwise_evaluation"
+      },
+      "seconds": 0,
+      "kernelSteps": 1966
+    },
+    {
+      "name": "docs/examples/proof-ergonomics/implemented/dependent.cubist",
+      "declarations": 27,
+      "checked": 27,
+      "gaps": 0,
+      "searches": 0,
+      "most": {
+        "visits": {
+          "spent": 0,
+          "declaration": null
+        },
+        "candidates": {
+          "spent": 0,
+          "declaration": null
+        },
+        "rewrites": {
+          "spent": 0,
+          "declaration": null
+        },
+        "premises": {
+          "spent": 0,
+          "declaration": null
+        },
+        "nodes": {
+          "spent": 0,
+          "declaration": null
+        },
+        "queries": {
+          "spent": 0,
+          "declaration": null
+        }
+      },
+      "declarationQueries": {
+        "spent": 159,
+        "declaration": "paths__cancel_left"
+      },
+      "seconds": 0.1,
+      "kernelSteps": 66012
+    },
+    {
+      "name": "docs/examples/proof-ergonomics/implemented/registered-simp.cubist",
+      "declarations": 48,
+      "checked": 48,
+      "gaps": 0,
+      "searches": 18,
+      "most": {
+        "visits": {
+          "spent": 15,
+          "declaration": "docs/examples/proof-ergonomics/implemented/registered-simp.cubist__recursive_premise"
+        },
+        "candidates": {
+          "spent": 43,
+          "declaration": "docs/examples/proof-ergonomics/implemented/registered-simp.cubist__recursive_premise"
+        },
+        "rewrites": {
+          "spent": 2,
+          "declaration": "docs/examples/proof-ergonomics/implemented/registered-simp.cubist__recursive_premise"
+        },
+        "premises": {
+          "spent": 1,
+          "declaration": "docs/examples/proof-ergonomics/implemented/registered-simp.cubist__recursive_premise"
+        },
+        "nodes": {
+          "spent": 74,
+          "declaration": "docs/examples/proof-ergonomics/implemented/registered-simp.cubist__recursive_premise"
+        },
+        "queries": {
+          "spent": 40,
+          "declaration": "docs/examples/proof-ergonomics/implemented/registered-simp.cubist__recursive_premise"
+        }
+      },
+      "declarationQueries": {
+        "spent": 450,
+        "declaration": "primes__bounded_least_search"
+      },
+      "seconds": 0.1,
+      "kernelSteps": 67588
+    },
+    {
+      "name": "docs/examples/proof-ergonomics/implemented/type-transport.cubist",
+      "declarations": 44,
+      "checked": 44,
+      "gaps": 0,
+      "searches": 11,
+      "most": {
+        "visits": {
+          "spent": 12,
+          "declaration": "docs/examples/proof-ergonomics/implemented/type-transport.cubist__family_simpa"
+        },
+        "candidates": {
+          "spent": 12,
+          "declaration": "docs/examples/proof-ergonomics/implemented/type-transport.cubist__family_simpa"
+        },
+        "rewrites": {
+          "spent": 1,
+          "declaration": "docs/examples/proof-ergonomics/implemented/type-transport.cubist__move_type"
+        },
+        "premises": {
+          "spent": 0,
+          "declaration": null
+        },
+        "nodes": {
+          "spent": 33,
+          "declaration": "docs/examples/proof-ergonomics/implemented/type-transport.cubist__family_simpa"
+        },
+        "queries": {
+          "spent": 14,
+          "declaration": "docs/examples/proof-ergonomics/implemented/type-transport.cubist__family_simpa"
+        }
+      },
+      "declarationQueries": {
+        "spent": 450,
+        "declaration": "primes__bounded_least_search"
+      },
+      "seconds": 0.1,
+      "kernelSteps": 63367
+    },
+    {
+      "name": "docs/examples/proof-ergonomics/current/arithmetic.cubist",
+      "declarations": 42,
+      "checked": 42,
+      "gaps": 0,
+      "searches": 0,
+      "most": {
+        "visits": {
+          "spent": 0,
+          "declaration": null
+        },
+        "candidates": {
+          "spent": 0,
+          "declaration": null
+        },
+        "rewrites": {
+          "spent": 0,
+          "declaration": null
+        },
+        "premises": {
+          "spent": 0,
+          "declaration": null
+        },
+        "nodes": {
+          "spent": 0,
+          "declaration": null
+        },
+        "queries": {
+          "spent": 0,
+          "declaration": null
+        }
+      },
+      "declarationQueries": {
+        "spent": 450,
+        "declaration": "primes__bounded_least_search"
+      },
+      "seconds": 0.1,
+      "kernelSteps": 62188
+    },
+    {
+      "name": "docs/examples/proof-ergonomics/current/dependent-transport.cubist",
+      "declarations": 27,
+      "checked": 27,
+      "gaps": 0,
+      "searches": 0,
+      "most": {
+        "visits": {
+          "spent": 0,
+          "declaration": null
+        },
+        "candidates": {
+          "spent": 0,
+          "declaration": null
+        },
+        "rewrites": {
+          "spent": 0,
+          "declaration": null
+        },
+        "premises": {
+          "spent": 0,
+          "declaration": null
+        },
+        "nodes": {
+          "spent": 0,
+          "declaration": null
+        },
+        "queries": {
+          "spent": 0,
+          "declaration": null
+        }
+      },
+      "declarationQueries": {
+        "spent": 159,
+        "declaration": "paths__cancel_left"
+      },
+      "seconds": 0.1,
+      "kernelSteps": 67383
+    },
+    {
+      "name": "docs/examples/proof-ergonomics/current/path-coherence.cubist",
+      "declarations": 25,
+      "checked": 25,
+      "gaps": 0,
+      "searches": 0,
+      "most": {
+        "visits": {
+          "spent": 0,
+          "declaration": null
+        },
+        "candidates": {
+          "spent": 0,
+          "declaration": null
+        },
+        "rewrites": {
+          "spent": 0,
+          "declaration": null
+        },
+        "premises": {
+          "spent": 0,
+          "declaration": null
+        },
+        "nodes": {
+          "spent": 0,
+          "declaration": null
+        },
+        "queries": {
+          "spent": 0,
+          "declaration": null
+        }
+      },
+      "declarationQueries": {
+        "spent": 159,
+        "declaration": "paths__cancel_left"
+      },
+      "seconds": 0.1,
+      "kernelSteps": 65833
+    },
+    {
+      "name": "docs/examples/proof-ergonomics/current/pointwise.cubist",
+      "declarations": 4,
+      "checked": 4,
+      "gaps": 0,
+      "searches": 0,
+      "most": {
+        "visits": {
+          "spent": 0,
+          "declaration": null
+        },
+        "candidates": {
+          "spent": 0,
+          "declaration": null
+        },
+        "rewrites": {
+          "spent": 0,
+          "declaration": null
+        },
+        "premises": {
+          "spent": 0,
+          "declaration": null
+        },
+        "nodes": {
+          "spent": 0,
+          "declaration": null
+        },
+        "queries": {
+          "spent": 0,
+          "declaration": null
+        }
+      },
+      "declarationQueries": {
+        "spent": 29,
+        "declaration": "docs/examples/proof-ergonomics/current/pointwise.cubist__pointwise_evaluation"
+      },
+      "seconds": 0,
+      "kernelSteps": 2087
+    },
+    {
+      "name": "docs/examples/proof-ergonomics/current/scoped-algebra.cubist",
+      "declarations": 422,
+      "checked": 422,
+      "gaps": 0,
+      "searches": 20,
+      "most": {
+        "visits": {
+          "spent": 62,
+          "declaration": "ring_laws__ring_distribute_left"
+        },
+        "candidates": {
+          "spent": 242,
+          "declaration": "ring_laws__ring_distribute_left"
+        },
+        "rewrites": {
+          "spent": 6,
+          "declaration": "ordered_fields__field_add_cancel"
+        },
+        "premises": {
+          "spent": 0,
+          "declaration": null
+        },
+        "nodes": {
+          "spent": 315,
+          "declaration": "ring_laws__ring_distribute_left"
+        },
+        "queries": {
+          "spent": 302,
+          "declaration": "ring_laws__ring_distribute_left"
+        }
+      },
+      "declarationQueries": {
+        "spent": 723,
+        "declaration": "algebraic_fields__fieldmullaws_prop"
+      },
+      "seconds": 1.3,
+      "kernelSteps": 21308053
+    },
+    {
+      "name": "docs/examples/proof-ergonomics/current/type-transport.cubist",
+      "declarations": 42,
+      "checked": 42,
+      "gaps": 0,
+      "searches": 0,
+      "most": {
+        "visits": {
+          "spent": 0,
+          "declaration": null
+        },
+        "candidates": {
+          "spent": 0,
+          "declaration": null
+        },
+        "rewrites": {
+          "spent": 0,
+          "declaration": null
+        },
+        "premises": {
+          "spent": 0,
+          "declaration": null
+        },
+        "nodes": {
+          "spent": 0,
+          "declaration": null
+        },
+        "queries": {
+          "spent": 0,
+          "declaration": null
+        }
+      },
+      "declarationQueries": {
+        "spent": 450,
+        "declaration": "primes__bounded_least_search"
+      },
+      "seconds": 0.1,
+      "kernelSteps": 61966
+    },
+    {
+      "name": "reference examples",
+      "declarations": 1325,
+      "checked": 1228,
+      "gaps": 101,
+      "searches": 54,
+      "seconds": 1.5,
+      "kernelSteps": 1536764,
+      "most": {
+        "visits": {
+          "spent": 2145,
+          "declaration": "reference/rewriting.html:289 reference/rewriting.html:289__growing"
+        },
+        "candidates": {
+          "spent": 2145,
+          "declaration": "reference/rewriting.html:289 reference/rewriting.html:289__growing"
+        },
+        "rewrites": {
+          "spent": 64,
+          "declaration": "reference/rewriting.html:289 reference/rewriting.html:289__growing"
+        },
+        "premises": {
+          "spent": 1,
+          "declaration": "reference/rewriting.html:415 reference/rewriting.html:415__premise_not_given"
+        },
+        "nodes": {
+          "spent": 19760,
+          "declaration": "reference/rewriting.html:289 reference/rewriting.html:289__growing"
+        },
+        "queries": {
+          "spent": 7020,
+          "declaration": "reference/rewriting.html:289 reference/rewriting.html:289__growing"
+        }
+      },
+      "declarationQueries": {
+        "spent": 7030,
+        "declaration": "reference/rewriting.html:289 reference/rewriting.html:289__growing"
+      }
+    }
+  ],
+  "most": {
+    "visits": {
+      "workload": "reference examples",
+      "spent": 2145,
+      "declaration": "reference/rewriting.html:289 reference/rewriting.html:289__growing"
+    },
+    "candidates": {
+      "workload": "reference examples",
+      "spent": 2145,
+      "declaration": "reference/rewriting.html:289 reference/rewriting.html:289__growing"
+    },
+    "rewrites": {
+      "workload": "reference examples",
+      "spent": 64,
+      "declaration": "reference/rewriting.html:289 reference/rewriting.html:289__growing"
+    },
+    "premises": {
+      "workload": "docs/examples/proof-ergonomics/implemented/registered-simp.cubist",
+      "spent": 1,
+      "declaration": "docs/examples/proof-ergonomics/implemented/registered-simp.cubist__recursive_premise"
+    },
+    "nodes": {
+      "workload": "reference examples",
+      "spent": 19760,
+      "declaration": "reference/rewriting.html:289 reference/rewriting.html:289__growing"
+    },
+    "queries": {
+      "workload": "reference examples",
+      "spent": 7020,
+      "declaration": "reference/rewriting.html:289 reference/rewriting.html:289__growing"
+    }
+  },
+  "declarationQueries": {
+    "workload": "reference examples",
+    "spent": 7030,
+    "declaration": "reference/rewriting.html:289 reference/rewriting.html:289__growing"
+  },
+  "defaults": {
+    "search": {
+      "visits": 10000,
+      "candidates": 10000,
+      "rewrites": 500,
+      "premises": 500,
+      "nodes": 100000,
+      "queries": 50000
+    },
+    "declaration": {
+      "queries": 50000
+    }
+  }
+}

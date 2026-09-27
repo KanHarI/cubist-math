@@ -11,7 +11,7 @@ static cc_term app(cc_kernel *k, cc_term f, cc_term x) {
 static cc_formula_id bottom(cc_kernel *k) {
     cc_formula face;
     cc_init(&face, CC_FACE);
-    cc_formula_id result = cc_kernel_formula(k, &face);
+    cc_formula_id result = ck_formula(k, &face);
     cc_clear(&face);
     return result;
 }
@@ -25,7 +25,7 @@ static cc_formula_id join(cc_kernel *k, cc_formula_id a, cc_formula_id b, cc_sor
         cc_clear(&result);
         return ck_fail(k, "HIT join allocation failed."), 0;
     }
-    cc_formula_id id = cc_kernel_formula(k, &result);
+    cc_formula_id id = ck_formula(k, &result);
     cc_clear(&result);
     return id;
 }
@@ -37,7 +37,7 @@ static cc_formula_id reversed(cc_kernel *k, unsigned dim) {
     cc_init(&reverse, CC_INTERVAL);
     bool valid = cc_generator(&coordinate, dim, true) == CC_OK &&
                  cc_reverse(&reverse, &coordinate) == CC_OK;
-    cc_formula_id result = valid ? cc_kernel_formula(k, &reverse) : 0;
+    cc_formula_id result = valid ? ck_formula(k, &reverse) : 0;
     cc_clear(&coordinate);
     cc_clear(&reverse);
     if (!valid)
@@ -53,7 +53,7 @@ static cc_formula_id endpoint(cc_kernel *k, cc_formula_id interval, unsigned end
         cc_clear(&face);
         return ck_fail(k, "HIT endpoint allocation failed."), 0;
     }
-    cc_formula_id result = cc_kernel_formula(k, &face);
+    cc_formula_id result = ck_formula(k, &face);
     cc_clear(&face);
     return result;
 }

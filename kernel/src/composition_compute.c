@@ -83,7 +83,7 @@ cc_term ck_fill(cc_kernel *k, unsigned dim, cc_term family, cc_term system,
     if (valid) {
         cc_term moved_family = ck_dimension_substitute(k, family, dim, &along);
         cc_term moved_system = substitute_tubes(k, system, dim, &along);
-        cc_formula_id face = cc_kernel_formula(k, &wall);
+        cc_formula_id face = ck_formula(k, &wall);
         moved_system = ck_append_tube(k, moved_system, face, base);
         result = ck_make(k, CC_COMP, direction, moved_family, moved_system, base, 0);
     } else
@@ -215,7 +215,7 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
         cc_init(&variable, CC_INTERVAL);
         if (cc_generator(&variable, direction, true) != CC_OK)
             return ck_fail(k, "Path composition direction allocation failed."), 0;
-        cc_formula_id arg = cc_kernel_formula(k, &variable);
+        cc_formula_id arg = ck_formula(k, &variable);
         cc_term body_family = ck_dimension_substitute(k, type.child[0], type.payload, &variable);
         cc_clear(&variable);
         cc_term body_system = map_tubes(k, system, CC_PAPP, arg, family);

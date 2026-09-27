@@ -491,9 +491,9 @@ static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms
 cc_term cc_kernel_endpoint_term(cc_kernel *k, cc_term term, uint32_t dimension, unsigned endpoint) {
     if (!k || k->error[0] || !term || term >= k->count)
         return 0;
+    ck_operation(k, CC_WORK_QUERY);
     if (dimension >= CC_DIMENSIONS || endpoint > 1)
         return ck_fail(k, "An endpoint substitution needs a dimension and 0 or 1."), 0;
-    k->budget = k->operation_budget;
     k->recursion = 0;
     return ck_endpoint_term(k, term, dimension, endpoint);
 }
@@ -501,7 +501,7 @@ cc_term cc_kernel_endpoint_term(cc_kernel *k, cc_term term, uint32_t dimension, 
 cc_term cc_kernel_rename(cc_kernel *k, cc_term term, bool dimension, uint32_t from, uint32_t to) {
     if (!k || k->error[0] || !term || term >= k->count)
         return 0;
-    k->budget = k->operation_budget;
+    ck_operation(k, CC_WORK_QUERY);
     k->recursion = 0;
     if (!dimension)
         return ck_substitute(k, term, from, ck_var(k, to));
@@ -517,7 +517,9 @@ cc_term cc_kernel_rename(cc_kernel *k, cc_term term, bool dimension, uint32_t fr
 bool cc_kernel_convertible(cc_kernel *k, cc_term a, cc_term b, uint64_t steps) {
     if (!k || k->error[0] || !a || !b || a >= k->count || b >= k->count)
         return false;
-    k->budget = steps && steps < k->operation_budget ? steps : k->operation_budget;
+    ck_operation(k, CC_WORK_QUERY);
+    if (steps && steps < k->operation_budget)
+        k->budget = steps;
     k->recursion = 0;
     return ck_convertible(k, a, b);
 }

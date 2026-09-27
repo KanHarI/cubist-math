@@ -33,6 +33,23 @@ try {
     await page.goto(`http://127.0.0.1:${port}/proof.html?proof=${proof}&name=${name}`);
     await idle(); await inspected(name);
   };
+  // An example opened in the workspace keeps its source in #source=… while the
+  // quick reference's links scroll and move focus, so a reload reopens it.
+  const example = Buffer.from("def kept_after_reload : Nat := 7;").toString("base64")
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  await page.goto(`http://127.0.0.1:${port}/proof.html?example=1#source=${example}`); await idle();
+  await page.locator("#guide-link").click();
+  assert.equal(await page.locator("#language-guide").getAttribute("open"), "");
+  await page.locator('.quick-topics a[href="#quick-paths"]').click();
+  assert.equal(new URL(page.url()).hash, `#source=${example}`, "a topic link keeps the example's source");
+  assert.equal(await page.evaluate(() => document.activeElement?.id), "quick-paths");
+  assert.ok(await page.locator("#quick-paths").evaluate(heading => heading.getBoundingClientRect().top < innerHeight));
+  await page.locator('.quick-topics a[href="#quick-universes"]').focus();
+  await page.keyboard.press("Enter");
+  assert.equal(await page.evaluate(() => document.activeElement?.id), "quick-universes", "Enter moves focus to the topic");
+  assert.equal(new URL(page.url()).hash, `#source=${example}`);
+  await page.reload(); await idle();
+  assert.match(await page.locator("#editor").inputValue(), /kept_after_reload/);
   await openProof("suspension", "S1");
   for (const name of ["Suspension", "north", "south", "meridian", "suspension_induction", "suspension_meridian_beta"]) {
     const link = page.locator(`#read-source button[data-name="${name}"]`).first();
@@ -125,7 +142,7 @@ try {
   assert.match(await assemblyBench.locator("#graph-status").textContent(), /^\d+ judgements?, \d+ highlighted steps?; #\d+ is the conclusion\.$/);
   // hd is a local definition over n : Nat, derived with its context entry.
   assert.match(await assemblyBench.locator(".graph-row.graph-root .graph-statement").textContent(),
-    /^\{n : Nat\} ⊢ snd\(snd\(prime_divisor_exists\(.*\)\)\) : Divides\(/);
+    /^\{n : Nat\} ⊢ prime_divisor_exists\(.*\)\.2\.2 : Divides\(/);
   // A lookup's definition is derived on request, as the lookup's premise, or
   // says which rule it still needs.
   const rows = await assemblyBench.locator(".graph-row").count();
@@ -331,6 +348,22 @@ try {
   assert.match(await page.locator("#syntax").inputValue(),/Raw syntax exceeds the display limit/);
   assert.equal(await page.locator("#check").isDisabled(),true);
   assert.ok((await page.locator("#expression").textContent()).length>0);
+  // An archive proof imports only from the archive, as the CLI checks it: in
+  // the default Euclid page, importing the rebuilt library leaves the check
+  // incomplete, while the library's own page imports it.
+  // The page keeps an edited draft across visits, so each edit starts from
+  // the repository's source.
+  const statusAfterImport = async (proof, root, header) => {
+    const original = await (await page.request.get(`http://127.0.0.1:${port}/${root}/${proof}.cubist`)).text();
+    await page.goto(`http://127.0.0.1:${port}/proof.html?proof=${proof}`); await idle();
+    if (!await page.locator("#editor").isVisible()) await page.locator("#edit-mode").click();
+    await page.locator("#editor").fill(`${header}\n${original}`);
+    await page.locator("#check").click(); await idle();
+    return page.locator("#status").textContent();
+  };
+  assert.match(await statusAfterImport("euclid", "archive/first-library", "import classical_axioms;"), /check incomplete/);
+  assert.match(await statusAfterImport("euclid", "archive/first-library", "import classical;"), /· checked/);
+  assert.match(await statusAfterImport("universe_automorphisms", "library", "import naturals;"), /· checked/);
   assert.deepEqual(errors, []);
-  console.log("PASS cubical inspector: folding, navigation, simp trace/freeze, generic transfer, bounded raw syntax, and workbench editing");
+  console.log("PASS cubical inspector: folding, navigation, simp trace/freeze, generic transfer, bounded raw syntax, workbench editing, and archive-isolated imports");
 } finally { await browser?.close(); server.kill(); }

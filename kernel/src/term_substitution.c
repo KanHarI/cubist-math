@@ -175,7 +175,7 @@ static cc_term tube_substitute(cc_kernel *k, cc_term term, unsigned dim,
                 ? "Cubical lattice term-size or work budget exceeded."
                 : "Invalid face substitution."), 0;
         }
-        n.payload = cc_kernel_formula(k, &changed);
+        n.payload = ck_formula(k, &changed);
         cc_clear(&changed);
     }
     n.child[1] = tube_substitute(k, n.child[1], dim, value, bodies, faces);
@@ -236,7 +236,7 @@ cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
                 ? "Cubical lattice term-size or work budget exceeded."
                 : "Invalid Glue face substitution."), 0;
         }
-        n.payload = cc_kernel_formula(k, &changed);
+        n.payload = ck_formula(k, &changed);
         cc_clear(&changed);
     }
     if (n.kind == CC_PAPP || n.kind == CC_PUSH_PATH) {
@@ -252,7 +252,7 @@ cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
                 ? "Cubical lattice term-size or work budget exceeded."
                 : "Invalid interval substitution."), 0;
         }
-        n.payload = cc_kernel_formula(k, &changed);
+        n.payload = ck_formula(k, &changed);
         cc_clear(&changed);
     }
     cc_node original = k->nodes[term];
@@ -289,7 +289,7 @@ cc_formula_id ck_interval_variable(cc_kernel *k, unsigned dim) {
     cc_init(&f, CC_INTERVAL);
     cc_formula_id result = 0;
     if (cc_generator(&f, dim, true) == CC_OK)
-        result = cc_kernel_formula(k, &f);
+        result = ck_formula(k, &f);
     else
         ck_fail(k, "Invalid interval variable.");
     cc_clear(&f);
@@ -301,7 +301,7 @@ cc_formula_id ck_endpoint_face(cc_kernel *k, unsigned dim, unsigned endpoint) {
     cc_init(&f, CC_FACE);
     cc_formula_id result = 0;
     if (cc_generator(&f, dim, endpoint != 0) == CC_OK)
-        result = cc_kernel_formula(k, &f);
+        result = ck_formula(k, &f);
     else
         ck_fail(k, "Invalid face variable.");
     cc_clear(&f);

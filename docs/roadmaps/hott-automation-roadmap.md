@@ -2,6 +2,7 @@
 
 Status reviewed 2026-09-27: A7 and A5's core goal, scope and reconstruction
 layer are delivered, including motive abstraction for several scrutinees.
+A8 (projections) and B4 (`show`, `suffices`) were delivered the same day.
 A5's remaining work and the other milestones are open. The
 [implementation checkpoint](../tactical/hott-automation-handoff.md) records A7's
 baseline. Revised after two design reviews on 2026-09-24 and a
@@ -285,7 +286,21 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     where a migration needs the old witness. Freeze/replay under the same
     strategy must still yield convertible proofs. Record the strategy/version
     and native steps against the [cost table](#cost-of-the-current-proof-shape).
-- [ ] **A4. Deterministic fuel.** In matching, traversal, premise search and
+- [x] **A4. Deterministic fuel.** Delivered on 2026-09-27 as work-plan L1.3
+  ([fuel.mjs](../../lib/cubical/fuel.mjs)). Each tactic search spends counted
+  fuel: subterm visits, candidate rules, rewrites, premise searches, term
+  nodes walked and kernel queries, failed ones included. A declaration has
+  fuel of its own for every kernel query it asks. No search reads the clock.
+  A query's growing step budget is capped (1.28G steps) and no longer carries
+  over to later queries. Fuel counts questions, not kernel steps, so a fresh
+  session and a reused one spend the same; `tests/search-fuel.test.mjs`
+  checks this. Fuel exhaustion ("fuel"), the kernel's step budget ("budget")
+  and the declaration time limit ("deadline") are reported apart. The
+  defaults come from `tests/fixtures/search-fuel.json`
+  (`node tools/search-fuel-baseline.mjs`). Remaining: worker cancellation; and
+  a query close to the capped step budget can still pass warm and fail cold,
+  reported as the kernel's exhaustion. The original item:
+  In matching, traversal, premise search and
   proof construction, replace elapsed-time checks with counted fuel: traversal
   visits, candidate matches, rewrites, premise attempts, generated DAG nodes
   and native queries. Replace unbounded adapter budget growth with hard declared
@@ -381,7 +396,13 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     - companion motives for inductive-inductive types.
 
     It is therefore a prerequisite of milestone 7's first release.
-- [ ] **A6. Diagnostics.** Unfinished `rw`, `simp`, `simpa` and `calc` steps
+- [x] **A6. Diagnostics.** Delivered on 2026-09-27 with A4. An unfinished
+  `rw`, `simp` or `simpa`, a search stopped by a bound or by its fuel, and a
+  missing rewrite occurrence show the remaining goal (at most 160 characters),
+  the side the rewrites changed and the rules that fired. A failing `simpa`
+  describes both simplifications, and `calc` shows the endpoints that do not
+  meet. A cycle names the rules that brought the goal back and how many
+  rewrites earlier. The original item: Unfinished `rw`, `simp`, `simpa` and `calc` steps
   print the residual goal (bounded in length), the side that changed and the
   rules that fired. A cycle error names the rules involved. The unresolved-goal
   error already names a blocked premise, an exhausted premise search and
@@ -428,13 +449,15 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     `field_pair_path_decode` hold by conversion and now use `rfl`, with
     unchanged public types and assumptions; the other 18 equality statements
     need their proofs.
-- [ ] **A8. Σ projections with inferred families.** Add projection syntax, for
-  example `p.1` and `p.2`, elaborating to the core `First` and `Second` with
-  the family read from the checked type of `p`. The library spells projections
-  through eight helpers that take the family explicitly, with 1,283 calls
-  (`field_snd`, `field_fst`, `sigma_first`, …); each helper converts to the
-  corresponding projection. A2's matcher then sees one head per projection.
-  Keep the helpers during migration.
+- [x] **A8. Σ projections with inferred families.** Delivered on 2026-09-27
+  (work plan L1.5): `p.1` and `p.2` elaborate to the kernel's `Fst` and `Snd`,
+  with the family read from the checked type of `p`. The archive spells
+  projections through eight helpers that take the family explicitly, with
+  1,283 calls (`field_snd`, `field_fst`, `sigma_first`, …); each helper
+  converts to the corresponding projection, which
+  `tests/projections-show-suffices.test.mjs` checks by `rfl`. A2's matcher then
+  sees one head per projection. The archive keeps its helpers; the paused
+  rebuild would use projections.
 - [ ] **A9. Superseded by G0 and ergonomics milestone 5.** G0 removes
   templates. Omitted universe arguments become level arguments, inferred from
   level constraints by milestone 5's argument inference. The inspector still
@@ -521,10 +544,12 @@ expression forms such as `induction n as k return C { … }`.
     unrelated maps never qualify.
 
   Equality of paths remains a nested `path` or an E2 square.
-- [ ] **B4. `show` and `suffices`.** `show T;` replaces the goal by a
-  convertible type, checked by conversion. `suffices h : T by term;` (or a
-  block) proves the goal from `h`, then continues with goal `T`.
-  Reconstruction uses only conversion or application.
+- [x] **B4. `show` and `suffices`.** Delivered on 2026-09-27 (work plan
+  L1.5). `show T;` replaces the goal by a convertible type, checked by
+  conversion. `suffices h : T by term;` (or a block) proves the goal from `h`,
+  then continues with goal `T`. Reconstruction uses only conversion or
+  application: `show` adds no step, and `suffices` applies the checked
+  function `fun (h : T) => term` to the proof of `T` through A5's lemma step.
 - [ ] **B5. Superseded by H1 and ergonomics milestone 7.** Generated
   eliminators need no registry, because the kernel signature is the
   description. What remains of B5 is views, which milestone 7 owns: checked
@@ -1355,9 +1380,11 @@ the same way. There, the ergonomic forms of its arithmetic examples use 1.7 to
 
 ### Other findings
 
-- Budgets depend on elapsed time. The frontend polls `performance.now()`
+- Budgets depended on elapsed time; since A4 (2026-09-27) searches spend
+  counted fuel, and only the declaration time limit reads the clock. It was
+  so: the frontend polled `performance.now()`
   deadlines, and the kernel deadline in [deadline.c](../../kernel/src/deadline.c)
-  reads `CLOCK_MONOTONIC`. Near a budget, the same source can therefore check
+  reads `CLOCK_MONOTONIC`. Near a budget, the same source could therefore check
   in Node and fail in the browser's WebAssembly build. The numeric limits (64
   rewrites, 512 traversal visits, 8,192 candidates, premise depth two, 64
   premise attempts) were fixed before the measurements that the ergonomics

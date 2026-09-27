@@ -144,6 +144,19 @@ void cb_step_budget(uint32_t token, uint32_t low, uint32_t high) {
     if (s) cc_kernel_set_step_budget(s->kernel, ((uint64_t)high << 32) | low);
 }
 
+/* The kernel's cumulative work (cc_kernel_work), by field: 0 instructions,
+ * 1 rejected, 2 instruction steps, 3 queries, 4 failed queries, 5 query
+ * steps, 6 exhausted, 7 deadlines. Exact below 2^53. */
+double cb_work(uint32_t token, unsigned field) {
+    browser_session *s = lookup(token);
+    if (!s || field > 7) return 0;
+    cc_work_counters w;
+    cc_kernel_work(s->kernel, &w);
+    const uint64_t fields[] = { w.instructions, w.rejected, w.instruction_steps, w.queries,
+                                w.failed_queries, w.query_steps, w.exhausted, w.deadlines };
+    return (double)fields[field];
+}
+
 /* Strategy hints contain only references already checked in this session.
  * They choose reduction order; every requested conversion is still checked. */
 int cb_unfolding_clear(uint32_t token) {

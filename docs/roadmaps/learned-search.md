@@ -1,8 +1,10 @@
 # Learned search for the instruction driver
 
-Status: optional research design, reviewed on 2026-09-27; its chooser,
-telemetry and learning phases are unimplemented. It builds on the instruction
-kernel
+Status: optional research design, reviewed on 2026-09-27. Phases 1 and 2
+are delivered (2026-09-27): the driver's branch points list their moves for
+a pluggable chooser, and the kernel counts its work; see
+[Phases](#phases) for the baseline they measured. The learning phases 3–5
+are unimplemented. It builds on the instruction kernel
 ([kernel-instructions.md](kernel-instructions.md)), whose driver searches for
 conversion steps in JavaScript, and it reuses the ideas of the original THTH
 (2023–2025: a Rust opcode driver and PyTorch models over its ASTs). The
@@ -228,13 +230,46 @@ same edges, and the same heads, with message passing in place of attention.
 
 ## Phases
 
-1. **Options.** Refactor `agree` so each branch point is an explicit list of
-   options with a pluggable chooser. Useful regardless: the workbench can
-   show the options, and the policy plugs in later.
-2. **Logging and cost.** The bridge exposes the kernel cost of each
-   instruction; the coverage tool logs trajectories and reports total cost
-   per definition, including unsuccessful attempts and guide queries. Pin
-   revision, machine, budgets and cache/session mode. This is the baseline.
+1. **Options.** Done on 2026-09-27. Each branch point of `agree` is an
+   explicit list of moves (normalize, descend, a step on either side or
+   both, whnf, eta), and a chooser ranks them
+   (`heuristicChooser` in `web/cubical-instruction-driver.mjs`). The
+   heuristic is the driver's former order; the archive's elaboration
+   fingerprint is identical under it. The workbench does not show the
+   options yet.
+2. **Logging and cost.** Done on 2026-09-27. The kernel counts
+   instructions and queries, their steps of budget and their failures,
+   cumulatively (`cc_kernel_work`, `CubicalKernel.work()`; the accounting is
+   in [kernel-instructions.md](kernel-instructions.md#the-driver)). The
+   coverage tool reports the work of the archive check and of each
+   definition derived again, rejected instructions and guide queries
+   included, and the outcome of each move; `--trajectories=FILE` writes
+   every branch point of every derivation, with the kernel steps spent
+   choosing and moving (`tools/search-telemetry.mjs`). The report pins the
+   revision, machine, budgets and session mode. The baseline below was one
+   run on an Apple M3 Pro shared with other jobs, at `d44239e` with these
+   changes; times are observations, and the counts are deterministic.
+
+   | Kernel work | Archive check | Derived again |
+   | --- | --- | --- |
+   | Time | 40.5 s | 14.4 s |
+   | Instructions (rejected) | 5,329,388 (31,706) | 2,012,235 (43,704) |
+   | Instruction steps | 167.5 M | 130.6 M |
+   | Queries (failed) | 512,673 (1,093) | 289,326 (1,153) |
+   | Query steps | 21.1 M | 16.9 M |
+   | Exhausted budgets | 1,101 | 1,160 |
+   | Branch points | 2,137,692 | 835,564 |
+
+   Of the 842,375 moves made while deriving again, 84% were steps, which
+   always apply; descending agreed 68,638 times and failed 50,865 times;
+   whnf and eta changed nothing 8,339 times. Peak memory was 2.4 GiB.
+
+   The trajectories show where the cost is. Seven normalize moves ran out
+   of their instruction's full budget of 10M steps and failed: 70M of the
+   147M steps of deriving again, 47%, in seven definitions, each of which
+   then agreed by other moves. A chooser, or a smaller budget for a
+   speculative normalization, that avoided them would save more than any
+   ranking of the cheap moves could.
 3. **Imitation and ablations.** Train the network on the logs; measure
    agreement with the heuristic on validation modules. Run the ablation
    table below and choose the architecture before final test evaluation.

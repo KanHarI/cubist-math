@@ -23,9 +23,9 @@ A new syntax form must elaborate completely through the instruction driver.
 
 | Area | Delivered | Still open |
 | --- | --- | --- |
-| Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default | Retiring the old checker APIs and their test clients; explicit driver options and per-instruction cost telemetry (learned-search phases 1–2, with L1.3); optional performance/certificate work |
+| Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default; explicit driver options and cumulative kernel-work counters (learned-search phases 1–2) | Retiring the old checker APIs and their test clients; optional performance/certificate work |
 | G0 universes | K1.1–K1.4 and L1.1; `U < UU0`, `next`, `max`, generic builtins and rewriting; all 43 former templates check generically | E1 level constraints and E2 higher-tier generic definitions remain deferred proposals |
-| Proof ergonomics | Grouped binders, `have`, `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand | General inference, `apply`/`refine`, folded path rules, broader dependent rewriting |
+| Proof ergonomics | Grouped binders, `have`, `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand; Σ projections `p.1`/`p.2`, `show` and `suffices` (L1.5) | General inference, `apply`/`refine`, folded path rules, broader dependent rewriting, `Path` induction (B1) |
 | Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | Face-aware plans, filling/source-span records, tactic integration, indexed and companion motives |
 | Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection | Expected-value patterns and closed truncation readout; H-stage dependency markers |
 | Declarations | Existing built-in types and explicit eliminators | H1–H4, `theory`, user `inductive`, general `match`, views, derived declarations |
@@ -106,27 +106,32 @@ exported content hashes remain conditional stage-6 work.
 | I0.4 | Remove local scratch state | Recorded done on 2026-09-25 |
 | L0.1 | Non-computing dependencies, `computable`, `evaluate` | Done; extensions have explicit L2.9 packages below |
 | D0.1 | Checked-reference harness | Done: accept/reject examples, excerpts, CLI and REPL transcripts; sketches must be labelled |
-| D0.2 | Reference chapters and quick reference | Chapter 5 done with G0; rewrite chapter 6 with H1; expand `proof.html` now without waiting for H1 |
+| D0.2 | Reference chapters and quick reference | Chapter 5 done with G0; rewrite chapter 6 with H1. Quick reference done on 2026-09-27: `proof.html` gives each construct one checked example and a link to its chapter section; add an entry with each new construct |
 
 The harness is active; `data-check` markers are not inert. Its acceptance
 allows explicitly labelled fragments, so a passing harness does not claim
 that every design sketch executes.
 
-**I1.1, module resolution parity (S, before new multi-module fixtures).**
-Specify archive-isolated checks and library-first checks explicitly. Currently
-`tools/test-selection.mjs` resolves selected-proof imports only from the
-archive, while the CLI and `tests/library.test.mjs` support the rebuilt
-library. Add a shared resolution contract and tests for same-name modules,
-local imports and source-root selection. This prevents a feature fixture
-from exercising different dependencies in the CLI and test runner.
+**I1.1, module resolution parity (S). Done on 2026-09-27.** One contract,
+`web/module-resolution.mjs`, resolves imports for the CLI, the test runner,
+the library, REPL and reference tests and the browser worker. Each module
+resolves its imports by where it lives: an archive module only in the archive,
+so checking it is archive-isolated; a library module in `library/`, then the
+archive; a checked file outside both roots in its own directory, then the
+library, then the archive; a REPL entry or reference example library-first.
+A check holds one module per name, and a clash fails on the later importer.
+Before, `tools/test-selection.mjs` resolved selected-proof imports only from
+the archive. `tests/module-resolution.test.mjs` covers same-name modules,
+local imports, source-root selection and CLI/test-runner parity.
 
-**I1.3, coverage acceptance reporting (S).** The coverage tool uses an
-import-only root, so `CubicalProgram.complete` is false even with no gaps
-(it requires a local output). The tool also prints failures without setting
-a failing exit code. Define success from checked imports, zero gaps and
-`derived === definitions`, and fail the command on a real coverage loss.
-Until then inspect the report rather than treating exit code 0 alone as
-the gate. The review run found zero gaps and 3,916/3,916 derived definitions.
+**I1.3, coverage acceptance reporting (S). Done on 2026-09-27.**
+`node tools/instruction-coverage.mjs` succeeds only when every import
+checks, no gap remains and every stored definition derives again
+(`derived === definitions`, with at least one); otherwise it prints
+"Coverage incomplete" and exits with status 1. It no longer reads
+`CubicalProgram.complete`, which is false for an import-only root. The
+report also pins the revision, machine, budgets and session mode, and gives
+the kernel work of each phase (learned-search phases 1–2).
 
 ## Stage 1: goals, diagnostics and inference
 
@@ -137,9 +142,9 @@ property tests remain regressions, not next actions.
 | --- | --- | --- | --- |
 | L1.2 | A5 core goal and proof-construction layer | Delivered | — |
 | L1.2r | Remaining A5 plan metadata and clients: faces, filling, source spans; index/companion motives with H2/H3 | Extend the delivered core with each consuming feature | L |
-| L1.3 | Deterministic fuel and residual-goal diagnostics (HoTT A4/A6), with learned-search phases 1–2: explicit driver options and per-instruction kernel cost | L1.2; A7 baseline | M |
+| L1.3 | Deterministic fuel and residual-goal diagnostics (HoTT A4/A6), on learned-search phases 1–2. Delivered 2026-09-27; worker cancellation remains | L1.2; A7 baseline | M |
 | L1.4 | Folded path vocabulary and constructor congruence (A1/A2) | L1.1, L1.2; A4 fuel for bounded search | L |
-| L1.5 | Σ projections `p.1`/`p.2`, `show`, `suffices`; separate `Path` induction/`subst` slice (A8/B4/B1) | L1.2; B1 uses A1b's checked induction construction | M |
+| L1.5 | Σ projections `p.1`/`p.2`, `show`, `suffices` (A8/B4): delivered 2026-09-27. Open: the separate `Path` induction/`subst` slice (B1) | L1.2; B1 uses A1b's checked induction construction | M |
 | L4.1a | Known-signature application elaboration, named arguments and scoped `_` holes | L1.1, L1.2; L1.3 fuel for inference search | M |
 | L4.1b | Opt-in implicit binders and level-argument inference | L4.1a | M |
 | L4.4 | `apply`, `refine`, pair/sum witness conveniences with visible goals | L4.1a; L4.1b for implicit arguments | M |
@@ -162,12 +167,13 @@ has an explicit spelling.
   fail before kernel admission. The inspector shows inferred arguments.
 - Fuel counts traversal, candidates, failed attempts, reconstruction,
   native queries and retries. Specify cache/reset accounting so fresh and
-  reused sessions agree. Native budgets already exist; the missing work is
-  hard cumulative limits and deterministic frontend accounting. Deadlines
-  remain separately reported safety timeouts. The per-instruction kernel
-  cost that learned-search phase 2 exposes is this same accounting: deliver
-  the bridge's cost counter and the driver's explicit options (phase 1) with
-  L1.3, not twice.
+  reused sessions agree. Deadlines remain separately reported safety
+  timeouts. Done (L1.3): searches and declarations spend counted fuel
+  (`lib/cubical/fuel.mjs`), which counts questions rather than the kernel's
+  steps, so warm caches change nothing; a query's growing step budget is
+  capped and restored after it; the defaults are recorded with their
+  measurement in `tests/fixtures/search-fuel.json`. The kernel-work counters
+  (`cc_kernel_work`) measure the steps behind the questions.
 - A1 uses level-generic checked definitions. Reintroducing per-universe
   specialization would undo L1.1. A2 initially excludes binder bodies;
   binder-aware rewriting remains a separately scoped extension.
@@ -348,8 +354,10 @@ Use the existing canonicity and false-equality fixtures, archive coverage and
 strict migration checks as applicable. Kernel/ABI changes also require native
 tests and sanitizers. Performance comparisons record revision, workload,
 limits, total checking time, kernel work and memory; historical timings are
-observations, not current guarantees. Rebaseline after G0 before setting new
-fuel defaults; old specialization-cost fields no longer describe the runtime.
+observations, not current guarantees. Fuel defaults come from the post-G0
+baseline in `tests/fixtures/search-fuel.json`; rerun
+`node tools/search-fuel-baseline.mjs --write` when workloads change. The A7
+baseline's specialization-cost fields no longer describe the runtime.
 
 D0.2 and D2.1 advance with their features, including indexed/companion syntax.
 Update the reference, roadmap status, index and tactical checkpoint together.

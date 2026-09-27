@@ -5,6 +5,7 @@
 bool cc_kernel_set_unfolding_hints(cc_kernel *k, const cc_term *references, size_t count) {
     if (!k)
         return false;
+    ck_standalone(k);
     /* Clearing must work in a finally block after a failed kernel operation. */
     if (!count) {
         free(k->unfolding_hints);
