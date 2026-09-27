@@ -558,6 +558,259 @@ uint32_t cc_instr_signature_close(cc_kernel *k, cc_judgement_id signature_id) {
     return index;
 }
 
+/* ---- Instances and constructors (F2) --------------------------------------- */
+
+static uint32_t recorded_count(const cc_signature *s) {
+    uint32_t n = 0;
+    for (uint32_t j = 0; j < s->level_count; ++j)
+        n += (s->recorded >> j) & 1u;
+    return n;
+}
+
+static cc_term cons(cc_kernel *k, cc_term item, cc_term next) { return ck_make(k, CC_LIST, 0, item, next, 0, 0); }
+
+/* A list's items in order; a list in progress is kept reversed. */
+static uint32_t items(const cc_kernel *k, cc_term list, cc_term *out, uint32_t max, bool reversed) {
+    uint32_t n = 0;
+    for (; list && n < max; list = node(k, list).child[1])
+        out[n++] = node(k, list).child[0];
+    if (reversed)
+        for (uint32_t i = 0; i < n / 2; ++i) { cc_term t = out[i]; out[i] = out[n - 1 - i]; out[n - 1 - i] = t; }
+    return n;
+}
+
+static cc_term list_of(cc_kernel *k, const cc_term *xs, uint32_t n) {
+    cc_term list = 0;
+    for (uint32_t i = n; i-- > 0 && !k->error[0];)
+        list = cons(k, xs[i], list);
+    return list;
+}
+
+/* The admitted signature an instance term names. */
+static bool admitted_signature(cc_kernel *k, cc_term sort, uint32_t *index, cc_signature **s) {
+    cc_node n = node(k, sort);
+    if (n.kind != CC_SORT || !n.payload || n.payload >= k->signature_count)
+        return fail(k, "Expected an instance of a declared type.");
+    *index = n.payload;
+    *s = &k->signatures[*index];
+    if (!(*s)->admitted)
+        return fail(k, "Only an admitted signature has instances.");
+    return true;
+}
+
+/* Substitution of the admission symbols, as one simultaneous substitution:
+ * each symbol is first renamed to a fresh one, so a value that mentions
+ * another admission symbol by the same name is never substituted into. */
+typedef struct {
+    uint32_t from[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS + CC_SIGNATURE_CONSTRUCTORS + 1];
+    cc_term value[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS + CC_SIGNATURE_CONSTRUCTORS + 1];
+    bool level[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS + CC_SIGNATURE_CONSTRUCTORS + 1];
+    uint32_t count;
+} simultaneous;
+
+static void assign(simultaneous *sub, uint32_t symbol, cc_term value, bool level) {
+    sub->from[sub->count] = symbol;
+    sub->value[sub->count] = value;
+    sub->level[sub->count++] = level;
+}
+
+static cc_term apply_substitution(cc_kernel *k, cc_term t, const simultaneous *sub) {
+    uint32_t fresh[sizeof sub->from / sizeof *sub->from];
+    for (uint32_t i = 0; i < sub->count && t; ++i) {
+        fresh[i] = ck_fresh_symbol(k);
+        t = ck_substitute(k, t, sub->from[i], ck_var(k, fresh[i]));
+    }
+    for (uint32_t i = 0; i < sub->count && t; ++i)
+        t = sub->level[i] ? ck_level_instantiate(k, t, fresh[i], sub->value[i]) : ck_substitute(k, t, fresh[i], sub->value[i]);
+    return t;
+}
+
+/* An instance is complete: read the erased levels, check each parameter
+ * against the telescope, and publish S{ls}(as) : U(ℓ[ρ]) (section 3.1). */
+static cc_judgement_id complete_instance(cc_kernel *k, uint32_t index, const cc_term *levels, const cc_term *as,
+                                         const cc_term *types, uint32_t context) {
+    const cc_signature *s = &k->signatures[index];
+    cc_term rho[CC_SIGNATURE_LEVELS] = {0};
+    for (uint32_t j = 0, r = 0; j < s->level_count; ++j) {
+        if (s->recorded & (UINT32_C(1) << j)) {
+            rho[j] = levels[r++];
+            continue;
+        }
+        /* The determining occurrence: the first parameter whose type ends in
+         * exactly U(x_j); the level is read at the end of its judgement's type. */
+        for (uint32_t i = 0; i < s->parameter_count && !rho[j]; ++i) {
+            cc_node end = node(k, codomain_end(k, s->parameter_types[i]));
+            if (end.kind != CC_U || node(k, end.child[0]).kind != CC_VAR || node(k, end.child[0]).payload != s->symbols[j])
+                continue;
+            cc_node found = node(k, codomain_end(k, types[i]));
+            if (found.kind != CC_U)
+                return fail(k, "A parameter's type does not end in a universe where the signature's does."), 0;
+            uint32_t ignored = 0;
+            if (!ck_instr_finite_level(k, found.child[0], &rho[j], &ignored))
+                return 0;
+        }
+        if (!rho[j])
+            return fail(k, "An erased universe parameter has no determining occurrence."), 0;
+    }
+    for (uint32_t i = 0; i < s->parameter_count; ++i) {
+        simultaneous sub = {.count = 0};
+        for (uint32_t j = 0; j < s->level_count; ++j)
+            assign(&sub, s->symbols[j], rho[j], true);
+        for (uint32_t j = 0; j < i; ++j)
+            assign(&sub, s->symbols[s->level_count + j], as[j], false);
+        cc_term expected = apply_substitution(k, s->parameter_types[i], &sub);
+        if (!expected)
+            return 0;
+        if (!ck_alpha_equal(k, types[i], expected)) {
+            if (k->error[0])
+                return 0;
+            cc_node end = node(k, codomain_end(k, s->parameter_types[i]));
+            bool reading = false;
+            for (uint32_t j = 0; j < s->level_count && end.kind == CC_U && !reading; ++j)
+                reading = !(s->recorded & (UINT32_C(1) << j)) && node(k, end.child[0]).kind == CC_VAR &&
+                          node(k, end.child[0]).payload == s->symbols[j];
+            k->mismatch_found = types[i];
+            k->mismatch_expected = expected;
+            return ck_fail_as(k, CC_ERROR_MISMATCH, reading
+                ? "A parameter reads an erased universe parameter at another level than an earlier one; lift the lower "
+                  "parameter first."
+                : "A parameter's type is not the signature's telescope at the earlier parameters."), 0;
+        }
+    }
+    simultaneous sub = {.count = 0};
+    for (uint32_t j = 0; j < s->level_count; ++j)
+        assign(&sub, s->symbols[j], rho[j], true);
+    cc_term level = apply_substitution(k, s->level, &sub);
+    cc_term canonical = 0;
+    uint32_t level_context = 0;
+    /* The sort's own level may be of any tier, as a fixed signature's in UU0
+     * is; only the levels read and given are finite. */
+    if (!level || !ck_instr_level(k, level, false, &canonical, &level_context) ||
+        !ck_instr_merge(k, context, level_context, &context))
+        return 0;
+    cc_term term = ck_make(k, CC_SORT, index, list_of(k, as, s->parameter_count), list_of(k, levels, recorded_count(s)), 0, 0);
+    return term ? ck_instr_publish(k, CC_FACT_TYPING, term, 0, ck_universe(k, canonical), context) : 0;
+}
+
+/* An instance in progress: kind 5, whose term is Sort(index) with the
+ * parameters and levels so far, reversed; other, the parameters' types,
+ * reversed; pending, the levels supplied and, above bit 32, the parameters. */
+static cc_judgement_id instance_step(cc_kernel *k, uint32_t index, cc_term params, cc_term levels, cc_term types,
+                                     uint32_t context, uint32_t level_count, uint32_t parameter_count) {
+    const cc_signature *s = &k->signatures[index];
+    if (level_count == recorded_count(s) && parameter_count == s->parameter_count) {
+        cc_term ls[CC_SIGNATURE_LEVELS], as[CC_SIGNATURE_PARAMETERS], ts[CC_SIGNATURE_PARAMETERS];
+        items(k, levels, ls, CC_SIGNATURE_LEVELS, true);
+        items(k, params, as, CC_SIGNATURE_PARAMETERS, true);
+        items(k, types, ts, CC_SIGNATURE_PARAMETERS, true);
+        return complete_instance(k, index, ls, as, ts, context);
+    }
+    cc_term term = ck_make(k, CC_SORT, index, params, levels, 0, 0);
+    cc_judgement_id id = term ? ck_instr_publish(k, CC_FACT_INSTANCE, term, types, s->former, context) : 0;
+    if (id)
+        k->facts[id].pending = level_count | (uint64_t)parameter_count << 32;
+    return id;
+}
+
+cc_judgement_id cc_instr_sort_begin(cc_kernel *k, uint32_t index) {
+    cc_judgement_id found;
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_SORT_BEGIN, .operand = {index}}, NULL, 0, &found))
+        return found;
+    if (!index || index >= k->signature_count || !k->signatures[index].admitted)
+        return fail(k, "Only an admitted signature has instances."), 0;
+    return instance_step(k, index, 0, 0, 0, 0, 0, 0);
+}
+
+static bool instance_fact(cc_kernel *k, cc_judgement_id id, cc_fact *f, uint32_t *index, cc_signature **s,
+                          uint32_t *levels, uint32_t *parameters) {
+    if (!id || id >= k->fact_count)
+        return fail(k, "Unknown judgement.");
+    if (k->facts[id].kind != CC_FACT_INSTANCE)
+        return fail(k, "Expected an instance in progress.");
+    *f = k->facts[id];
+    if (!admitted_signature(k, f->term, index, s))
+        return false;
+    *levels = (uint32_t)(f->pending & 0xffffffffu);
+    *parameters = (uint32_t)(f->pending >> 32);
+    return true;
+}
+
+
+cc_judgement_id cc_instr_sort_level(cc_kernel *k, cc_judgement_id instance, cc_term level) {
+    cc_judgement_id found;
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_SORT_LEVEL, .premise = {instance}, .operand = {level}},
+                        NULL, 0, &found))
+        return found;
+    cc_fact f = {0};
+    uint32_t index = 0, levels = 0, parameters = 0, context = 0;
+    cc_signature *s = NULL;
+    if (!instance_fact(k, instance, &f, &index, &s, &levels, &parameters))
+        return 0;
+    if (parameters || levels >= recorded_count(s))
+        return fail(k, "An instance takes its recorded levels first, one for each recorded universe parameter."), 0;
+    cc_term canonical = 0;
+    if (!ck_instr_finite_level(k, level, &canonical, &context) || !ck_instr_merge(k, f.context, context, &context))
+        return 0;
+    cc_node sort = node(k, f.term);
+    return instance_step(k, index, sort.child[0], cons(k, canonical, sort.child[1]), f.other, context,
+                         levels + 1, parameters);
+}
+
+cc_judgement_id cc_instr_sort_parameter(cc_kernel *k, cc_judgement_id instance, cc_judgement_id parameter) {
+    cc_judgement_id found;
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_SORT_PARAMETER, .premise = {instance, parameter}},
+                        NULL, 0, &found))
+        return found;
+    cc_fact f = {0}, p = {0};
+    uint32_t index = 0, levels = 0, parameters = 0, context = 0;
+    cc_signature *s = NULL;
+    if (!instance_fact(k, instance, &f, &index, &s, &levels, &parameters) ||
+        !ck_instr_premise(k, parameter, CC_FACT_TYPING, &p))
+        return 0;
+    if (levels < recorded_count(s))
+        return fail(k, "An instance takes its recorded levels before its parameters."), 0;
+    if (parameters >= s->parameter_count)
+        return fail(k, "The instance already has all its parameters."), 0;
+    if (!ck_instr_merge(k, f.context, p.context, &context))
+        return 0;
+    cc_node sort = node(k, f.term);
+    return instance_step(k, index, cons(k, p.term, sort.child[0]), sort.child[1],
+                         cons(k, p.type, f.other), context, levels, parameters + 1);
+}
+
+cc_judgement_id cc_instr_construct(cc_kernel *k, cc_judgement_id instance, uint32_t constructor) {
+    cc_judgement_id found;
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_CONSTRUCT, .premise = {instance}, .operand = {constructor}},
+                        NULL, 0, &found))
+        return found;
+    cc_fact f = {0};
+    uint32_t index = 0;
+    cc_signature *s = NULL;
+    if (!ck_instr_premise(k, instance, CC_FACT_TYPING, &f) || !admitted_signature(k, f.term, &index, &s))
+        return 0;
+    if (constructor >= s->constructor_count)
+        return fail(k, "The signature has no such constructor."), 0;
+    cc_node sort = node(k, f.term);
+    cc_term levels[CC_SIGNATURE_LEVELS], as[CC_SIGNATURE_PARAMETERS];
+    uint32_t level_count = items(k, sort.child[1], levels, CC_SIGNATURE_LEVELS, false);
+    uint32_t parameter_count = items(k, sort.child[0], as, CC_SIGNATURE_PARAMETERS, false);
+    if (level_count != recorded_count(s) || parameter_count != s->parameter_count)
+        return fail(k, "The instance's parameters and levels are not the signature's."), 0;
+    /* T_k[s := I, recorded levels, parameters, c_m := Con(m; I)] (3.2). */
+    simultaneous sub = {.count = 0};
+    assign(&sub, s->sort_symbol, f.term, false);
+    for (uint32_t j = 0, r = 0; j < s->level_count; ++j)
+        if (s->recorded & (UINT32_C(1) << j))
+            assign(&sub, s->symbols[j], levels[r++], true);
+    for (uint32_t i = 0; i < s->parameter_count; ++i)
+        assign(&sub, s->symbols[s->level_count + i], as[i], false);
+    for (uint32_t m = 0; m < constructor; ++m)
+        assign(&sub, s->constructors[m].symbol, ck_make(k, CC_CON, m, f.term, 0, 0, 0), false);
+    cc_term type = apply_substitution(k, s->constructors[constructor].type, &sub);
+    cc_term term = ck_make(k, CC_CON, constructor, f.term, 0, 0, 0);
+    return type && term ? ck_instr_publish(k, CC_FACT_TYPING, term, 0, type, f.context) : 0;
+}
+
 /* ---- Reading the table ---------------------------------------------------- */
 
 size_t cc_kernel_signature_count(const cc_kernel *k) { return k && k->signature_count ? k->signature_count : 1; }

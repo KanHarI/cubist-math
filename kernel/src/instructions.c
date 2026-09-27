@@ -2121,6 +2121,26 @@ cc_judgement_id ck_instr_publish(cc_kernel *k, uint32_t kind, cc_term term, cc_t
 bool ck_instr_premise(cc_kernel *k, cc_judgement_id id, uint32_t kind, cc_fact *out) {
     return premise(k, id, kind, out);
 }
+bool ck_instr_merge(cc_kernel *k, uint32_t a, uint32_t b, uint32_t *out) { return merge(k, a, b, out); }
+/* A level in normal form, and its context: the level entries of its
+ * variables. The finite form refuses tier 1 and above, as LevelApply does. */
+bool ck_instr_finite_level(cc_kernel *k, cc_term level, cc_term *canonical, uint32_t *context) {
+    return ck_instr_level(k, level, true, canonical, context);
+}
+bool ck_instr_level(cc_kernel *k, cc_term level, bool finite, cc_term *canonical, uint32_t *context) {
+    cc_level_nf nf;
+    if (!ck_level_normal(k, level, &nf))
+        return false;
+    *canonical = 0;
+    if (finite && nf.tier)
+        ck_fail(k, "A declared type's instance reads finite levels only, below ω (Q16).");
+    else if (nf.constant >= CC_LEVEL_MAX)
+        ck_fail(k, "A universe level exceeds the kernel's bound.");
+    else if (level_context(k, &nf, context))
+        *canonical = ck_level_build(k, &nf);
+    ck_level_nf_free(&nf);
+    return *canonical != 0;
+}
 
 bool cc_kernel_judgement(const cc_kernel *k, cc_judgement_id id, cc_judgement_info *info) {
     if (!k || !info || !id || id >= k->fact_count)

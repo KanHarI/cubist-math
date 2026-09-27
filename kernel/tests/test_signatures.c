@@ -9,6 +9,8 @@
 #include <string.h>
 
 static cc_kernel *k;
+/* Signatures admitted by the sections below, for the instance tests. */
+static uint32_t nat_signature, list_signature, circle_signature, trunc_signature, pointed_signature;
 
 static uint32_t ok(uint32_t id, const char *what, int line) {
     if (!id) {
@@ -46,6 +48,13 @@ static cc_constructor_info constructor(uint32_t index, uint32_t c) {
 }
 static cc_term_kind kind(cc_term t) { cc_term_kind result; assert(cc_kernel_node(k, t, &result, NULL, NULL)); return result; }
 
+static cc_judgement_info info(cc_judgement_id j) { cc_judgement_info result; assert(cc_kernel_judgement(k, j, &result)); return result; }
+static cc_term term_of(cc_judgement_id j) { return info(j).term; }
+static cc_term type_of(cc_judgement_id j) { return info(j).type; }
+static cc_term child(cc_term t, unsigned i) { cc_term c[4]; assert(cc_kernel_node(k, t, NULL, NULL, c)); return c[i]; }
+static uint32_t payload(cc_term t) { uint32_t p; assert(cc_kernel_node(k, t, NULL, &p, NULL)); return p; }
+static cc_term tier1(unsigned n) { return cc_kernel_term(k, CC_LCONST, 1u << 16 | n, 0, 0, 0, 0); }
+
 /* Symbols. Each signature gets its own, as a driver's supply would give. */
 enum {
     X = 1, Y, A, B, L, P,
@@ -59,7 +68,8 @@ enum {
     S_H = 80, HOLD, HB,
     S_BAD = 90, BAD, BF, BG, BN, BX, C1, C2, LATER, OTHER, BH, Z,
     S_Q = 110, CLASS, QA,
-    S_G = 120, GPOINT, GA
+    S_G = 120, GPOINT, GA,
+    S_BOTH = 130, MK, BOTH_A, BOTH_B
 };
 
 /* ⊢ U(0) : U(1), the former of a signature with no parameters in U0. */
@@ -87,6 +97,7 @@ static void natural_numbers(void) {
     cc_judgement_id succ_type = OK(cc_instr_pi(k, n, var(s)));
     sig = OK(cc_instr_signature_constructor(k, sig, succ_type, SUCC));
     index = OK(cc_instr_signature_close(k, sig));
+    nat_signature = index;
     cc_signature_info info = signature(index);
     assert(info.admitted && info.experimental && info.constructor_count == 2 && !info.level_count);
     cc_constructor_info succ = constructor(index, 1);
@@ -110,6 +121,7 @@ static void lists(void) {
     cc_judgement_id cons_type = OK(cc_instr_pi(k, head, OK(cc_instr_pi(k, tail, var(s)))));
     sig = OK(cc_instr_signature_constructor(k, sig, cons_type, CONS));
     uint32_t index = OK(cc_instr_signature_close(k, sig));
+    list_signature = index;
     cc_signature_info info = signature(index);
     assert(info.level_count == 1 && info.parameter_count == 1 && info.recorded == 0);
     assert(cc_kernel_signature_symbol(k, index, 0) == X && cc_kernel_signature_symbol(k, index, 1) == A);
@@ -127,6 +139,7 @@ static void circle(void) {
     cc_judgement_id loop_type = OK(cc_instr_path(k, i, var(s), var(base), var(base)));
     sig = OK(cc_instr_signature_constructor(k, sig, loop_type, LOOP));
     uint32_t index = OK(cc_instr_signature_close(k, sig));
+    circle_signature = index;
     cc_constructor_info loop = constructor(index, 1);
     assert(loop.dimensions == 1 && loop.data == 0 && loop.positions == 0);
 }
@@ -193,6 +206,7 @@ static void truncations(void) {
         cc_entry_id a = OK(cc_instr_extend(k, var(ae), base + 2));
         sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, a, var(s))), base + 3));
         uint32_t index = OK(cc_instr_signature_close(k, sig));
+        if (m == 0) trunc_signature = index;
         cc_signature_info info = signature(index);
         assert(info.constructor_count == 2 && info.modifier == modifiers[m]);
         cc_constructor_info squash = constructor(index, 1);
@@ -220,6 +234,7 @@ static void recorded_parameters(void) {
     /* pt's type lives in U(y + 1), the declared level. */
     sig = OK(cc_instr_signature_constructor(k, sig, pt_type, PT));
     uint32_t index = OK(cc_instr_signature_close(k, sig));
+    pointed_signature = index;
     assert(signature(index).recorded == 1 && constructor(index, 0).data == 2);
 
     /* Holder(x < ω, A : U(x)) : U(x + 1) { hold(B : U(x)); } with x proposed
@@ -238,6 +253,81 @@ static void recorded_parameters(void) {
     cc_judgement_id recorded = OK(cc_instr_signature_begin(k, hformer, CC_UNTRUNCATED, S_H, 1));
     recorded = OK(cc_instr_signature_constructor(k, recorded, hold_type, HOLD));
     OK(cc_instr_signature_close(k, recorded));
+}
+
+/* F2: instances and constructors (section 5.3, formation 3.1, constructors
+ * 3.2). */
+static void instances(void) {
+    /* N, with no parameters, is complete at once; succ(zero) : N. */
+    cc_judgement_id n = OK(cc_instr_sort_begin(k, nat_signature));
+    assert(info(n).kind == 1 && kind(term_of(n)) == CC_SORT && kind(type_of(n)) == CC_U);
+    cc_judgement_id zero = OK(cc_instr_construct(k, n, 0)), succ = OK(cc_instr_construct(k, n, 1));
+    assert(kind(term_of(zero)) == CC_CON && payload(term_of(zero)) == 0 && type_of(zero) == term_of(n));
+    assert(kind(type_of(succ)) == CC_PI && child(type_of(succ), 0) == term_of(n) && child(type_of(succ), 1) == term_of(n));
+    assert(type_of(OK(cc_instr_apply(k, succ, zero))) == term_of(n));
+    REJECTS(cc_instr_construct(k, n, 2), "no such constructor");
+
+    /* V1, V7: List(Nat) reads x := 0 from Nat : U0. Lifted to U1, the same
+     * instance term lives in U1: the erased level is not part of it. */
+    cc_judgement_id nat = OK(cc_instr_nat(k));
+    cc_judgement_id list0 = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, list_signature)), nat));
+    cc_judgement_id nat1 = OK(cc_instr_lift(k, nat, universe(lconst(1))));
+    cc_judgement_id list1 = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, list_signature)), nat1));
+    assert(term_of(list1) == term_of(list0));
+    assert(type_of(list0) == term_of(universe(lconst(0))) && type_of(list1) == term_of(universe(lconst(1))));
+    cc_term cons_type = type_of(OK(cc_instr_construct(k, list0, 1)));
+    assert(kind(child(cons_type, 0)) == CC_NAT && child(child(cons_type, 1), 0) == term_of(list0));
+    /* V8: a reading at tier 1 is refused. */
+    cc_judgement_id big = OK(cc_instr_lift(k, nat, universe(tier1(0))));
+    REJECTS(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, list_signature)), big), "finite levels only");
+
+    /* The loop at the circle's instance: Path(i; S1, base, base). */
+    cc_judgement_id s1 = OK(cc_instr_sort_begin(k, circle_signature));
+    cc_term loop = type_of(OK(cc_instr_construct(k, s1, 1)));
+    assert(kind(loop) == CC_PATH && kind(child(loop, 1)) == CC_CON && payload(child(loop, 1)) == 0);
+    assert(child(child(loop, 1), 0) == term_of(s1));
+    /* The squash at Trunc(Nat): Π (y z : Trunc(Nat)). Path(Trunc(Nat), y, z). */
+    cc_judgement_id tr = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, trunc_signature)), nat));
+    cc_term squash = type_of(OK(cc_instr_construct(k, tr, 1)));
+    assert(kind(squash) == CC_PI && child(squash, 0) == term_of(tr));
+
+    /* V20: Pointed(U0) : U1 and Pointed(U1) : U2 are distinct. Recorded
+     * levels come first, and are finite. */
+    cc_judgement_id p = OK(cc_instr_sort_begin(k, pointed_signature));
+    REJECTS(cc_instr_sort_parameter(k, p, nat), "recorded levels");
+    REJECTS(cc_instr_sort_level(k, p, tier1(0)), "finite levels only");
+    cc_judgement_id p0 = OK(cc_instr_sort_level(k, p, lconst(0))), p1 = OK(cc_instr_sort_level(k, p, lconst(1)));
+    assert(term_of(p0) != term_of(p1));
+    assert(type_of(p0) == term_of(universe(lconst(1))) && type_of(p1) == term_of(universe(lconst(2))));
+    cc_term pt0 = type_of(OK(cc_instr_construct(k, p0, 0)));
+    assert(child(pt0, 0) == term_of(universe(lconst(0))));
+
+    /* V15: Both(x < ω, A, B : U(x)) { mk(a : A, b : B); }: two readings of x
+     * must agree; lifting the lower parameter makes them agree. */
+    cc_entry_id xe = OK(cc_instr_level(k, X));
+    cc_judgement_id ux = universe(lvar(X));
+    cc_entry_id ae = OK(cc_instr_extend(k, ux, A)), be = OK(cc_instr_extend(k, ux, B));
+    cc_judgement_id former = OK(cc_instr_level_pi(k, xe, OK(cc_instr_pi(k, ae, OK(cc_instr_pi(k, be, ux))))));
+    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, S_BOTH, 0));
+    cc_entry_id s = OK(cc_instr_extend(k, ux, S_BOTH));
+    cc_entry_id a = OK(cc_instr_extend(k, var(ae), BOTH_A)), b = OK(cc_instr_extend(k, var(be), BOTH_B));
+    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, a, OK(cc_instr_pi(k, b, var(s))))), MK));
+    uint32_t both = OK(cc_instr_signature_close(k, sig));
+    cc_judgement_id unit1 = OK(cc_instr_lift(k, OK(cc_instr_unit(k)), universe(lconst(1))));
+    cc_judgement_id half = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, both)), nat));
+    REJECTS(cc_instr_sort_parameter(k, half, unit1), "lift the lower parameter first");
+    cc_judgement_id lifted = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, both)), nat1));
+    assert(type_of(OK(cc_instr_sort_parameter(k, lifted, unit1))) == term_of(universe(lconst(1))));
+
+    /* V16: λ (x < ω). Trunc(U(x)) at 0 is Trunc(U(0)) : U(1), by LevelApply and
+     * a Beta step: level substitution reaches the instance's parameters. */
+    cc_judgement_id trunc_ux = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, trunc_signature)), ux));
+    assert(type_of(trunc_ux) == term_of(universe(lsucc(lvar(X)))));
+    cc_judgement_id at0 = OK(cc_instr_level_apply(k, OK(cc_instr_level_lambda(k, xe, trunc_ux)), lconst(0)));
+    assert(type_of(at0) == term_of(universe(lconst(1))));
+    cc_judgement_id reduced = OK(cc_instr_step(k, OK(cc_instr_refl(k, at0)), 1, NULL, 0, CC_STEP_BETA));
+    cc_term instance = info(reduced).other;
+    assert(kind(instance) == CC_SORT && child(child(instance, 0), 0) == term_of(universe(lconst(0))));
 }
 
 /* Refusals of section 10.1. Each uses a fresh open signature over U0 whose
@@ -330,6 +420,8 @@ static void commits(void) {
     assert(cc_kernel_commit_checkpoint(k));
     cc_constructor_info succ = constructor(index, 1);
     assert(kind(succ.type) == CC_PI && succ.symbol == 303 && succ.positions == 1);
+    /* Instances formed after the commit check. */
+    assert(kind(type_of(OK(cc_instr_construct(k, OK(cc_instr_sort_begin(k, index)), 1)))) == CC_PI);
     assert(kind(signature(index).former) == CC_U);
 }
 
@@ -349,6 +441,7 @@ int main(void) {
     squares();
     truncations();
     recorded_parameters();
+    instances();
     refusals();
     commits();
     cc_kernel_free(k);

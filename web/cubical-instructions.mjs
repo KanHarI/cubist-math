@@ -11,7 +11,8 @@ export const instructions = ["", "universe", "nat", "zero", "succ", "natElim", "
   "eta", "side", "symmetry", "transitivity", "convert", "lift", "endpoint", "pathAt", "system", "systemTube", "comp", "systemOverlap",
   "pushout", "pushPoint", "pushPath", "pushElim", "w", "sup", "wElim", "hcomp", "trans",
   "glueBase", "gluePiece", "glueOverlap", "glue", "glueTermBase", "glueTermPiece", "glueTerm", "unglue",
-  "levelPi", "levelLambda", "levelApply", "signatureBegin", "signatureConstructor", "signatureClose"];
+  "levelPi", "levelLambda", "levelApply", "signatureBegin", "signatureConstructor", "signatureClose",
+  "sortBegin", "sortLevel", "sortParameter", "construct"];
 // THTH's names for the rules, for display.
 export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ", succ: "NatIntroS",
   natElim: "NatElim", unit: "UnitForm", point: "UnitIntro", unitElim: "UnitElim", void: "VoidForm",
@@ -26,7 +27,8 @@ export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ"
   hcomp: "HComp", trans: "Transp", glueBase: "GlueBase", gluePiece: "GluePiece", glueOverlap: "GlueOverlap",
   glue: "GlueForm", glueTermBase: "GlueIntroBase", glueTermPiece: "GlueIntroPiece", glueTerm: "GlueIntro",
   unglue: "GlueElim", levelPi: "LevelForm", levelLambda: "LevelIntro", levelApply: "LevelElim",
-  signatureBegin: "SignatureBegin", signatureConstructor: "SignatureCons", signatureClose: "SignatureClose" };
+  signatureBegin: "SignatureBegin", signatureConstructor: "SignatureCons", signatureClose: "SignatureClose",
+  sortBegin: "SortBegin", sortLevel: "SortLevel", sortParameter: "SortParameter", construct: "ConIntro" };
 export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf", "face"];
 // A judgement's sides: its term, an equality's other term, its type.
 export const sides = ["term", "other", "type"];
@@ -112,6 +114,13 @@ export class InstructionGraph {
     return this.issue("signatureConstructor", signature, type, this.kernel.symbol(name));
   }
   signatureClose(signature) { return this.issue("signatureClose", signature); }
+  // An instance of admitted signature `index`: its recorded levels first (level
+  // terms), then its parameters (judgements), each step giving the instance so
+  // far. construct gives constructor `c` of a complete instance.
+  sortBegin(index) { return this.issue("sortBegin", index); }
+  sortLevel(instance, level) { return this.issue("sortLevel", instance, level); }
+  sortParameter(instance, parameter) { return this.issue("sortParameter", instance, parameter); }
+  construct(instance, c) { return this.issue("construct", instance, c); }
   variable(entry) { return this.issue("variable", entry); }
   pi(entry, codomain) { return this.issue("pi", entry, codomain); }
   lambda(entry, body) { return this.issue("lambda", entry, body); }

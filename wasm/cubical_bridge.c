@@ -447,6 +447,12 @@ uint32_t cb_instr(uint32_t token, unsigned op, uint32_t a, uint32_t b, uint32_t 
     case CC_INSTR_SIGNATURE_BEGIN: return cc_instr_signature_begin(k, a, b, c, d);
     case CC_INSTR_SIGNATURE_CONSTRUCTOR: return cc_instr_signature_constructor(k, a, b, c);
     case CC_INSTR_SIGNATURE_CLOSE: return cc_instr_signature_close(k, a);
+    /* SortBegin(signature index); SortLevel(instance, level term);
+     * SortParameter(instance, parameter); Construct(instance, constructor). */
+    case CC_INSTR_SORT_BEGIN: return cc_instr_sort_begin(k, a);
+    case CC_INSTR_SORT_LEVEL: return cc_instr_sort_level(k, a, b);
+    case CC_INSTR_SORT_PARAMETER: return cc_instr_sort_parameter(k, a, b);
+    case CC_INSTR_CONSTRUCT: return cc_instr_construct(k, a, b);
     }
     s->error = "Unknown instruction.";
     return 0;
