@@ -289,6 +289,47 @@ def stopped(n, m : Nat, h : n + 0 = m) : m + 0 = n {
   assert.doesNotMatch(early.stopped.reason, /Remaining goal/);
 });
 
+test("a freeze suggestion's replay spends fuel of its own", async t => {
+  // Not `only`, with a selected rule the proof does not use: the inspector
+  // replays the simplification without it before suggesting `simp only`.
+  const source = `import naturals;
+
+def frozen(n : Nat) : (n + 0) + 0 = n {
+  simp [nat_add_zero, nat_add_succ];
+}
+`;
+  const run = async collectReferences => {
+    const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences });
+    t.after(() => program.dispose());
+    return program.check(source, "fuel_example");
+  };
+  const inspected = await run(true), plain = await run(false);
+  assert.equal(inspected.outputs[0].status, "checked-native-cubical");
+  const suggestion = inspected.links.find(link => link.freeze);
+  assert.equal(suggestion?.freeze.text, "simp only [nat_add_zero];");
+  assert.deepEqual(inspected.outputs[0].searchFuel, plain.outputs[0].searchFuel);
+});
+
+test("preparing the rules is part of the tactic's search: out of fuel, it shows the unchanged goal", async t => {
+  const outputs = await check(t, `def stopped(n, m : Nat, h : n = m) : n = m {
+  simp only [h];
+}
+`, { searchFuel: { ...SEARCH_FUEL, queries: 1 } });
+  assert.equal(outputs.stopped.failure, "fuel");
+  assert.match(outputs.stopped.reason, /^Preparing the simplification rules ran out of search fuel: 1 kernel queries\. Remaining goal: n = m\. No rule fired\. at \d+:\d+$/);
+});
+
+test("asking for univalence is a question every time, cached or not", async t => {
+  const source = "def u := ua(U0, Unit, Unit);\n";
+  const cold = await check(t, source);
+  const warm = await check(t, source, {}, [["warm_ua", "def v := ua(U0, Unit, Unit);\n"]]);
+  assert.equal(cold.u.status, "checked-native-cubical");
+  // Checking A and B, the request for the generic definition (which the cold
+  // session also checks and admits), the closing check and admission.
+  assert.equal(cold.u.searchFuel.queries, 5);
+  assert.deepEqual(warm.u.searchFuel, cold.u.searchFuel);
+});
+
 test("the kernel's step budget is a safety bound outside the determinism guarantee", async t => {
   // Warm caches make a question cheaper, so near its budget the same query
   // can fail cold and pass warm. That is reported as the kernel's exhaustion,
