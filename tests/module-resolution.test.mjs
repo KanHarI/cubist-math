@@ -148,8 +148,11 @@ test("the CLI and the test runner check a file with local and library imports al
   assert.match(cli.stdout, /^Checked 1 declarations/m);
   const environment = { ...process.env };
   delete environment.NODE_TEST_CONTEXT;
-  const runner = spawnSync(process.execPath, [fileURLToPath(new URL("../tools/test.mjs", import.meta.url)), join(directory, "parity.cubist")],
+  // A fixed reporter: Node's default differs between versions when piped.
+  const runner = spawnSync(process.execPath, [fileURLToPath(new URL("../tools/test.mjs", import.meta.url)),
+    "--test-reporter=tap", join(directory, "parity.cubist")],
     { cwd: projectRoot, encoding: "utf8", timeout: budget(60000), env: environment });
   assert.equal(runner.status, 0, runner.stdout + runner.stderr);
-  assert.match(runner.stdout, /# pass 1/);
+  assert.match(runner.stdout, /^ok 1 - cubical proof: parity\.cubist$/m);
+  assert.match(runner.stdout, /^# pass 1$/m);
 });
