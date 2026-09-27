@@ -173,7 +173,13 @@ has an explicit spelling.
   steps, so warm caches change nothing; a query's growing step budget is
   capped and restored after it; the defaults are recorded with their
   measurement in `tests/fixtures/search-fuel.json`. The kernel-work counters
-  (`cc_kernel_work`) measure the steps behind the questions.
+  (`cc_kernel_work`) measure the steps behind the questions. Decided on
+  2026-09-27: the kernel's step budget is a safety limit outside the
+  determinism guarantee, like the deadline, since near its cap a query can
+  pass warm and fail cold. Deferred: capping the driver's speculative
+  normalization, whose failed attempts took 47% of re-derivation steps in
+  the #52 measurement. Measure a lower cap with the coverage telemetry
+  before changing the driver.
 - A1 uses level-generic checked definitions. Reintroducing per-universe
   specialization would undo L1.1. A2 initially excludes binder bodies;
   binder-aware rewriting remains a separately scoped extension.

@@ -1,5 +1,15 @@
 name: Cubist kernel
-on: [push, pull_request]
+# Runs only for pull requests into main, where grouped work lands. Work on
+# other branches is checked locally; run this workflow by hand on any branch
+# with `gh workflow run ci.yml --ref BRANCH`. A newer push to a pull request
+# cancels its older run.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:

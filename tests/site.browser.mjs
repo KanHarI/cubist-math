@@ -37,7 +37,7 @@ try {
   assert.equal((await page.goto(base)).status(), 200);
   assert.match(await page.title(), /Proof highlights/);
   assert.equal(await page.getByRole("link", { name: "GitHub repository", exact: true }).getAttribute("href"), "https://github.com/KanHarI/cubist-math");
-  assert.equal(await page.locator(".proof-card").count(), 8);
+  assert.equal(await page.locator(".proof-card").count(), 9);
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
@@ -157,7 +157,7 @@ try {
   assert.match(await derivation.textContent(), /\/\/ \{n : Nat\}\s*\d+ CtxExt\(1\)/);
   assert.ok(await elaboration.locator(".derivation-scaffold").count() > 0);
   await page.goto(new URL("kernel.html", base).href);
-  assert.equal(await page.locator("#opcodes tbody tr").count(), 42);
+  assert.equal(await page.locator("#opcodes tbody tr").count(), 49);
   console.log("PASS elaboration panel and the kernel reference outline");
   await page.goto(new URL("workbench.html", base).href);
   await page.waitForFunction(() => document.querySelector("#status").textContent.includes("checked"));
