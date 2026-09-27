@@ -99,8 +99,11 @@ const definitions = select ? derivations.length : kernel.definitions.size;
 const top = (key, format) => [...derived].sort((a, b) => b[key] - a[key]).slice(0, 10).map(format);
 const report = {
   environment, budgets, oracle, chooser: search.name,
-  session: "The archive is checked in one kernel session, whose elaborator keeps one driver; then each stored "
-    + "definition is derived again by a fresh driver on that session, with the kernel's caches warm.",
+  session: "The archive is checked in one kernel session. Each declaration is derived by a driver of its own: admission and "
+    + "the declaration's transaction drop the driver, and the transaction's checkpoint commit clears the kernel's checking "
+    + "and reduction caches, keeping only checked definitions and interned syntax. Then each stored definition is derived "
+    + "again by a fresh driver in the same session, without checkpoints, so the kernel's caches stay warm across those "
+    + "derivations.",
   checked: { modules: modules.length, declarations: imports.length, verified: imports.filter(d => d.verified).length,
     gaps, ...check },
   definitions, derived: derived.length, selected: select?.source ?? null,

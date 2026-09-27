@@ -9,10 +9,14 @@ bool ck_fail_as(cc_kernel *k, cc_error_kind kind, const char *message) {
         strncpy(k->error, message, sizeof k->error - 1);
         k->error[sizeof k->error - 1] = '\0';
         k->error_kind = kind;
+        /* Outside an operation nothing is charged, though the budget and the
+         * deadline are checked as ever. */
         if (k->work_phase == CC_WORK_INSTRUCTION) ++k->work.rejected;
         else if (k->work_phase == CC_WORK_QUERY) ++k->work.failed_queries;
-        if (kind == CC_ERROR_BUDGET) ++k->work.exhausted;
-        else if (kind == CC_ERROR_DEADLINE) ++k->work.deadlines;
+        if (k->work_phase != CC_WORK_NONE) {
+            if (kind == CC_ERROR_BUDGET) ++k->work.exhausted;
+            else if (kind == CC_ERROR_DEADLINE) ++k->work.deadlines;
+        }
     }
     return false;
 }
@@ -46,7 +50,7 @@ bool ck_tick(cc_kernel *k, bool checking) {
     --k->budget;
     if (k->work_phase == CC_WORK_INSTRUCTION)
         ++k->work.instruction_steps;
-    else
+    else if (k->work_phase == CC_WORK_QUERY)
         ++k->work.query_steps;
     if (checking)
         ++k->checking_steps;
