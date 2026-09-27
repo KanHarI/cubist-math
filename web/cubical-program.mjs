@@ -47,19 +47,29 @@ export class CubicalProgram {
     // it does not run the mathematical library or count repeated imports twice.
     const prepared = new Map();
     let total = this.completed;
-    const prepare = async (name, text = null) => {
+    // The reader is told which module imports each name, since where a module
+    // lives decides where its imports are found (module-resolution.mjs). A
+    // reader may refuse a module whose import this check already holds under
+    // another file; a check holds one module per name. Each check reads afresh,
+    // so a failed read is retried.
+    this.readSource.beginCheck?.();
+    const prepare = async (name, text = null, importer = null) => {
       if (this.modules.has(name) || prepared.has(name)) return;
       try {
-        text ??= await this.readSource(name);
+        text ??= await this.readSource(name, importer);
         const ast = parse(text);
         prepared.set(name, { text, ast });
         total += ast.declarations.length;
         onProgress({ completed: this.completed, total: null, current: name,
           phase: "loading", unit: "declarations", instructions: this.checker.steps });
-        for (const dependency of ast.imports) await prepare(dependency);
+        for (const dependency of ast.imports) await prepare(dependency, null, name);
+        const refused = await this.readSource.checkImports?.(name, ast.imports);
+        if (refused) prepared.set(name, { error: new Error(refused) });
       } catch (error) { prepared.set(name, { error }); }
     };
     await prepare(main, source);
+    // Imports that failed in this check, used or not: any makes it incomplete.
+    const failedHere = new Set();
     const visiting = new Set();
     const load = async (name, text = null) => {
       if (visiting.has(name)) throw new Error(`Cyclic source import: ${name}`);
@@ -76,6 +86,7 @@ export class CubicalProgram {
         if (name === main) throw error;
         this.gaps.push({ module: name, reason: error.message });
         this.failedImports.set(name, error.message);
+        failedHere.add(name);
         visiting.delete(name); return new Map();
       }
       this.sources[name] = text;
@@ -211,7 +222,7 @@ export class CubicalProgram {
       declarationCount: total, instructionCount: this.checker.steps, axiomCount: new Set(outputs.flatMap(d => d.axioms)).size, gaps: this.gaps,
       evaluations: this.evaluations,
       complete: outputs.length > 0 && outputs.every(d => d.verified)
-        && !this.gaps.some(gap=>gap.directive), sources: this.sources };
+        && !this.gaps.some(gap=>gap.directive) && failedHere.size === 0, sources: this.sources };
   }
   // Each proof statement of a module: where it is, the goal it faced, with the
   // names in scope, and the term it built. The rest of the block's proof

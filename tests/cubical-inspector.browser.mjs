@@ -331,6 +331,22 @@ try {
   assert.match(await page.locator("#syntax").inputValue(),/Raw syntax exceeds the display limit/);
   assert.equal(await page.locator("#check").isDisabled(),true);
   assert.ok((await page.locator("#expression").textContent()).length>0);
+  // An archive proof imports only from the archive, as the CLI checks it: in
+  // the default Euclid page, importing the rebuilt library leaves the check
+  // incomplete, while the library's own page imports it.
+  // The page keeps an edited draft across visits, so each edit starts from
+  // the repository's source.
+  const statusAfterImport = async (proof, root, header) => {
+    const original = await (await page.request.get(`http://127.0.0.1:${port}/${root}/${proof}.cubist`)).text();
+    await page.goto(`http://127.0.0.1:${port}/proof.html?proof=${proof}`); await idle();
+    if (!await page.locator("#editor").isVisible()) await page.locator("#edit-mode").click();
+    await page.locator("#editor").fill(`${header}\n${original}`);
+    await page.locator("#check").click(); await idle();
+    return page.locator("#status").textContent();
+  };
+  assert.match(await statusAfterImport("euclid", "archive/first-library", "import classical_axioms;"), /check incomplete/);
+  assert.match(await statusAfterImport("euclid", "archive/first-library", "import classical;"), /· checked/);
+  assert.match(await statusAfterImport("universe_automorphisms", "library", "import naturals;"), /· checked/);
   assert.deepEqual(errors, []);
-  console.log("PASS cubical inspector: folding, navigation, simp trace/freeze, generic transfer, bounded raw syntax, and workbench editing");
+  console.log("PASS cubical inspector: folding, navigation, simp trace/freeze, generic transfer, bounded raw syntax, workbench editing, and archive-isolated imports");
 } finally { await browser?.close(); server.kill(); }

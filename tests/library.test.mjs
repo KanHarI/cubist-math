@@ -1,15 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { libraryModules } from "../web/mathscript/modules.mjs";
-import { cubicalSourceFile } from "../web/cubical-sources.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 
 // The rebuilt library under library/: every module is listed and checks completely.
-// Imports resolve as in the CLI and the workspace: the library, then the archive.
-const read = name => readFile(new URL(libraryModules.includes(name) ? `../library/${name}.cubist`
-  : `../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
+// Imports resolve as the CLI's check resolves them (web/module-resolution.mjs):
+// a library module imports from the library, then the archive.
 
 // The assumptions each module's declarations use; a module not listed uses none.
 const assumptions = {
@@ -22,9 +22,10 @@ test("every library module is listed and checks completely", async t => {
     .map(name => name.slice(0, -".cubist".length)).sort();
   assert.deepEqual(files, [...libraryModules].sort());
   for (const name of libraryModules) {
-    const program = new CubicalProgram(await createCubical(), read, { collectReferences: false });
+    const path = fileURLToPath(new URL(`../library/${name}.cubist`, import.meta.url));
+    const program = new CubicalProgram(await createCubical(), sourceReader({ path }), { collectReferences: false });
     t.after(() => program.dispose());
-    const result = await program.check(await read(name), name);
+    const result = await program.check(await readFile(path, "utf8"), name);
     assert.equal(result.complete, true, `${name}: ${JSON.stringify(program.gaps)}`);
     assert.deepEqual(result.outputs.filter(output => !output.verified).map(output => output.name), [], name);
     const used = [...new Set(result.outputs.flatMap(output => output.axioms))]

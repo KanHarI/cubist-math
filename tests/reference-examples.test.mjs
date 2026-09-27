@@ -10,6 +10,7 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 import { ReplSession, replTranscript } from "../web/repl-session.mjs";
 import { budget } from "./timing.mjs";
 import { referenceExamples, statedErrors, transcript } from "./reference-pages.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 
 // Every code example in the language references declares how it is checked:
 //   data-check="accept"                     the example checks completely;
@@ -30,13 +31,12 @@ const pages = [
   // Only the quick reference panel of the proof workspace holds examples.
   { file: "proof.html", scope: source => source.slice(source.indexOf('id="language-guide"'), source.indexOf("</details>", source.indexOf('id="language-guide"'))) },
 ];
-// Modules resolve as in the CLI: the rebuilt library first, then the archive.
-const readLibrary = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8")
-  .catch(error => { if (error.code !== "ENOENT") throw error; return readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8"); });
+// An example is a source that is not a file: its imports resolve as in the CLI's
+// REPL, the rebuilt library first, then the archive (web/module-resolution.mjs).
 const squash = text => text.replace(/\s+/g, " ").trim();
 
 async function check(text, name) {
-  const program = new CubicalProgram(await createCubical(), readLibrary);
+  const program = new CubicalProgram(await createCubical(), sourceReader());
   try {
     const result = await program.check(text, name);
     // The page's worker posts the whole result, goal displays included.
@@ -75,7 +75,7 @@ async function runSession(example, named) {
 
 // Each entry's results must be exactly the transcript's lines after it.
 async function runRepl({ label, text, attrs }, base) {
-  const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
+  const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false });
   try {
     let session = new ReplSession(program);
     if (attrs["data-base"] !== "none") {
@@ -113,7 +113,7 @@ async function verify(example, index, named = new Map(), base = null) {
       assert.ok(stated.some(error => failure.includes(error)), `${label}: the error "${failure}" is not stated in a comment`);
   } else if (kind === "excerpt") {
     assert.ok(attrs["data-module"], `${label}: an excerpt names its data-module`);
-    const module = await readLibrary(attrs["data-module"]);
+    const module = await sourceReader()(attrs["data-module"]);
     assert.ok(squash(module).includes(squash(text)), `${label} should quote ${attrs["data-module"]} exactly`);
   } else if (kind === "fragment") {
     assert.ok(attrs["data-reason"], `${label}: an unchecked fragment states its data-reason`);
