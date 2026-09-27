@@ -14,6 +14,15 @@ static cc_term var(cc_kernel *k, uint32_t symbol) {
     return ck_var(k, symbol);
 }
 
+/* t with the dimension from renamed to the dimension to. */
+static cc_term rename_dimension(cc_kernel *k, cc_term t, unsigned from, unsigned to) {
+    cc_formula target;
+    cc_init(&target, CC_INTERVAL);
+    cc_term result = cc_generator(&target, to, true) == CC_OK ? ck_dimension_substitute(k, t, from, &target) : 0;
+    cc_clear(&target);
+    return result ? result : (k->error[0] ? 0 : (ck_fail(k, "Dimension renaming allocation failed."), 0));
+}
+
 /* The display of 3.6 at an instance: the positions of one constructor, each
  * shown by a term (a displayed variable, or in Iota its value), and the
  * clauses of the earlier constructors. */
@@ -22,6 +31,7 @@ typedef struct {
     const cc_signature *signature;
     cc_term instance, motive;
     const cc_term *clauses;
+    uint64_t avoid;                       /* the motive's and clauses' free dimensions */
     uint32_t earlier, positions;
     uint32_t position_symbols[CC_CONSTRUCTOR_ARGUMENTS];
     cc_term shown[CC_CONSTRUCTOR_ARGUMENTS];
@@ -32,11 +42,14 @@ static cc_term shown_boundary(display *d, cc_term e, unsigned depth);
 
 /* ⟦E⟧': under a positional argument's arity binders. */
 static cc_term shown_positional(display *d, cc_term e, unsigned depth) {
-    cc_node n = d->k->nodes[e];
+    cc_kernel *k = d->k;
+    cc_node n = k->nodes[e];
     if (n.kind != CC_LAM)
         return shown_boundary(d, e, depth + 1);
-    cc_term body = shown_positional(d, n.child[1], depth + 1);
-    return body ? ck_make(d->k, CC_LAM, n.payload, n.child[0], body, 0, 0) : 0;
+    /* A fresh binder: a clause shown under it may mention its symbol. */
+    uint32_t fresh = ck_fresh_symbol(k);
+    cc_term body = shown_positional(d, ck_substitute(k, n.child[1], n.payload, var(k, fresh)), depth + 1);
+    return body ? ck_make(k, CC_LAM, fresh, n.child[0], body, 0, 0) : 0;
 }
 
 /* ⟦E⟧: q_j(us) is q̄_j(us), c_m(us, Es') is m_m(us, Es', ⟦Es'⟧'), and path
@@ -47,9 +60,16 @@ static cc_term shown_boundary(display *d, cc_term e, unsigned depth) {
         return ck_fail(k, "A boundary is nested too deeply."), 0;
     cc_node n = k->nodes[e];
     if (n.kind == CC_PLAM) {
-        cc_term family = displayed(d, n.child[0], n.child[1], depth + 1);
-        cc_term body = shown_boundary(d, n.child[1], depth + 1);
-        return family && body ? ck_make(k, CC_PLAM, n.payload, family, body, 0, 0) : 0;
+        /* A fresh dimension: the motive and clauses shown under it may use
+         * the abstraction's own. */
+        unsigned fresh = ck_fresh_dimension(k, d->avoid | ck_free_dims(k, e));
+        if (fresh >= CC_DIMENSIONS)
+            return 0;
+        cc_term inner_family = rename_dimension(k, n.child[0], n.payload, fresh);
+        cc_term inner_body = rename_dimension(k, n.child[1], n.payload, fresh);
+        cc_term family = inner_family && inner_body ? displayed(d, inner_family, inner_body, depth + 1) : 0;
+        cc_term body = inner_body ? shown_boundary(d, inner_body, depth + 1) : 0;
+        return family && body ? ck_make(k, CC_PLAM, fresh, family, body, 0, 0) : 0;
     }
     if (n.kind == CC_PAPP) {
         cc_term type = displayed(d, n.child[1], n.child[0], depth + 1);
@@ -100,11 +120,17 @@ static cc_term displayed(display *d, cc_term cube, cc_term y, unsigned depth) {
     cc_node c = k->nodes[cube];
     if (c.kind != CC_PATH)
         return ck_fail(k, "A cube is the sort or a path type over it."), 0;
-    cc_term at = ck_make(k, CC_PAPP, ck_interval_variable(k, c.payload), y, cube, 0, 0);
-    cc_term family = displayed(d, c.child[0], at, depth + 1);
+    /* A fresh binder, avoiding the dimensions of the motive and clauses, of
+     * y and of the cube: the displayed family puts them under it. */
+    unsigned fresh = ck_fresh_dimension(k, d->avoid | ck_free_dims(k, y) | ck_free_dims(k, cube));
+    if (fresh >= CC_DIMENSIONS)
+        return 0;
+    cc_term inner = rename_dimension(k, c.child[0], c.payload, fresh);
+    cc_term at = ck_make(k, CC_PAPP, ck_interval_variable(k, fresh), y, cube, 0, 0);
+    cc_term family = inner ? displayed(d, inner, at, depth + 1) : 0;
     cc_term left = shown_boundary(d, c.child[1], depth + 1);
     cc_term right = shown_boundary(d, c.child[2], depth + 1);
-    return family && left && right ? ck_make(k, CC_PATH, c.payload, family, left, right, 0) : 0;
+    return family && left && right ? ck_make(k, CC_PATH, fresh, family, left, right, 0) : 0;
 }
 
 /* The parts of ClauseType_k over variables: the arguments ts, qs, the
@@ -119,13 +145,15 @@ typedef struct {
     cc_term constructed; /* c_k(as)(ts, qs) */
 } clause_parts;
 
-/* A position's type Π (ys : As). C: its arity binders and its cube. */
+/* A position's type Π (ys : As). C: its arity binders, renamed fresh, since a
+ * motive or clause put under them may mention theirs, and its cube. */
 static uint32_t arity(cc_kernel *k, cc_term type, uint32_t *symbols, cc_term *domains, cc_term *cube) {
     uint32_t n = 0;
-    while (k->nodes[type].kind == CC_PI && n < CC_CONSTRUCTOR_ARGUMENTS) {
-        symbols[n] = k->nodes[type].payload;
-        domains[n++] = k->nodes[type].child[0];
-        type = k->nodes[type].child[1];
+    while (k->nodes[type].kind == CC_PI && n < CC_CONSTRUCTOR_ARGUMENTS && type) {
+        cc_node pi = k->nodes[type];
+        symbols[n] = ck_fresh_symbol(k);
+        domains[n++] = pi.child[0];
+        type = ck_substitute(k, pi.child[1], pi.payload, var(k, symbols[n - 1]));
     }
     *cube = type;
     return n;
@@ -145,19 +173,26 @@ static bool parts(cc_kernel *k, display *d, cc_term instance, cc_term motive, co
     *out = (clause_parts){.count = c->data + c->positions, .data = c->data, .positions = c->positions,
                           .dimensions = c->dimensions};
     cc_term constructed = ck_make(k, CC_CON, constructor, instance, 0, 0, 0);
-    for (uint32_t m = 0; m < out->count; ++m) {
+    /* The arguments as fresh variables: the motive, the clauses and later
+     * the actual arguments may mention the constructor type's own binders,
+     * which Iota's instantiation must not touch. */
+    for (uint32_t m = 0; m < out->count && type; ++m) {
         cc_node pi = k->nodes[type];
         if (pi.kind != CC_PI)
             return ck_fail(k, "A constructor's type has fewer arguments than it takes.");
-        out->symbols[m] = pi.payload;
+        out->symbols[m] = ck_fresh_symbol(k);
         out->domains[m] = pi.child[0];
-        constructed = app(k, constructed, var(k, pi.payload));
-        type = pi.child[1];
+        constructed = app(k, constructed, var(k, out->symbols[m]));
+        type = ck_substitute(k, pi.child[1], pi.payload, var(k, out->symbols[m]));
     }
+    if (!type)
+        return false;
     out->cube = type;
     out->constructed = constructed;
     *d = (display){.k = k, .signature = s, .instance = instance, .motive = motive, .clauses = clauses,
-                   .earlier = constructor, .positions = c->positions};
+                   .avoid = ck_free_dims(k, motive), .earlier = constructor, .positions = c->positions};
+    for (uint32_t m = 0; m < constructor; ++m)
+        d->avoid |= ck_free_dims(k, clauses[m]);
     for (uint32_t j = 0; j < c->positions; ++j) {
         d->position_symbols[j] = out->symbols[c->data + j];
         out->shown_symbols[j] = ck_fresh_symbol(k);
@@ -198,11 +233,13 @@ static cc_term lifted(cc_kernel *k, cc_term eliminator, cc_term instance, cc_ter
     if (cube == instance || (k->nodes[cube].kind == CC_SORT && ck_alpha_equal(k, cube, instance)))
         return app(k, eliminator, y);
     cc_node c = k->nodes[cube], s = k->nodes[shown];
-    if (c.kind != CC_PATH || s.kind != CC_PATH || c.payload != s.payload)
+    if (c.kind != CC_PATH || s.kind != CC_PATH)
         return ck_fail(k, "A position's displayed cube does not follow its cube."), 0;
-    cc_term at = ck_make(k, CC_PAPP, ck_interval_variable(k, c.payload), y, cube, 0, 0);
-    cc_term body = lifted(k, eliminator, instance, c.child[0], s.child[0], at);
-    return body ? ck_make(k, CC_PLAM, c.payload, s.child[0], body, 0, 0) : 0;
+    /* The displayed type's binder was chosen fresh; the cube follows it. */
+    cc_term inner = rename_dimension(k, c.child[0], c.payload, s.payload);
+    cc_term at = ck_make(k, CC_PAPP, ck_interval_variable(k, s.payload), y, cube, 0, 0);
+    cc_term body = inner ? lifted(k, eliminator, instance, inner, s.child[0], at) : 0;
+    return body ? ck_make(k, CC_PLAM, s.payload, s.child[0], body, 0, 0) : 0;
 }
 
 /* elim_{M, ms}(c_k(as)(ts, qs) @ rs) ⟶ m_k(ts, qs, q̄s) @ rs (3.7), with
@@ -255,6 +292,8 @@ cc_term ck_eliminate(cc_kernel *k, cc_term eliminator, cc_term argument, bool we
     clause_parts p;
     if (!parts(k, &d, instance, e.child[0], clauses, constructor, &p))
         return 0;
+    /* The lifted positions put the whole eliminator under their binders. */
+    d.avoid |= ck_free_dims(k, eliminator);
     if (count != p.count || depth != p.dimensions)
         return app(k, eliminator, value);
     /* The positions shown by their values, over the argument variables. */

@@ -88,7 +88,9 @@ enum {
     KAN_A = 520, KAN_B, KAN_E, KAN_X, KAN_M, KAN_Q, KAN_Y = 540,
     ELIM_P = 600, ELIM_PZ = 602, ELIM_N, ELIM_H, ELIM_PS, ELIM_Z, ELIM_Q, ELIM_PB = 609, ELIM_PB2, ELIM_PL, ELIM_PL2,
     ELIM_T = 620, ELIM_A = 622, ELIM_PP, ELIM_B, ELIM_W, ELIM_L = 627, ELIM_BB, ELIM_C, ELIM_CBAR, ELIM_MS,
-    ELIM_V = 640, ELIM_PV = 642, ELIM_PW, ELIM_WV, ELIM_WP, ELIM_WPB, ELIM_MW
+    ELIM_V = 640, ELIM_PV = 642, ELIM_PW, ELIM_WV, ELIM_WP, ELIM_WPB, ELIM_MW,
+    S_PW = 700, PW_BASE, PW_LOOP, PW_P, PW_WRAP, PW_V, PW_PV = 707, PW_PL, PW_PE, PW_PBAR, PW_MW, PW_P0,
+    S_BOX = 720, BOX_N, BOX, BOX_Z, BOX_X, AMB_Z = 730, AMB_P, AMB_F, AMB_FB, AMB_FL
 };
 
 /* ⊢ U(0) : U(1), the former of a signature with no parameters in U0. */
@@ -1129,6 +1131,99 @@ static void elimination(void) {
     assert(child(fix_clause, 2) == term_of(var(pv)));
 }
 
+/* Review regressions of F5: Iota instantiates fresh placeholders only; the
+ * displayed binders avoid ambient dimensions; a path-valued position is
+ * lifted to a path abstraction. */
+static void elimination_capture(void) {
+    cc_entry_id i = OK(cc_instr_dimension(k, 0)), j = OK(cc_instr_dimension(k, 1));
+    cc_judgement_id nat = OK(cc_instr_nat(k)), zero = OK(cc_instr_zero(k));
+
+    /* Box { box(n : Nat); }, and the clause λ x. n, whose n is the admission
+     * entry, free: elim(box(0)) is (λ x. n)(0). */
+    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_BOX, 0));
+    cc_entry_id bs = OK(cc_instr_extend(k, former_u0(), S_BOX));
+    cc_entry_id bn = OK(cc_instr_extend(k, nat, BOX_N));
+    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, bn, var(bs))), BOX));
+    cc_judgement_id boxes = OK(cc_instr_sort_begin(k, OK(cc_instr_signature_close(k, sig))));
+    cc_judgement_id box = OK(cc_instr_construct(k, boxes, 0));
+    cc_judgement_id constant = OK(cc_instr_lambda(k, OK(cc_instr_extend(k, boxes, BOX_Z)), nat));
+    cc_judgement_id opened = OK(cc_instr_eliminator(k, constant));
+    cc_entry_id bx = OK(cc_instr_extend(k, nat, BOX_X));
+    cc_judgement_id target = OK(cc_instr_pi(k, bx, OK(cc_instr_apply(k, constant, OK(cc_instr_apply(k, box, var(bx)))))));
+    assert(ck_alpha_equal(k, term_of(target), type_of(opened)));
+    cc_judgement_id to_nat = OK(cc_instr_step(k, OK(cc_instr_refl(k, target)), 1, (const uint8_t[]){1}, 1, CC_STEP_BETA));
+    cc_judgement_id clause = OK(cc_instr_convert(k, OK(cc_instr_lambda(k, bx, var(bn))), OK(cc_instr_symmetry(k, to_nat))));
+    cc_judgement_id box_elim = OK(cc_instr_eliminator_close(k, OK(cc_instr_eliminator_clause(k, opened, clause))));
+    cc_term on_box = iota_of(OK(cc_instr_apply(k, box_elim, OK(cc_instr_apply(k, box, zero)))));
+    assert(on_box == term_of(OK(cc_instr_apply(k, clause, zero))));
+
+    /* The motive F @ i, whose free dimension is the circle loop's binder:
+     * loop's clause is PathP(j. (F @ i)(loop @ j), fb, fb). */
+    cc_judgement_id s1 = OK(cc_instr_sort_begin(k, circle_signature));
+    cc_judgement_id base = OK(cc_instr_construct(k, s1, 0)), loop = OK(cc_instr_construct(k, s1, 1));
+    cc_judgement_id family = OK(cc_instr_pi(k, OK(cc_instr_extend(k, s1, AMB_Z)), universe(lconst(0))));
+    cc_entry_id pp = OK(cc_instr_extend(k, family, AMB_P));
+    cc_entry_id f = OK(cc_instr_extend(k, OK(cc_instr_path(k, j, family, var(pp), var(pp))), AMB_F));
+    cc_judgement_id motive = OK(cc_instr_path_apply(k, var(f), i, 0));
+    cc_entry_id fb = OK(cc_instr_extend(k, OK(cc_instr_apply(k, motive, base)), AMB_FB));
+    cc_judgement_id with_base = OK(cc_instr_eliminator_clause(k, OK(cc_instr_eliminator(k, motive)), var(fb)));
+    cc_judgement_id ends[2];
+    for (unsigned e = 0; e < 2; ++e) {
+        cc_judgement_id at_end = OK(cc_instr_apply(k, motive, OK(cc_instr_path_apply(k, loop, 0, e))));
+        cc_judgement_id to_base = OK(cc_instr_step(k, OK(cc_instr_refl(k, at_end)), 1, (const uint8_t[]){1}, 1,
+                                                   CC_STEP_PATH));
+        ends[e] = OK(cc_instr_convert(k, var(fb), OK(cc_instr_symmetry(k, to_base))));
+    }
+    cc_judgement_id loop_type = OK(cc_instr_path(k, j, OK(cc_instr_apply(k, motive, OK(cc_instr_path_apply(k, loop, j, 0)))),
+                                                 ends[0], ends[1]));
+    assert(ck_alpha_equal(k, term_of(loop_type), type_of(with_base)));
+    OK(cc_instr_eliminator_close(k, OK(cc_instr_eliminator_clause(k, with_base,
+        var(OK(cc_instr_extend(k, loop_type, AMB_FL)))))));
+
+    /* PW { base; loop : base = base; wrap(p : base = base) : base = base; }. */
+    sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_PW, 0));
+    cc_entry_id s = OK(cc_instr_extend(k, former_u0(), S_PW));
+    sig = OK(cc_instr_signature_constructor(k, sig, var(s), PW_BASE));
+    cc_entry_id pbase = OK(cc_instr_extend(k, var(s), PW_BASE));
+    cc_judgement_id around = OK(cc_instr_path(k, i, var(s), var(pbase), var(pbase)));
+    sig = OK(cc_instr_signature_constructor(k, sig, around, PW_LOOP));
+    OK(cc_instr_extend(k, around, PW_LOOP));
+    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, OK(cc_instr_extend(k, around, PW_P)), around)), PW_WRAP));
+    cc_judgement_id pw = OK(cc_instr_sort_begin(k, OK(cc_instr_signature_close(k, sig))));
+    cc_judgement_id b0 = OK(cc_instr_construct(k, pw, 0)), l0 = OK(cc_instr_construct(k, pw, 1));
+    cc_judgement_id w0 = OK(cc_instr_construct(k, pw, 2));
+    cc_entry_id v = motive_over(pw, PW_V);
+    cc_entry_id pv = OK(cc_instr_extend(k, at(v, b0), PW_PV));
+    cc_entry_id pl = OK(cc_instr_extend(k, path_over(v, l0, i, var(pv)), PW_PL));
+    cc_judgement_id loops = OK(cc_instr_path(k, i, pw, b0, b0));
+    cc_entry_id pe = OK(cc_instr_extend(k, loops, PW_PE));
+    cc_entry_id pbar = OK(cc_instr_extend(k, path_over(v, var(pe), i, var(pv)), PW_PBAR));
+    cc_judgement_id wrap_type = OK(cc_instr_pi(k, pe, OK(cc_instr_pi(k, pbar,
+        path_over(v, OK(cc_instr_apply(k, w0, var(pe))), i, var(pv))))));
+    cc_judgement_id opened_pw = OK(cc_instr_eliminator_clause(k, OK(cc_instr_eliminator_clause(k,
+        OK(cc_instr_eliminator(k, var(v))), var(pv))), var(pl)));
+    assert(ck_alpha_equal(k, term_of(wrap_type), type_of(opened_pw)));
+    cc_entry_id mw = OK(cc_instr_extend(k, wrap_type, PW_MW));
+    cc_judgement_id pw_elim = OK(cc_instr_eliminator_close(k, OK(cc_instr_eliminator_clause(k, opened_pw, var(mw)))));
+    /* elim(wrap(p0) @ j) is m_wrap(p0, ⟨i⟩ elim(p0 @ i)) @ j. */
+    cc_entry_id p0 = OK(cc_instr_extend(k, loops, PW_P0));
+    cc_term reduced = iota_of(OK(cc_instr_apply(k, pw_elim, OK(cc_instr_path_apply(k,
+        OK(cc_instr_apply(k, w0, var(p0))), j, 0)))));
+    assert(kind(reduced) == CC_PAPP && kind(child(reduced, 1)) == CC_PATH);
+    cc_term applied = child(reduced, 0);
+    cc_judgement_id lifted_p0 = OK(cc_instr_path_lambda(k, i, OK(cc_instr_apply(k, pw_elim,
+        OK(cc_instr_path_apply(k, var(p0), i, 0))))));
+    assert(child(child(applied, 0), 0) == term_of(var(mw)) && child(child(applied, 0), 1) == term_of(var(p0)));
+    assert(ck_alpha_equal(k, child(applied, 1), term_of(lifted_p0)));
+    /* At j = 0 both orders give pv: the boundary, then elim; or Iota, then
+     * the path step through the displayed annotation. */
+    cc_judgement_id at_zero = OK(cc_instr_apply(k, pw_elim, OK(cc_instr_path_apply(k,
+        OK(cc_instr_apply(k, w0, var(p0))), 0, 0))));
+    assert(reduct(at_zero, CC_STEP_WHNF) == term_of(var(pv)));
+    cc_judgement_id by_iota = OK(cc_instr_step(k, OK(cc_instr_refl(k, at_zero)), 1, NULL, 0, CC_STEP_IOTA));
+    assert(info(OK(cc_instr_step(k, by_iota, 1, NULL, 0, CC_STEP_PATH))).other == term_of(var(pv)));
+}
+
 /* Section 3.2's invariant: every path application in a judgement carries
  * its annotation, a path type, which boundary reduction reads. */
 static void annotated(cc_term t, unsigned char *seen) {
@@ -1275,6 +1370,7 @@ int main(void) {
     boundaries();
     kan();
     elimination();
+    elimination_capture();
     annotations();
     refusals();
     commits();
