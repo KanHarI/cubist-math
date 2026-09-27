@@ -41,6 +41,23 @@ th, td { padding: 11px 13px; text-align: left; vertical-align: top; border-botto
 th { background: #edf2e9; font-weight: 600; }
 .note { padding: 14px 18px; border-left: 3px solid #789782; background: #edf2e9; }
 .math { font-family: Georgia, "Times New Roman", serif; font-size: 1.15em; }
+/* Homotopy drawings: squares in the (i, j) plane, i to the right, j upwards. */
+.homotopy { display: flex; flex-wrap: wrap; gap: 16px 22px; margin: 18px 0; }
+.homotopy figure { margin: 0; padding: 12px 14px 10px; border: 1px solid #dce2dc; border-radius: 8px; background: #fff; }
+.homotopy svg { display: block; width: 240px; max-width: 100%; height: auto; }
+.homotopy figcaption { max-width: 240px; margin-top: 6px; color: #526459; font-size: 13px; line-height: 1.5; }
+.homotopy .face { fill: #f4f8f2; }
+.homotopy .edge { stroke: #346447; stroke-width: 2.5; }
+.homotopy .constant { stroke: #9bb3a2; stroke-width: 2.5; stroke-dasharray: 5 5; }
+.homotopy .level { fill: none; stroke: #b9cbbd; stroke-width: 1.2; }
+.homotopy .diagonal { stroke: #b0652b; stroke-width: 2; stroke-dasharray: 7 4; }
+.homotopy .arrowhead { fill: #346447; }
+.homotopy .corner { fill: #1f3b2a; }
+.homotopy .axis { stroke: #789782; stroke-width: 1.5; }
+.homotopy text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; fill: #1f3b2a; }
+.homotopy .faint { fill: #789782; }
+.homotopy .diagonal-label { fill: #b0652b; font-weight: 600; }
+.homotopy .axis-label { fill: #526459; font-style: italic; }
 dt { margin-top: 16px; font-weight: 600; }
 dd { margin: 5px 0 0; }
 @media (max-width: 850px) {
