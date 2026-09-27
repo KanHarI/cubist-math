@@ -49,6 +49,7 @@ cc_term cc_kernel_relocated(const cc_kernel *k, cc_term term) {
 
 bool cc_kernel_commit_checkpoint(cc_kernel *k) {
     if (!k || !k->checkpoint_count || k->error[0]) return false;
+    ck_standalone(k);
     size_t base = k->checkpoint_count, count = k->count - base;
     cc_term *map = calloc(count ? count : 1, sizeof *map);
     if (!map) return ck_fail(k, "Checkpoint compaction allocation failed.");

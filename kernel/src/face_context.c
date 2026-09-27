@@ -32,7 +32,7 @@ cc_formula_id ck_clause_formula(cc_kernel *k, cc_clause clause) {
         ck_fail(k, "Composition face allocation failed.");
         return 0;
     }
-    cc_formula_id id = cc_kernel_formula(k, &phi);
+    cc_formula_id id = ck_formula(k, &phi);
     cc_clear(&phi);
     return id;
 }

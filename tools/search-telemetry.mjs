@@ -31,10 +31,10 @@ export function countingChooser(inner = heuristicChooser) {
       counts.listings++;
       return inner.rank(point);
     },
-    observe(point, move, outcome) {
+    observe(point, move, outcome, error) {
       const entry = counts.moves[moveName(move)] ??= {};
       entry[outcome] = (entry[outcome] ?? 0) + 1;
-      inner.observe?.(point, move, outcome);
+      inner.observe?.(point, move, outcome, error);
     },
   };
 }
@@ -43,8 +43,9 @@ export function countingChooser(inner = heuristicChooser) {
 // `sink`, in the order reached: its depth (comparisons nest, as descending
 // compares parts), the steps the comparison had taken, the kinds of the two
 // heads, and each listing's open moves, the kernel steps spent choosing (the
-// guide's queries), and the moves made with their outcomes and kernel steps.
-// A move's steps include the comparisons nested in it. Reads the kernel's
+// guide's queries), and the moves made with their outcomes and kernel steps,
+// a move that threw included. A move's steps include the comparisons nested
+// in it. Reads the kernel's
 // work before and after each move, so it costs more than counting.
 export function recordingChooser(inner, kernel, sink) {
   const steps = () => kernelSteps(kernel.work());
@@ -70,11 +71,11 @@ export function recordingChooser(inner, kernel, sink) {
       }
       listing.choosing += steps() - state.mark;
     },
-    observe(at, move, outcome) {
+    observe(at, move, outcome, error) {
       const state = open.get(at), after = steps();
       state.record.listings.at(-1).made.at(-1).push(outcome, after - state.before);
       state.mark = after;
-      inner.observe?.(at, move, outcome);
+      inner.observe?.(at, move, outcome, error);
     },
   };
 }

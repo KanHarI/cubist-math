@@ -282,11 +282,22 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
 cc_term cc_kernel_term(cc_kernel *k, cc_term_kind kind, uint32_t payload,
                        cc_term a, cc_term b, cc_term c, cc_term d) {
     /* Building syntax is no operation: an error here is charged to none. */
-    if (k) k->work_phase = CC_WORK_NONE;
+    ck_standalone(k);
     return ck_make(k, kind, payload, a, b, c, d);
 }
 
+/* A public entry point that starts no operation (cc_kernel_work): an error
+ * it records is charged to nothing, not to the operation before it. */
+void ck_standalone(cc_kernel *k) {
+    if (k) k->work_phase = CC_WORK_NONE;
+}
+
 cc_formula_id cc_kernel_formula(cc_kernel *k, const cc_formula *f) {
+    ck_standalone(k);
+    return ck_formula(k, f);
+}
+
+cc_formula_id ck_formula(cc_kernel *k, const cc_formula *f) {
     if (!k || !f || !cc_valid_sort(f->sort) || k->error[0])
         return 0;
     for (size_t i = 1; i < k->formula_count; ++i)
@@ -339,6 +350,7 @@ uint32_t ck_fresh_symbol(cc_kernel *k) {
 }
 
 uint32_t cc_kernel_fresh_symbol(cc_kernel *k) {
+    ck_standalone(k);
     return k ? ck_fresh_symbol(k) : 0;
 }
 
