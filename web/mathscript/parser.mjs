@@ -222,11 +222,15 @@ export function parse(source, typeOnly = false) {
         clauses.push({ kind: "clause", constructor, args, names, body, start: constructor.start, end });
       }
       const end = take("}").end;
-      a = { kind: "match", motiveName, value, type, clauses, start: t.start, end };
+      a = { kind: "match", motiveName, value, type, start: t.start, end };
+      // The legacy shape keeps its fields; its clauses stay readable but are
+      // not enumerated, so a walk over the tree meets each body once.
       if (clauses.length === 2 && clauses[0].constructor.text === "left" && clauses[1].constructor.text === "right"
-          && clauses.every(clause => !clause.args && clause.names.length === 1))
+          && clauses.every(clause => !clause.args && clause.names.length === 1)) {
         Object.assign(a, { left: clauses[0].names[0], leftBody: clauses[0].body,
           right: clauses[1].names[0], rightBody: clauses[1].body });
+        Object.defineProperty(a, "clauses", { value: clauses, enumerable: false });
+      } else a.clauses = clauses;
     } else if (t.text === "unpack" && peek() !== "(") {
       const value = expr();
       take("as");
@@ -352,9 +356,10 @@ export function parse(source, typeOnly = false) {
       // A qualified name, T.squash, is tight too: a name, a dot and a name.
       if (a.kind === "name" && peek() === "." && ts[i - 1].end === ts[i].start
           && /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text) && ts[i + 1].start === ts[i].end) {
-        take(".");
+        const dot = take(".");
         const member = take();
-        a = { kind: "name", name: `${a.name}.${member.text}`, start: a.start, end: member.end };
+        a = { kind: "name", name: `${a.name}.${member.text}`, qualifiedDot: { start: dot.start, end: dot.end },
+          start: a.start, end: member.end };
         continue;
       }
       // A projection p.1 or p.2 is tight: no space on either side of the dot.

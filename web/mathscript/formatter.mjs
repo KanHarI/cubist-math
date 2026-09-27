@@ -86,6 +86,8 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
     if (!node || typeof node !== "object") return;
     if (node.kind === "withUnfolding") expressionBlockEnds.add(node.end);
     if (node.kind === "projection") projectionDots.add(node.dot.start);
+    // A qualified name's dot is tight too: T.squash.
+    if (node.qualifiedDot) projectionDots.add(node.qualifiedDot.start);
     // Only declaration/let assignments introduce an indented right-hand side.
     // An equality inside an annotated definition's type is not an assignment.
     const valueStart = node.valueStart ?? (node.kind === "let" ? node.value?.start : undefined);

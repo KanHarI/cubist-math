@@ -140,3 +140,51 @@ def shadowed(n : N) : N := match n { zero => zero; succ(n) => shadowed(n); };
   // A clause may name its argument as the parameter was named.
   ok(get("shadowed"));
 });
+
+test("recursion only where the match is the whole body, and with the matched parameter rebound", async t => {
+  const { get } = await check(t, `${naturals}
+def wrapped(n : N) : N := succ(match n return N { zero => zero; succ(k) => wrapped(k); });
+def captured(n : N) : N := match n { zero => n; succ(k) => captured(k); };
+def constant_zero : captured(succ(succ(zero))) = zero { rfl; }
+def not_identity : captured(succ(zero)) = succ(zero) { rfl; }
+def via_block(n : N) : N { exact match n { zero => zero; succ(k) => via_block(k); }; }
+def via_value(n : N) := match n return N { zero => zero; succ(k) => via_value(k); };
+`);
+  // Around the match, a call's recursive result would omit the succ.
+  refused(get("wrapped"), /wrapped is being defined: it can call itself only on an argument of a constructor/);
+  // n in the zero clause is zero there, on every recursive call: f is constant zero.
+  for (const name of ["captured", "constant_zero", "via_block", "via_value"]) ok(get(name));
+  refused(get("not_identity"), /./);
+});
+
+test("a clause's own names shadow the declaration's name and its matched parameter", async t => {
+  const { get } = await check(t, `${naturals}
+def f(n : N) : N := match n { zero => zero; succ(f) => f; };
+def predecessor : f(succ(succ(zero))) = succ(zero) { rfl; }
+def g(n : N) : N := match n { zero => zero; succ(n) => n; };
+def also_predecessor : g(succ(succ(zero))) = succ(zero) { rfl; }
+`);
+  for (const name of ["f", "predecessor", "g", "also_predecessor"]) ok(get(name));
+});
+
+test("the formatter keeps a qualified name's dot tight", async () => {
+  const { formatMathScript } = await import("../web/mathscript/formatter.mjs");
+  const source = "def same(x, y : Trunc(U0, Nat)) : x = y := Trunc.squash(x, y);\n";
+  const formatted = formatMathScript(source);
+  assert.match(formatted, /Trunc\.squash\(x, y\)/);
+  assert.equal(formatMathScript(formatted), formatted);
+});
+
+test("nested legacy matches are walked once: parsing and formatting stay linear", async () => {
+  const { parse } = await import("../web/mathscript/parser.mjs");
+  const { formatMathScript } = await import("../web/mathscript/formatter.mjs");
+  let body = "0";
+  for (let depth = 0; depth < 40; depth++) body = `match x return Nat { left a => ${body}; right b => 0; }`;
+  const source = `def deep(x : Nat or Nat) : Nat := ${body};\n`;
+  const started = performance.now();
+  const match = parse(source).declarations[0].body[0].value;
+  assert.ok(match.leftBody && match.clauses.length === 2, "the legacy fields and the clauses are both there");
+  assert.ok(!Object.keys(match).includes("clauses"), "the legacy shape's clauses are not enumerated");
+  formatMathScript(source);
+  assert.ok(performance.now() - started < 5000, "a doubled walk would take 2^40 steps");
+});
