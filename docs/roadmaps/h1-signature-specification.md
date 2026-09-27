@@ -750,10 +750,15 @@ forms are different terms, so different types.
   canonical. With `d_k ≥ 1` it is a path, and `(c_k … ) @ r_1 … @ r_d` with no
   `r_l` an endpoint is canonical.
 - **Boundary reduction.** `(c_k …) @ 0` and `(c_k …) @ 1` reduce to the
-  endpoints of its type: by the existing `Path` step, which reads the path
-  application's type annotation, and by weak head reduction, which reads the
-  signature. This is the design's "a constructor evaluated on a face of its
-  dimensions reduces to its boundary".
+  endpoints of its type: by the existing `Path` step and by weak head
+  reduction, both of which read the path application's type annotation.
+  `PathApply` and `PathAt` record the applied path's type there, and at a
+  constructor that type is the constructor type at the instance, so the
+  annotation's endpoints are the signature's boundary, substituted. Every
+  path application the kernel builds carries its annotation; the families
+  that build terms, F4's transport and F5's `Iota`, keep that invariant, and
+  no separate rule reads the signature. This is the design's "a constructor
+  evaluated on a face of its dimensions reduces to its boundary".
 - Eta for paths gives `c_k … ≡ ⟨i⟩ (c_k …) @ i` as for any path.
 
 ### 3.3 Kan structure of a data sort
@@ -1244,8 +1249,10 @@ open or rolled-back signature.
 
 ### 5.4 Family F3: boundary reduction
 
-The existing `Path` step reduces `(c_k …) @ ε` through the application's type
-annotation. `Whnf` and `Normalize` reduce it by the signature.
+The existing `Path` step, `Whnf` and `Normalize` reduce `(c_k …) @ ε` through
+the application's type annotation, which is the constructor type at the
+instance (3.2). F3 adds no rule: it tests that these reductions reach the
+signature's boundaries, on faces reached in either order.
 
 **Tests:** the endpoint of `loop`, `push` and `merid`; the four corners of
 `surf` in `Torus`, in both orders; a constructor at `i ∧ j` restricted to

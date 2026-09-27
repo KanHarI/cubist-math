@@ -7,12 +7,13 @@
 #include "term_internal.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static cc_kernel *k;
 /* Signatures admitted by the sections below, for the instance tests. */
 static uint32_t nat_signature, list_signature, circle_signature, trunc_signature, pointed_signature,
-    tagged_signature, tree_signature, wrapped_signature, branch_signature;
+    tagged_signature, tree_signature, wrapped_signature, branch_signature, torus_signature;
 
 static uint32_t ok(uint32_t id, const char *what, int line) {
     if (!id) {
@@ -80,7 +81,9 @@ enum {
     S_TAG = 450, TAG_A, TAG_X, TAG_B, TAG,
     S_HID = 460, HID_BASE, HID_LOOP, HID_Y, HID_T, HID_C,
     S_GEN = 470, GEN_C,
-    S_OPEN = 480, OPEN_C, TREE_N, S_GONE
+    S_OPEN = 480, OPEN_C, TREE_N, S_GONE,
+    S_SUSP = 490, SUSP_A, NORTH, SOUTH, MERID, SUSP_X,
+    S_PUSH = 500, PUSH_C, PUSH_A, PUSH_B, PUSH_ARG, PUSH_F, PUSH_G, PUSH_X, PUSH_Y, INL, INR, PUSH_Z, PUSH, PUSH_N
 };
 
 /* ⊢ U(0) : U(1), the former of a signature with no parameters in U0. */
@@ -187,7 +190,7 @@ static void squares(void) {
     cc_judgement_id q1 = OK(cc_instr_convert(k, var(q), OK(cc_instr_symmetry(k, eq1))));
     cc_judgement_id surf_type = OK(cc_instr_path(k, i, inner, q0, q1));
     sig = OK(cc_instr_signature_constructor(k, sig, surf_type, SURF));
-    uint32_t torus = OK(cc_instr_signature_close(k, sig));
+    uint32_t torus = torus_signature = OK(cc_instr_signature_close(k, sig));
     assert(constructor(torus, 3).dimensions == 2);
 
     /* S2: base; surf : Path(i; Path(j; s, base, base), ⟨j⟩ base, ⟨j⟩ base). */
@@ -615,6 +618,154 @@ static void generative(void) {
     assert(!cc_kernel_error(k)[0]);
 }
 
+/* The other side of a reflexivity after one step at its root. */
+static cc_term reduct(cc_judgement_id j, cc_step_rule rule) {
+    return info(OK(cc_instr_step(k, OK(cc_instr_refl(k, j)), 1, NULL, 0, rule))).other;
+}
+
+/* F3: a constructor at an endpoint of one of its dimensions reduces to that
+ * boundary of its type, by the path step, Whnf and Normalize, in whichever
+ * order the faces are reached (sections 2.5, 3.2 and 5.4). */
+static void boundaries(void) {
+    cc_judgement_id nat = OK(cc_instr_nat(k)), zero = OK(cc_instr_zero(k));
+    cc_judgement_id u0 = universe(lconst(0));
+    /* loop @ 0 and loop @ 1 are base. */
+    cc_judgement_id s1 = OK(cc_instr_sort_begin(k, circle_signature));
+    cc_term base = term_of(OK(cc_instr_construct(k, s1, 0)));
+    cc_judgement_id loop = OK(cc_instr_construct(k, s1, 1));
+    for (unsigned e = 0; e < 2; ++e) {
+        cc_judgement_id at = OK(cc_instr_path_apply(k, loop, 0, e));
+        assert(reduct(at, CC_STEP_PATH) == base && reduct(at, CC_STEP_WHNF) == base);
+        assert(reduct(at, CC_STEP_NORMALIZE) == base);
+    }
+
+    /* Susp(x < ω, A : U(x)) { north; south; merid(a : A) : north = south; }:
+     * merid(0) @ 1 is south. */
+    cc_entry_id xe = OK(cc_instr_level(k, X));
+    cc_judgement_id ux = universe(lvar(X));
+    cc_entry_id sa = OK(cc_instr_extend(k, ux, SUSP_A));
+    cc_judgement_id sig = OK(cc_instr_signature_begin(k, OK(cc_instr_level_pi(k, xe, OK(cc_instr_pi(k, sa, ux)))),
+                                                      CC_UNTRUNCATED, S_SUSP, 0));
+    cc_entry_id s = OK(cc_instr_extend(k, ux, S_SUSP));
+    sig = OK(cc_instr_signature_constructor(k, sig, var(s), NORTH));
+    cc_entry_id north = OK(cc_instr_extend(k, var(s), NORTH));
+    sig = OK(cc_instr_signature_constructor(k, sig, var(s), SOUTH));
+    cc_entry_id south = OK(cc_instr_extend(k, var(s), SOUTH));
+    cc_entry_id i = OK(cc_instr_dimension(k, 0)), j = OK(cc_instr_dimension(k, 1));
+    cc_entry_id a = OK(cc_instr_extend(k, var(sa), SUSP_X));
+    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, a, OK(cc_instr_path(k, i, var(s), var(north),
+                                                                                          var(south))))), MERID));
+    cc_judgement_id susp = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, OK(cc_instr_signature_close(k, sig)))),
+                                                      nat));
+    cc_judgement_id merid0 = OK(cc_instr_apply(k, OK(cc_instr_construct(k, susp, 2)), zero));
+    cc_term south_term = term_of(OK(cc_instr_construct(k, susp, 1)));
+    cc_judgement_id at1 = OK(cc_instr_path_apply(k, merid0, 0, 1));
+    assert(reduct(at1, CC_STEP_PATH) == south_term && reduct(at1, CC_STEP_WHNF) == south_term);
+
+    /* Push(x < ω, C A B : U(x), f : C → A, g : C → B) { inl(a : A); inr(b : B);
+     * push(c : C) : inl(f(c)) = inr(g(c)); } at Nat, Nat, Nat, λ n. n and
+     * succ: push(0) @ 0 is inl((λ n. n)(0)), which normalizes to inl(0), and
+     * push(0) @ 1 normalizes to inr(1). */
+    cc_entry_id pc = OK(cc_instr_extend(k, ux, PUSH_C)), pa = OK(cc_instr_extend(k, ux, PUSH_A));
+    cc_entry_id pb = OK(cc_instr_extend(k, ux, PUSH_B));
+    cc_entry_id arg = OK(cc_instr_extend(k, var(pc), PUSH_ARG));
+    cc_entry_id pf = OK(cc_instr_extend(k, OK(cc_instr_pi(k, arg, var(pa))), PUSH_F));
+    cc_entry_id pg = OK(cc_instr_extend(k, OK(cc_instr_pi(k, arg, var(pb))), PUSH_G));
+    cc_judgement_id former = OK(cc_instr_level_pi(k, xe, OK(cc_instr_pi(k, pc, OK(cc_instr_pi(k, pa,
+        OK(cc_instr_pi(k, pb, OK(cc_instr_pi(k, pf, OK(cc_instr_pi(k, pg, ux))))))))))));
+    sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, S_PUSH, 0));
+    s = OK(cc_instr_extend(k, ux, S_PUSH));
+    cc_entry_id left = OK(cc_instr_extend(k, var(pa), PUSH_X)), right = OK(cc_instr_extend(k, var(pb), PUSH_Y));
+    cc_judgement_id inl_type = OK(cc_instr_pi(k, left, var(s))), inr_type = OK(cc_instr_pi(k, right, var(s)));
+    sig = OK(cc_instr_signature_constructor(k, sig, inl_type, INL));
+    cc_entry_id inl = OK(cc_instr_extend(k, inl_type, INL));
+    sig = OK(cc_instr_signature_constructor(k, sig, inr_type, INR));
+    cc_entry_id inr = OK(cc_instr_extend(k, inr_type, INR));
+    cc_entry_id c = OK(cc_instr_extend(k, var(pc), PUSH_Z));
+    cc_judgement_id glued = OK(cc_instr_path(k, i, var(s), OK(cc_instr_apply(k, var(inl), OK(cc_instr_apply(k, var(pf), var(c))))),
+                                             OK(cc_instr_apply(k, var(inr), OK(cc_instr_apply(k, var(pg), var(c)))))));
+    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, c, glued)), PUSH));
+    uint32_t push_signature = OK(cc_instr_signature_close(k, sig));
+    cc_entry_id n = OK(cc_instr_extend(k, nat, PUSH_N));
+    cc_judgement_id push = OK(cc_instr_sort_begin(k, push_signature));
+    const cc_judgement_id parameters[] = {nat, nat, nat, OK(cc_instr_lambda(k, n, var(n))),
+                                          OK(cc_instr_lambda(k, n, OK(cc_instr_succ(k, var(n)))))};
+    for (unsigned p = 0; p < 5; ++p)
+        push = OK(cc_instr_sort_parameter(k, push, parameters[p]));
+    assert(type_of(push) == term_of(u0));
+    cc_judgement_id push0 = OK(cc_instr_apply(k, OK(cc_instr_construct(k, push, 2)), zero));
+    cc_term inl0 = term_of(OK(cc_instr_apply(k, OK(cc_instr_construct(k, push, 0)), zero)));
+    cc_term inr1 = term_of(OK(cc_instr_apply(k, OK(cc_instr_construct(k, push, 1)), OK(cc_instr_succ(k, zero)))));
+    assert(reduct(OK(cc_instr_path_apply(k, push0, 0, 0)), CC_STEP_NORMALIZE) == inl0);
+    assert(reduct(OK(cc_instr_path_apply(k, push0, 0, 1)), CC_STEP_NORMALIZE) == inr1);
+    cc_term head = reduct(OK(cc_instr_path_apply(k, push0, 0, 0)), CC_STEP_WHNF);
+    assert(kind(head) == CC_APP && child(head, 0) == term_of(OK(cc_instr_construct(k, push, 0))));
+
+    /* The torus's four corners are its point, reached through the square's
+     * outer endpoint first, as the whole application's step, or through its
+     * inner one, as a step inside it. */
+    cc_judgement_id torus = OK(cc_instr_sort_begin(k, torus_signature));
+    cc_term point = term_of(OK(cc_instr_construct(k, torus, 0)));
+    cc_judgement_id surf = OK(cc_instr_construct(k, torus, 3));
+    for (unsigned e1 = 0; e1 < 2; ++e1)
+        for (unsigned e2 = 0; e2 < 2; ++e2) {
+            cc_judgement_id corner = OK(cc_instr_path_apply(k, OK(cc_instr_path_apply(k, surf, 0, e1)), 0, e2));
+            assert(reduct(corner, CC_STEP_WHNF) == point && reduct(corner, CC_STEP_NORMALIZE) == point);
+            /* Outer first: the corner, then p @ e1, then the point. Inner
+             * first: surf @ e1 is q, and q @ e2 steps through the outer
+             * annotation to p @ e1, then to the point. */
+            cc_judgement_id outer = OK(cc_instr_refl(k, corner));
+            for (unsigned step = 0; step < 2; ++step)
+                outer = OK(cc_instr_step(k, outer, 1, NULL, 0, CC_STEP_PATH));
+            cc_judgement_id inner = OK(cc_instr_step(k, OK(cc_instr_refl(k, corner)), 1, (const uint8_t[]){0}, 1,
+                                                     CC_STEP_PATH));
+            assert(kind(child(info(inner).other, 0)) == CC_CON && payload(child(info(inner).other, 0)) == 2);
+            for (unsigned step = 0; step < 2; ++step)
+                inner = OK(cc_instr_step(k, inner, 1, NULL, 0, CC_STEP_PATH));
+            assert(info(outer).other == point && info(inner).other == point);
+        }
+
+    /* loop @ (i ∧ j), restricted to j = 0, is loop @ 0, and so base. */
+    cc_formula meet, left_i, right_j;
+    cc_init(&meet, CC_INTERVAL); cc_init(&left_i, CC_INTERVAL); cc_init(&right_j, CC_INTERVAL);
+    assert(cc_generator(&left_i, 0, true) == CC_OK && cc_generator(&right_j, 1, true) == CC_OK &&
+           cc_meet(&meet, &left_i, &right_j) == CC_OK);
+    cc_formula_id both = cc_kernel_formula(k, &meet);
+    cc_clear(&meet); cc_clear(&left_i); cc_clear(&right_j);
+    cc_judgement_id diagonal = OK(cc_instr_path_at(k, loop, both));
+    cc_judgement_id restricted = OK(cc_instr_endpoint(k, diagonal, j, 0));
+    assert(reduct(restricted, CC_STEP_PATH) == base && reduct(restricted, CC_STEP_WHNF) == base);
+    (void)i;
+}
+
+/* Section 3.2's invariant: every path application in a judgement carries
+ * its annotation, which boundary reduction reads. */
+static void annotated(cc_term t, unsigned char *seen) {
+    if (!t || seen[t])
+        return;
+    seen[t] = 1;
+    cc_term_kind node_kind;
+    cc_term children[4];
+    assert(cc_kernel_node(k, t, &node_kind, NULL, children));
+    assert(node_kind != CC_PAPP || children[1]);
+    for (unsigned c = 0; c < 4; ++c)
+        annotated(children[c], seen);
+}
+
+static void annotations(void) {
+    size_t nodes = 0, bytes = 0;
+    cc_kernel_arena(k, &nodes, &bytes);
+    unsigned char *seen = calloc(nodes + 1, 1);
+    assert(seen);
+    for (cc_judgement_id id = 1; id < cc_kernel_judgement_count(k); ++id) {
+        cc_judgement_info j = info(id);
+        annotated(j.term, seen);
+        annotated(j.other, seen);
+        annotated(j.type, seen);
+    }
+    free(seen);
+}
+
 /* Refusals of section 10.1. Each uses a fresh open signature over U0 whose
  * sort entry is s. */
 static cc_judgement_id open_bad(cc_entry_id *s, uint32_t sort) {
@@ -730,6 +881,8 @@ int main(void) {
     carried_types();
     generative();
     instances();
+    boundaries();
+    annotations();
     refusals();
     commits();
     cc_kernel_free(k);

@@ -1,6 +1,7 @@
-// Declared types (H1), families F1, F2 and F6, through the WASM bridge: the
-// extension gate, admission one constructor at a time, the generated squash,
-// instances and their constructors, and refusals reported as kernel errors. The C tests in
+// Declared types (H1), families F1, F2, F3 and F6, through the WASM bridge:
+// the extension gate, admission one constructor at a time, the generated
+// squash, instances, their constructors and boundaries, and refusals reported
+// as kernel errors. The C tests in
 // kernel/tests/test_signatures.c cover the acceptance cases in full.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -117,4 +118,23 @@ test("instances of admitted signatures give their constructors", t => {
   const p0 = g.sortLevel(g.sortBegin(g.signatureClose(pointed)), syntax.encodeLevel(0));
   assert.equal(g.judgement(p0).type, g.judgement(g.universe(syntax.encodeLevel(1))).term);
   assert.equal(g.judgement(g.construct(p0, 0)).rule, "construct");
+});
+
+test("a constructor at an endpoint steps to its boundary", t => {
+  const { kernel, syntax, g } = session(t);
+  kernel.setExtensions({ h1: true });
+  const u0 = g.universe(syntax.encodeLevel(0));
+  // inductive Circle { base; loop : base = base; }
+  let sig = g.signatureBegin(u0, 0, "Circle");
+  const c = g.extend(u0, "Circle");
+  sig = g.signatureConstructor(sig, g.variable(c), "base");
+  const base = g.extend(g.variable(c), "base");
+  sig = g.signatureConstructor(sig, g.path(g.dimension(0), g.variable(c), g.variable(base), g.variable(base)), "loop");
+  const circle = g.sortBegin(g.signatureClose(sig));
+  const point = g.judgement(g.construct(circle, 0)).term;
+  for (const endpoint of [0, 1])
+    for (const rule of ["path", "whnf", "normalize"]) {
+      const stepped = g.step(g.refl(g.pathApply(g.construct(circle, 1), 0, endpoint)), "other", [], rule);
+      assert.equal(g.judgement(stepped).other, point);
+    }
 });
