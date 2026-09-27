@@ -188,3 +188,24 @@ test("nested legacy matches are walked once: parsing and formatting stay linear"
   formatMathScript(source);
   assert.ok(performance.now() - started < 5000, "a doubled walk would take 2^40 steps");
 });
+
+test("recursive calls are the calls written: their types, arities and arguments", async t => {
+  const { get } = await check(t, `${naturals}
+inductive Tag(n : N) : U0 { tag; }
+def tagged(n : N) : Tag(n) := match n { zero => tag; succ(m) => tagged(m); };
+def outer_motive(n : N) : Tag(n) := match n as z return Tag(n) { zero => tag; succ(m) => outer_motive(m); };
+def refl_all(n : N) : n = n := match n { zero => refl(zero); succ(m) => refl(succ(m)); };
+def applied(n : N) : N -> N := match n { zero => fun (x : N) => x; succ(m) => fun (x : N) => applied(m(x)); };
+def dep(n : N, p : n = zero) : N := match n { zero => zero; succ(m) => dep(m, p); };
+def f(f : N -> N, n : N) : N := match n { zero => f(zero); succ(m) => f(m); };
+def shadowed_by_parameter : f(succ, succ(succ(zero))) = succ(succ(zero)) { rfl; }
+`);
+  // tagged(m) has type Tag(m), not Tag(n): the succ clause needs Tag(succ(m)).
+  refused(get("tagged"), /mismatch/i);
+  refused(get("outer_motive"), /The motive mentions n itself: write it over the matched value/);
+  ok(get("refl_all"));
+  refused(get("applied"), /m takes 0 arguments here, as an argument of the matched constructor/);
+  refused(get("dep"), /passes p unchanged, but its type mentions n, which the call changes/);
+  ok(get("f"));
+  ok(get("shadowed_by_parameter"));
+});
