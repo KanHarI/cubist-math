@@ -115,6 +115,18 @@ export class CubicalKernel {
       this.module._cb_step_budget(this.handle, Number(this.stepBudget & 0xffffffffn), Number(this.stepBudget >> 32n));
     }
   }
+  // The kernel's cumulative work (cc_kernel_work in
+  // kernel/include/cubical_kernel.h): instructions and queries started, their
+  // steps of budget, and their failures. The counters only grow, through
+  // errors and rollbacks too, so the difference of two readings is the work
+  // done in between. A step is the unit of the per-operation step budget.
+  work() {
+    this.assertOpen();
+    if (!this.module._cb_work) throw new Error("This cubical kernel module has no work counters. Rebuild it with `make wasm`.");
+    const field = index => this.module._cb_work(this.handle, index);
+    return { instructions: field(0), rejected: field(1), instructionSteps: field(2), queries: field(3),
+      failedQueries: field(4), querySteps: field(5), exhausted: field(6), deadlines: field(7) };
+  }
   // The term arena's size.
   arena() {
     this.assertOpen();

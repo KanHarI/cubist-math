@@ -2,14 +2,32 @@
  * Handle zero denotes absence/failure, never a type or term. */
 #include "term_internal.h"
 
-/* The first error of an operation is kept, with its class. */
+/* The first error of an operation is kept, with its class, and charged to
+ * the operation (cc_kernel_work). */
 bool ck_fail_as(cc_kernel *k, cc_error_kind kind, const char *message) {
     if (!k->error[0]) {
         strncpy(k->error, message, sizeof k->error - 1);
         k->error[sizeof k->error - 1] = '\0';
         k->error_kind = kind;
+        if (k->work_phase == CC_WORK_INSTRUCTION) ++k->work.rejected;
+        else if (k->work_phase == CC_WORK_QUERY) ++k->work.failed_queries;
+        if (kind == CC_ERROR_BUDGET) ++k->work.exhausted;
+        else if (kind == CC_ERROR_DEADLINE) ++k->work.deadlines;
     }
     return false;
+}
+
+void ck_operation(cc_kernel *k, unsigned phase) {
+    k->work_phase = phase;
+    if (phase == CC_WORK_INSTRUCTION) ++k->work.instructions;
+    else if (phase == CC_WORK_QUERY) ++k->work.queries;
+    k->budget = k->operation_budget;
+}
+
+void cc_kernel_work(const cc_kernel *k, cc_work_counters *out) {
+    if (!out) return;
+    if (k) *out = k->work;
+    else memset(out, 0, sizeof *out);
 }
 
 bool ck_fail(cc_kernel *k, const char *message) {
@@ -26,6 +44,10 @@ bool ck_tick(cc_kernel *k, bool checking) {
     if (!k->budget)
         return ck_fail_as(k, CC_ERROR_BUDGET, "Kernel checking/reduction budget exhausted.");
     --k->budget;
+    if (k->work_phase == CC_WORK_INSTRUCTION)
+        ++k->work.instruction_steps;
+    else
+        ++k->work.query_steps;
     if (checking)
         ++k->checking_steps;
     else
@@ -259,6 +281,8 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
 
 cc_term cc_kernel_term(cc_kernel *k, cc_term_kind kind, uint32_t payload,
                        cc_term a, cc_term b, cc_term c, cc_term d) {
+    /* Building syntax is no operation: an error here is charged to none. */
+    if (k) k->work_phase = CC_WORK_NONE;
     return ck_make(k, kind, payload, a, b, c, d);
 }
 

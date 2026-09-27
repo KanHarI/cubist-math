@@ -126,6 +126,14 @@ bool cc_kernel_check_in_cube(cc_kernel *k, cc_term raw, cc_term expected,
                               uint64_t dimensions, cc_checked_result *result) {
     if (!k || !result)
         return false;
+    k->error[0] = '\0';
+    ck_operation(k, CC_WORK_QUERY);
+    return ck_check_in_cube(k, raw, expected, assumptions, count, dimensions, result);
+}
+
+bool ck_check_in_cube(cc_kernel *k, cc_term raw, cc_term expected,
+                      const cc_assumption *assumptions, size_t count,
+                      uint64_t dimensions, cc_checked_result *result) {
     memset(result, 0, sizeof *result);
     k->error[0] = '\0';
     k->checking_steps = 0;
@@ -193,6 +201,6 @@ bool cc_kernel_check(cc_kernel *k, cc_term raw, cc_term expected,
 cc_term cc_kernel_normalize(cc_kernel *k, cc_term term) {
     if (!k || !term || term >= k->count || k->error[0])
         return 0;
-    k->budget = k->operation_budget;
+    ck_operation(k, CC_WORK_QUERY);
     return ck_normal(k, term);
 }

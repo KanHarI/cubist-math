@@ -58,6 +58,44 @@ void cc_kernel_free(cc_kernel *);
 /* Resource budget per checking/reduction operation; zero leaves it unchanged.
  * Raising it never bypasses a rule or certifies a previously rejected term. */
 void cc_kernel_set_step_budget(cc_kernel *, uint64_t steps);
+/* Kernel work, for measuring what a search costs (docs/roadmaps/
+ * learned-search.md; the work plan's L1.3 fuel).
+ *
+ * The budget. Every operation starts with the step budget set above. The
+ * operations are the instructions (cc_instr_*) and the queries: the term
+ * checker (cc_kernel_check, cc_kernel_check_in_cube, cc_kernel_define),
+ * cc_kernel_normalize, cc_kernel_whnf, cc_kernel_convertible (at most its
+ * own `steps`), and the syntax services cc_kernel_endpoint_term and
+ * cc_kernel_rename. One step is one unit of that budget: each type inference
+ * of the term checker, weak-head or normalization step, conversion
+ * comparison, substitution into a node and level normal-form node takes one,
+ * and an instruction takes one on entry, so an instruction answered from the
+ * derivation memo still costs a step. Work nested in an operation shares its
+ * budget: nothing nested resets it, whether an instruction's computation or
+ * a definition's check. An operation that runs out records a BUDGET error
+ * and makes no judgement. Building syntax (cc_kernel_term, cc_kernel_formula,
+ * cc_kernel_equiv_type) takes no step.
+ *
+ * The counters only grow. No operation, error, checkpoint, rollback or
+ * commit resets them, so the difference between two readings is the work in
+ * between, rejected and failed work included. An operation retried with a
+ * larger budget counts each time it runs, as its work is done again.
+ *   instructions       instructions started, whether accepted, answered from
+ *                      the memo or rejected. One issued while an error is
+ *                      recorded does nothing and counts nothing.
+ *   rejected           instructions that recorded an error
+ *   instruction_steps  steps taken by instructions
+ *   queries, failed_queries, query_steps: the same for queries
+ *   exhausted          operations of either kind that ran out of budget
+ *   deadlines          operations of either kind stopped by the deadline
+ * The step that finds the budget spent is not counted: an operation given a
+ * budget of n that runs out counts n steps. */
+typedef struct {
+    uint64_t instructions, rejected, instruction_steps;
+    uint64_t queries, failed_queries, query_steps;
+    uint64_t exhausted, deadlines;
+} cc_work_counters;
+void cc_kernel_work(const cc_kernel *, cc_work_counters *);
 /* Independent performance switches, enabled by default. Neither changes the
  * judgement rules. Disabling a cache discards its entries immediately. */
 enum { CC_SHARE_SYNTAX = 1, CC_REUSE_CHECKS = 2 };

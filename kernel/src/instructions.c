@@ -28,12 +28,13 @@ static void *reserve(cc_kernel *k, void *items, size_t *capacity, size_t needed,
     return grown;
 }
 
-/* Each instruction is one operation with its own budget. An instruction does
- * nothing while an earlier error is recorded. */
+/* Each instruction is one operation with its own budget, counted as kernel
+ * work (cc_kernel_work). An instruction does nothing, and counts nothing,
+ * while an earlier error is recorded. */
 static bool ready(cc_kernel *k) {
     if (!k || k->error[0])
         return false;
-    k->budget = k->operation_budget;
+    ck_operation(k, CC_WORK_INSTRUCTION);
     k->recursion = 0;
     /* The deadline bounds instructions as it bounds checking. */
     if (!ck_tick(k, true))

@@ -3,10 +3,11 @@
 // equality steps that make types agree where a rule needs them to:
 // congruence on common heads, weak-head steps as the term checker's
 // conversion takes them, the kernel's weak head normal form for heads those
-// steps do not take, eta, and a normalization when that runs long. It steers
-// by asking the term checker's conversion which parts are equal. The kernel
-// checks every instruction; a wrong search only fails, it cannot prove
-// anything.
+// steps do not take, eta, and a normalization when that runs long. Where it
+// could do several of these, a chooser picks (heuristicChooser, below); the
+// default steers by its own guide, which asks the kernel for weak heads. The
+// kernel checks every instruction; a wrong search only fails, it cannot
+// prove anything.
 import { InstructionGraph } from "./cubical-instructions.mjs";
 import { KernelError } from "./cubical-kernel.mjs";
 import { freeDimensionMask } from "./cubical-syntax.mjs";
@@ -32,6 +33,12 @@ const LONG_COMPUTATION = 64;
 // The guide (InstructionDriver.guide): how many pairs of subterms one
 // question may compare, and the kernel steps each weak head may take.
 const GUIDE_FUEL = 400, GUIDE_HEAD_STEPS = 4000;
+// A comparison's moves (InstructionDriver.agree), and the kernel steps the
+// oracle may take to answer one question.
+const FUEL = 20000, ORACLE_STEPS = 20000;
+// The search's fixed limits, for reports that must say what they measured.
+export const searchLimits = Object.freeze({ fuel: FUEL, longComputation: LONG_COMPUTATION, guideFuel: GUIDE_FUEL,
+  guideHeadSteps: GUIDE_HEAD_STEPS, oracleSteps: ORACLE_STEPS });
 // Weak heads that are constructors: two of different kinds never agree.
 const RIGID = new Set(["U", "Pi", "Sigma", "W", "LPi", "Nat", "Zero", "Succ", "Unit", "Point", "Void", "Sum",
   "Inl", "Inr", "Path", "Sup", "Pushout", "PushLeft", "PushRight", "Lam", "LLam", "PLam", "Pair"]);
@@ -53,9 +60,70 @@ const joinScopes = (...scopes) => new Map([...scopes.flatMap(scope => [...scope]
 // The children of a dimension binder that it binds.
 const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: [0] };
 
+// The search's choices (docs/roadmaps/learned-search.md, "The decision
+// problem"). `agree` rewrites two focused subterms until they are
+// alpha-equal; each time round, it stops at a branch point, lists the moves
+// open there, and asks a chooser which to make. A move is a plain object:
+//   { move: "normalize" }              both sides to normal form: a long closed
+//                                      computation, offered once per comparison
+//   { move: "descend" }                congruence: agree part by part under a
+//                                      common head, offered once per branch point
+//   { move: "step", side, rule, step } a weak-head step on one side ("left" or
+//                                      "right") by `rule`: beta, iota, path,
+//                                      face or delta, at `step.path`; delta on
+//                                      both sides is also side "both", `steps`
+//   { move: "whnf", side }             the kernel's weak head normal form
+//   { move: "eta" }                    eta-expand the side that is not a
+//                                      constructor, against one that is
+// The list is syntactic: it offers what the terms' shapes allow, and the
+// kernel checks the rest when the move is made. A step always applies. A
+// whnf or eta that turns out to change nothing leaves the point as it was.
+// A failed normalize or descend may have rewritten the sides, so the point
+// is listed again, without them.
+//
+// A chooser is { name, rank(point), observe?(point, move, outcome) }. rank
+// yields moves of point.moves, best first; the driver makes each in turn
+// until one applies, and the comparison fails when none does. observe hears
+// each move's outcome: "agreed", "progress", "stuck" (it changed nothing),
+// "changed" (it failed and may have rewritten the sides) or "deferred" (a
+// comparison inside gave up for an enclosing closed one to normalize).
+// A point is { driver, a, b, x, y, nx, ny, terms, dims, moves, round, taken,
+// depth }: the foci, their subterms and nodes when the point was reached,
+// the bound names that correspond, the moves, the listing's number at this
+// point, the steps taken by the whole comparison so far, and how many
+// comparisons enclose this one (descending compares parts, one inside the
+// other). Choosers are untrusted,
+// like the driver: a bad choice only fails, and the kernel checks each move.
+//
+// The heuristic is the driver's own order, lazily, since its tests ask the
+// guide: normalize a long closed computation unless the guide finds the
+// sides different; descend when no parts are known to differ; computation
+// steps before unfolding, left before right; unfold the later definition,
+// or both when it is the same (lazy delta reduction); then weak head normal
+// forms, left then right; then eta.
+export const heuristicChooser = Object.freeze({
+  name: "heuristic",
+  *rank(point) {
+    const { driver, moves } = point, find = (move, side) => moves.find(m => m.move === move && (!side || m.side === side));
+    const normalize = find("normalize");
+    if (normalize && driver.equal(point.x, point.y, point.terms, point.dims) !== false) yield normalize;
+    const descend = find("descend");
+    if (descend && driver.partsEqual(point.nx, point.ny, point.terms, point.dims)) yield descend;
+    const left = find("step", "left"), right = find("step", "right");
+    if (left && left.rule !== "delta") return yield left;
+    if (right && right.rule !== "delta") return yield right;
+    if (left && right) {
+      const order = driver.definitionAt(left.term, left.step) - driver.definitionAt(right.term, right.step);
+      return yield order > 0 ? left : order < 0 ? right : find("step", "both");
+    }
+    if (left || right) return yield left ?? right;
+    for (const move of moves) if (move.move === "whnf" || move.move === "eta") yield move;
+  },
+});
+
 export class InstructionDriver {
-  constructor(kernel, { graph = new InstructionGraph(kernel), fuel = 20000, guideSteps = 20000,
-                        oracle = kernel.conversionOracle ?? false } = {}) {
+  constructor(kernel, { graph = new InstructionGraph(kernel), fuel = FUEL, guideSteps = ORACLE_STEPS,
+                        oracle = kernel.conversionOracle ?? false, chooser = kernel.chooser ?? heuristicChooser } = {}) {
     this.kernel = kernel;
     this.graph = graph;
     this.fuel = fuel;
@@ -63,6 +131,10 @@ export class InstructionDriver {
     // Whether the term checker's conversion guides the search instead of the
     // driver's own guide (guide, below).
     this.oracle = oracle;
+    // Who picks the moves of `agree` (heuristicChooser, above), and how many
+    // comparisons are open, one inside another.
+    this.chooser = chooser;
+    this.depth = 0;
     this.nodes = new Map();
     // Judgements never change, so reads are cached; so are the scopes of
     // contexts, derivations by term and scope, and terms known to be in weak
@@ -811,46 +883,97 @@ export class InstructionDriver {
     // comparison tries once; when that fails, the steps go on as before.
     let untried = this.closed(a) && this.closed(b);
     if (untried) budget.untried = (budget.untried ?? 0) + 1;
+    const depth = this.depth++;
     try {
       for (;; budget.taken = (budget.taken ?? 0) + 1) {
         if (--budget.left < 0) return false;
         const x = this.subterm(a), y = this.subterm(b);
         if (this.alpha(x, y, terms, dims)) return true;
+        let normalize = false;
         if ((budget.taken ?? 0) >= LONG_COMPUTATION) {
-          if (untried) {
-            untried = false; budget.untried--;
-            if (this.equal(x, y, terms, dims) !== false && this.normalizeBoth(a, b, terms, dims)) return true;
-          } else if (budget.untried) return false;
+          if (untried) { untried = false; budget.untried--; normalize = true; }
+          else if (budget.untried) return false;
         }
-        const nx = this.node(x), ny = this.node(y);
-        if (nx.kind === ny.kind && !failed.has(`${x},${y}`) && this.sameHead(nx, ny, terms, dims) &&
-            this.partsEqual(nx, ny, terms, dims)) {
-          if (this.agreeParts(a, b, nx, terms, dims, budget)) return true;
-          // A comparison inside gave up for an enclosing closed one to try
-          // normal forms: congruence has not failed, and may be tried again.
-          if (budget.untried && budget.taken >= LONG_COMPUTATION) continue;
-          failed.add(`${x},${y}`);
-        }
-        // Computation before unfolding: beta, iota, path and face steps first.
-        // Then unfold the later definition, as it is likely defined through the
-        // other, and both when they are the same (lazy delta reduction).
-        // A congruence attempt that failed may have rewritten parts: read again.
-        const x2 = this.subterm(a), y2 = this.subterm(b);
-        const left = this.headStep(x2), right = this.headStep(y2);
-        if (left && left.rule !== "delta") { this.reduce(a, left); continue; }
-        if (right && right.rule !== "delta") { this.reduce(b, right); continue; }
-        if (left && right) {
-          const order = this.definitionAt(x2, left) - this.definitionAt(y2, right);
-          if (order >= 0) this.reduce(a, left);
-          if (order <= 0) this.reduce(b, right);
-          continue;
-        }
-        if (left) { this.reduce(a, left); continue; }
-        if (right) { this.reduce(b, right); continue; }
-        if (this.whnf(a) || this.whnf(b) || this.eta(a, b)) continue;
-        return false;
+        const point = { driver: this, a, b, x, y, nx: this.node(x), ny: this.node(y), terms, dims,
+          moves: null, round: 0, taken: budget.taken ?? 0, depth, normalize, descended: false, stuck: new Set(), failed };
+        const outcome = this.branch(point, budget);
+        if (outcome === "agreed") return true;
+        if (outcome === "failed") return false;
       }
-    } finally { if (untried) budget.untried--; }
+    } finally {
+      this.depth--;
+      if (untried) budget.untried--;
+    }
+  }
+
+  // One branch point of `agree`: the moves open there, made in the chooser's
+  // order until one applies. "agreed" when the sides now agree, "failed"
+  // when no move applies, and otherwise the comparison goes round again.
+  branch(point, budget) {
+    for (;; point.round++) {
+      point.moves = this.moves(point);
+      let changed = false;
+      for (const move of this.chooser.rank(point)) {
+        if (!point.moves.includes(move)) throw new Error(`The chooser ${this.chooser.name} chose a move that is not open.`);
+        const outcome = this.move(point, move, budget);
+        this.chooser.observe?.(point, move, outcome);
+        if (outcome === "stuck") continue;
+        if (outcome === "changed") { changed = true; break; }
+        return outcome;
+      }
+      // Normal forms are tried once, at the first listing.
+      point.normalize = false;
+      if (!changed) return "failed";
+    }
+  }
+  // The moves open at a point (heuristicChooser, above). Congruence reads the
+  // sides as the point found them; the rest reads them now, as a failed
+  // attempt may have rewritten parts.
+  moves(point) {
+    const { a, b, nx, ny, terms, dims } = point, moves = [];
+    if (point.normalize) moves.push({ move: "normalize" });
+    if (!point.descended && nx.kind === ny.kind && !point.failed.has(`${point.x},${point.y}`) && this.sameHead(nx, ny, terms, dims))
+      moves.push({ move: "descend" });
+    const x = this.subterm(a), y = this.subterm(b), left = this.headStep(x), right = this.headStep(y);
+    if (left) moves.push({ move: "step", side: "left", rule: left.rule, step: left, term: x });
+    if (right) moves.push({ move: "step", side: "right", rule: right.rule, step: right, term: y });
+    if (left?.rule === "delta" && right?.rule === "delta")
+      moves.push({ move: "step", side: "both", rule: "delta", steps: [left, right] });
+    // The kernel's weak head of a term not yet known to be one, and not a
+    // constructor, which it would only contract by eta.
+    for (const [side, term] of [["left", x], ["right", y]])
+      if (!point.stuck.has(side) && !this.stable.has(term) && !CONSTRUCTORS.has(this.node(term).kind)) moves.push({ move: "whnf", side });
+    const kx = this.node(x).kind, ky = this.node(y).kind;
+    if (!point.stuck.has("eta") && kx !== ky && (etaTypes[kx] || etaTypes[ky])) moves.push({ move: "eta" });
+    return moves;
+  }
+  // Make a move: its outcome, as `branch` reads it.
+  move(point, move, budget) {
+    const { a, b, terms, dims } = point;
+    switch (move.move) {
+    case "normalize": return this.normalizeBoth(a, b, terms, dims) ? "agreed" : "changed";
+    case "descend":
+      point.descended = true;
+      if (this.agreeParts(a, b, point.nx, terms, dims, budget)) return "agreed";
+      // A comparison inside gave up for an enclosing closed one to try
+      // normal forms: congruence has not failed, and may be tried again.
+      if (budget.untried && budget.taken >= LONG_COMPUTATION) return "deferred";
+      point.failed.add(`${point.x},${point.y}`);
+      return "changed";
+    case "step":
+      if (move.side !== "right") this.reduce(a, move.side === "both" ? move.steps[0] : move.step);
+      if (move.side !== "left") this.reduce(b, move.side === "both" ? move.steps[1] : move.step);
+      return "progress";
+    case "whnf":
+      if (this.whnf(move.side === "left" ? a : b)) return "progress";
+      point.stuck.add(move.side);
+      return "stuck";
+    case "eta":
+      if (this.eta(a, b)) return "progress";
+      point.stuck.add("eta");
+      return "stuck";
+    default: throw new Error(`Unknown move ${move.move}.`);
+    }
   }
   // Whether the focused subterm has no free term variable: its judgement has
   // none in context, and the position is under no term binder.
