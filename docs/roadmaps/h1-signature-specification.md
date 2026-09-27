@@ -193,17 +193,20 @@ formal compositions, and staged trust.
 
 ## Notation
 
+A trailing `s` on a variable marks a sequence: `xs` is `x_1 … x_n`, `as` is
+`a_1 … a_n`, and `q̄s` is `q̄_1 … q̄_n`.
+
 | Symbol | Meaning |
 | --- | --- |
-| `S` | the sort being declared; also its instance `S(a⃗)` at parameters `a⃗` |
-| `x⃗` | the signature's level parameters: erased ones, which each instance reads from its parameters' judgements, and recorded ones `x⃗_r`, which it carries |
+| `S` | the sort being declared; also its instance `S(as)` at parameters `as` |
+| `xs` | the signature's level parameters: erased ones, which each instance reads from its parameters' judgements, and recorded ones `xs_r`, which it carries |
 | `ρ` | an instance's levels, one per level parameter: given for recorded ones, read for erased ones |
-| `ℓ⃗_r` | an instance's recorded levels; `S{ℓ⃗_r}(a⃗)` is the instance, written `S(a⃗)` when there are none |
-| `p⃗ : P⃗` | the signature's term parameters, a telescope over `x⃗` |
-| `ℓ` | the sort's level, a level expression over `x⃗` |
+| `ℓs_r` | an instance's recorded levels; `S{ℓs_r}(as)` is the instance, written `S(as)` when there are none |
+| `ps : Ps` | the signature's term parameters, a telescope over `xs` |
+| `ℓ` | the sort's level, a level expression over `xs` |
 | `c_1 … c_n` | constructors, in order; `c_k` also names the constructor at an instance |
-| `t⃗ : D⃗` | a constructor's data telescope |
-| `q⃗ : Q⃗` | a constructor's positions |
+| `ts : Ds` | a constructor's data telescope |
+| `qs : Qs` | a constructor's positions |
 | `A` | an arity, the domain of a position |
 | `d_k` | the number of dimensions of `c_k` |
 | `r`, `s` | interval formulas |
@@ -227,9 +230,9 @@ modifier, and an ordered list of constructors.
 
 ### 1.1 Parameters
 
-- The telescope starts with level parameters `x⃗`, then term parameters
-  `p⃗ : P⃗`, each type well formed over the ones before. At admission the
-  telescope is presented as G0's prenex level binders `x⃗ < ω` (G0 Q8).
+- The telescope starts with level parameters `xs`, then term parameters
+  `ps : Ps`, each type well formed over the ones before. At admission the
+  telescope is presented as G0's prenex level binders `xs < ω` (G0 Q8).
 - **Erased and recorded universe parameters** (Q8, decided). Admission
   classifies each level parameter by a syntactic occurrence check:
   - *Erased*: it occurs in no constructor type `T_k`, and it has a
@@ -314,14 +317,14 @@ after a position, and an arity mentioning a position.
 An endpoint `E` of `R` or of a position's cube is a *constructor expression*:
 
 ```text
-E ::= q_j(u⃗)                          a position applied to data terms at its arity
-   |  c_m(u⃗, E⃗')                       an earlier constructor, data terms then positional arguments
+E ::= q_j(us)                          a position applied to data terms at its arity
+   |  c_m(us, Es')                       an earlier constructor, data terms then positional arguments
    |  E @ r                            path application at an interval formula
    |  ⟨i⟩ E                            path abstraction: a cube of one more dimension
 E' ::= E  |  λ (y : A). E'             positional arguments, under the arity's binders
 ```
 
-- `u⃗` are *data terms*: any terms that mention no `s`, constructor or
+- `us` are *data terms*: any terms that mention no `s`, constructor or
   position. They may mention parameters, data, arity variables, and
   dimensions in scope.
 - `r` is any interval formula over the dimensions in scope: the enclosing
@@ -409,7 +412,7 @@ outer endpoints `⟨j⟩ base` are path abstractions (1.4). In `Pushout`,
 
 ### 2.1 The sort's level
 
-- The former's type `Π (x⃗ < ω). Π (p⃗ : P⃗). U(ℓ)` declares `ℓ`.
+- The former's type `Π (xs < ω). Π (ps : Ps). U(ℓ)` declares `ℓ`.
 - Every constructor type `T_k` must be derived at `U(ℓ)` in the admission
   context, where `s : U(ℓ)`. By inversion of the formation rules, every data
   type and every arity in `T_k` then lives in `U(ℓ)`: the instruction kernel
@@ -673,8 +676,8 @@ counts index types too (G0 2.12).
 
 ### 3.1 Formation
 
-An instance `S{ℓ⃗_r}(a⃗) : U(ℓ[ρ])` is formed from one finite level per recorded
-parameter, `ℓ⃗_r`, and judgements `a_i : P_i[ρ, a_<i]`, one per term
+An instance `S{ℓs_r}(as) : U(ℓ[ρ])` is formed from one finite level per recorded
+parameter, `ℓs_r`, and judgements `a_i : P_i[ρ, a_<i]`, one per term
 parameter, in order:
 
 - each recorded parameter takes its given level, under `LevelApply`'s
@@ -689,7 +692,7 @@ parameter, in order:
 - the term records the signature, the recorded levels and the term
   parameters. It carries nothing for the erased parameters. Signatures
   with no recorded parameter, such as `Trunc`, have instances written
-  `S(a⃗)`.
+  `S(as)`.
 
 Every level, read or given, must be finite (Q16, decided). A derivation that
 lifts a parameter first reads a higher erased level, and types the same term
@@ -698,12 +701,12 @@ forms are different terms, so different types.
 
 ### 3.2 Constructors and boundary reduction
 
-- At an instance `I = S{ℓ⃗_r}(a⃗)`, the constructor `c_k` is the term
-  `Con(k; I)`, of type `T_k[s := I, x⃗_r := ℓ⃗_r, p⃗ := a⃗, c_m := Con(m; I)]`.
+- At an instance `I = S{ℓs_r}(as)`, the constructor `c_k` is the term
+  `Con(k; I)`, of type `T_k[s := I, xs_r := ℓs_r, ps := as, c_m := Con(m; I)]`.
   Only the recorded levels are substituted: `T_k` mentions no erased
   parameter (1.1). So `pt` at `Pointed{0}` has type
   `Π (X : U(0)). Π (p : X). Pointed{0}`.
-- A saturated application `Con(k; I)(u⃗, e⃗)`, written `c_k(a⃗)(u⃗, e⃗)` below, is
+- A saturated application `Con(k; I)(us, es)`, written `c_k(as)(us, es)` below, is
   canonical. With `d_k ≥ 1` it is a path, and `(c_k … ) @ r_1 … @ r_d` with no
   `r_l` an endpoint is canonical.
 - **Boundary reduction.** `(c_k …) @ 0` and `(c_k …) @ 1` reduce to the
@@ -719,14 +722,14 @@ A data sort has `d_k = 0` for every constructor and modifier `type`. It has
 no formal composition.
 
 ```text
-comp^i S(a⃗(i)) [φ ↦ u] u_0
-  ⟶  c_k(a⃗(1))(comp^i Θ_k(a⃗(i)) [φ ↦ θ_u] θ_0)
-      when whnf(u_0) = c_k(a⃗(0))(θ_0) and whnf(u) = c_k(a⃗(i))(θ_u) on every nonempty face
-comp^i S(a⃗(i)) [φ ↦ u] u_0  is neutral otherwise
+comp^i S(as(i)) [φ ↦ u] u_0
+  ⟶  c_k(as(1))(comp^i Θ_k(as(i)) [φ ↦ θ_u] θ_0)
+      when whnf(u_0) = c_k(as(0))(θ_0) and whnf(u) = c_k(as(i))(θ_u) on every nonempty face
+comp^i S(as(i)) [φ ↦ u] u_0  is neutral otherwise
 ```
 
-- `a⃗(i)` is the parameter line; levels do not vary (G0 2.11).
-- `Θ_k(a⃗)` is the argument telescope of `c_k` at the parameters: data then
+- `as(i)` is the parameter line; levels do not vary (G0 2.11).
+- `Θ_k(as)` is the argument telescope of `c_k` at the parameters: data then
   positions. Composition in a telescope is iterated Σ composition: each
   component is composed in its type, after filling the earlier components
   along `i` and substituting them. A position's type is a `Π` over its arity
@@ -741,7 +744,7 @@ comp^i S(a⃗(i)) [φ ↦ u] u_0  is neutral otherwise
 
 A higher sort has a constructor with `d_k ≥ 1` or modifier `set` or `prop`.
 
-- **Formal homogeneous composition.** `hcomp^i S(a⃗) [φ ↦ u] u_0 : S(a⃗)`,
+- **Formal homogeneous composition.** `hcomp^i S(as) [φ ↦ u] u_0 : S(as)`,
   at fixed parameters, is canonical. On a face that holds it reduces to that
   tube at `i = 1` (the `Face` step); tubes on the empty face are dropped. It
   never pushes into a constructor.
@@ -749,17 +752,17 @@ A higher sort has a constructor with `d_k ≥ 1` or modifier `set` or `prop`.
   `ck_pushout_composition` does today:
 
   ```text
-  comp^i S(a⃗(i)) [φ ↦ u] u_0
-    ⟶  hcomp^j S(a⃗(1)) [φ ↦ transp^k S(a⃗(j ∨ k)) (j = 1) u(j)] (transp^i S(a⃗(i)) 0 u_0)
+  comp^i S(as(i)) [φ ↦ u] u_0
+    ⟶  hcomp^j S(as(1)) [φ ↦ transp^k S(as(j ∨ k)) (j = 1) u(j)] (transp^i S(as(i)) 0 u_0)
   ```
 
-- **Transport** `transp^i S(a⃗(i)) φ u_0`, with `a⃗` constant on `φ`, computes
+- **Transport** `transp^i S(as(i)) φ u_0`, with `as` constant on `φ`, computes
   by the weak head of `u_0`. Section 3.5 gives the rules. When `φ` holds, it
   reduces to `u_0` (the `Face` step).
 
 ### 3.5 Transport along parameters with boundary correction
 
-Write `A(i) := S(a⃗(i))`. For a line `w(i) : A(i)` define the squeeze, which
+Write `A(i) := S(as(i))`. For a line `w(i) : A(i)` define the squeeze, which
 joins the transport of `w(0)` to `w(1)` and is fixed on `φ`:
 
 ```text
@@ -768,15 +771,15 @@ squeeze^i_A φ w  :=  transp^h A(i ∨ h) (φ ∨ (i = 1)) w(i)          at i = 
 
 `transp^i A(i) φ u_0` reduces by cases on `whnf(u_0)`:
 
-1. **Point constructor** `c_k(a⃗(0))(θ_0)`, `d_k = 0`. Let `θ(i)` be the
-   transport filler of the telescope: `θ(i) := fill^i Θ_k(a⃗(i)) [φ ↦ θ_0] θ_0`,
+1. **Point constructor** `c_k(as(0))(θ_0)`, `d_k = 0`. Let `θ(i)` be the
+   transport filler of the telescope: `θ(i) := fill^i Θ_k(as(i)) [φ ↦ θ_0] θ_0`,
    so `θ(0) = θ_0` and `θ` is constant on `φ`. Then
-   `transp^i A(i) φ u_0 ⟶ c_k(a⃗(1))(θ(1))`.
-2. **Constructor at dimensions** `(c_k(a⃗(0))(θ_0)) @ r_1 … @ r_d`, no `r_l` an
-   endpoint. With `θ` as above, let `v := (c_k(a⃗(1))(θ(1))) @ r⃗`. For each
+   `transp^i A(i) φ u_0 ⟶ c_k(as(1))(θ(1))`.
+2. **Constructor at dimensions** `(c_k(as(0))(θ_0)) @ r_1 … @ r_d`, no `r_l` an
+   endpoint. With `θ` as above, let `v := (c_k(as(1))(θ(1))) @ rs`. For each
    face `(l, ε)`, let `b_{l,ε}(i)` be the boundary piece of `c_k` on
-   `i_l = ε`, at parameters `a⃗(i)` and arguments `θ(i)`, with the other
-   formulas `r⃗` substituted. Then
+   `i_l = ε`, at parameters `as(i)` and arguments `θ(i)`, with the other
+   formulas `rs` substituted. Then
 
    ```text
    transp^i A(i) φ u_0
@@ -786,7 +789,7 @@ squeeze^i_A φ w  :=  transp^h A(i ∨ h) (φ ∨ (i = 1)) w(i)          at i = 
    ```
 
    - At `h = 0` each wall is `b_{l,ε}(1)`, which is `v` on its face; on `φ`
-     the base is `u_0`, since `a⃗` and `θ` are constant there.
+     the base is `u_0`, since `as` and `θ` are constant there.
    - At `h = 1` the wall on `r_l = ε` is `transp^i A(i) φ b_{l,ε}(0)`, the
      transport of `u_0` restricted to that face. So transport commutes with
      restriction to the constructor's faces.
@@ -800,9 +803,9 @@ squeeze^i_A φ w  :=  transp^h A(i ∨ h) (φ ∨ (i = 1)) w(i)          at i = 
 
 ### 3.6 The eliminator and clause types
 
-**Motive and clauses.** For an instance `S(a⃗)`, a motive `M : Π (z : S(a⃗)). U(l')`
+**Motive and clauses.** For an instance `S(as)`, a motive `M : Π (z : S(as)). U(l')`
 at any level `l'`, and clauses `m_1 … m_n` (squash constructors included),
-the eliminator `elim_{M, m⃗} : Π (z : S(a⃗)). M(z)`.
+the eliminator `elim_{M, ms} : Π (z : S(as)). M(z)`.
 
 **Displayed types.** For a cube `C` over `S` and `y : C`, its displayed type
 `C̄(y)`:
@@ -812,24 +815,24 @@ S̄(y)                  :=  M(y)
 Path(i; C, E, E')‾(y) :=  PathP(i. C̄(y @ i), ⟦E⟧, ⟦E'⟧)
 ```
 
-A position `q : Π (y⃗ : A⃗). C` has displayed type `q̄ : Π (y⃗ : A⃗). C̄(q(y⃗))`.
+A position `q : Π (ys : As). C` has displayed type `q̄ : Π (ys : As). C̄(q(ys))`.
 
 **Displayed boundary.** `⟦E⟧` replaces, in a constructor expression, each
 position by its displayed variable and each earlier constructor by its
 clause:
 
 ```text
-⟦q_j(u⃗)⟧          :=  q̄_j(u⃗)
-⟦c_m(u⃗, E⃗')⟧       :=  m_m(u⃗, E⃗', ⟦E⃗'⟧')
+⟦q_j(us)⟧          :=  q̄_j(us)
+⟦c_m(us, Es')⟧       :=  m_m(us, Es', ⟦Es'⟧')
 ⟦E @ r⟧           :=  ⟦E⟧ @ r
 ⟦⟨i⟩ E⟧           :=  ⟨i⟩ ⟦E⟧
 ⟦E⟧'              :=  ⟦E⟧                          ⟦λ (y : A). E'⟧' := λ (y : A). ⟦E'⟧'
 ```
 
-**Clause type.** With `c := c_k(a⃗)(t⃗, q⃗)`:
+**Clause type.** With `c := c_k(as)(ts, qs)`:
 
 ```text
-ClauseType_k(M, m_1 … m_{k-1})  :=  Π (t⃗ : D⃗). Π (q⃗ : Q⃗). Π (q̄⃗ : Q̄⃗). R̄(c)
+ClauseType_k(M, m_1 … m_{k-1})  :=  Π (ts : Ds). Π (qs : Qs). Π (q̄s : Q̄s). R̄(c)
 R̄(c)  :=  M(c)                                                  d_k = 0
 R̄(c)  :=  PathP(i_1. … PathP(i_d. M(c @ i_1 … @ i_d), ⟦·⟧, ⟦·⟧) …, ⟦·⟧, ⟦·⟧)   d_k ≥ 1
 ```
@@ -843,7 +846,7 @@ partial eliminator", specialised to constructor expressions. On them,
 running the eliminator with the clauses as variables is exactly the
 substitution `⟦·⟧`, so the kernel computes clause types by substitution, with
 no reduction. Lemma H1 (4.3) shows the two agree: after
-`q̄ := λ y⃗. elim(q(y⃗))`, pointwise along a cube, `⟦E⟧` is convertible to
+`q̄ := λ ys. elim(q(ys))`, pointwise along a cube, `⟦E⟧` is convertible to
 `elim(E)` by `Iota` steps.
 
 **Automatic clauses** (L2.2b) are the elaborator's: the kernel requires every
@@ -853,9 +856,9 @@ clause, the squash clause included.
 
 | Rule | Reduction | Step |
 | --- | --- | --- |
-| Iota, point | `elim_{M,m⃗}(c_k(a⃗)(t⃗, q⃗)) ⟶ m_k(t⃗, q⃗, q̄⃗)` with `q̄_j := λ y⃗. elim^{C_j}(q_j(y⃗))` | `Iota` |
-| Iota, dimensions | `elim_{M,m⃗}((c_k(a⃗)(t⃗, q⃗)) @ r_1 … @ r_d) ⟶ m_k(t⃗, q⃗, q̄⃗) @ r_1 … @ r_d` | `Iota` |
-| Boundary | `(c_k(a⃗)(t⃗, q⃗)) @ ε ⟶` the endpoint of its type | `Path`, `Whnf` |
+| Iota, point | `elim_{M,ms}(c_k(as)(ts, qs)) ⟶ m_k(ts, qs, q̄s)` with `q̄_j := λ ys. elim^{C_j}(q_j(ys))` | `Iota` |
+| Iota, dimensions | `elim_{M,ms}((c_k(as)(ts, qs)) @ r_1 … @ r_d) ⟶ m_k(ts, qs, q̄s) @ r_1 … @ r_d` | `Iota` |
+| Boundary | `(c_k(as)(ts, qs)) @ ε ⟶` the endpoint of its type | `Path`, `Whnf` |
 | Elimination of `hcomp` | `elim(hcomp^j S [ψ ↦ w] w_0) ⟶ comp^j M(hfill^j) [ψ ↦ elim(w(j))] (elim(w_0))` | `Whnf` |
 | Data-sort composition | 3.3 | `Whnf` |
 | Higher-sort composition | 3.4 | `Whnf` |
@@ -899,15 +902,15 @@ and no indices.
    decomposition (G0 3.2) the signature is interpreted separately at each
    assignment of them, as an ordinary fixed-level signature. Erased levels
    occur in no constructor type, so at fixed recorded levels the
-   construction below takes only the parameters' values `⟦a⃗⟧` as input.
+   construction below takes only the parameters' values `⟦as⟧` as input.
    The erased levels read at an instance only name a universe `U_α` that
    contains the result, and each such `α` is large enough, by G0's
    substitution into the admission derivation at finite levels. So one
    presheaf interprets the instance at every erased reading, and
    cumulativity by subsumption relates the universes (D9). Every other H1
    obligation is argued at fixed parameter values and recorded levels.
-2. **Carrier.** For fixed parameters `a⃗` in a context `Γ`, define the
-   presheaf `⟦S(a⃗)⟧` over cubes as the least family of sets closed under:
+2. **Carrier.** For fixed parameters `as` in a context `Γ`, define the
+   presheaf `⟦S(as)⟧` over cubes as the least family of sets closed under:
    - a constructor `c_k` applied to an element of its argument telescope at
      that cube, when `d_k = 0`;
    - a constructor `c_k` applied to its arguments and to `d_k` interval
@@ -952,14 +955,14 @@ and no indices.
 | D6 | Path-valued constructors | A presentation of dimension arguments: `c @ r` is the constructor at `r`. It changes no rule of the model. | A conditional outline, found valid in review |
 | D7 | Motives in any universe, including UU tiers | The eliminator is defined in the model at fixed parameter values, and a motive's universe plays no role in its definition. | A conditional outline, found valid in review |
 | D8 | Level-generic signatures, and recorded parameters | No reduction rule reads a level. Level substitution recurses through recorded levels, parameter terms, motives and clauses, and commutes with formation's reading of erased levels from parameter judgements (2.4). A recorded parameter is standard universe polymorphism: at each assignment of recorded levels the signature is an ordinary fixed-level signature (G0 3.2), and instances at different levels are distinct, as G0 Q1 decided for definitions. | Argued; relies on G0 and needs no new argument. Corrected after the second review for levels inside parameter terms |
-| D9 | Erased universe parameters | An erased parameter occurs in no constructor type, so at fixed recorded levels the carrier, its Kan structure and its eliminator are built from `⟦a⃗⟧` alone (4.2, step 1). Cumulative universes are nested by subsumption, so one presheaf lies in every `U_α` that is large enough. At finite read levels, G0's substitution into the admission derivation shows each is. This is the condition under which Timany and Sozeau make instances of a Coq inductive cumulative. The kernel refuses an erased parameter that occurs in a constructor type (V24). The later tier-parametric proposal would extend this to tier-1 readings (2.3). | Argued at finite levels, which is all Q16 admits. To be reviewed |
+| D9 | Erased universe parameters | An erased parameter occurs in no constructor type, so at fixed recorded levels the carrier, its Kan structure and its eliminator are built from `⟦as⟧` alone (4.2, step 1). Cumulative universes are nested by subsumption, so one presheaf lies in every `U_α` that is large enough. At finite read levels, G0's substitution into the admission derivation shows each is. This is the condition under which Timany and Sozeau make instances of a Coq inductive cumulative. The kernel refuses an erased parameter that occurs in a constructor type (V24). The later tier-parametric proposal would extend this to tier-1 readings (2.3). | Argued at finite levels, which is all Q16 admits. To be reviewed |
 
 **Lemma H1 (clause typing is the partial eliminator).** For a constructor
-expression `E` over positions `q⃗` and earlier constructors, and the
-substitution `σ := [q̄ := λ y⃗. elim^{C}(q(y⃗))]`, `⟦E⟧σ ≡ elim^{C}(E)` by `Iota`
-steps. Proof: induction on `E`. For `q_j(u⃗)`, both sides are
-`elim(q_j(u⃗))`. For `c_m(u⃗, E⃗')`, the right side takes one `Iota` step to
-`m_m(u⃗, E⃗', elim(E⃗'))`, which is the left side by induction. Path
+expression `E` over positions `qs` and earlier constructors, and the
+substitution `σ := [q̄ := λ ys. elim^{C}(q(ys))]`, `⟦E⟧σ ≡ elim^{C}(E)` by `Iota`
+steps. Proof: induction on `E`. For `q_j(us)`, both sides are
+`elim(q_j(us))`. For `c_m(us, Es')`, the right side takes one `Iota` step to
+`m_m(us, Es', elim(Es'))`, which is the left side by induction. Path
 application commutes with both sides. For `⟨i⟩ E`, the right side is
 `⟨i⟩ elim^{C}((⟨i⟩ E) @ i)`, which a `Path` step takes to `⟨i⟩ elim^{C}(E)`,
 the left side by induction. Status: proved here in outline; found valid in
@@ -979,7 +982,7 @@ terms through their parameters, motives and clauses, as on any term. No
 reduction rule reads a level, so it commutes with every rule (2.4). Status:
 argued. **Open obligation:** the full case analysis, rule by rule,
 including the corrected transport of 3.5 under substitution of formulas
-into `r⃗` and `φ`.
+into `rs` and `φ`.
 
 ### 4.4 Canonicity
 
@@ -991,7 +994,7 @@ non-endpoint formulas, or an `hcomp` of such.
 
 **Argument.** Extend Huber's computability predicates:
 
-- For a closed instance `S(a⃗)`, a term is computable when its weak head is
+- For a closed instance `S(as)`, a term is computable when its weak head is
   a saturated constructor, at non-endpoint formulas for `d_k ≥ 1`, whose data
   arguments are computable at their types and whose positions are computable
   pointwise; or, for a higher sort, an `hcomp` whose tubes and base are
@@ -1094,7 +1097,7 @@ Tags 1–49 keep their numbers. New kinds are appended:
 
 | Tag | Kind | Payload and children |
 | --- | --- | --- |
-| 50 | `CC_SORT` | payload: signature index; child 0: the term parameters, as a list; child 1: the recorded levels, as a list of level nodes, or 0. An instance `S{ℓ⃗_r}(a⃗)`, with nothing for its erased parameters. |
+| 50 | `CC_SORT` | payload: signature index; child 0: the term parameters, as a list; child 1: the recorded levels, as a list of level nodes, or 0. An instance `S{ℓs_r}(as)`, with nothing for its erased parameters. |
 | 51 | `CC_CON` | payload: constructor number; child 0: the instance. The constructor `Con(k; I)`, a function of its data and positions. |
 | 52 | `CC_ELIM` | payload: signature index; child 0: motive; child 1: clause list. A function on the sort. |
 | 53 | `CC_LIST` | child 0: an item; child 1: the next cell, or 0. Parameter, level and clause lists. |
@@ -1123,7 +1126,7 @@ Tags 1–49 keep their numbers. New kinds are appended:
 
 - `SignatureBegin(former, modifier, sort symbol, classification)`: from a
   closed judgement `⊢ F : U(…)` whose term `F` is
-  `Π (x⃗ < ω). Π (p⃗ : P⃗). U(ℓ)`, open a signature. The binder symbols of `F`
+  `Π (xs < ω). Π (ps : Ps). U(ℓ)`, open a signature. The binder symbols of `F`
   name the admission context's level and parameter entries, and the sort
   symbol names `s : U(ℓ)`. The classification marks each level parameter
   erased or recorded; the driver proposes it by the occurrence check of 1.1.
@@ -1171,10 +1174,10 @@ recorded for `Pointed`; one of each for `Tagged`.
 - `SortBegin(signature)` starts an instance. `SortLevel(instance, ℓ)`
   supplies the next recorded level, under `LevelApply`'s conditions, and
   `SortParameter(instance, a)` adds the next parameter judgement. After the
-  last, the judgement is `S{ℓ⃗_r}(a⃗) : U(ℓ[ρ])`, with `ρ` formed as 3.1
+  last, the judgement is `S{ℓs_r}(as) : U(ℓ[ρ])`, with `ρ` formed as 3.1
   describes.
 - `Construct(instance, k)` gives
-  `Con(k; I) : T_k[s := I, x⃗_r := ℓ⃗_r, p⃗ := a⃗, c_m := Con(m; I)]`.
+  `Con(k; I) : T_k[s := I, xs_r := ℓs_r, ps := as, c_m := Con(m; I)]`.
 - Applications use `Apply`. Constructors at dimensions use `PathApply` and
   `PathAt`.
 
@@ -1212,13 +1215,13 @@ the corrected `hcomp` of 3.5; the same for the 2-dimensional `set` squash.
 
 ### 5.6 Family F5: elimination
 
-- `Eliminator(motive)`: from `M : Π (z : S(a⃗)). U(l')`, where `S(a⃗)` is a
+- `Eliminator(motive)`: from `M : Π (z : S(as)). U(l')`, where `S(as)` is a
   saturated instance of an admitted sort, open an eliminator judgement.
 - `EliminatorClause(eliminator, clause)`: check the next clause against
   `ClauseType_k(M, m_1 … m_{k-1})` (3.6), syntactically, as `NatElim` checks
   its cases.
 - `EliminatorClose(eliminator)`: when every constructor, squash included, has
-  its clause, give `elim_{M, m⃗} : Π (z : S(a⃗)). M(z)`.
+  its clause, give `elim_{M, ms} : Π (z : S(as)). M(z)`.
 - `Iota` computes a saturated eliminator application on a saturated
   constructor, at dimensions or not (3.7). `Whnf` computes it on `hcomp`.
 
