@@ -1,11 +1,12 @@
-import { readdirSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { resolve, relative, basename } from "node:path";
-import { fileURLToPath } from "node:url";
 import { parse } from "../web/mathscript/parser.mjs";
+import { moduleNamePattern, moduleRoots } from "../web/module-resolution.mjs";
+import { projectRoot, sourceReader } from "./module-sources.mjs";
 
-export const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+export { projectRoot };
 export const defaultTests = readdirSync(new URL("../tests/", import.meta.url))
   .filter(name => name.endsWith(".test.mjs") && name !== "cubical-modules.test.mjs")
   .sort().map(name => `tests/${name}`).concat(
@@ -29,6 +30,11 @@ Repeat modules/files to select several. Node test flags are forwarded before
 file arguments. --changed includes staged, unstaged and untracked proof sources;
 it does not select JavaScript, browser or C tests. Imports are always checked.
 Selected-proof checks validate proofs, not the separate mutation/UI regressions.
+
+A module name is found in library/, then in archive/first-library/, as the
+CLI's check finds it. Imports resolve as in the CLI: a file in the archive
+imports only from the archive; any other file imports from its own directory,
+then library/, then the archive.
 `;
 
 export function changedProofs(root = projectRoot) {
@@ -42,8 +48,11 @@ export function selectTests(args, { root = projectRoot, changed = () => changedP
   const optimizations = { shareSyntax: true, reuseChecks: true, compactPaths: true };
   let explicitOptimizations = false;
   let explicitSelection = false;
+  // A module name is found library-first, like the CLI's `check NAME`.
+  const named = name => [moduleRoots.library, moduleRoots.archive].map(directory => `${directory}${name}.cubist`)
+    .find(path => existsSync(resolve(root, path))) ?? `${moduleRoots.archive}${name}.cubist`;
   const proof = value => {
-    const path = /^[A-Za-z_][A-Za-z0-9_]*$/.test(value) ? `archive/first-library/${value}.cubist` : value;
+    const path = moduleNamePattern.test(value) ? named(value) : value;
     if (!path.endsWith(".cubist")) throw new Error(`Expected a proof module or .cubist path: ${value}`);
     proofs.push(resolve(root, path));
   };
@@ -92,20 +101,19 @@ export function selectTests(args, { root = projectRoot, changed = () => changedP
   return { tests: [...new Set(tests)], proofs: [...new Set(proofs)], flags, optimizations };
 }
 
-// Load only the selected proof's transitive source imports. Parsing is shared
-// with the compiler, so comments are not mistaken for imports.
+// Load only the selected proof's transitive source imports, resolved as a check
+// resolves them (web/module-resolution.mjs). Parsing is shared with the
+// compiler, so comments are not mistaken for imports.
 export async function loadProof(path, root = projectRoot) {
-  const sources = {}, loading = new Set();
+  const sources = {}, readSource = sourceReader({ path, root }), main = basename(path, ".cubist");
   const source = await readFile(path, "utf8");
-  async function visit(text) {
+  async function visit(importer, text) {
     for (const name of parse(text).imports) {
-      if (loading.has(name)) continue;
-      loading.add(name);
-      const imported = await readFile(resolve(root, "archive/first-library", `${name}.cubist`), "utf8");
-      sources[name] = imported;
-      await visit(imported);
+      if (name === main || Object.hasOwn(sources, name)) continue;
+      sources[name] = await readSource(name, importer);
+      await visit(name, sources[name]);
     }
   }
-  await visit(source);
+  await visit(main, source);
   return { source, sources, label: relative(root, path) || basename(path) };
 }

@@ -40,21 +40,35 @@ A declaration with a universe variable `U < UU0` is checked once, for every
 universe.
 
 To import another custom source, put `helpers.cubist` beside `example.cubist`
-and write `import helpers;`. Imports resolve beside the root file first, then
-in the rebuilt `library/`, then in the archived `archive/first-library/`. This same root directory is used for
-transitive imports; nested module directories are not supported. No extension
-appears in an import statement. A local module can intentionally shadow a
-bundled module of the same name.
+and write `import helpers;`. No extension appears in an import statement, and
+nested module directories are not supported. Each module resolves its imports
+by where it lives:
 
-A bare module name selects the bundled library:
+- A file outside the two libraries, and each module beside it, imports from
+  its own directory first, then from the rebuilt `library/`, then from the
+  archived `archive/first-library/`. A local module can intentionally shadow a
+  bundled module of the same name.
+- A module of `library/` imports from `library/`, then from the archive, so a
+  library module shadows the archive module of the same name.
+- A module of the archive imports only from the archive. The archive is a
+  closed world: checking an archive module never uses the rebuilt library.
+
+A check holds one module per name. When two modules of one check would load a
+name from different places, for example an archive module and a library module
+that both import a name the library shadows, the check fails and names both
+places. A REPL entry imports from `library/`, then from the archive, and also
+sees the module checked before it.
+
+A bare module name is found in `library/` first, then in the archive:
 
 ```sh
 node cli/repl.mjs check euclid
+npm test -- euclid
 npm test -- example.cubist
 ```
 
-The selected test runner checks custom imports from the bundled library; use
-the CLI for custom sources with sibling modules.
+The test runner resolves imports exactly as the CLI does, sibling modules
+included. The rules are specified in `web/module-resolution.mjs`.
 
 ## Explore a checked proof
 

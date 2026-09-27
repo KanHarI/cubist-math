@@ -1,14 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { ReplSession, replStatements } from "../web/repl-session.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 
-const readLibrary = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8")
-  .catch(() => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8"));
+// A session is a source that is not a file: it imports library-first.
 async function session(t, source = null) {
-  const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
+  const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false });
   t.after(() => program.dispose());
   if (source === null) return new ReplSession(program);
   await program.check(source, "proof");
@@ -55,7 +54,7 @@ test("a session over a proof sees its names, and rebases onto a rechecked proof"
   assert.deepEqual(texts(await repl.run("evaluate double(21);")), ["value: 42"]);
   assert.deepEqual(texts(await repl.run("let y := double(2);")), ["defined: y : Nat"]);
   assert.equal(repl.program.main, "proof", "the program still presents the proof");
-  const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
+  const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false });
   t.after(() => program.dispose());
   await program.check("import naturals;\ndef double(n : Nat) := n + n + n;\n", "proof");
   const rebased = await repl.rebase(program);
@@ -63,7 +62,7 @@ test("a session over a proof sees its names, and rebases onto a rechecked proof"
 });
 
 test("slash commands: /modules lists what import can load, /help the commands", async t => {
-  const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
+  const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false });
   t.after(() => program.dispose());
   const modules = async () => ({ library: ["naturals"], archive: ["naturals", "primes", "euclid", "cubical_paths"] });
   const repl = new ReplSession(program, { modules });

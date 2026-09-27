@@ -47,16 +47,22 @@ export class CubicalProgram {
     // it does not run the mathematical library or count repeated imports twice.
     const prepared = new Map();
     let total = this.completed;
-    const prepare = async (name, text = null) => {
+    // The reader is told which module imports each name, since where a module
+    // lives decides where its imports are found (module-resolution.mjs). A
+    // reader may refuse a module whose import this check already holds under
+    // another file; a check holds one module per name.
+    const prepare = async (name, text = null, importer = null) => {
       if (this.modules.has(name) || prepared.has(name)) return;
       try {
-        text ??= await this.readSource(name);
+        text ??= await this.readSource(name, importer);
         const ast = parse(text);
         prepared.set(name, { text, ast });
         total += ast.declarations.length;
         onProgress({ completed: this.completed, total: null, current: name,
           phase: "loading", unit: "declarations", instructions: this.checker.steps });
-        for (const dependency of ast.imports) await prepare(dependency);
+        for (const dependency of ast.imports) await prepare(dependency, null, name);
+        const refused = await this.readSource.checkImports?.(name, ast.imports);
+        if (refused) prepared.set(name, { error: new Error(refused) });
       } catch (error) { prepared.set(name, { error }); }
     };
     await prepare(main, source);

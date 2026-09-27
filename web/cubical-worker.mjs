@@ -1,23 +1,22 @@
-import { cubicalSourceFile } from "./cubical-sources.mjs";
 import createCubical from "./dist/cubical.mjs";
 import { sourceModules, cubicalSourceModules, libraryModules } from "./mathscript/modules.mjs";
+import { listedReader } from "./module-resolution.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
 import { ReplSession } from "./repl-session.mjs";
 import { elaboration } from "./cubical-elaboration.mjs";
 const module = await createCubical();
+const listing = { library: libraryModules, archive: [...sourceModules, ...cubicalSourceModules] };
 // What import can load, for the REPL's /modules.
-const importable = async () => ({ library: libraryModules, archive: [...sourceModules, ...cubicalSourceModules] });
+const importable = async () => listing;
 let program = null;
-const readSource = async name => {
-  if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(name)) throw new Error("Invalid source module name.");
-  const library = libraryModules.includes(name);
-  if (!library && ![...sourceModules, ...cubicalSourceModules].includes(name))
-    throw new Error(`Native source is not available for ${name}.`);
-  const path = library ? `./library/${name}.cubist` : `./archive/first-library/${cubicalSourceFile(name)}`;
-  const response = await fetch(new URL(path, import.meta.url), { cache: "no-store" });
-  if (!response.ok) throw new Error(`Native source is not available for ${name}.`);
+// Imports resolve as in the CLI (module-resolution.mjs): a proof of the archive
+// imports only from the archive; a library proof, the workspace, the REPL and
+// reference examples import library-first. Each program has its own reader.
+const readSource = (main = null) => listedReader(listing, async path => {
+  const response = await fetch(new URL(`./${path}`, import.meta.url), { cache: "no-store" });
+  if (!response.ok) throw new Error(`Native source is not available at ${path}.`);
   return response.text();
-};
+}, main);
 self.postMessage({ ready: true, backend: "cubical" });
 // A REPL session runs over the checked proof, or over its own program when
 // the page has no proof (the REPL page and the reference pages).
@@ -25,7 +24,7 @@ let session = null, sessionProgram = null, programMain = null;
 async function repl({ input, fresh }) {
   if (fresh) {
     if (!sessionProgram) {
-      sessionProgram = new CubicalProgram(module, readSource, { collectReferences: false });
+      sessionProgram = new CubicalProgram(module, readSource(), { collectReferences: false });
       session = new ReplSession(sessionProgram, { modules: importable });
     }
   } else if (!program) throw new Error("Check a proof first.");
@@ -48,7 +47,7 @@ self.onmessage = async ({ data: { id, command, args } }) => {
     if (command === "check") {
       const replBefore = replQueue;
       const run = (async () => {
-        const next = new CubicalProgram(module, readSource, { optimizations: args.optimizations });
+        const next = new CubicalProgram(module, readSource(args.module), { optimizations: args.optimizations });
         let checked;
         try { checked = await next.check(args.source, args.module ?? "current", progress => self.postMessage({ id, progress })); }
         catch (error) { next.dispose(); throw error; }
@@ -61,7 +60,7 @@ self.onmessage = async ({ data: { id, command, args } }) => {
     } else if (command === "elaborate") {
       // A source of its own, checked apart from the proof: every declaration's
       // steps, terms and native opcode trees.
-      const scratch = new CubicalProgram(module, readSource);
+      const scratch = new CubicalProgram(module, readSource(args.module));
       try {
         await scratch.check(args.source, args.module ?? "current");
         result = elaboration(scratch, args.module ?? "current");

@@ -112,13 +112,17 @@ The harness is active; `data-check` markers are not inert. Its acceptance
 allows explicitly labelled fragments, so a passing harness does not claim
 that every design sketch executes.
 
-**I1.1, module resolution parity (S, before new multi-module fixtures).**
-Specify archive-isolated checks and library-first checks explicitly. Currently
-`tools/test-selection.mjs` resolves selected-proof imports only from the
-archive, while the CLI and `tests/library.test.mjs` support the rebuilt
-library. Add a shared resolution contract and tests for same-name modules,
-local imports and source-root selection. This prevents a feature fixture
-from exercising different dependencies in the CLI and test runner.
+**I1.1, module resolution parity (S). Done on 2026-09-27.** One contract,
+`web/module-resolution.mjs`, resolves imports for the CLI, the test runner,
+the library, REPL and reference tests and the browser worker. Each module
+resolves its imports by where it lives: an archive module only in the archive,
+so checking it is archive-isolated; a library module in `library/`, then the
+archive; a checked file outside both roots in its own directory, then the
+library, then the archive; a REPL entry or reference example library-first.
+A check holds one module per name, and a clash fails on the later importer.
+Before, `tools/test-selection.mjs` resolved selected-proof imports only from
+the archive. `tests/module-resolution.test.mjs` covers same-name modules,
+local imports, source-root selection and CLI/test-runner parity.
 
 **I1.3, coverage acceptance reporting (S).** The coverage tool uses an
 import-only root, so `CubicalProgram.complete` is false even with no gaps

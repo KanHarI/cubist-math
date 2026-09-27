@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Source is elaborated by JavaScript; all accepted judgements come from C/WASM.
 import { readFile, readdir, writeFile } from "node:fs/promises";
-import { basename, resolve, dirname, join } from "node:path";
+import { basename, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
@@ -9,6 +9,8 @@ import { cubicalText } from "../web/cubical-notation.mjs";
 import { kernelAssembly, assemblyText } from "../web/cubical-assembly.mjs";
 import { reduceView } from "../web/cubical-reduction.mjs";
 import { ReplSession, replStatements } from "../web/repl-session.mjs";
+import { moduleRoots } from "../web/module-resolution.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 const help = `Cubist Math — cubical C kernel
   let NAME := TERM;        Define a name; def and any other declaration work too
   typeof TERM;             Show the type of a term
@@ -41,19 +43,14 @@ for (const arg of args) {
 }
 const module = await createCubical();
 let program, view, binding, checkedModule, session = null, sessionProgram = null;
-// The rebuilt library comes first; the archived first library is the fallback.
-const readSource = async name => {
-  for (const root of ["../library/", "../archive/first-library/"]) {
-    try { return await readFile(new URL(`${root}${name}.cubist`, import.meta.url), "utf8"); }
-    catch (error) { if (error.code !== "ENOENT") throw error; }
-  }
-  throw Error(`No module named ${name} in library/ or archive/first-library/.`);
-};
+// Imports resolve as web/module-resolution.mjs specifies: an archive module
+// imports only from the archive; anything else imports library-first, and a
+// checked file outside both roots first imports from its own directory.
 // What import can load, for the REPL's /modules.
 const importable = async () => {
-  const names = async root => (await readdir(new URL(root, import.meta.url)).catch(() => []))
+  const names = async root => (await readdir(new URL(`../${root}`, import.meta.url)).catch(() => []))
     .filter(file => file.endsWith(".cubist")).map(file => file.slice(0, -".cubist".length));
-  return { library: await names("../library/"), archive: await names("../archive/first-library/") };
+  return { library: await names(moduleRoots.library), archive: await names(moduleRoots.archive) };
 };
 function show() {
   const shown = view.folded ?? view;
@@ -66,7 +63,7 @@ async function replSession() {
   if (program && session?.program !== program)
     session = session ? await session.rebase(program, checkedModule) : new ReplSession(program, { base: checkedModule, modules: importable });
   else if (!session) {
-    sessionProgram = new CubicalProgram(module, readSource, { optimizations });
+    sessionProgram = new CubicalProgram(module, sourceReader(), { optimizations });
     session = new ReplSession(sessionProgram, { modules: importable });
   }
   return session;
@@ -93,17 +90,11 @@ async function execute(line) {
   if (["quit", "exit"].includes(operation)) return false;
   if (operation === "check") {
     if (!value) throw Error("check requires a module or .cubist file.");
-    const source = value.endsWith(".cubist") ? await readFile(resolve(value), "utf8") : await readSource(value);
+    // A file is checked where it lives; a module name is found library-first.
+    const file = value.endsWith(".cubist"), imports = sourceReader(file ? { path: value } : {});
+    const source = file ? await readFile(resolve(value), "utf8") : await imports(value);
     const main = basename(value, ".cubist");
     program?.dispose(); view = null; binding = null;
-    const localDirectory = value.endsWith(".cubist") ? dirname(resolve(value)) : null;
-    const imports = async name => {
-      if (localDirectory) {
-        try { return await readFile(join(localDirectory, `${name}.cubist`), "utf8"); }
-        catch (error) { if (error.code !== "ENOENT") throw error; }
-      }
-      return readSource(name);
-    };
     program = new CubicalProgram(module, imports, { optimizations });
     const result = await program.check(source, main);
     if (!result.complete) throw Error(JSON.stringify(result.gaps, null, 2));
