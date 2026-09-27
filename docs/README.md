@@ -21,6 +21,10 @@ Moving these documents does not change their recorded status or resume paused wo
     (kernel);
   - [theories and inductive declarations](roadmaps/inductive-language-features.md)
     (language).
+- Specifications under review:
+  - [H1 signatures](roadmaps/h1-signature-specification.md): one-sort data and
+    higher inductive types, their soundness note, and the truncation and
+    resizing policy.
 - The trusted kernel:
   [kernel instructions](roadmaps/kernel-instructions.md), the THTH-style
   forward kernel with every search decision in an untrusted driver, merged

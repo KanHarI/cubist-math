@@ -211,6 +211,10 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
   - **H1. One sort, no indices.** Data and higher inductive types: natural
     numbers, sums, W types, pushouts, suspensions, spheres, truncation
     `Trunc`, set quotients `Quotient`.
+    - **Specification.** [H1 specification](h1-signature-specification.md)
+      (K2.1 and K2.5, draft for review): the admitted signatures, generated
+      rules, soundness note, instruction families, the K2.4 representation
+      map, and G2's truncation policy with its measured migration ledger.
     - Instructions first: the signature checker and every generated rule
       are instructions, and the driver learns to issue them.
     - The hand-coded natural-number, sum, W and pushout instructions are

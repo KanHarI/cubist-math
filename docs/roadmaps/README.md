@@ -15,6 +15,9 @@ target statement or a supplied theorem parameter as an already proved result.
   adopted kernel design. One signature format covers data, indexed, higher
   and inductive-inductive types, with computability expressible and
   preserved.
+- [H1 specification](h1-signature-specification.md): draft for review of the
+  design's first stage, one-sort data and higher inductive types (K2.1), with
+  G2's truncation and resizing policy and its migration ledger (K2.5).
 - [Language features for theories and inductive declarations](inductive-language-features.md):
   the adopted language proposal: theories, cells, relations and bundles,
   canonical quotients, presentations and derived declarations.
