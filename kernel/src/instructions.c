@@ -2064,6 +2064,13 @@ cc_judgement_id cc_instr_replace(cc_kernel *k, cc_judgement_id id, unsigned side
     cc_term target = locate(k, root, position, depth, crossed);
     if (!target || !same(k, target, inner.term, "The highlighted subterm is not the equality's left side."))
         goto done;
+    /* A path application's annotation is the path type its endpoints are
+     * read from (boundary reduction included): it stays one. */
+    if (depth && crossed[depth - 1].node.kind == CC_PAPP && crossed[depth - 1].child == 1 &&
+        k->nodes[inner.other].kind != CC_PATH) {
+        ck_fail(k, "A path application's annotation is replaced only by a path type.");
+        goto done;
+    }
     /* From the innermost binder out: a binder whose name the replacement
      * uses must correspond to an entry of the replacing equality with the
      * binder's type; that entry is discharged, and its type's names are in

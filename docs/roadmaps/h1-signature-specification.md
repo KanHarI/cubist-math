@@ -755,9 +755,11 @@ forms are different terms, so different types.
   `PathApply` and `PathAt` record the applied path's type there, and at a
   constructor that type is the constructor type at the instance, so the
   annotation's endpoints are the signature's boundary, substituted. Every
-  path application the kernel builds carries its annotation; the families
-  that build terms, F4's transport and F5's `Iota`, keep that invariant, and
-  no separate rule reads the signature. This is the design's "a constructor
+  path application the kernel builds carries its annotation, a literal path
+  type: `Replace` puts only a path type in that place, and substitution and
+  the other steps keep the node a path type. The families that build terms,
+  F4's transport and F5's `Iota`, keep that invariant, and no separate rule
+  reads the signature. This is the design's "a constructor
   evaluated on a face of its dimensions reduces to its boundary".
 - Eta for paths gives `c_k … ≡ ⟨i⟩ (c_k …) @ i` as for any path.
 

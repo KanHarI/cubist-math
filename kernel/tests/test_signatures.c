@@ -725,6 +725,47 @@ static void boundaries(void) {
             assert(info(outer).other == point && info(inner).other == point);
         }
 
+    /* The open square (surf @ i) @ j, restricted in either order: restricting
+     * i reaches into the outer application's annotation, the type of
+     * surf @ i. Its faces are q @ j at i = 0 and 1 and p @ i at j = 0 and 1,
+     * with no trace of the restricted dimension, and its corners the point. */
+    cc_term p_term = term_of(OK(cc_instr_construct(k, torus, 1))), q_term = term_of(OK(cc_instr_construct(k, torus, 2)));
+    cc_judgement_id square = OK(cc_instr_path_apply(k, OK(cc_instr_path_apply(k, surf, i, 0)), j, 0));
+    uint32_t along_i = payload(child(term_of(square), 0)), along_j = payload(term_of(square));
+    for (unsigned e = 0; e < 2; ++e) {
+        cc_judgement_id at_i = OK(cc_instr_endpoint(k, square, i, e)), at_j = OK(cc_instr_endpoint(k, square, j, e));
+        cc_term face_i = reduct(at_i, CC_STEP_WHNF), face_j = reduct(at_j, CC_STEP_WHNF);
+        assert(kind(face_i) == CC_PAPP && child(face_i, 0) == q_term && payload(face_i) == along_j);
+        assert(kind(face_j) == CC_PAPP && child(face_j, 0) == p_term && payload(face_j) == along_i);
+        assert(ck_free_dims(k, term_of(at_i)) == 2 && ck_free_dims(k, face_i) == 2);
+        assert(ck_free_dims(k, term_of(at_j)) == 1 && ck_free_dims(k, face_j) == 1);
+    }
+    for (unsigned e1 = 0; e1 < 2; ++e1)
+        for (unsigned e2 = 0; e2 < 2; ++e2) {
+            cc_judgement_id i_first = OK(cc_instr_endpoint(k, OK(cc_instr_endpoint(k, square, i, e1)), j, e2));
+            cc_judgement_id j_first = OK(cc_instr_endpoint(k, OK(cc_instr_endpoint(k, square, j, e2)), i, e1));
+            assert(term_of(i_first) == term_of(j_first) && !ck_free_dims(k, term_of(i_first)));
+            assert(reduct(i_first, CC_STEP_WHNF) == point && reduct(j_first, CC_STEP_NORMALIZE) == point);
+            cc_judgement_id stepped = OK(cc_instr_refl(k, i_first));
+            for (unsigned step = 0; step < 2; ++step)
+                stepped = OK(cc_instr_step(k, stepped, 1, NULL, 0, CC_STEP_PATH));
+            assert(info(stepped).other == point);
+        }
+
+    /* Replace keeps an annotation a path type: loop @ 0 with its annotation
+     * P replaced by (λ (X : U0). X)(P) would no longer reduce. */
+    cc_judgement_id loop_type = OK(cc_instr_path(k, i, s1, OK(cc_instr_construct(k, s1, 0)),
+                                                 OK(cc_instr_construct(k, s1, 0))));
+    cc_entry_id xt = OK(cc_instr_extend(k, u0, PUSH_N + 1));
+    cc_judgement_id wrapped = OK(cc_instr_apply(k, OK(cc_instr_lambda(k, xt, var(xt))), loop_type));
+    cc_judgement_id unwrap = OK(cc_instr_step(k, OK(cc_instr_refl(k, wrapped)), 1, NULL, 0, CC_STEP_BETA));
+    cc_judgement_id at0 = OK(cc_instr_path_apply(k, loop, 0, 0));
+    REJECTS(cc_instr_replace(k, at0, 0, (const uint8_t[]){1}, 1, OK(cc_instr_symmetry(k, unwrap))),
+            "annotation is replaced only by a path type");
+    /* Inside the annotation, and by another path type, rewriting is allowed. */
+    cc_judgement_id same_type = OK(cc_instr_replace(k, at0, 0, (const uint8_t[]){1}, 1, OK(cc_instr_refl(k, loop_type))));
+    assert(reduct(same_type, CC_STEP_WHNF) == base);
+
     /* loop @ (i ∧ j), restricted to j = 0, is loop @ 0, and so base. */
     cc_formula meet, left_i, right_j;
     cc_init(&meet, CC_INTERVAL); cc_init(&left_i, CC_INTERVAL); cc_init(&right_j, CC_INTERVAL);
@@ -739,7 +780,7 @@ static void boundaries(void) {
 }
 
 /* Section 3.2's invariant: every path application in a judgement carries
- * its annotation, which boundary reduction reads. */
+ * its annotation, a path type, which boundary reduction reads. */
 static void annotated(cc_term t, unsigned char *seen) {
     if (!t || seen[t])
         return;
@@ -747,7 +788,7 @@ static void annotated(cc_term t, unsigned char *seen) {
     cc_term_kind node_kind;
     cc_term children[4];
     assert(cc_kernel_node(k, t, &node_kind, NULL, children));
-    assert(node_kind != CC_PAPP || children[1]);
+    assert(node_kind != CC_PAPP || (children[1] && kind(children[1]) == CC_PATH));
     for (unsigned c = 0; c < 4; ++c)
         annotated(children[c], seen);
 }
