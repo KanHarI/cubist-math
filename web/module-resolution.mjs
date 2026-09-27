@@ -55,6 +55,11 @@ const either = order => order.length === 1 ? where(order[0])
 // module `name` in that place, or null when there is none; each answer is read
 // once per check. `place(name, where)` records where a checked source lives
 // before the check, for a source given as text rather than read here.
+//
+// A reader can serve several checks, as a REPL session's entries do. Where each
+// name was placed persists, since the modules a program holds keep their
+// identity. What was read does not: `beginCheck()` forgets every answer, so a
+// failed fetch is retried and a module created or fixed since is read again.
 export function moduleReader(read) {
   // `given` holds the checked sources placed before their checks.
   const probes = new Map(), placed = new Map(), given = new Set();
@@ -83,6 +88,7 @@ export function moduleReader(read) {
     given.add(name);
   };
   readSource.placeOf = name => placed.get(name);
+  readSource.beginCheck = () => probes.clear();
   // Called after a module's imports are loaded: a refusal message when one of
   // them is not the module this importer would have loaded under that name.
   readSource.checkImports = async (importer, imports) => {

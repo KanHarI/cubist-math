@@ -103,16 +103,21 @@ export function selectTests(args, { root = projectRoot, changed = () => changedP
 
 // Load only the selected proof's transitive source imports, resolved as a check
 // resolves them (web/module-resolution.mjs). Parsing is shared with the
-// compiler, so comments are not mistaken for imports.
+// compiler, so comments are not mistaken for imports. As in a check, each
+// importer's imports are validated after they load: two modules that would
+// load one name from different places are refused, and the refusal is thrown.
 export async function loadProof(path, root = projectRoot) {
   const sources = {}, readSource = sourceReader({ path, root }), main = basename(path, ".cubist");
   const source = await readFile(path, "utf8");
   async function visit(importer, text) {
-    for (const name of parse(text).imports) {
+    const imports = parse(text).imports;
+    for (const name of imports) {
       if (name === main || Object.hasOwn(sources, name)) continue;
       sources[name] = await readSource(name, importer);
       await visit(name, sources[name]);
     }
+    const refused = await readSource.checkImports(importer, imports);
+    if (refused) throw new Error(refused);
   }
   await visit(main, source);
   return { source, sources, label: relative(root, path) || basename(path) };

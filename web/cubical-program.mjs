@@ -50,7 +50,9 @@ export class CubicalProgram {
     // The reader is told which module imports each name, since where a module
     // lives decides where its imports are found (module-resolution.mjs). A
     // reader may refuse a module whose import this check already holds under
-    // another file; a check holds one module per name.
+    // another file; a check holds one module per name. Each check reads afresh,
+    // so a failed read is retried.
+    this.readSource.beginCheck?.();
     const prepare = async (name, text = null, importer = null) => {
       if (this.modules.has(name) || prepared.has(name)) return;
       try {
