@@ -1913,6 +1913,15 @@ static cc_term contract(cc_kernel *k, cc_term term, cc_step_rule rule) {
             break;
         }
         case CC_APP: {
+            /* A declared type's eliminator on a constructor, at dimensions
+             * or not (3.7). */
+            if (k->nodes[n.child[0]].kind == CC_ELIM) {
+                bool reduced = false;
+                cc_term result = ck_eliminate(k, n.child[0], n.child[1], false, &reduced);
+                if (reduced || !result)
+                    return result;
+                break;
+            }
             /* The pushout eliminator on a point or on a path. */
             cc_node eliminator = k->nodes[n.child[0]];
             head = k->nodes[n.child[1]];
@@ -2182,9 +2191,9 @@ bool cc_kernel_judgement(const cc_kernel *k, cc_judgement_id id, cc_judgement_in
     if (!k || !info || !id || id >= k->fact_count)
         return false;
     cc_fact f = k->facts[id];
-    /* An instance in progress keeps its parameters' types in other, which
-     * only its own instructions read. */
-    cc_term other = f.kind == CC_FACT_INSTANCE ? 0 : f.other;
+    /* Judgements in progress keep state in other, which only their own
+     * instructions read: it is shown for an equality only. */
+    cc_term other = f.kind == CC_FACT_EQUALITY ? f.other : 0;
     *info = (cc_judgement_info){f.kind, f.term, other, f.type, (cc_instruction)f.how.rule,
         {f.how.premise[0], f.how.premise[1], f.how.premise[2], f.how.premise[3]}, f.how.entry,
         {f.how.operand[0], f.how.operand[1]}, f.how.depth ? k->positions + f.how.position : NULL, f.how.depth};

@@ -1,7 +1,7 @@
-// Declared types (H1), families F1, F2, F3 and F6, through the WASM bridge:
+// Declared types (H1), families F1, F2, F3, F5 and F6, through the WASM bridge:
 // the extension gate, admission one constructor at a time, the generated
-// squash, instances, their constructors and boundaries, and refusals reported
-// as kernel errors. The C tests in
+// squash, instances, their constructors and boundaries, eliminators, and
+// refusals reported as kernel errors. The C tests in
 // kernel/tests/test_signatures.c cover the acceptance cases in full.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -137,4 +137,31 @@ test("a constructor at an endpoint steps to its boundary", t => {
       const stepped = g.step(g.refl(g.pathApply(g.construct(circle, 1), 0, endpoint)), "other", [], rule);
       assert.equal(g.judgement(stepped).other, point);
     }
+});
+
+test("an eliminator takes a clause per constructor and computes by Iota", t => {
+  const { kernel, syntax, g } = session(t);
+  kernel.setExtensions({ h1: true });
+  const u0 = g.universe(syntax.encodeLevel(0));
+  let sig = g.signatureBegin(u0, 0, "N");
+  const s = g.extend(u0, "N");
+  sig = g.signatureConstructor(sig, g.variable(s), "zero");
+  sig = g.signatureConstructor(sig, g.pi(g.extend(g.variable(s), "n"), g.variable(s)), "succ");
+  const n = g.sortBegin(g.signatureClose(sig));
+  const zero = g.construct(n, 0), succ = g.construct(n, 1);
+  // A motive P : N -> U0, and clauses pz : P(zero), ps : Π (m : N). P(m) -> P(succ(m)).
+  const P = g.extend(g.pi(g.extend(n, "z"), u0), "P");
+  const at = t => g.apply(g.variable(P), t);
+  let elim = g.eliminator(g.variable(P));
+  assert.equal(g.judgement(elim).kind, "eliminator");
+  assert.equal(g.judgement(elim).type, g.judgement(at(zero)).term);
+  assert.throws(() => g.eliminatorClose(elim), /lacks a clause/);
+  const pz = g.extend(at(zero), "pz");
+  elim = g.eliminatorClause(elim, g.variable(pz));
+  const m = g.extend(n, "m"), h = g.extend(at(g.variable(m)), "h");
+  const ps = g.extend(g.pi(m, g.pi(h, at(g.apply(succ, g.variable(m))))), "ps");
+  const closed = g.eliminatorClose(g.eliminatorClause(elim, g.variable(ps)));
+  assert.equal(g.judgement(closed).kind, "typing");
+  const stepped = g.step(g.refl(g.apply(closed, zero)), "other", [], "iota");
+  assert.equal(g.judgement(stepped).other, g.judgement(g.variable(pz)).term);
 });

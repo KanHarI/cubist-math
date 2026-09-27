@@ -12,7 +12,8 @@ export const instructions = ["", "universe", "nat", "zero", "succ", "natElim", "
   "pushout", "pushPoint", "pushPath", "pushElim", "w", "sup", "wElim", "hcomp", "trans",
   "glueBase", "gluePiece", "glueOverlap", "glue", "glueTermBase", "glueTermPiece", "glueTerm", "unglue",
   "levelPi", "levelLambda", "levelApply", "signatureBegin", "signatureConstructor", "signatureClose",
-  "sortBegin", "sortLevel", "sortParameter", "construct"];
+  "sortBegin", "sortLevel", "sortParameter", "construct",
+  "eliminator", "eliminatorClause", "eliminatorClose"];
 // THTH's names for the rules, for display.
 export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ", succ: "NatIntroS",
   natElim: "NatElim", unit: "UnitForm", point: "UnitIntro", unitElim: "UnitElim", void: "VoidForm",
@@ -28,7 +29,8 @@ export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ"
   glue: "GlueForm", glueTermBase: "GlueIntroBase", glueTermPiece: "GlueIntroPiece", glueTerm: "GlueIntro",
   unglue: "GlueElim", levelPi: "LevelForm", levelLambda: "LevelIntro", levelApply: "LevelElim",
   signatureBegin: "SignatureBegin", signatureConstructor: "SignatureCons", signatureClose: "SignatureClose",
-  sortBegin: "SortBegin", sortLevel: "SortLevel", sortParameter: "SortParameter", construct: "ConIntro" };
+  sortBegin: "SortBegin", sortLevel: "SortLevel", sortParameter: "SortParameter", construct: "ConIntro",
+  eliminator: "ElimBegin", eliminatorClause: "ElimClause", eliminatorClose: "ElimClose" };
 export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf", "face"];
 // A judgement's sides: its term, an equality's other term, its type.
 export const sides = ["term", "other", "type"];
@@ -121,6 +123,11 @@ export class InstructionGraph {
   sortLevel(instance, level) { return this.issue("sortLevel", instance, level); }
   sortParameter(instance, parameter) { return this.issue("sortParameter", instance, parameter); }
   construct(instance, c) { return this.issue("construct", instance, c); }
+  // An eliminator from a motive over a complete instance: its judgement's type
+  // is the next clause's type; with every clause given, close it.
+  eliminator(motive) { return this.issue("eliminator", motive); }
+  eliminatorClause(eliminator, clause) { return this.issue("eliminatorClause", eliminator, clause); }
+  eliminatorClose(eliminator) { return this.issue("eliminatorClose", eliminator); }
   variable(entry) { return this.issue("variable", entry); }
   pi(entry, codomain) { return this.issue("pi", entry, codomain); }
   lambda(entry, body) { return this.issue("lambda", entry, body); }
@@ -212,7 +219,7 @@ export class InstructionGraph {
     const context = [];
     for (let index = 0, entry; (entry = this.module._cb_judgement_context(this.kernel.handle, id, index) >>> 0); index++)
       context.push(entry);
-    const judgement = { id, kind: ["", "typing", "equality", "system", "signature", "instance"][kind], term: field(1), type: field(3), rule,
+    const judgement = { id, kind: ["", "typing", "equality", "system", "signature", "instance", "eliminator"][kind], term: field(1), type: field(3), rule,
       premises: [5, 6, 7, 8].map(field).filter(Boolean), entry: field(9), operands: [field(10), field(11)], context };
     if (kind === 2) judgement.other = field(2);
     if (rule === "step" || rule === "replace") {
