@@ -297,9 +297,13 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
   checks this. Fuel exhaustion ("fuel"), the kernel's step budget ("budget")
   and the declaration time limit ("deadline") are reported apart. The
   defaults come from `tests/fixtures/search-fuel.json`
-  (`node tools/search-fuel-baseline.mjs`). Remaining: worker cancellation; and
-  a query close to the capped step budget can still pass warm and fail cold,
-  reported as the kernel's exhaustion. The original item:
+  (`node tools/search-fuel-baseline.mjs`). Remaining: worker cancellation.
+  Decided on 2026-09-27: the kernel's step budget stays a safety limit
+  outside the determinism guarantee, like the deadline. A query close to the
+  capped budget can still pass warm and fail cold; it is reported as the
+  kernel's exhaustion ("budget"), never as fuel. Making the budget
+  independent of the kernel's caches was judged too invasive for the trusted
+  kernel. The original item:
   In matching, traversal, premise search and
   proof construction, replace elapsed-time checks with counted fuel: traversal
   visits, candidate matches, rewrites, premise attempts, generated DAG nodes
