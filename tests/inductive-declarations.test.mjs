@@ -207,3 +207,16 @@ computable def both : N and ExcludedMiddle(U0) := (zero, LEM(U0));
   refused(get("both"), /depends on non-computing assumptions: LEM/);
   assert.doesNotMatch(get("both").reason, /H1|kernel extension/);
 });
+
+test("a two-dimensional constructor of a type with parameters takes its instance from a square's type", async t => {
+  const { get } = await check(t, `${naturals}
+inductive Sq(U < UU0, A : U) {
+  b;
+  l : b = b;
+  s : PathP(fun (i : Interval) => l @ i = l @ i, l, l);
+}
+def loop_n : typed(Sq(U0, N), b) = b := l;
+def square : PathP(fun (i : Interval) => loop_n @ i = loop_n @ i, loop_n, loop_n) := s;
+`);
+  for (const name of ["Sq", "loop_n", "square"]) ok(get(name));
+});
