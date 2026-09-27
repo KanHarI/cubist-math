@@ -13,7 +13,8 @@
 static cc_kernel *k;
 /* Signatures admitted by the sections below, for the instance tests. */
 static uint32_t nat_signature, list_signature, circle_signature, trunc_signature, pointed_signature,
-    tagged_signature, tree_signature, wrapped_signature, branch_signature, torus_signature;
+    tagged_signature, tree_signature, wrapped_signature, branch_signature, torus_signature, susp_signature,
+    set_signature, groupoid_signature;
 
 static uint32_t ok(uint32_t id, const char *what, int line) {
     if (!id) {
@@ -83,7 +84,8 @@ enum {
     S_GEN = 470, GEN_C,
     S_OPEN = 480, OPEN_C, TREE_N, S_GONE,
     S_SUSP = 490, SUSP_A, NORTH, SOUTH, MERID, SUSP_X,
-    S_PUSH = 500, PUSH_C, PUSH_A, PUSH_B, PUSH_ARG, PUSH_F, PUSH_G, PUSH_X, PUSH_Y, INL, INR, PUSH_Z, PUSH, PUSH_N
+    S_PUSH = 500, PUSH_C, PUSH_A, PUSH_B, PUSH_ARG, PUSH_F, PUSH_G, PUSH_X, PUSH_Y, INL, INR, PUSH_Z, PUSH, PUSH_N,
+    KAN_A = 520, KAN_B, KAN_E, KAN_X, KAN_M, KAN_Q, KAN_Y = 540
 };
 
 /* ⊢ U(0) : U(1), the former of a signature with no parameters in U0. */
@@ -221,6 +223,8 @@ static void truncations(void) {
         sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, a, var(s))), base + 3));
         uint32_t index = OK(cc_instr_signature_close(k, sig));
         if (m == 0) trunc_signature = index;
+        if (m == 1) set_signature = index;
+        if (m == 2) groupoid_signature = index;
         cc_signature_info info = signature(index);
         assert(info.constructor_count == 2 && info.modifier == modifiers[m]);
         cc_constructor_info squash = constructor(index, 1);
@@ -655,7 +659,7 @@ static void boundaries(void) {
     cc_entry_id a = OK(cc_instr_extend(k, var(sa), SUSP_X));
     sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, a, OK(cc_instr_path(k, i, var(s), var(north),
                                                                                           var(south))))), MERID));
-    cc_judgement_id susp = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, OK(cc_instr_signature_close(k, sig)))),
+    cc_judgement_id susp = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, susp_signature = OK(cc_instr_signature_close(k, sig)))),
                                                       nat));
     cc_judgement_id merid0 = OK(cc_instr_apply(k, OK(cc_instr_construct(k, susp, 2)), zero));
     cc_term south_term = term_of(OK(cc_instr_construct(k, susp, 1)));
@@ -777,6 +781,150 @@ static void boundaries(void) {
     cc_judgement_id restricted = OK(cc_instr_endpoint(k, diagonal, j, 0));
     assert(reduct(restricted, CC_STEP_PATH) == base && reduct(restricted, CC_STEP_WHNF) == base);
     (void)i;
+}
+
+static cc_formula_id face_at(unsigned dim, bool one) {
+    cc_formula f;
+    cc_init(&f, CC_FACE);
+    assert(cc_generator(&f, dim, one) == CC_OK);
+    cc_formula_id id = cc_kernel_formula(k, &f);
+    cc_clear(&f);
+    return id;
+}
+
+static cc_formula_id nowhere(void) {
+    cc_formula f;
+    cc_init(&f, CC_FACE);
+    cc_formula_id id = cc_kernel_formula(k, &f);
+    cc_clear(&f);
+    return id;
+}
+
+/* The number of tubes of a composition node. */
+static unsigned tubes(cc_term composition) {
+    unsigned count = 0;
+    for (cc_term cursor = child(composition, 1); cursor; cursor = child(cursor, 1)) ++count;
+    return count;
+}
+
+/* Transport commutes with restriction to a face of a constructor's
+ * dimensions (3.5): restricting the transport, or the hcomp it reduces to,
+ * normalizes to the same term. */
+static cc_term commutes(cc_judgement_id transported, cc_entry_id dim, unsigned e) {
+    cc_judgement_id reduced = OK(cc_instr_step(k, OK(cc_instr_refl(k, transported)), 1, NULL, 0, CC_STEP_WHNF));
+    cc_judgement_id as_hcomp = OK(cc_instr_side(k, reduced, 1));
+    assert(kind(term_of(as_hcomp)) == CC_HCOMP);
+    cc_term direct = reduct(OK(cc_instr_endpoint(k, transported, dim, e)), CC_STEP_NORMALIZE);
+    cc_term through = reduct(OK(cc_instr_endpoint(k, as_hcomp, dim, e)), CC_STEP_NORMALIZE);
+    assert(ck_alpha_equal(k, direct, through));
+    return direct;
+}
+
+/* The squash of a truncated signature at an instance, applied to variables
+ * y_s, z_s : B_s, B_{s+1} = Path(B_s, y_s, z_s), and then at the dimensions. */
+static cc_judgement_id squash_at(cc_judgement_id instance, uint32_t steps, uint32_t symbols,
+                                 const cc_entry_id *dimensions) {
+    cc_judgement_id b = instance, applied = OK(cc_instr_construct(k, instance, 1));
+    for (uint32_t s = 0; s < steps; ++s) {
+        cc_entry_id y = OK(cc_instr_extend(k, b, symbols + 2 * s)), z = OK(cc_instr_extend(k, b, symbols + 2 * s + 1));
+        applied = OK(cc_instr_apply(k, OK(cc_instr_apply(k, applied, var(y))), var(z)));
+        b = OK(cc_instr_path(k, OK(cc_instr_dimension(k, 5 + s)), b, var(y), var(z)));
+    }
+    for (uint32_t s = 0; s < steps; ++s)
+        applied = OK(cc_instr_path_apply(k, applied, dimensions[s], 0));
+    return applied;
+}
+
+/* F4: the Kan structure of declared types (sections 3.3–3.5, 5.5). */
+static void kan(void) {
+    cc_entry_id i = OK(cc_instr_dimension(k, 0));
+    cc_entry_id dims[3] = {OK(cc_instr_dimension(k, 1)), OK(cc_instr_dimension(k, 2)), OK(cc_instr_dimension(k, 3))};
+    cc_entry_id j = dims[0];
+
+    /* A data sort has no formal composition; comp^i N [] succ(zero) composes
+     * succ's argument, and normalizes to succ(zero). */
+    cc_judgement_id n = OK(cc_instr_sort_begin(k, nat_signature));
+    cc_judgement_id one = OK(cc_instr_apply(k, OK(cc_instr_construct(k, n, 1)), OK(cc_instr_construct(k, n, 0))));
+    cc_judgement_id at_one = OK(cc_instr_system(k, i, n, one));
+    REJECTS(cc_instr_hcomp(k, at_one), "data sort has no formal");
+    REJECTS(cc_instr_trans(k, at_one, nowhere()), "data sort has no formal");
+    cc_judgement_id composed = OK(cc_instr_comp(k, at_one));
+    cc_term head = reduct(composed, CC_STEP_WHNF);
+    assert(kind(head) == CC_APP && kind(child(head, 0)) == CC_CON && payload(child(head, 0)) == 1);
+    assert(ck_alpha_equal(k, reduct(composed, CC_STEP_NORMALIZE), term_of(one)));
+    /* A neutral tube keeps it neutral: q @ i on j = 0, for q : succ(zero) = m. */
+    cc_entry_id m = OK(cc_instr_extend(k, n, KAN_M));
+    cc_entry_id q = OK(cc_instr_extend(k, OK(cc_instr_path(k, i, n, one, var(m))), KAN_Q));
+    cc_judgement_id q_i = OK(cc_instr_path_apply(k, var(q), i, 0));
+    cc_judgement_id starts = OK(cc_instr_step(k, OK(cc_instr_refl(k, OK(cc_instr_endpoint(k, q_i, i, 0)))), 1, NULL, 0,
+                                             CC_STEP_PATH));
+    cc_judgement_id stuck = OK(cc_instr_comp(k, OK(cc_instr_system_tube(k, at_one, face_at(1, false), q_i, starts))));
+    assert(kind(reduct(stuck, CC_STEP_WHNF)) == CC_COMP);
+
+    /* A line of types e : A = B, and Susp(e @ i) along it. */
+    cc_judgement_id u0 = universe(lconst(0));
+    cc_entry_id ta = OK(cc_instr_extend(k, u0, KAN_A)), tb = OK(cc_instr_extend(k, u0, KAN_B));
+    cc_entry_id e = OK(cc_instr_extend(k, OK(cc_instr_path(k, i, u0, var(ta), var(tb))), KAN_E));
+    cc_judgement_id e_i = OK(cc_instr_path_apply(k, var(e), i, 0));
+    cc_judgement_id e_0 = OK(cc_instr_path_apply(k, var(e), 0, 0)), e_1 = OK(cc_instr_path_apply(k, var(e), 0, 1));
+    cc_judgement_id line = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, susp_signature)), e_i));
+    cc_judgement_id start = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, susp_signature)), e_0));
+    cc_judgement_id end = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, susp_signature)), e_1));
+    cc_judgement_id north = OK(cc_instr_construct(k, start, 0));
+    /* North and south at the line's end, normalized: e @ 1 is B. */
+    cc_term north_end = reduct(OK(cc_instr_construct(k, end, 0)), CC_STEP_NORMALIZE);
+    cc_term south_end = reduct(OK(cc_instr_construct(k, end, 1)), CC_STEP_NORMALIZE);
+    /* A higher sort composes formally, and comp reduces to hcomp. */
+    cc_judgement_id formal = OK(cc_instr_hcomp(k, OK(cc_instr_system(k, j, start, north))));
+    assert(kind(term_of(formal)) == CC_HCOMP && reduct(formal, CC_STEP_WHNF) == term_of(formal));
+    assert(kind(reduct(OK(cc_instr_comp(k, OK(cc_instr_system(k, i, line, north)))), CC_STEP_WHNF)) == CC_HCOMP);
+    /* Face, unchanged: an hcomp with a tube on the face 1 is that tube at 1,
+     * and a transport on a face that holds is its base. */
+    cc_formula top;
+    cc_init(&top, CC_FACE);
+    assert(cc_one(&top) == CC_OK);
+    cc_formula_id always = cc_kernel_formula(k, &top);
+    cc_clear(&top);
+    cc_judgement_id stay = OK(cc_instr_refl(k, north));
+    cc_judgement_id held = OK(cc_instr_hcomp(k, OK(cc_instr_system_tube(k, OK(cc_instr_system(k, j, start, north)),
+                                                                        always, north, stay))));
+    assert(reduct(held, CC_STEP_FACE) == term_of(north));
+    cc_judgement_id still = OK(cc_instr_trans(k, OK(cc_instr_system_tube(k, OK(cc_instr_system(k, i, start, north)),
+                                                                         always, north, stay)), always));
+    assert(reduct(still, CC_STEP_FACE) == term_of(north) && reduct(still, CC_STEP_WHNF) == term_of(north));
+    /* Transport of a point constructor: north at the line's end. */
+    cc_judgement_id moved = OK(cc_instr_trans(k, OK(cc_instr_system(k, i, line, north)), nowhere()));
+    assert(ck_alpha_equal(k, reduct(moved, CC_STEP_NORMALIZE), north_end));
+    assert(ck_alpha_equal(k, reduct(moved, CC_STEP_WHNF), term_of(OK(cc_instr_construct(k, end, 0)))));
+    /* merid(a) @ j along the line: an hcomp corrected on j = 0 and j = 1, whose
+     * faces are the transports of north and south. */
+    cc_entry_id a = OK(cc_instr_extend(k, var(ta), KAN_X));
+    cc_judgement_id to_a = OK(cc_instr_step(k, OK(cc_instr_refl(k, e_0)), 1, NULL, 0, CC_STEP_PATH));
+    cc_judgement_id a0 = OK(cc_instr_convert(k, var(a), OK(cc_instr_symmetry(k, to_a))));
+    cc_judgement_id merid = OK(cc_instr_path_apply(k, OK(cc_instr_apply(k, OK(cc_instr_construct(k, start, 2)), a0)), j, 0));
+    cc_judgement_id transported = OK(cc_instr_trans(k, OK(cc_instr_system(k, i, line, merid)), nowhere()));
+    cc_term corrected = reduct(transported, CC_STEP_WHNF);
+    assert(kind(corrected) == CC_HCOMP && tubes(corrected) == 3);
+    cc_term base = child(corrected, 2);
+    assert(kind(base) == CC_PAPP && kind(child(base, 0)) == CC_APP && payload(child(child(base, 0), 0)) == 2);
+    assert(ck_alpha_equal(k, commutes(transported, j, 0), north_end));
+    assert(ck_alpha_equal(k, commutes(transported, j, 1), south_end));
+
+    /* The squash of set (two dimensions) and of trunc(1) (three), along the
+     * line: 2d walls, and each face commutes with transport. */
+    const uint32_t truncated[2] = {set_signature, groupoid_signature};
+    for (uint32_t t = 0; t < 2; ++t) {
+        uint32_t steps = t + 2;
+        cc_judgement_id from = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, truncated[t])), e_0));
+        cc_judgement_id along = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, truncated[t])), e_i));
+        cc_judgement_id squash = squash_at(from, steps, KAN_Y + 10 * t, dims);
+        cc_judgement_id carried = OK(cc_instr_trans(k, OK(cc_instr_system(k, i, along, squash)), nowhere()));
+        cc_term box = reduct(carried, CC_STEP_WHNF);
+        assert(kind(box) == CC_HCOMP && tubes(box) == 2 * steps + 1);
+        for (uint32_t l = 0; l < steps; ++l)
+            for (unsigned end_point = 0; end_point < 2; ++end_point)
+                commutes(carried, dims[l], end_point);
+    }
 }
 
 /* Section 3.2's invariant: every path application in a judgement carries
@@ -923,6 +1071,7 @@ int main(void) {
     generative();
     instances();
     boundaries();
+    kan();
     annotations();
     refusals();
     commits();

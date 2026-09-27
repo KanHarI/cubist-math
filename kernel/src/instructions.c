@@ -1307,6 +1307,25 @@ cc_judgement_id cc_instr_push_elim(cc_kernel *k, cc_judgement_id motive_id, cc_j
                   make(k, CC_PI, z, P, app(k, p.term, ck_var(k, z)), 0, 0), context);
 }
 
+/* Formal composition and transport are for pushouts and declared higher
+ * sorts (H1 family F4); a declared data sort has neither, and composes and
+ * transports by Comp (Q1, 3.3). */
+static bool formal_family(cc_kernel *k, cc_term family, const char *refusal) {
+    cc_term head = ck_whnf(k, family);
+    if (!head)
+        return false;
+    if (k->nodes[head].kind == CC_PUSHOUT)
+        return true;
+    if (k->nodes[head].kind == CC_SORT) {
+        const cc_signature *s = ck_instance_signature(k, head);
+        if (!s || ck_signature_higher(s))
+            return s != NULL;
+        return ck_fail(k, "A declared data sort has no formal composition or transport: compose it with Comp, "
+                          "whose tube φ ↦ u_0 transports (Q1).");
+    }
+    return k->error[0] ? false : ck_fail(k, refusal);
+}
+
 cc_judgement_id cc_instr_hcomp(cc_kernel *k, cc_judgement_id system_id) {
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_HCOMP, .premise = {system_id}}, NULL, 0, &found))
@@ -1322,9 +1341,8 @@ cc_judgement_id cc_instr_hcomp(cc_kernel *k, cc_judgement_id system_id) {
     cc_node comp = k->nodes[s.term];
     if (ck_free_dims(k, comp.child[0]) & (UINT64_C(1) << comp.payload))
         return ck_fail(k, "A homogeneous composition's type may not use its dimension."), 0;
-    cc_term head = ck_whnf(k, comp.child[0]);
-    if (!head || k->nodes[head].kind != CC_PUSHOUT)
-        return k->error[0] ? 0 : (ck_fail(k, "Homogeneous composition is for pushout types."), 0);
+    if (!formal_family(k, comp.child[0], "Homogeneous composition is for pushout types and declared higher sorts."))
+        return 0;
     cc_entry_id dimension = dimension_entry(k, comp.payload);
     if (!dimension || !discharge(k, s.context, &dimension, 1, &context))
         return 0;
@@ -1359,9 +1377,8 @@ cc_judgement_id cc_instr_trans(cc_kernel *k, cc_judgement_id system_id, cc_formu
     }
     if (clause != phi->length)
         return ck_fail(k, "A transport's tubes are its face's clauses, in order."), 0;
-    cc_term head = ck_whnf(k, comp.child[0]);
-    if (!head || k->nodes[head].kind != CC_PUSHOUT)
-        return k->error[0] ? 0 : (ck_fail(k, "Transport is for pushout type families."), 0);
+    if (!formal_family(k, comp.child[0], "Transport is for pushout type families and declared higher sorts."))
+        return 0;
     cc_entry_id dimension = dimension_entry(k, comp.payload);
     if (!dimension || !formula_context(k, phi, &dims) || !discharge(k, s.context, &dimension, 1, &context) ||
         !merge(k, context, dims, &context))

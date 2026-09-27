@@ -150,6 +150,11 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
     }
     if (type.kind == CC_PUSHOUT)
         return ck_whnf(k, ck_pushout_composition(k, dim, family, system, base));
+    if (type.kind == CC_SORT) {
+        cc_term normalized = family == n.child[0] && system == n.child[1] ? term :
+            ck_make(k, CC_COMP, dim, family, system, base, 0);
+        return ck_sort_composition(k, normalized, family, system);
+    }
     if (type.kind == CC_GLUE)
         return ck_whnf(k, ck_glue_composition(k, dim, family, system, base));
     if (type.kind == CC_U)

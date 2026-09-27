@@ -804,36 +804,59 @@ cc_judgement_id cc_instr_sort_parameter(cc_kernel *k, cc_judgement_id instance, 
                          cons(k, p.type, f.other), context, levels, parameters + 1);
 }
 
-cc_judgement_id cc_instr_construct(cc_kernel *k, cc_judgement_id instance, uint32_t constructor) {
-    cc_judgement_id found;
-    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_CONSTRUCT, .premise = {instance}, .operand = {constructor}},
-                        NULL, 0, &found))
-        return found;
-    cc_fact f = {0};
+/* T_k[s := I, recorded levels, parameters, c_m := Con(m; I)] (3.2), for an
+ * instance term I of an admitted signature, whatever its parameters are:
+ * the reduction rules of F4 instantiate it along a line of parameters. */
+cc_term ck_constructor_type(cc_kernel *k, cc_term instance, uint32_t constructor) {
     uint32_t index = 0;
     cc_signature *s = NULL;
-    if (!ck_instr_premise(k, instance, CC_FACT_TYPING, &f) || !admitted_signature(k, f.term, &index, &s))
+    if (!admitted_signature(k, instance, &index, &s))
         return 0;
     if (constructor >= s->constructor_count)
         return fail(k, "The signature has no such constructor."), 0;
-    cc_node sort = node(k, f.term);
+    cc_node sort = node(k, instance);
     cc_term levels[CC_SIGNATURE_LEVELS], as[CC_SIGNATURE_PARAMETERS];
     uint32_t level_count = items(k, sort.child[1], levels, CC_SIGNATURE_LEVELS, false);
     uint32_t parameter_count = items(k, sort.child[0], as, CC_SIGNATURE_PARAMETERS, false);
     if (level_count != recorded_count(s) || parameter_count != s->parameter_count)
         return fail(k, "The instance's parameters and levels are not the signature's."), 0;
-    /* T_k[s := I, recorded levels, parameters, c_m := Con(m; I)] (3.2). */
     simultaneous sub = {.count = 0};
-    assign(&sub, s->sort_symbol, f.term, false);
+    assign(&sub, s->sort_symbol, instance, false);
     for (uint32_t j = 0, r = 0; j < s->level_count; ++j)
         if (s->recorded & (UINT32_C(1) << j))
             assign(&sub, s->symbols[j], levels[r++], true);
     for (uint32_t i = 0; i < s->parameter_count; ++i)
         assign(&sub, s->symbols[s->level_count + i], as[i], false);
     for (uint32_t m = 0; m < constructor; ++m)
-        assign(&sub, s->constructors[m].symbol, ck_make(k, CC_CON, m, f.term, 0, 0, 0), false);
-    cc_term type = apply_substitution(k, s->constructors[constructor].type, &sub);
-    cc_term term = ck_make(k, CC_CON, constructor, f.term, 0, 0, 0);
+        assign(&sub, s->constructors[m].symbol, ck_make(k, CC_CON, m, instance, 0, 0, 0), false);
+    return apply_substitution(k, s->constructors[constructor].type, &sub);
+}
+
+const cc_signature *ck_instance_signature(cc_kernel *k, cc_term instance) {
+    uint32_t index = 0;
+    cc_signature *s = NULL;
+    return admitted_signature(k, instance, &index, &s) ? s : NULL;
+}
+
+/* A higher sort has a constructor with dimensions, or a truncation (3.4). */
+bool ck_signature_higher(const cc_signature *s) {
+    if (s->modifier != CC_UNTRUNCATED)
+        return true;
+    for (uint32_t c = 0; c < s->constructor_count; ++c)
+        if (s->constructors[c].dimensions) return true;
+    return false;
+}
+
+cc_judgement_id cc_instr_construct(cc_kernel *k, cc_judgement_id instance, uint32_t constructor) {
+    cc_judgement_id found;
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_CONSTRUCT, .premise = {instance}, .operand = {constructor}},
+                        NULL, 0, &found))
+        return found;
+    cc_fact f = {0};
+    if (!ck_instr_premise(k, instance, CC_FACT_TYPING, &f))
+        return 0;
+    cc_term type = ck_constructor_type(k, f.term, constructor);
+    cc_term term = type ? ck_make(k, CC_CON, constructor, f.term, 0, 0, 0) : 0;
     return type && term ? ck_instr_publish(k, CC_FACT_TYPING, term, 0, type, f.context) : 0;
 }
 
