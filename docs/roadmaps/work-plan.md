@@ -106,7 +106,7 @@ exported content hashes remain conditional stage-6 work.
 | I0.4 | Remove local scratch state | Recorded done on 2026-09-25 |
 | L0.1 | Non-computing dependencies, `computable`, `evaluate` | Done; extensions have explicit L2.9 packages below |
 | D0.1 | Checked-reference harness | Done: accept/reject examples, excerpts, CLI and REPL transcripts; sketches must be labelled |
-| D0.2 | Reference chapters and quick reference | Chapter 5 done with G0; rewrite chapter 6 with H1; expand `proof.html` now without waiting for H1 |
+| D0.2 | Reference chapters and quick reference | Chapter 5 done with G0; rewrite chapter 6 with H1. Quick reference done on 2026-09-27: `proof.html` gives each construct one checked example and a link to its chapter section; add an entry with each new construct |
 
 The harness is active; `data-check` markers are not inert. Its acceptance
 allows explicitly labelled fragments, so a passing harness does not claim

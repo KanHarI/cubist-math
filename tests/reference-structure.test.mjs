@@ -55,6 +55,26 @@ test("every link in the reference and the quick reference resolves, including it
   assert.deepEqual(problems, []);
 });
 
+// The proof workspace's quick reference: one entry per construct, each with
+// one checked example (reference-examples.test.mjs checks it) and a link to
+// the chapter section that explains it.
+test("the quick reference gives each construct one checked example and its chapter", async () => {
+  const page = await read("proof.html"), start = page.indexOf('id="language-guide"');
+  const guide = page.slice(start, page.indexOf("</details>", start));
+  const entries = [...guide.matchAll(/<div class="quick-entry" id="([^"]+)">([\s\S]*?)<\/div>/g)];
+  assert.ok(entries.length > 0, "the quick reference has entries");
+  assert.equal(referenceExamples("proof.html", guide).length, entries.length, "every example belongs to one entry");
+  for (const [, id, body] of entries) {
+    const examples = referenceExamples(id, body);
+    assert.equal(examples.length, 1, `${id} has one example`);
+    assert.equal(examples[0].attrs["data-check"], "accept", `${id}: its example is checked`);
+    assert.equal(hrefs(body).filter(href => /^reference\/[a-z-]+\.html#[a-z0-9-]+$/.test(href)).length, 1,
+      `${id} links to the chapter section that explains it`);
+  }
+  const topics = [...guide.matchAll(/<nav class="quick-topics"[\s\S]*?<\/nav>/g)].flatMap(([nav]) => hrefs(nav));
+  assert.deepEqual(topics, [...guide.matchAll(/<h3 id="([^"]+)">/g)].map(([, id]) => `#${id}`), "the topic list names every group");
+});
+
 test("anchors of the former single-page reference redirect to their chapters", async () => {
   const index = await read("language.html");
   const moved = JSON.parse(index.match(/const moved = (\{[\s\S]*?\});/)[1]);
