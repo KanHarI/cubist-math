@@ -91,6 +91,31 @@ A fourth review found two consistency defects, now fixed:
   and the migration verifier rejects it (fixture X8). No such call exists
   today.
 
+## Decisions
+
+The user decided these open questions on 2026-09-27. Section 11 records
+each as decided.
+
+- **Q16: finite levels only.** The conservative first release. Instances
+  read and carry finite levels. The native sum, W and pushout instructions
+  stay for arguments at tier-1 levels, and K2.4 retires only the `Nat`
+  instructions. The tier-parametric extension of 2.3 is a later proposal,
+  not a pending choice.
+- **Q8: per universe parameter.** An erased parameter only bounds parameter
+  types, and instances are one term at every universe (D9). A recorded
+  parameter occurs in a constructor type or cannot be read; instances
+  carry it, and are distinct at different levels, as standard universe
+  polymorphism (D8). Admission classifies each parameter by an occurrence
+  check, and the kernel checks the classification (1.1, 5.2).
+- **Q15: level-dependent signatures are admitted,** with the parameter
+  recorded. `inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }`
+  checks.
+- **Header universes** (9). The result position after the colon accepts a
+  universe wherever it accepts `type`, as in `inductive Flag : U1 { … }`,
+  `: next(U)`, or `: prop U` together with an h-level. A written universe
+  is the declared level, checked as an upper bound; without one, the least
+  level is inferred. When in doubt, the user writes the universe.
+
 ## 0. Relation to the adopted design and to G0
 
 The design fixes one signature format for H1–H4. For H1 this document makes
@@ -105,7 +130,7 @@ recommendation.
 | Boundaries are systems on faces of the constructor's dimensions | Boundaries are cube boundaries: a piece on both faces of every dimension (Q4) | A cube boundary is an iterated path type, which the kernel already has. Partial boundaries would need extension types. |
 | Constructors take dimension arguments | A constructor with dimensions is a function into an iterated path type, applied at interval formulas by path application (Q5) | Boundary reduction is then the kernel's existing path step, and overlap agreement is typing. |
 | A sort's level is the maximum of its data and arity levels | The former's type declares the level; the kernel checks that every constructor type lives in that universe, and the elaborator declares the least such level (Q7) | The instruction kernel does not infer principal levels. |
-| G0 2.12: generated constants are level-abstracted, as `Trunc : Π (x < ω). Π (A : U(x)). U(x)`; G0 Q1: instances at different levels are distinct | Instances carry no level of their own. A sort instance, a constructor and an eliminator are one term at every universe, and the levels are read from the parameters' judgements, within the finite range admission checked. An extension lets tier-parametric signatures read every tier (Q16). H1 admits only level-parametric signatures, whose constructor types mention no level parameter (Q8, Q15, Q16) | The native formers are level-erased, and the archive relies on it (7.2). A sort built from its parameters alone does not depend on the universe it is viewed in (D9). |
+| G0 2.12: generated constants are level-abstracted, as `Trunc : Π (x < ω). Π (A : U(x)). U(x)`; G0 Q1: instances at different levels are distinct | Per universe parameter (Q8, decided). An *erased* parameter, which only bounds parameter types, is read from the parameters' judgements, so instances are one term at every universe. A *recorded* parameter, which occurs in a constructor type or cannot be read, is carried by instances, and instances at different levels are distinct, as G0 Q1 decided. Every level is finite (Q16, decided) | The native formers are level-erased, and the archive relies on it (7.2). A sort built from its parameters alone does not depend on the universe it is viewed in (D9). A sort that stores types of its own level does, and is standard universe polymorphism (D8). |
 
 Everything else follows the design: one signature format, positions as
 cubes, generated squash constructors for `set` and `prop`, clause typing
@@ -140,20 +165,22 @@ formal compositions, and staged trust.
 - **Universes.** A sort lives in the universe its former's type declares, and
   every data type and arity must fit in it. Parameters count only through
   those types. Lowering is rejected.
-- **Level-erased instances.** Level parameters type the parameters only, and
-  never occur in a constructor type. An instance `S(a⃗)` carries no level of
-  its own: its universe is read from the parameters' judgements, so one term
-  serves every universe, as native sums do. The read levels are finite.
-  Letting tier-parametric signatures read every tier is a specified
-  extension, recommended for later (Q16).
+- **Erased and recorded universe parameters** (Q8, Q15, decided). A level
+  parameter that only bounds parameter types is erased: instances read it
+  from their parameters' judgements, so one term serves every universe, as
+  native sums do. A level parameter that occurs in a constructor type, or
+  cannot be read, is recorded: instances carry it, and instances at
+  different recorded levels are distinct. Every level is finite (Q16,
+  decided); letting tier-parametric signatures read every tier is a later
+  proposal.
 - **Trust.** Admission requires the kernel's H1 extension flag until review.
   Results carry `kernel extension: H1` transitively; it is visible, and it is
   not a non-computing dependency.
 - **Differential oracle (K2.4).** `Nat`, sums, W types and pushouts are
   declared as signatures and compared with the hand-coded instructions by a
-  level-free translation. In the recommended first release, the `Nat`
-  instructions retire, and the sum, W and pushout instructions stay only
-  for arguments at tier-1 levels (Q16). Native and declared forms are different
+  level-free translation. As Q16 decided, the `Nat` instructions retire,
+  and the sum, W and pushout instructions stay only for arguments at tier-1
+  levels. Native and declared forms are different
   types; no conversion relates them.
 - **Truncation (K2.5, G2).** `Trunc` is universe-preserving and has no
   resizing. The archive keeps its legacy assumptions. Measured on the archive,
@@ -168,8 +195,9 @@ formal compositions, and staged trust.
 | Symbol | Meaning |
 | --- | --- |
 | `S` | the sort being declared; also its instance `S(a⃗)` at parameters `a⃗` |
-| `x⃗` | the signature's level parameters; they type the parameters, and each instance reads them from its parameters' judgements |
-| `ρ` | the levels read at an instance, one per level parameter |
+| `x⃗` | the signature's level parameters: erased ones, which each instance reads from its parameters' judgements, and recorded ones `x⃗_r`, which it carries |
+| `ρ` | an instance's levels, one per level parameter: given for recorded ones, read for erased ones |
+| `ℓ⃗_r` | an instance's recorded levels; `S{ℓ⃗_r}(a⃗)` is the instance, written `S(a⃗)` when there are none |
 | `p⃗ : P⃗` | the signature's term parameters, a telescope over `x⃗` |
 | `ℓ` | the sort's level, a level expression over `x⃗` |
 | `c_1 … c_n` | constructors, in order; `c_k` also names the constructor at an instance |
@@ -201,22 +229,35 @@ modifier, and an ordered list of constructors.
 - The telescope starts with level parameters `x⃗`, then term parameters
   `p⃗ : P⃗`, each type well formed over the ones before. At admission the
   telescope is presented as G0's prenex level binders `x⃗ < ω` (G0 Q8).
-- **Level-parametric.** A level parameter occurs only in the parameter types,
-  never in a constructor type `T_k`. The constructors are therefore built
-  from the parameters' values alone, which is what makes level-erased
-  instances sound (D9). A signature that stores a type of a parameter level,
-  such as `wrap(B : U(x))`, is level-dependent and excluded from H1 (Q15).
-- **Determined.** Every level parameter occurs as the whole universe at the
-  end of some parameter's type, as in `A : U(x)` or `B : L → U(y)`; `U(x + 1)`
-  and `U(max(x, y))` do not count. Each instance reads the level there, from
-  that parameter's judgement, as a level expression (3.1). A level parameter
-  with no such occurrence is rejected.
-- **Finite levels.** The instances of a signature with level parameters
-  read finite levels, the range its admission checked. A proposed extension
-  would let *tier-parametric* signatures, whose admission derivation never
-  uses the finiteness of a level parameter, read levels of every tier (2.3,
-  Q16). A signature may also be stated at fixed levels of any tier, with no
-  level parameters.
+- **Erased and recorded universe parameters** (Q8, decided). Admission
+  classifies each level parameter by a syntactic occurrence check:
+  - *Erased*: it occurs in no constructor type `T_k`, and it has a
+    determining occurrence (below). It only bounds parameter types, so each
+    instance reads it from its parameters' judgements, and the instance
+    term does not carry it. `Trunc`, `List`, `W`, `Pushout`, `Quotient` and
+    the K2.4 counterparts have only erased parameters.
+  - *Recorded*: it occurs in some constructor type, or it has no
+    determining occurrence, as when it occurs only in the result universe.
+    Each instance carries it as an explicit level argument, and instances
+    at different recorded levels are distinct types, as G0 Q1 decided for
+    generic definitions. `Pointed(U < UU0) : next(U) { pt(X : U, x : X); }`
+    has a recorded parameter: `X : U` is data.
+
+  The driver proposes the classification, and the kernel records it and
+  checks it (5.2). The kernel never accepts as erased a parameter that
+  occurs in a constructor type: the instance term would then be one type
+  at every level, containing types of its own level, which is the
+  self-containing universe behind Girard's paradox (2.3, V24).
+- **Determined.** An erased parameter occurs as the whole universe at the
+  end of some parameter's type, as in `A : U(x)` or `B : L → U(y)`;
+  `U(x + 1)` and `U(max(x, y))` do not count. Each instance reads the level
+  there, from that parameter's judgement, as a level expression (3.1).
+- **Finite levels** (Q16, decided). Instances read and carry finite levels
+  only, the range admission checked, whether erased or recorded. A later
+  proposal would let *tier-parametric* signatures, whose admission never
+  uses the finiteness of an erased parameter, read levels of every tier
+  (2.3). A signature may also be stated at fixed levels of any tier, with
+  no level parameters.
 - Parameters are uniform: every occurrence of `S` inside the signature is at
   the declared parameters. A constructor cannot mention `S` at other
   arguments; that is an index, which is H2.
@@ -329,19 +370,18 @@ A user constructor cannot mention them, since they come last.
 - Non-uniform parameters: an index in disguise, H2.
 - Arities that depend on positions (design open question 1).
 - Partial boundaries, and boundaries with compositions (Q3, Q4).
-- Level-dependent signatures, whose constructor types mention a level
-  parameter (Q15).
-- Instances at tier-1 levels, in the recommended first release. Q16's
-  extension would allow them for tier-parametric signatures.
+- Instances at tier-1 levels (Q16, decided). The later tier-parametric
+  proposal would allow them for erased parameters of tier-parametric
+  signatures.
 - Induction-recursion (design open question 2).
 
 ### 1.8 Examples in normal form
 
 Level parameters are written `x`, `y`, `z`; `U(x)` is the universe. `Path(S, a, b)`
 abbreviates `Path(i; S, a, b)` when `i` is not used. The former type is the
-signature's presentation at admission; an instance carries no level (3.1).
-Every example is level-parametric: no constructor type mentions `x`, `y` or
-`z`.
+signature's presentation at admission. Every level parameter is erased,
+and instances carry no level for it (3.1), except in `Pointed`, whose `x`
+occurs in a constructor type and is recorded.
 
 | Declaration | Former type | Constructors |
 | --- | --- | --- |
@@ -355,6 +395,7 @@ Every example is level-parametric: no constructor type mentions `x`, `y` or
 | `S2` | `U(0)` | `base : s`; `surf : Path(i; Path(j; s, base, base), ⟨j⟩ base, ⟨j⟩ base)` |
 | `Trunc`, `prop` | `Π (x < ω). Π (A : U(x)). U(x)` | `point : Π (a : A). s`; generated `squash` |
 | `Quotient`, `set` | `Π (x, y < ω). Π (A : U(x)). Π (R : A → A → U(y)). U(max(x, y))` | `class : Π (a : A). s`; `glue : Π (a, b : A). Π (r : R(a, b)). Path(s, class(a), class(b))`; generated `squash` |
+| `Pointed`, from `inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }` | `Π (x < ω). U(x + 1)`, `x` recorded | `pt : Π (X : U(x)). Π (p : X). s` |
 
 In `Torus`, the inner path over `j` runs from `p @ i` to `p @ i`, and the
 outer endpoints are `q`. They agree at the four corners, `b`, by the typing
@@ -376,11 +417,13 @@ outer endpoints `⟨j⟩ base` are path abstractions (1.4). In `Pushout`,
   `s`.
 - Parameters count only through those types (G0 Q6). A parameter that no data
   type or arity mentions contributes nothing.
-- The kernel checks `ℓ` as an upper bound. The elaborator declares the least
+- The kernel checks `ℓ` as an upper bound. The header may state `ℓ` as a
+  universe after the colon; otherwise the elaborator declares the least
   level: the maximum of the inferred levels of the data types and arities,
-  and `0` when there are none (Q7).
-- An instance `S(a⃗)` lives in `U(ℓ[ρ])`, where `ρ` is read from the
-  parameters' judgements (3.1). `Trunc(A)` for `A : U(x)` lives in `U(x)`.
+  and `0` when there are none (Q7, 9).
+- An instance lives in `U(ℓ[ρ])`, where `ρ` holds its recorded levels and
+  the erased levels read from its parameters' judgements (3.1). `Trunc(A)`
+  for `A : U(x)` lives in `U(x)`, and `Pointed{x}` in `U(x + 1)`.
 
 ### 2.2 Fixtures by case
 
@@ -391,7 +434,10 @@ outer endpoints `⟨j⟩ base` are path abstractions (1.4). In `Pushout`,
 | Arity | `W(x, y < ω, L : U(x), B : L → U(y))` | `U(max(x, y))`: `B(l)` is an arity |
 | Relation | `Quotient(x, y < ω, A : U(x), R : A → A → U(y))` | `U(max(x, y))`: `r : R(a, b)` is data of `glue` |
 | Large parameter only | `Tag(A : U(1)) { here; }` | `U(0)` |
-| Tier 1 through parameters | `Pair(A, B)` for `A, B : UU0` | Refused in the first release; with Q16's extension, `UU0`, both level parameters reading `ω` |
+| Stored type, recorded level | `Pointed(x < ω) : U(x + 1) { pt(X : U(x), p : X); }` | `U(x + 1)`; `x` is recorded |
+| Mixed | `Tagged(x, y < ω, A : U(x)) : U(max(x, y + 1)) { tag(a : A, B : U(y)); }` | `U(max(x, y + 1))`; `x` erased, `y` recorded |
+| Stored type, fixed level | `Pointed1 : U1 { pt(X : U0, x : X); }` | `U(1)`, as written |
+| Tier 1 through parameters | `Pair(A, B)` for `A, B : UU0` | Refused (Q16); the later tier-parametric proposal would give `UU0` |
 | Tier 1 at fixed levels | `Big(A : UU0) { wrap(a : A); }` | `UU0` |
 
 Indices, the fifth case the work plan lists, arrive with H2; the rule then
@@ -399,8 +445,9 @@ counts index types too (G0 2.12).
 
 ### 2.3 Instances and rejections
 
-- **One term at every universe.** `Trunc(A)` is one term. It is typed at
-  `U(ℓ[ρ])` for the levels `ρ` read from `A`'s judgement, and a derivation
+- **Erased parameters: one term at every universe.** `Trunc(A)` is one
+  term. It is typed at `U(ℓ[ρ])` for the levels `ρ` read from `A`'s
+  judgement, and a derivation
   that first lifts `A` types it higher; cumulativity relates the two. So
   `point(a)`, built where `A : U(0)`, is a term of `Trunc(A)` where a generic
   definition sees `A : U(1)`. The native sums behave this way today:
@@ -411,24 +458,47 @@ counts index types too (G0 2.12).
   def lifted : Nat or Nat := sum_id(U1, Nat, small);
   ```
 
-  checks, and its translation (7.2) must check too. For declared sorts this
-  replaces G0 Q1's distinct instances (Q8).
+  checks, and its translation (7.2) must check too. For erased parameters
+  this replaces G0 Q1's distinct instances (Q8).
+- **Recorded parameters: explicit and distinct.** An instance carries each
+  recorded level. At the source, `Pointed(U0)` is the instance with
+  recorded level `0`; `Pointed` used as a function is the level λ
+  `fun (U < UU0) => Pointed(U)`, which G0's `LevelApply` and `Beta`
+  instantiate. The level is supplied at formation under `LevelApply`'s
+  conditions: finite, substituted by G0's capture-avoiding substitution,
+  and compared by normal form (3.1). `Pointed(U0) : U1` and
+  `Pointed(U1) : U2` are distinct types, following G0 Q1: a `Pointed(U0)`
+  value is not a `Pointed(U1)` value. A map between them is written by
+  `match`, as in
+
+  ```text
+  def lift(p : Pointed(U0)) : Pointed(U1) := match p { pt(X, x) => pt(X, x); };
+  ```
+
+  where `X : U0` is used at `U1` by cumulativity. This is standard universe
+  polymorphism: at each assignment of its recorded levels the signature is
+  an ordinary fixed-level signature, by G0's decomposition (G0 3.2), and
+  its soundness needs no argument beyond G0's.
 - **Instances within the admission's bound.** Admission derives the
   constructor types with level entries `x < ω`, so the derivation holds at
   every finite assignment, by G0's level substitution (G0 Lemma 4). An
   instance therefore reads finite levels: tier-0 level expressions, which may
-  mention level variables. A read level of tier 1 or above is refused. This
-  is the rule of the recommended first release (Q16).
-- **Extension: tier-parametric signatures (Q16).** The native formers accept
-  arguments at every tier. A signature could too, if its admission never
-  relied on its level parameters being finite. Q16 decides whether H1
-  includes this extension; the recommendation is to defer it. It is
-  specified here so that the choice is concrete.
+  mention level variables. A read level of tier 1 or above is refused, and
+  so is a recorded level of tier 1 or above, by `LevelApply`'s own
+  condition. This is H1's rule (Q16, decided).
+- **Later proposal: tier-parametric signatures** (Q16, decided against for
+  H1). The native formers accept arguments at every tier. A signature's
+  erased parameters could too, if its admission never relied on their
+  being finite. Q16 decided that H1 leaves this out, and it is kept
+  specified here for a later decision, when a rebuilt result needs a
+  declared type at `UU0`. Recorded parameters stay finite in any case, by
+  `LevelApply`'s condition.
 
-  *Criterion.* A signature is tier-parametric when its admission is
-  derivable without using the bound `x < ω` of any level parameter, so that
-  every level side condition of the derivation holds when the level
-  parameters range over all ordinals below ω². G0's rules use the bound in
+  *Criterion.* A signature is tier-parametric when it has no recorded
+  parameter, and its admission is derivable without using the bound
+  `x < ω` of any level parameter, so that every level side condition of
+  the derivation holds when the level parameters range over all ordinals
+  below ω². G0's rules use the bound in
   three places: `LevelApply` requires a finite level; level normal forms
   absorb a variable into a constant of tier 1 or above, as in
   `max(x, ω) = ω` and `x ≤ ω`; and a level quantification lives at the
@@ -534,10 +604,24 @@ counts index types too (G0 2.12).
 - **Lowering.** A constructor type that needs a level above `ℓ` cannot be
   derived at `U(ℓ)`, since no instruction lowers a universe. Example:
   `Small(x < ω, A : U(x)) : U(0) { wrap(a : A); }` is rejected at `wrap`.
-- **Level-dependent signatures.** `Wrap(x < ω) : U(x + 1) { wrap(B : U(x)); }`
-  is rejected: `x` occurs in a constructor type. Its elements store types of
-  level `x`, so its instances at different levels differ, and erasing the
-  level would identify them (Q15).
+- **Level-dependent signatures are admitted, with the parameter recorded**
+  (Q15, decided). `Wrap(x < ω) : U(x + 1) { wrap(B : U(x)); }` is admitted,
+  and `x` is recorded because it occurs in a constructor type.
+- **Never erase a level that a constructor type mentions.** A driver that
+  proposes such a parameter as erased is refused at the constructor
+  (acceptance V24). Take
+  `Holder(x < ω, A : U(x)) : U(x + 1) { hold(B : U(x)); }` with `x` proposed
+  erased, since `A : U(x)` determines it. Then `Holder(Unit)` would be one
+  term at every level. At `x = 1` it would contain `hold(B)` for every
+  `B : U(1)`, and `Holder(Unit)` itself lives in `U(1)` when read at
+  `x = 0`. So `hold(Holder(Unit)) : Holder(Unit)`: a type containing its
+  own code. That is the self-containing universe behind Girard's paradox.
+  Recorded, `Holder{0}(Unit) : U(1)` and `Holder{1}(Unit) : U(2)` are
+  distinct, and no such element exists.
+- **Lowering with a recorded level.**
+  `Pointed(x < ω) : U(x) { pt(X : U(x), p : X); }`, from the source
+  `inductive Pointed(U < UU0) : U { … }`, is rejected at `pt`. The data
+  `X : U(x)` lives in `U(x + 1)`, above the declared level.
 - **Tier-1 constants with level parameters.**
   `Mixed(x < ω, A : U(x), B : UU0) { mk(a : A, b : B); }` is admitted, but it
   is not tier-parametric. G0's normal form absorbs `x` into `ω` in
@@ -553,14 +637,15 @@ counts index types too (G0 2.12).
 
 ### 2.4 Level substitution
 
-- Instance nodes carry no level argument of their own, but their parameter
-  terms may mention levels. Level substitution is G0's ordinary recursive
-  substitution (G0 2.8), through every subterm: parameters, constructor
-  arguments, motives and clauses. So `(λ (x < ω). Trunc(U(x))) {0}` reduces
+- An instance carries its recorded levels and nothing for its erased ones,
+  and its parameter terms may mention levels too. Level substitution is
+  G0's ordinary recursive substitution (G0 2.8), through every subterm:
+  recorded levels, parameters, constructor arguments, motives and clauses.
+  `Pointed{x}` at `x := 0` is `Pointed{0}`. So `(λ (x < ω). Trunc(U(x))) {0}` reduces
   by `Beta` to `Trunc(U(0))`, and an eliminator whose motive lands in
   `U(x + 1)` becomes one into `U(1)` (acceptance V16).
-- Formation reads an instance's levels from its parameters' judgements
-  (3.1), so the reading is itself substituted: a parameter judgement
+- Formation reads an instance's erased levels from its parameters'
+  judgements (3.1), so the reading is itself substituted: a parameter judgement
   `U(x) : U(x + 1)` becomes `U(0) : U(1)`, and the read level becomes `1`.
   Level substitution therefore commutes with formation when the substituted
   levels stay within the signature's bound. G0's substitution is at finite
@@ -587,27 +672,36 @@ counts index types too (G0 2.12).
 
 ### 3.1 Formation
 
-An instance `S(a⃗) : U(ℓ[ρ])` is formed from judgements `a_i : P_i[ρ, a_<i]`,
-one per term parameter, in order:
+An instance `S{ℓ⃗_r}(a⃗) : U(ℓ[ρ])` is formed from one finite level per recorded
+parameter, `ℓ⃗_r`, and judgements `a_i : P_i[ρ, a_<i]`, one per term
+parameter, in order:
 
-- each level parameter reads its level `ρ(x)` at its determining occurrence:
-  the universe at the end of the corresponding parameter judgement's type;
+- each recorded parameter takes its given level, under `LevelApply`'s
+  conditions: finite, with its variables level entries of the context;
+- each erased parameter reads its level `ρ(x)` at its determining
+  occurrence: the universe at the end of the corresponding parameter
+  judgement's type;
 - every parameter judgement's type must then be exactly `P_i` with `ρ` and
   the earlier parameters substituted, up to alpha equality. When two
-  occurrences of a level parameter would read different levels, the
+  occurrences of an erased parameter would read different levels, the
   judgement is refused, and the driver lifts the lower parameter first;
-- the term records the signature and the term parameters only. It carries no
-  level.
+- the term records the signature, the recorded levels and the term
+  parameters. It carries nothing for the erased parameters. Signatures
+  with no recorded parameter, such as `Trunc`, have instances written
+  `S(a⃗)`.
 
-The read levels must be finite. With Q16's extension, a tier-parametric
-signature's may be of any tier (2.3). A derivation that lifts a parameter
-first reads a higher `ρ`, and types the same term in a higher universe.
+Every level, read or given, must be finite (Q16, decided). A derivation that
+lifts a parameter first reads a higher erased level, and types the same term
+in a higher universe. Two instances with recorded levels of different normal
+forms are different terms, so different types.
 
 ### 3.2 Constructors and boundary reduction
 
-- At an instance `I = S(a⃗)`, the constructor `c_k` is the term `Con(k; I)`, of
-  type `T_k[s := I, p⃗ := a⃗, c_m := Con(m; I)]`. No level is substituted, since
-  `T_k` mentions no level parameter (1.1).
+- At an instance `I = S{ℓ⃗_r}(a⃗)`, the constructor `c_k` is the term
+  `Con(k; I)`, of type `T_k[s := I, x⃗_r := ℓ⃗_r, p⃗ := a⃗, c_m := Con(m; I)]`.
+  Only the recorded levels are substituted: `T_k` mentions no erased
+  parameter (1.1). So `pt` at `Pointed{0}` has type
+  `Π (X : U(0)). Π (p : X). Pointed{0}`.
 - A saturated application `Con(k; I)(u⃗, e⃗)`, written `c_k(a⃗)(u⃗, e⃗)` below, is
   canonical. With `d_k ≥ 1` it is a path, and `(c_k … ) @ r_1 … @ r_d` with no
   `r_l` an endpoint is canonical.
@@ -800,15 +894,17 @@ declarations to this base. The claims below are relative to it.
 This follows the design's proposed route (design §4), restricted to one sort
 and no indices.
 
-1. **Levels.** A level-parametric signature's constructor types mention no
-   level parameter, so the construction below takes only the parameters'
-   values `⟦a⃗⟧` as input. The levels `ρ` read at an instance only name a
-   universe `U_α` that contains the result. Each such `α` is large enough:
-   for finite `ρ` by G0's substitution into the admission derivation, and,
-   with Q16's extension, for a tier-parametric signature at any `ρ` by the
-   induction of 2.3. So one presheaf interprets the instance at every `ρ`, and
+1. **Levels.** Recorded levels are fixed by the instance. By G0's
+   decomposition (G0 3.2) the signature is interpreted separately at each
+   assignment of them, as an ordinary fixed-level signature. Erased levels
+   occur in no constructor type, so at fixed recorded levels the
+   construction below takes only the parameters' values `⟦a⃗⟧` as input.
+   The erased levels read at an instance only name a universe `U_α` that
+   contains the result, and each such `α` is large enough, by G0's
+   substitution into the admission derivation at finite levels. So one
+   presheaf interprets the instance at every erased reading, and
    cumulativity by subsumption relates the universes (D9). Every other H1
-   obligation is argued at fixed parameter values.
+   obligation is argued at fixed parameter values and recorded levels.
 2. **Carrier.** For fixed parameters `a⃗` in a context `Γ`, define the
    presheaf `⟦S(a⃗)⟧` over cubes as the least family of sets closed under:
    - a constructor `c_k` applied to an element of its argument telescope at
@@ -854,8 +950,8 @@ and no indices.
 | D5 | Infinitary positions in higher sorts | Step 4's inductive definition allows infinitary generating clauses; the metatheory needs the corresponding well-founded trees, which ZFC provides. | Argued. **Open obligation:** the infinitary inductive definition over cubes, with restriction, written out |
 | D6 | Path-valued constructors | A presentation of dimension arguments: `c @ r` is the constructor at `r`. It changes no rule of the model. | A conditional outline, found valid in review |
 | D7 | Motives in any universe, including UU tiers | The eliminator is defined in the model at fixed parameter values, and a motive's universe plays no role in its definition. | A conditional outline, found valid in review |
-| D8 | Level-generic signatures | No reduction rule reads a level. Level substitution recurses through parameter terms, motives and clauses, and commutes with formation's reading of levels from parameter judgements (2.4). | Argued; corrected after the second review, which found the first statement ignored levels inside parameter terms. Relies on G0 |
-| D9 | Level-erased instances | The constructor types mention no level parameter, so the carrier, its Kan structure and its eliminator are built from `⟦a⃗⟧` alone (4.2, step 1). Cumulative universes are nested by subsumption, so one presheaf lies in every `U_α` that is large enough. At finite read levels, G0's substitution into the admission derivation shows each is. With Q16's extension, a tier-parametric signature is instantiated at tier-1 levels too. Its admission derivation uses no finiteness of a level parameter, which the kernel checks on the derivation itself, and 2.3's induction replays it at every ordinal assignment. This is the condition under which Timany and Sozeau make instances of a Coq inductive cumulative. | Argued at finite levels. Two reviews found bounds hidden in referenced types, first through a signature's parameter type and then through a parameter-free signature's constructor. The extension now rests on a check of the derivation, whose sufficiency is proved in outline (2.3). To be reviewed |
+| D8 | Level-generic signatures, and recorded parameters | No reduction rule reads a level. Level substitution recurses through recorded levels, parameter terms, motives and clauses, and commutes with formation's reading of erased levels from parameter judgements (2.4). A recorded parameter is standard universe polymorphism: at each assignment of recorded levels the signature is an ordinary fixed-level signature (G0 3.2), and instances at different levels are distinct, as G0 Q1 decided for definitions. | Argued; relies on G0 and needs no new argument. Corrected after the second review for levels inside parameter terms |
+| D9 | Erased universe parameters | An erased parameter occurs in no constructor type, so at fixed recorded levels the carrier, its Kan structure and its eliminator are built from `⟦a⃗⟧` alone (4.2, step 1). Cumulative universes are nested by subsumption, so one presheaf lies in every `U_α` that is large enough. At finite read levels, G0's substitution into the admission derivation shows each is. This is the condition under which Timany and Sozeau make instances of a Coq inductive cumulative. The kernel refuses an erased parameter that occurs in a constructor type (V24). The later tier-parametric proposal would extend this to tier-1 readings (2.3). | Argued at finite levels, which is all Q16 admits. To be reviewed |
 
 **Lemma H1 (clause typing is the partial eliminator).** For a constructor
 expression `E` over positions `q⃗` and earlier constructors, and the
@@ -937,8 +1033,10 @@ marker.
 | The model of 4.2 for the whole schema | Argued from Coquand–Huber–Mörtberg's construction (D1–D9); the construction written out is an **open obligation** (D1) |
 | Well-foundedness of the carrier with cube and infinitary positions | Argued (D4, D5); written out is an **open obligation** |
 | Transport with boundary correction for `d ≥ 2` | The local wall calculation is checked (D3); its stability is Lemma H2's open obligation; property tests in section 10 |
-| Level-erased instances are sound at finite levels | Argued (D9), from G0's level substitution |
-| With Q16's extension, tier-parametric signatures are sound at every tier | Proved here in outline, by induction on the checked admission derivation (2.3). The classification of each instruction into the cases of that induction is a review item of K2.2 |
+| Erased universe parameters are sound at finite levels | Argued (D9), from G0's level substitution |
+| Recorded universe parameters are sound | Standard universe polymorphism, by G0's decomposition (D8); no new argument |
+| The kernel's classification check refuses an erased parameter in a constructor type | Specified (5.2); a rejection test (V24) |
+| The later tier-parametric proposal would be sound at every tier | Proved here in outline, by induction on the checked admission derivation (2.3). Not part of H1 (Q16, decided) |
 | Confluence of the generated rules with the existing ones | Argued at boundaries (3.7); the full critical-pair check is an **open obligation** |
 | Canonicity for H1 | Argued (4.4), relative to the assumed baseline |
 | Consistency and canonicity of the baseline, pushouts included | **Assumed**, as in G0 3.6 |
@@ -995,16 +1093,17 @@ Tags 1–49 keep their numbers. New kinds are appended:
 
 | Tag | Kind | Payload and children |
 | --- | --- | --- |
-| 50 | `CC_SORT` | payload: signature index; child 0: the term parameters, as a list. An instance `S(a⃗)`, with no level. |
+| 50 | `CC_SORT` | payload: signature index; child 0: the term parameters, as a list; child 1: the recorded levels, as a list of level nodes, or 0. An instance `S{ℓ⃗_r}(a⃗)`, with nothing for its erased parameters. |
 | 51 | `CC_CON` | payload: constructor number; child 0: the instance. The constructor `Con(k; I)`, a function of its data and positions. |
 | 52 | `CC_ELIM` | payload: signature index; child 0: motive; child 1: clause list. A function on the sort. |
-| 53 | `CC_LIST` | child 0: an item; child 1: the next cell, or 0. Parameter and clause lists. |
+| 53 | `CC_LIST` | child 0: an item; child 1: the next cell, or 0. Parameter, level and clause lists. |
 
 - `CC_HCOMP` and `CC_TRANS` keep their layout. Their family may be any higher
   sort instance, not only a pushout.
 - **Signature table.** Each entry records: its state (open or admitted); the
   former's type; the level and parameter binder symbols; each level
-  parameter's determining occurrence; the sort symbol and level `ℓ`; the
+  parameter's classification, erased or recorded, and each erased one's
+  determining occurrence; the sort symbol and level `ℓ`; the
   h-level modifier; and, per constructor, its symbol, its type `T_k` over the
   admission symbols, the split between data and positions, each position's
   arity length and cube depth, and `d_k`.
@@ -1021,31 +1120,33 @@ Tags 1–49 keep their numbers. New kinds are appended:
 
 ### 5.2 Family F1: admission
 
-- `SignatureBegin(former, modifier, sort symbol)`: from a closed judgement
-  `⊢ F : U(…)` whose term `F` is `Π (x⃗ < ω). Π (p⃗ : P⃗). U(ℓ)`, open a
-  signature. The binder symbols of `F` name the admission context's level and
-  parameter entries, and the sort symbol names `s : U(ℓ)`. Returns a
-  signature judgement (a new judgement kind, like a composition system).
+- `SignatureBegin(former, modifier, sort symbol, classification)`: from a
+  closed judgement `⊢ F : U(…)` whose term `F` is
+  `Π (x⃗ < ω). Π (p⃗ : P⃗). U(ℓ)`, open a signature. The binder symbols of `F`
+  name the admission context's level and parameter entries, and the sort
+  symbol names `s : U(ℓ)`. The classification marks each level parameter
+  erased or recorded; the driver proposes it by the occurrence check of 1.1.
+  Returns a signature judgement (a new judgement kind, like a composition
+  system).
 - `SignatureConstructor(signature, type, symbol)`: from `Γ ⊢ T_k : U(ℓ)`, where
   every entry of `Γ` is a level or parameter entry of the signature (by symbol,
   at an alpha-equal type), the sort entry, or an earlier constructor's entry
-  at its recorded type: check the shape and positivity of 1.2–1.5, check that
-  `T_k` mentions no level parameter (1.1), and record `c_k`. The universe
+  at its recorded type: check the shape and positivity of 1.2–1.5, check
+  that `T_k` mentions no erased parameter (1.1), and record `c_k`. A
+  recorded parameter may occur in `T_k`. The universe
   must be exactly `U(ℓ)`, compared by level normal form;
   the driver lifts below it. The check reads the syntax as written, with no
   reduction: a data type written `(λ (X : U(0)). Nat)(s)` mentions `s` and is
   rejected. The driver presents `T_k` with such redexes contracted.
-- `SignatureBegin` also checks the former type: every level parameter has a
-  determining occurrence (1.1).
+- `SignatureBegin` also checks the former type: every erased parameter has
+  a determining occurrence (1.1). A recorded parameter needs none.
 - `SignatureClose(signature)`: append the generated squash constructors for
   the modifier, mark it admitted, and return its index. Later instructions
   name an admitted signature by its index, as `Lookup` names a definition.
-- With Q16's extension, `SignatureBegin` also requires the former judgement
-  to end in its closing prenex, and `SignatureClose` records whether the
-  signature is tier-parametric. It walks the judgements 2.3 lists, below
-  that prenex, with the three rules of 2.3, and consults the recorded flag
-  of each signature the derivation uses. The walk visits each judgement
-  once.
+- The later tier-parametric proposal would add, at `SignatureBegin`, that
+  the former judgement end in its closing prenex, and at `SignatureClose`,
+  a recorded tier-parametric flag from the walk of 2.3. H1 does not include
+  it (Q16, decided).
 
 The admission context's entries are ordinary entries, made by `Level` and
 `Extend`, and the constructor types are derived by ordinary instructions. A
@@ -1057,28 +1158,31 @@ constructor judgement with a foreign entry, or an entry at another type; a
 universe other than `U(ℓ)`; each positivity and shape violation of 1.3 and
 1.4, a composition in an endpoint included; data after a position; an
 arity mentioning a position; a self or forward reference
-(1.5); a level parameter in a constructor type; an undetermined level
-parameter; admission while the H1 extension is disabled (5.7);
-`SignatureClose` twice; any use of an open signature. With Q16's
-extension, tests also check the recorded tier-parametric flag: set for
-`Pair`, `Plus`, `Tree`, `Push`, `Trunc` and `Quotient`; clear for `Mixed`,
-`Outer`, `Outer2`, `Big` and a signature whose constructor type uses a
-definition `F(A : UU0) : U0`.
+(1.5); an erased parameter in a constructor type (`Holder`, V24); an
+erased parameter with no determining occurrence; admission while the H1
+extension is disabled (5.7); `SignatureClose` twice; any use of an open
+signature. Tests also check the recorded classification: every parameter
+erased for `Pair`, `Plus`, `Tree`, `Push`, `Trunc` and `Quotient`;
+recorded for `Pointed`; one of each for `Tagged`.
 
 ### 5.3 Family F2: instances and constructors
 
-- `SortBegin(signature)` starts an instance, and `SortParameter(instance, a)`
-  adds the next parameter judgement. After the last, the judgement is
-  `S(a⃗) : U(ℓ[ρ])`, with `ρ` read as 3.1 describes.
-- `Construct(instance, k)` gives `Con(k; I) : T_k[s := I, p⃗ := a⃗, c_m := Con(m; I)]`.
+- `SortBegin(signature)` starts an instance. `SortLevel(instance, ℓ)`
+  supplies the next recorded level, under `LevelApply`'s conditions, and
+  `SortParameter(instance, a)` adds the next parameter judgement. After the
+  last, the judgement is `S{ℓ⃗_r}(a⃗) : U(ℓ[ρ])`, with `ρ` formed as 3.1
+  describes.
+- `Construct(instance, k)` gives
+  `Con(k; I) : T_k[s := I, x⃗_r := ℓ⃗_r, p⃗ := a⃗, c_m := Con(m; I)]`.
 - Applications use `Apply`. Constructors at dimensions use `PathApply` and
   `PathAt`.
 
-**Rejections:** a parameter judgement whose type is not the telescope's
-under `ρ`; two occurrences of a level parameter that read different levels;
-a read level of tier 1 or above, unless Q16's extension is adopted and
-the signature is tier-parametric; a constructor number out of range; a reference to an open
-or rolled-back signature.
+**Rejections:** a recorded level that is not finite, or that mentions a
+variable not in the context; a missing or extra recorded level; a parameter
+judgement whose type is not the telescope's under `ρ`; two occurrences of
+an erased parameter that read different levels; a read level of tier 1 or
+above (Q16, decided); a constructor number out of range; a reference to an
+open or rolled-back signature.
 
 ### 5.4 Family F3: boundary reduction
 
@@ -1155,8 +1259,8 @@ whose type is not the displayed squash boundary.
   derivation, lifts it to `U(ℓ)` when needed, then `SignatureConstructor`,
   and adds the entry `c_k` for the next one. It issues `SignatureClose` last.
   Admission runs inside a declaration transaction.
-- **Terms.** Instances derive through `SortBegin` and one `SortParameter` per
-  parameter; constructors through `Construct`, `Apply`, `PathApply` and
+- **Terms.** Instances derive through `SortBegin`, one `SortLevel` per
+  recorded level and one `SortParameter` per parameter; constructors through `Construct`, `Apply`, `PathApply` and
   `PathAt`. An eliminator derives through `Eliminator`, one
   `EliminatorClause` per clause, `EliminatorClose` and `Apply`. The driver
   makes each clause's type agree with `ClauseType_k` by its usual conversion
@@ -1231,9 +1335,9 @@ declared for comparison; retiring them is a separate decision (Q11).
 
 ### 7.2 The translation τ
 
-- τ is a map on terms. Native formers carry no level, and neither do
-  declared instances (3.1), so τ adds no level and involves no coercion or
-  lifting: `τ(Sum(A, B)) = Plus(τ(A), τ(B))`. τ is the identity on every
+- τ is a map on terms. Native formers carry no level, and the K2.4
+  counterparts have only erased parameters, so their instances carry none
+  either (3.1). τ adds no level and involves no coercion or lifting: `τ(Sum(A, B)) = Plus(τ(A), τ(B))`. τ is the identity on every
   other node.
 - **Native and declared forms are not convertible.** `Nat` and `N` are
   different types. No conversion rule, no `Lift` and no coercion relates
@@ -1248,25 +1352,19 @@ declared for comparison; retiring them is a separate decision (Q11).
   as native. A native `Lift` translates to a `Lift` of the image, with the
   same levels.
 
-What τ guarantees depends on Q16, because a native former may occur at an
-argument in a tier-1 universe. Call a declaration *finite-tier* when
-neither it nor anything it uses, transitively, contains a native sum, W
-type or pushout whose instance would read a tier-1 level.
+A native former may occur at an argument in a tier-1 universe, and Q16
+decided that instances read finite levels only. Call a declaration
+*finite-tier* when neither it nor anything it uses, transitively, contains
+a native sum, W type or pushout whose instance would read a tier-1 level.
+The K2.4 counterparts have only erased parameters, so τ never needs a
+recorded level.
 
-- **With the extension**, the four declared counterparts are
-  tier-parametric: their derivations use only their parameters, universes
-  at their level parameters, `Π`, `Σ`, projections and path types. τ is
-  then purely syntactic and total. It commutes with binders, substitution,
-  level substitution and interval substitution everywhere. A native use at
-  a tier-1 argument has an image: `def big_sum(A, B : UU0) : UU0 := A or B;`
-  becomes `Plus(A, B)`, reading `ω`, in `UU0`.
-- **Without it**, the recommended first release, an instance cannot read a
-  tier-1 level. τ then keeps each native sum, W type or pushout whose
-  instance would read one, and maps every other occurrence; `Nat` has no
-  parameters and always maps. Which occurrences stay native depends on the
-  levels in the derivation. So τ commutes with substitution only on
-  finite-tier declarations, where every level read stays finite before and
-  after substitution, and its guarantees are stated for them only:
+- τ keeps each native sum, W type or pushout whose instance would read a
+  tier-1 level, and maps every other occurrence; `Nat` has no parameters
+  and always maps. Which occurrences stay native depends on the levels in
+  the derivation. So τ commutes with substitution only on finite-tier
+  declarations, where every level read stays finite before and after
+  substitution, and its guarantees are stated for them only:
   - on finite-tier declarations, τ preserves typing and conversion, native
     equalities across universes and `Lift`, as above;
   - a declaration that is not finite-tier keeps its tier-1 occurrences
@@ -1288,9 +1386,16 @@ type or pushout whose instance would read a tier-1 level.
     all 43 archive mentions of `UU0`, and the library's 4, are universe
     binders `U < UU0`. So every existing declaration is finite-tier, and
     no mixed-tier call exists.
+- If the later tier-parametric proposal is adopted, the four counterparts
+  qualify: their derivations use only their parameters, universes at their
+  level parameters, `Π`, `Σ`, projections and path types. τ then becomes
+  purely syntactic and total, commuting with binders, substitution, level
+  substitution and interval substitution everywhere, and
+  `def big_sum(A, B : UU0) : UU0 := A or B;` becomes `Plus(A, B)`, reading
+  `ω`, in `UU0`.
 
-Under either option, X1–X3 test the preservation rule by rule, and X4, X6,
-X7 and X8 test it on the archive and on the examples above.
+X1–X3 test the preservation rule by rule, and X4 and X6–X8 test it on the
+archive and on the examples above.
 
 ### 7.3 Differential fixtures
 
@@ -1302,8 +1407,8 @@ X7 and X8 test it on the archive and on the examples above.
 | X4 | The archive, elaborated with declared forms for the four types (a driver option) | 0 gaps; every stored definition derives again; each declaration's assumptions unchanged; canonicity fixture and `evaluate` results equal |
 | X5 | Cost of X4 against the native run: archive check time, re-derivation time, kernel steps, arena peak | Recorded with revision, machine and limits |
 | X6 | Native terms used at two finite universes: `sum_id(U1, Nat, small)` of 2.3, and the same with W, pushout and `Nat`-valued generic definitions instantiated at `U2` | Under both options, native and image both check; the image is one instance term at both universes |
-| X7 | Native formers at UU-tier arguments: `big_sum`, and a W type and a pushout over types in `UU0` | Without Q16's extension, τ leaves them native and they check unchanged; with it, native and image both check and the image lives in `UU0` |
-| X8 | A mixed-tier call: `big_id(Nat, small)` of 7.2, and the same through a W type and a pushout | Without Q16's extension, the image fails to check and the migration verifier rejects the declaration, naming the call; with it, native and image both check |
+| X7 | Native formers at UU-tier arguments: `big_sum`, and a W type and a pushout over types in `UU0` | τ leaves them native and they check unchanged (Q16). Under the later proposal, native and image would both check, the image in `UU0` |
+| X8 | A mixed-tier call: `big_id(Nat, small)` of 7.2, and the same through a W type and a pushout | The image fails to check, and the migration verifier rejects the declaration, naming the call (Q16). Under the later proposal, native and image would both check |
 
 ### 7.4 Retirement criterion
 
@@ -1313,27 +1418,25 @@ The hand-coded instructions retire in one change when:
 2. X5's gap is recorded, and either accepted by the maintainer or closed by
    specialised reduction paths for hot signatures (Q14);
 3. the archive is migrated by τ under the strict verifier, with every
-   public type equal after τ and every assumption list unchanged. Without
-   Q16's extension, this requires every archive declaration to be
-   finite-tier (7.2), which they all are today; a declaration that is not
-   is left on native formers and reported, not migrated in part.
+   public type equal after τ and every assumption list unchanged. This
+   requires every archive declaration to be finite-tier (7.2), which they
+   all are today; a declaration that is not is left on native formers and
+   reported, not migrated in part.
 
-What the change removes depends on Q16:
+As Q16 decided, the change removes the `Nat` instructions only: `Nat`,
+`Zero`, `Succ` and `NatElim`, and their node kinds, whose tags stay
+reserved; the ABI version changes. The sum, W and pushout instructions stay
+for arguments at tier-1 levels, and the elaborator emits the declared forms
+everywhere else. They stay trusted code, and X1–X3 stay as their regression
+tests. A native and a declared sum of the same components are then
+different types, so τ's guarantees cover finite-tier declarations only, and
+a mixed-tier call has no image (7.2, X8). Nothing does that today.
 
-- *With the extension*, it removes `Nat`, `Zero`, `Succ`, `NatElim`, `Sum`,
-  `Inject`, `SumElim`, `W`, `Sup`, `WElim`, `Pushout`, `PushPoint`,
-  `PushPath` and `PushElim`, and their node kinds. The tags stay reserved,
-  and the ABI version changes.
-- *Without it*, it removes the `Nat` instructions only. The sum, W and
-  pushout instructions stay for arguments at tier-1 levels, and the
-  elaborator emits the declared forms everywhere else. They stay trusted
-  code, and X1–X3 stay as their regression tests. A native and a declared
-  sum of the same components are then different types, so τ's guarantees
-  cover finite-tier declarations only, and a mixed-tier call has no image
-  (7.2, X8). Nothing does that today. Adopting the extension later retires
-  the three formers without changing any finite-level term.
+If the later tier-parametric proposal is adopted, a further change removes
+`Sum`, `Inject`, `SumElim`, `W`, `Sup`, `WElim`, `Pushout`, `PushPoint`,
+`PushPath` and `PushElim`, without changing any finite-level term.
 
-`Unit` and `Void` stay in both cases (Q11).
+`Unit` and `Void` stay (Q11).
 
 ## 8. K2.5: truncation and resizing (G2)
 
@@ -1348,8 +1451,8 @@ inductive Quotient(U, V < UU0, A : U, R : A -> A -> V) : set {
 ```
 
 - `Trunc(A) : U(x)` for `A : U(x)`, universe-preserving by 2.1, at every
-  finite level. `Trunc` is tier-parametric, so with Q16's extension this
-  holds at every tier too (2.3). The instance carries no level of its own.
+  finite level (Q16). Its universe parameter is erased, so the instance
+  carries no level.
 - `Quotient(A, R) : U(max(x, y))` for `A : U(x)` and `R : A → A → U(y)`: its
   level accounts for the carrier and the relation. A small quotient stays
   small, without the archive's predicate encoding.
@@ -1507,9 +1610,43 @@ L2.1 turns `inductive` declarations
 ([proposal](inductive-language-features.md), design §5) into the normal
 form. It is untrusted; the kernel checks the result.
 
-- **Header.** `inductive T(U < UU0, …, A : U, …) : m` gives the former type,
-  with `m` among `type` (the default), `set` and `prop`. The level `ℓ` is
-  the least level of 2.1, from the inferred types of the data and arities.
+- **Header.** `inductive T(U < UU0, …, A : U, …) : R` gives the former type.
+  The result position `R` after the colon is one of:
+
+  ```text
+  R  ::=  m  |  E  |  m E          m ::= type | set | prop
+  ```
+
+  where `E` is a universe expression, as L1.1 defines it: a constant of any
+  tier, a universe parameter, `next(E)` or `max(E, F)`. Examples:
+  `inductive Pointed1 : U1 { pt(X : U0, x : X); }`, and
+  `inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }`. Indexed
+  families at H2 take the same position at the end of their index type, as
+  in `: Nat -> U1`.
+  - **A written universe is the declared level `ℓ`.** The kernel checks it
+    as an upper bound, as for any `ℓ` (2.1), so lowering is rejected, at the
+    constructor, naming the argument: in
+    `inductive Bad : U0 { mk(X : U0); }`, `mk`'s data `X : U0` lives in
+    `U1`. A universe above the least level is allowed, and the sort then
+    lives there: `inductive Flag : U1 { on; off; }` is a type in `U1`, not
+    in `U0`. When in doubt, the user writes the universe.
+  - **`type`, `set` and `prop` alone, or no annotation, infer the least
+    level** of 2.1 from the inferred types of the data and arities, as
+    today.
+  - **An h-level and a universe together**, `m E`, give both: the modifier
+    `m` and the declared level `E`. `type U1` means the same as `U1`. The
+    generated squash constructors mention only the sort, so they live in any
+    declared universe, and the data alone bound it. So
+    `inductive Tr(U < UU0, A : U) : prop U { point(a : A); }` is `Trunc`
+    with its universe written, while
+    `inductive Small(A : U1) : prop U0 { point(a : A); }` is rejected as
+    lowering at `point`: it would be the resizing that K2.5 excludes.
+  - **Classifying universe parameters.** L2.1 proposes each universe
+    parameter as erased or recorded by the occurrence check of 1.1, on the
+    constructor types after lowering, and the kernel checks it (5.2). A
+    written universe may mention the universe parameters. A parameter
+    mentioned only there, and in no parameter type, cannot be read, so it is
+    recorded: `inductive Lifted(U < UU0) : U { mk; }` has a recorded `U`.
 - **Constructors.** An argument whose type mentions `T` or a position is a
   position, and must be a cube over `T` (1.2); otherwise it is rejected,
   naming the argument. The rest are data, moved ahead of the positions in
@@ -1520,10 +1657,12 @@ form. It is untrusted; the kernel checks the result.
 - **Errors** name the offending argument: `T` in negative position, a use
   before declaration, a composition in a boundary, or a boundary face that
   disagrees, shown with both sides.
-- **Uses.** `Trunc(U, A)`, with an explicit universe argument as in L1.1,
-  checks `A : U` and elaborates to the instance `Trunc(A)`, which carries no
-  level. A header whose constructor types would mention a universe parameter
-  is rejected as level-dependent (Q15), naming the argument.
+- **Uses.** A universe argument, as in L1.1, is checked and then placed by
+  the parameter's classification. `Trunc(U, A)` checks `A : U` and
+  elaborates to the instance `Trunc(A)`, which carries nothing for the
+  erased `U`. `Pointed(U0)` elaborates to the instance with recorded level
+  `0`. `Pointed` used as a function elaborates to the level λ
+  `fun (U < UU0) => Pointed(U)`.
 - **Generated names.** `T.squash` for the modifier's constructor; the
   eliminator is reached through `match` (L2.2), and `T.rec` and
   `T.ind_prop` are L2.3's.
@@ -1566,11 +1705,11 @@ and the driver, with L2.1. All run with the H1 extension on, except T1.
 | V5 | `Quotient(A, R) : U(max(x, y))`; `: U(x)` | Accept; Reject | The relation counts |
 | V6 | `Small(x < ω, A : U(x)) : U(0) { wrap(a : A); }` | Reject | Lowering |
 | V7 | source: `sum_id`, `small` and `lifted` of 2.3 with a declared sum; the same with `point(a)` passed to a generic definition at `U1` | Accept both | One instance term at every universe (Q8) |
-| V8 | `Trunc(A)` and `Pair(A, B)` for `A, B : UU0` | Reject; with Q16's extension, Accept, in `UU0` | A tier-1 read level; tier-parametric signatures under the extension (2.3) |
+| V8 | `Trunc(A)` and `Pair(A, B)` for `A, B : UU0` | Reject | A tier-1 read level (Q16, decided) |
 | V9 | the elaborator's `fun (U < UU0, A : U) => Trunc(A) : Π (x < ω). Π (A : U(x)). U(x)`, in `U(ω)` | Accept | A declared type used as a function |
 | V10 | `Big(A : UU0) { wrap(a : A); } : UU0`; its eliminator into `UU1` | Accept | Fixed tier-1 signature; any motive universe |
 | V11 | instantiating a generic definition that mentions `Trunc(A)` at `x + 1`, and reducing `elim` on `point` | Accept | Level substitution leaves the instance unchanged (2.4) |
-| V12 | `Wrap(x < ω) : U(x + 1) { wrap(B : U(x)); }` | Reject | Level-dependent (Q15) |
+| V12 | `Wrap(x < ω) : U(x + 1) { wrap(B : U(x)); }` | Accept, `x` recorded | Level-dependent (Q15, decided) |
 | V13 | `Mixed(x < ω, A : U(x), B : UU0) { mk(a : A, b : B); }`; `Mixed(A, B)` for `A : U(3)`; for `A : UU0` | Accept, not tier-parametric; Accept; Reject | A tier-1 constant bounds the instances to finite levels (Q16) |
 | V14 | a level parameter that ends no parameter's type | Reject | Undetermined (1.1) |
 | V15 | `Both(x < ω, A, B : U(x)) { mk(a : A, b : B); }` at `A : U(0)` and `B : U(1)`; the same after lifting `A` to `U(1)` | Reject; Accept | Conflicting reads of one level parameter (3.1) |
@@ -1578,6 +1717,17 @@ and the driver, with L2.1. All run with the H1 extension on, except T1.
 | V17 | `Tag(A : UU0) : U0 { here; }` and `Outer(x < ω, A : U(x)) : U0 { wrap(t : Tag(A)); }`; `Outer(Nat)`; `Outer(UU0)`; `Outer(A)` for `A : UU0` | Accept, and not tier-parametric under the extension (rules 2 and 3); Accept; Reject; Reject | A bound hidden in a referenced signature's parameter type (2.3) |
 | V18 | a signature whose constructor type uses a definition `F(A : UU0) : U0`, as in `wrap(t : F(A))`, at `A : UU0` | Reject at the instance; not tier-parametric under the extension (rule 2) | A bound hidden in a definition's type (2.3) |
 | V19 | `Big : UU1 { pack(B : UU0); }` and `Outer2(x < ω, A : U(x), F : Big → U0) : U0 { wrap(t : F(pack(A))); }`; `Outer2(Nat, F)`; `Outer2(UU0, F)`; `Outer2(A, F)` for `A : UU0` | Accept both, neither tier-parametric under the extension (rules 2 and 3); Accept; Reject; Reject | A bound hidden in a parameter-free signature's constructor type (2.3) |
+| V20 | source: `inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }`; `Pointed(U0) : U1`; `Pointed(U1) : U2`; `Pointed(U0)` and `Pointed(U1)` convertible | Accept, `U` recorded; Accept; Accept; Reject | Recorded parameter; distinct instances (Q8, Q15) |
+| V21 | source: `def lift(p : Pointed(U0)) : Pointed(U1) := match p { pt(X, x) => pt(X, x); };` | Accept | A map between instances, with `X : U0` used at `U1` by cumulativity (needs L2.2's `match`; the kernel case is the eliminator into `Pointed{1}`) |
+| V22 | source: `def same(p : Pointed(U0)) : Pointed(U1) := p;` | Reject | A `Pointed(U0)` value is not a `Pointed(U1)` value |
+| V23 | source: `inductive Pointed(U < UU0) : U { pt(X : U, x : X); }` | Reject at `pt`, naming `X` | Lowering: `X : U` lives in `next(U)` |
+| V24 | kernel: `Holder(x < ω, A : U(x)) : U(x + 1) { hold(B : U(x)); }` with `x` proposed erased; the same with `x` recorded | Reject at `hold`; Accept | An erased parameter in a constructor type would give a type containing its own code (2.3) |
+| V25 | source: `inductive Tagged(U, V < UU0, A : U) : max(U, next(V)) { tag(a : A, B : V); }`; `Tagged(U0, U0, A)` for `A : U0`, and with `A` lifted to `U1`; `Tagged` at `V := U0` and `V := U1` | Accept, `U` erased and `V` recorded; one instance term in both; distinct | A mixed signature (Q8) |
+| V26 | source: `inductive Pointed1 : U1 { pt(X : U0, x : X); }`; `pt(Nat, 3) : Pointed1` | Accept; Accept | A fixed-level signature storing a small type, with its universe written (9) |
+| V27 | source: `inductive Bad : U0 { mk(X : U0); }` | Reject at `mk`, naming `X` | A written universe is checked as an upper bound (9) |
+| V28 | source: `inductive Flag : U1 { on; off; }`; `Flag : U1`; `Flag : U0` | Accept; Accept; Reject | A written universe above the least level is where the sort lives (9) |
+| V29 | source: `inductive Tr(U < UU0, A : U) : prop U { point(a : A); }`; `inductive Small(A : U1) : prop U0 { point(a : A); }` | Accept; Reject at `point` | An h-level with a written universe; lowering would be resizing (9, K2.5) |
+| V30 | source: `inductive Lifted(U < UU0) : U { mk; }`; `Lifted(U0)` and `Lifted(U1)` convertible | Accept, `U` recorded; Reject | A parameter only in the written universe cannot be read, so it is recorded (9) |
 
 ### 10.3 Constructors and boundaries
 
@@ -1678,16 +1828,16 @@ support module where it computes:
 | Q4. Partial boundaries | Not in H1 |
 | Q5. How constructors take dimensions | Path-valued constructors |
 | Q6. The eliminator's form | A function node with every clause |
-| Q7. Who computes the sort's level | Declared, checked as a bound; the elaborator declares the least |
-| Q8. Level irrelevance across instances | Yes, by level-erased instances of level-parametric signatures, at finite levels; tier-1 levels are Q16's (revised twice) |
+| Q7. Who computes the sort's level | Declared, checked as a bound: written in the header, or the least, inferred by the elaborator |
+| Q8. Level irrelevance across instances | Decided: per universe parameter; erased parameters are one term at every universe, recorded ones give distinct instances |
 | Q9. Cube and infinitary positions in higher sorts | Admit both |
 | Q10. Are signatures generative | Yes |
 | Q11. `Unit` and `Void` | Keep native |
 | Q12. Resizing | No resizing assumption; the seven remedy groups of 8.4 (revised) |
 | Q13. Where the experimental gate lives | In the kernel |
 | Q14. Specialised reduction after retirement | Decide from X5 |
-| Q15. Level-dependent signatures | Excluded from H1 (new) |
-| Q16. Instances at tier-1 levels | Finite levels only in the first release; the tier-parametric extension later (revised twice) |
+| Q15. Level-dependent signatures | Decided: admitted, with the parameter recorded |
+| Q16. Instances at tier-1 levels | Decided: finite levels only; native sum, W and pushout kept for tier-1 arguments; the tier-parametric extension a later proposal |
 | Q17. Declarations that assert a large proposition is small | A hypothesis, `LEM` where present, or H2's inductive tower (new) |
 
 **Q1. Formal composition for data sorts.** The design gives every sort one
@@ -1730,25 +1880,34 @@ range over UU tiers too (2.4).
 **Q7. Who computes the sort's level.** The kernel cannot infer principal
 levels, so it cannot check a maximum. *Recommended:* the former's type
 declares `ℓ`; the kernel checks that every constructor type lives in `U(ℓ)`,
-which bounds every data type and arity; the elaborator declares the least
-level. The alternative, a kernel-computed level, would need principal-level
-inference in the kernel.
+which bounds every data type and arity. The user may write it in the
+header (9); otherwise the elaborator declares the least level. The
+alternative, a kernel-computed level, would need principal-level inference
+in the kernel.
 
 **Q8. Level irrelevance across instances.** G0 decided that instances of a
 generic type at different levels are distinct (G0 Q1), and asked to
-revisit at H1. The first draft kept that. Review showed it cannot stand for
-the types K2.4 replaces. The native formers carry no level, and a generic
-definition instantiated at `U1` accepts a sum built at `U0` (2.3). Distinct
-declared instances could not translate that without coercions that break
-definitional equalities. *Recommended:* yes, by construction. Instances of
-a level-parametric signature carry no level of their own, so they are one
-term at every universe. Their read levels stay within the finite range the
-admission checked. Tier-1 levels are refused in the first release. Q16's
-extension would let tier-parametric signatures read them, with a check on
-the admission derivation, because a bound can hide in a referenced
-signature, definition or constructor (2.3, `Outer` and `Outer2`). D9 argues soundness, which is Timany and Sozeau's
-condition for cumulative inductive types. G0 Q1's rule stays for generic
-definitions and assumptions, which are not signatures.
+revisit at H1. The native formers carry no level, and a generic definition
+instantiated at `U1` accepts a sum built at `U0` (2.3), so distinct
+instances cannot translate them faithfully. But a signature that stores a
+type of its own level, such as `Pointed`, has genuinely different instances
+at different levels. *Decided,* per universe parameter, as Coq's cumulative
+inductive types decide by variance:
+
+- *erased*: a parameter that occurs only in parameter types, and can be
+  read from their judgements. Its instances are one term at every
+  universe. This covers `Trunc`, `Plus`, `List`, `W`, `Pushout` and
+  `Quotient`, and keeps K2.4's translation as it is. D9 argues soundness;
+- *recorded*: a parameter that occurs in a constructor type, or cannot be
+  read from the parameters. Instances carry it as an explicit level
+  argument, and instances at different levels are distinct, following G0
+  Q1. This is standard universe polymorphism and needs no new argument
+  (D8).
+
+Admission classifies each parameter by a syntactic occurrence check, and
+the kernel records the classification and checks that no erased parameter
+occurs in a constructor type (1.1, 5.2, V24). Every level is finite (Q16).
+G0 Q1's rule stays unchanged for generic definitions and assumptions.
 
 **Q9. Cube and infinitary positions.** The `set` squash needs path
 positions, and W-like constructors in higher sorts need infinitary ones.
@@ -1780,49 +1939,37 @@ decide from X5's measurements; specialised paths, if any, must be observably
 identical to the generic rules and tested against them.
 
 **Q15. Level-dependent signatures.** A signature whose constructor types
-mention a level parameter, such as `wrap(B : U(x))`, stores types of that
-level. Its instances at different levels are different types, so they
-would need explicit level arguments and G0 Q1's distinct instances. No H1
-example, and none of K2.4's types, is level-dependent. *Recommended:*
-exclude them from H1. Stating such a type at fixed levels remains possible.
-Revisit with a concrete use, together with how explicit and erased
-instances would coexist.
+mention a level parameter, such as `pt(X : U, x : X)`, stores types of that
+level. The first drafts excluded them. *Decided:* reversed. They are
+admitted, with that parameter recorded (Q8), so
+`inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }` checks, with
+`Pointed(U0) : U1` and `Pointed(U1) : U2` distinct (V20–V23). A header may
+state such a universe after the colon, mentioning the universe parameters
+(9).
 
 **Q16. Instances at tier-1 levels.** Admission checks a signature at finite
 levels only, so reading a tier-1 level needs more. Two syntactic criteria
-have failed review. The first allowed every signature without a tier-1
-constant, and `Outer` hid a bound in `Tag(A : UU0)`. The second allowed a
-syntactic class, and `Outer2` hid one in the constructor of the
-parameter-free `Big`. Both bounds hide in a type the signature uses, not
-in its text. The options:
+failed review, because a bound can hide in a type the signature uses:
+`Outer` over `Tag(A : UU0)`, and `Outer2` over the parameter-free
+`Big : UU1 { pack(B : UU0); }`. Two options were set out: a
+tier-parametric extension, with a kernel check of the admission
+derivation (2.3), and a conservative first release. *Decided:* the
+conservative first release.
 
-- **The extension (2.3).** Tier-parametric signatures read every tier. The
-  kernel checks the admission derivation itself: no level-quantification
-  instruction, no tier-1 level in any judgement, and only tier-parametric
-  signatures used. Sufficiency is proved in outline by induction on the
-  derivation. It costs a walk of each admission derivation, a flag per
-  signature, and a review item for every instruction family: its
-  classification into the induction's cases.
-- **The conservative alternative.** No tier-parametric class. Instances
-  read finite levels only. The native sums, W types and pushouts stay for
-  arguments at tier-1 levels, and K2.4 retires only the `Nat` instructions;
-  the elaborator emits declared forms at finite levels (7.2, 7.4). It
-  costs three hand-coded formers kept as trusted code, with their
-  differential tests as regressions, and a native and a declared sum of the
-  same components are different types. That difference shows only when a
-  definition with a parameter typed at a tier-1 universe is applied to
-  small types. Today it costs nothing observable: no archive or library
-  declaration uses a tier-1 universe as a type.
-
-*Recommended:* the conservative alternative for H1's first release, with the
-extension kept specified as a later proposal. It adds no trusted check,
-and nothing today needs tier-1 instances. It is forward-compatible: adopting
-the extension later only accepts more instances and retires the three
-formers, without changing any finite-level term. The extension becomes
-worth its review when a rebuilt result needs a declared type at `UU0`,
-for example through the E2 proposal. A tier-1 constant stays allowed in
-any signature under either option; it makes the signature bounded
-(`Mixed`, V13).
+- Instances read and carry finite levels only, erased and recorded alike.
+- The native sums, W types and pushouts stay for arguments at tier-1
+  levels. K2.4 retires only the `Nat` instructions, and the elaborator
+  emits declared forms at finite levels (7.2, 7.4).
+- Its cost: three hand-coded formers stay trusted code, with their
+  differential tests as regressions. A native and a declared sum of the
+  same components are different types, which shows only in a mixed-tier
+  call (X8). No archive or library declaration uses a tier-1 universe as a
+  type, so none shows today.
+- The tier-parametric extension stays specified in 2.3 as a later proposal,
+  for when a rebuilt result needs a declared type at `UU0`, for example
+  through proposal E2. Adopting it later only accepts more instances, and
+  changes no finite-level term. A tier-1 constant stays allowed in any
+  signature, and bounds it to finite instances (`Mixed`, V13).
 
 **Q17. Declarations that assert a large proposition is small.** Groups 4
 and 5 of 8.4 state that the union of a large family, or the impredicatively
