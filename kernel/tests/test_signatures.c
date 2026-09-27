@@ -571,6 +571,9 @@ static void generative(void) {
     cc_entry_id s = OK(cc_instr_extend(k, former_u0(), S_GEN));
     cc_judgement_id next = OK(cc_instr_signature_constructor(k, first, var(s), GEN_C));
     REJECTS(cc_instr_signature_constructor(k, first, var(s), GEN_C), "latest");
+    /* Rewriting would copy a signature judgement without its state. */
+    REJECTS(cc_instr_step(k, first, 2, NULL, 0, CC_STEP_WHNF), "not rewritten");
+    REJECTS(cc_instr_replace(k, first, 2, NULL, 0, OK(cc_instr_refl(k, former_u0()))), "not rewritten");
     OK(cc_instr_signature_close(k, next));
     REJECTS(cc_instr_signature_constructor(k, first, var(s), GEN_C), "already admitted");
     OK(cc_instr_signature_close(k, OK(cc_instr_signature_constructor(k, second, var(s), GEN_C))));

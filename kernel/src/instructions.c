@@ -1971,6 +1971,11 @@ static bool judgement(cc_kernel *k, cc_judgement_id id, unsigned side, cc_fact *
     *out = k->facts[id];
     if (out->kind == CC_FACT_SYSTEM)
         return ck_fail(k, "A composition system is closed by Comp before it is rewritten.");
+    /* A declared type's judgements in progress carry state that only their
+     * own instructions advance: a rewritten copy would not. */
+    if (out->kind != CC_FACT_TYPING && out->kind != CC_FACT_EQUALITY)
+        return ck_fail(k, "An open signature or an instance in progress is continued by its own instructions, "
+                          "not rewritten.");
     if (side > 2 || (side == 1 && out->kind != CC_FACT_EQUALITY))
         return ck_fail(k, "A judgement has sides 0 (term), 2 (type), and 1 for an equality's other term.");
     *root = side == 0 ? out->term : side == 1 ? out->other : out->type;
