@@ -21,10 +21,10 @@ self.postMessage({ ready: true, backend: "cubical" });
 // A REPL session runs over the checked proof, or over its own program when
 // the page has no proof (the REPL page and the reference pages).
 let session = null, sessionProgram = null, programMain = null;
-async function repl({ input, fresh }) {
+async function repl({ input, fresh, experimental }) {
   if (fresh) {
     if (!sessionProgram) {
-      sessionProgram = new CubicalProgram(module, readSource(), { collectReferences: false });
+      sessionProgram = new CubicalProgram(module, readSource(), { collectReferences: false, experimental: experimental ?? [] });
       session = new ReplSession(sessionProgram, { modules: importable });
     }
   } else if (!program) throw new Error("Check a proof first.");

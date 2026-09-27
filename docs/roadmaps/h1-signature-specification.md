@@ -1844,8 +1844,17 @@ this section left open:
   real level.
 - **Instances of constructors.** A constructor of a type with parameters or
   recorded levels takes its instance from the expected type, as a sum's
-  injection does. Without one it asks for `typed(T(…), c(…))`. Inferring
-  the instance from the arguments waits for L4.1a.
+  injection does. Without one, it reads the instance from an argument of
+  that type, which only a position can have: `cons(zero, xs)` for
+  `xs : List(U0, N)`. Otherwise it asks for `typed(T(…), c(…))`. Inferring
+  the instance from data arguments waits for L4.1a.
+- **Types as written.** Argument and result types are beta-reduced before
+  they are classified and admitted, so `l : typed(C, b) = b` has a
+  constructor expression for a boundary. Binders written in a result, as
+  in `s : M -> M`, are arguments of the constructor.
+- **The former as a value.** Used alone, a type with parameters is its
+  former, `fun (U < UU0) => Pointed(U)`, a lambda over its universes and
+  parameters.
 - **Uses keep the source's order.** `node(l, a, r)` is applied as the
   normal form's `node(a, l, r)`. A constructor whose order changed is
   applied to all its arguments. Partial application is refused, with a
