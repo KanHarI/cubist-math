@@ -96,6 +96,11 @@ void ck_signatures_checkpoint(cc_kernel *);
 void ck_signatures_rollback(cc_kernel *);
 /* A signature opened or extended since the checkpoint, and still open. */
 bool ck_signatures_open(const cc_kernel *);
+/* An instance term's admitted signature, a constructor's type at an instance
+ * (3.2), and whether a signature is a higher sort (3.4). */
+const cc_signature *ck_instance_signature(cc_kernel *, cc_term instance);
+cc_term ck_constructor_type(cc_kernel *, cc_term instance, uint32_t constructor);
+bool ck_signature_higher(const cc_signature *);
 
 /* Exact-key memo entries affect time only. A collision discards the older
  * entry; it can never establish equality or approve an unchecked term. */
@@ -306,6 +311,15 @@ bool ck_paths(cc_kernel *, cc_node, const cc_context *, uint64_t, cc_judgement *
 bool ck_composition(cc_kernel *, cc_node, const cc_context *, uint64_t, cc_judgement *);
 cc_term ck_reduce_composition(cc_kernel *, cc_term);
 cc_term ck_inductive_composition(cc_kernel *, cc_term, cc_term, cc_term);
+/* Declared types (F4, inductive_composition.c): a saturated constructor
+ * application's number and arguments; a constructor type's first count
+ * arguments as the telescope Σ (x_1 : A_1). … Unit, a tuple in it, and
+ * Con(c; I) applied to a tuple's components; composition at an instance. */
+bool ck_constructor_application(cc_kernel *, cc_term, uint32_t *constructor, cc_term *arguments, uint32_t *count);
+cc_term ck_telescope(cc_kernel *, cc_term type, uint32_t count);
+cc_term ck_tuple(cc_kernel *, cc_term telescope, const cc_term *arguments, uint32_t count);
+cc_term ck_apply_components(cc_kernel *, cc_term instance, uint32_t constructor, cc_term tuple, uint32_t count);
+cc_term ck_sort_composition(cc_kernel *, cc_term term, cc_term family, cc_term system);
 cc_term ck_endpoint_term(cc_kernel *, cc_term, unsigned, unsigned);
 cc_formula_id ck_interval_variable(cc_kernel *, unsigned);
 cc_formula_id ck_endpoint_face(cc_kernel *, unsigned, unsigned);

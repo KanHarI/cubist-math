@@ -1273,9 +1273,20 @@ signature's boundaries, on faces reached in either order.
 
 **Rejections and tests:** `HComp` at a data sort; transport of a data sort by
 `Trans`; a composition with a neutral tube in a data sort stays neutral; a
-closed transport of `merid(a)` along a nonconstant parameter line reduces to
+transport of `merid(a)` along a nonconstant parameter line reduces to
 the corrected `hcomp` of 3.5; the same for the 2-dimensional `set` squash
-and the 3-dimensional squash of `trunc(1)`.
+and the 3-dimensional squash of `trunc(1)`. The kernel tests take the line
+`e @ i` of a path of types `e : A = B`, and check on every face of the
+constructor's dimensions that restricting the transport and restricting its
+`hcomp` normalize alike. A closed nonconstant line needs univalence, which
+the driver's tests of K2.3 build.
+
+**Implementation.** A constructor's argument telescope is composed and
+transported as nested Σ types `Σ (x_1 : A_1). … Σ (x_n : A_n). Unit`, so the
+existing Σ and Π rules do the dependent filling of 3.3 and 3.5. The general
+composition of a higher sort is the pushout's, transport then `hcomp`, which
+was already uniform in its family; transport commuting with `hcomp` is
+shared with pushouts.
 
 ### 5.6 Family F5: elimination
 

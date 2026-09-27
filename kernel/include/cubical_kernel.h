@@ -291,13 +291,16 @@ cc_judgement_id cc_instr_system_overlap(cc_kernel *, cc_judgement_id system, uin
                                         cc_judgement_id agreement);
 cc_judgement_id cc_instr_comp(cc_kernel *, cc_judgement_id system);
 /* HComp closes a system whose family A does not use its dimension into the
- * homogeneous composition hcomp^i A [φ ↦ u] a0 : A. As in the term checker, A
- * must be a pushout type: its weak head, which involves no choice. */
+ * homogeneous composition hcomp^i A [φ ↦ u] a0 : A. A's weak head, which
+ * involves no choice, must be a pushout type, as in the term checker, or an
+ * instance of a declared higher sort (H1); a declared data sort has no formal
+ * composition, and composes by Comp. */
 cc_judgement_id cc_instr_hcomp(cc_kernel *, cc_judgement_id system);
 /* Trans closes into transp^i A φ a0 : A(1) a system whose tubes are the base
  * a0 restricted to each clause of the face φ, in order: on φ the family is
  * constant, which each tube's typing shows. The family must be a pushout
- * type, as in the term checker. */
+ * type, as in the term checker, or a declared higher sort; a declared data
+ * sort transports by Comp, with the tube φ ↦ a0. */
 cc_judgement_id cc_instr_trans(cc_kernel *, cc_judgement_id system, cc_formula_id face);
 /* Glue [φ ↦ (T, e)] A, built one piece at a time as a system judgement.
  * GlueBase starts from A : U. GluePiece adds, on a face of one clause, a type
