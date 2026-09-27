@@ -193,7 +193,8 @@ typedef enum {
     CC_INSTR_GLUE_BASE, CC_INSTR_GLUE_PIECE, CC_INSTR_GLUE_OVERLAP, CC_INSTR_GLUE,
     CC_INSTR_GLUE_TERM_BASE, CC_INSTR_GLUE_TERM_PIECE, CC_INSTR_GLUE_TERM, CC_INSTR_UNGLUE,
     CC_INSTR_LEVEL_PI, CC_INSTR_LEVEL_LAMBDA, CC_INSTR_LEVEL_APPLY,
-    CC_INSTR_SIGNATURE_BEGIN, CC_INSTR_SIGNATURE_CONSTRUCTOR, CC_INSTR_SIGNATURE_CLOSE
+    CC_INSTR_SIGNATURE_BEGIN, CC_INSTR_SIGNATURE_CONSTRUCTOR, CC_INSTR_SIGNATURE_CLOSE,
+    CC_INSTR_SORT_BEGIN, CC_INSTR_SORT_LEVEL, CC_INSTR_SORT_PARAMETER, CC_INSTR_CONSTRUCT
 } cc_instruction;
 typedef enum {
     CC_STEP_BETA = 1,  /* App(Lam(x. b), a) to b[a/x] */
@@ -383,6 +384,28 @@ cc_judgement_id cc_instr_signature_begin(cc_kernel *, cc_judgement_id former, ui
 cc_judgement_id cc_instr_signature_constructor(cc_kernel *, cc_judgement_id signature, cc_judgement_id type,
                                                uint32_t symbol);
 uint32_t cc_instr_signature_close(cc_kernel *, cc_judgement_id signature);
+/* Instances and constructors of an admitted signature (family F2, section
+ * 5.3; formation is section 3.1). SortBegin starts an instance of signature
+ * index. SortLevel supplies the next recorded universe parameter's level, a
+ * finite level whose variables are level entries; SortParameter the next
+ * term parameter's judgement a : A. Recorded levels come first, then the
+ * parameters, in order. Until the last, each gives an instance judgement
+ * (kind 5); the last, or SortBegin for a signature with neither, gives
+ *   S{ls}(as) : U(ℓ[ρ]),
+ * whose term Sort(index; as; ls) carries the parameters and the recorded
+ * levels and nothing for an erased parameter. ρ holds the recorded levels
+ * and each erased one read from its determining parameter's judgement: the
+ * universe at the end of its type, which must be finite. Every parameter's
+ * type must then be the telescope's, with ρ and the earlier parameters
+ * substituted, up to bound names; two readings of one erased parameter
+ * that differ are refused, and the driver lifts the lower one first.
+ * Construct gives Con(k; I) : T_k[s := I, recorded levels, parameters,
+ * earlier constructors c_m := Con(m; I)] from an instance's typing
+ * judgement I : U(…) and a constructor number k. */
+cc_judgement_id cc_instr_sort_begin(cc_kernel *, uint32_t signature);
+cc_judgement_id cc_instr_sort_level(cc_kernel *, cc_judgement_id instance, cc_term level);
+cc_judgement_id cc_instr_sort_parameter(cc_kernel *, cc_judgement_id instance, cc_judgement_id parameter);
+cc_judgement_id cc_instr_construct(cc_kernel *, cc_judgement_id instance, uint32_t constructor);
 /* Γ, i ⊢ t : T gives Γ ⊢ t[e/i] : T[e/i] at an endpoint e: interval
  * substitution preserves typing. No other entry may depend on i. */
 cc_judgement_id cc_instr_endpoint(cc_kernel *, cc_judgement_id, cc_entry_id dimension, unsigned endpoint);
@@ -434,8 +457,9 @@ uint32_t cc_kernel_fresh_symbol(cc_kernel *);
 void cc_kernel_arena(const cc_kernel *, size_t *nodes, size_t *bytes);
 
 /* Reading the graph. Judgement ids run from 1 to count - 1, premises first.
- * Kind 1 is typing, 2 equality, 3 a composition system and 4 an open
- * signature; other is 0 but for an equality. Premises are
+ * Kind 1 is typing, 2 equality, 3 a composition system, 4 an open
+ * signature and 5 an instance in progress; other is 0 but for an equality.
+ * Premises are
  * judgements, in the instruction's argument order, and entry the context
  * entry the instruction bound or used. Operands: a universe level, a
  * definition symbol or reference, a path endpoint, a side and a step rule,

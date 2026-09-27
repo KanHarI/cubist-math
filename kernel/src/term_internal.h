@@ -39,7 +39,7 @@ typedef struct {
  * entries, sorted by creation; an entry records the context its own type
  * needs, so every set is closed under dependencies. Context set zero is the
  * empty context; fact and entry zero are invalid. */
-enum { CC_FACT_TYPING = 1, CC_FACT_EQUALITY = 2, CC_FACT_SYSTEM = 3, CC_FACT_SIGNATURE = 4 };
+enum { CC_FACT_TYPING = 1, CC_FACT_EQUALITY = 2, CC_FACT_SYSTEM = 3, CC_FACT_SIGNATURE = 4, CC_FACT_INSTANCE = 5 };
 typedef struct {
     uint32_t rule;
     uint32_t premise[4];
@@ -215,6 +215,9 @@ bool ck_instr_begin_stateful(cc_kernel *, cc_derivation);
 cc_judgement_id ck_instr_publish(cc_kernel *, uint32_t kind, cc_term term, cc_term other, cc_term type,
                                  uint32_t context);
 bool ck_instr_premise(cc_kernel *, cc_judgement_id, uint32_t kind, cc_fact *);
+bool ck_instr_merge(cc_kernel *, uint32_t a, uint32_t b, uint32_t *out);
+bool ck_instr_finite_level(cc_kernel *, cc_term level, cc_term *canonical, uint32_t *context);
+bool ck_instr_level(cc_kernel *, cc_term level, bool finite, cc_term *canonical, uint32_t *context);
 bool ck_alpha_equal(cc_kernel *, cc_term, cc_term);
 
 /* Universe levels (levels.c, G0 §2.4). A normal form is finite, a tier-0
