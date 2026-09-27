@@ -64,12 +64,12 @@ unsigned ck_arity(cc_term_kind kind) {
     case CC_DEFREF: case CC_VAR: case CC_NAT: case CC_ZERO: case CC_UNIT: case CC_POINT: case CC_VOID:
     case CC_LBOUND: case CC_LCONST:
         return 0;
-    case CC_U: case CC_SUCC: case CC_FST: case CC_SND: case CC_LSUCC:
+    case CC_U: case CC_SUCC: case CC_FST: case CC_SND: case CC_LSUCC: case CC_CON:
         return 1;
     case CC_PI: case CC_LAM: case CC_APP: case CC_SIGMA: case CC_PLAM: case CC_PAPP:
     case CC_TUBE: case CC_ABORT: case CC_W: case CC_SUM: case CC_INL: case CC_INR:
     case CC_GLUE: case CC_UNGLUE: case CC_PUSH_LEFT: case CC_PUSH_RIGHT: case CC_PUSH_PATH:
-    case CC_LMAX: case CC_LPI: case CC_LLAM: case CC_LAPP:
+    case CC_LMAX: case CC_LPI: case CC_LLAM: case CC_LAPP: case CC_SORT: case CC_ELIM: case CC_LIST:
         return 2;
     case CC_PAIR: case CC_PATH: case CC_COMP: case CC_SUP: case CC_WREC: case CC_UNITREC:
     case CC_GLUE_SYSTEM: case CC_GLUE_TERM: case CC_HCOMP: case CC_TRANS:
@@ -87,6 +87,7 @@ cc_kernel *cc_kernel_new(void) {
         k->count = 1;
         k->formula_count = 1;
         k->definition_count = 1;
+        k->signature_count = 1;
         k->next_symbol = 1;
         k->budget = k->operation_budget = UINT64_C(10000000);
     }
@@ -150,6 +151,7 @@ void cc_kernel_free(cc_kernel *k) {
     for (size_t i = 1; i < k->formula_count; ++i)
         cc_clear(&k->formulas[i]);
     free(k->relocation);
+    ck_signatures_free(k);
     free(k->definitions);
     free(k->unfolding_hints);
     free(k->formulas);
@@ -229,7 +231,10 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
         bool optional = (kind == CC_PAPP && i == 1) ||
                         (kind == CC_TUBE && i == 1) ||
                         ((kind == CC_COMP || kind == CC_HCOMP) && i == 1) || (kind == CC_GLUE && i == 1) ||
-                        (kind == CC_GLUE_SYSTEM && i == 2) || (kind == CC_GLUE_TERM && i == 2);
+                        (kind == CC_GLUE_SYSTEM && i == 2) || (kind == CC_GLUE_TERM && i == 2) ||
+                        /* An empty list is 0: a sort's parameters or recorded levels, a
+                         * list's next cell, an eliminator's clauses. */
+                        kind == CC_SORT || (kind == CC_LIST && i == 1) || (kind == CC_ELIM && i == 1);
         if (i < arity && !children[i] && !optional)
             return ck_fail(k, "Missing syntax child."), 0;
         if (children[i] >= k->count || (i >= arity && children[i]))

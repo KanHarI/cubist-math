@@ -411,7 +411,7 @@ test("the native kernel checks an elimination through an abstracted motive", t =
 
 test("G0: the module's ABI version is checked, and a universe carries its level as a child", t => {
   // A module built for another encoding is refused before any syntax is made.
-  assert.throws(() => new CubicalKernel({ ...module, _cb_abi_version: () => 1 }), /ABI version 1, but this code expects version 2/);
+  assert.throws(() => new CubicalKernel({ ...module, _cb_abi_version: () => 1 }), /ABI version 1, but this code expects version 3/);
   assert.throws(() => new CubicalKernel({ _cb_new: module._cb_new }), /ABI version 1/);
   const k = session(t), syntax = new CubicalSyntax(k);
   // Tier-0 levels stay numbers; other constants are objects.

@@ -79,6 +79,8 @@ static bool infer(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dim
         return ck_fail(k, "A level is not a term.");
     case CC_LPI: case CC_LLAM: case CC_LAPP:
         return ck_fail(k, "The term checker has no rules for level quantification.");
+    case CC_SORT: case CC_CON: case CC_ELIM: case CC_LIST:
+        return ck_fail(k, "The term checker has no rules for declared types; the instruction kernel checks them.");
     }
     return ck_fail(k, "Unsupported term constructor.");
 }

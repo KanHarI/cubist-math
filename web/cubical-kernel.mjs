@@ -9,11 +9,12 @@ export const cubicalKinds = [
   "Pushout", "PushLeft", "PushRight", "PushPath", "PushElim",
   "HComp", "Trans",
   "LBound", "LConst", "LSucc", "LMax", "LPi", "LLam", "LApp",
+  "Sort", "Con", "Elim", "List",
 ];
 // The syntax encoding this code is written for (CC_KERNEL_ABI_VERSION in
 // kernel/include/cubical_kernel.h). Version 2 keeps a universe's level in a
-// level child rather than its payload.
-export const CUBICAL_ABI_VERSION = 2;
+// level child rather than its payload; version 3 adds the declared-type kinds.
+export const CUBICAL_ABI_VERSION = 3;
 // The most kernel steps one query may take, after its budget has doubled from
 // the session's (10M by default) on each exhaustion: a hard, declared limit.
 export const MAX_QUERY_STEPS = 1280000000n;
@@ -64,6 +65,30 @@ export class CubicalKernel {
     this.assertOpen();
     this.optimizations = { shareSyntax, reuseChecks, compactPaths };
     this.module._cb_optimizations(this.handle, (shareSyntax ? 1 : 0) | (reuseChecks ? 2 : 0));
+  }
+  // Kernel extensions under review: { h1 } admits declared types. Off by
+  // default; the experimental mode turns it on.
+  setExtensions({ h1 = false } = {}) {
+    this.assertOpen();
+    this.extensions = { h1 };
+    this.module._cb_extensions(this.handle, h1 ? 1 : 0);
+  }
+  // An admitted or open signature: its classification, constructors and
+  // parameter symbols, as the kernel records them (cc_kernel_signature).
+  signature(index) {
+    this.assertOpen();
+    const m = this.module, h = this.handle, field = f => m._cb_signature(h, index, f) >>> 0;
+    const levels = field(4), parameters = field(5), count = field(6);
+    const constructor = c => {
+      const at = f => m._cb_signature_constructor(h, index, c, f) >>> 0;
+      return { symbol: at(0), data: at(1), positions: at(2), dimensions: at(3), type: at(4), generated: at(5) === 1 };
+    };
+    return {
+      admitted: field(0) === 1, experimental: field(1) === 1, modifier: field(2), sort: field(3),
+      recorded: field(7), former: field(8), level: field(9),
+      symbols: Array.from({ length: levels + parameters }, (_, i) => field(10 + i)), levels, parameters,
+      constructors: Array.from({ length: count }, (_, c) => constructor(c)),
+    };
   }
   setDeadline(milliseconds = 0) {
     this.assertOpen();

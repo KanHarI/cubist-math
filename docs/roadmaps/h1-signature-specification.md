@@ -1153,13 +1153,17 @@ Tags 1–49 keep their numbers. New kinds are appended:
   since the checkpoint is kept the same way: its former type, parameter types
   and constructor types are roots of the compaction, and its recorded
   handles are relocated with the definitions'. Commit refuses while a
-  signature is open, since the judgements it depends on are truncated.
+  signature opened or extended since the checkpoint is still open, since
+  its latest judgement is truncated; one left open from before the
+  checkpoint, and untouched since, keeps its judgement.
 - An admitted signature is never modified.
 
 ### 5.2 Family F1: admission
 
 - `SignatureBegin(former, modifier, sort symbol, classification)`, where the
-  modifier is a truncation level `n ≥ -1` or untruncated: from a
+  modifier is a truncation level `n ≥ -1` or untruncated, encoded as 0 for
+  an untruncated sort and `n + 2` for `trunc(n)`, and the classification is
+  a mask whose bit `j` marks universe parameter `j` recorded: from a
   closed judgement `⊢ F : U(…)` whose term `F` is
   `Π (xs < ω). Π (ps : Ps). U(ℓ)`, open a signature. The binder symbols of `F`
   name the admission context's level and parameter entries, and the sort

@@ -2109,6 +2109,19 @@ size_t cc_kernel_judgement_count(const cc_kernel *k) {
     return k && k->fact_count ? k->fact_count : 1;
 }
 
+/* The machinery above, for instruction families in their own files. */
+bool ck_instr_ready(cc_kernel *k) { return ready(k); }
+bool ck_instr_begin(cc_kernel *k, cc_derivation how, const uint8_t *position, size_t depth, cc_judgement_id *found) {
+    return begin(k, how, position, depth, found);
+}
+cc_judgement_id ck_instr_publish(cc_kernel *k, uint32_t kind, cc_term term, cc_term other, cc_term type,
+                                 uint32_t context) {
+    return publish(k, kind, term, other, type, context);
+}
+bool ck_instr_premise(cc_kernel *k, cc_judgement_id id, uint32_t kind, cc_fact *out) {
+    return premise(k, id, kind, out);
+}
+
 bool cc_kernel_judgement(const cc_kernel *k, cc_judgement_id id, cc_judgement_info *info) {
     if (!k || !info || !id || id >= k->fact_count)
         return false;

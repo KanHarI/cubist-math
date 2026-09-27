@@ -448,6 +448,10 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
     if (left.kind == CC_PAPP)
         return formula_equal(k, left.payload, right.payload, dims) &&
                alpha(k, left.child[0], right.child[0], terms, dims, children_mode);
+    /* Declared types: the signature index, or the constructor number, is part
+     * of the node's identity, which the generic comparison would ignore. */
+    if ((left.kind == CC_SORT || left.kind == CC_CON || left.kind == CC_ELIM) && left.payload != right.payload)
+        return false;
     for (unsigned i = 0; i < ck_arity(left.kind); ++i)
         if (!alpha(k, left.child[i], right.child[i], terms, dims, children_mode))
             return false;

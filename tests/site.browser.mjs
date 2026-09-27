@@ -157,7 +157,7 @@ try {
   assert.match(await derivation.textContent(), /\/\/ \{n : Nat\}\s*\d+ CtxExt\(1\)/);
   assert.ok(await elaboration.locator(".derivation-scaffold").count() > 0);
   await page.goto(new URL("kernel.html", base).href);
-  assert.equal(await page.locator("#opcodes tbody tr").count(), 49);
+  assert.equal(await page.locator("#opcodes tbody tr").count(), 53);
   console.log("PASS elaboration panel and the kernel reference outline");
   await page.goto(new URL("workbench.html", base).href);
   await page.waitForFunction(() => document.querySelector("#status").textContent.includes("checked"));
