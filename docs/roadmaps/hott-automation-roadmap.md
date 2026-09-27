@@ -286,7 +286,21 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     where a migration needs the old witness. Freeze/replay under the same
     strategy must still yield convertible proofs. Record the strategy/version
     and native steps against the [cost table](#cost-of-the-current-proof-shape).
-- [ ] **A4. Deterministic fuel.** In matching, traversal, premise search and
+- [x] **A4. Deterministic fuel.** Delivered on 2026-09-27 as work-plan L1.3
+  ([fuel.mjs](../../lib/cubical/fuel.mjs)). Each tactic search spends counted
+  fuel: subterm visits, candidate rules, rewrites, premise searches, term
+  nodes walked and kernel queries, failed ones included. A declaration has
+  fuel of its own for every kernel query it asks. No search reads the clock.
+  A query's growing step budget is capped (1.28G steps) and no longer carries
+  over to later queries. Fuel counts questions, not kernel steps, so a fresh
+  session and a reused one spend the same; `tests/search-fuel.test.mjs`
+  checks this. Fuel exhaustion ("fuel"), the kernel's step budget ("budget")
+  and the declaration time limit ("deadline") are reported apart. The
+  defaults come from `tests/fixtures/search-fuel.json`
+  (`node tools/search-fuel-baseline.mjs`). Remaining: worker cancellation; and
+  a query close to the capped step budget can still pass warm and fail cold,
+  reported as the kernel's exhaustion. The original item:
+  In matching, traversal, premise search and
   proof construction, replace elapsed-time checks with counted fuel: traversal
   visits, candidate matches, rewrites, premise attempts, generated DAG nodes
   and native queries. Replace unbounded adapter budget growth with hard declared
@@ -382,7 +396,13 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     - companion motives for inductive-inductive types.
 
     It is therefore a prerequisite of milestone 7's first release.
-- [ ] **A6. Diagnostics.** Unfinished `rw`, `simp`, `simpa` and `calc` steps
+- [x] **A6. Diagnostics.** Delivered on 2026-09-27 with A4. An unfinished
+  `rw`, `simp` or `simpa`, a search stopped by a bound or by its fuel, and a
+  missing rewrite occurrence show the remaining goal (at most 160 characters),
+  the side the rewrites changed and the rules that fired. A failing `simpa`
+  describes both simplifications, and `calc` shows the endpoints that do not
+  meet. A cycle names the rules that brought the goal back and how many
+  rewrites earlier. The original item: Unfinished `rw`, `simp`, `simpa` and `calc` steps
   print the residual goal (bounded in length), the side that changed and the
   rules that fired. A cycle error names the rules involved. The unresolved-goal
   error already names a blocked premise, an exhausted premise search and
@@ -1360,9 +1380,11 @@ the same way. There, the ergonomic forms of its arithmetic examples use 1.7 to
 
 ### Other findings
 
-- Budgets depend on elapsed time. The frontend polls `performance.now()`
+- Budgets depended on elapsed time; since A4 (2026-09-27) searches spend
+  counted fuel, and only the declaration time limit reads the clock. It was
+  so: the frontend polled `performance.now()`
   deadlines, and the kernel deadline in [deadline.c](../../kernel/src/deadline.c)
-  reads `CLOCK_MONOTONIC`. Near a budget, the same source can therefore check
+  reads `CLOCK_MONOTONIC`. Near a budget, the same source could therefore check
   in Node and fail in the browser's WebAssembly build. The numeric limits (64
   rewrites, 512 traversal visits, 8,192 candidates, premise depth two, 64
   premise attempts) were fixed before the measurements that the ergonomics

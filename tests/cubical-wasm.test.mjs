@@ -301,16 +301,43 @@ test("source-defined suspension induction uses a proved PathP bridge", async t =
   assert.equal(result.declarations.length, 7);
 });
 
-test("native operations grow exhausted budgets without accepting invalid proofs", t => {
+test("native operations grow exhausted budgets without accepting invalid proofs, one query at a time", t => {
   const k = session(t), syntax = new CubicalSyntax(k);
   k.stepBudget = 1n; module._cb_step_budget(k.handle, 1, 0);
   const proof = T.line("i", T.nat, T.zero);
+  const before = k.work();
   syntax.check(proof, T.path("j", T.nat, T.zero, T.zero));
-  assert.ok(k.stepBudget > 1n);
-  const budget = k.stepBudget;
+  // The query ran again with a larger budget, and each run is kernel work.
+  assert.ok(k.work().exhausted > before.exhausted);
+  // The growth was the query's own: the session's budget is as it was.
+  assert.equal(k.stepBudget, 1n);
   assert.throws(() => syntax.check(proof, T.path("j", T.nat, T.zero, T.succ(T.zero))), /mismatch/);
-  assert.ok(k.stepBudget >= budget);
+  assert.equal(k.stepBudget, 1n);
   syntax.check(proof, T.path("j", T.nat, T.zero, T.zero));
+});
+
+test("a query's growing budget stops at its declared limit and fails as the kernel's exhaustion", t => {
+  const k = session(t), syntax = new CubicalSyntax(k);
+  assert.equal(k.maxQuerySteps, 1280000000n);
+  // A weak head that takes more than four steps, with a session budget of
+  // one step and a limit of four: the query runs with 1, 2 and 4 steps, and
+  // then fails as the kernel's exhaustion, not as a mismatch.
+  const successor = T.lam("n", T.nat, T.succ(T.variable("n")));
+  let term = T.zero;
+  for (let i = 0; i < 8; i++) term = T.app(successor, term);
+  const handle = syntax.encode(term);
+  k.stepBudget = 1n; module._cb_step_budget(k.handle, 1, 0);
+  k.maxQuerySteps = 4n;
+  const before = k.work();
+  assert.throws(() => k.head(handle), error => error.kind === "budget");
+  const spent = k.work();
+  assert.equal(spent.queries - before.queries, 3);
+  assert.equal(spent.exhausted - before.exhausted, 3);
+  assert.equal(spent.querySteps - before.querySteps, 1 + 2 + 4);
+  assert.equal(k.stepBudget, 1n);
+  // With room to grow, the same query answers.
+  k.maxQuerySteps = 1280000000n;
+  assert.ok(k.head(handle));
 });
 
 test("browser dimension allocation reuses slots without capturing outer coordinates", t => {

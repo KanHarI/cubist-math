@@ -16,7 +16,10 @@ const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${
 // closed native definitions have qualified names so shadowing cannot retarget
 // an earlier checked reference. Unsupported declarations never become axioms.
 export class CubicalProgram {
-  constructor(module, readSource, { onDeclarationStart, onDeclaration, collectReferences = true, optimizations = {}, manageTransactions = true } = {}) {
+  constructor(module, readSource, { onDeclarationStart, onDeclaration, collectReferences = true, optimizations = {}, manageTransactions = true,
+    searchFuel, declarationFuel } = {}) {
+    // Fuel limits (lib/cubical/fuel.mjs), for a measurement or a test; the defaults otherwise.
+    this.fuelLimits = { searchFuel, declarationFuel };
     this.kernel = new CubicalKernel(module);
     this.kernel.setOptimizations(optimizations);
     this.checker = new NativeCubicalElaborator(this.kernel);
@@ -30,6 +33,8 @@ export class CubicalProgram {
     this.sourceAsts = new Map();
     this.simpRegistries = new Map();
     this.gaps = []; this.evaluations = []; this.links = []; this.sources = {}; this.completed = 0;
+    // What each directive (evaluate, simp_rule, simp_set) spent (fuel.mjs).
+    this.directiveFuel = [];
     // Proof statements of each checked module, with their goals (see steps()).
     this.moduleSteps = new Map();
     this.failedImports = new Map();
@@ -111,6 +116,7 @@ export class CubicalProgram {
       const statements = [];
       let current = null;
       const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
+        ...Object.fromEntries(Object.entries(this.fuelLimits).filter(([, limits]) => limits)),
         onStep: step => statements.push({ ...step, declaration: current }),
         onDeclarationStart: declaration => {
           current = declaration.name.text;
@@ -178,6 +184,7 @@ export class CubicalProgram {
       const result = translator.translate(text, env);
       this.simpRegistries.set(name,result.simpRegistry);
       for(const directive of result.directives??[]) {
+        this.directiveFuel.push({ module: name, kind: directive.kind, name: directive.name, searchFuel: directive.searchFuel ?? null });
         if(directive.status!=="checked")
           this.gaps.push({module:name,name:`${directive.kind} ${directive.name}`,
             reason:directive.reason,directive:true});
@@ -192,7 +199,7 @@ export class CubicalProgram {
         const reason = verified ? d.reason : failure(d.reason);
         const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified,
           status: d.status, reason, errorStart: d.errorStart, errorEnd: d.errorEnd,
-          rewriteWork: d.rewriteWork,
+          rewriteWork: d.rewriteWork, searchFuel: d.searchFuel, failure: d.failure ?? null,
           unfoldingHints: d.native?.unfoldingHints ?? [], axioms: d.native?.axioms ?? [], start: syntax.start, end: syntax.end,
           definitionStart: syntax.start, description: leadingDocumentation(text, syntax.start)?.text ?? "",
           ...(name === main ? {} : { sourceModule: name, sourceName: d.name }),
@@ -220,7 +227,7 @@ export class CubicalProgram {
       get steps() { return steps ??= program.steps(main); }, backend: "cubical", mode: "mathematical", source, outputs,
       imports: all.filter(d => d.sourceModule), symbols: [...all, ...Object.values(this.assumptionSymbols())], assumptionLabels: Object.fromEntries(this.checker.assumptionLabels), declarations: outputs, links: this.links,
       declarationCount: total, instructionCount: this.checker.steps, axiomCount: new Set(outputs.flatMap(d => d.axioms)).size, gaps: this.gaps,
-      evaluations: this.evaluations,
+      evaluations: this.evaluations, directiveFuel: this.directiveFuel,
       complete: outputs.length > 0 && outputs.every(d => d.verified)
         && !this.gaps.some(gap=>gap.directive) && failedHere.size === 0, sources: this.sources };
   }
