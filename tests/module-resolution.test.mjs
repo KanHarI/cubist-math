@@ -1,13 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { moduleReader, listedReader, searchOrder, placeOfPath } from "../web/module-resolution.mjs";
+import { moduleReader, listedReader, searchOrder, placeOfPath, moduleRoots } from "../web/module-resolution.mjs";
+import { moduleListing } from "../web/module-listing.mjs";
 import { sourceReader, placeOfFile, projectRoot } from "../tools/module-sources.mjs";
 import { selectTests, loadProof } from "../tools/test-selection.mjs";
 import { budget } from "./timing.mjs";
@@ -60,6 +61,23 @@ test("a module resolves its imports by where it lives", async () => {
   assert.equal(await listed("x", "a"), "archive/first-library/x.cubist");
   assert.equal(await listedReader({ library: ["x"], archive: ["x"] }, async path => path)("x"), "library/x.cubist");
   assert.deepEqual(fetched, ["archive/first-library/x.cubist"], "an unlisted place is never fetched");
+  // A page that loaded its source from the archive says so, listed or not.
+  const told = listedReader({ library: ["only"], archive: [] }, async path => path, "entry", "archive");
+  assert.equal(told.placeOf("entry"), "archive");
+  await assert.rejects(told("only", "entry"), /an archive module imports only from the archive/);
+});
+
+test("the browser lists every module the CLI finds on disk", async () => {
+  const names = async directory => (await readdir(join(projectRoot, directory)))
+    .filter(file => file.endsWith(".cubist")).map(file => file.slice(0, -".cubist".length)).sort();
+  assert.deepEqual([...moduleListing.archive].sort(), await names(moduleRoots.archive),
+    "every archive module, entry points such as euclid and basics included");
+  assert.deepEqual([...moduleListing.library].sort(), await names(moduleRoots.library));
+  // So the page's default proof is placed in the archive and imports only from it.
+  const reader = listedReader(moduleListing, async () => "", "euclid");
+  assert.equal(reader.placeOf("euclid"), "archive");
+  await assert.rejects(reader("classical_axioms", "euclid"),
+    { message: "No module named classical_axioms in archive/first-library/: an archive module imports only from the archive." });
 });
 
 // A repository-shaped directory with a module x in both roots, an archive
@@ -105,10 +123,40 @@ test("same-name modules: each importer loads the module its place sees, one per 
   // Both would be needed under one name: the later importer fails, naming both places.
   await assert.rejects(checked(t, root, "import a;\nimport x;\n"), { message: "current imports x from library/, "
     + "but this check already loaded x from archive/first-library/; a check holds one module per name." });
+  const clash = "a imports x from archive/first-library/, but this check already loaded x from library/; "
+    + "a check holds one module per name.";
   ({ program, result } = await checked(t, root, "import x;\nimport a;\ndef mine : Nat := a_value;\n"));
   assert.equal(result.complete, false);
-  assert.deepEqual(program.gaps.filter(gap => gap.module === "a").map(gap => gap.reason), ["a imports x from "
-    + "archive/first-library/, but this check already loaded x from library/; a check holds one module per name."]);
+  assert.deepEqual(program.gaps.filter(gap => gap.module === "a").map(gap => gap.reason), [clash]);
+  // The clash fails the check even when no declaration uses the refused module.
+  ({ program, result } = await checked(t, root, "import x;\nimport a;\ndef independent : Nat := 0;\n"));
+  assert.equal(result.outputs.every(output => output.verified), true);
+  assert.equal(result.complete, false, "a refused import leaves the check incomplete");
+  assert.deepEqual(program.gaps.map(gap => gap.reason), [clash]);
+});
+
+test("a failed import fails the check, even when nothing uses it", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "cubist-unused-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  await writeFile(join(directory, "unused.cubist"), "import no_such_module;\ndef independent : Nat := 0;\n");
+  const program = new CubicalProgram(await createCubical(), sourceReader({ path: join(directory, "unused.cubist") }),
+    { collectReferences: false });
+  t.after(() => program.dispose());
+  const result = await program.check(await readFile(join(directory, "unused.cubist"), "utf8"), "unused");
+  assert.equal(result.complete, false);
+  // A later check of the same program that imports nothing new is complete again.
+  assert.equal((await program.check("def later : Nat := 1;\n", "later")).complete, true);
+  const cli = spawnSync(process.execPath, [fileURLToPath(new URL("../cli/repl.mjs", import.meta.url)), "check", "unused.cubist"],
+    { cwd: directory, encoding: "utf8", timeout: budget(60000) });
+  assert.notEqual(cli.status, 0, cli.stdout);
+  assert.match(cli.stderr, /No module named no_such_module in the checked file's directory, library\/ or archive\/first-library\//);
+  const environment = { ...process.env };
+  delete environment.NODE_TEST_CONTEXT;
+  const runner = spawnSync(process.execPath, [fileURLToPath(new URL("../tools/test.mjs", import.meta.url)),
+    "--test-reporter=tap", join(directory, "unused.cubist")],
+    { cwd: projectRoot, encoding: "utf8", timeout: budget(60000), env: environment });
+  assert.notEqual(runner.status, 0, runner.stdout);
+  assert.match(runner.stdout, /^not ok 1 - cubical proof: unused\.cubist$/m);
 });
 
 test("a checked file outside both roots imports from its own directory first", async t => {

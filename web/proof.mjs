@@ -257,7 +257,10 @@ async function check() {
   $("diagnostic").hidden = true;
   const source = $("editor").value;
   try {
-    const result = await request("check", { source, module: proofId, optimizations: compilerOptimizations() });
+    // Where the source came from decides where its imports are found
+    // (module-resolution.mjs): an archive proof imports only from the archive.
+    const place = exampleMode ? null : libraryModule ? "library" : "archive";
+    const result = await request("check", { source, module: proofId, place, optimizations: compilerOptimizations() });
     last = result;
     history.length = 0;
     renderSource();

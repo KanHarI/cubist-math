@@ -22,7 +22,9 @@
 // A check holds one module per name. When two modules of one check would
 // resolve the same name to different files, for example a library module and
 // an archive module that both import a name the library shadows, the check
-// fails on the later importer with a message naming both places.
+// fails on the later importer with a message naming both places. A check with
+// any failed import, a clash included, is incomplete, even when no declaration
+// uses that module.
 
 export const moduleRoots = Object.freeze({ library: "library/", archive: "archive/first-library/" });
 export const moduleNamePattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -106,12 +108,13 @@ export function moduleReader(read) {
 // Modules known by name, as the browser knows them: `listing` names the
 // modules of the library and of the archive, and fetchText(path) reads one by
 // its path from the repository root. An unlisted name is never fetched.
-// `main` is the checked module: a listed name is placed where it is listed,
-// the library first; any other name is a source that is not a file.
-export function listedReader(listing, fetchText, main = null) {
-  const readSource = moduleReader((place, name) =>
-    listing[place]?.includes(name) ? fetchText(`${moduleRoots[place]}${name}.cubist`) : null);
-  const place = ["library", "archive"].find(root => listing[root]?.includes(main));
-  if (place) readSource.place(main, place);
+// `main` is the checked module and `place` where its source came from, as the
+// page that loaded it says. Without a place, a listed name is placed where it
+// is listed, the library first; any other name is a source that is not a file.
+export function listedReader(listing, fetchText, main = null, place = null) {
+  const readSource = moduleReader((where, name) =>
+    listing[where]?.includes(name) ? fetchText(`${moduleRoots[where]}${name}.cubist`) : null);
+  const found = place ?? ["library", "archive"].find(root => listing[root]?.includes(main));
+  if (main !== null && found) readSource.place(main, found);
   return readSource;
 }

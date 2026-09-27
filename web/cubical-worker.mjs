@@ -1,22 +1,22 @@
 import createCubical from "./dist/cubical.mjs";
-import { sourceModules, cubicalSourceModules, libraryModules } from "./mathscript/modules.mjs";
+import { moduleListing } from "./module-listing.mjs";
 import { listedReader } from "./module-resolution.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
 import { ReplSession } from "./repl-session.mjs";
 import { elaboration } from "./cubical-elaboration.mjs";
 const module = await createCubical();
-const listing = { library: libraryModules, archive: [...sourceModules, ...cubicalSourceModules] };
 // What import can load, for the REPL's /modules.
-const importable = async () => listing;
+const importable = async () => moduleListing;
 let program = null;
 // Imports resolve as in the CLI (module-resolution.mjs): a proof of the archive
 // imports only from the archive; a library proof, the workspace, the REPL and
-// reference examples import library-first. Each program has its own reader.
-const readSource = (main = null) => listedReader(listing, async path => {
+// reference examples import library-first. Each program has its own reader,
+// and a page that loaded its source from a root says so in `place`.
+const readSource = (main = null, place = null) => listedReader(moduleListing, async path => {
   const response = await fetch(new URL(`./${path}`, import.meta.url), { cache: "no-store" });
   if (!response.ok) throw new Error(`Native source is not available at ${path}.`);
   return response.text();
-}, main);
+}, main, place);
 self.postMessage({ ready: true, backend: "cubical" });
 // A REPL session runs over the checked proof, or over its own program when
 // the page has no proof (the REPL page and the reference pages).
@@ -47,7 +47,7 @@ self.onmessage = async ({ data: { id, command, args } }) => {
     if (command === "check") {
       const replBefore = replQueue;
       const run = (async () => {
-        const next = new CubicalProgram(module, readSource(args.module), { optimizations: args.optimizations });
+        const next = new CubicalProgram(module, readSource(args.module, args.place), { optimizations: args.optimizations });
         let checked;
         try { checked = await next.check(args.source, args.module ?? "current", progress => self.postMessage({ id, progress })); }
         catch (error) { next.dispose(); throw error; }
@@ -60,7 +60,7 @@ self.onmessage = async ({ data: { id, command, args } }) => {
     } else if (command === "elaborate") {
       // A source of its own, checked apart from the proof: every declaration's
       // steps, terms and native opcode trees.
-      const scratch = new CubicalProgram(module, readSource(args.module));
+      const scratch = new CubicalProgram(module, readSource(args.module, args.place));
       try {
         await scratch.check(args.source, args.module ?? "current");
         result = elaboration(scratch, args.module ?? "current");
