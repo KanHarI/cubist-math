@@ -119,11 +119,23 @@ def join_edges(A : U0, x, y : A, p : x = y) :
   PathP(fun (j : Interval) =&gt; p @ j = y, p, refl(y)) {
   exact path j =&gt; path i =&gt; p @ i | j;
 }</code></pre>
-            <p>The best-known use is that every path starting at <code>x</code>, taken together with its end, can be moved to <code>x</code> and <code>refl(x)</code>: the paths starting at a point form a contractible type. At coordinate <code>j</code> the pair is the point <code>p @ j</code> and the part of <code>p</code> that reaches it. This is how path induction is derived from paths.</p>
-            <pre><code data-check="accept">def to_center(A : U0, x, y : A, p : x = y) :
-  typed(exists z : A. x = z, (x, refl(x))) = typed(exists z : A. x = z, (y, p)) {
-  exact path j =&gt; (p @ j, path i =&gt; p @ i &amp; j);
+            <p>The best-known use is the <em>singleton</em> of a point <code>x</code>: the type of pairs of an end <code>y</code> and a path <code>x = y</code>. It is contractible: it has a center, <code>(x, refl(x))</code>, and every element <code>w</code> is equal to it. The path from the center to <code>w</code> slides the end back along <code>w.2</code>, and the meet shrinks the path along with it: at coordinate <code>j</code> the pair is the point <code>w.2 @ j</code> and the part of <code>w.2</code> that reaches it, <code>path i =&gt; w.2 @ i &amp; j</code>. At <code>j = 0</code> that part is <code>refl(x)</code>, and at <code>j = 1</code> it is all of <code>w.2</code>.</p>
+            <pre><code data-check="accept">def Singleton(A : U0, x : A) := exists y : A. x = y;
+
+def singletons_contractible(A : U0, x : A) :
+  exists center : Singleton(A, x). forall w : Singleton(A, x). center = w {
+  exact (typed(Singleton(A, x), (x, refl(x))),
+    fun (w : Singleton(A, x)) =&gt;
+      path j =&gt; (w.2 @ j, path i =&gt; w.2 @ i &amp; j));
+}
+
+// Path induction, from paths: to prove C of every pair (y, p), prove it of
+// the center and transport along the contraction.
+def based_path_induction(A : U0, x : A, C : Singleton(A, x) -&gt; U0,
+    base : C((x, refl(x))), w : Singleton(A, x)) : C(w) {
+  exact along C by singletons_contractible(A, x).2(w) from base;
 }</code></pre>
+            <p><code>based_path_induction</code> is the reason this matters: a statement about every path starting at <code>x</code> follows from the single case <code>refl(x)</code>. In cubical type theory path induction is derived in this way, not assumed: the built-in <a href="paths.html#path-induction"><code>path_induction</code></a> elaborates to a transport over the segments <code>path j =&gt; p @ i &amp; j</code>, the same meet.</p>
             <p>Choosing the wrong one is caught at the edges. With a meet, the path at <code>j</code> runs from <code>x</code> to <code>p @ j</code>, not from <code>p @ j</code> to <code>y</code>:</p>
             <pre><code data-check="reject">def wrong_connection(A : U0, x, y : A, p : x = y) :
   PathP(fun (j : Interval) =&gt; p @ j = y, p, refl(y)) {
