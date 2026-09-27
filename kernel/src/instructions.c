@@ -1971,6 +1971,11 @@ static bool judgement(cc_kernel *k, cc_judgement_id id, unsigned side, cc_fact *
     *out = k->facts[id];
     if (out->kind == CC_FACT_SYSTEM)
         return ck_fail(k, "A composition system is closed by Comp before it is rewritten.");
+    /* A declared type's judgements in progress carry state that only their
+     * own instructions advance: a rewritten copy would not. */
+    if (out->kind != CC_FACT_TYPING && out->kind != CC_FACT_EQUALITY)
+        return ck_fail(k, "An open signature or an instance in progress is continued by its own instructions, "
+                          "not rewritten.");
     if (side > 2 || (side == 1 && out->kind != CC_FACT_EQUALITY))
         return ck_fail(k, "A judgement has sides 0 (term), 2 (type), and 1 for an equality's other term.");
     *root = side == 0 ? out->term : side == 1 ? out->other : out->type;
@@ -2107,6 +2112,26 @@ done:
 
 size_t cc_kernel_judgement_count(const cc_kernel *k) {
     return k && k->fact_count ? k->fact_count : 1;
+}
+
+/* The machinery above, for instruction families in their own files. */
+bool ck_instr_ready(cc_kernel *k) { return ready(k); }
+bool ck_instr_begin(cc_kernel *k, cc_derivation how, const uint8_t *position, size_t depth, cc_judgement_id *found) {
+    return begin(k, how, position, depth, found);
+}
+bool ck_instr_begin_stateful(cc_kernel *k, cc_derivation how) {
+    if (!ready(k))
+        return false;
+    k->pending = how;
+    k->pending_position = NULL;
+    return true;
+}
+cc_judgement_id ck_instr_publish(cc_kernel *k, uint32_t kind, cc_term term, cc_term other, cc_term type,
+                                 uint32_t context) {
+    return publish(k, kind, term, other, type, context);
+}
+bool ck_instr_premise(cc_kernel *k, cc_judgement_id id, uint32_t kind, cc_fact *out) {
+    return premise(k, id, kind, out);
 }
 
 bool cc_kernel_judgement(const cc_kernel *k, cc_judgement_id id, cc_judgement_info *info) {

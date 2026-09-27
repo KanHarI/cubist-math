@@ -347,6 +347,13 @@ E' ::= E  |  λ (y : A). E'             positional arguments, under the arity's 
   positional arguments of path type.
 - No composition, transport, `hcomp` or other operation of type `s` occurs in
   an endpoint (Q3).
+- **Carried types.** The type a path abstraction carries (its family) and
+  the type a path application carries (the applied path's type, whose
+  endpoints the path step exposes) are cubes over `s` as well, their
+  endpoints constructor expressions. An endpoint hides nothing in them: a
+  path whose type was converted to `Path(s, (λ (y : s). y)(base), base)`
+  is refused at application. The driver presents these types with redexes
+  contracted, as it does `T_k`.
 - **Cube boundaries.** A constructor with `d` dimensions has a piece on both
   faces `i_l = 0` and `i_l = 1` of every dimension `i_l`: the endpoints of
   its iterated path type. No other face carries a piece (Q4).
@@ -1153,13 +1160,17 @@ Tags 1–49 keep their numbers. New kinds are appended:
   since the checkpoint is kept the same way: its former type, parameter types
   and constructor types are roots of the compaction, and its recorded
   handles are relocated with the definitions'. Commit refuses while a
-  signature is open, since the judgements it depends on are truncated.
+  signature opened or extended since the checkpoint is still open, since
+  its latest judgement is truncated; one left open from before the
+  checkpoint, and untouched since, keeps its judgement.
 - An admitted signature is never modified.
 
 ### 5.2 Family F1: admission
 
 - `SignatureBegin(former, modifier, sort symbol, classification)`, where the
-  modifier is a truncation level `n ≥ -1` or untruncated: from a
+  modifier is a truncation level `n ≥ -1` or untruncated, encoded as 0 for
+  an untruncated sort and `n + 2` for `trunc(n)`, and the classification is
+  a mask whose bit `j` marks universe parameter `j` recorded: from a
   closed judgement `⊢ F : U(…)` whose term `F` is
   `Π (xs < ω). Π (ps : Ps). U(ℓ)`, open a signature. The binder symbols of `F`
   name the admission context's level and parameter entries, and the sort
@@ -1167,6 +1178,13 @@ Tags 1–49 keep their numbers. New kinds are appended:
   erased or recorded; the driver proposes it by the occurrence check of 1.1.
   Returns a signature judgement (a new judgement kind, like a composition
   system).
+- `SignatureBegin` and `SignatureConstructor` are never answered from the
+  derivation cache, since their results depend on the table and the
+  extension gate: two identical `SignatureBegin`s open two signatures (Q10),
+  and repeating a `SignatureConstructor` finds its premise no longer the
+  latest. The sort and constructor symbols they accept are reserved from
+  the kernel's fresh-symbol supply, so the squash's generated names never
+  take them.
 - `SignatureConstructor(signature, type, symbol)`: from `Γ ⊢ T_k : U(ℓ)`, where
   every entry of `Γ` is a level or parameter entry of the signature (by symbol,
   at an alpha-equal type), the sort entry, or an earlier constructor's entry

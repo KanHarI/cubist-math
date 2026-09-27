@@ -39,7 +39,7 @@ typedef struct {
  * entries, sorted by creation; an entry records the context its own type
  * needs, so every set is closed under dependencies. Context set zero is the
  * empty context; fact and entry zero are invalid. */
-enum { CC_FACT_TYPING = 1, CC_FACT_EQUALITY = 2, CC_FACT_SYSTEM = 3 };
+enum { CC_FACT_TYPING = 1, CC_FACT_EQUALITY = 2, CC_FACT_SYSTEM = 3, CC_FACT_SIGNATURE = 4 };
 typedef struct {
     uint32_t rule;
     uint32_t premise[4];
@@ -70,6 +70,32 @@ typedef struct {
     size_t offset;
     uint32_t count;
 } cc_context_set;
+
+/* Declared types (signatures.c, H1). A constructor's type is over the
+ * admission symbols: the universe and term parameters, the sort and the
+ * earlier constructors. A signature is open until SignatureClose, then
+ * immutable. The checkpoint fields restore an open signature on rollback. */
+typedef struct {
+    uint32_t symbol, data, positions, dimensions;
+    cc_term type;
+    bool generated;
+} cc_constructor;
+typedef struct {
+    bool admitted, experimental;
+    uint32_t modifier, sort_symbol, level_count, parameter_count, recorded;
+    cc_term former, level;
+    uint32_t *symbols;            /* universe parameters, then term parameters */
+    cc_term *parameter_types;     /* one per term parameter, over earlier symbols */
+    cc_constructor *constructors;
+    uint32_t constructor_count, constructor_capacity;
+    uint32_t checkpoint_constructors;
+    bool checkpoint_admitted;
+} cc_signature;
+void ck_signatures_free(cc_kernel *);
+void ck_signatures_checkpoint(cc_kernel *);
+void ck_signatures_rollback(cc_kernel *);
+/* A signature opened or extended since the checkpoint, and still open. */
+bool ck_signatures_open(const cc_kernel *);
 
 /* Exact-key memo entries affect time only. A collision discards the older
  * entry; it can never establish equality or approve an unchecked term. */
@@ -174,7 +200,21 @@ struct cc_kernel {
     cc_derivation pending; /* the instruction being checked */
     const uint8_t *pending_position;
     size_t checkpoint_store[5]; /* facts, entries, context sets, items, positions */
+    /* Declared types (H1). Index 0 is invalid. */
+    unsigned extensions;
+    cc_signature *signatures;
+    size_t signature_count, signature_capacity, checkpoint_signatures;
 };
+/* The instruction machinery (instructions.c), for instruction families kept
+ * in their own files. */
+bool ck_instr_ready(cc_kernel *);
+bool ck_instr_begin(cc_kernel *, cc_derivation, const uint8_t *position, size_t depth, cc_judgement_id *found);
+/* Begin an instruction whose result depends on the signature table, which
+ * changes: it is never answered from the derivation cache. */
+bool ck_instr_begin_stateful(cc_kernel *, cc_derivation);
+cc_judgement_id ck_instr_publish(cc_kernel *, uint32_t kind, cc_term term, cc_term other, cc_term type,
+                                 uint32_t context);
+bool ck_instr_premise(cc_kernel *, cc_judgement_id, uint32_t kind, cc_fact *);
 bool ck_alpha_equal(cc_kernel *, cc_term, cc_term);
 
 /* Universe levels (levels.c, G0 §2.4). A normal form is finite, a tier-0

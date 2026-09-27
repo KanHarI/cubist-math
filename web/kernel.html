@@ -90,6 +90,10 @@
           <tr><td><code>CC_LPI</code></td><td>47</td><td>bound, body</td><td>bound symbol</td><td><code>LevelPi</code></td></tr>
           <tr><td><code>CC_LLAM</code></td><td>48</td><td>bound, body</td><td>bound symbol</td><td><code>LevelLambda</code></td></tr>
           <tr><td><code>CC_LAPP</code></td><td>49</td><td>function, level</td><td>—</td><td><code>LevelApply</code></td></tr>
+          <tr><td><code>CC_SORT</code></td><td>50</td><td>term parameters, recorded levels (lists, or none)</td><td>signature index</td><td>An instance of a declared type (H1, experimental)</td></tr>
+          <tr><td><code>CC_CON</code></td><td>51</td><td>instance</td><td>constructor number</td><td>A declared type’s constructor at an instance</td></tr>
+          <tr><td><code>CC_ELIM</code></td><td>52</td><td>motive, clauses (a list)</td><td>signature index</td><td>A declared type’s eliminator</td></tr>
+          <tr><td><code>CC_LIST</code></td><td>53</td><td>item, next cell (or none)</td><td>—</td><td>A list of parameters, levels or clauses</td></tr>
             </tbody>
           </table></div>
         </section>
@@ -134,9 +138,10 @@
               <tr><td><code>GlueBase</code>, <code>GluePiece</code>, <code>GlueOverlap</code>, <code>GlueForm</code>, <code>GlueIntro</code>, <code>GlueElim</code></td><td>A Glue type <code>Glue [φ ↦ (T, e)] A</code>, built one piece at a time: a type on a face with an equivalence to the base there, agreeing with each earlier piece where their faces meet; a Glue term, a value for each piece whose image is the base on its face; and unglue. Univalence is built from these.</td></tr>
               <tr><td><code>WForm</code>, <code>WIntro</code>, <code>WElim</code></td><td>A W type <code>W(x : L). B</code> of well-founded trees, the tree <code>sup(l, c)</code> with a label and its children, and W recursion; <code>Iota</code> computes recursion on <code>sup</code>.</td></tr>
               <tr><td><code>PushoutForm</code>, <code>PushoutIntro</code>, <code>PushoutPath</code>, <code>PushoutElim</code></td><td>A pushout of <code>A ← C → B</code>, its points <code>inl(a)</code> and <code>inr(b)</code>, the path <code>push(c)</code> between <code>inl(f(c))</code> and <code>inr(g(c))</code>, and its dependent eliminator; <code>Iota</code> computes the eliminator on a point or a path.</td></tr>
+              <tr><td><code>SignatureBegin</code>, <code>SignatureCons</code>, <code>SignatureClose</code></td><td>Declared types (H1), behind an extension that is off until the <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/roadmaps/h1-signature-specification.md">H1 specification</a>’s open proofs are reviewed. A signature is admitted one constructor at a time: the former’s type, then each constructor’s type, derived by the other instructions in a context of the signature’s parameters, its sort and its earlier constructors. The kernel checks the normal form on each type as written: data before positions, the sort only at the end of a position or of the result, and boundaries built from earlier constructors and positions. Closing appends the truncation’s squash constructor.</td></tr>
             </tbody>
           </table></div>
-          <p class="tbd">The instructions cover universes and universe-generic definitions, functions, pairs, natural numbers, the unit and empty types, sums, paths at any interval formula, composition, transport, pushouts, W types and Glue, and so every definition in the library and the archive, univalence included.</p>
+          <p class="tbd">The instructions cover universes and universe-generic definitions, functions, pairs, natural numbers, the unit and empty types, sums, paths at any interval formula, composition, transport, pushouts, W types and Glue, and so every definition in the library and the archive, univalence included. Behind the H1 extension they also admit declared types; instances, eliminators and their computation follow.</p>
         </section>
         <section id="conversion">
           <h2>Conversion</h2>

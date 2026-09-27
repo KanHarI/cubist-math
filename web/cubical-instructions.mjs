@@ -11,7 +11,7 @@ export const instructions = ["", "universe", "nat", "zero", "succ", "natElim", "
   "eta", "side", "symmetry", "transitivity", "convert", "lift", "endpoint", "pathAt", "system", "systemTube", "comp", "systemOverlap",
   "pushout", "pushPoint", "pushPath", "pushElim", "w", "sup", "wElim", "hcomp", "trans",
   "glueBase", "gluePiece", "glueOverlap", "glue", "glueTermBase", "glueTermPiece", "glueTerm", "unglue",
-  "levelPi", "levelLambda", "levelApply"];
+  "levelPi", "levelLambda", "levelApply", "signatureBegin", "signatureConstructor", "signatureClose"];
 // THTH's names for the rules, for display.
 export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ", succ: "NatIntroS",
   natElim: "NatElim", unit: "UnitForm", point: "UnitIntro", unitElim: "UnitElim", void: "VoidForm",
@@ -25,7 +25,8 @@ export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ"
   pushPath: "PushoutPath", pushElim: "PushoutElim", w: "WForm", sup: "WIntro", wElim: "WElim",
   hcomp: "HComp", trans: "Transp", glueBase: "GlueBase", gluePiece: "GluePiece", glueOverlap: "GlueOverlap",
   glue: "GlueForm", glueTermBase: "GlueIntroBase", glueTermPiece: "GlueIntroPiece", glueTerm: "GlueIntro",
-  unglue: "GlueElim", levelPi: "LevelForm", levelLambda: "LevelIntro", levelApply: "LevelElim" };
+  unglue: "GlueElim", levelPi: "LevelForm", levelLambda: "LevelIntro", levelApply: "LevelElim",
+  signatureBegin: "SignatureBegin", signatureConstructor: "SignatureCons", signatureClose: "SignatureClose" };
 export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf", "face"];
 // A judgement's sides: its term, an equality's other term, its type.
 export const sides = ["term", "other", "type"];
@@ -101,6 +102,16 @@ export class InstructionGraph {
   levelPi(entry, body) { return this.issue("levelPi", entry, body); }
   levelLambda(entry, body) { return this.issue("levelLambda", entry, body); }
   levelApply(fn, level) { return this.issue("levelApply", fn, level); }
+  // Declared types (H1). The modifier is 0 for an untruncated sort and n + 2
+  // for trunc(n); bit j of recorded marks universe parameter j recorded.
+  // signatureClose returns the admitted signature's index, not a judgement.
+  signatureBegin(former, modifier, sortName, recorded = 0) {
+    return this.issue("signatureBegin", former, modifier, this.kernel.symbol(sortName), recorded);
+  }
+  signatureConstructor(signature, type, name) {
+    return this.issue("signatureConstructor", signature, type, this.kernel.symbol(name));
+  }
+  signatureClose(signature) { return this.issue("signatureClose", signature); }
   variable(entry) { return this.issue("variable", entry); }
   pi(entry, codomain) { return this.issue("pi", entry, codomain); }
   lambda(entry, body) { return this.issue("lambda", entry, body); }
@@ -192,7 +203,7 @@ export class InstructionGraph {
     const context = [];
     for (let index = 0, entry; (entry = this.module._cb_judgement_context(this.kernel.handle, id, index) >>> 0); index++)
       context.push(entry);
-    const judgement = { id, kind: ["", "typing", "equality", "system"][kind], term: field(1), type: field(3), rule,
+    const judgement = { id, kind: ["", "typing", "equality", "system", "signature"][kind], term: field(1), type: field(3), rule,
       premises: [5, 6, 7, 8].map(field).filter(Boolean), entry: field(9), operands: [field(10), field(11)], context };
     if (kind === 2) judgement.other = field(2);
     if (rule === "step" || rule === "replace") {

@@ -28,13 +28,20 @@ typedef enum {
     CC_GLUE, CC_GLUE_SYSTEM, CC_GLUE_TERM, CC_UNGLUE, CC_DEFREF,
     CC_PUSHOUT, CC_PUSH_LEFT, CC_PUSH_RIGHT, CC_PUSH_PATH, CC_PUSH_ELIM, CC_HCOMP, CC_TRANS,
     /* Universe levels (G0). Levels are not terms; see the child order below. */
-    CC_LBOUND, CC_LCONST, CC_LSUCC, CC_LMAX, CC_LPI, CC_LLAM, CC_LAPP
+    CC_LBOUND, CC_LCONST, CC_LSUCC, CC_LMAX, CC_LPI, CC_LLAM, CC_LAPP,
+    /* Declared types (H1). Sort: payload a signature index; children its term
+     * parameters and its recorded levels, each a list, or 0. Con: payload a
+     * constructor number; child the sort instance. Elim: payload a signature
+     * index; children the motive and the clause list. List: an item and the
+     * next cell, or 0. */
+    CC_SORT, CC_CON, CC_ELIM, CC_LIST
 } cc_term_kind;
 
 /* The encoding of syntax this header describes. A client built for another
  * version must not exchange handles with this kernel: version 2 moved a
- * universe's level from its payload to a level child. */
-#define CC_KERNEL_ABI_VERSION 2u
+ * universe's level from its payload to a level child, and version 3 added
+ * the declared-type kinds. */
+#define CC_KERNEL_ABI_VERSION 3u
 uint32_t cc_kernel_abi_version(void);
 
 /* Resource bounds on universe levels (G0 §2.3): the finite part within a tier,
@@ -103,6 +110,12 @@ void cc_kernel_work(const cc_kernel *, cc_work_counters *);
  * judgement rules. Disabling a cache discards its entries immediately. */
 enum { CC_SHARE_SYNTAX = 1, CC_REUSE_CHECKS = 2 };
 void cc_kernel_set_optimizations(cc_kernel *, unsigned flags);
+/* Kernel extensions still under review, each off by default. With
+ * CC_EXTENSION_H1, SignatureBegin admits declared types (H1); without it, it
+ * refuses. Signatures already admitted stay usable either way. */
+enum { CC_EXTENSION_H1 = 1 };
+void cc_kernel_set_extensions(cc_kernel *, unsigned flags);
+unsigned cc_kernel_extensions(const cc_kernel *);
 /* Optional wall-clock deadline shared by successive operations. Zero disables.
  * Expiry only rejects work; it can never make a judgement succeed. */
 void cc_kernel_set_deadline_ms(cc_kernel *, double duration_ms);
@@ -179,7 +192,8 @@ typedef enum {
     CC_INSTR_W, CC_INSTR_SUP, CC_INSTR_W_ELIM, CC_INSTR_HCOMP, CC_INSTR_TRANS,
     CC_INSTR_GLUE_BASE, CC_INSTR_GLUE_PIECE, CC_INSTR_GLUE_OVERLAP, CC_INSTR_GLUE,
     CC_INSTR_GLUE_TERM_BASE, CC_INSTR_GLUE_TERM_PIECE, CC_INSTR_GLUE_TERM, CC_INSTR_UNGLUE,
-    CC_INSTR_LEVEL_PI, CC_INSTR_LEVEL_LAMBDA, CC_INSTR_LEVEL_APPLY
+    CC_INSTR_LEVEL_PI, CC_INSTR_LEVEL_LAMBDA, CC_INSTR_LEVEL_APPLY,
+    CC_INSTR_SIGNATURE_BEGIN, CC_INSTR_SIGNATURE_CONSTRUCTOR, CC_INSTR_SIGNATURE_CLOSE
 } cc_instruction;
 typedef enum {
     CC_STEP_BETA = 1,  /* App(Lam(x. b), a) to b[a/x] */
@@ -333,6 +347,42 @@ cc_judgement_id cc_instr_push_elim(cc_kernel *, cc_judgement_id motive, cc_judge
 cc_judgement_id cc_instr_w(cc_kernel *, cc_entry_id id, cc_judgement_id arities);
 cc_judgement_id cc_instr_sup(cc_kernel *, cc_judgement_id type, cc_judgement_id label, cc_judgement_id children);
 cc_judgement_id cc_instr_w_elim(cc_kernel *, cc_judgement_id motive, cc_judgement_id step, cc_judgement_id value);
+/* Declared types (H1), admitted one constructor at a time: the family F1 of
+ * docs/roadmaps/h1-signature-specification.md, section 5.2, whose sections
+ * 1.1-1.6 give the normal form checked here.
+ * SignatureBegin opens a signature from a closed judgement ⊢ F : U(…), where
+ * F is Π (xs < ω). Π (ps : Ps). U(ℓ): a LevelPi for each universe parameter,
+ * then a Pi for each term parameter, with distinct symbols. The modifier is
+ * the truncation: CC_UNTRUNCATED, or n + 2 for trunc(n) with n ≥ -1, so prop
+ * is 1 and set is 2. The sort symbol names the entry s : U(ℓ) that
+ * constructor types mention. Bit j of recorded marks universe parameter j
+ * recorded; every other one is erased, and needs a determining occurrence:
+ * a term parameter whose type ends in U(x_j) itself. The result is a
+ * signature judgement: kind 4, whose term is Sort(index) and type F.
+ * SignatureConstructor adds the next constructor from Γ ⊢ T : U(ℓ), with ℓ
+ * compared by normal form. Every entry of Γ is one of the signature's
+ * universe or term parameters, by symbol and at its type, the sort entry,
+ * or an earlier constructor's entry at that constructor's type. T must have
+ * the normal form: data, then positions that are cubes over s, then a
+ * result that is s or an iterated path type over it, whose endpoints are
+ * constructor expressions; this is checked on T as written. T may mention a
+ * recorded parameter and no erased one. The symbol names the new
+ * constructor's entry for later constructor types. Only the signature's
+ * latest judgement continues it.
+ * SignatureClose appends the squash constructor of the modifier, marks the
+ * signature admitted, and returns its index, from 1; an admitted signature
+ * never changes. Each is refused while an error is recorded. */
+enum {
+    CC_UNTRUNCATED = 0,
+    /* Resource bounds, checked, never truncated. */
+    CC_SIGNATURE_LEVELS = 24, CC_SIGNATURE_PARAMETERS = 64, CC_SIGNATURE_CONSTRUCTORS = 256,
+    CC_CONSTRUCTOR_ARGUMENTS = 64, CC_CONSTRUCTOR_DIMENSIONS = 16, CC_TRUNCATION_MAX = 14
+};
+cc_judgement_id cc_instr_signature_begin(cc_kernel *, cc_judgement_id former, uint32_t modifier,
+                                         uint32_t sort_symbol, uint32_t recorded);
+cc_judgement_id cc_instr_signature_constructor(cc_kernel *, cc_judgement_id signature, cc_judgement_id type,
+                                               uint32_t symbol);
+uint32_t cc_instr_signature_close(cc_kernel *, cc_judgement_id signature);
 /* Γ, i ⊢ t : T gives Γ ⊢ t[e/i] : T[e/i] at an endpoint e: interval
  * substitution preserves typing. No other entry may depend on i. */
 cc_judgement_id cc_instr_endpoint(cc_kernel *, cc_judgement_id, cc_entry_id dimension, unsigned endpoint);
@@ -384,8 +434,8 @@ uint32_t cc_kernel_fresh_symbol(cc_kernel *);
 void cc_kernel_arena(const cc_kernel *, size_t *nodes, size_t *bytes);
 
 /* Reading the graph. Judgement ids run from 1 to count - 1, premises first.
- * Kind 1 is typing, 2 equality and 3 a composition system; other is 0 but
- * for an equality. Premises are
+ * Kind 1 is typing, 2 equality, 3 a composition system and 4 an open
+ * signature; other is 0 but for an equality. Premises are
  * judgements, in the instruction's argument order, and entry the context
  * entry the instruction bound or used. Operands: a universe level, a
  * definition symbol or reference, a path endpoint, a side and a step rule,
@@ -410,6 +460,25 @@ cc_entry_id cc_kernel_judgement_context(const cc_kernel *, cc_judgement_id, size
 size_t cc_kernel_entry_count(const cc_kernel *);
 bool cc_kernel_entry(const cc_kernel *, cc_entry_id, uint32_t *symbol, cc_term *type, bool *dimension,
                      cc_judgement_id *source);
+/* Signatures run from 1 to count - 1. Symbols are the admission context's:
+ * the universe parameters, then the term parameters. A constructor's type
+ * is over those symbols, the sort symbol and the earlier constructors'
+ * symbols; generated marks the modifier's squash constructor. */
+typedef struct {
+    bool admitted, experimental;
+    uint32_t modifier, sort_symbol, level_count, parameter_count, constructor_count, recorded;
+    cc_term former, level;
+} cc_signature_info;
+typedef struct {
+    uint32_t symbol, data, positions, dimensions;
+    cc_term type;
+    bool generated;
+} cc_constructor_info;
+size_t cc_kernel_signature_count(const cc_kernel *);
+bool cc_kernel_signature(const cc_kernel *, uint32_t index, cc_signature_info *);
+uint32_t cc_kernel_signature_symbol(const cc_kernel *, uint32_t index, uint32_t position);
+bool cc_kernel_signature_constructor(const cc_kernel *, uint32_t index, uint32_t constructor,
+                                     cc_constructor_info *);
 
 /* Clear a rejected request before constructing corrected raw syntax. */
 void cc_kernel_clear_error(cc_kernel *);
@@ -449,6 +518,9 @@ cc_term cc_kernel_relocated(const cc_kernel *, cc_term);
  * Trans(dimension; pushout-family,face-tube,base) binds only the family.
  * Trans's single face-tube stores phi; its term is discarded and rebuilt as base.
  * DefRef(registry-index) refers only to a previously checked definition.
+ * Declared types (H1): Sort(signature-index; parameters, recorded-levels),
+ * each a List(item, next) with zero terminating it, both absent for a
+ * signature's own sort; Con(constructor-number; instance). Elim is F5's.
  * Nat/Zero/Unit/Point/Void have no children. Missing children must be zero.
  * The checker discards an untrusted PApp's optional second child (annotation).
  */

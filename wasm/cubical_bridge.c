@@ -441,6 +441,12 @@ uint32_t cb_instr(uint32_t token, unsigned op, uint32_t a, uint32_t b, uint32_t 
     case CC_INSTR_LEVEL_PI: return cc_instr_level_pi(k, a, b);
     case CC_INSTR_LEVEL_LAMBDA: return cc_instr_level_lambda(k, a, b);
     case CC_INSTR_LEVEL_APPLY: return cc_instr_level_apply(k, a, b);
+    /* Declared types (H1): SignatureBegin(former, modifier, sort symbol,
+     * recorded mask); SignatureConstructor(signature, type, symbol);
+     * SignatureClose(signature) gives the signature's index. */
+    case CC_INSTR_SIGNATURE_BEGIN: return cc_instr_signature_begin(k, a, b, c, d);
+    case CC_INSTR_SIGNATURE_CONSTRUCTOR: return cc_instr_signature_constructor(k, a, b, c);
+    case CC_INSTR_SIGNATURE_CLOSE: return cc_instr_signature_close(k, a);
     }
     s->error = "Unknown instruction.";
     return 0;
@@ -520,6 +526,35 @@ uint32_t cb_entry_count(uint32_t token) {
     browser_session *s = lookup(token);
     size_t count = s ? cc_kernel_entry_count(s->kernel) : 0;
     return count > UINT32_MAX ? UINT32_MAX : (uint32_t)count;
+}
+
+/* Kernel extensions under review (CC_EXTENSION_H1), off by default. */
+void cb_extensions(uint32_t token, unsigned flags) {
+    browser_session *s = lookup(token);
+    if (s) cc_kernel_set_extensions(s->kernel, flags);
+}
+
+/* A signature's fields: 0 admitted, 1 experimental, 2 modifier, 3 sort
+ * symbol, 4 universe parameters, 5 term parameters, 6 constructors,
+ * 7 recorded mask, 8 former, 9 level; 10 + i its i-th parameter symbol. */
+uint32_t cb_signature(uint32_t token, uint32_t index, uint32_t field) {
+    browser_session *s = lookup(token);
+    cc_signature_info g;
+    if (!s || !cc_kernel_signature(s->kernel, index, &g)) return 0;
+    if (field >= 10) return cc_kernel_signature_symbol(s->kernel, index, field - 10);
+    const uint32_t fields[] = {g.admitted, g.experimental, g.modifier, g.sort_symbol, g.level_count,
+                               g.parameter_count, g.constructor_count, g.recorded, g.former, g.level};
+    return fields[field];
+}
+
+/* A constructor's fields: 0 symbol, 1 data, 2 positions, 3 dimensions,
+ * 4 type, 5 generated. */
+uint32_t cb_signature_constructor(uint32_t token, uint32_t index, uint32_t constructor, unsigned field) {
+    browser_session *s = lookup(token);
+    cc_constructor_info c;
+    if (!s || field > 5 || !cc_kernel_signature_constructor(s->kernel, index, constructor, &c)) return 0;
+    const uint32_t fields[] = {c.symbol, c.data, c.positions, c.dimensions, c.type, c.generated};
+    return fields[field];
 }
 
 /* Fields: 0 symbol (a dimension's index), 1 type, 2 dimension, 3 source. */
