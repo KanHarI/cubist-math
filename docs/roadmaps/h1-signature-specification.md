@@ -426,7 +426,7 @@ occurs in a constructor type and is recorded.
 | `Torus` | `U(0)` | `b : s`; `p`, `q : Path(s, b, b)`; `surf : Path(i; Path(j; s, p @ i, p @ i), q, q)` |
 | `S2` | `U(0)` | `base : s`; `surf : Path(i; Path(j; s, base, base), ⟨j⟩ base, ⟨j⟩ base)` |
 | `Trunc`, `prop` | `Π (x < ω). Π (A : U(x)). U(x)` | `point : Π (a : A). s`; generated `squash` |
-| `Quotient`, `set` | `Π (x, y < ω). Π (A : U(x)). Π (R : A → A → U(y)). U(max(x, y))` | `class : Π (a : A). s`; `glue : Π (a, b : A). Π (r : R(a, b)). Path(s, class(a), class(b))`; generated `squash` |
+| `Quotient`, `set`: set-truncated | `Π (x, y < ω). Π (A : U(x)). Π (R : A → A → U(y)). U(max(x, y))` | `class : Π (a : A). s`; `glue : Π (a, b : A). Π (r : R(a, b)). Path(s, class(a), class(b))`; generated `squash` |
 | `Pointed`, from `inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }` | `Π (x < ω). U(x + 1)`, `x` recorded | `pt : Π (X : U(x)). Π (p : X). s` |
 
 In `Torus`, the inner path over `j` runs from `p @ i` to `p @ i`, and the
@@ -464,7 +464,7 @@ outer endpoints `⟨j⟩ base` are path abstractions (1.4). In `Pushout`,
 | Phantom parameter | `Box(x < ω, A : U(x)) { mk(n : Nat); }` | `U(0)` at every `x` |
 | Stored data | `Pair(x, y < ω, A : U(x), B : U(y)) { mk(a : A, b : B); }` | `U(max(x, y))` |
 | Arity | `W(x, y < ω, L : U(x), B : L → U(y))` | `U(max(x, y))`: `B(l)` is an arity |
-| Relation | `Quotient(x, y < ω, A : U(x), R : A → A → U(y))` | `U(max(x, y))`: `r : R(a, b)` is data of `glue` |
+| Relation | `Quotient(x, y < ω, A : U(x), R : A → A → U(y))`, the set-truncated quotient | `U(max(x, y))`: `r : R(a, b)` is data of `glue` |
 | Large parameter only | `Tag(A : U(1)) { here; }` | `U(0)` |
 | Stored type, recorded level | `Pointed(x < ω) : U(x + 1) { pt(X : U(x), p : X); }` | `U(x + 1)`; `x` is recorded |
 | Mixed | `Tagged(x, y < ω, A : U(x)) : U(max(x, y + 1)) { tag(a : A, B : U(y)); }` | `U(max(x, y + 1))`; `x` erased, `y` recorded |
@@ -1493,6 +1493,16 @@ inductive Quotient(U, V < UU0, A : U, R : A -> A -> V) : set {
 - `Quotient(A, R) : U(max(x, y))` for `A : U(x)` and `R : A → A → U(y)`: its
   level accounts for the carrier and the relation. A small quotient stays
   small, without the archive's predicate encoding.
+- **`Quotient` is the set quotient: it is set-truncated.** Its `set`
+  modifier appends the squash constructor of 1.6, so any two parallel
+  paths in `Quotient(A, R)` are equal. It keeps the classes and the paths
+  `glue` makes between them, and kills all higher structure: loops that
+  `glue` creates collapse, and so do the higher paths of `A` itself. That
+  is the classical quotient that constructions such as `G/N`, `R/I` and the
+  rationals need. Quotienting by an action while keeping the stabilizers,
+  or any other higher structure, uses a declaration without the modifier,
+  such as the graph quotient: for `A = Unit` and `R(tt, tt) = Unit` the
+  graph quotient is the circle, and `Quotient` is a point.
 - The eliminator into any universe replaces `TruncateElim`, which the archive
   restricts to propositions in the argument's universe. The largest group of
   the archive's resizing, 22 of 47 declarations, works around that
