@@ -80,8 +80,21 @@ function session(t) {
 }
 
 test("the modifier codes are the kernel's: 0 untruncated, n + 2 for trunc(n)", () => {
-  assert.deepEqual(["type", "prop", "set", { trunc: 1 }, undefined].map(modifierCode), [0, 1, 2, 3, 0]);
+  assert.deepEqual(["type", "prop", "set", { trunc: 1 }, { trunc: 14 }, undefined].map(modifierCode), [0, 1, 2, 3, 16, 0]);
   assert.throws(() => modifierCode({ trunc: -2 }), /n ≥ -1/);
+  assert.throws(() => modifierCode({ trunc: 1.5 }), /n ≥ -1/);
+  // Levels past the kernel's bound are refused before they reach an
+  // instruction, where 2^32 - 2 + 2 would have wrapped to 0, untruncated.
+  for (const n of [15, 4294967294, 4294967295]) assert.throws(() => modifierCode({ trunc: n }), /up to n = 14/);
+});
+
+test("an instruction refuses an operand that is not a 32-bit unsigned integer", t => {
+  const { g, syntax, admit } = session(t);
+  admit(natural);
+  const u0 = g.universe(syntax.encodeLevel(0));
+  for (const modifier of [2 ** 32, 2 ** 32 + 1, -1, 1.5])
+    assert.throws(() => g.signatureBegin(u0, modifier, "Wrapped"), /32-bit unsigned integer/);
+  assert.throws(() => g.construct(g.sortBegin(1), 2 ** 32), /32-bit unsigned integer/);
 });
 
 test("admission derives a signature from its normal form and registers it by name", t => {
@@ -249,12 +262,19 @@ test("higher constructors: the torus and the sphere are admitted, and their face
   admit({ name: "Torus", constructors: [{ name: "b", type: v("Torus") },
     { name: "p", type: path(v("Torus"), v("b"), v("b")) }, { name: "q", type: path(v("Torus"), v("b"), v("b")) },
     { name: "surf", type: path(square(v("Torus"), at(v("p"), "i"), at(v("p"), "i")), v("q"), v("q")) }] });
-  const T = sort("Torus"), p = con(T, 1), q = con(T, 2), surf = con(T, 3);
-  // surf @ 0 is q, and surf @ i @ 0 is p @ i: the square's faces.
-  check(line(T, at(q, "i")), path(T, atEnd(atEnd(surf, 0), 0), atEnd(atEnd(surf, 0), 1)));
-  const face = { tag: "PApp", path: at(surf, "i"), arg: [] };
-  check({ tag: "PLam", dim: "i", family: T, body: at(p, "i") }, path(T, atEnd(p, 0), atEnd(p, 1)));
-  check({ tag: "PLam", dim: "i", family: T, body: face }, path(T, con(T, 0), con(T, 0)));
+  const T = sort("Torus"), b = con(T, 0), p = con(T, 1), q = con(T, 2), surf = con(T, 3);
+  // The square's faces, compared as paths: surf @ 0 is q, and the path
+  // i ↦ surf @ i @ 0 is p. Each is an equality of loops, inhabited by a
+  // constant path only if the two loops are the same.
+  const loops = path(T, b, b);
+  const same = (x, y) => check({ tag: "PLam", dim: "k", family: loops, body: x }, { tag: "Path", dim: "k", family: loops, left: x, right: y });
+  same(q, atEnd(surf, 0));
+  same(q, atEnd(surf, 1));
+  same(p, { tag: "PLam", dim: "i", family: T, body: { tag: "PApp", path: at(surf, "i"), arg: [] } });
+  same(p, { tag: "PLam", dim: "i", family: T, body: { tag: "PApp", path: at(surf, "i"), arg: [[]] } });
+  // The loops swapped are refused: the faces are not the other loops.
+  assert.throws(() => same(p, atEnd(surf, 0)), /Type mismatch/);
+  assert.throws(() => same(q, { tag: "PLam", dim: "i", family: T, body: { tag: "PApp", path: at(surf, "i"), arg: [] } }), /Type mismatch/);
   // inductive S2 { base; surf : Path(i; Path(j; S2, base, base), ⟨j⟩ base, ⟨j⟩ base); }
   const constant = { tag: "PLam", dim: "j", family: v("S2"), body: v("base") };
   admit({ name: "S2", constructors: [{ name: "base", type: v("S2") },

@@ -51,7 +51,12 @@ export class InstructionGraph {
     this.kernel.assertOpen();
     const code = typeof name === "number" ? name : instructions.indexOf(name);
     while (operands.length < 4) operands.push(0);
-    return this.answer(this.module._cb_instr(this.kernel.handle, code, ...operands.map(operand => operand >>> 0)), `${name} failed.`);
+    // Every operand is a 32-bit unsigned integer: anything else would be
+    // coerced, silently, into another instruction's operands.
+    for (const operand of operands)
+      if (!Number.isInteger(operand) || operand < 0 || operand > 0xffffffff)
+        throw new TypeError(`An instruction operand must be a 32-bit unsigned integer, not ${operand}.`);
+    return this.answer(this.module._cb_instr(this.kernel.handle, code, ...operands), `${name} failed.`);
   }
   // A handle, or the kernel's error thrown and cleared: 0 is never a result.
   answer(handle, fallback) {

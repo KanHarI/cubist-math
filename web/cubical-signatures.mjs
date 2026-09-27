@@ -9,12 +9,16 @@
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { CubicalSyntax } from "./cubical-syntax.mjs";
 
-// The modifier the kernel takes: 0 untruncated, n + 2 for trunc(n).
+// The modifier the kernel takes: 0 untruncated, n + 2 for trunc(n), for
+// n from -1 up to the kernel's bound, CC_TRUNCATION_MAX.
+export const TRUNCATION_MAX = 14;
 export function modifierCode(modifier) {
   if (modifier === undefined || modifier === "type") return 0;
   if (modifier === "prop") return 1;
   if (modifier === "set") return 2;
-  if (modifier?.trunc !== undefined && Number.isInteger(modifier.trunc) && modifier.trunc >= -1) return modifier.trunc + 2;
+  const n = modifier?.trunc;
+  if (Number.isInteger(n) && n >= -1 && n <= TRUNCATION_MAX) return n + 2;
+  if (Number.isInteger(n) && n > TRUNCATION_MAX) throw new Error(`trunc(n) is supported up to n = ${TRUNCATION_MAX}.`);
   throw new Error("A sort is type, set, prop or trunc(n) for an integer n ≥ -1.");
 }
 
