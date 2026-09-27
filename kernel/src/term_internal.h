@@ -138,6 +138,10 @@ struct cc_kernel {
     size_t formula_count, formula_capacity;
     uint32_t next_symbol;
     uint64_t checking_steps, reduction_steps, budget, operation_budget;
+    /* Cumulative work (cc_kernel_work) and the kind of operation now running,
+     * which its steps and its error are charged to. Never reset. */
+    cc_work_counters work;
+    unsigned work_phase;
     double deadline_ms;
     unsigned deadline_ticks;
     unsigned recursion;
@@ -220,6 +224,18 @@ void ck_memo_put(cc_kernel *, uint32_t operation, cc_term, uint32_t name, cc_ter
 bool ck_fail(cc_kernel *, const char *);
 bool ck_fail_as(cc_kernel *, cc_error_kind, const char *);
 bool ck_tick(cc_kernel *, bool checking);
+/* Start an operation (cubical_kernel.h, cc_kernel_work): charge its steps and
+ * its error to its kind, count it, and give it a full budget. It leaves the
+ * recursion depth to the caller, as each entry point did before. */
+enum { CC_WORK_NONE, CC_WORK_INSTRUCTION, CC_WORK_QUERY };
+void ck_operation(cc_kernel *, unsigned phase);
+void ck_standalone(cc_kernel *);
+/* cc_kernel_formula without leaving the current operation: for the kernel's
+ * own use inside an operation. */
+cc_formula_id ck_formula(cc_kernel *, const cc_formula *);
+/* cc_kernel_check_in_cube without starting an operation: define's check. */
+bool ck_check_in_cube(cc_kernel *, cc_term raw, cc_term expected, const cc_assumption *, size_t count,
+                      uint64_t dimensions, cc_checked_result *);
 bool ck_deadline(cc_kernel *);
 unsigned ck_arity(cc_term_kind);
 cc_term ck_make(cc_kernel *, cc_term_kind, uint32_t, cc_term, cc_term, cc_term, cc_term);

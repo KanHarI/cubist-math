@@ -1,0 +1,8 @@
+{
+  "recordedFrom": "d44239e5ff0a9448a03ad3f0e76192eb60206802",
+  "method": "tests/driver-trace.mjs run on the tree of that commit, before agree's choices were made explicit, with the current WebAssembly module (its instructions compute as before; it adds the work counters). Every instruction the driver issued with its operands and result, and every weak-head query with its budget and answer, in order, hashed.",
+  "issued": 2822,
+  "heads": 370,
+  "checked": 8,
+  "sha256": "13044fc57811d100562707b47271afc0a2233e571f9423ad37a5faa7e437b7a9"
+}

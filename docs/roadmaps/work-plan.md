@@ -23,7 +23,7 @@ A new syntax form must elaborate completely through the instruction driver.
 
 | Area | Delivered | Still open |
 | --- | --- | --- |
-| Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default | Retiring the old checker APIs and their test clients; explicit driver options and per-instruction cost telemetry (learned-search phases 1–2, with L1.3); optional performance/certificate work |
+| Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default; explicit driver options and cumulative kernel-work counters (learned-search phases 1–2) | Retiring the old checker APIs and their test clients; optional performance/certificate work |
 | G0 universes | K1.1–K1.4 and L1.1; `U < UU0`, `next`, `max`, generic builtins and rewriting; all 43 former templates check generically | E1 level constraints and E2 higher-tier generic definitions remain deferred proposals |
 | Proof ergonomics | Grouped binders, `have`, `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand; Σ projections `p.1`/`p.2`, `show` and `suffices` (L1.5) | General inference, `apply`/`refine`, folded path rules, broader dependent rewriting, `Path` induction (B1) |
 | Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | Face-aware plans, filling/source-span records, tactic integration, indexed and companion motives |
@@ -124,13 +124,14 @@ Before, `tools/test-selection.mjs` resolved selected-proof imports only from
 the archive. `tests/module-resolution.test.mjs` covers same-name modules,
 local imports, source-root selection and CLI/test-runner parity.
 
-**I1.3, coverage acceptance reporting (S).** The coverage tool uses an
-import-only root, so `CubicalProgram.complete` is false even with no gaps
-(it requires a local output). The tool also prints failures without setting
-a failing exit code. Define success from checked imports, zero gaps and
-`derived === definitions`, and fail the command on a real coverage loss.
-Until then inspect the report rather than treating exit code 0 alone as
-the gate. The review run found zero gaps and 3,916/3,916 derived definitions.
+**I1.3, coverage acceptance reporting (S). Done on 2026-09-27.**
+`node tools/instruction-coverage.mjs` succeeds only when every import
+checks, no gap remains and every stored definition derives again
+(`derived === definitions`, with at least one); otherwise it prints
+"Coverage incomplete" and exits with status 1. It no longer reads
+`CubicalProgram.complete`, which is false for an import-only root. The
+report also pins the revision, machine, budgets and session mode, and gives
+the kernel work of each phase (learned-search phases 1–2).
 
 ## Stage 1: goals, diagnostics and inference
 
@@ -141,7 +142,7 @@ property tests remain regressions, not next actions.
 | --- | --- | --- | --- |
 | L1.2 | A5 core goal and proof-construction layer | Delivered | — |
 | L1.2r | Remaining A5 plan metadata and clients: faces, filling, source spans; index/companion motives with H2/H3 | Extend the delivered core with each consuming feature | L |
-| L1.3 | Deterministic fuel and residual-goal diagnostics (HoTT A4/A6), with learned-search phases 1–2: explicit driver options and per-instruction kernel cost | L1.2; A7 baseline | M |
+| L1.3 | Deterministic fuel and residual-goal diagnostics (HoTT A4/A6), on learned-search phases 1–2 (explicit driver options and cumulative kernel work, delivered 2026-09-27) | L1.2; A7 baseline | M |
 | L1.4 | Folded path vocabulary and constructor congruence (A1/A2) | L1.1, L1.2; A4 fuel for bounded search | L |
 | L1.5 | Σ projections `p.1`/`p.2`, `show`, `suffices` (A8/B4): delivered 2026-09-27. Open: the separate `Path` induction/`subst` slice (B1) | L1.2; B1 uses A1b's checked induction construction | M |
 | L4.1a | Known-signature application elaboration, named arguments and scoped `_` holes | L1.1, L1.2; L1.3 fuel for inference search | M |
@@ -168,10 +169,9 @@ has an explicit spelling.
   native queries and retries. Specify cache/reset accounting so fresh and
   reused sessions agree. Native budgets already exist; the missing work is
   hard cumulative limits and deterministic frontend accounting. Deadlines
-  remain separately reported safety timeouts. The per-instruction kernel
-  cost that learned-search phase 2 exposes is this same accounting: deliver
-  the bridge's cost counter and the driver's explicit options (phase 1) with
-  L1.3, not twice.
+  remain separately reported safety timeouts. The cumulative kernel-work
+  counters of learned-search phase 2 (`cc_kernel_work`, delivered) are the
+  native half of this accounting; frontend fuel counts on top of them.
 - A1 uses level-generic checked definitions. Reintroducing per-universe
   specialization would undo L1.1. A2 initially excludes binder bodies;
   binder-aware rewriting remains a separately scoped extension.

@@ -38,8 +38,9 @@ that changes the plan.
   10.7 s for the second derivation. These are one run's observations.
   Every derived term is its source syntax, annotations included. The
   first proof and `library/naturals` also use this admission path.
-  The coverage report's import-only `complete` flag and exit status need
-  the reporting correction tracked as I1.3 in the work plan.
+  Since I1.3 the command fails, with exit status 1, unless every import
+  checks, no gap remains and every definition derives again; its report
+  also gives the kernel work each phase cost (see [the driver](#the-driver)).
 
 ## Goal
 
@@ -353,6 +354,41 @@ entries by symbol. Together, these took the archive from 457 s to 14 s.
 A learned policy for this search, trained against the kernel with the
 heuristic as its teacher and derivation cost as its objective, is designed
 in [learned-search.md](learned-search.md).
+
+**Choices.** Each time round, `agree` stops at a branch point and lists the
+moves open there: normalize both sides (a long closed computation, once per
+comparison), descend by congruence, a weak-head step on either side or both
+(beta, iota, path, face or delta), a side's weak head normal form, or eta.
+The list is syntactic; the kernel checks the rest when a move is made. A
+chooser (`heuristicChooser` and the interface beside it) ranks the moves,
+and the driver makes them in that order until one applies. The default
+chooser is the order described above, lazily, since its tests ask the
+guide; it derives the archive with an identical elaboration fingerprint.
+Choosers are untrusted: a bad one only fails, and one that picks a move the
+point did not offer is refused.
+
+**Cost.** The kernel counts its work cumulatively (`cc_kernel_work`, read
+by `CubicalKernel.work()`), so the difference of two readings is the work
+done between them. Every operation starts with the step budget: an
+instruction, or a query, which is the term checker, `whnf`, normalization,
+conversion, or the substitution and renaming services. One step is one unit
+of that budget: an inference or reduction step, a conversion comparison, a
+substituted node, a level normal-form node, and the step each instruction
+takes on entry, so an instruction answered from the derivation memo still
+costs one. Work nested in an operation shares its budget. Instructions and
+queries are counted apart, with their steps and their failures, and so are
+exhausted budgets and deadlines. Nothing resets the counters: not errors,
+not rollback, not a retry with a larger budget, whose work is counted
+again. `kernel/tests/test_work.c` and `tests/driver-search.test.mjs` check
+the accounting against direct calls.
+
+`node tools/instruction-coverage.mjs` reports this cost for the archive
+check and for each definition derived again, rejected instructions and the
+guide's queries included, with the driver's branch points and the outcome
+of each move. It pins the revision, the machine, the budgets and the
+session mode in its report, can write every branch point of every
+derivation as JSON lines (`--trajectories=FILE`), and exits with status 1
+unless every import checks, no gap remains and every definition derives.
 
 A rule's expected type comes either from a premise the driver can rewrite in
 place, or from a typing judgement it derives for that type. It reduces a
