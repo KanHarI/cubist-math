@@ -34,9 +34,17 @@ npm test -- --changed                    # Modified .cubist sources
 npm test -- tests/cubical-program.test.mjs
 npm test                                # Final regression and corpus check
 npm run test:browser
+node tools/differential-driver.mjs --seeds=2000   # The driver against the term checker
 make CC=clang sanitize                  # Address/undefined sanitizers
 make lint
 ```
+
+`tools/differential-driver.mjs` generates problems where eta and computation
+meet, each a context, a type and two terms. The terms are equal by
+construction, through beta, pair eta, Glue eta with pieces on a face, and
+type-level beta, or they differ in one variable. The tool checks each problem
+with the term checker's conversion and with the instruction driver, and
+reports any disagreement with its seed. `npm test` runs 500 seeds.
 
 The independent optimization switches are `--[no-]share-syntax`,
 `--[no-]reuse-checks`, and `--[no-]compact-paths`; all default on.
