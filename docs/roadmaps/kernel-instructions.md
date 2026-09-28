@@ -586,8 +586,12 @@ The correction:
 - **Reduction decides eta by syntax.** Pair eta contracts `(fst p, snd p)`
   and Glue eta `glue [φ ↦ b|φ] (unglue b)` only when the two sides are the
   same up to bound names. `Normalize` still reaches the contraction when
-  the normal forms of the parts agree, and conversion has both eta rules
-  itself, decided by conversion.
+  the normal forms of the parts agree; for Glue eta it compares each piece
+  with the normal form of the base's restriction, since restricting can
+  make a new redex, as `p @ i` at `i = 0` is `p`'s left endpoint.
+  Conversion makes both eta contractions itself, decided by conversion, on
+  either side of a comparison, so two pairs with different annotations
+  still compare.
 - **The boundary is enforced.** `ck_convertible` fails, with an internal
   error, while an instruction runs; every public entry point that may reach
   it starts a query first.

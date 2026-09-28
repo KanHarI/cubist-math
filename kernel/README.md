@@ -25,7 +25,8 @@ evidence for an instruction, and this is enforced (work plan I1.2a):
 - the folded comparison that instructions use keeps its own entries in the
   comparison memo, apart from conversion's successes;
 - weak-head reduction contracts pair and Glue eta only when their sides are
-  the same syntax; conversion completes both eta rules itself;
+  the same syntax, and normal forms when the parts' normal forms are;
+  conversion completes both eta rules itself;
 - the conversion search refuses to run while an instruction does.
 
 `tests/test_isolation.c` checks each of these, including the probe that the

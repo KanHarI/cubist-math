@@ -255,13 +255,21 @@ static cc_term hinted_head(cc_kernel *k, cc_term term) {
     return term;
 }
 
-/* Glue eta for conversion: glue [φ ↦ t] (unglue b) is b when the Glue types
- * are equal and each piece is b on its face. Reduction decides this only
- * syntactically (term_normalize.c), because instructions trust it; the
- * search completes it here by conversion. Both comparisons are within one
- * side's scope, so they bind nothing. Returns b, or 0. */
-static cc_term glue_eta(cc_kernel *k, cc_term term) {
+/* The eta contractions that weak heads make only by syntax (term_normalize.c),
+ * because instructions trust reduction; the search makes them here when
+ * their sides are equal by conversion. (fst x, snd y) is x when y is x, and
+ * glue [φ ↦ t] (unglue b) is b when the Glue types are equal and each piece
+ * is b on its face. The comparisons are within one side's scope, so they
+ * bind nothing. Returns the contraction, or 0. */
+static cc_term conversion_eta(cc_kernel *k, cc_term term) {
     cc_node n = k->nodes[term];
+    if (n.kind == CC_PAIR) {
+        cc_node first = k->nodes[n.child[1]], second = k->nodes[n.child[2]];
+        return first.kind == CC_FST && second.kind == CC_SND &&
+               alpha(k, first.child[0], second.child[0], NULL, NULL, COMPUTE) ? first.child[0] : 0;
+    }
+    if (n.kind != CC_GLUE_TERM)
+        return 0;
     cc_term projected = ck_whnf(k, n.child[1]);
     if (!projected || k->nodes[projected].kind != CC_UNGLUE)
         return 0;
@@ -371,6 +379,15 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
             return true;
         a = ck_whnf(k, a);
         b = ck_whnf(k, b);
+        if (!a || !b)
+            return false;
+        /* Eta that holds only by conversion, on either side, whatever the
+         * other: two pairs may also differ in their annotations. */
+        cc_term eta_a = conversion_eta(k, a), eta_b = conversion_eta(k, b);
+        if (k->error[0])
+            return false;
+        if (eta_a || eta_b)
+            return alpha(k, eta_a ? eta_a : a, eta_b ? eta_b : b, terms, dims, COMPUTE);
     }
     if (!a || !b)
         return false;
@@ -436,14 +453,6 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
             cc_term second = ck_make(k, CC_SND, 0, a, 0, 0, 0);
             return alpha(k, first, right.child[1], terms, dims, children_mode) &&
                    alpha(k, second, right.child[2], terms, dims, children_mode);
-        }
-        /* Glue eta, which weak heads contract only when it holds by syntax. */
-        if (mode == COMPUTE && (left.kind == CC_GLUE_TERM || right.kind == CC_GLUE_TERM)) {
-            bool on_left = left.kind == CC_GLUE_TERM;
-            cc_term contracted = glue_eta(k, on_left ? a : b);
-            if (contracted)
-                return on_left ? alpha(k, contracted, b, terms, dims, COMPUTE)
-                               : alpha(k, a, contracted, terms, dims, COMPUTE);
         }
         return false;
     }

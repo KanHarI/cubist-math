@@ -296,6 +296,42 @@ cc_term ck_whnf(cc_kernel *k, cc_term term) {
     return result;
 }
 
+/* Glue eta in a normal form, whose parts are normal. Restricting the base to
+ * a piece's face can make a new redex, as p @ i at i = 0 is p's left
+ * endpoint, so each piece is compared with the normal form of the base's
+ * restriction. Still by syntax, as in weak(): conversion never decides a
+ * reduction step. Returns the contraction, the term itself, or 0 on error. */
+static cc_term normal_glue_eta(cc_kernel *k, cc_term term) {
+    cc_node n = k->nodes[term];
+    cc_term projected = ck_whnf(k, n.child[1]);
+    if (!projected)
+        return 0;
+    cc_node projection = k->nodes[projected];
+    if (projection.kind != CC_UNGLUE || !ck_alpha_equal(k, n.child[0], projection.child[0]))
+        return k->error[0] ? 0 : term;
+    for (cc_term system = n.child[2]; system; system = k->nodes[system].child[1]) {
+        cc_node piece = k->nodes[system];
+        const cc_formula *raw = cc_kernel_get_formula(k, piece.payload);
+        cc_formula face;
+        cc_init(&face, CC_FACE);
+        if (!raw || cc_copy(&face, raw) != CC_OK) {
+            cc_clear(&face);
+            return ck_fail(k, "Glue eta face allocation failed."), 0;
+        }
+        bool agrees = true;
+        for (size_t i = 0; i < face.length && agrees; ++i) {
+            cc_term restricted = ck_normal(k, ck_restrict(k, projection.child[1], face.clauses[i]));
+            agrees = restricted && ck_alpha_equal(k, piece.child[0], restricted);
+        }
+        cc_clear(&face);
+        if (k->error[0])
+            return 0;
+        if (!agrees)
+            return term;
+    }
+    return projection.child[1];
+}
+
 cc_term ck_normal(cc_kernel *k, cc_term term) {
     cc_term head = ck_whnf(k, term);
     if (!head)
@@ -309,6 +345,8 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
         if (n.child[i])
             n.child[i] = ck_normal(k, n.child[i]);
     cc_term result = ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], n.child[3]);
+    if (result && n.kind == CC_GLUE_TERM)
+        result = normal_glue_eta(k, result);
     if (result)
         result = ck_whnf(k, result);
     --k->recursion;

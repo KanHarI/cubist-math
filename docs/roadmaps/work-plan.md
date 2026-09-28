@@ -119,7 +119,8 @@ so a public `cc_kernel_convertible` query could satisfy a later
 instruction's syntactic side condition. The correction keeps the folded
 result and conversion's success as separate facts in each memo entry,
 decides both eta rules in reduction by syntax, gives conversion its own
-Glue eta, and makes `ck_convertible` refuse to run inside an instruction.
+pair and Glue eta, and makes `ck_convertible` refuse to run inside an
+instruction.
 `kernel/tests/test_isolation.c` covers each part, including the audit's
 probe, and reverting any part fails it. A static call graph finds no path
 from an instruction to the conversion search or the typing rules. Archive

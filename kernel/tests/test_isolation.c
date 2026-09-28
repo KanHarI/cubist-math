@@ -163,6 +163,53 @@ static void reduction_decides_eta_syntactically(void) {
     cc_kernel_free(k);
 }
 
+/* G(d) = Glue [d = 0 ↦ (Unit, e)] Unit, as raw syntax. */
+static cc_term glue_line(cc_term unit, cc_term e, unsigned d) {
+    cc_formula face;
+    cc_init(&face, CC_FACE);
+    assert(cc_generator(&face, d, false) == CC_OK);
+    cc_formula_id at_zero = cc_kernel_formula(k, &face);
+    cc_clear(&face);
+    return ck_make(k, CC_GLUE, 0, unit, ck_make(k, CC_GLUE_SYSTEM, at_zero, unit, e, 0, 0), 0, 0);
+}
+
+/* The review of #72 found two contractions the syntactic rules had lost.
+ * Normalize must still make Glue eta on a nonempty face, where the base's
+ * restriction is a redex: with p a path over G from point to b1 and
+ * b = p @ i, glue [i = 0 ↦ point] (unglue b) is b, because b at i = 0 is
+ * p @ 0, which is point. And conversion must make pair eta when both sides
+ * are pairs: (fst p, snd ((λ r. r) p)) annotated Σ (x : Nat). U0 and the same
+ * annotated Σ (x : Nat). U1 are both p. Raw syntax, as reduction inspects
+ * it and conversion compares it. */
+static void normal_forms_and_conversion_keep_eta(void) {
+    k = cc_kernel_new();
+    assert(k);
+    unsigned i = 0, j = 1;
+    cc_term unit = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0), point = ck_make(k, CC_POINT, 0, 0, 0, 0, 0);
+    cc_term e = ck_var(k, 300), p = ck_var(k, 301), b1 = ck_var(k, 302);
+    cc_term along = ck_make(k, CC_PATH, j, glue_line(unit, e, j), point, b1, 0);
+    cc_term b = ck_make(k, CC_PAPP, ck_interval_variable(k, i), p, along, 0, 0);
+    cc_term over_i = glue_line(unit, e, i);
+    cc_term piece = ck_make(k, CC_TUBE, k->nodes[k->nodes[over_i].child[1]].payload, point, 0, 0, 0);
+    cc_term glued = ck_make(k, CC_GLUE_TERM, 0, over_i, ck_make(k, CC_UNGLUE, 0, over_i, b, 0, 0), piece, 0);
+    assert(k->nodes[cc_kernel_whnf(k, glued)].kind == CC_GLUE_TERM);
+    assert(cc_kernel_normalize(k, glued) == b);
+    assert(cc_kernel_convertible(k, glued, b, 0));
+
+    cc_term nat = ck_make(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term small = ck_make(k, CC_SIGMA, 400, nat, ck_universe_at(k, 0), 0, 0);
+    cc_term large = ck_make(k, CC_SIGMA, 400, nat, ck_universe_at(k, 1), 0, 0);
+    cc_term q = ck_var(k, 401);
+    cc_term beta = ck_make(k, CC_APP, 0, ck_make(k, CC_LAM, 402, small, ck_var(k, 402), 0, 0), q, 0, 0);
+    cc_term first = ck_make(k, CC_FST, 0, q, 0, 0, 0), second = ck_make(k, CC_SND, 0, beta, 0, 0, 0);
+    cc_term at_small = ck_make(k, CC_PAIR, 0, small, first, second, 0);
+    cc_term at_large = ck_make(k, CC_PAIR, 0, large, first, second, 0);
+    assert(k->nodes[cc_kernel_whnf(k, at_small)].kind == CC_PAIR);
+    assert(cc_kernel_convertible(k, at_small, at_large, 0));
+    assert(!k->error[0]);
+    cc_kernel_free(k);
+}
+
 /* The boundary is enforced, not only kept: conversion refuses to run while
  * an instruction does, so no later path can reach it unnoticed. */
 static void conversion_refused_inside_an_instruction(void) {
@@ -182,6 +229,7 @@ int main(void) {
     queries_leave_acceptance_unchanged();
     folded_comparison_reads_only_its_own_results();
     reduction_decides_eta_syntactically();
+    normal_forms_and_conversion_keep_eta();
     conversion_refused_inside_an_instruction();
     printf("instruction isolation: ok\n");
     return 0;
