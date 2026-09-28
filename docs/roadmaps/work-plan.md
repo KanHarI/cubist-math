@@ -57,8 +57,8 @@ coverage command reports 365 modules, 3,804 of 3,804 declarations checked
 with no gap and 3,916 of 3,916 definitions re-derived, at 5,524,209
 checking and 2,012,235 re-derivation instructions. That is archive
 compatibility evidence, not the declared-type comparison (X4) and not a
-proof of H1's soundness. CI runs only for PRs into `main`, so integration
-into `h1-signatures` is recorded by a manual run against a pinned revision.
+proof of H1's soundness. CI runs for PRs into `main` and, since 2026-09-29,
+into `h1-signatures`; a release still records a run at its pinned revision.
 
 The completed [G0 specification](historical/g0-universe-specification.md)
 is kept in `historical/`; its rules remain the contract for later features.
@@ -144,7 +144,7 @@ stage-6 work.
 
 | ID | Package | Status / next obligation |
 | --- | --- | --- |
-| I0.1 | Merge the development branch into `main` | Deferred maintainer decision; work is on `h1-signatures`, whose CI runs only through PRs into `main` |
+| I0.1 | Merge the development branch into `main` | Deferred maintainer decision; work is on `h1-signatures`, whose PRs CI checks since 2026-09-29 |
 | I0.2 | Archive the first library | Done: 367 sources in `archive/first-library/`; keep it as regression evidence |
 | I0.3 | Start `library/` | Done: three modules listed above; broader topic coverage is deferred |
 | I0.4 | Remove local scratch state | Recorded done on 2026-09-25 |
