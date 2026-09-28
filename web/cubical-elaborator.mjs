@@ -151,12 +151,44 @@ export function betaReduce(term, budget = 256) {
 // U_1 has the stem U: the separator only keeps it apart from the constant U1.
 const stem = name => name.startsWith("__") ? name : /^native\d+$/.test(name) ? "x"
   : name.replace(/\d+$/, "").replace(/^(U+)_$/, "$1") || name;
+// The names a term prints without binding them: a declared type or an
+// eliminator by its signature, a constructor, and a definition, each as the
+// printer labels it, without its module. A binder must not take one, and no
+// variable is shown by a stem that is one.
+const shortLabel = name => name.includes("__") && !name.startsWith("__") ? name.slice(name.indexOf("__") + 2) : name;
+export function printedLabels(term) {
+  const labels = new Set(), seen = new WeakSet();
+  const visit = t => {
+    if (!t || typeof t !== "object" || seen.has(t)) return;
+    seen.add(t);
+    const label = t.tag === "Sort" || t.tag === "Elim" ? t.signature : t.tag === "Con" || t.tag === "DefRef" ? t.name : null;
+    if (typeof label === "string") labels.add(shortLabel(label));
+    Object.values(t).forEach(visit);
+  };
+  visit(term);
+  return labels;
+}
 const binders = new Set(["Pi", "Lam", "Sigma", "W", "LPi", "LLam"]);
 
 // Each binder shows its stem, n for n11, unless a binder around it already
 // shows that name or its body uses the name for another variable; then it
 // shows the stem numbered from 1, n1. The copy is a tree, so a term that
 // shares much structure is left to globalNames.
+// A name shown as a label would read as that label: a variable a term shows
+// by a declared type's, a constructor's or a definition's name is numbered
+// instead, apart from every other name shown.
+function apartFromLabels(shownAs, labels) {
+  const taken = new Set([...shownAs.keys(), ...shownAs.values(), ...labels]);
+  for (const [name, shown] of shownAs) {
+    if (!labels.has(shown)) continue;
+    let index = 1, renamed;
+    do renamed = numberedName(stem(name), index++); while (taken.has(renamed));
+    taken.add(renamed);
+    shownAs.set(name, renamed);
+  }
+  return shownAs;
+}
+
 function scopedNames(term, limit = 2000) {
   let work = 0;
   const freeMemo = new WeakMap();
@@ -196,11 +228,12 @@ function scopedNames(term, limit = 2000) {
   };
   // Free variables, such as a goal's context, show their stems when no two
   // share one; binders then avoid those names.
-  const outer = [...free(term)], count = new Map();
+  const outer = [...free(term)], count = new Map(), labels = printedLabels(term);
   for (const name of outer) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
-  const shownAs = new Map(outer.map(name => [name,
-    count.get(stem(name)) === 1 && !(outer.includes(stem(name)) && stem(name) !== name) ? stem(name) : name]));
-  try { return go(term, shownAs, new Set(shownAs.values())); }
+  const shownAs = apartFromLabels(new Map(outer.map(name => [name,
+    count.get(stem(name)) === 1 && !(outer.includes(stem(name)) && stem(name) !== name) && !labels.has(stem(name))
+      ? stem(name) : name])), labels);
+  try { return go(term, shownAs, new Set([...shownAs.values(), ...labels])); }
   catch (error) { if (error === scopedNames) return null; throw error; }
 }
 
@@ -214,9 +247,11 @@ function globalNames(shown) {
     Object.values(t).forEach(collect);
   };
   collect(shown);
-  const count = new Map();
+  const count = new Map(), labels = printedLabels(shown);
   for (const name of names) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
-  const rename = name => count.get(stem(name)) === 1 && !(names.has(stem(name)) && stem(name) !== name) ? stem(name) : name;
+  const renames = apartFromLabels(new Map([...names].map(name => [name, count.get(stem(name)) === 1
+    && !(names.has(stem(name)) && stem(name) !== name) && !labels.has(stem(name)) ? stem(name) : name])), labels);
+  const rename = name => renames.get(name) ?? name;
   const renamed = new WeakMap();
   const apply = t => {
     if (!t || typeof t !== "object") return t;
@@ -346,9 +381,10 @@ export class NativeCubicalElaborator {
     if (error?.kind !== "mismatch" || !error.mismatch?.found || error.described) return error;
     error.described = true;
     try {
-      // Both types renamed together, once, so that a dimension reads alike in each.
-      const [found, expected] = readableDimensions([error.mismatch.found, error.mismatch.expected]
-        .map(handle => displayTerm(this.syntax.decode(handle, dimensions)))).map(term => this.printed(term));
+      // Both types named together, once, so that a variable and a dimension
+      // read alike in each, apart from every label either prints.
+      const [found, expected] = this.displayTexts([error.mismatch.found, error.mismatch.expected]
+        .map(handle => this.syntax.decode(handle, dimensions)));
       error.message = `Type mismatch: found ${found}, expected ${expected}.`;
     } catch { /* Keep the kernel's message. */ }
     return error;
@@ -360,12 +396,17 @@ export class NativeCubicalElaborator {
       : this.assumptionLabels.has(name) ? { name: this.assumptionLabels.get(name), kind: "axiom" }
       : name.includes("__") && !name.startsWith("__") ? { name: name.slice(name.indexOf("__") + 2) } : undefined });
   }
-  displayText(term, width = 160) {
-    return this.printed(readableDimensions([displayTerm(term)])[0], width);
+  displayText(term, width = 160, limit = 4000) {
+    return this.printed(readableDimensions([displayTerm(term)])[0], width, limit);
+  }
+  // Several terms shown with one naming: a variable they share has one name
+  // in all of them, apart from every label any of them prints.
+  displayTexts(terms, width = 160, limit = 4000) {
+    return readableDimensions(displayTerm(terms)).map(term => this.printed(term, width, limit));
   }
   // A term whose names are already chosen, as source text within a width.
-  printed(term, width = 160) {
-    const text = sourceText(term, this.displayNames);
+  printed(term, width = 160, limit = 4000) {
+    const text = sourceText(term, this.displayNames, limit);
     return text.length > width ? `${text.slice(0, width - 1)}…` : text;
   }
   // A goal, and the term a statement built for it, shown with one renaming,

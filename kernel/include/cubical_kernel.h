@@ -209,9 +209,17 @@ typedef enum {
     CC_STEP_WHNF,      /* the weak head normal form, by the same strategy:
                         * composition, transport, Glue and pushouts compute,
                         * and lambdas contract by eta */
-    CC_STEP_FACE       /* a composition with a tube on a face that holds, to
+    CC_STEP_FACE,      /* a composition with a tube on a face that holds, to
                         * that tube at the end of the composition's dimension;
                         * a transport on a face that holds, to its base */
+    CC_STEP_GLUE       /* Glue eta: glue [φ ↦ t] (unglue b) to b, the unglue
+                        * being the base's weak head or what a nested Glue
+                        * step exposes, when the side conditions agree by
+                        * syntax, as they are, as weak heads, part by part
+                        * under a common head, or as normal forms, and
+                        * nothing else is reduced: the two Glue types, and t
+                        * and b restricted to each clause of φ
+                        * (term_normalize.c) */
 } cc_step_rule;
 
 /* Γ ⊢ U(l) : U(l+1), for a level l whose successor is within CC_LEVEL_MAX.
@@ -446,7 +454,8 @@ cc_judgement_id cc_instr_step(cc_kernel *, cc_judgement_id, unsigned side,
                               const uint8_t *position, size_t depth, cc_step_rule);
 cc_judgement_id cc_instr_replace(cc_kernel *, cc_judgement_id, unsigned side,
                                  const uint8_t *position, size_t depth, cc_judgement_id by);
-/* t : T for a Π, Σ or path type T gives t ≡ its eta expansion : T. */
+/* t : T for a Π, Σ, path or Glue type T gives t ≡ its eta expansion : T;
+ * for T = Glue [φ ↦ (B, e)] A, the expansion is glue [φ ↦ t] (unglue t). */
 cc_judgement_id cc_instr_eta(cc_kernel *, cc_judgement_id typing);
 cc_judgement_id cc_instr_side(cc_kernel *, cc_judgement_id equality, unsigned side); /* a : T */
 cc_judgement_id cc_instr_symmetry(cc_kernel *, cc_judgement_id equality);

@@ -5,6 +5,10 @@
 //   the names of bound variables and generated helpers;
 // - "types": every public type is the same by kernel conversion and every
 //   declaration keeps the same assumptions. Proof witnesses may change.
+// At both levels every declaration keeps its kernel extensions under review,
+// such as H1, which are compared apart from assumptions (the H1
+// specification's 6.4). A module that declares a type cannot be compared
+// yet: its edited copy's signature is another, generative one.
 // A universe-generic definition is one checked term, compared like any other.
 import { createHash } from "node:crypto";
 import createCubical from "../web/dist/cubical.mjs";
@@ -123,7 +127,7 @@ function mapDefinitions(rename) {
 // readOriginal/readEdited return module source text. Returns one report per
 // module; `failures` lists every declaration that does not meet the level.
 export async function verifyMigration({ modules, readOriginal, readEdited, level = "identical",
-  typeTimeLimitMs = 10000 } = {}) {
+  typeTimeLimitMs = 10000, experimental = [] } = {}) {
   if (!["identical", "types"].includes(level)) throw new Error(`Unknown verification level: ${level}`);
   const compared = new Set(modules), shadowOf = module => `${module}${SHADOW}`;
   const editedSources = new Map();
@@ -136,7 +140,7 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   const shadowModule = name => name.endsWith(SHADOW) && compared.has(name.slice(0, -SHADOW.length))
     ? name.slice(0, -SHADOW.length) : null;
   const program = new CubicalProgram(await createCubical(),
-    name => shadowModule(name) ? editedSource(shadowModule(name)) : readOriginal(name), { collectReferences: false });
+    name => shadowModule(name) ? editedSource(shadowModule(name)) : readOriginal(name), { collectReferences: false, experimental });
   const checker = program.checker, views = checker.definitionViews;
   // Check dependencies before the modules that import them.
   const order = [], visited = new Map();
@@ -195,6 +199,9 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   const rootsOf = bindings => [...new Set([...bindings].flatMap(binding => [...(roots.get(binding) ?? [binding])]))].sort();
   const assumptions = binding => (program.symbols[binding]?.axioms ?? [])
     .map(name => checker.assumptionLabels.get(name) ?? name).sort().join(",");
+  // Kernel extensions under review are not assumptions: a migration that
+  // adds or removes one changes what the result relies on all the same.
+  const extensions = binding => [...new Set(program.symbols[binding]?.extensions ?? [])].sort().join(",");
   try {
     const reports = [];
     for (const module of order) {
@@ -224,6 +231,8 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
           new Set([...own, ...rootsOf(new Set([...changedReferences(after.term), ...changedReferences(after.type)]))]));
         if (assumptions(originalBinding) !== assumptions(editedBinding))
           return fail(name, `Assumptions changed: ${assumptions(originalBinding)} -> ${assumptions(editedBinding)}`);
+        if (extensions(originalBinding) !== extensions(editedBinding))
+          return fail(name, `Kernel extensions changed: ${extensions(originalBinding) || "none"} -> ${extensions(editedBinding) || "none"}`);
         if (hashTerm(before.term) === hashTerm(after.term) && hashTerm(before.type) === hashTerm(after.type)) {
           identical.add(binding); report.identical++; return;
         }
@@ -249,6 +258,10 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
         if (!output) continue;
         if (symbol.verified && !output.verified) { fail(symbol.name, `No longer checks: ${output.reason}`); continue; }
         if (!symbol.verified) continue;
+        if (symbol.kind === "inductive") {
+          fail(symbol.name, "A declared type: the verifier does not compare signatures yet, so a module that declares one cannot be verified. Declare it in a module the migration leaves unchanged.");
+          continue;
+        }
         compare(symbol.name, views.get(symbol.binding), views.get(output.binding), symbol.binding, output.binding);
       }
     }

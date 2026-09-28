@@ -180,6 +180,26 @@ pre {
 #inspect-description {
   font-size: 13px;
 }
+/* A declared type: its constructors and its eliminator's clause types. */
+#inspect-signature:not([hidden]) {
+  margin: 10px 0;
+}
+.signature-list {
+  padding: 0;
+  margin: 6px 0 14px;
+  list-style: none;
+}
+.signature-list li {
+  margin: 6px 0;
+  overflow-wrap: anywhere;
+}
+.signature-list code {
+  font-size: 12px;
+}
+.signature-list small {
+  display: block;
+  color: #5d6758;
+}
 #rewrite-trace:not([hidden]) {
   display: grid;
   gap: 6px;

@@ -113,15 +113,21 @@ async function execute(line) {
     const matches = Object.values(program.symbols).filter(item => item.name === value);
     if (matches.length > 1) throw Error(`Ambiguous name; use a qualified binding: ${matches.map(item => item.binding).join(", ")}`);
     binding = matches[0]?.binding ?? value;
-    const signature = operation === "inspect" && program.signature(binding);
+    const signature = operation === "inspect" && program.signatureView(binding);
     if (signature) {
-      // A declared type: its signature in normal form, as the kernel admitted it.
-      const text = term => program.checker.displayText(term, 400);
-      console.log(`inductive ${signature.name} : ${text(signature.former)} (${signature.modifier})`);
+      // A declared type: its signature in normal form, as the kernel admitted
+      // it, and its eliminator's clause types for a motive P.
+      console.log(`inductive ${signature.name} : ${signature.former} (${signature.modifier})`);
       if (signature.recorded.length) console.log(`Recorded universe parameters: ${signature.recorded.join(", ")}`);
       for (const c of signature.constructors)
-        console.log(`  ${c.name} : ${text(c.type)}  [${c.data} data, ${c.positions} positions, `
-          + `${c.dimensions} dimensions${c.generated ? ", generated" : ""}]`);
+        console.log(`  ${c.name} : ${c.type}  [${c.data} data, ${c.positions} position${c.positions === 1 ? "" : "s"}, `
+          + `${c.dimensions} dimension${c.dimensions === 1 ? "" : "s"}${c.generated ? ", generated" : ""}]`);
+      const eliminator = signature.eliminator;
+      if (eliminator) {
+        console.log(`Eliminator, for a motive ${eliminator.motive}:`);
+        for (const clause of eliminator.clauses) console.log(`  ${clause.name} : ${clause.type}`);
+        if (eliminator.error) console.log(`  The remaining clause types could not be computed: ${eliminator.error}`);
+      }
       console.log(`Kernel extensions: ${signature.extensions.join(", ") || "none"}`);
       view = null;
       return;

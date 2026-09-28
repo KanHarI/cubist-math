@@ -62,6 +62,22 @@ try {
   const modifier = page.locator("#read-source .source-line").nth(2).locator("span, button").filter({ hasText: /^prop$/ });
   assert.equal(await modifier.count(), 1, "the modifier is a token of its own");
   assert.match(await modifier.getAttribute("class"), /keyword/);
+  // A declared type has no checked term: the inspector shows its signature
+  // and its eliminator's clause types (the H1 specification's 6.5).
+  await page.locator('#read-source button[data-name="Wrapped"]').first().click();
+  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "Wrapped"
+    && !document.querySelector("#inspect-signature").hidden);
+  assert.equal(await page.locator("#inspect-kind").textContent(), "Declared type · prop");
+  assert.deepEqual(await page.locator("#inspect-constructors li code").allTextContents(),
+    ["point : A -> Wrapped", "Wrapped.squash : forall x : Wrapped. forall x1 : Wrapped. x = x1"]);
+  assert.match(await page.locator("#inspect-constructors li").nth(1).textContent(), /2 positions · 1 dimension · generated/);
+  assert.equal(await page.locator("#inspect-eliminator-motive").textContent(), "For a motive P : Wrapped(A) -> U, one clause per constructor:");
+  const clauses = await page.locator("#inspect-clauses li code").allTextContents();
+  assert.equal(clauses[0], "point_case : forall x : A. P(point(x))");
+  assert.match(clauses[1], /^squash_case : .*PathP\(fun \(i : Interval\) => P\(Wrapped\.squash\(x, x1\) @ i\), x2, x3\)$/);
+  assert.match(await page.locator("#inspect-axioms").textContent(), /kernel extension: H1/);
+  assert.equal(await page.locator("#kernel-terms").isVisible(), false, "no checked term to show");
+  assert.deepEqual(errors, []);
   await openProof("suspension", "S1");
   for (const name of ["Suspension", "north", "south", "meridian", "suspension_induction", "suspension_meridian_beta"]) {
     const link = page.locator(`#read-source button[data-name="${name}"]`).first();

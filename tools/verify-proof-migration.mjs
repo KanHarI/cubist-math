@@ -1,6 +1,6 @@
 // Check that edited library modules keep their checked meaning.
 //   node tools/verify-proof-migration.mjs [--base REV] [--level identical|types]
-//     [--json FILE] [--no-dependents] [module ...]
+//     [--json FILE] [--no-dependents] [--experimental h1] [module ...]
 // Without module names, every archive/first-library module modified relative to the base
 // revision (default HEAD) is checked. Every module that imports a checked
 // module, directly or not, is compared too, against the edited definitions;
@@ -21,6 +21,8 @@ const args = process.argv.slice(2), option = name => {
 const noDependents = args.includes("--no-dependents");
 if (noDependents) args.splice(args.indexOf("--no-dependents"), 1);
 const base = option("--base") ?? "HEAD", level = option("--level") ?? "identical", json = option("--json");
+// Kernel extensions under review to enable, as the CLI's --experimental=h1.
+const experimental = (option("--experimental") ?? "").split(",").filter(Boolean);
 if (args.some(arg => arg.startsWith("--"))) throw new Error(`Unknown option: ${args.find(arg => arg.startsWith("--"))}`);
 const git = gitArgs => execFileSync("git", gitArgs, { cwd: root, encoding: "utf8", maxBuffer: 1 << 28 });
 const modules = args.length ? args : git(["diff", "--name-only", base, "--", "archive/first-library"]).split("\n")
@@ -44,7 +46,7 @@ const readOriginal = async name => {
   if (!originals.has(name)) originals.set(name, git(["show", `${base}:archive/first-library/${name}.cubist`]));
   return originals.get(name);
 };
-const reports = await verifyMigration({ modules, readOriginal, readEdited, level });
+const reports = await verifyMigration({ modules, readOriginal, readEdited, level, experimental });
 let failures = 0;
 for (const report of reports) {
   failures += report.failures.length;

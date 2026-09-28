@@ -158,6 +158,22 @@ static void reduction_decides_eta_syntactically(void) {
     assert(cc_kernel_convertible(k, term_of(over_nat), term_of(over_redex), 0));
     assert(kind(reduct(at_nat, CC_STEP_WHNF)) == CC_GLUE_TERM);
     assert(reduct(at_nat, CC_STEP_NORMALIZE) == term_of(bv));
+    /* The Glue step reaches it too, normalizing only the two Glue types, and
+     * refuses a Glue term whose base is no unglue, and any other term. */
+    assert(reduct(at_nat, CC_STEP_GLUE) == term_of(bv));
+    cc_judgement_id plain_glue = OK(cc_instr_glue_term(k, OK(cc_instr_glue_term_piece(k,
+        OK(cc_instr_glue_term_base(k, over_nat, OK(cc_instr_variable(k, n)))), point, 0))));
+    rejects(cc_instr_step(k, OK(cc_instr_refl(k, plain_glue)), 1, NULL, 0, CC_STEP_GLUE), "A Glue step needs");
+    rejects(cc_instr_step(k, OK(cc_instr_refl(k, pv)), 1, NULL, 0, CC_STEP_GLUE), "A Glue step needs");
+    /* The sixth review of #73: Eta expands a term of a Glue type to
+     * glue [φ ↦ b] (unglue b), a piece per face, which the Glue step
+     * contracts again. */
+    cc_judgement_id expansion = OK(cc_instr_eta(k, bv));
+    cc_node expanded = k->nodes[other_of(expansion)];
+    assert(expanded.kind == CC_GLUE_TERM && expanded.child[0] == term_of(over_redex));
+    assert(kind(expanded.child[1]) == CC_UNGLUE && kind(expanded.child[2]) == CC_TUBE &&
+           k->nodes[expanded.child[2]].child[0] == term_of(bv) && !k->nodes[expanded.child[2]].child[1]);
+    assert(other_of(OK(cc_instr_step(k, expansion, 1, NULL, 0, CC_STEP_GLUE))) == term_of(bv));
     /* Conversion has Glue eta of its own, by conversion. */
     assert(cc_kernel_convertible(k, term_of(at_nat), term_of(bv), 0));
     cc_kernel_free(k);
@@ -207,6 +223,144 @@ static void normal_forms_and_conversion_keep_eta(void) {
     assert(k->nodes[cc_kernel_whnf(k, at_small)].kind == CC_PAIR);
     assert(cc_kernel_convertible(k, at_small, at_large, 0));
     assert(!k->error[0]);
+
+    /* The second review: conversion must also expose a base through eta
+     * that holds only by conversion. With A = Glue [] Nat,
+     * A' = Glue [] ((λ X. X)(Nat)), G = Glue [] A, g : G and u = unglue_G(g),
+     * glue_G [] (glue_A' [] (unglue_A(u))) is g: the inner Glue term is u only
+     * because A' is A by a Beta step. */
+    cc_term identity = ck_make(k, CC_LAM, 403, ck_universe_at(k, 0), ck_var(k, 403), 0, 0);
+    cc_term a = ck_make(k, CC_GLUE, 0, nat, 0, 0, 0);
+    cc_term a_redex = ck_make(k, CC_GLUE, 0, ck_make(k, CC_APP, 0, identity, nat, 0, 0), 0, 0, 0);
+    cc_term g_type = ck_make(k, CC_GLUE, 0, a, 0, 0, 0), g = ck_var(k, 404);
+    cc_term u = ck_make(k, CC_UNGLUE, 0, g_type, g, 0, 0);
+    cc_term inner = ck_make(k, CC_GLUE_TERM, 0, a_redex, ck_make(k, CC_UNGLUE, 0, a, u, 0, 0), 0, 0);
+    cc_term outer = ck_make(k, CC_GLUE_TERM, 0, g_type, inner, 0, 0);
+    assert(cc_kernel_convertible(k, outer, g, 0));
+    assert(!k->error[0]);
+    /* The fifth review of #73: so must the Glue step, whose base here is the
+     * inner Glue term, an eta redex by its own Glue step. */
+    ck_operation(k, CC_WORK_INSTRUCTION);
+    assert(ck_glue_step(k, outer) == g && !k->error[0]);
+    ck_standalone(k);
+    cc_kernel_free(k);
+}
+
+/* The review of #73: exposing a nested base must count toward the
+ * comparison's depth. Syntax is at most 512 deep, but reduction reaches past
+ * that: here D_i := glue_(Glue [] T_(i-1)) [] D_(i-1), with T_i := Glue [] T_(i-1), 600
+ * definitions, each weak head cached as it is made. Exposing D_600's base
+ * goes through every level with no other guard reached; it now stops with a
+ * recorded error, where a longer chain would have overflowed the stack. */
+static void nested_glue_exposure_is_depth_guarded(void) {
+    k = cc_kernel_new();
+    assert(k);
+    cc_term u0 = ck_universe_at(k, 0), zero = ck_make(k, CC_ZERO, 0, 0, 0, 0, 0);
+    cc_term type = cc_kernel_define(k, 1000, ck_make(k, CC_NAT, 0, 0, 0, 0, 0), u0);
+    cc_term value = cc_kernel_define(k, 2000, zero, type);
+    assert(type && value);
+    for (unsigned depth = 1; depth <= 600; ++depth) {
+        cc_term glue_type = ck_make(k, CC_GLUE, 0, type, 0, 0, 0);
+        type = cc_kernel_define(k, 1000 + depth, glue_type, u0);
+        value = cc_kernel_define(k, 2000 + depth, ck_make(k, CC_GLUE_TERM, 0, glue_type, value, 0, 0), glue_type);
+        if (!type || !value) fprintf(stderr, "depth %u: %s\n", depth, cc_kernel_error(k));
+        assert(type && value && cc_kernel_whnf(k, value));
+    }
+    assert(!cc_kernel_convertible(k, value, zero, 0));
+    assert(strstr(cc_kernel_error(k), "recursion depth"));
+    cc_kernel_clear_error(k);
+    /* The Glue step exposes a nested base the same way, within the reduction
+     * depth of 1024: 1,100 levels stop it with a recorded error too. */
+    for (unsigned depth = 601; depth <= 1100; ++depth) {
+        cc_term glue_type = ck_make(k, CC_GLUE, 0, type, 0, 0, 0);
+        type = cc_kernel_define(k, 10000 + depth, glue_type, u0);
+        value = cc_kernel_define(k, 20000 + depth, ck_make(k, CC_GLUE_TERM, 0, glue_type, value, 0, 0), glue_type);
+        assert(type && value && cc_kernel_whnf(k, value));
+    }
+    ck_operation(k, CC_WORK_INSTRUCTION);
+    assert(!ck_glue_step(k, cc_kernel_whnf(k, value)) && strstr(cc_kernel_error(k), "recursion depth"));
+    cc_kernel_clear_error(k);
+    ck_standalone(k);
+    cc_kernel_free(k);
+}
+
+/* The fourth review of #73: the glue move normalized the whole Glue term,
+ * where Glue eta needs only its side conditions. With b = p @ i as above,
+ * but p's right endpoint a Glue term over t(40), where t(n + 1) is
+ * f(t(n))(t(n)): 41 nodes, 2^40 paths. The Glue step reduces the piece and
+ * b at i = 0, which is point, and never reaches the endpoint p's annotation
+ * carries; Normalize walks it, path by path, and runs out of budget. The
+ * piece is restricted too, so glue [i = 0 ↦ b] (unglue b), which Whnf
+ * leaves, is b; and a piece that is b's restriction as a weak head needs no
+ * normal form, here t(40) itself, as p's left endpoint. */
+static void glue_step_normalizes_only_its_side_conditions(void) {
+    k = cc_kernel_new();
+    assert(k);
+    unsigned i = 0, j = 1;
+    cc_term unit = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0), point = ck_make(k, CC_POINT, 0, 0, 0, 0, 0);
+    cc_term e = ck_var(k, 300), p = ck_var(k, 301), f = ck_var(k, 303), t = ck_var(k, 302);
+    for (unsigned n = 0; n < 40; ++n) t = ck_make(k, CC_APP, 0, ck_make(k, CC_APP, 0, f, t, 0, 0), t, 0, 0);
+    cc_term end = ck_make(k, CC_GLUE_TERM, 0, ck_make(k, CC_GLUE, 0, unit, 0, 0, 0), t, 0, 0);
+    cc_term along = ck_make(k, CC_PATH, j, glue_line(unit, e, j), point, end, 0);
+    cc_term b = ck_make(k, CC_PAPP, ck_interval_variable(k, i), p, along, 0, 0);
+    cc_term over_i = glue_line(unit, e, i);
+    cc_term piece = ck_make(k, CC_TUBE, k->nodes[k->nodes[over_i].child[1]].payload, point, 0, 0, 0);
+    cc_term glued = ck_make(k, CC_GLUE_TERM, 0, over_i, ck_make(k, CC_UNGLUE, 0, over_i, b, 0, 0), piece, 0);
+    cc_kernel_set_step_budget(k, 100000);
+    cc_work_counters before, after;
+    cc_kernel_work(k, &before);
+    ck_operation(k, CC_WORK_INSTRUCTION);
+    assert(ck_glue_step(k, glued) == b && !k->error[0]);
+    ck_standalone(k);
+    cc_kernel_work(k, &after);
+    assert(after.instruction_steps - before.instruction_steps < 1000);
+    assert(!cc_kernel_normalize(k, glued) && strstr(cc_kernel_error(k), "budget"));
+    cc_kernel_clear_error(k);
+
+    uint32_t at_zero = k->nodes[piece].payload;
+    cc_term itself = ck_make(k, CC_GLUE_TERM, 0, over_i, ck_make(k, CC_UNGLUE, 0, over_i, b, 0, 0),
+                             ck_make(k, CC_TUBE, at_zero, b, 0, 0, 0), 0);
+    assert(kind(cc_kernel_whnf(k, itself)) == CC_GLUE_TERM);
+    ck_operation(k, CC_WORK_INSTRUCTION);
+    assert(ck_glue_step(k, itself) == b && !k->error[0]);
+
+    cc_term from_graph = ck_make(k, CC_PAPP, ck_interval_variable(k, i), p,
+                                 ck_make(k, CC_PATH, j, glue_line(unit, e, j), t, end, 0), 0, 0);
+    cc_term graph_piece = ck_make(k, CC_GLUE_TERM, 0, over_i, ck_make(k, CC_UNGLUE, 0, over_i, from_graph, 0, 0),
+                                  ck_make(k, CC_TUBE, at_zero, t, 0, 0, 0), 0);
+    cc_kernel_work(k, &before);
+    ck_operation(k, CC_WORK_INSTRUCTION);
+    assert(ck_glue_step(k, graph_piece) == from_graph && !k->error[0]);
+    ck_standalone(k);
+    cc_kernel_work(k, &after);
+    assert(after.instruction_steps - before.instruction_steps < 1000);
+
+    /* The sixth review: Glue types equal only below their heads, over the
+     * graph on both sides, agree part by part, by a beta step in the family:
+     * the graph is the same node on both sides, and never normalized. */
+    cc_term family = ck_make(k, CC_APP, 0, ck_make(k, CC_LAM, 700, ck_universe_at(k, 0), ck_var(k, 700), 0, 0), unit, 0, 0);
+    cc_term plain = ck_make(k, CC_GLUE, 0, ck_make(k, CC_PATH, j, unit, t, t, 0), 0, 0, 0);
+    cc_term redex = ck_make(k, CC_GLUE, 0, ck_make(k, CC_PATH, j, family, t, t, 0), 0, 0, 0);
+    cc_term g = ck_var(k, 701);
+    cc_term retyped = ck_make(k, CC_GLUE_TERM, 0, redex, ck_make(k, CC_UNGLUE, 0, plain, g, 0, 0), 0, 0);
+    cc_kernel_work(k, &before);
+    ck_operation(k, CC_WORK_INSTRUCTION);
+    assert(ck_glue_step(k, retyped) == g && !k->error[0]);
+    ck_standalone(k);
+    cc_kernel_work(k, &after);
+    assert(after.instruction_steps - before.instruction_steps < 1000);
+    /* And over two graphs that are different nodes, equal level by level
+     * down to (λ z. z)(x) against x: each pair of levels is compared once. */
+    cc_term other = ck_make(k, CC_APP, 0, ck_make(k, CC_LAM, 702, unit, ck_var(k, 702), 0, 0), ck_var(k, 302), 0, 0);
+    for (unsigned n = 0; n < 40; ++n) other = ck_make(k, CC_APP, 0, ck_make(k, CC_APP, 0, f, other, 0, 0), other, 0, 0);
+    cc_term far = ck_make(k, CC_GLUE, 0, ck_make(k, CC_PATH, j, unit, other, other, 0), 0, 0, 0);
+    cc_term relabeled = ck_make(k, CC_GLUE_TERM, 0, far, ck_make(k, CC_UNGLUE, 0, plain, g, 0, 0), 0, 0);
+    cc_kernel_work(k, &before);
+    ck_operation(k, CC_WORK_INSTRUCTION);
+    assert(ck_glue_step(k, relabeled) == g && !k->error[0]);
+    ck_standalone(k);
+    cc_kernel_work(k, &after);
+    assert(after.instruction_steps - before.instruction_steps < 5000);
     cc_kernel_free(k);
 }
 
@@ -230,6 +384,8 @@ int main(void) {
     folded_comparison_reads_only_its_own_results();
     reduction_decides_eta_syntactically();
     normal_forms_and_conversion_keep_eta();
+    nested_glue_exposure_is_depth_guarded();
+    glue_step_normalizes_only_its_side_conditions();
     conversion_refused_inside_an_instruction();
     printf("instruction isolation: ok\n");
     return 0;

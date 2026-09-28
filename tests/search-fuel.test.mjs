@@ -283,6 +283,21 @@ def stopped(n, m : Nat, h : n + 0 = m) : m + 0 = n {
   const late = await check(t, source, { searchFuel: { ...SEARCH_FUEL, candidates: 7 } });
   assert.equal(late.stopped.failure, "fuel");
   assert.match(late.stopped.reason, /^simpa ran out of search fuel: 7 candidate rules tried\. Simplifying the goal stopped at m \+ 0 = n\. .* The supplied type had simplified to n = m\. 1 rewrite changed the left side, using nat_add_zero\./);
+  // The fourth review of #74: the two goals are named together. A variable
+  // introduced as add is named apart from the add that + prints in the
+  // goal, and so in the supplied type too, where neither it nor the context
+  // prints an add of its own.
+  const named = await check(t, `import naturals;
+
+def stopped : forall n : Nat. forall m : Nat. n = m -> m + 0 = n {
+  intro add;
+  intro m;
+  intro h;
+  simpa only [nat_add_zero] using h;
+}
+`, { searchFuel: { ...SEARCH_FUEL, candidates: 3 } });
+  assert.match(named.stopped.reason, /Simplifying the goal stopped at m \+ 0 = (\w+)\. .* The supplied type had simplified to \1 = m\./);
+  assert.doesNotMatch(named.stopped.reason, /simplified to add = m/);
   // The supplied type's search runs out first.
   const early = await check(t, source, { searchFuel: { ...SEARCH_FUEL, candidates: 1 } });
   assert.match(early.stopped.reason, /^simpa ran out of search fuel: 1 candidate rules tried\. Simplifying the supplied type stopped at n \+ 0 = m\./);

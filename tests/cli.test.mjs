@@ -42,3 +42,16 @@ evaluate double(2) expecting 4;
   assert.match(shell.stderr, /The evaluated term depends on non-computing assumptions: LEM.*Path to LEM: recover \(sample\) → double_negation \(classical\) → LEM\./);
   assert.match(shell.stderr, /missing_name/);
 });
+// The H1 specification's 6.5: inspecting a declared type prints its signature
+// in normal form and its eliminator's clause types, with the marker.
+test("CLI inspects a declared type: its constructors and its eliminator", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "cubist-cli-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  await writeFile(join(directory, "circle.cubist"), "inductive S1 { base; loop : base = base; }\n");
+  const shell = run(["--experimental=h1"], { cwd: directory, input: "check circle.cubist\ninspect S1\nquit\n" });
+  assert.equal(shell.status, 0, shell.stderr); assert.equal(shell.stderr, "");
+  for (const line of ["inductive S1 : U0 (type)", "  base : S1  [0 data, 0 positions, 0 dimensions]",
+    "  loop : base = base  [0 data, 0 positions, 1 dimension]", "Eliminator, for a motive P : S1 -> U:", "  base_case : P(base)",
+    "  loop_case : PathP(fun (i : Interval) => P(loop @ i), base_case, base_case)", "Kernel extensions: H1"])
+    assert.ok(shell.stdout.split("\n").includes(line), `missing: ${line}\n${shell.stdout}`);
+});

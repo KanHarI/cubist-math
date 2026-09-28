@@ -182,7 +182,8 @@ export function sourceText(term, symbols = {}, limit = 4000) {
         // An equality: a path whose type does not vary along it.
         if (!varies(t.family, t.dim))
           return [`${sub(t.left, LEVEL.compare + 1)} = ${sub(t.right, LEVEL.compare + 1)}`, LEVEL.compare];
-        return fallback(t);
+        // A dependent path type, as the source writes it.
+        return atom(`PathP(fun (${t.dim} : Interval) => ${show(t.family)}, ${show(t.left)}, ${show(t.right)})`);
       // A path, as the source writes it where its type is known; one that
       // does not vary is refl.
       case "PLam":

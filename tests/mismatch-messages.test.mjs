@@ -54,3 +54,41 @@ test("display renaming never merges two different names", () => {
   // A lone generated name gets its stem back.
   assert.equal(displayTerm({ tag: "Lam", name: "x7", domain: { tag: "Nat" }, body: { tag: "Var", name: "x7" } }).name, "x");
 });
+
+// The third review of #74: a mismatch's two sides are named together. The
+// found side prints naturals' add, so a variable named add1 cannot show its
+// stem add there; named alone, the expected side would have shown it as add.
+test("a variable reads alike on both sides of a mismatch", async t => {
+  const { readFile } = await import("node:fs/promises");
+  const { T } = await import("../lib/cubical/core.mjs");
+  const program = new CubicalProgram(await createCubical(), name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8"));
+  t.after(() => program.dispose());
+  await program.check("import naturals;\n", "main");
+  const add = (a, b) => T.app(T.app({ tag: "DefRef", name: "naturals__add" }, a), b);
+  const add1 = T.variable("add1"), context = [["add1", T.nat], ["p", T.path("i", T.nat, add(add1, T.succ(T.zero)), add1)]];
+  let message = null;
+  try { program.checker.checkView(T.variable("p"), T.path("i", T.nat, add1, add1), context); }
+  catch (error) { message = error.message; }
+  assert.match(message ?? "", /^Type mismatch: found add1 \+ 1 = add1, expected add1 = add1\.$/);
+});
+
+// The fourth review of #74: every message that shows two terms of one scope
+// names them together, as a mismatch does. `+` is naturals' add, captured as
+// plus before a variable named add is introduced. That label prints on one
+// side only, so the variable is named apart from it there; named alone, the
+// other side would have shown it as add.
+test("show and calc name the two terms they show together", async t => {
+  const { readFile } = await import("node:fs/promises");
+  const program = new CubicalProgram(await createCubical(), name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8"),
+    { collectReferences: false });
+  t.after(() => program.dispose());
+  const result = await program.check(`import naturals;
+def restated : forall add : Nat. add = add { let plus := add; intro add; show plus(add, 1) = add; }
+def step_start : forall n : Nat. n = n { let plus := add; intro add; calc { add = add by refl(add); plus(add, 1) = add by refl(add); } }
+def chain_end : forall n : Nat. n = n + 1 { intro add; calc { add = add by refl(add); } }
+`, "main");
+  const reason = name => result.outputs.find(output => output.name === name).reason;
+  assert.match(reason("restated"), /^show requires a type equal to the goal by computation: found (\w+) \+ 1 = \1, expected \1 = \1\./);
+  assert.match(reason("step_start"), /^calc step left endpoint does not match the preceding endpoint\. The step starts at (\w+) \+ 1; the chain so far ends at \1\./);
+  assert.match(reason("chain_end"), /^calc final endpoint does not match the goal\. The chain ends at (\w+); the goal's right side is \1 \+ 1\./);
+});

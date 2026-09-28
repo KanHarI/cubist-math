@@ -332,3 +332,112 @@ test("with the path notation's minus sign, trunc(-1) is prop", async t => {
   ok(get("Tr"));
   assert.equal(program.kernel.signature(program.kernel.signatures.get("main__Tr").index).modifier, 1);
 });
+
+// The H1 specification's 6.5: a declared type's signature, and the clause
+// type its eliminator asks for each constructor, for a motive P over the type
+// at its own parameters. The CLI's inspect and the workbench show this view.
+test("inspection: a declared type's constructors and its eliminator's clause types", async t => {
+  const { program } = await check(t, `inductive S1 { base; loop : base = base; }
+inductive Tr(U < UU0, A : U) : prop { point(a : A); }
+inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }
+`);
+  // The fourth review of #74: the first inspection computes the eliminator's
+  // clause types in a kernel transaction, and rolls it back.
+  const nodes = program.kernel.arena().nodes;
+  const circle = program.signatureView("main__S1");
+  assert.equal(program.kernel.arena().nodes, nodes);
+  // The sort prints by its name: a variable named S1 would print as its stem.
+  assert.deepEqual(circle.constructors.map(c => `${c.name} : ${c.type}`), ["base : S1", "loop : base = base"]);
+  assert.equal(circle.eliminator.motive, "P : S1 -> U");
+  assert.deepEqual(circle.eliminator.clauses.map(c => `${c.name} : ${c.type}`), [
+    "base_case : P(base)",
+    // A dependent path type prints as the source writes it.
+    "loop_case : PathP(fun (i : Interval) => P(loop @ i), base_case, base_case)"]);
+  const truncation = program.signatureView("main__Tr");
+  assert.deepEqual(truncation.eliminator.clauses.map(c => c.constructor), ["point", "Tr.squash"]);
+  // The motive's universe avoids the parameter's name.
+  assert.equal(truncation.eliminator.motive, "P : Tr(A) -> V");
+  assert.equal(truncation.eliminator.clauses[1].type, "forall x : Tr(A). forall x1 : Tr(A). forall x2 : P(x). "
+    + "forall x3 : P(x1). PathP(fun (i : Interval) => P(Tr.squash(x, x1) @ i), x2, x3)");
+  // A recorded universe parameter by its name in the declaration.
+  assert.deepEqual(program.signatureView("main__Pointed").recorded, ["U"]);
+  assert.equal(program.signatureView("main__nothing"), null);
+});
+
+// The first review of #74: names in the view are never ambiguous, clause
+// types print whole, and inspecting again leaves nothing behind.
+test("inspection: names are distinct, clause types whole, and repeated inspection keeps no state", async t => {
+  const { program } = await check(t, `inductive C { point(C : U0, x : C); }
+inductive P { p; }
+inductive D { d(x : P); }
+inductive E(P, Q, M, R, P_ : U0) { e; }
+inductive G : trunc(1) { g; }
+inductive Tr(U < UU0, A : U) : set { point(a : A); }
+`);
+  // A binder named as the type is shown apart from it.
+  assert.deepEqual(program.signatureView("main__C").constructors.map(c => c.type), ["forall C1 : U0. C1 -> C"]);
+  // The motive is not named as a type the clauses mention, nor as a parameter.
+  const d = program.signatureView("main__D").eliminator;
+  assert.equal(d.motive, "Q : D -> U");
+  assert.deepEqual(d.clauses.map(c => `${c.name} : ${c.type}`), ["d_case : forall x : P. Q(d(x))"]);
+  const e = program.signatureView("main__E").eliminator;
+  assert.ok(!["P", "Q", "M", "R", "P_"].includes(e.motive.split(" ")[0]), e.motive);
+  // A groupoid's squash clause, whole: its boundary comes last.
+  const squash = program.signatureView("main__G").eliminator.clauses.at(-1).type;
+  assert.ok(!squash.includes("…") && squash.length > 400, squash);
+  assert.match(squash, /PathP\(fun \(i : Interval\) => .*\)$/);
+  // Inspecting again names no new symbols.
+  program.signatureView("main__Tr");
+  const sizes = () => [program.kernel.names.size, program.kernel.symbolNames.size];
+  const before = sizes();
+  for (let i = 0; i < 3; i++) program.signatureView("main__Tr");
+  assert.deepEqual(sizes(), before);
+});
+
+// The fifth review of #74: a generated name prints as itself after every
+// round of suffixes. P__ printed as nothing, as the display reads __ as a
+// module's separator: the motive vanished from its clause, and U__ left the
+// universe blank. After one underscore, names take a letter.
+test("inspection: generated names print as themselves after every round of suffixes", async t => {
+  const { program } = await check(t, `inductive E(P, Q, M, R, P_, Q_, M_, R_ : U0) { e; }
+inductive F(U, V, W, X, Y, V_, W_, X_, Y_ : U0) { f; }
+inductive D { c_; d(x : D); }
+`);
+  const e = program.signatureView("main__E").eliminator;
+  assert.equal(e.motive, "P_a : E(P, Q, M, R, P_, Q_, M_, R_) -> U");
+  assert.equal(e.clauses[0].type, "P_a(e)");
+  assert.equal(program.signatureView("main__F").eliminator.motive, "P : F(U, V, W, X, Y, V_, W_, X_, Y_) -> U_a");
+  assert.deepEqual(program.signatureView("main__D").eliminator.clauses.map(c => c.name), ["c_case", "d_case"]);
+});
+
+// The sixth review of #74: a parameter named a__P prints as P, as the
+// display shows the part after a module's separator; the motive was named P
+// too, and its clause read forall x : P. P(d(x)). Names are new to every form
+// a name prints in.
+test("inspection: generated names avoid the printed form of every name", async t => {
+  const { program } = await check(t, "inductive D(a__P : U0) { d(x : a__P); }\n");
+  const view = program.signatureView("main__D");
+  assert.equal(view.eliminator.motive, "Q : D(P) -> U");
+  assert.equal(view.eliminator.clauses[0].type, "forall x : P. Q(d(x))");
+});
+
+// The second review of #74: one naming for the whole view, and the
+// generated constructor as the source writes it.
+test("inspection: a parameter has one name in the whole view, and T.squash is distinct from squash", async t => {
+  const { program } = await check(t, `inductive T(c : U0) { c(x : c); }
+inductive S : prop { squash; }
+`);
+  const view = program.signatureView("main__T");
+  const parameter = /^P : T\((\w+)\) -> U$/.exec(view.eliminator.motive)?.[1];
+  assert.ok(parameter && parameter !== "c", view.eliminator.motive);
+  assert.equal(view.constructors[0].type, `${parameter} -> T`);
+  assert.equal(view.eliminator.clauses[0].type, `forall x : ${parameter}. P(c(x))`);
+  const squashes = program.signatureView("main__S");
+  assert.deepEqual(squashes.constructors.map(c => c.name), ["squash", "S.squash"]);
+  assert.equal(squashes.eliminator.clauses[0].type, "P(squash)");
+  assert.match(squashes.eliminator.clauses[1].type, /P\(S\.squash\(x, x1\) @ i\)/);
+  // Any display: a variable whose name is a printed label is numbered apart.
+  const { T } = await import("../lib/cubical/core.mjs");
+  const constructor = T.constructor(0, T.sort("main__T"), "c");
+  assert.equal(program.checker.displayText(T.app(T.app(T.variable("f"), T.variable("c")), constructor)), "f(c1, c)");
+});
