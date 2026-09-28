@@ -162,7 +162,8 @@ export class InstructionDriver {
     this.mentions = new Map();
     this.derived = new Map();
     this.stable = new Set();
-    // Glue terms whose normal form the glue move has taken, or that are one.
+    // Glue terms the glue move need not try again: normal forms, and terms
+    // whose normal form takes more than its budget.
     this.glueNormal = new Set();
     this.equalities = new Map();
     // The guide's answers and the weak heads it asked for.
@@ -866,13 +867,21 @@ export class InstructionDriver {
   // The weak head compares each piece with the base's restriction by syntax,
   // and the restriction can be a redex, as p @ i at i = 0 is p's left
   // endpoint; Normalize compares them reduced, and contracts the eta. Within
-  // its own step budget, and once per term: a normal form rebuilt without
-  // shared syntax is a new handle, so progress is judged by alpha-equality.
+  // its own step budget. A normal form rebuilt without shared syntax is a
+  // new handle, so progress is judged by alpha-equality. What it learns
+  // holds wherever the term occurs: that a term is normal, or that its
+  // normal form takes more than the budget; the term it rewrote at this
+  // focus may still need the move at another.
   glue(focus) {
     const before = this.subterm(focus);
-    this.glueNormal.add(before);
     try { this.graph.within(GLUE_NORMAL_STEPS, () => this.reduce(focus, { path: [], rule: "normalize" })); }
-    catch { return false; }
+    catch (error) {
+      // Out of the move's own budget: no progress. Anything else, a deadline
+      // above all, ends the comparison as it would after any move.
+      if (error.kind !== "budget") throw error;
+      this.glueNormal.add(before);
+      return false;
+    }
     const after = this.subterm(focus);
     this.glueNormal.add(after);
     return !this.alpha(after, before, null, null);
@@ -1116,7 +1125,8 @@ export class InstructionDriver {
     const kx = this.node(x).kind, ky = this.node(y).kind;
     if (!point.stuck.has("eta") && kx !== ky && (etaTypes[kx] || etaTypes[ky])) moves.push({ move: "eta" });
     for (const [side, term] of [["left", x], ["right", y]])
-      if (this.node(term).kind === "GlueTerm" && !this.glueNormal.has(term)) moves.push({ move: "glue", side });
+      if (this.node(term).kind === "GlueTerm" && !this.glueNormal.has(term) && !point.stuck.has(`glue:${side}`))
+        moves.push({ move: "glue", side });
     return moves;
   }
   // Make a move: its outcome, as `branch` reads it.
@@ -1144,7 +1154,10 @@ export class InstructionDriver {
       if (this.eta(a, b)) return "progress";
       point.stuck.add("eta");
       return "stuck";
-    case "glue": return this.glue(move.side === "left" ? a : b) ? "progress" : "stuck";
+    case "glue":
+      if (this.glue(move.side === "left" ? a : b)) return "progress";
+      point.stuck.add(`glue:${move.side}`);
+      return "stuck";
     default: throw new Error(`Unknown move ${move.move}.`);
     }
   }

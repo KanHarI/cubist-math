@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
+import { InstructionDriver, searchLimits } from "../web/cubical-instruction-driver.mjs";
 import { instructions } from "../web/cubical-instructions.mjs";
 import { judgementGraph } from "../web/cubical-graph-view.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
@@ -526,4 +526,83 @@ test("the glue move comes last, judges progress by syntax, and is bounded", asyn
   const graph = await agrees(shared, [["x", T.nat], ["f", T.pi("a", T.nat, T.pi("b", T.nat, T.nat))]]);
   assert.equal(graph.checked.term.tag, "PLam");
   assert.ok(graph.steps < 100000 && graph.exhausted === 0, `${graph.steps} steps, ${graph.exhausted} exhausted`);
+});
+
+// The second review of #73: the glue move itself, where only it is left.
+const glueSession = async (t, optimizations = {}) => {
+  const { T } = await import("../lib/cubical/core.mjs");
+  const { heuristicChooser } = await import("../web/cubical-instruction-driver.mjs");
+  const program = new CubicalProgram(await createCubical(), readLibrary, { optimizations });
+  t.after(() => program.dispose());
+  await program.check("def unit_point : Unit := point;\n", "glue_move");
+  // Each move made, its outcome, and the kernel steps since the one before.
+  const made = [], spent = [], steps = () => { const w = program.kernel.work(); return w.instructionSteps + w.querySteps; };
+  let last = steps();
+  program.kernel.chooser = { name: "recording", rank: point => heuristicChooser.rank(point),
+    observe: (point, move, outcome) => {
+      const name = `${move.move}${move.side ? `:${move.side}` : ""}:${outcome}`, now = steps();
+      made.push(name); spent.push([name, now - last]); last = now;
+    } };
+  // A path between two Glue terms of G = Glue [] Nat, which only agree when
+  // their bases do: the comparison fails, and its last moves are glue moves.
+  const G = T.glueType(T.nat, []);
+  const compare = (left, right, context) => {
+    const before = program.kernel.work();
+    let error = null;
+    try { program.checker.checkView(T.line("i", G, T.glue(G, left, [])), T.path("i", G, T.glue(G, left, []), T.glue(G, right, [])), context); }
+    catch (thrown) { error = thrown; }
+    const after = program.kernel.work();
+    return { error, instructions: after.instructions - before.instructions, exhausted: after.exhausted - before.exhausted,
+      steps: after.instructionSteps - before.instructionSteps + after.querySteps - before.querySteps };
+  };
+  return { T, program, made, spent, compare };
+};
+
+test("the glue move: an unchanged normal form is no progress, and its budget is its own", async t => {
+  // Without syntax sharing a normal form is a new handle: judged by handles,
+  // the move would report progress until the comparison's fuel ran out.
+  const plain = await glueSession(t, { shareSyntax: false });
+  const run = plain.compare(plain.T.variable("x"), plain.T.variable("y"), [["x", plain.T.nat], ["y", plain.T.nat]]);
+  assert.ok(run.error, "different bases do not agree");
+  assert.ok(plain.made.includes("glue:left:stuck"), plain.made.join(" "));
+  assert.ok(run.instructions < 1000, `${run.instructions} instructions`);
+  // Over a shared open graph, the move's normal form runs out of its own
+  // budget, not the session's: stuck, and the session's budget restored.
+  const shared = await glueSession(t);
+  const { T } = shared;
+  let graph = T.variable("x");
+  for (let n = 0; n < 40; n++) graph = T.app(T.app(T.variable("f"), graph), graph);
+  const context = [["x", T.nat], ["y", T.nat], ["f", T.pi("a", T.nat, T.pi("b", T.nat, T.nat))]];
+  const heavy = shared.compare(graph, T.variable("y"), context);
+  assert.ok(heavy.error && heavy.error.kind !== "deadline", heavy.error?.message);
+  // Measured: the move stops at 200,000 steps, its budget, and is stuck.
+  const move = shared.spent.find(([name]) => name === "glue:left:stuck");
+  assert.ok(move && move[1] <= searchLimits.glueNormalSteps + 1000, JSON.stringify(shared.spent));
+  const g = shared.program.checker.driver.graph, typing = shared.program.checker.driver.check(
+    shared.program.checker.syntax.encode(T.app(T.lam("n", T.nat, T.succ(T.variable("n"))), T.zero)),
+    shared.program.checker.syntax.encode(T.nat));
+  assert.throws(() => g.within(1, () => g.step(g.refl(typing), "other", [], "normalize")), error => error.kind === "budget");
+  assert.ok(g.step(g.refl(typing), "other", [], "normalize"), "the session's budget is back");
+});
+
+test("the glue move rethrows a deadline, and a Glue term needs it at every focus", async t => {
+  const { T, program, compare } = await glueSession(t);
+  const { KernelError } = await import("../web/cubical-kernel.mjs");
+  const graph = program.checker.driver.graph, within = graph.within;
+  graph.within = () => { throw new KernelError("Declaration time limit exceeded.", "deadline"); };
+  const interrupted = compare(T.variable("x"), T.variable("y"), [["x", T.nat], ["y", T.nat]]);
+  graph.within = within;
+  assert.equal(interrupted.error?.kind, "deadline", interrupted.error?.message);
+  // Two tubes of one composition, each the same Glue term that is its base by
+  // eta only after a step: the move rewrites one focus, and must still be
+  // open at the other.
+  const { face: F, interval: I } = await import("../lib/cubical/lattice.mjs");
+  const { identityEquivalence } = await import("../lib/cubical/equivalence.mjs");
+  const equivalence = identityEquivalence(T.unit);
+  const Gd = face => T.glueType(T.unit, [{ face, type: T.unit, equiv: equivalence }]);
+  const context = [["b1", Gd(F.bottom)], ["p", T.path("j", Gd(F.endpoint("j", 0)), T.point, T.variable("b1"))]];
+  const b = T.at(T.variable("p"), I.variable("i")), over = Gd(F.endpoint("i", 0));
+  const glued = T.glue(over, T.unglue(over, b), [{ face: F.endpoint("i", 0), term: T.point }]);
+  const composite = T.comp("k", over, [{ face: F.endpoint("m", 0), term: glued }, { face: F.endpoint("m", 1), term: glued }], b);
+  assert.equal(program.checker.checkView(composite, over, context, new Map([["i", 0], ["m", 1]])).term.tag, "Comp");
 });
