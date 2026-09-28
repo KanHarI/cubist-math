@@ -31,7 +31,7 @@ export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ"
   signatureBegin: "SignatureBegin", signatureConstructor: "SignatureCons", signatureClose: "SignatureClose",
   sortBegin: "SortBegin", sortLevel: "SortLevel", sortParameter: "SortParameter", construct: "ConIntro",
   eliminator: "ElimBegin", eliminatorClause: "ElimClause", eliminatorClose: "ElimClose" };
-export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf", "face"];
+export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf", "face", "glue"];
 // A judgement's sides: its term, an equality's other term, its type.
 export const sides = ["term", "other", "type"];
 const EXTEND = 100, DIMENSION = 101, LEVEL = 102;
@@ -107,6 +107,14 @@ export class InstructionGraph {
     } finally {
       m._cb_step_budget(k.handle, Number(k.stepBudget & 0xffffffffn), Number(k.stepBudget >> 32n));
     }
+  }
+  // An operation under a step budget of its own, as head's query has; the
+  // session's budget is restored afterwards.
+  within(steps, operation) {
+    const k = this.kernel, m = this.module;
+    m._cb_step_budget(k.handle, Number(BigInt(steps) & 0xffffffffn), Number(BigInt(steps) >> 32n));
+    try { return operation(); }
+    finally { m._cb_step_budget(k.handle, Number(k.stepBudget & 0xffffffffn), Number(k.stepBudget >> 32n)); }
   }
   levelPi(entry, body) { return this.issue("levelPi", entry, body); }
   levelLambda(entry, body) { return this.issue("levelLambda", entry, body); }

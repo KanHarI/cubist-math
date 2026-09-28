@@ -308,6 +308,8 @@ cc_term ck_restrict(cc_kernel *, cc_term, cc_clause);
 cc_term ck_whnf(cc_kernel *, cc_term);
 cc_term ck_expose(cc_kernel *, cc_term);
 cc_term ck_normal(cc_kernel *, cc_term);
+/* Glue eta with its side conditions normalized (CC_STEP_GLUE). */
+cc_term ck_glue_step(cc_kernel *, cc_term);
 bool ck_convertible(cc_kernel *, cc_term, cc_term);
 bool ck_expect(cc_kernel *, cc_term actual, cc_term expected);
 bool ck_infer(cc_kernel *, cc_term, const cc_context *, uint64_t, cc_judgement *);

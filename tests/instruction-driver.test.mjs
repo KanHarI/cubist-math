@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
+import { InstructionDriver, searchLimits } from "../web/cubical-instruction-driver.mjs";
 import { instructions } from "../web/cubical-instructions.mjs";
 import { judgementGraph } from "../web/cubical-graph-view.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
@@ -469,4 +469,255 @@ test("a derivation in one context is not reused in another that types a variable
   assert.deepEqual(typeIn(unit), unit);
   assert.throws(() => driver.check(syntax.encode(x), syntax.encode(nat), [[kernel.symbol("x"), syntax.encode(unit)]]),
     /Type mismatch/);
+});
+
+// The second review of #72. The kernel's weak head decides Glue eta by
+// syntax, so a Glue term whose piece is the base's restriction only after a
+// step stays a Glue term there; the driver's glue move then contracts it by
+// the Glue step, which compares the two reduced. G(d) = Glue [d = 0 ↦
+// (Unit, id)] Unit, p a path over G from point, b = p @ i: the constant tube
+// glue [i = 0 ↦ point] (unglue b) of a composition over G(i) must agree with
+// its base b, as b at i = 0 is p @ 0, which is point.
+test("a Glue term that is its base by eta only after a step still agrees with it", async t => {
+  const { T } = await import("../lib/cubical/core.mjs");
+  const { face: F, interval: I } = await import("../lib/cubical/lattice.mjs");
+  const { identityEquivalence } = await import("../lib/cubical/equivalence.mjs");
+  const program = new CubicalProgram(await createCubical(), readLibrary);
+  t.after(() => program.dispose());
+  await program.check("def unit_point : Unit := tt;\n", "glue_eta");
+  const equivalence = identityEquivalence(T.unit);
+  const G = face => T.glueType(T.unit, [{ face, type: T.unit, equiv: equivalence }]);
+  const context = [["b1", G(F.bottom)], ["p", T.path("j", G(F.endpoint("j", 0)), T.point, T.variable("b1"))]];
+  const b = T.at(T.variable("p"), I.variable("i")), over = G(F.endpoint("i", 0));
+  const glued = T.glue(over, T.unglue(over, b), [{ face: F.endpoint("i", 0), term: T.point }]);
+  const composite = T.comp("k", over, [{ face: F.endpoint("m", 0), term: glued }], b);
+  const checked = program.checker.checkView(composite, over, context, new Map([["i", 0], ["m", 1]]));
+  assert.equal(checked.term.tag, "Comp");
+});
+
+// The review of #73. The glue move is a last resort. G = Glue [] Nat,
+// u = glue_G [] x and H = Glue [] G: u and unglue_H(glue_H [] u) agree by the
+// right side's weak head. A move that took u's normal form first would, over
+// a shared open graph t(n + 1) = f(t(n))(t(n)), take time exponential in n,
+// where the weak head needs none; without syntax sharing, a normal form is a
+// new handle even when nothing changed.
+test("the glue move comes last, after the weak heads", async t => {
+  const { T } = await import("../lib/cubical/core.mjs");
+  const G = T.glueType(T.nat, []), H = T.glueType(G, []);
+  const agrees = async (base, context, optimizations) => {
+    const program = new CubicalProgram(await createCubical(), readLibrary, { optimizations });
+    t.after(() => program.dispose());
+    await program.check("def unit_point : Unit := tt;\n", "glue_move");
+    const u = T.glue(G, base, []), unglued = T.unglue(H, T.glue(H, u, []));
+    const before = program.kernel.work();
+    const checked = program.checker.checkView(T.line("i", G, u), T.path("i", G, u, unglued), context);
+    const after = program.kernel.work();
+    return { checked, instructions: after.instructions - before.instructions, exhausted: after.exhausted - before.exhausted,
+      steps: after.instructionSteps - before.instructionSteps + after.querySteps - before.querySteps };
+  };
+  // Measured: 33 instructions here, where normalizing on the way took 40,027.
+  const unshared = await agrees(T.variable("x"), [["x", T.nat]], { shareSyntax: false });
+  assert.equal(unshared.checked.term.tag, "PLam");
+  assert.ok(unshared.instructions < 1000, `${unshared.instructions} instructions`);
+  // Measured: 473 steps here, where normalizing first ran out of all 10,000,000.
+  let shared = T.variable("x");
+  for (let n = 0; n < 40; n++) shared = T.app(T.app(T.variable("f"), shared), shared);
+  const graph = await agrees(shared, [["x", T.nat], ["f", T.pi("a", T.nat, T.pi("b", T.nat, T.nat))]]);
+  assert.equal(graph.checked.term.tag, "PLam");
+  assert.ok(graph.steps < 100000 && graph.exhausted === 0, `${graph.steps} steps, ${graph.exhausted} exhausted`);
+});
+
+// The second review of #73: the glue move itself, where only it is left.
+const glueSession = async (t, optimizations = {}) => {
+  const { T } = await import("../lib/cubical/core.mjs");
+  const { heuristicChooser } = await import("../web/cubical-instruction-driver.mjs");
+  const program = new CubicalProgram(await createCubical(), readLibrary, { optimizations });
+  t.after(() => program.dispose());
+  await program.check("def unit_point : Unit := tt;\n", "glue_move");
+  // Each move made, its outcome, and the kernel steps since the one before.
+  const made = [], spent = [], steps = () => { const w = program.kernel.work(); return w.instructionSteps + w.querySteps; };
+  let last = steps();
+  program.kernel.chooser = { name: "recording", rank: point => heuristicChooser.rank(point),
+    observe: (point, move, outcome) => {
+      const name = `${move.move}${move.side ? `:${move.side}` : ""}:${outcome}`, now = steps();
+      made.push(name); spent.push([name, now - last]); last = now;
+    } };
+  // A path between two Glue terms of G = Glue [] Nat, which only agree when
+  // their bases do: the comparison fails, and its last moves are glue moves.
+  const G = T.glueType(T.nat, []);
+  const compare = (left, right, context) => {
+    const before = program.kernel.work();
+    let error = null;
+    try { program.checker.checkView(T.line("i", G, T.glue(G, left, [])), T.path("i", G, T.glue(G, left, []), T.glue(G, right, [])), context); }
+    catch (thrown) { error = thrown; }
+    const after = program.kernel.work();
+    return { error, instructions: after.instructions - before.instructions, exhausted: after.exhausted - before.exhausted,
+      steps: after.instructionSteps - before.instructionSteps + after.querySteps - before.querySteps };
+  };
+  return { T, program, made, spent, compare };
+};
+
+test("the glue move: no Glue eta redex is no progress, and the move's budget is its own", async t => {
+  // A Glue term whose base is no unglue: the Glue step does not apply, and
+  // the move is stuck, even without syntax sharing.
+  const plain = await glueSession(t, { shareSyntax: false });
+  const run = plain.compare(plain.T.variable("x"), plain.T.variable("y"), [["x", plain.T.nat], ["y", plain.T.nat]]);
+  assert.ok(run.error, "different bases do not agree");
+  assert.ok(plain.made.includes("glue:left:stuck"), plain.made.join(" "));
+  assert.ok(run.instructions < 1000, `${run.instructions} instructions`);
+  // The Glue step runs within the move's own budget, and running out of it
+  // is no progress: the comparison goes on to its own mismatch.
+  const shared = await glueSession(t);
+  const { T } = shared;
+  const { KernelError } = await import("../web/cubical-kernel.mjs");
+  const g = shared.program.checker.driver.graph, within = g.within, budgets = [];
+  g.within = steps => { budgets.push(steps); throw new KernelError("Kernel checking/reduction budget exhausted.", "budget"); };
+  const heavy = shared.compare(T.variable("x"), T.variable("y"), [["x", T.nat], ["y", T.nat]]);
+  g.within = within;
+  assert.ok(heavy.error && heavy.error.kind !== "budget", heavy.error?.message);
+  assert.ok(budgets.length && budgets.every(steps => steps === searchLimits.glueSteps), JSON.stringify(budgets));
+  assert.ok(shared.made.includes("glue:left:stuck"), shared.made.join(" "));
+  // And an operation within a budget of its own gives the session's back.
+  const typing = shared.program.checker.driver.check(
+    shared.program.checker.syntax.encode(T.app(T.lam("n", T.nat, T.succ(T.variable("n"))), T.zero)),
+    shared.program.checker.syntax.encode(T.nat));
+  assert.throws(() => g.within(1, () => g.step(g.refl(typing), "other", [], "normalize")), error => error.kind === "budget");
+  assert.ok(g.step(g.refl(typing), "other", [], "normalize"), "the session's budget is back");
+});
+
+test("the glue move rethrows a deadline, and a Glue term needs it at every focus", async t => {
+  const { T, program, compare } = await glueSession(t);
+  const { KernelError } = await import("../web/cubical-kernel.mjs");
+  const graph = program.checker.driver.graph, within = graph.within;
+  graph.within = () => { throw new KernelError("Declaration time limit exceeded.", "deadline"); };
+  const interrupted = compare(T.variable("x"), T.variable("y"), [["x", T.nat], ["y", T.nat]]);
+  graph.within = within;
+  assert.equal(interrupted.error?.kind, "deadline", interrupted.error?.message);
+  // Two tubes of one composition, each the same Glue term that is its base by
+  // eta only after a step: the move rewrites one focus, and must still be
+  // open at the other.
+  const { face: F, interval: I } = await import("../lib/cubical/lattice.mjs");
+  const { identityEquivalence } = await import("../lib/cubical/equivalence.mjs");
+  const equivalence = identityEquivalence(T.unit);
+  const Gd = face => T.glueType(T.unit, [{ face, type: T.unit, equiv: equivalence }]);
+  const context = [["b1", Gd(F.bottom)], ["p", T.path("j", Gd(F.endpoint("j", 0)), T.point, T.variable("b1"))]];
+  const b = T.at(T.variable("p"), I.variable("i")), over = Gd(F.endpoint("i", 0));
+  const glued = T.glue(over, T.unglue(over, b), [{ face: F.endpoint("i", 0), term: T.point }]);
+  const composite = T.comp("k", over, [{ face: F.endpoint("m", 0), term: glued }, { face: F.endpoint("m", 1), term: glued }], b);
+  assert.equal(program.checker.checkView(composite, over, context, new Map([["i", 0], ["m", 1]])).term.tag, "Comp");
+});
+
+// The third review of #73: the glue move waits for enclosing reductions. With
+// n0 := 0, n(k) := succ(n(k - 1)) up to n600, G = Glue [] Nat and
+// f(A : U0, z : A) := point, f(G, glue_G [] n600) and f(G, glue_G [] y) agree
+// by unfolding f. The heuristic first descends into the arguments, whose
+// equality it cannot rule out; there, while the unfolding still waits, no
+// glue move is made. Compared directly, the two Glue terms differ and the
+// move is tried: the Glue step does not apply, and reduces nothing of n600,
+// whose normal form is deeper than syntax may be, as the whole term's
+// normal form, which the move once took, would.
+test("the glue move waits for enclosing reductions, and reduces nothing beyond its side conditions", async t => {
+  const { T } = await import("../lib/cubical/core.mjs");
+  const { heuristicChooser } = await import("../web/cubical-instruction-driver.mjs");
+  const numbers = ["def n0 : Nat := 0;", ...Array.from({ length: 600 }, (_, k) => `def n${k + 1} : Nat := succ(n${k});`)];
+  const program = new CubicalProgram(await createCubical(), readLibrary);
+  t.after(() => program.dispose());
+  await program.check([...numbers, "def f(A : U0, z : A) : Unit := tt;"].join("\n") + "\n", "deep");
+  const made = [];
+  program.kernel.chooser = { name: "recording", rank: point => heuristicChooser.rank(point),
+    observe: (point, move, outcome) => made.push(`${move.move}:${point.depth}:${outcome}`) };
+  const G = T.glueType(T.nat, []), deep = T.glue(G, { tag: "DefRef", name: "deep__n600" }, []);
+  const f = { tag: "DefRef", name: "deep__f" }, y = T.glue(G, T.variable("y"), []);
+  const left = T.app(T.app(f, G), deep), right = T.app(T.app(f, G), y);
+  assert.equal(program.checker.checkView(T.line("i", T.unit, left), T.path("i", T.unit, left, right), [["y", T.nat]]).term.tag, "PLam");
+  assert.ok(!made.some(move => move.startsWith("glue:")), made.join(" "));
+  // Compared directly, the two Glue terms differ; the glue move is tried, and
+  // is stuck without reaching the depth of syntax.
+  let error = null;
+  try { program.checker.checkView(T.line("i", G, deep), T.path("i", G, deep, y), [["y", T.nat]]); }
+  catch (thrown) { error = thrown; }
+  assert.ok(error && !/syntax depth/.test(error.message), error?.message);
+  assert.ok(made.some(move => move.startsWith("glue:") && move.endsWith(":stuck")), made.join(" "));
+});
+
+// The fourth review of #73: the glue move took the whole Glue term's normal
+// form, the path in its base included. Here that path's right endpoint holds
+// a shared graph, t(n + 1) = f(t(n))(t(n)) over x : Unit, with 2^40 paths,
+// which the comparison never needs: the normal form ran out of the move's
+// budget, and the tube disagreed with its base. The Glue step reduces only
+// the piece and b at i = 0, which is point.
+test("a Glue term agrees with its base though its path mentions a large shared graph", async t => {
+  const { T } = await import("../lib/cubical/core.mjs");
+  const { heuristicChooser } = await import("../web/cubical-instruction-driver.mjs");
+  const { face: F, interval: I } = await import("../lib/cubical/lattice.mjs");
+  const { identityEquivalence } = await import("../lib/cubical/equivalence.mjs");
+  const program = new CubicalProgram(await createCubical(), readLibrary);
+  t.after(() => program.dispose());
+  await program.check("def unit_point : Unit := tt;\n", "glue_graph");
+  // The glue moves made, and the kernel steps each took.
+  const made = [], work = () => { const w = program.kernel.work(); return w.instructionSteps + w.querySteps; };
+  let started = 0;
+  program.kernel.chooser = { name: "recording",
+    *rank(point) { for (const move of heuristicChooser.rank(point)) { if (move.move === "glue") started = work(); yield move; } },
+    observe: (point, move, outcome) => { if (move.move === "glue") made.push([outcome, work() - started]); } };
+  const equivalence = identityEquivalence(T.unit);
+  const G = face => T.glueType(T.unit, [{ face, type: T.unit, equiv: equivalence }]);
+  let graph = T.variable("x");
+  for (let n = 0; n < 40; n++) graph = T.app(T.app(T.variable("f"), graph), graph);
+  const end = T.glue(T.glueType(T.unit, []), graph, []);
+  const context = [["x", T.unit], ["f", T.pi("a", T.unit, T.pi("b", T.unit, T.unit))],
+    ["p", T.path("j", G(F.endpoint("j", 0)), T.point, end)]];
+  const b = T.at(T.variable("p"), I.variable("i")), over = G(F.endpoint("i", 0));
+  const glued = T.glue(over, T.unglue(over, b), [{ face: F.endpoint("i", 0), term: T.point }]);
+  const composite = T.comp("k", over, [{ face: F.endpoint("m", 0), term: glued }], b);
+  assert.equal(program.checker.checkView(composite, over, context, new Map([["i", 0], ["m", 1]])).term.tag, "Comp");
+  assert.ok(made.some(([outcome, steps]) => outcome === "progress" && steps < 10000), JSON.stringify(made));
+});
+
+// The fifth review of #73: the Glue step exposes a base that is itself a
+// Glue eta redex, as conversion does. With A = Glue [] Nat, A' = Glue []
+// ((λ X. X)(Nat)), G = Glue [] A, g : G and u = unglue_G(g), the constant
+// tube glue_G [] (glue_A' [] (unglue_A(u))) of a composition over G must
+// agree with its base g: the inner Glue term is u once A' is A, and the
+// outer Glue term and g have different heads, so congruence cannot reach it.
+test("a Glue term whose base is a nested Glue eta redex agrees with its base", async t => {
+  const { T } = await import("../lib/cubical/core.mjs");
+  const { face: F } = await import("../lib/cubical/lattice.mjs");
+  const program = new CubicalProgram(await createCubical(), readLibrary);
+  t.after(() => program.dispose());
+  await program.check("def unit_point : Unit := tt;\n", "glue_nested");
+  const A = T.glueType(T.nat, []), redex = T.glueType(T.app(T.lam("X", T.universe(0), T.variable("X")), T.nat), []);
+  const G = T.glueType(A, []), g = T.variable("g");
+  const outer = T.glue(G, T.glue(redex, T.unglue(A, T.unglue(G, g)), []), []);
+  const composite = T.comp("k", G, [{ face: F.endpoint("m", 0), term: outer }], g);
+  assert.equal(program.checker.checkView(composite, G, [["g", G]], new Map([["m", 0]])).term.tag, "Comp");
+});
+
+// The sixth review of #73: a Glue term's base may be the other side's unglue
+// only by pair eta, and its Glue type the other side's only below its weak
+// head, over large shared parts. Glue eta expands the neutral side to
+// glue [φ ↦ g] (unglue g), and the two Glue terms are compared part by
+// part: the bases by pair eta and beta, the types by one beta step, with
+// the shared parts never normalized.
+test("a Glue term agrees with its base through pair eta, and through types equal below their heads", async t => {
+  const { T } = await import("../lib/cubical/core.mjs");
+  const { face: F } = await import("../lib/cubical/lattice.mjs");
+  const program = new CubicalProgram(await createCubical(), readLibrary);
+  t.after(() => program.dispose());
+  await program.check("def unit_point : Unit := tt;\n", "glue_eta_expansion");
+  const tube = (G, term, context) =>
+    program.checker.checkView(T.comp("k", G, [{ face: F.endpoint("m", 0), term }], T.variable("g")), G, context, new Map([["m", 0]]));
+  // A = Σ (n : Nat). Nat, G = Glue [] A, u = unglue_G(g): glue_G [] (fst u, snd ((λ x. x) u)) is g.
+  const A = T.sigma("n", T.nat, T.nat), G = T.glueType(A, []), u = T.unglue(G, T.variable("g"));
+  const paired = T.glue(G, T.pair(A, T.first(u), T.second(T.app(T.lam("x", A, T.variable("x")), u))), []);
+  assert.equal(tube(G, paired, [["g", G]]).term.tag, "Comp");
+  // r(n + 1) = f(r(n))(r(n)) over x : Unit, A2 = Path(Unit, r(40), r(40)), and
+  // A2' the same over (λ X. X)(Unit): glue_(Glue [] A2') [] (unglue_(Glue [] A2)(g)) is g.
+  let r = T.variable("x");
+  for (let n = 0; n < 40; n++) r = T.app(T.app(T.variable("f"), r), r);
+  const A2 = T.path("j", T.unit, r, r), A2beta = T.path("j", T.app(T.lam("X", T.universe(0), T.variable("X")), T.unit), r, r);
+  const G2 = T.glueType(A2, []), G2beta = T.glueType(A2beta, []);
+  const retyped = T.glue(G2beta, T.unglue(G2, T.variable("g")), []);
+  const context = [["x", T.unit], ["f", T.pi("a", T.unit, T.pi("b", T.unit, T.unit))], ["g", G2]];
+  assert.equal(tube(G2, retyped, context).term.tag, "Comp");
 });

@@ -28,10 +28,15 @@ const dimensionBound = (kind, i) => kind === "PLam" || ((kind === "Path" || kind
 // (H1): a constructor applied computes only under an eliminator.
 const CONSTRUCTORS = new Set(["U", "Pi", "Lam", "LPi", "LLam", "Sigma", "Pair", "Nat", "Zero", "Succ", "Unit", "Point", "Void",
   "Sum", "Inl", "Inr", "Path", "PLam", "W", "Sup", "Pushout", "PushLeft", "PushRight", "Sort", "Con", "Elim", "List"]);
-// The type former a constructor's eta expansion needs.
-const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma", LLam: "LPi" };
+// The type former a constructor's eta expansion needs. A Glue term's is
+// glue [φ ↦ g] (unglue g), for g of a Glue type.
+const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma", LLam: "LPi", GlueTerm: "Glue" };
 // Steps after which a comparison the oracle finds true computes normal forms.
 const LONG_COMPUTATION = 64;
+// The kernel steps the Glue step may take (the glue move). It normalizes its
+// side conditions, and open terms can be large shared graphs, whose normal
+// forms are not.
+const GLUE_STEPS = 200000;
 // The guide (InstructionDriver.guide): how many pairs of subterms one
 // question may compare, and the kernel steps each weak head may take.
 const GUIDE_FUEL = 400, GUIDE_HEAD_STEPS = 4000;
@@ -40,13 +45,13 @@ const GUIDE_FUEL = 400, GUIDE_HEAD_STEPS = 4000;
 const FUEL = 20000, ORACLE_STEPS = 20000;
 // The search's fixed limits, for reports that must say what they measured.
 export const searchLimits = Object.freeze({ fuel: FUEL, longComputation: LONG_COMPUTATION, guideFuel: GUIDE_FUEL,
-  guideHeadSteps: GUIDE_HEAD_STEPS, oracleSteps: ORACLE_STEPS });
+  guideHeadSteps: GUIDE_HEAD_STEPS, oracleSteps: ORACLE_STEPS, glueSteps: GLUE_STEPS });
 // Weak heads that are constructors: two of different kinds never agree.
 // An instance of a declared type is one (H1); so is a list of its parameters.
 const RIGID = new Set(["U", "Pi", "Sigma", "W", "LPi", "Nat", "Zero", "Succ", "Unit", "Point", "Void", "Sum",
   "Inl", "Inr", "Path", "Sup", "Pushout", "PushLeft", "PushRight", "Lam", "LLam", "PLam", "Pair", "Sort", "List"]);
 // Constructors that eta relates to a neutral term of their type.
-const ETA_CONSTRUCTORS = new Set(["Lam", "LLam", "PLam", "Pair"]);
+const ETA_CONSTRUCTORS = new Set(["Lam", "LLam", "PLam", "Pair", "GlueTerm"]);
 // Neutral weak heads: variables and eliminations stuck on one. A declared
 // type's constructor and eliminator count here, not as rigid heads: each is
 // a function, or a path, which eta relates to a lambda. Two constructors of
@@ -82,6 +87,12 @@ const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: 
 //   { move: "whnf", side }             the kernel's weak head normal form
 //   { move: "eta" }                    eta-expand the side that is not a
 //                                      constructor, against one that is
+//   { move: "glue", side }             Glue eta by the kernel's Glue step,
+//                                      within GLUE_STEPS: a piece may be the
+//                                      base's restriction only once both are
+//                                      reduced, which the weak head does not
+//                                      do; the last resort, and never inside a
+//                                      speculative descent
 // The list is syntactic: it offers what the terms' shapes allow, and the
 // kernel checks the rest when the move is made. A step always applies. A
 // whnf or eta that turns out to change nothing leaves the point as it was.
@@ -127,6 +138,7 @@ export const heuristicChooser = Object.freeze({
     }
     if (left || right) return yield left ?? right;
     for (const move of moves) if (move.move === "whnf" || move.move === "eta") yield move;
+    for (const move of moves) if (move.move === "glue") yield move;
   },
 });
 
@@ -154,6 +166,10 @@ export class InstructionDriver {
     this.mentions = new Map();
     this.derived = new Map();
     this.stable = new Set();
+    // Glue terms the glue move need not try again: no Glue eta redex, even
+    // with its side conditions normalized, or one whose side conditions take
+    // more than the move's budget.
+    this.glueStuck = new Set();
     this.equalities = new Map();
     // The guide's answers and the weak heads it asked for.
     this.guesses = new Map();
@@ -852,6 +868,29 @@ export class InstructionDriver {
     this.stable.add(before);
     return false;
   }
+  // The glue move: Glue eta by the kernel's Glue step, when the weak head
+  // leaves a Glue term. The weak head compares each piece with the base's
+  // restriction by syntax, and the restriction can be a redex, as p @ i at
+  // i = 0 is p's left endpoint; the Glue step compares the two normalized,
+  // and normalizes nothing else of the term. Within its own step budget.
+  // What it learns holds wherever the term occurs: that the term is no Glue
+  // eta redex, or that its side conditions take more than the budget. The
+  // same term at another focus may still need the move, and so may the base
+  // it contracts to.
+  glue(focus) {
+    const before = this.subterm(focus);
+    try { this.graph.within(GLUE_STEPS, () => this.reduce(focus, { path: [], rule: "glue" })); }
+    catch (error) {
+      // A deadline ends the comparison, as it would after any move. Anything
+      // else is no progress, and the comparison goes on: the term is no
+      // Glue eta redex, or its side conditions ran into the move's budget or
+      // the depth of syntax.
+      if (error.kind === "deadline") throw error;
+      this.glueStuck.add(before);
+      return false;
+    }
+    return true;
+  }
 
   // The scope at a focus: its judgement's, with an entry for each term binder
   // on the way down, named as the binder so that Replace discharges it.
@@ -1033,7 +1072,8 @@ export class InstructionDriver {
           else if (budget.untried) return false;
         }
         const point = { driver: this, a, b, x, y, nx: this.node(x), ny: this.node(y), terms, dims,
-          moves: null, round: 0, taken: budget.taken ?? 0, depth, normalize, descended: false, stuck: new Set(), failed };
+          moves: null, round: 0, taken: budget.taken ?? 0, depth, normalize, descended: false, stuck: new Set(), failed,
+          speculative: (budget.speculative ?? 0) > 0 };
         const outcome = this.branch(point, budget);
         if (outcome === "agreed") return true;
         if (outcome === "failed") return false;
@@ -1090,6 +1130,11 @@ export class InstructionDriver {
       if (!point.stuck.has(side) && !this.stable.has(term) && !CONSTRUCTORS.has(this.node(term).kind)) moves.push({ move: "whnf", side });
     const kx = this.node(x).kind, ky = this.node(y).kind;
     if (!point.stuck.has("eta") && kx !== ky && (etaTypes[kx] || etaTypes[ky])) moves.push({ move: "eta" });
+    // Not inside a speculative descent: the enclosing comparison's lazy steps
+    // come first, and should they fail, its last resort normalizes both sides.
+    for (const [side, term] of [["left", x], ["right", y]])
+      if (!point.speculative && this.node(term).kind === "GlueTerm" && !this.glueStuck.has(term) && !point.stuck.has(`glue:${side}`))
+        moves.push({ move: "glue", side });
     return moves;
   }
   // Make a move: its outcome, as `branch` reads it.
@@ -1097,14 +1142,22 @@ export class InstructionDriver {
     const { a, b, terms, dims } = point;
     switch (move.move) {
     case "normalize": return this.normalizeBoth(a, b, terms, dims) ? "agreed" : "changed";
-    case "descend":
+    case "descend": {
       point.descended = true;
-      if (this.agreeParts(a, b, point.nx, terms, dims, budget)) return "agreed";
+      // A descent is speculative while this point still has lazy steps to
+      // try should it fail: inside it, the glue move waits (moves).
+      const speculative = point.moves.some(open => open.move === "step");
+      if (speculative) budget.speculative = (budget.speculative ?? 0) + 1;
+      let agreed;
+      try { agreed = this.agreeParts(a, b, point.nx, terms, dims, budget); }
+      finally { if (speculative) budget.speculative--; }
+      if (agreed) return "agreed";
       // A comparison inside gave up for an enclosing closed one to try
       // normal forms: congruence has not failed, and may be tried again.
       if (budget.untried && budget.taken >= LONG_COMPUTATION) return "deferred";
       point.failed.add(`${point.x},${point.y}`);
       return "changed";
+    }
     case "step":
       if (move.side !== "right") this.reduce(a, move.side === "both" ? move.steps[0] : move.step);
       if (move.side !== "left") this.reduce(b, move.side === "both" ? move.steps[1] : move.step);
@@ -1116,6 +1169,10 @@ export class InstructionDriver {
     case "eta":
       if (this.eta(a, b)) return "progress";
       point.stuck.add("eta");
+      return "stuck";
+    case "glue":
+      if (this.glue(move.side === "left" ? a : b)) return "progress";
+      point.stuck.add(`glue:${move.side}`);
       return "stuck";
     default: throw new Error(`Unknown move ${move.move}.`);
     }

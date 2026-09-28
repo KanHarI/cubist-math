@@ -1755,6 +1755,17 @@ cc_judgement_id cc_instr_lift(cc_kernel *k, cc_judgement_id typing_id, cc_judgem
     return typing(k, t.term, b.term, context);
 }
 
+/* The pieces of a Glue eta expansion: the term itself on each face of the
+ * Glue type's system, in its order. On its face the term has the face's
+ * type, as the Glue type is that type there. */
+static cc_term eta_pieces(cc_kernel *k, cc_term system, cc_term term) {
+    if (!system || k->error[0])
+        return 0;
+    cc_node piece = k->nodes[system];
+    cc_term rest = eta_pieces(k, piece.child[2], term);
+    return k->error[0] ? 0 : make(k, CC_TUBE, piece.payload, term, rest, 0, 0);
+}
+
 cc_judgement_id cc_instr_eta(cc_kernel *k, cc_judgement_id typing_id) {
     cc_judgement_id found;
     if (!begin(k, (cc_derivation){.rule = CC_INSTR_ETA, .premise = {typing_id}}, NULL, 0, &found))
@@ -1784,8 +1795,13 @@ cc_judgement_id cc_instr_eta(cc_kernel *k, cc_judgement_id typing_id) {
         if (!family)
             return ck_fail(k, "Interval allocation failed."), 0;
         expanded = make(k, CC_PLAM, fresh, family, make(k, CC_PAPP, argument, t.term, t.type, 0, 0), 0, 0);
+    } else if (type.kind == CC_GLUE) {
+        cc_term pieces = eta_pieces(k, type.child[1], t.term);
+        if (k->error[0])
+            return 0;
+        expanded = make(k, CC_GLUE_TERM, 0, t.type, make(k, CC_UNGLUE, 0, t.type, t.term, 0, 0), pieces, 0);
     } else {
-        return ck_fail(k, "Eta needs a term of a Π, level Π, Σ or path type."), 0;
+        return ck_fail(k, "Eta needs a term of a Π, level Π, Σ, path or Glue type."), 0;
     }
     return publish(k, CC_FACT_EQUALITY, t.term, expanded, t.type, t.context);
 }
@@ -1983,6 +1999,16 @@ static cc_term contract(cc_kernel *k, cc_term term, cc_step_rule rule) {
                 return n.child[2];
         }
         return ck_fail(k, "A face step needs a composition with a tube on a face that holds."), 0;
+    case CC_STEP_GLUE: {
+        /* Glue eta where a piece is the base's restriction only after
+         * reduction, which Whnf leaves: the side conditions normalized, and
+         * nothing else (term_normalize.c). */
+        cc_term base = n.kind == CC_GLUE_TERM ? ck_glue_step(k, term) : term;
+        if (!base || base != term)
+            return base;
+        return ck_fail(k, "A Glue step needs glue [φ ↦ t] (unglue b) whose two Glue types agree, and whose t is b on φ, "
+                          "after normalization."), 0;
+    }
     }
     return ck_fail(k, "Unknown step rule."), 0;
 }
