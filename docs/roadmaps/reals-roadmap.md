@@ -1,15 +1,21 @@
 # Real-number roadmap
 
-Status: paused during language development (reviewed 2026-09-27);
-restructured on 2026-09-25 for the rebuild of the library. The first
-library's development is described below, under "The first library's
+Status: paused during language development; corrected on 2026-09-28 after
+the [work-plan audit](audits/2026-09-28-audit.md) (previously reviewed
+2026-09-27); restructured on 2026-09-25 for the rebuild of the library. The
+first library's development is described below, under "The first library's
 development", and is archived with that library. Its results are summarized in
 [library-results.md](../library-results.md#analysis). This roadmap owns the
 rebuilt number systems; they are deferred in the
-[work plan](work-plan.md#deferred-library-backlog) as B5.1–B5.2, and no
-language milestone resumes them automatically.
+[work plan](work-plan.md#deferred-library-backlog) as B3 (integers), B4
+(rationals and the field interface) and B5 (reals), and no language
+milestone resumes them automatically.
 
 ## Plan for the rebuilt library
+
+The audit confirmed the construction choice and revised the promises around
+it: the precision type, the normal-form and approximation claims, R3's
+breakdown and each package's dependencies. The corrections are marked.
 
 The interface stays an **Archimedean ordered field with Cauchy completeness**,
 with Dedekind completeness as a separate property. It becomes the theory
@@ -17,17 +23,32 @@ with Dedekind completeness as a separate property. It becomes the theory
 against its models and does not depend on which construction supplies them.
 The constructive developments assume neither excluded middle nor choice.
 
+**An unproved compatibility obligation (corrected).** The archived interface
+([complete_fields.cubist](../../archive/first-library/complete_fields.cubist))
+asks, for each positive element of the field carrier, an actual
+natural-number bound, both for Cauchyness and for convergence. The Cauchy
+completion below uses positive-rational precision, as the
+[HoTT book](https://github.com/HoTT/book/blob/master/reals.tex#L437-L450)
+does. These are different constructive APIs: a selector from arbitrary real
+precision does not follow from rational bounds merely existing. R2 chooses
+the precision type for its computational modulus, proves the bridge between
+sequences with a modulus and the completion's approximations, and states
+which legacy adapters need extra data. The archive's parameterized
+definitions are not claimed to fail to check; the obligation is the bridge.
+
 | Carrier | Construction | Needs | Computation |
 | --- | --- | --- | --- |
-| Integers | `inductive Int { pos(n : Nat); negsucc(n : Nat); }`, with "difference of naturals" and "point with an equivalence" as presentations | Kernel H1; ergonomics 7 | Constructor normal forms; decidable equality |
-| Rationals | Canonical quotient of `Int and Pos` by cross-multiplication, represented in lowest terms | Ergonomics 7 (canonical quotients) | Closed rationals print reduced; equality decidable |
-| Reals (primary) | `Real = initial CauchyStructure`: the book's Cauchy completion, a higher inductive-inductive type with its closeness relation | Kernel H3; ergonomics 6–7 | Closed reals normalize to `rat`/`lim`; approximations are evaluated |
-| Reals (fallback) | Dedekind reals: located two-sided cuts of the rationals, in `next(U0)` | Kernel H1 (`Trunc`, `Quotient`) | Approximations through locatedness, which computes once truncation does |
+| Integers | `inductive Int { pos(n : Nat); negsucc(n : Nat); }`, with "difference of naturals" and "point with an equivalence" as presentations | L2.1 and L2.2a, experimental since 2026-09-28; L2.7 for the presentations | Constructor normal forms; decidable equality |
+| Rationals | Canonical quotient of `Int and PosNat` by cross-multiplication, represented in lowest terms | L2.7 (canonical quotients), with gcd, normalization correctness and uniqueness | Closed rationals print reduced; equality decidable |
+| Reals (primary) | `Real = initial CauchyStructure`: the book's Cauchy completion, a higher inductive-inductive type with its closeness relation, at precision `PosRat` | Kernel H3 (K5.1, K5.2, L5.1); L2.6 initial models and folds; the rational prerequisites | Closed reals normalize to the constructors `rat`/`lim` or to the stage's formal Kan forms; a closed rational approximation comes from a proved approximation theorem, read out through L2.9b |
+| Reals (fallback) | Dedekind reals: located two-sided cuts of the rationals, in `next(U0)` | Kernel H1 (`Trunc`) and the cut and field mathematics; with canonical rationals, no generic quotient is needed for cuts | Approximations through locatedness, given a proved approximation result, a closed computable input and L2.9b's checked readout; native truncation alone supplies none of these |
 
 - **Why Cauchy reals are primary.**
   - They are complete without countable choice, unlike the ordinary quotient
     of Cauchy sequences.
-  - Their elements have constructor normal forms.
+  - Their closed elements have data canonicity (corrected): constructors or
+    the stage's formal compositions, which is not a canonical rational
+    representation of an arbitrary real.
   - Their recursion principle is folding into a model, and the Lipschitz
     extension of maps from the rationals is such a fold.
 - **When to use the fallback.** Dedekind reals need no kernel work beyond
@@ -43,30 +64,78 @@ The constructive developments assume neither excluded middle nor choice.
   models (for example the Lipschitz extension view), and by limits with a
   modulus. A discontinuous function is defined only on a subtype, or with
   excluded middle as a visible non-computing dependency.
-- **Universes.** With G0 and H1's universe-preserving `Trunc`, no resizing is
-  used anywhere (kernel G2).
+- **Universes.** No resizing is the rebuilt foundation's requirement
+  (kernel G2), met with G0 and H1's universe-preserving `Trunc`. It does not
+  describe the archive: its universe-lowering `FieldExists` remains until
+  the G2 ledger's actual migrations, and that legacy behaviour is kept
+  distinct from the new universe-preserving truncation.
+- **Names.** `PosNat` for denominators; `PosRat` for precision.
+- **Readout.** There is no source-level selector `Trunc(A) -> A`; L2.9b is
+  a closed evaluation tool that needs a closed computable input and a
+  checked error certificate. Its later H3 extension must specify the
+  extracted witness's type: under heterogeneous transport a base witness
+  has type `A(0)` while the requested result needs `A(1)`, so "read off the
+  base" needs that case. H1's homogeneous `hcomp` and computing parameter
+  transport show no such defect; L2.9b's tests include transported
+  truncations, and the argument is revisited when H3's formal operations
+  are fixed.
 
 ### Milestones
 
-1. **R1. Integers and rationals.** The inductive integers with their
-   presentations; rationals as a canonical quotient. Prove the ordered-field
-   laws and the Archimedean property. Provide `computable` arithmetic, with
-   `evaluate` tests.
-2. **R2. The interface.** The theories `OrderedField` and
+1. **R1. Integers and rationals** (B3 for the integers, B4 for the
+   rationals). The inductive integers with their presentations, with
+   arithmetic, setness and decidable equality proved; rationals as a
+   canonical quotient, with gcd, normalization correctness and uniqueness;
+   the ordered-field laws and the Archimedean property; `computable`
+   arithmetic, with `evaluate` tests. A generic H1 set quotient is a
+   separate presentation: the quotient constructor does not supply the
+   fixed-point canonical representation.
+2. **R2. The interface** (B4). The theories `OrderedField` and
    `CompleteOrderedField`, with limits, uniqueness and the algebra of limits
-   stated generically. This can proceed with any model, even before a
-   concrete reals construction exists.
-3. **R3. Cauchy reals.**
-   - `CauchyStructure` and its initial model at H3.
-   - Field operations defined by folding into models.
-   - A `CompleteOrderedField` model.
-   - Evaluation: a rational within 10⁻³ of √2 read from a closed real.
-4. **R4, optional.** Dedekind reals, as the fallback or as a comparison. Prove
-   the embedding of Cauchy reals into them. Record the countable-choice or
-   excluded-middle hypothesis under which the embedding is an equivalence.
+   stated generically, on L2.4's core theories and L2.5a's h-level fields.
+   Settle the precision and modulus types (`PosRat` or `Nat`) and prove the
+   bridge above before porting clients. It needs no H3 and can proceed with
+   any model, even before a concrete reals construction exists.
+3. **R3. Cauchy reals** (B5), scheduled as separate obligations
+   (corrected: "field operations by folding" hid most of them):
+   - `CauchyStructure` and its initial model at H3;
+   - the rational embedding, and closeness compatible with the order;
+   - Lipschitz extension of maps from the rationals, with uniqueness;
+   - the field laws: addition and negation by Lipschitz folds; squaring
+     and multiplication by bounded extensions; inversion away from zero,
+     as the [book constructs them](https://github.com/HoTT/book/blob/master/reals.tex#L1487-L1577);
+     one globally Lipschitz fold does not supply them all;
+   - the Archimedean property and Cauchy completeness;
+   - a `CompleteOrderedField` model;
+   - an approximation theorem with a checked error certificate, and its
+     readout through L2.9b: a rational within 10⁻³ of √2 from a closed real.
+
+   A working H3 eliminator is a language milestone; this model is a
+   mathematical development with its own proof obligations.
+4. **R4, optional** (B5). Dedekind reals, as the fallback or as a comparison.
+   Prove the embedding of Cauchy reals into them. Record the countable-choice
+   or excluded-middle hypothesis under which the embedding is an equivalence.
+   Readout has the gate above.
 
 No milestone may be replaced by an axiom asserting that a construction is a
 complete ordered field.
+
+### Dependencies and acceptance
+
+| Package | Explicit dependencies and acceptance |
+| --- | --- |
+| R1 integers | L2.1/L2.2a; arithmetic, setness and decidable-equality proofs; L2.7 for the alternate presentations |
+| R1 canonical rationals | L2.7, with gcd, normalization correctness and uniqueness, and the arithmetic and order laws; the generic set quotient is a separate presentation |
+| R2 field interface | L2.4 core theories and L2.5a h-level fields; the precision and modulus types settled and the sequence/approximation bridge proved before clients are ported; no H3 |
+| R3 Cauchy reals | K5.1/K5.2/L5.1; L2.6 initial models and folds; R1 and R2; the construction proofs listed above; L2.9b for the closed approximation readout |
+| R4 Dedekind fallback | H1 truncation and the cut and field mathematics; canonical rationals in place of a generic quotient; L2.9b for readout |
+
+The work plan replaces Cauchy reals and √2 as the active H3 release gate
+with a small context/type interpreter; the mathematical example remains
+deferred integration acceptance. No concrete rational ordered field or
+complete ordered field has been constructed in the rebuilt library, and the
+archive records that its abstract `Q` and its candidate real carriers did
+not supply those certificates.
 
 ## The first library's development (archived)
 

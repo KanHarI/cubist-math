@@ -1,7 +1,10 @@
 # Higher inductive-inductive types: kernel and language design
 
 Status: adopted on 2026-09-25 as [kernel roadmap](cubical-kernel-roadmap.md)
-item H, stages H1–H4. Nothing is implemented yet; the
+item H, stages H1–H4. As of 2026-09-28, H1 is implemented experimentally,
+behind the `h1` option, as the [H1 specification](h1-signature-specification.md)
+narrows it; its soundness review, differential fixtures and migrations are
+pending, and nothing of H2–H4 is implemented. The
 [work plan](work-plan.md) schedules it. It supersedes kernel items G1–G3 and
 the separate native-inductive and generic higher-inductive items. It depends
 on G0 (universe-generic checking). The existing literature informed this
@@ -9,8 +12,9 @@ design without bounding it; the choices that depart from it are listed in the
 section on departures. The language features built on it are proposed in
 [inductive-language-features.md](inductive-language-features.md), which
 ergonomics milestones 6 and 7 adopt. The
-[H1 specification](h1-signature-specification.md), a draft for review, makes
-stage H1 precise; its section 0 lists where it narrows this design.
+[H1 specification](h1-signature-specification.md), approved for
+experimental implementation, makes stage H1 precise; its section 0 lists
+where it narrows this design.
 
 ## Goals
 
@@ -290,9 +294,16 @@ existing kernel's interval algebra:
 | H3 | Several sorts where every sort is `set` or `prop` (quotient inductive-inductive types) | Induction-induction; clause typing through the partial eliminator |
 | H4 | Several sorts with untruncated sorts | Higher dependent cubes in clauses; adopt only if a use appears |
 
-The code is the same at every stage; the signature checker's gate widens.
-Stage H3 covers every inductive-inductive use we know of: Cauchy reals, the
-partiality monad, surreal numbers and the syntax of type theory.
+One code path for every stage, with only the signature checker's gate
+widening, is the reuse goal. It is not the implementation contract at
+2026-09-28: ABI 3 represents one sort, its parameters and recorded levels,
+and one eliminator motive. Indices, formal composition along varying
+indices, dependent companion sorts and joint motives need representation
+and computation work, which the work plan lists as deliverables of K4.2 and
+K5.2 (ABI, substitution, rollback, codec, inspection and cross-stage
+regressions). Stage H3 covers every inductive-inductive use we know of:
+Cauchy reals, the partiality monad, surreal numbers and the syntax of type
+theory.
 
 ### Trust controls
 
@@ -310,7 +321,9 @@ partiality monad, surreal numbers and the syntax of type theory.
   instructions are the oracle for stage H1. Declare the same types
   generically and compare typing, reduction and composition results on the
   kernel tests and, through the driver, on the archived library. Retire the
-  hand-coded instructions only after they agree.
+  hand-coded instructions only after they agree; by the specification's 7.4
+  (Q16), H1's first release retires the `Nat` instructions only, and sum, W
+  and pushout stay for tier-1 arguments.
 - **Negative tests:**
   - positivity violations, such as a sort in an arity or in data;
   - boundaries that disagree on overlapping faces;

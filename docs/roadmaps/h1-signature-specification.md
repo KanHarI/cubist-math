@@ -1,18 +1,44 @@
 # One-sort signatures (H1): rules, soundness note and truncation policy
 
-Status: approved on 2026-09-27 for implementation. K2.2's six instruction
-families are implemented on the `h1-signatures` branch, and K2.3's driver
-support is in progress there (section 6). Written
-on 2026-09-27 as work-plan items K2.1 (the H1 fragment and its soundness
-note) and K2.5 (G2's truncation and resizing policy, with its migration
-ledger). Every open question is decided (see Decisions). It is the contract
-that K2.2 (instructions), K2.3 (driver and bridges), K2.4 (differential
-fixtures) and L2.1 (the `inductive` declaration) implement; work on them
-proceeds on the `h1-signatures` branch. Default admission and release wait
-for the open proofs of section 4 (D1, D4, D5 and Lemma H2) and for each
-K2.2 family's classification into the cases of 2.3. Until then, H1 runs
-only in the experimental mode of section 5.7, and its results carry the
-`kernel extension: H1` marker.
+Status: approved on 2026-09-27 for experimental implementation; reviewed
+against `02a57ef` on 2026-09-28 by the
+[work-plan audit](audits/2026-09-28-audit.md). Written on 2026-09-27 as
+work-plan items K2.1 (the H1 fragment and its soundness note) and K2.5
+(G2's truncation and resizing policy, with its migration ledger). It is the
+contract that K2.2 (instructions), K2.3 (driver and bridges), K2.4
+(differential fixtures) and L2.1 (the `inductive` declaration) implement,
+on the `h1-signatures` branch. Its statuses are distinct:
+
+- **Decided:** every question of section 11, on 2026-09-27.
+- **Approved for implementation:** the fragment of sections 1–3 and the
+  families of section 5, in the experimental mode of 5.7 only. Implemented
+  there: K2.2's six families (ABI 3), K2.3 in part (section 6), L2.1
+  (section 9) and L2.2a's first `match` slice; every result carries the
+  `kernel extension: H1` marker.
+- **Review pending:** the obligations of 4.5. Implementation and passing
+  tests do not discharge them.
+- **Migration pending:** K2.4's fixtures and tooling (section 7) and K2.5's
+  ledger verifier (8.5).
+
+**Release checklist for finite-level H1.** The experimental option is
+removed, and default admission granted, only when every item has evidence
+and a review decision:
+
+1. D1, D4 and D5 written out and reviewed (4.2, 4.3);
+2. Lemma H2's full case analysis, and the critical-pair check of 3.7;
+3. canonicity (4.4) reviewed, relative to the assumed baseline of 4.1;
+4. the acceptance matrix of 10.10 complete, K10 and K11 included;
+5. K2.3's open items: the verifier's marker comparison (6.4), the
+   inspection of 6.5, and a recorded run of the whole suite at a pinned
+   revision;
+6. K2.4a's differential fixtures X1–X4 and X6–X8, and the work plan's
+   isolation correction I1.2a, on which 4.1's baseline relies.
+
+Not on the checklist: the classification of each instruction into the
+cases (i)–(v) of 2.3. It belongs to the deferred tier-parametric proposal
+(Q16), not to the finite-level fragment. Normalization and decidable
+conversion are not claimed (4.5); a canonicity fixture is not a proof of
+them.
 
 It refines the adopted
 [higher inductive-inductive type design](higher-inductive-types-design.md)
@@ -616,8 +642,9 @@ counts index types too (G0 2.12).
   keeps every level in tier-0 form, so no other case arises. Hence the
   constructor types are well formed at `ρ`, and their comparisons with `ℓ`
   hold. The classification of each instruction into (i) to (v) is a review
-  item of each K2.2 family; an instruction added later must be classified
-  before the check admits it.
+  item of this proposal, for each K2.2 family, if it is adopted; an
+  instruction added later must be classified before the check admits it.
+  It is not on finite-level H1's release checklist (header).
 
   *Examples.* `Pair`, `Trunc`, `Quotient` and the K2.4 counterparts pass:
   their derivations use only their parameters, universes at their level
@@ -1095,6 +1122,12 @@ marker.
 | Canonicity for H1 | Argued (4.4), relative to the assumed baseline |
 | Consistency and canonicity of the baseline, pushouts included | **Assumed**, as in G0 3.6 |
 | Normalization, for decidable conversion | **Not established**; the kernel relies on budgets, as today |
+| The baseline's isolation of instruction acceptance from untrusted conversion queries | **Open defect** (audit of 2026-09-28, finding 1): the reducers behind `Whnf` and `Normalize` call `ck_convertible`, and a successful public conversion query enters the memo that folded alpha equality reads, so one `Apply` is refused, then accepted, with no equality judgement among its premises. Valid beta equality, so no false equality; corrected by work-plan I1.2a |
+
+**Status on 2026-09-28.** No open obligation above has been discharged
+since the approval of 2026-09-27. The implementation's tests are evidence
+for the specified behaviour, not for these claims, and the header's release
+checklist maps each to its evidence and review decision.
 
 ### 4.6 Literature
 
@@ -1430,7 +1463,9 @@ again.
   It propagates through definitions, as non-computing dependencies do, and
   is tracked separately from them.
 - `computable def` accepts it. `inspect`, the CLI and the workbench list it
-  apart from assumptions. The migration verifier compares it too.
+  apart from assumptions. The migration verifier must compare it too: the
+  marker is not an axiom, so an `axioms` comparison cannot establish this
+  contract.
 - Tests: direct use; use through a definition; `computable` with the marker
   accepted; `computable` with the marker and `LEM` rejected, naming `LEM`;
   the marker absent once H1 is on by default.
@@ -1443,6 +1478,10 @@ or a definition that carries the marker. The program reports them as
 "kernel extension: H1", and the workbench shows it beside the axioms used.
 `computable` reads only the assumptions. `tests/inductive-declarations.test.mjs`
 covers the first four tests. The last waits for default admission.
+**Open (K2.3):** at `02a57ef`, `tools/proof-migration.mjs` compares
+`axioms` only and has no comparison of `extensions`, so the verifier does
+not yet establish this contract, and a migration that adds or removes the
+marker goes undetected (audit of 2026-09-28, finding 7).
 
 ### 6.5 Inspection
 
@@ -1453,8 +1492,11 @@ type, and each clause's displayed boundary, as the design's section 5 asks.
 **Implementation, in part.** `CubicalProgram.signature` reads a signature
 back from the kernel: its former, h-level, recorded universe parameters, and
 each constructor's normal form with its data, positions and dimensions,
-shown by its declared names. The CLI's `inspect` prints it. The workbench
-inspector and the eliminator's clause types wait for `match` (L2.2a).
+shown by its declared names. The CLI's `inspect` prints it. The
+eliminator's clause types are computed and consumed by L2.2a's `match`
+(`lib/cubical/match.mjs`, through the scope's `clauseType`), which is
+delivered experimentally; their display, and the workbench's signature and
+eliminator inspection, remain open (K2.3).
 
 ## 7. K2.4: representation map and differential contract
 
@@ -1579,6 +1621,14 @@ If the later tier-parametric proposal is adopted, a further change removes
 `PushPath` and `PushElim`, without changing any finite-level term.
 
 `Unit` and `Void` stay (Q11).
+
+**Status on 2026-09-28.** No X fixture, no τ driver option and no cost
+record exists. The work plan schedules them as K2.4a, the `Nat` retirement
+above as K2.4b, and the wider retirement of the previous paragraph as
+K2.4c, deferred with the tier-parametric proposal. At the source boundary,
+a program with a mixed-tier call keeps its native formers and the verifier
+reports it; it is never migrated in part. The archive coverage run is
+compatibility evidence for the native forms, not X4.
 
 ## 8. K2.5: truncation and resizing (G2)
 
@@ -1756,6 +1806,12 @@ local experiment; the archive is unchanged.
 - The legacy assumptions are removed from `web/cubical-assumptions.mjs` only
   when no module that the tests check uses them.
 
+**Status on 2026-09-28.** Not implemented: there is no ledger file, the
+verifier has no ledger support (fixture G4 has no test), and no migration
+has been made; the archive keeps its legacy assumptions, as G3 requires.
+The two tower declarations of group 5 wait for H2, so removing every legacy
+assumption is not an H1 prerequisite.
+
 ## 9. L2.1: the lowering contract
 
 L2.1 turns `inductive` declarations
@@ -1871,9 +1927,11 @@ same as `prop`, is written with the minus sign of the path notation.
 
 ## 10. Acceptance cases
 
-Tests name cases by ID, as `H1.A3`. "Kernel" cases are issued directly in
-`kernel/tests/test_instructions.c`; "source" cases go through the elaborator
-and the driver, with L2.1. All run with the H1 extension on, except T1.
+Tests name cases by ID: the kernel tests do so in comments, as `A3`, and
+source tests should do the same, so that 10.10 can trace them. "Kernel"
+cases are issued directly in `kernel/tests/test_signatures.c`; "source"
+cases go through the elaborator and the driver, with L2.1. All run with the
+H1 extension on, except T1.
 
 ### 10.1 Admission
 
@@ -2032,6 +2090,29 @@ elimination waits for automatic set clauses (L2.2b).
 | R3 | a constructor with cube depth 8 and arity 64 | Accept within budget |
 | R4 | a client with ABI version 2 | Refused |
 | R5 | an encode and decode round trip of every new kind | Identical handles |
+
+### 10.10 Coverage of the acceptance cases
+
+Status at `02a57ef` (2026-09-28), to be kept current with each change to
+sections 5–10. *Traced* means a test names the case or states its subject.
+*Not traced* means no test names it: the next change to that group either
+finds it under another name and records that here, or adds it. *Missing*
+means the test cannot exist yet, for the stated reason. Kernel cases are in
+`kernel/tests/test_signatures.c`; driver and source cases in
+`tests/h1-admission.test.mjs`, `tests/h1-driver.test.mjs`,
+`tests/inductive-declarations.test.mjs` and `tests/declared-match.test.mjs`.
+
+| Group | Traced | Not traced | Missing, and why |
+| --- | --- | --- | --- |
+| Admission A1–A17 | Kernel: A1 (`N`, `List`, `S1`, `Tree`, `Push` and `Susp` across its sections), A2, A3, A4, A5, A7, A8, A9, A11, A12, A13, A14, A15, A16, A17. Driver: A2, A8. Source: A4, A8, A11, and the uniformity refusal of 9 | A6, A10 | — |
+| Universes V1–V31 | Kernel: V1, V4, V7, V8, V14, V15, V16, V20, V24, V25. Source, in substance: V7 and V20 (an erased parameter read, a recorded one carried), V26–V28 (`Pointed1`, `Bad`, `Flag`), V30 (`Lifted`), V31 (the contextual words and `trunc(-1)`) | V2, V3, V5, V6, V9, V10, V11, V12, V13, V17, V18, V19, V21, V22, V23, V29 | — (V21 and V22 can be written now that `match` exists) |
+| Boundaries N1–N6 | Kernel: N1, N2, N3, N4. Driver: N1, N3 | N5, N6 | — |
+| Kan K1–K11 | Kernel: K1, K2, K4, K5, K7; K6 in part (transport of `merid` along a line of types `e : A = B`, not along `ua`); K9 in substance (a higher sort's `comp` reduces to `hcomp`). Driver: K2 | K3, K8 | K10, K11: no randomized H1 generator exists; the randomized level tests cover G0 |
+| Elimination E1–E11 | Source: E1 (`docs/examples/h1/winding.cubist`), E2 (as `cong(code, loop)` equal to `ua(succ)` by `rfl`), E3 (`T.squash`), E8 (a missing clause, a duplicate clause, an unknown constructor). Kernel: E3 (the `prop` squash clause), E5, and a motive over no declared type refused. Driver: E5 | E6, E7, E9, E10 | E4 and E11: automatic set and groupoid clauses (L2.2b) |
+| Trust T1–T7 | Kernel: T1, T5, T6, T7. Driver: T5, T6. Source: T1 (the option named when off), T2 (direct, through a definition, through an import), T3, T4 | — | — |
+| Truncation policy G1–G7 | G3 (the audit's archive coverage run) | G1 (V29's `Small` is its source form) | G2, G4, G5, G6, G7: the ledger verifier and the migrations (K2.5) |
+| Resources R1–R5 | Driver: R1 in part (an operand that is not a 32-bit unsigned integer is refused), R5 (the codec round trip); `tests/h1-admission.test.mjs` checks ABI version 3. Kernel: a former of the wrong shape and a truncation level above the maximum are refused | R2, R3, R4 (a version-2 client refused by the loader) | — |
+| Differential X1–X8 | — | — | All: K2.4a |
 
 ## 11. Open questions
 

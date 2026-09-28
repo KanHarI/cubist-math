@@ -3,7 +3,10 @@
 Status reviewed 2026-09-27: A7 and A5's core goal, scope and reconstruction
 layer are delivered, including motive abstraction for several scrutinees.
 A8 (projections) and B4 (`show`, `suffices`) were delivered the same day.
-A5's remaining work and the other milestones are open. The
+A5's remaining work and the other milestones are open. On 2026-09-28 the
+(H)-marked prerequisites were re-scoped after the
+[work-plan audit](audits/2026-09-28-audit.md): only the single-sort motive
+and clause services gate H1's explicit `match` (see A5 and D0a). The
 [implementation checkpoint](../tactical/hott-automation-handoff.md) records A7's
 baseline. Revised after two design reviews on 2026-09-24 and a
 restructuring on 2026-09-25. The second review added library-first milestones:
@@ -170,7 +173,7 @@ and D0b together:
 | Baseline and shared machinery | A7 first; A5/A6 extract goal, scope and diagnostics; A4 uses the baseline to set hard fuel limits. |
 | Path vocabulary and library foundations | A1a–A1c, A2 and A8 use the shared machinery. D0b defines the public equivalence type in the rebuild. |
 | First useful automation | B1 follows A5 alone: it needs neither folded heads nor search fuel. B4 also follows A5. D1 uses D0a without waiting for D0b. Basic Σ ext in B3 precedes D2's automatic property-field closure; universe ext follows D0b. These do not wait for C3 or all of E. |
-| Induction | `match` (ergonomics milestone 7) uses A5's motive abstraction on H1's generated eliminators. D3's library eliminator uses D0b and D4; its interface is a milestone 7 view, with B1 for `Path`. |
+| Induction | `match` (ergonomics milestone 7; experimental since 2026-09-28) uses H1's generated eliminators with an explicit or expected motive; A5's motive abstraction is not its client yet (L2.2a). D3's library eliminator uses D0b and D4; its interface is a milestone 7 view, with B1 for `Path`. |
 | Path optimization and dependent geometry | A3/C1 change proof construction explicitly; C3 uses their checked reconstruction. C4 needs only A5 and its library soundness lemma. E1 uses A1/A2/A5/E0, with optional C2 cleanup. E2's square library can start independently of C; E3 follows E0/E2/A5 and E4 follows the simplifier witness interface. C2 adds B1's computation law when available. |
 | Structure descriptions and transfer | F1 can start after D0, D4, B3 and D1/D2; F4 uses D0a's h-level definitions. Theories (ergonomics milestone 6) supply record syntax; transfer builds on that evidence. |
 | Kernel work | The [kernel roadmap](cubical-kernel-roadmap.md) ranks G0, then H1–H3. A–F releases do not wait for them, except the (H)-marked requirements, which the [work plan](work-plan.md) sequences. |
@@ -349,8 +352,10 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     [motives.mjs](../../lib/cubical/motives.mjs) abstracts a goal over
     several scrutinees, independently of any tactic. It generalizes the
     hypotheses that depend on them and introduces them again in each branch.
-    No statement uses it yet: `cases` keeps its constant motive, and `match`
-    (L2.2) will be its first client. Filling steps, face restrictions, source
+    No statement uses it yet (2026-09-28): `cases` keeps its constant
+    motive, and the experimental `match` (L2.2a) builds its own motive
+    rather than calling it; that integration is L2.2a's open item. Filling
+    steps, face restrictions, source
     spans in the plan, index generalization, companion motives, and
     `induction` and `hlevel` as tactics remain.
   - Also replace these elaborator mechanisms, found in the 2026-09-25 review:
@@ -392,14 +397,19 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
       dimensions) are passed down; checker queries take the scope's context,
       dimensions and names explicitly. A template specialization or a freeze
       replay elaborates in a derived unit.
-  - (H) `match` elaboration (ergonomics milestone 7) is this layer's first
-    large client. It needs:
-    - motive abstraction over several scrutinees;
-    - generalization of hypotheses that depend on the scrutinee;
-    - index generalization for indexed families;
-    - companion motives for inductive-inductive types.
+  - (H) `match` elaboration (ergonomics milestone 7; work-plan L2.2a) is
+    this layer's first large client. Its first explicit H1 release needs
+    only the single-sort services:
+    - motive abstraction over the scrutinee, from the expected type or an
+      explicit `return` motive;
+    - generalization of hypotheses that depend on the scrutinee.
 
-    It is therefore a prerequisite of milestone 7's first release.
+    Index generalization for indexed families belongs to L4.2 (H2) and
+    companion motives to L5.1 (H3); neither gates the H1 release (audit of
+    2026-09-28, finding 5). Status: the experimental `match`
+    (`lib/cubical/match.mjs`) builds its own explicit or expected motive
+    and does not call `motives.mjs` yet; connecting them is L2.2a's open
+    A5 item.
 - [x] **A6. Diagnostics.** Delivered on 2026-09-27 with A4. An unfinished
   `rw`, `simp` or `simpa`, a search stopped by a bound or by its fuel, and a
   missing rewrite occurrence show the remaining goal (at most 160 characters),
@@ -674,9 +684,11 @@ Completion:
     conversion identifies, rather than names the matcher must register.
     Cubical Agda's `isOfHLevel` uses two base cases to keep `IsContr`
     definitional as well.
-  - (H) Milestone 7's automatic clauses consult these definitions. A clause
-    for a squash constructor is generated when the target's h-level is proved.
-    D0a and D1's first slice therefore precede milestone 7's first release.
+  - (H) Milestone 7's automatic clauses (work-plan L2.2b) consult these
+    definitions. A clause for a squash constructor is generated when the
+    target's h-level is proved. D0a and D1's first slice therefore precede
+    automatic clauses, not the explicit-match release: hand-written squash
+    clauses work without the solver (2026-09-28).
 - [ ] **D0b. Canonical equivalences.** Make the public equivalence
   representation agree with the native contractible-fiber type:
 

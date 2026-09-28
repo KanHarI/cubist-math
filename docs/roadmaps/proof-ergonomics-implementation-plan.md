@@ -33,7 +33,9 @@ Update, 2026-09-25: the roadmap adopted milestones 6–8, summarized below. The
 record sections below remain design input for theories.
 - **Milestone 6, theories:** these supersede PR 11's notation packs,
   records and sections.
-- **Milestone 7:** inductive declarations and pattern matching.
+- **Milestone 7:** inductive declarations and pattern matching; its one-sort
+  declarations and explicit `match` are experimental since 2026-09-28
+  (work-plan L2.1 and L2.2a).
 - **Milestone 8:** computability checking.
 Milestone 8's core computability checking and G0's universe-generic definitions
 are delivered. The first library is archived; `library/naturals` begins the

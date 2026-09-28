@@ -1,11 +1,18 @@
 # Work plan: language features and their kernel support
 
-Status: reviewed against `fabb174` on 2026-09-27, after PRs #46–#48, and
-revised the same day: K2.1 is the main track, learned-search phases 1–2 are
-scheduled with L1.3, and L4.1a no longer gates explicit matching.
+Status: reviewed against `02a57ef` (PR #71 on `h1-signatures`) on
+2026-09-28 by the [work-plan audit](audits/2026-09-28-audit.md), and revised
+the same day; the previous review was against `fabb174` on 2026-09-27.
 This is the scheduling authority for the linked roadmaps. Package IDs from
 the earlier plan are retained; their stage numbers do not impose dependencies.
 Sizes (S < M < L < XL) describe relative scope, not elapsed time.
+
+Rows record one of five statuses. **Implemented**: delivered and on by
+default. **Experimental**: implemented behind the `h1` option, with results
+carrying `kernel extension: H1`; not approved for default admission.
+**Review pending**: a semantic obligation that implementation and passing
+tests do not discharge. **Migration pending**: specified tooling or
+migrations not yet built. **Deferred**: not scheduled.
 
 **Current scope.** Advance the language, elaborator, tooling and the kernel
 features they require. Use small checked programs and the archived library
@@ -23,22 +30,35 @@ A new syntax form must elaborate completely through the instruction driver.
 
 | Area | Delivered | Still open |
 | --- | --- | --- |
-| Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default; explicit driver options and cumulative kernel-work counters (learned-search phases 1–2) | Retiring the old checker APIs and their test clients; optional performance/certificate work |
+| Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default; explicit driver options and cumulative kernel-work counters (learned-search phases 1–2) | **Review pending, I1.2a:** the old conversion checker still crosses the stated trust boundary (audit finding 1): the reducers behind `Whnf` and `Normalize` call `ck_convertible`, and a public `cc_kernel_convertible` query enters the memo that folded alpha equality reads, so it can change a later instruction's acceptance. Then the optional retirement I1.2b, after a complete call-graph audit; optional performance/certificate work |
 | G0 universes | K1.1–K1.4 and L1.1; `U < UU0`, `next`, `max`, generic builtins and rewriting; all 43 former templates check generically | E1 level constraints and E2 higher-tier generic definitions remain deferred proposals |
-| Proof ergonomics | Grouped binders, `have`, `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand; Σ projections `p.1`/`p.2`, `show` and `suffices` (L1.5) | General inference, `apply`/`refine`, folded path rules, broader dependent rewriting, `Path` induction (B1) |
-| Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | Face-aware plans, filling/source-span records, tactic integration, indexed and companion motives |
-| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection | Expected-value patterns and closed truncation readout; H-stage dependency markers |
-| Declarations | Existing built-in types and explicit eliminators | H1–H4, `theory`, user `inductive`, general `match`, views, derived declarations |
+| Proof ergonomics | Grouped binders, `have`, `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand; Σ projections `p.1`/`p.2`, `show` and `suffices` (L1.5); path-operator notation (`-i`, `&`, `\|`, `path i =>`) and readable path diagnostics (PR #71) | General inference, `apply`/`refine`, folded path rules and constructor descent, broader dependent rewriting, `Path` induction (B1) |
+| Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | Face-aware plans, filling/source-span records, tactic integration; a source `match` client for the motive service; indexed motives (with L4.2) and companion motives (with L5.1) |
+| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection; the `kernel extension: H1` marker, tracked apart from assumptions and listed by `inspect`, the CLI and the workbench (experimental) | Expected-value patterns and closed truncation readout; the migration verifier's comparison of extension markers (K2.3) |
+| Declarations | Existing built-in types and explicit eliminators | **Experimental:** K2.2's six instruction families (ABI 3), K2.3's driver in part, L2.1's one-sort `inductive`, L2.2a's explicit expression `match` with restricted structural recursion; the circle's winding number computes in source. **Review pending:** D1, D4, D5, Lemma H2, the critical-pair check and canonicity (K2.1). **Migration pending:** K2.4a's differential fixtures and K2.5's ledger verifier. Open: `theory`, automatic clauses, views, derived declarations, H2–H4 |
 | Computation notation | Design only | N0–N5; no `do`/`proc` syntax or interfaces delivered |
-| Reference and library | Checked-reference harness; universe chapter rewritten; `library/naturals`, `classical_axioms`, `universe_automorphisms` | Induction chapter rewrite and quick-reference expansion; these three modules are not completion of a rebuild wave |
+| Reference and library | Checked-reference harness; universe chapter rewritten; quick reference (`proof.html`); `library/naturals`, `classical_axioms`, `universe_automorphisms` | Induction chapter rewrite and an H1 chapter (D2.1): `docs/examples/h1/winding.cubist` is a checked example, not a chapter; these three modules are not completion of a rebuild wave |
 
 Evidence lives in `tests/universe-generic.test.mjs`,
 `tests/proof-ergonomics.test.mjs`, `tests/computability.test.mjs`,
 `lib/cubical/tests/proof-goals.test.mjs`, `lib/cubical/tests/motives.test.mjs`,
-`tests/reference-examples.test.mjs` and `tests/library.test.mjs`.
+`tests/reference-examples.test.mjs` and `tests/library.test.mjs`; for H1,
+in `kernel/tests/test_signatures.c`, `tests/h1-admission.test.mjs`,
+`tests/h1-driver.test.mjs`, `tests/inductive-declarations.test.mjs`,
+`tests/declared-match.test.mjs` and `tests/inductive-repl.test.mjs`.
 HoTT's gated probes still reject constructor descent and folded-path cases;
 A1/A2 are not complete. The motive abstraction service has no source-level
-`match` client yet.
+`match` client yet: `lib/cubical/match.mjs` builds its own explicit or
+expected motive.
+
+**Baseline at `02a57ef`** (the audit's section 5, one machine's
+observations): `make test` and the focused H1 suite pass; the archive
+coverage command reports 365 modules, 3,804 of 3,804 declarations checked
+with no gap and 3,916 of 3,916 definitions re-derived, at 5,524,209
+checking and 2,012,235 re-derivation instructions. That is archive
+compatibility evidence, not the declared-type comparison (X4) and not a
+proof of H1's soundness. CI runs only for PRs into `main`, so integration
+into `h1-signatures` is recorded by a manual run against a pinned revision.
 
 The completed [G0 specification](historical/g0-universe-specification.md)
 is kept in `historical/`; its rules remain the contract for later features.
@@ -58,9 +78,11 @@ cleanup and conditional stage 6.
 | 5 | Inductive-inductive language | Reviewed H3 fragment and a small companion-sort interpreter |
 | 6 | Optional extensions | A concrete use and a separate acceptance gate for each |
 
-L4.1 inference is scheduled in stage 1 despite its retained ID. Core theories
-can progress alongside H1: records need no new kernel rule. N1/N2/N4 need
-neither initial models nor a rebuilt algebra library.
+Stage 2's gate is not passed at `02a57ef`: its rules are implemented
+experimentally, their review is pending, and the differential fixtures do
+not exist. L4.1 inference is scheduled in stage 1 despite its retained ID.
+Core theories can progress alongside H1: records need no new kernel rule.
+N1/N2/N4 need neither initial models nor a rebuilt algebra library.
 
 ## The instruction kernel and this plan
 
@@ -88,25 +110,46 @@ convertible. K2.4 must specify comparison fixtures before retiring anything.
 G2's deliberate universe/assumption changes have a separate reviewed ledger;
 weakening the ordinary migration verifier is not an acceptance strategy.
 
-**I1.2, optional checker retirement (M).** K1.4 removes the runtime dependency,
-but deletion also requires migrating test-only clients and bridge exports.
-Move the trusted alpha-equality, syntactic-cumulativity and pushout bridge
-helpers out of the old checker files, preserve required syntax builders,
-and check the remaining call graph before removing old APIs. This is not a
-gate for H1, inference or theories. Native search, certificate compaction and
-exported content hashes remain conditional stage-6 work.
+**I1.2a, instruction isolation (M, current).** The audit of 2026-09-28
+(finding 1) found that the separation from the old conversion checker is
+incomplete, in two places. `Step(Whnf)` and `Step(Normalize)` call the
+reducers of `kernel/src/term_normalize.c`, which call `ck_convertible` for
+Glue and pair eta, so the conversion strategy is transitively part of
+trusted reduction. And a successful conversion comparison enters the memo
+table that folded alpha equality reads (`kernel/src/term_conversion.c`), so
+a public `cc_kernel_convertible` query can satisfy a later instruction's
+syntactic side condition: the audit's appendix shows one `Apply` rejected,
+then accepted after the query, with no equality judgement among its
+premises. The equality involved is valid beta equality, so this is
+history-dependent acceptance and incomplete certificate isolation, not a
+false equality. Correct it before relying on the stated boundary: separate
+syntactic and conversion memo evidence; make the reducers' equality
+dependencies explicit, and either justify them as trusted operations or
+replace them with the intended instruction mechanism; add a regression
+showing that untrusted queries cannot change instruction acceptance; and
+correct the trusted-remnant list in the
+[kernel instructions](kernel-instructions.md#what-remains-of-the-term-checker).
+This precedes any deletion and is not an H1, inference or theory gate.
+
+**I1.2b, optional checker retirement (M).** K1.4 removes the runtime
+dependency, but deletion also requires migrating test-only clients and
+bridge exports. Move the trusted helpers out of the old checker files,
+preserve required syntax builders, and audit the complete call graph, not
+only the three helpers, before removing old APIs. Native search,
+certificate compaction and exported content hashes remain conditional
+stage-6 work.
 
 ## Stage 0: delivered baseline and remaining documentation
 
 | ID | Package | Status / next obligation |
 | --- | --- | --- |
-| I0.1 | Merge the development branch into `main` | Deferred maintainer decision; work is on `proof-ergonomics-roadmap` |
+| I0.1 | Merge the development branch into `main` | Deferred maintainer decision; work is on `h1-signatures`, whose CI runs only through PRs into `main` |
 | I0.2 | Archive the first library | Done: 367 sources in `archive/first-library/`; keep it as regression evidence |
 | I0.3 | Start `library/` | Done: three modules listed above; broader topic coverage is deferred |
 | I0.4 | Remove local scratch state | Recorded done on 2026-09-25 |
 | L0.1 | Non-computing dependencies, `computable`, `evaluate` | Done; extensions have explicit L2.9 packages below |
 | D0.1 | Checked-reference harness | Done: accept/reject examples, excerpts, CLI and REPL transcripts; sketches must be labelled |
-| D0.2 | Reference chapters and quick reference | Chapter 5 done with G0; rewrite chapter 6 with H1. Quick reference done on 2026-09-27: `proof.html` gives each construct one checked example and a link to its chapter section; add an entry with each new construct |
+| D0.2 | Reference chapters and quick reference | Chapter 5 done with G0; chapter 6 and an H1 chapter wait for D2.1, since `docs/examples/h1/winding.cubist` is a checked example and not a chapter. Quick reference done on 2026-09-27: `proof.html` gives each construct one checked example and a link to its chapter section; add an entry with each new construct, `inductive` and `match` included once they leave the experimental option |
 
 The harness is active; `data-check` markers are not inert. Its acceptance
 allows explicitly labelled fragments, so a passing harness does not claim
@@ -141,7 +184,7 @@ property tests remain regressions, not next actions.
 | ID | Package | Depends on | Size |
 | --- | --- | --- | --- |
 | L1.2 | A5 core goal and proof-construction layer | Delivered | — |
-| L1.2r | Remaining A5 plan metadata and clients: faces, filling, source spans; index/companion motives with H2/H3 | Extend the delivered core with each consuming feature | L |
+| L1.2r | Remaining A5 plan metadata and clients: faces, filling, source spans; the source `match` client of the motive service (with L2.2a); indexed motives with L4.2 and companion motives with L5.1, neither of which gates H1's explicit `match` | Extend the delivered core with each consuming feature | L |
 | L1.3 | Deterministic fuel and residual-goal diagnostics (HoTT A4/A6), on learned-search phases 1–2. Delivered 2026-09-27; worker cancellation remains | L1.2; A7 baseline | M |
 | L1.4 | Folded path vocabulary and constructor congruence (A1/A2) | L1.1, L1.2; A4 fuel for bounded search | L |
 | L1.5 | Σ projections `p.1`/`p.2`, `show`, `suffices` (A8/B4): delivered 2026-09-27. Open: the separate `Path` induction/`subst` slice (B1) | L1.2; B1 uses A1b's checked induction construction | M |
@@ -192,20 +235,23 @@ has an explicit spelling.
 
 | ID | Package | Depends on | Size |
 | --- | --- | --- | --- |
-| K2.1 | Precise H1 signature fragment and soundness note; review gates release. Drafted in the [H1 specification](h1-signature-specification.md); every question decided and the specification approved on 2026-09-27. K2.2 is open, behind the experimental gate, on the `h1-signatures` branch. Default admission and release wait for the open proofs D1, D4, D5 and Lemma H2 | G0 specification | L |
-| K2.2 | H1 instructions: signature admission, constructors, composition, eliminators and steps, as the six families F1–F6 of the specification's section 5, each reviewed and merged into `h1-signatures` separately. All six families are implemented, with ABI version 3: F1 (admission), F2 (instances and constructors), F3 (boundary reduction), F4 (Kan structure), F5 (elimination) and F6 (the extension gate). K2.3 (the driver) follows | K1.2, K2.1 | XL |
-| K2.3 | H1 driver, bridges, signature serialization and generated-rule derivation. In progress on `h1-signatures`: admission from a normal form, the syntax codec and renderers, and the driver's derivations and search for instances, constructors and eliminators; the `kernel extension: H1` marker, with L2.1; import invalidation, by construction; signatures in the CLI's `inspect`. Open: the workbench inspector and clause types, with L2.2a | K1.3, K2.2 | L |
-| K2.4 | Differential fixtures for native and declared Nat/sum/W/pushout; then retirement | K2.3; explicit representation/comparison contract | M |
-| K2.5 | G2 truncation/resizing policy and migration ledger. Policy and measured ledger in the [H1 specification](h1-signature-specification.md#8-k25-truncation-and-resizing-g2); no resizing assumption (Q12) and the 8.4 remedy groups (Q17) decided, and the policy approved, on 2026-09-27 | K2.1; implementation with K2.3/L2.1 | M |
-| L2.1 | One-sort `inductive` declarations and signature diagnostics. Implemented behind the experimental option `h1`: the header's result position, lowering with data before positions, universe classification and the least level, uses of the type and its constructors, precise refusals. Open: the reference chapter (D2.1) | K2.3 | L |
-| L2.2a | Explicit `match`, motives, structural recursion and path clauses. First slice implemented behind `h1`: the expression `match v [as z] [return T] { c(xs) i => … }`, each clause checked against the kernel's clause type; dependent motives; path clauses and hand-written squash clauses with `T.squash`; recursion on a constructor's argument with the other arguments fixed, in a definition whose whole body is the match, where the matched parameter stands for the clause's constructor. The H1 winding-number fixture computes in source. Open: `match` as a proof statement with goal-derived motives (A5), recursion whose other arguments vary, and the `cases` migration | L2.1, L1.2; relevant L1.2r metadata; L4.1a improves the release without gating it | L |
-| L2.2b | Automatic clauses and explicit `obligations` | L2.2a, L2.5b; checked h-level evidence | M |
-| L2.3 | Supported `deriving`: `paths`, `decidable_equality`, `irrelevance`, `ind_prop`, `rec`; `universal` slice | L2.2; `universal` also uses L2.4/L2.6 | L |
+| K2.1 | Precise H1 signature fragment and soundness note; review gates release. Specified in the [H1 specification](h1-signature-specification.md): every question decided and the specification approved for experimental implementation on 2026-09-27. **Review pending:** the proofs D1, D4, D5 and Lemma H2, the critical-pair check of its 3.7, and canonicity relative to the assumed baseline (its 4.5). The release checklist in its header covers the finite-level fragment only; the classification walk of its 2.3 belongs to the deferred tier-parametric proposal, not to this gate (audit finding 2) | G0 specification | L |
+| K2.2 | H1 instructions, the six families F1–F6 of the specification's section 5. **Experimental:** all six implemented with ABI version 3, each reviewed and merged into `h1-signatures` separately. Open: the acceptance matrix of the specification's 10.10, where the randomized K10/K11 property tests are missing, and a review record per family for its semantic obligations; passing tests do not discharge them | K1.2, K2.1 | XL |
+| K2.3 | H1 driver, bridges, signature serialization and generated-rule derivation. **Experimental, in part:** admission from a normal form, the codec and renderers, derivations and search for instances, constructors and eliminators, rollback and commit, the `kernel extension: H1` marker (with L2.1), import invalidation by construction, signatures in the CLI's `inspect`, and clause types, which L2.2a's `match` consumes (`lib/cubical/match.mjs`). Open: the workbench's signature and eliminator inspection with clause types; the migration verifier's comparison of `extensions`, which the specification's 6.4 promises and `tools/proof-migration.mjs` does not do, since it compares `axioms` only; keeping the acceptance matrix current; a recorded run of the whole suite against a pinned `h1-signatures` revision, because CI runs only for PRs into `main` | K1.3, K2.2 | L |
+| K2.4a | Differential fixtures X1–X8 of the specification's 7.3 and their tooling: the translation τ as a driver option, the verifier's report of a mixed-tier call (X8), and X5's cost record. **Migration pending:** none exists at `02a57ef`; the archive coverage run is not X4 | K2.3; the representation map of the specification's section 7 | M |
+| K2.4b | Retire the `Nat` instructions only, by the criterion of the specification's 7.4 (Q16): X1–X4 and X6–X8 pass, X5 is recorded, and the archive is migrated by τ under the strict verifier. Sum, W and pushout stay trusted for tier-1 arguments, with X1–X3, X7, X8 and their native tests as regressions | K2.4a | M |
+| K2.4c | Wider retirement of the sum, W and pushout instructions. **Deferred** with the tier-parametric proposal (Q16). At the source boundary a mixed-tier program has no image under τ: the verifier reports it, and nothing is migrated in part | The tier-parametric proposal, adopted and reviewed | M |
+| K2.5 | G2 truncation/resizing policy and migration ledger. Policy and measured ledger in the [H1 specification](h1-signature-specification.md#8-k25-truncation-and-resizing-g2); no resizing assumption (Q12) and the 8.4 remedy groups (Q17) decided, and the policy approved, on 2026-09-27. **Migration pending:** the ledger file and verifier of its 8.5 (fixture G4) and each migration (G2, G5–G7); the two H2-dependent tower declarations stay deferred, so removing every legacy truncation assumption is not an H1 prerequisite | K2.1; implementation with K2.3/L2.1 | M |
+| L2.1 | One-sort `inductive` declarations and signature diagnostics. **Experimental:** the header's result position, lowering with data before positions, universe classification and the least level, uses of the type and its constructors, precise refusals. Open: the reference chapter (D2.1). Excluded by the specification: a composite boundary such as `Torus2`'s `trans(p, q) = trans(q, p)` (its 1.4, Q3; the square torus is admitted), and proof-first `: set`/`: prop`, which is L2.3b | K2.3 | L |
+| L2.2a | Explicit `match`, motives, structural recursion and path clauses. **Experimental, first slice:** the expression `match v [as z] [return T] { c(xs) i => … }`, each clause checked against the kernel's clause type; dependent motives; path clauses and hand-written squash clauses with `T.squash`; recursion on a constructor's argument with the other arguments fixed, in a definition whose whole body is the match, where the matched parameter stands for the clause's constructor. The H1 winding-number fixture computes in source. Open: `match` as a proof statement with goal-derived motives through the A5 motive service, which the match does not use yet; recursion whose other arguments vary, with explicit acceptance cases; broader pattern coverage; and the `cases` migration, with `cases` retained until its gate passes | L2.1, L1.2; relevant L1.2r metadata; L4.1a improves the release without gating it | L |
+| L2.2b | Automatic clauses and explicit `obligations`. The h-level solver gates this package only: explicit squash clauses work without it (audit finding 5) | L2.2a, L2.5b; checked h-level evidence | M |
+| L2.3 | Supported `deriving`: `paths`, `decidable_equality`, `irrelevance`, `ind_prop`, `rec`; `universal` slice, once L2.6's contract is specified | L2.2; `universal` also uses L2.4/L2.6 | L |
+| L2.3b | Proof-first h-levels: `: set` and `: prop` proved from the generated path characterization instead of a squash constructor, and `set!` to force the constructor (proposal section 4). It changes the admitted signature and the clauses a `match` needs, so a declaration that switches is a migration the verifier must see | L2.3's `paths`, L2.5a/b | M |
 | L2.4 | Core theories: named model records, explicit homomorphisms/isomorphisms, scoped notation, sections, `extends` | L1.1, L1.5 projections, L2.5a for h-level fields | L |
-| L2.6 | Single-sort `initial T`, `free T on A`, `fold`, checked uniqueness/universal interface | L2.2, L2.4; H1-admissible signature | M |
+| L2.6 | Single-sort `initial T`, `free T on A`, `fold`, checked uniqueness/universal interface. **Specify first** (audit finding 4): the proposal's `universal : (initial T → M) ≃ T.Hom(…)` is not a valid contract. State separately the contractibility of `T.Hom(initial T, M)` for a fixed model `M`, the free-model property relating homomorphisms out of `free T on A` to generator assignments `A → M`, and any maps-out characterization in terms of the constructor and clause data, with higher theories' coherence fields | L2.2, L2.4; H1-admissible signature | M |
 | L2.8 | Squares and `cell` face syntax with boundary inspection (HoTT E2) | L2.1; face/source metadata from L1.2r | M |
 | L2.9a | Expected-value patterns for `evaluate` | L0.1; own pattern contract and L4.1a infrastructure | S |
-| L2.9b | Closed truncation witness readout | Native H1 `Trunc`, K2.5, L0.1 | M |
+| L2.9b | Closed truncation witness readout: a closed computable input, a checked error certificate, and the extracted witness's type specified under transported truncations, which its tests include. Native truncation alone supplies no approximation result | Native H1 `Trunc`, K2.5, L0.1 | M |
 | D2.1 | Checked reference, formatter and inspection for each released construct | Corresponding package, including L2.8/L2.9 | L |
 
 L2.2 means both slices when another package needs automatic clauses.
@@ -214,16 +260,18 @@ release accepts explicit fields and arguments; L4.1b improves its notation
 without making records depend on H1. Generated `T.equality` and richer
 `T.Displayed`/coherence support have separate gates in stage 3.
 
-**Specify before implementing H1:** the admitted grammar and positivity,
-constructor ordering, substitution under levels and dimensions, overlaps,
-formal composition, parameter transport and dependent eliminator clauses.
-Split K2.2/K2.3 into reviewable instruction families with rejection tests,
-then demonstrate their integration. The specified fragment precedes the
-implementation; experiments and fixtures may precede review in an explicitly
-enabled experimental mode. Default admission and release require the reviewed
-soundness note. While review is pending, experimental results carry
-`kernel extension: H1`; test its transitive provenance separately from
-non-computing assumptions. A design sketch is not a reviewed soundness note.
+**H1's gates at `02a57ef`.** The fragment was specified before it was
+implemented, and K2.2/K2.3 landed as reviewable instruction families with
+rejection tests, as this plan required. The experiments preceded review, in
+the explicitly enabled experimental mode, and every result carries
+`kernel extension: H1`, whose transitive provenance is tested apart from
+non-computing assumptions. Default admission and release require the
+finite-level checklist in the specification's header: the reviewed
+soundness note (D1, D4, D5, Lemma H2, the critical-pair check, canonicity),
+the complete acceptance matrix, K2.3's verifier and inspection items, a
+recorded integration run, and K2.4a's differential contract. A design sketch
+is not a reviewed soundness note, and passing examples do not remove the
+option.
 
 Universe fixtures cover phantom parameters, stored data, arities, indices
 and quotient relations: parameters contribute only through those types.
@@ -235,15 +283,21 @@ between a sort's universe and its parameter telescope's universe.
 legacy assumptions available to archive checks until each intentional
 migration is justified. Record changed public universes, removed assumptions
 and affected consumers; do not add resizing to the rebuilt foundation.
-The ordinary migration check stays strict for unrelated changes.
+The ordinary migration check stays strict for unrelated changes. The ledger
+verifier is not implemented at `02a57ef`; until it is, the archive keeps
+its legacy assumptions and no migration is claimed.
 
-**Release fixtures:** declared Nat/list, W and pushout comparisons;
-a circle with computed winding number 1 and `code_meridian` by `rfl`;
-`Trunc` and set quotient with checked dependent elimination; a tiny theory
-whose law and homomorphism preservation are checked; and rejected bad
-boundaries, nonstructural recursion, missing clauses and missing h-level
-proofs. These fixtures need only their small foundation dependencies.
-A canonical rational is a later library example, not the H1 gate.
+**Release fixtures,** with their status at `02a57ef`: declared Nat/list, W
+and pushout comparisons (K2.4a, not started); a circle with computed winding
+number 1 and `code_meridian` by `rfl` (done in source, in
+`docs/examples/h1/winding.cubist`, checked by `tests/declared-match.test.mjs`);
+`Trunc` with checked dependent elimination (done, with a hand-written squash
+clause) and the set quotient (waits for L2.2b's automatic set clauses); a
+tiny theory whose law and homomorphism preservation are checked (L2.4);
+rejected bad boundaries (the kernel, done), nonstructural recursion and
+missing clauses (L2.2a, done) and missing h-level proofs (L2.2b). These
+fixtures need only their small foundation dependencies. A canonical rational
+is a later library example, not the H1 gate.
 
 `evaluate` patterns require a specified matching language and clear mismatch
 messages; they do not inherently require H1. Truncation readout does require
@@ -284,7 +338,7 @@ the core theories release.
 | ID | Package | Depends on | Size |
 | --- | --- | --- | --- |
 | K4.1 | H2 soundness note: index-line matching and stability under faces | K2.1; H1 computation contract | L |
-| K4.2 | H2 instructions/driver, formal composition along indices, `Id` and J | K2.3, K4.1 | L |
+| K4.2 | H2 instructions/driver, formal composition along indices, `Id` and J. Explicit deliverables (audit finding 8): the ABI change that represents indices, substitution and level substitution through index lines, rollback, the codec, inspection, and cross-stage regressions that keep every H1 case passing | K2.3, K4.1 | L |
 | L4.2 | Dependent matching without K, coverage, impossible branches | K4.2, L2.3's path-characterization slice, L4.1a/b; indexed L1.2r motives | L |
 | L4.3 | Nested declarations: specify an admissible lowering first | H3/H4 if lowering introduces companion sorts; an H1 subset needs its own one-sort translation | M |
 
@@ -302,8 +356,15 @@ No general nested-declaration release is promised at H2.
 | ID | Package | Depends on | Size |
 | --- | --- | --- | --- |
 | K5.1 | H3 soundness note, including induction-induction and partial eliminators | K4.1; stabilized H1/H2 rules | XL |
-| K5.2 | H3 instructions, driver and declared set/prop companion sorts | K4.2, K5.1 | XL |
+| K5.2 | H3 instructions, driver and declared set/prop companion sorts, with the same explicit deliverables as K4.2 for several sorts and joint motives: ABI, substitution, rollback, codec, inspection and cross-stage regressions | K4.2, K5.1 | XL |
 | L5.1 | Companion functions/motives, relations, bundles, inductive-inductive initial models | K5.2, L2.6; companion L1.2r motives | L |
+
+The design's statement that the code is the same at every stage and only
+the gate widens is a reuse goal, not the implementation contract: ABI 3
+represents one sort, its parameters and recorded levels, and one eliminator
+motive. Indices, varying-index composition, dependent companion sorts and
+joint motives need representation and computation work, which K4.2 and K5.2
+list.
 
 H3 is a research gate. First specify a small context/type signature and a
 computable interpreter that exercise genuine dependent companion sorts and
@@ -379,9 +440,9 @@ release gates:
 
 | Retained IDs | Deferred work |
 | --- | --- |
-| B3.1–B3.6 | Full foundations, numbers, finite counting, order, homotopy types and groups rebuild |
-| B4.1–B4.4 | Linear algebra, polynomials, rationals, fields and Galois rebuild |
-| B5.1–B5.2 | Cauchy/Dedekind reals and analysis |
+| B3.1–B3.6 | Full foundations, numbers, finite counting, order, homotopy types and groups rebuild; the reals roadmap's R1 integers are B3 work |
+| B4.1–B4.4 | Linear algebra, polynomials, rationals, fields and Galois rebuild; the reals roadmap's canonical rationals (R1) and field interface (R2) are B4 work |
+| B5.1–B5.2 | Cauchy/Dedekind reals and analysis: the reals roadmap's R3 and R4, with the [dependencies corrected on 2026-09-28](reals-roadmap.md#dependencies-and-acceptance) |
 | B5.3 | Full `initial CwF` development and interpreter; L5.1 instead requires a smaller H3 fixture first |
 | Later mathematical roadmaps | Complex analysis, Galois continuation and RH; no automatic resumption |
 
@@ -408,24 +469,67 @@ results from the corresponding library area.
   are one accounting; make L4.1a an input to explicit matching rather than
   its gate, because every implicit argument has an explicit spelling.
 
+**Corrections from the audit of 2026-09-28** (the
+[audit](audits/2026-09-28-audit.md) lists each finding):
+
+- Record the experimental H1 language (K2.2, K2.3 in part, L2.1, L2.2a) with
+  the five statuses above, and retire the delivered items from the first
+  actions.
+- Add I1.2a, instruction isolation, as current work, ahead of the optional
+  retirement I1.2b.
+- Restrict H1's release checklist to the finite-level fragment; the
+  classification walk belongs to the deferred tier-parametric proposal.
+- Split K2.4 into differential fixtures and tooling (K2.4a), `Nat`
+  retirement (K2.4b) and deferred wider retirement (K2.4c); state that a
+  mixed-tier call is reported, not migrated in part.
+- Require a specified universal-property contract before L2.6 and L2.3's
+  `universal` slice.
+- Attach indexed and companion motives to L4.2/L5.1 and the h-level solver
+  to L2.2b, so the explicit H1 release depends only on its single-sort
+  services.
+- Add L2.3b for proof-first h-levels, and record that composite boundaries
+  are outside H1.
+- Give K2.3/K2.4/K2.5 explicit verifier deliverables, an acceptance matrix
+  with missing cases visible, and a recorded integration run.
+- Make ABI, substitution, rollback, codec, inspection and cross-stage
+  regressions explicit deliverables of K4.2/K5.2.
+- Correct the reals roadmap: precision and modulus types, normal-form and
+  approximation promises, R3's breakdown, and each package's dependencies.
+
 ## First actions
 
-1. **Main track: K2.1**, the H1 signature fragment and soundness note, with
-   K2.5's truncation and resizing policy. It depends on nothing open and
-   gates K2.2, the largest package in the plan.
-2. Alongside: L1.3 deterministic budgets and diagnostics together with
-   learned-search phases 1–2, which share its cost accounting; and L1.5,
-   the small goal conveniences.
-3. Between those, the small items: the quick reference (D0.2),
-   module-resolution parity (I1.1) and coverage reporting (I1.3). Rebaseline
-   current generic declarations for fuel accounting.
-4. Build L4.1a, then L4.1b/L4.4; start L2.5a/b and core theories (L2.4) as
-   their projection/fuel prerequisites land.
-5. Implement H1 instruction families and driver support, explicit matching,
-   then automatic clauses and their canonicity/differential acceptance.
-6. Advance N0/N1, then N2/N4 alongside derived declarations and views. H2
-   follows H1's stable rules; H3 waits for its reviewed research result.
+1. **I1.2a, instruction isolation.** Repair and document the trust boundary
+   with focused history and cache regressions. Keep the optional deletion
+   (I1.2b) separate.
+2. **Reconcile H1's release scope.** One checklist for finite-level H1
+   (the specification's header), one differential and retirement contract
+   (K2.4a–c), and an explicit review record for each obligation of the
+   specification's 4.5. Refresh the status pages and the superseded
+   proposals as each gate moves.
+3. **Finish the experimental H1 integration (K2.3, L2.1, L2.2a).** Complete
+   the acceptance matrix (10.10), the workbench's signature and clause
+   inspection, the checked reference chapter (D2.1) and the verifier's
+   marker comparison. Extend L2.2a through A5, with explicit acceptance
+   cases for recursion whose other arguments vary. Retain `cases` until its
+   migration gate passes.
+4. **Independent language work alongside it.** L4.1a, then L4.1b/L4.4;
+   L2.5a/b; core L2.4 records. Automatic clauses (L2.2b) consume the
+   h-level work. Settle the universal-property contract before L2.6 and
+   L2.3's `universal` slice.
+5. **K2.4a and staged K2.5 tooling.** Implement the representation
+   comparison and the exact migration ledger without weakening ordinary
+   checks. The two H2-dependent tower declarations stay deferred; complete
+   removal of the legacy truncation assumptions is not an H1 prerequisite.
+6. **Derived interfaces and notation on small examples.** N0/N1 with their
+   record prerequisites; N2/N4 after inference. Keep canonical quotient and
+   view examples finite and computable.
+7. **H2, then the H3 research gate.** Specify the representation and
+   computation changes (K4.2, K5.2) before implementing them. Keep the full
+   Cauchy reals deferred; the reals roadmap's corrected R2 interface and R3
+   obligations give later work a usable contract.
 
-Checker retirement and learned-search phases 3–5 may proceed separately;
-neither blocks this language sequence. Concrete mathematical development
+Checker retirement (I1.2b) and learned-search phases 3–5 may proceed
+separately; neither blocks this language sequence. H4, E1/E2, trained
+search, transport regularity (G4) and interval normalization (G5) keep
+their concrete-use and performance gates. Concrete mathematical development
 remains paused.

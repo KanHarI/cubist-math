@@ -11,7 +11,10 @@ name-capture bug; see the [implementation checkpoint](../tactical/proof-ergonomi
 
 The shared goal layer's core and motive abstraction are delivered (HoTT A5),
 as are G0's checked universe binders and milestone 8's core computability
-features. Argument inference, theories and inductive declarations remain open.
+features. Argument inference and theories remain open; one-sort inductive
+declarations and the explicit expression `match` are experimental behind
+the `h1` option since 2026-09-28 (work-plan L2.1 and L2.2a), and the rest
+of milestone 7 is open.
 
 The remaining dependent, cubical, induction and shared elaboration work moved
 to the [HoTT and cubical automation roadmap](hott-automation-roadmap.md), and
@@ -496,6 +499,18 @@ arguments. Explicit matching is L2.2a; automatic clauses in L2.2b additionally n
 D0a and D1's first slice (h-level evidence). Implicit binders and level
 inference (L4.1b) are a separate release.
 
+**Status (2026-09-28).** Experimental, behind `h1`: `inductive` with
+parameters and universe parameters and no indices; h-levels by a generated
+squash constructor (`prop`, `set`, `trunc(n)`); path constructors as
+equalities and `PathP`; the expression `match` with `as … return`, one
+scrutinee, structural recursion on one argument with the others fixed,
+clauses that bind interval variables for path constructors, and
+hand-written squash clauses. Not delivered: the closing proof statement,
+several scrutinees, inferred motives with index generalization, companion
+sorts, `cell` syntax (L2.8), proof-first h-levels (L2.3b), automatic
+clauses and `obligations` (L2.2b), dependent matching, views, canonical
+quotients, `deriving`, nested declarations and the `cases` removal.
+
 - [ ] `inductive` declarations:
   - parameters, and indices after the colon;
   - h-levels, with setness proved from the generated path characterization
@@ -549,7 +564,10 @@ Completion, per release:
 
 - **H1:** natural numbers, lists, W types, suspensions, the circle, `Trunc`
   and `Quotient` are declared and matched. The circle's `code` computes, and
-  `code_meridian` holds by `rfl`.
+  `code_meridian` holds by `rfl`. Status on 2026-09-28: the circle's winding
+  number computes in source (`docs/examples/h1/winding.cubist`), with
+  `cong(code, loop)` equal to `ua(succ)` by `rfl`; `Quotient`'s elimination
+  into sets waits for L2.2b; the native comparisons are K2.4a.
 - **H2:** `Vec`, `Fin`, well-typed syntax and `Id` are declared. `J` on
   `refl` holds by `rfl`, and `head` needs no `nil` branch.
 - **H3:** a small context/type signature with genuinely dependent set/prop
