@@ -263,3 +263,42 @@ def still_needs := nil;
   assert.equal(get("prepend").type, "(List(N) → List(N))");
   refused(get("still_needs"), /nil needs an expected type/);
 });
+
+test("second review: types are checked before reduction, level redexes reduce, telescopes substitute at once", async t => {
+  const { get } = await check(t, `${naturals}
+inductive Discarded { c(x : (fun (n : Nat) => Nat)(U0)); }
+inductive Level { b; c : (fun (U < UU0) => Level)(U0); d(x : (fun (U < UU0) => Nat)(U0)); }
+`);
+  // The redex's argument U0 is not a Nat: the kernel sees it before reduction drops it.
+  refused(get("Discarded"), /mismatch/i);
+  ok(get("Level"));
+  // Each module numbers its own names: here the importer's B and A get the
+  // names the declaration's A and B had, and are still not them.
+  const imported = await check(t, "import telescope;\ndef use(dummy : Nat, B : U0, A : U0, b : B) := S(B, A, b);\n",
+    { modules: { telescope: "inductive S(A : U0, B : U0, a : A) { c; }\n" } });
+  ok(imported.get("use"));
+});
+
+test("second review: shape errors name the constructor and its argument, where they are", async t => {
+  const source = `${naturals}
+inductive Negative { c(x : Negative -> N); }
+inductive Nested { c(x : Nested and N); }
+inductive Composed { a; p : a = a; q : a = a; s : trans(p, q) = p; }
+`;
+  const { get } = await check(t, source);
+  refused(get("Negative"), /Negative occurs in a negative position: c's argument x takes an argument that mentions Negative/);
+  assert.equal(get("Negative").errorStart, source.indexOf("x : Negative"));
+  refused(get("Nested"), /c's argument x mentions Nested but is not one/);
+  // A boundary with a composition, refused by the kernel (Q3), at its constructor.
+  refused(get("Composed"), /Constructor s: /);
+  assert.equal(get("Composed").errorStart, source.indexOf("s : trans"));
+});
+
+test("second review: inspection shows the marker, and only the result position's words are keywords", async t => {
+  const { program } = await check(t, `${naturals}def n : N := zero;\n`);
+  assert.deepEqual(program.inspect("main__n").extensions, ["H1"]);
+  const { headerWordAt } = await import("../web/source-tokens.mjs");
+  const header = "inductive T(x : type) : prop { a; }";
+  assert.equal(headerWordAt(header, header.indexOf("type"), "type"), false, "a parameter's type is a name");
+  assert.equal(headerWordAt(header, header.indexOf("prop"), "prop"), true);
+});
