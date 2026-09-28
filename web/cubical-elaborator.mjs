@@ -196,6 +196,9 @@ export class NativeCubicalElaborator {
     // `kernel extension: H1` marker (h1-signature-specification.md, 6.4).
     // Visible, and not a non-computing dependency.
     this.definitionExtensions = new Map();
+    // Each declared type's lowering metadata (lib/cubical/inductive.mjs), by
+    // the name its signature was registered under.
+    this.inductives = new Map();
   }
   // The kernel extensions a term relies on: a declared type's instance,
   // constructor or eliminator whose signature was admitted experimentally,

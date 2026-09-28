@@ -11,6 +11,7 @@ export class CubicalDeclarationTransaction {
       [checker.definitionViews,checker.definitionViews.size],
       [checker.genericDefinitions,checker.genericDefinitions.size],
       [checker.definitionExtensions,checker.definitionExtensions.size],
+      [checker.inductives,checker.inductives.size],
       [checker.scopeDefinitions,checker.scopeDefinitions.size],
       [checker.assumptions,checker.assumptions.size],
       [checker.assumptionLabels,checker.assumptionLabels.size],

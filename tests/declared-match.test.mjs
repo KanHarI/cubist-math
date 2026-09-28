@@ -209,3 +209,36 @@ def shadowed_by_parameter : f(succ, succ(succ(zero))) = succ(succ(zero)) { rfl; 
   ok(get("f"));
   ok(get("shadowed_by_parameter"));
 });
+
+test("third review: a path of the matched type is recursed on at its dimensions", async t => {
+  const { get } = await check(t, `${naturals}
+inductive S : set { point; }
+def ill_typed(s : S) : S := match s {
+  point => point;
+  squash(x, y, p, q) i j => S.squash(ill_typed(x), ill_typed(y), ill_typed(p), ill_typed(q)) @ i @ j;
+};
+def rebuilt(s : S) : S := match s {
+  point => point;
+  squash(x, y, p, q) i j => S.squash(rebuilt(x), rebuilt(y), path k => rebuilt(p @ k), path k => rebuilt(q @ k)) @ i @ j;
+};
+def rebuilt_point : rebuilt(point) = point { rfl; }
+def too_many(s : S) : S := match s {
+  point => point;
+  squash(x, y, p, q) i j => S.squash(too_many(x @ i), too_many(y), path k => too_many(p @ k), path k => too_many(q @ k)) @ i @ j;
+};
+`);
+  // p : x = y is not an S: too_many(p) would be ill-typed outside the definition.
+  refused(get("ill_typed"), /p is a 1-dimensional path of the matched type, not an element: call ill_typed on it at its dimensions, as ill_typed\(p @ i\)/);
+  ok(get("rebuilt"));
+  ok(get("rebuilt_point"));
+  refused(get("too_many"), /x is an element of the matched type, not a path/);
+});
+
+test("third review: a parameter that shadows its type's name still matches", async t => {
+  const { get } = await check(t, `${naturals}
+def count(N : N) : Nat := match N { zero => 0; succ(k) => count(k); };
+def counted : count(succ(succ(zero))) = 0 { rfl; }
+`);
+  ok(get("count"));
+  ok(get("counted"));
+});
