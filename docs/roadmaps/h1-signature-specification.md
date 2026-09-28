@@ -12,7 +12,7 @@ on the `h1-signatures` branch. Its statuses are distinct:
 - **Decided:** every question of section 11, on 2026-09-27.
 - **Approved for implementation:** the fragment of sections 1–3 and the
   families of section 5, in the experimental mode of 5.7 only. Implemented
-  there: K2.2's six families (ABI 3), K2.3 in part (section 6), L2.1
+  there: K2.2's six families (ABI 3), K2.3 (section 6), L2.1
   (section 9) and L2.2a's first `match` slice; every result carries the
   `kernel extension: H1` marker.
 - **Review pending:** the obligations of 4.5. Implementation and passing
@@ -32,9 +32,10 @@ and a review decision:
    cases that wait for L2.2b (E4, E11), K2.5 (G2, G4–G7) and K2.4a
    (X1–X8); `tests/acceptance-matrix.test.mjs` checks the matrix against
    the tests;
-5. K2.3's open item, a recorded run of the whole suite at a pinned
-   revision; the verifier's marker comparison (6.4) and the inspection of
-   6.5 were delivered on 2026-09-28;
+5. a recorded run of the whole suite at a pinned revision, repeated at
+   the release's own. The first was CI run 36472206548, at `bef00e3` on
+   2026-09-28, where all seven jobs passed; the verifier's marker
+   comparison (6.4) and the inspection of 6.5 were delivered the same day;
 6. K2.4a's differential fixtures X1–X4 and X6–X8. The work plan's
    isolation correction I1.2a, on which 4.1's baseline relies, was
    delivered on 2026-09-28.
