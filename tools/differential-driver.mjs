@@ -154,7 +154,7 @@ if (invoked()) {
   const args = process.argv.slice(2), usage = "Usage: node tools/differential-driver.mjs [--seeds=N] [--from=S] [--verbose]";
   const stop = message => { process.stderr.write(`${message}\n${usage}\n`); process.exit(2); };
   const unknown = args.find(arg => !/^--(seeds|from)=|^--verbose$/.test(arg));
-  if (unknown) stop(`Unknown argument ${unknown}.`);
+  if (unknown !== undefined) stop(`Unknown argument "${unknown}".`);
   const integer = (name, fallback, least) => {
     const text = args.findLast(arg => arg.startsWith(`--${name}=`))?.slice(name.length + 3);
     const value = text === undefined ? fallback : /^\d+$/.test(text) ? Number(text) : NaN;

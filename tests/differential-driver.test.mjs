@@ -39,7 +39,7 @@ test("the tool checks what it is asked, or stops", () => {
   assert.equal(run.status, 0, run.stderr);
   assert.match(run.stdout, /^3 problems from seed 5: 0 disagreements\.$/m);
   for (const args of [["--from=oops"], ["--seeds=Infinity"], ["--seeds=0"], ["--seeds=2.5"], ["--seeds=-1"], ["--seed=2000"],
-    ["--from=4294967295", "--seeds=2"], ["2000"]]) {
+    ["--from=4294967295", "--seeds=2"], ["2000"], [""]]) {
     const refused = tool(args);
     assert.equal(refused.status, 2, args.join(" "));
     assert.match(refused.stderr, /Usage: node tools\/differential-driver\.mjs/, args.join(" "));
