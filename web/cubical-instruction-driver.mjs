@@ -88,7 +88,8 @@ const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: 
 //   { move: "glue", side }             a Glue term's normal form, within
 //                                      GLUE_NORMAL_STEPS: its eta may hold only
 //                                      once its parts are reduced, which the
-//                                      weak head does not do; the last resort
+//                                      weak head does not do; the last resort,
+//                                      and never inside a speculative descent
 // The list is syntactic: it offers what the terms' shapes allow, and the
 // kernel checks the rest when the move is made. A step always applies. A
 // whnf or eta that turns out to change nothing leaves the point as it was.
@@ -876,9 +877,10 @@ export class InstructionDriver {
     const before = this.subterm(focus);
     try { this.graph.within(GLUE_NORMAL_STEPS, () => this.reduce(focus, { path: [], rule: "normalize" })); }
     catch (error) {
-      // Out of the move's own budget: no progress. Anything else, a deadline
-      // above all, ends the comparison as it would after any move.
-      if (error.kind !== "budget") throw error;
+      // A deadline ends the comparison, as it would after any move. Anything
+      // else is a limit of this speculative normal form, its budget or the
+      // depth of syntax, and only no progress: the comparison goes on.
+      if (error.kind === "deadline") throw error;
       this.glueNormal.add(before);
       return false;
     }
@@ -1067,7 +1069,8 @@ export class InstructionDriver {
           else if (budget.untried) return false;
         }
         const point = { driver: this, a, b, x, y, nx: this.node(x), ny: this.node(y), terms, dims,
-          moves: null, round: 0, taken: budget.taken ?? 0, depth, normalize, descended: false, stuck: new Set(), failed };
+          moves: null, round: 0, taken: budget.taken ?? 0, depth, normalize, descended: false, stuck: new Set(), failed,
+          speculative: (budget.speculative ?? 0) > 0 };
         const outcome = this.branch(point, budget);
         if (outcome === "agreed") return true;
         if (outcome === "failed") return false;
@@ -1124,8 +1127,10 @@ export class InstructionDriver {
       if (!point.stuck.has(side) && !this.stable.has(term) && !CONSTRUCTORS.has(this.node(term).kind)) moves.push({ move: "whnf", side });
     const kx = this.node(x).kind, ky = this.node(y).kind;
     if (!point.stuck.has("eta") && kx !== ky && (etaTypes[kx] || etaTypes[ky])) moves.push({ move: "eta" });
+    // Not inside a speculative descent: the enclosing comparison's lazy steps
+    // come first, and should they fail, its last resort normalizes both sides.
     for (const [side, term] of [["left", x], ["right", y]])
-      if (this.node(term).kind === "GlueTerm" && !this.glueNormal.has(term) && !point.stuck.has(`glue:${side}`))
+      if (!point.speculative && this.node(term).kind === "GlueTerm" && !this.glueNormal.has(term) && !point.stuck.has(`glue:${side}`))
         moves.push({ move: "glue", side });
     return moves;
   }
@@ -1134,14 +1139,22 @@ export class InstructionDriver {
     const { a, b, terms, dims } = point;
     switch (move.move) {
     case "normalize": return this.normalizeBoth(a, b, terms, dims) ? "agreed" : "changed";
-    case "descend":
+    case "descend": {
       point.descended = true;
-      if (this.agreeParts(a, b, point.nx, terms, dims, budget)) return "agreed";
+      // A descent is speculative while this point still has lazy steps to
+      // try should it fail: inside it, the glue move waits (moves).
+      const speculative = point.moves.some(open => open.move === "step");
+      if (speculative) budget.speculative = (budget.speculative ?? 0) + 1;
+      let agreed;
+      try { agreed = this.agreeParts(a, b, point.nx, terms, dims, budget); }
+      finally { if (speculative) budget.speculative--; }
+      if (agreed) return "agreed";
       // A comparison inside gave up for an enclosing closed one to try
       // normal forms: congruence has not failed, and may be tried again.
       if (budget.untried && budget.taken >= LONG_COMPUTATION) return "deferred";
       point.failed.add(`${point.x},${point.y}`);
       return "changed";
+    }
     case "step":
       if (move.side !== "right") this.reduce(a, move.side === "both" ? move.steps[0] : move.step);
       if (move.side !== "left") this.reduce(b, move.side === "both" ? move.steps[1] : move.step);

@@ -484,7 +484,7 @@ test("a Glue term that is its base by eta only after a step still agrees with it
   const { identityEquivalence } = await import("../lib/cubical/equivalence.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
-  await program.check("def unit_point : Unit := point;\n", "glue_eta");
+  await program.check("def unit_point : Unit := tt;\n", "glue_eta");
   const equivalence = identityEquivalence(T.unit);
   const G = face => T.glueType(T.unit, [{ face, type: T.unit, equiv: equivalence }]);
   const context = [["b1", G(F.bottom)], ["p", T.path("j", G(F.endpoint("j", 0)), T.point, T.variable("b1"))]];
@@ -508,7 +508,7 @@ test("the glue move comes last, judges progress by syntax, and is bounded", asyn
   const agrees = async (base, context, optimizations) => {
     const program = new CubicalProgram(await createCubical(), readLibrary, { optimizations });
     t.after(() => program.dispose());
-    await program.check("def unit_point : Unit := point;\n", "glue_move");
+    await program.check("def unit_point : Unit := tt;\n", "glue_move");
     const u = T.glue(G, base, []), unglued = T.unglue(H, T.glue(H, u, []));
     const before = program.kernel.work();
     const checked = program.checker.checkView(T.line("i", G, u), T.path("i", G, u, unglued), context);
@@ -534,7 +534,7 @@ const glueSession = async (t, optimizations = {}) => {
   const { heuristicChooser } = await import("../web/cubical-instruction-driver.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary, { optimizations });
   t.after(() => program.dispose());
-  await program.check("def unit_point : Unit := point;\n", "glue_move");
+  await program.check("def unit_point : Unit := tt;\n", "glue_move");
   // Each move made, its outcome, and the kernel steps since the one before.
   const made = [], spent = [], steps = () => { const w = program.kernel.work(); return w.instructionSteps + w.querySteps; };
   let last = steps();
@@ -605,4 +605,36 @@ test("the glue move rethrows a deadline, and a Glue term needs it at every focus
   const glued = T.glue(over, T.unglue(over, b), [{ face: F.endpoint("i", 0), term: T.point }]);
   const composite = T.comp("k", over, [{ face: F.endpoint("m", 0), term: glued }, { face: F.endpoint("m", 1), term: glued }], b);
   assert.equal(program.checker.checkView(composite, over, context, new Map([["i", 0], ["m", 1]])).term.tag, "Comp");
+});
+
+// The third review of #73: the glue move waits for enclosing reductions. With
+// n0 := 0, n(k) := succ(n(k - 1)) up to n600, G = Glue [] Nat and
+// f(A : U0, z : A) := point, f(G, glue_G [] n600) and f(G, glue_G [] y) agree
+// by unfolding f. The heuristic first descends into the arguments, whose
+// equality it cannot rule out; a glue move there, while the unfolding still
+// waits, would normalize glue_G [] n600, whose normal form is deeper than
+// syntax may be. And that limit, where the move is the last one left, is no
+// progress rather than the end of the comparison.
+test("the glue move waits for enclosing reductions, and a limit is no progress", async t => {
+  const { T } = await import("../lib/cubical/core.mjs");
+  const { heuristicChooser } = await import("../web/cubical-instruction-driver.mjs");
+  const numbers = ["def n0 : Nat := 0;", ...Array.from({ length: 600 }, (_, k) => `def n${k + 1} : Nat := succ(n${k});`)];
+  const program = new CubicalProgram(await createCubical(), readLibrary);
+  t.after(() => program.dispose());
+  await program.check([...numbers, "def f(A : U0, z : A) : Unit := tt;"].join("\n") + "\n", "deep");
+  const made = [];
+  program.kernel.chooser = { name: "recording", rank: point => heuristicChooser.rank(point),
+    observe: (point, move, outcome) => made.push(`${move.move}:${point.depth}:${outcome}`) };
+  const G = T.glueType(T.nat, []), deep = T.glue(G, { tag: "DefRef", name: "deep__n600" }, []);
+  const f = { tag: "DefRef", name: "deep__f" }, y = T.glue(G, T.variable("y"), []);
+  const left = T.app(T.app(f, G), deep), right = T.app(T.app(f, G), y);
+  assert.equal(program.checker.checkView(T.line("i", T.unit, left), T.path("i", T.unit, left, right), [["y", T.nat]]).term.tag, "PLam");
+  assert.ok(!made.some(move => move.startsWith("glue:")), made.join(" "));
+  // Compared directly, the two Glue terms differ; the glue move is tried, and
+  // its normal form's depth ends only the move.
+  let error = null;
+  try { program.checker.checkView(T.line("i", G, deep), T.path("i", G, deep, y), [["y", T.nat]]); }
+  catch (thrown) { error = thrown; }
+  assert.ok(error && !/syntax depth/.test(error.message), error?.message);
+  assert.ok(made.some(move => move.startsWith("glue:") && move.endsWith(":stuck")), made.join(" "));
 });
