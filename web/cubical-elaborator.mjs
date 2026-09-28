@@ -95,10 +95,13 @@ export function readableDimensions(terms) {
     if (!t || typeof t !== "object" || seen.has(t)) return;
     seen.add(t);
     if (typeof t.dim === "string") used.add(t.dim);
-    if (typeof t.name === "string") {
-      used.add(t.name);
-      if (t.name.includes("__") && !t.name.startsWith("__")) used.add(t.name.slice(t.name.indexOf("__") + 2));
-    }
+    // Every name the printer shows: variables, definitions and constructors,
+    // and declared types, which a sort or an eliminator names by signature.
+    for (const name of [t.name, t.signature])
+      if (typeof name === "string") {
+        used.add(name);
+        if (name.includes("__") && !name.startsWith("__")) used.add(name.slice(name.indexOf("__") + 2));
+      }
     Object.values(t).forEach(visit);
   };
   terms.forEach(visit);

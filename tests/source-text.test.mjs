@@ -123,6 +123,10 @@ test("messages name unnamed dimensions once, keep sharing, and avoid the names t
   // i2 is shown as i: the dimension takes another name.
   const line = { tag: "PLam", dim: "d0", family: variable("A"), body: { tag: "PApp", path: variable("i2"), arg: [["d0:1"]] } };
   assert.equal(sourceText(readableDimensions([displayTerm(line)])[0]), "path j => i @ j");
+  // A declared type named i, shown without its module: the dimension is j.
+  const typed = { tag: "PLam", dim: "d0", family: variable("A"),
+    body: { tag: "App", fn: { tag: "PApp", path: variable("p"), arg: [["d0:1"]] }, arg: { tag: "Sort", signature: "main__i", parameters: [], levels: [] } } };
+  assert.equal(sourceText(readableDimensions([displayTerm(typed)])[0], { main__i: { name: "i" } }), "path j => (p @ j)(i)");
   // Seven dimensions in two terms: one renaming for both, past the letters.
   const at = (...dims) => ({ tag: "PApp", path: variable("p"), arg: [dims.map(d => `d${d}:1`)] });
   const [found, expected] = readableDimensions([at(0, 6), at(1, 2, 3, 4, 5, 6)]);
