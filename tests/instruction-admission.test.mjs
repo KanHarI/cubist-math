@@ -1,5 +1,6 @@
 // Stage 4: the instruction kernel admits every definition, and a tactic's
 // committed check is derived by instructions as the tactic runs.
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";

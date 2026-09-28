@@ -5,6 +5,7 @@
 // converted to their clause types, and the conversion search: Iota, the path
 // step at an endpoint, Whnf on a formal composition, and the guide's answers
 // for distinct constructors.
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
