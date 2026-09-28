@@ -21,16 +21,24 @@ function section(heading) {
   return next < 0 ? rest : rest.slice(0, next + 1);
 }
 
-// The case IDs a text names, with ranges written A2–A17 expanded; a package
-// ID such as K2.5 or K2.4a is not a case, but a case ends a sentence.
-function mentions(text, prefix) {
-  const ids = new Set();
-  for (const match of text.matchAll(new RegExp(`\\b${prefix}(\\d+)(?:–${prefix}?(\\d+))?(?!\\d|\\.[\\da-z])`, "g"))) {
-    const from = Number(match[1]), to = Number(match[2] ?? match[1]);
-    for (let n = from; n <= to; n++) ids.add(`${prefix}${n}`);
-  }
-  return ids;
+// A cell's entries, outside the parentheses that explain them: an entry is
+// an ID or a range written A2–A17, and "in part" after it qualifies every
+// case it names. A package ID such as K2.5 or K2.4a is not a case, but a
+// case may end a sentence.
+function outsideParentheses(text) {
+  for (let previous; previous !== text;) [previous, text] = [text, text.replace(/\([^()]*\)/g, "")];
+  return text;
 }
+function entries(text, prefix) {
+  const full = new Set(), partial = new Set();
+  const pattern = new RegExp(`\\b${prefix}(\\d+)(?:–${prefix}?(\\d+))?(?!\\d|\\.[\\da-z])(\\s+in part\\b)?`, "g");
+  for (const match of outsideParentheses(text).matchAll(pattern)) {
+    const from = Number(match[1]), to = Number(match[2] ?? match[1]);
+    for (let n = from; n <= to; n++) (match[3] ? partial : full).add(`${prefix}${n}`);
+  }
+  return { full, partial, all: new Set([...full, ...partial]) };
+}
+const mentions = (text, prefix) => entries(text, prefix).all;
 
 // Each case is defined by a table row of its own, in 7.3 and 10.1 to 10.9.
 const defined = new Set([...specification.matchAll(new RegExp(`^\\| ([${prefixes}]\\d+) \\|`, "gm"))].map(match => match[1]));
@@ -47,9 +55,10 @@ const rows = coverage.split("\n").filter(line => /^\| [A-Z][a-z]/.test(line) && 
   const [group, traced, untraced, missing] = line.split("|").slice(1, -1).map(cell => cell.trim());
   const [, prefix, from, to] = group.match(/ ([A-Z])(\d+)–[A-Z](\d+)$/);
   const cases = [...mentions(`${prefix}${from}–${to}`, prefix)];
-  return { group, prefix, cases, traced, untraced, missing,
-    columns: { traced: mentions(traced, prefix), untraced: mentions(untraced, prefix),
-      missing: /^All\b/.test(missing) ? new Set(cases) : mentions(missing, prefix) } };
+  // "All" in the missing column stands for every case, beside any it names.
+  const named = { traced: mentions(traced, prefix), untraced: mentions(untraced, prefix), missing: mentions(missing, prefix) };
+  return { group, prefix, cases, traced, untraced, missing, named, coverage: entries(traced, prefix),
+    columns: { ...named, missing: /^All\b/.test(missing) ? new Set([...cases, ...named.missing]) : named.missing } };
 });
 
 test("the matrix's groups cover exactly the cases the specification defines", () => {
@@ -64,21 +73,17 @@ test("the matrix lists each of the test files it names", () => {
   for (const path of testFiles) assert.ok(existsSync(new URL(`../${path}`, import.meta.url)), path);
 });
 
-// The cases the traced column names in full, not only as "in part".
-const tracedInFull = (traced, prefix) => mentions(traced.replace(new RegExp(`\\b${prefix}\\d+ in part\\b`, "g"), ""), prefix);
-
-test("each case is in the matrix, and a case traced in part has a remainder, and only then", () => {
-  for (const { group, prefix, cases, traced, columns } of rows) {
-    for (const [column, ids] of Object.entries(columns))
+test("each case is in the matrix, and a case has a remainder exactly when it is traced only in part", () => {
+  for (const { group, cases, named, coverage, columns } of rows) {
+    for (const [column, ids] of Object.entries(named))
       for (const id of ids) assert.ok(cases.includes(id), `${group}: the ${column} column names ${id}, which is no case of the group`);
-    const full = tracedInFull(traced, prefix);
     for (const id of cases) {
-      if (columns.traced.has(id) && !full.has(id))
-        assert.ok(columns.untraced.has(id) || columns.missing.has(id), `${group}: ${id} is traced only in part, so its remainder must be listed`);
-      const where = Object.entries(columns).filter(([, ids]) => ids.has(id)).map(([column]) => column);
-      assert.ok(where.length > 0, `${group}: ${id} is in no column`);
-      if (where.length > 1) assert.ok(where.includes("traced") && new RegExp(`\\b${id} in part\\b`).test(traced),
-        `${group}: ${id} is in ${where.join(" and ")}, so its traced part must say "in part"`);
+      const remainder = columns.untraced.has(id) || columns.missing.has(id);
+      assert.ok(columns.traced.has(id) || remainder, `${group}: ${id} is in no column`);
+      if (columns.traced.has(id) && !coverage.full.has(id))
+        assert.ok(remainder, `${group}: ${id} is traced only in part, so its remainder must be listed`);
+      if (columns.traced.has(id) && remainder)
+        assert.ok(!coverage.full.has(id), `${group}: ${id} is traced in full, so it can have no remainder`);
     }
   }
 });
