@@ -363,3 +363,33 @@ inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }
   assert.equal(program.kernel.arena().nodes, nodes);
   assert.equal(program.signatureView("main__nothing"), null);
 });
+
+// The first review of #74: names in the view are never ambiguous, clause
+// types print whole, and inspecting again leaves nothing behind.
+test("inspection: names are distinct, clause types whole, and repeated inspection keeps no state", async t => {
+  const { program } = await check(t, `inductive C { point(C : U0, x : C); }
+inductive P { p; }
+inductive D { d(x : P); }
+inductive E(P, Q, M, R, P_ : U0) { e; }
+inductive G : trunc(1) { g; }
+inductive Tr(U < UU0, A : U) : set { point(a : A); }
+`);
+  // A binder named as the type is shown apart from it.
+  assert.deepEqual(program.signatureView("main__C").constructors.map(c => c.type), ["forall C1 : U0. C1 -> C"]);
+  // The motive is not named as a type the clauses mention, nor as a parameter.
+  const d = program.signatureView("main__D").eliminator;
+  assert.equal(d.motive, "Q : D -> U");
+  assert.deepEqual(d.clauses.map(c => `${c.name} : ${c.type}`), ["d_case : forall x : P. Q(d(x))"]);
+  const e = program.signatureView("main__E").eliminator;
+  assert.ok(!["P", "Q", "M", "R", "P_"].includes(e.motive.split(" ")[0]), e.motive);
+  // A groupoid's squash clause, whole: its boundary comes last.
+  const squash = program.signatureView("main__G").eliminator.clauses.at(-1).type;
+  assert.ok(!squash.includes("…") && squash.length > 400, squash);
+  assert.match(squash, /PathP\(fun \(i : Interval\) => .*\)$/);
+  // Inspecting again names no new symbols.
+  program.signatureView("main__Tr");
+  const sizes = () => [program.kernel.names.size, program.kernel.symbolNames.size];
+  const before = sizes();
+  for (let i = 0; i < 3; i++) program.signatureView("main__Tr");
+  assert.deepEqual(sizes(), before);
+});

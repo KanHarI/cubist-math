@@ -1,6 +1,6 @@
 import { sourceStatement } from "./cubical-statement.mjs";
 import { CubicalKernel } from "./cubical-kernel.mjs";
-import { NativeCubicalElaborator } from "./cubical-elaborator.mjs";
+import { NativeCubicalElaborator, printedLabels } from "./cubical-elaborator.mjs";
 import { Translator } from "./dist/cubical-runtime/translate.mjs";
 import {emptySimpRegistry,mergeSimpRegistries} from "./dist/cubical-runtime/simp-registry.mjs";
 import { substituteTerm, T } from "./dist/cubical-runtime/core.mjs";
@@ -281,15 +281,39 @@ export class CubicalProgram {
   eliminator(binding, source) {
     const inductive = this.checker.inductives?.get(binding);
     if (!inductive) return null;
-    const names = inductive.record.constructors, generated = this.kernel.signature(inductive.record.index).constructors
-      .map(c => c.generated);
-    // Display names end in a letter: the display gives a name ending in a
-    // digit back to its stem.
+    // Computed once per admitted signature: the kernel's symbol registries
+    // keep the names a computation uses, which a rollback does not take back.
+    this.eliminators ??= new WeakMap();
+    if (this.eliminators.has(inductive.record)) return this.eliminators.get(inductive.record);
+    const view = this.computeEliminator(binding, source, inductive);
+    this.eliminators.set(inductive.record, view);
+    return view;
+  }
+  computeEliminator(binding, source, inductive) {
+    const names = inductive.record.constructors;
+    // The names are new to everything the view shows: the type, its
+    // constructors and parameters, and every type, constructor, definition
+    // and variable their types mention, with the stems the display gives
+    // generated names. And the display prints them as they are: not ending
+    // in a digit, which it would take back to a stem.
     const used = new Set([source, ...names, ...inductive.slots.map(slot => slot.source)]);
+    const syntax = this.checker.syntax, info = this.kernel.signature(inductive.record.index);
+    for (const term of [info.former, ...info.constructors.map(c => c.type)].map(handle => syntax.decode(handle))) {
+      for (const label of printedLabels(term)) used.add(label);
+      const visit = (t, seen = new WeakSet()) => {
+        if (!t || typeof t !== "object" || seen.has(t)) return;
+        seen.add(t);
+        if (typeof t.name === "string") used.add(t.name).add(t.name.replace(/\d+$/, "").replace(/^(U+)_$/, "$1"));
+        Object.values(t).forEach(value => visit(value, seen));
+      };
+      visit(term);
+    }
+    for (const parameter of inductive.parameters) for (const label of printedLabels(parameter.type)) used.add(label);
+    const printsAsItself = name => !/\d$/.test(name) && !/^U+_$/.test(name);
     const pick = candidates => {
-      const name = candidates.find(candidate => !used.has(candidate)) ?? `${candidates[0]}_`;
-      used.add(name);
-      return name;
+      for (let suffix = ""; ; suffix += "_")
+        for (const candidate of candidates.map(name => name + suffix))
+          if (printsAsItself(candidate) && !used.has(candidate)) { used.add(candidate); return candidate; }
     };
     const context = new Map(), parameters = [], levels = [];
     for (const slot of inductive.slots) {
@@ -310,7 +334,7 @@ export class CubicalProgram {
     const transaction = new CubicalDeclarationTransaction(this.kernel, this.checker);
     try {
       names.forEach((constructor, k) => {
-        const shown = generated[k] ? `${source}.squash` : constructor;
+        const shown = info.constructors[k].generated ? `${source}.squash` : constructor;
         const variable = pick([`${constructor}_case`, `${constructor}_clause`]);
         const type = this.checker.nextClauseType(T.variable(motive), clauses.map(clause => T.variable(clause.name)), context);
         context.set(variable, type);
@@ -321,11 +345,12 @@ export class CubicalProgram {
       return { universe, motive, motiveType, clauses, error: error.message };
     } finally { transaction.finish(false); }
   }
-  // The same, as display text, for the CLI's inspect and the workbench.
-  signatureView(binding, width = 400) {
+  // The same, as display text, for the CLI's inspect and the workbench:
+  // whole, as a clause's boundary comes at the end of its type.
+  signatureView(binding) {
     const signature = this.signature(binding);
     if (!signature) return null;
-    const text = term => this.checker.displayText(term, width), { eliminator } = signature;
+    const text = term => this.checker.displayText(term, Infinity, 1000000), { eliminator } = signature;
     return { ...signature, former: text(signature.former),
       constructors: signature.constructors.map(c => ({ ...c, type: text(c.type) })),
       eliminator: eliminator && { motive: `${eliminator.motive} : ${text(eliminator.motiveType)}`,

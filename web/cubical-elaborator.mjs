@@ -151,6 +151,23 @@ export function betaReduce(term, budget = 256) {
 // U_1 has the stem U: the separator only keeps it apart from the constant U1.
 const stem = name => name.startsWith("__") ? name : /^native\d+$/.test(name) ? "x"
   : name.replace(/\d+$/, "").replace(/^(U+)_$/, "$1") || name;
+// The names a term prints without binding them: a declared type or an
+// eliminator by its signature, a constructor, and a definition, each as the
+// printer labels it, without its module. A binder must not take one, and no
+// variable is shown by a stem that is one.
+const shortLabel = name => name.includes("__") && !name.startsWith("__") ? name.slice(name.indexOf("__") + 2) : name;
+export function printedLabels(term) {
+  const labels = new Set(), seen = new WeakSet();
+  const visit = t => {
+    if (!t || typeof t !== "object" || seen.has(t)) return;
+    seen.add(t);
+    const label = t.tag === "Sort" || t.tag === "Elim" ? t.signature : t.tag === "Con" || t.tag === "DefRef" ? t.name : null;
+    if (typeof label === "string") labels.add(shortLabel(label));
+    Object.values(t).forEach(visit);
+  };
+  visit(term);
+  return labels;
+}
 const binders = new Set(["Pi", "Lam", "Sigma", "W", "LPi", "LLam"]);
 
 // Each binder shows its stem, n for n11, unless a binder around it already
@@ -196,11 +213,12 @@ function scopedNames(term, limit = 2000) {
   };
   // Free variables, such as a goal's context, show their stems when no two
   // share one; binders then avoid those names.
-  const outer = [...free(term)], count = new Map();
+  const outer = [...free(term)], count = new Map(), labels = printedLabels(term);
   for (const name of outer) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
   const shownAs = new Map(outer.map(name => [name,
-    count.get(stem(name)) === 1 && !(outer.includes(stem(name)) && stem(name) !== name) ? stem(name) : name]));
-  try { return go(term, shownAs, new Set(shownAs.values())); }
+    count.get(stem(name)) === 1 && !(outer.includes(stem(name)) && stem(name) !== name) && !labels.has(stem(name))
+      ? stem(name) : name]));
+  try { return go(term, shownAs, new Set([...shownAs.values(), ...labels])); }
   catch (error) { if (error === scopedNames) return null; throw error; }
 }
 
@@ -214,9 +232,10 @@ function globalNames(shown) {
     Object.values(t).forEach(collect);
   };
   collect(shown);
-  const count = new Map();
+  const count = new Map(), labels = printedLabels(shown);
   for (const name of names) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
-  const rename = name => count.get(stem(name)) === 1 && !(names.has(stem(name)) && stem(name) !== name) ? stem(name) : name;
+  const rename = name => count.get(stem(name)) === 1 && !(names.has(stem(name)) && stem(name) !== name)
+    && !labels.has(stem(name)) ? stem(name) : name;
   const renamed = new WeakMap();
   const apply = t => {
     if (!t || typeof t !== "object") return t;
@@ -360,12 +379,12 @@ export class NativeCubicalElaborator {
       : this.assumptionLabels.has(name) ? { name: this.assumptionLabels.get(name), kind: "axiom" }
       : name.includes("__") && !name.startsWith("__") ? { name: name.slice(name.indexOf("__") + 2) } : undefined });
   }
-  displayText(term, width = 160) {
-    return this.printed(readableDimensions([displayTerm(term)])[0], width);
+  displayText(term, width = 160, limit = 4000) {
+    return this.printed(readableDimensions([displayTerm(term)])[0], width, limit);
   }
   // A term whose names are already chosen, as source text within a width.
-  printed(term, width = 160) {
-    const text = sourceText(term, this.displayNames);
+  printed(term, width = 160, limit = 4000) {
+    const text = sourceText(term, this.displayNames, limit);
     return text.length > width ? `${text.slice(0, width - 1)}…` : text;
   }
   // A goal, and the term a statement built for it, shown with one renaming,
