@@ -99,7 +99,9 @@ static void remember(cc_kernel *k, cc_judgement_id id) {
     }
     const cc_fact *fact = &k->facts[id];
     size_t mask = k->derivation_capacity - 1;
-    size_t slot = derivation_hash(&fact->how, k->positions + fact->how.position) & mask;
+    /* A derivation of depth 0 has no positions, and the array may still be
+     * null: an offset from it is undefined, and the hash reads none. */
+    size_t slot = derivation_hash(&fact->how, fact->how.depth ? k->positions + fact->how.position : NULL) & mask;
     while (k->derivations[slot] && k->derivations[slot] < k->fact_count)
         slot = (slot + 1) & mask;
     if (!k->derivations[slot])

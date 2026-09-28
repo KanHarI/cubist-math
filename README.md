@@ -36,6 +36,7 @@ npm test                                # Final regression and corpus check
 npm run test:browser
 node tools/differential-driver.mjs --seeds=2000   # The driver against the term checker
 make CC=clang sanitize                  # Address/undefined sanitizers
+make sanitize SANITIZERS=undefined     # macOS 26, where the address sanitizer hangs
 make lint
 ```
 
