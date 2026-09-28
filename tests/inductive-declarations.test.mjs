@@ -421,6 +421,26 @@ test("inspection: generated names avoid the printed form of every name", async t
   assert.equal(view.eliminator.clauses[0].type, "forall x : P. Q(d(x))");
 });
 
+// The display shows an assumption by its label, and the view's names do not
+// avoid those labels: no declared type mentions an assumption. The kernel
+// admits a signature only from closed judgements (the H1 specification's
+// 5.2), so an assumption in a parameter, in a constructor's argument, or in a
+// definition one of them uses is refused, and nothing is admitted.
+test("inspection: no declared type mentions an assumption, so the view has no assumption's label to avoid", async t => {
+  const { program, get } = await check(t, `import classical_axioms;
+inductive InParameter(t : Truncate(U0, Nat)) { p; }
+inductive InGeneric(U < UU0, A : U, t : Truncate(U, A)) { g; }
+inductive InArgument { a(t : Truncate(U0, Nat)); }
+inductive InDefinition { d(t : ExcludedMiddle(U0)); }
+inductive Clear { c(n : Nat); }
+`);
+  for (const name of ["InParameter", "InGeneric", "InArgument", "InDefinition"]) {
+    refused(get(name), /Unbound variable __assumption_Truncate/);
+    assert.equal(program.signatureView(`main__${name}`), null, name);
+  }
+  assert.equal(program.signatureView("main__Clear").eliminator.motive, "P : Clear -> U");
+});
+
 // The second review of #74: one naming for the whole view, and the
 // generated constructor as the source writes it.
 test("inspection: a parameter has one name in the whole view, and T.squash is distinct from squash", async t => {

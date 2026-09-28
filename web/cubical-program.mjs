@@ -297,6 +297,11 @@ export class CubicalProgram {
     // and variable their types mention, in each form the display may print
     // them (printedForms). And the display prints the new names as they are
     // (printsAsItself), so no numbered name the display makes is one of them.
+    // No assumption occurs in these types, so none of the labels the display
+    // shows assumptions by needs avoiding: the kernel admits a signature
+    // only from closed judgements, in a context of the signature's own
+    // entries (the H1 specification's 5.2), and refuses one that mentions
+    // an assumption (tests/inductive-declarations.test.mjs).
     const used = new Set([source, ...names, ...inductive.slots.map(slot => slot.source)].flatMap(printedForms));
     const syntax = this.checker.syntax, info = this.kernel.signature(inductive.record.index);
     for (const term of [info.former, ...info.constructors.map(c => c.type)].map(handle => syntax.decode(handle))) {
