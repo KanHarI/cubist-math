@@ -1,6 +1,7 @@
 // A7 regressions for the HoTT automation roadmap. They pin what the kernel
 // computes today, which probes it rejects, and why. A later milestone that
 // changes one of these outcomes must update the fixture deliberately.
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";

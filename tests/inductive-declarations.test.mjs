@@ -3,6 +3,7 @@
 // the normal form with data before positions, universe classification, the
 // least level, uses of the type and its constructors, the experimental gate
 // and the `kernel extension: H1` marker (6.4), and the rejections.
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";

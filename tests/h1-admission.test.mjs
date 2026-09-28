@@ -3,6 +3,7 @@
 // squash, instances, their constructors and boundaries, eliminators, and
 // refusals reported as kernel errors. The C tests in
 // kernel/tests/test_signatures.c cover the acceptance cases in full.
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";

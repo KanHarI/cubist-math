@@ -1,3 +1,4 @@
+import "./fresh-build.mjs";
 import { cubicalSourceFile } from "../web/cubical-sources.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";

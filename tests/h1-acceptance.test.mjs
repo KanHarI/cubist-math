@@ -2,6 +2,7 @@
 // (docs/roadmaps/h1-signature-specification.md, section 10), where no other
 // test names them. Each test names its cases by ID, as 10.10 traces them;
 // the kernel's cases are in kernel/tests/test_signatures.c.
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";

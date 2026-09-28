@@ -2,6 +2,7 @@
 // clause types the kernel computes, dependent motives, path and squash
 // clauses, structural recursion, the refusals, and the H1 release fixture:
 // the circle's winding number, computed through univalence.
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";

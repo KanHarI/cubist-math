@@ -1,3 +1,4 @@
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
