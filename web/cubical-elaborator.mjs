@@ -78,6 +78,41 @@ export function displayTerm(term, budget = 256) {
   return scopedNames(shown) ?? globalNames(shown);
 }
 
+// Dimensions a message has no source name for, bound or free, which decoding
+// calls d0, d1, …: renamed together in several terms to i, j, k, …, names
+// none of them uses, so that the terms read as source and agree.
+export function readableDimensions(terms) {
+  const used = new Set(), unnamed = [];
+  const visit = t => {
+    if (typeof t === "string") {
+      const literal = /^(.+):[01]$/.exec(t);
+      if (literal) used.add(literal[1]);
+      return;
+    }
+    if (!t || typeof t !== "object") return;
+    if (typeof t.dim === "string") used.add(t.dim);
+    if (typeof t.name === "string") used.add(t.name);
+    Object.values(t).forEach(visit);
+  };
+  terms.forEach(visit);
+  for (const name of used) if (/^d[0-9]+_*$/.test(name)) unnamed.push(name);
+  if (!unnamed.length) return terms;
+  unnamed.sort();
+  const pool = ["i", "j", "k", "l", "m", "n"].filter(name => !used.has(name));
+  const renaming = new Map(unnamed.slice(0, pool.length).map((name, index) => [name, pool[index]]));
+  const rename = t => {
+    if (typeof t === "string") {
+      const literal = /^(.+):([01])$/.exec(t);
+      return literal && renaming.has(literal[1]) ? `${renaming.get(literal[1])}:${literal[2]}` : t;
+    }
+    if (!t || typeof t !== "object") return t;
+    const copy = Array.isArray(t) ? t.map(rename) : Object.fromEntries(Object.entries(t).map(([key, value]) => [key, rename(value)]));
+    if (!Array.isArray(t) && typeof t.dim === "string" && renaming.has(t.dim)) copy.dim = renaming.get(t.dim);
+    return copy;
+  };
+  return terms.map(rename);
+}
+
 // Beta-reduce within a budget of substitutions, keeping every name.
 export function betaReduce(term, budget = 256) {
   const reduced = new WeakMap();
@@ -291,8 +326,9 @@ export class NativeCubicalElaborator {
     if (error?.kind !== "mismatch" || !error.mismatch?.found || error.described) return error;
     error.described = true;
     try {
-      const [found, expected] = [error.mismatch.found, error.mismatch.expected]
-        .map(handle => this.displayText(this.syntax.decode(handle, dimensions)));
+      // Both types renamed together, so that a dimension reads alike in each.
+      const [found, expected] = readableDimensions([error.mismatch.found, error.mismatch.expected]
+        .map(handle => this.syntax.decode(handle, dimensions))).map(term => this.displayText(term));
       error.message = `Type mismatch: found ${found}, expected ${expected}.`;
     } catch { /* Keep the kernel's message. */ }
     return error;
@@ -305,7 +341,7 @@ export class NativeCubicalElaborator {
       : name.includes("__") && !name.startsWith("__") ? { name: name.slice(name.indexOf("__") + 2) } : undefined });
   }
   displayText(term, width = 160) {
-    const text = sourceText(displayTerm(term), this.displayNames);
+    const text = sourceText(displayTerm(readableDimensions([term])[0]), this.displayNames);
     return text.length > width ? `${text.slice(0, width - 1)}…` : text;
   }
   // A goal, and the term a statement built for it, shown with one renaming,

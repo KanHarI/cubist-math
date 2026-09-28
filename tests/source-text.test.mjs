@@ -70,11 +70,17 @@ test("paths print as equalities when their type does not vary, and path applicat
   const p = variable("p");
   const at = arg => ({ tag: "PApp", path: p, arg });
   assert.equal(sourceText(equal(at([["i:1"]]), at([]))), "p @ i = p @ 0");
-  assert.equal(sourceText(at([["i:0", "j:1"]])), "p @ meet(flip(i), j)");
-  assert.equal(sourceText(at([["i:1"], ["j:1"]])), "p @ join(i, j)");
+  // Coordinates print in the source's notation: -i, & and |.
+  assert.equal(sourceText(at([["i:0", "j:1"]])), "p @ -i & j");
+  assert.equal(sourceText(at([["i:1"], ["j:1"]])), "p @ i | j");
+  assert.equal(sourceText(at([["i:1", "j:1"], ["k:0"]])), "p @ i & j | -k");
   assert.equal(sourceText(at([[]])), "p @ 1");
   const varying = { tag: "Path", dim: "i", family: { tag: "PApp", path: variable("q"), arg: [["i:1"]] }, left: variable("a"), right: variable("b") };
   assert.doesNotMatch(sourceText(varying), / = /);
+  // A path prints as path i => …, and one that does not vary as refl.
+  const line = { tag: "PLam", dim: "i", family: variable("A"), body: at([["i:1"]]) };
+  assert.equal(sourceText(line), "path i => p @ i");
+  assert.equal(sourceText({ tag: "PLam", dim: "i", family: variable("A"), body: variable("x") }), "refl(x)");
 });
 
 test("binary numbers print as binary literals", () => {

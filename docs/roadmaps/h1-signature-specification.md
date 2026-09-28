@@ -1866,9 +1866,8 @@ this section left open:
   exactly its own parameters, `List(U, A)`. Any other argument is refused
   as an index.
 
-Not yet: `T.squash` as a source name, and `trunc(-1)` written with a minus
-sign, which waits for the `-` token of the `language-notation` branch.
-`prop` means the same.
+`T.squash` names the generated constructor (L2.2a), and `trunc(-1)`, the
+same as `prop`, is written with the minus sign of the path notation.
 
 ## 10. Acceptance cases
 
