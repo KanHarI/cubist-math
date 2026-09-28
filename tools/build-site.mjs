@@ -4,8 +4,11 @@ import { createHash } from "node:crypto";
 import { cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { join, relative } from "node:path";
+import { assertFreshBuild } from "./build-stamp.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
+// The site publishes web/dist: never a build older than its sources.
+assertFreshBuild();
 const output = join(root, "build/site");
 async function files(directory) {
   const result = [];

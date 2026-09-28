@@ -17,11 +17,16 @@ CUBICAL_DIR = kernel
 CUBICAL_SRC = $(wildcard $(CUBICAL_DIR)/src/*.c)
 CUBICAL_EXPORTS = '["_cb_abi_version","_cb_new","_cb_optimizations","_cb_step_budget","_cb_work","_cb_deadline_ms","_cb_checkpoint","_cb_rollback","_cb_commit_checkpoint","_cb_relocated","_cb_unfolding_clear","_cb_unfolding_add","_cb_free","_cb_error","_cb_error_kind","_cb_mismatch","_cb_trace","_cb_trace_count","_cb_trace_event","_cb_term","_cb_formula_begin","_cb_formula_clause","_cb_formula_end","_cb_context_clear","_cb_context_add","_cb_check","_cb_check_in_cube","_cb_result","_cb_normalize","_cb_node","_cb_formula_view","_cb_define","_cb_definition","_cb_head","_cb_position_clear","_cb_position_push","_cb_clear_error","_cb_instr","_cb_judgement_count","_cb_judgement","_cb_judgement_context","_cb_entry_count","_cb_entry","_cb_convertible","_cb_rename","_cb_equiv_type","_cb_fresh_symbol","_cb_endpoint_term","_cb_arena","_cb_normalize_derived","_cb_extensions","_cb_signature","_cb_signature_constructor"]'
 .PHONY: cubical-wasm
-wasm cubical-wasm: web/dist/cubical.mjs
+# A build whose sources changed since it was stamped is rebuilt, whatever the
+# file times say (tools/build-stamp.mjs): a source edited while emcc ran is
+# older than the output by its file time, but no longer matches the hash.
+wasm cubical-wasm:
+	@node tools/build-stamp.mjs check kernel 2>/dev/null || rm -f web/dist/cubical.mjs
+	$(MAKE) web/dist/cubical.mjs
 	node tools/build-cubical-runtime.mjs
 web/dist/cubical.mjs: $(CUBICAL_SRC) $(wildcard $(CUBICAL_DIR)/include/*.h) $(CUBICAL_DIR)/src/term_internal.h wasm/cubical_bridge.c Makefile
 	mkdir -p web/dist
-	$(EMCC) -O3 -std=c11 -Wall -Wextra -Wpedantic -Werror -I$(CUBICAL_DIR)/include -I$(CUBICAL_DIR)/src $(CUBICAL_SRC) wasm/cubical_bridge.c --no-entry -sMODULARIZE -sEXPORT_ES6 -sENVIRONMENT=web,worker,node -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=16777216 -sMAXIMUM_MEMORY=4294967296 -sSTACK_SIZE=2097152 -sABORTING_MALLOC=0 -sFILESYSTEM=0 -sEXPORTED_FUNCTIONS=$(CUBICAL_EXPORTS) -sEXPORTED_RUNTIME_METHODS='["UTF8ToString"]' -o $@
+	hash=$$(node tools/build-stamp.mjs hash kernel) && $(EMCC) -O3 -std=c11 -Wall -Wextra -Wpedantic -Werror -I$(CUBICAL_DIR)/include -I$(CUBICAL_DIR)/src $(CUBICAL_SRC) wasm/cubical_bridge.c --no-entry -sMODULARIZE -sEXPORT_ES6 -sENVIRONMENT=web,worker,node -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=16777216 -sMAXIMUM_MEMORY=4294967296 -sSTACK_SIZE=2097152 -sABORTING_MALLOC=0 -sFILESYSTEM=0 -sEXPORTED_FUNCTIONS=$(CUBICAL_EXPORTS) -sEXPORTED_RUNTIME_METHODS='["UTF8ToString"]' -o $@ && node tools/build-stamp.mjs write kernel $$hash
 wasm-test: wasm
 	npm test
 PORT ?= 8088

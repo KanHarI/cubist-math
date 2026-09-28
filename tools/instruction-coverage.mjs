@@ -28,6 +28,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import os from "node:os";
 import createCubical from "../web/dist/cubical.mjs";
+import { assertFreshBuild } from "./build-stamp.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { InstructionDriver, heuristicChooser, searchLimits } from "../web/cubical-instruction-driver.mjs";
 import { sourceModules, cubicalSourceModules } from "../web/mathscript/modules.mjs";
@@ -52,6 +53,8 @@ const environment = {
 };
 
 const readSource = name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
+// A stale WASM kernel or translator copy would measure code it does not contain.
+assertFreshBuild();
 const program = new CubicalProgram(await createCubical(), readSource);
 const kernel = program.kernel;
 kernel.conversionOracle = oracle;

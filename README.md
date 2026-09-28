@@ -38,6 +38,13 @@ make CC=clang sanitize                  # Address/undefined sanitizers
 make lint
 ```
 
+`make wasm` stamps `web/dist` with a hash of the kernel's and the
+translator's sources (`tools/build-stamp.mjs`), and rebuilds whatever no
+longer matches, whatever the file times say. `npm test`, the browser tests,
+the site build and the coverage tool refuse a stale build rather than test
+code it does not contain. A test file run directly with `node --test` is not
+checked: run `node tools/build-stamp.mjs check` first.
+
 The independent optimization switches are `--[no-]share-syntax`,
 `--[no-]reuse-checks`, and `--[no-]compact-paths`; all default on.
 `npm run format:cubist` formats sources and flattens right-associated tuples
