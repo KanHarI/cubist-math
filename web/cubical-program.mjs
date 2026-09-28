@@ -346,16 +346,46 @@ export class CubicalProgram {
     } finally { transaction.finish(false); }
   }
   // The same, as display text, for the CLI's inspect and the workbench:
-  // whole, as a clause's boundary comes at the end of its type.
+  // whole, as a clause's boundary comes at the end of its type, and with one
+  // naming for the whole view, so a parameter has one name in every type.
   signatureView(binding) {
     const signature = this.signature(binding);
     if (!signature) return null;
-    const text = term => this.checker.displayText(term, Infinity, 1000000), { eliminator } = signature;
-    return { ...signature, former: text(signature.former),
-      constructors: signature.constructors.map(c => ({ ...c, type: text(c.type) })),
-      eliminator: eliminator && { motive: `${eliminator.motive} : ${text(eliminator.motiveType)}`,
+    const { eliminator } = signature;
+    const terms = [signature.former, ...signature.constructors.map(c => c.type),
+      ...(eliminator ? [eliminator.motiveType, ...eliminator.clauses.map(c => c.type)] : [])];
+    const texts = this.checker.displayTexts(this.qualifyGenerated(terms), Infinity, 1000000);
+    let next = 0;
+    const text = () => texts[next++];
+    return { ...signature, former: text(),
+      constructors: signature.constructors.map(c => ({ ...c, name: c.generated ? `${signature.name}.squash` : c.name, type: text() })),
+      eliminator: eliminator && { motive: `${eliminator.motive} : ${text()}`,
         universe: eliminator.universe, error: eliminator.error ?? null,
-        clauses: eliminator.clauses.map(c => ({ constructor: c.constructor, name: c.name, type: text(c.type) })) } };
+        clauses: eliminator.clauses.map(c => ({ constructor: c.constructor, name: c.name, type: text() })) } };
+  }
+  // A signature's generated constructor as the source writes it, T.squash:
+  // a user constructor may be named squash too.
+  qualifyGenerated(term) {
+    const generated = new Map(), copies = new WeakMap();
+    const generatedOf = signature => {
+      if (!generated.has(signature)) {
+        const record = this.kernel.signatures.get(signature);
+        generated.set(signature, record ? this.kernel.signature(record.index).constructors.findIndex(c => c.generated) : -1);
+      }
+      return generated.get(signature);
+    };
+    const visit = t => {
+      if (!t || typeof t !== "object") return t;
+      if (copies.has(t)) return copies.get(t);
+      const copy = Array.isArray(t) ? [] : {};
+      copies.set(t, copy);
+      for (const [key, value] of Object.entries(t)) copy[key] = visit(value);
+      const signature = t.tag === "Con" ? t.sort?.signature : null;
+      if (typeof signature === "string" && t.index === generatedOf(signature))
+        copy.name = `${this.symbols[signature]?.name ?? signature.slice(signature.indexOf("__") + 2)}.squash`;
+      return copy;
+    };
+    return visit(term);
   }
   // Each proof statement of a module: where it is, the goal it faced, with the
   // names in scope, and the term it built. The rest of the block's proof

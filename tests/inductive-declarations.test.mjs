@@ -354,7 +354,7 @@ inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }
   // The motive's universe avoids the parameter's name.
   assert.equal(truncation.eliminator.motive, "P : Tr(A) -> V");
   assert.equal(truncation.eliminator.clauses[1].type, "forall x : Tr(A). forall x1 : Tr(A). forall x2 : P(x). "
-    + "forall x3 : P(x1). PathP(fun (i : Interval) => P(squash(x, x1) @ i), x2, x3)");
+    + "forall x3 : P(x1). PathP(fun (i : Interval) => P(Tr.squash(x, x1) @ i), x2, x3)");
   // A recorded universe parameter by its name in the declaration.
   assert.deepEqual(program.signatureView("main__Pointed").recorded, ["U"]);
   // Reading the eliminator leaves no kernel work behind.
@@ -392,4 +392,25 @@ inductive Tr(U < UU0, A : U) : set { point(a : A); }
   const before = sizes();
   for (let i = 0; i < 3; i++) program.signatureView("main__Tr");
   assert.deepEqual(sizes(), before);
+});
+
+// The second review of #74: one naming for the whole view, and the
+// generated constructor as the source writes it.
+test("inspection: a parameter has one name in the whole view, and T.squash is distinct from squash", async t => {
+  const { program } = await check(t, `inductive T(c : U0) { c(x : c); }
+inductive S : prop { squash; }
+`);
+  const view = program.signatureView("main__T");
+  const parameter = /^P : T\((\w+)\) -> U$/.exec(view.eliminator.motive)?.[1];
+  assert.ok(parameter && parameter !== "c", view.eliminator.motive);
+  assert.equal(view.constructors[0].type, `${parameter} -> T`);
+  assert.equal(view.eliminator.clauses[0].type, `forall x : ${parameter}. P(c(x))`);
+  const squashes = program.signatureView("main__S");
+  assert.deepEqual(squashes.constructors.map(c => c.name), ["squash", "S.squash"]);
+  assert.equal(squashes.eliminator.clauses[0].type, "P(squash)");
+  assert.match(squashes.eliminator.clauses[1].type, /P\(S\.squash\(x, x1\) @ i\)/);
+  // Any display: a variable whose name is a printed label is numbered apart.
+  const { T } = await import("../lib/cubical/core.mjs");
+  const constructor = T.constructor(0, T.sort("main__T"), "c");
+  assert.equal(program.checker.displayText(T.app(T.app(T.variable("f"), T.variable("c")), constructor)), "f(c1, c)");
 });

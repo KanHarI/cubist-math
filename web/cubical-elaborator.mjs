@@ -174,6 +174,21 @@ const binders = new Set(["Pi", "Lam", "Sigma", "W", "LPi", "LLam"]);
 // shows that name or its body uses the name for another variable; then it
 // shows the stem numbered from 1, n1. The copy is a tree, so a term that
 // shares much structure is left to globalNames.
+// A name shown as a label would read as that label: a variable a term shows
+// by a declared type's, a constructor's or a definition's name is numbered
+// instead, apart from every other name shown.
+function apartFromLabels(shownAs, labels) {
+  const taken = new Set([...shownAs.keys(), ...shownAs.values(), ...labels]);
+  for (const [name, shown] of shownAs) {
+    if (!labels.has(shown)) continue;
+    let index = 1, renamed;
+    do renamed = numberedName(stem(name), index++); while (taken.has(renamed));
+    taken.add(renamed);
+    shownAs.set(name, renamed);
+  }
+  return shownAs;
+}
+
 function scopedNames(term, limit = 2000) {
   let work = 0;
   const freeMemo = new WeakMap();
@@ -215,9 +230,9 @@ function scopedNames(term, limit = 2000) {
   // share one; binders then avoid those names.
   const outer = [...free(term)], count = new Map(), labels = printedLabels(term);
   for (const name of outer) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
-  const shownAs = new Map(outer.map(name => [name,
+  const shownAs = apartFromLabels(new Map(outer.map(name => [name,
     count.get(stem(name)) === 1 && !(outer.includes(stem(name)) && stem(name) !== name) && !labels.has(stem(name))
-      ? stem(name) : name]));
+      ? stem(name) : name])), labels);
   try { return go(term, shownAs, new Set([...shownAs.values(), ...labels])); }
   catch (error) { if (error === scopedNames) return null; throw error; }
 }
@@ -234,8 +249,9 @@ function globalNames(shown) {
   collect(shown);
   const count = new Map(), labels = printedLabels(shown);
   for (const name of names) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
-  const rename = name => count.get(stem(name)) === 1 && !(names.has(stem(name)) && stem(name) !== name)
-    && !labels.has(stem(name)) ? stem(name) : name;
+  const renames = apartFromLabels(new Map([...names].map(name => [name, count.get(stem(name)) === 1
+    && !(names.has(stem(name)) && stem(name) !== name) && !labels.has(stem(name)) ? stem(name) : name])), labels);
+  const rename = name => renames.get(name) ?? name;
   const renamed = new WeakMap();
   const apply = t => {
     if (!t || typeof t !== "object") return t;
@@ -381,6 +397,11 @@ export class NativeCubicalElaborator {
   }
   displayText(term, width = 160, limit = 4000) {
     return this.printed(readableDimensions([displayTerm(term)])[0], width, limit);
+  }
+  // Several terms shown with one naming: a variable they share has one name
+  // in all of them, apart from every label any of them prints.
+  displayTexts(terms, width = 160, limit = 4000) {
+    return readableDimensions(displayTerm(terms)).map(term => this.printed(term, width, limit));
   }
   // A term whose names are already chosen, as source text within a width.
   printed(term, width = 160, limit = 4000) {

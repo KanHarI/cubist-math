@@ -66,12 +66,12 @@ try {
     && !document.querySelector("#inspect-signature").hidden);
   assert.equal(await page.locator("#inspect-kind").textContent(), "Declared type · prop");
   assert.deepEqual(await page.locator("#inspect-constructors li code").allTextContents(),
-    ["point : A -> Wrapped", "squash : forall x : Wrapped. forall x1 : Wrapped. x = x1"]);
+    ["point : A -> Wrapped", "Wrapped.squash : forall x : Wrapped. forall x1 : Wrapped. x = x1"]);
   assert.match(await page.locator("#inspect-constructors li").nth(1).textContent(), /2 positions · 1 dimension · generated/);
   assert.equal(await page.locator("#inspect-eliminator-motive").textContent(), "For a motive P : Wrapped(A) -> U, one clause per constructor:");
   const clauses = await page.locator("#inspect-clauses li code").allTextContents();
   assert.equal(clauses[0], "point_case : forall x : A. P(point(x))");
-  assert.match(clauses[1], /^squash_case : .*PathP\(fun \(i : Interval\) => P\(squash\(x, x1\) @ i\), x2, x3\)$/);
+  assert.match(clauses[1], /^squash_case : .*PathP\(fun \(i : Interval\) => P\(Wrapped\.squash\(x, x1\) @ i\), x2, x3\)$/);
   assert.match(await page.locator("#inspect-axioms").textContent(), /kernel extension: H1/);
   assert.equal(await page.locator("#kernel-terms").isVisible(), false, "no checked term to show");
   assert.deepEqual(errors, []);
