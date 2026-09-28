@@ -215,6 +215,12 @@ both term handles and unique identifiers for the complete term-binder and
 dimension-binder scopes. Scope identifiers are never reused; they are not
 hashes of context names. This preserves the distinction between bound and free
 names, including under shadowing. Collisions only replace an older cache entry.
+A renaming is left out of the key, and the comparison, where neither side has
+a renamed name free: then the pair compares the same under every renaming.
+So a shared graph below differently named binders is compared once per node,
+not once per path to it. Each node carries masks of the term variables and
+dimensions it mentions, which rule most names out at once; the rest are
+looked up exactly, and only for terms at least eight levels deep.
 No typing judgement is cached by this table. An entry holds two separate
 facts: the folded comparison's result, which only that comparison reads, and
 a success of the conversion search, which conversion reuses. Until

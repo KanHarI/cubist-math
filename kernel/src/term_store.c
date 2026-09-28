@@ -240,6 +240,11 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
         if (children[i] >= k->count || (i >= arity && children[i]))
             return ck_fail(k, "Invalid syntax child handle."), 0;
     }
+    /* A formula payload names a registered formula: a node's masks are taken
+     * from it once, when the node is made, and interning shares the node. */
+    if ((kind == CC_PAPP || kind == CC_PUSH_PATH || kind == CC_TUBE || kind == CC_GLUE_SYSTEM) &&
+        !cc_kernel_get_formula(k, payload))
+        return ck_fail(k, "A formula handle names no registered formula."), 0;
     /* Identical syntax is one node. Every child and payload is compared after
      * hashing, so collisions affect performance, never term identity. */
     if (k->optimizations & CC_SHARE_SYNTAX) {
@@ -277,8 +282,21 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
         k->weak_cache = cache;
         k->capacity = capacity;
     }
+    uint64_t symbols = kind == CC_VAR ? UINT64_C(1) << (payload % 64) : 0, dims = 0;
+    if (kind == CC_PAPP || kind == CC_PUSH_PATH || kind == CC_TUBE || kind == CC_GLUE_SYSTEM) {
+        const cc_formula *formula = cc_kernel_get_formula(k, payload);
+        for (size_t i = 0; formula && i < formula->length; ++i)
+            dims |= formula->clauses[i].positive | formula->clauses[i].negative;
+    }
+    if (ck_dim_binder(kind) && payload < CC_DIMENSIONS)
+        dims |= UINT64_C(1) << payload;
+    for (unsigned i = 0; i < arity; ++i)
+        if (children[i]) {
+            symbols |= k->nodes[children[i]].symbols;
+            dims |= k->nodes[children[i]].dims;
+        }
     cc_term result = (cc_term)k->count++;
-    k->nodes[result] = (cc_node){kind, payload, {a,b,c,d}, depth};
+    k->nodes[result] = (cc_node){kind, payload, {a,b,c,d}, depth, symbols, dims};
     if ((kind == CC_VAR || ck_term_binder(kind)) && payload >= k->next_symbol) {
         if (payload == UINT32_MAX)
             return ck_fail(k, "Term symbol space exhausted."), 0;

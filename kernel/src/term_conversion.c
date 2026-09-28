@@ -10,6 +10,9 @@ typedef struct alpha_binding {
     uint64_t scope;
     bool identity;
     const struct alpha_binding *previous;
+    /* Every name this binding and the ones before it rename, one bit per
+     * name modulo 64, as cc_node's masks: a symbol, or a dimension. */
+    uint64_t left_mask, right_mask;
 } alpha_binding;
 
 static size_t comparison_slot(uint64_t hash) {
@@ -39,7 +42,9 @@ static alpha_binding bind(cc_kernel *k, uint32_t left, uint32_t right,
         if (entry) *entry = (cc_alpha_scope){left, right, parent, scope};
     }
     return (alpha_binding){left, right, scope,
-        left == right && (!previous || previous->identity), previous};
+        left == right && (!previous || previous->identity), previous,
+        (previous ? previous->left_mask : 0) | UINT64_C(1) << (left % 64),
+        (previous ? previous->right_mask : 0) | UINT64_C(1) << (right % 64)};
 }
 
 static size_t alpha_slot(cc_term left, cc_term right, uint64_t terms, uint64_t dims) {
@@ -144,6 +149,27 @@ static bool formula_equal(cc_kernel *k, uint32_t a, uint32_t b, const alpha_bind
 }
 
 static bool alpha(cc_kernel *, cc_term, cc_term, const alpha_binding *, const alpha_binding *, enum comparison_mode);
+
+/* Whether a name that the renaming binds, on one side, occurs free in the
+ * term: the node's mask proves most names absent at once, and each name it
+ * cannot rule out is looked up exactly. */
+static bool renamed_free(cc_kernel *k, cc_term term, const alpha_binding *env, bool right) {
+    uint64_t mask = k->nodes[term].symbols;
+    if (!(mask & (right ? env->right_mask : env->left_mask)))
+        return false;
+    for (const alpha_binding *binding = env; binding && !k->error[0]; binding = binding->previous) {
+        uint32_t name = right ? binding->right : binding->left;
+        if ((mask & UINT64_C(1) << (name % 64)) && ck_term_free(k, term, name))
+            return true;
+    }
+    return false;
+}
+
+/* The same for a renaming of dimensions, whose masks hold them exactly. */
+static bool renamed_dims_free(cc_kernel *k, cc_term term, const alpha_binding *env, bool right) {
+    uint64_t renamed = right ? env->right_mask : env->left_mask;
+    return (k->nodes[term].dims & renamed) && (ck_free_dims(k, term) & renamed);
+}
 
 /* Peel applications without evaluating their arguments or function bodies. */
 static cc_term application_head(cc_kernel *k, cc_term term) {
@@ -546,6 +572,22 @@ static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms
     if (++k->recursion > 512) {
         --k->recursion;
         return ck_fail(k, "Native conversion recursion depth exceeded.");
+    }
+    /* A renaming matters only where its names occur free. Where neither side
+     * has a renamed name free, the pair compares the same under every
+     * renaming, so it is compared and memoized as one pair, however many
+     * binders it is reached under: a shared graph below differently named
+     * binders is compared once per node, not once per path to it. Only deep
+     * terms are asked, where the question pays for itself. */
+    if (a && b && a < k->count && b < k->count && (k->nodes[a].depth >= 8 || k->nodes[b].depth >= 8)) {
+        if (terms && !terms->identity && !renamed_free(k, a, terms, false) && !renamed_free(k, b, terms, true))
+            terms = NULL;
+        if (dims && !dims->identity && !renamed_dims_free(k, a, dims, false) && !renamed_dims_free(k, b, dims, true))
+            dims = NULL;
+        if (k->error[0]) {
+            --k->recursion;
+            return false;
+        }
     }
     uint64_t term_scope = terms && !terms->identity ? terms->scope : 0;
     uint64_t dimension_scope = dims && !dims->identity ? dims->scope : 0;
