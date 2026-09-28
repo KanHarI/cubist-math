@@ -262,3 +262,14 @@ def qualified(t : Trunc(U0, N)) : Trunc(U0, N) := match t {
   const source = "def f(t : T) : T := match t { T.squash(x, y) i => x; };\n";
   assert.match(formatMathScript(source), /T\.squash\(x, y\) i => x;/);
 });
+
+test("fifth review: a position's arguments may be curried in a recursive call", async t => {
+  const { get } = await check(t, `inductive W { leaf; node(p : Nat -> Nat -> W); }
+def size(w : W) : Nat := match w { leaf => 0; node(p) => succ(size(p(0)(0))); };
+def size_flat(w : W) : Nat := match w { leaf => 0; node(p) => succ(size(p(0, 0))); };
+def one : size(node(fun (a : Nat) => fun (b : Nat) => leaf)) = 1 { rfl; }
+def partial(w : W) : Nat := match w { leaf => 0; node(p) => succ(partial(p(0))); };
+`);
+  for (const name of ["size", "size_flat", "one"]) ok(get(name));
+  refused(get("partial"), /p takes 2 arguments here, as an argument of the matched constructor/);
+});
