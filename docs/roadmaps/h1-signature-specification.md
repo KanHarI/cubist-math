@@ -31,8 +31,9 @@ and a review decision:
 5. K2.3's open items: the verifier's marker comparison (6.4), the
    inspection of 6.5, and a recorded run of the whole suite at a pinned
    revision;
-6. K2.4a's differential fixtures X1–X4 and X6–X8, and the work plan's
-   isolation correction I1.2a, on which 4.1's baseline relies.
+6. K2.4a's differential fixtures X1–X4 and X6–X8. The work plan's
+   isolation correction I1.2a, on which 4.1's baseline relies, was
+   delivered on 2026-09-28.
 
 Not on the checklist: the classification of each instruction into the
 cases (i)–(v) of 2.3. It belongs to the deferred tier-parametric proposal
@@ -1122,11 +1123,12 @@ marker.
 | Canonicity for H1 | Argued (4.4), relative to the assumed baseline |
 | Consistency and canonicity of the baseline, pushouts included | **Assumed**, as in G0 3.6 |
 | Normalization, for decidable conversion | **Not established**; the kernel relies on budgets, as today |
-| The baseline's isolation of instruction acceptance from untrusted conversion queries | **Open defect** (audit of 2026-09-28, finding 1): the reducers behind `Whnf` and `Normalize` call `ck_convertible`, and a successful public conversion query enters the memo that folded alpha equality reads, so one `Apply` is refused, then accepted, with no equality judgement among its premises. Valid beta equality, so no false equality; corrected by work-plan I1.2a |
+| The baseline's isolation of instruction acceptance from untrusted conversion queries | **Corrected** on 2026-09-28 (work-plan I1.2a). The audit's finding 1: the reducers behind `Whnf` and `Normalize` called `ck_convertible`, and a successful public conversion query entered the memo that folded alpha equality read, so one `Apply` was refused, then accepted, with no equality judgement among its premises. Valid beta equality, so no false equality. Now the folded comparison reads only its own results, reduction decides eta by syntax, and conversion refuses to run inside an instruction (`kernel/tests/test_isolation.c`) |
 
 **Status on 2026-09-28.** No open obligation above has been discharged
-since the approval of 2026-09-27. The implementation's tests are evidence
-for the specified behaviour, not for these claims, and the header's release
+since the approval of 2026-09-27; the isolation defect is an implementation
+fix, not one of them. The implementation's tests are evidence for the
+specified behaviour, not for these claims, and the header's release
 checklist maps each to its evidence and review decision.
 
 ### 4.6 Literature

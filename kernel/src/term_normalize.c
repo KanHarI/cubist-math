@@ -55,12 +55,17 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             system = piece.child[n.kind == CC_GLUE ? 2 : 1];
         }
     }
+    /* Glue eta: glue [φ ↦ b|φ] (unglue b) is b. Reduction is trusted, so its
+     * side conditions are syntactic, as instructions' are (ck_alpha_equal):
+     * the same Glue type, and each piece the restriction of b. When the sides
+     * are equal only after computation, the redex stays uncontracted, and
+     * still checked; conversion never decides a reduction step. */
     if (n.kind == CC_GLUE_TERM) {
         cc_term projected = ck_whnf(k, n.child[1]);
         if (!projected)
             return 0;
         cc_node projection = k->nodes[projected];
-        if (projection.kind == CC_UNGLUE && ck_convertible(k, n.child[0], projection.child[0])) {
+        if (projection.kind == CC_UNGLUE && ck_alpha_equal(k, n.child[0], projection.child[0])) {
             bool agrees = true;
             for (cc_term system = n.child[2]; system && agrees;) {
                 cc_node piece = k->nodes[system];
@@ -70,7 +75,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
                 if (cc_copy(&face, raw) != CC_OK)
                     return ck_fail(k, "Glue eta face allocation failed."), 0;
                 for (size_t i = 0; i < face.length && agrees; ++i)
-                    agrees = ck_convertible(k, piece.child[0], ck_restrict(k, projection.child[1], face.clauses[i]));
+                    agrees = ck_alpha_equal(k, piece.child[0], ck_restrict(k, projection.child[1], face.clauses[i]));
                 cc_clear(&face);
                 system = piece.child[1];
             }
@@ -125,12 +130,14 @@ static cc_term weak(cc_kernel *k, cc_term term) {
         return fn == n.child[0] ? term : ck_make(k, CC_LAPP, 0, fn, n.child[1], 0, 0);
     }
     if (n.kind == CC_PAIR) {
-        /* Surjective pairing. Inspect only projection syntax here: forcing
-         * arbitrary components would destroy the demand-driven strategy. */
+        /* Surjective pairing: (fst p, snd p) is p. Inspect only projection
+         * syntax here: forcing arbitrary components would destroy the
+         * demand-driven strategy. The two projections must be of the same
+         * term up to bound names, as for Glue eta above. */
         cc_node first = k->nodes[n.child[1]];
         cc_node second = k->nodes[n.child[2]];
         if (first.kind == CC_FST && second.kind == CC_SND &&
-            ck_convertible(k, first.child[0], second.child[0]))
+            ck_alpha_equal(k, first.child[0], second.child[0]))
             return ck_whnf(k, first.child[0]);
     }
     if (n.kind == CC_FST || n.kind == CC_SND) {

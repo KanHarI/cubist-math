@@ -11,7 +11,7 @@ target statement or a supplied theorem parameter as an already proved result.
   kernel support; concrete mathematical development is paused.
 - [Work-plan audit of 2026-09-28](audits/2026-09-28-audit.md): the baseline
   revision (`02a57ef`) and findings behind the current statuses, including
-  the open instruction-isolation defect (work-plan I1.2a).
+  the instruction-isolation defect, corrected the same day (work-plan I1.2a).
 - [Historical plans and specifications](historical/README.md): completed
   work, currently G0. Its specification remains linked as a contract.
 - [Higher inductive-inductive types](higher-inductive-types-design.md): the
@@ -37,7 +37,8 @@ target statement or a supplied theorem parameter as an already proved result.
   Every search decision is in an untrusted driver, and the kernel's state is
   two hash graphs, explorable in the workbench. Every later kernel item is a
   set of instructions. The audit of 2026-09-28 found the separation from
-  the old conversion checker incomplete; work-plan I1.2a corrects it.
+  the old conversion checker incomplete; work-plan I1.2a corrected it the same
+  day.
 - [Learned search](learned-search.md): a design for a small policy and value
   network over the kernel's graphs, trained against the instruction kernel,
   that steers the driver's conversion search toward cheaper derivations.

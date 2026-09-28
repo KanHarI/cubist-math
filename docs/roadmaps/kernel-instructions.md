@@ -7,9 +7,9 @@ default; the old conversion oracle is available only for comparison. Its
 retirement and conditional stage 6 remain open; see
 [what remains of it](#what-remains-of-the-term-checker). The
 [audit of 2026-09-28](audits/2026-09-28-audit.md) found that separation
-incomplete: reduction still calls the old conversion, and its memo can
-change an instruction's acceptance. That section records the defect, and
-the work plan schedules its correction as I1.2a, ahead of any deletion.
+incomplete: reduction called the old conversion, and its memo could change
+an instruction's acceptance. Work-plan I1.2a corrected both the same day,
+and enforces the boundary at run time; that section records how.
 H1's signature instructions (K2.2) are implemented behind the
 `CC_EXTENSION_H1` gate, with ABI version 3.
 Every later kernel item (G0, H) is a set of instructions; the
@@ -554,44 +554,61 @@ against 20 s in Stage 4. The JS test suite takes 76 s, up from 61 s.
 
 ## What remains of the term checker
 
-The intended boundary: the instruction kernel calls three functions of the
-old checker's files, and only those are trusted: alpha equality
-(`ck_alpha_equal`) and syntactic cumulativity (`ck_syntactic_cumulative`)
-in `term_conversion.c`, and the builder of a pushout's bridge type
-(`ck_pushout_bridge_type`) in `check_pushout.c`. The rest is meant to be
-untrusted:
+The instruction kernel uses two pieces of the old checker's files, and only
+they are trusted: the folded comparison of `term_conversion.c`, which is
+alpha equality (`ck_alpha_equal`) and syntactic cumulativity
+(`ck_syntactic_cumulative`), and the builder of a pushout's bridge type
+(`ck_pushout_bridge_type`) in `check_pushout.c`. The reducers of
+`term_normalize.c`, which `Step`, composition and transport call, are
+trusted computation, as decision 1 below states. The rest is untrusted:
 
 - the typing rules (`ck_check`, `ck_infer` in `check_*.c`), reachable through
   `cc_kernel_check` for `CubicalSyntax.check`, which only tests use;
-- the conversion strategy (`ck_convertible` in `term_conversion.c`) and the
+- the conversion search (`ck_convertible` in `term_conversion.c`) and the
   unfolding hints, reachable through `cc_kernel_convertible`, which the
   driver asks only with its `oracle` option;
 - `cc_kernel_define`, whose definitions `Lookup` refuses.
 
-**The boundary is not yet what this says** (audit of 2026-09-28, finding 1;
-work-plan I1.2a). Two paths cross it:
+**Corrected on 2026-09-28 (I1.2a).** The audit of that day (finding 1)
+found two paths across this boundary. `Step(Whnf)` and `Step(Normalize)`
+reached `ck_convertible` through the reducers' Glue and pair eta rules.
+And a successful conversion comparison entered the memo table that the
+folded comparison also read, so a public `cc_kernel_convertible` query
+could satisfy a later instruction's syntactic side condition: the audit's
+probe has an `Apply` refused, then accepted after the query, with no
+equality judgement among its premises. The equality involved was valid beta
+equality, so this was history-dependent acceptance, not a false equality.
+The correction:
 
-- `Step(Whnf)` and `Step(Normalize)` call the reducers of
-  `term_normalize.c`, which call `ck_convertible` for Glue and for pair
-  eta. The conversion strategy is therefore transitively part of trusted
-  reduction, not only a search aid.
-- A successful conversion comparison enters the memo table that folded
-  alpha equality also reads (`term_conversion.c`), and a success is reused
-  across comparison modes. A public `cc_kernel_convertible` query can so
-  satisfy a later instruction's syntactic side condition. The audit's
-  appendix reproduces it through the public API: an `Apply` whose argument
-  type is a beta redex of the expected type is refused, then accepted after
-  the query, with no equality judgement among its premises.
+- **The memo keeps two facts per pair.** The folded result is written and
+  read only by the folded comparison; a conversion success is reused only
+  by conversion.
+- **Reduction decides eta by syntax.** Pair eta contracts `(fst p, snd p)`
+  and Glue eta `glue [φ ↦ b|φ] (unglue b)` only when the two sides are the
+  same up to bound names. `Normalize` still reaches the contraction when
+  the normal forms of the parts agree, and conversion has both eta rules
+  itself, decided by conversion.
+- **The boundary is enforced.** `ck_convertible` fails, with an internal
+  error, while an instruction runs; every public entry point that may reach
+  it starts a query first.
+- **The call graph.** A static call graph of `kernel/src` at this revision
+  finds no path from any of the 76 instruction entry points to
+  `ck_convertible`, `ck_expect`, `ck_check`, `ck_infer` or the typing rules.
+  Reached old-checker code is the folded comparison with its helpers and
+  `ck_pushout_bridge_type`. The folded comparison shares one function,
+  `alpha`, with the conversion modes; at run time the folded mode never
+  enters them, and I1.2b gives it its own file.
 
-The equality involved is valid beta equality, so this is history-dependent
-acceptance and incomplete certificate isolation, not a false equality and
-not an inconsistency. The correction, I1.2a: separate syntactic and
-conversion memo evidence; make the reducers' equality dependencies explicit
-and either justify them as trusted operations or replace them with the
-instruction mechanism; add a regression showing that untrusted queries
-cannot change instruction acceptance; and audit the complete call graph
-before any deletion, since the three helpers above are not the whole
-trusted remnant.
+`kernel/tests/test_isolation.c` covers each point, and reverting any one of
+them fails it. Measured on the archive: with the driver's guide, reduction's
+conversion accepted an eta contraction that syntax refused twice, and the
+driver found other derivations for both; archive coverage stays complete,
+at 5,524,203 check instructions (6 fewer) and 147,448,289 re-derivation
+steps (0.006% more). With the conversion oracle, which the leaky memo
+actually affected (a counting build found dozens of side conditions
+answered by conversion's evidence where syntax disagreed), coverage stays
+complete at about 1% more kernel steps: those side conditions are now
+derived.
 
 The JavaScript reference checker (`lib/cubical/core.mjs`) is in the same
 position: its `Checker` serves the tests of the CCHM fragment and the
@@ -610,11 +627,13 @@ against 33 s, three declarations ran out of kernel budget
 deriving every definition again took 34 s against 10 s. The driver's own
 guide (above) closed that gap on 2026-09-27 (work plan K1.4), and is now the
 default: the driver no longer asks the term checker anything. What remains
-is its retirement, a separate change: the three trusted functions move to
-their own file, and
-`check_*.c`, the rest of `term_conversion.c` and `unfolding_hints.c` are
-deleted, together with `cc_kernel_check`, `cc_kernel_convertible` and
-`cc_kernel_define`. Stage 6 stays conditional on JavaScript being too slow.
+is its retirement, a separate change (I1.2b): the folded comparison, with
+the level, formula and scope helpers it uses, and the pushout bridge
+builder move to their own files, and `check_*.c`, the rest of
+`term_conversion.c` and `unfolding_hints.c` are deleted, together with
+`cc_kernel_check`, `cc_kernel_convertible` and `cc_kernel_define`. The
+call graph above lists what must move. Stage 6 stays conditional on
+JavaScript being too slow.
 
 ## Decisions
 
@@ -635,6 +654,7 @@ deleted, together with `cc_kernel_check`, `cc_kernel_convertible` and
    and the JavaScript reference checker are not extended, and they retire
    when the driver no longer benefits from the conversion oracle.
 9. (2026-09-28) An instruction's acceptance may not depend on an untrusted
-   query. The memo that syntactic side conditions read holds syntactic
-   evidence only, and reduction's equality dependencies are explicit and
-   trusted, or replaced. I1.2a establishes this before I1.2b deletes code.
+   query. The folded comparison reads only its own memo entries, reduction
+   decides its eta rules by syntax, and the conversion search refuses to
+   run inside an instruction. I1.2a established this before I1.2b deletes
+   code.

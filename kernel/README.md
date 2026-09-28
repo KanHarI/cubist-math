@@ -7,6 +7,31 @@ Suspension is derived from pushouts. The website and CLI use this code through
 WebAssembly; the archived first library's source modules live in
 `archive/first-library/*.cubist`.
 
+## Trust boundary
+
+The trusted checker is the instruction kernel
+([design](../docs/roadmaps/kernel-instructions.md)): each typing rule is an
+instruction (`cc_instr_*`, `src/instructions.c`, with declared types in
+`src/signatures.c` and `src/eliminators.c`) whose side conditions are
+syntactic, and a definition is admitted only by the `Define` instruction.
+The computation that instructions call, such as `Step`'s reductions,
+composition and transport, is trusted with them.
+
+The term checker (`cc_kernel_check`, `cc_kernel_define`, the `check_*.c`
+files) and the conversion search (`cc_kernel_convertible`) are untrusted
+services that tests and an optional search aid use. Their answers are never
+evidence for an instruction, and this is enforced (work plan I1.2a):
+
+- the folded comparison that instructions use keeps its own entries in the
+  comparison memo, apart from conversion's successes;
+- weak-head reduction contracts pair and Glue eta only when their sides are
+  the same syntax; conversion completes both eta rules itself;
+- the conversion search refuses to run while an instruction does.
+
+`tests/test_isolation.c` checks each of these, including the probe that the
+[2026-09-28 audit](../docs/roadmaps/audits/2026-09-28-audit.md) used to show
+an untrusted query changing an instruction's verdict.
+
 ## Reading the mathematics in the code
 
 | File | Mathematical responsibility |
@@ -18,9 +43,11 @@ WebAssembly; the archived first library's source modules live in
 | `include/cubical_kernel.h` | Opaque arena, raw handles and checked-result API |
 | `src/term_store.c` | Inert syntax allocation and bounded handles |
 | `src/term_substitution.c` | Capture-avoiding term and dimension substitution |
-| `src/term_conversion.c` | Demand-driven conversion modulo bound names |
-| `src/term_normalize.c` | Weak-head computation; separate optional normal forms |
-| `src/check.c` | Checked telescopes, dispatch and result publication |
+| `src/instructions.c` | The instruction kernel: forward rules on a graph of judgements |
+| `src/signatures.c`, `src/eliminators.c` | Declared types (H1): admission, instances, constructors, elimination |
+| `src/term_conversion.c` | Folded comparison modulo bound names (trusted); the demand-driven conversion search (untrusted) |
+| `src/term_normalize.c` | Weak-head computation; separate optional normal forms; eta only by syntax |
+| `src/check.c` | The untrusted term checker: checked telescopes, dispatch and result publication |
 | `src/check_functions.c` | Pi/Sigma formation, introduction and elimination |
 | `src/check_inductives.c` | Nat, Unit, Void, sums and general W rules |
 | `src/check_pushout.c` | Pushout span, point and dependent bridge premises |
@@ -61,10 +88,11 @@ bitsets or a sparse dimension representation are required before removing it.
 A universe carries its level as a child: a level expression over constants
 `ω·tier + n` below ω², successors, maxima and variables (G0). Levels are
 compared by normal form, so equality and cumulativity are arithmetic, never
-search; `CC_LEVEL_MAX` and `CC_TIER_MAX` bound them. No rule binds a level
-variable yet, and the frontend still instantiates universe schemas at explicit
-universe arguments. The term checker takes universes at closed finite levels
-only. Cumulative upward inclusion is not downward resizing. The syntax
+search; `CC_LEVEL_MAX` and `CC_TIER_MAX` bound them. Level variables are
+bound by instructions (`Level`, `LevelPi`, `LevelLambda`, `LevelApply`), so a
+universe-generic definition is one checked term (G0). The term checker takes
+universes at closed finite levels only. Cumulative upward inclusion is not
+downward resizing. The syntax
 encoding has an ABI version, `cc_kernel_abi_version()`; the JavaScript loader
 and `kernel-cli` refuse a client written for another.
 
@@ -75,7 +103,12 @@ The JavaScript reference and native protocol tests live in `lib/cubical/tests`.
 The public corpus benchmark is `web/benchmark.html`; timing results depend on
 hardware and browser. Inspect the current report rather than historical milestones.
 
-## Checked API and compact computation
+## The term checker's API and compact computation
+
+The sections below describe the term checker and the conversion search. Since
+the instruction kernel became the trusted checker, elaboration no longer uses
+them; they serve tests and the optional conversion oracle, and nothing they
+accept is admitted (see [Trust boundary](#trust-boundary)).
 
 `cc_kernel_term` only creates inert syntax. `cc_kernel_check` validates the
 ordered assumption telescope, infers the term and checks an optional expected
@@ -151,8 +184,10 @@ Conversion tries folded syntax, then definition/beta/projection/boundary exposur
 then congruence of matching constructors before computing their values. For
 example, equality of `decode(p @ 1)` and `decode(bits)` first compares the small
 arguments. It does not evaluate both resulting unary naturals. A lambda is
-already a weak head; its body is not evaluated by a head query. Function/path
-eta is handled explicitly when conversion requires it. Conversion recursion is
+already a weak head; its body is not evaluated by a head query. Function,
+path, pair and Glue eta are handled explicitly when conversion requires them;
+weak heads contract pair and Glue eta only when they hold by syntax, since
+instructions trust reduction. Conversion recursion is
 guarded at 512 active levels, reporting a failed request rather than relying on
 a host stack overflow.
 
@@ -166,7 +201,7 @@ criterion of actual computational-univalence transfer is still outstanding.
 
 The derived-library suite also certifies the closed total-space formulation of
 univalence at U0 and U2: `forall A, IsContr(Sigma X, Equiv(X,A))`. See the
-[experiment milestone](../../../docs/cubical/experiment.md#derived-univalence-milestone).
+[experiment milestone](../docs/cubical/experiment.md#derived-univalence-milestone).
 The explicit `idtoequiv isEquiv` API is still a remaining library connection.
 
 ### Sharing during folded conversion
@@ -176,7 +211,11 @@ both term handles and unique identifiers for the complete term-binder and
 dimension-binder scopes. Scope identifiers are never reused; they are not
 hashes of context names. This preserves the distinction between bound and free
 names, including under shadowing. Collisions only replace an older cache entry.
-No typing judgement or reduced equality is cached by this table.
+No typing judgement is cached by this table. An entry holds two separate
+facts: the folded comparison's result, which only that comparison reads, and
+a success of the conversion search, which conversion reuses. Until
+2026-09-28 one flag held both, and a conversion query could satisfy a later
+instruction's syntactic side condition (work plan I1.2a).
 
 The 8192-entry table adds 256 KiB on the tested native platform, included in
 reported arena memory. Comparing a closed arithmetic DAG with 2^24 unfolded
@@ -189,7 +228,7 @@ proof by checking a generic beta lemma and applying it to the endpoint.
 
 ### Cubical higher inductive structure
 
-See [the pushout rule and ABI notes](../../../docs/cubical/pushouts.md).
+See [the pushout rule and ABI notes](../docs/cubical/pushouts.md).
 Append-only tags 36–42 cover the pushout and its computational structure;
 no suspension-specific tags are needed. The existing open-cube checking API
 `cc_kernel_check_in_cube` accepts an explicit dimension bitmask and checks all

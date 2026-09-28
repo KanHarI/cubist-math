@@ -255,6 +255,38 @@ static cc_term hinted_head(cc_kernel *k, cc_term term) {
     return term;
 }
 
+/* Glue eta for conversion: glue [φ ↦ t] (unglue b) is b when the Glue types
+ * are equal and each piece is b on its face. Reduction decides this only
+ * syntactically (term_normalize.c), because instructions trust it; the
+ * search completes it here by conversion. Both comparisons are within one
+ * side's scope, so they bind nothing. Returns b, or 0. */
+static cc_term glue_eta(cc_kernel *k, cc_term term) {
+    cc_node n = k->nodes[term];
+    cc_term projected = ck_whnf(k, n.child[1]);
+    if (!projected || k->nodes[projected].kind != CC_UNGLUE)
+        return 0;
+    cc_node projection = k->nodes[projected];
+    if (!alpha(k, n.child[0], projection.child[0], NULL, NULL, COMPUTE))
+        return 0;
+    for (cc_term system = n.child[2]; system; system = k->nodes[system].child[1]) {
+        cc_node piece = k->nodes[system];
+        const cc_formula *raw = cc_kernel_get_formula(k, piece.payload);
+        cc_formula face;
+        cc_init(&face, CC_FACE);
+        if (!raw || cc_copy(&face, raw) != CC_OK) {
+            cc_clear(&face);
+            return ck_fail(k, "Glue eta face allocation failed."), 0;
+        }
+        bool agrees = true;
+        for (size_t i = 0; i < face.length && agrees; ++i)
+            agrees = alpha(k, piece.child[0], ck_restrict(k, projection.child[1], face.clauses[i]), NULL, NULL, COMPUTE);
+        cc_clear(&face);
+        if (!agrees)
+            return 0;
+    }
+    return projection.child[1];
+}
+
 static bool tube_alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms,
                        const alpha_binding *outer_dims, const alpha_binding *inner_dims, enum comparison_mode mode) {
     if (!a || !b)
@@ -405,6 +437,14 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
             return alpha(k, first, right.child[1], terms, dims, children_mode) &&
                    alpha(k, second, right.child[2], terms, dims, children_mode);
         }
+        /* Glue eta, which weak heads contract only when it holds by syntax. */
+        if (mode == COMPUTE && (left.kind == CC_GLUE_TERM || right.kind == CC_GLUE_TERM)) {
+            bool on_left = left.kind == CC_GLUE_TERM;
+            cc_term contracted = glue_eta(k, on_left ? a : b);
+            if (contracted)
+                return on_left ? alpha(k, contracted, b, terms, dims, COMPUTE)
+                               : alpha(k, a, contracted, terms, dims, COMPUTE);
+        }
         return false;
     }
     if (left.kind == CC_DEFREF)
@@ -470,6 +510,10 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
     return true;
 }
 
+static bool same_key(const cc_alpha_memo *entry, cc_term a, cc_term b, uint64_t terms, uint64_t dims) {
+    return entry->left == a && entry->right == b && entry->term_scope == terms && entry->dimension_scope == dims;
+}
+
 static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms,
                    const alpha_binding *dims, enum comparison_mode mode) {
     if (++k->recursion > 512) {
@@ -479,12 +523,16 @@ static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms
     uint64_t term_scope = terms && !terms->identity ? terms->scope : 0;
     uint64_t dimension_scope = dims && !dims->identity ? dims->scope : 0;
     size_t slot = alpha_slot(a, b, term_scope, dimension_scope);
-    if (a && b && k->alpha_memo) {
+    if (a && b && k->alpha_memo && same_key(&k->alpha_memo[slot], a, b, term_scope, dimension_scope)) {
         cc_alpha_memo entry = k->alpha_memo[slot];
-        if (entry.left == a && entry.right == b && entry.term_scope == term_scope &&
-            entry.dimension_scope == dimension_scope && (entry.equal || mode == FOLDED)) {
+        /* The folded comparison reads only its own results: a success of a
+         * computing strategy is not syntactic evidence. Conversion may reuse
+         * either kind of success. */
+        bool known = mode == FOLDED ? entry.folded != CC_FOLDED_UNKNOWN
+                                    : entry.folded == CC_FOLDED_EQUAL || entry.convertible;
+        if (known) {
             --k->recursion;
-            return ck_tick(k, false) && entry.equal;
+            return ck_tick(k, false) && (mode != FOLDED || entry.folded == CC_FOLDED_EQUAL);
         }
     }
     bool equal = alpha_inner(k, a, b, terms, dims, mode);
@@ -497,8 +545,16 @@ static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms
             if (!k->alpha_memo)
                 ck_fail(k, "Alpha-comparison memo allocation failed.");
         }
-        if (k->alpha_memo)
-            k->alpha_memo[slot] = (cc_alpha_memo){a, b, term_scope, dimension_scope, equal};
+        if (k->alpha_memo) {
+            /* The comparison may have reused the slot for other pairs. */
+            cc_alpha_memo *entry = &k->alpha_memo[slot];
+            if (!same_key(entry, a, b, term_scope, dimension_scope))
+                *entry = (cc_alpha_memo){a, b, term_scope, dimension_scope, CC_FOLDED_UNKNOWN, false};
+            if (mode == FOLDED)
+                entry->folded = equal ? CC_FOLDED_EQUAL : CC_FOLDED_DIFFERENT;
+            else
+                entry->convertible = true;
+        }
     }
     --k->recursion;
     return !k->error[0] && equal;
@@ -568,11 +624,18 @@ bool ck_syntactic_cumulative(cc_kernel *k, cc_term actual, cc_term expected) {
 }
 
 bool ck_convertible(cc_kernel *k, cc_term a, cc_term b) {
-    /* Prefer the folded checked structure. Equal closed references never
-     * need their bodies evaluated, even inside larger matching types. */
-    if (alpha(k, a, b, NULL, NULL, FOLDED))
-        return true;
-    return !k->error[0] && alpha(k, a, b, NULL, NULL, COMPUTE);
+    /* The conversion search is untrusted. Instructions, and the reducers
+     * they call, decide equality syntactically; reaching the search while an
+     * instruction runs would put it back on the trusted path, so it refuses.
+     * Every public entry point that may reach it starts a query first. */
+    if (k->work_phase == CC_WORK_INSTRUCTION)
+        return ck_fail(k, "Internal error: an instruction reached the conversion search.");
+    /* The computing comparison prefers the folded checked structure at every
+     * node (alpha_inner), so equal closed references never need their bodies
+     * evaluated, even inside larger matching types. Its own memo lookup comes
+     * first: a repeated question is answered in one step, although the
+     * folded pass no longer takes conversion's successes. */
+    return alpha(k, a, b, NULL, NULL, COMPUTE);
 }
 
 /* Cumulativity is directed typing, not definitional equality. A function or

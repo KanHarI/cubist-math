@@ -30,7 +30,7 @@ A new syntax form must elaborate completely through the instruction driver.
 
 | Area | Delivered | Still open |
 | --- | --- | --- |
-| Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default; explicit driver options and cumulative kernel-work counters (learned-search phases 1–2) | **Review pending, I1.2a:** the old conversion checker still crosses the stated trust boundary (audit finding 1): the reducers behind `Whnf` and `Normalize` call `ck_convertible`, and a public `cc_kernel_convertible` query enters the memo that folded alpha equality reads, so it can change a later instruction's acceptance. Then the optional retirement I1.2b, after a complete call-graph audit; optional performance/certificate work |
+| Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default; explicit driver options and cumulative kernel-work counters (learned-search phases 1–2) | The optional retirement I1.2b, after the call-graph audit I1.2a recorded; optional performance/certificate work. I1.2a, instruction isolation, was delivered on 2026-09-28: no untrusted query can change an instruction's verdict |
 | G0 universes | K1.1–K1.4 and L1.1; `U < UU0`, `next`, `max`, generic builtins and rewriting; all 43 former templates check generically | E1 level constraints and E2 higher-tier generic definitions remain deferred proposals |
 | Proof ergonomics | Grouped binders, `have`, `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand; Σ projections `p.1`/`p.2`, `show` and `suffices` (L1.5); path-operator notation (`-i`, `&`, `\|`, `path i =>`) and readable path diagnostics (PR #71) | General inference, `apply`/`refine`, folded path rules and constructor descent, broader dependent rewriting, `Path` induction (B1) |
 | Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | Face-aware plans, filling/source-span records, tactic integration; a source `match` client for the motive service; indexed motives (with L4.2) and companion motives (with L5.1) |
@@ -110,32 +110,32 @@ convertible. K2.4 must specify comparison fixtures before retiring anything.
 G2's deliberate universe/assumption changes have a separate reviewed ledger;
 weakening the ordinary migration verifier is not an acceptance strategy.
 
-**I1.2a, instruction isolation (M, current).** The audit of 2026-09-28
-(finding 1) found that the separation from the old conversion checker is
-incomplete, in two places. `Step(Whnf)` and `Step(Normalize)` call the
-reducers of `kernel/src/term_normalize.c`, which call `ck_convertible` for
-Glue and pair eta, so the conversion strategy is transitively part of
-trusted reduction. And a successful conversion comparison enters the memo
-table that folded alpha equality reads (`kernel/src/term_conversion.c`), so
-a public `cc_kernel_convertible` query can satisfy a later instruction's
-syntactic side condition: the audit's appendix shows one `Apply` rejected,
-then accepted after the query, with no equality judgement among its
-premises. The equality involved is valid beta equality, so this is
-history-dependent acceptance and incomplete certificate isolation, not a
-false equality. Correct it before relying on the stated boundary: separate
-syntactic and conversion memo evidence; make the reducers' equality
-dependencies explicit, and either justify them as trusted operations or
-replace them with the intended instruction mechanism; add a regression
-showing that untrusted queries cannot change instruction acceptance; and
-correct the trusted-remnant list in the
-[kernel instructions](kernel-instructions.md#what-remains-of-the-term-checker).
-This precedes any deletion and is not an H1, inference or theory gate.
+**I1.2a, instruction isolation (M). Done on 2026-09-28.** The audit of
+that day (finding 1) found the separation from the old conversion checker
+incomplete in two places: the reducers behind `Step(Whnf)` and
+`Step(Normalize)` decided pair and Glue eta with `ck_convertible`, and a
+conversion success entered the memo table that the folded comparison read,
+so a public `cc_kernel_convertible` query could satisfy a later
+instruction's syntactic side condition. The correction keeps the folded
+result and conversion's success as separate facts in each memo entry,
+decides both eta rules in reduction by syntax, gives conversion its own
+Glue eta, and makes `ck_convertible` refuse to run inside an instruction.
+`kernel/tests/test_isolation.c` covers each part, including the audit's
+probe, and reverting any part fails it. A static call graph finds no path
+from an instruction to the conversion search or the typing rules. Archive
+coverage stays complete with the driver's guide, at essentially unchanged
+work, and with the conversion oracle, at about 1% more kernel steps, since
+side conditions the leaky memo answered are now derived. The
+[kernel instructions](kernel-instructions.md#what-remains-of-the-term-checker)
+record the boundary, the evidence and the measurements.
 
 **I1.2b, optional checker retirement (M).** K1.4 removes the runtime
 dependency, but deletion also requires migrating test-only clients and
 bridge exports. Move the trusted helpers out of the old checker files,
-preserve required syntax builders, and audit the complete call graph, not
-only the three helpers, before removing old APIs. Native search,
+preserve required syntax builders, and remove old APIs only after the
+call graph I1.2a recorded is rechecked: the folded comparison shares its
+function with the conversion modes, and its level, formula and scope
+helpers move with it. Native search,
 certificate compaction and exported content hashes remain conditional
 stage-6 work.
 
@@ -498,9 +498,8 @@ results from the corresponding library area.
 
 ## First actions
 
-1. **I1.2a, instruction isolation.** Repair and document the trust boundary
-   with focused history and cache regressions. Keep the optional deletion
-   (I1.2b) separate.
+1. **I1.2a, instruction isolation.** Done on 2026-09-28; the optional
+   deletion (I1.2b) stays separate.
 2. **Reconcile H1's release scope.** One checklist for finite-level H1
    (the specification's header), one differential and retirement contract
    (K2.4a–c), and an explicit review record for each obligation of the
