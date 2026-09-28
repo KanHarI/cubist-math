@@ -458,7 +458,9 @@ cc_judgement_id cc_instr_lift(cc_kernel *, cc_judgement_id typing, cc_judgement_
 /* A search aid, never evidence: whether the term checker's conversion finds
  * two terms equal, within a step budget (zero for the usual one). An
  * untrusted driver may steer its search by it; the instructions it then
- * issues are checked as any others. False on an error, which stays recorded:
+ * issues are checked as any others, and its answer cannot change their
+ * verdicts: their syntactic comparison keeps its own memo entries, and no
+ * instruction reaches this search. False on an error, which stays recorded:
  * an exhausted budget means the answer is unknown. */
 bool cc_kernel_convertible(cc_kernel *, cc_term, cc_term, uint64_t steps);
 /* Syntax only, for the same search: a term with a free name, or dimension,

@@ -35,7 +35,8 @@ Moving these documents does not change their recorded status or resume paused wo
   on 2026-09-26. Every later kernel item is a set of instructions; the
   [work plan](roadmaps/work-plan.md#the-instruction-kernel-and-this-plan)
   records what that changes. The audit of 2026-09-28 found the separation
-  from the old conversion checker incomplete; work-plan I1.2a corrects it.
+  from the old conversion checker incomplete; work-plan I1.2a corrected it
+  the same day.
 - Experimental designs:
   - [learned search](roadmaps/learned-search.md): a small policy and value
     network, trained against that kernel, for cheaper derivations.

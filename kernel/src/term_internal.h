@@ -114,12 +114,19 @@ typedef struct {
 
 /* Conversion keys include exact, never-reused binder-renaming scopes. An
  * identity renaming is equivalent to the empty renaming and uses scope zero.
- * Success is reusable in every strategy; failure means only that the folded
- * syntax differed. This caches equality, never a typing judgement. */
+ * An entry holds two separate facts about its pair. `folded` is the result of
+ * the syntactic comparison that instructions trust (ck_alpha_equal): only
+ * that comparison writes it, and it reads nothing else, so no conversion
+ * query can satisfy an instruction's side condition. `convertible` records a
+ * success of any conversion strategy, which conversion reuses; a folded
+ * failure says nothing about equality after reduction. This caches equality,
+ * never a typing judgement. */
+enum { CC_FOLDED_UNKNOWN, CC_FOLDED_EQUAL, CC_FOLDED_DIFFERENT };
 typedef struct {
     cc_term left, right;
     uint64_t term_scope, dimension_scope;
-    bool equal;
+    uint8_t folded;
+    bool convertible;
 } cc_alpha_memo;
 #define CC_ALPHA_MEMO_SIZE 8192
 
