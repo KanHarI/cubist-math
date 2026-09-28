@@ -33,13 +33,13 @@ the kernel workbench, checking the real worker and WASM checker.
 
 ## Checks
 
-The kernel workflow (`.github/workflows/ci.yml`) runs its full matrix only for
-pull requests into `main`. Work is grouped on other branches and merged into
-`main` together, so those branches' pull requests run no CI; check them
-locally with `npm test`, `npm run test:browser`, `make -C kernel test` and
-`make lint`. To run the workflow on another branch, use
-`gh workflow run ci.yml --ref BRANCH`. A newer push to a pull request cancels
-its older run. After a merge, the website workflow checks `main` again
+The kernel workflow (`.github/workflows/ci.yml`) runs its full matrix for
+pull requests into `main`, where grouped work lands, and into
+`h1-signatures`, where the H1 work integrates. Pull requests into other
+branches run no CI; check them locally with `npm test`,
+`npm run test:browser`, `make -C kernel test` and `make lint`. To run the
+workflow on another branch, use `gh workflow run ci.yml --ref BRANCH`. A
+newer push to a pull request cancels its older run. After a merge, the website workflow checks `main` again
 (`npm test` and the site test) before publishing.
 
 ## Domain
