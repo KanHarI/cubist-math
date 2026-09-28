@@ -242,3 +242,23 @@ def counted : count(succ(succ(zero))) = 0 { rfl; }
   ok(get("count"));
   ok(get("counted"));
 });
+
+test("fourth review: a user constructor named squash and the generated T.squash are distinct clauses", async t => {
+  const { get } = await check(t, `${naturals}
+inductive S : prop { squash; }
+def keep(s : S) : S := match s { squash => squash; S.squash(x, y) i => S.squash(keep(x), keep(y)) @ i; };
+def kept : keep(squash) = squash { rfl; }
+def ambiguous(s : S) : S := match s { squash => squash; squash(x, y) i => S.squash(x, y) @ i; };
+inductive Trunc(U < UU0, A : U) : prop { point(a : A); }
+def qualified(t : Trunc(U0, N)) : Trunc(U0, N) := match t {
+  point(a) => point(a);
+  Trunc.squash(x, y) i => Trunc.squash(qualified(x), qualified(y)) @ i;
+};
+`);
+  for (const name of ["keep", "kept", "qualified"]) ok(get(name));
+  // squash here is the user's constructor: two clauses for it.
+  refused(get("ambiguous"), /squash has two clauses/);
+  const { formatMathScript } = await import("../web/mathscript/formatter.mjs");
+  const source = "def f(t : T) : T := match t { T.squash(x, y) i => x; };\n";
+  assert.match(formatMathScript(source), /T\.squash\(x, y\) i => x;/);
+});

@@ -203,7 +203,14 @@ export function parse(source, typeOnly = false) {
       const clauses = [];
       while (peek() !== "}") {
         if (peek() === "EOF") throw Object.assign(new Error("Expected '}' to close the match."), { offset: ts[i].start });
-        const constructor = name();
+        let constructor = name(), qualifiedDot = null;
+        // A generated constructor may be named with its type, T.squash.
+        if (peek() === "." && ts[i - 1].end === ts[i].start && /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text)
+            && ts[i + 1].start === ts[i].end) {
+          const dot = take("."), member = take();
+          qualifiedDot = { start: dot.start, end: dot.end };
+          constructor = { text: `${constructor.text}.${member.text}`, start: constructor.start, end: member.end };
+        }
         let args = null;
         if (peek() === "(") {
           take("(");
@@ -219,7 +226,8 @@ export function parse(source, typeOnly = false) {
         take("=>");
         const body = expr();
         const end = take(";").end;
-        clauses.push({ kind: "clause", constructor, args, names, body, start: constructor.start, end });
+        clauses.push({ kind: "clause", constructor, args, names, body, ...(qualifiedDot ? { qualifiedDot } : {}),
+          start: constructor.start, end });
       }
       const end = take("}").end;
       a = { kind: "match", motiveName, value, type, start: t.start, end };
