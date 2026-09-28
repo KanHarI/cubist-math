@@ -1,33 +1,24 @@
-// The build stamp (web/dist/build-stamp.json): a hash of each generated
-// artifact's sources, taken before the artifact is built and written once it
-// is. The WASM kernel and the translator's runtime copy are both generated
-// into web/dist, which is not versioned. A build that no longer matches its
-// sources, because they changed afterwards or while it ran, would make a
-// test run pass or fail for code it does not contain. So `make wasm`
-// rebuilds whatever is stale, and the test runners refuse to start on it.
+// The build stamp (web/dist/build-stamp.json). web/dist is generated and not
+// versioned: the WASM kernel, compiled from kernel/src, kernel/include and the
+// bridge, and a copy of the translator's modules, which CubicalProgram loads.
+// A build that no longer matches its sources, its compiler or its own outputs
+// would make a run pass or fail for code it does not contain. So a build clears
+// its stamp before it writes anything, hashes its sources, builds, and stamps
+// the sources' hash, its compiler and flags, and its outputs' hashes; `make
+// wasm` runs under a lock and rebuilds what no longer matches, whatever the
+// file times say; and every runner refuses a stale build.
+//
+// CUBIST_BUILD_ROOT names another tree to check, for this module's tests.
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-
-const root = new URL("../", import.meta.url);
-const stampFile = new URL("web/dist/build-stamp.json", root);
+import { execFileSync, spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 // The translator modules copied for the browser (tools/build-cubical-runtime.mjs).
 export const runtimeModules = ["core", "lattice", "syntax-graph", "equivalence", "translate", "proof-rewrite",
   "simp-registry", "number-transport", "pushouts", "path-over", "path-algebra", "public-equivalence",
   "dimension-slots", "dependent-transport", "adjointification", "names", "elaboration", "proof-goals", "motives",
   "fuel", "inductive", "match"];
-
-const listed = (directory, keep) => readdirSync(new URL(directory, root)).filter(keep).sort()
-  .map(name => `${directory}${name}`);
-
-// Each artifact's sources, as paths from the repository root. The kernel's
-// include the Makefile, which holds its compiler flags.
-export const buildSources = {
-  kernel: () => [...listed("kernel/src/", name => /\.[ch]$/.test(name)), ...listed("kernel/include/", name => name.endsWith(".h")),
-    "wasm/cubical_bridge.c", "Makefile"],
-  runtime: () => runtimeModules.map(name => `lib/cubical/${name}.mjs`),
-};
 
 // A hash of files, by path and content, read through `read`.
 export function hashOf(paths, read) {
@@ -36,40 +27,137 @@ export function hashOf(paths, read) {
   return hash.digest("hex");
 }
 
-export function sourceHash(kind) {
-  if (!buildSources[kind]) throw new Error(`Unknown build ${kind}: expected kernel or runtime.`);
-  return hashOf(buildSources[kind](), path => readFileSync(new URL(path, root)));
+// A compiler's identity and flags: its --version line, then its arguments.
+export function compilerConfiguration(command) {
+  let version = "unknown";
+  try { version = execFileSync(command[0], ["--version"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).split("\n")[0]; }
+  catch { /* A compiler that cannot say is still named by its path. */ }
+  return `${version}\n${command.join(" ")}`;
 }
 
-function readStamp() {
-  try { return JSON.parse(readFileSync(stampFile, "utf8")); } catch { return {}; }
+const sleep = milliseconds => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
+const alive = pid => { try { process.kill(pid, 0); return true; } catch (error) { return error.code === "EPERM"; } };
+
+// The stamp of the tree at `root`, a directory URL ending in a slash.
+export function buildStamp(root) {
+  const at = path => new URL(path, root);
+  const stampFile = at("web/dist/build-stamp.json");
+  const lockDirectory = at("web/dist/.build-lock/"), ownerFile = at("web/dist/.build-lock/owner");
+  const listed = (directory, keep) => existsSync(at(directory))
+    ? readdirSync(at(directory)).filter(keep).sort().map(name => `${directory}${name}`) : [];
+  // Each build's inputs: the kernel's include the Makefile, which holds its
+  // flags; the runtime's include the generator, and this file, which lists
+  // the modules it copies.
+  const sources = {
+    kernel: () => [...listed("kernel/src/", name => /\.[ch]$/.test(name)), ...listed("kernel/include/", name => name.endsWith(".h")),
+      "wasm/cubical_bridge.c", "Makefile"],
+    runtime: () => [...runtimeModules.map(name => `lib/cubical/${name}.mjs`), "tools/build-cubical-runtime.mjs", "tools/build-stamp.mjs"],
+  };
+  const outputs = {
+    kernel: () => ["web/dist/cubical.mjs", "web/dist/cubical.wasm"],
+    runtime: () => runtimeModules.map(name => `web/dist/cubical-runtime/${name}.mjs`),
+  };
+  const kinds = Object.keys(sources);
+  const hashFiles = paths => hashOf(paths, path => readFileSync(at(path)));
+  const readStamp = () => { try { return JSON.parse(readFileSync(stampFile, "utf8")); } catch { return {}; } };
+  // Written whole, then renamed into place: a reader never sees half a stamp.
+  const saveStamp = stamp => {
+    mkdirSync(at("web/dist/"), { recursive: true });
+    const temporary = at(`web/dist/build-stamp.json.${process.pid}`);
+    writeFileSync(temporary, `${JSON.stringify(stamp, null, 2)}\n`);
+    renameSync(temporary, stampFile);
+  };
+  const known = kind => { if (!sources[kind]) throw new Error(`Unknown build ${kind}: expected ${kinds.join(" or ")}.`); return kind; };
+
+  const sourceHash = kind => hashFiles(sources[known(kind)]());
+  // Before a build writes any output: until it is stamped again, it is stale.
+  const invalidate = kind => { const stamp = readStamp(); delete stamp[known(kind)]; saveStamp(stamp); };
+  const write = (kind, sourcesHash, configuration = null) => {
+    const stamp = readStamp();
+    stamp[known(kind)] = { sources: sourcesHash, ...(configuration === null ? {} : { configuration }),
+      outputs: hashFiles(outputs[kind]()) };
+    saveStamp(stamp);
+  };
+  // Why a build is stale, or null. The configuration is compared only when
+  // given, by `make wasm`, which knows the compiler and flags it would use.
+  const staleness = (kind, configuration = null) => {
+    const entry = readStamp()[known(kind)];
+    if (!entry) return `no ${kind} build is recorded`;
+    if (entry.sources !== sourceHash(kind)) return `the ${kind} sources changed since it was built`;
+    if (configuration !== null && entry.configuration !== configuration)
+      return `the ${kind} was built with another compiler or other flags`;
+    const missing = outputs[kind]().find(path => !existsSync(at(path)));
+    if (missing) return `${missing} is missing`;
+    if (entry.outputs !== hashFiles(outputs[kind]())) return `the ${kind} outputs changed since they were built`;
+    return null;
+  };
+  const staleBuilds = (names = kinds) => names.map(kind => staleness(kind)).filter(Boolean);
+  const assertFreshBuild = names => {
+    const stale = staleBuilds(names);
+    if (stale.length) throw new Error(`web/dist is stale: ${stale.join("; ")}. Run make wasm.`);
+  };
+
+  // One build of web/dist at a time. The lock is a directory, made atomically,
+  // holding its owner's process id; a lock whose owner has exited is taken
+  // over. A process started under the lock (CUBIST_BUILD_LOCK) holds it.
+  const acquire = (timeout = Number(process.env.CUBIST_BUILD_LOCK_TIMEOUT_MS ?? 20 * 60 * 1000)) => {
+    mkdirSync(at("web/dist/"), { recursive: true });
+    const started = Date.now();
+    for (let reported = false; ;) {
+      try {
+        mkdirSync(lockDirectory);
+        writeFileSync(ownerFile, String(process.pid));
+        return;
+      } catch (error) {
+        if (error.code !== "EEXIST") throw error;
+      }
+      let owner = 0;
+      try { owner = Number(readFileSync(ownerFile, "utf8")); } catch { /* Being written. */ }
+      if (owner && !alive(owner)) { rmSync(lockDirectory, { recursive: true, force: true }); continue; }
+      if (Date.now() - started > timeout) throw new Error("Timed out waiting for another build of web/dist to finish.");
+      if (!reported) { process.stderr.write("Waiting for another build of web/dist to finish.\n"); reported = true; }
+      sleep(200);
+    }
+  };
+  const release = () => rmSync(lockDirectory, { recursive: true, force: true });
+  const withLock = operation => {
+    if (process.env.CUBIST_BUILD_LOCK) return operation();
+    acquire();
+    try { return operation(); } finally { release(); }
+  };
+
+  return { sources, outputs, sourceHash, invalidate, write, staleness, staleBuilds, assertFreshBuild, withLock };
 }
 
-export function writeStamp(kind, hash) {
-  mkdirSync(new URL("web/dist/", root), { recursive: true });
-  writeFileSync(stampFile, `${JSON.stringify({ ...readStamp(), [kind]: hash }, null, 2)}\n`);
-}
+const root = process.env.CUBIST_BUILD_ROOT ? pathToFileURL(`${process.env.CUBIST_BUILD_ROOT.replace(/\/$/, "")}/`)
+  : new URL("../", import.meta.url);
+export const { sources, outputs, sourceHash, invalidate, write, staleness, staleBuilds, assertFreshBuild, withLock } = buildStamp(root);
 
-// Why each named build does not match its sources; empty when all do.
-export function staleBuilds(kinds = Object.keys(buildSources)) {
-  const stamp = readStamp();
-  return kinds.filter(kind => stamp[kind] !== sourceHash(kind))
-    .map(kind => stamp[kind] ? `the ${kind} sources changed since it was built` : `no ${kind} build is recorded`);
-}
-
-export function assertFreshBuild(kinds) {
-  const stale = staleBuilds(kinds);
-  if (stale.length) throw new Error(`web/dist is stale: ${stale.join("; ")}. Run make wasm.`);
-}
-
-// node tools/build-stamp.mjs hash KIND | write KIND HASH | check [KIND...]
+// node tools/build-stamp.mjs
+//   hash KIND                        the sources' hash, for a build to stamp
+//   invalidate KIND                  before a build writes its outputs
+//   write KIND HASH [-- COMPILER...] after it succeeds
+//   check [KIND...]                  refuse a stale build
+//   check-kernel -- COMPILER...      also compare the compiler and flags
+//   locked -- COMMAND...             run a build under the lock
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const [command, ...rest] = process.argv.slice(2);
+  const argv = process.argv.slice(2), separator = argv.indexOf("--");
+  const [command, ...rest] = separator < 0 ? argv : argv.slice(0, separator);
+  const after = separator < 0 ? [] : argv.slice(separator + 1);
   try {
     if (command === "hash" && rest.length === 1) process.stdout.write(`${sourceHash(rest[0])}\n`);
-    else if (command === "write" && rest.length === 2) writeStamp(rest[0], rest[1]);
-    else if (command === "check") assertFreshBuild(rest.length ? rest : undefined);
-    else throw new Error("Usage: node tools/build-stamp.mjs hash KIND | write KIND HASH | check [KIND...]");
+    else if (command === "invalidate" && rest.length === 1) invalidate(rest[0]);
+    else if (command === "write" && rest.length === 2) write(rest[0], rest[1], after.length ? compilerConfiguration(after) : null);
+    else if (command === "check" && !after.length) assertFreshBuild(rest.length ? rest : undefined);
+    else if (command === "check-kernel" && after.length) {
+      const reason = staleness("kernel", compilerConfiguration(after));
+      if (reason) throw new Error(`web/dist is stale: ${reason}.`);
+    } else if (command === "locked" && after.length) {
+      const result = withLock(() => spawnSync(after[0], after.slice(1), { stdio: "inherit",
+        env: { ...process.env, CUBIST_BUILD_LOCK: String(process.pid) } }));
+      if (result.error) throw result.error;
+      process.exitCode = result.status ?? 1;
+    } else throw new Error("Usage: node tools/build-stamp.mjs hash|invalidate|write|check|check-kernel|locked (see the source).");
   } catch (error) {
     process.stderr.write(`${error.message}\n`);
     process.exitCode = 1;

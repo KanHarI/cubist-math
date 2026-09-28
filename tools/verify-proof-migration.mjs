@@ -9,6 +9,7 @@ import { readFile, readdir, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { verifyMigration } from "./proof-migration.mjs";
+import { assertFreshBuild } from "./build-stamp.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const args = process.argv.slice(2), option = name => {
@@ -46,6 +47,8 @@ const readOriginal = async name => {
   if (!originals.has(name)) originals.set(name, git(["show", `${base}:archive/first-library/${name}.cubist`]));
   return originals.get(name);
 };
+// A stale WASM kernel or translator copy would run code it does not contain.
+assertFreshBuild();
 const reports = await verifyMigration({ modules, readOriginal, readEdited, level, experimental });
 let failures = 0;
 for (const report of reports) {

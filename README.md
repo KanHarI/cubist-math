@@ -39,11 +39,14 @@ make lint
 ```
 
 `make wasm` stamps `web/dist` with a hash of the kernel's and the
-translator's sources (`tools/build-stamp.mjs`), and rebuilds whatever no
-longer matches, whatever the file times say. `npm test`, the browser tests,
-the site build and the coverage tool refuse a stale build rather than test
-code it does not contain. A test file run directly with `node --test` is not
-checked: run `node tools/build-stamp.mjs check` first.
+translator's sources, the compiler and its flags, and the outputs
+(`tools/build-stamp.mjs`). It runs under a lock, clears a stamp before
+rewriting its outputs, and rebuilds whatever no longer matches, whatever the
+file times say. Every command that loads `web/dist` refuses a stale build
+rather than run code it does not contain: `npm test`, the browser tests, the
+site build, the CLI, and the coverage, audit, fingerprint, fuel-baseline,
+migration-verifier and benchmark tools. A test file run directly with
+`node --test` is not checked: run `node tools/build-stamp.mjs check` first.
 
 The independent optimization switches are `--[no-]share-syntax`,
 `--[no-]reuse-checks`, and `--[no-]compact-paths`; all default on.

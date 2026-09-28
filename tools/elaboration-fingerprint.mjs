@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { canonicalHasher } from "./proof-migration.mjs";
+import { assertFreshBuild } from "./build-stamp.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 
@@ -86,6 +87,7 @@ export function compareFingerprints(before, after, limit = 50) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  assertFreshBuild();
   const args = process.argv.slice(2), option = name => {
     const index = args.indexOf(name);
     if (index < 0) return undefined;
