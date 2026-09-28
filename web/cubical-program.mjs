@@ -331,6 +331,9 @@ export class CubicalProgram {
     const assumptions = this.checker.requiredAssumptions(term, expected, context.map(([, type]) => type));
     context = [...assumptions, ...context];
     const checked = this.checker.checkView(term, expected, context, dimensions);
+    // The kernel extensions of the term as checked: a normal form may no
+    // longer mention the declared type it computed through.
+    const extensions = this.checker.extensionsOf(checked.term, checked.type, ...context.map(([, type]) => type));
     if (normalize) checked.term = this.checker.syntax.decode(this.kernel.normalize(checked.expression), dimensions);
     const bindings = this.declarationBindings.get(binding) ?? [];
     const aliases = (local?.aliases ?? []).map(alias => ({ ...alias, binding: `${local.referencePrefix ?? local.module}__local_${alias.start}` }));
@@ -352,7 +355,7 @@ export class CubicalProgram {
         binding: variableNames[name]?.binding ?? (this.checker.assumptions.has(name) ? name : null), type })), symbols,
       checkingSteps: checked.checkingSteps, reductionSteps: checked.reductionSteps, axioms: [...assumptions.keys()],
       // The kernel extensions the inspected term relies on, apart from assumptions.
-      extensions: this.checker.extensionsOf(checked.term, checked.type, ...context.map(([, type]) => type)) };
+      extensions };
     view.sourceBinding = aliases.find(alias => alias.term === local?.term)?.binding;
     const simplifiedType = simplifyTypeApplications(view.type);
     const presentation = simplifiedType === view.type ? view
