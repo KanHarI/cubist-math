@@ -45,9 +45,11 @@ translator's sources, the compiler and its flags, and the outputs
 rewriting its outputs, and rebuilds whatever no longer matches, whatever the
 file times say. Every command that loads `web/dist` refuses a stale build
 rather than run code it does not contain: `npm test`, the browser tests, the
-site build, the CLI, and the coverage, audit, fingerprint, fuel-baseline,
-migration-verifier, benchmark and differential tools. A test file run
-directly with `node --test` is not checked: run `node tools/build-stamp.mjs check` first.
+site build, the CLI, the coverage, audit, fingerprint, fuel-baseline,
+migration-verifier, benchmark and differential tools, and the driver trace
+(`tests/driver-trace.mjs`), which checks another checkout it traces by that
+tree's own stamp. A test file run directly with `node --test` is not
+checked: run `node tools/build-stamp.mjs check` first.
 
 `tools/differential-driver.mjs` generates problems where eta and computation
 meet, each a context, a type and two terms. The terms are equal by
