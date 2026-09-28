@@ -6,13 +6,12 @@
 // its stamp before it writes anything, hashes its sources, builds, and stamps
 // the sources' hash, its compiler and flags, and its outputs' hashes; `make
 // wasm` runs under a lock and rebuilds what no longer matches, whatever the
-// file times say; and every runner refuses a stale build.
-//
-// CUBIST_BUILD_ROOT names another tree to check, for this module's tests.
+// file times say; and every runner refuses a stale build. The exported
+// functions always check this repository; buildStamp(root) serves tests.
 import { createHash } from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 // The translator modules copied for the browser (tools/build-cubical-runtime.mjs).
 export const runtimeModules = ["core", "lattice", "syntax-graph", "equivalence", "translate", "proof-rewrite",
@@ -39,10 +38,11 @@ const sleep = milliseconds => Atomics.wait(new Int32Array(new SharedArrayBuffer(
 const alive = pid => { try { process.kill(pid, 0); return true; } catch (error) { return error.code === "EPERM"; } };
 
 // The stamp of the tree at `root`, a directory URL ending in a slash.
-export function buildStamp(root) {
+export function buildStamp(root, { lockTimeout = Number(process.env.CUBIST_BUILD_LOCK_TIMEOUT_MS ?? 20 * 60 * 1000) } = {}) {
   const at = path => new URL(path, root);
   const stampFile = at("web/dist/build-stamp.json");
   const lockDirectory = at("web/dist/.build-lock/"), ownerFile = at("web/dist/.build-lock/owner");
+  const recoveryDirectory = at("web/dist/.build-lock-recovery/"), recoveryOwner = at("web/dist/.build-lock-recovery/owner");
   const listed = (directory, keep) => existsSync(at(directory))
     ? readdirSync(at(directory)).filter(keep).sort().map(name => `${directory}${name}`) : [];
   // Each build's inputs: the kernel's include the Makefile, which holds its
@@ -98,9 +98,36 @@ export function buildStamp(root) {
   };
 
   // One build of web/dist at a time. The lock is a directory, made atomically,
-  // holding its owner's process id; a lock whose owner has exited is taken
-  // over. A process started under the lock (CUBIST_BUILD_LOCK) holds it.
-  const acquire = (timeout = Number(process.env.CUBIST_BUILD_LOCK_TIMEOUT_MS ?? 20 * 60 * 1000)) => {
+  // holding its owner's process id. A process started under the lock
+  // (CUBIST_BUILD_LOCK, by `locked`) runs in it.
+  const ownerOf = file => { try { return Number(readFileSync(file, "utf8")); } catch { return 0; } };
+  // A lock whose owner has exited is taken over, one recoverer at a time.
+  // Under a second lock, the recoverer reads the owner again and removes the
+  // lock only if it is still the exited owner's: a recoverer that saw the
+  // exited owner leaves a lock another has taken since. The second lock is
+  // held only for that moment and is never taken over; should its owner exit
+  // holding it, the builds stop and say what to remove. False when another
+  // recovery is under way.
+  const recoverLock = exited => {
+    try {
+      mkdirSync(recoveryDirectory);
+      writeFileSync(recoveryOwner, String(process.pid));
+    } catch (error) {
+      if (error.code !== "EEXIST") throw error;
+      const recoverer = ownerOf(recoveryOwner);
+      if (recoverer && !alive(recoverer) && ownerOf(recoveryOwner) === recoverer)
+        throw new Error("A build of web/dist exited while taking over an abandoned lock. If no build is running, "
+          + "remove web/dist/.build-lock and web/dist/.build-lock-recovery.");
+      return false;
+    }
+    try {
+      if (ownerOf(ownerFile) === exited) rmSync(lockDirectory, { recursive: true, force: true });
+      return true;
+    } finally {
+      rmSync(recoveryDirectory, { recursive: true, force: true });
+    }
+  };
+  const acquire = (timeout = lockTimeout) => {
     mkdirSync(at("web/dist/"), { recursive: true });
     const started = Date.now();
     for (let reported = false; ;) {
@@ -111,27 +138,27 @@ export function buildStamp(root) {
       } catch (error) {
         if (error.code !== "EEXIST") throw error;
       }
-      let owner = 0;
-      try { owner = Number(readFileSync(ownerFile, "utf8")); } catch { /* Being written. */ }
-      if (owner && !alive(owner)) { rmSync(lockDirectory, { recursive: true, force: true }); continue; }
-      if (Date.now() - started > timeout) throw new Error("Timed out waiting for another build of web/dist to finish.");
+      const owner = ownerOf(ownerFile);
+      if (owner && !alive(owner) && recoverLock(owner)) continue;
+      if (Date.now() - started > timeout)
+        throw new Error("Timed out waiting for another build of web/dist to finish. If none is running, remove web/dist/.build-lock.");
       if (!reported) { process.stderr.write("Waiting for another build of web/dist to finish.\n"); reported = true; }
       sleep(200);
     }
   };
   const release = () => rmSync(lockDirectory, { recursive: true, force: true });
   const withLock = operation => {
-    if (process.env.CUBIST_BUILD_LOCK) return operation();
+    const holder = Number(process.env.CUBIST_BUILD_LOCK);
+    if (holder && ownerOf(ownerFile) === holder) return operation();
     acquire();
     try { return operation(); } finally { release(); }
   };
 
-  return { sources, outputs, sourceHash, invalidate, write, staleness, staleBuilds, assertFreshBuild, withLock };
+  return { sources, outputs, sourceHash, invalidate, write, staleness, staleBuilds, assertFreshBuild, withLock, recoverLock };
 }
 
-const root = process.env.CUBIST_BUILD_ROOT ? pathToFileURL(`${process.env.CUBIST_BUILD_ROOT.replace(/\/$/, "")}/`)
-  : new URL("../", import.meta.url);
-export const { sources, outputs, sourceHash, invalidate, write, staleness, staleBuilds, assertFreshBuild, withLock } = buildStamp(root);
+export const { sources, outputs, sourceHash, invalidate, write, staleness, staleBuilds, assertFreshBuild, withLock } =
+  buildStamp(new URL("../", import.meta.url));
 
 // node tools/build-stamp.mjs
 //   hash KIND                        the sources' hash, for a build to stamp
@@ -140,7 +167,10 @@ export const { sources, outputs, sourceHash, invalidate, write, staleness, stale
 //   check [KIND...]                  refuse a stale build
 //   check-kernel -- COMPILER...      also compare the compiler and flags
 //   locked -- COMMAND...             run a build under the lock
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+// Run as a command, by any path to this file: a check that silently did
+// nothing would pass.
+const invoked = () => { try { return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url); } catch { return false; } };
+if (invoked()) {
   const argv = process.argv.slice(2), separator = argv.indexOf("--");
   const [command, ...rest] = separator < 0 ? argv : argv.slice(0, separator);
   const after = separator < 0 ? [] : argv.slice(separator + 1);
