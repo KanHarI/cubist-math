@@ -350,7 +350,9 @@ export class CubicalProgram {
       dimensions: [...dimensions], context: context.map(([name, type]) => ({ name,
         label: variableNames[name]?.name ?? this.checker.assumptionLabels.get(name) ?? name,
         binding: variableNames[name]?.binding ?? (this.checker.assumptions.has(name) ? name : null), type })), symbols,
-      checkingSteps: checked.checkingSteps, reductionSteps: checked.reductionSteps, axioms: [...assumptions.keys()] };
+      checkingSteps: checked.checkingSteps, reductionSteps: checked.reductionSteps, axioms: [...assumptions.keys()],
+      // The kernel extensions the inspected term relies on, apart from assumptions.
+      extensions: this.checker.extensionsOf(checked.term, checked.type, ...context.map(([, type]) => type)) };
     view.sourceBinding = aliases.find(alias => alias.term === local?.term)?.binding;
     const simplifiedType = simplifyTypeApplications(view.type);
     const presentation = simplifiedType === view.type ? view

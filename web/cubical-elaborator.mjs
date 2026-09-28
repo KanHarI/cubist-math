@@ -201,6 +201,8 @@ export class NativeCubicalElaborator {
   // constructor or eliminator whose signature was admitted experimentally,
   // and every definition that carries a marker.
   extensionsOf(...terms) {
+    // No signature admitted in this session, no marker: nothing to walk.
+    if (!this.kernel.signatures.size) return [];
     const found = new Set(), seen = new WeakSet(), experimental = this.experimentalSignatures ??= new WeakMap();
     const signature = name => {
       const record = this.kernel.signatures.get(name);
@@ -241,7 +243,7 @@ export class NativeCubicalElaborator {
           + "with --experimental=h1 in the CLI or Declared types (H1) in the workbench."
         : error.message;
       throw this.describeMismatch(Object.assign(new Error(`Instruction kernel: ${refused}`),
-        { kind: error.kind ?? "other", mismatch: error.mismatch }), new Map());
+        { kind: error.kind ?? "other", mismatch: error.mismatch, constructor: error.constructor }), new Map());
     } finally {
       this.kernel.instructionDriver = null;
     }

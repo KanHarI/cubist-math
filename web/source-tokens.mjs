@@ -69,6 +69,13 @@ export const tokenStyle = (text, expansion, headerWord = false) =>
     : expansion && expansion !== text ? "macro" : "";
 // type, set, prop and trunc are h-level keywords only as the first word of an
 // inductive header's result position, after its colon, and names elsewhere.
-export const headerWordAt = (source, start, text) => ["type", "set", "prop", "trunc"].includes(text)
-  && /\binductive\b[^{};]*:\s*$/.test(source.slice(0, start));
+export function headerWordAt(source, start, text) {
+  if (!["type", "set", "prop", "trunc"].includes(text)) return false;
+  const before = source.slice(0, start), header = before.search(/\binductive\b[^{};]*$/);
+  if (header < 0 || !/:\s*$/.test(before)) return false;
+  // The colon must be the header's own, outside its parameters' parentheses.
+  let depth = 0;
+  for (const character of before.slice(header)) depth += character === "(" ? 1 : character === ")" ? -1 : 0;
+  return depth === 0;
+}
 

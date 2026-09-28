@@ -65,13 +65,18 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
   const sort = driver.bind(sortSymbol, universe);
   scope = new Map(scope).set(sortSymbol, sort);
   let signature = g.signatureBegin(former, modifierCode(spec.modifier), g.entry(sort).name, recorded);
-  for (const { name, type } of spec.constructors ?? []) {
+  for (const { name, type, display } of spec.constructors ?? []) {
     // A constructor's type lives in the sort's universe; one derived lower
-    // is lifted to it.
-    const derived = driver.convertTo(driver.derive(syntax.encode(type), scope), universe);
-    const entry = driver.bind(kernel.symbol(name), derived);
-    signature = g.signatureConstructor(signature, derived, g.entry(entry).name);
-    scope = new Map(scope).set(kernel.symbol(name), entry);
+    // is lifted to it. A refusal names the constructor.
+    try {
+      const derived = driver.convertTo(driver.derive(syntax.encode(type), scope), universe);
+      const entry = driver.bind(kernel.symbol(name), derived);
+      signature = g.signatureConstructor(signature, derived, g.entry(entry).name);
+      scope = new Map(scope).set(kernel.symbol(name), entry);
+    } catch (error) {
+      const shown = display ?? name;
+      throw Object.assign(error, { message: `Constructor ${shown}: ${error.message}`, constructor: shown });
+    }
   }
   const index = g.signatureClose(signature);
   const constructors = (spec.constructors ?? []).map(c => c.display ?? c.name);

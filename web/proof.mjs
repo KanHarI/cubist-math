@@ -780,7 +780,7 @@ function renderCubicalKernel(view) {
   $("kernel-identity-options").hidden = raw;
   $("expand-kernel").textContent = "Show more of the term";
   $("expand-kernel").hidden = raw || !["kernel-expression", "kernel-type", "kernel-context-list", "kernel-axioms-list"].some(id => $(id).textContent.includes("…"));
-  renderAxioms($("inspect-axioms"), view.axioms ?? []);
+  renderAxioms($("inspect-axioms"), view.axioms ?? [], view.extensions ?? []);
 }
 $("toggle-kernel-body").onclick = () => { showKernelBody = !showKernelBody; renderKernel(checkedKernelView); };
 $("widen-inspector").onclick = () => {

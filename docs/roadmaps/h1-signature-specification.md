@@ -1848,9 +1848,12 @@ this section left open:
   that type, which only a position can have: `cons(zero, xs)` for
   `xs : List(U0, N)`. Otherwise it asks for `typed(T(…), c(…))`. Inferring
   the instance from data arguments waits for L4.1a.
-- **Types as written.** Argument and result types are beta-reduced before
-  they are classified and admitted, so `l : typed(C, b) = b` has a
-  constructor expression for a boundary. Binders written in a result, as
+- **Types as written.** Argument and result types are checked by the kernel
+  as written, then beta-reduced, level redexes included, before they are
+  classified and admitted, so `l : typed(C, b) = b` has a constructor
+  expression for a boundary. An argument that mentions the sort but is not a
+  cube over it, or whose arity does, is refused by name before admission,
+  and a refusal the kernel makes names its constructor. Binders written in a result, as
   in `s : M -> M`, are arguments of the constructor.
 - **The former as a value.** Used alone, a type with parameters is its
   former, `fun (U < UU0) => Pointed(U)`, a lambda over its universes and
