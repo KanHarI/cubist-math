@@ -28,9 +28,9 @@ and a review decision:
 2. Lemma H2's full case analysis, and the critical-pair check of 3.7;
 3. canonicity (4.4) reviewed, relative to the assumed baseline of 4.1;
 4. the acceptance matrix of 10.10 complete, K10 and K11 included;
-5. K2.3's open items: the verifier's marker comparison (6.4), the
-   inspection of 6.5, and a recorded run of the whole suite at a pinned
-   revision;
+5. K2.3's open item, a recorded run of the whole suite at a pinned
+   revision; the verifier's marker comparison (6.4) and the inspection of
+   6.5 were delivered on 2026-09-28;
 6. K2.4a's differential fixtures X1–X4 and X6–X8. The work plan's
    isolation correction I1.2a, on which 4.1's baseline relies, was
    delivered on 2026-09-28.
@@ -1480,10 +1480,16 @@ or a definition that carries the marker. The program reports them as
 "kernel extension: H1", and the workbench shows it beside the axioms used.
 `computable` reads only the assumptions. `tests/inductive-declarations.test.mjs`
 covers the first four tests. The last waits for default admission.
-**Open (K2.3):** at `02a57ef`, `tools/proof-migration.mjs` compares
-`axioms` only and has no comparison of `extensions`, so the verifier does
-not yet establish this contract, and a migration that adds or removes the
-marker goes undetected (audit of 2026-09-28, finding 7).
+The migration verifier (`tools/proof-migration.mjs`, with
+`--experimental h1` in `tools/verify-proof-migration.mjs`) compares each
+declaration's `extensions` apart from its `axioms`, and refuses a migration
+that adds or removes the marker (`Kernel extensions changed: none -> H1`);
+until K2.3 it compared `axioms` only (audit of 2026-09-28, finding 7). It
+does not yet compare a module that declares a type: the edited copy's
+signature is another one, since signatures are generative (Q10), so such a
+declaration is refused by name. Comparing signatures, and mapping the edited
+copy's onto the original's when their normal forms agree, is K2.4a's
+tooling. `tests/proof-migration.test.mjs` covers both.
 
 ### 6.5 Inspection
 
@@ -1491,14 +1497,20 @@ The inspector shows a signature's normal form (data, positions with arities
 and cubes, dimensions, boundary), the generated eliminator with each clause
 type, and each clause's displayed boundary, as the design's section 5 asks.
 
-**Implementation, in part.** `CubicalProgram.signature` reads a signature
-back from the kernel: its former, h-level, recorded universe parameters, and
-each constructor's normal form with its data, positions and dimensions,
-shown by its declared names. The CLI's `inspect` prints it. The
-eliminator's clause types are computed and consumed by L2.2a's `match`
-(`lib/cubical/match.mjs`, through the scope's `clauseType`), which is
-delivered experimentally; their display, and the workbench's signature and
-eliminator inspection, remain open (K2.3).
+**Implementation.** `CubicalProgram.signature` reads a signature back from
+the kernel: its former, h-level, recorded universe parameters by their
+declared names, and each constructor's normal form with its data, positions
+and dimensions, with the sort and earlier constructors shown as themselves.
+It also gives the eliminator's clause types for a motive `P` over the type
+at its own parameters: the kernel computes each `ClauseType_k` as L2.2a's
+`match` has it do, given a variable for each earlier clause, in a
+transaction rolled back afterwards. The CLI's `inspect` prints this, and the
+workbench's inspector shows it for a declared type, which has no checked
+term, with the marker. A dependent path type prints as the source writes
+it, `PathP(fun (i : Interval) => P(loop @ i), base_case, base_case)`.
+`tests/inductive-declarations.test.mjs`, `tests/cli.test.mjs` and
+`tests/cubical-inspector.browser.mjs` cover it. Each clause's boundary is
+shown within its type, not yet drawn as a diagram.
 
 ## 7. K2.4: representation map and differential contract
 
@@ -2111,7 +2123,7 @@ means the test cannot exist yet, for the stated reason. Kernel cases are in
 | Boundaries N1–N6 | Kernel: N1, N2, N3, N4. Driver: N1, N3 | N5, N6 | — |
 | Kan K1–K11 | Kernel: K1, K2, K4, K5, K7; K6 in part (transport of `merid` along a line of types `e : A = B`, not along `ua`); K9 in substance (a higher sort's `comp` reduces to `hcomp`). Driver: K2 | K3, K8 | K10, K11: no randomized H1 generator exists; the randomized level tests cover G0 |
 | Elimination E1–E11 | Source: E1 (`docs/examples/h1/winding.cubist`), E2 (as `cong(code, loop)` equal to `ua(succ)` by `rfl`), E3 (`T.squash`), E8 (a missing clause, a duplicate clause, an unknown constructor). Kernel: E3 (the `prop` squash clause), E5, and a motive over no declared type refused. Driver: E5 | E6, E7, E9, E10 | E4 and E11: automatic set and groupoid clauses (L2.2b) |
-| Trust T1–T7 | Kernel: T1, T5, T6, T7. Driver: T5, T6. Source: T1 (the option named when off), T2 (direct, through a definition, through an import), T3, T4 | — | — |
+| Trust T1–T7 | Kernel: T1, T5, T6, T7. Driver: T5, T6. Source: T1 (the option named when off), T2 (direct, through a definition, through an import), T3, T4. Verifier: the marker compared apart from assumptions (6.4) | — | — |
 | Truncation policy G1–G7 | G3 (the audit's archive coverage run) | G1 (V29's `Small` is its source form) | G2, G4, G5, G6, G7: the ledger verifier and the migrations (K2.5) |
 | Resources R1–R5 | Driver: R1 in part (an operand that is not a 32-bit unsigned integer is refused), R5 (the codec round trip); `tests/h1-admission.test.mjs` checks ABI version 3. Kernel: a former of the wrong shape and a truncation level above the maximum are refused | R2, R3, R4 (a version-2 client refused by the loader) | — |
 | Differential X1–X8 | — | — | All: K2.4a |

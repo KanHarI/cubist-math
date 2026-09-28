@@ -332,3 +332,34 @@ test("with the path notation's minus sign, trunc(-1) is prop", async t => {
   ok(get("Tr"));
   assert.equal(program.kernel.signature(program.kernel.signatures.get("main__Tr").index).modifier, 1);
 });
+
+// The H1 specification's 6.5: a declared type's signature, and the clause
+// type its eliminator asks for each constructor, for a motive P over the type
+// at its own parameters. The CLI's inspect and the workbench show this view.
+test("inspection: a declared type's constructors and its eliminator's clause types", async t => {
+  const { program } = await check(t, `inductive S1 { base; loop : base = base; }
+inductive Tr(U < UU0, A : U) : prop { point(a : A); }
+inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }
+`);
+  const circle = program.signatureView("main__S1");
+  // The sort prints by its name: a variable named S1 would print as its stem.
+  assert.deepEqual(circle.constructors.map(c => `${c.name} : ${c.type}`), ["base : S1", "loop : base = base"]);
+  assert.equal(circle.eliminator.motive, "P : S1 -> U");
+  assert.deepEqual(circle.eliminator.clauses.map(c => `${c.name} : ${c.type}`), [
+    "base_case : P(base)",
+    // A dependent path type prints as the source writes it.
+    "loop_case : PathP(fun (i : Interval) => P(loop @ i), base_case, base_case)"]);
+  const truncation = program.signatureView("main__Tr");
+  assert.deepEqual(truncation.eliminator.clauses.map(c => c.constructor), ["point", "Tr.squash"]);
+  // The motive's universe avoids the parameter's name.
+  assert.equal(truncation.eliminator.motive, "P : Tr(A) -> V");
+  assert.equal(truncation.eliminator.clauses[1].type, "forall x : Tr(A). forall x1 : Tr(A). forall x2 : P(x). "
+    + "forall x3 : P(x1). PathP(fun (i : Interval) => P(squash(x, x1) @ i), x2, x3)");
+  // A recorded universe parameter by its name in the declaration.
+  assert.deepEqual(program.signatureView("main__Pointed").recorded, ["U"]);
+  // Reading the eliminator leaves no kernel work behind.
+  const nodes = program.kernel.arena().nodes;
+  program.signatureView("main__Tr");
+  assert.equal(program.kernel.arena().nodes, nodes);
+  assert.equal(program.signatureView("main__nothing"), null);
+});
