@@ -87,6 +87,10 @@ test("a bound variable prints as its binder in later domains and in fallback for
   // outside.
   const motive = T.lam("mod__x", T.unit, T.variable("x"));
   const apart = shown(T.lam("x", T.universe(0), T.unitrec(motive, T.variable("p"), T.point)));
-  const [, outside, spelled, body] = /^fun \((\S+) : U0\) => UnitRec\(λ \((\S+) : Unit\)\. (\S+), p, ⋆\)$/.exec(apart) ?? [];
-  assert.ok(outside && body === outside && spelled !== outside, apart);
+  assert.equal(apart, "fun (x : U0) => UnitRec(λ (x′ : Unit). x, p, ⋆)");
+  // The second review of #79: a definition keeps its label inside such a
+  // form, though a binder the display shortens to mod__x shares its name.
+  const definition = { tag: "DefRef", name: "mod__x" };
+  const labelled = shown(T.lam("mod__x42", T.nat, T.pair(null, definition, T.unitrec(T.lam("u", T.unit, T.nat), definition, T.point))));
+  assert.equal(labelled, "fun (mod__x : Nat) => (x, UnitRec(λ (u : Unit). Nat, x, ⋆))");
 });

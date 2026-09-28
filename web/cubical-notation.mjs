@@ -1,7 +1,11 @@
 import { renameLevel, universeText } from "./cubical-levels.mjs";
 // Display the native checked syntax itself. Definition references stay named;
 // this does not reconstruct an unchecked expression from Cubist source.
-export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = false } = {}) {
+// `scope` maps variables bound around the term by an enclosing printer to
+// the names it shows them by (sourceText's forms without a source
+// spelling): they show so here, and binders here keep apart from them.
+// Definitions, sorts and eliminators keep the labels `symbols` gives.
+export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = false, scope = new Map() } = {}) {
   let remaining = limit;
   const boundNames = new Map(), freeCache = new WeakMap();
   const free = (term, variable) => {
@@ -21,7 +25,12 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (!sourceNames.has(symbol.name)) sourceNames.set(symbol.name, []);
     sourceNames.get(symbol.name).push(variable);
   }
-  const label = value => boundNames.get(value) ?? symbols[value]?.name ?? value;
+  for (const [variable, shown] of scope) {
+    if (!sourceNames.has(shown)) sourceNames.set(shown, []);
+    sourceNames.get(shown).push(variable);
+  }
+  const outer = value => !boundNames.has(value) && scope.has(value);
+  const label = value => boundNames.get(value) ?? scope.get(value) ?? symbols[value]?.name ?? value;
   const underBinder = (variable, body, renderBody) => {
     let spelling = symbols[variable]?.name ?? variable;
     while ([...boundNames].some(([key, name]) => key !== variable && name === spelling)
@@ -80,9 +89,12 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (!t || --remaining < 0) return name("…");
     if (t.tag === "DisplayRef") return { ...name(t.name), contextBinding: t.binding, local: true };
     if (t.tag === "DefRef") return { ...name(symbols[t.name]?.name ?? t.name), binding: t.name };
-    if (t.tag === "Var") return { ...name(label(t.name)), local: symbols[t.name]?.kind !== "axiom",
-      ...(symbols[t.name]?.kind === "axiom" ? { binding: t.name, axiomNotation: t.name === "__assumption_Truncate" ? "truncation" : undefined }
-        : symbols[t.name]?.binding ? { contextBinding: symbols[t.name].binding } : {}) };
+    if (t.tag === "Var") {
+      const symbol = outer(t.name) ? undefined : symbols[t.name];
+      return { ...name(label(t.name)), local: symbol?.kind !== "axiom",
+        ...(symbol?.kind === "axiom" ? { binding: t.name, axiomNotation: t.name === "__assumption_Truncate" ? "truncation" : undefined }
+          : symbol?.binding ? { contextBinding: symbol.binding } : {}) };
+    }
     if (t.tag === "U") return { kind: "Universe", level: renameLevel(t.level, label) };
     // The bound of a universe variable x < UU0, which a context entry has in
     // place of a type: shown as the bound's universe.
@@ -192,6 +204,6 @@ export function cubicalTextParts(tree) {
   return show(tree);
 }
 
-export function cubicalText(term, symbols = {}) {
-  return cubicalTextParts(cubicalMathTree(term, symbols)).map(part => part.text).join("");
+export function cubicalText(term, symbols = {}, { scope } = {}) {
+  return cubicalTextParts(cubicalMathTree(term, symbols, undefined, { scope })).map(part => part.text).join("");
 }

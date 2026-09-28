@@ -98,13 +98,12 @@ export function sourceText(term, symbols = {}, limit = 4000) {
   const atom = text => [text, LEVEL.atom];
   // A form without a source spelling is cubicalText's. It is given the
   // variables bound around it, and the renamed ones, as this printer shows
-  // them, and as variables with source names: it shows them alike, and keeps
-  // its own binders apart from those free in their bodies.
+  // them: it shows them alike, and keeps its own binders apart from those
+  // free in their bodies. Definitions keep their labels.
   const fallback = t => {
-    const scoped = Object.assign(Object.create(symbols), symbols);
-    for (const name of [...renames.keys(), ...[...bound.keys()].filter(name => bound.get(name))])
-      scoped[name] = { name: variable(name), local: true };
-    const text = cubicalText(t, scoped);
+    const scope = new Map([...renames.keys(), ...[...bound.keys()].filter(name => bound.get(name))]
+      .map(name => [name, variable(name)]));
+    const text = cubicalText(t, symbols, { scope });
     return atom(/^[[λΠΣ]/.test(text) ? `(${text})` : text);
   };
   // The text of a term and the precedence level of its outermost form.
