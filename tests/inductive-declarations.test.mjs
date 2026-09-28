@@ -341,7 +341,11 @@ test("inspection: a declared type's constructors and its eliminator's clause typ
 inductive Tr(U < UU0, A : U) : prop { point(a : A); }
 inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }
 `);
+  // The fourth review of #74: the first inspection computes the eliminator's
+  // clause types in a kernel transaction, and rolls it back.
+  const nodes = program.kernel.arena().nodes;
   const circle = program.signatureView("main__S1");
+  assert.equal(program.kernel.arena().nodes, nodes);
   // The sort prints by its name: a variable named S1 would print as its stem.
   assert.deepEqual(circle.constructors.map(c => `${c.name} : ${c.type}`), ["base : S1", "loop : base = base"]);
   assert.equal(circle.eliminator.motive, "P : S1 -> U");
@@ -357,10 +361,6 @@ inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }
     + "forall x3 : P(x1). PathP(fun (i : Interval) => P(Tr.squash(x, x1) @ i), x2, x3)");
   // A recorded universe parameter by its name in the declaration.
   assert.deepEqual(program.signatureView("main__Pointed").recorded, ["U"]);
-  // Reading the eliminator leaves no kernel work behind.
-  const nodes = program.kernel.arena().nodes;
-  program.signatureView("main__Tr");
-  assert.equal(program.kernel.arena().nodes, nodes);
   assert.equal(program.signatureView("main__nothing"), null);
 });
 

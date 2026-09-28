@@ -71,3 +71,24 @@ test("a variable reads alike on both sides of a mismatch", async t => {
   catch (error) { message = error.message; }
   assert.match(message ?? "", /^Type mismatch: found add1 \+ 1 = add1, expected add1 = add1\.$/);
 });
+
+// The fourth review of #74: every message that shows two terms of one scope
+// names them together, as a mismatch does. `+` is naturals' add, captured as
+// plus before a variable named add is introduced. That label prints on one
+// side only, so the variable is named apart from it there; named alone, the
+// other side would have shown it as add.
+test("show and calc name the two terms they show together", async t => {
+  const { readFile } = await import("node:fs/promises");
+  const program = new CubicalProgram(await createCubical(), name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8"),
+    { collectReferences: false });
+  t.after(() => program.dispose());
+  const result = await program.check(`import naturals;
+def restated : forall add : Nat. add = add { let plus := add; intro add; show plus(add, 1) = add; }
+def step_start : forall n : Nat. n = n { let plus := add; intro add; calc { add = add by refl(add); plus(add, 1) = add by refl(add); } }
+def chain_end : forall n : Nat. n = n + 1 { intro add; calc { add = add by refl(add); } }
+`, "main");
+  const reason = name => result.outputs.find(output => output.name === name).reason;
+  assert.match(reason("restated"), /^show requires a type equal to the goal by computation: found (\w+) \+ 1 = \1, expected \1 = \1\./);
+  assert.match(reason("step_start"), /^calc step left endpoint does not match the preceding endpoint\. The step starts at (\w+) \+ 1; the chain so far ends at \1\./);
+  assert.match(reason("chain_end"), /^calc final endpoint does not match the goal\. The chain ends at (\w+); the goal's right side is \1 \+ 1\./);
+});
