@@ -394,6 +394,22 @@ inductive Tr(U < UU0, A : U) : set { point(a : A); }
   assert.deepEqual(sizes(), before);
 });
 
+// The fifth review of #74: a generated name prints as itself after every
+// round of suffixes. P__ printed as nothing, as the display reads __ as a
+// module's separator: the motive vanished from its clause, and U__ left the
+// universe blank. After one underscore, names take a letter.
+test("inspection: generated names print as themselves after every round of suffixes", async t => {
+  const { program } = await check(t, `inductive E(P, Q, M, R, P_, Q_, M_, R_ : U0) { e; }
+inductive F(U, V, W, X, Y, V_, W_, X_, Y_ : U0) { f; }
+inductive D { c_; d(x : D); }
+`);
+  const e = program.signatureView("main__E").eliminator;
+  assert.equal(e.motive, "P_a : E(P, Q, M, R, P_, Q_, M_, R_) -> U");
+  assert.equal(e.clauses[0].type, "P_a(e)");
+  assert.equal(program.signatureView("main__F").eliminator.motive, "P : F(U, V, W, X, Y, V_, W_, X_, Y_) -> U_a");
+  assert.deepEqual(program.signatureView("main__D").eliminator.clauses.map(c => c.name), ["c_case", "d_case"]);
+});
+
 // The second review of #74: one naming for the whole view, and the
 // generated constructor as the source writes it.
 test("inspection: a parameter has one name in the whole view, and T.squash is distinct from squash", async t => {

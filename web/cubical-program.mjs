@@ -309,11 +309,22 @@ export class CubicalProgram {
       visit(term);
     }
     for (const parameter of inductive.parameters) for (const label of printedLabels(parameter.type)) used.add(label);
-    const printsAsItself = name => !/\d$/.test(name) && !/^U+_$/.test(name);
+    // A name prints as itself unless it ends in a digit or is U_, which the
+    // display takes back to a stem, or contains __, which it reads as a
+    // module's separator. So the rounds of suffixes are "", "_", then "_a",
+    // "_b", …: never a second underscore.
+    const printsAsItself = name => !/\d$/.test(name) && !/^U+_$/.test(name) && !name.includes("__");
+    const letters = n => (n >= 26 ? letters(Math.floor(n / 26) - 1) : "") + String.fromCharCode(97 + n % 26);
     const pick = candidates => {
-      for (let suffix = ""; ; suffix += "_")
-        for (const candidate of candidates.map(name => name + suffix))
+      // No candidate has a run of underscores or one at its end, as c_case
+      // for a constructor c_: from the third round on, every candidate prints
+      // as itself, so one not yet used is found.
+      const stems = candidates.map(name => name.replace(/_{2,}/g, "_").replace(/_+$/, "") || "x");
+      for (let round = 0; ; round++) {
+        const suffix = round === 0 ? "" : round === 1 ? "_" : `_${letters(round - 2)}`;
+        for (const candidate of stems.map(name => name + suffix))
           if (printsAsItself(candidate) && !used.has(candidate)) { used.add(candidate); return candidate; }
+      }
     };
     const context = new Map(), parameters = [], levels = [];
     for (const slot of inductive.slots) {
