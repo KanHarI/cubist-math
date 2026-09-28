@@ -108,6 +108,14 @@ export class InstructionGraph {
       m._cb_step_budget(k.handle, Number(k.stepBudget & 0xffffffffn), Number(k.stepBudget >> 32n));
     }
   }
+  // An operation under a step budget of its own, as head's query has; the
+  // session's budget is restored afterwards.
+  within(steps, operation) {
+    const k = this.kernel, m = this.module;
+    m._cb_step_budget(k.handle, Number(BigInt(steps) & 0xffffffffn), Number(BigInt(steps) >> 32n));
+    try { return operation(); }
+    finally { m._cb_step_budget(k.handle, Number(k.stepBudget & 0xffffffffn), Number(k.stepBudget >> 32n)); }
+  }
   levelPi(entry, body) { return this.issue("levelPi", entry, body); }
   levelLambda(entry, body) { return this.issue("levelLambda", entry, body); }
   levelApply(fn, level) { return this.issue("levelApply", fn, level); }

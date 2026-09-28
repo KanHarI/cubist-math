@@ -32,6 +32,9 @@ const CONSTRUCTORS = new Set(["U", "Pi", "Lam", "LPi", "LLam", "Sigma", "Pair", 
 const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma", LLam: "LPi" };
 // Steps after which a comparison the oracle finds true computes normal forms.
 const LONG_COMPUTATION = 64;
+// The kernel steps a Glue term's normal form may take (the glue move): open
+// terms can be large shared graphs, whose normal forms are not.
+const GLUE_NORMAL_STEPS = 200000;
 // The guide (InstructionDriver.guide): how many pairs of subterms one
 // question may compare, and the kernel steps each weak head may take.
 const GUIDE_FUEL = 400, GUIDE_HEAD_STEPS = 4000;
@@ -40,7 +43,7 @@ const GUIDE_FUEL = 400, GUIDE_HEAD_STEPS = 4000;
 const FUEL = 20000, ORACLE_STEPS = 20000;
 // The search's fixed limits, for reports that must say what they measured.
 export const searchLimits = Object.freeze({ fuel: FUEL, longComputation: LONG_COMPUTATION, guideFuel: GUIDE_FUEL,
-  guideHeadSteps: GUIDE_HEAD_STEPS, oracleSteps: ORACLE_STEPS });
+  guideHeadSteps: GUIDE_HEAD_STEPS, oracleSteps: ORACLE_STEPS, glueNormalSteps: GLUE_NORMAL_STEPS });
 // Weak heads that are constructors: two of different kinds never agree.
 // An instance of a declared type is one (H1); so is a list of its parameters.
 const RIGID = new Set(["U", "Pi", "Sigma", "W", "LPi", "Nat", "Zero", "Succ", "Unit", "Point", "Void", "Sum",
@@ -79,11 +82,13 @@ const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: 
 //                                      "right") by `rule`: beta, iota, path,
 //                                      face or delta, at `step.path`; delta on
 //                                      both sides is also side "both", `steps`
-//   { move: "whnf", side }             the kernel's weak head normal form, or a
-//                                      Glue term's normal form when its weak
-//                                      head leaves it (eta, reduced parts)
+//   { move: "whnf", side }             the kernel's weak head normal form
 //   { move: "eta" }                    eta-expand the side that is not a
 //                                      constructor, against one that is
+//   { move: "glue", side }             a Glue term's normal form, within
+//                                      GLUE_NORMAL_STEPS: its eta may hold only
+//                                      once its parts are reduced, which the
+//                                      weak head does not do; the last resort
 // The list is syntactic: it offers what the terms' shapes allow, and the
 // kernel checks the rest when the move is made. A step always applies. A
 // whnf or eta that turns out to change nothing leaves the point as it was.
@@ -129,6 +134,7 @@ export const heuristicChooser = Object.freeze({
     }
     if (left || right) return yield left ?? right;
     for (const move of moves) if (move.move === "whnf" || move.move === "eta") yield move;
+    for (const move of moves) if (move.move === "glue") yield move;
   },
 });
 
@@ -156,6 +162,8 @@ export class InstructionDriver {
     this.mentions = new Map();
     this.derived = new Map();
     this.stable = new Set();
+    // Glue terms whose normal form the glue move has taken, or that are one.
+    this.glueNormal = new Set();
     this.equalities = new Map();
     // The guide's answers and the weak heads it asked for.
     this.guesses = new Map();
@@ -851,16 +859,23 @@ export class InstructionDriver {
     if (this.stable.has(before) || CONSTRUCTORS.has(this.node(before).kind)) return false;
     this.reduce(focus, { path: [], rule: "whnf" });
     if (this.subterm(focus) !== before) return true;
-    // A Glue term the weak head leaves may still contract by eta: the kernel's
-    // weak head compares each piece with the base's restriction by syntax,
-    // and the restriction can be a redex, as p @ i at i = 0 is p's left
-    // endpoint. Its normal form compares them reduced.
-    if (this.node(before).kind === "GlueTerm") {
-      try { this.reduce(focus, { path: [], rule: "normalize" }); } catch { /* stays as it was */ }
-      if (this.subterm(focus) !== before) return true;
-    }
     this.stable.add(before);
     return false;
+  }
+  // The glue move: a Glue term's normal form, when its weak head leaves it.
+  // The weak head compares each piece with the base's restriction by syntax,
+  // and the restriction can be a redex, as p @ i at i = 0 is p's left
+  // endpoint; Normalize compares them reduced, and contracts the eta. Within
+  // its own step budget, and once per term: a normal form rebuilt without
+  // shared syntax is a new handle, so progress is judged by alpha-equality.
+  glue(focus) {
+    const before = this.subterm(focus);
+    this.glueNormal.add(before);
+    try { this.graph.within(GLUE_NORMAL_STEPS, () => this.reduce(focus, { path: [], rule: "normalize" })); }
+    catch { return false; }
+    const after = this.subterm(focus);
+    this.glueNormal.add(after);
+    return !this.alpha(after, before, null, null);
   }
 
   // The scope at a focus: its judgement's, with an entry for each term binder
@@ -1100,6 +1115,8 @@ export class InstructionDriver {
       if (!point.stuck.has(side) && !this.stable.has(term) && !CONSTRUCTORS.has(this.node(term).kind)) moves.push({ move: "whnf", side });
     const kx = this.node(x).kind, ky = this.node(y).kind;
     if (!point.stuck.has("eta") && kx !== ky && (etaTypes[kx] || etaTypes[ky])) moves.push({ move: "eta" });
+    for (const [side, term] of [["left", x], ["right", y]])
+      if (this.node(term).kind === "GlueTerm" && !this.glueNormal.has(term)) moves.push({ move: "glue", side });
     return moves;
   }
   // Make a move: its outcome, as `branch` reads it.
@@ -1127,6 +1144,7 @@ export class InstructionDriver {
       if (this.eta(a, b)) return "progress";
       point.stuck.add("eta");
       return "stuck";
+    case "glue": return this.glue(move.side === "left" ? a : b) ? "progress" : "stuck";
     default: throw new Error(`Unknown move ${move.move}.`);
     }
   }

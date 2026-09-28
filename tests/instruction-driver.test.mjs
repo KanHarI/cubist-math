@@ -494,3 +494,36 @@ test("a Glue term that is its base by eta only after a step still agrees with it
   const checked = program.checker.checkView(composite, over, context, new Map([["i", 0], ["m", 1]]));
   assert.equal(checked.term.tag, "Comp");
 });
+
+// The review of #73. The glue move is a last resort, bounded, and judged by
+// alpha-equality. G = Glue [] Nat, u = glue_G [] x and H = Glue [] G: u and
+// unglue_H(glue_H [] u) agree by the right side's weak head. Without syntax
+// sharing, a normal form is a new handle even when nothing changed, so a
+// move judged by handles would normalize u until the fuel ran out; and over a
+// shared open graph t(n + 1) = f(t(n))(t(n)), normalizing u first would take
+// time exponential in n, where the weak head needs none.
+test("the glue move comes last, judges progress by syntax, and is bounded", async t => {
+  const { T } = await import("../lib/cubical/core.mjs");
+  const G = T.glueType(T.nat, []), H = T.glueType(G, []);
+  const agrees = async (base, context, optimizations) => {
+    const program = new CubicalProgram(await createCubical(), readLibrary, { optimizations });
+    t.after(() => program.dispose());
+    await program.check("def unit_point : Unit := point;\n", "glue_move");
+    const u = T.glue(G, base, []), unglued = T.unglue(H, T.glue(H, u, []));
+    const before = program.kernel.work();
+    const checked = program.checker.checkView(T.line("i", G, u), T.path("i", G, u, unglued), context);
+    const after = program.kernel.work();
+    return { checked, instructions: after.instructions - before.instructions, exhausted: after.exhausted - before.exhausted,
+      steps: after.instructionSteps - before.instructionSteps + after.querySteps - before.querySteps };
+  };
+  // Measured: 33 instructions here, where normalizing on the way took 40,027.
+  const unshared = await agrees(T.variable("x"), [["x", T.nat]], { shareSyntax: false });
+  assert.equal(unshared.checked.term.tag, "PLam");
+  assert.ok(unshared.instructions < 1000, `${unshared.instructions} instructions`);
+  // Measured: 473 steps here, where normalizing first ran out of all 10,000,000.
+  let shared = T.variable("x");
+  for (let n = 0; n < 40; n++) shared = T.app(T.app(T.variable("f"), shared), shared);
+  const graph = await agrees(shared, [["x", T.nat], ["f", T.pi("a", T.nat, T.pi("b", T.nat, T.nat))]]);
+  assert.equal(graph.checked.term.tag, "PLam");
+  assert.ok(graph.steps < 100000 && graph.exhausted === 0, `${graph.steps} steps, ${graph.exhausted} exhausted`);
+});

@@ -592,9 +592,10 @@ The correction:
   Conversion makes both eta contractions itself, decided by conversion, on
   either side of a comparison, so two pairs with different annotations
   still compare, and it exposes a Glue term's base through such eta, for
-  nested Glue terms. The driver's `whnf` move takes a Glue term's normal
-  form when its weak head leaves it, so its searches still find the
-  contraction.
+  nested Glue terms, within the comparison's depth limit. The driver's
+  last-resort `glue` move takes a Glue term's normal form, within its own
+  step budget, when nothing else agrees the two sides, so its searches
+  still find the contraction.
 - **The boundary is enforced.** `ck_convertible` fails, with an internal
   error, while an instruction runs; every public entry point that may reach
   it starts a query first.

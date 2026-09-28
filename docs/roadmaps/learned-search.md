@@ -64,8 +64,9 @@ kind. Learning enters only where two types must agree, the driver's `agree`.
 - **State.** An equality goal: the two sides, the context entries they use,
   and the entries' types.
 - **Actions.** At a node on one side: `beta`, `iota`, `path`, `delta`,
-  `whnf`, eta expansion, or descend (congruence at that node). At the goal:
-  `symmetry` and `normalize`. Syntactic masks remove obvious mismatches
+  `whnf`, eta expansion, descend (congruence at that node), or `glue` (a
+  Glue term's bounded normal form, whose eta the weak head decides only by
+  syntax). At the goal: `symmetry` and `normalize`. Syntactic masks remove obvious mismatches
   (a `beta` needs an application of a lambda, a `delta` a definition
   reference); the kernel checks the remaining side conditions.
 - **Episode.** One `agree` call. Descending creates subgoals with the
@@ -232,7 +233,8 @@ same edges, and the same heads, with message passing in place of attention.
 
 1. **Options.** Done on 2026-09-27. Each branch point of `agree` is an
    explicit list of moves (normalize, descend, a step on either side or
-   both, whnf, eta), and a chooser ranks them
+   both, whnf, eta, and since I1.2a glue, ranked last), and a chooser
+   ranks them
    (`heuristicChooser` in `web/cubical-instruction-driver.mjs`). The
    heuristic is the driver's former order; the archive's elaboration
    fingerprint is identical under it. The workbench does not show the

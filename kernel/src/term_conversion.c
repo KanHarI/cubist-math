@@ -261,7 +261,8 @@ static cc_term hinted_head(cc_kernel *k, cc_term term) {
  * glue [φ ↦ t] (unglue b) is b when the Glue types are equal and each piece
  * is b on its face. The comparisons are within one side's scope, so they
  * bind nothing. Returns the contraction, or 0. */
-static cc_term conversion_eta(cc_kernel *k, cc_term term) {
+static cc_term conversion_eta(cc_kernel *, cc_term);
+static cc_term eta_contraction(cc_kernel *k, cc_term term) {
     cc_node n = k->nodes[term];
     if (n.kind == CC_PAIR) {
         cc_node first = k->nodes[n.child[1]], second = k->nodes[n.child[2]];
@@ -297,6 +298,19 @@ static cc_term conversion_eta(cc_kernel *k, cc_term term) {
             return 0;
     }
     return projection.child[1];
+}
+
+/* The eta step, which exposing a nested base repeats: it counts toward the
+ * comparison's depth, since cached weak heads let it descend a long chain of
+ * Glue terms without reaching any other guard. */
+static cc_term conversion_eta(cc_kernel *k, cc_term term) {
+    if (++k->recursion > 512) {
+        --k->recursion;
+        return ck_fail(k, "Native conversion recursion depth exceeded."), 0;
+    }
+    cc_term contracted = eta_contraction(k, term);
+    --k->recursion;
+    return contracted;
 }
 
 static bool tube_alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms,

@@ -225,6 +225,32 @@ static void normal_forms_and_conversion_keep_eta(void) {
     cc_kernel_free(k);
 }
 
+/* The review of #73: exposing a nested base must count toward the
+ * comparison's depth. Syntax is at most 512 deep, but reduction reaches past
+ * that: here D_i := glue_(Glue [] T_(i-1)) [] D_(i-1), with T_i := Glue [] T_(i-1), 600
+ * definitions, each weak head cached as it is made. Exposing D_600's base
+ * goes through every level with no other guard reached; it now stops with a
+ * recorded error, where a longer chain would have overflowed the stack. */
+static void nested_glue_exposure_is_depth_guarded(void) {
+    k = cc_kernel_new();
+    assert(k);
+    cc_term u0 = ck_universe_at(k, 0), zero = ck_make(k, CC_ZERO, 0, 0, 0, 0, 0);
+    cc_term type = cc_kernel_define(k, 1000, ck_make(k, CC_NAT, 0, 0, 0, 0, 0), u0);
+    cc_term value = cc_kernel_define(k, 2000, zero, type);
+    assert(type && value);
+    for (unsigned depth = 1; depth <= 600; ++depth) {
+        cc_term glue_type = ck_make(k, CC_GLUE, 0, type, 0, 0, 0);
+        type = cc_kernel_define(k, 1000 + depth, glue_type, u0);
+        value = cc_kernel_define(k, 2000 + depth, ck_make(k, CC_GLUE_TERM, 0, glue_type, value, 0, 0), glue_type);
+        if (!type || !value) fprintf(stderr, "depth %u: %s\n", depth, cc_kernel_error(k));
+        assert(type && value && cc_kernel_whnf(k, value));
+    }
+    assert(!cc_kernel_convertible(k, value, zero, 0));
+    assert(strstr(cc_kernel_error(k), "recursion depth"));
+    cc_kernel_clear_error(k);
+    cc_kernel_free(k);
+}
+
 /* The boundary is enforced, not only kept: conversion refuses to run while
  * an instruction does, so no later path can reach it unnoticed. */
 static void conversion_refused_inside_an_instruction(void) {
@@ -245,6 +271,7 @@ int main(void) {
     folded_comparison_reads_only_its_own_results();
     reduction_decides_eta_syntactically();
     normal_forms_and_conversion_keep_eta();
+    nested_glue_exposure_is_depth_guarded();
     conversion_refused_inside_an_instruction();
     printf("instruction isolation: ok\n");
     return 0;
