@@ -5,6 +5,8 @@
 // tool runs as many as asked.
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { describe, disagreement, problem, verdicts } from "../tools/differential-driver.mjs";
@@ -27,5 +29,20 @@ test("the generator is deterministic and poses every kind of problem", () => {
   for (const name of ["nat", "sigma", "glueNat", "glueSigma", "glueNested", "face"]) {
     assert.ok(kinds.has(name), `an equal ${name} problem`);
     assert.ok(kinds.has(`${name} different`), `a different ${name} problem`);
+  }
+});
+
+test("the tool checks what it is asked, or stops", () => {
+  const tool = args => spawnSync(process.execPath, ["tools/differential-driver.mjs", ...args],
+    { cwd: fileURLToPath(new URL("../", import.meta.url)), encoding: "utf8" });
+  const run = tool(["--seeds=3", "--from=5"]);
+  assert.equal(run.status, 0, run.stderr);
+  assert.match(run.stdout, /^3 problems from seed 5: 0 disagreements\.$/m);
+  for (const args of [["--from=oops"], ["--seeds=Infinity"], ["--seeds=0"], ["--seeds=2.5"], ["--seeds=-1"], ["--seed=2000"],
+    ["--from=4294967295", "--seeds=2"], ["2000"]]) {
+    const refused = tool(args);
+    assert.equal(refused.status, 2, args.join(" "));
+    assert.match(refused.stderr, /Usage: node tools\/differential-driver\.mjs/, args.join(" "));
+    assert.equal(refused.stdout, "", args.join(" "));
   }
 });

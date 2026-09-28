@@ -9,6 +9,7 @@
 // constant tube, which checks only if the tube agrees with the base.
 //
 //   node tools/differential-driver.mjs [--seeds=N] [--from=S] [--verbose]
+import { existsSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { T } from "../lib/cubical/core.mjs";
 import { face as F, interval as I } from "../lib/cubical/lattice.mjs";
@@ -145,11 +146,27 @@ const shown = term => { const text = sourceText(term, undefined, 400); return te
 export const describe = p => `seed ${p.seed} (${p.name}${p.equal ? "" : ", different"}${p.shared ? ", shared graph" : ""}): `
   + `${shown(p.left)}  vs  ${shown(p.right)}`;
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const option = name => process.argv.find(arg => arg.startsWith(`--${name}=`))?.slice(name.length + 3);
-  const count = Number(option("seeds") ?? 200), from = Number(option("from") ?? 1), verbose = process.argv.includes("--verbose");
-  const { assertFreshBuild } = await import("./build-stamp.mjs").catch(() => ({ assertFreshBuild: () => {} }));
-  assertFreshBuild();
+// Run as a command, by any path to this file.
+const invoked = () => { try { return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url); } catch { return false; } };
+if (invoked()) {
+  // A run that checked fewer problems than asked must not report success, so
+  // an argument this tool does not take, or a count that is not one, stops it.
+  const args = process.argv.slice(2), usage = "Usage: node tools/differential-driver.mjs [--seeds=N] [--from=S] [--verbose]";
+  const stop = message => { process.stderr.write(`${message}\n${usage}\n`); process.exit(2); };
+  const unknown = args.find(arg => !/^--(seeds|from)=|^--verbose$/.test(arg));
+  if (unknown) stop(`Unknown argument ${unknown}.`);
+  const integer = (name, fallback, least) => {
+    const text = args.findLast(arg => arg.startsWith(`--${name}=`))?.slice(name.length + 3);
+    const value = text === undefined ? fallback : /^\d+$/.test(text) ? Number(text) : NaN;
+    if (!Number.isSafeInteger(value) || value < least) stop(`--${name} takes a whole number of at least ${least}, not ${text}.`);
+    return value;
+  };
+  // Seeds are 32-bit (random): beyond, two seeds would pose the same problem.
+  const count = integer("seeds", 200, 1), from = integer("from", 1, 0), verbose = args.includes("--verbose");
+  if (from + count - 1 > 0xFFFFFFFF) stop(`Seeds run up to ${0xFFFFFFFF}.`);
+  // The build stamp, where this tree has one (tools/build-stamp.mjs).
+  const stamp = new URL("./build-stamp.mjs", import.meta.url);
+  if (existsSync(stamp)) (await import(stamp)).assertFreshBuild();
   const { default: createCubical } = await import("../web/dist/cubical.mjs");
   const { CubicalProgram } = await import("../web/cubical-program.mjs");
   const program = new CubicalProgram(await createCubical(), async () => { throw new Error("No modules."); });
