@@ -293,17 +293,23 @@ export class CubicalProgram {
     const names = inductive.record.constructors;
     // The names are new to everything the view shows: the type, its
     // constructors and parameters, and every type, constructor, definition
-    // and variable their types mention, with the stems the display gives
-    // generated names. And the display prints them as they are: not ending
-    // in a digit, which it would take back to a stem.
-    const used = new Set([source, ...names, ...inductive.slots.map(slot => slot.source)]);
+    // and variable their types mention, in each form the display may print
+    // them: as they are, after a module's separator for a name with __, and
+    // the stem of either, which it gives generated names. And the display
+    // prints the new names as they are: not ending in a digit, which it
+    // would take back to a stem.
+    const printedForms = name => {
+      const short = name.includes("__") && !name.startsWith("__") ? name.slice(name.indexOf("__") + 2) : name;
+      return [name, short].flatMap(form => [form, form.replace(/\d+$/, "").replace(/^(U+)_$/, "$1")]);
+    };
+    const used = new Set([source, ...names, ...inductive.slots.map(slot => slot.source)].flatMap(printedForms));
     const syntax = this.checker.syntax, info = this.kernel.signature(inductive.record.index);
     for (const term of [info.former, ...info.constructors.map(c => c.type)].map(handle => syntax.decode(handle))) {
       for (const label of printedLabels(term)) used.add(label);
       const visit = (t, seen = new WeakSet()) => {
         if (!t || typeof t !== "object" || seen.has(t)) return;
         seen.add(t);
-        if (typeof t.name === "string") used.add(t.name).add(t.name.replace(/\d+$/, "").replace(/^(U+)_$/, "$1"));
+        if (typeof t.name === "string") for (const form of printedForms(t.name)) used.add(form);
         Object.values(t).forEach(value => visit(value, seen));
       };
       visit(term);

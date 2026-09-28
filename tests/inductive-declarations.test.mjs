@@ -410,6 +410,17 @@ inductive D { c_; d(x : D); }
   assert.deepEqual(program.signatureView("main__D").eliminator.clauses.map(c => c.name), ["c_case", "d_case"]);
 });
 
+// The sixth review of #74: a parameter named a__P prints as P, as the
+// display shows the part after a module's separator; the motive was named P
+// too, and its clause read forall x : P. P(d(x)). Names are new to every form
+// a name prints in.
+test("inspection: generated names avoid the printed form of every name", async t => {
+  const { program } = await check(t, "inductive D(a__P : U0) { d(x : a__P); }\n");
+  const view = program.signatureView("main__D");
+  assert.equal(view.eliminator.motive, "Q : D(P) -> U");
+  assert.equal(view.eliminator.clauses[0].type, "forall x : P. Q(d(x))");
+});
+
 // The second review of #74: one naming for the whole view, and the
 // generated constructor as the source writes it.
 test("inspection: a parameter has one name in the whole view, and T.squash is distinct from squash", async t => {
