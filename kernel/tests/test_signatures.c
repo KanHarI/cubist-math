@@ -206,11 +206,15 @@ static void squares(void) {
     uint32_t torus = torus_signature = OK(cc_instr_signature_close(k, sig));
     assert(constructor(torus, 3).dimensions == 2);
     /* A10: a square whose sides do not meet the inner paths at a corner.
-     * r : Path(j; s, c, c), for a point c, is no side over p @ 0, which is
-     * b: the square's path type cannot be formed. */
+     * Over the constant inner family Path(j; s, b, b), a side q : Path(j; s,
+     * b, b) meets it at every corner, and the square's path type is formed;
+     * r : Path(j; s, c, c), for another point c, does not, and it is not. */
+    cc_judgement_id flat_inner = OK(cc_instr_path(k, j, var(s), var(b), var(b)));
+    cc_entry_id side = OK(cc_instr_extend(k, flat_inner, ACC_R + 100));
+    OK(cc_instr_path(k, i, flat_inner, var(side), var(side)));
     cc_entry_id c = OK(cc_instr_extend(k, var(s), ACC_C));
     cc_entry_id r = OK(cc_instr_extend(k, OK(cc_instr_path(k, j, var(s), var(c), var(c))), ACC_R));
-    REJECTS(cc_instr_path(k, i, inner, var(r), var(r)), "endpoint has the wrong type");
+    REJECTS(cc_instr_path(k, i, flat_inner, var(r), var(r)), "endpoint has the wrong type");
 
     /* S2: base; surf : Path(i; Path(j; s, base, base), ⟨j⟩ base, ⟨j⟩ base). */
     sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_S2, 0));
@@ -1545,7 +1549,8 @@ static void malformed(void) {
         if (!cc_kernel_normalize(k, terms[t]))
             cc_kernel_clear_error(k);
         cc_checked_result checked;
-        assert(!cc_kernel_check(k, terms[t], nat, NULL, 0, &checked));
+        assert(!cc_kernel_check(k, terms[t], 0, NULL, 0, &checked));
+        assert(strstr(cc_kernel_error(k), "no rules for declared types"));
         cc_kernel_clear_error(k);
     }
     cc_signature_info info;
