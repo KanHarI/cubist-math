@@ -639,6 +639,22 @@ export class InstructionDriver {
     }
     return { levels, types };
   }
+  // A signature's former with its level binders renamed to fresh symbols:
+  // they are the admission's symbols, which a caller's variables may share,
+  // and a level entry cannot take a symbol that names a term entry.
+  freshFormer(index, info) {
+    const formers = this.formers ??= new Map();
+    if (!formers.has(index)) {
+      const rebuild = term => {
+        const n = this.node(term);
+        if (n.kind !== "LPi") return term;
+        const fresh = this.freshSymbol(this.kernel.symbolName(n.payload));
+        return this.kernel.term("LPi", fresh, n.children[0], rebuild(this.graph.rename(n.children[1], false, n.payload, fresh)));
+      };
+      formers.set(index, rebuild(info.former));
+    }
+    return formers.get(index);
+  }
   // S{ls}(as): an instance of an admitted signature (the specification's
   // sections 3.1 and 6.1). The kernel checks each parameter's type against
   // the telescope's, with the levels and the earlier parameters substituted,
@@ -685,7 +701,7 @@ export class InstructionDriver {
       if (!read) throw new Error("An erased universe parameter has no parameter to read it from.");
       levels.push(read);
     }
-    let fn = g.variable(this.freshEntry(this.asType(this.derive(info.former, new Map([[LIVE, 0n]]))), "S"));
+    let fn = g.variable(this.freshEntry(this.asType(this.derive(this.freshFormer(n.payload, info), new Map([[LIVE, 0n]]))), "S"));
     for (const level of levels) fn = g.levelApply(this.shape(this.focus(fn, "type"), "LPi"), level);
     let instance = g.sortBegin(n.payload);
     for (const level of given) instance = g.sortLevel(instance, level);
