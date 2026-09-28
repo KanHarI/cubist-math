@@ -7,8 +7,10 @@
 // two-sided unfolding, and weak heads that do not compute.
 //   node tests/driver-trace.mjs [ROOT]   prints the trace summary for the tree at ROOT
 import { createHash } from "node:crypto";
+import { existsSync, realpathSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { pathToFileURL, fileURLToPath } from "node:url";
+import { assertFreshBuild } from "../tools/build-stamp.mjs";
 
 const repository = new URL("../", import.meta.url);
 export const traceSource = `import naturals;
@@ -76,7 +78,15 @@ export async function driverTrace(root = repository) {
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const root = process.argv[2] ? pathToFileURL(`${process.argv[2].replace(/\/$/, "")}/`) : repository;
+// Run as a command, by any path to this file. A stale web/dist would trace
+// code its sources no longer contain: this tree is checked by its stamp, and
+// another by that tree's own, which a tree older than the stamp lacks.
+const invoked = () => { try { return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url); } catch { return false; } };
+if (invoked()) {
+  const root = process.argv[2] ? pathToFileURL(`${realpathSync(process.argv[2])}/`) : repository;
+  const stamp = new URL("tools/build-stamp.mjs", root);
+  if (root.href === repository.href) assertFreshBuild();
+  else if (existsSync(stamp)) (await import(stamp.href)).assertFreshBuild();
+  else process.stderr.write(`${fileURLToPath(root)} has no build stamp: its web/dist is traced as it is.\n`);
   console.log(JSON.stringify(await driverTrace(root), null, 2));
 }

@@ -121,12 +121,28 @@ test("every command that loads web/dist refuses a stale build", () => {
     ["tools/instruction-coverage.mjs", "--select=nothing"], ["tools/audit-cubical.mjs"],
     ["tools/verify-proof-migration.mjs", "--no-dependents", "nothing"], ["tools/elaboration-fingerprint.mjs"],
     ["tools/search-fuel-baseline.mjs"], ["tools/benchmark-cubical.mjs", "nothing"], ["tools/build-site.mjs"],
+    ["tools/differential-driver.mjs", "--seeds=1"], ["tests/driver-trace.mjs"],
     ["tests/cubical-inspector.browser.mjs"], ["tests/cubical.browser.mjs"], ["tests/statement.browser.mjs"],
     ["tests/proof-navigation.browser.mjs"], ["tests/landing.browser.mjs"]]) {
     const result = stale(args);
     assert.notEqual(result.status, 0, args.join(" "));
     assert.match(result.stderr, refusal, args.join(" "));
   }
+});
+
+// The driver trace also traces another checkout, given as its argument, by
+// that tree's own stamp; a tree older than the stamp has none, and is traced
+// with a warning.
+test("the driver trace checks another tree by that tree's own stamp", t => {
+  const { root, path } = fakeTree(t);
+  appendFileSync(path("kernel/src/a.c"), "\n");
+  const stale = run(["tests/driver-trace.mjs", root]);
+  assert.notEqual(stale.status, 0);
+  assert.match(stale.stderr, /web\/dist is stale: the kernel sources changed/);
+  rmSync(path("tools/build-stamp.mjs"));
+  const unstamped = run(["tests/driver-trace.mjs", root]);
+  assert.notEqual(unstamped.status, 0, "the temporary tree has no kernel to trace");
+  assert.match(unstamped.stderr, /has no build stamp: its web\/dist is traced as it is/);
 });
 
 test("one build at a time: a live owner's lock is waited for, an exited owner's taken over", t => {
