@@ -653,7 +653,9 @@ export class InstructionDriver {
       const rebuild = term => {
         const n = this.node(term);
         if (n.kind !== "LPi") return term;
-        const fresh = this.freshSymbol(this.kernel.symbolName(n.payload));
+        // A symbol the kernel allocates now, with no name: no entry has it.
+        const fresh = this.kernel.module._cb_fresh_symbol(this.kernel.handle) >>> 0;
+        if (!fresh) throw new Error("Could not allocate a symbol.");
         return this.kernel.term("LPi", fresh, n.children[0], rebuild(this.graph.rename(n.children[1], false, n.payload, fresh)));
       };
       formers.set(index, rebuild(info.former));

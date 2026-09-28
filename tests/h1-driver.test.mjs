@@ -115,21 +115,24 @@ test("admission derives a signature from its normal form and registers it by nam
 
 test("the codec round-trips instances, constructors and eliminators, with their names", t => {
   const { syntax, admit } = session(t);
+  // A decoded object is cached with its handle: a copy is encoded afresh,
+  // from its fields, so a wrong field gives another handle.
+  const again = term => syntax.encode(JSON.parse(JSON.stringify(term)));
   admit(natural);
   admit(list);
   const two = numeral(2);
   const decoded = syntax.decode(syntax.encode(two));
   assert.equal(decoded.fn.name, "succ");
   assert.deepEqual(decoded.fn.sort, { tag: "Sort", signature: "N", parameters: [], levels: [] });
-  assert.equal(syntax.encode(decoded), syntax.encode(two));
+  assert.equal(again(decoded), syntax.encode(two));
   const listN = sort("List", [N]);
   const cons = app(con(listN, 1), zero, con(listN, 0));
-  assert.equal(syntax.encode(syntax.decode(syntax.encode(cons))), syntax.encode(cons));
+  assert.equal(again(syntax.decode(syntax.encode(cons))), syntax.encode(cons));
   const double = elim("N", lam("z", N, N), [zero, lam("m", N, lam("h", N, succ(succ(v("h")))))]);
   const back = syntax.decode(syntax.encode(double));
   assert.equal(back.signature, "N");
   assert.equal(back.clauses.length, 2);
-  assert.equal(syntax.encode(back), syntax.encode(double));
+  assert.equal(again(back), syntax.encode(double));
   assert.throws(() => syntax.encode(sort("Nope")), /Unknown declared type: Nope/);
   assert.throws(() => syntax.encode({ tag: "Con", sort: N }), /needs its number/);
 });
@@ -297,10 +300,13 @@ test("an instance derives in a context whose variables share the signature's lev
   const transaction = new CubicalDeclarationTransaction(kernel, checker);
   admitSignature(kernel, list, { syntax });
   transaction.finish(true);
-  // List's level parameter is U; here U is a type of the caller's.
-  const driver = new InstructionDriver(kernel), listU = sort("List", [v("U")]);
-  const context = [[kernel.symbol("U"), syntax.encode(U(0))]];
-  assert.ok(driver.check(syntax.encode(con(listU, 0)), syntax.encode(listU), context));
-  assert.ok(driver.check(syntax.encode(app(con(listU, 1), v("u"), con(listU, 0))), syntax.encode(listU),
-    [...context, [kernel.symbol("u"), syntax.encode(v("U"))]]));
+  // List's level parameter is U; here U'1, the name a counter would pick
+  // first for a renamed U, is a type of the caller's, and then U is.
+  for (const name of ["U'1", "U"]) {
+    const driver = new InstructionDriver(kernel), listU = sort("List", [v(name)]);
+    const context = [[kernel.symbol(name), syntax.encode(U(0))]];
+    assert.ok(driver.check(syntax.encode(con(listU, 0)), syntax.encode(listU), context));
+    assert.ok(driver.check(syntax.encode(app(con(listU, 1), v("u"), con(listU, 0))), syntax.encode(listU),
+      [...context, [kernel.symbol("u"), syntax.encode(v(name))]]));
+  }
 });
