@@ -1,5 +1,6 @@
 import { cubicalText } from "./cubical-notation.mjs";
-import { numberedName, renameLevel, universeText } from "./cubical-levels.mjs";
+import { renameLevel, universeText } from "./cubical-levels.mjs";
+import { localName, numberedName } from "./dist/cubical-runtime/names.mjs";
 
 // Print a checked term in Cubist source syntax, for messages and the command
 // line: `A -> B`, `forall x : A. B`, `A and B`, `exists x : A. B`, `A or B`,
@@ -18,7 +19,7 @@ const arithmetic = /^(?:naturals|primes)__(add|mul|le|isLt)$/;
 export function sourceText(term, symbols = {}, limit = 4000) {
   let budget = limit;
   const label = binding => symbols[binding]?.name
-    ?? (binding.includes("__") && !binding.startsWith("__") ? binding.slice(binding.indexOf("__") + 2) : binding);
+    ?? localName(binding);
   // Terms share subterms, so each scan visits a node once.
   const mentions = (t, variable, seen = new Set()) => {
     if (!t || typeof t !== "object" || seen.has(t)) return false;
@@ -72,11 +73,21 @@ export function sourceText(term, symbols = {}, limit = 4000) {
     renames.set(from, to);
     try { return fn(); } finally { renames.delete(from); }
   };
+  // The variables bound where the printer is. A bound variable shows as its
+  // binder does; only a free one is a definition or an assumption, shown by
+  // its label: a binder a__b is not shown as b.
+  const bound = new Map();
   const under = (names, fn) => {
-    const shadowed = [names].flat().filter(name => renames.has(name)).map(name => [name, renames.get(name)]);
+    const list = [names].flat();
+    const shadowed = list.filter(name => renames.has(name)).map(name => [name, renames.get(name)]);
     for (const [name] of shadowed) renames.delete(name);
-    try { return fn(); } finally { for (const [name, to] of shadowed) renames.set(name, to); }
+    for (const name of list) bound.set(name, (bound.get(name) ?? 0) + 1);
+    try { return fn(); } finally {
+      for (const name of list) bound.set(name, bound.get(name) - 1);
+      for (const [name, to] of shadowed) renames.set(name, to);
+    }
   };
+  const variable = name => renames.get(name) ?? (bound.get(name) ? name : label(name));
   // A bound name that also occurs in `outside` gets a numbered variant.
   const apart = (name, outside, whole) => {
     if (!mentions(outside, name)) return name;
@@ -85,12 +96,21 @@ export function sourceText(term, symbols = {}, limit = 4000) {
   const show = t => print(t)[0];
   const sub = (t, needed) => { const [text, level] = print(t); return level < needed ? `(${text})` : text; };
   const atom = text => [text, LEVEL.atom];
-  const fallback = t => { const text = cubicalText(t, symbols); return atom(/^[[λΠΣ]/.test(text) ? `(${text})` : text); };
+  // A form without a source spelling is cubicalText's. It is given the
+  // variables bound around it, and the renamed ones, as this printer shows
+  // them: it shows them alike, and keeps its own binders apart from those
+  // free in their bodies. Definitions keep their labels.
+  const fallback = t => {
+    const scope = new Map([...renames.keys(), ...[...bound.keys()].filter(name => bound.get(name))]
+      .map(name => [name, variable(name)]));
+    const text = cubicalText(t, symbols, { scope });
+    return atom(/^[[λΠΣ]/.test(text) ? `(${text})` : text);
+  };
   // The text of a term and the precedence level of its outermost form.
   function print(t) {
     if (--budget < 0) return atom("…");
     switch (t?.tag) {
-      case "U": return atom(universeText(renameLevel(t.level, name => renames.get(name) ?? label(name))));
+      case "U": return atom(universeText(renameLevel(t.level, variable)));
       // A universe variable's bound, in place of a context entry's type.
       case "LBound": return atom(universeText({ tag: "LConst", tier: t.tier, value: 0 }));
       case "Nat": case "Unit": case "Void": return atom(t.tag);
@@ -99,7 +119,7 @@ export function sourceText(term, symbols = {}, limit = 4000) {
         const n = numeral(t);
         return atom(n !== null ? String(n) : `succ(${show(t.value)})`);
       }
-      case "Var": return atom(renames.get(t.name) ?? label(t.name));
+      case "Var": return atom(variable(t.name));
       case "DefRef": return atom(label(t.name));
       case "Pi": case "Sigma": {
         const pi = t.tag === "Pi";
@@ -113,17 +133,19 @@ export function sourceText(term, symbols = {}, limit = 4000) {
       case "LPi": return [`forall ${t.name} < UU0. ${under(t.name, () => show(t.body))}`, LEVEL.binder];
       case "LLam": return [`fun (${t.name} < UU0) => ${under(t.name, () => show(t.body))}`, LEVEL.binder];
       case "Lam": {
-        // fun (x, y : A, z : B) => body
-        const groups = [];
+        // fun (x, y : A, z : B) => body, each domain in the scope of the
+        // binders before it
+        const groups = [], names = [];
         let body = t;
         while (body.tag === "Lam") {
-          const last = groups.at(-1), domain = show(body.domain);
+          const last = groups.at(-1), domain = under(names, () => show(body.domain));
           if (last?.domain === domain && !last.names.some(name => mentions(body.domain, name))) last.names.push(body.name);
           else groups.push({ names: [body.name], domain });
+          names.push(body.name);
           body = body.body;
         }
         const binders = groups.map(group => `${group.names.join(", ")} : ${group.domain}`).join(", ");
-        return [`fun (${binders}) => ${under(groups.flatMap(group => group.names), () => show(body))}`, LEVEL.binder];
+        return [`fun (${binders}) => ${under(names, () => show(body))}`, LEVEL.binder];
       }
       // Eliminators print as the source forms that build them. The motive's
       // bound name is shown as the one the branches bind: `as k` binds both.
@@ -173,7 +195,7 @@ export function sourceText(term, symbols = {}, limit = 4000) {
       // levels, as universes, and its parameters; a constructor is its name.
       // An eliminator has no source form before `match`: it falls back.
       case "Sort": {
-        const args = [...(t.levels ?? []).map(level => universeText(renameLevel(level, name => renames.get(name) ?? label(name)))),
+        const args = [...(t.levels ?? []).map(level => universeText(renameLevel(level, variable))),
           ...(t.parameters ?? []).map(show)];
         return atom(args.length ? `${label(t.signature)}(${args.join(", ")})` : label(t.signature));
       }
