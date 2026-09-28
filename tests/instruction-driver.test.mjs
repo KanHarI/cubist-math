@@ -473,9 +473,9 @@ test("a derivation in one context is not reused in another that types a variable
 
 // The second review of #72. The kernel's weak head decides Glue eta by
 // syntax, so a Glue term whose piece is the base's restriction only after a
-// step stays a Glue term there; the driver's whnf move then takes its normal
-// form, where the parts are compared reduced. G(d) = Glue [d = 0 ↦ (Unit, id)]
-// Unit, p a path over G from point, b = p @ i: the constant tube
+// step stays a Glue term there; the driver's glue move then contracts it by
+// the Glue step, which compares the two reduced. G(d) = Glue [d = 0 ↦
+// (Unit, id)] Unit, p a path over G from point, b = p @ i: the constant tube
 // glue [i = 0 ↦ point] (unglue b) of a composition over G(i) must agree with
 // its base b, as b at i = 0 is p @ 0, which is point.
 test("a Glue term that is its base by eta only after a step still agrees with it", async t => {
@@ -495,14 +495,13 @@ test("a Glue term that is its base by eta only after a step still agrees with it
   assert.equal(checked.term.tag, "Comp");
 });
 
-// The review of #73. The glue move is a last resort, bounded, and judged by
-// alpha-equality. G = Glue [] Nat, u = glue_G [] x and H = Glue [] G: u and
-// unglue_H(glue_H [] u) agree by the right side's weak head. Without syntax
-// sharing, a normal form is a new handle even when nothing changed, so a
-// move judged by handles would normalize u until the fuel ran out; and over a
-// shared open graph t(n + 1) = f(t(n))(t(n)), normalizing u first would take
-// time exponential in n, where the weak head needs none.
-test("the glue move comes last, judges progress by syntax, and is bounded", async t => {
+// The review of #73. The glue move is a last resort. G = Glue [] Nat,
+// u = glue_G [] x and H = Glue [] G: u and unglue_H(glue_H [] u) agree by the
+// right side's weak head. A move that took u's normal form first would, over
+// a shared open graph t(n + 1) = f(t(n))(t(n)), take time exponential in n,
+// where the weak head needs none; without syntax sharing, a normal form is a
+// new handle even when nothing changed.
+test("the glue move comes last, after the weak heads", async t => {
   const { T } = await import("../lib/cubical/core.mjs");
   const G = T.glueType(T.nat, []), H = T.glueType(G, []);
   const agrees = async (base, context, optimizations) => {
@@ -558,27 +557,28 @@ const glueSession = async (t, optimizations = {}) => {
   return { T, program, made, spent, compare };
 };
 
-test("the glue move: an unchanged normal form is no progress, and its budget is its own", async t => {
-  // Without syntax sharing a normal form is a new handle: judged by handles,
-  // the move would report progress until the comparison's fuel ran out.
+test("the glue move: no Glue eta redex is no progress, and the move's budget is its own", async t => {
+  // A Glue term whose base is no unglue: the Glue step does not apply, and
+  // the move is stuck, even without syntax sharing.
   const plain = await glueSession(t, { shareSyntax: false });
   const run = plain.compare(plain.T.variable("x"), plain.T.variable("y"), [["x", plain.T.nat], ["y", plain.T.nat]]);
   assert.ok(run.error, "different bases do not agree");
   assert.ok(plain.made.includes("glue:left:stuck"), plain.made.join(" "));
   assert.ok(run.instructions < 1000, `${run.instructions} instructions`);
-  // Over a shared open graph, the move's normal form runs out of its own
-  // budget, not the session's: stuck, and the session's budget restored.
+  // The Glue step runs within the move's own budget, and running out of it
+  // is no progress: the comparison goes on to its own mismatch.
   const shared = await glueSession(t);
   const { T } = shared;
-  let graph = T.variable("x");
-  for (let n = 0; n < 40; n++) graph = T.app(T.app(T.variable("f"), graph), graph);
-  const context = [["x", T.nat], ["y", T.nat], ["f", T.pi("a", T.nat, T.pi("b", T.nat, T.nat))]];
-  const heavy = shared.compare(graph, T.variable("y"), context);
-  assert.ok(heavy.error && heavy.error.kind !== "deadline", heavy.error?.message);
-  // Measured: the move stops at 200,000 steps, its budget, and is stuck.
-  const move = shared.spent.find(([name]) => name === "glue:left:stuck");
-  assert.ok(move && move[1] <= searchLimits.glueNormalSteps + 1000, JSON.stringify(shared.spent));
-  const g = shared.program.checker.driver.graph, typing = shared.program.checker.driver.check(
+  const { KernelError } = await import("../web/cubical-kernel.mjs");
+  const g = shared.program.checker.driver.graph, within = g.within, budgets = [];
+  g.within = steps => { budgets.push(steps); throw new KernelError("Kernel checking/reduction budget exhausted.", "budget"); };
+  const heavy = shared.compare(T.variable("x"), T.variable("y"), [["x", T.nat], ["y", T.nat]]);
+  g.within = within;
+  assert.ok(heavy.error && heavy.error.kind !== "budget", heavy.error?.message);
+  assert.ok(budgets.length && budgets.every(steps => steps === searchLimits.glueSteps), JSON.stringify(budgets));
+  assert.ok(shared.made.includes("glue:left:stuck"), shared.made.join(" "));
+  // And an operation within a budget of its own gives the session's back.
+  const typing = shared.program.checker.driver.check(
     shared.program.checker.syntax.encode(T.app(T.lam("n", T.nat, T.succ(T.variable("n"))), T.zero)),
     shared.program.checker.syntax.encode(T.nat));
   assert.throws(() => g.within(1, () => g.step(g.refl(typing), "other", [], "normalize")), error => error.kind === "budget");
@@ -611,11 +611,12 @@ test("the glue move rethrows a deadline, and a Glue term needs it at every focus
 // n0 := 0, n(k) := succ(n(k - 1)) up to n600, G = Glue [] Nat and
 // f(A : U0, z : A) := point, f(G, glue_G [] n600) and f(G, glue_G [] y) agree
 // by unfolding f. The heuristic first descends into the arguments, whose
-// equality it cannot rule out; a glue move there, while the unfolding still
-// waits, would normalize glue_G [] n600, whose normal form is deeper than
-// syntax may be. And that limit, where the move is the last one left, is no
-// progress rather than the end of the comparison.
-test("the glue move waits for enclosing reductions, and a limit is no progress", async t => {
+// equality it cannot rule out; there, while the unfolding still waits, no
+// glue move is made. Compared directly, the two Glue terms differ and the
+// move is tried: the Glue step does not apply, and reduces nothing of n600,
+// whose normal form is deeper than syntax may be, as the whole term's
+// normal form, which the move once took, would.
+test("the glue move waits for enclosing reductions, and reduces nothing beyond its side conditions", async t => {
   const { T } = await import("../lib/cubical/core.mjs");
   const { heuristicChooser } = await import("../web/cubical-instruction-driver.mjs");
   const numbers = ["def n0 : Nat := 0;", ...Array.from({ length: 600 }, (_, k) => `def n${k + 1} : Nat := succ(n${k});`)];
@@ -631,10 +632,44 @@ test("the glue move waits for enclosing reductions, and a limit is no progress",
   assert.equal(program.checker.checkView(T.line("i", T.unit, left), T.path("i", T.unit, left, right), [["y", T.nat]]).term.tag, "PLam");
   assert.ok(!made.some(move => move.startsWith("glue:")), made.join(" "));
   // Compared directly, the two Glue terms differ; the glue move is tried, and
-  // its normal form's depth ends only the move.
+  // is stuck without reaching the depth of syntax.
   let error = null;
   try { program.checker.checkView(T.line("i", G, deep), T.path("i", G, deep, y), [["y", T.nat]]); }
   catch (thrown) { error = thrown; }
   assert.ok(error && !/syntax depth/.test(error.message), error?.message);
   assert.ok(made.some(move => move.startsWith("glue:") && move.endsWith(":stuck")), made.join(" "));
+});
+
+// The fourth review of #73: the glue move took the whole Glue term's normal
+// form, the path in its base included. Here that path's right endpoint holds
+// a shared graph, t(n + 1) = f(t(n))(t(n)) over x : Unit, with 2^40 paths,
+// which the comparison never needs: the normal form ran out of the move's
+// budget, and the tube disagreed with its base. The Glue step reduces only
+// the piece and b at i = 0, which is point.
+test("a Glue term agrees with its base though its path mentions a large shared graph", async t => {
+  const { T } = await import("../lib/cubical/core.mjs");
+  const { heuristicChooser } = await import("../web/cubical-instruction-driver.mjs");
+  const { face: F, interval: I } = await import("../lib/cubical/lattice.mjs");
+  const { identityEquivalence } = await import("../lib/cubical/equivalence.mjs");
+  const program = new CubicalProgram(await createCubical(), readLibrary);
+  t.after(() => program.dispose());
+  await program.check("def unit_point : Unit := tt;\n", "glue_graph");
+  // The glue moves made, and the kernel steps each took.
+  const made = [], work = () => { const w = program.kernel.work(); return w.instructionSteps + w.querySteps; };
+  let started = 0;
+  program.kernel.chooser = { name: "recording",
+    *rank(point) { for (const move of heuristicChooser.rank(point)) { if (move.move === "glue") started = work(); yield move; } },
+    observe: (point, move, outcome) => { if (move.move === "glue") made.push([outcome, work() - started]); } };
+  const equivalence = identityEquivalence(T.unit);
+  const G = face => T.glueType(T.unit, [{ face, type: T.unit, equiv: equivalence }]);
+  let graph = T.variable("x");
+  for (let n = 0; n < 40; n++) graph = T.app(T.app(T.variable("f"), graph), graph);
+  const end = T.glue(T.glueType(T.unit, []), graph, []);
+  const context = [["x", T.unit], ["f", T.pi("a", T.unit, T.pi("b", T.unit, T.unit))],
+    ["p", T.path("j", G(F.endpoint("j", 0)), T.point, end)]];
+  const b = T.at(T.variable("p"), I.variable("i")), over = G(F.endpoint("i", 0));
+  const glued = T.glue(over, T.unglue(over, b), [{ face: F.endpoint("i", 0), term: T.point }]);
+  const composite = T.comp("k", over, [{ face: F.endpoint("m", 0), term: glued }], b);
+  assert.equal(program.checker.checkView(composite, over, context, new Map([["i", 0], ["m", 1]])).term.tag, "Comp");
+  assert.ok(made.some(([outcome, steps]) => outcome === "progress" && steps < 10000), JSON.stringify(made));
 });

@@ -64,9 +64,9 @@ kind. Learning enters only where two types must agree, the driver's `agree`.
 - **State.** An equality goal: the two sides, the context entries they use,
   and the entries' types.
 - **Actions.** At a node on one side: `beta`, `iota`, `path`, `delta`,
-  `whnf`, eta expansion, descend (congruence at that node), or `glue` (a
-  Glue term's bounded normal form, whose eta the weak head decides only by
-  syntax). At the goal: `symmetry` and `normalize`. Syntactic masks remove obvious mismatches
+  `whnf`, eta expansion, descend (congruence at that node), or `glue` (the
+  kernel's bounded `Glue` step, for Glue eta that the weak head decides only
+  by syntax). At the goal: `symmetry` and `normalize`. Syntactic masks remove obvious mismatches
   (a `beta` needs an application of a lambda, a `delta` a definition
   reference); the kernel checks the remaining side conditions.
 - **Episode.** One `agree` call. Descending creates subgoals with the

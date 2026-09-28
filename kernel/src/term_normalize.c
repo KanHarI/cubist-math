@@ -352,3 +352,61 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
     --k->recursion;
     return result;
 }
+
+/* Whether two terms agree by syntax: as they are, as weak heads, or as
+ * normal forms, each tried only when the one before differs. */
+static bool normal_agree(cc_kernel *k, cc_term a, cc_term b) {
+    if (!a || !b)
+        return false;
+    if (ck_alpha_equal(k, a, b))
+        return true;
+    cc_term left = k->error[0] ? 0 : ck_whnf(k, a), right = left ? ck_whnf(k, b) : 0;
+    if (!right)
+        return false;
+    if (ck_alpha_equal(k, left, right))
+        return true;
+    left = k->error[0] ? 0 : ck_normal(k, left);
+    right = left ? ck_normal(k, right) : 0;
+    return right && ck_alpha_equal(k, left, right);
+}
+
+/* The Glue step (CC_STEP_GLUE): glue [φ ↦ t] (unglue b) is b when the two
+ * Glue types agree and t is b on φ. Each side condition is compared by
+ * syntax, its two sides reduced only as far as that takes (normal_agree),
+ * and nothing else is reduced: the Glue types, and t and b restricted to
+ * each clause of φ, since restricting can make a new redex, as p @ i at
+ * i = 0 is p's left endpoint. b stays as it is, with whatever its
+ * annotations carry. Weak heads and normal forms are reduction, so
+ * conversion still decides no step. Returns b, the term itself when a side
+ * condition fails, or 0 on error. */
+cc_term ck_glue_step(cc_kernel *k, cc_term term) {
+    cc_node n = k->nodes[term];
+    cc_term projected = ck_whnf(k, n.child[1]);
+    if (!projected)
+        return 0;
+    cc_node projection = k->nodes[projected];
+    if (projection.kind != CC_UNGLUE)
+        return term;
+    if (!normal_agree(k, n.child[0], projection.child[0]))
+        return k->error[0] ? 0 : term;
+    for (cc_term system = n.child[2]; system; system = k->nodes[system].child[1]) {
+        cc_node piece = k->nodes[system];
+        const cc_formula *raw = cc_kernel_get_formula(k, piece.payload);
+        cc_formula face;
+        cc_init(&face, CC_FACE);
+        if (!raw || cc_copy(&face, raw) != CC_OK) {
+            cc_clear(&face);
+            return ck_fail(k, "Glue eta face allocation failed."), 0;
+        }
+        bool agrees = true;
+        for (size_t i = 0; i < face.length && agrees; ++i)
+            agrees = normal_agree(k, ck_restrict(k, piece.child[0], face.clauses[i]),
+                                  ck_restrict(k, projection.child[1], face.clauses[i]));
+        cc_clear(&face);
+        if (k->error[0])
+            return 0;
+        if (!agrees)
+            return term;
+    }
+    return projection.child[1];
+}

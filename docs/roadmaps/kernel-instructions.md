@@ -156,9 +156,12 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
     eliminator or projection on a constructor), `Path` (a path lambda at a
     point, or a path at an endpoint of its annotated type), `Face` (a
     composition with a tube on a face that holds, to that tube at the end of
-    its dimension), `Whnf` (the kernel's weak head normal form), or
-    `Normalize` (the normal form of the highlighted subterm, by the kernel's
-    fixed strategy; THTH's `BetaReduceGrossKnuth`).
+    its dimension), `Whnf` (the kernel's weak head normal form), `Normalize`
+    (the normal form of the highlighted subterm, by the kernel's fixed
+    strategy; THTH's `BetaReduceGrossKnuth`), or `Glue` (Glue eta,
+    `glue [φ ↦ t] (unglue b)` to `b`, when the two Glue types agree and `t`
+    is `b` on each clause of `φ`, compared as they are, as weak heads or as
+    normal forms, with nothing else reduced).
   - `Replace(eq, side, position, a ≡ b)` swaps a highlighted occurrence of `a`
     for `b`: a targeted definitional-equality rewrite. When `a` or `b` uses a
     name bound on the way down, the given equality must have that name as a
@@ -364,8 +367,9 @@ in [learned-search.md](learned-search.md).
 **Choices.** Each time round, `agree` stops at a branch point and lists the
 moves open there: normalize both sides (a long closed computation, once per
 comparison), descend by congruence, a weak-head step on either side or both
-(beta, iota, path, face or delta), a side's weak head normal form, or eta.
-The list is syntactic; the kernel checks the rest when a move is made. A
+(beta, iota, path, face or delta), a side's weak head normal form, eta, or,
+last, a `Glue` step on a side that is a Glue term (the glue move). The list
+is syntactic; the kernel checks the rest when a move is made. A
 chooser (`heuristicChooser` and the interface beside it) ranks the moves,
 and the driver makes them in that order until one applies. The default
 chooser is the order described above, lazily, since its tests ask the
@@ -593,9 +597,12 @@ The correction:
   either side of a comparison, so two pairs with different annotations
   still compare, and it exposes a Glue term's base through such eta, for
   nested Glue terms, within the comparison's depth limit. The driver's
-  last-resort `glue` move takes a Glue term's normal form, within its own
-  step budget, when nothing else agrees the two sides, so its searches
-  still find the contraction.
+  last-resort `glue` move makes a `Glue` step, within its own step budget,
+  when nothing else agrees the two sides, so its searches still find the
+  contraction. The step reduces the two Glue types, and each piece and the
+  base on the piece's face, only as far as comparing them takes. The move
+  first took the whole term's normal form instead, which also walked the
+  base's annotations, whose endpoints can hold large shared graphs.
 - **The boundary is enforced.** `ck_convertible` fails, with an internal
   error, while an instruction runs; every public entry point that may reach
   it starts a query first.

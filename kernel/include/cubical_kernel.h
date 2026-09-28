@@ -209,9 +209,14 @@ typedef enum {
     CC_STEP_WHNF,      /* the weak head normal form, by the same strategy:
                         * composition, transport, Glue and pushouts compute,
                         * and lambdas contract by eta */
-    CC_STEP_FACE       /* a composition with a tube on a face that holds, to
+    CC_STEP_FACE,      /* a composition with a tube on a face that holds, to
                         * that tube at the end of the composition's dimension;
                         * a transport on a face that holds, to its base */
+    CC_STEP_GLUE       /* Glue eta: glue [φ ↦ t] (unglue b) to b, when its side
+                        * conditions agree by syntax, as they are, as weak
+                        * heads or as normal forms, and nothing else is
+                        * reduced: the two Glue types, and t and b restricted
+                        * to each clause of φ (term_normalize.c) */
 } cc_step_rule;
 
 /* Γ ⊢ U(l) : U(l+1), for a level l whose successor is within CC_LEVEL_MAX.

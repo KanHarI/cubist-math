@@ -1983,6 +1983,16 @@ static cc_term contract(cc_kernel *k, cc_term term, cc_step_rule rule) {
                 return n.child[2];
         }
         return ck_fail(k, "A face step needs a composition with a tube on a face that holds."), 0;
+    case CC_STEP_GLUE: {
+        /* Glue eta where a piece is the base's restriction only after
+         * reduction, which Whnf leaves: the side conditions normalized, and
+         * nothing else (term_normalize.c). */
+        cc_term base = n.kind == CC_GLUE_TERM ? ck_glue_step(k, term) : term;
+        if (!base || base != term)
+            return base;
+        return ck_fail(k, "A Glue step needs glue [φ ↦ t] (unglue b) whose two Glue types agree, and whose t is b on φ, "
+                          "after normalization."), 0;
+    }
     }
     return ck_fail(k, "Unknown step rule."), 0;
 }
