@@ -1,9 +1,9 @@
 import { CubicalSyntax } from "./cubical-syntax.mjs";
 import { T, substituteTerm } from "./dist/cubical-runtime/core.mjs";
 import { interval as I } from "./dist/cubical-runtime/lattice.mjs";
-import { NameSupply } from "./dist/cubical-runtime/names.mjs";
+import { NameSupply, localName, numberedName, stem } from "./dist/cubical-runtime/names.mjs";
 import { sourceText } from "./cubical-source-text.mjs";
-import { numberedName, levelNormal } from "./cubical-levels.mjs";
+import { levelNormal } from "./cubical-levels.mjs";
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { KernelError } from "./cubical-kernel.mjs";
 import { admitSignature } from "./cubical-signatures.mjs";
@@ -100,7 +100,7 @@ export function readableDimensions(terms) {
     for (const name of [t.name, t.signature])
       if (typeof name === "string") {
         used.add(name);
-        if (name.includes("__") && !name.startsWith("__")) used.add(name.slice(name.indexOf("__") + 2));
+        used.add(localName(name));
       }
     Object.values(t).forEach(visit);
   };
@@ -148,21 +148,17 @@ export function betaReduce(term, budget = 256) {
   return beta(term);
 }
 
-// U_1 has the stem U: the separator only keeps it apart from the constant U1.
-const stem = name => name.startsWith("__") ? name : /^native\d+$/.test(name) ? "x"
-  : name.replace(/\d+$/, "").replace(/^(U+)_$/, "$1") || name;
 // The names a term prints without binding them: a declared type or an
 // eliminator by its signature, a constructor, and a definition, each as the
 // printer labels it, without its module. A binder must not take one, and no
 // variable is shown by a stem that is one.
-const shortLabel = name => name.includes("__") && !name.startsWith("__") ? name.slice(name.indexOf("__") + 2) : name;
 export function printedLabels(term) {
   const labels = new Set(), seen = new WeakSet();
   const visit = t => {
     if (!t || typeof t !== "object" || seen.has(t)) return;
     seen.add(t);
     const label = t.tag === "Sort" || t.tag === "Elim" ? t.signature : t.tag === "Con" || t.tag === "DefRef" ? t.name : null;
-    if (typeof label === "string") labels.add(shortLabel(label));
+    if (typeof label === "string") labels.add(localName(label));
     Object.values(t).forEach(visit);
   };
   visit(term);
@@ -394,7 +390,7 @@ export class NativeCubicalElaborator {
   get displayNames() {
     return this.displaySymbols ??= new Proxy({}, { get: (_, name) => typeof name !== "string" ? undefined
       : this.assumptionLabels.has(name) ? { name: this.assumptionLabels.get(name), kind: "axiom" }
-      : name.includes("__") && !name.startsWith("__") ? { name: name.slice(name.indexOf("__") + 2) } : undefined });
+      : localName(name) !== name ? { name: localName(name) } : undefined });
   }
   displayText(term, width = 160, limit = 4000) {
     return this.printed(readableDimensions([displayTerm(term)])[0], width, limit);

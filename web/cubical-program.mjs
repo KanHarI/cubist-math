@@ -4,6 +4,7 @@ import { NativeCubicalElaborator, printedLabels } from "./cubical-elaborator.mjs
 import { Translator } from "./dist/cubical-runtime/translate.mjs";
 import {emptySimpRegistry,mergeSimpRegistries} from "./dist/cubical-runtime/simp-registry.mjs";
 import { substituteTerm, T } from "./dist/cubical-runtime/core.mjs";
+import { localName, printedForms, printsAsItself } from "./dist/cubical-runtime/names.mjs";
 import { parse } from "./mathscript/parser.mjs";
 import { leadingDocumentation } from "./mathscript/documentation.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
@@ -294,14 +295,8 @@ export class CubicalProgram {
     // The names are new to everything the view shows: the type, its
     // constructors and parameters, and every type, constructor, definition
     // and variable their types mention, in each form the display may print
-    // them: as they are, after a module's separator for a name with __, and
-    // the stem of either, which it gives generated names. And the display
-    // prints the new names as they are: not ending in a digit, which it
-    // would take back to a stem.
-    const printedForms = name => {
-      const short = name.includes("__") && !name.startsWith("__") ? name.slice(name.indexOf("__") + 2) : name;
-      return [name, short].flatMap(form => [form, form.replace(/\d+$/, "").replace(/^(U+)_$/, "$1")]);
-    };
+    // them (printedForms). And the display prints the new names as they are
+    // (printsAsItself), so no numbered name the display makes is one of them.
     const used = new Set([source, ...names, ...inductive.slots.map(slot => slot.source)].flatMap(printedForms));
     const syntax = this.checker.syntax, info = this.kernel.signature(inductive.record.index);
     for (const term of [info.former, ...info.constructors.map(c => c.type)].map(handle => syntax.decode(handle))) {
@@ -315,11 +310,10 @@ export class CubicalProgram {
       visit(term);
     }
     for (const parameter of inductive.parameters) for (const label of printedLabels(parameter.type)) used.add(label);
-    // A name prints as itself unless it ends in a digit or is U_, which the
-    // display takes back to a stem, or contains __, which it reads as a
-    // module's separator. So the rounds of suffixes are "", "_", then "_a",
-    // "_b", …: never a second underscore.
-    const printsAsItself = name => !/\d$/.test(name) && !/^U+_$/.test(name) && !name.includes("__");
+    // A candidate that ends in a digit, or is U's and an underscore, does
+    // not print as itself. So the rounds of suffixes are "", "_", then "_a",
+    // "_b", …: never a digit, nor a second underscore, which with the first
+    // would name a module.
     const letters = n => (n >= 26 ? letters(Math.floor(n / 26) - 1) : "") + String.fromCharCode(97 + n % 26);
     const pick = candidates => {
       // No candidate has a run of underscores or one at its end, as c_case
@@ -399,7 +393,7 @@ export class CubicalProgram {
       for (const [key, value] of Object.entries(t)) copy[key] = visit(value);
       const signature = t.tag === "Con" ? t.sort?.signature : null;
       if (typeof signature === "string" && t.index === generatedOf(signature))
-        copy.name = `${this.symbols[signature]?.name ?? signature.slice(signature.indexOf("__") + 2)}.squash`;
+        copy.name = `${this.symbols[signature]?.name ?? localName(signature)}.squash`;
       return copy;
     };
     return visit(term);
