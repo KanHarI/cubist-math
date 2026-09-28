@@ -551,9 +551,14 @@ export class InstructionDriver {
         }
         const value = this.convertTo(derive(t), this.evidence(this.focus(annotation, "term", [...here, 0])));
         const equivalence = this.subterm(this.focus(annotation, "term", [...here, 1]));
-        const image = this.derive(k.term("App", 0, k.term("Fst", 0, equivalence), this.statement(value).term),
-          joinScopes(this.scope(annotation), this.scope(value)));
-        const start = this.focus(g.refl(image), "other"), end = this.focus(g.refl(this.restrict(base, clause)), "other");
+        // The image lives in the equivalence's codomain, and the base on the
+        // face in the Glue type's base: equal types, perhaps only up to
+        // computation, as (λ X. X)(Unit) and Unit. The two equalities below
+        // are joined at one type, so the image is converted to the base's.
+        const restricted = this.restrict(base, clause);
+        const image = this.convertTo(this.derive(k.term("App", 0, k.term("Fst", 0, equivalence), this.statement(value).term),
+          joinScopes(this.scope(annotation), this.scope(value))), this.evidence(this.focus(restricted, "type")));
+        const start = this.focus(g.refl(image), "other"), end = this.focus(g.refl(restricted), "other");
         if (!this.agree(start, end)) throw new Error("A Glue value's image disagrees with the base.");
         system = g.glueTermPiece(system, value, g.transitivity(start.ref.id, g.symmetry(end.ref.id)));
         values.forEach((earlier, position) => {
@@ -1043,9 +1048,10 @@ export class InstructionDriver {
   // heads part by part when their parts are equal, and otherwise take
   // weak-head steps on either side.
   agree(a, b, terms = null, dims = null, budget = { left: this.fuel }) {
-    // Pairs of terms congruence already failed on. A failed attempt can leave
-    // an eta expansion that a step contracts again, so without this the same
-    // attempt would repeat until the budget ran out.
+    // Pairs of terms congruence already failed on, and pairs already expanded
+    // by eta. A failed attempt can leave an eta expansion that a step or the
+    // glue move contracts again, back to the same pair, so without this the
+    // same attempt would repeat until the budget ran out.
     const failed = new Set();
     // A long closed computation, such as a numeral's arithmetic: unless the
     // term checker's conversion finds the two different, compute both normal
@@ -1129,7 +1135,8 @@ export class InstructionDriver {
     for (const [side, term] of [["left", x], ["right", y]])
       if (!point.stuck.has(side) && !this.stable.has(term) && !CONSTRUCTORS.has(this.node(term).kind)) moves.push({ move: "whnf", side });
     const kx = this.node(x).kind, ky = this.node(y).kind;
-    if (!point.stuck.has("eta") && kx !== ky && (etaTypes[kx] || etaTypes[ky])) moves.push({ move: "eta" });
+    if (!point.stuck.has("eta") && !point.failed.has(`eta:${point.x},${point.y}`) && kx !== ky && (etaTypes[kx] || etaTypes[ky]))
+      moves.push({ move: "eta" });
     // Not inside a speculative descent: the enclosing comparison's lazy steps
     // come first, and should they fail, its last resort normalizes both sides.
     for (const [side, term] of [["left", x], ["right", y]])
@@ -1167,7 +1174,7 @@ export class InstructionDriver {
       point.stuck.add(move.side);
       return "stuck";
     case "eta":
-      if (this.eta(a, b)) return "progress";
+      if (this.eta(a, b)) { point.failed.add(`eta:${point.x},${point.y}`); return "progress"; }
       point.stuck.add("eta");
       return "stuck";
     case "glue":

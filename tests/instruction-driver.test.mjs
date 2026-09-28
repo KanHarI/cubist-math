@@ -721,3 +721,29 @@ test("a Glue term agrees with its base through pair eta, and through types equal
   const context = [["x", T.unit], ["f", T.pi("a", T.unit, T.pi("b", T.unit, T.unit))], ["g", G2]];
   assert.equal(tube(G2, retyped, context).term.tag, "Comp");
 });
+
+// Two gaps the differential generator found (tools/differential-driver.mjs),
+// with G(d) = Glue [d = 0 ↦ (Unit, id)] Unit and p a path over G from point.
+// A Glue term's piece is joined to the base at one type, though the Glue
+// type's base is (λ X. X)(Unit) where the equivalence's codomain is Unit. And
+// an eta expansion that the glue move contracts is not made again, which had
+// looped until the fuel ran out.
+test("generated Glue cases: a base type that computes, and no eta and glue loop", async t => {
+  const { T } = await import("../lib/cubical/core.mjs");
+  const { face: F, interval: I } = await import("../lib/cubical/lattice.mjs");
+  const { identityEquivalence } = await import("../lib/cubical/equivalence.mjs");
+  const program = new CubicalProgram(await createCubical(), readLibrary);
+  t.after(() => program.dispose());
+  await program.check("def unit_point : Unit := tt;\n", "generated_glue");
+  const e = identityEquivalence(T.unit), unitRedex = T.app(T.lam("X", T.universe(0), T.variable("X")), T.unit);
+  const G = (base, d) => T.glueType(base, [{ face: F.endpoint(d, 0), type: T.unit, equiv: e }]);
+  const context = [["b1", T.glueType(T.unit, [{ face: F.bottom, type: T.unit, equiv: e }])],
+    ["p", T.path("j", G(T.unit, "j"), T.point, T.variable("b1"))]];
+  const dims = new Map([["i", 0], ["m", 1]]), b = T.at(T.variable("p"), I.variable("i")), over = G(T.unit, "i");
+  const glued = (as, base) => T.glue(as, T.unglue(over, base), [{ face: F.endpoint("i", 0), term: T.point }]);
+  const id = term => T.app(T.lam("z", over, T.variable("z")), term);
+  assert.equal(program.checker.checkView(glued(G(unitRedex, "i"), b), G(unitRedex, "i"), context, dims).term.tag, "GlueTerm");
+  const left = id(glued(over, id(b))), right = id(glued(over, glued(over, b)));
+  const composite = T.comp("k", over, [{ face: F.endpoint("m", 0), term: left }], right);
+  assert.equal(program.checker.checkView(composite, over, context, dims).term.tag, "Comp");
+});
