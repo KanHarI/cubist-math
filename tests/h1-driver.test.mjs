@@ -286,3 +286,21 @@ test("higher constructors: the torus and the sphere are admitted, and their face
   assert.throws(() => admit({ name: "Ahead", constructors: [{ name: "a", type: path(v("Ahead"), v("b"), v("b")) },
     { name: "b", type: v("Ahead") }] }), /Unbound variable b/);
 });
+
+test("an instance derives in a context whose variables share the signature's level names", t => {
+  const kernel = new CubicalKernel(module);
+  t.after(() => kernel.dispose());
+  kernel.setExtensions({ h1: true });
+  const syntax = new CubicalSyntax(kernel);
+  const checker = { syntax, definitionViews: new Map(), genericDefinitions: new Map(), scopeDefinitions: new Map(), definitionExtensions: new Map(),
+    assumptions: new Map(), assumptionLabels: new Map(), assumptionOrigins: new Map(), libraryAssumptions: new Map() };
+  const transaction = new CubicalDeclarationTransaction(kernel, checker);
+  admitSignature(kernel, list, { syntax });
+  transaction.finish(true);
+  // List's level parameter is U; here U is a type of the caller's.
+  const driver = new InstructionDriver(kernel), listU = sort("List", [v("U")]);
+  const context = [[kernel.symbol("U"), syntax.encode(U(0))]];
+  assert.ok(driver.check(syntax.encode(con(listU, 0)), syntax.encode(listU), context));
+  assert.ok(driver.check(syntax.encode(app(con(listU, 1), v("u"), con(listU, 0))), syntax.encode(listU),
+    [...context, [kernel.symbol("u"), syntax.encode(v("U"))]]));
+});
