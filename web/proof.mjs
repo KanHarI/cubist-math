@@ -512,7 +512,8 @@ function renderSource() {
       } else {
         const info = linkMap.get(start);
         const expansion = (last.mode === "mathematical" ? numeralAt(line, token.index, text) : null) ?? info?.expansion;
-        const style = tokenStyle(text, expansion, headerWordAt(line, token.index, text));
+        // The whole source: a header's colon and its inductive may be on earlier lines.
+        const style = tokenStyle(text, expansion, headerWordAt(last.source, start, text));
         if (info) {
           const button = document.createElement("button");
           button.className = `reference${style ? " " + style : ""}`;

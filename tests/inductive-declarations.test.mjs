@@ -302,3 +302,13 @@ test("second review: inspection shows the marker, and only the result position's
   assert.equal(headerWordAt(header, header.indexOf("type"), "type"), false, "a parameter's type is a name");
   assert.equal(headerWordAt(header, header.indexOf("prop"), "prop"), true);
 });
+
+test("third review: a path lambda at a point is contracted in constructor types", async t => {
+  const { program, get } = await check(t, `inductive P : U0 { z; s(x : refl(P) @ 0); c : refl(P) @ 1; }
+def two : P := s(s(z));
+`);
+  ok(get("P"));
+  ok(get("two"));
+  const shape = program.kernel.signature(program.kernel.signatures.get("main__P").index).constructors;
+  assert.deepEqual(shape.map(c => [c.data, c.positions]), [[0, 0], [0, 1], [0, 0]], "s's argument is a position");
+});
