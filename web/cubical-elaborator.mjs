@@ -381,9 +381,10 @@ export class NativeCubicalElaborator {
     if (error?.kind !== "mismatch" || !error.mismatch?.found || error.described) return error;
     error.described = true;
     try {
-      // Both types renamed together, once, so that a dimension reads alike in each.
-      const [found, expected] = readableDimensions([error.mismatch.found, error.mismatch.expected]
-        .map(handle => displayTerm(this.syntax.decode(handle, dimensions)))).map(term => this.printed(term));
+      // Both types named together, once, so that a variable and a dimension
+      // read alike in each, apart from every label either prints.
+      const [found, expected] = this.displayTexts([error.mismatch.found, error.mismatch.expected]
+        .map(handle => this.syntax.decode(handle, dimensions)));
       error.message = `Type mismatch: found ${found}, expected ${expected}.`;
     } catch { /* Keep the kernel's message. */ }
     return error;
