@@ -9,8 +9,9 @@
 // constant tube, which checks only if the tube agrees with the base.
 //
 //   node tools/differential-driver.mjs [--seeds=N] [--from=S] [--verbose]
-import { existsSync, realpathSync } from "node:fs";
+import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { assertFreshBuild } from "./build-stamp.mjs";
 import { T } from "../lib/cubical/core.mjs";
 import { face as F, interval as I } from "../lib/cubical/lattice.mjs";
 import { identityEquivalence } from "../lib/cubical/equivalence.mjs";
@@ -164,9 +165,8 @@ if (invoked()) {
   // Seeds are 32-bit (random): beyond, two seeds would pose the same problem.
   const count = integer("seeds", 200, 1), from = integer("from", 1, 0), verbose = args.includes("--verbose");
   if (from + count - 1 > 0xFFFFFFFF) stop(`Seeds run up to ${0xFFFFFFFF}.`);
-  // The build stamp, where this tree has one (tools/build-stamp.mjs).
-  const stamp = new URL("./build-stamp.mjs", import.meta.url);
-  if (existsSync(stamp)) (await import(stamp)).assertFreshBuild();
+  // A stale web/dist would check code the sources no longer contain.
+  assertFreshBuild();
   const { default: createCubical } = await import("../web/dist/cubical.mjs");
   const { CubicalProgram } = await import("../web/cubical-program.mjs");
   const program = new CubicalProgram(await createCubical(), async () => { throw new Error("No modules."); });

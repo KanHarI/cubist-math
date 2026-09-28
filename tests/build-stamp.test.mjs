@@ -121,7 +121,7 @@ test("every command that loads web/dist refuses a stale build", () => {
     ["tools/instruction-coverage.mjs", "--select=nothing"], ["tools/audit-cubical.mjs"],
     ["tools/verify-proof-migration.mjs", "--no-dependents", "nothing"], ["tools/elaboration-fingerprint.mjs"],
     ["tools/search-fuel-baseline.mjs"], ["tools/benchmark-cubical.mjs", "nothing"], ["tools/build-site.mjs"],
-    ["tests/cubical-inspector.browser.mjs"], ["tests/cubical.browser.mjs"], ["tests/statement.browser.mjs"],
+    ["tools/differential-driver.mjs", "--seeds=1"], ["tests/cubical-inspector.browser.mjs"], ["tests/cubical.browser.mjs"], ["tests/statement.browser.mjs"],
     ["tests/proof-navigation.browser.mjs"], ["tests/landing.browser.mjs"]]) {
     const result = stale(args);
     assert.notEqual(result.status, 0, args.join(" "));
