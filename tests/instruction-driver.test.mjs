@@ -470,3 +470,27 @@ test("a derivation in one context is not reused in another that types a variable
   assert.throws(() => driver.check(syntax.encode(x), syntax.encode(nat), [[kernel.symbol("x"), syntax.encode(unit)]]),
     /Type mismatch/);
 });
+
+// The second review of #72. The kernel's weak head decides Glue eta by
+// syntax, so a Glue term whose piece is the base's restriction only after a
+// step stays a Glue term there; the driver's whnf move then takes its normal
+// form, where the parts are compared reduced. G(d) = Glue [d = 0 ↦ (Unit, id)]
+// Unit, p a path over G from point, b = p @ i: the constant tube
+// glue [i = 0 ↦ point] (unglue b) of a composition over G(i) must agree with
+// its base b, as b at i = 0 is p @ 0, which is point.
+test("a Glue term that is its base by eta only after a step still agrees with it", async t => {
+  const { T } = await import("../lib/cubical/core.mjs");
+  const { face: F, interval: I } = await import("../lib/cubical/lattice.mjs");
+  const { identityEquivalence } = await import("../lib/cubical/equivalence.mjs");
+  const program = new CubicalProgram(await createCubical(), readLibrary);
+  t.after(() => program.dispose());
+  await program.check("def unit_point : Unit := point;\n", "glue_eta");
+  const equivalence = identityEquivalence(T.unit);
+  const G = face => T.glueType(T.unit, [{ face, type: T.unit, equiv: equivalence }]);
+  const context = [["b1", G(F.bottom)], ["p", T.path("j", G(F.endpoint("j", 0)), T.point, T.variable("b1"))]];
+  const b = T.at(T.variable("p"), I.variable("i")), over = G(F.endpoint("i", 0));
+  const glued = T.glue(over, T.unglue(over, b), [{ face: F.endpoint("i", 0), term: T.point }]);
+  const composite = T.comp("k", over, [{ face: F.endpoint("m", 0), term: glued }], b);
+  const checked = program.checker.checkView(composite, over, context, new Map([["i", 0], ["m", 1]]));
+  assert.equal(checked.term.tag, "Comp");
+});

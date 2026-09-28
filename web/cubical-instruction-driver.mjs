@@ -79,7 +79,9 @@ const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: 
 //                                      "right") by `rule`: beta, iota, path,
 //                                      face or delta, at `step.path`; delta on
 //                                      both sides is also side "both", `steps`
-//   { move: "whnf", side }             the kernel's weak head normal form
+//   { move: "whnf", side }             the kernel's weak head normal form, or a
+//                                      Glue term's normal form when its weak
+//                                      head leaves it (eta, reduced parts)
 //   { move: "eta" }                    eta-expand the side that is not a
 //                                      constructor, against one that is
 // The list is syntactic: it offers what the terms' shapes allow, and the
@@ -849,6 +851,14 @@ export class InstructionDriver {
     if (this.stable.has(before) || CONSTRUCTORS.has(this.node(before).kind)) return false;
     this.reduce(focus, { path: [], rule: "whnf" });
     if (this.subterm(focus) !== before) return true;
+    // A Glue term the weak head leaves may still contract by eta: the kernel's
+    // weak head compares each piece with the base's restriction by syntax,
+    // and the restriction can be a redex, as p @ i at i = 0 is p's left
+    // endpoint. Its normal form compares them reduced.
+    if (this.node(before).kind === "GlueTerm") {
+      try { this.reduce(focus, { path: [], rule: "normalize" }); } catch { /* stays as it was */ }
+      if (this.subterm(focus) !== before) return true;
+    }
     this.stable.add(before);
     return false;
   }

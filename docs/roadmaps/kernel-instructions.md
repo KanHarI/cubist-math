@@ -591,7 +591,10 @@ The correction:
   make a new redex, as `p @ i` at `i = 0` is `p`'s left endpoint.
   Conversion makes both eta contractions itself, decided by conversion, on
   either side of a comparison, so two pairs with different annotations
-  still compare.
+  still compare, and it exposes a Glue term's base through such eta, for
+  nested Glue terms. The driver's `whnf` move takes a Glue term's normal
+  form when its weak head leaves it, so its searches still find the
+  contraction.
 - **The boundary is enforced.** `ck_convertible` fails, with an internal
   error, while an instruction runs; every public entry point that may reach
   it starts a query first.

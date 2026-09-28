@@ -270,7 +270,11 @@ static cc_term conversion_eta(cc_kernel *k, cc_term term) {
     }
     if (n.kind != CC_GLUE_TERM)
         return 0;
+    /* The base's weak head, contracting eta that holds only by conversion on
+     * the way: the base may itself be a Glue term of a convertible type. */
     cc_term projected = ck_whnf(k, n.child[1]);
+    for (cc_term inner; projected && (inner = conversion_eta(k, projected));)
+        projected = ck_whnf(k, inner);
     if (!projected || k->nodes[projected].kind != CC_UNGLUE)
         return 0;
     cc_node projection = k->nodes[projected];

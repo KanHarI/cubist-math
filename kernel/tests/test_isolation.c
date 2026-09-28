@@ -207,6 +207,21 @@ static void normal_forms_and_conversion_keep_eta(void) {
     assert(k->nodes[cc_kernel_whnf(k, at_small)].kind == CC_PAIR);
     assert(cc_kernel_convertible(k, at_small, at_large, 0));
     assert(!k->error[0]);
+
+    /* The second review: conversion must also expose a base through eta
+     * that holds only by conversion. With A = Glue [] Nat,
+     * A' = Glue [] ((λ X. X)(Nat)), G = Glue [] A, g : G and u = unglue_G(g),
+     * glue_G [] (glue_A' [] (unglue_A(u))) is g: the inner Glue term is u only
+     * because A' is A by a Beta step. */
+    cc_term identity = ck_make(k, CC_LAM, 403, ck_universe_at(k, 0), ck_var(k, 403), 0, 0);
+    cc_term a = ck_make(k, CC_GLUE, 0, nat, 0, 0, 0);
+    cc_term a_redex = ck_make(k, CC_GLUE, 0, ck_make(k, CC_APP, 0, identity, nat, 0, 0), 0, 0, 0);
+    cc_term g_type = ck_make(k, CC_GLUE, 0, a, 0, 0, 0), g = ck_var(k, 404);
+    cc_term u = ck_make(k, CC_UNGLUE, 0, g_type, g, 0, 0);
+    cc_term inner = ck_make(k, CC_GLUE_TERM, 0, a_redex, ck_make(k, CC_UNGLUE, 0, a, u, 0, 0), 0, 0);
+    cc_term outer = ck_make(k, CC_GLUE_TERM, 0, g_type, inner, 0, 0);
+    assert(cc_kernel_convertible(k, outer, g, 0));
+    assert(!k->error[0]);
     cc_kernel_free(k);
 }
 
