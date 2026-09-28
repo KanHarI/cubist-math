@@ -587,6 +587,7 @@ async function inspect(info, remember = true) {
   renderWitnessDetails(info);
   sourceLink(info);
   $("inspect-axioms").replaceChildren();
+  $("inspect-signature").hidden = true;
   $("locals").replaceChildren();
   $("kernel-details").hidden = info.kind === "goal";
   $("kernel-terms").hidden = info.kind === "goal";
@@ -640,12 +641,24 @@ async function inspect(info, remember = true) {
       $("inspect-description").textContent = `Not checked by cubical C: ${info.reason}`;
       return;
     }
+    // A declared type has no checked term: its signature and eliminator.
+    const declared = last.backend === "cubical" && [info.kind, info.role].includes("inductive");
+    if (declared) {
+      $("kernel-details").hidden = true;
+      $("kernel-terms").hidden = true;
+    }
     try {
-      const view = await request("inspect", { binding: info.binding });
-      if (sequence !== inspectSerial) return;
-      if (view.statement) renderStatement(view);
-      else renderType(view.typeText, Object.values(view.symbols));
-      renderKernel(view);
+      if (declared) {
+        const view = await request("signature", { binding: info.binding });
+        if (sequence !== inspectSerial) return;
+        if (view) renderSignature(view);
+      } else {
+        const view = await request("inspect", { binding: info.binding });
+        if (sequence !== inspectSerial) return;
+        if (view.statement) renderStatement(view);
+        else renderType(view.typeText, Object.values(view.symbols));
+        renderKernel(view);
+      }
     } catch (e) {
       if (sequence === inspectSerial) diagnostic(e);
     }
@@ -653,6 +666,36 @@ async function inspect(info, remember = true) {
   if (embedded) scrollTo(0, 0);
   else if (matchMedia("(max-width:1150px)").matches)
     $("inspect-name").scrollIntoView({ block: "center" });
+}
+// A declared type: its former, its constructors in the kernel's normal form
+// with their shapes, and the clause type the eliminator asks for each
+// constructor, for a motive P (the H1 specification's 6.5).
+function renderSignature(view) {
+  const plural = (count, word) => `${count} ${word}${count === 1 ? "" : "s"}`;
+  const item = (text, note) => {
+    const row = document.createElement("li"), code = document.createElement("code");
+    code.textContent = text;
+    row.append(code);
+    if (note) {
+      const small = document.createElement("small");
+      small.textContent = note;
+      row.append(small);
+    }
+    return row;
+  };
+  $("inspect-kind").textContent = `Declared type · ${view.modifier}`;
+  renderType(view.former);
+  $("inspect-signature").hidden = false;
+  $("inspect-signature-recorded").hidden = !view.recorded.length;
+  $("inspect-signature-recorded").textContent = `Recorded universe parameters: ${view.recorded.join(", ")}`;
+  $("inspect-constructors").replaceChildren(...view.constructors.map(c => item(`${c.name} : ${c.type}`,
+    `${c.data} data · ${plural(c.positions, "position")} · ${plural(c.dimensions, "dimension")}${c.generated ? " · generated" : ""}`)));
+  const eliminator = view.eliminator;
+  $("inspect-eliminator").hidden = !eliminator;
+  $("inspect-eliminator-motive").textContent = eliminator ? `For a motive ${eliminator.motive}, one clause per constructor:` : "";
+  $("inspect-clauses").replaceChildren(...(eliminator?.clauses ?? []).map(clause => item(`${clause.name} : ${clause.type}`)),
+    ...(eliminator?.error ? [item("…", `The remaining clause types could not be computed: ${eliminator.error}`)] : []));
+  renderAxioms($("inspect-axioms"), [], view.extensions ?? []);
 }
 function renderStatement(view) {
   const append = (target, parts) => {

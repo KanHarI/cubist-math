@@ -1,9 +1,9 @@
 import { sourceStatement } from "./cubical-statement.mjs";
 import { CubicalKernel } from "./cubical-kernel.mjs";
-import { NativeCubicalElaborator } from "./cubical-elaborator.mjs";
+import { NativeCubicalElaborator, printedLabels } from "./cubical-elaborator.mjs";
 import { Translator } from "./dist/cubical-runtime/translate.mjs";
 import {emptySimpRegistry,mergeSimpRegistries} from "./dist/cubical-runtime/simp-registry.mjs";
-import { substituteTerm } from "./dist/cubical-runtime/core.mjs";
+import { substituteTerm, T } from "./dist/cubical-runtime/core.mjs";
 import { parse } from "./mathscript/parser.mjs";
 import { leadingDocumentation } from "./mathscript/documentation.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
@@ -244,25 +244,165 @@ export class CubicalProgram {
   }
   // A declared type's signature as the kernel admitted it (the H1
   // specification's 6.5): its former, h-level, recorded universe parameters,
-  // and each constructor's normal form, with its data, positions and
-  // dimensions. Null for a name that is not a declared type.
+  // each constructor's normal form, with its data, positions and dimensions,
+  // and the eliminator's clause types. Null for a name that is not a
+  // declared type.
   signature(binding) {
     const record = this.kernel.signatures.get(binding);
     if (!record) return null;
     const info = this.kernel.signature(record.index), syntax = this.checker.syntax;
     const symbols = info.symbols.map(symbol => this.kernel.symbolName(symbol));
     // The sort and the earlier constructors appear in constructor types as
-    // the admission's variables; they are shown by their declared names.
+    // the admission's variables. They are shown as the sort and constructors
+    // they stand for, which print by their declared names: a variable named
+    // S1 would print as its stem S.
     const name = this.symbols[binding]?.name ?? binding;
-    const shown = [[info.sort, name], ...info.constructors.map((c, index) => [c.symbol, record.constructors[index]])]
-      .map(([symbol, display]) => [this.kernel.symbolName(symbol), { tag: "Var", name: display }]);
+    const sort = T.sort(binding);
+    const shown = [[info.sort, sort], ...info.constructors.map((c, index) =>
+      [c.symbol, T.constructor(index, sort, record.constructors[index])])]
+      .map(([symbol, term]) => [this.kernel.symbolName(symbol), term]);
     const display = term => shown.reduce((t, [from, to]) => substituteTerm(t, from, to), syntax.decode(term));
+    // Universe parameters by their names in the declaration, where the
+    // elaborator declared the type; the kernel's own symbols otherwise.
+    const slots = this.checker.inductives?.get(binding)?.slots.filter(slot => slot.level !== undefined);
+    const levelNames = slots?.length === info.levels ? slots.map(slot => slot.source) : symbols.slice(0, info.levels);
     return { name, binding, former: syntax.decode(info.former),
       modifier: info.modifier === 0 ? "type" : info.modifier === 1 ? "prop" : info.modifier === 2 ? "set" : `trunc(${info.modifier - 2})`,
-      recorded: symbols.slice(0, info.levels).filter((_, j) => info.recorded >> j & 1),
+      recorded: levelNames.filter((_, j) => info.recorded >> j & 1),
       extensions: info.experimental ? ["H1"] : [],
       constructors: info.constructors.map((c, index) => ({ name: record.constructors[index], type: display(c.type),
-        data: c.data, positions: c.positions, dimensions: c.dimensions, generated: c.generated })) };
+        data: c.data, positions: c.positions, dimensions: c.dimensions, generated: c.generated })),
+      eliminator: this.eliminator(binding, name) };
+  }
+  // The generated eliminator (the H1 specification's 3.6), for a motive P
+  // over the type at its own parameters: each clause's type as the kernel
+  // computes it (ClauseType_k), given a variable for each earlier clause, as
+  // a later clause's boundary mentions them. The kernel work is rolled back.
+  eliminator(binding, source) {
+    const inductive = this.checker.inductives?.get(binding);
+    if (!inductive) return null;
+    // Computed once per admitted signature: the kernel's symbol registries
+    // keep the names a computation uses, which a rollback does not take back.
+    this.eliminators ??= new WeakMap();
+    if (this.eliminators.has(inductive.record)) return this.eliminators.get(inductive.record);
+    const view = this.computeEliminator(binding, source, inductive);
+    this.eliminators.set(inductive.record, view);
+    return view;
+  }
+  computeEliminator(binding, source, inductive) {
+    const names = inductive.record.constructors;
+    // The names are new to everything the view shows: the type, its
+    // constructors and parameters, and every type, constructor, definition
+    // and variable their types mention, in each form the display may print
+    // them: as they are, after a module's separator for a name with __, and
+    // the stem of either, which it gives generated names. And the display
+    // prints the new names as they are: not ending in a digit, which it
+    // would take back to a stem.
+    const printedForms = name => {
+      const short = name.includes("__") && !name.startsWith("__") ? name.slice(name.indexOf("__") + 2) : name;
+      return [name, short].flatMap(form => [form, form.replace(/\d+$/, "").replace(/^(U+)_$/, "$1")]);
+    };
+    const used = new Set([source, ...names, ...inductive.slots.map(slot => slot.source)].flatMap(printedForms));
+    const syntax = this.checker.syntax, info = this.kernel.signature(inductive.record.index);
+    for (const term of [info.former, ...info.constructors.map(c => c.type)].map(handle => syntax.decode(handle))) {
+      for (const label of printedLabels(term)) used.add(label);
+      const visit = (t, seen = new WeakSet()) => {
+        if (!t || typeof t !== "object" || seen.has(t)) return;
+        seen.add(t);
+        if (typeof t.name === "string") for (const form of printedForms(t.name)) used.add(form);
+        Object.values(t).forEach(value => visit(value, seen));
+      };
+      visit(term);
+    }
+    for (const parameter of inductive.parameters) for (const label of printedLabels(parameter.type)) used.add(label);
+    // A name prints as itself unless it ends in a digit or is U_, which the
+    // display takes back to a stem, or contains __, which it reads as a
+    // module's separator. So the rounds of suffixes are "", "_", then "_a",
+    // "_b", …: never a second underscore.
+    const printsAsItself = name => !/\d$/.test(name) && !/^U+_$/.test(name) && !name.includes("__");
+    const letters = n => (n >= 26 ? letters(Math.floor(n / 26) - 1) : "") + String.fromCharCode(97 + n % 26);
+    const pick = candidates => {
+      // No candidate has a run of underscores or one at its end, as c_case
+      // for a constructor c_: from the third round on, every candidate prints
+      // as itself, so one not yet used is found.
+      const stems = candidates.map(name => name.replace(/_{2,}/g, "_").replace(/_+$/, "") || "x");
+      for (let round = 0; ; round++) {
+        const suffix = round === 0 ? "" : round === 1 ? "_" : `_${letters(round - 2)}`;
+        for (const candidate of stems.map(name => name + suffix))
+          if (printsAsItself(candidate) && !used.has(candidate)) { used.add(candidate); return candidate; }
+      }
+    };
+    const context = new Map(), parameters = [], levels = [];
+    for (const slot of inductive.slots) {
+      if (slot.level !== undefined) {
+        context.set(slot.name, T.bound);
+        if (inductive.levels[slot.level].recorded) levels.push(T.variable(slot.name));
+      } else {
+        context.set(slot.name, inductive.parameters[slot.parameter].type);
+        parameters.push(T.variable(slot.name));
+      }
+    }
+    const instance = T.sort(binding, parameters, levels);
+    const universe = pick(["U", "V", "W", "X", "Y"]), motive = pick(["P", "Q", "M", "R"]), z = pick(["z", "w", "v"]);
+    const motiveType = T.pi(z, instance, T.universe(T.variable(universe)));
+    context.set(universe, T.bound);
+    context.set(motive, motiveType);
+    const clauses = [];
+    const transaction = new CubicalDeclarationTransaction(this.kernel, this.checker);
+    try {
+      names.forEach((constructor, k) => {
+        const shown = info.constructors[k].generated ? `${source}.squash` : constructor;
+        const variable = pick([`${constructor}_case`, `${constructor}_clause`]);
+        const type = this.checker.nextClauseType(T.variable(motive), clauses.map(clause => T.variable(clause.name)), context);
+        context.set(variable, type);
+        clauses.push({ constructor: shown, name: variable, type });
+      });
+      return { universe, motive, motiveType, clauses };
+    } catch (error) {
+      return { universe, motive, motiveType, clauses, error: error.message };
+    } finally { transaction.finish(false); }
+  }
+  // The same, as display text, for the CLI's inspect and the workbench:
+  // whole, as a clause's boundary comes at the end of its type, and with one
+  // naming for the whole view, so a parameter has one name in every type.
+  signatureView(binding) {
+    const signature = this.signature(binding);
+    if (!signature) return null;
+    const { eliminator } = signature;
+    const terms = [signature.former, ...signature.constructors.map(c => c.type),
+      ...(eliminator ? [eliminator.motiveType, ...eliminator.clauses.map(c => c.type)] : [])];
+    const texts = this.checker.displayTexts(this.qualifyGenerated(terms), Infinity, 1000000);
+    let next = 0;
+    const text = () => texts[next++];
+    return { ...signature, former: text(),
+      constructors: signature.constructors.map(c => ({ ...c, name: c.generated ? `${signature.name}.squash` : c.name, type: text() })),
+      eliminator: eliminator && { motive: `${eliminator.motive} : ${text()}`,
+        universe: eliminator.universe, error: eliminator.error ?? null,
+        clauses: eliminator.clauses.map(c => ({ constructor: c.constructor, name: c.name, type: text() })) } };
+  }
+  // A signature's generated constructor as the source writes it, T.squash:
+  // a user constructor may be named squash too.
+  qualifyGenerated(term) {
+    const generated = new Map(), copies = new WeakMap();
+    const generatedOf = signature => {
+      if (!generated.has(signature)) {
+        const record = this.kernel.signatures.get(signature);
+        generated.set(signature, record ? this.kernel.signature(record.index).constructors.findIndex(c => c.generated) : -1);
+      }
+      return generated.get(signature);
+    };
+    const visit = t => {
+      if (!t || typeof t !== "object") return t;
+      if (copies.has(t)) return copies.get(t);
+      const copy = Array.isArray(t) ? [] : {};
+      copies.set(t, copy);
+      for (const [key, value] of Object.entries(t)) copy[key] = visit(value);
+      const signature = t.tag === "Con" ? t.sort?.signature : null;
+      if (typeof signature === "string" && t.index === generatedOf(signature))
+        copy.name = `${this.symbols[signature]?.name ?? signature.slice(signature.indexOf("__") + 2)}.squash`;
+      return copy;
+    };
+    return visit(term);
   }
   // Each proof statement of a module: where it is, the goal it faced, with the
   // names in scope, and the term it built. The rest of the block's proof

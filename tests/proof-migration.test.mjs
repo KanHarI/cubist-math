@@ -185,3 +185,26 @@ def eight : double(4) = 8 {
     [["same", "The public type changed. It mentions changed definitions from: dependency_fixture__pick."]]);
   assert.equal(dependent.identical, 1);
 });
+
+// The H1 specification's 6.4: a declaration's kernel extensions under review
+// are compared apart from its assumptions. The declared type lives in a module
+// the migration leaves unchanged, so both versions use one signature.
+test("a migration may not add or remove a kernel extension, such as H1", async () => {
+  const types = "inductive B { yes; no; }\n";
+  const plain = "import h1_types;\ndef pick : Nat := 0;\n";
+  const declared = "import h1_types;\ndef pick : Nat := (fun (b : B) => 0)(yes);\n";
+  const verify = async (original, edited, level) => (await verifyMigration({ modules: ["h1_fixture"], level,
+    experimental: ["h1"], readOriginal: name => name === "h1_fixture" ? original : name === "h1_types" ? types : library(name),
+    readEdited: async () => edited }))[0];
+  assert.deepEqual((await verify(plain, declared, "types")).failures.map(failure => failure.reason),
+    ["Kernel extensions changed: none -> H1"]);
+  assert.deepEqual((await verify(declared, plain, "types")).failures.map(failure => failure.reason),
+    ["Kernel extensions changed: H1 -> none"]);
+  assert.deepEqual((await verify(declared, declared, "identical")).failures, []);
+  // A module that declares a type is refused, by name, not compared.
+  const own = "inductive C { c; }\ndef one : Nat := 1;\n";
+  const report = (await verifyMigration({ modules: ["h1_fixture"], level: "types", experimental: ["h1"],
+    readOriginal: name => name === "h1_fixture" ? own : library(name), readEdited: async () => own }))[0];
+  assert.deepEqual(report.failures.map(failure => failure.name), ["C"]);
+  assert.match(report.failures[0].reason, /does not compare signatures yet/);
+});
