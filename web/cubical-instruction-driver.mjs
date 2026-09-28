@@ -28,8 +28,9 @@ const dimensionBound = (kind, i) => kind === "PLam" || ((kind === "Path" || kind
 // (H1): a constructor applied computes only under an eliminator.
 const CONSTRUCTORS = new Set(["U", "Pi", "Lam", "LPi", "LLam", "Sigma", "Pair", "Nat", "Zero", "Succ", "Unit", "Point", "Void",
   "Sum", "Inl", "Inr", "Path", "PLam", "W", "Sup", "Pushout", "PushLeft", "PushRight", "Sort", "Con", "Elim", "List"]);
-// The type former a constructor's eta expansion needs.
-const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma", LLam: "LPi" };
+// The type former a constructor's eta expansion needs. A Glue term's is
+// glue [φ ↦ g] (unglue g), for g of a Glue type.
+const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma", LLam: "LPi", GlueTerm: "Glue" };
 // Steps after which a comparison the oracle finds true computes normal forms.
 const LONG_COMPUTATION = 64;
 // The kernel steps the Glue step may take (the glue move). It normalizes its
@@ -50,7 +51,7 @@ export const searchLimits = Object.freeze({ fuel: FUEL, longComputation: LONG_CO
 const RIGID = new Set(["U", "Pi", "Sigma", "W", "LPi", "Nat", "Zero", "Succ", "Unit", "Point", "Void", "Sum",
   "Inl", "Inr", "Path", "Sup", "Pushout", "PushLeft", "PushRight", "Lam", "LLam", "PLam", "Pair", "Sort", "List"]);
 // Constructors that eta relates to a neutral term of their type.
-const ETA_CONSTRUCTORS = new Set(["Lam", "LLam", "PLam", "Pair"]);
+const ETA_CONSTRUCTORS = new Set(["Lam", "LLam", "PLam", "Pair", "GlueTerm"]);
 // Neutral weak heads: variables and eliminations stuck on one. A declared
 // type's constructor and eliminator count here, not as rigid heads: each is
 // a function, or a path, which eta relates to a lambda. Two constructors of

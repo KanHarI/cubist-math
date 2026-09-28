@@ -353,11 +353,40 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
     return result;
 }
 
-/* Whether two terms agree by syntax: as they are, as weak heads, or as
- * normal forms, each tried only when the one before differs. */
+/* Heads whose normal form may still contract by eta once their parts are
+ * normal: there, parts that differ do not show that the wholes do. */
+static bool eta_sensitive(cc_term_kind kind) {
+    return kind == CC_LAM || kind == CC_LLAM || kind == CC_PLAM || kind == CC_PAIR || kind == CC_GLUE_TERM;
+}
+
+static bool parts_agree(cc_kernel *k, cc_term a, cc_term b);
+
+/* Whether two terms agree by syntax, reduced only as far as that takes: as
+ * they are, as weak heads, part by part under a common head (the same kind
+ * and payload, so the same binder), or else as normal forms. Parts already
+ * equal, such as a large shared graph on both sides, are never normalized,
+ * and each pair is compared once: the result is memoized, as the terms are
+ * immutable. Every answer is reduction and syntax, never conversion. */
 static bool normal_agree(cc_kernel *k, cc_term a, cc_term b) {
     if (!a || !b)
         return false;
+    if (a == b)
+        return true;
+    uint64_t cached;
+    if (ck_memo_get(k, 5, a, 0, b, &cached))
+        return cached != 0;
+    if (++k->recursion > 1024) {
+        --k->recursion;
+        return ck_fail(k, "Native reduction recursion depth exceeded.");
+    }
+    bool agrees = parts_agree(k, a, b);
+    --k->recursion;
+    if (!k->error[0])
+        ck_memo_put(k, 5, a, 0, b, agrees);
+    return agrees && !k->error[0];
+}
+
+static bool parts_agree(cc_kernel *k, cc_term a, cc_term b) {
     if (ck_alpha_equal(k, a, b))
         return true;
     cc_term left = k->error[0] ? 0 : ck_whnf(k, a), right = left ? ck_whnf(k, b) : 0;
@@ -365,7 +394,17 @@ static bool normal_agree(cc_kernel *k, cc_term a, cc_term b) {
         return false;
     if (ck_alpha_equal(k, left, right))
         return true;
-    left = k->error[0] ? 0 : ck_normal(k, left);
+    cc_node x = k->nodes[left], y = k->nodes[right];
+    if (x.kind == y.kind && x.payload == y.payload) {
+        bool parts = true;
+        for (unsigned i = 0; i < ck_arity(x.kind) && parts; ++i)
+            parts = x.child[i] == y.child[i] || normal_agree(k, x.child[i], y.child[i]);
+        if (parts || k->error[0] || !eta_sensitive(x.kind))
+            return parts;
+    }
+    if (k->error[0])
+        return false;
+    left = ck_normal(k, left);
     right = left ? ck_normal(k, right) : 0;
     return right && ck_alpha_equal(k, left, right);
 }

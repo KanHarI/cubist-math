@@ -692,3 +692,32 @@ test("a Glue term whose base is a nested Glue eta redex agrees with its base", a
   const composite = T.comp("k", G, [{ face: F.endpoint("m", 0), term: outer }], g);
   assert.equal(program.checker.checkView(composite, G, [["g", G]], new Map([["m", 0]])).term.tag, "Comp");
 });
+
+// The sixth review of #73: a Glue term's base may be the other side's unglue
+// only by pair eta, and its Glue type the other side's only below its weak
+// head, over large shared parts. Glue eta expands the neutral side to
+// glue [φ ↦ g] (unglue g), and the two Glue terms are compared part by
+// part: the bases by pair eta and beta, the types by one beta step, with
+// the shared parts never normalized.
+test("a Glue term agrees with its base through pair eta, and through types equal below their heads", async t => {
+  const { T } = await import("../lib/cubical/core.mjs");
+  const { face: F } = await import("../lib/cubical/lattice.mjs");
+  const program = new CubicalProgram(await createCubical(), readLibrary);
+  t.after(() => program.dispose());
+  await program.check("def unit_point : Unit := tt;\n", "glue_eta_expansion");
+  const tube = (G, term, context) =>
+    program.checker.checkView(T.comp("k", G, [{ face: F.endpoint("m", 0), term }], T.variable("g")), G, context, new Map([["m", 0]]));
+  // A = Σ (n : Nat). Nat, G = Glue [] A, u = unglue_G(g): glue_G [] (fst u, snd ((λ x. x) u)) is g.
+  const A = T.sigma("n", T.nat, T.nat), G = T.glueType(A, []), u = T.unglue(G, T.variable("g"));
+  const paired = T.glue(G, T.pair(A, T.first(u), T.second(T.app(T.lam("x", A, T.variable("x")), u))), []);
+  assert.equal(tube(G, paired, [["g", G]]).term.tag, "Comp");
+  // r(n + 1) = f(r(n))(r(n)) over x : Unit, A2 = Path(Unit, r(40), r(40)), and
+  // A2' the same over (λ X. X)(Unit): glue_(Glue [] A2') [] (unglue_(Glue [] A2)(g)) is g.
+  let r = T.variable("x");
+  for (let n = 0; n < 40; n++) r = T.app(T.app(T.variable("f"), r), r);
+  const A2 = T.path("j", T.unit, r, r), A2beta = T.path("j", T.app(T.lam("X", T.universe(0), T.variable("X")), T.unit), r, r);
+  const G2 = T.glueType(A2, []), G2beta = T.glueType(A2beta, []);
+  const retyped = T.glue(G2beta, T.unglue(G2, T.variable("g")), []);
+  const context = [["x", T.unit], ["f", T.pi("a", T.unit, T.pi("b", T.unit, T.unit))], ["g", G2]];
+  assert.equal(tube(G2, retyped, context).term.tag, "Comp");
+});

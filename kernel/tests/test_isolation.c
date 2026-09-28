@@ -165,6 +165,15 @@ static void reduction_decides_eta_syntactically(void) {
         OK(cc_instr_glue_term_base(k, over_nat, OK(cc_instr_variable(k, n)))), point, 0))));
     rejects(cc_instr_step(k, OK(cc_instr_refl(k, plain_glue)), 1, NULL, 0, CC_STEP_GLUE), "A Glue step needs");
     rejects(cc_instr_step(k, OK(cc_instr_refl(k, pv)), 1, NULL, 0, CC_STEP_GLUE), "A Glue step needs");
+    /* The sixth review of #73: Eta expands a term of a Glue type to
+     * glue [φ ↦ b] (unglue b), a piece per face, which the Glue step
+     * contracts again. */
+    cc_judgement_id expansion = OK(cc_instr_eta(k, bv));
+    cc_node expanded = k->nodes[other_of(expansion)];
+    assert(expanded.kind == CC_GLUE_TERM && expanded.child[0] == term_of(over_redex));
+    assert(kind(expanded.child[1]) == CC_UNGLUE && kind(expanded.child[2]) == CC_TUBE &&
+           k->nodes[expanded.child[2]].child[0] == term_of(bv) && !k->nodes[expanded.child[2]].child[1]);
+    assert(other_of(OK(cc_instr_step(k, expansion, 1, NULL, 0, CC_STEP_GLUE))) == term_of(bv));
     /* Conversion has Glue eta of its own, by conversion. */
     assert(cc_kernel_convertible(k, term_of(at_nat), term_of(bv), 0));
     cc_kernel_free(k);
@@ -325,6 +334,33 @@ static void glue_step_normalizes_only_its_side_conditions(void) {
     ck_standalone(k);
     cc_kernel_work(k, &after);
     assert(after.instruction_steps - before.instruction_steps < 1000);
+
+    /* The sixth review: Glue types equal only below their heads, over the
+     * graph on both sides, agree part by part, by a beta step in the family:
+     * the graph is the same node on both sides, and never normalized. */
+    cc_term family = ck_make(k, CC_APP, 0, ck_make(k, CC_LAM, 700, ck_universe_at(k, 0), ck_var(k, 700), 0, 0), unit, 0, 0);
+    cc_term plain = ck_make(k, CC_GLUE, 0, ck_make(k, CC_PATH, j, unit, t, t, 0), 0, 0, 0);
+    cc_term redex = ck_make(k, CC_GLUE, 0, ck_make(k, CC_PATH, j, family, t, t, 0), 0, 0, 0);
+    cc_term g = ck_var(k, 701);
+    cc_term retyped = ck_make(k, CC_GLUE_TERM, 0, redex, ck_make(k, CC_UNGLUE, 0, plain, g, 0, 0), 0, 0);
+    cc_kernel_work(k, &before);
+    ck_operation(k, CC_WORK_INSTRUCTION);
+    assert(ck_glue_step(k, retyped) == g && !k->error[0]);
+    ck_standalone(k);
+    cc_kernel_work(k, &after);
+    assert(after.instruction_steps - before.instruction_steps < 1000);
+    /* And over two graphs that are different nodes, equal level by level
+     * down to (λ z. z)(x) against x: each pair of levels is compared once. */
+    cc_term other = ck_make(k, CC_APP, 0, ck_make(k, CC_LAM, 702, unit, ck_var(k, 702), 0, 0), ck_var(k, 302), 0, 0);
+    for (unsigned n = 0; n < 40; ++n) other = ck_make(k, CC_APP, 0, ck_make(k, CC_APP, 0, f, other, 0, 0), other, 0, 0);
+    cc_term far = ck_make(k, CC_GLUE, 0, ck_make(k, CC_PATH, j, unit, other, other, 0), 0, 0, 0);
+    cc_term relabeled = ck_make(k, CC_GLUE_TERM, 0, far, ck_make(k, CC_UNGLUE, 0, plain, g, 0, 0), 0, 0);
+    cc_kernel_work(k, &before);
+    ck_operation(k, CC_WORK_INSTRUCTION);
+    assert(ck_glue_step(k, relabeled) == g && !k->error[0]);
+    ck_standalone(k);
+    cc_kernel_work(k, &after);
+    assert(after.instruction_steps - before.instruction_steps < 5000);
     cc_kernel_free(k);
 }
 
