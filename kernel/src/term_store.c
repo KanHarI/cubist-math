@@ -240,6 +240,11 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
         if (children[i] >= k->count || (i >= arity && children[i]))
             return ck_fail(k, "Invalid syntax child handle."), 0;
     }
+    /* A formula payload names a registered formula: a node's masks are taken
+     * from it once, when the node is made, and interning shares the node. */
+    if ((kind == CC_PAPP || kind == CC_PUSH_PATH || kind == CC_TUBE || kind == CC_GLUE_SYSTEM) &&
+        !cc_kernel_get_formula(k, payload))
+        return ck_fail(k, "A formula handle names no registered formula."), 0;
     /* Identical syntax is one node. Every child and payload is compared after
      * hashing, so collisions affect performance, never term identity. */
     if (k->optimizations & CC_SHARE_SYNTAX) {

@@ -145,6 +145,16 @@ static void renamings_share_work(void) {
     cc_term bound = ck_make(k, CC_LAM, 1100, unit, ck_make(k, CC_APP, 0, used, ck_var(k, 1100), 0, 0), 0, 0);
     cc_term free_there = ck_make(k, CC_LAM, 1101, unit, ck_make(k, CC_APP, 0, used, ck_var(k, 1100), 0, 0), 0, 0);
     assert(!equal_within(k, bound, free_there, 1000000));
+    /* The first review of #77: a formula-bearing node made before its
+     * formula exists would keep a mask without the formula's dimensions,
+     * and a renaming of them could be dropped. Such a node is refused. */
+    uint32_t unregistered = 60000;
+    assert(!cc_kernel_get_formula(k, unregistered));
+    assert(!cc_kernel_term(k, CC_PAPP, unregistered, x, 0, 0, 0));
+    assert(strstr(cc_kernel_error(k), "names no registered formula"));
+    cc_kernel_clear_error(k);
+    assert(!cc_kernel_term(k, CC_TUBE, unregistered, x, 0, 0, 0));
+    cc_kernel_clear_error(k);
     cc_kernel_free(k);
 }
 
