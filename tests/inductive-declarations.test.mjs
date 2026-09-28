@@ -312,3 +312,17 @@ def two : P := s(s(z));
   const shape = program.kernel.signature(program.kernel.signatures.get("main__P").index).constructors;
   assert.deepEqual(shape.map(c => [c.data, c.positions]), [[0, 0], [0, 1], [0, 0]], "s's argument is a position");
 });
+
+test("fourth review: projections contract, constructor-headed rules simplify, normalized views keep the marker", async t => {
+  const { program, get } = await check(t, `${naturals}${lists}
+inductive P : U0 { z; s(x : typed(U0 and U0, (P, Nat)).1); l : typed(P and P, (z, z)).2 = z; }
+inductive H { b; s(n : H); law(n : H) : s(n) = n; }
+def fired : s(b) = b { simp only [law]; }
+inductive Stack(U < UU0, A : U) : U { empty; push(x : A, s : Stack(U, A)); pop(x : A, s : Stack(U, A)) : push(x, s) = s; }
+def popped(A : U0, x : A, s : Stack(U0, A)) : push(x, s) = s := pop(x, s);
+def instance_matched(y : N) : typed(Stack(U0, N), push(y, empty)) = empty { simp only [popped]; }
+def through : Nat := (fun (x : N) => 0)(zero);
+`);
+  for (const name of ["P", "H", "fired", "instance_matched", "through"]) ok(get(name));
+  assert.deepEqual(program.inspect("main__through", { normalize: true }).extensions, ["H1"]);
+});
