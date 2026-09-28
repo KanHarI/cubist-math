@@ -424,18 +424,25 @@ test("inspection: generated names avoid the printed form of every name", async t
 // The display shows an assumption by its label, and the view's names do not
 // avoid those labels: no declared type mentions an assumption. The kernel
 // admits a signature only from closed judgements (the H1 specification's
-// 5.2), so an assumption in a parameter, in a constructor's argument, or in a
-// definition one of them uses is refused, and nothing is admitted.
+// 5.2), and the lowering refuses an assumption before it gets there: in a
+// parameter, in a constructor's argument, or in a definition one of them
+// uses, naming it, and nothing is admitted.
 test("inspection: no declared type mentions an assumption, so the view has no assumption's label to avoid", async t => {
   const { program, get } = await check(t, `import classical_axioms;
 inductive InParameter(t : Truncate(U0, Nat)) { p; }
 inductive InGeneric(U < UU0, A : U, t : Truncate(U, A)) { g; }
 inductive InArgument { a(t : Truncate(U0, Nat)); }
 inductive InDefinition { d(t : ExcludedMiddle(U0)); }
+inductive InResult { r : Truncate(U0, Nat) -> InResult; }
 inductive Clear { c(n : Nat); }
 `);
-  for (const name of ["InParameter", "InGeneric", "InArgument", "InDefinition"]) {
-    refused(get(name), /Unbound variable __assumption_Truncate/);
+  // Each refusal names the assumption by its label, and the parameter or
+  // argument that uses it, where the source writes it.
+  for (const [name, where, at] of [["InParameter", "InParameter's parameter t", "2:23"],
+    ["InGeneric", "InGeneric's parameter t", "3:37"], ["InArgument", "a's argument t", "4:26"],
+    ["InDefinition", "d's argument t", "5:28"], ["InResult", "r's type", "6:26"]]) {
+    refused(get(name), new RegExp(`^${where} uses the assumption Truncate: a declared type's parameters and constructors `
+      + `cannot use assumptions, since its signature is closed\\. at ${at}$`));
     assert.equal(program.signatureView(`main__${name}`), null, name);
   }
   assert.equal(program.signatureView("main__Clear").eliminator.motive, "P : Clear -> U");
