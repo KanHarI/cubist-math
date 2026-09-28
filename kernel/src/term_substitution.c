@@ -28,6 +28,9 @@ static bool term_free(cc_kernel *k, cc_term term, uint32_t name) {
 }
 
 bool ck_term_free(cc_kernel *k, cc_term term, uint32_t name) {
+    /* The node's mask proves most names absent, without the memo. */
+    if (term && term < k->count && !(k->nodes[term].symbols & UINT64_C(1) << (name % 64)))
+        return false;
     uint64_t result;
     if (ck_memo_get(k, 1, term, name, 0, &result))
         return result != 0;

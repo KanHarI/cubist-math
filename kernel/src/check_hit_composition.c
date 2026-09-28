@@ -48,7 +48,7 @@ bool ck_hit_composition(cc_kernel *k, cc_node n, const cc_context *ctx,
         system = ck_make(k, CC_TUBE, face, n.child[2], 0, 0, 0);
     }
     cc_clear(&variable);
-    cc_node box = {CC_COMP, dim, {family, system, n.child[2], 0}, 0};
+    cc_node box = {CC_COMP, dim, {family, system, n.child[2], 0}, 0, 0, 0};
     cc_judgement checked;
     if (!ck_composition(k, box, ctx, dims, &checked))
         return false;
