@@ -15,6 +15,9 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceModules, cubicalSourceModules } from "../web/mathscript/modules.mjs";
 import { cubicalSourceFile } from "../web/cubical-sources.mjs";
 import { referenceExamples } from "../tests/reference-pages.mjs";
+import { assertFreshBuild } from "./build-stamp.mjs";
+// A stale WASM kernel or translator copy would run code it does not contain.
+assertFreshBuild();
 
 const root = new URL("../", import.meta.url);
 const text = path => readFile(new URL(path, root), "utf8");

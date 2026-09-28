@@ -1,6 +1,7 @@
 import { spawn, execFileSync } from "node:child_process";
 import { access } from "node:fs/promises";
 import { selectTests, projectRoot, help } from "./test-selection.mjs";
+import { assertFreshBuild } from "./build-stamp.mjs";
 
 try {
   const selected = selectTests(process.argv.slice(2));
@@ -10,6 +11,9 @@ try {
     process.stdout.write("No added or modified .cubist files to check.\n");
   } else {
     await Promise.all([...selected.tests, ...selected.proofs].map(path => access(path)));
+    // The JavaScript tests load the WASM kernel and the translator from
+    // web/dist: a stale build would test code it does not contain.
+    if (selected.tests.some(path => path.startsWith(projectRoot + "tests/"))) assertFreshBuild();
     // Native protocol tests share executables. Build before Node launches test
     // files concurrently: a clean checkout must not race missing/half-built files.
     if (selected.tests.some(path => path.startsWith(projectRoot + "lib/cubical/tests/")))

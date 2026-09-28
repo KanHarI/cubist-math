@@ -7,9 +7,11 @@ import { cpus } from "node:os";
 import { pathToFileURL } from "node:url";
 import { benchmark } from "../web/benchmark-runner.mjs";
 import { cubicalSourceFile } from "../web/cubical-sources.mjs";
+import { assertFreshBuild } from "./build-stamp.mjs";
 
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  assertFreshBuild();
   const args = process.argv.slice(2), selected = args.filter(a => !a.startsWith("--"));
   const limitArg = args.find(a => a.startsWith("--limit-ms="));
   const limitMs = limitArg ? Number(limitArg.slice("--limit-ms=".length)) : 100;

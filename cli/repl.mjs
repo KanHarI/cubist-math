@@ -11,6 +11,7 @@ import { reduceView } from "../web/cubical-reduction.mjs";
 import { ReplSession, replStatements } from "../web/repl-session.mjs";
 import { moduleRoots } from "../web/module-resolution.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
+import { assertFreshBuild } from "../tools/build-stamp.mjs";
 const help = `Cubist Math — cubical C kernel
   let NAME := TERM;        Define a name; def and any other declaration work too
   typeof TERM;             Show the type of a term
@@ -45,6 +46,8 @@ for (const arg of args) {
   else if (extension) experimental.push(...extension[1].split(","));
   else command.push(arg);
 }
+// A stale WASM kernel or translator copy would run code it does not contain.
+assertFreshBuild();
 const module = await createCubical();
 let program, view, binding, checkedModule, session = null, sessionProgram = null;
 // Imports resolve as web/module-resolution.mjs specifies: an archive module
