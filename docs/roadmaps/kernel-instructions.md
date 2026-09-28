@@ -156,17 +156,23 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
     eliminator or projection on a constructor), `Path` (a path lambda at a
     point, or a path at an endpoint of its annotated type), `Face` (a
     composition with a tube on a face that holds, to that tube at the end of
-    its dimension), `Whnf` (the kernel's weak head normal form), or
-    `Normalize` (the normal form of the highlighted subterm, by the kernel's
-    fixed strategy; THTH's `BetaReduceGrossKnuth`).
+    its dimension), `Whnf` (the kernel's weak head normal form), `Normalize`
+    (the normal form of the highlighted subterm, by the kernel's fixed
+    strategy; THTH's `BetaReduceGrossKnuth`), or `Glue` (Glue eta,
+    `glue [φ ↦ t] (unglue b)` to `b`, when the two Glue types agree and `t`
+    is `b` on each clause of `φ`, compared as they are, as weak heads, part
+    by part under a common head, or as normal forms, with nothing else
+    reduced; the `unglue` is the base's weak head, or what a nested Glue step
+    exposes).
   - `Replace(eq, side, position, a ≡ b)` swaps a highlighted occurrence of `a`
     for `b`: a targeted definitional-equality rewrite. When `a` or `b` uses a
     name bound on the way down, the given equality must have that name as a
     context entry of the binder's type — THTH's view of a bound variable as a
     context fragment — and the entry is discharged. Entry types are followed
     outwards, so a dependent binder's domain must agree too.
-  - `Eta` (a term of a `Π`, `Σ` or path type equals its expansion), `Side`,
-    `Symmetry`, `Transitivity`.
+  - `Eta` (a term of a `Π`, `Σ`, path or Glue type equals its expansion;
+    for `g` of a Glue type, `glue [φ ↦ g] (unglue g)`), `Side`, `Symmetry`,
+    `Transitivity`.
 - **Conversion:** `Convert(t : A, A ≡ B)` gives `t : B`; `Lift` raises
   `t : A` to a cumulative `B` (universes by level, `Π`/`Σ` by codomain).
   `Step` and `Replace` also rewrite the term or the type of a typing judgement
@@ -286,7 +292,8 @@ trust:
   compute the tube's head, perhaps a large number in unary;
 - by `Whnf`, the kernel's own weak head normal form, for heads the steps do
   not take: composition, transport, Glue, pushouts;
-- by eta, expanding a neutral term against a lambda, path lambda or pair:
+- by eta, expanding a neutral term against a lambda, path lambda, pair or
+  Glue term:
   - the neutral term is derived again at its position, and `Replace` puts its
     `Eta` expansion there;
   - below binders, the derivation uses entries named as the binders;
@@ -364,8 +371,9 @@ in [learned-search.md](learned-search.md).
 **Choices.** Each time round, `agree` stops at a branch point and lists the
 moves open there: normalize both sides (a long closed computation, once per
 comparison), descend by congruence, a weak-head step on either side or both
-(beta, iota, path, face or delta), a side's weak head normal form, or eta.
-The list is syntactic; the kernel checks the rest when a move is made. A
+(beta, iota, path, face or delta), a side's weak head normal form, eta, or,
+last, a `Glue` step on a side that is a Glue term (the glue move). The list
+is syntactic; the kernel checks the rest when a move is made. A
 chooser (`heuristicChooser` and the interface beside it) ranks the moves,
 and the driver makes them in that order until one applies. The default
 chooser is the order described above, lazily, since its tests ask the
@@ -591,7 +599,23 @@ The correction:
   make a new redex, as `p @ i` at `i = 0` is `p`'s left endpoint.
   Conversion makes both eta contractions itself, decided by conversion, on
   either side of a comparison, so two pairs with different annotations
-  still compare.
+  still compare, and it exposes a Glue term's base through such eta, for
+  nested Glue terms, within the comparison's depth limit. The driver's
+  last-resort `glue` move makes a `Glue` step, within its own step budget,
+  when nothing else agrees the two sides, so its searches still find the
+  contraction. The step reduces the two Glue types, and each piece and the
+  base on the piece's face, only as far as comparing them takes: part by
+  part under a common head, each pair once, so that parts already equal are
+  never normalized. It exposes a nested base through nested Glue steps, as
+  conversion does, within the reduction depth of 1,024. The move first took
+  the whole term's normal form instead, which also walked the base's
+  annotations, whose endpoints can hold large shared graphs. Before the
+  move, the driver's eta move expands a neutral side against a Glue term,
+  `g` to `glue [φ ↦ g] (unglue g)`, so that the two Glue terms compare part
+  by part with every move of the search: a base equal to `unglue g` only by
+  pair eta, or a Glue type equal to the other only below its head. The Glue
+  step remains for a piece that is the base only on its face, which
+  congruence cannot show.
 - **The boundary is enforced.** `ck_convertible` fails, with an internal
   error, while an instruction runs; every public entry point that may reach
   it starts a query first.
