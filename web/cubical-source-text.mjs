@@ -168,6 +168,15 @@ export function sourceText(term, symbols = {}, limit = 4000) {
       case "Sup": return atom(`sup(${show(t.as)}, ${show(t.label)}, ${show(t.children)})`);
       case "Abort": return atom(`absurd(${show(t.impossible)})`);
       case "Fst": case "Snd": return atom(`${sub(t.pair, LEVEL.atom)}.${t.tag === "Fst" ? 1 : 2}`);
+      // Declared types (H1): an instance is its name applied to its recorded
+      // levels, as universes, and its parameters; a constructor is its name.
+      // An eliminator has no source form before `match`: it falls back.
+      case "Sort": {
+        const args = [...(t.levels ?? []).map(level => universeText(renameLevel(level, name => renames.get(name) ?? label(name)))),
+          ...(t.parameters ?? []).map(show)];
+        return atom(args.length ? `${t.signature}(${args.join(", ")})` : t.signature);
+      }
+      case "Con": return t.name ? atom(t.name) : fallback(t);
       case "Path":
         // An equality: a path whose type does not vary along it.
         if (!varies(t.family, t.dim))

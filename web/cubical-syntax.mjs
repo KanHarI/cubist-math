@@ -140,6 +140,21 @@ export class CubicalSyntax {
       case "LApp": result = node(0, child(term.fn), this.encodeLevel(term.level)); break;
       // A universe variable's bound, as the type of its context entry.
       case "LBound": result = node(term.tier ?? 1); break;
+      // Declared types (H1): an instance S{ls}(as) of an admitted signature,
+      // named as its declaration registered it (web/cubical-signatures.mjs);
+      // constructor number `index` of an instance; an eliminator with its
+      // motive and one clause per constructor, the squash's included.
+      case "Sort":
+        result = node(this.signatureIndex(term.signature), this.list(term.parameters ?? [], child),
+          this.list(term.levels ?? [], level => this.encodeLevel(level)));
+        break;
+      case "Con":
+        if (!Number.isInteger(term.index) || term.index < 0) throw new Error("A constructor needs its number.");
+        result = node(term.index, child(term.sort));
+        break;
+      case "Elim":
+        result = node(this.signatureIndex(term.signature), child(term.motive), this.list(term.clauses, child));
+        break;
       default: throw new Error(`Unsupported cubical syntax: ${term.tag}`);
     }
     if (!this.encoded.has(term)) this.encoded.set(term, new Map());
@@ -147,8 +162,34 @@ export class CubicalSyntax {
     // Cache keys are immutable syntax, so a later mutation cannot accidentally
     // display new text while reusing the earlier checked term.
     if (term.system) { term.system.forEach(Object.freeze); Object.freeze(term.system); }
+    for (const items of [term.parameters, term.levels, term.clauses]) if (Array.isArray(items)) Object.freeze(items);
     Object.freeze(term);
     return result;
+  }
+  // The kernel's List cells for a sequence, in order.
+  list(items, encode) {
+    let list = 0;
+    for (const item of [...items].reverse()) list = this.kernel.term("List", 0, encode(item), list);
+    return list;
+  }
+  items(list) {
+    const out = [];
+    for (let cell = list; cell; cell = this.kernel.node(cell).children[1]) out.push(this.kernel.node(cell).children[0]);
+    return out;
+  }
+  // An admitted signature's kernel index, by the name its declaration gave it.
+  signatureIndex(name) {
+    const record = this.kernel.signatures.get(name);
+    if (!record) throw new Error(`Unknown declared type: ${name}`);
+    return record.index;
+  }
+  // The registered record of the signature at a kernel index: its name and
+  // constructor names. A signature admitted without one is named by its
+  // kernel symbols.
+  signatureRecord(index) {
+    for (const record of this.kernel.signatures.values()) if (record.index === index) return record;
+    const info = this.kernel.signature(index), name = this.kernel.symbolName(info.sort);
+    return { name, index, constructors: info.constructors.map(c => c.generated ? "squash" : this.kernel.symbolName(c.symbol)) };
   }
   // A universe's level (web/cubical-levels.mjs): a number is a tier-0
   // constant. The kernel takes it to normal form; this only encodes it.
@@ -268,6 +309,21 @@ export class CubicalSyntax {
       case "PushLeft": case "PushRight": Object.assign(result, { as: child(0), value: child(1) }); break;
       case "PushPath": Object.assign(result, { as: child(0), value: child(1), arg: this.decodeFormula(payload, dimensions) }); break;
       case "PushElim": Object.assign(result, { motive: child(0), left: child(1), right: child(2), bridge: child(3) }); break;
+      case "Sort":
+        Object.assign(result, { signature: this.signatureRecord(payload).name,
+          parameters: this.items(c[0]).map(item => this.decode(item, dimensions)),
+          levels: this.items(c[1]).map(level => this.decodeLevel(level)) });
+        break;
+      case "Con": {
+        const sort = this.kernel.node(c[0]);
+        const name = sort.kind === "Sort" ? this.signatureRecord(sort.payload).constructors[payload] : undefined;
+        Object.assign(result, { index: payload, ...(name ? { name } : {}), sort: child(0) });
+        break;
+      }
+      case "Elim":
+        Object.assign(result, { signature: this.signatureRecord(payload).name, motive: child(0),
+          clauses: this.items(c[1]).map(item => this.decode(item, dimensions)) });
+        break;
       default: throw new Error(`Unsupported cubical node: ${tag}`);
     }
     // Preserve the native node on a round trip. In particular a checked PApp

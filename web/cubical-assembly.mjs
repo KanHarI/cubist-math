@@ -18,6 +18,7 @@ export const operandNames = {
   U: ["level"], LSucc: ["level"], LMax: ["left", "right"], LApp: ["function", "level"],
   LPi: ["bound", "body"], LLam: ["bound", "body"],
   HComp: ["type", "tubes", "base"], Trans: ["family", "face tube", "base"],
+  Sort: ["parameters", "recorded levels"], Con: ["instance"], Elim: ["motive", "clauses"], List: ["item", "next"],
 };
 export const opcodeName = kind => "CC_" + ({ GlueSystem: "GLUE_SYSTEM", GlueTerm: "GLUE_TERM",
   PushLeft: "PUSH_LEFT", PushRight: "PUSH_RIGHT", PushPath: "PUSH_PATH", PushElim: "PUSH_ELIM" }[kind] ?? kind.toUpperCase());
@@ -45,6 +46,9 @@ export function kernelAssembly(program, view, checked, { limit = 400, expanded =
       node.annotation = `symbol #${native.payload}: ${label && label !== name ? `${label} (${name})` : name}`;
     } else if (["Path", "PLam", "Comp", "HComp", "Trans"].includes(native.kind)) node.annotation = `dimension #${native.payload}`;
     else if (native.kind === "U") node.annotation = "universe; its level is operand a";
+    else if (native.kind === "Sort" || native.kind === "Elim")
+      node.annotation = `signature #${native.payload}: ${syntax.signatureRecord(native.payload).name}`;
+    else if (native.kind === "Con") node.annotation = `constructor ${native.payload}`;
     else if (native.kind === "LConst") node.annotation = `level ${levelText({ tag: "LConst", tier: native.payload >>> 16, value: native.payload & 0xffff })}`;
     else if (native.kind === "LSucc") node.annotation = `level successor: + ${native.payload}`;
     else if (["PApp", "PushPath", "Tube", "GlueSystem"].includes(native.kind)) {

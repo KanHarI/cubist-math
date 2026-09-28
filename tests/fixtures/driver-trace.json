@@ -1,8 +1,8 @@
 {
-  "recordedFrom": "d44239e5ff0a9448a03ad3f0e76192eb60206802",
-  "method": "tests/driver-trace.mjs run on the tree of that commit, before agree's choices were made explicit, with the current WebAssembly module (its instructions compute as before; it adds the work counters). Every instruction the driver issued with its operands and result, and every weak-head query with its budget and answer, in order, hashed.",
-  "issued": 2822,
+  "recordedFrom": "73824132e4fe3921bc3f3384265bb599fa9f2a6e",
+  "method": "tests/driver-trace.mjs run on the tree of that commit. Every instruction the driver issued with its operands and result, and every weak-head query with its budget and answer, in order, hashed. The trace was first recorded at d44239e, before agree's choices were made explicit (2,822 instructions, sha256 13044fc5…), and the chooser refactor reproduced it exactly, as did this commit's parent. This commit's fix to contextScope, which stopped derivations being shared between contexts, changes it: 162 fewer instructions, the same number of weak-head queries, and every declaration still checks.",
+  "issued": 2660,
   "heads": 370,
   "checked": 8,
-  "sha256": "13044fc57811d100562707b47271afc0a2233e571f9423ad37a5faa7e437b7a9"
+  "sha256": "a1d46f93c54e791241b73b1a84ed6d13a52124669a773ab384fc8d2939e855e5"
 }

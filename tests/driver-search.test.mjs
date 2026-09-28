@@ -122,10 +122,12 @@ test("agree: a move that throws is reported to observers with its work, and the 
   assert.deepEqual(counting.counts.moves, { "step:left:beta": { error: 1 } });
 });
 
-test("the default chooser makes the driver's former moves: a trace recorded before the refactor", async () => {
+test("the default chooser makes the driver's pinned moves: a recorded trace", async () => {
   // Independent of the chooser interface: the instructions issued and the
-  // guide's queries, in order, against tests/fixtures/driver-trace.json,
-  // recorded from the pre-refactor driver at d44239e.
+  // guide's queries, in order, against tests/fixtures/driver-trace.json.
+  // First recorded from the pre-refactor driver at d44239e, which the
+  // chooser refactor reproduced exactly; re-recorded after the context-scope
+  // fix, as the fixture's method says.
   const pinned = JSON.parse(await readFile(new URL("./fixtures/driver-trace.json", import.meta.url), "utf8"));
   const trace = await driverTrace();
   assert.deepEqual(trace.failed, []);

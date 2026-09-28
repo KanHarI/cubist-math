@@ -6,6 +6,8 @@ export class CubicalDeclarationTransaction {
     this.checker = checker;
     this.sizes = new Map([
       [kernel.definitions,kernel.definitions.size],
+      // Signature indices survive a commit and are freed by a rollback.
+      [kernel.signatures,kernel.signatures.size],
       [checker.definitionViews,checker.definitionViews.size],
       [checker.genericDefinitions,checker.genericDefinitions.size],
       [checker.scopeDefinitions,checker.scopeDefinitions.size],

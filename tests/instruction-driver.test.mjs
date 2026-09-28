@@ -457,3 +457,16 @@ test("the driver's guide compares weak heads: equal, different, or unknown", asy
   assert.equal(guide(at(1), e(one)), true);
   assert.equal(guide(at(0), e(one)), false);
 });
+
+test("a derivation in one context is not reused in another that types a variable differently", async t => {
+  const kernel = new CubicalKernel(await createCubical());
+  t.after(() => kernel.dispose());
+  const syntax = new CubicalSyntax(kernel), driver = new InstructionDriver(kernel), graph = driver.graph;
+  const x = { tag: "Var", name: "x" }, nat = { tag: "Nat" }, unit = { tag: "Unit" };
+  const typeIn = type => syntax.decode(graph.judgement(driver.infer(syntax.encode(x), [[kernel.symbol("x"), syntax.encode(type)]])).type);
+  assert.deepEqual(typeIn(nat), nat);
+  // Each context's scope is its own memo key, including its assumptions.
+  assert.deepEqual(typeIn(unit), unit);
+  assert.throws(() => driver.check(syntax.encode(x), syntax.encode(nat), [[kernel.symbol("x"), syntax.encode(unit)]]),
+    /Type mismatch/);
+});
