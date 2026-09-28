@@ -1416,6 +1416,13 @@ extended, as the work plan decided.
 - Import changes invalidate the signatures they admitted, and everything
   derived from them.
 
+**Implementation.** An `inductive` declaration runs in its declaration's
+transaction, which removes the registry entry and the elaborator's marker
+records that a rollback frees. Import invalidation holds by construction:
+each check builds a new kernel session, and the REPL replays its entries
+into the new one, so a signature admitted from an old import is never seen
+again.
+
 ### 6.4 The `kernel extension: H1` marker
 
 - A declaration whose checked term or type mentions a sort, constructor or
@@ -1428,11 +1435,26 @@ extended, as the work plan decided.
   accepted; `computable` with the marker and `LEM` rejected, naming `LEM`;
   the marker absent once H1 is on by default.
 
+**Implementation.** The elaborator computes each result's extensions beside
+its assumptions (`extensionsOf` in `web/cubical-elaborator.mjs`): an
+instance or eliminator of a signature the kernel admitted experimentally,
+or a definition that carries the marker. The program reports them as
+`extensions`, apart from `axioms`. The CLI's `inspect` prints
+"kernel extension: H1", and the workbench shows it beside the axioms used.
+`computable` reads only the assumptions. `tests/inductive-declarations.test.mjs`
+covers the first four tests. The last waits for default admission.
+
 ### 6.5 Inspection
 
 The inspector shows a signature's normal form (data, positions with arities
 and cubes, dimensions, boundary), the generated eliminator with each clause
 type, and each clause's displayed boundary, as the design's section 5 asks.
+
+**Implementation, in part.** `CubicalProgram.signature` reads a signature
+back from the kernel: its former, h-level, recorded universe parameters, and
+each constructor's normal form with its data, positions and dimensions,
+shown by its declared names. The CLI's `inspect` prints it. The workbench
+inspector and the eliminator's clause types wait for `match` (L2.2a).
 
 ## 7. K2.4: representation map and differential contract
 
@@ -1808,6 +1830,45 @@ form. It is untrusted; the kernel checks the result.
 - **Generated names.** `T.squash` for the modifier's constructor; the
   eliminator is reached through `match` (L2.2), and `T.rec` and
   `T.ind_prop` are L2.3's.
+
+**Implementation.** `lib/cubical/inductive.mjs` lowers a declaration, and
+`CubicalProgram` admits it only with the experimental option `h1`
+(`--experimental=h1` in the CLI, "Declared types (H1)" in the workbench).
+Otherwise the declaration fails, and the error names the option. Decisions
+this section left open:
+
+- **The sort while constructors are elaborated.** It is a variable, typed
+  at the written universe or, without one, at `UU0`, which only the
+  elaborator sees. No data type or arity mentions the sort, so none depends
+  on that choice. The kernel derives every constructor type again at the
+  real level.
+- **Instances of constructors.** A constructor of a type with parameters or
+  recorded levels takes its instance from the expected type, as a sum's
+  injection does. Without one, it reads the instance from an argument of
+  that type, which only a position can have: `cons(zero, xs)` for
+  `xs : List(U0, N)`. Otherwise it asks for `typed(T(…), c(…))`. Inferring
+  the instance from data arguments waits for L4.1a.
+- **Types as written.** Argument and result types are checked by the kernel
+  as written, then beta-reduced, level redexes included, before they are
+  classified and admitted, so `l : typed(C, b) = b` has a constructor
+  expression for a boundary. An argument that mentions the sort but is not a
+  cube over it, or whose arity does, is refused by name before admission,
+  and a refusal the kernel makes names its constructor. Binders written in a result, as
+  in `s : M -> M`, are arguments of the constructor.
+- **The former as a value.** Used alone, a type with parameters is its
+  former, `fun (U < UU0) => Pointed(U)`, a lambda over its universes and
+  parameters.
+- **Uses keep the source's order.** `node(l, a, r)` is applied as the
+  normal form's `node(a, l, r)`. A constructor whose order changed is
+  applied to all its arguments. Partial application is refused, with a
+  message saying why.
+- **Uniformity.** Inside its declaration, the type is written applied to
+  exactly its own parameters, `List(U, A)`. Any other argument is refused
+  as an index.
+
+Not yet: `T.squash` as a source name, and `trunc(-1)` written with a minus
+sign, which waits for the `-` token of the `language-notation` branch.
+`prop` means the same.
 
 ## 10. Acceptance cases
 

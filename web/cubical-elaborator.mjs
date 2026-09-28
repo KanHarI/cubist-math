@@ -3,9 +3,10 @@ import { T, substituteTerm } from "./dist/cubical-runtime/core.mjs";
 import { interval as I } from "./dist/cubical-runtime/lattice.mjs";
 import { NameSupply } from "./dist/cubical-runtime/names.mjs";
 import { sourceText } from "./cubical-source-text.mjs";
-import { numberedName } from "./cubical-levels.mjs";
+import { numberedName, levelNormal } from "./cubical-levels.mjs";
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { KernelError } from "./cubical-kernel.mjs";
+import { admitSignature } from "./cubical-signatures.mjs";
 
 const speculativeFailures = new Set(["mismatch", "budget", "deadline"]);
 
@@ -191,6 +192,61 @@ export class NativeCubicalElaborator {
     this.definitionViews = new Map();
     this.genericDefinitions = new Map();
     this.scopeDefinitions = new Set();
+    // Each definition's kernel extensions under review, such as H1: the
+    // `kernel extension: H1` marker (h1-signature-specification.md, 6.4).
+    // Visible, and not a non-computing dependency.
+    this.definitionExtensions = new Map();
+  }
+  // The kernel extensions a term relies on: a declared type's instance,
+  // constructor or eliminator whose signature was admitted experimentally,
+  // and every definition that carries a marker.
+  extensionsOf(...terms) {
+    // No signature admitted in this session, no marker: nothing to walk.
+    if (!this.kernel.signatures.size) return [];
+    const found = new Set(), seen = new WeakSet(), experimental = this.experimentalSignatures ??= new WeakMap();
+    const signature = name => {
+      const record = this.kernel.signatures.get(name);
+      if (!record) return;
+      if (!experimental.has(record)) experimental.set(record, this.kernel.signature(record.index).experimental);
+      if (experimental.get(record)) found.add("H1");
+    };
+    const visit = term => {
+      if (!term || typeof term !== "object" || seen.has(term)) return;
+      seen.add(term);
+      if (term.tag === "Sort" || term.tag === "Elim") signature(term.signature);
+      if (term.tag === "DefRef") for (const marker of this.definitionExtensions.get(term.name) ?? []) found.add(marker);
+      for (const child of Object.values(term)) visit(child);
+    };
+    terms.forEach(visit);
+    return [...found].sort();
+  }
+  // An admitted signature's former, Π (xs < ω). Π (ps : Ps). U(ℓ), as syntax,
+  // and the kernel extensions its admission carries.
+  signatureFormer(record) { return this.syntax.decode(this.kernel.signature(record.index).former); }
+  signatureExtensions(record) { return this.kernel.signature(record.index).experimental ? ["H1"] : []; }
+  // Whether one level lies within another at every assignment (G0 §2.4,
+  // Lemma 2): coefficient by coefficient. For messages only; the kernel
+  // decides levels.
+  levelWithin(level, bound) {
+    const read = id => this.kernel.node(id);
+    const a = levelNormal(read, this.syntax.encodeLevel(level)), b = levelNormal(read, this.syntax.encodeLevel(bound));
+    if (a.tier || b.tier) return a.tier < b.tier || (a.tier === b.tier && a.constant <= b.constant);
+    return a.constant <= b.constant && [...a.offsets].every(([name, offset]) => (b.offsets.get(name) ?? -1) >= offset);
+  }
+  // Admits a declared type's signature in normal form (web/cubical-signatures.mjs),
+  // one instruction at a time, as a declaration's admission is.
+  admitSignature(spec) {
+    try { return admitSignature(this.kernel, spec, { syntax: this.syntax, driver: this.driver }); }
+    catch (error) {
+      const refused = /kernel extension under review/.test(error.message)
+        ? "Declared types are a kernel extension under review: enable the experimental option h1, "
+          + "with --experimental=h1 in the CLI or Declared types (H1) in the workbench."
+        : error.message;
+      throw this.describeMismatch(Object.assign(new Error(`Instruction kernel: ${refused}`),
+        { kind: error.kind ?? "other", mismatch: error.mismatch, constructor: error.constructor }), new Map());
+    } finally {
+      this.kernel.instructionDriver = null;
+    }
   }
   context(local = new Map()) { return new Map([...this.assumptions, ...local]); }
   assume(name, type, avoid = new Set()) {
@@ -322,7 +378,8 @@ export class NativeCubicalElaborator {
     const checked = this.checkSyntax(term, null, context, dimensions);
     this.steps += checked.checkingSteps;
     return { term: checked.term, type: checked.type, native: { ok: true,
-      arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, unfoldingHints: [...this.kernel.unfoldingHints], axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()] } };
+      arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, unfoldingHints: [...this.kernel.unfoldingHints], axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()],
+      extensions: this.extensionsOf(checked.term, checked.type) } };
   }
   check(term, expected, context = new Map(), dimensions = this.dimensions, describe = true) {
     const checked = this.checkSyntax(term, expected, context, dimensions, describe);
@@ -391,6 +448,7 @@ export class NativeCubicalElaborator {
     try { ({ reference, admission } = this.admit(name, this.syntax.encode(body), this.syntax.encode(signature))); }
     catch (error) { throw this.describeMismatch(error, new Map()); }
     this.definitionViews.set(name, { term, type, assumptions, unfoldingHints: [...this.kernel.unfoldingHints], admission });
+    this.definitionExtensions.set(name, this.extensionsOf(term, type, ...assumptions.values()));
     let result = this.syntax.decode(reference);
     for (const parameter of assumptions.keys()) result = { tag: "App", fn: result, arg: { tag: "Var", name: parameter } };
     return result;
@@ -471,6 +529,7 @@ export class NativeCubicalElaborator {
   verify(term, expected = null, assumptions = []) {
     const checked = this.checkSyntax(term, expected, new Map(assumptions), this.dimensions);
     const normal = this.syntax.decode(this.kernel.normalize(checked.expression), this.dimensions);
-    return { ...checked, normal, native: { ok: true, arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, unfoldingHints: [...this.kernel.unfoldingHints], axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()] } };
+    return { ...checked, normal, native: { ok: true, arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, unfoldingHints: [...this.kernel.unfoldingHints], axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()],
+      extensions: this.extensionsOf(checked.term, checked.type) } };
   }
 }

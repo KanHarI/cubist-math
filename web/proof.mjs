@@ -8,7 +8,7 @@ import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proof-navigation.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
-import { numeralAt, tokenStyle } from "./source-tokens.mjs";
+import { numeralAt, tokenStyle, headerWordAt } from "./source-tokens.mjs";
 import { libraryModules } from "./mathscript/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
 import { createReplConsole } from "./repl-console.mjs";
@@ -98,6 +98,10 @@ for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) {
   $(id).checked = true;
   try { $(id).checked = localStorage.getItem("mathscript:" + id) !== "false"; } catch {}
 }
+// Kernel extensions under review are off unless chosen here, remembered, or
+// asked for by the address: ?experimental=h1.
+$("experimental-h1").checked = new URLSearchParams(location.search).get("experimental")?.split(",").includes("h1") ?? false;
+try { if (localStorage.getItem("mathscript:experimental-h1") === "true") $("experimental-h1").checked = true; } catch {}
 $("proof-title").textContent = choice?.title ?? (libraryModule ? `Library: ${proofId}` : "Reference example");
 $("development-note").hidden = !choice?.realDevelopment;
 $("puncture-note").hidden = !choice?.punctureDevelopment;
@@ -193,6 +197,7 @@ function diagnostic(e) {
 function dirty() {
   return last && $("editor").value !== last.source;
 }
+function experimentalExtensions() { return $("experimental-h1").checked ? ["h1"] : []; }
 function compilerOptimizations() {
   return {
     shareSyntax: $("share-syntax").checked, reuseChecks: $("reuse-checks").checked,
@@ -260,7 +265,8 @@ async function check() {
     // Where the source came from decides where its imports are found
     // (module-resolution.mjs): an archive proof imports only from the archive.
     const place = exampleMode ? null : libraryModule ? "library" : "archive";
-    const result = await request("check", { source, module: proofId, place, optimizations: compilerOptimizations() });
+    const result = await request("check", { source, module: proofId, place, optimizations: compilerOptimizations(),
+      experimental: experimentalExtensions() });
     last = result;
     history.length = 0;
     renderSource();
@@ -379,10 +385,21 @@ function axiomInfo(binding) {
     ...[...last.outputs, ...last.imports].find(o => o.binding === binding),
   });
 }
-function renderAxioms(target, axioms) {
+function renderAxioms(target, axioms, extensions = []) {
   target.replaceChildren(document.createTextNode("Axioms used: "));
+  // A kernel extension under review is listed apart: it is not an assumption,
+  // and the result still computes.
+  const marker = () => {
+    if (!extensions.length) return;
+    const note = document.createElement("span");
+    note.className = "kernel-extensions";
+    note.textContent = ` · ${extensions.map(name => `kernel extension: ${name}`).join(", ")}`;
+    note.title = "Relies on a kernel extension under review. It is not an assumption, and the result still computes.";
+    target.append(note);
+  };
   if (!axioms.length) {
     target.append("None");
+    marker();
     return;
   }
   for (const [index, binding] of axioms.entries()) {
@@ -395,6 +412,7 @@ function renderAxioms(target, axioms) {
     button.onclick = () => inspect(axiomInfo(binding));
     target.append(button);
   }
+  marker();
 }
 function renderResult() {
   $("result").hidden = !last;
@@ -415,7 +433,7 @@ function renderResult() {
     const dependencies = document.createElement("small");
     dependencies.className = "axiom-dependencies";
     if (last.backend === "cubical" && !output.verified) dependencies.textContent = output.reason;
-    else renderAxioms(dependencies, output.axioms ?? []);
+    else renderAxioms(dependencies, output.axioms ?? [], output.extensions ?? []);
     line.append(dependencies);
     $("result").append(line);
   }
@@ -494,7 +512,8 @@ function renderSource() {
       } else {
         const info = linkMap.get(start);
         const expansion = (last.mode === "mathematical" ? numeralAt(line, token.index, text) : null) ?? info?.expansion;
-        const style = tokenStyle(text, expansion);
+        // The whole source: a header's colon and its inductive may be on earlier lines.
+        const style = tokenStyle(text, expansion, headerWordAt(last.source, start, text));
         if (info) {
           const button = document.createElement("button");
           button.className = `reference${style ? " " + style : ""}`;
@@ -762,7 +781,7 @@ function renderCubicalKernel(view) {
   $("kernel-identity-options").hidden = raw;
   $("expand-kernel").textContent = "Show more of the term";
   $("expand-kernel").hidden = raw || !["kernel-expression", "kernel-type", "kernel-context-list", "kernel-axioms-list"].some(id => $(id).textContent.includes("…"));
-  renderAxioms($("inspect-axioms"), view.axioms ?? []);
+  renderAxioms($("inspect-axioms"), view.axioms ?? [], view.extensions ?? []);
 }
 $("toggle-kernel-body").onclick = () => { showKernelBody = !showKernelBody; renderKernel(checkedKernelView); };
 $("widen-inspector").onclick = () => {
@@ -806,7 +825,7 @@ function download(text, name, type) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 $("check").onclick = check;
-for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) $(id).onchange = () => {
+for (const id of ["share-syntax", "reuse-checks", "compact-paths", "experimental-h1"]) $(id).onchange = () => {
   try { localStorage.setItem("mathscript:" + id, String($(id).checked)); } catch {}
   check();
 };

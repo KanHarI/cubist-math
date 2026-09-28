@@ -174,7 +174,7 @@ export function sourceText(term, symbols = {}, limit = 4000) {
       case "Sort": {
         const args = [...(t.levels ?? []).map(level => universeText(renameLevel(level, name => renames.get(name) ?? label(name)))),
           ...(t.parameters ?? []).map(show)];
-        return atom(args.length ? `${t.signature}(${args.join(", ")})` : t.signature);
+        return atom(args.length ? `${label(t.signature)}(${args.join(", ")})` : label(t.signature));
       }
       case "Con": return t.name ? atom(t.name) : fallback(t);
       case "Path":

@@ -3,6 +3,7 @@
 export const keywords = new Set([
   "import",
   "def",
+  "inductive",
   "forall",
   "exists",
   "and",
@@ -63,7 +64,18 @@ export const projectionIndex = (source, start) => source[start - 1] === "." && /
 export const numeralAt = (source, start, text) => projectionIndex(source, start) ? null : numeralExpansion(text);
 // Keywords and language-provided forms share one palette; notation is a
 // macro, unless it stands for itself.
-export const tokenStyle = (text, expansion) =>
-  keywords.has(text) || builtinForms.has(text) || /^U+[0-9]+$/.test(text) ? "keyword"
+export const tokenStyle = (text, expansion, headerWord = false) =>
+  headerWord || keywords.has(text) || builtinForms.has(text) || /^U+[0-9]+$/.test(text) ? "keyword"
     : expansion && expansion !== text ? "macro" : "";
+// type, set, prop and trunc are h-level keywords only as the first word of an
+// inductive header's result position, after its colon, and names elsewhere.
+export function headerWordAt(source, start, text) {
+  if (!["type", "set", "prop", "trunc"].includes(text)) return false;
+  const before = source.slice(0, start), header = before.search(/\binductive\b[^{};]*$/);
+  if (header < 0 || !/:\s*$/.test(before)) return false;
+  // The colon must be the header's own, outside its parameters' parentheses.
+  let depth = 0;
+  for (const character of before.slice(header)) depth += character === "(" ? 1 : character === ")" ? -1 : 0;
+  return depth === 0;
+}
 

@@ -50,6 +50,15 @@ try {
   assert.equal(new URL(page.url()).hash, `#source=${example}`);
   await page.reload(); await idle();
   assert.match(await page.locator("#editor").inputValue(), /kept_after_reload/);
+  // An inductive header wrapped over lines keeps its h-level keyword, which
+  // the highlighter finds in the whole source, not the line alone (H1).
+  const wrapped = Buffer.from("inductive Wrapped(\n  A : U0\n) : prop {\n  point(a : A);\n}\n").toString("base64")
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  await page.goto(`http://127.0.0.1:${port}/proof.html?example=1&experimental=h1#source=${wrapped}`); await idle();
+  await page.locator("#read-mode").click();
+  const modifier = page.locator("#read-source .source-line").nth(2).locator("span, button").filter({ hasText: /^prop$/ });
+  assert.equal(await modifier.count(), 1, "the modifier is a token of its own");
+  assert.match(await modifier.getAttribute("class"), /keyword/);
   await openProof("suspension", "S1");
   for (const name of ["Suspension", "north", "south", "meridian", "suspension_induction", "suspension_meridian_beta"]) {
     const link = page.locator(`#read-source button[data-name="${name}"]`).first();
