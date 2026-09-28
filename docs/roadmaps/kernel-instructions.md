@@ -161,7 +161,8 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
     strategy; THTH's `BetaReduceGrossKnuth`), or `Glue` (Glue eta,
     `glue [φ ↦ t] (unglue b)` to `b`, when the two Glue types agree and `t`
     is `b` on each clause of `φ`, compared as they are, as weak heads or as
-    normal forms, with nothing else reduced).
+    normal forms, with nothing else reduced; the `unglue` is the base's weak
+    head, or what a nested Glue step exposes).
   - `Replace(eq, side, position, a ≡ b)` swaps a highlighted occurrence of `a`
     for `b`: a targeted definitional-equality rewrite. When `a` or `b` uses a
     name bound on the way down, the given equality must have that name as a
@@ -600,7 +601,9 @@ The correction:
   last-resort `glue` move makes a `Glue` step, within its own step budget,
   when nothing else agrees the two sides, so its searches still find the
   contraction. The step reduces the two Glue types, and each piece and the
-  base on the piece's face, only as far as comparing them takes. The move
+  base on the piece's face, only as far as comparing them takes. It exposes
+  a nested base through nested Glue steps, as conversion does, within the
+  reduction depth of 1,024. The move
   first took the whole term's normal form instead, which also walked the
   base's annotations, whose endpoints can hold large shared graphs.
 - **The boundary is enforced.** `ck_convertible` fails, with an internal

@@ -673,3 +673,22 @@ test("a Glue term agrees with its base though its path mentions a large shared g
   assert.equal(program.checker.checkView(composite, over, context, new Map([["i", 0], ["m", 1]])).term.tag, "Comp");
   assert.ok(made.some(([outcome, steps]) => outcome === "progress" && steps < 10000), JSON.stringify(made));
 });
+
+// The fifth review of #73: the Glue step exposes a base that is itself a
+// Glue eta redex, as conversion does. With A = Glue [] Nat, A' = Glue []
+// ((λ X. X)(Nat)), G = Glue [] A, g : G and u = unglue_G(g), the constant
+// tube glue_G [] (glue_A' [] (unglue_A(u))) of a composition over G must
+// agree with its base g: the inner Glue term is u once A' is A, and the
+// outer Glue term and g have different heads, so congruence cannot reach it.
+test("a Glue term whose base is a nested Glue eta redex agrees with its base", async t => {
+  const { T } = await import("../lib/cubical/core.mjs");
+  const { face: F } = await import("../lib/cubical/lattice.mjs");
+  const program = new CubicalProgram(await createCubical(), readLibrary);
+  t.after(() => program.dispose());
+  await program.check("def unit_point : Unit := tt;\n", "glue_nested");
+  const A = T.glueType(T.nat, []), redex = T.glueType(T.app(T.lam("X", T.universe(0), T.variable("X")), T.nat), []);
+  const G = T.glueType(A, []), g = T.variable("g");
+  const outer = T.glue(G, T.glue(redex, T.unglue(A, T.unglue(G, g)), []), []);
+  const composite = T.comp("k", G, [{ face: F.endpoint("m", 0), term: outer }], g);
+  assert.equal(program.checker.checkView(composite, G, [["g", G]], new Map([["m", 0]])).term.tag, "Comp");
+});

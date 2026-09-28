@@ -229,6 +229,11 @@ static void normal_forms_and_conversion_keep_eta(void) {
     cc_term outer = ck_make(k, CC_GLUE_TERM, 0, g_type, inner, 0, 0);
     assert(cc_kernel_convertible(k, outer, g, 0));
     assert(!k->error[0]);
+    /* The fifth review of #73: so must the Glue step, whose base here is the
+     * inner Glue term, an eta redex by its own Glue step. */
+    ck_operation(k, CC_WORK_INSTRUCTION);
+    assert(ck_glue_step(k, outer) == g && !k->error[0]);
+    ck_standalone(k);
     cc_kernel_free(k);
 }
 
@@ -255,6 +260,18 @@ static void nested_glue_exposure_is_depth_guarded(void) {
     assert(!cc_kernel_convertible(k, value, zero, 0));
     assert(strstr(cc_kernel_error(k), "recursion depth"));
     cc_kernel_clear_error(k);
+    /* The Glue step exposes a nested base the same way, within the reduction
+     * depth of 1024: 1,100 levels stop it with a recorded error too. */
+    for (unsigned depth = 601; depth <= 1100; ++depth) {
+        cc_term glue_type = ck_make(k, CC_GLUE, 0, type, 0, 0, 0);
+        type = cc_kernel_define(k, 10000 + depth, glue_type, u0);
+        value = cc_kernel_define(k, 20000 + depth, ck_make(k, CC_GLUE_TERM, 0, glue_type, value, 0, 0), glue_type);
+        assert(type && value && cc_kernel_whnf(k, value));
+    }
+    ck_operation(k, CC_WORK_INSTRUCTION);
+    assert(!ck_glue_step(k, cc_kernel_whnf(k, value)) && strstr(cc_kernel_error(k), "recursion depth"));
+    cc_kernel_clear_error(k);
+    ck_standalone(k);
     cc_kernel_free(k);
 }
 

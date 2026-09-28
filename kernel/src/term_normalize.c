@@ -370,8 +370,13 @@ static bool normal_agree(cc_kernel *k, cc_term a, cc_term b) {
     return right && ck_alpha_equal(k, left, right);
 }
 
+static cc_term glue_step(cc_kernel *k, cc_term term);
+
 /* The Glue step (CC_STEP_GLUE): glue [φ ↦ t] (unglue b) is b when the two
- * Glue types agree and t is b on φ. Each side condition is compared by
+ * Glue types agree and t is b on φ. The unglue is the base's weak head, or,
+ * where that is a Glue term, what its own Glue step exposes, as conversion
+ * exposes it: nesting can be deeper than syntax, through definitions, so it
+ * counts toward the reduction depth. Each side condition is compared by
  * syntax, its two sides reduced only as far as that takes (normal_agree),
  * and nothing else is reduced: the Glue types, and t and b restricted to
  * each clause of φ, since restricting can make a new redex, as p @ i at
@@ -380,8 +385,26 @@ static bool normal_agree(cc_kernel *k, cc_term a, cc_term b) {
  * conversion still decides no step. Returns b, the term itself when a side
  * condition fails, or 0 on error. */
 cc_term ck_glue_step(cc_kernel *k, cc_term term) {
+    if (++k->recursion > 1024) {
+        --k->recursion;
+        return ck_fail(k, "Native reduction recursion depth exceeded."), 0;
+    }
+    cc_term result = glue_step(k, term);
+    --k->recursion;
+    return result;
+}
+
+static cc_term glue_step(cc_kernel *k, cc_term term) {
     cc_node n = k->nodes[term];
     cc_term projected = ck_whnf(k, n.child[1]);
+    while (projected && k->nodes[projected].kind == CC_GLUE_TERM) {
+        cc_term inner = ck_glue_step(k, projected);
+        if (!inner)
+            return 0;
+        if (inner == projected)
+            break;
+        projected = ck_whnf(k, inner);
+    }
     if (!projected)
         return 0;
     cc_node projection = k->nodes[projected];
