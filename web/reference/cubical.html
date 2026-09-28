@@ -46,6 +46,7 @@
           <h2>In this chapter</h2>
           <ul class="sections">
             <li><a href="#cubical">Paths as functions of the interval</a></li>
+            <li><a href="#meets-and-joins">Meets and joins</a></li>
             <li><a href="#cubical-shorthand">Shorthand</a></li>
             <li><a href="#dependent-paths">Dependent paths</a></li>
             <li><a href="#ext">Function extensionality: <code>ext</code></a></li>
@@ -58,7 +59,7 @@
           <section id="cubical">
             <h2>Paths as functions of the interval</h2>
             <p>In cubical type theory, a path <code>p : x = y</code> in <code>A</code> is a function from an abstract interval into <code>A</code>. Its value at <code>0</code> is definitionally <code>x</code> and its value at <code>1</code> is <code>y</code>. Many path proofs can therefore be written directly, as functions of an interval coordinate, instead of by path induction.</p>
-            <p><code>fun (i : Interval) => …</code> binds a coordinate inside the forms below. <code>Interval</code> is not a type: it belongs to no universe and cannot be the domain of an ordinary function. A coordinate can be <code>0</code>, <code>1</code>, a bound coordinate <code>i</code>, <code>flip(i)</code> (the reversal <span class="math">1 − i</span>), <code>meet(i, j)</code> (minimum) or <code>join(i, j)</code> (maximum).</p>
+            <p><code>fun (i : Interval) => …</code> binds a coordinate inside the forms below. <code>Interval</code> is not a type: it belongs to no universe and cannot be the domain of an ordinary function. A coordinate can be <code>0</code>, <code>1</code>, a bound coordinate <code>i</code>, <code>-i</code> (the reversal <span class="math">1 − i</span>), <code>i &amp; j</code> (the minimum, or meet) or <code>i | j</code> (the maximum, or join). <code>&amp;</code> binds tighter than <code>|</code>, and both tighter than <code>@</code>: <code>p @ -i &amp; j | k</code> is <code>p @ (((-i) &amp; j) | k)</code>. The forms <code>flip(i)</code>, <code>meet(i, j)</code> and <code>join(i, j)</code> say the same. The kernel inspector prints meets and joins as <span class="math">∧</span> and <span class="math">∨</span>.</p>
             <div class="table-scroll"><table>
               <thead><tr><th>Form</th><th>Meaning</th></tr></thead>
               <tbody>
@@ -77,12 +78,12 @@ def value_at_zero(A : U0, x, y : A, p : x = y) : p @ 0 = x {
 
 def to_start(A : U0, x, y : A, p : x = y) :
   PathP(fun (j : Interval) =&gt; x = p @ j, refl(x), p) {
-  exact path j =&gt; path i =&gt; p @ meet(i, j);
+  exact path j =&gt; path i =&gt; p @ i &amp; j;
 }</code></pre>
-            <p><code>value_at_zero</code> holds by computation. In <code>to_start</code>, the square <code>p @ meet(i, j)</code> is <code>refl(x)</code> at <code>j = 0</code> and <code>p</code> at <code>j = 1</code>. The kernel checks every endpoint:</p>
+            <p><code>value_at_zero</code> holds by computation. In <code>to_start</code>, the square <code>p @ i &amp; j</code> is <code>refl(x)</code> at <code>j = 0</code> and <code>p</code> at <code>j = 1</code>. The kernel checks every endpoint:</p>
             <pre><code data-check="reject">def wrong_direction(A : U0, x, y : A, p : x = y) : x = y {
   // Error: Type mismatch: found p @ 1 = p @ 0, expected x = y.
-  exact path i =&gt; p @ flip(i);
+  exact path i =&gt; p @ -i;
 }</code></pre>
             <p>A coordinate is not a term, and <code>Interval</code> is not a type:</p>
             <pre><code data-check="reject">def coordinate_as_term(A : U0, x : A) : x = x {
@@ -90,6 +91,63 @@ def to_start(A : U0, x, y : A, p : x = y) :
   exact path i =&gt; typed(Nat, i);
 }</code></pre>
             <pre><code data-check="reject">def interval_as_type(i : Interval) := i;  // Error: Untranslated name: Interval</code></pre>
+          </section>
+          <section id="meets-and-joins">
+            <h2>Meets and joins</h2>
+            <p><code>i &amp; j</code> is the smaller of two coordinates and <code>i | j</code> the larger. At the corners of the square they are the familiar “and” and “or”:</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th><code>i</code></th><th><code>j</code></th><th><code>i &amp; j</code></th><th><code>i | j</code></th></tr></thead>
+              <tbody>
+                <tr><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+                <tr><td>1</td><td>0</td><td>0</td><td>1</td></tr>
+                <tr><td>0</td><td>1</td><td>0</td><td>1</td></tr>
+                <tr><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+              </tbody>
+            </table></div>
+            <p>A path applied to a meet or a join is a square, a function of two coordinates, called a <em>connection</em>. Squares like these are needed wherever one side of a square must shrink to a point. Along an edge, <code>i &amp; 0</code> is <code>0</code> and <code>i &amp; 1</code> is <code>i</code>, so <code>p @ i &amp; j</code> is constant at <code>x</code> where <code>j = 0</code> and is <code>p</code> where <code>j = 1</code>; <code>p @ i | j</code> is <code>p</code> where <code>j = 0</code> and constant at <code>y</code> where <code>j = 1</code>. Both facts hold by computation:</p>
+            <pre><code data-check="accept">def meet_edges(A : U0, x, y : A, p : x = y) :
+  (refl(x) = (path i =&gt; p @ i &amp; 0)) and (p = (path i =&gt; p @ i &amp; 1)) {
+  exact (refl(refl(x)), refl(p));
+}
+
+def join_edges(A : U0, x, y : A, p : x = y) :
+  (p = (path i =&gt; p @ i | 0)) and (refl(y) = (path i =&gt; p @ i | 1)) {
+  exact (refl(p), refl(refl(y)));
+}</code></pre>
+            <p>Read along the other coordinate, the meet shrinks <code>p</code> towards its start, as <code>to_start</code> above does, and the join shrinks it towards its end:</p>
+            <pre><code data-check="accept">def to_end(A : U0, x, y : A, p : x = y) :
+  PathP(fun (j : Interval) =&gt; p @ j = y, p, refl(y)) {
+  exact path j =&gt; path i =&gt; p @ i | j;
+}</code></pre>
+            <p>The best-known use is the <em>singleton</em> of a point <code>x</code>: the type of pairs of an end <code>y</code> and a path <code>x = y</code>. It is contractible: it has a center, <code>(x, refl(x))</code>, and every element <code>w</code> is equal to it. The path from the center to <code>w</code> moves the end forward along <code>w.2</code>, and the meet grows the path along with it: at coordinate <code>j</code> the pair is the point <code>w.2 @ j</code> and the part of <code>w.2</code> that reaches it, <code>path i =&gt; w.2 @ i &amp; j</code>. At <code>j = 0</code> that part is <code>refl(x)</code>, and at <code>j = 1</code> it is all of <code>w.2</code>. Read from <code>j = 1</code> back to <code>j = 0</code>, the same path slides <code>w</code> back to the center, shrinking its path to <code>refl(x)</code>.</p>
+            <pre><code data-check="accept">def Singleton(A : U0, x : A) := exists y : A. x = y;
+
+def singletons_contractible(A : U0, x : A) :
+  exists center : Singleton(A, x). forall w : Singleton(A, x). center = w {
+  exact (typed(Singleton(A, x), (x, refl(x))),
+    fun (w : Singleton(A, x)) =&gt;
+      path j =&gt; (w.2 @ j, path i =&gt; w.2 @ i &amp; j));
+}
+
+// Path induction, from paths: to prove C of every pair (y, p), prove it of
+// the center and transport along the contraction.
+def based_path_induction(A : U0, x : A, C : Singleton(A, x) -&gt; U0,
+    base : C((x, refl(x))), w : Singleton(A, x)) : C(w) {
+  exact along C by singletons_contractible(A, x).2(w) from base;
+}</code></pre>
+            <p><code>based_path_induction</code> is the reason this matters: a statement about every path starting at <code>x</code> follows from the single case <code>refl(x)</code>. In cubical type theory path induction is derived in this way, not assumed: the built-in <a href="paths.html#path-induction"><code>path_induction</code></a> elaborates to a transport over the segments <code>path j =&gt; p @ i &amp; j</code>, the same meet.</p>
+            <p>Choosing the wrong one is caught at the edges. With a meet, the path at <code>i</code> runs from <code>x</code> to <code>p @ i</code>, not from <code>p @ i</code> to <code>y</code>:</p>
+            <pre><code data-check="reject">def wrong_connection(A : U0, x, y : A, p : x = y) :
+  PathP(fun (i : Interval) =&gt; p @ i = y, p, refl(y)) {
+  // Error: Type mismatch: found p @ 0 = p @ i, expected p @ i = y.
+  exact path i =&gt; path j =&gt; p @ j &amp; i;
+}</code></pre>
+            <p>Coordinates obey the laws of a De Morgan algebra: <code>&amp;</code> and <code>|</code> are associative, commutative and distribute over each other, and <code>-(i &amp; j)</code> is <code>-i | -j</code>. They are not Boolean: <code>i &amp; -i</code> is not <code>0</code>, since at <code>i = 1/2</code> it is <code>1/2</code>. The checker does not simplify it away:</p>
+            <pre><code data-check="reject">def not_boolean(A : U0, x, y : A, p : x = y) : refl(x) = (path i =&gt; p @ i &amp; -i) {
+  // Error: Type mismatch: found refl(x) = refl(x), expected refl(x) = (path i =&gt; p @ i &amp; -i).
+  exact refl(refl(x));
+}</code></pre>
+            <p>The composition tubes of hand-built proofs use connections in the same way. A tube <code>fun (k : Interval) =&gt; q @ k &amp; i</code> is constant where <code>i = 0</code> and follows <code>q</code> where <code>i = 1</code>, and <code>fun (k : Interval) =&gt; p @ k | -i</code> is constant where <code>i = 0</code> and follows <code>p</code> where <code>i = 1</code>.</p>
           </section>
           <section id="cubical-shorthand">
             <h2>Shorthand</h2>
@@ -105,7 +163,7 @@ def to_start(A : U0, x, y : A, p : x = y) :
               </tbody>
             </table></div>
             <pre><code data-check="accept">def reverse_again(A : U0, x, y : A, p : x = y) : y = x {
-  exact path i =&gt; p @ flip(i);
+  exact path i =&gt; p @ -i;
 }
 
 def constant_path(A : U0, x : A) : x = x {

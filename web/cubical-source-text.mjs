@@ -40,10 +40,11 @@ export function sourceText(term, symbols = {}, limit = 4000) {
     return Object.values(t).some(child => varies(child, dim, seen));
   };
   // Interval formulas are disjunctions of conjunctions of literals; `i:0` is
-  // the reversed coordinate.
-  const literal = text => text.endsWith(":0") ? `flip(${text.slice(0, -2)})` : text.replace(/:1$/, "");
-  const conjunction = clause => clause.length ? clause.map(literal).reduce((a, b) => `meet(${a}, ${b})`) : "1";
-  const interval = value => value.length ? value.map(conjunction).reduce((a, b) => `join(${a}, ${b})`) : "0";
+  // the reversed coordinate. They print in the source's notation: -i, i & j
+  // and i | j, where & binds tighter than |, and both tighter than @.
+  const literal = text => text.endsWith(":0") ? `-${text.slice(0, -2)}` : text.replace(/:1$/, "");
+  const conjunction = clause => clause.length ? clause.map(literal).join(" & ") : "1";
+  const interval = value => value.length ? value.map(conjunction).join(" | ") : "0";
   // A binary number from the library's binary_naturals, in normal form:
   // left(tt) is 0b0, and right(p) a W tree whose leaf is the leading 1 and
   // whose unary nodes are the trailing digits, the last digit outermost.
@@ -182,6 +183,11 @@ export function sourceText(term, symbols = {}, limit = 4000) {
         if (!varies(t.family, t.dim))
           return [`${sub(t.left, LEVEL.compare + 1)} = ${sub(t.right, LEVEL.compare + 1)}`, LEVEL.compare];
         return fallback(t);
+      // A path, as the source writes it where its type is known; one that
+      // does not vary is refl.
+      case "PLam":
+        if (!varies(t.body, t.dim) && !varies(t.family, t.dim)) return atom(`refl(${show(t.body)})`);
+        return [`path ${t.dim} => ${show(t.body)}`, LEVEL.binder];
       default: return fallback(t);
     }
   }

@@ -326,3 +326,9 @@ def through : Nat := (fun (x : N) => 0)(zero);
   for (const name of ["P", "H", "fired", "instance_matched", "through"]) ok(get(name));
   assert.deepEqual(program.inspect("main__through", { normalize: true }).extensions, ["H1"]);
 });
+
+test("with the path notation's minus sign, trunc(-1) is prop", async t => {
+  const { program, get } = await check(t, "inductive Tr(U < UU0, A : U) : trunc(-1) { point(a : A); }\n");
+  ok(get("Tr"));
+  assert.equal(program.kernel.signature(program.kernel.signatures.get("main__Tr").index).modifier, 1);
+});

@@ -4,12 +4,12 @@ export function tokenize(source) {
     throw new Error("Source exceeds 1 MB.");
   const tokens = [];
   const re =
-    /\s+|\/\/[^\n]*|(?:<=|=>|->|:=|<-)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[\[\](){}:,;.+*<=>@]|./gy;
+    /\s+|\/\/[^\n]*|(?:<=|=>|->|:=|<-|\+\+)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[\[\](){}:,;.+*<=>@&|-]|./gy;
   for (const match of source.matchAll(re)) {
     const text = match[0];
     if (/^\s|^\/\//.test(text)) continue;
     if (
-      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|=>|->|:=|<-|[\[\](){}:,;.+*<=>@])$/.test(text)
+      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|=>|->|:=|<-|\+\+|[\[\](){}:,;.+*<=>@&|-])$/.test(text)
     )
       throw Object.assign(new Error(`Unexpected character ${text}`), {
         offset: match.index,
@@ -113,6 +113,11 @@ export function parse(source, typeOnly = false) {
       throw Object.assign(new Error(`Separate names with commas: ${example}`), { offset: ts[i].start });
     return names;
   }
+  // p ++ q concatenates paths, left to right as calc chains do; it binds
+  // looser than arithmetic and tighter than =. Coordinates combine tighter
+  // than @: i & j is their meet (minimum), i | j their join (maximum), and
+  // prefix -i reverses one, so p @ -i & j | k is p @ (((-i) & j) | k). Prefix
+  // -p reverses a path, tighter still: -p @ i is (-p) @ i.
   const prec = {
     "->": 1,
     or: 2,
@@ -120,10 +125,14 @@ export function parse(source, typeOnly = false) {
     "=": 4,
     "<": 4,
     "<=": 4,
-    "+": 5,
-    "*": 6,
-    "@": 7,
+    "++": 5,
+    "+": 6,
+    "*": 7,
+    "@": 8,
+    "|": 9,
+    "&": 10,
   };
+  const PREFIX = 11;
   // Tuples are notation for right-associated binary dependent pairs. Preserve
   // the delimiter locations for macro inspection; elaboration sees only pairs.
   function tuple(open, first, item) {
@@ -325,6 +334,10 @@ export function parse(source, typeOnly = false) {
         binderKind:t.text, domain, ...(bound ? { bound } : {}), body, start:t.start, end:body.end,
         keyword:{start:t.start,end:t.end},
       };
+    } else if (t.text === "-") {
+      const operand = expr(PREFIX);
+      a = { kind: "unary", operator: "-", operand, operatorStart: t.start, operatorEnd: t.end,
+        start: t.start, end: operand.end };
     } else if (t.text === "(") {
       a = tuple(t, expr(), () => expr());
     } else if (/^0b[01]+$/.test(t.text)) {
