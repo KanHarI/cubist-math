@@ -112,3 +112,20 @@ test("recursion and case analysis print as induction and match", () => {
   assert.equal(sourceText(cases), "match v as z return U0 { left a => Nat; right b => Unit; }");
   assert.equal(sourceText(add(recursion, number(1))), "(induction m as k return Nat { zero => n; succ h => succ(h); }) + 1");
 });
+
+test("messages name unnamed dimensions once, keep sharing, and avoid the names they show", async () => {
+  const { readableDimensions, displayTerm } = await import("../web/cubical-elaborator.mjs");
+  // A compact shared type: each level uses the one below twice.
+  let shared = { tag: "PApp", path: variable("p"), arg: [["d0:1"]] };
+  for (let depth = 0; depth < 60; depth++) shared = { tag: "App", fn: shared, arg: shared };
+  const [renamed] = readableDimensions([shared]);
+  assert.equal(renamed.fn, renamed.arg, "shared subterms stay shared");
+  // i2 is shown as i: the dimension takes another name.
+  const line = { tag: "PLam", dim: "d0", family: variable("A"), body: { tag: "PApp", path: variable("i2"), arg: [["d0:1"]] } };
+  assert.equal(sourceText(readableDimensions([displayTerm(line)])[0]), "path j => i @ j");
+  // Seven dimensions in two terms: one renaming for both, past the letters.
+  const at = (...dims) => ({ tag: "PApp", path: variable("p"), arg: [dims.map(d => `d${d}:1`)] });
+  const [found, expected] = readableDimensions([at(0, 6), at(1, 2, 3, 4, 5, 6)]);
+  assert.equal(sourceText(found), "p @ i & i1");
+  assert.equal(sourceText(expected), "p @ j & k & l & m & n & i1");
+});

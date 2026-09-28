@@ -79,34 +79,51 @@ export function displayTerm(term, budget = 256) {
 }
 
 // Dimensions a message has no source name for, bound or free, which decoding
-// calls d0, d1, …: renamed together in several terms to i, j, k, …, names
-// none of them uses, so that the terms read as source and agree.
+// calls d0, d1, …: renamed together in several terms, after their display
+// names are chosen, to i, j, k, … (then i1, j1, …), names none of them
+// shows: not a variable's, a dimension's, or a definition's without its
+// module. The terms are shared graphs, so each node is visited and copied
+// once, and sharing is kept.
 export function readableDimensions(terms) {
-  const used = new Set(), unnamed = [];
+  const used = new Set(), seen = new WeakSet();
   const visit = t => {
     if (typeof t === "string") {
       const literal = /^(.+):[01]$/.exec(t);
       if (literal) used.add(literal[1]);
       return;
     }
-    if (!t || typeof t !== "object") return;
+    if (!t || typeof t !== "object" || seen.has(t)) return;
+    seen.add(t);
     if (typeof t.dim === "string") used.add(t.dim);
-    if (typeof t.name === "string") used.add(t.name);
+    if (typeof t.name === "string") {
+      used.add(t.name);
+      if (t.name.includes("__") && !t.name.startsWith("__")) used.add(t.name.slice(t.name.indexOf("__") + 2));
+    }
     Object.values(t).forEach(visit);
   };
   terms.forEach(visit);
-  for (const name of used) if (/^d[0-9]+_*$/.test(name)) unnamed.push(name);
+  const unnamed = [...used].filter(name => /^d[0-9]+_*$/.test(name))
+    .sort((a, b) => parseInt(a.slice(1)) - parseInt(b.slice(1)) || a.length - b.length);
   if (!unnamed.length) return terms;
-  unnamed.sort();
-  const pool = ["i", "j", "k", "l", "m", "n"].filter(name => !used.has(name));
-  const renaming = new Map(unnamed.slice(0, pool.length).map((name, index) => [name, pool[index]]));
+  const names = (function* () {
+    for (let round = 0; ; round++)
+      for (const letter of "ijklmn") {
+        const name = round ? `${letter}${round}` : letter;
+        if (!used.has(name)) yield name;
+      }
+  })();
+  const renaming = new Map(unnamed.map(name => [name, names.next().value]));
+  const copies = new WeakMap();
   const rename = t => {
     if (typeof t === "string") {
       const literal = /^(.+):([01])$/.exec(t);
       return literal && renaming.has(literal[1]) ? `${renaming.get(literal[1])}:${literal[2]}` : t;
     }
     if (!t || typeof t !== "object") return t;
-    const copy = Array.isArray(t) ? t.map(rename) : Object.fromEntries(Object.entries(t).map(([key, value]) => [key, rename(value)]));
+    if (copies.has(t)) return copies.get(t);
+    const copy = Array.isArray(t) ? [] : {};
+    copies.set(t, copy);
+    for (const [key, value] of Object.entries(t)) copy[key] = rename(value);
     if (!Array.isArray(t) && typeof t.dim === "string" && renaming.has(t.dim)) copy.dim = renaming.get(t.dim);
     return copy;
   };
@@ -326,9 +343,9 @@ export class NativeCubicalElaborator {
     if (error?.kind !== "mismatch" || !error.mismatch?.found || error.described) return error;
     error.described = true;
     try {
-      // Both types renamed together, so that a dimension reads alike in each.
+      // Both types renamed together, once, so that a dimension reads alike in each.
       const [found, expected] = readableDimensions([error.mismatch.found, error.mismatch.expected]
-        .map(handle => this.syntax.decode(handle, dimensions))).map(term => this.displayText(term));
+        .map(handle => displayTerm(this.syntax.decode(handle, dimensions)))).map(term => this.printed(term));
       error.message = `Type mismatch: found ${found}, expected ${expected}.`;
     } catch { /* Keep the kernel's message. */ }
     return error;
@@ -341,7 +358,11 @@ export class NativeCubicalElaborator {
       : name.includes("__") && !name.startsWith("__") ? { name: name.slice(name.indexOf("__") + 2) } : undefined });
   }
   displayText(term, width = 160) {
-    const text = sourceText(displayTerm(readableDimensions([term])[0]), this.displayNames);
+    return this.printed(readableDimensions([displayTerm(term)])[0], width);
+  }
+  // A term whose names are already chosen, as source text within a width.
+  printed(term, width = 160) {
+    const text = sourceText(term, this.displayNames);
     return text.length > width ? `${text.slice(0, width - 1)}…` : text;
   }
   // A goal, and the term a statement built for it, shown with one renaming,
