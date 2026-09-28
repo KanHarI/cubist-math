@@ -228,7 +228,7 @@ test("a rolled back declaration takes its signature with it; a committed one sta
   t.after(() => kernel.dispose());
   kernel.setExtensions({ h1: true });
   const syntax = new CubicalSyntax(kernel);
-  const checker = { syntax, definitionViews: new Map(), genericDefinitions: new Map(), scopeDefinitions: new Map(), definitionExtensions: new Map(),
+  const checker = { syntax, definitionViews: new Map(), genericDefinitions: new Map(), scopeDefinitions: new Map(), definitionExtensions: new Map(), inductives: new Map(),
     assumptions: new Map(), assumptionLabels: new Map(), assumptionOrigins: new Map(), libraryAssumptions: new Map() };
   let transaction = new CubicalDeclarationTransaction(kernel, checker);
   const { index } = admitSignature(kernel, natural, { syntax });
@@ -295,7 +295,7 @@ test("an instance derives in a context whose variables share the signature's lev
   t.after(() => kernel.dispose());
   kernel.setExtensions({ h1: true });
   const syntax = new CubicalSyntax(kernel);
-  const checker = { syntax, definitionViews: new Map(), genericDefinitions: new Map(), scopeDefinitions: new Map(), definitionExtensions: new Map(),
+  const checker = { syntax, definitionViews: new Map(), genericDefinitions: new Map(), scopeDefinitions: new Map(), definitionExtensions: new Map(), inductives: new Map(),
     assumptions: new Map(), assumptionLabels: new Map(), assumptionOrigins: new Map(), libraryAssumptions: new Map() };
   const transaction = new CubicalDeclarationTransaction(kernel, checker);
   admitSignature(kernel, list, { syntax });

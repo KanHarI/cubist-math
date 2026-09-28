@@ -196,6 +196,9 @@ export class NativeCubicalElaborator {
     // `kernel extension: H1` marker (h1-signature-specification.md, 6.4).
     // Visible, and not a non-computing dependency.
     this.definitionExtensions = new Map();
+    // Each declared type's lowering metadata (lib/cubical/inductive.mjs), by
+    // the name its signature was registered under.
+    this.inductives = new Map();
   }
   // The kernel extensions a term relies on: a declared type's instance,
   // constructor or eliminator whose signature was admitted experimentally,
@@ -369,6 +372,33 @@ export class NativeCubicalElaborator {
     return { expression, typeHandle: type, term: display(this.syntax.decode(expression, dimensions)),
       type: display(this.syntax.decode(type, dimensions)), checkingSteps: graph.count - before,
       arenaNodes: arena.nodes, arenaBytes: arena.bytes };
+  }
+  // The type the kernel computes for the next clause of an eliminator, with
+  // the motive and the clauses given so far (ClauseType_k, the H1
+  // specification's 3.6): a query, as match elaborates each clause against
+  // it. The eliminator is started in the kernel and never closed.
+  nextClauseType(motive, clauses, context = new Map(), dimensions = this.dimensions) {
+    this.kernel.checkDeadline();
+    const driver = this.driver, graph = driver.graph;
+    const assumptions = [...this.context(context)].map(([name, type]) =>
+      [this.kernel.symbol(name), this.syntax.encode(type, dimensions)]);
+    const mask = this.dimensionMask(dimensions);
+    let type;
+    try {
+      const scope = driver.contextScope(assumptions, mask);
+      let eliminator = driver.openEliminator(driver.derive(this.syntax.encode(motive, dimensions), scope));
+      for (const clause of clauses) eliminator = driver.addClause(eliminator, driver.derive(this.syntax.encode(clause, dimensions), scope));
+      type = graph.judgement(eliminator).type;
+      for (const [symbol, entry] of scope) {
+        if (typeof symbol !== "number") continue;
+        const own = graph.entry(entry).symbol;
+        if (own !== symbol) type = graph.rename(type, false, own, symbol);
+      }
+    } catch (error) {
+      if (error instanceof KernelError && ["mismatch", "budget", "deadline"].includes(error.kind)) throw this.describeMismatch(error, dimensions);
+      throw Object.assign(new KernelError(`Instruction kernel: ${error.message}`, error.kind ?? "other"), { mismatch: error.mismatch });
+    }
+    return this.syntax.decode(type, dimensions);
   }
   // A check over a context given as [name, type] pairs, for inspection.
   checkView(term, expected, context = [], dimensions = new Map()) {

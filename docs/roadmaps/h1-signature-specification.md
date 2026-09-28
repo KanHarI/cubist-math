@@ -2014,6 +2014,16 @@ support module where it computes:
 - the rejections of A4–A12 and E6–E8. Nonstructural recursion and missing
   h-level proofs are L2.2's rejections, not the kernel's.
 
+**Progress.** The circle's winding number is checked in source, in
+`docs/examples/h1/winding.cubist`, through declared integers, `match` and
+univalence. It gives 1 for `loop`, 2 for `loop · loop` and -1 for its
+inverse, by `rfl`, and closed `evaluate` directives read the normal forms.
+`cong(code, loop)` is `ua(succ)` by `rfl`, the E2 fixture's
+`code_meridian` in this form. `tests/declared-match.test.mjs` checks the
+example with the experimental option. Its results carry the H1 marker and
+no assumption. The native comparisons (X1–X8) are K2.4's, and `Quotient`'s
+elimination waits for automatic set clauses (L2.2b).
+
 ### 10.9 Resources and malformed input
 
 | ID | Input | Verdict |

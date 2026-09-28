@@ -599,25 +599,30 @@ export class InstructionDriver {
       return g.construct(instance, n.payload);
     }
     case "Elim": {
-      // A motive Π (z : S(as)). U(l), then each clause at the type the
-      // kernel computes for it, ClauseType_k, which the eliminator judgement
-      // in progress carries as its type.
-      const motive = this.focus(this.shape(this.focus(derive(a), "type"), "Pi"), "type");
-      this.shape(this.child(motive, 0), "Sort");
-      this.shape(this.child(motive, 1), "U");
-      if (this.node(this.subterm(this.child(motive, 0))).payload !== n.payload)
-        throw new Error("The eliminator's motive is over another declared type.");
-      let eliminator = g.eliminator(motive.ref.id);
-      for (let clause = b; clause; clause = this.node(clause).children[1]) {
-        const expected = this.evidence(this.focus(eliminator, "type"));
-        eliminator = g.eliminatorClause(eliminator, this.convertTo(derive(this.node(clause).children[0]), expected));
-      }
+      let eliminator = this.openEliminator(derive(a), n.payload);
+      for (let clause = b; clause; clause = this.node(clause).children[1])
+        eliminator = this.addClause(eliminator, derive(this.node(clause).children[0]));
       return g.eliminatorClose(eliminator);
     }
     default: throw unsupported(n.kind);
     }
   }
 
+  // An eliminator in progress from a motive Π (z : S(as)). U(l), its type
+  // reduced to that shape; with `index`, over that signature only. Its
+  // judgement's type is the next clause's type, ClauseType_k.
+  openEliminator(motiveJudgement, index = null) {
+    const motive = this.focus(this.shape(this.focus(motiveJudgement, "type"), "Pi"), "type");
+    this.shape(this.child(motive, 0), "Sort");
+    this.shape(this.child(motive, 1), "U");
+    if (index !== null && this.node(this.subterm(this.child(motive, 0))).payload !== index)
+      throw new Error("The eliminator's motive is over another declared type.");
+    return this.graph.eliminator(motive.ref.id);
+  }
+  // The next clause, converted to the type the kernel computes for it.
+  addClause(eliminator, clause) {
+    return this.graph.eliminatorClause(eliminator, this.convertTo(clause, this.evidence(this.focus(eliminator, "type"))));
+  }
   // An admitted signature as the kernel records it, read once per driver.
   signatureInfo(index) {
     const infos = this.signatureInfos ??= new Map();
