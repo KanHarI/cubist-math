@@ -65,3 +65,28 @@ test("the printer shows every name in a form the rules predict", () => {
     if (printsAsItself(name)) assert.equal(outerShown, name, `${name} as a binder prints as itself`);
   }
 });
+
+// The first review of #79: a binder's name held in the domains after it in
+// a group, and inside a form the printer leaves to cubicalText.
+test("a bound variable prints as its binder in later domains and in fallback forms", () => {
+  // With the display's names, as the elaborator gives them, which show a
+  // module's definition by its local name.
+  const displayNames = new Proxy({}, { get: (_, name) => typeof name === "string" && localName(name) !== name
+    ? { name: localName(name) } : undefined });
+  const shown = term => sourceText(displayTerm(term), displayNames);
+  for (const name of names) {
+    const dependent = shown(T.lam(name, T.universe(0), T.lam("y", T.variable(name), T.variable("y"))));
+    const [, binder, domain] = /^fun \((\S+) : U0, y : (\S+)\) => y$/.exec(dependent) ?? [];
+    assert.ok(binder && domain === binder, `${name} in a later domain: ${dependent}`);
+    const fallen = shown(T.lam(name, T.nat, T.pair(null, T.variable(name), T.unitrec(T.lam("u", T.unit, T.nat), T.variable(name), T.point))));
+    const [, bound, first, inside] = /^fun \((\S+) : Nat\) => \((\S+), UnitRec\(λ \(u : Unit\)\. Nat, (\S+), ⋆\)\)$/.exec(fallen) ?? [];
+    assert.ok(bound && first === bound && inside === bound, `${name} inside a fallback: ${fallen}`);
+  }
+  // cubicalText keeps its own binder apart from a variable bound around it:
+  // its motive's binder mod__x shows as x, and would capture the x bound
+  // outside.
+  const motive = T.lam("mod__x", T.unit, T.variable("x"));
+  const apart = shown(T.lam("x", T.universe(0), T.unitrec(motive, T.variable("p"), T.point)));
+  const [, outside, spelled, body] = /^fun \((\S+) : U0\) => UnitRec\(λ \((\S+) : Unit\)\. (\S+), p, ⋆\)$/.exec(apart) ?? [];
+  assert.ok(outside && body === outside && spelled !== outside, apart);
+});

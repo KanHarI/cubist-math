@@ -96,7 +96,17 @@ export function sourceText(term, symbols = {}, limit = 4000) {
   const show = t => print(t)[0];
   const sub = (t, needed) => { const [text, level] = print(t); return level < needed ? `(${text})` : text; };
   const atom = text => [text, LEVEL.atom];
-  const fallback = t => { const text = cubicalText(t, symbols); return atom(/^[[λΠΣ]/.test(text) ? `(${text})` : text); };
+  // A form without a source spelling is cubicalText's. It is given the
+  // variables bound around it, and the renamed ones, as this printer shows
+  // them, and as variables with source names: it shows them alike, and keeps
+  // its own binders apart from those free in their bodies.
+  const fallback = t => {
+    const scoped = Object.assign(Object.create(symbols), symbols);
+    for (const name of [...renames.keys(), ...[...bound.keys()].filter(name => bound.get(name))])
+      scoped[name] = { name: variable(name), local: true };
+    const text = cubicalText(t, scoped);
+    return atom(/^[[λΠΣ]/.test(text) ? `(${text})` : text);
+  };
   // The text of a term and the precedence level of its outermost form.
   function print(t) {
     if (--budget < 0) return atom("…");
@@ -124,17 +134,19 @@ export function sourceText(term, symbols = {}, limit = 4000) {
       case "LPi": return [`forall ${t.name} < UU0. ${under(t.name, () => show(t.body))}`, LEVEL.binder];
       case "LLam": return [`fun (${t.name} < UU0) => ${under(t.name, () => show(t.body))}`, LEVEL.binder];
       case "Lam": {
-        // fun (x, y : A, z : B) => body
-        const groups = [];
+        // fun (x, y : A, z : B) => body, each domain in the scope of the
+        // binders before it
+        const groups = [], names = [];
         let body = t;
         while (body.tag === "Lam") {
-          const last = groups.at(-1), domain = show(body.domain);
+          const last = groups.at(-1), domain = under(names, () => show(body.domain));
           if (last?.domain === domain && !last.names.some(name => mentions(body.domain, name))) last.names.push(body.name);
           else groups.push({ names: [body.name], domain });
+          names.push(body.name);
           body = body.body;
         }
         const binders = groups.map(group => `${group.names.join(", ")} : ${group.domain}`).join(", ");
-        return [`fun (${binders}) => ${under(groups.flatMap(group => group.names), () => show(body))}`, LEVEL.binder];
+        return [`fun (${binders}) => ${under(names, () => show(body))}`, LEVEL.binder];
       }
       // Eliminators print as the source forms that build them. The motive's
       // bound name is shown as the one the branches bind: `as k` binds both.
