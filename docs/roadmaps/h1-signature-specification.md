@@ -27,7 +27,9 @@ and a review decision:
 1. D1, D4 and D5 written out and reviewed (4.2, 4.3);
 2. Lemma H2's full case analysis, and the critical-pair check of 3.7;
 3. canonicity (4.4) reviewed, relative to the assumed baseline of 4.1;
-4. the acceptance matrix of 10.10 complete, K10 and K11 included;
+4. the acceptance matrix of 10.10 complete, K10 and K11 included. Since
+   2026-09-28 every case is traced but K6 along `ua`, K10 and K11, and the
+   cases that wait for L2.2b (E4, E11), K2.5 (G2, G4–G7) and K2.4a (X1–X8);
 5. K2.3's open item, a recorded run of the whole suite at a pinned
    revision; the verifier's marker comparison (6.4) and the inspection of
    6.5 were delivered on 2026-09-28;
@@ -2107,25 +2109,27 @@ elimination waits for automatic set clauses (L2.2b).
 
 ### 10.10 Coverage of the acceptance cases
 
-Status at `02a57ef` (2026-09-28), to be kept current with each change to
-sections 5–10. *Traced* means a test names the case or states its subject.
-*Not traced* means no test names it: the next change to that group either
-finds it under another name and records that here, or adds it. *Missing*
-means the test cannot exist yet, for the stated reason. Kernel cases are in
-`kernel/tests/test_signatures.c`; driver and source cases in
+Status on 2026-09-28, after K2.3's acceptance tests, to be kept current
+with each change to sections 5–10. *Traced* means a test names the case,
+by its ID, or states its subject. *Not traced* means no test names it: the
+next change to that group either finds it under another name and records
+that here, or adds it. *Missing* means the test cannot exist yet, for the
+stated reason. Kernel cases are in `kernel/tests/test_signatures.c`;
+driver and source cases in `tests/h1-acceptance.test.mjs`,
 `tests/h1-admission.test.mjs`, `tests/h1-driver.test.mjs`,
 `tests/inductive-declarations.test.mjs` and `tests/declared-match.test.mjs`.
+Every case is traced except those listed as missing.
 
 | Group | Traced | Not traced | Missing, and why |
 | --- | --- | --- | --- |
-| Admission A1–A17 | Kernel: A1 (`N`, `List`, `S1`, `Tree`, `Push` and `Susp` across its sections), A2, A3, A4, A5, A7, A8, A9, A11, A12, A13, A14, A15, A16, A17. Driver: A2, A8. Source: A4, A8, A11, and the uniformity refusal of 9 | A6, A10 | — |
-| Universes V1–V31 | Kernel: V1, V4, V7, V8, V14, V15, V16, V20, V24, V25. Source, in substance: V7 and V20 (an erased parameter read, a recorded one carried), V26–V28 (`Pointed1`, `Bad`, `Flag`), V30 (`Lifted`), V31 (the contextual words and `trunc(-1)`) | V2, V3, V5, V6, V9, V10, V11, V12, V13, V17, V18, V19, V21, V22, V23, V29 | — (V21 and V22 can be written now that `match` exists) |
-| Boundaries N1–N6 | Kernel: N1, N2, N3, N4. Driver: N1, N3 | N5, N6 | — |
-| Kan K1–K11 | Kernel: K1, K2, K4, K5, K7; K6 in part (transport of `merid` along a line of types `e : A = B`, not along `ua`); K9 in substance (a higher sort's `comp` reduces to `hcomp`). Driver: K2 | K3, K8 | K10, K11: no randomized H1 generator exists; the randomized level tests cover G0 |
-| Elimination E1–E11 | Source: E1 (`docs/examples/h1/winding.cubist`), E2 (as `cong(code, loop)` equal to `ua(succ)` by `rfl`), E3 (`T.squash`), E8 (a missing clause, a duplicate clause, an unknown constructor). Kernel: E3 (the `prop` squash clause), E5, and a motive over no declared type refused. Driver: E5 | E6, E7, E9, E10 | E4 and E11: automatic set and groupoid clauses (L2.2b) |
+| Admission A1–A17 | Kernel: A1 (`N`, `List`, `S1`, `Tree`, `Push` and `Susp` across its sections), A2–A17. Driver: A2, A8. Source: A4, A8, A11, and the uniformity refusal of 9 | — | — |
+| Universes V1–V31 | Kernel: V1, V4, V7, V8, V13–V20, V24, V25. For V13 and V17–V19, H1's rule: each signature is admitted, and an instance that reads a level of tier 1 is refused; the tier-parametric flag of 2.3 is the later proposal's (Q16). Source: V2, V3, V5, V6, V9–V12, V21–V23, V29, and in substance V7 and V20 (an erased parameter read, a recorded one carried), V26–V28 (`Pointed1`, `Bad`, `Flag`), V30 (`Lifted`), V31 (the contextual words and `trunc(-1)`) | — | — |
+| Boundaries N1–N6 | Kernel: N1–N4. Driver: N1, N3. Source: N5, N6 | — | — |
+| Kan K1–K11 | Kernel: K1–K5, K7, K8; K6 in part (transport of `merid` along a line of types `e : A = B`, not along `ua`); K9 in substance (a higher sort's `comp` reduces to `hcomp`). Driver: K2 | — | K10, K11: no randomized H1 generator exists; the randomized level tests cover G0 |
+| Elimination E1–E11 | Source: E1 (`docs/examples/h1/winding.cubist`), E2 (as `cong(code, loop)` equal to `ua(succ)` by `rfl`), E3 (`T.squash`), E8 (a missing clause, a duplicate clause, an unknown constructor). Kernel: E3 (the `prop` squash clause), E5–E7, E9, E10, and a motive over no declared type refused. Driver: E5 | — | E4 and E11: automatic set and groupoid clauses (L2.2b) |
 | Trust T1–T7 | Kernel: T1, T5, T6, T7. Driver: T5, T6. Source: T1 (the option named when off), T2 (direct, through a definition, through an import), T3, T4. Verifier: the marker compared apart from assumptions (6.4) | — | — |
-| Truncation policy G1–G7 | G3 (the audit's archive coverage run) | G1 (V29's `Small` is its source form) | G2, G4, G5, G6, G7: the ledger verifier and the migrations (K2.5) |
-| Resources R1–R5 | Driver: R1 in part (an operand that is not a 32-bit unsigned integer is refused), R5 (the codec round trip); `tests/h1-admission.test.mjs` checks ABI version 3. Kernel: a former of the wrong shape and a truncation level above the maximum are refused | R2, R3, R4 (a version-2 client refused by the loader) | — |
+| Truncation policy G1–G7 | Source: G1 (`Tr(U1, U0)` is not in `U0`). G3 (the audit's archive coverage run) | — | G2, G4, G5, G6, G7: the ledger verifier and the migrations (K2.5) |
+| Resources R1–R5 | Kernel: R1 (a sort, constructor and eliminator whose indices are out of range, and a list whose next cell is no list, built as raw syntax: inspected, reduced or refused with an error, and refused by the term checker and the instructions), R2, R3; a former of the wrong shape and a truncation level above the maximum are refused. Driver: R1 in part (an operand that is not a 32-bit unsigned integer is refused), R5 (the codec round trip); `tests/h1-admission.test.mjs` checks ABI version 3. Source: R4 (a module of ABI version 2 refused by the loader) | — | — |
 | Differential X1–X8 | — | — | All: K2.4a |
 
 ## 11. Open questions

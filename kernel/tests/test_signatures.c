@@ -90,7 +90,13 @@ enum {
     ELIM_T = 620, ELIM_A = 622, ELIM_PP, ELIM_B, ELIM_W, ELIM_L = 627, ELIM_BB, ELIM_C, ELIM_CBAR, ELIM_MS,
     ELIM_V = 640, ELIM_PV = 642, ELIM_PW, ELIM_WV, ELIM_WP, ELIM_WPB, ELIM_MW,
     S_PW = 700, PW_BASE, PW_LOOP, PW_P, PW_WRAP, PW_V, PW_PV = 707, PW_PL, PW_PE, PW_PBAR, PW_MW, PW_P0,
-    S_BOX = 720, BOX_N, BOX, BOX_Z, BOX_X, AMB_Z = 730, AMB_P, AMB_F, AMB_FB, AMB_FL
+    S_BOX = 720, BOX_N, BOX, BOX_Z, BOX_X, AMB_Z = 730, AMB_P, AMB_F, AMB_FB, AMB_FL,
+    ACC_C = 740, ACC_R, A6_N, A6_X, A6_G, E9_Y, E9_Z, E9_YB, E9_ZB, E9_SQ, E10_Z, E10_P, E10_PB, E10_PL,
+    S_RES = 760, S_ARGS, S_DEEP, RES_B, RES_F, RES_A = RES_F + 3,
+    HB_X = 780, HB_A, HB_B, HB_MA, HB_MB, HB_MK, HB_TA, HB_HERE, HB_T, HB_WRAP, HB_FA, HB_F, HB_BB, HB_PACK, HB_Z,
+    HB_FF, HB_WRAP2, HB_WRAP3, HB_UZ,
+    S_MIXED = 810, S_TAG2, S_OUTER, S_HID2, S_BIG, S_OUTER2,
+    RES_C = 3000, RES_N = 3400
 };
 
 /* ⊢ U(0) : U(1), the former of a signature with no parameters in U0. */
@@ -199,6 +205,12 @@ static void squares(void) {
     sig = OK(cc_instr_signature_constructor(k, sig, surf_type, SURF));
     uint32_t torus = torus_signature = OK(cc_instr_signature_close(k, sig));
     assert(constructor(torus, 3).dimensions == 2);
+    /* A10: a square whose sides do not meet the inner paths at a corner.
+     * r : Path(j; s, c, c), for a point c, is no side over p @ 0, which is
+     * b: the square's path type cannot be formed. */
+    cc_entry_id c = OK(cc_instr_extend(k, var(s), ACC_C));
+    cc_entry_id r = OK(cc_instr_extend(k, OK(cc_instr_path(k, j, var(s), var(c), var(c))), ACC_R));
+    REJECTS(cc_instr_path(k, i, inner, var(r), var(r)), "endpoint has the wrong type");
 
     /* S2: base; surf : Path(i; Path(j; s, base, base), ⟨j⟩ base, ⟨j⟩ base). */
     sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_S2, 0));
@@ -887,8 +899,8 @@ static void kan(void) {
     cc_entry_id dims[3] = {OK(cc_instr_dimension(k, 1)), OK(cc_instr_dimension(k, 2)), OK(cc_instr_dimension(k, 3))};
     cc_entry_id j = dims[0];
 
-    /* A data sort has no formal composition; comp^i N [] succ(zero) composes
-     * succ's argument, and normalizes to succ(zero). */
+    /* K3: a data sort has no formal composition; comp^i N [] succ(zero)
+     * composes succ's argument, and normalizes to succ(zero). */
     cc_judgement_id n = OK(cc_instr_sort_begin(k, nat_signature));
     cc_judgement_id one = OK(cc_instr_apply(k, OK(cc_instr_construct(k, n, 1)), OK(cc_instr_construct(k, n, 0))));
     cc_judgement_id at_one = OK(cc_instr_system(k, i, n, one));
@@ -924,6 +936,10 @@ static void kan(void) {
     cc_judgement_id formal = OK(cc_instr_hcomp(k, OK(cc_instr_system(k, j, start, north))));
     assert(kind(term_of(formal)) == CC_HCOMP && reduct(formal, CC_STEP_WHNF) == term_of(formal));
     assert(kind(reduct(OK(cc_instr_comp(k, OK(cc_instr_system(k, i, line, north)))), CC_STEP_WHNF)) == CC_HCOMP);
+    /* K8: transport commutes with an hcomp (3.5, case 3): hcomp^j [] north,
+     * moved along the line, is an hcomp at its end, of north moved. */
+    cc_term moved_box = reduct(OK(cc_instr_trans(k, OK(cc_instr_system(k, i, line, formal)), nowhere())), CC_STEP_WHNF);
+    assert(kind(moved_box) == CC_HCOMP && ck_alpha_equal(k, normal(child(moved_box, 2)), north_end));
     /* Face, unchanged: an hcomp with a tube on the face 1 is that tube at 1,
      * and a transport on a face that holds is its base. */
     cc_formula top;
@@ -1019,6 +1035,7 @@ static void elimination(void) {
     cc_judgement_id opened = OK(cc_instr_eliminator(k, var(p)));
     assert(info(opened).kind == 6 && type_of(opened) == term_of(at(p, zero)) && !info(opened).other);
     REJECTS(cc_instr_eliminator_close(k, opened), "lacks a clause");
+    /* E6: a clause of the wrong type. */
     REJECTS(cc_instr_eliminator_clause(k, opened, OK(cc_instr_zero(k))), "clause type");
     cc_entry_id pz = OK(cc_instr_extend(k, at(p, zero), ELIM_PZ));
     cc_judgement_id after_zero = OK(cc_instr_eliminator_clause(k, opened, var(pz)));
@@ -1041,8 +1058,8 @@ static void elimination(void) {
     cc_entry_id z = OK(cc_instr_extend(k, nat, ELIM_Z));
     REJECTS(cc_instr_eliminator(k, OK(cc_instr_lambda(k, z, nat))), "instance of a declared type");
 
-    /* The circle: loop's clause is PathP(i. P(loop @ i), pb, pb); one with
-     * another end is refused. */
+    /* The circle: loop's clause is PathP(i. P(loop @ i), pb, pb); E7: one
+     * whose ends are not the base clause is refused. */
     cc_judgement_id s1 = OK(cc_instr_sort_begin(k, circle_signature));
     cc_judgement_id base = OK(cc_instr_construct(k, s1, 0)), loop = OK(cc_instr_construct(k, s1, 1));
     cc_entry_id q = motive_over(s1, ELIM_Q);
@@ -1076,6 +1093,36 @@ static void elimination(void) {
     cc_term y_bar = child(child(squash, 1), 1), z_bar = child(y_bar, 1), inner = child(z_bar, 1);
     assert(kind(inner) == CC_PATH && payload(child(inner, 1)) == payload(y_bar) && payload(child(inner, 2)) == payload(z_bar));
     assert(kind(child(y_bar, 0)) == CC_APP && payload(child(child(y_bar, 0), 1)) == payload(squash));
+    /* E9: Trunc(Nat)'s eliminator, with both clauses, is over its own
+     * instance: a term of Trunc(Unit) is refused. The squash clause is
+     * derived here as the kernel reports it. */
+    cc_entry_id ty = OK(cc_instr_extend(k, tr, E9_Y)), tz = OK(cc_instr_extend(k, tr, E9_Z));
+    const cc_entry_id bars[2] = {OK(cc_instr_extend(k, at(t, var(ty)), E9_YB)), OK(cc_instr_extend(k, at(t, var(tz)), E9_ZB))};
+    cc_judgement_id sq = OK(cc_instr_apply(k, OK(cc_instr_apply(k, OK(cc_instr_construct(k, tr, 1)), var(ty))), var(tz)));
+    cc_judgement_id ends[2];
+    for (unsigned e = 0; e < 2; ++e) {
+        cc_judgement_id at_end = at(t, OK(cc_instr_path_apply(k, sq, 0, e)));
+        cc_judgement_id to_bar = OK(cc_instr_step(k, OK(cc_instr_refl(k, at_end)), 1, (const uint8_t[]){1}, 1, CC_STEP_PATH));
+        ends[e] = OK(cc_instr_convert(k, var(bars[e]), OK(cc_instr_symmetry(k, to_bar))));
+    }
+    cc_judgement_id squash_type = OK(cc_instr_pi(k, ty, OK(cc_instr_pi(k, tz, OK(cc_instr_pi(k, bars[0], OK(cc_instr_pi(k, bars[1],
+        OK(cc_instr_path(k, i, at(t, OK(cc_instr_path_apply(k, sq, i, 0))), ends[0], ends[1]))))))))));
+    cc_judgement_id tr_open = OK(cc_instr_eliminator_clause(k, OK(cc_instr_eliminator(k, var(t))), var(pp)));
+    assert(ck_alpha_equal(k, type_of(tr_open), term_of(squash_type)));
+    cc_judgement_id tr_elim = OK(cc_instr_eliminator_close(k, OK(cc_instr_eliminator_clause(k, tr_open,
+        var(OK(cc_instr_extend(k, squash_type, E9_SQ)))))));
+    OK(cc_instr_apply(k, tr_elim, point_at));
+    cc_judgement_id unit_tr = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, trunc_signature)), OK(cc_instr_unit(k))));
+    REJECTS(cc_instr_apply(k, tr_elim, OK(cc_instr_apply(k, OK(cc_instr_construct(k, unit_tr, 0)), OK(cc_instr_point(k))))),
+            "wrong type");
+    /* E10: a motive into UU0 for the circle, P : Π (z : S1). U(ω), with its
+     * two clauses. */
+    cc_entry_id wide = OK(cc_instr_extend(k, OK(cc_instr_pi(k, OK(cc_instr_extend(k, s1, E10_Z)), universe(tier1(0)))), E10_P));
+    cc_entry_id wide_base = OK(cc_instr_extend(k, at(wide, base), E10_PB));
+    cc_entry_id wide_loop = OK(cc_instr_extend(k, path_over(wide, loop, i, var(wide_base)), E10_PL));
+    cc_judgement_id wide_elim = OK(cc_instr_eliminator_close(k, OK(cc_instr_eliminator_clause(k,
+        OK(cc_instr_eliminator_clause(k, OK(cc_instr_eliminator(k, var(wide))), var(wide_base))), var(wide_loop)))));
+    assert(kind(type_of(wide_elim)) == CC_PI);
 
     /* Tree(Nat, λ n. Nat): sup's position has an arity, so q̄ is λ b. elim(c(b)). */
     cc_entry_id nb = OK(cc_instr_extend(k, nat, ELIM_B));
@@ -1272,6 +1319,10 @@ static void refusals(void) {
     cc_entry_id h = OK(cc_instr_extend(k, s_to_nat, BH));
     cc_entry_id g = OK(cc_instr_extend(k, OK(cc_instr_pi(k, h, var(s))), BG));
     REJECTS(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, g, var(s))), BAD), "arity mentions");
+    /* A6: s under a function inside a position's arity: g : Nat → (s → s). */
+    cc_entry_id an = OK(cc_instr_extend(k, nat, A6_N)), ax = OK(cc_instr_extend(k, var(s), A6_X));
+    cc_entry_id ag = OK(cc_instr_extend(k, OK(cc_instr_pi(k, an, OK(cc_instr_pi(k, ax, var(s))))), A6_G));
+    REJECTS(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, ag, var(s))), BAD), "arity mentions");
     /* A11: data after a position, in the kernel's order. */
     cc_entry_id x = OK(cc_instr_extend(k, var(s), BX));
     cc_entry_id n = OK(cc_instr_extend(k, nat, BN));
@@ -1330,6 +1381,178 @@ static void refusals(void) {
     assert(cc_kernel_signature_count(k) == before);
 }
 
+/* V13, V17–V19: a bound of tier 1 in what a constructor type uses. H1
+ * admits each signature, since for finite x the parameter A : U(x) lifts
+ * into UU0, and refuses every instance that reads a level of tier 1 (Q16).
+ * The later proposal's tier-parametric check (2.3) is not H1's. */
+/* ⊢ Π (x < ω). Π (A : U(x)). U0, with x and A named by the given symbols. */
+static cc_judgement_id former_into_u0(uint32_t x, uint32_t a, cc_entry_id *ae) {
+    cc_entry_id xe = OK(cc_instr_level(k, x));
+    *ae = OK(cc_instr_extend(k, universe(lvar(x)), a));
+    return OK(cc_instr_level_pi(k, xe, OK(cc_instr_pi(k, *ae, universe(lconst(0))))));
+}
+
+static void hidden_bounds(void) {
+    cc_judgement_id nat = OK(cc_instr_nat(k)), u0 = universe(lconst(0)), uu0 = universe(tier1(0));
+    cc_judgement_id nat_big = OK(cc_instr_lift(k, nat, uu0)), uu0_itself = uu0;
+    cc_entry_id ae;
+
+    /* V13: Mixed(x < ω, A : U(x), B : UU0) { mk(a : A, b : B); } lives in UU0;
+     * Mixed(U2, Nat) reads x = 3, and Mixed(Nat) with Nat : UU0 reads ω. */
+    cc_entry_id be = OK(cc_instr_extend(k, uu0, HB_B));
+    cc_entry_id xe = OK(cc_instr_level(k, HB_X));
+    ae = OK(cc_instr_extend(k, universe(lvar(HB_X)), HB_A));
+    cc_judgement_id former = OK(cc_instr_level_pi(k, xe, OK(cc_instr_pi(k, ae, OK(cc_instr_pi(k, be, uu0))))));
+    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, S_MIXED, 0));
+    cc_entry_id s = OK(cc_instr_extend(k, uu0, S_MIXED));
+    cc_entry_id a = OK(cc_instr_extend(k, var(ae), HB_MA)), b = OK(cc_instr_extend(k, var(be), HB_MB));
+    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, a, OK(cc_instr_pi(k, b, var(s))))), HB_MK));
+    uint32_t mixed = OK(cc_instr_signature_close(k, sig));
+    cc_judgement_id at3 = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, mixed)), universe(lconst(2))));
+    assert(type_of(OK(cc_instr_sort_parameter(k, at3, nat_big))) == term_of(uu0));
+    REJECTS(cc_instr_sort_parameter(k, OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, mixed)), nat_big)), nat_big),
+            "finite levels only");
+
+    /* V17: Tag(A : UU0) : U0 { here; } and Outer(x < ω, A : U(x)) : U0
+     * { wrap(t : Tag(A)); }, with A lifted into UU0; Outer(Nat) is formed,
+     * Outer(UU0) and Outer(A) for A : UU0 are not. */
+    cc_entry_id ta = OK(cc_instr_extend(k, uu0, HB_TA));
+    sig = OK(cc_instr_signature_begin(k, OK(cc_instr_pi(k, ta, u0)), CC_UNTRUNCATED, S_TAG2, 0));
+    s = OK(cc_instr_extend(k, u0, S_TAG2));
+    uint32_t tag = OK(cc_instr_signature_close(k, OK(cc_instr_signature_constructor(k, sig, var(s), HB_HERE))));
+    former = former_into_u0(HB_X + 100, HB_A + 100, &ae);
+    sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, S_OUTER, 0));
+    s = OK(cc_instr_extend(k, u0, S_OUTER));
+    cc_judgement_id tag_a = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, tag)), OK(cc_instr_lift(k, var(ae), uu0))));
+    cc_entry_id held = OK(cc_instr_extend(k, tag_a, HB_T));
+    uint32_t outer = OK(cc_instr_signature_close(k, OK(cc_instr_signature_constructor(k, sig,
+        OK(cc_instr_pi(k, held, var(s))), HB_WRAP))));
+    OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, outer)), nat));
+    REJECTS(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, outer)), uu0_itself), "finite levels only");
+    REJECTS(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, outer)), nat_big), "finite levels only");
+
+    /* V18: the same bound through a definition F(A : UU0) : U0 := Unit, in
+     * wrap(t : F(A)); refused at the instance that reads it. */
+    cc_entry_id fa = OK(cc_instr_extend(k, uu0, HB_FA));
+    cc_judgement_id f = OK(cc_instr_define(k, HB_F, OK(cc_instr_lambda(k, fa, OK(cc_instr_unit(k))))));
+    former = former_into_u0(HB_X + 200, HB_A + 200, &ae);
+    sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, S_HID2, 0));
+    s = OK(cc_instr_extend(k, u0, S_HID2));
+    cc_entry_id through = OK(cc_instr_extend(k, OK(cc_instr_apply(k, f, OK(cc_instr_lift(k, var(ae), uu0)))), HB_T + 100));
+    uint32_t hid = OK(cc_instr_signature_close(k, OK(cc_instr_signature_constructor(k, sig,
+        OK(cc_instr_pi(k, through, var(s))), HB_WRAP2))));
+    OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, hid)), nat));
+    REJECTS(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, hid)), nat_big), "finite levels only");
+
+    /* V19: Big : UU1 { pack(B : UU0); } and Outer2(x < ω, A : U(x),
+     * F : Big → U0) : U0 { wrap(t : F(pack(A))); }: a bound in a
+     * parameter-free signature's constructor type. */
+    cc_judgement_id uu1 = universe(tier1(1));
+    sig = OK(cc_instr_signature_begin(k, uu1, CC_UNTRUNCATED, S_BIG, 0));
+    s = OK(cc_instr_extend(k, uu1, S_BIG));
+    cc_entry_id bb = OK(cc_instr_extend(k, uu0, HB_BB));
+    uint32_t big = OK(cc_instr_signature_close(k, OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, bb, var(s))),
+        HB_PACK))));
+    cc_judgement_id big_instance = OK(cc_instr_sort_begin(k, big));
+    cc_entry_id z = OK(cc_instr_extend(k, big_instance, HB_Z));
+    cc_entry_id x2 = OK(cc_instr_level(k, HB_X + 300));
+    cc_entry_id a2 = OK(cc_instr_extend(k, universe(lvar(HB_X + 300)), HB_A + 300));
+    cc_entry_id fe = OK(cc_instr_extend(k, OK(cc_instr_pi(k, z, u0)), HB_FF));
+    former = OK(cc_instr_level_pi(k, x2, OK(cc_instr_pi(k, a2, OK(cc_instr_pi(k, fe, u0))))));
+    sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, S_OUTER2, 0));
+    s = OK(cc_instr_extend(k, u0, S_OUTER2));
+    cc_judgement_id packed = OK(cc_instr_apply(k, OK(cc_instr_construct(k, big_instance, 0)), OK(cc_instr_lift(k, var(a2), uu0))));
+    cc_entry_id carried = OK(cc_instr_extend(k, OK(cc_instr_apply(k, var(fe), packed)), HB_T + 200));
+    uint32_t outer2 = OK(cc_instr_signature_close(k, OK(cc_instr_signature_constructor(k, sig,
+        OK(cc_instr_pi(k, carried, var(s))), HB_WRAP3))));
+    cc_judgement_id family = OK(cc_instr_lambda(k, OK(cc_instr_extend(k, big_instance, HB_UZ)), OK(cc_instr_unit(k))));
+    OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, outer2)), nat)), family));
+    REJECTS(cc_instr_sort_parameter(k, OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, outer2)), uu0_itself)), family),
+            "finite levels only");
+    REJECTS(cc_instr_sort_parameter(k, OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, outer2)), nat_big)), family),
+            "finite levels only");
+}
+
+/* R2, R3: the resource bounds of 5.8, at their limits and above them. */
+static void resources(void) {
+    /* R2: 256 constructors are admitted, and a 257th is refused. */
+    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_RES, 0));
+    cc_entry_id s = OK(cc_instr_extend(k, former_u0(), S_RES));
+    for (uint32_t c = 0; c < CC_SIGNATURE_CONSTRUCTORS; ++c)
+        sig = OK(cc_instr_signature_constructor(k, sig, var(s), RES_C + c));
+    REJECTS(cc_instr_signature_constructor(k, sig, var(s), RES_C + CC_SIGNATURE_CONSTRUCTORS), "too many constructors");
+    assert(signature(OK(cc_instr_signature_close(k, sig))).constructor_count == CC_SIGNATURE_CONSTRUCTORS);
+
+    /* R2: a constructor with 64 arguments is admitted, and one with 65 is
+     * refused. */
+    cc_judgement_id nat = OK(cc_instr_nat(k));
+    cc_entry_id args[CC_CONSTRUCTOR_ARGUMENTS + 1];
+    for (uint32_t a = 0; a <= CC_CONSTRUCTOR_ARGUMENTS; ++a)
+        args[a] = OK(cc_instr_extend(k, nat, RES_N + a));
+    sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_ARGS, 0));
+    s = OK(cc_instr_extend(k, former_u0(), S_ARGS));
+    cc_judgement_id at_limit = var(s);
+    for (uint32_t a = CC_CONSTRUCTOR_ARGUMENTS; a-- > 0;)
+        at_limit = OK(cc_instr_pi(k, args[a], at_limit));
+    REJECTS(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, args[CC_CONSTRUCTOR_ARGUMENTS], at_limit)), RES_F),
+            "too many arguments");
+    sig = OK(cc_instr_signature_constructor(k, sig, at_limit, RES_F));
+    assert(constructor(OK(cc_instr_signature_close(k, sig)), 0).data == CC_CONSTRUCTOR_ARGUMENTS);
+
+    /* R3: a position of arity 64 into a cube of depth 8, ⟨i⟩ … b at each
+     * level, is admitted within the budget. */
+    sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_DEEP, 0));
+    s = OK(cc_instr_extend(k, former_u0(), S_DEEP));
+    sig = OK(cc_instr_signature_constructor(k, sig, var(s), RES_B));
+    cc_judgement_id cube = var(s), point = var(OK(cc_instr_extend(k, var(s), RES_B)));
+    for (unsigned d = 0; d < 8; ++d) {
+        cc_entry_id dimension = OK(cc_instr_dimension(k, d));
+        cc_judgement_id next = OK(cc_instr_path(k, dimension, cube, point, point));
+        point = OK(cc_instr_path_lambda(k, dimension, point));
+        cube = next;
+    }
+    cc_judgement_id position = cube;
+    for (uint32_t a = CC_CONSTRUCTOR_ARGUMENTS; a-- > 0;)
+        position = OK(cc_instr_pi(k, args[a], position));
+    cc_entry_id f = OK(cc_instr_extend(k, position, RES_A));
+    cc_work_counters before, after;
+    cc_kernel_work(k, &before);
+    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, f, var(s))), RES_F + 1));
+    uint32_t deep = OK(cc_instr_signature_close(k, sig));
+    cc_kernel_work(k, &after);
+    assert(constructor(deep, 1).positions == 1);
+    assert(after.instruction_steps - before.instruction_steps < 1000000);
+}
+
+/* R1: malformed declared-type nodes, built as raw syntax: a sort, a
+ * constructor and an eliminator whose indices are out of range, a list cell
+ * whose next cell is no list, and the eliminator applied. Inspection reads
+ * them, reduction leaves them or refuses them with an error, and the term
+ * checker and the instructions refuse them. */
+static void malformed(void) {
+    cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term sort = cc_kernel_term(k, CC_SORT, 9999, 0, 0, 0, 0);
+    cc_term con = cc_kernel_term(k, CC_CON, 77, sort, 0, 0, 0);
+    cc_term elim = cc_kernel_term(k, CC_ELIM, 9999, nat, 0, 0, 0);
+    const cc_term terms[] = {sort, con, elim, cc_kernel_term(k, CC_LIST, 0, con, nat, 0, 0),
+                             cc_kernel_term(k, CC_APP, 0, elim, con, 0, 0)};
+    for (unsigned t = 0; t < sizeof terms / sizeof *terms; ++t) {
+        assert(terms[t] && !cc_kernel_error(k)[0]);
+        cc_term_kind seen;
+        assert(cc_kernel_node(k, terms[t], &seen, NULL, NULL));
+        if (!cc_kernel_whnf(k, terms[t]))
+            cc_kernel_clear_error(k);
+        if (!cc_kernel_normalize(k, terms[t]))
+            cc_kernel_clear_error(k);
+        cc_checked_result checked;
+        assert(!cc_kernel_check(k, terms[t], nat, NULL, 0, &checked));
+        cc_kernel_clear_error(k);
+    }
+    cc_signature_info info;
+    assert(!cc_kernel_signature(k, 9999, &info));
+    REJECTS(cc_instr_sort_begin(k, 9999), "Only an admitted signature");
+}
+
 /* T6: a commit keeps an admitted signature and relocates its syntax. */
 static void commits(void) {
     cc_kernel_checkpoint(k);
@@ -1373,6 +1596,9 @@ int main(void) {
     elimination_capture();
     annotations();
     refusals();
+    hidden_bounds();
+    resources();
+    malformed();
     commits();
     cc_kernel_free(k);
     printf("signature admission: ok\n");
