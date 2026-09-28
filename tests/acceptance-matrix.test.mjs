@@ -37,7 +37,9 @@ const defined = new Set([...specification.matchAll(new RegExp(`^\\| ([${prefixes
 
 const coverage = section("### 10.10 Coverage of the acceptance cases");
 const introduction = coverage.slice(0, coverage.indexOf("\n|"));
-const testFiles = [...introduction.matchAll(/`([^`]+\.(?:c|mjs))`/g)].map(match => match[1]);
+// This checker is named there too, and names cases only to look for them.
+const testFiles = [...introduction.matchAll(/`([^`]+\.(?:c|mjs))`/g)].map(match => match[1])
+  .filter(path => path !== "tests/acceptance-matrix.test.mjs");
 const named = new Map(testFiles.map(path => [path, read(path)]));
 const namedIn = id => [...named].filter(([, source]) => new RegExp(`\\b${id}(?!\\d|\\.[\\da-z])`).test(source)).map(([path]) => path);
 
@@ -58,12 +60,21 @@ test("the matrix's groups cover exactly the cases the specification defines", ()
 
 test("the matrix lists each of the test files it names", () => {
   assert.ok(testFiles.includes("kernel/tests/test_signatures.c") && testFiles.length >= 6, testFiles.join(", "));
+  assert.ok(introduction.includes("`tests/acceptance-matrix.test.mjs`") && !testFiles.includes("tests/acceptance-matrix.test.mjs"));
   for (const path of testFiles) assert.ok(existsSync(new URL(`../${path}`, import.meta.url)), path);
 });
 
-test("each case is in the matrix, and a case in two columns is traced in part", () => {
-  for (const { group, cases, traced, columns } of rows) {
+// The cases the traced column names in full, not only as "in part".
+const tracedInFull = (traced, prefix) => mentions(traced.replace(new RegExp(`\\b${prefix}\\d+ in part\\b`, "g"), ""), prefix);
+
+test("each case is in the matrix, and a case traced in part has a remainder, and only then", () => {
+  for (const { group, prefix, cases, traced, columns } of rows) {
+    for (const [column, ids] of Object.entries(columns))
+      for (const id of ids) assert.ok(cases.includes(id), `${group}: the ${column} column names ${id}, which is no case of the group`);
+    const full = tracedInFull(traced, prefix);
     for (const id of cases) {
+      if (columns.traced.has(id) && !full.has(id))
+        assert.ok(columns.untraced.has(id) || columns.missing.has(id), `${group}: ${id} is traced only in part, so its remainder must be listed`);
       const where = Object.entries(columns).filter(([, ids]) => ids.has(id)).map(([column]) => column);
       assert.ok(where.length > 0, `${group}: ${id} is in no column`);
       if (where.length > 1) assert.ok(where.includes("traced") && new RegExp(`\\b${id} in part\\b`).test(traced),

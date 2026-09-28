@@ -944,11 +944,16 @@ static void kan(void) {
     cc_judgement_id formal = OK(cc_instr_hcomp(k, OK(cc_instr_system(k, j, start, north))));
     assert(kind(term_of(formal)) == CC_HCOMP && reduct(formal, CC_STEP_WHNF) == term_of(formal));
     assert(kind(reduct(OK(cc_instr_comp(k, OK(cc_instr_system(k, i, line, north)))), CC_STEP_WHNF)) == CC_HCOMP);
+    /* K9 in substance, in Susp rather than S1: comp along a constant line is
+     * an hcomp of the base moved along that line, which is north again. */
+    cc_term along_constant = reduct(OK(cc_instr_comp(k, OK(cc_instr_system(k, i, start, north)))), CC_STEP_WHNF);
+    assert(kind(along_constant) == CC_HCOMP);
+    assert(ck_alpha_equal(k, normal(child(along_constant, 2)), reduct(north, CC_STEP_NORMALIZE)));
     /* K8: transport commutes with an hcomp (3.5, case 3): hcomp^j [] north,
      * moved along the line, is an hcomp at its end, of north moved. */
     cc_term moved_box = reduct(OK(cc_instr_trans(k, OK(cc_instr_system(k, i, line, formal)), nowhere())), CC_STEP_WHNF);
     assert(kind(moved_box) == CC_HCOMP && ck_alpha_equal(k, normal(child(moved_box, 2)), north_end));
-    /* K4, in Susp: Face, unchanged: an hcomp with a tube on the face 1 is that tube at 1,
+    /* Face, unchanged: an hcomp with a tube on the face 1 is that tube at 1,
      * and a transport on a face that holds is its base. */
     cc_formula top;
     cc_init(&top, CC_FACE);
@@ -985,8 +990,19 @@ static void kan(void) {
     walls_start_on_base(corrected);
     assert(ck_alpha_equal(k, commutes(transported, j, 0), north_end));
     assert(ck_alpha_equal(k, commutes(transported, j, 1), south_end));
+    /* K4 in substance, in Susp rather than S1: an hcomp whose tube, on a face
+     * that holds, runs from north to south is the tube's end, south, not its
+     * base. */
+    cc_judgement_id merid_starts = OK(cc_instr_step(k, OK(cc_instr_refl(k, OK(cc_instr_endpoint(k, merid, j, 0)))), 1,
+                                                    NULL, 0, CC_STEP_PATH));
+    cc_judgement_id to_south = OK(cc_instr_hcomp(k, OK(cc_instr_system_tube(k, OK(cc_instr_system(k, j, start, north)),
+                                                                            always, merid, merid_starts))));
+    cc_term south_start = reduct(OK(cc_instr_construct(k, start, 1)), CC_STEP_NORMALIZE);
+    assert(!ck_alpha_equal(k, south_start, reduct(north, CC_STEP_NORMALIZE)));
+    assert(ck_alpha_equal(k, normal(reduct(to_south, CC_STEP_FACE)), south_start));
 
-    /* K7: the squash of set (two dimensions) and of trunc(1) (three), along the
+    /* K7 in substance, with a set truncation's squash rather than Quotient's:
+     * the squash of set (two dimensions) and of trunc(1) (three), along the
      * line: 2d walls, and each face commutes with transport. */
     const uint32_t truncated[2] = {set_signature, groupoid_signature};
     for (uint32_t t = 0; t < 2; ++t) {

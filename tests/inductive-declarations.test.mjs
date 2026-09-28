@@ -36,7 +36,8 @@ const naturals = "inductive N { zero; succ(n : N); }\n";
 const lists = "inductive List(U < UU0, A : U) : U { nil; cons(x : A, xs : List(U, A)); }\n";
 
 // V31: the contextual words are h-levels only in a header's result
-// position: Gpd's trunc(1), and prop as a definition's name.
+// position: Gpd's trunc(1), and prop as a definition's name; trunc(-2) is
+// refused, stating the allowed levels.
 test("the parser reads each header form, and the formatter keeps them", () => {
   const source = `inductive N { zero; succ(n : N); }
 inductive Trunc(U < UU0, A : U) : prop U { point(a : A); }
@@ -56,7 +57,8 @@ def prop(set : N) := set;
   assert.equal(formatMathScript(formatted), formatted);
   for (const [bad, message] of [["inductive X : { a; }", /h-level, a universe or both/],
     ["inductive X : trunc(x) { a; }", /integer level/], ["inductive X { a(U < UU0); }", /bind universes in the declaration's header/],
-    ["inductive X { a", /Expected ';'/]])
+    ["inductive X { a", /Expected ';'/],
+    ["inductive B : trunc(-2) { b; }", /trunc\(n\) needs n ≥ -1: prop is trunc\(-1\), set is trunc\(0\)\./]])
     assert.throws(() => parse(bad), message);
 });
 
@@ -88,8 +90,8 @@ def plain : Nat := 2;
 });
 
 // V7 and V20 in substance: an erased parameter is read, a recorded one
-// carried. V26 in substance: Pointed(U0) stores a small type in U1. V30 in
-// substance: Lifted's universe is recorded.
+// carried. V26 in substance: Pointed(U0) stores a small type in U1. V30:
+// Lifted's universe is recorded, so Lifted(U0) and Lifted(U1) are distinct.
 test("universe parameters: an erased one is read from its parameter, a recorded one carried", async t => {
   const { program, get } = await check(t, `${naturals}${lists}
 inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }
@@ -102,6 +104,8 @@ def base_point : Pointed(U0) := pt(N, zero);
 def lifted_point : Pointed(U1) := pt(N, zero);
 def other_level : Pointed(U1) := base_point;
 def lifted : U2 := Lifted(U2);
+def lifted_zero : Lifted(U0) := mk;
+def lifted_moved : Lifted(U1) := lifted_zero;
 `);
   const recorded = name => program.kernel.signature(program.kernel.signatures.get(`main__${name}`).index).recorded;
   assert.equal(recorded("List"), 0, "List's universe only bounds A's type");
@@ -112,6 +116,8 @@ def lifted : U2 := Lifted(U2);
   refused(get("pointed_lowered"), /mismatch|universe|not included/i);
   // Instances at different recorded levels are distinct types.
   refused(get("other_level"), /mismatch/i);
+  ok(get("lifted_zero"));
+  refused(get("lifted_moved"), /mismatch/i);
 });
 
 // V27: Bad is refused at mk, naming X. V28: Flag lives in U1, not in U0.
