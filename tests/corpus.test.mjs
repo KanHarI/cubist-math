@@ -5,6 +5,8 @@ import { readFile } from "node:fs/promises";
 import { benchmark } from "../web/benchmark-runner.mjs";
 import { budget } from "./timing.mjs";
 
+// G3 of the H1 specification: the archive, with its legacy assumptions,
+// still checks in full after H1.
 test("the complete canonical .cubist corpus checks with the sole native kernel", { timeout: budget(900000) }, async t => {
   // A correctness test: the limits only stop a hang, far above any
   // declaration's time and the whole run's, even under machine load. Speed is

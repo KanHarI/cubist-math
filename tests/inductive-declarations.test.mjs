@@ -60,6 +60,7 @@ def prop(set : N) := set;
     assert.throws(() => parse(bad), message);
 });
 
+// T1: with the option off, a declaration is refused, naming the option.
 test("declared types need the experimental option, and name it when it is off", async t => {
   const { get } = await check(t, naturals, { experimental: [] });
   refused(get("N"), /kernel extension under review: enable the experimental option h1, with --experimental=h1 in the CLI or Declared types \(H1\) in the workbench/);
@@ -138,6 +139,7 @@ inductive Boxed : prop U1 { box(X : U0); }
   refused(get("Bad"), /mk's argument X lives in a universe above Bad's declared one/);
 });
 
+// A11: data are moved ahead of positions, as the kernel requires.
 test("data are moved ahead of positions, and uses keep the source's order", async t => {
   const { program, get } = await check(t, `${naturals}
 inductive Tree(U < UU0, A : U) { leaf; node(l : Tree(U, A), a : A, r : Tree(U, A)); }
@@ -163,7 +165,8 @@ def meridian_zero : typed(Susp(U0, N), north) = south := merid(zero);
   for (const name of ["Circle", "Susp", "round", "at_end", "meridian_zero"]) ok(get(name));
 });
 
-// V31: a universe parameter named prop is refused.
+// A4: Negative takes itself in a function's domain. A8: Ahead's boundary
+// names a later constructor. V31: a universe parameter named prop.
 test("declarations are checked before they are admitted: the rejections name what is wrong", async t => {
   const { get } = await check(t, `${naturals}
 inductive Negative { mk(f : Negative -> N); }

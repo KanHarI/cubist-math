@@ -917,7 +917,8 @@ static void kan(void) {
     cc_term head = reduct(composed, CC_STEP_WHNF);
     assert(kind(head) == CC_APP && kind(child(head, 0)) == CC_CON && payload(child(head, 0)) == 1);
     assert(ck_alpha_equal(k, reduct(composed, CC_STEP_NORMALIZE), term_of(one)));
-    /* A neutral tube keeps it neutral: q @ i on j = 0, for q : succ(zero) = m. */
+    /* K2 in substance, in N rather than Plus: a neutral tube keeps it
+     * neutral: q @ i on j = 0, for q : succ(zero) = m. */
     cc_entry_id m = OK(cc_instr_extend(k, n, KAN_M));
     cc_entry_id q = OK(cc_instr_extend(k, OK(cc_instr_path(k, i, n, one, var(m))), KAN_Q));
     cc_judgement_id q_i = OK(cc_instr_path_apply(k, var(q), i, 0));

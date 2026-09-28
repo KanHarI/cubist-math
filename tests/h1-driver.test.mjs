@@ -89,6 +89,7 @@ test("the modifier codes are the kernel's: 0 untruncated, n + 2 for trunc(n)", (
   for (const n of [15, 4294967294, 4294967295]) assert.throws(() => modifierCode({ trunc: n }), /up to n = 14/);
 });
 
+// R1 in part: an operand that is not a 32-bit unsigned integer is refused.
 test("an instruction refuses an operand that is not a 32-bit unsigned integer", t => {
   const { g, syntax, admit } = session(t);
   admit(natural);
@@ -227,6 +228,7 @@ test("the kernel's weak head computes an eliminator on a formal composition", t 
   assert.throws(() => check(line(N, numeral(1)), path(N, app(count, box), numeral(1))), /Type mismatch/);
 });
 
+// T5: a rolled back admission leaves nothing. T6: a committed one stays.
 test("a rolled back declaration takes its signature with it; a committed one stays", t => {
   const kernel = new CubicalKernel(module);
   t.after(() => kernel.dispose());
@@ -262,7 +264,8 @@ test("displays name instances, constructors and eliminators as the source does",
   assert.equal(cubicalText(shown(app(double, zero))), "N.elim(λ (z : N). N, zero, λ (m : N). λ (h : N). succ(succ(h)))(zero)");
 });
 
-// N3: the torus's square, at its faces.
+// A2: the torus and the sphere are admitted. A8: a boundary that names a
+// later constructor is refused. N3: the torus's square, at its faces.
 test("higher constructors: the torus and the sphere are admitted, and their faces compute", t => {
   const { admit, check } = session(t);
   // inductive Torus { b; p, q : b = b; surf : Path(i; Path(j; Torus, p @ i, p @ i), q, q); }
