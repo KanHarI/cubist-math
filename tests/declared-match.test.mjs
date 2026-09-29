@@ -80,6 +80,8 @@ def extra(x : Circle) : N := match x { base i => zero; loop i => zero; };
   refused(get("extra"), /base has no dimensions to name/);
 });
 
+// E3: a truncation's eliminator, with its squash clause written T.squash.
+// E8: a match on it without the squash clause is refused.
 test("a truncation's squash clause, with T.squash and recursive results", async t => {
   const { get } = await check(t, `${naturals}
 inductive Trunc(U < UU0, A : U) : prop { point(a : A); }
@@ -95,6 +97,7 @@ def unsquashed(t : Trunc(U0, N)) : Trunc(U0, N) := match t { point(a) => point(a
   refused(get("unsquashed"), /Give the squash clause, .*generated squash clauses come with automatic clauses \(L2\.2b\)/);
 });
 
+// E8: a missing clause, a duplicate clause and an unknown constructor.
 test("the refusals name the clause or the call", async t => {
   const { get } = await check(t, `${naturals}
 def unknown(n : N) : N := match n { zero => zero; succ(m) => m; tail(x) => x; };
@@ -118,6 +121,9 @@ def on_nat(n : Nat) : Nat := match n { zero => zero; succ(m) => m; };
   refused(get("on_nat"), /match requires a value of a declared type, or of a sum/);
 });
 
+// E1: the winding number, by S1's eliminator into U0 with ua of the
+// successor equivalence. E2 in substance: code_on_loop, cong(code, loop)
+// equal to ua(succ) by rfl.
 test("the H1 release fixture: the circle's winding number computes through univalence", async t => {
   const source = await readFile(new URL("../docs/examples/h1/winding.cubist", import.meta.url), "utf8");
   const { result, get } = await check(t, source);

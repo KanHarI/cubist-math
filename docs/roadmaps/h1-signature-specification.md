@@ -12,7 +12,7 @@ on the `h1-signatures` branch. Its statuses are distinct:
 - **Decided:** every question of section 11, on 2026-09-27.
 - **Approved for implementation:** the fragment of sections 1–3 and the
   families of section 5, in the experimental mode of 5.7 only. Implemented
-  there: K2.2's six families (ABI 3), K2.3 in part (section 6), L2.1
+  there: K2.2's six families (ABI 3), K2.3 (section 6), L2.1
   (section 9) and L2.2a's first `match` slice; every result carries the
   `kernel extension: H1` marker.
 - **Review pending:** the obligations of 4.5. Implementation and passing
@@ -27,12 +27,15 @@ and a review decision:
 1. D1, D4 and D5 written out and reviewed (4.2, 4.3);
 2. Lemma H2's full case analysis, and the critical-pair check of 3.7;
 3. canonicity (4.4) reviewed, relative to the assumed baseline of 4.1;
-4. the acceptance matrix of 10.10 complete, K10 and K11 included. Since
-   2026-09-28 every case is traced but K6 along `ua`, K10 and K11, and the
-   cases that wait for L2.2b (E4, E11), K2.5 (G2, G4–G7) and K2.4a (X1–X8);
-5. K2.3's open item, a recorded run of the whole suite at a pinned
-   revision; the verifier's marker comparison (6.4) and the inspection of
-   6.5 were delivered on 2026-09-28;
+4. the acceptance matrix of 10.10 complete, K10 and K11 included. Every
+   case is traced but K1 with tubes, K6 along `ua`, K10 and K11, and the
+   cases that wait for L2.2b (E4, E11), K2.5 (G2, G4–G7) and K2.4a
+   (X1–X8); `tests/acceptance-matrix.test.mjs` checks the matrix against
+   the tests;
+5. a recorded run of the whole suite at a pinned revision, repeated at
+   the release's own. The first was CI run 36472206548, at `bef00e3` on
+   2026-09-28, where all seven jobs passed; the verifier's marker
+   comparison (6.4) and the inspection of 6.5 were delivered the same day;
 6. K2.4a's differential fixtures X1–X4 and X6–X8. The work plan's
    isolation correction I1.2a, on which 4.1's baseline relies, was
    delivered on 2026-09-28.
@@ -2109,26 +2112,28 @@ elimination waits for automatic set clauses (L2.2b).
 
 ### 10.10 Coverage of the acceptance cases
 
-Status on 2026-09-28, after K2.3's acceptance tests, to be kept current
-with each change to sections 5–10. *Traced* means a test names the case,
-by its ID, or states its subject. *Not traced* means no test names it: the
-next change to that group either finds it under another name and records
-that here, or adds it. *Missing* means the test cannot exist yet, for the
-stated reason. Kernel cases are in `kernel/tests/test_signatures.c`;
-driver and source cases in `tests/h1-acceptance.test.mjs`,
+Status on 2026-09-29, to be kept current with each change to sections
+5–10. *Traced* means a test names the case by its ID, in the layer its
+entry gives: a kernel case in `kernel/tests/test_signatures.c`; a driver,
+source or verifier case in `tests/h1-acceptance.test.mjs`,
 `tests/h1-admission.test.mjs`, `tests/h1-driver.test.mjs`,
-`tests/inductive-declarations.test.mjs` and `tests/declared-match.test.mjs`.
-Every case is traced except those listed as missing.
+`tests/inductive-declarations.test.mjs`, `tests/declared-match.test.mjs`
+or `tests/corpus.test.mjs`. *In part* marks a case whose rest is listed as
+not traced, and *in substance* a test that differs from its case in a
+detail the entry states. *Not traced* means no test covers it yet, and
+*Missing* that none can exist yet, for the stated reason.
+`tests/acceptance-matrix.test.mjs` checks this table against the cases
+above and against the tests.
 
 | Group | Traced | Not traced | Missing, and why |
 | --- | --- | --- | --- |
 | Admission A1–A17 | Kernel: A1 (`N`, `List`, `S1`, `Tree`, `Push` and `Susp` across its sections), A2–A17. Driver: A2, A8. Source: A4, A8, A11, and the uniformity refusal of 9 | — | — |
-| Universes V1–V31 | Kernel: V1, V4, V7, V8, V13–V20, V24, V25. For V13 and V17–V19, H1's rule: each signature is admitted, and an instance that reads a level of tier 1 is refused; the tier-parametric flag of 2.3 is the later proposal's (Q16). Source: V2, V3, V5, V6, V9–V12, V21–V23, V29, and in substance V7 and V20 (an erased parameter read, a recorded one carried), V26–V28 (`Pointed1`, `Bad`, `Flag`), V30 (`Lifted`), V31 (the contextual words and `trunc(-1)`) | — | — |
+| Universes V1–V31 | Kernel: V1, V4, V7, V8, V13–V20, V24, V25. For V13 and V17–V19, H1's rule: each signature is admitted, and an instance that reads a level of tier 1 is refused; the tier-parametric flag of 2.3 is the later proposal's (Q16). Source: V2, V3, V5, V6, V9–V12, V21–V23, V27 (`Bad`), V28 (`Flag`), V29, V30 (`Lifted`, its instances distinct), and in substance V7 and V20 (an erased parameter read, a recorded one carried), V26 (`Pointed(U0)` for `Pointed1`), V31 (the contextual words, parsed; `trunc(-1)`; `trunc(-2)` refused) | — | — |
 | Boundaries N1–N6 | Kernel: N1–N4. Driver: N1, N3. Source: N5, N6 | — | — |
-| Kan K1–K11 | Kernel: K1–K5, K7, K8; K6 in part (transport of `merid` along a line of types `e : A = B`, not along `ua`); K9 in substance (a higher sort's `comp` reduces to `hcomp`). Driver: K2 | — | K10, K11: no randomized H1 generator exists; the randomized level tests cover G0 |
+| Kan K1–K11 | Kernel: K1 in part (with no tubes, a composition pushes into `succ`), K2 in substance (in `N` rather than `Plus`), K3, K4 in substance (in `Susp` rather than `S1`, with a tube from `north` to `south`), K5 in substance (the argument of `merid`, not a point constructor's), K6 in part (transport of `merid` along a line of types `e : A = B`, not along `ua`), K7 in substance (a set truncation's squash rather than `Quotient`'s), K8, K9 in substance (in `Susp` rather than `S1`: along a constant line, an `hcomp` of the base moved) | K1 with tubes; K6 along `ua` | K10, K11: no randomized H1 generator exists; the randomized level tests cover G0 |
 | Elimination E1–E11 | Source: E1 (`docs/examples/h1/winding.cubist`), E2 (as `cong(code, loop)` equal to `ua(succ)` by `rfl`), E3 (`T.squash`), E8 (a missing clause, a duplicate clause, an unknown constructor). Kernel: E3 (the `prop` squash clause), E5–E7, E9, E10, and a motive over no declared type refused. Driver: E5 | — | E4 and E11: automatic set and groupoid clauses (L2.2b) |
 | Trust T1–T7 | Kernel: T1, T5, T6, T7. Driver: T5, T6. Source: T1 (the option named when off), T2 (direct, through a definition, through an import), T3, T4. Verifier: the marker compared apart from assumptions (6.4) | — | — |
-| Truncation policy G1–G7 | Source: G1 (`Tr(U1, U0)` is not in `U0`). G3 (the audit's archive coverage run) | — | G2, G4, G5, G6, G7: the ledger verifier and the migrations (K2.5) |
+| Truncation policy G1–G7 | Source: G1 (`Tr(U1, U0)` is not in `U0`), G3 (the archive checks in full; the audit's coverage run counted 3,804 declarations and 0 gaps) | — | G2, G4, G5, G6, G7: the ledger verifier and the migrations (K2.5) |
 | Resources R1–R5 | Kernel: R1 (a sort, constructor and eliminator whose indices are out of range, and a list whose next cell is no list, built as raw syntax: inspected, reduced or refused with an error, and refused by the term checker and the instructions), R2, R3; a former of the wrong shape and a truncation level above the maximum are refused. Driver: R1 in part (an operand that is not a 32-bit unsigned integer is refused), R5 (the codec round trip); `tests/h1-admission.test.mjs` checks ABI version 3. Source: R4 (a module of ABI version 2 refused by the loader) | — | — |
 | Differential X1–X8 | — | — | All: K2.4a |
 

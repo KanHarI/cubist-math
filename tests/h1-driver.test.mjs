@@ -89,6 +89,7 @@ test("the modifier codes are the kernel's: 0 untruncated, n + 2 for trunc(n)", (
   for (const n of [15, 4294967294, 4294967295]) assert.throws(() => modifierCode({ trunc: n }), /up to n = 14/);
 });
 
+// R1 in part: an operand that is not a 32-bit unsigned integer is refused.
 test("an instruction refuses an operand that is not a 32-bit unsigned integer", t => {
   const { g, syntax, admit } = session(t);
   admit(natural);
@@ -114,6 +115,7 @@ test("admission derives a signature from its normal form and registers it by nam
   assert.equal(kernel.signatures.has("Bad"), false);
 });
 
+// R5: the codec's round trip.
 test("the codec round-trips instances, constructors and eliminators, with their names", t => {
   const { syntax, admit } = session(t);
   // A decoded object is cached with its handle: a copy is encoded afresh,
@@ -199,6 +201,7 @@ test("an eliminator computes on constructors, by Iota steps the search takes", t
   assert.notEqual(driver.equal(e(con(N, 1)), e(lam("n", N, succ(v("n")))), null, null), false);
 });
 
+// N1: loop @ 0 and loop @ 1 are base.
 test("a path constructor: its endpoints are its boundary, and an eliminator computes on it at a dimension", t => {
   const { admit, check, steps } = session(t);
   admit(natural);
@@ -213,6 +216,7 @@ test("a path constructor: its endpoints are its boundary, and an eliminator comp
   assert.throws(() => check(elim("S1", lam("z", S1, N), [zero, line(N, numeral(1))]), pi("z", S1, N)), /Type mismatch/);
 });
 
+// E5: an eliminator on a formal composition.
 test("the kernel's weak head computes an eliminator on a formal composition", t => {
   const { admit, check, steps } = session(t);
   admit(natural);
@@ -224,6 +228,7 @@ test("the kernel's weak head computes an eliminator on a formal composition", t 
   assert.throws(() => check(line(N, numeral(1)), path(N, app(count, box), numeral(1))), /Type mismatch/);
 });
 
+// T5: a rolled back admission leaves nothing. T6: a committed one stays.
 test("a rolled back declaration takes its signature with it; a committed one stays", t => {
   const kernel = new CubicalKernel(module);
   t.after(() => kernel.dispose());
@@ -259,6 +264,8 @@ test("displays name instances, constructors and eliminators as the source does",
   assert.equal(cubicalText(shown(app(double, zero))), "N.elim(λ (z : N). N, zero, λ (m : N). λ (h : N). succ(succ(h)))(zero)");
 });
 
+// A2: the torus and the sphere are admitted. A8: a boundary that names a
+// later constructor is refused. N3: the torus's square, at its faces.
 test("higher constructors: the torus and the sphere are admitted, and their faces compute", t => {
   const { admit, check } = session(t);
   // inductive Torus { b; p, q : b = b; surf : Path(i; Path(j; Torus, p @ i, p @ i), q, q); }

@@ -35,6 +35,9 @@ const refused = (declaration, pattern) => {
 const naturals = "inductive N { zero; succ(n : N); }\n";
 const lists = "inductive List(U < UU0, A : U) : U { nil; cons(x : A, xs : List(U, A)); }\n";
 
+// V31: the contextual words are h-levels only in a header's result
+// position: Gpd's trunc(1), and prop as a definition's name; trunc(-2) is
+// refused, stating the allowed levels.
 test("the parser reads each header form, and the formatter keeps them", () => {
   const source = `inductive N { zero; succ(n : N); }
 inductive Trunc(U < UU0, A : U) : prop U { point(a : A); }
@@ -54,16 +57,20 @@ def prop(set : N) := set;
   assert.equal(formatMathScript(formatted), formatted);
   for (const [bad, message] of [["inductive X : { a; }", /h-level, a universe or both/],
     ["inductive X : trunc(x) { a; }", /integer level/], ["inductive X { a(U < UU0); }", /bind universes in the declaration's header/],
-    ["inductive X { a", /Expected ';'/]])
+    ["inductive X { a", /Expected ';'/],
+    ["inductive B : trunc(-2) { b; }", /trunc\(n\) needs n ≥ -1: prop is trunc\(-1\), set is trunc\(0\)\./]])
     assert.throws(() => parse(bad), message);
 });
 
+// T1: with the option off, a declaration is refused, naming the option.
 test("declared types need the experimental option, and name it when it is off", async t => {
   const { get } = await check(t, naturals, { experimental: [] });
   refused(get("N"), /kernel extension under review: enable the experimental option h1, with --experimental=h1 in the CLI or Declared types \(H1\) in the workbench/);
   assert.throws(() => new CubicalProgram(module, library, { experimental: ["h9"] }), /Unknown experimental kernel extension: h9/);
 });
 
+// T2, directly and through a definition: each result that uses a declared
+// type carries the marker.
 test("constructors build values, computations hold by rfl, and every result carries the H1 marker", async t => {
   const { get } = await check(t, `${naturals}${lists}
 def two : N := succ(succ(zero));
@@ -82,6 +89,9 @@ def plain : Nat := 2;
   assert.equal(get("two").type, "N");
 });
 
+// V7 and V20 in substance: an erased parameter is read, a recorded one
+// carried. V26 in substance: Pointed(U0) stores a small type in U1. V30:
+// Lifted's universe is recorded, so Lifted(U0) and Lifted(U1) are distinct.
 test("universe parameters: an erased one is read from its parameter, a recorded one carried", async t => {
   const { program, get } = await check(t, `${naturals}${lists}
 inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }
@@ -94,6 +104,8 @@ def base_point : Pointed(U0) := pt(N, zero);
 def lifted_point : Pointed(U1) := pt(N, zero);
 def other_level : Pointed(U1) := base_point;
 def lifted : U2 := Lifted(U2);
+def lifted_zero : Lifted(U0) := mk;
+def lifted_moved : Lifted(U1) := lifted_zero;
 `);
   const recorded = name => program.kernel.signature(program.kernel.signatures.get(`main__${name}`).index).recorded;
   assert.equal(recorded("List"), 0, "List's universe only bounds A's type");
@@ -104,8 +116,11 @@ def lifted : U2 := Lifted(U2);
   refused(get("pointed_lowered"), /mismatch|universe|not included/i);
   // Instances at different recorded levels are distinct types.
   refused(get("other_level"), /mismatch/i);
+  ok(get("lifted_zero"));
+  refused(get("lifted_moved"), /mismatch/i);
 });
 
+// V27: Bad is refused at mk, naming X. V28: Flag lives in U1, not in U0.
 test("the sort's level is the least containing its data and arities, or the one written", async t => {
   const { get } = await check(t, `${naturals}
 inductive Quotient(U, V < UU0, A : U, R : A -> A -> V) : set {
@@ -130,6 +145,7 @@ inductive Boxed : prop U1 { box(X : U0); }
   refused(get("Bad"), /mk's argument X lives in a universe above Bad's declared one/);
 });
 
+// A11: data are moved ahead of positions, as the kernel requires.
 test("data are moved ahead of positions, and uses keep the source's order", async t => {
   const { program, get } = await check(t, `${naturals}
 inductive Tree(U < UU0, A : U) { leaf; node(l : Tree(U, A), a : A, r : Tree(U, A)); }
@@ -155,6 +171,8 @@ def meridian_zero : typed(Susp(U0, N), north) = south := merid(zero);
   for (const name of ["Circle", "Susp", "round", "at_end", "meridian_zero"]) ok(get(name));
 });
 
+// A4: Negative takes itself in a function's domain. A8: Ahead's boundary
+// names a later constructor. V31: a universe parameter named prop.
 test("declarations are checked before they are admitted: the rejections name what is wrong", async t => {
   const { get } = await check(t, `${naturals}
 inductive Negative { mk(f : Negative -> N); }
@@ -188,6 +206,7 @@ def uses : Broken := fine;
   assert.equal(program.kernel.signatures.has("main__Broken"), false);
 });
 
+// T2, through an import.
 test("an imported declared type is used by name, with its marker", async t => {
   const { get } = await check(t, `import numbers;
 def three : N := succ(succ(succ(zero)));
@@ -198,6 +217,8 @@ def three_again : three = succ(succ(succ(zero))) { rfl; }
   assert.deepEqual(get("three").extensions, ["H1"]);
 });
 
+// T3: computable accepts the marker. T4: an assumption is refused, and
+// named alone.
 test("computable accepts the marker, and still refuses an assumption, naming it", async t => {
   const { get } = await check(t, `import classical_axioms;
 ${naturals}
@@ -328,6 +349,7 @@ def through : Nat := (fun (x : N) => 0)(zero);
   assert.deepEqual(program.inspect("main__through", { normalize: true }).extensions, ["H1"]);
 });
 
+// V31: trunc(-1) is prop.
 test("with the path notation's minus sign, trunc(-1) is prop", async t => {
   const { program, get } = await check(t, "inductive Tr(U < UU0, A : U) : trunc(-1) { point(a : A); }\n");
   ok(get("Tr"));

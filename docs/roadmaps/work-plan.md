@@ -28,16 +28,20 @@ A new syntax form must elaborate completely through the instruction driver.
 
 ## Current status
 
+The cells name packages; each package's row below holds its details and
+status, so a status changes there, and here only when a package moves
+between columns.
+
 | Area | Delivered | Still open |
 | --- | --- | --- |
-| Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default; explicit driver options and cumulative kernel-work counters (learned-search phases 1–2) | The optional retirement I1.2b, after the call-graph audit I1.2a recorded; optional performance/certificate work. I1.2a, instruction isolation, was delivered on 2026-09-28: no untrusted query can change an instruction's verdict |
-| G0 universes | K1.1–K1.4 and L1.1; `U < UU0`, `next`, `max`, generic builtins and rewriting; all 43 former templates check generically | E1 level constraints and E2 higher-tier generic definitions remain deferred proposals |
-| Proof ergonomics | Grouped binders, `have`, `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand; Σ projections `p.1`/`p.2`, `show` and `suffices` (L1.5); path-operator notation (`-i`, `&`, `\|`, `path i =>`) and readable path diagnostics (PR #71) | General inference, `apply`/`refine`, folded path rules and constructor descent, broader dependent rewriting, `Path` induction (B1) |
-| Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | Face-aware plans, filling/source-span records, tactic integration; a source `match` client for the motive service; indexed motives (with L4.2) and companion motives (with L5.1) |
-| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection; the `kernel extension: H1` marker, tracked apart from assumptions and listed by `inspect`, the CLI and the workbench (experimental) | Expected-value patterns and closed truncation readout; the migration verifier's comparison of extension markers (K2.3) |
-| Declarations | Existing built-in types and explicit eliminators | **Experimental:** K2.2's six instruction families (ABI 3), K2.3's driver in part, L2.1's one-sort `inductive`, L2.2a's explicit expression `match` with restricted structural recursion; the circle's winding number computes in source. **Review pending:** D1, D4, D5, Lemma H2, the critical-pair check and canonicity (K2.1). **Migration pending:** K2.4a's differential fixtures and K2.5's ledger verifier. Open: `theory`, automatic clauses, views, derived declarations, H2–H4 |
-| Computation notation | Design only | N0–N5; no `do`/`proc` syntax or interfaces delivered |
-| Reference and library | Checked-reference harness; universe chapter rewritten; quick reference (`proof.html`); `library/naturals`, `classical_axioms`, `universe_automorphisms` | Induction chapter rewrite and an H1 chapter (D2.1): `docs/examples/h1/winding.cubist` is a checked example, not a chapter; these three modules are not completion of a rebuild wave |
+| Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default; explicit driver options and cumulative kernel-work counters (learned-search phases 1–2); I1.2a, instruction isolation: no untrusted query can change an instruction's verdict | I1.2b, the optional retirement, after the call-graph audit I1.2a recorded; stage-6 performance and certificate work |
+| G0 universes | K1.1–K1.4 and L1.1; `U < UU0`, `next`, `max`, generic builtins and rewriting; all 43 former templates check generically | E1 and E2, deferred proposals |
+| Proof ergonomics | Grouped binders, `have`, `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand; Σ projections `p.1`/`p.2`, `show` and `suffices` (L1.5); path-operator notation (`-i`, `&`, `\ | L4.1a/b and L4.4 (inference, `apply`/`refine`), L1.4 (folded path rules, constructor descent), B1 (`Path` induction), broader dependent rewriting |
+| Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | L1.2r |
+| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection; the `kernel extension: H1` marker (experimental), tracked apart from assumptions, listed by `inspect`, the CLI and the workbench, and compared by the migration verifier | L2.9a, L2.9b |
+| Declarations | Built-in types and explicit eliminators. **Experimental:** K2.2, K2.3, L2.1 and L2.2a's first slice; the circle's winding number computes in source | **Review pending:** K2.1. **Migration pending:** K2.4a, K2.5. Open: L2.2a's remainder, L2.2b, L2.3, L2.3b, L2.4, L2.6–L2.9, stages 4 and 5 |
+| Computation notation | Design only | N0–N5 |
+| Reference and library | Checked-reference harness; universe chapter rewritten; quick reference (`proof.html`); `library/naturals`, `classical_axioms`, `universe_automorphisms` | The induction chapter and an H1 chapter (D0.2, D2.1); the three modules do not complete a rebuild wave |
 
 Evidence lives in `tests/universe-generic.test.mjs`,
 `tests/proof-ergonomics.test.mjs`, `tests/computability.test.mjs`,
@@ -237,8 +241,8 @@ has an explicit spelling.
 | ID | Package | Depends on | Size |
 | --- | --- | --- | --- |
 | K2.1 | Precise H1 signature fragment and soundness note; review gates release. Specified in the [H1 specification](h1-signature-specification.md): every question decided and the specification approved for experimental implementation on 2026-09-27. **Review pending:** the proofs D1, D4, D5 and Lemma H2, the critical-pair check of its 3.7, and canonicity relative to the assumed baseline (its 4.5). The release checklist in its header covers the finite-level fragment only; the classification walk of its 2.3 belongs to the deferred tier-parametric proposal, not to this gate (audit finding 2) | G0 specification | L |
-| K2.2 | H1 instructions, the six families F1–F6 of the specification's section 5. **Experimental:** all six implemented with ABI version 3, each reviewed and merged into `h1-signatures` separately. Open: the acceptance matrix's randomized K10/K11 property tests and K6 along `ua` (the specification's 10.10, where every other kernel case is traced since 2026-09-28), and a review record per family for its semantic obligations; passing tests do not discharge them | K1.2, K2.1 | XL |
-| K2.3 | H1 driver, bridges, signature serialization and generated-rule derivation. **Experimental, in part:** admission from a normal form, the codec and renderers, derivations and search for instances, constructors and eliminators, rollback and commit, the `kernel extension: H1` marker (with L2.1), import invalidation by construction, signatures in the CLI's `inspect`, and clause types, which L2.2a's `match` consumes (`lib/cubical/match.mjs`). Since 2026-09-28 the CLI's `inspect` and the workbench's inspector show a declared type's signature and its eliminator's clause types, and the migration verifier compares the marker apart from assumptions (the specification's 6.4, 6.5). Since 2026-09-28 the acceptance matrix traces every case of 10.10 but those that wait for another package or a randomized generator (`tests/h1-acceptance.test.mjs`, `kernel/tests/test_signatures.c`). Open: keeping the matrix current; a recorded run of the whole suite against a pinned `h1-signatures` revision, because CI runs only for PRs into `main` | K1.3, K2.2 | L |
+| K2.2 | H1 instructions, the six families F1–F6 of the specification's section 5. **Experimental:** all six implemented with ABI version 3, each reviewed and merged into `h1-signatures` separately. Open: the acceptance matrix's randomized K10/K11 property tests, K1 with tubes and K6 along `ua` (the specification's 10.10, which `tests/acceptance-matrix.test.mjs` checks against the tests), and a review record per family for its semantic obligations; passing tests do not discharge them | K1.2, K2.1 | XL |
+| K2.3 | H1 driver, bridges, signature serialization and generated-rule derivation. **Experimental:** admission from a normal form, the codec and renderers, derivations and search for instances, constructors and eliminators, rollback and commit, the `kernel extension: H1` marker (with L2.1), import invalidation by construction, signatures in the CLI's `inspect`, and clause types, which L2.2a's `match` consumes (`lib/cubical/match.mjs`). Since 2026-09-28 the CLI's `inspect` and the workbench's inspector show a declared type's signature and its eliminator's clause types, and the migration verifier compares the marker apart from assumptions (the specification's 6.4, 6.5). The acceptance matrix traces every case of 10.10 but K1 with tubes, K6 along `ua`, and those that wait for another package or a randomized generator; each traced case is named by its ID in its test, and `tests/acceptance-matrix.test.mjs` checks the matrix against the tests. The whole suite ran at a pinned revision on 2026-09-28: CI run 36472206548 at `bef00e3`, all seven jobs passed. A release repeats that run at its own revision | K1.3, K2.2 | L |
 | K2.4a | Differential fixtures X1–X8 of the specification's 7.3 and their tooling: the translation τ as a driver option, the verifier's report of a mixed-tier call (X8), X5's cost record, and the verifier's comparison of a module that declares a type, whose edited copy has another, generative signature. **Migration pending:** none exists at `02a57ef`; the archive coverage run is not X4 | K2.3; the representation map of the specification's section 7 | M |
 | K2.4b | Retire the `Nat` instructions only, by the criterion of the specification's 7.4 (Q16): X1–X4 and X6–X8 pass, X5 is recorded, and the archive is migrated by τ under the strict verifier. Sum, W and pushout stay trusted for tier-1 arguments, with X1–X3, X7, X8 and their native tests as regressions | K2.4a | M |
 | K2.4c | Wider retirement of the sum, W and pushout instructions. **Deferred** with the tier-parametric proposal (Q16). At the source boundary a mixed-tier program has no image under τ: the verifier reports it, and nothing is migrated in part | The tier-parametric proposal, adopted and reviewed | M |
@@ -506,11 +510,12 @@ results from the corresponding library area.
    (K2.4a–c), and an explicit review record for each obligation of the
    specification's 4.5. Refresh the status pages and the superseded
    proposals as each gate moves.
-3. **Finish the experimental H1 integration (K2.3, L2.1, L2.2a).** The
-   acceptance matrix (10.10) traces every case but K6 along `ua`, K10, K11
-   and the cases that wait for other packages; the workbench's signature and
-   clause inspection and the verifier's marker comparison are done. Write
-   the checked reference chapter (D2.1). Extend L2.2a through A5, with explicit acceptance
+3. **Finish the experimental H1 integration (K2.3, L2.1, L2.2a).** K2.3
+   is done: the acceptance matrix (10.10) traces every case but K1 with
+   tubes, K6 along `ua`, K10, K11 and the cases that wait for other
+   packages, and a test checks it against the tests; the inspection, the
+   verifier's marker comparison and a recorded run are done. Write the
+   checked reference chapter (D2.1). Extend L2.2a through A5, with explicit acceptance
    cases for recursion whose other arguments vary. Retain `cases` until its
    migration gate passes.
 4. **Independent language work alongside it.** L4.1a, then L4.1b/L4.4;

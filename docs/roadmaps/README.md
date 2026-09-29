@@ -22,7 +22,7 @@ target statement or a supplied theorem parameter as an already proved result.
   stage, one-sort data and higher inductive types (K2.1), with G2's
   truncation and resizing policy and its migration ledger (K2.5). Approved
   for experimental implementation, and implemented behind the `h1` option
-  (K2.2, K2.3 in part, L2.1, L2.2a); the soundness review, the
+  (K2.2, K2.3, L2.1, L2.2a); the soundness review, the
   differential fixtures and the migrations are pending. Its header holds
   the release checklist.
 - [Language features for theories and inductive declarations](inductive-language-features.md):

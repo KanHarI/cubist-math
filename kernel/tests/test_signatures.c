@@ -112,6 +112,8 @@ static cc_judgement_id former_generic(uint32_t x, uint32_t a, cc_entry_id *xe, c
     return OK(cc_instr_level_pi(k, *xe, body));
 }
 
+/* A1: N here, List and the circle below, Tree in shapes, and Push and Susp
+ * in boundaries, each admitted in normal form. */
 static void natural_numbers(void) {
     /* inductive N { zero; succ(n : N); } */
     uint32_t index;
@@ -654,7 +656,7 @@ static cc_term reduct(cc_judgement_id j, cc_step_rule rule) {
 static void boundaries(void) {
     cc_judgement_id nat = OK(cc_instr_nat(k)), zero = OK(cc_instr_zero(k));
     cc_judgement_id u0 = universe(lconst(0));
-    /* loop @ 0 and loop @ 1 are base. */
+    /* N1: loop @ 0 and loop @ 1 are base. */
     cc_judgement_id s1 = OK(cc_instr_sort_begin(k, circle_signature));
     cc_term base = term_of(OK(cc_instr_construct(k, s1, 0)));
     cc_judgement_id loop = OK(cc_instr_construct(k, s1, 1));
@@ -687,7 +689,7 @@ static void boundaries(void) {
     cc_judgement_id at1 = OK(cc_instr_path_apply(k, merid0, 0, 1));
     assert(reduct(at1, CC_STEP_PATH) == south_term && reduct(at1, CC_STEP_WHNF) == south_term);
 
-    /* Push(x < ω, C A B : U(x), f : C → A, g : C → B) { inl(a : A); inr(b : B);
+    /* N2: Push(x < ω, C A B : U(x), f : C → A, g : C → B) { inl(a : A); inr(b : B);
      * push(c : C) : inl(f(c)) = inr(g(c)); } at Nat, Nat, Nat, λ n. n and
      * succ: push(0) @ 0 is inl((λ n. n)(0)), which normalizes to inl(0), and
      * push(0) @ 1 normalizes to inr(1). */
@@ -726,7 +728,7 @@ static void boundaries(void) {
     cc_term head = reduct(OK(cc_instr_path_apply(k, push0, 0, 0)), CC_STEP_WHNF);
     assert(kind(head) == CC_APP && child(head, 0) == term_of(OK(cc_instr_construct(k, push, 0))));
 
-    /* The torus's four corners are its point, reached through the square's
+    /* N3: the torus's four corners are its point, reached through the square's
      * outer endpoint first, as the whole application's step, or through its
      * inner one, as a step inside it. */
     cc_judgement_id torus = OK(cc_instr_sort_begin(k, torus_signature));
@@ -750,7 +752,7 @@ static void boundaries(void) {
             assert(info(outer).other == point && info(inner).other == point);
         }
 
-    /* The open square (surf @ i) @ j, restricted in either order: restricting
+    /* N3: the open square (surf @ i) @ j, restricted in either order: restricting
      * i reaches into the outer application's annotation, the type of
      * surf @ i. Its faces are q @ j at i = 0 and 1 and p @ i at j = 0 and 1,
      * with no trace of the restricted dimension, and its corners the point. */
@@ -791,7 +793,7 @@ static void boundaries(void) {
     cc_judgement_id same_type = OK(cc_instr_replace(k, at0, 0, (const uint8_t[]){1}, 1, OK(cc_instr_refl(k, loop_type))));
     assert(reduct(same_type, CC_STEP_WHNF) == base);
 
-    /* loop @ (i ∧ j), restricted to j = 0, is loop @ 0, and so base. */
+    /* N4: loop @ (i ∧ j), restricted to j = 0, is loop @ 0, and so base. */
     cc_formula meet, left_i, right_j;
     cc_init(&meet, CC_INTERVAL); cc_init(&left_i, CC_INTERVAL); cc_init(&right_j, CC_INTERVAL);
     assert(cc_generator(&left_i, 0, true) == CC_OK && cc_generator(&right_j, 1, true) == CC_OK &&
@@ -903,8 +905,9 @@ static void kan(void) {
     cc_entry_id dims[3] = {OK(cc_instr_dimension(k, 1)), OK(cc_instr_dimension(k, 2)), OK(cc_instr_dimension(k, 3))};
     cc_entry_id j = dims[0];
 
-    /* K3: a data sort has no formal composition; comp^i N [] succ(zero)
-     * composes succ's argument, and normalizes to succ(zero). */
+    /* K3: a data sort has no formal composition. K1 in part, with no tubes:
+     * comp^i N [] succ(zero) composes succ's argument, and normalizes to
+     * succ(zero). */
     cc_judgement_id n = OK(cc_instr_sort_begin(k, nat_signature));
     cc_judgement_id one = OK(cc_instr_apply(k, OK(cc_instr_construct(k, n, 1)), OK(cc_instr_construct(k, n, 0))));
     cc_judgement_id at_one = OK(cc_instr_system(k, i, n, one));
@@ -914,7 +917,8 @@ static void kan(void) {
     cc_term head = reduct(composed, CC_STEP_WHNF);
     assert(kind(head) == CC_APP && kind(child(head, 0)) == CC_CON && payload(child(head, 0)) == 1);
     assert(ck_alpha_equal(k, reduct(composed, CC_STEP_NORMALIZE), term_of(one)));
-    /* A neutral tube keeps it neutral: q @ i on j = 0, for q : succ(zero) = m. */
+    /* K2 in substance, in N rather than Plus: a neutral tube keeps it
+     * neutral: q @ i on j = 0, for q : succ(zero) = m. */
     cc_entry_id m = OK(cc_instr_extend(k, n, KAN_M));
     cc_entry_id q = OK(cc_instr_extend(k, OK(cc_instr_path(k, i, n, one, var(m))), KAN_Q));
     cc_judgement_id q_i = OK(cc_instr_path_apply(k, var(q), i, 0));
@@ -936,10 +940,15 @@ static void kan(void) {
     /* North and south at the line's end, normalized: e @ 1 is B. */
     cc_term north_end = reduct(OK(cc_instr_construct(k, end, 0)), CC_STEP_NORMALIZE);
     cc_term south_end = reduct(OK(cc_instr_construct(k, end, 1)), CC_STEP_NORMALIZE);
-    /* A higher sort composes formally, and comp reduces to hcomp. */
+    /* K9 in substance: a higher sort composes formally, and comp reduces to hcomp. */
     cc_judgement_id formal = OK(cc_instr_hcomp(k, OK(cc_instr_system(k, j, start, north))));
     assert(kind(term_of(formal)) == CC_HCOMP && reduct(formal, CC_STEP_WHNF) == term_of(formal));
     assert(kind(reduct(OK(cc_instr_comp(k, OK(cc_instr_system(k, i, line, north)))), CC_STEP_WHNF)) == CC_HCOMP);
+    /* K9 in substance, in Susp rather than S1: comp along a constant line is
+     * an hcomp of the base moved along that line, which is north again. */
+    cc_term along_constant = reduct(OK(cc_instr_comp(k, OK(cc_instr_system(k, i, start, north)))), CC_STEP_WHNF);
+    assert(kind(along_constant) == CC_HCOMP);
+    assert(ck_alpha_equal(k, normal(child(along_constant, 2)), reduct(north, CC_STEP_NORMALIZE)));
     /* K8: transport commutes with an hcomp (3.5, case 3): hcomp^j [] north,
      * moved along the line, is an hcomp at its end, of north moved. */
     cc_term moved_box = reduct(OK(cc_instr_trans(k, OK(cc_instr_system(k, i, line, formal)), nowhere())), CC_STEP_WHNF);
@@ -962,7 +971,8 @@ static void kan(void) {
     cc_judgement_id moved = OK(cc_instr_trans(k, OK(cc_instr_system(k, i, line, north)), nowhere()));
     assert(ck_alpha_equal(k, reduct(moved, CC_STEP_NORMALIZE), north_end));
     assert(ck_alpha_equal(k, reduct(moved, CC_STEP_WHNF), term_of(OK(cc_instr_construct(k, end, 0)))));
-    /* merid(a) @ j along the line: an hcomp corrected on j = 0 and j = 1, whose
+    /* K6 in part, along a line of types rather than ua: merid(a) @ j along the
+     * line: an hcomp corrected on j = 0 and j = 1, whose
      * faces are the transports of north and south. */
     cc_entry_id a = OK(cc_instr_extend(k, var(ta), KAN_X));
     cc_judgement_id to_a = OK(cc_instr_step(k, OK(cc_instr_refl(k, e_0)), 1, NULL, 0, CC_STEP_PATH));
@@ -973,15 +983,26 @@ static void kan(void) {
     assert(kind(corrected) == CC_HCOMP && tubes(corrected) == 3);
     cc_term base = child(corrected, 2);
     assert(kind(base) == CC_PAPP && kind(child(base, 0)) == CC_APP && payload(child(child(base, 0), 0)) == 2);
-    /* Its argument is a moved along e @ i, derived independently, and each
+    /* K5 in substance: its argument is a moved along e @ i, derived independently, and each
      * wall starts on the base. */
     cc_term moved_a = reduct(OK(cc_instr_comp(k, OK(cc_instr_system(k, i, e_i, a0)))), CC_STEP_NORMALIZE);
     assert(ck_alpha_equal(k, normal(constructor_argument(base, 0, 1)), moved_a));
     walls_start_on_base(corrected);
     assert(ck_alpha_equal(k, commutes(transported, j, 0), north_end));
     assert(ck_alpha_equal(k, commutes(transported, j, 1), south_end));
+    /* K4 in substance, in Susp rather than S1: an hcomp whose tube, on a face
+     * that holds, runs from north to south is the tube's end, south, not its
+     * base. */
+    cc_judgement_id merid_starts = OK(cc_instr_step(k, OK(cc_instr_refl(k, OK(cc_instr_endpoint(k, merid, j, 0)))), 1,
+                                                    NULL, 0, CC_STEP_PATH));
+    cc_judgement_id to_south = OK(cc_instr_hcomp(k, OK(cc_instr_system_tube(k, OK(cc_instr_system(k, j, start, north)),
+                                                                            always, merid, merid_starts))));
+    cc_term south_start = reduct(OK(cc_instr_construct(k, start, 1)), CC_STEP_NORMALIZE);
+    assert(!ck_alpha_equal(k, south_start, reduct(north, CC_STEP_NORMALIZE)));
+    assert(ck_alpha_equal(k, normal(reduct(to_south, CC_STEP_FACE)), south_start));
 
-    /* The squash of set (two dimensions) and of trunc(1) (three), along the
+    /* K7 in substance, with a set truncation's squash rather than Quotient's:
+     * the squash of set (two dimensions) and of trunc(1) (three), along the
      * line: 2d walls, and each face commutes with transport. */
     const uint32_t truncated[2] = {set_signature, groupoid_signature};
     for (uint32_t t = 0; t < 2; ++t) {
@@ -1082,11 +1103,11 @@ static void elimination(void) {
     assert(reduct(at_zero, CC_STEP_WHNF) == term_of(var(pb)));
     cc_judgement_id by_iota = OK(cc_instr_step(k, OK(cc_instr_refl(k, at_zero)), 1, NULL, 0, CC_STEP_IOTA));
     assert(info(OK(cc_instr_step(k, by_iota, 1, NULL, 0, CC_STEP_PATH))).other == term_of(var(pb)));
-    /* elim(hcomp) computes by Whnf, as a composition in the motive. */
+    /* E5: elim(hcomp) computes by Whnf, as a composition in the motive. */
     cc_judgement_id box = OK(cc_instr_hcomp(k, OK(cc_instr_system(k, j, s1, base))));
     assert(kind(reduct(OK(cc_instr_apply(k, circle_elim, box)), CC_STEP_WHNF)) == CC_COMP);
 
-    /* The prop squash: Π (y z : T). Π (ȳ : P(y)) (z̄ : P(z)). PathP(i. …, ȳ, z̄):
+    /* E3: the prop squash: Π (y z : T). Π (ȳ : P(y)) (z̄ : P(z)). PathP(i. …, ȳ, z̄):
      * its boundary shows the positions y, z by their displayed variables. */
     cc_judgement_id tr = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, trunc_signature)), nat));
     cc_entry_id t = motive_over(tr, ELIM_T);
