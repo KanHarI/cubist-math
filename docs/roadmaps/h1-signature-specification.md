@@ -28,10 +28,9 @@ and a review decision:
 2. Lemma H2's full case analysis, and the critical-pair check of 3.7;
 3. canonicity (4.4) reviewed, relative to the assumed baseline of 4.1;
 4. the acceptance matrix of 10.10 complete, K10 and K11 included. Every
-   case is traced but K1 with tubes, K6 along `ua`, K10 and K11, and the
-   cases that wait for L2.2b (E4, E11), K2.5 (G2, G4–G7) and K2.4a
-   (X1–X8); `tests/acceptance-matrix.test.mjs` checks the matrix against
-   the tests;
+   case is traced but K10 and K11, and the cases that wait for L2.2b (E4,
+   E11), K2.5 (G2, G4–G7) and K2.4a (X1–X8);
+   `tests/acceptance-matrix.test.mjs` checks the matrix against the tests;
 5. a recorded run of the whole suite at a pinned revision, repeated at
    the release's own. The first was CI run 36472206548, at `bef00e3` on
    2026-09-28, where all seven jobs passed; the verifier's marker
@@ -2130,7 +2129,7 @@ above and against the tests.
 | Admission A1–A17 | Kernel: A1 (`N`, `List`, `S1`, `Tree`, `Push` and `Susp` across its sections), A2–A17. Driver: A2, A8. Source: A4, A8, A11, and the uniformity refusal of 9 | — | — |
 | Universes V1–V31 | Kernel: V1, V4, V7, V8, V13–V20, V24, V25. For V13 and V17–V19, H1's rule: each signature is admitted, and an instance that reads a level of tier 1 is refused; the tier-parametric flag of 2.3 is the later proposal's (Q16). Source: V2, V3, V5, V6, V9–V12, V21–V23, V27 (`Bad`), V28 (`Flag`), V29, V30 (`Lifted`, its instances distinct), and in substance V7 and V20 (an erased parameter read, a recorded one carried), V26 (`Pointed(U0)` for `Pointed1`), V31 (the contextual words, parsed; `trunc(-1)`; `trunc(-2)` refused) | — | — |
 | Boundaries N1–N6 | Kernel: N1–N4. Driver: N1, N3. Source: N5, N6 | — | — |
-| Kan K1–K11 | Kernel: K1 in part (with no tubes, a composition pushes into `succ`), K2 in substance (in `N` rather than `Plus`), K3, K4 in substance (in `Susp` rather than `S1`, with a tube from `north` to `south`), K5 in substance (the argument of `merid`, not a point constructor's), K6 in part (transport of `merid` along a line of types `e : A = B`, not along `ua`), K7 in substance (a set truncation's squash rather than `Quotient`'s), K8, K9 in substance (in `Susp` rather than `S1`: along a constant line, an `hcomp` of the base moved) | K1 with tubes; K6 along `ua` | K10, K11: no randomized H1 generator exists; the randomized level tests cover G0 |
+| Kan K1–K11 | Kernel: K1 (with no tubes, and with a tube of `succ`: a composition pushes into `succ`), K2 in substance (in `N` rather than `Plus`), K3, K4 in substance (in `Susp` rather than `S1`, with a tube from `north` to `south`), K5 in substance (the argument of `merid`, not a point constructor's), K6 in substance (transport of `merid` along a line of types `e : A = B`), K7 in substance (a set truncation's squash rather than `Quotient`'s), K8, K9 in substance (in `Susp` rather than `S1`: along a constant line, an `hcomp` of the base moved). Driver: K6 (the kernel's transport along `ua` of the integers' successor, from the checked definitions of `docs/examples/h1/winding.cubist`) | — | K10, K11: no randomized H1 generator exists; the randomized level tests cover G0 |
 | Elimination E1–E11 | Source: E1 (`docs/examples/h1/winding.cubist`), E2 (as `cong(code, loop)` equal to `ua(succ)` by `rfl`), E3 (`T.squash`), E8 (a missing clause, a duplicate clause, an unknown constructor). Kernel: E3 (the `prop` squash clause), E5–E7, E9, E10, and a motive over no declared type refused. Driver: E5 | — | E4 and E11: automatic set and groupoid clauses (L2.2b) |
 | Trust T1–T7 | Kernel: T1, T5, T6, T7. Driver: T5, T6. Source: T1 (the option named when off), T2 (direct, through a definition, through an import), T3, T4. Verifier: the marker compared apart from assumptions (6.4) | — | — |
 | Truncation policy G1–G7 | Source: G1 (`Tr(U1, U0)` is not in `U0`), G3 (the archive checks in full; the audit's coverage run counted 3,804 declarations and 0 gaps) | — | G2, G4, G5, G6, G7: the ledger verifier and the migrations (K2.5) |
