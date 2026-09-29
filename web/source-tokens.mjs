@@ -16,7 +16,7 @@ export const keywords = new Set([
   "left",
   "right",
   "exact",
-  "rfl", "calc", "rw", "simp", "simpa", "simp_rule", "simp_set", "priority", "only", "without", "using", "by", "occurrence", "ext", "over", "along", "from",
+  "rfl", "calc", "rw", "simp", "simpa", "hlevel", "simp_rule", "simp_set", "priority", "only", "without", "using", "by", "occurrence", "ext", "over", "along", "from",
   "show", "suffices",
   "private",
   "export",

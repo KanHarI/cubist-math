@@ -68,7 +68,7 @@
           <section id="inspecting-tactics">
             <h2>Inspecting tactics</h2>
             <ul>
-              <li>Click <code>calc</code>, <code>rw</code>, <code>simp</code> or <code>simpa</code> to see the checked proof term it built. Each <code>by</code> inside a <code>calc</code> links to the path for that step.</li>
+              <li>Click <code>calc</code>, <code>rw</code>, <code>simp</code>, <code>simpa</code> or <code>hlevel</code> to see the checked proof term it built. Each <code>by</code> inside a <code>calc</code> links to the path for that step.</li>
               <li>A <code>simp</code> also shows its rewrite trace: each rule that fired, the checked path it produced, and any premise proofs found for conditional rules.</li>
               <li>A multi-binder <code>fun</code>, <code>forall</code> or <code>exists</code> opens the whole checked term. Names bound by <code>ext</code> or <code>simp … at h as h2</code> link to their types like any other local name.</li>
             </ul>

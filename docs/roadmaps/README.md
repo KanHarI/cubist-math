@@ -68,12 +68,13 @@ target statement or a supplied theorem parameter as an already proved result.
     checked current-language sample expansions.
 - [HoTT and cubical proof automation](hott-automation-roadmap.md):
   - Delivered: A7 (baseline, regressions and canonicity fixture), the A5
-    goal-layer core, and A4/A6 deterministic fuel with residual-goal
-    diagnostics; see the
+    goal-layer core, A4/A6 deterministic fuel with residual-goal
+    diagnostics, D0a's h-level definitions and the first slice of D1's
+    `hlevel` solver; see the
     [checkpoint](../tactical/hott-automation-handoff.md).
   - Planned: remaining goal-layer metadata/clients; folded path operations;
     `Path` induction; type-directed `ext`; transport and path-algebra rules;
-    h-levels and their solver; identity systems; dependent paths and
+    the rest of the h-level solver; identity systems; dependent paths and
     squares; structure identity and transfer.
   - B0, B2, B5, F3 and A9 are superseded by the kernel's item H and
     ergonomics milestone 7.
