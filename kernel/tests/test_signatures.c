@@ -1060,8 +1060,10 @@ static void random_interval(cc_formula *out, unsigned depth) {
     unsigned choice = depth ? pick(6) : pick(4);
     if (choice < 2)
         assert((choice ? cc_one(out) : cc_zero(out)) == CC_OK);
-    else if (choice < 4)
-        assert(cc_generator(out, 1 + pick(2), choice == 2) == CC_OK);
+    else if (choice < 4) {
+        unsigned dimension = 1 + pick(2);
+        assert(cc_generator(out, dimension, choice == 2) == CC_OK);
+    }
     else {
         cc_formula left, right;
         random_interval(&left, depth - 1);
