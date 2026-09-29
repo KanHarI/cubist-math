@@ -622,6 +622,9 @@ export function parse(source, typeOnly = false) {
         // L2.2a): a clause per constructor, each a proof block of the goal at
         // that constructor. Its motive comes from the goal.
         const value = expr();
+        if (peek() === ",")
+          throw Object.assign(new Error("The match statement takes apart one value; match on the first, then on the next inside each clause."),
+            { offset: ts[i].start });
         if (peek() === "as" || peek() === "return")
           throw Object.assign(new Error("The match statement takes its motive from the goal: write match v { c(xs) => { … } … } without as or return."),
             { offset: ts[i].start });

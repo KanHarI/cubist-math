@@ -409,6 +409,41 @@ def not_smaller(n : N) : N {
   refused(get("not_smaller"), /not on an argument of the matched constructor/);
 });
 
+test("a match statement recurses on several arguments of a constructor, with a parameter fixed", async t => {
+  const { get } = await check(t, `${naturals}
+inductive Tree(U < UU0, A : U) { leaf; node(l : Tree(U, A), a : A, r : Tree(U, A)); }
+def mirror(A : U0, t : Tree(U0, A)) : Tree(U0, A) {
+  match t {
+    leaf => { exact leaf; }
+    node(l, a, r) => { exact node(mirror(A, r), a, mirror(A, l)); }
+  }
+}
+def mirror_mirror(A : U0, t : Tree(U0, A)) : mirror(A, mirror(A, t)) = t {
+  match t {
+    leaf => { rfl; }
+    node(l, a, r) => { exact path i => node(mirror_mirror(A, l) @ i, a, mirror_mirror(A, r) @ i); }
+  }
+}
+`);
+  for (const name of ["mirror", "mirror_mirror"]) ok(get(name));
+});
+
+// A truncation's squash clause, written in the statement: a path between the
+// recursive results at its ends.
+test("a match statement's squash clause", async t => {
+  const { get } = await check(t, `${naturals}
+inductive Trunc(U < UU0, A : U) : prop { point(a : A); }
+def rebuilt(t : Trunc(U0, N)) : Trunc(U0, N) {
+  match t {
+    point(a) => { exact point(a); }
+    squash(x, y) i => { exact Trunc.squash(rebuilt(x), rebuilt(y)) @ i; }
+  }
+}
+def rebuilt_point : rebuilt(point(zero)) = point(zero) { rfl; }
+`);
+  for (const name of ["rebuilt", "rebuilt_point"]) ok(get(name));
+});
+
 test("a match statement's path clause is a path between the clauses at its ends", async t => {
   const { get } = await check(t, `${naturals}
 inductive Circle { base; loop : base = base; }
@@ -476,4 +511,6 @@ test("the match statement parses and formats, one statement to a line", async ()
     /The match statement takes its motive from the goal/);
   assert.throws(() => parse("def f(n : N) : N {\n  match n { zero => n; }\n}\n"),
     /A clause of the match statement is a proof block/);
+  assert.throws(() => parse("def f(n, m : N) : N {\n  match n, m { zero => { exact m; } }\n}\n"),
+    /The match statement takes apart one value/);
 });
