@@ -2,6 +2,14 @@ CC ?= cc
 CFLAGS ?= -O2 -g -std=c11 -Wall -Wextra -Wpedantic -Werror
 CPPFLAGS ?= -Iinclude -Isrc
 BUILD ?= build
+# The sanitizers of `make sanitize`, whose reports fail the build. Apple
+# clang 17's address sanitizer never finishes starting on macOS 26: setting
+# up its shadow memory walks the loader's shared cache, which allocates, and
+# the allocation re-enters its unfinished startup. Run SANITIZERS=undefined
+# there; CI runs both on Linux. Each set builds in a directory of its own,
+# since the rules track sources, not flags.
+SANITIZERS ?= address,undefined
+comma := ,
 SRC = $(wildcard src/*.c)
 HEADERS = $(wildcard include/*.h src/*.h)
 .PHONY: all test sanitize
@@ -29,7 +37,7 @@ test: all
 	$(BUILD)/test-signatures
 	$(BUILD)/test-isolation
 sanitize:
-	$(MAKE) BUILD=build-sanitize CFLAGS='-O1 -g -std=c11 -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -fno-omit-frame-pointer' test
+	$(MAKE) BUILD=build-sanitize-$(subst $(comma),-,$(SANITIZERS)) CFLAGS='-O1 -g -std=c11 -Wall -Wextra -Wpedantic -Werror -fsanitize=$(SANITIZERS) -fno-sanitize-recover=all -fno-omit-frame-pointer' test
 
 $(BUILD)/kernel-cli: tests/kernel_cli.c $(SRC) $(HEADERS) | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $< -o $@
@@ -63,7 +71,7 @@ $(BUILD)/test-levels: tests/test_levels.c $(SRC) $(HEADERS) | $(BUILD)
 
 .PHONY: clean
 clean:
-	rm -rf build build-sanitize
+	rm -rf build build-sanitize build-sanitize-*
 
 $(BUILD)/test-work: tests/test_work.c $(SRC) $(HEADERS) | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $< -o $@
