@@ -14,7 +14,7 @@ static cc_kernel *k;
 /* Signatures admitted by the sections below, for the instance tests. */
 static uint32_t nat_signature, list_signature, circle_signature, trunc_signature, pointed_signature,
     tagged_signature, tree_signature, wrapped_signature, branch_signature, torus_signature, susp_signature,
-    set_signature, groupoid_signature;
+    set_signature, groupoid_signature, quotient_signature;
 
 static uint32_t ok(uint32_t id, const char *what, int line) {
     if (!id) {
@@ -96,7 +96,10 @@ enum {
     HB_X = 780, HB_A, HB_B, HB_MA, HB_MB, HB_MK, HB_TA, HB_HERE, HB_T, HB_WRAP, HB_FA, HB_F, HB_BB, HB_PACK, HB_Z,
     HB_FF, HB_WRAP2, HB_WRAP3, HB_UZ,
     S_MIXED = 810, S_TAG2, S_OUTER, S_HID2, S_BIG, S_OUTER2,
-    RES_C = 3000, RES_N = 3400
+    PROP_A = 850, PROP_B, PROP_E, PROP_XA, PROP_XB,
+    RES_C = 3000, RES_N = 3400,
+    /* Four for each random term of the property tests. */
+    PROP_R = 6000
 };
 
 /* ⊢ U(0) : U(1), the former of a signature with no parameters in U0. */
@@ -478,7 +481,7 @@ static void shapes(void) {
                                                OK(cc_instr_apply(k, var(cls), var(y)))));
     cc_judgement_id eq_type = OK(cc_instr_pi(k, a, OK(cc_instr_pi(k, y, OK(cc_instr_pi(k, r, related))))));
     sig = OK(cc_instr_signature_constructor(k, sig, eq_type, QEQ));
-    uint32_t quotient = OK(cc_instr_signature_close(k, sig));
+    uint32_t quotient = quotient_signature = OK(cc_instr_signature_close(k, sig));
     cc_constructor_info eq = constructor(quotient, 1);
     assert(eq.data == 3 && eq.positions == 0 && eq.dimensions == 1);
     assert(constructor(quotient, 2).generated && constructor(quotient, 2).dimensions == 2);
@@ -1033,6 +1036,179 @@ static void kan(void) {
             for (unsigned end_point = 0; end_point < 2; ++end_point)
                 commutes(carried, dims[l], end_point);
     }
+}
+
+/* K10 and K11, the property tests of Lemma H2 (10.4): random closed
+ * constructor terms of Susp, Torus and Quotient, their path constructors at
+ * random formulas over two dimensions, moved along random lines of their
+ * parameters. K10: restricting the transport to a face of those dimensions
+ * is transporting the restricted term, (transp u)[r = ε] ≡ transp(u[r = ε]).
+ * K11: transport along a constant line, at φ = 1, is the identity. The draws
+ * are from a fixed seed, so a failure is the same on every run. */
+static uint64_t property_state = UINT64_C(0x9E3779B97F4A7C15);
+static uint32_t pick(uint32_t bound) {
+    property_state ^= property_state << 13;
+    property_state ^= property_state >> 7;
+    property_state ^= property_state << 17;
+    return (uint32_t)(property_state % bound);
+}
+
+/* A random interval formula over the dimensions 1 and 2: an endpoint, a
+ * dimension or its reversal, or a meet or join of two such. */
+static void random_interval(cc_formula *out, unsigned depth) {
+    cc_init(out, CC_INTERVAL);
+    unsigned choice = depth ? pick(6) : pick(4);
+    if (choice < 2)
+        assert((choice ? cc_one(out) : cc_zero(out)) == CC_OK);
+    else if (choice < 4)
+        assert(cc_generator(out, 1 + pick(2), choice == 2) == CC_OK);
+    else {
+        cc_formula left, right;
+        random_interval(&left, depth - 1);
+        random_interval(&right, depth - 1);
+        assert((choice == 4 ? cc_meet(out, &left, &right) : cc_join(out, &left, &right)) == CC_OK);
+        cc_clear(&left);
+        cc_clear(&right);
+    }
+}
+static cc_formula_id random_formula(void) {
+    cc_formula f;
+    random_interval(&f, 2);
+    cc_formula_id id = cc_kernel_formula(k, &f);
+    cc_clear(&f);
+    return id;
+}
+
+/* A line of the parameter A(i) over the dimension i, its type at 0, and an
+ * element of that type. */
+typedef struct { cc_judgement_id along, start, element; } property_line;
+
+/* An instance over the line's type T: Susp(T), Torus, or Quotient(T, R) with
+ * R x y = Nat, bound by symbols from `symbol`; `relation` receives R. */
+static cc_judgement_id property_instance(unsigned sort, cc_judgement_id type, uint32_t symbol, cc_judgement_id *relation) {
+    if (sort == 1)
+        return OK(cc_instr_sort_begin(k, torus_signature));
+    if (sort == 0)
+        return OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, susp_signature)), type));
+    cc_entry_id x = OK(cc_instr_extend(k, type, symbol)), y = OK(cc_instr_extend(k, type, symbol + 1));
+    *relation = OK(cc_instr_lambda(k, x, OK(cc_instr_lambda(k, y, OK(cc_instr_nat(k))))));
+    return OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, quotient_signature)), type)),
+                                      *relation));
+}
+
+/* A random constructor term of an instance at the line's start: a point
+ * constructor, or a path constructor at random formulas, which `path`
+ * counts. */
+static cc_judgement_id property_term(unsigned sort, cc_judgement_id instance, cc_judgement_id relation, cc_judgement_id element,
+                                     unsigned *path) {
+    if (sort == 0) {
+        unsigned c = pick(3);
+        if (c < 2)
+            return OK(cc_instr_construct(k, instance, c));
+        ++*path;
+        return OK(cc_instr_path_at(k, OK(cc_instr_apply(k, OK(cc_instr_construct(k, instance, 2)), element)), random_formula()));
+    }
+    if (sort == 1) {
+        unsigned c = pick(4);
+        cc_judgement_id made = OK(cc_instr_construct(k, instance, c));
+        if (!c)
+            return made;
+        ++*path;
+        cc_judgement_id at = OK(cc_instr_path_at(k, made, random_formula()));
+        return c == 3 ? OK(cc_instr_path_at(k, at, random_formula())) : at;
+    }
+    cc_judgement_id cls = OK(cc_instr_apply(k, OK(cc_instr_construct(k, instance, 0)), element));
+    if (pick(2))
+        return cls;
+    ++*path;
+    /* eq(a, a, 0), where R a a is Nat by its weak head. */
+    cc_judgement_id eq = OK(cc_instr_apply(k, OK(cc_instr_apply(k, OK(cc_instr_construct(k, instance, 1)), element)), element));
+    cc_judgement_id related = OK(cc_instr_apply(k, OK(cc_instr_apply(k, relation, element)), element));
+    cc_judgement_id is_nat = OK(cc_instr_step(k, OK(cc_instr_refl(k, related)), 1, NULL, 0, CC_STEP_WHNF));
+    cc_judgement_id witness = OK(cc_instr_convert(k, OK(cc_instr_zero(k)), OK(cc_instr_symmetry(k, is_nat))));
+    return OK(cc_instr_path_at(k, OK(cc_instr_apply(k, eq, witness)), random_formula()));
+}
+
+static void transport_properties(void) {
+    cc_entry_id i = OK(cc_instr_dimension(k, 0));
+    cc_entry_id dims[2] = {OK(cc_instr_dimension(k, 1)), OK(cc_instr_dimension(k, 2))};
+    cc_judgement_id u0 = universe(lconst(0));
+    cc_entry_id ta = OK(cc_instr_extend(k, u0, PROP_A)), tb = OK(cc_instr_extend(k, u0, PROP_B));
+    cc_entry_id e = OK(cc_instr_extend(k, OK(cc_instr_path(k, i, u0, var(ta), var(tb))), PROP_E));
+    cc_entry_id xa = OK(cc_instr_extend(k, var(ta), PROP_XA)), xb = OK(cc_instr_extend(k, var(tb), PROP_XB));
+    /* The lines: along e, from A; along e reversed, from B; and constant at A. */
+    cc_formula flipped;
+    cc_init(&flipped, CC_INTERVAL);
+    assert(cc_generator(&flipped, 0, false) == CC_OK);
+    cc_formula_id not_i = cc_kernel_formula(k, &flipped);
+    cc_clear(&flipped);
+    property_line lines[3];
+    for (unsigned l = 0; l < 2; ++l) {
+        cc_judgement_id start = OK(cc_instr_path_apply(k, var(e), 0, l));
+        cc_judgement_id is_end = OK(cc_instr_step(k, OK(cc_instr_refl(k, start)), 1, NULL, 0, CC_STEP_PATH));
+        lines[l] = (property_line){l ? OK(cc_instr_path_at(k, var(e), not_i)) : OK(cc_instr_path_apply(k, var(e), i, 0)), start,
+                                   OK(cc_instr_convert(k, var(l ? xb : xa), OK(cc_instr_symmetry(k, is_end))))};
+    }
+    lines[2] = (property_line){var(ta), var(ta), var(xa)};
+    cc_formula top;
+    cc_init(&top, CC_FACE);
+    assert(cc_one(&top) == CC_OK);
+    cc_formula_id always = cc_kernel_formula(k, &top);
+    cc_clear(&top);
+    enum { TERMS = 96 };
+    unsigned restrictions = 0, symbol = PROP_R, drawn[3][3] = {{0}}, paths[3] = {0};
+    for (unsigned n = 0; n < TERMS; ++n) {
+        unsigned sort = pick(3), l = sort == 1 ? 2 : pick(3);
+        ++drawn[sort][l];
+        cc_judgement_id relation = 0, unused = 0;
+        cc_judgement_id along = property_instance(sort, lines[l].along, symbol, &unused);
+        cc_judgement_id start = property_instance(sort, lines[l].start, symbol + 2, &relation);
+        symbol += 4;
+        cc_judgement_id u = property_term(sort, start, relation, lines[l].element, &paths[sort]);
+        /* K10, at each face of the two dimensions: the transport restricted,
+         * as it is and as the weak head it reduces to (the hcomp of 3.5,
+         * case 2, for a path constructor, whose walls then decide), is the
+         * transport of the term restricted. */
+        cc_judgement_id moved = OK(cc_instr_trans(k, OK(cc_instr_system(k, i, along, u)), nowhere()));
+        cc_judgement_id head = OK(cc_instr_side(k, OK(cc_instr_step(k, OK(cc_instr_refl(k, moved)), 1, NULL, 0, CC_STEP_WHNF)), 1));
+        for (unsigned d = 0; d < 2; ++d)
+            for (unsigned end = 0; end < 2; ++end, ++restrictions) {
+                cc_judgement_id face = OK(cc_instr_endpoint(k, u, dims[d], end));
+                cc_term transported =
+                    reduct(OK(cc_instr_trans(k, OK(cc_instr_system(k, i, along, face)), nowhere())), CC_STEP_NORMALIZE);
+                cc_term restricted = reduct(OK(cc_instr_endpoint(k, moved, dims[d], end)), CC_STEP_NORMALIZE);
+                cc_term through = reduct(OK(cc_instr_endpoint(k, head, dims[d], end)), CC_STEP_NORMALIZE);
+                if (!ck_alpha_equal(k, restricted, transported) || !ck_alpha_equal(k, through, transported))
+                    fprintf(stderr, "K10 fails for term %u: sort %u, line %u, dimension %u at %u\n", n, sort, l, d + 1, end);
+                assert(ck_alpha_equal(k, restricted, transported) && ck_alpha_equal(k, through, transported));
+            }
+        /* K11, along the constant line of the term's own instance: at φ = 1
+         * the transport is the term (Face). Where φ is the face d = 1, the
+         * weak head the generated rules give, restricted to it, is the term
+         * restricted too: the rules agree with Face. */
+        if (l == 2) {
+            cc_judgement_id held = OK(cc_instr_trans(k, OK(cc_instr_system_tube(k, OK(cc_instr_system(k, i, start, u)), always, u,
+                                                                                OK(cc_instr_refl(k, u)))), always));
+            assert(ck_alpha_equal(k, reduct(held, CC_STEP_NORMALIZE), normal(term_of(u))));
+            unsigned d = pick(2);
+            cc_formula_id phi = face_at(1 + d, true);
+            cc_judgement_id on_face = OK(cc_instr_endpoint(k, u, dims[d], 1));
+            cc_judgement_id partial = OK(cc_instr_trans(k, OK(cc_instr_system_tube(k, OK(cc_instr_system(k, i, start, u)), phi, on_face,
+                                                                                   OK(cc_instr_refl(k, on_face)))), phi));
+            cc_judgement_id reduced = OK(cc_instr_side(k, OK(cc_instr_step(k, OK(cc_instr_refl(k, partial)), 1, NULL, 0, CC_STEP_WHNF)), 1));
+            cc_term there = normal(term_of(on_face));
+            assert(ck_alpha_equal(k, reduct(OK(cc_instr_endpoint(k, reduced, dims[d], 1)), CC_STEP_NORMALIZE), there));
+            assert(ck_alpha_equal(k, reduct(OK(cc_instr_endpoint(k, partial, dims[d], 1)), CC_STEP_NORMALIZE), there));
+        }
+    }
+    /* The draws reach every sort along each of its lines, and every sort's
+     * path constructors. */
+    for (unsigned sort = 0; sort < 3; ++sort) {
+        assert(paths[sort] > 0);
+        for (unsigned l = 0; l < 3; ++l)
+            assert(drawn[sort][l] > 0 || (sort == 1 && l != 2));
+    }
+    printf("transport properties (K10, K11): %u random terms, %u restrictions commute\n", (unsigned)TERMS, restrictions);
 }
 
 /* A motive P : Π (z : I). U0, as a variable. */
@@ -1629,6 +1805,7 @@ int main(void) {
     instances();
     boundaries();
     kan();
+    transport_properties();
     elimination();
     elimination_capture();
     annotations();
