@@ -46,9 +46,17 @@ def lifted(A : U0, h : IsProp(U0, A)) : HasLevel(U0, 3, A) { hlevel; }
 def from_contractible(A : U0, c : IsContr(U0, A)) : IsSet(U0, A -> A) { hlevel; }
 def in_u1(A : U1, h : IsSet(U1, A)) : IsSet(U1, (A -> A) and A) { hlevel; }
 def equal_in_prop(A : U0, h : IsProp(U0, A), x, y : A) : x = y { hlevel; }
-def from_hint(A : U0, B : A -> U0, h : forall x : A. IsProp(U0, B(x)), a : A) : IsSet(U0, B(a) -> Nat) {
+def from_hint(A : U0, B : A -> U0, h : forall x : A. IsProp(U0, B(x)), a : A) : IsSet(U0, B(a) and Nat) {
   hlevel with [h(a)];
 }
+def after_intro : forall A : U0. IsSet(U0, A) -> IsSet(U0, A -> A) { intro A, h; hlevel; }
+def from_have(A : U0, p : Unit -> IsProp(U0, A)) : IsProp(U0, A) { have h := p(tt); hlevel; }
+def from_have_block(A : U0, p : Unit -> IsProp(U0, A)) : IsSet(U0, A and A) {
+  have h : IsProp(U0, A) { exact p(tt); }
+  hlevel;
+}
+def from_let(A : U0, p : Unit -> IsContr(U0, A)) : IsSet(U0, A) { let c := p(tt); hlevel; }
+def from_obtain(A : U0, q : IsProp(U0, A) and Nat) : IsSet(U0, A) { obtain (h, n) := q; hlevel; }
 def prop_at_any_level(n : Nat, A : U0, h : IsProp(U0, A)) : HasLevel(U0, n, A) { hlevel; }
 def contractible_at_any_level(n : Nat, A : U0, c : IsContr(U0, A)) : HasLevel(U0, n, A) { hlevel; }
 def statement_at_any_level(n : Nat, A : U0) : HasLevel(U0, n, IsSet(U0, A)) { hlevel; }
@@ -60,6 +68,7 @@ def variable_statement(n : Nat, A : U0) : IsProp(U0, HasLevel(U0, n, A)) { hleve
   // Every proof is built from computable lemmas and uses no assumption, so
   // it may be marked computable.
   for (const name of [...Object.keys(proved), "lifted", "from_contractible", "in_u1", "equal_in_prop", "from_hint",
+    "after_intro", "from_have", "from_have_block", "from_let", "from_obtain",
     "prop_at_any_level", "contractible_at_any_level", "statement_at_any_level", "computable_evidence", "any_universe",
     "variable_statement"]) {
     ok(get(name));
@@ -85,6 +94,8 @@ def variable_level(n : Nat, A : U0) : HasLevel(U0, n, A) { hlevel; }
 def unreachable : IsProp(U0, Unit) { hlevel; rfl; }
 def other_universe(n : Nat, A : U0, h : HasLevel(U1, n, A)) : HasLevel(U0, n, A) { hlevel; }
 def not_a_statement(A : U0, a : A) : IsProp(U0, Unit) { hlevel with [a]; }
+def without_hint(A : U0, B : A -> U0, h : forall x : A. IsProp(U0, B(x)), a : A) : IsSet(U0, B(a) and Nat) { hlevel; }
+def nested_names(A : U0, B : A -> U0) : IsProp(U0, forall x : A. Unit and B(x)) { hlevel; }
 def quantified_hint(A : U0, B : A -> U0, h : forall x : A. IsProp(U0, B(x)), a : A) : IsProp(U0, B(a)) {
   hlevel with [h];
 }
@@ -102,6 +113,10 @@ def quantified_hint(A : U0, B : A -> U0, h : forall x : A. IsProp(U0, B(x)), a :
   // universe states something else.
   refused(get("other_universe"), /nothing in scope states that A has level n\./);
   refused(get("not_a_statement"), /^The hint a has type A, which states no h-level\./);
+  // A quantified hypothesis is no evidence until applied: from_hint's hint is needed.
+  refused(get("without_hint"), /^hlevel could not prove IsSet\(U0, B\(a\) and Nat\): it needs B\(a\) to be a set; no local evidence, hint or rule gives that\./);
+  // Each binder the search goes under keeps its name, however deep.
+  refused(get("nested_names"), /^hlevel could not prove IsProp\(U0, forall x : A\. Unit and B\(x\)\): it needs Unit and B\(x\) to be a proposition for every x : A, which needs B\(x\) to be a proposition; no local evidence, hint or rule gives that\./);
   refused(get("quantified_hint"), /^hlevel does not use quantified hints yet: apply h to its arguments\./);
 });
 
@@ -123,7 +138,7 @@ test("the search spends counted fuel, the same on every run, and stops when it r
 });
 
 test("the keyword links to the checked proof, and the formatter keeps hints", async t => {
-  const source = "import hlevels;\n\ndef hinted(A : U0, h : IsSet(U0, A)) : IsSet(U0, A and Nat) {\n  hlevel with [h];\n}\n";
+  const source = "import hlevels;\n\ndef hinted(A : U0, h : Unit -> IsSet(U0, A)) : IsSet(U0, A and Nat) {\n  hlevel with [h(tt)];\n}\n";
   const { program, get } = await check(t, source, { collectReferences: true });
   ok(get("hinted"));
   const link = program.links.find(item => item.role === "h-level evidence");
