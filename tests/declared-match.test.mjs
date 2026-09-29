@@ -499,6 +499,15 @@ def wrong_clause(n : N) : add(n, zero) = n {
   refused(get("wrong_clause"), /./);
 });
 
+// The refactor shared with the statement keeps the expression's order: the
+// declared type, then the motive, then the clauses.
+test("the expression reports a missing motive before a missing clause", async t => {
+  const { get } = await check(t, `${naturals}
+def unknown := match succ(zero) { zero => zero; };
+`);
+  refused(get("unknown"), /^match needs its result's type: give return T, or use it where its type is known\./);
+});
+
 test("without the experimental option, the match statement says what it needs", async t => {
   const program = new CubicalProgram(module, sourceReader());
   t.after(() => program.dispose());
