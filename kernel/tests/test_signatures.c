@@ -926,6 +926,17 @@ static void kan(void) {
                                              CC_STEP_PATH));
     cc_judgement_id stuck = OK(cc_instr_comp(k, OK(cc_instr_system_tube(k, at_one, face_at(1, false), q_i, starts))));
     assert(kind(reduct(stuck, CC_STEP_WHNF)) == CC_COMP);
+    /* K1, with a tube: comp^i N [j = 0 ↦ succ(zero)] succ(zero) pushes into
+     * succ, as the native composition does: succ of the first component of a
+     * composition in succ's telescope, with the tube's argument as its tube,
+     * which normalizes to succ(zero). */
+    cc_judgement_id pushed = OK(cc_instr_comp(k, OK(cc_instr_system_tube(k, at_one, face_at(1, false), one,
+                                                                         OK(cc_instr_refl(k, one))))));
+    cc_term into_succ = reduct(pushed, CC_STEP_WHNF);
+    assert(kind(into_succ) == CC_APP && kind(child(into_succ, 0)) == CC_CON && payload(child(into_succ, 0)) == 1);
+    cc_term argument = child(into_succ, 1);
+    assert(kind(argument) == CC_FST && kind(child(argument, 0)) == CC_COMP && tubes(child(argument, 0)) == 1);
+    assert(ck_alpha_equal(k, reduct(pushed, CC_STEP_NORMALIZE), term_of(one)));
 
     /* A line of types e : A = B, and Susp(e @ i) along it. */
     cc_judgement_id u0 = universe(lconst(0));

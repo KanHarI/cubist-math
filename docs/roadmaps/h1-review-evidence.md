@@ -1,6 +1,7 @@
 # H1 review evidence: the mathematical items of the release checklist
 
-Status: gathered on 2026-09-29 at `0b775b1`, for work-plan K2.1's review.
+Status: gathered on 2026-09-29 at `0b775b1`, for work-plan K2.1's review;
+K1 with tubes and K6 along `ua` traced since (PR #94).
 This record serves the first three items of the
 [H1 specification](h1-signature-specification.md)'s release checklist, the
 mathematical ones:
@@ -23,7 +24,7 @@ differential fixtures (item 6).
 | --- | --- | --- | --- |
 | D1, D4, D5: the model | Uniform construction in 4.2, steps 1–7; each departure argued in 4.3 | Admission, boundaries and cube depth: A1–A17, N1–N6, R3, E3, K7 | The construction written out, with well-foundedness at every cube depth and for infinitary arities |
 | Lemma H2 and 3.7's critical pairs | H2 argued; confluence argued at boundaries, through Lemma H1 | Instances of substitution and of the Kan rules: N3, N4, K4–K9 in part or in substance, E5, V11, V16 | The rule-by-rule case analysis; the list of overlapping redexes with the joinability of each; the property tests K10 and K11 |
-| Canonicity | Huber's computability predicates, extended, argued | Closed computations through declared types: E1, E2, K1 in part, E5, T3, T4 | The argument written out, and the baseline's canonicity accepted explicitly as an assumption |
+| Canonicity | Huber's computability predicates, extended, argued | Closed computations through declared types: E1, E2, K1, E5, T3, T4 | The argument written out, and the baseline's canonicity accepted explicitly as an assumption |
 
 ## 1. The model: D1, D4 and D5
 
@@ -106,7 +107,7 @@ critical-pair check is open. D3's stability is Lemma H2's.
 | N4 | `loop @ (i ∧ j)` restricted to `j = 0` is `base`: a formula substituted into a constructor | Kernel |
 | K4, in substance | `hcomp` whose tube's face holds gives the tube at `1`, in `Susp` | Kernel |
 | K5, in substance | Transport of a constructor's argument along a line of types | Kernel |
-| K6, in part | Transport of `merid(a) @ j` along a line of types, not along `ua` | Kernel |
+| K6 | Transport of `merid(a) @ j` along a line of types, and along `ua` of the integers' successor: the hcomp of 3.5, which restricted to either end is the transported pole | Kernel; driver along `ua` |
 | K7, in substance | The two-dimensional correction of 3.5, for a set truncation's squash | Kernel |
 | K8 | Transport commutes with `hcomp` (3.5, case 3) | Kernel |
 | K9, in substance | Composition along a constant line is `hcomp` of the moved base, in `Susp` | Kernel |
@@ -124,8 +125,8 @@ a constructor's face, which 3.5's correction walls are built to ensure. K11
 checks that transport along a constant line at `φ = 1` is the identity.
 Neither exists, because no randomized H1
 generator does; the randomized level tests in `kernel/tests/test_levels.c`
-cover G0 only. K1 with tubes and K6 along `ua` are not traced either. No
-list of 3.7's critical pairs exists, and so no test per pair.
+cover G0 only. No list of 3.7's critical pairs exists, and so no test per
+pair.
 
 **What a decision needs.** The case analysis of Lemma H2, rule by rule. The
 list of overlapping redexes between the generated rules of 3.7 and the
@@ -165,7 +166,8 @@ conversion queries, which the audit found broken; I1.2a corrected it on
     numbers of `loop`, `trans(loop, trans(loop, loop))` and
     `trans(loop, sym(loop))` to the normal forms 1, 3 and 0. The test
     compares those values.
-- K1 in part: with no tubes, a composition in `N` pushes into `succ`.
+- K1: with no tubes, and with a tube of `succ`, a composition in `N` pushes
+  into `succ`.
 - E5: the eliminator on `hcomp` computes, as composition in the motive.
 - T3 and T4: `computable` accepts the H1 marker, and a declaration that also
   uses `LEM` is refused, naming `LEM` only.
@@ -181,7 +183,6 @@ assumption.
 
 These strengthen the record without discharging an obligation:
 - the randomized generators for K10 and K11;
-- the cases K1 with tubes and K6 along `ua`;
 - a table of 3.7's critical pairs, each with a kernel test of a
   representative instance;
 - drafts of the written arguments, for a reviewer to check: Lemma H2's case
