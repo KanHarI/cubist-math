@@ -115,10 +115,14 @@ critical-pair check is open. D3's stability is Lemma H2's.
 | V16 | Level substitution into `Trunc(U(x))` at `0`, convertible with its `Beta` reduct | Kernel |
 
 **Missing mechanical evidence.** K10 and K11 are the specified property
-tests for Lemma H2. K10 checks that transport commutes with setting a
-parameter line's formula to an endpoint, over random closed constructor terms
-of `Susp`, `Torus` and `Quotient`. K11 checks that transport along a constant
-line at `φ = 1` is the identity. Neither exists, because no randomized H1
+tests for Lemma H2. K10 draws random closed constructor terms `u` of `Susp`,
+`Torus` and `Quotient`, and random parameter lines to transport along, and
+checks `(transp u)[r_l = ε] ≡ transp(u[r_l = ε])`. Here `r_l` is one of the
+constructor's dimensions, as `r` in `merid(a) @ r` (2.5; 3.5, case 2), not a
+parameter line: the property is that transport commutes with restriction to
+a constructor's face, which 3.5's correction walls are built to ensure. K11
+checks that transport along a constant line at `φ = 1` is the identity.
+Neither exists, because no randomized H1
 generator does; the randomized level tests in `kernel/tests/test_levels.c`
 cover G0 only. K1 with tubes and K6 along `ua` are not traced either. No
 list of 3.7's critical pairs exists, and so no test per pair.
@@ -150,10 +154,17 @@ conversion queries, which the audit found broken; I1.2a corrected it on
 2026-09-28, and `kernel/tests/test_isolation.c` checks it.
 
 **Behaviour that exercises the claim.**
-- E1 and E2: the circle's winding number computes to 1, 2 and -1 by `rfl`,
-  and closed `evaluate` directives read the numerals. The fixture is
-  `docs/examples/h1/winding.cubist`, which `tests/declared-match.test.mjs`
-  checks; `cong(code, loop)` is `ua(succ)` by `rfl`.
+- E1, and E2 as the specification's trace takes it, in
+  `docs/examples/h1/winding.cubist`. `tests/declared-match.test.mjs` checks
+  the fixture, checks that none of its definitions uses an assumption, and
+  checks two kinds of computation:
+  - By `rfl`, the winding numbers of `loop`, `trans(loop, loop)` and
+    `sym(loop)` are 1, 2 and −1, and `cong(code, loop)` is `ua(succ)`. The
+    checker decides these equations by conversion.
+  - Separately, three closed `evaluate` directives compute the winding
+    numbers of `loop`, `trans(loop, trans(loop, loop))` and
+    `trans(loop, sym(loop))` to the normal forms 1, 3 and 0. The test
+    compares those values.
 - K1 in part: with no tubes, a composition in `N` pushes into `succ`.
 - E5: the eliminator on `hcomp` computes, as composition in the motive.
 - T3 and T4: `computable` accepts the H1 marker, and a declaration that also
