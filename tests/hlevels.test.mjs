@@ -76,7 +76,10 @@ def contractible_is_prop(A : U1) : IsProp(U1, IsContr(U1, A)) := is_contr_is_pro
 
 // The first review of #87: contractible types are closed under the same
 // constructions, keeping their centers, not only as propositions.
-test("contractible types are closed under retracts, functions, pairs, products and paths", async t => {
+// A subtype of a contractible type can be empty, so contractibility has no
+// subtype closure: exists x : Unit. Void is a proposition over Unit, and not
+// contractible.
+test("contractible types are closed under retracts, functions, pairs, products and paths, not subtypes", async t => {
   const get = await check(t, `
 def retract_contractible(A, B : U0, s : B -> A, r : A -> B, e : forall b : B. r(s(b)) = b, c : IsContr(U0, A)) :
   IsContr(U0, B) := retract_is_contr(U0, A, B, s, r, e, c);
@@ -87,9 +90,13 @@ def pairs_contractible(A : U1, B : A -> U1, hA : IsContr(U1, A), hB : forall a :
 def product_contractible(A, B : U0, hA : IsContr(U0, A), hB : IsContr(U0, B)) : IsContr(U0, A and B) :=
   product_is_contr(U0, A, B, hA, hB);
 def paths_contractible(A : U0, c : IsContr(U0, A), x, y : A) : IsContr(U0, x = y) := path_is_contr(U0, A, c, x, y);
+def empty_subtype_is_prop : IsProp(U0, exists x : Unit. Void) := subtype_has_level(U0, 0, Unit, fun (x : Unit) => Void,
+  contr_has_level(U0, 0, Unit, unit_is_contr), fun (x : Unit) => void_is_prop);
+def empty_subtype_not_contractible(c : IsContr(U0, exists x : Unit. Void)) : Void := c.1.2;
 `);
   for (const name of ["retract_contractible", "functions_into_contractible", "pairs_contractible",
-    "product_contractible", "paths_contractible"]) ok(get(name));
+    "product_contractible", "paths_contractible", "empty_subtype_is_prop", "empty_subtype_not_contractible"])
+    ok(get(name));
 });
 
 // Hedberg's theorem, and the HoTT roadmap's D completion: with Nat a set,
