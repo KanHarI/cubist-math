@@ -37,8 +37,8 @@ and a review decision:
    2026-09-28, where all seven jobs passed; the verifier's marker
    comparison (6.4) and the inspection of 6.5 were delivered the same day.
    `node tools/release-evidence.mjs` records such a run: the revision, its
-   build stamp, each local check's command and outcome, and the CI jobs of
-   that revision alone;
+   build stamp, each local check's command and outcome, run in a fresh
+   checkout of it, and the jobs of the CI runs dispatched on that commit;
 6. K2.4a's differential fixtures X1–X4 and X6–X8. The work plan's
    isolation correction I1.2a, on which 4.1's baseline relies, was
    delivered on 2026-09-28.

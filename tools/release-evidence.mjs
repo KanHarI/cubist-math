@@ -2,19 +2,24 @@
 // daily report of 2026-09-29, recommendation 1): one record of the checks run
 // on one revision, with the revision, its build stamp, each command and its
 // outcome, and the CI jobs that ran on that same revision. A record is only
-// ever of the revision it names: the working tree is clean before and after
-// the local checks, and a CI run counts only when its commit is that
-// revision, never an earlier run standing in for it.
+// ever of the revision it names. The local checks run in a fresh checkout of
+// it, apart from the developer's tree, so every build in them is made from
+// it, and that checkout must still be the revision, unchanged, when they end.
+// A CI run counts only when it was dispatched on that commit: a pull
+// request's run checks out a merge commit, and no run of another commit
+// stands in for it.
 //
 //   node tools/release-evidence.mjs [--local] [--ci] [--out FILE]
 //
-// --local runs the local checks, which take tens of minutes; --ci reads the
-// runs of ci.yml on the revision through the gh CLI. With neither, both. The
-// record is Markdown, on standard output or in FILE. The exit status is 1
-// when a local check failed, the tree changed, or no CI run of the revision
-// passed.
+// The revision is HEAD's commit. --local runs the local checks, which take
+// tens of minutes; --ci reads the runs of ci.yml on the revision through the
+// gh CLI. With neither, both. The record is Markdown, on standard output or in
+// FILE. The exit status is 1 when a local check failed, the checkout changed,
+// or no dispatched CI run of the revision passed.
 import { execFileSync, spawnSync } from "node:child_process";
-import { readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -44,66 +49,87 @@ export const localChecks = (platform = process.platform) => [
   { name: "Site browser test", command: ["node", "tests/site.browser.mjs"], summary: pageSummary },
 ];
 
-// A command's outcome: its exit status, time and summary.
-export function outcome({ name, command, summary }, { status, output, seconds }) {
-  const lines = summary ? [...output.matchAll(summary)].map(match => match[0].trim())
-    : [output.trim().split("\n").at(-1)?.trim() ?? ""];
-  return { name, command: command.join(" "), status, passed: status === 0, seconds, summary: lines.filter(Boolean) };
+// A command's outcome. It passed only when it ran and exited with 0: an
+// error in running it, such as output beyond the buffer, fails it, whatever
+// it exited with.
+export function outcome({ name, command, summary }, { status, error = null, output, seconds }) {
+  const found = summary ? [...output.matchAll(summary)].map(match => match[0].trim()).filter(Boolean) : [];
+  const last = output.trim().split("\n").at(-1)?.trim();
+  return { name, command: command.join(" "), status: error ?? status, passed: !error && status === 0, seconds,
+    summary: found.length ? found : last ? [last] : [] };
 }
-function runCheck(check) {
+function runCheck(check, cwd) {
   const started = Date.now();
-  const result = spawnSync(check.command[0], check.command.slice(1), { cwd: root, encoding: "utf8", maxBuffer: 1 << 30 });
-  return outcome(check, { status: result.status ?? result.signal ?? result.error?.code ?? "not run",
+  const result = spawnSync(check.command[0], check.command.slice(1), { cwd, encoding: "utf8", maxBuffer: 1 << 30 });
+  return outcome(check, { status: result.status ?? result.signal, error: result.error?.code ?? result.error?.message ?? null,
     output: `${result.stdout ?? ""}${result.stderr ?? ""}`, seconds: Math.round((Date.now() - started) / 1000) });
 }
 
-// The revision: HEAD, its branch, and whether the tree is clean.
+// The revision of a checkout: its HEAD and the changes to its tree.
 export function revision(git) {
-  return { sha: git(["rev-parse", "HEAD"]).trim(), branch: git(["rev-parse", "--abbrev-ref", "HEAD"]).trim(),
-    changes: git(["status", "--porcelain"]).trim() };
+  return { sha: git(["rev-parse", "HEAD"]).trim(), changes: git(["status", "--porcelain"]).trim() };
 }
 
-// The runs of ci.yml on exactly `sha`, newest first, each with its jobs. A
-// run on any other commit is left out, whatever the listing returns.
+// The local checks of `sha`, in a checkout of it that `tree` makes and
+// `remove` takes away, however they end. The checkout's links to the shared
+// packages and toolchain are no changes of it.
+export function checkRevision(sha, { tree, remove, git, run, stamp, checks = localChecks() }) {
+  const dir = tree(sha);
+  try {
+    const local = checks.map(check => run(check, dir));
+    const after = revision(args => git(dir, args));
+    const changes = after.changes.split("\n").filter(line => line && !/^\?\? (node_modules|\.tools)$/.test(line)).join("\n");
+    return { local, changed: after.sha !== sha ? `HEAD moved to ${after.sha}` : changes, stamp: stamp(dir) };
+  } finally { remove(dir); }
+}
+
+// The runs of ci.yml dispatched on exactly `sha`, newest first, each with its
+// jobs. A pull request's run checks out a merge commit, not `sha`, and a run
+// of another commit or workflow is no run of this one.
 export function ciRuns(sha, gh) {
-  const runs = JSON.parse(gh(["run", "list", "--workflow", "ci.yml", "--commit", sha, "--limit", "20",
-    "--json", "databaseId,headSha,status,conclusion,url,createdAt,event"]));
-  return runs.filter(run => run.headSha === sha).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(run => ({
-    ...run, jobs: JSON.parse(gh(["run", "view", String(run.databaseId), "--json", "jobs"])).jobs
-      .map(({ name, conclusion, url }) => ({ name, conclusion, url })) }));
+  const runs = JSON.parse(gh(["run", "list", "--workflow", "ci.yml", "--commit", sha, "--limit", "50",
+    "--json", "databaseId,headSha,event,status,conclusion,url,createdAt"]));
+  return runs.filter(run => run.headSha === sha && run.event === "workflow_dispatch")
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(run => ({
+      ...run, jobs: JSON.parse(gh(["run", "view", String(run.databaseId), "--json", "jobs"])).jobs
+        .map(({ name, conclusion, url }) => ({ name, conclusion, url })) }));
 }
 
-// Whether the record passes: every local check passed, on a tree that stayed
-// clean, and a CI run of the revision passed, as far as each was asked for.
+// Whether the record passes: every local check passed, in a checkout that
+// stayed the revision, and a dispatched CI run of the revision passed, as far
+// as each was asked for.
 export function verdict({ local, ci, changed }) {
   const failures = [];
   if (local) {
     for (const check of local) if (!check.passed) failures.push(`${check.name} failed.`);
-    if (changed) failures.push("The working tree changed during the local checks.");
+    if (changed) failures.push("The checkout changed during the local checks.");
   }
-  if (ci && !ci.some(run => run.conclusion === "success")) failures.push("No CI run of this revision passed.");
+  if (ci && !ci.some(run => run.status === "completed" && run.conclusion === "success"))
+    failures.push("No dispatched CI run of this revision passed.");
   return failures;
 }
 
-const cell = text => String(text).replaceAll("|", "\\|").replaceAll("\n", " ");
+// Output as the text of a table cell: backslashes first, then the characters
+// that would end the cell, open code, HTML, emphasis or a link.
+export const cell = text => String(text).replaceAll("\\", "\\\\").replace(/[|`<>&*_[\]~]/g, "\\$&").replace(/\s*\n\s*/g, " ");
+const hash = part => part ? `sources \`${part.sources?.slice(0, 12) ?? "none"}\`, outputs \`${part.outputs?.slice(0, 12) ?? "none"}\`` : "none";
 // The record, as Markdown.
-export function render({ sha, branch, date, stamp, local, ci, changed }) {
-  const lines = [`# Release evidence for \`${sha.slice(0, 7)}\``, "",
-    `- Revision: \`${sha}\`, on ${branch}, with a clean working tree`, `- Recorded: ${date}`];
-  if (stamp) lines.push(`- Build stamp: kernel sources \`${stamp.kernel.sources.slice(0, 12)}\`, outputs \`${stamp.kernel.outputs.slice(0, 12)}\`; ` +
-    `translator copy sources \`${stamp.runtime.sources.slice(0, 12)}\`, outputs \`${stamp.runtime.outputs.slice(0, 12)}\``);
+export function render({ sha, date, stamp, local, ci, changed }) {
+  const lines = [`# Release evidence for \`${sha.slice(0, 7)}\``, "", `- Revision: \`${sha}\``, `- Recorded: ${date}`];
   if (local) {
+    lines.push("- Local checks: in a fresh checkout of the revision",
+      stamp ? `- Build stamp: kernel ${hash(stamp.kernel)}; translator copy ${hash(stamp.runtime)}` : "- Build stamp: none");
     lines.push("", "## Local checks", "", "| Check | Command | Outcome | Seconds | Summary |", "| --- | --- | --- | --- | --- |");
     for (const check of local)
-      lines.push(`| ${cell(check.name)} | \`${cell(check.command)}\` | ${check.passed ? "passed" : `failed (${cell(check.status)})`} | ${check.seconds} | ${cell(check.summary.join("; "))} |`);
-    if (changed) lines.push("", `The working tree changed during the checks:\n\n\`\`\`\n${changed}\n\`\`\``);
+      lines.push(`| ${cell(check.name)} | ${cell(check.command)} | ${check.passed ? "passed" : `failed (${cell(check.status)})`} | ${check.seconds} | ${cell(check.summary.join("; "))} |`);
+    if (changed) lines.push("", "The checkout changed during the checks:", "", "```", changed, "```");
   }
   if (ci) {
-    lines.push("", "## CI runs of this revision", "");
+    lines.push("", "## CI runs dispatched on this revision", "");
     if (!ci.length) lines.push("None. Dispatch one with `gh workflow run ci.yml --ref BRANCH` once the revision is pushed.");
     for (const run of ci) {
-      lines.push(`- [Run ${run.databaseId}](${run.url}), ${run.event}, ${run.createdAt}: ${run.status === "completed" ? run.conclusion : run.status}`);
-      for (const job of run.jobs) lines.push(`  - [${job.name}](${job.url}): ${job.conclusion ?? "not finished"}`);
+      lines.push(`- [Run ${run.databaseId}](${run.url}), ${run.createdAt}: ${run.status === "completed" ? run.conclusion : run.status}`);
+      for (const job of run.jobs) lines.push(`  - [${cell(job.name)}](${job.url}): ${job.conclusion || "not finished"}`);
     }
   }
   const failures = verdict({ local, ci, changed });
@@ -115,26 +141,26 @@ const invoked = () => { try { return realpathSync(process.argv[1]) === fileURLTo
 if (invoked()) {
   const args = process.argv.slice(2), out = args.includes("--out") ? args[args.indexOf("--out") + 1] : null;
   const both = !args.includes("--local") && !args.includes("--ci");
-  const git = argv => execFileSync("git", argv, { cwd: root, encoding: "utf8" });
-  const gh = argv => execFileSync("gh", argv, { cwd: root, encoding: "utf8" });
-  const before = revision(git);
-  if (before.changes) {
-    console.error(`The working tree has changes; evidence is recorded only of a committed revision:\n${before.changes}`);
-    process.exit(2);
-  }
-  const record = { ...before, date: new Date().toISOString() };
-  if (both || args.includes("--local")) {
-    record.local = [];
-    for (const check of localChecks()) {
-      console.error(`${check.name}: ${check.command.join(" ")}`);
-      record.local.push(runCheck(check));
-    }
-    const after = revision(git);
-    record.changed = after.sha !== before.sha ? `HEAD moved to ${after.sha}` : after.changes;
-    try { record.stamp = JSON.parse(readFileSync(new URL("../web/dist/build-stamp.json", import.meta.url), "utf8")); }
-    catch { record.stamp = null; }
-  }
-  if (both || args.includes("--ci")) record.ci = ciRuns(record.sha, gh);
+  const git = (cwd, argv) => execFileSync("git", argv, { cwd, encoding: "utf8" });
+  const record = { sha: revision(argv => git(root, argv)).sha, date: new Date().toISOString() };
+  if (both || args.includes("--local")) Object.assign(record, checkRevision(record.sha, {
+    // A worktree of its own, detached at the revision, with the developer's
+    // installed packages and toolchain linked in.
+    tree: sha => {
+      const dir = mkdtempSync(join(tmpdir(), `cubist-evidence-${sha.slice(0, 7)}-`));
+      git(root, ["worktree", "add", "--detach", dir, sha]);
+      for (const shared of ["node_modules", ".tools"]) if (existsSync(join(root, shared))) symlinkSync(join(root, shared), join(dir, shared));
+      return dir;
+    },
+    remove: dir => {
+      try { git(root, ["worktree", "remove", "--force", dir]); }
+      catch { rmSync(dir, { recursive: true, force: true }); git(root, ["worktree", "prune"]); }
+    },
+    git,
+    run: (check, dir) => { console.error(`${check.name}: ${check.command.join(" ")}`); return runCheck(check, dir); },
+    stamp: dir => { try { return JSON.parse(readFileSync(join(dir, "web/dist/build-stamp.json"), "utf8")); } catch { return null; } },
+  }));
+  if (both || args.includes("--ci")) record.ci = ciRuns(record.sha, argv => execFileSync("gh", argv, { cwd: root, encoding: "utf8" }));
   const text = render(record);
   if (out) writeFileSync(out, text); else process.stdout.write(text);
   process.exitCode = verdict(record).length ? 1 : 0;
