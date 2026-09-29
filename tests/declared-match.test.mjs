@@ -440,8 +440,16 @@ def rebuilt(t : Trunc(U0, N)) : Trunc(U0, N) {
   }
 }
 def rebuilt_point : rebuilt(point(zero)) = point(zero) { rfl; }
+def generic(U < UU0, A : U, t : Trunc(U, A)) : Trunc(U, A) {
+  match t {
+    point(a) => { exact point(a); }
+    squash(x, y) i => { exact Trunc.squash(generic(U, A, x), generic(U, A, y)) @ i; }
+  }
+}
+def generic_point(U < UU0, A : U, a : A) : generic(U, A, point(a)) = point(a) { rfl; }
 `);
-  for (const name of ["rebuilt", "rebuilt_point"]) ok(get(name));
+  // A universe parameter passes unchanged as a type parameter does.
+  for (const name of ["rebuilt", "rebuilt_point", "generic", "generic_point"]) ok(get(name));
 });
 
 test("a match statement's path clause is a path between the clauses at its ends", async t => {
