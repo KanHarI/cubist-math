@@ -69,4 +69,26 @@ computable def unit_square_computes :
   rfl;
 }
 
+computable def retract_path_computes :
+  retract_has_level(U0, 0, Unit, Unit, fun (u : Unit) => u, fun (u : Unit) => u, fun (u : Unit) => refl(u),
+    unit_is_prop, tt, tt) = refl(tt) {
+  rfl;
+}
+
+computable def nat_decision_computes :
+  match nat_decide(2, 3) return Nat {
+    left p => 1;
+    right n => 0;
+  } = 0 {
+  rfl;
+}
+
+computable def nat_square_computes : nat_is_set(1, 1, refl(1), refl(1)) = refl(refl(1)) {
+  rfl;
+}
+
+computable def unit_paths_contract : path_is_contr(U0, Unit, unit_is_contr, tt, tt).1 = refl(tt) {
+  rfl;
+}
+
 evaluate unit_is_contr.1 expecting tt;
