@@ -10,7 +10,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
-import { T } from "../lib/cubical/core.mjs";
+import { T, substituteDimension } from "../lib/cubical/core.mjs";
 import { interval as I, face as F } from "../lib/cubical/lattice.mjs";
 
 const module = await createCubical();
@@ -141,9 +141,11 @@ test("R4: a kernel module of another ABI version is refused", () => {
 
 // K6: transport of merid(a) @ r in Susp(A(i)) along ua of a closed
 // equivalence, the integers' successor of the winding fixture. The kernel's
-// transport, built from the checked definitions, is the hcomp of 3.5: its
-// base is merid at a moved along the line, succ(a), and its faces reduce to
-// the transported poles.
+// transport, built from the checked definitions, is the hcomp of 3.5, case 2:
+// its base is merid at a moved along the line, succ(a); its tubes are φ's,
+// here ⊥, and the walls on r = 0 and r = 1; and restricted to either end, the
+// hcomp itself is the transported pole, as transporting the restricted
+// meridian is.
 test("K6: a meridian transported along ua of the integers' successor", async t => {
   const winding = await readFile(new URL("../docs/examples/h1/winding.cubist", import.meta.url), "utf8");
   const { program, get } = await check(t, `${winding.slice(0, winding.indexOf("inductive Circle"))}
@@ -164,8 +166,12 @@ def line : Int = Int := ua(U0, Int, Int, succ_equiv);
   assert.deepEqual([head.tag, head.system.length], ["HComp", 3]);
   assert.deepEqual([head.base.tag, head.base.path.fn.tag, head.base.path.fn.index], ["PApp", "Con", 2]);
   assert.ok(checker.equal(checked(head.base.path.arg, at), pos(succ(zero)), none, at));
+  assert.deepEqual(head.system.map(tube => tube.face), [[["r:0"]], [["r:1"]], []]);
   const [north, south] = [0, 1].map(index => T.constructor(index, susp(Int)));
-  assert.ok(checker.equal(checked(moved(0)), north, none, none));
-  assert.ok(checker.equal(checked(moved(1)), south, none, none));
-  assert.ok(!checker.equal(checked(moved(0)), south, none, none));
+  for (const [end, pole, other] of [[[], north, south], [[[]], south, north]]) {
+    const restricted = checked(substituteDimension(head, "r", end));
+    assert.ok(checker.equal(restricted, pole, none, none));
+    assert.ok(!checker.equal(restricted, other, none, none));
+    assert.ok(checker.equal(checked(moved(end.length)), pole, none, none));
+  }
 });
