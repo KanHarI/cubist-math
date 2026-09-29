@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 export const runtimeModules = ["core", "lattice", "syntax-graph", "equivalence", "translate", "proof-rewrite",
   "simp-registry", "number-transport", "pushouts", "path-over", "path-algebra", "public-equivalence",
   "dimension-slots", "dependent-transport", "adjointification", "names", "elaboration", "proof-goals", "motives",
-  "fuel", "inductive", "match"];
+  "fuel", "inductive", "match", "hlevel"];
 
 // A hash of files, by path and content, read through `read`.
 export function hashOf(paths, read) {

@@ -10,21 +10,26 @@
 import { readFile, writeFile, readdir } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import os from "node:os";
+import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceModules, cubicalSourceModules } from "../web/mathscript/modules.mjs";
 import { cubicalSourceFile } from "../web/cubical-sources.mjs";
 import { referenceExamples } from "../tests/reference-pages.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
+import { sourceReader } from "./module-sources.mjs";
 // A stale WASM kernel or translator copy would run code it does not contain.
 assertFreshBuild();
 
 const root = new URL("../", import.meta.url);
 const text = path => readFile(new URL(path, root), "utf8");
+// Each workload resolves its imports as its tests do. The archive's modules
+// come from the archive, as do the proof-ergonomics examples' imports. The
+// library, the reference's examples and the HoTT automation examples resolve
+// by the CLI's contract (web/module-resolution.mjs): an example from its own
+// directory first, then the library, then the archive.
 const archive = name => text(`archive/first-library/${cubicalSourceFile(name)}`);
-// Modules resolve as in the CLI: the rebuilt library first, then the archive.
-const library = name => text(`library/${name}.cubist`)
-  .catch(error => { if (error.code !== "ENOENT") throw error; return archive(name); });
+const exampleReader = path => sourceReader({ path: fileURLToPath(new URL(path, root)) });
 const unlimited = Object.fromEntries(["visits", "candidates", "rewrites", "premises", "nodes", "queries"].map(kind => [kind, Infinity]));
 const kinds = Object.keys(unlimited);
 
@@ -61,14 +66,16 @@ const workloads = [];
 const modules = [...new Set([...sourceModules, ...cubicalSourceModules])];
 workloads.push(await measure("archive", modules.map(module => `import ${module};`).join("\n"), archive));
 const rebuilt = (await readdir(new URL("library/", root))).filter(file => file.endsWith(".cubist")).map(file => file.slice(0, -7));
-workloads.push(await measure("library", rebuilt.map(module => `import ${module};`).join("\n"), library));
+workloads.push(await measure("library", rebuilt.map(module => `import ${module};`).join("\n"), sourceReader()));
 const examples = [
-  ...["conversion-laws", "cubical-probes", "canonicity"].map(file => `docs/examples/hott-automation/${file}.cubist`),
-  ...(await readdir(new URL("docs/examples/proof-ergonomics/implemented/", root))).map(file => `docs/examples/proof-ergonomics/implemented/${file}`),
+  ...["conversion-laws", "cubical-probes", "canonicity"].map(file => `docs/examples/hott-automation/${file}.cubist`)
+    .map(path => [path, exampleReader(path)]),
+  ...(await readdir(new URL("docs/examples/proof-ergonomics/implemented/", root))).map(file => `docs/examples/proof-ergonomics/implemented/${file}`)
+    .map(path => [path, archive]),
   ...(await readdir(new URL("docs/examples/proof-ergonomics/current/", root))).filter(file => file.endsWith(".cubist"))
-    .map(file => `docs/examples/proof-ergonomics/current/${file}`),
+    .map(file => [`docs/examples/proof-ergonomics/current/${file}`, archive]),
 ];
-for (const path of examples) workloads.push(await measure(path, await text(path), archive));
+for (const [path, readSource] of examples) workloads.push(await measure(path, await text(path), readSource));
 // The reference's checked examples, accepted and rejected: a rejected one's
 // search must still stop with the error it states, not for want of fuel.
 const pages = ["language.html", ...(await readdir(new URL("web/reference/", root))).filter(name => name.endsWith(".html"))
@@ -79,7 +86,7 @@ for (const page of pages) {
   for (const { attrs, text: source, label } of referenceExamples(page, await text(`web/${page}`))) {
     if (!["accept", "reject"].includes(attrs["data-check"])) continue;
     let measured;
-    try { measured = await measure(label, source, library); } catch { continue; }
+    try { measured = await measure(label, source, sourceReader()); } catch { continue; }
     for (const key of ["declarations", "checked", "gaps", "searches", "seconds", "kernelSteps"]) reference[key] += measured[key];
     for (const kind of kinds) if (measured.most[kind].spent > reference.most[kind].spent) reference.most[kind] = { ...measured.most[kind], declaration: `${label} ${measured.most[kind].declaration}` };
     if (measured.declarationQueries.spent > reference.declarationQueries.spent)

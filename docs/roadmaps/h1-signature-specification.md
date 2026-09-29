@@ -40,6 +40,10 @@ and a review decision:
    isolation correction I1.2a, on which 4.1's baseline relies, was
    delivered on 2026-09-28.
 
+The evidence for items 1–3, the mathematical ones, and what a review
+decision on each still needs are gathered in the
+[review evidence](h1-review-evidence.md) (2026-09-29).
+
 Not on the checklist: the classification of each instruction into the
 cases (i)–(v) of 2.3. It belongs to the deferred tier-parametric proposal
 (Q16), not to the finite-level fragment. Normalization and decidable
@@ -2123,7 +2127,8 @@ not traced, and *in substance* a test that differs from its case in a
 detail the entry states. *Not traced* means no test covers it yet, and
 *Missing* that none can exist yet, for the stated reason.
 `tests/acceptance-matrix.test.mjs` checks this table against the cases
-above and against the tests.
+above and against the tests, and is itself tried on small tables it must
+refuse.
 
 | Group | Traced | Not traced | Missing, and why |
 | --- | --- | --- | --- |

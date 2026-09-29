@@ -673,7 +673,7 @@ Completion:
 
 ### D. Equivalence foundations, h-levels and identity systems
 
-- [ ] **D0a. h-level templates.** Publish universe templates for `IsContr`,
+- [x] **D0a. h-level templates.** Publish universe templates for `IsContr`,
   `IsProp` and `IsSet`, their propositionhood, subtype closure, and closure
   under Π, Σ, products and path types as applicable. Add preservation under
   equivalences and retracts. Existing `U0`/`U1` spellings may be temporary
@@ -691,6 +691,16 @@ Completion:
     target's h-level is proved. D0a and D1's first slice therefore precede
     automatic clauses, not the explicit-match release: hand-written squash
     clauses work without the solver (2026-09-28).
+  - Done on 2026-09-29: [`library/hlevels.cubist`](../../library/hlevels.cubist)
+    defines the levels as above, `IsSet(U, A)` converts to
+    `forall x, y : A. forall p, q : x = y. p = q`. It proves each item above
+    at every level, and each closure but subtypes for contractible types: a
+    subtype of a contractible type can be empty, and `exists x : Unit. Void`
+    is not contractible. With them come Hedberg's theorem and `Nat` a set for
+    D1. An equivalence's inverse makes a retract; the statement for the public
+    `Equiv` type waits for D0b, which defines it. The archive keeps its own
+    `Proposition`, `IsSet` and the like; rebuilt modules use these
+    definitions instead.
 - [ ] **D0b. Canonical equivalences.** Make the public equivalence
   representation agree with the native contractible-fiber type:
 
@@ -781,6 +791,23 @@ Completion:
     - for setness proofs of declared data types, before a squash constructor
       would be added;
     - for deleting reflexive index equations in dependent pattern matching.
+  - First slice on 2026-09-29 (work-plan L2.5b):
+    [`lib/cubical/hlevel.mjs`](../../lib/cubical/hlevel.mjs) proves
+    `IsContr`, `IsProp`, `IsSet` and `HasLevel`, stated with D0a's
+    definitions, and `x = y` when `IsProp(T)` is proved, which covers
+    `p = q` when `IsSet(T)` is. It tries local evidence and explicit hints,
+    lifted by cumulativity, then the propositionhood of h-level statements,
+    then, at a numeral level, structural rules for Π, Σ, products,
+    homogeneous path types, `Nat`, `Unit` and `Void`, each by one of D0a's
+    closure lemmas. A variable level comes from evidence at that level, or
+    from a proposition or a contractible type, which has every level. Each rule makes
+    its obligations on the type's parts, so the search ends; each obligation
+    and candidate spends A4 fuel. `IsProp(A)` for an arbitrary `A` and
+    `0 = 1` stay unproved with the chain of obligations shown, and parallel
+    paths of numbers are equal. Registered rules, and with them cycle
+    detection, quantified hints, Hedberg for registered carriers, one layer
+    of unfolding, `Truncate`, the solver's use for premises and truncation
+    targets, and the inspector's record of chosen witnesses remain.
 - [ ] **D2. Subtype extensionality.** Add a checked lemma: given `B : A -> U`
   whose fibers are propositions and a path `p : a = a'`, any `b : B(a)` and
   `b' : B(a')` are connected by `PathP(fun (i : Interval) => B(p @ i), b, b')`.

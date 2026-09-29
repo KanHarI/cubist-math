@@ -65,7 +65,7 @@
             <ul>
               <li>it <strong>extends the context</strong> and continues with the same goal: <code>let</code>, <code>have</code>, <code>obtain</code>;</li>
               <li>it <strong>changes the goal</strong> and continues with the new one: <code>intro</code>, <code>show</code>, <code>suffices</code>, <code>rw</code>, <code>simp</code>, <code>ext</code>;</li>
-              <li>it <strong>closes the goal</strong> and ends the block: <code>exact</code>, <code>cases</code>, <code>rfl</code>, <code>calc</code>, <code>simpa</code>, <code>over</code>.</li>
+              <li>it <strong>closes the goal</strong> and ends the block: <code>exact</code>, <code>cases</code>, <code>rfl</code>, <code>calc</code>, <code>simpa</code>, <code>over</code>, <code>hlevel</code>.</li>
             </ul>
             <pre><code data-check="accept">def swap_product(A, B : U0) : (A and B) -&gt; (B and A) {
   intro pair;            // goal: B and A
@@ -107,6 +107,7 @@
                 <tr><td><code>simpa [rules] using proof;</code></td><td>Closes</td><td><a href="rewriting.html#simpa">simpa</a></td></tr>
                 <tr><td><code>ext x;</code></td><td>Changes the goal</td><td><a href="cubical.html#ext">function extensionality</a></td></tr>
                 <tr><td><code>over C along p by { … }</code></td><td>Closes</td><td><a href="cubical.html#cubical-shorthand">dependent paths</a></td></tr>
+                <tr><td><code>hlevel;</code>, <code>hlevel with [h];</code></td><td>Closes</td><td><a href="paths.html#hlevel">h-levels</a></td></tr>
               </tbody>
             </table></div>
           </section>
