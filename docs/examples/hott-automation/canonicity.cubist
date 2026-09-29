@@ -75,4 +75,16 @@ computable def retract_path_computes :
   rfl;
 }
 
+computable def nat_decision_computes :
+  match nat_decide(2, 3) return Nat {
+    left p => 1;
+    right n => 0;
+  } = 0 {
+  rfl;
+}
+
+computable def nat_square_computes : nat_is_set(1, 1, refl(1), refl(1)) = refl(refl(1)) {
+  rfl;
+}
+
 evaluate unit_is_contr.1 expecting tt;

@@ -41,7 +41,7 @@ between columns.
 | Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection; the `kernel extension: H1` marker (experimental), tracked apart from assumptions, listed by `inspect`, the CLI and the workbench, and compared by the migration verifier | L2.9a, L2.9b |
 | Declarations | Built-in types and explicit eliminators. **Experimental:** K2.2, K2.3, L2.1 and L2.2a's first slice; the circle's winding number computes in source | **Review pending:** K2.1. **Migration pending:** K2.4a, K2.5. Open: L2.2a's remainder, L2.2b, L2.3, L2.3b, L2.4, L2.6–L2.9, stages 4 and 5 |
 | Computation notation | Design only | N0–N5 |
-| Reference and library | Checked-reference harness; universe chapter rewritten; quick reference (`proof.html`); `library/naturals`, `classical_axioms`, `universe_automorphisms`, `hlevels` (L2.5a in part) | The induction chapter and an H1 chapter (D0.2, D2.1); the four modules do not complete a rebuild wave |
+| Reference and library | Checked-reference harness; universe chapter rewritten; quick reference (`proof.html`); `library/naturals`, `classical_axioms`, `universe_automorphisms`, `hlevels` (L2.5a) | The induction chapter and an H1 chapter (D0.2, D2.1); the four modules do not complete a rebuild wave |
 
 Evidence lives in `tests/universe-generic.test.mjs`,
 `tests/proof-ergonomics.test.mjs`, `tests/computability.test.mjs`,
@@ -196,7 +196,7 @@ property tests remain regressions, not next actions.
 | L4.1a | Known-signature application elaboration, named arguments and scoped `_` holes | L1.1, L1.2; L1.3 fuel for inference search | M |
 | L4.1b | Opt-in implicit binders and level-argument inference | L4.1a | M |
 | L4.4 | `apply`, `refine`, pair/sum witness conveniences with visible goals | L4.1a; L4.1b for implicit arguments | M |
-| L2.5a | Checked h-level definitions (HoTT D0a). **In part** since 2026-09-29: `library/hlevels.cubist` defines `IsContr`, `IsProp`, `HasLevel` by recursion on `Nat` and `IsSet` as its level 1, in every universe below `UU0`, and proves contractible types propositions, propositions sets, levels cumulative, having a level a proposition, and closure under retracts and Π at every level; an equivalence's inverse makes a retract, and the statement for the public `Equiv` type waits for D0b. Open: Σ and products, `IsContr` a proposition, and `Nat` a set | L1.1; small foundation module | S |
+| L2.5a | Checked h-level definitions (HoTT D0a). **Done** on 2026-09-29: `library/hlevels.cubist` defines `IsContr`, `IsProp`, `HasLevel` by recursion on `Nat` and `IsSet` as its level 1, in every universe below `UU0`. It proves contractible types propositions, propositions sets, levels cumulative, having a level a proposition, being contractible a proposition, closure under retracts, Π, Σ, products, subtypes and path types at every level, and Hedberg's theorem, with `Nat` a set. An equivalence's inverse makes a retract; the statement for the public `Equiv` type waits for D0b | L1.1; small foundation module | S |
 | L2.5b | First `hlevel` solver slice (HoTT D1) | L2.5a, L1.2, L1.3 fuel | M |
 
 L4.1a/b together retain the old L4.1 scope; L2.5a/b retain L2.5.

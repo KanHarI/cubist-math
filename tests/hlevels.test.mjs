@@ -58,6 +58,34 @@ def functions_into_groupoids(A : U0, B : A -> U0, h : forall x : A. HasLevel(U0,
   for (const name of ["retract_of_prop", "retract_of_groupoid", "functions_into_sets", "functions_into_groupoids"]) ok(get(name));
 });
 
+test("pairs, products and subtypes keep every level, and being contractible is a proposition", async t => {
+  const get = await check(t, `
+def pairs_of_sets(A : U0, B : A -> U0, hA : IsSet(U0, A), hB : forall a : A. IsSet(U0, B(a))) :
+  IsSet(U0, exists a : A. B(a)) := sigma_has_level(U0, 1, A, B, hA, hB);
+def pairs_of_groupoids(A : U1, B : A -> U1, hA : HasLevel(U1, 2, A), hB : forall a : A. HasLevel(U1, 2, B(a))) :
+  HasLevel(U1, 2, exists a : A. B(a)) := sigma_has_level(U1, 2, A, B, hA, hB);
+def product_of_props(A, B : U0, hA : IsProp(U0, A), hB : IsProp(U0, B)) : IsProp(U0, A and B) :=
+  product_has_level(U0, 0, A, B, hA, hB);
+def subset_of_nat(P : Nat -> U0, hP : forall n : Nat. IsProp(U0, P(n))) : IsSet(U0, exists n : Nat. P(n)) :=
+  subtype_has_level(U0, 1, Nat, P, nat_is_set, hP);
+def contractible_is_prop(A : U1) : IsProp(U1, IsContr(U1, A)) := is_contr_is_prop(U1, A);
+`);
+  for (const name of ["pairs_of_sets", "pairs_of_groupoids", "product_of_props", "subset_of_nat", "contractible_is_prop"])
+    ok(get(name));
+});
+
+// Hedberg's theorem, and the HoTT roadmap's D completion: with Nat a set,
+// parallel paths of numbers are equal, but 0 = 1 stays unproved.
+test("a type with decidable equality is a set, and Nat is one", async t => {
+  const get = await check(t, `
+def decided_set(A : U1, decide : forall x, y : A. (x = y) or ((x = y) -> Void)) : IsSet(U1, A) := hedberg(U1, A, decide);
+def parallel_nat_paths(p, q : 0 = 0) : p = q := nat_is_set(0, 0, p, q);
+def zero_is_one : 0 = 1 := nat_is_set(0, 1);
+`);
+  for (const name of ["decided_set", "parallel_nat_paths"]) ok(get(name));
+  refused(get("zero_is_one"), /mismatch/i);
+});
+
 // The HoTT roadmap's D1: a set's evidence never equates arbitrary elements,
 // and a proposition's never invents an element.
 test("no lemma proves more than it states", async t => {
