@@ -52,7 +52,7 @@ test("closed assumption-free results compute to canonical values (invariant 10)"
   assertCheckedFixture(result,["closed_arithmetic","closed_path_induction","closed_transport",
     "closed_dependent_transport","winding_one","winding_two","winding_minus_one",
     "winding_integer_loop","unit_center","unit_path_computes","unit_square_computes",
-    "retract_path_computes","nat_decision_computes","nat_square_computes"]);
+    "retract_path_computes","nat_decision_computes","nat_square_computes","unit_paths_contract"]);
   // Each statement names its canonical value and is proved by computation
   // alone. Replacing rfl by a lemma would hide a result that stopped computing.
   for(const declaration of parse(source).declarations) {

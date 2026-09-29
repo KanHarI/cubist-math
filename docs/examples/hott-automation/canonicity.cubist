@@ -87,4 +87,8 @@ computable def nat_square_computes : nat_is_set(1, 1, refl(1), refl(1)) = refl(r
   rfl;
 }
 
+computable def unit_paths_contract : path_is_contr(U0, Unit, unit_is_contr, tt, tt).1 = refl(tt) {
+  rfl;
+}
+
 evaluate unit_is_contr.1 expecting tt;

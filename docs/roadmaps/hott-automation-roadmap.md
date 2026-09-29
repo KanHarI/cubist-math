@@ -691,8 +691,9 @@ Completion:
     clauses work without the solver (2026-09-28).
   - Done on 2026-09-29: [`library/hlevels.cubist`](../../library/hlevels.cubist)
     defines the levels as above, `IsSet(U, A)` converts to
-    `forall x, y : A. forall p, q : x = y. p = q`, and it proves each item
-    above at every level, with Hedberg's theorem and `Nat` a set for D1. An
+    `forall x, y : A. forall p, q : x = y. p = q`. It proves each item above
+    at every level, and for contractible types, with Hedberg's theorem and
+    `Nat` a set for D1. An
     equivalence's inverse makes a retract; the statement for the public
     `Equiv` type waits for D0b, which defines it. The archive keeps its own
     `Proposition`, `IsSet` and the like; rebuilt modules use these

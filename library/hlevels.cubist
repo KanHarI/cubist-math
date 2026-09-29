@@ -204,6 +204,36 @@ computable def is_contr_is_prop(U < UU0, A : U) : IsProp(U, IsContr(U, A)) {
     u, v);
 }
 
+// Contractible types are closed under the same constructions as levels.
+// A retract of a contractible type is contractible: the center is carried
+// along r, and e straightens each path from it.
+computable def retract_is_contr(U < UU0, A, B : U, s : B -> A, r : A -> B, e : forall b : B. r(s(b)) = b,
+    c : IsContr(U, A)) : IsContr(U, B) :=
+  (r(c.1), fun (b : B) => trans(cong(r, c.2(s(b))), e(b)));
+
+// Functions into contractible types form one: the center is the function of
+// centers, and each function is reached pointwise.
+computable def pi_is_contr(U < UU0, A : U, B : A -> U, h : forall x : A. IsContr(U, B(x))) :
+  IsContr(U, forall x : A. B(x)) :=
+  (fun (x : A) => h(x).1, fun (f : forall x : A. B(x)) => path i => fun (x : A) => h(x).2(f(x)) @ i);
+
+// Pairs over a contractible type with contractible fibers form one: the
+// center is the pair of centers, and a pair is reached along the base's
+// contraction, over which the fibers, being propositions, connect.
+computable def sigma_is_contr(U < UU0, A : U, B : A -> U, hA : IsContr(U, A), hB : forall a : A. IsContr(U, B(a))) :
+  IsContr(U, exists a : A. B(a)) :=
+  ((hA.1, hB(hA.1).1), fun (u : exists a : A. B(a)) => path i => (hA.2(u.1) @ i,
+    prop_over(U, A, B, fun (a : A) => contr_is_prop(U, B(a), hB(a)), hA.1, u.1, hA.2(u.1), hB(hA.1).1, u.2) @ i));
+
+computable def product_is_contr(U < UU0, A, B : U, hA : IsContr(U, A), hB : IsContr(U, B)) : IsContr(U, A and B) :=
+  sigma_is_contr(U, A, fun (a : A) => B, hA, fun (a : A) => hB);
+
+// The path types of a contractible type are contractible: it is a set, so
+// all paths between two elements are equal to the one through the center.
+computable def path_is_contr(U < UU0, A : U, c : IsContr(U, A), x, y : A) : IsContr(U, x = y) :=
+  (contr_is_prop(U, A, c, x, y),
+    fun (q : x = y) => prop_is_set(U, A, contr_is_prop(U, A, c), x, y, contr_is_prop(U, A, c, x, y), q));
+
 // A reflexive family of propositions R that implies equality makes A a set:
 // each path type is a retract of R. A path p is carried into R by moving
 // R's reflexivity along it; an element c of R is carried back to the path

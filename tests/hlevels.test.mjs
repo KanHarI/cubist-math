@@ -74,6 +74,24 @@ def contractible_is_prop(A : U1) : IsProp(U1, IsContr(U1, A)) := is_contr_is_pro
     ok(get(name));
 });
 
+// The first review of #87: contractible types are closed under the same
+// constructions, keeping their centers, not only as propositions.
+test("contractible types are closed under retracts, functions, pairs, products and paths", async t => {
+  const get = await check(t, `
+def retract_contractible(A, B : U0, s : B -> A, r : A -> B, e : forall b : B. r(s(b)) = b, c : IsContr(U0, A)) :
+  IsContr(U0, B) := retract_is_contr(U0, A, B, s, r, e, c);
+def functions_into_contractible(A : U0, B : A -> U0, h : forall x : A. IsContr(U0, B(x))) :
+  IsContr(U0, forall x : A. B(x)) := pi_is_contr(U0, A, B, h);
+def pairs_contractible(A : U1, B : A -> U1, hA : IsContr(U1, A), hB : forall a : A. IsContr(U1, B(a))) :
+  IsContr(U1, exists a : A. B(a)) := sigma_is_contr(U1, A, B, hA, hB);
+def product_contractible(A, B : U0, hA : IsContr(U0, A), hB : IsContr(U0, B)) : IsContr(U0, A and B) :=
+  product_is_contr(U0, A, B, hA, hB);
+def paths_contractible(A : U0, c : IsContr(U0, A), x, y : A) : IsContr(U0, x = y) := path_is_contr(U0, A, c, x, y);
+`);
+  for (const name of ["retract_contractible", "functions_into_contractible", "pairs_contractible",
+    "product_contractible", "paths_contractible"]) ok(get(name));
+});
+
 // Hedberg's theorem, and the HoTT roadmap's D completion: with Nat a set,
 // parallel paths of numbers are equal, but 0 = 1 stays unproved.
 test("a type with decidable equality is a set, and Nat is one", async t => {
