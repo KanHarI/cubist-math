@@ -410,6 +410,28 @@ test("the native kernel checks an elimination through an abstracted motive", t =
     goal.target), error => error instanceof KernelError);
 });
 
+// A recursive match names its declaration's other parameters: the motive
+// quantifies over them whatever their types mention, and each branch binds
+// them again under their stems, the names a display shows.
+test("the motive service generalizes a hypothesis it is given, and binds it again under its stem", t => {
+  const checker = new NativeCubicalElaborator(session(t)), v = T.variable;
+  const sum = T.sum(v("A"), v("B")), unit = new SourceUnit({ checker }), a = unit.names.fresh("a");
+  const scope = [["A", T.universe(0)], ["B", T.universe(0)], ["s", sum], [a, v("A")]]
+    .reduce((scope, [name, type]) => scope.bind(name, type), new Scope(unit));
+  const goal = new Goal(v("A"), scope);
+  assert.deepEqual(abstractMotive(goal, [v("s")]).generalized, []);
+  const motive = abstractMotive(goal, [v("s")], { generalizing: [a] });
+  assert.deepEqual(motive.generalized.map(hypothesis => hypothesis.name), [a]);
+  const branch = (side, domain) => {
+    const name = scope.fresh(side), inner = scope.bind(name, domain), value = T[side](sum, v(name));
+    const { transition, renamed } = motive.introduce(motive.instance([value], inner));
+    assert.match(renamed.get(a).name, /^a[0-9]+$/);
+    return T.lam(name, domain, transition.rebuild(renamed.get(a)));
+  };
+  const proof = motive.apply(T.sumrec(motive.term, branch("inl", v("A")), branch("inr", v("B")), v("s")));
+  assert.doesNotThrow(() => scope.check(proof, goal.target));
+});
+
 test("G0: the module's ABI version is checked, and a universe carries its level as a child", t => {
   // A module built for another encoding is refused before any syntax is made.
   assert.throws(() => new CubicalKernel({ ...module, _cb_abi_version: () => 1 }), /ABI version 1, but this code expects version 3/);

@@ -105,7 +105,6 @@ def twice(n : N) : N := match n { zero => zero; zero => zero; succ(m) => m; };
 def partial(n : N) : N := match n { zero => zero; };
 def arity(n : N) : N := match n { zero => zero; succ => zero; };
 def growing(n : N) : N := match n { zero => zero; succ(m) => growing(succ(m)); };
-def moving(n, m : N) : N := match n { zero => m; succ(k) => moving(k, succ(m)); };
 def outside(n : N) : N := add(outside(n), match n { zero => zero; succ(m) => m; });
 def untyped(n : N) := match n { zero => zero; succ(m) => m; };
 def on_nat(n : Nat) : Nat := match n { zero => zero; succ(m) => m; };
@@ -115,7 +114,6 @@ def on_nat(n : Nat) : Nat := match n { zero => zero; succ(m) => m; };
   refused(get("partial"), /match on N needs a clause for succ/);
   refused(get("arity"), /succ takes 1 argument here/);
   refused(get("growing"), /not on an argument of the matched constructor: only structural recursion/);
-  refused(get("moving"), /passes its other arguments unchanged: here m/);
   refused(get("outside"), /outside is being defined: it can call itself only on an argument of a constructor/);
   refused(get("untyped"), /match needs its result's type/);
   refused(get("on_nat"), /match requires a value of a declared type, or of a sum/);
@@ -212,7 +210,9 @@ def shadowed_by_parameter : f(succ, succ(succ(zero))) = succ(succ(zero)) { rfl; 
   refused(get("outer_motive"), /The motive mentions n itself: write it over the matched value/);
   ok(get("refl_all"));
   refused(get("applied"), /m takes 0 arguments here, as an argument of the matched constructor/);
-  refused(get("dep"), /passes p unchanged, but its type mentions n, which the call changes/);
+  // p is generalized: in the succ clause it proves succ(m) = zero, and the
+  // call needs m = zero.
+  refused(get("dep"), /Type mismatch: found succ\(m\) = zero, expected m = zero/);
   ok(get("f"));
   ok(get("shadowed_by_parameter"));
 });
@@ -556,6 +556,115 @@ def wrong_clause(n : N) : add(n, zero) = n {
   refused(get("missing"), /match on N needs a clause for succ\./);
   refused(get("of_a_sum"), /^The match statement takes apart a value of a declared type; for a sum, use cases\./);
   refused(get("wrong_clause"), /./);
+});
+
+// L2.2a's third slice: a recursive call passes values of its own for the
+// declaration's other parameters. The motive quantifies over each of them but
+// those the matched parameter's type depends on, and each clause binds them
+// again under their own names.
+test("recursion whose other arguments vary: the accumulator, computed and proved", async t => {
+  const { result, get } = await check(t, `${naturals}
+def acc(n, a : N) : N := match n { zero => a; succ(m) => acc(m, succ(a)); };
+def acc_first(a, n : N) : N := match n { zero => a; succ(m) => acc_first(succ(a), m); };
+def two_three : acc(succ(succ(zero)), succ(zero)) = succ(succ(succ(zero))) { rfl; }
+def add_succ(n, a : N) : add(n, succ(a)) = succ(add(n, a)) {
+  match n {
+    zero => { rfl; }
+    succ(m) => { exact cong(succ, add_succ(m, a)); }
+  }
+}
+def acc_add(n, a : N) : acc(n, a) = add(n, a) {
+  match n {
+    zero => { rfl; }
+    succ(m) => { exact trans(acc_add(m, succ(a)), add_succ(m, a)); }
+  }
+}
+evaluate acc(succ(succ(zero)), zero) expecting succ(succ(zero));
+evaluate acc_first(zero, succ(succ(succ(zero)))) expecting succ(succ(succ(zero)));
+`);
+  for (const name of ["acc", "acc_first", "two_three", "add_succ", "acc_add"]) ok(get(name));
+  assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["succ(succ(zero))", "succ(succ(succ(zero)))"]);
+});
+
+// A parameter whose type mentions a generalized one is generalized too; a
+// clause's own name shadows a parameter's; a nested match takes apart a
+// generalized parameter, and a call passes its constructor.
+test("recursion whose other arguments vary: dependent, shadowed and nested parameters", async t => {
+  const { get } = await check(t, `${naturals}
+def Rep(n : N) : U0 := match n { zero => Unit; succ(m) => N and Rep(m); };
+def dep_ok(n : N, p : n = n) : N := match n { zero => zero; succ(m) => dep_ok(m, refl(m)); };
+def bounded(n, a : N, h : a = a) : N {
+  match n {
+    zero => { exact a; }
+    succ(m) => { exact bounded(m, succ(a), refl(succ(a))); }
+  }
+}
+def sh(n, a : N) : N := match n { zero => a; succ(a) => sh(a, a); };
+def sh_value : sh(succ(succ(zero)), succ(zero)) = zero { rfl; }
+def inner(n, k : N, r : Rep(k)) : N {
+  match n {
+    zero => { exact zero; }
+    succ(m) => {
+      match k {
+        zero => { exact inner(m, zero, tt); }
+        succ(j) => { exact add(r.1, inner(m, k, r)); }
+      }
+    }
+  }
+}
+def inner_value : inner(succ(zero), succ(zero), (succ(zero), tt)) = succ(zero) { rfl; }
+`);
+  for (const name of ["Rep", "dep_ok", "bounded", "sh", "sh_value", "inner", "inner_value"]) ok(get(name));
+});
+
+test("recursion whose other arguments vary: what stays fixed, and path and squash clauses", async t => {
+  const { get } = await check(t, `${naturals}
+inductive Tree(U < UU0, A : U) { leaf; node(l : Tree(U, A), a : A, r : Tree(U, A)); }
+def relabel(A : U0, t : Tree(U0, A)) : N := match t { leaf => zero; node(l, a, r) => relabel(N, l); };
+def lift(U < UU0, n : N) : N := match n { zero => zero; succ(m) => lift(U0, m); };
+inductive Circle { base; loop : base = base; }
+def around(x : Circle, a : N) : N := match x { base => a; loop i => a; };
+def around_loop(a : N) : around(loop @ 1, succ(a)) = succ(a) { rfl; }
+def torn(x : Circle, a : N) : N := match x { base => a; loop i => succ(a); };
+inductive Trunc(U < UU0, A : U) : prop { point(a : A); }
+def shift(t : Trunc(U0, N), b : N) : Trunc(U0, N) := match t {
+  point(a) => point(add(a, b));
+  squash(x, y) i => Trunc.squash(shift(x, b), shift(y, b)) @ i;
+};
+def shift_point : shift(point(zero), succ(zero)) = point(succ(zero)) { rfl; }
+def skewed(t : Trunc(U0, N), b : N) : Trunc(U0, N) := match t {
+  point(a) => point(add(a, b));
+  squash(x, y) i => Trunc.squash(skewed(x, succ(b)), skewed(y, b)) @ i;
+};
+`);
+  refused(get("relabel"), /^A recursive call of relabel passes A unchanged: the type of the matched t depends on it\./);
+  refused(get("lift"), /^A recursive call of lift passes the universe parameter U unchanged\./);
+  for (const name of ["around", "around_loop", "shift", "shift_point"]) ok(get(name));
+  // A generalized clause is still checked against the clauses at its ends.
+  refused(get("torn"), /mismatch|clause/i);
+  refused(get("skewed"), /mismatch|clause/i);
+});
+
+// A clause's goal shows a generalized parameter under its own name, without
+// the parameter it supersedes; its recursive result quantifies over it.
+test("a clause's goal shows a generalized parameter under its source name", async t => {
+  const program = new CubicalProgram(module, sourceReader(), { experimental: ["h1"] });
+  t.after(() => program.dispose());
+  await program.check(`${naturals}
+def add_succ(n, a : N) : add(n, succ(a)) = succ(add(n, a)) {
+  match n {
+    zero => { rfl; }
+    succ(m) => { exact cong(succ, add_succ(m, a)); }
+  }
+}
+`, "main");
+  const steps = program.steps("main").filter(step => step.declaration === "add_succ");
+  assert.deepEqual(steps.map(step => [step.kind, step.locals.map(local => `${local.name} : ${local.type}`), step.goal]), [
+    ["matchStatement", ["n : N", "a : N"], "add(n, succ(a)) = succ(add(n, a))"],
+    ["rfl", ["n : N", "a : N"], "add(zero, succ(a)) = succ(add(zero, a))"],
+    ["exact", ["n : N", "m : N", "m_rec : forall a : N. add(m, succ(a)) = succ(add(m, a))", "a : N"],
+      "add(succ(m), succ(a)) = succ(add(succ(m), a))"],
+  ]);
 });
 
 // The refactor shared with the statement keeps the expression's order: the
