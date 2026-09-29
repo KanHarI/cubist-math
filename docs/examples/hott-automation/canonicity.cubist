@@ -69,4 +69,11 @@ computable def square_of_unit_prop :
   rfl;
 }
 
+computable def transport_along_retract :
+  transport(fun (u : Unit) => Nat, tt, tt,
+    retract_has_level(U0, 0, Unit, Unit, fun (u : Unit) => u, fun (u : Unit) => u, fun (u : Unit) => refl(u),
+      unit_is_prop, tt, tt), 5) = 5 {
+  rfl;
+}
+
 evaluate unit_is_contr.1 expecting tt;

@@ -44,6 +44,20 @@ def functions_into_u0_props(A : U1, B : A -> U1, h : forall x : A. IsProp(U1, B(
   for (const name of ["prop_set_in_u1", "every_level_in_u1", "functions_into_u0_props"]) ok(get(name));
 });
 
+test("retracts and function types keep every level", async t => {
+  const get = await check(t, `
+def retract_of_prop(A, B : U0, s : B -> A, r : A -> B, e : forall b : B. r(s(b)) = b, h : IsProp(U0, A)) :
+  IsProp(U0, B) := retract_has_level(U0, 0, A, B, s, r, e, h);
+def retract_of_groupoid(A, B : U1, s : B -> A, r : A -> B, e : forall b : B. r(s(b)) = b, h : HasLevel(U1, 2, A)) :
+  HasLevel(U1, 2, B) := retract_has_level(U1, 2, A, B, s, r, e, h);
+def functions_into_sets(A : U0, B : A -> U0, h : forall x : A. IsSet(U0, B(x))) : IsSet(U0, forall x : A. B(x)) :=
+  pi_has_level(U0, 1, A, B, h);
+def functions_into_groupoids(A : U0, B : A -> U0, h : forall x : A. HasLevel(U0, 2, B(x))) :
+  HasLevel(U0, 2, forall x : A. B(x)) := pi_has_level(U0, 2, A, B, h);
+`);
+  for (const name of ["retract_of_prop", "retract_of_groupoid", "functions_into_sets", "functions_into_groupoids"]) ok(get(name));
+});
+
 // The HoTT roadmap's D1: a set's evidence never equates arbitrary elements,
 // and a proposition's never invents an element.
 test("no lemma proves more than it states", async t => {
@@ -51,6 +65,9 @@ test("no lemma proves more than it states", async t => {
 def set_equates_elements(U < UU0, A : U, s : IsSet(U, A), x, y : A) : x = y := s(x, y);
 def set_is_prop(U < UU0, A : U, s : IsSet(U, A)) : IsProp(U, A) := s;
 def prop_has_center(U < UU0, A : U, h : IsProp(U, A)) : IsContr(U, A) := h;
+def retract_backwards(A, B : U0, s : B -> A, r : A -> B, e : forall a : A. s(r(a)) = a, h : IsProp(U0, A)) :
+  IsProp(U0, B) := retract_has_level(U0, 0, A, B, s, r, e, h);
 `);
-  for (const name of ["set_equates_elements", "set_is_prop", "prop_has_center"]) refused(get(name), /mismatch/i);
+  for (const name of ["set_equates_elements", "set_is_prop", "prop_has_center", "retract_backwards"])
+    refused(get(name), /mismatch/i);
 });

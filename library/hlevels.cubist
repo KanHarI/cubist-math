@@ -96,6 +96,47 @@ computable def pi_is_set(U < UU0, A : U, B : A -> U, h : forall x : A. IsSet(U, 
     (h(x, f(x), g(x), path k => (p @ k)(x), path k => (q @ k)(x)) @ j) @ i;
 }
 
+// A retract of a type of level n has level n. B is a retract of A when a
+// map s from B to A has a left inverse r, up to a path e(b) from r(s(b))
+// to b. At level 0, two elements of B meet through their images in A. At
+// level n + 1, each path type of B is a retract of the path type of A
+// between the images: a path q between images is carried back along r and
+// straightened by e at its ends, and a path p of B, carried there and back,
+// is p again, by a square whose third side follows e along p.
+computable def retract_has_level(U < UU0, n : Nat) := induction n as k
+  return (forall A, B : U. forall s : B -> A. forall r : A -> B.
+    (forall b : B. r(s(b)) = b) -> HasLevel(U, k, A) -> HasLevel(U, k, B)) {
+    zero => (fun (A, B : U, s : B -> A, r : A -> B, e : forall b : B. r(s(b)) = b, h : IsProp(U, A)) =>
+      fun (b, c : B) => trans(sym(e(b)), trans(cong(r, h(s(b), s(c))), e(c))));
+    succ step => (fun (A, B : U, s : B -> A, r : A -> B, e : forall b : B. r(s(b)) = b, h : HasLevel(U, succ(k), A)) =>
+      fun (b, c : B) => step(s(b) = s(c), b = c,
+        fun (p : b = c) => cong(s, p),
+        fun (q : s(b) = s(c)) => path i => comp(fun (j : Interval) => B, r(q @ i),
+          face(i, 0, fun (j : Interval) => e(b) @ j),
+          face(i, 1, fun (j : Interval) => e(c) @ j)),
+        fun (p : b = c) => path t => path i => comp(fun (j : Interval) => B, r(s(p @ i)),
+          face(i, 0, fun (j : Interval) => e(b) @ j),
+          face(i, 1, fun (j : Interval) => e(c) @ j),
+          face(t, 1, fun (j : Interval) => e(p @ i) @ j)),
+        h(s(b), s(c))));
+  };
+
+// Functions into types of level n have level n. A path between functions
+// is a function into the paths between their values, and back, by function
+// extensionality, whose two directions compose to the identity by
+// conversion: so f = g is a retract of forall x. f(x) = g(x).
+computable def pi_has_level(U < UU0, n : Nat) := induction n as k
+  return (forall A : U. forall B : A -> U. (forall x : A. HasLevel(U, k, B(x))) ->
+    HasLevel(U, k, forall x : A. B(x))) {
+    zero => (fun (A : U, B : A -> U, h : forall x : A. IsProp(U, B(x))) => pi_is_prop(U, A, B, h));
+    succ step => (fun (A : U, B : A -> U, h : forall x : A. HasLevel(U, succ(k), B(x))) =>
+      fun (f, g : forall x : A. B(x)) => retract_has_level(U, k, forall x : A. f(x) = g(x), f = g,
+        fun (p : f = g) => (fun (x : A) => path i => (p @ i)(x)),
+        fun (u : forall x : A. f(x) = g(x)) => path i => fun (x : A) => u(x) @ i,
+        fun (p : f = g) => refl(p),
+        step(A, fun (x : A) => f(x) = g(x), fun (x : A) => h(x, f(x), g(x)))));
+  };
+
 // Unit is contractible, around tt.
 computable def unit_is_contr : IsContr(U0, Unit) :=
   (tt, fun (x : Unit) => unit_induction(fun (v : Unit) => tt = v, refl(tt), x));

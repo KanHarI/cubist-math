@@ -693,9 +693,9 @@ Completion:
     defines the levels as above, `IsSet(U, A)` converts to
     `forall x, y : A. forall p, q : x = y. p = q`, and it proves that
     propositions are sets, levels are cumulative, having a level is a
-    proposition, and Π preserves propositions and sets. Retracts,
-    equivalences, Π at every level, Σ, products and `IsContr`'s
-    propositionhood are open.
+    proposition, and retracts and Π preserve every level. An equivalence's
+    inverse makes a retract; the statement for the public `Equiv` type waits
+    for D0b. Σ, products and `IsContr`'s propositionhood are open.
 - [ ] **D0b. Canonical equivalences.** Make the public equivalence
   representation agree with the native contractible-fiber type:
 
