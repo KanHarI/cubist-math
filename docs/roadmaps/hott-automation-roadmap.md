@@ -692,9 +692,10 @@ Completion:
   - Done on 2026-09-29: [`library/hlevels.cubist`](../../library/hlevels.cubist)
     defines the levels as above, `IsSet(U, A)` converts to
     `forall x, y : A. forall p, q : x = y. p = q`. It proves each item above
-    at every level, and for contractible types, with Hedberg's theorem and
-    `Nat` a set for D1. An
-    equivalence's inverse makes a retract; the statement for the public
+    at every level, and each closure but subtypes for contractible types: a
+    subtype of a contractible type can be empty, and `exists x : Unit. Void`
+    is not contractible. With them come Hedberg's theorem and `Nat` a set for
+    D1. An equivalence's inverse makes a retract; the statement for the public
     `Equiv` type waits for D0b, which defines it. The archive keeps its own
     `Proposition`, `IsSet` and the like; rebuilt modules use these
     definitions instead.
