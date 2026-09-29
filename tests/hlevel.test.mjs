@@ -53,10 +53,18 @@ def prop_at_any_level(n : Nat, A : U0, h : IsProp(U0, A)) : HasLevel(U0, n, A) {
 def contractible_at_any_level(n : Nat, A : U0, c : IsContr(U0, A)) : HasLevel(U0, n, A) { hlevel; }
 def statement_at_any_level(n : Nat, A : U0) : HasLevel(U0, n, IsSet(U0, A)) { hlevel; }
 def same_variable_level(n : Nat, A : U0, h : HasLevel(U0, n, A)) : HasLevel(U0, n, A -> A) { hlevel with [h]; }
+computable def computable_evidence : IsSet(U0, Nat -> (Nat and Unit)) { hlevel; }
+def any_universe(U < UU0, A : U, h : IsSet(U, A)) : IsSet(U, (A -> A) and (Unit -> A)) { hlevel; }
+def variable_statement(n : Nat, A : U0) : IsProp(U0, HasLevel(U0, n, A)) { hlevel; }
 `);
+  // Every proof is built from computable lemmas and uses no assumption, so
+  // it may be marked computable.
   for (const name of [...Object.keys(proved), "lifted", "from_contractible", "in_u1", "equal_in_prop", "from_hint",
-    "prop_at_any_level", "contractible_at_any_level", "statement_at_any_level"])
+    "prop_at_any_level", "contractible_at_any_level", "statement_at_any_level", "computable_evidence", "any_universe",
+    "variable_statement"]) {
     ok(get(name));
+    assert.deepEqual(get(name).axioms, [], name);
+  }
   // Structural rules need a numeral: a variable level is given only by
   // evidence at that level.
   refused(get("same_variable_level"), /^hlevel could not prove HasLevel\(U0, n, A -> A\); nothing in scope states that A -> A has level n\./);
