@@ -409,6 +409,22 @@ def nested(n : N) : add(n, zero) = n {
     }
   }
 }
+def deep(n : N) : add(n, zero) = n {
+  match n {
+    zero => { rfl; }
+    succ(m) => {
+      match m {
+        zero => { rfl; }
+        succ(k) => {
+          match k {
+            zero => { rfl; }
+            succ(j) => { exact cong(succ, deep(m)); }
+          }
+        }
+      }
+    }
+  }
+}
 def keep(n, a : N) : N {
   match n {
     zero => { exact a; }
@@ -448,7 +464,7 @@ def not_smaller(n : N) : N {
 `);
   // A position the inner match generalizes, as p : Tag(k) -> W is, is
   // recursed on under its new variable.
-  for (const name of ["nested", "keep", "keep_two", "Tag", "W", "count"]) ok(get(name));
+  for (const name of ["nested", "deep", "keep", "keep_two", "Tag", "W", "count"]) ok(get(name));
   refused(get("not_smaller"), /not on an argument of the matched constructor/);
 });
 
