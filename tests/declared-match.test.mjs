@@ -613,8 +613,49 @@ def inner(n, k : N, r : Rep(k)) : N {
   }
 }
 def inner_value : inner(succ(zero), succ(zero), (succ(zero), tt)) = succ(zero) { rfl; }
+def total(n : N, r : Rep(n)) : N := match n { zero => zero; succ(m) => add(r.1, total(m, r.2)); };
+def seven : total(succ(succ(zero)), (succ(zero), (succ(succ(zero)), tt))) = succ(succ(succ(zero))) { rfl; }
+def first(n : N, r : Rep(n)) : N := match n { zero => zero; succ(m) => r.1; };
 `);
   for (const name of ["Rep", "dep_ok", "bounded", "sh", "sh_value", "inner", "inner_value"]) ok(get(name));
+  // A dependent parameter used at its refined type before the call: the
+  // match as written fails there, and the one over the other parameters
+  // stands, since it makes the call.
+  for (const name of ["total", "seven"]) ok(get(name));
+  // Without a call the expression is the match as written, whose motive does
+  // not refine r (the statement's does).
+  refused(get("first"), /^Projection \.1 requires a dependent pair; found a value of type Rep\(n\)\./);
+});
+
+// An abandoned first attempt spends nothing of the declaration's. The two
+// proofs are the same but for their type's constructor order: once's first
+// attempt checks its simp before reaching the call that changes a, and
+// abandons it; again's reaches that call first. Both record what their kept
+// attempt spent, and only that.
+test("recursion whose other arguments vary: an abandoned attempt spends nothing", async t => {
+  const { get } = await check(t, `${naturals}
+def acc(n, a : N) : N := match n { zero => a; succ(m) => acc(m, succ(a)); };
+def once(n, a : N) : acc(n, a) = acc(n, a) {
+  match n {
+    zero => { simp only []; }
+    succ(m) => { exact once(m, succ(a)); }
+  }
+}
+inductive M { more(n : M); none; }
+def macc(n : M, a : N) : N := match n { none => a; more(m) => macc(m, succ(a)); };
+def again(n : M, a : N) : macc(n, a) = macc(n, a) {
+  match n {
+    none => { simp only []; }
+    more(m) => { exact again(m, succ(a)); }
+  }
+}
+def plain(a : N) : add(zero, a) = add(zero, a) { simp only []; }
+`);
+  for (const name of ["once", "again", "plain"]) ok(get(name));
+  const spent = name => [get(name).searchFuel.queries, get(name).searchFuel.searches];
+  assert.deepEqual(spent("once"), spent("again"));
+  // What the kept attempt spent is the declaration's: more than its simp alone.
+  assert.ok(spent("once")[0] > spent("plain")[0] && spent("once")[1] === spent("plain")[1]);
 });
 
 test("recursion whose other arguments vary: what stays fixed, and path and squash clauses", async t => {
