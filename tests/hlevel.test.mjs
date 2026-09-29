@@ -50,6 +50,8 @@ def from_hint(A : U0, B : A -> U0, h : forall x : A. IsProp(U0, B(x)), a : A) : 
   hlevel with [h(a)];
 }
 def after_intro : forall A : U0. IsSet(U0, A) -> IsSet(U0, A -> A) { intro A, h; hlevel; }
+def after_universe_intro : forall U < UU0. IsSet(U, Nat) { intro U; hlevel; }
+def after_universe_intros : forall U < UU0. forall A : U. IsSet(U, A) -> IsSet(U, A and (Unit -> A)) { intro U, A, h; hlevel; }
 def from_have(A : U0, p : Unit -> IsProp(U0, A)) : IsProp(U0, A) { have h := p(tt); hlevel; }
 def from_have_block(A : U0, p : Unit -> IsProp(U0, A)) : IsSet(U0, A and A) {
   have h : IsProp(U0, A) { exact p(tt); }
@@ -68,7 +70,7 @@ def variable_statement(n : Nat, A : U0) : IsProp(U0, HasLevel(U0, n, A)) { hleve
   // Every proof is built from computable lemmas and uses no assumption, so
   // it may be marked computable.
   for (const name of [...Object.keys(proved), "lifted", "from_contractible", "in_u1", "equal_in_prop", "from_hint",
-    "after_intro", "from_have", "from_have_block", "from_let", "from_obtain",
+    "after_intro", "after_universe_intro", "after_universe_intros", "from_have", "from_have_block", "from_let", "from_obtain",
     "prop_at_any_level", "contractible_at_any_level", "statement_at_any_level", "computable_evidence", "any_universe",
     "variable_statement"]) {
     ok(get(name));
