@@ -9,7 +9,7 @@ export const identicalRewrites = ["path-apply", "along", "intro", "have", "param
 // Rewrites that keep public types but may change proof terms.
 export const typePreservingRewrites = ["wrappers", "rfl", "path-lambda", "ext"];
 
-const statementKinds = new Set(["intro", "let", "obtain", "have", "haveValue", "cases", "exact", "rfl",
+const statementKinds = new Set(["intro", "let", "obtain", "have", "haveValue", "cases", "matchStatement", "exact", "rfl",
   "calc", "rw", "simpOnly", "simpaOnly", "hlevel", "ext", "over", "show", "suffices"]);
 const spanned = value => value && typeof value === "object" && Number.isInteger(value.start) && Number.isInteger(value.end);
 const identifiers = text => new Set(text.match(/[A-Za-z_][A-Za-z_0-9]*/g) ?? []);

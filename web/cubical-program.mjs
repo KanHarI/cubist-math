@@ -425,7 +425,7 @@ export class CubicalProgram {
       const built = rest ? without(record.proof, rest) : record.proof;
       return { start: record.statement.start, end: record.statement.end, kind: record.statement.kind,
         declaration: record.declaration, closes: !record.next,
-        ...this.checker.displayGoal(record.goal.scope.context, record.goal.target, built) };
+        ...this.checker.displayGoal(record.goal.scope.shownContext([record.goal.target, built]), record.goal.target, built) };
     }).sort((a, b) => a.start - b.start);
   }
   // Check one more module on top of the loaded ones, as a REPL entry does,
