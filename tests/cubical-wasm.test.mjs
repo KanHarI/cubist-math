@@ -432,6 +432,18 @@ test("the motive service generalizes a hypothesis it is given, and binds it agai
   assert.doesNotThrow(() => scope.check(proof, goal.target));
 });
 
+// A scope built apart from elaboration may bind names another supply gave:
+// the motive's binders avoid them, so they capture nothing.
+test("the motive service's binders avoid every name the scope binds", t => {
+  const checker = new NativeCubicalElaborator(session(t)), v = T.variable;
+  const scope = [["x1", T.nat], ["x2", T.nat]]
+    .reduce((scope, [name, type]) => scope.bind(name, type), new Scope(new SourceUnit({ checker })));
+  const goal = new Goal(T.path("i", T.nat, v("x1"), v("x2")), scope);
+  const motive = abstractMotive(goal, [v("x2")]);
+  assert.equal(scope.context.has(motive.binders[0].name), false);
+  assert.deepEqual(motive.instance([v("x2")]).target, goal.target);
+});
+
 test("G0: the module's ABI version is checked, and a universe carries its level as a child", t => {
   // A module built for another encoding is refused before any syntax is made.
   assert.throws(() => new CubicalKernel({ ...module, _cb_abi_version: () => 1 }), /ABI version 1, but this code expects version 3/);

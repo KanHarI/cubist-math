@@ -622,6 +622,8 @@ test("recursion whose other arguments vary: what stays fixed, and path and squas
 inductive Tree(U < UU0, A : U) { leaf; node(l : Tree(U, A), a : A, r : Tree(U, A)); }
 def relabel(A : U0, t : Tree(U0, A)) : N := match t { leaf => zero; node(l, a, r) => relabel(N, l); };
 def lift(U < UU0, n : N) : N := match n { zero => zero; succ(m) => lift(U0, m); };
+def pick(n, a : N) : N := match n { zero => a; succ(m) => m; };
+def pick_unfolds(n, a : N) : pick(n, a) = (match n return N { zero => a; succ(m) => m; }) { rfl; }
 inductive Circle { base; loop : base = base; }
 def around(x : Circle, a : N) : N := match x { base => a; loop i => a; };
 def around_loop(a : N) : around(loop @ 1, succ(a)) = succ(a) { rfl; }
@@ -637,6 +639,9 @@ def skewed(t : Trunc(U0, N), b : N) : Trunc(U0, N) := match t {
   squash(x, y) i => Trunc.squash(skewed(x, succ(b)), skewed(y, b)) @ i;
 };
 `);
+  // A match that never calls its declaration keeps its motive: the
+  // declaration is the match as written.
+  for (const name of ["pick", "pick_unfolds"]) ok(get(name));
   refused(get("relabel"), /^A recursive call of relabel passes A unchanged: the type of the matched t depends on it\./);
   refused(get("lift"), /^A recursive call of lift passes the universe parameter U unchanged\./);
   for (const name of ["around", "around_loop", "shift", "shift_point"]) ok(get(name));
@@ -657,7 +662,16 @@ def add_succ(n, a : N) : add(n, succ(a)) = succ(add(n, a)) {
     succ(m) => { exact cong(succ, add_succ(m, a)); }
   }
 }
+def same(n, a1 : N) : add(n, a1) = add(n, a1) {
+  match n {
+    zero => { rfl; }
+    succ(m) => { exact cong(succ, same(m, a1)); }
+  }
+}
 `, "main");
+  // A parameter whose name ends in a digit is shown once too.
+  const clause = program.steps("main").find(step => step.declaration === "same" && step.kind === "exact");
+  assert.deepEqual(clause.locals.filter(local => local.name.startsWith("a1")).map(local => local.type), ["N"]);
   const steps = program.steps("main").filter(step => step.declaration === "add_succ");
   assert.deepEqual(steps.map(step => [step.kind, step.locals.map(local => `${local.name} : ${local.type}`), step.goal]), [
     ["matchStatement", ["n : N", "a : N"], "add(n, succ(a)) = succ(add(n, a))"],
