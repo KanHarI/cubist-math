@@ -2123,7 +2123,8 @@ not traced, and *in substance* a test that differs from its case in a
 detail the entry states. *Not traced* means no test covers it yet, and
 *Missing* that none can exist yet, for the stated reason.
 `tests/acceptance-matrix.test.mjs` checks this table against the cases
-above and against the tests.
+above and against the tests, and is itself tried on small tables it must
+refuse.
 
 | Group | Traced | Not traced | Missing, and why |
 | --- | --- | --- | --- |
