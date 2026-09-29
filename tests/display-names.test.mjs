@@ -2,6 +2,7 @@
 // applies them: whatever the rules predict a name shows as, the printer
 // shows. Code that must name things apart from what a view prints, such as
 // CubicalProgram's eliminator view, relies on the predictions.
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { localName, numberedName, printedForms, printsAsItself, stem } from "../lib/cubical/names.mjs";

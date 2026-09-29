@@ -2,6 +2,7 @@
 // L1.3): tactic searches spend counted fuel, the same in a fresh session and
 // a reused one; fuel, the kernel's steps and the time limit fail apart; and an
 // unfinished rw, simp, simpa or calc says where it stopped.
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, mkdtemp, writeFile, rm } from "node:fs/promises";

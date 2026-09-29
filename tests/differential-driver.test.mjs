@@ -3,6 +3,7 @@
 // (tools/differential-driver.mjs): whatever the reference accepts the driver
 // derives, and whatever it refuses the driver refuses. Fixed seeds here; the
 // tool runs as many as asked.
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";

@@ -122,11 +122,13 @@ test("every command that loads web/dist refuses a stale build", () => {
     ["tools/verify-proof-migration.mjs", "--no-dependents", "nothing"], ["tools/elaboration-fingerprint.mjs"],
     ["tools/search-fuel-baseline.mjs"], ["tools/benchmark-cubical.mjs", "nothing"], ["tools/build-site.mjs"],
     ["tools/differential-driver.mjs", "--seeds=1"], ["tests/driver-trace.mjs"],
+    ["tests/display-names.test.mjs"], ["--test", "tests/display-names.test.mjs"],
     ["tests/cubical-inspector.browser.mjs"], ["tests/cubical.browser.mjs"], ["tests/statement.browser.mjs"],
     ["tests/proof-navigation.browser.mjs"], ["tests/landing.browser.mjs"]]) {
     const result = stale(args);
     assert.notEqual(result.status, 0, args.join(" "));
-    assert.match(result.stderr, refusal, args.join(" "));
+    // node --test reports a test file's failure on stdout.
+    assert.match(result.stderr + result.stdout, refusal, args.join(" "));
   }
 });
 

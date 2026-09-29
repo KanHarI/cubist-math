@@ -48,8 +48,9 @@ rather than run code it does not contain: `npm test`, the browser tests, the
 site build, the CLI, the coverage, audit, fingerprint, fuel-baseline,
 migration-verifier, benchmark and differential tools, and the driver trace
 (`tests/driver-trace.mjs`), which checks another checkout it traces by that
-tree's own stamp. A test file run directly with `node --test` is not
-checked: run `node tools/build-stamp.mjs check` first.
+tree's own stamp. So does a test file run on its own, with `node` or
+`node --test`: each test file that loads `web/dist` imports
+`tests/fresh-build.mjs` first, and `tests/fresh-build.test.mjs` keeps it so.
 
 `tools/differential-driver.mjs` generates problems where eta and computation
 meet, each a context, a type and two terms. The terms are equal by

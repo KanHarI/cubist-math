@@ -1,5 +1,6 @@
 // An inductive declaration entered in a REPL session (L2.1), with the
 // experimental option on, is used by the entries after it.
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";

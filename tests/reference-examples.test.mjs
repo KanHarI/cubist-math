@@ -1,3 +1,4 @@
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, readdir, mkdtemp, writeFile, rm } from "node:fs/promises";

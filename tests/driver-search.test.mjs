@@ -2,6 +2,7 @@
 // phases 1 and 2): kernel work read through the bridge, the moves each
 // branch point of `agree` offers, pluggable choosers, and the coverage
 // tool's report and exit status.
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";

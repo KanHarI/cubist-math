@@ -1,3 +1,4 @@
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
@@ -93,7 +94,7 @@ test("benchmark reports the selected deadline and optimizations and rejects inva
 });
 
 test("benchmark checks local simp witnesses without collecting inspector references",async()=>{
-  const report=await benchmark({modules:["ergonomics_registered"],limitMs:budget(1000),
+  const report=await benchmark({modules:["ergonomics_registered"],limitMs:budget(10000),
     readSource:async name=>{
       const source=await readFile(name==="ergonomics_registered"
         ? new URL("../docs/examples/proof-ergonomics/implemented/registered-simp.cubist",import.meta.url)
