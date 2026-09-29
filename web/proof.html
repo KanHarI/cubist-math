@@ -529,6 +529,16 @@ def by_computation : succ(succ(0)) = 2 {
     fun (a : A) =&gt; refl(a), x, y, p);
 }</code></pre>
         </div>
+        <div class="quick-entry" id="quick-hlevel">
+          <h4>Propositions, sets and <code>hlevel</code></h4>
+          <p><code>import hlevels;</code> defines <code>IsContr</code>, <code>IsProp</code>, <code>IsSet</code> and <code>HasLevel(U, n, A)</code>, and <code>hlevel;</code> proves them from evidence and the type's shape.
+            <a href="reference/paths.html#hlevel">Equality and paths →</a></p>
+          <pre><code data-check="accept">import hlevels;
+
+def functions_into_nat(A : U0) : IsSet(U0, A -> Nat) {
+  hlevel;
+}</code></pre>
+        </div>
         <h3 id="quick-rewriting">Equational reasoning and simplification</h3>
         <div class="quick-entry" id="quick-rfl">
           <h4><code>rfl</code></h4>
