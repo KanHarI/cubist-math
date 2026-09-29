@@ -11,6 +11,7 @@ const tactics = new Map([
   ["simpaOnly", ["simpa", "simplification witness"]],
   ["show", ["show", "restated goal"]],
   ["suffices", ["suffices", "goal reduction"]],
+  ["hlevel", ["hlevel", "h-level evidence"]],
 ]);
 
 export function tacticSite(statement) {

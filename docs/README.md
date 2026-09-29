@@ -72,11 +72,12 @@ finishing a language milestone does not automatically resume them.
     and [checked/proposed examples](examples/proof-ergonomics/README.md).
 - [HoTT and cubical proof automation](roadmaps/hott-automation-roadmap.md):
   - Delivered: A7 (baseline, regressions and canonicity fixture), the A5
-    goal-layer core, and A4/A6 deterministic fuel with residual-goal
-    diagnostics; see the
+    goal-layer core, A4/A6 deterministic fuel with residual-goal
+    diagnostics, D0a's h-level definitions and the first slice of D1's
+    `hlevel` solver; see the
     [checkpoint](tactical/hott-automation-handoff.md).
   - Planned: remaining goal-layer work, path operations,
-    path induction, transport, h-levels, dependent
+    path induction, transport, the rest of the h-level solver, dependent
     paths, structure identity and transfer.
 - [Kernel extensions for computation](roadmaps/cubical-kernel-roadmap.md):
   G0 (universe-generic checking) delivered; H1 (inductive signatures)

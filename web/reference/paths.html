@@ -51,6 +51,8 @@
             <li><a href="#transport">Transport</a></li>
             <li><a href="#path-induction">Path induction</a></li>
             <li><a href="#paths-library">The paths library</a></li>
+            <li><a href="#hlevels">Propositions and sets</a></li>
+            <li><a href="#hlevel">Proving levels: <code>hlevel</code></a></li>
           </ul>
         </aside>
         <article id="reference">
@@ -212,6 +214,59 @@ def cancel(A : U0, x, y : A, p : x = y) : trans(sym(p), p) = refl(y) {
   exact inverse_left(A, x, y, p);
 }</code></pre>
             <p>The laws are propositional: <code>trans(sym(p), p)</code> is not definitionally <code>refl(y)</code>, so <code>refl</code> does not prove it.</p>
+          </section>
+          <section id="hlevels">
+            <h2>Propositions and sets</h2>
+            <p><code>import hlevels;</code> measures how much a type's paths carry, in every universe <code>U</code> below <code>UU0</code>. <code>IsContr(U, A)</code> says that <code>A</code> has a center with a path to every element, and <code>IsProp(U, A)</code> that any two elements are equal. <code>HasLevel(U, n, A)</code> is <code>IsProp</code> at <code>n = 0</code>, and at <code>n + 1</code> it says that every path type of <code>A</code> has level <code>n</code>. <code>IsSet(U, A)</code> is level 1, so by conversion it says that any two parallel paths are equal.</p>
+            <pre><code data-check="accept">import hlevels;
+
+def set_unfolds(A : U0) : IsSet(U0, A) = (forall x, y : A. forall p, q : x = y. p = q) {
+  rfl;
+}
+
+def props_are_sets(A : U0, h : IsProp(U0, A)) : IsSet(U0, A) {
+  exact prop_is_set(U0, A, h);
+}
+
+def pairs_of_sets(A : U0, B : A -> U0, hA : IsSet(U0, A), hB : forall a : A. IsSet(U0, B(a))) :
+  IsSet(U0, exists a : A. B(a)) {
+  exact sigma_has_level(U0, 1, A, B, hA, hB);
+}</code></pre>
+            <p>The module also proves that levels are cumulative and that having a level is a proposition. Retracts, function types, pairs, products and path types keep levels and contractibility, and subtypes keep levels. Hedberg's theorem says that a type with decidable equality is a set, as <code>nat_is_set</code> shows for <code>Nat</code>.</p>
+          </section>
+          <section id="hlevel">
+            <h2>Proving levels: <code>hlevel</code></h2>
+            <p><code>hlevel;</code> closes a goal <code>IsContr(U, A)</code>, <code>IsProp(U, A)</code>, <code>IsSet(U, A)</code> or <code>HasLevel(U, n, A)</code>. It also closes an equality <code>x = y</code> whose type is a proposition. It tries, in order:</p>
+            <ul>
+              <li>evidence in scope, or listed after <code>with</code>, that states the level or a lower one, where a proposition or a contractible type has every level;</li>
+              <li>a level statement being itself a proposition;</li>
+              <li>the type's shape, at a numeral level: functions, pairs and paths reduce to their parts, and <code>Unit</code>, <code>Void</code> and <code>Nat</code> have their levels.</li>
+            </ul>
+            <p>It needs <code>import hlevels;</code>. A hint must state a level, so apply a quantified one to its arguments, as <code>h(a)</code> below. The search spends counted fuel, and the kernel checks the proof it builds.</p>
+            <pre><code data-check="accept">import hlevels;
+
+def functions_into_nat(A : U0) : IsSet(U0, A -> Nat) {
+  hlevel;
+}
+
+def equal_in_a_proposition(A : U0, h : IsProp(U0, A), x, y : A) : x = y {
+  hlevel;
+}
+
+def from_a_hint(A : U0, B : A -> U0, h : forall x : A. IsSet(U0, B(x)), a : A) : IsSet(U0, B(a) and Nat) {
+  hlevel with [h(a)];
+}</code></pre>
+            <p>A set's evidence never equates two elements: <code>Nat</code> is a set, but not a proposition. A failure names the obligation nothing discharges:</p>
+            <pre><code data-check="reject">import hlevels;
+
+def zero_is_one : 0 = 1 {
+  hlevel;  // Error: hlevel could not prove 0 = 1; Nat is not a proposition: 0 and 1 differ.
+}</code></pre>
+            <pre><code data-check="reject">import hlevels;
+
+def unknown_codomain(A, B : U0) : IsSet(U0, A -> B) {
+  hlevel;  // Error: hlevel could not prove IsSet(U0, A -> B): it needs B to be a set; no local evidence, hint or rule gives that.
+}</code></pre>
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">
