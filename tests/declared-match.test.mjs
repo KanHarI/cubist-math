@@ -327,6 +327,33 @@ def local_value(n : N) : add(n, zero) = n {
     succ(m) => { exact cong(succ, add_zero(m)); }
   }
 }
+def nested_copy(n : N) : add(n, zero) = n {
+  let copy := n;
+  match n {
+    zero => { rfl; }
+    succ(m) => {
+      match m {
+        zero => { exact refl(copy); }
+        succ(k) => { exact cong(succ, add_zero(succ(k))); }
+      }
+    }
+  }
+}
+def simp_at_generalized(n : N, h : n = n) : n = n {
+  match n {
+    zero => {
+      simp only [] at h as k;
+      exact k;
+    }
+    succ(m) => { exact h; }
+  }
+}
+def constructor_scrutinee(n : N) : succ(n) = succ(n) {
+  match succ(n) {
+    zero => { exact refl(zero); }
+    succ(k) => { exact refl(succ(k)); }
+  }
+}
 def same(n : N) : N {
   match n {
     zero => { exact n; }
@@ -342,7 +369,8 @@ def after_intro : forall n : N. add(n, zero) = n {
   }
 }
 `);
-  for (const name of ["add_zero", "IsZero", "zero_of", "zero_named", "zero_named_after_intro", "local_fact", "local_value", "same", "same_two", "after_intro"]) ok(get(name));
+  for (const name of ["add_zero", "IsZero", "zero_of", "zero_named", "zero_named_after_intro", "local_fact", "local_value", "nested_copy",
+    "simp_at_generalized", "constructor_scrutinee", "same", "same_two", "after_intro"]) ok(get(name));
 });
 
 test("a match statement's generalized hypothesis takes its own value at a recursive call", async t => {
@@ -393,6 +421,19 @@ def keep(n, a : N) : N {
   }
 }
 def keep_two : keep(succ(zero), succ(zero)) = succ(succ(zero)) { rfl; }
+inductive Tag(k : N) : U0 { tag; }
+inductive W { leaf; node(k : N, p : Tag(k) -> W); }
+def count(w : W) : N {
+  match w {
+    leaf => { exact zero; }
+    node(k, p) => {
+      match k {
+        zero => { exact succ(count(p(tag))); }
+        succ(j) => { exact count(p(tag)); }
+      }
+    }
+  }
+}
 def not_smaller(n : N) : N {
   match n {
     zero => { exact zero; }
@@ -405,7 +446,9 @@ def not_smaller(n : N) : N {
   }
 }
 `);
-  for (const name of ["nested", "keep", "keep_two"]) ok(get(name));
+  // A position the inner match generalizes, as p : Tag(k) -> W is, is
+  // recursed on under its new variable.
+  for (const name of ["nested", "keep", "keep_two", "Tag", "W", "count"]) ok(get(name));
   refused(get("not_smaller"), /not on an argument of the matched constructor/);
 });
 
