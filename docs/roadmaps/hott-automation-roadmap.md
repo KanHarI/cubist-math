@@ -173,7 +173,7 @@ and D0b together:
 | Baseline and shared machinery | A7 first; A5/A6 extract goal, scope and diagnostics; A4 uses the baseline to set hard fuel limits. |
 | Path vocabulary and library foundations | A1a–A1c, A2 and A8 use the shared machinery. D0b defines the public equivalence type in the rebuild. |
 | First useful automation | B1 follows A5 alone: it needs neither folded heads nor search fuel. B4 also follows A5. D1 uses D0a without waiting for D0b. Basic Σ ext in B3 precedes D2's automatic property-field closure; universe ext follows D0b. These do not wait for C3 or all of E. |
-| Induction | `match` (ergonomics milestone 7; experimental since 2026-09-28) uses H1's generated eliminators. The expression has an explicit or expected motive; the closing statement's is the goal, through A5's motive abstraction (L2.2a's second slice, 2026-09-29). D3's library eliminator uses D0b and D4; its interface is a milestone 7 view, with B1 for `Path`. |
+| Induction | `match` (ergonomics milestone 7; experimental since 2026-09-28) uses H1's generated eliminators. The expression has an explicit or expected motive; the closing statement's is the goal, through A5's motive abstraction (L2.2a's second slice, 2026-09-29). A recursive match of either form whose calls change another parameter generalizes the declaration's other parameters through it, so that a call may pass values of its own for them (the third slice). D3's library eliminator uses D0b and D4; its interface is a milestone 7 view, with B1 for `Path`. |
 | Path optimization and dependent geometry | A3/C1 change proof construction explicitly; C3 uses their checked reconstruction. C4 needs only A5 and its library soundness lemma. E1 uses A1/A2/A5/E0, with optional C2 cleanup. E2's square library can start independently of C; E3 follows E0/E2/A5 and E4 follows the simplifier witness interface. C2 adds B1's computation law when available. |
 | Structure descriptions and transfer | F1 can start after D0, D4, B3 and D1/D2; F4 uses D0a's h-level definitions. Theories (ergonomics milestone 6) supply record syntax; transfer builds on that evidence. |
 | Kernel work | The [kernel roadmap](cubical-kernel-roadmap.md) ranks G0, then H1–H3. A–F releases do not wait for them, except the (H)-marked requirements, which the [work plan](work-plan.md) sequences. |
@@ -352,9 +352,11 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     [motives.mjs](../../lib/cubical/motives.mjs) abstracts a goal over
     several scrutinees, independently of any tactic. It generalizes the
     hypotheses that depend on them and introduces them again in each branch.
-    No statement uses it yet (2026-09-28): `cases` keeps its constant
-    motive, and the experimental `match` (L2.2a) builds its own motive
-    rather than calling it; that integration is L2.2a's open item. Filling
+    Since 2026-09-29 the experimental `match` (L2.2a) uses it: the closing
+    statement always, and the expression in a recursive definition whose
+    calls change another parameter, which generalizes the declaration's other
+    parameters. `cases` keeps its constant motive, and any other expression
+    its own. Filling
     steps, face restrictions, source
     spans in the plan, index generalization, companion motives, and
     `induction` and `hlevel` as tactics remain.
@@ -407,9 +409,9 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     Index generalization for indexed families belongs to L4.2 (H2) and
     companion motives to L5.1 (H3); neither gates the H1 release (audit of
     2026-09-28, finding 5). Status: the experimental `match`
-    (`lib/cubical/match.mjs`) builds its own explicit or expected motive
-    and does not call `motives.mjs` yet; connecting them is L2.2a's open
-    A5 item.
+    (`lib/cubical/match.mjs`) calls `motives.mjs` for the closing statement
+    and for recursion whose calls change another parameter (2026-09-29); any
+    other expression keeps its explicit or expected motive.
 - [x] **A6. Diagnostics.** Delivered on 2026-09-27 with A4. An unfinished
   `rw`, `simp` or `simpa`, a search stopped by a bound or by its fuel, and a
   missing rewrite occurrence show the remaining goal (at most 160 characters),
