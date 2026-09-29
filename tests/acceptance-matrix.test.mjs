@@ -157,6 +157,18 @@ test("the fixtures' matrix is right as it stands", () => {
   assert.deepEqual(findingsIn(small({ kanMissing: "K4: waits for K2.5" })), []);
 });
 
+// The matrix's frame: its groups against the cases defined, and the test
+// files its introduction names, which are the only ones.
+test("the checker refuses a matrix whose groups, cases or test files are wrong", () => {
+  const withoutDifferential = findingsIn(small().replace(/^\| Differential .*\n/m, ""));
+  found(withoutDifferential, "The matrix's groups are K, where the cases are KX.");
+  found(withoutDifferential, "X1 is a case, and no group covers it.");
+  found(findingsIn(small().replace("| Kan K1–K4 |", "| Kan K1–K5 |")), "A group covers K5, which is no case.");
+  found(findingsIn(small().replace("`tests/small.test.mjs`", "`tests/small.test.mjs`, `tests/gone.test.mjs`")),
+    "The matrix names tests/gone.test.mjs, which does not exist.");
+  assert.deepEqual(findingsIn(small({ kanMissing: "K4: see `tests/other.test.mjs`" }), { "tests/other.test.mjs": "// K4" }), []);
+});
+
 // Missing test labels: a case the matrix traces in a layer that no test of
 // that layer names, and a case a test names that the matrix does not trace.
 // The checker's own source, which names every case, stands in for none.
@@ -167,6 +179,19 @@ test("the checker refuses a traced case whose label is gone", () => {
     "Kan K1–K4: Kernel traces K2, but none of kernel/tests/small.c names it.");
   found(findingsIn(small(), { "kernel/tests/small.c": "// K1, K2, K4" }),
     "Kan K1–K4: kernel/tests/small.c name K4, but the matrix does not trace it.");
+  // A label in the other layer's tests stands in for none, either way.
+  found(findingsIn(small(), { "kernel/tests/small.c": "// K1, K2, K3", "tests/small.test.mjs": "" }),
+    "Kan K1–K4: Source traces K3, but none of tests/small.test.mjs names it.");
+  found(findingsIn(small(), { "kernel/tests/small.c": "// K1", "tests/small.test.mjs": "// K2, K3" }),
+    "Kan K1–K4: Kernel traces K2, but none of kernel/tests/small.c names it.");
+  // Nor does a package ID that begins with a case's.
+  found(findingsIn(small(), { "kernel/tests/small.c": "// K1, K2.5" }),
+    "Kan K1–K4: Kernel traces K2, but none of kernel/tests/small.c names it.");
+  // A case before any layer is named in a test of either.
+  const unlayered = small({ kan: "K2. Kernel: K1 in part (with no tubes). Source: K3" });
+  assert.deepEqual(findingsIn(unlayered, { "kernel/tests/small.c": "// K1", "tests/small.test.mjs": "// K2, K3" }), []);
+  found(findingsIn(unlayered, { "kernel/tests/small.c": "// K1" }),
+    "Kan K1–K4: the matrix traces K2, but none of kernel/tests/small.c, tests/small.test.mjs names it.");
 });
 
 // Invalid IDs: a column naming an ID its group does not define, in each
