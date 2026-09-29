@@ -280,3 +280,200 @@ def partial(w : W) : Nat := match w { leaf => 0; node(p) => succ(partial(p(0)));
   for (const name of ["size", "size_flat", "one"]) ok(get(name));
   refused(get("partial"), /p takes 2 arguments here, as an argument of the matched constructor/);
 });
+
+// The closing proof statement (L2.2a through the HoTT roadmap's A5): its
+// motive is the goal over the matched value, and each clause is a proof
+// block of the goal at its constructor.
+test("the match statement proves the goal at each constructor, recursing by name", async t => {
+  const { get } = await check(t, `${naturals}
+def add_zero(n : N) : add(n, zero) = n {
+  match n {
+    zero => { rfl; }
+    succ(m) => { exact cong(succ, add_zero(m)); }
+  }
+}
+def IsZero(n : N) : U0 := match n { zero => Unit; succ(m) => Void; };
+def zero_of(n : N, h : IsZero(n)) : n = zero {
+  match n {
+    zero => { rfl; }
+    succ(m) => { exact absurd(h); }
+  }
+}
+def zero_named(n : N, h : IsZero(n)) : n = zero {
+  match n {
+    zero => { exact refl(n); }
+    succ(m) => { exact absurd(h); }
+  }
+}
+def zero_named_after_intro : forall n : N. IsZero(n) -> n = zero {
+  intro n, h;
+  match n {
+    zero => { exact refl(n); }
+    succ(m) => { exact absurd(h); }
+  }
+}
+def local_fact(n : N, h : IsZero(n)) : n = zero {
+  have k : IsZero(n) { exact h; }
+  match n {
+    zero => { rfl; }
+    succ(m) => { exact absurd(k); }
+  }
+}
+def local_value(n : N) : add(n, zero) = n {
+  let copy := n;
+  let twice := add(n, n);
+  match n {
+    zero => { exact refl(add(copy, twice)); }
+    succ(m) => { exact cong(succ, add_zero(m)); }
+  }
+}
+def same(n : N) : N {
+  match n {
+    zero => { exact n; }
+    succ(m) => { exact n; }
+  }
+}
+def same_two : same(succ(succ(zero))) = succ(succ(zero)) { rfl; }
+def after_intro : forall n : N. add(n, zero) = n {
+  intro n;
+  match n {
+    zero => { rfl; }
+    succ(m) => { exact cong(succ, add_zero(m)); }
+  }
+}
+`);
+  for (const name of ["add_zero", "IsZero", "zero_of", "zero_named", "zero_named_after_intro", "local_fact", "local_value", "same", "same_two", "after_intro"]) ok(get(name));
+});
+
+test("a match statement's generalized hypothesis takes its own value at a recursive call", async t => {
+  const { get } = await check(t, `${naturals}
+def Rep(n : N) : U0 := match n { zero => Unit; succ(m) => N and Rep(m); };
+def total(n : N, r : Rep(n)) : N {
+  match n {
+    zero => { exact zero; }
+    succ(m) => { exact add(r.1, total(m, r.2)); }
+  }
+}
+def seven : total(succ(succ(zero)), (succ(zero), (succ(succ(zero)), tt))) = succ(succ(succ(zero))) { rfl; }
+def unchanged(n : N, r : Rep(n)) : N {
+  match n {
+    zero => { exact zero; }
+    succ(m) => { exact unchanged(m, r); }
+  }
+}
+`);
+  for (const name of ["Rep", "total", "seven"]) ok(get(name));
+  refused(get("unchanged"), /mismatch/i);
+});
+
+// A match inside a recursive clause: the recursive call still names the
+// variable the inner match takes apart, at its constructor there.
+test("a nested match statement keeps the enclosing recursion", async t => {
+  const { get } = await check(t, `${naturals}
+def nested(n : N) : add(n, zero) = n {
+  match n {
+    zero => { rfl; }
+    succ(m) => {
+      match m {
+        zero => { rfl; }
+        succ(k) => { exact cong(succ, nested(m)); }
+      }
+    }
+  }
+}
+def keep(n, a : N) : N {
+  match n {
+    zero => { exact a; }
+    succ(m) => {
+      match a {
+        zero => { exact keep(m, a); }
+        succ(b) => { exact succ(keep(m, a)); }
+      }
+    }
+  }
+}
+def keep_two : keep(succ(zero), succ(zero)) = succ(succ(zero)) { rfl; }
+def not_smaller(n : N) : N {
+  match n {
+    zero => { exact zero; }
+    succ(m) => {
+      match m {
+        zero => { exact zero; }
+        succ(k) => { exact not_smaller(n); }
+      }
+    }
+  }
+}
+`);
+  for (const name of ["nested", "keep", "keep_two"]) ok(get(name));
+  refused(get("not_smaller"), /not on an argument of the matched constructor/);
+});
+
+test("a match statement's path clause is a path between the clauses at its ends", async t => {
+  const { get } = await check(t, `${naturals}
+inductive Circle { base; loop : base = base; }
+def flat(x : Circle) : N := match x { base => zero; loop i => zero; };
+def flat_constant(x : Circle) : flat(x) = zero {
+  match x {
+    base => { rfl; }
+    loop i => { rfl; }
+  }
+}
+`);
+  for (const name of ["flat", "flat_constant"]) ok(get(name));
+});
+
+test("the match statement's refusals", async t => {
+  const { get } = await check(t, `${naturals}
+def unreachable(n : N) : N {
+  match n {
+    zero => { exact zero; }
+    succ(m) => { exact m; }
+  }
+  exact n;
+}
+def missing(n : N) : N {
+  match n {
+    zero => { exact zero; }
+  }
+}
+def of_a_sum(p : N or N) : N {
+  match p {
+    left x => { exact x; }
+    right y => { exact y; }
+  }
+}
+def wrong_clause(n : N) : add(n, zero) = n {
+  match n {
+    zero => { rfl; }
+    succ(m) => { rfl; }
+  }
+}
+`);
+  refused(get("unreachable"), /^Statements after match are unreachable: each clause's block closes the goal\./);
+  refused(get("missing"), /match on N needs a clause for succ\./);
+  refused(get("of_a_sum"), /^The match statement takes apart a value of a declared type; for a sum, use cases\./);
+  refused(get("wrong_clause"), /./);
+});
+
+test("without the experimental option, the match statement says what it needs", async t => {
+  const program = new CubicalProgram(module, sourceReader());
+  t.after(() => program.dispose());
+  const result = await program.check("def f(n : Nat) : Nat {\n  match n {\n    zero => { exact n; }\n  }\n}\n", "main");
+  refused(result.outputs.find(output => output.name === "f"),
+    /^The match statement takes apart a value of a declared type, a kernel extension under review: enable the experimental option h1/);
+});
+
+test("the match statement parses and formats, one statement to a line", async () => {
+  const { parse } = await import("../web/mathscript/parser.mjs");
+  const { formatMathScript } = await import("../web/mathscript/formatter.mjs");
+  const source = "def add_zero(n : N) : add(n, zero) = n {\n  match n {\n    zero => {\n      rfl;\n    }\n    succ(m) => {\n      exact cong(succ, add_zero(m));\n    }\n  }\n}\n";
+  const statement = parse(source).declarations[0].body[0];
+  assert.equal(statement.kind, "matchStatement");
+  assert.deepEqual(statement.clauses.map(clause => clause.constructor.text), ["zero", "succ"]);
+  assert.equal(formatMathScript(source), source);
+  assert.throws(() => parse("def f(n : N) : N {\n  match n as k return N { zero => { exact n; } }\n}\n"),
+    /The match statement takes its motive from the goal/);
+  assert.throws(() => parse("def f(n : N) : N {\n  match n { zero => n; }\n}\n"),
+    /A clause of the match statement is a proof block/);
+});

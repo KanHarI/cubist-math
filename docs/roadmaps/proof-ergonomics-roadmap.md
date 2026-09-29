@@ -505,8 +505,9 @@ squash constructor (`prop`, `set`, `trunc(n)`); path constructors as
 equalities and `PathP`; the expression `match` with `as … return`, one
 scrutinee, structural recursion on one argument with the others fixed,
 clauses that bind interval variables for path constructors, and
-hand-written squash clauses. Not delivered: the closing proof statement,
-several scrutinees, inferred motives with index generalization, companion
+hand-written squash clauses; since 2026-09-29, the closing proof statement,
+whose motive is the goal over the matched value, with the hypotheses about
+it generalized. Not delivered: several scrutinees, inferred motives with index generalization, companion
 sorts, `cell` syntax (L2.8), proof-first h-levels (L2.3b), automatic
 clauses and `obligations` (L2.2b), dependent matching, views, canonical
 quotients, `deriving`, nested declarations and the `cases` removal.

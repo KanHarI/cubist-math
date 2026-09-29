@@ -212,31 +212,10 @@ export function parse(source, typeOnly = false) {
       const clauses = [];
       while (peek() !== "}") {
         if (peek() === "EOF") throw Object.assign(new Error("Expected '}' to close the match."), { offset: ts[i].start });
-        let constructor = name(), qualifiedDot = null;
-        // A generated constructor may be named with its type, T.squash.
-        if (peek() === "." && ts[i - 1].end === ts[i].start && /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text)
-            && ts[i + 1].start === ts[i].end) {
-          const dot = take("."), member = take();
-          qualifiedDot = { start: dot.start, end: dot.end };
-          constructor = { text: `${constructor.text}.${member.text}`, start: constructor.start, end: member.end };
-        }
-        let args = null;
-        if (peek() === "(") {
-          take("(");
-          args = [];
-          if (peek() !== ")") {
-            args.push(name());
-            while (peek() === ",") { take(","); args.push(name()); }
-          }
-          take(")");
-        }
-        const names = [];
-        while (peek() !== "=>") names.push(name());
-        take("=>");
+        const head = clauseHead();
         const body = expr();
         const end = take(";").end;
-        clauses.push({ kind: "clause", constructor, args, names, body, ...(qualifiedDot ? { qualifiedDot } : {}),
-          start: constructor.start, end });
+        clauses.push({ kind: "clause", ...head, body, start: head.constructor.start, end });
       }
       const end = take("}").end;
       a = { kind: "match", motiveName, value, type, start: t.start, end };
@@ -436,6 +415,33 @@ export function parse(source, typeOnly = false) {
     depth--;
     return p;
   }
+  // A match clause's head, `c(xs) i =>`: its constructor, which a generated
+  // one may name with its type, T.squash; its arguments in parentheses; then
+  // its dimensions.
+  function clauseHead() {
+    let constructor = name(), qualifiedDot = null;
+    if (peek() === "." && ts[i - 1].end === ts[i].start && /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text)
+        && ts[i + 1].start === ts[i].end) {
+      const dot = take("."), member = take();
+      qualifiedDot = { start: dot.start, end: dot.end };
+      constructor = { text: `${constructor.text}.${member.text}`, start: constructor.start, end: member.end };
+    }
+    let args = null;
+    if (peek() === "(") {
+      take("(");
+      args = [];
+      if (peek() !== ")") {
+        args.push(name());
+        while (peek() === ",") { take(","); args.push(name()); }
+      }
+      take(")");
+    }
+    const names = [];
+    while (peek() !== "=>") names.push(name());
+    take("=>");
+    return { constructor, args, names, ...(qualifiedDot ? { qualifiedDot } : {}) };
+  }
+
   function block() {
     if (++depth > 128)
       throw Object.assign(new Error("Block nesting exceeds 128."), {
@@ -611,6 +617,26 @@ export function parse(source, typeOnly = false) {
         const value = expr(),
           e = take(";");
         s = { kind: "exact", value, start: t.start, end: e.end };
+      } else if (t.text === "match") {
+        // The closing statement `match v { c(xs) i => { … } … }` (work plan
+        // L2.2a): a clause per constructor, each a proof block of the goal at
+        // that constructor. Its motive comes from the goal.
+        const value = expr();
+        if (peek() === "as" || peek() === "return")
+          throw Object.assign(new Error("The match statement takes its motive from the goal: write match v { c(xs) => { … } … } without as or return."),
+            { offset: ts[i].start });
+        take("{");
+        const clauses = [];
+        while (peek() !== "}") {
+          if (peek() === "EOF") throw Object.assign(new Error("Expected '}' to close the match."), { offset: ts[i].start });
+          const head = clauseHead();
+          if (peek() !== "{")
+            throw Object.assign(new Error("A clause of the match statement is a proof block: c(xs) => { … }."), { offset: ts[i].start });
+          const body = block();
+          clauses.push({ kind: "clause", ...head, body, start: head.constructor.start, end: ts[i - 1].end });
+        }
+        const e = take("}");
+        s = { kind: "matchStatement", value, clauses, start: t.start, end: e.end };
       } else if (t.text === "cases") {
         const value = expr();
         take("{");
