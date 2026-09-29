@@ -6,6 +6,7 @@
 // assumption-free result from computing.
 import primes;
 import circle;
+import hlevels;
 
 // Natural-number recursion.
 computable def closed_arithmetic : add(mul(3, 4), 5) = 17 {
@@ -51,3 +52,21 @@ computable def winding_integer_loop : winding(integer_loop(negative(2))) = negat
 
 // The same computation, stated as a checked normal-form test.
 evaluate winding(concatenate(U1, S1, base, base, base, loop, loop)) expecting nonnegative(2);
+
+// h-levels: the contraction of Unit has a canonical center, and the path
+// and the square the h-level lemmas build between closed elements compute
+// to reflexivity. A neutral path or square would not be refl.
+computable def unit_center : unit_is_contr.1 = tt {
+  rfl;
+}
+
+computable def unit_path_computes : unit_is_prop(tt, tt) = refl(tt) {
+  rfl;
+}
+
+computable def unit_square_computes :
+  prop_is_set(U0, Unit, unit_is_prop, tt, tt, refl(tt), refl(tt)) = refl(refl(tt)) {
+  rfl;
+}
+
+evaluate unit_is_contr.1 expecting tt;

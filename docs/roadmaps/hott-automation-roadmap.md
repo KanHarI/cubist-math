@@ -689,6 +689,13 @@ Completion:
     target's h-level is proved. D0a and D1's first slice therefore precede
     automatic clauses, not the explicit-match release: hand-written squash
     clauses work without the solver (2026-09-28).
+  - In part since 2026-09-29: [`library/hlevels.cubist`](../../library/hlevels.cubist)
+    defines the levels as above, `IsSet(U, A)` converts to
+    `forall x, y : A. forall p, q : x = y. p = q`, and it proves that
+    propositions are sets, levels are cumulative, having a level is a
+    proposition, and Π preserves propositions and sets. Retracts,
+    equivalences, Π at every level, Σ, products and `IsContr`'s
+    propositionhood are open.
 - [ ] **D0b. Canonical equivalences.** Make the public equivalence
   representation agree with the native contractible-fiber type:
 

@@ -1,0 +1,109 @@
+// h-levels (work-plan L2.5a, the HoTT roadmap's D0a): contractible types,
+// propositions and sets, defined once for every universe below UU0, with
+// the lemmas that relate them. A type has level 0 when it is a proposition,
+// and level n + 1 when each of its path types has level n. So a set is a
+// type of level 1 by conversion, and one family of lemmas serves every level.
+
+// A contractible type: a center, and a path from it to every element.
+def IsContr(U < UU0, A : U) : U := exists center : A. forall x : A. center = x;
+
+// A proposition: any two elements are equal.
+def IsProp(U < UU0, A : U) : U := forall x, y : A. x = y;
+
+// HasLevel(U, n, A): a proposition at level 0; at level n + 1, every path
+// type of A has level n.
+def HasLevel(U < UU0, n : Nat) := induction n as k return (U -> U) {
+    zero => (fun (A : U) => IsProp(U, A));
+    succ h => (fun (A : U) => forall x, y : A. h(x = y));
+  };
+
+// A set: a type of level 1, which unfolds to "any two parallel paths are
+// equal".
+def IsSet(U < UU0, A : U) : U := HasLevel(U, 1, A);
+
+// A contractible type is a proposition: any two elements meet at the center.
+computable def contr_is_prop(U < UU0, A : U, c : IsContr(U, A)) : IsProp(U, A) {
+  intro x, y;
+  exact trans(sym(c.2(x)), c.2(y));
+}
+
+// A proposition is a set. Two paths p and q from x to y are opposite sides
+// of a square whose other sides stay at x and y: each of its points is
+// reached from x along the proposition's path to the point below it.
+computable def prop_is_set(U < UU0, A : U, h : IsProp(U, A)) : IsSet(U, A) {
+  intro x, y, p, q;
+  exact path j => path i => comp(fun (k : Interval) => A, x,
+    face(i, 0, fun (k : Interval) => h(x, x) @ k),
+    face(i, 1, fun (k : Interval) => h(x, y) @ k),
+    face(j, 0, fun (k : Interval) => h(x, p @ i) @ k),
+    face(j, 1, fun (k : Interval) => h(x, q @ i) @ k));
+}
+
+// Levels are cumulative: a type of level n has level n + 1.
+computable def level_up(U < UU0, n : Nat) := induction n as k
+  return (forall A : U. HasLevel(U, k, A) -> HasLevel(U, succ(k), A)) {
+    zero => (fun (A : U, h : HasLevel(U, 0, A)) => prop_is_set(U, A, h));
+    succ step => (fun (A : U, h : HasLevel(U, succ(k), A)) => (fun (x, y : A) => step(x = y, h(x, y))));
+  };
+
+// A proposition has every level.
+computable def prop_has_level(U < UU0, n : Nat) := induction n as k
+  return (forall A : U. IsProp(U, A) -> HasLevel(U, k, A)) {
+    zero => (fun (A : U, h : IsProp(U, A)) => h);
+    succ step => (fun (A : U, h : IsProp(U, A)) => level_up(U, k, A, step(A, h)));
+  };
+
+// A contractible type has every level.
+computable def contr_has_level(U < UU0, n : Nat, A : U, c : IsContr(U, A)) : HasLevel(U, n, A) :=
+  prop_has_level(U, n, A, contr_is_prop(U, A, c));
+
+// Each path type of a type of level n + 1 has level n, by definition.
+computable def path_has_level(U < UU0, n : Nat, A : U, h : HasLevel(U, succ(n), A), x, y : A) :
+  HasLevel(U, n, x = y) := h(x, y);
+
+// Being a proposition is a proposition: two proofs agree at every pair of
+// elements, since a proposition is a set.
+computable def is_prop_is_prop(U < UU0, A : U) : IsProp(U, IsProp(U, A)) {
+  intro f, g;
+  exact path i => fun (x, y : A) => prop_is_set(U, A, f, x, y, f(x, y), g(x, y)) @ i;
+}
+
+// Having a level is a proposition, at every level.
+computable def has_level_is_prop(U < UU0, n : Nat) := induction n as k
+  return (forall A : U. IsProp(U, HasLevel(U, k, A))) {
+    zero => (fun (A : U) => is_prop_is_prop(U, A));
+    succ step => (fun (A : U, f, g : HasLevel(U, succ(k), A)) =>
+      path i => fun (x, y : A) => step(x = y, f(x, y), g(x, y)) @ i);
+  };
+
+// Being a set is a proposition.
+computable def is_set_is_prop(U < UU0, A : U) : IsProp(U, IsSet(U, A)) := has_level_is_prop(U, 1, A);
+
+// Functions into propositions form a proposition: two functions agree at
+// every point, and so, by function extensionality, as functions.
+computable def pi_is_prop(U < UU0, A : U, B : A -> U, h : forall x : A. IsProp(U, B(x))) :
+  IsProp(U, forall x : A. B(x)) {
+  intro f, g;
+  exact path i => fun (x : A) => h(x, f(x), g(x)) @ i;
+}
+
+// Functions into sets form a set: two paths between functions are compared
+// at each point, where they are parallel paths in a set.
+computable def pi_is_set(U < UU0, A : U, B : A -> U, h : forall x : A. IsSet(U, B(x))) :
+  IsSet(U, forall x : A. B(x)) {
+  intro f, g, p, q;
+  exact path j => path i => fun (x : A) =>
+    (h(x, f(x), g(x), path k => (p @ k)(x), path k => (q @ k)(x)) @ j) @ i;
+}
+
+// Unit is contractible, around tt.
+computable def unit_is_contr : IsContr(U0, Unit) :=
+  (tt, fun (x : Unit) => unit_induction(fun (v : Unit) => tt = v, refl(tt), x));
+
+computable def unit_is_prop : IsProp(U0, Unit) := contr_is_prop(U0, Unit, unit_is_contr);
+
+// Void is a proposition: there is nothing to compare.
+computable def void_is_prop : IsProp(U0, Void) {
+  intro x, y;
+  exact absurd(x);
+}
