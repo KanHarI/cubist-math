@@ -153,8 +153,12 @@ const found = (all, finding) => assert.ok(all.includes(finding), `${finding}\nfo
 
 test("the fixtures' matrix is right as it stands", () => {
   assert.deepEqual(findingsIn(small()), []);
-  // A package ID such as K2.5 is no case.
-  assert.deepEqual(findingsIn(small({ kanMissing: "K4: waits for K2.5" })), []);
+  // A package ID such as K2.5 or K22.5 is no case.
+  assert.deepEqual(findingsIn(small({ kanMissing: "K4: waits for K2.5 and K22.5" })), []);
+  // A remainder may be listed as missing, and a range may leave out its
+  // second prefix.
+  assert.deepEqual(findingsIn(small({ kanRest: "—", kanMissing: "K1 with tubes, K4: no generator" })), []);
+  assert.deepEqual(findingsIn(small({ kan: "Kernel: K1–2 in part (with no tubes). Source: K3", kanRest: "K1 and K2 with tubes" })), []);
 });
 
 // The matrix's frame: its groups against the cases defined, and the test
@@ -179,14 +183,27 @@ test("the checker refuses a traced case whose label is gone", () => {
     "Kan K1–K4: Kernel traces K2, but none of kernel/tests/small.c names it.");
   found(findingsIn(small(), { "kernel/tests/small.c": "// K1, K2, K4" }),
     "Kan K1–K4: kernel/tests/small.c name K4, but the matrix does not trace it.");
+  found(findingsIn(small({ kanRest: "K1 with tubes; K4", kanMissing: "—" }), { "tests/small.test.mjs": "// K3, K4" }),
+    "Kan K1–K4: tests/small.test.mjs name K4, but the matrix does not trace it.");
+  // A case traced in part needs its label as much as one traced in full.
+  found(findingsIn(small(), { "kernel/tests/small.c": "// K2" }),
+    "Kan K1–K4: Kernel traces K1, but none of kernel/tests/small.c names it.");
+  // Each layer's heading is read, and a case traced in two layers needs a
+  // label in each.
+  for (const layer of ["Driver", "Verifier"])
+    found(findingsIn(small({ kan: `Kernel: K1 in part (with no tubes), K2. ${layer}: K3` }), { "tests/small.test.mjs": "" }),
+      `Kan K1–K4: ${layer} traces K3, but none of tests/small.test.mjs names it.`);
+  found(findingsIn(small({ kan: "Kernel: K1 in part (with no tubes), K2. Source: K2, K3" })),
+    "Kan K1–K4: Source traces K2, but none of tests/small.test.mjs names it.");
   // A label in the other layer's tests stands in for none, either way.
   found(findingsIn(small(), { "kernel/tests/small.c": "// K1, K2, K3", "tests/small.test.mjs": "" }),
     "Kan K1–K4: Source traces K3, but none of tests/small.test.mjs names it.");
   found(findingsIn(small(), { "kernel/tests/small.c": "// K1", "tests/small.test.mjs": "// K2, K3" }),
     "Kan K1–K4: Kernel traces K2, but none of kernel/tests/small.c names it.");
-  // Nor does a package ID that begins with a case's.
-  found(findingsIn(small(), { "kernel/tests/small.c": "// K1, K2.5" }),
-    "Kan K1–K4: Kernel traces K2, but none of kernel/tests/small.c names it.");
+  // Nor does a package ID, or a longer ID, that begins with a case's.
+  for (const other of ["K2.5", "K20"])
+    found(findingsIn(small(), { "kernel/tests/small.c": `// K1, ${other}` }),
+      "Kan K1–K4: Kernel traces K2, but none of kernel/tests/small.c names it.");
   // A case before any layer is named in a test of either.
   const unlayered = small({ kan: "K2. Kernel: K1 in part (with no tubes). Source: K3" });
   assert.deepEqual(findingsIn(unlayered, { "kernel/tests/small.c": "// K1", "tests/small.test.mjs": "// K2, K3" }), []);
@@ -215,9 +232,12 @@ test("the checker refuses a case whose remainder is missing, or that has one it 
     "Kan K1–K4: K2 is in no column.");
   found(findingsIn(small({ kanRest: "K1 with tubes; K2 with a tube" })),
     "Kan K1–K4: K2 is traced in full, so it can have no remainder.");
+  found(findingsIn(small({ kanMissing: "K2, K4: no generator" })),
+    "Kan K1–K4: K2 is traced in full, so it can have no remainder.");
   // An ID repeated in its own note does not make its case traced in full.
-  found(findingsIn(small({ kan: "Kernel: K1 in part (K1 with no tubes), K2. Source: K3", kanRest: "—" })),
-    "Kan K1–K4: K1 is traced only in part, so its remainder must be listed.");
+  for (const note of ["(K1 with no tubes)", "(K1 (with no tubes))"])
+    found(findingsIn(small({ kan: `Kernel: K1 in part ${note}, K2. Source: K3`, kanRest: "—" })),
+      "Kan K1–K4: K1 is traced only in part, so its remainder must be listed.");
 });
 
 // Partial ranges: "in part" after a range qualifies every case in it.
