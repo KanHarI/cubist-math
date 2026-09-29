@@ -613,6 +613,19 @@ export function parse(source, typeOnly = false) {
         s = {kind:t.text === "simpa" ? "simpaOnly" : "simpOnly", rules, only,without,witnesses,
           ...(at?{at,as}:{}),
           ...(using?{using}:{}), start:t.start, end:end.end};
+      } else if (t.text === "hlevel") {
+        const hints = [];
+        if (peek() === "with") {
+          take("with"); take("[");
+          if (peek() !== "]") while (true) {
+            hints.push(expr());
+            if (peek() !== ",") break;
+            take(",");
+          }
+          take("]");
+        }
+        const end = take(";");
+        s = { kind: "hlevel", hints, start: t.start, end: end.end };
       } else if (t.text === "exact") {
         const value = expr(),
           e = take(";");
