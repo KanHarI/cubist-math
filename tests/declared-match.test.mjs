@@ -624,61 +624,89 @@ def relabel(A : U0, t : Tree(U0, A)) : N := match t { leaf => zero; node(l, a, r
 def lift(U < UU0, n : N) : N := match n { zero => zero; succ(m) => lift(U0, m); };
 def pick(n, a : N) : N := match n { zero => a; succ(m) => m; };
 def pick_unfolds(n, a : N) : pick(n, a) = (match n return N { zero => a; succ(m) => m; }) { rfl; }
+def own(n, a : N) : N := match n { zero => a; succ(own) => own; };
+def own_unfolds(n, a : N) : own(n, a) = (match n return N { zero => a; succ(k) => k; }) { rfl; }
 inductive Circle { base; loop : base = base; }
 def around(x : Circle, a : N) : N := match x { base => a; loop i => a; };
 def around_loop(a : N) : around(loop @ 1, succ(a)) = succ(a) { rfl; }
 def torn(x : Circle, a : N) : N := match x { base => a; loop i => succ(a); };
 inductive Trunc(U < UU0, A : U) : prop { point(a : A); }
-def shift(t : Trunc(U0, N), b : N) : Trunc(U0, N) := match t {
-  point(a) => point(add(a, b));
-  squash(x, y) i => Trunc.squash(shift(x, b), shift(y, b)) @ i;
+inductive Steps : prop { stop; next(s : Steps); }
+def count(s : Steps, b : N) : Trunc(U0, N) := match s {
+  stop => point(b);
+  next(r) => count(r, succ(b));
+  squash(x, y) i => Trunc.squash(count(x, b), count(y, b)) @ i;
 };
-def shift_point : shift(point(zero), succ(zero)) = point(succ(zero)) { rfl; }
-def skewed(t : Trunc(U0, N), b : N) : Trunc(U0, N) := match t {
-  point(a) => point(add(a, b));
+def count_two : count(next(next(stop)), zero) = point(succ(succ(zero))) { rfl; }
+def skewed(s : Steps, b : N) : Trunc(U0, N) := match s {
+  stop => point(b);
+  next(r) => skewed(r, succ(b));
   squash(x, y) i => Trunc.squash(skewed(x, succ(b)), skewed(y, b)) @ i;
 };
 `);
-  // A match that never calls its declaration keeps its motive: the
-  // declaration is the match as written.
-  for (const name of ["pick", "pick_unfolds"]) ok(get(name));
+  // A match that never calls its declaration keeps its motive, whatever its
+  // binders are named: the declaration is the match as written.
+  for (const name of ["pick", "pick_unfolds", "own", "own_unfolds"]) ok(get(name));
   refused(get("relabel"), /^A recursive call of relabel passes A unchanged: the type of the matched t depends on it\./);
   refused(get("lift"), /^A recursive call of lift passes the universe parameter U unchanged\./);
-  for (const name of ["around", "around_loop", "shift", "shift_point"]) ok(get(name));
-  // A generalized clause is still checked against the clauses at its ends.
+  // A clause over a generalized parameter is a path of functions, and the
+  // kernel still checks it against the clauses at its ends.
+  for (const name of ["around", "around_loop", "Steps", "count", "count_two"]) ok(get(name));
   refused(get("torn"), /mismatch|clause/i);
   refused(get("skewed"), /mismatch|clause/i);
 });
 
+// An operator that stands for the declaration calls it as its name does.
+test("recursion whose other arguments vary: a call spelled with an operator", async t => {
+  const { get } = await check(t, `inductive N { zero; succ(n : N); }
+def add(n, a : N) : N := match n { zero => a; succ(m) => m + succ(a); };
+def five : add(succ(succ(zero)), succ(succ(succ(zero)))) = succ(succ(succ(succ(succ(zero))))) { rfl; }
+`);
+  for (const name of ["add", "five"]) ok(get(name));
+});
+
 // A clause's goal shows a generalized parameter under its own name, without
-// the parameter it supersedes; its recursive result quantifies over it.
+// the parameter it supersedes; its recursive result quantifies over it. A
+// recursion that passes its parameters unchanged keeps them fixed, and the
+// first attempt of one that changes them leaves no second set of steps.
 test("a clause's goal shows a generalized parameter under its source name", async t => {
   const program = new CubicalProgram(module, sourceReader(), { experimental: ["h1"] });
   t.after(() => program.dispose());
   await program.check(`${naturals}
+def acc(n, a : N) : N := match n { zero => a; succ(m) => acc(m, succ(a)); };
 def add_succ(n, a : N) : add(n, succ(a)) = succ(add(n, a)) {
   match n {
     zero => { rfl; }
     succ(m) => { exact cong(succ, add_succ(m, a)); }
   }
 }
-def same(n, a1 : N) : add(n, a1) = add(n, a1) {
+def acc_add(n, a : N) : acc(n, a) = add(n, a) {
   match n {
     zero => { rfl; }
-    succ(m) => { exact cong(succ, same(m, a1)); }
+    succ(m) => { exact trans(acc_add(m, succ(a)), add_succ(m, a)); }
+  }
+}
+def same(n, a1 : N) : acc(n, a1) = acc(n, a1) {
+  match n {
+    zero => { rfl; }
+    succ(m) => { exact same(m, succ(a1)); }
   }
 }
 `, "main");
+  const shown = name => program.steps("main").filter(step => step.declaration === name)
+    .map(step => [step.kind, step.locals.map(local => `${local.name} : ${local.type}`), step.goal]);
+  assert.deepEqual(shown("acc_add"), [
+    ["matchStatement", ["n : N", "a : N"], "acc(n, a) = add(n, a)"],
+    ["rfl", ["n : N", "a : N"], "acc(zero, a) = add(zero, a)"],
+    ["exact", ["n : N", "m : N", "m_rec : forall a : N. acc(m, a) = add(m, a)", "a : N"], "acc(succ(m), a) = add(succ(m), a)"],
+  ]);
+  assert.deepEqual(shown("add_succ").at(-1), ["exact", ["n : N", "a : N", "m : N", "m_rec : add(m, succ(a)) = succ(add(m, a))"],
+    "add(succ(m), succ(a)) = succ(add(succ(m), a))"]);
+  // Nor a second set of inspector records: the clause binds m once.
+  assert.equal(program.declarationBindings.get("main__acc_add").filter(item => item.node.name === "m").length, 1);
   // A parameter whose name ends in a digit is shown once too.
   const clause = program.steps("main").find(step => step.declaration === "same" && step.kind === "exact");
   assert.deepEqual(clause.locals.filter(local => local.name.startsWith("a1")).map(local => local.type), ["N"]);
-  const steps = program.steps("main").filter(step => step.declaration === "add_succ");
-  assert.deepEqual(steps.map(step => [step.kind, step.locals.map(local => `${local.name} : ${local.type}`), step.goal]), [
-    ["matchStatement", ["n : N", "a : N"], "add(n, succ(a)) = succ(add(n, a))"],
-    ["rfl", ["n : N", "a : N"], "add(zero, succ(a)) = succ(add(zero, a))"],
-    ["exact", ["n : N", "m : N", "m_rec : forall a : N. add(m, succ(a)) = succ(add(m, a))", "a : N"],
-      "add(succ(m), succ(a)) = succ(add(succ(m), a))"],
-  ]);
 });
 
 // The refactor shared with the statement keeps the expression's order: the
