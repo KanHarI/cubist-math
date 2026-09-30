@@ -83,6 +83,19 @@ def variable_statement(n : Nat, A : U0) : IsProp(U0, HasLevel(U0, n, A)) { hleve
 
 // The HoTT roadmap's D completion: IsProp of an arbitrary type and 0 = 1
 // stay unproved, the second with Nat a set.
+test("hlevel checks dependent path h-levels using evidence at the line's start", async t => {
+  const {get} = await check(t, `import hlevels;
+def path_prop(A, B : U0, e : A = B, h : IsSet(U0, A), a : A, b : B) :
+  IsProp(U0, PathP(fun (i : Interval) => e @ i, a, b)) { hlevel; }
+def path_contr(A, B : U0, e : A = B, h : IsContr(U0, A), a : A, b : B) :
+  IsContr(U0, PathP(fun (i : Interval) => e @ i, a, b)) { hlevel; }
+def no_evidence(A, B : U0, e : A = B, a : A, b : B) :
+  IsProp(U0, PathP(fun (i : Interval) => e @ i, a, b)) { hlevel; }
+`);
+  ok(get("path_prop")); ok(get("path_contr"));
+  refused(get("no_evidence"), /hlevel could not prove.*no local evidence/);
+});
+
 test("hlevel refuses, naming the first obligation nothing discharges", async t => {
   const { get } = await check(t, `import hlevels;
 def zero_is_one : 0 = 1 { hlevel; }

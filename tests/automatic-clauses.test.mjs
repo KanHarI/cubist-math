@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
+import { parse } from "../web/mathscript/parser.mjs";
 
 const module = await createCubical();
 async function check(t, source) {
@@ -113,4 +114,55 @@ def flat(x : Circle) : Nat { match x { base => { exact 0; } } obligations { loop
 def by_level(x : Circle) : Unit { match x { base => { exact tt; } } obligations by hlevel; }
 `);
   for (const name of ["rebuilt","point_computes","flat","by_level"]) ok(name);
+});
+
+test("trailing proofs fill declared paths without replacing a generated squash", async t => {
+  const {ok} = await check(t, `${quotient}
+def by_rfl(A : U0, R : A -> A -> U0, q : Quotient(A, R)) : Nat :=
+  match q { class(a) => 0; glue(a, b, r) i => 0; } obligations by rfl;
+def by_block(A : U0, R : A -> A -> U0, q : Quotient(A, R)) : Nat :=
+  match q { class(a) => 0; } obligations by { intro a, b, r; rfl; };
+def by_term(A : U0, R : A -> A -> U0, q : Quotient(A, R)) : Nat :=
+  match q { class(a) => 0; } obligations by (fun (a, b : A, r : R(a, b)) => path i => 0);
+def statement_block(A : U0, R : A -> A -> U0, q : Quotient(A, R)) : Nat {
+  match q { class(a) => { exact 0; } } obligations by { intro a, b, r; rfl; }
+}
+def statement_term(A : U0, R : A -> A -> U0, q : Quotient(A, R)) : Nat {
+  match q { class(a) => { exact 0; } } obligations by (fun (a, b : A, r : R(a, b)) => path i => 0);
+}
+def computes : by_term(Unit, fun (a, b : Unit) => Unit, class(tt)) = 0 { rfl; }
+`);
+  for (const name of ["by_rfl", "by_block", "by_term", "statement_block", "statement_term", "computes"]) ok(name);
+});
+
+test("a whole-clause proof is refused when several declared paths are missing", async t => {
+  const {ok,get} = await check(t, `import hlevels;
+inductive TwoLoops { base; first : base = base; second : base = base; }
+def tactics(x : TwoLoops) : Nat := match x { base => 0; } obligations by rfl;
+def ambiguous_block(x : TwoLoops) : Nat := match x { base => 0; } obligations by { rfl; };
+def ambiguous_term(x : TwoLoops) : Nat := match x { base => 0; } obligations by (path i => 0);
+`);
+  ok("tactics");
+  for (const name of ["ambiguous_block", "ambiguous_term"])
+    assert.match(get(name).reason, /exactly one missing declared path clause; found 2/);
+});
+
+test("hlevel hints supply evidence unavailable to automatic squash without the hint", async t => {
+  const {ok,get} = await check(t, `${quotient}
+def hinted(A : U0, R : A -> A -> U0, B : U0, h : Unit -> IsSet(U0, B), b : B, q : Quotient(A, R)) : B :=
+  match q { class(a) => b; glue(a, a2, r) i => b; } obligations by hlevel with [h(tt)];
+def no_hint(A : U0, R : A -> A -> U0, B : U0, h : Unit -> IsSet(U0, B), b : B, q : Quotient(A, R)) : B :=
+  match q { class(a) => b; glue(a, a2, r) i => b; };
+`);
+  ok("hinted");
+  assert.match(get("no_hint").reason, /Cannot generate Quotient\.squash/);
+});
+
+test("obligations report missing imports and unsupported tactics directly", async t => {
+  const {get} = await check(t, `inductive Tr(A : U0) : prop { point(a : A); }
+def absent(A : U0, x : Tr(A)) : Unit := match x { point(a) => tt; };
+`);
+  assert.match(get("absent").reason, /Cannot generate Tr\.squash: import hlevels/);
+  assert.throws(() => parse("def f(x : Circle) : Nat := match x { base => 0; } obligations by simp;"),
+    /obligations by supports hlevel.*proof block/);
 });

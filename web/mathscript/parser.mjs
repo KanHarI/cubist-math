@@ -459,7 +459,11 @@ export function parse(source, typeOnly = false) {
         }
         const statement = {kind:tactic.text,hints,start:tactic.start,end:ts[i - 1].end,keyword:tactic};
         obligationProof = {kind:"tactic",body:[statement]};
-      } else obligationProof = {kind:"term",value:expr()};
+      } else {
+        if (peek() === "simp" || peek() === "simpa")
+          throw Object.assign(Error("obligations by supports hlevel (with optional hints), rfl, a proof block, or a whole clause term; put simp or simpa inside a proof block."), {offset:ts[i].start});
+        obligationProof = {kind:"term",value:expr()};
+      }
       if (!expression && peek() === ";") take(";");
       return {obligationsToken,obligationProof,end:ts[i - 1].end};
     }

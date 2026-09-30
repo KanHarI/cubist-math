@@ -1969,8 +1969,11 @@ obligations { glue(a, b, r) i => respects(a, b, r) @ i; }
 The block names the constructor's arguments and dimensions in the same
 order as a match clause. `obligations by hlevel` (optionally `with` hints)
 requests h-level completion of missing path clauses. `obligations by rfl`
-proves reflexive path clauses; a proof block or an explicit term may supply
-the whole missing clause at its telescope type. These forms work in both
+proves reflexive declared path clauses; a proof block or an explicit term
+supplies exactly one missing declared path clause at its telescope type.
+With several missing declared paths, use named obligations. The generated
+squash remains automatic unless named explicitly; `by hlevel` hints also
+apply to its synthesis. These forms work in both
 expression and statement matches. An obligation cannot supply an omitted
 point clause, and incorrect boundaries, duplicates and unknown constructors
 are refused. `tests/automatic-clauses.test.mjs` includes the dependent
