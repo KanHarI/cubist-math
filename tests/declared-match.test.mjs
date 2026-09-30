@@ -81,7 +81,7 @@ def extra(x : Circle) : N := match x { base i => zero; loop i => zero; };
 });
 
 // E3: a truncation's eliminator, with its squash clause written T.squash.
-// E8: a match on it without the squash clause is refused.
+// E8: without an explicit squash clause or checked h-level evidence, refused.
 test("a truncation's squash clause, with T.squash and recursive results", async t => {
   const { get } = await check(t, `${naturals}
 inductive Trunc(U < UU0, A : U) : prop { point(a : A); }
@@ -94,7 +94,7 @@ def rebuilt_point : rebuilt(point(zero)) = point(zero) { rfl; }
 def unsquashed(t : Trunc(U0, N)) : Trunc(U0, N) := match t { point(a) => point(a); };
 `);
   for (const name of ["same", "rebuilt", "rebuilt_point"]) ok(get(name));
-  refused(get("unsquashed"), /Give the squash clause, .*generated squash clauses come with automatic clauses \(L2\.2b\)/);
+  refused(get("unsquashed"), /Cannot generate Trunc\.squash: import hlevels.*h-level evidence/);
 });
 
 // E8: a missing clause, a duplicate clause and an unknown constructor.

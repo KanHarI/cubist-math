@@ -28,8 +28,8 @@ and a review decision:
 2. Lemma H2's full case analysis, and the critical-pair check of 3.7;
 3. canonicity (4.4) reviewed, relative to the assumed baseline of 4.1;
 4. the acceptance matrix of 10.10 complete, K10 and K11 included. Every
-   case is traced but those that wait for L2.2b (E4, E11), K2.5 (G2,
-   G4–G7) and K2.4a (X1–X8);
+   case is traced but those that wait for K2.5 (G2, G4–G7)
+   and K2.4a (X1–X8);
    `tests/acceptance-matrix.test.mjs` checks the matrix against the tests;
 5. a recorded run of the whole suite at a pinned revision, repeated at
    the release's own. The first was CI run 36472206548, at `bef00e3` on
@@ -1950,6 +1950,36 @@ this section left open:
 `T.squash` names the generated constructor (L2.2a), and `trunc(-1)`, the
 same as `prop`, is written with the minus sign of the path notation.
 
+**Automatic clauses (L2.2b).** With `import hlevels`, a missing generated
+squash clause is filled from checked h-level evidence for the motive. For a
+dependent set family `B`, this can be a hypothesis
+`h : forall z : T. IsSet(U0, B(z))`; a groupoid family supplies
+`HasLevel(U0, 2, B(z))`. Each generated clause is checked at the kernel's
+clause type and is shown as a coherence obligation in inspection. Without
+enough evidence the declaration fails.
+
+Every point constructor needs its computational clause in `match`. Path
+clauses may be supplied there or in a following `obligations` block:
+
+```text
+match q as z return B(z) { class(a) => f(a); }
+obligations { glue(a, b, r) i => respects(a, b, r) @ i; }
+```
+
+The block names the constructor's arguments and dimensions in the same
+order as a match clause. `obligations by hlevel` (optionally `with` hints)
+requests h-level completion of missing path clauses. `obligations by rfl`
+proves reflexive declared path clauses; a proof block or an explicit term
+supplies exactly one missing declared path clause at its telescope type.
+With several missing declared paths, use named obligations. The generated
+squash remains automatic unless named explicitly; `by hlevel` hints also
+apply to its synthesis. These forms work in both
+expression and statement matches. An obligation cannot supply an omitted
+point clause, and incorrect boundaries, duplicates and unknown constructors
+are refused. `tests/automatic-clauses.test.mjs` includes the dependent
+quotient's computation on both `class` and `glue` and the groupoid's point
+computation.
+
 ## 10. Acceptance cases
 
 Tests name cases by ID: the kernel tests do so in comments, as `A3`, and
@@ -2103,8 +2133,9 @@ inverse, by `rfl`, and closed `evaluate` directives read the normal forms.
 `cong(code, loop)` is `ua(succ)` by `rfl`, the E2 fixture's
 `code_meridian` in this form. `tests/declared-match.test.mjs` checks the
 example with the experimental option. Its results carry the H1 marker and
-no assumption. The native comparisons (X1–X8) are K2.4's, and `Quotient`'s
-elimination waits for automatic set clauses (L2.2b).
+no assumption. The native comparisons (X1–X8) remain K2.4a's.
+`tests/automatic-clauses.test.mjs` checks `Quotient`'s dependent elimination
+into sets and `Gpd`'s into groupoids, using L2.2b's generated clauses.
 
 ### 10.9 Resources and malformed input
 
@@ -2118,13 +2149,13 @@ elimination waits for automatic set clauses (L2.2b).
 
 ### 10.10 Coverage of the acceptance cases
 
-Status on 2026-09-29, to be kept current with each change to sections
+Status on 2026-09-30, to be kept current with each change to sections
 5–10. *Traced* means a test names the case by its ID, in the layer its
 entry gives: a kernel case in `kernel/tests/test_signatures.c`; a driver,
 source or verifier case in `tests/h1-acceptance.test.mjs`,
 `tests/h1-admission.test.mjs`, `tests/h1-driver.test.mjs`,
-`tests/inductive-declarations.test.mjs`, `tests/declared-match.test.mjs`
-or `tests/corpus.test.mjs`. *In part* marks a case whose rest is listed as
+`tests/inductive-declarations.test.mjs`, `tests/declared-match.test.mjs`,
+`tests/automatic-clauses.test.mjs` or `tests/corpus.test.mjs`. *In part* marks a case whose rest is listed as
 not traced, and *in substance* a test that differs from its case in a
 detail the entry states. *Not traced* means no test covers it yet, and
 *Missing* that none can exist yet, for the stated reason.
@@ -2138,7 +2169,7 @@ refuse.
 | Universes V1–V31 | Kernel: V1, V4, V7, V8, V13–V20, V24, V25. For V13 and V17–V19, H1's rule: each signature is admitted, and an instance that reads a level of tier 1 is refused; the tier-parametric flag of 2.3 is the later proposal's (Q16). Source: V2, V3, V5, V6, V9–V12, V21–V23, V27 (`Bad`), V28 (`Flag`), V29, V30 (`Lifted`, its instances distinct), and in substance V7 and V20 (an erased parameter read, a recorded one carried), V26 (`Pointed(U0)` for `Pointed1`), V31 (the contextual words, parsed; `trunc(-1)`; `trunc(-2)` refused) | — | — |
 | Boundaries N1–N6 | Kernel: N1–N4. Driver: N1, N3. Source: N5, N6 | — | — |
 | Kan K1–K11 | Kernel: K1 (with no tubes, and with a tube of `succ`: a composition pushes into `succ`), K2 in substance (in `N` rather than `Plus`), K3, K4 in substance (in `Susp` rather than `S1`, with a tube from `north` to `south`), K5 in substance (the argument of `merid`, not a point constructor's), K6 in substance (transport of `merid` along a line of types `e : A = B`), K7 in substance (a set truncation's squash rather than `Quotient`'s), K8, K9 in substance (in `Susp` rather than `S1`: along a constant line, an `hcomp` of the base moved), K10 in substance (96 random constructor terms of `Susp`, `Torus` and `Quotient`, the path constructors at random formulas over two dimensions, `Quotient`'s `cls` and `eq` without its squash, moved along lines of the parameter drawn from `e @ i`, its reversal and a constant; each restricted to every face of the two dimensions, as it is and as its weak head), K11 (along the constant lines: at φ = 1 the term, and where φ is a face, the generated rules' weak head restricted to it is the term there). Driver: K6 (the kernel's transport along `ua` of the integers' successor, from the checked definitions of `docs/examples/h1/winding.cubist`) | — | — |
-| Elimination E1–E11 | Source: E1 (`docs/examples/h1/winding.cubist`), E2 (as `cong(code, loop)` equal to `ua(succ)` by `rfl`), E3 (`T.squash`), E8 (a missing clause, a duplicate clause, an unknown constructor). Kernel: E3 (the `prop` squash clause), E5–E7, E9, E10, and a motive over no declared type refused. Driver: E5 | — | E4 and E11: automatic set and groupoid clauses (L2.2b) |
+| Elimination E1–E11 | Source: E1 (`docs/examples/h1/winding.cubist`), E2 (as `cong(code, loop)` equal to `ua(succ)` by `rfl`), E3 (`T.squash`), E4 (dependent family of sets, with explicit glue obligation and automatic squash), E8 (a missing clause, a duplicate clause, an unknown constructor), E11 (dependent groupoid family, automatic three-dimensional squash). Kernel: E3 (the `prop` squash clause), E5–E7, E9, E10, and a motive over no declared type refused. Driver: E5 | — | — |
 | Trust T1–T7 | Kernel: T1, T5, T6, T7. Driver: T5, T6. Source: T1 (the option named when off), T2 (direct, through a definition, through an import), T3, T4. Verifier: the marker compared apart from assumptions (6.4) | — | — |
 | Truncation policy G1–G7 | Source: G1 (`Tr(U1, U0)` is not in `U0`), G3 (the archive checks in full; the audit's coverage run counted 3,804 declarations and 0 gaps) | — | G2, G4, G5, G6, G7: the ledger verifier and the migrations (K2.5) |
 | Resources R1–R5 | Kernel: R1 (a sort, constructor and eliminator whose indices are out of range, and a list whose next cell is no list, built as raw syntax: inspected, reduced or refused with an error, and refused by the term checker and the instructions), R2, R3; a former of the wrong shape and a truncation level above the maximum are refused. Driver: R1 in part (an operand that is not a 32-bit unsigned integer is refused), R5 (the codec round trip); `tests/h1-admission.test.mjs` checks ABI version 3. Source: R4 (a module of ABI version 2 refused by the loader) | — | — |
