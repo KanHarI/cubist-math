@@ -6,15 +6,15 @@
 #include <stdio.h>
 
 static cc_term lambda(cc_kernel *k, uint32_t name, cc_term body) {
-    return ck_make(k, CC_LAM, name, ck_make(k, CC_NAT, 0, 0, 0, 0, 0), body, 0, 0);
+    return ck_make(k, CC_LAM, name, ck_make(k, CC_U, 0, ck_make(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0), body, 0, 0);
 }
 
 static void conversion_cache(void) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
-    cc_term nat = ck_make(k, CC_NAT, 0, 0, 0, 0, 0);
-    cc_term zero = ck_make(k, CC_ZERO, 0, 0, 0, 0, 0);
-    cc_term one = ck_make(k, CC_SUCC, 0, zero, 0, 0, 0);
+    cc_term nat = ck_make(k, CC_U, 0, ck_make(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
+    cc_term zero = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0);
+    cc_term one = ck_make(k, CC_SUM, 0, ck_make(k, CC_UNIT, 0, 0, 0, 0, 0), zero, 0, 0);
     cc_term x = ck_var(k, 10), y = ck_var(k, 11);
     cc_term beta_x = ck_make(k, CC_APP, 0, lambda(k, 12, ck_var(k, 12)), x, 0, 0);
     assert(ck_convertible(k, beta_x, x));
@@ -78,8 +78,8 @@ static void cut_short_scans_are_forgotten(void) {
     cc_term deep = ck_var(k, 7);
     cc_term at_three = ck_make(k, CC_PAPP, ck_interval_variable(k, 3), ck_var(k, 8), 0, 0, 0);
     for (unsigned i = 0; i < 200; ++i) {
-        deep = ck_make(k, CC_SUCC, 0, deep, 0, 0, 0);
-        at_three = ck_make(k, CC_SUCC, 0, at_three, 0, 0, 0);
+        deep = ck_make(k, CC_SUM, 0, ck_make(k, CC_UNIT, 0, 0, 0, 0, 0), deep, 0, 0);
+        at_three = ck_make(k, CC_SUM, 0, ck_make(k, CC_UNIT, 0, 0, 0, 0, 0), at_three, 0, 0);
     }
     k->budget = 50;
     assert(!ck_term_free(k, deep, 7) && k->error[0]);
@@ -91,7 +91,7 @@ static void cut_short_scans_are_forgotten(void) {
     assert(ck_term_free(k, deep, 7));
     assert(ck_free_dims(k, at_three) == UINT64_C(1) << 3);
     /* Substituting it under a binder named 7 renames the binder. */
-    cc_term binder = ck_make(k, CC_LAM, 7, ck_make(k, CC_NAT, 0, 0, 0, 0, 0), ck_var(k, 9), 0, 0);
+    cc_term binder = ck_make(k, CC_LAM, 7, ck_make(k, CC_U, 0, ck_make(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0), ck_var(k, 9), 0, 0);
     cc_term substituted = ck_substitute(k, binder, 9, deep);
     assert(substituted && k->nodes[substituted].payload != 7);
     cc_kernel_free(k);
@@ -165,8 +165,8 @@ int main(void) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
     k->budget = UINT64_C(1000000);
-    cc_term nat = ck_make(k, CC_NAT, 0, 0, 0, 0, 0);
-    cc_term zero = ck_make(k, CC_ZERO, 0, 0, 0, 0, 0);
+    cc_term nat = ck_make(k, CC_U, 0, ck_make(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
+    cc_term zero = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0);
     cc_term x = ck_var(k, 10);
     cc_term y = ck_var(k, 11);
     cc_term identity_x = lambda(k, 10, x);
@@ -214,13 +214,11 @@ int main(void) {
     assert(cc_kernel_get_formula(k, tube.payload)->length == 0);
     cc_clear(&one);
 
-    /* A closed shared arithmetic DAG has 2^24 unfolded branches. Beneath
+    /* A closed shared sum DAG has 2^24 unfolded branches. Beneath
      * differently named lambdas, its nodes are compared once per scope. */
-    cc_term motive = lambda(k, 20, nat);
-    cc_term step = lambda(k, 20, lambda(k, 21, ck_var(k, 21)));
     cc_term shared = zero;
     for (unsigned i = 0; i < 24; ++i)
-        shared = ck_make(k, CC_NATREC, 0, motive, shared, step, shared);
+        shared = ck_make(k, CC_SUM, 0, shared, shared, 0, 0);
     uint64_t before = k->reduction_steps;
     assert(ck_convertible(k, lambda(k, 10, shared), lambda(k, 11, shared)));
     uint64_t steps = k->reduction_steps - before;

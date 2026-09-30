@@ -1,4 +1,7 @@
 import "./fresh-build.mjs";
+import {CubicalProgram} from "../web/cubical-program.mjs";
+import {sourceReader} from "../tools/module-sources.mjs";
+import {naturalSort,numeral} from "../lib/cubical/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -12,23 +15,13 @@ import { numberEquivalence, transportNumberEquality, factorialThroughUnivalence 
 const module = await createCubical();
 
 test("actual binary and radix factorial proofs transport through native Glue in all four directions", async t => {
-  const kernel = new CubicalKernel(module);
-  t.after(() => kernel.dispose());
-  const checker = new NativeCubicalElaborator(kernel);
-  const translator = new Translator({ normalize: false, checker });
-  let env = new Map();
-  for (const name of ["primes", "binary_naturals", "binary_arithmetic", "binary_induction", "binary_equivalence", "binary_arithmetic_correct"]) {
-    const source = await readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
-    const result = translator.translate(source, env);
-    env = result.env;
-    for (const declaration of result.declarations) {
-      // The production half-adjoint Equiv API has not yet been translated.
-      // Build the cubical contractible-fiber equivalence below from its laws.
-      if (["binary_nat_equiv", "nat_binary_equiv"].includes(declaration.name)) {
-        assert.equal(declaration.status, "not-translated");
-      } else assert.equal(declaration.status, "checked-native-cubical", `${declaration.name}: ${declaration.reason}`);
-    }
-  }
+  const program=new CubicalProgram(module,sourceReader(),{collectReferences:false});
+  t.after(()=>program.dispose());
+  const result=await program.check("import binary_arithmetic_correct; import radix_univalence_transfer; def retained : Unit := tt;", "transfers");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  const kernel=program.kernel, checker=program.checker;
+  const translator=new Translator({normalize:false,checker});
+  let env=program.modules.get("transfers");
   const named = name => {
     const term = env.get(name);
     assert.equal(term?.tag, "DefRef", name);
@@ -36,59 +29,35 @@ test("actual binary and radix factorial proofs transport through native Glue in 
   };
   const binary = named("BinaryNat");
   const equivalence = numberEquivalence(checker, "cubical_binary_nat",
-    binary, T.nat, named("binary_to_nat"), named("binary_of_nat"),
+    binary, naturalSort, named("binary_to_nat"), named("binary_of_nat"),
     named("binary_roundtrip"), named("binary_nat_roundtrip"),
   );
   const transported = transportNumberEquality(checker, "binary_factorial_through_glue", equivalence, named("binary_factorial_ten"));
-  const checked = checker.syntax.check(transported);
+  const checked = checker.checkView(transported);
   assert.ok(checked.arenaNodes < 2000000, JSON.stringify(checked));
   assert.ok(checked.arenaBytes < 128 * 1024 * 1024, JSON.stringify(checked));
-  assert.equal(checked.normal, 0, "checking must not require normalizing the unary value");
+  assert.equal(checked.normal, undefined, "checking must not require normalizing the unary value");
   t.diagnostic(`Actual binary factorial through Glue: ${checked.arenaNodes} nodes, ${checked.arenaBytes} bytes`);
-  let ten = T.zero;
-  for (let n = 0; n < 10; n++) ten = T.succ(ten);
+  const ten = numeral(10);
   const natFactorial = factorialThroughUnivalence(checker, "cubical_factorial_ten_via_univalence",
     equivalence, named("binary_factorial_ten"), T.app(named("binary_factorial_correct"), ten));
-  checker.syntax.check(natFactorial, T.path("i", T.nat, T.app(named("factorial"), ten), named("nat_3628800")));
+  checker.checkView(natFactorial, T.path("i", naturalSort, T.app(named("factorial"), ten), named("nat_3628800")));
   env.set("cubical_factorial_ten_via_univalence", natFactorial);
 
-  for (const name of ["equivalences", "radix_naturals", "radix_arithmetic", "radix_factorial", "radix_induction", "radix_digit_laws", "radix_decode", "radix_uniqueness", "radix_equivalence", "radix_arithmetic_correct", "radix_binary_equivalence", "radix_univalence_transfer"]) {
-    const source = await readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
-    const result = translator.translate(source, env);
-    env = result.env;
-    for (const declaration of result.declarations) {
-      if (name === "radix_univalence_transfer" && declaration.name.startsWith("factorial_ten_")) {
-        assert.equal(declaration.status, "not-translated");
-        continue;
-      }
-      // The elementary bijections, pair eliminations and half-adjoint laws also
-      // check. These eight declarations depend on the still-untranslated
-      // generic Equiv API.
-      if (name === "equivalences" && ["equivalence_function", "equivalence_inverse_data",
-        "equivalence_inverse", "equivalence_laws", "equivalence_left", "equivalence_right", "bijection_equiv", "equiv_bijection"].includes(declaration.name)) {
-        assert.equal(declaration.status, "not-translated");
-        continue;
-      }
-      if (["radix_nat_equiv", "nat_radix_equiv", "radix_binary_equiv", "binary_radix_equiv"].includes(declaration.name)) {
-        assert.equal(declaration.status, "not-translated");
-      } else assert.equal(declaration.status, "checked-native-cubical", `${declaration.name}: ${declaration.reason}`);
-    }
-  }
   for (const [base, extra, manual] of [[2, 0, "radix_factorial_ten_base_two"], [10, 8, "radix_factorial_ten_base_ten"]]) {
-    let n = T.zero;
-    for (let i = 0; i < extra; i++) n = T.succ(n);
+    const n = numeral(extra);
     const specialized = name => T.app(named(name), n);
     const radix = specialized("RadixNat");
     for (const [direction, A, B, forward, inverse, eta, epsilon, proof] of [
       ["binary_radix", binary, radix, specialized("binary_to_radix"), specialized("radix_to_binary"), specialized("binary_radix_roundtrip"), specialized("radix_binary_roundtrip"), named("binary_factorial_ten")],
       ["radix_binary", radix, binary, specialized("radix_to_binary"), specialized("binary_to_radix"), specialized("radix_binary_roundtrip"), specialized("binary_radix_roundtrip"), named(manual)],
-      ["radix_nat", radix, T.nat, specialized("radix_to_nat"), specialized("radix_of_nat"), specialized("radix_roundtrip"), specialized("radix_nat_roundtrip"), named(manual)],
+      ["radix_nat", radix, naturalSort, specialized("radix_to_nat"), specialized("radix_of_nat"), specialized("radix_roundtrip"), specialized("radix_nat_roundtrip"), named(manual)],
     ]) {
       const label = `cubical_${direction}_base_${base}`;
       const equivalence = numberEquivalence(checker, label, A, B, forward, inverse, eta, epsilon);
       const result = transportNumberEquality(checker, `${label}_factorial`, equivalence, proof);
-      const checked = checker.syntax.check(result);
-      assert.equal(checked.normal, 0);
+      const checked = checker.checkView(result);
+      assert.equal(checked.normal, undefined);
       assert.ok(checked.arenaNodes < 2500000, `${label}: ${checked.arenaNodes} nodes`);
       assert.ok(checked.arenaBytes < 128 * 1024 * 1024, `${label}: ${checked.arenaBytes} bytes`);
       t.diagnostic(`${label}: ${checked.arenaNodes} nodes, ${checked.arenaBytes} bytes`);
@@ -101,7 +70,7 @@ test("actual binary and radix factorial proofs transport through native Glue in 
       const target = direction === "radix_nat" ? T.app(named("factorial"), ten)
         : direction === "radix_binary" ? T.app(named("binary_factorial"), ten)
         : T.app(specialized("radix_factorial"), ten);
-      checker.syntax.check(final, T.path("i", B, target, T.app(forward, original.right)));
+      checker.checkView(final, T.path("i", B, target, T.app(forward, original.right)));
     }
   }
   const concrete = translator.translate(await readFile(new URL(
@@ -122,6 +91,7 @@ test("actual binary and radix factorial proofs transport through native Glue in 
       if (node.kind === "DefRef") {
         const definition = kernel.definition(id);
         names.add(definition.name);
+        names.add(definition.name.split("__").at(-1));
         pending.push(definition.value, definition.type);
       }
     }
@@ -139,7 +109,7 @@ test("actual binary and radix factorial proofs transport through native Glue in 
     }
   }
   assert.ok(dependencies("factorial_ten_binary_to_nat").has("binary_factorial_ten"));
-  const last = checker.syntax.check(named("binary_factorial_ten"));
+  const last = checker.checkView(named("binary_factorial_ten"));
   t.diagnostic(`All concrete endpoints: ${last.arenaNodes} nodes, ${last.arenaBytes} bytes`);
   assert.ok(last.arenaNodes < 2500000);
   assert.ok(last.arenaBytes < 128 * 1024 * 1024);
@@ -147,9 +117,9 @@ test("actual binary and radix factorial proofs transport through native Glue in 
   let maximum = 0;
   for (let id = 1; id <= last.arenaNodes; id++) {
     const node = kernel.node(id);
-    if (node.kind === "Zero") lengths.set(id, 0);
-    if (node.kind === "Succ" && lengths.has(node.children[0])) {
-      const length = lengths.get(node.children[0]) + 1;
+    if (node.kind === "Con" && node.payload === 0 && kernel.node(node.children[0]).payload === kernel.signatures.get("nat__Nat").index) lengths.set(id, 0);
+    if (node.kind === "App" && kernel.node(node.children[0]).kind === "Con" && kernel.node(node.children[0]).payload === 1 && lengths.has(node.children[1])) {
+      const length = lengths.get(node.children[1]) + 1;
       lengths.set(id, length);
       maximum = Math.max(maximum, length);
     }

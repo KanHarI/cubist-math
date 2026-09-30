@@ -1,3 +1,5 @@
+import nat;
+
 // Natural-number arithmetic: addition, multiplication and order, with the
 // basic laws of addition. The notation `+`, `*`, `<` and `<=` stands for
 // `add`, `mul`, `isLt` and `le`, so importing this module enables it.

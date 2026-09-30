@@ -29,7 +29,7 @@ test("every library module is listed and checks completely", async t => {
   for (const name of libraryModules) {
     const path = fileURLToPath(new URL(`../library/${name}.cubist`, import.meta.url));
     const program = new CubicalProgram(await createCubical(), sourceReader({ path }), {
-      collectReferences: false, experimental: experimental.has(name) ? ["h1"] : [],
+      collectReferences: false, experimental: ["h1"],
     });
     t.after(() => program.dispose());
     const result = await program.check(await readFile(path, "utf8"), name);

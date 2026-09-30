@@ -21,6 +21,8 @@ export const proofTopics = [
 ];
 
 export const proofChoices = [
+  { id: "nat", topic: "arithmetic", title: "Natural numbers · a source declaration" },
+  { id: "w", topic: "homotopy", title: "Well-founded trees · a source declaration" },
   { id: "field_embedding_spaces", topic: "fields", title: "Spaces of field embeddings over a base" },
   { id: "algebraic_base_change", topic: "algebraic-extensions", title: "Algebraic elements · enlarging the base field" },
   { id: "basis_generators", topic: "algebraic-extensions", title: "Finite bases generate their field extensions" },

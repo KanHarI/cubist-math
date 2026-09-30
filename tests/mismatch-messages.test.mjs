@@ -1,4 +1,5 @@
 import "./fresh-build.mjs";
+import {naturalSort, numeral} from "../lib/cubical/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
@@ -35,15 +36,16 @@ def refined(value : Unit or Unit) : Shape(value) {
 test("the kernel reports the mismatched handles, and speculative checks stay undescribed", async t => {
   const program = new CubicalProgram(await createCubical(), async () => "", { collectReferences: false });
   t.after(() => program.dispose());
+  await program.check("import nat;", "main");
   const checker = program.checker;
-  const nat = { tag: "Nat" }, unit = { tag: "Unit" }, zero = { tag: "Zero" };
+  const nat = naturalSort, unit = { tag: "Unit" }, zero = numeral(0);
   const answer = checker.attempt(zero, unit);
   assert.equal(answer.ok, false);
   assert.equal(answer.failure, "mismatch");
   assert.equal(answer.error.message, "Type mismatch.");
   assert.ok(answer.error.mismatch.found && answer.error.mismatch.expected);
   assert.throws(() => checker.check(zero, unit), /^Error: Type mismatch: found Nat, expected Unit\.$/);
-  assert.equal(checker.check(zero, nat).tag, "Zero");
+  assert.equal(checker.check(zero, nat).tag, "Con");
 });
 
 test("display renaming never merges two different names", () => {
@@ -66,9 +68,9 @@ test("a variable reads alike on both sides of a mismatch", async t => {
   t.after(() => program.dispose());
   await program.check("import naturals;\n", "main");
   const add = (a, b) => T.app(T.app({ tag: "DefRef", name: "naturals__add" }, a), b);
-  const add1 = T.variable("add1"), context = [["add1", T.nat], ["p", T.path("i", T.nat, add(add1, T.succ(T.zero)), add1)]];
+  const add1 = T.variable("add1"), context = [["add1", naturalSort], ["p", T.path("i", naturalSort, add(add1, numeral(1)), add1)]];
   let message = null;
-  try { program.checker.checkView(T.variable("p"), T.path("i", T.nat, add1, add1), context); }
+  try { program.checker.checkView(T.variable("p"), T.path("i", naturalSort, add1, add1), context); }
   catch (error) { message = error.message; }
   assert.match(message ?? "", /^Type mismatch: found add1 \+ 1 = add1, expected add1 = add1\.$/);
 });

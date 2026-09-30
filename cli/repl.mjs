@@ -35,10 +35,11 @@ before it. An entry continues on the next line while a bracket is open.
 Noninteractive: node cli/repl.mjs check euclid
                 node cli/repl.mjs "import naturals; evaluate 2 + 3;"
 Optimizations: --[no-]share-syntax, --[no-]reuse-checks, --[no-]compact-paths
-Kernel extensions under review: --experimental=h1 admits declared types
+H1 declared types are enabled by default and remain under mathematical review.
+Nat is imported from the source prelude; import w for W(U,V,A,B).
 (inductive), and results that use them carry the marker kernel extension: H1.
 --representation=declared additionally checks the finite-tier representation map τ.`;
-const args = process.argv.slice(2), optimizations = {}, experimental = [];
+const args = process.argv.slice(2), optimizations = {}, experimental = ["h1"];
 let representation="native";
 const command = [];
 for (const arg of args) {

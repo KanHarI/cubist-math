@@ -1,3 +1,5 @@
+import nat;
+
 import ordered_fields;
 
 // Natural indices are separate from the field's ordered carrier.

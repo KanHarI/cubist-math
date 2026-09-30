@@ -61,7 +61,7 @@ const readSource = name => readFile(new URL(`../archive/first-library/${cubicalS
 // A stale WASM kernel or translator copy would measure code it does not contain.
 assertFreshBuild();
 const program = new CubicalProgram(await createCubical(), readSource, {
-  representation, experimental: representation === "declared" ? ["h1"] : [],
+  representation, experimental: ["h1"],
 });
 const kernel = program.translation?.kernel ?? program.kernel;
 kernel.conversionOracle = oracle;

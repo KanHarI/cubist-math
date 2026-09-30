@@ -50,7 +50,7 @@ static void queries_leave_acceptance_unchanged(void) {
     k = cc_kernel_new();
     assert(k);
     cc_term l0 = cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0);
-    cc_judgement_id u0 = OK(cc_instr_universe(k, l0)), nat = OK(cc_instr_nat(k));
+    cc_judgement_id u0 = OK(cc_instr_universe(k, l0)), nat = OK(cc_instr_unit(k));
     cc_entry_id a = OK(cc_instr_extend(k, u0, 100));
     cc_judgement_id identity = OK(cc_instr_lambda(k, a, OK(cc_instr_variable(k, a))));
     cc_judgement_id beta_nat = OK(cc_instr_apply(k, identity, nat));
@@ -83,7 +83,7 @@ static void queries_leave_acceptance_unchanged(void) {
 static void folded_comparison_reads_only_its_own_results(void) {
     k = cc_kernel_new();
     assert(k);
-    cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term nat = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
     cc_term x = cc_kernel_term(k, CC_VAR, 10, 0, 0, 0, 0);
     cc_term z = cc_kernel_term(k, CC_VAR, 11, 0, 0, 0, 0);
     cc_term identity = cc_kernel_term(k, CC_LAM, 11, nat, z, 0, 0);
@@ -108,7 +108,7 @@ static void folded_comparison_reads_only_its_own_results(void) {
 static void reduction_decides_eta_syntactically(void) {
     k = cc_kernel_new();
     assert(k);
-    cc_judgement_id nat = OK(cc_instr_nat(k));
+    cc_judgement_id nat = OK(cc_instr_unit(k));
     cc_entry_id n = OK(cc_instr_extend(k, nat, 200));
     cc_judgement_id sigma = OK(cc_instr_sigma(k, n, nat));
     cc_entry_id p = OK(cc_instr_extend(k, sigma, 201)), q = OK(cc_instr_extend(k, sigma, 202));
@@ -138,7 +138,7 @@ static void reduction_decides_eta_syntactically(void) {
     assert(cc_zero(&formula) == CC_OK);
     cc_formula_id never = cc_kernel_formula(k, &formula);
     cc_clear(&formula);
-    cc_judgement_id unit = OK(cc_instr_unit(k)), point = OK(cc_instr_point(k)), zero = OK(cc_instr_zero(k));
+    cc_judgement_id unit = OK(cc_instr_unit(k)), point = OK(cc_instr_point(k)), zero = OK(cc_instr_point(k));
     cc_judgement_id over_redex = OK(cc_instr_glue(k, OK(cc_instr_glue_piece(k, OK(cc_instr_glue_base(k, beta_nat)), never, unit, zero))));
     cc_judgement_id over_nat = OK(cc_instr_glue(k, OK(cc_instr_glue_piece(k, OK(cc_instr_glue_base(k, nat)), never, unit, zero))));
     cc_entry_id b = OK(cc_instr_extend(k, over_redex, 204));
@@ -212,7 +212,7 @@ static void normal_forms_and_conversion_keep_eta(void) {
     assert(cc_kernel_normalize(k, glued) == b);
     assert(cc_kernel_convertible(k, glued, b, 0));
 
-    cc_term nat = ck_make(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term nat = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0);
     cc_term small = ck_make(k, CC_SIGMA, 400, nat, ck_universe_at(k, 0), 0, 0);
     cc_term large = ck_make(k, CC_SIGMA, 400, nat, ck_universe_at(k, 1), 0, 0);
     cc_term q = ck_var(k, 401);
@@ -255,8 +255,8 @@ static void normal_forms_and_conversion_keep_eta(void) {
 static void nested_glue_exposure_is_depth_guarded(void) {
     k = cc_kernel_new();
     assert(k);
-    cc_term u0 = ck_universe_at(k, 0), zero = ck_make(k, CC_ZERO, 0, 0, 0, 0, 0);
-    cc_term type = cc_kernel_define(k, 1000, ck_make(k, CC_NAT, 0, 0, 0, 0, 0), u0);
+    cc_term u0 = ck_universe_at(k, 0), zero = ck_make(k, CC_POINT, 0, 0, 0, 0, 0);
+    cc_term type = cc_kernel_define(k, 1000, ck_make(k, CC_UNIT, 0, 0, 0, 0, 0), u0);
     cc_term value = cc_kernel_define(k, 2000, zero, type);
     assert(type && value);
     for (unsigned depth = 1; depth <= 600; ++depth) {
@@ -369,7 +369,7 @@ static void glue_step_normalizes_only_its_side_conditions(void) {
 static void conversion_refused_inside_an_instruction(void) {
     k = cc_kernel_new();
     assert(k);
-    cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term nat = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
     ck_operation(k, CC_WORK_INSTRUCTION);
     assert(!ck_convertible(k, nat, nat));
     assert(strstr(cc_kernel_error(k), "reached the conversion search"));

@@ -1,3 +1,5 @@
+import nat;
+
 // Suspension glues two points along one path for each element of A.
 // All operations below are ordinary definitions over the pushout primitive.
 def Suspension(A : U0) := Pushout(A, Unit, Unit, fun (a : A) => tt, fun (a : A) => tt);

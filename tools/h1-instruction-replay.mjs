@@ -20,8 +20,8 @@ const declaredRefusalMessages = {
   sup:"Expected W, found Sort",
   hcomp:"A declared data sort has no formal composition or transport",
 };
-export function replayInstructions(module, fixtures) {
-  const kernel = new CubicalKernel(module), source = new NativeCubicalElaborator(kernel);
+export function replayInstructions(module, fixtures, {sourceModule=module}={}) {
+  const kernel = new CubicalKernel(sourceModule), source = new NativeCubicalElaborator(kernel);
   const target = new H1Translation(module,source);
   const report = { replayed:0, equalities:0, refused:0, unequal:0, refusals:{}, refusalReasons:[], kinds:{}, failures:[] };
   const importNode = node => {
@@ -140,7 +140,8 @@ export function replayInstructions(module, fixtures) {
     if(declaredReason.kind !== nativeReason.kind)
       throw Error(`Refusal class changed from ${nativeReason.kind} to ${declaredReason.kind}: ${declaredReason.message}`);
     if(nativeReason.kind === "other") {
-      const expected=declaredRefusalMessages[fixture.operation] ?? fixture.nativeError.expected;
+      const expected=fixture.operation === "sup" && terms[0].tag !== "W" ? "Unknown term constructor"
+        : declaredRefusalMessages[fixture.operation] ?? fixture.nativeError.expected;
       if(!nativeReason.message.includes(fixture.nativeError.expected) || !declaredReason.message.includes(expected))
         throw Error(`Refusal diagnostic changed: native ${nativeReason.message}; declared ${declaredReason.message}`);
     }

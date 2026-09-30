@@ -5,6 +5,7 @@
  * derives it. */
 #include "cubical_kernel.h"
 #include "term_internal.h"
+#include "declared_nat_fixture.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -313,14 +314,14 @@ static void instances(void) {
 
     /* V1, V7: List(Nat) reads x := 0 from Nat : U0. Lifted to U1, the same
      * instance term lives in U1: the erased level is not part of it. */
-    cc_judgement_id nat = OK(cc_instr_nat(k));
+    cc_judgement_id nat = OK(fixture_nat(k));
     cc_judgement_id list0 = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, list_signature)), nat));
     cc_judgement_id nat1 = OK(cc_instr_lift(k, nat, universe(lconst(1))));
     cc_judgement_id list1 = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, list_signature)), nat1));
     assert(term_of(list1) == term_of(list0));
     assert(type_of(list0) == term_of(universe(lconst(0))) && type_of(list1) == term_of(universe(lconst(1))));
     cc_term cons_type = type_of(OK(cc_instr_construct(k, list0, 1)));
-    assert(kind(child(cons_type, 0)) == CC_NAT && child(child(cons_type, 1), 0) == term_of(list0));
+    assert(kind(child(cons_type, 0)) == CC_SORT && child(child(cons_type, 1), 0) == term_of(list0));
     /* V8: a reading at tier 1 is refused. */
     cc_judgement_id big = OK(cc_instr_lift(k, nat, universe(tier1(0))));
     REJECTS(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, list_signature)), big), "finite levels only");
@@ -391,7 +392,7 @@ static void instances(void) {
     cc_judgement_id tagged_up = OK(cc_instr_sort_parameter(k, t1, nat));
     assert(term_of(tagged_up) != term_of(tagged_nat) && type_of(tagged_up) == term_of(universe(lconst(2))));
     cc_term tag = type_of(OK(cc_instr_construct(k, tagged_nat, 0)));
-    assert(kind(child(tag, 0)) == CC_NAT && child(child(tag, 1), 0) == term_of(universe(lconst(0))));
+    assert(kind(child(tag, 0)) == CC_SORT && child(child(tag, 1), 0) == term_of(universe(lconst(0))));
     assert(child(child(tag, 1), 1) == term_of(tagged_nat));
 
     /* Tree(Nat, λ n. Nat) : U0; sup : Π (l : Nat). Π (c : Π (b : (λ n. Nat)(l)). T). T,
@@ -407,7 +408,7 @@ static void instances(void) {
     REJECTS(cc_instr_replace(k, half_tree, 0, (const uint8_t[]){0, 0}, 2, OK(cc_instr_refl(k, nat))), "not rewritten");
     cc_term sup = type_of(OK(cc_instr_construct(k, tree, 0)));
     cc_term position = child(child(sup, 1), 0);
-    assert(kind(child(sup, 0)) == CC_NAT && kind(position) == CC_PI && kind(child(position, 0)) == CC_APP);
+    assert(kind(child(sup, 0)) == CC_SORT && kind(position) == CC_PI && kind(child(position, 0)) == CC_APP);
     assert(child(position, 1) == term_of(tree) && child(child(sup, 1), 1) == term_of(tree));
 
     /* Constructor expressions at an instance: fix : wrap(⟨i⟩ loop @ i) = base,
@@ -487,7 +488,7 @@ static void shapes(void) {
     assert(constructor(quotient, 2).generated && constructor(quotient, 2).dimensions == 2);
 
     /* A15: Cantor : set { leaf; node(f : Nat → s); }, infinitary. */
-    cc_judgement_id nat = OK(cc_instr_nat(k));
+    cc_judgement_id nat = OK(fixture_nat(k));
     sig = OK(cc_instr_signature_begin(k, former_u0(), 2, S_CAN, 0));
     s = OK(cc_instr_extend(k, former_u0(), S_CAN));
     sig = OK(cc_instr_signature_constructor(k, sig, var(s), CAN_LEAF));
@@ -657,7 +658,7 @@ static cc_term reduct(cc_judgement_id j, cc_step_rule rule) {
  * boundary of its type, by the path step, Whnf and Normalize, in whichever
  * order the faces are reached (sections 2.5, 3.2 and 5.4). */
 static void boundaries(void) {
-    cc_judgement_id nat = OK(cc_instr_nat(k)), zero = OK(cc_instr_zero(k));
+    cc_judgement_id nat = OK(fixture_nat(k)), zero = OK(fixture_zero(k));
     cc_judgement_id u0 = universe(lconst(0));
     /* N1: loop @ 0 and loop @ 1 are base. */
     cc_judgement_id s1 = OK(cc_instr_sort_begin(k, circle_signature));
@@ -719,15 +720,15 @@ static void boundaries(void) {
     cc_entry_id n = OK(cc_instr_extend(k, nat, PUSH_N));
     cc_judgement_id push = OK(cc_instr_sort_begin(k, push_signature));
     const cc_judgement_id parameters[] = {nat, nat, nat, OK(cc_instr_lambda(k, n, var(n))),
-                                          OK(cc_instr_lambda(k, n, OK(cc_instr_succ(k, var(n)))))};
+                                          OK(cc_instr_lambda(k, n, OK(fixture_succ(k, var(n)))))};
     for (unsigned p = 0; p < 5; ++p)
         push = OK(cc_instr_sort_parameter(k, push, parameters[p]));
     assert(type_of(push) == term_of(u0));
     cc_judgement_id push0 = OK(cc_instr_apply(k, OK(cc_instr_construct(k, push, 2)), zero));
     cc_term inl0 = term_of(OK(cc_instr_apply(k, OK(cc_instr_construct(k, push, 0)), zero)));
-    cc_term inr1 = term_of(OK(cc_instr_apply(k, OK(cc_instr_construct(k, push, 1)), OK(cc_instr_succ(k, zero)))));
-    assert(reduct(OK(cc_instr_path_apply(k, push0, 0, 0)), CC_STEP_NORMALIZE) == inl0);
-    assert(reduct(OK(cc_instr_path_apply(k, push0, 0, 1)), CC_STEP_NORMALIZE) == inr1);
+    cc_term inr1 = term_of(OK(cc_instr_apply(k, OK(cc_instr_construct(k, push, 1)), OK(fixture_succ(k, zero)))));
+    assert(reduct(OK(cc_instr_path_apply(k, push0, 0, 0)), CC_STEP_NORMALIZE) == cc_kernel_normalize(k, inl0));
+    assert(reduct(OK(cc_instr_path_apply(k, push0, 0, 1)), CC_STEP_NORMALIZE) == cc_kernel_normalize(k, inr1));
     cc_term head = reduct(OK(cc_instr_path_apply(k, push0, 0, 0)), CC_STEP_WHNF);
     assert(kind(head) == CC_APP && child(head, 0) == term_of(OK(cc_instr_construct(k, push, 0))));
 
@@ -1119,7 +1120,7 @@ static cc_judgement_id property_instance(unsigned sort, cc_judgement_id type, ui
     if (sort == 0)
         return OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, susp_signature)), type));
     cc_entry_id x = OK(cc_instr_extend(k, type, symbol)), y = OK(cc_instr_extend(k, type, symbol + 1));
-    *relation = OK(cc_instr_lambda(k, x, OK(cc_instr_lambda(k, y, OK(cc_instr_nat(k))))));
+    *relation = OK(cc_instr_lambda(k, x, OK(cc_instr_lambda(k, y, OK(fixture_nat(k))))));
     return OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, quotient_signature)), type)),
                                       *relation));
 }
@@ -1153,7 +1154,7 @@ static cc_judgement_id property_term(unsigned sort, cc_judgement_id instance, cc
     cc_judgement_id eq = OK(cc_instr_apply(k, OK(cc_instr_apply(k, OK(cc_instr_construct(k, instance, 1)), element)), element));
     cc_judgement_id related = OK(cc_instr_apply(k, OK(cc_instr_apply(k, relation, element)), element));
     cc_judgement_id is_nat = OK(cc_instr_step(k, OK(cc_instr_refl(k, related)), 1, NULL, 0, CC_STEP_WHNF));
-    cc_judgement_id witness = OK(cc_instr_convert(k, OK(cc_instr_zero(k)), OK(cc_instr_symmetry(k, is_nat))));
+    cc_judgement_id witness = OK(cc_instr_convert(k, OK(fixture_zero(k)), OK(cc_instr_symmetry(k, is_nat))));
     return OK(cc_instr_path_at(k, OK(cc_instr_apply(k, eq, witness)), random_formula()));
 }
 
@@ -1321,7 +1322,7 @@ static void critical_composition_pairs(void) {
 /* F5: elimination (sections 3.6, 3.7, 5.6). */
 static void elimination(void) {
     cc_entry_id i = OK(cc_instr_dimension(k, 0)), j = OK(cc_instr_dimension(k, 1));
-    cc_judgement_id nat = OK(cc_instr_nat(k));
+    cc_judgement_id nat = OK(fixture_nat(k));
 
     /* N: P(zero), then Π (n : N). Π (n̄ : P(n)). P(succ(n)). */
     cc_judgement_id n = OK(cc_instr_sort_begin(k, nat_signature));
@@ -1331,7 +1332,7 @@ static void elimination(void) {
     assert(info(opened).kind == 6 && type_of(opened) == term_of(at(p, zero)) && !info(opened).other);
     REJECTS(cc_instr_eliminator_close(k, opened), "lacks a clause");
     /* E6: a clause of the wrong type. */
-    REJECTS(cc_instr_eliminator_clause(k, opened, OK(cc_instr_zero(k))), "clause type");
+    REJECTS(cc_instr_eliminator_clause(k, opened, OK(fixture_zero(k))), "clause type");
     cc_entry_id pz = OK(cc_instr_extend(k, at(p, zero), ELIM_PZ));
     cc_judgement_id after_zero = OK(cc_instr_eliminator_clause(k, opened, var(pz)));
     cc_entry_id m = OK(cc_instr_extend(k, n, ELIM_N)), h = OK(cc_instr_extend(k, at(p, var(m)), ELIM_H));
@@ -1350,8 +1351,8 @@ static void elimination(void) {
     REJECTS(cc_instr_step(k, OK(cc_instr_refl(k, OK(cc_instr_apply(k, elim, var(m))))), 1, NULL, 0, CC_STEP_IOTA),
             "Iota needs");
     /* A motive over no declared type is refused. */
-    cc_entry_id z = OK(cc_instr_extend(k, nat, ELIM_Z));
-    REJECTS(cc_instr_eliminator(k, OK(cc_instr_lambda(k, z, nat))), "instance of a declared type");
+    cc_entry_id plain = OK(cc_instr_extend(k, OK(cc_instr_unit(k)), 899999));
+    REJECTS(cc_instr_eliminator(k, OK(cc_instr_lambda(k, plain, nat))), "instance of a declared type");
 
     /* The circle: loop's clause is PathP(i. P(loop @ i), pb, pb); E7: one
      * whose ends are not the base clause is refused. */
@@ -1504,7 +1505,7 @@ static void elimination(void) {
  * lifted to a path abstraction. */
 static void elimination_capture(void) {
     cc_entry_id i = OK(cc_instr_dimension(k, 0)), j = OK(cc_instr_dimension(k, 1));
-    cc_judgement_id nat = OK(cc_instr_nat(k)), zero = OK(cc_instr_zero(k));
+    cc_judgement_id nat = OK(fixture_nat(k)), zero = OK(fixture_zero(k));
 
     /* Box { box(n : Nat); }, and the clause λ x. n, whose n is the admission
      * entry, free: elim(box(0)) is (λ x. n)(0). */
@@ -1630,7 +1631,7 @@ static cc_judgement_id open_bad(cc_entry_id *s, uint32_t sort) {
 
 static void refusals(void) {
     cc_entry_id s;
-    cc_judgement_id nat = OK(cc_instr_nat(k));
+    cc_judgement_id nat = OK(fixture_nat(k));
     cc_judgement_id sig = open_bad(&s, S_BAD);
     cc_entry_id f = OK(cc_instr_extend(k, OK(cc_instr_pi(k, OK(cc_instr_extend(k, var(s), BX)), nat)), BF));
     /* A4: s in data, as the domain of a function argument. */
@@ -1683,7 +1684,7 @@ static void refusals(void) {
     cc_entry_id c2 = OK(cc_instr_extend(k, nat_con, C2));
     cc_entry_id w = OK(cc_instr_extend(k, var(s), Z + 1));
     cc_judgement_id zero_of_w = OK(cc_instr_apply(k, OK(cc_instr_lambda(k, OK(cc_instr_extend(k, var(s), Z + 2)),
-                                                                           OK(cc_instr_zero(k)))), var(w)));
+                                                                           OK(fixture_zero(k)))), var(w)));
     cc_judgement_id tainted = OK(cc_instr_apply(k, var(c2), zero_of_w));
     cc_judgement_id tainted_type = OK(cc_instr_pi(k, w, OK(cc_instr_path(k, i, var(s), tainted, var(w)))));
     REJECTS(cc_instr_signature_constructor(k, with_nat, tainted_type, Z + 3), "data terms only");
@@ -1714,7 +1715,7 @@ static cc_judgement_id former_into_u0(uint32_t x, uint32_t a, cc_entry_id *ae) {
 }
 
 static void hidden_bounds(void) {
-    cc_judgement_id nat = OK(cc_instr_nat(k)), u0 = universe(lconst(0)), uu0 = universe(tier1(0));
+    cc_judgement_id nat = OK(fixture_nat(k)), u0 = universe(lconst(0)), uu0 = universe(tier1(0));
     cc_judgement_id nat_big = OK(cc_instr_lift(k, nat, uu0)), uu0_itself = uu0;
     cc_entry_id ae;
 
@@ -1806,7 +1807,7 @@ static void resources(void) {
 
     /* R2: a constructor with 64 arguments is admitted, and one with 65 is
      * refused. */
-    cc_judgement_id nat = OK(cc_instr_nat(k));
+    cc_judgement_id nat = OK(fixture_nat(k));
     cc_entry_id args[CC_CONSTRUCTOR_ARGUMENTS + 1];
     for (uint32_t a = 0; a <= CC_CONSTRUCTOR_ARGUMENTS; ++a)
         args[a] = OK(cc_instr_extend(k, nat, RES_N + a));
@@ -1851,7 +1852,7 @@ static void resources(void) {
  * them, reduction leaves them or refuses them with an error, and the term
  * checker and the instructions refuse them. */
 static void malformed(void) {
-    cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term nat = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
     cc_term sort = cc_kernel_term(k, CC_SORT, 9999, 0, 0, 0, 0);
     cc_term con = cc_kernel_term(k, CC_CON, 77, sort, 0, 0, 0);
     cc_term elim = cc_kernel_term(k, CC_ELIM, 9999, nat, 0, 0, 0);
@@ -1900,7 +1901,7 @@ int main(void) {
     cc_kernel_set_extensions(k, CC_EXTENSION_H1);
     assert(cc_kernel_extensions(k) == CC_EXTENSION_H1);
     /* Formers that are not Π (xs < ω). Π (ps : Ps). U(ℓ), or not closed. */
-    REJECTS(cc_instr_signature_begin(k, OK(cc_instr_nat(k)), CC_UNTRUNCATED, S_N, 0), "former type");
+    REJECTS(cc_instr_signature_begin(k, OK(fixture_nat(k)), CC_UNTRUNCATED, S_N, 0), "former type");
     REJECTS(cc_instr_signature_begin(k, former_u0(), CC_TRUNCATION_MAX + 3, S_N, 0), "truncation level");
     natural_numbers();
     lists();

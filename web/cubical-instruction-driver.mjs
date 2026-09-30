@@ -355,8 +355,22 @@ export class InstructionDriver {
     }
     case "Succ": return g.succ(this.convertTo(derive(a), g.nat()));
     case "LPi": case "LLam": {
-      const entry = g.levelEntry(n.payload), inner = new Map(scope).set(n.payload, entry);
-      const body = derive(b, inner);
+      let symbol=n.payload, entry, bodyHandle=b;
+      try { entry=g.levelEntry(symbol); }
+      catch(error) {
+        if(!/already names/.test(error.message))throw error;
+        // A warm session may already use this spelling for a term entry.
+        // Rename the bound level and its occurrences together before replay.
+        const stem=this.kernel.symbolName(symbol);
+        for(let suffix=1;;suffix++) {
+          const fresh=this.kernel.symbol(`${stem}'level${suffix}`);
+          try { entry=g.levelEntry(fresh);symbol=fresh;break; }
+          catch(error) {if(!/already names/.test(error.message))throw error;}
+        }
+        bodyHandle=g.rename(b,false,n.payload,symbol);
+      }
+      const inner = new Map(scope).set(symbol, entry);
+      const body = derive(bodyHandle, inner);
       return n.kind === "LPi" ? g.levelPi(entry, this.asType(body)) : g.levelLambda(entry, body);
     }
     case "LApp": return g.levelApply(this.shape(this.focus(derive(a), "type"), "LPi"), b);

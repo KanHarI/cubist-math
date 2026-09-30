@@ -119,7 +119,8 @@
                 <tr><td data-message="Expected a Sigma type for pair.">“Expected a Sigma type for pair.”</td><td>A pair is checked against a type that is not a pair type, or a tuple does not match the nesting of its type.</td><td><a href="terms.html#tuples">tuples</a></td></tr>
                 <tr><td data-message="requires a dependent pair; found a value of type">“Projection <var>.1</var> requires a dependent pair; found a value of type <var>T</var>.”</td><td>Only a pair has projections. The message shows the type of the projected value.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
                 <tr><td data-message="unpack requires a dependent pair.">“unpack requires a dependent pair.”</td><td>Only pairs can be unpacked.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
-                <tr><td data-message="match requires a sum type.">“match requires a sum type.”</td><td><code>match</code> analyses <code>A or B</code>. Use <code>induction</code> for <code>Nat</code>.</td><td><a href="terms.html#match">match</a></td></tr>
+                <tr><td data-message="Nat has no constructor left: its constructors are zero, succ.">“Nat has no constructor left: its constructors are zero, succ.”</td><td><code>match</code> clauses name the constructors of the matched type. Nat has <code>zero</code> and <code>succ</code>.</td><td><a href="terms.html#match">match</a></td></tr>
+                <tr><td data-message="loop is being defined: it can call itself only on an argument of a constructor">“loop is being defined: it can call itself only on an argument of a constructor”</td><td>Use a structural <code>match</code> and recurse on a matched constructor argument.</td><td><a href="first-proof.html#order">recursion</a></td></tr>
               </tbody>
             </table></div>
           </section>

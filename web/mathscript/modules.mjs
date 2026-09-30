@@ -1,5 +1,7 @@
 // Bundled mathematical source modules; no checked proof snapshots.
 export const sourceModules = [
+  "nat",
+  "w",
   "fundamental_groups",
   "suspension_types",
   "field_embedding_spaces",

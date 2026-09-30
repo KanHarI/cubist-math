@@ -107,7 +107,7 @@ def arity(n : N) : N := match n { zero => zero; succ => zero; };
 def growing(n : N) : N := match n { zero => zero; succ(m) => growing(succ(m)); };
 def outside(n : N) : N := add(outside(n), match n { zero => zero; succ(m) => m; });
 def untyped(n : N) := match n { zero => zero; succ(m) => m; };
-def on_nat(n : Nat) : Nat := match n { zero => zero; succ(m) => m; };
+def on_nat(n : Unit) : Unit := match n { zero => tt; succ(m) => tt; };
 `);
   refused(get("unknown"), /N has no constructor tail: its constructors are zero, succ/);
   refused(get("twice"), /zero has two clauses/);
@@ -760,9 +760,9 @@ def unknown := match succ(zero) { zero => zero; };
 });
 
 test("without the experimental option, the match statement says what it needs", async t => {
-  const program = new CubicalProgram(module, sourceReader());
+  const program = new CubicalProgram(module, sourceReader(), {experimental:[],prelude:false});
   t.after(() => program.dispose());
-  const result = await program.check("def f(n : Nat) : Nat {\n  match n {\n    zero => { exact n; }\n  }\n}\n", "main");
+  const result = await program.check("def f(n : Unit) : Unit {\n  match n {\n    zero => { exact n; }\n  }\n}\n", "main");
   refused(result.outputs.find(output => output.name === "f"),
     /^The match statement takes apart a value of a declared type, a kernel extension under review: enable the experimental option h1/);
 });

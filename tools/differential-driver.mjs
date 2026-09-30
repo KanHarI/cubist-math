@@ -33,6 +33,9 @@ export function random(seed) {
 
 const equivalence = identityEquivalence(T.unit);
 const U0 = T.universe(0);
+// A primitive sum supplies the raw checker's data carrier; source Nat is
+// checked by the H1 instruction kernel and the full source corpus.
+const data = T.sum(T.unit,T.unit);
 // A type equal to a base type only by a beta step: (λ X. X)(A).
 const redex = type => T.app(T.lam("X", U0, T.variable("X")), type);
 
@@ -40,18 +43,18 @@ const redex = type => T.app(T.lam("X", U0, T.variable("X")), type);
 // context, how to write an equal variant of itself, and which expansions it
 // admits. A Glue type over a face depends on the dimension i.
 const types = {
-  nat: { term: T.nat, neutral: ["n", "n2"] },
-  sigma: { term: T.sigma("s", T.nat, T.nat), neutral: ["u", "u2"] },
-  glueNat: { term: T.glueType(T.nat, []), neutral: ["g", "g2"], base: "nat" },
-  glueSigma: { term: T.glueType(T.sigma("s", T.nat, T.nat), []), neutral: ["h", "h2"], base: "sigma" },
-  glueNested: { term: T.glueType(T.glueType(T.nat, []), []), neutral: ["w", "w2"], base: "glueNat" },
+  nat: { term: data, neutral: ["n", "n2"] },
+  sigma: { term: T.sigma("s", data, data), neutral: ["u", "u2"] },
+  glueNat: { term: T.glueType(data, []), neutral: ["g", "g2"], base: "nat" },
+  glueSigma: { term: T.glueType(T.sigma("s", data, data), []), neutral: ["h", "h2"], base: "sigma" },
+  glueNested: { term: T.glueType(T.glueType(data, []), []), neutral: ["w", "w2"], base: "glueNat" },
 };
 const faceType = (dimension, face) => T.glueType(T.unit, [{ face: F.endpoint(dimension, face), type: T.unit, equiv: equivalence }]);
 
 // A type equal to `name`'s, written differently where the generator chooses.
 function variant(r, name) {
   switch (name) {
-  case "nat": return r.chance(0.3) ? redex(T.nat) : T.nat;
+  case "nat": return r.chance(0.3) ? redex(data) : data;
   case "sigma": return T.sigma("s", variant(r, "nat"), variant(r, "nat"));
   case "glueNat": return T.glueType(variant(r, "nat"), []);
   case "glueSigma": return T.glueType(variant(r, "sigma"), []);

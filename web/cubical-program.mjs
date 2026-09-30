@@ -12,6 +12,7 @@ import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notati
 import { checkReduction, simplifyTypeApplications } from "./cubical-reduction.mjs";
 import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
 import { H1Translation } from "./h1-translation.mjs";
+import naturalSource from "./dist/cubical-runtime/nat-source.mjs";
 
 const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${index}` : "";
 
@@ -20,7 +21,7 @@ const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${
 // an earlier checked reference. Unsupported declarations never become axioms.
 export class CubicalProgram {
   constructor(module, readSource, { onDeclarationStart, onDeclaration, collectReferences = true, optimizations = {}, manageTransactions = true,
-    searchFuel, declarationFuel, experimental = [], representation = "native" } = {}) {
+    searchFuel, declarationFuel, experimental = ["h1"], representation = "native", prelude = true } = {}) {
     if (!["native","declared"].includes(representation)) throw Error(`Unknown type representation: ${representation}.`);
     if (representation === "declared" && !experimental.includes("h1"))
       throw Error("Declared representation uses the experimental H1 kernel: enable h1.");
@@ -39,6 +40,7 @@ export class CubicalProgram {
     this.representation = representation;
     this.translation = representation === "declared" ? new H1Translation(module,this.checker) : null;
     this.readSource = readSource;
+    this.prelude=prelude;
     this.onDeclarationStart = onDeclarationStart; this.onDeclaration = onDeclaration;
     this.collectReferences = collectReferences;
     this.manageTransactions = manageTransactions;
@@ -76,8 +78,15 @@ export class CubicalProgram {
     const prepare = async (name, text = null, importer = null) => {
       if (this.modules.has(name) || prepared.has(name)) return;
       try {
-        text ??= await this.readSource(name, importer);
+        if(text===null) {
+          try { text=await this.readSource(name,importer); }
+          catch(error) {if(name!=="nat"||!this.prelude)throw error;}
+          // Readers with no standard library (such as an exported inspection)
+          // can still load the bundled source of the ordinary prelude module.
+          if(name==="nat"&&this.prelude&&!text)text=naturalSource;
+        }
         const ast = parse(text);
+        if(this.prelude&&name!=="nat"&&!ast.imports.includes("nat"))ast.imports.unshift("nat");
         prepared.set(name, { text, ast });
         total += ast.declarations.length;
         onProgress({ completed: this.completed, total: null, current: name,

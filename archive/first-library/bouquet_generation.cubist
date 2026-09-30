@@ -1,3 +1,5 @@
+import nat;
+
 import bouquet_cover;
 import loop_words;
 import field_extensionality;

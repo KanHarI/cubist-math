@@ -36,7 +36,7 @@ const editedFile = option("--edited-file");
 const selected = option("--declarations")?.split(",");
 const representation = option("--representation") ?? "native";
 // Kernel extensions under review to enable, as the CLI's --experimental=h1.
-const experimental = (option("--experimental") ?? "").split(",").filter(Boolean);
+const experimental = (option("--experimental") ?? "h1").split(",").filter(Boolean);
 if (args.some(arg => arg.startsWith("--"))) throw new Error(`Unknown option: ${args.find(arg => arg.startsWith("--"))}`);
 const git = gitArgs => execFileSync("git", gitArgs, { cwd: root, encoding: "utf8", maxBuffer: 1 << 28 });
 if (ledger?.base && git(["rev-parse", base]).trim() !== git(["rev-parse", ledger.base]).trim())

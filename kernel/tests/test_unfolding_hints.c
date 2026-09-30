@@ -5,8 +5,8 @@
 int main(void) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
-    cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
-    cc_term zero = cc_kernel_term(k, CC_ZERO, 0, 0, 0, 0, 0);
+    cc_term nat = cc_kernel_term(k, CC_U, 0, cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
+    cc_term zero = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
     cc_term reference = cc_kernel_define(k, 1, zero, nat);
     assert(reference);
     cc_term repeated[] = {reference, reference};
@@ -24,7 +24,7 @@ int main(void) {
     assert(!k->unfolding_hints && !k->unfolding_hint_count);
     cc_kernel_clear_error(k);
     assert(cc_kernel_set_unfolding_hints(k, &reference, 1));
-    cc_term one = cc_kernel_term(k, CC_SUCC, 0, zero, 0, 0, 0);
+    cc_term one = cc_kernel_term(k, CC_SUM, 0, cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0), zero, 0, 0);
     assert(ck_convertible(k, reference, zero));
     assert(cc_kernel_set_unfolding_hints(k, NULL, 0));
     assert(ck_convertible(k, reference, zero));

@@ -137,7 +137,7 @@ function mapDefinitions(rename, signatureName = name => name) {
 // readOriginal/readEdited return module source text. Returns one report per
 // module; `failures` lists every declaration that does not meet the level.
 export async function verifyMigration({ modules, readOriginal, readEdited, level = "identical",
-  typeTimeLimitMs = 10000, experimental = [], ledger = null, declarations = null, representation = "native" } = {}) {
+  typeTimeLimitMs = 10000, experimental = ["h1"], ledger = null, declarations = null, representation = "native" } = {}) {
   if (!["identical", "types"].includes(level)) throw new Error(`Unknown verification level: ${level}`);
   const allowedChanges = validateLedger(ledger);
   const compared = new Set(modules), shadowOf = module => `${module}${SHADOW}`;
@@ -345,7 +345,17 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
             if (!identical.has(reference) && !ledgerVerified.has(reference))
               return fail(name, `Ledger dependency ${reference} must be identical or have its own verified ledger entry.`);
           }
-          if (observed.oldPublicType.hash === observed.newPublicType.hash && assumptions(originalBinding) === assumptions(editedBinding)
+          // A type former's public type is its returned type construction,
+          // pinned by oldValue/newValue. Both versions may already carry H1
+          // through Nat, even when the new returned type uses truncation.
+          const typeFormer = type => {
+            let end = checker.nf(type);
+            while (end.tag === "Pi" || end.tag === "LPi") end = end.body;
+            return end.tag === "U";
+          };
+          const changedTypeFormer = typeFormer(before.type) && typeFormer(after.type)
+            && observed.oldValue.hash !== observed.newValue.hash;
+          if (!changedTypeFormer && observed.oldPublicType.hash === observed.newPublicType.hash && assumptions(originalBinding) === assumptions(editedBinding)
             && extensions(originalBinding) === extensions(editedBinding))
             return fail(name,"The ledger entry records no public type, assumption or extension change; use ordinary verification for proof changes.");
           ledgerVerified.add(binding); recordRoots(); report.ledgerAccepted++; return;

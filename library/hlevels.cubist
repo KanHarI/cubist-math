@@ -1,3 +1,5 @@
+import nat;
+
 // h-levels (work-plan L2.5a, the HoTT roadmap's D0a): contractible types,
 // propositions and sets, defined once for every universe below UU0, with
 // the lemmas that relate them. A type has level 0 when it is a proposition,

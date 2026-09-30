@@ -193,8 +193,8 @@ def eight : double(4) = 8 {
 // the migration leaves unchanged, so both versions use one signature.
 test("a migration may not add or remove a kernel extension, such as H1", async () => {
   const types = "inductive B { yes; no; }\n";
-  const plain = "import h1_types;\ndef pick : Nat := 0;\n";
-  const declared = "import h1_types;\ndef pick : Nat := (fun (b : B) => 0)(yes);\n";
+  const plain = "import h1_types;\ndef pick : Unit := tt;\n";
+  const declared = "import h1_types;\ndef pick : Unit := (fun (b : B) => tt)(yes);\n";
   const verify = async (original, edited, level) => (await verifyMigration({ modules: ["h1_fixture"], level,
     experimental: ["h1"], readOriginal: name => name === "h1_fixture" ? original : name === "h1_types" ? types : library(name),
     readEdited: async () => edited }))[0];
@@ -215,7 +215,7 @@ test("generative signatures compare bound names and preserve constructor boundar
 def pick(A : U0, a : A) : Edge(U0, A) := first(a);
 `;
   const verify = async after => (await verifyMigration({modules:["generative"],experimental:["h1"],
-    readOriginal:async () => before,readEdited:async () => after}))[0];
+    readOriginal:async name => name === "generative" ? before : library(name),readEdited:async () => after}))[0];
   assert.deepEqual((await verify(before)).failures,[]);
   const renamed = before.replaceAll("A : U)","Carrier : U)").replaceAll("a : A);","a : Carrier);")
     .replace("edge(a : A)","edge(a : Carrier)");
@@ -230,7 +230,7 @@ test("G4: an exact ledger records removed truncation assumptions and the added H
   const before = "import trunc_types;\ndef value(A : U0, a : A) : Truncate(U0, A) := TruncateIntro(U0, A, a);\n";
   const after = "import trunc_types;\ndef value(A : U0, a : A) : Tr(A) := point(a);\n";
   const verify = async (ledger=null,edited=after) => (await verifyMigration({modules:["ledger_fixture"],experimental:["h1"],ledger,
-    readOriginal:async name => name === "trunc_types" ? types : before,readEdited:async () => edited}))[0];
+    readOriginal:async name => name === "trunc_types" ? types : name === "ledger_fixture" ? before : library(name),readEdited:async () => edited}))[0];
   const strict = await verify();
   assert.match(strict.failures[0].reason,/Assumptions changed/);
   const change = {...strict.changes[0],remedyGroup:1};
@@ -256,11 +256,27 @@ test("G4: an exact ledger records removed truncation assumptions and the added H
 test("a ledger never admits a failed declaration or bypasses identical proof verification", async () => {
   const original = "def n : Nat := 0;\n", edited = "def n : Nat := 1;\n";
   const run = async (after,ledger=null) => (await verifyMigration({modules:["pin"],ledger,
-    readOriginal:async () => original,readEdited:async () => after}))[0];
+    readOriginal:async name => name === "pin" ? original : library(name),readEdited:async () => after}))[0];
   const initial = await run(edited);
   const ledger = {version:2,changes:[{...initial.changes[0],remedyGroup:1}]};
   assert.match((await run(edited,ledger)).failures[0].reason,/ordinary verification for proof changes/);
   assert.match((await run("def n : Nat := tt;\n",ledger)).failures[0].reason,/No longer checks/);
+});
+
+test("a pinned type construction can change when both versions already use H1",async()=>{
+  const before="def Carrier(n : Nat) : U0 := Unit;\n";
+  const after="def Carrier(n : Nat) : U0 := Unit or Unit;\n";
+  const run=async(edited=after,ledger=null)=>(await verifyMigration({modules:["type_value"],ledger,
+    readOriginal:name=>name==="type_value"?before:library(name),readEdited:async()=>edited}))[0];
+  const strict=await run();
+  assert.match(strict.failures[0].reason,/checked term changed/);
+  const change={...strict.changes[0],remedyGroup:1};
+  assert.equal(change.oldPublicType.hash,change.newPublicType.hash);
+  assert.deepEqual(change.extensionsAdded,[]);
+  assert.deepEqual(change.extensionsRetained,["H1"]);
+  const ledger={version:2,changes:[change]};
+  assert.deepEqual((await run(after,ledger)).failures,[]);
+  assert.match((await run(after.replace("Unit or Unit","Void"),ledger)).failures[0].reason,/newValue/);
 });
 
 test("ledger value pins refuse a different predicate with the same public type and dependencies", async () => {
@@ -268,7 +284,7 @@ test("ledger value pins refuse a different predicate with the same public type a
   const before = "import trunc_types;\ndef Predicate(A : U0) := Truncate(U0, A);\n";
   const after = "import trunc_types;\ndef Predicate(A : U0) := Tr(A);\n";
   const run = async (edited=after, ledger=null, foundation=types) => (await verifyMigration({modules:["meaning"],experimental:["h1"],ledger,
-    readOriginal:async name => name === "trunc_types" ? foundation : before,readEdited:async () => edited}))[0];
+    readOriginal:async name => name === "trunc_types" ? foundation : name === "meaning" ? before : library(name),readEdited:async () => edited}))[0];
   const change = {...(await run()).changes[0],remedyGroup:1};
   const ledger = {version:2,changes:[change]};
   assert.deepEqual((await run(after,ledger)).failures,[]);
@@ -290,7 +306,7 @@ test("value pins close over a folded helper even when the public type and displa
   const before = "import trunc_types;\ndef Carrier(A : U0) := Truncate(U0, A);\ndef Predicate(A : U0) : U0 := Carrier(A);\n";
   const after = "import trunc_types;\ndef Carrier(A : U0) := Tr(A);\ndef Predicate(A : U0) : U0 := Carrier(A);\n";
   const run = async (edited=after,ledger=null) => (await verifyMigration({modules:["closure"],experimental:["h1"],ledger,
-    declarations:{closure:["Predicate"]},readOriginal:async name => name === "trunc_types" ? types : before,
+    declarations:{closure:["Predicate"]},readOriginal:async name => name === "trunc_types" ? types : name === "closure" ? before : library(name),
     readEdited:async () => edited}))[0];
   const change = {...(await run()).changes[0],remedyGroup:1}, ledger={version:2,changes:[change]};
   assert.deepEqual((await run(after,ledger)).failures,[]);
@@ -305,7 +321,7 @@ test("ledgered public dependencies cannot be hidden outside a declaration scope"
   const before = "import trunc_types;\ndef Predicate(A : U0) := Truncate(U0, A);\ndef witness(A : U0, a : A) : Predicate(A) := TruncateIntro(U0, A, a);\n";
   const after = "import trunc_types;\ndef Predicate(A : U0) := Tr(A);\ndef witness(A : U0, a : A) : Predicate(A) := point(a);\n";
   const run = async (ledger=null,declarations=null) => (await verifyMigration({modules:["scope"],experimental:["h1"],ledger,declarations,
-    readOriginal:async name => name === "trunc_types" ? types : before,readEdited:async () => after}))[0];
+    readOriginal:async name => name === "trunc_types" ? types : name === "scope" ? before : library(name),readEdited:async () => after}))[0];
   const entries = (await run()).changes.map(change => ({...change,remedyGroup:1}));
   assert.deepEqual((await run({version:2,changes:entries})).failures,[]);
   const scoped = await run({version:2,changes:[entries[1]]},{scope:["witness"]});

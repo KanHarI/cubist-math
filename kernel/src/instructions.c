@@ -538,22 +538,10 @@ static cc_judgement_id constant(cc_kernel *k, cc_instruction rule, cc_term_kind 
     return typing(k, make(k, kind, 0, 0, 0, 0, 0), sort, 0);
 }
 
-cc_judgement_id cc_instr_nat(cc_kernel *k) { return constant(k, CC_INSTR_NAT, CC_NAT, CC_U); }
 cc_judgement_id cc_instr_unit(cc_kernel *k) { return constant(k, CC_INSTR_UNIT, CC_UNIT, CC_U); }
 cc_judgement_id cc_instr_void(cc_kernel *k) { return constant(k, CC_INSTR_VOID, CC_VOID, CC_U); }
-cc_judgement_id cc_instr_zero(cc_kernel *k) { return constant(k, CC_INSTR_ZERO, CC_ZERO, CC_NAT); }
-cc_judgement_id cc_instr_point(cc_kernel *k) { return constant(k, CC_INSTR_POINT, CC_POINT, CC_UNIT); }
 
-cc_judgement_id cc_instr_succ(cc_kernel *k, cc_judgement_id value) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_SUCC, .premise = {value}}, NULL, 0, &found))
-        return found;
-    cc_fact n = {0};
-    if (!premise(k, value, CC_FACT_TYPING, &n) ||
-        !same(k, n.type, make(k, CC_NAT, 0, 0, 0, 0, 0), "succ needs a natural number."))
-        return 0;
-    return typing(k, make(k, CC_SUCC, 0, n.term, 0, 0, 0), n.type, n.context);
-}
+cc_judgement_id cc_instr_point(cc_kernel *k) { return constant(k, CC_INSTR_POINT, CC_POINT, CC_UNIT); }
 
 /* A motive over the type domain: P : Π(x : domain). U(l). */
 static bool motive(cc_kernel *k, cc_fact p, cc_term domain) {
@@ -561,29 +549,6 @@ static bool motive(cc_kernel *k, cc_fact p, cc_term domain) {
     if (pi.kind != CC_PI || k->nodes[pi.child[1]].kind != CC_U)
         return ck_fail(k, "A motive is a family of types: Π(x : A). U(l).");
     return same(k, pi.child[0], domain, "The motive is a family over another type.");
-}
-
-cc_judgement_id cc_instr_nat_elim(cc_kernel *k, cc_judgement_id motive_id, cc_judgement_id zero_id,
-                                  cc_judgement_id step_id, cc_judgement_id value_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_NAT_ELIM, .premise = {motive_id, zero_id, step_id, value_id}}, NULL, 0, &found))
-        return found;
-    cc_fact p = {0}, z = {0}, s = {0}, n = {0};
-    if (!premise(k, motive_id, CC_FACT_TYPING, &p) || !premise(k, zero_id, CC_FACT_TYPING, &z) ||
-        !premise(k, step_id, CC_FACT_TYPING, &s) || !premise(k, value_id, CC_FACT_TYPING, &n))
-        return 0;
-    cc_term nat = make(k, CC_NAT, 0, 0, 0, 0, 0);
-    uint32_t predecessor = ck_fresh_symbol(k), hypothesis = ck_fresh_symbol(k);
-    cc_term pred = ck_var(k, predecessor);
-    cc_term step_type = make(k, CC_PI, predecessor, nat,
-        make(k, CC_PI, hypothesis, app(k, p.term, pred), app(k, p.term, make(k, CC_SUCC, 0, pred, 0, 0, 0)), 0, 0), 0, 0);
-    uint32_t context = 0;
-    if (!motive(k, p, nat) || !same(k, n.type, nat, "Induction on a natural number needs a natural number.") ||
-        !same(k, z.type, app(k, p.term, make(k, CC_ZERO, 0, 0, 0, 0, 0)), "The zero case has the wrong type.") ||
-        !same(k, s.type, step_type, "The successor case has the wrong type.") ||
-        !merge(k, p.context, z.context, &context) || !merge3(k, context, s.context, n.context, &context))
-        return 0;
-    return typing(k, make(k, CC_NATREC, 0, p.term, z.term, s.term, n.term), app(k, p.term, n.term), context);
 }
 
 cc_judgement_id cc_instr_unit_elim(cc_kernel *k, cc_judgement_id motive_id, cc_judgement_id point_id,
@@ -682,7 +647,7 @@ cc_judgement_id cc_instr_sum_elim(cc_kernel *k, cc_judgement_id motive_id, cc_ju
 
 static cc_judgement_id former(cc_kernel *k, cc_term_kind kind, cc_entry_id id, cc_judgement_id family) {
     cc_judgement_id found;
-    unsigned rule = kind == CC_PI ? CC_INSTR_PI : kind == CC_SIGMA ? CC_INSTR_SIGMA : CC_INSTR_W;
+    unsigned rule = kind == CC_PI ? CC_INSTR_PI : CC_INSTR_SIGMA;
     if (!begin(k, (cc_derivation){.rule = rule, .premise = {family}, .entry = id}, NULL, 0, &found))
         return found;
     cc_entry e = {0};
@@ -835,7 +800,7 @@ cc_judgement_id cc_instr_first(cc_kernel *k, cc_judgement_id pair) { return proj
 cc_judgement_id cc_instr_second(cc_kernel *k, cc_judgement_id pair) { return projection(k, pair, true); }
 
 /* The parts of a type former are types in its universe, by cumulativity:
- * the domain of Π(x : A). B, Σ(x : A). B or W(x : A). B, and its family
+ * the domain of Π(x : A). B or Σ(x : A). B, and its family
  * B[a/x] at a : A. */
 cc_judgement_id cc_instr_domain(cc_kernel *k, cc_judgement_id type_id) {
     cc_judgement_id found;
@@ -846,8 +811,8 @@ cc_judgement_id cc_instr_domain(cc_kernel *k, cc_judgement_id type_id) {
     if (!premise(k, type_id, CC_FACT_TYPING, &t) || !universe(k, t.type, &level))
         return 0;
     cc_node former = k->nodes[t.term];
-    if (former.kind != CC_PI && former.kind != CC_SIGMA && former.kind != CC_W)
-        return ck_fail(k, "Only a Π, Σ or W type has a domain."), 0;
+    if (former.kind != CC_PI && former.kind != CC_SIGMA)
+        return ck_fail(k, "Only a Π or Σ type has a domain."), 0;
     return typing(k, former.child[0], t.type, t.context);
 }
 
@@ -862,8 +827,8 @@ cc_judgement_id cc_instr_family(cc_kernel *k, cc_judgement_id type_id, cc_judgem
         !universe(k, t.type, &level))
         return 0;
     cc_node former = k->nodes[t.term];
-    if (former.kind != CC_PI && former.kind != CC_SIGMA && former.kind != CC_W)
-        return ck_fail(k, "Only a Π, Σ or W type has a family."), 0;
+    if (former.kind != CC_PI && former.kind != CC_SIGMA)
+        return ck_fail(k, "Only a Π or Σ type has a family."), 0;
     if (!same(k, a.type, former.child[0], "The argument has the wrong type.") || !merge(k, t.context, a.context, &context))
         return 0;
     return typing(k, ck_substitute(k, former.child[1], former.payload, a.term), t.type, context);
@@ -1146,67 +1111,6 @@ cc_judgement_id cc_instr_comp(cc_kernel *k, cc_judgement_id system_id) {
     if (!dimension || !discharge(k, s.context, &dimension, 1, &context))
         return 0;
     return typing(k, s.term, s.type, context);
-}
-
-/* ---- W types ------------------------------------------------------------- */
-
-cc_judgement_id cc_instr_w(cc_kernel *k, cc_entry_id id, cc_judgement_id arities) {
-    return former(k, CC_W, id, arities);
-}
-
-/* A W type as written: its typing judgement and its node. */
-static bool w_type(cc_kernel *k, cc_term type, cc_node *w) {
-    *w = k->nodes[type];
-    if (w->kind != CC_W)
-        return ck_fail(k, "Expected a W type.");
-    return true;
-}
-
-cc_judgement_id cc_instr_sup(cc_kernel *k, cc_judgement_id type_id, cc_judgement_id label_id, cc_judgement_id children_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_SUP, .premise = {type_id, label_id, children_id}}, NULL, 0, &found))
-        return found;
-    cc_fact t = {0}, l = {0}, c = {0};
-    cc_node w = {0};
-    cc_term level = 0;
-    uint32_t context = 0;
-    if (!premise(k, type_id, CC_FACT_TYPING, &t) || !premise(k, label_id, CC_FACT_TYPING, &l) ||
-        !premise(k, children_id, CC_FACT_TYPING, &c) || !universe(k, t.type, &level) || !w_type(k, t.term, &w))
-        return 0;
-    cc_term arity = ck_substitute(k, w.child[1], w.payload, l.term);
-    cc_term children = make(k, CC_PI, ck_fresh_symbol(k), arity, t.term, 0, 0);
-    if (!same(k, l.type, w.child[0], "The label has the wrong type.") ||
-        !same(k, c.type, children, "The children have the wrong type.") ||
-        !merge(k, t.context, l.context, &context) || !merge(k, context, c.context, &context))
-        return 0;
-    return typing(k, make(k, CC_SUP, 0, t.term, l.term, c.term, 0), t.term, context);
-}
-
-cc_judgement_id cc_instr_w_elim(cc_kernel *k, cc_judgement_id motive_id, cc_judgement_id step_id, cc_judgement_id value_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_W_ELIM, .premise = {motive_id, step_id, value_id}}, NULL, 0, &found))
-        return found;
-    cc_fact p = {0}, s = {0}, v = {0};
-    cc_node w = {0};
-    uint32_t context = 0;
-    if (!premise(k, motive_id, CC_FACT_TYPING, &p) || !premise(k, step_id, CC_FACT_TYPING, &s) ||
-        !premise(k, value_id, CC_FACT_TYPING, &v) || !w_type(k, v.type, &w) || !motive(k, p, v.type))
-        return 0;
-    /* As the term checker states it (check_inductives.c). */
-    uint32_t label_name = ck_fresh_symbol(k), child_name = ck_fresh_symbol(k);
-    uint32_t index_name = ck_fresh_symbol(k), hypothesis_name = ck_fresh_symbol(k);
-    cc_term label = ck_var(k, label_name), children = ck_var(k, child_name), index = ck_var(k, index_name);
-    cc_term arity = ck_substitute(k, w.child[1], w.payload, label);
-    cc_term child_type = make(k, CC_PI, index_name, arity, v.type, 0, 0);
-    cc_term hypothesis_type = make(k, CC_PI, index_name, arity, app(k, p.term, app(k, children, index)), 0, 0);
-    cc_term tree = make(k, CC_SUP, 0, v.type, label, children, 0);
-    cc_term step_type = make(k, CC_PI, hypothesis_name, hypothesis_type, app(k, p.term, tree), 0, 0);
-    step_type = make(k, CC_PI, child_name, child_type, step_type, 0, 0);
-    step_type = make(k, CC_PI, label_name, w.child[0], step_type, 0, 0);
-    if (!same(k, s.type, step_type, "The step has the wrong type.") ||
-        !merge(k, p.context, s.context, &context) || !merge(k, context, v.context, &context))
-        return 0;
-    return typing(k, make(k, CC_WREC, 0, p.term, s.term, v.term, 0), app(k, p.term, v.term), context);
 }
 
 /* ---- Pushouts ------------------------------------------------------------ */
@@ -1882,13 +1786,6 @@ static cc_term contract(cc_kernel *k, cc_term term, cc_step_rule rule) {
     case CC_STEP_IOTA: {
         cc_node head;
         switch (n.kind) {
-        case CC_NATREC:
-            head = k->nodes[n.child[3]];
-            if (head.kind == CC_ZERO)
-                return n.child[1];
-            if (head.kind == CC_SUCC)
-                return app(k, app(k, n.child[2], head.child[0]), make(k, CC_NATREC, 0, n.child[0], n.child[1], n.child[2], head.child[0]));
-            break;
         case CC_SUMREC:
             head = k->nodes[n.child[3]];
             if (head.kind == CC_INL || head.kind == CC_INR)
@@ -1902,23 +1799,6 @@ static cc_term contract(cc_kernel *k, cc_term term, cc_step_rule rule) {
             head = k->nodes[n.child[0]];
             if (head.kind == CC_PAIR)
                 return head.child[n.kind == CC_FST ? 1 : 2];
-            break;
-        case CC_WREC:
-            /* WRec(M, s, sup(l, c)) is s(l)(c)(λi. WRec(M, s, c(i))); the
-             * arity is read off the W type's weak head, which involves no
-             * choice. */
-            head = k->nodes[n.child[2]];
-            if (head.kind == CC_SUP) {
-                cc_term type = ck_whnf(k, head.child[0]);
-                if (!type || k->nodes[type].kind != CC_W)
-                    return ck_fail(k, "Malformed W constructor."), 0;
-                cc_node w = k->nodes[type];
-                uint32_t name = ck_fresh_symbol(k);
-                cc_term arity = ck_substitute(k, w.child[1], w.payload, head.child[1]);
-                cc_term recursive = make(k, CC_WREC, 0, n.child[0], n.child[1], app(k, head.child[2], ck_var(k, name)), 0);
-                cc_term hypothesis = make(k, CC_LAM, name, arity, recursive, 0, 0);
-                return app(k, app(k, app(k, n.child[1], head.child[1]), head.child[2]), hypothesis);
-            }
             break;
         case CC_PUSH_PATH: {
             /* push at 0 is inl(f(c)), at 1 inr(g(c)); the maps are read off

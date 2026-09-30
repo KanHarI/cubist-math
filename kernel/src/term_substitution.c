@@ -5,7 +5,7 @@
 #include "term_internal.h"
 
 bool ck_term_binder(cc_term_kind kind) {
-    return kind == CC_PI || kind == CC_LAM || kind == CC_SIGMA || kind == CC_W || kind == CC_LPI || kind == CC_LLAM;
+    return kind == CC_PI || kind == CC_LAM || kind == CC_SIGMA || kind == CC_LPI || kind == CC_LLAM;
 }
 
 bool ck_dim_binder(cc_term_kind kind) {

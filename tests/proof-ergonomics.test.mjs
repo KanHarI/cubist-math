@@ -1,4 +1,5 @@
 import "./fresh-build.mjs";
+import {naturalSort, numeral} from "../lib/cubical/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {spawnSync} from "node:child_process";
@@ -784,7 +785,7 @@ test("generic calc endpoints stay separate from step witnesses",async t=>{
   const offset=source.indexOf("n + 0 = n by");
   const endpoint=result.links.find(item=>item.start===offset&&item.name==="n");
   assert.ok(endpoint);
-  assert.equal(program.inspect(endpoint.binding).type.tag,"Nat");
+  assert.equal(program.inspect(endpoint.binding).type.tag,"Sort");
   // The step's checked path belongs to its `by` keyword, not its left endpoint.
   const byOffset=source.indexOf("by nat_add_zero");
   const step=result.links.find(item=>item.start===byOffset&&item.role==="calculation step");
@@ -819,7 +820,7 @@ test("generic proofs link ext and simplified hypothesis binders and uses",async 
     assert.ok(link,`Missing source link for ${snippet}`);
     const view=program.inspect(link.binding);
     assert.equal(view.symbols[view.name].name,name);
-    assert.equal(view.type.tag,name==="x"?"Nat":"Path");
+    assert.equal(view.type.tag,name==="x"?"Sort":"Path");
     const payload=program.export(view.name);
     const replay=new CubicalProgram(await createCubical(),module=>payload.sources[module]);
     t.after(()=>replay.dispose());

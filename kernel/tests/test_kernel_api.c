@@ -13,10 +13,10 @@ static cc_term_kind kind(cc_kernel *k, cc_term term) {
 static void checked_definitions(void) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
-    cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term nat = cc_kernel_term(k, CC_U, 0, cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
     cc_term unit = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
-    cc_term zero = cc_kernel_term(k, CC_ZERO, 0, 0, 0, 0, 0);
-    cc_term one = cc_kernel_term(k, CC_SUCC, 0, zero, 0, 0, 0);
+    cc_term zero = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
+    cc_term one = cc_kernel_term(k, CC_SUM, 0, cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0), zero, 0, 0);
     cc_term named_nat = cc_kernel_define(k, 100, nat, 0);
     cc_term named_one = cc_kernel_define(k, 101, one, named_nat);
     assert(named_nat && named_one);
@@ -24,12 +24,12 @@ static void checked_definitions(void) {
     uint32_t symbol;
     cc_term body, type;
     assert(cc_kernel_definition(k, named_one, &symbol, &body, &type));
-    assert(symbol == 101 && kind(k, body) == CC_SUCC && kind(k, type) == CC_NAT);
+    assert(symbol == 101 && kind(k, body) == CC_SUM && kind(k, type) == CC_U);
     assert(!cc_kernel_definition(k, one, NULL, NULL, NULL));
     cc_checked_result checked;
     assert(cc_kernel_check(k, named_one, named_nat, NULL, 0, &checked));
     assert(checked.expression == named_one && !checked.normal);
-    assert(kind(k, cc_kernel_whnf(k, checked.expression)) == CC_SUCC);
+    assert(kind(k, cc_kernel_whnf(k, checked.expression)) == CC_SUM);
 
     /* Publication is closed and atomic: neither a wrong type, an unknown
      * reference, nor a free variable reserves the requested source name. */
@@ -63,19 +63,13 @@ static void checked_definitions(void) {
     assert(named_id && kind(k, cc_kernel_whnf(k, named_id)) == CC_LAM);
     cc_term applied = cc_kernel_term(k, CC_APP, 0, named_id, named_one, 0, 0);
     assert(cc_kernel_check(k, applied, nat, NULL, 0, &checked));
-    assert(kind(k, cc_kernel_whnf(k, checked.expression)) == CC_SUCC);
+    assert(kind(k, cc_kernel_whnf(k, checked.expression)) == CC_SUM);
 
-    /* Build the compact natural 2^22 by checked applications of doubling.
-     * This equality must compare references, not allocate 4,194,304 succs. */
+    /* A compact sum with 2^22 leaves must compare references, without
+     * expanding millions of type nodes. */
     cc_term n = cc_kernel_term(k, CC_VAR, 18, 0, 0, 0, 0);
-    cc_term ih = cc_kernel_term(k, CC_VAR, 19, 0, 0, 0, 0);
-    cc_term twice_succ = cc_kernel_term(k, CC_SUCC, 0, ih, 0, 0, 0);
-    twice_succ = cc_kernel_term(k, CC_SUCC, 0, twice_succ, 0, 0, 0);
-    cc_term step = cc_kernel_term(k, CC_LAM, 19, nat, twice_succ, 0, 0);
-    step = cc_kernel_term(k, CC_LAM, 18, nat, step, 0, 0);
-    cc_term motive = cc_kernel_term(k, CC_LAM, 18, nat, nat, 0, 0);
-    cc_term rec = cc_kernel_term(k, CC_NATREC, 0, motive, zero, step, n);
-    cc_term double_fn = cc_kernel_term(k, CC_LAM, 18, nat, rec, 0, 0);
+    cc_term twice = cc_kernel_term(k, CC_SUM, 0, n, n, 0, 0);
+    cc_term double_fn = cc_kernel_term(k, CC_LAM, 18, nat, twice, 0, 0);
     cc_term named_double = cc_kernel_define(k, 105, double_fn, 0);
     assert(named_double);
     cc_term compact = named_one;
@@ -96,7 +90,7 @@ static void checked_definitions(void) {
      * Its weak head is a lambda, so no arithmetic evaluation is requested. */
     cc_term shared = one;
     for (unsigned i = 0; i < 24; ++i)
-        shared = cc_kernel_term(k, CC_NATREC, 0, motive, shared, step, shared);
+        shared = cc_kernel_term(k, CC_SUM, 0, shared, shared, 0, 0);
     cc_term inner = cc_kernel_term(k, CC_LAM, 18, nat, free_var, 0, 0);
     cc_term outer = cc_kernel_term(k, CC_LAM, 17, nat, inner, 0, 0);
     cc_term inserted = cc_kernel_term(k, CC_APP, 0, outer, shared, 0, 0);
@@ -107,10 +101,9 @@ static void checked_definitions(void) {
 static void open_cube(void) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
-    cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term nat = cc_kernel_term(k, CC_U, 0, cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
     cc_term unit = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
-    cc_term universe = cc_kernel_term(k, CC_U, 0, cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
-    cc_term family_type = cc_kernel_term(k, CC_PATH, 1, universe, nat, unit, 0);
+    cc_term family_type = cc_kernel_term(k, CC_PATH, 1, cc_kernel_term(k, CC_U, 0, cc_kernel_term(k, CC_LCONST, 1, 0, 0, 0, 0), 0, 0, 0), nat, unit, 0);
     cc_term family = cc_kernel_term(k, CC_VAR, 100, 0, 0, 0, 0);
     cc_formula i;
     cc_init(&i, CC_INTERVAL);
@@ -136,19 +129,19 @@ static void open_cube(void) {
 static void error_kinds(void) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
-    cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term nat = cc_kernel_term(k, CC_U, 0, cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
     cc_term unit = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
-    cc_term zero = cc_kernel_term(k, CC_ZERO, 0, 0, 0, 0, 0);
+    cc_term zero = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
     cc_term free_var = cc_kernel_term(k, CC_VAR, 17, 0, 0, 0, 0);
     cc_term large = zero;
-    for (unsigned i = 0; i < 64; ++i) large = cc_kernel_term(k, CC_SUCC, 0, large, 0, 0, 0);
+    for (unsigned i = 0; i < 64; ++i) large = cc_kernel_term(k, CC_SUM, 0, cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0), large, 0, 0);
     cc_checked_result result;
     assert(cc_kernel_error_kind(k) == CC_ERROR_NONE);
     assert(!cc_kernel_check(k, zero, unit, NULL, 0, &result));
     assert(cc_kernel_error_kind(k) == CC_ERROR_MISMATCH);
     cc_term found = 0, expected = 0;
     assert(cc_kernel_mismatch(k, &found, &expected));
-    assert(cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0) == 0); /* no construction while an error is set */
+    assert(cc_kernel_term(k, CC_U, 0, cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0) == 0); /* no construction while an error is set */
     cc_kernel_clear_error(k);
     assert(cc_kernel_error_kind(k) == CC_ERROR_NONE);
     assert(!cc_kernel_mismatch(k, &found, &expected));
@@ -193,7 +186,7 @@ static bool traced(const cc_kernel *k, cc_trace_kind kind, uint32_t a, cc_trace_
 static void trace_events(void) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
-    cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term nat = cc_kernel_term(k, CC_U, 0, cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
     cc_term unit = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
     cc_term var = cc_kernel_term(k, CC_VAR, 5, 0, 0, 0, 0);
     cc_term identity = cc_kernel_term(k, CC_LAM, 5, nat, var, 0, 0);
@@ -214,7 +207,7 @@ static void trace_events(void) {
     assert(cc_kernel_check(k, identity, arrow, NULL, 0, &result));
     assert(traced(k, CC_TRACE_REUSED, identity, NULL));
     /* A rejection is still a rejection, with the failed conversion recorded. */
-    cc_term zero = cc_kernel_term(k, CC_ZERO, 0, 0, 0, 0, 0);
+    cc_term zero = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
     assert(cc_kernel_trace_start(k, 256));
     assert(!cc_kernel_check(k, zero, unit, NULL, 0, &result));
     assert(traced(k, CC_TRACE_CONVERT, 0, &event) && event.c == 0);
@@ -247,7 +240,7 @@ static void exact_sharing(void) {
     cc_kernel_checkpoint(k);
     cc_term discarded = cc_kernel_term(k, CC_LCONST, MANY, 0, 0, 0, 0);
     cc_kernel_rollback(k);
-    cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term nat = cc_kernel_term(k, CC_U, 0, cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
     assert(nat == discarded);
     cc_term again = cc_kernel_term(k, CC_LCONST, MANY, 0, 0, 0, 0);
     assert(again != nat && cc_kernel_term(k, CC_LCONST, MANY, 0, 0, 0, 0) == again);
@@ -255,14 +248,14 @@ static void exact_sharing(void) {
 
     cc_kernel_checkpoint(k);
     assert(cc_kernel_term(k, CC_LCONST, MANY + 1, 0, 0, 0, 0));
-    cc_term zero = cc_kernel_term(k, CC_ZERO, 0, 0, 0, 0, 0);
-    cc_term one = cc_kernel_term(k, CC_SUCC, 0, zero, 0, 0, 0);
+    cc_term zero = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
+    cc_term one = cc_kernel_term(k, CC_SUM, 0, cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0), zero, 0, 0);
     cc_term reference = cc_kernel_define(k, 500, one, nat);
     assert(reference && cc_kernel_commit_checkpoint(k));
     cc_term value;
     assert(cc_kernel_definition(k, cc_kernel_relocated(k, reference), NULL, &value, NULL));
-    zero = cc_kernel_term(k, CC_ZERO, 0, 0, 0, 0, 0);
-    assert(cc_kernel_term(k, CC_SUCC, 0, zero, 0, 0, 0) == value);
+    zero = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
+    assert(cc_kernel_term(k, CC_SUM, 0, cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0), zero, 0, 0) == value);
     cc_kernel_free(k);
 }
 
@@ -274,16 +267,16 @@ int main(void) {
     error_kinds();
     cc_kernel *kernel = cc_kernel_new();
     assert(kernel);
-    cc_term nat = cc_kernel_term(kernel, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term nat = cc_kernel_term(kernel, CC_U, 0, cc_kernel_term(kernel, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
     cc_term unit = cc_kernel_term(kernel, CC_UNIT, 0, 0, 0, 0, 0);
-    cc_term zero = cc_kernel_term(kernel, CC_ZERO, 0, 0, 0, 0, 0);
+    cc_term zero = cc_kernel_term(kernel, CC_UNIT, 0, 0, 0, 0, 0);
     cc_checked_result result;
     assert(!cc_kernel_check(kernel, zero, unit, NULL, 0, &result));
     assert(result.expression == 0 && result.type == 0);
     assert(cc_kernel_error(kernel)[0]);
     cc_kernel_clear_error(kernel);
     assert(!cc_kernel_error(kernel)[0]);
-    cc_term corrected = cc_kernel_term(kernel, CC_SUCC, 0, zero, 0, 0, 0);
+    cc_term corrected = cc_kernel_term(kernel, CC_SUM, 0, cc_kernel_term(kernel, CC_UNIT, 0, 0, 0, 0, 0), zero, 0, 0);
     assert(corrected);
     assert(cc_kernel_check(kernel, corrected, nat, NULL, 0, &result));
     assert(result.expression && result.type && !result.normal);

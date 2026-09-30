@@ -1,6 +1,4 @@
-/* Inductive rules retain their actual dependent motives. In particular W's
- * induction hypothesis is a FUNCTION providing a result for each child, not a
- * result for one selected child and not an assumption about the whole tree. */
+/* The remaining fixed inductive rules retain their dependent motives. */
 #include "term_internal.h"
 
 static cc_term app(cc_kernel *k, cc_term f, cc_term x) {
@@ -25,24 +23,17 @@ static bool family_on(cc_kernel *k, cc_term raw, cc_term domain,
 
 bool ck_inductives(cc_kernel *k, cc_node n, const cc_context *ctx, uint64_t dims,
                     cc_judgement *out) {
-    if (n.kind == CC_NAT || n.kind == CC_UNIT || n.kind == CC_VOID) {
+    if (n.kind == CC_UNIT || n.kind == CC_VOID) {
         out->expression = ck_make(k, n.kind, 0, 0, 0, 0, 0);
         out->type = ck_universe_at(k, 0);
         return !k->error[0];
     }
-    if (n.kind == CC_ZERO || n.kind == CC_POINT) {
+    if (n.kind == CC_POINT) {
         out->expression = ck_make(k, n.kind, 0, 0, 0, 0, 0);
-        out->type = ck_make(k, n.kind == CC_ZERO ? CC_NAT : CC_UNIT, 0, 0, 0, 0, 0);
+        out->type = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0);
         return !k->error[0];
     }
-    if (n.kind == CC_SUCC) {
-        cc_term nat = ck_make(k, CC_NAT, 0, 0, 0, 0, 0), value;
-        if (!ck_check(k, n.child[0], nat, ctx, dims, &value))
-            return false;
-        out->expression = ck_make(k, CC_SUCC, 0, value, 0, 0, 0);
-        out->type = nat;
-        return !k->error[0];
-    }
+
     if (n.kind == CC_ABORT) {
         cc_term type, impossible;
         uint32_t level;
@@ -114,90 +105,6 @@ bool ck_inductives(cc_kernel *k, cc_node n, const cc_context *ctx, uint64_t dims
         out->type = app(k, motive, value);
         return !k->error[0];
     }
-    if (n.kind == CC_NATREC) {
-        cc_term nat = ck_make(k, CC_NAT, 0, 0, 0, 0, 0);
-        cc_term motive, zero, step, value;
-        if (!family_on(k, n.child[0], nat, ctx, dims, &motive) ||
-            !ck_check(k, n.child[3], nat, ctx, dims, &value))
-            return false;
-        cc_term zero_value = ck_make(k, CC_ZERO, 0, 0, 0, 0, 0);
-        if (!ck_check(k, n.child[1], app(k, motive, zero_value), ctx, dims, &zero))
-            return false;
-        uint32_t predecessor = ck_fresh_symbol(k), hypothesis = ck_fresh_symbol(k);
-        cc_term pred = ck_var(k, predecessor);
-        cc_term succ = ck_make(k, CC_SUCC, 0, pred, 0, 0, 0);
-        cc_term step_type = ck_make(k, CC_PI, hypothesis, app(k, motive, pred), app(k, motive, succ), 0, 0);
-        step_type = ck_make(k, CC_PI, predecessor, nat, step_type, 0, 0);
-        if (!ck_check(k, n.child[2], step_type, ctx, dims, &step))
-            return false;
-        out->expression = ck_make(k, CC_NATREC, 0, motive, zero, step, value);
-        out->type = app(k, motive, value);
-        return !k->error[0];
-    }
-    if (n.kind == CC_W) {
-        cc_term labels, arities;
-        uint32_t label_level, arity_level;
-        if (!ck_type(k, n.child[0], ctx, dims, &labels, &label_level))
-            return false;
-        /* Preserve an already fresh binder: renaming it on every recheck
-         * copies the whole body and destroys sharing. Rename on shadowing. */
-        uint32_t name = n.payload;
-        for (const cc_context *entry = ctx; entry; entry = entry->previous)
-            if (entry->name == name) { name = ck_fresh_symbol(k); break; }
-        cc_term body = name == n.payload ? n.child[1] : ck_substitute(k, n.child[1], n.payload, ck_var(k, name));
-        cc_context extended = ck_extend(k, name, labels, ctx);
-        if (!ck_type(k, body, &extended, dims, &arities, &arity_level))
-            return false;
-        out->expression = ck_make(k, CC_W, name, labels, arities, 0, 0);
-        out->type = ck_universe_at(k, label_level > arity_level ? label_level : arity_level);
-        return !k->error[0];
-    }
-    if (n.kind == CC_SUP) {
-        cc_term type, label, children;
-        uint32_t level;
-        if (!ck_type(k, n.child[0], ctx, dims, &type, &level))
-            return false;
-        cc_term normal = ck_whnf(k, type);
-        if (!normal || k->nodes[normal].kind != CC_W)
-            return ck_fail(k, "sup requires a W-type.");
-        cc_node w = k->nodes[normal];
-        if (!ck_check(k, n.child[1], w.child[0], ctx, dims, &label))
-            return false;
-        cc_term arity = ck_substitute(k, w.child[1], w.payload, label);
-        cc_term child_type = ck_make(k, CC_PI, ck_fresh_symbol(k), arity, type, 0, 0);
-        if (!ck_check(k, n.child[2], child_type, ctx, dims, &children))
-            return false;
-        out->expression = ck_make(k, CC_SUP, 0, type, label, children, 0);
-        out->type = type;
-        return !k->error[0];
-    }
-    if (n.kind == CC_WREC) {
-        cc_judgement value;
-        if (!ck_infer(k, n.child[2], ctx, dims, &value))
-            return false;
-        cc_term type = ck_whnf(k, value.type);
-        if (!type || k->nodes[type].kind != CC_W)
-            return ck_fail(k, "W induction requires a W-tree.");
-        cc_node w = k->nodes[type];
-        cc_term motive, step;
-        if (!family_on(k, n.child[0], type, ctx, dims, &motive))
-            return false;
-        uint32_t label_name = ck_fresh_symbol(k), child_name = ck_fresh_symbol(k);
-        uint32_t index_name = ck_fresh_symbol(k), hypothesis_name = ck_fresh_symbol(k);
-        cc_term label = ck_var(k, label_name), children = ck_var(k, child_name);
-        cc_term index = ck_var(k, index_name);
-        cc_term arity = ck_substitute(k, w.child[1], w.payload, label);
-        cc_term child_type = ck_make(k, CC_PI, index_name, arity, type, 0, 0);
-        cc_term hypothesis_type = ck_make(k, CC_PI, index_name, arity, app(k, motive, app(k, children, index)), 0, 0);
-        cc_term tree = ck_make(k, CC_SUP, 0, type, label, children, 0);
-        cc_term step_type = ck_make(k, CC_PI, hypothesis_name, hypothesis_type, app(k, motive, tree), 0, 0);
-        step_type = ck_make(k, CC_PI, child_name, child_type, step_type, 0, 0);
-        step_type = ck_make(k, CC_PI, label_name, w.child[0], step_type, 0, 0);
-        if (!ck_check(k, n.child[1], step_type, ctx, dims, &step))
-            return false;
-        out->expression = ck_make(k, CC_WREC, 0, motive, step, value.expression, 0);
-        out->type = app(k, motive, value.expression);
-        return !k->error[0];
-    }
+
     return ck_fail(k, "Unsupported inductive rule.");
 }

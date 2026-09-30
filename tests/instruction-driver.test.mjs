@@ -1,4 +1,6 @@
 import "./fresh-build.mjs";
+import createLegacyCubical from "../tools/legacy-kernel.mjs";
+import {naturalSort,numeral} from "../lib/cubical/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -84,7 +86,7 @@ test("the judgement graph records each derivation: rule, premises, highlighted s
   const lambda = [...seen.values()].find(judgement => judgement.rule === "lambda");
   const entry = graph.entry(lambda.entry);
   assert.equal(entry.dimension, false);
-  assert.equal(graph.judgement(entry.source).rule, "nat");
+  assert.equal(graph.judgement(entry.source).rule, "sortBegin");
   // Repeating an instruction returns the same judgement.
   assert.equal(driver.check(value, type), root.id);
 });
@@ -94,7 +96,7 @@ test("the workbench's kernel graph lists lt_succ's derivation in THTH style", as
   t.after(() => program.dispose());
   await program.check(source, "first");
   const view = program.inspect("first__lt_succ");
-  const checked = program.checker.syntax.check(view.expression, view.type, [], new Map());
+  const checked = program.checker.checkView(view.expression, view.type, [], new Map());
   const listing = judgementGraph(program, view, checked);
   const root = listing.rows.at(-1);
   assert.equal(root.number, listing.root);
@@ -119,7 +121,7 @@ test("a definition's body is derived on request, as its lookup's premise", async
   t.after(() => program.dispose());
   await program.check(source, "first");
   const view = program.inspect("first__lt_succ");
-  const checked = program.checker.syntax.check(view.expression, view.type, [], new Map());
+  const checked = program.checker.checkView(view.expression, view.type, [], new Map());
   const folded = judgementGraph(program, view, checked);
   const lookup = folded.rows.find(row => row.definition?.name === "lt");
   assert.equal(lookup.definition.expanded, false);
@@ -317,7 +319,7 @@ test("W types: binary positive numbers, their constructors and their recursion d
     } catch (error) { failures.push(`${name}: ${error.message}`); }
   }
   assert.deepEqual(failures, []);
-  for (const rule of ["w", "sup", "wElim"]) assert.ok(rules.has(rule), rule);
+  for (const rule of ["sortBegin", "construct", "lookup"]) assert.ok(rules.has(rule), rule);
 });
 
 test("Glue: univalence derives, and so does a Glue term over its Glue type", async t => {
@@ -368,7 +370,7 @@ test("Glue: univalence derives, and so does a Glue term over its Glue type", asy
 });
 
 test("G0: the driver derives universe-generic terms, and compares levels by normal form", async t => {
-  const kernel = new CubicalKernel(await createCubical());
+  const kernel = new CubicalKernel(await createLegacyCubical());
   t.after(() => kernel.dispose());
   const syntax = new CubicalSyntax(kernel);
   const v = name => ({ tag: "Var", name }), U = level => ({ tag: "U", level });
@@ -407,7 +409,7 @@ test("G0: the driver derives universe-generic terms, and compares levels by norm
 });
 
 test("G0: the driver's level normal forms agree with the kernel's on random levels", async t => {
-  const kernel = new CubicalKernel(await createCubical());
+  const kernel = new CubicalKernel(await createLegacyCubical());
   t.after(() => kernel.dispose());
   const syntax = new CubicalSyntax(kernel), g = new InstructionGraph(kernel);
   const names = ["x", "y", "z"];
@@ -436,7 +438,7 @@ test("G0: the driver's level normal forms agree with the kernel's on random leve
 });
 
 test("the driver's guide compares weak heads: equal, different, or unknown", async t => {
-  const kernel = new CubicalKernel(await createCubical());
+  const kernel = new CubicalKernel(await createLegacyCubical());
   t.after(() => kernel.dispose());
   const syntax = new CubicalSyntax(kernel), driver = new InstructionDriver(kernel), e = term => syntax.encode(term);
   const guide = (x, y) => driver.guide(x, y, null, null, { left: 400 });
@@ -460,7 +462,7 @@ test("the driver's guide compares weak heads: equal, different, or unknown", asy
 });
 
 test("a derivation in one context is not reused in another that types a variable differently", async t => {
-  const kernel = new CubicalKernel(await createCubical());
+  const kernel = new CubicalKernel(await createLegacyCubical());
   t.after(() => kernel.dispose());
   const syntax = new CubicalSyntax(kernel), driver = new InstructionDriver(kernel), graph = driver.graph;
   const x = { tag: "Var", name: "x" }, nat = { tag: "Nat" }, unit = { tag: "Unit" };
@@ -504,7 +506,7 @@ test("a Glue term that is its base by eta only after a step still agrees with it
 // new handle even when nothing changed.
 test("the glue move comes last, after the weak heads", async t => {
   const { T } = await import("../lib/cubical/core.mjs");
-  const G = T.glueType(T.nat, []), H = T.glueType(G, []);
+  const G = T.glueType(naturalSort, []), H = T.glueType(G, []);
   const agrees = async (base, context, optimizations) => {
     const program = new CubicalProgram(await createCubical(), readLibrary, { optimizations });
     t.after(() => program.dispose());
@@ -517,13 +519,13 @@ test("the glue move comes last, after the weak heads", async t => {
       steps: after.instructionSteps - before.instructionSteps + after.querySteps - before.querySteps };
   };
   // Measured: 33 instructions here, where normalizing on the way took 40,027.
-  const unshared = await agrees(T.variable("x"), [["x", T.nat]], { shareSyntax: false });
+  const unshared = await agrees(T.variable("x"), [["x", naturalSort]], { shareSyntax: false });
   assert.equal(unshared.checked.term.tag, "PLam");
   assert.ok(unshared.instructions < 1000, `${unshared.instructions} instructions`);
   // Measured: 473 steps here, where normalizing first ran out of all 10,000,000.
   let shared = T.variable("x");
   for (let n = 0; n < 40; n++) shared = T.app(T.app(T.variable("f"), shared), shared);
-  const graph = await agrees(shared, [["x", T.nat], ["f", T.pi("a", T.nat, T.pi("b", T.nat, T.nat))]]);
+  const graph = await agrees(shared, [["x", naturalSort], ["f", T.pi("a", naturalSort, T.pi("b", naturalSort, naturalSort))]]);
   assert.equal(graph.checked.term.tag, "PLam");
   assert.ok(graph.steps < 100000 && graph.exhausted === 0, `${graph.steps} steps, ${graph.exhausted} exhausted`);
 });
@@ -545,7 +547,7 @@ const glueSession = async (t, optimizations = {}) => {
     } };
   // A path between two Glue terms of G = Glue [] Nat, which only agree when
   // their bases do: the comparison fails, and its last moves are glue moves.
-  const G = T.glueType(T.nat, []);
+  const G = T.glueType(naturalSort, []);
   const compare = (left, right, context) => {
     const before = program.kernel.work();
     let error = null;
@@ -562,7 +564,7 @@ test("the glue move: no Glue eta redex is no progress, and the move's budget is 
   // A Glue term whose base is no unglue: the Glue step does not apply, and
   // the move is stuck, even without syntax sharing.
   const plain = await glueSession(t, { shareSyntax: false });
-  const run = plain.compare(plain.T.variable("x"), plain.T.variable("y"), [["x", plain.T.nat], ["y", plain.T.nat]]);
+  const run = plain.compare(plain.T.variable("x"), plain.T.variable("y"), [["x", naturalSort], ["y", naturalSort]]);
   assert.ok(run.error, "different bases do not agree");
   assert.ok(plain.made.includes("glue:left:stuck"), plain.made.join(" "));
   assert.ok(run.instructions < 1000, `${run.instructions} instructions`);
@@ -573,15 +575,15 @@ test("the glue move: no Glue eta redex is no progress, and the move's budget is 
   const { KernelError } = await import("../web/cubical-kernel.mjs");
   const g = shared.program.checker.driver.graph, within = g.within, budgets = [];
   g.within = steps => { budgets.push(steps); throw new KernelError("Kernel checking/reduction budget exhausted.", "budget"); };
-  const heavy = shared.compare(T.variable("x"), T.variable("y"), [["x", T.nat], ["y", T.nat]]);
+  const heavy = shared.compare(T.variable("x"), T.variable("y"), [["x", naturalSort], ["y", naturalSort]]);
   g.within = within;
   assert.ok(heavy.error && heavy.error.kind !== "budget", heavy.error?.message);
   assert.ok(budgets.length && budgets.every(steps => steps === searchLimits.glueSteps), JSON.stringify(budgets));
   assert.ok(shared.made.includes("glue:left:stuck"), shared.made.join(" "));
   // And an operation within a budget of its own gives the session's back.
   const typing = shared.program.checker.driver.check(
-    shared.program.checker.syntax.encode(T.app(T.lam("n", T.nat, T.succ(T.variable("n"))), T.zero)),
-    shared.program.checker.syntax.encode(T.nat));
+    shared.program.checker.syntax.encode(T.app(T.lam("n", naturalSort, T.app(T.constructor(1,naturalSort,"succ"),T.variable("n"))), numeral(0))),
+    shared.program.checker.syntax.encode(naturalSort));
   assert.throws(() => g.within(1, () => g.step(g.refl(typing), "other", [], "normalize")), error => error.kind === "budget");
   assert.ok(g.step(g.refl(typing), "other", [], "normalize"), "the session's budget is back");
 });
@@ -591,7 +593,7 @@ test("the glue move rethrows a deadline, and a Glue term needs it at every focus
   const { KernelError } = await import("../web/cubical-kernel.mjs");
   const graph = program.checker.driver.graph, within = graph.within;
   graph.within = () => { throw new KernelError("Declaration time limit exceeded.", "deadline"); };
-  const interrupted = compare(T.variable("x"), T.variable("y"), [["x", T.nat], ["y", T.nat]]);
+  const interrupted = compare(T.variable("x"), T.variable("y"), [["x", naturalSort], ["y", naturalSort]]);
   graph.within = within;
   assert.equal(interrupted.error?.kind, "deadline", interrupted.error?.message);
   // Two tubes of one composition, each the same Glue term that is its base by
@@ -627,15 +629,15 @@ test("the glue move waits for enclosing reductions, and reduces nothing beyond i
   const made = [];
   program.kernel.chooser = { name: "recording", rank: point => heuristicChooser.rank(point),
     observe: (point, move, outcome) => made.push(`${move.move}:${point.depth}:${outcome}`) };
-  const G = T.glueType(T.nat, []), deep = T.glue(G, { tag: "DefRef", name: "deep__n600" }, []);
+  const G = T.glueType(naturalSort, []), deep = T.glue(G, { tag: "DefRef", name: "deep__n600" }, []);
   const f = { tag: "DefRef", name: "deep__f" }, y = T.glue(G, T.variable("y"), []);
   const left = T.app(T.app(f, G), deep), right = T.app(T.app(f, G), y);
-  assert.equal(program.checker.checkView(T.line("i", T.unit, left), T.path("i", T.unit, left, right), [["y", T.nat]]).term.tag, "PLam");
+  assert.equal(program.checker.checkView(T.line("i", T.unit, left), T.path("i", T.unit, left, right), [["y", naturalSort]]).term.tag, "PLam");
   assert.ok(!made.some(move => move.startsWith("glue:")), made.join(" "));
   // Compared directly, the two Glue terms differ; the glue move is tried, and
   // is stuck without reaching the depth of syntax.
   let error = null;
-  try { program.checker.checkView(T.line("i", G, deep), T.path("i", G, deep, y), [["y", T.nat]]); }
+  try { program.checker.checkView(T.line("i", G, deep), T.path("i", G, deep, y), [["y", naturalSort]]); }
   catch (thrown) { error = thrown; }
   assert.ok(error && !/syntax depth/.test(error.message), error?.message);
   assert.ok(made.some(move => move.startsWith("glue:") && move.endsWith(":stuck")), made.join(" "));
@@ -687,7 +689,7 @@ test("a Glue term whose base is a nested Glue eta redex agrees with its base", a
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
   await program.check("def unit_point : Unit := tt;\n", "glue_nested");
-  const A = T.glueType(T.nat, []), redex = T.glueType(T.app(T.lam("X", T.universe(0), T.variable("X")), T.nat), []);
+  const A = T.glueType(naturalSort, []), redex = T.glueType(T.app(T.lam("X", T.universe(0), T.variable("X")), naturalSort), []);
   const G = T.glueType(A, []), g = T.variable("g");
   const outer = T.glue(G, T.glue(redex, T.unglue(A, T.unglue(G, g)), []), []);
   const composite = T.comp("k", G, [{ face: F.endpoint("m", 0), term: outer }], g);
@@ -709,7 +711,7 @@ test("a Glue term agrees with its base through pair eta, and through types equal
   const tube = (G, term, context) =>
     program.checker.checkView(T.comp("k", G, [{ face: F.endpoint("m", 0), term }], T.variable("g")), G, context, new Map([["m", 0]]));
   // A = Σ (n : Nat). Nat, G = Glue [] A, u = unglue_G(g): glue_G [] (fst u, snd ((λ x. x) u)) is g.
-  const A = T.sigma("n", T.nat, T.nat), G = T.glueType(A, []), u = T.unglue(G, T.variable("g"));
+  const A = T.sigma("n", naturalSort, naturalSort), G = T.glueType(A, []), u = T.unglue(G, T.variable("g"));
   const paired = T.glue(G, T.pair(A, T.first(u), T.second(T.app(T.lam("x", A, T.variable("x")), u))), []);
   assert.equal(tube(G, paired, [["g", G]]).term.tag, "Comp");
   // r(n + 1) = f(r(n))(r(n)) over x : Unit, A2 = Path(Unit, r(40), r(40)), and

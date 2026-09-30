@@ -1,5 +1,17 @@
 # H1 representation replay evidence
 
+2026-09-30 update: source programs now use declared Nat and W directly, with
+H1 enabled by default. Primitive Nat/W are absent from the current kernel.
+X1/X3 primitive instruction snapshots and the large primitive-W comparison
+now use the exact pre-migration kernel at
+`bfef585cfe09f4b94a658564dff505cd67855368`, built under
+`build/reference-kernel`. They remain historical differential evidence.
+Current source and corpus tests use the current producer; source W requires
+explicit finite universe arguments, or a separate fixed-universe declaration
+for higher universes. The former tier-1 primitive-W and mixed-W source probes
+below no longer describe an available source API. Sum and pushout retain
+their primitive APIs. See the [migration record](h1-program-types.md).
+
 Status: experimental implementation, 2026-09-30. The representation option
 and archive replay are implemented. X2, X4 and X5 remain partially traced;
 this record does not mark the differential release gate discharged.
@@ -39,7 +51,7 @@ between native and declared sorts.
 | X6, X7 | Finite-universe calls for Nat, sum, W and pushout; tier-1 formers remain native |
 | X8 | All three mixed-tier calls check natively and fail after translation; the verifier names each failed call |
 
-`tests/h1-differential.test.mjs` checks these fixtures. The native test emits
+`tests/h1-differential.test.mjs` checks these fixtures. The pinned historical native test emits
 snapshots with `--fixtures FILE`; snapshots expand definition references
 before their checkpoint disappears. `tools/h1-instruction-replay.mjs`
 reconstructs the checked contexts and formulas, then independently derives

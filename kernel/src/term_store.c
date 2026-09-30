@@ -61,20 +61,23 @@ bool ck_tick(cc_kernel *k, bool checking) {
 
 unsigned ck_arity(cc_term_kind kind) {
     switch (kind) {
-    case CC_DEFREF: case CC_VAR: case CC_NAT: case CC_ZERO: case CC_UNIT: case CC_POINT: case CC_VOID:
+    /* Retired primitive tags stay reserved in ABI 3, and are not syntax. */
+    case CC_NAT: case CC_ZERO: case CC_SUCC: case CC_NATREC:
+    case CC_W: case CC_SUP: case CC_WREC: return 5;
+    case CC_DEFREF: case CC_VAR: case CC_UNIT: case CC_POINT: case CC_VOID:
     case CC_LBOUND: case CC_LCONST:
         return 0;
-    case CC_U: case CC_SUCC: case CC_FST: case CC_SND: case CC_LSUCC: case CC_CON:
+    case CC_U: case CC_FST: case CC_SND: case CC_LSUCC: case CC_CON:
         return 1;
     case CC_PI: case CC_LAM: case CC_APP: case CC_SIGMA: case CC_PLAM: case CC_PAPP:
-    case CC_TUBE: case CC_ABORT: case CC_W: case CC_SUM: case CC_INL: case CC_INR:
+    case CC_TUBE: case CC_ABORT: case CC_SUM: case CC_INL: case CC_INR:
     case CC_GLUE: case CC_UNGLUE: case CC_PUSH_LEFT: case CC_PUSH_RIGHT: case CC_PUSH_PATH:
     case CC_LMAX: case CC_LPI: case CC_LLAM: case CC_LAPP: case CC_SORT: case CC_ELIM: case CC_LIST:
         return 2;
-    case CC_PAIR: case CC_PATH: case CC_COMP: case CC_SUP: case CC_WREC: case CC_UNITREC:
+    case CC_PAIR: case CC_PATH: case CC_COMP: case CC_UNITREC:
     case CC_GLUE_SYSTEM: case CC_GLUE_TERM: case CC_HCOMP: case CC_TRANS:
         return 3;
-    case CC_NATREC: case CC_SUMREC: case CC_PUSHOUT: case CC_PUSH_ELIM:
+    case CC_SUMREC: case CC_PUSHOUT: case CC_PUSH_ELIM:
         return 4;
     }
     return 5;

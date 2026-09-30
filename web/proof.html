@@ -468,20 +468,22 @@ def copy_two : copy(2) = 2 {
         </div>
         <div class="quick-entry" id="quick-w-types">
           <h4>W types</h4>
-          <p><code>W(A, B)</code> holds well-founded trees with a label <code>a : A</code> and a child for each <code>b : B(a)</code>. <code>sup(T, a, children)</code> builds one, and <code>wrec</code> recurses over them.
+          <p><code>W(U, V, A, B)</code> holds well-founded trees with a label <code>a : A</code> and a child for each <code>b : B(a)</code>. <code>sup(a, children)</code> builds one, and <code>wrec</code> recurses over them.
             <a href="reference/induction.html#w-types">Natural numbers and inductive types →</a></p>
-          <pre><code data-check="accept">def Label := Unit or Unit;
+          <pre><code data-check="accept">import w;
+
+def Label := Unit or Unit;
 
 def Arity(tag : Label) := match tag return U0 {
   left leaf =&gt; Void;
   right node =&gt; Unit;
 };
 
-def Chain := W(Label, Arity);
+def Chain := W(U0, U0, Label, Arity);
 
-def leaf := sup(Chain, typed(Label, left(tt)), fun (v : Void) =&gt; typed(Chain, absurd(v)));
+def leaf := typed(Chain, sup(typed(Label, left(tt)), fun (v : Void) =&gt; typed(Chain, absurd(v))));
 
-def grow(c : Chain) := sup(Chain, typed(Label, right(tt)), fun (u : Unit) =&gt; c);</code></pre>
+def grow(c : Chain) := typed(Chain, sup(typed(Label, right(tt)), fun (u : Unit) =&gt; c));</code></pre>
         </div>
         <div class="quick-entry" id="quick-binary">
           <h4>Binary literals</h4>

@@ -21,9 +21,12 @@ typedef struct cc_kernel cc_kernel;
 
 typedef enum {
     CC_U = 1, CC_VAR, CC_PI, CC_LAM, CC_APP, CC_SIGMA, CC_PAIR, CC_FST, CC_SND,
+    /* Reserved: the former Nat primitive tags cannot be constructed. */
     CC_NAT, CC_ZERO, CC_SUCC, CC_NATREC, CC_UNIT, CC_POINT,
     CC_PATH, CC_PLAM, CC_PAPP, CC_COMP, CC_TUBE,
-    CC_VOID, CC_ABORT, CC_W, CC_SUP, CC_WREC,
+    CC_VOID, CC_ABORT,
+    /* Reserved: the former W primitive tags cannot be constructed. */
+    CC_W, CC_SUP, CC_WREC,
     CC_SUM, CC_INL, CC_INR, CC_SUMREC, CC_UNITREC,
     CC_GLUE, CC_GLUE_SYSTEM, CC_GLUE_TERM, CC_UNGLUE, CC_DEFREF,
     CC_PUSHOUT, CC_PUSH_LEFT, CC_PUSH_RIGHT, CC_PUSH_PATH, CC_PUSH_ELIM, CC_HCOMP, CC_TRANS,
@@ -179,7 +182,9 @@ bool cc_kernel_trace_event(const cc_kernel *, size_t index, cc_trace_event *);
 typedef uint32_t cc_judgement_id;
 typedef uint32_t cc_entry_id;
 typedef enum {
-    CC_INSTR_UNIVERSE = 1, CC_INSTR_NAT, CC_INSTR_ZERO, CC_INSTR_SUCC, CC_INSTR_NAT_ELIM,
+    CC_INSTR_UNIVERSE = 1,
+    /* Reserved ABI slots: Nat/Zero/Succ/NatElim are refused. */
+    CC_INSTR_NAT, CC_INSTR_ZERO, CC_INSTR_SUCC, CC_INSTR_NAT_ELIM,
     CC_INSTR_UNIT, CC_INSTR_POINT, CC_INSTR_UNIT_ELIM, CC_INSTR_VOID, CC_INSTR_ABORT,
     CC_INSTR_SUM, CC_INSTR_INJECT, CC_INSTR_SUM_ELIM,
     CC_INSTR_VARIABLE, CC_INSTR_PI, CC_INSTR_LAMBDA, CC_INSTR_APPLY,
@@ -189,7 +194,9 @@ typedef enum {
     CC_INSTR_SYMMETRY, CC_INSTR_TRANSITIVITY, CC_INSTR_CONVERT, CC_INSTR_LIFT, CC_INSTR_ENDPOINT,
     CC_INSTR_PATH_AT, CC_INSTR_SYSTEM, CC_INSTR_SYSTEM_TUBE, CC_INSTR_COMP, CC_INSTR_SYSTEM_OVERLAP,
     CC_INSTR_PUSHOUT, CC_INSTR_PUSH_POINT, CC_INSTR_PUSH_PATH, CC_INSTR_PUSH_ELIM,
-    CC_INSTR_W, CC_INSTR_SUP, CC_INSTR_W_ELIM, CC_INSTR_HCOMP, CC_INSTR_TRANS,
+    /* Reserved ABI slots: W/Sup/WElim are refused. */
+    CC_INSTR_W, CC_INSTR_SUP, CC_INSTR_W_ELIM,
+    CC_INSTR_HCOMP, CC_INSTR_TRANS,
     CC_INSTR_GLUE_BASE, CC_INSTR_GLUE_PIECE, CC_INSTR_GLUE_OVERLAP, CC_INSTR_GLUE,
     CC_INSTR_GLUE_TERM_BASE, CC_INSTR_GLUE_TERM_PIECE, CC_INSTR_GLUE_TERM, CC_INSTR_UNGLUE,
     CC_INSTR_LEVEL_PI, CC_INSTR_LEVEL_LAMBDA, CC_INSTR_LEVEL_APPLY,
@@ -200,8 +207,8 @@ typedef enum {
 typedef enum {
     CC_STEP_BETA = 1,  /* App(Lam(x. b), a) to b[a/x] */
     CC_STEP_DELTA,     /* a definition to its checked value */
-    CC_STEP_IOTA,      /* an eliminator or projection on a constructor (W
-                        * recursion on sup included), and a pushout path
+    CC_STEP_IOTA,      /* an eliminator or projection on a constructor,
+                        * and a pushout path
                         * at an endpoint */
     CC_STEP_PATH,      /* a path lambda applied at an interval point, or a
                         * path applied at an endpoint of its annotated type */
@@ -226,11 +233,6 @@ typedef enum {
  * Its variables must be level entries, which form Γ. The judgement's
  * universes carry l's normal form. */
 cc_judgement_id cc_instr_universe(cc_kernel *, cc_term level);
-cc_judgement_id cc_instr_nat(cc_kernel *);                                /* ⊢ Nat : U0 */
-cc_judgement_id cc_instr_zero(cc_kernel *);                               /* ⊢ 0 : Nat */
-cc_judgement_id cc_instr_succ(cc_kernel *, cc_judgement_id);              /* n : Nat ⊢ succ(n) : Nat */
-cc_judgement_id cc_instr_nat_elim(cc_kernel *, cc_judgement_id motive, cc_judgement_id zero,
-                                  cc_judgement_id step, cc_judgement_id value);
 cc_judgement_id cc_instr_unit(cc_kernel *);
 cc_judgement_id cc_instr_point(cc_kernel *);
 cc_judgement_id cc_instr_unit_elim(cc_kernel *, cc_judgement_id motive, cc_judgement_id point,
@@ -351,15 +353,6 @@ cc_judgement_id cc_instr_push_point(cc_kernel *, cc_judgement_id type, cc_judgem
 cc_judgement_id cc_instr_push_path(cc_kernel *, cc_judgement_id type, cc_judgement_id value, cc_formula_id interval);
 cc_judgement_id cc_instr_push_elim(cc_kernel *, cc_judgement_id motive, cc_judgement_id left,
                                    cc_judgement_id right, cc_judgement_id bridge);
-/* W types. W(x : L). B, from an entry x : L and B : U over it, like Π and Σ;
- * Domain and Family give L and B[l/x]. Sup gives sup(l, c) : T for T a W type
- * as written, l : L and c : Π(i : B[l/x]). T. WElim, from a motive
- * M : Π(z : T). U(l), a step Π(l : L). Π(c : Π(i : B[l/x]). T).
- * Π(h : Π(i : B[l/x]). M(c(i))). M(sup(l, c)), and a value v : T, gives
- * WRec(M, step, v) : M(v). */
-cc_judgement_id cc_instr_w(cc_kernel *, cc_entry_id id, cc_judgement_id arities);
-cc_judgement_id cc_instr_sup(cc_kernel *, cc_judgement_id type, cc_judgement_id label, cc_judgement_id children);
-cc_judgement_id cc_instr_w_elim(cc_kernel *, cc_judgement_id motive, cc_judgement_id step, cc_judgement_id value);
 /* Declared types (H1), admitted one constructor at a time: the family F1 of
  * docs/roadmaps/h1-signature-specification.md, section 5.2, whose sections
  * 1.1-1.6 give the normal form checked here.
@@ -549,19 +542,18 @@ bool cc_kernel_commit_checkpoint(cc_kernel *);
 cc_term cc_kernel_relocated(const cc_kernel *, cc_term);
 
 /* Child order:
- * U(level) with payload zero; Var(symbol); Pi/Lam/Sigma/W(symbol; domain, body).
+ * U(level) with payload zero; Var(symbol); Pi/Lam/Sigma(symbol; domain, body).
  * Levels: LConst(tier * 65536 + n) is the constant ω·tier + n; LSucc(n; level)
  * is level + n, for n ≥ 1; LMax(level, level); a level variable is a Var.
  * LBound(tier) is a level binder's bound ω·tier, and the type of a level
  * entry; LPi/LLam(symbol; bound, body) and LApp(function, level) are level
  * quantification, Π (x < ω). B, λ (x < ω). t and f {l}. Only the bound ω,
  * LBound(1), is admitted.
- * App(fn,arg); Pair(type,first,second); Fst/Snd(pair); Succ(value).
- * NatRec(motive,zero,step,value).
+ * App(fn,arg); Pair(type,first,second); Fst/Snd(pair).
  * Path(dimension; family,left,right); PLam(dimension; family,body).
  * PApp(formula; path); Comp(dimension; family,tubes,base).
  * Tube(face-formula; partial-term,next-tube), with zero terminating the list.
- * Abort(type,impossible); Sup(W-type,label,children); WRec(motive,step,value).
+ * Abort(type,impossible).
  * Sum(left,right); Inl/Inr(sum-type,value); SumRec(motive,left,right,value).
  * UnitRec(motive,point-case,value).
  * Glue(base,system); GlueSystem(face-formula; partial-type,equivalence,next).
@@ -576,7 +568,8 @@ cc_term cc_kernel_relocated(const cc_kernel *, cc_term);
  * Declared types (H1): Sort(signature-index; parameters, recorded-levels),
  * each a List(item, next) with zero terminating it, both absent for a
  * signature's own sort; Con(constructor-number; instance). Elim is F5's.
- * Nat/Zero/Unit/Point/Void have no children. Missing children must be zero.
+ * Unit/Point/Void have no children. Missing children must be zero.
+ * The retired Nat/Zero/Succ/NatRec/W/Sup/WRec slots are refused.
  * The checker discards an untrusted PApp's optional second child (annotation).
  */
 cc_term cc_kernel_term(cc_kernel *, cc_term_kind, uint32_t payload,

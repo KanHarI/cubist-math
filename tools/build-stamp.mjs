@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 export const runtimeModules = ["core", "lattice", "syntax-graph", "equivalence", "translate", "proof-rewrite",
   "simp-registry", "number-transport", "pushouts", "path-over", "path-algebra", "public-equivalence",
   "dimension-slots", "dependent-transport", "adjointification", "names", "elaboration", "proof-goals", "motives",
-  "fuel", "inductive", "match", "hlevel"];
+  "fuel", "inductive", "match", "hlevel", "numerals"];
 
 // A hash of files, by path and content, read through `read`.
 export function hashOf(paths, read) {
@@ -51,11 +51,11 @@ export function buildStamp(root, { lockTimeout = Number(process.env.CUBIST_BUILD
   const sources = {
     kernel: () => [...listed("kernel/src/", name => /\.[ch]$/.test(name)), ...listed("kernel/include/", name => name.endsWith(".h")),
       "wasm/cubical_bridge.c", "Makefile"],
-    runtime: () => [...runtimeModules.map(name => `lib/cubical/${name}.mjs`), "tools/build-cubical-runtime.mjs", "tools/build-stamp.mjs"],
+    runtime: () => [...runtimeModules.map(name => `lib/cubical/${name}.mjs`), "archive/first-library/nat.cubist", "tools/build-cubical-runtime.mjs", "tools/build-stamp.mjs"],
   };
   const outputs = {
     kernel: () => ["web/dist/cubical.mjs", "web/dist/cubical.wasm"],
-    runtime: () => runtimeModules.map(name => `web/dist/cubical-runtime/${name}.mjs`),
+    runtime: () => [...runtimeModules.map(name => `web/dist/cubical-runtime/${name}.mjs`), "web/dist/cubical-runtime/nat-source.mjs"],
   };
   const kinds = Object.keys(sources);
   const hashFiles = paths => hashOf(paths, path => readFileSync(at(path)));

@@ -4,6 +4,9 @@ import { chromium } from "playwright";
 import { assertFreshBuild } from "../tools/build-stamp.mjs";
 // The page loads the WASM kernel and the translator from web/dist.
 assertFreshBuild();
+const natural = {tag:"Sort",signature:"nat__Nat",parameters:[],levels:[]};
+const zero = {tag:"Con",index:0,name:"zero",sort:natural};
+const one = {tag:"App",fn:{tag:"Con",index:1,name:"succ",sort:natural},arg:zero};
 const server = spawn("python3", ["tools/serve.py", "--port", "0"], { stdio: ["ignore", "pipe", "pipe"] });
 server.stderr.resume();
 let browser;
@@ -140,7 +143,7 @@ try {
   await workbench.locator("#back").click();
   await workbench.locator("details summary").click();
   // The exported type is itself a U0 term: replace it with Nat and recheck.
-  await workbench.locator("#syntax").fill('{"tag":"Nat"}');
+  await workbench.locator("#syntax").fill(JSON.stringify(natural));
   await workbench.locator("#check").click();
   assert.equal(await workbench.locator("#expression").textContent(), "Nat");
   await workbench.locator("#syntax").fill('{"tag":"Var","name":"missing"}');
@@ -270,7 +273,7 @@ try {
   assert.equal(await reductionBench.locator("#expression").textContent(), "0");
   await reductionBench.locator("details summary").click();
   const ref = { tag: "DefRef", name: "cubical_paths__id" };
-  const repeated = { tag: "App", fn: ref, arg: { tag: "App", fn: ref, arg: { tag: "Zero" } } };
+  const repeated = { tag: "App", fn: ref, arg: { tag: "App", fn: ref, arg: zero } };
   await reductionBench.locator("#syntax").fill(JSON.stringify(repeated));
   await reductionBench.locator("#check").click();
   await reductionBench.locator("#delta-expression").click();
@@ -285,8 +288,8 @@ try {
   assert.equal(reducedOccurrence.fn.tag, "DefRef");
   assert.equal(reducedOccurrence.arg.fn.tag, "Lam");
   await chooseReduction("expression", "beta", ["arg"]);
-  const identity = { tag: "Lam", name: "x", domain: { tag: "Nat" }, body: { tag: "Var", name: "x" } };
-  const nestedBeta = { tag: "App", fn: identity, arg: { tag: "App", fn: identity, arg: { tag: "Zero" } } };
+  const identity = { tag: "Lam", name: "x", domain: natural, body: { tag: "Var", name: "x" } };
+  const nestedBeta = { tag: "App", fn: identity, arg: { tag: "App", fn: identity, arg: zero } };
   await reductionBench.locator("#syntax").fill(JSON.stringify(nestedBeta));
   await reductionBench.locator("#check").click();
   await reductionBench.locator("#beta-expression").click();
@@ -294,7 +297,7 @@ try {
   await reductionBench.locator('#expression [data-reduction-path=\'["arg"]\']').click();
   const chosenInner = JSON.parse(await reductionBench.locator("#syntax").inputValue());
   assert.equal(chosenInner.fn.tag, "Lam");
-  assert.equal(chosenInner.arg.tag, "Zero");
+  assert.deepEqual(chosenInner.arg, zero);
   await reductionBench.locator("#back").click();
   assert.deepEqual(JSON.parse(await reductionBench.locator("#syntax").inputValue()), nestedBeta);
   await reductionBench.locator("#syntax").fill(JSON.stringify(repeated));
@@ -303,10 +306,10 @@ try {
   await reductionBench.locator("#unhighlight").click();
   assert.equal(await reductionBench.locator(".reduction-site").count(), 0);
   await reductionBench.locator("#delta-expression").click();
-  await reductionBench.locator("#syntax").fill('{"tag":"Succ","value":{"tag":"Zero"}}');
+  await reductionBench.locator("#syntax").fill(JSON.stringify(one));
   assert.equal(await reductionBench.locator(".reduction-site").count(), 0);
   await reductionBench.locator("#unhighlight").click();
-  assert.equal(await reductionBench.locator("#syntax").inputValue(), '{"tag":"Succ","value":{"tag":"Zero"}}');
+  assert.deepEqual(JSON.parse(await reductionBench.locator("#syntax").inputValue()), one);
   assert.equal(await reductionBench.locator("[data-reduction]:enabled").count(), 0);
   await reductionBench.close();
   await page.locator("#edit-mode").click();

@@ -60,25 +60,27 @@
         "H1"
       ],
       "extensionsRetained": [],
-      "remedyGroup": 1
+      "remedyGroup": 1,
+      "assumptionsAdded": [],
+      "extensionsRemoved": []
     },
     {
       "module": "cauchy_quotient",
       "declaration": "EventualClose",
       "oldPublicType": {
-        "hash": "0499c39e32eb2b8d24fa0947506ddab115f70a8b",
+        "hash": "4860f1bb4054cf28d5b3bb3beacde3c5db1e6d54",
         "text": "forall Q : U0. (Q -> Q -> Q) -> (Q -> Q -> U0) -> (Nat -> Q) -> (Nat -> Q) -> Q -> U0"
       },
       "newPublicType": {
-        "hash": "0499c39e32eb2b8d24fa0947506ddab115f70a8b",
+        "hash": "4860f1bb4054cf28d5b3bb3beacde3c5db1e6d54",
         "text": "forall Q : U0. (Q -> Q -> Q) -> (Q -> Q -> U0) -> (Nat -> Q) -> (Nat -> Q) -> Q -> U0"
       },
       "oldValue": {
-        "hash": "2cc7bbb38fd062e561b92d39087012a6c39f44f3",
+        "hash": "19d0c6d3f45c98c8ec6b26a08de3f6d6f1d494cd",
         "text": "fun (Q : U0, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x, y : Nat -> Q, epsilon : Q) => FieldExists(__assumption_Truncate, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), epsilon))"
       },
       "newValue": {
-        "hash": "252e3d73877a3175ad33ff5e1c02c39d5f2dd20b",
+        "hash": "4b8a43c9f240b14596a5ffcdd18ae0cfb99f9bf4",
         "text": "fun (Q : U0, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x, y : Nat -> Q, epsilon : Q) => Trunc(exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), epsilon))"
       },
       "assumptionsReplaced": [],
@@ -87,29 +89,31 @@
         "Truncate"
       ],
       "assumptionsRetained": [],
-      "extensionsAdded": [
+      "extensionsAdded": [],
+      "extensionsRetained": [
         "H1"
       ],
-      "extensionsRetained": [],
-      "remedyGroup": 2
+      "remedyGroup": 2,
+      "assumptionsAdded": [],
+      "extensionsRemoved": []
     },
     {
       "module": "cauchy_quotient",
       "declaration": "SequenceSame",
       "oldPublicType": {
-        "hash": "7e2cf0690a790d3f4f6f72d3ef19b7cc7f5c1892",
+        "hash": "a1177e5847d2af9b493d092fca06e21dbe0ea2a8",
         "text": "forall Q : U0. Q -> (Q -> Q -> Q) -> (Q -> Q -> U0) -> (Nat -> Q) -> (Nat -> Q) -> U0"
       },
       "newPublicType": {
-        "hash": "7e2cf0690a790d3f4f6f72d3ef19b7cc7f5c1892",
+        "hash": "a1177e5847d2af9b493d092fca06e21dbe0ea2a8",
         "text": "forall Q : U0. Q -> (Q -> Q -> Q) -> (Q -> Q -> U0) -> (Nat -> Q) -> (Nat -> Q) -> U0"
       },
       "oldValue": {
-        "hash": "cf1e71e0b986a4942ebb0e6582b8828dee8af886",
+        "hash": "12a456a94e5cf802808cd717bcee2723f3b591a1",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x, y : Nat -> Q) => forall epsilon : Q. ltQ(zero, epsilon) -> EventualClose(__assumption_Truncate, Q, addQ, ltQ, x, y, epsilon)"
       },
       "newValue": {
-        "hash": "cf748056e7b559c8a8a7931d672faa938bc835cf",
+        "hash": "795fb2829224f029cc3bfa71e39e3932f6bb5b1f",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x, y : Nat -> Q) => forall epsilon : Q. ltQ(zero, epsilon) -> EventualClose(Q, addQ, ltQ, x, y, epsilon)"
       },
       "assumptionsReplaced": [],
@@ -118,29 +122,31 @@
         "Truncate"
       ],
       "assumptionsRetained": [],
-      "extensionsAdded": [
+      "extensionsAdded": [],
+      "extensionsRetained": [
         "H1"
       ],
-      "extensionsRetained": [],
-      "remedyGroup": 2
+      "remedyGroup": 2,
+      "assumptionsAdded": [],
+      "extensionsRemoved": []
     },
     {
       "module": "cauchy_quotient",
       "declaration": "CauchySame",
       "oldPublicType": {
-        "hash": "d4800b92d315336fb87fc5cdf43263f9f6fbeb93",
+        "hash": "da2a22d0a0d20e29bd7acbc31061b70ef6770ec3",
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. CauchySequence(Q, zero, addQ, ltQ) -> CauchySequence(Q, zero, addQ, ltQ) -> U0"
       },
       "newPublicType": {
-        "hash": "d4800b92d315336fb87fc5cdf43263f9f6fbeb93",
+        "hash": "da2a22d0a0d20e29bd7acbc31061b70ef6770ec3",
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. CauchySequence(Q, zero, addQ, ltQ) -> CauchySequence(Q, zero, addQ, ltQ) -> U0"
       },
       "oldValue": {
-        "hash": "51c9b33c10d4cc0aaf83ab99d261a57ede2ab741",
+        "hash": "7c7e7cf401fca263aa474bee01f6b0a9c06b23fc",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x, y : CauchySequence(Q, zero, addQ, ltQ)) => SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, cauchy_sequence(Q, zero, addQ, ltQ, x), cauchy_sequence(Q, zero, addQ, ltQ, y))"
       },
       "newValue": {
-        "hash": "8af4b9356a31f042b5fff16d01aa63768a33a1df",
+        "hash": "63d2eaa7dce0160462bc2321fc04bd5938e03e70",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x, y : CauchySequence(Q, zero, addQ, ltQ)) => SequenceSame(Q, zero, addQ, ltQ, cauchy_sequence(Q, zero, addQ, ltQ, x), cauchy_sequence(Q, zero, addQ, ltQ, y))"
       },
       "assumptionsReplaced": [],
@@ -149,11 +155,13 @@
         "Truncate"
       ],
       "assumptionsRetained": [],
-      "extensionsAdded": [
+      "extensionsAdded": [],
+      "extensionsRetained": [
         "H1"
       ],
-      "extensionsRetained": [],
-      "remedyGroup": 2
+      "remedyGroup": 2,
+      "assumptionsAdded": [],
+      "extensionsRemoved": []
     },
     {
       "module": "cauchy_quotient",
@@ -167,11 +175,11 @@
         "text": "forall Q : U0. Q -> (Q -> Q -> Q) -> (Q -> Q -> U0) -> U1"
       },
       "oldValue": {
-        "hash": "19a3def6a7e9635f233494aad2f47baee56181ce",
+        "hash": "fe69626ad88eb4f6d9dce2569d0d01e3ab2d7ebb",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0) => SetQuotient(__assumption_Truncate, CauchySequence(Q, zero, addQ, ltQ), CauchySame(__assumption_Truncate, Q, zero, addQ, ltQ))"
       },
       "newValue": {
-        "hash": "8f9da24999f20a446f76562c3c1c7e13a4b1e6d8",
+        "hash": "2b1005200c8c9f4501c894c48b95b7abbdc85d1a",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0) => SetQuotient(__assumption_Truncate, CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ))"
       },
       "assumptionsReplaced": [],
@@ -180,29 +188,31 @@
       "assumptionsRetained": [
         "Truncate"
       ],
-      "extensionsAdded": [
+      "extensionsAdded": [],
+      "extensionsRetained": [
         "H1"
       ],
-      "extensionsRetained": [],
-      "remedyGroup": 2
+      "remedyGroup": 2,
+      "assumptionsAdded": [],
+      "extensionsRemoved": []
     },
     {
       "module": "cauchy_quotient",
       "declaration": "sequence_same_prop",
       "oldPublicType": {
-        "hash": "801920ddf5f87b9c47a2485c92b2c2b7d7a9dd82",
+        "hash": "c2cec2f2077afb9d86ad80a677b500871b741329",
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. forall x : Nat -> Q. forall y : Nat -> Q. FieldProp(SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, x, y))"
       },
       "newPublicType": {
-        "hash": "b9668c8c7d967ce51aca1abead3e6815e0590cba",
+        "hash": "dba65718aa1e9dbda26c08426961a8accbf79b7d",
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. forall x : Nat -> Q. forall y : Nat -> Q. FieldProp(SequenceSame(Q, zero, addQ, ltQ, x, y))"
       },
       "oldValue": {
-        "hash": "61e6af22a89998d6f306600dd137525aa8eade99",
+        "hash": "225f99b633461f934e3c6b05de0d186ffad5fd9b",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x, y : Nat -> Q) => field_forall_prop(Q, fun (epsilon : Q) => ltQ(zero, epsilon) -> EventualClose(__assumption_Truncate, Q, addQ, ltQ, x, y, epsilon), fun (epsilon : Q) => field_forall_prop(ltQ(zero, epsilon), fun (positive : ltQ(zero, epsilon)) => EventualClose(__assumption_Truncate, Q, addQ, ltQ, x, y, epsilon), fun (positive : ltQ(zero, epsilon)) => field_exists_prop(__assumption_Truncate, __assumption_TruncateProp, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), epsilon))))"
       },
       "newValue": {
-        "hash": "80e7e82e71688b4af6dd32ef0b38fef436bd5bf5",
+        "hash": "49bcb7716477fb0ebc3c6524708dc38acb6e932c",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x, y : Nat -> Q) => field_forall_prop(Q, fun (epsilon : Q) => ltQ(zero, epsilon) -> EventualClose(Q, addQ, ltQ, x, y, epsilon), fun (epsilon : Q) => field_forall_prop(ltQ(zero, epsilon), fun (positive : ltQ(zero, epsilon)) => EventualClose(Q, addQ, ltQ, x, y, epsilon), fun (positive : ltQ(zero, epsilon)) => mere_is_prop(U0, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), epsilon))))"
       },
       "assumptionsReplaced": [],
@@ -212,30 +222,32 @@
         "TruncateProp"
       ],
       "assumptionsRetained": [],
-      "extensionsAdded": [
+      "extensionsAdded": [],
+      "extensionsRetained": [
         "H1"
       ],
-      "extensionsRetained": [],
-      "remedyGroup": 2
+      "remedyGroup": 2,
+      "assumptionsAdded": [],
+      "extensionsRemoved": []
     },
     {
       "module": "cauchy_quotient",
       "declaration": "sequence_same_reflexive",
       "oldPublicType": {
-        "hash": "b788f1f3dde97a5d4d0311caba43d0ffbb79b576",
+        "hash": "c125bb8c7b1905bb4454aa55072952a181474690",
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. (forall x : Q. forall epsilon : Q. ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon)) -> (forall x : Nat -> Q. SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, x, x))"
       },
       "newPublicType": {
-        "hash": "a22d229981edb831f21c412bb1a17e79ae4d05b9",
+        "hash": "057343e3ed886bbc89afe917ccf206f2451dccf9",
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. (forall x : Q. forall epsilon : Q. ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon)) -> (forall x : Nat -> Q. SequenceSame(Q, zero, addQ, ltQ, x, x))"
       },
       "oldValue": {
-        "hash": "3cdde88e74de6c12ebbf85139e7aea54db6d0c6c",
-        "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, closeSelf : forall x : Q. forall epsilon : Q. ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon), x : Nat -> Q, epsilon : Q, positive : ltQ(zero, epsilon)) => field_exists_intro(__assumption_Truncate, __assumption_TruncateIntro, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), x(n), epsilon), (0, fun (n : Nat, bound : IndexLE(0, n)) => closeSelf(x(n), epsilon, positive)))"
+        "hash": "e47b92dd76d7e873455b0288aabb22fe0deb8440",
+        "text": "fun (Q : U0, zero1 : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, closeSelf : forall x : Q. forall epsilon : Q. ltQ(zero1, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon), x : Nat -> Q, epsilon : Q, positive : ltQ(zero1, epsilon)) => field_exists_intro(__assumption_Truncate, __assumption_TruncateIntro, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), x(n), epsilon), (0, fun (n : Nat, bound : IndexLE(0, n)) => closeSelf(x(n), epsilon, positive)))"
       },
       "newValue": {
-        "hash": "11ce43739fd93506a10210d82cfd765a66b21afd",
-        "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, closeSelf : forall x : Q. forall epsilon : Q. ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon), x : Nat -> Q, epsilon : Q, positive : ltQ(zero, epsilon)) => merely(U0, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), x(n), epsilon), (0, fun (n : Nat, bound : IndexLE(0, n)) => closeSelf(x(n), epsilon, positive)))"
+        "hash": "8b7609c478905fcea0498dc37fa4bab8cc02b6d4",
+        "text": "fun (Q : U0, zero1 : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, closeSelf : forall x : Q. forall epsilon : Q. ltQ(zero1, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon), x : Nat -> Q, epsilon : Q, positive : ltQ(zero1, epsilon)) => merely(U0, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), x(n), epsilon), (0, fun (n : Nat, bound : IndexLE(0, n)) => closeSelf(x(n), epsilon, positive)))"
       },
       "assumptionsReplaced": [],
       "hypothesesAdded": [],
@@ -244,29 +256,31 @@
         "TruncateIntro"
       ],
       "assumptionsRetained": [],
-      "extensionsAdded": [
+      "extensionsAdded": [],
+      "extensionsRetained": [
         "H1"
       ],
-      "extensionsRetained": [],
-      "remedyGroup": 2
+      "remedyGroup": 2,
+      "assumptionsAdded": [],
+      "extensionsRemoved": []
     },
     {
       "module": "cauchy_quotient",
       "declaration": "sequence_same_symmetric",
       "oldPublicType": {
-        "hash": "942e5f06897c4e3645fff2714ef61a50b5d4516d",
+        "hash": "ca1cc2b0fd5ed4b2888f5d4644905c51c75a7b01",
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. forall x : Nat -> Q. forall y : Nat -> Q. SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, x, y) -> SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, y, x)"
       },
       "newPublicType": {
-        "hash": "9125b0b8b20ca3fef14811db66046776b49aee82",
+        "hash": "c45ca033402f1791ca8733d310ab2741c2eec5b8",
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. forall x : Nat -> Q. forall y : Nat -> Q. SequenceSame(Q, zero, addQ, ltQ, x, y) -> SequenceSame(Q, zero, addQ, ltQ, y, x)"
       },
       "oldValue": {
-        "hash": "ecdff06330e593434e8f87088bb862aac63902fb",
+        "hash": "1c3235dcb5b00c4249d0d77f9fa477a9d40974ab",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x, y : Nat -> Q, same : SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, x, y), epsilon : Q, positive : ltQ(zero, epsilon)) => field_exists_map(__assumption_Truncate, __assumption_TruncateIntro, __assumption_TruncateProp, __assumption_TruncateElim, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), epsilon), exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, y(n), x(n), epsilon), fun (tail : exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), epsilon)) => (tail.1, fun (n : Nat, large : IndexLE(tail.1, n)) => (field_snd(ltQ(x(n), addQ(y(n), epsilon)), ltQ(y(n), addQ(x(n), epsilon)), tail.2(n, large)), field_fst(ltQ(x(n), addQ(y(n), epsilon)), ltQ(y(n), addQ(x(n), epsilon)), tail.2(n, large)))), same(epsilon, positive))"
       },
       "newValue": {
-        "hash": "30d36eae927e3419e615cde2c1ba88d09d8120fc",
+        "hash": "330d86bdbb13f43efc74f1c0746f61ec4f24653d",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x, y : Nat -> Q, same : SequenceSame(Q, zero, addQ, ltQ, x, y), epsilon : Q, positive : ltQ(zero, epsilon)) => mere_map(U0, U0, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), epsilon), exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, y(n), x(n), epsilon), fun (tail : exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), epsilon)) => (tail.1, fun (n : Nat, large : IndexLE(tail.1, n)) => (field_snd(ltQ(x(n), addQ(y(n), epsilon)), ltQ(y(n), addQ(x(n), epsilon)), tail.2(n, large)), field_fst(ltQ(x(n), addQ(y(n), epsilon)), ltQ(y(n), addQ(x(n), epsilon)), tail.2(n, large)))), same(epsilon, positive))"
       },
       "assumptionsReplaced": [],
@@ -278,29 +292,31 @@
         "TruncateProp"
       ],
       "assumptionsRetained": [],
-      "extensionsAdded": [
+      "extensionsAdded": [],
+      "extensionsRetained": [
         "H1"
       ],
-      "extensionsRetained": [],
-      "remedyGroup": 2
+      "remedyGroup": 2,
+      "assumptionsAdded": [],
+      "extensionsRemoved": []
     },
     {
       "module": "cauchy_quotient",
       "declaration": "sequence_same_transitive",
       "oldPublicType": {
-        "hash": "79ee54e85aa6433f58ba126fd80870f4b17291da",
+        "hash": "631b512b98df9a8003208a33b323bbce7581a04b",
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. CloseComposition(Q, zero, addQ, ltQ) -> (forall x : Nat -> Q. forall y : Nat -> Q. forall z : Nat -> Q. SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, x, y) -> SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, y, z) -> SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, x, z))"
       },
       "newPublicType": {
-        "hash": "e83e82ba4a052406d8d6ca08348100f988969fcc",
+        "hash": "cc2e7f9e1dcff6c1e329fb456a8199a804e685ea",
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. CloseComposition(Q, zero, addQ, ltQ) -> (forall x : Nat -> Q. forall y : Nat -> Q. forall z : Nat -> Q. SequenceSame(Q, zero, addQ, ltQ, x, y) -> SequenceSame(Q, zero, addQ, ltQ, y, z) -> SequenceSame(Q, zero, addQ, ltQ, x, z))"
       },
       "oldValue": {
-        "hash": "6d116ec0fc42225f3375dd39cf782e3d3ba39ddb",
+        "hash": "d25ca0c1b4955d5c18a125fb9b58bfbfb3aee154",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, composeClose : CloseComposition(Q, zero, addQ, ltQ), x, y, z : Nat -> Q, xy : SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, x, y), yz : SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, y, z), epsilon : Q, positive : ltQ(zero, epsilon)) => field_exists_elim(__assumption_Truncate, __assumption_TruncateElim, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), composeClose(epsilon, positive).1), FieldExists(__assumption_Truncate, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), z(n), epsilon)), field_exists_prop(__assumption_Truncate, __assumption_TruncateProp, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), z(n), epsilon)), fun (leftActual : exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), composeClose(epsilon, positive).1)) => field_exists_map(__assumption_Truncate, __assumption_TruncateIntro, __assumption_TruncateProp, __assumption_TruncateElim, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, y(n), z(n), composeClose(epsilon, positive).1), exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), z(n), epsilon), close_tails_compose(Q, addQ, ltQ, x, y, z, epsilon, composeClose(epsilon, positive).1, composeClose(epsilon, positive).2.2, leftActual), yz(composeClose(epsilon, positive).1, composeClose(epsilon, positive).2.1)), xy(composeClose(epsilon, positive).1, composeClose(epsilon, positive).2.1))"
       },
       "newValue": {
-        "hash": "7758f3df6589e242001d951e018791172f75be2a",
+        "hash": "1d9059f29523bb2b81c099dbcfaae4c513ac3a20",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, composeClose : CloseComposition(Q, zero, addQ, ltQ), x, y, z : Nat -> Q, xy : SequenceSame(Q, zero, addQ, ltQ, x, y), yz : SequenceSame(Q, zero, addQ, ltQ, y, z), epsilon : Q, positive : ltQ(zero, epsilon)) => mere_eliminate(U0, U0, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), composeClose(epsilon, positive).1), Trunc(exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), z(n), epsilon)), mere_is_prop(U0, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), z(n), epsilon)), fun (leftActual : exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), composeClose(epsilon, positive).1)) => mere_map(U0, U0, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, y(n), z(n), composeClose(epsilon, positive).1), exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), z(n), epsilon), close_tails_compose(Q, addQ, ltQ, x, y, z, epsilon, composeClose(epsilon, positive).1, composeClose(epsilon, positive).2.2, leftActual), yz(composeClose(epsilon, positive).1, composeClose(epsilon, positive).2.1)), xy(composeClose(epsilon, positive).1, composeClose(epsilon, positive).2.1))"
       },
       "assumptionsReplaced": [],
@@ -312,29 +328,31 @@
         "TruncateProp"
       ],
       "assumptionsRetained": [],
-      "extensionsAdded": [
+      "extensionsAdded": [],
+      "extensionsRetained": [
         "H1"
       ],
-      "extensionsRetained": [],
-      "remedyGroup": 2
+      "remedyGroup": 2,
+      "assumptionsAdded": [],
+      "extensionsRemoved": []
     },
     {
       "module": "cauchy_quotient",
       "declaration": "cauchy_same_equivalence",
       "oldPublicType": {
-        "hash": "bf081f3fb37d12aa985c8a8af6738b3ef009475f",
+        "hash": "5bd57775566590b688387ab0d190b2a3fce2913d",
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. (forall x : Q. forall epsilon : Q. ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon)) -> CloseComposition(Q, zero, addQ, ltQ) -> EquivalenceRelation(CauchySequence(Q, zero, addQ, ltQ), CauchySame(__assumption_Truncate, Q, zero, addQ, ltQ))"
       },
       "newPublicType": {
-        "hash": "9c218fcc2ee0beace76eeace83c759557c3566e3",
+        "hash": "1f0575fe7cc09b8720d03c71dd4ef87773a3239b",
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. (forall x : Q. forall epsilon : Q. ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon)) -> CloseComposition(Q, zero, addQ, ltQ) -> EquivalenceRelation(CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ))"
       },
       "oldValue": {
-        "hash": "2db125798b00b46464cfc258e9debd4bda166af4",
+        "hash": "ae10ca5bfcd11a6aebb1808522a2c389dac19498",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, closeSelf : forall x : Q. forall epsilon : Q. ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon), composeClose : CloseComposition(Q, zero, addQ, ltQ)) => (fun (x, y : CauchySequence(Q, zero, addQ, ltQ)) => sequence_same_prop(__assumption_Truncate, __assumption_TruncateProp, Q, zero, addQ, ltQ, cauchy_sequence(Q, zero, addQ, ltQ, x), cauchy_sequence(Q, zero, addQ, ltQ, y)), fun (x : CauchySequence(Q, zero, addQ, ltQ)) => sequence_same_reflexive(__assumption_Truncate, __assumption_TruncateIntro, Q, zero, addQ, ltQ, closeSelf, cauchy_sequence(Q, zero, addQ, ltQ, x)), fun (x, y : CauchySequence(Q, zero, addQ, ltQ)) => sequence_same_symmetric(__assumption_Truncate, __assumption_TruncateIntro, __assumption_TruncateProp, __assumption_TruncateElim, Q, zero, addQ, ltQ, cauchy_sequence(Q, zero, addQ, ltQ, x), cauchy_sequence(Q, zero, addQ, ltQ, y)), fun (x, y, z : CauchySequence(Q, zero, addQ, ltQ)) => sequence_same_transitive(__assumption_Truncate, __assumption_TruncateIntro, __assumption_TruncateProp, __assumption_TruncateElim, Q, zero, addQ, ltQ, composeClose, cauchy_sequence(Q, zero, addQ, ltQ, x), cauchy_sequence(Q, zero, addQ, ltQ, y), cauchy_sequence(Q, zero, addQ, ltQ, z)))"
       },
       "newValue": {
-        "hash": "fc562cd209815ec657ea3549bff81f38e2a78016",
+        "hash": "89763e7504f204346f04d60c82e9998bb0d22d6f",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, closeSelf : forall x : Q. forall epsilon : Q. ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon), composeClose : CloseComposition(Q, zero, addQ, ltQ)) => (fun (x, y : CauchySequence(Q, zero, addQ, ltQ)) => sequence_same_prop(Q, zero, addQ, ltQ, cauchy_sequence(Q, zero, addQ, ltQ, x), cauchy_sequence(Q, zero, addQ, ltQ, y)), fun (x : CauchySequence(Q, zero, addQ, ltQ)) => sequence_same_reflexive(Q, zero, addQ, ltQ, closeSelf, cauchy_sequence(Q, zero, addQ, ltQ, x)), fun (x, y : CauchySequence(Q, zero, addQ, ltQ)) => sequence_same_symmetric(Q, zero, addQ, ltQ, cauchy_sequence(Q, zero, addQ, ltQ, x), cauchy_sequence(Q, zero, addQ, ltQ, y)), fun (x, y, z : CauchySequence(Q, zero, addQ, ltQ)) => sequence_same_transitive(Q, zero, addQ, ltQ, composeClose, cauchy_sequence(Q, zero, addQ, ltQ, x), cauchy_sequence(Q, zero, addQ, ltQ, y), cauchy_sequence(Q, zero, addQ, ltQ, z)))"
       },
       "assumptionsReplaced": [],
@@ -346,29 +364,31 @@
         "TruncateProp"
       ],
       "assumptionsRetained": [],
-      "extensionsAdded": [
+      "extensionsAdded": [],
+      "extensionsRetained": [
         "H1"
       ],
-      "extensionsRetained": [],
-      "remedyGroup": 2
+      "remedyGroup": 2,
+      "assumptionsAdded": [],
+      "extensionsRemoved": []
     },
     {
       "module": "cauchy_quotient",
       "declaration": "cauchy_class_represented",
       "oldPublicType": {
-        "hash": "9b7610bb527b4a54f441e05324672a8da41a5f10",
+        "hash": "73e458fbd9fa3d1745f52744ac49615d712d090c",
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. forall x : CauchyQuotient(__assumption_Truncate, Q, zero, addQ, ltQ). FieldExists(__assumption_Truncate, exists s : CauchySequence(Q, zero, addQ, ltQ). quotient_class(__assumption_Truncate, __assumption_TruncateIntro, CauchySequence(Q, zero, addQ, ltQ), CauchySame(__assumption_Truncate, Q, zero, addQ, ltQ), s) = x)"
       },
       "newPublicType": {
-        "hash": "2817c49164a03290f1d0f4e7f55dc0263df58ab0",
+        "hash": "b0eb82cc2434977da2a60cc327b7c85822a9b58d",
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. forall x : CauchyQuotient(__assumption_Truncate, Q, zero, addQ, ltQ). FieldExists(__assumption_Truncate, exists s : CauchySequence(Q, zero, addQ, ltQ). quotient_class(__assumption_Truncate, __assumption_TruncateIntro, CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ), s) = x)"
       },
       "oldValue": {
-        "hash": "97a6ca694fa4aa662b528300b6dd696b7a8ea547",
+        "hash": "fe7eb3d8c9a065695e335e479332d784000d1bc1",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x : CauchyQuotient(__assumption_Truncate, Q, zero, addQ, ltQ)) => quotient_surjective(__assumption_Truncate, __assumption_TruncateIntro, __assumption_TruncateProp, __assumption_TruncateElim, CauchySequence(Q, zero, addQ, ltQ), CauchySame(__assumption_Truncate, Q, zero, addQ, ltQ), x)"
       },
       "newValue": {
-        "hash": "92e9e88ea662332d08e19c968b284644e98c4eea",
+        "hash": "0c7226595cd8017450adb6a0e15ad6da1a5e6896",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x : CauchyQuotient(__assumption_Truncate, Q, zero, addQ, ltQ)) => quotient_surjective(__assumption_Truncate, __assumption_TruncateIntro, __assumption_TruncateProp, __assumption_TruncateElim, CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ), x)"
       },
       "assumptionsReplaced": [],
@@ -380,29 +400,31 @@
         "TruncateIntro",
         "TruncateProp"
       ],
-      "extensionsAdded": [
+      "extensionsAdded": [],
+      "extensionsRetained": [
         "H1"
       ],
-      "extensionsRetained": [],
-      "remedyGroup": 2
+      "remedyGroup": 2,
+      "assumptionsAdded": [],
+      "extensionsRemoved": []
     },
     {
       "module": "cauchy_quotient",
       "declaration": "cauchy_sequence_representatives",
       "oldPublicType": {
-        "hash": "d55e9ed1df3ff2b89217c6b670d98ab09c5b3186",
+        "hash": "ecfddf69e287044cd7cc14aa4856e5e4e898c73b",
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. forall sequence : Nat -> CauchyQuotient(__assumption_Truncate, Q, zero, addQ, ltQ). RepresentativeChoice(__assumption_Truncate, __assumption_TruncateIntro, CauchySequence(Q, zero, addQ, ltQ), CauchySame(__assumption_Truncate, Q, zero, addQ, ltQ), sequence) -> FieldExists(__assumption_Truncate, forall n : Nat. exists s : CauchySequence(Q, zero, addQ, ltQ). quotient_class(__assumption_Truncate, __assumption_TruncateIntro, CauchySequence(Q, zero, addQ, ltQ), CauchySame(__assumption_Truncate, Q, zero, addQ, ltQ), s) = sequence(n))"
       },
       "newPublicType": {
-        "hash": "5b7d7f6c3f71a8c332cea96d1ebba9c2114ba71d",
+        "hash": "bd6544797c4f28b5960682858acc92096ec98a32",
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. forall sequence : Nat -> CauchyQuotient(__assumption_Truncate, Q, zero, addQ, ltQ). RepresentativeChoice(__assumption_Truncate, __assumption_TruncateIntro, CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ), sequence) -> FieldExists(__assumption_Truncate, forall n : Nat. exists s : CauchySequence(Q, zero, addQ, ltQ). quotient_class(__assumption_Truncate, __assumption_TruncateIntro, CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ), s) = sequence(n))"
       },
       "oldValue": {
-        "hash": "2d0ada0f62c0d827c8075c08c442d5d2c5cb4c04",
+        "hash": "cb4a80a52d1f4af15c6cfd07d755933f95603d80",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, sequence : Nat -> CauchyQuotient(__assumption_Truncate, Q, zero, addQ, ltQ), choice : RepresentativeChoice(__assumption_Truncate, __assumption_TruncateIntro, CauchySequence(Q, zero, addQ, ltQ), CauchySame(__assumption_Truncate, Q, zero, addQ, ltQ), sequence)) => quotient_sequence_representatives(__assumption_Truncate, __assumption_TruncateIntro, __assumption_TruncateProp, __assumption_TruncateElim, CauchySequence(Q, zero, addQ, ltQ), CauchySame(__assumption_Truncate, Q, zero, addQ, ltQ), sequence, choice)"
       },
       "newValue": {
-        "hash": "ea12cae643ea6bcc5e6834622ac4ad31393b7314",
+        "hash": "13d0e546e08a024a3f9fc5dc1250439107231fcb",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, sequence : Nat -> CauchyQuotient(__assumption_Truncate, Q, zero, addQ, ltQ), choice : RepresentativeChoice(__assumption_Truncate, __assumption_TruncateIntro, CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ), sequence)) => quotient_sequence_representatives(__assumption_Truncate, __assumption_TruncateIntro, __assumption_TruncateProp, __assumption_TruncateElim, CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ), sequence, choice)"
       },
       "assumptionsReplaced": [],
@@ -414,11 +436,13 @@
         "TruncateIntro",
         "TruncateProp"
       ],
-      "extensionsAdded": [
+      "extensionsAdded": [],
+      "extensionsRetained": [
         "H1"
       ],
-      "extensionsRetained": [],
-      "remedyGroup": 2
+      "remedyGroup": 2,
+      "assumptionsAdded": [],
+      "extensionsRemoved": []
     },
     {
       "module": "zorn_chain_complete",
@@ -457,7 +481,9 @@
         "H1"
       ],
       "extensionsRetained": [],
-      "remedyGroup": 7
+      "remedyGroup": 7,
+      "assumptionsAdded": [],
+      "extensionsRemoved": []
     },
     {
       "module": "classical_axioms",
@@ -488,7 +514,9 @@
         "H1"
       ],
       "extensionsRetained": [],
-      "remedyGroup": 1
+      "remedyGroup": 1,
+      "assumptionsAdded": [],
+      "extensionsRemoved": []
     },
     {
       "module": "classical_axioms",
@@ -506,7 +534,7 @@
         "text": "fun (U < UU0) => forall A : U. forall B : A -> U. (forall x : A. forall y : A. forall p : x = y. forall q : x = y. p = q) -> (forall a : A. forall x : B(a). forall y : B(a). forall p : x = y. forall q : x = y. p = q) -> (forall a : A. __assumption_Truncate(U, B(a))) -> __assumption_Truncate(U, forall a : A. B(a))"
       },
       "newValue": {
-        "hash": "bb333ac2142b9898001117fc6c23ed272ad4dc97",
+        "hash": "16ef777f2749fe0aff787c60c3d8f981007c2f9d",
         "text": "fun (U < UU0) => forall A : U. forall B : A -> U. IsSet(U, A) -> (forall a : A. IsSet(U, B(a))) -> (forall a : A. Trunc(B(a))) -> Trunc(forall a : A. B(a))"
       },
       "assumptionsReplaced": [],
@@ -519,7 +547,9 @@
         "H1"
       ],
       "extensionsRetained": [],
-      "remedyGroup": 1
+      "remedyGroup": 1,
+      "assumptionsAdded": [],
+      "extensionsRemoved": []
     },
     {
       "module": "classical_axioms",
@@ -555,7 +585,9 @@
         "H1"
       ],
       "extensionsRetained": [],
-      "remedyGroup": 1
+      "remedyGroup": 1,
+      "assumptionsAdded": [],
+      "extensionsRemoved": []
     },
     {
       "module": "classical_axioms",
@@ -565,7 +597,7 @@
         "text": "forall U < UU0. AxiomOfChoice(__assumption_Truncate, U)"
       },
       "newPublicType": {
-        "hash": "0ba4c818dd8240f053fb372792affe78fa427f92",
+        "hash": "dd474449ebd41dd3551feb8467df9b012ca6fdf0",
         "text": "forall U < UU0. AxiomOfChoice(U)"
       },
       "oldValue": {
@@ -573,7 +605,7 @@
         "text": "fun (U < UU0) => __assumption_Choice(U)"
       },
       "newValue": {
-        "hash": "09078098252a97fcf34806dd24b159b8ba5bfd33",
+        "hash": "327179d360b2f3018293edfeb2a3081f1cc9acdb",
         "text": "fun (U < UU0) => __assumption_Choice_h1_truncation__Trunc(U)"
       },
       "assumptionsReplaced": [
@@ -591,7 +623,10 @@
         "H1"
       ],
       "extensionsRetained": [],
-      "remedyGroup": 1
+      "remedyGroup": 1,
+      "assumptionsAdded": [],
+      "extensionsRemoved": []
     }
-  ]
+  ],
+  "representation": "Nat is the imported nat.Nat H1 signature in both checked source versions. Pins refreshed after retiring primitive Nat/W; logical assumptions and remedy groups are unchanged."
 }

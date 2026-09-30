@@ -1,8 +1,8 @@
 {
-  "recordedFrom": "73824132e4fe3921bc3f3384265bb599fa9f2a6e",
-  "method": "tests/driver-trace.mjs run on the tree of that commit. Every instruction the driver issued with its operands and result, and every weak-head query with its budget and answer, in order, hashed. The trace was first recorded at d44239e, before agree's choices were made explicit (2,822 instructions, sha256 13044fc5…), and the chooser refactor reproduced it exactly, as did this commit's parent. This commit's fix to contextScope, which stopped derivations being shared between contexts, changes it: 162 fewer instructions, the same number of weak-head queries, and every declaration still checks.",
-  "issued": 2660,
-  "heads": 370,
+  "recordedFrom": "bfef585cfe09f4b94a658564dff505cd67855368 + source-defined Nat/W migration",
+  "method": "tests/driver-trace.mjs run on the implementation tree. Every instruction the driver issued with its operands and result, and every weak-head query with its budget and answer, in order, hashed. Source-defined Nat replaces primitive NatForm/NatIntro/NatElim with signature instances, constructors and generic eliminators; the eight fixture declarations still check.",
+  "issued": 3536,
+  "heads": 487,
   "checked": 8,
-  "sha256": "a1d46f93c54e791241b73b1a84ed6d13a52124669a773ab384fc8d2939e855e5"
+  "sha256": "011f50006348b618f21c198f33a62392a827da2ec8e08e529fc34d32e04f743d"
 }

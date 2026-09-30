@@ -1,3 +1,5 @@
+import nat;
+
 // Functions and proofs share ordinary typed parameters.
 def identity(A : U0, x : A) := x;
 
