@@ -36,7 +36,9 @@ removed, and default admission granted, only when every item has evidence
 and a review decision:
 
 1. D1, D4 and D5 written out and reviewed (4.2, 4.3);
-2. Lemma H2's full case analysis, and the critical-pair check of 3.7;
+2. Lemma H2's full case analysis, and the critical-pair check of 3.7.
+   **Approved on 2026-09-30:** the [case analysis and overlap
+   table](h1-critical-pairs.md);
 3. canonicity (4.4) reviewed, relative to the assumed baseline of 4.1;
 4. the acceptance matrix of 10.10 complete, K10 and K11 included. Every
    case is now traced; X2 retains the remainder listed below;
@@ -1050,7 +1052,7 @@ and no indices.
 | --- | --- | --- | --- |
 | D1 | A general schema, where Coquand–Huber–Mörtberg treat examples | Steps 2–6 of 4.2 are uniform in the signature. The only signature-specific facts used are the constructor order (for restriction), the cube boundary's typing (for overlaps) and positivity (for the inductive definition). | Argued. **Open obligation:** the model construction written out for the whole schema |
 | D2 | Data sorts have no formal composition | Composition by recursion on constructors is CCHM's treatment of natural numbers and the kernel's of sums and W types. Adding a formal `hcomp` that also pushes would break confluence: `elim` of a pushed and of a formal composition differ (clause of compositions against composition of clauses). | A conditional outline, found valid in review; standard for the three hand-coded types |
-| D3 | Transport with boundary correction for `d ≥ 1` | 3.5 generalises the pushout rule. The walls agree on overlaps because boundary pieces agree on corners, and the result restricts to the transport of each boundary piece. | The local wall calculation was found valid in review. Its stability under substitution belongs to Lemma H2, which is open |
+| D3 | Transport with boundary correction for `d ≥ 1` | 3.5 generalises the pushout rule. The walls agree on overlaps because boundary pieces agree on corners, and the result restricts to the transport of each boundary piece. | The local wall calculation was found valid in review. Its stability under substitution belongs to Lemma H2, approved on 2026-09-30 |
 | D4 | Cube positions (paths as arguments), needed by the squash of every level `n ≥ 0`, at cube depth up to `n + 1` | In step 2 a cube position is an element of the carrier at a higher cube with its boundary: still strictly positive. | Argued. **Open obligation:** well-foundedness of the definition when positions live at higher cubes of every depth, written out |
 | D5 | Infinitary positions in higher sorts | Step 4's inductive definition allows infinitary generating clauses; the metatheory needs the corresponding well-founded trees, which ZFC provides. | Argued. **Open obligation:** the infinitary inductive definition over cubes, with restriction, written out |
 | D6 | Path-valued constructors | A presentation of dimension arguments: `c @ r` is the constructor at `r`. It changes no rule of the model. | A conditional outline, found valid in review |
@@ -1081,9 +1083,9 @@ under substitution only when a neutral tube becomes a constructor, which
 is a new reduction, not a changed one. Level substitution acts on instance
 terms through their parameters, motives and clauses, as on any term. No
 reduction rule reads a level, so it commutes with every rule (2.4). Status:
-argued. **Open obligation:** the full case analysis, rule by rule,
-including the corrected transport of 3.5 under substitution of formulas
-into `rs` and `φ`.
+the full case analysis, rule by rule, including the corrected transport of
+3.5 under substitution of formulas into `rs` and `φ`, is written out in the
+[critical-pair analysis](h1-critical-pairs.md), approved on 2026-09-30.
 
 ### 4.4 Canonicity
 
@@ -1134,15 +1136,15 @@ marker.
 | Positivity and shape of admitted signatures are decided syntactically | Specified here (1.2–1.5); K2.2 implements the check |
 | Overlap agreement of cube boundaries follows from typing | Proved here: it is the typing of the iterated path type (1.4) |
 | Clause typing agrees with the partial eliminator | Proved here in outline (Lemma H1) |
-| Reduction is stable under dimension and level substitution | Argued (Lemma H2); the full case analysis is an **open obligation** |
+| Reduction is stable under dimension and level substitution | Proved by the case analysis of Lemma H2 ([critical pairs](h1-critical-pairs.md)), relative to the baseline; approved on 2026-09-30 |
 | The model of 4.2 for the whole schema | Argued from Coquand–Huber–Mörtberg's construction (D1–D9); the construction written out is an **open obligation** (D1) |
 | Well-foundedness of the carrier with cube and infinitary positions | Argued (D4, D5); written out is an **open obligation** |
-| Transport with boundary correction for `d ≥ 2` | The local wall calculation is checked (D3); its stability is Lemma H2's open obligation; property tests in section 10 |
+| Transport with boundary correction for `d ≥ 2` | The local wall calculation is checked (D3); its stability is part of Lemma H2, approved on 2026-09-30; property tests in section 10 |
 | Erased universe parameters are sound at finite levels | Argued (D9), from G0's level substitution |
 | Recorded universe parameters are sound | Standard universe polymorphism, by G0's decomposition (D8); no new argument |
 | The kernel's classification check refuses an erased parameter in a constructor type | Specified (5.2); a rejection test (V24) |
 | The later tier-parametric proposal would be sound at every tier | Proved here in outline, by induction on the checked admission derivation (2.3). Not part of H1 (Q16, decided) |
-| Confluence of the generated rules with the existing ones | Argued at boundaries (3.7); the full critical-pair check is an **open obligation** |
+| Confluence of the generated rules with the existing ones | The overlaps of the generated rules with the baseline's are joined, CP01–CP10 ([critical pairs](h1-critical-pairs.md)); approved on 2026-09-30. No global confluence or normalization is claimed |
 | Canonicity for H1 | Argued (4.4), relative to the assumed baseline |
 | Consistency and canonicity of the baseline, pushouts included | **Assumed**, as in G0 3.6 |
 | Normalization, for decidable conversion | **Not established**; the kernel relies on budgets, as today |
@@ -1152,7 +1154,9 @@ marker.
 since the approval of 2026-09-27; the isolation defect is an implementation
 fix, not one of them. The implementation's tests are evidence for the
 specified behaviour, not for these claims, and the header's release
-checklist maps each to its evidence and review decision.
+checklist maps each to its evidence and review decision. On 2026-09-30 the
+maintainer approved Lemma H2 and the critical-pair check (checklist item 2);
+the model (D1, D4, D5) and canonicity remain open.
 
 ### 4.6 Literature
 

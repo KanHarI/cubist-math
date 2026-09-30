@@ -1,10 +1,11 @@
 # H1 substitution stability and critical pairs
 
-Status: review draft, 2026-09-30. This is the case analysis for Lemma H2
-and the overlap analysis of the [H1 specification](h1-signature-specification.md),
-sections 3.3–3.7. It supplies the argument requested by release checklist
-item 2. The maintainer must review its coverage and joins; adding this draft
-does not record that decision or discharge the model and canonicity gates.
+Status: approved by the maintainer on 2026-09-30, after the review below.
+This is the case analysis for Lemma H2 and the overlap analysis of the
+[H1 specification](h1-signature-specification.md), sections 3.3–3.7. It
+supplies the argument requested by release checklist item 2, which now has
+its review decision. It does not discharge the model and canonicity gates,
+items 1 and 3.
 
 Review on 2026-09-30 found two cited regressions weaker than their entries.
 CP01's `elimination_capture` constructor, `wrap(p : base = base) : base =
@@ -210,6 +211,6 @@ choose a reduct.
 
 This is an overlap argument for the added rules, relative to the baseline.
 It does not infer global confluence from termination or claim normalization:
-the specification makes neither claim. Review must accept the completeness
-of the head classification, the use of Lemma H1 and baseline congruence,
-and the joins above before checklist item 2 is marked reviewed.
+the specification makes neither claim. The approval of 2026-09-30 accepts
+the completeness of the head classification, the use of Lemma H1 and
+baseline congruence, and the joins above; checklist item 2 is reviewed.
