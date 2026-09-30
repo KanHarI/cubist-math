@@ -5,8 +5,8 @@ the [H1 specification](h1-signature-specification.md)'s section 4.4:
 release checklist item 3. The maintainer must review it; adding this draft
 does not record that decision. It is relative to the baseline's canonicity,
 which remains an assumption (4.1; G0 3.5, 3.6). It uses the
-[critical-pair draft](h1-critical-pairs.md) for coherence, so it depends on
-item 2's review too. Each step is proved in outline, at the level of detail
+[critical-pair analysis](h1-critical-pairs.md) for coherence, which the
+maintainer approved on 2026-09-30 (item 2). Each step is proved in outline, at the level of detail
 of G0's 3.5.
 
 Since #101, `Nat` is a data sort declared in `nat.cubist`, not a primitive.
@@ -105,10 +105,10 @@ reducts of `t f` and `t′ f` are computably equal.
 
 *Proof.* By Lemma H2, either the same rule applies to `t f` and gives
 `t′ f`, or substitution has made a formula an endpoint or a face true. In
-the second case, the joins CP01–CP10 of the critical-pair draft give a
+the second case, the joins CP01–CP10 of the critical-pair analysis give a
 common reduct, and computable equality contains common reducts. ∎
 
-This is where canonicity depends on item 2. The joins are the syntactic
+This is where canonicity depends on item 2, approved on 2026-09-30. The joins are the syntactic
 counterparts of the model's naturality lemmas ([model draft](h1-model.md),
 M3–M6).
 
@@ -202,8 +202,7 @@ constructor with computable arguments.
   lemma (specification 4.1, G0 3.5, 3.6).
 - **Premise P1** of the model draft, for the agreement of boundary pieces at
   corners.
-- **Item 2.** Lemma C1 uses the joins CP01–CP10, so this argument is
-  conditional on the critical-pair review.
+- **Item 2.** Lemma C1 uses the joins CP01–CP10, approved on 2026-09-30.
 - **Metatheory.** An inductive definition of predicates with set-sized
   branching, within ZFC and G0's universes.
 
