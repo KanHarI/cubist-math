@@ -11,6 +11,7 @@ import { foldedInspection } from "./cubical-inspection.mjs";
 import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notation.mjs";
 import { checkReduction, simplifyTypeApplications } from "./cubical-reduction.mjs";
 import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
+import { H1Translation } from "./h1-translation.mjs";
 
 const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${index}` : "";
 
@@ -19,7 +20,10 @@ const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${
 // an earlier checked reference. Unsupported declarations never become axioms.
 export class CubicalProgram {
   constructor(module, readSource, { onDeclarationStart, onDeclaration, collectReferences = true, optimizations = {}, manageTransactions = true,
-    searchFuel, declarationFuel, experimental = [] } = {}) {
+    searchFuel, declarationFuel, experimental = [], representation = "native" } = {}) {
+    if (!["native","declared"].includes(representation)) throw Error(`Unknown type representation: ${representation}.`);
+    if (representation === "declared" && !experimental.includes("h1"))
+      throw Error("Declared representation uses the experimental H1 kernel: enable h1.");
     // Fuel limits (lib/cubical/fuel.mjs), for a measurement or a test; the defaults otherwise.
     this.fuelLimits = { searchFuel, declarationFuel };
     this.kernel = new CubicalKernel(module);
@@ -32,6 +36,8 @@ export class CubicalProgram {
     this.experimental = [...experimental];
     this.kernel.setExtensions({ h1: experimental.includes("h1") });
     this.checker = new NativeCubicalElaborator(this.kernel);
+    this.representation = representation;
+    this.translation = representation === "declared" ? new H1Translation(module,this.checker) : null;
     this.readSource = readSource;
     this.onDeclarationStart = onDeclarationStart; this.onDeclaration = onDeclaration;
     this.collectReferences = collectReferences;
@@ -48,7 +54,7 @@ export class CubicalProgram {
     this.moduleSteps = new Map();
     this.failedImports = new Map();
   }
-  dispose() { this.kernel.dispose(); }
+  dispose() { this.translation?.dispose(); this.kernel.dispose(); }
   assumptionSymbols() {
     return Object.fromEntries([...this.checker.assumptions].map(([binding, type]) => [binding, {
       binding, name: this.checker.assumptionLabels.get(binding) ?? binding, kind: "axiom", role: "explicit axiom",
@@ -127,6 +133,7 @@ export class CubicalProgram {
       const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
         ...Object.fromEntries(Object.entries(this.fuelLimits).filter(([, limits]) => limits)),
         onStep: step => statements.push({ ...step, declaration: current }),
+        onEvaluation: (directive,result,expected) => this.translation?.checkEvaluation(directive,result,expected),
         onDeclarationStart: declaration => {
           current = declaration.name.text;
           if (this.manageTransactions) transaction = new CubicalDeclarationTransaction(this.kernel,this.checker);
@@ -142,6 +149,14 @@ export class CubicalProgram {
         },
         onReference: this.collectReferences ? (node, term, context, dimensions, aliases) => pending.push({ node, term, context, dimensions, aliases, unfoldingHints: [...this.kernel.unfoldingHints] }) : null,
         onDeclaration: (declaration, result) => {
+          if (this.translation && result.status === "checked-native-cubical") {
+            try {
+              const image = this.translation.checkDeclaration(`${name}__${result.name}`,declaration.kind);
+              if (result.native) result.native = {...result.native,extensions:image.extensions};
+            } catch (error) {
+              result.status = "not-translated"; result.reason = error.message; result.failure = error.kind;
+            }
+          }
           try {this.onDeclaration?.(name, declaration, result, checker);}
           catch(error) {
             transaction?.finish(false);

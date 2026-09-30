@@ -16,7 +16,8 @@ try {
     if (selected.tests.some(path => path.startsWith(projectRoot + "tests/"))) assertFreshBuild();
     // Native protocol tests share executables. Build before Node launches test
     // files concurrently: a clean checkout must not race missing/half-built files.
-    if (selected.tests.some(path => path.startsWith(projectRoot + "lib/cubical/tests/")))
+    if (selected.tests.some(path => path.startsWith(projectRoot + "lib/cubical/tests/") ||
+      path === projectRoot + "tests/h1-differential.test.mjs"))
       execFileSync("make", ["-C", "kernel", "all"], { cwd: projectRoot, stdio: "inherit" });
     const environment = { ...process.env, MATHSCRIPT_TEST_PROOFS: JSON.stringify(selected.proofs), MATHSCRIPT_OPTIMIZATIONS: JSON.stringify(selected.optimizations) };
     // A nested invocation must start its own Node test run, not inherit the

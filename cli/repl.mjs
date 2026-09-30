@@ -36,14 +36,18 @@ Noninteractive: node cli/repl.mjs check euclid
                 node cli/repl.mjs "import naturals; evaluate 2 + 3;"
 Optimizations: --[no-]share-syntax, --[no-]reuse-checks, --[no-]compact-paths
 Kernel extensions under review: --experimental=h1 admits declared types
-(inductive), and results that use them carry the marker kernel extension: H1.`;
+(inductive), and results that use them carry the marker kernel extension: H1.
+--representation=declared additionally checks the finite-tier representation map τ.`;
 const args = process.argv.slice(2), optimizations = {}, experimental = [];
+let representation="native";
 const command = [];
 for (const arg of args) {
   const match = arg.match(/^--(no-)?(share-syntax|reuse-checks|compact-paths)$/);
   const extension = arg.match(/^--experimental=([a-z0-9,]+)$/);
+  const typeRepresentation=arg.match(/^--representation=(native|declared)$/);
   if (match) optimizations[{ "share-syntax": "shareSyntax", "reuse-checks": "reuseChecks", "compact-paths": "compactPaths" }[match[2]]] = !match[1];
   else if (extension) experimental.push(...extension[1].split(","));
+  else if(typeRepresentation) representation=typeRepresentation[1];
   else command.push(arg);
 }
 // A stale WASM kernel or translator copy would run code it does not contain.
@@ -70,7 +74,7 @@ async function replSession() {
   if (program && session?.program !== program)
     session = session ? await session.rebase(program, checkedModule) : new ReplSession(program, { base: checkedModule, modules: importable });
   else if (!session) {
-    sessionProgram = new CubicalProgram(module, sourceReader(), { optimizations, experimental });
+    sessionProgram = new CubicalProgram(module, sourceReader(), { optimizations, experimental, representation });
     session = new ReplSession(sessionProgram, { modules: importable });
   }
   return session;
@@ -102,7 +106,7 @@ async function execute(line) {
     const source = file ? await readFile(resolve(value), "utf8") : await imports(value);
     const main = basename(value, ".cubist");
     program?.dispose(); view = null; binding = null;
-    program = new CubicalProgram(module, imports, { optimizations, experimental });
+    program = new CubicalProgram(module, imports, { optimizations, experimental, representation });
     const result = await program.check(source, main);
     if (!result.complete) throw Error(JSON.stringify(result.gaps, null, 2));
     checkedModule = main;

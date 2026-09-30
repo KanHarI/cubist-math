@@ -17,9 +17,10 @@ on the `h1-signatures` branch. Its statuses are distinct:
   `kernel extension: H1` marker.
 - **Review pending:** the obligations of 4.5. Implementation and passing
   tests do not discharge them.
-- **Migration evidence:** K2.5 has an exact ledger verifier and
-  [scoped migrations](h1-truncation-migration.md). K2.4a's representation
-  option and archive replay remain pending.
+- **Migration evidence:** K2.4a's representation option and archive replay
+  are implemented, with the X2 remainder in the
+  [differential record](h1-differential-evidence.md). K2.5 has an exact
+  ledger verifier and [scoped migrations](h1-truncation-migration.md).
 
 **Release checklist for finite-level H1.** The experimental option is
 removed, and default admission granted, only when every item has evidence
@@ -29,7 +30,7 @@ and a review decision:
 2. Lemma H2's full case analysis, and the critical-pair check of 3.7;
 3. canonicity (4.4) reviewed, relative to the assumed baseline of 4.1;
 4. the acceptance matrix of 10.10 complete, K10 and K11 included. Every
-   case is traced but those that wait for K2.4a (X1–X8);
+   case is now traced; X2 retains the remainder listed below;
    `tests/acceptance-matrix.test.mjs` checks the matrix against the tests;
 5. a recorded run of the whole suite at a pinned revision, repeated at
    the release's own. The first was CI run 36472206548, at `bef00e3` on
@@ -2143,7 +2144,8 @@ inverse, by `rfl`, and closed `evaluate` directives read the normal forms.
 `cong(code, loop)` is `ua(succ)` by `rfl`, the E2 fixture's
 `code_meridian` in this form. `tests/declared-match.test.mjs` checks the
 example with the experimental option. Its results carry the H1 marker and
-no assumption. The native comparisons (X1–X8) remain K2.4a's.
+no assumption. The native comparisons (X1–X8) are K2.4a's, with X2's
+remaining criterion issue recorded in the differential evidence.
 `tests/automatic-clauses.test.mjs` checks `Quotient`'s dependent elimination
 into sets and `Gpd`'s into groupoids, using L2.2b's generated clauses.
 
@@ -2165,8 +2167,9 @@ entry gives: a kernel case in `kernel/tests/test_signatures.c`; a driver,
 source or verifier case in `tests/h1-acceptance.test.mjs`,
 `tests/h1-admission.test.mjs`, `tests/h1-driver.test.mjs`,
 `tests/inductive-declarations.test.mjs`, `tests/declared-match.test.mjs`,
-`tests/automatic-clauses.test.mjs`, `tests/truncation-migration.test.mjs`,
-`tests/proof-migration.test.mjs` or `tests/corpus.test.mjs`. *In part* marks a case whose rest is listed as
+`tests/corpus.test.mjs`, `tests/automatic-clauses.test.mjs`,
+`tests/truncation-migration.test.mjs`, `tests/proof-migration.test.mjs`
+or `tests/h1-differential.test.mjs`. *In part* marks a case whose rest is listed as
 not traced, and *in substance* a test that differs from its case in a
 detail the entry states. *Not traced* means no test covers it yet, and
 *Missing* that none can exist yet, for the stated reason.
@@ -2184,7 +2187,7 @@ refuse.
 | Trust T1–T7 | Kernel: T1, T5, T6, T7. Driver: T5, T6. Source: T1 (the option named when off), T2 (direct, through a definition, through an import), T3, T4. Verifier: the marker compared apart from assumptions (6.4) | — | — |
 | Truncation policy G1–G7 | Source: G1 (`Tr(U1, U0)` is not in `U0`), G2 (small truncation into a proposition in U1), G3 (the archive checks in full; 3,804 declarations, 0 gaps), G5 (rebuilt `CauchySame` and `EventualClose` in U0 without assumptions), G6 (proposition resized through LEM, witness with set evidence refused), G7 (large double-negation elimination, LEM retained). Verifier: G4 (exact ledger change accepted, unlisted or altered pin refused) | — | — |
 | Resources R1–R5 | Kernel: R1 (a sort, constructor and eliminator whose indices are out of range, and a list whose next cell is no list, built as raw syntax: inspected, reduced or refused with an error, and refused by the term checker and the instructions), R2, R3; a former of the wrong shape and a truncation level above the maximum are refused. Driver: R1 in part (an operand that is not a 32-bit unsigned integer is refused), R5 (the codec round trip); `tests/h1-admission.test.mjs` checks ABI version 3. Source: R4 (a module of ABI version 2 refused by the loader) | — | — |
-| Differential X1–X8 | — | — | All: K2.4a |
+| Differential X1–X8 | Driver: X1 (202 successful instruction judgements, 70 equalities, 42 rejected requests and an unequal conversion query; Nat, sum, W and pushout), X2 in part (small normal-form fixtures, after administrative Beta/Eta), X3 (the native instruction fixtures' Comp, HComp and Trans), X4 in part (winding canonicity and evaluations), X5 in part (cost-report fields on a small fixture), X6 (finite-universe calls for all four types), X7 (tier-1 formers stay native), X8 (mixed calls fail for sum, W and pushout; the verifier names each call) | X2: all archive value normal forms and the literal alpha criterion. X4 and X5: whole-archive replay and cost observations are manual evidence; rerun both coverage commands sequentially at the merged release head on a clean tree before counting these release cases. See the [differential record](h1-differential-evidence.md) | — |
 
 ## 11. Open questions
 
