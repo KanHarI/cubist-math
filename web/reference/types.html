@@ -125,13 +125,20 @@ def forget(n : Nat) : Unit {
           <section id="tour-pairs">
             <h2>Pairs: <code>and</code></h2>
             <p><code>A and B</code> is the type of pairs <code>(a, b)</code> with <code>a : A</code> and <code>b : B</code>. Three or more components are written in one tuple, <code>(1, 2, 3)</code>, with the type <code>Nat and Nat and Nat</code>.</p>
+            <p>A tuple is a pair whose second component holds the rest: <code>(1, 2, 3)</code> is <code>(1, (2, 3))</code>, and <code>Nat and Nat and Nat</code> is <code>Nat and (Nat and Nat)</code>. So <code>(1, (2, 3))</code> also checks as <code>Nat and Nat and Nat</code>, and it is the same value. Nesting on the left, <code>((1, 2), 3)</code>, has a different type; see <a href="terms.html#tuples">tuples</a>.</p>
             <pre><code data-check="accept">def pair : Nat and Unit {
   exact (3, tt);
 }
 
 def triple : Nat and Nat and Nat {
   exact (1, 2, 3);
-}</code></pre>
+}
+
+def nested : Nat and Nat and Nat {
+  exact (1, (2, 3));
+}
+
+def same_value : triple = nested { rfl; }</code></pre>
             <p>A pair needs its type stated: the checker does not guess it.</p>
             <pre><code data-check="reject">def loose := (3, tt);  // Error: Pair requires an expected type.</code></pre>
           </section>
