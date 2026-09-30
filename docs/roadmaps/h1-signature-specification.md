@@ -54,7 +54,9 @@ and a review decision:
 
 The evidence for items 1–3, the mathematical ones, and what a review
 decision on each still needs are gathered in the
-[review evidence](h1-review-evidence.md) (2026-09-29).
+[review evidence](h1-review-evidence.md) (2026-09-29). Review drafts of the
+three arguments followed on 2026-09-30: the [model](h1-model.md), the
+[critical pairs](h1-critical-pairs.md) and [canonicity](h1-canonicity.md).
 
 Not on the checklist: the classification of each instruction into the
 cases (i)–(v) of 2.3. It belongs to the deferred tier-parametric proposal

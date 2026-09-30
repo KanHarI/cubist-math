@@ -5,7 +5,10 @@ K1 with tubes and K6 along `ua` traced since (PR #94), and K10 and K11
 (PR #95).
 Updated on 2026-09-30 with the [H2 case analysis and critical-pair
 draft](h1-critical-pairs.md), including representative joins CP01–CP10
-in the kernel. Its mathematical review remains pending.
+in the kernel. Its mathematical review remains pending. The same day, the
+[model construction](h1-model.md) and the [canonicity argument](h1-canonicity.md)
+were written out as review drafts for items 1 and 3; their review is
+pending too.
 This record serves the first three items of the
 [H1 specification](h1-signature-specification.md)'s release checklist, the
 mathematical ones:
@@ -26,9 +29,9 @@ differential fixtures (item 6).
 
 | Item | Argument now | Mechanical evidence | Missing for a decision |
 | --- | --- | --- | --- |
-| D1, D4, D5: the model | Uniform construction in 4.2, steps 1–7; each departure argued in 4.3 | Admission, boundaries and cube depth: A1–A17, N1–N6, R3, E3, K7 | The construction written out, with well-foundedness at every cube depth and for infinitary arities |
+| D1, D4, D5: the model | [Construction written out](h1-model.md), review draft: raw trees, a weight by constructor index, carrier, Kan structure and eliminator | Admission, boundaries and cube depth: A1–A17, N1–N6, R3, E3, K7 | Review of the draft: premise P1, the weight measure, restriction's functoriality at endpoints and the semantic Lemma H1 |
 | Lemma H2 and 3.7's critical pairs | [Rule-by-rule case analysis and overlap table](h1-critical-pairs.md), review draft | CP01–CP10 representative joins; N3, N4, K4–K9 in part or in substance, E5, V11, V16; randomized K10 and K11 | Review of the head classification, baseline premises, use of H1 and joining sequences |
-| Canonicity | Huber's computability predicates, extended, argued | Closed computations through declared types: E1, E2, K1, E5, T3, T4 | The argument written out, and the baseline's canonicity accepted explicitly as an assumption |
+| Canonicity | [Huber's predicates extended, written out](h1-canonicity.md), review draft | Closed computations through declared types: E1, E2, K1, E5, T3, T4 | Review of the draft, which uses item 2's joins; the baseline's canonicity accepted explicitly as an assumption |
 
 ## 1. The model: D1, D4 and D5
 
