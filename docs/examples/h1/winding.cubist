@@ -33,7 +33,7 @@ def succ_pred(z : Int) : succ_int(pred_int(z)) = z := match z as w return succ_i
 def succ_equiv : Equiv(U0, Int, Int) := equiv_from_inverse(U0, Int, Int, succ_int, pred_int, pred_succ, succ_pred);
 
 inductive Circle { base; loop : base = base; }
-def code(x : Circle) : U0 := match x { base => Int; loop i => ua(U0, Int, Int, succ_equiv) @ i; };
+def code(x : Circle) : U0 := match x { base => Int; loop @ i => ua(U0, Int, Int, succ_equiv) @ i; };
 def winding(p : base = base) : Int := transport(code, base, base, p, pos(zero));
 def winding_loop : winding(loop) = pos(succ(zero)) { rfl; }
 def winding_twice : winding(trans(loop, loop)) = pos(succ(succ(zero))) { rfl; }

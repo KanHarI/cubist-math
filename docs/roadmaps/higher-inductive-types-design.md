@@ -421,7 +421,7 @@ def neg(u : Real) : Real
 = match {
   rat(q) => rat(-q);
   lim(x, c) => lim(fun δ => neg(x(δ)), fun δ ε => neg_close(c(δ, ε)));
-  eq(u, v, near) i => eq(neg(u), neg(v), fun ε => neg_close(near(ε))) @ i;
+  eq(u, v, near) @ i => eq(neg(u), neg(v), fun ε => neg_close(near(ε))) @ i;
   rat_rat(q, r, ε, bound) => rat_rat(-q, -r, ε, abs_neg_difference(q, r, ε, bound));
   rat_lim(q, y, cy, δ, η, h) => rat_lim(-q, fun δ => neg(y(δ)), fun δ ε => neg_close(cy(δ, ε)),
                                         δ, η, neg_close(h));

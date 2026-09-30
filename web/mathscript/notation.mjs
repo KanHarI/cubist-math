@@ -24,8 +24,8 @@ export function notationFromSyntax(node, globals = new Map(), bound = new Set())
   if (node.kind === "number") return { kind: "Number", value: node.value };
   if (node.kind === "binaryNumber") return visit(binaryLiteralSyntax(node));
   if (node.kind === "induction") {
-    const scope = new Set(bound).add(node.index.text);
-    return { kind: "Induction", index: node.index.text, hypothesis: node.hypothesis.text,
+    const scope = node.index ? new Set(bound).add(node.index.text) : bound;
+    return { kind: "Induction", index: node.index?.text ?? null, hypothesis: node.hypothesis.text,
       value: visit(node.value), type: visit(node.type, scope), base: visit(node.base),
       step: visit(node.step, new Set(scope).add(node.hypothesis.text)) };
   }

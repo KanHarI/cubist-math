@@ -1983,7 +1983,7 @@ clauses may be supplied there or in a following `obligations` block:
 
 ```text
 match q as z return B(z) { class(a) => f(a); }
-obligations { glue(a, b, r) i => respects(a, b, r) @ i; }
+obligations { glue(a, b, r) @ i => respects(a, b, r) @ i; }
 ```
 
 The block names the constructor's arguments and dimensions in the same

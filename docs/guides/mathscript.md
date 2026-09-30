@@ -248,10 +248,10 @@ The mathematical layer covers Euclid, the circle fundamental group,
 [right inverses of surjections using choice](../tactical/surjections.md), and
 [finite counting](../tactical/finite_counting.md), including functions, permutations, and
 Rijke binomial types. Ports of the
-older universe-polymorphic library are still in progress. General W types now
-use `W(A, B)`, `sup(T, label, children)` and `wrec(T, motive, step, tree)`.
-The branch takes the label, its child function, and dependent recursive results
-for all children. These elaborate to the existing checked W rules.
+older universe-polymorphic library are still in progress. Data types are
+`inductive` declarations with structurally recursive `match` definitions; binary
+and radix numbers are declared this way. The archive's `w` module still declares
+well-founded trees `W(U, V, A, B)` and `wrec`, but nothing imports it.
 
 With `import binary_naturals;`, `0b110` denotes a binary natural number, expanding
 to `binary_positive(binary_bit0(binary_bit1(binary_one)))`. `0b0` denotes

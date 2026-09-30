@@ -51,17 +51,19 @@
             <li><a href="#type-errors">Types and terms</a></li>
             <li><a href="#block-errors">Proof blocks</a></li>
             <li><a href="#universe-errors">Universes</a></li>
+            <li><a href="#inductive-errors">Inductive types and recursion</a></li>
             <li><a href="#path-errors">Equality and paths</a></li>
             <li><a href="#rewriting-errors">Equational reasoning and simplification</a></li>
             <li><a href="#cubical-errors">Cubical paths</a></li>
             <li><a href="#conversion-errors">Conversion, assumptions and computability</a></li>
+            <li><a href="#warnings">Warnings</a></li>
             <li><a href="#not-yet-available">Not yet available</a></li>
           </ul>
         </aside>
         <article id="reference">
           <section id="errors">
             <h2>How to read an error</h2>
-            <p>Every rejected example in this reference shows its error as a <code>// Error:</code> comment, on the line where the checker reports it. This chapter lists those messages by topic, with what each means, what to do, and where an example shows it. Parts in <var>italics</var> stand for names or numbers from your source.</p>
+            <p>Every rejected example in this reference shows its error as a <code>// Error:</code> comment, on the line where the checker reports it. An accepted example that draws a <a href="#warnings">warning</a> shows it as a <code>// Warning:</code> comment in the same way. This chapter lists those messages by topic, with what each means, what to do, and where an example shows it. Parts in <var>italics</var> stand for names or numbers from your source.</p>
             <p>An error names the declaration it belongs to, and the workspace marks the statement it points at. A rejected declaration is not added, so every declaration that uses it fails too, with “Untranslated dependency”. Fix the first error in a file first.</p>
           </section>
           <section id="syntax-errors">
@@ -119,8 +121,6 @@
                 <tr><td data-message="Expected a Sigma type for pair.">“Expected a Sigma type for pair.”</td><td>A pair is checked against a type that is not a pair type, or a tuple does not match the nesting of its type.</td><td><a href="terms.html#tuples">tuples</a></td></tr>
                 <tr><td data-message="requires a dependent pair; found a value of type">“Projection <var>.1</var> requires a dependent pair; found a value of type <var>T</var>.”</td><td>Only a pair has projections. The message shows the type of the projected value.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
                 <tr><td data-message="unpack requires a dependent pair.">“unpack requires a dependent pair.”</td><td>Only pairs can be unpacked.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
-                <tr><td data-message="Nat has no constructor left: its constructors are zero, succ.">“Nat has no constructor left: its constructors are zero, succ.”</td><td><code>match</code> clauses name the constructors of the matched type. Nat has <code>zero</code> and <code>succ</code>.</td><td><a href="terms.html#match">match</a></td></tr>
-                <tr><td data-message="loop is being defined: it can call itself only on an argument of a constructor">“loop is being defined: it can call itself only on an argument of a constructor”</td><td>Use a structural <code>match</code> and recurse on a matched constructor argument.</td><td><a href="first-proof.html#order">recursion</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -151,6 +151,18 @@
                 <tr><td data-message="A universe argument must lie below UU0">“A universe argument must lie below UU0: …”</td><td>A generic declaration was used at <code>UU0</code> or above. Use <code>U0</code>, <code>U1</code>, … or a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
                 <tr><td data-message="Expected a universe:">“Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).”</td><td>A type or a term stands where a universe is required, such as <code>next(Nat)</code>.</td><td><a href="universes.html#universe-expressions">next and max</a></td></tr>
                 <tr><td data-message="is a universe constant; choose another name.">“<var>name</var> is a universe constant; choose another name.”</td><td>Names such as <code>U1</code> and <code>UU2</code> are universes.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section id="inductive-errors">
+            <h2>Inductive types and recursion</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr><td data-message="needs an expected type, to know which">“<var>nil</var> needs an expected type, to know which <var>List(…)</var> it builds: write typed(<var>List(…)</var>, <var>nil</var>).”</td><td>A constructor of a parameterized type takes only its declared arguments, so the type’s arguments come from context. Give a result type, or use <code>typed</code>.</td><td><a href="induction.html#inductive-parameters">parameters</a></td></tr>
+                <tr><td data-message="Nat has no constructor left: its constructors are zero, succ.">“<var>Nat</var> has no constructor <var>left</var>: its constructors are <var>zero, succ</var>.”</td><td>A <code>match</code> clause names a constructor that the matched type does not have, such as a sum’s <code>left</code> on <code>Nat</code>. Use the listed constructors.</td><td><a href="terms.html#match">match</a></td></tr>
+                <tr><td data-message="loop is being defined: it can call itself only on an argument of a constructor">“<var>loop</var> is being defined: it can call itself only on an argument of a constructor”</td><td>A definition calls itself, but its whole body is not a <code>match</code> on one of its parameters. Make it one, and recurse on a child bound by a clause.</td><td><a href="first-proof.html#order">order</a>, <a href="induction.html#recursion">structural recursion</a></td></tr>
+                <tr><td data-message="is not on an argument of the matched constructor: only structural recursion">“The recursive call of <var>f</var> is not on an argument of the matched constructor: only structural recursion, …”</td><td>A recursive call passes something other than a child bound by the clause, such as the original input or a new constructor value. Recurse on a child.</td><td><a href="induction.html#recursion">structural recursion</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -224,6 +236,19 @@
               </tbody>
             </table></div>
           </section>
+          <section id="warnings">
+            <h2>Warnings</h2>
+            <p>A warning does not reject anything: the declaration is checked. It marks a binding that is never used and can be removed; see <a href="checking.html#warnings">warnings</a>.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr><td data-message="is unused: the return type does not mention it and the successor clause does not use it.">“<var>k</var> is unused: the return type does not mention it and the successor clause does not use it. …”</td><td>The result type is the same for every number, and the successor branch does not use the predecessor. Omit <code>as k</code>.</td><td><a href="induction.html#induction">induction</a></td></tr>
+                <tr><td data-message="is unused: the return type does not mention it.">“<var>z</var> is unused: the return type does not mention it. …”</td><td>The result type is the same for every value. Omit <code>as z</code>.</td><td><a href="terms.html#match">match</a></td></tr>
+                <tr><td data-message="is unused in the body: write">“<var>x</var> is unused in the body: write <var>A</var> -&gt; … instead of forall <var>x</var> : <var>A</var>. ….”</td><td>The quantified variable is never mentioned. Write <code>A -&gt; B</code> for <code>forall x : A. B</code>, and <code>A and B</code> for <code>exists x : A. B</code>; they are the same types.</td><td><a href="paths.html#exists-and">exists and and</a></td></tr>
+                <tr><td data-message="is never used after this">“<var>name</var> is never used after this let: remove it.”, and the same for <code>have</code></td><td>Nothing later in the block uses the name. Remove the statement.</td><td><a href="proof-blocks.html#let">let</a></td></tr>
+              </tbody>
+            </table></div>
+          </section>
           <section id="not-yet-available">
             <h2>Not yet available</h2>
             <p>These are planned; see the work plan. Until then, they are rejected:</p>
@@ -251,7 +276,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
               <li>chains of relations other than equality in <code>calc</code>;</li>
               <li>rewriting a hypothesis together with everything that depends on it: <code>simp at</code> makes a new copy instead;</li>
               <li>solving premises of conditional rules that are not equalities;</li>
-              <li>user-declared inductive types and <code>match</code> on them, which replace today’s <a href="induction.html#induction">built-in eliminators</a>.</li>
+              <li>inductive families with indices, mutually defined inductive types, and a <code>match</code> on several values at once; see <a href="induction.html#inductive-parameters">parameters and constructors</a>.</li>
             </ul>
           </section>
 

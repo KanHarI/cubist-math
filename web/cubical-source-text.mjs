@@ -43,26 +43,25 @@ export function sourceText(term, symbols = {}, limit = 4000) {
   const literal = text => text.endsWith(":0") ? `-${text.slice(0, -2)}` : text.replace(/:1$/, "");
   const conjunction = clause => clause.length ? clause.map(literal).join(" & ") : "1";
   const interval = value => value.length ? value.map(conjunction).join(" | ") : "0";
-  // A binary number from the library's binary_naturals, in normal form:
-  // left(tt) is 0b0, and right(p) a W tree whose leaf is the leading 1 and
-  // whose unary nodes are the trailing digits, the last digit outermost.
+  // A binary number from the archive's binary_naturals, in normal form:
+  // binary_zero is 0b0, and binary_positive(p) holds binary_bit0 and
+  // binary_bit1 digits, the last digit outermost, around the leading binary_one.
+  const constructorOf = (t, signature) => {
+    const head = t?.tag === "App" ? t.fn : t;
+    return head?.tag === "Con" && head.sort?.tag === "Sort" && head.sort.signature === signature ? head.index : null;
+  };
   const binary = t => {
-    const shape = t.as;
-    if (shape?.tag !== "Sum" || shape.left?.tag !== "Unit" || !(shape.right?.tag === "W"
-      || shape.right?.tag==="Sort"&&shape.right.signature==="w__W")) return null;
-    if (t.tag === "Inl") return t.value?.tag === "Point" ? "0b0" : null;
-    let digits = "", p = t.value;
-    while (p?.tag === "Sup"||p?.tag==="App"&&p.fn?.tag==="App"&&p.fn.fn?.tag==="Con"
-      &&p.fn.fn.sort?.signature==="w__W") {
-      const label = p.tag==="Sup"?p.label:p.fn.arg,children=p.tag==="Sup"?p.children:p.arg;
-      if (label?.tag === "Inl" && label.value?.tag === "Point") return `0b1${digits}`;
-      const digit = { Inl: "0", Inr: "1" }[label?.value?.tag];
-      if (label?.tag !== "Inr" || !digit || label.value.value?.tag !== "Point"
-        || children?.tag !== "Lam" || mentions(children.body, children.name)) return null;
-      digits = digit + digits;
-      p = children.body;
+    const natural = constructorOf(t, "binary_naturals__BinaryNat");
+    if (natural === 0 && t.tag === "Con") return "0b0";
+    if (natural !== 1 || t.tag !== "App") return null;
+    let digits = "", p = t.arg;
+    for (;;) {
+      const index = constructorOf(p, "binary_naturals__BinaryPositive");
+      if (index === 0 && p.tag === "Con") return `0b1${digits}`;
+      if ((index !== 1 && index !== 2) || p.tag !== "App") return null;
+      digits = (index === 1 ? "0" : "1") + digits;
+      p = p.arg;
     }
-    return null;
   };
   // A motive's variable shown under another name; a binder of the same name
   // inside shadows the renaming.
@@ -156,7 +155,9 @@ export function sourceText(term, symbols = {}, limit = 4000) {
         const type = under(motive.name, () => renaming(motive.name, k, () => show(motive.body)));
         const successor = under([step.name, step.body.name], () =>
           renaming(step.name, k, () => renaming(step.body.name, h, () => show(step.body.body))));
-        return [`induction ${show(t.value)} as ${k} return ${type} { zero => ${show(t.zero)}; `
+        // `as k` is written only where the motive or the successor clause uses k.
+        const named = mentions(motive.body, motive.name) || mentions(step.body, step.name);
+        return [`induction ${show(t.value)}${named ? ` as ${k}` : ""} return ${type} { zero => ${show(t.zero)}; `
           + `succ ${h} => ${successor}; }`, LEVEL.binder];
       }
       case "SumRec": {
@@ -169,6 +170,8 @@ export function sourceText(term, symbols = {}, limit = 4000) {
       case "App": case "LApp": {
         const number=numeral(t);
         if(number!==null)return atom(String(number));
+        const bits=binary(t);
+        if(bits)return atom(bits);
         // The standard source Nat's eliminator has the existing induction
         // spelling. Eta reduction may leave its successor clause curried.
         if(t.tag==="App"&&t.fn.tag==="Elim"&&t.fn.signature==="nat__Nat"
@@ -199,7 +202,7 @@ export function sourceText(term, symbols = {}, limit = 4000) {
         return atom(`(${[...items, show(rest)].join(", ")})`);
       }
       case "PApp": return [`${sub(t.path, LEVEL.at + 1)} @ ${interval(t.arg)}`, LEVEL.at];
-      case "Inl": case "Inr": return atom(binary(t) ?? `${t.tag === "Inl" ? "left" : "right"}(${show(t.value)})`);
+      case "Inl": case "Inr": return atom(`${t.tag === "Inl" ? "left" : "right"}(${show(t.value)})`);
       case "W": return atom(`W(${show(t.domain)}, ${show({ tag: "Lam", name: t.name, domain: t.domain, body: t.body })})`);
       case "Sup": return atom(`sup(${show(t.as)}, ${show(t.label)}, ${show(t.children)})`);
       case "Abort": return atom(`absurd(${show(t.impossible)})`);
@@ -212,7 +215,7 @@ export function sourceText(term, symbols = {}, limit = 4000) {
           ...(t.parameters ?? []).map(show)];
         return atom(args.length ? `${label(t.signature)}(${args.join(", ")})` : label(t.signature));
       }
-      case "Con": {const n=numeral(t);return n!==null?atom(String(n)):t.name ? atom(t.name) : fallback(t);}
+      case "Con": {const n=numeral(t);return n!==null?atom(String(n)):binary(t)?atom(binary(t)):t.name ? atom(t.name) : fallback(t);}
       case "Path":
         // An equality: a path whose type does not vary along it.
         if (!varies(t.family, t.dim))

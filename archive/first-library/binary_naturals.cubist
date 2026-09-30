@@ -1,52 +1,24 @@
-import w;
-// Binary positive integers are W trees with a leaf for one and a unary node
-// for each trailing digit. They have no leading-zero representation.
-def BinaryLabel := Unit or (Unit or Unit);
-
-def BinaryArity(tag : BinaryLabel) := match tag return U0 {
-    left one => Void;
-    right bit => Unit;
-  };
-
-def BinaryPositive := W(U0, U0, BinaryLabel, BinaryArity);
-
-def binary_one :=
-  typed(
-    BinaryPositive,
-    sup(typed(BinaryLabel, left(tt)), fun (v : Void) => typed(BinaryPositive, absurd(v)))
-  );
-
-def binary_bit0(p : BinaryPositive) :=
-  typed(BinaryPositive, sup(typed(BinaryLabel, right(left(tt))), fun (u : Unit) => p));
-
-def binary_bit1(p : BinaryPositive) :=
-  typed(BinaryPositive, sup(typed(BinaryLabel, right(right(tt))), fun (u : Unit) => p));
+// Binary positive integers: the leading one, then each trailing digit, the
+// last digit outermost. They have no leading-zero representation.
+inductive BinaryPositive : U0 {
+  binary_one;
+  binary_bit0(p : BinaryPositive);
+  binary_bit1(p : BinaryPositive);
+}
 
 // Zero is separate, so every nonzero numeral ends at the one leaf.
-def BinaryNat := Unit or BinaryPositive;
-
-def binary_zero := typed(BinaryNat, left(tt));
-
-def binary_positive(p : BinaryPositive) := typed(BinaryNat, right(p));
+inductive BinaryNat : U0 {
+  binary_zero;
+  binary_positive(p : BinaryPositive);
+}
 
 // The recursive result and original child are both available in a digit case.
-def binary_positive_rec(R : U0, one : R, even, odd : BinaryPositive -> R -> R, p : BinaryPositive) :=
-  wrec(
-    U0, U0, U0, BinaryLabel, BinaryArity, fun (tree : BinaryPositive) => R,
-    fun (
-      tag : BinaryLabel, children : BinaryArity(tag) -> BinaryPositive, ih : BinaryArity(tag) -> R
-    ) => (
-      match tag as label return (
-        (BinaryArity(label) -> BinaryPositive) -> (BinaryArity(label) -> R) -> R
-      ) {
-        left leaf => fun (f : Void -> BinaryPositive, h : Void -> R) => one;
-        right bit => fun (f : Unit -> BinaryPositive, h : Unit -> R) => match bit return R {
-          left zeroBit => even(f(tt), h(tt));
-          right oneBit => odd(f(tt), h(tt));
-        };
-      }
-    )(children, ih), p
-  );
+def binary_positive_rec(R : U0, one : R, even, odd : BinaryPositive -> R -> R, p : BinaryPositive) :
+  R := match p {
+    binary_one => one;
+    binary_bit0(child) => even(child, binary_positive_rec(R, one, even, odd, child));
+    binary_bit1(child) => odd(child, binary_positive_rec(R, one, even, odd, child));
+  };
 
 def binary_positive_cases(R : U0, one : R, even, odd : BinaryPositive -> R, p : BinaryPositive) :=
   binary_positive_rec(
@@ -54,7 +26,7 @@ def binary_positive_cases(R : U0, one : R, even, odd : BinaryPositive -> R, p : 
     fun (child : BinaryPositive, ignored : R) => odd(child), p
   );
 
-// These examples reduce using only W, sum, unit and function computation.
+// These examples reduce by constructor computation alone.
 def binary_literal_digits : 0b110 = binary_positive(binary_bit0(binary_bit1(binary_one))) {
   rfl;
 }

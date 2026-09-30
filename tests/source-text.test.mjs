@@ -85,33 +85,34 @@ test("paths print as equalities when their type does not vary, and path applicat
 });
 
 test("binary numbers print as binary literals", () => {
-  const label = { tag: "Sum", left: unit, right: { tag: "Sum", left: unit, right: unit } };
-  const positive = { tag: "W", name: "b", domain: label, body: unit };
-  const binaryNat = { tag: "Sum", left: unit, right: positive };
-  const tt = { tag: "Point" };
-  const one = { tag: "Sup", as: positive, label: { tag: "Inl", as: label, value: tt },
-    children: { tag: "Lam", name: "v", domain: v, body: { tag: "Abort", as: positive, impossible: variable("v") } } };
-  const bit = (digit, p) => ({ tag: "Sup", as: positive,
-    label: { tag: "Inr", as: label, value: { tag: digit ? "Inr" : "Inl", as: label.right, value: tt } },
-    children: { tag: "Lam", name: "u", domain: unit, body: p } });
-  assert.equal(sourceText({ tag: "Inl", as: binaryNat, value: tt }), "0b0");
-  assert.equal(sourceText({ tag: "Inr", as: binaryNat, value: bit(0, bit(1, one)) }), "0b110");
+  // binary_naturals declares BinaryNat and BinaryPositive by their constructors.
+  const constructor = (type, index, name) => ({ tag: "Con", index, name, sort: { tag: "Sort", signature: `binary_naturals__${type}` } });
+  const zero = constructor("BinaryNat", 0, "binary_zero"), positive = p => ({ tag: "App", fn: constructor("BinaryNat", 1, "binary_positive"), arg: p });
+  const one = constructor("BinaryPositive", 0, "binary_one");
+  const bit = (digit, p) => ({ tag: "App", fn: constructor("BinaryPositive", digit ? 2 : 1, `binary_bit${digit}`), arg: p });
+  assert.equal(sourceText(zero), "0b0");
+  assert.equal(sourceText(positive(bit(0, bit(1, one)))), "0b110");
   // Anything else in the same type prints as it is built.
-  assert.match(sourceText({ tag: "Inr", as: binaryNat, value: variable("p") }), /^right\(p\)$/);
+  assert.match(sourceText(positive(variable("p"))), /^binary_positive\(p\)$/);
+  assert.match(sourceText(positive(bit(1, variable("p")))), /^binary_positive\(binary_bit1\(p\)\)$/);
 });
 
 test("recursion and case analysis print as induction and match", () => {
   const recursion = { tag: "NatRec", motive: { tag: "Lam", name: "b", domain: nat, body: nat }, zero: variable("n"),
     step: { tag: "Lam", name: "k", domain: nat, body: { tag: "Lam", name: "h", domain: nat, body: { tag: "Succ", value: variable("h") } } },
     value: variable("m") };
-  assert.equal(sourceText(recursion), "induction m as k return Nat { zero => n; succ h => succ(h); }");
+  // A constant motive, and a successor clause that does not use the
+  // predecessor, need no `as`.
+  assert.equal(sourceText(recursion), "induction m return Nat { zero => n; succ h => succ(h); }");
+  const predecessor = { ...recursion, step: { ...recursion.step, body: { ...recursion.step.body, body: variable("k") } } };
+  assert.equal(sourceText(predecessor), "induction m as k return Nat { zero => n; succ h => k; }");
   // The motive's variable reads as the name `as` binds.
   const dependent = { ...recursion, motive: { tag: "Lam", name: "b", domain: nat, body: equal(variable("b"), variable("b")) } };
   assert.match(sourceText(dependent), /^induction m as k return k = k \{/);
   const cases = { tag: "SumRec", motive: { tag: "Lam", name: "z", domain: sum(unit, unit), body: U0 },
     left: { tag: "Lam", name: "a", domain: unit, body: nat }, right: { tag: "Lam", name: "b", domain: unit, body: unit }, value: variable("v") };
   assert.equal(sourceText(cases), "match v as z return U0 { left a => Nat; right b => Unit; }");
-  assert.equal(sourceText(add(recursion, number(1))), "(induction m as k return Nat { zero => n; succ h => succ(h); }) + 1");
+  assert.equal(sourceText(add(recursion, number(1))), "(induction m return Nat { zero => n; succ h => succ(h); }) + 1");
 });
 
 test("messages name unnamed dimensions once, keep sharing, and avoid the names they show", async () => {
