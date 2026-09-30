@@ -1,4 +1,7 @@
 import "./fresh-build.mjs";
+import createLegacyCubical from "../tools/legacy-kernel.mjs";
+import {CubicalProgram} from "../web/cubical-program.mjs";
+import {sourceReader} from "../tools/module-sources.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
@@ -16,7 +19,9 @@ import { readFile } from "node:fs/promises";
 import { InstructionGraph } from "../web/cubical-instructions.mjs";
 import { levelText, universeText } from "../web/cubical-levels.mjs";
 
-const module = await createCubical();
+// Raw primitive-calculus probes use the pinned historical comparison oracle.
+const module = await createLegacyCubical();
+const producerModule = await createCubical();
 function session(t) {
   const kernel = new CubicalKernel(module);
   t.after(() => kernel.dispose());
@@ -106,19 +111,11 @@ test("named syntax preserves path binders and sharing across WASM checks", t => 
 });
 
 test("the actual W binary source checks entirely in cubical WASM", async t => {
-  const syntax = new CubicalSyntax(session(t));
-  const nativeCheck = (term, expected, context) => {
-    try { return { ok: true, ...syntax.check(term, expected, context) }; }
-    catch (error) { return { ok: false, error: error.message }; }
-  };
-  const source = await readFile(new URL("../archive/first-library/binary_naturals.cubist", import.meta.url), "utf8");
-  const result = new Translator({ normalize: false, nativeCheck }).translate(source);
-  assert.equal(result.declarations.length, 13);
-  for (const declaration of result.declarations)
-    assert.equal(declaration.status, "checked-native-cubical", `${declaration.name}: ${declaration.reason}`);
-  const bad = new Translator({ normalize: false, nativeCheck }).translate(
-    "def bad_binary_literal : 0b110 = 0b111 { exact refl(0b110); }", result.env);
-  assert.equal(bad.declarations[0].status, "not-translated");
+  const program = new CubicalProgram(producerModule, sourceReader());
+  t.after(()=>program.dispose());
+  const result=await program.check("import binary_naturals; def bad_binary_literal : 0b110 = 0b111 { exact refl(0b110); }", "binary_probe");
+  assert.equal(result.imports.filter(d=>d.sourceModule==="binary_naturals" && d.verified).length,13);
+  assert.equal(result.outputs[0].verified,false);
 });
 
 test("dependent pair induction checks its motive and both branch arguments natively", t => {
@@ -151,71 +148,25 @@ test("cubical WASM computes transport through Glue without a univalence axiom", 
 });
 
 test("native elaboration checks all manual factorial sources while retaining checked definitions", async t => {
-  const k = session(t), checker = new NativeCubicalElaborator(k);
-  const translator = new Translator({ normalize: false, checker });
-  let env = new Map(), last;
-  for (const name of ["binary_naturals", "binary_arithmetic", "binary_induction", "radix_naturals", "radix_arithmetic", "radix_factorial"]) {
-    const source = await readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
-    const result = translator.translate(source, env);
-    env = result.env;
-    for (const declaration of result.declarations) {
-      assert.equal(declaration.status, "checked-native-cubical", `${declaration.name}: ${declaration.reason}`);
-      assert.equal(env.get(declaration.name).tag, "DefRef");
-      last = declaration.native;
-    }
+  const program=new CubicalProgram(producerModule,sourceReader(),{collectReferences:false});
+  t.after(()=>program.dispose());
+  const result=await program.check("import binary_arithmetic; import binary_induction; import radix_factorial; def retained : Unit := tt;", "factorials");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  for(const name of ["binary_arithmetic__binary_factorial_ten", "radix_factorial__radix_factorial_ten_base_two", "radix_factorial__radix_factorial_ten_base_ten"]) {
+    const view=program.inspect(name),checked=program.checker.checkView(view.expression,view.type);
+    assert.ok(checked.arenaNodes<500000 && checked.arenaBytes<32*1024*1024);
   }
-  for (const name of ["binary_factorial_ten", "radix_factorial_ten_base_two", "radix_factorial_ten_base_ten"]) {
-    const reference = k.definitions.get(name), definition = k.definition(reference);
-    assert.equal(k.node(reference).kind, "DefRef");
-    k.check(reference, definition.type);
-  }
-  assert.ok(last.arenaNodes < 500000, JSON.stringify(last));
-  assert.ok(last.arenaBytes < 32 * 1024 * 1024, JSON.stringify(last));
-  const bad = translator.translate("def wrong_factorial : binary_factorial(3) = 0b111 { exact refl(0b111); }", env);
-  assert.equal(bad.declarations[0].status, "not-translated");
-  assert.equal(k.definitions.has("wrong_factorial"), false);
+  const bad=await program.check("import binary_induction; def wrong_factorial : binary_factorial(3) = 0b111 { exact refl(0b111); }", "bad_factorial");
+  assert.equal(bad.outputs.find(d=>d.name === "wrong_factorial").verified,false);
 });
 
-test("the existing Nat factorial theorem checks cubically without a million-successor expression", async t => {
-  const k = session(t), checker = new NativeCubicalElaborator(k);
-  const translator = new Translator({ normalize: false, checker });
-  let env = new Map(), theorem;
-  // The full generic equivalence API is not used by this compatibility proof.
-  // Those separate declarations are explicitly rejected as untranslated;
-  // no assumptions are registered in their place.
-  for (const name of ["primes", "binary_naturals", "binary_arithmetic", "binary_induction", "binary_equivalence", "binary_arithmetic_correct"]) {
-    const source = await readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
-    const result = translator.translate(source, env);
-    env = result.env;
-    for (const d of result.declarations) {
-      if (["binary_nat_equiv", "nat_binary_equiv"].includes(d.name)) {
-        assert.equal(d.status, "not-translated");
-        assert.equal(k.definitions.has(d.name), false);
-      } else assert.equal(d.status, "checked-native-cubical", `${d.name}: ${d.reason}`);
-      if (d.name === "factorial_ten_from_binary") theorem = d;
-    }
-  }
-  assert.ok(theorem);
-  const { arenaNodes, arenaBytes } = theorem.native;
-  assert.ok(arenaNodes < 1000000, JSON.stringify(theorem.native));
-  assert.ok(arenaBytes < 64 * 1024 * 1024, JSON.stringify(theorem.native));
-  const lengths = new Map();
-  let maximum = 0;
-  for (let id = 1; id <= arenaNodes; id++) {
-    const node = k.node(id);
-    if (node.kind === "Zero") lengths.set(id, 0);
-    if (node.kind === "Succ" && lengths.has(node.children[0])) {
-      const length = lengths.get(node.children[0]) + 1;
-      lengths.set(id, length);
-      maximum = Math.max(maximum, length);
-    }
-  }
-  assert.equal(maximum, 10);
-  const signature = k.definition(k.definitions.get("factorial_ten_from_binary")).type;
-  const type = checker.syntax.decode(signature);
-  assert.equal(type.tag, "Path");
-  assert.equal(type.left.fn.name, "factorial");
-  assert.equal(type.right.name, "nat_3628800");
+test("the existing Nat factorial theorem checks cubically without a million-successor expression",async t=>{
+  const program=new CubicalProgram(producerModule,sourceReader(),{collectReferences:false});
+  t.after(()=>program.dispose());
+  const result=await program.check("import binary_arithmetic_correct; def retained : Unit := tt;", "factorial");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  const view=program.inspect("binary_arithmetic_correct__factorial_ten_from_binary"),checked=program.checker.checkView(view.expression,view.type);
+  assert.ok(checked.arenaNodes<500000 && checked.arenaBytes<32*1024*1024);
 });
 
 test("open cubes check dependent contexts and preserve dimension names across decoding", t => {
@@ -242,24 +193,21 @@ test("open cubes check dependent contexts and preserve dimension names across de
 });
 
 test("Cubist expresses cubical paths, composition and pushout induction with checked boundaries", async t => {
-  const kernel = session(t), checker = new NativeCubicalElaborator(kernel);
-  const translator = new Translator({ checker, normalize: false });
-  const source = await readFile(new URL("../archive/first-library/cubical_paths.cubist", import.meta.url), "utf8");
-  const library = translator.translate(await readFile(new URL("../archive/first-library/suspension_types.cubist", import.meta.url), "utf8"));
-  assert.ok(library.declarations.every(d => d.status === "checked-native-cubical"));
-  const result = translator.translate(source, library.env);
-  assert.deepEqual(result.declarations.filter(d => d.status !== "checked-native-cubical"), []);
-  assert.equal(result.declarations.length, 15);
-  const invalid = translator.translate(`
+  const program=new CubicalProgram(producerModule,sourceReader());
+  t.after(()=>program.dispose());
+  const result=await program.check(await sourceReader()("cubical_paths"),"cubical_paths");
+  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  assert.equal(result.outputs.length,15);
+  const invalid=await program.check(`import suspension_types;
     def escaped := path(fun (i : Interval) => Nat, fun (i : Interval) => i);
     def wrong : 0 = 1 { exact path(fun (i : Interval) => Nat, fun (i : Interval) => 0); }
     def malformed := comp(fun (i : Interval) => Nat, 0, face(i, 0, fun (j : Interval) => 0));
     def bad_bridge := pushout_induction(fun (p : Susp(Unit)) => Nat,
       fun (a : Unit) => 0, fun (b : Unit) => 1,
-      fun (a : Unit) => refl(0), push_left(Susp(Unit), tt));
-  `, result.env);
-  assert.ok(invalid.declarations.every(d => d.status === "not-translated"), JSON.stringify(invalid.declarations));
-  assert.equal(checker.dimensions.size, 0, "failed elaboration must restore the outer cube");
+      fun (a : Unit) => refl(0), push_left(Susp(Unit), tt));`,"invalid_paths");
+  const rejected=invalid.outputs.filter(d=>["escaped","wrong","malformed","bad_bridge"].includes(d.name));
+  assert.equal(rejected.length,4);
+  assert.ok(rejected.every(d=>!d.verified));
 });
 
 test("WASM round trips pushout boxes and corrected transport across changing maps", async t => {

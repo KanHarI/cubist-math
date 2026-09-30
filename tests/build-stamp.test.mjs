@@ -21,7 +21,7 @@ function fakeTree(t) {
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const path = relative => join(root, relative);
   for (const file of ["kernel/src/a.c", "kernel/src/a.h", "kernel/include/k.h", "wasm/cubical_bridge.c", "Makefile",
-    "tools/build-cubical-runtime.mjs", "web/dist/cubical.mjs", "web/dist/cubical.wasm",
+    "tools/build-cubical-runtime.mjs", "archive/first-library/nat.cubist", "web/dist/cubical-runtime/nat-source.mjs", "web/dist/cubical.mjs", "web/dist/cubical.wasm",
     ...runtimeModules.flatMap(name => [`lib/cubical/${name}.mjs`, `web/dist/cubical-runtime/${name}.mjs`])]) {
     mkdirSync(dirname(path(file)), { recursive: true });
     writeFileSync(path(file), file);

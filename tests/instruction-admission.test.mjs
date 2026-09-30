@@ -35,7 +35,7 @@ test("every definition is admitted by Define, and only admitted definitions can 
     assert.equal(lookup.term, reference, name);
   }
   // The term checker's own definitions are refused.
-  const zero = kernel.term("Zero"), nat = kernel.term("Nat");
+  const zero = kernel.term("Point"), nat = kernel.term("Unit");
   const unadmitted = kernel.define("checked_only", zero, nat);
   assert.throws(() => graph.lookup(unadmitted), /admitted by Define/);
 });

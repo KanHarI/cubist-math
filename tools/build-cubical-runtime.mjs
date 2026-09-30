@@ -15,5 +15,7 @@ withLock(() => {
     // move up two directories instead of naming web/.
     writeFileSync(new URL(`${name}.mjs`, output), source.replaceAll("../../web/", "../../"));
   }
+  const naturalSource=readFileSync(new URL("../archive/first-library/nat.cubist",import.meta.url),"utf8");
+  writeFileSync(new URL("nat-source.mjs",output),`export default ${JSON.stringify(naturalSource)};\n`);
   write("runtime", hash);
 });

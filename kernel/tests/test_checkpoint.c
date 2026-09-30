@@ -7,14 +7,14 @@ int main(void) {
     assert(k);
     cc_kernel_checkpoint(k);
     assert(cc_kernel_commit_checkpoint(k)); /* Empty arena is valid too. */
-    cc_term nat = cc_kernel_term(k, CC_NAT, 0, 0, 0, 0, 0);
-    cc_term zero = cc_kernel_term(k, CC_ZERO, 0, 0, 0, 0, 0);
+    cc_term nat = cc_kernel_term(k, CC_U, 0, cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
+    cc_term zero = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
     cc_term old = cc_kernel_define(k, 1, zero, nat);
     assert(old);
     cc_kernel_checkpoint(k);
     for (unsigned i = 0; i < 1000; ++i)
         assert(cc_kernel_term(k, CC_VAR, 100 + i, 0, 0, 0, 0));
-    cc_term one = cc_kernel_term(k, CC_SUCC, 0, old, 0, 0, 0);
+    cc_term one = cc_kernel_term(k, CC_SUM, 0, cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0), old, 0, 0);
     cc_term ref = cc_kernel_define(k, 2, one, nat);
     assert(ref && cc_kernel_whnf(k, ref));
     size_t allocated = k->count;

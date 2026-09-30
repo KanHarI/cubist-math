@@ -44,7 +44,7 @@ test("accepted cubical probes from the roadmap evidence keep checking",async t=>
   const {result}=await checkExample(t,"cubical-probes.cubist","hott_cubical_probes");
   assertCheckedFixture(result,["sigma_line","filler_rewrite","multi_hole","square_rebuild",
     "trans_as_composition","sym_sym_refl","convertible_rule","right_unit_at_u1",
-    "right_unit_at_u0","ordered_fillers"]);
+    "right_unit_at_u0","ordered_fillers","under_succ"]);
 });
 
 test("closed assumption-free results compute to canonical values (invariant 10)",async t=>{
@@ -76,7 +76,6 @@ const rejectedProbes = {
   rejected_sym_pathp:{reason:/Unbound cubical dimension/,until:"E0 or A1a"},
   rejected_rule_constant:{reason:/not determined by the matched side/,until:"A1"},
   rejected_rule_ap:{reason:/not determined by the matched side/,until:"A1"},
-  under_succ:{reason:/unresolved equality goal/,until:"A2"},
   use_ru:{reason:/unresolved equality goal/,until:"A1"},
   use_ru_at_u0:{reason:/unresolved equality goal/,until:"A1"},
 };

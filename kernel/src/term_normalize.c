@@ -149,19 +149,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             return ck_whnf(k, head.child[n.kind == CC_FST ? 1 : 2]);
         return pair == n.child[0] ? term : ck_make(k, n.kind, 0, pair, 0, 0, 0);
     }
-    if (n.kind == CC_NATREC) {
-        cc_term value = ck_whnf(k, n.child[3]);
-        if (!value)
-            return 0;
-        cc_node head = k->nodes[value];
-        if (head.kind == CC_ZERO)
-            return ck_whnf(k, n.child[1]);
-        if (head.kind == CC_SUCC) {
-            cc_term recursive = ck_make(k, CC_NATREC, 0, n.child[0], n.child[1], n.child[2], head.child[0]);
-            return ck_whnf(k, app(k, app(k, n.child[2], head.child[0]), recursive));
-        }
-        return value == n.child[3] ? term : ck_make(k, CC_NATREC, 0, n.child[0], n.child[1], n.child[2], value);
-    }
+
     if (n.kind == CC_SUMREC) {
         cc_term value = ck_whnf(k, n.child[3]);
         if (!value)
@@ -179,26 +167,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             return ck_whnf(k, n.child[1]);
         return value == n.child[2] ? term : ck_make(k, CC_UNITREC, 0, n.child[0], n.child[1], value, 0);
     }
-    if (n.kind == CC_WREC) {
-        cc_term value = ck_whnf(k, n.child[2]);
-        if (!value)
-            return 0;
-        cc_node head = k->nodes[value];
-        if (head.kind == CC_SUP) {
-            cc_term type = ck_whnf(k, head.child[0]);
-            if (!type || k->nodes[type].kind != CC_W)
-                return ck_fail(k, "Malformed checked W constructor."), 0;
-            cc_node w = k->nodes[type];
-            uint32_t name = ck_fresh_symbol(k);
-            cc_term index = ck_var(k, name);
-            cc_term arity = ck_substitute(k, w.child[1], w.payload, head.child[1]);
-            cc_term child = app(k, head.child[2], index);
-            cc_term recursive = ck_make(k, CC_WREC, 0, n.child[0], n.child[1], child, 0);
-            cc_term hypothesis = ck_make(k, CC_LAM, name, arity, recursive, 0, 0);
-            return ck_whnf(k, app(k, app(k, app(k, n.child[1], head.child[1]), head.child[2]), hypothesis));
-        }
-        return value == n.child[2] ? term : ck_make(k, CC_WREC, 0, n.child[0], n.child[1], value, 0);
-    }
+
     if (n.kind == CC_PAPP) {
         const cc_formula *arg = cc_kernel_get_formula(k, n.payload);
         if (!arg || arg->sort != CC_INTERVAL)

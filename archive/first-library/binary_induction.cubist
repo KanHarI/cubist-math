@@ -30,15 +30,18 @@ def binary_label_induction(
 def BinaryBranch(P : BinaryPositive -> U0, label : BinaryLabel) :=
   forall children : BinaryArity(label) -> BinaryPositive.
   (forall branch : BinaryArity(label). P(children(branch)))
-  -> P(sup(BinaryPositive, label, children));
+  -> P(typed(BinaryPositive, sup(label, children)));
 
 def binary_one_branch(
   P : BinaryPositive -> U0, one : P(binary_one), children : Void -> BinaryPositive,
   ih : forall v : Void. P(children(v))
 ) :=
   along P by cong(
-    (fun (f : Void -> BinaryPositive) => sup(BinaryPositive, typed(BinaryLabel, left(tt)), f)),
-    binary_empty_children(children)
+    (
+      fun (f : Void -> BinaryPositive) => typed(
+        BinaryPositive, sup(typed(BinaryLabel, left(tt)), f)
+      )
+    ), binary_empty_children(children)
   ) from one;
 
 def binary_even_branch(
@@ -47,8 +50,8 @@ def binary_even_branch(
 ) :=
   along P by cong(
     (
-      fun (f : Unit -> BinaryPositive) => sup(
-        BinaryPositive, typed(BinaryLabel, right(left(tt))), f
+      fun (f : Unit -> BinaryPositive) => typed(
+        BinaryPositive, sup(typed(BinaryLabel, right(left(tt))), f)
       )
     ), binary_unit_children(children)
   ) from even(children(tt), ih(tt));
@@ -59,8 +62,8 @@ def binary_odd_branch(
 ) :=
   along P by cong(
     (
-      fun (f : Unit -> BinaryPositive) => sup(
-        BinaryPositive, typed(BinaryLabel, right(right(tt))), f
+      fun (f : Unit -> BinaryPositive) => typed(
+        BinaryPositive, sup(typed(BinaryLabel, right(right(tt))), f)
       )
     ), binary_unit_children(children)
   ) from odd(children(tt), ih(tt));
@@ -72,7 +75,7 @@ def binary_positive_induction(
   odd : (forall p : BinaryPositive. P(p) -> P(binary_bit1(p))), p : BinaryPositive
 ) :=
   wrec(
-    BinaryPositive, P,
+    U0, U0, U0, BinaryLabel, BinaryArity, P,
     (
       fun (tag : BinaryLabel) => typed(
         BinaryBranch(P, tag),

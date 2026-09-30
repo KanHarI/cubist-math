@@ -1,6 +1,7 @@
 import { cubicalText } from "./cubical-notation.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
 import { localName, numberedName } from "./dist/cubical-runtime/names.mjs";
+import {numeralValue} from "./dist/cubical-runtime/numerals.mjs";
 
 // Print a checked term in Cubist source syntax, for messages and the command
 // line: `A -> B`, `forall x : A. B`, `A and B`, `exists x : A. B`, `A or B`,
@@ -28,11 +29,7 @@ export function sourceText(term, symbols = {}, limit = 4000) {
     if (["Pi", "Lam", "Sigma", "W", "LPi", "LLam"].includes(t.tag) && t.name === variable) return mentions(t.domain, variable, seen);
     return Object.values(t).some(child => mentions(child, variable, seen));
   };
-  const numeral = t => {
-    let n = 0;
-    while (t?.tag === "Succ") { n++; t = t.value; }
-    return t?.tag === "Zero" ? n : null;
-  };
+  const numeral = numeralValue;
   // A dimension occurs in a term through interval literals `i:1` and `i:0`.
   const varies = (t, dim, seen = new Set()) => {
     if (typeof t === "string") return t === `${dim}:0` || t === `${dim}:1`;
@@ -51,17 +48,19 @@ export function sourceText(term, symbols = {}, limit = 4000) {
   // whose unary nodes are the trailing digits, the last digit outermost.
   const binary = t => {
     const shape = t.as;
-    if (shape?.tag !== "Sum" || shape.left?.tag !== "Unit" || shape.right?.tag !== "W") return null;
+    if (shape?.tag !== "Sum" || shape.left?.tag !== "Unit" || !(shape.right?.tag === "W"
+      || shape.right?.tag==="Sort"&&shape.right.signature==="w__W")) return null;
     if (t.tag === "Inl") return t.value?.tag === "Point" ? "0b0" : null;
     let digits = "", p = t.value;
-    while (p?.tag === "Sup") {
-      const label = p.label;
+    while (p?.tag === "Sup"||p?.tag==="App"&&p.fn?.tag==="App"&&p.fn.fn?.tag==="Con"
+      &&p.fn.fn.sort?.signature==="w__W") {
+      const label = p.tag==="Sup"?p.label:p.fn.arg,children=p.tag==="Sup"?p.children:p.arg;
       if (label?.tag === "Inl" && label.value?.tag === "Point") return `0b1${digits}`;
       const digit = { Inl: "0", Inr: "1" }[label?.value?.tag];
       if (label?.tag !== "Inr" || !digit || label.value.value?.tag !== "Point"
-        || p.children?.tag !== "Lam" || mentions(p.children.body, p.children.name)) return null;
+        || children?.tag !== "Lam" || mentions(children.body, children.name)) return null;
       digits = digit + digits;
-      p = p.children.body;
+      p = children.body;
     }
     return null;
   };
@@ -168,6 +167,20 @@ export function sourceText(term, symbols = {}, limit = 4000) {
           + `right ${right.name} => ${under(right.name, () => show(right.body))}; }`, LEVEL.binder];
       }
       case "App": case "LApp": {
+        const number=numeral(t);
+        if(number!==null)return atom(String(number));
+        // The standard source Nat's eliminator has the existing induction
+        // spelling. Eta reduction may leave its successor clause curried.
+        if(t.tag==="App"&&t.fn.tag==="Elim"&&t.fn.signature==="nat__Nat"
+          &&t.fn.motive?.tag==="Lam"&&t.fn.clauses?.length===2&&t.fn.clauses[1]?.tag==="Lam") {
+          let step=t.fn.clauses[1];
+          if(step.body.tag!=="Lam") {
+            const h=apart("h",t,t);
+            step={...step,body:{tag:"Lam",name:h,domain:t.fn.motive.body,
+              body:{tag:"App",fn:step.body,arg:{tag:"Var",name:h}}}};
+          }
+          return print({tag:"NatRec",motive:t.fn.motive,zero:t.fn.clauses[0],step,value:t.arg});
+        }
         // An instantiation is an application to a universe.
         const args = [];
         let head = t;
@@ -199,7 +212,7 @@ export function sourceText(term, symbols = {}, limit = 4000) {
           ...(t.parameters ?? []).map(show)];
         return atom(args.length ? `${label(t.signature)}(${args.join(", ")})` : label(t.signature));
       }
-      case "Con": return t.name ? atom(t.name) : fallback(t);
+      case "Con": {const n=numeral(t);return n!==null?atom(String(n)):t.name ? atom(t.name) : fallback(t);}
       case "Path":
         // An equality: a path whose type does not vary along it.
         if (!varies(t.family, t.dim))

@@ -1,3 +1,5 @@
+import nat;
+
 import suspension_types;
 
 // Cubical paths expose their interval coordinate; Interval is binder syntax,

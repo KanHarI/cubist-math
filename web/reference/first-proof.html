@@ -329,9 +329,9 @@ def in_type : forall A : U0. A -&gt; A {
             <pre><code data-check="reject">def uses_later := later;  // Error: Untranslated name: later
 
 def later := 0;</code></pre>
-            <p>A declaration cannot refer to itself, so there is no recursive definition. Recursion and induction use an eliminator instead, such as <a href="induction.html#induction">natural-number induction</a>:</p>
+            <p>A recursive definition can call itself on a constructor argument in a structural <code>match</code>. Other self-calls are rejected. Recursion and induction also use eliminators, such as <a href="induction.html#induction">natural-number induction</a>:</p>
             <pre><code data-check="reject">def loop(n : Nat) : Nat {
-  exact loop(n);  // Error: Untranslated name: loop
+  exact loop(n);  // Error: loop is being defined: it can call itself only on an argument of a constructor
 }</code></pre>
             <p>Each name can be declared once in a module:</p>
             <pre><code data-check="reject">def twice_named := 0;

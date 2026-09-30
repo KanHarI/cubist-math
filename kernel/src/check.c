@@ -56,8 +56,8 @@ static bool infer(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dim
         return ck_fail(k, "Unbound term variable.");
     case CC_PI: case CC_LAM: case CC_APP: case CC_SIGMA: case CC_PAIR: case CC_FST: case CC_SND:
         return ck_functions(k, n, ctx, dims, result);
-    case CC_NAT: case CC_ZERO: case CC_SUCC: case CC_NATREC: case CC_UNIT: case CC_POINT:
-    case CC_VOID: case CC_ABORT: case CC_W: case CC_SUP: case CC_WREC:
+    case CC_UNIT: case CC_POINT:
+    case CC_VOID: case CC_ABORT:
     case CC_SUM: case CC_INL: case CC_INR: case CC_SUMREC: case CC_UNITREC:
         return ck_inductives(k, n, ctx, dims, result);
     case CC_PATH: case CC_PLAM: case CC_PAPP:
@@ -81,6 +81,9 @@ static bool infer(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dim
         return ck_fail(k, "The term checker has no rules for level quantification.");
     case CC_SORT: case CC_CON: case CC_ELIM: case CC_LIST:
         return ck_fail(k, "The term checker has no rules for declared types; the instruction kernel checks them.");
+    case CC_NAT: case CC_ZERO: case CC_SUCC: case CC_NATREC:
+    case CC_W: case CC_SUP: case CC_WREC:
+        return ck_fail(k, "Retired primitive type constructor.");
     }
     return ck_fail(k, "Unsupported term constructor.");
 }

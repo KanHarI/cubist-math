@@ -1,4 +1,5 @@
 import "./fresh-build.mjs";
+import {naturalSort, numeral} from "../lib/cubical/numerals.mjs";
 import { cubicalSourceFile } from "../web/cubical-sources.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -31,7 +32,7 @@ test("the browser program checks Euclid from source and exports a replayable nat
   assert.ok(result.instructionCount > 0);
   assert.ok(result.links.some(x => x.name === "prime_divisor_exists"));
   assert.equal(program.inspect("euclid__euclid").type.name, "euclid__InfinitelyManyPrimes");
-  const local = result.links.find(x => x.role === "local");
+  const local = result.links.find(x => x.role === "local" && program.inspect(x.binding).context.length);
   assert.ok(local);
   assert.ok(program.inspect(local.binding).context.length);
   const payload = program.export("euclid__euclid", "type");
@@ -46,8 +47,8 @@ test("module shadowing cannot retarget earlier checked native definitions", asyn
   const result = await program.check("import first; import second; def preserved : remembered = 0 { exact refl(0); }", "example");
   assert.equal(result.complete, true);
   assert.equal(program.inspect("first__remembered").expression.name, "first__value");
-  assert.equal(program.inspect("first__value", { normalize: true }).expression.tag, "Zero");
-  assert.equal(program.inspect("second__value", { normalize: true }).expression.tag, "Succ");
+  assert.equal(program.inspect("first__value", { normalize: true }).expression.tag, "Con");
+  assert.equal(program.inspect("second__value", { normalize: true }).expression.tag, "App");
 });
 
 test("unsupported foundations and invalid proofs remain explicitly unverified", async t => {
@@ -135,10 +136,11 @@ test("native progress identifies the active declaration before it is checked", a
   const progress = [];
   await program.check("def first := 0; def second := 1;", "progress", event => progress.push(event));
   const checking = progress.filter(p => p.phase !== "loading");
-  assert.ok(checking.every(p => p.total === 2));
+  assert.ok(checking.every(p => p.total === 3));
   assert.deepEqual(checking.map(p => [p.current, p.phase, p.completed]), [
-    ["progress.first", "checking", 0], ["progress.first", "checked", 1],
-    ["progress.second", "checking", 1], ["progress.second", "checked", 2],
+    ["nat.Nat", "checking", 0], ["nat.Nat", "checked", 1],
+    ["progress.first", "checking", 1], ["progress.first", "checked", 2],
+    ["progress.second", "checking", 2], ["progress.second", "checked", 3],
   ]);
 });
 
@@ -169,10 +171,10 @@ test("progress totals count a shared import once, including universe-generic def
   t.after(() => program.dispose());
   const progress = [];
   const result = await program.check("import left; import right; def final := fromLeft;", "root", p => progress.push(p));
-  assert.equal(result.declarationCount, 5);
+  assert.equal(result.declarationCount, 6);
   assert.equal(reads.filter(name => name === "common").length, 1);
-  assert.ok(progress.filter(p => p.phase !== "loading").every(p => p.total === 5));
-  assert.equal(progress.at(-1).completed, 5);
+  assert.ok(progress.filter(p => p.phase !== "loading").every(p => p.total === 6));
+  assert.equal(progress.at(-1).completed, 6);
 });
 
 test("native optimization switches preserve path proofs and rejection independently", async () => {

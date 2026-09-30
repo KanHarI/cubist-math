@@ -1,5 +1,9 @@
 # HoTT automation implementation checkpoint
 
+2026-09-30 update: source-defined Nat makes successor an ordinary constructor
+function. `under_succ` now checks with `simp only [nat_add_zero]` and has moved
+to `cubical-probes.cubist`. Its earlier rejection below is historical.
+
 Current status, 2026-09-27: A7, A5's goal-layer core, A4's deterministic fuel
 and A6's residual-goal diagnostics are delivered. The remaining A5 metadata
 and tactic clients and further automation are scheduled in the

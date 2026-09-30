@@ -9,7 +9,7 @@ int main(void) {
         cc_kernel *k = cc_kernel_new();
         assert(k);
         cc_kernel_set_optimizations(k, flags);
-        cc_term nat = ck_make(k, CC_NAT, 0, 0, 0, 0, 0);
+        cc_term nat = ck_make(k, CC_U, 0, ck_make(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
         cc_term unit = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0);
         cc_term x = ck_var(k, 20), p = ck_var(k, 21);
         cc_assumption ctx = {20, nat};
@@ -31,7 +31,7 @@ int main(void) {
         assert(k->nodes[body].payload == k->nodes[result.expression].payload);
         assert(k->nodes[body].payload != 20);
 
-        cc_term zero = ck_make(k, CC_ZERO, 0, 0, 0, 0, 0);
+        cc_term zero = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0);
         cc_term path = ck_make(k, CC_PATH, 1, nat, zero, zero, 0);
         cc_assumption path_ctx = {21, path};
         cc_term applied = ck_make(k, CC_PAPP, ck_interval_variable(k, 0), p, 0, 0, 0);
@@ -49,7 +49,7 @@ int main(void) {
         assert(ck_extend(k, 20, nat, NULL).identity != collision.identity);
 
         cc_kernel_checkpoint(k);
-        cc_term temporary = ck_make(k, CC_SUCC, 0, zero, 0, 0, 0);
+        cc_term temporary = ck_make(k, CC_SUM, 0, ck_make(k, CC_UNIT, 0, 0, 0, 0, 0), zero, 0, 0);
         assert(cc_kernel_check(k, temporary, nat, NULL, 0, &result));
         cc_kernel_rollback(k);
         cc_term point = ck_make(k, CC_POINT, 0, 0, 0, 0, 0);

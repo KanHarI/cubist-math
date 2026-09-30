@@ -26,9 +26,10 @@ Moving these documents does not change their recorded status or resume paused wo
 - Specifications approved for experimental implementation, review pending:
   - [H1 signatures](roadmaps/h1-signature-specification.md): one-sort data and
     higher inductive types, their soundness note, and the truncation and
-    resizing policy. Implemented behind the `h1` option as of 2026-09-28,
-    with the soundness review, the differential fixtures and the
-    migrations open.
+    resizing policy. H1 is now the default for source-defined Nat and W;
+    mathematical release review remains pending. See the
+    [Nat/W migration](roadmaps/h1-program-types.md) for the current behavior,
+    validation and limits of the historical comparison fixtures.
 - The trusted kernel:
   [kernel instructions](roadmaps/kernel-instructions.md), the THTH-style
   forward kernel with every search decision in an untrusted driver, merged
@@ -81,7 +82,7 @@ finishing a language milestone does not automatically resume them.
     paths, structure identity and transfer.
 - [Kernel extensions for computation](roadmaps/cubical-kernel-roadmap.md):
   G0 (universe-generic checking) delivered; H1 (inductive signatures)
-  experimental behind a gate with its review pending; H2–H4 and optional
+  enabled by default with its mathematical review pending; H2–H4 and optional
   extensions planned, under the requirement that computability is
   expressible and preserved. Its [conversion probes](examples/hott-automation/README.md)
   record what the kernel already computes and which laws it rejects.

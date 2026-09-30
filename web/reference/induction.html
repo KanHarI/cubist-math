@@ -50,7 +50,7 @@
           </ul>
         </aside>
         <article id="reference">
-          <p class="note status">This chapter describes today’s built-in natural numbers and W types. User-declared inductive types with pattern matching will replace most of it (stage 2 of the work plan).</p>
+          <p class="note status">Natural numbers and W types are ordinary source inductives. The standard prelude imports <code>nat</code>; <code>import w;</code> supplies W types. Their signatures are checked by H1, enabled by default and still under mathematical review.</p>
           <section id="induction">
             <h2>Natural-number induction</h2>
             <pre><code data-check="accept">def copy(n : Nat) := induction n as k return Nat {
@@ -101,18 +101,18 @@ def le_succ(n : Nat) := induction n as k return (k &lt;= succ(k)) {
           </section>
           <section id="w-types">
             <h2>W types and binary numbers</h2>
-            <p><code>W(A, B)</code> is the type of well-founded trees with a label
+            <p><code>W(U, V, A, B)</code> is the type of well-founded trees with a label
             <code>a : A</code> and a child for each <code>b : B(a)</code>.
             Both <code>A</code> and every <code>B(a)</code> are checked types.
             The universe is the maximum of their universes.</p>
-            <p><code>sup(T, a, children)</code> requires <code>T = W(A, B)</code>,
+            <p><code>sup(a, children)</code> requires <code>T = W(U, V, A, B)</code>,
             <code>a : A</code> and <code>children : B(a) -&gt; T</code>.
-            <code>wrec(T, P, step, tree)</code> returns <code>P(tree)</code>.
+            <code>wrec(U, V, R, A, B, P, step, tree)</code> returns <code>P(tree)</code>.
             Its branch takes <code>a : A</code>, <code>children : B(a) -&gt; T</code>,
             and <code>ih : forall b : B(a), P(children(b))</code>, then returns
-            <code>P(sup(T, a, children))</code>. At a constructor it computes
+            <code>P(sup(a, children))</code>. At a constructor it computes
             by applying that branch to the recursive results on the children.
-            These are checked W rules, not axioms or JavaScript recursion.</p>
+            The source declaration and its structural recursion use generic H1 constructor and eliminator rules. <code>U</code>, <code>V</code>, and the result universe <code>R</code> range over finite universes. A declaration at a fixed higher universe is also allowed.</p>
             <p>After <code>import binary_naturals;</code>, a literal such as
             <code>0b110</code> has type <code>BinaryNat</code> and expands to
             <code>binary_positive(binary_bit0(binary_bit1(binary_one)))</code>.

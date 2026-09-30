@@ -1,8 +1,8 @@
 # Cubist cubical C kernel
 
 This is the sole trusted checker for Cubist Math. It implements cumulative
-universes, dependent functions and pairs, Nat, Unit, Void, sums, dependent W
-induction, interval paths and composition, Glue, and computational pushouts.
+universes, dependent functions and pairs, Unit, Void, sums, declared inductive
+types and their dependent elimination, interval paths and composition, Glue, and computational pushouts.
 Suspension is derived from pushouts. The website and CLI use this code through
 WebAssembly; the archived first library's source modules live in
 `archive/first-library/*.cubist`.
@@ -53,7 +53,7 @@ an untrusted query changing an instruction's verdict.
 | `src/term_normalize.c` | Weak-head computation; separate optional normal forms; eta only by syntax |
 | `src/check.c` | The untrusted term checker: checked telescopes, dispatch and result publication |
 | `src/check_functions.c` | Pi/Sigma formation, introduction and elimination |
-| `src/check_inductives.c` | Nat, Unit, Void, sums and general W rules |
+| `src/check_inductives.c` | Unit, Void and sums |
 | `src/check_pushout.c` | Pushout span, point and dependent bridge premises |
 | `src/pushout_compute.c` | Point/bridge computation of the dependent eliminator |
 | `src/check_hit_composition.c` | Homogeneous boxes and constant-face transport premises |
@@ -125,7 +125,7 @@ Checking returns the checked expression and type without normalizing either.
 `cc_kernel_normalize` is a separate explicit inspection operation; it does not
 certify an arbitrary raw handle. The test CLI accepts a normalization option.
 Conversion exposes only needed heads: beta reduction does not evaluate unused
-arguments, and W induction constructs child induction hypotheses as functions
+arguments, and generic tree elimination constructs child induction hypotheses as functions
 without traversing every subtree in advance.
 
 ### Checked definitions and demanded heads
@@ -151,7 +151,7 @@ unknown neutral path as having arbitrary endpoints. The dedicated
 `test-path-head` target checks this distinction and recovery after rejection.
 
 The tests also reject duplicate names, free variables, wrong declared types,
-unknown references and equality between distinct numeric definitions.
+unknown references and equality between distinct definitions.
 
 ### Sharing during substitution
 
@@ -163,24 +163,28 @@ and cannot bypass checking a context or a face restriction. Its allocation is
 included in the reported arena memory. Substitution also returns the original
 node immediately when the substituted variable/dimension does not occur.
 
-A 24-level shared-DAG regression exercises weak-head inspection. With the source
+A 24-level shared-DAG regression exercises weak-head inspection. The following
+arithmetic counts are historical measurements before source-defined Nat/W. With the source
 frontend's independently supplied failing arithmetic fixtures, the default
 10-million-step budget now checks binary factorial 7 in 59,153 reduction steps
 and the radix fixture in 152,535. Their respective cumulative node counts are
 14,681 and 83,238. These are source frontend checkpoints, not yet the final
 computational-univalence factorial transfer acceptance test.
 
-### Constructor composition for Sum and W
+### Source-defined Nat and W
 
-Both checkers now compute composition through matching sum/tree constructors.
-For a W type, they first fill the label, then compose its children as a dependent
-function over the varying arity. The native implementation lives in
-`src/inductive_composition.c`; the reference implements the same mathematical
-rule independently. Tests check empty/nonempty walls, varying label types and
-varying arities, and independently recheck the resulting normal terms in both
-implementations. A tube whose constructor cannot be exposed stays neutral.
-This does not introduce a strict constant-family transport rule or an equality
-between arbitrary trees.
+`archive/first-library/nat.cubist` and `w.cubist` declare these types through H1.
+Their instances, constructors and eliminators use `CC_SORT`, `CC_CON` and
+`CC_ELIM`; arithmetic and child induction hypotheses compute through the shared
+signature rules. No Nat/W-specific C formation, elimination or composition rule
+remains. Their old term and instruction numbers are reserved ABI slots and are
+refused by the producer.
+
+Primitive-calculus differential fixtures use the exact historical kernel at
+`bfef585cfe09f4b94a658564dff505cd67855368`, built only under
+`build/reference-kernel` by `tools/legacy-kernel.mjs`. It is a test oracle outside
+the production binary and browser bundle. The current native tests and source
+corpus validate the current producer separately.
 
 ### Conversion preserves compact endpoints
 

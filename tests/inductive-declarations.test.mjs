@@ -84,7 +84,7 @@ def plain : Nat := 2;
     assert.deepEqual(get(name).extensions, ["H1"], `${name} carries the marker`);
     assert.deepEqual(get(name).axioms, [], "the marker is not an assumption");
   }
-  assert.deepEqual(get("plain").extensions, []);
+  assert.deepEqual(get("plain").extensions, ["H1"]);
   assert.equal(get("one_two").type, "List(N)");
   assert.equal(get("two").type, "N");
 });

@@ -232,7 +232,7 @@ def default(value : Unit or Unit) := match value as z return Shape(z) {
   left a =&gt; 0;
   right b =&gt; tt;
 };</code></pre>
-            <pre><code data-check="reject">def not_a_sum(n : Nat) := match n return Nat {  // Error: match requires a sum type.
+            <pre><code data-check="reject">def not_a_sum(n : Nat) := match n return Nat {  // Error: Nat has no constructor left: its constructors are zero, succ.
   left a =&gt; 0;
   right b =&gt; 1;
 };</code></pre>

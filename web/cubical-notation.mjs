@@ -1,4 +1,5 @@
 import { renameLevel, universeText } from "./cubical-levels.mjs";
+import {numeralValue} from "./dist/cubical-runtime/numerals.mjs";
 // Display the native checked syntax itself. Definition references stay named;
 // this does not reconstruct an unchecked expression from Cubist source.
 // `scope` maps variables bound around the term by an enclosing printer to
@@ -117,6 +118,8 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (t.tag === "LPi" || t.tag === "LLam")
       return { kind: t.tag === "LPi" ? "LevelPi" : "LevelLambda", ...underBinder(t.name, t.body, () => child(t.body, "body")) };
     if (t.tag === "App" || t.tag === "LApp") {
+      const number=numeralValue(t);
+      if(!paths&&number!==null)return {kind:"Number",value:number};
       if (paths && t.tag === "App") return { kind: "Call", fn: child(t.fn, "fn"), args: [child(t.arg, "arg")] };
       const args = []; let fn = t;
       while ((fn.tag === "App" || fn.tag === "LApp") && remaining-- > 0) {
@@ -160,7 +163,10 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
       const sortName = symbols[t.signature]?.name ?? t.signature;
       return args.length ? call(sortName, args) : name(sortName);
     }
-    if (t.tag === "Con") return name(t.name ?? `constructor ${t.index}`);
+    if (t.tag === "Con") {
+      const number=numeralValue(t);
+      return !paths&&number!==null?{kind:"Number",value:number}:name(t.name ?? `constructor ${t.index}`);
+    }
     if (t.tag === "Elim") return call(`${symbols[t.signature]?.name ?? t.signature}.elim`, [child(t.motive, "motive"),
       ...t.clauses.map((clause, index) => child(clause, "clauses", index))]);
     const fields = { NatRec: ["motive", "zero", "step", "value"], UnitRec: ["motive", "point", "value"],

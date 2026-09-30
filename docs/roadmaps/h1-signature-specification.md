@@ -1,5 +1,14 @@
 # One-sort signatures (H1): rules, soundness note and truncation policy
 
+2026-09-30 implementation update: at the user's request, source checking now
+enables H1 by default and imports an ordinary source-defined Nat. W is also
+source-defined; both primitive C implementations have been retired. This
+changes the deployment default while the mathematical release review below
+remains pending. It does not discharge the release checklist. Statements
+below about retaining primitive W refer to the earlier implementation; the
+[migration record](h1-program-types.md) describes the current universe limits
+and historical oracle.
+
 Status: approved on 2026-09-27 for experimental implementation; reviewed
 against `02a57ef` on 2026-09-28 by the
 [work-plan audit](audits/2026-09-28-audit.md). Written on 2026-09-27 as

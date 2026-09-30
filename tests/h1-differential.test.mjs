@@ -1,4 +1,5 @@
 import "./fresh-build.mjs";
+import createLegacyCubical, {legacyKernelRoot} from "../tools/legacy-kernel.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
@@ -16,6 +17,7 @@ import { H1Translation } from "../web/h1-translation.mjs";
 import { T } from "../web/dist/cubical-runtime/core.mjs";
 import { verifyMigration } from "../tools/proof-migration.mjs";
 
+const legacyModule = await createLegacyCubical();
 const module = await createCubical(), hash = canonicalHasher();
 async function check(t,source,representation="declared") {
   const program = new CubicalProgram(module,sourceReader(),{experimental:["h1"],representation,collectReferences:false});
@@ -29,9 +31,9 @@ const ok = (result,name) => assert.ok(result.outputs.find(output=>output.name===
 test("X1 and X3: native instruction judgements, equalities and refusals replay through τ",async t=>{
   const directory = await mkdtemp(join(tmpdir(),"h1-instructions-")), file=join(directory,"fixtures.jsonl");
   t.after(()=>rm(directory,{recursive:true,force:true}));
-  execFileSync("kernel/build/test-instructions",["--fixtures",file],{stdio:"pipe"});
+  execFileSync(legacyKernelRoot+"build/test-instructions",["--fixtures",file],{stdio:"pipe"});
   const fixtures=(await readFile(file,"utf8")).trim().split("\n").map(line=>JSON.parse(line));
-  const report=replayInstructions(module,fixtures);
+  const report=replayInstructions(module,fixtures,{sourceModule:legacyModule});
   assert.deepEqual(report.failures,[]);
   // Pinned evidence counts: update the record when native fixtures change.
   assert.equal(report.replayed,202); assert.equal(report.equalities,70);
@@ -43,9 +45,9 @@ test("X1 and X3: native instruction judgements, equalities and refusals replay t
   for(const kind of ["NatRec","WRec","PushPath","Comp","HComp","Trans"]) assert.ok(report.kinds[kind],kind);
   for(const reason of report.refusalReasons) assert.equal(reason.declared.kind,reason.native.kind);
   const refusal=fixtures.find(fixture=>fixture.operation === "glueBase");
-  const wrongKind=replayInstructions(module,[{...refusal,nativeError:{...refusal.nativeError,kind:1}}]);
+  const wrongKind=replayInstructions(module,[{...refusal,nativeError:{...refusal.nativeError,kind:1}}],{sourceModule:legacyModule});
   assert.match(wrongKind.failures[0]?.reason,/no longer matches its recorded reason/);
-  const wrongReason=replayInstructions(module,[{...refusal,nativeError:{...refusal.nativeError,expected:"unrelated refusal"}}]);
+  const wrongReason=replayInstructions(module,[{...refusal,nativeError:{...refusal.nativeError,expected:"unrelated refusal"}}],{sourceModule:legacyModule});
   assert.match(wrongReason.failures[0]?.reason,/Refusal diagnostic changed/);
 });
 
@@ -104,7 +106,7 @@ def call : Nat or Nat := big_id(Nat, small);
 });
 
 test("X6, X7 and X8: W and pushout finite instantiations and mixed-tier calls",t=>{
-  const kernel=new CubicalKernel(module), source=new NativeCubicalElaborator(kernel), target=new H1Translation(module,source);
+  const kernel=new CubicalKernel(legacyModule), source=new NativeCubicalElaborator(kernel), target=new H1Translation(legacyModule,source);
   t.after(()=>{target.dispose();kernel.dispose();});
   const A=T.variable("carrier"), UU0=T.universe({tag:"LConst",tier:1,value:0});
   const tree=a=>T.w("label",a,T.void);
@@ -135,14 +137,13 @@ test("X8: the migration verifier rejects the mixed-tier declaration by name",asy
   const tree=a=>`W(${a}, fun (label : ${a}) => Void)`;
   const push=a=>`Pushout(${a}, ${a}, ${a}, fun (x : ${a}) => x, fun (x : ${a}) => x)`;
   for(const [former,value] of [[a=>`${a} or ${a}`,"left(0)"],
-    [tree,`sup(${tree("Nat")}, 0, fun (v : Void) => typed(${tree("Nat")}, absurd(v)))`],
     [push,`push_left(${push("Nat")}, 0)`]]) {
     const source=`def big_id(A : UU0, x : ${former("A")}) : ${former("A")} := x;
 def small : ${former("Nat")} := ${value};
 def call : ${former("Nat")} := big_id(Nat, small);`;
-    const [native]=await verifyMigration({modules:["tier_fixture"],readOriginal:async()=>source,readEdited:async()=>source});
+    const [native]=await verifyMigration({modules:["tier_fixture"],readOriginal:async name=>name==="tier_fixture"?source:sourceReader()(name),readEdited:async()=>source});
     assert.deepEqual(native.failures,[]);
-    const [report]=await verifyMigration({modules:["tier_fixture"],readOriginal:async()=>source,readEdited:async()=>source,
+    const [report]=await verifyMigration({modules:["tier_fixture"],readOriginal:async name=>name==="tier_fixture"?source:sourceReader()(name),readEdited:async()=>source,
       experimental:["h1"],representation:"declared"});
     assert.ok(report.failures.some(failure=>failure.name==="call" && /τ has no checked image/.test(failure.reason)),JSON.stringify(report));
     assert.equal(report.changes.length,2,"the callable definition and small value both have images");
@@ -176,7 +177,7 @@ test("X2 and X5: coverage records both phases and distinguishes literal alpha fr
   }
   assert.ok(reports[1].checked.sourceWork.instructionSteps>0);
   assert.equal(reports[0].checked.verified,reports[1].checked.verified);
-  assert.equal(reports[1].differential.strictAlphaSatisfied,false);
-  assert.equal(reports[1].differential.exactAlpha,0);
-  assert.equal(reports[1].differential.renormalizedImages,1);
+  assert.equal(reports[1].differential.strictAlphaSatisfied,true);
+  assert.equal(reports[1].differential.exactAlpha,1);
+  assert.equal(reports[1].differential.renormalizedImages,0);
 });

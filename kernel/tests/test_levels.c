@@ -121,7 +121,7 @@ static void bounds_and_malformed(void) {
     expect_error(ck_level_equal(k, lconst(CC_TIER_MAX + 1, 0), lconst(0, 0)), "bound");
     expect_error(ck_level_constant(k, CC_TIER_MAX + 1, 0) != 0, "bound");
     expect_error(ck_level_equal(k, ck_make(k, CC_LSUCC, 0, x, 0, 0, 0), x), "at least one");
-    expect_error(ck_level_equal(k, ck_make(k, CC_NAT, 0, 0, 0, 0, 0), x), "Expected a level");
+    expect_error(ck_level_equal(k, ck_make(k, CC_U, 0, ck_make(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0), x), "Expected a level");
     expect_error(ck_level_equal(k, ck_make(k, CC_LBOUND, 1, 0, 0, 0, 0), x), "A bound is not a level");
     expect_error(ck_make(k, CC_U, 1, 0, 0, 0, 0) != 0, "payload must be zero");
     /* A level shared as a DAG but exponential as a tree exhausts the budget. */

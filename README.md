@@ -9,6 +9,13 @@ extension. The browser and CLI elaborate the same source language and submit
 terms to the native kernel compiled to WebAssembly. Definitions remain named;
 conversion unfolds them on demand. Explicit assumptions are shown with each proof.
 
+`Nat`, `zero`, and `succ` come from the ordinary source module
+[`nat.cubist`](archive/first-library/nat.cubist), imported as the standard prelude.
+They are ordinary names and can be shadowed. `import w;` supplies the source
+inductive `W(U,V,A,B)` and its structurally recursive `wrec`. H1 is enabled by
+default; mathematical review remains pending. The kernel has no primitive Nat/W
+formation, constructor, elimination, or computation rules.
+
 ## Build and use
 
 ```sh
@@ -64,6 +71,11 @@ The independent optimization switches are `--[no-]share-syntax`,
 `--[no-]reuse-checks`, and `--[no-]compact-paths`; all default on.
 `npm run format:cubist` formats sources and flattens right-associated tuples
 while checking that the expanded AST is unchanged. Add `-- --check` for a dry run.
+
+Primitive-calculus comparison tests build a historical kernel from the exact
+Git revision pinned in `tools/legacy-kernel.mjs`; they need that commit in the
+local history and Emscripten for its WASM fixtures. It is a test oracle only.
+Selected proof checks use the current kernel without building that oracle.
 
 ## Code and documentation
 

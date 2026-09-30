@@ -1,3 +1,6 @@
+import nat;
+
+import w;
 // RadixDigit(n) has n inhabitants. Its leftmost alternative has value n-1;
 // this ordering makes increment and overflow structural, with no comparison.
 def RadixDigit(n : Nat) := induction n as k return U0 {
@@ -50,16 +53,19 @@ def RadixArity(extra : Nat, tag : RadixLabel(extra)) := match tag return U0 {
     right digit => Unit;
   };
 
-def RadixPositive(extra : Nat) := W(RadixLabel(extra), RadixArity(extra));
+def RadixPositive(extra : Nat) := W(U0, U0, RadixLabel(extra), RadixArity(extra));
 
 def radix_leading(extra : Nat, leading : RadixDigit(succ(extra))) :=
-  sup(
-    RadixPositive(extra), typed(RadixLabel(extra), left(leading)),
-    fun (v : Void) => typed(RadixPositive(extra), absurd(v))
+  typed(
+    RadixPositive(extra),
+    sup(
+      typed(RadixLabel(extra), left(leading)),
+      fun (v : Void) => typed(RadixPositive(extra), absurd(v))
+    )
   );
 
 def radix_append(extra : Nat, digit : RadixDigit(succ(succ(extra))), child : RadixPositive(extra)) :=
-  sup(RadixPositive(extra), typed(RadixLabel(extra), right(digit)), fun (u : Unit) => child);
+  typed(RadixPositive(extra), sup(typed(RadixLabel(extra), right(digit)), fun (u : Unit) => child));
 
 def RadixNat(extra : Nat) := Unit or RadixPositive(extra);
 
@@ -74,7 +80,7 @@ def radix_positive_rec(
   -> RadixPositive(extra) -> R -> R, p : RadixPositive(extra)
 ) :=
   wrec(
-    RadixPositive(extra), fun (tree : RadixPositive(extra)) => R,
+    U0, U0, U0, RadixLabel(extra), RadixArity(extra), fun (tree : RadixPositive(extra)) => R,
     fun (
       tag : RadixLabel(extra), children : RadixArity(extra, tag) -> RadixPositive(extra),
       ih : RadixArity(extra, tag) -> R

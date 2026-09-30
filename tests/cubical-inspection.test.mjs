@@ -1,4 +1,5 @@
 import "./fresh-build.mjs";
+import {naturalSort, numeral} from "../lib/cubical/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -13,7 +14,7 @@ import { simplifyTypeApplications } from "../web/cubical-reduction.mjs";
 const module = await createCubical();
 const readSource = name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
 const variable = name => ({ tag: "Var", name });
-const nat = { tag: "Nat" };
+const nat = naturalSort;
 
 test("inferred induction statements simplify the motive and retain source binder names", async t => {
   const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
@@ -55,9 +56,9 @@ test("Euclid locals retain checked syntax, source aliases, and navigable assumpt
   assert.match(view.typeText, /Divides\(succ\(succ\(i\)\), m\)/);
   assert.equal(view.folded.reference.name, "hd");
   assert.equal(view.context[0].label, "n");
-  assert.equal(program.inspect(view.context[0].binding).type.tag, "Nat");
+  assert.equal(program.inspect(view.context[0].binding).type.tag, "Sort");
   const i = view.locals.find(local => local.name === "i");
-  assert.equal(program.inspect(i.binding).type.tag, "Nat");
+  assert.equal(program.inspect(i.binding).type.tag, "Sort");
   assert.equal(source.slice(view.symbols[i.binding].definitionStart).startsWith("i,"), true);
   assert.ok(JSON.stringify(view.type).includes('"Fst"'));
   assert.ok(!JSON.stringify(view.type).includes("DisplayRef"));

@@ -8,10 +8,10 @@ int main(void) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
     k->budget = UINT64_C(10000000);
-    cc_term universe = ck_universe_at(k, 0);
-    cc_term nat = ck_make(k, CC_NAT, 0, 0, 0, 0, 0);
+    cc_term universe = ck_universe_at(k, 1);
+    cc_term nat = ck_make(k, CC_U, 0, ck_make(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
     cc_term unit = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0);
-    cc_term zero = ck_make(k, CC_ZERO, 0, 0, 0, 0, 0);
+    cc_term zero = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0);
     cc_term family_path = ck_make(k, CC_PATH, 2, universe, nat, unit, 0);
     cc_term family = ck_var(k, 10);
     cc_term point = ck_var(k, 11);

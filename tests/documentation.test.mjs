@@ -35,7 +35,7 @@ def proof : Nat { exact 0; }
 
 
 test("documentation is extracted from checked local and imported source", async t => {
-  const program = new CubicalProgram(await createCubical(), async () => "// Imported identity.\ndef identity(n : Nat) := n;");
+  const program = new CubicalProgram(await createCubical(), async name => name === "helper" ? "// Imported identity.\ndef identity(n : Nat) := n;" : "");
   t.after(() => program.dispose());
   const result = await program.check("import helper;\n// Local definition.\ndef value := identity(0);", "docs");
   assert.equal(result.complete, true);

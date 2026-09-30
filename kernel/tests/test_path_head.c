@@ -9,8 +9,8 @@ int main(void) {
     assert(k);
     k->budget = UINT64_C(10000000);
     cc_term universe = ck_universe_at(k, 0);
-    cc_term nat = ck_make(k, CC_NAT, 0, 0, 0, 0, 0);
-    cc_term zero = ck_make(k, CC_ZERO, 0, 0, 0, 0, 0);
+    cc_term nat = ck_make(k, CC_U, 0, ck_make(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
+    cc_term zero = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0);
     cc_term A = ck_var(k, 10);
     cc_term line = ck_make(k, CC_PLAM, 0, universe, A, 0, 0);
     cc_formula one;
@@ -39,7 +39,7 @@ int main(void) {
     cc_assumption path_context[] = {{12, path_type}};
     assert(cc_kernel_check(k, neutral, nat, path_context, 1, &checked));
     cc_term exposed = cc_kernel_whnf(k, checked.expression);
-    assert(exposed && k->nodes[exposed].kind == CC_ZERO);
+    assert(exposed && k->nodes[exposed].kind == CC_UNIT);
     cc_kernel_free(k);
     puts("Raw path lambda beta remains separate from neutral endpoint certification.");
     return 0;

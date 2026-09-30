@@ -1,5 +1,11 @@
 # Kernel instructions: a THTH-style forward kernel
 
+2026-09-30 update: Nat and W are now source-defined H1 inductives. Their
+primitive formation, constructor and elimination instructions have been
+removed; their ABI numbers remain reserved and are refused. The primitive
+API and stage milestones below describe the earlier implementation. See the
+[migration record](h1-program-types.md) for the current API and validation.
+
 Status: merged into `proof-ergonomics-roadmap` on 2026-09-26 (PR #38). The
 instruction kernel is the trusted kernel, and elaboration checks every term
 through it. Since K1.4 on 2026-09-27 the driver uses its own guide by

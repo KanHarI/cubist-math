@@ -360,8 +360,8 @@ test("the kernel's step budget is a safety bound outside the determinism guarant
     kernel.maxQuerySteps = 16n;
     return { kernel, syntax: new CubicalSyntax(kernel) };
   };
-  const nat = { tag: "Nat" }, id = { tag: "Lam", name: "x", domain: nat, body: { tag: "Var", name: "x" } };
-  const nest = depth => { let term = { tag: "Zero" }; for (let i = 0; i < depth; i++) term = { tag: "App", fn: id, arg: term }; return term; };
+  const nat = { tag: "Unit" }, id = { tag: "Lam", name: "x", domain: nat, body: { tag: "Var", name: "x" } };
+  const nest = depth => { let term = { tag: "Point" }; for (let i = 0; i < depth; i++) term = { tag: "App", fn: id, arg: term }; return term; };
   const cold = await session();
   assert.throws(() => cold.kernel.head(cold.syntax.encode(nest(8))), error => error.kind === "budget");
   const warm = await session();

@@ -98,10 +98,10 @@ for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) {
   $(id).checked = true;
   try { $(id).checked = localStorage.getItem("mathscript:" + id) !== "false"; } catch {}
 }
-// Kernel extensions under review are off unless chosen here, remembered, or
-// asked for by the address: ?experimental=h1.
-$("experimental-h1").checked = new URLSearchParams(location.search).get("experimental")?.split(",").includes("h1") ?? false;
-try { if (localStorage.getItem("mathscript:experimental-h1") === "true") $("experimental-h1").checked = true; } catch {}
+// Nat's ordinary source prelude uses H1. The review marker remains visible.
+$("experimental-h1").checked = new URLSearchParams(location.search).get("experimental")?.split(",").includes("h1") ?? true;
+try { if (localStorage.getItem("mathscript:experimental-h1") !== null)
+  $("experimental-h1").checked = localStorage.getItem("mathscript:experimental-h1") === "true"; } catch {}
 $("proof-title").textContent = choice?.title ?? (libraryModule ? `Library: ${proofId}` : "Reference example");
 $("development-note").hidden = !choice?.realDevelopment;
 $("puncture-note").hidden = !choice?.punctureDevelopment;

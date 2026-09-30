@@ -1229,8 +1229,11 @@ Representative proofs:
 
 ### What the current simplifier cannot reach
 
-Both probes are rejected with "simp only left an unresolved equality goal; add
-a following proof statement":
+As of 2026-09-30, the first probe checks: source-defined Nat makes `succ` an
+ordinary constructor function, through which the simplifier rewrites. It is
+now in the checked `cubical-probes.cubist` fixture. The second probe still
+reports "simp only left an unresolved equality goal; add a following proof
+statement":
 
 ```text
 import primes;

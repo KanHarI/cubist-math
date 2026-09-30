@@ -107,9 +107,9 @@ test("instances of admitted signatures give their constructors", t => {
   assert.equal(g.judgement(started).kind, "instance");
   assert.throws(() => g.construct(started, 0), /Expected a typing judgement/);
   assert.throws(() => g.step(started, "term", [], "whnf"), /not rewritten/);
-  const truncNat = g.sortParameter(started, g.nat());
+  const truncNat = g.sortParameter(started, g.unit());
   assert.equal(g.judgement(truncNat).type, g.judgement(u0).term);
-  assert.equal(g.judgement(g.apply(g.construct(truncNat, 0), g.zero())).type, g.judgement(truncNat).term);
+  assert.equal(g.judgement(g.apply(g.construct(truncNat, 0), g.point())).type, g.judgement(truncNat).term);
   // Pointed(U < UU0) : next(U) { pt(X : U, x : X); }: its level is recorded.
   const y = g.level("y"), uy = g.universe(syntax.encodeLevel({ tag: "Var", name: "y" }));
   const next = g.universe(syntax.encodeLevel({ tag: "LSucc", count: 1, level: { tag: "Var", name: "y" } }));

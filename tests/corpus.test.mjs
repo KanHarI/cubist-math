@@ -19,6 +19,6 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // G3 asks for the archive unchanged: every module imports, and every one
   // of its 3,804 declarations checks.
   assert.deepEqual(report.importErrors, []);
-  assert.equal(report.declarations.length, 3804, "The corpus must not silently lose modules.");
+  assert.equal(report.declarations.length, 3807, "The corpus must not silently lose modules.");
   t.diagnostic(JSON.stringify(report.counts));
 });

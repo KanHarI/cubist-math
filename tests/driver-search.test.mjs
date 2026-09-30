@@ -1,8 +1,9 @@
+import "./fresh-build.mjs";
+import createLegacyCubical from "../tools/legacy-kernel.mjs";
 // The instruction driver's search as data (docs/roadmaps/learned-search.md,
 // phases 1 and 2): kernel work read through the bridge, the moves each
 // branch point of `agree` offers, pluggable choosers, and the coverage
 // tool's report and exit status.
-import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -23,7 +24,7 @@ const zero = { tag: "Zero" }, nat = { tag: "Nat" };
 const identity = { tag: "Lam", name: "x", domain: nat, body: { tag: "Var", name: "x" } };
 
 async function session(t) {
-  const kernel = new CubicalKernel(await createCubical());
+  const kernel = new CubicalKernel(await createLegacyCubical());
   t.after(() => kernel.dispose());
   return { kernel, syntax: new CubicalSyntax(kernel), graph: new InstructionGraph(kernel) };
 }
@@ -198,7 +199,7 @@ test("instruction coverage: the report pins what it measured, and the exit statu
   const report = join(directory, "report.json"), trajectories = join(directory, "trajectories.jsonl");
   const passed = coverage(["--modules=basics", `--trajectories=${trajectories}`], report);
   assert.equal(passed.status, 0, passed.stderr + passed.stdout);
-  assert.match(passed.stdout, /4 of 4 declarations in 1 module, 0 gaps/);
+  assert.match(passed.stdout, /5 of 5 declarations in 1 module, 0 gaps/);
   assert.match(passed.stdout, /Coverage complete\./);
   const written = JSON.parse(await readFile(report, "utf8"));
   assert.equal(written.success, true);

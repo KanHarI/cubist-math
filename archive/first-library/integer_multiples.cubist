@@ -1,3 +1,5 @@
+import nat;
+
 import ordered_fields;
 import integers;
 

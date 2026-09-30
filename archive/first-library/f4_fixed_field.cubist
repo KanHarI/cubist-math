@@ -1,3 +1,5 @@
+import nat;
+
 import f4_galois_group;
 import galois_fixing_subgroups;
 
