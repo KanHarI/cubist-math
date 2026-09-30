@@ -1,0 +1,53 @@
+import h1_truncation;
+
+// The same two non-computing assumptions, explicitly restated over Trunc.
+def ExcludedMiddle(U < UU0) := forall A : U. ((A -> Void) -> Void) -> Trunc(U, A);
+
+def AxiomOfChoice(U < UU0) :=
+  forall A : U. forall B : A -> U. IsSet(U, A) -> (forall a : A. IsSet(U, B(a)))
+  -> (forall a : A. Trunc(U, B(a))) -> Trunc(U, forall a : A. B(a));
+
+def excluded_middle_assumed(U < UU0) : ExcludedMiddle(U) := LEM(Trunc, U);
+
+def axiom_of_choice_assumed(U < UU0) : AxiomOfChoice(U) := Choice(Trunc, U);
+
+def double_negation(U < UU0, P : U, prop : IsProp(U, P), h : (P -> Void) -> Void) :
+  P := mere_eliminate(U, U, P, P, prop, fun (p : P) => p, LEM(Trunc, U, P, h));
+
+// P or not P is a proposition when P is: like cases use proposition
+// evidence; unlike cases contradict the negative branch.
+computable def decision_is_prop(U < UU0, P : U, prop : IsProp(U, P)) : IsProp(U, P or (P -> Void)) {
+  intro x, y;
+  exact match x as v return (v = y) {
+    left p => match y as w return (typed(P or (P -> Void), left(p)) = w) {
+      left q => cong(fun (a : P) => typed(P or (P -> Void), left(a)), prop(p, q));
+      right no => absurd(no(p));
+    };
+    right no => match y as w return (typed(P or (P -> Void), right(no)) = w) {
+      left p => absurd(no(p));
+      right never => cong(
+        fun (a : P -> Void) => typed(P or (P -> Void), right(a)),
+        pi_is_prop(U, P, fun (p : P) => Void, fun (p : P) => void_is_prop, no, never)
+      );
+    };
+  };
+}
+
+def decide_prop(U < UU0, P : U, prop : IsProp(U, P)) :
+  P
+  or (P -> Void) := double_negation(
+    U, P or (P -> Void), decision_is_prop(U, P, prop),
+    fun (no : (P or (P -> Void)) -> Void) => no(
+      typed(P or (P -> Void), right(fun (p : P) => no(typed(P or (P -> Void), left(p)))))
+    )
+  );
+
+// G6: this packages a small proposition and maps in both directions.
+// The hypothesis prop prevents its use on an arbitrary witness type.
+def PropResize(P : U1) := exists Q : U0. IsProp(U0, Q) and (P -> Q) and (Q -> P);
+
+def resize_prop(P : U1, prop : IsProp(U1, P)) :
+  PropResize(P) := match decide_prop(U1, P, prop) return PropResize(P) {
+    left p => (Unit, unit_is_prop, fun (q : P) => tt, fun (u : Unit) => p);
+    right no => (Void, void_is_prop, no, fun (v : Void) => typed(P, absurd(v)));
+  };

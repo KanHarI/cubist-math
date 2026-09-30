@@ -16,7 +16,11 @@ import { sourceReader } from "../tools/module-sources.mjs";
 const assumptions = {
   classical_axioms: ["Choice", "LEM", "Truncate"],
   universe_automorphisms: ["LEM", "Truncate", "TruncateElim", "TruncateIntro", "TruncateProp"],
+  h1_classical: ["Choice", "LEM"],
+  cauchy_quotient: ["Truncate", "TruncateElim", "TruncateIntro", "TruncateProp"],
+  h1_zorn_step: ["LEM"],
 };
+const experimental = new Set(["h1_truncation","h1_classical","cauchy_quotient","h1_zorn_step"]);
 
 test("every library module is listed and checks completely", async t => {
   const files = (await readdir(new URL("../library/", import.meta.url))).filter(name => name.endsWith(".cubist"))
@@ -24,13 +28,15 @@ test("every library module is listed and checks completely", async t => {
   assert.deepEqual(files, [...libraryModules].sort());
   for (const name of libraryModules) {
     const path = fileURLToPath(new URL(`../library/${name}.cubist`, import.meta.url));
-    const program = new CubicalProgram(await createCubical(), sourceReader({ path }), { collectReferences: false });
+    const program = new CubicalProgram(await createCubical(), sourceReader({ path }), {
+      collectReferences: false, experimental: experimental.has(name) ? ["h1"] : [],
+    });
     t.after(() => program.dispose());
     const result = await program.check(await readFile(path, "utf8"), name);
     assert.equal(result.complete, true, `${name}: ${JSON.stringify(program.gaps)}`);
     assert.deepEqual(result.outputs.filter(output => !output.verified).map(output => output.name), [], name);
-    const used = [...new Set(result.outputs.flatMap(output => output.axioms))]
-      .map(axiom => axiom.replace(/^__assumption_/, "")).sort();
+    const used = [...new Set(result.outputs.flatMap(output => output.axioms)
+      .map(axiom => result.assumptionLabels[axiom] ?? axiom))].sort();
     assert.deepEqual(used, assumptions[name] ?? [], `${name}: its assumptions`);
   }
 });

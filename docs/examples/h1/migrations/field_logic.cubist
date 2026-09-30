@@ -1,0 +1,7 @@
+import h1_truncation;
+
+// K2.5, G2: only this public wrapper is compared with the archive here.
+computable def small_mere_eliminate(
+  A : U0, P : U1, prop : IsProp(U1, P), f : A -> P, h : Trunc(U0, A)
+) :
+  P := mere_eliminate(U0, U1, A, P, prop, f, h);

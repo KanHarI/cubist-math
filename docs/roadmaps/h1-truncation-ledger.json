@@ -1,0 +1,429 @@
+{
+  "version": 1,
+  "base": "cc6b50f",
+  "status": "Review draft; exact checked changes, not proof identity.",
+  "scope": {
+    "field_logic": [
+      "small_mere_eliminate"
+    ],
+    "cauchy_quotient": "Whole rebuilt module; representative-selection wrappers retain legacy assumptions.",
+    "zorn_chain_complete": [
+      "no_maximal_strict_successor"
+    ],
+    "classical_axioms": [
+      "ExcludedMiddle",
+      "AxiomOfChoice",
+      "excluded_middle_assumed",
+      "axiom_of_choice_assumed"
+    ]
+  },
+  "deferred": [
+    "tower_induction_large",
+    "tower_relative_induction"
+  ],
+  "changes": [
+    {
+      "module": "field_logic",
+      "declaration": "small_mere_eliminate",
+      "oldPublicType": {
+        "hash": "f5bcdd829e1d80bea77f32e58312ca3ff44dcb22",
+        "text": "forall A : U0. forall P : U1. FieldProp(P) -> (A -> P) -> __assumption_Truncate(U0, A) -> P"
+      },
+      "newPublicType": {
+        "hash": "709a4307d198611667038a7908295cdc87155c67",
+        "text": "forall A : U0. forall P : U1. IsProp(U1, P) -> (A -> P) -> Trunc(A) -> P"
+      },
+      "hypothesesAdded": [],
+      "assumptionsRemoved": [
+        "Truncate",
+        "TruncateElim",
+        "TruncateIntro",
+        "TruncateProp"
+      ],
+      "assumptionsRetained": [],
+      "extensionsAdded": [
+        "H1"
+      ],
+      "extensionsRetained": [],
+      "remedyGroup": 1
+    },
+    {
+      "module": "cauchy_quotient",
+      "declaration": "EventualClose",
+      "oldPublicType": {
+        "hash": "0499c39e32eb2b8d24fa0947506ddab115f70a8b",
+        "text": "forall Q : U0. (Q -> Q -> Q) -> (Q -> Q -> U0) -> (Nat -> Q) -> (Nat -> Q) -> Q -> U0"
+      },
+      "newPublicType": {
+        "hash": "0499c39e32eb2b8d24fa0947506ddab115f70a8b",
+        "text": "forall Q : U0. (Q -> Q -> Q) -> (Q -> Q -> U0) -> (Nat -> Q) -> (Nat -> Q) -> Q -> U0"
+      },
+      "hypothesesAdded": [],
+      "assumptionsRemoved": [
+        "Truncate"
+      ],
+      "assumptionsRetained": [],
+      "extensionsAdded": [
+        "H1"
+      ],
+      "extensionsRetained": [],
+      "remedyGroup": 2
+    },
+    {
+      "module": "cauchy_quotient",
+      "declaration": "SequenceSame",
+      "oldPublicType": {
+        "hash": "7e2cf0690a790d3f4f6f72d3ef19b7cc7f5c1892",
+        "text": "forall Q : U0. Q -> (Q -> Q -> Q) -> (Q -> Q -> U0) -> (Nat -> Q) -> (Nat -> Q) -> U0"
+      },
+      "newPublicType": {
+        "hash": "7e2cf0690a790d3f4f6f72d3ef19b7cc7f5c1892",
+        "text": "forall Q : U0. Q -> (Q -> Q -> Q) -> (Q -> Q -> U0) -> (Nat -> Q) -> (Nat -> Q) -> U0"
+      },
+      "hypothesesAdded": [],
+      "assumptionsRemoved": [
+        "Truncate"
+      ],
+      "assumptionsRetained": [],
+      "extensionsAdded": [
+        "H1"
+      ],
+      "extensionsRetained": [],
+      "remedyGroup": 2
+    },
+    {
+      "module": "cauchy_quotient",
+      "declaration": "CauchySame",
+      "oldPublicType": {
+        "hash": "3477247428a5ff7cd7279502e830dc29b10fa816",
+        "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. CauchySequence(Q, zero, addQ, ltQ) -> CauchySequence(Q, zero, addQ, ltQ) -> U0"
+      },
+      "newPublicType": {
+        "hash": "3477247428a5ff7cd7279502e830dc29b10fa816",
+        "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. CauchySequence(Q, zero, addQ, ltQ) -> CauchySequence(Q, zero, addQ, ltQ) -> U0"
+      },
+      "hypothesesAdded": [],
+      "assumptionsRemoved": [
+        "Truncate"
+      ],
+      "assumptionsRetained": [],
+      "extensionsAdded": [
+        "H1"
+      ],
+      "extensionsRetained": [],
+      "remedyGroup": 2
+    },
+    {
+      "module": "cauchy_quotient",
+      "declaration": "CauchyQuotient",
+      "oldPublicType": {
+        "hash": "b79c206802b3f3b1c29b50da0af898f001516c30",
+        "text": "forall Q : U0. Q -> (Q -> Q -> Q) -> (Q -> Q -> U0) -> U1"
+      },
+      "newPublicType": {
+        "hash": "b79c206802b3f3b1c29b50da0af898f001516c30",
+        "text": "forall Q : U0. Q -> (Q -> Q -> Q) -> (Q -> Q -> U0) -> U1"
+      },
+      "hypothesesAdded": [],
+      "assumptionsRemoved": [],
+      "assumptionsRetained": [
+        "Truncate"
+      ],
+      "extensionsAdded": [
+        "H1"
+      ],
+      "extensionsRetained": [],
+      "remedyGroup": 2
+    },
+    {
+      "module": "cauchy_quotient",
+      "declaration": "sequence_same_prop",
+      "oldPublicType": {
+        "hash": "4998804a9fad396637ff8e86e3937af9f4908263",
+        "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. forall x : Nat -> Q. forall y : Nat -> Q. FieldProp(SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, x, y))"
+      },
+      "newPublicType": {
+        "hash": "c34597e656a7393820785b259c79686821c87b44",
+        "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. forall x : Nat -> Q. forall y : Nat -> Q. FieldProp(SequenceSame(Q, zero, addQ, ltQ, x, y))"
+      },
+      "hypothesesAdded": [],
+      "assumptionsRemoved": [
+        "Truncate",
+        "TruncateProp"
+      ],
+      "assumptionsRetained": [],
+      "extensionsAdded": [
+        "H1"
+      ],
+      "extensionsRetained": [],
+      "remedyGroup": 2
+    },
+    {
+      "module": "cauchy_quotient",
+      "declaration": "sequence_same_reflexive",
+      "oldPublicType": {
+        "hash": "7dcee04b092057b82f5e32360a953cc1aa4682a2",
+        "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. (forall x : Q. forall epsilon : Q. ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon)) -> (forall x : Nat -> Q. SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, x, x))"
+      },
+      "newPublicType": {
+        "hash": "9c0240dc3c06f39fb6961a009e94118f7223d4e3",
+        "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. (forall x : Q. forall epsilon : Q. ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon)) -> (forall x : Nat -> Q. SequenceSame(Q, zero, addQ, ltQ, x, x))"
+      },
+      "hypothesesAdded": [],
+      "assumptionsRemoved": [
+        "Truncate",
+        "TruncateIntro"
+      ],
+      "assumptionsRetained": [],
+      "extensionsAdded": [
+        "H1"
+      ],
+      "extensionsRetained": [],
+      "remedyGroup": 2
+    },
+    {
+      "module": "cauchy_quotient",
+      "declaration": "sequence_same_symmetric",
+      "oldPublicType": {
+        "hash": "fb8d5bca1bac99f960cb45ac11977f8664c97744",
+        "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. forall x : Nat -> Q. forall y : Nat -> Q. SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, x, y) -> SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, y, x)"
+      },
+      "newPublicType": {
+        "hash": "d7abaee6b1afe7fcae3bfde8984090d05244ca3e",
+        "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. forall x : Nat -> Q. forall y : Nat -> Q. SequenceSame(Q, zero, addQ, ltQ, x, y) -> SequenceSame(Q, zero, addQ, ltQ, y, x)"
+      },
+      "hypothesesAdded": [],
+      "assumptionsRemoved": [
+        "Truncate",
+        "TruncateElim",
+        "TruncateIntro",
+        "TruncateProp"
+      ],
+      "assumptionsRetained": [],
+      "extensionsAdded": [
+        "H1"
+      ],
+      "extensionsRetained": [],
+      "remedyGroup": 2
+    },
+    {
+      "module": "cauchy_quotient",
+      "declaration": "sequence_same_transitive",
+      "oldPublicType": {
+        "hash": "ef0f58620fae09dfa12f9e8dc232c8e0203a0315",
+        "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. CloseComposition(Q, zero, addQ, ltQ) -> (forall x : Nat -> Q. forall y : Nat -> Q. forall z : Nat -> Q. SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, x, y) -> SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, y, z) -> SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, x, z))"
+      },
+      "newPublicType": {
+        "hash": "92e33f4d7608e2ad4fae16b38607aeead5673143",
+        "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. CloseComposition(Q, zero, addQ, ltQ) -> (forall x : Nat -> Q. forall y : Nat -> Q. forall z : Nat -> Q. SequenceSame(Q, zero, addQ, ltQ, x, y) -> SequenceSame(Q, zero, addQ, ltQ, y, z) -> SequenceSame(Q, zero, addQ, ltQ, x, z))"
+      },
+      "hypothesesAdded": [],
+      "assumptionsRemoved": [
+        "Truncate",
+        "TruncateElim",
+        "TruncateIntro",
+        "TruncateProp"
+      ],
+      "assumptionsRetained": [],
+      "extensionsAdded": [
+        "H1"
+      ],
+      "extensionsRetained": [],
+      "remedyGroup": 2
+    },
+    {
+      "module": "cauchy_quotient",
+      "declaration": "cauchy_same_equivalence",
+      "oldPublicType": {
+        "hash": "d33b3e2f5e6a1d7088812329993e512314de9bb3",
+        "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. (forall x : Q. forall epsilon : Q. ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon)) -> CloseComposition(Q, zero, addQ, ltQ) -> EquivalenceRelation(CauchySequence(Q, zero, addQ, ltQ), CauchySame(__assumption_Truncate, Q, zero, addQ, ltQ))"
+      },
+      "newPublicType": {
+        "hash": "55b56cb79df35eec9993c4da422dead3f4adfa4c",
+        "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. (forall x : Q. forall epsilon : Q. ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon)) -> CloseComposition(Q, zero, addQ, ltQ) -> EquivalenceRelation(CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ))"
+      },
+      "hypothesesAdded": [],
+      "assumptionsRemoved": [
+        "Truncate",
+        "TruncateElim",
+        "TruncateIntro",
+        "TruncateProp"
+      ],
+      "assumptionsRetained": [],
+      "extensionsAdded": [
+        "H1"
+      ],
+      "extensionsRetained": [],
+      "remedyGroup": 2
+    },
+    {
+      "module": "cauchy_quotient",
+      "declaration": "cauchy_class_represented",
+      "oldPublicType": {
+        "hash": "3c942cbbe1e6ec5d7727293da6fbfcd31b8742cd",
+        "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. forall x : CauchyQuotient(__assumption_Truncate, Q, zero, addQ, ltQ). FieldExists(__assumption_Truncate, exists s : CauchySequence(Q, zero, addQ, ltQ). quotient_class(__assumption_Truncate, __assumption_TruncateIntro, CauchySequence(Q, zero, addQ, ltQ), CauchySame(__assumption_Truncate, Q, zero, addQ, ltQ), s) = x)"
+      },
+      "newPublicType": {
+        "hash": "15ab49ac8512636267af09ae7c2f4c6ba9d9c5e1",
+        "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. forall x : CauchyQuotient(__assumption_Truncate, Q, zero, addQ, ltQ). FieldExists(__assumption_Truncate, exists s : CauchySequence(Q, zero, addQ, ltQ). quotient_class(__assumption_Truncate, __assumption_TruncateIntro, CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ), s) = x)"
+      },
+      "hypothesesAdded": [],
+      "assumptionsRemoved": [],
+      "assumptionsRetained": [
+        "Truncate",
+        "TruncateElim",
+        "TruncateIntro",
+        "TruncateProp"
+      ],
+      "extensionsAdded": [
+        "H1"
+      ],
+      "extensionsRetained": [],
+      "remedyGroup": 2
+    },
+    {
+      "module": "cauchy_quotient",
+      "declaration": "cauchy_sequence_representatives",
+      "oldPublicType": {
+        "hash": "e7e9d5b5d7171fe7a26c792f94ac425185582fb7",
+        "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. forall sequence : Nat -> CauchyQuotient(__assumption_Truncate, Q, zero, addQ, ltQ). RepresentativeChoice(__assumption_Truncate, __assumption_TruncateIntro, CauchySequence(Q, zero, addQ, ltQ), CauchySame(__assumption_Truncate, Q, zero, addQ, ltQ), sequence) -> FieldExists(__assumption_Truncate, forall n : Nat. exists s : CauchySequence(Q, zero, addQ, ltQ). quotient_class(__assumption_Truncate, __assumption_TruncateIntro, CauchySequence(Q, zero, addQ, ltQ), CauchySame(__assumption_Truncate, Q, zero, addQ, ltQ), s) = sequence(n))"
+      },
+      "newPublicType": {
+        "hash": "5983c90ec7123d6091d81a570f0317675ef93fb3",
+        "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. forall sequence : Nat -> CauchyQuotient(__assumption_Truncate, Q, zero, addQ, ltQ). RepresentativeChoice(__assumption_Truncate, __assumption_TruncateIntro, CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ), sequence) -> FieldExists(__assumption_Truncate, forall n : Nat. exists s : CauchySequence(Q, zero, addQ, ltQ). quotient_class(__assumption_Truncate, __assumption_TruncateIntro, CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ), s) = sequence(n))"
+      },
+      "hypothesesAdded": [],
+      "assumptionsRemoved": [],
+      "assumptionsRetained": [
+        "Truncate",
+        "TruncateElim",
+        "TruncateIntro",
+        "TruncateProp"
+      ],
+      "extensionsAdded": [
+        "H1"
+      ],
+      "extensionsRetained": [],
+      "remedyGroup": 2
+    },
+    {
+      "module": "zorn_chain_complete",
+      "declaration": "no_maximal_strict_successor",
+      "oldPublicType": {
+        "hash": "b3b13aa9d725e58d393dc46fd4322c1bdbdd3833",
+        "text": "forall A : U1. forall le : OrderRelation(A). PartialOrderLaws(A, le) -> (FieldExists(__assumption_Truncate, exists x : A. OrderMaximal(A, le, x)) -> Void) -> (forall x : A. FieldExists(__assumption_Truncate, StrictlyAbove(A, le, x)))"
+      },
+      "newPublicType": {
+        "hash": "559c064dedc64a904a294d6c7f2093b162eaa7b2",
+        "text": "forall A : U1. forall le : OrderRelation(A). PartialOrderLaws(A, le) -> (Trunc(exists x : A. OrderMaximal(A, le, x)) -> Void) -> (forall x : A. Trunc(StrictlyAbove(A, le, x)))"
+      },
+      "hypothesesAdded": [],
+      "assumptionsRemoved": [
+        "Truncate",
+        "TruncateElim",
+        "TruncateIntro",
+        "TruncateProp"
+      ],
+      "assumptionsRetained": [
+        "LEM"
+      ],
+      "extensionsAdded": [
+        "H1"
+      ],
+      "extensionsRetained": [],
+      "remedyGroup": 7
+    },
+    {
+      "module": "classical_axioms",
+      "declaration": "ExcludedMiddle",
+      "oldPublicType": {
+        "hash": "91ed8e05917aecce72b0843469dc6cc29d9e4b05",
+        "text": "forall U < UU0. next(U)"
+      },
+      "newPublicType": {
+        "hash": "91ed8e05917aecce72b0843469dc6cc29d9e4b05",
+        "text": "forall U < UU0. next(U)"
+      },
+      "hypothesesAdded": [],
+      "assumptionsRemoved": [
+        "Truncate"
+      ],
+      "assumptionsRetained": [],
+      "extensionsAdded": [
+        "H1"
+      ],
+      "extensionsRetained": [],
+      "remedyGroup": 1
+    },
+    {
+      "module": "classical_axioms",
+      "declaration": "AxiomOfChoice",
+      "oldPublicType": {
+        "hash": "91ed8e05917aecce72b0843469dc6cc29d9e4b05",
+        "text": "forall U < UU0. next(U)"
+      },
+      "newPublicType": {
+        "hash": "91ed8e05917aecce72b0843469dc6cc29d9e4b05",
+        "text": "forall U < UU0. next(U)"
+      },
+      "hypothesesAdded": [],
+      "assumptionsRemoved": [
+        "Truncate"
+      ],
+      "assumptionsRetained": [],
+      "extensionsAdded": [
+        "H1"
+      ],
+      "extensionsRetained": [],
+      "remedyGroup": 1
+    },
+    {
+      "module": "classical_axioms",
+      "declaration": "excluded_middle_assumed",
+      "oldPublicType": {
+        "hash": "2f6207525d9f27e6d1c35a66c9c3c3898fbb51c4",
+        "text": "forall U < UU0. ExcludedMiddle(__assumption_Truncate, U)"
+      },
+      "newPublicType": {
+        "hash": "a6255ac6e359011d9ec5da34c4eed3fb196720d3",
+        "text": "forall U < UU0. ExcludedMiddle(U)"
+      },
+      "hypothesesAdded": [],
+      "assumptionsRemoved": [
+        "Truncate"
+      ],
+      "assumptionsRetained": [
+        "LEM"
+      ],
+      "extensionsAdded": [
+        "H1"
+      ],
+      "extensionsRetained": [],
+      "remedyGroup": 1
+    },
+    {
+      "module": "classical_axioms",
+      "declaration": "axiom_of_choice_assumed",
+      "oldPublicType": {
+        "hash": "06df17ebaed68fe15903278bd28977203598c0b5",
+        "text": "forall U < UU0. AxiomOfChoice(__assumption_Truncate, U)"
+      },
+      "newPublicType": {
+        "hash": "9e53c6670e7d19f77dd08b54f324cff8859a51a2",
+        "text": "forall U < UU0. AxiomOfChoice(U)"
+      },
+      "hypothesesAdded": [],
+      "assumptionsRemoved": [
+        "Truncate"
+      ],
+      "assumptionsRetained": [
+        "Choice"
+      ],
+      "extensionsAdded": [
+        "H1"
+      ],
+      "extensionsRetained": [],
+      "remedyGroup": 1
+    }
+  ]
+}

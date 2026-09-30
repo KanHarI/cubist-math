@@ -1,0 +1,53 @@
+import bourbaki_witt;
+import h1_classical;
+
+def OrderMaximal(A : U1, le : OrderRelation(A), x : A) := forall y : A. le(x, y) -> le(y, x);
+
+def StrictlyAbove(A : U1, le : OrderRelation(A), x : A) :=
+  exists y : A. le(x, y) and (le(y, x) -> Void);
+
+def strict_above_point(A : U1, le : OrderRelation(A), x : A, witness : StrictlyAbove(A, le, x)) :=
+  field_first(A, (fun (y : A) => typed(U1, le(x, y) and (le(y, x) -> Void))), witness);
+
+def strict_above_laws(A : U1, le : OrderRelation(A), x : A, witness : StrictlyAbove(A, le, x)) :=
+  field_second(A, (fun (y : A) => typed(U1, le(x, y) and (le(y, x) -> Void))), witness);
+
+def strict_above_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), x : A) :
+  FieldSet(StrictlyAbove(A, le, x)) {
+  exact field_subtype_is_set(
+    A, (fun (y : A) => typed(U1, le(x, y) and (le(y, x) -> Void))),
+    partial_order_is_set(A, le, laws),
+    (
+      fun (y : A) => product_prop(
+        le(x, y), (le(y, x) -> Void), order_prop(A, le, laws, x, y), negation_is_prop(le(y, x))
+      )
+    )
+  );
+}
+
+// If there is no maximal element, each point merely has a strict successor.
+// At this stage there is no selected successor function.
+def no_maximal_strict_successor(
+  A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le),
+  none : Trunc(U1, exists x : A. OrderMaximal(A, le, x)) -> Void, x : A
+) :
+  Trunc(U1, StrictlyAbove(A, le, x)) {
+  have contradiction : (Trunc(U1, StrictlyAbove(A, le, x)) -> Void) -> Void {
+    intro noSuccessor;
+    have maximal : OrderMaximal(A, le, x) {
+      intro y, xy;
+      exact double_negation(
+        U0, le(y, x), order_prop(A, le, laws, y, x),
+        (
+          fun (strict : le(y, x) -> Void) => noSuccessor(
+            merely(U1, StrictlyAbove(A, le, x), (y, xy, strict))
+          )
+        )
+      );
+    }
+    exact none(merely(U1, (exists a : A. OrderMaximal(A, le, a)), (x, maximal)));
+  }
+  exact double_negation(
+    U1, Trunc(U1, StrictlyAbove(A, le, x)), mere_is_prop(U1, StrictlyAbove(A, le, x)), contradiction
+  );
+}

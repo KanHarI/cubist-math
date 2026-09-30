@@ -202,10 +202,62 @@ test("a migration may not add or remove a kernel extension, such as H1", async (
   assert.deepEqual((await verify(declared, plain, "types")).failures.map(failure => failure.reason),
     ["Kernel extensions changed: H1 -> none"]);
   assert.deepEqual((await verify(declared, declared, "identical")).failures, []);
-  // A module that declares a type is refused, by name, not compared.
+  // Generative copies now compare through their identical admitted schemas.
   const own = "inductive C { c; }\ndef one : Nat := 1;\n";
   const report = (await verifyMigration({ modules: ["h1_fixture"], level: "types", experimental: ["h1"],
     readOriginal: name => name === "h1_fixture" ? own : library(name), readEdited: async () => own }))[0];
-  assert.deepEqual(report.failures.map(failure => failure.name), ["C"]);
-  assert.match(report.failures[0].reason, /does not compare signatures yet/);
+  assert.deepEqual(report.failures, []);
+});
+
+test("generative signatures compare bound names and preserve constructor boundaries", async () => {
+  const before = `inductive Edge(U < UU0, A : U) { first(a : A); second(a : A); edge(a : A) : first(a) = second(a); }
+def pick(A : U0, a : A) : Edge(U0, A) := first(a);
+`;
+  const verify = async after => (await verifyMigration({modules:["generative"],experimental:["h1"],
+    readOriginal:async () => before,readEdited:async () => after}))[0];
+  assert.deepEqual((await verify(before)).failures,[]);
+  const renamed = before.replaceAll("A : U)","Carrier : U)").replaceAll("a : A);","a : Carrier);")
+    .replace("edge(a : A)","edge(a : Carrier)");
+  assert.deepEqual((await verify(renamed)).failures,[]);
+  const changed = await verify(before.replace("first(a) = second(a)","second(a) = first(a)"));
+  assert.match(changed.failures.find(item => item.name === "Edge").reason,/admitted signature changed/);
+});
+
+// G4: the same checked migration succeeds only with its exact ledger entry.
+test("G4: an exact ledger records removed truncation assumptions and the added H1 marker", async () => {
+  const types = "inductive Tr(A : U0) : prop { point(a : A); }\n";
+  const before = "import trunc_types;\ndef value(A : U0, a : A) : Truncate(U0, A) := TruncateIntro(U0, A, a);\n";
+  const after = "import trunc_types;\ndef value(A : U0, a : A) : Tr(A) := point(a);\n";
+  const verify = async (ledger=null,edited=after) => (await verifyMigration({modules:["ledger_fixture"],experimental:["h1"],ledger,
+    readOriginal:async name => name === "trunc_types" ? types : before,readEdited:async () => edited}))[0];
+  const strict = await verify();
+  assert.match(strict.failures[0].reason,/Assumptions changed/);
+  const change = {...strict.changes[0],remedyGroup:1};
+  assert.deepEqual(change.assumptionsRemoved,["Truncate","TruncateIntro"]);
+  assert.deepEqual(change.extensionsAdded,["H1"]);
+  const ledger = {version:1,changes:[change]};
+  const allowed = await verify(ledger);
+  assert.deepEqual(allowed.failures,[]);
+  assert.equal(allowed.ledgerAccepted,1);
+  for (const field of ["oldPublicType","newPublicType","assumptionsRemoved","extensionsAdded","hypothesesAdded"]) {
+    const altered = structuredClone(ledger);
+    if (field.endsWith("PublicType")) altered.changes[0][field].hash = "0".repeat(40);
+    else altered.changes[0][field] = field === "hypothesesAdded" ? ["extra"] : [];
+    assert.match((await verify(altered)).failures[0].reason,new RegExp(field));
+  }
+  assert.match((await verify(ledger,after.replace("point(a)","point(a)").replace("a : A)","a : A, extra : Unit)"))).failures[0].reason,
+    /newPublicType|hypothesesAdded/);
+  await assert.rejects(verify({...ledger,changes:[change,change]}),/Duplicate ledger/);
+  await assert.rejects(verify({version:1,changes:[{...change,assumptionsRemoved:["LEM"]}]}),/only the four legacy/);
+  await assert.rejects(verify({version:1,changes:[{...change,remedyGroup:5}]}),/waits for H2/);
+});
+
+test("a ledger never admits a failed declaration or bypasses identical proof verification", async () => {
+  const original = "def n : Nat := 0;\n", edited = "def n : Nat := 1;\n";
+  const run = async (after,ledger=null) => (await verifyMigration({modules:["pin"],ledger,
+    readOriginal:async () => original,readEdited:async () => after}))[0];
+  const initial = await run(edited);
+  const ledger = {version:1,changes:[{...initial.changes[0],remedyGroup:1}]};
+  assert.match((await run(edited,ledger)).failures[0].reason,/ordinary verification for proof changes/);
+  assert.match((await run("def n : Nat := tt;\n",ledger)).failures[0].reason,/No longer checks/);
 });

@@ -374,4 +374,5 @@ export const cubicalSourceModules = ["cubical_paths"];
 
 // Modules of the rebuilt library, served from library/. A name here shadows an
 // archive module of the same name.
-export const libraryModules = ["naturals", "classical_axioms", "universe_automorphisms", "hlevels"];
+export const libraryModules = ["naturals", "classical_axioms", "universe_automorphisms", "hlevels",
+  "h1_truncation", "h1_classical", "cauchy_quotient", "h1_zorn_step"];
