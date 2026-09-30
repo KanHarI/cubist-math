@@ -448,7 +448,7 @@ def structure_iso_set(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R), X, Y : Structure(S)
 ) :
   IsSet(StructureIso(S, R, X, Y)) {
-  have constant :
+  let constant :
     forall e : StructureIso(S, R, X, Y). forall d : StructureIso(S, R, X, Y). forall p : e = d.
     forall q : e = d.
     structure_iso_choose_path(S, R, prop, X, Y, e, d, p) = structure_iso_choose_path(

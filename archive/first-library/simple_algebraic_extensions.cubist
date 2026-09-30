@@ -27,13 +27,12 @@ def simple_root_embedding_surjective(
   let h := adjoin_root_embedding(K, M, irreducible, L, e, x, root);
   let f := field_embedding_map(R, L, h);
   let S := subfield_image(R, L, h, subfield_top(R));
-  have base : forall a : af_carrier(K). subfield_members(L, S, field_embedding_map(K, L, e, a)) {
+  let base : forall a : af_carrier(K). subfield_members(L, S, field_embedding_map(K, L, e, a)) {
     intro a;
     exact (residue_constant(K, M, a), tt, residue_evaluate_constant(K, M, L, e, x, root, a));
   }
-  have generator : subfield_members(L, S, x) := (
-    adjoined_root(K, M), tt, residue_evaluate_generator(K, M, L, e, x, root)
-  );
+  let generator : subfield_members(L, S, x) :=
+    (adjoined_root(K, M), tt, residue_evaluate_generator(K, M, L, e, x, root));
   intro y;
   obtain (r, unit, same) := generates(S, base, generator, y);
   exact merely(

@@ -123,7 +123,7 @@ def normal_subgroup_conjugation_invariant(
   subgroup_preimage(G, G, group_iso_hom(G, G, group_conjugation_iso(G, g)), S) =[Subgroup(G)] S {
   let h := group_iso_hom(G, G, group_conjugation_iso(G, g));
   let preimage := subgroup_preimage(G, G, h, S);
-  have same :
+  let same :
     forall x : group_carrier(G).
     FieldIff(subgroup_members(G, preimage, x), subgroup_members(G, S, x)) {
     intro x;

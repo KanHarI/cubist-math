@@ -24,13 +24,14 @@ def f4_auto_ext(e, d : F4Automorphism, alpha : f4_auto_apply(e, f4_2) = f4_auto_
   obtain (e0, e1, en, ea, em) := f4_auto_field_map(e);
   obtain (d0, d1, dn, da, dm) := f4_auto_field_map(d);
   let onePath := trans(e1, sym(d1));
-  have other : f4_auto_apply(e, f4_3) = f4_auto_apply(d, f4_3) := trans(
-    ea(f4_2, f4_1),
+  let other : f4_auto_apply(e, f4_3) = f4_auto_apply(d, f4_3) :=
     trans(
-      cong((fun (x : F4Carrier) => f4_add(x, f4_auto_apply(e, f4_1))), alpha),
-      trans(cong(f4_add(f4_auto_apply(d, f4_2)), onePath), sym(da(f4_2, f4_1)))
-    )
-  );
+      ea(f4_2, f4_1),
+      trans(
+        cong((fun (x : F4Carrier) => f4_add(x, f4_auto_apply(e, f4_1))), alpha),
+        trans(cong(f4_add(f4_auto_apply(d, f4_2)), onePath), sym(da(f4_2, f4_1)))
+      )
+    );
   exact structure_iso_ext(
     ExtensionData(F2), ExtensionPreserved(F2), extension_preserved_prop(F2), F4OverF2, F4OverF2, e,
     d,
@@ -77,23 +78,24 @@ def f4_symmetry_bit_roundtrip(b : F2Carrier) : f4_symmetry_bit(f4_symmetry(b)) =
 def f4_symmetry_classify(e : F4Automorphism) : f4_symmetry(f4_symmetry_bit(e)) = e {
   obtain (e0, e1, en, ea, em) := f4_auto_field_map(e);
   let f := f4_auto_apply(e);
-  have classify : (f(f4_2) = f(f4_2))
-  -> (f4_symmetry(f4_symmetry_bit(e)) = e) := f4_induction(
-    (fun (v : F4Carrier) => (f(f4_2) = v) -> (f4_symmetry(f4_root_bit(v)) = e)),
-    (
-      fun (p : f(f4_2) = f4_0) => typed(
-        (f4_symmetry(f4_root_bit(f4_0)) = e),
-        absurd(f4_2_not_0(f4_auto_injective(e, f4_2, f4_0, trans(p, sym(e0)))))
-      )
-    ),
-    (
-      fun (p : f(f4_2) = f4_1) => typed(
-        (f4_symmetry(f4_root_bit(f4_1)) = e),
-        absurd(f4_2_not_1(f4_auto_injective(e, f4_2, f4_1, trans(p, sym(e1)))))
-      )
-    ), (fun (p : f(f4_2) = f4_2) => f4_auto_ext(f4_identity_automorphism, e, sym(p))),
-    (fun (p : f(f4_2) = f4_3) => f4_auto_ext(f4_frobenius_automorphism, e, sym(p))), f(f4_2)
-  );
+  let classify : (f(f4_2) = f(f4_2))
+  -> (f4_symmetry(f4_symmetry_bit(e)) = e) :=
+    f4_induction(
+      (fun (v : F4Carrier) => (f(f4_2) = v) -> (f4_symmetry(f4_root_bit(v)) = e)),
+      (
+        fun (p : f(f4_2) = f4_0) => typed(
+          (f4_symmetry(f4_root_bit(f4_0)) = e),
+          absurd(f4_2_not_0(f4_auto_injective(e, f4_2, f4_0, trans(p, sym(e0)))))
+        )
+      ),
+      (
+        fun (p : f(f4_2) = f4_1) => typed(
+          (f4_symmetry(f4_root_bit(f4_1)) = e),
+          absurd(f4_2_not_1(f4_auto_injective(e, f4_2, f4_1, trans(p, sym(e1)))))
+        )
+      ), (fun (p : f(f4_2) = f4_2) => f4_auto_ext(f4_identity_automorphism, e, sym(p))),
+      (fun (p : f(f4_2) = f4_3) => f4_auto_ext(f4_frobenius_automorphism, e, sym(p))), f(f4_2)
+    );
   exact classify(refl(f(f4_2)));
 }
 
@@ -248,14 +250,15 @@ def f4_loop_of_bit_add(a, b : F2Carrier) :
 // Reading a concatenation of loops gives the sum of their two symmetry bits.
 def f4_loop_bit_concatenate(p, q : F4ExtensionLoops) :
   f4_loop_bit(trans(p, q)) = f2_add(f4_loop_bit(p), f4_loop_bit(q)) {
-  have recovered : trans(f4_loop_of_bit(f4_loop_bit(p)), f4_loop_of_bit(f4_loop_bit(q))) = trans(
+  let recovered : trans(f4_loop_of_bit(f4_loop_bit(p)), f4_loop_of_bit(f4_loop_bit(q))) = trans(
     p, q
-  ) := trans(
-    cong(
-      (fun (r : F4ExtensionLoops) => trans(r, f4_loop_of_bit(f4_loop_bit(q)))),
-      f4_extension_loop_roundtrip(p)
-    ), cong((fun (r : F4ExtensionLoops) => trans(p, r)), f4_extension_loop_roundtrip(q))
-  );
+  ) :=
+    trans(
+      cong(
+        (fun (r : F4ExtensionLoops) => trans(r, f4_loop_of_bit(f4_loop_bit(q)))),
+        f4_extension_loop_roundtrip(p)
+      ), cong((fun (r : F4ExtensionLoops) => trans(p, r)), f4_extension_loop_roundtrip(q))
+    );
   exact with unfolding [f4_loop_bit, f4_loop_of_bit] {
     trans(
       sym(cong(f4_loop_bit, recovered)),

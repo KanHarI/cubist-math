@@ -36,14 +36,16 @@ def field_affine_increment(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), a, d, s, t : F
 ) :
   addF(a, mulF(s, d)) = addF(addF(a, mulF(t, d)), mulF(addF(negF(t), s), d)) {
-  have recover : addF(t, addF(negF(t), s)) = s := trans(
-    sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, t, negF(t), s)),
+  let recover : addF(t, addF(negF(t), s)) = s :=
     trans(
-      cong(
-        (fun (v : F) => addF(v, s)), ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, t)
-      ), ring_add_zero(F, zero, one, addF, mulF, negF, ring, s)
-    )
-  );
+      sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, t, negF(t), s)),
+      trans(
+        cong(
+          (fun (v : F) => addF(v, s)),
+          ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, t)
+        ), ring_add_zero(F, zero, one, addF, mulF, negF, ring, s)
+      )
+    );
   exact trans(
     cong((fun (v : F) => addF(a, mulF(v, d))), sym(recover)),
     trans(

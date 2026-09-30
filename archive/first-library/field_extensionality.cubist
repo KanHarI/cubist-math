@@ -34,7 +34,7 @@ def field_subtype_ext(
   p : field_first(A, P, u) = field_first(A, P, v)
 ) :
   u = v {
-  have square : PathP(fun (i : Interval) => P(p @ i), field_second(A, P, u), field_second(A, P, v)) {
+  let square : PathP(fun (i : Interval) => P(p @ i), field_second(A, P, u), field_second(A, P, v)) {
     over P along p by {
       exact prop(
         field_first(A, P, v), along P by p from field_second(A, P, u), field_second(A, P, v)

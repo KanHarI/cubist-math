@@ -13,15 +13,15 @@ def finite_basis_element_algebraic(
   let V := field_vector_space(K, L, e);
   let C := CoordinateSpace(K, succ(n));
   let evaluation := polynomial_evaluation_linear(K, L, e, x, succ(n));
-  have impossible : (AlgebraicElement(K, L, e, x) -> Void) -> Void {
+  let impossible : (AlgebraicElement(K, L, e, x) -> Void) -> Void {
     intro transcendental;
-    have kernel :
+    let kernel :
       forall a : Fin(succ(n)) -> af_carrier(K). linear_map(K, C, V, evaluation, a) = field_zero(L)
       -> a = (fun (i : Fin(succ(n))) => field_zero(K)) {
       intro a, root;
       let p := polynomial_from_coordinates(K, succ(n), a);
-      have zero : p = polynomial_zero(K) {
-        have contradiction : PolynomialNonzero(K, p) -> Void {
+      let zero : p = polynomial_zero(K) {
+        let contradiction : PolynomialNonzero(K, p) -> Void {
           intro nonzero;
           exact transcendental(
             merely(

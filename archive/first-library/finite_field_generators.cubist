@@ -20,14 +20,14 @@ def finite_basis_generates_field(
   let roots := basis_columns(K, field_vector_space(K, L, e), n, basis);
   let P := RootFieldGenerators(K, L, e, n, roots);
   let Q := subfield_members(L, S);
-  have contains : forall x : af_carrier(L). P(x) -> Q(x) {
+  let contains : forall x : af_carrier(L). P(x) -> Q(x) {
     intro x, witness;
-    have fromBase : (exists a : af_carrier(K). field_embedding_map(K, L, e, a) = x) -> Q(x) {
+    let fromBase : (exists a : af_carrier(K). field_embedding_map(K, L, e, a) = x) -> Q(x) {
       intro w;
       obtain (a, same) := w;
       exact along Q by same from base(a);
     }
-    have fromList : (exists i : Fin(n). roots(i) = x) -> Q(x) {
+    let fromList : (exists i : Fin(n). roots(i) = x) -> Q(x) {
       intro w;
       obtain (i, same) := w;
       exact along Q by same from members(i);
@@ -71,12 +71,12 @@ def field_generated_adjoin_tail(
   FieldGeneratedBy(R, L, h, n, finite_tail(af_carrier(L), n, generators)) {
   intro S, base, members, y;
   let P := subfield_members(L, S);
-  have oldBase : forall a : af_carrier(K). P(field_embedding_map(K, L, e, a)) {
+  let oldBase : forall a : af_carrier(K). P(field_embedding_map(K, L, e, a)) {
     intro a;
     exact along P by triangle(a) from base(field_embedding_map(K, R, i, a));
   }
   let head := along P by first from base(r);
-  have all : forall j : Fin(succ(n)). P(generators(j)) {
+  let all : forall j : Fin(succ(n)). P(generators(j)) {
     intro j;
     exact match j as v return P(generators(v)) {
       left u => (
@@ -98,14 +98,14 @@ def generated_field_generators(
   intro S, base, members, y;
   let P := RootFieldGenerators(K, L, e, n, roots);
   let Q := subfield_members(L, S);
-  have contains : forall x : af_carrier(L). P(x) -> Q(x) {
+  let contains : forall x : af_carrier(L). P(x) -> Q(x) {
     intro x, witness;
-    have fromBase : (exists a : af_carrier(K). field_embedding_map(K, L, e, a) = x) -> Q(x) {
+    let fromBase : (exists a : af_carrier(K). field_embedding_map(K, L, e, a) = x) -> Q(x) {
       intro w;
       obtain (a, same) := w;
       exact along Q by same from base(a);
     }
-    have fromList : (exists i : Fin(n). roots(i) = x) -> Q(x) {
+    let fromList : (exists i : Fin(n). roots(i) = x) -> Q(x) {
       intro w;
       obtain (i, same) := w;
       exact along Q by same from members(i);

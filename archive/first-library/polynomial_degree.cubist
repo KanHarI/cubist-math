@@ -96,10 +96,10 @@ def polynomial_cutoff_exact(
 ) :
   polynomial_cutoff(K, p) = succ(n) {
   let c := polynomial_cutoff(K, p);
-  have lower : le(succ(n), c) := match nat_le_total(succ(n), c) return le(succ(n), c) {
-    left yes => yes;
-    right below => absurd(nonzero(polynomial_cutoff_support(K, p, n, below)));
-  };
+  let lower : le(succ(n), c) := match nat_le_total(succ(n), c) return le(succ(n), c) {
+      left yes => yes;
+      right below => absurd(nonzero(polynomial_cutoff_support(K, p, n, below)));
+    };
   exact dimension_order_antisymmetric(
     c, succ(n), polynomial_cutoff_least(K, p, succ(n), support), lower
   );

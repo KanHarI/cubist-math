@@ -11,7 +11,7 @@ def field_mul_left_cancel_nonzero(
   x = y {
   obtain (ring, nontrivial, inverses) := af_laws(L);
   obtain (b, inverse) := inverses(a, nonzero);
-  have reduce : forall z : af_carrier(L). field_mul(L, b, field_mul(L, a, z)) = z {
+  let reduce : forall z : af_carrier(L). field_mul(L, b, field_mul(L, a, z)) = z {
     intro z;
     exact trans(
       sym(scalar_mul_assoc(L, b, a, z)),
@@ -39,7 +39,7 @@ def distinct_embeddings_two_independent(
   let G := field_embedding_map(K, L, g);
   obtain (f0, f1, fn, fa, fm) := field_embedding_preserves(K, L, f);
   obtain (g0, g1, gn, ga, gm) := field_embedding_preserves(K, L, g);
-  have sumZero : field_add(L, a, b) = field_zero(L) := trans(
+  let sumZero : field_add(L, a, b) = field_zero(L) := trans(
     sym(
       trans(
         cong(
@@ -67,14 +67,14 @@ def distinct_embeddings_two_independent(
       )
     ), relation(field_one(K))
   );
-  have equalIfNonzero : FieldNonzero(af_carrier(L), af_operations(L), a) -> f = g {
+  let equalIfNonzero : FieldNonzero(af_carrier(L), af_operations(L), a) -> f = g {
     intro nonzero;
-    have equalPointwise : forall x : af_carrier(K). F(x) = G(x) {
+    let equalPointwise : forall x : af_carrier(K). F(x) = G(x) {
       intro x;
       let fx := F(x);
       let gx := G(x);
       let c := field_mul(L, b, gx);
-      have alternate : field_add(L, field_mul(L, a, gx), c) = field_zero(L) := trans(
+      let alternate : field_add(L, field_mul(L, a, gx), c) = field_zero(L) := trans(
         sym(scalar_distribute_left(L, a, b, gx)),
         trans(
           cong((fun (z : af_carrier(L)) => field_mul(L, z, gx)), sumZero), scalar_zero_mul(L, gx)
@@ -89,7 +89,7 @@ def distinct_embeddings_two_independent(
     }
     exact field_embedding_ext(K, L, f, g, equalPointwise);
   }
-  have aZero : a = field_zero(L) := double_negation(
+  let aZero : a = field_zero(L) := double_negation(
     a = field_zero(L), af_set(L, a, field_zero(L)),
     (
       fun (nonzero : FieldNonzero(af_carrier(L), af_operations(L), a)) => different(
@@ -97,7 +97,7 @@ def distinct_embeddings_two_independent(
       )
     )
   );
-  have bZero : b = field_zero(L) := trans(
+  let bZero : b = field_zero(L) := trans(
     sym(scalar_add_zero(L, b)),
     trans(cong((fun (z : af_carrier(L)) => field_add(L, z, b)), sym(aZero)), sumZero)
   );

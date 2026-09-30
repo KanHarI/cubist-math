@@ -316,7 +316,7 @@ def zero_named_after_intro : forall n : N. IsZero(n) -> n = zero {
   }
 }
 def local_fact(n : N, h : IsZero(n)) : n = zero {
-  have k : IsZero(n) { exact h; }
+  let k : IsZero(n) { exact h; }
   match n {
     zero => { rfl; }
     succ(m) => { exact absurd(k); }

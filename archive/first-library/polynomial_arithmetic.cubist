@@ -79,7 +79,7 @@ def polynomial_scale_coefficient(K : AlgebraicField, a : af_carrier(K), p : Poly
 def polynomial_tail(K : AlgebraicField, p : Polynomial(K)) : Polynomial(K) {
   let f := polynomial_coefficients(K, p);
   let Result := exists k : Nat. SeriesSupport(K, series_tail(K, f), k);
-  have convert : (exists n : Nat. SeriesSupport(K, f, n)) -> Result {
+  let convert : (exists n : Nat. SeriesSupport(K, f, n)) -> Result {
     intro witness;
     obtain (n, support) := witness;
     exact (n, (fun (k : Nat, above : le(n, k)) => support(succ(k), nat_le_step(n, k, above))));

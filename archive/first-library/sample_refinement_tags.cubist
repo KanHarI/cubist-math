@@ -91,7 +91,7 @@ def sample_between_ordered(
   valid : SampleBetween(C, related, n, vertices, tags)
 ) :
   SampleAdjacent(C, related, n, vertices) {
-  have orders :
+  let orders :
     forall a : C. forall b : C. forall tag : C. (related(a, tag) and related(tag, b))
     -> related(a, b) {
     intro a, b, tag, within;
@@ -122,7 +122,7 @@ def sample_between_global_step(
   let tailVertices := field_snd(C, SampleVertices(C, n), vertices);
   let headTag := field_fst(C, SampleTags(C, n), tags);
   let tailTags := field_snd(C, SampleTags(C, n), tags);
-  have validData : (
+  let validData : (
     related(headVertex, headTag) and related(headTag, sample_first(C, n, tailVertices))
   ) and SampleBetween(C, related, n, tailVertices, tailTags) := valid;
   obtain ((lowerTag, upperTag), tailValid) := validData;

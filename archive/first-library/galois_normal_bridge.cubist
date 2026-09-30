@@ -20,19 +20,20 @@ def normal_embedding_intermediate_base_change(
   let e := extension_inclusion_embedding(K, E);
   let tower := intermediate_tower(K, E, M);
   intro T, j, h, same, y;
-  have overK : field_embedding_compose(K, F, T, e, h) = field_embedding_compose(K, F, T, e, j) := trans(
-    cong((fun (f : FieldEmbedding(K, F)) => field_embedding_compose(K, F, T, f, h)), sym(tower)),
+  let overK : field_embedding_compose(K, F, T, e, h) = field_embedding_compose(K, F, T, e, j) :=
     trans(
-      field_embedding_associative(K, R, F, T, b, i, h),
+      cong((fun (f : FieldEmbedding(K, F)) => field_embedding_compose(K, F, T, f, h)), sym(tower)),
       trans(
-        cong(field_embedding_compose(K, R, T, b), same),
+        field_embedding_associative(K, R, F, T, b, i, h),
         trans(
-          sym(field_embedding_associative(K, R, F, T, b, i, j)),
-          cong((fun (f : FieldEmbedding(K, F)) => field_embedding_compose(K, F, T, f, j)), tower)
+          cong(field_embedding_compose(K, R, T, b), same),
+          trans(
+            sym(field_embedding_associative(K, R, F, T, b, i, j)),
+            cong((fun (f : FieldEmbedding(K, F)) => field_embedding_compose(K, F, T, f, j)), tower)
+          )
         )
       )
-    )
-  );
+    );
   exact normal(T, j, h, overK, y);
 }
 
@@ -71,14 +72,15 @@ def normal_self_embedding_surjective(
 ) :
   Surjective(af_carrier(F), af_carrier(F), field_embedding_map(F, F, h)) {
   let identity := field_embedding_identity(F);
-  have triangle : field_embedding_compose(K, F, F, e, identity) = field_embedding_compose(
+  let triangle : field_embedding_compose(K, F, F, e, identity) = field_embedding_compose(
     K, F, F, e, h
-  ) := trans(
-    field_embedding_right_identity(K, F, e),
-    field_embedding_ext(
-      K, F, e, field_embedding_compose(K, F, F, e, h), (fun (a : af_carrier(K)) => sym(over(a)))
-    )
-  );
+  ) :=
+    trans(
+      field_embedding_right_identity(K, F, e),
+      field_embedding_ext(
+        K, F, e, field_embedding_compose(K, F, F, e, h), (fun (a : af_carrier(K)) => sym(over(a)))
+      )
+    );
   intro y;
   exact merely(
     Fiber(af_carrier(F), af_carrier(F), field_embedding_map(F, F, h), y),
@@ -120,14 +122,14 @@ def normal_embedding_over_intermediate_automorphism(
   let R := intermediate_as_field(K, E, M);
   let F := extension_field(K, E);
   obtain (h, over) := d;
-  have overK :
+  let overK :
     forall a : af_carrier(K).
     field_embedding_map(F, F, h, extension_inclusion(K, E, a)) = extension_inclusion(K, E, a) {
     intro a;
     exact over(intermediate_base_map(K, E, M, a));
   }
   let g := normal_self_embedding_automorphism(K, E, normal, h, overK);
-  have fixes : GaloisFixing(K, E, intermediate_members(K, E, M), g) {
+  let fixes : GaloisFixing(K, E, intermediate_members(K, E, M), g) {
     intro x, member;
     exact over(typed(af_carrier(R), (x, member)));
   }
@@ -157,7 +159,7 @@ def normal_intermediate_embeddings_automorphisms(
     fun (b : B) => fixing_automorphism_over_intermediate(
       K, E, M, subgroup_value(G, H, b), subgroup_evidence(G, H, b)
     );
-  have leftInverse : forall d : A. backwardMap(forwardMap(d)) = d {
+  let leftInverse : forall d : A. backwardMap(forwardMap(d)) = d {
     intro d;
     let g := subgroup_value(G, H, forwardMap(d));
     let h := embedding_over(R, F, i, F, i, d);
@@ -169,7 +171,7 @@ def normal_intermediate_embeddings_automorphisms(
       )
     );
   }
-  have rightInverse : forall b : B. forwardMap(backwardMap(b)) = b {
+  let rightInverse : forall b : B. forwardMap(backwardMap(b)) = b {
     intro b;
     let g := subgroup_value(G, H, b);
     exact subgroup_value_ext(

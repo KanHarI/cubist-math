@@ -25,24 +25,26 @@ def division_adjust(
   let a := field_mul(K, b, last);
   let scaled := polynomial_scale(K, a, divisor);
   let r := polynomial_add(K, p, polynomial_neg(K, scaled));
-  have remainder_top : polynomial_coefficients(K, r, d) = field_zero(K) := trans(
-    cong(
-      (fun (c : af_carrier(K)) => field_add(K, last, field_neg(K, c))),
-      polynomial_scale_coefficient(K, a, divisor, d)
-    ),
+  let remainder_top : polynomial_coefficients(K, r, d) = field_zero(K) :=
     trans(
       cong(
         (fun (c : af_carrier(K)) => field_add(K, last, field_neg(K, c))),
-        scalar_pivot_cancel(K, lead, b, inverse, last)
-      ), scalar_add_inverse_right(K, last)
-    )
-  );
-  have equation : p = polynomial_add(K, scaled, r) := sym(
-    trans(
-      cong(polynomial_add(K, scaled), polynomial_add_comm(K, p, polynomial_neg(K, scaled))),
-      polynomial_add_cancel_prefix(K, scaled, p)
-    )
-  );
+        polynomial_scale_coefficient(K, a, divisor, d)
+      ),
+      trans(
+        cong(
+          (fun (c : af_carrier(K)) => field_add(K, last, field_neg(K, c))),
+          scalar_pivot_cancel(K, lead, b, inverse, last)
+        ), scalar_add_inverse_right(K, last)
+      )
+    );
+  let equation : p = polynomial_add(K, scaled, r) :=
+    sym(
+      trans(
+        cong(polynomial_add(K, scaled), polynomial_add_comm(K, p, polynomial_neg(K, scaled))),
+        polynomial_add_cancel_prefix(K, scaled, p)
+      )
+    );
   let support :=
     support_add_same(
       K, polynomial_coefficients(K, p), polynomial_coefficients(K, polynomial_neg(K, scaled)),
@@ -142,9 +144,8 @@ def division_zero(
   support : SeriesSupport(K, polynomial_coefficients(K, p), 0)
 ) :
   DivisionResult(K, p, divisor, d) {
-  have product : polynomial_mul(K, polynomial_zero(K), divisor) = polynomial_zero(K) := trans(
-    polynomial_mul_comm(K, polynomial_zero(K), divisor), polynomial_mul_zero(K, divisor)
-  );
+  let product : polynomial_mul(K, polynomial_zero(K), divisor) = polynomial_zero(K) :=
+    trans(polynomial_mul_comm(K, polynomial_zero(K), divisor), polynomial_mul_zero(K, divisor));
   exact (
     polynomial_zero(K), polynomial_zero(K),
     trans(

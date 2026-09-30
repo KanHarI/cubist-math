@@ -96,7 +96,7 @@ def span_least(
   x : vector_carrier(K, V), member : Span(K, V, P, x)
 ) :
   subspace_members(K, V, S, x) {
-  have descend : SpanWitness(K, V, P, x) -> subspace_members(K, V, S, x) {
+  let descend : SpanWitness(K, V, P, x) -> subspace_members(K, V, S, x) {
     intro witness;
     obtain (n, vectors, coefficients, members, sum) := witness;
     exact along subspace_members(K, V, S) by sum from combination_in_subspace(

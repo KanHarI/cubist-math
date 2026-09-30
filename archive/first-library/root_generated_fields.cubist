@@ -80,12 +80,12 @@ def root_generated_generates(
   let rs := root_generated_root(K, L, e, n, roots);
   let Q := RootFieldGenerators(K, T, d, n, rs);
   let H := generated_subfield(T, Q);
-  have contains :
+  let contains :
     forall y : af_carrier(L). forall member : P(y).
     subfield_members(T, H, generated_carrier_generator(L, P, y, member)) {
     intro y, member;
     let target := generated_carrier_generator(L, P, y, member);
-    have baseCase :
+    let baseCase :
       (exists a : af_carrier(K). field_embedding_map(K, L, e, a) = y)
       -> subfield_members(T, H, target) {
       intro witness;
@@ -100,7 +100,7 @@ def root_generated_generates(
         T, Q, u, generator
       );
     }
-    have rootCase : (exists i : Fin(n). roots(i) = y) -> subfield_members(T, H, target) {
+    let rootCase : (exists i : Fin(n). roots(i) = y) -> subfield_members(T, H, target) {
       intro witness;
       obtain (i, same) := witness;
       let u := rs(i);

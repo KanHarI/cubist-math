@@ -179,9 +179,9 @@ Type mismatch: found 7 = 7, expected x = 8.
             <ul>
               <li><code>as k</code> on an <a href="induction.html#induction"><code>induction</code></a> whose return type and successor branch do not use <code>k</code>, and <code>as z</code> on a <a href="terms.html#match"><code>match</code></a> whose return type does not mention <code>z</code>;</li>
               <li>a variable of <code>forall</code> or <code>exists</code> that its body does not mention, which can be written with <a href="paths.html#exists-and"><code>-&gt;</code> or <code>and</code></a>;</li>
-              <li>a <a href="proof-blocks.html#let"><code>let</code></a>, <code>have</code> or <code>obtain</code> whose names nothing after it in its block uses.</li>
+              <li>a <a href="proof-blocks.html#let"><code>let</code></a> or <code>obtain</code> whose names nothing after it in its block uses.</li>
             </ul>
-            <p>A name the syntax requires is never reported, even when it is unused: a parameter, a <code>fun</code> binder, a constructor argument or coordinate in a clause, an induction hypothesis, or a name given to <code>intro</code>. Nor is a <code>let</code>, <code>have</code> or <code>obtain</code> before an <code>hlevel</code> or a <code>match</code> in the same block, because those can use hypotheses without naming them. A warning does not affect checking: the declaration is checked and can be used.</p>
+            <p>A name the syntax requires is never reported, even when it is unused: a parameter, a <code>fun</code> binder, a constructor argument or coordinate in a clause, an induction hypothesis, or a name given to <code>intro</code>. Nor is a <code>let</code> or <code>obtain</code> before an <code>hlevel</code> or a <code>match</code> in the same block, because those can use hypotheses without naming them. A warning does not affect checking: the declaration is checked and can be used.</p>
             <pre><code data-check="accept" data-name="unused">def copy(n : Nat) := induction n as k return Nat {  // Warning: k is unused: the return type does not mention it and the successor clause does not use it.
   zero =&gt; 0;
   succ previous =&gt; succ(previous);

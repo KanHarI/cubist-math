@@ -95,7 +95,8 @@ export function formatMathScript(source, { printWidth = 100, linearizeTuples = t
     const valueStart = node.valueStart ?? (node.kind === "let" ? node.value?.start : undefined);
     if (valueStart !== undefined && tokenBefore.get(valueStart)?.text === ":=")
       assignmentTokens.add(tokenBefore.get(valueStart).start);
-    if (node.type && ["def", "have"].includes(node.kind)) {
+    // A declaration's type, or a let's stated type before its proof block.
+    if (node.type && (node.kind === "def" || node.kind === "let" && node.body)) {
       annotationStarts.add(node.type.start);
       const next = tokenAfter.get(node.type.end);
       if (next?.text === "{") proofBodyStarts.add(next.start);

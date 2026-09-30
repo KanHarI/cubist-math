@@ -4,15 +4,15 @@ import { parse } from "./parser.mjs";
 //   induction v as k   when neither the return type nor the successor clause uses k;
 //   match v as z       when the return type does not mention z;
 //   forall/exists x    when the body does not mention x (write A -> B, A and B);
-//   let, have, obtain  when nothing after them in their block uses their names.
+//   let, obtain        when nothing after them in their block uses their names.
 // A binding the syntax requires is never reported: a parameter, a fun binder,
 // a clause's argument or coordinate, an induction hypothesis, intro.
 //
 // A use is an identifier of the same name inside the binding's scope, so a
 // shadowing binder can hide an unused binding but never invents one. hlevel
 // and generated squash clauses search the context for evidence without
-// naming it, so let, have and obtain are not reported before an hlevel or a
-// match in the same block.
+// naming it, so let and obtain are not reported before an hlevel or a match
+// in the same block.
 export function lint(source, ast = parse(source)) {
   // Every identifier's positions, skipping comments and numerals (0b110).
   const positions = new Map();
@@ -26,14 +26,13 @@ export function lint(source, ast = parse(source)) {
   const warnings = [];
   const warn = (at, message) => warnings.push({ start: at.start, end: at.end, message });
 
-  // A block's statements: each let, have and obtain is in scope for the rest
-  // of the block, nested blocks included.
+  // A block's statements: each let and obtain is in scope for the rest of the
+  // block, nested blocks included.
   const block = statements => {
     const last = statements.at(-1);
     if (!last || !Number.isInteger(last.end)) return;
     statements.forEach(statement => {
       const names = statement.kind === "let" ? [statement.target]
-        : statement.kind === "have" || statement.kind === "haveValue" ? [statement.name]
         : statement.kind === "obtain" ? patternNames(statement.target) : null;
       if (!names || statement === last) return;
       const start = statement.end, end = last.end;
@@ -42,12 +41,12 @@ export function lint(source, ast = parse(source)) {
       if (names.some(token => used(name(token), start, end))) return;
       if (statement.kind === "obtain")
         warn(statement.target, `None of ${names.map(name).join(", ")} is used after this obtain: remove it.`);
-      else warn(names[0], `${name(names[0])} is never used after this ${statement.kind === "let" ? "let" : "have"}: remove it.`);
+      else warn(names[0], `${name(names[0])} is never used after this let: remove it.`);
     });
   };
   const visit = node => {
     if (Array.isArray(node)) {
-      if (node.some(item => ["let", "have", "haveValue", "obtain"].includes(item?.kind))) block(node);
+      if (node.some(item => ["let", "obtain"].includes(item?.kind))) block(node);
       node.forEach(visit);
       return;
     }

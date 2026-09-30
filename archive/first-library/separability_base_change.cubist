@@ -30,7 +30,7 @@ def polynomial_map_divides(
   PolynomialDivides(L, polynomial_map(K, L, e, q), polynomial_map(K, L, e, p)) {
   let Q := polynomial_map(K, L, e, q);
   let P := polynomial_map(K, L, e, p);
-  have send :
+  let send :
     (exists w : Polynomial(K). p = polynomial_mul(K, q, w))
     -> (exists w : Polynomial(L). P = polynomial_mul(L, Q, w)) {
     intro witness;
@@ -82,7 +82,7 @@ def separable_elements_enlarge_base(
     );
   let nonzeroP := polynomial_map_nonzero(R, T, j, mapped, polynomial_map_nonzero(K, R, i, p, nzP));
   let nonzeroQ := polynomial_map_nonzero(R, T, j, q, nzQ);
-  have descend : DistinctPolynomialSplitting(T, P, n) -> SeparableIn(R, T, j, q) {
+  let descend : DistinctPolynomialSplitting(T, P, n) -> SeparableIn(R, T, j, q) {
     intro splitting;
     let result :=
       distinct_splitting_divisor(T, closed, n, P, nonzeroP, splitting, Q, nonzeroQ, divides);

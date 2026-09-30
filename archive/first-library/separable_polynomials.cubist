@@ -129,7 +129,7 @@ def polynomial_root_family_upper_bound(
   let P := PolynomialRoot(K, L, e, p);
   obtain (f, distinct) := family;
   let roots := fun (i : Fin(n)) => sigma_first(af_carrier(L), P, f(i));
-  have injective : Injective(Fin(n), af_carrier(L), roots) {
+  let injective : Injective(Fin(n), af_carrier(L), roots) {
     intro i, j, same;
     exact distinct(
       i, j, subtype_ext(af_carrier(L), P, polynomial_root_prop(K, L, e, p), f(i), f(j), same)

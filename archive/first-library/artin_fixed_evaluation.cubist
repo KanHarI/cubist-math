@@ -69,10 +69,10 @@ def finite_subgroup_evaluation_basis(
         )
       )
     );
-  have withEnumeration : Bijection(Fin(n), A) -> Mere(Goal) {
+  let withEnumeration : Bijection(Fin(n), A) -> Mere(Goal) {
     intro enumeration;
     let maps := subgroup_evaluation_maps(K, E, H, n, enumeration);
-    have attach :
+    let attach :
       (
         exists points : Fin(n) -> extension_carrier(K, E).
         FamilyBasis(

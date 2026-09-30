@@ -27,12 +27,12 @@ def weighted_winding_laws(
     PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG,
     weighted_winding_sum(n, G, zero, addG, negG, values)
   ) {
-  have constant : weighted_winding_sum(n, G, zero, addG, negG, values, refl(bouquet_base(Fin(n)))) = zero := finite_sum_zero(
+  let constant : weighted_winding_sum(n, G, zero, addG, negG, values, refl(bouquet_base(Fin(n)))) = zero := finite_sum_zero(
     G, zero, addG, negG, laws, n,
     (fun (i : Fin(n)) => integer_multiple(G, zero, addG, negG, values(i), zeroZ)),
     (fun (i : Fin(n)) => refl(zero))
   );
-  have append :
+  let append :
     forall p : BouquetLoops(Fin(n)). forall q : BouquetLoops(Fin(n)).
     weighted_winding_sum(n, G, zero, addG, negG, values, trans(p, q)) = addG(
       weighted_winding_sum(n, G, zero, addG, negG, values, p),

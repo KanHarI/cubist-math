@@ -27,13 +27,14 @@ def monic_linear_product_step(
   let fb := polynomial_coefficients(K, B);
   let sa := along SeriesSupport(K, fa) by da from polynomial_cutoff_support(K, A);
   let sb := along SeriesSupport(K, fb) by db from polynomial_cutoff_support(K, B);
-  have leading : polynomial_coefficients(K, polynomial_mul(K, A, B), succ(n)) = field_one(K) := trans(
-    convolution_top(K, 1, fa, fb, n, sa, sb),
+  let leading : polynomial_coefficients(K, polynomial_mul(K, A, B), succ(n)) = field_one(K) :=
     trans(
-      cong((fun (a : af_carrier(K)) => field_mul(K, a, fb(n))), linear_factor_leading(K, x)),
-      trans(scalar_mul_one(K, fb(n)), lb)
-    )
-  );
+      convolution_top(K, 1, fa, fb, n, sa, sb),
+      trans(
+        cong((fun (a : af_carrier(K)) => field_mul(K, a, fb(n))), linear_factor_leading(K, x)),
+        trans(scalar_mul_one(K, fb(n)), lb)
+      )
+    );
   exact (polynomial_product_degree(K, A, B, 1, n, da, db), leading);
 }
 

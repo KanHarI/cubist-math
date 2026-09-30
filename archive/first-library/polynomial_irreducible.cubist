@@ -50,10 +50,10 @@ def polynomial_divides_trans(
 ) :
   PolynomialDivides(K, a, c) {
   let Result := PolynomialDivides(K, a, c);
-  have first : (exists u : Polynomial(K). b = polynomial_mul(K, a, u)) -> Result {
+  let first : (exists u : Polynomial(K). b = polynomial_mul(K, a, u)) -> Result {
     intro witness;
     obtain (u, eu) := witness;
-    have second :
+    let second :
       (exists v : Polynomial(K). c = polynomial_mul(K, b, v))
       -> (exists w : Polynomial(K). c = polynomial_mul(K, a, w)) {
       intro other;
@@ -85,7 +85,7 @@ def polynomial_unit_factor_reverse(
   unit : PolynomialUnit(K, b)
 ) :
   PolynomialDivides(K, p, a) {
-  have useInverse :
+  let useInverse :
     (exists u : Polynomial(K). polynomial_mul(K, b, u) = polynomial_one(K))
     -> (exists u : Polynomial(K). a = polynomial_mul(K, p, u)) {
     intro witness;
@@ -116,10 +116,10 @@ def irreducible_coprime(
 ) :
   PolynomialCoprime(K, p, q) {
   intro g, gp, gq;
-  have useFactor : (exists h : Polynomial(K). p = polynomial_mul(K, g, h)) -> PolynomialUnit(K, g) {
+  let useFactor : (exists h : Polynomial(K). p = polynomial_mul(K, g, h)) -> PolynomialUnit(K, g) {
     intro witness;
     obtain (h, equation) := witness;
-    have alternative : (PolynomialUnit(K, g) or PolynomialUnit(K, h)) -> PolynomialUnit(K, g) {
+    let alternative : (PolynomialUnit(K, g) or PolynomialUnit(K, h)) -> PolynomialUnit(K, g) {
       intro which;
       exact match which as z return PolynomialUnit(K, g) {
         left unit => unit;

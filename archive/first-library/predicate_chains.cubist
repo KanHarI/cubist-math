@@ -29,7 +29,7 @@ def predicate_union_least(
 ) :
   PredicateIncluded(A, PredicateUnion(I, A, P), Q) {
   intro x, member;
-  have fromMember : (exists i : I. P(i, x)) -> Q(x) {
+  let fromMember : (exists i : I. P(i, x)) -> Q(x) {
     intro witness;
     obtain (i, hx) := witness;
     exact included(i, x, hx);
@@ -42,7 +42,7 @@ def predicate_chain_directed(I : U1, A : U0, P : I -> A -> U0, chain : Predicate
   intro i, j;
   let Upper := exists k : I. PredicateIncluded(A, P(i), P(k)) and PredicateIncluded(A, P(j), P(k));
   let Either := PredicateIncluded(A, P(i), P(j)) or PredicateIncluded(A, P(j), P(i));
-  have chooseUpper : Either -> FieldExists(Upper) {
+  let chooseUpper : Either -> FieldExists(Upper) {
     intro comparison;
     cases comparison {
       left ij => {
@@ -71,18 +71,18 @@ def finite_cover_step(
   FieldExists(FiniteFamilyCover(I, A, P, succ(n), v)) {
   let Cover := FiniteFamilyCover(I, A, P, succ(n), v);
   let h := finite_head(A, n, v);
-  have fromHead : (exists i : I. P(i, h)) -> FieldExists(Cover) {
+  let fromHead : (exists i : I. P(i, h)) -> FieldExists(Cover) {
     intro headWitness;
     obtain (i, headInI) := headWitness;
-    have fromTail : FiniteFamilyCover(I, A, P, n, finite_tail(A, n, v)) -> FieldExists(Cover) {
+    let fromTail : FiniteFamilyCover(I, A, P, n, finite_tail(A, n, v)) -> FieldExists(Cover) {
       intro tailWitness;
       obtain (j, tailInJ) := tailWitness;
       let Upper :=
         exists k : I. PredicateIncluded(A, P(i), P(k)) and PredicateIncluded(A, P(j), P(k));
-      have fromUpper : Upper -> FieldExists(Cover) {
+      let fromUpper : Upper -> FieldExists(Cover) {
         intro upperWitness;
         obtain (k, ik, jk) := upperWitness;
-        have allMembers : forall index : Fin(succ(n)). P(k, v(index)) {
+        let allMembers : forall index : Fin(succ(n)). P(k, v(index)) {
           intro index;
           exact match index as z return P(k, v(z)) {
             left u => (

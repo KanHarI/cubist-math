@@ -248,7 +248,7 @@ def subfield_carrier_inverse(
   );
   let value := subfield_value(F, S, x);
   obtain (ambientInverse, inverseLaw) := inverses(value, subfield_carrier_nonzero(F, S, x, nonzero));
-  have result : SubfieldCarrier(F, S) := (
+  let result : SubfieldCarrier(F, S) := (
     ambientInverse,
     subfield_inverse(
       F, subfield_members(F, S), subfield_laws(F, S), value, ambientInverse,

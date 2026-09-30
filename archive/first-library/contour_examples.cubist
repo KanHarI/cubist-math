@@ -137,7 +137,7 @@ def identity_backtrack_sum_nonzero(
     ) = zero
   ) -> Void {
   intro vanishes;
-  have minusOneZero : negF(one) = zero := trans(
+  let minusOneZero : negF(one) = zero := trans(
     sym(identity_backtrack_sum(F, zero, one, addF, mulF, negF, ring)), vanishes
   );
   exact nontrivial(

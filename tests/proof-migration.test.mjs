@@ -74,7 +74,7 @@ def moved(C : Nat -> U0, p : 0 = 0, q : 0 = 0, v : C(0)) : forall a, b, c : Nat.
   intro a;
   intro b; // kept apart by this comment
   intro c;
-  have h : C(0) {
+  let h : C(0) {
     exact transport(C, 0, 0, p, v);
   }
   exact h;
@@ -94,10 +94,10 @@ def pointwise(A : U0, f : A -> A) : f = f {
 }
 `;
   const identical = rewriteModule(source, { rewrites: identicalRewrites });
-  assert.deepEqual(identical.applied, { params: 1, intro: 1, have: 1, along: 1, "path-apply": 1, fun: 1 });
+  assert.deepEqual(identical.applied, { params: 1, intro: 1, let: 1, along: 1, "path-apply": 1, fun: 1 });
   assert.match(identical.source, /\(C : Nat -> U0, p, q : 0 = 0, v : C\(0\)\)/);
   assert.match(identical.source, /intro a, b; \/\/ kept apart by this comment\n  intro c;/);
-  assert.match(identical.source, /have h : C\(0\) := along C by p from v;/);
+  assert.match(identical.source, /let h : C\(0\) := along C by p from v;/);
   assert.match(identical.source, /\(fun \(a, b : A\) => a\)\(p @ 0, y\)/);
   const typed = rewriteModule(source, { rewrites: typePreservingRewrites });
   assert.deepEqual(typed.applied, { wrappers: 2, "path-lambda": 2, ext: 1, rfl: 1 });

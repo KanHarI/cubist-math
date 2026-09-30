@@ -57,13 +57,14 @@ def complex_subdivision_total_estimate_step(
   let tailTags := field_snd(C, SampleTags(C, n), tags);
   let headPiece := field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
   let tailPieces := field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
-  have data : ComplexSubdivisionEstimate(C, F, zero, addF, negF, lt, edge, radius)(
+  let data : ComplexSubdivisionEstimate(C, F, zero, addF, negF, lt, edge, radius)(
     a, b, tag, headPiece
   )
   and SubdivisionTagged(
     C, ComplexSubdivisionEstimate(C, F, zero, addF, negF, lt, edge, radius), n, tail, tailTags,
     tailPieces
-  ) := estimates;
+  ) :=
+    estimates;
   obtain (headEstimate, tailEstimates) := data;
   exact complex_perturbation_add(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, edge(a, b, tag),

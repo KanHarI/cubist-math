@@ -133,7 +133,7 @@ def dyadic_interval_samples_zero(
   DyadicIntervalSamples(F, zero, one, addF, negF, lt, half, 0, a, b) {
   let I := FieldUnitInterval(F, zero, one, lt);
   let radius := interval_difference(F, zero, one, addF, negF, lt)(a, b);
-  have valid : IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius, a, b, a)
+  let valid : IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius, a, b, a)
   and Unit := (
     (
       (order_le_refl(F, lt, order, field_interval_coordinate(F, zero, one, lt)(a)), ordered),
@@ -175,13 +175,13 @@ def dyadic_interval_samples_step(
     interval_midpoint_right_order(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     );
-  have leftWidth : width(a, midpoint) = half(width(a, b)) := field_fst(
+  let leftWidth : width(a, midpoint) = half(width(a, b)) := field_fst(
     (width(a, midpoint) = half(width(a, b))), (width(midpoint, b) = half(width(a, b))),
     interval_midpoint_widths(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     )
   );
-  have rightWidth : width(midpoint, b) = half(width(a, b)) := field_snd(
+  let rightWidth : width(midpoint, b) = half(width(a, b)) := field_snd(
     (width(a, midpoint) = half(width(a, b))), (width(midpoint, b) = half(width(a, b))),
     interval_midpoint_widths(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered

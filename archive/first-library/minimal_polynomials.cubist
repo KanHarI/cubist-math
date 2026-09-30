@@ -106,16 +106,16 @@ def normalize_annihilator_generator(
   obtain (ring, nontrivial, inverses) := af_laws(K);
   obtain (a, inverse) := inverses(leading, polynomial_leading_nonzero(K, g, d, degree));
   let p := polynomial_scale(K, a, g);
-  have rootP : PolynomialRoot(K, L, e, p, x) := with unfolding [] {
-    trans(
-      polynomial_eval_scale(K, L, e, a, g, x),
+  let rootP : PolynomialRoot(K, L, e, p, x) := with unfolding [] {
       trans(
-        cong(field_mul(L, field_embedding_map(K, L, e, a)), root),
-        scalar_mul_zero(L, field_embedding_map(K, L, e, a))
+        polynomial_eval_scale(K, L, e, a, g, x),
+        trans(
+          cong(field_mul(L, field_embedding_map(K, L, e, a)), root),
+          scalar_mul_zero(L, field_embedding_map(K, L, e, a))
+        )
       )
-    )
-  };
-  have generatesP :
+    };
+  let generatesP :
     forall q : Polynomial(K). PolynomialRoot(K, L, e, q, x) -> PolynomialDivides(K, p, q) {
     intro q, rq;
     exact polynomial_divides_trans(

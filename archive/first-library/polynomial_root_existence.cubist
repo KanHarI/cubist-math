@@ -9,7 +9,7 @@ def polynomial_divisor_root(
 ) :
   PolynomialRoot(K, L, e, p, x) {
   let E := fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
-  have useFactor :
+  let useFactor :
     (exists q : Polynomial(K). p = polynomial_mul(K, g, q)) -> PolynomialRoot(K, L, e, p, x) {
     intro witness;
     obtain (q, equation) := witness;

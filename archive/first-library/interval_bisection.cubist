@@ -90,7 +90,7 @@ def interval_midpoint(
     order_le_add_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic, x, h, nonnegativeHalf
     );
-  have completes : addF(m, h) = y := trans(
+  let completes : addF(m, h) = y := trans(
     ring_add_assoc(F, zero, one, addF, mulF, negF, ring, x, h, h),
     trans(
       cong(addF(x), halfSum(width)), difference_add_back(F, zero, one, addF, mulF, negF, ring, x, y)
@@ -102,7 +102,7 @@ def interval_midpoint(
     );
   obtain (lowerA, upperA) := field_interval_bounds(F, zero, one, lt, a);
   obtain (lowerB, upperB) := field_interval_bounds(F, zero, one, lt, b);
-  have midpoint : FieldUnitInterval(F, zero, one, lt) := (
+  let midpoint : FieldUnitInterval(F, zero, one, lt) := (
     m, order_le_trans(F, zero, one, addF, mulF, lt, arithmetic, zero, x, m, lowerA, leftBound),
     order_le_trans(F, zero, one, addF, mulF, lt, arithmetic, m, y, one, rightBound, upperB)
   );

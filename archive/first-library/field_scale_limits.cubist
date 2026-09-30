@@ -40,18 +40,19 @@ def field_close_zero_magnitude(
     along((fun (v : F) => lt(v, addF(addF(x, radius), negF(x))))) by ring_add_zero(
       F, zero, one, addF, mulF, negF, ring, negF(x)
     ) from shifted;
-  have cancels : addF(addF(x, radius), negF(x)) = radius := trans(
-    ring_add_comm(F, zero, one, addF, mulF, negF, ring, addF(x, radius), negF(x)),
+  let cancels : addF(addF(x, radius), negF(x)) = radius :=
     trans(
-      sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, negF(x), x, radius)),
+      ring_add_comm(F, zero, one, addF, mulF, negF, ring, addF(x, radius), negF(x)),
       trans(
-        cong(
-          (fun (v : F) => addF(v, radius)),
-          ring_add_inverse(F, zero, one, addF, mulF, negF, ring, x)
-        ), ring_add_zero(F, zero, one, addF, mulF, negF, ring, radius)
+        sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, negF(x), x, radius)),
+        trans(
+          cong(
+            (fun (v : F) => addF(v, radius)),
+            ring_add_inverse(F, zero, one, addF, mulF, negF, ring, x)
+          ), ring_add_zero(F, zero, one, addF, mulF, negF, ring, radius)
+        )
       )
-    )
-  );
+    );
   let negLess := along lt(negF(x)) by cancels from lhs;
   exact (
     ordered_lt_implies_le(
@@ -90,7 +91,7 @@ def field_positive_reciprocal(
     field_exists_intro(
       (lt(x, zero) or lt(zero, x)), typed((lt(x, zero) or lt(zero, x)), right(positive))
     );
-  have inverseData : exists reciprocal : F. mulF(x, reciprocal) = one := getInverse(apart);
+  let inverseData : exists reciprocal : F. mulF(x, reciprocal) = one := getInverse(apart);
   obtain (reciprocal, inverseLaw) := inverseData;
   obtain (forward, backward) := scale(zero, reciprocal, x, positive);
   let productOne :=
@@ -128,28 +129,30 @@ def field_small_scaled_radius(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, epsilon, reciprocal, positive,
       positiveReciprocal
     );
-  have product : mulF(delta, denominator) = epsilon := trans(
-    ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, epsilon, reciprocal, denominator),
+  let product : mulF(delta, denominator) = epsilon :=
     trans(
-      cong(
-        mulF(epsilon),
-        trans(
-          ring_mul_comm(F, zero, one, addF, mulF, negF, ring, reciprocal, denominator), inverseLaw
-        )
-      ), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, epsilon)
-    )
-  );
-  have gap : addF(delta, mulF(delta, length)) = epsilon := trans(
-    sym(
+      ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, epsilon, reciprocal, denominator),
       trans(
-        ring_distribute(F, zero, one, addF, mulF, negF, ring, delta, one, length),
         cong(
-          (fun (v : F) => addF(v, mulF(delta, length))),
-          ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, delta)
-        )
+          mulF(epsilon),
+          trans(
+            ring_mul_comm(F, zero, one, addF, mulF, negF, ring, reciprocal, denominator), inverseLaw
+          )
+        ), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, epsilon)
       )
-    ), product
-  );
+    );
+  let gap : addF(delta, mulF(delta, length)) = epsilon :=
+    trans(
+      sym(
+        trans(
+          ring_distribute(F, zero, one, addF, mulF, negF, ring, delta, one, length),
+          cong(
+            (fun (v : F) => addF(v, mulF(delta, length))),
+            ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, delta)
+          )
+        )
+      ), product
+    );
   obtain (shiftForward, shiftBackward) := translate(zero, delta, mulF(delta, length));
   let shifted :=
     along((fun (v : F) => lt(v, addF(delta, mulF(delta, length))))) by ring_add_zero(
@@ -177,7 +180,7 @@ def field_bounded_scale_zero_converges(
     nonnegativeLength, epsilon, positive
   );
   obtain (bound, close) := vanishes(delta, positiveDelta);
-  have tail :
+  let tail :
     forall n : Nat. IndexLE(bound, n) -> FieldClose(F, addF, lt, mulF(xs(n), factor), zero, epsilon) {
     intro n, large;
     let boundedX :=

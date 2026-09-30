@@ -71,7 +71,7 @@ test("computable and evaluate parse, format stably and stay ordinary names elsew
 computable def one := 1;
 computable def two := 2;
 def uses_names(evaluate, computable : Nat) : Nat {
-  have expecting : Nat := evaluate;
+  let expecting : Nat := evaluate;
   exact expecting;
 }
 evaluate one + one expecting two;
@@ -85,5 +85,5 @@ evaluate one + one expecting two;
   assert.equal(formatMathScript(formatted), formatted);
   assert.match(formatted, /\ncomputable def one := 1;\n\ncomputable def two := 2;\n\n/);
   assert.match(formatted, /\n\nevaluate one \+ one expecting two;\n$/);
-  assert.match(formatted, /have expecting : Nat := evaluate;/);
+  assert.match(formatted, /let expecting : Nat := evaluate;/);
 });

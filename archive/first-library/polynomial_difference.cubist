@@ -11,14 +11,16 @@ def polynomial_difference_step(
   ) {
   let difference := addF(x, negF(r));
   // First write x = r + (x-r), so xq = rq + (x-r)q.
-  have recombine : addF(r, difference) = x := trans(
-    cong(addF(r), ring_add_comm(F, zero, one, addF, mulF, negF, ring, x, negF(r))),
-    ring_add_cancel_prefix(F, zero, one, addF, mulF, negF, ring, r, x)
-  );
-  have split : mulF(x, q) = addF(mulF(r, q), mulF(difference, q)) := trans(
-    cong((fun (v : F) => mulF(v, q)), sym(recombine)),
-    ring_distribute_left(F, zero, one, addF, mulF, negF, ring, r, difference, q)
-  );
+  let recombine : addF(r, difference) = x :=
+    trans(
+      cong(addF(r), ring_add_comm(F, zero, one, addF, mulF, negF, ring, x, negF(r))),
+      ring_add_cancel_prefix(F, zero, one, addF, mulF, negF, ring, r, x)
+    );
+  let split : mulF(x, q) = addF(mulF(r, q), mulF(difference, q)) :=
+    trans(
+      cong((fun (v : F) => mulF(v, q)), sym(recombine)),
+      ring_distribute_left(F, zero, one, addF, mulF, negF, ring, r, difference, q)
+    );
   // Distribute once, move x past (x-r), then factor (x-r) back out.
   let distribute :=
     cong(addF(a), ring_distribute(F, zero, one, addF, mulF, negF, ring, x, q, mulF(difference, d)));

@@ -117,7 +117,7 @@ def complex_straight_curve_endpoints(
   let negC := complex_neg(F, negF);
   let zeroC := complex_zero(F, zero);
   let oneC := complex_one(F, zero, one);
-  have recover : addC(a, error) = b := trans(
+  let recover : addC(a, error) = b := trans(
     sym(ring_add_assoc(Complex(F), zeroC, oneC, addC, mulC, negC, ringC, a, negC(a), b)),
     trans(
       cong(

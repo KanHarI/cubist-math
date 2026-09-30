@@ -106,11 +106,12 @@ def residue_coordinates_scale(
   let p := residue_polynomial(K, M, r);
   let f := polynomial_coefficients(K, p);
   let n := modulus_degree(K, M);
-  have coefficient : polynomial_coefficients(K, polynomial_scale(K, a, p)) = series_scale(K, a, f) := FunExt(
-    U0, Nat, (fun (j : Nat) => af_carrier(K)),
-    polynomial_coefficients(K, polynomial_scale(K, a, p)), series_scale(K, a, f),
-    polynomial_scale_coefficient(K, a, p)
-  );
+  let coefficient : polynomial_coefficients(K, polynomial_scale(K, a, p)) = series_scale(K, a, f) :=
+    FunExt(
+      U0, Nat, (fun (j : Nat) => af_carrier(K)),
+      polynomial_coefficients(K, polynomial_scale(K, a, p)), series_scale(K, a, f),
+      polynomial_scale_coefficient(K, a, p)
+    );
   exact with unfolding [] {
     trans(
       cong(

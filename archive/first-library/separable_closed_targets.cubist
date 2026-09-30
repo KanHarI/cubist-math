@@ -72,7 +72,7 @@ def distinct_splitting_to_closed(
   let generates :=
     generated_field_generators(K, R, d, n, rs, root_generated_generates(K, L, e, n, roots));
   let algebraic := generated_splitting_roots_algebraic(K, L, e, p, nonzero, n, roots, a, equation);
-  have distinctR : Injective(Fin(n), af_carrier(R), rs) {
+  let distinctR : Injective(Fin(n), af_carrier(R), rs) {
     intro i, k, same;
     exact distinct(i, k, cong(subfield_value(L, S), same));
   }
@@ -82,7 +82,7 @@ def distinct_splitting_to_closed(
       DistinctPolynomialSplitting(R, q, n),
       (rs, b, root_generated_factorization(K, L, e, p, n, roots, a, equation), distinctR)
     );
-  have send :
+  let send :
     EmbeddingsOver(K, R, d, T, j) -> DistinctPolynomialSplitting(T, polynomial_map(K, T, j, p), n) {
     intro extension;
     obtain (h, over) := extension;
@@ -111,7 +111,7 @@ def separable_polynomial_splits_in_closed(
   let n := polynomial_degree(K, p);
   let Goal := SeparableIn(K, T, j, p);
   let W := (exists L : AlgebraicField. exists e : FieldEmbedding(K, L). SeparableIn(K, L, e, p));
-  have send : W -> Goal {
+  let send : W -> Goal {
     intro w;
     obtain (L, e, splitting) := w;
     exact mere_eliminate(

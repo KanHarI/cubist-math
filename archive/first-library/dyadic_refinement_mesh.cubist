@@ -28,7 +28,7 @@ def interval_refinement_mesh(
   let fine := IntervalRefinementAdmissible(F, zero, one, lt);
   let other := IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh);
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
-  have combine :
+  let combine :
     forall a : I. forall b : I. forall tag : I. forall piece : SampleSubdivision(I, a, b).
     coarse(a, b, tag) -> fine(a, b, tag, piece) -> other(a, b, tag, piece) {
     intro a, b, tag, piece, coarseData, fineData;

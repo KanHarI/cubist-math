@@ -31,17 +31,17 @@ test("a quantified variable the body does not mention is reported, with its plai
   clean("def K(A, B : U0) := fun (a : A) => fun (b : B) => a;");
 });
 
-test("let, have and obtain whose names nothing after them uses are reported", () => {
+test("let and obtain whose names nothing after them uses are reported", () => {
   warned("def f(n : Nat) : Nat { let unused := succ(n); exact n; }", /^unused is never used after this let: remove it\.$/);
-  warned("def f(n : Nat) : Nat { have h : Nat := n; exact n; }", /^h is never used after this have: remove it\.$/);
-  warned("def f(n : Nat) : Nat { have h : n = n { rfl; } exact n; }", /^h is never used after this have: remove it\.$/);
+  warned("def f(n : Nat) : Nat { let h : Nat := n; exact n; }", /^h is never used after this let: remove it\.$/);
+  warned("def f(n : Nat) : Nat { let h : n = n { rfl; } exact n; }", /^h is never used after this let: remove it\.$/);
   warned("def f(p : Nat and Nat) : Nat { obtain (a, b) := p; exact 0; }", /^None of a, b is used after this obtain: remove it\.$/);
   clean("def f(n : Nat) : Nat { let m := succ(n); exact m; }");
   clean("def f(p : Nat and Nat) : Nat { obtain (a, b) := p; exact a; }");
   // Used inside a nested block.
-  clean("def f(n : Nat) : n = n { have h : n = n { rfl; } have g : n = n { exact h; } exact g; }");
+  clean("def f(n : Nat) : n = n { let h : n = n { rfl; } let g : n = n { exact h; } exact g; }");
   // hlevel and generated squash clauses use the context without naming it.
-  clean("def f(A : U0, p : IsProp(U0, A)) : IsSet(U0, A) { have h : IsProp(U0, A) := p; hlevel; }");
+  clean("def f(A : U0, p : IsProp(U0, A)) : IsSet(U0, A) { let h : IsProp(U0, A) := p; hlevel; }");
 });
 
 test("clause arguments, coordinates, hypotheses and parameters are never reported", () => {

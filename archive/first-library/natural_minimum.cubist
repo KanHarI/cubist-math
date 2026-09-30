@@ -48,7 +48,7 @@ def natural_minimum_from_witness(
   obtain (m, bound, pm, noLess) := least_bounded_witness(
     P, (fun (k : Nat) => excluded_middle(P(k), prop(k))), n, pn
   );
-  have least : forall k : Nat. P(k) -> le(m, k) {
+  let least : forall k : Nat. P(k) -> le(m, k) {
     intro k, pk;
     exact match nat_le_total(m, k) return le(m, k) {
       left yes => yes;

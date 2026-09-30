@@ -52,7 +52,7 @@ def complex_uniform_curve_add(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, r, s, positiveR,
     positiveS
   );
-  have close :
+  let close :
     forall a : FieldUnitInterval(F, zero, one, lt). forall b : FieldUnitInterval(F, zero, one, lt).
     FieldClose(
       F, addF, lt, field_interval_coordinate(F, zero, one, lt)(a),

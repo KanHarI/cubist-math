@@ -52,7 +52,7 @@ def archimedean_interval_fine_samples(
     );
   let A := (exists depth : Nat. lt(dyadic_width(F, half, depth, width), mesh));
   let B := FineIntervalSamples(F, zero, one, addF, negF, lt, mesh, a, b);
-  have mapping : A -> B {
+  let mapping : A -> B {
     intro data;
     obtain (depth, small) := data;
     exact (

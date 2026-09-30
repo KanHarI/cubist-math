@@ -163,7 +163,7 @@ def affine_dyadic_integral_add(
         bounds, half, halfSum, z, slope, g, uniformG, a, b, ordered, complete
       )
     );
-  have computes : forall n : Nat. summed(n) = samples(n) {
+  let computes : forall n : Nat. summed(n) = samples(n) {
     intro n;
     exact sym(
       curve_subdivision_samples_add(
@@ -251,7 +251,7 @@ def affine_dyadic_integral_scale(
         bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
       )
     );
-  have computes : forall n : Nat. products(n) = samples(n) {
+  let computes : forall n : Nat. products(n) = samples(n) {
     intro n;
     exact sym(
       curve_subdivision_samples_scale(
@@ -328,7 +328,7 @@ def affine_dyadic_integral_cong(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
       bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
     );
-  have computes : forall n : Nat. xs(n) = ys(n) {
+  let computes : forall n : Nat. xs(n) = ys(n) {
     intro n;
     exact curve_subdivision_samples_cong(
       F, zero, one, addF, mulF, negF, lt, curve, f, g, same, a, b,

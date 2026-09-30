@@ -113,10 +113,11 @@ def dyadic_width_growth_step(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic, mulF(factor, next), h, next, h,
       oldBound, nextBound
     );
-  have distribute : mulF(addF(factor, one), next) = addF(mulF(factor, next), next) := trans(
-    ring_distribute_left(F, zero, one, addF, mulF, negF, ring, factor, one, next),
-    cong(addF(mulF(factor, next)), ring_mul_one(F, zero, one, addF, mulF, negF, ring, next))
-  );
+  let distribute : mulF(addF(factor, one), next) = addF(mulF(factor, next), next) :=
+    trans(
+      ring_distribute_left(F, zero, one, addF, mulF, negF, ring, factor, one, next),
+      cong(addF(mulF(factor, next)), ring_mul_one(F, zero, one, addF, mulF, negF, ring, next))
+    );
   let productBound :=
     along((fun (v : F) => FieldLe(F, lt, v, addF(h, h)))) by sym(distribute) from doubledBound;
   exact along FieldLe(F, lt, mulF(addF(factor, one), next)) by halfSum(width) from productBound;
@@ -135,7 +136,7 @@ def dyadic_width_growth_bound(
     F, lt,
     mulF(field_natural(F, zero, one, addF)(succ(depth)), dyadic_width(F, half, depth, width)), width
   ) {
-  have base :
+  let base :
     forall width : F. FieldLe(F, lt, zero, width)
     -> FieldLe(
       F, lt, mulF(field_natural(F, zero, one, addF)(succ(0)), dyadic_width(F, half, 0, width)),

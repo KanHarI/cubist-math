@@ -16,7 +16,7 @@ def two : Nat {
 }
 
 def two_is_two : two = 2 {
-  have same : 2 = 2 := refl(2);
+  let same : 2 = 2 := refl(2);
   exact same;
 }
 `;
@@ -51,10 +51,10 @@ test("a tactic's check is derived as it runs, and fails at the tactic", async t 
   };
   try { await program.check(source, "issued"); }
   finally { InstructionDriver.prototype.check = check; }
-  // have's value, refl(2), is derived when have is elaborated; the
+  // let's value, refl(2), is derived when let is elaborated; the
   // definitions are admitted after.
   assert.ok(issued.includes("PLam"), issued.join(", "));
-  // An instruction failure in have's check is that tactic's error.
+  // An instruction failure in let's check is that statement's error.
   InstructionDriver.prototype.check = function (expression, type, context) {
     if (this.kernel.node(expression).kind === "PLam") throw new Error("No rule for this yet.");
     return check.call(this, expression, type, context);
@@ -64,7 +64,7 @@ test("a tactic's check is derived as it runs, and fails at the tactic", async t 
   finally { InstructionDriver.prototype.check = check; }
   const failed = result.outputs.find(output => output.name === "two_is_two");
   assert.equal(failed.verified, false);
-  // Reported at have, line 8, not at the declaration.
+  // Reported at let, line 8, not at the declaration.
   assert.match(failed.reason, /^Instruction kernel: No rule for this yet\. at 8:3$/);
 });
 

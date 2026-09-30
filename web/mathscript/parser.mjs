@@ -511,47 +511,34 @@ export function parse(source, typeOnly = false) {
           throw Object.assign(new Error("Use obtain to unpack a pair."), {
             offset: target.start,
           });
-        define(t.text === "let" ? "let name := term;" : "obtain (a, b) := pair;");
-        const value = expr();
-        const e = take(";");
-        s = { kind: t.text, target, value, start: t.start, end: e.end };
-      } else if (t.text === "have") {
-        const n = name();
-        if (peek() === "=") define("have name := term;");
-        if (binds()) {
-          take();
-          const value = expr(), end = take(";");
-          s = { kind: "haveValue", name: n, value, start: t.start, end: end.end };
-        } else {
+        if (t.text === "let" && peek() === ":") {
+          // let name : T := term; states the name's type, and
+          // let name : T { … } proves T in a nested block.
           take(":");
           const type = expr();
-          if (peek() === ":=") {
-            take(":=");
+          if (binds()) {
+            take();
             const value = expr(), end = take(";");
-            s = { kind: "haveValue", name: n, type, value, start: t.start, end: end.end };
+            s = { kind: "let", target, type, value, start: t.start, end: end.end };
           } else {
             const body = block();
-            s = { kind: "have", name: n, type, body, start: t.start, end: ts[i - 1].end };
+            s = { kind: "let", target, type, body, start: t.start, end: ts[i - 1].end };
           }
+        } else {
+          define(t.text === "let" ? "let name := term;" : "obtain (a, b) := pair;");
+          const value = expr();
+          const e = take(";");
+          s = { kind: t.text, target, value, start: t.start, end: e.end };
         }
+      } else if (t.text === "have") {
+        throw Object.assign(new Error("have was removed: write let name : T := term; or prove the claim in a block, let name : T { … }."),
+          { offset: t.start });
       } else if (t.text === "show") {
-        // show T; restates the goal as a type equal to it by computation.
-        const type = expr(), end = take(";");
-        s = { kind: "show", type, start: t.start, end: end.end };
+        throw Object.assign(new Error("show was removed: prove the restated goal in a block, let h : T { … }, then exact h;."),
+          { offset: t.start });
       } else if (t.text === "suffices") {
-        // suffices h : T by proof; proves the goal from h : T, and the
-        // statements after it prove T. The proof is a term or a block.
-        if (!/^[A-Za-z_]/.test(peek()) || peek() === "EOF" || ts[i + 1].text !== ":")
-          throw Object.assign(new Error("suffices names its hypothesis: suffices h : T by term;"), { offset: ts[i].start });
-        const n = name();
-        take(":");
-        const type = expr();
-        if (peek() !== "by")
-          throw Object.assign(new Error(`suffices needs a proof of the goal from ${n.text} after by: suffices ${n.text} : T by term;`), { offset: ts[i].start });
-        const by = take("by");
-        const proof = peek() === "{" ? { kind: "block", body: block() } : { kind: "term", value: expr() };
-        const end = proof.kind === "term" ? take(";").end : ts[i - 1].end;
-        s = { kind: "suffices", name: n, type, proof, by: { start: by.start, end: by.end }, start: t.start, end };
+        throw Object.assign(new Error("suffices was removed: prove the claim first, let h : T { … }, then prove the goal from h."),
+          { offset: t.start });
       } else if (t.text === "rfl") {
         const end = take(";");
         s = { kind: "rfl", start: t.start, end: end.end };
