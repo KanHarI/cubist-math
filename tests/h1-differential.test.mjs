@@ -27,19 +27,26 @@ const ok = (result,name) => assert.ok(result.outputs.find(output=>output.name===
   `${name}: ${result.outputs.find(output=>output.name===name)?.reason}`);
 
 test("X1 and X3: native instruction judgements, equalities and refusals replay through τ",async t=>{
-  execFileSync("make",["-C","kernel","build/test-instructions"],{stdio:"pipe"});
   const directory = await mkdtemp(join(tmpdir(),"h1-instructions-")), file=join(directory,"fixtures.jsonl");
   t.after(()=>rm(directory,{recursive:true,force:true}));
   execFileSync("kernel/build/test-instructions",["--fixtures",file],{stdio:"pipe"});
-  const report=replayInstructions(module,(await readFile(file,"utf8")).trim().split("\n").map(line=>JSON.parse(line)));
+  const fixtures=(await readFile(file,"utf8")).trim().split("\n").map(line=>JSON.parse(line));
+  const report=replayInstructions(module,fixtures);
   assert.deepEqual(report.failures,[]);
-  assert.equal(report.replayed,209); assert.equal(report.equalities,74);
+  // Pinned evidence counts: update the record when native fixtures change.
+  assert.equal(report.replayed,202); assert.equal(report.equalities,70);
   assert.equal(report.refused,42); assert.equal(report.unequal,1);
   assert.deepEqual(report.refusals,{replace:2,lookup:1,lambda:1,extend:3,step:4,comp:1,systemTube:2,
     systemOverlap:3,system:1,pushout:1,pushRight:1,pushLeft:1,iota:1,hcomp:1,trans:1,
     glueBase:1,gluePiece:1,glue:1,glueTermBase:1,glueTerm:1,unglue:1,sup:2,wElim:1,
     apply:2,define:1,lift:1,universeEntry:2,universeTerm:1,level:1,levelApplyTerm:1});
   for(const kind of ["NatRec","WRec","PushPath","Comp","HComp","Trans"]) assert.ok(report.kinds[kind],kind);
+  for(const reason of report.refusalReasons) assert.equal(reason.declared.kind,reason.native.kind);
+  const refusal=fixtures.find(fixture=>fixture.operation === "glueBase");
+  const wrongKind=replayInstructions(module,[{...refusal,nativeError:{...refusal.nativeError,kind:1}}]);
+  assert.match(wrongKind.failures[0]?.reason,/no longer matches its recorded reason/);
+  const wrongReason=replayInstructions(module,[{...refusal,nativeError:{...refusal.nativeError,expected:"unrelated refusal"}}]);
+  assert.match(wrongReason.failures[0]?.reason,/Refusal diagnostic changed/);
 });
 
 // X1/X2: point formation and elimination. Translation introduces applications

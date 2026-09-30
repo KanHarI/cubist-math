@@ -1,7 +1,7 @@
 # H1 representation replay evidence
 
 Status: experimental implementation, 2026-09-30. The representation option
-and archive replay are implemented. X2 remains partially covered;
+and archive replay are implemented. X2, X4 and X5 remain partially traced;
 this record does not mark the differential release gate discharged.
 
 ## The checked representation option
@@ -32,10 +32,10 @@ between native and declared sorts.
 
 | Cases | Evidence |
 | --- | --- |
-| X1, X3 | 209 successful judgements from the native instruction test, including 74 equalities, replay in the declared kernel. All 42 rejected requests involving native types and the unequal conversion query retain their verdict. They cover Nat, W, pushout, Comp, HComp and Trans; additional source fixtures cover sums |
+| X1, X3 | 202 successful judgements from the native instruction test, including 70 equalities, replay in the declared kernel. All 42 rejected requests involving native types and the unequal conversion query retain their verdict and error class. They cover Nat, W, pushout, Comp, HComp and Trans; additional source fixtures cover sums |
 | X2 | Small Nat and sum normal-form comparisons, and a command that compares selected archive definitions, after administrative Beta/Eta. Literal alpha equality fails as described below; the whole archive value-normal-form comparison is not completed |
-| X4 | All 3,804 archive declarations check, zero gaps; all 3,916 stored definitions re-derive. The winding canonicity fixture and all three evaluation directives agree under both options |
-| X5 | Coverage reports record revision, modified-tree flag, Node, CPU, platform, limits, times, steps and arena size, including the source elaboration phase of the declared run |
+| X4, in part | The winding canonicity fixture and all three evaluation directives agree under both options. Whole-archive checking and re-derivation are manual observations recorded below, rather than a CI test |
+| X5, in part | A small fixture tests the coverage report's revision, modified-tree flag, Node, CPU, platform, limits, times, steps and arena size. Whole-archive cost observations are manual evidence, including the source elaboration phase of the declared run |
 | X6, X7 | Finite-universe calls for Nat, sum, W and pushout; tier-1 formers remain native |
 | X8 | All three mixed-tier calls check natively and fail after translation; the verifier names each failed call |
 
@@ -46,7 +46,13 @@ reconstructs the checked contexts and formulas, then independently derives
 the typing and equality images. Refusal snapshots preserve the request and
 independently check every premise in both kernels. Unfinished systems retain
 their System/Tube/Overlap instruction chains, and entry failures retain the
-entry's type. In particular, the transport snapshot retains its input system
+entry's type. A single native request produces each rejection and its
+snapshot, without evaluating its premises twice. Replay compares the actual
+native error class with the recorded one and requires the declared class to
+agree. Non-mismatch errors also retain the expected diagnostic, with explicit
+diagnostics for changed declared APIs. Type mismatches compare their class:
+fresh binder names during replay can change the detailed message.
+In particular, the transport snapshot retains its input system
 and wrong clause list; an ill-typed raw Trans term would not test that API
 condition. Failed requests cover both changed constructor/eliminator APIs
 and shared baseline operations involving native types: replacement, context
@@ -123,7 +129,7 @@ zero gaps and zero deadlines.
 | Re-derivation instructions | 2,006,960 | 2,357,050 |
 | Re-derivation steps | 133,990,469 | 184,485,348 |
 | Final target arena, nodes | 5,823,480 | 6,329,830 |
-| Final target arena, MiB | 481 | 481 |
+| Final target arena reserved capacity, MiB | 481 | 481 |
 | Process peak RSS, MiB | 2,474 | 2,462 |
 
 Machine: Apple M3 Pro, 12 logical CPUs, 36 GiB RAM; darwin arm64;

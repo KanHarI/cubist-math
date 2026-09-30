@@ -100,12 +100,30 @@ static void fixture_judgement(uint32_t id, const char *request, int line) {
     fputc('\n', fixture_file);
 }
 
+static void fixture_string(const char *value) {
+    fputc('"', fixture_file);
+    for (const unsigned char *p = (const unsigned char *)value; *p; ++p) {
+        if (*p == '"' || *p == '\\') fprintf(fixture_file, "\\%c", *p);
+        else if (*p < 32) fprintf(fixture_file, "\\u%04x", *p);
+        else fputc(*p, fixture_file);
+    }
+    fputc('"', fixture_file);
+}
+
+static void fixture_error(const char *fragment) {
+    fprintf(fixture_file, "\"nativeError\":{\"kind\":%u,\"expected\":", (unsigned)cc_kernel_error_kind(k));
+    fixture_string(fragment);
+    fputs("},", fixture_file);
+}
+
 /* The rejected request itself matters: a transport's malformed clause list
  * cannot be represented by an ill-typed Trans term. Keep its input system. */
 static void fixture_refusal(const char *operation, const cc_judgement_id *arguments,
-                            size_t count, cc_formula_id face, cc_entry_id entry, uint32_t operand, int line) {
+                            size_t count, cc_formula_id face, cc_entry_id entry, uint32_t operand, const char *fragment, int line) {
     if (!fixture_file) return;
-    fprintf(fixture_file, "{\"operation\":\"%s\",\"line\":%d,\"arguments\":[", operation, line);
+    fputc('{', fixture_file);
+    fixture_error(fragment);
+    fprintf(fixture_file, "\"operation\":\"%s\",\"line\":%d,\"arguments\":[", operation, line);
     for (size_t index = 0; index < count; ++index) {
         if (index) fputc(',', fixture_file);
         if (arguments[index]) fixture_fact(arguments[index], line);
@@ -121,11 +139,13 @@ static void fixture_refusal(const char *operation, const cc_judgement_id *argume
     fputs("}\n", fixture_file);
 }
 
-static void fixture_unadmitted(cc_term reference, int line) {
+static void fixture_unadmitted(cc_term reference, const char *fragment, int line) {
     if (!fixture_file) return;
     cc_term type, value;
     assert(cc_kernel_definition(k, reference, NULL, &value, &type));
-    fprintf(fixture_file, "{\"operation\":\"lookup\",\"line\":%d,\"arguments\":[{\"kind\":1,\"context\":[],\"term\":", line);
+    fputc('{', fixture_file);
+    fixture_error(fragment);
+    fprintf(fixture_file, "\"operation\":\"lookup\",\"line\":%d,\"arguments\":[{\"kind\":1,\"context\":[],\"term\":", line);
     fixture_node(value);
     fputs(",\"type\":", fixture_file); fixture_node(type);
     fputs(",\"other\":null}],\"face\":null,\"entry\":null,\"operand\":0}\n", fixture_file);

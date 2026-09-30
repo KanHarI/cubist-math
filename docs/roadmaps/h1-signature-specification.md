@@ -2166,7 +2166,7 @@ Status on 2026-09-30, to be kept current with each change to sections
 entry gives: a kernel case in `kernel/tests/test_signatures.c`; a driver,
 source or verifier case in `tests/h1-acceptance.test.mjs`,
 `tests/h1-admission.test.mjs`, `tests/h1-driver.test.mjs`,
-`tests/inductive-declarations.test.mjs`, `tests/declared-match.test.mjs`
+`tests/inductive-declarations.test.mjs`, `tests/declared-match.test.mjs`,
 `tests/corpus.test.mjs`, `tests/automatic-clauses.test.mjs`,
 `tests/truncation-migration.test.mjs`, `tests/proof-migration.test.mjs`
 or `tests/h1-differential.test.mjs`. *In part* marks a case whose rest is listed as
@@ -2187,7 +2187,7 @@ refuse.
 | Trust T1–T7 | Kernel: T1, T5, T6, T7. Driver: T5, T6. Source: T1 (the option named when off), T2 (direct, through a definition, through an import), T3, T4. Verifier: the marker compared apart from assumptions (6.4) | — | — |
 | Truncation policy G1–G7 | Source: G1 (`Tr(U1, U0)` is not in `U0`), G2 (small truncation into a proposition in U1), G3 (the archive checks in full; 3,804 declarations, 0 gaps), G5 (rebuilt `CauchySame` and `EventualClose` in U0 without assumptions), G6 (proposition resized through LEM, witness with set evidence refused), G7 (large double-negation elimination, LEM retained). Verifier: G4 (exact ledger change accepted, unlisted or altered pin refused) | — | — |
 | Resources R1–R5 | Kernel: R1 (a sort, constructor and eliminator whose indices are out of range, and a list whose next cell is no list, built as raw syntax: inspected, reduced or refused with an error, and refused by the term checker and the instructions), R2, R3; a former of the wrong shape and a truncation level above the maximum are refused. Driver: R1 in part (an operand that is not a 32-bit unsigned integer is refused), R5 (the codec round trip); `tests/h1-admission.test.mjs` checks ABI version 3. Source: R4 (a module of ABI version 2 refused by the loader) | — | — |
-| Differential X1–X8 | Driver: X1 (209 successful instruction judgements, 74 equalities, 42 rejected requests and an unequal conversion query; Nat, sum, W and pushout), X2 in part (small normal-form fixtures, after administrative Beta/Eta), X3 (the native instruction fixtures' Comp, HComp and Trans), X4 (declared archive run and winding evaluations), X5 (cost record), X6 (finite-universe calls for all four types), X7 (tier-1 formers stay native), X8 (mixed calls fail for sum, W and pushout; the verifier names each call) | X2: all archive value normal forms and the literal alpha criterion; see the [differential record](h1-differential-evidence.md) | — |
+| Differential X1–X8 | Driver: X1 (202 successful instruction judgements, 70 equalities, 42 rejected requests and an unequal conversion query; Nat, sum, W and pushout), X2 in part (small normal-form fixtures, after administrative Beta/Eta), X3 (the native instruction fixtures' Comp, HComp and Trans), X4 in part (winding canonicity and evaluations), X5 in part (cost-report fields on a small fixture), X6 (finite-universe calls for all four types), X7 (tier-1 formers stay native), X8 (mixed calls fail for sum, W and pushout; the verifier names each call) | X2: all archive value normal forms and the literal alpha criterion. X4 and X5: whole-archive replay and cost observations are manual evidence; rerun both coverage commands sequentially at the merged release head on a clean tree before counting these release cases. See the [differential record](h1-differential-evidence.md) | — |
 
 ## 11. Open questions
 

@@ -10,10 +10,20 @@ import { instructions, stepRules } from "../web/cubical-instructions.mjs";
 const binders = new Set(["Var","Pi","Lam","Sigma","W","LPi","LLam"]);
 const native = new Set(["Nat","Zero","Succ","NatRec","Sum","Inl","Inr","SumRec","W","Sup","WRec",
   "Pushout","PushLeft","PushRight","PushPath","PushElim"]);
+const errorKinds = ["none","mismatch","budget","deadline","other"];
+// These requests use a different declared API (or, for Lookup, the
+// documented raw-definition workflow). Pin that diagnostic as well as its
+// error class; shared baseline requests retain the native diagnostic.
+const declaredRefusalMessages = {
+  lookup:"The term checker has no rules for declared types",
+  pushLeft:"Expected Pushout, found Sort",
+  sup:"Expected W, found Sort",
+  hcomp:"A declared data sort has no formal composition or transport",
+};
 export function replayInstructions(module, fixtures) {
   const kernel = new CubicalKernel(module), source = new NativeCubicalElaborator(kernel);
   const target = new H1Translation(module,source);
-  const report = { replayed:0, equalities:0, refused:0, unequal:0, refusals:{}, kinds:{}, failures:[] };
+  const report = { replayed:0, equalities:0, refused:0, unequal:0, refusals:{}, refusalReasons:[], kinds:{}, failures:[] };
   const importNode = node => {
     if (!node) return 0;
     let [index,payload,children] = node;
@@ -114,15 +124,30 @@ export function replayInstructions(module, fixtures) {
         default: throw Error(`Unknown refusal operation ${fixture.operation}.`);
       }
       };
-      let rejected=false;
-      try { const answer=execute(); rejected=fixture.operation === "convertible" && answer === false; }
+      try {
+        const answer=execute();
+        if(fixture.operation === "convertible" && answer === false) return {kind:"none",message:""};
+      }
       catch(error) {
         if(!["other","mismatch"].includes(error.kind)) throw error;
-        rejected=true;
+        return {kind:error.kind,message:error.message};
       }
-      if(!rejected) throw Error(`${declared ? "Declared" : "Native"} request accepted ${fixture.operation}.`);
+      throw Error(`${declared ? "Declared" : "Native"} request accepted ${fixture.operation}.`);
     };
-    for(const arguments_ of [[source,terms,context,false],[target.checker,images,imageContext,true]]) attempt(...arguments_);
+    const nativeReason=attempt(source,terms,context,false), declaredReason=attempt(target.checker,images,imageContext,true);
+    if(!fixture.nativeError || nativeReason.kind !== errorKinds[fixture.nativeError.kind])
+      throw Error(`Native refusal no longer matches its recorded reason: ${nativeReason.message}`);
+    if(declaredReason.kind !== nativeReason.kind)
+      throw Error(`Refusal class changed from ${nativeReason.kind} to ${declaredReason.kind}: ${declaredReason.message}`);
+    if(nativeReason.kind === "other") {
+      const expected=declaredRefusalMessages[fixture.operation] ?? fixture.nativeError.expected;
+      if(!nativeReason.message.includes(fixture.nativeError.expected) || !declaredReason.message.includes(expected))
+        throw Error(`Refusal diagnostic changed: native ${nativeReason.message}; declared ${declaredReason.message}`);
+    }
+    // Mismatch fixtures compare the kernel's type-error class: replay can
+    // choose fresh binder names and expose a different mismatch diagnostic.
+    report.refusalReasons.push({line:fixture.line,operation:fixture.operation,
+      recordedExpected:fixture.nativeError.expected,native:nativeReason,declared:declaredReason});
     if(fixture.operation === "convertible") { report.unequal++; return; }
     report.refused++; report.refusals[fixture.operation]=(report.refusals[fixture.operation] ?? 0)+1;
   };
