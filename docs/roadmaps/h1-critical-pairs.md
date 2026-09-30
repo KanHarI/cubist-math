@@ -6,6 +6,14 @@ sections 3.3–3.7. It supplies the argument requested by release checklist
 item 2. The maintainer must review its coverage and joins; adding this draft
 does not record that decision or discharge the model and canonicity gates.
 
+Review on 2026-09-30 found two cited regressions weaker than their entries.
+CP01's `elimination_capture` constructor, `wrap(p : base = base) : base =
+base`, has boundaries that ignore `p`, and A16 checked a displayed clause's
+shape without comparing elimination orders. CP07's test substituted both
+coordinates before normalizing, so its two branches were alpha-equal and
+selected the same wall. Both are replaced below; the new tests assert that
+the two branches differ before they join.
+
 The argument concerns well-typed admitted signatures and substitutions that
 preserve the finite-level fragment. It assumes substitution stability and
 the conversion congruences of the baseline kernel, as section 4.1 does.
@@ -155,21 +163,24 @@ formulas and parameter lines with a fixed seed.
 
 | Pair | Peak and joining expression | Representative kernel test |
 | --- | --- | --- |
-| CP01 | `elim(c @ ε)`: Iota then Path gives `⟦β⟧`; Path then elimination gives `elim(β)`, joined by H1 | `elimination`, both circle endpoints with a dependent motive; `elimination_capture`, a path position in a boundary |
+| CP01 | `elim(c @ ε)`: Iota then Path gives `⟦β⟧`; Path then elimination gives `elim(β)`, joined by H1 | `elimination`, both circle endpoints with a dependent motive, and A16's `fix`, whose boundary gives an earlier constructor the path abstraction `⟨i⟩ loop @ i`; `elimination_capture`, `twist(p) : Path(i; Path(j; s, base, base), wrap(p), p)`, whose faces give its path-valued position to an earlier constructor and apply it at a free formula. Each compares both orders; the clause types a driver derives for `fix` and `twist` equal the reported ones |
 | CP02 | Two constructor boundaries at a corner: either restriction order gives the same typed corner | `boundaries`, N3, all torus corners and both path-step orders |
 | CP03 | `elim(hcomp[ψ ↦ w] w₀)` where `ψ` becomes true: eliminate then Face, or Face then eliminate, gives `elim(w(1))` | `elimination`, CP03, a nonconstant loop tube and a dependent motive |
 | CP04 | Data composition versus held tube: pushing the argument telescope then Face, or Face first, gives `c(θ_w(1))` | `critical_composition_pairs`, CP04, `succ(q @ i)` for `q : zero = m`, ending at `succ(m)` rather than its base `succ(zero)` |
 | CP04 (empty) | Data composition versus empty-tube deletion: the empty wall contributes no telescope restriction; either order gives the constructor of the telescope composition with that wall deleted | Data composition argument above; no separate regression for this overlap |
 | CP05 | Higher composition versus held tube: its generated hcomp selects transport at constancy face `1`, giving `w(1)` | `critical_composition_pairs`, CP05, `p @ i` for `p : base = x`, ending at `x` rather than `base` |
 | CP06 | Corrected transport versus constructor boundary: correction wall at `h = 1` gives `transp(b_{l,ε}(0))` | `kan`, `commutes` on merid and squash faces; `transport_properties`, K10 |
-| CP07 | Two correction walls selected at a corner: equality of boundary pieces gives equality of their squeezes | `kan`, CP07, both corner restriction orders for 2- and 3-dimensional squash |
+| CP07 | Two correction walls selected at a corner: equality of boundary pieces gives equality of their squeezes | `kan`, CP07: each order restricts one dimension of the corrected transport and normalizes, so Face selects that dimension's wall, before it restricts the other; for 2- and 3-dimensional squash, at every corner of the first two dimensions |
 | CP08 | Any structural transport case versus constancy Face: the telescope, correction or component transports restrict to `u₀` | `transport_properties`, K11, structural reduction before restriction to `φ` |
 | CP09 | Transport of formal hcomp versus held tube: either order gives transport of `w(1)` | `kan`, CP09, a meridian tube along a nonconstant type line |
 | CP10 | Empty-tube deletion versus selection of a held tube: the empty wall cannot be selected, and the surviving tube gives `w(1)` | `critical_composition_pairs`, CP10, an empty wall and `p @ i` ending at `x` rather than `base` |
 
 CP03, CP04, CP05 and CP10 take the face-selection branch with an explicit
 `CC_STEP_FACE` step after restriction. Their structural branch reduces
-before restriction, independently of the normalizer's rule ordering.
+before restriction, independently of the normalizer's rule ordering. CP07
+normalizes after its first restriction in each branch, and CP01 takes an
+explicit first step in each order; both tests assert that the branches
+differ before they are compared.
 
 Several held tubes are not separate rules indexed by syntactic tube order:
 checked compatibility identifies their selected terms. Their intersections

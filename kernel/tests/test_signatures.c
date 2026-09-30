@@ -89,7 +89,7 @@ enum {
     KAN_A = 520, KAN_B, KAN_E, KAN_X, KAN_M, KAN_Q, KAN_Y = 540,
     ELIM_P = 600, ELIM_PZ = 602, ELIM_N, ELIM_H, ELIM_PS, ELIM_Z, ELIM_Q, ELIM_PB = 609, ELIM_PB2, ELIM_PL, ELIM_PL2,
     ELIM_T = 620, ELIM_A = 622, ELIM_PP, ELIM_B, ELIM_W, ELIM_L = 627, ELIM_BB, ELIM_C, ELIM_CBAR, ELIM_MS,
-    ELIM_V = 640, ELIM_PV = 642, ELIM_PW, ELIM_WV, ELIM_WP, ELIM_WPB, ELIM_MW,
+    ELIM_V = 640, ELIM_PV = 642, ELIM_PW, ELIM_WV, ELIM_WP, ELIM_WPB, ELIM_MW, ELIM_MF,
     S_PW = 700, PW_BASE, PW_LOOP, PW_P, PW_WRAP, PW_V, PW_PV = 707, PW_PL, PW_PE, PW_PBAR, PW_MW, PW_P0,
     S_BOX = 720, BOX_N, BOX, BOX_Z, BOX_X, AMB_Z = 730, AMB_P, AMB_F, AMB_FB, AMB_FL,
     ACC_C = 740, ACC_R, A6_N, A6_X, A6_G, E9_Y, E9_Z, E9_YB, E9_ZB, E9_SQ, E10_Z, E10_P, E10_PB, E10_PL,
@@ -98,6 +98,8 @@ enum {
     HB_FF, HB_WRAP2, HB_WRAP3, HB_UZ,
     S_MIXED = 810, S_TAG2, S_OUTER, S_HID2, S_BIG, S_OUTER2,
     PROP_A = 850, PROP_B, PROP_E, PROP_XA, PROP_XB,
+    /* CP01: constructors whose boundaries use a path-valued position. */
+    CP_TP = 900, CP_TWIST, CP_QP, CP_SQ, CP_TE, CP_TBAR, CP_MT, CP_QE, CP_QBAR, CP_MS,
     RES_C = 3000, RES_N = 3400,
     /* Four for each random term of the property tests. */
     PROP_R = 6000
@@ -1047,12 +1049,23 @@ static void kan(void) {
         cc_term box = reduct(carried, CC_STEP_WHNF);
         assert(kind(box) == CC_HCOMP && tubes(box) == 2 * steps + 1);
         walls_start_on_base(box);
-        /* CP07: different correction walls meet at a corner. Restrict the
-         * generated correction in both orders, including the 3-cube. */
+        /* CP07: different correction walls meet at a corner. Each order
+         * restricts one of the first two dimensions and reduces, so Face
+         * selects that dimension's wall, before it restricts the other: the
+         * two branches take different walls, and must join, on the 3-cube
+         * too. Restricting both first would give alpha-equal peaks. */
         for (unsigned a_end = 0; a_end < 2; ++a_end)
             for (unsigned b_end = 0; b_end < 2; ++b_end) {
-                cc_term ab = ck_endpoint_term(k, ck_endpoint_term(k, box, 1, a_end), 2, b_end);
-                cc_term ba = ck_endpoint_term(k, ck_endpoint_term(k, box, 2, b_end), 1, a_end);
+                ck_standalone(k);
+                cc_term wall_a = normal(ck_endpoint_term(k, box, 1, a_end));
+                ck_standalone(k);
+                cc_term wall_b = normal(ck_endpoint_term(k, box, 2, b_end));
+                assert(!ck_alpha_equal(k, wall_a, wall_b));
+                ck_standalone(k);
+                cc_term ab = ck_endpoint_term(k, wall_a, 2, b_end);
+                ck_standalone(k);
+                cc_term ba = ck_endpoint_term(k, wall_b, 1, a_end);
+                assert(!ck_alpha_equal(k, ab, ba));
                 assert(ck_alpha_equal(k, normal(ab), normal(ba)));
             }
         /* The first argument, y_0, is moved along the line. */
@@ -1263,6 +1276,22 @@ static cc_judgement_id path_over(cc_entry_id motive, cc_judgement_id loop, cc_en
 }
 
 static cc_term iota_of(cc_judgement_id j) { return reduct(j, CC_STEP_IOTA); }
+
+/* A point of type T as a term of `type`, where `type` reaches T by path
+ * steps at the given positions, in order: an endpoint or family a driver
+ * converts to state a clause type. */
+static cc_judgement_id as_type(cc_judgement_id point, cc_judgement_id type, unsigned count,
+                               const uint8_t positions[][3], const size_t *depths) {
+    cc_judgement_id equal = OK(cc_instr_refl(k, type));
+    for (unsigned n = 0; n < count; ++n)
+        equal = OK(cc_instr_step(k, equal, 1, positions[n], depths[n], CC_STEP_PATH));
+    return OK(cc_instr_convert(k, point, OK(cc_instr_symmetry(k, equal))));
+}
+
+/* A judgement whose type takes one path step at the given position. */
+static cc_judgement_id type_step(cc_judgement_id typing, const uint8_t *position, size_t depth) {
+    return OK(cc_instr_step(k, typing, 2, position, depth, CC_STEP_PATH));
+}
 
 /* The structural and explicit Face steps take different paths from each
  * peak; normalizing only their reducts does not depend on whnf's ordering.
@@ -1498,6 +1527,43 @@ static void elimination(void) {
     assert(kind(shown_line) == CC_PLAM && kind(child(shown_line, 1)) == CC_PAPP &&
            child(child(shown_line, 1), 0) == term_of(var(pw)));
     assert(child(fix_clause, 2) == term_of(var(pv)));
+
+    /* CP01 at fix, whose boundary gives wrap a path abstraction over an
+     * earlier constructor. Its clause is a variable of the type a driver
+     * derives, which must be the reported one; elim(fix @ 0) then reduces
+     * by Iota and the path step through the displayed annotation, or by the
+     * boundary and Iota, and the two join. */
+    cc_judgement_id wfix = OK(cc_instr_construct(k, wr, 3));
+    cc_judgement_id wline = OK(cc_instr_path_lambda(k, i, OK(cc_instr_path_apply(k, wloop, i, 0))));
+    wline = type_step(type_step(wline, (const uint8_t[]){1}, 1), (const uint8_t[]){2}, 1);
+    cc_judgement_id line_ends[2];
+    for (unsigned e = 0; e < 2; ++e)
+        line_ends[e] = as_type(var(pv), at(v, OK(cc_instr_path_apply(k, wline, 0, e))), 2,
+                               (const uint8_t[][3]){{1}, {1}}, (const size_t[]){1, 1});
+    cc_judgement_id over_line = OK(cc_instr_path(k, i, at(v, OK(cc_instr_path_apply(k, wline, i, 0))), line_ends[0],
+                                                 line_ends[1]));
+    cc_judgement_id lifted_loop = OK(cc_instr_path_lambda(k, i, OK(cc_instr_path_apply(k, var(pw), i, 0))));
+    lifted_loop = type_step(type_step(lifted_loop, (const uint8_t[]){1}, 1), (const uint8_t[]){2}, 1);
+    lifted_loop = as_type(lifted_loop, over_line, 1, (const uint8_t[][3]){{0, 1}}, (const size_t[]){2});
+    cc_judgement_id shown = OK(cc_instr_apply(k, OK(cc_instr_apply(k, var(mw), wline)), lifted_loop));
+    cc_judgement_id fix_ends[2] = {
+        as_type(shown, at(v, OK(cc_instr_path_apply(k, wfix, 0, 0))), 1, (const uint8_t[][3]){{1}}, (const size_t[]){1}),
+        as_type(var(pv), at(v, OK(cc_instr_path_apply(k, wfix, 0, 1))), 1, (const uint8_t[][3]){{1}}, (const size_t[]){1})};
+    cc_judgement_id fix_type = OK(cc_instr_path(k, j, at(v, OK(cc_instr_path_apply(k, wfix, j, 0))), fix_ends[0],
+                                                fix_ends[1]));
+    assert(ck_alpha_equal(k, term_of(fix_type), fix_clause));
+    cc_entry_id mf = OK(cc_instr_extend(k, fix_type, ELIM_MF));
+    cc_judgement_id fix_elim = OK(cc_instr_eliminator_close(k, OK(cc_instr_eliminator_clause(k,
+        OK(cc_instr_eliminator_clause(k, wrapped, var(mw))), var(mf)))));
+    cc_judgement_id fix_peak = OK(cc_instr_apply(k, fix_elim, OK(cc_instr_path_apply(k, wfix, 0, 0))));
+    cc_judgement_id fix_by_iota = OK(cc_instr_step(k, OK(cc_instr_refl(k, fix_peak)), 1, NULL, 0, CC_STEP_IOTA));
+    cc_judgement_id fix_by_boundary = OK(cc_instr_step(k, OK(cc_instr_refl(k, fix_peak)), 1, (const uint8_t[]){1}, 1,
+                                                   CC_STEP_PATH));
+    assert(!ck_alpha_equal(k, info(fix_by_iota).other, info(fix_by_boundary).other));
+    cc_term iota_then_path = info(OK(cc_instr_step(k, fix_by_iota, 1, NULL, 0, CC_STEP_PATH))).other;
+    cc_term boundary_then_iota = info(OK(cc_instr_step(k, fix_by_boundary, 1, NULL, 0, CC_STEP_IOTA))).other;
+    assert(ck_alpha_equal(k, iota_then_path, term_of(shown)));
+    assert(ck_alpha_equal(k, normal(iota_then_path), normal(boundary_then_iota)));
 }
 
 /* Review regressions of F5: Iota instantiates fresh placeholders only; the
@@ -1549,7 +1615,10 @@ static void elimination_capture(void) {
     OK(cc_instr_eliminator_close(k, OK(cc_instr_eliminator_clause(k, with_base,
         var(OK(cc_instr_extend(k, loop_type, AMB_FL)))))));
 
-    /* PW { base; loop : base = base; wrap(p : base = base) : base = base; }. */
+    /* PW { base; loop : base = base; wrap(p : base = base) : base = base;
+     *      twist(p : base = base) : Path(i; Path(j; s, base, base), wrap(p), p); }.
+     * twist's faces on i give its path-valued position to an earlier
+     * constructor, wrap(p) @ j, and apply it at a formula, p @ j. */
     sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_PW, 0));
     cc_entry_id s = OK(cc_instr_extend(k, former_u0(), S_PW));
     sig = OK(cc_instr_signature_constructor(k, sig, var(s), PW_BASE));
@@ -1557,10 +1626,18 @@ static void elimination_capture(void) {
     cc_judgement_id around = OK(cc_instr_path(k, i, var(s), var(pbase), var(pbase)));
     sig = OK(cc_instr_signature_constructor(k, sig, around, PW_LOOP));
     OK(cc_instr_extend(k, around, PW_LOOP));
-    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, OK(cc_instr_extend(k, around, PW_P)), around)), PW_WRAP));
-    cc_judgement_id pw = OK(cc_instr_sort_begin(k, OK(cc_instr_signature_close(k, sig))));
+    cc_judgement_id wrap_on = OK(cc_instr_pi(k, OK(cc_instr_extend(k, around, PW_P)), around));
+    sig = OK(cc_instr_signature_constructor(k, sig, wrap_on, PW_WRAP));
+    cc_entry_id pwrap = OK(cc_instr_extend(k, wrap_on, PW_WRAP));
+    cc_entry_id tp = OK(cc_instr_extend(k, around, CP_TP));
+    cc_judgement_id flat = OK(cc_instr_path(k, j, var(s), var(pbase), var(pbase)));
+    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, tp, OK(cc_instr_path(k, i, flat,
+        OK(cc_instr_apply(k, var(pwrap), var(tp))), var(tp))))), CP_TWIST));
+    uint32_t twisted = OK(cc_instr_signature_close(k, sig));
+    assert(constructor(twisted, 3).positions == 1 && constructor(twisted, 3).dimensions == 2);
+    cc_judgement_id pw = OK(cc_instr_sort_begin(k, twisted));
     cc_judgement_id b0 = OK(cc_instr_construct(k, pw, 0)), l0 = OK(cc_instr_construct(k, pw, 1));
-    cc_judgement_id w0 = OK(cc_instr_construct(k, pw, 2));
+    cc_judgement_id w0 = OK(cc_instr_construct(k, pw, 2)), t0 = OK(cc_instr_construct(k, pw, 3));
     cc_entry_id v = motive_over(pw, PW_V);
     cc_entry_id pv = OK(cc_instr_extend(k, at(v, b0), PW_PV));
     cc_entry_id pl = OK(cc_instr_extend(k, path_over(v, l0, i, var(pv)), PW_PL));
@@ -1573,7 +1650,28 @@ static void elimination_capture(void) {
         OK(cc_instr_eliminator(k, var(v))), var(pv))), var(pl)));
     assert(ck_alpha_equal(k, term_of(wrap_type), type_of(opened_pw)));
     cc_entry_id mw = OK(cc_instr_extend(k, wrap_type, PW_MW));
-    cc_judgement_id pw_elim = OK(cc_instr_eliminator_close(k, OK(cc_instr_eliminator_clause(k, opened_pw, var(mw)))));
+    /* twist's clause type as a driver derives it: Π (p). Π (p̄).
+     * PathP(i. PathP(j. P(twist(p) @ i @ j), pv, pv), m_wrap(p, p̄), p̄). */
+    cc_entry_id te = OK(cc_instr_extend(k, loops, CP_TE));
+    cc_entry_id tbar = OK(cc_instr_extend(k, path_over(v, var(te), i, var(pv)), CP_TBAR));
+    cc_judgement_id twist_i = OK(cc_instr_path_apply(k, OK(cc_instr_apply(k, t0, var(te))), i, 0));
+    cc_judgement_id corners[2];
+    for (unsigned e = 0; e < 2; ++e)
+        corners[e] = as_type(var(pv), at(v, OK(cc_instr_path_apply(k, twist_i, 0, e))), 1,
+                             (const uint8_t[][3]){{1}}, (const size_t[]){1});
+    cc_judgement_id square = OK(cc_instr_path(k, j, at(v, OK(cc_instr_path_apply(k, twist_i, j, 0))), corners[0],
+                                              corners[1]));
+    cc_judgement_id sides[2] = {
+        as_type(OK(cc_instr_apply(k, OK(cc_instr_apply(k, var(mw), var(te))), var(tbar))),
+                OK(cc_instr_endpoint(k, square, i, 0)), 1, (const uint8_t[][3]){{0, 1, 0}}, (const size_t[]){3}),
+        as_type(var(tbar), OK(cc_instr_endpoint(k, square, i, 1)), 1, (const uint8_t[][3]){{0, 1, 0}},
+                (const size_t[]){3})};
+    cc_judgement_id twist_type = OK(cc_instr_pi(k, te, OK(cc_instr_pi(k, tbar,
+        OK(cc_instr_path(k, i, square, sides[0], sides[1]))))));
+    cc_judgement_id with_wrap = OK(cc_instr_eliminator_clause(k, opened_pw, var(mw)));
+    assert(ck_alpha_equal(k, term_of(twist_type), type_of(with_wrap)));
+    cc_entry_id mt = OK(cc_instr_extend(k, twist_type, CP_MT));
+    cc_judgement_id pw_elim = OK(cc_instr_eliminator_close(k, OK(cc_instr_eliminator_clause(k, with_wrap, var(mt)))));
     /* elim(wrap(p0) @ j) is m_wrap(p0, ⟨i⟩ elim(p0 @ i)) @ j. */
     cc_entry_id p0 = OK(cc_instr_extend(k, loops, PW_P0));
     cc_term reduced = iota_of(OK(cc_instr_apply(k, pw_elim, OK(cc_instr_path_apply(k,
@@ -1591,6 +1689,31 @@ static void elimination_capture(void) {
     assert(reduct(at_zero, CC_STEP_WHNF) == term_of(var(pv)));
     cc_judgement_id by_iota = OK(cc_instr_step(k, OK(cc_instr_refl(k, at_zero)), 1, NULL, 0, CC_STEP_IOTA));
     assert(info(OK(cc_instr_step(k, by_iota, 1, NULL, 0, CC_STEP_PATH))).other == term_of(var(pv)));
+
+    /* CP01 with a path-valued position in the boundary: elim(twist(p0) @ ε @ j).
+     * Iota, then the path step through the displayed annotation of the face
+     * ε, gives m_wrap(p0, p̄0) @ j or p̄0 @ j. The boundary first gives
+     * wrap(p0) @ j, then Iota, or p0 @ j, which is neutral. They join because
+     * Iota lifts p0 to p̄0 = ⟨i⟩ elim(p0 @ i). */
+    for (unsigned e = 0; e < 2; ++e) {
+        cc_judgement_id peak = OK(cc_instr_apply(k, pw_elim, OK(cc_instr_path_apply(k,
+            OK(cc_instr_path_apply(k, OK(cc_instr_apply(k, t0, var(p0))), 0, e)), j, 0))));
+        cc_judgement_id iota_first = OK(cc_instr_step(k, OK(cc_instr_refl(k, peak)), 1, NULL, 0, CC_STEP_IOTA));
+        cc_judgement_id boundary_first = OK(cc_instr_step(k, OK(cc_instr_refl(k, peak)), 1, (const uint8_t[]){1, 0}, 2,
+                                                          CC_STEP_PATH));
+        assert(!ck_alpha_equal(k, info(iota_first).other, info(boundary_first).other));
+        cc_term iota_then_path = info(OK(cc_instr_step(k, iota_first, 1, (const uint8_t[]){0}, 1, CC_STEP_PATH))).other;
+        cc_term boundary_then = e ? info(boundary_first).other
+                                  : info(OK(cc_instr_step(k, boundary_first, 1, NULL, 0, CC_STEP_IOTA))).other;
+        assert(ck_alpha_equal(k, normal(iota_then_path), normal(boundary_then)));
+    }
+    /* The face ε = 0 shows wrap's clause at the lifted position. */
+    cc_judgement_id wrapped_face = OK(cc_instr_apply(k, pw_elim, OK(cc_instr_path_apply(k,
+        OK(cc_instr_path_apply(k, OK(cc_instr_apply(k, t0, var(p0))), 0, 0)), j, 0))));
+    cc_term shown = info(OK(cc_instr_step(k, OK(cc_instr_step(k, OK(cc_instr_refl(k, wrapped_face)), 1, NULL, 0,
+        CC_STEP_IOTA)), 1, (const uint8_t[]){0}, 1, CC_STEP_PATH))).other;
+    assert(kind(shown) == CC_PAPP && child(child(child(shown, 0), 0), 0) == term_of(var(mw)));
+    assert(ck_alpha_equal(k, child(child(shown, 0), 1), term_of(lifted_p0)));
 }
 
 /* Section 3.2's invariant: every path application in a judgement carries
