@@ -136,7 +136,7 @@ that reaches its own boundary is replaced by an expression of smaller `wt`.
 Restriction of an `hcomp` recurses into `U(f)` or `u₀`, of no greater weight
 and smaller rank. The two bounds are proved in the same induction. ∎
 
-This weight is the semantic form of the precedence the critical-pair draft
+This weight is the semantic form of the precedence the critical-pair analysis
 relies on: every boundary mentions only earlier constructors.
 
 ## 4. The carrier
@@ -164,7 +164,7 @@ cube type over `s` uses only:
 
 Nothing else of type `s` exists there (1.3), and endpoints contain no
 composition (Q3). P1 is a claim about the kernel's conversion on this
-fragment, and review must accept it. The critical-pair draft's CP02 uses the
+fragment, and review must accept it. The critical-pair analysis's CP02 uses the
 same fragment.
 
 **Lemma M2 (corners).** For a good environment of `c_k` and faces
@@ -344,7 +344,8 @@ Review must accept:
 - the functoriality case of M3 at endpoints;
 - the semantic Lemma H1 in M6;
 - that the model cases of CP01, CP03 and CP06–CP09 match the syntactic
-  joins of the [critical-pair draft](h1-critical-pairs.md).
+  joins of the [critical-pair analysis](h1-critical-pairs.md), which was
+  approved on 2026-09-30.
 
 Not claimed: normalization or decidable conversion; that the kernel
 implements these rules, which its tests exercise; canonicity, which the

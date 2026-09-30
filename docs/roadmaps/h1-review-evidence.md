@@ -5,10 +5,11 @@ K1 with tubes and K6 along `ua` traced since (PR #94), and K10 and K11
 (PR #95).
 Updated on 2026-09-30 with the [H2 case analysis and critical-pair
 draft](h1-critical-pairs.md), including representative joins CP01–CP10
-in the kernel. Its mathematical review remains pending. The same day, the
+in the kernel. The maintainer approved it on 2026-09-30, after the CP01 and
+CP07 regressions were strengthened (PR #103). The same day, the
 [model construction](h1-model.md) and the [canonicity argument](h1-canonicity.md)
 were written out as review drafts for items 1 and 3; their review is
-pending too.
+pending.
 This record serves the first three items of the
 [H1 specification](h1-signature-specification.md)'s release checklist, the
 mathematical ones:
@@ -20,8 +21,8 @@ mathematical ones:
 For each it gives the claim, where its argument stands, what reviews have
 found, the tests that exercise the behaviour the argument relies on, and what
 a review decision still needs. As the specification's 4.5 says, the tests are
-evidence for the specified behaviour, not for these claims. **None of the
-three items is discharged.** The checklist's other items are not
+evidence for the specified behaviour, not for these claims. **Item 2 is
+approved; items 1 and 3 are not discharged.** The checklist's other items are not
 mathematical: the acceptance matrix (item 4), a pinned run (item 5) and the
 differential fixtures (item 6).
 
@@ -30,7 +31,7 @@ differential fixtures (item 6).
 | Item | Argument now | Mechanical evidence | Missing for a decision |
 | --- | --- | --- | --- |
 | D1, D4, D5: the model | [Construction written out](h1-model.md), review draft: raw trees, a weight by constructor index, carrier, Kan structure and eliminator | Admission, boundaries and cube depth: A1–A17, N1–N6, R3, E3, K7 | Review of the draft: premise P1, the weight measure, restriction's functoriality at endpoints and the semantic Lemma H1 |
-| Lemma H2 and 3.7's critical pairs | [Rule-by-rule case analysis and overlap table](h1-critical-pairs.md), review draft | CP01–CP10 representative joins; N3, N4, K4–K9 in part or in substance, E5, V11, V16; randomized K10 and K11 | Review of the head classification, baseline premises, use of H1 and joining sequences |
+| Lemma H2 and 3.7's critical pairs | [Rule-by-rule case analysis and overlap table](h1-critical-pairs.md), **approved on 2026-09-30** | CP01–CP10 representative joins; N3, N4, K4–K9 in part or in substance, E5, V11, V16; randomized K10 and K11 | None: approved on 2026-09-30 |
 | Canonicity | [Huber's predicates extended, written out](h1-canonicity.md), review draft | Closed computations through declared types: E1, E2, K1, E5, T3, T4 | Review of the draft, which uses item 2's joins; the baseline's canonicity accepted explicitly as an assumption |
 
 ## 1. The model: D1, D4 and D5
@@ -94,9 +95,11 @@ interval formulas for dimensions, and of level expressions for level
 variables. Section 3.7, with 4.5: the generated rules are confluent with the
 existing ones.
 
-**Argument now.** The [2026-09-30 draft](h1-critical-pairs.md) writes out
-Lemma H2 rule by rule and lists CP01–CP10 with their joins and kernel tests.
-It remains a draft, relative to baseline substitution and conversion.
+**Argument now.** The [critical-pair analysis](h1-critical-pairs.md) writes
+out Lemma H2 rule by rule and lists CP01–CP10 with their joins and kernel
+tests, relative to baseline substitution and conversion. The maintainer
+approved it on 2026-09-30. The rest of this section records the argument as
+it stood before the analysis.
 The specification's previous argument was that substitution preserves the redex
 patterns, which are constructor heads, `hcomp`, transport and path
 application. The side conditions that substitution can change, that a
@@ -140,9 +143,10 @@ that transport along a constant line at `φ = 1` is the identity. Both are
 evidence for the claims' instances, not proof of them. The new draft adds
 the critical-pair list and a representative test per pair.
 
-**What a decision needs.** Review of the draft's completeness and joins,
-including the use of Lemma H1 and baseline congruence. Passing the
-representative tests does not record that review decision.
+**Decision.** Approved on 2026-09-30: the analysis's completeness and
+joins, including the use of Lemma H1 and baseline congruence. The review
+first found CP01's and CP07's cited tests weaker than their entries; PR #103
+replaced them.
 
 ## 3. Canonicity: section 4.4
 
