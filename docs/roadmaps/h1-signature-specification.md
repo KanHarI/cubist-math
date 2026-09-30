@@ -59,6 +59,9 @@ decision on each still needs are gathered in the
 [review evidence](h1-review-evidence.md) (2026-09-29). Review drafts of the
 three arguments followed on 2026-09-30: the [model](h1-model.md), the
 [critical pairs](h1-critical-pairs.md) and [canonicity](h1-canonicity.md).
+The model and canonicity drafts were revised the same day after their
+first review, which found three substantive issues; items 1 and 3 await
+re-review.
 
 Not on the checklist: the classification of each instruction into the
 cases (i)–(v) of 2.3. It belongs to the deferred tier-parametric proposal

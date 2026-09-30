@@ -1,12 +1,35 @@
 # H1 model: the construction for the whole schema
 
-Status: review draft, 2026-09-30. This writes out the semantic construction
+Status: review draft, 2026-09-30, revised the same day after its first
+review (below). This writes out the semantic construction
 of the [H1 specification](h1-signature-specification.md)'s section 4.2 for
 every admitted signature: release checklist item 1, the obligations D1, D4
 and D5 of its 4.3. The maintainer must review it; adding this draft does not
 record that decision. It is relative to the baseline model, which remains an
 assumption (4.1). Each lemma is proved in outline, at the level of detail of
 G0's 3.2.
+
+Its first review, on 2026-09-30, found that transport can raise the weight
+of section 3: filling a path position evaluates its endpoint expressions at
+moved data, and those trees can outweigh every original position. The
+review's constructor order shows it:
+
+```text
+base : s
+loop : Path(s, base, base)
+step : s → s
+pack : Π (f : A → s). Path(s, step(f(a)), step(f(a))) → s
+```
+
+Take for `A` a pushout with a connecting path, `f` sending its endpoints to
+`base` and the path to `loop`, and `p := refl(step(base))`. Under the old
+weight the positions weighed at most `ω³ + ω`. Once `a` moves into the
+connecting path, the transported position's endpoint `step(f₁(a₁))` weighs
+`ω³ + ω²`, and so does the position. The weight is now the next multiple of
+`ω^k` (section 3, Lemma M0): `step` of anything lighter than `ω³` weighs
+`ω³`, and `pack` weighs `ω⁴` before and after. Lemma M4a fills the
+telescope with its dependent endpoints, and M4 is proved from it. The
+[canonicity draft](h1-canonicity.md)'s transport lemma inherits both.
 
 Since #101 the kernel has no primitive Nat or W. Both are H1 declarations,
 and this construction covers them; the baseline below no longer lists them.
@@ -82,25 +105,41 @@ ordinal rank.
 
 ## 3. Weight, evaluation and restriction
 
-The recursions below do not always descend to subtrees: evaluating a
+The recursions below do not always descend to subtrees. Evaluating a
 boundary builds new nodes, and transport (section 5) acts on boundary pieces
-whose leaves are transports of positions. They are well founded because
-every boundary mentions only earlier constructors. The weight makes that
-precise, with a constructor's index as an exponent:
+and on the endpoint expressions of path positions, whose leaves are
+transports of positions. They are well founded because every boundary and
+every endpoint mentions only earlier constructors. The weight makes that
+precise, with a constructor's index as an exponent. For an ordinal `β` and
+`k ≥ 1`, `β ↑ k` is the least multiple of `ω^k` above `β`: if
+`β = ω^k · δ + σ` with `σ < ω^k`, then `β ↑ k := ω^k · (δ + 1)`.
 
 ```text
-‖con(k, t, Q, rs)‖   :=  (sup over j, f, y of ‖Q_j(f, y)‖) ⊕ ω^k
+‖con(k, t, Q, rs)‖   :=  (sup over j, f, y of ‖Q_j(f, y)‖) ↑ k
 ‖hcomp(φ, U, u₀)‖   :=  max(sup over f of ‖U(f)‖, ‖u₀‖)
 μ(x)                :=  (‖x‖, rank x), ordered lexicographically
 ```
 
-`⊕` is the natural sum, strictly monotone in each argument; an empty
-supremum is `0`. For a constructor expression `E`, `wt(E)` is the largest
-natural sum of `ω^m` over the constructor nodes `c_m` on one root-to-leaf
-path of its syntax. An expression in `c_k`'s boundary mentions only `c_m`
-with `m < k`, so `wt(E) < ω^k`. Replacing a node `c_m(Es')` by its boundary
-`E_m[Es']` lowers `wt`: a path through `E_m[Es']` crosses nodes of index
-below `m`, whose sum is below `ω^m`, and then a path of some `Es'`.
+An empty supremum is `0`, so a constructor without positions weighs `ω^k`.
+A constructor weighs more than each of its positions. It also weighs more
+than anything that earlier constructors build over trees in its *block*,
+the ordinals from `ω^k · δ` to below `ω^k · (δ + 1)`:
+
+**Lemma M0 (blocks).** Let `m < k` and `γ ≤ ω^k · δ + σ` with `σ < ω^k`.
+Then `γ ↑ m ≤ ω^k · δ + (σ + ω^m)`, and `σ + ω^m < ω^k`.
+
+*Proof.* If `γ < ω^k · δ`, then `ω^k · δ` is itself a multiple of `ω^m`
+above `γ`. Otherwise `γ = ω^k · δ + τ` with `τ ≤ σ`. As `ω^k · δ` is a
+multiple of `ω^m`, `γ ↑ m = ω^k · δ + (τ ↑ m)`, and `τ ↑ m ≤ τ + ω^m`.
+Finally `ω^k` is closed under addition, and `σ` and `ω^m` are below it. ∎
+
+For a constructor expression `E`, `wt(E)` is the largest ordinal sum
+`ω^{m_p} + … + ω^{m_1}` along a root-to-leaf path of its syntax, from the
+deepest constructor node `c_{m_p}` out to the outermost `c_{m_1}`. An
+expression that mentions only `c_m` with `m < k` has `wt(E) < ω^k`, and by
+M0 each node it adds keeps its value in the block of its leaves: over trees
+of weight at most `ω^k · δ + σ`, it weighs at most `ω^k · δ + σ + wt(E)`
+(Lemma M1).
 
 **Evaluation.** An environment for `c_k` at `(J, ρ')` gives data, position
 families and formulas for the dimensions in scope. `ev(E, env)` follows
@@ -124,17 +163,22 @@ families and formulas for the dimensions in scope. `ev(E, env)` follows
   otherwise `hcomp(φf, U·f, f*u₀)`.
 
 **Lemma M1 (restriction and evaluation are well defined).** Both are total,
-by recursion on `μ` of the tree restricted. Moreover `‖f*x‖ ≤ ‖x‖`, and
-`‖ev(E, env)‖ ≤ β ⊕ wt(E)` when `β` bounds the weights of the environment's
-position trees.
+by recursion on `μ` of the tree restricted. Moreover `‖f*x‖ ≤ ‖x‖`, and if
+`E` mentions only `c_m` with `m < k` and the environment's position trees
+weigh at most `ω^k · δ + σ` with `σ < ω^k`, then
+`‖ev(E, env)‖ ≤ ω^k · δ + σ + wt(E) < ω^k · (δ + 1)`.
 
-*Proof.* At an endpoint, restriction of `con(k, …)` evaluates `E_{k,l,ε}`
-over position trees of weight at most `β := sup ‖Q‖`. Evaluation restricts
-those trees, which have smaller `μ`. It also restricts the nodes it builds,
-whose weight is at most `β ⊕ wt(E_{k,l,ε}) < β ⊕ ω^k = ‖x‖`. A built node
-that reaches its own boundary is replaced by an expression of smaller `wt`.
-Restriction of an `hcomp` recurses into `U(f)` or `u₀`, of no greater weight
-and smaller rank. The two bounds are proved in the same induction. ∎
+*Proof.* At an endpoint, restriction of `x = con(k, …)` evaluates
+`E_{k,l,ε}` over position trees of weight at most `β := sup ‖Q‖`; write
+`β = ω^k · δ + σ`, so `‖x‖ = ω^k · (δ + 1)`. Evaluation restricts those
+trees, which have smaller `μ`. It also builds nodes and restricts them. By
+M0, node by node, each weighs at most `ω^k · δ + σ + wt(E_{k,l,ε})`, below
+`‖x‖`. A built node that reaches its own boundary is replaced by the
+evaluation of that boundary, over still earlier constructors, which M0
+bounds in the same way. Restriction of an `hcomp` recurses into `U(f)` or
+`u₀`, of no greater weight and smaller rank. At a non-endpoint, the
+positions of `f*x` are among those of `x`. The two bounds are proved in the
+same induction. ∎
 
 This weight is the semantic form of the precedence the critical-pair analysis
 relies on: every boundary mentions only earlier constructors.
@@ -178,7 +222,7 @@ evaluation respects each one:
 - endpoint steps: for earlier constructors, by the definition of
   restriction; for positions, by goodness;
 - path β and η: by the definition of `ev`;
-- congruence and substitution: by Lemma M3 at smaller weight;
+- congruence and substitution: by Lemma M3 at smaller weight (M1);
 - data conversion: by B's soundness.
 
 The proof is by induction on the conversion derivation. ∎
@@ -233,30 +277,74 @@ face that holds it is the tube at `1`, which is the Face step. Tubes on the
 empty face are dropped.
 
 **Transport (3.5).** For a line `ρ ∈ Γ(I⁺)` constant on `φ ∈ F(I)`,
-`T_{ρ,φ} : X(I, ρ(0)) → X(I, ρ(1))` follows 3.5's cases on the element. Case
-1 is a point constructor; case 2 is a constructor at dimensions, corrected
-by an `hcomp` whose walls are squeezes of the boundary pieces; case 3 is an
-`hcomp`, transported componentwise. The model has no neutral case.
+`T_{ρ,φ} : X(I, ρ(0)) → X(I, ρ(1))` follows 3.5's cases on the element:
+
+- case 1 is a point constructor, whose argument telescope is filled along
+  the line;
+- case 2 is a constructor at dimensions, filled the same way and corrected
+  by an `hcomp` whose walls are squeezes of the boundary pieces;
+- case 3 is an `hcomp`, transported componentwise.
+
+The model has no neutral case. Filling a position is composition in its
+cube, whose faces are the position's endpoint expressions. They are
+evaluated at the filled earlier positions and the moved data, so they are
+tubes of the composition, and they are not subtrees of `x`.
+
+**Lemma M4a (telescope filling).** Let `x = con(k, t, Q, rs)` at
+`(I, ρ(0))`, with `sup ‖Q‖ = ω^k · δ + σ` and `σ < ω^k`. Suppose `T` is
+defined, at every stage and along every line, on every tree lighter than
+`x`, and does not increase weight there. Then the filler `θ(i)` of `c_k`'s
+argument telescope along `ρ`, constant on `φ`, exists, and:
+
+- each filled position has its declared faces at every `i`;
+- every filled position tree weighs at most `ω^k · δ + σ′`, for some
+  `σ′ < ω^k` that depends only on `σ` and the signature;
+- so `ev(E, θ(i))` weighs less than `‖x‖ = ω^k · (δ + 1)` for every
+  constructor expression `E` over `c_1 … c_{k-1}`.
+
+*Proof.* Along the telescope, with `σ_0 := σ`.
+
+- The data are filled by B.
+- Position `j` has a type at `i` that is a `Π` over the arity into the cube
+  `C_j(i)` over `X(ρ(i))`. Its faces are `ev` of the endpoint expressions
+  `P` over the filled data, the arity argument and `θ_{<j}(i)`. B's `Π`
+  rule fills an arity argument backward and composes in the cube: the base
+  is `Q_j` at the moved argument, and the tubes are `φ ↦ Q_j` and, on each
+  face of the cube, the line `i ↦ ev(P, θ_{<j}(i), y(i))`.
+- Composition in `X` is 3.4's `hcomp` of transports. `Q_j` weighs at most
+  `ω^k · δ + σ`. By induction along the telescope the earlier filled
+  positions weigh at most `ω^k · δ + σ_{j-1}`, so by M1 the endpoint lines
+  weigh at most `ω^k · δ + σ_{j-1} + wt(P)`. Both are lighter than `x`, so
+  `T` is defined on them and keeps these bounds. The `hcomp` weighs the
+  maximum of its parts: at most `ω^k · δ + σ_j`, where `σ_j` is the larger
+  of `σ` and `σ_{j-1} + wt(P)` over the cube's faces, still below `ω^k`.
+- On a face of the cube, the `hcomp` is its tube at the end of the line,
+  the transport of the endpoint line along its constancy face: the declared
+  face at `θ_{<j}(i)`.
+
+`σ′` is `σ_j` for the last position. The last claim is M1 at `σ′`. ∎
 
 **Lemma M4 (transport is well defined).** `T` is defined by recursion on
 `μ`, and `‖T x‖ ≤ ‖x‖`.
 
-*Proof.*
+*Proof.* In cases 1 and 2, with `x = con(k, …)` and the notation of M4a,
+the induction hypothesis gives M4a's premise, since every tree lighter than
+`x` has smaller `μ`.
 
-- Case 1, and the telescope filler `θ(i)` of case 2, call `T` on `x`'s
-  positions, which have smaller weight.
-- Case 2's walls call `T` on `b_{l,ε}(i) = ev(E_{k,l,ε}, θ(i))`. Its leaves
-  are fillers of the positions, of weight at most `β := sup ‖Q‖` by the
-  induction hypothesis. So by M1, `‖b_{l,ε}(i)‖ ≤ β ⊕ wt(E_{k,l,ε}) <
-  β ⊕ ω^k = ‖x‖`.
-- The result `hcomp[φ ↦ x, walls](c_k(θ(1)) @ rs)` has weight at most
-  `max(‖x‖, ‖walls‖, β ⊕ ω^k) = ‖x‖`.
+- Case 1 calls `T` only through M4a, on positions and endpoint lines
+  lighter than `x`. Its result `c_k(θ(1))` has positions of weight at most
+  `ω^k · δ + σ′`, so it weighs at most `ω^k · (δ + 1) = ‖x‖`.
+- Case 2's walls call `T` on `b_{l,ε}(i) = ev(E_{k,l,ε}, θ(i))`, lighter
+  than `x` by M4a. The result `hcomp[φ ↦ x, walls](c_k(θ(1)) @ rs)` weighs
+  at most `max(‖x‖, ‖walls‖, ‖x‖) = ‖x‖`.
 - Case 3 recurses into the tubes and the base, of no greater weight and
   smaller rank. ∎
 
-This is D4 in its sharpest form. The walls transport boundary pieces whose
-leaves are transports of the positions, not subtrees of `x`. It is the
-weight, not the rank, that decreases.
+This is D4 in its sharpest form. The walls transport boundary pieces, and
+the fillers transport endpoint expressions, whose leaves are transports of
+the positions, not subtrees of `x`. It is the weight, not the rank, that
+decreases. A transported position can outweigh every original one, as in
+the review's `pack`; it stays in `x`'s block, which `x`'s weight absorbs.
 
 **Lemma M5 (transport is a composition structure).**
 
@@ -286,19 +374,19 @@ elim(hcomp(φ, U, u₀))     :=  comp^j M(hfill^j) [φ ↦ elim(U(j))] (elim(u�
 
 **Lemma M6 (the eliminator is a section).** `elim(f*x) = f*(elim x)`.
 
-*Proof.* The non-endpoint and `hcomp` cases are structural; the second uses
+*Proof.* By induction on `μ`. The non-endpoint and `hcomp` cases are
+structural; the second uses
 composition's face condition (CP03). At an endpoint, `f*x` is
 `ev(E_{k,l,ε})`. By the typing of `m_k`, `f*(m_k(…) @ rs)` is the clause's
 face: `⟦E_{k,l,ε}⟧` with `Q̄` substituted. The two agree by the semantic form
-of Lemma H1: `elim(ev(E, env)) = ⟦E⟧[env, elim∘env]`, by induction on
-`wt(E)`:
+of Lemma H1: `elim(ev(E, env)) = ⟦E⟧[env, elim∘env]`, by induction on `E`:
 
 - positions, by the definition of `Q̄`;
-- earlier constructors, by `elim`'s first clause, and their endpoints by
-  induction on the index;
-- path application and abstraction, by naturality.
+- earlier constructors, by `elim`'s first clause;
+- path application and abstraction, by naturality: the lemma itself, for
+  the nodes `ev` builds, which are lighter than `x` by M1.
 
-This is CP01. ∎
+The whole proof is by induction on `μ`. This is CP01. ∎
 
 So point and dimensional Iota, the elimination of `hcomp` and the boundary
 rule hold strictly.
@@ -311,7 +399,7 @@ rule hold strictly.
 | 3.2 constructors and boundary reduction | `con` nodes; restriction at an endpoint is the boundary piece (M3) |
 | 3.3 data-sort composition | Section 5, by recursion on the base |
 | 3.4 formal and general composition | `hcomp` generator; the decomposition |
-| 3.5 transport with boundary correction | M4, M5 |
+| 3.5 transport with boundary correction | M4a, M4, M5 |
 | 3.6 clause types | Semantic Lemma H1 (M6) |
 | 3.7 Iota, elimination of `hcomp` | The definition of `elim`; M6 |
 | 2.4, 2.5 substitution | Stability of the construction; M3 |
@@ -333,14 +421,15 @@ soundness of B.
   pushouts and propositional truncation it gives carriers of the same shape
   as Coquand–Huber–Mörtberg's.
 - **D4.** Raw trees are well founded at every cube depth (section 2), and
-  transport's recursion terminates by weight (M4).
+  transport's recursion terminates by weight (M0, M4a, M4).
 - **D5.** Raw trees allow set-sized branching, and the fibres stay
   `V_{κ_ℓ}`-small (section 4).
 
 Review must accept:
 
 - the premise P1;
-- the weight argument in M1 and M4;
+- the weight, revised after the first review: Lemma M0, and its use in M1,
+  the telescope filling of M4a and M4;
 - the functoriality case of M3 at endpoints;
 - the semantic Lemma H1 in M6;
 - that the model cases of CP01, CP03 and CP06–CP09 match the syntactic
