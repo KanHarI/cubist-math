@@ -158,13 +158,18 @@ formulas and parameter lines with a fixed seed.
 | CP01 | `elim(c @ ε)`: Iota then Path gives `⟦β⟧`; Path then elimination gives `elim(β)`, joined by H1 | `elimination`, both circle endpoints with a dependent motive; `elimination_capture`, a path position in a boundary |
 | CP02 | Two constructor boundaries at a corner: either restriction order gives the same typed corner | `boundaries`, N3, all torus corners and both path-step orders |
 | CP03 | `elim(hcomp[ψ ↦ w] w₀)` where `ψ` becomes true: eliminate then Face, or Face then eliminate, gives `elim(w(1))` | `elimination`, CP03, a nonconstant loop tube and a dependent motive |
-| CP04 | Data composition versus held tube: pushing the argument telescope then Face, or Face first, gives `c(θ_w(1))` | `critical_composition_pairs`, CP04, successor with a tube |
-| CP05 | Higher composition versus held tube: its generated hcomp selects transport at constancy face `1`, giving `w(1)` | `critical_composition_pairs`, CP05, a loop tube |
+| CP04 | Data composition versus held tube: pushing the argument telescope then Face, or Face first, gives `c(θ_w(1))` | `critical_composition_pairs`, CP04, `succ(q @ i)` for `q : zero = m`, ending at `succ(m)` rather than its base `succ(zero)` |
+| CP04 (empty) | Data composition versus empty-tube deletion: the empty wall contributes no telescope restriction; either order gives the constructor of the telescope composition with that wall deleted | Data composition argument above; no separate regression for this overlap |
+| CP05 | Higher composition versus held tube: its generated hcomp selects transport at constancy face `1`, giving `w(1)` | `critical_composition_pairs`, CP05, `p @ i` for `p : base = x`, ending at `x` rather than `base` |
 | CP06 | Corrected transport versus constructor boundary: correction wall at `h = 1` gives `transp(b_{l,ε}(0))` | `kan`, `commutes` on merid and squash faces; `transport_properties`, K10 |
 | CP07 | Two correction walls selected at a corner: equality of boundary pieces gives equality of their squeezes | `kan`, CP07, both corner restriction orders for 2- and 3-dimensional squash |
 | CP08 | Any structural transport case versus constancy Face: the telescope, correction or component transports restrict to `u₀` | `transport_properties`, K11, structural reduction before restriction to `φ` |
 | CP09 | Transport of formal hcomp versus held tube: either order gives transport of `w(1)` | `kan`, CP09, a meridian tube along a nonconstant type line |
-| CP10 | Empty-tube deletion versus selection of a held tube: the empty wall cannot be selected, and the surviving tube gives `w(1)` | `critical_composition_pairs`, CP10, an empty wall and a loop tube |
+| CP10 | Empty-tube deletion versus selection of a held tube: the empty wall cannot be selected, and the surviving tube gives `w(1)` | `critical_composition_pairs`, CP10, an empty wall and `p @ i` ending at `x` rather than `base` |
+
+CP03, CP04, CP05 and CP10 take the face-selection branch with an explicit
+`CC_STEP_FACE` step after restriction. Their structural branch reduces
+before restriction, independently of the normalizer's rule ordering.
 
 Several held tubes are not separate rules indexed by syntactic tube order:
 checked compatibility identifies their selected terms. Their intersections

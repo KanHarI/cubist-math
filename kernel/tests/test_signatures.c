@@ -903,6 +903,12 @@ static cc_judgement_id squash_at(cc_judgement_id instance, uint32_t steps, uint3
 }
 
 /* F4: the Kan structure of declared types (sections 3.3–3.5, 5.5). */
+static cc_judgement_id step_judgement(cc_judgement_id value, cc_step_rule rule) {
+    return OK(cc_instr_side(k, OK(cc_instr_step(k, OK(cc_instr_refl(k, value)), 1, NULL, 0, rule)), 1));
+}
+
+static cc_judgement_id head_judgement(cc_judgement_id value) { return step_judgement(value, CC_STEP_WHNF); }
+
 static void kan(void) {
     cc_entry_id i = OK(cc_instr_dimension(k, 0));
     cc_entry_id dims[3] = {OK(cc_instr_dimension(k, 1)), OK(cc_instr_dimension(k, 2)), OK(cc_instr_dimension(k, 3))};
@@ -1019,8 +1025,7 @@ static void kan(void) {
     cc_judgement_id partial_box = OK(cc_instr_hcomp(k, OK(cc_instr_system_tube(k,
         OK(cc_instr_system(k, j, start, north)), face_at(2, true), merid, merid_starts))));
     cc_judgement_id moved_partial = OK(cc_instr_trans(k, OK(cc_instr_system(k, i, line, partial_box)), nowhere()));
-    cc_judgement_id moved_head = OK(cc_instr_side(k, OK(cc_instr_step(k, OK(cc_instr_refl(k, moved_partial)),
-                                                        1, NULL, 0, CC_STEP_WHNF)), 1));
+    cc_judgement_id moved_head = head_judgement(moved_partial);
     assert(kind(term_of(moved_head)) == CC_HCOMP);
     cc_judgement_id restricted_box = OK(cc_instr_endpoint(k, partial_box, dims[1], 1));
     cc_judgement_id restricted_then_moved = OK(cc_instr_trans(k, OK(cc_instr_system(k, i, line, restricted_box)), nowhere()));
@@ -1258,13 +1263,9 @@ static cc_judgement_id path_over(cc_entry_id motive, cc_judgement_id loop, cc_en
 
 static cc_term iota_of(cc_judgement_id j) { return reduct(j, CC_STEP_IOTA); }
 
-/* The two sides of a peak are derived independently. In particular this
- * does not just normalize the same expression twice. CP identifiers refer
- * to docs/roadmaps/h1-critical-pairs.md. */
-static cc_judgement_id head_judgement(cc_judgement_id value) {
-    return OK(cc_instr_side(k, OK(cc_instr_step(k, OK(cc_instr_refl(k, value)), 1, NULL, 0, CC_STEP_WHNF)), 1));
-}
-
+/* The structural and explicit Face steps take different paths from each
+ * peak; normalizing only their reducts does not depend on whnf's ordering.
+ * CP identifiers refer to docs/roadmaps/h1-critical-pairs.md. */
 static void joins(cc_judgement_id left, cc_judgement_id right) {
     assert(ck_alpha_equal(k, reduct(left, CC_STEP_NORMALIZE), reduct(right, CC_STEP_NORMALIZE)));
 }
@@ -1273,28 +1274,38 @@ static void critical_composition_pairs(void) {
     cc_entry_id i = OK(cc_instr_dimension(k, 0)), j = OK(cc_instr_dimension(k, 1));
     cc_formula_id face = face_at(1, true);
     cc_judgement_id n = OK(cc_instr_sort_begin(k, nat_signature));
-    cc_judgement_id one = OK(cc_instr_apply(k, OK(cc_instr_construct(k, n, 1)), OK(cc_instr_construct(k, n, 0))));
-    cc_judgement_id system = OK(cc_instr_system_tube(k, OK(cc_instr_system(k, i, n, one)), face, one,
-                                                   OK(cc_instr_refl(k, one))));
+    cc_judgement_id zero = OK(cc_instr_construct(k, n, 0)), succ = OK(cc_instr_construct(k, n, 1));
+    cc_judgement_id one = OK(cc_instr_apply(k, succ, zero));
+    cc_entry_id m = OK(cc_instr_extend(k, n, cc_kernel_fresh_symbol(k)));
+    cc_entry_id q = OK(cc_instr_extend(k, OK(cc_instr_path(k, i, n, zero, var(m))), cc_kernel_fresh_symbol(k)));
+    cc_judgement_id tube = OK(cc_instr_apply(k, succ, OK(cc_instr_path_apply(k, var(q), i, 0))));
+    cc_judgement_id starts = OK(cc_instr_step(k, OK(cc_instr_refl(k, OK(cc_instr_endpoint(k, tube, i, 0)))),
+                                             1, (const uint8_t[]){1}, 1, CC_STEP_PATH));
+    cc_judgement_id end = OK(cc_instr_apply(k, succ, var(m)));
+    assert(!ck_alpha_equal(k, normal(term_of(one)), normal(term_of(end))));
+    cc_judgement_id system = OK(cc_instr_system_tube(k, OK(cc_instr_system(k, i, n, one)), face, tube, starts));
     cc_judgement_id comp = OK(cc_instr_comp(k, system));
     /* CP04: push into succ first, or make the tube's face hold first. */
     cc_judgement_id pushed = head_judgement(comp);
     assert(kind(term_of(pushed)) == CC_APP);
-    joins(OK(cc_instr_endpoint(k, pushed, j, 1)), OK(cc_instr_endpoint(k, comp, j, 1)));
-    joins(OK(cc_instr_endpoint(k, pushed, j, 1)), one);
+    joins(OK(cc_instr_endpoint(k, pushed, j, 1)), step_judgement(OK(cc_instr_endpoint(k, comp, j, 1)), CC_STEP_FACE));
+    joins(OK(cc_instr_endpoint(k, pushed, j, 1)), end);
 
     cc_judgement_id s1 = OK(cc_instr_sort_begin(k, circle_signature));
-    cc_judgement_id base = OK(cc_instr_construct(k, s1, 0)), loop = OK(cc_instr_construct(k, s1, 1));
-    cc_judgement_id tube = OK(cc_instr_path_apply(k, loop, i, 0));
-    cc_judgement_id starts = OK(cc_instr_step(k, OK(cc_instr_refl(k, OK(cc_instr_endpoint(k, tube, i, 0)))),
-                                             1, NULL, 0, CC_STEP_PATH));
+    cc_judgement_id base = OK(cc_instr_construct(k, s1, 0));
+    cc_entry_id x = OK(cc_instr_extend(k, s1, cc_kernel_fresh_symbol(k)));
+    cc_entry_id p = OK(cc_instr_extend(k, OK(cc_instr_path(k, i, s1, base, var(x))), cc_kernel_fresh_symbol(k)));
+    tube = OK(cc_instr_path_apply(k, var(p), i, 0));
+    starts = OK(cc_instr_step(k, OK(cc_instr_refl(k, OK(cc_instr_endpoint(k, tube, i, 0)))),
+                             1, NULL, 0, CC_STEP_PATH));
+    assert(!ck_alpha_equal(k, normal(term_of(base)), normal(term_of(var(x)))));
     system = OK(cc_instr_system_tube(k, OK(cc_instr_system(k, i, s1, base)), face, tube, starts));
     comp = OK(cc_instr_comp(k, system));
     /* CP05: turn a higher composition into hcomp first, or take Face first. */
     cc_judgement_id formal = head_judgement(comp);
     assert(kind(term_of(formal)) == CC_HCOMP);
-    joins(OK(cc_instr_endpoint(k, formal, j, 1)), OK(cc_instr_endpoint(k, comp, j, 1)));
-    joins(OK(cc_instr_endpoint(k, formal, j, 1)), base);
+    joins(OK(cc_instr_endpoint(k, formal, j, 1)), step_judgement(OK(cc_instr_endpoint(k, comp, j, 1)), CC_STEP_FACE));
+    joins(OK(cc_instr_endpoint(k, formal, j, 1)), var(x));
     /* CP10: deleting an empty tube and selecting a held tube commute. The
      * surviving tube is a path, so the join checks its end, too. */
     system = OK(cc_instr_system_tube(k, OK(cc_instr_system(k, i, s1, base)), nowhere(), base, 0));
@@ -1303,7 +1314,8 @@ static void critical_composition_pairs(void) {
     assert(tubes(term_of(box)) == 2);
     cc_judgement_id dropped = head_judgement(box);
     assert(tubes(term_of(dropped)) == 1);
-    joins(OK(cc_instr_endpoint(k, dropped, j, 1)), OK(cc_instr_endpoint(k, box, j, 1)));
+    joins(OK(cc_instr_endpoint(k, dropped, j, 1)), step_judgement(OK(cc_instr_endpoint(k, box, j, 1)), CC_STEP_FACE));
+    joins(OK(cc_instr_endpoint(k, dropped, j, 1)), var(x));
 }
 
 /* F5: elimination (sections 3.6, 3.7, 5.6). */
@@ -1386,7 +1398,8 @@ static void elimination(void) {
     cc_judgement_id peak = OK(cc_instr_apply(k, circle_elim, box));
     cc_judgement_id outer = head_judgement(peak);
     assert(kind(term_of(outer)) == CC_COMP);
-    cc_judgement_id on_face = OK(cc_instr_apply(k, circle_elim, OK(cc_instr_endpoint(k, box, r, 1))));
+    cc_judgement_id on_face = OK(cc_instr_apply(k, circle_elim,
+        step_judgement(OK(cc_instr_endpoint(k, box, r, 1)), CC_STEP_FACE)));
     joins(OK(cc_instr_endpoint(k, outer, r, 1)), on_face);
     joins(on_face, var(pb));
 
