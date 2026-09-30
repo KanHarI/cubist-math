@@ -1014,6 +1014,19 @@ static void kan(void) {
     cc_term south_start = reduct(OK(cc_instr_construct(k, start, 1)), CC_STEP_NORMALIZE);
     assert(!ck_alpha_equal(k, south_start, reduct(north, CC_STEP_NORMALIZE)));
     assert(ck_alpha_equal(k, normal(reduct(to_south, CC_STEP_FACE)), south_start));
+    /* CP09: transport a formal box before its tube face becomes true, or
+     * transport the tube's endpoint after restricting the box. */
+    cc_judgement_id partial_box = OK(cc_instr_hcomp(k, OK(cc_instr_system_tube(k,
+        OK(cc_instr_system(k, j, start, north)), face_at(2, true), merid, merid_starts))));
+    cc_judgement_id moved_partial = OK(cc_instr_trans(k, OK(cc_instr_system(k, i, line, partial_box)), nowhere()));
+    cc_judgement_id moved_head = OK(cc_instr_side(k, OK(cc_instr_step(k, OK(cc_instr_refl(k, moved_partial)),
+                                                        1, NULL, 0, CC_STEP_WHNF)), 1));
+    assert(kind(term_of(moved_head)) == CC_HCOMP);
+    cc_judgement_id restricted_box = OK(cc_instr_endpoint(k, partial_box, dims[1], 1));
+    cc_judgement_id restricted_then_moved = OK(cc_instr_trans(k, OK(cc_instr_system(k, i, line, restricted_box)), nowhere()));
+    assert(ck_alpha_equal(k, reduct(OK(cc_instr_endpoint(k, moved_head, dims[1], 1)), CC_STEP_NORMALIZE),
+                          reduct(restricted_then_moved, CC_STEP_NORMALIZE)));
+    assert(ck_alpha_equal(k, reduct(restricted_then_moved, CC_STEP_NORMALIZE), south_end));
 
     /* K7 in substance, with a set truncation's squash rather than Quotient's:
      * the squash of set (two dimensions) and of trunc(1) (three), along the
@@ -1028,6 +1041,14 @@ static void kan(void) {
         cc_term box = reduct(carried, CC_STEP_WHNF);
         assert(kind(box) == CC_HCOMP && tubes(box) == 2 * steps + 1);
         walls_start_on_base(box);
+        /* CP07: different correction walls meet at a corner. Restrict the
+         * generated correction in both orders, including the 3-cube. */
+        for (unsigned a_end = 0; a_end < 2; ++a_end)
+            for (unsigned b_end = 0; b_end < 2; ++b_end) {
+                cc_term ab = ck_endpoint_term(k, ck_endpoint_term(k, box, 1, a_end), 2, b_end);
+                cc_term ba = ck_endpoint_term(k, ck_endpoint_term(k, box, 2, b_end), 1, a_end);
+                assert(ck_alpha_equal(k, normal(ab), normal(ba)));
+            }
         /* The first argument, y_0, is moved along the line. */
         cc_judgement_id y0 = var(OK(cc_instr_extend(k, from, KAN_Y + 10 * t)));
         cc_term moved_y0 = reduct(OK(cc_instr_comp(k, OK(cc_instr_system(k, i, along, y0)))), CC_STEP_NORMALIZE);
@@ -1237,6 +1258,54 @@ static cc_judgement_id path_over(cc_entry_id motive, cc_judgement_id loop, cc_en
 
 static cc_term iota_of(cc_judgement_id j) { return reduct(j, CC_STEP_IOTA); }
 
+/* The two sides of a peak are derived independently. In particular this
+ * does not just normalize the same expression twice. CP identifiers refer
+ * to docs/roadmaps/h1-critical-pairs.md. */
+static cc_judgement_id head_judgement(cc_judgement_id value) {
+    return OK(cc_instr_side(k, OK(cc_instr_step(k, OK(cc_instr_refl(k, value)), 1, NULL, 0, CC_STEP_WHNF)), 1));
+}
+
+static void joins(cc_judgement_id left, cc_judgement_id right) {
+    assert(ck_alpha_equal(k, reduct(left, CC_STEP_NORMALIZE), reduct(right, CC_STEP_NORMALIZE)));
+}
+
+static void critical_composition_pairs(void) {
+    cc_entry_id i = OK(cc_instr_dimension(k, 0)), j = OK(cc_instr_dimension(k, 1));
+    cc_formula_id face = face_at(1, true);
+    cc_judgement_id n = OK(cc_instr_sort_begin(k, nat_signature));
+    cc_judgement_id one = OK(cc_instr_apply(k, OK(cc_instr_construct(k, n, 1)), OK(cc_instr_construct(k, n, 0))));
+    cc_judgement_id system = OK(cc_instr_system_tube(k, OK(cc_instr_system(k, i, n, one)), face, one,
+                                                   OK(cc_instr_refl(k, one))));
+    cc_judgement_id comp = OK(cc_instr_comp(k, system));
+    /* CP04: push into succ first, or make the tube's face hold first. */
+    cc_judgement_id pushed = head_judgement(comp);
+    assert(kind(term_of(pushed)) == CC_APP);
+    joins(OK(cc_instr_endpoint(k, pushed, j, 1)), OK(cc_instr_endpoint(k, comp, j, 1)));
+    joins(OK(cc_instr_endpoint(k, pushed, j, 1)), one);
+
+    cc_judgement_id s1 = OK(cc_instr_sort_begin(k, circle_signature));
+    cc_judgement_id base = OK(cc_instr_construct(k, s1, 0)), loop = OK(cc_instr_construct(k, s1, 1));
+    cc_judgement_id tube = OK(cc_instr_path_apply(k, loop, i, 0));
+    cc_judgement_id starts = OK(cc_instr_step(k, OK(cc_instr_refl(k, OK(cc_instr_endpoint(k, tube, i, 0)))),
+                                             1, NULL, 0, CC_STEP_PATH));
+    system = OK(cc_instr_system_tube(k, OK(cc_instr_system(k, i, s1, base)), face, tube, starts));
+    comp = OK(cc_instr_comp(k, system));
+    /* CP05: turn a higher composition into hcomp first, or take Face first. */
+    cc_judgement_id formal = head_judgement(comp);
+    assert(kind(term_of(formal)) == CC_HCOMP);
+    joins(OK(cc_instr_endpoint(k, formal, j, 1)), OK(cc_instr_endpoint(k, comp, j, 1)));
+    joins(OK(cc_instr_endpoint(k, formal, j, 1)), base);
+    /* CP10: deleting an empty tube and selecting a held tube commute. The
+     * surviving tube is a path, so the join checks its end, too. */
+    system = OK(cc_instr_system_tube(k, OK(cc_instr_system(k, i, s1, base)), nowhere(), base, 0));
+    system = OK(cc_instr_system_tube(k, system, face, tube, starts));
+    cc_judgement_id box = OK(cc_instr_hcomp(k, system));
+    assert(tubes(term_of(box)) == 2);
+    cc_judgement_id dropped = head_judgement(box);
+    assert(tubes(term_of(dropped)) == 1);
+    joins(OK(cc_instr_endpoint(k, dropped, j, 1)), OK(cc_instr_endpoint(k, box, j, 1)));
+}
+
 /* F5: elimination (sections 3.6, 3.7, 5.6). */
 static void elimination(void) {
     cc_entry_id i = OK(cc_instr_dimension(k, 0)), j = OK(cc_instr_dimension(k, 1));
@@ -1285,16 +1354,41 @@ static void elimination(void) {
             "clause type");
     cc_entry_id pl = OK(cc_instr_extend(k, loop_type, ELIM_PL));
     cc_judgement_id circle_elim = OK(cc_instr_eliminator_close(k, OK(cc_instr_eliminator_clause(k, circle, var(pl)))));
-    /* elim(loop @ j) is pl @ j; at loop @ 0 both orders give pb (3.7). */
+    /* CP01: elim(loop @ j) is pl @ j; at either endpoint both orders give
+     * pb. Take the inner boundary explicitly, independently of Iota. */
     cc_term on_loop = iota_of(OK(cc_instr_apply(k, circle_elim, OK(cc_instr_path_apply(k, loop, j, 0)))));
     assert(kind(on_loop) == CC_PAPP && child(on_loop, 0) == term_of(var(pl)) && kind(child(on_loop, 1)) == CC_PATH);
     cc_judgement_id at_zero = OK(cc_instr_apply(k, circle_elim, OK(cc_instr_path_apply(k, loop, 0, 0))));
     assert(reduct(at_zero, CC_STEP_WHNF) == term_of(var(pb)));
     cc_judgement_id by_iota = OK(cc_instr_step(k, OK(cc_instr_refl(k, at_zero)), 1, NULL, 0, CC_STEP_IOTA));
     assert(info(OK(cc_instr_step(k, by_iota, 1, NULL, 0, CC_STEP_PATH))).other == term_of(var(pb)));
+    for (unsigned end_point = 0; end_point < 2; ++end_point) {
+        cc_judgement_id peak = OK(cc_instr_apply(k, circle_elim, OK(cc_instr_path_apply(k, loop, 0, end_point))));
+        cc_judgement_id outer = OK(cc_instr_side(k, OK(cc_instr_step(k, OK(cc_instr_refl(k, peak)), 1,
+                                                    NULL, 0, CC_STEP_IOTA)), 1));
+        cc_judgement_id inner = OK(cc_instr_side(k, OK(cc_instr_step(k, OK(cc_instr_refl(k, peak)), 1,
+                                                    (const uint8_t[]){1}, 1, CC_STEP_PATH)), 1));
+        joins(outer, inner);
+        joins(outer, var(pb));
+    }
     /* E5: elim(hcomp) computes by Whnf, as a composition in the motive. */
     cc_judgement_id box = OK(cc_instr_hcomp(k, OK(cc_instr_system(k, j, s1, base))));
     assert(kind(reduct(OK(cc_instr_apply(k, circle_elim, box)), CC_STEP_WHNF)) == CC_COMP);
+    /* CP03: eliminate the formal box before making its tube face hold, or
+     * restrict the box first. The tube is loop @ j, not a constant tube;
+     * the motive and its loop clause are arbitrary dependent variables. */
+    cc_entry_id r = OK(cc_instr_dimension(k, 2));
+    cc_judgement_id tube = OK(cc_instr_path_apply(k, loop, j, 0));
+    cc_judgement_id starts = OK(cc_instr_step(k, OK(cc_instr_refl(k, OK(cc_instr_endpoint(k, tube, j, 0)))),
+                                             1, NULL, 0, CC_STEP_PATH));
+    box = OK(cc_instr_hcomp(k, OK(cc_instr_system_tube(k, OK(cc_instr_system(k, j, s1, base)), face_at(2, true),
+                                                      tube, starts))));
+    cc_judgement_id peak = OK(cc_instr_apply(k, circle_elim, box));
+    cc_judgement_id outer = head_judgement(peak);
+    assert(kind(term_of(outer)) == CC_COMP);
+    cc_judgement_id on_face = OK(cc_instr_apply(k, circle_elim, OK(cc_instr_endpoint(k, box, r, 1))));
+    joins(OK(cc_instr_endpoint(k, outer, r, 1)), on_face);
+    joins(on_face, var(pb));
 
     /* E3: the prop squash: Π (y z : T). Π (ȳ : P(y)) (z̄ : P(z)). PathP(i. …, ȳ, z̄):
      * its boundary shows the positions y, z by their displayed variables. */
@@ -1807,6 +1901,7 @@ int main(void) {
     instances();
     boundaries();
     kan();
+    critical_composition_pairs();
     transport_properties();
     elimination();
     elimination_capture();

@@ -3,6 +3,9 @@
 Status: gathered on 2026-09-29 at `0b775b1`, for work-plan K2.1's review;
 K1 with tubes and K6 along `ua` traced since (PR #94), and K10 and K11
 (PR #95).
+Updated on 2026-09-30 with the [H2 case analysis and critical-pair
+draft](h1-critical-pairs.md), including representative joins CP01–CP10
+in the kernel. Its mathematical review remains pending.
 This record serves the first three items of the
 [H1 specification](h1-signature-specification.md)'s release checklist, the
 mathematical ones:
@@ -24,7 +27,7 @@ differential fixtures (item 6).
 | Item | Argument now | Mechanical evidence | Missing for a decision |
 | --- | --- | --- | --- |
 | D1, D4, D5: the model | Uniform construction in 4.2, steps 1–7; each departure argued in 4.3 | Admission, boundaries and cube depth: A1–A17, N1–N6, R3, E3, K7 | The construction written out, with well-foundedness at every cube depth and for infinitary arities |
-| Lemma H2 and 3.7's critical pairs | H2 argued; confluence argued at boundaries, through Lemma H1 | Instances of substitution and of the Kan rules: N3, N4, K4–K9 in part or in substance, E5, V11, V16; the randomized property tests K10 and K11 | The rule-by-rule case analysis; the list of overlapping redexes with the joinability of each |
+| Lemma H2 and 3.7's critical pairs | [Rule-by-rule case analysis and overlap table](h1-critical-pairs.md), review draft | CP01–CP10 representative joins; N3, N4, K4–K9 in part or in substance, E5, V11, V16; randomized K10 and K11 | Review of the head classification, baseline premises, use of H1 and joining sequences |
 | Canonicity | Huber's computability predicates, extended, argued | Closed computations through declared types: E1, E2, K1, E5, T3, T4 | The argument written out, and the baseline's canonicity accepted explicitly as an assumption |
 
 ## 1. The model: D1, D4 and D5
@@ -88,7 +91,10 @@ interval formulas for dimensions, and of level expressions for level
 variables. Section 3.7, with 4.5: the generated rules are confluent with the
 existing ones.
 
-**Argument now.** Lemma H2 is argued. Substitution preserves the redex
+**Argument now.** The [2026-09-30 draft](h1-critical-pairs.md) writes out
+Lemma H2 rule by rule and lists CP01–CP10 with their joins and kernel tests.
+It remains a draft, relative to baseline substitution and conversion.
+The specification's previous argument was that substitution preserves the redex
 patterns, which are constructor heads, `hcomp`, transport and path
 application. The side conditions that substitution can change, that a
 formula is an endpoint and that a face holds, hand over to the boundary and
@@ -128,12 +134,12 @@ which 3.5's correction walls are built to ensure. Its lines are drawn from
 three kinds rather than at random, and `Quotient` contributes its `cls` and
 `eq` but not its squash, so the matrix traces it in substance. K11 checks
 that transport along a constant line at `φ = 1` is the identity. Both are
-evidence for the claims' instances, not proof of them. No list of 3.7's
-critical pairs exists, and so no test per pair.
+evidence for the claims' instances, not proof of them. The new draft adds
+the critical-pair list and a representative test per pair.
 
-**What a decision needs.** The case analysis of Lemma H2, rule by rule. The
-list of overlapping redexes between the generated rules of 3.7 and the
-kernel's existing ones, with a joining sequence for each.
+**What a decision needs.** Review of the draft's completeness and joins,
+including the use of Lemma H1 and baseline congruence. Passing the
+representative tests does not record that review decision.
 
 ## 3. Canonicity: section 4.4
 
