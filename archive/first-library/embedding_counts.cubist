@@ -12,7 +12,7 @@ def embeddings_over_surjective_prop(
   intro first, second;
   obtain (f, overF) := first;
   obtain (g, overG) := second;
-  have same :
+  let same :
     forall y : af_carrier(L). field_embedding_map(L, T, f, y) = field_embedding_map(L, T, g, y) {
     intro y;
     obtain (x, eq) := field_embedding_preimage(K, L, e, onto, y);

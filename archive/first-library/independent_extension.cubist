@@ -59,11 +59,11 @@ def independent_zero_omission(
   let X := vector_carrier(K, V);
   let omit := fin_omit(n, i);
   let rest := linear_remainder(K, V, succ(n), v, a, i);
-  have headZero : vector_scale(K, V, a(i), v(i)) = vector_zero(K, V) := trans(
+  let headZero : vector_scale(K, V, a(i), v(i)) = vector_zero(K, V) := trans(
     cong((fun (b : af_carrier(K)) => vector_scale(K, V, b, v(i))), zero),
     vector_zero_scale(K, V, v(i))
   );
-  have restZero : rest = vector_zero(K, V) := trans(
+  let restZero : rest = vector_zero(K, V) := trans(
     sym(group_unit_left(vector_group(K, V), rest)),
     trans(
       cong((fun (z : X) => vector_add(K, V, z, rest)), sym(headZero)),
@@ -72,7 +72,7 @@ def independent_zero_omission(
   );
   let omittedV := fun (t : Fin(n)) => v(omit(t));
   let omittedA := fun (t : Fin(n)) => a(omit(t));
-  have omittedZero : forall t : Fin(n).
+  let omittedZero : forall t : Fin(n).
   omittedA(t) = af_zero(af_carrier(K), af_operations(K)) := independent(
     n, omittedV,
     (
@@ -124,7 +124,7 @@ def adjoin_dependence_at_new(
   i : Fin(succ(n)), same : v(i) = x, j : Fin(succ(n))
 ) :
   a(j) = af_zero(af_carrier(K), af_operations(K)) {
-  have others : forall t : Fin(succ(n)). ((t = i) -> Void) -> P(v(t)) {
+  let others : forall t : Fin(succ(n)). ((t = i) -> Void) -> P(v(t)) {
     intro t, different;
     exact adjoin_vector_other(
       K, V, P, prop, x, v(t),
@@ -154,7 +154,7 @@ def adjoin_independent_step(
   let Occurs := exists i : Fin(succ(n)). v(i) = x;
   cases excluded_middle(Truncate(U0, Occurs), TruncateProp(U0, Occurs)) {
     left occurs => {
-      have descend : Occurs -> (a(j) = af_zero(af_carrier(K), af_operations(K))) {
+      let descend : Occurs -> (a(j) = af_zero(af_carrier(K), af_operations(K))) {
         intro witness;
         obtain (i, same) := witness;
         exact adjoin_dependence_at_new(
@@ -167,7 +167,7 @@ def adjoin_independent_step(
       );
     }
     right absent => {
-      have oldMembers : forall i : Fin(succ(n)). P(v(i)) {
+      let oldMembers : forall i : Fin(succ(n)). P(v(i)) {
         intro i;
         exact adjoin_vector_other(
           K, V, P, prop, x, v(i),
@@ -236,7 +236,7 @@ def maximal_independent_spans(
   Spans(K, V, independent_members(K, V, S)) {
   intro x;
   let P := independent_members(K, V, S);
-  have contradiction : (Span(K, V, P, x) -> Void) -> Void {
+  let contradiction : (Span(K, V, P, x) -> Void) -> Void {
     intro outside;
     let T := IndependentAdjoin(K, V, S, x, outside);
     let back := maximal(T, adjoin_vector_old(K, V, P, x));

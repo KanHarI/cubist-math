@@ -97,10 +97,11 @@ def group_conjugate_multiply(G : Group, g, x, y : group_carrier(G)) :
   ) {
   let m := group_multiply(G);
   let gi := group_inverse(G, g);
-  have cancel : m(gi, m(m(g, y), gi)) = m(y, gi) := trans(
-    sym(group_associative(G, gi, m(g, y), gi)),
-    cong((fun (z : group_carrier(G)) => m(z, gi)), group_cancel_left_value(G, g, y))
-  );
+  let cancel : m(gi, m(m(g, y), gi)) = m(y, gi) :=
+    trans(
+      sym(group_associative(G, gi, m(g, y), gi)),
+      cong((fun (z : group_carrier(G)) => m(z, gi)), group_cancel_left_value(G, g, y))
+    );
   exact sym(
     trans(
       group_associative(G, m(g, x), gi, m(m(g, y), gi)),
@@ -119,10 +120,11 @@ def group_conjugate_undo(G : Group, g, x : group_carrier(G)) :
   group_conjugate(G, group_inverse(G, g), group_conjugate(G, g, x)) = x {
   let m := group_multiply(G);
   let gi := group_inverse(G, g);
-  have cancel : m(gi, m(m(g, x), gi)) = m(x, gi) := trans(
-    sym(group_associative(G, gi, m(g, x), gi)),
-    cong((fun (z : group_carrier(G)) => m(z, gi)), group_cancel_left_value(G, g, x))
-  );
+  let cancel : m(gi, m(m(g, x), gi)) = m(x, gi) :=
+    trans(
+      sym(group_associative(G, gi, m(g, x), gi)),
+      cong((fun (z : group_carrier(G)) => m(z, gi)), group_cancel_left_value(G, g, x))
+    );
   exact trans(
     cong((fun (z : group_carrier(G)) => m(z, group_inverse(G, gi))), cancel),
     group_cancel_right_value(G, x, gi)

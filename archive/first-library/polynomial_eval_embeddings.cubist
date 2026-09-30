@@ -44,7 +44,7 @@ def polynomial_eval_embedding(
   let E := fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
   let F := fun (q : Polynomial(K)) => f(E(q));
   obtain (f0, f1, fn, fa, fm) := field_embedding_preserves(L, T, h);
-  have step : PolynomialHornerLaw(K, T, c, f(x), F) {
+  let step : PolynomialHornerLaw(K, T, c, f(x), F) {
     intro q;
     let a := field_embedding_map(K, L, e, polynomial_coefficients(K, q, 0));
     let tail := E(polynomial_tail(K, q));

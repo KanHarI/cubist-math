@@ -59,8 +59,9 @@ def subdivision_tagged_map_step(
   let tailTags := field_snd(C, SampleTags(C, n), tags);
   let headPiece := field_fst(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
   let tailPieces := field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
-  have data : condition(a, b, tag, headPiece)
-  and SubdivisionTagged(C, condition, n, tail, tailTags, tailPieces) := valid;
+  let data : condition(a, b, tag, headPiece)
+  and SubdivisionTagged(C, condition, n, tail, tailTags, tailPieces) :=
+    valid;
   obtain (headValid, tailValid) := data;
   exact typed(
     (other(a, b, tag, headPiece) and SubdivisionTagged(C, other, n, tail, tailTags, tailPieces)),

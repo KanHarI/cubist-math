@@ -60,7 +60,7 @@ def subfield_preimage_image(K, L : AlgebraicField, e : FieldEmbedding(K, L), S :
   subfield_preimage(K, L, e, subfield_image(K, L, e, S)) =[Subfield(K)] S {
   let P := subfield_members(K, S);
   let f := field_embedding_map(K, L, e);
-  have back : SubfieldIncluded(K, subfield_preimage(K, L, e, subfield_image(K, L, e, S)), S) {
+  let back : SubfieldIncluded(K, subfield_preimage(K, L, e, subfield_image(K, L, e, S)), S) {
     intro x, member;
     obtain (y, py, same) := typed(SubfieldImage(K, L, e, S, f(x)), member);
     exact along P by field_embedding_injective(K, L, e, y, x, same) from py;

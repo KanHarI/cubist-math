@@ -14,7 +14,7 @@ def contour_sum_scale(
   let scaled := contour_edge(F, addF, mulF, negF, (fun (x : F) => mulF(f(x), coefficient)));
   let mapping := mulF(coefficient);
   let mapped := (fun (a, b, tag : F) => mapping(original(a, b, tag)));
-  have edgePath : forall a : F. forall b : F. forall tag : F. scaled(a, b, tag) = mapped(a, b, tag) {
+  let edgePath : forall a : F. forall b : F. forall tag : F. scaled(a, b, tag) = mapped(a, b, tag) {
     intro a, b, tag;
     let difference := coordinate_difference(F, addF, negF, a, b);
     exact trans(
@@ -115,7 +115,7 @@ def curve_subdivision_samples_cong(
     parameter_contour_edge(I, Complex(F), addC, mulC, negC, curve, (fun (t : I) => f(curve(t))));
   let edgeG :=
     parameter_contour_edge(I, Complex(F), addC, mulC, negC, curve, (fun (t : I) => g(curve(t))));
-  have edges : forall x : I. forall y : I. forall tag : I. edgeF(x, y, tag) = edgeG(x, y, tag) {
+  let edges : forall x : I. forall y : I. forall tag : I. edgeF(x, y, tag) = edgeG(x, y, tag) {
     intro x, y, tag;
     exact cong(
       (

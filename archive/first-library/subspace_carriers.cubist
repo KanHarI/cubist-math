@@ -8,7 +8,7 @@ def subspace_as_subgroup(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K,
   let G := vector_group(K, V);
   let X := vector_carrier(K, V);
   let P := subspace_members(K, V, S);
-  have inverseClosed :
+  let inverseClosed :
     forall x : X. forall y : X. P(x) -> vector_add(K, V, y, x) = vector_zero(K, V) -> P(y) {
     intro x, y, member, inverse;
     let same :=

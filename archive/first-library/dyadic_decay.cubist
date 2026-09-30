@@ -33,15 +33,18 @@ def dyadic_width_small_from_natural_bound(
       field_natural_successor_ge_one(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, n)
     );
   obtain (multiply, unMultiply) := scale(divided, factor, epsilon, positiveEpsilon);
-  have restores : mulF(divided, epsilon) = width := trans(
-    ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, width, reciprocal, epsilon),
+  let restores : mulF(divided, epsilon) = width :=
     trans(
-      cong(
-        mulF(width),
-        trans(ring_mul_comm(F, zero, one, addF, mulF, negF, ring, reciprocal, epsilon), inverseLaw)
-      ), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, width)
-    )
-  );
+      ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, width, reciprocal, epsilon),
+      trans(
+        cong(
+          mulF(width),
+          trans(
+            ring_mul_comm(F, zero, one, addF, mulF, negF, ring, reciprocal, epsilon), inverseLaw
+          )
+        ), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, width)
+      )
+    );
   let aboveWidth :=
     along((fun (v : F) => lt(v, mulF(factor, epsilon)))) by restores from multiply(largeFactor);
   let bounded :=
@@ -81,7 +84,7 @@ def dyadic_width_arbitrarily_small(
   let divided := mulF(width, reciprocal);
   let A := (exists n : Nat. lt(divided, field_natural(F, zero, one, addF)(n)));
   let B := (exists depth : Nat. lt(dyadic_width(F, half, depth, width), epsilon));
-  have mapping : A -> B {
+  let mapping : A -> B {
     intro data;
     obtain (n, large) := data;
     exact (

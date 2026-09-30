@@ -98,7 +98,7 @@ def scalar_extension_basis_finite(
   let R := RestrictScalars(K, L, e, V);
   let h := basis_expansion(K, R, n, basis);
   let extended := extend_coordinate_linear(K, L, e, V, n, h);
-  have onto : LinearSurjective(L, CoordinateSpace(L, n), V, extended) {
+  let onto : LinearSurjective(L, CoordinateSpace(L, n), V, extended) {
     intro x;
     let a := linear_map(K, R, CoordinateSpace(K, n), basis_coordinates(K, R, n, basis), x);
     exact merely(

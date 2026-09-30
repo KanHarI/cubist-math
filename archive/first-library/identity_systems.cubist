@@ -41,10 +41,11 @@ def identity_system_retraction(
 ) :
   identity_system_encode(A, a, R, r0, contraction, b, identity_system_decode(A, a, R, r0, b, p)) = p {
   let center := identity_total_point(A, R, a, r0);
-  have atCenter : contraction(center) = refl(center) := contractible_loops_are_null(
-    IdentityTotal(A, R), center, (fun (z : IdentityTotal(A, R)) => sym(contraction(z))), center,
-    contraction(center)
-  );
+  let atCenter : contraction(center) = refl(center) :=
+    contractible_loops_are_null(
+      IdentityTotal(A, R), center, (fun (z : IdentityTotal(A, R)) => sym(contraction(z))), center,
+      contraction(center)
+    );
   exact based_induction(
     U1, U1, A, a,
     (

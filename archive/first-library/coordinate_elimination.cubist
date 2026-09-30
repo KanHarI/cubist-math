@@ -129,18 +129,21 @@ def pivot_reduced_kernel(
   let u := F(coordinate_first(K, m));
   let h := F(coordinate_insert(K, m, v));
   let cu := vector_scale(K, T, c, u);
-  have corrected_zero : vector_add(K, T, h, vector_neg(K, T, cu)) = vector_zero(K, T) := finite_function_ext(
-    A, n, vector_add(K, T, h, vector_neg(K, T, cu)), vector_zero(K, T),
-    pivot_corrected_head(K, m, n, f, b, inv, v), vanishes
-  );
-  have image_equal : h = cu := group_cancel_right(
-    vector_group(K, T), h, cu, vector_neg(K, T, cu),
-    trans(corrected_zero, sym(group_inverse_right(vector_group(K, T), cu)))
-  );
-  have source_equal : coordinate_insert(K, m, v) = vector_scale(K, S, c, coordinate_first(K, m)) := injective(
-    coordinate_insert(K, m, v), vector_scale(K, S, c, coordinate_first(K, m)),
-    trans(image_equal, sym(linear_scale(K, S, T, f, c, coordinate_first(K, m))))
-  );
+  let corrected_zero : vector_add(K, T, h, vector_neg(K, T, cu)) = vector_zero(K, T) :=
+    finite_function_ext(
+      A, n, vector_add(K, T, h, vector_neg(K, T, cu)), vector_zero(K, T),
+      pivot_corrected_head(K, m, n, f, b, inv, v), vanishes
+    );
+  let image_equal : h = cu :=
+    group_cancel_right(
+      vector_group(K, T), h, cu, vector_neg(K, T, cu),
+      trans(corrected_zero, sym(group_inverse_right(vector_group(K, T), cu)))
+    );
+  let source_equal : coordinate_insert(K, m, v) = vector_scale(K, S, c, coordinate_first(K, m)) :=
+    injective(
+      coordinate_insert(K, m, v), vector_scale(K, S, c, coordinate_first(K, m)),
+      trans(image_equal, sym(linear_scale(K, S, T, f, c, coordinate_first(K, m))))
+    );
   // Every tail coordinate of a multiple of the first coordinate vector is zero.
   exact trans(
     cong(finite_tail(A, m), source_equal),

@@ -11,7 +11,7 @@ def field_affine_difference(
   ) {
   let x := addF(a, mulF(s, d));
   let error := mulF(addF(negF(s), t), d);
-  have cancel : addF(addF(x, error), negF(x)) = error := trans(
+  let cancel : addF(addF(x, error), negF(x)) = error := trans(
     ring_add_comm(F, zero, one, addF, mulF, negF, ring, addF(x, error), negF(x)),
     trans(
       sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, negF(x), x, error)),

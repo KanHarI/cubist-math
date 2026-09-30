@@ -157,29 +157,29 @@ def finite_spanning_embeddings_upper_bound(
   let Kernel :=
     exists a : Fin(succ(n)) -> af_carrier(F). (linear_map(F, C, D, h, a) = vector_zero(F, D))
     and ((a = vector_zero(F, C)) -> Void);
-  have reject : Kernel -> Void {
+  let reject : Kernel -> Void {
     intro witness;
     obtain (a, vanishes, nonzero) := witness;
-    have allRows : forall j : Fin(n). coordinate_dot(F, succ(n), a, rows(j)) = field_zero(F) {
+    let allRows : forall j : Fin(n). coordinate_dot(F, succ(n), a, rows(j)) = field_zero(F) {
       intro j;
       exact cong((fun (v : Fin(n) -> af_carrier(F)) => v(j)), vanishes);
     }
-    have relation :
+    let relation :
       forall x : af_carrier(F). hom_family_sum(F, F, succ(n), maps, a, x) = field_zero(F) {
       intro x;
       let Goal := hom_family_sum(F, F, succ(n), maps, a, x) = field_zero(F);
-      have fromSpan :
+      let fromSpan :
         (exists b : Fin(n) -> af_carrier(R). linear_combination(R, V, n, points, b) = x) -> Goal {
         intro representation;
         obtain (b, same) := representation;
         let mapped := fun (j : Fin(n)) => field_embedding_map(R, F, e, b(j));
-        have evalX : embedding_evaluation_vector(F, F, succ(n), maps, x) = linear_combination(
+        let evalX : embedding_evaluation_vector(F, F, succ(n), maps, x) = linear_combination(
           F, C, n, rows, mapped
         ) := trans(
           sym(cong(embedding_evaluation_vector(F, F, succ(n), maps), same)),
           embedding_evaluation_combination(R, F, e, succ(n), maps, over, n, points, b)
         );
-        have dotZero : embedding_evaluation_dot(F, F, succ(n), maps, a, x) = field_zero(F) := trans(
+        let dotZero : embedding_evaluation_dot(F, F, succ(n), maps, a, x) = field_zero(F) := trans(
           cong(coordinate_dot(F, succ(n), a), evalX),
           coordinate_dot_rows_zero(F, succ(n), n, a, rows, mapped, allRows)
         );

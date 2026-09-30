@@ -91,7 +91,7 @@ def algebraic_finitely_generated_extension_finite(
 ) :
   FiniteExtension(K, embedding_as_extension(K, L, e)) {
   let Goal := FiniteExtension(K, embedding_as_extension(K, L, e));
-  have useGenerators : FiniteFieldGeneration(K, L, e) -> Goal {
+  let useGenerators : FiniteFieldGeneration(K, L, e) -> Goal {
     intro witness;
     obtain (n, generators, generates) := witness;
     exact finitely_generated_algebraic_is_finite(

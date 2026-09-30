@@ -107,7 +107,7 @@ def complex_apart_inverse(
       (lt(squaredNorm, zero) or lt(zero, squaredNorm)),
       typed((lt(squaredNorm, zero) or lt(zero, squaredNorm)), right(positiveNorm))
     );
-  have scalarInverse : exists v : F. mulF(squaredNorm, v) = one := forward(apartNorm);
+  let scalarInverse : exists v : F. mulF(squaredNorm, v) = one := forward(apartNorm);
   obtain (reciprocal, normLaw) := scalarInverse;
   exact complex_inverse_from_norm(F, zero, one, addF, mulF, negF, ring, z, reciprocal, normLaw);
 }
@@ -122,7 +122,7 @@ def complex_inverse_apart(
   ComplexApartZero(F, zero, addF, mulF, lt, z) {
   obtain (w, productLaw) := inverseWitness;
   let squaredNorm := complex_norm_squared(F, addF, mulF, z);
-  have normLaw : mulF(squaredNorm, complex_norm_squared(F, addF, mulF, w)) = one := trans(
+  let normLaw : mulF(squaredNorm, complex_norm_squared(F, addF, mulF, w)) = one := trans(
     sym(complex_norm_multiplicative(F, zero, one, addF, mulF, negF, ring, z, w)),
     trans(
       cong(complex_norm_squared(F, addF, mulF), productLaw),

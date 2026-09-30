@@ -104,7 +104,7 @@ def complex_interval_deformation_variation(
       imagBelow
     );
   let sumWeight := (fun (a, b, tag : I) => addF(realWeight(a, b, tag), imagWeight(a, b, tag)));
-  have combined : FieldLe(
+  let combined : FieldLe(
     F, lt, sample_sum(I, F, zero, addF, sumWeight, n, vertices, tags), addF(r, s)
   ) := along((fun (v : F) => FieldLe(F, lt, v, addF(r, s)))) by sym(
     sample_sum_add(I, F, zero, addF, negF, addLaws, realWeight, imagWeight, n, vertices, tags)

@@ -15,7 +15,7 @@ def equal_basis_dimension_injective_surjective(
   let v := linear_iso_forward(K, W, C, inverseW);
   let middle := linear_compose(K, C, V, W, u, f);
   let square := linear_compose(K, C, W, C, middle, v);
-  have squareInjective : LinearInjective(K, C, C, square) {
+  let squareInjective : LinearInjective(K, C, C, square) {
     intro x, y, same;
     exact linear_iso_injective(
       K, C, V, basisV, x, y,
@@ -31,7 +31,7 @@ def equal_basis_dimension_injective_surjective(
   let squareOnto := coordinate_square_injective_surjective(K, n, square, squareInjective);
   intro y;
   let c := linear_map(K, W, C, v, y);
-  have lift :
+  let lift :
     Fiber(vector_carrier(K, C), vector_carrier(K, C), linear_map(K, C, C, square), c)
     -> Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), y) {
     intro witness;
@@ -113,7 +113,7 @@ def positive_product_unit(k, m : Nat, same : multiply_count(succ(k), m) = succ(k
 
 def inhabited_cardinality_positive(A : U0, n : Nat, count : HasCardinality(A, n), a : A) :
   exists k : Nat. n = succ(k) {
-  have nonzero : (n = 0) -> Void {
+  let nonzero : (n = 0) -> Void {
     intro zero;
     let countZero := along HasCardinality(A) by zero from count;
     exact mere_eliminate(

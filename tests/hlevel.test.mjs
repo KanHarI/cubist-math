@@ -52,9 +52,9 @@ def from_hint(A : U0, B : A -> U0, h : forall x : A. IsProp(U0, B(x)), a : A) : 
 def after_intro : forall A : U0. IsSet(U0, A) -> IsSet(U0, A -> A) { intro A, h; hlevel; }
 def after_universe_intro : forall U < UU0. IsSet(U, Nat) { intro U; hlevel; }
 def after_universe_intros : forall U < UU0. forall A : U. IsSet(U, A) -> IsSet(U, A and (Unit -> A)) { intro U, A, h; hlevel; }
-def from_have(A : U0, p : Unit -> IsProp(U0, A)) : IsProp(U0, A) { have h := p(tt); hlevel; }
+def from_have(A : U0, p : Unit -> IsProp(U0, A)) : IsProp(U0, A) { let h := p(tt); hlevel; }
 def from_have_block(A : U0, p : Unit -> IsProp(U0, A)) : IsSet(U0, A and A) {
-  have h : IsProp(U0, A) { exact p(tt); }
+  let h : IsProp(U0, A) { exact p(tt); }
   hlevel;
 }
 def from_let(A : U0, p : Unit -> IsContr(U0, A)) : IsSet(U0, A) { let c := p(tt); hlevel; }

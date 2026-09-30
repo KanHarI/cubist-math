@@ -325,31 +325,32 @@ def polynomial_eval_mul_step(
   let ec := field_embedding_map(K, L, e, c);
   let et := E(t);
   let eq := E(q);
-  have product : polynomial_mul(K, p, q) = polynomial_add(
+  let product : polynomial_mul(K, p, q) = polynomial_add(
     K, polynomial_scale(K, c, q), polynomial_shift(K, polynomial_mul(K, t, q))
-  ) := with unfolding [] {
-    trans(
-      cong((fun (s : Polynomial(K)) => polynomial_mul(K, s, q)), polynomial_decompose(K, p)),
+  ) :=
+    with unfolding [] {
       trans(
-        polynomial_distribute_left(K, C, polynomial_shift(K, t), q),
-        cong(polynomial_add(K, polynomial_scale(K, c, q)), sym(polynomial_shift_mul(K, t, q)))
-      )
-    )
-  };
-  have expand : E(p) = field_add(L, ec, field_mul(L, x, et)) := with unfolding [] {
-    trans(
-      cong(E, polynomial_decompose(K, p)),
-      trans(
-        polynomial_eval_add(K, L, e, C, polynomial_shift(K, t), x),
+        cong((fun (s : Polynomial(K)) => polynomial_mul(K, s, q)), polynomial_decompose(K, p)),
         trans(
-          cong(
-            (fun (a : af_carrier(L)) => field_add(L, a, E(polynomial_shift(K, t)))),
-            polynomial_eval_constant(K, L, e, c, x)
-          ), cong(field_add(L, ec), polynomial_eval_shift(K, L, e, t, x))
+          polynomial_distribute_left(K, C, polynomial_shift(K, t), q),
+          cong(polynomial_add(K, polynomial_scale(K, c, q)), sym(polynomial_shift_mul(K, t, q)))
         )
       )
-    )
-  };
+    };
+  let expand : E(p) = field_add(L, ec, field_mul(L, x, et)) := with unfolding [] {
+      trans(
+        cong(E, polynomial_decompose(K, p)),
+        trans(
+          polynomial_eval_add(K, L, e, C, polynomial_shift(K, t), x),
+          trans(
+            cong(
+              (fun (a : af_carrier(L)) => field_add(L, a, E(polynomial_shift(K, t)))),
+              polynomial_eval_constant(K, L, e, c, x)
+            ), cong(field_add(L, ec), polynomial_eval_shift(K, L, e, t, x))
+          )
+        )
+      )
+    };
   exact with unfolding [] {
     trans(
       cong(E, product),

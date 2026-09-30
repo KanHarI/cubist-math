@@ -146,22 +146,21 @@ def galois_composition_is_concatenation(K : AlgebraicField, E : FieldExt(K), e, 
   ) {
   let p := extension_iso_path(K, E, E, e);
   let q := extension_iso_path(K, E, E, d);
-  have decoded : extension_path_iso(K, E, E, trans(p, q)) = extension_iso_compose(K, E, E, E, e, d) := with unfolding [
-    extension_iso_path, extension_path_iso
-  ] {
-    trans(
-      extension_paths_compose(K, E, E, E, p, q),
+  let decoded : extension_path_iso(K, E, E, trans(p, q)) = extension_iso_compose(K, E, E, E, e, d) :=
+    with unfolding [extension_iso_path, extension_path_iso] {
       trans(
-        cong(
-          (
-            fun (v : Galois(K, E)) => extension_iso_compose(
-              K, E, E, E, v, extension_path_iso(K, E, E, q)
-            )
-          ), extension_iso_roundtrip(K, E, E, e)
-        ), cong(extension_iso_compose(K, E, E, E, e), extension_iso_roundtrip(K, E, E, d))
+        extension_paths_compose(K, E, E, E, p, q),
+        trans(
+          cong(
+            (
+              fun (v : Galois(K, E)) => extension_iso_compose(
+                K, E, E, E, v, extension_path_iso(K, E, E, q)
+              )
+            ), extension_iso_roundtrip(K, E, E, e)
+          ), cong(extension_iso_compose(K, E, E, E, e), extension_iso_roundtrip(K, E, E, d))
+        )
       )
-    )
-  };
+    };
   exact with unfolding [
     field_first, identity_total_point, identity_system_decode, structure_iso_point,
     structure_iso_center, structure_equality_iso, structure_iso_equality, structure_identity_family,

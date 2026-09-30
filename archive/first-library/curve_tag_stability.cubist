@@ -54,7 +54,7 @@ def curve_contour_uniform_tag_stability(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
     (fun (t : I) => integrand(curve(t))), uniform, delta, positiveDelta
   );
-  have stable :
+  let stable :
     CurveFineTagsClose(F, zero, one, addF, mulF, negF, lt, curve, integrand, epsilon, mesh) {
     intro n, vertices, oldTags, newTags, fine, oldValid, newValid;
     let ordered :=
@@ -164,7 +164,7 @@ def affine_contour_endpoint_sums_close(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, minF, maxF, lattice, z,
     error, integrand, uniform, epsilon, positive
   );
-  have close :
+  let close :
     forall n : Nat. forall vertices : SampleVertices(I, n).
     IntervalOrderedSamples(F, zero, one, lt, n, vertices)
     -> IntervalMeshBelow(F, zero, one, addF, negF, lt, mesh, n, vertices)

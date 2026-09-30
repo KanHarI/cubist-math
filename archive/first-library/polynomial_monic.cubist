@@ -53,7 +53,7 @@ def polynomial_normalize_degree(
   let support := along SeriesSupport(K, f) by degree from polynomial_cutoff_support(K, p);
   let leading :=
     trans(polynomial_scale_coefficient(K, a, p, d), trans(scalar_mul_comm(K, a, f(d)), inverse));
-  have nonzero : FieldNonzero(af_carrier(K), af_operations(K), polynomial_coefficients(K, q, d)) {
+  let nonzero : FieldNonzero(af_carrier(K), af_operations(K), polynomial_coefficients(K, q, d)) {
     intro zero;
     obtain (ring, nontrivial, inverses) := af_laws(K);
     exact nontrivial(trans(sym(leading), zero));
@@ -98,12 +98,12 @@ def polynomial_divides_cutoff_le(
 ) :
   le(polynomial_cutoff(K, p), polynomial_cutoff(K, q)) {
   obtain (m, dp) := polynomial_nonzero_degree(K, p, nonzeroP);
-  have useQuotient :
+  let useQuotient :
     (exists r : Polynomial(K). q = polynomial_mul(K, p, r))
     -> le(polynomial_cutoff(K, p), polynomial_cutoff(K, q)) {
     intro witness;
     obtain (r, equation) := witness;
-    have nonzeroR : PolynomialNonzero(K, r) {
+    let nonzeroR : PolynomialNonzero(K, r) {
       intro zero;
       exact nonzeroQ(
         trans(equation, trans(cong(polynomial_mul(K, p), zero), polynomial_mul_zero(K, p)))
@@ -135,13 +135,14 @@ def monic_difference_support(
   let sq := along SeriesSupport(K, g) by dq from polynomial_cutoff_support(K, q);
   let p1 := trans(cong(f, sym(cong(natural_predecessor, dp))), monicP);
   let q1 := trans(cong(g, sym(cong(natural_predecessor, dq))), monicQ);
-  have topZero : field_add(K, f(d), field_neg(K, g(d))) = field_zero(K) := trans(
-    cong((fun (a : af_carrier(K)) => field_add(K, a, field_neg(K, g(d)))), p1),
+  let topZero : field_add(K, f(d), field_neg(K, g(d))) = field_zero(K) :=
     trans(
-      cong((fun (a : af_carrier(K)) => field_add(K, field_one(K), field_neg(K, a))), q1),
-      scalar_add_inverse_right(K, field_one(K))
-    )
-  );
+      cong((fun (a : af_carrier(K)) => field_add(K, a, field_neg(K, g(d)))), p1),
+      trans(
+        cong((fun (a : af_carrier(K)) => field_add(K, field_one(K), field_neg(K, a))), q1),
+        scalar_add_inverse_right(K, field_one(K))
+      )
+    );
   exact support_predecessor(
     K, polynomial_coefficients(K, polynomial_subtract(K, p, q)), d,
     support_add_same(

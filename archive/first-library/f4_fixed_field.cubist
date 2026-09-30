@@ -48,8 +48,8 @@ def f2_image_prop(x : F4Carrier, p, q : F2Image(x)) : p = q {
   let fiber := (fun (k : F2Carrier) => f2_into_f4(k) = x);
   let k := sigma_first(F2Carrier, fiber, p);
   let l := sigma_first(F2Carrier, fiber, q);
-  have pk : f2_into_f4(k) = x := sigma_second(F2Carrier, fiber, p);
-  have ql : f2_into_f4(l) = x := sigma_second(F2Carrier, fiber, q);
+  let pk : f2_into_f4(k) = x := sigma_second(F2Carrier, fiber, p);
+  let ql : f2_into_f4(l) = x := sigma_second(F2Carrier, fiber, q);
   exact subtype_ext(
     F2Carrier, fiber, (fun (a : F2Carrier) => fin_is_set(4, f2_into_f4(a), x)), p, q,
     f2_inclusion_injective(k, l, trans(pk, sym(ql)))

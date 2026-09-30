@@ -167,7 +167,7 @@ def restrict_bijection(
   let g := backward(Unit or A, Unit or B, e);
   let eta := left_inverse(Unit or A, Unit or B, e);
   let eps := right_inverse(Unit or A, Unit or B, e);
-  have fixed_g : g(head(B)) = head(A) := trans(sym(cong(g, fixed)), eta(head(A)));
+  let fixed_g : g(head(B)) = head(A) := trans(sym(cong(g, fixed)), eta(head(A)));
   exact (
     restrict_tail(A, B, f, g, eta, fixed), restrict_tail(B, A, g, f, eps, fixed_g),
     restriction_inverse(A, B, f, g, eta, eps, fixed, fixed_g),

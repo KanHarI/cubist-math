@@ -157,7 +157,7 @@ def polynomial_product_degree(
   let g := polynomial_coefficients(K, q);
   let sf := along SeriesSupport(K, f) by dp from polynomial_cutoff_support(K, p);
   let sg := along SeriesSupport(K, g) by dq from polynomial_cutoff_support(K, q);
-  have nonzero :
+  let nonzero :
     FieldNonzero(af_carrier(K), af_operations(K), convolution(K, add_count(m, n), f, g)) {
     intro zero;
     exact scalar_product_nonzero(

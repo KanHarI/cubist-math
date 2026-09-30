@@ -58,7 +58,7 @@ def uniform_curve_tag_bounds(
   obtain (mesh, positiveMesh, closeValues) := uniform(epsilon, positive);
   let smallEdge :=
     (fun (a, b : I) => lt(interval_difference(F, zero, one, addF, negF, lt, a, b), mesh));
-  have localBound :
+  let localBound :
     forall a : I. forall b : I. forall x : I. forall y : I. smallEdge(a, b)
     -> IntervalTagWithin(F, zero, one, lt, a, b, x) -> IntervalTagWithin(F, zero, one, lt, a, b, y)
     -> ComplexBoxBound(

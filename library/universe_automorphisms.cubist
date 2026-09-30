@@ -60,7 +60,7 @@ computable def image_empty_then_holds(
   F, G : U0 -> U0, eta : forall X : U0. G(F(X)) = X, empty : F(Unit) -> Void, P : U0,
   none : F(P) -> Void
 ) : P {
-  have same : P = Unit := trans(
+  let same : P = Unit := trans(
     sym(eta(P)), trans(cong(G, empty_types_equal(F(P), F(Unit), none, empty)), eta(Unit))
   );
   exact along((fun (T : U0) => T)) by sym(same) from tt;

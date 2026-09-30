@@ -9,8 +9,6 @@ const tactics = new Map([
   ["rw", ["rw", "rewrite witness"]],
   ["simpOnly", ["simp", "simplification witness"]],
   ["simpaOnly", ["simpa", "simplification witness"]],
-  ["show", ["show", "restated goal"]],
-  ["suffices", ["suffices", "goal reduction"]],
   ["hlevel", ["hlevel", "h-level evidence"]],
 ]);
 

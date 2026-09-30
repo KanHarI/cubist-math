@@ -381,26 +381,17 @@ def two_below_three : 2 &lt; 3 {
   exact fun (a : A) =&gt; a;
 }</code></pre>
         </div>
-        <div class="quick-entry" id="quick-have">
-          <h4><code>have</code></h4>
-          <p><code>have h := term;</code> names an inferred proof, <code>have h : T := term;</code> checks one, and <code>have h : T { … }</code> proves a local claim in a block.
-            <a href="reference/proof-blocks.html#have">Proof blocks →</a></p>
+        <div class="quick-entry" id="quick-let">
+          <h4><code>let</code></h4>
+          <p><code>let x := term;</code> names a term, <code>let x : T := term;</code> checks it against <code>T</code>, and <code>let x : T { … }</code> proves <code>T</code> in a block. The checker sees through every form.
+            <a href="reference/proof-blocks.html#let">Proof blocks →</a></p>
           <pre><code data-check="accept">def three_ways(n : Nat) : n = n {
-  have p := refl(n);
-  have q : n = n := p;
-  have r : n = n {
+  let p := refl(n);
+  let q : n = n := p;
+  let r : n = n {
     exact q;
   }
   exact r;
-}</code></pre>
-        </div>
-        <div class="quick-entry" id="quick-let">
-          <h4><code>let</code></h4>
-          <p>Names a term for the rest of the block. The name stands for the term itself, so the checker sees through it.
-            <a href="reference/proof-blocks.html#let">Proof blocks →</a></p>
-          <pre><code data-check="accept">def see_through(n : Nat) : succ(n) = succ(n) {
-  let m := succ(n);
-  exact refl(m);
 }</code></pre>
         </div>
         <div class="quick-entry" id="quick-obtain">

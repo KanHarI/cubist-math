@@ -195,7 +195,7 @@ def affine_dyadic_integral_midpoint(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, left, right, leftValue,
       rightValue, leftConverges, rightConverges
     );
-  have computes : forall n : Nat. total(n) = shifted(n) {
+  let computes : forall n : Nat. total(n) = shifted(n) {
     intro n;
     exact sym(
       affine_dyadic_sum_successor(

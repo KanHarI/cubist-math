@@ -32,10 +32,10 @@ def curve_subdivision_constant(
   let imageTags := map_sample_tags(I, Complex(F), curve, n, tags);
   let first := sample_first(I, n, vertices);
   let last := sample_last(I, n, vertices);
-  have firstPath : first = a := field_fst(
+  let firstPath : first = a := field_fst(
     (first = a), (last = b), subdivision_endpoints(I, a, b, piece)
   );
-  have lastPath : last = b := field_snd(
+  let lastPath : last = b := field_snd(
     (first = a), (last = b), subdivision_endpoints(I, a, b, piece)
   );
   let firstImage :=
@@ -161,7 +161,7 @@ def affine_dyadic_integral_constant(
       (fun (x : Complex(F)) => coefficient), a, b, ordered
     );
   let constant := (fun (n : Nat) => value);
-  have computes : forall n : Nat. constant(n) = sequence(n) {
+  let computes : forall n : Nat. constant(n) = sequence(n) {
     intro n;
     exact sym(
       curve_subdivision_constant(

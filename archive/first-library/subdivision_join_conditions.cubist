@@ -43,8 +43,9 @@ def subdivision_tagged_join_step(
   let joinedPieces :=
     join_subdivision_families(C, n, tail, tailPieces, m, rightVertices, rightPieces, same);
   let moved := subdivision_move_end(C, a, b, joinedFirst, firstPath, headPiece);
-  have data : condition(a, b, tag, headPiece)
-  and SubdivisionTagged(C, condition, n, tail, tailTags, tailPieces) := valid;
+  let data : condition(a, b, tag, headPiece)
+  and SubdivisionTagged(C, condition, n, tail, tailTags, tailPieces) :=
+    valid;
   obtain (headValid, tailValid) := data;
   exact typed(
     (

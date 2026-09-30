@@ -53,7 +53,7 @@ def f4_prime_subfield_is_base : prime_subfield(F4) =[Subfield(F4)] f4_base_subfi
 
 // The generated prime subfield does not accidentally contain alpha.
 def f4_alpha_not_in_prime(member : subfield_members(F4, prime_subfield(F4), f4_2)) : Void {
-  have inBase : F2Image(f4_2) := prime_subfield_least(F4, f4_base_subfield, f4_2, member);
+  let inBase : F2Image(f4_2) := prime_subfield_least(F4, f4_base_subfield, f4_2, member);
   exact f4_3_not_2(f4_base_is_fixed(f4_2, inBase, f4_frobenius_automorphism, tt));
 }
 

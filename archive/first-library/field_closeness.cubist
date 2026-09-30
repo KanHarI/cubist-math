@@ -140,7 +140,7 @@ def field_close_all_le(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, y, x, reversed
     );
   obtain (upper, lower) := close(gap, positive);
-  have recovers : addF(y, gap) = x := trans(
+  let recovers : addF(y, gap) = x := trans(
     ring_add_swap(F, zero, one, addF, mulF, negF, ring, y, x, negF(y)),
     trans(
       cong(addF(x), ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, y)),

@@ -111,7 +111,7 @@ def affine_dyadic_cauchy(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, inverses, bounds,
       width, nonnegativeWidth
     );
-  have refines :
+  let refines :
     forall epsilon : F. lt(zero, epsilon) -> exists bound : Nat. forall n : Nat. forall extra : Nat.
     IndexLE(bound, n) -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon) {
     intro epsilon, positive;
@@ -124,7 +124,7 @@ def affine_dyadic_cauchy(
       integrand, uniform, delta, positiveDelta, half, halfSum
     );
     obtain (bound, closeWidths) := widthsVanish(mesh, positiveMesh);
-    have tail :
+    let tail :
       forall n : Nat. forall extra : Nat. IndexLE(bound, n)
       -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon) {
       intro n, extra, later;

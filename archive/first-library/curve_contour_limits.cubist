@@ -70,7 +70,7 @@ def curve_contour_tag_independent_limit(
         I, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), newTags(n)
       )
     );
-  have increments :
+  let increments :
     forall n : Nat.
     ComplexParameterIncrementBounds(
       I, F, addF, negF, lt, curve, realWeight, imagWeight, count(n), vertices(n), oldTags(n)
@@ -84,7 +84,7 @@ def curve_contour_tag_independent_limit(
       realBounds, imagBounds
     );
   }
-  have total :
+  let total :
     forall n : Nat.
     FieldLe(
       F, lt,
@@ -99,7 +99,7 @@ def curve_contour_tag_independent_limit(
     );
     exact totalBound;
   }
-  have oldSame : forall n : Nat. oldMapped(n) = oldParam(n) {
+  let oldSame : forall n : Nat. oldMapped(n) = oldParam(n) {
     intro n;
     exact sym(
       parameter_contour_sum_is_mapped(
@@ -109,7 +109,7 @@ def curve_contour_tag_independent_limit(
       )
     );
   }
-  have newSame : forall n : Nat. newParam(n) = newMapped(n) {
+  let newSame : forall n : Nat. newParam(n) = newMapped(n) {
     intro n;
     exact parameter_contour_sum_is_mapped(
       I, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF),

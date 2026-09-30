@@ -16,6 +16,7 @@ import { assertFreshBuild } from "./build-stamp.mjs";
 import { migrationSourceReader } from "./migration-sources.mjs";
 import { placeOfFile } from "./module-sources.mjs";
 import { moduleRoots } from "../web/module-resolution.mjs";
+import { currentSyntax } from "../web/mathscript/legacy-syntax.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const args = process.argv.slice(2), option = name => {
@@ -76,7 +77,8 @@ const available = new Set(git(["ls-tree","-r","--name-only",base,"--","library",
 const readOriginal = migrationSourceReader(async (place, name) => {
   const path = `${moduleRoots[place]}${name}.cubist`;
   if (!originals.has(path)) {
-    let text = available.has(path) ? git(["show",`${base}:${path}`]) : null;
+    // A baseline may predate a syntax change; it is read in today's syntax.
+    let text = available.has(path) ? currentSyntax(git(["show",`${base}:${path}`])) : null;
     // A new shared foundation has no predecessor. It is available only in
     // library resolution; archive importers never see this fallback.
     if (text === null && place === "library" && !modules.includes(name)) {

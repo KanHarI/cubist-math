@@ -150,7 +150,7 @@ def swap_arguments(A : U0, P : A -&gt; A -&gt; U0, f : forall x, y : A. P(x, y))
 def two_exists : exists n : Nat. n = 2 {
   exact (2, refl(2));
 }</code></pre>
-            <p>A pair needs an expected type. <code>(1, 2)</code> could belong to <code>Nat and Nat</code> or to many <code>exists</code> types, and the elaborator does not guess. The expected type comes from a stated result type, a <code>have</code> type, a function argument’s type or <a href="#typed"><code>typed</code></a>.</p>
+            <p>A pair needs an expected type. <code>(1, 2)</code> could belong to <code>Nat and Nat</code> or to many <code>exists</code> types, and the elaborator does not guess. The expected type comes from a stated result type, a <code>let</code>'s stated type, a function argument’s type or <a href="#typed"><code>typed</code></a>.</p>
             <pre><code data-check="reject">def unannotated := (1, 2);  // Error: Pair requires an expected type.</code></pre>
             <h3 id="tuples">Tuples</h3>
             <p>The kernel has only binary pairs. Tuple notation <code>(a, b, c)</code> means <code>(a, (b, c))</code>, and the same notation works for types: <code>A and B and C</code> means <code>A and (B and C)</code>. Explicit left nesting <code>((a, b), c)</code> is a different shape.</p>
@@ -307,7 +307,7 @@ def plus_zero_by_computation(n : Nat) : n + 0 = n {
             <p>Several forms need an expected type: pairs, <code>left</code> and <code>right</code>, <code>absurd</code>, and untyped <code>fun x =></code>. The expected type comes from:</p>
             <ul>
               <li>the stated result type of a block declaration, through <code>exact</code>;</li>
-              <li>the type in <code>have name : T</code>;</li>
+              <li>the type in <code>let name : T</code>;</li>
               <li>the parameter type, when the term is an argument of a function;</li>
               <li>the result type of a <code>match</code> branch;</li>
               <li><code>typed(T, term)</code>, which checks <code>term</code> against <code>T</code>.</li>

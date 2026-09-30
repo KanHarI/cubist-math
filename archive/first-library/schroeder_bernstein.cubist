@@ -223,7 +223,7 @@ def csb_preimages(
       let preimage := f_preimage(A, B, f, g, embedF, injG, y, bad);
       let x := sigma_first(A, (fun (x : A) => f(x) = y), preimage);
       let p := typed((f(x) = y), sigma_second(A, (fun (x : A) => f(x) = y), preimage));
-      have badX : GPoint(A, B, f, g, x) -> Void {
+      let badX : GPoint(A, B, f, g, x) -> Void {
         intro goodX;
         exact bad(
           along GPoint(A, B, f, g) by cong(g, p) from gpoint_forward(

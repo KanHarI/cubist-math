@@ -51,7 +51,7 @@ def series_from_coordinates_support(K : AlgebraicField, n : Nat) :=
 
 def series_cons_decompose(K : AlgebraicField, f : FormalSeries(K)) :
   series_cons(K, f(0), series_tail(K, f)) = f {
-  have pointwise : forall n : Nat. series_cons(K, f(0), series_tail(K, f), n) = f(n) {
+  let pointwise : forall n : Nat. series_cons(K, f(0), series_tail(K, f), n) = f(n) {
     intro n;
     exact induction n as k return (series_cons(K, f(0), series_tail(K, f), k) = f(k)) {
       zero => refl(f(0));

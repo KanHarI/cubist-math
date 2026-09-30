@@ -32,9 +32,9 @@ def no_maximal_strict_successor(
   none : Trunc(U1, exists x : A. OrderMaximal(A, le, x)) -> Void, x : A
 ) :
   Trunc(U1, StrictlyAbove(A, le, x)) {
-  have contradiction : (Trunc(U1, StrictlyAbove(A, le, x)) -> Void) -> Void {
+  let contradiction : (Trunc(U1, StrictlyAbove(A, le, x)) -> Void) -> Void {
     intro noSuccessor;
-    have maximal : OrderMaximal(A, le, x) {
+    let maximal : OrderMaximal(A, le, x) {
       intro y, xy;
       exact double_negation(
         U0, le(y, x), order_prop(A, le, laws, y, x),

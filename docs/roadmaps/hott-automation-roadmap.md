@@ -471,7 +471,7 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
   projections through eight helpers that take the family explicitly, with
   1,283 calls (`field_snd`, `field_fst`, `sigma_first`, …); each helper
   converts to the corresponding projection, which
-  `tests/projections-show-suffices.test.mjs` checks by `rfl`. A2's matcher then
+  `tests/projections-let.test.mjs` checks by `rfl`. A2's matcher then
   sees one head per projection. The archive keeps its helpers; the paused
   rebuild would use projections.
 - [ ] **A9. Superseded by G0 and ergonomics milestone 5.** G0 removes

@@ -151,12 +151,12 @@ def embedded_compositum_least(
   containsL : (forall x : af_carrier(L). subfield_members(O, S, field_embedding_map(L, O, lo, x)))
 ) :
   SubfieldIncluded(O, embedded_compositum_subfield(K, L, O, ko, lo), S) {
-  have imageK : SubfieldIncluded(O, subfield_image(K, O, ko, subfield_top(K)), S) {
+  let imageK : SubfieldIncluded(O, subfield_image(K, O, ko, subfield_top(K)), S) {
     intro y, member;
     obtain (x, inTop, same) := typed(SubfieldImage(K, O, ko, subfield_top(K), y), member);
     exact along subfield_members(O, S) by same from containsK(x);
   }
-  have imageL : SubfieldIncluded(O, subfield_image(L, O, lo, subfield_top(L)), S) {
+  let imageL : SubfieldIncluded(O, subfield_image(L, O, lo, subfield_top(L)), S) {
     intro y, member;
     obtain (x, inTop, same) := typed(SubfieldImage(L, O, lo, subfield_top(L), y), member);
     exact along subfield_members(O, S) by same from containsL(x);

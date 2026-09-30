@@ -8,7 +8,7 @@ def euclid : InfinitelyManyPrimes {
   let m := succ(factorial(n));
   obtain (i, hp, hd) := prime_divisor_exists(m, factorial_positive(n));
   let p := 2 + i;
-  have bigger : n < p {
+  let bigger : n < p {
     cases nat_le_total(p, n) {
       left bounded => {
         let divides_factorial := bounded_divisor_of_factorial(i, n, bounded);

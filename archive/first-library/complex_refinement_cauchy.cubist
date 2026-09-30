@@ -97,7 +97,7 @@ def complex_cauchy_from_refinements(
   obtain (half, halfSum, positiveHalf) := halving;
   intro epsilon, positive;
   obtain (bound, close) := refines(half(epsilon), positiveHalf(epsilon, positive));
-  have tail :
+  let tail :
     forall m : Nat. forall n : Nat. IndexLE(bound, m) -> IndexLE(bound, n)
     -> ComplexClose(F, addF, lt, sequence(m), sequence(n), epsilon) {
     intro m, n, largeM, largeN;

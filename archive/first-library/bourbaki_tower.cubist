@@ -41,7 +41,7 @@ def tower_step(
   member : TowerMember(A, le, complete, f, x)
 ) :
   TowerMember(A, le, complete, f, f(x)) {
-  have universal : forall P : A -> U0. TowerLaws(A, le, complete, f, P) -> P(f(x)) {
+  let universal : forall P : A -> U0. TowerLaws(A, le, complete, f, P) -> P(f(x)) {
     intro P, laws;
     obtain (prop, step, supremum) := laws;
     exact step(x, tower_contains(A, le, complete, f, P, laws, x, member));
@@ -56,7 +56,7 @@ def tower_sup(
   chain : OrderChain(A, le, C), members : (forall x : A. C(x) -> TowerMember(A, le, complete, f, x))
 ) :
   TowerMember(A, le, complete, f, chain_sup(A, le, complete, C, chain)) {
-  have universal :
+  let universal :
     forall P : A -> U0. TowerLaws(A, le, complete, f, P) -> P(chain_sup(A, le, complete, C, chain)) {
     intro P, laws;
     obtain (prop, step, supremum) := laws;
@@ -86,16 +86,17 @@ def tower_induction_large(
   P(x) {
   let Q := fun (y : A) => FieldExists(P(y));
   let unwrap := fun (y : A) => field_exists_elim(P(y), P(y), prop(y), (fun (p : P(y)) => p));
-  have laws : TowerLaws(A, le, complete, f, Q) := (
-    (fun (y : A) => field_exists_prop(P(y))),
-    (fun (y : A) => field_exists_map(P(y), P(f(y)), step(y))),
+  let laws : TowerLaws(A, le, complete, f, Q) :=
     (
-      fun (C : A -> U0, chain : OrderChain(A, le, C), members : (forall y : A. C(y) -> Q(y))) => field_exists_intro(
-        P(chain_sup(A, le, complete, C, chain)),
-        supremum(C, chain, (fun (y : A, cy : C(y)) => unwrap(y, members(y, cy))))
+      (fun (y : A) => field_exists_prop(P(y))),
+      (fun (y : A) => field_exists_map(P(y), P(f(y)), step(y))),
+      (
+        fun (C : A -> U0, chain : OrderChain(A, le, C), members : (forall y : A. C(y) -> Q(y))) => field_exists_intro(
+          P(chain_sup(A, le, complete, C, chain)),
+          supremum(C, chain, (fun (y : A, cy : C(y)) => unwrap(y, members(y, cy))))
+        )
       )
-    )
-  );
+    );
   exact unwrap(x, tower_contains(A, le, complete, f, Q, laws, x, member));
 }
 
@@ -113,12 +114,12 @@ def tower_relative_induction(
   P(x) {
   let T := TowerMember(A, le, complete, f);
   let Q := fun (y : A) => T(y) and P(y);
-  have next : forall y : A. Q(y) -> Q(f(y)) {
+  let next : forall y : A. Q(y) -> Q(f(y)) {
     intro y, pair;
     obtain (ty, py) := pair;
     exact (tower_step(A, le, complete, f, y, ty), step(y, ty, py));
   }
-  have limit :
+  let limit :
     forall C : A -> U0. forall chain : OrderChain(A, le, C). (forall y : A. C(y) -> Q(y))
     -> Q(chain_sup(A, le, complete, C, chain)) {
     intro C, chain, members;

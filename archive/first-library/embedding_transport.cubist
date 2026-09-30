@@ -14,7 +14,7 @@ def embedding_over_surjective_source(
   let inverse := field_embedding_inverse(R, L, h, onto);
   let g := field_inverse_map(R, L, h, onto);
   let f := field_embedding_map(R, T, map);
-  have commutes :
+  let commutes :
     forall a : af_carrier(K).
     f(g(field_embedding_map(K, L, e, a))) = field_embedding_map(K, T, j, a) {
     intro a;

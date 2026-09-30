@@ -123,7 +123,7 @@ def distinct_extension_loops_two_independent(
   let f := galois_field_embedding(K, E, e);
   let g := galois_field_embedding(K, E, d);
   let distinct := extension_loop_embeddings_distinct(K, E, p, q, different);
-  have embeddingRelation :
+  let embeddingRelation :
     forall x : af_carrier(F).
     field_add(
       F, field_mul(F, a, field_embedding_map(F, F, f, x)),
@@ -154,11 +154,11 @@ def distinct_extension_loops_independent(
   let F := extension_field(K, E);
   let maps :=
     fun (i : Fin(n)) => galois_field_embedding(K, E, extension_path_iso(K, E, E, loops(i)));
-  have mapsDistinct : PairwiseDistinctEmbeddings(F, F, n, maps) {
+  let mapsDistinct : PairwiseDistinctEmbeddings(F, F, n, maps) {
     intro i, j, same;
     exact distinct(i, j, extension_loop_embedding_injective(K, E, loops(i), loops(j), same));
   }
-  have embeddingRelation :
+  let embeddingRelation :
     forall x : af_carrier(F). hom_family_sum(F, F, n, maps, coefficients, x) = field_zero(F) {
     intro x;
     exact trans(

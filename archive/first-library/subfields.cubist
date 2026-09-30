@@ -245,10 +245,11 @@ def subfield_ext(
   S =[Subfield(F)] T {
   let P := subfield_members(F, S);
   let Q := subfield_members(F, T);
-  have membership : P = Q := field_predicate_ext(
-    af_carrier(F), P, Q, subfield_prop(F, P, subfield_laws(F, S)),
-    subfield_prop(F, Q, subfield_laws(F, T)), same
-  );
+  let membership : P = Q :=
+    field_predicate_ext(
+      af_carrier(F), P, Q, subfield_prop(F, P, subfield_laws(F, S)),
+      subfield_prop(F, Q, subfield_laws(F, T)), same
+    );
   exact field_subtype_ext(
     (af_carrier(F) -> U0), (fun (P : af_carrier(F) -> U0) => typed(U1, SubfieldLaws(F, P))),
     subfield_laws_prop(F), S, T, membership

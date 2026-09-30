@@ -151,7 +151,7 @@ def coordinate_injection_pivot_bound(
   let u := linear_map(K, S, T, f, coordinate_first(K, m));
   let h := coordinate_pivot_map(K, m, n, f, i);
   let a := finite_head(A, n, linear_map(K, S, T, h, coordinate_first(K, m)));
-  have at_pivot : a = u(i) := cong(u, swap_head(Fin(n), fin_decidable(n), i));
+  let at_pivot : a = u(i) := cong(u, swap_head(Fin(n), fin_decidable(n), i));
   obtain (ring, nontrivial, inverses) := af_laws(K);
   obtain (b, inv) := inverses(
     a, (fun (zero : a = af_zero(A, af_operations(K))) => nonzero(trans(sym(at_pivot), zero)))

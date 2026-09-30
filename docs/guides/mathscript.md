@@ -108,13 +108,14 @@ component of a tuple `(a, b, c)` is `.2.2`.
 `left(value)` and `right(value)` introduce a disjunction. `refl(x)` proves
 `x = x`; `absurd(impossible)` eliminates a proof of `Void` into the expected type.
 
-Blocks support `intro`, `let`, `obtain`, `have`, `cases`, and `exact`. See
+Blocks support `intro`, `let`, `obtain`, `cases`, and `exact`. See
 [Euclid](../../archive/first-library/euclid.cubist) for the complete short argument.
-`show T;` restates the goal as a type equal to it by computation; it adds
-nothing to the proof. `suffices h : T by term;` proves the goal from a
-hypothesis `h : T`, and the statements after it prove `T`; the proof after
-`by` may also be a block. Its proof is `fun (h : T) => term` applied to the
-proof of `T`. Induction expressions carry an explicit motive:
+`let name := term;` names a term, `let name : T := term;` checks it against
+`T`, and `let name : T { … }` proves `T` in a nested block; the checker sees
+through every form. To restate the goal, prove the restated form in a `let`
+block and close with it; to reason backwards, prove the claim first. `have`,
+`show` and `suffices` were removed on 2026-09-30 in favour of these forms.
+Induction expressions carry an explicit motive:
 
 ```text
 induction n as k return C(k) {

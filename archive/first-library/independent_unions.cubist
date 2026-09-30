@@ -14,10 +14,10 @@ def directed_union_independent(
   let zero := af_zero(af_carrier(K), af_operations(K));
   let Goal := coefficients(i) = zero;
   let prop := af_set(K, coefficients(i), zero);
-  have fromSeed : (exists j : I. P(j, vectors(i))) -> Goal {
+  let fromSeed : (exists j : I. P(j, vectors(i))) -> Goal {
     intro seedWitness;
     obtain (seed, member) := seedWitness;
-    have fromCover : FiniteFamilyCover(I, A, P, n, vectors) -> Goal {
+    let fromCover : FiniteFamilyCover(I, A, P, n, vectors) -> Goal {
       intro witness;
       obtain (j, allMembers) := witness;
       exact independent(j, n, vectors, distinct, allMembers, coefficients, vanishes, i);

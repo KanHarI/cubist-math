@@ -14,7 +14,7 @@ test("numerals from 1 are notation for successors; 0 is the constructor itself",
   assert.equal(tokenStyle("exact", null), "keyword");
 });
 
-test("a projection's index is not a numeral, and show and suffices are keywords", () => {
+test("a projection's index is not a numeral, and the removed have, show and suffices are ordinary names", () => {
   const source = "exact (p.1, q.2.1, 1);";
   const at = text => source.indexOf(text);
   assert.equal(projectionIndex(source, at("1,")), true);
@@ -23,6 +23,6 @@ test("a projection's index is not a numeral, and show and suffices are keywords"
   assert.equal(numeralAt(source, at("2."), "2"), null);
   // A quantifier's dot is followed by a space, so a numeral after it expands.
   assert.equal(numeralAt("forall n : Nat. 1 = n", 16, "1"), "succ(0)");
-  assert.equal(tokenStyle("show", null), "keyword");
-  assert.equal(tokenStyle("suffices", null), "keyword");
+  for (const word of ["have", "show", "suffices"]) assert.equal(tokenStyle(word, null), tokenStyle("name", null), word);
+  assert.equal(tokenStyle("let", null), "keyword");
 });

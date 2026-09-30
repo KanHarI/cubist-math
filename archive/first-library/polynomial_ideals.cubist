@@ -69,10 +69,11 @@ def polynomial_ideal_remainder(
   polynomial_ideal_members(K, I, r) {
   let product := polynomial_mul(K, q, divisor);
   let difference := polynomial_subtract(K, p, product);
-  have recombine : polynomial_add(K, product, difference) = p := trans(
-    cong(polynomial_add(K, product), polynomial_add_comm(K, p, polynomial_neg(K, product))),
-    polynomial_add_cancel_prefix(K, product, p)
-  );
+  let recombine : polynomial_add(K, product, difference) = p :=
+    trans(
+      cong(polynomial_add(K, product), polynomial_add_comm(K, p, polynomial_neg(K, product))),
+      polynomial_add_cancel_prefix(K, product, p)
+    );
   let same :=
     group_cancel_left(
       PolynomialAdditiveGroup(K), product, difference, r, trans(recombine, equation)
@@ -95,8 +96,8 @@ def ideal_minimal_divides(
   obtain (d, degree) := polynomial_nonzero_degree(K, g, nonzero);
   obtain (q, r, equation, support) := divide_by_degree(K, p, g, d, degree);
   let memberR := polynomial_ideal_remainder(K, I, p, g, q, r, equation, member, memberG);
-  have zero : r = polynomial_zero(K) {
-    have impossible : PolynomialNonzero(K, r) -> Void {
+  let zero : r = polynomial_zero(K) {
+    let impossible : PolynomialNonzero(K, r) -> Void {
       intro nr;
       let below :=
         nat_le_trans(
@@ -147,7 +148,7 @@ def polynomial_ideal_principal(
 ) :
   Mere(IdealPrincipalGenerator(K, I)) {
   let P := fun (n : Nat) => Mere(IdealCutoffWitness(K, I, n));
-  have candidate :
+  let candidate :
     (exists g : Polynomial(K). polynomial_ideal_members(K, I, g) and PolynomialNonzero(K, g))
     -> (exists n : Nat. P(n)) {
     intro witness;
@@ -172,10 +173,10 @@ def polynomial_ideal_principal(
       )
     );
   obtain (n, pn, least) := minima;
-  have generate : IdealCutoffWitness(K, I, n) -> IdealPrincipalGenerator(K, I) {
+  let generate : IdealCutoffWitness(K, I, n) -> IdealPrincipalGenerator(K, I) {
     intro witness;
     obtain (g, member, nonzero, same) := witness;
-    have minimal :
+    let minimal :
       forall r : Polynomial(K). polynomial_ideal_members(K, I, r) -> PolynomialNonzero(K, r)
       -> le(polynomial_cutoff(K, g), polynomial_cutoff(K, r)) {
       intro r, mr, nr;

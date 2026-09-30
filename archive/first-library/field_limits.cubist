@@ -34,7 +34,7 @@ def field_limit_unique(
 ) :
   x = y {
   obtain (half, halfSum, halfPositive) := halving;
-  have close : forall epsilon : F. lt(zero, epsilon) -> FieldClose(F, addF, lt, x, y, epsilon) {
+  let close : forall epsilon : F. lt(zero, epsilon) -> FieldClose(F, addF, lt, x, y, epsilon) {
     intro epsilon, positive;
     obtain (leftBound, leftClose) := toX(half(epsilon), halfPositive(epsilon, positive));
     obtain (rightBound, rightClose) := toY(half(epsilon), halfPositive(epsilon, positive));

@@ -296,7 +296,7 @@ def sample_weighted_sum_bound(
       C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, products, radii, n, vertices,
       tags, bounds
     );
-  have factors : sample_sum(C, F, zero, addF, radii, n, vertices, tags) = mulF(delta, totalWeight) := sym(
+  let factors : sample_sum(C, F, zero, addF, radii, n, vertices, tags) = mulF(delta, totalWeight) := sym(
     sample_sum_map(
       C, F, zero, addF, F, zero, addF, mulF(delta),
       ring_mul_zero(F, zero, one, addF, mulF, negF, ring, delta),

@@ -153,7 +153,7 @@ def notation_is_trans(A : U0, x, y, z : A, p : x = y, q : y = z) : -p ++ p ++ q 
             <pre><code data-check="reject">def dependent_cong(A : U0, C : A -&gt; U0, f : forall a : A. C(a), x, y : A, p : x = y) : f(x) = f(y) {
   exact cong(f, p);  // Error: Type mismatch: found C(y), expected C(x).
 }</code></pre>
-            <p>Some inferred pair projections do not keep enough equality information for <code>sym</code>, <code>trans</code> or <code>cong</code>. In that case, state the path first with <code>have p : x = y := term;</code>.</p>
+            <p>Some inferred pair projections do not keep enough equality information for <code>sym</code>, <code>trans</code> or <code>cong</code>. In that case, state the path first with <code>let p : x = y := term;</code>.</p>
           </section>
           <section id="transport">
             <h2>Transport</h2>

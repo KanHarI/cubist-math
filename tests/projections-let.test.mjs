@@ -5,13 +5,15 @@ import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { parse } from "../web/mathscript/parser.mjs";
+import { currentSyntax } from "../web/mathscript/legacy-syntax.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
 import { cubicalMathTree, cubicalText } from "../web/cubical-notation.mjs";
 
-// L1.5 (HoTT A8 and B4): projections p.1 and p.2, and the statements show
-// and suffices. Each elaborates to existing kernel syntax through the
-// instruction driver: projections to Fst and Snd, show to no step at all,
-// and suffices to an application of a checked function.
+// L1.5 (HoTT A8 and B4): projections p.1 and p.2, and let's stated type and
+// proof block, which replaced have, show and suffices on 2026-09-30. Each
+// elaborates to existing kernel syntax through the instruction driver:
+// projections to Fst and Snd, and a typed let to its checked value kept at
+// the stated type.
 const module = await createCubical();
 const readArchive = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
 async function check(t, source, name = "conveniences") {
@@ -115,110 +117,79 @@ test("projections print as p.1 and p.2 in source text and in mathematical notati
   assert.equal(parse(text, true).kind, "projection");
 });
 
-test("HoTT B4: show restates the goal as a type equal to it by computation", async t => {
+test("HoTT B4 by let: a restated goal, reasoning backwards, and a stated type", async t => {
   const source = `
     def Endo(A : U0) := A -> A;
     def identity_endo(A : U0) : Endo(A) {
-      show A -> A;
-      intro a;
-      exact a;
+      let restated : A -> A {
+        intro a;
+        exact a;
+      }
+      exact restated;
     }
-    def computed(n : Nat) : typed(Nat and Nat, (n, 0)).1 = n {
-      show n = n;
-      rfl;
-    }
-    def closes_by_conversion(n : Nat) : typed(Nat and Nat, (n, 0)).1 = n {
-      show n = n;
-    }
-    def different(A, B : U0, a : A) : A {
-      show B;
-      exact a;
-    }
-    def unproved(A : U0) : A -> A {
-      show A -> A;
-    }
-    def not_a_type(A : U0, a : A) : A {
-      show a;
-      exact a;
-    }
-  `;
-  const { program, verdicts } = await check(t, source);
-  for (const name of ["identity_endo", "computed", "closes_by_conversion"]) assert.equal(verdicts[name], true, name);
-  assert.equal(verdicts.different, `show requires a type equal to the goal by computation: found B, expected A. at ${at(source, "show B;")}`);
-  assert.equal(verdicts.unproved, `show left the goal unproved; add a following proof statement. at ${at(source, "show", "def unproved")}`);
-  assert.equal(verdicts.not_a_type, `show requires a type equal to the goal by computation: found a, expected A. at ${at(source, "show a;")}`);
-  // show adds no proof step: the proof is fun (a : A) => a and nothing more.
-  assert.equal(body(program, "identity_endo").tag, "Var");
-  const steps = program.steps("conveniences").filter(step => step.declaration === "identity_endo");
-  assert.deepEqual(steps.map(step => [step.kind, step.goal, step.built]),
-    [["show", "Endo(A)", "?"], ["intro", "A -> A", "fun (a : A) => ?"], ["exact", "A", "a"]]);
-});
-
-test("HoTT B4: suffices proves the goal from a hypothesis, and the statements after it prove the hypothesis", async t => {
-  const source = `
     def contrapositive(A, B : U0, f : A -> B, not_b : B -> Void) : A -> Void {
       intro a;
-      suffices b : B by not_b(b);
-      exact f(a);
+      let b : B {
+        exact f(a);
+      }
+      exact not_b(b);
     }
-    def by_block(A, B : U0, a : A, f : A -> B) : B {
-      suffices x : A by {
-        exact f(x);
+    def stated(n : Nat) : n = n {
+      let same : n = n := refl(n);
+      exact same;
+    }
+    def wrong_block(A, B : U0, a : A) : A {
+      let x : B {
+        exact a;
       }
       exact a;
     }
-    def equality_left(n : Nat) : n = n {
-      suffices same : Unit by refl(n);
-      exact tt;
-    }
-    def hypothesis_out_of_scope(A : U0, a : A) : A {
-      suffices x : A by x;
+    def not_a_type(A : U0, a : A) : A {
+      let x : a := a;
       exact x;
     }
-    def wrong_proof(A, B : U0, a : A, f : A -> B) : B {
-      suffices x : A by x;
-      exact a;
-    }
-    def unproved(A, B : U0, f : A -> B) : B {
-      suffices x : A by f(x);
-    }
-    def not_a_type(A : U0, a : A) : A {
-      suffices x : a by x;
-      exact a;
+    def out_of_scope(A : U0, a : A) : A {
+      let x : A {
+        exact x;
+      }
+      exact x;
     }
   `;
   const { program, verdicts } = await check(t, source);
-  for (const name of ["contrapositive", "by_block", "equality_left"]) assert.equal(verdicts[name], true, name);
-  assert.match(verdicts.hypothesis_out_of_scope, /^Untranslated name: x/);
-  // A by term that does not prove the goal is reported at the term.
-  assert.equal(verdicts.wrong_proof, `Type mismatch: found A, expected B. at ${at(source, "x;", "def wrong_proof")}`);
-  assert.equal(verdicts.unproved, `suffices left the stated goal unproved; add a following proof statement. at ${at(source, "suffices", "def unproved")}`);
-  assert.equal(verdicts.not_a_type, `suffices states a type after the colon; found a value of type A. at ${at(source, "suffices", "def not_a_type")}`);
-  // The proof applies the checked function fun (b : B) => not_b(b) to the
-  // proof that follows: application, with no other step.
-  const proof = body(program, "contrapositive");
-  assert.equal(proof.tag, "App");
-  assert.equal(proof.fn.tag, "Lam");
-  const steps = program.steps("conveniences").filter(step => step.declaration === "by_block");
+  for (const name of ["identity_endo", "contrapositive", "stated"]) assert.equal(verdicts[name], true, name);
+  // The block's result is checked against the stated type at the let.
+  assert.equal(verdicts.wrong_block, `Type mismatch: found A, expected B. at ${at(source, "let x : B", "def wrong_block")}`);
+  assert.equal(verdicts.not_a_type, `let states a type after the colon; found a value of type A. at ${at(source, "a :=", "def not_a_type")}`);
+  // The block proves its type without the name it defines.
+  assert.match(verdicts.out_of_scope, /^Untranslated name: x/);
+  // The block sees the stated type as its goal. A let names a term rather
+  // than a context entry, so the displayed context does not list b; the
+  // final exact uses it all the same.
+  const steps = program.steps("conveniences").filter(step => step.declaration === "contrapositive");
   assert.deepEqual(steps.map(step => [step.kind, step.goal, step.locals.map(local => local.name).join(",")]),
-    [["suffices", "B", "A,B,a,f"], ["exact", "B", "A,B,a,f,x"], ["exact", "A", "A,B,a,f"]]);
-  assert.equal(parseError("def a(A : U0, x : A) : A { suffices : A by x; exact x; }"),
-    "suffices names its hypothesis: suffices h : T by term;");
-  assert.equal(parseError("def a(A : U0, x : A) : A { suffices h : A; exact x; }"),
-    "suffices needs a proof of the goal from h after by: suffices h : T by term;");
+    [["intro", "A -> Void", "A,B,f,not_b"], ["let", "Void", "A,B,f,not_b,a"], ["exact", "B", "A,B,f,not_b,a"],
+     ["exact", "Void", "A,B,f,not_b,a"]]);
 });
 
-test("show and suffices link their keywords to the checked proof, and projections to theirs", async t => {
+test("have, show and suffices are refused with their let forms", () => {
+  assert.equal(parseError("def a(A : U0, x : A) : A { have h : A := x; exact h; }"),
+    "have was removed: write let name : T := term; or prove the claim in a block, let name : T { … }.");
+  assert.equal(parseError("def a(A : U0, x : A) : A { show A; exact x; }"),
+    "show was removed: prove the restated goal in a block, let h : T { … }, then exact h;.");
+  assert.equal(parseError("def a(A : U0, x : A) : A { suffices h : A by h; exact x; }"),
+    "suffices was removed: prove the claim first, let h : T { … }, then prove the goal from h.");
+});
+
+test("a historical source reads in today's syntax: have statements become let, prose does not", () => {
+  assert.equal(currentSyntax("def a(A : U0, x : A) : A { have h : A := x; have g : A { exact h; } exact g; } // we have g"),
+    "def a(A : U0, x : A) : A { let h : A := x; let g : A { exact h; } exact g; } // we have g");
+  assert.equal(parseError(currentSyntax("def a(A : U0, x : A) : A { have h : A := x; exact h; }")), null);
+});
+
+test("projections link to their checked terms", async t => {
   const { program } = await check(t, `
-    def reduce(A, B : U0, a : A, f : A -> B) : B {
-      show B;
-      suffices x : A by f(x);
-      exact a;
-    }
     def first_of(p : Nat and Unit) : Nat := p.1;
   `);
   const roles = program.links.map(link => [link.name, link.role]);
-  assert.ok(roles.some(([name, role]) => name === "show" && role === "restated goal"), JSON.stringify(roles));
-  assert.ok(roles.some(([name, role]) => name === "suffices" && role === "goal reduction"), JSON.stringify(roles));
   assert.ok(roles.some(([name]) => name === ".1"), JSON.stringify(roles));
 });

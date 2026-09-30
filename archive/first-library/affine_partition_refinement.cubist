@@ -155,7 +155,7 @@ def affine_partition_piece_estimate(
   let radius := interval_refinement_radius(F, zero, one, addF, mulF, negF, lt, delta, length);
   let condition := IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh);
   let other := ComplexSubdivisionEstimate(I, F, zero, addF, negF, lt, edge, radius);
-  have mapEstimates :
+  let mapEstimates :
     forall a : I. forall b : I. forall tag : I. forall piece : SampleSubdivision(I, a, b).
     condition(a, b, tag, piece) -> other(a, b, tag, piece) {
     intro a, b, tag, piece, valid;
@@ -165,12 +165,10 @@ def affine_partition_piece_estimate(
     let fineTags := subdivision_tags(I, a, b, piece);
     let first := sample_first(I, count, samples);
     let last := sample_last(I, count, samples);
-    have firstPath : first = a := field_fst(
-      (first = a), (last = b), subdivision_endpoints(I, a, b, piece)
-    );
-    have lastPath : last = b := field_snd(
-      (first = a), (last = b), subdivision_endpoints(I, a, b, piece)
-    );
+    let firstPath : first = a :=
+      field_fst((first = a), (last = b), subdivision_endpoints(I, a, b, piece));
+    let lastPath : last = b :=
+      field_snd((first = a), (last = b), subdivision_endpoints(I, a, b, piece));
     let withinFirst :=
       along((fun (v : I) => IntervalTagWithin(F, zero, one, lt, v, b, tag))) by sym(firstPath) from within;
     let withinSamples :=
@@ -289,7 +287,7 @@ def affine_partition_from_local_estimates(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
       integrand, uniform, delta, positiveDelta, mesh, localEstimates
     );
-  have estimates :
+  let estimates :
     forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
     forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
     forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices).

@@ -77,7 +77,7 @@ def field_sequence_antitone(
   decreasing : (forall k : Nat. FieldLe(F, lt, sequence(succ(k)), sequence(k))), n : Nat
 ) :
   forall m : Nat. IndexLE(m, n) -> FieldLe(F, lt, sequence(n), sequence(m)) {
-  have base : forall m : Nat. IndexLE(m, 0) -> FieldLe(F, lt, sequence(0), sequence(m)) {
+  let base : forall m : Nat. IndexLE(m, 0) -> FieldLe(F, lt, sequence(0), sequence(m)) {
     intro m, ordered;
     exact along((fun (k : Nat) => FieldLe(F, lt, sequence(0), sequence(k)))) by sym(
       nat_le_zero(m, ordered)
@@ -154,7 +154,7 @@ def dyadic_width_eventually_small(
       exists bound : Nat. forall n : Nat. IndexLE(bound, n)
       -> lt(dyadic_width(F, half, n, width), epsilon)
     );
-  have mapping : A -> B {
+  let mapping : A -> B {
     intro data;
     obtain (bound, small) := data;
     exact (

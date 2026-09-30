@@ -10,7 +10,7 @@ def span_add_witnesses(
   obtain (m, w, b, membersW, sumY) := hy;
   let vectors := fin_append(vector_carrier(K, V), n, m, v, w);
   let coefficients := fin_append(af_carrier(K), n, m, a, b);
-  have sum : linear_combination(K, V, add_count(n, m), vectors, coefficients) = vector_add(
+  let sum : linear_combination(K, V, add_count(n, m), vectors, coefficients) = vector_add(
     K, V, x, y
   ) := trans(
     linear_combination_append(K, V, n, m, v, w, a, b),

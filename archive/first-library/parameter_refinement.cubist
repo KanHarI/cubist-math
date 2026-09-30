@@ -15,7 +15,7 @@ def parameter_constant_tag_sum(
     sample_last(C, n, vertices), tag
   ) {
   let edge := parameter_contour_edge(C, F, addF, mulF, negF, curve, values);
-  have diagonal : forall a : C. edge(a, a, tag) = zero {
+  let diagonal : forall a : C. edge(a, a, tag) = zero {
     intro a;
     exact trans(
       cong(
@@ -23,7 +23,7 @@ def parameter_constant_tag_sum(
       ), ring_mul_zero(F, zero, one, addF, mulF, negF, ring, values(tag))
     );
   }
-  have composeEdges :
+  let composeEdges :
     forall a : C. forall b : C. forall c : C.
     addF(edge(a, b, tag), edge(b, c, tag)) = edge(a, c, tag) {
     intro a, b, c;

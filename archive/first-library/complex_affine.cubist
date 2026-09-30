@@ -68,7 +68,7 @@ def complex_linear_deformation_uniform(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,
     nonnegativeLength, epsilon, positive
   );
-  have close :
+  let close :
     forall s : F. forall t : F. FieldClose(F, addF, lt, s, t, delta)
     -> ComplexClose(
       F, addF, lt, complex_linear_deformation(F, addF, mulF, s, z, error),

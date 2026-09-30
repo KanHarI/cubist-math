@@ -35,7 +35,7 @@ def field_asymptotic_limits_equal(
 ) :
   x = y {
   obtain (half, halfSum, halfPositive) := halving;
-  have close : forall epsilon : F. lt(zero, epsilon) -> FieldClose(F, addF, lt, x, y, epsilon) {
+  let close : forall epsilon : F. lt(zero, epsilon) -> FieldClose(F, addF, lt, x, y, epsilon) {
     intro epsilon, positive;
     let delta := half(epsilon);
     let quarter := half(delta);
@@ -46,7 +46,7 @@ def field_asymptotic_limits_equal(
     let tails :=
       exists bound : Nat. forall n : Nat. IndexLE(bound, n)
       -> FieldClose(F, addF, lt, xs(n), ys(n), quarter);
-    have useTail : tails -> FieldClose(F, addF, lt, x, y, epsilon) {
+    let useTail : tails -> FieldClose(F, addF, lt, x, y, epsilon) {
       intro tail;
       obtain (tailBound, tailClose) := tail;
       let convergenceBound := leftBound + rightBound;
