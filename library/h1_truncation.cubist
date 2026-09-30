@@ -1,0 +1,31 @@
+import hlevels;
+
+// Universe-preserving truncation; the archive keeps its legacy assumptions.
+inductive Trunc(U < UU0, A : U) : prop U {
+  point(a : A);
+}
+
+computable def merely(U < UU0, A : U, a : A) : Trunc(U, A) := point(a);
+
+computable def mere_is_prop(U < UU0, A : U) : IsProp(U, Trunc(U, A)) {
+  hlevel;
+}
+
+// Its motive universe is independent of its source universe.
+computable def mere_eliminate(
+  U, V < UU0, A : U, P : V, proposition : IsProp(V, P), f : A -> P, h : Trunc(U, A)
+) :
+  P := match h {
+    point(a) => f(a);
+  };
+
+computable def mere_map(U, V < UU0, A : U, B : V, f : A -> B, h : Trunc(U, A)) :
+  Trunc(V, B) := match h {
+    point(a) => point(f(a));
+  };
+
+// G2: a small truncation eliminates directly into a large proposition.
+computable def small_mere_eliminate(
+  A : U0, P : U1, prop : IsProp(U1, P), f : A -> P, h : Trunc(U0, A)
+) :
+  P := mere_eliminate(U0, U1, A, P, prop, f, h);
