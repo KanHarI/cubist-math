@@ -28,7 +28,8 @@ const dimensionScope = { Path: ["family"], PLam: ["family", "body"], Comp: ["fam
 // Hash checked syntax up to renaming of bound term variables and dimensions.
 // Shared subterms are hashed once for each assignment of their free names, so
 // a compact DAG is never expanded into a tree.
-export function canonicalHasher({ definitionName = name => name, signatureName = name => name } = {}) {
+export function canonicalHasher({ definitionName = name => name, signatureName = name => name,
+  freeVariableName = name => name } = {}) {
   const freeMemo = new WeakMap(), hashMemo = new WeakMap();
   const formulaNames = formula => formula.flat().map(literal => literal.slice(0, -2));
   function free(node) {
@@ -71,10 +72,12 @@ export function canonicalHasher({ definitionName = name => name, signatureName =
       for (const fieldName of Object.keys(node).sort()) {
         const value = node[fieldName];
         if (fieldName === "tag") continue;
+        // Con.name is display metadata. Constructor identity is its index
+        // in a sort whose admitted schema also compares constructor names.
         if ((termBinders.has(node.tag) && fieldName === "name") || (dimensionScope[node.tag] && fieldName === "dim")
           || node.tag === "Con" && fieldName === "name") continue;
         digest.update(`|${fieldName}=`);
-        if (node.tag === "Var" && fieldName === "name") digest.update(index(`t:${value}`) ?? `free:${value}`);
+        if (node.tag === "Var" && fieldName === "name") digest.update(index(`t:${value}`) ?? `free:${freeVariableName(value)}`);
         else if (node.tag === "DefRef" && fieldName === "name") digest.update(definitionName(value));
         else if ((node.tag === "Sort" || node.tag === "Elim") && fieldName === "signature") digest.update(signatureName(value));
         else if ((fieldName === "face" || fieldName === "arg") && Array.isArray(value))
@@ -140,15 +143,21 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   const compared = new Set(modules), shadowOf = module => `${module}${SHADOW}`;
   const editedSources = new Map();
   const editedSource = async module => {
-    if (!editedSources.has(module)) editedSources.set(module, (await readEdited(module)).replace(
-      /^(\s*import\s+)([A-Za-z_][A-Za-z_0-9]*)(\s*;)/gm,
-      (text, head, name, tail) => compared.has(name) ? `${head}${shadowOf(name)}${tail}` : text));
+    if (!editedSources.has(module)) {
+      const source = await readEdited(module);
+      const place = readEdited.placeOf?.(module);
+      if (place) readOriginal.place?.(shadowOf(module), place);
+      editedSources.set(module, source.replace(/^(\s*import\s+)([A-Za-z_][A-Za-z_0-9]*)(\s*;)/gm,
+        (text, head, name, tail) => compared.has(name) ? `${head}${shadowOf(name)}${tail}` : text));
+    }
     return editedSources.get(module);
   };
   const shadowModule = name => name.endsWith(SHADOW) && compared.has(name.slice(0, -SHADOW.length))
     ? name.slice(0, -SHADOW.length) : null;
-  const program = new CubicalProgram(await createCubical(),
-    name => shadowModule(name) ? editedSource(shadowModule(name)) : readOriginal(name), { collectReferences: false, experimental });
+  const readSource = (name, importer) => shadowModule(name) ? editedSource(shadowModule(name)) : readOriginal(name, importer);
+  readSource.beginCheck = () => readOriginal.beginCheck?.();
+  readSource.checkImports = (importer, imports) => readOriginal.checkImports?.(importer, imports.filter(name => !shadowModule(name)));
+  const program = new CubicalProgram(await createCubical(), readSource, { collectReferences: false, experimental });
   const checker = program.checker, views = checker.definitionViews;
   // Check dependencies before the modules that import them.
   const order = [], visited = new Map();
@@ -176,6 +185,7 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   // identical, given that every edited definition they mention is identical.
   // Only those edited definitions may stand in for the originals.
   const identical = new Set();
+  const ledgerVerified = new Set();
   const signatureCorrespondence = new Map();
   const signatureName = name => signatureCorrespondence.get(name) ?? name;
   const standsIn = name => {
@@ -191,14 +201,14 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   const toOriginal = mapDefinitions(name => standsIn(name) && views.has(originalName(name)) ? originalName(name) : name, signatureName);
   // Close each constructor schema over its admission symbols before
   // hashing. In particular, boundaries refer to bound earlier constructors.
-  const signatureShape = binding => {
+  const signatureShape = (binding, hashChecked = null) => {
     const record = program.kernel.signatures.get(binding);
     if (!record) return null;
     const info = program.kernel.signature(record.index), syntax = checker.syntax;
     const former = syntax.decode(info.former), parameters = [];
     let universe = former;
     while (universe.tag === "LPi" || universe.tag === "Pi") { parameters.push(universe); universe = universe.body; }
-    const hash = canonicalHasher({definitionName:name => standsIn(name) ? originalName(name) : name, signatureName});
+    const hash = hashChecked ?? canonicalHasher({definitionName:name => standsIn(name) ? originalName(name) : name, signatureName});
     const earlier = [];
     const constructors = info.constructors.map(constructor => {
       const type = syntax.decode(constructor.type);
@@ -236,9 +246,40 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   // Kernel extensions under review are not assumptions: a migration that
   // adds or removes one changes what the result relies on all the same.
   const extensions = binding => [...new Set(program.symbols[binding]?.extensions ?? [])].sort().join(",");
-  const snapshotHash = canonicalHasher({definitionName:originalName,signatureName:originalName});
+  // A pin closes over referenced checked meanings, not only their names.
+  // Otherwise an unchanged `Predicate(A)` could hide a changed Predicate.
+  // The checked definition/signature graph is acyclic and its syntax DAG is
+  // memoized by canonicalHasher, including the types of referenced values.
+  const signaturePins = new Map();
+  let snapshotHash;
+  snapshotHash = canonicalHasher({definitionName:name => {
+    const view = views.get(name);
+    return view ? `${helper(name) ? "helper" : originalName(name)}:${snapshotHash(view.term)}:${snapshotHash(view.type)}` : originalName(name);
+  }, signatureName:name => {
+    if (!signaturePins.has(name)) signaturePins.set(name, createHash("sha1").update(JSON.stringify(signatureShape(name,snapshotHash))).digest("hex"));
+    return `${originalName(name)}:${signaturePins.get(name)}`;
+  }, freeVariableName:name => {
+    const label = checker.assumptionLabels.get(name) ?? name, type = checker.assumptions.get(name);
+    return type ? `${label}:${snapshotHash(type)}` : label;
+  }});
   const readableBindings = mapDefinitions(originalName, originalName);
-  const publicType = type => ({hash:snapshotHash(type),text:sourceText(displayTerm(readableBindings(type)))});
+  const snapshot = term => ({hash:snapshotHash(term),text:sourceText(displayTerm(readableBindings(term)))});
+  const localReferences = (module, ...terms) => {
+    const found = new Set(), seen = new WeakSet();
+    const visit = node => {
+      if (!node || typeof node !== "object" || seen.has(node)) return;
+      seen.add(node);
+      const name = node.tag === "DefRef" ? node.name : ["Sort", "Elim"].includes(node.tag) ? node.signature : null;
+      if (name) {
+        if (helper(name)) visit(views.get(name).term);
+        const binding = originalName(name);
+        if (binding.startsWith(`${module}__`)) found.add(`${module}__${binding.slice(module.length+2).split("__")[0]}`);
+      }
+      for (const value of Array.isArray(node) ? node : Object.values(node)) visit(value);
+    };
+    terms.forEach(visit);
+    return [...found];
+  };
   const difference = (a,b) => a.filter(value => !b.includes(value));
   const list = text => text ? text.split(",") : [];
   try {
@@ -277,20 +318,37 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
           new Set([...own, ...rootsOf(new Set([...changedReferences(after.term), ...changedReferences(after.type)]))]));
         const oldAssumptions = list(assumptions(originalBinding)), newAssumptions = list(assumptions(editedBinding));
         const oldExtensions = list(extensions(originalBinding)), newExtensions = list(extensions(editedBinding));
-        const observed = {module,declaration:name,oldPublicType:publicType(before.type),newPublicType:publicType(after.type),
+        const removed = difference(oldAssumptions,newAssumptions), added = difference(newAssumptions,oldAssumptions);
+        const assumptionsReplaced = [];
+        for (const old of ["LEM", "Choice"]) {
+          const variants = added.filter(label => [...checker.assumptionOrigins].some(([symbol, origin]) =>
+            origin.kind === "generic-assumption" && origin.name === old && origin.truncateSignature
+            && checker.assumptionLabels.get(symbol) === label));
+          if (removed.includes(old) && variants.length === 1) assumptionsReplaced.push({old,new:variants[0]});
+        }
+        const observed = {module,declaration:name,oldPublicType:snapshot(before.type),newPublicType:snapshot(after.type),
+          oldValue:snapshot(before.term),newValue:snapshot(after.term),assumptionsReplaced,
           hypothesesAdded:difference(newParameters.get(name) ?? [],oldParameters.get(name) ?? []),
-          assumptionsRemoved:difference(oldAssumptions,newAssumptions),assumptionsRetained:oldAssumptions.filter(value => newAssumptions.includes(value)),
-          assumptionsAdded:difference(newAssumptions,oldAssumptions),extensionsAdded:difference(newExtensions,oldExtensions),
+          assumptionsRemoved:removed.filter(label => !assumptionsReplaced.some(change => change.old === label)),
+          assumptionsRetained:oldAssumptions.filter(value => newAssumptions.includes(value)),
+          assumptionsAdded:added.filter(label => !assumptionsReplaced.some(change => change.new === label)),extensionsAdded:difference(newExtensions,oldExtensions),
           extensionsRetained:oldExtensions.filter(value => newExtensions.includes(value)),extensionsRemoved:difference(oldExtensions,newExtensions)};
         report.changes.push(observed);
         const permission = allowedChanges.get(binding);
         if (permission) {
           const reason = ledgerMatches(permission, observed);
           if (reason) return fail(name, reason);
+          for (const reference of localReferences(module, before.type, after.type)) {
+            if (reference === binding) continue;
+            if (!originalOutputs.some(symbol => symbol.binding === reference))
+              return fail(name, `Ledger dependency ${reference} is outside this comparison's scope.`);
+            if (!identical.has(reference) && !ledgerVerified.has(reference))
+              return fail(name, `Ledger dependency ${reference} must be identical or have its own verified ledger entry.`);
+          }
           if (observed.oldPublicType.hash === observed.newPublicType.hash && assumptions(originalBinding) === assumptions(editedBinding)
             && extensions(originalBinding) === extensions(editedBinding))
             return fail(name,"The ledger entry records no public type, assumption or extension change; use ordinary verification for proof changes.");
-          recordRoots(); report.ledgerAccepted++; return;
+          ledgerVerified.add(binding); recordRoots(); report.ledgerAccepted++; return;
         }
         if (assumptions(originalBinding) !== assumptions(editedBinding))
           return fail(name, `Assumptions changed: ${assumptions(originalBinding)} -> ${assumptions(editedBinding)}`);

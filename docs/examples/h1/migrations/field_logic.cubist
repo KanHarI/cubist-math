@@ -1,6 +1,9 @@
 import h1_truncation;
 
-// K2.5, G2: only this public wrapper is compared with the archive here.
+// Keep the original public predicate in scope for the ledger comparison.
+def FieldProp(P : U1) := forall p : P. forall q : P. p = q;
+
+// K2.5, G2: this wrapper and its original public predicate are compared.
 computable def small_mere_eliminate(
   A : U0, P : U1, prop : IsProp(U1, P), f : A -> P, h : Trunc(U0, A)
 ) :

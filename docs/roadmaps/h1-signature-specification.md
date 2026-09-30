@@ -1819,20 +1819,28 @@ local experiment; the archive is unchanged.
 ### 8.5 Ledger format and verifier (K2.5 implementation)
 
 - A reviewed ledger file lists each intentional change: module, declaration,
-  old public type, new public type, hypotheses added, assumptions removed,
-  assumptions retained, and the remedy group of 8.4.
+  old and new public types and values (checked canonical hashes and readable
+  renderings), hypotheses added, assumptions removed or retained, explicit
+  classical-signature replacements, extension changes, and the remedy group
+  of 8.4. A pin includes referenced checked definition and signature meanings.
 - When a module migrates from the legacy assumptions to `Trunc`, the
   migration verifier accepts a changed public type or assumption list only
   for a declaration listed with exactly that change. Every other change
   fails, as today.
 - Removing `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim`
   from a declaration's dependencies is recorded, not assumed: the verifier
-  checks that the new list is the old one minus those four.
+  checks the actual delta. A rebuilt LEM or Choice over a checked admitted
+  truncation has a distinct label; replacement of its legacy signature is
+  pinned explicitly, rather than listed as retention or as an arbitrary new
+  assumption. Every local definition named in a ledgered public type must
+  be identical or ledgered and inside the comparison scope. Value pins close
+  over the meanings of other helpers, even when their names stay folded.
 - The legacy assumptions are removed from `web/cubical-assumptions.mjs` only
   when no module that the tests check uses them.
 
 **Status on 2026-09-30.** The [ledger](h1-truncation-ledger.json) pins
-17 checked changes, and the verifier implements exact ledger matching
+17 checked changes in version 2, including value pins and explicit
+assumption replacements, and the verifier implements exact ledger matching
 (G4). The [migration record](h1-truncation-migration.md) gives the checked
 G2 and G5–G7 fixtures and the scope of each comparison. The ledger remains
 a review draft; the archive keeps its legacy assumptions, as G3 requires.

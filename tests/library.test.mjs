@@ -16,11 +16,11 @@ import { sourceReader } from "../tools/module-sources.mjs";
 const assumptions = {
   classical_axioms: ["Choice", "LEM", "Truncate"],
   universe_automorphisms: ["LEM", "Truncate", "TruncateElim", "TruncateIntro", "TruncateProp"],
-  h1_classical: ["Choice", "LEM"],
-  cauchy_quotient: ["Truncate", "TruncateElim", "TruncateIntro", "TruncateProp"],
-  h1_zorn_step: ["LEM"],
+  h1_classical: ["Choice[h1_truncation.Trunc]", "LEM[h1_truncation.Trunc]"],
+  h1_cauchy_quotient: ["Truncate", "TruncateElim", "TruncateIntro", "TruncateProp"],
+  h1_zorn_step: ["LEM[h1_truncation.Trunc]"],
 };
-const experimental = new Set(["h1_truncation","h1_classical","cauchy_quotient","h1_zorn_step"]);
+const experimental = new Set(["h1_truncation","h1_classical","h1_cauchy_quotient","h1_zorn_step"]);
 
 test("every library module is listed and checks completely", async t => {
   const files = (await readdir(new URL("../library/", import.meta.url))).filter(name => name.endsWith(".cubist"))

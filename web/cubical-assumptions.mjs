@@ -29,8 +29,7 @@ function assumptionType(name, universe, truncate) {
 // None has an instance at UU0 or above. Truncate keeps the archive's
 // signature, into U0, until H1's universe-preserving Trunc replaces it.
 export function libraryAssumption(checker,name,context=new Map(),truncateFormer=null) {
-  const key=truncateFormer ? `${name}:${JSON.stringify(truncateFormer)}` : name;
-  if(checker.libraryAssumptions.has(key))return checker.libraryAssumptions.get(key);
+  let truncateSignature=null;
   const level='assumption_level',universe=U(V(level));
   if(truncateFormer && !['LEM','Choice'].includes(name))throw Error('Only LEM and Choice have rebuilt truncation signatures.');
   if(truncateFormer) {
@@ -49,12 +48,18 @@ export function libraryAssumption(checker,name,context=new Map(),truncateFormer=
       || domain?.kind!=='Var' || domain.payload!==schema.symbols[1] || result?.kind!=='Var' || result.payload!==schema.sort
       || probe.parameters.length!==1 || probe.parameters[0].tag!=='Var' || probe.parameters[0].name!=='A')
       throw Error('Rebuilt LEM and Choice require an admitted proposition truncation.');
+    truncateSignature=probe.signature;
   }
+  // Aliases of the same checked former share an assumption. Distinct
+  // generative truncations have different keys and visible dependency labels.
+  const label=truncateSignature ? `${name}[${truncateSignature.replaceAll('__','.')}]` : name;
+  const key=truncateSignature ? `${name}:${truncateSignature}` : name;
+  if(checker.libraryAssumptions.has(key))return checker.libraryAssumptions.get(key);
   const truncate=()=>({tag:'LApp',fn:truncateFormer ?? libraryAssumption(checker,'Truncate',context),level:V(level)});
   const type={tag:'LPi',name:level,body:assumptionType(name,universe,truncate)};
-  const value=checker.assume(`__assumption_${name}`,type,new Set(context.keys()));
-  checker.assumptionOrigins.set(value.name,{kind:'generic-assumption',name,implementation:'web/cubical-assumptions.mjs'});
+  const value=checker.assume(`__assumption_${name}${truncateSignature ? `_${truncateSignature}` : ''}`,type,new Set(context.keys()));
+  checker.assumptionOrigins.set(value.name,{kind:'generic-assumption',name,truncateSignature,implementation:'web/cubical-assumptions.mjs'});
   checker.libraryAssumptions.set(key,value);
-  checker.assumptionLabels.set(value.name,name);
+  checker.assumptionLabels.set(value.name,label);
   return value;
 }

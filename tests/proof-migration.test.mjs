@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 import { canonicalHasher, verifyMigration } from "../tools/proof-migration.mjs";
 import { identicalRewrites, rewriteModule, typePreservingRewrites } from "../tools/proof-rewrites.mjs";
 import { formatMathScript } from "../web/mathscript/formatter.mjs";
+import { migrationSourceReader } from "../tools/migration-sources.mjs";
 
 const library = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
 const original = `import primes;
@@ -235,21 +236,21 @@ test("G4: an exact ledger records removed truncation assumptions and the added H
   const change = {...strict.changes[0],remedyGroup:1};
   assert.deepEqual(change.assumptionsRemoved,["Truncate","TruncateIntro"]);
   assert.deepEqual(change.extensionsAdded,["H1"]);
-  const ledger = {version:1,changes:[change]};
+  const ledger = {version:2,changes:[change]};
   const allowed = await verify(ledger);
   assert.deepEqual(allowed.failures,[]);
   assert.equal(allowed.ledgerAccepted,1);
-  for (const field of ["oldPublicType","newPublicType","assumptionsRemoved","extensionsAdded","hypothesesAdded"]) {
+  for (const field of ["oldPublicType","newPublicType","oldValue","newValue","assumptionsRemoved","extensionsAdded","hypothesesAdded"]) {
     const altered = structuredClone(ledger);
-    if (field.endsWith("PublicType")) altered.changes[0][field].hash = "0".repeat(40);
+    if (field.endsWith("PublicType") || field.endsWith("Value")) altered.changes[0][field].hash = "0".repeat(40);
     else altered.changes[0][field] = field === "hypothesesAdded" ? ["extra"] : [];
     assert.match((await verify(altered)).failures[0].reason,new RegExp(field));
   }
   assert.match((await verify(ledger,after.replace("point(a)","point(a)").replace("a : A)","a : A, extra : Unit)"))).failures[0].reason,
     /newPublicType|hypothesesAdded/);
   await assert.rejects(verify({...ledger,changes:[change,change]}),/Duplicate ledger/);
-  await assert.rejects(verify({version:1,changes:[{...change,assumptionsRemoved:["LEM"]}]}),/only the four legacy/);
-  await assert.rejects(verify({version:1,changes:[{...change,remedyGroup:5}]}),/waits for H2/);
+  await assert.rejects(verify({version:2,changes:[{...change,assumptionsRemoved:["LEM"]}]}),/only the four legacy/);
+  await assert.rejects(verify({version:2,changes:[{...change,remedyGroup:5}]}),/waits for H2/);
 });
 
 test("a ledger never admits a failed declaration or bypasses identical proof verification", async () => {
@@ -257,7 +258,86 @@ test("a ledger never admits a failed declaration or bypasses identical proof ver
   const run = async (after,ledger=null) => (await verifyMigration({modules:["pin"],ledger,
     readOriginal:async () => original,readEdited:async () => after}))[0];
   const initial = await run(edited);
-  const ledger = {version:1,changes:[{...initial.changes[0],remedyGroup:1}]};
+  const ledger = {version:2,changes:[{...initial.changes[0],remedyGroup:1}]};
   assert.match((await run(edited,ledger)).failures[0].reason,/ordinary verification for proof changes/);
   assert.match((await run("def n : Nat := tt;\n",ledger)).failures[0].reason,/No longer checks/);
+});
+
+test("ledger value pins refuse a different predicate with the same public type and dependencies", async () => {
+  const types = "inductive Tr(A : U0) : prop { point(a : A); }\n";
+  const before = "import trunc_types;\ndef Predicate(A : U0) := Truncate(U0, A);\n";
+  const after = "import trunc_types;\ndef Predicate(A : U0) := Tr(A);\n";
+  const run = async (edited=after, ledger=null, foundation=types) => (await verifyMigration({modules:["meaning"],experimental:["h1"],ledger,
+    readOriginal:async name => name === "trunc_types" ? foundation : before,readEdited:async () => edited}))[0];
+  const change = {...(await run()).changes[0],remedyGroup:1};
+  const ledger = {version:2,changes:[change]};
+  assert.deepEqual((await run(after,ledger)).failures,[]);
+  const different = await run(after.replace("Tr(A)","Tr(Unit)"),ledger);
+  assert.equal(different.changes[0].newPublicType.hash,change.newPublicType.hash);
+  assert.deepEqual(different.changes[0].assumptionsRemoved,change.assumptionsRemoved);
+  assert.match(different.failures[0].reason,/newValue/);
+  const changedSchema = await run(after,ledger,types.replace("point(a : A)","point(a : Unit)"));
+  assert.match(changedSchema.failures[0].reason,/newValue/);
+  const reordered = structuredClone(ledger);
+  for (const key of ["oldPublicType","newPublicType","oldValue","newValue"]) {
+    const {hash,text} = reordered.changes[0][key]; reordered.changes[0][key] = {text,hash};
+  }
+  assert.deepEqual((await run(after,reordered)).failures,[]);
+});
+
+test("value pins close over a folded helper even when the public type and displayed value stay unchanged", async () => {
+  const types = "inductive Tr(A : U0) : prop { point(a : A); }\n";
+  const before = "import trunc_types;\ndef Carrier(A : U0) := Truncate(U0, A);\ndef Predicate(A : U0) : U0 := Carrier(A);\n";
+  const after = "import trunc_types;\ndef Carrier(A : U0) := Tr(A);\ndef Predicate(A : U0) : U0 := Carrier(A);\n";
+  const run = async (edited=after,ledger=null) => (await verifyMigration({modules:["closure"],experimental:["h1"],ledger,
+    declarations:{closure:["Predicate"]},readOriginal:async name => name === "trunc_types" ? types : before,
+    readEdited:async () => edited}))[0];
+  const change = {...(await run()).changes[0],remedyGroup:1}, ledger={version:2,changes:[change]};
+  assert.deepEqual((await run(after,ledger)).failures,[]);
+  const altered = await run(after.replace("Tr(A)","Tr(Unit)"),ledger);
+  assert.equal(altered.changes[0].newPublicType.hash,change.newPublicType.hash);
+  assert.equal(altered.changes[0].newValue.text,change.newValue.text);
+  assert.match(altered.failures[0].reason,/newValue/);
+});
+
+test("ledgered public dependencies cannot be hidden outside a declaration scope", async () => {
+  const types = "inductive Tr(A : U0) : prop { point(a : A); }\n";
+  const before = "import trunc_types;\ndef Predicate(A : U0) := Truncate(U0, A);\ndef witness(A : U0, a : A) : Predicate(A) := TruncateIntro(U0, A, a);\n";
+  const after = "import trunc_types;\ndef Predicate(A : U0) := Tr(A);\ndef witness(A : U0, a : A) : Predicate(A) := point(a);\n";
+  const run = async (ledger=null,declarations=null) => (await verifyMigration({modules:["scope"],experimental:["h1"],ledger,declarations,
+    readOriginal:async name => name === "trunc_types" ? types : before,readEdited:async () => after}))[0];
+  const entries = (await run()).changes.map(change => ({...change,remedyGroup:1}));
+  assert.deepEqual((await run({version:2,changes:entries})).failures,[]);
+  const scoped = await run({version:2,changes:[entries[1]]},{scope:["witness"]});
+  assert.match(scoped.failures[0].reason,/Ledger dependency scope__Predicate is outside.*scope/);
+  const unpinned = await run({version:2,changes:[entries[1]]});
+  assert.match(unpinned.failures.find(item => item.name === "witness").reason,/must be identical or have its own verified ledger entry/);
+});
+
+test("rebuilt classical assumptions require explicit, pinned replacements", async () => {
+  const source = async name => name === "replacement" ? before
+    : readFile(new URL(`../library/${name}.cubist`,import.meta.url),"utf8");
+  const before = "import h1_truncation;\ndef value(A : U0, h : (A -> Void) -> Void) := LEM(U0, A, h);\n";
+  const after = "import h1_truncation;\ndef value(A : U0, h : (A -> Void) -> Void) := LEM(Trunc, U0, A, h);\n";
+  const run = async ledger => (await verifyMigration({modules:["replacement"],experimental:["h1"],ledger,
+    readOriginal:source,readEdited:async () => after}))[0];
+  const change = {...(await run(null)).changes[0],remedyGroup:6};
+  assert.deepEqual(change.assumptionsReplaced,[{old:"LEM",new:"LEM[h1_truncation.Trunc]"}]);
+  assert.deepEqual(change.assumptionsRetained,[]);
+  assert.deepEqual((await run({version:2,changes:[change]})).failures,[]);
+  assert.match((await run({version:2,changes:[{...change,assumptionsReplaced:[]}]})).failures[0].reason,/assumptionsReplaced/);
+});
+
+test("pinned source resolution keeps archive imports isolated from library collisions", async () => {
+  const archive = new Map([["root","import collision;\ndef n : Nat := value;\n"],["collision","def value : Nat := 1;\n"]]);
+  const rebuilt = new Map([["collision","inductive H { point; }\n"]]);
+  const read = async (place,name) => (place === "archive" ? archive : rebuilt).get(name) ?? null;
+  const original = migrationSourceReader(read,["root"]);
+  const edited = async name => archive.get(name);
+  edited.placeOf = () => "archive";
+  const report = (await verifyMigration({modules:["root"],readOriginal:original,readEdited:edited}))[0];
+  assert.deepEqual(report.failures,[]);
+  original.place("library_root","library");
+  assert.equal(await original("collision","library_root"),rebuilt.get("collision"));
+  assert.match(await original.checkImports("root",["collision"]),/loaded collision from library/);
 });
