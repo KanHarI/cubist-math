@@ -7,6 +7,7 @@
 // prints a summary.
 //   node tools/instruction-coverage.mjs [--limit-ms=5000] [--oracle]
 //        [--trajectories=FILE] [--select=REGEX] [--modules=a,b] [--report=FILE]
+//        [--representation=native|declared]
 // The driver steers by its own guide; with --oracle, by the term checker's
 // conversion instead, for comparison. --trajectories writes one JSON line per
 // re-derived definition with every branch point of its search
@@ -34,13 +35,17 @@ import { InstructionDriver, heuristicChooser, searchLimits } from "../web/cubica
 import { sourceModules, cubicalSourceModules } from "../web/mathscript/modules.mjs";
 import { cubicalSourceFile } from "../web/cubical-sources.mjs";
 import { addWork, countingChooser, kernelSteps, recordingChooser, workSince } from "./search-telemetry.mjs";
+import { canonicalHasher } from "./proof-migration.mjs";
 
 const option = name => process.argv.find(arg => arg.startsWith(`--${name}=`))?.slice(name.length + 3);
 const limitMs = option("limit-ms") ? Number(option("limit-ms")) : 5000;
 const oracle = process.argv.includes("--oracle");
 const trajectoryFile = option("trajectories");
 const select = option("select") ? new RegExp(option("select")) : null;
-const known = /^--(limit-ms|trajectories|select|modules|report)=|^--oracle$/;
+const representation = option("representation") ?? "native";
+const compareNormalForms = process.argv.includes("--normal-forms");
+if (compareNormalForms && representation !== "declared") throw Error("--normal-forms requires --representation=declared.");
+const known = /^--(limit-ms|trajectories|select|modules|report|representation)=|^--(oracle|normal-forms)$/;
 const unknown = process.argv.slice(2).find(arg => !known.test(arg));
 if (unknown) throw new Error(`Unknown option: ${unknown}`);
 
@@ -55,17 +60,23 @@ const environment = {
 const readSource = name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
 // A stale WASM kernel or translator copy would measure code it does not contain.
 assertFreshBuild();
-const program = new CubicalProgram(await createCubical(), readSource);
-const kernel = program.kernel;
+const program = new CubicalProgram(await createCubical(), readSource, {
+  representation, experimental: representation === "declared" ? ["h1"] : [],
+});
+const kernel = program.translation?.kernel ?? program.kernel;
 kernel.conversionOracle = oracle;
+program.kernel.conversionOracle = oracle;
 // The archive check shares one driver across declarations, the elaborator's.
 const checkChooser = countingChooser(heuristicChooser);
 kernel.chooser = checkChooser;
+program.kernel.chooser = checkChooser;
 const modules = option("modules")?.split(",") ?? [...new Set([...sourceModules, ...cubicalSourceModules])];
 const checkStarted = performance.now(), checkWork = kernel.work();
+const sourceWork = program.translation ? program.kernel.work() : null;
 const checked = await program.check(modules.map(name => `import ${name};`).join("\n"), "coverage");
 const check = { seconds: Number(((performance.now() - checkStarted) / 1000).toFixed(1)),
-  work: workSince(checkWork, kernel.work()), search: checkChooser.counts };
+  work: workSince(checkWork, kernel.work()), search: checkChooser.counts,
+  ...(sourceWork ? { sourceWork: workSince(sourceWork,program.kernel.work()) } : {}) };
 const budgets = { limitMs, stepBudget: Number(kernel.stepBudget), ...searchLimits };
 
 // Every definition again, each by a fresh driver on the checked session: the
@@ -92,6 +103,32 @@ for (const [name, reference] of kernel.definitions) {
   trajectories?.write(JSON.stringify({ definition: name, outcome, ms: Math.round(ms), work, points }) + "\n");
 }
 if (trajectories) await new Promise(resolve => trajectories.end(resolve));
+const differential = compareNormalForms ? { compared: 0, typesRelated: 0, exactAlpha: 0,
+  renormalizedImages: 0, strictAlphaSatisfied: false, failures: [], seconds: 0 } : null;
+if (differential) {
+  const started = performance.now(), hash = canonicalHasher(), target = program.translation;
+  for (const [name,reference] of kernel.definitions) {
+    if (select && !select.test(name)) continue;
+    differential.compared++;
+    kernel.setDeadline(limitMs); program.kernel.setDeadline(limitMs);
+    try {
+      const image = kernel.definition(reference), original = program.kernel.definition(program.kernel.definitions.get(name));
+      if (hash(target.map(program.checker.syntax.decode(original.type))) !== hash(target.checker.syntax.decode(image.type)))
+        throw Error("Public types are not related by τ.");
+      differential.typesRelated++;
+      const nativeNormal = program.checker.verify(program.checker.syntax.decode(original.value)).normal;
+      const imageNormal = target.checker.verify(target.checker.syntax.decode(image.value)).normal;
+      const mapped = target.map(nativeNormal);
+      if (hash(mapped) === hash(imageNormal)) differential.exactAlpha++;
+      else if (hash(target.checker.verify(mapped).normal) === hash(imageNormal)) differential.renormalizedImages++;
+      else throw Error("Normal forms disagree after normalizing the translated native normal form.");
+    } catch (error) { differential.failures.push({name,reason:error.message}); }
+    finally { kernel.setDeadline(); program.kernel.setDeadline(); }
+  }
+  differential.seconds = Number(((performance.now()-started)/1000).toFixed(1));
+  differential.strictAlphaSatisfied = differential.compared > 0 && !differential.failures.length
+    && differential.exactAlpha === differential.compared;
+}
 const arena = kernel.arena();
 program.dispose();
 
@@ -101,7 +138,7 @@ const derived = derivations.filter(d => d.derived);
 const definitions = select ? derivations.length : kernel.definitions.size;
 const top = (key, format) => [...derived].sort((a, b) => b[key] - a[key]).slice(0, 10).map(format);
 const report = {
-  environment, budgets, oracle, chooser: search.name,
+  environment, budgets, oracle, representation, differential, chooser: search.name,
   session: "The archive is checked in one kernel session. Each declaration is derived by a driver of its own: admission and "
     + "the declaration's transaction drop the driver, and the transaction's checkpoint commit clears the kernel's checking "
     + "and reduction caches, keeping only checked definitions and interned syntax. Then each stored definition is derived "
@@ -123,7 +160,7 @@ const report = {
   failures: Object.fromEntries(Object.entries(failures).sort((a, b) => b[1].length - a[1].length)),
 };
 report.success = imports.length > 0 && report.checked.verified === imports.length && !gaps.length
-  && definitions > 0 && report.derived === definitions;
+  && definitions > 0 && report.derived === definitions && !differential?.failures.length;
 const reportFile = resolve(option("report") ?? fileURLToPath(new URL("../build/instruction-coverage.json", import.meta.url)));
 await mkdir(dirname(reportFile), { recursive: true });
 await writeFile(reportFile, JSON.stringify(report, null, 2) + "\n");
@@ -141,5 +178,9 @@ console.log(`${count(report.derived)} of ${count(definitions)} definitions deriv
   + `${count(search.counts.points)} branch points.`);
 for (const [reason, names] of Object.entries(report.failures)) console.log(`${String(names.length).padStart(5)}  ${reason}  (${names.slice(0, 2).join(", ")})`);
 console.log(report.success ? "Coverage complete." : "Coverage incomplete: see above.");
+if (differential) console.log(`Differential: ${differential.typesRelated}/${differential.compared} types related, `
+  + `${differential.exactAlpha} exact alpha comparisons, ${differential.renormalizedImages} need image normalization, `
+  + `${differential.failures.length} failures in ${differential.seconds} s; strict alpha satisfied: ${differential.strictAlphaSatisfied}.`);
+for (const failure of differential?.failures ?? []) console.log(`  differential ${failure.name}: ${failure.reason}`);
 if (trajectoryFile) console.log(`Trajectories written to ${trajectoryFile}.`);
 if (!report.success) process.exitCode = 1;

@@ -1,7 +1,7 @@
 // Check that edited library modules keep their checked meaning.
 //   node tools/verify-proof-migration.mjs [--base REV] [--level identical|types]
 //     [--json FILE] [--ledger FILE] [--no-dependents] [--experimental h1]
-//     [--edited-root DIR]
+//     [--representation native|declared] [--edited-root DIR]
 //     [--edited-file FILE --declarations name,...] [module ...]
 // Without module names, every archive/first-library module modified relative to the base
 // revision (default HEAD) is checked. Every module that imports a checked
@@ -34,6 +34,7 @@ const base = requestedBase ?? ledger?.base ?? "HEAD";
 const editedRoot = resolve(root,option("--edited-root") ?? "archive/first-library");
 const editedFile = option("--edited-file");
 const selected = option("--declarations")?.split(",");
+const representation = option("--representation") ?? "native";
 // Kernel extensions under review to enable, as the CLI's --experimental=h1.
 const experimental = (option("--experimental") ?? "").split(",").filter(Boolean);
 if (args.some(arg => arg.startsWith("--"))) throw new Error(`Unknown option: ${args.find(arg => arg.startsWith("--"))}`);
@@ -89,7 +90,7 @@ const readOriginal = migrationSourceReader(async (place, name) => {
 // A stale WASM kernel or translator copy would run code it does not contain.
 assertFreshBuild();
 const declarations=selected ? {[modules[0]]:selected} : null;
-const reports = await verifyMigration({ modules, readOriginal, readEdited, level, experimental, ledger, declarations });
+const reports = await verifyMigration({ modules, readOriginal, readEdited, level, experimental, ledger, declarations, representation });
 let failures = 0;
 for (const report of reports) {
   failures += report.failures.length;
