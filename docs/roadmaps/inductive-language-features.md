@@ -200,7 +200,7 @@ inductive Torus2 {                    // the same space, with an equation betwee
   The composite presentation needs a separately specified translation to
   the square form, with its equivalence, or a later fragment; the kernel is
   not changed to accept it.
-- Clauses bind the cell's variables (`surf i j => …`). Their boundary
+- Clauses bind the cell's variables (`surf @ i @ j => …`). Their boundary
   obligations display the same diagram.
 
 **Stage** H1 for cube boundaries, as the specification's 1.4 admits them;

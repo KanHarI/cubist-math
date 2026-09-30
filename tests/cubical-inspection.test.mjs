@@ -16,6 +16,46 @@ const readSource = name => readFile(new URL(`../archive/first-library/${cubicalS
 const variable = name => ({ tag: "Var", name });
 const nat = naturalSort;
 
+test("declared type occurrences link to their imported and local source declarations", async t => {
+  const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
+  const source = `import w;
+def Z := Nat or Nat;
+def Tree := W(U0, U0, Unit, fun (a : Unit) => Void);
+def former := W;
+inductive N { zero; succ(n : N); }
+def two : N := succ(succ(zero));`;
+  const result = await program.check(source, "main");
+  assert.equal(result.complete, true, JSON.stringify(result.gaps));
+  for (const [name, binding] of [["Nat", "nat__Nat"], ["W", "w__W"], ["N", "main__N"]]) {
+    const links = result.links.filter(link => link.name === name);
+    assert.equal(links.length, name === "N" ? 3 : 2, name);
+    for (const link of links) {
+      assert.equal(link.binding, binding);
+      assert.equal(link.role, "inductive");
+    }
+  }
+  const imported = result.imports.find(info => info.binding === "nat__Nat");
+  assert.equal(imported.sourceModule, "nat");
+  assert.equal(imported.sourceName, "Nat");
+  assert.match(result.sources.nat.slice(imported.definitionStart), /^inductive Nat/);
+  assert.deepEqual(program.signatureView("nat__Nat").constructors.map(c => c.name), ["zero", "succ"]);
+});
+
+test("shadowed Nat names retain their own local source targets", async t => {
+  const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
+  const source = "def identity(Nat : U0, x : Nat) : Nat := x; def Nat := Unit; def point : Nat := tt;";
+  const result = await program.check(source, "shadow");
+  assert.equal(result.complete, true, JSON.stringify(result.gaps));
+  const links = result.links.filter(link => link.name === "Nat");
+  assert.equal(links.length, 5);
+  for (const link of links.slice(0, 3)) {
+    assert.notEqual(link.binding, "nat__Nat");
+    assert.notEqual(link.role, "inductive");
+  }
+  assert.equal(links.at(-1).binding, "shadow__Nat");
+  assert.equal(links.at(-1).role, "def");
+});
+
 test("inferred induction statements simplify the motive and retain source binder names", async t => {
   const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
   assert.equal((await program.check(await readSource("finite_combinations"), "finite_combinations")).complete, true);

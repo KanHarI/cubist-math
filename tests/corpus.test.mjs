@@ -17,8 +17,9 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   const failures = report.declarations.filter(d => d.category !== "checked");
   assert.deepEqual(failures, []);
   // G3 asks for the archive unchanged: every module imports, and every one
-  // of its 3,804 declarations checks.
+  // of its declarations checks. Declaring BinaryNat, BinaryPositive, RadixNat
+  // and RadixPositive by their constructors removed 21 W-encoding helpers.
   assert.deepEqual(report.importErrors, []);
-  assert.equal(report.declarations.length, 3807, "The corpus must not silently lose modules.");
+  assert.equal(report.declarations.length, 3786, "The corpus must not silently lose modules.");
   t.diagnostic(JSON.stringify(report.counts));
 });

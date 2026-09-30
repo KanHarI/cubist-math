@@ -172,9 +172,12 @@ export function parse(source, typeOnly = false) {
       const end = take("}").end;
       a = { kind: "withUnfolding", hints, body, start: t.start, end };
     } else if (t.text === "induction") {
+      // `induction n [as k] return C { … }`: as names the value in the motive
+      // and the predecessor in the successor clause; without it the motive is
+      // constant and the predecessor unnamed.
       const value = expr();
-      take("as");
-      const index = name();
+      let index = null;
+      if (peek() === "as") { take("as"); index = name(); }
       take("return");
       const type = expr();
       take("{");
@@ -200,7 +203,7 @@ export function parse(source, typeOnly = false) {
         end,
       };
     } else if (t.text === "match") {
-      // `match v [as z] [return T] { c(xs) i => body; … }`: a clause per
+      // `match v [as z] [return T] { c(xs) @ i => body; … }`: a clause per
       // constructor, its arguments in parentheses, then its dimensions. The
       // legacy match on a sum, `left x => …; right y => …;`, keeps its fields.
       const value = expr();
@@ -223,9 +226,9 @@ export function parse(source, typeOnly = false) {
       // The legacy shape keeps its fields; its clauses stay readable but are
       // not enumerated, so a walk over the tree meets each body once.
       if (!obligations.obligationsToken && clauses.length === 2 && clauses[0].constructor.text === "left" && clauses[1].constructor.text === "right"
-          && clauses.every(clause => !clause.args && clause.names.length === 1)) {
-        Object.assign(a, { left: clauses[0].names[0], leftBody: clauses[0].body,
-          right: clauses[1].names[0], rightBody: clauses[1].body });
+          && clauses.every(clause => !clause.args && clause.binders.length === 1 && !clause.coordinates.length)) {
+        Object.assign(a, { left: clauses[0].binders[0], leftBody: clauses[0].body,
+          right: clauses[1].binders[0], rightBody: clauses[1].body });
         Object.defineProperty(a, "clauses", { value: clauses, enumerable: false });
       } else a.clauses = clauses;
     } else if (t.text === "unpack" && peek() !== "(") {
@@ -416,7 +419,7 @@ export function parse(source, typeOnly = false) {
     depth--;
     return p;
   }
-  // A match clause's head, `c(xs) i =>`: its constructor, which a generated
+  // A match clause's head, `c(xs) @ i =>`: its constructor, which a generated
   // one may name with its type, T.squash; its arguments in parentheses; then
   // its dimensions.
   function clauseHead() {
@@ -437,10 +440,14 @@ export function parse(source, typeOnly = false) {
       }
       take(")");
     }
-    const names = [];
-    while (peek() !== "=>") names.push(name());
+    // A bare name binds a sum's side in the legacy clause, left x =>. A path
+    // constructor's coordinates follow @, as in the point the clause covers:
+    // loop @ i =>.
+    const binders = [], coordinates = [];
+    while (peek() !== "=>" && peek() !== "@") binders.push(name());
+    while (peek() === "@") { take("@"); coordinates.push(name()); }
     take("=>");
-    return { constructor, args, names, ...(qualifiedDot ? { qualifiedDot } : {}) };
+    return { constructor, args, binders, coordinates, ...(qualifiedDot ? { qualifiedDot } : {}) };
   }
 
   function matchObligations(expression) {
@@ -669,7 +676,7 @@ export function parse(source, typeOnly = false) {
           e = take(";");
         s = { kind: "exact", value, start: t.start, end: e.end };
       } else if (t.text === "match") {
-        // The closing statement `match v { c(xs) i => { … } … }` (work plan
+        // The closing statement `match v { c(xs) @ i => { … } … }` (work plan
         // L2.2a): a clause per constructor, each a proof block of the goal at
         // that constructor. Its motive comes from the goal.
         const value = expr();

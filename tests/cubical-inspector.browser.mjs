@@ -81,6 +81,26 @@ try {
   assert.match(await page.locator("#inspect-axioms").textContent(), /kernel extension: H1/);
   assert.equal(await page.locator("#kernel-terms").isVisible(), false, "no checked term to show");
   assert.deepEqual(errors, []);
+  // Nat is an ordinary imported declaration: both occurrences in Z lead to
+  // its signature and View source opens the actual inductive, not this use.
+  await openProof("integers", "Z");
+  const naturalUses = page.locator('.source-line').filter({ hasText: "def Z := Nat or Nat;" })
+    .locator('button[data-name="Nat"]');
+  assert.equal(await naturalUses.count(), 2);
+  await naturalUses.first().click();
+  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "Nat"
+    && !document.querySelector("#inspect-signature").hidden);
+  assert.deepEqual(await page.locator("#inspect-constructors li code").allTextContents(),
+    ["zero : Nat", "succ : Nat -> Nat"]);
+  assert.match(await page.locator("#view-source").getAttribute("href"), /proof=nat&name=Nat/);
+  await page.locator("#view-source").click(); await idle();
+  assert.equal(new URL(page.url()).searchParams.get("proof"), "nat");
+  assert.equal(new URL(page.url()).searchParams.get("name"), "Nat");
+  assert.match(await page.locator(".source-line.active").textContent(), /inductive Nat : U0/);
+  assert.match(await page.locator("#editor").inputValue(), /succ\(n : Nat\)/);
+  await page.locator("#back").click(); await idle();
+  assert.equal(new URL(page.url()).searchParams.get("proof"), "integers");
+  assert.equal(await page.locator("#inspect-name").textContent(), "Nat");
   await openProof("suspension", "S1");
   for (const name of ["Suspension", "north", "south", "meridian", "suspension_induction", "suspension_meridian_beta"]) {
     const link = page.locator(`#read-source button[data-name="${name}"]`).first();

@@ -76,12 +76,12 @@ def two_lt_seven : lt(2, 7) {
             <pre><code data-check="repl">&gt; typeof lt;
 Nat -&gt; Nat -&gt; U0
 &gt; evaluate lt;
-fun (n, m : Nat) =&gt; exists k : Nat. succ(induction k as k1 return Nat { zero =&gt; n; succ h =&gt; succ(h); }) = m
+fun (n, m : Nat) =&gt; exists k : Nat. succ(induction k return Nat { zero =&gt; n; succ h =&gt; succ(h); }) = m
 &gt; typeof two_lt_seven;
 lt(2, 7)
 &gt; evaluate two_lt_seven;
 (4, refl(7))</code></pre>
-            <p><code>lt</code> takes two numbers and returns a type in <code>U0</code>. Evaluating it unfolds every definition, <code>+</code> included. <code>naturals</code> defines <code>+</code> by recursion on its first argument: <code>0 + b</code> is <code>b</code>, and <code>succ(a) + b</code> is <code>succ(a + b)</code>. So <code>succ(k) + n</code> computes one step, to <code>succ(k + n)</code>. Then <code>k + n</code> is stuck, because <code>k</code> is a variable, not a numeral. It stays as the recursion that defines it: <code>induction k as k1 return Nat { zero => n; succ h => succ(h); }</code> reads “if <code>k</code> is <code>0</code>, the result is <code>n</code>; if it is a successor, the result is <code>succ(h)</code>, where <code>h</code> is the result for its predecessor”. With a numeral in place of <code>k</code>, the recursion runs to the end: <code>succ(4) + 2</code> computes to <code>7</code>. The chapter on <a href="induction.html#induction">natural numbers and inductive types</a> explains <code>induction</code>. <em>Fork into REPL</em> copies the session into the REPL bar, to continue it there.</p>
+            <p><code>lt</code> takes two numbers and returns a type in <code>U0</code>. Evaluating it unfolds every definition, <code>+</code> included. <code>naturals</code> defines <code>+</code> by recursion on its first argument: <code>0 + b</code> is <code>b</code>, and <code>succ(a) + b</code> is <code>succ(a + b)</code>. So <code>succ(k) + n</code> computes one step, to <code>succ(k + n)</code>. Then <code>k + n</code> is stuck, because <code>k</code> is a variable, not a numeral. The recursive definition waits for a constructor; the REPL shows it as the eliminator it elaborates to, <code>induction k return Nat { zero =&gt; n; succ h =&gt; succ(h); }</code>, where <code>h</code> is the sum for the predecessor. With a numeral in place of <code>k</code>, it runs to the end: <code>succ(4) + 2</code> computes to <code>7</code>. The chapter on <a href="induction.html#recursion">structural recursion</a> shows the definition of addition. <em>Fork into REPL</em> copies the session into the REPL bar, to continue it there.</p>
             <p>The same idea works for every <code>n</code>: <code>succ(n)</code> is greater than <code>n</code>, with <code>k = 0</code>. That gives the statement:</p>
             <pre><code data-check="accept">import naturals;
 
@@ -282,6 +282,7 @@ def two := 2;  // Error: Expected ';', found 'def'.</code></pre>
             <div class="table-scroll"><table>
               <thead><tr><th>Form</th><th>Meaning</th></tr></thead>
               <tbody>
+                <tr><td><code>inductive Name … { … }</code></td><td>A type defined by its constructors. See <a href="induction.html#inductive">inductive declarations</a> and <a href="induction.html#recursion">functions on inductive types</a>.</td></tr>
                 <tr><td><code>computable def name …</code></td><td>A definition that must use no assumption. See <a href="assumptions.html#computability">computability</a>.</td></tr>
                 <tr><td><code>evaluate term expecting value;</code></td><td>A directive that checks what a closed term computes to. See <a href="assumptions.html#evaluate">evaluate</a>.</td></tr>
                 <tr><td><code>simp_rule name priority N;</code><br /><code>simp_set name := [rule, …];</code></td><td>Directives that register checked equalities for simplification. See <a href="rewriting.html#simp-registration">registering rules</a>.</td></tr>
@@ -329,7 +330,7 @@ def in_type : forall A : U0. A -&gt; A {
             <pre><code data-check="reject">def uses_later := later;  // Error: Untranslated name: later
 
 def later := 0;</code></pre>
-            <p>A recursive definition can call itself on a constructor argument in a structural <code>match</code>. Other self-calls are rejected. Recursion and induction also use eliminators, such as <a href="induction.html#induction">natural-number induction</a>:</p>
+            <p>A recursive definition can call itself on a recursive constructor argument in a <code>match</code>. See <a href="induction.html#recursion">structural recursion</a> for functions on natural numbers and lists, and <a href="induction.html#dependent-match">proofs by matching</a> for induction. Other self-calls are rejected:</p>
             <pre><code data-check="reject">def loop(n : Nat) : Nat {
   exact loop(n);  // Error: loop is being defined: it can call itself only on an argument of a constructor
 }</code></pre>

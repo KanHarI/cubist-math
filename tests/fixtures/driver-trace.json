@@ -1,8 +1,8 @@
 {
-  "recordedFrom": "bfef585cfe09f4b94a658564dff505cd67855368 + source-defined Nat/W migration",
-  "method": "tests/driver-trace.mjs run on the implementation tree. Every instruction the driver issued with its operands and result, and every weak-head query with its budget and answer, in order, hashed. Source-defined Nat replaces primitive NatForm/NatIntro/NatElim with signature instances, constructors and generic eliminators; the eight fixture declarations still check.",
-  "issued": 3536,
-  "heads": 487,
+  "recordedFrom": "a28bc38d121671187088a30c1bbebe5f18368d18 + match-based addition and order, declared-type source links",
+  "method": "tests/driver-trace.mjs run on the implementation tree. Every instruction the driver issued with its operands and result, and every weak-head query with its budget and answer, in order, hashed. Source-defined Nat uses signature instances, constructors and generic eliminators. Rewriting library/naturals add with match and an explicit Nat result removes motive applications from its public type, changing the derivation trace. The inner case analysis of le is a match, which names the predecessor in its clause instead of `as j`; that adds 18 issued instructions and no weak-head query. Dropping unused `as` names alone leaves the trace unchanged. The eight fixture declarations still check.",
+  "issued": 3128,
+  "heads": 481,
   "checked": 8,
-  "sha256": "011f50006348b618f21c198f33a62392a827da2ec8e08e529fc34d32e04f743d"
+  "sha256": "c36b41bbfd8a8ee8ef26119dd5d4c108b5bd35c35e2d29d46bf73dbaf299b0f1"
 }

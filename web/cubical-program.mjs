@@ -6,6 +6,7 @@ import {emptySimpRegistry,mergeSimpRegistries} from "./dist/cubical-runtime/simp
 import { substituteTerm, T } from "./dist/cubical-runtime/core.mjs";
 import { localName, printedForms, printsAsItself } from "./dist/cubical-runtime/names.mjs";
 import { parse } from "./mathscript/parser.mjs";
+import { lint } from "./mathscript/lint.mjs";
 import { leadingDocumentation } from "./mathscript/documentation.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
 import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notation.mjs";
@@ -186,8 +187,9 @@ export class CubicalProgram {
               if (!Number.isInteger(item.node.start)) continue;
               let head = item.term; while (head.tag === "App" || head.tag === "LApp") head = head.fn;
               const source = item.aliases?.find(alias => alias.name === item.node.name && alias.term === item.term);
-              const definition = head.tag === "DefRef" && !source && !item.node.expressionSite;
-              const binding = definition ? head.name : `${name}__local_${item.node.start}${
+              const declared = !source && !item.node.expressionSite && item.node.declarationBinding;
+              const definition = !!declared || head.tag === "DefRef" && !source && !item.node.expressionSite;
+              const binding = definition ? declared || head.name : `${name}__local_${item.node.start}${
                 expansionSuffix(item.node.role,item.node.expansionIndex)}`;
               references.push({ start: item.node.start, binding });
               if (!definition && !this.views.has(binding)) this.views.set(binding, { ...item, module: name });
@@ -198,7 +200,7 @@ export class CubicalProgram {
                 ...(name === main ? {} : { sourceModule: name, sourceName: declaration.name.text }) };
               if (name === main) {
                 const link={ name: item.node.name, binding, start: item.node.start,
-                end: item.node.end, definitionStart: source?.start, role: item.node.role ?? (definition ? "definition" : "local"),
+                end: item.node.end, definitionStart: source?.start, role: item.node.role ?? (declared ? "inductive" : definition ? "definition" : "local"),
                 expansion: item.node.expansion, description: item.node.description,
                 freeze:item.node.freeze,traceParent:item.node.traceParent };
                 this.links.push(link);declarationLinks.push(link);
@@ -264,6 +266,9 @@ export class CubicalProgram {
       imports: all.filter(d => d.sourceModule), symbols: [...all, ...Object.values(this.assumptionSymbols())], assumptionLabels: Object.fromEntries(this.checker.assumptionLabels), declarations: outputs, links: this.links,
       declarationCount: total, instructionCount: this.checker.steps, axiomCount: new Set(outputs.flatMap(d => d.axioms)).size, gaps: this.gaps,
       evaluations: this.evaluations, directiveFuel: this.directiveFuel,
+      // Unused bindings that can be removed, in the checked module only; a
+      // fresh parse, since elaboration annotates the syntax it checks.
+      warnings: lint(source),
       complete: outputs.length > 0 && outputs.every(d => d.verified)
         && !this.gaps.some(gap=>gap.directive) && failedHere.size === 0, sources: this.sources };
   }

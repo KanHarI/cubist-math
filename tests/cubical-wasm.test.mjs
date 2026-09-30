@@ -110,11 +110,11 @@ test("named syntax preserves path binders and sharing across WASM checks", t => 
   assert.throws(() => { term.name = "changed"; }, TypeError);
 });
 
-test("the actual W binary source checks entirely in cubical WASM", async t => {
+test("the actual binary source checks entirely in cubical WASM", async t => {
   const program = new CubicalProgram(producerModule, sourceReader());
   t.after(()=>program.dispose());
   const result=await program.check("import binary_naturals; def bad_binary_literal : 0b110 = 0b111 { exact refl(0b110); }", "binary_probe");
-  assert.equal(result.imports.filter(d=>d.sourceModule==="binary_naturals" && d.verified).length,13);
+  assert.equal(result.imports.filter(d=>d.sourceModule==="binary_naturals" && d.verified).length,6);
   assert.equal(result.outputs[0].verified,false);
 });
 

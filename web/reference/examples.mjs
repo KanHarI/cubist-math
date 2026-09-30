@@ -6,6 +6,8 @@ import { tokenPattern, tokenStyle, numeralAt, headerWordAt } from "../source-tok
 import { enableTokenTips } from "../token-tips.mjs";
 import { sourceModules, cubicalSourceModules, libraryModules } from "../mathscript/modules.mjs";
 import { replTranscript } from "../repl-session.mjs";
+import { moduleListing } from "../module-listing.mjs";
+import { moduleRoots } from "../module-resolution.mjs";
 
 const workerURL = new URL("../cubical-worker.mjs", import.meta.url);
 const workspaceURL = new URL("../proof.html?example=1", import.meta.url);
@@ -35,8 +37,8 @@ function request(command, args) {
 
 // The worker keeps one program at a time, so examples are checked in turn.
 let queue = Promise.resolve();
-const checkInTurn = source => (queue = queue.then(() => request("check", { source, module: "reference_example" }))
-  .catch(error => ({ error })));
+const checkInTurn = (source, module = "reference_example", place) => (queue = queue
+  .then(() => request("check", { source, module, ...(place ? { place } : {}) })).catch(error => ({ error })));
 
 const encode = source => btoa(String.fromCharCode(...new TextEncoder().encode(source)))
   .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -46,7 +48,7 @@ const workspaceLink = source => `${workspaceURL.href}#source=${encode(source)}`;
 // become buttons that open the kernel inspector, and an imported module's
 // name links to its source in the workspace.
 const modules = new Set([...sourceModules, ...cubicalSourceModules, ...libraryModules]);
-function render(code, source, links = []) {
+function render(code, source, links = [], inspect = start => openInspector(source, start)) {
   const imports = new Map([...source.matchAll(/^\s*import\s+([A-Za-z_][A-Za-z_0-9]*)\s*;/gm)]
     .filter(match => modules.has(match[1]))
     .map(match => [match.index + match[0].lastIndexOf(match[1]), match[1]]));
@@ -83,7 +85,7 @@ function render(code, source, links = []) {
       button.textContent = text;
       if (expansion && expansion !== text) button.dataset.tip = `${text} expands to ${expansion}`;
       else button.title = `Inspect ${text} as a checked kernel term`;
-      button.onclick = () => openInspector(source, start);
+      button.onclick = () => inspect(start);
       parts.push(button);
     } else if (style) {
       const span = document.createElement("span");
@@ -97,7 +99,7 @@ function render(code, source, links = []) {
 }
 
 let drawer = null, frameReady = null;
-function openInspector(source, offset) {
+function openInspector(source, offset, workspace = workspaceLink(source)) {
   if (!drawer) {
     drawer = document.createElement("aside");
     drawer.className = "inspector-drawer";
@@ -124,7 +126,7 @@ function openInspector(source, offset) {
   }
   drawer.hidden = false;
   document.body.classList.add("inspector-open");
-  drawer.querySelector("a").href = workspaceLink(source);
+  drawer.querySelector("a").href = workspace;
   const frame = drawer.querySelector("iframe");
   frameReady.then(() => frame.contentWindow.postMessage({ type: "cubist-inspect", source, offset }, location.origin));
 }
@@ -268,8 +270,53 @@ function enhance(pre, code) {
     const links = result?.links ?? [];
     if (links.length) render(code, source, links);
     const evaluations = (result?.evaluations ?? []).map(evaluation => `${evaluation.name}: ${evaluation.value}`);
+    const warnings = (result?.warnings ?? []).map(warning => `warning at line ${warning.line}: ${warning.message}`);
     status.textContent = [links.length ? "Click a name to inspect its kernel term" : result?.error ? "Not checked" : "",
-      ...evaluations.map(text => `evaluate ${text}`)].filter(Boolean).join(" · ");
+      ...evaluations.map(text => `evaluate ${text}`), ...warnings].filter(Boolean).join(" · ");
+  });
+}
+
+// An excerpt quotes a module of the library exactly (data-module); the test
+// suite checks the quotation. The module is checked as it stands, once per
+// page and resolved library-first like an example's imports, and the names it
+// links inside the quoted text become clickable. The workspace link opens the
+// module at the excerpt's first declaration.
+const moduleChecks = new Map();
+function checkModule(name) {
+  if (!moduleChecks.has(name)) {
+    const place = ["library", "archive"].find(root => moduleListing[root].includes(name));
+    moduleChecks.set(name, !place ? Promise.resolve({ result: { error: new Error(`No module ${name}.`) } })
+      : fetch(new URL(`../${moduleRoots[place]}${name}.cubist`, import.meta.url), { cache: "no-store" })
+        .then(response => response.ok ? response.text() : Promise.reject(new Error(`No source for ${name}.`)))
+        .then(source => checkInTurn(source, name, place).then(result => ({ source, result })),
+          error => ({ result: { error } })));
+  }
+  return moduleChecks.get(name);
+}
+
+function enhanceExcerpt(pre, code) {
+  const excerpt = code.textContent, name = code.dataset.module;
+  const declaration = excerpt.match(/\b(?:def|inductive)\s+([A-Za-z_][A-Za-z0-9_]*)/)?.[1];
+  const workspace = new URL(`../proof.html?proof=${encodeURIComponent(name)}${
+    declaration ? `&name=${encodeURIComponent(declaration)}` : ""}`, import.meta.url).href;
+  const bar = document.createElement("div");
+  bar.className = "example-bar";
+  const status = document.createElement("span"), open = document.createElement("a");
+  status.textContent = `Checking ${name}…`;
+  open.textContent = "Open in workspace ↗";
+  open.href = workspace;
+  open.target = "_blank";
+  open.rel = "noopener";
+  bar.append(status, open);
+  pre.after(bar);
+  checkModule(name).then(({ source, result }) => {
+    const at = source?.indexOf(excerpt) ?? -1, end = at + excerpt.length;
+    const links = at < 0 ? [] : (result?.links ?? []).filter(link => link.start >= at && link.end <= end)
+      .map(link => ({ ...link, start: link.start - at, end: link.end - at }));
+    if (links.length) render(code, excerpt, links, start => openInspector(source, at + start, workspace));
+    status.textContent = [`Quoted from ${name}`,
+      links.length ? "Click a name to inspect its kernel term" : result?.error || at < 0 ? "Not checked" : ""]
+      .filter(Boolean).join(" · ");
   });
 }
 
@@ -319,11 +366,11 @@ enableTokenTips();
 for (const code of document.querySelectorAll('pre > code[data-check]:not([data-check="cli"]):not([data-check="repl"])'))
   render(code, code.textContent);
 for (const code of document.querySelectorAll('pre > code[data-check="repl"]')) renderTranscript(code);
-const examples = [...document.querySelectorAll('pre > code[data-check="accept"], pre > code[data-check="reject"]')];
+const examples = [...document.querySelectorAll('pre > code[data-check="accept"], pre > code[data-check="reject"], pre > code[data-check="excerpt"][data-module]')];
 const observer = new IntersectionObserver(entries => {
   for (const entry of entries) if (entry.isIntersecting) {
     observer.unobserve(entry.target);
-    enhance(entry.target.parentElement, entry.target);
+    (entry.target.dataset.check === "excerpt" ? enhanceExcerpt : enhance)(entry.target.parentElement, entry.target);
   }
 }, { rootMargin: "400px 0px" });
 for (const code of examples) observer.observe(code);

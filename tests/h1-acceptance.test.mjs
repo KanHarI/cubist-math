@@ -86,7 +86,7 @@ def wrap_point(U < UU0, A : U, a : A) : Tr(U, A) := point(a);
 def at_next(U < UU0, A : U, a : A) : Tr(next(U), A) := wrap_point(next(U), A, a);
 def rebuilt(U < UU0, A : U, t : Tr(U, A)) : Tr(U, A) := match t {
   point(a) => point(a);
-  squash(x, y) i => Tr.squash(rebuilt(U, A, x), rebuilt(U, A, y)) @ i;
+  squash(x, y) @ i => Tr.squash(rebuilt(U, A, x), rebuilt(U, A, y)) @ i;
 };
 def computes(U < UU0, A : U, a : A) : rebuilt(next(U), A, at_next(U, A, a)) = point(a) { rfl; }
 `);

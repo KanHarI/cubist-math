@@ -67,17 +67,20 @@ def one : labels(small) = succ(zero) { rfl; }
 test("a path constructor's clause is a path between the clauses at its ends", async t => {
   const { get } = await check(t, `${naturals}
 inductive Circle { base; loop : base = base; }
-def flat(x : Circle) : N := match x { base => zero; loop i => zero; };
+def flat(x : Circle) : N := match x { base => zero; loop @ i => zero; };
 def at_loop : flat(loop @ 1) = zero { rfl; }
-def torn(x : Circle) : N := match x { base => zero; loop i => succ(zero); };
+def torn(x : Circle) : N := match x { base => zero; loop @ i => succ(zero); };
 def unnamed(x : Circle) : N := match x { base => zero; loop => zero; };
-def extra(x : Circle) : N := match x { base i => zero; loop i => zero; };
+def extra(x : Circle) : N := match x { base @ i => zero; loop @ i => zero; };
+def bare(x : Circle) : N := match x { base => zero; loop i => zero; };
 `);
   ok(get("flat"));
   ok(get("at_loop"));
   refused(get("torn"), /mismatch|clause/i);
-  refused(get("unnamed"), /loop is a path constructor: name its 1 dimension after its arguments/);
+  refused(get("unnamed"), /loop is a path constructor: name its 1 dimension after its arguments, as in loop @ i => …/);
   refused(get("extra"), /base has no dimensions to name/);
+  // A coordinate follows @, as in the point the clause covers.
+  refused(get("bare"), /Write the dimension of loop after @, as the point the clause covers: loop @ i => …/);
 });
 
 // E3: a truncation's eliminator, with its squash clause written T.squash.
@@ -88,7 +91,7 @@ inductive Trunc(U < UU0, A : U) : prop { point(a : A); }
 def same(x, y : Trunc(U0, N)) : x = y := Trunc.squash(x, y);
 def rebuilt(t : Trunc(U0, N)) : Trunc(U0, N) := match t {
   point(a) => point(a);
-  squash(x, y) i => Trunc.squash(rebuilt(x), rebuilt(y)) @ i;
+  squash(x, y) @ i => Trunc.squash(rebuilt(x), rebuilt(y)) @ i;
 };
 def rebuilt_point : rebuilt(point(zero)) = point(zero) { rfl; }
 def unsquashed(t : Trunc(U0, N)) : Trunc(U0, N) := match t { point(a) => point(a); };
@@ -222,16 +225,16 @@ test("third review: a path of the matched type is recursed on at its dimensions"
 inductive S : set { point; }
 def ill_typed(s : S) : S := match s {
   point => point;
-  squash(x, y, p, q) i j => S.squash(ill_typed(x), ill_typed(y), ill_typed(p), ill_typed(q)) @ i @ j;
+  squash(x, y, p, q) @ i @ j => S.squash(ill_typed(x), ill_typed(y), ill_typed(p), ill_typed(q)) @ i @ j;
 };
 def rebuilt(s : S) : S := match s {
   point => point;
-  squash(x, y, p, q) i j => S.squash(rebuilt(x), rebuilt(y), path k => rebuilt(p @ k), path k => rebuilt(q @ k)) @ i @ j;
+  squash(x, y, p, q) @ i @ j => S.squash(rebuilt(x), rebuilt(y), path k => rebuilt(p @ k), path k => rebuilt(q @ k)) @ i @ j;
 };
 def rebuilt_point : rebuilt(point) = point { rfl; }
 def too_many(s : S) : S := match s {
   point => point;
-  squash(x, y, p, q) i j => S.squash(too_many(x @ i), too_many(y), path k => too_many(p @ k), path k => too_many(q @ k)) @ i @ j;
+  squash(x, y, p, q) @ i @ j => S.squash(too_many(x @ i), too_many(y), path k => too_many(p @ k), path k => too_many(q @ k)) @ i @ j;
 };
 `);
   // p : x = y is not an S: too_many(p) would be ill-typed outside the definition.
@@ -253,21 +256,21 @@ def counted : count(succ(succ(zero))) = 0 { rfl; }
 test("fourth review: a user constructor named squash and the generated T.squash are distinct clauses", async t => {
   const { get } = await check(t, `${naturals}
 inductive S : prop { squash; }
-def keep(s : S) : S := match s { squash => squash; S.squash(x, y) i => S.squash(keep(x), keep(y)) @ i; };
+def keep(s : S) : S := match s { squash => squash; S.squash(x, y) @ i => S.squash(keep(x), keep(y)) @ i; };
 def kept : keep(squash) = squash { rfl; }
-def ambiguous(s : S) : S := match s { squash => squash; squash(x, y) i => S.squash(x, y) @ i; };
+def ambiguous(s : S) : S := match s { squash => squash; squash(x, y) @ i => S.squash(x, y) @ i; };
 inductive Trunc(U < UU0, A : U) : prop { point(a : A); }
 def qualified(t : Trunc(U0, N)) : Trunc(U0, N) := match t {
   point(a) => point(a);
-  Trunc.squash(x, y) i => Trunc.squash(qualified(x), qualified(y)) @ i;
+  Trunc.squash(x, y) @ i => Trunc.squash(qualified(x), qualified(y)) @ i;
 };
 `);
   for (const name of ["keep", "kept", "qualified"]) ok(get(name));
   // squash here is the user's constructor: two clauses for it.
   refused(get("ambiguous"), /squash has two clauses/);
   const { formatMathScript } = await import("../web/mathscript/formatter.mjs");
-  const source = "def f(t : T) : T := match t { T.squash(x, y) i => x; };\n";
-  assert.match(formatMathScript(source), /T\.squash\(x, y\) i => x;/);
+  const source = "def f(t : T) : T := match t { T.squash(x, y) @ i => x; };\n";
+  assert.match(formatMathScript(source), /T\.squash\(x, y\) @ i => x;/);
 });
 
 test("fifth review: a position's arguments may be curried in a recursive call", async t => {
@@ -495,14 +498,14 @@ inductive Trunc(U < UU0, A : U) : prop { point(a : A); }
 def rebuilt(t : Trunc(U0, N)) : Trunc(U0, N) {
   match t {
     point(a) => { exact point(a); }
-    squash(x, y) i => { exact Trunc.squash(rebuilt(x), rebuilt(y)) @ i; }
+    squash(x, y) @ i => { exact Trunc.squash(rebuilt(x), rebuilt(y)) @ i; }
   }
 }
 def rebuilt_point : rebuilt(point(zero)) = point(zero) { rfl; }
 def generic(U < UU0, A : U, t : Trunc(U, A)) : Trunc(U, A) {
   match t {
     point(a) => { exact point(a); }
-    squash(x, y) i => { exact Trunc.squash(generic(U, A, x), generic(U, A, y)) @ i; }
+    squash(x, y) @ i => { exact Trunc.squash(generic(U, A, x), generic(U, A, y)) @ i; }
   }
 }
 def generic_point(U < UU0, A : U, a : A) : generic(U, A, point(a)) = point(a) { rfl; }
@@ -514,11 +517,11 @@ def generic_point(U < UU0, A : U, a : A) : generic(U, A, point(a)) = point(a) { 
 test("a match statement's path clause is a path between the clauses at its ends", async t => {
   const { get } = await check(t, `${naturals}
 inductive Circle { base; loop : base = base; }
-def flat(x : Circle) : N := match x { base => zero; loop i => zero; };
+def flat(x : Circle) : N := match x { base => zero; loop @ i => zero; };
 def flat_constant(x : Circle) : flat(x) = zero {
   match x {
     base => { rfl; }
-    loop i => { rfl; }
+    loop @ i => { rfl; }
   }
 }
 `);
@@ -668,21 +671,21 @@ def pick_unfolds(n, a : N) : pick(n, a) = (match n return N { zero => a; succ(m)
 def own(n, a : N) : N := match n { zero => a; succ(own) => own; };
 def own_unfolds(n, a : N) : own(n, a) = (match n return N { zero => a; succ(k) => k; }) { rfl; }
 inductive Circle { base; loop : base = base; }
-def around(x : Circle, a : N) : N := match x { base => a; loop i => a; };
+def around(x : Circle, a : N) : N := match x { base => a; loop @ i => a; };
 def around_loop(a : N) : around(loop @ 1, succ(a)) = succ(a) { rfl; }
-def torn(x : Circle, a : N) : N := match x { base => a; loop i => succ(a); };
+def torn(x : Circle, a : N) : N := match x { base => a; loop @ i => succ(a); };
 inductive Trunc(U < UU0, A : U) : prop { point(a : A); }
 inductive Steps : prop { stop; next(s : Steps); }
 def count(s : Steps, b : N) : Trunc(U0, N) := match s {
   stop => point(b);
   next(r) => count(r, succ(b));
-  squash(x, y) i => Trunc.squash(count(x, b), count(y, b)) @ i;
+  squash(x, y) @ i => Trunc.squash(count(x, b), count(y, b)) @ i;
 };
 def count_two : count(next(next(stop)), zero) = point(succ(succ(zero))) { rfl; }
 def skewed(s : Steps, b : N) : Trunc(U0, N) := match s {
   stop => point(b);
   next(r) => skewed(r, succ(b));
-  squash(x, y) i => Trunc.squash(skewed(x, succ(b)), skewed(y, b)) @ i;
+  squash(x, y) @ i => Trunc.squash(skewed(x, succ(b)), skewed(y, b)) @ i;
 };
 `);
   // A match that never calls its declaration keeps its motive, whatever its

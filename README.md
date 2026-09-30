@@ -11,10 +11,11 @@ conversion unfolds them on demand. Explicit assumptions are shown with each proo
 
 `Nat`, `zero`, and `succ` come from the ordinary source module
 [`nat.cubist`](archive/first-library/nat.cubist), imported as the standard prelude.
-They are ordinary names and can be shadowed. `import w;` supplies the source
-inductive `W(U,V,A,B)` and its structurally recursive `wrec`. H1 is enabled by
-default; mathematical review remains pending. The kernel has no primitive Nat/W
-formation, constructor, elimination, or computation rules.
+They are ordinary names and can be shadowed. Binary and radix numbers are
+ordinary inductive declarations too. The source module `w` keeps the inductive
+`W(U,V,A,B)` and its structurally recursive `wrec`, though nothing imports it.
+H1 is enabled by default; mathematical review remains pending. The kernel has no
+primitive Nat/W formation, constructor, elimination, or computation rules.
 
 ## Build and use
 
@@ -71,6 +72,8 @@ The independent optimization switches are `--[no-]share-syntax`,
 `--[no-]reuse-checks`, and `--[no-]compact-paths`; all default on.
 `npm run format:cubist` formats sources and flattens right-associated tuples
 while checking that the expanded AST is unchanged. Add `-- --check` for a dry run.
+`npm run lint:cubist` reports bindings that are never used and can be removed,
+such as an `as` name no motive mentions; checking reports the same warnings.
 
 Primitive-calculus comparison tests build a historical kernel from the exact
 Git revision pinned in `tools/legacy-kernel.mjs`; they need that commit in the

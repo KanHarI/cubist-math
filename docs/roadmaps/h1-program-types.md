@@ -24,10 +24,47 @@ no elaborator-created Nat signature. `Nat`, `zero` and `succ` are ordinary
 names; local bindings can shadow them. Explicit `import nat;` works too.
 Program clients can select `prelude: false` to require explicit imports.
 
+Clicking Nat in a proof opens its declared signature, and View source leads
+to `nat.cubist` at the inductive declaration. Declared-type references carry
+their source binding, including parameterized and recursive occurrences;
+shadowed local names retain their own targets.
+
 Numerals resolve the Nat declaration in scope and apply its registered zero
 and successor constructors. The existing `induction` syntax constructs its
 generic dependent eliminator. Both produce `Sort`, `Con`, `Elim` and ordinary
 applications. Structurally recursive `match` definitions use the same rules.
+The rebuilt arithmetic library defines addition with `match` on zero and
+successor and a recursive call on the predecessor. The earlier `induction`
+spelling continues to work with the imported Nat.
+
+The [language reference](../../web/reference/induction.html) now teaches
+ordinary declarations, parameterized constructors, exhaustive matching,
+structural functions on Nat and lists, accumulator arguments and dependent
+proofs. Checked examples also cover path constructors, generated truncation
+clauses and the source W API. The chapter index and introductory function
+and declaration chapters link to that guide, the errors chapter catalogues
+the new refusals, and the quick reference has entries for `inductive` and
+`match`. Excerpts quoted from `nat`, `naturals` and `w` are checked with
+their module in the page, so their names open the kernel inspector.
+
+Two spellings changed with the chapter. A path clause is written as the
+point it covers, `loop @ i => …`, and `squash(x, y) @ i => …`; the former
+`loop i => …` is refused with a message naming the new form. `induction n
+return C { … }` no longer needs `as k` when the motive is constant and the
+successor clause does not use the predecessor; `mul` and `le` in
+`naturals` drop it, and the term display omits it in the same case. The
+inner case analysis of `le` is a `match`, which names the predecessor in its
+clause, `succ(j)`, instead of `as j`.
+
+A linter, `web/mathscript/lint.mjs`, warns about bindings that are never
+used and can be removed: `as` names on `induction` and `match`, `forall`
+and `exists` variables, and `let`, `have` and `obtain` statements. Checking
+reports its warnings in the CLI, the workspace and the reference pages, and
+`npm run lint:cubist` lints files without checking. Required names, such as
+parameters, clause arguments and induction hypotheses, are never reported.
+The rebuilt library has no warnings; the archive has about 120 and is not
+changed. Reference examples state their warnings as `// Warning:` comments,
+and the errors chapter catalogues them.
 
 [`w.cubist`](../../archive/first-library/w.cubist) supplies the ordinary type
 and a structurally recursive dependent `wrec`. Use `import w;`. The API writes
@@ -40,8 +77,13 @@ wrec(U, V, R, A, B, motive, step, tree)
 
 Here `U`, `V` and `R` are finite universes below `UU0`. `sup(a, children)`
 infers its instance from an expected type; `typed(T, sup(a, children))`
-provides it when needed. The binary and radix corpus modules now use these
-ordinary definitions. Generic arguments at `UU0` cannot instantiate this
+provides it when needed. Nothing imports `w` now: `BinaryNat`,
+`BinaryPositive`, `RadixNat` and `RadixPositive` are declared directly by their
+constructors, and their recursion and induction principles are structural
+`match` definitions. That removes 21 W-encoding helpers from the corpus.
+`binary_induction` no longer needs `paths`, since function extensionality on
+W child functions is gone. The display prints binary numbers from the new
+constructors. Generic arguments at `UU0` cannot instantiate this
 finite-universe declaration. A separate inductive at a fixed higher universe
 works and is tested; no primitive W fallback remains.
 
@@ -78,7 +120,7 @@ Tampered values and changed private dependency closures are refused.
 
 Checks on the implementation tree:
 
-- `node tools/test.mjs`: 704 tests passed, zero failures.
+- `node tools/test.mjs`: 712 tests passed, zero failures.
 - `make -C kernel test`: all 13 native suites passed.
 - `make sanitize SANITIZERS=undefined`: all 13 suites passed with fatal UBSan.
 - `make lint`: C lint passed.
@@ -87,10 +129,10 @@ Checks on the implementation tree:
   static worker/WASM, reference examples and REPL flows passed.
 - The cubical, statement, proof-navigation and landing browser scripts passed.
 - `node tools/instruction-coverage.mjs --limit-ms=60000
-  --report=build/h1-program-types-cost.json`: all 3,807 declarations checked;
-  all 3,917 stored definitions re-derived, zero gaps. The three extra
-  declarations are Nat, W and wrec; earlier primitive declarations supplied
-  no source declarations.
+  --report=build/h1-program-types-cost.json`: all 3,786 declarations checked;
+  all 3,892 stored definitions re-derived, zero gaps. Nat, W and wrec are
+  source declarations, and declaring the binary and radix numbers directly
+  removed 21 W-encoding helpers.
 
 Regression cases include ordinary-name shadowing, numeral constructor
 resolution, source W child recursion, a fixed higher-universe W declaration,

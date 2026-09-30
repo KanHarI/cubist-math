@@ -12,8 +12,8 @@ def binary_positive_to_nat(p : BinaryPositive) :=
   );
 
 def binary_to_nat(n : BinaryNat) := match n return Nat {
-    left zero => 0;
-    right p => binary_positive_to_nat(p);
+    binary_zero => 0;
+    binary_positive(p) => binary_positive_to_nat(p);
   };
 
 def binary_decode_one : binary_positive_to_nat(binary_one) = 1 {
@@ -63,8 +63,8 @@ def binary_decode_positive_succ(p : BinaryPositive) :
 
 def binary_decode_succ(n : BinaryNat) : binary_to_nat(binary_succ(n)) = succ(binary_to_nat(n)) {
   exact match n as x return (binary_to_nat(binary_succ(x)) = succ(binary_to_nat(x))) {
-    left zero => refl(1);
-    right p => binary_decode_positive_succ(p);
+    binary_zero => refl(1);
+    binary_positive(p) => binary_decode_positive_succ(p);
   };
 }
 
@@ -76,8 +76,8 @@ def binary_nat_roundtrip(n : Nat) : binary_to_nat(binary_of_nat(n)) = n {
 }
 
 def binary_double(n : BinaryNat) := match n return BinaryNat {
-    left zero => binary_zero;
-    right p => binary_positive(binary_bit0(p));
+    binary_zero => binary_zero;
+    binary_positive(p) => binary_positive(binary_bit0(p));
   };
 
 def binary_double_succ(n : BinaryNat) :
@@ -85,8 +85,8 @@ def binary_double_succ(n : BinaryNat) :
   exact match n as x return (
     binary_double(binary_succ(x)) = binary_succ(binary_succ(binary_double(x)))
   ) {
-    left zero => refl(0b10);
-    right p => refl(binary_positive(binary_bit0(binary_positive_succ(p))));
+    binary_zero => refl(0b10);
+    binary_positive(p) => refl(binary_positive(binary_bit0(binary_positive_succ(p))));
   };
 }
 
@@ -128,10 +128,8 @@ def binary_positive_roundtrip(p : BinaryPositive) :
 
 def binary_roundtrip(n : BinaryNat) : binary_of_nat(binary_to_nat(n)) = n {
   exact match n as x return (binary_of_nat(binary_to_nat(x)) = x) {
-    left zero => unit_induction(
-      (fun (u : Unit) => binary_zero = typed(BinaryNat, left(u))), refl(binary_zero), zero
-    );
-    right p => binary_positive_roundtrip(p);
+    binary_zero => refl(binary_zero);
+    binary_positive(p) => binary_positive_roundtrip(p);
   };
 }
 

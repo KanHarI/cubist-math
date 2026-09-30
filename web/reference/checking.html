@@ -49,6 +49,7 @@
             <li><a href="#inspecting-tactics">Inspecting tactics</a></li>
             <li><a href="#cli">The command-line checker</a></li>
             <li><a href="#repl">The REPL</a></li>
+            <li><a href="#warnings">Warnings</a></li>
             <li><a href="#tools">Formatting and tests</a></li>
             <li><a href="#limits">Limits</a></li>
           </ul>
@@ -88,7 +89,7 @@ def recover(P : U0, prop : Proposition(P), nn : (P -&gt; Void) -&gt; Void) : P {
 }
 
 evaluate double(2) expecting 4;</code></pre>
-            <p><code>check</code> checks the file and everything it imports. It prints the number of declarations and kernel steps, then each <a href="assumptions.html#evaluate"><code>evaluate</code></a> result, and exits with status 0. A file that does not check completely prints the failures and exits with a nonzero status.</p>
+            <p><code>check</code> checks the file and everything it imports. It prints the number of declarations and kernel steps, then each <a href="#warnings">warning</a> and each <a href="assumptions.html#evaluate"><code>evaluate</code></a> result, and exits with status 0. A file that does not check completely prints the failures and exits with a nonzero status.</p>
             <pre><code data-check="cli" data-files="sample">$ node cli/repl.mjs check sample.cubist
 Checked 2 declarations · … kernel steps
 evaluate at line 11: 4</code></pre>
@@ -172,10 +173,32 @@ Type mismatch: found 7 = 7, expected x = 8.
 8</code></pre>
             <p><code>let x := 7;</code> defines <code>x</code> and prints its type; <code>def</code> works the same way. An entry continues on the next line while a bracket is open, so a proof block is one entry. A term alone is evaluated, and the final <code>;</code> of an entry can be left out. <code>x_is_eight</code> is rejected, so it does not exist for later entries. <code>/help</code> lists the entries and the commands, which start with <code>/</code>: <code>/modules</code> lists the modules <code>import</code> can load, <code>/clear</code> clears the log and <code>/restart</code> starts a new session. The consoles on the website take the same commands.</p>
           </section>
+          <section id="warnings">
+            <h2>Warnings</h2>
+            <p>A declaration that checks can still bind a name it never uses. The checker warns about such a binding when it can simply be removed:</p>
+            <ul>
+              <li><code>as k</code> on an <a href="induction.html#induction"><code>induction</code></a> whose return type and successor branch do not use <code>k</code>, and <code>as z</code> on a <a href="terms.html#match"><code>match</code></a> whose return type does not mention <code>z</code>;</li>
+              <li>a variable of <code>forall</code> or <code>exists</code> that its body does not mention, which can be written with <a href="paths.html#exists-and"><code>-&gt;</code> or <code>and</code></a>;</li>
+              <li>a <a href="proof-blocks.html#let"><code>let</code></a>, <code>have</code> or <code>obtain</code> whose names nothing after it in its block uses.</li>
+            </ul>
+            <p>A name the syntax requires is never reported, even when it is unused: a parameter, a <code>fun</code> binder, a constructor argument or coordinate in a clause, an induction hypothesis, or a name given to <code>intro</code>. Nor is a <code>let</code>, <code>have</code> or <code>obtain</code> before an <code>hlevel</code> or a <code>match</code> in the same block, because those can use hypotheses without naming them. A warning does not affect checking: the declaration is checked and can be used.</p>
+            <pre><code data-check="accept" data-name="unused">def copy(n : Nat) := induction n as k return Nat {  // Warning: k is unused: the return type does not mention it and the successor clause does not use it.
+  zero =&gt; 0;
+  succ previous =&gt; succ(previous);
+};
+
+def copy_two : copy(2) = 2 { rfl; }</code></pre>
+            <p>The workspace lists warnings under the checked declarations; click a line number to show the line. The command-line checker prints each with its line, column and declaration:</p>
+            <pre><code data-check="cli" data-files="unused">$ node cli/repl.mjs check unused.cubist
+Checked 2 declarations · … kernel steps
+warning at line 1:37 (copy): k is unused: the return type does not mention it and the successor clause does not use it. Omit as k: induction n return ….</code></pre>
+            <p><code>npm run lint:cubist -- FILE.cubist</code> reports the same warnings without checking, and exits with status 1 when there are any. Without file names it lints the library, which has none.</p>
+          </section>
           <section id="tools">
             <h2>Formatting and tests</h2>
             <ul>
               <li><code>npm run format:cubist -- FILE.cubist</code> formats a source file. With <code>--check</code> it reports which files would change, without writing. Without file names it formats the library. The formatter keeps every token and comment and checks that the parsed syntax is unchanged.</li>
+              <li><code>npm run lint:cubist -- FILE.cubist</code> reports <a href="#warnings">unused bindings</a> that can be removed; without file names it lints the library.</li>
               <li><code>npm run linearize:cubist -- --check</code> lists right-nested pairs that can be written as flat tuples; without <code>--check</code>, it rewrites them after checking that the expanded syntax is identical.</li>
               <li><code>npm test</code> runs the test suite, which includes checking the library and every example in this reference. <code>npm test -- archive/first-library/FILE.cubist</code> checks one library module and its imports.</li>
               <li><code>make serve</code> serves the workspace locally.</li>

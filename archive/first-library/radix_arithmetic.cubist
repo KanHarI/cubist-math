@@ -20,13 +20,13 @@ def radix_positive_succ(extra : Nat, p : RadixPositive(extra)) :=
   );
 
 def radix_succ(extra : Nat, n : RadixNat(extra)) := match n return RadixNat(extra) {
-    left zero => radix_positive(extra, radix_one(extra));
-    right p => radix_positive(extra, radix_positive_succ(extra, p));
+    radix_nat_zero => radix_positive(extra, radix_one(extra));
+    radix_nat_positive(p) => radix_positive(extra, radix_positive_succ(extra, p));
   };
 
 // Only small digit values drive these loops; whole numbers remain W trees.
 def radix_add_small(extra, count : Nat, p : RadixPositive(extra)) :=
-  induction count as k return RadixPositive(extra) {
+  induction count return RadixPositive(extra) {
     zero => p;
     succ previous => radix_positive_succ(extra, previous);
   };
@@ -54,15 +54,15 @@ def radix_positive_add(extra : Nat, a : RadixPositive(extra)) :
 }
 
 def radix_add(extra : Nat, a, b : RadixNat(extra)) := match a return RadixNat(extra) {
-    left zero => b;
-    right p => match b return RadixNat(extra) {
-      left zero => a;
-      right q => radix_positive(extra, radix_positive_add(extra, p, q));
+    radix_nat_zero => b;
+    radix_nat_positive(p) => match b return RadixNat(extra) {
+      radix_nat_zero => a;
+      radix_nat_positive(q) => radix_positive(extra, radix_positive_add(extra, p, q));
     };
   };
 
 def radix_add_copies(extra, count : Nat, a, b : RadixPositive(extra)) :=
-  induction count as k return RadixPositive(extra) {
+  induction count return RadixPositive(extra) {
     zero => a;
     succ previous => radix_positive_add(extra, previous, b);
   };
@@ -85,14 +85,14 @@ def radix_positive_mul(extra : Nat, a : RadixPositive(extra)) :
 }
 
 def radix_mul(extra : Nat, a, b : RadixNat(extra)) := match a return RadixNat(extra) {
-    left zero => radix_zero(extra);
-    right p => match b return RadixNat(extra) {
-      left zero => radix_zero(extra);
-      right q => radix_positive(extra, radix_positive_mul(extra, p, q));
+    radix_nat_zero => radix_zero(extra);
+    radix_nat_positive(p) => match b return RadixNat(extra) {
+      radix_nat_zero => radix_zero(extra);
+      radix_nat_positive(q) => radix_positive(extra, radix_positive_mul(extra, p, q));
     };
   };
 
-def radix_of_nat(extra, n : Nat) := induction n as k return RadixNat(extra) {
+def radix_of_nat(extra, n : Nat) := induction n return RadixNat(extra) {
     zero => radix_zero(extra);
     succ previous => radix_succ(extra, previous);
   };

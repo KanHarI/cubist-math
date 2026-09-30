@@ -112,6 +112,8 @@ async function execute(line) {
     if (!result.complete) throw Error(JSON.stringify(result.gaps, null, 2));
     checkedModule = main;
     console.log(`Checked ${result.outputs.length} declarations · ${result.instructionCount.toLocaleString()} kernel steps`);
+    for (const warning of result.warnings ?? [])
+      console.log(`warning at line ${warning.line}:${warning.column}${warning.declaration ? ` (${warning.declaration})` : ""}: ${warning.message}`);
     for (const evaluation of result.evaluations ?? [])
       console.log(`evaluate ${evaluation.name}${evaluation.module === main ? "" : ` (${evaluation.module})`}: ${evaluation.value}`);
     return;

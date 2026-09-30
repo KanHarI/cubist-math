@@ -88,6 +88,20 @@ try {
   assert.match(await page.locator(".token-tip:not([hidden])").textContent(), /^\d+ expands to succ\(/);
   assert.match(await page.locator(".drawer-head a").getAttribute("href"), /proof\.html\?example=1#source=/);
   console.log("PASS reference examples: in-browser checking, linked names, embedded kernel inspector, evaluate results, instant macro tips");
+  // An excerpt is checked with the module it quotes: its names open the
+  // inspector, and its workspace link opens that module at the declaration.
+  await page.goto(new URL("reference/induction.html", base).href);
+  const excerpt = page.locator('pre > code[data-check="excerpt"][data-module="nat"]');
+  const excerptBar = excerpt.locator("xpath=../following-sibling::div[contains(@class, 'example-bar')][1]");
+  await excerpt.scrollIntoViewIfNeeded();
+  await excerpt.locator(".example-token", { hasText: /^Nat$/ }).first().waitFor();
+  assert.match(await excerptBar.locator("span").textContent(), /^Quoted from nat · Click a name/);
+  assert.match(await excerptBar.locator("a").getAttribute("href"), /proof\.html\?proof=nat&name=Nat$/);
+  await excerpt.locator(".example-token", { hasText: /^Nat$/ }).first().click();
+  await inspector.locator("#inspect-name").filter({ hasText: /^Nat$/ }).waitFor();
+  assert.deepEqual(await inspector.locator("#inspect-constructors li code").allTextContents(), ["zero : Nat", "succ : Nat -> Nat"]);
+  assert.match(await page.locator(".drawer-head a").getAttribute("href"), /proof\.html\?proof=nat&name=Nat$/);
+  console.log("PASS reference excerpts: checked with their module, linked names, the module's workspace link");
   // The reference's REPL bar opens and closes.
   const dockToggle = page.locator(".repl-dock-toggle");
   await dockToggle.click();

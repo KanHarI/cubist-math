@@ -11,6 +11,7 @@
     "linearize:mathscript": "node tools/linearize-mathscript.mjs",
     "benchmark:cubical": "make wasm && node tools/benchmark-cubical.mjs",
     "format:cubist": "node tools/format-mathscript.mjs",
+    "lint:cubist": "node tools/lint-cubist.mjs",
     "linearize:cubist": "node tools/linearize-mathscript.mjs"
   },
   "devDependencies": {

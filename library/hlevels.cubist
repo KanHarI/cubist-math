@@ -14,7 +14,7 @@ def IsProp(U < UU0, A : U) : U := forall x, y : A. x = y;
 
 // HasLevel(U, n, A): a proposition at level 0; at level n + 1, every path
 // type of A has level n.
-def HasLevel(U < UU0, n : Nat) := induction n as k return (U -> U) {
+def HasLevel(U < UU0, n : Nat) := induction n return (U -> U) {
     zero => (fun (A : U) => IsProp(U, A));
     succ h => (fun (A : U) => forall x, y : A. h(x = y));
   };
@@ -275,7 +275,7 @@ computable def hedberg(U < UU0, A : U, decide : forall x, y : A. (x = y) or ((x 
 // Natural numbers form a set, by Hedberg's theorem: equality is decided by
 // recursion on both numbers, since 0 is no successor and a successor
 // determines its predecessor.
-def nat_is_zero(n : Nat) := induction n as k return U0 {
+def nat_is_zero(n : Nat) := induction n return U0 {
     zero => Unit;
     succ previous => Void;
   };

@@ -39,7 +39,7 @@ def descend(A : U0, R : A -> A -> U0, B : Quotient(A, R) -> U0,
     q : Quotient(A, R)) : B(q) := match q as z return B(z) {
   class(a) => f(a);
 } obligations {
-  glue(a, b, r) i => respects(a, b, r) @ i;
+  glue(a, b, r) @ i => respects(a, b, r) @ i;
 };
 def class_computes(A : U0, R : A -> A -> U0, B : Quotient(A, R) -> U0,
     h : forall z : Quotient(A, R). IsSet(U0, B(z)), f : forall a : A. B(class(a)),
@@ -82,9 +82,9 @@ test("explicit obligations retain kernel checking and require all computational 
 inductive Circle { base; loop : base = base; }
 def flat(x : Circle) : Nat := match x { base => 0; } obligations by rfl;
 def checked : flat(loop @ 1) = 0 { rfl; }
-def wrong(x : Circle) : Nat := match x { base => 0; } obligations { loop i => 1; };
+def wrong(x : Circle) : Nat := match x { base => 0; } obligations { loop @ i => 1; };
 def missing(x : Circle) : Nat := match x {} obligations by hlevel;
-def misplaced(x : Circle) : Nat := match x {} obligations { base => 0; loop i => 0; };
+def misplaced(x : Circle) : Nat := match x {} obligations { base => 0; loop @ i => 0; };
 `);
   ok("flat"); ok("checked");
   assert.equal(get("wrong").verified,false);
@@ -97,7 +97,7 @@ test("missing h-level evidence fails rather than admitting an unsquashed elimina
   const {get} = await check(t, `${quotient}
 def unsound(A : U0, R : A -> A -> U0, q : Quotient(A, R)) : U0 := match q {
   class(a) => A;
-  glue(a, b, r) i => A;
+  glue(a, b, r) @ i => A;
 };
 `);
   assert.equal(get("unsound").verified,false);
@@ -110,7 +110,7 @@ inductive Tr(A : U0) : prop { point(a : A); }
 def rebuilt(A : U0, x : Tr(A)) : Tr(A) { match x { point(a) => { exact point(a); } } }
 def point_computes : rebuilt(Nat, point(2)) = point(2) { rfl; }
 inductive Circle { base; loop : base = base; }
-def flat(x : Circle) : Nat { match x { base => { exact 0; } } obligations { loop i => { exact 0; } } }
+def flat(x : Circle) : Nat { match x { base => { exact 0; } } obligations { loop @ i => { exact 0; } } }
 def by_level(x : Circle) : Unit { match x { base => { exact tt; } } obligations by hlevel; }
 `);
   for (const name of ["rebuilt","point_computes","flat","by_level"]) ok(name);
@@ -119,7 +119,7 @@ def by_level(x : Circle) : Unit { match x { base => { exact tt; } } obligations 
 test("trailing proofs fill declared paths without replacing a generated squash", async t => {
   const {ok} = await check(t, `${quotient}
 def by_rfl(A : U0, R : A -> A -> U0, q : Quotient(A, R)) : Nat :=
-  match q { class(a) => 0; glue(a, b, r) i => 0; } obligations by rfl;
+  match q { class(a) => 0; glue(a, b, r) @ i => 0; } obligations by rfl;
 def by_block(A : U0, R : A -> A -> U0, q : Quotient(A, R)) : Nat :=
   match q { class(a) => 0; } obligations by { intro a, b, r; rfl; };
 def by_term(A : U0, R : A -> A -> U0, q : Quotient(A, R)) : Nat :=
@@ -150,9 +150,9 @@ def ambiguous_term(x : TwoLoops) : Nat := match x { base => 0; } obligations by 
 test("hlevel hints supply evidence unavailable to automatic squash without the hint", async t => {
   const {ok,get} = await check(t, `${quotient}
 def hinted(A : U0, R : A -> A -> U0, B : U0, h : Unit -> IsSet(U0, B), b : B, q : Quotient(A, R)) : B :=
-  match q { class(a) => b; glue(a, a2, r) i => b; } obligations by hlevel with [h(tt)];
+  match q { class(a) => b; glue(a, a2, r) @ i => b; } obligations by hlevel with [h(tt)];
 def no_hint(A : U0, R : A -> A -> U0, B : U0, h : Unit -> IsSet(U0, B), b : B, q : Quotient(A, R)) : B :=
-  match q { class(a) => b; glue(a, a2, r) i => b; };
+  match q { class(a) => b; glue(a, a2, r) @ i => b; };
 `);
   ok("hinted");
   assert.match(get("no_hint").reason, /Cannot generate Quotient\.squash/);

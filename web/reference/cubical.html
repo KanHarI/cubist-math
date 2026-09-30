@@ -274,7 +274,7 @@ def collapse(value : TwoPoints) : Unit {
   exact pushout_induction(fun (s : TwoPoints) =&gt; Unit,
     fun (a : Unit) =&gt; tt, fun (b : Unit) =&gt; tt, fun (n : Nat) =&gt; refl(tt), value);
 }</code></pre>
-            <p><code>pushout_induction(motive, leftCase, rightCase, bridgeCase, value)</code> eliminates a pushout into a family over it. The bridge case gives, for each <code>s</code>, a path over <code>push_path(P, s)</code> between the two point cases. The constructor computations are checked by the kernel. Pushouts are built into the kernel today; user-declared higher inductive types are planned for stage 2 of the work plan.</p>
+            <p><code>pushout_induction(motive, leftCase, rightCase, bridgeCase, value)</code> eliminates a pushout into a family over it. The bridge case gives, for each <code>s</code>, a path over <code>push_path(P, s)</code> between the two point cases. The constructor computations are checked by the kernel. Pushouts are built into the kernel. You can also <a href="induction.html#higher-constructors">declare your own higher inductive types</a> with path constructors and define functions on them using <code>match</code>.</p>
           </section>
           <section id="suspensions">
             <h2>Suspensions</h2>

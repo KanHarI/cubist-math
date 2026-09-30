@@ -27,7 +27,13 @@ test("actual binary and radix factorial proofs transport through native Glue in 
     assert.equal(term?.tag, "DefRef", name);
     return term;
   };
-  const binary = named("BinaryNat");
+  // BinaryNat and RadixNat(extra) are declared types: their signatures' sorts.
+  const declared = (name, ...parameters) => {
+    const value = env.get(name);
+    assert.equal(value?.tag, "Inductive", name);
+    return T.sort(value.binding, parameters);
+  };
+  const binary = declared("BinaryNat");
   const equivalence = numberEquivalence(checker, "cubical_binary_nat",
     binary, naturalSort, named("binary_to_nat"), named("binary_of_nat"),
     named("binary_roundtrip"), named("binary_nat_roundtrip"),
@@ -47,7 +53,7 @@ test("actual binary and radix factorial proofs transport through native Glue in 
   for (const [base, extra, manual] of [[2, 0, "radix_factorial_ten_base_two"], [10, 8, "radix_factorial_ten_base_ten"]]) {
     const n = numeral(extra);
     const specialized = name => T.app(named(name), n);
-    const radix = specialized("RadixNat");
+    const radix = declared("RadixNat", n);
     for (const [direction, A, B, forward, inverse, eta, epsilon, proof] of [
       ["binary_radix", binary, radix, specialized("binary_to_radix"), specialized("radix_to_binary"), specialized("binary_radix_roundtrip"), specialized("radix_binary_roundtrip"), named("binary_factorial_ten")],
       ["radix_binary", radix, binary, specialized("radix_to_binary"), specialized("binary_to_radix"), specialized("radix_binary_roundtrip"), specialized("binary_radix_roundtrip"), named(manual)],

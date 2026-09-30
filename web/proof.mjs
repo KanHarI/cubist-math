@@ -437,6 +437,15 @@ function renderResult() {
     line.append(dependencies);
     $("result").append(line);
   }
+  // Lint warnings: bindings that are never used and can be removed.
+  for (const warning of last.warnings ?? []) {
+    const line = document.createElement("div"), at = document.createElement("button");
+    line.className = "lint-warning";
+    at.textContent = `line ${warning.line}`;
+    at.onclick = () => revealSource(warning);
+    line.append("Warning at ", at, `: ${warning.message}`);
+    $("result").append(line);
+  }
   const detail = document.createElement("small");
   detail.textContent = `${last.instructionCount.toLocaleString()} checked instructions. ${last.axiomCount ? last.axiomCount + " explicit axioms in this module." : "No axioms."}`;
   $("result").append(detail);

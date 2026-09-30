@@ -453,11 +453,33 @@ def small_identity := identity(U0);</code></pre>
 def both(U, V &lt; UU0, A : U, B : V) : max(U, V) := A and B;</code></pre>
         </div>
         <h3 id="quick-induction">Natural numbers and inductive types</h3>
-        <div class="quick-entry" id="quick-induction">
+        <div class="quick-entry" id="quick-inductive">
+          <h4><code>inductive</code></h4>
+          <p><code>inductive Name(params) : U0 { c; d(x : A, rest : Name(params)); }</code> declares a type by its constructors. A constructor takes only its declared arguments; the type's parameters come from the expected type.
+            <a href="reference/induction.html#inductive">Natural numbers and inductive types →</a></p>
+          <pre><code data-check="accept">inductive List(U &lt; UU0, A : U) : U {
+  nil;
+  cons(head : A, tail : List(U, A));
+}
+
+def numbers : List(U0, Nat) := cons(2, cons(3, nil));</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-recursion">
+          <h4><code>match</code> and structural recursion</h4>
+          <p><code>match n { zero =&gt; …; succ(k) =&gt; …; }</code> gives one branch per constructor. A definition whose body is the match can call itself on a child such as <code>k</code>. In a proof block, <code>match n { zero =&gt; { … } succ(k) =&gt; { … } }</code> proves the goal for each constructor.
+            <a href="reference/induction.html#recursion">Natural numbers and inductive types →</a></p>
+          <pre><code data-check="accept">def double(n : Nat) : Nat := match n {
+  zero =&gt; 0;
+  succ(k) =&gt; succ(succ(double(k)));
+};
+
+def double_three : double(3) = 6 { rfl; }</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-nat-induction">
           <h4><code>induction</code></h4>
-          <p><code>induction n as k return C { zero =&gt; …; succ ih =&gt; …; }</code>: the zero branch gives <code>C(0)</code>, and the successor branch turns <code>ih : C(k)</code> into <code>C(succ(k))</code>.
+          <p><code>induction n as k return C { zero =&gt; …; succ ih =&gt; …; }</code>: the zero branch gives <code>C(0)</code>, and the successor branch turns <code>ih : C(k)</code> into <code>C(succ(k))</code>. Without <code>as k</code>, the result type is the same in every branch.
             <a href="reference/induction.html#induction">Natural numbers and inductive types →</a></p>
-          <pre><code data-check="accept">def copy(n : Nat) := induction n as k return Nat {
+          <pre><code data-check="accept">def copy(n : Nat) := induction n return Nat {
   zero =&gt; 0;
   succ previous =&gt; succ(previous);
 };
@@ -466,29 +488,10 @@ def copy_two : copy(2) = 2 {
   exact refl(2);
 }</code></pre>
         </div>
-        <div class="quick-entry" id="quick-w-types">
-          <h4>W types</h4>
-          <p><code>W(U, V, A, B)</code> holds well-founded trees with a label <code>a : A</code> and a child for each <code>b : B(a)</code>. <code>sup(a, children)</code> builds one, and <code>wrec</code> recurses over them.
-            <a href="reference/induction.html#w-types">Natural numbers and inductive types →</a></p>
-          <pre><code data-check="accept">import w;
-
-def Label := Unit or Unit;
-
-def Arity(tag : Label) := match tag return U0 {
-  left leaf =&gt; Void;
-  right node =&gt; Unit;
-};
-
-def Chain := W(U0, U0, Label, Arity);
-
-def leaf := typed(Chain, sup(typed(Label, left(tt)), fun (v : Void) =&gt; typed(Chain, absurd(v))));
-
-def grow(c : Chain) := typed(Chain, sup(typed(Label, right(tt)), fun (u : Unit) =&gt; c));</code></pre>
-        </div>
         <div class="quick-entry" id="quick-binary">
           <h4>Binary literals</h4>
-          <p>After <code>import binary_naturals;</code>, <code>0b110</code> is six in <code>BinaryNat</code>, one W constructor per bit. Hover it to see the expansion. Decimal literals stay unary.
-            <a href="reference/induction.html#w-types">Natural numbers and inductive types →</a></p>
+          <p>After <code>import binary_naturals;</code>, <code>0b110</code> is six in <code>BinaryNat</code>, one constructor per bit. Hover it to see the expansion. Decimal literals stay unary.
+            <a href="reference/induction.html#binary">Natural numbers and inductive types →</a></p>
           <pre><code data-check="accept">import binary_naturals;
 
 def six : BinaryNat := 0b110;</code></pre>
