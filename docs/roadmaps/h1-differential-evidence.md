@@ -112,25 +112,29 @@ Add both to compare total check work with native mode. Re-derivation counts
 the image kernel alone. Arena size is that kernel's final interned arena;
 peak RSS includes both kernels. No speed acceptance decision is implied.
 
-### Recorded cost, 2026-09-30
+### Clean PR-head cost, 2026-09-30
 
-The two commands above completed sequentially at base revision
-`cc6b50fff248dd152cbb7051cf542dabb22c370d`, with **modified tree: true**.
-This is development evidence, not the pinned release/CI record. Both checked
-365 modules, all 3,804 declarations and all 3,916 stored definitions, with
-zero gaps and zero deadlines.
+The two commands above completed sequentially in a clean checkout at
+`3cb1d5f65ac49c979185b5c0a826ed0f497835a0`, with **modified tree: false**.
+Both checked 365 modules, all 3,804 declarations and all 3,916 stored
+definitions, with zero gaps and zero deadlines. This pins the corrected
+PR implementation, rather than the earlier development tree at
+`cc6b50fff248dd152cbb7051cf542dabb22c370d` (modified tree: true).
+X4 and X5 remain partly traced: the whole-archive runs are manual evidence.
+Before counting either release case, rerun these two commands sequentially
+at the merged release head on a clean tree and record that revision.
 
 | Observation | Native | Declared |
 | --- | ---: | ---: |
-| Archive checking, seconds | 34.2 | 53.5 |
-| Re-derivation, seconds | 11.7 | 14.0 |
+| Archive checking, seconds | 38.4 | 56.4 |
+| Re-derivation, seconds | 13.1 | 14.5 |
 | Check instructions, both phases | 5,511,574 | 8,111,391 |
 | Check steps, both phases | 198,727,662 | 407,266,541 |
 | Re-derivation instructions | 2,006,960 | 2,357,050 |
 | Re-derivation steps | 133,990,469 | 184,485,348 |
 | Final target arena, nodes | 5,823,480 | 6,329,830 |
 | Final target arena reserved capacity, MiB | 481 | 481 |
-| Process peak RSS, MiB | 2,474 | 2,462 |
+| Process peak RSS, MiB | 2,280 | 2,548 |
 
 Machine: Apple M3 Pro, 12 logical CPUs, 36 GiB RAM; darwin arm64;
 Node v24.13.0. Both runs used a 60,000 ms stored-definition re-derivation limit,
