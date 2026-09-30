@@ -218,10 +218,11 @@ export function parse(source, typeOnly = false) {
         clauses.push({ kind: "clause", ...head, body, start: head.constructor.start, end });
       }
       const end = take("}").end;
-      a = { kind: "match", motiveName, value, type, start: t.start, end };
+      const obligations = matchObligations(true);
+      a = { kind: "match", motiveName, value, type, start: t.start, end, ...obligations };
       // The legacy shape keeps its fields; its clauses stay readable but are
       // not enumerated, so a walk over the tree meets each body once.
-      if (clauses.length === 2 && clauses[0].constructor.text === "left" && clauses[1].constructor.text === "right"
+      if (!obligations.obligationsToken && clauses.length === 2 && clauses[0].constructor.text === "left" && clauses[1].constructor.text === "right"
           && clauses.every(clause => !clause.args && clause.names.length === 1)) {
         Object.assign(a, { left: clauses[0].names[0], leftBody: clauses[0].body,
           right: clauses[1].names[0], rightBody: clauses[1].body });
@@ -442,6 +443,39 @@ export function parse(source, typeOnly = false) {
     return { constructor, args, names, ...(qualifiedDot ? { qualifiedDot } : {}) };
   }
 
+  function matchObligations(expression) {
+    if (peek() !== "obligations") return {};
+    const obligationsToken = take("obligations");
+    if (peek() === "by") {
+      take("by");
+      let obligationProof;
+      if (peek() === "{") obligationProof = {kind:"block",body:block()};
+      else if (peek() === "hlevel" || peek() === "rfl") {
+        const tactic = take(), hints = [];
+        if (tactic.text === "hlevel" && peek() === "with") {
+          take("with"); take("[");
+          if (peek() !== "]") { hints.push(expr()); while (peek() === ",") { take(","); hints.push(expr()); } }
+          take("]");
+        }
+        const statement = {kind:tactic.text,hints,start:tactic.start,end:ts[i - 1].end,keyword:tactic};
+        obligationProof = {kind:"tactic",body:[statement]};
+      } else obligationProof = {kind:"term",value:expr()};
+      if (!expression && peek() === ";") take(";");
+      return {obligationsToken,obligationProof,end:ts[i - 1].end};
+    }
+    take("{");
+    const obligations = [];
+    while (peek() !== "}") {
+      if (peek() === "EOF") throw Object.assign(Error("Expected '}' to close obligations."), {offset:ts[i].start});
+      const head = clauseHead();
+      const body = expression ? expr() : block();
+      if (expression) take(";");
+      obligations.push({kind:"clause",...head,body,obligation:true,start:head.constructor.start,end:ts[i - 1].end});
+    }
+    const end = take("}").end;
+    return {obligationsToken,obligations,end};
+  }
+
   function block() {
     if (++depth > 128)
       throw Object.assign(new Error("Block nesting exceeds 128."), {
@@ -652,7 +686,7 @@ export function parse(source, typeOnly = false) {
           clauses.push({ kind: "clause", ...head, body, start: head.constructor.start, end: ts[i - 1].end });
         }
         const e = take("}");
-        s = { kind: "matchStatement", value, clauses, start: t.start, end: e.end };
+        s = { kind: "matchStatement", value, clauses, start: t.start, end: e.end, ...matchObligations(false) };
       } else if (t.text === "cases") {
         const value = expr();
         take("{");
