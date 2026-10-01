@@ -86,7 +86,7 @@ uniformity and the constancy face.
 
 **Literature, as the specification reads it (4.6).**
 - Coquand, Huber and Mörtberg (LICS 2018) construct the cubical-set models
-  of the examples, the kernel's pushouts among them, and describe the
+  of the examples, pushouts among them, and describe the
   pattern, without a general schema and its soundness proof.
 - Cavallo and Harper (POPL 2019) give a general schema whose boundaries are
   constructor terms, with a computational semantics and canonicity, in
@@ -216,8 +216,10 @@ eliminates earlier constructors only at fresh dimensions; Theorem C assumes
 P1; and `μ` is the least measure over a term's derivations.
 
 **Its baseline is assumed.** Section 4.1 assumes the consistency and
-canonicity of De Morgan CCHM with the kernel's formers. No published
-canonicity proof covers the kernel's pushouts. The baseline's integrity
+canonicity of De Morgan CCHM with the kernel's formers: Π, Σ, Path, Glue,
+universes, unit, the empty type and sums. Pushouts, which no published
+canonicity proof covers, left the baseline on 2026-10-01 (#110): they are an
+H1 declaration, which items 1 and 3 cover. The baseline's integrity
 also relies on the isolation of instruction acceptance from untrusted
 conversion queries, which the audit found broken; I1.2a corrected it on
 2026-09-28, and `kernel/tests/test_isolation.c` checks it.

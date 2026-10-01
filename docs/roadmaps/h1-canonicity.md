@@ -12,7 +12,9 @@ step is proved in outline, at the level of detail of G0's 3.5.
 
 Since #101, `Nat` is a data sort declared in `nat.cubist`, not a primitive.
 Invariant 10's promise that a closed natural number computes to a numeral
-therefore rests on this argument.
+therefore rests on this argument. Since #110, so do pushouts, a higher sort
+declared in `pushout.cubist`, and the suspensions and circle built from
+them.
 
 ## Revision after review
 
@@ -129,8 +131,9 @@ quantifies over computable types generically, through the lemmas above, so
 it applies to a declared instance once that instance's predicates satisfy
 them (2.3). Huber's published proof covers Π, Σ, Path, Glue, one universe
 and natural numbers. The kernel's baseline adds unit, the empty type, sums,
-pushouts, the hierarchy below ω² and level quantification. No published
-proof covers pushouts.
+the hierarchy below ω² and level quantification. Pushouts, which no
+published proof covers, left the baseline with #110: they are an H1
+declaration, which this argument covers.
 
 ## 2. The predicates for a declared instance
 
