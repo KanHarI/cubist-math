@@ -9,8 +9,10 @@ in the kernel. The maintainer approved it on 2026-09-30, after the CP01 and
 CP07 regressions were strengthened (PR #103). The same day, the
 [model construction](h1-model.md) and the [canonicity argument](h1-canonicity.md)
 were written out as review drafts for items 1 and 3. Their first review
-found three substantive issues, and both drafts were revised the same day
-(section 1 and section 3 below); their re-review is pending.
+found three substantive issues, and both drafts were revised the same day.
+The second review, on 2026-10-01 at `626138d`, accepted those revisions and
+asked for three more repairs; the drafts were revised again (section 1 and
+section 3 below), and their next review is pending.
 This record serves the first three items of the
 [H1 specification](h1-signature-specification.md)'s release checklist, the
 mathematical ones:
@@ -69,6 +71,18 @@ the same day: a constructor now weighs the least multiple of `ω^k` above its
 positions (M0), which absorbs everything earlier constructors build in its
 block, and M4a fills the telescope with its dependent endpoints before M4
 uses it. The canonicity draft's C2 inherited the problem and the fix.
+
+The second review, on 2026-10-01, accepted the block weight and the
+telescope filling, and requested changes before discharging the item. The
+model's eliminator was defined by rank and typed afterwards, but a clause
+needs typed recursive results before it applies, and restriction can raise
+rank (its `wrap(edge)` example). Premise P1 left out function β at
+positional arguments, and Theorem M did not state it as an assumption. The
+draft now constructs `elim`, its typing and its naturality together by `μ`
+(M6, with the bounded semantic Lemma H1 as M6a), uses a spine rank that
+restriction does not raise, states P1 as an existence claim with function β
+and η and assumes it in Theorem M, and merges M5 into M4's induction with
+uniformity and the constancy face.
 
 **Literature, as the specification reads it (4.6).**
 - Coquand, Huber and Mörtberg (LICS 2018) construct the cubical-set models
@@ -191,6 +205,15 @@ clause, and stability is Lemma C3. The measure is the revised weight, and
 C5 fills the telescope. C1 is stated under computability hypotheses, and
 each critical pair's join is shown computable and computably equal inside
 the fundamental induction.
+
+The second review, on 2026-10-01, accepted these and found that C6's
+semantic H1 eliminated a constructor at an endpoint as a V2 value, though
+it is N, whose weight can forget the constructor's arguments (its
+`erase(step^N(base)) @ 0`). It also asked for P1's scope, V1 among a higher
+sort's values, and a measure that does not assume unique derivations. The
+semantic H1 is now Lemma C7, an expression lemma with an explicit bound that
+eliminates earlier constructors only at fresh dimensions; Theorem C assumes
+P1; and `μ` is the least measure over a term's derivations.
 
 **Its baseline is assumed.** Section 4.1 assumes the consistency and
 canonicity of De Morgan CCHM with the kernel's formers. No published

@@ -1,7 +1,7 @@
 # H1 canonicity
 
-Status: review draft, 2026-09-30, revised the same day after its first
-review (below). This writes out the canonicity argument of the
+Status: review draft, 2026-09-30, revised after its first review the same
+day and after its second on 2026-10-01 (below). This writes out the canonicity argument of the
 [H1 specification](h1-signature-specification.md)'s section 4.4: release
 checklist item 3. The maintainer must review it; adding this draft does not
 record that decision. It is relative to the baseline's canonicity, which
@@ -44,14 +44,35 @@ The first review, on 2026-09-30, found three substantive issues:
 The items of Theorem C were called C1–C3, like the lemmas; they are now
 (i)–(iii).
 
+The second review, on 2026-10-01, accepted the separation of values from
+expansion, the block weight, the telescope filling and C1's qualification,
+and asked for these repairs:
+
+1. **C6 used the wrong case at constructor endpoints.** Its semantic H1
+   eliminated `c_m(…) @ rs′` at an endpoint as a V2 value, but that term is
+   N, and its N weight can discard the constructor's arguments: the review's
+   `erase(step^N(base)) @ 0` weighs `ω` whatever `N` is. The semantic H1 is
+   now Lemma C7, an expression lemma with an explicit bound
+   `B = ω^k · (δ + 1)` over a computable environment whose bound it keeps.
+   It eliminates an earlier constructor only at fresh, non-endpoint
+   dimensions, where it is V1 or V2, and obtains the endpoints from C3 and
+   the Path clause. C6's V1 and V2 cases and the CP01 join use C7.
+2. **P1's scope.** P1 now includes function β and η at the arities of
+   positional arguments, and is stated as the existence of a derivation
+   within its fragment (model draft, section 4). Theorem C assumes it.
+3. **Smaller corrections.** A higher sort's values include V1. A term may
+   have several derivations, so `μ` is now the least measure over them
+   (2.2, 2.4).
+
 ## The claim
 
 "Reduces" means the specification's weak-head reduction: the baseline's
 rules together with sections 3.2–3.7.
 
-**Theorem C.** Let `I` be a context of dimension variables only, and let
-`⊢_I t : A`, where `t` uses no assumption. Then `t` is computable at `A`, in
-the sense of section 1. In particular:
+**Theorem C.** Assume the baseline's canonicity and premise P1 of the
+[model draft](h1-model.md) (section 4). Let `I` be a context of dimension
+variables only, and let `⊢_I t : A`, where `t` uses no assumption. Then `t`
+is computable at `A`, in the sense of section 1. In particular:
 
 - **(i) Data sorts.** If `A` reduces to an instance `S(as)` of a data sort,
   then `t` reduces to `c_k(as′)(ts, qs)` with computable arguments. When
@@ -173,9 +194,10 @@ None concerns the term itself. `S`'s predicates occur only positively,
 through Huber's Π and Path clauses for the positions. So the clauses define
 a monotone operator with a least fixed point. It is the union of the
 operator's stages, and each derivation is a well-founded tree with an
-ordinal height. Exactly one clause applies to a term and reduction is
-deterministic, so a computable term has one derivation, and the measures of
-2.4 are functions of the term.
+ordinal height. Exactly one clause applies to a term, but a derivation also
+holds witnesses of the baseline predicates that its premises quantify over,
+such as the arity arguments' computability. So a term can have several
+derivations, and 2.4 takes the least measure over them.
 
 Positivity shows that the least fixed point exists, not that it contains
 anything. Lemma C4 shows that it contains every constructor with computable
@@ -229,9 +251,13 @@ A derivation's weight is the model's (the model draft's section 3). There,
 - **V3:** the larger of the base's and the tube's weights.
 - **N:** the supremum over `f` of the weights of the `u f↓`.
 
-`μ(u)` is the pair of weight and height, ordered lexicographically.
-Positions are lighter than their constructor. The parts of a V3 value and
-the reducts of an N term have lower derivations, of no greater weight.
+`μ(u)` is the least pair of weight and height, ordered lexicographically,
+over the derivations of `u`. Ordinals are well ordered, so it exists, and
+the inductions below work with a derivation that attains it. A bound proved
+for a particular derivation, such as the block bound's, bounds `μ` too. In
+an attaining derivation, positions are lighter than their constructor, and
+the parts of a V3 value and the reducts of an N term have lower
+derivations, of no greater weight.
 Restriction does not increase `μ`: in C3's cases the derivation of `u f` is
 built from restrictions of lower derivations, or is a face premise of `u`,
 and a V2 value's face premises are lighter than it by the block bound
@@ -287,7 +313,7 @@ baseline's fundamental lemma covers.
 
 | Pair | Case | `t f↓` and `(t↓) f` are computable by | They are computably equal by |
 | --- | --- | --- | --- |
-| CP01 | C6, V2 | the induction hypothesis at the lighter piece; the clause, by Huber's Path clause | the semantic Lemma H1, whose `Iota` steps are at lighter scrutinees |
+| CP01 | C6, V2 | the induction hypothesis at the lighter piece; the clause, by Huber's Path clause | Lemma C7 at the bound `u`'s weight, whose `Iota` steps are at fresh dimensions, below it |
 | CP02 | C4 | C4 at earlier constructors | premise P1, with the baseline's fundamental lemma |
 | CP03 | C6, V3 | the induction hypothesis at the tube; the baseline's composition in the motive | the baseline's face rule for composition |
 | CP04 | C2 (b) | the tube; C4, and the induction hypothesis at the positions | the tube's own arguments, which the telescope composition returns on its face |
@@ -306,7 +332,7 @@ M3–M6).
 ## 4. The fundamental lemma: the H1 cases
 
 The fundamental lemma is proved by induction on typing derivations, and
-its baseline cases are assumed. The H1 cases below use Lemmas C2 and C4–C6.
+its baseline cases are assumed. The H1 cases below use Lemmas C2 and C4–C7.
 Each lemma's own induction runs inside one case of the fundamental lemma,
 where the parameters, motive, clauses and lines are computable by the outer
 induction hypothesis. Every reduction is made computable by the Expansion
@@ -338,8 +364,10 @@ at the positions' types. Then:
 *Proof.* By induction on `k`.
 
 - **(2),** by induction on `E`:
-  - `q_j(us)`: the data terms `us` are baseline terms, computable by the
-    baseline's fundamental lemma, and `q_j` is computable at its Π type.
+  - `q_j(us)`, or a positional argument applied to data terms: the data
+    terms `us` are baseline terms, computable by the baseline's fundamental
+    lemma, and `q_j` is computable at its Π type; a positional argument
+    applied reduces by function β, an expansion the baseline covers.
   - `c_m(us, Es′)` with `m < k`: (1) at `m`. Each positional argument
     `λ ys. E′` is computable at its Π type by (2) at every `f` and every
     computable `ys`, and its endpoints are right by (3).
@@ -350,9 +378,10 @@ at the positions' types. Then:
   the positions as variables. Instantiate `s` with `S(as)`, each `c_m` with
   `Con(m; S(as))`, which is computable at `T_m` by (1) at `m`, and the
   data and positions with the given arguments. This substitution is
-  computable. By P1 the conversion uses only baseline rules: path β and
-  η, congruence, dimension substitution, data conversion, and the path step
-  at an endpoint of a variable's annotation. So the baseline's fundamental
+  computable. By P1 some conversion derivation uses only baseline rules:
+  path β and η, function β and η at the arities of positional arguments,
+  congruence, dimension substitution, data conversion, and the path step at
+  an endpoint of a variable's annotation. So the baseline's fundamental
   lemma makes the two instances computably equal. At `c_m(…) @ ε` the path
   step becomes the boundary rule of an earlier constructor, whose equality
   is (1) at `m`.
@@ -509,54 +538,87 @@ holds, so C2 (a) equates it with `u(1)`, the source's `Face` reduct.
 
 ### 4.6 The eliminator (3.6, 3.7)
 
-**Lemma C6 (elimination).** Let `M` be a computable family over `S(as)`,
-at any level, and `ms` computable clauses at their clause types. If
-`⊩ u : S(as)`, then `⊩ elim_{M,ms}(u) : M(u)`, and computably equal
-scrutinees give computably equal results. Moreover, if `u` is
-`c_k(ts, qs) @ rs`, then for every constructor expression `E` over
-`c_1 … c_{k-1}` at `u`'s arguments, restricted along any `f`, the
-**semantic Lemma H1** holds: `⊩ elim^C(E) = ⟦E⟧[q̄s]`.
+Fix a computable family `M` over `S(as)`, at any level, and computable
+clauses `ms` at their clause types. The displayed boundary comes first, as
+an expression lemma with an explicit bound, since C6 uses it at every
+constructor.
 
-*Proof.* By induction on `μ(u)`.
+**Lemma C7 (displayed boundary: the semantic Lemma H1).** Let
+`B := ω^k · (δ + 1)`, and assume C6's conclusions for every computable term
+lighter than `B`: its elimination is computable, computably equal
+scrutinees give computably equal results, and it is computably equal to
+its reduct. Let `ts` and `qs` be computable arguments of `c_k` at some
+stage, whose positions weigh at most `ω^k · δ + σ` with `σ < ω^k`, and let
+`q̄_j := λ ys. elim^{C_j}(q_j(ys))`. Then, along the telescope, each `q̄_j` is
+computable at its displayed type. And for every constructor expression `E`
+over `c_1 … c_{k-1}`, evaluated at `(ts, qs)`:
+
+```text
+⊩ elim^C(E[ts, qs]) = ⟦E⟧[ts, qs, q̄s].
+```
+
+*Proof.* Every term eliminated below is lighter than `B`, by the block
+bound. By induction on `E`, and along the telescope for the `q̄_j`:
+
+- **`q_j(us)`**, or a positional argument applied to data terms:
+  `⟦q_j(us)⟧ = q̄_j(us)` reduces by function β to `elim^C(q_j(us))`, an
+  expansion the baseline covers.
+- **`c_m(us, Es′)`.** Take it first at fresh dimensions `is`, not
+  endpoints. There `v := c_m(us, Es′) @ is` is V1 or V2, computable by C4,
+  and its generic weight is below `B`. So `elim(v)` is computable and equal
+  to its `Iota` reduct `m_m(us, Es′, q̄s′) @ is`, where `q̄s′` lifts `Es′`.
+  By induction, `q̄s′` equals `⟦Es′⟧`, pointwise in the arity arguments. By
+  the Path clause two paths are computably equal when they are at every
+  restriction and point, so path η gives
+  `⊩ elim^R(c_m(us, Es′)) = ⟦c_m(us, Es′)⟧`. Its endpoints follow by C3 and
+  the clause's Path premises. An endpoint term `c_m(…) @ ε` is N, not V2,
+  and is never eliminated through its own derivation, whose weight may have
+  forgotten `us` and `Es′`.
+- **`E @ r`.** The induction hypothesis at `E` is an equality of paths; the
+  Path clause gives it at `r`, and path β turns the left side into
+  `elim^{C′}(E[ts, qs] @ r)`.
+- **`⟨i⟩ E`.** By the induction hypothesis at a fresh `i`, and the Path
+  clause.
+- **`q̄_j` is computable at its displayed type.** Pointwise, by the
+  assumption, the position being lighter than `B`. At a face of its cube,
+  `q_j(ys) @ ε` is computably equal to its endpoint expression `P` at the
+  arguments, by the Path clause for `q_j`. So its elimination equals
+  `elim(P[…])`, which equals `⟦P⟧` by this lemma at `P`; `P` mentions only
+  earlier positions. ∎
+
+**Lemma C6 (elimination).** If `⊩ u : S(as)`, then
+`⊩ elim_{M,ms}(u) : M(u)` and `⊩ elim(u) = elim(u)↓`, and computably equal
+scrutinees give computably equal results.
+
+*Proof.* By induction on `μ(u)`, with a derivation that attains it. For a
+V1 or V2 value `u = c_k(ts, qs) @ rs`, of weight `B = ω^k · (δ + 1)`, every
+computable term lighter than `B` has smaller `μ`. So the induction
+hypothesis gives C7's assumption at `B`, for `u`'s arguments and their
+restrictions, which keep the bound (C3).
 
 - **N.** As Huber's `natrec` (his Lemma 4.10): `elim(u) f` reduces to
   `elim(u f↓)`, which is computable by the induction hypothesis, and
   coherent by 3.10 and the induction hypothesis's equality part.
 - **V1.** `elim(u) ≻ m_k(ts, qs, q̄s)`. This reduction is closed under
-  substitution, since every `u f` is again V1. Each
-  `q̄_j = λ ys. elim^{C_j}(q_j(ys))` is computable at its displayed type:
-  pointwise by the induction hypothesis at the lighter position. Its
-  endpoints `elim(q_j(ys) @ ε)` equal `⟦P⟧` by the induction hypothesis's
-  equality part, since `q_j(ys) @ ε = P[…]` by the Path clause, and by the
-  semantic H1 for the endpoint expression `P`, at lighter scrutinees. The
-  clause is computable, so the reduct is, and the Expansion Lemma applies.
-- **V2.** `elim(u) ≻ m_k(ts, qs, q̄s) @ rs`, computable at the clause
-  type's nested `PathP` by the Path clause. Where no formula changes, H2.
-  Where `r_l f = ε` this is CP01:
-  - `t f↓ = elim(E_{k,l,ε}[f])` is computable by the induction hypothesis
-    at the lighter piece;
+  substitution, since every `u f` is again V1. By C7 the `q̄s` are computable
+  at their displayed types, so the reduct is computable, and the Expansion
+  Lemma applies.
+- **V2.** `elim(u) ≻ m_k(ts, qs, q̄s) @ rs`, computable by C7 and the Path
+  clause at the clause type's nested `PathP`. Where no formula changes, H2.
+  Where `r_l f = ε`, this is CP01:
+  - `t f↓ = elim(E_{k,l,ε}[f])`, computable by the induction hypothesis: its
+    scrutinee is lighter than `u`, by the block bound;
   - `(t↓) f = m_k(…) f @ rs f` is computable, and by the Path clause's
     endpoint premise it equals `⟦E_{k,l,ε}⟧[f]`;
-  - the semantic H1 equates the two.
+  - C7 at `B`, with the restricted arguments, equates the two.
 - **V3.** `elim(u) ≻ comp^j M(hfill^j) [ψ ↦ elim(w(j))] (elim(w₀))`. It is
   computable by the baseline's composition in the computable family `M`
   along the computable line `hfill^j`. Its tubes and base are computable by
   the induction hypothesis at lower derivations, and agree at `j = 0` by
-  its equality part. Where `ψ` becomes true
-  this is CP03: the scrutinee reduces by `Face` and the composition by the
-  baseline's face rule, both to `elim(w(1) f)`, and that rule's soundness
-  gives the equality. H2 otherwise.
-- **Semantic H1,** by induction on `E`:
-  - a position application: `q̄_j(us)` reduces by β to
-    `elim^C(q_j(us))`, an expansion the baseline covers;
-  - `c_m(us, Es′)` at non-endpoint formulas: one `Iota` step,
-    `elim(c_m(…)) ≻ m_m(us, Es′, elim(Es′))`, at a scrutinee lighter than
-    `u` by the block bound, then congruence of `m_m` and induction on `Es′`;
-  - `c_m(…) @ rs′` where some formula is an endpoint: the scrutinee takes
-    the boundary step and the clause the path step, and the semantic H1 at
-    the lighter value `c_m(…) @ rs′` (induction hypothesis, case V2)
-    equates the results;
-  - path application and abstraction by the Path clause and path β. ∎
+  its equality part. Where `ψ` becomes true this is CP03: the scrutinee
+  reduces by `Face` and the composition by the baseline's face rule, both
+  to `elim(w(1) f)`, and that rule's soundness gives the equality. H2
+  otherwise. ∎
 
 ### 4.7 The computation rules as equalities
 
@@ -585,9 +647,10 @@ lower derivation, and heights are well founded.
   `S` is first-order, iterate on the positions, whose derivations are
   lower: this gives a finite closed constructor term. For `Nat` it is a
   numeral.
-- **(ii).** For a higher sort the value is V2, a constructor at
-  non-endpoint formulas with computable arguments, or V3, an `hcomp` with
-  `φ ≠ 1` whose base and tube are computable.
+- **(ii).** For a higher sort the value is V1, a point constructor with
+  computable arguments; V2, a constructor at non-endpoint formulas with
+  computable arguments; or V3, an `hcomp` with `φ ≠ 1` whose base and tube
+  are computable.
 - **(iii).** C6 at a V3 scrutinee gives composition in the motive. For a
   data-sort motive, that composition is computable by C2 (b), so it reduces
   to a constructor with computable arguments.
@@ -597,8 +660,10 @@ lower derivation, and heights are well founded.
 - **Assumed.** The baseline's computability predicates and fundamental
   lemma (specification 4.1, G0 3.5, 3.6), generic in the computable types
   they quantify over.
-- **Premise P1** of the model draft, for C4 (3): the agreement of boundary
-  pieces at corners, and the endpoints of positional arguments.
+- **Premise P1** of the model draft, an explicit assumption of Theorem C:
+  the existence of a conversion derivation within the fragment, function β
+  and η at the arities included. C4 (3) uses it for the agreement of
+  boundary pieces at corners and the endpoints of positional arguments.
 - **Item 2.** The critical pairs CP01–CP10, approved on 2026-09-30, name the
   coherence obligations. Their computable joins are proved here.
 - **Metatheory.** An inductive definition of predicates with set-sized
@@ -613,5 +678,6 @@ Review must accept:
 - Lemma C4, and its use of P1 with the baseline's fundamental lemma;
 - the telescope filling of C5, and the measure in C2;
 - the constructor-index argument in C2 (b);
-- Lemma C6 and the semantic Lemma H1;
+- Lemma C7, the semantic Lemma H1 with its explicit bound, and Lemma C6;
+- `μ` as the least measure over a term's derivations (2.4);
 - the level cases.
