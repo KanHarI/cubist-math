@@ -84,7 +84,7 @@ test("the elaboration view shows each declaration's type, term and the kernel's 
 test("a declaration the instruction kernel cannot derive shows why, not a derivation", async t => {
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
-  await program.check("def Suspension(A : U0) := Pushout(A, Unit, Unit, fun (a : A) => tt, fun (a : A) => tt);\n", "suspension");
+  await program.check("def Doubled(A : U0) : U0 := A or A;\n", "suspension");
   // Whatever the driver cannot derive; here, it is made to fail.
   const check = InstructionDriver.prototype.check;
   InstructionDriver.prototype.check = () => { throw new Error("The search could not derive this."); };

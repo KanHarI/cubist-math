@@ -6,6 +6,12 @@ removed; their ABI numbers remain reserved and are refused. The primitive
 API and stage milestones below describe the earlier implementation. See the
 [migration record](h1-program-types.md) for the current API and validation.
 
+2026-10-01 update: pushouts are source-defined too, as an H1 declaration
+with a path constructor in `pushout.cubist`. `Pushout`, `PushPoint`,
+`PushPath` and `PushElim` have been removed and their ABI numbers reserved,
+like Nat's and W's. `HComp` and `Trans` are now for declared higher sorts
+only; the term checker has no rule for them. Sums stay native.
+
 Status: merged into `proof-ergonomics-roadmap` on 2026-09-26 (PR #38). The
 instruction kernel is the trusted kernel, and elaboration checks every term
 through it. Since K1.4 on 2026-09-27 the driver uses its own guide by

@@ -62,14 +62,10 @@ static bool infer(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dim
         return ck_inductives(k, n, ctx, dims, result);
     case CC_PATH: case CC_PLAM: case CC_PAPP:
         return ck_paths(k, n, ctx, dims, result);
-    case CC_HCOMP: case CC_TRANS:
-        return ck_hit_composition(k, n, ctx, dims, result);
     case CC_COMP:
         return ck_composition(k, n, ctx, dims, result);
     case CC_GLUE: case CC_GLUE_TERM: case CC_UNGLUE:
         return ck_glue(k, n, ctx, dims, result);
-    case CC_PUSHOUT: case CC_PUSH_LEFT: case CC_PUSH_RIGHT: case CC_PUSH_PATH: case CC_PUSH_ELIM:
-        return ck_pushout(k, n, ctx, dims, result);
     case CC_GLUE_SYSTEM:
     case CC_TUBE:
         return ck_fail(k, "A partial tube is not a standalone term.");
@@ -80,9 +76,11 @@ static bool infer(cc_kernel *k, cc_term raw, const cc_context *ctx, uint64_t dim
     case CC_LPI: case CC_LLAM: case CC_LAPP:
         return ck_fail(k, "The term checker has no rules for level quantification.");
     case CC_SORT: case CC_CON: case CC_ELIM: case CC_LIST:
+    case CC_HCOMP: case CC_TRANS:
         return ck_fail(k, "The term checker has no rules for declared types; the instruction kernel checks them.");
     case CC_NAT: case CC_ZERO: case CC_SUCC: case CC_NATREC:
     case CC_W: case CC_SUP: case CC_WREC:
+    case CC_PUSHOUT: case CC_PUSH_LEFT: case CC_PUSH_RIGHT: case CC_PUSH_PATH: case CC_PUSH_ELIM:
         return ck_fail(k, "Retired primitive type constructor.");
     }
     return ck_fail(k, "Unsupported term constructor.");

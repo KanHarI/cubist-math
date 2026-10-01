@@ -23,6 +23,7 @@ export const proofTopics = [
 export const proofChoices = [
   { id: "nat", topic: "arithmetic", title: "Natural numbers · a source declaration" },
   { id: "w", topic: "homotopy", title: "Well-founded trees · a source declaration" },
+  { id: "pushout", topic: "homotopy", title: "Pushouts · a higher inductive source declaration" },
   { id: "field_embedding_spaces", topic: "fields", title: "Spaces of field embeddings over a base" },
   { id: "algebraic_base_change", topic: "algebraic-extensions", title: "Algebraic elements · enlarging the base field" },
   { id: "basis_generators", topic: "algebraic-extensions", title: "Finite bases generate their field extensions" },
@@ -389,7 +390,7 @@ export const proofChoices = [
   { id: "integers", topic: "arithmetic", title: "Integers · successor equivalence" },
   { id: "paths", topic: "homotopy", title: "Paths · equality reasoning" },
   { id: "fundamental_groups", topic: "homotopy", title: "Fundamental groups · set-valued loop spaces" },
-  { id: "suspension_types", topic: "homotopy", title: "Suspension · definitions from pushouts" },
+  { id: "suspension_types", topic: "homotopy", title: "Suspension · definitions from the declared pushout" },
   { id: "suspension", topic: "homotopy", title: "Suspension & the circle · foundations" },
   { id: "euclid", topic: "arithmetic", title: "Euclid · mathematical proof" },
   { id: "basics", topic: "basic-logic", title: "Functions, pairs & induction · examples" },

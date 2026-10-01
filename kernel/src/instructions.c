@@ -1113,115 +1113,13 @@ cc_judgement_id cc_instr_comp(cc_kernel *k, cc_judgement_id system_id) {
     return typing(k, s.term, s.type, context);
 }
 
-/* ---- Pushouts ------------------------------------------------------------ */
-
-cc_judgement_id cc_instr_pushout(cc_kernel *k, cc_judgement_id source_id, cc_judgement_id left_id,
-                                 cc_judgement_id right_id, cc_judgement_id maps_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_PUSHOUT, .premise = {source_id, left_id, right_id, maps_id}},
-               NULL, 0, &found))
-        return found;
-    cc_fact c = {0}, a = {0}, b = {0}, m = {0};
-    cc_term lc = 0, la = 0, lb = 0;
-    uint32_t context = 0;
-    if (!premise(k, source_id, CC_FACT_TYPING, &c) || !premise(k, left_id, CC_FACT_TYPING, &a) ||
-        !premise(k, right_id, CC_FACT_TYPING, &b) || !premise(k, maps_id, CC_FACT_TYPING, &m) ||
-        !universe(k, c.type, &lc) || !universe(k, a.type, &la) || !universe(k, b.type, &lb))
-        return 0;
-    uint32_t x = ck_fresh_symbol(k), f = ck_fresh_symbol(k);
-    cc_term span = make(k, CC_SIGMA, f, make(k, CC_PI, x, c.term, a.term, 0, 0), make(k, CC_PI, x, c.term, b.term, 0, 0), 0, 0);
-    if (!same(k, m.type, span, "The maps of a pushout are a pair C → A, C → B.") ||
-        !merge(k, c.context, a.context, &context) || !merge3(k, context, b.context, m.context, &context))
-        return 0;
-    return typing(k, make(k, CC_PUSHOUT, 0, c.term, a.term, b.term, m.term),
-                  ck_universe(k, ck_level_max(k, ck_level_max(k, lc, la), lb)), context);
-}
-
-/* A pushout type as written, and the context of its typing judgement. */
-static bool pushout_type(cc_kernel *k, cc_judgement_id type_id, cc_fact *t, cc_node *span) {
-    cc_term level = 0;
-    if (!premise(k, type_id, CC_FACT_TYPING, t) || !universe(k, t->type, &level))
-        return false;
-    *span = k->nodes[t->term];
-    if (span->kind != CC_PUSHOUT)
-        return ck_fail(k, "Expected a pushout type.");
-    return true;
-}
-
-cc_judgement_id cc_instr_push_point(cc_kernel *k, cc_judgement_id type_id, cc_judgement_id value_id, bool right) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_PUSH_POINT, .premise = {type_id, value_id}, .operand = {right}},
-               NULL, 0, &found))
-        return found;
-    cc_fact t = {0}, v = {0};
-    cc_node span = {0};
-    uint32_t context = 0;
-    if (!pushout_type(k, type_id, &t, &span) || !premise(k, value_id, CC_FACT_TYPING, &v) ||
-        !same(k, v.type, span.child[right ? 2 : 1], "The point has the wrong type.") ||
-        !merge(k, t.context, v.context, &context))
-        return 0;
-    return typing(k, make(k, right ? CC_PUSH_RIGHT : CC_PUSH_LEFT, 0, t.term, v.term, 0, 0), t.term, context);
-}
-
-cc_judgement_id cc_instr_push_path(cc_kernel *k, cc_judgement_id type_id, cc_judgement_id value_id, cc_formula_id interval) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_PUSH_PATH, .premise = {type_id, value_id}, .operand = {interval}},
-               NULL, 0, &found))
-        return found;
-    cc_fact t = {0}, v = {0};
-    cc_node span = {0};
-    uint32_t dims = 0, context = 0;
-    const cc_formula *point = cc_kernel_get_formula(k, interval);
-    if (!point || point->sort != CC_INTERVAL)
-        return ck_fail(k, "A pushout path is at an interval formula."), 0;
-    if (!pushout_type(k, type_id, &t, &span) || !premise(k, value_id, CC_FACT_TYPING, &v) ||
-        !same(k, v.type, span.child[0], "The path's point has the wrong type.") ||
-        !formula_context(k, point, &dims) || !merge3(k, t.context, v.context, dims, &context))
-        return 0;
-    return typing(k, make(k, CC_PUSH_PATH, interval, t.term, v.term, 0, 0), t.term, context);
-}
-
-cc_judgement_id cc_instr_push_elim(cc_kernel *k, cc_judgement_id motive_id, cc_judgement_id left_id,
-                                   cc_judgement_id right_id, cc_judgement_id bridge_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_PUSH_ELIM, .premise = {motive_id, left_id, right_id, bridge_id}},
-               NULL, 0, &found))
-        return found;
-    cc_fact p = {0}, l = {0}, r = {0}, b = {0};
-    uint32_t context = 0;
-    if (!premise(k, motive_id, CC_FACT_TYPING, &p) || !premise(k, left_id, CC_FACT_TYPING, &l) ||
-        !premise(k, right_id, CC_FACT_TYPING, &r) || !premise(k, bridge_id, CC_FACT_TYPING, &b))
-        return 0;
-    cc_node family = k->nodes[p.type];
-    if (family.kind != CC_PI || k->nodes[family.child[1]].kind != CC_U || k->nodes[family.child[0]].kind != CC_PUSHOUT)
-        return ck_fail(k, "A pushout motive is a family of types over a pushout type."), 0;
-    cc_term P = family.child[0];
-    cc_node span = k->nodes[P];
-    uint32_t a = ck_fresh_symbol(k), bb = ck_fresh_symbol(k), c = ck_fresh_symbol(k), z = ck_fresh_symbol(k);
-    cc_term left_type = make(k, CC_PI, a, span.child[1],
-                             app(k, p.term, make(k, CC_PUSH_LEFT, 0, P, ck_var(k, a), 0, 0)), 0, 0);
-    cc_term right_type = make(k, CC_PI, bb, span.child[2],
-                              app(k, p.term, make(k, CC_PUSH_RIGHT, 0, P, ck_var(k, bb), 0, 0)), 0, 0);
-    cc_term path = ck_pushout_bridge_type(k, P, p.term, l.term, r.term, ck_var(k, c));
-    cc_term bridge_type = path ? make(k, CC_PI, c, span.child[0], path, 0, 0) : 0;
-    if (!bridge_type || !same(k, l.type, left_type, "The left case has the wrong type.") ||
-        !same(k, r.type, right_type, "The right case has the wrong type.") ||
-        !same(k, b.type, bridge_type, "The bridge case has the wrong type.") ||
-        !merge(k, p.context, l.context, &context) || !merge3(k, context, r.context, b.context, &context))
-        return 0;
-    return typing(k, make(k, CC_PUSH_ELIM, 0, p.term, l.term, r.term, b.term),
-                  make(k, CC_PI, z, P, app(k, p.term, ck_var(k, z)), 0, 0), context);
-}
-
-/* Formal composition and transport are for pushouts and declared higher
- * sorts (H1 family F4); a declared data sort has neither, and composes and
- * transports by Comp (Q1, 3.3). */
+/* Formal composition and transport are for declared higher sorts (H1 family
+ * F4); a declared data sort has neither, and composes and transports by Comp
+ * (Q1, 3.3). */
 static bool formal_family(cc_kernel *k, cc_term family, const char *refusal) {
     cc_term head = ck_whnf(k, family);
     if (!head)
         return false;
-    if (k->nodes[head].kind == CC_PUSHOUT)
-        return true;
     if (k->nodes[head].kind == CC_SORT) {
         const cc_signature *s = ck_instance_signature(k, head);
         if (!s || ck_signature_higher(s))
@@ -1247,7 +1145,7 @@ cc_judgement_id cc_instr_hcomp(cc_kernel *k, cc_judgement_id system_id) {
     cc_node comp = k->nodes[s.term];
     if (ck_free_dims(k, comp.child[0]) & (UINT64_C(1) << comp.payload))
         return ck_fail(k, "A homogeneous composition's type may not use its dimension."), 0;
-    if (!formal_family(k, comp.child[0], "Homogeneous composition is for pushout types and declared higher sorts."))
+    if (!formal_family(k, comp.child[0], "Homogeneous composition is for declared higher sorts."))
         return 0;
     cc_entry_id dimension = dimension_entry(k, comp.payload);
     if (!dimension || !discharge(k, s.context, &dimension, 1, &context))
@@ -1283,7 +1181,7 @@ cc_judgement_id cc_instr_trans(cc_kernel *k, cc_judgement_id system_id, cc_formu
     }
     if (clause != phi->length)
         return ck_fail(k, "A transport's tubes are its face's clauses, in order."), 0;
-    if (!formal_family(k, comp.child[0], "Transport is for pushout type families and declared higher sorts."))
+    if (!formal_family(k, comp.child[0], "Transport is for families of declared higher sorts."))
         return 0;
     cc_entry_id dimension = dimension_entry(k, comp.payload);
     if (!dimension || !formula_context(k, phi, &dims) || !discharge(k, s.context, &dimension, 1, &context) ||
@@ -1800,16 +1698,6 @@ static cc_term contract(cc_kernel *k, cc_term term, cc_step_rule rule) {
             if (head.kind == CC_PAIR)
                 return head.child[n.kind == CC_FST ? 1 : 2];
             break;
-        case CC_PUSH_PATH: {
-            /* push at 0 is inl(f(c)), at 1 inr(g(c)); the maps are read off
-             * the pushout type's weak head, which involves no choice. */
-            cc_term reduct = ck_pushout_reduce(k, term);
-            if (reduct && reduct != term)
-                return reduct;
-            if (k->error[0])
-                return 0;
-            break;
-        }
         case CC_APP: {
             /* A declared type's eliminator on a constructor, at dimensions
              * or not (3.7). */
@@ -1818,19 +1706,6 @@ static cc_term contract(cc_kernel *k, cc_term term, cc_step_rule rule) {
                 cc_term result = ck_eliminate(k, n.child[0], n.child[1], false, &reduced);
                 if (reduced || !result)
                     return result;
-                break;
-            }
-            /* The pushout eliminator on a point or on a path. */
-            cc_node eliminator = k->nodes[n.child[0]];
-            head = k->nodes[n.child[1]];
-            if (eliminator.kind != CC_PUSH_ELIM)
-                break;
-            if (head.kind == CC_PUSH_LEFT || head.kind == CC_PUSH_RIGHT)
-                return app(k, eliminator.child[head.kind == CC_PUSH_LEFT ? 1 : 2], head.child[1]);
-            if (head.kind == CC_PUSH_PATH) {
-                cc_term path = ck_pushout_bridge_type(k, head.child[0], eliminator.child[0], eliminator.child[1],
-                                                      eliminator.child[2], head.child[1]);
-                return path ? make(k, CC_PAPP, head.payload, app(k, eliminator.child[3], head.child[1]), path, 0, 0) : 0;
             }
             break;
         }

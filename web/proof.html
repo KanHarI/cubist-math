@@ -670,16 +670,18 @@ def at_the_start(A : U0, x, y : A, p : x = y) : p @ 0 = x {
         </div>
         <div class="quick-entry" id="quick-pushouts">
           <h4>Pushouts</h4>
-          <p><code>Pushout(S, A, B, f, g)</code> glues <code>A</code> and <code>B</code> along the two maps from <code>S</code>: <code>push_path</code> joins the images of each <code>s : S</code>.
+          <p><code>import pushout;</code> declares <code>Pushout(U, V, W, C, A, B, f, g)</code>, which glues <code>A</code> and <code>B</code> along the two maps from <code>C</code>: the path constructor <code>push(c)</code> joins <code>inl(f(c))</code> to <code>inr(g(c))</code>.
             <a href="reference/cubical.html#pushouts">Cubical paths →</a></p>
-          <pre><code data-check="accept">def TwoPoints := Pushout(Nat, Unit, Unit, fun (n : Nat) =&gt; tt, fun (n : Nat) =&gt; tt);
+          <pre><code data-check="accept">import pushout;
 
-def west := push_left(TwoPoints, tt);
+def TwoPoints : U0 := Pushout(U0, U0, U0, Nat, Unit, Unit, fun (n : Nat) =&gt; tt, fun (n : Nat) =&gt; tt);
 
-def east := push_right(TwoPoints, tt);
+def west : TwoPoints := inl(tt);
+
+def east : TwoPoints := inr(tt);
 
 def bridge(n : Nat) : west = east {
-  exact push_path(TwoPoints, n);
+  exact push(n);
 }</code></pre>
         </div>
         <div class="quick-entry" id="quick-suspensions">

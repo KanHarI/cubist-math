@@ -259,31 +259,44 @@ def join_by_formulas(A : U0, x, y, z : A, p : x = y, q : y = z) : x = z {
           </section>
           <section id="pushouts">
             <h2>Pushouts</h2>
-            <p><code>Pushout(S, A, B, f, g)</code>, for <code>f : S -> A</code> and <code>g : S -> B</code>, glues <code>A</code> and <code>B</code> along <code>S</code>. Its constructors are <code>push_left(P, a)</code>, <code>push_right(P, b)</code> and, for each <code>s : S</code>, the path <code>push_path(P, s) : push_left(P, f(s)) = push_right(P, g(s))</code>, where <code>P</code> is the pushout type.</p>
-            <pre><code data-check="accept">def TwoPoints := Pushout(Nat, Unit, Unit, fun (n : Nat) =&gt; tt, fun (n : Nat) =&gt; tt);
+            <p>A pushout glues <code>A</code> and <code>B</code> along a span <code>f : C -> A</code>, <code>g : C -> B</code>. It is an ordinary <a href="induction.html#higher-constructors">declaration with a path constructor</a>, in the <a href="../proof.html?proof=pushout&amp;name=Pushout">pushout module</a>:</p>
+            <pre><code data-check="excerpt" data-module="pushout">inductive Pushout(U &lt; UU0, V &lt; UU0, W &lt; UU0, C : U, A : V, B : W, f : C -&gt; A, g : C -&gt; B) : max(
+  U, max(V, W)
+) {
+  inl(a : A);
+  inr(b : B);
+  push(c : C) : inl(f(c)) = inr(g(c));
+}</code></pre>
+            <p>After <code>import pushout;</code>, write its universe arguments explicitly, as for any declaration with universe parameters. The constructors take their instance from the expected type, and <code>match</code> eliminates a pushout: a clause for each side and a path clause <code>push(c) @ i</code>, which the kernel checks against the two side clauses at <code>i = 0</code> and <code>i = 1</code>.</p>
+            <pre><code data-check="accept">import pushout;
 
-def west := push_left(TwoPoints, tt);
+def TwoPoints : U0 := Pushout(U0, U0, U0, Nat, Unit, Unit, fun (n : Nat) =&gt; tt, fun (n : Nat) =&gt; tt);
 
-def east := push_right(TwoPoints, tt);
+def west : TwoPoints := inl(tt);
+
+def east : TwoPoints := inr(tt);
 
 def bridge(n : Nat) : west = east {
-  exact push_path(TwoPoints, n);
+  exact push(n);
 }
 
-def collapse(value : TwoPoints) : Unit {
-  exact pushout_induction(fun (s : TwoPoints) =&gt; Unit,
-    fun (a : Unit) =&gt; tt, fun (b : Unit) =&gt; tt, fun (n : Nat) =&gt; refl(tt), value);
-}</code></pre>
-            <p><code>pushout_induction(motive, leftCase, rightCase, bridgeCase, value)</code> eliminates a pushout into a family over it. The bridge case gives, for each <code>s</code>, a path over <code>push_path(P, s)</code> between the two point cases. The constructor computations are checked by the kernel. Pushouts are built into the kernel. You can also <a href="induction.html#higher-constructors">declare your own higher inductive types</a> with path constructors and define functions on them using <code>match</code>.</p>
+def collapse(value : TwoPoints) : Unit := match value {
+  inl(a) =&gt; tt;
+  inr(b) =&gt; tt;
+  push(n) @ i =&gt; tt;
+};</code></pre>
+            <p><code>pushout_induction</code> in the same module packages this elimination into a family over the pushout, with a dependent path over each <code>push(c)</code>. Pushouts are not built into the kernel: they compose, transport and compute by the same rules as every declared higher inductive type.</p>
           </section>
           <section id="suspensions">
             <h2>Suspensions</h2>
             <p>The suspension of <code>A</code> is the pushout of the two maps <code>A -> Unit</code>. Its operations are ordinary definitions in <a href="../proof.html?proof=suspension_types&amp;name=Suspension">the suspension library</a>, so they are written with the pushout constructors:</p>
-            <pre><code data-check="accept">def Suspension(A : U0) := Pushout(A, Unit, Unit,
+            <pre><code data-check="accept">import pushout;
+
+def Suspension(A : U0) : U0 := Pushout(U0, U0, U0, A, Unit, Unit,
   fun (_ : A) =&gt; tt, fun (_ : A) =&gt; tt);
-def north(A : U0) := push_left(Suspension(A), tt);
-def south(A : U0) := push_right(Suspension(A), tt);
-def meridian(A : U0, a : A) := push_path(Suspension(A), a);</code></pre>
+def north(A : U0) : Suspension(A) := inl(tt);
+def south(A : U0) : Suspension(A) := inr(tt);
+def meridian(A : U0, a : A) : north(A) = south(A) := push(a);</code></pre>
             <p>After <code>import suspension_types;</code>, <code>Suspension(A)</code> has the points <code>north(A)</code> and <code>south(A)</code> and, for every <code>a : A</code>, a path <code>meridian(A, a) : north(A) = south(A)</code>. <code>suspension_induction(A, C, atNorth, atSouth, coherence, point)</code> eliminates into a family <code>C</code> over the suspension. The coherence case takes <code>a : A</code> and proves <code>transport(C, north(A), south(A), meridian(A, a), atNorth) = atSouth</code>.</p>
             <pre><code data-check="accept">import suspension_types;
 

@@ -253,7 +253,7 @@ cc_term ck_eliminate(cc_kernel *k, cc_term eliminator, cc_term argument, bool we
         return 0;
     if (weak && k->nodes[value].kind == CC_HCOMP) {
         *reduced = true;
-        return ck_pushout_eliminate_hcomp(k, eliminator, value);
+        return ck_eliminate_hcomp(k, eliminator, value);
     }
     cc_formula_id formulas[CC_CONSTRUCTOR_DIMENSIONS];
     uint32_t depth = 0;

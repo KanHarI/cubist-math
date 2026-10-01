@@ -192,7 +192,7 @@ test("open cubes check dependent contexts and preserve dimension names across de
   syntax.check(decoded, null, [["p", T.path("k", T.nat, T.zero, T.zero)]], collision);
 });
 
-test("Cubist expresses cubical paths, composition and pushout induction with checked boundaries", async t => {
+test("Cubist expresses cubical paths, composition and pushout elimination with checked boundaries", async t => {
   const program=new CubicalProgram(producerModule,sourceReader());
   t.after(()=>program.dispose());
   const result=await program.check(await sourceReader()("cubical_paths"),"cubical_paths");
@@ -202,39 +202,45 @@ test("Cubist expresses cubical paths, composition and pushout induction with che
     def escaped := path(fun (i : Interval) => Nat, fun (i : Interval) => i);
     def wrong : 0 = 1 { exact path(fun (i : Interval) => Nat, fun (i : Interval) => 0); }
     def malformed := comp(fun (i : Interval) => Nat, 0, face(i, 0, fun (j : Interval) => 0));
-    def bad_bridge := pushout_induction(fun (p : Susp(Unit)) => Nat,
-      fun (a : Unit) => 0, fun (b : Unit) => 1,
-      fun (a : Unit) => refl(0), push_left(Susp(Unit), tt));`,"invalid_paths");
+    def bad_bridge(z : Suspension(Unit)) : Nat := match z { inl(a) => 0; inr(b) => 1; push(a) @ i => 0; };`,"invalid_paths");
   const rejected=invalid.outputs.filter(d=>["escaped","wrong","malformed","bad_bridge"].includes(d.name));
   assert.equal(rejected.length,4);
   assert.ok(rejected.every(d=>!d.verified));
+  // The push clause is constant 0, but the inr clause is 1: its boundary fails.
+  assert.match(rejected.find(d=>d.name==="bad_bridge").reason,/expected Unit -> 0 = 1/);
 });
 
-test("WASM round trips pushout boxes and corrected transport across changing maps", async t => {
-  const { pushout, suspension, north } = await import("../lib/cubical/pushouts.mjs");
-  const k = session(t), syntax = new CubicalSyntax(k);
-  const C = suspension(T.unit), g = T.lam("x", T.unit, T.point);
-  const family = r => pushout(T.unit, C, T.unit, T.lam("x", T.unit, T.pushPath(C, T.point, r)), g);
-  const old = family(I.zero), last = family(I.one);
-  const source = T.pushPath(old, T.point, I.variable("r"));
-  const moved = T.line("r", last, T.trans("i", family(I.variable("i")), F.bottom, source));
-  const left = T.pushLeft(last, T.comp("i", C, [], north(T.unit))), right = T.pushRight(last, T.point);
-  const expected = T.path("r", last, left, right);
-  const checked = syntax.check(moved, expected);
-  const normal = syntax.decode(k.normalize(checked.expression));
-  assert.equal(normal.body.tag, "HComp");
-  syntax.check(normal, expected);
-  syntax.check(checked.term, checked.type);
-  assert.throws(() => syntax.check(T.line("r", last, T.pushPath(last, T.point, I.variable("r"))), expected));
-  assert.throws(() => syntax.check(T.trans("i", family(I.variable("i")), F.top, T.pushLeft(old, north(T.unit))), last));
+test("the declared pushout transports a path constructor along changing maps, with boundary correction", async t => {
+  const program=new CubicalProgram(producerModule,sourceReader());
+  t.after(()=>program.dispose());
+  // Glued(p)'s left map sends tt to p, which moves from north to south along
+  // the meridian: transporting push(tt) must correct its left endpoint.
+  const result=await program.check(`import pushout;
+import suspension_types;
+def Glued(p : Suspension(Unit)) : U0 := Pushout(U0, U0, U0, Unit, Suspension(Unit), Unit, fun (x : Unit) => p, fun (x : Unit) => tt);
+def Edge(p : Suspension(Unit)) : U0 := typed(Glued(p), inl(p)) = typed(Glued(p), inr(tt));
+def moved : Edge(south(Unit)) := along Edge by meridian(Unit, tt) from typed(Edge(north(Unit)), push(tt));
+def collapse(p : Suspension(Unit), z : Glued(p)) : Unit := match z { inl(a) => tt; inr(b) => tt; push(c) @ i => tt; };
+def collapsed : cong(fun (z : Glued(south(Unit))) => collapse(south(Unit), z), moved) = refl(tt) { rfl; }
+def unmoved : Edge(north(Unit)) := along Edge by meridian(Unit, tt) from typed(Edge(north(Unit)), push(tt));
+`,"moving_maps");
+  const get=name=>result.outputs.find(output=>output.name===name);
+  for (const name of ["Glued","Edge","moved","collapse","collapsed"]) assert.equal(get(name)?.verified,true,`${name}: ${get(name)?.reason}`);
+  // The transport ends over south, not north.
+  assert.equal(get("unmoved").verified,false);
+  // Its normal form is the corrected composition of 3.5, not a bare constructor.
+  assert.match(JSON.stringify(program.inspect("moving_maps__moved",{normalize:true}).expression),/"tag":"HComp"/);
 });
 
 test("source-defined suspension induction uses a proved PathP bridge", async t => {
-  const kernel = session(t), checker = new NativeCubicalElaborator(kernel);
-  const translator = new Translator({ checker, normalize: false });
-  const library = translator.translate(await readFile(new URL("../archive/first-library/suspension_types.cubist", import.meta.url), "utf8"));
-  assert.ok(library.declarations.every(d => d.status === "checked-native-cubical"));
-  const result = translator.translate(`
+  const libraryProgram = new CubicalProgram(producerModule, sourceReader());
+  t.after(() => libraryProgram.dispose());
+  const library = await libraryProgram.check(await sourceReader()("suspension_types"), "suspension_types");
+  assert.ok(library.complete, JSON.stringify(library.gaps));
+  assert.ok(library.outputs.every(output => output.verified));
+  const program = new CubicalProgram(producerModule, sourceReader());
+  t.after(() => program.dispose());
+  const result = await program.check(`import suspension_types;
     def C := Suspension(Unit);
     def family(p : C) := Unit;
     def unique(u : Unit) := unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
@@ -245,9 +251,9 @@ test("source-defined suspension induction uses a proved PathP bridge", async t =
       apd(collapse, north(Unit), south(Unit), meridian(Unit, a)) = boundary(a) {
       exact suspension_meridian_beta(Unit, family, tt, tt, boundary, a);
     }
-  `, library.env);
-  assert.deepEqual(result.declarations.filter(d => d.status !== "checked-native-cubical"), []);
-  assert.equal(result.declarations.length, 7);
+  `, "suspension_use");
+  assert.deepEqual(result.outputs.filter(output => !output.verified).map(output => output.name), []);
+  assert.equal(result.outputs.length, 7);
 });
 
 test("native operations grow exhausted budgets without accepting invalid proofs, one query at a time", t => {

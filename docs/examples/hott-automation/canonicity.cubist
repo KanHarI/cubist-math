@@ -32,7 +32,7 @@ computable def closed_dependent_transport :
   rfl;
 }
 
-// Univalence (Glue) and the circle's pushout: winding numbers compute.
+// Univalence (Glue) and the circle's declared pushout: winding numbers compute.
 computable def winding_one : winding(loop) = nonnegative(1) {
   rfl;
 }

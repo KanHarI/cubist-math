@@ -52,7 +52,7 @@ static uint64_t free_dims(cc_kernel *k, cc_term term) {
         return 0;
     cc_node n = k->nodes[term];
     uint64_t result = 0;
-    if (n.kind == CC_PAPP || n.kind == CC_PUSH_PATH || n.kind == CC_TUBE || n.kind == CC_GLUE_SYSTEM)
+    if (n.kind == CC_PAPP || n.kind == CC_TUBE || n.kind == CC_GLUE_SYSTEM)
         result = formula_names(cc_kernel_get_formula(k, n.payload));
     for (unsigned i = 0; i < ck_arity(n.kind); ++i) {
         uint64_t names = 0;
@@ -242,7 +242,7 @@ cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
         n.payload = ck_formula(k, &changed);
         cc_clear(&changed);
     }
-    if (n.kind == CC_PAPP || n.kind == CC_PUSH_PATH) {
+    if (n.kind == CC_PAPP) {
         const cc_formula *arg = cc_kernel_get_formula(k, n.payload);
         cc_formula changed;
         cc_init(&changed, CC_INTERVAL);

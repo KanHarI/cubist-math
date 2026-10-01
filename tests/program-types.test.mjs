@@ -90,9 +90,9 @@ test("a fresh driver replays a level binder after a conflicting term entry",asyn
 test("the producer refuses the reserved primitive syntax and instruction slots",async t=>{
   const {program,result}=await check(t,"def retained : Unit := tt;");
   ok(result);
-  for(const kind of ["Nat","Zero","Succ","NatRec","W","Sup","WRec"])
+  for(const kind of ["Nat","Zero","Succ","NatRec","W","Sup","WRec","Pushout","PushLeft","PushRight","PushPath","PushElim"])
     assert.throws(()=>program.kernel.term(kind),/Unknown term constructor/);
-  for(const operation of ["nat","zero","succ","natElim","w","sup","wElim"]) {
+  for(const operation of ["nat","zero","succ","natElim","w","sup","wElim","pushout","pushPoint","pushPath","pushElim"]) {
     const opcode=instructions.indexOf(operation);
     assert.ok(opcode>0,operation);
     assert.equal(module._cb_instr(program.kernel.handle,opcode,0,0,0,0),0,operation);

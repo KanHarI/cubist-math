@@ -134,10 +134,9 @@ test("X6, X7 and X8: W and pushout finite instantiations and mixed-tier calls",t
 });
 
 test("X8: the migration verifier rejects the mixed-tier declaration by name",async()=>{
-  const tree=a=>`W(${a}, fun (label : ${a}) => Void)`;
-  const push=a=>`Pushout(${a}, ${a}, ${a}, fun (x : ${a}) => x, fun (x : ${a}) => x)`;
-  for(const [former,value] of [[a=>`${a} or ${a}`,"left(0)"],
-    [push,`push_left(${push("Nat")}, 0)`]]) {
+  // Source pushouts are declared types since their primitive retired; the
+  // native pushout's mixed-tier call is X6–X8's, against the historical kernel.
+  for(const [former,value] of [[a=>`${a} or ${a}`,"left(0)"]]) {
     const source=`def big_id(A : UU0, x : ${former("A")}) : ${former("A")} := x;
 def small : ${former("Nat")} := ${value};
 def call : ${former("Nat")} := big_id(Nat, small);`;
