@@ -8,8 +8,9 @@ draft](h1-critical-pairs.md), including representative joins CP01–CP10
 in the kernel. The maintainer approved it on 2026-09-30, after the CP01 and
 CP07 regressions were strengthened (PR #103). The same day, the
 [model construction](h1-model.md) and the [canonicity argument](h1-canonicity.md)
-were written out as review drafts for items 1 and 3; their review is
-pending.
+were written out as review drafts for items 1 and 3. Their first review
+found three substantive issues, and both drafts were revised the same day
+(section 1 and section 3 below); their re-review is pending.
 This record serves the first three items of the
 [H1 specification](h1-signature-specification.md)'s release checklist, the
 mathematical ones:
@@ -30,9 +31,9 @@ differential fixtures (item 6).
 
 | Item | Argument now | Mechanical evidence | Missing for a decision |
 | --- | --- | --- | --- |
-| D1, D4, D5: the model | [Construction written out](h1-model.md), review draft: raw trees, a weight by constructor index, carrier, Kan structure and eliminator | Admission, boundaries and cube depth: A1–A17, N1–N6, R3, E3, K7 | Review of the draft: premise P1, the weight measure, restriction's functoriality at endpoints and the semantic Lemma H1 |
+| D1, D4, D5: the model | [Construction written out](h1-model.md), review draft: raw trees, a weight by constructor index, carrier, Kan structure and eliminator; the weight revised after the first review, with telescope filling (M0, M4a) | Admission, boundaries and cube depth: A1–A17, N1–N6, R3, E3, K7 | Re-review of the revised draft: premise P1, the revised weight and M4a, restriction's functoriality at endpoints and the semantic Lemma H1 |
 | Lemma H2 and 3.7's critical pairs | [Rule-by-rule case analysis and overlap table](h1-critical-pairs.md), **approved on 2026-09-30** | CP01–CP10 representative joins; N3, N4, K4–K9 in part or in substance, E5, V11, V16; randomized K10 and K11 | None: approved on 2026-09-30 |
-| Canonicity | [Huber's predicates extended, written out](h1-canonicity.md), review draft | Closed computations through declared types: E1, E2, K1, E5, T3, T4 | Review of the draft, which uses item 2's joins; the baseline's canonicity accepted explicitly as an assumption |
+| Canonicity | [Huber's predicates extended, written out](h1-canonicity.md), review draft; revised after the first review: value clauses separated from expansion, stability, the revised weight, and C1 under computability hypotheses | Closed computations through declared types: E1, E2, K1, E5, T3, T4 | Re-review of the revised draft, which discharges item 2's joins as computable equalities; the baseline's canonicity accepted explicitly as an assumption |
 
 ## 1. The model: D1, D4 and D5
 
@@ -58,6 +59,17 @@ coverage, and they marked D1, D4, D5 and Lemma H2 as open obligations. None
 of them wrote out the construction. D2, D6 and D7 were found valid as
 conditional outlines, and D3's local wall calculation was found valid.
 
+The written-out [model](h1-model.md) had its first review on 2026-09-30.
+It found that M4's bound `‖T x‖ ≤ ‖x‖` fails: filling a path position
+evaluates its endpoint expressions at moved data, and those trees can
+outweigh every original position. The review's `pack`, over a pushout
+whose connecting path goes to `loop`, gives a transported position of
+weight `ω³ + ω²` above the original bound `ω³ + ω`. The draft was revised
+the same day: a constructor now weighs the least multiple of `ω^k` above its
+positions (M0), which absorbs everything earlier constructors build in its
+block, and M4a fills the telescope with its dependent endpoints before M4
+uses it. The canonicity draft's C2 inherited the problem and the fix.
+
 **Literature, as the specification reads it (4.6).**
 - Coquand, Huber and Mörtberg (LICS 2018) construct the cubical-set models
   of the examples, the kernel's pushouts among them, and describe the
@@ -82,7 +94,7 @@ Cube positions at depth 8 with arity 64 are admitted within budget: R3.
 Squash constructors, which need cube positions: E3 for `prop`, and K7 for a
 set truncation's squash.
 
-**What a decision needs.** Either the construction written out for the
+**What a decision needs.** A re-review of the revised construction for the
 whole schema, with the well-founded definition over cubes at every depth
 (D4) and with infinitary arities (D5); or an explicit decision to accept the
 argued status on the literature above. The second could narrow the first
@@ -160,7 +172,25 @@ any H1 declaration normalizes to a numeral.
 2019), as G0's 3.5 argues for level quantification. It covers the new
 formation, constructors, boundary reduction, the eliminator, transport and
 composition, and pushes a data sort's compositions as Huber does for the
-natural numbers. It is argued, not written out.
+natural numbers. The [written-out argument](h1-canonicity.md) followed on
+2026-09-30.
+
+**Reviews so far.** The written-out argument's first review, on 2026-09-30,
+found three substantive issues:
+
+1. every clause required every restriction to be computable, so at the
+   identity a term's computability was a premise of itself, and the least
+   fixed point was empty;
+2. C2 used the model's weight, which transport can raise (section 1 above);
+3. Lemma C1 concluded computable equality from syntactic joins, while
+   Huber's Expansion Lemma needs the reducts to be computable.
+
+The draft was revised the same day. Value clauses are separate from
+expansion, as Huber's are for `N`, with face premises like his `Glue`
+clause, and stability is Lemma C3. The measure is the revised weight, and
+C5 fills the telescope. C1 is stated under computability hypotheses, and
+each critical pair's join is shown computable and computably equal inside
+the fundamental induction.
 
 **Its baseline is assumed.** Section 4.1 assumes the consistency and
 canonicity of De Morgan CCHM with the kernel's formers. No published
@@ -190,8 +220,8 @@ conversion queries, which the audit found broken; I1.2a corrected it on
 Normalization, and with it decidable conversion, is not claimed; the kernel
 relies on budgets (4.5). A canonicity fixture is not a proof of canonicity.
 
-**What a decision needs.** The computability argument written out for the
-new cases, and an explicit acceptance of the baseline's canonicity as an
+**What a decision needs.** A re-review of the revised argument for the new
+cases, and an explicit acceptance of the baseline's canonicity as an
 assumption.
 
 ## What can be added as evidence
