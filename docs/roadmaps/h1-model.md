@@ -50,14 +50,15 @@ telescope filling, and asked for three repairs:
   with totality and the weight bound: M5 is merged into M4, and M4a assumes
   all four of transports on lighter trees.
 
-Since #101 the kernel has no primitive Nat or W. Both are H1 declarations,
-and this construction covers them; the baseline below no longer lists them.
+Since #101 the kernel has no primitive Nat or W, and since #110 no primitive
+pushout. All three are H1 declarations, and this construction covers them;
+the baseline below no longer lists them.
 
 ## The claim
 
 **Theorem M.** Assume the baseline model **B**: CCHM_{ω²} in cubical sets
 (G0 3.1), with Π, Σ, Path, Glue, universes `U_α` for `α < ω²`, unit, empty
-type, sums and pushouts, sound for the baseline rules. Assume also premise
+type and sums, sound for the baseline rules. Assume also premise
 P1 (section 4) on the kernel's conversion of constructor expressions. Then
 every admitted signature has an interpretation extending B in which:
 
