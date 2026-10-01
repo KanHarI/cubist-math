@@ -142,12 +142,26 @@ precise, with a constructor's index as an exponent. For an ordinal `β` and
 ```
 
 An empty supremum is `0`, so a constructor without positions weighs `ω^k`.
-The *spine rank* `srank x` is the rank of `x` with every subtree lighter than
-`x` counted as a leaf of rank `0`. A constructor's positions are lighter
-than it, so a constructor has spine rank `1`; an `hcomp` has one more than
-the largest spine rank among its parts of its own weight. Plain rank would
-not do: restriction can raise it. In section 6's example, `edge @ i` has
-rank `0` and its endpoint `step(step(base))` rank `2`.
+The *spine rank* counts only the nodes of a tree's own weight. The children
+of `con(k, t, Q, rs)` are its position trees `Q_j(f, y)`, and those of
+`hcomp(φ, U, u₀)` are the `U(f)` and `u₀`. For an ordinal `w`:
+
+```text
+srank_w(y)  :=  0                                             if ‖y‖ < w
+srank_w(y)  :=  sup { srank_w(z) + 1 : z a child of y }       if ‖y‖ = w
+srank x     :=  srank_{‖x‖}(x)
+```
+
+A child weighs no more than its parent, so only these two cases occur. The
+supremum is over a set of ordinals, with `sup ∅ = 0`, and the recurrence
+follows the raw trees' well-founded order (section 2). So `srank` is defined
+on every raw tree, infinitary ones included. A constructor's positions are
+lighter than it, so its spine rank is at most `1`. An `hcomp`'s spine rank
+exceeds that of each of its parts of its own weight, though no part need
+have the largest: infinitely many parts may have unbounded finite spine
+ranks, and then the `hcomp`'s is `ω`. Plain rank would not do: restriction
+can raise it. In section 6's example, `edge @ i` has rank `0` and its
+endpoint `step(step(base))` rank `2`.
 A constructor weighs more than each of its positions. It also weighs more
 than anything that earlier constructors build over trees in its *block*,
 the ordinals from `ω^k · δ` to below `ω^k · (δ + 1)`:
@@ -205,11 +219,15 @@ M0, node by node, each weighs at most `ω^k · δ + σ + wt(E_{k,l,ε})`, below
 `‖x‖`. A built node that reaches its own boundary is replaced by the
 evaluation of that boundary, over still earlier constructors, which M0
 bounds in the same way. Restriction of an `hcomp` recurses into `U(f)` or
-`u₀`, of smaller `μ`. At a non-endpoint, the positions of `f*x` are among
-those of `x`, so it has the same spine rank `1`. An `hcomp` restricted keeps
-its parts or restricts them, and a part's spine rank does not grow by
-induction; where it gets lighter, it stops counting. The bounds are proved
-in the same induction. ∎
+`u₀`, of smaller `μ`. At a non-endpoint, the children of `f*x` are among
+those of `x`, so its spine rank is no greater. Where `φf = 1`, `f*x` is a
+restriction of the part `U(f)`, so by induction its `μ` is at most
+`μ(U(f)) < μ(x)`. Otherwise `f*x = hcomp(φf, U·f, f*u₀)`: its children are
+among `x`'s, together with `f*u₀`. By induction `f*u₀` keeps its weight and
+does not raise its spine rank, or gets lighter and counts `0`. So each
+successor rank in the supremum for `f*x` is bounded by one in the supremum
+for `x`, and the spine rank does not grow. The bounds are proved in the same
+induction. ∎
 
 This weight is the semantic form of the precedence the critical-pair analysis
 relies on: every boundary mentions only earlier constructors.
