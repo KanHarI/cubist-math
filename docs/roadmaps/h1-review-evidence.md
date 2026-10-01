@@ -79,8 +79,8 @@ needs typed recursive results before it applies, and restriction can raise
 rank (its `wrap(edge)` example). Premise P1 left out function β at
 positional arguments, and Theorem M did not state it as an assumption. The
 draft now constructs `elim`, its typing and its naturality together by `μ`
-(M6, with the bounded semantic Lemma H1 as M6a), uses a spine rank that
-restriction does not raise, states P1 as an existence claim with function β
+(M6, with the bounded semantic Lemma H1 as M6a), measures by weight and
+spine rank, a pair that restriction does not raise, states P1 as an existence claim with function β
 and η and assumes it in Theorem M, and merges M5 into M4's induction with
 uniformity and the constancy face.
 
