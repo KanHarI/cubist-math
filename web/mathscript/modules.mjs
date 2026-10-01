@@ -2,6 +2,7 @@
 export const sourceModules = [
   "nat",
   "w",
+  "pushout",
   "fundamental_groups",
   "suspension_types",
   "field_embedding_spaces",

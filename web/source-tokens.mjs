@@ -40,7 +40,6 @@ export const keywords = new Set([
 // user-defined functions retain the green reference style.
 export const builtinForms = new Set([
   "Interval", "path", "PathP", "at", "comp", "face", "flip", "meet", "join",
-  "Pushout", "push_left", "push_right", "push_path", "pushout_induction",
   "Nat", "Unit", "Void", "next", "max", "tt", "succ", "refl", "absurd",
   "sym", "trans", "cong", "transport", "apd", "apd_path", "Eq", "typed",
   "induct", "unpack", "pair_induction", "unit_induction", "path_induction",

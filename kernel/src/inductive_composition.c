@@ -142,7 +142,7 @@ cc_term ck_sort_composition(cc_kernel *k, cc_term term, cc_term family, cc_term 
         return 0;
     if (ck_signature_higher(s)) {
         cc_node n = k->nodes[term];
-        return ck_whnf(k, ck_pushout_composition(k, n.payload, family, system, n.child[2]));
+        return ck_whnf(k, ck_higher_composition(k, n.payload, family, system, n.child[2]));
     }
     return data_sort_composition(k, term, family, system);
 }

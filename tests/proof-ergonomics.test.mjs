@@ -137,18 +137,20 @@ test("positive composition faces use only the needed endpoint of a compact inter
   assert.equal(result.outputs[0].verified,true,result.outputs[0].reason);
 });
 
-test("pushout construction visits shared source types within the proof deadline",()=>{
+test("a pushout instance visits shared source types within the proof deadline",()=>{
   const wasm=new URL("../web/dist/cubical.mjs",import.meta.url).href;
   const programPath=new URL("../web/cubical-program.mjs",import.meta.url).href;
-  let source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
+  let source="import pushout;\ndef shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
   for(let i=1;i<=sharedDepth;i++)source+=`let T${i} := F(T${i-1},T${i-1});`;
-  source+=`let P := Pushout(T${sharedDepth}, Unit, Unit, fun (x : T${sharedDepth}) => tt, fun (x : T${sharedDepth}) => tt);
+  source+=`let P := Pushout(U0, U0, U0, T${sharedDepth}, Unit, Unit, fun (x : T${sharedDepth}) => tt, fun (x : T${sharedDepth}) => tt);
     let h : forall x : P. x = x { intro x; exact path i => x; } rfl; }
     def after : 0 = 0 { rfl; }`;
+  const sources=new URL("../tools/module-sources.mjs",import.meta.url).href;
   const script=`import createCubical from ${JSON.stringify(wasm)};
     import {CubicalProgram} from ${JSON.stringify(programPath)};
-    const program=new CubicalProgram(await createCubical(),()=>{throw Error("Unexpected import");},
-      {collectReferences:false});
+    import {sourceReader} from ${JSON.stringify(sources)};
+    const program=new CubicalProgram(await createCubical(),sourceReader(),{collectReferences:false});
+    await program.check("import pushout;","imports");
     program.kernel.setDeadline(${checkLimit});
     try { const result=await program.check(process.argv[1],"shared_pushout");
       console.log(JSON.stringify(result.outputs.map(({verified,reason})=>({verified,reason}))));

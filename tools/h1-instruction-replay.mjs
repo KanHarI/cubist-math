@@ -140,7 +140,11 @@ export function replayInstructions(module, fixtures, {sourceModule=module}={}) {
     if(declaredReason.kind !== nativeReason.kind)
       throw Error(`Refusal class changed from ${nativeReason.kind} to ${declaredReason.kind}: ${declaredReason.message}`);
     if(nativeReason.kind === "other") {
-      const expected=fixture.operation === "sup" && terms[0].tag !== "W" ? "Unknown term constructor"
+      // A native constructor whose annotation is not its former keeps its
+      // retired node under τ, which the current kernel refuses as syntax.
+      const retired=(fixture.operation === "sup" && terms[0].tag !== "W")
+        || (["pushLeft","pushRight"].includes(fixture.operation) && terms[0].tag !== "Pushout");
+      const expected=retired ? "Unknown term constructor"
         : declaredRefusalMessages[fixture.operation] ?? fixture.nativeError.expected;
       if(!nativeReason.message.includes(fixture.nativeError.expected) || !declaredReason.message.includes(expected))
         throw Error(`Refusal diagnostic changed: native ${nativeReason.message}; declared ${declaredReason.message}`);

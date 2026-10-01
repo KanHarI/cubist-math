@@ -31,8 +31,6 @@ static cc_term weak(cc_kernel *k, cc_term term) {
     cc_node n = k->nodes[term];
     if (n.kind == CC_HCOMP || n.kind == CC_TRANS)
         return ck_hit_reduce(k, term);
-    if (n.kind == CC_PUSH_PATH)
-        return ck_pushout_reduce(k, term);
     if (n.kind == CC_DEFREF) {
         if (!n.payload || n.payload >= k->definition_count)
             return ck_fail(k, "Unknown definition reached reduction."), 0;
@@ -105,8 +103,6 @@ static cc_term weak(cc_kernel *k, cc_term term) {
     }
     if (n.kind == CC_APP) {
         cc_term fn = ck_whnf(k, n.child[0]);
-        if (fn && k->nodes[fn].kind == CC_PUSH_ELIM)
-            return ck_pushout_reduce(k, ck_make(k, CC_APP, 0, fn, n.child[1], 0, 0));
         if (fn && k->nodes[fn].kind == CC_ELIM) {
             bool reduced = false;
             cc_term result = ck_eliminate(k, fn, n.child[1], true, &reduced);

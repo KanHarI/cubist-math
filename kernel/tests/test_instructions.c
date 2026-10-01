@@ -90,7 +90,8 @@ static void trees(void) {
     assert(value(cc_kernel_normalize(k,term(counted)))==2);
 }
 static void retired_syntax(void) {
-    const cc_term_kind retired[]={CC_NAT,CC_ZERO,CC_SUCC,CC_NATREC,CC_W,CC_SUP,CC_WREC};
+    const cc_term_kind retired[]={CC_NAT,CC_ZERO,CC_SUCC,CC_NATREC,CC_W,CC_SUP,CC_WREC,
+        CC_PUSHOUT,CC_PUSH_LEFT,CC_PUSH_RIGHT,CC_PUSH_PATH,CC_PUSH_ELIM};
     for (unsigned i=0;i<sizeof retired/sizeof *retired;++i) {
         assert(!cc_kernel_term(k,retired[i],0,0,0,0,0));
         assert(cc_kernel_error(k)[0]); cc_kernel_clear_error(k);
@@ -99,6 +100,6 @@ static void retired_syntax(void) {
 int main(void) {
     k=cc_kernel_new(); assert(k); cc_kernel_set_extensions(k,CC_EXTENSION_H1);
     addition(); trees(); retired_syntax(); cc_kernel_free(k);
-    puts("Declared Nat and W instructions compute; retired syntax is refused.");
+    puts("Declared Nat and W instructions compute; retired Nat, W and pushout syntax is refused.");
     return 0;
 }

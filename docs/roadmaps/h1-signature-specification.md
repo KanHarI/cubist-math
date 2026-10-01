@@ -9,6 +9,21 @@ below about retaining primitive W refer to the earlier implementation; the
 [migration record](h1-program-types.md) describes the current universe limits
 and historical oracle.
 
+2026-10-01 decisions and update, by the maintainer:
+
+- **Sums stay native.** `A or B` keeps its kernel primitive at every level,
+  tier-1 arguments included. The wider retirement of 7.4 and work-plan K2.4c
+  no longer covers sums, even if the tier-parametric proposal is adopted.
+- **Pushouts are a declared type.** `Pushout` is an ordinary H1 declaration
+  with the path constructor `push(c) : inl(f(c)) = inr(g(c))`, in
+  [`pushout.cubist`](../../archive/first-library/pushout.cubist). Its
+  primitive formation, constructors, eliminator and computation rules have
+  been retired, and their tags and ABI slots reserved, as for Nat and W. So
+  the assumed baseline of 4.1 no longer contains pushouts: they are covered
+  by the H1 model and canonicity arguments instead. Statements below about
+  the native pushout describe the earlier implementation; the
+  [migration record](h1-program-types.md) describes the current API.
+
 Status: approved on 2026-09-27 for experimental implementation; reviewed
 against `02a57ef` on 2026-09-28 by the
 [work-plan audit](audits/2026-09-28-audit.md). Written on 2026-09-27 as
@@ -993,11 +1008,16 @@ base and tubes reduce to such forms. Section 4.4 argues this.
 ### 4.1 Baseline
 
 G0 fixes the trust base (G0 3.1 and 3.6): De Morgan CCHM with Π, Σ, Path and
-Glue, a cumulative hierarchy over the ordinals below ω², natural numbers,
-unit, empty type, sums, W types and pushouts. Its consistency and
-canonicity with these formers is **assumed**; in particular no published
-canonicity proof covers the kernel's pushouts. H1 adds one schema of
-declarations to this base. The claims below are relative to it.
+Glue, a cumulative hierarchy over the ordinals below ω², unit, empty type and
+sums. Its consistency and canonicity with these formers is **assumed**.
+Huber's published proof covers Π, Σ, Path, Glue, one universe and natural
+numbers; unit, the empty type and sums are routine beside them. H1 adds one
+schema of declarations to this base. The claims below are relative to it.
+
+The base once also had natural numbers, W types and pushouts. Since
+2026-09-30 natural numbers and W types, and since 2026-10-01 pushouts, are H1
+declarations, so the arguments below cover them instead of assuming them.
+Pushouts were the base's one former with no published canonicity proof.
 
 ### 4.2 Semantic construction
 
@@ -1149,7 +1169,7 @@ marker.
 | The later tier-parametric proposal would be sound at every tier | Proved here in outline, by induction on the checked admission derivation (2.3). Not part of H1 (Q16, decided) |
 | Confluence of the generated rules with the existing ones | The overlaps of the generated rules with the baseline's are joined, CP01–CP10 ([critical pairs](h1-critical-pairs.md)); approved on 2026-09-30. No global confluence or normalization is claimed |
 | Canonicity for H1 | Argued (4.4), relative to the assumed baseline |
-| Consistency and canonicity of the baseline, pushouts included | **Assumed**, as in G0 3.6 |
+| Consistency and canonicity of the baseline: Π, Σ, Path, Glue, universes, unit, empty type and sums | **Assumed**, as in G0 3.6 |
 | Normalization, for decidable conversion | **Not established**; the kernel relies on budgets, as today |
 | The baseline's isolation of instruction acceptance from untrusted conversion queries | **Corrected** on 2026-09-28 (work-plan I1.2a). The audit's finding 1: the reducers behind `Whnf` and `Normalize` called `ck_convertible`, and a successful public conversion query entered the memo that folded alpha equality read, so one `Apply` was refused, then accepted, with no equality judgement among its premises. Valid beta equality, so no false equality. Now the folded comparison reads only its own results, reduction decides eta by syntax, and conversion refuses to run inside an instruction (`kernel/tests/test_isolation.c`) |
 

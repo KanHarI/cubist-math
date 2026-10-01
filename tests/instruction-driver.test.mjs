@@ -268,7 +268,7 @@ test("composition with overlapping faces: each overlap has its equality, and a t
   assert.deepEqual(overlaps.sort(), [0, 1]);
 });
 
-test("pushouts: the suspension, its points and meridian, and its induction principle derive", async t => {
+test("declared pushouts: the suspension, its points and meridian, and its induction principle derive", async t => {
   const readArchive = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
   const program = new CubicalProgram(await createCubical(), readArchive);
   t.after(() => program.dispose());
@@ -292,7 +292,7 @@ test("pushouts: the suspension, its points and meridian, and its induction princ
     } catch (error) { failures.push(`${name}: ${error.message}`); }
   }
   assert.deepEqual(failures, []);
-  for (const rule of ["pushout", "pushPoint", "pushPath", "pushElim"]) assert.ok(rules.has(rule), rule);
+  for (const rule of ["sortBegin", "construct", "eliminator"]) assert.ok(rules.has(rule), rule);
 });
 
 test("W types: binary positive numbers, their constructors and their recursion derive", async t => {

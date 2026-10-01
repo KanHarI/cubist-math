@@ -1,4 +1,6 @@
-# Source-defined Nat and W
+# Source-defined Nat, W and pushouts
+
+Nat and W since 2026-09-30, pushouts since 2026-10-01 ([below](#source-defined-pushouts)).
 
 Implemented on 2026-09-30, based on `bfef585`. H1 is enabled by default in
 the browser, CLI and source-checking tools. Mathematical release review of
@@ -105,6 +107,70 @@ oracle: `tools/legacy-kernel.mjs` builds the exact Git revision
 That binary is never loaded by production checking or included in the site.
 Historical comparisons do not certify the current producer; the current
 native, source, corpus and driver tests provide that evidence separately.
+
+## Source-defined pushouts
+
+Decided and implemented on 2026-10-01. Sums stay native: `A or B` keeps its
+kernel primitive at every level. Pushouts become an ordinary declaration, so
+the specification's assumed baseline (4.1) no longer contains them.
+[`pushout.cubist`](../../archive/first-library/pushout.cubist) declares
+
+```cubist
+inductive Pushout(U < UU0, V < UU0, W < UU0, C : U, A : V, B : W, f : C -> A, g : C -> B) : max(
+  U, max(V, W)
+) {
+  inl(a : A);
+  inr(b : B);
+  push(c : C) : inl(f(c)) = inr(g(c));
+}
+```
+
+with a structural `pushout_induction`. Use `import pushout;`. As for W, the
+universe arguments are explicit, and a pushout over `UU`-tier types needs a
+separate fixed-universe declaration. The constructors take their instance
+from the expected type. A path constructor applied at a point now reads it
+from the point's expected type, so a motive's family can say
+`P(push(c) @ i)`; the refusal without one says so.
+
+- **Source.** The builtins `Pushout(C, A, B, f, g)`, `push_left`,
+  `push_right`, `push_path` and `pushout_induction` are gone, and the names
+  are ordinary. `suspension_types` keeps its API (`Suspension`, `north`,
+  `south`, `meridian`, `suspension_induction`), now defined by the
+  constructors and a `match`; its importers are unchanged. `cubical_paths`
+  and the conversion-law example use `match`, and the meridian computation
+  laws still hold by `rfl`.
+- **Kernel.** The term checker's pushout rules, the pushout instructions and
+  their computation (`check_pushout.c`, `pushout_compute.c`, the pushout
+  transport in `hit_composition.c`) are removed. The tags 36–40 and the four
+  instruction slots are reserved and refused. The term checker also loses
+  its `HComp`/`Trans` rule, which only pushout families satisfied; declared
+  higher sorts take them through the instruction kernel. The shared
+  decomposition and `hcomp` elimination are renamed
+  `ck_higher_composition` and `ck_eliminate_hcomp`.
+- **Tests.** A new WASM test transports `push(tt)` along a line of pushouts
+  whose left map moves along a meridian: the result types over the moved
+  endpoint, its normal form is the corrected `hcomp` of specification 3.5,
+  and eliminating it computes by `rfl`. The driver test derives the
+  suspension from `sortBegin`, `construct` and `eliminator` judgements. The
+  retired tags and opcodes are refused, in C and through WASM.
+- **Historical oracle.** The pushout cases of X1, X3 and X6–X8 replay
+  against the pinned pre-migration kernel, as W's do. X8's source-level
+  pushout call is gone, since source pushouts are declared; its sum call
+  remains.
+
+Checks on the implementation tree, 2026-10-01:
+
+- `node tools/test.mjs`: 713 tests passed, zero failures. The corpus has
+  3,788 declarations, two more than before: `Pushout` and
+  `pushout_induction`.
+- `make -C kernel test`, `make sanitize SANITIZERS=undefined` and
+  `make lint` passed.
+- `node tools/build-site.mjs`, `npm run test:site` and
+  `npm run test:browser` passed. In the page worker, every example of the
+  cubical, induction and errors chapters and of the quick reference checked
+  with its labelled verdict, the pushout excerpt with its module; the
+  `pushout`, `suspension_types` and `cubical_paths` library pages show
+  checked, no axioms, with no console errors.
 
 ## Migration ledger
 

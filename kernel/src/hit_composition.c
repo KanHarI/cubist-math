@@ -1,7 +1,9 @@
-/* CHM §§3.2 and 3.3.5. General composition decomposes into transport followed
- * by canonical homogeneous composition. Transporting a pushout BRIDGE also
- * corrects its endpoints: transport(f(c)) need not equal f(transport(c)).
- * All correction terms below are built from checked cubical operations. */
+/* Composition and transport of declared higher sorts (H1 family F4,
+ * specification 3.4 and 3.5), after CHM §§3.2 and 3.3.5. General composition
+ * decomposes into transport followed by formal homogeneous composition.
+ * Transporting a constructor at dimensions also corrects its boundary: the
+ * transport of a boundary piece need not be the piece at the transported
+ * arguments. All correction terms are built from checked cubical operations. */
 #include "term_internal.h"
 #include <string.h>
 
@@ -107,8 +109,8 @@ static cc_term rename_tubes(cc_kernel *k, cc_term system, unsigned dim, cc_formu
     return ck_make(k, CC_TUBE, tube.payload, value, tail, 0, 0);
 }
 
-cc_term ck_pushout_composition(cc_kernel *k, unsigned dim, cc_term family,
-                                cc_term system, cc_term base) {
+cc_term ck_higher_composition(cc_kernel *k, unsigned dim, cc_term family,
+                              cc_term system, cc_term base) {
     cc_formula_id empty = bottom(k);
     cc_term moved = transport(k, dim, family, empty, base, false);
     cc_term walls = 0;
@@ -122,7 +124,7 @@ cc_term ck_pushout_composition(cc_kernel *k, unsigned dim, cc_term family,
     return ck_make(k, CC_HCOMP, dim, target, walls, moved, 0);
 }
 
-cc_term ck_pushout_eliminate_hcomp(cc_kernel *k, cc_term eliminator, cc_term composition) {
+cc_term ck_eliminate_hcomp(cc_kernel *k, cc_term eliminator, cc_term composition) {
     cc_node e = k->nodes[eliminator];
     cc_node box = k->nodes[composition];
     uint64_t avoid = ck_free_dims(k, eliminator) | ck_free_dims(k, composition) |
@@ -332,46 +334,5 @@ cc_term ck_hit_reduce(cc_kernel *k, cc_term term) {
         return 0;
     if (k->nodes[family].kind == CC_SORT)
         return sort_transport(k, term, family, value);
-    if (k->nodes[family].kind != CC_PUSHOUT)
-        return ck_fail(k, "Transport computation currently requires a pushout family."), 0;
-    cc_node P = k->nodes[family];
-    cc_node z = k->nodes[value];
-    unsigned dim = n.payload;
-    cc_formula_id phi = k->nodes[n.child[1]].payload;
-    cc_term target = ck_endpoint_term(k, family, dim, 1);
-    if (z.kind == CC_PUSH_LEFT || z.kind == CC_PUSH_RIGHT) {
-        cc_term carrier = P.child[z.kind == CC_PUSH_LEFT ? 1 : 2];
-        cc_term point = transport(k, dim, carrier, phi, z.child[1], true);
-        return ck_make(k, z.kind, 0, target, point, 0, 0);
-    }
-    if (z.kind == CC_HCOMP)
-        return transport_hcomp(k, term, family, value);
-    if (z.kind != CC_PUSH_PATH)
-        return term;
-    unsigned h = ck_fresh_dimension(k, ck_free_dims(k, term) | (UINT64_C(1) << dim));
-    if (h >= CC_DIMENSIONS)
-        return 0;
-    cc_formula_id reverse = reversed(k, h);
-    cc_formula coordinate;
-    cc_init(&coordinate, CC_INTERVAL);
-    if (cc_generator(&coordinate, dim, true) != CC_OK) {
-        cc_clear(&coordinate);
-        return ck_fail(k, "Pushout bridge filling allocation failed."), 0;
-    }
-    cc_term fixed = ck_make(k, CC_TUBE, phi, z.child[1], 0, 0, 0);
-    cc_term label_fill = ck_fill(k, dim, P.child[0], fixed, z.child[1], &coordinate);
-    cc_clear(&coordinate);
-    cc_term left_map = ck_make(k, CC_FST, 0, P.child[3], 0, 0, 0);
-    cc_term right_map = ck_make(k, CC_SND, 0, P.child[3], 0, 0, 0);
-    cc_term left = ck_make(k, CC_PUSH_LEFT, 0, family, app(k, left_map, label_fill), 0, 0);
-    cc_term right = ck_make(k, CC_PUSH_RIGHT, 0, family, app(k, right_map, label_fill), 0, 0);
-    cc_term left_correction = substitute(k, squeeze(k, dim, family, phi, left), dim, reverse);
-    cc_term right_correction = substitute(k, squeeze(k, dim, family, phi, right), dim, reverse);
-    cc_term label = transport(k, dim, P.child[0], phi, z.child[1], true);
-    cc_term bridge = ck_make(k, CC_PUSH_PATH, z.payload, target, label, 0, 0);
-    cc_term walls = 0;
-    walls = ck_append_tube(k, walls, endpoint(k, z.payload, 0), left_correction);
-    walls = ck_append_tube(k, walls, endpoint(k, z.payload, 1), right_correction);
-    walls = ck_append_tube(k, walls, phi, value);
-    return ck_make(k, CC_HCOMP, h, target, walls, bridge, 0);
+    return ck_fail(k, "Transport computation requires a declared higher sort."), 0;
 }

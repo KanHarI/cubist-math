@@ -63,7 +63,8 @@ unsigned ck_arity(cc_term_kind kind) {
     switch (kind) {
     /* Retired primitive tags stay reserved in ABI 3, and are not syntax. */
     case CC_NAT: case CC_ZERO: case CC_SUCC: case CC_NATREC:
-    case CC_W: case CC_SUP: case CC_WREC: return 5;
+    case CC_W: case CC_SUP: case CC_WREC:
+    case CC_PUSHOUT: case CC_PUSH_LEFT: case CC_PUSH_RIGHT: case CC_PUSH_PATH: case CC_PUSH_ELIM: return 5;
     case CC_DEFREF: case CC_VAR: case CC_UNIT: case CC_POINT: case CC_VOID:
     case CC_LBOUND: case CC_LCONST:
         return 0;
@@ -71,13 +72,13 @@ unsigned ck_arity(cc_term_kind kind) {
         return 1;
     case CC_PI: case CC_LAM: case CC_APP: case CC_SIGMA: case CC_PLAM: case CC_PAPP:
     case CC_TUBE: case CC_ABORT: case CC_SUM: case CC_INL: case CC_INR:
-    case CC_GLUE: case CC_UNGLUE: case CC_PUSH_LEFT: case CC_PUSH_RIGHT: case CC_PUSH_PATH:
+    case CC_GLUE: case CC_UNGLUE:
     case CC_LMAX: case CC_LPI: case CC_LLAM: case CC_LAPP: case CC_SORT: case CC_ELIM: case CC_LIST:
         return 2;
     case CC_PAIR: case CC_PATH: case CC_COMP: case CC_UNITREC:
     case CC_GLUE_SYSTEM: case CC_GLUE_TERM: case CC_HCOMP: case CC_TRANS:
         return 3;
-    case CC_SUMREC: case CC_PUSHOUT: case CC_PUSH_ELIM:
+    case CC_SUMREC:
         return 4;
     }
     return 5;
@@ -245,7 +246,7 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
     }
     /* A formula payload names a registered formula: a node's masks are taken
      * from it once, when the node is made, and interning shares the node. */
-    if ((kind == CC_PAPP || kind == CC_PUSH_PATH || kind == CC_TUBE || kind == CC_GLUE_SYSTEM) &&
+    if ((kind == CC_PAPP || kind == CC_TUBE || kind == CC_GLUE_SYSTEM) &&
         !cc_kernel_get_formula(k, payload))
         return ck_fail(k, "A formula handle names no registered formula."), 0;
     /* Identical syntax is one node. Every child and payload is compared after
@@ -286,7 +287,7 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
         k->capacity = capacity;
     }
     uint64_t symbols = kind == CC_VAR ? UINT64_C(1) << (payload % 64) : 0, dims = 0;
-    if (kind == CC_PAPP || kind == CC_PUSH_PATH || kind == CC_TUBE || kind == CC_GLUE_SYSTEM) {
+    if (kind == CC_PAPP || kind == CC_TUBE || kind == CC_GLUE_SYSTEM) {
         const cc_formula *formula = cc_kernel_get_formula(k, payload);
         for (size_t i = 0; formula && i < formula->length; ++i)
             dims |= formula->clauses[i].positive | formula->clauses[i].negative;

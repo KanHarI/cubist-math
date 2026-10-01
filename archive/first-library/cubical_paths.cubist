@@ -1,4 +1,5 @@
 import nat;
+import pushout;
 
 import suspension_types;
 
@@ -34,18 +35,18 @@ def join_paths(A : U0, x, y, z : A, p : x = y, q : y = z) :=
     )
   );
 
-def Susp(A : U0) := Pushout(A, Unit, Unit, fun (a : A) => tt, fun (a : A) => tt);
+def Susp(A : U0) : U0 := Pushout(U0, U0, U0, A, Unit, Unit, fun (a : A) => tt, fun (a : A) => tt);
 
-def susp_meridian(A : U0, a : A) := push_path(Susp(A), a);
+def susp_meridian(A : U0, a : A) : typed(Susp(A), inl(tt)) = typed(Susp(A), inr(tt)) := push(a);
 
-// Induction checks the bridge as a dependent path with the required endpoints.
-def collapse_suspension(A : U0, z : Susp(A)) :=
-  pushout_induction(
-    fun (p : Susp(A)) => Unit, fun (a : Unit) => tt, fun (b : Unit) => tt,
-    fun (a : A) => path(fun (i : Interval) => Unit, fun (i : Interval) => tt), z
-  );
+// Matching checks the push clause as a dependent path with the required endpoints.
+def collapse_suspension(A : U0, z : Susp(A)) : Unit := match z {
+    inl(a) => tt;
+    inr(b) => tt;
+    push(a) @ i => tt;
+  };
 
-def collapse_north(A : U0) : collapse_suspension(A, push_left(Susp(A), tt)) = tt {
+def collapse_north(A : U0) : collapse_suspension(A, inl(tt)) = tt {
   rfl;
 }
 

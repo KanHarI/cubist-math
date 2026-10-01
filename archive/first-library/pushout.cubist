@@ -1,0 +1,25 @@
+// Pushouts glue A and B along a span f : C -> A, g : C -> B. The path
+// constructor joins inl(f(c)) to inr(g(c)) for each c : C, so this is a
+// higher sort: the kernel composes and transports it by the H1 rules.
+inductive Pushout(U < UU0, V < UU0, W < UU0, C : U, A : V, B : W, f : C -> A, g : C -> B) : max(
+  U, max(V, W)
+) {
+  inl(a : A);
+  inr(b : B);
+  push(c : C) : inl(f(c)) = inr(g(c));
+}
+
+// Dependent elimination is an ordinary definition by match: a case for each
+// side and, over each push(c), a dependent path between the two cases.
+def pushout_induction(
+  U < UU0, V < UU0, W < UU0, R < UU0, C : U, A : V, B : W, f : C -> A, g : C -> B,
+  P : Pushout(U, V, W, C, A, B, f, g) -> R, left : forall a : A. P(inl(a)), right : forall b : B.
+  P(inr(b)), bridge : forall c : C.
+  PathP(fun (i : Interval) => P(push(c) @ i), left(f(c)), right(g(c))),
+  z : Pushout(U, V, W, C, A, B, f, g)
+) :
+  P(z) := match z as t return P(t) {
+    inl(a) => left(a);
+    inr(b) => right(b);
+    push(c) @ i => bridge(c) @ i;
+  };

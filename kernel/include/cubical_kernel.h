@@ -29,7 +29,9 @@ typedef enum {
     CC_W, CC_SUP, CC_WREC,
     CC_SUM, CC_INL, CC_INR, CC_SUMREC, CC_UNITREC,
     CC_GLUE, CC_GLUE_SYSTEM, CC_GLUE_TERM, CC_UNGLUE, CC_DEFREF,
-    CC_PUSHOUT, CC_PUSH_LEFT, CC_PUSH_RIGHT, CC_PUSH_PATH, CC_PUSH_ELIM, CC_HCOMP, CC_TRANS,
+    /* Reserved: the former pushout primitive tags cannot be constructed. */
+    CC_PUSHOUT, CC_PUSH_LEFT, CC_PUSH_RIGHT, CC_PUSH_PATH, CC_PUSH_ELIM,
+    CC_HCOMP, CC_TRANS,
     /* Universe levels (G0). Levels are not terms; see the child order below. */
     CC_LBOUND, CC_LCONST, CC_LSUCC, CC_LMAX, CC_LPI, CC_LLAM, CC_LAPP,
     /* Declared types (H1). Sort: payload a signature index; children its term
@@ -193,6 +195,7 @@ typedef enum {
     CC_INSTR_REFL, CC_INSTR_STEP, CC_INSTR_REPLACE, CC_INSTR_ETA, CC_INSTR_SIDE,
     CC_INSTR_SYMMETRY, CC_INSTR_TRANSITIVITY, CC_INSTR_CONVERT, CC_INSTR_LIFT, CC_INSTR_ENDPOINT,
     CC_INSTR_PATH_AT, CC_INSTR_SYSTEM, CC_INSTR_SYSTEM_TUBE, CC_INSTR_COMP, CC_INSTR_SYSTEM_OVERLAP,
+    /* Reserved ABI slots: Pushout/PushPoint/PushPath/PushElim are refused. */
     CC_INSTR_PUSHOUT, CC_INSTR_PUSH_POINT, CC_INSTR_PUSH_PATH, CC_INSTR_PUSH_ELIM,
     /* Reserved ABI slots: W/Sup/WElim are refused. */
     CC_INSTR_W, CC_INSTR_SUP, CC_INSTR_W_ELIM,
@@ -207,14 +210,12 @@ typedef enum {
 typedef enum {
     CC_STEP_BETA = 1,  /* App(Lam(x. b), a) to b[a/x] */
     CC_STEP_DELTA,     /* a definition to its checked value */
-    CC_STEP_IOTA,      /* an eliminator or projection on a constructor,
-                        * and a pushout path
-                        * at an endpoint */
+    CC_STEP_IOTA,      /* an eliminator or projection on a constructor */
     CC_STEP_PATH,      /* a path lambda applied at an interval point, or a
                         * path applied at an endpoint of its annotated type */
     CC_STEP_NORMALIZE, /* the normal form, by the kernel's fixed strategy */
     CC_STEP_WHNF,      /* the weak head normal form, by the same strategy:
-                        * composition, transport, Glue and pushouts compute,
+                        * composition, transport and Glue compute,
                         * and lambdas contract by eta */
     CC_STEP_FACE,      /* a composition with a tube on a face that holds, to
                         * that tube at the end of the composition's dimension;
@@ -303,15 +304,13 @@ cc_judgement_id cc_instr_system_overlap(cc_kernel *, cc_judgement_id system, uin
 cc_judgement_id cc_instr_comp(cc_kernel *, cc_judgement_id system);
 /* HComp closes a system whose family A does not use its dimension into the
  * homogeneous composition hcomp^i A [φ ↦ u] a0 : A. A's weak head, which
- * involves no choice, must be a pushout type, as in the term checker, or an
- * instance of a declared higher sort (H1); a declared data sort has no formal
- * composition, and composes by Comp. */
+ * involves no choice, must be an instance of a declared higher sort (H1); a
+ * declared data sort has no formal composition, and composes by Comp. */
 cc_judgement_id cc_instr_hcomp(cc_kernel *, cc_judgement_id system);
 /* Trans closes into transp^i A φ a0 : A(1) a system whose tubes are the base
  * a0 restricted to each clause of the face φ, in order: on φ the family is
- * constant, which each tube's typing shows. The family must be a pushout
- * type, as in the term checker, or a declared higher sort; a declared data
- * sort transports by Comp, with the tube φ ↦ a0. */
+ * constant, which each tube's typing shows. The family must be a declared
+ * higher sort; a declared data sort transports by Comp, with the tube φ ↦ a0. */
 cc_judgement_id cc_instr_trans(cc_kernel *, cc_judgement_id system, cc_formula_id face);
 /* Glue [φ ↦ (T, e)] A, built one piece at a time as a system judgement.
  * GlueBase starts from A : U. GluePiece adds, on a face of one clause, a type
@@ -339,20 +338,6 @@ cc_judgement_id cc_instr_unglue(cc_kernel *, cc_judgement_id value);
 /* Syntax only, for an untrusted search: the type Equiv(A, B) as the Glue
  * rules state it. */
 cc_term cc_kernel_equiv_type(cc_kernel *, cc_term a, cc_term b);
-/* Pushouts (CHM §3.3.5). Pushout gives Pushout(C, A, B, maps) : U from
- * C, A, B : U and maps : Σ(f : C → A). C → B. PushPoint gives inl(a) or inr(b)
- * of a pushout type P (right selects inr); PushPath gives push^r(c) : P for
- * c : C at an interval formula r. PushElim, from a motive M : Π(z : P). U(l)
- * and its left, right and bridge cases, gives the eliminator :
- * Π(z : P). M(z); the bridge is a dependent path over push(c) from the left
- * case at f(c) to the right case at g(c). Types are compared syntactically;
- * P must be a pushout type as written. */
-cc_judgement_id cc_instr_pushout(cc_kernel *, cc_judgement_id source, cc_judgement_id left,
-                                 cc_judgement_id right, cc_judgement_id maps);
-cc_judgement_id cc_instr_push_point(cc_kernel *, cc_judgement_id type, cc_judgement_id value, bool right);
-cc_judgement_id cc_instr_push_path(cc_kernel *, cc_judgement_id type, cc_judgement_id value, cc_formula_id interval);
-cc_judgement_id cc_instr_push_elim(cc_kernel *, cc_judgement_id motive, cc_judgement_id left,
-                                   cc_judgement_id right, cc_judgement_id bridge);
 /* Declared types (H1), admitted one constructor at a time: the family F1 of
  * docs/roadmaps/h1-signature-specification.md, section 5.2, whose sections
  * 1.1-1.6 give the normal form checked here.
@@ -558,11 +543,8 @@ cc_term cc_kernel_relocated(const cc_kernel *, cc_term);
  * UnitRec(motive,point-case,value).
  * Glue(base,system); GlueSystem(face-formula; partial-type,equivalence,next).
  * GlueTerm(Glue-type,base-value,partial-tubes); Unglue(Glue-type,value).
- * Pushout(center,left,right,maps), maps : (center -> left) x (center -> right).
- * PushLeft/PushRight(pushout,value); PushPath(interval-formula; pushout,value).
- * PushElim(motive,left-case,right-case,bridge-case) is a function on the pushout.
- * HComp(dimension; pushout-type,tubes,base) binds only tube terms.
- * Trans(dimension; pushout-family,face-tube,base) binds only the family.
+ * HComp(dimension; higher-sort-type,tubes,base) binds only tube terms.
+ * Trans(dimension; higher-sort-family,face-tube,base) binds only the family.
  * Trans's single face-tube stores phi; its term is discarded and rebuilt as base.
  * DefRef(registry-index) refers only to a previously checked definition.
  * Declared types (H1): Sort(signature-index; parameters, recorded-levels),

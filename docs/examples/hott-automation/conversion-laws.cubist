@@ -8,10 +8,11 @@ import truncation;
 // that conversion rejects.
 
 // Suspension recursion with each bridge supplied directly as a path.
-def bridge_rec(A : U0, B : U1, n : B, s : B, h : A -> (n = s), x : Suspension(A)) :=
-  pushout_induction(
-    fun (p : Suspension(A)) => B, fun (u : Unit) => n, fun (u : Unit) => s, fun (a : A) => h(a), x
-  );
+def bridge_rec(A : U0, B : U1, n : B, s : B, h : A -> (n = s), x : Suspension(A)) : B := match x {
+    inl(u) => n;
+    inr(u) => s;
+    push(a) @ i => h(a) @ i;
+  };
 
 // Its meridian computation law holds by conversion.
 def bridge_rec_beta(A : U0, B : U1, n : B, s : B, h : A -> (n = s), a : A) :
@@ -23,11 +24,12 @@ def bridge_rec_beta(A : U0, B : U1, n : B, s : B, h : A -> (n = s), a : A) :
 def bridge_ind(
   A : U0, C : Suspension(A) -> U1, n : C(north(A)), s : C(south(A)),
   m : (forall a : A. PathP(fun (i : Interval) => C(meridian(A, a) @ i), n, s)), x : Suspension(A)
-) :=
-  pushout_induction(
-    C, fun (u : Unit) => unit_induction(fun (v : Unit) => C(push_left(Suspension(A), v)), n, u),
-    fun (u : Unit) => unit_induction(fun (v : Unit) => C(push_right(Suspension(A), v)), s, u), m, x
-  );
+) :
+  C(x) := match x as z return C(z) {
+    inl(u) => unit_induction(fun (v : Unit) => C(inl(v)), n, u);
+    inr(u) => unit_induction(fun (v : Unit) => C(inr(v)), s, u);
+    push(a) @ i => m(a) @ i;
+  };
 
 // Its dependent meridian computation law also holds by conversion.
 def bridge_ind_beta(
