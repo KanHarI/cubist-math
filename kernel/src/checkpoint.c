@@ -28,7 +28,6 @@ static void truncate_store(cc_kernel *k) {
 }
 void cc_kernel_rollback(cc_kernel *k) {
     if (!k || !k->checkpoint_count) return;
-    ck_clear_check_cache(k);
     if (k->weak_cache) memset(k->weak_cache, 0, k->count * sizeof *k->weak_cache);
     if (k->syntax_memo) memset(k->syntax_memo, 0, CC_SYNTAX_MEMO_SIZE * sizeof *k->syntax_memo);
     if (k->alpha_memo) memset(k->alpha_memo, 0, CC_ALPHA_MEMO_SIZE * sizeof *k->alpha_memo);
@@ -37,7 +36,6 @@ void cc_kernel_rollback(cc_kernel *k) {
     truncate_store(k);
     ck_signatures_rollback(k);
     k->checkpoint_count = 0;
-    k->unfolding_hint_count = 0;
     k->recursion = 0;
     cc_kernel_clear_error(k);
 }
@@ -95,7 +93,6 @@ bool cc_kernel_commit_checkpoint(cc_kernel *k) {
                 cc_term child = k->nodes[i].child[j];
                 if (child >= base) map[child - base] = 1;
             }
-    ck_clear_check_cache(k);
     if (k->weak_cache) memset(k->weak_cache, 0, k->count * sizeof *k->weak_cache);
     if (k->syntax_memo) memset(k->syntax_memo, 0, CC_SYNTAX_MEMO_SIZE * sizeof *k->syntax_memo);
     if (k->alpha_memo) memset(k->alpha_memo, 0, CC_ALPHA_MEMO_SIZE * sizeof *k->alpha_memo);

@@ -1,9 +1,9 @@
-/* Definitional equality first compares folded syntax, then demanded heads. Interval
- * normal forms remain De Morgan expressions; endpoint tests are face formulas.
- * An unbound name must never be identified with a binder on the other side. */
+/* Comparison by syntax: equality up to bound names and the interval algebra,
+ * with nothing reduced or unfolded, and cumulativity built on it. This is the
+ * comparison the instructions use. Interval normal forms remain De Morgan
+ * expressions; endpoint tests are face formulas. An unbound name must never
+ * be identified with a binder on the other side. */
 #include "term_internal.h"
-
-enum comparison_mode { FOLDED, EXPOSE, COMPUTE, CONGRUENCE, HINTED };
 
 typedef struct alpha_binding {
     uint32_t left, right;
@@ -148,7 +148,7 @@ static bool formula_equal(cc_kernel *k, uint32_t a, uint32_t b, const alpha_bind
     return true;
 }
 
-static bool alpha(cc_kernel *, cc_term, cc_term, const alpha_binding *, const alpha_binding *, enum comparison_mode);
+static bool alpha(cc_kernel *, cc_term, cc_term, const alpha_binding *, const alpha_binding *);
 
 /* Whether a name that the renaming binds, on one side, occurs free in the
  * term: the node's mask proves most names absent at once, and each name it
@@ -171,335 +171,29 @@ static bool renamed_dims_free(cc_kernel *k, cc_term term, const alpha_binding *e
     return (k->nodes[term].dims & renamed) && (ck_free_dims(k, term) & renamed);
 }
 
-/* Peel applications without evaluating their arguments or function bodies. */
-static cc_term application_head(cc_kernel *k, cc_term term) {
-    while (k->nodes[term].kind == CC_APP)
-        term = k->nodes[term].child[0];
-    return term;
-}
-
-/* Beta-reduce only explicit lambda heads, without unfolding constants. */
-static cc_term beta_application_head(cc_kernel *k, cc_term term) {
-    if (++k->recursion > 512 || !ck_tick(k, false)) {
-        --k->recursion;
-        ck_fail(k, "Application beta depth exceeded.");
-        return 0;
-    }
-    cc_node n = k->nodes[term];
-    cc_term result = term;
-    if (n.kind == CC_APP) {
-        cc_term fn = beta_application_head(k, n.child[0]);
-        if (!fn) {
-            result = 0;
-        } else if (k->nodes[fn].kind == CC_LAM) {
-            cc_node lambda = k->nodes[fn];
-            cc_term body = ck_substitute(k, lambda.child[1], lambda.payload, n.child[1]);
-            result = body ? beta_application_head(k, body) : 0;
-        } else if (fn != n.child[0]) {
-            result = ck_make(k, CC_APP, 0, fn, n.child[1], 0, 0);
-        }
-    }
-    --k->recursion;
-    return result;
-}
-
-/* Unfold exactly the selected head definition, then discharge the lambdas
- * already supplied with arguments. Older definitions inside its body stay
- * folded so a shared head can be recognized before further computation. */
-static cc_term unfold_application_head(cc_kernel *k, cc_term term) {
-    if (++k->recursion > 512) {
-        --k->recursion;
-        ck_fail(k, "Application spine depth exceeded.");
-        return 0;
-    }
-    cc_node n = k->nodes[term];
-    cc_term result = term;
-    if (n.kind == CC_DEFREF) {
-        if (!n.payload || n.payload >= k->definition_count) {
-            ck_fail(k, "Unknown definition in application comparison.");
-            result = 0;
-        } else {
-            result = beta_application_head(k, k->definitions[n.payload].value);
-        }
-    } else if (n.kind == CC_APP) {
-        cc_term fn = unfold_application_head(k, n.child[0]);
-        if (!fn) {
-            result = 0;
-        } else if (k->nodes[fn].kind == CC_LAM) {
-            cc_node lambda = k->nodes[fn];
-            result = ck_substitute(k, lambda.child[1], lambda.payload, n.child[1]);
-        } else {
-            result = ck_make(k, CC_APP, 0, fn, n.child[1], 0, 0);
-        }
-    }
-    --k->recursion;
-    return result;
-}
-
-static bool has_unfolding_hint(const cc_kernel *k, cc_node head) {
-    if (head.kind == CC_DEFREF)
-        for (size_t i = 0; i < k->unfolding_hint_count; ++i)
-            if (k->unfolding_hints[i] == head.payload)
-                return true;
-    return false;
-}
-
-/* A preliminary comparison unfolds only requested definitions. Other heads
- * remain folded, allowing a wrapper to reveal a common opaque computation. */
-static cc_term hinted_head(cc_kernel *k, cc_term term) {
-    for (unsigned step = 0; step < 128 && term && !k->error[0]; ++step) {
-        cc_term before = term;
-        term = beta_application_head(k, term);
-        if (!term)
-            return 0;
-        cc_term head = application_head(k, term);
-        if (has_unfolding_hint(k, k->nodes[head])) {
-            term = unfold_application_head(k, term);
-        } else {
-            cc_node n = k->nodes[term];
-            if (n.kind == CC_PAPP || n.kind == CC_COMP || n.kind == CC_HCOMP || n.kind == CC_TRANS)
-                term = ck_expose(k, term);
-            else if (n.kind == CC_FST || n.kind == CC_SND) {
-                if (++k->recursion > 512) {
-                    --k->recursion;
-                    ck_fail(k, "Hinted projection depth exceeded.");
-                    return 0;
-                }
-                cc_term pair = hinted_head(k, n.child[0]);
-                --k->recursion;
-                if (!pair)
-                    return 0;
-                if (k->nodes[pair].kind == CC_PAIR)
-                    term = k->nodes[pair].child[n.kind == CC_FST ? 1 : 2];
-                else if (pair != n.child[0])
-                    term = ck_make(k, n.kind, 0, pair, 0, 0, 0);
-            }
-        }
-        if (term == before)
-            break;
-    }
-    return term;
-}
-
-/* The eta contractions that weak heads make only by syntax (term_normalize.c),
- * because instructions trust reduction; the search makes them here when
- * their sides are equal by conversion. (fst x, snd y) is x when y is x, and
- * glue [φ ↦ t] (unglue b) is b when the Glue types are equal and each piece
- * is b on its face. The comparisons are within one side's scope, so they
- * bind nothing. Returns the contraction, or 0. */
-static cc_term conversion_eta(cc_kernel *, cc_term);
-static cc_term eta_contraction(cc_kernel *k, cc_term term) {
-    cc_node n = k->nodes[term];
-    if (n.kind == CC_PAIR) {
-        cc_node first = k->nodes[n.child[1]], second = k->nodes[n.child[2]];
-        return first.kind == CC_FST && second.kind == CC_SND &&
-               alpha(k, first.child[0], second.child[0], NULL, NULL, COMPUTE) ? first.child[0] : 0;
-    }
-    if (n.kind != CC_GLUE_TERM)
-        return 0;
-    /* The base's weak head, contracting eta that holds only by conversion on
-     * the way: the base may itself be a Glue term of a convertible type. */
-    cc_term projected = ck_whnf(k, n.child[1]);
-    for (cc_term inner; projected && (inner = conversion_eta(k, projected));)
-        projected = ck_whnf(k, inner);
-    if (!projected || k->nodes[projected].kind != CC_UNGLUE)
-        return 0;
-    cc_node projection = k->nodes[projected];
-    if (!alpha(k, n.child[0], projection.child[0], NULL, NULL, COMPUTE))
-        return 0;
-    for (cc_term system = n.child[2]; system; system = k->nodes[system].child[1]) {
-        cc_node piece = k->nodes[system];
-        const cc_formula *raw = cc_kernel_get_formula(k, piece.payload);
-        cc_formula face;
-        cc_init(&face, CC_FACE);
-        if (!raw || cc_copy(&face, raw) != CC_OK) {
-            cc_clear(&face);
-            return ck_fail(k, "Glue eta face allocation failed."), 0;
-        }
-        bool agrees = true;
-        for (size_t i = 0; i < face.length && agrees; ++i)
-            agrees = alpha(k, piece.child[0], ck_restrict(k, projection.child[1], face.clauses[i]), NULL, NULL, COMPUTE);
-        cc_clear(&face);
-        if (!agrees)
-            return 0;
-    }
-    return projection.child[1];
-}
-
-/* The eta step, which exposing a nested base repeats: it counts toward the
- * comparison's depth, since cached weak heads let it descend a long chain of
- * Glue terms without reaching any other guard. */
-static cc_term conversion_eta(cc_kernel *k, cc_term term) {
-    if (++k->recursion > 512) {
-        --k->recursion;
-        return ck_fail(k, "Native conversion recursion depth exceeded."), 0;
-    }
-    cc_term contracted = eta_contraction(k, term);
-    --k->recursion;
-    return contracted;
-}
-
 static bool tube_alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms,
-                       const alpha_binding *outer_dims, const alpha_binding *inner_dims, enum comparison_mode mode) {
+                       const alpha_binding *outer_dims, const alpha_binding *inner_dims) {
     if (!a || !b)
         return a == b;
     cc_node left = k->nodes[a], right = k->nodes[b];
     if (left.kind != CC_TUBE || right.kind != CC_TUBE)
         return false;
     return formula_equal(k, left.payload, right.payload, outer_dims) &&
-           alpha(k, left.child[0], right.child[0], terms, inner_dims, mode) &&
-           tube_alpha(k, left.child[1], right.child[1], terms, outer_dims, inner_dims, mode);
+           alpha(k, left.child[0], right.child[0], terms, inner_dims) &&
+           tube_alpha(k, left.child[1], right.child[1], terms, outer_dims, inner_dims);
 }
 
 static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms,
-                         const alpha_binding *dims, enum comparison_mode mode) {
-    if (!ck_tick(k, false))
+                         const alpha_binding *dims) {
+    if (!ck_tick(k))
         return false;
     if (!a || !b)
         return a == b;
     if (a == b && (!terms || terms->identity) && (!dims || dims->identity))
         return true;
-    if (mode != FOLDED && alpha(k, a, b, terms, dims, FOLDED))
-        return true;
-    if (mode == COMPUTE && k->unfolding_hint_count && alpha(k, a, b, terms, dims, HINTED))
-        return true;
-    if (mode == HINTED) {
-        cc_term left = hinted_head(k, a);
-        cc_term right = hinted_head(k, b);
-        if (!left || !right)
-            return false;
-        if (left != a || right != b)
-            return alpha(k, left, right, terms, dims, HINTED);
-    }
-    if (mode == COMPUTE && alpha(k, a, b, terms, dims, EXPOSE))
-        return true;
-    if (mode == EXPOSE) {
-        /* Delta expansion is separate from evaluation. An alias for a compact
-         * numeral can already match its checked expression after one step. */
-        cc_node left = k->nodes[a], right = k->nodes[b];
-        if (left.kind == CC_DEFREF || right.kind == CC_DEFREF) {
-            if (left.kind == CC_DEFREF) {
-                if (!left.payload || left.payload >= k->definition_count)
-                    return ck_fail(k, "Unknown definition in conversion.");
-                a = k->definitions[left.payload].value;
-            }
-            if (right.kind == CC_DEFREF) {
-                if (!right.payload || right.payload >= k->definition_count)
-                    return ck_fail(k, "Unknown definition in conversion.");
-                b = k->definitions[right.payload].value;
-            }
-            return alpha(k, a, b, terms, dims, EXPOSE);
-        }
-    }
-    if (mode == EXPOSE) {
-        cc_term exposed_a = ck_expose(k, a);
-        cc_term exposed_b = ck_expose(k, b);
-        if (!exposed_a || !exposed_b)
-            return false;
-        if (exposed_a != a || exposed_b != b)
-            return alpha(k, exposed_a, exposed_b, terms, dims, EXPOSE);
-    }
-    if (mode == COMPUTE) {
-        cc_term old_a, old_b;
-        do {
-            old_a = a;
-            if (k->nodes[a].kind == CC_DEFREF)
-                a = k->definitions[k->nodes[a].payload].value;
-            else
-                a = ck_expose(k, a);
-        } while (a && a != old_a && ck_tick(k, false));
-        do {
-            old_b = b;
-            if (k->nodes[b].kind == CC_DEFREF)
-                b = k->definitions[k->nodes[b].payload].value;
-            else
-                b = ck_expose(k, b);
-        } while (b && b != old_b && ck_tick(k, false));
-        if (!a || !b || k->error[0])
-            return false;
-        /* Congruence can compare small arguments of a shared computation
-         * before evaluating its potentially enormous result. */
-        if (alpha(k, a, b, terms, dims, CONGRUENCE))
-            return true;
-        a = ck_whnf(k, a);
-        b = ck_whnf(k, b);
-        if (!a || !b)
-            return false;
-        /* Eta that holds only by conversion, on either side, whatever the
-         * other: two pairs may also differ in their annotations. */
-        cc_term eta_a = conversion_eta(k, a), eta_b = conversion_eta(k, b);
-        if (k->error[0])
-            return false;
-        if (eta_a || eta_b)
-            return alpha(k, eta_a ? eta_a : a, eta_b ? eta_b : b, terms, dims, COMPUTE);
-    }
-    if (!a || !b)
-        return false;
     cc_node left = k->nodes[a], right = k->nodes[b];
-    enum comparison_mode children_mode = mode == CONGRUENCE ? COMPUTE : mode;
-    if (left.kind != right.kind) {
-        /* Pair eta also belongs to the selective pass: otherwise a folded
-         * (fst p, snd p) versus p comparison would force unrelated definitions
-         * to unfold before reaching the existing eta rule below. */
-        bool hinted_pair = mode == HINTED && (left.kind == CC_PAIR || right.kind == CC_PAIR);
-        if (mode != COMPUTE && !hinted_pair)
-            return false;
-        /* Function eta is checked here, without reducing lambda bodies merely
-         * to discover their shape during weak-head inspection. */
-        if (left.kind == CC_LAM) {
-            uint32_t fresh = ck_fresh_symbol(k);
-            cc_term applied = ck_make(k, CC_APP, 0, b, ck_var(k, fresh), 0, 0);
-            alpha_binding binding = bind(k, left.payload, fresh, terms);
-            return alpha(k, left.child[1], applied, &binding, dims, children_mode);
-        }
-        if (right.kind == CC_LAM) {
-            uint32_t fresh = ck_fresh_symbol(k);
-            cc_term applied = ck_make(k, CC_APP, 0, a, ck_var(k, fresh), 0, 0);
-            alpha_binding binding = bind(k, fresh, right.payload, terms);
-            return alpha(k, applied, right.child[1], &binding, dims, children_mode);
-        }
-        if (left.kind == CC_PLAM || right.kind == CC_PLAM) {
-            bool on_left = left.kind == CC_PLAM;
-            cc_node line = on_left ? left : right;
-            cc_term other = on_left ? b : a;
-            uint64_t avoid = ck_free_dims(k, a) | ck_free_dims(k, b);
-            for (const alpha_binding *entry = dims; entry; entry = entry->previous)
-                avoid |= (UINT64_C(1) << entry->left) | (UINT64_C(1) << entry->right);
-            unsigned direction = ck_fresh_dimension(k, avoid);
-            if (direction >= CC_DIMENSIONS)
-                return false;
-            cc_formula_id argument = ck_interval_variable(k, direction);
-            cc_formula variable;
-            cc_init(&variable, CC_INTERVAL);
-            if (cc_copy(&variable, cc_kernel_get_formula(k, argument)) != CC_OK)
-                return ck_fail(k, "Path eta dimension allocation failed.");
-            cc_term body = ck_dimension_substitute(k, line.child[1], line.payload, &variable);
-            cc_clear(&variable);
-            cc_term annotation = ck_make(k, CC_PATH, line.payload, line.child[0],
-                ck_endpoint_term(k, line.child[1], line.payload, 0),
-                ck_endpoint_term(k, line.child[1], line.payload, 1), 0);
-            cc_term applied = ck_make(k, CC_PAPP, argument, other, annotation, 0, 0);
-            alpha_binding binding = bind(k, direction, direction, dims);
-            return on_left ? alpha(k, body, applied, terms, &binding, COMPUTE) :
-                             alpha(k, applied, body, terms, &binding, COMPUTE);
-        }
-        /* Typed surjective pairing: compare a pair with the two projections
-         * of the other term. This also handles components that only expose
-         * their projection after reduction; it does not normalize unused data. */
-        if (left.kind == CC_PAIR) {
-            cc_term first = ck_make(k, CC_FST, 0, b, 0, 0, 0);
-            cc_term second = ck_make(k, CC_SND, 0, b, 0, 0, 0);
-            return alpha(k, left.child[1], first, terms, dims, children_mode) &&
-                   alpha(k, left.child[2], second, terms, dims, children_mode);
-        }
-        if (right.kind == CC_PAIR) {
-            cc_term first = ck_make(k, CC_FST, 0, a, 0, 0, 0);
-            cc_term second = ck_make(k, CC_SND, 0, a, 0, 0, 0);
-            return alpha(k, first, right.child[1], terms, dims, children_mode) &&
-                   alpha(k, second, right.child[2], terms, dims, children_mode);
-        }
+    if (left.kind != right.kind)
         return false;
-    }
     if (left.kind == CC_DEFREF)
         return left.payload == right.payload;
     /* Universes are equal when their levels are (G0 §2.5, U-Eq), and
@@ -507,7 +201,7 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
     if (left.kind == CC_U)
         return level_alpha(k, left.child[0], right.child[0], terms);
     if (left.kind == CC_LAPP)
-        return alpha(k, left.child[0], right.child[0], terms, dims, children_mode) &&
+        return alpha(k, left.child[0], right.child[0], terms, dims) &&
                level_alpha(k, left.child[1], right.child[1], terms);
     /* A binder's bound by its tier, and a level met on its own by its normal
      * form; the generic comparison below would ignore their payloads. */
@@ -519,26 +213,26 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
         return same_name(left.payload, right.payload, terms);
     if (ck_term_binder(left.kind)) {
         alpha_binding binding = bind(k, left.payload, right.payload, terms);
-        return alpha(k, left.child[0], right.child[0], terms, dims, children_mode) &&
-               alpha(k, left.child[1], right.child[1], &binding, dims, children_mode);
+        return alpha(k, left.child[0], right.child[0], terms, dims) &&
+               alpha(k, left.child[1], right.child[1], &binding, dims);
     }
     if (ck_dim_binder(left.kind)) {
         alpha_binding binding = bind(k, left.payload, right.payload, dims);
-        if (!alpha(k, left.child[0], right.child[0], terms, left.kind == CC_HCOMP ? dims : &binding, children_mode))
+        if (!alpha(k, left.child[0], right.child[0], terms, left.kind == CC_HCOMP ? dims : &binding))
             return false;
         if (left.kind == CC_PLAM)
-            return alpha(k, left.child[1], right.child[1], terms, &binding, children_mode);
+            return alpha(k, left.child[1], right.child[1], terms, &binding);
         if (left.kind == CC_COMP || left.kind == CC_HCOMP)
-            return tube_alpha(k, left.child[1], right.child[1], terms, dims, &binding, children_mode) &&
-                   alpha(k, left.child[2], right.child[2], terms, dims, children_mode);
-        return alpha(k, left.child[1], right.child[1], terms, dims, children_mode) &&
-               alpha(k, left.child[2], right.child[2], terms, dims, children_mode);
+            return tube_alpha(k, left.child[1], right.child[1], terms, dims, &binding) &&
+                   alpha(k, left.child[2], right.child[2], terms, dims);
+        return alpha(k, left.child[1], right.child[1], terms, dims) &&
+               alpha(k, left.child[2], right.child[2], terms, dims);
     }
     if ((left.kind == CC_GLUE_SYSTEM || left.kind == CC_TUBE) && !formula_equal(k, left.payload, right.payload, dims))
         return false;
     if (left.kind == CC_PAPP)
         return formula_equal(k, left.payload, right.payload, dims) &&
-               alpha(k, left.child[0], right.child[0], terms, dims, children_mode);
+               alpha(k, left.child[0], right.child[0], terms, dims);
     /* Declared types: the signature index, or the constructor number, is part
      * of the node's identity, which the generic comparison would ignore. */
     if ((left.kind == CC_SORT || left.kind == CC_CON || left.kind == CC_ELIM) && left.payload != right.payload)
@@ -546,7 +240,7 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
     /* An instance's recorded levels are levels, equal by normal form as a
      * universe's are. */
     if (left.kind == CC_SORT) {
-        if (!alpha(k, left.child[0], right.child[0], terms, dims, children_mode))
+        if (!alpha(k, left.child[0], right.child[0], terms, dims))
             return false;
         cc_term l = left.child[1], r = right.child[1];
         for (; l && r; l = k->nodes[l].child[1], r = k->nodes[r].child[1])
@@ -556,7 +250,7 @@ static bool alpha_inner(cc_kernel *k, cc_term a, cc_term b, const alpha_binding 
         return !l && !r;
     }
     for (unsigned i = 0; i < ck_arity(left.kind); ++i)
-        if (!alpha(k, left.child[i], right.child[i], terms, dims, children_mode))
+        if (!alpha(k, left.child[i], right.child[i], terms, dims))
             return false;
     return true;
 }
@@ -566,7 +260,7 @@ static bool same_key(const cc_alpha_memo *entry, cc_term a, cc_term b, uint64_t 
 }
 
 static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms,
-                   const alpha_binding *dims, enum comparison_mode mode) {
+                   const alpha_binding *dims) {
     if (++k->recursion > 512) {
         --k->recursion;
         return ck_fail(k, "Native conversion recursion depth exceeded.");
@@ -592,21 +286,14 @@ static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms
     size_t slot = alpha_slot(a, b, term_scope, dimension_scope);
     if (a && b && k->alpha_memo && same_key(&k->alpha_memo[slot], a, b, term_scope, dimension_scope)) {
         cc_alpha_memo entry = k->alpha_memo[slot];
-        /* The folded comparison reads only its own results: a success of a
-         * computing strategy is not syntactic evidence. Conversion may reuse
-         * either kind of success. */
-        bool known = mode == FOLDED ? entry.folded != CC_FOLDED_UNKNOWN
-                                    : entry.folded == CC_FOLDED_EQUAL || entry.convertible;
-        if (known) {
+        if (entry.folded != CC_FOLDED_UNKNOWN) {
             --k->recursion;
-            return ck_tick(k, false) && (mode != FOLDED || entry.folded == CC_FOLDED_EQUAL);
+            return ck_tick(k) && entry.folded == CC_FOLDED_EQUAL;
         }
     }
-    bool equal = alpha_inner(k, a, b, terms, dims, mode);
-    /* Success is definitional equality regardless of the reduction strategy.
-     * A failed folded comparison says nothing about equality after reduction;
-     * failures from other strategies (including hints) are never retained. */
-    if ((equal || mode == FOLDED) && a && b && !k->error[0]) {
+    bool equal = alpha_inner(k, a, b, terms, dims);
+    /* Both answers are kept: either is a fact about the two terms' syntax. */
+    if (a && b && !k->error[0]) {
         if (!k->alpha_memo) {
             k->alpha_memo = calloc(CC_ALPHA_MEMO_SIZE, sizeof *k->alpha_memo);
             if (!k->alpha_memo)
@@ -615,12 +302,8 @@ static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms
         if (k->alpha_memo) {
             /* The comparison may have reused the slot for other pairs. */
             cc_alpha_memo *entry = &k->alpha_memo[slot];
-            if (!same_key(entry, a, b, term_scope, dimension_scope))
-                *entry = (cc_alpha_memo){a, b, term_scope, dimension_scope, CC_FOLDED_UNKNOWN, false};
-            if (mode == FOLDED)
-                entry->folded = equal ? CC_FOLDED_EQUAL : CC_FOLDED_DIFFERENT;
-            else
-                entry->convertible = true;
+            *entry = (cc_alpha_memo){a, b, term_scope, dimension_scope,
+                                     equal ? CC_FOLDED_EQUAL : CC_FOLDED_DIFFERENT};
         }
     }
     --k->recursion;
@@ -653,20 +336,10 @@ cc_term cc_kernel_rename(cc_kernel *k, cc_term term, bool dimension, uint32_t fr
     return renamed;
 }
 
-bool cc_kernel_convertible(cc_kernel *k, cc_term a, cc_term b, uint64_t steps) {
-    if (!k || k->error[0] || !a || !b || a >= k->count || b >= k->count)
-        return false;
-    ck_operation(k, CC_WORK_QUERY);
-    if (steps && steps < k->operation_budget)
-        k->budget = steps;
-    k->recursion = 0;
-    return ck_convertible(k, a, b);
-}
-
 /* Syntactic equality up to bound names and interval algebra: nothing is
  * reduced or unfolded. The instruction kernel uses only this. */
 bool ck_alpha_equal(cc_kernel *k, cc_term a, cc_term b) {
-    return alpha(k, a, b, NULL, NULL, FOLDED);
+    return alpha(k, a, b, NULL, NULL);
 }
 
 /* Cumulativity without conversion: universes by level, and Π or Σ with
@@ -688,72 +361,4 @@ bool ck_syntactic_cumulative(cc_kernel *k, cc_term actual, cc_term expected) {
                                        ck_substitute(k, right.child[1], right.payload, variable));
     }
     return false;
-}
-
-bool ck_convertible(cc_kernel *k, cc_term a, cc_term b) {
-    /* The conversion search is untrusted. Instructions, and the reducers
-     * they call, decide equality syntactically; reaching the search while an
-     * instruction runs would put it back on the trusted path, so it refuses.
-     * Every public entry point that may reach it starts a query first. */
-    if (k->work_phase == CC_WORK_INSTRUCTION)
-        return ck_fail(k, "Internal error: an instruction reached the conversion search.");
-    /* The computing comparison prefers the folded checked structure at every
-     * node (alpha_inner), so equal closed references never need their bodies
-     * evaluated, even inside larger matching types. Its own memo lookup comes
-     * first: a repeated question is answered in one step, although the
-     * folded pass no longer takes conversion's successes. */
-    return alpha(k, a, b, NULL, NULL, COMPUTE);
-}
-
-/* Cumulativity is directed typing, not definitional equality. A function or
- * dependent pair over the same domain remains valid when its result universe
- * is raised. Closing this rule under Pi/Sigma is necessary for substitution:
- * instantiating B : U1 with B : U0 can turn a checked family A -> U1 into a
- * lambda whose most precise inferred type is A -> U0.
- *
- * Domains must be definitionally equal. In particular this rule cannot widen
- * a function's accepted arguments, identify universes, or resize downward. */
-static bool cumulative(cc_kernel *k, cc_term actual, cc_term expected) {
-    if (++k->recursion > 512) {
-        --k->recursion;
-        return ck_fail(k, "Cumulative comparison recursion depth exceeded.");
-    }
-    bool accepted = ck_convertible(k, actual, expected);
-    if (!accepted && !k->error[0]) {
-        actual = ck_whnf(k, actual);
-        expected = ck_whnf(k, expected);
-        if (actual && expected) {
-            cc_node left = k->nodes[actual];
-            cc_node right = k->nodes[expected];
-            if (left.kind == CC_U && right.kind == CC_U) {
-                accepted = ck_level_leq(k, left.child[0], right.child[0]);
-            } else if ((left.kind == CC_PI || left.kind == CC_SIGMA) &&
-                       left.kind == right.kind &&
-                       ck_convertible(k, left.child[0], right.child[0])) {
-                /* Compare codomains under one common fresh variable. Both
-                 * types have already been checked; no new assumption is
-                 * approved by this comparison. */
-                cc_term variable = ck_var(k, ck_fresh_symbol(k));
-                cc_term left_body = ck_substitute(k, left.child[1], left.payload, variable);
-                cc_term right_body = ck_substitute(k, right.child[1], right.payload, variable);
-                accepted = cumulative(k, left_body, right_body);
-            }
-        }
-    }
-    --k->recursion;
-    return accepted && !k->error[0];
-}
-
-bool ck_expect(cc_kernel *k, cc_term actual, cc_term expected) {
-    ++k->trace_mute;
-    bool agree = cumulative(k, actual, expected);
-    --k->trace_mute;
-    ck_trace(k, CC_TRACE_CONVERT, actual, expected, agree);
-    if (agree)
-        return true;
-    if (!k->error[0]) {
-        k->mismatch_found = actual;
-        k->mismatch_expected = expected;
-    }
-    return ck_fail_as(k, CC_ERROR_MISMATCH, "Type mismatch.");
 }

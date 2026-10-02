@@ -13,7 +13,7 @@ bool ck_dim_binder(cc_term_kind kind) {
 }
 
 static bool term_free(cc_kernel *k, cc_term term, uint32_t name) {
-    if (!term || !ck_tick(k, false))
+    if (!term || !ck_tick(k))
         return false;
     cc_node n = k->nodes[term];
     if (n.kind == CC_VAR)
@@ -48,7 +48,7 @@ static uint64_t formula_names(const cc_formula *f) {
 }
 
 static uint64_t free_dims(cc_kernel *k, cc_term term) {
-    if (!term || !ck_tick(k, false))
+    if (!term || !ck_tick(k))
         return 0;
     cc_node n = k->nodes[term];
     uint64_t result = 0;
@@ -99,7 +99,7 @@ static cc_term tube_substitute(cc_kernel *, cc_term, unsigned,
 static cc_term substitute(cc_kernel *k, cc_term term, uint32_t name, cc_term value) {
     if (!term)
         return 0;
-    if (!ck_tick(k, false))
+    if (!ck_tick(k))
         return 0;
     if (!ck_term_free(k, term, name))
         return term;
@@ -158,7 +158,7 @@ static cc_term tube_substitute(cc_kernel *k, cc_term term, unsigned dim,
                                const cc_formula *value, bool bodies, bool faces) {
     if (!term)
         return 0;
-    if (!ck_tick(k, false))
+    if (!ck_tick(k))
         return 0;
     cc_node n = k->nodes[term];
     if (n.kind != CC_TUBE)
@@ -189,7 +189,7 @@ cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
                                 const cc_formula *value) {
     if (!term)
         return 0;
-    if (!ck_tick(k, false))
+    if (!ck_tick(k))
         return 0;
     if (dim >= CC_DIMENSIONS || !value || value->sort != CC_INTERVAL)
         return ck_fail(k, "Invalid dimension substitution."), 0;

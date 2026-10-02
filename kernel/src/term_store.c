@@ -38,7 +38,7 @@ bool ck_fail(cc_kernel *k, const char *message) {
     return ck_fail_as(k, CC_ERROR_OTHER, message);
 }
 
-bool ck_tick(cc_kernel *k, bool checking) {
+bool ck_tick(cc_kernel *k) {
     if (k->error[0])
         return false;
     if (k->deadline_ms && (!k->deadline_ticks--)) {
@@ -52,10 +52,6 @@ bool ck_tick(cc_kernel *k, bool checking) {
         ++k->work.instruction_steps;
     else if (k->work_phase == CC_WORK_QUERY)
         ++k->work.query_steps;
-    if (checking)
-        ++k->checking_steps;
-    else
-        ++k->reduction_steps;
     return true;
 }
 
@@ -87,7 +83,7 @@ unsigned ck_arity(cc_term_kind kind) {
 cc_kernel *cc_kernel_new(void) {
     cc_kernel *k = calloc(1, sizeof *k);
     if (k) {
-        k->optimizations = CC_SHARE_SYNTAX | CC_REUSE_CHECKS;
+        k->optimizations = CC_SHARE_SYNTAX;
         /* Declared types (H1) are on by default since their release. */
         k->extensions = CC_EXTENSION_H1;
         k->count = 1;
@@ -100,43 +96,10 @@ cc_kernel *cc_kernel_new(void) {
     return k;
 }
 
-void ck_trace(cc_kernel *k, cc_trace_kind kind, uint32_t a, uint32_t b, uint32_t c) {
-    if (!k->trace || k->trace_mute) return;
-    if (k->trace_count < k->trace_capacity)
-        k->trace[k->trace_count] = (cc_trace_event){ kind, k->trace_depth, a, b, c };
-    if (k->trace_count < SIZE_MAX) ++k->trace_count;
-}
-
-bool cc_kernel_trace_start(cc_kernel *k, size_t capacity) {
-    if (!k || !capacity) return false;
-    cc_kernel_trace_stop(k);
-    k->trace = calloc(capacity, sizeof *k->trace);
-    if (!k->trace) return false;
-    k->trace_capacity = capacity;
-    return true;
-}
-
-void cc_kernel_trace_stop(cc_kernel *k) {
-    if (!k) return;
-    free(k->trace);
-    k->trace = NULL;
-    k->trace_count = k->trace_capacity = 0;
-    k->trace_depth = k->trace_mute = 0;
-}
-
-size_t cc_kernel_trace_count(const cc_kernel *k) { return k ? k->trace_count : 0; }
-
-bool cc_kernel_trace_event(const cc_kernel *k, size_t index, cc_trace_event *event) {
-    if (!k || !k->trace || !event || index >= k->trace_count || index >= k->trace_capacity) return false;
-    *event = k->trace[index];
-    return true;
-}
-
 void cc_kernel_set_optimizations(cc_kernel *k, unsigned flags) {
     if (!k) return;
-    k->optimizations = flags & (CC_SHARE_SYNTAX | CC_REUSE_CHECKS);
+    k->optimizations = flags & CC_SHARE_SYNTAX;
     if (!(flags & CC_SHARE_SYNTAX)) { free(k->interned); k->interned = NULL; k->intern_capacity = k->intern_used = 0; }
-    if (!(flags & CC_REUSE_CHECKS)) ck_clear_check_cache(k);
 }
 
 void cc_kernel_set_step_budget(cc_kernel *k, uint64_t steps) {
@@ -146,7 +109,6 @@ void cc_kernel_set_step_budget(cc_kernel *k, uint64_t steps) {
 void cc_kernel_free(cc_kernel *k) {
     if (!k)
         return;
-    free(k->trace);
     free(k->facts);
     free(k->entries);
     free(k->context_sets);
@@ -159,15 +121,12 @@ void cc_kernel_free(cc_kernel *k) {
     free(k->relocation);
     ck_signatures_free(k);
     free(k->definitions);
-    free(k->unfolding_hints);
     free(k->formulas);
     free(k->syntax_memo);
     free(k->alpha_memo);
     free(k->alpha_scopes);
     free(k->weak_cache);
     free(k->interned);
-    free(k->contexts);
-    free(k->inferred);
     free(k->nodes);
     free(k);
 }

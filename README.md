@@ -44,7 +44,6 @@ npm test -- --changed                    # Modified .cubist sources
 npm test -- tests/cubical-program.test.mjs
 npm test                                # Final regression and corpus check
 npm run test:browser
-node tools/differential-driver.mjs --seeds=2000   # The driver against the term checker
 make CC=clang sanitize                  # Address/undefined sanitizers
 make sanitize SANITIZERS=undefined     # macOS 26, where the address sanitizer hangs
 make lint
@@ -57,18 +56,11 @@ rewriting its outputs, and rebuilds whatever no longer matches, whatever the
 file times say. Every command that loads `web/dist` refuses a stale build
 rather than run code it does not contain: `npm test`, the browser tests, the
 site build, the CLI, the coverage, audit, fingerprint, fuel-baseline,
-migration-verifier, benchmark and differential tools, and the driver trace
+migration-verifier and benchmark tools, and the driver trace
 (`tests/driver-trace.mjs`), which checks another checkout it traces by that
 tree's own stamp. So does a test file run on its own, with `node` or
 `node --test`: each test file that loads `web/dist` imports
 `tests/fresh-build.mjs` first, and `tests/fresh-build.test.mjs` keeps it so.
-
-`tools/differential-driver.mjs` generates problems where eta and computation
-meet, each a context, a type and two terms. The terms are equal by
-construction, through beta, pair eta, Glue eta with pieces on a face, and
-type-level beta, or they differ in one variable. The tool checks each problem
-with the term checker's conversion and with the instruction driver, and
-reports any disagreement with its seed. `npm test` runs 500 seeds.
 
 The independent optimization switches are `--[no-]share-syntax`,
 `--[no-]reuse-checks`, and `--[no-]compact-paths`; all default on.
@@ -80,7 +72,7 @@ such as an `as` name no motive mentions; checking reports the same warnings.
 ## Code and documentation
 
 - [`docs/README.md`](docs/README.md): documentation index and where to resume each development.
-- [`kernel/`](kernel/README.md): the trusted C kernel. Its typing rules are the instructions in `src/instructions.c`, with one file per group of computation rules; the old term checker remains as the search's untrusted oracle.
+- [`kernel/`](kernel/README.md): the trusted C kernel. Its typing rules are the instructions in `src/instructions.c`, with one file per group of computation rules.
 - [`docs/guides/cli.md`](docs/guides/cli.md): custom proofs, imports, commands, and CLI limitations.
 - [`docs/guides/kernel.md`](docs/guides/kernel.md): a mathematician's guide to reading the kernel.
 - [`lib/cubical/`](lib/cubical): elaboration and cubical syntax. Every check is the kernel's; the JavaScript reference checker was removed on 2026-10-02.

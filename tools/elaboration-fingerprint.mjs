@@ -42,7 +42,7 @@ export async function elaborationFingerprint({ modules, readSource }) {
       const view = views.get(binding);
       declarations[binding] = { status: symbol.status, reason: symbol.reason ?? null,
         errorStart: symbol.errorStart ?? null, errorEnd: symbol.errorEnd ?? null,
-        axioms: [...symbol.axioms].sort(), unfoldingHints: symbol.unfoldingHints.length,
+        axioms: [...symbol.axioms].sort(),
         displayedType: symbol.type, rewriteWork: symbol.rewriteWork ?? null,
         term: view ? hash(view.term) : null, type: view ? hash(view.type) : null,
         references: program.declarationReferences.get(binding)?.map(({ start, binding }) =>
@@ -61,7 +61,6 @@ export async function elaborationFingerprint({ modules, readSource }) {
           freeze: symbol.freeze ?? null, definitionStart: symbol.definitionStart ?? null,
           rewriteSteps: symbol.rewriteSteps?.map(step => step.binding) ?? null },
         aliases: (view.aliases ?? []).map(alias => [alias.name, alias.start, alias.end]),
-        unfoldingHints: view.unfoldingHints?.length ?? 0,
         term: hash(closed(view.term, view.context, view.dimensions)),
       };
     }

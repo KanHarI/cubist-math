@@ -11,8 +11,8 @@ SANITIZERS ?= address,undefined
 comma := ,
 SRC = $(wildcard src/*.c)
 HEADERS = $(sort $(wildcard include/*.h src/*.h))
-TESTS = test-lattice test-kernel-api test-conversion test-dimension-scope test-path-head test-unfolding-hints \
-	test-checkpoint test-check-cache test-instructions test-levels test-work test-signatures test-isolation
+TESTS = test-lattice test-kernel-api test-comparison test-path-head \
+	test-checkpoint test-instructions test-levels test-work test-signatures test-isolation
 PROGRAMS = lattice-cli bench-lattice $(TESTS)
 # The kernel's sources compile once per configuration, into objects every
 # program links, and each object records the headers it includes (-MMD), so

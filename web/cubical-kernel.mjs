@@ -1,6 +1,6 @@
-// Integer-handle interface to the independent C checker, usable in a browser
-// worker or Node. Building syntax never certifies it; check() does that in C.
-const traceKinds = ["", "infer", "inferred", "reused", "extend", "convert", "reduce"];
+// Integer-handle interface to the C kernel, usable in a browser worker or
+// Node. Building syntax never certifies it: only an instruction derives a
+// judgement (web/cubical-instructions.mjs).
 // A term kind's name at its number. null marks a retired kind whose number
 // stays reserved, Nat's, W's and pushouts' (kernel/include/cubical_kernel.h).
 export const cubicalKinds = [
@@ -52,7 +52,6 @@ export class CubicalKernel {
     this.stepBudget = 10000000n;
     // The most steps one query may grow to (withGrowingBudget).
     this.maxQuerySteps = MAX_QUERY_STEPS;
-    this.unfoldingHints = [];
     this.definitions = new Map();
     // Admitted signatures of declared types (H1), by name: each record's
     // kernel index, constructor names and normal form in source terms
@@ -61,11 +60,6 @@ export class CubicalKernel {
     // Declared types (H1) are on by default since their release, in the
     // kernel and here; setExtensions can switch them off.
     this.extensions = { h1: true };
-    // Whether instruction drivers on this session consult the term checker's
-    // conversion as a search aid rather than their own guide, which compares
-    // weak head normal forms (web/cubical-instruction-driver.mjs). For
-    // comparison only: the guide needs no term checker.
-    this.conversionOracle = false;
   }
   assertOpen() {
     if (!this.handle) throw new Error("Cubical kernel session is disposed.");
@@ -73,7 +67,8 @@ export class CubicalKernel {
   setOptimizations({ shareSyntax = true, reuseChecks = true, compactPaths = true } = {}) {
     this.assertOpen();
     this.optimizations = { shareSyntax, reuseChecks, compactPaths };
-    this.module._cb_optimizations(this.handle, (shareSyntax ? 1 : 0) | (reuseChecks ? 2 : 0));
+    // reuseChecks and compactPaths are the translator's; the kernel's switch is shared syntax.
+    this.module._cb_optimizations(this.handle, shareSyntax ? 1 : 0);
   }
   // Kernel extensions: { h1 } admits declared types, on by default since
   // H1's release. Switched off, the kernel refuses new declarations.
@@ -104,44 +99,9 @@ export class CubicalKernel {
     this.deadline = milliseconds > 0 ? performance.now() + milliseconds : 0;
     this.module._cb_deadline_ms(this.handle, milliseconds);
   }
-  // Run an operation with the checker's trace on, and return the rules it
-  // applied, as events (kernel/include/cubical_kernel.h). The trace changes
-  // no result; events past the capacity are counted as dropped.
-  traced(operation, capacity = 4000) {
-    this.assertOpen();
-    if (!this.module._cb_trace(this.handle, capacity)) throw new Error("Could not start a kernel trace.");
-    try {
-      const value = operation();
-      const count = this.module._cb_trace_count(this.handle) >>> 0, kept = Math.min(count, capacity);
-      const field = (index, which) => this.module._cb_trace_event(this.handle, index, which) >>> 0;
-      const events = Array.from({ length: kept }, (_, index) => ({ kind: traceKinds[field(index, 0)],
-        depth: field(index, 1), a: field(index, 2), b: field(index, 3), c: field(index, 4) }));
-      return { value, events, dropped: count - kept };
-    } finally { this.module._cb_trace(this.handle, 0); }
-  }
   checkDeadline() {
     if (this.deadline && performance.now() >= this.deadline)
       throw new KernelError("Declaration time limit exceeded.", "deadline");
-  }
-  setUnfoldingHints(names = []) {
-    this.assertOpen();
-    const unique = [...new Set(names)];
-    const references = unique.map(name => {
-      const reference = this.definitions.get(name);
-      if (!reference) throw new Error(`An unfolding hint needs a checked definition: ${name}`);
-      return reference;
-    });
-    if (!this.module._cb_unfolding_clear(this.handle)) throw this.failure();
-    this.unfoldingHints = [];
-    for (let i = 0; i < references.length; i++) {
-      if (!this.module._cb_unfolding_add(this.handle, references[i])) throw this.failure();
-      this.unfoldingHints.push(unique[i]);
-    }
-  }
-  withUnfoldingHints(names, operation) {
-    const previous = this.unfoldingHints;
-    this.setUnfoldingHints(names);
-    try { return operation(); } finally { this.setUnfoldingHints(previous); }
   }
   // A query that runs out of its step budget is run again with twice the
   // budget, up to maxQuerySteps, and then fails as the kernel's exhaustion
@@ -252,46 +212,21 @@ export class CubicalKernel {
     if (!id) throw this.failure();
     return id;
   }
-  check(expression, expected = 0, context = [], dimensions = 0n) {
+  // The normal form of a term an instruction derived: the elaborator records
+  // each such handle, and its reduction terminates. Raw syntax is refused.
+  normalize(derivedHandle) {
     this.assertOpen();
-    uint32(expression, "Expression handle");
-    uint32(expected, "Type handle");
-    if (typeof dimensions !== "bigint" || dimensions < 0n || dimensions >> 64n)
-      throw new TypeError("Dimensions must be an unsigned 64-bit BigInt mask.");
-    const m = this.module, h = this.handle;
-    m._cb_context_clear(h);
-    for (const [symbol, type] of context) {
-      uint32(symbol, "Context symbol");
-      uint32(type, "Context type");
-      if (!m._cb_context_add(h, symbol, type)) throw this.failure();
-    }
-    if (!this.withGrowingBudget(() => m._cb_check_in_cube(h, expression, expected,
-      Number(dimensions & 0xffffffffn), Number(dimensions >> 32n)))) throw this.failure();
-    const fields = ["expression", "type", "normal", "checkingSteps", "reductionSteps", "arenaNodes", "arenaBytes"];
-    return Object.freeze(Object.fromEntries(fields.map((key, i) => [key, m._cb_result(h, i)])));
-  }
-  normalize(checkedHandle) {
-    this.assertOpen();
-    uint32(checkedHandle, "Checked handle");
-    // A handle the instruction kernel derived is well typed as well.
-    const derived = this.derivedHandles?.has(checkedHandle);
-    const id = this.withGrowingBudget(() => derived ? this.module._cb_normalize_derived(this.handle, checkedHandle)
-      : this.module._cb_normalize(this.handle, checkedHandle)) >>> 0;
-    if (!id) throw this.failure("Normalize an expression or type from the most recent successful check.");
+    uint32(derivedHandle, "Derived handle");
+    if (!this.derivedHandles?.has(derivedHandle))
+      throw new KernelError("Normalize a term or type an instruction derived.");
+    const id = this.withGrowingBudget(() => this.module._cb_normalize(this.handle, derivedHandle)) >>> 0;
+    if (!id) throw this.failure();
     return id;
   }
   head(handle) {
     this.assertOpen();
     const id = this.withGrowingBudget(() => this.module._cb_head(this.handle, uint32(handle, "Term handle"))) >>> 0;
     if (!id) throw this.failure();
-    return id;
-  }
-  define(name, value, expected = 0) {
-    this.assertOpen();
-    const id = this.withGrowingBudget(() => this.module._cb_define(this.handle, this.symbol(name), uint32(value, "Definition body"),
-      uint32(expected, "Definition type"))) >>> 0;
-    if (!id) throw this.failure();
-    this.definitions.set(name, id);
     return id;
   }
   definition(reference) {

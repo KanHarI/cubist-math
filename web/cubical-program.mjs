@@ -151,7 +151,7 @@ export class CubicalProgram {
             throw error;
           }
         },
-        onReference: this.collectReferences ? (node, term, context, dimensions, aliases) => pending.push({ node, term, context, dimensions, aliases, unfoldingHints: [...this.kernel.unfoldingHints] }) : null,
+        onReference: this.collectReferences ? (node, term, context, dimensions, aliases) => pending.push({ node, term, context, dimensions, aliases }) : null,
         onDeclaration: (declaration, result) => {
           try {this.onDeclaration?.(name, declaration, result, checker);}
           catch(error) {
@@ -221,7 +221,7 @@ export class CubicalProgram {
         const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified,
           status: d.status, reason, errorStart: d.errorStart, errorEnd: d.errorEnd,
           rewriteWork: d.rewriteWork, searchFuel: d.searchFuel, failure: d.failure ?? null,
-          unfoldingHints: d.native?.unfoldingHints ?? [], axioms: d.native?.axioms ?? [],
+          axioms: d.native?.axioms ?? [],
           // Kernel extensions under review that the result relies on, shown
           // apart from assumptions; computable accepts them. None is under
           // review since H1's release, so this list is empty.
@@ -473,15 +473,15 @@ export class CubicalProgram {
     this.kernel.instructionDriver = null;
     const info = this.symbols[binding], local = this.views.get(binding);
     if (info && !info.verified) throw new Error(info.reason);
-    let term, expected = null, context = [], dimensions = new Map(), unfoldingHints = [];
-    if (local) { term = local.term; context = [...local.context]; dimensions = local.dimensions; unfoldingHints = local.unfoldingHints ?? []; }
+    let term, expected = null, context = [], dimensions = new Map();
+    if (local) { term = local.term; context = [...local.context]; dimensions = local.dimensions; }
     else if (this.checker.assumptions.has(binding)) {
       term = { tag: "Var", name: binding }; expected = this.checker.assumptions.get(binding);
     } else {
       const reference = this.kernel.definitions.get(binding);
       if (!reference) throw new Error("No checked native definition for this name.");
       const definition = this.checker.definitionViews.get(binding);
-      term = definition.term; expected = definition.type; unfoldingHints = definition.unfoldingHints;
+      term = definition.term; expected = definition.type;
     }
     const assumptions = this.checker.requiredAssumptions(term, expected, context.map(([, type]) => type));
     context = [...assumptions, ...context];
@@ -503,7 +503,7 @@ export class CubicalProgram {
       .filter(alias => alias.variable).reverse().map(alias => [alias.variable, { name: alias.name, binding: alias.binding }]));
     for (const [name, value] of Object.entries(variableNames)) symbols[name] = { ...value, local: true };
     const view = { backend: "cubical", name: binding,
-      unfoldingHints, expression: checked.term, type: checked.type,
+      expression: checked.term, type: checked.type,
       expressionText: cubicalText(checked.term, this.symbols), typeText: cubicalText(checked.type, this.symbols),
       dimensions: [...dimensions], context: context.map(([name, type]) => ({ name,
         label: variableNames[name]?.name ?? this.checker.assumptionLabels.get(name) ?? name,

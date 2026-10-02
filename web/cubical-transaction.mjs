@@ -18,7 +18,6 @@ export class CubicalDeclarationTransaction {
       [checker.assumptionOrigins,checker.assumptionOrigins.size],
       [checker.libraryAssumptions,checker.libraryAssumptions.size],
     ]);
-    this.hints = [...kernel.unfoldingHints];
     kernel.module._cb_checkpoint(kernel.handle);
     this.active = true;
   }
@@ -40,8 +39,6 @@ export class CubicalDeclarationTransaction {
       kernel.module._cb_rollback(kernel.handle);
       for (const collection of this.sizes.keys())
         for (const key of this.added(collection)) collection.delete(key);
-      kernel.unfoldingHints = [];
-      if (this.hints.length) kernel.setUnfoldingHints(this.hints);
     }
     checker.syntax.reset();
     // Its judgements were truncated with the checkpoint, and handles moved.

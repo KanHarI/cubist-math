@@ -210,7 +210,7 @@ static bool endpoint(shape *sh, cc_term e, unsigned depth) {
     cc_kernel *k = sh->k;
     if (depth > 256)
         return fail(k, "A boundary is nested too deeply.");
-    if (!ck_tick(k, true))
+    if (!ck_tick(k))
         return false;
     cc_node n = node(k, e);
     if (n.kind == CC_PLAM)

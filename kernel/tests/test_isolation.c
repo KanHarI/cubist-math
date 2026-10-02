@@ -1,9 +1,10 @@
 /* Instruction isolation (work plan I1.2a). An instruction's side conditions
- * are syntactic, and so are the reducers that Step, HComp and Trans call:
- * an untrusted query made before an instruction cannot change whether it is
- * accepted, and conversion never decides a reduction step. The work-plan
- * audit of 2026-09-28 (docs/roadmaps/audits/2026-09-28-audit.md, finding 1)
- * found both broken; these are its regressions. */
+ * are syntactic, and so are the reducers that Step, HComp and Trans call: a
+ * query made before an instruction cannot change whether it is accepted, and
+ * no comparison by computation decides a reduction step. The work-plan audit
+ * of 2026-09-28 (docs/roadmaps/audits/2026-09-28-audit.md, finding 1) found
+ * both broken; these are its regressions. Since I1.2b there is no conversion
+ * search to ask at all. */
 #include "cubical_kernel.h"
 #include "term_internal.h"
 #include <assert.h>
@@ -42,10 +43,10 @@ static cc_term reduct(cc_judgement_id typing, cc_step_rule rule) {
 }
 
 /* The audit's probe. x : (λ (a : U0). a)(Nat) is not syntactically an
- * argument of λ (y : Nat). y, so Apply refuses it. Asking conversion, weak
- * heads, normal forms or the old checker about the two types in between
- * changes nothing: before the fix, a successful conversion query entered
- * the memo that the syntactic comparison reads, and Apply then accepted. */
+ * argument of λ (y : Nat). y, so Apply refuses it. Asking for weak heads or
+ * normal forms of the two types in between changes nothing: before the fix,
+ * a successful conversion query entered the memo that the syntactic
+ * comparison reads, and Apply then accepted. */
 static void queries_leave_acceptance_unchanged(void) {
     k = cc_kernel_new();
     assert(k);
@@ -59,44 +60,13 @@ static void queries_leave_acceptance_unchanged(void) {
     cc_judgement_id function = OK(cc_instr_lambda(k, y, OK(cc_instr_variable(k, y))));
     cc_term redex = term_of(beta_nat), plain = term_of(nat);
     rejects(cc_instr_apply(k, function, argument), "wrong type");
-
-    assert(cc_kernel_convertible(k, redex, plain, 10000));
-    rejects(cc_instr_apply(k, function, argument), "wrong type");
     assert(cc_kernel_whnf(k, redex) == plain && cc_kernel_normalize(k, redex) == plain);
-    rejects(cc_instr_apply(k, function, argument), "wrong type");
-    /* The old checker accepts the application, by conversion. */
-    cc_checked_result checked;
-    cc_term application = cc_kernel_term(k, CC_APP, 0, term_of(function), term_of(argument), 0, 0);
-    assert(cc_kernel_check(k, application, plain, (cc_assumption[]){{101, redex}}, 1, &checked));
     rejects(cc_instr_apply(k, function, argument), "wrong type");
 
     /* The derivation instructions accept: a Beta step converts x's type. */
     cc_judgement_id beta = OK(cc_instr_step(k, OK(cc_instr_refl(k, beta_nat)), 1, NULL, 0, CC_STEP_BETA));
     cc_judgement_id applied = OK(cc_instr_apply(k, function, OK(cc_instr_convert(k, argument, beta))));
     assert(type_of(applied) == plain);
-    cc_kernel_free(k);
-}
-
-/* The memo keeps the two kinds of evidence apart: a success of conversion
- * is reused by conversion, never by the syntactic comparison, whichever
- * runs first. */
-static void folded_comparison_reads_only_its_own_results(void) {
-    k = cc_kernel_new();
-    assert(k);
-    cc_term nat = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
-    cc_term x = cc_kernel_term(k, CC_VAR, 10, 0, 0, 0, 0);
-    cc_term z = cc_kernel_term(k, CC_VAR, 11, 0, 0, 0, 0);
-    cc_term identity = cc_kernel_term(k, CC_LAM, 11, nat, z, 0, 0);
-    cc_term beta_x = cc_kernel_term(k, CC_APP, 0, identity, x, 0, 0);
-    assert(cc_kernel_convertible(k, beta_x, x, 0));
-    assert(!ck_alpha_equal(k, beta_x, x) && !k->error[0]);
-    assert(cc_kernel_convertible(k, beta_x, x, 0));
-    assert(!ck_alpha_equal(k, beta_x, x) && !k->error[0]);
-    /* Syntactic equality is evidence for both. */
-    cc_term w = cc_kernel_term(k, CC_VAR, 12, 0, 0, 0, 0);
-    cc_term renamed = cc_kernel_term(k, CC_LAM, 12, nat, w, 0, 0);
-    assert(ck_alpha_equal(k, identity, renamed));
-    assert(cc_kernel_convertible(k, identity, renamed, 0));
     cc_kernel_free(k);
 }
 
@@ -119,14 +89,8 @@ static void reduction_decides_eta_syntactically(void) {
     cc_judgement_id same = OK(cc_instr_pair(k, sigma, first, OK(cc_instr_second(k, pv))));
     assert(reduct(same, CC_STEP_WHNF) == term_of(pv));
     cc_judgement_id other = OK(cc_instr_pair(k, sigma, first, OK(cc_instr_second(k, beta_p))));
-    /* Conversion, which is untrusted, finds p and (λ q. q)(p) equal. Asked
-     * first, about the very pair the reducer compares, its answer must not
-     * reach the reducer's syntactic comparison. */
-    assert(cc_kernel_convertible(k, term_of(pv), term_of(beta_p), 0));
     assert(kind(reduct(other, CC_STEP_WHNF)) == CC_PAIR);
     assert(reduct(other, CC_STEP_NORMALIZE) == term_of(pv));
-    /* Conversion identifies the pair with p, by surjective pairing. */
-    assert(cc_kernel_convertible(k, term_of(other), term_of(pv), 0));
 
     /* Glue over (λ (T : U0). T)(Nat) and over Nat, each with one piece on
      * the empty face, which needs no equivalence and no image. */
@@ -153,9 +117,6 @@ static void reduction_decides_eta_syntactically(void) {
     cc_judgement_id beta = OK(cc_instr_step(k, OK(cc_instr_refl(k, beta_nat)), 1, NULL, 0, CC_STEP_BETA));
     cc_judgement_id at_nat = OK(cc_instr_glue_term(k, OK(cc_instr_glue_term_piece(k,
         OK(cc_instr_glue_term_base(k, over_nat, OK(cc_instr_convert(k, unglued, beta)))), point, 0))));
-    /* The two Glue types are convertible, and asking first changes nothing
-     * for the reducer, which compares exactly them. */
-    assert(cc_kernel_convertible(k, term_of(over_nat), term_of(over_redex), 0));
     assert(kind(reduct(at_nat, CC_STEP_WHNF)) == CC_GLUE_TERM);
     assert(reduct(at_nat, CC_STEP_NORMALIZE) == term_of(bv));
     /* The Glue step reaches it too, normalizing only the two Glue types, and
@@ -174,8 +135,6 @@ static void reduction_decides_eta_syntactically(void) {
     assert(kind(expanded.child[1]) == CC_UNGLUE && kind(expanded.child[2]) == CC_TUBE &&
            k->nodes[expanded.child[2]].child[0] == term_of(bv) && !k->nodes[expanded.child[2]].child[1]);
     assert(other_of(OK(cc_instr_step(k, expansion, 1, NULL, 0, CC_STEP_GLUE))) == term_of(bv));
-    /* Conversion has Glue eta of its own, by conversion. */
-    assert(cc_kernel_convertible(k, term_of(at_nat), term_of(bv), 0));
     cc_kernel_free(k);
 }
 
@@ -193,11 +152,8 @@ static cc_term glue_line(cc_term unit, cc_term e, unsigned d) {
  * Normalize must still make Glue eta on a nonempty face, where the base's
  * restriction is a redex: with p a path over G from point to b1 and
  * b = p @ i, glue [i = 0 ↦ point] (unglue b) is b, because b at i = 0 is
- * p @ 0, which is point. And conversion must make pair eta when both sides
- * are pairs: (fst p, snd ((λ r. r) p)) annotated Σ (x : Nat). U0 and the same
- * annotated Σ (x : Nat). U1 are both p. Raw syntax, as reduction inspects
- * it and conversion compares it. */
-static void normal_forms_and_conversion_keep_eta(void) {
+ * p @ 0, which is point. Raw syntax, as reduction inspects it. */
+static void normal_forms_and_the_glue_step_keep_eta(void) {
     k = cc_kernel_new();
     assert(k);
     unsigned i = 0, j = 1;
@@ -210,25 +166,13 @@ static void normal_forms_and_conversion_keep_eta(void) {
     cc_term glued = ck_make(k, CC_GLUE_TERM, 0, over_i, ck_make(k, CC_UNGLUE, 0, over_i, b, 0, 0), piece, 0);
     assert(k->nodes[cc_kernel_whnf(k, glued)].kind == CC_GLUE_TERM);
     assert(cc_kernel_normalize(k, glued) == b);
-    assert(cc_kernel_convertible(k, glued, b, 0));
 
-    cc_term nat = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0);
-    cc_term small = ck_make(k, CC_SIGMA, 400, nat, ck_universe_at(k, 0), 0, 0);
-    cc_term large = ck_make(k, CC_SIGMA, 400, nat, ck_universe_at(k, 1), 0, 0);
-    cc_term q = ck_var(k, 401);
-    cc_term beta = ck_make(k, CC_APP, 0, ck_make(k, CC_LAM, 402, small, ck_var(k, 402), 0, 0), q, 0, 0);
-    cc_term first = ck_make(k, CC_FST, 0, q, 0, 0, 0), second = ck_make(k, CC_SND, 0, beta, 0, 0, 0);
-    cc_term at_small = ck_make(k, CC_PAIR, 0, small, first, second, 0);
-    cc_term at_large = ck_make(k, CC_PAIR, 0, large, first, second, 0);
-    assert(k->nodes[cc_kernel_whnf(k, at_small)].kind == CC_PAIR);
-    assert(cc_kernel_convertible(k, at_small, at_large, 0));
-    assert(!k->error[0]);
-
-    /* The second review: conversion must also expose a base through eta
-     * that holds only by conversion. With A = Glue [] Nat,
+    /* The second review: the Glue step exposes a base through eta that
+     * holds only after computing. With A = Glue [] Nat,
      * A' = Glue [] ((λ X. X)(Nat)), G = Glue [] A, g : G and u = unglue_G(g),
      * glue_G [] (glue_A' [] (unglue_A(u))) is g: the inner Glue term is u only
      * because A' is A by a Beta step. */
+    cc_term nat = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0);
     cc_term identity = ck_make(k, CC_LAM, 403, ck_universe_at(k, 0), ck_var(k, 403), 0, 0);
     cc_term a = ck_make(k, CC_GLUE, 0, nat, 0, 0, 0);
     cc_term a_redex = ck_make(k, CC_GLUE, 0, ck_make(k, CC_APP, 0, identity, nat, 0, 0), 0, 0, 0);
@@ -236,50 +180,10 @@ static void normal_forms_and_conversion_keep_eta(void) {
     cc_term u = ck_make(k, CC_UNGLUE, 0, g_type, g, 0, 0);
     cc_term inner = ck_make(k, CC_GLUE_TERM, 0, a_redex, ck_make(k, CC_UNGLUE, 0, a, u, 0, 0), 0, 0);
     cc_term outer = ck_make(k, CC_GLUE_TERM, 0, g_type, inner, 0, 0);
-    assert(cc_kernel_convertible(k, outer, g, 0));
-    assert(!k->error[0]);
-    /* The fifth review of #73: so must the Glue step, whose base here is the
-     * inner Glue term, an eta redex by its own Glue step. */
+    /* The fifth review of #73: the Glue step's base here is the inner Glue
+     * term, an eta redex by its own Glue step. */
     ck_operation(k, CC_WORK_INSTRUCTION);
     assert(ck_glue_step(k, outer) == g && !k->error[0]);
-    ck_standalone(k);
-    cc_kernel_free(k);
-}
-
-/* The review of #73: exposing a nested base must count toward the
- * comparison's depth. Syntax is at most 512 deep, but reduction reaches past
- * that: here D_i := glue_(Glue [] T_(i-1)) [] D_(i-1), with T_i := Glue [] T_(i-1), 600
- * definitions, each weak head cached as it is made. Exposing D_600's base
- * goes through every level with no other guard reached; it now stops with a
- * recorded error, where a longer chain would have overflowed the stack. */
-static void nested_glue_exposure_is_depth_guarded(void) {
-    k = cc_kernel_new();
-    assert(k);
-    cc_term u0 = ck_universe_at(k, 0), zero = ck_make(k, CC_POINT, 0, 0, 0, 0, 0);
-    cc_term type = cc_kernel_define(k, 1000, ck_make(k, CC_UNIT, 0, 0, 0, 0, 0), u0);
-    cc_term value = cc_kernel_define(k, 2000, zero, type);
-    assert(type && value);
-    for (unsigned depth = 1; depth <= 600; ++depth) {
-        cc_term glue_type = ck_make(k, CC_GLUE, 0, type, 0, 0, 0);
-        type = cc_kernel_define(k, 1000 + depth, glue_type, u0);
-        value = cc_kernel_define(k, 2000 + depth, ck_make(k, CC_GLUE_TERM, 0, glue_type, value, 0, 0), glue_type);
-        if (!type || !value) fprintf(stderr, "depth %u: %s\n", depth, cc_kernel_error(k));
-        assert(type && value && cc_kernel_whnf(k, value));
-    }
-    assert(!cc_kernel_convertible(k, value, zero, 0));
-    assert(strstr(cc_kernel_error(k), "recursion depth"));
-    cc_kernel_clear_error(k);
-    /* The Glue step exposes a nested base the same way, within the reduction
-     * depth of 1024: 1,100 levels stop it with a recorded error too. */
-    for (unsigned depth = 601; depth <= 1100; ++depth) {
-        cc_term glue_type = ck_make(k, CC_GLUE, 0, type, 0, 0, 0);
-        type = cc_kernel_define(k, 10000 + depth, glue_type, u0);
-        value = cc_kernel_define(k, 20000 + depth, ck_make(k, CC_GLUE_TERM, 0, glue_type, value, 0, 0), glue_type);
-        assert(type && value && cc_kernel_whnf(k, value));
-    }
-    ck_operation(k, CC_WORK_INSTRUCTION);
-    assert(!ck_glue_step(k, cc_kernel_whnf(k, value)) && strstr(cc_kernel_error(k), "recursion depth"));
-    cc_kernel_clear_error(k);
     ck_standalone(k);
     cc_kernel_free(k);
 }
@@ -364,29 +268,11 @@ static void glue_step_normalizes_only_its_side_conditions(void) {
     cc_kernel_free(k);
 }
 
-/* The boundary is enforced, not only kept: conversion refuses to run while
- * an instruction does, so no later path can reach it unnoticed. */
-static void conversion_refused_inside_an_instruction(void) {
-    k = cc_kernel_new();
-    assert(k);
-    cc_term nat = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
-    ck_operation(k, CC_WORK_INSTRUCTION);
-    assert(!ck_convertible(k, nat, nat));
-    assert(strstr(cc_kernel_error(k), "reached the conversion search"));
-    cc_kernel_clear_error(k);
-    ck_operation(k, CC_WORK_QUERY);
-    assert(ck_convertible(k, nat, nat));
-    cc_kernel_free(k);
-}
-
 int main(void) {
     queries_leave_acceptance_unchanged();
-    folded_comparison_reads_only_its_own_results();
     reduction_decides_eta_syntactically();
-    normal_forms_and_conversion_keep_eta();
-    nested_glue_exposure_is_depth_guarded();
+    normal_forms_and_the_glue_step_keep_eta();
     glue_step_normalizes_only_its_side_conditions();
-    conversion_refused_inside_an_instruction();
     printf("instruction isolation: ok\n");
     return 0;
 }

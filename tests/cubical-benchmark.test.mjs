@@ -5,9 +5,23 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
+import { InstructionGraph } from "../web/cubical-instructions.mjs";
 import { benchmark, category } from "../web/benchmark-runner.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
 import { budget } from "./timing.mjs";
+
+// A kernel session with its instruction graph, and a definition of tt : Unit
+// admitted by Define, recorded under its name as the elaborator records one.
+async function session(t) {
+  const module = await createCubical(), kernel = new CubicalKernel(module), graph = new InstructionGraph(kernel);
+  t.after(() => kernel.dispose());
+  const define = (name, value = graph.point()) => {
+    const reference = graph.judgement(graph.define(name, value)).term;
+    kernel.definitions.set(name, reference);
+    return reference;
+  };
+  return { module, kernel, graph, define, typeOf: reference => kernel.node(graph.judgement(graph.lookup(reference)).type).kind };
+}
 
 test("benchmark distinguishes invalid proofs, blocked uses, and independent checked declarations", async () => {
   const report = await benchmark({ modules: ["sample"], readSource: async name => name === "sample" ?
@@ -29,35 +43,28 @@ test("benchmark distinguishes invalid proofs, blocked uses, and independent chec
   assert.equal(report.importErrors.length, 0);
 });
 
-test("the native deadline rejects work without leaking a previous certificate, then recovers", async t => {
-  const module = await createCubical(), kernel = new CubicalKernel(module);
-  t.after(() => kernel.dispose());
-  const nat = kernel.term("Unit"), zero = kernel.term("Point");
-  kernel.check(zero, nat);
+test("the native deadline rejects work, then recovers", async t => {
+  const { module, kernel, graph } = await session(t);
+  graph.point();
   // Set C's deadline directly so this exercises C, not the JS preflight guard.
   module._cb_deadline_ms(kernel.handle, .01);
   const until = performance.now() + 2;
   while (performance.now() < until) { /* let the native deadline expire */ }
-  assert.throws(() => kernel.check(zero, nat), /Declaration time limit exceeded/);
-  assert.equal(module._cb_result(kernel.handle, 0), 0);
+  assert.throws(() => graph.unit(), /Declaration time limit exceeded/);
   module._cb_deadline_ms(kernel.handle, 0);
-  assert.equal(kernel.node(kernel.check(zero, nat).expression).kind, "Point");
+  assert.equal(kernel.node(graph.judgement(graph.unit()).term).kind, "Unit");
 });
 
-test("rollback discards checked definitions and cached reductions from a rejected attempt", async t => {
-  const module = await createCubical(), kernel = new CubicalKernel(module);
-  t.after(() => kernel.dispose());
-  const nat = kernel.term("Unit"), zero = kernel.term("Point");
-  const before = kernel.define("before", zero, nat);
+test("rollback discards definitions and cached reductions from a rejected attempt", async t => {
+  const { module, kernel, graph, define, typeOf } = await session(t);
+  const before = define("before");
   module._cb_checkpoint(kernel.handle);
-  const late = kernel.define("late", zero, nat);
+  const late = define("late");
   kernel.head(late);
   module._cb_rollback(kernel.handle);
   kernel.definitions.delete("late");
-  assert.equal(module._cb_result(kernel.handle, 0), 0);
-  assert.throws(() => kernel.check(late, nat));
-  assert.equal(kernel.node(kernel.check(before, nat).type).kind, "Unit");
-  assert.throws(() => kernel.check(kernel.term("Unit"), nat));
+  assert.throws(() => graph.lookup(late));
+  assert.equal(typeOf(before), "Unit");
 });
 
 test("a timeout remains a speed failure", () => {
@@ -65,24 +72,21 @@ test("a timeout remains a speed failure", () => {
   assert.equal(category({ failure: "deadline", reason: "Declaration time limit exceeded." }, 1000, 1000), "optimize");
 });
 
-test("successful compaction retains definitions and translates references while clearing stale results", async t => {
-  const module = await createCubical(), kernel = new CubicalKernel(module);
-  t.after(() => kernel.dispose());
-  const nat = kernel.term("Unit"), zero = kernel.term("Point");
+test("successful compaction retains definitions and translates references", async t => {
+  const { module, kernel, graph, define, typeOf } = await session(t);
   module._cb_checkpoint(kernel.handle);
   for (let i = 0; i < 300; i++) kernel.term("Var", kernel.symbol(`unused${i}`));
-  const reference = kernel.define("retained", zero, nat);
+  const reference = define("retained");
   kernel.head(reference);
   assert.equal(module._cb_commit_checkpoint(kernel.handle), 1);
   const moved = module._cb_relocated(kernel.handle, reference);
   assert.ok(moved < reference);
   kernel.definitions.set("retained", moved);
   assert.equal(kernel.node(kernel.head(moved)).kind, "Point");
-  assert.equal(kernel.node(kernel.check(moved, nat).type).kind, "Unit");
-  assert.throws(() => kernel.check(moved, kernel.term("Void")));
+  assert.equal(typeOf(moved), "Unit");
   module._cb_checkpoint(kernel.handle);
-  const later = kernel.define("later", moved, nat);
-  assert.equal(kernel.node(kernel.check(later, nat).type).kind, "Unit");
+  const later = define("later", graph.lookup(moved));
+  assert.equal(typeOf(later), "Unit");
 });
 
 test("benchmark reports the selected deadline and optimizations and rejects invalid deadlines", async () => {

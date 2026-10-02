@@ -505,7 +505,7 @@ export class NativeCubicalElaborator {
     const checked = this.checkSyntax(term, null, context, dimensions);
     this.steps += checked.checkingSteps;
     return { term: checked.term, type: checked.type, native: { ok: true,
-      arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, unfoldingHints: [...this.kernel.unfoldingHints], axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()],
+      arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()],
       extensions: this.extensionsOf(checked.term, checked.type) } };
   }
   check(term, expected, context = new Map(), dimensions = this.dimensions, describe = true) {
@@ -581,7 +581,7 @@ export class NativeCubicalElaborator {
     let reference, admission;
     try { ({ reference, admission } = this.admit(name, this.syntax.encode(body), this.syntax.encode(signature))); }
     catch (error) { throw this.describeMismatch(error, new Map()); }
-    this.definitionViews.set(name, { term, type, assumptions, unfoldingHints: [...this.kernel.unfoldingHints], admission });
+    this.definitionViews.set(name, { term, type, assumptions, admission });
     this.definitionExtensions.set(name, this.extensionsOf(term, type, ...assumptions.values()));
     let result = this.syntax.decode(reference);
     for (const parameter of assumptions.keys()) result = { tag: "App", fn: result, arg: { tag: "Var", name: parameter } };
@@ -618,52 +618,37 @@ export class NativeCubicalElaborator {
     this.genericDefinitions.set(name, value);
     return value;
   }
-  scopedUnfolding(names, elaborate, context, expected = null, dimensions = this.dimensions, supply = this.names) {
-    const expanded = new Set(names), visited = new Set(), syntaxSeen = new WeakSet();
-    const visitTerm = term => {
-      if (!term || typeof term !== "object" || syntaxSeen.has(term)) return;
-      syntaxSeen.add(term);
-      if (term.tag === "DefRef" && this.scopeDefinitions.has(term.name)) visitDefinition(term.name);
-      Object.values(term).forEach(visitTerm);
-    };
-    const visitDefinition = name => {
-      if (visited.has(name)) return;
-      visited.add(name); expanded.add(name);
-      visitTerm(this.definitionViews.get(name)?.term);
-    };
-    // A selected source definition includes its compiler-created blocks.
-    // Otherwise that implementation detail would obstruct unfolding its body.
-    // Other user definitions remain folded, and all references are checked.
-    names.forEach(visitDefinition);
-    return this.kernel.withUnfoldingHints([...this.kernel.unfoldingHints, ...expanded], () => {
-      const raw = elaborate();
-      const checked = expected ? { term: this.check(raw, expected, context, dimensions), type: expected }
-        : this.infer(raw, context, dimensions);
-      let term = checked.term, type = checked.type;
-      // Close over local variables before interval coordinates: a variable's
-      // type may itself depend on a coordinate. The helper is then checked as
-      // an ordinary closed definition, not installed as an unchecked promise.
-      for (const [name, domain] of [...context].reverse()) {
-        term = T.lam(name, domain, term); type = T.pi(name, domain, type);
-      }
-      for (const dim of [...dimensions.keys()].reverse()) {
-        term = T.line(dim, type, term);
-        type = T.path(dim, type, T.at(term, I.zero), T.at(term, I.one));
-      }
-      this.kernel.unfoldingSerial = (this.kernel.unfoldingSerial ?? 0) + 1;
-      const name = `${this.bindingName?.("unfolding") ?? "unfolding"}_${this.kernel.unfoldingSerial}`;
-      let result = NativeCubicalElaborator.prototype.define.call(this, name, this.ascribe(term, type, supply), type);
-      this.scopeDefinitions.add(name);
-      for (const dim of dimensions.keys()) result = T.at(result, I.variable(dim));
-      for (const name of context.keys()) result = T.app(result, T.variable(name));
-      return result;
-    });
+  // `with unfolding [names] { e }`: e checked as a definition of its own. The
+  // names guided the retired conversion oracle; the driver's own guide
+  // unfolds what a comparison needs, so they no longer matter here.
+  scopedUnfolding(elaborate, context, expected = null, dimensions = this.dimensions, supply = this.names) {
+    const raw = elaborate();
+    const checked = expected ? { term: this.check(raw, expected, context, dimensions), type: expected }
+      : this.infer(raw, context, dimensions);
+    let term = checked.term, type = checked.type;
+    // Close over local variables before interval coordinates: a variable's
+    // type may itself depend on a coordinate. The helper is then checked as
+    // an ordinary closed definition, not installed as an unchecked promise.
+    for (const [name, domain] of [...context].reverse()) {
+      term = T.lam(name, domain, term); type = T.pi(name, domain, type);
+    }
+    for (const dim of [...dimensions.keys()].reverse()) {
+      term = T.line(dim, type, term);
+      type = T.path(dim, type, T.at(term, I.zero), T.at(term, I.one));
+    }
+    this.kernel.unfoldingSerial = (this.kernel.unfoldingSerial ?? 0) + 1;
+    const name = `${this.bindingName?.("unfolding") ?? "unfolding"}_${this.kernel.unfoldingSerial}`;
+    let result = NativeCubicalElaborator.prototype.define.call(this, name, this.ascribe(term, type, supply), type);
+    this.scopeDefinitions.add(name);
+    for (const dim of dimensions.keys()) result = T.at(result, I.variable(dim));
+    for (const name of context.keys()) result = T.app(result, T.variable(name));
+    return result;
   }
 
   verify(term, expected = null, assumptions = []) {
     const checked = this.checkSyntax(term, expected, new Map(assumptions), this.dimensions);
     const normal = this.syntax.decode(this.kernel.normalize(checked.expression), this.dimensions);
-    return { ...checked, normal, native: { ok: true, arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, unfoldingHints: [...this.kernel.unfoldingHints], axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()],
+    return { ...checked, normal, native: { ok: true, arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()],
       extensions: this.extensionsOf(checked.term, checked.type) } };
   }
 }

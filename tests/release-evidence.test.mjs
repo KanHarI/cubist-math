@@ -72,10 +72,9 @@ test("the local checks are the commands CI and the project's verification run", 
   assert.equal(command("Sanitizers", "darwin"), "make sanitize SANITIZERS=undefined");
   assert.equal(command("Sanitizers", "linux"), "make sanitize");
   assert.equal(command("Instruction coverage"), "node tools/instruction-coverage.mjs");
-  assert.equal(command("Instruction coverage with the oracle"), "node tools/instruction-coverage.mjs --oracle");
   assert.deepEqual(localChecks().map(check => check.command.join(" ")).filter(text => !text.startsWith("node tests/")), [
     "make -C kernel test", "make lint", localChecks()[2].command.join(" "), "make wasm", "node tools/build-stamp.mjs check",
-    "node tools/instruction-coverage.mjs", "node tools/instruction-coverage.mjs --oracle", "npm test", "npm run test:browser",
+    "node tools/instruction-coverage.mjs", "npm test", "npm run test:browser",
     "node tools/build-site.mjs"]);
 });
 

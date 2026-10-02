@@ -31,7 +31,7 @@ const CONSTRUCTORS = new Set(["U", "Pi", "Lam", "LPi", "LLam", "Sigma", "Pair", 
 // The type former a constructor's eta expansion needs. A Glue term's is
 // glue [φ ↦ g] (unglue g), for g of a Glue type.
 const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma", LLam: "LPi", GlueTerm: "Glue" };
-// Steps after which a comparison the oracle finds true computes normal forms.
+// Steps after which a closed comparison computes normal forms.
 const LONG_COMPUTATION = 64;
 // The kernel steps the Glue step may take (the glue move). It normalizes its
 // side conditions, and open terms can be large shared graphs, whose normal
@@ -40,12 +40,11 @@ const GLUE_STEPS = 200000;
 // The guide (InstructionDriver.guide): how many pairs of subterms one
 // question may compare, and the kernel steps each weak head may take.
 const GUIDE_FUEL = 400, GUIDE_HEAD_STEPS = 4000;
-// A comparison's moves (InstructionDriver.agree), and the kernel steps the
-// oracle may take to answer one question.
-const FUEL = 20000, ORACLE_STEPS = 20000;
+// A comparison's moves (InstructionDriver.agree).
+const FUEL = 20000;
 // The search's fixed limits, for reports that must say what they measured.
 export const searchLimits = Object.freeze({ fuel: FUEL, longComputation: LONG_COMPUTATION, guideFuel: GUIDE_FUEL,
-  guideHeadSteps: GUIDE_HEAD_STEPS, oracleSteps: ORACLE_STEPS, glueSteps: GLUE_STEPS });
+  guideHeadSteps: GUIDE_HEAD_STEPS, glueSteps: GLUE_STEPS });
 // Weak heads that are constructors: two of different kinds never agree.
 // An instance of a declared type is one (H1); so is a list of its parameters.
 const RIGID = new Set(["U", "Pi", "Sigma", "LPi", "Unit", "Point", "Void", "Sum",
@@ -143,15 +142,10 @@ export const heuristicChooser = Object.freeze({
 });
 
 export class InstructionDriver {
-  constructor(kernel, { graph = new InstructionGraph(kernel), fuel = FUEL, guideSteps = ORACLE_STEPS,
-                        oracle = kernel.conversionOracle ?? false, chooser = kernel.chooser ?? heuristicChooser } = {}) {
+  constructor(kernel, { graph = new InstructionGraph(kernel), fuel = FUEL, chooser = kernel.chooser ?? heuristicChooser } = {}) {
     this.kernel = kernel;
     this.graph = graph;
     this.fuel = fuel;
-    this.guideSteps = guideSteps;
-    // Whether the term checker's conversion guides the search instead of the
-    // driver's own guide (guide, below).
-    this.oracle = oracle;
     // Who picks the moves of `agree` (heuristicChooser, above), and how many
     // comparisons are open, one inside another.
     this.chooser = chooser;
@@ -170,7 +164,6 @@ export class InstructionDriver {
     // with its side conditions normalized, or one whose side conditions take
     // more than the move's budget.
     this.glueStuck = new Set();
-    this.equalities = new Map();
     // The guide's answers and the weak heads it asked for.
     this.guesses = new Map();
     this.heads = new Map();
@@ -902,28 +895,9 @@ export class InstructionDriver {
   }
 
   // Whether two subterms are equal: true, false, or null when it cannot tell.
-  // A guide for the search only. Without the oracle it is the driver's own
-  // guide; with it, the term checker's conversion, after bound names that
-  // differ are renamed on the right, innermost binder first.
+  // A guide for the search only: the driver's own (guide, below).
   equal(x, y, terms, dims) {
-    if (!this.oracle) return this.guide(x, y, terms, dims, { left: GUIDE_FUEL });
-    try {
-      for (const [bindings, dimension] of [[terms, false], [dims, true]]) {
-        const renamed = new Set();
-        for (let binding = bindings; binding; binding = binding.next) {
-          if (renamed.has(binding.right)) continue;
-          renamed.add(binding.right);
-          if (binding.left !== binding.right) y = this.graph.rename(y, dimension, binding.right, binding.left);
-        }
-      }
-    } catch (error) {
-      // Out of time is passed on; a name that cannot be renamed leaves no answer.
-      if (error?.kind === "deadline") throw error;
-      return null;
-    }
-    const key = `${x},${y}`;
-    if (!this.equalities.has(key)) this.equalities.set(key, this.graph.convertible(x, y, this.guideSteps));
-    return this.equalities.get(key);
+    return this.guide(x, y, terms, dims, { left: GUIDE_FUEL });
   }
 
   // The driver's own guide: two terms compared lazily through their weak head

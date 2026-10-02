@@ -34,10 +34,8 @@ test("every definition is admitted by Define, and only admitted definitions can 
     const lookup = graph.judgement(graph.lookup(reference));
     assert.equal(lookup.term, reference, name);
   }
-  // The term checker's own definitions are refused.
-  const zero = kernel.term("Point"), nat = kernel.term("Unit");
-  const unadmitted = kernel.define("checked_only", zero, nat);
-  assert.throws(() => graph.lookup(unadmitted), /admitted by Define/);
+  // Anything else is refused: Lookup recalls definitions only.
+  assert.throws(() => graph.lookup(kernel.term("Point")), /Unknown checked definition reference/);
 });
 
 test("a tactic's check is derived as it runs, and fails at the tactic", async t => {
@@ -68,20 +66,16 @@ test("a tactic's check is derived as it runs, and fails at the tactic", async t 
   assert.match(failed.reason, /^Instruction kernel: No rule for this yet\. at 8:3$/);
 });
 
-test("the driver steers by its own guide, and asks the term checker's conversion only when told to", async t => {
+test("the driver steers by its own guide: every definition derives again from nothing", async t => {
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
-  assert.equal(program.kernel.conversionOracle, false);
   const result = await program.check(source, "unaided");
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
-  assert.equal(new InstructionDriver(program.kernel).oracle, false);
-  assert.equal(new InstructionDriver(program.kernel, { oracle: true }).oracle, true);
   const graph = new InstructionDriver(program.kernel).graph;
   for (const [name, reference] of program.kernel.definitions) {
     const { value, type } = program.kernel.definition(reference);
     const driver = new InstructionDriver(program.kernel);
     driver.check(value, type);
-    assert.equal(driver.equalities.size, 0, name);
     assert.equal(graph.judgement(graph.lookup(reference)).term, reference, name);
   }
 });

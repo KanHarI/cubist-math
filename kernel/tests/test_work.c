@@ -101,21 +101,14 @@ int main(void) {
     assert(spent.exhausted == 1 && !spent.instructions && !spent.instruction_steps);
     cc_kernel_clear_error(k);
 
-    /* The term checker's steps are its query's: the same numbers it reports. */
     cc_kernel_set_step_budget(k, 10000000);
-    cc_checked_result checked;
-    before = now();
-    assert(cc_kernel_check(k, big, raw(CC_U, 0, raw(CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0), NULL, 0, &checked));
-    cc_work_counters check = since(before);
-    assert(check.queries == 1 && check.query_steps == checked.checking_steps + checked.reduction_steps);
-    assert(!check.failed_queries && !check.instructions);
 
     /* A full budget computes the normal form; the steps are the same each
      * time the same computation is made from nothing, and a rollback keeps
      * the counters. */
     cc_kernel_checkpoint(k);
     before = now();
-    cc_term normal = cc_kernel_normalize(k, checked.expression);
+    cc_term normal = cc_kernel_normalize(k, big);
     assert(normal);
     cc_work_counters computed = since(before);
     assert(computed.queries == 1 && computed.query_steps > 80);
@@ -162,10 +155,8 @@ int main(void) {
     OK(cc_instr_unit(k));
     before = now();
     for (int repeat = 0; repeat < 5; ++repeat) {
-        assert(!cc_kernel_set_unfolding_hints(k, NULL, 1));
-        assert(cc_kernel_error(k)[0]);
-        cc_kernel_clear_error(k);
         assert(!cc_kernel_term(k, CC_SUCC, 0, 0, 0, 0, 0));
+        assert(cc_kernel_error(k)[0]);
         cc_kernel_clear_error(k);
         assert(!cc_kernel_equiv_type(k, 0x7fffffff, 1));
     }
@@ -173,7 +164,7 @@ int main(void) {
     assert(!memcmp(&standalone, &(cc_work_counters){0}, sizeof standalone));
     cc_kernel_normalize(k, numeral(1));
     before = now();
-    assert(!cc_kernel_set_unfolding_hints(k, NULL, 1));
+    assert(!cc_kernel_equiv_type(k, 0x7fffffff, 1));
     cc_work_counters after_query = since(before);
     assert(!after_query.failed_queries && !after_query.rejected);
     cc_kernel_clear_error(k);

@@ -307,21 +307,16 @@ All other formatting changes only whitespace. Programmatic callers can set
 `linearizeTuples: false` for whitespace-only formatting.
 
 
-### Selective conversion hints (native cubical backend)
+### Unfolding blocks
 
-`with unfolding [name1, name2] { expression }` gives the checker a list of
-already checked definitions to open during a preliminary conversion pass.
-The bracketed list accepts definition names only. The braces contain one
-expression, without a trailing semicolon; scopes can nest, and an empty list
-is allowed. Other definitions remain folded in that pass; ordinary conversion
-remains the fallback.
-
-Hints apply inside the block. The compiler may retain its result as a checked
-helper definition so the surrounding proof can reuse it without expansion;
-rechecking that helper replays its selected strategy. Hints do not leak into
-surrounding expressions. They do not add an equality, a rewrite theorem, or an
-axiom. An invalid proof stays invalid. Unlike `unfold(expression)`, this does
-not ask for a fully normalized expression.
+`with unfolding [name1, name2] { expression }` checks one expression as a
+checked helper definition, which the surrounding proof reuses without
+expansion. The bracketed list accepts already checked definition names only.
+The braces contain one expression, without a trailing semicolon; scopes can
+nest, and an empty list is allowed. The names once steered the kernel's
+conversion search, which was retired on 2026-10-02; the checker now unfolds
+whatever a comparison needs, so the list has no further effect. A block adds
+no equality, rewrite theorem or axiom, and an invalid proof stays invalid.
 
 ```mathscript
 def identity(n : Nat) = n;
