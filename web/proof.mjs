@@ -98,10 +98,6 @@ for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) {
   $(id).checked = true;
   try { $(id).checked = localStorage.getItem("mathscript:" + id) !== "false"; } catch {}
 }
-// Nat's ordinary source prelude uses H1. The review marker remains visible.
-$("experimental-h1").checked = new URLSearchParams(location.search).get("experimental")?.split(",").includes("h1") ?? true;
-try { if (localStorage.getItem("mathscript:experimental-h1") !== null)
-  $("experimental-h1").checked = localStorage.getItem("mathscript:experimental-h1") === "true"; } catch {}
 $("proof-title").textContent = choice?.title ?? (libraryModule ? `Library: ${proofId}` : "Reference example");
 $("development-note").hidden = !choice?.realDevelopment;
 $("puncture-note").hidden = !choice?.punctureDevelopment;
@@ -197,7 +193,6 @@ function diagnostic(e) {
 function dirty() {
   return last && $("editor").value !== last.source;
 }
-function experimentalExtensions() { return $("experimental-h1").checked ? ["h1"] : []; }
 function compilerOptimizations() {
   return {
     shareSyntax: $("share-syntax").checked, reuseChecks: $("reuse-checks").checked,
@@ -265,8 +260,7 @@ async function check() {
     // Where the source came from decides where its imports are found
     // (module-resolution.mjs): an archive proof imports only from the archive.
     const place = exampleMode ? null : libraryModule ? "library" : "archive";
-    const result = await request("check", { source, module: proofId, place, optimizations: compilerOptimizations(),
-      experimental: experimentalExtensions() });
+    const result = await request("check", { source, module: proofId, place, optimizations: compilerOptimizations() });
     last = result;
     history.length = 0;
     renderSource();
@@ -877,7 +871,7 @@ function download(text, name, type) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 $("check").onclick = check;
-for (const id of ["share-syntax", "reuse-checks", "compact-paths", "experimental-h1"]) $(id).onchange = () => {
+for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) $(id).onchange = () => {
   try { localStorage.setItem("mathscript:" + id, String($(id).checked)); } catch {}
   check();
 };

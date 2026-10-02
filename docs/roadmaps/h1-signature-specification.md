@@ -1,5 +1,13 @@
 # One-sort signatures (H1): rules, soundness note and truncation policy
 
+2026-10-02 release. With checklist items 1–4 approved and item 6 retired as
+a gate, the experimental option is removed and default admission granted:
+the kernel admits declared types by default (5.7), no CLI, workbench or
+program option remains, and results no longer carry the
+`kernel extension: H1` marker (6.4). Acceptance case T2 states the
+released behaviour. Item 5, the recorded run at the release's own revision,
+is taken at this change's merged revision.
+
 2026-09-30 implementation update: at the user's request, source checking now
 enables H1 by default and imports an ordinary source-defined Nat. W is also
 source-defined; both primitive C implementations have been retired. This
@@ -34,11 +42,11 @@ contract that K2.2 (instructions), K2.3 (driver and bridges), K2.4
 on the `h1-signatures` branch. Its statuses are distinct:
 
 - **Decided:** every question of section 11, on 2026-09-27.
-- **Approved for implementation:** the fragment of sections 1–3 and the
-  families of section 5, in the experimental mode of 5.7 only. Implemented
-  there: K2.2's six families (ABI 3), K2.3 (section 6), L2.1
-  (section 9) and L2.2a's first `match` slice; every result carries the
-  `kernel extension: H1` marker.
+- **Released** on 2026-10-02: the fragment of sections 1–3 and the
+  families of section 5, admitted by default (5.7). Implemented: K2.2's six
+  families (ABI 3), K2.3 (section 6), L2.1 (section 9) and L2.2a's first
+  `match` slice. Before the release, in the experimental mode of 5.7, every
+  result carried the `kernel extension: H1` marker; now none does.
 - **Approved:** the checklist's mathematical items. Lemma H2 and the
   critical-pair check on 2026-09-30 (item 2); the model construction, D1,
   D4 and D5, and canonicity on 2026-10-02 (items 1 and 3). They are relative
@@ -53,7 +61,8 @@ on the `h1-signatures` branch. Its statuses are distinct:
 
 **Release checklist for finite-level H1.** The experimental option is
 removed, and default admission granted, only when every item has evidence
-and a review decision:
+and a review decision. With items 1–4 approved and item 6 retired as a gate,
+both were done on 2026-10-02; item 5's run is repeated at that revision:
 
 1. D1, D4 and D5 written out and reviewed (4.2, 4.3).
    **Approved on 2026-10-02:** the [model construction](h1-model.md);
@@ -1163,8 +1172,8 @@ baseline (4.1) and premise P1 of the model draft.
 
 **Computability tracking.** Declarations are not assumptions. A result that
 uses a declared type has no new non-computing dependency; it carries the
-`kernel extension: H1` marker until review (5.7). `computable` accepts the
-marker.
+`kernel extension: H1` marker until the release of 2026-10-02 (5.7), and
+none since. `computable` accepted the marker.
 
 ### 4.5 What is proved, argued and assumed
 
@@ -1414,15 +1423,18 @@ whose type is not the displayed squash boundary.
 
 ### 5.7 Family F6: extension gate and marker
 
-- `cc_kernel_set_extensions(k, flags)` with `CC_EXTENSION_H1`, off by
-  default. With it off, `SignatureBegin` refuses. Every other instruction
-  works on already admitted signatures, so rollback and inspection are
-  unaffected.
-- The flag is on in the experimental mode that the work plan describes: the
-  tests, the CLI's `--experimental=h1`, and the workbench's matching option.
-  Review of section 4 turns it on by default in a separate change.
-- The marker is the elaborator's (6.4); the kernel records only which
-  signatures were admitted with the flag.
+- `cc_kernel_set_extensions(k, flags)` with `CC_EXTENSION_H1`, on by
+  default since the release of 2026-10-02. With it off, `SignatureBegin`
+  refuses (T1). Every other instruction works on already admitted
+  signatures, so rollback and inspection are unaffected.
+- Before the release the flag was off by default and on in the experimental
+  mode: the tests, the CLI's `--experimental=h1`, the workbench's option and
+  the program's `experimental: ["h1"]`. The release turned it on by default
+  and removed those options; the CLI and the program refuse the old ones by
+  name.
+- The marker is the elaborator's (6.4). The kernel marked each signature
+  admitted in the experimental mode; since the release none is, and
+  `cc_signature_info`'s `experimental` field is always false.
 
 ### 5.8 ABI and resources
 
@@ -1543,11 +1555,15 @@ or a definition that carries the marker. The program reports them as
 `extensions`, apart from `axioms`. The CLI's `inspect` prints
 "kernel extension: H1", and the workbench shows it beside the axioms used.
 `computable` reads only the assumptions. `tests/inductive-declarations.test.mjs`
-covers the first four tests. The last waits for default admission.
-The migration verifier (`tools/proof-migration.mjs`, with
-`--experimental h1` in `tools/verify-proof-migration.mjs`) compares each
-declaration's `extensions` apart from its `axioms`, and refuses a migration
-that adds or removes the marker (`Kernel extensions changed: none -> H1`);
+covered the first four tests before the release. Since the release of
+2026-10-02 no signature is admitted experimentally, so no result carries the
+marker: the same tests now check the last, the marker absent with H1 on by
+default, and `computable` still refuses an assumption, naming it. The
+machinery stays for any later extension under review.
+The migration verifier (`tools/proof-migration.mjs` and
+`tools/verify-proof-migration.mjs`) compares each declaration's
+`extensions` apart from its `axioms`, and refuses a migration that adds or
+removes one (`Kernel extensions changed: none -> H1`, before the release);
 until K2.3 it compared `axioms` only (audit of 2026-09-28, finding 7). It
 does not yet compare a module that declares a type: the edited copy's
 signature is another one, since signatures are generative (Q10), so such a
@@ -1991,10 +2007,10 @@ form. It is untrusted; the kernel checks the result.
   `T.ind_prop` are L2.3's.
 
 **Implementation.** `lib/cubical/inductive.mjs` lowers a declaration, and
-`CubicalProgram` admits it only with the experimental option `h1`
-(`--experimental=h1` in the CLI, "Declared types (H1)" in the workbench).
-Otherwise the declaration fails, and the error names the option. Decisions
-this section left open:
+`CubicalProgram` admits it; since the release of 2026-10-02 it needs no
+option. Before it, the experimental option `h1` (`--experimental=h1` in the
+CLI, "Declared types (H1)" in the workbench) admitted it, and without the
+option the error named it. Decisions this section left open:
 
 - **The sort while constructors are elaborated.** It is a variable, typed
   at the written universe or, without one, at `UU0`, which only the
@@ -2172,7 +2188,7 @@ H1 extension on, except T1.
 | ID | Case | Verdict |
 | --- | --- | --- |
 | T1 | `SignatureBegin` with the extension off | Reject |
-| T2 | a definition using `S1` carries `kernel extension: H1`; one using that definition carries it too | Accept, marker listed |
+| T2 | a definition using `S1` carries no kernel extension since the release, nor does one using that definition; before it, both carried `kernel extension: H1` | Accept, no marker |
 | T3 | `computable def` using `S1` | Accept |
 | T4 | `computable def` using `S1` and `LEM` | Reject, naming `LEM` only |
 | T5 | rollback after admission: the signature, its instances and its JavaScript record are gone; a later admission reuses nothing | Accept |
@@ -2210,8 +2226,7 @@ univalence. It gives 1 for `loop`, 2 for `loop · loop` and -1 for its
 inverse, by `rfl`, and closed `evaluate` directives read the normal forms.
 `cong(code, loop)` is `ua(succ)` by `rfl`, the E2 fixture's
 `code_meridian` in this form. `tests/declared-match.test.mjs` checks the
-example with the experimental option. Its results carry the H1 marker and
-no assumption. The native comparisons (X1–X8) are K2.4a's, with X2's
+example. Its results carry no assumption and, since the release, no marker. The native comparisons (X1–X8) are K2.4a's, with X2's
 remaining criterion issue recorded in the differential evidence.
 `tests/automatic-clauses.test.mjs` checks `Quotient`'s dependent elimination
 into sets and `Gpd`'s into groupoids, using L2.2b's generated clauses.
@@ -2253,7 +2268,7 @@ refuse.
 | Boundaries N1–N6 | Kernel: N1–N4. Driver: N1, N3. Source: N5, N6 | — | — |
 | Kan K1–K11 | Kernel: K1 (with no tubes, and with a tube of `succ`: a composition pushes into `succ`), K2 in substance (in `N` rather than `Plus`), K3, K4 in substance (in `Susp` rather than `S1`, with a tube from `north` to `south`), K5 in substance (the argument of `merid`, not a point constructor's), K6 in substance (transport of `merid` along a line of types `e : A = B`), K7 in substance (a set truncation's squash rather than `Quotient`'s), K8, K9 in substance (in `Susp` rather than `S1`: along a constant line, an `hcomp` of the base moved), K10 in substance (96 random constructor terms of `Susp`, `Torus` and `Quotient`, the path constructors at random formulas over two dimensions, `Quotient`'s `cls` and `eq` without its squash, moved along lines of the parameter drawn from `e @ i`, its reversal and a constant; each restricted to every face of the two dimensions, as it is and as its weak head), K11 (along the constant lines: at φ = 1 the term, and where φ is a face, the generated rules' weak head restricted to it is the term there). Driver: K6 (the kernel's transport along `ua` of the integers' successor, from the checked definitions of `docs/examples/h1/winding.cubist`) | — | — |
 | Elimination E1–E11 | Source: E1 (`docs/examples/h1/winding.cubist`), E2 (as `cong(code, loop)` equal to `ua(succ)` by `rfl`), E3 (`T.squash`), E4 (dependent family of sets, with explicit glue obligation and automatic squash), E8 (a missing clause, a duplicate clause, an unknown constructor), E11 (dependent groupoid family, automatic three-dimensional squash). Kernel: E3 (the `prop` squash clause), E5–E7, E9, E10, and a motive over no declared type refused. Driver: E5 | — | — |
-| Trust T1–T7 | Kernel: T1, T5, T6, T7. Driver: T5, T6. Source: T1 (the option named when off), T2 (direct, through a definition, through an import), T3, T4. Verifier: the marker compared apart from assumptions (6.4) | — | — |
+| Trust T1–T7 | Kernel: T1, T5, T6, T7. Driver: T5, T6. Source: T1 (H1 switched off in the kernel session, and the refusal says so), T2 (no marker since the release: direct, through a definition, through an import), T3, T4. Verifier: kernel extensions compared apart from assumptions (6.4) | — | — |
 | Truncation policy G1–G7 | Source: G1 (`Tr(U1, U0)` is not in `U0`), G2 (small truncation into a proposition in U1), G3 (the archive checks in full; 3,788 declarations, 0 gaps), G5 (rebuilt `CauchySame` and `EventualClose` in U0 without assumptions), G6 (proposition resized through LEM, witness with set evidence refused), G7 (large double-negation elimination, LEM retained). Verifier: G4 (exact ledger change accepted, unlisted or altered pin refused) | — | — |
 | Resources R1–R5 | Kernel: R1 (a sort, constructor and eliminator whose indices are out of range, and a list whose next cell is no list, built as raw syntax: inspected, reduced or refused with an error, and refused by the term checker and the instructions), R2, R3; a former of the wrong shape and a truncation level above the maximum are refused. Driver: R1 in part (an operand that is not a 32-bit unsigned integer is refused), R5 (the codec round trip); `tests/h1-admission.test.mjs` checks ABI version 3. Source: R4 (a module of ABI version 2 refused by the loader) | — | — |
 | Differential X1–X8 | Driver: X1 (202 successful instruction judgements, 70 equalities, 42 rejected requests and an unequal conversion query; Nat, sum, W and pushout), X2 in part (small normal-form fixtures, after administrative Beta/Eta), X3 (the native instruction fixtures' Comp, HComp and Trans), X4 in part (winding canonicity and evaluations), X5 in part (cost-report fields on a small fixture), X6 (finite-universe calls for all four types), X7 (tier-1 formers stay native), X8 (mixed calls fail for sum, W and pushout; the verifier names each call) | X2: all archive value normal forms and the literal alpha criterion. X4 and X5: whole-archive replay and cost observations are manual evidence; rerun both coverage commands sequentially at the merged release head on a clean tree before counting these release cases. See the [differential record](h1-differential-evidence.md) | — |

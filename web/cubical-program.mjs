@@ -22,21 +22,16 @@ const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${
 // an earlier checked reference. Unsupported declarations never become axioms.
 export class CubicalProgram {
   constructor(module, readSource, { onDeclarationStart, onDeclaration, collectReferences = true, optimizations = {}, manageTransactions = true,
-    searchFuel, declarationFuel, experimental = ["h1"], representation = "native", prelude = true } = {}) {
+    searchFuel, declarationFuel, experimental, representation = "native", prelude = true } = {}) {
     if (!["native","declared"].includes(representation)) throw Error(`Unknown type representation: ${representation}.`);
-    if (representation === "declared" && !experimental.includes("h1"))
-      throw Error("Declared representation uses the experimental H1 kernel: enable h1.");
+    // Declared types (H1) are on by default since their release; the option
+    // that admitted them experimentally is gone.
+    if (experimental !== undefined)
+      throw Error("H1 is no longer experimental: declared types are on by default, so drop the experimental option.");
     // Fuel limits (lib/cubical/fuel.mjs), for a measurement or a test; the defaults otherwise.
     this.fuelLimits = { searchFuel, declarationFuel };
     this.kernel = new CubicalKernel(module);
     this.kernel.setOptimizations(optimizations);
-    // Kernel extensions under review, such as "h1" for declared types (the
-    // H1 specification's experimental mode, 5.7). Their results carry the
-    // `kernel extension` marker.
-    const unknown = experimental.filter(name => name !== "h1");
-    if (unknown.length) throw new Error(`Unknown experimental kernel extension: ${unknown.join(", ")}. The one under review is h1.`);
-    this.experimental = [...experimental];
-    this.kernel.setExtensions({ h1: experimental.includes("h1") });
     this.checker = new NativeCubicalElaborator(this.kernel);
     this.representation = representation;
     this.translation = representation === "declared" ? new H1Translation(module,this.checker) : null;
@@ -236,8 +231,9 @@ export class CubicalProgram {
           status: d.status, reason, errorStart: d.errorStart, errorEnd: d.errorEnd,
           rewriteWork: d.rewriteWork, searchFuel: d.searchFuel, failure: d.failure ?? null,
           unfoldingHints: d.native?.unfoldingHints ?? [], axioms: d.native?.axioms ?? [],
-          // Kernel extensions under review that the result relies on, such as
-          // H1; shown apart from assumptions, and computable accepts them.
+          // Kernel extensions under review that the result relies on, shown
+          // apart from assumptions; computable accepts them. None is under
+          // review since H1's release, so this list is empty.
           extensions: d.native?.extensions ?? [], start: syntax.start, end: syntax.end,
           definitionStart: syntax.start, description: leadingDocumentation(text, syntax.start)?.text ?? "",
           ...(name === main ? {} : { sourceModule: name, sourceName: d.name }),

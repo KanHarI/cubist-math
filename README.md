@@ -14,8 +14,10 @@ conversion unfolds them on demand. Explicit assumptions are shown with each proo
 They are ordinary names and can be shadowed. Binary and radix numbers are
 ordinary inductive declarations too. The source module `w` keeps the inductive
 `W(U,V,A,B)` and its structurally recursive `wrec`, though nothing imports it.
-H1 is enabled by default; mathematical review remains pending. The kernel has no
-primitive Nat/W formation, constructor, elimination, or computation rules.
+H1 was released on 2026-10-02, after review of its model, critical pairs and
+canonicity, and is on by default. The kernel has no primitive Nat, W or
+pushout formation, constructor, elimination, or computation rules; pushouts
+are the source declaration in `pushout`.
 
 ## Build and use
 

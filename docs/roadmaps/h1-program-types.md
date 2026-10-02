@@ -3,9 +3,9 @@
 Nat and W since 2026-09-30, pushouts since 2026-10-01 ([below](#source-defined-pushouts)).
 
 Implemented on 2026-09-30, based on `bfef585`. H1 is enabled by default in
-the browser, CLI and source-checking tools. Mathematical release review of
-H1 remains pending; changing the default does not discharge its soundness,
-critical-pair or canonicity obligations.
+the browser, CLI and source-checking tools. Its mathematical review was
+approved and H1 released on 2026-10-02: no experimental option or marker
+remains (the specification's 5.7 and 6.4).
 
 ## Source and imports
 

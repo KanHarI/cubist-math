@@ -56,6 +56,9 @@ export class CubicalKernel {
     // kernel index, constructor names and normal form in source terms
     // (web/cubical-signatures.mjs). A rollback removes those it admitted.
     this.signatures = new Map();
+    // Declared types (H1) are on by default since their release, in the
+    // kernel and here; setExtensions can switch them off.
+    this.extensions = { h1: true };
     // Whether instruction drivers on this session consult the term checker's
     // conversion as a search aid rather than their own guide, which compares
     // weak head normal forms (web/cubical-instruction-driver.mjs). For
@@ -70,9 +73,9 @@ export class CubicalKernel {
     this.optimizations = { shareSyntax, reuseChecks, compactPaths };
     this.module._cb_optimizations(this.handle, (shareSyntax ? 1 : 0) | (reuseChecks ? 2 : 0));
   }
-  // Kernel extensions under review: { h1 } admits declared types. Off by
-  // default; the experimental mode turns it on.
-  setExtensions({ h1 = false } = {}) {
+  // Kernel extensions: { h1 } admits declared types, on by default since
+  // H1's release. Switched off, the kernel refuses new declarations.
+  setExtensions({ h1 = true } = {}) {
     this.assertOpen();
     this.extensions = { h1 };
     this.module._cb_extensions(this.handle, h1 ? 1 : 0);

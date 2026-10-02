@@ -288,7 +288,8 @@ export class NativeCubicalElaborator {
   }
   // The kernel extensions a term relies on: a declared type's instance,
   // constructor or eliminator whose signature was admitted experimentally,
-  // and every definition that carries a marker.
+  // and every definition that carries a marker. Since H1's release no
+  // signature is admitted experimentally, so the list is empty.
   extensionsOf(...terms) {
     // No signature admitted in this session, no marker: nothing to walk.
     if (!this.kernel.signatures.size) return [];
@@ -327,9 +328,8 @@ export class NativeCubicalElaborator {
   admitSignature(spec) {
     try { return admitSignature(this.kernel, spec, { syntax: this.syntax, driver: this.driver }); }
     catch (error) {
-      const refused = /kernel extension under review/.test(error.message)
-        ? "Declared types are a kernel extension under review: enable the experimental option h1, "
-          + "with --experimental=h1 in the CLI or Declared types (H1) in the workbench."
+      const refused = /switched off/.test(error.message)
+        ? "Declared types (H1) are switched off in this kernel session."
         : error.message;
       throw this.describeMismatch(Object.assign(new Error(`Instruction kernel: ${refused}`),
         { kind: error.kind ?? "other", mismatch: error.mismatch, constructor: error.constructor }), new Map());

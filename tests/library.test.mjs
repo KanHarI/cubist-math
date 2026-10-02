@@ -20,7 +20,6 @@ const assumptions = {
   h1_cauchy_quotient: ["Truncate", "TruncateElim", "TruncateIntro", "TruncateProp"],
   h1_zorn_step: ["LEM[h1_truncation.Trunc]"],
 };
-const experimental = new Set(["h1_truncation","h1_classical","h1_cauchy_quotient","h1_zorn_step"]);
 
 test("every library module is listed and checks completely", async t => {
   const files = (await readdir(new URL("../library/", import.meta.url))).filter(name => name.endsWith(".cubist"))
@@ -29,7 +28,7 @@ test("every library module is listed and checks completely", async t => {
   for (const name of libraryModules) {
     const path = fileURLToPath(new URL(`../library/${name}.cubist`, import.meta.url));
     const program = new CubicalProgram(await createCubical(), sourceReader({ path }), {
-      collectReferences: false, experimental: ["h1"],
+      collectReferences: false,
     });
     t.after(() => program.dispose());
     const result = await program.check(await readFile(path, "utf8"), name);

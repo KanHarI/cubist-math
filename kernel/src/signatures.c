@@ -362,8 +362,7 @@ cc_judgement_id cc_instr_signature_begin(cc_kernel *k, cc_judgement_id former_id
                                                     .operand = {sort_symbol, recorded}, .entry = modifier}))
         return 0;
     if (!(k->extensions & CC_EXTENSION_H1))
-        return fail(k, "Declared types are a kernel extension under review (H1); the kernel admits them only when "
-                       "the extension is enabled."), 0;
+        return fail(k, "Declared types (H1) are switched off in this kernel; CC_EXTENSION_H1 switches them on."), 0;
     cc_fact f = {0};
     if (!ck_instr_premise(k, former_id, CC_FACT_TYPING, &f))
         return 0;
@@ -448,7 +447,6 @@ cc_judgement_id cc_instr_signature_begin(cc_kernel *k, cc_judgement_id former_id
     s->recorded = recorded;
     s->former = f.term;
     s->level = level;
-    s->experimental = true;
     cc_term sort = ck_make(k, CC_SORT, index, 0, 0, 0, 0);
     cc_judgement_id id = sort ? ck_instr_publish(k, CC_FACT_SIGNATURE, sort, 0, f.term, 0) : 0;
     if (!id) {

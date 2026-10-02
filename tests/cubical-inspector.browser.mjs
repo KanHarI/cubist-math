@@ -60,7 +60,9 @@ try {
   // the highlighter finds in the whole source, not the line alone (H1).
   const wrapped = Buffer.from("inductive Wrapped(\n  A : U0\n) : prop {\n  point(a : A);\n}\n").toString("base64")
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  await page.goto(`http://127.0.0.1:${port}/proof.html?example=1&experimental=h1#source=${wrapped}`); await idle();
+  // Only the hash differs from the page already open, so goto alone changes
+  // the hash in place: reload to load the new source.
+  await page.goto(`http://127.0.0.1:${port}/proof.html?example=1#source=${wrapped}`); await page.reload(); await idle();
   await page.locator("#read-mode").click();
   const modifier = page.locator("#read-source .source-line").nth(2).locator("span, button").filter({ hasText: /^prop$/ });
   assert.equal(await modifier.count(), 1, "the modifier is a token of its own");
@@ -78,7 +80,8 @@ try {
   const clauses = await page.locator("#inspect-clauses li code").allTextContents();
   assert.equal(clauses[0], "point_case : forall x : A. P(point(x))");
   assert.match(clauses[1], /^squash_case : .*PathP\(fun \(i : Interval\) => P\(Wrapped\.squash\(x, x1\) @ i\), x2, x3\)$/);
-  assert.match(await page.locator("#inspect-axioms").textContent(), /kernel extension: H1/);
+  // Since H1's release a declared type carries no marker.
+  assert.doesNotMatch(await page.locator("#inspect-axioms").textContent(), /kernel extension/);
   assert.equal(await page.locator("#kernel-terms").isVisible(), false, "no checked term to show");
   assert.deepEqual(errors, []);
   // Nat is an ordinary imported declaration: both occurrences in Z lead to

@@ -8,7 +8,7 @@ import { parse } from "../web/mathscript/parser.mjs";
 
 const module = await createCubical();
 async function check(t, source) {
-  const program = new CubicalProgram(module, sourceReader(), {experimental:["h1"]});
+  const program = new CubicalProgram(module, sourceReader(), {});
   t.after(() => program.dispose());
   const result = await program.check(source, "automatic");
   const get = name => {

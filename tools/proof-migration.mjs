@@ -6,9 +6,10 @@
 // - "types": every public type is the same by kernel conversion and every
 //   declaration keeps the same assumptions. Proof witnesses may change.
 // At both levels every declaration keeps its kernel extensions under review,
-// such as H1, which are compared apart from assumptions (the H1
-// specification's 6.4). Generative signatures are compared by their admitted
-// schemas. Only an identical schema grants a renaming between the copies.
+// which are compared apart from assumptions (the H1 specification's 6.4).
+// None is under review since H1's release. Generative signatures are
+// compared by their admitted schemas. Only an identical schema grants a
+// renaming between the copies.
 // A universe-generic definition is one checked term, compared like any other.
 import { createHash } from "node:crypto";
 import createCubical from "../web/dist/cubical.mjs";
@@ -137,8 +138,10 @@ function mapDefinitions(rename, signatureName = name => name) {
 // readOriginal/readEdited return module source text. Returns one report per
 // module; `failures` lists every declaration that does not meet the level.
 export async function verifyMigration({ modules, readOriginal, readEdited, level = "identical",
-  typeTimeLimitMs = 10000, experimental = ["h1"], ledger = null, declarations = null, representation = "native" } = {}) {
+  typeTimeLimitMs = 10000, experimental, ledger = null, declarations = null, representation = "native" } = {}) {
   if (!["identical", "types"].includes(level)) throw new Error(`Unknown verification level: ${level}`);
+  if (experimental !== undefined)
+    throw new Error("H1 is no longer experimental: declared types are on by default, so drop the experimental option.");
   const allowedChanges = validateLedger(ledger);
   const compared = new Set(modules), shadowOf = module => `${module}${SHADOW}`;
   const editedSources = new Map();
@@ -157,7 +160,7 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   const readSource = (name, importer) => shadowModule(name) ? editedSource(shadowModule(name)) : readOriginal(name, importer);
   readSource.beginCheck = () => readOriginal.beginCheck?.();
   readSource.checkImports = (importer, imports) => readOriginal.checkImports?.(importer, imports.filter(name => !shadowModule(name)));
-  const program = new CubicalProgram(await createCubical(), readSource, { collectReferences: false, experimental, representation });
+  const program = new CubicalProgram(await createCubical(), readSource, { collectReferences: false, representation });
   const checker = program.checker, views = checker.definitionViews;
   // Check dependencies before the modules that import them.
   const order = [], visited = new Map();
@@ -221,7 +224,7 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
         dimensions:constructor.dimensions,generated:constructor.generated};
     });
     return {former:hash(former),recorded:info.recorded,modifier:info.modifier,
-      experimental:info.experimental,names:record.constructors,constructors};
+      names:record.constructors,constructors};
   };
   // For each edited declaration that is not identical, the declarations with
   // changed source text that make it differ.
