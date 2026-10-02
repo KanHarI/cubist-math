@@ -3,9 +3,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
-import { CubicalProgram } from "../web/cubical-program.mjs";
 import { parse, tokenize } from "../web/mathscript/parser.mjs";
 import { formatMathScript } from "../web/mathscript/formatter.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 // Path operators: -p reverses a path, as sym(p) does; p ++ q concatenates two
 // paths, as trans(p, q) does. Coordinate operators: -i reverses a coordinate,
@@ -14,12 +14,7 @@ import { formatMathScript } from "../web/mathscript/formatter.mjs";
 // The kernel inspector still prints formulas with ∧ and ∨.
 const module = await createCubical();
 const readArchive = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
-async function check(t, source, name = "operators") {
-  const program = new CubicalProgram(module, readArchive);
-  t.after(() => program.dispose());
-  const result = await program.check(source, name);
-  return Object.fromEntries(result.outputs.map(output => [output.name, output.verified ? true : output.reason]));
-}
+const check = async (t, source, name = "operators") => (await checkProgram(t, source, { module, reader: readArchive, name })).verdicts;
 const accepted = verdicts => assert.ok(Object.values(verdicts).every(verdict => verdict === true), JSON.stringify(verdicts, null, 1));
 // An expression's grouping, fully parenthesized.
 const grouping = source => {

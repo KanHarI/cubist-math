@@ -2,18 +2,15 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import createCubical from "../web/dist/cubical.mjs";
-import { CubicalProgram } from "../web/cubical-program.mjs";
 import { parse } from "../web/mathscript/parser.mjs";
 import { formatMathScript } from "../web/mathscript/formatter.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 const readLibrary = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
 async function check(source, t) {
-  const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
-  t.after(() => program.dispose());
-  const result = await program.check(source, "computability_sample");
-  return { result, outcome: Object.fromEntries(result.outputs.map(output => [output.name, output.verified || output.reason])),
-    gaps: program.gaps.filter(gap => gap.directive).map(gap => `${gap.name}: ${gap.reason}`) };
+  const { program, result, verdicts } = await checkProgram(t, source,
+    { reader: readLibrary, name: "computability_sample", options: { collectReferences: false } });
+  return { result, outcome: verdicts, gaps: program.gaps.filter(gap => gap.directive).map(gap => `${gap.name}: ${gap.reason}`) };
 }
 
 test("a computable declaration is rejected when it depends on an assumption, naming the path", async t => {

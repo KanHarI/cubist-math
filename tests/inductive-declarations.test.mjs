@@ -11,21 +11,14 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { parse } from "../web/mathscript/parser.mjs";
 import { formatMathScript } from "../web/mathscript/formatter.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 const module = await createCubical();
 const library = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8");
 
 // Check a program, with other modules by name, and give each declaration's result.
-async function check(t, source, { modules = {} } = {}) {
-  const program = new CubicalProgram(module, name => name in modules ? modules[name] : library(name));
-  t.after(() => program.dispose());
-  const result = await program.check(source, "main");
-  return { program, result, get: name => {
-    const found = result.outputs.find(output => output.name === name);
-    assert.ok(found, `no declaration ${name}`);
-    return found;
-  } };
-}
+const check = (t, source, { modules = {} } = {}) =>
+  checkProgram(t, source, { module, reader: name => name in modules ? modules[name] : library(name) });
 const ok = (declaration, message) => assert.ok(declaration.verified, `${declaration.name}: ${declaration.reason} ${message ?? ""}`);
 const refused = (declaration, pattern) => {
   assert.equal(declaration.verified, false, `${declaration.name} was accepted`);

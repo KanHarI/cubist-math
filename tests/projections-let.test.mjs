@@ -3,11 +3,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
-import { CubicalProgram } from "../web/cubical-program.mjs";
 import { parse } from "../web/mathscript/parser.mjs";
 import { currentSyntax } from "../web/mathscript/legacy-syntax.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
 import { cubicalMathTree, cubicalText } from "../web/cubical-notation.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 // L1.5 (HoTT A8 and B4): projections p.1 and p.2, and let's stated type and
 // proof block, which replaced have, show and suffices on 2026-09-30. Each
@@ -16,13 +16,7 @@ import { cubicalMathTree, cubicalText } from "../web/cubical-notation.mjs";
 // the stated type.
 const module = await createCubical();
 const readArchive = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
-async function check(t, source, name = "conveniences") {
-  const program = new CubicalProgram(module, readArchive);
-  t.after(() => program.dispose());
-  const result = await program.check(source, name);
-  const verdicts = Object.fromEntries(result.outputs.map(output => [output.name, output.verified ? true : output.reason]));
-  return { program, result, verdicts };
-}
+const check = (t, source, name = "conveniences") => checkProgram(t, source, { module, reader: readArchive, name });
 const parseError = source => { try { parse(source); return null; } catch (error) { return error.message; } };
 const accepted = verdicts => assert.ok(Object.values(verdicts).every(verdict => verdict === true), JSON.stringify(verdicts, null, 1));
 // The checked term of a declaration, under its parameters' lambdas and the

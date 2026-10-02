@@ -1,26 +1,15 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import createCubical from "../web/dist/cubical.mjs";
-import { CubicalProgram } from "../web/cubical-program.mjs";
 import { SEARCH_FUEL } from "../web/translator/fuel.mjs";
 import { parse } from "../web/mathscript/parser.mjs";
 import { formatMathScript } from "../web/mathscript/formatter.mjs";
-import { sourceReader } from "../tools/module-sources.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 // The hlevel tactic (work-plan L2.5b, the HoTT roadmap's D1): it proves
 // h-level statements, and equalities in propositions, from the lemmas of
 // library/hlevels.cubist, evidence in scope and hints, under counted fuel.
-async function check(t, source, options = {}) {
-  const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false, ...options });
-  t.after(() => program.dispose());
-  const result = await program.check(source, "main");
-  return { program, result, get: name => {
-    const found = result.outputs.find(output => output.name === name);
-    assert.ok(found, `no declaration ${name}`);
-    return found;
-  } };
-}
+const check = (t, source, options = {}) => checkProgram(t, source, { options: { collectReferences: false, ...options } });
 const ok = declaration => assert.ok(declaration.verified, `${declaration.name}: ${declaration.reason}`);
 const refused = (declaration, pattern) => {
   assert.equal(declaration.verified, false, `${declaration.name} was accepted`);

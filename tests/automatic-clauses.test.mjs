@@ -2,21 +2,14 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
-import { CubicalProgram } from "../web/cubical-program.mjs";
-import { sourceReader } from "../tools/module-sources.mjs";
 import { parse } from "../web/mathscript/parser.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 const module = await createCubical();
 async function check(t, source) {
-  const program = new CubicalProgram(module, sourceReader(), {});
-  t.after(() => program.dispose());
-  const result = await program.check(source, "automatic");
-  const get = name => {
-    const found = result.outputs.find(output => output.name === name);
-    assert.ok(found, name); return found;
-  };
-  const ok = name => assert.ok(get(name).verified, `${name}: ${get(name).reason}`);
-  return {program,result,get,ok};
+  const checked = await checkProgram(t, source, { module, name: "automatic" });
+  const ok = name => assert.ok(checked.get(name).verified, `${name}: ${checked.get(name).reason}`);
+  return { ...checked, ok };
 }
 
 const quotient = `import hlevels;

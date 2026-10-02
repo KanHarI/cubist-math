@@ -8,19 +8,14 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 import { parse } from "../web/mathscript/parser.mjs";
 import { T, substituteTerm } from "../web/translator/core.mjs";
 import { canonicalHasher } from "../tools/canonical-hash.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 // L1.1 (G0 §4.3): universe binders U < UU0, universe constants of every tier,
 // next and max, generic builtins and assumptions, and generic rewriting.
 // Source cases carry the IDs of the G0 specification's section 5.
 const module = await createCubical();
 const readArchive = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
-async function check(t, source, name = "generic") {
-  const program = new CubicalProgram(module, readArchive);
-  t.after(() => program.dispose());
-  const result = await program.check(source, name);
-  const verdicts = Object.fromEntries(result.outputs.map(output => [output.name, output.verified ? true : output.reason]));
-  return { program, result, verdicts };
-}
+const check = (t, source, name = "generic") => checkProgram(t, source, { module, reader: readArchive, name });
 const parseError = source => { try { parse(source); return null; } catch (error) { return error.message; } };
 const labels = (program, binding) => program.symbols[binding].axioms.map(id => program.checker.assumptionLabels.get(id)).sort();
 

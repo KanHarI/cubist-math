@@ -9,18 +9,10 @@ import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 const module = await createCubical();
-async function check(t, source) {
-  const program = new CubicalProgram(module, sourceReader());
-  t.after(() => program.dispose());
-  const result = await program.check(source, "main");
-  return { result, get: name => {
-    const found = result.outputs.find(output => output.name === name);
-    assert.ok(found, `no declaration ${name}`);
-    return found;
-  } };
-}
+const check = (t, source) => checkProgram(t, source, { module });
 const ok = declaration => assert.ok(declaration.verified, `${declaration.name}: ${declaration.reason}`);
 const refused = (declaration, pattern) => {
   assert.equal(declaration.verified, false, `${declaration.name} was accepted`);
