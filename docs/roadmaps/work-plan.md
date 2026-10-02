@@ -510,7 +510,8 @@ results from the corresponding library area.
    proposals as each gate moves.
 3. **Finish the experimental H1 integration (K2.3, L2.1, L2.2a).** K2.3
    is done: the acceptance matrix (10.10) traces every case but those
-   that wait for other packages, and a test checks it against the tests; the inspection, the
+   that wait for other packages, and a test checks it against the tests;
+   the maintainer approved it on 2026-10-02 (release checklist item 4); the inspection, the
    verifier's marker comparison and a recorded run are done. The checked
    reference chapter (D2.1) is written: chapter 6. L2.2a's recursion whose other
    arguments vary is done, through A5, with explicit acceptance cases.

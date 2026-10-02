@@ -63,7 +63,9 @@ and a review decision:
    **Approved on 2026-10-02:** the [canonicity argument](h1-canonicity.md);
 4. the acceptance matrix of 10.10 complete, K10 and K11 included. Every
    case is now traced; X2 retains the remainder listed below;
-   `tests/acceptance-matrix.test.mjs` checks the matrix against the tests;
+   `tests/acceptance-matrix.test.mjs` checks the matrix against the tests.
+   **Approved on 2026-10-02:** the [matrix](#1010-coverage-of-the-acceptance-cases)
+   as traced; its X2 remainder belongs to item 6;
 5. a recorded run of the whole suite at a pinned revision, repeated at
    the release's own. The first was CI run 36472206548, at `bef00e3` on
    2026-09-28, where all seven jobs passed; the verifier's marker
@@ -2207,7 +2209,7 @@ into sets and `Gpd`'s into groupoids, using L2.2b's generated clauses.
 ### 10.10 Coverage of the acceptance cases
 
 Status on 2026-09-30, to be kept current with each change to sections
-5–10. *Traced* means a test names the case by its ID, in the layer its
+5–10. The maintainer approved it on 2026-10-02 (release checklist item 4). *Traced* means a test names the case by its ID, in the layer its
 entry gives: a kernel case in `kernel/tests/test_signatures.c`; a driver,
 source or verifier case in `tests/h1-acceptance.test.mjs`,
 `tests/h1-admission.test.mjs`, `tests/h1-driver.test.mjs`,
@@ -2230,7 +2232,7 @@ refuse.
 | Kan K1–K11 | Kernel: K1 (with no tubes, and with a tube of `succ`: a composition pushes into `succ`), K2 in substance (in `N` rather than `Plus`), K3, K4 in substance (in `Susp` rather than `S1`, with a tube from `north` to `south`), K5 in substance (the argument of `merid`, not a point constructor's), K6 in substance (transport of `merid` along a line of types `e : A = B`), K7 in substance (a set truncation's squash rather than `Quotient`'s), K8, K9 in substance (in `Susp` rather than `S1`: along a constant line, an `hcomp` of the base moved), K10 in substance (96 random constructor terms of `Susp`, `Torus` and `Quotient`, the path constructors at random formulas over two dimensions, `Quotient`'s `cls` and `eq` without its squash, moved along lines of the parameter drawn from `e @ i`, its reversal and a constant; each restricted to every face of the two dimensions, as it is and as its weak head), K11 (along the constant lines: at φ = 1 the term, and where φ is a face, the generated rules' weak head restricted to it is the term there). Driver: K6 (the kernel's transport along `ua` of the integers' successor, from the checked definitions of `docs/examples/h1/winding.cubist`) | — | — |
 | Elimination E1–E11 | Source: E1 (`docs/examples/h1/winding.cubist`), E2 (as `cong(code, loop)` equal to `ua(succ)` by `rfl`), E3 (`T.squash`), E4 (dependent family of sets, with explicit glue obligation and automatic squash), E8 (a missing clause, a duplicate clause, an unknown constructor), E11 (dependent groupoid family, automatic three-dimensional squash). Kernel: E3 (the `prop` squash clause), E5–E7, E9, E10, and a motive over no declared type refused. Driver: E5 | — | — |
 | Trust T1–T7 | Kernel: T1, T5, T6, T7. Driver: T5, T6. Source: T1 (the option named when off), T2 (direct, through a definition, through an import), T3, T4. Verifier: the marker compared apart from assumptions (6.4) | — | — |
-| Truncation policy G1–G7 | Source: G1 (`Tr(U1, U0)` is not in `U0`), G2 (small truncation into a proposition in U1), G3 (the archive checks in full; 3,804 declarations, 0 gaps), G5 (rebuilt `CauchySame` and `EventualClose` in U0 without assumptions), G6 (proposition resized through LEM, witness with set evidence refused), G7 (large double-negation elimination, LEM retained). Verifier: G4 (exact ledger change accepted, unlisted or altered pin refused) | — | — |
+| Truncation policy G1–G7 | Source: G1 (`Tr(U1, U0)` is not in `U0`), G2 (small truncation into a proposition in U1), G3 (the archive checks in full; 3,788 declarations, 0 gaps), G5 (rebuilt `CauchySame` and `EventualClose` in U0 without assumptions), G6 (proposition resized through LEM, witness with set evidence refused), G7 (large double-negation elimination, LEM retained). Verifier: G4 (exact ledger change accepted, unlisted or altered pin refused) | — | — |
 | Resources R1–R5 | Kernel: R1 (a sort, constructor and eliminator whose indices are out of range, and a list whose next cell is no list, built as raw syntax: inspected, reduced or refused with an error, and refused by the term checker and the instructions), R2, R3; a former of the wrong shape and a truncation level above the maximum are refused. Driver: R1 in part (an operand that is not a 32-bit unsigned integer is refused), R5 (the codec round trip); `tests/h1-admission.test.mjs` checks ABI version 3. Source: R4 (a module of ABI version 2 refused by the loader) | — | — |
 | Differential X1–X8 | Driver: X1 (202 successful instruction judgements, 70 equalities, 42 rejected requests and an unequal conversion query; Nat, sum, W and pushout), X2 in part (small normal-form fixtures, after administrative Beta/Eta), X3 (the native instruction fixtures' Comp, HComp and Trans), X4 in part (winding canonicity and evaluations), X5 in part (cost-report fields on a small fixture), X6 (finite-universe calls for all four types), X7 (tier-1 formers stay native), X8 (mixed calls fail for sum, W and pushout; the verifier names each call) | X2: all archive value normal forms and the literal alpha criterion. X4 and X5: whole-archive replay and cost observations are manual evidence; rerun both coverage commands sequentially at the merged release head on a clean tree before counting these release cases. See the [differential record](h1-differential-evidence.md) | — |
 
