@@ -1,12 +1,14 @@
 // Integer-handle interface to the independent C checker, usable in a browser
 // worker or Node. Building syntax never certifies it; check() does that in C.
 const traceKinds = ["", "infer", "inferred", "reused", "extend", "convert", "reduce"];
+// A term kind's name at its number. null marks a retired kind whose number
+// stays reserved, Nat's, W's and pushouts' (kernel/include/cubical_kernel.h).
 export const cubicalKinds = [
   "", "U", "Var", "Pi", "Lam", "App", "Sigma", "Pair", "Fst", "Snd",
-  "Nat", "Zero", "Succ", "NatRec", "Unit", "Point", "Path", "PLam", "PApp",
-  "Comp", "Tube", "Void", "Abort", "W", "Sup", "WRec", "Sum", "Inl", "Inr",
+  null, null, null, null, "Unit", "Point", "Path", "PLam", "PApp",
+  "Comp", "Tube", "Void", "Abort", null, null, null, "Sum", "Inl", "Inr",
   "SumRec", "UnitRec", "Glue", "GlueSystem", "GlueTerm", "Unglue", "DefRef",
-  "Pushout", "PushLeft", "PushRight", "PushPath", "PushElim",
+  null, null, null, null, null,
   "HComp", "Trans",
   "LBound", "LConst", "LSucc", "LMax", "LPi", "LLam", "LApp",
   "Sort", "Con", "Elim", "List",
@@ -224,7 +226,7 @@ export class CubicalKernel {
   }
   term(kind, payload = 0, ...children) {
     this.assertOpen();
-    const tag = cubicalKinds.indexOf(kind);
+    const tag = typeof kind === "string" ? cubicalKinds.indexOf(kind) : -1;
     if (tag < 1) throw new Error(`Unsupported cubical constructor: ${kind}`);
     uint32(payload, "Payload");
     if (children.length > 4) throw new Error("Cubical nodes have at most four children.");

@@ -650,10 +650,11 @@ answered by conversion's evidence where syntax disagreed), coverage stays
 complete at about 1% more kernel steps: those side conditions are now
 derived.
 
-The JavaScript reference checker (`lib/cubical/core.mjs`) is in the same
-position: its `Checker` serves the tests of the CCHM fragment and the
-JavaScript-only elaboration tests, and the path builders use its syntax
-constructors and substitution.
+The JavaScript reference checker (`lib/cubical/core.mjs`) was in the same
+position: its `Checker` served the tests of the CCHM fragment and the
+JavaScript-only elaboration tests. It was removed on 2026-10-02, when those
+tests moved to the instruction kernel; `core.mjs` keeps the syntax
+constructors and substitution the path builders use.
 
 **Decision (2026-09-26).** Neither is extended. G0 and H are implemented as
 instructions and as the driver's search, once; the term checker's rules and

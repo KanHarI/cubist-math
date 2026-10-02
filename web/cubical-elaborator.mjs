@@ -14,7 +14,7 @@ const speculativeFailures = new Set(["mismatch", "budget", "deadline"]);
 // entry named apart from another x, taken back to their stems for display
 // wherever the stem occurs nowhere in the binder's body, so nothing in it
 // can tell the two apart. Syntax is shared, so each pass is memoized.
-const TERM_BINDERS = new Set(["Pi", "Lam", "Sigma", "W", "LPi", "LLam"]);
+const TERM_BINDERS = new Set(["Pi", "Lam", "Sigma", "LPi", "LLam"]);
 class SourceNames {
   constructor(stems) { this.stems = stems; this.results = new WeakMap(); this.mentions = new Map(); this.renamed = new Map(); }
   memo(table, key) {
@@ -68,7 +68,7 @@ class SourceNames {
     return this.results.get(value);
   }
 }
-const namedBinders = new Set(["Var", "Pi", "Lam", "Sigma", "W", "LPi", "LLam"]);
+const namedBinders = new Set(["Var", "Pi", "Lam", "Sigma", "LPi", "LLam"]);
 
 // For messages only: reduce beta-redexes, within a budget, and give generated
 // names back their source stems (`A3` → `A`, `native10` → `x`) where no two
@@ -164,7 +164,7 @@ export function printedLabels(term) {
   visit(term);
   return labels;
 }
-const binders = new Set(["Pi", "Lam", "Sigma", "W", "LPi", "LLam"]);
+const binders = new Set(["Pi", "Lam", "Sigma", "LPi", "LLam"]);
 
 // Each binder shows its stem, n for n11, unless a binder around it already
 // shows that name or its body uses the name for another variable; then it
@@ -359,7 +359,7 @@ export class NativeCubicalElaborator {
       if (memo.has(term)) return memo.get(term);
       const result = new Set();
       if (term.tag === "Var") result.add(term.name);
-      else if (["Pi", "Lam", "Sigma", "W", "LPi", "LLam"].includes(term.tag)) {
+      else if (["Pi", "Lam", "Sigma", "LPi", "LLam"].includes(term.tag)) {
         for (const name of free(term.domain)) result.add(name);
         for (const name of free(term.body)) if (name !== term.name) result.add(name);
       } else for (const child of Object.values(term)) for (const name of free(child)) result.add(name);

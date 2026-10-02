@@ -26,7 +26,7 @@ export function sourceText(term, symbols = {}, limit = 4000) {
     if (!t || typeof t !== "object" || seen.has(t)) return false;
     seen.add(t);
     if (t.tag === "Var") return t.name === variable;
-    if (["Pi", "Lam", "Sigma", "W", "LPi", "LLam"].includes(t.tag) && t.name === variable) return mentions(t.domain, variable, seen);
+    if (["Pi", "Lam", "Sigma", "LPi", "LLam"].includes(t.tag) && t.name === variable) return mentions(t.domain, variable, seen);
     return Object.values(t).some(child => mentions(child, variable, seen));
   };
   const numeral = numeralValue;
@@ -111,12 +111,8 @@ export function sourceText(term, symbols = {}, limit = 4000) {
       case "U": return atom(universeText(renameLevel(t.level, variable)));
       // A universe variable's bound, in place of a context entry's type.
       case "LBound": return atom(universeText({ tag: "LConst", tier: t.tier, value: 0 }));
-      case "Nat": case "Unit": case "Void": return atom(t.tag);
+      case "Unit": case "Void": return atom(t.tag);
       case "Point": return atom("tt");
-      case "Zero": case "Succ": {
-        const n = numeral(t);
-        return atom(n !== null ? String(n) : `succ(${show(t.value)})`);
-      }
       case "Var": return atom(variable(t.name));
       case "DefRef": return atom(label(t.name));
       case "Pi": case "Sigma": {
@@ -147,7 +143,9 @@ export function sourceText(term, symbols = {}, limit = 4000) {
       }
       // Eliminators print as the source forms that build them. The motive's
       // bound name is shown as the one the branches bind: `as k` binds both.
-      case "NatRec": {
+      // NatInduction is no term: it is the source Nat's eliminator, applied,
+      // in the shape its `induction` spelling reads.
+      case "NatInduction": {
         const { motive, step } = t;
         if (motive?.tag !== "Lam" || step?.tag !== "Lam" || step.body?.tag !== "Lam") return fallback(t);
         // `induction k as k` would be correct but hard to read.
@@ -182,7 +180,7 @@ export function sourceText(term, symbols = {}, limit = 4000) {
             step={...step,body:{tag:"Lam",name:h,domain:t.fn.motive.body,
               body:{tag:"App",fn:step.body,arg:{tag:"Var",name:h}}}};
           }
-          return print({tag:"NatRec",motive:t.fn.motive,zero:t.fn.clauses[0],step,value:t.arg});
+          return print({tag:"NatInduction",motive:t.fn.motive,zero:t.fn.clauses[0],step,value:t.arg});
         }
         // An instantiation is an application to a universe.
         const args = [];
@@ -203,8 +201,6 @@ export function sourceText(term, symbols = {}, limit = 4000) {
       }
       case "PApp": return [`${sub(t.path, LEVEL.at + 1)} @ ${interval(t.arg)}`, LEVEL.at];
       case "Inl": case "Inr": return atom(`${t.tag === "Inl" ? "left" : "right"}(${show(t.value)})`);
-      case "W": return atom(`W(${show(t.domain)}, ${show({ tag: "Lam", name: t.name, domain: t.domain, body: t.body })})`);
-      case "Sup": return atom(`sup(${show(t.as)}, ${show(t.label)}, ${show(t.children)})`);
       case "Abort": return atom(`absurd(${show(t.impossible)})`);
       case "Fst": case "Snd": return atom(`${sub(t.pair, LEVEL.atom)}.${t.tag === "Fst" ? 1 : 2}`);
       // Declared types (H1): an instance is its name applied to its recorded

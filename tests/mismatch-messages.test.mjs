@@ -55,7 +55,7 @@ test("display renaming never merges two different names", () => {
   assert.notEqual(shown.name, shown.body.name);
   assert.equal(shown.body.body.name, shown.name);
   // A lone generated name gets its stem back.
-  assert.equal(displayTerm({ tag: "Lam", name: "x7", domain: { tag: "Nat" }, body: { tag: "Var", name: "x7" } }).name, "x");
+  assert.equal(displayTerm({ tag: "Lam", name: "x7", domain: { tag: "Unit" }, body: { tag: "Var", name: "x7" } }).name, "x");
 });
 
 // The third review of #74: a mismatch's two sides are named together. The

@@ -5,23 +5,20 @@ import { cubicalKinds } from "./cubical-kernel.mjs";
 
 export const operandNames = {
   Pi: ["domain", "body"], Lam: ["domain", "body"], Sigma: ["domain", "body"], W: ["domain", "body"],
-  App: ["function", "argument"], Pair: ["type", "first", "second"], Fst: ["pair"], Snd: ["pair"], Succ: ["value"],
-  NatRec: ["motive", "zero", "step", "value"], Path: ["family", "left", "right"], PLam: ["family", "body"],
+  App: ["function", "argument"], Pair: ["type", "first", "second"], Fst: ["pair"], Snd: ["pair"],
+  Path: ["family", "left", "right"], PLam: ["family", "body"],
   PApp: ["path", "checked annotation"], Comp: ["family", "tubes", "base"], Tube: ["partial term", "next tube"],
-  Abort: ["type", "impossible"], Sup: ["W type", "label", "children"], WRec: ["motive", "step", "value"],
+  Abort: ["type", "impossible"],
   Sum: ["left", "right"], Inl: ["sum type", "value"], Inr: ["sum type", "value"],
   SumRec: ["motive", "left", "right", "value"], UnitRec: ["motive", "point", "value"],
   Glue: ["base", "system"], GlueSystem: ["partial type", "equivalence", "next"],
   GlueTerm: ["Glue type", "base", "tubes"], Unglue: ["Glue type", "value"],
-  Pushout: ["center", "left", "right", "maps"], PushLeft: ["pushout", "value"], PushRight: ["pushout", "value"],
-  PushPath: ["pushout", "value"], PushElim: ["motive", "left", "right", "bridge"],
   U: ["level"], LSucc: ["level"], LMax: ["left", "right"], LApp: ["function", "level"],
   LPi: ["bound", "body"], LLam: ["bound", "body"],
   HComp: ["type", "tubes", "base"], Trans: ["family", "face tube", "base"],
   Sort: ["parameters", "recorded levels"], Con: ["instance"], Elim: ["motive", "clauses"], List: ["item", "next"],
 };
-export const opcodeName = kind => "CC_" + ({ GlueSystem: "GLUE_SYSTEM", GlueTerm: "GLUE_TERM",
-  PushLeft: "PUSH_LEFT", PushRight: "PUSH_RIGHT", PushPath: "PUSH_PATH", PushElim: "PUSH_ELIM" }[kind] ?? kind.toUpperCase());
+export const opcodeName = kind => "CC_" + ({ GlueSystem: "GLUE_SYSTEM", GlueTerm: "GLUE_TERM" }[kind] ?? kind.toUpperCase());
 
 export function kernelAssembly(program, view, checked, { limit = 400, expanded = [], focus = [] } = {}) {
   const kernel = program.kernel, syntax = program.checker.syntax, dimensions = new Map(view.dimensions ?? []);
@@ -41,7 +38,7 @@ export function kernelAssembly(program, view, checked, { limit = 400, expanded =
     const native = kernel.node(id), opcode = cubicalKinds.indexOf(native.kind);
     const node = { id, opcode, mnemonic: opcodeName(native.kind), kind: native.kind, payload: native.payload,
       operands: native.children.map((handle, i) => ({ slot: "abcd"[i], label: operandNames[native.kind]?.[i] ?? "unused", handle })) };
-    if (["Var", "Pi", "Lam", "Sigma", "W"].includes(native.kind)) {
+    if (["Var", "Pi", "Lam", "Sigma"].includes(native.kind)) {
       const name = kernel.symbolName(native.payload), label = view.symbols[name]?.name;
       node.annotation = `symbol #${native.payload}: ${label && label !== name ? `${label} (${name})` : name}`;
     } else if (["Path", "PLam", "Comp", "HComp", "Trans"].includes(native.kind)) node.annotation = `dimension #${native.payload}`;
@@ -51,7 +48,7 @@ export function kernelAssembly(program, view, checked, { limit = 400, expanded =
     else if (native.kind === "Con") node.annotation = `constructor ${native.payload}`;
     else if (native.kind === "LConst") node.annotation = `level ${levelText({ tag: "LConst", tier: native.payload >>> 16, value: native.payload & 0xffff })}`;
     else if (native.kind === "LSucc") node.annotation = `level successor: + ${native.payload}`;
-    else if (["PApp", "PushPath", "Tube", "GlueSystem"].includes(native.kind)) {
+    else if (["PApp", "Tube", "GlueSystem"].includes(native.kind)) {
       node.formula = native.payload;
       if (!formulas.has(native.payload)) {
         const formula = kernel.inspectFormula(native.payload);

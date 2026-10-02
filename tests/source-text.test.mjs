@@ -4,14 +4,17 @@ import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
+import { naturalSort as nat, numeral as number } from "../lib/cubical/numerals.mjs";
 
-const U0 = { tag: "U", level: 0 }, nat = { tag: "Nat" }, unit = { tag: "Unit" }, v = { tag: "Void" };
+const U0 = { tag: "U", level: 0 }, unit = { tag: "Unit" }, v = { tag: "Void" };
 const variable = name => ({ tag: "Var", name });
 const pi = (name, domain, body) => ({ tag: "Pi", name, domain, body });
 const sigma = (name, domain, body) => ({ tag: "Sigma", name, domain, body });
 const sum = (left, right) => ({ tag: "Sum", left, right });
 const app = (fn, ...args) => args.reduce((f, arg) => ({ tag: "App", fn: f, arg }), fn);
-const number = n => n ? { tag: "Succ", value: number(n - 1) } : { tag: "Zero" };
+const succ = value => app({ tag: "Con", index: 1, sort: nat, name: "succ" }, value);
+// The source Nat's eliminator applied, which prints as `induction`.
+const induction = ({ motive, zero, step, value }) => app({ tag: "Elim", signature: "nat__Nat", motive, clauses: [zero, step] }, value);
 const add = (a, b) => app({ tag: "DefRef", name: "naturals__add" }, a, b);
 const equal = (left, right) => ({ tag: "Path", dim: "i", family: nat, left, right });
 
@@ -35,7 +38,7 @@ test("values and arithmetic print in source syntax", () => {
   assert.equal(sourceText(add(add(number(1), number(2)), number(3))), "1 + 2 + 3");
   assert.equal(sourceText(add(number(1), add(number(2), number(3)))), "1 + (2 + 3)");
   assert.equal(sourceText(app({ tag: "DefRef", name: "naturals__mul" }, add(number(1), number(2)), number(3))), "(1 + 2) * 3");
-  assert.equal(sourceText(app({ tag: "DefRef", name: "naturals__isLt" }, variable("n"), { tag: "Succ", value: variable("n") })), "n < succ(n)");
+  assert.equal(sourceText(app({ tag: "DefRef", name: "naturals__isLt" }, variable("n"), succ(variable("n")))), "n < succ(n)");
   assert.equal(sourceText({ tag: "Pair", first: number(3), second: { tag: "Pair", first: { tag: "Point" }, second: number(1) } }), "(3, tt, 1)");
   assert.equal(sourceText({ tag: "Inl", as: sum(unit, nat), value: { tag: "Point" } }), "left(tt)");
   assert.equal(sourceText({ tag: "Lam", name: "m", domain: nat, body: { tag: "Lam", name: "n", domain: nat,
@@ -98,21 +101,21 @@ test("binary numbers print as binary literals", () => {
 });
 
 test("recursion and case analysis print as induction and match", () => {
-  const recursion = { tag: "NatRec", motive: { tag: "Lam", name: "b", domain: nat, body: nat }, zero: variable("n"),
-    step: { tag: "Lam", name: "k", domain: nat, body: { tag: "Lam", name: "h", domain: nat, body: { tag: "Succ", value: variable("h") } } },
+  const recursion = { motive: { tag: "Lam", name: "b", domain: nat, body: nat }, zero: variable("n"),
+    step: { tag: "Lam", name: "k", domain: nat, body: { tag: "Lam", name: "h", domain: nat, body: succ(variable("h")) } },
     value: variable("m") };
   // A constant motive, and a successor clause that does not use the
   // predecessor, need no `as`.
-  assert.equal(sourceText(recursion), "induction m return Nat { zero => n; succ h => succ(h); }");
+  assert.equal(sourceText(induction(recursion)), "induction m return Nat { zero => n; succ h => succ(h); }");
   const predecessor = { ...recursion, step: { ...recursion.step, body: { ...recursion.step.body, body: variable("k") } } };
-  assert.equal(sourceText(predecessor), "induction m as k return Nat { zero => n; succ h => k; }");
+  assert.equal(sourceText(induction(predecessor)), "induction m as k return Nat { zero => n; succ h => k; }");
   // The motive's variable reads as the name `as` binds.
   const dependent = { ...recursion, motive: { tag: "Lam", name: "b", domain: nat, body: equal(variable("b"), variable("b")) } };
-  assert.match(sourceText(dependent), /^induction m as k return k = k \{/);
+  assert.match(sourceText(induction(dependent)), /^induction m as k return k = k \{/);
   const cases = { tag: "SumRec", motive: { tag: "Lam", name: "z", domain: sum(unit, unit), body: U0 },
     left: { tag: "Lam", name: "a", domain: unit, body: nat }, right: { tag: "Lam", name: "b", domain: unit, body: unit }, value: variable("v") };
   assert.equal(sourceText(cases), "match v as z return U0 { left a => Nat; right b => Unit; }");
-  assert.equal(sourceText(add(recursion, number(1))), "(induction m return Nat { zero => n; succ h => succ(h); }) + 1");
+  assert.equal(sourceText(add(induction(recursion), number(1))), "(induction m return Nat { zero => n; succ h => succ(h); }) + 1");
 });
 
 test("messages name unnamed dimensions once, keep sharing, and avoid the names they show", async () => {

@@ -29,12 +29,12 @@ const verify = async (edited, level) => {
 
 test("canonical hashes ignore bound names but not binding structure", () => {
   const hash = canonicalHasher();
-  const lam = (name, body) => ({ tag: "Lam", name, domain: { tag: "Nat" }, body });
+  const lam = (name, body) => ({ tag: "Lam", name, domain: { tag: "Unit" }, body });
   const variable = name => ({ tag: "Var", name });
   assert.equal(hash(lam("x", lam("y", variable("x")))), hash(lam("a", lam("b", variable("a")))));
   assert.notEqual(hash(lam("x", lam("y", variable("x")))), hash(lam("x", lam("y", variable("y")))));
   assert.equal(hash(lam("x", lam("x", variable("x")))), hash(lam("x", lam("y", variable("y")))));
-  const line = (dim, formula) => ({ tag: "PLam", dim, family: { tag: "Nat" },
+  const line = (dim, formula) => ({ tag: "PLam", dim, family: { tag: "Unit" },
     body: { tag: "PApp", path: variable("p"), arg: formula } });
   assert.equal(hash(line("i", [["i:1"]])), hash(line("j", [["j:1"]])));
   assert.notEqual(hash(line("i", [["i:1"]])), hash(line("i", [["k:1"]])));

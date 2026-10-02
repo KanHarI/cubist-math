@@ -135,8 +135,9 @@ falls back to the old kernel.
 ## Verification commands
 
 Run `node --test lib/cubical/tests/*.test.mjs` for the experimental core.
-Run `node lib/cubical/check-library.mjs` to regenerate actual translation
-results; every successful declaration is checked again from inert term syntax.
+`lib/cubical/check-library.mjs`, which wrote `translation-results.json` with
+the JavaScript reference checker, was removed with that checker on
+2026-10-02; the JSON file is the last such record.
 Run `node lib/cubical/inventory.mjs` for the separate AST-only census.
 No experiment command changes the production WASM binary or deploys the site.
 
