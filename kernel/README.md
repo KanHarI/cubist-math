@@ -46,7 +46,10 @@ of these regressions.
 | `src/term_store.c` | Inert syntax allocation, bounded handles, budgets and errors |
 | `src/term_substitution.c` | Capture-avoiding term and dimension substitution |
 | `src/syntax_cache.c` | Memoized pure operations on the immutable syntax graph |
-| `src/instructions.c` | The instruction kernel: forward rules on a graph of judgements |
+| `src/instructions.c` | The instruction kernel: forward rules on a graph of judgements, contexts, universes, functions, pairs, level quantification and definitions |
+| `src/instruction_paths.c` | Paths, path application at interval formulas, composition built one tube at a time, `HComp` and `Trans` |
+| `src/instruction_glue.c` | Glue types and terms, built one piece at a time, and `Unglue` |
+| `src/instruction_equality.c` | Equality judgements: reflexivity, symmetry, transitivity, conversion, `Lift`, `Eta`, and `Step` and `Replace` at a position |
 | `src/signatures.c`, `src/eliminators.c` | Declared types (H1): admission, instances, constructors, elimination |
 | `src/term_conversion.c` | Comparison modulo bound names and the interval algebra; syntactic cumulativity |
 | `src/levels.c` | Universe levels: normal forms, equality and order by arithmetic (G0 §2.4) |

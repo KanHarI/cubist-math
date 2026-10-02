@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 // The translator modules copied for the browser (tools/build-cubical-runtime.mjs).
 export const runtimeModules = ["core", "lattice", "syntax-graph", "equivalence", "translate", "proof-rewrite",
-  "simp-registry", "path-over", "path-algebra", "public-equivalence", "dimension-slots", "names", "elaboration",
+  "simp-registry", "path-over", "path-algebra", "public-equivalence", "dimension-slots", "names", "elaboration", "builtins", "tactics",
   "proof-goals", "motives", "fuel", "inductive", "match", "hlevel", "numerals"];
 
 // A hash of files, by path and content, read through `read`.
