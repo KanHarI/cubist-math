@@ -7,7 +7,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { parse } from "../web/mathscript/parser.mjs";
 import { T, substituteTerm } from "../web/translator/core.mjs";
-import { canonicalHasher } from "../tools/proof-migration.mjs";
+import { canonicalHasher } from "../tools/canonical-hash.mjs";
 
 // L1.1 (G0 §4.3): universe binders U < UU0, universe constants of every tier,
 // next and max, generic builtins and assumptions, and generic rewriting.
