@@ -46,7 +46,8 @@ on the `h1-signatures` branch. Its statuses are distinct:
   entries of 4.5 keep their status, and implementation and passing tests
   discharge none of them.
 - **Migration evidence:** K2.4a's representation option and archive replay
-  are implemented, with the X2 remainder in the
+  are implemented, historical evidence since 2026-10-02 rather than a
+  release gate (checklist item 6), with the X2 remainder in the
   [differential record](h1-differential-evidence.md). K2.5 has an exact
   ledger verifier and [scoped migrations](h1-truncation-migration.md).
 
@@ -75,7 +76,11 @@ and a review decision:
    checkout of it, and the jobs of the CI runs dispatched on that commit;
 6. K2.4a's differential fixtures X1–X4 and X6–X8. The work plan's
    isolation correction I1.2a, on which 4.1's baseline relies, was
-   delivered on 2026-09-28.
+   delivered on 2026-09-28. **Retired as a gate on 2026-10-02:** the
+   fixtures were to justify retiring the hand-coded types through τ, but
+   Nat and W (2026-09-30) and pushouts (2026-10-01) were retired by
+   declaring them in source, and sums stay native. X1–X8 are recorded as
+   historical evidence (7.4), and their tests remain as regressions.
 
 The evidence for items 1–3, the mathematical ones, and what a review
 decision on each still needs are gathered in the
@@ -1703,6 +1708,21 @@ a program with a mixed-tier call keeps its native formers and the verifier
 reports it; it is never migrated in part. The archive coverage run is
 compatibility evidence for the native forms, not X4.
 
+**Decision on 2026-10-02.** The differential fixtures no longer gate the
+release (checklist item 6). Their purpose was to justify retiring the
+hand-coded instructions through τ, under the criterion above. Instead Nat
+and W (2026-09-30) and pushouts (2026-10-01) were retired by declaring them
+in source, and sums stay native at every level. So no shipped term passes
+through τ, and X1–X8 are kept as historical evidence for those retirements,
+with their tests as regressions:
+
+- X2's literal criterion is left as written. Its counterexample, the
+  η-contracted image of a sum eliminator, concerns only τ's declared
+  stand-in for sums, which nothing uses; the two forms are convertible.
+- X4's purpose, that the archive still checks, is served for the current
+  kernel by G3's corpus test, which checks every archive declaration in CI.
+- X5's cost records stay as observations.
+
 ## 8. K2.5: truncation and resizing (G2)
 
 ### 8.1 Native truncation and quotients
@@ -2209,8 +2229,10 @@ into sets and `Gpd`'s into groupoids, using L2.2b's generated clauses.
 ### 10.10 Coverage of the acceptance cases
 
 Status on 2026-09-30, to be kept current with each change to sections
-5–10. The maintainer approved it on 2026-10-02 (release checklist item 4). *Traced* means a test names the case by its ID, in the layer its
-entry gives: a kernel case in `kernel/tests/test_signatures.c`; a driver,
+5–10. The maintainer approved it on 2026-10-02 (release checklist item 4).
+Since 2026-10-02 the differential cases X1–X8 are historical evidence, not a
+release gate (checklist item 6). *Traced* means a test names the case by its
+ID, in the layer its entry gives: a kernel case in `kernel/tests/test_signatures.c`; a driver,
 source or verifier case in `tests/h1-acceptance.test.mjs`,
 `tests/h1-admission.test.mjs`, `tests/h1-driver.test.mjs`,
 `tests/inductive-declarations.test.mjs`, `tests/declared-match.test.mjs`,

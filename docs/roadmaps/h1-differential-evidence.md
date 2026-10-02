@@ -21,8 +21,12 @@ annotation is not its former now meets the retired-syntax refusal for
 pushouts as for W.
 
 Status: experimental implementation, 2026-09-30. The representation option
-and archive replay are implemented. X2, X4 and X5 remain partially traced;
-this record does not mark the differential release gate discharged.
+and archive replay are implemented. X2, X4 and X5 remain partially traced.
+On 2026-10-02 the maintainer retired the differential fixtures as a release
+gate (specification checklist item 6, and its 7.4): Nat, W and pushouts were
+retired by source declaration rather than through τ, and sums stay native.
+This record is historical evidence for those retirements, and its tests
+remain as regressions. X2's remainder and criterion are not pursued.
 
 ## The checked representation option
 
