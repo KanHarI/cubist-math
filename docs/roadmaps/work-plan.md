@@ -278,7 +278,8 @@ recorded integration run, and K2.4a's differential contract, retired as a gate o
 is not a reviewed soundness note, and passing examples do not remove the
 option. **Released on 2026-10-02:** with the checklist's items 1–4 approved
 and item 6 retired as a gate, the option was removed and default admission
-granted; results carry no marker, and item 5's run follows at that revision.
+granted; results carry no marker. Item 5's run at that revision, `581e03c`,
+passed the same day: the [release evidence](h1-release-evidence.md).
 
 Universe fixtures cover phantom parameters, stored data, arities, indices
 and quotient relations: parameters contribute only through those types.

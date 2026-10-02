@@ -54,6 +54,9 @@ test("a check's outcome: it passes only when it ran and exited with 0", () => {
   const node = localChecks().find(check => check.name === "Node suite");
   assert.deepEqual(outcome(node, { status: 0, output: "noise\nℹ tests 9\nℹ pass 9\nℹ fail 0\nℹ duration_ms 3\n", seconds: 4 }),
     { name: "Node suite", command: "npm test", status: 0, passed: true, seconds: 4, summary: ["ℹ tests 9", "ℹ pass 9", "ℹ fail 0"] });
+  // Its summary is found through the runner's colours, which it leaves out.
+  assert.deepEqual(outcome(node, { status: 0, output: "\x1b[34mℹ tests 9\x1b[39m\n\x1b[34mℹ fail 0\x1b[39m\n", seconds: 1 }).summary,
+    ["ℹ tests 9", "ℹ fail 0"]);
   // An error in running it fails it, even with status 0.
   assert.deepEqual(outcome(node, { status: 0, error: "ENOBUFS", output: "ℹ pass 9\n", seconds: 1 }).passed, false);
   assert.deepEqual(outcome(node, { status: 0, error: "ENOBUFS", output: "", seconds: 1 }).status, "ENOBUFS");

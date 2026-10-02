@@ -5,8 +5,9 @@ a gate, the experimental option is removed and default admission granted:
 the kernel admits declared types by default (5.7), no CLI, workbench or
 program option remains, and results no longer carry the
 `kernel extension: H1` marker (6.4). Acceptance case T2 states the
-released behaviour. Item 5, the recorded run at the release's own revision,
-is taken at this change's merged revision.
+released behaviour. Item 5's run at the release's own revision, `581e03c`,
+was recorded the same day, and every check in it passed: the
+[release evidence](h1-release-evidence.md).
 
 2026-09-30 implementation update: at the user's request, source checking now
 enables H1 by default and imports an ordinary source-defined Nat. W is also
@@ -62,7 +63,8 @@ on the `h1-signatures` branch. Its statuses are distinct:
 **Release checklist for finite-level H1.** The experimental option is
 removed, and default admission granted, only when every item has evidence
 and a review decision. With items 1–4 approved and item 6 retired as a gate,
-both were done on 2026-10-02; item 5's run is repeated at that revision:
+both were done on 2026-10-02, and item 5's run was repeated at that
+revision the same day:
 
 1. D1, D4 and D5 written out and reviewed (4.2, 4.3).
    **Approved on 2026-10-02:** the [model construction](h1-model.md);
@@ -82,7 +84,11 @@ both were done on 2026-10-02; item 5's run is repeated at that revision:
    comparison (6.4) and the inspection of 6.5 were delivered the same day.
    `node tools/release-evidence.mjs` records such a run: the revision, its
    build stamp, each local check's command and outcome, run in a fresh
-   checkout of it, and the jobs of the CI runs dispatched on that commit;
+   checkout of it, and the jobs of the CI runs dispatched on that commit.
+   **Recorded on 2026-10-02** at the release revision `581e03c`: the
+   [release evidence](h1-release-evidence.md), where every local check
+   passed and all seven jobs of CI run 37028834426, dispatched on that
+   commit;
 6. K2.4a's differential fixtures X1–X4 and X6–X8. The work plan's
    isolation correction I1.2a, on which 4.1's baseline relies, was
    delivered on 2026-09-28. **Retired as a gate on 2026-10-02:** the

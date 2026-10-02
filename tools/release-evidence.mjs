@@ -51,8 +51,10 @@ export const localChecks = (platform = process.platform) => [
 
 // A command's outcome. It passed only when it ran and exited with 0: an
 // error in running it, such as output beyond the buffer, fails it, whatever
-// it exited with.
-export function outcome({ name, command, summary }, { status, error = null, output, seconds }) {
+// it exited with. Its output is read without terminal escapes, such as the
+// colours of the Node test runner's summary.
+export function outcome({ name, command, summary }, { status, error = null, output: raw, seconds }) {
+  const output = raw.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "");
   const found = summary ? [...output.matchAll(summary)].map(match => match[0].trim()).filter(Boolean) : [];
   const last = output.trim().split("\n").at(-1)?.trim();
   return { name, command: command.join(" "), status: error ?? status, passed: !error && status === 0, seconds,
