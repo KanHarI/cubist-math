@@ -1,6 +1,6 @@
 # Public half-adjoint equivalences and cubical fibers
 
-`lib/cubical/public-equivalence.mjs` connects the existing public
+`web/translator/public-equivalence.mjs` connects the existing public
 Cubist equivalence representation with the native CCHM representation.
 The public signatures are taken from `buildAxiomSpecialization` in
 `web/mathscript/compiler.mjs`; no compiler or website code is changed here.

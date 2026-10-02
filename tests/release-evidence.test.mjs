@@ -104,23 +104,22 @@ test("the revision is HEAD and the tree's changes", () => {
 });
 
 test("the record names the revision, its stamp, each outcome and the dispatched runs", () => {
-  const stamp = { kernel: { sources: "a".repeat(64), outputs: "b".repeat(64) }, runtime: { sources: "c".repeat(64), outputs: "d".repeat(64) } };
+  const stamp = { kernel: { sources: "a".repeat(64), outputs: "b".repeat(64) } };
   const local = [{ name: "Lint", command: "make lint", status: 0, passed: true, seconds: 3, summary: ["ok"] },
     { name: "Node suite", command: "npm test", status: 1, passed: false, seconds: 60, summary: ["ℹ fail 1"] }];
   const text = render({ sha, date: "2026-09-29T12:00:00Z", stamp, local, ci: ciRuns(sha, gh([run(7)])) });
   assert.match(text, /^# Release evidence for `0123456`$/m);
   assert.match(text, new RegExp(`^- Revision: \`${sha}\`$`, "m"));
   assert.match(text, /^- Local checks: in a fresh checkout of the revision$/m);
-  assert.match(text, /^- Build stamp: kernel sources `aaaaaaaaaaaa`, outputs `bbbbbbbbbbbb`; translator copy sources `cccccccccccc`, outputs `dddddddddddd`$/m);
+  assert.match(text, /^- Build stamp: kernel sources `aaaaaaaaaaaa`, outputs `bbbbbbbbbbbb`$/m);
   assert.match(text, /^\| Lint \| make lint \| passed \| 3 \| ok \|$/m);
   assert.match(text, /^\| Node suite \| npm test \| failed \(1\) \| 60 \| ℹ fail 1 \|$/m);
   assert.match(text, /^- \[Run 7\]\(https:\/\/ci\/7\), 2026-09-29T07:00:00Z: success$/m);
   assert.match(text, /^ {2}- \[lint of 7\]\(https:\/\/ci\/7\/lint\): success$/m);
   assert.match(text, /## Verdict\n\n- Node suite failed\.\n$/);
   assert.match(render({ sha, date: "d", ci: [] }), /None\. Dispatch one with `gh workflow run ci\.yml --ref BRANCH`/);
-  // A build that failed may leave a stamp of one part, or none.
-  assert.match(render({ sha, date: "d", local, stamp: { runtime: stamp.runtime } }), /^- Build stamp: kernel none; translator copy sources `cccccccccccc`/m);
-  assert.match(render({ sha, date: "d", local, stamp: { kernel: stamp.kernel } }), /; translator copy none$/m);
+  // A build that failed may leave a stamp with no kernel entry, or none.
+  assert.match(render({ sha, date: "d", local, stamp: {} }), /^- Build stamp: kernel none$/m);
   assert.match(render({ sha, date: "d", local, stamp: null }), /^- Build stamp: none$/m);
 });
 

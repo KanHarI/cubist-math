@@ -119,7 +119,7 @@ export function render({ sha, date, stamp, local, ci, changed }) {
   const lines = [`# Release evidence for \`${sha.slice(0, 7)}\``, "", `- Revision: \`${sha}\``, `- Recorded: ${date}`];
   if (local) {
     lines.push("- Local checks: in a fresh checkout of the revision",
-      stamp ? `- Build stamp: kernel ${hash(stamp.kernel)}; translator copy ${hash(stamp.runtime)}` : "- Build stamp: none");
+      stamp ? `- Build stamp: kernel ${hash(stamp.kernel)}` : "- Build stamp: none");
     lines.push("", "## Local checks", "", "| Check | Command | Outcome | Seconds | Summary |", "| --- | --- | --- | --- | --- |");
     for (const check of local)
       lines.push(`| ${cell(check.name)} | ${cell(check.command)} | ${check.passed ? "passed" : `failed (${cell(check.status)})`} | ${check.seconds} | ${cell(check.summary.join("; "))} |`);

@@ -134,16 +134,16 @@ falls back to the old kernel.
 
 ## Verification commands
 
-Run `node --test lib/cubical/tests/*.test.mjs` for the experimental core.
+Run `node --test tests/translator/*.test.mjs` for the experimental core.
 `lib/cubical/check-library.mjs`, which wrote `translation-results.json` with
 the JavaScript reference checker, was removed with that checker on
 2026-10-02; the JSON file is the last such record.
-Run `node lib/cubical/inventory.mjs` for the separate AST-only census.
+Run `node tools/cubical-inventory.mjs` for the separate AST-only census.
 No experiment command changes the production WASM binary or deploys the site.
 
 ## Derived univalence milestone
 
-`lib/cubical/equivalence.mjs` now builds and independently checks the
+`web/translator/equivalence.mjs` now builds and independently checks the
 CCHM theorem that `unglue` is an equivalence (contractible fibers), uniqueness of
 contractibility witnesses, and the total-space formulation of univalence:
 

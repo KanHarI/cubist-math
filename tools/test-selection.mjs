@@ -10,8 +10,8 @@ export { projectRoot };
 export const defaultTests = readdirSync(new URL("../tests/", import.meta.url))
   .filter(name => name.endsWith(".test.mjs") && name !== "cubical-modules.test.mjs")
   .sort().map(name => `tests/${name}`).concat(
-    readdirSync(new URL("../lib/cubical/tests/", import.meta.url)).filter(name => name.endsWith(".test.mjs"))
-      .sort().map(name => `lib/cubical/tests/${name}`));
+    readdirSync(new URL("../tests/translator/", import.meta.url)).filter(name => name.endsWith(".test.mjs"))
+      .sort().map(name => `tests/translator/${name}`));
 export const help = `Usage: npm test -- [options] [module | file ...]
 
   npm test                              Full regression suite (final check)

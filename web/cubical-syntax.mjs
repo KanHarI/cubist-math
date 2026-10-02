@@ -1,5 +1,5 @@
-import { bindDimensions } from "./dist/cubical-runtime/dimension-slots.mjs";
-import { dimensionContextKey } from "./dist/cubical-runtime/syntax-graph.mjs";
+import { bindDimensions } from "./translator/dimension-slots.mjs";
+import { dimensionContextKey } from "./translator/syntax-graph.mjs";
 // Lossless syntax transport between named cubical ASTs and C arena handles.
 // This layer never decides typing or equality. Every checked result comes
 // from CubicalKernel.check; shared input objects retain shared arena nodes.

@@ -101,7 +101,7 @@ another.
 ## Running the checks
 
 From the repository root, run `make test`, `make sanitize`, and `make lint`.
-The library's tests in `lib/cubical/tests` check raw syntax through this
+The translator's tests in `tests/translator` check raw syntax through this
 kernel's instructions, and `npm test` runs them with the rest. The public
 corpus benchmark is `web/benchmark.html`; timing results depend on hardware
 and browser.

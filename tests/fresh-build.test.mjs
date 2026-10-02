@@ -28,18 +28,20 @@ function chainToDist(file, seen = new Set()) {
 }
 
 // This file names web/dist only to look for it, and loads no build.
-const testFiles = ["tests", "lib/cubical/tests"].flatMap(directory => readdirSync(join(root, directory))
+const testFiles = ["tests", "tests/translator"].flatMap(directory => readdirSync(join(root, directory))
   .filter(name => name.endsWith(".test.mjs")).map(name => join(root, directory, name)))
   .filter(file => file !== fileURLToPath(import.meta.url));
 const loadsDist = file => chainToDist(file) !== null || /\.\.\/web\/dist\//.test(readFileSync(file, "utf8"));
 const firstImport = file => specifiers(readFileSync(file, "utf8"))[0];
 
 test("the analysis finds web/dist through direct imports, other modules and child scripts", () => {
-  for (const name of ["tests/inductive-declarations.test.mjs", "tests/display-names.test.mjs",
-    "tests/corpus.test.mjs", "lib/cubical/tests/translation.test.mjs"])
+  for (const name of ["tests/inductive-declarations.test.mjs", "tests/corpus.test.mjs", "tests/translator/translation.test.mjs"])
     assert.ok(chainToDist(join(root, name)), name);
   assert.ok(loadsDist(join(root, "tests/proof-ergonomics.test.mjs")));
   assert.ok(!loadsDist(join(root, "tests/build-stamp.test.mjs")), "the stamp's own tests load no build");
+  // The translator is source in web/translator, not a build: its tests that
+  // do not run the kernel load none.
+  assert.ok(!loadsDist(join(root, "tests/display-names.test.mjs")), "the display's naming rules load no build");
   assert.ok(testFiles.filter(loadsDist).length >= 50, "most test files load web/dist");
 });
 

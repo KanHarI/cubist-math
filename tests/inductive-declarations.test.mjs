@@ -491,7 +491,7 @@ inductive S : prop { squash; }
   assert.equal(squashes.eliminator.clauses[0].type, "P(squash)");
   assert.match(squashes.eliminator.clauses[1].type, /P\(S\.squash\(x, x1\) @ i\)/);
   // Any display: a variable whose name is a printed label is numbered apart.
-  const { T } = await import("../lib/cubical/core.mjs");
+  const { T } = await import("../web/translator/core.mjs");
   const constructor = T.constructor(0, T.sort("main__T"), "c");
   assert.equal(program.checker.displayText(T.app(T.app(T.variable("f"), T.variable("c")), constructor)), "f(c1, c)");
 });

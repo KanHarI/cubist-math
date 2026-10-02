@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The baseline behind the default search fuel (lib/cubical/fuel.mjs; HoTT
+// The baseline behind the default search fuel (web/translator/fuel.mjs; HoTT
 // roadmap A4, work plan L1.3): what tactic searches and declarations spend on
 // the checked workloads, with fuel unlimited. The fuel counts are
 // deterministic; times, kernel work and memory are one run's observations.
@@ -18,7 +18,7 @@ import { cubicalSourceFile } from "../web/cubical-sources.mjs";
 import { referenceExamples } from "../tests/reference-pages.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
 import { sourceReader } from "./module-sources.mjs";
-// A stale WASM kernel or translator copy would run code it does not contain.
+// A stale WASM kernel would run code it does not contain.
 assertFreshBuild();
 
 const root = new URL("../", import.meta.url);

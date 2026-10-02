@@ -39,7 +39,7 @@ class Handler(SimpleHTTPRequestHandler):
             paths += sorted(ARCHIVE.rglob("*.cubist")) + sorted(LIBRARY.rglob("*.cubist"))
             paths += [Path(__file__)]
             paths += sorted(ROOT.glob("cubical-*.mjs"))
-            paths += sorted((ROOT / "dist/cubical-runtime").glob("*.mjs"))
+            paths += sorted((ROOT / "translator").glob("*.mjs"))
             paths += [path for path in (ROOT / "dist/cubical.mjs", ROOT / "dist/cubical.wasm") if path.is_file()]
             digest = hashlib.sha256()
             for path in paths:

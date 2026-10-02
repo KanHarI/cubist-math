@@ -137,7 +137,7 @@ Current independent WASM tests cover:
   including radix bases 2 and 10, followed by the derived computation law and
   arithmetic compatibility to identify the original target factorial;
 - seven concrete transferred factorial statements in
-  `lib/cubical/factorial-transfer.cubist`, including the existing
+  `tests/fixtures/factorial-transfer.cubist`, including the existing
   `Nat` statement `factorial(10) = nat_3628800`.
 
 The source translator now handles W formation/introduction/induction, sums and
@@ -170,7 +170,7 @@ proof folded avoids repeated checking of a large substituted beta body. The
 initial direct-body radix check exhausted the existing work budget; this
 factoring solves it without increasing that budget or changing a kernel rule.
 
-`lib/cubical/number-transport.mjs` contains the checked-definition
+`tests/translator/number-transport.mjs` contains the checked-definition
 assembly for this migration. The production half-adjoint `Equiv` declarations
 remain explicitly untranslated: their source inverse laws build the cubical
 contractible-fiber witnesses instead. The generic production `Equiv` API still

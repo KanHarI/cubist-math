@@ -1,5 +1,5 @@
 import "./fresh-build.mjs";
-import {naturalSort, numeral} from "../lib/cubical/numerals.mjs";
+import {naturalSort, numeral} from "../web/translator/numerals.mjs";
 import { cubicalSourceFile } from "../web/cubical-sources.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -7,7 +7,14 @@ import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { cubicalMathTree } from "../web/cubical-notation.mjs";
+import naturalSource from "../web/translator/nat-source.mjs";
 const module = await createCubical();
+
+// A reader with no library, such as the first test's, still loads `nat`.
+test("the bundled prelude source is the archive's nat module", async () => {
+  assert.equal(naturalSource, await readFile(new URL("../archive/first-library/nat.cubist", import.meta.url), "utf8"),
+    "Regenerate web/translator/nat-source.mjs from archive/first-library/nat.cubist.");
+});
 
 test("a universe-generic definition is checked once and instantiated at each level", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());

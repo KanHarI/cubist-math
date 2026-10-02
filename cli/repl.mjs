@@ -52,7 +52,7 @@ for (const arg of args) {
   }
   else command.push(arg);
 }
-// A stale WASM kernel or translator copy would run code it does not contain.
+// A stale WASM kernel would run code it does not contain.
 assertFreshBuild();
 const module = await createCubical();
 let program, view, binding, checkedModule, session = null, sessionProgram = null;

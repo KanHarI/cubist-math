@@ -1,16 +1,16 @@
 import "./fresh-build.mjs";
 import {CubicalProgram} from "../web/cubical-program.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
-import {naturalSort,numeral} from "../lib/cubical/numerals.mjs";
+import {naturalSort,numeral} from "../web/translator/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { NativeCubicalElaborator } from "../web/cubical-elaborator.mjs";
-import { Translator } from "../lib/cubical/translate.mjs";
-import { T } from "../lib/cubical/core.mjs";
-import { numberEquivalence, transportNumberEquality, factorialThroughUnivalence } from "../lib/cubical/number-transport.mjs";
+import { Translator } from "../web/translator/translate.mjs";
+import { T } from "../web/translator/core.mjs";
+import { numberEquivalence, transportNumberEquality, factorialThroughUnivalence } from "./translator/number-transport.mjs";
 
 const module = await createCubical();
 
@@ -80,7 +80,7 @@ test("actual binary and radix factorial proofs transport through native Glue in 
     }
   }
   const concrete = translator.translate(await readFile(new URL(
-    "../lib/cubical/factorial-transfer.cubist", import.meta.url), "utf8"), env);
+    "./fixtures/factorial-transfer.cubist", import.meta.url), "utf8"), env);
   assert.equal(concrete.declarations.length, 7);
   for (const declaration of concrete.declarations)
     assert.equal(declaration.status, "checked-native-cubical", `${declaration.name}: ${declaration.reason}`);

@@ -10,8 +10,8 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
-import { T, substituteDimension } from "../lib/cubical/core.mjs";
-import { interval as I, face as F } from "../lib/cubical/lattice.mjs";
+import { T, substituteDimension } from "../web/translator/core.mjs";
+import { interval as I, face as F } from "../web/translator/lattice.mjs";
 
 const module = await createCubical();
 const library = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8");

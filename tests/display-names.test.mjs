@@ -1,12 +1,11 @@
-// The display's naming rules (lib/cubical/names.mjs), and the printer that
+// The display's naming rules (web/translator/names.mjs), and the printer that
 // applies them: whatever the rules predict a name shows as, the printer
 // shows. Code that must name things apart from what a view prints, such as
 // CubicalProgram's eliminator view, relies on the predictions.
-import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { localName, numberedName, printedForms, printsAsItself, stem } from "../lib/cubical/names.mjs";
-import { T } from "../lib/cubical/core.mjs";
+import { localName, numberedName, printedForms, printsAsItself, stem } from "../web/translator/names.mjs";
+import { T } from "../web/translator/core.mjs";
 import { displayTerm } from "../web/cubical-elaborator.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
 
