@@ -77,11 +77,6 @@ while checking that the expanded AST is unchanged. Add `-- --check` for a dry ru
 `npm run lint:cubist` reports bindings that are never used and can be removed,
 such as an `as` name no motive mentions; checking reports the same warnings.
 
-Primitive-calculus comparison tests build a historical kernel from the exact
-Git revision pinned in `tools/legacy-kernel.mjs`; they need that commit in the
-local history and Emscripten for its WASM fixtures. It is a test oracle only.
-Selected proof checks use the current kernel without building that oracle.
-
 ## Code and documentation
 
 - [`docs/README.md`](docs/README.md): documentation index and where to resume each development.

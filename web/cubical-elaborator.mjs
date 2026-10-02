@@ -438,10 +438,10 @@ export class NativeCubicalElaborator {
     // A judgement derived earlier is reused without work, so the deadline is
     // polled here too, not only by the instructions the search issues.
     this.kernel.checkDeadline();
-    const driver = this.driver, graph = driver.graph, before = graph.count;
+    const driver = this.driver, graph = driver.graph, before = graph.count, mask = this.dimensionMask(dimensions);
     const assumptions = [...this.context(context)].map(([name, type]) =>
       [this.kernel.symbol(name), this.syntax.encode(type, dimensions)]);
-    const mask = this.dimensionMask(dimensions), raw = this.syntax.encode(term, dimensions);
+    const raw = this.syntax.encode(term, dimensions);
     let judgement;
     try {
       judgement = expected ? driver.check(raw, this.syntax.encode(expected, dimensions), assumptions, mask)
@@ -513,9 +513,16 @@ export class NativeCubicalElaborator {
     this.steps += checked.checkingSteps;
     return checked.term;
   }
+  // The cube of a check: one bit per dimension, each at its own index.
   dimensionMask(dimensions) {
     let mask = 0n;
-    for (const index of dimensions.values()) mask |= 1n << BigInt(index);
+    for (const [name, index] of dimensions) {
+      if (typeof name !== "string" || !Number.isInteger(index) || index < 0 || index >= 64)
+        throw new Error("Invalid cubical dimension binding.");
+      const bit = 1n << BigInt(index);
+      if (mask & bit) throw new Error("Cubical dimension indices must be distinct.");
+      mask |= bit;
+    }
     return mask;
   }
   // The driver of this declaration's instructions, kept on the kernel, which

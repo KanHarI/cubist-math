@@ -1,6 +1,4 @@
-/* Source-shaped Nat and W use only the generic signature instructions.
- * The pre-migration primitive instruction fixture remains pinned in the
- * historical differential oracle (tools/legacy-kernel.mjs). */
+/* Source-shaped Nat and W use only the generic signature instructions. */
 #include "cubical_kernel.h"
 #include "declared_nat_fixture.h"
 #include <assert.h>

@@ -98,7 +98,7 @@ universe-generic definition is one checked term (G0). The term checker takes
 universes at closed finite levels only. Cumulative upward inclusion is not
 downward resizing. The syntax
 encoding has an ABI version, `cc_kernel_abi_version()`; the JavaScript loader
-and `kernel-cli` refuse a client written for another.
+refuses a client written for another.
 
 ## Running the checks
 
@@ -180,11 +180,10 @@ signature rules. No Nat/W-specific C formation, elimination or composition rule
 remains. Their old term and instruction numbers are reserved ABI slots and are
 refused by the producer.
 
-Primitive-calculus differential fixtures use the exact historical kernel at
-`bfef585cfe09f4b94a658564dff505cd67855368`, built only under
-`build/reference-kernel` by `tools/legacy-kernel.mjs`. It is a test oracle outside
-the production binary and browser bundle. The current native tests and source
-corpus validate the current producer separately.
+The primitive-calculus differential fixtures, which compared against the
+historical kernel at `bfef585cfe09f4b94a658564dff505cd67855368`, were removed
+with it on 2026-10-02. The native tests and the source corpus test the
+current kernel.
 
 ### Conversion preserves compact endpoints
 

@@ -1,5 +1,4 @@
 import "./fresh-build.mjs";
-import createLegacyCubical from "../tools/legacy-kernel.mjs";
 import {naturalSort, numeral} from "../lib/cubical/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
