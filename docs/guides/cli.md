@@ -90,7 +90,7 @@ checked sessions. `assembly` lists the actual native
 opcodes and operands. Use a qualified binding such as `example__self_equal`
 when a short name is ambiguous. `beta` or `delta` reduces the first applicable
 occurrence in the expression (or `type`); the native checker validates the
-result. The browser workbench supports choosing a particular occurrence.
+result. The browser workbench supports selecting a particular occurrence.
 
 `export` saves replayable source and inspection metadata for the selected
 original declaration. It does not save an interactive reduction history.

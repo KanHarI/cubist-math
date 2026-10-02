@@ -73,7 +73,7 @@ opacity become elaborator features only.
 ## Where the term checker searched
 
 The term checker, the trusted kernel before this work, takes a finished term
-and checks it top-down (`kernel/src/check*.c`). Choosing each rule is not
+and checks it top-down (`kernel/src/check*.c`). Selecting each rule is not
 search: every node kind has one rule. The search is in how it decides that
 two types are equal, and where it reduces:
 
@@ -387,11 +387,11 @@ comparison), descend by congruence, a weak-head step on either side or both
 (beta, iota, path, face or delta), a side's weak head normal form, eta, or,
 last, a `Glue` step on a side that is a Glue term (the glue move). The list
 is syntactic; the kernel checks the rest when a move is made. A
-chooser (`heuristicChooser` and the interface beside it) ranks the moves,
+policy (`heuristicPolicy` and the interface beside it) ranks the moves,
 and the driver makes them in that order until one applies. The default
-chooser is the order described above, lazily, since its tests ask the
+policy is the order described above, lazily, since its tests ask the
 guide; it derives the archive with an identical elaboration fingerprint.
-Choosers are untrusted: a bad one only fails, and one that picks a move the
+Policies are untrusted: a bad one only fails, and one that picks a move the
 point did not offer is refused.
 
 **Cost.** The kernel counts its work cumulatively (`cc_kernel_work`, read

@@ -5,8 +5,8 @@ import { chromium, webkit } from "playwright";
 import { assertFreshBuild } from "../tools/build-stamp.mjs";
 // The page loads the WASM kernel from web/dist.
 assertFreshBuild();
-import { proofChoices } from "../web/proof-library.mjs";
-import { libraryModules } from "../web/mathscript/modules.mjs";
+import { proofCatalog } from "../web/proof-library.mjs";
+import { libraryModules } from "../web/cubist/modules.mjs";
 
 const server = spawn("python3", [fileURLToPath(new URL("../tools/serve.py", import.meta.url)), "--port", "0"],
   { stdio: ["ignore", "pipe", "pipe"] });
@@ -45,7 +45,7 @@ try {
   // and to a real theorem in that source.
   for (const link of links) {
     const query = new URL(link).searchParams, library = libraryModules.includes(query.get("proof"));
-    assert.ok(library || proofChoices.some(p => p.id === query.get("proof")));
+    assert.ok(library || proofCatalog.some(p => p.id === query.get("proof")));
     const source = await page.request.get(`${base}/${library ? "library" : "archive/first-library"}/${query.get("proof")}.cubist`);
     assert.equal(source.status(), 200);
     assert.ok((await source.text()).includes(`def ${query.get("name")}`));

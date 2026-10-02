@@ -2,7 +2,7 @@
 // hlevel, ext, over, let, obtain, match and cases. tacticProof elaborates a
 // block's first statement into a proof of the goal, with the rest of the
 // block after it, or returns undefined when it is no statement here.
-import {calcStepSite} from "../mathscript/link-sites.mjs";
+import {calcStepSite} from "../cubist/link-sites.mjs";
 import {T} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
 import {freeDimensions} from "./dimension-slots.mjs";

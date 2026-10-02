@@ -3,8 +3,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
-import { parse, tokenize } from "../web/mathscript/parser.mjs";
-import { formatMathScript } from "../web/mathscript/formatter.mjs";
+import { parse, tokenize } from "../web/cubist/parser.mjs";
+import { formatCubist } from "../web/cubist/formatter.mjs";
 import { checkProgram } from "./check-program.mjs";
 
 // Path operators: -p reverses a path, as sym(p) does; p ++ q concatenates two
@@ -94,8 +94,8 @@ test("the operators on a non-path say which operator failed", async t => {
 });
 
 test("the formatter writes -p and -i tight and spaces ++, & and |", () => {
-  const formatted = formatMathScript("def f(A : U0, x, y, z : A, p : y = x, q : y = z) : x = z := - p++q;\n");
+  const formatted = formatCubist("def f(A : U0, x, y, z : A, p : y = x, q : y = z) : x = z := - p++q;\n");
   assert.match(formatted, /:= -p \+\+ q;/);
-  assert.match(formatMathScript("def g(A : U0, x, y : A, p : x = y) : y = x := path i => p @ - i&1|0;\n"),
+  assert.match(formatCubist("def g(A : U0, x, y : A, p : x = y) : y = x := path i => p @ - i&1|0;\n"),
     /p @ -i & 1 \| 0;/);
 });

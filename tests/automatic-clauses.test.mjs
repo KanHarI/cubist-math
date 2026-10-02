@@ -2,7 +2,7 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
-import { parse } from "../web/mathscript/parser.mjs";
+import { parse } from "../web/cubist/parser.mjs";
 import { checkProgram } from "./check-program.mjs";
 
 const module = await createCubical();

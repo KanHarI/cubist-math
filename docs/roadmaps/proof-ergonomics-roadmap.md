@@ -612,10 +612,10 @@ Only the truncation readout extension needs H1.
 
 | Existing location | Planned work |
 | --- | --- |
-| [parser](../../web/mathscript/parser.mjs), [formatter](../../web/mathscript/formatter.mjs), [notation](../../web/mathscript/notation.mjs) | Syntax, spans, roundtrips, and readable expansions. |
+| [parser](../../web/cubist/parser.mjs), [formatter](../../web/cubist/formatter.mjs), [notation](../../web/cubist/notation.mjs) | Syntax, spans, roundtrips, and readable expansions. |
 | [translator](../../web/translator/translate.mjs) | Proof-block statements, reconstruction, expected types, and parameter elaboration. Extract new matching/rewrite modules to keep this manageable. |
 | [native elaborator](../../web/cubical-elaborator.mjs) | Native type/conversion queries, scoped contexts, checked witnesses, and dependency tracking. |
-| [program](../../web/cubical-program.mjs), [modules](../../web/mathscript/modules.mjs) | Rule registration, import identity, invalidation, and source inspection records. |
+| [program](../../web/cubical-program.mjs), [modules](../../web/cubist/modules.mjs) | Rule registration, import identity, invalidation, and source inspection records. |
 | [kernel adapter](../../web/cubical-kernel.mjs), [syntax codec](../../web/cubical-syntax.mjs) | Preserve native checking, handle ownership, and dimensions through generated terms. |
 | [path library](../../archive/first-library/paths.cubist), [path-over builders](../../web/translator/path-over.mjs) | Reuse proved congruence, composition, and transport constructions. |
 | New: declaration elaborator and `match` compiler | `inductive`/`theory` to H's signature normal form; motive abstraction, index unification, coverage, structural recursion and obligations to eliminator applications (milestones 6–7). |

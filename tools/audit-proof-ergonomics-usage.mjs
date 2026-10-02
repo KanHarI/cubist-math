@@ -1,7 +1,7 @@
 // Count checked source syntax in the canonical proof corpus, excluding comments
 // and the design fixtures under docs/examples.
 import {readdirSync,readFileSync} from 'node:fs';
-import {parse} from '../web/mathscript/parser.mjs';
+import {parse} from '../web/cubist/parser.mjs';
 
 const root=new URL('../archive/first-library/',import.meta.url);
 const features=new Map();

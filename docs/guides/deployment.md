@@ -15,7 +15,7 @@ deployment secrets stored in this repository.
 
 `npm run build:site` creates `build/site/` from `web/` and `docs/`. The build
 versions module imports, worker URLs, CSS and the WASM loader using a content
-hash. It supplies the static `mathscript-version` response used by the editor's
+hash. It supplies the static `cubist-version` response used by the editor's
 update check. No local server, credentials, build tools, or private workspace
 files are included in the published artifact.
 

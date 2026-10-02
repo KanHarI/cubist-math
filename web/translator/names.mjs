@@ -29,7 +29,7 @@ export class NameSupply {
 // How the display shows a kernel name (web/cubical-elaborator.mjs,
 // web/cubical-source-text.mjs). These rules are defined here once: the
 // printer applies them, and code that must predict what it prints, such as
-// an inspection view choosing names new to everything it shows, derives its
+// an inspection view picking names new to everything it shows, derives its
 // predictions from them.
 //
 // A module's definition is module__local, and shows its local name. A name

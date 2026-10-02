@@ -2,8 +2,8 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { SEARCH_FUEL } from "../web/translator/fuel.mjs";
-import { parse } from "../web/mathscript/parser.mjs";
-import { formatMathScript } from "../web/mathscript/formatter.mjs";
+import { parse } from "../web/cubist/parser.mjs";
+import { formatCubist } from "../web/cubist/formatter.mjs";
 import { checkProgram } from "./check-program.mjs";
 
 // The hlevel tactic (work-plan L2.5b, the HoTT roadmap's D1): it proves
@@ -152,5 +152,5 @@ test("the keyword links to the checked proof, and the formatter keeps hints", as
   const statement = parse(source).declarations[0].body[0];
   assert.equal(statement.kind, "hlevel");
   assert.equal(statement.hints.length, 1);
-  assert.equal(formatMathScript(source), source);
+  assert.equal(formatCubist(source), source);
 });

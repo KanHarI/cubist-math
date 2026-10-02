@@ -1097,18 +1097,18 @@ static uint32_t pick(uint32_t bound) {
  * dimension or its reversal, or a meet or join of two such. */
 static void random_interval(cc_formula *out, unsigned depth) {
     cc_init(out, CC_INTERVAL);
-    unsigned choice = depth ? pick(6) : pick(4);
-    if (choice < 2)
-        assert((choice ? cc_one(out) : cc_zero(out)) == CC_OK);
-    else if (choice < 4) {
+    unsigned form = depth ? pick(6) : pick(4);
+    if (form < 2)
+        assert((form ? cc_one(out) : cc_zero(out)) == CC_OK);
+    else if (form < 4) {
         unsigned dimension = 1 + pick(2);
-        assert(cc_generator(out, dimension, choice == 2) == CC_OK);
+        assert(cc_generator(out, dimension, form == 2) == CC_OK);
     }
     else {
         cc_formula left, right;
         random_interval(&left, depth - 1);
         random_interval(&right, depth - 1);
-        assert((choice == 4 ? cc_meet(out, &left, &right) : cc_join(out, &left, &right)) == CC_OK);
+        assert((form == 4 ? cc_meet(out, &left, &right) : cc_join(out, &left, &right)) == CC_OK);
         cc_clear(&left);
         cc_clear(&right);
     }

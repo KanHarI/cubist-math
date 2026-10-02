@@ -20,7 +20,7 @@ composition and transport, is trusted with them.
 
 The queries (`cc_kernel_whnf`, `cc_kernel_normalize`, `cc_kernel_rename`,
 `cc_kernel_endpoint_term`) compute on syntax and certify nothing. The
-untrusted driver (`web/cubical-instruction-driver.mjs`) uses them to choose
+untrusted driver (`web/cubical-instruction-driver.mjs`) uses them to pick
 the instructions it issues, and each instruction checks its premises as any
 other. Until 2026-10-02 the kernel also held a term checker and a
 conversion search, as untrusted elaboration aids; work plan I1.2b removed

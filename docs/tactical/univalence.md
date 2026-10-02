@@ -68,7 +68,7 @@ Regenerate after changing the proof generator:
 ```sh
 node tools/proofs/univalence.mjs
 make proof-export
-npm run format:mathscript
+npm run format:cubist
 ```
 
 Focused checks:

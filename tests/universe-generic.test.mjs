@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { parse } from "../web/mathscript/parser.mjs";
+import { parse } from "../web/cubist/parser.mjs";
 import { T, substituteTerm } from "../web/translator/core.mjs";
 import { canonicalHasher } from "../tools/canonical-hash.mjs";
 import { checkProgram } from "./check-program.mjs";
@@ -66,8 +66,8 @@ test("B11–B14, B16, B17: Universe is removed, and bounds, reserved names and u
   assert.match(verdicts.bad_identity, universe);
   assert.match(verdicts.numeral_bound, bound);                    // B17
   // B13: universe constants are reserved names.
-  assert.equal(parseError("def UU2 := Nat;"), "UU2 is a universe constant; choose another name.");
-  assert.equal(parseError("def f := fun (U1 : U0) => U1;"), "U1 is a universe constant; choose another name.");
+  assert.equal(parseError("def UU2 := Nat;"), "UU2 is a universe constant; pick another name.");
+  assert.equal(parseError("def f := fun (U1 : U0) => U1;"), "U1 is a universe constant; pick another name.");
   assert.match(parseError("def f := exists U < UU0. U;"), /exists has no level form/);
 });
 

@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import createCubical from "../../../web/dist/cubical.mjs";
 import { CubicalProgram } from "../../../web/cubical-program.mjs";
 import { cubicalSourceFile } from "../../../web/cubical-sources.mjs";
-import { parse, tokenize } from "../../../web/mathscript/parser.mjs";
+import { parse, tokenize } from "../../../web/cubist/parser.mjs";
 
 const root = new URL("../../../", import.meta.url);
 const selection = [

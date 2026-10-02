@@ -58,7 +58,7 @@ successor clause does not use the predecessor; `mul` and `le` in
 inner case analysis of `le` is a `match`, which names the predecessor in its
 clause, `succ(j)`, instead of `as j`.
 
-A linter, `web/mathscript/lint.mjs`, warns about bindings that are never
+A linter, `web/cubist/lint.mjs`, warns about bindings that are never
 used and can be removed: `as` names on `induction` and `match`, `forall`
 and `exists` variables, and `let`, `have` and `obtain` statements. Checking
 reports its warnings in the CLI, the workspace and the reference pages, and

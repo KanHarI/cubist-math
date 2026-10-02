@@ -5,7 +5,7 @@
 // time and judgements of that derivation.
 import createCubical from "./dist/cubical.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
-import { sourceModules, cubicalSourceModules } from "./mathscript/modules.mjs";
+import { archiveModules } from "./cubist/modules.mjs";
 import { cubicalSourceFile } from "./cubical-sources.mjs";
 import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
 
@@ -15,7 +15,7 @@ export function category(result, elapsedMs, limitMs) {
   return result.status === "checked-native-cubical" ? "checked" : "failed";
 }
 
-export async function benchmark({ modules = [...sourceModules, ...cubicalSourceModules], limitMs = 100, optimizations = {},
+export async function benchmark({ modules = archiveModules, limitMs = 100, optimizations = {},
   readSource = async name => {
     const response = await fetch(new URL(`./archive/first-library/${cubicalSourceFile(name)}`, import.meta.url));
     if (!response.ok) throw Error(`Could not load ${name}: HTTP ${response.status}`);

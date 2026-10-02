@@ -1,11 +1,11 @@
 import { readFile, writeFile, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
-import { linearizeTuples } from "../web/mathscript/tuples.mjs";
-import { formatMathScript } from "../web/mathscript/formatter.mjs";
+import { linearizeTuples } from "../web/cubist/tuples.mjs";
+import { formatCubist } from "../web/cubist/formatter.mjs";
 
 const args = process.argv.slice(2), check = args.includes("--check");
 if (args.includes("--help")) {
-  console.log("Usage: npm run linearize:mathscript -- [--check] [file.cubist ...]\nWith no files, scan every archive/first-library/*.cubist source. Flatten right-nested pairs and obtain patterns; preserve comments and expanded ASTs. Construction sources are skipped. --check reports changes without writing.");
+  console.log("Usage: npm run linearize:cubist -- [--check] [file.cubist ...]\nWith no files, scan every archive/first-library/*.cubist source. Flatten right-nested pairs and obtain patterns; preserve comments and expanded ASTs. Construction sources are skipped. --check reports changes without writing.");
 } else {
   const files = args.filter(a => a !== "--check");
   if (files.some(a => a.startsWith("--"))) throw new Error("Unknown tuple linearization option.");
@@ -16,7 +16,7 @@ if (args.includes("--help")) {
   for (const file of files) {
     const path = file instanceof URL ? file : resolve(file);
     const result = linearizeTuples(await readFile(path, "utf8"));
-    if (result.count) changes.push({ path, ...result, source: formatMathScript(result.source) });
+    if (result.count) changes.push({ path, ...result, source: formatCubist(result.source) });
   }
   for (const change of changes) {
     if (check) console.log(`${String(change.path)}: ${change.count} nested pairs`);

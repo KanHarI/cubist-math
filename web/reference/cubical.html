@@ -136,7 +136,7 @@ def based_path_induction(A : U0, x : A, C : Singleton(A, x) -&gt; U0,
   exact along C by singletons_contractible(A, x).2(w) from base;
 }</code></pre>
             <p><code>based_path_induction</code> is the reason this matters: a statement about every path starting at <code>x</code> follows from the single case <code>refl(x)</code>. In cubical type theory path induction is derived in this way, not assumed: the built-in <a href="paths.html#path-induction"><code>path_induction</code></a> elaborates to a transport over the segments <code>path j =&gt; p @ i &amp; j</code>, the same meet.</p>
-            <p>Choosing the wrong one is caught at the edges. With a meet, the path at <code>i</code> runs from <code>x</code> to <code>p @ i</code>, not from <code>p @ i</code> to <code>y</code>:</p>
+            <p>Picking the wrong one is caught at the edges. With a meet, the path at <code>i</code> runs from <code>x</code> to <code>p @ i</code>, not from <code>p @ i</code> to <code>y</code>:</p>
             <pre><code data-check="reject">def wrong_connection(A : U0, x, y : A, p : x = y) :
   PathP(fun (i : Interval) =&gt; p @ i = y, p, refl(y)) {
   // Error: Type mismatch: found p @ 0 = p @ i, expected p @ i = y.

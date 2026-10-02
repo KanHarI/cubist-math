@@ -532,14 +532,14 @@ test("the glue move comes last, after the weak heads", async t => {
 // The second review of #73: the glue move itself, where only it is left.
 const glueSession = async (t, optimizations = {}) => {
   const { T } = await import("../web/translator/core.mjs");
-  const { heuristicChooser } = await import("../web/cubical-instruction-driver.mjs");
+  const { heuristicPolicy } = await import("../web/cubical-instruction-driver.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary, { optimizations });
   t.after(() => program.dispose());
   await program.check("def unit_point : Unit := tt;\n", "glue_move");
   // Each move made, its outcome, and the kernel steps since the one before.
   const made = [], spent = [], steps = () => { const w = program.kernel.work(); return w.instructionSteps + w.querySteps; };
   let last = steps();
-  program.kernel.chooser = { name: "recording", rank: point => heuristicChooser.rank(point),
+  program.kernel.policy = { name: "recording", rank: point => heuristicPolicy.rank(point),
     observe: (point, move, outcome) => {
       const name = `${move.move}${move.side ? `:${move.side}` : ""}:${outcome}`, now = steps();
       made.push(name); spent.push([name, now - last]); last = now;
@@ -620,13 +620,13 @@ test("the glue move rethrows a deadline, and a Glue term needs it at every focus
 // normal form, which the move once took, would.
 test("the glue move waits for enclosing reductions, and reduces nothing beyond its side conditions", async t => {
   const { T } = await import("../web/translator/core.mjs");
-  const { heuristicChooser } = await import("../web/cubical-instruction-driver.mjs");
+  const { heuristicPolicy } = await import("../web/cubical-instruction-driver.mjs");
   const numbers = ["def n0 : Nat := 0;", ...Array.from({ length: 600 }, (_, k) => `def n${k + 1} : Nat := succ(n${k});`)];
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
   await program.check([...numbers, "def f(A : U0, z : A) : Unit := tt;"].join("\n") + "\n", "deep");
   const made = [];
-  program.kernel.chooser = { name: "recording", rank: point => heuristicChooser.rank(point),
+  program.kernel.policy = { name: "recording", rank: point => heuristicPolicy.rank(point),
     observe: (point, move, outcome) => made.push(`${move.move}:${point.depth}:${outcome}`) };
   const G = T.glueType(naturalSort, []), deep = T.glue(G, { tag: "DefRef", name: "deep__n600" }, []);
   const f = { tag: "DefRef", name: "deep__f" }, y = T.glue(G, T.variable("y"), []);
@@ -650,7 +650,7 @@ test("the glue move waits for enclosing reductions, and reduces nothing beyond i
 // the piece and b at i = 0, which is point.
 test("a Glue term agrees with its base though its path mentions a large shared graph", async t => {
   const { T } = await import("../web/translator/core.mjs");
-  const { heuristicChooser } = await import("../web/cubical-instruction-driver.mjs");
+  const { heuristicPolicy } = await import("../web/cubical-instruction-driver.mjs");
   const { face: F, interval: I } = await import("../web/translator/lattice.mjs");
   const { identityEquivalence } = await import("../web/translator/equivalence.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
@@ -659,8 +659,8 @@ test("a Glue term agrees with its base though its path mentions a large shared g
   // The glue moves made, and the kernel steps each took.
   const made = [], work = () => { const w = program.kernel.work(); return w.instructionSteps + w.querySteps; };
   let started = 0;
-  program.kernel.chooser = { name: "recording",
-    *rank(point) { for (const move of heuristicChooser.rank(point)) { if (move.move === "glue") started = work(); yield move; } },
+  program.kernel.policy = { name: "recording",
+    *rank(point) { for (const move of heuristicPolicy.rank(point)) { if (move.move === "glue") started = work(); yield move; } },
     observe: (point, move, outcome) => { if (move.move === "glue") made.push([outcome, work() - started]); } };
   const equivalence = identityEquivalence(T.unit);
   const G = face => T.glueType(T.unit, [{ face, type: T.unit, equiv: equivalence }]);

@@ -162,7 +162,7 @@ async function execute(line) {
   if (!view) throw Error("Inspect a checked name first.");
   if (["beta", "delta"].includes(operation)) {
     const side = value || "expression";
-    if (!["expression", "type"].includes(side)) throw Error("Choose expression or type.");
+    if (!["expression", "type"].includes(side)) throw Error("Expected expression or type.");
     const reduced = reduceView(program, view, side, operation);
     if (reduced.change) { view = reduced.view; view.folded = null; show(); }
     else console.log("No applicable reduction.");

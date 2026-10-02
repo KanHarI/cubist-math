@@ -1,10 +1,10 @@
 import { readFile, readdir } from "node:fs/promises";
 import { relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { lint } from "../web/mathscript/lint.mjs";
+import { lint } from "../web/cubist/lint.mjs";
 
 // Reports bindings that are never used and can be removed
-// (web/mathscript/lint.mjs). Exits with status 1 when there are any.
+// (web/cubist/lint.mjs). Exits with status 1 when there are any.
 const args = process.argv.slice(2);
 if (args.includes("--help")) {
   console.log("Usage: npm run lint:cubist -- [file.cubist ...]\nWith no files, lint every library/*.cubist module. Reports unused `as` names, quantified variables, let, have and obtain bindings that can be removed.");

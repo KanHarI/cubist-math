@@ -2,7 +2,7 @@
 // only the spans it recognizes and keeps all other text, including comments.
 // A rewrite is skipped wherever it would drop a comment. tools/
 // verify-proof-migration.mjs then checks the checked meaning of the result.
-import { parse, tokenize } from "../web/mathscript/parser.mjs";
+import { parse, tokenize } from "../web/cubist/parser.mjs";
 
 // Rewrites whose output elaborates to the same checked terms.
 export const identicalRewrites = ["path-apply", "along", "intro", "let", "params", "fun"];

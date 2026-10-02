@@ -90,7 +90,7 @@ def choose(A : U0, B : A -&gt; U0, setA : IsSet(A), setB : forall a : A. IsSet(B
 }</code></pre>
             <p>The inspector lists every assumption a theorem uses, computed from its checked term, type and the definitions they mention. The assumptions are independent: using truncation does not by itself request excluded middle or choice.</p>
             <h3 id="assumption-universes">Universes</h3>
-            <p>The first argument chooses the universe. <code>Truncate(U1, A)</code> truncates a type <code>A : U1</code>, and a <a href="universes.html#universe-variables">universe variable</a> works too. The universe and the later arguments can be supplied separately: <code>Choice(U0)</code> and <code>Truncate(U2)</code> are functions that can be named and passed on.</p>
+            <p>The first argument selects the universe. <code>Truncate(U1, A)</code> truncates a type <code>A : U1</code>, and a <a href="universes.html#universe-variables">universe variable</a> works too. The universe and the later arguments can be supplied separately: <code>Choice(U0)</code> and <code>Truncate(U2)</code> are functions that can be named and passed on.</p>
             <pre><code data-check="accept">def truncate_at_two := Truncate(U2);
 
 def choice_at_zero := Choice(U0);

@@ -384,7 +384,7 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     - [x] One computation of source link sites. The parser records keyword spans,
       as it now does for each `calc` step's `by`; concrete declarations and
       unelaborated templates use the same sites. Delivered in
-      [link-sites.mjs](../../web/mathscript/link-sites.mjs): the parser records
+      [link-sites.mjs](../../web/cubist/link-sites.mjs): the parser records
       each proof statement's keyword and each `fun`, `forall` and `exists`
       keyword. The elaborator takes tactic, `calc` step, operator and binder
       sites from there, and template links take the same tactic and `calc` step
@@ -1114,7 +1114,7 @@ The matcher, resource limits and witness reconstruction must support it first.
 | [quotient_descent](../../archive/first-library/quotient_descent.cubist), [quotient_operations](../../archive/first-library/quotient_operations.cubist) | Evidence only (archived): replaced by the `Quotient` declaration and milestone 7's multi-argument `match` |
 | [native elaborator](../../web/cubical-elaborator.mjs), [kernel adapter](../../web/cubical-kernel.mjs) | Fuel accounting (A4), prelude definitions (A1), face-restricted query (E2) |
 | [assumption schemas](../../web/cubical-assumptions.mjs), [field_logic](../../archive/first-library/field_logic.cubist), [kernel](../../kernel/README.md) | Replaced by H1's `Trunc` and `Quotient` and G2's resizing policy ([kernel roadmap](cubical-kernel-roadmap.md)) |
-| [parser](../../web/mathscript/parser.mjs), [formatter](../../web/mathscript/formatter.mjs) | New statement syntax, projection syntax (A8), spans and roundtrips |
+| [parser](../../web/cubist/parser.mjs), [formatter](../../web/cubist/formatter.mjs) | New statement syntax, projection syntax (A8), spans and roundtrips |
 | [measurement script](../examples/proof-ergonomics/measure.mjs) | HoTT baseline (A7) |
 | [conversion probes](../examples/hott-automation/conversion-laws.cubist), [rejected laws](../examples/hott-automation/README.md#rejected-laws) | Conversion fixture and expected failures (A7) |
 | [language reference](../../web/language.html) | Document delivered syntax only |

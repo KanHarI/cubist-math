@@ -63,7 +63,7 @@
 <h1>Language reference</h1>
 <p class="lead">Write terms and proofs in dependent type theory. Cubist elaborates each declaration into instructions checked by the C kernel.</p>
 <p>The reference describes the mathematical <code>.cubist</code> language in the chapters below. The test suite checks every complete example, including the rejected ones and their error messages. The few partial sketches are marked as such in the page source.</p>
-<p>One principle runs through the whole language. The elaborator is written in JavaScript and may be arbitrarily clever: it expands notation, finds rewrite positions and chooses simplification rules. It is not trusted. Everything it produces is an ordinary kernel term, and the C kernel checks every one of them. A convenience that the kernel cannot check makes the declaration fail. It never becomes an assumption.</p>
+<p>One principle runs through the whole language. The elaborator is written in JavaScript and may be arbitrarily clever: it expands notation, finds rewrite positions and selects simplification rules. It is not trusted. Everything it produces is an ordinary kernel term, and the C kernel checks every one of them. A convenience that the kernel cannot check makes the declaration fail. It never becomes an assumption.</p>
       </div>
       <section id="using" class="using">
         <h2>Using Cubist</h2>
@@ -107,7 +107,7 @@
           <li><a href="proof.html?proof=circle">The circle’s fundamental group</a>: suspension paths, equivalences, and univalence.</li>
           <li><a href="proof.html?proof=complete_fields">Complete ordered field interface</a>: explicit universes and constructive hypotheses.</li>
         </ul>
-        <p>For the exact accepted grammar and elaboration, see <a href="mathscript/parser.mjs">parser.mjs</a> and <a href="cubical-elaborator.mjs">cubical-elaborator.mjs</a>. Library definitions are ordinary checked source; their signatures remain the authority for their particular arguments and universes.</p>
+        <p>For the exact accepted grammar and elaboration, see <a href="cubist/parser.mjs">parser.mjs</a> and <a href="cubical-elaborator.mjs">cubical-elaborator.mjs</a>. Library definitions are ordinary checked source; their signatures remain the authority for their particular arguments and universes.</p>
       </section>
     </main>
     <footer>Cubist · Language reference · <a href="proof.html">Return to the proof workspace</a></footer>

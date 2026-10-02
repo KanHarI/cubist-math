@@ -65,7 +65,7 @@ static void cut_short_scans_are_forgotten(void) {
  * reached under 2^(40 - n) renamings. The comparison ignores a renaming
  * where neither side has its names free, so 40 levels compare in a few
  * thousand steps, not 2^40: #73's normal-form cache met this as a Convert
- * of two such types running out of budget. The names are chosen so that
+ * of two such types running out of budget. The names are picked so that
  * their bits collide with f's and x's, which only the exact check tells
  * apart. Where a name occurs free, the renaming still decides. */
 static cc_term graph(cc_kernel *k, cc_term bottom, uint32_t names, cc_term body_of(cc_kernel *, cc_term, uint32_t)) {

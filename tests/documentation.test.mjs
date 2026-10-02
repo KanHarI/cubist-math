@@ -1,8 +1,8 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parse } from "../web/mathscript/parser.mjs";
-import { leadingDocumentation } from "../web/mathscript/documentation.mjs";
+import { parse } from "../web/cubist/parser.mjs";
+import { leadingDocumentation } from "../web/cubist/documentation.mjs";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 test("declaration comments distinguish adjacent prose, paragraphs, headers and trailing comments", () => {

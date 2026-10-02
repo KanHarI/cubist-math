@@ -16,7 +16,7 @@ import { assertFreshBuild } from "./build-stamp.mjs";
 import { migrationSourceReader } from "./migration-sources.mjs";
 import { placeOfFile } from "./module-sources.mjs";
 import { moduleRoots } from "../web/module-resolution.mjs";
-import { currentSyntax } from "../web/mathscript/legacy-syntax.mjs";
+import { currentSyntax } from "../web/cubist/legacy-syntax.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const args = process.argv.slice(2), option = name => {

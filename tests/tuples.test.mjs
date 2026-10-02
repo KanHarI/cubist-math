@@ -1,8 +1,8 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parse } from "../web/mathscript/parser.mjs";
-import { formatMathScript } from "../web/mathscript/formatter.mjs";
+import { parse } from "../web/cubist/parser.mjs";
+import { formatCubist } from "../web/cubist/formatter.mjs";
 const semantic = node => JSON.parse(JSON.stringify(node, (key, value) =>
   ["start", "end", "operatorStart", "operatorEnd", "tupleStart", "tupleEnd", "syntheticTuplePair", "valueStart", "valueEnd", "definitionStart"].includes(key) ? undefined : value));
 
@@ -27,8 +27,8 @@ b,0);} def unpacked : Nat { obtain (a,b,c) := build(0,0); exact c; }
   def relation(a:Nat,b:Nat) := a < b;
 `;
   for (const printWidth of [40, 80, 100]) {
-    const formatted = formatMathScript(source, { printWidth });
-    assert.equal(formatMathScript(formatted, { printWidth }), formatted);
+    const formatted = formatCubist(source, { printWidth });
+    assert.equal(formatCubist(formatted, { printWidth }), formatted);
     assert.deepEqual(semantic(parse(formatted)), semantic(parse(source)));
     assert.match(formatted, /a, \/\/ saved\n/);
     assert.match(formatted, /a < b/);
@@ -36,7 +36,7 @@ b,0);} def unpacked : Nat { obtain (a,b,c) := build(0,0); exact c; }
 });
 
 test("AST linearization preserves comments, grouping, left components and application arguments", async () => {
-  const { linearizeTuples, expandedSyntax } = await import("../web/mathscript/tuples.mjs");
+  const { linearizeTuples, expandedSyntax } = await import("../web/cubist/tuples.mjs");
   const source = `// 🧮 A tuple with a paired first field and a right-associated tail.
     def build : (Nat and Nat) and Nat and Nat and Nat {
       exact ((0, 1), (2, // keep the tail note
@@ -46,7 +46,7 @@ test("AST linearization preserves comments, grouping, left components and applic
     def call := f(a, b, c);
   `;
   const raw = linearizeTuples(source);
-  const result = { ...raw, source: formatMathScript(raw.source) };
+  const result = { ...raw, source: formatCubist(raw.source) };
   assert.equal(result.count, 5);
   assert.equal(expandedSyntax(parse(result.source)), expandedSyntax(parse(source)));
   assert.match(result.source, /exact \(\(0, 1\), 2, \/\/ keep the tail note\n\s+3, 4\)/);

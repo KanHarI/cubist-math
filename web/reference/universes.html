@@ -113,7 +113,7 @@ def too_large(T : UU0, x : T) := identity(UU0, T, x);
             <pre><code data-check="reject">def wrong_bound(U &lt; UU1, A : U) := A;
 // Error: A universe variable's bound must be UU0, as in U &lt; UU0.</code></pre>
             <p>Names made of <code>U</code>s followed by digits, such as <code>U1</code> and <code>UU2</code>, are universes. They cannot name a variable or a declaration. A name such as <code>UU</code> or <code>U_1</code> is an ordinary name.</p>
-            <pre><code data-check="reject">def UU2 := Nat;  // Error: UU2 is a universe constant; choose another name.</code></pre>
+            <pre><code data-check="reject">def UU2 := Nat;  // Error: UU2 is a universe constant; pick another name.</code></pre>
           </section>
           <section id="generic-library">
             <h2>Univalence and assumptions</h2>

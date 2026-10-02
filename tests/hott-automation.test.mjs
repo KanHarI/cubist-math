@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import {CubicalProgram} from "../web/cubical-program.mjs";
-import {parse} from "../web/mathscript/parser.mjs";
+import {parse} from "../web/cubist/parser.mjs";
 import {fileURLToPath} from "node:url";
 import {sourceReader} from "../tools/module-sources.mjs";
 
