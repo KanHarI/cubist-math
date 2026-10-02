@@ -134,7 +134,7 @@ static void natural_numbers(void) {
     index = OK(cc_instr_signature_close(k, sig));
     nat_signature = index;
     cc_signature_info info = signature(index);
-    assert(info.admitted && info.experimental && info.constructor_count == 2 && !info.level_count);
+    assert(info.admitted && !info.experimental && info.constructor_count == 2 && !info.level_count);
     cc_constructor_info succ = constructor(index, 1);
     assert(succ.symbol == SUCC && succ.data == 0 && succ.positions == 1 && succ.dimensions == 0 && !succ.generated);
     /* A14: an admitted signature never changes. */
@@ -607,7 +607,7 @@ static void generative(void) {
     cc_judgement_id second = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_GEN, 0));
     assert(first != second && term_of(first) != term_of(second));
     cc_kernel_set_extensions(k, 0);
-    REJECTS(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_GEN, 0), "kernel extension under review");
+    REJECTS(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_GEN, 0), "switched off");
     cc_kernel_set_extensions(k, CC_EXTENSION_H1);
     cc_entry_id s = OK(cc_instr_extend(k, former_u0(), S_GEN));
     cc_judgement_id next = OK(cc_instr_signature_constructor(k, first, var(s), GEN_C));
@@ -2019,8 +2019,11 @@ static void commits(void) {
 int main(void) {
     k = cc_kernel_new();
     assert(k);
-    /* T1: without the extension, admission is refused. */
-    REJECTS(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_N, 0), "kernel extension under review");
+    /* H1 is on by default since its release. T1: switched off, admission is
+     * refused. */
+    assert(cc_kernel_extensions(k) == CC_EXTENSION_H1);
+    cc_kernel_set_extensions(k, 0);
+    REJECTS(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_N, 0), "switched off");
     cc_kernel_set_extensions(k, CC_EXTENSION_H1);
     assert(cc_kernel_extensions(k) == CC_EXTENSION_H1);
     /* Formers that are not Π (xs < ω). Π (ps : Ps). U(ℓ), or not closed. */

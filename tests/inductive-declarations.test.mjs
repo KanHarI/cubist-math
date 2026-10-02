@@ -1,8 +1,8 @@
 // `inductive` declarations, work-plan L2.1 (docs/roadmaps/h1-signature-
 // specification.md, section 9): the header's result position, lowering to
 // the normal form with data before positions, universe classification, the
-// least level, uses of the type and its constructors, the experimental gate
-// and the `kernel extension: H1` marker (6.4), and the rejections.
+// least level, uses of the type and its constructors, the kernel's H1 switch
+// and the absence of the marker since H1's release (6.4), and the rejections.
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -16,8 +16,8 @@ const module = await createCubical();
 const library = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8");
 
 // Check a program, with other modules by name, and give each declaration's result.
-async function check(t, source, { experimental = ["h1"], modules = {} } = {}) {
-  const program = new CubicalProgram(module, name => name in modules ? modules[name] : library(name), { experimental });
+async function check(t, source, { modules = {} } = {}) {
+  const program = new CubicalProgram(module, name => name in modules ? modules[name] : library(name));
   t.after(() => program.dispose());
   const result = await program.check(source, "main");
   return { program, result, get: name => {
@@ -62,16 +62,20 @@ def prop(set : N) := set;
     assert.throws(() => parse(bad), message);
 });
 
-// T1: with the option off, a declaration is refused, naming the option.
-test("declared types need the experimental option, and name it when it is off", async t => {
-  const { get } = await check(t, naturals, { experimental: [] });
-  refused(get("N"), /kernel extension under review: enable the experimental option h1, with --experimental=h1 in the CLI or Declared types \(H1\) in the workbench/);
-  assert.throws(() => new CubicalProgram(module, library, { experimental: ["h9"] }), /Unknown experimental kernel extension: h9/);
+// T1: switched off in the kernel, a declaration is refused, saying so. The
+// experimental option that once switched H1 on is gone.
+test("declared types need no option, and are refused when switched off in the kernel", async t => {
+  const program = new CubicalProgram(module, library);
+  t.after(() => program.dispose());
+  program.kernel.setExtensions({ h1: false });
+  const result = await program.check(naturals, "main");
+  refused(result.outputs.find(output => output.name === "N"), /Declared types \(H1\) are switched off in this kernel session/);
+  assert.throws(() => new CubicalProgram(module, library, { experimental: ["h1"] }), /H1 is no longer experimental/);
 });
 
-// T2, directly and through a definition: each result that uses a declared
-// type carries the marker.
-test("constructors build values, computations hold by rfl, and every result carries the H1 marker", async t => {
+// T2, directly and through a definition: since H1's release, no result that
+// uses a declared type carries the marker (the specification's 6.4).
+test("constructors build values, computations hold by rfl, and no result carries a marker", async t => {
   const { get } = await check(t, `${naturals}${lists}
 def two : N := succ(succ(zero));
 def two_is_two : two = succ(succ(zero)) { rfl; }
@@ -81,10 +85,10 @@ def plain : Nat := 2;
 `);
   for (const name of ["N", "List", "two", "two_is_two", "one_two", "counted"]) {
     ok(get(name));
-    assert.deepEqual(get(name).extensions, ["H1"], `${name} carries the marker`);
-    assert.deepEqual(get(name).axioms, [], "the marker is not an assumption");
+    assert.deepEqual(get(name).extensions, [], `${name} carries no marker`);
+    assert.deepEqual(get(name).axioms, []);
   }
-  assert.deepEqual(get("plain").extensions, ["H1"]);
+  assert.deepEqual(get("plain").extensions, []);
   assert.equal(get("one_two").type, "List(N)");
   assert.equal(get("two").type, "N");
 });
@@ -207,26 +211,26 @@ def uses : Broken := fine;
 });
 
 // T2, through an import.
-test("an imported declared type is used by name, with its marker", async t => {
+test("an imported declared type is used by name, with no marker", async t => {
   const { get } = await check(t, `import numbers;
 def three : N := succ(succ(succ(zero)));
 def three_again : three = succ(succ(succ(zero))) { rfl; }
 `, { modules: { numbers: naturals } });
   ok(get("three"));
   ok(get("three_again"));
-  assert.deepEqual(get("three").extensions, ["H1"]);
+  assert.deepEqual(get("three").extensions, []);
 });
 
-// T3: computable accepts the marker. T4: an assumption is refused, and
+// T3: computable accepts a declared type. T4: an assumption is refused, and
 // named alone.
-test("computable accepts the marker, and still refuses an assumption, naming it", async t => {
+test("computable accepts a declared type, and still refuses an assumption, naming it", async t => {
   const { get } = await check(t, `import classical_axioms;
 ${naturals}
 computable def marked : N := succ(zero);
 computable def both : N and ExcludedMiddle(U0) := (zero, LEM(U0));
 `);
   ok(get("marked"));
-  assert.deepEqual(get("marked").extensions, ["H1"]);
+  assert.deepEqual(get("marked").extensions, []);
   refused(get("both"), /depends on non-computing assumptions: LEM/);
   assert.doesNotMatch(get("both").reason, /H1|kernel extension/);
 });
@@ -316,9 +320,9 @@ inductive Composed { a; p : a = a; q : a = a; s : trans(p, q) = p; }
   assert.equal(get("Composed").errorStart, source.indexOf("s : trans"));
 });
 
-test("second review: inspection shows the marker, and only the result position's words are keywords", async t => {
+test("second review: inspection shows no marker, and only the result position's words are keywords", async t => {
   const { program } = await check(t, `${naturals}def n : N := zero;\n`);
-  assert.deepEqual(program.inspect("main__n").extensions, ["H1"]);
+  assert.deepEqual(program.inspect("main__n").extensions, []);
   const { headerWordAt } = await import("../web/source-tokens.mjs");
   const header = "inductive T(x : type) : prop { a; }";
   assert.equal(headerWordAt(header, header.indexOf("type"), "type"), false, "a parameter's type is a name");
@@ -346,7 +350,7 @@ def instance_matched(y : N) : typed(Stack(U0, N), push(y, empty)) = empty { simp
 def through : Nat := (fun (x : N) => 0)(zero);
 `);
   for (const name of ["P", "H", "fired", "instance_matched", "through"]) ok(get(name));
-  assert.deepEqual(program.inspect("main__through", { normalize: true }).extensions, ["H1"]);
+  assert.deepEqual(program.inspect("main__through", { normalize: true }).extensions, []);
 });
 
 // V31: trunc(-1) is prop.

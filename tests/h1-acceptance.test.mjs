@@ -17,7 +17,7 @@ const module = await createCubical();
 const library = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8");
 
 async function check(t, source, reader = library) {
-  const program = new CubicalProgram(module, reader, { experimental: ["h1"] });
+  const program = new CubicalProgram(module, reader);
   t.after(() => program.dispose());
   const result = await program.check(source, "main");
   return { program, get: name => {

@@ -23,13 +23,15 @@ Moving these documents does not change their recorded status or resume paused wo
     (kernel);
   - [theories and inductive declarations](roadmaps/inductive-language-features.md)
     (language).
-- Specifications approved for experimental implementation, review pending:
+- Released specifications:
   - [H1 signatures](roadmaps/h1-signature-specification.md): one-sort data and
     higher inductive types, their soundness note, and the truncation and
-    resizing policy. H1 is now the default for source-defined Nat and W;
-    mathematical release review remains pending. See the
-    [Nat/W migration](roadmaps/h1-program-types.md) for the current behavior,
-    validation and limits of the historical comparison fixtures.
+    resizing policy. Released on 2026-10-02 after review of its model,
+    critical pairs and canonicity: declared types are on by default, with no
+    experimental option or marker. Nat, W and pushouts are source
+    declarations; see the [migration record](roadmaps/h1-program-types.md)
+    for the current behavior, validation and limits of the historical
+    comparison fixtures.
 - The trusted kernel:
   [kernel instructions](roadmaps/kernel-instructions.md), the THTH-style
   forward kernel with every search decision in an untrusted driver, merged

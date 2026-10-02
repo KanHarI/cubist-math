@@ -21,10 +21,10 @@ self.postMessage({ ready: true, backend: "cubical" });
 // A REPL session runs over the checked proof, or over its own program when
 // the page has no proof (the REPL page and the reference pages).
 let session = null, sessionProgram = null, programMain = null;
-async function repl({ input, fresh, experimental }) {
+async function repl({ input, fresh }) {
   if (fresh) {
     if (!sessionProgram) {
-      sessionProgram = new CubicalProgram(module, readSource(), { collectReferences: false, experimental: experimental ?? ["h1"] });
+      sessionProgram = new CubicalProgram(module, readSource(), { collectReferences: false });
       session = new ReplSession(sessionProgram, { modules: importable });
     }
   } else if (!program) throw new Error("Check a proof first.");
@@ -48,7 +48,7 @@ self.onmessage = async ({ data: { id, command, args } }) => {
       const replBefore = replQueue;
       const run = (async () => {
         const next = new CubicalProgram(module, readSource(args.module, args.place),
-          { optimizations: args.optimizations, experimental: args.experimental ?? ["h1"] });
+          { optimizations: args.optimizations });
         let checked;
         try { checked = await next.check(args.source, args.module ?? "current", progress => self.postMessage({ id, progress })); }
         catch (error) { next.dispose(); throw error; }
@@ -61,7 +61,7 @@ self.onmessage = async ({ data: { id, command, args } }) => {
     } else if (command === "elaborate") {
       // A source of its own, checked apart from the proof: every declaration's
       // steps, terms and native opcode trees.
-      const scratch = new CubicalProgram(module, readSource(args.module, args.place), { experimental: args.experimental ?? ["h1"] });
+      const scratch = new CubicalProgram(module, readSource(args.module, args.place));
       try {
         await scratch.check(args.source, args.module ?? "current");
         result = elaboration(scratch, args.module ?? "current");

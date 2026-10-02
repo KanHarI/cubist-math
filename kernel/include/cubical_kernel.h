@@ -115,9 +115,9 @@ void cc_kernel_work(const cc_kernel *, cc_work_counters *);
  * judgement rules. Disabling a cache discards its entries immediately. */
 enum { CC_SHARE_SYNTAX = 1, CC_REUSE_CHECKS = 2 };
 void cc_kernel_set_optimizations(cc_kernel *, unsigned flags);
-/* Kernel extensions still under review, each off by default. With
- * CC_EXTENSION_H1, SignatureBegin admits declared types (H1); without it, it
- * refuses. Signatures already admitted stay usable either way. */
+/* Kernel extensions. CC_EXTENSION_H1 admits declared types (H1); it is on by
+ * default since H1's release, and switching it off makes SignatureBegin
+ * refuse. Signatures already admitted stay usable either way. */
 enum { CC_EXTENSION_H1 = 1 };
 void cc_kernel_set_extensions(cc_kernel *, unsigned flags);
 unsigned cc_kernel_extensions(const cc_kernel *);
@@ -498,6 +498,8 @@ bool cc_kernel_entry(const cc_kernel *, cc_entry_id, uint32_t *symbol, cc_term *
  * is over those symbols, the sort symbol and the earlier constructors'
  * symbols; generated marks the modifier's squash constructor. */
 typedef struct {
+    /* experimental marked signatures admitted while H1 was under review; since
+     * its release none is, and the field is always false (ABI 3 keeps it). */
     bool admitted, experimental;
     uint32_t modifier, sort_symbol, level_count, parameter_count, constructor_count, recorded;
     cc_term former, level;

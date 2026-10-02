@@ -12,7 +12,7 @@ import { sourceReader } from "../tools/module-sources.mjs";
 
 const module = await createCubical();
 async function check(t, source) {
-  const program = new CubicalProgram(module, sourceReader(), { experimental: ["h1"] });
+  const program = new CubicalProgram(module, sourceReader());
   t.after(() => program.dispose());
   const result = await program.check(source, "main");
   return { result, get: name => {
@@ -130,7 +130,7 @@ test("the H1 release fixture: the circle's winding number computes through univa
   const { result, get } = await check(t, source);
   for (const name of ["succ_equiv", "code", "winding", "winding_loop", "winding_twice", "winding_back", "code_on_loop"]) {
     ok(get(name));
-    assert.deepEqual(get(name).extensions, ["H1"]);
+    assert.deepEqual(get(name).extensions, []);
     assert.deepEqual(get(name).axioms, [], `${name} uses no assumption: it computes`);
   }
   assert.deepEqual(result.evaluations.map(evaluation => evaluation.value),
@@ -714,7 +714,7 @@ def five : add(succ(succ(zero)), succ(succ(succ(zero)))) = succ(succ(succ(succ(s
 // recursion that passes its parameters unchanged keeps them fixed, and the
 // first attempt of one that changes them leaves no second set of steps.
 test("a clause's goal shows a generalized parameter under its source name", async t => {
-  const program = new CubicalProgram(module, sourceReader(), { experimental: ["h1"] });
+  const program = new CubicalProgram(module, sourceReader());
   t.after(() => program.dispose());
   await program.check(`${naturals}
 def acc(n, a : N) : N := match n { zero => a; succ(m) => acc(m, succ(a)); };
@@ -762,12 +762,13 @@ def unknown := match succ(zero) { zero => zero; };
   refused(get("unknown"), /^match needs its result's type: give return T, or use it where its type is known\./);
 });
 
-test("without the experimental option, the match statement says what it needs", async t => {
-  const program = new CubicalProgram(module, sourceReader(), {experimental:[],prelude:false});
+test("with declared types switched off in the kernel, the match statement says so", async t => {
+  const program = new CubicalProgram(module, sourceReader(), {prelude:false});
   t.after(() => program.dispose());
+  program.kernel.setExtensions({ h1: false });
   const result = await program.check("def f(n : Unit) : Unit {\n  match n {\n    zero => { exact n; }\n  }\n}\n", "main");
   refused(result.outputs.find(output => output.name === "f"),
-    /^The match statement takes apart a value of a declared type, a kernel extension under review: enable the experimental option h1/);
+    /^The match statement takes apart a value of a declared type, and declared types \(H1\) are switched off in this kernel session\./);
 });
 
 test("the match statement parses and formats, one statement to a line", async () => {

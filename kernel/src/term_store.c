@@ -88,6 +88,8 @@ cc_kernel *cc_kernel_new(void) {
     cc_kernel *k = calloc(1, sizeof *k);
     if (k) {
         k->optimizations = CC_SHARE_SYNTAX | CC_REUSE_CHECKS;
+        /* Declared types (H1) are on by default since their release. */
+        k->extensions = CC_EXTENSION_H1;
         k->count = 1;
         k->formula_count = 1;
         k->definition_count = 1;

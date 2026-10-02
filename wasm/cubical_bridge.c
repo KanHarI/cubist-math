@@ -528,7 +528,7 @@ uint32_t cb_entry_count(uint32_t token) {
     return count > UINT32_MAX ? UINT32_MAX : (uint32_t)count;
 }
 
-/* Kernel extensions under review (CC_EXTENSION_H1), off by default. */
+/* Kernel extensions (CC_EXTENSION_H1), on by default since H1's release. */
 void cb_extensions(uint32_t token, unsigned flags) {
     browser_session *s = lookup(token);
     if (s) cc_kernel_set_extensions(s->kernel, flags);

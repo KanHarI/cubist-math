@@ -30,11 +30,11 @@ remain as regressions. X2's remainder and criterion are not pursued.
 
 ## The checked representation option
 
-`CubicalProgram` accepts `representation: "declared"` with
-`experimental: ["h1"]`. The CLI accepts the equivalent options:
+`CubicalProgram` accepts `representation: "declared"`. The CLI accepts the
+equivalent option:
 
 ```sh
-node cli/repl.mjs --experimental=h1 --representation=declared check archive/first-library/primes.cubist
+node cli/repl.mjs --representation=declared check archive/first-library/primes.cubist
 ```
 
 Surface elaboration constructs the native derivation. A second instruction

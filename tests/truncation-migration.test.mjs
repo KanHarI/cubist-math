@@ -10,7 +10,7 @@ import { execFileSync } from "node:child_process";
 
 const module = await createCubical();
 async function check(t,source) {
-  const program=new CubicalProgram(module,sourceReader(),{experimental:["h1"]});
+  const program=new CubicalProgram(module,sourceReader());
   t.after(()=>program.dispose());
   const result=await program.check(source,"migration_cases");
   const get=name=>[...result.outputs,...result.imports].find(output=>output.name===name);
@@ -26,7 +26,7 @@ computable def computes : small_mere_eliminate(Unit, Unit, unit_is_prop, fun (x 
 `);
   assert.ok(result.complete,JSON.stringify(result.gaps));
   assert.deepEqual(assumptions(get("replay")),[]);
-  assert.deepEqual(get("replay").extensions,["H1"]);
+  assert.deepEqual(get("replay").extensions,[]);
 });
 
 test("G5: the rebuilt CauchySame relation and EventualClose stay in U0 without assumptions",async t=>{
@@ -69,7 +69,7 @@ test("G4: the checked migration ledger has exact pins and defers the H2 tower de
 });
 
 test("G4: the CLI uses a pinned library baseline and refuses a new module without a baseline",()=>{
-  const args=["tools/verify-proof-migration.mjs","--base","cc6b50f","--experimental","h1","--no-dependents",
+  const args=["tools/verify-proof-migration.mjs","--base","cc6b50f","--no-dependents",
     "--edited-file","library/h1_classical.cubist"];
   const report=execFileSync(process.execPath,[...args,"--declarations",
     "ExcludedMiddle,AxiomOfChoice,excluded_middle_assumed,axiom_of_choice_assumed",
@@ -83,7 +83,7 @@ test("G4: the CLI uses a pinned library baseline and refuses a new module withou
     error=>error.status===1 && /No baseline for compared module migration_no_baseline_fixture/.test(String(error.stderr)));
 });
 
-test("archive module names still check without enabling H1",()=>{
+test("archive module names check from the CLI and the verifier, with no marker",()=>{
   const module = execFileSync(process.execPath,["cli/repl.mjs","check","cauchy_quotient"],{encoding:"utf8"});
   assert.doesNotMatch(module,/kernel extension|under review|does not check|failed/i);
   const migration = execFileSync(process.execPath,["tools/verify-proof-migration.mjs","--no-dependents","cauchy_ordered"],{encoding:"utf8"});
@@ -98,7 +98,7 @@ test("all four documented ledger comparisons verify their pinned changes and loc
     ["classical_axioms","library/h1_classical.cubist","ExcludedMiddle,AxiomOfChoice,excluded_middle_assumed,axiom_of_choice_assumed",4]
   ];
   for (const [module,file,scope,count] of cases) {
-    const args=["tools/verify-proof-migration.mjs","--experimental","h1","--no-dependents","--edited-file",file,
+    const args=["tools/verify-proof-migration.mjs","--no-dependents","--edited-file",file,
       "--ledger","docs/roadmaps/h1-truncation-ledger.json",...(scope ? ["--declarations",scope] : []),module];
     const report=execFileSync(process.execPath,args,{encoding:"utf8"});
     assert.match(report,new RegExp(`${count} exact ledger changes`)); assert.match(report,/0 failures/);

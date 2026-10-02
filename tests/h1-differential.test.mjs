@@ -20,7 +20,7 @@ import { verifyMigration } from "../tools/proof-migration.mjs";
 const legacyModule = await createLegacyCubical();
 const module = await createCubical(), hash = canonicalHasher();
 async function check(t,source,representation="declared") {
-  const program = new CubicalProgram(module,sourceReader(),{experimental:["h1"],representation,collectReferences:false});
+  const program = new CubicalProgram(module,sourceReader(),{representation,collectReferences:false});
   t.after(() => program.dispose());
   const result = await program.check(source,"differential");
   return {program,result,get:name=>result.outputs.find(output=>output.name===name)};
@@ -143,7 +143,7 @@ def call : ${former("Nat")} := big_id(Nat, small);`;
     const [native]=await verifyMigration({modules:["tier_fixture"],readOriginal:async name=>name==="tier_fixture"?source:sourceReader()(name),readEdited:async()=>source});
     assert.deepEqual(native.failures,[]);
     const [report]=await verifyMigration({modules:["tier_fixture"],readOriginal:async name=>name==="tier_fixture"?source:sourceReader()(name),readEdited:async()=>source,
-      experimental:["h1"],representation:"declared"});
+      representation:"declared"});
     assert.ok(report.failures.some(failure=>failure.name==="call" && /τ has no checked image/.test(failure.reason)),JSON.stringify(report));
     assert.equal(report.changes.length,2,"the callable definition and small value both have images");
   }

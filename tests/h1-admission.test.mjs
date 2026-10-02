@@ -23,10 +23,12 @@ test("the ABI version is 3, with the declared-type kinds", () => {
   assert.equal(module._cb_abi_version(), 3);
 });
 
-test("SignatureBegin is refused until the H1 extension is enabled", t => {
+test("SignatureBegin admits by default, and is refused with H1 switched off", t => {
   const { kernel, syntax, g } = session(t);
   const u0 = g.universe(syntax.encodeLevel(0));
-  assert.throws(() => g.signatureBegin(u0, 0, "N"), /kernel extension under review/);
+  assert.deepEqual(kernel.extensions, { h1: true });
+  kernel.setExtensions({ h1: false });
+  assert.throws(() => g.signatureBegin(u0, 0, "N"), /switched off/);
   kernel.setExtensions({ h1: true });
   assert.ok(g.signatureBegin(u0, 0, "N") > 0);
 });
@@ -45,7 +47,8 @@ test("natural numbers and the circle are admitted one constructor at a time", t 
   sig = g.signatureConstructor(sig, g.pi(n, g.variable(s)), "succ");
   const nat = kernel.signature(g.signatureClose(sig));
   assert.equal(nat.admitted, true);
-  assert.equal(nat.experimental, true);
+  // Since H1's release no signature is admitted experimentally.
+  assert.equal(nat.experimental, false);
   assert.deepEqual(nat.constructors.map(c => [c.data, c.positions, c.dimensions]), [[0, 0, 0], [0, 1, 0]]);
   assert.throws(() => g.signatureClose(sig), /already admitted/);
   // inductive Circle { base; loop : base = base; }
