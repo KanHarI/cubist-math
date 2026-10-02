@@ -12,7 +12,8 @@ were written out as review drafts for items 1 and 3. Their first review
 found three substantive issues, and both drafts were revised the same day.
 The second review, on 2026-10-01 at `626138d`, accepted those revisions and
 asked for three more repairs; the drafts were revised again (section 1 and
-section 3 below), and their next review is pending.
+section 3 below), with two corrections to the model's spine rank after it.
+The maintainer approved both on 2026-10-02.
 This record serves the first three items of the
 [H1 specification](h1-signature-specification.md)'s release checklist, the
 mathematical ones:
@@ -24,8 +25,8 @@ mathematical ones:
 For each it gives the claim, where its argument stands, what reviews have
 found, the tests that exercise the behaviour the argument relies on, and what
 a review decision still needs. As the specification's 4.5 says, the tests are
-evidence for the specified behaviour, not for these claims. **Item 2 is
-approved; items 1 and 3 are not discharged.** The checklist's other items are not
+evidence for the specified behaviour, not for these claims. **Items 1, 2
+and 3 are approved**, relative to the assumed baseline and premise P1. The checklist's other items are not
 mathematical: the acceptance matrix (item 4), a pinned run (item 5) and the
 differential fixtures (item 6).
 
@@ -33,9 +34,9 @@ differential fixtures (item 6).
 
 | Item | Argument now | Mechanical evidence | Missing for a decision |
 | --- | --- | --- | --- |
-| D1, D4, D5: the model | [Construction written out](h1-model.md), review draft: raw trees, a weight by constructor index, carrier, Kan structure and eliminator; the weight revised after the first review, with telescope filling (M0, M4a) | Admission, boundaries and cube depth: A1–A17, N1–N6, R3, E3, K7 | Re-review of the revised draft: premise P1, the revised weight and M4a, restriction's functoriality at endpoints and the semantic Lemma H1 |
+| D1, D4, D5: the model | [Construction written out](h1-model.md), **approved on 2026-10-02**: raw trees, a weight by constructor index, carrier, Kan structure and eliminator; the weight revised after the first review, with telescope filling (M0, M4a) | Admission, boundaries and cube depth: A1–A17, N1–N6, R3, E3, K7 | None: approved on 2026-10-02 |
 | Lemma H2 and 3.7's critical pairs | [Rule-by-rule case analysis and overlap table](h1-critical-pairs.md), **approved on 2026-09-30** | CP01–CP10 representative joins; N3, N4, K4–K9 in part or in substance, E5, V11, V16; randomized K10 and K11 | None: approved on 2026-09-30 |
-| Canonicity | [Huber's predicates extended, written out](h1-canonicity.md), review draft; revised after the first review: value clauses separated from expansion, stability, the revised weight, and C1 under computability hypotheses | Closed computations through declared types: E1, E2, K1, E5, T3, T4 | Re-review of the revised draft, which discharges item 2's joins as computable equalities; the baseline's canonicity accepted explicitly as an assumption |
+| Canonicity | [Huber's predicates extended, written out](h1-canonicity.md), **approved on 2026-10-02**; revised after the first review: value clauses separated from expansion, stability, the revised weight, and C1 under computability hypotheses | Closed computations through declared types: E1, E2, K1, E5, T3, T4 | None: approved on 2026-10-02, with the baseline's canonicity an explicit assumption |
 
 ## 1. The model: D1, D4 and D5
 
@@ -108,11 +109,10 @@ Cube positions at depth 8 with arity 64 are admitted within budget: R3.
 Squash constructors, which need cube positions: E3 for `prop`, and K7 for a
 set truncation's squash.
 
-**What a decision needs.** A re-review of the revised construction for the
-whole schema, with the well-founded definition over cubes at every depth
-(D4) and with infinitary arities (D5); or an explicit decision to accept the
-argued status on the literature above. The second could narrow the first
-release to what the literature covers, for instance finite arities.
+**Decision.** Approved on 2026-10-02: the [model construction](h1-model.md)
+for the whole schema, with the well-founded definition over cubes at every
+depth (D4) and infinitary arities (D5), and the items its section 9 lists
+for review, premise P1 among them.
 
 ## 2. Stability and confluence: Lemma H2 and section 3.7
 
@@ -245,9 +245,9 @@ conversion queries, which the audit found broken; I1.2a corrected it on
 Normalization, and with it decidable conversion, is not claimed; the kernel
 relies on budgets (4.5). A canonicity fixture is not a proof of canonicity.
 
-**What a decision needs.** A re-review of the revised argument for the new
-cases, and an explicit acceptance of the baseline's canonicity as an
-assumption.
+**Decision.** Approved on 2026-10-02: the [canonicity argument](h1-canonicity.md)
+for the new cases and the items its section 6 lists for review, with the
+baseline's canonicity and premise P1 as explicit assumptions.
 
 ## What can be added as evidence
 

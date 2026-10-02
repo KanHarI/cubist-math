@@ -1,10 +1,10 @@
 # H1 canonicity
 
-Status: review draft, 2026-09-30, revised after its first review the same
-day and after its second on 2026-10-01 (below). This writes out the canonicity argument of the
-[H1 specification](h1-signature-specification.md)'s section 4.4: release
-checklist item 3. The maintainer must review it; adding this draft does not
-record that decision. It is relative to the baseline's canonicity, which
+Status: approved by the maintainer on 2026-10-02, after the reviews below.
+Written on 2026-09-30, and revised after its first review the same day and
+after its second on 2026-10-01. This writes out the canonicity argument of
+the [H1 specification](h1-signature-specification.md)'s section 4.4:
+release checklist item 3. It is relative to the baseline's canonicity, which
 remains an assumption (4.1; G0 3.5, 3.6). It uses the
 [critical-pair analysis](h1-critical-pairs.md), which the maintainer
 approved on 2026-09-30 (item 2), to find every coherence obligation. Each

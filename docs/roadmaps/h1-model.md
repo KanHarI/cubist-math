@@ -1,11 +1,11 @@
 # H1 model: the construction for the whole schema
 
-Status: review draft, 2026-09-30, revised after its first review the same
-day and after its second on 2026-10-01 (below). This writes out the semantic construction
+Status: approved by the maintainer on 2026-10-02, after the reviews below.
+Written on 2026-09-30, and revised after its first review the same day and
+after its second on 2026-10-01. This writes out the semantic construction
 of the [H1 specification](h1-signature-specification.md)'s section 4.2 for
 every admitted signature: release checklist item 1, the obligations D1, D4
-and D5 of its 4.3. The maintainer must review it; adding this draft does not
-record that decision. It is relative to the baseline model, which remains an
+and D5 of its 4.3. It is relative to the baseline model, which remains an
 assumption (4.1). Each lemma is proved in outline, at the level of detail of
 G0's 3.2.
 
