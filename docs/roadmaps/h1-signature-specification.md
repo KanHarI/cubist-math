@@ -1,116 +1,31 @@
 # One-sort signatures (H1): rules, soundness note and truncation policy
 
-2026-10-02 release. With checklist items 1–4 approved and item 6 retired as
-a gate, the experimental option is removed and default admission granted:
-the kernel admits declared types by default (5.7), no CLI, workbench or
-program option remains, and results no longer carry the
-`kernel extension: H1` marker (6.4). Acceptance case T2 states the
-released behaviour. Item 5's run at the release's own revision, `581e03c`,
-was recorded the same day, and every check in it passed: the
-[release evidence](h1-release-evidence.md).
+Released on 2026-10-02. The kernel admits declared types by default (5.7):
+one sort per signature, with uniform parameters, constructors with data,
+positions and dimensions, and truncation at any level `n ≥ -1`. Nat, W and
+pushouts are declarations in source, in `archive/first-library/`; `Unit`,
+`Void` and sums stay kernel primitives. This document states the rules
+(sections 1–3), the soundness note (4), the instructions that implement them
+(5), the driver and bridges (6), the truncation policy (8), the lowering of
+`inductive` declarations (9), the acceptance cases (10) and the decided
+questions (11).
 
-2026-09-30 implementation update: at the user's request, source checking now
-enables H1 by default and imports an ordinary source-defined Nat. W is also
-source-defined; both primitive C implementations have been retired. This
-changes the deployment default while the mathematical release review below
-remains pending. It does not discharge the release checklist. Statements
-below about retaining primitive W refer to the earlier implementation; the
-[migration record](h1-program-types.md) describes the current universe limits.
+The mathematical arguments are reviewed and approved: Lemma H2 and the
+critical-pair check on 2026-09-30 ([case analysis](h1-critical-pairs.md)),
+and the [model construction](h1-model.md) (D1, D4, D5) and
+[canonicity](h1-canonicity.md) on 2026-10-02. They are relative to the
+assumed baseline of 4.1 and to premise P1 of the model; 4.5 lists what is
+proved, argued and assumed. Normalization and decidable conversion are not
+claimed, and a canonicity fixture is not a proof of them. The
+[release evidence](h1-release-evidence.md) records every check at the
+release revision, `581e03c`.
 
-2026-10-01 decisions and update, by the maintainer:
-
-- **Sums stay native.** `A or B` keeps its kernel primitive at every level,
-  tier-1 arguments included. The wider retirement of 7.4 and work-plan K2.4c
-  no longer covers sums, even if the tier-parametric proposal is adopted.
-- **Pushouts are a declared type.** `Pushout` is an ordinary H1 declaration
-  with the path constructor `push(c) : inl(f(c)) = inr(g(c))`, in
-  [`pushout.cubist`](../../archive/first-library/pushout.cubist). Its
-  primitive formation, constructors, eliminator and computation rules have
-  been retired, and their tags and ABI slots reserved, as for Nat and W. So
-  the assumed baseline of 4.1 no longer contains pushouts: they are covered
-  by the H1 model and canonicity arguments instead. Statements below about
-  the native pushout describe the earlier implementation; the
-  [migration record](h1-program-types.md) describes the current API.
-
-Status: approved on 2026-09-27 for experimental implementation; reviewed
-against `02a57ef` on 2026-09-28 by the
-[work-plan audit](audits/2026-09-28-audit.md). Written on 2026-09-27 as
-work-plan items K2.1 (the H1 fragment and its soundness note) and K2.5
-(G2's truncation and resizing policy, with its migration ledger). It is the
-contract that K2.2 (instructions), K2.3 (driver and bridges), K2.4
-(differential fixtures) and L2.1 (the `inductive` declaration) implement,
-on the `h1-signatures` branch. Its statuses are distinct:
-
-- **Decided:** every question of section 11, on 2026-09-27.
-- **Released** on 2026-10-02: the fragment of sections 1–3 and the
-  families of section 5, admitted by default (5.7). Implemented: K2.2's six
-  families (ABI 3), K2.3 (section 6), L2.1 (section 9) and L2.2a's first
-  `match` slice. Before the release, in the experimental mode of 5.7, every
-  result carried the `kernel extension: H1` marker; now none does.
-- **Approved:** the checklist's mathematical items. Lemma H2 and the
-  critical-pair check on 2026-09-30 (item 2); the model construction, D1,
-  D4 and D5, and canonicity on 2026-10-02 (items 1 and 3). They are relative
-  to the assumed baseline of 4.1 and to premise P1 of the model draft. Other
-  entries of 4.5 keep their status, and implementation and passing tests
-  discharge none of them.
-- **Migration evidence:** K2.4a's representation option and archive replay
-  are implemented, historical evidence since 2026-10-02 rather than a
-  release gate (checklist item 6), with the X2 remainder in the
-  [differential record](h1-differential-evidence.md). K2.5 has an exact
-  ledger verifier and [scoped migrations](h1-truncation-migration.md).
-
-**Release checklist for finite-level H1.** The experimental option is
-removed, and default admission granted, only when every item has evidence
-and a review decision. With items 1–4 approved and item 6 retired as a gate,
-both were done on 2026-10-02, and item 5's run was repeated at that
-revision the same day:
-
-1. D1, D4 and D5 written out and reviewed (4.2, 4.3).
-   **Approved on 2026-10-02:** the [model construction](h1-model.md);
-2. Lemma H2's full case analysis, and the critical-pair check of 3.7.
-   **Approved on 2026-09-30:** the [case analysis and overlap
-   table](h1-critical-pairs.md);
-3. canonicity (4.4) reviewed, relative to the assumed baseline of 4.1.
-   **Approved on 2026-10-02:** the [canonicity argument](h1-canonicity.md);
-4. the acceptance matrix of 10.10 complete, K10 and K11 included. Every
-   case is now traced; X2 retains the remainder listed below;
-   `tests/acceptance-matrix.test.mjs` checks the matrix against the tests.
-   **Approved on 2026-10-02:** the [matrix](#1010-coverage-of-the-acceptance-cases)
-   as traced; its X2 remainder belongs to item 6;
-5. a recorded run of the whole suite at a pinned revision, repeated at
-   the release's own. The first was CI run 36472206548, at `bef00e3` on
-   2026-09-28, where all seven jobs passed; the verifier's marker
-   comparison (6.4) and the inspection of 6.5 were delivered the same day.
-   `node tools/release-evidence.mjs` records such a run: the revision, its
-   build stamp, each local check's command and outcome, run in a fresh
-   checkout of it, and the jobs of the CI runs dispatched on that commit.
-   **Recorded on 2026-10-02** at the release revision `581e03c`: the
-   [release evidence](h1-release-evidence.md), where every local check
-   passed and all seven jobs of CI run 37028834426, dispatched on that
-   commit;
-6. K2.4a's differential fixtures X1–X4 and X6–X8. The work plan's
-   isolation correction I1.2a, on which 4.1's baseline relies, was
-   delivered on 2026-09-28. **Retired as a gate on 2026-10-02:** the
-   fixtures were to justify retiring the hand-coded types through τ, but
-   Nat and W (2026-09-30) and pushouts (2026-10-01) were retired by
-   declaring them in source, and sums stay native. X1–X8 are recorded as
-   historical evidence (7.4). Their tests were removed with the historical
-   kernel they ran against, later the same day.
-
-The evidence for items 1–3, the mathematical ones, and what a review
-decision on each still needs are gathered in the
-[review evidence](h1-review-evidence.md) (2026-09-29). Review drafts of the
-three arguments followed on 2026-09-30: the [model](h1-model.md), the
-[critical pairs](h1-critical-pairs.md) and [canonicity](h1-canonicity.md).
-The model and canonicity drafts were revised the same day after their
-first review, which found three substantive issues, and again after the
-second, on 2026-10-01. The maintainer approved both on 2026-10-02.
-
-Not on the checklist: the classification of each instruction into the
-cases (i)–(v) of 2.3. It belongs to the deferred tier-parametric proposal
-(Q16), not to the finite-level fragment. Normalization and decidable
-conversion are not claimed (4.5); a canonicity fixture is not a proof of
-them.
+The [history](h1-history.md) keeps what this document said along the way:
+the release checklist and its record, the experimental mode and its
+`kernel extension: H1` marker, the four reviews of the first draft and the
+decisions of 2026-09-27, and K2.4's representation map and differential
+contract (section 7), retired when Nat, W and pushouts were declared in
+source.
 
 It refines the adopted
 [higher inductive-inductive type design](higher-inductive-types-design.md)
@@ -119,112 +34,8 @@ for its first stage. It keeps the level rules of the
 of G0's statements about declared types: the level-abstracted constants of
 its section 2.12, and Q1's distinct instances. The
 [work plan](work-plan.md) schedules the packages. Where this document narrows
-or departs from the design or from G0, section 0 says so and section 11 asks
-for a decision.
-
-## Revisions after review
-
-A review of the first draft (PR #53) found one blocking and four further
-defects. This version corrects them:
-
-- **Level-erased instances** (2.3, 3.1, 5.3, 7.2). The native formers carry
-  no level, and the archive relies on it: a generic definition instantiated
-  at `U1` accepts a sum built at `U0`. Level-abstracted declared constants
-  could not translate that. Instances of a declared sort now carry no level,
-  and H1 admits only level-parametric signatures, where this is sound (D9).
-- **Path abstraction in boundaries** (1.4). `S2`'s outer endpoints are
-  `⟨j⟩ base`, which the first grammar could not generate.
-- **Commit keeps signatures** (5.1). `cc_kernel_commit_checkpoint` keeps new
-  definitions and relocates their syntax; admitted signatures are kept the
-  same way. Only rollback removes them.
-- **UU-tier arguments** (2.3, 7.2). Native formers accept them. The first
-  revision let every level-parametric signature without a tier-1 constant
-  read any tier; the second review narrowed that (below).
-- **The ledger's remedies** (8.3, 8.4). Raising the tower's quantifier moves
-  membership up a universe each time, and the same holds for the union of
-  independent sets. Those remedies are replaced, and the Cauchy root is
-  identified as an artifact of a wrapper's fixed universe.
-- **Open obligations** (4.3, 4.5) are marked as such for D1, D4, D5 and
-  Lemma H2.
-
-A second review, of that revision, found one blocking and two further
-defects:
-
-- **Hidden tier bounds** (2.3, 3.1, 5.2, 5.3, D9, Q8, Q16). A signature can
-  inherit a level bound from a signature or definition it uses, as `Outer`
-  does from `Tag(A : UU0)`, without a tier-1 constant of its own. Instances
-  now read finite levels, the range admission checked. That revision let a
-  syntactically checked class of tier-parametric signatures read tier-1
-  levels; the third review found a hole in the class (below).
-- **Levels inside parameter terms** (2.4, D8, Lemma H2). Level substitution
-  recurses through parameters, motives and clauses: `Trunc(U(x))` at `0` is
-  `Trunc(U(0))`.
-- **Propositions against witness types** (8.2, 8.4). `LEM` resizes
-  propositions only. Group 7 needed no resizing at all, only double negation
-  at `U1`, which a local check on the archive confirms. Groups 4 and 6 now
-  name the propositions they resize and keep their witness types.
-
-A third review found that the syntactic class of the second revision still
-admitted a hidden bound, in the constructor of a parameter-free signature
-(`Outer2` over `Big : UU1 { pack(B : UU0); }`). This version:
-
-- **States the criterion semantically** (2.3): a signature reads tier-1
-  levels only if its admission is derivable without the finiteness of its
-  level parameters.
-- **Checks the derivation, not the text.** Three rules on the recorded
-  admission derivation, closed transitively over the signatures it uses,
-  parameter-free ones included, implement the criterion. Their sufficiency
-  is proved in outline by induction on the derivation; each instruction's
-  classification into the proof's cases is a K2.2 review item.
-- **Makes the extension optional** (Q16). The recommended first release has
-  instances at finite levels only, and keeps the native sum, W and pushout
-  instructions for tier-1 arguments, which no archive or library
-  declaration uses today. Rejection fixture V19 covers the new
-  counterexample.
-
-A fourth review found two consistency defects, now fixed:
-
-- **The walk's coverage** (2.3, 5.2). The closed former judgement ends in
-  a prenex of `LevelPi` and `Pi`, in `U(ω)`, which rules 1 and 2 would
-  reject. The walk now starts below that prenex, from the parameter types'
-  judgements, `U(ℓ)` and the constructor judgements, and still refuses
-  level quantification within them.
-- **τ's guarantees under the conservative option** (7.2–7.4). They hold
-  for finite-tier declarations only. A mixed-tier call, such as
-  `big_id(Nat, small)` with `big_id(A : UU0, x : A or A)`, has no image,
-  and the migration verifier rejects it (fixture X8). No such call exists
-  today.
-
-## Decisions
-
-The user decided every open question on 2026-09-27, and section 11
-records each as decided. Q8, Q15, Q16 and Q18 were decided as below;
-Q1–Q7, Q9–Q14 and Q17 were accepted as recommended.
-
-- **Q16: finite levels only.** The conservative first release. Instances
-  read and carry finite levels. The native sum, W and pushout instructions
-  stay for arguments at tier-1 levels, and K2.4 retires only the `Nat`
-  instructions. The tier-parametric extension of 2.3 is a later proposal,
-  not a pending choice.
-- **Q8: per universe parameter.** An erased parameter only bounds parameter
-  types, and instances are one term at every universe (D9). A recorded
-  parameter occurs in a constructor type or cannot be read; instances
-  carry it, and are distinct at different levels, as standard universe
-  polymorphism (D8). Admission classifies each parameter by an occurrence
-  check, and the kernel checks the classification (1.1, 5.2).
-- **Q15: level-dependent signatures are admitted,** with the parameter
-  recorded. `inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }`
-  checks.
-- **Header universes** (9). The result position after the colon accepts a
-  universe wherever it accepts `type`, as in `inductive Flag : U1 { … }`,
-  `: next(U)`, or `: prop U` together with an h-level. A written universe
-  is the declared level, checked as an upper bound; without one, the least
-  level is inferred. When in doubt, the user writes the universe.
-- **Q18: truncation levels in HoTT's numbering.** A sort may be truncated
-  at any level `n ≥ -1`, written `trunc(n)`; `prop` is `trunc(-1)`, `set` is
-  `trunc(0)`, and `type` is untruncated (1.6). The header words `type`,
-  `set`, `prop` and `trunc` are contextual: keywords only in the result
-  position, ordinary names elsewhere (9).
+or departs from the design or from G0, section 0 says so and section 11
+records the decision.
 
 ## 0. Relation to the adopted design and to G0
 
@@ -234,8 +45,8 @@ recommended.
 
 | Design statement | H1 as specified here | Why |
 | --- | --- | --- |
-| One heterogeneous formal composition `fcomp` per sort, along a line of parameters and indices | Higher sorts get a formal homogeneous `hcomp` at fixed parameters; transport along a parameter line computes by recursion on its argument; general composition is `hcomp` after transport (Q1, Q2) | An eliminator's motive is over the sort at fixed parameters, so a formal element joining two parameter values could not be eliminated. This is Coquand–Huber–Mörtberg's split, which the kernel already implements for pushouts. |
-| `fcomp` pushes through constructors of sorts without path constructors | Data sorts get no formal composition at all; composition pushes through equal constructor heads and is otherwise neutral (Q1) | A formal element that also pushes breaks confluence and stability under substitution. This is how the hand-coded `Nat`, sums and W types compute. |
+| One heterogeneous formal composition `fcomp` per sort, along a line of parameters and indices | Higher sorts get a formal homogeneous `hcomp` at fixed parameters; transport along a parameter line computes by recursion on its argument; general composition is `hcomp` after transport (Q1, Q2) | An eliminator's motive is over the sort at fixed parameters, so a formal element joining two parameter values could not be eliminated. This is Coquand–Huber–Mörtberg's split, which the kernel implemented for its native pushouts before they were declared in source. |
+| `fcomp` pushes through constructors of sorts without path constructors | Data sorts get no formal composition at all; composition pushes through equal constructor heads and is otherwise neutral (Q1) | A formal element that also pushes breaks confluence and stability under substitution. This is how sums compute, as the hand-coded `Nat` and W types did. |
 | Boundaries may mention earlier constructors and formal compositions | Boundaries are constructor expressions: positions and earlier constructors at interval formulas, with no compositions (Q3) | Displayed boundaries then follow by substitution; every H1 example needs no more. |
 | Boundaries are systems on faces of the constructor's dimensions | Boundaries are cube boundaries: a piece on both faces of every dimension (Q4) | A cube boundary is an iterated path type, which the kernel already has. Partial boundaries would need extension types. |
 | Constructors take dimension arguments | A constructor with dimensions is a function into an iterated path type, applied at interval formulas by path application (Q5) | Boundary reduction is then the kernel's existing path step, and overlap agreement is typing. |
@@ -265,10 +76,11 @@ formal compositions, and staged trust.
   positivity, syntactically. Overlap agreement is the typing of the iterated
   path type.
 - **Two Kan classes.** A *data sort* (no dimensions anywhere, modifier `type`)
-  composes by pushing through constructors, like `Nat`, sums and W types
-  today. A *higher sort* has a formal `hcomp` at fixed parameters; transport
-  along parameters computes by recursion with boundary correction; general
-  composition is `hcomp` after transport, like pushouts today.
+  composes by pushing through constructors, like sums and the declared
+  `Nat` and W. A *higher sort* has a formal `hcomp` at fixed parameters;
+  transport along parameters computes by recursion with boundary correction;
+  general composition is `hcomp` after transport, like the declared
+  `Pushout`.
 - **One dependent eliminator.** It is a function node with one clause per
   constructor, generated squash constructors included. The motive may land in
   any universe of any tier. Clause types come from the displayed boundary. It
@@ -285,15 +97,14 @@ formal compositions, and staged trust.
   different recorded levels are distinct. Every level is finite (Q16,
   decided); letting tier-parametric signatures read every tier is a later
   proposal.
-- **Trust.** Admission requires the kernel's H1 extension flag until review.
-  Results carry `kernel extension: H1` transitively; it is visible, and it is
-  not a non-computing dependency.
-- **Differential oracle (K2.4).** `Nat`, sums, W types and pushouts are
-  declared as signatures and compared with the hand-coded instructions by a
-  level-free translation. As Q16 decided, the `Nat` instructions retire,
-  and the sum, W and pushout instructions stay only for arguments at tier-1
-  levels. Native and declared forms are different
-  types; no conversion relates them.
+- **Trust.** Declarations are not assumptions: a result that uses a
+  declared type has no new non-computing dependency (4.4). The kernel's H1
+  extension flag, on by default since the release, gates admission (5.7).
+- **Native and declared types.** `Unit`, `Void` and sums are kernel
+  primitives; `Nat`, W and pushouts are H1 declarations in source, at finite
+  levels like any other (a `UU`-tier instance needs a declaration of its
+  own). Native and declared forms are different types; no conversion
+  relates them.
 - **Truncation (K2.5, G2).** `Trunc` is universe-preserving and has no
   resizing. The archive keeps its legacy assumptions. Measured on the archive,
   a universe-preserving truncation breaks 47 of 3,804 declarations, from 8
@@ -328,11 +139,11 @@ A trailing `s` on a variable marks a sequence: `xs` is `x_1 … x_n`, `as` is
 | `e`, `E` | constructor expressions (1.4) |
 | `⟦e⟧` | the displayed version of a constructor expression (3.6) |
 
-"The kernel" is the instruction kernel, `kernel/src/instructions.c`, and the
-reduction code it calls. "The driver" is the untrusted
-`web/cubical-instruction-driver.mjs`. The term checker and the JavaScript
-reference checker are not extended, as the
-[work plan](work-plan.md#the-instruction-kernel-and-this-plan) records.
+"The kernel" is the instruction kernel, `kernel/src/instructions.c` and the
+`instruction_*.c` files beside it, and the reduction code it calls. "The
+driver" is the untrusted `web/cubical-instruction-driver.mjs`. There is no
+other checker: the term checker and the JavaScript reference checker, which
+H1 never extended, were retired on 2026-10-02.
 
 ## 1. Signatures
 
@@ -507,7 +318,7 @@ with automatic clauses; the rules are the same for every `n`.
 
 ### 1.7 What H1 excludes
 
-- Indices, and constructors that choose result indices: H2.
+- Indices, and constructors that fix their own result indices: H2.
 - Several sorts, and companion sorts: H3 when every sort is `set` or `prop`,
   otherwise H4.
 - Non-uniform parameters: an index in disguise, H2.
@@ -716,7 +527,7 @@ counts index types too (G0 2.12).
   hold. The classification of each instruction into (i) to (v) is a review
   item of this proposal, for each K2.2 family, if it is adopted; an
   instruction added later must be classified before the check admits it.
-  It is not on finite-level H1's release checklist (header).
+  It was not on finite-level H1's release checklist ([history](h1-history.md#status-and-release-record)).
 
   *Examples.* `Pair`, `Trunc`, `Quotient` and the K2.4 counterparts pass:
   their derivations use only their parameters, universes at their level
@@ -882,8 +693,8 @@ comp^i S(as(i)) [φ ↦ u] u_0  is neutral otherwise
   component is composed in its type, after filling the earlier components
   along `i` and substituting them. A position's type is a `Π` over its arity
   into `S`, composed by the `Π` rule with its backward filling. This is how
-  `composition_compute.c` and `inductive_composition.c` compute sums and W
-  types today.
+  `composition_compute.c` and `inductive_composition.c` compute sums and
+  declared data sorts.
 - Transport along a parameter line is the case `φ ↦ u_0` on the constancy
   face, and needs no separate rule.
 - No rule turns a neutral tube into a constructor because its base is one.
@@ -898,7 +709,7 @@ A higher sort has a constructor with `d_k ≥ 1`, or a truncation modifier
   tube at `i = 1` (the `Face` step); tubes on the empty face are dropped. It
   never pushes into a constructor.
 - **General composition** reduces to formal composition after transport, as
-  `ck_pushout_composition` does today:
+  for Coquand–Huber–Mörtberg's pushouts (`hit_composition.c`):
 
   ```text
   comp^i S(as(i)) [φ ↦ u] u_0
@@ -1102,7 +913,7 @@ and no indices.
 | # | Departure | Argument | Status |
 | --- | --- | --- | --- |
 | D1 | A general schema, where Coquand–Huber–Mörtberg treat examples | Steps 2–6 of 4.2 are uniform in the signature. The only signature-specific facts used are the constructor order (for restriction), the cube boundary's typing (for overlaps) and positivity (for the inductive definition). | Written out in the [model construction](h1-model.md) and approved on 2026-10-02, relative to the baseline model and premise P1 |
-| D2 | Data sorts have no formal composition | Composition by recursion on constructors is CCHM's treatment of natural numbers and the kernel's of sums and W types. Adding a formal `hcomp` that also pushes would break confluence: `elim` of a pushed and of a formal composition differ (clause of compositions against composition of clauses). | A conditional outline, found valid in review; standard for the three hand-coded types |
+| D2 | Data sorts have no formal composition | Composition by recursion on constructors is CCHM's treatment of natural numbers and the kernel's of sums, as of its former hand-coded `Nat` and W. Adding a formal `hcomp` that also pushes would break confluence: `elim` of a pushed and of a formal composition differ (clause of compositions against composition of clauses). | A conditional outline, found valid in review; standard for the hand-coded types |
 | D3 | Transport with boundary correction for `d ≥ 1` | 3.5 generalises the pushout rule. The walls agree on overlaps because boundary pieces agree on corners, and the result restricts to the transport of each boundary piece. | The local wall calculation was found valid in review. Its stability under substitution belongs to Lemma H2, approved on 2026-09-30 |
 | D4 | Cube positions (paths as arguments), needed by the squash of every level `n ≥ 0`, at cube depth up to `n + 1` | In step 2 a cube position is an element of the carrier at a higher cube with its boundary: still strictly positive. | Written out and approved on 2026-10-02: raw trees at every cube depth, and transport by weight (the model's M0, M4a, M4) |
 | D5 | Infinitary positions in higher sorts | Step 4's inductive definition allows infinitary generating clauses; the metatheory needs the corresponding well-founded trees, which ZFC provides. | Written out and approved on 2026-10-02: raw trees with set-sized branching, with restriction (the model's sections 2 and 3) |
@@ -1202,13 +1013,8 @@ none since. `computable` accepted the marker.
 | Normalization, for decidable conversion | **Not established**; the kernel relies on budgets, as today |
 | The baseline's isolation of instruction acceptance from untrusted conversion queries | **Corrected** on 2026-09-28 (work-plan I1.2a). The audit's finding 1: the reducers behind `Whnf` and `Normalize` called `ck_convertible`, and a successful public conversion query entered the memo that folded alpha equality read, so one `Apply` was refused, then accepted, with no equality judgement among its premises. Valid beta equality, so no false equality. Now the folded comparison reads only its own results, reduction decides eta by syntax, and conversion refuses to run inside an instruction (`kernel/tests/test_isolation.c`) |
 
-**Status on 2026-09-28.** No open obligation above has been discharged
-since the approval of 2026-09-27; the isolation defect is an implementation
-fix, not one of them. The implementation's tests are evidence for the
-specified behaviour, not for these claims, and the header's release
-checklist maps each to its evidence and review decision. On 2026-09-30 the
-maintainer approved Lemma H2 and the critical-pair check (checklist item 2),
-and on 2026-10-02 the model (D1, D4, D5) and canonicity (items 1 and 3).
+The implementation's tests are evidence for the specified behaviour, not
+for these claims.
 
 ### 4.6 Literature
 
@@ -1216,7 +1022,7 @@ and on 2026-10-02 the model (D1, D4, D5) and canonicity (items 1 and 3).
   Theory*, LICS 2018. The cubical-set semantics of spheres, the torus,
   suspensions, pushouts and propositional truncation; formal homogeneous
   composition; transport along parameters with boundary correction. The
-  kernel's pushouts follow it. To our reading they treat these examples and
+  kernel's native pushouts followed it before they were declared in source. To our reading they treat these examples and
   describe the pattern, without a general schema and its soundness proof.
 - Cavallo, Harper, *Higher Inductive Types in Cubical Computational Type
   Theory*, POPL 2019. To our reading: a general schema of indexed cubical
@@ -1252,8 +1058,8 @@ and on 2026-10-02 the model (D1, D4, D5) and canonicity (items 1 and 3).
 ## 5. K2.2: instruction families
 
 Each family is reviewed and merged separately with its rejection tests,
-then integrated (work plan stage 2). Nothing is added to the term checker or
-the JavaScript reference checker.
+then integrated (work plan stage 2). Neither the term checker nor the
+JavaScript reference checker was extended; both were retired on 2026-10-02.
 
 ### 5.1 Node kinds and tables
 
@@ -1476,7 +1282,7 @@ whose type is not the displayed squash boundary.
   heads compare parameters and arguments by congruence, and different
   constructors are different. An eliminator applied to a constructor takes an `Iota`
   step. A constructor at an endpoint takes a `Path` step. Composition,
-  transport and `hcomp` elimination go through `Whnf`, as pushouts do. The
+  transport and `hcomp` elimination go through `Whnf`. The
   K1.4 guide answers "different" for distinct constructor heads and "unknown"
   for `hcomp` and transport heads.
 
@@ -1507,8 +1313,7 @@ its constructor names, the generated squash named `squash`. The driver
 ### 6.2 Bridges and serialization
 
 - `web/cubical-syntax.mjs` and `web/cubical-kernel.mjs` encode and decode
-  the new kinds and the ABI version, as `lib/cubical/native.mjs`, removed on
-  2026-10-02 with the historical kernel it drove, did.
+  the new kinds and the ABI version.
 - The JavaScript side keeps a record of each admitted signature (its normal
   form in source terms, and its kernel index), so that inspection, workers
   and replay after rollback need no kernel query.
@@ -1523,8 +1328,7 @@ declaration's transaction removes those a rollback frees. The renderers
 print an instance as its name applied to its recorded levels and
 parameters, `Pointed(U0)` or `List(N)`, a constructor by its name, and an
 eliminator as `N.elim(motive, clauses…)` until `match` gives it a source
-form. `lib/cubical/native.mjs` and the JavaScript reference checker were not
-extended, as the work plan decided, and the former is gone since 2026-10-02.
+form.
 
 ### 6.3 Transactions and caches
 
@@ -1543,40 +1347,18 @@ again.
 
 ### 6.4 The `kernel extension: H1` marker
 
-- A declaration whose checked term or type mentions a sort, constructor or
-  eliminator of a signature admitted in experimental mode carries the marker.
-  It propagates through definitions, as non-computing dependencies do, and
-  is tracked separately from them.
-- `computable def` accepts it. `inspect`, the CLI and the workbench list it
-  apart from assumptions. The migration verifier must compare it too: the
-  marker is not an axiom, so an `axioms` comparison cannot establish this
-  contract.
-- Tests: direct use; use through a definition; `computable` with the marker
-  accepted; `computable` with the marker and `LEM` rejected, naming `LEM`;
-  the marker absent once H1 is on by default.
-
-**Implementation.** The elaborator computes each result's extensions beside
-its assumptions (`extensionsOf` in `web/cubical-elaborator.mjs`): an
-instance or eliminator of a signature the kernel admitted experimentally,
-or a definition that carries the marker. The program reports them as
-`extensions`, apart from `axioms`. The CLI's `inspect` prints
-"kernel extension: H1", and the workbench shows it beside the axioms used.
-`computable` reads only the assumptions. `tests/inductive-declarations.test.mjs`
-covered the first four tests before the release. Since the release of
-2026-10-02 no signature is admitted experimentally, so no result carries the
-marker: the same tests now check the last, the marker absent with H1 on by
-default, and `computable` still refuses an assumption, naming it. The
-machinery stays for any later extension under review.
-The migration verifier (`tools/proof-migration.mjs` and
-`tools/verify-proof-migration.mjs`) compares each declaration's
-`extensions` apart from its `axioms`, and refuses a migration that adds or
-removes one (`Kernel extensions changed: none -> H1`, before the release);
-until K2.3 it compared `axioms` only (audit of 2026-09-28, finding 7). It
-does not yet compare a module that declares a type: the edited copy's
-signature is another one, since signatures are generative (Q10), so such a
-declaration is refused by name. Comparing signatures, and mapping the edited
-copy's onto the original's when their normal forms agree, is K2.4a's
-tooling. `tests/proof-migration.test.mjs` covers both.
+None since the release of 2026-10-02. A result that used a signature
+admitted in the experimental mode carried the marker, apart from its
+assumptions; no signature is admitted that way now, so no result carries it,
+and `tests/inductive-declarations.test.mjs` checks that it is absent. The
+machinery stays for a later extension under review: the elaborator computes
+each result's extensions beside its assumptions (`extensionsOf` in
+`web/cubical-elaborator.mjs`), the program reports them as `extensions`, and
+the migration verifier (`tools/proof-migration.mjs`) refuses a migration
+that adds or removes one. It compares generative signatures by their
+admitted schemas, and only an identical schema grants a renaming between
+the two copies. The contract the marker followed before the release is in
+the [history](h1-history.md#64-the-kernel-extension-h1-marker).
 
 ### 6.5 Inspection
 
@@ -1593,159 +1375,23 @@ at its own parameters: the kernel computes each `ClauseType_k` as L2.2a's
 `match` has it do, given a variable for each earlier clause, in a
 transaction rolled back afterwards. The CLI's `inspect` prints this, and the
 workbench's inspector shows it for a declared type, which has no checked
-term, with the marker. A dependent path type prints as the source writes
+term. A dependent path type prints as the source writes
 it, `PathP(fun (i : Interval) => P(loop @ i), base_case, base_case)`.
 `tests/inductive-declarations.test.mjs`, `tests/cli.test.mjs` and
 `tests/cubical-inspector.browser.mjs` cover it. Each clause's boundary is
 shown within its type, not yet drawn as a diagram.
 
-## 7. K2.4: representation map and differential contract
+## 7. K2.4: representation map and differential contract (retired)
 
-### 7.1 The declared counterparts
-
-| Native | Declared | Notes |
-| --- | --- | --- |
-| `Nat`, `zero`, `succ(n)` | `N : U(0)`; `zero`; `succ(n : s)` | |
-| `NatRec(M, z, s, n)` | `elim_{M, [z, s]}(n)` | the native step is `Π (n). Π (h : M(n)). M(succ(n))`, the clause type |
-| `Sum(A, B)`, `inl`, `inr` | `Plus(A, B)`; `inl(a : A)`, `inr(b : B)` | no level, as native |
-| `SumRec(M, l, r, v)` | `elim_{M, [l, r]}(v)` | |
-| `W(x : L). B`, `sup(l, c)` | `Tree(L, λ x. B)`; `sup(l : L, c : Π (b : B(l)). s)` | the arity is `(λ x. B)(l)`, one `Beta` from `B[l/x]` |
-| `WRec(M, step, v)` | `elim_{M, [step]}(v)` | same clause shape up to that `Beta` |
-| `Pushout(C, A, B, m)` and its points and paths | `Push(C, A, B, m)`; `inl`, `inr`, `push(c) : Path(s, inl(fst(m)(c)), inr(snd(m)(c)))` | one maps parameter, as native; `push^r(c)` is `push(c) @ r` |
-| `PushElim(M, l, r, b)` | `λ (z). elim_{M, [l, r, b]}(z)` | native is unapplied; `App(PushElim, z)` maps to the saturated eliminator |
-| `HComp`, `Trans` at a pushout | the same nodes at `Push` | |
-
-`Unit`, `Void` and their eliminators are not in K2.4's oracle. They may be
-declared for comparison; retiring them is a separate decision (Q11).
-
-### 7.2 The translation τ
-
-- τ is a map on terms. Native formers carry no level, and the K2.4
-  counterparts have only erased parameters, so their instances carry none
-  either (3.1). τ adds no level and involves no coercion or lifting: `τ(Sum(A, B)) = Plus(τ(A), τ(B))`. τ is the identity on every
-  other node.
-- **Native and declared forms are not convertible.** `Nat` and `N` are
-  different types. No conversion rule, no `Lift` and no coercion relates
-  them, and a term mixing them is a type error. Migration is a rewrite by
-  τ, checked by the strict migration verifier.
-- **Native equalities across universes, at finite levels.** A native term
-  used at several universes is one term, and so is its image. In the
-  example of 2.3, `small : Nat or Nat` built at `U0` and passed to
-  `sum_id(U1, Nat, …)` translates to `small : Plus(N, N)` passed where
-  `sum_id`'s parameter type `A or A` has become `Plus(A, A)` with `A := N`.
-  The two types are the same term, `Plus(N, N)`, so the application checks,
-  as native. A native `Lift` translates to a `Lift` of the image, with the
-  same levels.
-
-A native former may occur at an argument in a tier-1 universe, and Q16
-decided that instances read finite levels only. Call a declaration
-*finite-tier* when neither it nor anything it uses, transitively, contains
-a native sum, W type or pushout whose instance would read a tier-1 level.
-The K2.4 counterparts have only erased parameters, so τ never needs a
-recorded level.
-
-- τ keeps each native sum, W type or pushout whose instance would read a
-  tier-1 level, and maps every other occurrence; `Nat` has no parameters
-  and always maps. Which occurrences stay native depends on the levels in
-  the derivation. So τ commutes with substitution only on finite-tier
-  declarations, where every level read stays finite before and after
-  substitution, and its guarantees are stated for them only:
-  - on finite-tier declarations, τ preserves typing and conversion, native
-    equalities across universes and `Lift`, as above;
-  - a declaration that is not finite-tier keeps its tier-1 occurrences
-    native. A *mixed-tier call*, which passes a finite-tier term where a
-    native tier-1 type is expected, has no image. For example:
-
-    ```text
-    def big_id(A : UU0, x : A or A) : A or A := x;
-    def small : Nat or Nat := left(0);
-    def call := big_id(Nat, small);
-    ```
-
-    `call` checks natively. After τ, `big_id`'s parameter type stays the
-    native `A or A`, which becomes `Nat or Nat` with `Nat` mapped to `N`,
-    while `small` has type `Plus(N, N)`. The application fails, and the
-    migration verifier reports it; it does not migrate the declaration in
-    part (X8);
-  - no archive or library declaration uses a tier-1 universe as a type:
-    all 43 archive mentions of `UU0`, and the library's 4, are universe
-    binders `U < UU0`. So every existing declaration is finite-tier, and
-    no mixed-tier call exists.
-- If the later tier-parametric proposal is adopted, the four counterparts
-  qualify: their derivations use only their parameters, universes at their
-  level parameters, `Π`, `Σ`, projections and path types. τ then becomes
-  purely syntactic and total, commuting with binders, substitution, level
-  substitution and interval substitution everywhere, and
-  `def big_sum(A, B : UU0) : UU0 := A or B;` becomes `Plus(A, B)`, reading
-  `ω`, in `UU0`.
-
-X1–X3 test the preservation rule by rule, and X4 and X6–X8 test it on the
-archive and on the examples above.
-
-### 7.3 Differential fixtures
-
-| ID | Comparison | Pass condition |
-| --- | --- | --- |
-| X1 | Every `Nat`, sum, W and pushout case of `kernel/tests/test_instructions.c`, replayed through τ with the declared signatures | Same verdict; accepted types related by τ, up to the W arity's `Beta` |
-| X2 | Weak head and normal forms of the terms those cases derive, and of each archive definition's value | `τ(nf(t))` is alpha-equal to `nf(τ(t))`, up to that `Beta` |
-| X3 | Composition, homogeneous composition and transport at each type, including pushout bridges | Reducts related by τ |
-| X4 | The archive, elaborated with declared forms for the four types (a driver option) | 0 gaps; every stored definition derives again; each declaration's assumptions unchanged; canonicity fixture and `evaluate` results equal |
-| X5 | Cost of X4 against the native run: archive check time, re-derivation time, kernel steps, arena peak | Recorded with revision, machine and limits |
-| X6 | Native terms used at two finite universes: `sum_id(U1, Nat, small)` of 2.3, and the same with W, pushout and `Nat`-valued generic definitions instantiated at `U2` | Under both options, native and image both check; the image is one instance term at both universes |
-| X7 | Native formers at UU-tier arguments: `big_sum`, and a W type and a pushout over types in `UU0` | τ leaves them native and they check unchanged (Q16). Under the later proposal, native and image would both check, the image in `UU0` |
-| X8 | A mixed-tier call: `big_id(Nat, small)` of 7.2, and the same through a W type and a pushout | The image fails to check, and the migration verifier rejects the declaration, naming the call (Q16). Under the later proposal, native and image would both check |
-
-### 7.4 Retirement criterion
-
-The hand-coded instructions retire in one change when:
-
-1. X1–X4 and X6–X8 pass;
-2. X5's gap is recorded, and either accepted by the maintainer or closed by
-   specialised reduction paths for hot signatures (Q14);
-3. the archive is migrated by τ under the strict verifier, with every
-   public type equal after τ and every assumption list unchanged. This
-   requires every archive declaration to be finite-tier (7.2), which they
-   all are today; a declaration that is not is left on native formers and
-   reported, not migrated in part.
-
-As Q16 decided, the change removes the `Nat` instructions only: `Nat`,
-`Zero`, `Succ` and `NatElim`, and their node kinds, whose tags stay
-reserved; the ABI version changes. The sum, W and pushout instructions stay
-for arguments at tier-1 levels, and the elaborator emits the declared forms
-everywhere else. They stay trusted code, and X1–X3 stay as their regression
-tests. A native and a declared sum of the same components are then
-different types, so τ's guarantees cover finite-tier declarations only, and
-a mixed-tier call has no image (7.2, X8). Nothing does that today.
-
-If the later tier-parametric proposal is adopted, a further change removes
-`Sum`, `Inject`, `SumElim`, `W`, `Sup`, `WElim`, `Pushout`, `PushPoint`,
-`PushPath` and `PushElim`, without changing any finite-level term.
-
-`Unit` and `Void` stay (Q11).
-
-**Status on 2026-09-28.** No X fixture, no τ driver option and no cost
-record exists. The work plan schedules them as K2.4a, the `Nat` retirement
-above as K2.4b, and the wider retirement of the previous paragraph as
-K2.4c, deferred with the tier-parametric proposal. At the source boundary,
-a program with a mixed-tier call keeps its native formers and the verifier
-reports it; it is never migrated in part. The archive coverage run is
-compatibility evidence for the native forms, not X4.
-
-**Decision on 2026-10-02.** The differential fixtures no longer gate the
-release (checklist item 6). Their purpose was to justify retiring the
-hand-coded instructions through τ, under the criterion above. Instead Nat
-and W (2026-09-30) and pushouts (2026-10-01) were retired by declaring them
-in source, and sums stay native at every level. So no shipped term passes
-through τ, and X1–X8 are kept as historical evidence for those retirements.
-Their tests were removed later that day, with the pinned historical kernel
-they compared against, the representation option and τ itself:
-
-- X2's literal criterion is left as written. Its counterexample, the
-  η-contracted image of a sum eliminator, concerns only τ's declared
-  stand-in for sums, which nothing uses; the two forms are convertible.
-- X4's purpose, that the archive still checks, is served for the current
-  kernel by G3's corpus test, which checks every archive declaration in CI.
-- X5's cost records stay as observations.
+K2.4 was to retire the hand-coded Nat, W and pushout instructions through a
+level-free translation τ into declared counterparts, once the differential
+fixtures X1–X8 agreed with them. Instead Nat and W (2026-09-30) and pushouts
+(2026-10-01) were declared in source and their instructions removed, and
+sums stay native; the fixtures were retired as a release gate on 2026-10-02,
+and their tests removed with the historical kernel they ran against. The
+section as it stood, 7.1–7.4, is in the
+[history](h1-history.md#7-k24-representation-map-and-differential-contract);
+references to it elsewhere in this document are to that text.
 
 ## 8. K2.5: truncation and resizing (G2)
 
@@ -2280,10 +1926,13 @@ refuse.
 | Resources R1–R5 | Kernel: R1 (a sort, constructor and eliminator whose indices are out of range, and a list whose next cell is no list, built as raw syntax: inspected, reduced or refused with an error, and refused by the term checker and the instructions), R2, R3; a former of the wrong shape and a truncation level above the maximum are refused. Driver: R1 in part (an operand that is not a 32-bit unsigned integer is refused), R5 (the codec round trip); `tests/h1-admission.test.mjs` checks ABI version 3. Source: R4 (a module of ABI version 2 refused by the loader) | — | — |
 | Differential X1–X8 | — | — | All: retired as a gate on 2026-10-02 (checklist item 6). The tests that traced X1, X3 and X6–X8, and X2, X4 and X5 in part, ran against the pinned historical kernel and were removed with it the same day; the [differential record](h1-differential-evidence.md) keeps what they showed |
 
-## 11. Open questions
+## 11. Decided questions
 
 Every question below was decided on 2026-09-27: Q8, Q15, Q16 and Q18 as
-the Decisions section records, and the others as recommended.
+the [history](h1-history.md#decisions) records, and the others as
+recommended. Each answer gives the reasoning as it stood then; where the
+implementation changed since, as when Nat, W and pushouts were declared in
+source, the status at the top of this document says so.
 
 | Question | Decision |
 | --- | --- |
