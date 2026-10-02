@@ -40,7 +40,7 @@ telescope filling, and asked for three repairs:
   the clause applies to them. Defining `elim` by rank first fails, because
   restriction can raise rank. `elim`, its typing and its naturality are now
   one construction by `μ` (section 6, Lemmas M6a and M6). `μ`'s second
-  component is now the spine rank, which restriction does not raise
+  component is now the spine rank, and restriction does not raise `μ`
   (section 3).
 - **P1's scope.** Positional arguments `λ (y : A). E′` bring function β at
   types over `s`. P1 now includes function β and η at the arities, is
@@ -160,7 +160,7 @@ lighter than it, so its spine rank is at most `1`. An `hcomp`'s spine rank
 exceeds that of each of its parts of its own weight, though no part need
 have the largest: infinitely many parts may have unbounded finite spine
 ranks, and then the `hcomp`'s is `ω`. Plain rank would not do: restriction
-can raise it. In section 6's example, `edge @ i` has rank `0` and its
+can raise it without lowering the weight. In section 6's example, `edge @ i` has rank `0` and its
 endpoint `step(step(base))` rank `2`.
 A constructor weighs more than each of its positions. It also weighs more
 than anything that earlier constructors build over trees in its *block*,
@@ -219,15 +219,24 @@ M0, node by node, each weighs at most `ω^k · δ + σ + wt(E_{k,l,ε})`, below
 `‖x‖`. A built node that reaches its own boundary is replaced by the
 evaluation of that boundary, over still earlier constructors, which M0
 bounds in the same way. Restriction of an `hcomp` recurses into `U(f)` or
-`u₀`, of smaller `μ`. At a non-endpoint, the children of `f*x` are among
-those of `x`, so its spine rank is no greater. Where `φf = 1`, `f*x` is a
-restriction of the part `U(f)`, so by induction its `μ` is at most
-`μ(U(f)) < μ(x)`. Otherwise `f*x = hcomp(φf, U·f, f*u₀)`: its children are
-among `x`'s, together with `f*u₀`. By induction `f*u₀` keeps its weight and
-does not raise its spine rank, or gets lighter and counts `0`. So each
-successor rank in the supremum for `f*x` is bounded by one in the supremum
-for `x`, and the spine rank does not grow. The bounds are proved in the same
-induction. ∎
+`u₀`, of smaller `μ`.
+
+For `μ(f*x) ≤ μ(x)`: if `f*x` is lighter than `x`, its `μ` is smaller,
+whatever its spine rank. That rank can grow, since at the lower weight
+children that were lighter than `x` may start to count. So spine ranks are
+compared only when `f*x` keeps `x`'s weight `w`:
+
+- at a non-endpoint, the children of `f*x` are among those of `x`, so its
+  spine rank is no greater;
+- where `φf = 1`, `f*x` is a restriction of the part `U(f)`, so by
+  induction its `μ` is at most `μ(U(f)) < μ(x)`;
+- otherwise `f*x = hcomp(φf, U·f, f*u₀)`, whose children are among `x`'s,
+  together with `f*u₀`. By induction `f*u₀` either keeps weight `w` and does
+  not raise its spine rank, or gets lighter and counts `0` toward the rank
+  at `w`. So each successor rank in the supremum for `f*x` is bounded by one
+  in the supremum for `x`.
+
+The bounds are proved in the same induction. ∎
 
 This weight is the semantic form of the precedence the critical-pair analysis
 relies on: every boundary mentions only earlier constructors.
@@ -586,7 +595,7 @@ Review must accept:
   Theorem M assumes;
 - the weight, revised after the first review: Lemma M0, and its use in M1,
   the telescope filling of M4a and M4;
-- the spine rank in `μ`, which restriction does not raise (M1);
+- the spine rank in `μ`, and that restriction does not raise `μ` (M1);
 - transport's simultaneous induction, M4 with M4a;
 - the functoriality case of M3 at endpoints;
 - the eliminator's simultaneous construction, M6, and the semantic Lemma
