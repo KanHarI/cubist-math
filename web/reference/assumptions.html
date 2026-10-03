@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="The explicit library assumptions, and how a result states and checks that it computes." />
+    <meta name="description" content="The explicit library assumptions, univalence and extensionality, and how a result states and checks that it computes." />
     <title>Cubist · 11. Assumptions and computability</title>
     <link rel="stylesheet" href="../language.css" />
     <link rel="stylesheet" href="../repl.css" />
@@ -23,7 +23,7 @@
       <div class="introduction">
         <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 11</p>
         <h1>Assumptions and computability</h1>
-        <p class="lead">The explicit library assumptions, and how a result states and checks that it computes.</p>
+        <p class="lead">The explicit library assumptions, univalence and extensionality, and how a result states and checks that it computes.</p>
       </div>
       <div class="reference-layout">
         <aside class="contents" aria-label="Chapters and sections">
@@ -31,14 +31,14 @@
           <ol class="chapters">
             <li><a href="types.html">Types and values</a></li>
             <li><a href="first-proof.html">A first proof and files</a></li>
-            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="terms.html">Functions, pairs and sums</a></li>
             <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
             <li><a href="universes.html">Universes</a></li>
-            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
-            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
-            <li><a href="conversion.html">Conversion and unfolding</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
             <li class="current"><a href="assumptions.html" aria-current="page">Assumptions and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
             <li><a href="errors.html">Error messages</a></li>
@@ -53,7 +53,7 @@
         <article id="reference">
           <section id="axioms">
             <h2>The library assumptions</h2>
-            <p>A few principles are assumed rather than constructed. Each is a name with a type and no computation rule, provided by the checker at a chosen universe. There are six. A source file cannot add more. To reason under a hypothesis, take it as a parameter: the result then holds for every value of the hypothesis, which stays visible in its type.</p>
+            <p>A few principles are assumed rather than constructed. Each is a name with a type and no computation rule, provided by the checker at a universe given as its first argument. There are six. A source file cannot add more. To reason under a hypothesis, take it as a parameter: the result then holds for every value of the hypothesis, which stays visible in its type.</p>
             <div class="table-scroll"><table>
               <thead><tr><th>Assumption</th><th>Type, at <code>U0</code></th></tr></thead>
               <tbody>
@@ -65,7 +65,7 @@
                 <tr><td><code>Choice(U0, A, B, setA, setFibers, inhabited)</code></td><td>The axiom of choice for a set <code>A</code> and a family of sets <code>B</code>: from <code>inhabited : forall a : A. Truncate(U0, B(a))</code>, an element of <code>Truncate(U0, forall a : A. B(a))</code></td></tr>
               </tbody>
             </table></div>
-            <p><code>Truncate(U0, A)</code>, which the library often names <code>Mere(A)</code>, says that <code>A</code> is inhabited without giving access to a chosen element. The inspector displays it as <span class="math">‖A‖</span>; that is display notation, not source syntax.</p>
+            <p><code>Truncate(U0, A)</code>, which the library often names <code>Mere(A)</code>, says that <code>A</code> is inhabited without giving access to a particular element. The inspector displays it as <span class="math">‖A‖</span>; that is display notation, not source syntax.</p>
             <pre><code data-check="accept">def merely(A : U0, a : A) : Truncate(U0, A) {
   exact TruncateIntro(U0, A, a);
 }
@@ -153,6 +153,12 @@ evaluate along (fun (T : U0) =&gt; T) by swapped from typed(Unit and Nat, (tt, 3
     h : forall a : A. f(a) = g(a)) : f = g {
   exact FunExt(U0, A, B, f, g, h);
 }</code></pre>
+            <h3 id="generic-library">One definition for every universe</h3>
+            <p>Like the assumptions, <code>ua</code>, <code>UnivalenceBeta</code> and <code>FunExt</code> are each one definition, used at any universe below <code>UU0</code> through their first argument, as a <a href="universes.html#universe-variables">universe variable</a> would be:</p>
+            <pre><code data-check="accept">import paths;
+def small_path(A, B : U0, e : Equiv(U0, A, B)) : A = B := ua(U0, A, B, e);
+def large_path(A, B : U1, e : Equiv(U1, A, B)) : A = B := ua(U1, A, B, e);</code></pre>
+            <p><code>Equiv(U, A, B)</code>, like <code>IsProp</code> and <code>IsSet</code>, is a library definition, not a new sort or a keyword. Two modules define the levels: <code>hlevels</code>’ <code>IsProp(U, A)</code> and <code>IsSet(U, A)</code> take a universe (<a href="paths.html#hlevels">propositions and sets</a>), and the first library’s <code>sets</code> module defines <code>IsSet(A)</code> for a type <code>A : U0</code>, as <code>Choice</code> above uses it. Both say that any two paths between the same elements are equal.</p>
           </section>
           <section id="computability">
             <h2>Computability</h2>
@@ -200,11 +206,11 @@ evaluate double(3) expecting 7;  // Error: The term evaluates to 6, not 7.</code
 evaluate TruncateIntro(U0, Nat, 3) expecting TruncateIntro(U0, Nat, 3);</code></pre>
             <p>The expected side is normalized too, so it may be any term of the same type. Writing a literal makes the directive state what the term computes to. Evaluation computes full normal forms: it unfolds every definition and ignores <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints. <code>computable</code>, <code>evaluate</code> and <code>expecting</code> are keywords only in these positions. Elsewhere they are ordinary names.</p>
             <p>The command-line checker prints each success as <code>evaluate at line N: value</code>. After <code>check</code>, its <code>evaluate EXPRESSION</code> command prints the normal form of an expression in the scope of the checked module, under the same rule. <code>inspect NAME</code> lists the declaration’s assumptions, or <code>none</code>. See <a href="checking.html#inspection">checking and inspection</a>.</p>
-            <p class="note">The legacy <code>Truncate</code> API used in this chapter remains an assumption, so its terms are refused by <code>evaluate</code>. A <a href="induction.html#higher-constructors">source inductive declared with <code>: prop</code></a> provides a computing truncation through H1. Its point constructor computes, and its eliminator must respect the generated squash constructor; it does not provide an unrestricted way to extract a witness.</p>
+            <p class="note">The <code>Truncate</code> of this chapter is an assumption, so <code>evaluate</code> refuses its terms. A truncation that computes can be declared instead: an <a href="cubical.html#higher-constructors">inductive type declared with <code>: prop</code></a>. Its point constructor computes, and a function out of it must respect the generated squash constructor, so it gives no unrestricted way to extract a witness.</p>
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">
-            <a class="previous" href="conversion.html">← 10. Conversion and unfolding</a>
+            <a class="previous" href="cubical.html">← 10. Cubical paths and higher inductive types</a>
             <a class="next" href="checking.html">12. Checking and inspection →</a>
           </nav>
         </article>

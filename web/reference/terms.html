@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="The basic types and the terms that build and use them: functions, pairs, sums, Unit and Void, and numbers." />
-    <title>Cubist · 3. Terms, functions and pairs</title>
+    <meta name="description" content="Each basic type in full: how to build its values and how to use them, expected types, and precedence." />
+    <title>Cubist · 3. Functions, pairs and sums</title>
     <link rel="stylesheet" href="../language.css" />
     <link rel="stylesheet" href="../repl.css" />
   </head>
@@ -22,8 +22,8 @@
     <main>
       <div class="introduction">
         <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 3</p>
-        <h1>Terms, functions and pairs</h1>
-        <p class="lead">The basic types and the terms that build and use them: functions, pairs, sums, Unit and Void, and numbers.</p>
+        <h1>Functions, pairs and sums</h1>
+        <p class="lead">Each basic type in full: how to build its values and how to use them, expected types, and precedence.</p>
       </div>
       <div class="reference-layout">
         <aside class="contents" aria-label="Chapters and sections">
@@ -31,14 +31,14 @@
           <ol class="chapters">
             <li><a href="types.html">Types and values</a></li>
             <li><a href="first-proof.html">A first proof and files</a></li>
-            <li class="current"><a href="terms.html" aria-current="page">Terms, functions and pairs</a></li>
+            <li class="current"><a href="terms.html" aria-current="page">Functions, pairs and sums</a></li>
             <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
             <li><a href="universes.html">Universes</a></li>
-            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
-            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
-            <li><a href="conversion.html">Conversion and unfolding</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
             <li><a href="assumptions.html">Assumptions and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
             <li><a href="errors.html">Error messages</a></li>
@@ -78,7 +78,6 @@
           </section>
           <section id="functions">
             <h2>Functions</h2>
-            <p>To define a function by cases on a declared type, use <a href="induction.html#match">pattern matching</a>. A function that calls itself on recursive children uses <a href="induction.html#recursion">structural recursion</a>.</p>
             <p><code>fun (x : A) => body</code> is the function sending <code>x</code> to <code>body</code>. Its type is <code>A -> B</code> when <code>body : B</code> does not mention <code>x</code>, and <code>forall x : A. B(x)</code> when it does. Binders can be grouped like parameters:</p>
             <div class="table-scroll"><table>
               <thead><tr><th>Source</th><th>Means</th></tr></thead>
@@ -141,6 +140,7 @@ def swap_arguments(A : U0, P : A -&gt; A -&gt; U0, f : forall x, y : A. P(x, y))
             <pre><code data-check="reject">def wrong_index(P : Nat -&gt; U0, f : forall n : Nat. P(n)) : P(1) {
   exact f(0);  // Error: Type mismatch: found P(0), expected P(1).
 }</code></pre>
+            <p>Functions defined by cases, on <a href="#match">sums</a> below or on <a href="induction.html#match">inductive types</a>, use <code>match</code>. A function that calls itself on smaller values uses <a href="induction.html#recursion">structural recursion</a>.</p>
           </section>
           <section id="pairs">
             <h2>Pairs and dependent pairs</h2>
@@ -243,7 +243,7 @@ def default(value : Unit or Unit) := match value as z return Shape(z) {
   left a =&gt; 0;
   right b =&gt; 1;
 };</code></pre>
-            <p>The result type is the expected type of each branch, so <code>right(a)</code> needs no annotation. In a proof block, <a href="proof-blocks.html#cases"><code>cases</code></a> does the same with a block for each side, but without refining the goal.</p>
+            <p>The result type is the expected type of each branch, so <code>right(a)</code> needs no annotation. In a proof block, <a href="first-proof.html#first-proof-cases"><code>cases</code></a> does the same with a block for each side, but without refining the goal; <a href="proof-blocks.html#cases">proof blocks</a> compares the two.</p>
           </section>
           <section id="unit-and-void">
             <h2>Unit, Void and negation</h2>
@@ -324,7 +324,7 @@ def unit_on_the_right := typed(Nat or Unit, right(tt));</code></pre>
             <p>From tightest to loosest:</p>
             <ol>
               <li>application <code>f(a)</code> and projection <code>p.1</code>, from left to right, so <code>f(a).2(b)</code> applies the second component of <code>f(a)</code> to <code>b</code>;</li>
-              <li>interval application <code>p @ i</code>;</li>
+              <li>interval application <code>p @ i</code>, for <a href="cubical.html#cubical">cubical paths</a>;</li>
               <li><code>*</code>;</li>
               <li><code>+</code>;</li>
               <li><code>=</code>, <code>&lt;</code>, <code>&lt;=</code>;</li>
@@ -346,7 +346,6 @@ def and_before_or(A, B, C : U0, x : A and B or C) : (A and B) or C {
 def chained : 1 &lt; 2 &lt; 3 {
   exact tt;  // Error: Type mismatch: found U0, expected Nat.
 }</code></pre>
-            <p>In the source reader, keywords and built-in forms are purple, and named functions are green. <code>Nat</code> and its constructors are ordinary imported names; their inspection links lead to the source declaration. Numerals, tuples and arithmetic are notation: they are amber with a dotted underline. Hover over one to see its expansion; <code>2</code> shows <code>succ(succ(0))</code> and <code>a + b</code> shows <code>add(a, b)</code>. The index of a projection, as in <code>p.2</code>, is not a numeral.</p>
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">

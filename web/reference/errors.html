@@ -31,14 +31,14 @@
           <ol class="chapters">
             <li><a href="types.html">Types and values</a></li>
             <li><a href="first-proof.html">A first proof and files</a></li>
-            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="terms.html">Functions, pairs and sums</a></li>
             <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
             <li><a href="universes.html">Universes</a></li>
-            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
-            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
-            <li><a href="conversion.html">Conversion and unfolding</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
             <li><a href="assumptions.html">Assumptions and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
             <li class="current"><a href="errors.html" aria-current="page">Error messages</a></li>
@@ -50,12 +50,13 @@
             <li><a href="#name-errors">Names and declarations</a></li>
             <li><a href="#type-errors">Types and terms</a></li>
             <li><a href="#block-errors">Proof blocks</a></li>
+            <li><a href="#conversion-errors">Computation and conversion</a></li>
             <li><a href="#universe-errors">Universes</a></li>
-            <li><a href="#inductive-errors">Inductive types and recursion</a></li>
             <li><a href="#path-errors">Equality and paths</a></li>
+            <li><a href="#inductive-errors">Inductive types and recursion</a></li>
             <li><a href="#rewriting-errors">Equational reasoning and simplification</a></li>
-            <li><a href="#cubical-errors">Cubical paths</a></li>
-            <li><a href="#conversion-errors">Conversion, assumptions and computability</a></li>
+            <li><a href="#cubical-errors">Cubical paths and higher inductive types</a></li>
+            <li><a href="#assumption-errors">Assumptions and computability</a></li>
             <li><a href="#warnings">Warnings</a></li>
             <li><a href="#not-yet-available">Not yet available</a></li>
           </ul>
@@ -94,7 +95,7 @@
                 <tr><td data-message="Binary literals are limited to 256 significant bits.">“Binary literals are limited to 256 significant bits.”</td><td>A resource limit of the parser.</td><td><a href="checking.html#limits">limits</a></td></tr>
                 <tr><td data-message="simp only requires an explicit rule list.">“simp only requires an explicit rule list.”</td><td>Write <code>simp only [rules];</code>, or plain <code>simp;</code> for the default rules.</td><td><a href="rewriting.html#simp">simplification</a></td></tr>
                 <tr><td data-message="simp only cannot exclude rules.">“simp only cannot exclude rules.”</td><td><code>without</code> removes default rules; <code>simp only</code> has none. Leave the rule out of the list instead.</td><td><a href="rewriting.html#simp-registration">rule selection</a></td></tr>
-                <tr><td data-message="simp_rule priority must be an integer from 0 to 1000.">“simp_rule priority must be an integer from 0 to 1000.”</td><td>Choose a priority in range.</td><td><a href="rewriting.html#simp-registration">registration</a></td></tr>
+                <tr><td data-message="simp_rule priority must be an integer from 0 to 1000.">“simp_rule priority must be an integer from 0 to 1000.”</td><td>Give a priority in range.</td><td><a href="rewriting.html#simp-registration">registration</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -139,6 +140,15 @@
               </tbody>
             </table></div>
           </section>
+          <section id="conversion-errors">
+            <h2>Computation and conversion</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr><td data-message="No checked definition to unfold:">“No checked definition to unfold: <var>name</var>”</td><td>Hints name top-level checked definitions only.</td><td><a href="conversion.html#unfolding-hints">unfolding hints</a></td></tr>
+              </tbody>
+            </table></div>
+          </section>
           <section id="universe-errors">
             <h2>Universes</h2>
             <div class="table-scroll"><table>
@@ -149,18 +159,6 @@
                 <tr><td data-message="A universe argument must lie below UU0">“A universe argument must lie below UU0: …”</td><td>A generic declaration was used at <code>UU0</code> or above. Use <code>U0</code>, <code>U1</code>, … or a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
                 <tr><td data-message="Expected a universe:">“Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).”</td><td>A type or a term stands where a universe is required, such as <code>next(Nat)</code>.</td><td><a href="universes.html#universe-expressions">next and max</a></td></tr>
                 <tr><td data-message="is a universe constant; pick another name.">“<var>name</var> is a universe constant; pick another name.”</td><td>Names such as <code>U1</code> and <code>UU2</code> are universes.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
-              </tbody>
-            </table></div>
-          </section>
-          <section id="inductive-errors">
-            <h2>Inductive types and recursion</h2>
-            <div class="table-scroll"><table>
-              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
-              <tbody>
-                <tr><td data-message="needs an expected type, to know which">“<var>nil</var> needs an expected type, to know which <var>List(…)</var> it builds: write typed(<var>List(…)</var>, <var>nil</var>).”</td><td>A constructor of a parameterized type takes only its declared arguments, so the type’s arguments come from context. Give a result type, or use <code>typed</code>.</td><td><a href="induction.html#inductive-parameters">parameters</a></td></tr>
-                <tr><td data-message="Nat has no constructor left: its constructors are zero, succ.">“<var>Nat</var> has no constructor <var>left</var>: its constructors are <var>zero, succ</var>.”</td><td>A <code>match</code> clause names a constructor that the matched type does not have, such as a sum’s <code>left</code> on <code>Nat</code>. Use the listed constructors.</td><td><a href="terms.html#match">match</a></td></tr>
-                <tr><td data-message="loop is being defined: it can call itself only on an argument of a constructor">“<var>loop</var> is being defined: it can call itself only on an argument of a constructor”</td><td>A definition calls itself, but its whole body is not a <code>match</code> on one of its parameters. Make it one, and recurse on a child bound by a clause.</td><td><a href="first-proof.html#order">order</a>, <a href="induction.html#recursion">structural recursion</a></td></tr>
-                <tr><td data-message="is not on an argument of the matched constructor: only structural recursion">“The recursive call of <var>f</var> is not on an argument of the matched constructor: only structural recursion, …”</td><td>A recursive call passes something other than a child bound by the clause, such as the original input or a new constructor value. Recurse on a child.</td><td><a href="induction.html#recursion">structural recursion</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -176,6 +174,18 @@
                 <tr><td data-message="Path induction endpoints/carrier do not match.">“Path induction endpoints/carrier do not match.”</td><td>The type and endpoints passed to <code>path_induction</code> must be the path’s.</td><td><a href="paths.html#path-induction">path induction</a></td></tr>
                 <tr><td data-message="Based induction needs universes.">“Based induction needs universes.”</td><td>The first two arguments of <code>based_induction</code> are universes.</td><td><a href="paths.html#path-induction">path induction</a></td></tr>
                 <tr><td data-message="hlevel could not prove">“hlevel could not prove <var>goal</var>”</td><td>The message names each obligation the goal needs, down to the first that nothing discharges, and why. Supply that evidence as a hypothesis or with <code>hlevel with [h];</code>. Some goals are false: <code>Nat</code> is not a proposition.</td><td><a href="paths.html#hlevel">hlevel</a></td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section id="inductive-errors">
+            <h2>Inductive types and recursion</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr><td data-message="needs an expected type, to know which">“<var>nil</var> needs an expected type, to know which <var>List(…)</var> it builds: write typed(<var>List(…)</var>, <var>nil</var>).”</td><td>A constructor of a parameterized type takes only its declared arguments, so the type’s arguments come from context. Give a result type, or use <code>typed</code>.</td><td><a href="induction.html#inductive-parameters">parameters</a></td></tr>
+                <tr><td data-message="Nat has no constructor left: its constructors are zero, succ.">“<var>Nat</var> has no constructor <var>left</var>: its constructors are <var>zero, succ</var>.”</td><td>A <code>match</code> clause names a constructor that the matched type does not have, such as a sum’s <code>left</code> on <code>Nat</code>. Use the listed constructors.</td><td><a href="terms.html#match">match</a></td></tr>
+                <tr><td data-message="loop is being defined: it can call itself only on an argument of a constructor">“<var>loop</var> is being defined: it can call itself only on an argument of a constructor”</td><td>A definition calls itself, but its whole body is not a <code>match</code> on one of its parameters. Make it one, and recurse on a child bound by a clause.</td><td><a href="first-proof.html#order">order</a>, <a href="induction.html#recursion">structural recursion</a></td></tr>
+                <tr><td data-message="is not on an argument of the matched constructor: only structural recursion">“The recursive call of <var>f</var> is not on an argument of the matched constructor: only structural recursion, …”</td><td>A recursive call passes something other than a child bound by the clause, such as the original input or a new constructor value. Recurse on a child.</td><td><a href="induction.html#recursion">structural recursion</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -206,7 +216,7 @@
             <p>A search, or a declaration, that uses up its <a href="rewriting.html#simp-traversal">fuel</a> fails with “<var>search</var> ran out of search fuel: <var>n</var> <var>kind</var>.”, naming what ran out: subterm visits, candidate rules tried, rewrites, premise searches, term nodes walked or kernel queries. A search’s message also shows the goal where it stopped. The defaults are well above what the checked proofs need, so such a failure usually means a rule set that keeps rewriting. The kernel’s own step limit per operation and a checker’s time limit fail differently: “Kernel checking/reduction budget exhausted.” and “Declaration time limit exceeded.”</p>
           </section>
           <section id="cubical-errors">
-            <h2>Cubical paths</h2>
+            <h2>Cubical paths and higher inductive types</h2>
             <div class="table-scroll"><table>
               <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
@@ -219,12 +229,11 @@
             </table></div>
             <p>Interval and face formulas beyond 4,096 clauses fail with a lattice budget error. Split such a proof into named steps.</p>
           </section>
-          <section id="conversion-errors">
-            <h2>Conversion, assumptions and computability</h2>
+          <section id="assumption-errors">
+            <h2>Assumptions and computability</h2>
             <div class="table-scroll"><table>
               <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
-                <tr><td data-message="No checked definition to unfold:">“No checked definition to unfold: <var>name</var>”</td><td>Hints name top-level checked definitions only.</td><td><a href="conversion.html#unfolding-hints">unfolding hints</a></td></tr>
                 <tr><td data-message="Logical assumptions require a universe and an explicit native context.">“Logical assumptions require a universe and an explicit native context.”</td><td>A library assumption was used without its universe argument. Write <code>Truncate(U0, A)</code>.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
                 <tr><td data-message="holds only for universes below UU0.">“<var>name</var> holds only for universes below UU0.”</td><td>A library assumption was used at <code>UU0</code> or above. It is generic over the universes below <code>UU0</code> only.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
                 <tr><td data-message="Too many arguments to">“Too many arguments to <var>name</var>.”</td><td>A library assumption got more arguments than its type allows.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>

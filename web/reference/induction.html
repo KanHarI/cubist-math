@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Declare inductive types, build values, and define functions and proofs by pattern matching and structural recursion." />
-    <title>Cubist · 6. Natural numbers and inductive types</title>
+    <meta name="description" content="Inductive declarations, constructors, pattern matching, recursive functions and proofs, induction, and binary numbers." />
+    <title>Cubist · 8. Natural numbers and inductive types</title>
     <link rel="stylesheet" href="../language.css" />
     <link rel="stylesheet" href="../repl.css" />
   </head>
@@ -21,9 +21,9 @@
     </header>
     <main>
       <div class="introduction">
-        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 6</p>
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 8</p>
         <h1>Natural numbers and inductive types</h1>
-        <p class="lead">Declare inductive types, build values, and define functions and proofs by pattern matching and structural recursion.</p>
+        <p class="lead">Inductive declarations, constructors, pattern matching, recursive functions and proofs, induction, and binary numbers.</p>
       </div>
       <div class="reference-layout">
         <aside class="contents" aria-label="Chapters and sections">
@@ -31,14 +31,14 @@
           <ol class="chapters">
             <li><a href="types.html">Types and values</a></li>
             <li><a href="first-proof.html">A first proof and files</a></li>
-            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="terms.html">Functions, pairs and sums</a></li>
             <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
             <li><a href="universes.html">Universes</a></li>
-            <li class="current"><a href="induction.html" aria-current="page">Natural numbers and inductive types</a></li>
             <li><a href="paths.html">Equality and paths</a></li>
+            <li class="current"><a href="induction.html" aria-current="page">Natural numbers and inductive types</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
-            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
-            <li><a href="conversion.html">Conversion and unfolding</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
             <li><a href="assumptions.html">Assumptions and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
             <li><a href="errors.html">Error messages</a></li>
@@ -50,13 +50,12 @@
             <li><a href="#match">Functions by pattern matching</a></li>
             <li><a href="#recursion">Structural recursion</a></li>
             <li><a href="#dependent-match">Proofs and dependent results</a></li>
-            <li><a href="#higher-constructors">Paths and truncation</a></li>
             <li><a href="#induction">Natural-number induction</a></li>
             <li><a href="#binary">Binary numbers</a></li>
           </ul>
         </aside>
         <article id="reference">
-          <p class="note status">Natural numbers are an ordinary source inductive, which the standard prelude imports from <code>nat</code>. Declared types are checked by H1, on by default since its release.</p>
+          <p class="note status">Natural numbers are not built into the kernel. <code>Nat</code> is an ordinary inductive declaration, which every file imports from the prelude module <code>nat</code>, and its numerals, <code>match</code> and <code>induction</code> work as they do for any declared type.</p>
           <section id="inductive">
             <h2>Declaring an inductive type</h2>
             <p>An <code>inductive</code> declaration introduces a type and the constructors that build its values. This type has two constructors, each taking no arguments:</p>
@@ -72,8 +71,8 @@ def enabled : Bool := true;</code></pre>
   zero;
   succ(n : Nat);
 }</code></pre>
-            <p><code>zero : Nat</code> builds zero, and <code>succ(n)</code> builds the successor of <code>n : Nat</code>. Decimal numerals abbreviate these constructors: <code>2</code> is <code>succ(succ(zero))</code>. <code>Nat</code>, <code>zero</code> and <code>succ</code> are ordinary imported names. They are available through the standard prelude; an explicit <code>import nat;</code> also works. In the proof workspace, click <code>Nat</code> and choose <em>View source</em> to open its declaration.</p>
-            <p>You can put your own inductive declaration in a module and import it like a <code>def</code>. Declarations become available in source order. If you omit the universe after <code>:</code>, the checker chooses the least universe containing the constructor data and recursive argument domains. An explicit universe must be large enough for them. See <a href="universes.html">universes</a> for the level notation.</p>
+            <p><code>zero : Nat</code> builds zero, and <code>succ(n)</code> builds the successor of <code>n : Nat</code>. Decimal numerals abbreviate these constructors: <code>2</code> is <code>succ(succ(zero))</code>. <code>Nat</code>, <code>zero</code> and <code>succ</code> are ordinary imported names. They are available through the standard prelude; an explicit <code>import nat;</code> also works. In the proof workspace, click <code>Nat</code> and select <em>View source</em> to open its declaration.</p>
+            <p>You can put your own inductive declaration in a module and import it like a <code>def</code>. Declarations become available in source order. If you omit the universe after <code>:</code>, the checker picks the least universe containing the constructor data and recursive argument domains. An explicit universe must be large enough for them. See <a href="universes.html">universes</a> for the level notation.</p>
           </section>
           <section id="inductive-parameters">
             <h2>Parameters and constructors</h2>
@@ -94,6 +93,7 @@ def empty_again := typed(List(U0, Nat), nil);</code></pre>
 
 def ambiguous := nil;  // Error: nil needs an expected type, to know which List(…) it builds: write typed(List(…), nil).</code></pre>
             <p>A recursive occurrence uses the declaration's own parameters, as <code>List(U, A)</code> does in <code>tail</code>. Indices that change these arguments, mutually recursive declarations, and negative occurrences such as <code>List(U, A) -&gt; A</code> as a constructor argument are not supported. A recursive argument may also be a function into the declared type, as in <code>node(children : Nat -&gt; Tree)</code>; a structural call then takes a child <code>children(n)</code>.</p>
+            <p>A constructor can also build a path rather than a point, as the circle’s <code>loop : base = base</code> does, and a declaration can make its type a proposition or a set. Such <a href="cubical.html#higher-constructors">higher inductive types</a> use coordinates on paths, and come after <a href="cubical.html#cubical">cubical paths</a>.</p>
           </section>
           <section id="match">
             <h2>Functions by pattern matching</h2>
@@ -165,7 +165,7 @@ def add_zero(n : Nat) : n + 0 = n {
     succ(k) =&gt; { exact cong(succ, add_zero(k)); }
   }
 }</code></pre>
-            <p>The zero branch proves <code>0 + 0 = 0</code> by computation. The successor branch needs <code>succ(k) + 0 = succ(k)</code>, which computes to <code>succ(k + 0) = succ(k)</code>. The recursive proof <code>add_zero(k)</code> has type <code>k + 0 = k</code>; applying <code>cong(succ, …)</code> gives the required proof. Here <code>k</code> is the predecessor, and <code>add_zero(k)</code> supplies the induction hypothesis.</p>
+            <p>The zero branch proves <code>0 + 0 = 0</code> by computation. The successor branch needs <code>succ(k) + 0 = succ(k)</code>, which computes to <code>succ(k + 0) = succ(k)</code>. The recursive proof <code>add_zero(k)</code> has type <code>k + 0 = k</code>; applying <a href="paths.html#path-operations"><code>cong</code></a> of <code>succ</code> to it gives the required proof. Here <code>k</code> is the predecessor, and <code>add_zero(k)</code> supplies the induction hypothesis.</p>
             <p>A match expression can state its dependent result explicitly. Bind the matched value with <code>as</code> and write the family after <code>return</code>:</p>
             <pre><code data-check="accept">import naturals;
 
@@ -175,81 +175,6 @@ def add_zero(n : Nat) : n + 0 = n :=
     succ(k) =&gt; cong(succ, add_zero(k));
   };</code></pre>
             <p>In <code>match n as value return C(value)</code>, the zero branch produces <code>C(zero)</code> and the successor branch produces <code>C(succ(k))</code>. The family <code>C</code> is called the <em>motive</em>. Write it over the name bound by <code>as</code>, so each branch gets its own instance. This also works for dependent functions on lists and other declared types. A proof-block match reads the motive from the goal and closes that goal in every branch.</p>
-          </section>
-          <section id="higher-constructors">
-            <h2>Paths and truncation</h2>
-            <p>An inductive declaration can also include path constructors. Write their endpoint equality as the constructor's result type:</p>
-            <pre><code data-check="accept">inductive Circle : U0 {
-  base;
-  loop : base = base;
-}
-
-// For each coordinate i, loop @ i is a point of Circle.
-def start : loop @ 0 = base { rfl; }
-def finish : loop @ 1 = base { rfl; }</code></pre>
-            <p><code>base</code> is a point, and <code>loop</code> is a path from <code>base</code> to itself. A path is a function of an interval coordinate: for each <code>i</code>, <code>loop @ i</code> is a point of <code>Circle</code>, and its ends <code>loop @ 0</code> and <code>loop @ 1</code> are <code>base</code>. So <code>Circle</code> has two kinds of points: <code>base</code>, and the points <code>loop @ i</code> along the loop. See <a href="cubical.html#cubical">cubical paths</a> for coordinates and <code>@</code>.</p>
-            <p>A function out of <code>Circle</code> gives a clause for each kind of point. A clause is written as the point it covers: <code>loop @ i =&gt; e</code> gives the result at <code>loop @ i</code>. The matched value is that point, not the path. This function goes around the loop backwards:</p>
-            <pre><code data-check="accept">inductive Circle : U0 {
-  base;
-  loop : base = base;
-}
-
-def reverse(c : Circle) : Circle := match c {
-  base =&gt; base;
-  loop @ i =&gt; loop @ -i;
-};
-
-def reverse_loop : cong(reverse, loop) = sym(loop) { rfl; }</code></pre>
-            <p>At <code>loop @ i</code>, <code>reverse</code> returns <code>loop @ -i</code>, where <code>-i</code> is <span class="math">1 − i</span>. At <code>i = 0</code> and <code>i = 1</code> the point is <code>base</code>, so there the clause must agree with the <code>base</code> clause: <code>loop @ -0</code> is <code>loop @ 1</code>, which is <code>base</code>, and <code>loop @ -1</code> is <code>loop @ 0</code>, also <code>base</code>. Taken over all <code>i</code>, the clause traces a path between the results at <code>base</code>. Applying <code>reverse</code> along the whole loop, <code>cong(reverse, loop)</code>, gives that path, <code>sym(loop)</code>, and <code>rfl</code> checks this by computation.</p>
-            <p>A clause whose ends disagree with the point clause is rejected. Here the loop clause traces a path from <code>1</code> to <code>1</code>, but the <code>base</code> clause requires one from <code>0</code> to <code>0</code>:</p>
-            <pre><code data-check="reject">inductive Circle : U0 {
-  base;
-  loop : base = base;
-}
-
-def broken(c : Circle) : Nat := match c {  // Error: Type mismatch: found 1 = 1, expected 0 = 0.
-  base =&gt; 0;
-  loop @ i =&gt; 1;
-};</code></pre>
-            <p>A constant clause traces the constant path. <code>flatten</code> sends every point of the loop to <code>0</code>, so along the loop it gives <code>refl(0)</code>. A path clause can also be omitted and its path proved instead: <code>obligations by rfl</code> proves the path the missing loop clause must give, <code>0 = 0</code>.</p>
-            <pre><code data-check="accept">inductive Circle : U0 {
-  base;
-  loop : base = base;
-}
-
-def flatten(c : Circle) : Nat := match c {
-  base =&gt; 0;
-  loop @ i =&gt; 0;
-};
-
-def flatten_loop : cong(flatten, loop) = refl(0) { rfl; }
-
-def flatten_again(c : Circle) : Nat := match c {
-  base =&gt; 0;
-} obligations by rfl;</code></pre>
-            <p>A header can also specify a truncation level. It adds a canonical constructor named <code>TypeName.squash</code> enforcing that level:</p>
-            <div class="table-scroll"><table>
-              <thead><tr><th>Header result</th><th>Meaning</th></tr></thead>
-              <tbody>
-                <tr><td><code>: U0</code></td><td>A type in U0, with no truncation imposed</td></tr>
-                <tr><td><code>: prop</code></td><td>A proposition: any two values are equal</td></tr>
-                <tr><td><code>: set</code></td><td>A set: any two equality proofs with the same endpoints are equal</td></tr>
-                <tr><td><code>: trunc(n)</code></td><td>A higher truncation level, for an integer n ≥ −1; prop is −1 and set is 0</td></tr>
-                <tr><td><code>: prop U1</code></td><td>Both a truncation level and a universe</td></tr>
-              </tbody>
-            </table></div>
-            <pre><code data-check="accept">import hlevels;
-
-inductive Mere(A : U0) : prop {
-  point(value : A);
-}
-
-def same(A : U0, x, y : Mere(A)) : x = y := Mere.squash(x, y);
-
-def discard(A : U0, x : Mere(A)) : Unit := match x {
-  point(value) =&gt; tt;
-};</code></pre>
-            <p>A match on a truncated type must also respect its squash constructor. Importing <code>hlevels</code> lets the checker generate that branch when it can establish the required level of the result; <code>Unit</code> is a proposition in <code>discard</code>. Otherwise, write the squash clause, as the point it covers: <code>Mere.squash(x, y) @ i =&gt; …</code>, or give level evidence. Declared path clauses can be written in the match itself, or in a trailing <code>obligations { … }</code> block. Omitting a path clause requires a checked proof of its path, such as <code>obligations by rfl</code> above.</p>
           </section>
           <section id="induction">
             <h2>Natural-number induction</h2>
@@ -363,8 +288,8 @@ def six : value(0b110) = 6 { rfl; }</code></pre>
             compute 10! without a unary expansion of 3628800.</p>
           </section>
           <nav class="pager" aria-label="Chapter navigation">
-            <a class="previous" href="universes.html">← 5. Universes</a>
-            <a class="next" href="paths.html">7. Equality and paths →</a>
+            <a class="previous" href="paths.html">← 7. Equality and paths</a>
+            <a class="next" href="rewriting.html">9. Equational reasoning and simplification →</a>
           </nav>
         </article>
       </div>
