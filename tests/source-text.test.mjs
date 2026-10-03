@@ -114,7 +114,10 @@ test("recursion and case analysis print as induction and match", () => {
   assert.match(sourceText(induction(dependent)), /^induction m as k return k = k \{/);
   const cases = { tag: "SumRec", motive: { tag: "Lam", name: "z", domain: sum(unit, unit), body: U0 },
     left: { tag: "Lam", name: "a", domain: unit, body: nat }, right: { tag: "Lam", name: "b", domain: unit, body: unit }, value: variable("v") };
-  assert.equal(sourceText(cases), "match v as z return U0 { left a => Nat; right b => Unit; }");
+  // As the linter asks, `as z` is written only where the return type uses z.
+  assert.equal(sourceText(cases), "match v return U0 { left a => Nat; right b => Unit; }");
+  const dependentCases = { ...cases, motive: { ...cases.motive, body: equal(variable("z"), variable("z")) } };
+  assert.match(sourceText(dependentCases), /^match v as z return z = z \{ left a => /);
   assert.equal(sourceText(add(induction(recursion), number(1))), "(induction m return Nat { zero => n; succ h => succ(h); }) + 1");
 });
 

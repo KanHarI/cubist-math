@@ -283,7 +283,8 @@ const tactics = {
     if(sum.tag!=="Sum")throw Error("cases requires a sum type.");
     const motive=T.lam(scope.fresh(),type,goal.target);
     const branch=side=>{
-      const name=scope.fresh(),domain=sum[side];
+      // Each branch's binder keeps its source name.
+      const name=scope.fresh(first[side]?.text),domain=sum[side];
       const inner=t.sourceBinding(first[side],T.variable(name),scope.bind(name,domain));
       return T.lam(name,domain,t.block(first[side+"Body"],goal.at(inner)));
     };

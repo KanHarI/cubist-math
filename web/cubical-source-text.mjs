@@ -104,6 +104,35 @@ export function sourceText(term, symbols = {}, limit = 4000) {
     const text = cubicalText(t, symbols, { scope });
     return atom(/^[[λΠΣ]/.test(text) ? `(${text})` : text);
   };
+  // A declared type's eliminator applied to a value, as the match that builds
+  // it, when the printer knows the type's constructors: one clause per
+  // constructor, `c(x, y) => body`, a path constructor's written as the point
+  // it covers, `loop @ i => body`. A clause takes the constructor's data and
+  // positions, then a recursive result for each position, then its
+  // dimensions. A match cannot name a recursive result, so a clause that uses
+  // one has no source form here, and the eliminator falls back.
+  const declaredMatch = (elim, value) => {
+    const constructors = symbols[elim.signature]?.constructors, motive = elim.motive;
+    if (!constructors || constructors.length !== elim.clauses?.length || motive?.tag !== "Lam") return null;
+    const clauses = [];
+    for (const [c, clause] of elim.clauses.entries()) {
+      const { name, data, positions, dimensions } = constructors[c];
+      const args = [], results = [], dims = [];
+      let body = clause;
+      for (let i = 0; i < data + positions; i++) { if (body?.tag !== "Lam") return null; args.push(body.name); body = body.body; }
+      for (let i = 0; i < positions; i++) { if (body?.tag !== "Lam") return null; results.push(body.name); body = body.body; }
+      if (results.some(result => mentions(body, result))) return null;
+      for (let i = 0; i < dimensions; i++) { if (body?.tag !== "PLam") return null; dims.push(body.dim); body = body.body; }
+      clauses.push({ name, args, results, dims, body });
+    }
+    // `as z` is written only where the return type uses z, as the linter asks.
+    const named = mentions(motive.body, motive.name);
+    const shown = clauses.map(({ name, args, results, dims, body }) =>
+      `${name}${args.length ? `(${args.join(", ")})` : ""}${dims.map(dim => ` @ ${dim}`).join("")} => `
+        + `${under([...args, ...results], () => show(body))};`);
+    return `match ${show(value)}${named ? ` as ${motive.name}` : ""} return ${under(motive.name, () => show(motive.body))} { `
+      + `${shown.join(" ")} }`;
+  };
   // The text of a term and the precedence level of its outermost form.
   function print(t) {
     if (--budget < 0) return atom("…");
@@ -161,9 +190,22 @@ export function sourceText(term, symbols = {}, limit = 4000) {
       case "SumRec": {
         const { motive, left, right } = t;
         if ([motive, left, right].some(branch => branch?.tag !== "Lam")) return fallback(t);
-        return [`match ${show(t.value)} as ${motive.name} return ${under(motive.name, () => show(motive.body))} { `
+        // `as z` is written only where the return type uses z, as the linter asks.
+        const named = mentions(motive.body, motive.name);
+        return [`match ${show(t.value)}${named ? ` as ${motive.name}` : ""} return ${under(motive.name, () => show(motive.body))} { `
           + `left ${left.name} => ${under(left.name, () => show(left.body))}; `
           + `right ${right.name} => ${under(right.name, () => show(right.body))}; }`, LEVEL.binder];
+      }
+      // A declared type's eliminator on its own, as evaluation leaves a
+      // function by cases after eta reduction, is the function that applies
+      // it: fun (n : Nat) => induction n …, or fun (x : T) => match x …, which
+      // the application case below prints.
+      case "Elim": {
+        if (t.motive?.tag !== "Lam") return fallback(t);
+        const nat = t.signature === "nat__Nat" && t.clauses?.length === 2 && t.clauses[1]?.tag === "Lam";
+        const x = apart(nat ? "n" : "x", t, t), arg = { tag: "Var", name: x };
+        const text = under(x, () => nat ? show({ tag: "App", fn: t, arg }) : declaredMatch(t, arg));
+        return text ? [`fun (${x} : ${show(t.motive.domain)}) => ${text}`, LEVEL.binder] : fallback(t);
       }
       case "App": case "LApp": {
         const number=numeral(t);
@@ -182,6 +224,7 @@ export function sourceText(term, symbols = {}, limit = 4000) {
           }
           return print({tag:"NatInduction",motive:t.fn.motive,zero:t.fn.clauses[0],step,value:t.arg});
         }
+        if(t.tag==="App"&&t.fn.tag==="Elim"){const text=declaredMatch(t.fn,t.arg);if(text)return [text,LEVEL.binder];}
         // An instantiation is an application to a universe.
         const args = [];
         let head = t;
