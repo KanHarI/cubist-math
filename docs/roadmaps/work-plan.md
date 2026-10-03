@@ -149,17 +149,25 @@ stage-6 work.
 
 **I1.2c, gaps found moving the library's tests to the instruction kernel
 (S).** Recorded on 2026-10-02, when the historical kernel was removed.
-The instruction kernel derives no partial tube or Glue piece whose term
+The instruction kernel derived no partial tube or Glue piece whose term
 is a variable whose type reduces only on that face: on the face, the
-variable's type is not restricted. `glue [k = 0 ↦ g] (unglue g)`, for `g`
-of a Glue type on the face `k = 0`, is refused, where the term checker
-accepted it; `tests/translator/kernel-glue.test.mjs` keeps it as a todo
-test. Library builders for univalence's eta, `idtoequiv` after `ua`, and
-the total-space contraction were refused with mismatches of the same form;
-nothing in production calls them, and their tests were removed. Separately,
-the driver reads a face-sorted formula given as a path's argument as the
+variable's type was not restricted. `glue [k = 0 ↦ g] (unglue g)`, for `g`
+of a Glue type on the face `k = 0`, was refused, where the term checker
+accepted it, and library builders for univalence's eta, `idtoequiv` after
+`ua`, and the total-space contraction were refused with mismatches of the
+same form. **Fixed on 2026-10-03:** face entries, CCHM's `Γ, φ`, and the
+instruction `Restrict` type a judgement on a face, and only a partial
+element on a face that implies it discharges the assumption
+([contexts](kernel-instructions.md#contexts)). The todo test passes, and
+the builders' tests are restored. Archive coverage is unchanged, to the
+instruction and the step. Two gaps remain, and neither accepts a false
+judgement. The normal form of unglue's equivalence over a Glue type on
+`i = 0` is not checked again: there two tubes' agreement is a composition
+that the kernel's normal form splits into tubes otherwise than the other
+side, and the driver compares no systems split differently. And the
+driver reads a face-sorted formula given as a path's argument as the
 interval with the same clauses and derives that well-formed term, where it
-could refuse the input. Neither accepts a false judgement.
+could refuse the input.
 
 ## Stage 0: delivered baseline and remaining documentation
 

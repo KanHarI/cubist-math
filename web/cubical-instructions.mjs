@@ -15,7 +15,7 @@ export const instructions = ["", "universe", null, null, null, null, "unit", "po
   "glueBase", "gluePiece", "glueOverlap", "glue", "glueTermBase", "glueTermPiece", "glueTerm", "unglue",
   "levelPi", "levelLambda", "levelApply", "signatureBegin", "signatureConstructor", "signatureClose",
   "sortBegin", "sortLevel", "sortParameter", "construct",
-  "eliminator", "eliminatorClause", "eliminatorClose"];
+  "eliminator", "eliminatorClause", "eliminatorClose", "restrict"];
 // THTH's names for the rules, for display.
 export const ththNames = { universe: "UIntro", unit: "UnitForm", point: "UnitIntro", unitElim: "UnitElim", void: "VoidForm",
   abort: "VoidElim", sum: "SumForm", inject: "SumIntro", sumElim: "SumElim", variable: "Vble", pi: "PiForm",
@@ -30,11 +30,20 @@ export const ththNames = { universe: "UIntro", unit: "UnitForm", point: "UnitInt
   unglue: "GlueElim", levelPi: "LevelForm", levelLambda: "LevelIntro", levelApply: "LevelElim",
   signatureBegin: "SignatureBegin", signatureConstructor: "SignatureCons", signatureClose: "SignatureClose",
   sortBegin: "SortBegin", sortLevel: "SortLevel", sortParameter: "SortParameter", construct: "ConIntro",
-  eliminator: "ElimBegin", eliminatorClause: "ElimClause", eliminatorClose: "ElimClose" };
+  eliminator: "ElimBegin", eliminatorClause: "ElimClause", eliminatorClose: "ElimClose", restrict: "Restrict" };
 export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf", "face", "glue"];
 // A judgement's sides: its term, an equality's other term, its type.
 export const sides = ["term", "other", "type"];
 const EXTEND = 100, DIMENSION = 101, LEVEL = 102;
+// A face entry's name: its clause's equations, as d0 = 0 ∧ d2 = 1.
+const faceName = ([positive, negative]) => {
+  const equations = [];
+  for (let dim = 0n; (positive | negative) >> dim; dim++) {
+    if (negative >> dim & 1n) equations.push(`d${dim} = 0`);
+    if (positive >> dim & 1n) equations.push(`d${dim} = 1`);
+  }
+  return equations.join(" ∧ ");
+};
 
 const side = value => {
   const index = typeof value === "number" ? value : sides.indexOf(value);
@@ -152,6 +161,10 @@ export class InstructionGraph {
   pathLambda(dimension, body) { return this.issue("pathLambda", dimension, body); }
   pathApply(path, dimension, endpoint = 0) { return this.issue("pathApply", path, dimension, endpoint); }
   endpoint(judgement, dimension, endpoint) { return this.issue("endpoint", judgement, dimension, endpoint); }
+  // A typing judgement on a face of one clause, in the context with the
+  // face's entry: for a partial element whose context Endpoint cannot
+  // restrict.
+  restrict(judgement, face) { return this.issue("restrict", judgement, face); }
   pathAt(path, formula) { return this.issue("pathAt", path, formula); }
   system(dimension, family, base) { return this.issue("system", dimension, family, base); }
   systemTube(system, face, tube, adjacency) { return this.issue("systemTube", system, face, tube, adjacency); }
@@ -226,11 +239,19 @@ export class InstructionGraph {
     }
     return judgement;
   }
+  // A context entry: a term or level variable, a dimension, or a face entry,
+  // the assumption that a clause holds ([positive, negative] masks, as
+  // inspectFormula gives them), which Restrict adds.
   entry(id) {
     const field = index => this.module._cb_entry(this.kernel.handle, id, index) >>> 0;
+    const mask = low => BigInt(field(low)) | BigInt(field(low + 1)) << 32n;
+    if (field(4)) {
+      const clause = [mask(5), mask(7)];
+      return { id, dimension: false, face: true, symbol: 0, clause, name: faceName(clause), type: 0, source: 0 };
+    }
     const dimension = !!field(2), symbol = field(0);
     if (!dimension && !symbol) throw new Error(`Unknown context entry ${id}.`);
-    return { id, dimension, symbol, name: dimension ? `d${symbol}` : this.kernel.symbolName(symbol),
+    return { id, dimension, face: false, symbol, name: dimension ? `d${symbol}` : this.kernel.symbolName(symbol),
       type: field(1), source: field(3) };
   }
 }

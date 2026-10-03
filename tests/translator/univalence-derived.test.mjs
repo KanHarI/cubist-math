@@ -15,10 +15,44 @@ function checked(term,type,context=[]) {
   return native;
 }
 
+test('unglue is a derived equivalence with checked contractible fibers',()=>{
+  const A=v('A'),X=v('X'),e=v('e');
+  const context=[['A',T.universe(0)],['X',T.universe(0)],['e',equiv(X,A)]];
+  const G=T.glueType(A,[{face:F.endpoint('i',0),type:X,equiv:e}]);
+  const family=equiv(G,A),term=T.line('i',family,unglueEquivalence(G));
+  // Its normal form is not checked again: there two tubes' agreement is a
+  // composition the kernel's normal form splits into tubes otherwise than
+  // the other side, which the driver cannot compare (work plan I1.2c).
+  checked(term,null,context);
+  const empty=T.glueType(A,[]);
+  checked(unglueEquivalence(empty),equiv(empty,A),context);
+});
+
 test('contractibility witnesses are connected by a derived cubical square',()=>{
   const A=v('A'),c=v('c'),d=v('d');
   const context=[['A',T.universe(1)],['c',contractible(A)],['d',contractible(A)]];
   checked(contractibilityPath(A,c,d),T.path('i',contractible(A),c,d),context);
+});
+
+function replaceIdentity(term) {
+  if(Array.isArray(term))return term.map(replaceIdentity);
+  if(!term||typeof term!=='object')return term;
+  if(term.tag==='Var'&&term.name==='identity')return {tag:'Ref',name:'identity'};
+  return Object.fromEntries(Object.entries(term).map(([key,value])=>[key,replaceIdentity(value)]));
+}
+
+// The total space of equivalences into A is contractible: closed, from the
+// checked identity equivalence alone, without normalizing the proof.
+for(const level of [0,2])test(`univalence total-space contraction at U${level} checks closed using only prior checked definitions`,()=>{
+  const A=v('A');
+  const identity=T.lam('A',T.universe(level),identityEquivalence(A));
+  const contraction=univalenceContraction(A,level,T.app(v('identity'),A));
+  const statement=contractible(totalEquivalences(A,level));
+  const term=replaceIdentity(T.lam('A',T.universe(level),contraction));
+  const type=T.pi('A',T.universe(level),statement);
+  const result=checkKernel(term,type,[],{normalize:false,definitions:[{name:'identity',value:identity}]});
+  assert(result.ok,result.error);
+  assert(result.arenaNodes<100000);
 });
 
 test('actual univalence transport computes a nonidentity product-swap equivalence',()=>{

@@ -316,6 +316,8 @@ uint32_t cb_instr(uint32_t token, unsigned op, uint32_t a, uint32_t b, uint32_t 
     case CC_INSTR_ELIMINATOR: return cc_instr_eliminator(k, a);
     case CC_INSTR_ELIMINATOR_CLAUSE: return cc_instr_eliminator_clause(k, a, b);
     case CC_INSTR_ELIMINATOR_CLOSE: return cc_instr_eliminator_close(k, a);
+    /* Restrict(typing, face formula). */
+    case CC_INSTR_RESTRICT: return cc_instr_restrict(k, a, b);
     }
     s->error = "Unknown instruction.";
     return 0;
@@ -423,7 +425,11 @@ uint32_t cb_entry(uint32_t token, uint32_t id, unsigned field) {
     cc_term type;
     bool dimension;
     cc_judgement_id source;
-    if (!s || field > 3 || !cc_kernel_entry(s->kernel, id, &symbol, &type, &dimension, &source)) return 0;
-    const uint32_t fields[] = {symbol, type, dimension, source};
+    if (!s || field > 8 || !cc_kernel_entry(s->kernel, id, &symbol, &type, &dimension, &source)) return 0;
+    /* A face entry's clause, after the flag: each mask in two 32-bit halves. */
+    cc_clause clause = {0};
+    bool face = cc_kernel_entry_face(s->kernel, id, &clause);
+    const uint32_t fields[] = {symbol, type, dimension, source, face,
+        (uint32_t)clause.positive, (uint32_t)(clause.positive >> 32), (uint32_t)clause.negative, (uint32_t)(clause.negative >> 32)};
     return fields[field];
 }

@@ -78,6 +78,7 @@ cc_judgement_id cc_instr_glue_piece(cc_kernel *k, cc_judgement_id system_id, cc_
         return ck_fail(k, "A Glue piece's face is one conjunction of endpoint equations, or 0."), 0;
     cc_node glue = k->nodes[s.term];
     uint64_t pending = 0;
+    uint32_t type_context = t.context, equivalence_context = e.context;
     if (phi->length) {
         cc_clause clause = phi->clauses[0];
         uint64_t names = clause.positive | clause.negative;
@@ -87,10 +88,11 @@ cc_judgement_id cc_instr_glue_piece(cc_kernel *k, cc_judgement_id system_id, cc_
             return ck_fail(k, "A Glue piece must already be restricted to its face."), 0;
         if (!ck_instr_same(k, e.type, ck_equiv_type(k, t.term, ck_restrict(k, glue.child[0], clause)),
                   "The equivalence is not from the piece's type to the base on the face.") ||
-            !overlapping(k, glue.child[1], 2, clause, &pending) || !ck_instr_formula_context(k, phi, &dims))
+            !overlapping(k, glue.child[1], 2, clause, &pending) || !ck_instr_formula_context(k, phi, &dims) ||
+            !ck_instr_on_face(k, t.context, clause, &type_context) || !ck_instr_on_face(k, e.context, clause, &equivalence_context))
             return 0;
     }
-    if (!ck_instr_merge(k, s.context, t.context, &context) || !ck_instr_merge3(k, context, e.context, dims, &context))
+    if (!ck_instr_merge(k, s.context, type_context, &context) || !ck_instr_merge3(k, context, equivalence_context, dims, &context))
         return 0;
     cc_term pieces = append_piece(k, glue.child[1], face, t.term, e.term);
     cc_term extended = pieces ? ck_instr_make(k, CC_GLUE, 0, glue.child[0], pieces, 0, 0) : 0;
@@ -121,7 +123,7 @@ cc_judgement_id cc_instr_glue_overlap(cc_kernel *k, cc_judgement_id system_id, u
                                   .operand = {position}}, NULL, 0, &found))
         return found;
     cc_fact s = {0}, t = {0}, e = {0};
-    uint32_t context = 0;
+    uint32_t context = 0, types = 0, equivalences = 0;
     if (!ck_instr_premise(k, system_id, CC_FACT_SYSTEM, &s) || !ck_instr_premise(k, types_id, CC_FACT_EQUALITY, &t) ||
         !ck_instr_premise(k, equivalences_id, CC_FACT_EQUALITY, &e))
         return 0;
@@ -138,7 +140,8 @@ cc_judgement_id cc_instr_glue_overlap(cc_kernel *k, cc_judgement_id system_id, u
         !ck_instr_same(k, t.other, ck_restrict(k, theirs.child[0], overlap), "The types' equality does not end at the other piece.") ||
         !ck_instr_same(k, e.term, ck_restrict(k, mine.child[1], overlap), "The equivalences' equality does not start at the last piece.") ||
         !ck_instr_same(k, e.other, ck_restrict(k, theirs.child[1], overlap), "The equivalences' equality does not end at the other piece.") ||
-        !ck_instr_merge3(k, s.context, t.context, e.context, &context))
+        !ck_instr_on_face(k, t.context, overlap, &types) || !ck_instr_on_face(k, e.context, overlap, &equivalences) ||
+        !ck_instr_merge3(k, s.context, types, equivalences, &context))
         return 0;
     return ck_instr_system_fact(k, s.term, s.type, context, s.pending & ~(UINT64_C(1) << position));
 }
@@ -180,9 +183,10 @@ cc_judgement_id cc_instr_glue_term_piece(cc_kernel *k, cc_judgement_id system_id
                NULL, 0, &found))
         return found;
     cc_fact s = {0}, v = {0}, e = {0};
-    uint32_t dims = 0, context = 0;
+    uint32_t dims = 0, context = 0, value_context = 0, image_context = 0;
     if (!open_system(k, system_id, CC_GLUE_TERM, &s) || !ck_instr_premise(k, value_id, CC_FACT_TYPING, &v))
         return 0;
+    value_context = v.context;
     cc_node term = k->nodes[s.term], glue = k->nodes[term.child[0]];
     /* The piece of the type this value is for: the next one, in order. */
     cc_term piece = glue.child[1];
@@ -204,14 +208,15 @@ cc_judgement_id cc_instr_glue_term_piece(cc_kernel *k, cc_judgement_id system_id
             !ck_instr_same(k, e.term, image, "The equality does not start at the value's image.") ||
             !ck_instr_same(k, e.other, ck_restrict(k, term.child[1], clause), "The equality does not end at the base on the face.") ||
             !overlapping(k, term.child[2], 1, clause, &pending) || !ck_instr_formula_context(k, phi, &dims) ||
-            !ck_instr_merge(k, s.context, e.context, &context))
+            !ck_instr_on_face(k, v.context, clause, &value_context) || !ck_instr_on_face(k, e.context, clause, &image_context) ||
+            !ck_instr_merge(k, s.context, image_context, &context))
             return 0;
     } else {
         if (image_id)
             return ck_fail(k, "A value on the face 0 takes no equality."), 0;
         context = s.context;
     }
-    if (!ck_instr_merge3(k, context, v.context, dims, &context))
+    if (!ck_instr_merge3(k, context, value_context, dims, &context))
         return 0;
     cc_term tubes = ck_instr_append_tube(k, term.child[2], part.payload, v.term);
     cc_term extended = tubes ? ck_instr_make(k, CC_GLUE_TERM, 0, term.child[0], term.child[1], tubes, 0) : 0;

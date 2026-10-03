@@ -12,7 +12,7 @@ comma := ,
 SRC = $(wildcard src/*.c)
 HEADERS = $(sort $(wildcard include/*.h src/*.h))
 TESTS = test-lattice test-kernel-api test-comparison test-path-head \
-	test-checkpoint test-instructions test-levels test-work test-signatures test-isolation
+	test-checkpoint test-instructions test-levels test-work test-signatures test-isolation test-faces
 PROGRAMS = lattice-cli bench-lattice $(TESTS)
 # The kernel's sources compile once per configuration, into objects every
 # program links, and each object records the headers it includes (-MMD), so
