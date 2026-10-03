@@ -236,7 +236,7 @@
           <a href="#quick-induction">Natural numbers and inductive types</a>
           <a href="#quick-rewriting">Equational reasoning and simplification</a>
           <a href="#quick-cubical">Cubical paths and higher inductive types</a>
-          <a href="#quick-assumptions">Assumptions and computability</a>
+          <a href="#quick-assumptions">Excluded middle, choice and computability</a>
         </nav>
         <h3 id="quick-declarations">Declarations and files</h3>
         <div class="quick-entry" id="quick-def">
@@ -721,23 +721,23 @@ def pole_path(A : U0, a : A) : north(A) = south(A) {
   exact meridian(A, a);
 }</code></pre>
         </div>
-        <h3 id="quick-assumptions">Assumptions and computability</h3>
+        <h3 id="quick-assumptions">Excluded middle, choice and computability</h3>
         <div class="quick-entry" id="quick-axioms">
-          <h4>Truncation, excluded middle and choice</h4>
-          <p>There is no <code>axiom</code> declaration. <code>Truncate</code>, <code>LEM</code> and <code>Choice</code> are the library's explicit assumptions, each generic over the universes below <code>UU0</code>.
-            <a href="reference/assumptions.html#axioms">Assumptions and computability →</a></p>
-          <pre><code data-check="accept">def merely(A : U0, a : A) : Truncate(U0, A) {
-  exact TruncateIntro(U0, A, a);
+          <h4>Excluded middle and choice</h4>
+          <p>There is no <code>axiom</code> declaration. <code>LEM</code> and <code>Choice</code> are the two classical assumptions, and their conclusions are truncations, <code>Truncate</code>, an assumption too. Each is generic over the universes below <code>UU0</code>.
+            <a href="reference/assumptions.html#axioms">Excluded middle, choice and computability →</a></p>
+          <pre><code data-check="accept">def excluded_middle(A : U0, nn : (A -&gt; Void) -&gt; Void) : Truncate(U0, A) {
+  exact LEM(U0, A, nn);
 }
 
-def excluded_middle(A : U0, nn : (A -&gt; Void) -&gt; Void) : Truncate(U0, A) {
-  exact LEM(U0, A, nn);
+def merely(A : U0, a : A) : Truncate(U0, A) {
+  exact TruncateIntro(U0, A, a);
 }</code></pre>
         </div>
         <div class="quick-entry" id="quick-univalence">
           <h4>Function extensionality and univalence</h4>
           <p><code>FunExt</code>, <code>ua</code> and <code>UnivalenceBeta</code> are constructions that compute, not assumptions.
-            <a href="reference/assumptions.html#univalence">Assumptions and computability →</a></p>
+            <a href="reference/assumptions.html#univalence">Excluded middle, choice and computability →</a></p>
           <pre><code data-check="accept">computable def extensional(A : U0, B : A -&gt; U0, f, g : forall a : A. B(a),
     h : forall a : A. f(a) = g(a)) : f = g {
   exact FunExt(U0, A, B, f, g, h);
@@ -746,7 +746,7 @@ def excluded_middle(A : U0, nn : (A -&gt; Void) -&gt; Void) : Truncate(U0, A) {
         <div class="quick-entry" id="quick-computable">
           <h4><code>computable def</code></h4>
           <p>Rejects the declaration if it uses an assumption, directly or through a definition.
-            <a href="reference/assumptions.html#computable">Assumptions and computability →</a></p>
+            <a href="reference/assumptions.html#computable">Excluded middle, choice and computability →</a></p>
           <pre><code data-check="accept">import naturals;
 
 computable def double(n : Nat) := n + n;</code></pre>
@@ -754,7 +754,7 @@ computable def double(n : Nat) := n + n;</code></pre>
         <div class="quick-entry" id="quick-evaluate">
           <h4><code>evaluate</code></h4>
           <p><code>evaluate term expecting value;</code> checks what a closed term computes to. The term may use no assumption.
-            <a href="reference/assumptions.html#evaluate">Assumptions and computability →</a></p>
+            <a href="reference/assumptions.html#evaluate">Excluded middle, choice and computability →</a></p>
           <pre><code data-check="accept">import naturals;
 
 def double(n : Nat) := n + n;

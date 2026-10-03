@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="The explicit library assumptions, univalence and extensionality, and how a result states and checks that it computes." />
-    <title>Cubist · 11. Assumptions and computability</title>
+    <meta name="description" content="The two classical assumptions, excluded middle and choice, the mere existence they conclude, univalence and extensionality, which compute, and how a result states and checks that it computes." />
+    <title>Cubist · 11. Excluded middle, choice and computability</title>
     <link rel="stylesheet" href="../language.css" />
     <link rel="stylesheet" href="../repl.css" />
   </head>
@@ -22,8 +22,8 @@
     <main>
       <div class="introduction">
         <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 11</p>
-        <h1>Assumptions and computability</h1>
-        <p class="lead">The explicit library assumptions, univalence and extensionality, and how a result states and checks that it computes.</p>
+        <h1>Excluded middle, choice and computability</h1>
+        <p class="lead">The two classical assumptions, excluded middle and choice, the mere existence they conclude, univalence and extensionality, which compute, and how a result states and checks that it computes.</p>
       </div>
       <div class="reference-layout">
         <aside class="contents" aria-label="Chapters and sections">
@@ -39,33 +39,71 @@
             <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
             <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
-            <li class="current"><a href="assumptions.html" aria-current="page">Assumptions and computability</a></li>
+            <li class="current"><a href="assumptions.html" aria-current="page">Excluded middle, choice and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
             <li><a href="errors.html">Error messages</a></li>
           </ol>
           <h2>In this chapter</h2>
           <ul class="sections">
-            <li><a href="#axioms">The library assumptions</a></li>
+            <li><a href="#axioms">Excluded middle and choice</a></li>
             <li><a href="#univalence">Extensionality and univalence compute</a></li>
             <li><a href="#computability">Computability</a></li>
           </ul>
         </aside>
         <article id="reference">
           <section id="axioms">
-            <h2>The library assumptions</h2>
-            <p>A few principles are assumed rather than constructed. Each is a name with a type and no computation rule, provided by the checker at a universe given as its first argument. There are six. A source file cannot add more. To reason under a hypothesis, take it as a parameter: the result then holds for every value of the hypothesis, which stays visible in its type.</p>
+            <h2>Excluded middle and choice</h2>
+            <p>Cubist’s own rules are constructive. A proof builds its evidence, so a proof of <code>A or B</code> says which side holds, and a closed term <a href="#computability">computes</a> to a value. Two principles of classical mathematics cannot be built this way: <strong>excluded middle</strong>, that every statement is true or false, and the <strong>axiom of choice</strong>. Cubist provides each as an <strong>assumption</strong>: a name with a type and no computation rule.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Assumption</th><th>Statement, at <code>U0</code></th></tr></thead>
+              <tbody>
+                <tr><td><code>LEM(U0, A, doubleNegation)</code></td><td>Excluded middle: if <code>A</code> cannot be refuted, <code>doubleNegation : (A -> Void) -> Void</code>, then <code>A</code> merely holds, <code>Truncate(U0, A)</code></td></tr>
+                <tr><td><code>Choice(U0, A, B, setA, setFibers, inhabited)</code></td><td>The axiom of choice, for a set <code>A</code> and a family of sets <code>B</code> over it: if every <code>B(a)</code> merely has an element, <code>inhabited : forall a : A. Truncate(U0, B(a))</code>, then there merely is a function giving one for each <code>a</code>, <code>Truncate(U0, forall a : A. B(a))</code></td></tr>
+              </tbody>
+            </table></div>
+            <p>Both conclude that something <em>merely</em> holds. <code>Truncate(U0, A)</code> says that <code>A</code> has an element, without providing one. It is described <a href="#truncation">below</a>, and comes with four assumptions of its own, so there are six in all. A source file cannot add more. The inspector lists every assumption a theorem uses, computed from its checked term, its type and the definitions they mention. The assumptions are independent: using truncation does not by itself request excluded middle or choice. To reason under a hypothesis of your own, take it as a parameter. The result then holds for every value of the hypothesis, which stays visible in its type.</p>
+            <h3 id="lem">Excluded middle</h3>
+            <p>A proof of <code>A or (A -> Void)</code> decides which of the two holds, and for most statements no construction can. Excluded middle is assumed in the form a proof most often needs: if <code>A</code> cannot be refuted, then <code>A</code> holds. A refutation of <code>A</code> is a function <code>A -> Void</code>, so “cannot be refuted” is <code>(A -> Void) -> Void</code>, and any element of <code>A</code> gives one:</p>
+            <pre><code data-check="accept">def unrefuted(A : U0, a : A) : (A -&gt; Void) -&gt; Void {
+  intro refutation;
+  exact refutation(a);
+}
+
+def excluded_middle_here(A : U0, nn : (A -&gt; Void) -&gt; Void) : Truncate(U0, A) {
+  exact LEM(U0, A, nn);
+}</code></pre>
+            <p>The converse is excluded middle. Its conclusion is <code>Truncate(U0, A)</code>, not <code>A</code>: it asserts that <code>A</code> has an element without naming one, since an assumption has no rule that could compute it. The truncation is also what keeps excluded middle consistent with univalence. A function that produced an element of every non-empty type would have to respect every equivalence of types, which is impossible (<em>Homotopy Type Theory</em>, Theorem 3.2.2).</p>
+            <p>For a <strong>proposition</strong>, a type whose elements are all equal, merely holding and holding are the same, so excluded middle gives the statement itself. The first library’s <code>classical</code> module proves both familiar forms, for a proposition <code>P</code>:</p>
+            <pre><code data-check="accept">import classical;
+
+def not_not(P : U0, prop : Proposition(P), nn : (P -&gt; Void) -&gt; Void) : P {
+  exact double_negation(P, prop, nn);
+}
+
+def decide(P : U0, prop : Proposition(P)) : P or (P -&gt; Void) {
+  exact excluded_middle(P, prop);
+}</code></pre>
+            <p><code>Proposition(P)</code> is <code>forall x, y : P. x = y</code>. <code>decide</code> is excluded middle as it is usually stated: every proposition holds or fails. Both use <code>LEM</code>, and the inspector lists it.</p>
+            <h3 id="choice">The axiom of choice</h3>
+            <p>If every <code>B(a)</code> has an element, there is a function picking one for each <code>a</code>. When the elements are actually given, as <code>f : forall a : A. B(a)</code>, the function is <code>f</code> itself, and no assumption is needed. The axiom of choice covers the case where each <code>B(a)</code> only merely has an element: it concludes that such a function merely exists.</p>
+            <pre><code data-check="accept">import sets;
+
+def choose(A : U0, B : A -&gt; U0, setA : IsSet(A), setB : forall a : A. IsSet(B(a)),
+    inhabited : forall a : A. Truncate(U0, B(a))) : Truncate(U0, forall a : A. B(a)) {
+  exact Choice(U0, A, B, setA, setB, inhabited);
+}</code></pre>
+            <p><code>A</code> and every <code>B(a)</code> must be <strong>sets</strong>, types in which any two paths between the same elements are equal (<a href="paths.html#hlevels">propositions and sets</a>); here <code>IsSet</code> comes from the first library’s <code>sets</code> module. Without these conditions the statement can fail: with univalence, there is a family of sets over a type that is not a set for which it is false (<em>Homotopy Type Theory</em>, Lemma 3.8.5). The library’s <a href="../proof.html?proof=surjections">surjections</a> module uses choice to show that every surjection between sets merely has a right inverse.</p>
+            <h3 id="truncation">Mere existence: <code>Truncate</code></h3>
+            <p>The conclusions of both assumptions are truncations. <code>Truncate(U0, A)</code>, which the library often names <code>Mere(A)</code>, is the <strong>propositional truncation</strong> of <code>A</code>: it says that <code>A</code> is inhabited, and any two of its elements are equal. The inspector displays it as <span class="math">‖A‖</span>; that is display notation, not source syntax. It is given by four more assumptions:</p>
             <div class="table-scroll"><table>
               <thead><tr><th>Assumption</th><th>Type, at <code>U0</code></th></tr></thead>
               <tbody>
                 <tr><td><code>Truncate(U0, A)</code></td><td>The propositional truncation of <code>A : U0</code>, a type in <code>U0</code></td></tr>
                 <tr><td><code>TruncateIntro(U0, A, a)</code></td><td>Sends <code>a : A</code> into <code>Truncate(U0, A)</code></td></tr>
-                <tr><td><code>TruncateProp(U0, A, x, y)</code></td><td>Any two elements <code>x y</code> of the truncation are equal</td></tr>
+                <tr><td><code>TruncateProp(U0, A, x, y)</code></td><td>Any two elements <code>x</code> and <code>y</code> of the truncation are equal</td></tr>
                 <tr><td><code>TruncateElim(U0, A, P, proposition, map, t)</code></td><td>Given <code>proposition : forall x, y : P. x = y</code> and <code>map : A -> P</code>, maps <code>t : Truncate(U0, A)</code> to <code>P</code></td></tr>
-                <tr><td><code>LEM(U0, A, doubleNegation)</code></td><td>Excluded middle: from <code>(A -> Void) -> Void</code>, an element of <code>Truncate(U0, A)</code></td></tr>
-                <tr><td><code>Choice(U0, A, B, setA, setFibers, inhabited)</code></td><td>The axiom of choice for a set <code>A</code> and a family of sets <code>B</code>: from <code>inhabited : forall a : A. Truncate(U0, B(a))</code>, an element of <code>Truncate(U0, forall a : A. B(a))</code></td></tr>
               </tbody>
             </table></div>
-            <p><code>Truncate(U0, A)</code>, which the library often names <code>Mere(A)</code>, says that <code>A</code> is inhabited without giving access to a particular element. The inspector displays it as <span class="math">‖A‖</span>; that is display notation, not source syntax.</p>
             <pre><code data-check="accept">def merely(A : U0, a : A) : Truncate(U0, A) {
   exact TruncateIntro(U0, A, a);
 }
@@ -78,17 +116,8 @@ def into_a_proposition(A, P : U0, proposition : forall x : P. forall y : P. x = 
     map : A -&gt; P, t : Truncate(U0, A)) : P {
   exact TruncateElim(U0, A, P, proposition, map, t);
 }</code></pre>
-            <pre><code data-check="accept">import sets;
-
-def excluded_middle(A : U0, nn : (A -&gt; Void) -&gt; Void) : Truncate(U0, A) {
-  exact LEM(U0, A, nn);
-}
-
-def choose(A : U0, B : A -&gt; U0, setA : IsSet(A), setB : forall a : A. IsSet(B(a)),
-    inhabited : forall a : A. Truncate(U0, B(a))) : Truncate(U0, forall a : A. B(a)) {
-  exact Choice(U0, A, B, setA, setB, inhabited);
-}</code></pre>
-            <p>The inspector lists every assumption a theorem uses, computed from its checked term, type and the definitions they mention. The assumptions are independent: using truncation does not by itself request excluded middle or choice.</p>
+            <p><code>TruncateElim</code> is the only way to use a truncation, and only to prove a proposition: a merely existing element can be used in a proof whose result does not depend on which element it is. So the function that choice merely provides can be used to prove that a right inverse merely exists, but never to compute one.</p>
+            <p class="note">This <code>Truncate</code> is itself an assumption, so <a href="#evaluate"><code>evaluate</code></a> refuses its terms. A truncation that computes can be declared instead: an <a href="cubical.html#higher-constructors">inductive type declared with <code>: prop</code></a>. Its point constructor computes, and a function out of it must respect the generated squash constructor, so it gives no unrestricted way to extract a witness. The library’s <code>h1_truncation</code> and <code>h1_classical</code> modules state excluded middle and choice over it.</p>
             <h3 id="assumption-universes">Universes</h3>
             <p>The first argument selects the universe. <code>Truncate(U1, A)</code> truncates a type <code>A : U1</code>, and a <a href="universes.html#universe-variables">universe variable</a> works too. The universe and the later arguments can be supplied separately: <code>Choice(U0)</code> and <code>Truncate(U2)</code> are functions that can be named and passed on.</p>
             <pre><code data-check="accept">def truncate_at_two := Truncate(U2);
@@ -206,7 +235,6 @@ evaluate double(3) expecting 7;  // Error: The term evaluates to 6, not 7.</code
 evaluate TruncateIntro(U0, Nat, 3) expecting TruncateIntro(U0, Nat, 3);</code></pre>
             <p>The expected side is normalized too, so it may be any term of the same type. Writing a literal makes the directive state what the term computes to. Evaluation computes full normal forms: it unfolds every definition and ignores <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints. <code>computable</code>, <code>evaluate</code> and <code>expecting</code> are keywords only in these positions. Elsewhere they are ordinary names.</p>
             <p>The command-line checker prints each success as <code>evaluate at line N: value</code>. After <code>check</code>, its <code>evaluate EXPRESSION</code> command prints the normal form of an expression in the scope of the checked module, under the same rule. <code>inspect NAME</code> lists the declaration’s assumptions, or <code>none</code>. See <a href="checking.html#inspection">checking and inspection</a>.</p>
-            <p class="note">The <code>Truncate</code> of this chapter is an assumption, so <code>evaluate</code> refuses its terms. A truncation that computes can be declared instead: an <a href="cubical.html#higher-constructors">inductive type declared with <code>: prop</code></a>. Its point constructor computes, and a function out of it must respect the generated squash constructor, so it gives no unrestricted way to extract a witness.</p>
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">
