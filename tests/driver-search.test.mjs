@@ -1,5 +1,4 @@
 import "./fresh-build.mjs";
-import createLegacyCubical from "../tools/legacy-kernel.mjs";
 // The instruction driver's search as data (docs/roadmaps/learned-search.md,
 // phases 1 and 2): kernel work read through the bridge, the moves each
 // branch point of `agree` offers, pluggable choosers, and the coverage
@@ -20,11 +19,11 @@ import { InstructionDriver, heuristicChooser } from "../web/cubical-instruction-
 import { countingChooser, recordingChooser, workSince, kernelSteps } from "../tools/search-telemetry.mjs";
 import { driverTrace, traceSource } from "./driver-trace.mjs";
 
-const zero = { tag: "Zero" }, nat = { tag: "Nat" };
-const identity = { tag: "Lam", name: "x", domain: nat, body: { tag: "Var", name: "x" } };
+const point = { tag: "Point" }, unit = { tag: "Unit" }, two = { tag: "Sum", left: unit, right: unit };
+const identity = { tag: "Lam", name: "x", domain: unit, body: { tag: "Var", name: "x" } };
 
 async function session(t) {
-  const kernel = new CubicalKernel(await createLegacyCubical());
+  const kernel = new CubicalKernel(await createCubical());
   t.after(() => kernel.dispose());
   return { kernel, syntax: new CubicalSyntax(kernel), graph: new InstructionGraph(kernel) };
 }
@@ -33,13 +32,13 @@ test("kernel work: instructions, queries, failures and budgets, read as differen
   const { kernel, syntax, graph } = await session(t);
   assert.deepEqual(Object.values(kernel.work()), [0, 0, 0, 0, 0, 0, 0, 0]);
   let before = kernel.work();
-  const n = graph.nat();
+  const n = graph.unit();
   const first = workSince(before, kernel.work());
   assert.equal(first.instructions, 1);
   assert.ok(first.instructionSteps >= 1);
   // Answered from the derivation memo, an instruction costs its entry step.
   before = kernel.work();
-  assert.equal(graph.nat(), n);
+  assert.equal(graph.unit(), n);
   assert.deepEqual(workSince(before, kernel.work()), { ...first, instructionSteps: 1 });
   // A rejected instruction counts, and so does its error.
   before = kernel.work();
@@ -49,7 +48,7 @@ test("kernel work: instructions, queries, failures and budgets, read as differen
   assert.equal(rejected.rejected, 1);
   // The guide's weak heads are queries, with their own budget: a question
   // cut short spends exactly that budget, and is no answer.
-  const redex = syntax.encode({ tag: "App", fn: identity, arg: zero });
+  const redex = syntax.encode({ tag: "App", fn: identity, arg: point });
   before = kernel.work();
   assert.equal(graph.head(redex, 1), 0);
   const short = workSince(before, kernel.work());
@@ -61,18 +60,18 @@ test("kernel work: instructions, queries, failures and budgets, read as differen
   assert.equal(answered.failedQueries, 0);
   // Rollback discards judgements, not the work that made them.
   kernel.module._cb_checkpoint(kernel.handle);
-  graph.zero();
+  graph.point();
   const kept = kernel.work();
   kernel.module._cb_rollback(kernel.handle);
   assert.deepEqual(kernel.work(), kept);
 });
 
-// Two sides to agree: (λx. x) 0 and 0, as the right sides of reflexivity.
+// Two sides to agree: (λx. x) tt and tt, as the right sides of reflexivity.
 async function sides(t, chooser) {
   const { kernel, syntax, graph } = await session(t);
   const driver = new InstructionDriver(kernel, { chooser });
   const focus = term => driver.focus(graph.refl(driver.infer(syntax.encode(term))), "other");
-  return { kernel, driver, a: focus({ tag: "App", fn: identity, arg: zero }), b: focus(zero) };
+  return { kernel, driver, a: focus({ tag: "App", fn: identity, arg: point }), b: focus(point) };
 }
 
 test("agree: a branch point lists the moves the shapes allow, and the heuristic makes today's choice", async t => {
@@ -83,7 +82,7 @@ test("agree: a branch point lists the moves the shapes allow, and the heuristic 
   // One point: a beta step on the left, or its weak head. No congruence:
   // the heads differ; no eta: neither is a lambda.
   assert.equal(points.length, 1);
-  assert.deepEqual(points[0].heads, ["App", "Zero"]);
+  assert.deepEqual(points[0].heads, ["App", "Point"]);
   const [listing] = points[0].listings;
   assert.deepEqual(listing.moves, ["step:left:beta", "whnf:left"]);
   assert.deepEqual(listing.made.map(([name, outcome]) => [name, outcome]), [["step:left:beta", "progress"]]);
@@ -94,12 +93,12 @@ test("agree: comparisons nest by congruence, and the record keeps each point's m
   const { kernel, syntax, graph } = await session(t), points = [];
   const driver = new InstructionDriver(kernel, { chooser: recordingChooser(heuristicChooser, kernel, point => points.push(point)) });
   const focus = term => driver.focus(graph.refl(driver.infer(syntax.encode(term))), "other");
-  // succ((λx. x) 0) against succ(0): descend, and inside, a beta step.
-  const one = { tag: "Succ", value: zero };
-  assert.equal(driver.agree(focus({ tag: "Succ", value: { tag: "App", fn: identity, arg: zero } }), focus(one)), true);
+  // inl((λx. x) tt) against inl(tt): descend, and inside, a beta step.
+  const left = { tag: "Inl", as: two, value: point };
+  assert.equal(driver.agree(focus({ tag: "Inl", as: two, value: { tag: "App", fn: identity, arg: point } }), focus(left)), true);
   assert.deepEqual(points.map(point => [point.depth, point.heads, point.listings.map(listing => listing.made.map(([name, outcome]) => `${name} ${outcome}`))]), [
-    [0, ["Succ", "Succ"], [["descend agreed"]]],
-    [1, ["App", "Zero"], [["step:left:beta progress"]]],
+    [0, ["Inl", "Inl"], [["descend agreed"]]],
+    [1, ["App", "Point"], [["step:left:beta progress"]]],
   ]);
   // The outer move's steps include the nested comparison's.
   assert.ok(points[0].listings[0].made[0][2] >= points[1].listings[0].made[0][2]);

@@ -144,6 +144,20 @@ helpers move with it. Native search,
 certificate compaction and exported content hashes remain conditional
 stage-6 work.
 
+**I1.2c, gaps found moving the library's tests to the instruction kernel
+(S).** Recorded on 2026-10-02, when the historical kernel was removed.
+The instruction kernel derives no partial tube or Glue piece whose term
+is a variable whose type reduces only on that face: on the face, the
+variable's type is not restricted. `glue [k = 0 ↦ g] (unglue g)`, for `g`
+of a Glue type on the face `k = 0`, is refused, where the term checker
+accepted it; `lib/cubical/tests/kernel-glue.test.mjs` keeps it as a todo
+test. Library builders for univalence's eta, `idtoequiv` after `ua`, and
+the total-space contraction were refused with mismatches of the same form;
+nothing in production calls them, and their tests were removed. Separately,
+the driver reads a face-sorted formula given as a path's argument as the
+interval with the same clauses and derives that well-formed term, where it
+could refuse the input. Neither accepts a false judgement.
+
 ## Stage 0: delivered baseline and remaining documentation
 
 | ID | Package | Status / next obligation |

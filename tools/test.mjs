@@ -1,9 +1,7 @@
 import { spawn, execFileSync } from "node:child_process";
 import { access } from "node:fs/promises";
-import { readFileSync } from "node:fs";
 import { selectTests, projectRoot, help } from "./test-selection.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
-import { ensureLegacyKernel } from "./legacy-kernel.mjs";
 
 try {
   const selected = selectTests(process.argv.slice(2));
@@ -16,16 +14,11 @@ try {
     // The JavaScript tests load the WASM kernel and the translator from
     // web/dist: a stale build would test code it does not contain.
     if (selected.tests.some(path => path.startsWith(projectRoot + "tests/"))) assertFreshBuild();
-    // Native protocol tests share executables. Build before Node launches test
-    // files concurrently: a clean checkout must not race missing/half-built files.
-    if (selected.tests.some(path => path.startsWith(projectRoot + "lib/cubical/tests/") ||
-      path === projectRoot + "tests/h1-differential.test.mjs"))
+    // The interval algebra's native test runs a kernel executable. Build it
+    // before Node launches test files concurrently: a clean checkout must not
+    // race missing or half-built files.
+    if (selected.tests.some(path => path.startsWith(projectRoot + "lib/cubical/tests/")))
       execFileSync("make", ["-C", "kernel", "all"], { cwd: projectRoot, stdio: "inherit" });
-    // Only comparison fixtures need the pinned historical primitive kernel.
-    // Checking current proof modules must not build or load that oracle.
-    const referenceWasm = selected.tests.some(path => readFileSync(path,"utf8").includes("legacy-kernel.mjs"));
-    const referenceNative = selected.tests.some(path => path.startsWith(projectRoot + "lib/cubical/tests/"));
-    if (referenceWasm || referenceNative) ensureLegacyKernel({wasm:referenceWasm});
     const environment = { ...process.env, MATHSCRIPT_TEST_PROOFS: JSON.stringify(selected.proofs), MATHSCRIPT_OPTIMIZATIONS: JSON.stringify(selected.optimizations) };
     // A nested invocation must start its own Node test run, not inherit the
     // parent runner's internal child-process protocol.

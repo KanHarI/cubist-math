@@ -15,8 +15,7 @@ source-defined; both primitive C implementations have been retired. This
 changes the deployment default while the mathematical release review below
 remains pending. It does not discharge the release checklist. Statements
 below about retaining primitive W refer to the earlier implementation; the
-[migration record](h1-program-types.md) describes the current universe limits
-and historical oracle.
+[migration record](h1-program-types.md) describes the current universe limits.
 
 2026-10-01 decisions and update, by the maintainer:
 
@@ -95,7 +94,8 @@ revision the same day:
    fixtures were to justify retiring the hand-coded types through τ, but
    Nat and W (2026-09-30) and pushouts (2026-10-01) were retired by
    declaring them in source, and sums stay native. X1–X8 are recorded as
-   historical evidence (7.4), and their tests remain as regressions.
+   historical evidence (7.4). Their tests were removed with the historical
+   kernel they ran against, later the same day.
 
 The evidence for items 1–3, the mathematical ones, and what a review
 decision on each still needs are gathered in the
@@ -1445,7 +1445,8 @@ whose type is not the displayed squash boundary.
 ### 5.8 ABI and resources
 
 - `CC_KERNEL_ABI_VERSION` becomes 3: new kinds, and `CC_HCOMP`/`CC_TRANS` with
-  new families. The WASM bridge and `kernel-cli` refuse a mismatch.
+  new families. The WASM bridge refuses a mismatch, as `kernel-cli`, the
+  native tests' line protocol, did until its removal on 2026-10-02.
 - The exported function list gains the new instructions and
   `cc_kernel_set_extensions`.
 - Limits: constructors per signature, arguments per constructor, arity
@@ -1505,9 +1506,9 @@ its constructor names, the generated squash named `squash`. The driver
 
 ### 6.2 Bridges and serialization
 
-- `web/cubical-syntax.mjs`, `web/cubical-kernel.mjs` and
-  `lib/cubical/native.mjs` encode and decode the new kinds and the ABI
-  version.
+- `web/cubical-syntax.mjs` and `web/cubical-kernel.mjs` encode and decode
+  the new kinds and the ABI version, as `lib/cubical/native.mjs`, removed on
+  2026-10-02 with the historical kernel it drove, did.
 - The JavaScript side keeps a record of each admitted signature (its normal
   form in source terms, and its kernel index), so that inspection, workers
   and replay after rollback need no kernel query.
@@ -1522,8 +1523,8 @@ declaration's transaction removes those a rollback frees. The renderers
 print an instance as its name applied to its recorded levels and
 parameters, `Pointed(U0)` or `List(N)`, a constructor by its name, and an
 eliminator as `N.elim(motive, clauses…)` until `match` gives it a source
-form. `lib/cubical/native.mjs` and the JavaScript reference checker are not
-extended, as the work plan decided.
+form. `lib/cubical/native.mjs` and the JavaScript reference checker were not
+extended, as the work plan decided, and the former is gone since 2026-10-02.
 
 ### 6.3 Transactions and caches
 
@@ -1735,8 +1736,9 @@ release (checklist item 6). Their purpose was to justify retiring the
 hand-coded instructions through τ, under the criterion above. Instead Nat
 and W (2026-09-30) and pushouts (2026-10-01) were retired by declaring them
 in source, and sums stay native at every level. So no shipped term passes
-through τ, and X1–X8 are kept as historical evidence for those retirements,
-with their tests as regressions:
+through τ, and X1–X8 are kept as historical evidence for those retirements.
+Their tests were removed later that day, with the pinned historical kernel
+they compared against, the representation option and τ itself:
 
 - X2's literal criterion is left as written. Its counterexample, the
   η-contracted image of a sum eliminator, concerns only τ's declared
@@ -2258,8 +2260,7 @@ source or verifier case in `tests/h1-acceptance.test.mjs`,
 `tests/h1-admission.test.mjs`, `tests/h1-driver.test.mjs`,
 `tests/inductive-declarations.test.mjs`, `tests/declared-match.test.mjs`,
 `tests/corpus.test.mjs`, `tests/automatic-clauses.test.mjs`,
-`tests/truncation-migration.test.mjs`, `tests/proof-migration.test.mjs`
-or `tests/h1-differential.test.mjs`. *In part* marks a case whose rest is listed as
+`tests/truncation-migration.test.mjs` or `tests/proof-migration.test.mjs`. *In part* marks a case whose rest is listed as
 not traced, and *in substance* a test that differs from its case in a
 detail the entry states. *Not traced* means no test covers it yet, and
 *Missing* that none can exist yet, for the stated reason.
@@ -2277,7 +2278,7 @@ refuse.
 | Trust T1–T7 | Kernel: T1, T5, T6, T7. Driver: T5, T6. Source: T1 (H1 switched off in the kernel session, and the refusal says so), T2 (no marker since the release: direct, through a definition, through an import), T3, T4. Verifier: kernel extensions compared apart from assumptions (6.4) | — | — |
 | Truncation policy G1–G7 | Source: G1 (`Tr(U1, U0)` is not in `U0`), G2 (small truncation into a proposition in U1), G3 (the archive checks in full; 3,788 declarations, 0 gaps), G5 (rebuilt `CauchySame` and `EventualClose` in U0 without assumptions), G6 (proposition resized through LEM, witness with set evidence refused), G7 (large double-negation elimination, LEM retained). Verifier: G4 (exact ledger change accepted, unlisted or altered pin refused) | — | — |
 | Resources R1–R5 | Kernel: R1 (a sort, constructor and eliminator whose indices are out of range, and a list whose next cell is no list, built as raw syntax: inspected, reduced or refused with an error, and refused by the term checker and the instructions), R2, R3; a former of the wrong shape and a truncation level above the maximum are refused. Driver: R1 in part (an operand that is not a 32-bit unsigned integer is refused), R5 (the codec round trip); `tests/h1-admission.test.mjs` checks ABI version 3. Source: R4 (a module of ABI version 2 refused by the loader) | — | — |
-| Differential X1–X8 | Driver: X1 (202 successful instruction judgements, 70 equalities, 42 rejected requests and an unequal conversion query; Nat, sum, W and pushout), X2 in part (small normal-form fixtures, after administrative Beta/Eta), X3 (the native instruction fixtures' Comp, HComp and Trans), X4 in part (winding canonicity and evaluations), X5 in part (cost-report fields on a small fixture), X6 (finite-universe calls for all four types), X7 (tier-1 formers stay native), X8 (mixed calls fail for sum, W and pushout; the verifier names each call) | X2: all archive value normal forms and the literal alpha criterion. X4 and X5: whole-archive replay and cost observations are manual evidence; rerun both coverage commands sequentially at the merged release head on a clean tree before counting these release cases. See the [differential record](h1-differential-evidence.md) | — |
+| Differential X1–X8 | — | — | All: retired as a gate on 2026-10-02 (checklist item 6). The tests that traced X1, X3 and X6–X8, and X2, X4 and X5 in part, ran against the pinned historical kernel and were removed with it the same day; the [differential record](h1-differential-evidence.md) keeps what they showed |
 
 ## 11. Open questions
 
@@ -2426,7 +2427,8 @@ conservative first release.
   levels. K2.4 retires only the `Nat` instructions, and the elaborator
   emits declared forms at finite levels (7.2, 7.4).
 - Its cost: three hand-coded formers stay trusted code, with their
-  differential tests as regressions. A native and a declared sum of the
+  differential tests as regressions (since 2026-10-02 only sums remain
+  hand-coded, and the differential tests are gone). A native and a declared sum of the
   same components are different types, which shows only in a mixed-tier
   call (X8). No archive or library declaration uses a tier-1 universe as a
   type, so none shows today.

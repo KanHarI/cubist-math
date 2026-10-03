@@ -138,7 +138,7 @@ function mapDefinitions(rename, signatureName = name => name) {
 // readOriginal/readEdited return module source text. Returns one report per
 // module; `failures` lists every declaration that does not meet the level.
 export async function verifyMigration({ modules, readOriginal, readEdited, level = "identical",
-  typeTimeLimitMs = 10000, experimental, ledger = null, declarations = null, representation = "native" } = {}) {
+  typeTimeLimitMs = 10000, experimental, ledger = null, declarations = null } = {}) {
   if (!["identical", "types"].includes(level)) throw new Error(`Unknown verification level: ${level}`);
   if (experimental !== undefined)
     throw new Error("H1 is no longer experimental: declared types are on by default, so drop the experimental option.");
@@ -160,7 +160,7 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   const readSource = (name, importer) => shadowModule(name) ? editedSource(shadowModule(name)) : readOriginal(name, importer);
   readSource.beginCheck = () => readOriginal.beginCheck?.();
   readSource.checkImports = (importer, imports) => readOriginal.checkImports?.(importer, imports.filter(name => !shadowModule(name)));
-  const program = new CubicalProgram(await createCubical(), readSource, { collectReferences: false, representation });
+  const program = new CubicalProgram(await createCubical(), readSource, { collectReferences: false });
   const checker = program.checker, views = checker.definitionViews;
   // Check dependencies before the modules that import them.
   const order = [], visited = new Map();
@@ -296,7 +296,7 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
       const included = symbol => !selected || selected.includes(symbol.name);
       const editedOutputs = edited.outputs.filter(output => output.binding.startsWith(`${shadow}__`) && included(output));
       const originalOutputs = Object.values(program.symbols).filter(symbol => symbol.sourceModule === module && included(symbol));
-      const report = { module, representation, selectedDeclarations: selected ?? null, identical: 0, typesPreserved: 0, ledgerAccepted: 0, changes: [], failures: [] };
+      const report = { module, selectedDeclarations: selected ?? null, identical: 0, typesPreserved: 0, ledgerAccepted: 0, changes: [], failures: [] };
       reports.push(report);
       const fail = (name, reason) => report.failures.push({ name, reason });
       for(const name of selected ?? []) if(!originalOutputs.some(symbol=>symbol.name===name) || !editedOutputs.some(symbol=>symbol.name===name))

@@ -1,5 +1,4 @@
 import "./fresh-build.mjs";
-import createLegacyCubical from "../tools/legacy-kernel.mjs";
 import {naturalSort,numeral} from "../lib/cubical/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -370,7 +369,7 @@ test("Glue: univalence derives, and so does a Glue term over its Glue type", asy
 });
 
 test("G0: the driver derives universe-generic terms, and compares levels by normal form", async t => {
-  const kernel = new CubicalKernel(await createLegacyCubical());
+  const kernel = new CubicalKernel(await createCubical());
   t.after(() => kernel.dispose());
   const syntax = new CubicalSyntax(kernel);
   const v = name => ({ tag: "Var", name }), U = level => ({ tag: "U", level });
@@ -386,8 +385,8 @@ test("G0: the driver derives universe-generic terms, and compares levels by norm
   const checked = derive(id, idType);
   assert.equal(checked.context.length, 0);
   assert.deepEqual(syntax.decode(checked.term), id);
-  // The same definition at level 1: id {1} U0 Nat : U0.
-  const atOne = { tag: "App", fn: { tag: "App", fn: { tag: "LApp", fn: id, level: 1 }, arg: U(0) }, arg: { tag: "Nat" } };
+  // The same definition at level 1: id {1} U0 Unit : U0.
+  const atOne = { tag: "App", fn: { tag: "App", fn: { tag: "LApp", fn: id, level: 1 }, arg: U(0) }, arg: { tag: "Unit" } };
   assert.deepEqual(syntax.decode(derive(atOne, U(0)).type), U(0));
   // The expected type (λ (x < ω). U(x)) {1} is U(1) by a level Beta step.
   const family = { tag: "LApp", fn: { tag: "LLam", name: "x", body: U(v("x")) }, level: 1 };
@@ -398,18 +397,18 @@ test("G0: the driver derives universe-generic terms, and compares levels by norm
   const renamed = { tag: "LPi", name: "w", body: { tag: "LPi", name: "x", body: U(succ(max(v("w"), v("x")))) } };
   assert.equal(derive(nested, renamed).context.length, 0);
   // Cumulativity under a level binder (C11), and a universe not in itself (C3).
-  derive({ tag: "LLam", name: "x", body: { tag: "Nat" } }, { tag: "LPi", name: "x", body: U(1) });
+  derive({ tag: "LLam", name: "x", body: { tag: "Unit" } }, { tag: "LPi", name: "x", body: U(1) });
   assert.throws(() => derive({ tag: "LLam", name: "x", body: U(v("x")) }, { tag: "LPi", name: "x", body: U(v("x")) }),
     /Type mismatch|not included/);
   // Displays: kernel notation, and the source syntax L1.1 will parse.
   assert.equal(cubicalText(idType), "Π (y < ω), Π (B : y), (B → B)");
-  assert.equal(cubicalText(atOne), "(λ (x < ω). λ (A : x). λ (a : A). a)(U1, U0, Nat)");
+  assert.equal(cubicalText(atOne), "(λ (x < ω). λ (A : x). λ (a : A). a)(U1, U0, Unit)");
   assert.equal(sourceText(idType), "forall y < UU0. forall B : y. B -> B");
   assert.equal(sourceText(renamed), "forall w < UU0. forall x < UU0. next(max(w, x))");
 });
 
 test("G0: the driver's level normal forms agree with the kernel's on random levels", async t => {
-  const kernel = new CubicalKernel(await createLegacyCubical());
+  const kernel = new CubicalKernel(await createCubical());
   t.after(() => kernel.dispose());
   const syntax = new CubicalSyntax(kernel), g = new InstructionGraph(kernel);
   const names = ["x", "y", "z"];
@@ -438,23 +437,24 @@ test("G0: the driver's level normal forms agree with the kernel's on random leve
 });
 
 test("the driver's guide compares weak heads: equal, different, or unknown", async t => {
-  const kernel = new CubicalKernel(await createLegacyCubical());
+  const kernel = new CubicalKernel(await createCubical());
   t.after(() => kernel.dispose());
   const syntax = new CubicalSyntax(kernel), driver = new InstructionDriver(kernel), e = term => syntax.encode(term);
   const guide = (x, y) => driver.guide(x, y, null, null, { left: 400 });
-  const zero = { tag: "Zero" }, one = { tag: "Succ", value: zero }, two = { tag: "Succ", value: one }, nat = { tag: "Nat" };
-  const successor = { tag: "Lam", name: "n", domain: nat, body: { tag: "Succ", value: { tag: "Var", name: "n" } } };
+  const unit = { tag: "Unit" }, point = { tag: "Point" }, bool = { tag: "Sum", left: unit, right: unit };
+  const zero = { tag: "Inl", as: bool, value: point }, one = { tag: "Inr", as: bool, value: point };
+  const wrap = { tag: "Lam", name: "n", domain: unit, body: { tag: "Inr", as: bool, value: { tag: "Var", name: "n" } } };
   // Equal after computing heads; different constructors or neutral terms.
-  assert.equal(guide(e({ tag: "App", fn: successor, arg: one }), e(two)), true);
-  assert.equal(guide(e(one), e(two)), false);
-  assert.equal(guide(e(nat), e({ tag: "U", level: 0 })), false);
+  assert.equal(guide(e({ tag: "App", fn: wrap, arg: point }), e(one)), true);
+  assert.equal(guide(e(zero), e(one)), false);
+  assert.equal(guide(e(bool), e({ tag: "U", level: 0 })), false);
   assert.equal(guide(e({ tag: "Var", name: "x" }), e({ tag: "Var", name: "y" })), false);
   assert.equal(guide(e({ tag: "Var", name: "x" }), e(zero)), false);
   // A lambda against a neutral function may be equal by eta: unknown.
-  assert.equal(guide(e({ tag: "Lam", name: "m", domain: nat, body: { tag: "Var", name: "m" } }), e({ tag: "Var", name: "f" })), null);
+  assert.equal(guide(e({ tag: "Lam", name: "m", domain: bool, body: { tag: "Var", name: "m" } }), e({ tag: "Var", name: "f" })), null);
   // A path at an endpoint of its annotated type is that endpoint: nothing is
   // computed, and the path may be a variable.
-  const annotation = e({ tag: "Path", dim: "i", family: nat, left: zero, right: one });
+  const annotation = e({ tag: "Path", dim: "i", family: bool, left: zero, right: one });
   const at = end => kernel.term("PApp", syntax.formula(end ? [[]] : [], "interval"), e({ tag: "Var", name: "p" }), annotation);
   assert.equal(guide(at(0), e(zero)), true);
   assert.equal(guide(at(1), e(one)), true);
@@ -462,15 +462,15 @@ test("the driver's guide compares weak heads: equal, different, or unknown", asy
 });
 
 test("a derivation in one context is not reused in another that types a variable differently", async t => {
-  const kernel = new CubicalKernel(await createLegacyCubical());
+  const kernel = new CubicalKernel(await createCubical());
   t.after(() => kernel.dispose());
   const syntax = new CubicalSyntax(kernel), driver = new InstructionDriver(kernel), graph = driver.graph;
-  const x = { tag: "Var", name: "x" }, nat = { tag: "Nat" }, unit = { tag: "Unit" };
+  const x = { tag: "Var", name: "x" }, unit = { tag: "Unit" }, bool = { tag: "Sum", left: unit, right: unit };
   const typeIn = type => syntax.decode(graph.judgement(driver.infer(syntax.encode(x), [[kernel.symbol("x"), syntax.encode(type)]])).type);
-  assert.deepEqual(typeIn(nat), nat);
+  assert.deepEqual(typeIn(bool), bool);
   // Each context's scope is its own memo key, including its assumptions.
   assert.deepEqual(typeIn(unit), unit);
-  assert.throws(() => driver.check(syntax.encode(x), syntax.encode(nat), [[kernel.symbol("x"), syntax.encode(unit)]]),
+  assert.throws(() => driver.check(syntax.encode(x), syntax.encode(bool), [[kernel.symbol("x"), syntax.encode(unit)]]),
     /Type mismatch/);
 });
 
