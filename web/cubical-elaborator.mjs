@@ -390,7 +390,18 @@ export class NativeCubicalElaborator {
   get displayNames() {
     return this.displaySymbols ??= new Proxy({}, { get: (_, name) => typeof name !== "string" ? undefined
       : this.assumptionLabels.has(name) ? { name: this.assumptionLabels.get(name), kind: "axiom" }
+      : this.kernel.signatures?.has(name) ? this.signatureDisplay(name)
       : localName(name) !== name ? { name: localName(name) } : undefined });
+  }
+  // A declared type's name and its constructors, each with its numbers of
+  // data, positions and dimensions, so that the printer can show the type's
+  // eliminator as the match that builds it. A generated constructor, such as
+  // a truncation's squash, is named through its type, as a clause writes it.
+  signatureDisplay(name) {
+    const record = this.kernel.signatures.get(name), shapes = this.kernel.signature(record.index).constructors;
+    return { name: localName(name), constructors: record.constructors.map((constructor, c) => ({
+      name: shapes[c].generated ? `${localName(name)}.${constructor}` : constructor,
+      data: shapes[c].data, positions: shapes[c].positions, dimensions: shapes[c].dimensions })) };
   }
   displayText(term, width = 160, limit = 4000) {
     return this.printed(readableDimensions([displayTerm(term)])[0], width, limit);

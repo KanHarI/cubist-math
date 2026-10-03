@@ -834,11 +834,12 @@ export class Translator {
         if(sum.tag!=="Sum")throw Error(this.checker.kernel?.extensions?.h1
           ?"match requires a value of a declared type, or of a sum.":"match requires a sum type.");
         if(!n.leftBody||!n.type)throw Error("A match on a sum has a return type and the clauses left x => …; right y => ….");
-        const name=scope.fresh(),inner=scope.bind(name,type);
+        // Binders keep their source names, as induction's do.
+        const name=scope.fresh(n.motiveName?.text),inner=scope.bind(name,type);
         const motive=T.lam(name,type,this.term(n.type,
           n.motiveName?inner.alias(n.motiveName.text,T.variable(name)):inner,null));
         const branch=side=>{
-          const local=scope.fresh(),domain=sum[side],variable=T.variable(local);
+          const local=scope.fresh(n[side].text),domain=sum[side],variable=T.variable(local);
           const injection=(side==="left"?T.inl:T.inr)(type,variable);
           return T.lam(local,domain,this.term(n[side+"Body"],
             scope.bind(local,domain).alias(n[side].text,variable),T.app(motive,injection)));
