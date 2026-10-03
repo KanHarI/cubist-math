@@ -130,7 +130,7 @@ def compose_endo(A : U0, f, g : Endo(A)) : Endo(A) {
   exact a;
 }</code></pre>
             <p>A function goal can also be closed without <code>intro</code>, by giving the function: <code>exact fun (a : A) => a;</code>.</p>
-            <p>The name after <code>intro</code> is chosen by the author. Its spelling does not determine its type; the goal does. Here <code>setA</code> gets the type <code>IsSet(A)</code> because that is the next input of the goal:</p>
+            <p>The name after <code>intro</code> is picked by the author. Its spelling does not determine its type; the goal does. Here <code>setA</code> gets the type <code>IsSet(A)</code> because that is the next input of the goal:</p>
             <pre><code data-check="accept">import sets;
 
 def SetAssumption := forall A : U0. IsSet(A) -&gt; IsSet(A);

@@ -1,7 +1,7 @@
 import "./fresh-build.mjs";
 // The instruction driver's search as data (docs/roadmaps/learned-search.md,
 // phases 1 and 2): kernel work read through the bridge, the moves each
-// branch point of `agree` offers, pluggable choosers, and the coverage
+// branch point of `agree` offers, pluggable policies, and the coverage
 // tool's report and exit status.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -15,8 +15,8 @@ import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { CubicalSyntax } from "../web/cubical-syntax.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { InstructionGraph } from "../web/cubical-instructions.mjs";
-import { InstructionDriver, heuristicChooser } from "../web/cubical-instruction-driver.mjs";
-import { countingChooser, recordingChooser, workSince, kernelSteps } from "../tools/search-telemetry.mjs";
+import { InstructionDriver, heuristicPolicy } from "../web/cubical-instruction-driver.mjs";
+import { countingPolicy, recordingPolicy, workSince, kernelSteps } from "../tools/search-telemetry.mjs";
 import { driverTrace, traceSource } from "./driver-trace.mjs";
 
 const point = { tag: "Point" }, unit = { tag: "Unit" }, two = { tag: "Sum", left: unit, right: unit };
@@ -67,17 +67,17 @@ test("kernel work: instructions, queries, failures and budgets, read as differen
 });
 
 // Two sides to agree: (λx. x) tt and tt, as the right sides of reflexivity.
-async function sides(t, chooser) {
+async function sides(t, policy) {
   const { kernel, syntax, graph } = await session(t);
-  const driver = new InstructionDriver(kernel, { chooser });
+  const driver = new InstructionDriver(kernel, { policy });
   const focus = term => driver.focus(graph.refl(driver.infer(syntax.encode(term))), "other");
   return { kernel, driver, a: focus({ tag: "App", fn: identity, arg: point }), b: focus(point) };
 }
 
-test("agree: a branch point lists the moves the shapes allow, and the heuristic makes today's choice", async t => {
+test("agree: a branch point lists the moves the shapes allow, and the heuristic makes today's move", async t => {
   const points = [];
   const { kernel, driver, a, b } = await sides(t, null);
-  driver.chooser = recordingChooser(heuristicChooser, kernel, point => points.push(point));
+  driver.policy = recordingPolicy(heuristicPolicy, kernel, point => points.push(point));
   assert.equal(driver.agree(a, b), true);
   // One point: a beta step on the left, or its weak head. No congruence:
   // the heads differ; no eta: neither is a lambda.
@@ -91,7 +91,7 @@ test("agree: a branch point lists the moves the shapes allow, and the heuristic 
 
 test("agree: comparisons nest by congruence, and the record keeps each point's moves apart", async t => {
   const { kernel, syntax, graph } = await session(t), points = [];
-  const driver = new InstructionDriver(kernel, { chooser: recordingChooser(heuristicChooser, kernel, point => points.push(point)) });
+  const driver = new InstructionDriver(kernel, { policy: recordingPolicy(heuristicPolicy, kernel, point => points.push(point)) });
   const focus = term => driver.focus(graph.refl(driver.infer(syntax.encode(term))), "other");
   // inl((λx. x) tt) against inl(tt): descend, and inside, a beta step.
   const left = { tag: "Inl", as: two, value: point };
@@ -107,7 +107,7 @@ test("agree: comparisons nest by congruence, and the record keeps each point's m
 test("agree: a move that throws is reported to observers with its work, and the error ends the comparison", async t => {
   const points = [];
   const { kernel, driver, a, b } = await sides(t, null);
-  driver.chooser = recordingChooser(heuristicChooser, kernel, point => points.push(point));
+  driver.policy = recordingPolicy(heuristicPolicy, kernel, point => points.push(point));
   // One step of budget: the beta step's instruction takes it on entry and
   // runs out computing.
   kernel.stepBudget = 1n; kernel.module._cb_step_budget(kernel.handle, 1, 0);
@@ -116,30 +116,30 @@ test("agree: a move that throws is reported to observers with its work, and the 
   assert.equal(made[0], "step:left:beta");
   assert.equal(made[1], "error");
   assert.ok(made[2] >= 1, "the failed move's kernel steps are recorded");
-  const counting = countingChooser(heuristicChooser);
+  const counting = countingPolicy(heuristicPolicy);
   const again = await sides(t, counting);
   again.kernel.stepBudget = 1n; again.kernel.module._cb_step_budget(again.kernel.handle, 1, 0);
   assert.throws(() => again.driver.agree(again.a, again.b), error => error.kind === "budget");
   assert.deepEqual(counting.counts.moves, { "step:left:beta": { error: 1 } });
 });
 
-test("the default chooser makes the driver's pinned moves: a recorded trace", async () => {
-  // Independent of the chooser interface: the instructions issued and the
+test("the default policy makes the driver's pinned moves: a recorded trace", async () => {
+  // Independent of the policy interface: the instructions issued and the
   // guide's queries, in order, against tests/fixtures/driver-trace.json.
   // First recorded from the pre-refactor driver at d44239e, which the
-  // chooser refactor reproduced exactly; re-recorded after the context-scope
+  // policy refactor reproduced exactly; re-recorded after the context-scope
   // fix, as the fixture's method says.
   const pinned = JSON.parse(await readFile(new URL("./fixtures/driver-trace.json", import.meta.url), "utf8"));
   const trace = await driverTrace();
   assert.deepEqual(trace.failed, []);
   assert.deepEqual({ issued: trace.issued, heads: trace.heads, checked: trace.checked, sha256: trace.sha256 },
     { issued: pinned.issued, heads: pinned.heads, checked: pinned.checked, sha256: pinned.sha256 });
-  // The fixture exercises the choices that matter.
+  // The fixture exercises the branch points that matter.
   const program = new CubicalProgram(await createCubical(), name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8"),
     { collectReferences: false });
   try {
-    const counting = countingChooser(heuristicChooser);
-    program.kernel.chooser = counting;
+    const counting = countingPolicy(heuristicPolicy);
+    program.kernel.policy = counting;
     await program.check(traceSource, "trace");
     const { moves } = counting.counts;
     assert.ok(moves.normalize?.agreed, "a long closed computation is normalized");
@@ -150,36 +150,36 @@ test("the default chooser makes the driver's pinned moves: a recorded trace", as
   } finally { program.dispose(); }
 });
 
-test("agree: choosers are pluggable and untrusted", async t => {
-  // A chooser that makes no move: the comparison fails.
+test("agree: policies are pluggable and untrusted", async t => {
+  // A policy that makes no move: the comparison fails.
   const none = await sides(t, { name: "none", *rank() {} });
   assert.equal(none.driver.agree(none.a, none.b), false);
   // Another order still agrees: every move is checked by the kernel.
   const lazy = await sides(t, { name: "whnf first", *rank(point) {
     yield* point.moves.filter(move => move.move === "whnf");
-    yield* heuristicChooser.rank(point);
+    yield* heuristicPolicy.rank(point);
   } });
   assert.equal(lazy.driver.agree(lazy.a, lazy.b), true);
   // A move the point did not offer is refused.
   const rogue = await sides(t, { name: "rogue", *rank() { yield { move: "eta" }; } });
-  assert.throws(() => rogue.driver.agree(rogue.a, rogue.b), /chose a move that is not open/);
+  assert.throws(() => rogue.driver.agree(rogue.a, rogue.b), /ranked a move that is not open/);
 });
 
-test("the heuristic chooser, counted, derives the first library exactly as the default driver does", async t => {
+test("the heuristic policy, counted, derives the first library exactly as the default driver does", async t => {
   const source = await readFile(new URL("../library/naturals.cubist", import.meta.url), "utf8");
-  const derive = async chooser => {
+  const derive = async policy => {
     const program = new CubicalProgram(await createCubical(), async () => { throw new Error("no imports"); });
     t.after(() => program.dispose());
     await program.check(source, "naturals");
     const kernel = program.kernel, before = kernel.work(), judgements = [];
     for (const [name, reference] of kernel.definitions) {
       const { value, type } = kernel.definition(reference);
-      const driver = new InstructionDriver(kernel, { chooser });
+      const driver = new InstructionDriver(kernel, { policy });
       judgements.push([name, driver.graph.judgement(driver.check(value, type)).rule]);
     }
     return { work: workSince(before, kernel.work()), judgements };
   };
-  const counting = countingChooser(heuristicChooser);
+  const counting = countingPolicy(heuristicPolicy);
   const plain = await derive(undefined), counted = await derive(counting);
   assert.deepEqual(counted, plain);
   assert.ok(kernelSteps(plain.work) > 0);

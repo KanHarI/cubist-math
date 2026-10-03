@@ -2,19 +2,13 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
-import { CubicalProgram } from "../web/cubical-program.mjs";
-import { sourceReader } from "../tools/module-sources.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
 import { instructions } from "../web/cubical-instructions.mjs";
 import { cubicalKinds } from "../web/cubical-kernel.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 const module=await createCubical();
-async function check(t,source,options={}) {
-  const program=new CubicalProgram(module,sourceReader(),options);
-  t.after(()=>program.dispose());
-  const result=await program.check(source,"main");
-  return {program,result};
-}
+const check = (t, source, options = {}) => checkProgram(t, source, { module, options });
 const ok=result=>assert.equal(result.complete,true,JSON.stringify(result.gaps));
 
 test("Nat, its constructors and W require ordinary source imports",async t=>{

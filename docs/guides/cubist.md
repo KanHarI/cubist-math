@@ -289,7 +289,7 @@ endpoints are equal. Click an introduced name to see its inferred type.
 
 ## Linearizing nested tuples
 
-`npm run linearize:mathscript` scans the AST of every mathematical proof source
+`npm run linearize:cubist` scans the AST of every mathematical proof source
 and converts right-nested pairs and `obtain` patterns to tuple notation.
 It preserves left-nested pairs, function arguments, component order and comments.
 Every proposed rewrite is checked against the fully expanded original AST
@@ -297,8 +297,8 @@ before any files are written, then formatted. Recorded construction sources
 are skipped. Run it again and it makes no further changes.
 
 ```sh
-npm run linearize:mathscript -- --check
-npm run linearize:mathscript -- archive/first-library/circle_group_identity.cubist
+npm run linearize:cubist -- --check
+npm run linearize:cubist -- archive/first-library/circle_group_identity.cubist
 ```
 
 `--check` reports remaining candidates without writing and exits nonzero if
@@ -318,7 +318,7 @@ conversion search, which was retired on 2026-10-02; the checker now unfolds
 whatever a comparison needs, so the list has no further effect. A block adds
 no equality, rewrite theorem or axiom, and an invalid proof stays invalid.
 
-```mathscript
+```cubist
 def identity(n : Nat) = n;
 def identity_zero : identity(0) = 0 {
   exact with unfolding [identity] { refl(0) };

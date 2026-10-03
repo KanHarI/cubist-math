@@ -7,7 +7,7 @@
  * admitted only by Define, from a closed judgement derived one rule at a
  * time, and Lookup reads it back. Queries (normalize, whnf, rename, endpoint
  * terms) compute on syntax and certify nothing; an untrusted driver uses
- * them to choose the instructions it issues.
+ * them to pick the instructions it issues.
  *
  * Raw syntax constructors are deliberately NOT proof certificates. Names are
  * numeric symbols whose readable spelling is maintained by the caller;
@@ -269,7 +269,7 @@ cc_judgement_id cc_instr_system_overlap(cc_kernel *, cc_judgement_id system, uin
 cc_judgement_id cc_instr_comp(cc_kernel *, cc_judgement_id system);
 /* HComp closes a system whose family A does not use its dimension into the
  * homogeneous composition hcomp^i A [φ ↦ u] a0 : A. A's weak head, which
- * involves no choice, must be an instance of a declared higher sort (H1); a
+ * involves no search, must be an instance of a declared higher sort (H1); a
  * declared data sort has no formal composition, and composes by Comp. */
 cc_judgement_id cc_instr_hcomp(cc_kernel *, cc_judgement_id system);
 /* Trans closes into transp^i A φ a0 : A(1) a system whose tubes are the base

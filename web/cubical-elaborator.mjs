@@ -80,7 +80,7 @@ export function displayTerm(term, budget = 256) {
 
 // Dimensions a message has no source name for, bound or free, which decoding
 // calls d0, d1, …: renamed together in several terms, after their display
-// names are chosen, to i, j, k, … (then i1, j1, …), names none of them
+// names are settled, to i, j, k, … (then i1, j1, …), names none of them
 // shows: not a variable's, a dimension's, or a definition's without its
 // module. The terms are shared graphs, so each node is visited and copied
 // once, and sharing is kept.
@@ -400,7 +400,7 @@ export class NativeCubicalElaborator {
   displayTexts(terms, width = 160, limit = 4000) {
     return readableDimensions(displayTerm(terms)).map(term => this.printed(term, width, limit));
   }
-  // A term whose names are already chosen, as source text within a width.
+  // A term whose names are already settled, as source text within a width.
   printed(term, width = 160, limit = 4000) {
     const text = sourceText(term, this.displayNames, limit);
     return text.length > width ? `${text.slice(0, width - 1)}…` : text;

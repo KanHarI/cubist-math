@@ -1,5 +1,8 @@
-// Bundled mathematical source modules; no checked proof snapshots.
-export const sourceModules = [
+// Every module of the archive (archive/first-library), in the order the
+// coverage, audit and benchmark tools check them. web/proof-library.mjs gives
+// each a title and a browsing topic, and web/module-listing.mjs lists them
+// for the browser.
+export const archiveModules = [
   "nat",
   "w",
   "pushout",
@@ -370,10 +373,11 @@ export const sourceModules = [
   "identity_systems",
   "group_univalence",
   "circle_group_identity",
+  "cubical_paths",
+  // Entry points, which no module imports.
+  "basics",
+  "euclid",
 ];
-
-// Native cubical sources use interval binders and computational path syntax.
-export const cubicalSourceModules = ["cubical_paths"];
 
 // Modules of the rebuilt library, served from library/. A name here shadows an
 // archive module of the same name.

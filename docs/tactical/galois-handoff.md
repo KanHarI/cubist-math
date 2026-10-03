@@ -333,7 +333,7 @@ Selected checks for that quotient increment:
 npm test -- quotient_group_universal group_first_isomorphism circle_group_identity
 npm test -- tests/quotient-universal.test.mjs tests/quotient-groups.test.mjs tests/proof-library.test.mjs
 node tests/landing.browser.mjs
-node tools/format-mathscript.mjs --check
+node tools/format-cubist.mjs --check
 ```
 
 The focused regression checks the general theorem, identity/trivial
@@ -354,7 +354,7 @@ constructors against abstract carriers before specializing to large terms
 (`group_iso_object_at` follows this pattern). These are elaborator hints;
 the kernel still verifies all conversions.
 
-Register new modules in `web/mathscript/modules.mjs` and
+Register new modules in `web/cubist/modules.mjs` and
 `web/proof-library.mjs` when introducing imports, so the live website remains
 usable during development. Source comments supply inspector documentation.
 Pushes to main publish the website; deployment checks are separate from

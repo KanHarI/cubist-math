@@ -34,8 +34,8 @@ class Handler(SimpleHTTPRequestHandler):
         super().end_headers()
 
     def do_GET(self):
-        if self.path.split("?")[0] == "/mathscript-version":
-            paths = sorted((ROOT / "mathscript").glob("*.mjs"))
+        if self.path.split("?")[0] == "/cubist-version":
+            paths = sorted((ROOT / "cubist").glob("*.mjs"))
             paths += sorted(ARCHIVE.rglob("*.cubist")) + sorted(LIBRARY.rglob("*.cubist"))
             paths += [Path(__file__)]
             paths += sorted(ROOT.glob("cubical-*.mjs"))

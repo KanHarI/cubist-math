@@ -43,7 +43,7 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
-  const version = await page.request.get(new URL("mathscript-version", base).href);
+  const version = await page.request.get(new URL("cubist-version", base).href);
   assert.equal(version.status(), 200);
   assert.match((await version.json()).version, /^[a-f0-9]{64}$/);
   console.log("PASS static landing, repository link, mobile layout, build version");

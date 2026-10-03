@@ -263,7 +263,7 @@ try {
   reductionBench.on("pageerror", error => errors.push(error.message));
   await reductionBench.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
   await reductionBench.locator("#workbench-view").selectOption("math");
-  const chooseReduction = async (side, kind, path = []) => {
+  const selectReduction = async (side, kind, path = []) => {
     const before = await reductionBench.locator("#syntax").inputValue();
     await reductionBench.locator(`#${kind}-${side}`).click();
     assert.equal(await reductionBench.locator("#syntax").inputValue(), before, "highlighting must not reduce");
@@ -271,22 +271,22 @@ try {
     if (kind === "beta") await site.press("Enter"); else await site.click();
   };
   assert.equal(await reductionBench.locator("#type").textContent(), "Alias");
-  await chooseReduction("type", "delta");
+  await selectReduction("type", "delta");
   assert.equal(await reductionBench.locator("#type").textContent(), "IdentityType(N)");
-  await chooseReduction("type", "delta", ["fn"]);
+  await selectReduction("type", "delta", ["fn"]);
   assert.match(await reductionBench.locator("#type").textContent(), /λ/);
-  await chooseReduction("type", "beta");
+  await selectReduction("type", "beta");
   assert.equal(await reductionBench.locator("#type").textContent(), "N");
-  await chooseReduction("type", "delta");
+  await selectReduction("type", "delta");
   assert.equal(await reductionBench.locator("#type").textContent(), "Nat");
   await reductionBench.locator("#back").click();
   assert.equal(await reductionBench.locator("#type").textContent(), "N");
   await reductionBench.locator("#normalize-type").click();
   assert.equal(await reductionBench.locator("#type").textContent(), "Nat");
-  await chooseReduction("expression", "delta", ["arg", "fn"]);
+  await selectReduction("expression", "delta", ["arg", "fn"]);
   assert.match(await reductionBench.locator("#reduction-status").textContent(), /δ expression: id/);
-  await chooseReduction("expression", "beta");
-  await chooseReduction("expression", "beta");
+  await selectReduction("expression", "beta");
+  await selectReduction("expression", "beta");
   assert.equal(await reductionBench.locator("#expression").textContent(), "0");
   await reductionBench.locator("#beta-expression").click();
   assert.match(await reductionBench.locator("#reduction-status").textContent(), /No β sites/);
@@ -305,12 +305,12 @@ try {
   await reductionBench.keyboard.press("Escape");
   assert.equal(await reductionBench.locator(".reduction-site").count(), 0);
   assert.deepEqual(JSON.parse(await reductionBench.locator("#syntax").inputValue()), repeated);
-  await chooseReduction("expression", "delta", ["arg", "fn"]);
+  await selectReduction("expression", "delta", ["arg", "fn"]);
   assert.equal(await reductionBench.locator("#name").textContent(), "value", "reducing a name must not navigate to it");
   const reducedOccurrence = JSON.parse(await reductionBench.locator("#syntax").inputValue());
   assert.equal(reducedOccurrence.fn.tag, "DefRef");
   assert.equal(reducedOccurrence.arg.fn.tag, "Lam");
-  await chooseReduction("expression", "beta", ["arg"]);
+  await selectReduction("expression", "beta", ["arg"]);
   const identity = { tag: "Lam", name: "x", domain: natural, body: { tag: "Var", name: "x" } };
   const nestedBeta = { tag: "App", fn: identity, arg: { tag: "App", fn: identity, arg: zero } };
   await reductionBench.locator("#syntax").fill(JSON.stringify(nestedBeta));
@@ -318,9 +318,9 @@ try {
   await reductionBench.locator("#beta-expression").click();
   assert.equal(await reductionBench.locator("#expression .reduction-site").count(), 2);
   await reductionBench.locator('#expression [data-reduction-path=\'["arg"]\']').click();
-  const chosenInner = JSON.parse(await reductionBench.locator("#syntax").inputValue());
-  assert.equal(chosenInner.fn.tag, "Lam");
-  assert.deepEqual(chosenInner.arg, zero);
+  const selectedInner = JSON.parse(await reductionBench.locator("#syntax").inputValue());
+  assert.equal(selectedInner.fn.tag, "Lam");
+  assert.deepEqual(selectedInner.arg, zero);
   await reductionBench.locator("#back").click();
   assert.deepEqual(JSON.parse(await reductionBench.locator("#syntax").inputValue()), nestedBeta);
   await reductionBench.locator("#syntax").fill(JSON.stringify(repeated));

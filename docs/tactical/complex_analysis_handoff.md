@@ -26,7 +26,7 @@ been constructed.
 | [Puncture homotopy](puncture_homotopy.md) | Loop generation, winding and the abstract period formula. |
 | [Real-number development](../roadmaps/reals-roadmap.md) | Shared field interfaces and the unfinished concrete constructions. |
 
-The proof sources are in `archive/first-library/`. `web/mathscript/modules.mjs` registers
+The proof sources are in `archive/first-library/`. `web/cubist/modules.mjs` registers
 imports for the browser; `web/proof-library.mjs` registers the proof selector
 and its topics. The main regression coverage is in
 `tests/mathscript.test.mjs`.

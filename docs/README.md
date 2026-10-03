@@ -95,7 +95,7 @@ finishing a language milestone does not automatically resume them.
 - [Tactical notes](tactical/README.md): handoffs, implementation details, and checked proof developments.
 - Guides: [CLI](guides/cli.md), [kernel](guides/kernel.md), and [deployment](guides/deployment.md).
 - [Cubical implementation notes](cubical/): kernel constructions, performance, browser integration, and migration history. Start with the [benchmark](cubical/benchmark.md) and [checking optimizations](cubical/checking-optimizations.md) for performance work.
-- [Language reference](../web/language.html): current user-facing syntax. The [older language design notes](guides/mathscript.md) are historical.
+- [Language reference](../web/language.html): current user-facing syntax. The [older language design notes](guides/cubist.md) are historical.
 
 When handing off work, record what was checked, its assumptions and limitations,
 the commands used to verify it, and the next unfinished obligation. Update both

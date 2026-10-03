@@ -15,7 +15,7 @@ import { createHash } from "node:crypto";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { CubicalDeclarationTransaction } from "../web/cubical-transaction.mjs";
-import { parse } from "../web/mathscript/parser.mjs";
+import { parse } from "../web/cubist/parser.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
 import { displayTerm } from "../web/cubical-elaborator.mjs";
 import { validateLedger, ledgerMatches } from "./migration-ledger.mjs";

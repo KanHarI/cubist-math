@@ -10,7 +10,7 @@ rebuild follows.
   command-line checker, the proof workspace and the language reference.
 - Each module has one theme, and no helper is duplicated across modules.
 - Every module is listed in `libraryModules` in
-  [`web/mathscript/modules.mjs`](../web/mathscript/modules.mjs), and
+  [`web/cubist/modules.mjs`](../web/cubist/modules.mjs), and
   `tests/library.test.mjs` checks that each checks completely and uses exactly
   the assumptions listed for it there.
 - Until the foundations are rebuilt, a module may import archive modules, such

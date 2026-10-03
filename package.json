@@ -5,14 +5,12 @@
   "scripts": {
     "build:site": "make wasm && node tools/build-site.mjs",
     "test:site": "node tests/site.browser.mjs",
-    "format:mathscript": "node tools/format-mathscript.mjs",
     "test": "node tools/test.mjs",
     "test:browser": "node tests/cubical-inspector.browser.mjs",
-    "linearize:mathscript": "node tools/linearize-mathscript.mjs",
     "benchmark:cubical": "make wasm && node tools/benchmark-cubical.mjs",
-    "format:cubist": "node tools/format-mathscript.mjs",
+    "format:cubist": "node tools/format-cubist.mjs",
     "lint:cubist": "node tools/lint-cubist.mjs",
-    "linearize:cubist": "node tools/linearize-mathscript.mjs"
+    "linearize:cubist": "node tools/linearize-cubist.mjs"
   },
   "devDependencies": {
     "playwright": "1.63.0"

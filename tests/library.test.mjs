@@ -5,7 +5,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { libraryModules } from "../web/mathscript/modules.mjs";
+import { libraryModules } from "../web/cubist/modules.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 
 // The rebuilt library under library/: every module is listed and checks completely.

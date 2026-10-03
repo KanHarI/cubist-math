@@ -9,18 +9,10 @@ import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 const module = await createCubical();
-async function check(t, source) {
-  const program = new CubicalProgram(module, sourceReader());
-  t.after(() => program.dispose());
-  const result = await program.check(source, "main");
-  return { result, get: name => {
-    const found = result.outputs.find(output => output.name === name);
-    assert.ok(found, `no declaration ${name}`);
-    return found;
-  } };
-}
+const check = (t, source) => checkProgram(t, source, { module });
 const ok = declaration => assert.ok(declaration.verified, `${declaration.name}: ${declaration.reason}`);
 const refused = (declaration, pattern) => {
   assert.equal(declaration.verified, false, `${declaration.name} was accepted`);
@@ -176,16 +168,16 @@ def also_predecessor : g(succ(succ(zero))) = succ(zero) { rfl; }
 });
 
 test("the formatter keeps a qualified name's dot tight", async () => {
-  const { formatMathScript } = await import("../web/mathscript/formatter.mjs");
+  const { formatCubist } = await import("../web/cubist/formatter.mjs");
   const source = "def same(x, y : Trunc(U0, Nat)) : x = y := Trunc.squash(x, y);\n";
-  const formatted = formatMathScript(source);
+  const formatted = formatCubist(source);
   assert.match(formatted, /Trunc\.squash\(x, y\)/);
-  assert.equal(formatMathScript(formatted), formatted);
+  assert.equal(formatCubist(formatted), formatted);
 });
 
 test("nested legacy matches are walked once: parsing and formatting stay linear", async () => {
-  const { parse } = await import("../web/mathscript/parser.mjs");
-  const { formatMathScript } = await import("../web/mathscript/formatter.mjs");
+  const { parse } = await import("../web/cubist/parser.mjs");
+  const { formatCubist } = await import("../web/cubist/formatter.mjs");
   let body = "0";
   for (let depth = 0; depth < 40; depth++) body = `match x return Nat { left a => ${body}; right b => 0; }`;
   const source = `def deep(x : Nat or Nat) : Nat := ${body};\n`;
@@ -193,7 +185,7 @@ test("nested legacy matches are walked once: parsing and formatting stay linear"
   const match = parse(source).declarations[0].body[0].value;
   assert.ok(match.leftBody && match.clauses.length === 2, "the legacy fields and the clauses are both there");
   assert.ok(!Object.keys(match).includes("clauses"), "the legacy shape's clauses are not enumerated");
-  formatMathScript(source);
+  formatCubist(source);
   assert.ok(performance.now() - started < 5000, "a doubled walk would take 2^40 steps");
 });
 
@@ -268,9 +260,9 @@ def qualified(t : Trunc(U0, N)) : Trunc(U0, N) := match t {
   for (const name of ["keep", "kept", "qualified"]) ok(get(name));
   // squash here is the user's constructor: two clauses for it.
   refused(get("ambiguous"), /squash has two clauses/);
-  const { formatMathScript } = await import("../web/mathscript/formatter.mjs");
+  const { formatCubist } = await import("../web/cubist/formatter.mjs");
   const source = "def f(t : T) : T := match t { T.squash(x, y) @ i => x; };\n";
-  assert.match(formatMathScript(source), /T\.squash\(x, y\) @ i => x;/);
+  assert.match(formatCubist(source), /T\.squash\(x, y\) @ i => x;/);
 });
 
 test("fifth review: a position's arguments may be curried in a recursive call", async t => {
@@ -772,13 +764,13 @@ test("with declared types switched off in the kernel, the match statement says s
 });
 
 test("the match statement parses and formats, one statement to a line", async () => {
-  const { parse } = await import("../web/mathscript/parser.mjs");
-  const { formatMathScript } = await import("../web/mathscript/formatter.mjs");
+  const { parse } = await import("../web/cubist/parser.mjs");
+  const { formatCubist } = await import("../web/cubist/formatter.mjs");
   const source = "def add_zero(n : N) : add(n, zero) = n {\n  match n {\n    zero => {\n      rfl;\n    }\n    succ(m) => {\n      exact cong(succ, add_zero(m));\n    }\n  }\n}\n";
   const statement = parse(source).declarations[0].body[0];
   assert.equal(statement.kind, "matchStatement");
   assert.deepEqual(statement.clauses.map(clause => clause.constructor.text), ["zero", "succ"]);
-  assert.equal(formatMathScript(source), source);
+  assert.equal(formatCubist(source), source);
   assert.throws(() => parse("def f(n : N) : N {\n  match n as k return N { zero => { exact n; } }\n}\n"),
     /The match statement takes its motive from the goal/);
   assert.throws(() => parse("def f(n : N) : N {\n  match n { zero => n; }\n}\n"),

@@ -235,7 +235,7 @@ static cc_term lifted(cc_kernel *k, cc_term eliminator, cc_term instance, cc_ter
     cc_node c = k->nodes[cube], s = k->nodes[shown];
     if (c.kind != CC_PATH || s.kind != CC_PATH)
         return ck_fail(k, "A position's displayed cube does not follow its cube."), 0;
-    /* The displayed type's binder was chosen fresh; the cube follows it. */
+    /* The displayed type's binder was picked fresh; the cube follows it. */
     cc_term inner = rename_dimension(k, c.child[0], c.payload, s.payload);
     cc_term at = ck_make(k, CC_PAPP, ck_interval_variable(k, s.payload), y, cube, 0, 0);
     cc_term body = inner ? lifted(k, eliminator, instance, inner, s.child[0], at) : 0;

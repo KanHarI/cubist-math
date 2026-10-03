@@ -4,7 +4,7 @@
 // in a side panel, checked and inspected in the same way as in a proof.
 import { tokenPattern, tokenStyle, numeralAt, headerWordAt } from "../source-tokens.mjs";
 import { enableTokenTips } from "../token-tips.mjs";
-import { sourceModules, cubicalSourceModules, libraryModules } from "../mathscript/modules.mjs";
+import { archiveModules, libraryModules } from "../cubist/modules.mjs";
 import { replTranscript } from "../repl-session.mjs";
 import { moduleListing } from "../module-listing.mjs";
 import { moduleRoots } from "../module-resolution.mjs";
@@ -47,7 +47,7 @@ const workspaceLink = source => `${workspaceURL.href}#source=${encode(source)}`;
 // Highlight source as the workspace's Read view does. Names the checker linked
 // become buttons that open the kernel inspector, and an imported module's
 // name links to its source in the workspace.
-const modules = new Set([...sourceModules, ...cubicalSourceModules, ...libraryModules]);
+const modules = new Set([...archiveModules, ...libraryModules]);
 function render(code, source, links = [], inspect = start => openInspector(source, start)) {
   const imports = new Map([...source.matchAll(/^\s*import\s+([A-Za-z_][A-Za-z_0-9]*)\s*;/gm)]
     .filter(match => modules.has(match[1]))

@@ -1,10 +1,10 @@
 import { readFile, writeFile, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
-import { formatMathScript } from "../web/mathscript/formatter.mjs";
+import { formatCubist } from "../web/cubist/formatter.mjs";
 
 const args = process.argv.slice(2), check = args.includes("--check");
 if (args.includes("--help")) {
-  console.log("Usage: npm run format:mathscript -- [--check] [file.cubist ...]\nWith no files, format every archive/first-library/*.cubist source, including AST-checked tuple linearization. --check reports changes without writing.");
+  console.log("Usage: npm run format:cubist -- [--check] [file.cubist ...]\nWith no files, format every archive/first-library/*.cubist source, including AST-checked tuple linearization. --check reports changes without writing.");
 } else {
   const files = args.filter(a => a !== "--check");
   if (files.some(a => a.startsWith("--"))) throw new Error("Unknown formatter option.");
@@ -12,7 +12,7 @@ if (args.includes("--help")) {
   let changed = 0;
   for (const file of files) {
     const path = file instanceof URL ? file : resolve(file);
-    const source = await readFile(path, "utf8"), formatted = formatMathScript(source);
+    const source = await readFile(path, "utf8"), formatted = formatCubist(source);
     if (source === formatted) continue;
     changed++;
     if (!check) await writeFile(path, formatted);

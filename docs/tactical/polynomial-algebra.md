@@ -124,7 +124,7 @@ concrete F4 polynomial, and reject division/root bounds with missing nonzero
 hypotheses, embeddings with no closed-target hypothesis, an incorrect embedding
 count, and a false root.
 
-Run `npm test`, `node tools/format-mathscript.mjs --check`, and
+Run `npm test`, `node tools/format-cubist.mjs --check`, and
 `node tools/audit-cubical.mjs --all`. The bounded diagnostic audit adds
 `--diagnostic-budget=100000000`; exhausting that bound is a conversion-performance
 failure, not a mathematical counterexample. Final run results are recorded in

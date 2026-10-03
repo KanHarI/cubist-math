@@ -4,7 +4,7 @@
 // congruence on common heads, weak-head steps as the term checker's
 // conversion takes them, the kernel's weak head normal form for heads those
 // steps do not take, eta, and a normalization when that runs long. Where it
-// could do several of these, a chooser picks (heuristicChooser, below); the
+// could do several of these, a policy picks (heuristicPolicy, below); the
 // default steers by its own guide, which asks the kernel for weak heads. The
 // kernel checks every instruction; a wrong search only fails, it cannot
 // prove anything.
@@ -71,10 +71,10 @@ const joinScopes = (...scopes) => new Map([...scopes.flatMap(scope => [...scope]
 // The children of a dimension binder that it binds.
 const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: [0] };
 
-// The search's choices (docs/roadmaps/learned-search.md, "The decision
+// The search's decisions (docs/roadmaps/learned-search.md, "The decision
 // problem"). `agree` rewrites two focused subterms until they are
 // alpha-equal; each time round, it stops at a branch point, lists the moves
-// open there, and asks a chooser which to make. A move is a plain object:
+// open there, and asks a policy which to make. A move is a plain object:
 //   { move: "normalize" }              both sides to normal form: a long closed
 //                                      computation, offered once per comparison
 //   { move: "descend" }                congruence: agree part by part under a
@@ -98,7 +98,7 @@ const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: 
 // A failed normalize or descend may have rewritten the sides, so the point
 // is listed again, without them.
 //
-// A chooser is { name, rank(point), observe?(point, move, outcome, error) }.
+// A policy is { name, rank(point), observe?(point, move, outcome, error) }.
 // rank yields moves of point.moves, best first; the driver makes each in
 // turn until one applies, and the comparison fails when none does. observe
 // hears each move's outcome: "agreed", "progress", "stuck" (it changed
@@ -111,8 +111,8 @@ const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: 
 // the bound names that correspond, the moves, the listing's number at this
 // point, the steps taken by the whole comparison so far, and how many
 // comparisons enclose this one (descending compares parts, one inside the
-// other). Choosers are untrusted,
-// like the driver: a bad choice only fails, and the kernel checks each move.
+// other). Policies are untrusted,
+// like the driver: a bad ranking only fails, and the kernel checks each move.
 //
 // The heuristic is the driver's own order, lazily, since its tests ask the
 // guide: normalize a long closed computation unless the guide finds the
@@ -120,7 +120,7 @@ const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: 
 // steps before unfolding, left before right; unfold the later definition,
 // or both when it is the same (lazy delta reduction); then weak head normal
 // forms, left then right; then eta.
-export const heuristicChooser = Object.freeze({
+export const heuristicPolicy = Object.freeze({
   name: "heuristic",
   *rank(point) {
     const { driver, moves } = point, find = (move, side) => moves.find(m => m.move === move && (!side || m.side === side));
@@ -142,13 +142,13 @@ export const heuristicChooser = Object.freeze({
 });
 
 export class InstructionDriver {
-  constructor(kernel, { graph = new InstructionGraph(kernel), fuel = FUEL, chooser = kernel.chooser ?? heuristicChooser } = {}) {
+  constructor(kernel, { graph = new InstructionGraph(kernel), fuel = FUEL, policy = kernel.policy ?? heuristicPolicy } = {}) {
     this.kernel = kernel;
     this.graph = graph;
     this.fuel = fuel;
-    // Who picks the moves of `agree` (heuristicChooser, above), and how many
+    // Who picks the moves of `agree` (heuristicPolicy, above), and how many
     // comparisons are open, one inside another.
-    this.chooser = chooser;
+    this.policy = policy;
     this.depth = 0;
     this.nodes = new Map();
     // Judgements never change, so reads are cached; so are the scopes of
@@ -1006,24 +1006,24 @@ export class InstructionDriver {
     }
   }
 
-  // One branch point of `agree`: the moves open there, made in the chooser's
+  // One branch point of `agree`: the moves open there, made in the policy's
   // order until one applies. "agreed" when the sides now agree, "failed"
   // when no move applies, and otherwise the comparison goes round again.
   branch(point, budget) {
     for (;; point.round++) {
       point.moves = this.moves(point);
       let changed = false;
-      for (const move of this.chooser.rank(point)) {
-        if (!point.moves.includes(move)) throw new Error(`The chooser ${this.chooser.name} chose a move that is not open.`);
+      for (const move of this.policy.rank(point)) {
+        if (!point.moves.includes(move)) throw new Error(`The policy ${this.policy.name} ranked a move that is not open.`);
         let outcome;
         try { outcome = this.move(point, move, budget); }
         catch (error) {
           // The move's work is done, and observers hear of it; the error
           // ends the comparison as before.
-          this.chooser.observe?.(point, move, "error", error);
+          this.policy.observe?.(point, move, "error", error);
           throw error;
         }
-        this.chooser.observe?.(point, move, outcome);
+        this.policy.observe?.(point, move, outcome);
         if (outcome === "stuck") continue;
         if (outcome === "changed") { changed = true; break; }
         return outcome;
@@ -1033,7 +1033,7 @@ export class InstructionDriver {
       if (!changed) return "failed";
     }
   }
-  // The moves open at a point (heuristicChooser, above). Congruence reads the
+  // The moves open at a point (heuristicPolicy, above). Congruence reads the
   // sides as the point found them; the rest reads them now, as a failed
   // attempt may have rewritten parts.
   moves(point) {

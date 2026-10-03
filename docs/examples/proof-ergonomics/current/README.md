@@ -14,7 +14,7 @@ checker on 2026-09-24 and reported an empty axiom dependency list.
 | [pointwise.cubist](pointwise.cubist) | Function paths, dependent sections, evaluation coherence, naturality square | 4 | 464 | 671 |
 | [scoped-algebra.cubist](scoped-algebra.cubist) | Explicit structure projections for future scoped notation | 1 | 60 | 210,357 |
 
-Tokens use `tokenize(source).length - 1` from `web/mathscript/parser.mjs`,
+Tokens use `tokenize(source).length - 1` from `web/cubist/parser.mjs`,
 excluding comments, whitespace, and EOF. The CLI's “kernel steps” are
 `CubicalProgram.check().instructionCount`: accumulated checking steps, including
 imports and elaboration queries, **not** the sum of checking and reduction work.
@@ -30,7 +30,7 @@ node cli/repl.mjs check docs/examples/proof-ergonomics/current/path-coherence.cu
 node cli/repl.mjs check docs/examples/proof-ergonomics/current/dependent-transport.cubist
 node cli/repl.mjs check docs/examples/proof-ergonomics/current/pointwise.cubist
 node cli/repl.mjs check docs/examples/proof-ergonomics/current/scoped-algebra.cubist
-node tools/format-mathscript.mjs --check docs/examples/proof-ergonomics/current/*.cubist
+node tools/format-cubist.mjs --check docs/examples/proof-ergonomics/current/*.cubist
 ```
 
 Each check exits 0 and prints the declaration and step counts above; the

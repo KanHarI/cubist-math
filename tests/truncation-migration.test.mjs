@@ -3,16 +3,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
-import { CubicalProgram } from "../web/cubical-program.mjs";
-import { sourceReader } from "../tools/module-sources.mjs";
 import { validateLedger } from "../tools/migration-ledger.mjs";
 import { execFileSync } from "node:child_process";
+import { checkProgram } from "./check-program.mjs";
 
 const module = await createCubical();
 async function check(t,source) {
-  const program=new CubicalProgram(module,sourceReader());
-  t.after(()=>program.dispose());
-  const result=await program.check(source,"migration_cases");
+  const {program,result}=await checkProgram(t,source,{module,name:"migration_cases"});
   const get=name=>[...result.outputs,...result.imports].find(output=>output.name===name);
   const assumptions=output=>output.axioms.map(name=>result.assumptionLabels[name] ?? name).sort();
   return {program,result,get,assumptions};

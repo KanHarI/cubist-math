@@ -9,23 +9,16 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { parse } from "../web/mathscript/parser.mjs";
-import { formatMathScript } from "../web/mathscript/formatter.mjs";
+import { parse } from "../web/cubist/parser.mjs";
+import { formatCubist } from "../web/cubist/formatter.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 const module = await createCubical();
 const library = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8");
 
 // Check a program, with other modules by name, and give each declaration's result.
-async function check(t, source, { modules = {} } = {}) {
-  const program = new CubicalProgram(module, name => name in modules ? modules[name] : library(name));
-  t.after(() => program.dispose());
-  const result = await program.check(source, "main");
-  return { program, result, get: name => {
-    const found = result.outputs.find(output => output.name === name);
-    assert.ok(found, `no declaration ${name}`);
-    return found;
-  } };
-}
+const check = (t, source, { modules = {} } = {}) =>
+  checkProgram(t, source, { module, reader: name => name in modules ? modules[name] : library(name) });
 const ok = (declaration, message) => assert.ok(declaration.verified, `${declaration.name}: ${declaration.reason} ${message ?? ""}`);
 const refused = (declaration, pattern) => {
   assert.equal(declaration.verified, false, `${declaration.name} was accepted`);
@@ -52,9 +45,9 @@ def prop(set : N) := set;
   assert.equal(declarations[3].result.modifier.level, 1);
   assert.equal(declarations[2].result.universe.name, "U1");
   assert.equal(declarations[4].constructors[1].type.kind, "binary");
-  const formatted = formatMathScript(source);
+  const formatted = formatCubist(source);
   assert.match(formatted, /^inductive N \{\n {2}zero;\n {2}succ\(n : N\);\n\}\n\ninductive Trunc/);
-  assert.equal(formatMathScript(formatted), formatted);
+  assert.equal(formatCubist(formatted), formatted);
   for (const [bad, message] of [["inductive X : { a; }", /h-level, a universe or both/],
     ["inductive X : trunc(x) { a; }", /integer level/], ["inductive X { a(U < UU0); }", /bind universes in the declaration's header/],
     ["inductive X { a", /Expected ';'/],

@@ -1,24 +1,14 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import createCubical from "../web/dist/cubical.mjs";
-import { CubicalProgram } from "../web/cubical-program.mjs";
-import { sourceReader } from "../tools/module-sources.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 // The h-levels of library/hlevels.cubist (work-plan L2.5a): the levels are
 // one definition by recursion on Nat, so each named level is that
 // definition at a numeral, by conversion; the lemmas hold in every universe
 // below UU0; and none proves more than it states.
-async function check(t, source) {
-  const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false });
-  t.after(() => program.dispose());
-  const result = await program.check(`import hlevels;\n${source}`, "main");
-  return name => {
-    const found = result.outputs.find(output => output.name === name);
-    assert.ok(found, `no declaration ${name}`);
-    return found;
-  };
-}
+const check = async (t, source) =>
+  (await checkProgram(t, `import hlevels;\n${source}`, { options: { collectReferences: false } })).get;
 const ok = declaration => assert.ok(declaration.verified, `${declaration.name}: ${declaration.reason}`);
 const refused = (declaration, pattern) => {
   assert.equal(declaration.verified, false, `${declaration.name} was accepted`);

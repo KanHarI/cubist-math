@@ -1,9 +1,9 @@
 // Partial source translator. Unsupported syntax/foundations are explicit errors;
 // no fallback axiom, old-kernel handle, or unchecked term enters this checker.
-import {parse} from "../mathscript/parser.mjs";
-import {tacticSite,expressionSite} from "../mathscript/link-sites.mjs";
+import {parse} from "../cubist/parser.mjs";
+import {tacticSite,expressionSite} from "../cubist/link-sites.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
-import {binaryLiteralSyntax} from "../mathscript/binary-literals.mjs";
+import {binaryLiteralSyntax} from "../cubist/binary-literals.mjs";
 import {T,finiteLevel,substituteTerm,substituteDimension} from "./core.mjs";
 import {interval as I,face as F,latticeBudget} from "./lattice.mjs";
 import {freeDimensions} from "./dimension-slots.mjs";
@@ -544,7 +544,7 @@ export class Translator {
       const replayScope=scope.withUnit(unit.with({work:emptyRewriteWork(),fuel:null,searches:emptySearchRecord()}));
       let valid=false;
       // An omitted rule can change a failed premise search and hence a later
-      // rewrite choice. Replay must preserve the constructed proof as well as
+      // rewrite. Replay must preserve the constructed proof as well as
       // its type: later statements may depend on that particular path.
       try {valid=rules.withSubset(frozen,()=>replay?.(frozen,replayScope)===true);}
       catch {valid=false;}

@@ -46,7 +46,7 @@ export function parse(source, typeOnly = false) {
       throw Object.assign(new Error("Expected a name."), { offset: t.start });
     // U0, UU3 and the like name universes: they cannot be bound or declared.
     if (/^U+[0-9]+$/.test(t.text))
-      throw Object.assign(new Error(`${t.text} is a universe constant; choose another name.`), { offset: t.start });
+      throw Object.assign(new Error(`${t.text} is a universe constant; pick another name.`), { offset: t.start });
     return t;
   }
   // A binder's type, or a universe binder's bound: `x : A` or `U < UU0`.

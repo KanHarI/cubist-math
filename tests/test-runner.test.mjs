@@ -45,7 +45,7 @@ test("compiler optimizations default on with independent ordered CLI overrides",
 });
 
 test("selected proofs load only transitive imports and tolerate cycles for compiler diagnostics", async t => {
-  const root = await mkdtemp(join(tmpdir(), "mathscript-imports-"));
+  const root = await mkdtemp(join(tmpdir(), "cubist-imports-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(join(root, "archive/first-library"), { recursive: true });
   await writeFile(join(root, "archive/first-library/a.cubist"), "import b; def a := tt;");
@@ -59,7 +59,7 @@ test("selected proofs load only transitive imports and tolerate cycles for compi
 });
 
 test("changed-proof selection includes staged, unstaged and untracked files only", async t => {
-  const root = await mkdtemp(join(tmpdir(), "mathscript-changed-"));
+  const root = await mkdtemp(join(tmpdir(), "cubist-changed-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   const git = (...args) => {
     const result = spawnSync("git", args, { cwd: root, encoding: "utf8" });
@@ -79,7 +79,7 @@ test("changed-proof selection includes staged, unstaged and untracked files only
 });
 
 test("targeted CLI checks a small proof and propagates failures without running the library", async t => {
-  const root = await mkdtemp(join(tmpdir(), "mathscript-runner-"));
+  const root = await mkdtemp(join(tmpdir(), "cubist-runner-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   const good = join(root, "good.cubist"), bad = join(root, "bad.cubist");
   await writeFile(good, "def good : Unit { exact tt; }");

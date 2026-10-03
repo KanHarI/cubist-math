@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises";
 import { canonicalHasher } from "../tools/canonical-hash.mjs";
 import { verifyMigration } from "../tools/proof-migration.mjs";
 import { identicalRewrites, rewriteModule, typePreservingRewrites } from "../tools/proof-rewrites.mjs";
-import { formatMathScript } from "../web/mathscript/formatter.mjs";
+import { formatCubist } from "../web/cubist/formatter.mjs";
 import { migrationSourceReader } from "../tools/migration-sources.mjs";
 
 const library = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
@@ -109,7 +109,7 @@ def pointwise(A : U0, f : A -> A) : f = f {
   assert.match(typed.source, /ext a;\s+rfl;/);
   const check = async (edited, level) => (await verifyMigration({ modules: ["rewrite_fixture"], level,
     readOriginal: name => name === "rewrite_fixture" ? source : library(name),
-    readEdited: async () => formatMathScript(edited) }))[0];
+    readEdited: async () => formatCubist(edited) }))[0];
   const exact = await check(identical.source, "identical");
   assert.deepEqual(exact.failures, []);
   assert.equal(exact.identical, 6);
@@ -129,7 +129,7 @@ def picked : Nat := (fun (x : Nat) => fun (y : Nat) => typed(Nat and Nat, (x, y)
   assert.match(identical.source, /:= \(fun \(x, y : Nat\) => typed\(Nat and Nat, \(x, y\)\)\)\(1, 2\)\.2;/);
   const [report] = await verifyMigration({ modules: ["projection_fixture"], level: "identical",
     readOriginal: name => name === "projection_fixture" ? source : library(name),
-    readEdited: async () => formatMathScript(identical.source) });
+    readEdited: async () => formatCubist(identical.source) });
   assert.deepEqual(report.failures, []);
   assert.equal(report.identical, 3);
   // A library wrapper becomes a call, which a projection applies to as it is.
@@ -148,7 +148,7 @@ def concatenated_at(A : U0, x, y : A, p, q : x = y, e : p = q) : x = x := at(e, 
   assert.match(identical.source, /:= e @ 0 \+\+ -\(e @ 1\);/);
   const [report] = await verifyMigration({ modules: ["prefix_fixture"], level: "identical",
     readOriginal: name => name === "prefix_fixture" ? source : library(name),
-    readEdited: async () => formatMathScript(identical.source) });
+    readEdited: async () => formatCubist(identical.source) });
   assert.deepEqual(report.failures, []);
   assert.equal(report.identical, 2);
 });

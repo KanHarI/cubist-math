@@ -58,7 +58,7 @@ function render(document, width) {
 
 // Canonicalize right-nested tuples first, with expanded-AST equality checked by
 // the rewriter. Everything else changes whitespace only; comments stay intact.
-export function formatMathScript(source, { printWidth = 100, linearizeTuples = true } = {}) {
+export function formatCubist(source, { printWidth = 100, linearizeTuples = true } = {}) {
   if (!Number.isInteger(printWidth) || printWidth < 40 || printWidth > 240)
     throw new Error("Print width must be an integer between 40 and 240.");
   if (typeof linearizeTuples !== "boolean") throw new Error("linearizeTuples must be Boolean.");

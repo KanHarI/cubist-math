@@ -5,7 +5,7 @@
 // Verify the result with tools/verify-proof-migration.mjs.
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { formatMathScript } from "../web/mathscript/formatter.mjs";
+import { formatCubist } from "../web/cubist/formatter.mjs";
 import { identicalRewrites, typePreservingRewrites, rewriteModule } from "./proof-rewrites.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -30,7 +30,7 @@ for (const module of modules) {
   const result = rewriteModule(source, { rewrites, skip: new Set(skips[module] ?? []) });
   if (result.source === source) continue;
   let text = result.source;
-  try { text = formatMathScript(text); }
+  try { text = formatCubist(text); }
   catch (error) { console.log(`${module}: not formatted (${error.message})`); }
   await writeFile(path, text);
   changed++;

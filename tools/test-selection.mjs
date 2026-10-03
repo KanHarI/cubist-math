@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { resolve, relative, basename } from "node:path";
-import { parse } from "../web/mathscript/parser.mjs";
+import { parse } from "../web/cubist/parser.mjs";
 import { moduleNamePattern, moduleRoots } from "../web/module-resolution.mjs";
 import { projectRoot, sourceReader } from "./module-sources.mjs";
 
@@ -97,7 +97,7 @@ export function selectTests(args, { root = projectRoot, changed = () => changedP
     tests.push(resolve(root, "tests/cubical-modules.test.mjs"));
   }
   if (explicitOptimizations && !proofs.length)
-    throw new Error("Compiler optimization flags require selected proof modules; regression tests choose their own compiler modes.");
+    throw new Error("Compiler optimization flags require selected proof modules; regression tests set their own compiler modes.");
   return { tests: [...new Set(tests)], proofs: [...new Set(proofs)], flags, optimizations };
 }
 

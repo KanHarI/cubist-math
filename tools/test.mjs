@@ -19,7 +19,7 @@ try {
     // race missing or half-built files.
     if (selected.tests.some(path => path.startsWith(projectRoot + "tests/translator/")))
       execFileSync("make", ["-C", "kernel", "all"], { cwd: projectRoot, stdio: "inherit" });
-    const environment = { ...process.env, MATHSCRIPT_TEST_PROOFS: JSON.stringify(selected.proofs), MATHSCRIPT_OPTIMIZATIONS: JSON.stringify(selected.optimizations) };
+    const environment = { ...process.env, CUBIST_TEST_PROOFS: JSON.stringify(selected.proofs), CUBIST_OPTIMIZATIONS: JSON.stringify(selected.optimizations) };
     // A nested invocation must start its own Node test run, not inherit the
     // parent runner's internal child-process protocol.
     delete environment.NODE_TEST_CONTEXT;

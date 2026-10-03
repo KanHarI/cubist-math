@@ -1,6 +1,6 @@
 import { splitInspectionContext } from "./cubical-context.mjs";
 import { cubicalSourceFile } from "./cubical-sources.mjs";
-import { proofChoices as choices, proofTopics, proofsInTopic } from "./proof-library.mjs";
+import { proofCatalog, proofTopics, proofsInTopic } from "./proof-library.mjs";
 import { proofRequestWatchdog } from "./proof-watchdog.mjs";
 import { renderMathNotation } from "./math-notation.mjs";
 import { axiomLabels } from "./axiom-labels.mjs";
@@ -9,7 +9,7 @@ import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proo
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
 import { numeralAt, tokenStyle, headerWordAt } from "./source-tokens.mjs";
-import { libraryModules } from "./mathscript/modules.mjs";
+import { libraryModules } from "./cubist/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
 import { createReplConsole } from "./repl-console.mjs";
 
@@ -21,12 +21,12 @@ const exampleMode = query.has("example"), embedded = exampleMode && query.has("e
 // A module of the rebuilt library opens like a proof, from library/.
 const libraryModule = !exampleMode && libraryModules.includes(query.get("proof"));
 const proofId = exampleMode ? "reference_example"
-  : libraryModule || choices.some((p) => p.id === query.get("proof")) ? query.get("proof")
+  : libraryModule || proofCatalog.some((p) => p.id === query.get("proof")) ? query.get("proof")
   : "euclid";
-const choice = choices.find((p) => p.id === proofId);
+const catalogEntry = proofCatalog.find((p) => p.id === proofId);
 const sourceURL = exampleMode ? null
   : libraryModule ? `library/${proofId}.cubist`
-  : `archive/first-library/${choice.file ?? cubicalSourceFile(proofId)}`;
+  : `archive/first-library/${cubicalSourceFile(proofId)}`;
 const snapshot = readProofNavigation(query.get("restore"));
 let restoring = snapshot?.proof === proofId ? snapshot : null;
 const crossFileBack = restoring?.back ?? query.get("back");
@@ -48,7 +48,8 @@ let savedDraft = null,
   previousDraft = null,
   sourceNotice = "";
 try {
-  // An example always opens with the source it was given.
+  // An example always opens with the source it was given. Storage keys keep
+  // the language's former name, MathScript, so saved drafts still load.
   const stored = exampleMode ? null : sessionStorage.getItem("mathscript:" + proofId);
   if (stored) {
     let record;
@@ -98,10 +99,10 @@ for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) {
   $(id).checked = true;
   try { $(id).checked = localStorage.getItem("mathscript:" + id) !== "false"; } catch {}
 }
-$("proof-title").textContent = choice?.title ?? (libraryModule ? `Library: ${proofId}` : "Reference example");
-$("development-note").hidden = !choice?.realDevelopment;
-$("puncture-note").hidden = !choice?.punctureDevelopment;
-$("complex-note").hidden = !choice?.complexDevelopment;
+$("proof-title").textContent = catalogEntry?.title ?? (libraryModule ? `Library: ${proofId}` : "Reference example");
+$("development-note").hidden = !catalogEntry?.realDevelopment;
+$("puncture-note").hidden = !catalogEntry?.punctureDevelopment;
+$("complex-note").hidden = !catalogEntry?.complexDevelopment;
 $("archive-note").hidden = exampleMode || libraryModule;
 $("source-file").hidden = exampleMode;
 $("repository-source").hidden = exampleMode;
@@ -129,7 +130,7 @@ function showTopic(topic) {
   if (!proofs.some(item => item.id === proofId)) {
     const prompt = document.createElement("option");
     prompt.value = "";
-    prompt.textContent = "Choose a proof…";
+    prompt.textContent = "Select a proof…";
     prompt.disabled = true;
     prompt.selected = true;
     $("proof-picker").append(prompt);
@@ -143,7 +144,7 @@ function showTopic(topic) {
   if (proofs.some(item => item.id === proofId)) $("proof-picker").value = proofId;
   $("proof-count").textContent = `${proofs.length} proofs`;
 }
-$("proof-topic").value = choice?.topic ?? proofTopics[0].id;
+$("proof-topic").value = catalogEntry?.topic ?? proofTopics[0].id;
 showTopic($("proof-topic").value);
 $("proof-topic").onchange = () => showTopic($("proof-topic").value);
 function rememberDraft() {
@@ -952,7 +953,7 @@ $("language-guide").addEventListener("click", followInPageLink);
 let workerVersion = null;
 async function serverVersion() {
   try {
-    const r = await fetch("mathscript-version", { cache: "no-store" });
+    const r = await fetch("cubist-version", { cache: "no-store" });
     return r.ok ? (await r.json()).version : null;
   } catch {
     return null;

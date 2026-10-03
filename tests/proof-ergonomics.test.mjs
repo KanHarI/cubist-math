@@ -6,9 +6,9 @@ import {spawnSync} from "node:child_process";
 import {readFile} from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import {CubicalProgram} from "../web/cubical-program.mjs";
-import {formatMathScript} from "../web/mathscript/formatter.mjs";
-import {parse} from "../web/mathscript/parser.mjs";
-import {expandedSyntax} from "../web/mathscript/tuples.mjs";
+import {formatCubist} from "../web/cubist/formatter.mjs";
+import {parse} from "../web/cubist/parser.mjs";
+import {expandedSyntax} from "../web/cubist/tuples.mjs";
 import {budget} from "./timing.mjs";
 
 // The blowup detectors below. A shared term nested sharedDepth deep has a
@@ -164,14 +164,14 @@ test("a pushout instance visits shared source types within the proof deadline",(
 
 test("new proof syntax survives formatting with the same expanded AST",async()=>{
   for(const name of ["arithmetic","cubical","dependent","type-transport"]) {
-    const source=await sample(name),formatted=formatMathScript(source);
-    assert.equal(formatMathScript(formatted),formatted,name);
+    const source=await sample(name),formatted=formatCubist(source);
+    assert.equal(formatCubist(formatted),formatted,name);
     assert.equal(expandedSyntax(parse(formatted)),expandedSyntax(parse(source)),name);
   }
 });
 
 test("incomplete grouped binders and introductions fail without hanging the parser",()=>{
-  const parser=new URL("../web/mathscript/parser.mjs",import.meta.url).href;
+  const parser=new URL("../web/cubist/parser.mjs",import.meta.url).href;
   for(const source of ["def f(x","def f : forall x","def f := fun (x",
     "def f : Nat { intro x"]) {
     const script=`import {parse} from ${JSON.stringify(parser)}; parse(process.argv[1]);`;
@@ -711,7 +711,7 @@ test("a multi-binder fun source link inspects the complete closed function",asyn
     const program=new CubicalProgram(await createCubical(),readLibrary);
     t.after(()=>program.dispose());
     const source=`def f := ${expression};`;
-    assert.equal(expandedSyntax(parse(formatMathScript(source))),expandedSyntax(parse(source)));
+    assert.equal(expandedSyntax(parse(formatCubist(source))),expandedSyntax(parse(source)));
     const result=await program.check(source,"multi_binder_link");
     assert.equal(result.complete,true,JSON.stringify(result.gaps));
     const links=result.links.filter(link=>link.name==="fun"&&link.start===source.indexOf("fun"));
@@ -883,17 +883,17 @@ test("registered default and named sets retain checked proofs and format stably"
   assert.ok(work.traversals>work.successfulRewrites);
   assert.ok(work.candidateVisits>=work.traversals);
   assert.equal(work.premiseProofs,0);
-  const choices=result.links.filter(link=>link.role==="simplification witness"&&link.freeze);
-  assert.equal(choices.length,6);
-  const recursive=choices.find(choice=>choice.freeze.original==="simp;"
-    &&choice.freeze.text.includes("nat_add_zero"));
+  const witnesses=result.links.filter(link=>link.role==="simplification witness"&&link.freeze);
+  assert.equal(witnesses.length,6);
+  const recursive=witnesses.find(witness=>witness.freeze.original==="simp;"
+    &&witness.freeze.text.includes("nat_add_zero"));
   assert.ok(recursive);
   assert.doesNotMatch(recursive.freeze.text,/double_zero_if/);
-  for(const [index,choice] of choices.entries()) {
-    assert.ok(choice.rewriteSteps?.length,choice.name);
-    for(const step of choice.rewriteSteps)
+  for(const [index,witness] of witnesses.entries()) {
+    assert.ok(witness.rewriteSteps?.length,witness.name);
+    for(const step of witness.rewriteSteps)
       assert.equal(program.inspect(step.binding).type.tag,"Path");
-    const {start,end,original,text}=choice.freeze;
+    const {start,end,original,text}=witness.freeze;
     assert.equal(source.slice(start,end),original);
     assert.match(text,/^simp(?:a)? only \[/);
     const frozen=source.slice(0,start)+text+source.slice(end);
@@ -902,12 +902,12 @@ test("registered default and named sets retain checked proofs and format stably"
     const checked=await replay.check(frozen,`frozen_simp_${index}`);
     assert.equal(checked.complete,true,JSON.stringify(checked.gaps));
   }
-  const formatted=formatMathScript(source);
+  const formatted=formatCubist(source);
   assert.equal(expandedSyntax(parse(formatted)),expandedSyntax(parse(source)));
   // A set assignment is spaced like one; an equality carrier stays attached.
   assert.equal(formatted,source);
   assert.match(formatted,/simp_set nat_units := \[nat_add_zero\];/);
-  assert.match(formatMathScript("def t(x : Nat) : x =[Nat] x {\n  rfl;\n}\n"),/x =\[Nat\] x/);
+  assert.match(formatCubist("def t(x : Nat) : x =[Nat] x {\n  rfl;\n}\n"),/x =\[Nat\] x/);
 });
 
 test("imported simp registrations are scoped and conflicting named sets fail only on use",async t=>{
