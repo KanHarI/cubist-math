@@ -6,6 +6,7 @@
 // assumption-free result from computing.
 import primes;
 import circle;
+import hlevels;
 
 // Natural-number recursion.
 computable def closed_arithmetic : add(mul(3, 4), 5) = 17 {
@@ -31,7 +32,7 @@ computable def closed_dependent_transport :
   rfl;
 }
 
-// Univalence (Glue) and the circle's pushout: winding numbers compute.
+// Univalence (Glue) and the circle's declared pushout: winding numbers compute.
 computable def winding_one : winding(loop) = nonnegative(1) {
   rfl;
 }
@@ -51,3 +52,43 @@ computable def winding_integer_loop : winding(integer_loop(negative(2))) = negat
 
 // The same computation, stated as a checked normal-form test.
 evaluate winding(concatenate(U1, S1, base, base, base, loop, loop)) expecting nonnegative(2);
+
+// h-levels: the contraction of Unit has a canonical center, and the path
+// and the square the h-level lemmas build between closed elements compute
+// to reflexivity. A neutral path or square would not be refl.
+computable def unit_center : unit_is_contr.1 = tt {
+  rfl;
+}
+
+computable def unit_path_computes : unit_is_prop(tt, tt) = refl(tt) {
+  rfl;
+}
+
+computable def unit_square_computes :
+  prop_is_set(U0, Unit, unit_is_prop, tt, tt, refl(tt), refl(tt)) = refl(refl(tt)) {
+  rfl;
+}
+
+computable def retract_path_computes :
+  retract_has_level(U0, 0, Unit, Unit, fun (u : Unit) => u, fun (u : Unit) => u, fun (u : Unit) => refl(u),
+    unit_is_prop, tt, tt) = refl(tt) {
+  rfl;
+}
+
+computable def nat_decision_computes :
+  match nat_decide(2, 3) return Nat {
+    left p => 1;
+    right n => 0;
+  } = 0 {
+  rfl;
+}
+
+computable def nat_square_computes : nat_is_set(1, 1, refl(1), refl(1)) = refl(refl(1)) {
+  rfl;
+}
+
+computable def unit_paths_contract : path_is_contr(U0, Unit, unit_is_contr, tt, tt).1 = refl(tt) {
+  rfl;
+}
+
+evaluate unit_is_contr.1 expecting tt;

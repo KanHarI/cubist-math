@@ -4,7 +4,7 @@
 // congruence on common heads, weak-head steps as the term checker's
 // conversion takes them, the kernel's weak head normal form for heads those
 // steps do not take, eta, and a normalization when that runs long. Where it
-// could do several of these, a chooser picks (heuristicChooser, below); the
+// could do several of these, a policy picks (heuristicPolicy, below); the
 // default steers by its own guide, which asks the kernel for weak heads. The
 // kernel checks every instruction; a wrong search only fails, it cannot
 // prove anything.
@@ -13,42 +13,53 @@ import { KernelError } from "./cubical-kernel.mjs";
 import { freeDimensionMask } from "./cubical-syntax.mjs";
 import { levelNormal } from "./cubical-levels.mjs";
 
-const TERM_BINDERS = new Set(["Pi", "Lam", "Sigma", "W", "LPi", "LLam"]);
+const TERM_BINDERS = new Set(["Pi", "Lam", "Sigma", "LPi", "LLam"]);
 // Binders of a universe variable x < ω (G0): the level entry is found by its
 // symbol, which levels below name.
 const LEVEL_BINDERS = new Set(["LPi", "LLam"]);
 // Nodes whose payload is an interval or face formula.
-const FORMULA_PAYLOADS = new Set(["PApp", "Tube", "GlueSystem", "PushPath"]);
+const FORMULA_PAYLOADS = new Set(["PApp", "Tube", "GlueSystem"]);
 const unsupported = kind => new Error(`${kind} is not in instruction mode yet.`);
 // Whether child i of a node is under its dimension binder (the payload).
 const dimensionBound = (kind, i) => kind === "PLam" || ((kind === "Path" || kind === "Trans") && i === 0) ||
   (kind === "Comp" && i < 2) || (kind === "HComp" && i === 1);
 // Weak heads that only compute by eta, or not at all.
-const CONSTRUCTORS = new Set(["U", "Pi", "Lam", "LPi", "LLam", "Sigma", "Pair", "Nat", "Zero", "Succ", "Unit", "Point", "Void",
-  "Sum", "Inl", "Inr", "Path", "PLam", "W", "Sup", "Pushout", "PushLeft", "PushRight"]);
-// The type former a constructor's eta expansion needs.
-const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma", LLam: "LPi" };
-// Steps after which a comparison the oracle finds true computes normal forms.
+// A declared type's instance, constructor and eliminator are weak heads too
+// (H1): a constructor applied computes only under an eliminator.
+const CONSTRUCTORS = new Set(["U", "Pi", "Lam", "LPi", "LLam", "Sigma", "Pair", "Unit", "Point", "Void",
+  "Sum", "Inl", "Inr", "Path", "PLam", "Sort", "Con", "Elim", "List"]);
+// The type former a constructor's eta expansion needs. A Glue term's is
+// glue [φ ↦ g] (unglue g), for g of a Glue type.
+const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma", LLam: "LPi", GlueTerm: "Glue" };
+// Steps after which a closed comparison computes normal forms.
 const LONG_COMPUTATION = 64;
+// The kernel steps the Glue step may take (the glue move). It normalizes its
+// side conditions, and open terms can be large shared graphs, whose normal
+// forms are not.
+const GLUE_STEPS = 200000;
 // The guide (InstructionDriver.guide): how many pairs of subterms one
 // question may compare, and the kernel steps each weak head may take.
 const GUIDE_FUEL = 400, GUIDE_HEAD_STEPS = 4000;
-// A comparison's moves (InstructionDriver.agree), and the kernel steps the
-// oracle may take to answer one question.
-const FUEL = 20000, ORACLE_STEPS = 20000;
+// A comparison's moves (InstructionDriver.agree).
+const FUEL = 20000;
 // The search's fixed limits, for reports that must say what they measured.
 export const searchLimits = Object.freeze({ fuel: FUEL, longComputation: LONG_COMPUTATION, guideFuel: GUIDE_FUEL,
-  guideHeadSteps: GUIDE_HEAD_STEPS, oracleSteps: ORACLE_STEPS });
+  guideHeadSteps: GUIDE_HEAD_STEPS, glueSteps: GLUE_STEPS });
 // Weak heads that are constructors: two of different kinds never agree.
-const RIGID = new Set(["U", "Pi", "Sigma", "W", "LPi", "Nat", "Zero", "Succ", "Unit", "Point", "Void", "Sum",
-  "Inl", "Inr", "Path", "Sup", "Pushout", "PushLeft", "PushRight", "Lam", "LLam", "PLam", "Pair"]);
+// An instance of a declared type is one (H1); so is a list of its parameters.
+const RIGID = new Set(["U", "Pi", "Sigma", "LPi", "Unit", "Point", "Void", "Sum",
+  "Inl", "Inr", "Path", "Lam", "LLam", "PLam", "Pair", "Sort", "List"]);
 // Constructors that eta relates to a neutral term of their type.
-const ETA_CONSTRUCTORS = new Set(["Lam", "LLam", "PLam", "Pair"]);
-// Neutral weak heads: variables and eliminations stuck on one.
-const NEUTRAL = new Set(["Var", "App", "LApp", "Fst", "Snd", "NatRec", "SumRec", "UnitRec", "WRec", "PApp", "Abort"]);
+const ETA_CONSTRUCTORS = new Set(["Lam", "LLam", "PLam", "Pair", "GlueTerm"]);
+// Neutral weak heads: variables and eliminations stuck on one. A declared
+// type's constructor and eliminator count here, not as rigid heads: each is
+// a function, or a path, which eta relates to a lambda. Two constructors of
+// different numbers still differ, and so does a constructor from a variable.
+const NEUTRAL = new Set(["Var", "App", "LApp", "Fst", "Snd", "SumRec", "UnitRec", "PApp", "Abort",
+  "Con", "Elim"]);
 // The child that is only a constructor's annotation: two equal terms may
 // carry different annotations, so a difference there proves nothing.
-const ANNOTATION = { Pair: 0, Inl: 0, Inr: 0, Sup: 0, PushLeft: 0, PushRight: 0, Abort: 0, Lam: 0 };
+const ANNOTATION = { Pair: 0, Inl: 0, Inr: 0, Sup: 0, PushLeft: 0, PushRight: 0, Abort: 0, Lam: 0, Con: 0 };
 // A scope maps term symbols to entries; under this key, the mask of the
 // interval dimensions live in it.
 const LIVE = "dims";
@@ -60,10 +71,10 @@ const joinScopes = (...scopes) => new Map([...scopes.flatMap(scope => [...scope]
 // The children of a dimension binder that it binds.
 const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: [0] };
 
-// The search's choices (docs/roadmaps/learned-search.md, "The decision
+// The search's decisions (docs/roadmaps/learned-search.md, "The decision
 // problem"). `agree` rewrites two focused subterms until they are
 // alpha-equal; each time round, it stops at a branch point, lists the moves
-// open there, and asks a chooser which to make. A move is a plain object:
+// open there, and asks a policy which to make. A move is a plain object:
 //   { move: "normalize" }              both sides to normal form: a long closed
 //                                      computation, offered once per comparison
 //   { move: "descend" }                congruence: agree part by part under a
@@ -75,13 +86,19 @@ const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: 
 //   { move: "whnf", side }             the kernel's weak head normal form
 //   { move: "eta" }                    eta-expand the side that is not a
 //                                      constructor, against one that is
+//   { move: "glue", side }             Glue eta by the kernel's Glue step,
+//                                      within GLUE_STEPS: a piece may be the
+//                                      base's restriction only once both are
+//                                      reduced, which the weak head does not
+//                                      do; the last resort, and never inside a
+//                                      speculative descent
 // The list is syntactic: it offers what the terms' shapes allow, and the
 // kernel checks the rest when the move is made. A step always applies. A
 // whnf or eta that turns out to change nothing leaves the point as it was.
 // A failed normalize or descend may have rewritten the sides, so the point
 // is listed again, without them.
 //
-// A chooser is { name, rank(point), observe?(point, move, outcome, error) }.
+// A policy is { name, rank(point), observe?(point, move, outcome, error) }.
 // rank yields moves of point.moves, best first; the driver makes each in
 // turn until one applies, and the comparison fails when none does. observe
 // hears each move's outcome: "agreed", "progress", "stuck" (it changed
@@ -94,8 +111,8 @@ const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: 
 // the bound names that correspond, the moves, the listing's number at this
 // point, the steps taken by the whole comparison so far, and how many
 // comparisons enclose this one (descending compares parts, one inside the
-// other). Choosers are untrusted,
-// like the driver: a bad choice only fails, and the kernel checks each move.
+// other). Policies are untrusted,
+// like the driver: a bad ranking only fails, and the kernel checks each move.
 //
 // The heuristic is the driver's own order, lazily, since its tests ask the
 // guide: normalize a long closed computation unless the guide finds the
@@ -103,7 +120,7 @@ const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: 
 // steps before unfolding, left before right; unfold the later definition,
 // or both when it is the same (lazy delta reduction); then weak head normal
 // forms, left then right; then eta.
-export const heuristicChooser = Object.freeze({
+export const heuristicPolicy = Object.freeze({
   name: "heuristic",
   *rank(point) {
     const { driver, moves } = point, find = (move, side) => moves.find(m => m.move === move && (!side || m.side === side));
@@ -120,22 +137,18 @@ export const heuristicChooser = Object.freeze({
     }
     if (left || right) return yield left ?? right;
     for (const move of moves) if (move.move === "whnf" || move.move === "eta") yield move;
+    for (const move of moves) if (move.move === "glue") yield move;
   },
 });
 
 export class InstructionDriver {
-  constructor(kernel, { graph = new InstructionGraph(kernel), fuel = FUEL, guideSteps = ORACLE_STEPS,
-                        oracle = kernel.conversionOracle ?? false, chooser = kernel.chooser ?? heuristicChooser } = {}) {
+  constructor(kernel, { graph = new InstructionGraph(kernel), fuel = FUEL, policy = kernel.policy ?? heuristicPolicy } = {}) {
     this.kernel = kernel;
     this.graph = graph;
     this.fuel = fuel;
-    this.guideSteps = guideSteps;
-    // Whether the term checker's conversion guides the search instead of the
-    // driver's own guide (guide, below).
-    this.oracle = oracle;
-    // Who picks the moves of `agree` (heuristicChooser, above), and how many
+    // Who picks the moves of `agree` (heuristicPolicy, above), and how many
     // comparisons are open, one inside another.
-    this.chooser = chooser;
+    this.policy = policy;
     this.depth = 0;
     this.nodes = new Map();
     // Judgements never change, so reads are cached; so are the scopes of
@@ -147,7 +160,10 @@ export class InstructionDriver {
     this.mentions = new Map();
     this.derived = new Map();
     this.stable = new Set();
-    this.equalities = new Map();
+    // Glue terms the glue move need not try again: no Glue eta redex, even
+    // with its side conditions normalized, or one whose side conditions take
+    // more than the move's budget.
+    this.glueStuck = new Set();
     // The guide's answers and the weak heads it asked for.
     this.guesses = new Map();
     this.heads = new Map();
@@ -175,10 +191,12 @@ export class InstructionDriver {
   contextScope(context, dimensions) {
     const key = `${dimensions}|${context.map(([symbol, type]) => `${symbol}:${type}`).join(",")}`;
     if (!this.contextScopes.has(key)) {
-      const scope = new Map([[LIVE, dimensions]]);
+      // A new scope for each assumption: a scope is a memo key for the
+      // derivations made in it (scopeKey), so it never changes once used.
+      let scope = new Map([[LIVE, dimensions]]);
       for (const [symbol, assumption] of context)
         // A universe variable (G0) is a level entry, typed by its bound.
-        scope.set(symbol, this.node(assumption).kind === "LBound" ? this.graph.levelEntry(symbol)
+        scope = new Map(scope).set(symbol, this.node(assumption).kind === "LBound" ? this.graph.levelEntry(symbol)
           : this.bind(symbol, this.asType(this.derive(assumption, scope))));
       this.contextScopes.set(key, scope);
     }
@@ -318,8 +336,6 @@ export class InstructionDriver {
     const within = child => this.derive(child, bound);
     switch (n.kind) {
     case "U": return g.universe(n.children[0]);
-    case "Nat": return g.nat();
-    case "Zero": return g.zero();
     case "Unit": return g.unit();
     case "Point": return g.point();
     case "Void": return g.void();
@@ -328,39 +344,32 @@ export class InstructionDriver {
       if (!scope.has(n.payload)) throw new Error(`Unbound variable ${this.kernel.symbolName(n.payload)}.`);
       return g.variable(scope.get(n.payload));
     }
-    case "Succ": return g.succ(this.convertTo(derive(a), g.nat()));
     case "LPi": case "LLam": {
-      const entry = g.levelEntry(n.payload), inner = new Map(scope).set(n.payload, entry);
-      const body = derive(b, inner);
+      let symbol=n.payload, entry, bodyHandle=b;
+      try { entry=g.levelEntry(symbol); }
+      catch(error) {
+        if(!/already names/.test(error.message))throw error;
+        // A warm session may already use this spelling for a term entry.
+        // Rename the bound level and its occurrences together before replay.
+        const stem=this.kernel.symbolName(symbol);
+        for(let suffix=1;;suffix++) {
+          const fresh=this.kernel.symbol(`${stem}'level${suffix}`);
+          try { entry=g.levelEntry(fresh);symbol=fresh;break; }
+          catch(error) {if(!/already names/.test(error.message))throw error;}
+        }
+        bodyHandle=g.rename(b,false,n.payload,symbol);
+      }
+      const inner = new Map(scope).set(symbol, entry);
+      const body = derive(bodyHandle, inner);
       return n.kind === "LPi" ? g.levelPi(entry, this.asType(body)) : g.levelLambda(entry, body);
     }
     case "LApp": return g.levelApply(this.shape(this.focus(derive(a), "type"), "LPi"), b);
-    case "Pi": case "Sigma": case "W": case "Lam": {
+    case "Pi": case "Sigma": case "Lam": {
       const entry = this.bind(n.payload, this.asType(derive(a)));
       const inner = new Map(scope).set(n.payload, entry);
       if (n.kind === "Lam") return g.lambda(entry, derive(b, inner));
       const body = this.asType(derive(b, inner));
-      return n.kind === "Pi" ? g.pi(entry, body) : n.kind === "Sigma" ? g.sigma(entry, body) : g.w(entry, body);
-    }
-    case "Sup": {
-      // sup(l, c) : T, with c : Π(i : B[l/x]). T.
-      const [type, back] = this.former(this.asType(derive(a)), "W");
-      const label = this.convertTo(derive(b), g.domain(type));
-      const index = this.freshEntry(g.family(type, label), "i");
-      return this.restore(g.sup(type, label, this.convertTo(derive(c), g.pi(index, type))), back);
-    }
-    case "WRec": {
-      // The step at Π(l : L). Π(c : Π(i : B[l]). W). Π(h : Π(i : B[l]).
-      // M(c(i))). M(sup(l, c)), built by instructions.
-      const value = this.shape(this.focus(derive(c), "type"), "W");
-      const type = this.evidence(this.focus(value, "type"));
-      const motive = this.motive(derive(a), type);
-      const label = this.freshEntry(g.domain(type), "l"), lv = g.variable(label);
-      const arity = g.family(type, lv), index = this.freshEntry(arity, "i");
-      const children = this.freshEntry(g.pi(index, type), "c"), cv = g.variable(children);
-      const hypothesis = this.freshEntry(g.pi(index, g.apply(motive, g.apply(cv, g.variable(index)))), "h");
-      const step = g.pi(label, g.pi(children, g.pi(hypothesis, g.apply(motive, g.sup(type, lv, cv)))));
-      return g.wElim(motive, this.convertTo(derive(b), step), value);
+      return n.kind === "Pi" ? g.pi(entry, body) : g.sigma(entry, body);
     }
     case "App": {
       // The argument's type and the function's domain agree in place, both
@@ -386,15 +395,6 @@ export class InstructionDriver {
       const [type, back] = this.former(this.asType(derive(a)), "Sum");
       const summand = this.evidence(this.focus(type, "term", [n.kind === "Inl" ? 0 : 1]));
       return this.restore(g.inject(type, this.convertTo(derive(b), summand), n.kind === "Inr"), back);
-    }
-    case "NatRec": {
-      const value = this.convertTo(derive(d), g.nat());
-      const motive = this.motive(derive(a), g.nat());
-      const zero = this.convertTo(derive(b), g.apply(motive, g.zero()));
-      const predecessor = this.freshEntry(g.nat(), "n"), pv = g.variable(predecessor);
-      const hypothesis = this.freshEntry(g.apply(motive, pv), "ih");
-      const stepType = g.pi(predecessor, g.pi(hypothesis, g.apply(motive, g.succ(pv))));
-      return g.natElim(motive, zero, this.convertTo(derive(c), stepType), value);
     }
     case "UnitRec": {
       const motive = this.motive(derive(a), g.unit());
@@ -526,9 +526,14 @@ export class InstructionDriver {
         }
         const value = this.convertTo(derive(t), this.evidence(this.focus(annotation, "term", [...here, 0])));
         const equivalence = this.subterm(this.focus(annotation, "term", [...here, 1]));
-        const image = this.derive(k.term("App", 0, k.term("Fst", 0, equivalence), this.statement(value).term),
-          joinScopes(this.scope(annotation), this.scope(value)));
-        const start = this.focus(g.refl(image), "other"), end = this.focus(g.refl(this.restrict(base, clause)), "other");
+        // The image lives in the equivalence's codomain, and the base on the
+        // face in the Glue type's base: equal types, perhaps only up to
+        // computation, as (λ X. X)(Unit) and Unit. The two equalities below
+        // are joined at one type, so the image is converted to the base's.
+        const restricted = this.restrict(base, clause);
+        const image = this.convertTo(this.derive(k.term("App", 0, k.term("Fst", 0, equivalence), this.statement(value).term),
+          joinScopes(this.scope(annotation), this.scope(value))), this.evidence(this.focus(restricted, "type")));
+        const start = this.focus(g.refl(image), "other"), end = this.focus(g.refl(restricted), "other");
         if (!this.agree(start, end)) throw new Error("A Glue value's image disagrees with the base.");
         system = g.glueTermPiece(system, value, g.transitivity(start.ref.id, g.symmetry(end.ref.id)));
         values.forEach((earlier, position) => {
@@ -541,48 +546,135 @@ export class InstructionDriver {
       return g.glueTerm(system);
     }
     case "Unglue": return g.unglue(this.convertTo(derive(b), this.asType(derive(a))));
-    case "Pushout": {
-      // The maps are a pair C → A, C → B, derived as that type's syntax.
-      const [source, left, right] = [a, b, c].map(child => this.asType(derive(child)));
-      const x = this.freshSymbol("x"), f = this.freshSymbol("f"), k = this.kernel;
-      const span = k.term("Sigma", f, k.term("Pi", x, a, b), k.term("Pi", x, a, c));
-      return g.pushout(source, left, right, this.convertTo(derive(d), this.asType(derive(span))));
+    // Declared types (H1; the specification's section 6.1).
+    case "Sort": return this.instance(n, scope);
+    case "Con": {
+      // Constructor k of an instance, at the type the kernel gives it.
+      const instance = this.asType(derive(a));
+      if (this.node(this.statement(instance).term).kind !== "Sort") throw new Error("A constructor names an instance of a declared type.");
+      return g.construct(instance, n.payload);
     }
-    case "PushLeft": case "PushRight": case "PushPath": {
-      const [type, back] = this.former(this.asType(derive(a)), "Pushout");
-      const slot = { PushPath: 0, PushLeft: 1, PushRight: 2 }[n.kind];
-      const value = this.convertTo(derive(b), this.evidence(this.focus(type, "term", [slot])));
-      return this.restore(n.kind === "PushPath" ? g.pushPath(type, value, n.payload)
-        : g.pushPoint(type, value, n.kind === "PushRight"), back);
-    }
-    case "PushElim": {
-      // A motive over a pushout type P = Pushout(C, A, B, (f, g)), and each
-      // case at the type the kernel asks for, derived from its syntax.
-      const motive = this.focus(this.shape(this.focus(derive(a), "type"), "Pi"), "type");
-      this.shape(this.child(motive, 0), "Pushout");
-      this.shape(this.child(motive, 1), "U");
-      const k = this.kernel, M = this.statement(motive.ref.id).term, P = this.subterm(this.child(motive, 0));
-      const [C, A, B, maps] = this.node(P).children;
-      const point = (kind, domain, stem) => {
-        const x = this.freshSymbol(stem);
-        return k.term("Pi", x, domain, k.term("App", 0, M, k.term(kind, 0, P, k.term("Var", x))));
-      };
-      // Built from judgements, the syntax names their entries: derive it in
-      // their scope, not the source's.
-      const own = this.scope(motive.ref.id);
-      const left = this.convertTo(derive(b), this.asType(derive(point("PushLeft", A, "a"), own)));
-      const right = this.convertTo(derive(c), this.asType(derive(point("PushRight", B, "b"), own)));
-      const [l, r] = [left, right].map(id => this.statement(id).term);
-      const joint = joinScopes(own, this.scope(left), this.scope(right));
-      const dimension = this.freeDimension([motive.ref.id, left, right]), x = this.freshSymbol("c");
-      const at = k.formula("interval", [[1n << BigInt(dimension), 0n]]), cv = k.term("Var", x);
-      const bridge = k.term("Pi", x, C, k.term("Path", dimension, k.term("App", 0, M, k.term("PushPath", at, P, cv)),
-        k.term("App", 0, l, k.term("App", 0, k.term("Fst", 0, maps), cv)),
-        k.term("App", 0, r, k.term("App", 0, k.term("Snd", 0, maps), cv))));
-      return g.pushElim(motive.ref.id, left, right, this.convertTo(derive(d), this.asType(derive(bridge, joint))));
+    case "Elim": {
+      let eliminator = this.openEliminator(derive(a), n.payload);
+      for (let clause = b; clause; clause = this.node(clause).children[1])
+        eliminator = this.addClause(eliminator, derive(this.node(clause).children[0]));
+      return g.eliminatorClose(eliminator);
     }
     default: throw unsupported(n.kind);
     }
+  }
+
+  // An eliminator in progress from a motive Π (z : S(as)). U(l), its type
+  // reduced to that shape; with `index`, over that signature only. Its
+  // judgement's type is the next clause's type, ClauseType_k.
+  openEliminator(motiveJudgement, index = null) {
+    const motive = this.focus(this.shape(this.focus(motiveJudgement, "type"), "Pi"), "type");
+    this.shape(this.child(motive, 0), "Sort");
+    this.shape(this.child(motive, 1), "U");
+    if (index !== null && this.node(this.subterm(this.child(motive, 0))).payload !== index)
+      throw new Error("The eliminator's motive is over another declared type.");
+    return this.graph.eliminator(motive.ref.id);
+  }
+  // The next clause, converted to the type the kernel computes for it.
+  addClause(eliminator, clause) {
+    return this.graph.eliminatorClause(eliminator, this.convertTo(clause, this.evidence(this.focus(eliminator, "type"))));
+  }
+  // An admitted signature as the kernel records it, read once per driver.
+  signatureInfo(index) {
+    const infos = this.signatureInfos ??= new Map();
+    if (!infos.has(index)) infos.set(index, this.kernel.signature(index));
+    return infos.get(index);
+  }
+  // The former Π (xs < ω). Π (ps : Ps). U(ℓ) of a signature, read as its
+  // level symbols and its parameters' types, each over the earlier ones.
+  telescope(info) {
+    let term = info.former;
+    const levels = [], types = [];
+    for (let j = 0; j < info.levels; j++, term = this.node(term).children[1]) {
+      if (this.node(term).kind !== "LPi") throw new Error("A signature's former binds its universe parameters first.");
+      levels.push(this.node(term).payload);
+    }
+    for (let i = 0; i < info.parameters; i++, term = this.node(term).children[1]) {
+      if (this.node(term).kind !== "Pi") throw new Error("A signature's former binds its parameters after its levels.");
+      types.push(this.node(term).children[0]);
+    }
+    return { levels, types };
+  }
+  // A signature's former with its level binders renamed to fresh symbols:
+  // they are the admission's symbols, which a caller's variables may share,
+  // and a level entry cannot take a symbol that names a term entry.
+  freshFormer(index, info) {
+    const formers = this.formers ??= new Map();
+    if (!formers.has(index)) {
+      const rebuild = term => {
+        const n = this.node(term);
+        if (n.kind !== "LPi") return term;
+        // A symbol the kernel allocates now, with no name: no entry has it.
+        const fresh = this.kernel.module._cb_fresh_symbol(this.kernel.handle) >>> 0;
+        if (!fresh) throw new Error("Could not allocate a symbol.");
+        return this.kernel.term("LPi", fresh, n.children[0], rebuild(this.graph.rename(n.children[1], false, n.payload, fresh)));
+      };
+      formers.set(index, rebuild(info.former));
+    }
+    return formers.get(index);
+  }
+  // S{ls}(as): an instance of an admitted signature (the specification's
+  // sections 3.1 and 6.1). The kernel checks each parameter's type against
+  // the telescope's, with the levels and the earlier parameters substituted,
+  // up to bound names: so each parameter is converted to exactly that type.
+  // The types come from applying an entry of the former's type to the
+  // levels and the parameters, as an application would.
+  //
+  // A recorded level is given. An erased one is read from the parameters
+  // whose telescope type ends in U(x), each reduced to that shape first; the
+  // largest reading is used, and the lower parameters are lifted to it, as
+  // the kernel asks.
+  instance(n, scope) {
+    const g = this.graph, info = this.signatureInfo(n.payload), { levels: symbols, types } = this.telescope(info);
+    const list = cell => cell ? [this.node(cell).children[0], ...list(this.node(cell).children[1])] : [];
+    const given = list(n.children[1]), parameters = list(n.children[0]);
+    if (parameters.length !== info.parameters) throw new Error("An instance takes each of its signature's parameters.");
+    const derived = parameters.map(parameter => this.derive(parameter, scope));
+    // The Π binders a telescope type has before its end, and that end.
+    const shapeOf = type => {
+      let depth = 0;
+      for (; this.node(type).kind === "Pi"; depth++) type = this.node(type).children[1];
+      return { depth, end: this.node(type) };
+    };
+    let recorded = 0;
+    for (let j = 0; j < info.levels; j++) recorded += info.recorded >> j & 1;
+    if (given.length !== recorded) throw new Error("An instance gives each recorded universe parameter its level, and no other.");
+    const levels = [];
+    for (let j = 0, r = 0; j < info.levels; j++) {
+      if (info.recorded >> j & 1) {
+        levels.push(given[r++]);
+        continue;
+      }
+      let read = 0;
+      types.forEach((type, i) => {
+        const { depth, end } = shapeOf(type);
+        if (end.kind !== "U" || this.node(end.children[0]).kind !== "Var" || this.node(end.children[0]).payload !== symbols[j]) return;
+        let focus = this.focus(derived[i], "type");
+        for (let d = 0; d < depth; d++) { this.shape(focus, "Pi"); focus = this.child(focus, 1); }
+        this.shape(focus, "U");
+        derived[i] = focus.ref.id;
+        const level = this.node(this.subterm(focus)).children[0];
+        read = read ? this.kernel.term("LMax", 0, read, level) : level;
+      });
+      if (!read) throw new Error("An erased universe parameter has no parameter to read it from.");
+      levels.push(read);
+    }
+    let fn = g.variable(this.freshEntry(this.asType(this.derive(this.freshFormer(n.payload, info), new Map([[LIVE, 0n]]))), "S"));
+    for (const level of levels) fn = g.levelApply(this.shape(this.focus(fn, "type"), "LPi"), level);
+    let instance = g.sortBegin(n.payload);
+    for (const level of given) instance = g.sortLevel(instance, level);
+    derived.forEach(parameter => {
+      const type = this.focus(this.shape(this.focus(fn, "type"), "Pi"), "type");
+      const converted = this.convertTo(parameter, this.evidence(this.child(type, 0)));
+      instance = g.sortParameter(instance, converted);
+      fn = g.apply(type.ref.id, converted);
+    });
+    return instance;
   }
 
   // Two typing judgements agree where two faces meet: an equality between
@@ -704,7 +796,7 @@ export class InstructionDriver {
   }
 
   // The kernel's weak head normal form of the focused subterm, for heads the
-  // steps do not take: composition, transport, Glue, pushouts. False when it
+  // steps do not take: composition, transport and Glue. False when it
   // is one already.
   whnf(focus) {
     const before = this.subterm(focus);
@@ -715,6 +807,29 @@ export class InstructionDriver {
     if (this.subterm(focus) !== before) return true;
     this.stable.add(before);
     return false;
+  }
+  // The glue move: Glue eta by the kernel's Glue step, when the weak head
+  // leaves a Glue term. The weak head compares each piece with the base's
+  // restriction by syntax, and the restriction can be a redex, as p @ i at
+  // i = 0 is p's left endpoint; the Glue step compares the two normalized,
+  // and normalizes nothing else of the term. Within its own step budget.
+  // What it learns holds wherever the term occurs: that the term is no Glue
+  // eta redex, or that its side conditions take more than the budget. The
+  // same term at another focus may still need the move, and so may the base
+  // it contracts to.
+  glue(focus) {
+    const before = this.subterm(focus);
+    try { this.graph.within(GLUE_STEPS, () => this.reduce(focus, { path: [], rule: "glue" })); }
+    catch (error) {
+      // A deadline ends the comparison, as it would after any move. Anything
+      // else is no progress, and the comparison goes on: the term is no
+      // Glue eta redex, or its side conditions ran into the move's budget or
+      // the depth of syntax.
+      if (error.kind === "deadline") throw error;
+      this.glueStuck.add(before);
+      return false;
+    }
+    return true;
   }
 
   // The scope at a focus: its judgement's, with an entry for each term binder
@@ -780,28 +895,9 @@ export class InstructionDriver {
   }
 
   // Whether two subterms are equal: true, false, or null when it cannot tell.
-  // A guide for the search only. Without the oracle it is the driver's own
-  // guide; with it, the term checker's conversion, after bound names that
-  // differ are renamed on the right, innermost binder first.
+  // A guide for the search only: the driver's own (guide, below).
   equal(x, y, terms, dims) {
-    if (!this.oracle) return this.guide(x, y, terms, dims, { left: GUIDE_FUEL });
-    try {
-      for (const [bindings, dimension] of [[terms, false], [dims, true]]) {
-        const renamed = new Set();
-        for (let binding = bindings; binding; binding = binding.next) {
-          if (renamed.has(binding.right)) continue;
-          renamed.add(binding.right);
-          if (binding.left !== binding.right) y = this.graph.rename(y, dimension, binding.right, binding.left);
-        }
-      }
-    } catch (error) {
-      // Out of time is passed on; a name that cannot be renamed leaves no answer.
-      if (error?.kind === "deadline") throw error;
-      return null;
-    }
-    const key = `${x},${y}`;
-    if (!this.equalities.has(key)) this.equalities.set(key, this.graph.convertible(x, y, this.guideSteps));
-    return this.equalities.get(key);
+    return this.guide(x, y, terms, dims, { left: GUIDE_FUEL });
   }
 
   // The driver's own guide: two terms compared lazily through their weak head
@@ -868,9 +964,10 @@ export class InstructionDriver {
   // heads part by part when their parts are equal, and otherwise take
   // weak-head steps on either side.
   agree(a, b, terms = null, dims = null, budget = { left: this.fuel }) {
-    // Pairs of terms congruence already failed on. A failed attempt can leave
-    // an eta expansion that a step contracts again, so without this the same
-    // attempt would repeat until the budget ran out.
+    // Pairs of terms congruence already failed on, and pairs already expanded
+    // by eta. A failed attempt can leave an eta expansion that a step or the
+    // glue move contracts again, back to the same pair, so without this the
+    // same attempt would repeat until the budget ran out.
     const failed = new Set();
     // A long closed computation, such as a numeral's arithmetic: unless the
     // term checker's conversion finds the two different, compute both normal
@@ -897,7 +994,8 @@ export class InstructionDriver {
           else if (budget.untried) return false;
         }
         const point = { driver: this, a, b, x, y, nx: this.node(x), ny: this.node(y), terms, dims,
-          moves: null, round: 0, taken: budget.taken ?? 0, depth, normalize, descended: false, stuck: new Set(), failed };
+          moves: null, round: 0, taken: budget.taken ?? 0, depth, normalize, descended: false, stuck: new Set(), failed,
+          speculative: (budget.speculative ?? 0) > 0 };
         const outcome = this.branch(point, budget);
         if (outcome === "agreed") return true;
         if (outcome === "failed") return false;
@@ -908,24 +1006,24 @@ export class InstructionDriver {
     }
   }
 
-  // One branch point of `agree`: the moves open there, made in the chooser's
+  // One branch point of `agree`: the moves open there, made in the policy's
   // order until one applies. "agreed" when the sides now agree, "failed"
   // when no move applies, and otherwise the comparison goes round again.
   branch(point, budget) {
     for (;; point.round++) {
       point.moves = this.moves(point);
       let changed = false;
-      for (const move of this.chooser.rank(point)) {
-        if (!point.moves.includes(move)) throw new Error(`The chooser ${this.chooser.name} chose a move that is not open.`);
+      for (const move of this.policy.rank(point)) {
+        if (!point.moves.includes(move)) throw new Error(`The policy ${this.policy.name} ranked a move that is not open.`);
         let outcome;
         try { outcome = this.move(point, move, budget); }
         catch (error) {
           // The move's work is done, and observers hear of it; the error
           // ends the comparison as before.
-          this.chooser.observe?.(point, move, "error", error);
+          this.policy.observe?.(point, move, "error", error);
           throw error;
         }
-        this.chooser.observe?.(point, move, outcome);
+        this.policy.observe?.(point, move, outcome);
         if (outcome === "stuck") continue;
         if (outcome === "changed") { changed = true; break; }
         return outcome;
@@ -935,7 +1033,7 @@ export class InstructionDriver {
       if (!changed) return "failed";
     }
   }
-  // The moves open at a point (heuristicChooser, above). Congruence reads the
+  // The moves open at a point (heuristicPolicy, above). Congruence reads the
   // sides as the point found them; the rest reads them now, as a failed
   // attempt may have rewritten parts.
   moves(point) {
@@ -953,7 +1051,13 @@ export class InstructionDriver {
     for (const [side, term] of [["left", x], ["right", y]])
       if (!point.stuck.has(side) && !this.stable.has(term) && !CONSTRUCTORS.has(this.node(term).kind)) moves.push({ move: "whnf", side });
     const kx = this.node(x).kind, ky = this.node(y).kind;
-    if (!point.stuck.has("eta") && kx !== ky && (etaTypes[kx] || etaTypes[ky])) moves.push({ move: "eta" });
+    if (!point.stuck.has("eta") && !point.failed.has(`eta:${point.x},${point.y}`) && kx !== ky && (etaTypes[kx] || etaTypes[ky]))
+      moves.push({ move: "eta" });
+    // Not inside a speculative descent: the enclosing comparison's lazy steps
+    // come first, and should they fail, its last resort normalizes both sides.
+    for (const [side, term] of [["left", x], ["right", y]])
+      if (!point.speculative && this.node(term).kind === "GlueTerm" && !this.glueStuck.has(term) && !point.stuck.has(`glue:${side}`))
+        moves.push({ move: "glue", side });
     return moves;
   }
   // Make a move: its outcome, as `branch` reads it.
@@ -961,14 +1065,22 @@ export class InstructionDriver {
     const { a, b, terms, dims } = point;
     switch (move.move) {
     case "normalize": return this.normalizeBoth(a, b, terms, dims) ? "agreed" : "changed";
-    case "descend":
+    case "descend": {
       point.descended = true;
-      if (this.agreeParts(a, b, point.nx, terms, dims, budget)) return "agreed";
+      // A descent is speculative while this point still has lazy steps to
+      // try should it fail: inside it, the glue move waits (moves).
+      const speculative = point.moves.some(open => open.move === "step");
+      if (speculative) budget.speculative = (budget.speculative ?? 0) + 1;
+      let agreed;
+      try { agreed = this.agreeParts(a, b, point.nx, terms, dims, budget); }
+      finally { if (speculative) budget.speculative--; }
+      if (agreed) return "agreed";
       // A comparison inside gave up for an enclosing closed one to try
       // normal forms: congruence has not failed, and may be tried again.
       if (budget.untried && budget.taken >= LONG_COMPUTATION) return "deferred";
       point.failed.add(`${point.x},${point.y}`);
       return "changed";
+    }
     case "step":
       if (move.side !== "right") this.reduce(a, move.side === "both" ? move.steps[0] : move.step);
       if (move.side !== "left") this.reduce(b, move.side === "both" ? move.steps[1] : move.step);
@@ -978,8 +1090,12 @@ export class InstructionDriver {
       point.stuck.add(move.side);
       return "stuck";
     case "eta":
-      if (this.eta(a, b)) return "progress";
+      if (this.eta(a, b)) { point.failed.add(`eta:${point.x},${point.y}`); return "progress"; }
       point.stuck.add("eta");
+      return "stuck";
+    case "glue":
+      if (this.glue(move.side === "left" ? a : b)) return "progress";
+      point.stuck.add(`glue:${move.side}`);
       return "stuck";
     default: throw new Error(`Unknown move ${move.move}.`);
     }
@@ -1010,14 +1126,23 @@ export class InstructionDriver {
     if (x.kind === "Var") return this.sameName(x.payload, y.payload, terms);
     if (x.kind === "U") return this.levelsEqual(x.children[0], y.children[0], terms);
     if (x.kind === "LApp") return this.levelsEqual(x.children[1], y.children[1], terms);
+    // An instance: its signature, and its recorded levels by normal form.
+    if (x.kind === "Sort") {
+      if (x.payload !== y.payload) return false;
+      let a = x.children[1], b = y.children[1];
+      for (; a && b; a = this.node(a).children[1], b = this.node(b).children[1])
+        if (!this.levelsEqual(this.node(a).children[0], this.node(b).children[0], terms)) return false;
+      return !a && !b;
+    }
     if (FORMULA_PAYLOADS.has(x.kind)) return this.sameFormula(x.payload, y.payload, dims);
     if (TERM_BINDERS.has(x.kind) || ["PLam", "Path", "Comp", "HComp", "Trans"].includes(x.kind)) return true;
     return x.payload === y.payload;
   }
   nodeHandle(node) { return node.id; }
   // The operand slots compared: all but a path application's annotation, a
-  // universe's level and an instantiation's level, which sameHead compares.
-  parts(n) { return n.kind === "U" ? 0 : n.kind === "PApp" || n.kind === "LApp" ? 1 : 4; }
+  // universe's level, an instantiation's level and an instance's recorded
+  // levels, which sameHead compares.
+  parts(n) { return n.kind === "U" ? 0 : n.kind === "PApp" || n.kind === "LApp" || n.kind === "Sort" ? 1 : 4; }
   // Two levels are equal when their normal forms are (G0 §2.4), each variable
   // bound on the way down named by its binder, so that the levels of
   // λ (x < ω). U(max(x, z)) and λ (y < ω). U(max(z, y)) agree though their
@@ -1082,29 +1207,20 @@ export class InstructionDriver {
     case "App": {
       const fn = this.node(n.children[0]).kind;
       if (fn === "Lam") return { path: [], rule: "beta" };
-      // The pushout eliminator computes on a point or a path.
-      if (fn === "PushElim") {
-        const kind = this.node(n.children[1]).kind;
-        return ["PushLeft", "PushRight", "PushPath"].includes(kind) ? iota : under(1, this.headStep(n.children[1]));
-      }
+      // A declared type's eliminator computes on a constructor applied to
+      // its arguments and at its dimensions (H1). A constructor at an
+      // endpoint is its boundary first, by the path step inside.
+      if (fn === "Elim") return this.constructed(n.children[1]) ? iota : under(1, this.headStep(n.children[1]));
       return under(0, this.headStep(n.children[0]));
     }
-    // A pushout path at an endpoint is a point.
-    case "PushPath": return this.point(n.payload).endpoint !== undefined ? iota : null;
     case "Fst": case "Snd":
       return this.node(n.children[0]).kind === "Pair" ? iota : under(0, this.headStep(n.children[0]));
-    case "NatRec": {
-      const kind = this.node(n.children[3]).kind;
-      return kind === "Zero" || kind === "Succ" ? iota : under(3, this.headStep(n.children[3]));
-    }
     case "SumRec": {
       const kind = this.node(n.children[3]).kind;
       return kind === "Inl" || kind === "Inr" ? iota : under(3, this.headStep(n.children[3]));
     }
     case "UnitRec":
       return this.node(n.children[2]).kind === "Point" ? iota : under(2, this.headStep(n.children[2]));
-    case "WRec":
-      return this.node(n.children[2]).kind === "Sup" ? iota : under(2, this.headStep(n.children[2]));
     case "PApp": {
       const fn = this.node(n.children[0]);
       if (fn.kind === "PLam") {
@@ -1132,6 +1248,16 @@ export class InstructionDriver {
       return null;
     default: return null;
     }
+  }
+
+  // Whether a term is a declared type's constructor applied, at dimensions
+  // that are not endpoints: c(ts, qs) @ rs.
+  constructed(term) {
+    let n = this.node(term);
+    for (; n.kind === "PApp"; n = this.node(n.children[0]))
+      if (this.point(n.payload).endpoint !== undefined) return false;
+    for (; n.kind === "App"; n = this.node(n.children[0]));
+    return n.kind === "Con";
   }
 
   // Alpha equality, as the kernel decides it without reducing: bound names

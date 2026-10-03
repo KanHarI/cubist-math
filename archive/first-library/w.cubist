@@ -1,0 +1,16 @@
+// Well-founded trees: labels are data and child functions are positions.
+inductive W(U < UU0, V < UU0, A : U, B : A -> V) : max(U, V) {
+  sup(a : A, children : B(a) -> W(U, V, A, B));
+}
+
+// Dependent elimination is an ordinary structurally recursive definition.
+def wrec(
+  U < UU0, V < UU0, R < UU0, A : U, B : A -> V, P : W(U, V, A, B) -> R, step : forall a : A.
+  forall children : B(a) -> W(U, V, A, B). (forall b : B(a). P(children(b))) -> P(sup(a, children)),
+  tree : W(U, V, A, B)
+) :
+  P(tree) := match tree as t return P(t) {
+    sup(a, children) => step(
+      a, children, fun (b : B(a)) => wrec(U, V, R, A, B, P, step, children(b))
+    );
+  };

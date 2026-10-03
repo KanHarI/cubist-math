@@ -1,5 +1,5 @@
-import { bindDimensions } from "./dist/cubical-runtime/dimension-slots.mjs";
-import { dimensionContextKey } from "./dist/cubical-runtime/syntax-graph.mjs";
+import { bindDimensions } from "./translator/dimension-slots.mjs";
+import { dimensionContextKey } from "./translator/syntax-graph.mjs";
 // Lossless syntax transport between named cubical ASTs and C arena handles.
 // This layer never decides typing or equality. Every checked result comes
 // from CubicalKernel.check; shared input objects retain shared arena nodes.
@@ -28,7 +28,6 @@ export function freeDimensionMask(kernel, id, memo) {
     case "Path": mask = bound(c[0]) | free(c[1]) | free(c[2]); break;
     case "PLam": mask = bound(c[0]) | bound(c[1]); break;
     case "PApp": mask = formula(payload) | free(c[0]); break;
-    case "PushPath": mask = formula(payload) | free(c[0]) | free(c[1]); break;
     case "Trans": mask = bound(c[0]) | formula(kernel.node(c[1]).payload) | free(c[2]); break;
     case "Comp": case "HComp":
       mask = (tag === "HComp" ? free(c[0]) : bound(c[0])) | system(c[1], ([body]) => bound(body)) | free(c[2]); break;
@@ -84,14 +83,12 @@ export class CubicalSyntax {
         break;
       case "U": result = node(0, this.encodeLevel(term.level)); break;
       case "Var": result = node(k.symbol(term.name)); break;
-      case "Nat": case "Zero": case "Unit": case "Point": case "Void": result = node(); break;
-      case "Pi": case "Lam": case "Sigma": case "W":
+      case "Unit": case "Point": case "Void": result = node(); break;
+      case "Pi": case "Lam": case "Sigma":
         result = node(k.symbol(term.name), child(term.domain), child(term.body)); break;
       case "App": result = node(0, child(term.fn), child(term.arg)); break;
       case "Pair": result = node(0, child(term.as), child(term.first), child(term.second)); break;
       case "Fst": case "Snd": result = node(0, child(term.pair)); break;
-      case "Succ": result = node(0, child(term.value)); break;
-      case "NatRec": result = node(0, child(term.motive), child(term.zero), child(term.step), child(term.value)); break;
       case "Path": case "PLam": case "Comp": case "HComp": case "Trans": {
         const { dim, inner } = bindDimensions(term, dimensions);
         const family = this.encode(term.family, term.tag === "HComp" ? dimensions : inner);
@@ -111,8 +108,6 @@ export class CubicalSyntax {
       }
       case "PApp": result = node(this.formula(term.arg, "interval", dimensions), child(term.path)); break;
       case "Abort": result = node(0, child(term.as), child(term.impossible)); break;
-      case "Sup": result = node(0, child(term.as), child(term.label), child(term.children)); break;
-      case "WRec": result = node(0, child(term.motive), child(term.step), child(term.value)); break;
       case "Sum": result = node(0, child(term.left), child(term.right)); break;
       case "Inl": case "Inr": result = node(0, child(term.as), child(term.value)); break;
       case "SumRec": result = node(0, child(term.motive), child(term.left), child(term.right), child(term.value)); break;
@@ -130,16 +125,27 @@ export class CubicalSyntax {
         result = node(0, child(term.as), child(term.base), system); break;
       }
       case "Unglue": result = node(0, child(term.as), child(term.value)); break;
-      case "Pushout": result = node(0, child(term.center), child(term.left), child(term.right), child(term.maps)); break;
-      case "PushLeft": case "PushRight": result = node(0, child(term.as), child(term.value)); break;
-      case "PushPath": result = node(this.formula(term.arg, "interval", dimensions), child(term.as), child(term.value)); break;
-      case "PushElim": result = node(0, child(term.motive), child(term.left), child(term.right), child(term.bridge)); break;
       // Level quantification (G0): Π (x < ω). B, λ (x < ω). t and f {ℓ}. The
       // bound is always ω, LBound(1), in this version.
       case "LPi": case "LLam": result = node(k.symbol(term.name), k.term("LBound", 1), child(term.body)); break;
       case "LApp": result = node(0, child(term.fn), this.encodeLevel(term.level)); break;
       // A universe variable's bound, as the type of its context entry.
       case "LBound": result = node(term.tier ?? 1); break;
+      // Declared types (H1): an instance S{ls}(as) of an admitted signature,
+      // named as its declaration registered it (web/cubical-signatures.mjs);
+      // constructor number `index` of an instance; an eliminator with its
+      // motive and one clause per constructor, the squash's included.
+      case "Sort":
+        result = node(this.signatureIndex(term.signature), this.list(term.parameters ?? [], child),
+          this.list(term.levels ?? [], level => this.encodeLevel(level)));
+        break;
+      case "Con":
+        if (!Number.isInteger(term.index) || term.index < 0) throw new Error("A constructor needs its number.");
+        result = node(term.index, child(term.sort));
+        break;
+      case "Elim":
+        result = node(this.signatureIndex(term.signature), child(term.motive), this.list(term.clauses, child));
+        break;
       default: throw new Error(`Unsupported cubical syntax: ${term.tag}`);
     }
     if (!this.encoded.has(term)) this.encoded.set(term, new Map());
@@ -147,8 +153,34 @@ export class CubicalSyntax {
     // Cache keys are immutable syntax, so a later mutation cannot accidentally
     // display new text while reusing the earlier checked term.
     if (term.system) { term.system.forEach(Object.freeze); Object.freeze(term.system); }
+    for (const items of [term.parameters, term.levels, term.clauses]) if (Array.isArray(items)) Object.freeze(items);
     Object.freeze(term);
     return result;
+  }
+  // The kernel's List cells for a sequence, in order.
+  list(items, encode) {
+    let list = 0;
+    for (const item of [...items].reverse()) list = this.kernel.term("List", 0, encode(item), list);
+    return list;
+  }
+  items(list) {
+    const out = [];
+    for (let cell = list; cell; cell = this.kernel.node(cell).children[1]) out.push(this.kernel.node(cell).children[0]);
+    return out;
+  }
+  // An admitted signature's kernel index, by the name its declaration gave it.
+  signatureIndex(name) {
+    const record = this.kernel.signatures.get(name);
+    if (!record) throw new Error(`Unknown declared type: ${name}`);
+    return record.index;
+  }
+  // The registered record of the signature at a kernel index: its name and
+  // constructor names. A signature admitted without one is named by its
+  // kernel symbols.
+  signatureRecord(index) {
+    for (const record of this.kernel.signatures.values()) if (record.index === index) return record;
+    const info = this.kernel.signature(index), name = this.kernel.symbolName(info.sort);
+    return { name, index, constructors: info.constructors.map(c => c.generated ? "squash" : this.kernel.symbolName(c.symbol)) };
   }
   // A universe's level (web/cubical-levels.mjs): a number is a tier-0
   // constant. The kernel takes it to normal form; this only encodes it.
@@ -214,14 +246,12 @@ export class CubicalSyntax {
       case "LApp": Object.assign(result, { fn: child(0), level: this.decodeLevel(c[1]) }); break;
       case "LBound": result.tier = payload; break;
       case "Var": result.name = this.kernel.symbolName(payload); break;
-      case "Nat": case "Zero": case "Unit": case "Point": case "Void": break;
-      case "Pi": case "Lam": case "Sigma": case "W":
+      case "Unit": case "Point": case "Void": break;
+      case "Pi": case "Lam": case "Sigma":
         Object.assign(result, { name: this.kernel.symbolName(payload), domain: child(0), body: child(1) }); break;
       case "App": Object.assign(result, { fn: child(0), arg: child(1) }); break;
       case "Pair": Object.assign(result, { as: child(0), first: child(1), second: child(2) }); break;
       case "Fst": case "Snd": result.pair = child(0); break;
-      case "Succ": result.value = child(0); break;
-      case "NatRec": Object.assign(result, { motive: child(0), zero: child(1), step: child(2), value: child(3) }); break;
       case "Path": Object.assign(result, { dim, family: boundChild(0), left: child(1), right: child(2) }); break;
       case "PLam": Object.assign(result, { dim, family: boundChild(0), body: boundChild(1) }); break;
       case "PApp": Object.assign(result, { path: child(0), arg: this.decodeFormula(payload, dimensions) }); break;
@@ -242,8 +272,6 @@ export class CubicalSyntax {
         Object.assign(result, { dim, family: tag === "HComp" ? child(0) : boundChild(0), system, base: child(2) }); break;
       }
       case "Abort": Object.assign(result, { as: child(0), impossible: child(1) }); break;
-      case "Sup": Object.assign(result, { as: child(0), label: child(1), children: child(2) }); break;
-      case "WRec": Object.assign(result, { motive: child(0), step: child(1), value: child(2) }); break;
       case "Sum": Object.assign(result, { left: child(0), right: child(1) }); break;
       case "Inl": case "Inr": Object.assign(result, { as: child(0), value: child(1) }); break;
       case "SumRec": Object.assign(result, { motive: child(0), left: child(1), right: child(2), value: child(3) }); break;
@@ -264,10 +292,21 @@ export class CubicalSyntax {
         Object.assign(result, tag === "Glue" ? { base: child(0), system } : { as: child(0), base: child(1), system }); break;
       }
       case "Unglue": Object.assign(result, { as: child(0), value: child(1) }); break;
-      case "Pushout": Object.assign(result, { center: child(0), left: child(1), right: child(2), maps: child(3) }); break;
-      case "PushLeft": case "PushRight": Object.assign(result, { as: child(0), value: child(1) }); break;
-      case "PushPath": Object.assign(result, { as: child(0), value: child(1), arg: this.decodeFormula(payload, dimensions) }); break;
-      case "PushElim": Object.assign(result, { motive: child(0), left: child(1), right: child(2), bridge: child(3) }); break;
+      case "Sort":
+        Object.assign(result, { signature: this.signatureRecord(payload).name,
+          parameters: this.items(c[0]).map(item => this.decode(item, dimensions)),
+          levels: this.items(c[1]).map(level => this.decodeLevel(level)) });
+        break;
+      case "Con": {
+        const sort = this.kernel.node(c[0]);
+        const name = sort.kind === "Sort" ? this.signatureRecord(sort.payload).constructors[payload] : undefined;
+        Object.assign(result, { index: payload, ...(name ? { name } : {}), sort: child(0) });
+        break;
+      }
+      case "Elim":
+        Object.assign(result, { signature: this.signatureRecord(payload).name, motive: child(0),
+          clauses: this.items(c[1]).map(item => this.decode(item, dimensions)) });
+        break;
       default: throw new Error(`Unsupported cubical node: ${tag}`);
     }
     // Preserve the native node on a round trip. In particular a checked PApp
@@ -283,18 +322,4 @@ export class CubicalSyntax {
     this.encoded.set(result, new Map([[dimensionContextKey(dimensions), id]]));
     this.decoded.set(cacheKey, result);
     return result;
-  }
-  check(term, expected = null, assumptions = [], dimensions = new Map()) {
-    let mask = 0n;
-    for (const [name, index] of dimensions) {
-      if (typeof name !== "string" || !Number.isInteger(index) || index < 0 || index >= 64)
-        throw new Error("Invalid cubical dimension binding.");
-      const bit = 1n << BigInt(index);
-      if (mask & bit) throw new Error("Cubical dimension indices must be distinct.");
-      mask |= bit;
-    }
-    const context = assumptions.map(([name, type]) => [this.kernel.symbol(name), this.encode(type, dimensions)]);
-    const result = this.kernel.check(this.encode(term, dimensions), expected ? this.encode(expected, dimensions) : 0, context, mask);
-    return { ...result, typeHandle: result.type, term: this.decode(result.expression, dimensions), type: this.decode(result.type, dimensions) };
-  }
-}
+  }}

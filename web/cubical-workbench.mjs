@@ -78,7 +78,7 @@ function display(updateSyntax = true) {
     const truncated = target.textContent.includes("…");
     $("more-reduction-sites").hidden = !truncated;
     $("reduction-status").textContent = count
-      ? `Choose one of ${count} highlighted ${reductionMode.kind === "beta" ? "β" : "δ"} sites in the ${reductionMode.side}.`
+      ? `Select one of ${count} highlighted ${reductionMode.kind === "beta" ? "β" : "δ"} sites in the ${reductionMode.side}.`
       : `No ${reductionMode.kind === "beta" ? "β" : "δ"} sites ${truncated ? "in the displayed portion" : "in the " + reductionMode.side}.`;
     $("reduction-status").textContent += truncated ? " Show more to reveal hidden sites." : "";
   }

@@ -1,3 +1,5 @@
+import nat;
+
 import function_linear_isos;
 
 def coordinate_cons(
@@ -43,7 +45,7 @@ def coordinate_insert_linear(K : AlgebraicField, n : Nat) :
   LinearMap(K, CoordinateSpace(K, n), CoordinateSpace(K, succ(n))) {
   let A := af_carrier(K);
   let zero := af_zero(A, af_operations(K));
-  have additive :
+  let additive :
     forall v : Fin(n) -> A. forall w : Fin(n) -> A.
     coordinate_insert(K, n, vector_add(K, CoordinateSpace(K, n), v, w)) = vector_add(
       K, CoordinateSpace(K, succ(n)), coordinate_insert(K, n, v), coordinate_insert(K, n, w)
@@ -57,7 +59,7 @@ def coordinate_insert_linear(K : AlgebraicField, n : Nat) :
       refl(vector_add(K, CoordinateSpace(K, n), v, w))
     );
   }
-  have scalar :
+  let scalar :
     forall a : A. forall v : Fin(n) -> A.
     coordinate_insert(K, n, vector_scale(K, CoordinateSpace(K, n), a, v)) = vector_scale(
       K, CoordinateSpace(K, succ(n)), a, coordinate_insert(K, n, v)
@@ -95,22 +97,24 @@ def coordinate_decompose(K : AlgebraicField, n : Nat, v : Fin(succ(n)) -> af_car
       K, S, vector_scale(K, S, a, coordinate_first(K, n)),
       coordinate_insert(K, n, finite_tail(A, n, v))
     );
-  have first : finite_head(A, n, f) = finite_head(A, n, v) := trans(
-    cong(
-      (fun (z : A) => af_add(A, af_operations(K), z, af_zero(A, af_operations(K)))),
-      scalar_mul_one_right(K, a)
-    ), group_unit_right(FieldAdditiveGroup(K), a)
-  );
-  have rest : finite_tail(A, n, f) = finite_tail(A, n, v) := FunExt(
-    U0, Fin(n), (fun (i : Fin(n)) => A), finite_tail(A, n, f), finite_tail(A, n, v),
-    (
-      fun (i : Fin(n)) => trans(
-        cong(
-          (fun (z : A) => af_add(A, af_operations(K), z, v(typed(Fin(succ(n)), right(i))))),
-          vector_scale_zero(K, ScalarSpace(K), a)
-        ), group_unit_left(FieldAdditiveGroup(K), v(typed(Fin(succ(n)), right(i))))
+  let first : finite_head(A, n, f) = finite_head(A, n, v) :=
+    trans(
+      cong(
+        (fun (z : A) => af_add(A, af_operations(K), z, af_zero(A, af_operations(K)))),
+        scalar_mul_one_right(K, a)
+      ), group_unit_right(FieldAdditiveGroup(K), a)
+    );
+  let rest : finite_tail(A, n, f) = finite_tail(A, n, v) :=
+    FunExt(
+      U0, Fin(n), (fun (i : Fin(n)) => A), finite_tail(A, n, f), finite_tail(A, n, v),
+      (
+        fun (i : Fin(n)) => trans(
+          cong(
+            (fun (z : A) => af_add(A, af_operations(K), z, v(typed(Fin(succ(n)), right(i))))),
+            vector_scale_zero(K, ScalarSpace(K), a)
+          ), group_unit_left(FieldAdditiveGroup(K), v(typed(Fin(succ(n)), right(i))))
+        )
       )
-    )
-  );
+    );
   exact finite_function_ext(A, n, f, v, first, rest);
 }

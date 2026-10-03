@@ -1,7 +1,7 @@
 import polynomial_ideals;
 
 // Divisibility and invertibility are propositions: no arbitrary quotient or
-// inverse is chosen by the mathematical statement.
+// inverse is fixed by the mathematical statement.
 def PolynomialUnit(K : AlgebraicField, p : Polynomial(K)) :=
   Mere(exists u : Polynomial(K). polynomial_mul(K, p, u) = polynomial_one(K));
 
@@ -103,7 +103,7 @@ def bezout_mul(K : AlgebraicField, p, q, x, c : Polynomial(K), hx : BezoutCombin
 
 def GeneratedPairIdeal(K : AlgebraicField, p, q : Polynomial(K)) : PolynomialIdeal(K) {
   let P := GeneratedPair(K, p, q);
-  have add :
+  let add :
     forall x : Polynomial(K). forall y : Polynomial(K). P(x) -> P(y) -> P(polynomial_add(K, x, y)) {
     intro x, y, hx, hy;
     exact mere_eliminate(
@@ -195,14 +195,14 @@ def polynomial_bezout(
   GeneratedPair(K, p, q, polynomial_one(K)) {
   let I := GeneratedPairIdeal(K, p, q);
   let Result := GeneratedPair(K, p, q, polynomial_one(K));
-  have fromGenerator : IdealPrincipalGenerator(K, I) -> Result {
+  let fromGenerator : IdealPrincipalGenerator(K, I) -> Result {
     intro witness;
     obtain (g, member, nz, divides) := witness;
     let unit :=
       coprime(
         g, divides(p, generated_pair_left(K, p, q)), divides(q, generated_pair_right(K, p, q))
       );
-    have fromInverse :
+    let fromInverse :
       (exists u : Polynomial(K). polynomial_mul(K, g, u) = polynomial_one(K)) -> Result {
       intro inverse;
       obtain (u, equation) := inverse;

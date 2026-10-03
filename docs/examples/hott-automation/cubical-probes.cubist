@@ -73,3 +73,8 @@ def ordered_fillers(
       fill(fun (j : Interval) => E(p @ j, fill(fun (k : Interval) => B(p @ k), v, j)), w, i)
     )
   );
+
+// An imported constructor is an ordinary function for congruence search.
+def under_succ(n : Nat) : succ(n + 0) = succ(n) {
+  simp only [nat_add_zero];
+}

@@ -26,7 +26,7 @@ def complex_converges_coordinates(
       )
     ) -> ComplexConverges(F, zero, addF, lt, sequence, limit)
   ) {
-  have forward :
+  let forward :
     ComplexConverges(F, zero, addF, lt, sequence, limit)
     -> (
       FieldConverges(
@@ -37,7 +37,7 @@ def complex_converges_coordinates(
       )
     ) {
     intro given;
-    have realPart :
+    let realPart :
       FieldConverges(
         F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), complex_real(F, limit)
       ) {
@@ -54,7 +54,7 @@ def complex_converges_coordinates(
         )
       );
     }
-    have imagPart :
+    let imagPart :
       FieldConverges(
         F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), complex_imag(F, limit)
       ) {
@@ -73,7 +73,7 @@ def complex_converges_coordinates(
     }
     exact (realPart, imagPart);
   }
-  have backward :
+  let backward :
     (
       FieldConverges(
         F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), complex_real(F, limit)
@@ -124,14 +124,14 @@ def complex_cauchy_coordinates(
       and FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))))
     ) -> ComplexCauchy(F, zero, addF, lt, sequence)
   ) {
-  have forward :
+  let forward :
     ComplexCauchy(F, zero, addF, lt, sequence)
     -> (
       FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))))
       and FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))))
     ) {
     intro given;
-    have realPart : FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n)))) {
+    let realPart : FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n)))) {
       intro epsilon, positive;
       obtain (bound, close) := given(epsilon, positive);
       exact (
@@ -148,7 +148,7 @@ def complex_cauchy_coordinates(
         )
       );
     }
-    have imagPart : FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n)))) {
+    let imagPart : FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n)))) {
       intro epsilon, positive;
       obtain (bound, close) := given(epsilon, positive);
       exact (
@@ -167,7 +167,7 @@ def complex_cauchy_coordinates(
     }
     exact (realPart, imagPart);
   }
-  have backward :
+  let backward :
     (
       FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))))
       and FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))))
@@ -208,22 +208,19 @@ def complex_cauchy_complete(
 ) :
   exists limit : Complex(F). ComplexConverges(F, zero, addF, lt, sequence, limit) {
   obtain (split, combine) := complex_cauchy_coordinates(F, zero, addF, lt, sequence);
-  have coordinateCauchy : FieldCauchy(
+  let coordinateCauchy : FieldCauchy(
     F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n)))
   )
-  and FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n)))) := split(
-    cauchy
-  );
+  and FieldCauchy(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n)))) :=
+    split(cauchy);
   obtain (cauchyReal, cauchyImag) := coordinateCauchy;
-  have realData : exists limit : F.
-  FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), limit) := complete(
-    (fun (n : Nat) => complex_real(F, sequence(n))), cauchyReal
-  );
+  let realData : exists limit : F.
+  FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), limit) :=
+    complete((fun (n : Nat) => complex_real(F, sequence(n))), cauchyReal);
   obtain (realLimit, realConverges) := realData;
-  have imagData : exists limit : F.
-  FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), limit) := complete(
-    (fun (n : Nat) => complex_imag(F, sequence(n))), cauchyImag
-  );
+  let imagData : exists limit : F.
+  FieldConverges(F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), limit) :=
+    complete((fun (n : Nat) => complex_imag(F, sequence(n))), cauchyImag);
   obtain (imagLimit, imagConverges) := imagData;
   let limit := typed(Complex(F), (realLimit, imagLimit));
   obtain (project, assemble) := complex_converges_coordinates(F, zero, addF, lt, sequence, limit);
@@ -255,19 +252,21 @@ def complex_limit_unique(
   x = y {
   obtain (splitX, combineX) := complex_converges_coordinates(F, zero, addF, lt, sequence, x);
   obtain (splitY, combineY) := complex_converges_coordinates(F, zero, addF, lt, sequence, y);
-  have coordinatesX : FieldConverges(
+  let coordinatesX : FieldConverges(
     F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), complex_real(F, x)
   )
   and FieldConverges(
     F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), complex_imag(F, x)
-  ) := splitX(toX);
+  ) :=
+    splitX(toX);
   obtain (realX, imagX) := coordinatesX;
-  have coordinatesY : FieldConverges(
+  let coordinatesY : FieldConverges(
     F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), complex_real(F, y)
   )
   and FieldConverges(
     F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), complex_imag(F, y)
-  ) := splitY(toY);
+  ) :=
+    splitY(toY);
   obtain (realY, imagY) := coordinatesY;
   exact field_pair_path(
     F, F, x, y,
@@ -297,19 +296,21 @@ def complex_converges_add(
   ) {
   obtain (splitX, combineX) := complex_converges_coordinates(F, zero, addF, lt, xs, x);
   obtain (splitY, combineY) := complex_converges_coordinates(F, zero, addF, lt, ys, y);
-  have coordinatesX : FieldConverges(
+  let coordinatesX : FieldConverges(
     F, zero, addF, lt, (fun (n : Nat) => complex_real(F, xs(n))), complex_real(F, x)
   )
   and FieldConverges(
     F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, xs(n))), complex_imag(F, x)
-  ) := splitX(toX);
+  ) :=
+    splitX(toX);
   obtain (realX, imagX) := coordinatesX;
-  have coordinatesY : FieldConverges(
+  let coordinatesY : FieldConverges(
     F, zero, addF, lt, (fun (n : Nat) => complex_real(F, ys(n))), complex_real(F, y)
   )
   and FieldConverges(
     F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, ys(n))), complex_imag(F, y)
-  ) := splitY(toY);
+  ) :=
+    splitY(toY);
   obtain (realY, imagY) := coordinatesY;
   obtain (project, assemble) := complex_converges_coordinates(
     F, zero, addF, lt, (fun (n : Nat) => complex_add(F, addF, xs(n), ys(n))),
@@ -354,12 +355,13 @@ def complex_converges_is_cauchy(
 ) :
   ComplexCauchy(F, zero, addF, lt, sequence) {
   obtain (project, assemble) := complex_converges_coordinates(F, zero, addF, lt, sequence, limit);
-  have coordinatesLimit : FieldConverges(
+  let coordinatesLimit : FieldConverges(
     F, zero, addF, lt, (fun (n : Nat) => complex_real(F, sequence(n))), complex_real(F, limit)
   )
   and FieldConverges(
     F, zero, addF, lt, (fun (n : Nat) => complex_imag(F, sequence(n))), complex_imag(F, limit)
-  ) := project(converges);
+  ) :=
+    project(converges);
   obtain (realPart, imagPart) := coordinatesLimit;
   obtain (split, combine) := complex_cauchy_coordinates(F, zero, addF, lt, sequence);
   exact combine(

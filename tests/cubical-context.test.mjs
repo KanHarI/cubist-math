@@ -4,7 +4,7 @@ import { splitInspectionContext } from "../web/cubical-context.mjs";
 
 test("inspection separates checked axioms from locals without changing the kernel context", () => {
   const axiom = { name: "__assumption_Choice", binding: "__assumption_Choice", label: "Choice", type: { tag: "U", level: 1 } };
-  const local = { name: "Choice42", binding: "test__local_12", label: "Choice", type: { tag: "Nat" } };
+  const local = { name: "Choice42", binding: "test__local_12", label: "Choice", type: { tag: "Unit" } };
   const view = { context: [axiom, local], axioms: [axiom.name], symbols: {} };
   assert.deepEqual(splitInspectionContext(view), { context: [local], axioms: [axiom] });
   assert.deepEqual(view.context, [axiom, local]);

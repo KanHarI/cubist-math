@@ -215,7 +215,7 @@ def complex_contour_tag_independent_limit(
     );
   let total := fun (n : Nat) => complex_add(F, addF, oldSums(n), errorSums(n));
   let sameLimit := along ComplexConverges(F, zero, addF, lt, total) by unit from added;
-  have pointwise : forall n : Nat. total(n) = newSums(n) {
+  let pointwise : forall n : Nat. total(n) = newSums(n) {
     intro n;
     exact sym(
       contour_sum_change_tags(

@@ -256,7 +256,7 @@ membership of the specified extension F → E in the class. A class is
 Here EF is the smallest subfield of Ω containing the two images. Its ambient
 field and the compatibility of the embeddings are part of the data. This is
 not an assertion that a tensor product of arbitrary field extensions is a
-field, nor that a compositum can be chosen without specifying compatible
+field, nor that a compositum can be fixed without specifying compatible
 embeddings. Once the necessary compositum identifications exist, clause 3
 follows from clauses 1 and 2; still expose all three clauses in the interface
 to match Lang's definition.
@@ -278,7 +278,7 @@ Formalization requirements:
   its structure identity path; use that result instead of duplicating
   isomorphism-invariance fields in every class record.
 - Keep class membership propositional. A selected basis, polynomial or
-  splitting witness belongs in a separate data type; differing choices must
+  splitting witness belongs in a separate data type; differing selections must
   not make two mathematical class-membership assertions different.
 - Establish distinguished-class instances for finite extensions and finite separable extensions,
   retaining general algebraic/separability interfaces only where useful for finite arguments,
@@ -315,7 +315,7 @@ for completing the initial finite Galois development.
 
 | Future stage | Deferred constructions and results | Future completion criterion |
 |---|---|---|
-| 8. Algebraic and separable closures | Existence under explicit assumptions, extension of embeddings, uniqueness up to isomorphism, normal and separable closures | Closure existence and any choices of embeddings are separately tracked |
+| 8. Algebraic and separable closures | Existence under explicit assumptions, extension of embeddings, uniqueness up to isomorphism, normal and separable closures | Closure existence and any selected embeddings are separately tracked |
 | 9. Infinite correspondence | Finite Galois subextensions, inverse systems of finite groups, Krull topology, closed subgroups and fixed fields | The infinite fundamental theorem, with closed-subgroup hypotheses and topological quotient statements, is checked |
 
 ## Current implementation and next work

@@ -50,7 +50,7 @@ def family_linear_surjective(
   let C := Fin(n) -> af_carrier(K);
   let X := vector_carrier(K, V);
   let f := linear_map(K, CoordinateSpace(K, n), V, family_linear(K, V, n, vectors));
-  have convert : (exists a : C. linear_combination(K, V, n, vectors, a) = x) -> Fiber(C, X, f, x) {
+  let convert : (exists a : C. linear_combination(K, V, n, vectors, a) = x) -> Fiber(C, X, f, x) {
     intro witness;
     obtain (a, sum) := witness;
     exact (a, trans(family_linear_evaluation(K, V, n, vectors, a), sum));

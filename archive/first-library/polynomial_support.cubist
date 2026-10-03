@@ -207,10 +207,10 @@ def finite_support_binary(
   let Wf := exists m : Nat. SeriesSupport(K, f, m);
   let Wg := exists n : Nat. SeriesSupport(K, g, n);
   let Result := exists k : Nat. SeriesSupport(K, op(f, g), k);
-  have first : Wf -> FiniteSupport(K, op(f, g)) {
+  let first : Wf -> FiniteSupport(K, op(f, g)) {
     intro wf;
     obtain (m, sf) := wf;
-    have second : Wg -> Result {
+    let second : Wg -> Result {
       intro wg;
       obtain (n, sg) := wg;
       exact (add_count(m, n), closure(m, f, g, n, sf, sg));
@@ -236,7 +236,7 @@ def polynomial_mul(K : AlgebraicField) := finite_support_binary(K, series_mul(K)
 def polynomial_shift(K : AlgebraicField, p : Polynomial(K)) : Polynomial(K) {
   let f := polynomial_coefficients(K, p);
   let Result := exists k : Nat. SeriesSupport(K, series_shift(K, f), k);
-  have convert : (exists n : Nat. SeriesSupport(K, f, n)) -> Result {
+  let convert : (exists n : Nat. SeriesSupport(K, f, n)) -> Result {
     intro witness;
     obtain (n, support) := witness;
     exact (succ(n), support_shift(K, f, n, support));
@@ -252,7 +252,7 @@ def polynomial_variable(K : AlgebraicField) := polynomial_shift(K, polynomial_on
 def polynomial_neg(K : AlgebraicField, p : Polynomial(K)) : Polynomial(K) {
   let f := polynomial_coefficients(K, p);
   let Result := exists k : Nat. SeriesSupport(K, series_neg(K, f), k);
-  have convert : (exists n : Nat. SeriesSupport(K, f, n)) -> Result {
+  let convert : (exists n : Nat. SeriesSupport(K, f, n)) -> Result {
     intro witness;
     obtain (n, support) := witness;
     exact (

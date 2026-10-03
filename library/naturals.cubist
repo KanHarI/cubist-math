@@ -1,28 +1,30 @@
+import nat;
+
 // Natural-number arithmetic: addition, multiplication and order, with the
 // basic laws of addition. The notation `+`, `*`, `<` and `<=` stands for
 // `add`, `mul`, `isLt` and `le`, so importing this module enables it.
 
 // Addition, by recursion on the first argument.
 // 0 + b = b; succ(a) + b = succ(a + b).
-def add(x, y : Nat) := induction x as k return Nat {
+def add(x, y : Nat) : Nat := match x {
     zero => y;
-    succ h => succ(h);
+    succ(k) => succ(add(k, y));
   };
 
 // Multiplication, by recursion on the first argument.
 // 0 * b = 0; succ(a) * b = b + a * b.
-def mul(x, y : Nat) := induction x as k return Nat {
+def mul(x, y : Nat) := induction x return Nat {
     zero => 0;
     succ h => (y + h);
   };
 
 // Order, computed: 0 <= b is Unit; succ(a) <= 0 is Void;
 // succ(a) <= succ(b) is a <= b.
-def le(x : Nat) := induction x as k return (Nat -> U0) {
+def le(x : Nat) := induction x return (Nat -> U0) {
     zero => (fun (x2 : Nat) => Unit);
-    succ h => (fun (y : Nat) => induction y as j return U0 {
+    succ h => (fun (y : Nat) => match y return U0 {
         zero => Void;
-        succ ignored => h(j);
+        succ(j) => h(j);
       });
   };
 

@@ -28,7 +28,7 @@ def root_descends_to_factor_quotient(
   let e := field_embedding_identity(K);
   let E := fun (s : Polynomial(K)) => polynomial_eval(K, K, e, s, x);
   let a := E(polynomial_linear_factor(K, r));
-  have productZero : field_mul(K, a, E(q)) = field_zero(K) := with unfolding [] {
+  let productZero : field_mul(K, a, E(q)) = field_zero(K) := with unfolding [] {
     trans(
       sym(polynomial_eval_mul(K, K, e, polynomial_linear_factor(K, r), q, x)),
       trans(sym(cong(E, factor)), root)
@@ -98,7 +98,7 @@ def polynomial_root_bound_step(
   let first := typed(Fin(succ(succ(m))), left(tt));
   let r := roots(first);
   obtain (q, factor) := polynomial_factor_theorem(K, p, r, allRoots(first));
-  have pNonzero : (p = polynomial_zero(K)) -> Void {
+  let pNonzero : (p = polynomial_zero(K)) -> Void {
     intro zero;
     exact nat_zero_ne_succ(
       succ(m),
@@ -111,17 +111,17 @@ def polynomial_root_bound_step(
       factor_quotient_nonzero(K, p, polynomial_linear_factor(K, r), q, factor, pNonzero)
     );
   let rest := finite_tail(af_carrier(K), succ(m), roots);
-  have restDistinct : Injective(Fin(succ(m)), af_carrier(K), rest) {
+  let restDistinct : Injective(Fin(succ(m)), af_carrier(K), rest) {
     intro i, j, same;
     exact tail_injective(
       Fin(succ(m)), i, j,
       distinct(typed(Fin(succ(succ(m))), right(i)), typed(Fin(succ(succ(m))), right(j)), same)
     );
   }
-  have restRoots :
+  let restRoots :
     forall i : Fin(succ(m)). PolynomialRoot(K, K, field_embedding_identity(K), q, rest(i)) {
     intro i;
-    have different : rest(i) = r -> Void {
+    let different : rest(i) = r -> Void {
       intro same;
       exact sum_disjoint(
         Fin(succ(m)), tt, i, sym(distinct(typed(Fin(succ(succ(m))), right(i)), first, same))

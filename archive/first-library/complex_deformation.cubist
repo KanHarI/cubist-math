@@ -168,12 +168,13 @@ def complex_linear_deformation_nonzero(
       Complex(F), zeroC, oneC, addC, mulC, negC, ringC, scaled, z,
       trans(complex_add_comm(F, zero, one, addF, mulF, negF, ring, scaled, z), vanishes)
     );
-  have sameNorm : complex_norm_squared(F, addF, mulF, z) = complex_norm_squared(
+  let sameNorm : complex_norm_squared(F, addF, mulF, z) = complex_norm_squared(
     F, addF, mulF, scaled
-  ) := trans(
-    cong(complex_norm_squared(F, addF, mulF), opposite),
-    complex_negative_norm(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, scaled)
-  );
+  ) :=
+    trans(
+      cong(complex_norm_squared(F, addF, mulF), opposite),
+      complex_negative_norm(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, scaled)
+    );
   let impossible := along lt(complex_norm_squared(F, addF, mulF, error)) by sameNorm from dominates;
   exact complex_scale_norm_bound(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, error, lower, upper, impossible

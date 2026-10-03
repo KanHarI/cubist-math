@@ -1,3 +1,4 @@
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, readdir, mkdtemp, writeFile, rm } from "node:fs/promises";
@@ -9,8 +10,13 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { ReplSession, replTranscript } from "../web/repl-session.mjs";
 import { budget } from "./timing.mjs";
-import { referenceExamples, statedErrors, transcript } from "./reference-pages.mjs";
+import { decode, referenceExamples, statedErrors, statedWarnings, transcript } from "./reference-pages.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
+import { diagnosticCode } from "../web/diagnostics.mjs";
+
+// Every failure and warning the examples report, with its code; the errors
+// chapter's catalogue is checked against them.
+const reported = [];
 
 // Every code example in the language references declares how it is checked:
 //   data-check="accept"                     the example checks completely;
@@ -33,7 +39,6 @@ const pages = [
 ];
 // An example is a source that is not a file: its imports resolve as in the CLI's
 // REPL, the rebuilt library first, then the archive (web/module-resolution.mjs).
-const squash = text => text.replace(/\s+/g, " ").trim();
 
 async function check(text, name) {
   const program = new CubicalProgram(await createCubical(), sourceReader());
@@ -44,9 +49,13 @@ async function check(text, name) {
     const failures = result.outputs.filter(output => !output.verified)
       .map(output => `${output.name}: ${output.reason}`);
     const gaps = program.gaps.map(gap => `${gap.module ?? "?"}${gap.name ? `.${gap.name}` : ""}: ${gap.reason}`);
-    return { failures: [...failures, ...gaps] };
+    for (const { reason: message, code } of [...result.outputs.filter(output => !output.verified), ...program.gaps])
+      reported.push({ message, code });
+    for (const { message, code } of result.warnings) reported.push({ message, code });
+    return { failures: [...failures, ...gaps], warnings: result.warnings.map(warning => warning.message) };
   } catch (error) {
-    return { failures: [error.message] };
+    reported.push({ message: error.message, code: diagnosticCode(error.message) });
+    return { failures: [error.message], warnings: [] };
   } finally { program.dispose(); }
 }
 
@@ -99,9 +108,16 @@ async function verify(example, index, named = new Map(), base = null) {
   assert.ok(!("data-error" in attrs), `${label}: state the error as an \`// Error:\` comment, not data-error`);
   if (kind === "accept") {
     assert.deepEqual(statedErrors(text), [], `${label}: an accepted example states no error`);
-    const { failures } = await check(text, `reference_example_${index}`);
+    const { failures, warnings } = await check(text, `reference_example_${index}`);
     assert.deepEqual(failures, [], `${label} should check`);
+    // Lint warnings, like errors, are stated where they occur.
+    const stated = statedWarnings(text);
+    for (const warning of stated)
+      assert.ok(warnings.some(actual => actual.includes(warning)), `${label} should warn "${warning}", got ${JSON.stringify(warnings)}`);
+    for (const warning of warnings)
+      assert.ok(stated.some(expected => warning.includes(expected)), `${label}: the warning "${warning}" is not stated in a comment`);
   } else if (kind === "reject") {
+    assert.deepEqual(statedWarnings(text), [], `${label}: a rejected example states errors, not warnings`);
     const stated = statedErrors(text);
     assert.ok(stated.length, `${label}: a rejected example states its errors in \`// Error:\` comments`);
     const { failures } = await check(text, `reference_example_${index}`);
@@ -113,8 +129,10 @@ async function verify(example, index, named = new Map(), base = null) {
       assert.ok(stated.some(error => failure.includes(error)), `${label}: the error "${failure}" is not stated in a comment`);
   } else if (kind === "excerpt") {
     assert.ok(attrs["data-module"], `${label}: an excerpt names its data-module`);
+    // The page finds the quotation in the module to link its names, so it is
+    // exact, whitespace included.
     const module = await sourceReader()(attrs["data-module"]);
-    assert.ok(squash(module).includes(squash(text)), `${label} should quote ${attrs["data-module"]} exactly`);
+    assert.ok(module.includes(text), `${label} should quote ${attrs["data-module"]} exactly`);
   } else if (kind === "fragment") {
     assert.ok(attrs["data-reason"], `${label}: an unchecked fragment states its data-reason`);
   } else if (kind === "cli") {
@@ -146,6 +164,16 @@ test("every language reference example declares and passes its check", async t =
   assert.ok(index > 0, "the references contain examples");
   assert.deepEqual(problems, []);
   t.diagnostic(`reference examples: ${JSON.stringify(counts)}`);
+  // Each failure and warning is reported with a code (web/diagnostics.mjs).
+  assert.deepEqual(reported.filter(({ code }) => !code).map(({ message }) => message), [], "messages without a code");
+  // Each catalogue entry of the errors chapter shows the codes of the
+  // messages it describes, those the examples report that contain its text.
+  const errors = await readFile(new URL("../web/reference/errors.html", import.meta.url), "utf8");
+  for (const [, cell, raw] of errors.matchAll(/<td class="code">(.*?)<\/td><td data-message="([^"]*)">/g)) {
+    const message = decode(raw), shown = [...cell.matchAll(/<code>([EKW]\d{3})<\/code>/g)].map(match => match[1]);
+    const codes = [...new Set(reported.filter(entry => entry.message.includes(message)).map(entry => entry.code))].sort();
+    assert.deepEqual(shown, codes, `the errors chapter's codes for "${message}"`);
+  }
 });
 
 test("the harness distinguishes accepted, rejected, excerpted and unmarked examples", async () => {
@@ -158,6 +186,7 @@ test("the harness distinguishes accepted, rejected, excerpted and unmarked examp
   await verify(accepted, 0);
   await verify(rejected, 1);
   await verify(excerpt, 2);
+  await assert.rejects(verify({ ...excerpt, text: "def  Divides(d, n : Nat) :=" }, 10), /should quote primes exactly/);
   await assert.rejects(verify(unmarked, 3), /no declared check/);
   await assert.rejects(verify({ ...rejected, text: "def wrong : 0 = 1 { exact refl(0); }  // Error: not this message" }, 4),
     /should fail with/);
@@ -169,6 +198,11 @@ test("the harness distinguishes accepted, rejected, excerpted and unmarked examp
   assert.deepEqual(statedErrors("  // Error: first part\n  //   second part\nx;  // Error: other\n  //   not a continuation"),
     ["first part second part", "other"]);
   await assert.rejects(verify({ ...accepted, text: "def wrong : 0 = 1 { exact refl(0); }" }, 5), /should check/);
+  // An accepted example states its lint warnings, and only those.
+  const unused = "def copy(n : Nat) := induction n as k return Nat { zero => 0; succ h => h; };";
+  await assert.rejects(verify({ ...accepted, text: unused }, 11), /is not stated in a comment/);
+  await verify({ ...accepted, text: `${unused}  // Warning: k is unused` }, 12);
+  await assert.rejects(verify({ ...accepted, text: "def one := 1;  // Warning: k is unused" }, 13), /should warn/);
 });
 
 test("the harness replays REPL transcripts on the example before them", async () => {
@@ -185,7 +219,7 @@ test("the harness runs command-line sessions against named examples", async () =
   const named = new Map([["sample", "def two := succ(succ(0));\nevaluate two expecting 2;\n"]]);
   const session = text => ({ label: "sample.html:1", attrs: { "data-check": "cli", "data-files": "sample" }, text });
   await verify(session("$ node cli/repl.mjs check sample.cubist\nChecked 1 declarations · … kernel steps\nevaluate at line 2: 2"), 0, named);
-  await verify(session("$ node cli/repl.mjs\n> check sample.cubist\n> inspect two\nChecked …\nAssumptions: none\n> inspect missing\nNo checked native definition for this name."), 1, named);
+  await verify(session("$ node cli/repl.mjs\n> check sample.cubist\n> inspect two\nChecked …\nAssumptions: none\n> inspect missing\nE211: No checked native definition for this name."), 1, named);
   await assert.rejects(verify(session("$ node cli/repl.mjs check sample.cubist\nevaluate at line 2: 3"), 2, named), /output line not found/);
   await assert.rejects(verify(session("$ node cli/repl.mjs check sample.cubist\nAssumptions: none\nChecked …"), 3, named), /output line not found/);
   await assert.rejects(verify({ ...session("$ node cli/repl.mjs check other.cubist"), attrs: { "data-check": "cli", "data-files": "other" } }, 4, named),

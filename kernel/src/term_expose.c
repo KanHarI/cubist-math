@@ -1,7 +1,6 @@
-/* Expose one beta/projection/boundary step, retaining its compact result.
- * Conversion tries structural comparison again before evaluating that result.
- * In particular, a path endpoint can name a huge numeral without computing it.
- */
+/* Expose one beta/projection/boundary step, retaining its compact result:
+ * a path endpoint, for instance, can name a huge numeral without computing
+ * it. Reduction of higher sorts uses it to find a constructor's head. */
 #include "term_internal.h"
 
 cc_term ck_expose(cc_kernel *k, cc_term term) {

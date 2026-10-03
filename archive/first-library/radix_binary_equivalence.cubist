@@ -21,8 +21,8 @@ def radix_positive_to_binary(extra : Nat, p : RadixPositive(extra)) :=
   );
 
 def radix_to_binary(extra : Nat, n : RadixNat(extra)) := match n return BinaryNat {
-    left zero => binary_zero;
-    right p => radix_positive_to_binary(extra, p);
+    radix_nat_zero => binary_zero;
+    radix_nat_positive(p) => radix_positive_to_binary(extra, p);
   };
 
 def radix_binary_leading_correct(extra : Nat, d : RadixDigit(succ(extra))) :
@@ -78,8 +78,8 @@ def radix_binary_positive_correct(extra : Nat, p : RadixPositive(extra)) :
 def radix_binary_correct(extra : Nat, n : RadixNat(extra)) :
   binary_to_nat(radix_to_binary(extra, n)) = radix_to_nat(extra, n) {
   exact match n as x return (binary_to_nat(radix_to_binary(extra, x)) = radix_to_nat(extra, x)) {
-    left zero => refl(0);
-    right p => radix_binary_positive_correct(extra, p);
+    radix_nat_zero => refl(0);
+    radix_nat_positive(p) => radix_binary_positive_correct(extra, p);
   };
 }
 
@@ -96,8 +96,8 @@ def binary_positive_to_radix(extra : Nat, p : BinaryPositive) :=
   );
 
 def binary_to_radix(extra : Nat, n : BinaryNat) := match n return RadixNat(extra) {
-    left zero => radix_zero(extra);
-    right p => binary_positive_to_radix(extra, p);
+    binary_zero => radix_zero(extra);
+    binary_positive(p) => binary_positive_to_radix(extra, p);
   };
 
 def binary_radix_even_correct(
@@ -150,8 +150,8 @@ def binary_radix_positive_correct(extra : Nat, p : BinaryPositive) :
 def binary_radix_correct(extra : Nat, n : BinaryNat) :
   radix_to_nat(extra, binary_to_radix(extra, n)) = binary_to_nat(n) {
   exact match n as x return (radix_to_nat(extra, binary_to_radix(extra, x)) = binary_to_nat(x)) {
-    left zero => refl(0);
-    right p => binary_radix_positive_correct(extra, p);
+    binary_zero => refl(0);
+    binary_positive(p) => binary_radix_positive_correct(extra, p);
   };
 }
 

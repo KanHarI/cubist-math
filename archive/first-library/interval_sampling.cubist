@@ -87,12 +87,12 @@ def interval_endpoint_tags_admissible(
   let I := FieldUnitInterval(F, zero, one, lt);
   let coordinate := field_interval_coordinate(F, zero, one, lt);
   let related := (fun (a, b : I) => FieldLe(F, lt, coordinate(a), coordinate(b)));
-  have leftAllowed :
+  let leftAllowed :
     forall a : I. forall b : I. related(a, b) -> IntervalTagWithin(F, zero, one, lt, a, b, a) {
     intro a, b, ab;
     exact (order_le_refl(F, lt, order, coordinate(a)), ab);
   }
-  have rightAllowed :
+  let rightAllowed :
     forall a : I. forall b : I. related(a, b) -> IntervalTagWithin(F, zero, one, lt, a, b, b) {
     intro a, b, ab;
     exact (ab, order_le_refl(F, lt, order, coordinate(b)));

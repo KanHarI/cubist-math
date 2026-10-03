@@ -30,7 +30,7 @@ def compositum_least(
   tv : SubfieldIncluded(F, T, V)
 ) :
   SubfieldIncluded(F, compositum(F, S, T), V) {
-  have includesUnion :
+  let includesUnion :
     PredicateIncluded(af_carrier(F), SubfieldUnion(F, S, T), subfield_members(F, V)) {
     intro x, member;
     cases typed(SubfieldUnion(F, S, T, x), member) {

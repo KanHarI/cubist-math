@@ -1,18 +1,16 @@
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import createCubical from "../web/dist/cubical.mjs";
-import { CubicalProgram } from "../web/cubical-program.mjs";
-import { parse } from "../web/mathscript/parser.mjs";
-import { formatMathScript } from "../web/mathscript/formatter.mjs";
+import { parse } from "../web/cubist/parser.mjs";
+import { formatCubist } from "../web/cubist/formatter.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 const readLibrary = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
 async function check(source, t) {
-  const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
-  t.after(() => program.dispose());
-  const result = await program.check(source, "computability_sample");
-  return { result, outcome: Object.fromEntries(result.outputs.map(output => [output.name, output.verified || output.reason])),
-    gaps: program.gaps.filter(gap => gap.directive).map(gap => `${gap.name}: ${gap.reason}`) };
+  const { program, result, verdicts } = await checkProgram(t, source,
+    { reader: readLibrary, name: "computability_sample", options: { collectReferences: false } });
+  return { result, outcome: verdicts, gaps: program.gaps.filter(gap => gap.directive).map(gap => `${gap.name}: ${gap.reason}`) };
 }
 
 test("a computable declaration is rejected when it depends on an assumption, naming the path", async t => {
@@ -70,7 +68,7 @@ test("computable and evaluate parse, format stably and stay ordinary names elsew
 computable def one := 1;
 computable def two := 2;
 def uses_names(evaluate, computable : Nat) : Nat {
-  have expecting : Nat := evaluate;
+  let expecting : Nat := evaluate;
   exact expecting;
 }
 evaluate one + one expecting two;
@@ -80,9 +78,9 @@ evaluate one + one expecting two;
     [["one", true], ["two", true], ["uses_names", false]]);
   assert.equal(ast.directives.filter(d => d.kind === "evaluate").length, 1);
   assert.equal("computable" in ast.declarations[2], false, "the flag appears only when written");
-  const formatted = formatMathScript(source);
-  assert.equal(formatMathScript(formatted), formatted);
+  const formatted = formatCubist(source);
+  assert.equal(formatCubist(formatted), formatted);
   assert.match(formatted, /\ncomputable def one := 1;\n\ncomputable def two := 2;\n\n/);
   assert.match(formatted, /\n\nevaluate one \+ one expecting two;\n$/);
-  assert.match(formatted, /have expecting : Nat := evaluate;/);
+  assert.match(formatted, /let expecting : Nat := evaluate;/);
 });

@@ -15,8 +15,8 @@ def radix_positive_to_nat(extra : Nat, p : RadixPositive(extra)) :=
   );
 
 def radix_to_nat(extra : Nat, n : RadixNat(extra)) := match n return Nat {
-    left zero => 0;
-    right p => radix_positive_to_nat(extra, p);
+    radix_nat_zero => 0;
+    radix_nat_positive(p) => radix_positive_to_nat(extra, p);
   };
 
 def radix_decode_leading(extra : Nat, d : RadixDigit(succ(extra))) :
@@ -179,8 +179,8 @@ def radix_decode_succ(extra : Nat, n : RadixNat(extra)) :
   exact match n as x return (
     radix_to_nat(extra, radix_succ(extra, x)) = succ(radix_to_nat(extra, x))
   ) {
-    left zero => radix_decode_one(extra);
-    right p => radix_decode_positive_succ(extra, p);
+    radix_nat_zero => radix_decode_one(extra);
+    radix_nat_positive(p) => radix_decode_positive_succ(extra, p);
   };
 }
 

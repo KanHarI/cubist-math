@@ -15,19 +15,22 @@ export function referenceExamples(file, source) {
 
 // `// Error: message` states one error that checking reports. On a line of
 // its own, it may continue on following `//   …` lines at the same indent.
-// A rejected example states every error it causes.
-export function statedErrors(text) {
-  const errors = [], lines = text.split("\n");
+// A rejected example states every error it causes. `// Warning: message`
+// states a lint warning in the same way; an accepted example states every
+// warning it causes.
+const stated = label => text => {
+  const messages = [], lines = text.split("\n");
   for (let i = 0; i < lines.length; i++) {
-    const start = lines[i].match(/\/\/ Error: (.*)$/);
+    const start = lines[i].match(new RegExp(`// ${label}: (.*)$`));
     if (!start) continue;
     let message = start[1].trim();
-    const own = lines[i].match(/^(\s*)\/\/ Error:/);
+    const own = lines[i].match(new RegExp(`^(\\s*)// ${label}:`));
     while (own && i + 1 < lines.length && lines[i + 1].startsWith(`${own[1]}//   `)) message += ` ${lines[++i].trim().slice(2).trim()}`;
-    errors.push(message);
+    messages.push(message);
   }
-  return errors;
-}
+  return messages;
+};
+export const statedErrors = stated("Error"), statedWarnings = stated("Warning");
 
 // `$ node cli/repl.mjs …` starts the checker, `> …` lines are its input, and
 // every other line is output that must appear in order within stdout or

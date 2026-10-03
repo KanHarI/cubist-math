@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="The basic types and the terms that build and use them: functions, pairs, sums, Unit and Void, and numbers." />
-    <title>Cubist · 3. Terms, functions and pairs</title>
+    <meta name="description" content="Each basic type in full: how to build its values and how to use them, expected types, and precedence." />
+    <title>Cubist · 3. Functions, pairs and sums</title>
     <link rel="stylesheet" href="../language.css" />
     <link rel="stylesheet" href="../repl.css" />
   </head>
@@ -22,8 +22,8 @@
     <main>
       <div class="introduction">
         <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 3</p>
-        <h1>Terms, functions and pairs</h1>
-        <p class="lead">The basic types and the terms that build and use them: functions, pairs, sums, Unit and Void, and numbers.</p>
+        <h1>Functions, pairs and sums</h1>
+        <p class="lead">Each basic type in full: how to build its values and how to use them, expected types, and precedence.</p>
       </div>
       <div class="reference-layout">
         <aside class="contents" aria-label="Chapters and sections">
@@ -31,15 +31,15 @@
           <ol class="chapters">
             <li><a href="types.html">Types and values</a></li>
             <li><a href="first-proof.html">A first proof and files</a></li>
-            <li class="current"><a href="terms.html" aria-current="page">Terms, functions and pairs</a></li>
+            <li class="current"><a href="terms.html" aria-current="page">Functions, pairs and sums</a></li>
             <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
             <li><a href="universes.html">Universes</a></li>
-            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
-            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
-            <li><a href="conversion.html">Conversion and unfolding</a></li>
-            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
+            <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
             <li><a href="errors.html">Error messages</a></li>
           </ol>
@@ -69,7 +69,7 @@
                 <tr><td><code>A or B</code></td><td>Disjoint sums, <span class="math">A + B</span></td><td><code>left(a)</code>, <code>right(b)</code></td><td><code>match</code>, <code>cases</code></td></tr>
                 <tr><td><code>Unit</code></td><td>The one-element type</td><td><code>tt</code></td><td><code>unit_induction</code></td></tr>
                 <tr><td><code>Void</code></td><td>The empty type, falsehood</td><td>None</td><td><code>absurd</code></td></tr>
-                <tr><td><code>Nat</code></td><td>Natural numbers</td><td><code>0</code>, <code>succ(n)</code>, numerals</td><td><a href="induction.html#induction"><code>induction</code></a></td></tr>
+                <tr><td><code>Nat</code></td><td>Natural numbers</td><td><code>0</code>, <code>succ(n)</code>, numerals</td><td><a href="induction.html#match"><code>match</code></a>, <a href="induction.html#induction"><code>induction</code></a></td></tr>
                 <tr><td><code>x = y</code></td><td>Equality: paths from <code>x</code> to <code>y</code></td><td><code>refl(x)</code></td><td>See <a href="paths.html#paths">equality and paths</a></td></tr>
                 <tr><td><code>U0</code>, <code>U1</code>, …</td><td>Universes of types</td><td>Types themselves</td><td>See <a href="universes.html#universes">universes</a></td></tr>
               </tbody>
@@ -140,6 +140,7 @@ def swap_arguments(A : U0, P : A -&gt; A -&gt; U0, f : forall x, y : A. P(x, y))
             <pre><code data-check="reject">def wrong_index(P : Nat -&gt; U0, f : forall n : Nat. P(n)) : P(1) {
   exact f(0);  // Error: Type mismatch: found P(0), expected P(1).
 }</code></pre>
+            <p>Functions defined by cases, on <a href="#match">sums</a> below or on <a href="induction.html#match">inductive types</a>, use <code>match</code>. A function that calls itself on smaller values uses <a href="induction.html#recursion">structural recursion</a>.</p>
           </section>
           <section id="pairs">
             <h2>Pairs and dependent pairs</h2>
@@ -149,7 +150,7 @@ def swap_arguments(A : U0, P : A -&gt; A -&gt; U0, f : forall x, y : A. P(x, y))
 def two_exists : exists n : Nat. n = 2 {
   exact (2, refl(2));
 }</code></pre>
-            <p>A pair needs an expected type. <code>(1, 2)</code> could belong to <code>Nat and Nat</code> or to many <code>exists</code> types, and the elaborator does not guess. The expected type comes from a stated result type, a <code>have</code> type, a function argument’s type or <a href="#typed"><code>typed</code></a>.</p>
+            <p>A pair needs an expected type. <code>(1, 2)</code> could belong to <code>Nat and Nat</code> or to many <code>exists</code> types, and the elaborator does not guess. The expected type comes from a stated result type, a <code>let</code>'s stated type, a function argument’s type or <a href="#typed"><code>typed</code></a>.</p>
             <pre><code data-check="reject">def unannotated := (1, 2);  // Error: Pair requires an expected type.</code></pre>
             <h3 id="tuples">Tuples</h3>
             <p>The kernel has only binary pairs. Tuple notation <code>(a, b, c)</code> means <code>(a, (b, c))</code>, and the same notation works for types: <code>A and B and C</code> means <code>A and (B and C)</code>. Explicit left nesting <code>((a, b), c)</code> is a different shape.</p>
@@ -212,6 +213,7 @@ def three_on_the_right : Unit or Nat {
 }</code></pre>
             <pre><code data-check="reject">def unannotated := left(tt);  // Error: Sum injection requires an expected type.</code></pre>
             <h3 id="match">Case analysis: <code>match</code></h3>
+            <p><code>match</code> works on sums and on <a href="induction.html#match">declared inductive types</a>, such as <code>Nat</code> and your own types. This section shows the sum cases.</p>
             <p><code>match value return T { left x => …; right y => …; }</code> computes a result of type <code>T</code> from each side. Each branch is an expression and ends with <code>;</code>.</p>
             <pre><code data-check="accept">def to_number(value : Unit or Nat) := match value return Nat {
   left u =&gt; 0;
@@ -223,7 +225,7 @@ def swap_sides(A, B : U0, value : A or B) := match value return B or A {
   right b =&gt; left(b);
 };</code></pre>
             <p>When the result type depends on the value, name it with <code>as</code>: <code>match value as z return C(z) { … }</code>. The left branch must produce <code>C(left(x))</code> and the right branch <code>C(right(y))</code>.</p>
-            <pre><code data-check="accept">def Shape(value : Unit or Unit) := match value as z return U0 {
+            <pre><code data-check="accept">def Shape(value : Unit or Unit) := match value return U0 {
   left a =&gt; Nat;
   right b =&gt; Unit;
 };
@@ -232,11 +234,16 @@ def default(value : Unit or Unit) := match value as z return Shape(z) {
   left a =&gt; 0;
   right b =&gt; tt;
 };</code></pre>
-            <pre><code data-check="reject">def not_a_sum(n : Nat) := match n return Nat {  // Error: match requires a sum type.
+            <p><code>Shape</code> needs no <code>as</code>: its result type, <code>U0</code>, is the same for both sides. An <code>as</code> name that the result type does not mention is accepted, with a <a href="checking.html#warnings">warning</a>:</p>
+            <pre><code data-check="accept">def to_number(value : Unit or Nat) := match value as z return Nat {  // Warning: z is unused: the return type does not mention it.
+  left u =&gt; 0;
+  right n =&gt; n;
+};</code></pre>
+            <pre><code data-check="reject">def not_a_sum(n : Nat) := match n return Nat {  // Error: Nat has no constructor left: its constructors are zero, succ.
   left a =&gt; 0;
   right b =&gt; 1;
 };</code></pre>
-            <p>The result type is the expected type of each branch, so <code>right(a)</code> needs no annotation. In a proof block, <a href="proof-blocks.html#cases"><code>cases</code></a> does the same with a block for each side, but without refining the goal.</p>
+            <p>The result type is the expected type of each branch, so <code>right(a)</code> needs no annotation. In a proof block, <a href="first-proof.html#first-proof-cases"><code>cases</code></a> does the same with a block for each side, but without refining the goal; <a href="proof-blocks.html#cases">proof blocks</a> compares the two.</p>
           </section>
           <section id="unit-and-void">
             <h2>Unit, Void and negation</h2>
@@ -300,7 +307,7 @@ def plus_zero_by_computation(n : Nat) : n + 0 = n {
             <p>Several forms need an expected type: pairs, <code>left</code> and <code>right</code>, <code>absurd</code>, and untyped <code>fun x =></code>. The expected type comes from:</p>
             <ul>
               <li>the stated result type of a block declaration, through <code>exact</code>;</li>
-              <li>the type in <code>have name : T</code>;</li>
+              <li>the type in <code>let name : T</code>;</li>
               <li>the parameter type, when the term is an argument of a function;</li>
               <li>the result type of a <code>match</code> branch;</li>
               <li><code>typed(T, term)</code>, which checks <code>term</code> against <code>T</code>.</li>
@@ -317,7 +324,7 @@ def unit_on_the_right := typed(Nat or Unit, right(tt));</code></pre>
             <p>From tightest to loosest:</p>
             <ol>
               <li>application <code>f(a)</code> and projection <code>p.1</code>, from left to right, so <code>f(a).2(b)</code> applies the second component of <code>f(a)</code> to <code>b</code>;</li>
-              <li>interval application <code>p @ i</code>;</li>
+              <li>interval application <code>p @ i</code>, for <a href="cubical.html#cubical">cubical paths</a>;</li>
               <li><code>*</code>;</li>
               <li><code>+</code>;</li>
               <li><code>=</code>, <code>&lt;</code>, <code>&lt;=</code>;</li>
@@ -339,7 +346,6 @@ def and_before_or(A, B, C : U0, x : A and B or C) : (A and B) or C {
 def chained : 1 &lt; 2 &lt; 3 {
   exact tt;  // Error: Type mismatch: found U0, expected Nat.
 }</code></pre>
-            <p>In the source reader, keywords and built-in forms such as <code>succ</code> are purple, and named functions are green. Numerals, tuples and arithmetic are notation: they are amber with a dotted underline. Hover over one to see its expansion; <code>2</code> shows <code>succ(succ(0))</code> and <code>a + b</code> shows <code>add(a, b)</code>. The index of a projection, as in <code>p.2</code>, is not a numeral.</p>
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">

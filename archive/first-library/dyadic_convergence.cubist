@@ -98,7 +98,7 @@ def dyadic_width_mere_close_tail(
       exists bound : Nat. forall n : Nat. IndexLE(bound, n)
       -> FieldClose(F, addF, lt, dyadic_width(F, half, n, width), zero, epsilon)
     );
-  have mapping : A -> B {
+  let mapping : A -> B {
     intro data;
     obtain (bound, small) := data;
     exact (

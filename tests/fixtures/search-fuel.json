@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-27T10:14:55.908Z",
-  "revision": "78aebba92f817eb21e421413f540d508e01c2a1e",
-  "modified": true,
+  "generatedAt": "2026-09-29T06:43:27.934Z",
+  "revision": "9f762cef1059771bc4716571372104361fa1f5f8",
+  "modified": false,
   "machine": {
     "node": "v24.13.0",
     "platform": "darwin arm64",
@@ -14,7 +14,7 @@
     "premises": 64,
     "rewrites": 64
   },
-  "peakRssMiB": 1056,
+  "peakRssMiB": 1194,
   "workloads": [
     {
       "name": "archive",
@@ -52,13 +52,13 @@
         "spent": 2081,
         "declaration": "complex_contour_bounds__complex_contour_tag_error_variation_bound"
       },
-      "seconds": 27.2,
-      "kernelSteps": 188623390
+      "seconds": 29.9,
+      "kernelSteps": 198727662
     },
     {
       "name": "library",
-      "declarations": 182,
-      "checked": 182,
+      "declarations": 219,
+      "checked": 219,
       "gaps": 0,
       "searches": 0,
       "most": {
@@ -91,8 +91,8 @@
         "spent": 453,
         "declaration": "equivalence_from_inverse__homotopy_self"
       },
-      "seconds": 0.4,
-      "kernelSteps": 412531
+      "seconds": 0.6,
+      "kernelSteps": 424016
     },
     {
       "name": "docs/examples/hott-automation/conversion-laws.cubist",
@@ -131,7 +131,7 @@
         "declaration": "finite__fin_decidable"
       },
       "seconds": 0.9,
-      "kernelSteps": 4886339
+      "kernelSteps": 2355029
     },
     {
       "name": "docs/examples/hott-automation/cubical-probes.cubist",
@@ -170,12 +170,12 @@
         "declaration": "primes__bounded_least_search"
       },
       "seconds": 0.1,
-      "kernelSteps": 128839
+      "kernelSteps": 108132
     },
     {
       "name": "docs/examples/hott-automation/canonicity.cubist",
-      "declarations": 266,
-      "checked": 266,
+      "declarations": 310,
+      "checked": 310,
       "gaps": 0,
       "searches": 0,
       "most": {
@@ -208,8 +208,8 @@
         "spent": 450,
         "declaration": "primes__bounded_least_search"
       },
-      "seconds": 0.9,
-      "kernelSteps": 6391136
+      "seconds": 0.8,
+      "kernelSteps": 3061019
     },
     {
       "name": "docs/examples/proof-ergonomics/implemented/arithmetic.cubist",
@@ -248,7 +248,7 @@
         "declaration": "primes__bounded_least_search"
       },
       "seconds": 0.1,
-      "kernelSteps": 67985
+      "kernelSteps": 49811
     },
     {
       "name": "docs/examples/proof-ergonomics/implemented/cubical.cubist",
@@ -287,7 +287,7 @@
         "declaration": "docs/examples/proof-ergonomics/implemented/cubical.cubist__pointwise_evaluation"
       },
       "seconds": 0,
-      "kernelSteps": 1966
+      "kernelSteps": 1623
     },
     {
       "name": "docs/examples/proof-ergonomics/implemented/dependent.cubist",
@@ -326,7 +326,7 @@
         "declaration": "paths__cancel_left"
       },
       "seconds": 0.1,
-      "kernelSteps": 66012
+      "kernelSteps": 62960
     },
     {
       "name": "docs/examples/proof-ergonomics/implemented/registered-simp.cubist",
@@ -365,7 +365,7 @@
         "declaration": "primes__bounded_least_search"
       },
       "seconds": 0.1,
-      "kernelSteps": 67588
+      "kernelSteps": 49374
     },
     {
       "name": "docs/examples/proof-ergonomics/implemented/type-transport.cubist",
@@ -404,7 +404,7 @@
         "declaration": "primes__bounded_least_search"
       },
       "seconds": 0.1,
-      "kernelSteps": 63367
+      "kernelSteps": 45745
     },
     {
       "name": "docs/examples/proof-ergonomics/current/arithmetic.cubist",
@@ -443,7 +443,7 @@
         "declaration": "primes__bounded_least_search"
       },
       "seconds": 0.1,
-      "kernelSteps": 62188
+      "kernelSteps": 44628
     },
     {
       "name": "docs/examples/proof-ergonomics/current/dependent-transport.cubist",
@@ -482,7 +482,7 @@
         "declaration": "paths__cancel_left"
       },
       "seconds": 0.1,
-      "kernelSteps": 67383
+      "kernelSteps": 64052
     },
     {
       "name": "docs/examples/proof-ergonomics/current/path-coherence.cubist",
@@ -521,7 +521,7 @@
         "declaration": "paths__cancel_left"
       },
       "seconds": 0.1,
-      "kernelSteps": 65833
+      "kernelSteps": 62642
     },
     {
       "name": "docs/examples/proof-ergonomics/current/pointwise.cubist",
@@ -560,7 +560,7 @@
         "declaration": "docs/examples/proof-ergonomics/current/pointwise.cubist__pointwise_evaluation"
       },
       "seconds": 0,
-      "kernelSteps": 2087
+      "kernelSteps": 1718
     },
     {
       "name": "docs/examples/proof-ergonomics/current/scoped-algebra.cubist",
@@ -599,7 +599,7 @@
         "declaration": "algebraic_fields__fieldmullaws_prop"
       },
       "seconds": 1.3,
-      "kernelSteps": 21308053
+      "kernelSteps": 20947770
     },
     {
       "name": "docs/examples/proof-ergonomics/current/type-transport.cubist",
@@ -638,16 +638,16 @@
         "declaration": "primes__bounded_least_search"
       },
       "seconds": 0.1,
-      "kernelSteps": 61966
+      "kernelSteps": 44542
     },
     {
       "name": "reference examples",
-      "declarations": 1325,
-      "checked": 1228,
-      "gaps": 101,
-      "searches": 54,
-      "seconds": 1.5,
-      "kernelSteps": 1536764,
+      "declarations": 1515,
+      "checked": 1409,
+      "gaps": 110,
+      "searches": 59,
+      "seconds": 1.8,
+      "kernelSteps": 1445051,
       "most": {
         "visits": {
           "spent": 2145,
@@ -662,8 +662,8 @@
           "declaration": "reference/rewriting.html:289 reference/rewriting.html:289__growing"
         },
         "premises": {
-          "spent": 1,
-          "declaration": "reference/rewriting.html:415 reference/rewriting.html:415__premise_not_given"
+          "spent": 3,
+          "declaration": "reference/paths.html:246 reference/paths.html:246__from_a_hint"
         },
         "nodes": {
           "spent": 19760,
@@ -697,9 +697,9 @@
       "declaration": "reference/rewriting.html:289 reference/rewriting.html:289__growing"
     },
     "premises": {
-      "workload": "docs/examples/proof-ergonomics/implemented/registered-simp.cubist",
-      "spent": 1,
-      "declaration": "docs/examples/proof-ergonomics/implemented/registered-simp.cubist__recursive_premise"
+      "workload": "reference examples",
+      "spent": 3,
+      "declaration": "reference/paths.html:246 reference/paths.html:246__from_a_hint"
     },
     "nodes": {
       "workload": "reference examples",

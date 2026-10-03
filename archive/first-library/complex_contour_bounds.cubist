@@ -52,7 +52,7 @@ def complex_box_squeeze(
   ComplexConverges(F, zero, addF, lt, errors, complex_zero(F, zero)) {
   intro epsilon, positive;
   obtain (bound, close) := vanishes(epsilon, positive);
-  have tail :
+  let tail :
     forall n : Nat. IndexLE(bound, n)
     -> ComplexClose(F, addF, lt, errors(n), complex_zero(F, zero), epsilon) {
     intro n, large;

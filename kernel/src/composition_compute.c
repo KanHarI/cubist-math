@@ -1,4 +1,4 @@
-/* Computational composition rules for Nat, Unit, Pi, Sigma and Path.
+/* Computational composition rules for Unit, Pi, Sigma and Path.
  * Filling is DERIVED from composition with an extra r=0 wall (CCHM §4.4).
  * No rule treats a neutral tube as a constructor merely because its lid is one. */
 #include "term_internal.h"
@@ -44,10 +44,7 @@ static cc_term map_tubes(cc_kernel *k, cc_term system, cc_term_kind operation,
         value = ck_make(k, CC_LAPP, 0, tube.child[0], argument, 0, 0);
     else if (operation == CC_PAPP)
         value = ck_make(k, CC_PAPP, argument, tube.child[0], annotation, 0, 0);
-    else if (operation == CC_SUCC) {
-        cc_term head = ck_whnf(k, tube.child[0]);
-        value = head ? k->nodes[head].child[0] : 0;
-    } else
+    else
         value = ck_make(k, operation, 0, tube.child[0], 0, 0, 0);
     cc_term tail = map_tubes(k, tube.child[1], operation, argument, annotation);
     return ck_make(k, CC_TUBE, tube.payload, value, tail, 0, 0);
@@ -128,28 +125,23 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
     if (!family)
         return 0;
     cc_node type = k->nodes[family];
-    if (type.kind == CC_NAT || type.kind == CC_UNIT) {
+    if (type.kind == CC_UNIT) {
         cc_term head = ck_whnf(k, base);
         if (!head)
             return 0;
-        cc_node constructor = k->nodes[head];
-        bool nat = type.kind == CC_NAT && (constructor.kind == CC_ZERO || constructor.kind == CC_SUCC);
-        bool unit = type.kind == CC_UNIT && constructor.kind == CC_POINT;
-        if ((nat || unit) && all_constructor(k, system, constructor.kind)) {
-            if (constructor.kind != CC_SUCC)
-                return head;
-            cc_term predecessors = map_tubes(k, system, CC_SUCC, 0, 0);
-            cc_term recursive = ck_make(k, CC_COMP, dim, family, predecessors, constructor.child[0], 0);
-            return ck_make(k, CC_SUCC, 0, recursive, 0, 0, 0);
-        }
+        if (k->nodes[head].kind == CC_POINT && all_constructor(k, system, CC_POINT))
+            return head;
     }
-    if (type.kind == CC_SUM || type.kind == CC_W) {
+    if (type.kind == CC_SUM) {
         cc_term normalized = family == n.child[0] && system == n.child[1] ? term :
             ck_make(k, CC_COMP, dim, family, system, base, 0);
         return ck_inductive_composition(k, normalized, family, system);
     }
-    if (type.kind == CC_PUSHOUT)
-        return ck_whnf(k, ck_pushout_composition(k, dim, family, system, base));
+    if (type.kind == CC_SORT) {
+        cc_term normalized = family == n.child[0] && system == n.child[1] ? term :
+            ck_make(k, CC_COMP, dim, family, system, base, 0);
+        return ck_sort_composition(k, normalized, family, system);
+    }
     if (type.kind == CC_GLUE)
         return ck_whnf(k, ck_glue_composition(k, dim, family, system, base));
     if (type.kind == CC_U)

@@ -1,3 +1,5 @@
+import nat;
+
 import sets;
 
 // left(n) represents n; right(n) represents -(n+1). There is one zero.

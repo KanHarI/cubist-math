@@ -18,8 +18,8 @@ def subfield_image_prop(
   let fiber := (fun (x : A) => P(x) and (f(x) = y));
   let a := sigma_first(A, fiber, p);
   let b := sigma_first(A, fiber, q);
-  have pa : f(a) = y := snd(P(a), (f(a) = y), sigma_second(A, fiber, p));
-  have qb : f(b) = y := snd(P(b), (f(b) = y), sigma_second(A, fiber, q));
+  let pa : f(a) = y := snd(P(a), (f(a) = y), sigma_second(A, fiber, p));
+  let qb : f(b) = y := snd(P(b), (f(b) = y), sigma_second(A, fiber, q));
   exact subtype_ext(
     A, fiber,
     (
@@ -123,12 +123,12 @@ def subfield_image_inverse(
   obtain (a, memberA, imageA) := px;
   obtain (p0, p1, pn, pa, pm) := field_embedding_preserves(K, L, e);
   obtain (ringLaws, nontrivial, inverses) := typed(AlgebraicFieldLaws(A, opsA), af_laws(K));
-  have nonzeroImage : FieldNonzero(B, opsB, f(a)) {
+  let nonzeroImage : FieldNonzero(B, opsB, f(a)) {
     intro equalZero;
     exact field_nonzero_of_inverse(L, x, y, inverseLaw, trans(sym(imageA), equalZero));
   }
   obtain (b, inverseA) := inverses(a, field_embedding_reflects_nonzero(K, L, e, a, nonzeroImage));
-  have inverseImage : multiplyL(x, f(b)) = af_one(B, opsB) := trans(
+  let inverseImage : multiplyL(x, f(b)) = af_one(B, opsB) := trans(
     cong((fun (v : B) => multiplyL(v, f(b))), sym(imageA)),
     trans(sym(pm(a, b)), trans(cong(f, inverseA), p1))
   );

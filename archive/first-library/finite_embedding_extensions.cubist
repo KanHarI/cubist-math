@@ -37,9 +37,9 @@ def finite_embedding_extension_step(n : Nat, previous : FiniteEmbeddingExtension
   let i := residue_embedding(K, M, irr);
   let h := adjoin_root_embedding(K, M, irr, L, e, x, root);
   let triangle := residue_evaluate_constant(K, M, L, e, x, root);
-  have tower : FieldTower(K, R, L, i, h, e) := with unfolding [FieldTower] {
-    field_embedding_ext(K, L, field_embedding_compose(K, R, L, i, h), e, triangle)
-  };
+  let tower : FieldTower(K, R, L, i, h, e) := with unfolding [FieldTower] {
+      field_embedding_ext(K, L, field_embedding_compose(K, R, L, i, h), e, triangle)
+    };
   let algebraicR :=
     (
       fun (index : Fin(n)) => algebraic_element_enlarge_base(
@@ -55,7 +55,7 @@ def finite_embedding_extension_step(n : Nat, previous : FiniteEmbeddingExtension
     );
   let W := PolynomialRoots(K, T, j, p);
   let Goal := EmbeddingsOver(K, L, e, T, j);
-  have chooseRoot : W -> Mere(Goal) {
+  let fromRoot : W -> Mere(Goal) {
     intro witness;
     obtain (y, rootY) := witness;
     let d := adjoin_root_embedding(K, M, irr, T, j, y, rootY);
@@ -67,7 +67,7 @@ def finite_embedding_extension_step(n : Nat, previous : FiniteEmbeddingExtension
     );
   }
   exact mere_eliminate(
-    W, Mere(Goal), mere_is_prop(Goal), chooseRoot,
+    W, Mere(Goal), mere_is_prop(Goal), fromRoot,
     algebraically_closed_extension_root(
       K, T, j, closed, p, nonzero, polynomial_irreducible_nonunit(K, p, irr)
     )

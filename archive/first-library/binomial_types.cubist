@@ -1,3 +1,5 @@
+import nat;
+
 import truncation;
 import finite_cancellation;
 import bijection_equality;
@@ -143,7 +145,7 @@ def cancel_unit_bijection(
   let image := forward(Unit or A, Unit or B, e, head(A));
   let adjusted :=
     compose_bijection(Unit or A, Unit or B, Unit or B, e, swap_bijection(B, decide, image));
-  exact restrict_bijection(A, B, adjusted, swap_chosen(B, decide, image));
+  exact restrict_bijection(A, B, adjusted, swap_target(B, decide, image));
 }
 
 // Selecting the new first alternative adds Unit to the selected subtype;

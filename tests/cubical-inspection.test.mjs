@@ -1,3 +1,5 @@
+import "./fresh-build.mjs";
+import {naturalSort, numeral} from "../web/translator/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -12,7 +14,47 @@ import { simplifyTypeApplications } from "../web/cubical-reduction.mjs";
 const module = await createCubical();
 const readSource = name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
 const variable = name => ({ tag: "Var", name });
-const nat = { tag: "Nat" };
+const nat = naturalSort;
+
+test("declared type occurrences link to their imported and local source declarations", async t => {
+  const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
+  const source = `import w;
+def Z := Nat or Nat;
+def Tree := W(U0, U0, Unit, fun (a : Unit) => Void);
+def former := W;
+inductive N { zero; succ(n : N); }
+def two : N := succ(succ(zero));`;
+  const result = await program.check(source, "main");
+  assert.equal(result.complete, true, JSON.stringify(result.gaps));
+  for (const [name, binding] of [["Nat", "nat__Nat"], ["W", "w__W"], ["N", "main__N"]]) {
+    const links = result.links.filter(link => link.name === name);
+    assert.equal(links.length, name === "N" ? 3 : 2, name);
+    for (const link of links) {
+      assert.equal(link.binding, binding);
+      assert.equal(link.role, "inductive");
+    }
+  }
+  const imported = result.imports.find(info => info.binding === "nat__Nat");
+  assert.equal(imported.sourceModule, "nat");
+  assert.equal(imported.sourceName, "Nat");
+  assert.match(result.sources.nat.slice(imported.definitionStart), /^inductive Nat/);
+  assert.deepEqual(program.signatureView("nat__Nat").constructors.map(c => c.name), ["zero", "succ"]);
+});
+
+test("shadowed Nat names retain their own local source targets", async t => {
+  const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
+  const source = "def identity(Nat : U0, x : Nat) : Nat := x; def Nat := Unit; def point : Nat := tt;";
+  const result = await program.check(source, "shadow");
+  assert.equal(result.complete, true, JSON.stringify(result.gaps));
+  const links = result.links.filter(link => link.name === "Nat");
+  assert.equal(links.length, 5);
+  for (const link of links.slice(0, 3)) {
+    assert.notEqual(link.binding, "nat__Nat");
+    assert.notEqual(link.role, "inductive");
+  }
+  assert.equal(links.at(-1).binding, "shadow__Nat");
+  assert.equal(links.at(-1).role, "def");
+});
 
 test("inferred induction statements simplify the motive and retain source binder names", async t => {
   const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
@@ -54,9 +96,9 @@ test("Euclid locals retain checked syntax, source aliases, and navigable assumpt
   assert.match(view.typeText, /Divides\(succ\(succ\(i\)\), m\)/);
   assert.equal(view.folded.reference.name, "hd");
   assert.equal(view.context[0].label, "n");
-  assert.equal(program.inspect(view.context[0].binding).type.tag, "Nat");
+  assert.equal(program.inspect(view.context[0].binding).type.tag, "Sort");
   const i = view.locals.find(local => local.name === "i");
-  assert.equal(program.inspect(i.binding).type.tag, "Nat");
+  assert.equal(program.inspect(i.binding).type.tag, "Sort");
   assert.equal(source.slice(view.symbols[i.binding].definitionStart).startsWith("i,"), true);
   assert.ok(JSON.stringify(view.type).includes('"Fst"'));
   assert.ok(!JSON.stringify(view.type).includes("DisplayRef"));
@@ -112,7 +154,7 @@ test("path notation and raw syntax display stay bounded on shared terms", () => 
   assert.equal(boundedSyntaxJson(shared), null);
   assert.equal(boundedSyntaxJson(nat), JSON.stringify(nat, null, 2));
   let deep = nat;
-  for (let i = 0; i < 600; i++) deep = { tag: "Succ", value: deep };
+  for (let i = 0; i < 600; i++) deep = { tag: "Inl", as: { tag: "Unit" }, value: deep };
   assert.equal(boundedSyntaxJson(deep), null);
 });
 

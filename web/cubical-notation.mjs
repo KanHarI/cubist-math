@@ -1,7 +1,12 @@
 import { renameLevel, universeText } from "./cubical-levels.mjs";
+import {numeralValue} from "./translator/numerals.mjs";
 // Display the native checked syntax itself. Definition references stay named;
 // this does not reconstruct an unchecked expression from Cubist source.
-export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = false } = {}) {
+// `scope` maps variables bound around the term by an enclosing printer to
+// the names it shows them by (sourceText's forms without a source
+// spelling): they show so here, and binders here keep apart from them.
+// Definitions, sorts and eliminators keep the labels `symbols` gives.
+export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = false, scope = new Map() } = {}) {
   let remaining = limit;
   const boundNames = new Map(), freeCache = new WeakMap();
   const free = (term, variable) => {
@@ -10,7 +15,7 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (!cache) { cache = new Map(); freeCache.set(term, cache); }
     if (cache.has(variable)) return cache.get(variable);
     const found = term.tag === "Var" ? term.name === variable
-      : ["Pi", "Sigma", "Lam", "W", "LPi", "LLam"].includes(term.tag)
+      : ["Pi", "Sigma", "Lam", "LPi", "LLam"].includes(term.tag)
         ? free(term.domain, variable) || (term.name !== variable && free(term.body, variable))
         : Object.values(term).some(child => free(child, variable));
     cache.set(variable, found); return found;
@@ -21,7 +26,12 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (!sourceNames.has(symbol.name)) sourceNames.set(symbol.name, []);
     sourceNames.get(symbol.name).push(variable);
   }
-  const label = value => boundNames.get(value) ?? symbols[value]?.name ?? value;
+  for (const [variable, shown] of scope) {
+    if (!sourceNames.has(shown)) sourceNames.set(shown, []);
+    sourceNames.get(shown).push(variable);
+  }
+  const outer = value => !boundNames.has(value) && scope.has(value);
+  const label = value => boundNames.get(value) ?? scope.get(value) ?? symbols[value]?.name ?? value;
   const underBinder = (variable, body, renderBody) => {
     let spelling = symbols[variable]?.name ?? variable;
     while ([...boundNames].some(([key, name]) => key !== variable && name === spelling)
@@ -80,20 +90,18 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (!t || --remaining < 0) return name("…");
     if (t.tag === "DisplayRef") return { ...name(t.name), contextBinding: t.binding, local: true };
     if (t.tag === "DefRef") return { ...name(symbols[t.name]?.name ?? t.name), binding: t.name };
-    if (t.tag === "Var") return { ...name(label(t.name)), local: symbols[t.name]?.kind !== "axiom",
-      ...(symbols[t.name]?.kind === "axiom" ? { binding: t.name, axiomNotation: t.name === "__assumption_Truncate" ? "truncation" : undefined }
-        : symbols[t.name]?.binding ? { contextBinding: symbols[t.name].binding } : {}) };
+    if (t.tag === "Var") {
+      const symbol = outer(t.name) ? undefined : symbols[t.name];
+      return { ...name(label(t.name)), local: symbol?.kind !== "axiom",
+        ...(symbol?.kind === "axiom" ? { binding: t.name, axiomNotation: t.name === "__assumption_Truncate" ? "truncation" : undefined }
+          : symbol?.binding ? { contextBinding: symbol.binding } : {}) };
+    }
     if (t.tag === "U") return { kind: "Universe", level: renameLevel(t.level, label) };
     // The bound of a universe variable x < UU0, which a context entry has in
     // place of a type: shown as the bound's universe.
     if (t.tag === "LBound") return { kind: "Universe", level: { tag: "LConst", tier: t.tier, value: 0 } };
-    if (["Nat", "Unit", "Void"].includes(t.tag)) return name(t.tag);
-    if (t.tag === "Zero") return { kind: "Number", value: 0 };
+    if (["Unit", "Void"].includes(t.tag)) return name(t.tag);
     if (t.tag === "Point") return name("⋆");
-    if (t.tag === "Succ") {
-      const value = child(t.value, "value");
-      return value.kind === "Number" ? { kind: "Number", value: value.value + 1 } : call("succ", [value]);
-    }
     if (["Pi", "Sigma"].includes(t.tag)) {
       if (!free(t.body, t.name)) return { kind: t.tag === "Pi" ? "Arrow" : "Product", left: child(t.domain, "domain"), right: child(t.body, "body") };
       const domain = child(t.domain, "domain"), binder = underBinder(t.name, t.body, () => child(t.body, "body"));
@@ -105,6 +113,8 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (t.tag === "LPi" || t.tag === "LLam")
       return { kind: t.tag === "LPi" ? "LevelPi" : "LevelLambda", ...underBinder(t.name, t.body, () => child(t.body, "body")) };
     if (t.tag === "App" || t.tag === "LApp") {
+      const number=numeralValue(t);
+      if(!paths&&number!==null)return {kind:"Number",value:number};
       if (paths && t.tag === "App") return { kind: "Call", fn: child(t.fn, "fn"), args: [child(t.arg, "arg")] };
       const args = []; let fn = t;
       while ((fn.tag === "App" || fn.tag === "LApp") && remaining-- > 0) {
@@ -130,8 +140,6 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (t.tag === "PLam") return !depends(t.family, t.dim) && !depends(t.body, t.dim)
       ? call("refl", [child(t.body, "body")]) : call("path", [{ kind: "Lambda", name: t.dim, body: child(t.body, "body") }]);
     if (t.tag === "PApp") return call("at", [child(t.path, "path"), formula(t.arg)]);
-    if (t.tag === "PushPath") return call("push_path_at", [child(t.as, "as"), child(t.value, "value"), formula(t.arg)]);
-    if (t.tag === "W") return call("W", [child(t.domain, "domain"), { kind: "Lambda", name: t.name, body: child(t.body, "body") }]);
     if (t.tag === "Comp") return { kind: "Scope", names: [t.dim], body: call("comp", [child(t.family, "family"),
       ...t.system.map((p, index) => call("face", [formula(p.face), child(p.term, "system", index, "term")])), child(t.base, "base")]) };
     if (t.tag === "HComp") return call("hcomp", [child(t.family, "family"), ...t.system.map((p, index) => call("face", [formula(p.face),
@@ -139,12 +147,23 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (t.tag === "Trans") return call("transp", [{ kind: "Lambda", name: t.dim, body: child(t.family, "family") }, formula(t.face), child(t.base, "base")]);
     if (t.tag === "Glue") return call("Glue", [child(t.base, "base"), ...t.system.map((p, index) => call("face", [formula(p.face), child(p.type, "system", index, "type"), child(p.equiv, "system", index, "equiv")]))]);
     if (t.tag === "GlueTerm") return call("glue", [child(t.as, "as"), child(t.base, "base"), ...t.system.map((p, index) => call("face", [formula(p.face), child(p.term, "system", index, "term")]))]);
-    const fields = { NatRec: ["motive", "zero", "step", "value"], UnitRec: ["motive", "point", "value"],
-      SumRec: ["motive", "left", "right", "value"], WRec: ["motive", "step", "value"],
-      Sup: ["as", "label", "children"], Inl: ["as", "value"], Inr: ["as", "value"],
-      Abort: ["as", "impossible"], Unglue: ["as", "value"],
-      Pushout: ["center", "left", "right", "maps"], PushLeft: ["as", "value"],
-      PushRight: ["as", "value"], PushElim: ["motive", "left", "right", "bridge"] };
+    // Declared types (H1), as the source writes them: an instance is its
+    // name, applied to its recorded levels and its parameters; a constructor
+    // is its name, its instance left implicit; an eliminator names its type.
+    if (t.tag === "Sort") {
+      const args = [...(t.levels ?? []).map(level => ({ kind: "Universe", level: renameLevel(level, label) })),
+        ...(t.parameters ?? []).map((parameter, index) => child(parameter, "parameters", index))];
+      const sortName = symbols[t.signature]?.name ?? t.signature;
+      return args.length ? call(sortName, args) : name(sortName);
+    }
+    if (t.tag === "Con") {
+      const number=numeralValue(t);
+      return !paths&&number!==null?{kind:"Number",value:number}:name(t.name ?? `constructor ${t.index}`);
+    }
+    if (t.tag === "Elim") return call(`${symbols[t.signature]?.name ?? t.signature}.elim`, [child(t.motive, "motive"),
+      ...t.clauses.map((clause, index) => child(clause, "clauses", index))]);
+    const fields = { UnitRec: ["motive", "point", "value"], SumRec: ["motive", "left", "right", "value"],
+      Inl: ["as", "value"], Inr: ["as", "value"], Abort: ["as", "impossible"], Unglue: ["as", "value"] };
     if (!fields[t.tag]) throw new Error(`Unsupported cubical notation: ${t.tag}`);
     return call(t.tag, fields[t.tag].map(key => child(t[key], key)));
   }
@@ -180,6 +199,6 @@ export function cubicalTextParts(tree) {
   return show(tree);
 }
 
-export function cubicalText(term, symbols = {}) {
-  return cubicalTextParts(cubicalMathTree(term, symbols)).map(part => part.text).join("");
+export function cubicalText(term, symbols = {}, { scope } = {}) {
+  return cubicalTextParts(cubicalMathTree(term, symbols, undefined, { scope })).map(part => part.text).join("");
 }

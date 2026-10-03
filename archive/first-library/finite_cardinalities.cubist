@@ -24,7 +24,7 @@ def bijective_map_bijection(
 
 def cardinality_unique(A : U0, n, m : Nat, hn : HasCardinality(A, n), hm : HasCardinality(A, m)) :
   n = m {
-  have first : Bijection(Fin(n), A) -> n = m {
+  let first : Bijection(Fin(n), A) -> n = m {
     intro e;
     exact mere_eliminate(
       Bijection(Fin(m), A), (n = m), hedberg(Nat, nat_eq_decidable, n, m),

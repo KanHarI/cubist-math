@@ -67,18 +67,12 @@ static void canonical_forms(void) {
     assert(canonical(canonical(lmax(lconst(0, 4), succ(y, 2)))) == canonical(lmax(lconst(0, 4), succ(y, 2))));
     assert(ck_level_max(k, lconst(0, 3), lconst(0, 5)) == lconst(0, 5));
     assert(ck_level_max(k, x, lconst(1, 0)) == lconst(1, 0));
-    assert(ck_level_succ(k, lmax(x, lconst(0, 2))) == lmax(succ(x, 1), lconst(0, 3)));
-    assert(ck_level_finite(k, lmax(x, lconst(0, 9))) && !ck_level_finite(k, lconst(1, 0)));
+    assert(canonical(succ(lmax(x, lconst(0, 2)), 1)) == lmax(succ(x, 1), lconst(0, 3)));
     /* The limit of §2.7: ω when the variable occurs in the normal form. */
     assert(ck_level_limit(k, X, succ(x, 1)) == lconst(1, 0));
     assert(ck_level_limit(k, X, succ(y, 1)) == succ(y, 1));
     assert(ck_level_limit(k, X, lmax(x, lconst(1, 2))) == lconst(1, 2));
     assert(ck_level_limit(k, X, lconst(0, 0)) == lconst(0, 0));
-    /* The term checker's universes: closed finite levels only. */
-    uint32_t n = 0;
-    assert(ck_universe_number(k, ck_universe(k, lmax(lconst(0, 1), lconst(0, 0))), &n) && n == 1);
-    expect_error(ck_universe_number(k, ck_universe(k, x), &n), "closed finite");
-    expect_error(ck_universe_number(k, ck_universe(k, lconst(1, 0)), &n), "closed finite");
     /* Universes compare by level (U-Eq) and by order (U-Cum), across tiers. */
     assert(ck_alpha_equal(k, ck_universe(k, lmax(lconst(0, 1), lconst(0, 0))), ck_universe_at(k, 1)));
     assert(!ck_alpha_equal(k, ck_universe_at(k, 1), ck_universe_at(k, 2)));
@@ -116,12 +110,12 @@ static void canonical_forms(void) {
 static void bounds_and_malformed(void) {
     cc_term x = var(X);
     assert(ck_level_constant(k, 0, CC_LEVEL_MAX));
-    expect_error(ck_level_succ(k, lconst(0, CC_LEVEL_MAX)) != 0, "bound");
-    expect_error(ck_level_succ(k, succ(x, CC_LEVEL_MAX)) != 0, "bound");
+    expect_error(ck_level_canonical(k, succ(lconst(0, CC_LEVEL_MAX), 1)) != 0, "bound");
+    expect_error(ck_level_canonical(k, succ(succ(x, CC_LEVEL_MAX), 1)) != 0, "bound");
     expect_error(ck_level_equal(k, lconst(CC_TIER_MAX + 1, 0), lconst(0, 0)), "bound");
     expect_error(ck_level_constant(k, CC_TIER_MAX + 1, 0) != 0, "bound");
     expect_error(ck_level_equal(k, ck_make(k, CC_LSUCC, 0, x, 0, 0, 0), x), "at least one");
-    expect_error(ck_level_equal(k, ck_make(k, CC_NAT, 0, 0, 0, 0, 0), x), "Expected a level");
+    expect_error(ck_level_equal(k, ck_make(k, CC_U, 0, ck_make(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0), x), "Expected a level");
     expect_error(ck_level_equal(k, ck_make(k, CC_LBOUND, 1, 0, 0, 0, 0), x), "A bound is not a level");
     expect_error(ck_make(k, CC_U, 1, 0, 0, 0, 0) != 0, "payload must be zero");
     /* A level shared as a DAG but exponential as a tree exhausts the budget. */

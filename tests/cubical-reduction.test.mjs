@@ -1,3 +1,5 @@
+import "./fresh-build.mjs";
+import {naturalSort, numeral} from "../web/translator/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
@@ -5,7 +7,7 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 import { reduceView, reductionStep, checkReduction, reductionAt, reductionRule, termAtPath } from "../web/cubical-reduction.mjs";
 import { cubicalMathTree } from "../web/cubical-notation.mjs";
 
-const module = await createCubical(), nat = { tag: "Nat" }, zero = { tag: "Zero" };
+const module = await createCubical(), nat = naturalSort, zero = numeral(0);
 const variable = name => ({ tag: "Var", name });
 const lambda = (name, body) => ({ tag: "Lam", name, domain: nat, body });
 const app = (fn, arg) => ({ tag: "App", fn, arg });
@@ -26,7 +28,7 @@ test("delta unfolds one closed kernel definition; beta leaves other definitions 
   assert.equal(beta.view.expression.fn.name, "demo__id");
   assert.equal(reduceView(program, beta.view, "expression", "beta").change, null);
   const unfolded = reduceView(program, beta.view, "expression", "delta");
-  assert.equal(reduceView(program, unfolded.view, "expression", "beta").view.expression.tag, "Zero");
+  assert.equal(reduceView(program, unfolded.view, "expression", "beta").view.expression.tag, "Con");
 });
 
 test("type delta and beta are retained even when the inferred type uses an alias", async t => {
@@ -42,7 +44,7 @@ test("type delta and beta are retained even when the inferred type uses an alias
 
 test("reduction must preserve definitional equality, not just inhabitation", async t => {
   const program = await programFor(t), original = program.inspect("demo__value");
-  assert.throws(() => checkReduction(program, original, "expression", { tag: "Succ", value: zero }), /mismatch/i);
+  assert.throws(() => checkReduction(program, original, "expression", numeral(1)), /mismatch/i);
   assert.throws(() => checkReduction(program, original, "type", { tag: "Unit" }), /mismatch/i);
 });
 

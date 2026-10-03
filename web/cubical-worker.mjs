@@ -47,7 +47,8 @@ self.onmessage = async ({ data: { id, command, args } }) => {
     if (command === "check") {
       const replBefore = replQueue;
       const run = (async () => {
-        const next = new CubicalProgram(module, readSource(args.module, args.place), { optimizations: args.optimizations });
+        const next = new CubicalProgram(module, readSource(args.module, args.place),
+          { optimizations: args.optimizations });
         let checked;
         try { checked = await next.check(args.source, args.module ?? "current", progress => self.postMessage({ id, progress })); }
         catch (error) { next.dispose(); throw error; }
@@ -74,6 +75,8 @@ self.onmessage = async ({ data: { id, command, args } }) => {
       result = await run;
     } else if (!program) throw new Error("Check a proof first.");
     else if (command === "inspect") result = program.inspect(args.binding, args);
+    // A declared type has no checked definition: its signature and eliminator.
+    else if (command === "signature") result = program.signatureView(args.binding);
     else if (command === "export-inspection") result = program.export(args.binding, args.side);
     else if (command === "export") result = program.export();
     else throw new Error("Unsupported cubical command.");

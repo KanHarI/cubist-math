@@ -1,3 +1,5 @@
+import nat;
+
 import artin_hom_independence;
 import finite_sums;
 
@@ -106,7 +108,7 @@ def hom_family_sum_product(
     K, L, n, maps,
     (fun (i : Fin(n)) => field_mul(L, coefficients(i), field_embedding_map(K, L, maps(i), t))), x
   ) {
-  have sameTerm :
+  let sameTerm :
     forall i : Fin(n).
     field_mul(L, coefficients(i), field_embedding_map(K, L, maps(i), field_mul(K, t, x))) = field_mul(
       L, field_mul(L, coefficients(i), field_embedding_map(K, L, maps(i), t)),
@@ -171,7 +173,7 @@ def hom_family_sum_at_one(
   -> af_carrier(L)
 ) :
   hom_family_sum(K, L, n, maps, coefficients, field_one(K)) = field_sum(L, n, coefficients) {
-  have same :
+  let same :
     forall i : Fin(n).
     field_mul(L, coefficients(i), field_embedding_map(K, L, maps(i), field_one(K))) = coefficients(
       i
@@ -205,7 +207,7 @@ def hom_family_difference(
   let v := fun (i : Fin(n)) => field_mul(L, second(i), F(i));
   let w := fun (i : Fin(n)) => field_mul(L, field_add(L, first(i), field_neg(L, second(i))), F(i));
   let z := fun (i : Fin(n)) => field_add(L, u(i), field_neg(L, v(i)));
-  have same : forall i : Fin(n). w(i) = z(i) {
+  let same : forall i : Fin(n). w(i) = z(i) {
     intro i;
     exact trans(
       scalar_distribute_left(L, first(i), field_neg(L, second(i)), F(i)),
@@ -391,7 +393,7 @@ def hom_family_tail_coefficient_zero(
   let f := maps(index);
   let g := maps(head);
   let tailMaps := finite_tail(FieldEmbedding(K, L), n, maps);
-  have twistedZero :
+  let twistedZero :
     forall t : af_carrier(K).
     field_add(
       L, field_mul(L, c, field_embedding_map(K, L, f, t)),
@@ -416,9 +418,9 @@ def hom_family_tail_coefficient_zero(
       ), i
     );
   }
-  have impossible : FieldNonzero(af_carrier(L), af_operations(L), c) -> Void {
+  let impossible : FieldNonzero(af_carrier(L), af_operations(L), c) -> Void {
     intro nonzero;
-    have sameMap :
+    let sameMap :
       forall t : af_carrier(K). field_embedding_map(K, L, f, t) = field_embedding_map(K, L, g, t) {
       intro t;
       let ft := field_embedding_map(K, L, f, t);
@@ -450,7 +452,7 @@ def hom_family_head_coefficient_zero(
   let c := finite_head(af_carrier(L), n, coefficients);
   let tail := finite_tail(af_carrier(L), n, coefficients);
   let tailSum := field_sum(L, n, tail);
-  have tailZero : tailSum = field_zero(L) := field_sum_zero(
+  let tailZero : tailSum = field_zero(L) := field_sum_zero(
     L, n, tail,
     (
       fun (i : Fin(n)) => hom_family_tail_coefficient_zero(

@@ -23,12 +23,6 @@ export function levelText(level) {
   }
 }
 
-// Names such as U3 and UU0 spell universe constants (G0 §1.4), so a numbered
-// variable never shows that way: the U stem numbered 1 shows as U_1.
-export function numberedName(stem, index) {
-  return /^U+$/.test(stem) ? `${stem}_${index}` : `${stem}${index}`;
-}
-
 // A level with each universe variable renamed, for printing under the same
 // renaming as the term around it.
 export function renameLevel(level, rename) {

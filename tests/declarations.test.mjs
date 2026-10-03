@@ -1,7 +1,8 @@
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parse } from "../web/mathscript/parser.mjs";
-import { formatMathScript } from "../web/mathscript/formatter.mjs";
+import { parse } from "../web/cubist/parser.mjs";
+import { formatCubist } from "../web/cubist/formatter.mjs";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 
@@ -11,7 +12,7 @@ test("removed theorem declarations are rejected in both source forms", () => {
     "theorem identity : forall A : U0. A -> A { intro A; intro x; exact x; }",
   ]) {
     assert.throws(() => parse(source), /Expected a declaration or directive/);
-    assert.throws(() => formatMathScript(source), /Expected a declaration or directive/);
+    assert.throws(() => formatCubist(source), /Expected a declaration or directive/);
   }
 });
 

@@ -4,6 +4,7 @@
 // entry sees what came before. Declarations and imports that check extend
 // the session; `typeof` and `evaluate` check a scratch module and leave the
 // session as it was. Every result is checked by the kernel like a file.
+import { withCode } from "./diagnostics.mjs";
 
 export const replHelp = [
   "let NAME := TERM;     define a name (def works too, with any declaration form)",
@@ -100,13 +101,13 @@ export class ReplSession {
     if (!source) return [];
     if (source === "help" || source === "/help") return [{ kind: "help", text: replHelp }];
     if ((match = /^\/modules(?:\s+(\S+))?$/.exec(source))) return this.listModules(match[1]);
-    if (consoleCommands.has(source)) return [{ kind: "error", text: `${source} is a command of the console, not of an entry.` }];
-    if (/^\//.test(source)) return [{ kind: "error", text: `Unknown command ${source.split(/\s/)[0]}. /help lists the commands.` }];
+    if (consoleCommands.has(source)) return [{ kind: "error", text: withCode(`${source} is a command of the console, not of an entry.`) }];
+    if (/^\//.test(source)) return [{ kind: "error", text: withCode(`Unknown command ${source.split(/\s/)[0]}. /help lists the commands.`) }];
     if ((match = /^typeof\s+([\s\S]+)$/.exec(source))) return this.typeOf(match[1]);
     if ((match = /^import\s+([A-Za-z_][A-Za-z_0-9]*)$/.exec(source))) return this.import(match[1], text);
     if (/^evaluate\s/.test(source) && !/\bexpecting\b/.test(source)) return this.evaluate(source.replace(/^evaluate\s+/, ""));
     if (/^let\s/.test(source)) return this.declare(`def${source.slice(3)};`, text);
-    if (/^(def|computable|simp_rule|simp_set|evaluate)\s/.test(source))
+    if (/^(def|computable|simp_rule|simp_set|evaluate|inductive)\s/.test(source))
       return this.declare(/[;}]$/.test(text.trim()) ? text.trim() : `${source};`, text);
     return this.evaluate(source);
   }
@@ -114,7 +115,7 @@ export class ReplSession {
   // The modules import can load: the rebuilt library, then the archive of the
   // first library, whose modules the library's shadow.
   async listModules(filter) {
-    if (!this.modules) return [{ kind: "error", text: "This session cannot list its modules." }];
+    if (!this.modules) return [{ kind: "error", text: withCode("This session cannot list its modules.") }];
     const { library = [], archive = [] } = await this.modules(), matches = name => !filter || name.includes(filter);
     const groups = [["Library", library.filter(matches)],
       ["Archive, the first library", archive.filter(name => matches(name) && !library.includes(name))]];
@@ -137,12 +138,13 @@ export class ReplSession {
 
   // Failures of an entry: its declarations, directives, and modules it loaded.
   failures(result, { position = false } = {}) {
-    if (result.error) return [{ kind: "error", text: result.error }];
+    // Each message is shown with its code (web/diagnostics.mjs).
+    if (result.error) return [{ kind: "error", text: withCode(result.error) }];
     const clean = reason => position ? reason : reason.replace(/ at \d+:\d+$/, "");
     return [
       ...result.declarations.filter(info => !info.verified)
-        .map(info => ({ kind: "error", text: clean(info.reason) })),
-      ...result.gaps.filter(gap => gap.directive || !gap.name).map(gap => ({ kind: "error", text: clean(gap.reason) })),
+        .map(info => ({ kind: "error", text: withCode(clean(info.reason), info.code) })),
+      ...result.gaps.filter(gap => gap.directive || !gap.name).map(gap => ({ kind: "error", text: withCode(clean(gap.reason), gap.code) })),
     ];
   }
 
@@ -165,7 +167,7 @@ export class ReplSession {
   async import(name, text) {
     const result = await this.entry(`import ${name};`), failures = this.failures(result);
     if (failures.length || !this.program.modules.has(name)) return failures.length ? failures
-      : [{ kind: "error", text: `Module ${name} was not loaded.` }];
+      : [{ kind: "error", text: withCode(`Module ${name} was not loaded.`) }];
     this.advance(result, text);
     return [{ kind: "info", text: `Imported ${name}.` }];
   }

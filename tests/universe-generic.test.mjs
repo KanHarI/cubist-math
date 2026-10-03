@@ -1,24 +1,21 @@
+import "./fresh-build.mjs";
+import {naturalSort, numeral} from "../web/translator/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { parse } from "../web/mathscript/parser.mjs";
-import { T, substituteTerm } from "../lib/cubical/core.mjs";
-import { canonicalHasher } from "../tools/proof-migration.mjs";
+import { parse } from "../web/cubist/parser.mjs";
+import { T, substituteTerm } from "../web/translator/core.mjs";
+import { canonicalHasher } from "../tools/canonical-hash.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 // L1.1 (G0 §4.3): universe binders U < UU0, universe constants of every tier,
 // next and max, generic builtins and assumptions, and generic rewriting.
 // Source cases carry the IDs of the G0 specification's section 5.
 const module = await createCubical();
 const readArchive = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
-async function check(t, source, name = "generic") {
-  const program = new CubicalProgram(module, readArchive);
-  t.after(() => program.dispose());
-  const result = await program.check(source, name);
-  const verdicts = Object.fromEntries(result.outputs.map(output => [output.name, output.verified ? true : output.reason]));
-  return { program, result, verdicts };
-}
+const check = (t, source, name = "generic") => checkProgram(t, source, { module, reader: readArchive, name });
 const parseError = source => { try { parse(source); return null; } catch (error) { return error.message; } };
 const labels = (program, binding) => program.symbols[binding].axioms.map(id => program.checker.assumptionLabels.get(id)).sort();
 
@@ -37,8 +34,8 @@ test("a generic definition checks once and is instantiated at universes of tier 
   `);
   assert.ok(Object.values(verdicts).every(verdict => verdict === true), JSON.stringify(verdicts));
   assert.equal(program.inspect("generic__identity").type.tag, "LPi");
-  assert.equal(program.checker.verify(T.app(T.levelApply({ tag: "DefRef", name: "generic__identity" }, 0), T.nat)).type.tag, "Pi");
-  assert.deepEqual(program.checker.verify({ tag: "DefRef", name: "generic__three" }).normal, T.succ(T.succ(T.succ(T.zero))));
+  assert.equal(program.checker.verify(T.app(T.levelApply({ tag: "DefRef", name: "generic__identity" }, 0), naturalSort)).type.tag, "Pi");
+  assert.deepEqual(program.checker.verify({ tag: "DefRef", name: "generic__three" }).normal, numeral(3));
 });
 
 test("B11–B14, B16, B17: Universe is removed, and bounds, reserved names and universes are checked", async t => {
@@ -69,8 +66,8 @@ test("B11–B14, B16, B17: Universe is removed, and bounds, reserved names and u
   assert.match(verdicts.bad_identity, universe);
   assert.match(verdicts.numeral_bound, bound);                    // B17
   // B13: universe constants are reserved names.
-  assert.equal(parseError("def UU2 := Nat;"), "UU2 is a universe constant; choose another name.");
-  assert.equal(parseError("def f := fun (U1 : U0) => U1;"), "U1 is a universe constant; choose another name.");
+  assert.equal(parseError("def UU2 := Nat;"), "UU2 is a universe constant; pick another name.");
+  assert.equal(parseError("def f := fun (U1 : U0) => U1;"), "U1 is a universe constant; pick another name.");
   assert.match(parseError("def f := exists U < UU0. U;"), /exists has no level form/);
 });
 
@@ -199,7 +196,7 @@ function generator(seed) {
   // A type with the level variable free, and a level it lives at.
   const type = depth => {
     switch (depth ? random(5) : random(2)) {
-      case 0: return { term: T.nat, level: 0 };
+      case 0: return { term: naturalSort, level: 0 };
       case 1: { const l = level(); return { term: T.universe(l), level: succ(l) }; }
       case 2: { const a = type(depth - 1), b = type(depth - 1); return { term: T.pi(name("p"), a.term, b.term), level: max(a.level, b.level) }; }
       case 3: { // (λ (A : U(m)). A → A)(a)
@@ -215,19 +212,19 @@ function generator(seed) {
   // A natural number, canonical data whatever the level.
   const number = depth => {
     switch (depth ? random(3) : 0) {
-      case 0: { let n = T.zero; for (let i = random(3); i > 0; i--) n = T.succ(n); return n; }
-      case 1: { const n = name("n"); return T.app(T.lam(n, T.nat, T.succ(T.variable(n))), number(depth - 1)); }
+      case 0: return numeral(random(3));
+      case 1: { const n = name("n"); return T.app(T.lam(n, naturalSort, T.app(T.constructor(1,naturalSort,"succ"),T.variable(n))), number(depth - 1)); }
       default: {
         const a = type(depth - 1), m = max(a.level, level()), A = name("C"), n = name("k");
-        return T.app(T.app(T.lam(A, T.universe(m), T.lam(n, T.nat, T.variable(n))), a.term), number(depth - 1));
+        return T.app(T.app(T.lam(A, T.universe(m), T.lam(n, naturalSort, T.variable(n))), a.term), number(depth - 1));
       }
     }
   };
   // A type with the level variable free, and a closed inhabitant of it.
   const inhabited = depth => {
     switch (depth ? random(4) : random(2)) {
-      case 0: return { type: T.nat, value: T.succ(T.zero) };
-      case 1: return { type: T.universe(level()), value: T.nat };
+      case 0: return { type: naturalSort, value: numeral(1) };
+      case 1: return { type: T.universe(level()), value: naturalSort };
       case 2: { const a = inhabited(depth - 1), b = inhabited(depth - 1), n = name("a"); return { type: T.pi(n, a.type, b.type), value: T.lam(n, a.type, b.value) }; }
       default: { const l = level(), A = name("D"); return { type: T.pi(A, T.universe(l), T.universe(l)), value: T.lam(A, T.universe(l), T.variable(A)) }; }
     }
@@ -237,6 +234,7 @@ function generator(seed) {
 
 test("Lemma 5: instantiating a level commutes with normalization", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
+  await program.check("def retained : Unit := tt;", "properties");
   const nf = term => program.checker.verify(term).normal, hash = canonicalHasher();
   const same = (a, b) => hash(a) === hash(b);
   const { x, type, number } = generator(12345);
@@ -258,6 +256,7 @@ test("Lemma 5: instantiating a level commutes with normalization", async t => {
 
 test("composition at a level Π is pointwise: its reduct instantiated is the composition at the instance", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
+  await program.check("def retained : Unit := tt;", "properties");
   const nf = term => program.checker.verify(term).normal, hash = canonicalHasher();
   const { x, inhabited } = generator(777);
   for (let i = 0; i < 30; i++) {

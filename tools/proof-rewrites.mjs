@@ -2,15 +2,15 @@
 // only the spans it recognizes and keeps all other text, including comments.
 // A rewrite is skipped wherever it would drop a comment. tools/
 // verify-proof-migration.mjs then checks the checked meaning of the result.
-import { parse, tokenize } from "../web/mathscript/parser.mjs";
+import { parse, tokenize } from "../web/cubist/parser.mjs";
 
 // Rewrites whose output elaborates to the same checked terms.
-export const identicalRewrites = ["path-apply", "along", "intro", "have", "params", "fun"];
+export const identicalRewrites = ["path-apply", "along", "intro", "let", "params", "fun"];
 // Rewrites that keep public types but may change proof terms.
 export const typePreservingRewrites = ["wrappers", "rfl", "path-lambda", "ext"];
 
-const statementKinds = new Set(["intro", "let", "obtain", "have", "haveValue", "cases", "exact", "rfl",
-  "calc", "rw", "simpOnly", "simpaOnly", "ext", "over", "show", "suffices"]);
+const statementKinds = new Set(["intro", "let", "obtain", "cases", "matchStatement", "exact", "rfl",
+  "calc", "rw", "simpOnly", "simpaOnly", "hlevel", "ext", "over"]);
 const spanned = value => value && typeof value === "object" && Number.isInteger(value.start) && Number.isInteger(value.end);
 const identifiers = text => new Set(text.match(/[A-Za-z_][A-Za-z_0-9]*/g) ?? []);
 const squash = text => text.replace(/\s+/g, " ").trim();
@@ -55,10 +55,11 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
   }
   function childContext(node, key) {
     if (node.kind === "call") return key === "fn" ? "callee" : "delimited";
-    // A projection's operand binds as tightly as a callee: (e @ 0).1.
-    if (node.kind === "projection") return "callee";
-    if (["pair", "exact", "let", "obtain", "have", "haveValue", "over", "along", "rw", "simpOnly",
-      "simpaOnly", "show", "suffices", "lambda", "binderGroup", "forall", "exists", "pathLambda", "withUnfolding"].includes(node.kind))
+    // A projection's operand binds as tightly as a callee: (e @ 0).1. So does
+    // a prefix minus's: -(e @ 0), never -e @ 0, which is (-e) @ 0.
+    if (node.kind === "projection" || node.kind === "unary") return "callee";
+    if (["pair", "exact", "let", "obtain", "over", "along", "rw", "simpOnly",
+      "simpaOnly", "lambda", "binderGroup", "forall", "exists", "pathLambda", "withUnfolding"].includes(node.kind))
       return "delimited";
     if (node.kind === undefined && key === "value") return "delimited";
     return "operand";
@@ -148,10 +149,10 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
         return ["delimited", "statement"].includes(context) ? text : `(${text})`;
       }
     }
-    if (node.kind === "have" && enabled.has("have") && node.body?.length === 1 && node.body[0].kind === "exact"
+    if (node.kind === "let" && enabled.has("let") && node.body?.length === 1 && node.body[0].kind === "exact"
       && !comment(node.start, node.body[0].value.start) && !comment(node.body[0].value.end, node.end)) {
-      count("have");
-      return `have ${node.name.text} : ${render(node.type, "delimited")} := ${render(node.body[0].value, "delimited")};`;
+      count("let");
+      return `let ${node.target.name} : ${render(node.type, "delimited")} := ${render(node.body[0].value, "delimited")};`;
     }
     if (["lambda", "binderGroup"].includes(node.kind) && (node.binderKind ?? "lambda") === "lambda"
       && enabled.has("fun") && !node.generatedBinder && source.startsWith("fun", funStart(node))) {

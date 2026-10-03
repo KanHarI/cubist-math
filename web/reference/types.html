@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="The basic types and their values: numbers, Unit and Void, pairs, alternatives, functions, types themselves, and forall and exists." />
+    <meta name="description" content="The basic types and their values: numbers, Unit and Void, pairs, alternatives, functions, types themselves, equality, and forall and exists." />
     <title>Cubist · 1. Types and values</title>
     <link rel="stylesheet" href="../language.css" />
     <link rel="stylesheet" href="../repl.css" />
@@ -23,7 +23,7 @@
       <div class="introduction">
         <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 1</p>
         <h1>Types and values</h1>
-        <p class="lead">The basic types and their values: numbers, Unit and Void, pairs, alternatives, functions, types themselves, and forall and exists.</p>
+        <p class="lead">The basic types and their values: numbers, Unit and Void, pairs, alternatives, functions, types themselves, equality, and forall and exists.</p>
       </div>
       <div class="reference-layout">
         <aside class="contents" aria-label="Chapters and sections">
@@ -31,15 +31,15 @@
           <ol class="chapters">
             <li class="current"><a href="types.html" aria-current="page">Types and values</a></li>
             <li><a href="first-proof.html">A first proof and files</a></li>
-            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="terms.html">Functions, pairs and sums</a></li>
             <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
             <li><a href="universes.html">Universes</a></li>
-            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
-            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
-            <li><a href="conversion.html">Conversion and unfolding</a></li>
-            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
+            <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
             <li><a href="errors.html">Error messages</a></li>
           </ol>
@@ -63,7 +63,7 @@
             <h2>Introduction</h2>
             <p>Cubist is a language for writing mathematics that a computer checks. A Cubist file defines objects, states theorems about them, and proves each theorem. The checker accepts a declaration only when its proof really proves its statement.</p>
             <p>Every value in Cubist has a type. A statement is a type too, and a proof of the statement is a value of that type: proving a statement means building a value of the right type. So the language starts with types and their values, and the <a href="first-proof.html#first-proof">next chapter</a> writes a first proof with them.</p>
-            <p>This chapter introduces the basic types one at a time: natural numbers, <code>Unit</code> and <code>Void</code>, pairs, alternatives, functions, types themselves, equality, and <code>forall</code> and <code>exists</code>. Each section shows how to write the type, how to build its values, and what the checker says about a value of the wrong type.</p>
+            <p>This chapter introduces the basic types one at a time: natural numbers, <code>Unit</code> and <code>Void</code>, pairs, alternatives, functions, types themselves, equality, and <code>forall</code> and <code>exists</code>. Each section shows how to write the type, how to build its values, and what the checker says about a value of the wrong type. How to <em>use</em> a value, such as taking a pair apart or deciding which side of an alternative holds, comes in the <a href="first-proof.html#first-proof">next chapter</a>, with the first proofs that need it.</p>
             <p>Every example in this reference is checked. When the checker rejects an example, its error message appears as a <code>// Error:</code> comment on the line at fault. Click a name in an example to see the checked kernel term behind it, with its type and context. <em>Open in workspace</em> opens the example in the <a href="../proof.html">proof workspace</a>, where you can edit and check it. To check files on your own computer, use the <a href="checking.html#cli">command-line checker</a>.</p>
           </section>
           <section id="values">
@@ -81,7 +81,7 @@
           <section id="tour-numbers">
             <h2>Natural numbers</h2>
             <p><code>Nat</code> is the type of natural numbers <code>0, 1, 2, …</code>. They are built from <code>0</code> and <code>succ</code>, the successor: <code>succ(n)</code> is <code>n + 1</code>.</p>
-            <p>By default, a numeral is a <code>Nat</code> in this unary form: <code>3</code> is shorthand for <code>succ(succ(succ(0)))</code>. It is not a machine integer, so a numeral’s size is the size of its term; numerals go up to 256. Binary literals such as <code>0b110</code> belong to a separate type, <code>BinaryNat</code>, described with the <a href="induction.html#w-types">inductive types</a>.</p>
+            <p>By default, a numeral is a <code>Nat</code> in this unary form: <code>3</code> is shorthand for <code>succ(succ(succ(0)))</code>. It is not a machine integer, so a numeral’s size is the size of its term; numerals go up to 256. Binary literals such as <code>0b110</code> belong to a separate type, <code>BinaryNat</code>, described with the <a href="induction.html#binary">inductive types</a>.</p>
             <p>Addition <code>+</code> and multiplication <code>*</code> are defined in the arithmetic library, which a file loads with <code>import naturals;</code> at its start. <code>evaluate term expecting value;</code> checks what a term computes to:</p>
             <pre><code data-check="accept">import naturals;
 
@@ -125,12 +125,17 @@ def forget(n : Nat) : Unit {
           <section id="tour-pairs">
             <h2>Pairs: <code>and</code></h2>
             <p><code>A and B</code> is the type of pairs <code>(a, b)</code> with <code>a : A</code> and <code>b : B</code>. Three or more components are written in one tuple, <code>(1, 2, 3)</code>, with the type <code>Nat and Nat and Nat</code>.</p>
+            <p>A tuple is a pair whose second component holds the rest: <code>(1, 2, 3)</code> is <code>(1, (2, 3))</code>, and <code>Nat and Nat and Nat</code> is <code>Nat and (Nat and Nat)</code>. So <code>(1, (2, 3))</code> also checks as <code>Nat and Nat and Nat</code>, and it is the same value, as the section on <a href="#tour-equality">equality</a> checks. Nesting on the left, <code>((1, 2), 3)</code>, has a different type; see <a href="terms.html#tuples">tuples</a>.</p>
             <pre><code data-check="accept">def pair : Nat and Unit {
   exact (3, tt);
 }
 
 def triple : Nat and Nat and Nat {
   exact (1, 2, 3);
+}
+
+def nested : Nat and Nat and Nat {
+  exact (1, (2, 3));
 }</code></pre>
             <p>A pair needs its type stated: the checker does not guess it.</p>
             <pre><code data-check="reject">def loose := (3, tt);  // Error: Pair requires an expected type.</code></pre>
@@ -270,17 +275,31 @@ def two_plus_two : 2 + 2 = 4 {
 def seven_is_seven : 7 = 7 {
   exact refl(7);
 }</code></pre>
-            <p><code>2 + 2</code> computes to <code>4</code>, so <code>refl(4)</code> proves <code>2 + 2 = 4</code>. Values that are not equal have no such evidence:</p>
+            <p><code>2 + 2</code> computes to <code>4</code>, so <code>refl(4)</code> proves <code>2 + 2 = 4</code>. In a block, <code>rfl;</code> says the same without repeating the value: it closes a goal <code>x = y</code> whose two sides compute to the same value. The tuple and the nested pair of the <a href="#tour-pairs">pairs section</a> are equal this way:</p>
+            <pre><code data-check="accept">import naturals;
+
+def two_plus_two_again : 2 + 2 = 4 {
+  rfl;
+}
+
+def triple : Nat and Nat and Nat := (1, 2, 3);
+
+def nested : Nat and Nat and Nat := (1, (2, 3));
+
+def same_value : triple = nested {
+  rfl;
+}</code></pre>
+            <p>Values that are not equal have no such evidence:</p>
             <pre><code data-check="reject">import naturals;
 
 def wrong_sum : 2 + 2 = 5 {
   exact refl(4);  // Error: Type mismatch: found 4 = 4, expected 2 + 2 = 5.
 }</code></pre>
-            <p>The message shows both types as they would be written in a file. An equality is a type like any other, so it can be a parameter, an assumption to reason from, or part of a larger type. Equalities that do not hold by computation, such as <code>n + 0 = n</code> for a variable <code>n</code>, need a proof; the chapter on <a href="paths.html#paths">equality and paths</a> describes the tools.</p>
+            <p>The message shows both types as they would be written in a file. An equality is a type like any other, so it can be a parameter, an assumption to reason from, or part of a larger type. Equalities that do not hold by computation, such as <code>n + 0 = n</code> for a variable <code>n</code>, need a proof. The chapter on <a href="conversion.html#conversion">computation</a> says exactly which equalities hold by computation, and the chapter on <a href="paths.html#paths">equality and paths</a> describes the tools for the others.</p>
           </section>
           <section id="tour-dependent">
             <h2>Dependent types: <code>forall</code> and <code>exists</code></h2>
-            <p>A function’s result type can depend on its argument. <code>forall x : A. B</code> is the type of functions that take any <code>x : A</code> and return a value of <code>B</code>, where <code>B</code> may mention <code>x</code>. <code>A -> B</code> is the special case where it does not; the chapter on equality proves <a href="paths.html#exists-and"><code>(forall x : A. B) =[U0] (A -> B)</code></a>. The dot ends the type of <code>x</code>, and the body follows it. Several names can share the type, as parameters do: <code>forall x, y : A. B</code>.</p>
+            <p>A function’s result type can depend on its argument. <code>forall x : A. B</code> is the type of functions that take any <code>x : A</code> and return a value of <code>B</code>, where <code>B</code> may mention <code>x</code>. <code>A -> B</code> is the special case where it does not: the two are the same type, as the chapter on equality <a href="paths.html#exists-and">checks</a>. The dot ends the type of <code>x</code>, and the body follows it. Several names can share the type, as parameters do: <code>forall x, y : A. B</code>.</p>
             <pre><code data-check="accept">// `and` binds tighter than `-&gt;`, so `A -&gt; A and A` means `A -&gt; (A and A)`.
 def duplicate : forall A : U0. A -&gt; A and A {
   exact fun (A : U0, a : A) =&gt; (a, a);
@@ -293,7 +312,7 @@ def duplicate_again : forall A : U0. A -&gt; A and A {
 }
 
 def one_one := duplicate(Nat, 1);</code></pre>
-            <p><code>duplicate</code> takes a type <code>A</code> and then a value of that type; <code>intro A, a;</code> takes the two inputs of <code>duplicate_again</code> in the same order. Its result type, <code>A and A</code>, depends on which type it was given: <code>duplicate(Nat, 1)</code> is the pair <code>(1, 1)</code>. The chapter on terms lists the full <a href="terms.html#precedence">precedence</a> of the operators. The result must fit the type the argument chose:</p>
+            <p><code>duplicate</code> takes a type <code>A</code> and then a value of that type; <code>intro A, a;</code> takes the two inputs of <code>duplicate_again</code> in the same order. Its result type, <code>A and A</code>, depends on which type it was given: <code>duplicate(Nat, 1)</code> is the pair <code>(1, 1)</code>. The chapter on terms lists the full <a href="terms.html#precedence">precedence</a> of the operators. The result must fit the type given as the first argument:</p>
             <pre><code data-check="reject">def duplicate : forall A : U0. A -&gt; A and A {
   exact fun (A : U0, a : A) =&gt; (a, 0);  // Error: Type mismatch: found Nat, expected A.
 }</code></pre>
@@ -307,7 +326,7 @@ def AlsoTwice : U1 {
   exact forall A : U0. A and A;
 }</code></pre>
             <p><code>Twice</code> is a function from types to types: <code>Twice(Nat)</code> is <code>Nat and Nat</code>. <code>AlsoTwice</code> is one type: the type of functions that give a pair of values in every type. It quantifies over all of <code>U0</code>, so it lives in the next universe, <code>U1</code>. It has no values, because <code>Void</code> has no pair of values.</p>
-            <p><code>exists x : A. B</code> is the type of pairs whose second component’s type depends on the first: a value <code>x : A</code>, together with a value of <code>B</code> for that <code>x</code>. When <code>B</code> does not mention <code>x</code>, nothing depends on the first component, and <code>exists x : A. B</code> is the same type as <code>A and B</code>, just as <code>A -> B</code> is <code>forall x : A. B</code> without the dependency. The chapter on equality proves it: <a href="paths.html#exists-and"><code>(exists a : A. B) =[U0] (A and B)</code></a>.</p>
+            <p><code>exists x : A. B</code> is the type of pairs whose second component’s type depends on the first: a value <code>x : A</code>, together with a value of <code>B</code> for that <code>x</code>. When <code>B</code> does not mention <code>x</code>, nothing depends on the first component, and <code>exists x : A. B</code> is the same type as <code>A and B</code>, just as <code>A -> B</code> is <code>forall x : A. B</code> without the dependency. The chapter on equality <a href="paths.html#exists-and">checks</a> this too.</p>
             <pre><code data-check="accept">def pointed : exists A : U0. A {
   exact (Nat, 3);
 }
@@ -319,7 +338,7 @@ def two_of_a_kind : exists A : U0. A and A {
             <pre><code data-check="reject">def pointed : exists A : U0. A {
   exact (Nat, tt);  // Error: Type mismatch: found Unit, expected Nat.
 }</code></pre>
-            <p>Read as statements, <code>forall</code> and <code>exists</code> are the quantifiers “for all” and “there exists”. A value of <code>exists n : Nat. P(n)</code> is a witness <code>n</code> together with evidence that <code>P(n)</code> holds. The <a href="first-proof.html#first-proof">next chapter</a> proves a first statement with both: <code>forall n : Nat. exists m : Nat. lt(n, m)</code>, every number has a greater one.</p>
+            <p>Read as statements, <code>forall</code> and <code>exists</code> are the quantifiers “for all” and “there exists”. A value of <code>exists n : Nat. P(n)</code> is a witness <code>n</code> together with evidence that <code>P(n)</code> holds. The <a href="first-proof.html#first-proof">next chapter</a> starts with proofs about <code>and</code> and <code>or</code>, then <a href="first-proof.html#numbers-proof">proves</a> a statement with both quantifiers: <code>forall n : Nat. exists m : Nat. lt(n, m)</code>, every number has a greater one.</p>
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">

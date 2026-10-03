@@ -1,3 +1,4 @@
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { compareFingerprints, elaborationFingerprint } from "../tools/elaboration-fingerprint.mjs";

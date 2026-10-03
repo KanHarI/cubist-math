@@ -1,7 +1,7 @@
 # Tactical development notes
 
 Use these alongside the [roadmaps](../roadmaps/README.md). They describe checked
-interfaces, proof organization, implementation choices, and restart commands.
+interfaces, proof organization, implementation decisions, and restart commands.
 Dates and historical notices matter: verify an older claim against the current
 cubical source before building on it.
 

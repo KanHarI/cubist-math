@@ -1,4 +1,4 @@
-import { tokenize } from "./mathscript/parser.mjs";
+import { tokenize } from "./cubist/parser.mjs";
 
 // Preserve the checked declaration's source notation. This is a statement
 // summary; the kernel inspector independently shows the elaborated type.

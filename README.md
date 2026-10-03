@@ -9,6 +9,16 @@ extension. The browser and CLI elaborate the same source language and submit
 terms to the native kernel compiled to WebAssembly. Definitions remain named;
 conversion unfolds them on demand. Explicit assumptions are shown with each proof.
 
+`Nat`, `zero`, and `succ` come from the ordinary source module
+[`nat.cubist`](archive/first-library/nat.cubist), imported as the standard prelude.
+They are ordinary names and can be shadowed. Binary and radix numbers are
+ordinary inductive declarations too. The source module `w` keeps the inductive
+`W(U,V,A,B)` and its structurally recursive `wrec`, though nothing imports it.
+H1 was released on 2026-10-02, after review of its model, critical pairs and
+canonicity, and is on by default. The kernel has no primitive Nat, W or
+pushout formation, constructor, elimination, or computation rules; pushouts
+are the source declaration in `pushout`.
+
 ## Build and use
 
 ```sh
@@ -35,21 +45,37 @@ npm test -- tests/cubical-program.test.mjs
 npm test                                # Final regression and corpus check
 npm run test:browser
 make CC=clang sanitize                  # Address/undefined sanitizers
+make sanitize SANITIZERS=undefined     # macOS 26, where the address sanitizer hangs
 make lint
 ```
+
+`make wasm` stamps `web/dist` with a hash of the kernel's and the
+translator's sources, the compiler and its flags, and the outputs
+(`tools/build-stamp.mjs`). It runs under a lock, clears a stamp before
+rewriting its outputs, and rebuilds whatever no longer matches, whatever the
+file times say. Every command that loads `web/dist` refuses a stale build
+rather than run code it does not contain: `npm test`, the browser tests, the
+site build, the CLI, the coverage, audit, fingerprint, fuel-baseline,
+migration-verifier and benchmark tools, and the driver trace
+(`tests/driver-trace.mjs`), which checks another checkout it traces by that
+tree's own stamp. So does a test file run on its own, with `node` or
+`node --test`: each test file that loads `web/dist` imports
+`tests/fresh-build.mjs` first, and `tests/fresh-build.test.mjs` keeps it so.
 
 The independent optimization switches are `--[no-]share-syntax`,
 `--[no-]reuse-checks`, and `--[no-]compact-paths`; all default on.
 `npm run format:cubist` formats sources and flattens right-associated tuples
 while checking that the expanded AST is unchanged. Add `-- --check` for a dry run.
+`npm run lint:cubist` reports bindings that are never used and can be removed,
+such as an `as` name no motive mentions; checking reports the same warnings.
 
 ## Code and documentation
 
 - [`docs/README.md`](docs/README.md): documentation index and where to resume each development.
-- [`kernel/`](kernel/README.md): the trusted C kernel. Its typing rules are the instructions in `src/instructions.c`, with one file per group of computation rules; the old term checker remains as the search's untrusted oracle.
+- [`kernel/`](kernel/README.md): the trusted C kernel. Its typing rules are the instructions in `src/instructions.c`, with one file per group of computation rules.
 - [`docs/guides/cli.md`](docs/guides/cli.md): custom proofs, imports, commands, and CLI limitations.
 - [`docs/guides/kernel.md`](docs/guides/kernel.md): a mathematician's guide to reading the kernel.
-- [`lib/cubical/`](lib/cubical): elaboration, inert native adapters, and an independent JavaScript reference checker used in tests (not extended for new kernel features).
+- [`web/translator/`](web/translator): the translator from source to kernel syntax, with elaboration and the proof tactics; the browser, the CLI and the tests load these same files. Every check is the kernel's. Their tests are in `tests/translator/`.
 - [`archive/first-library/`](archive/first-library): the archived first `.cubist` library, still checked in CI. A rebuilt library replaces it area by area; see [`docs/library-results.md`](docs/library-results.md) and the [work plan](docs/roadmaps/work-plan.md).
 - [`web/language.html`](web/language.html): the source language reference, one page per chapter under `web/reference/`.
 - [`docs/tactical/galois-handoff.md`](docs/tactical/galois-handoff.md) and [`docs/roadmaps/complex-analysis-roadmap.md`](docs/roadmaps/complex-analysis-roadmap.md): unfinished mathematical developments and resumption notes.

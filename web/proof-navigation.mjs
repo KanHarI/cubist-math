@@ -1,5 +1,7 @@
 // Small, per-tab snapshots preserve inspector selections across source files.
 // They contain UI state only; returning to a proof still checks its source.
+// Browser storage keys keep the language's former name, MathScript, so what
+// was saved before the rename still loads.
 const prefix = "mathscript:navigation:";
 export function readProofNavigation(key) {
   try { return key ? JSON.parse(sessionStorage.getItem(prefix + key)) : null; }

@@ -24,7 +24,7 @@ The main target is the standard conditional bound
 \quad(x\to\infty).
 \]
 
-Counts are coerced to the chosen real field. Spell out the conclusion as
+Counts are coerced to the selected real field. Spell out the conclusion as
 
 \[
 \exists C>0\;\exists X\geq2\;\forall x\geq X,\quad
@@ -163,7 +163,7 @@ Euler product and logarithmic derivative there:
 Prove convergence and justify each product/series/differentiation interchange.
 Then construct continuation, the simple pole of residue one at \(s=1\),
 the functional equation, and the analytic properties of \(\xi\).
-Choose a single route: a Mellin transform of the theta function with Poisson
+Take a single route: a Mellin transform of the theta function with Poisson
 summation for the Gaussian is a reusable candidate. This adds concrete
 Gaussian, gamma, and Mellin lemmas, not a requirement to build an unrestricted
 Fourier-analysis library first. Obtain the gamma growth estimates needed later.
@@ -176,10 +176,10 @@ that can replace Cubist derivations.
 
 Prove local finiteness of the zeros and a multiplicity-aware zero-count bound
 \(N(T)=O(T\log T)\). Separately establish a local count bound sufficient to
-choose horizontal contour edges away from zeros, and bound \(\zeta'/\zeta\)
+place horizontal contour edges away from zeros, and bound \(\zeta'/\zeta\)
 on those edges. The global count alone does not provide that local control.
 
-Use finite zero collections below each height rather than immediately choosing
+Use finite zero collections below each height rather than immediately fixing
 a global enumeration. A full Riemann–von Mangoldt asymptotic is optional if
 the weaker bounds suffice. Treat bounded-height zeros separately, and retain
 multiplicity in every sum and contour-crossing identity.
@@ -201,7 +201,7 @@ A convenient target interface is: for sufficiently large half-integer
 \]
 
 where the sum is over nontrivial zeros with multiplicity, and the constant is
-uniform in these choices. This is a **planned lemma**, not a new assumption.
+uniform in these selections. This is a **planned lemma**, not a new assumption.
 Half-integer inputs avoid the near-integer singularity in the Perron error.
 Account for fixed and trivial-zero terms inside the proved remainder.
 
@@ -292,14 +292,14 @@ which local contributions occur and with what orientation; analytic residue
 calculation determines their values. Bounds on long contour edges and the
 limit as their height grows remain analytic tasks.
 
-### Independence of representations and choices
+### Independence of representations and selections
 
 Univalence may transport results between equivalent presentations of real
 and complex analytic structures, provided the equivalence preserves order,
 norm, operations, convergence, and the functions used. A bare carrier
 equivalence does not preserve estimates. Likewise, homotopies between
 admissible contour deformations could prove independence of deformation
-choices. Introduce higher coherence only if an actual composition or reuse
+selections. Introduce higher coherence only if an actual composition or reuse
 obligation needs it.
 
 **Important boundary:** \(\mathbb C\), viewed simply as a set of coordinate

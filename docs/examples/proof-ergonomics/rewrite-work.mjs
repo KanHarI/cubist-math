@@ -6,7 +6,7 @@ import {createHash} from "node:crypto";
 import {cpus} from "node:os";
 import {fileURLToPath} from "node:url";
 import {benchmark} from "../../../web/benchmark-runner.mjs";
-import {parse,tokenize} from "../../../web/mathscript/parser.mjs";
+import {parse,tokenize} from "../../../web/cubist/parser.mjs";
 
 const root=new URL("../../../",import.meta.url);
 const examples=new Map([

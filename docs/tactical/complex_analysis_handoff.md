@@ -26,7 +26,7 @@ been constructed.
 | [Puncture homotopy](puncture_homotopy.md) | Loop generation, winding and the abstract period formula. |
 | [Real-number development](../roadmaps/reals-roadmap.md) | Shared field interfaces and the unfinished concrete constructions. |
 
-The proof sources are in `archive/first-library/`. `web/mathscript/modules.mjs` registers
+The proof sources are in `archive/first-library/`. `web/cubist/modules.mjs` registers
 imports for the browser; `web/proof-library.mjs` registers the proof selector
 and its topics. The main regression coverage is in
 `tests/mathscript.test.mjs`.
@@ -152,7 +152,7 @@ coefficients and zero lengths need no zero test.
   documented in [reals.md](../roadmaps/reals-roadmap.md#universes-and-foundational-assumptions).
 - Keep shared foundations constructive. The user permits explicit
   theorem-specific LEM or choice where needed. Do not introduce target
-  theorems as axioms, choose representatives from mere existence, or replace
+  theorems as axioms, pick representatives from mere existence, or replace
   exact roots with approximate roots without changing the stated result.
 
 ## Remaining work and sensible resumption points

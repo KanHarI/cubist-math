@@ -1,11 +1,30 @@
 # Kernel instructions: a THTH-style forward kernel
 
+2026-09-30 update: Nat and W are now source-defined H1 inductives. Their
+primitive formation, constructor and elimination instructions have been
+removed; their ABI numbers remain reserved and are refused. The primitive
+API and stage milestones below describe the earlier implementation. See the
+[migration record](h1-program-types.md) for the current API and validation.
+
+2026-10-01 update: pushouts are source-defined too, as an H1 declaration
+with a path constructor in `pushout.cubist`. `Pushout`, `PushPoint`,
+`PushPath` and `PushElim` have been removed and their ABI numbers reserved,
+like Nat's and W's. `HComp` and `Trans` are now for declared higher sorts
+only; the term checker has no rule for them. Sums stay native.
+
 Status: merged into `proof-ergonomics-roadmap` on 2026-09-26 (PR #38). The
 instruction kernel is the trusted kernel, and elaboration checks every term
 through it. Since K1.4 on 2026-09-27 the driver uses its own guide by
-default; the old conversion oracle is available only for comparison. Its
-retirement and conditional stage 6 remain open; see
-[what remains of it](#what-remains-of-the-term-checker).
+default. The term checker and its conversion oracle were retired on
+2026-10-02 (work plan I1.2b; see
+[what remained of it](#what-remains-of-the-term-checker)); conditional
+stage 6 remains open. The
+[audit of 2026-09-28](audits/2026-09-28-audit.md) found that separation
+incomplete: reduction called the old conversion, and its memo could change
+an instruction's acceptance. Work-plan I1.2a corrected both the same day,
+and enforces the boundary at run time; that section records how.
+H1's signature instructions (K2.2) are implemented behind the
+`CC_EXTENSION_H1` gate, with ABI version 3.
 Every later kernel item (G0, H) is a set of instructions; the
 [work plan](work-plan.md#the-instruction-kernel-and-this-plan) records how
 that changes the plan.
@@ -54,7 +73,7 @@ opacity become elaborator features only.
 ## Where the term checker searched
 
 The term checker, the trusted kernel before this work, takes a finished term
-and checks it top-down (`kernel/src/check*.c`). Choosing each rule is not
+and checks it top-down (`kernel/src/check*.c`). Selecting each rule is not
 search: every node kind has one rule. The search is in how it decides that
 two types are equal, and where it reduces:
 
@@ -150,17 +169,23 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
     eliminator or projection on a constructor), `Path` (a path lambda at a
     point, or a path at an endpoint of its annotated type), `Face` (a
     composition with a tube on a face that holds, to that tube at the end of
-    its dimension), `Whnf` (the kernel's weak head normal form), or
-    `Normalize` (the normal form of the highlighted subterm, by the kernel's
-    fixed strategy; THTH's `BetaReduceGrossKnuth`).
+    its dimension), `Whnf` (the kernel's weak head normal form), `Normalize`
+    (the normal form of the highlighted subterm, by the kernel's fixed
+    strategy; THTH's `BetaReduceGrossKnuth`), or `Glue` (Glue eta,
+    `glue [φ ↦ t] (unglue b)` to `b`, when the two Glue types agree and `t`
+    is `b` on each clause of `φ`, compared as they are, as weak heads, part
+    by part under a common head, or as normal forms, with nothing else
+    reduced; the `unglue` is the base's weak head, or what a nested Glue step
+    exposes).
   - `Replace(eq, side, position, a ≡ b)` swaps a highlighted occurrence of `a`
     for `b`: a targeted definitional-equality rewrite. When `a` or `b` uses a
     name bound on the way down, the given equality must have that name as a
     context entry of the binder's type — THTH's view of a bound variable as a
     context fragment — and the entry is discharged. Entry types are followed
     outwards, so a dependent binder's domain must agree too.
-  - `Eta` (a term of a `Π`, `Σ` or path type equals its expansion), `Side`,
-    `Symmetry`, `Transitivity`.
+  - `Eta` (a term of a `Π`, `Σ`, path or Glue type equals its expansion;
+    for `g` of a Glue type, `glue [φ ↦ g] (unglue g)`), `Side`, `Symmetry`,
+    `Transitivity`.
 - **Conversion:** `Convert(t : A, A ≡ B)` gives `t : B`; `Lift` raises
   `t : A` to a cumulative `B` (universes by level, `Π`/`Σ` by codomain).
   `Step` and `Replace` also rewrite the term or the type of a typing judgement
@@ -242,7 +267,7 @@ rejections: capture, dependency, mismatched binder types, open definitions,
 misplaced steps, and lookups of definitions `Define` did not admit.
 
 The interval and face algebra keeps its decision procedure in the kernel: it
-decides equality of De Morgan formulas, with no strategy to choose.
+decides equality of De Morgan formulas, with no strategy to select.
 
 ### What moves to the elaborator
 
@@ -280,7 +305,8 @@ trust:
   compute the tube's head, perhaps a large number in unary;
 - by `Whnf`, the kernel's own weak head normal form, for heads the steps do
   not take: composition, transport, Glue, pushouts;
-- by eta, expanding a neutral term against a lambda, path lambda or pair:
+- by eta, expanding a neutral term against a lambda, path lambda, pair or
+  Glue term:
   - the neutral term is derived again at its position, and `Replace` puts its
     `Eta` expansion there;
   - below binders, the derivation uses entries named as the binders;
@@ -355,16 +381,17 @@ A learned policy for this search, trained against the kernel with the
 heuristic as its teacher and derivation cost as its objective, is designed
 in [learned-search.md](learned-search.md).
 
-**Choices.** Each time round, `agree` stops at a branch point and lists the
+**Branch points.** Each time round, `agree` stops at a branch point and lists the
 moves open there: normalize both sides (a long closed computation, once per
 comparison), descend by congruence, a weak-head step on either side or both
-(beta, iota, path, face or delta), a side's weak head normal form, or eta.
-The list is syntactic; the kernel checks the rest when a move is made. A
-chooser (`heuristicChooser` and the interface beside it) ranks the moves,
+(beta, iota, path, face or delta), a side's weak head normal form, eta, or,
+last, a `Glue` step on a side that is a Glue term (the glue move). The list
+is syntactic; the kernel checks the rest when a move is made. A
+policy (`heuristicPolicy` and the interface beside it) ranks the moves,
 and the driver makes them in that order until one applies. The default
-chooser is the order described above, lazily, since its tests ask the
+policy is the order described above, lazily, since its tests ask the
 guide; it derives the archive with an identical elaboration fingerprint.
-Choosers are untrusted: a bad one only fails, and one that picks a move the
+Policies are untrusted: a bad one only fails, and one that picks a move the
 point did not offer is refused.
 
 **Cost.** The kernel counts its work cumulatively (`cc_kernel_work`, read
@@ -548,23 +575,104 @@ against 20 s in Stage 4. The JS test suite takes 76 s, up from 61 s.
 
 ## What remains of the term checker
 
-The instruction kernel calls three functions of the old checker's files, and
-only those are trusted: alpha equality (`ck_alpha_equal`) and syntactic
-cumulativity (`ck_syntactic_cumulative`) in `term_conversion.c`, and the
-builder of a pushout's bridge type (`ck_pushout_bridge_type`) in
-`check_pushout.c`. The rest is untrusted:
+**Retired on 2026-10-02 (work plan I1.2b).** Nothing remains of it. The
+typing rules (`check.c` and the `check_*.c` files), the check cache, the
+restricted contexts of `face_context.c`, the unfolding hints, the trace, and
+the conversion search with its modes are deleted, with `cc_kernel_check`,
+`cc_kernel_check_in_cube`, `cc_kernel_define`, `cc_kernel_convertible`,
+`cc_kernel_set_unfolding_hints`, the trace API and `CC_REUSE_CHECKS`. The
+folded comparison stays in `term_conversion.c` as the comparison's only
+mode, unchanged; the queries the driver asks moved to `queries.c`. In
+JavaScript, `CubicalKernel.check`, `define` and `convertible`,
+`CubicalSyntax.check`, the driver's `oracle` option and the coverage tool's
+`--oracle` are gone, and so is `tools/differential-driver.mjs`, which
+compared the driver with the term checker. Source `with unfolding [names] {
+e }` is still accepted: its names must be checked definitions, and its body
+is checked as a definition of its own, but the names steer nothing. Archive
+coverage with the driver's guide is unchanged, to the instruction and the
+step. The record below is how it stood before.
+
+The instruction kernel uses two pieces of the old checker's files, and only
+they are trusted: the folded comparison of `term_conversion.c`, which is
+alpha equality (`ck_alpha_equal`) and syntactic cumulativity
+(`ck_syntactic_cumulative`), and the builder of a pushout's bridge type
+(`ck_pushout_bridge_type`) in `check_pushout.c`. The reducers of
+`term_normalize.c`, which `Step`, composition and transport call, are
+trusted computation, as decision 1 below states. The rest is untrusted:
 
 - the typing rules (`ck_check`, `ck_infer` in `check_*.c`), reachable through
   `cc_kernel_check` for `CubicalSyntax.check`, which only tests use;
-- the conversion strategy (`ck_convertible` in `term_conversion.c`) and the
+- the conversion search (`ck_convertible` in `term_conversion.c`) and the
   unfolding hints, reachable through `cc_kernel_convertible`, which the
   driver asks only with its `oracle` option;
 - `cc_kernel_define`, whose definitions `Lookup` refuses.
 
-The JavaScript reference checker (`lib/cubical/core.mjs`) is in the same
-position: its `Checker` serves the tests of the CCHM fragment and the
-JavaScript-only elaboration tests, and the path builders use its syntax
-constructors and substitution.
+**Corrected on 2026-09-28 (I1.2a).** The audit of that day (finding 1)
+found two paths across this boundary. `Step(Whnf)` and `Step(Normalize)`
+reached `ck_convertible` through the reducers' Glue and pair eta rules.
+And a successful conversion comparison entered the memo table that the
+folded comparison also read, so a public `cc_kernel_convertible` query
+could satisfy a later instruction's syntactic side condition: the audit's
+probe has an `Apply` refused, then accepted after the query, with no
+equality judgement among its premises. The equality involved was valid beta
+equality, so this was history-dependent acceptance, not a false equality.
+The correction:
+
+- **The memo keeps two facts per pair.** The folded result is written and
+  read only by the folded comparison; a conversion success is reused only
+  by conversion.
+- **Reduction decides eta by syntax.** Pair eta contracts `(fst p, snd p)`
+  and Glue eta `glue [φ ↦ b|φ] (unglue b)` only when the two sides are the
+  same up to bound names. `Normalize` still reaches the contraction when
+  the normal forms of the parts agree; for Glue eta it compares each piece
+  with the normal form of the base's restriction, since restricting can
+  make a new redex, as `p @ i` at `i = 0` is `p`'s left endpoint.
+  Conversion makes both eta contractions itself, decided by conversion, on
+  either side of a comparison, so two pairs with different annotations
+  still compare, and it exposes a Glue term's base through such eta, for
+  nested Glue terms, within the comparison's depth limit. The driver's
+  last-resort `glue` move makes a `Glue` step, within its own step budget,
+  when nothing else agrees the two sides, so its searches still find the
+  contraction. The step reduces the two Glue types, and each piece and the
+  base on the piece's face, only as far as comparing them takes: part by
+  part under a common head, each pair once, so that parts already equal are
+  never normalized. It exposes a nested base through nested Glue steps, as
+  conversion does, within the reduction depth of 1,024. The move first took
+  the whole term's normal form instead, which also walked the base's
+  annotations, whose endpoints can hold large shared graphs. Before the
+  move, the driver's eta move expands a neutral side against a Glue term,
+  `g` to `glue [φ ↦ g] (unglue g)`, so that the two Glue terms compare part
+  by part with every move of the search: a base equal to `unglue g` only by
+  pair eta, or a Glue type equal to the other only below its head. The Glue
+  step remains for a piece that is the base only on its face, which
+  congruence cannot show.
+- **The boundary is enforced.** `ck_convertible` fails, with an internal
+  error, while an instruction runs; every public entry point that may reach
+  it starts a query first.
+- **The call graph.** A static call graph of `kernel/src` at this revision
+  finds no path from any of the 76 instruction entry points to
+  `ck_convertible`, `ck_expect`, `ck_check`, `ck_infer` or the typing rules.
+  Reached old-checker code is the folded comparison with its helpers and
+  `ck_pushout_bridge_type`. The folded comparison shares one function,
+  `alpha`, with the conversion modes; at run time the folded mode never
+  enters them, and I1.2b gives it its own file.
+
+`kernel/tests/test_isolation.c` covers each point, and reverting any one of
+them fails it. Measured on the archive: with the driver's guide, reduction's
+conversion accepted an eta contraction that syntax refused twice, and the
+driver found other derivations for both; archive coverage stays complete,
+at 5,524,203 check instructions (6 fewer) and 147,448,289 re-derivation
+steps (0.006% more). With the conversion oracle, which the leaky memo
+actually affected (a counting build found dozens of side conditions
+answered by conversion's evidence where syntax disagreed), coverage stays
+complete at about 1% more kernel steps: those side conditions are now
+derived.
+
+The JavaScript reference checker (`lib/cubical/core.mjs`) was in the same
+position: its `Checker` served the tests of the CCHM fragment and the
+JavaScript-only elaboration tests. It was removed on 2026-10-02, when those
+tests moved to the instruction kernel; `core.mjs` keeps the syntax
+constructors and substitution the path builders use.
 
 **Decision (2026-09-26).** Neither is extended. G0 and H are implemented as
 instructions and as the driver's search, once; the term checker's rules and
@@ -578,11 +686,13 @@ against 33 s, three declarations ran out of kernel budget
 deriving every definition again took 34 s against 10 s. The driver's own
 guide (above) closed that gap on 2026-09-27 (work plan K1.4), and is now the
 default: the driver no longer asks the term checker anything. What remains
-is its retirement, a separate change: the three trusted functions move to
-their own file, and
-`check_*.c`, the rest of `term_conversion.c` and `unfolding_hints.c` are
-deleted, together with `cc_kernel_check`, `cc_kernel_convertible` and
-`cc_kernel_define`. Stage 6 stays conditional on JavaScript being too slow.
+is its retirement, a separate change (I1.2b): the folded comparison, with
+the level, formula and scope helpers it uses, and the pushout bridge
+builder move to their own files, and `check_*.c`, the rest of
+`term_conversion.c` and `unfolding_hints.c` are deleted, together with
+`cc_kernel_check`, `cc_kernel_convertible` and `cc_kernel_define`. The
+call graph above lists what must move. Stage 6 stays conditional on
+JavaScript being too slow.
 
 ## Decisions
 
@@ -596,9 +706,15 @@ deleted, together with `cc_kernel_check`, `cc_kernel_convertible` and
    the workbench; binders stay named, and ids stay dense, for now.
 6. The instruction kernel is the trusted kernel: only `Define` admits a
    definition, and only admitted definitions can be looked up. The term
-   checker and the unfolding hints are untrusted elaboration aids.
-7. Elaboration checks nothing with the term checker. Its conversion is a
-   search aid only; `CubicalSyntax.check` keeps it reachable for tests.
+   checker and the unfolding hints were untrusted elaboration aids, retired
+   on 2026-10-02.
+7. Elaboration checks nothing with the term checker. Its conversion was a
+   search aid only, until both were retired.
 8. Every later kernel feature is instructions only. The term checker's rules
-   and the JavaScript reference checker are not extended, and they retire
-   when the driver no longer benefits from the conversion oracle.
+   and the JavaScript reference checker were not extended, and they retired
+   once the driver no longer benefited from the conversion oracle.
+9. (2026-09-28) An instruction's acceptance may not depend on an untrusted
+   query. The folded comparison reads only its own memo entries, reduction
+   decides its eta rules by syntax, and the conversion search refuses to
+   run inside an instruction. I1.2a established this before I1.2b deletes
+   code.

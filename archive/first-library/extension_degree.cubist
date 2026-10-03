@@ -202,7 +202,7 @@ def extension_basis_positive(
   let intoV := linear_compose(K, C, ScalarSpace(K), V, scalar, embed);
   let outV := basis_coordinates(K, V, n, basis);
   let h := linear_compose(K, C, V, N, intoV, outV);
-  have injective : CoordinateInjection(K, 1, n, h) {
+  let injective : CoordinateInjection(K, 1, n, h) {
     intro x, y, same;
     let sameV :=
       linear_iso_injective(

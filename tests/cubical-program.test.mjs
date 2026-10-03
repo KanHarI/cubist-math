@@ -1,3 +1,5 @@
+import "./fresh-build.mjs";
+import {naturalSort, numeral} from "../web/translator/numerals.mjs";
 import { cubicalSourceFile } from "../web/cubical-sources.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -5,7 +7,14 @@ import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { cubicalMathTree } from "../web/cubical-notation.mjs";
+import naturalSource from "../web/translator/nat-source.mjs";
 const module = await createCubical();
+
+// A reader with no library, such as the first test's, still loads `nat`.
+test("the bundled prelude source is the archive's nat module", async () => {
+  assert.equal(naturalSource, await readFile(new URL("../archive/first-library/nat.cubist", import.meta.url), "utf8"),
+    "Regenerate web/translator/nat-source.mjs from archive/first-library/nat.cubist.");
+});
 
 test("a universe-generic definition is checked once and instantiated at each level", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
@@ -30,7 +39,7 @@ test("the browser program checks Euclid from source and exports a replayable nat
   assert.ok(result.instructionCount > 0);
   assert.ok(result.links.some(x => x.name === "prime_divisor_exists"));
   assert.equal(program.inspect("euclid__euclid").type.name, "euclid__InfinitelyManyPrimes");
-  const local = result.links.find(x => x.role === "local");
+  const local = result.links.find(x => x.role === "local" && program.inspect(x.binding).context.length);
   assert.ok(local);
   assert.ok(program.inspect(local.binding).context.length);
   const payload = program.export("euclid__euclid", "type");
@@ -45,8 +54,8 @@ test("module shadowing cannot retarget earlier checked native definitions", asyn
   const result = await program.check("import first; import second; def preserved : remembered = 0 { exact refl(0); }", "example");
   assert.equal(result.complete, true);
   assert.equal(program.inspect("first__remembered").expression.name, "first__value");
-  assert.equal(program.inspect("first__value", { normalize: true }).expression.tag, "Zero");
-  assert.equal(program.inspect("second__value", { normalize: true }).expression.tag, "Succ");
+  assert.equal(program.inspect("first__value", { normalize: true }).expression.tag, "Con");
+  assert.equal(program.inspect("second__value", { normalize: true }).expression.tag, "App");
 });
 
 test("unsupported foundations and invalid proofs remain explicitly unverified", async t => {
@@ -105,7 +114,7 @@ test("logical assumptions remain explicit, minimal, and inspectable after native
   assert.deepEqual(replay.inspect(payload.binding).context, view.context);
 });
 
-test("source unfolding hints name checked definitions, remain scoped, and cannot prove false paths", async t => {
+test("`with unfolding` names checked definitions, checks its body apart, and cannot prove false paths", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
   const source = `
     def id(n : Nat) := n;
@@ -116,13 +125,11 @@ test("source unfolding hints name checked definitions, remain scoped, and cannot
   `;
   const result = await program.check(source, "hints");
   assert.deepEqual(result.outputs.map(d => d.verified), [true, true, true, false, false]);
-  assert.deepEqual(result.outputs[1].unfoldingHints, []);
-  assert.deepEqual(program.checker.definitionViews.get("hints__unfolding_1").unfoldingHints, ["hints__id"]);
-  assert.deepEqual(result.outputs[2].unfoldingHints, []);
-  assert.deepEqual(program.kernel.unfoldingHints, []);
+  // The body is a definition of its own; the names steer nothing since the
+  // conversion oracle's retirement.
+  assert.ok(program.checker.definitionViews.has("hints__unfolding_1"));
+  assert.match(result.outputs[4].reason, /No checked definition to unfold: unknown/);
   const view = program.inspect("hints__hinted");
-  assert.deepEqual(view.unfoldingHints, []);
-  assert.deepEqual(program.kernel.unfoldingHints, []);
   const payload = program.export("hints__hinted");
   const replay = new CubicalProgram(module, async name => payload.sources[name]); t.after(() => replay.dispose());
   await replay.check(payload.source, payload.main);
@@ -134,10 +141,11 @@ test("native progress identifies the active declaration before it is checked", a
   const progress = [];
   await program.check("def first := 0; def second := 1;", "progress", event => progress.push(event));
   const checking = progress.filter(p => p.phase !== "loading");
-  assert.ok(checking.every(p => p.total === 2));
+  assert.ok(checking.every(p => p.total === 3));
   assert.deepEqual(checking.map(p => [p.current, p.phase, p.completed]), [
-    ["progress.first", "checking", 0], ["progress.first", "checked", 1],
-    ["progress.second", "checking", 1], ["progress.second", "checked", 2],
+    ["nat.Nat", "checking", 0], ["nat.Nat", "checked", 1],
+    ["progress.first", "checking", 1], ["progress.first", "checked", 2],
+    ["progress.second", "checking", 2], ["progress.second", "checked", 3],
   ]);
 });
 
@@ -154,7 +162,6 @@ test("unfolding scopes close local variables and interval coordinates without le
   `, "scope");
   assert.deepEqual(result.outputs.map(d => [d.name, d.reason]).filter(([, reason]) => reason), []);
   assert.equal(result.complete, true);
-  assert.deepEqual(program.kernel.unfoldingHints, []);
 });
 
 test("progress totals count a shared import once, including universe-generic definitions", async t => {
@@ -168,10 +175,10 @@ test("progress totals count a shared import once, including universe-generic def
   t.after(() => program.dispose());
   const progress = [];
   const result = await program.check("import left; import right; def final := fromLeft;", "root", p => progress.push(p));
-  assert.equal(result.declarationCount, 5);
+  assert.equal(result.declarationCount, 6);
   assert.equal(reads.filter(name => name === "common").length, 1);
-  assert.ok(progress.filter(p => p.phase !== "loading").every(p => p.total === 5));
-  assert.equal(progress.at(-1).completed, 5);
+  assert.ok(progress.filter(p => p.phase !== "loading").every(p => p.total === 6));
+  assert.equal(progress.at(-1).completed, 6);
 });
 
 test("native optimization switches preserve path proofs and rejection independently", async () => {

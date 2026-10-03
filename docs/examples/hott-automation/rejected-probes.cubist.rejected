@@ -81,9 +81,7 @@ def rejected_rule_ap(A : U1, C : A -> U0, x, y : A, p : x = y, v : C(x)) :
 }
 
 // A2: rewriting through succ.
-def under_succ(n : Nat) : succ(n + 0) = succ(n) {
-  simp only [nat_add_zero];
-}
+
 
 // A1: rules stated with trans, including a U1 rule on a U0 carrier.
 def ru(A : U1, x, y : A, p : x = y) : trans(p, refl(y)) = p {

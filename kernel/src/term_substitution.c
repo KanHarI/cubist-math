@@ -5,7 +5,7 @@
 #include "term_internal.h"
 
 bool ck_term_binder(cc_term_kind kind) {
-    return kind == CC_PI || kind == CC_LAM || kind == CC_SIGMA || kind == CC_W || kind == CC_LPI || kind == CC_LLAM;
+    return kind == CC_PI || kind == CC_LAM || kind == CC_SIGMA || kind == CC_LPI || kind == CC_LLAM;
 }
 
 bool ck_dim_binder(cc_term_kind kind) {
@@ -13,7 +13,7 @@ bool ck_dim_binder(cc_term_kind kind) {
 }
 
 static bool term_free(cc_kernel *k, cc_term term, uint32_t name) {
-    if (!term || !ck_tick(k, false))
+    if (!term || !ck_tick(k))
         return false;
     cc_node n = k->nodes[term];
     if (n.kind == CC_VAR)
@@ -28,6 +28,9 @@ static bool term_free(cc_kernel *k, cc_term term, uint32_t name) {
 }
 
 bool ck_term_free(cc_kernel *k, cc_term term, uint32_t name) {
+    /* The node's mask proves most names absent, without the memo. */
+    if (term && term < k->count && !(k->nodes[term].symbols & UINT64_C(1) << (name % 64)))
+        return false;
     uint64_t result;
     if (ck_memo_get(k, 1, term, name, 0, &result))
         return result != 0;
@@ -45,11 +48,11 @@ static uint64_t formula_names(const cc_formula *f) {
 }
 
 static uint64_t free_dims(cc_kernel *k, cc_term term) {
-    if (!term || !ck_tick(k, false))
+    if (!term || !ck_tick(k))
         return 0;
     cc_node n = k->nodes[term];
     uint64_t result = 0;
-    if (n.kind == CC_PAPP || n.kind == CC_PUSH_PATH || n.kind == CC_TUBE || n.kind == CC_GLUE_SYSTEM)
+    if (n.kind == CC_PAPP || n.kind == CC_TUBE || n.kind == CC_GLUE_SYSTEM)
         result = formula_names(cc_kernel_get_formula(k, n.payload));
     for (unsigned i = 0; i < ck_arity(n.kind); ++i) {
         uint64_t names = 0;
@@ -96,7 +99,7 @@ static cc_term tube_substitute(cc_kernel *, cc_term, unsigned,
 static cc_term substitute(cc_kernel *k, cc_term term, uint32_t name, cc_term value) {
     if (!term)
         return 0;
-    if (!ck_tick(k, false))
+    if (!ck_tick(k))
         return 0;
     if (!ck_term_free(k, term, name))
         return term;
@@ -155,7 +158,7 @@ static cc_term tube_substitute(cc_kernel *k, cc_term term, unsigned dim,
                                const cc_formula *value, bool bodies, bool faces) {
     if (!term)
         return 0;
-    if (!ck_tick(k, false))
+    if (!ck_tick(k))
         return 0;
     cc_node n = k->nodes[term];
     if (n.kind != CC_TUBE)
@@ -186,7 +189,7 @@ cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
                                 const cc_formula *value) {
     if (!term)
         return 0;
-    if (!ck_tick(k, false))
+    if (!ck_tick(k))
         return 0;
     if (dim >= CC_DIMENSIONS || !value || value->sort != CC_INTERVAL)
         return ck_fail(k, "Invalid dimension substitution."), 0;
@@ -239,7 +242,7 @@ cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
         n.payload = ck_formula(k, &changed);
         cc_clear(&changed);
     }
-    if (n.kind == CC_PAPP || n.kind == CC_PUSH_PATH) {
+    if (n.kind == CC_PAPP) {
         const cc_formula *arg = cc_kernel_get_formula(k, n.payload);
         cc_formula changed;
         cc_init(&changed, CC_INTERVAL);

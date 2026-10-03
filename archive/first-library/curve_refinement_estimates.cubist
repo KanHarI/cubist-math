@@ -136,7 +136,7 @@ def affine_refinement_sum_estimate(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
     integrand, uniform, delta, positiveDelta
   );
-  have actual :
+  let actual :
     forall a : FieldUnitInterval(F, zero, one, lt). forall b : FieldUnitInterval(F, zero, one, lt).
     forall coarse : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b).
     forall fine : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b).
@@ -185,10 +185,10 @@ def affine_refinement_sum_estimate(
         IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), a, b, coarse, fine, oldRadius,
         refinement, estimates(n, vertices, tags)
       );
-    have firstPath : first = a := field_fst(
+    let firstPath : first = a := field_fst(
       (first = a), (last = b), subdivision_endpoints(I, a, b, coarse)
     );
-    have lastPath : last = b := field_snd(
+    let lastPath : last = b := field_snd(
       (first = a), (last = b), subdivision_endpoints(I, a, b, coarse)
     );
     let widthPath :=

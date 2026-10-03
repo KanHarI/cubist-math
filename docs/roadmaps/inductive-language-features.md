@@ -1,7 +1,15 @@
 # Language features for theories, inductive and higher inductive declarations
 
 Status: adopted on 2026-09-25 by [ergonomics](proof-ergonomics-roadmap.md)
-milestones 6 and 7; the declarations proposed here remain unimplemented.
+milestones 6 and 7. As of 2026-09-28, one-sort `inductive` declarations
+(work-plan L2.1) and the explicit expression `match` (L2.2a) are
+implemented experimentally behind the `h1` option, in the subset the
+[H1 specification](h1-signature-specification.md) admits; theories, cells,
+relations and bundles, proof-first h-levels, `obligations`, dependent
+matching, canonical quotients, presentations and derivations remain
+proposals. The [audit of 2026-09-28](audits/2026-09-28-audit.md) corrected
+three promises here: the universal property of section 1, `Torus2` in
+section 2 and proof-first h-levels in section 4.
 G0 and the shared goal-layer core are delivered as of 2026-09-27. It builds on
 [the higher inductive-inductive type design](higher-inductive-types-design.md)
 (kernel roadmap item H, stages H1–H4) and on
@@ -52,8 +60,18 @@ declaration the language derives:
   - `fold(M)`, the unique homomorphism into any model, computing on
     constructors;
   - `fold_unique`, its uniqueness;
-  - `universal : (initial T → M) ≃ T.Hom(…)` in the form the theory's shape
-    allows.
+  - `universal`, stated as separate typed results (corrected on
+    2026-09-28): for a fixed model `M`, `T.Hom(initial T, M)` is
+    contractible, which is `fold` and `fold_unique` together; for
+    `free T on A`, `T.Hom(free T on A, M) ≃ (A → M.carrier)`; and a
+    characterization of plain maps out of the carrier only where the
+    theory's constructor and clause data give one, as for `Loop` below.
+    An earlier draft wrote `(initial T → M) ≃ T.Hom(…)`, which conflates
+    carrier functions with homomorphisms: the initial monoid has a
+    singleton carrier, so it has two functions into a two-element monoid
+    but one homomorphism. Higher theories need their coherence fields in
+    `T.Hom` before any such statement. Work-plan L2.6 specifies this
+    contract before `universal` is generated.
 - **`free T on A`**: the initial model of `T` extended with generators
   `gen(a : A)`, whose `fold(M, f)` extends `f : A → M`.
 
@@ -175,12 +193,19 @@ inductive Torus2 {                    // the same space, with an equation betwee
   exactly the kernel form, so errors show the face and both sides.
 - An equation between composite paths gives a higher cell whose sides are
   the composites. It is a different signature for an equivalent space,
-  and a generated lemma relates it to the square form.
-- Clauses bind the cell's variables (`surf i j => …`). Their boundary
+  and a generated lemma relates it to the square form. **This form is not
+  H1** (corrected on 2026-09-28): the specification's 1.4 (Q3) admits
+  constructor expressions only in boundaries, and a live probe rejects
+  `Torus2` with that diagnostic. `Torus` in the square form is admitted.
+  The composite presentation needs a separately specified translation to
+  the square form, with its equivalence, or a later fragment; the kernel is
+  not changed to accept it.
+- Clauses bind the cell's variables (`surf @ i @ j => …`). Their boundary
   obligations display the same diagram.
 
-**Stage** H1. **Computability:** path constructors compute on their faces by
-definition.
+**Stage** H1 for cube boundaries, as the specification's 1.4 admits them;
+composite equations are a later, separately specified elaboration.
+**Computability:** path constructors compute on their faces by definition.
 
 ## 3. Relations and argument bundles
 
@@ -222,6 +247,16 @@ characterization to show that any two elements are equal.
 **Why:** a squash constructor on a data type makes formal compositions
 canonical and costs computation for nothing. Proving setness instead keeps
 it.
+
+**Status (2026-09-28): not implemented, and not part of H1's lowering.**
+The experimental `: set` and `: prop` always generate the squash
+constructor of the specification's 1.6, named `T.squash` in clauses. The
+proof-first pass is work-plan L2.3b: it needs `paths` (section 9) for the
+characterization and the h-level evidence of L2.5. It is not an editorial
+label on the current behaviour. It changes the admitted signature, which
+then has no squash constructor, and the clauses a `match` needs, so moving
+a declaration between the two forms is a migration the verifier must see,
+and `set!` keeps the constructor form available.
 
 ## 5. Obligations separate from computational content
 
@@ -345,7 +380,7 @@ checked declarations:
 | --- | --- | --- |
 | `paths` | Types without path constructors | Encode–decode characterization `x = y ≃ Code(x, y)`, with injectivity and disjointness of constructors as corollaries |
 | `decidable_equality` | Types without path constructors whose arguments have decidable equality | A computable decision procedure |
-| `universal` | Every declaration | The maps-out equivalence with models |
+| `universal` | Every declaration | The universal property in section 1's corrected form: a contractible homomorphism type, the free-model property, and a maps-out characterization only where the constructor and clause data give one; its contract is specified (L2.6) before it is generated |
 | `irrelevance` | Constructors with proposition-valued arguments | `lim(x, c) = lim(x, c')` without writing the proof |
 | `ind_prop`, `rec` | Every declaration | Induction into propositions and non-dependent recursion, as views |
 

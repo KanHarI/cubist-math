@@ -17,8 +17,8 @@ file remains a design fixture, excluded from `.cubist` corpus checks.
 Arithmetic elaborates to checked composition, inversion and congruence witnesses.
 Function equality swaps an interval binder and a term binder. The naturality
 square uses its expected PathP families. The transport shorthand infers
-endpoints while preserving the chosen path. The remaining structure notation
-proposal would expand to ordinary field operations on an explicitly chosen field.
+endpoints while preserving the given path. The remaining structure notation
+proposal would expand to ordinary field operations on an explicitly given field.
 
 The dependent examples deliberately distinguish `section_path` from
 `section_after_transport`: the former is a path in varying fibers; the latter

@@ -126,14 +126,14 @@ def radix_decode_add(extra : Nat, a, b : RadixNat(extra)) :
   exact match a as x return (
     radix_to_nat(extra, radix_add(extra, x, b)) = radix_to_nat(extra, x) + radix_to_nat(extra, b)
   ) {
-    left zero => refl(radix_to_nat(extra, b));
-    right p => match b as y return (
+    radix_nat_zero => refl(radix_to_nat(extra, b));
+    radix_nat_positive(p) => match b as y return (
       radix_to_nat(extra, radix_add(extra, radix_positive(extra, p), y)) = radix_positive_to_nat(
         extra, p
       ) + radix_to_nat(extra, y)
     ) {
-      left zero => sym(nat_add_zero(radix_positive_to_nat(extra, p)));
-      right q => radix_decode_positive_add(extra, p, q);
+      radix_nat_zero => sym(nat_add_zero(radix_positive_to_nat(extra, p)));
+      radix_nat_positive(q) => radix_decode_positive_add(extra, p, q);
     };
   };
 }
@@ -217,14 +217,14 @@ def radix_decode_mul(extra : Nat, a, b : RadixNat(extra)) :
   exact match a as x return (
     radix_to_nat(extra, radix_mul(extra, x, b)) = radix_to_nat(extra, x) * radix_to_nat(extra, b)
   ) {
-    left zero => refl(0);
-    right p => match b as y return (
+    radix_nat_zero => refl(0);
+    radix_nat_positive(p) => match b as y return (
       radix_to_nat(extra, radix_mul(extra, radix_positive(extra, p), y)) = radix_positive_to_nat(
         extra, p
       ) * radix_to_nat(extra, y)
     ) {
-      left zero => sym(nat_mul_zero(radix_positive_to_nat(extra, p)));
-      right q => radix_decode_positive_mul(extra, p, q);
+      radix_nat_zero => sym(nat_mul_zero(radix_positive_to_nat(extra, p)));
+      radix_nat_positive(q) => radix_decode_positive_mul(extra, p, q);
     };
   };
 }

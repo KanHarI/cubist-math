@@ -1,0 +1,5 @@
+// Natural numbers, defined and checked from source like any other data type.
+inductive Nat : U0 {
+  zero;
+  succ(n : Nat);
+}

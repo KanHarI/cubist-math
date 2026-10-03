@@ -31,8 +31,6 @@ static cc_term weak(cc_kernel *k, cc_term term) {
     cc_node n = k->nodes[term];
     if (n.kind == CC_HCOMP || n.kind == CC_TRANS)
         return ck_hit_reduce(k, term);
-    if (n.kind == CC_PUSH_PATH)
-        return ck_pushout_reduce(k, term);
     if (n.kind == CC_DEFREF) {
         if (!n.payload || n.payload >= k->definition_count)
             return ck_fail(k, "Unknown definition reached reduction."), 0;
@@ -55,12 +53,17 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             system = piece.child[n.kind == CC_GLUE ? 2 : 1];
         }
     }
+    /* Glue eta: glue [φ ↦ b|φ] (unglue b) is b. Reduction is trusted, so its
+     * side conditions are syntactic, as instructions' are (ck_alpha_equal):
+     * the same Glue type, and each piece the restriction of b. When the sides
+     * are equal only after computation, the redex stays uncontracted, and
+     * still checked; conversion never decides a reduction step. */
     if (n.kind == CC_GLUE_TERM) {
         cc_term projected = ck_whnf(k, n.child[1]);
         if (!projected)
             return 0;
         cc_node projection = k->nodes[projected];
-        if (projection.kind == CC_UNGLUE && ck_convertible(k, n.child[0], projection.child[0])) {
+        if (projection.kind == CC_UNGLUE && ck_alpha_equal(k, n.child[0], projection.child[0])) {
             bool agrees = true;
             for (cc_term system = n.child[2]; system && agrees;) {
                 cc_node piece = k->nodes[system];
@@ -70,7 +73,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
                 if (cc_copy(&face, raw) != CC_OK)
                     return ck_fail(k, "Glue eta face allocation failed."), 0;
                 for (size_t i = 0; i < face.length && agrees; ++i)
-                    agrees = ck_convertible(k, piece.child[0], ck_restrict(k, projection.child[1], face.clauses[i]));
+                    agrees = ck_alpha_equal(k, piece.child[0], ck_restrict(k, projection.child[1], face.clauses[i]));
                 cc_clear(&face);
                 system = piece.child[1];
             }
@@ -100,8 +103,11 @@ static cc_term weak(cc_kernel *k, cc_term term) {
     }
     if (n.kind == CC_APP) {
         cc_term fn = ck_whnf(k, n.child[0]);
-        if (fn && k->nodes[fn].kind == CC_PUSH_ELIM)
-            return ck_pushout_reduce(k, ck_make(k, CC_APP, 0, fn, n.child[1], 0, 0));
+        if (fn && k->nodes[fn].kind == CC_ELIM) {
+            bool reduced = false;
+            cc_term result = ck_eliminate(k, fn, n.child[1], true, &reduced);
+            return reduced ? ck_whnf(k, result) : result;
+        }
         if (!fn)
             return 0;
         cc_node head = k->nodes[fn];
@@ -120,12 +126,14 @@ static cc_term weak(cc_kernel *k, cc_term term) {
         return fn == n.child[0] ? term : ck_make(k, CC_LAPP, 0, fn, n.child[1], 0, 0);
     }
     if (n.kind == CC_PAIR) {
-        /* Surjective pairing. Inspect only projection syntax here: forcing
-         * arbitrary components would destroy the demand-driven strategy. */
+        /* Surjective pairing: (fst p, snd p) is p. Inspect only projection
+         * syntax here: forcing arbitrary components would destroy the
+         * demand-driven strategy. The two projections must be of the same
+         * term up to bound names, as for Glue eta above. */
         cc_node first = k->nodes[n.child[1]];
         cc_node second = k->nodes[n.child[2]];
         if (first.kind == CC_FST && second.kind == CC_SND &&
-            ck_convertible(k, first.child[0], second.child[0]))
+            ck_alpha_equal(k, first.child[0], second.child[0]))
             return ck_whnf(k, first.child[0]);
     }
     if (n.kind == CC_FST || n.kind == CC_SND) {
@@ -137,19 +145,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             return ck_whnf(k, head.child[n.kind == CC_FST ? 1 : 2]);
         return pair == n.child[0] ? term : ck_make(k, n.kind, 0, pair, 0, 0, 0);
     }
-    if (n.kind == CC_NATREC) {
-        cc_term value = ck_whnf(k, n.child[3]);
-        if (!value)
-            return 0;
-        cc_node head = k->nodes[value];
-        if (head.kind == CC_ZERO)
-            return ck_whnf(k, n.child[1]);
-        if (head.kind == CC_SUCC) {
-            cc_term recursive = ck_make(k, CC_NATREC, 0, n.child[0], n.child[1], n.child[2], head.child[0]);
-            return ck_whnf(k, app(k, app(k, n.child[2], head.child[0]), recursive));
-        }
-        return value == n.child[3] ? term : ck_make(k, CC_NATREC, 0, n.child[0], n.child[1], n.child[2], value);
-    }
+
     if (n.kind == CC_SUMREC) {
         cc_term value = ck_whnf(k, n.child[3]);
         if (!value)
@@ -167,26 +163,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             return ck_whnf(k, n.child[1]);
         return value == n.child[2] ? term : ck_make(k, CC_UNITREC, 0, n.child[0], n.child[1], value, 0);
     }
-    if (n.kind == CC_WREC) {
-        cc_term value = ck_whnf(k, n.child[2]);
-        if (!value)
-            return 0;
-        cc_node head = k->nodes[value];
-        if (head.kind == CC_SUP) {
-            cc_term type = ck_whnf(k, head.child[0]);
-            if (!type || k->nodes[type].kind != CC_W)
-                return ck_fail(k, "Malformed checked W constructor."), 0;
-            cc_node w = k->nodes[type];
-            uint32_t name = ck_fresh_symbol(k);
-            cc_term index = ck_var(k, name);
-            cc_term arity = ck_substitute(k, w.child[1], w.payload, head.child[1]);
-            cc_term child = app(k, head.child[2], index);
-            cc_term recursive = ck_make(k, CC_WREC, 0, n.child[0], n.child[1], child, 0);
-            cc_term hypothesis = ck_make(k, CC_LAM, name, arity, recursive, 0, 0);
-            return ck_whnf(k, app(k, app(k, app(k, n.child[1], head.child[1]), head.child[2]), hypothesis));
-        }
-        return value == n.child[2] ? term : ck_make(k, CC_WREC, 0, n.child[0], n.child[1], value, 0);
-    }
+
     if (n.kind == CC_PAPP) {
         const cc_formula *arg = cc_kernel_get_formula(k, n.payload);
         if (!arg || arg->sort != CC_INTERVAL)
@@ -264,24 +241,55 @@ static cc_term weak(cc_kernel *k, cc_term term) {
 }
 
 cc_term ck_whnf(cc_kernel *k, cc_term term) {
-    if (!term || term >= k->count || !ck_tick(k, false))
+    if (!term || term >= k->count || !ck_tick(k))
         return 0;
-    if (k->weak_cache[term]) {
-        if (k->weak_cache[term] != term) ck_trace(k, CC_TRACE_REDUCE, term, k->weak_cache[term], 0);
+    if (k->weak_cache[term])
         return k->weak_cache[term];
-    }
     if (++k->recursion > 1024) {
         --k->recursion;
         return ck_fail(k, "Native reduction recursion depth exceeded."), 0;
     }
-    ++k->trace_mute;
     cc_term result = weak(k, term);
-    --k->trace_mute;
     --k->recursion;
     if (result && !k->error[0])
         k->weak_cache[term] = result;
-    if (result && result != term) ck_trace(k, CC_TRACE_REDUCE, term, result, 0);
     return result;
+}
+
+/* Glue eta in a normal form, whose parts are normal. Restricting the base to
+ * a piece's face can make a new redex, as p @ i at i = 0 is p's left
+ * endpoint, so each piece is compared with the normal form of the base's
+ * restriction. Still by syntax, as in weak(): conversion never decides a
+ * reduction step. Returns the contraction, the term itself, or 0 on error. */
+static cc_term normal_glue_eta(cc_kernel *k, cc_term term) {
+    cc_node n = k->nodes[term];
+    cc_term projected = ck_whnf(k, n.child[1]);
+    if (!projected)
+        return 0;
+    cc_node projection = k->nodes[projected];
+    if (projection.kind != CC_UNGLUE || !ck_alpha_equal(k, n.child[0], projection.child[0]))
+        return k->error[0] ? 0 : term;
+    for (cc_term system = n.child[2]; system; system = k->nodes[system].child[1]) {
+        cc_node piece = k->nodes[system];
+        const cc_formula *raw = cc_kernel_get_formula(k, piece.payload);
+        cc_formula face;
+        cc_init(&face, CC_FACE);
+        if (!raw || cc_copy(&face, raw) != CC_OK) {
+            cc_clear(&face);
+            return ck_fail(k, "Glue eta face allocation failed."), 0;
+        }
+        bool agrees = true;
+        for (size_t i = 0; i < face.length && agrees; ++i) {
+            cc_term restricted = ck_normal(k, ck_restrict(k, projection.child[1], face.clauses[i]));
+            agrees = restricted && ck_alpha_equal(k, piece.child[0], restricted);
+        }
+        cc_clear(&face);
+        if (k->error[0])
+            return 0;
+        if (!agrees)
+            return term;
+    }
+    return projection.child[1];
 }
 
 cc_term ck_normal(cc_kernel *k, cc_term term) {
@@ -297,8 +305,130 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
         if (n.child[i])
             n.child[i] = ck_normal(k, n.child[i]);
     cc_term result = ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], n.child[3]);
+    if (result && n.kind == CC_GLUE_TERM)
+        result = normal_glue_eta(k, result);
     if (result)
         result = ck_whnf(k, result);
     --k->recursion;
     return result;
+}
+
+/* Heads whose normal form may still contract by eta once their parts are
+ * normal: there, parts that differ do not show that the wholes do. */
+static bool eta_sensitive(cc_term_kind kind) {
+    return kind == CC_LAM || kind == CC_LLAM || kind == CC_PLAM || kind == CC_PAIR || kind == CC_GLUE_TERM;
+}
+
+static bool parts_agree(cc_kernel *k, cc_term a, cc_term b);
+
+/* Whether two terms agree by syntax, reduced only as far as that takes: as
+ * they are, as weak heads, part by part under a common head (the same kind
+ * and payload, so the same binder), or else as normal forms. Parts already
+ * equal, such as a large shared graph on both sides, are never normalized,
+ * and each pair is compared once: the result is memoized, as the terms are
+ * immutable. Every answer is reduction and syntax, never conversion. */
+static bool normal_agree(cc_kernel *k, cc_term a, cc_term b) {
+    if (!a || !b)
+        return false;
+    if (a == b)
+        return true;
+    uint64_t cached;
+    if (ck_memo_get(k, 5, a, 0, b, &cached))
+        return cached != 0;
+    if (++k->recursion > 1024) {
+        --k->recursion;
+        return ck_fail(k, "Native reduction recursion depth exceeded.");
+    }
+    bool agrees = parts_agree(k, a, b);
+    --k->recursion;
+    if (!k->error[0])
+        ck_memo_put(k, 5, a, 0, b, agrees);
+    return agrees && !k->error[0];
+}
+
+static bool parts_agree(cc_kernel *k, cc_term a, cc_term b) {
+    if (ck_alpha_equal(k, a, b))
+        return true;
+    cc_term left = k->error[0] ? 0 : ck_whnf(k, a), right = left ? ck_whnf(k, b) : 0;
+    if (!right)
+        return false;
+    if (ck_alpha_equal(k, left, right))
+        return true;
+    cc_node x = k->nodes[left], y = k->nodes[right];
+    if (x.kind == y.kind && x.payload == y.payload) {
+        bool parts = true;
+        for (unsigned i = 0; i < ck_arity(x.kind) && parts; ++i)
+            parts = x.child[i] == y.child[i] || normal_agree(k, x.child[i], y.child[i]);
+        if (parts || k->error[0] || !eta_sensitive(x.kind))
+            return parts;
+    }
+    if (k->error[0])
+        return false;
+    left = ck_normal(k, left);
+    right = left ? ck_normal(k, right) : 0;
+    return right && ck_alpha_equal(k, left, right);
+}
+
+static cc_term glue_step(cc_kernel *k, cc_term term);
+
+/* The Glue step (CC_STEP_GLUE): glue [φ ↦ t] (unglue b) is b when the two
+ * Glue types agree and t is b on φ. The unglue is the base's weak head, or,
+ * where that is a Glue term, what its own Glue step exposes, as conversion
+ * exposes it: nesting can be deeper than syntax, through definitions, so it
+ * counts toward the reduction depth. Each side condition is compared by
+ * syntax, its two sides reduced only as far as that takes (normal_agree),
+ * and nothing else is reduced: the Glue types, and t and b restricted to
+ * each clause of φ, since restricting can make a new redex, as p @ i at
+ * i = 0 is p's left endpoint. b stays as it is, with whatever its
+ * annotations carry. Weak heads and normal forms are reduction, so
+ * conversion still decides no step. Returns b, the term itself when a side
+ * condition fails, or 0 on error. */
+cc_term ck_glue_step(cc_kernel *k, cc_term term) {
+    if (++k->recursion > 1024) {
+        --k->recursion;
+        return ck_fail(k, "Native reduction recursion depth exceeded."), 0;
+    }
+    cc_term result = glue_step(k, term);
+    --k->recursion;
+    return result;
+}
+
+static cc_term glue_step(cc_kernel *k, cc_term term) {
+    cc_node n = k->nodes[term];
+    cc_term projected = ck_whnf(k, n.child[1]);
+    while (projected && k->nodes[projected].kind == CC_GLUE_TERM) {
+        cc_term inner = ck_glue_step(k, projected);
+        if (!inner)
+            return 0;
+        if (inner == projected)
+            break;
+        projected = ck_whnf(k, inner);
+    }
+    if (!projected)
+        return 0;
+    cc_node projection = k->nodes[projected];
+    if (projection.kind != CC_UNGLUE)
+        return term;
+    if (!normal_agree(k, n.child[0], projection.child[0]))
+        return k->error[0] ? 0 : term;
+    for (cc_term system = n.child[2]; system; system = k->nodes[system].child[1]) {
+        cc_node piece = k->nodes[system];
+        const cc_formula *raw = cc_kernel_get_formula(k, piece.payload);
+        cc_formula face;
+        cc_init(&face, CC_FACE);
+        if (!raw || cc_copy(&face, raw) != CC_OK) {
+            cc_clear(&face);
+            return ck_fail(k, "Glue eta face allocation failed."), 0;
+        }
+        bool agrees = true;
+        for (size_t i = 0; i < face.length && agrees; ++i)
+            agrees = normal_agree(k, ck_restrict(k, piece.child[0], face.clauses[i]),
+                                  ck_restrict(k, projection.child[1], face.clauses[i]));
+        cc_clear(&face);
+        if (k->error[0])
+            return 0;
+        if (!agrees)
+            return term;
+    }
+    return projection.child[1];
 }

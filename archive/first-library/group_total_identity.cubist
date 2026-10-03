@@ -266,17 +266,18 @@ def group_objects_iso_total_path(
   let bijection := typed(Bijection(A, B), (f, g, leftLaw, rightLaw));
   let equivalence := bijection_equiv(A, B, group_set_law(B, unitB, multiplyB, lawsB), bijection);
   let carrierPath := ua(U0, A, B, equivalence);
-  have computes : forall x : A. group_carrier_transport(A, B, carrierPath, x) = f(x) {
+  let computes : forall x : A. group_carrier_transport(A, B, carrierPath, x) = f(x) {
     intro x;
     exact UnivalenceBeta(U0, A, B, equivalence, x);
   }
-  have unitPath : group_carrier_transport(A, B, carrierPath, unitA) = unitB := trans(
-    computes(unitA),
-    group_isomorphism_preserves_unit(
-      A, unitA, multiplyA, lawsA, B, unitB, multiplyB, lawsB, f, g, rightLaw, preserves
-    )
-  );
-  have multiplicationPath :
+  let unitPath : group_carrier_transport(A, B, carrierPath, unitA) = unitB :=
+    trans(
+      computes(unitA),
+      group_isomorphism_preserves_unit(
+        A, unitA, multiplyA, lawsA, B, unitB, multiplyB, lawsB, f, g, rightLaw, preserves
+      )
+    );
+  let multiplicationPath :
     forall x : A. forall y : A.
     group_carrier_transport(A, B, carrierPath, multiplyA(x, y)) = multiplyB(
       group_carrier_transport(A, B, carrierPath, x), group_carrier_transport(A, B, carrierPath, y)

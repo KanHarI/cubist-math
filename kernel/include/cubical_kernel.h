@@ -3,12 +3,11 @@
 
 #include "cubical.h"
 
-/* The trusted kernel is the instruction kernel (cc_instr_*, below): a
- * definition is admitted only by Define, from a closed judgement derived one
- * rule at a time, and only admitted definitions can be looked up. The term
- * checker (cc_kernel_check, cc_kernel_define), its conversion strategy and
- * the unfolding hints that steer it are untrusted elaboration services: they
- * propose checked terms, and decide nothing an instruction relies on.
+/* The kernel is the instruction kernel (cc_instr_*, below): a definition is
+ * admitted only by Define, from a closed judgement derived one rule at a
+ * time, and Lookup reads it back. Queries (normalize, whnf, rename, endpoint
+ * terms) compute on syntax and certify nothing; an untrusted driver uses
+ * them to pick the instructions it issues.
  *
  * Raw syntax constructors are deliberately NOT proof certificates. Names are
  * numeric symbols whose readable spelling is maintained by the caller;
@@ -21,20 +20,32 @@ typedef struct cc_kernel cc_kernel;
 
 typedef enum {
     CC_U = 1, CC_VAR, CC_PI, CC_LAM, CC_APP, CC_SIGMA, CC_PAIR, CC_FST, CC_SND,
+    /* Reserved: the former Nat primitive tags cannot be constructed. */
     CC_NAT, CC_ZERO, CC_SUCC, CC_NATREC, CC_UNIT, CC_POINT,
     CC_PATH, CC_PLAM, CC_PAPP, CC_COMP, CC_TUBE,
-    CC_VOID, CC_ABORT, CC_W, CC_SUP, CC_WREC,
+    CC_VOID, CC_ABORT,
+    /* Reserved: the former W primitive tags cannot be constructed. */
+    CC_W, CC_SUP, CC_WREC,
     CC_SUM, CC_INL, CC_INR, CC_SUMREC, CC_UNITREC,
     CC_GLUE, CC_GLUE_SYSTEM, CC_GLUE_TERM, CC_UNGLUE, CC_DEFREF,
-    CC_PUSHOUT, CC_PUSH_LEFT, CC_PUSH_RIGHT, CC_PUSH_PATH, CC_PUSH_ELIM, CC_HCOMP, CC_TRANS,
+    /* Reserved: the former pushout primitive tags cannot be constructed. */
+    CC_PUSHOUT, CC_PUSH_LEFT, CC_PUSH_RIGHT, CC_PUSH_PATH, CC_PUSH_ELIM,
+    CC_HCOMP, CC_TRANS,
     /* Universe levels (G0). Levels are not terms; see the child order below. */
-    CC_LBOUND, CC_LCONST, CC_LSUCC, CC_LMAX, CC_LPI, CC_LLAM, CC_LAPP
+    CC_LBOUND, CC_LCONST, CC_LSUCC, CC_LMAX, CC_LPI, CC_LLAM, CC_LAPP,
+    /* Declared types (H1). Sort: payload a signature index; children its term
+     * parameters and its recorded levels, each a list, or 0. Con: payload a
+     * constructor number; child the sort instance. Elim: payload a signature
+     * index; children the motive and the clause list. List: an item and the
+     * next cell, or 0. */
+    CC_SORT, CC_CON, CC_ELIM, CC_LIST
 } cc_term_kind;
 
 /* The encoding of syntax this header describes. A client built for another
  * version must not exchange handles with this kernel: version 2 moved a
- * universe's level from its payload to a level child. */
-#define CC_KERNEL_ABI_VERSION 2u
+ * universe's level from its payload to a level child, and version 3 added
+ * the declared-type kinds. */
+#define CC_KERNEL_ABI_VERSION 3u
 uint32_t cc_kernel_abi_version(void);
 
 /* Resource bounds on universe levels (G0 §2.3): the finite part within a tier,
@@ -42,45 +53,32 @@ uint32_t cc_kernel_abi_version(void);
 #define CC_LEVEL_MAX 65535u
 #define CC_TIER_MAX 255u
 
-typedef struct {
-    uint32_t symbol;
-    cc_term type;
-} cc_assumption;
-
-typedef struct {
-    cc_term expression, type, normal;
-    uint64_t checking_steps, reduction_steps;
-    size_t arena_nodes, arena_bytes;
-} cc_checked_result;
-
 cc_kernel *cc_kernel_new(void);
 void cc_kernel_free(cc_kernel *);
-/* Resource budget per checking/reduction operation; zero leaves it unchanged.
+/* Resource budget per operation; zero leaves it unchanged.
  * Raising it never bypasses a rule or certifies a previously rejected term. */
 void cc_kernel_set_step_budget(cc_kernel *, uint64_t steps);
 /* Kernel work, for measuring what a search costs (docs/roadmaps/
  * learned-search.md; the work plan's L1.3 fuel).
  *
  * The budget. Every operation starts with the step budget set above. The
- * operations are the instructions (cc_instr_*) and the queries: the term
- * checker (cc_kernel_check, cc_kernel_check_in_cube, cc_kernel_define),
- * cc_kernel_normalize, cc_kernel_whnf, cc_kernel_convertible (at most its
- * own `steps`), and the syntax services cc_kernel_endpoint_term and
- * cc_kernel_rename. One step is one unit of that budget: each type inference
- * of the term checker, weak-head or normalization step, conversion
- * comparison, substitution into a node and level normal-form node takes one,
+ * operations are the instructions (cc_instr_*) and the queries:
+ * cc_kernel_normalize, cc_kernel_whnf, and the syntax services
+ * cc_kernel_endpoint_term and cc_kernel_rename. One step is one unit of that
+ * budget: each weak-head or normalization step, syntactic comparison,
+ * substitution into a node and level normal-form node takes one,
  * and an instruction takes one on entry, so an instruction answered from the
  * derivation memo still costs a step. Work nested in an operation shares its
  * budget: nothing nested resets it, whether an instruction's computation or
- * a definition's check. An operation that runs out records a BUDGET error
+ * another derivation. An operation that runs out records a BUDGET error
  * and makes no judgement. Building syntax (cc_kernel_term, cc_kernel_formula,
  * cc_kernel_equiv_type) takes no step.
  *
  * The counters only grow. No operation, error, checkpoint, rollback or
  * commit resets them, so the difference between two readings is the work in
  * between, rejected and failed work included. A public function that starts
- * no operation, such as building syntax, cc_kernel_equiv_type or setting
- * unfolding hints, counts nothing: not its steps, which spend what budget the
+ * no operation, such as building syntax or cc_kernel_equiv_type, counts
+ * nothing: not its steps, which spend what budget the
  * last operation left, nor its error. An operation retried with a
  * larger budget counts each time it runs, as its work is done again.
  *   instructions       instructions started, whether accepted, answered from
@@ -99,17 +97,23 @@ typedef struct {
     uint64_t exhausted, deadlines;
 } cc_work_counters;
 void cc_kernel_work(const cc_kernel *, cc_work_counters *);
-/* Independent performance switches, enabled by default. Neither changes the
- * judgement rules. Disabling a cache discards its entries immediately. */
-enum { CC_SHARE_SYNTAX = 1, CC_REUSE_CHECKS = 2 };
+/* A performance switch, enabled by default, that changes no judgement rule:
+ * with CC_SHARE_SYNTAX identical syntax has one handle. Disabling it discards
+ * its table immediately. */
+enum { CC_SHARE_SYNTAX = 1 };
 void cc_kernel_set_optimizations(cc_kernel *, unsigned flags);
+/* Kernel extensions. CC_EXTENSION_H1 admits declared types (H1); it is on by
+ * default since H1's release, and switching it off makes SignatureBegin
+ * refuse. Signatures already admitted stay usable either way. */
+enum { CC_EXTENSION_H1 = 1 };
+void cc_kernel_set_extensions(cc_kernel *, unsigned flags);
+unsigned cc_kernel_extensions(const cc_kernel *);
 /* Optional wall-clock deadline shared by successive operations. Zero disables.
  * Expiry only rejects work; it can never make a judgement succeed. */
 void cc_kernel_set_deadline_ms(cc_kernel *, double duration_ms);
 const char *cc_kernel_error(const cc_kernel *);
 /* The class of the recorded error, so callers need not read its text.
- * MISMATCH: a type is not convertible to, or cumulative with, the expected
- * type. BUDGET, DEADLINE: the step budget or the deadline ran out, so no
+ * MISMATCH: a type is not the expected type, or not included in it. BUDGET, DEADLINE: the step budget or the deadline ran out, so no
  * judgement was made. OTHER: any other rejection. NONE: no error. */
 typedef enum {
     CC_ERROR_NONE, CC_ERROR_MISMATCH, CC_ERROR_BUDGET, CC_ERROR_DEADLINE, CC_ERROR_OTHER
@@ -119,29 +123,8 @@ cc_error_kind cc_kernel_error_kind(const cc_kernel *);
  * to match, for diagnostics. Returns false for any other error or none. The
  * handles are valid until the next rollback, which also clears the error. */
 bool cc_kernel_mismatch(const cc_kernel *, cc_term *found, cc_term *expected);
-/* An optional trace of the checker's actions, for inspection only. It
- * records events as the rules run and never changes a judgement. Starting a
- * trace discards the previous one; events beyond its capacity are counted but
- * not kept. Handles in events are valid until the next rollback.
- *   INFER      a: raw term; the events that check it follow, one level deeper.
- *   INFERRED   a: raw term, b: checked term, c: its type; b = c = 0 on failure.
- *   REUSED     a: raw term, b: checked term, c: its type, from the check cache.
- *   EXTEND     a: bound symbol, b: its type: the context gains an assumption.
- *   CONVERT    a: type found, b: type expected, c: 1 when they agree.
- *   REDUCE     a: term, b: its weak head normal form, when they differ.
- * Reductions inside a conversion are not recorded. */
-typedef enum {
-    CC_TRACE_INFER = 1, CC_TRACE_INFERRED, CC_TRACE_REUSED, CC_TRACE_EXTEND, CC_TRACE_CONVERT, CC_TRACE_REDUCE
-} cc_trace_kind;
-typedef struct {
-    uint32_t kind, depth, a, b, c;
-} cc_trace_event;
-bool cc_kernel_trace_start(cc_kernel *, size_t capacity);
-void cc_kernel_trace_stop(cc_kernel *);
-size_t cc_kernel_trace_count(const cc_kernel *);
-bool cc_kernel_trace_event(const cc_kernel *, size_t index, cc_trace_event *);
 /* Instructions (instructions.c): THTH-style forward rules on a graph of
- * judgements, beside cc_kernel_check. An instruction takes earlier judgements
+ * judgements. An instruction takes earlier judgements
  * and context entries, checks its side conditions syntactically — types must
  * be identical up to bound names — and returns a new judgement, or 0 with an
  * error. Nothing is reduced or unfolded except by an equality instruction
@@ -166,7 +149,9 @@ bool cc_kernel_trace_event(const cc_kernel *, size_t index, cc_trace_event *);
 typedef uint32_t cc_judgement_id;
 typedef uint32_t cc_entry_id;
 typedef enum {
-    CC_INSTR_UNIVERSE = 1, CC_INSTR_NAT, CC_INSTR_ZERO, CC_INSTR_SUCC, CC_INSTR_NAT_ELIM,
+    CC_INSTR_UNIVERSE = 1,
+    /* Reserved ABI slots: Nat/Zero/Succ/NatElim are refused. */
+    CC_INSTR_NAT, CC_INSTR_ZERO, CC_INSTR_SUCC, CC_INSTR_NAT_ELIM,
     CC_INSTR_UNIT, CC_INSTR_POINT, CC_INSTR_UNIT_ELIM, CC_INSTR_VOID, CC_INSTR_ABORT,
     CC_INSTR_SUM, CC_INSTR_INJECT, CC_INSTR_SUM_ELIM,
     CC_INSTR_VARIABLE, CC_INSTR_PI, CC_INSTR_LAMBDA, CC_INSTR_APPLY,
@@ -175,38 +160,45 @@ typedef enum {
     CC_INSTR_REFL, CC_INSTR_STEP, CC_INSTR_REPLACE, CC_INSTR_ETA, CC_INSTR_SIDE,
     CC_INSTR_SYMMETRY, CC_INSTR_TRANSITIVITY, CC_INSTR_CONVERT, CC_INSTR_LIFT, CC_INSTR_ENDPOINT,
     CC_INSTR_PATH_AT, CC_INSTR_SYSTEM, CC_INSTR_SYSTEM_TUBE, CC_INSTR_COMP, CC_INSTR_SYSTEM_OVERLAP,
+    /* Reserved ABI slots: Pushout/PushPoint/PushPath/PushElim are refused. */
     CC_INSTR_PUSHOUT, CC_INSTR_PUSH_POINT, CC_INSTR_PUSH_PATH, CC_INSTR_PUSH_ELIM,
-    CC_INSTR_W, CC_INSTR_SUP, CC_INSTR_W_ELIM, CC_INSTR_HCOMP, CC_INSTR_TRANS,
+    /* Reserved ABI slots: W/Sup/WElim are refused. */
+    CC_INSTR_W, CC_INSTR_SUP, CC_INSTR_W_ELIM,
+    CC_INSTR_HCOMP, CC_INSTR_TRANS,
     CC_INSTR_GLUE_BASE, CC_INSTR_GLUE_PIECE, CC_INSTR_GLUE_OVERLAP, CC_INSTR_GLUE,
     CC_INSTR_GLUE_TERM_BASE, CC_INSTR_GLUE_TERM_PIECE, CC_INSTR_GLUE_TERM, CC_INSTR_UNGLUE,
-    CC_INSTR_LEVEL_PI, CC_INSTR_LEVEL_LAMBDA, CC_INSTR_LEVEL_APPLY
+    CC_INSTR_LEVEL_PI, CC_INSTR_LEVEL_LAMBDA, CC_INSTR_LEVEL_APPLY,
+    CC_INSTR_SIGNATURE_BEGIN, CC_INSTR_SIGNATURE_CONSTRUCTOR, CC_INSTR_SIGNATURE_CLOSE,
+    CC_INSTR_SORT_BEGIN, CC_INSTR_SORT_LEVEL, CC_INSTR_SORT_PARAMETER, CC_INSTR_CONSTRUCT,
+    CC_INSTR_ELIMINATOR, CC_INSTR_ELIMINATOR_CLAUSE, CC_INSTR_ELIMINATOR_CLOSE
 } cc_instruction;
 typedef enum {
     CC_STEP_BETA = 1,  /* App(Lam(x. b), a) to b[a/x] */
     CC_STEP_DELTA,     /* a definition to its checked value */
-    CC_STEP_IOTA,      /* an eliminator or projection on a constructor (W
-                        * recursion on sup included), and a pushout path
-                        * at an endpoint */
+    CC_STEP_IOTA,      /* an eliminator or projection on a constructor */
     CC_STEP_PATH,      /* a path lambda applied at an interval point, or a
                         * path applied at an endpoint of its annotated type */
     CC_STEP_NORMALIZE, /* the normal form, by the kernel's fixed strategy */
     CC_STEP_WHNF,      /* the weak head normal form, by the same strategy:
-                        * composition, transport, Glue and pushouts compute,
+                        * composition, transport and Glue compute,
                         * and lambdas contract by eta */
-    CC_STEP_FACE       /* a composition with a tube on a face that holds, to
+    CC_STEP_FACE,      /* a composition with a tube on a face that holds, to
                         * that tube at the end of the composition's dimension;
                         * a transport on a face that holds, to its base */
+    CC_STEP_GLUE       /* Glue eta: glue [φ ↦ t] (unglue b) to b, the unglue
+                        * being the base's weak head or what a nested Glue
+                        * step exposes, when the side conditions agree by
+                        * syntax, as they are, as weak heads, part by part
+                        * under a common head, or as normal forms, and
+                        * nothing else is reduced: the two Glue types, and t
+                        * and b restricted to each clause of φ
+                        * (term_normalize.c) */
 } cc_step_rule;
 
 /* Γ ⊢ U(l) : U(l+1), for a level l whose successor is within CC_LEVEL_MAX.
  * Its variables must be level entries, which form Γ. The judgement's
  * universes carry l's normal form. */
 cc_judgement_id cc_instr_universe(cc_kernel *, cc_term level);
-cc_judgement_id cc_instr_nat(cc_kernel *);                                /* ⊢ Nat : U0 */
-cc_judgement_id cc_instr_zero(cc_kernel *);                               /* ⊢ 0 : Nat */
-cc_judgement_id cc_instr_succ(cc_kernel *, cc_judgement_id);              /* n : Nat ⊢ succ(n) : Nat */
-cc_judgement_id cc_instr_nat_elim(cc_kernel *, cc_judgement_id motive, cc_judgement_id zero,
-                                  cc_judgement_id step, cc_judgement_id value);
 cc_judgement_id cc_instr_unit(cc_kernel *);
 cc_judgement_id cc_instr_point(cc_kernel *);
 cc_judgement_id cc_instr_unit_elim(cc_kernel *, cc_judgement_id motive, cc_judgement_id point,
@@ -276,13 +268,14 @@ cc_judgement_id cc_instr_system_overlap(cc_kernel *, cc_judgement_id system, uin
                                         cc_judgement_id agreement);
 cc_judgement_id cc_instr_comp(cc_kernel *, cc_judgement_id system);
 /* HComp closes a system whose family A does not use its dimension into the
- * homogeneous composition hcomp^i A [φ ↦ u] a0 : A. As in the term checker, A
- * must be a pushout type: its weak head, which involves no choice. */
+ * homogeneous composition hcomp^i A [φ ↦ u] a0 : A. A's weak head, which
+ * involves no search, must be an instance of a declared higher sort (H1); a
+ * declared data sort has no formal composition, and composes by Comp. */
 cc_judgement_id cc_instr_hcomp(cc_kernel *, cc_judgement_id system);
 /* Trans closes into transp^i A φ a0 : A(1) a system whose tubes are the base
  * a0 restricted to each clause of the face φ, in order: on φ the family is
- * constant, which each tube's typing shows. The family must be a pushout
- * type, as in the term checker. */
+ * constant, which each tube's typing shows. The family must be a declared
+ * higher sort; a declared data sort transports by Comp, with the tube φ ↦ a0. */
 cc_judgement_id cc_instr_trans(cc_kernel *, cc_judgement_id system, cc_formula_id face);
 /* Glue [φ ↦ (T, e)] A, built one piece at a time as a system judgement.
  * GlueBase starts from A : U. GluePiece adds, on a face of one clause, a type
@@ -310,34 +303,84 @@ cc_judgement_id cc_instr_unglue(cc_kernel *, cc_judgement_id value);
 /* Syntax only, for an untrusted search: the type Equiv(A, B) as the Glue
  * rules state it. */
 cc_term cc_kernel_equiv_type(cc_kernel *, cc_term a, cc_term b);
-/* Pushouts (CHM §3.3.5). Pushout gives Pushout(C, A, B, maps) : U from
- * C, A, B : U and maps : Σ(f : C → A). C → B. PushPoint gives inl(a) or inr(b)
- * of a pushout type P (right selects inr); PushPath gives push^r(c) : P for
- * c : C at an interval formula r. PushElim, from a motive M : Π(z : P). U(l)
- * and its left, right and bridge cases, gives the eliminator :
- * Π(z : P). M(z); the bridge is a dependent path over push(c) from the left
- * case at f(c) to the right case at g(c). Types are compared syntactically;
- * P must be a pushout type as written. */
-cc_judgement_id cc_instr_pushout(cc_kernel *, cc_judgement_id source, cc_judgement_id left,
-                                 cc_judgement_id right, cc_judgement_id maps);
-cc_judgement_id cc_instr_push_point(cc_kernel *, cc_judgement_id type, cc_judgement_id value, bool right);
-cc_judgement_id cc_instr_push_path(cc_kernel *, cc_judgement_id type, cc_judgement_id value, cc_formula_id interval);
-cc_judgement_id cc_instr_push_elim(cc_kernel *, cc_judgement_id motive, cc_judgement_id left,
-                                   cc_judgement_id right, cc_judgement_id bridge);
-/* W types. W(x : L). B, from an entry x : L and B : U over it, like Π and Σ;
- * Domain and Family give L and B[l/x]. Sup gives sup(l, c) : T for T a W type
- * as written, l : L and c : Π(i : B[l/x]). T. WElim, from a motive
- * M : Π(z : T). U(l), a step Π(l : L). Π(c : Π(i : B[l/x]). T).
- * Π(h : Π(i : B[l/x]). M(c(i))). M(sup(l, c)), and a value v : T, gives
- * WRec(M, step, v) : M(v). */
-cc_judgement_id cc_instr_w(cc_kernel *, cc_entry_id id, cc_judgement_id arities);
-cc_judgement_id cc_instr_sup(cc_kernel *, cc_judgement_id type, cc_judgement_id label, cc_judgement_id children);
-cc_judgement_id cc_instr_w_elim(cc_kernel *, cc_judgement_id motive, cc_judgement_id step, cc_judgement_id value);
+/* Declared types (H1), admitted one constructor at a time: the family F1 of
+ * docs/roadmaps/h1-signature-specification.md, section 5.2, whose sections
+ * 1.1-1.6 give the normal form checked here.
+ * SignatureBegin opens a signature from a closed judgement ⊢ F : U(…), where
+ * F is Π (xs < ω). Π (ps : Ps). U(ℓ): a LevelPi for each universe parameter,
+ * then a Pi for each term parameter, with distinct symbols. The modifier is
+ * the truncation: CC_UNTRUNCATED, or n + 2 for trunc(n) with n ≥ -1, so prop
+ * is 1 and set is 2. The sort symbol names the entry s : U(ℓ) that
+ * constructor types mention. Bit j of recorded marks universe parameter j
+ * recorded; every other one is erased, and needs a determining occurrence:
+ * a term parameter whose type ends in U(x_j) itself. The result is a
+ * signature judgement: kind 4, whose term is Sort(index) and type F.
+ * SignatureConstructor adds the next constructor from Γ ⊢ T : U(ℓ), with ℓ
+ * compared by normal form. Every entry of Γ is one of the signature's
+ * universe or term parameters, by symbol and at its type, the sort entry,
+ * or an earlier constructor's entry at that constructor's type. T must have
+ * the normal form: data, then positions that are cubes over s, then a
+ * result that is s or an iterated path type over it, whose endpoints are
+ * constructor expressions; this is checked on T as written. T may mention a
+ * recorded parameter and no erased one. The symbol names the new
+ * constructor's entry for later constructor types. Only the signature's
+ * latest judgement continues it.
+ * SignatureClose appends the squash constructor of the modifier, marks the
+ * signature admitted, and returns its index, from 1; an admitted signature
+ * never changes. Each is refused while an error is recorded. */
+enum {
+    CC_UNTRUNCATED = 0,
+    /* Resource bounds, checked, never truncated. */
+    CC_SIGNATURE_LEVELS = 24, CC_SIGNATURE_PARAMETERS = 64, CC_SIGNATURE_CONSTRUCTORS = 256,
+    CC_CONSTRUCTOR_ARGUMENTS = 64, CC_CONSTRUCTOR_DIMENSIONS = 16, CC_TRUNCATION_MAX = 14
+};
+cc_judgement_id cc_instr_signature_begin(cc_kernel *, cc_judgement_id former, uint32_t modifier,
+                                         uint32_t sort_symbol, uint32_t recorded);
+cc_judgement_id cc_instr_signature_constructor(cc_kernel *, cc_judgement_id signature, cc_judgement_id type,
+                                               uint32_t symbol);
+uint32_t cc_instr_signature_close(cc_kernel *, cc_judgement_id signature);
+/* Instances and constructors of an admitted signature (family F2, section
+ * 5.3; formation is section 3.1). SortBegin starts an instance of signature
+ * index. SortLevel supplies the next recorded universe parameter's level, a
+ * finite level whose variables are level entries; SortParameter the next
+ * term parameter's judgement a : A. Recorded levels come first, then the
+ * parameters, in order. Until the last, each gives an instance judgement
+ * (kind 5); the last, or SortBegin for a signature with neither, gives
+ *   S{ls}(as) : U(ℓ[ρ]),
+ * whose term Sort(index; as; ls) carries the parameters and the recorded
+ * levels and nothing for an erased parameter. ρ holds the recorded levels
+ * and each erased one read from its determining parameter's judgement: the
+ * universe at the end of its type, which must be finite. Every parameter's
+ * type must then be the telescope's, with ρ and the earlier parameters
+ * substituted, up to bound names; two readings of one erased parameter
+ * that differ are refused, and the driver lifts the lower one first.
+ * Construct gives Con(k; I) : T_k[s := I, recorded levels, parameters,
+ * earlier constructors c_m := Con(m; I)] from an instance's typing
+ * judgement I : U(…) and a constructor number k. */
+cc_judgement_id cc_instr_sort_begin(cc_kernel *, uint32_t signature);
+cc_judgement_id cc_instr_sort_level(cc_kernel *, cc_judgement_id instance, cc_term level);
+cc_judgement_id cc_instr_sort_parameter(cc_kernel *, cc_judgement_id instance, cc_judgement_id parameter);
+cc_judgement_id cc_instr_construct(cc_kernel *, cc_judgement_id instance, uint32_t constructor);
+/* Elimination (family F5, sections 3.6, 3.7 and 5.6). Eliminator opens an
+ * eliminator from a motive M : Π (z : I). U(l) over a complete instance I:
+ * an eliminator judgement (kind 6) whose type is the next clause's type,
+ * ClauseType_k(M, m_1 … m_{k-1}), computed by substitution: the arguments,
+ * each position's displayed type, and the displayed result, whose boundaries
+ * show positions by their displayed variables and earlier constructors by
+ * their clauses. EliminatorClause adds the next clause, a judgement at
+ * exactly that type, up to bound names; EliminatorClose, with every
+ * constructor's clause given, the squash's included, gives
+ *   Elim(M, ms) : Π (z : I). M(z).
+ * Iota computes it on a constructor, at dimensions or not, and Whnf also on
+ * a formal composition. */
+cc_judgement_id cc_instr_eliminator(cc_kernel *, cc_judgement_id motive);
+cc_judgement_id cc_instr_eliminator_clause(cc_kernel *, cc_judgement_id eliminator, cc_judgement_id clause);
+cc_judgement_id cc_instr_eliminator_close(cc_kernel *, cc_judgement_id eliminator);
 /* Γ, i ⊢ t : T gives Γ ⊢ t[e/i] : T[e/i] at an endpoint e: interval
  * substitution preserves typing. No other entry may depend on i. */
 cc_judgement_id cc_instr_endpoint(cc_kernel *, cc_judgement_id, cc_entry_id dimension, unsigned endpoint);
 /* A closed typing judgement becomes a definition, admitted; the result is its
- * lookup. Lookup recalls an admitted definition, and no other. */
+ * lookup. Lookup recalls a definition Define admitted. */
 cc_judgement_id cc_instr_define(cc_kernel *, uint32_t symbol, cc_judgement_id closed);
 cc_judgement_id cc_instr_lookup(cc_kernel *, cc_term reference);         /* ⊢ d : T */
 /* Equalities, and rewriting. A judgement's sides are 0, its term; 1, the
@@ -354,7 +397,8 @@ cc_judgement_id cc_instr_step(cc_kernel *, cc_judgement_id, unsigned side,
                               const uint8_t *position, size_t depth, cc_step_rule);
 cc_judgement_id cc_instr_replace(cc_kernel *, cc_judgement_id, unsigned side,
                                  const uint8_t *position, size_t depth, cc_judgement_id by);
-/* t : T for a Π, Σ or path type T gives t ≡ its eta expansion : T. */
+/* t : T for a Π, Σ, path or Glue type T gives t ≡ its eta expansion : T;
+ * for T = Glue [φ ↦ (B, e)] A, the expansion is glue [φ ↦ t] (unglue t). */
 cc_judgement_id cc_instr_eta(cc_kernel *, cc_judgement_id typing);
 cc_judgement_id cc_instr_side(cc_kernel *, cc_judgement_id equality, unsigned side); /* a : T */
 cc_judgement_id cc_instr_symmetry(cc_kernel *, cc_judgement_id equality);
@@ -363,13 +407,7 @@ cc_judgement_id cc_instr_transitivity(cc_kernel *, cc_judgement_id first, cc_jud
 cc_judgement_id cc_instr_convert(cc_kernel *, cc_judgement_id typing, cc_judgement_id equality);
 cc_judgement_id cc_instr_lift(cc_kernel *, cc_judgement_id typing, cc_judgement_id type);
 
-/* A search aid, never evidence: whether the term checker's conversion finds
- * two terms equal, within a step budget (zero for the usual one). An
- * untrusted driver may steer its search by it; the instructions it then
- * issues are checked as any others. False on an error, which stays recorded:
- * an exhausted budget means the answer is unknown. */
-bool cc_kernel_convertible(cc_kernel *, cc_term, cc_term, uint64_t steps);
-/* Syntax only, for the same search: a term with a free name, or dimension,
+/* Syntax only, for the driver's search: a term with a free name, or dimension,
  * renamed, avoiding capture. */
 cc_term cc_kernel_rename(cc_kernel *, cc_term, bool dimension, uint32_t from, uint32_t to);
 /* Syntax only, for the same search: a term with 0 or 1 substituted for a free
@@ -384,8 +422,10 @@ uint32_t cc_kernel_fresh_symbol(cc_kernel *);
 void cc_kernel_arena(const cc_kernel *, size_t *nodes, size_t *bytes);
 
 /* Reading the graph. Judgement ids run from 1 to count - 1, premises first.
- * Kind 1 is typing, 2 equality and 3 a composition system; other is 0 but
- * for an equality. Premises are
+ * Kind 1 is typing, 2 equality, 3 a composition system, 4 an open
+ * signature, 5 an instance in progress and 6 an eliminator in progress;
+ * other is 0 but for an equality.
+ * Premises are
  * judgements, in the instruction's argument order, and entry the context
  * entry the instruction bound or used. Operands: a universe level, a
  * definition symbol or reference, a path endpoint, a side and a step rule,
@@ -410,6 +450,27 @@ cc_entry_id cc_kernel_judgement_context(const cc_kernel *, cc_judgement_id, size
 size_t cc_kernel_entry_count(const cc_kernel *);
 bool cc_kernel_entry(const cc_kernel *, cc_entry_id, uint32_t *symbol, cc_term *type, bool *dimension,
                      cc_judgement_id *source);
+/* Signatures run from 1 to count - 1. Symbols are the admission context's:
+ * the universe parameters, then the term parameters. A constructor's type
+ * is over those symbols, the sort symbol and the earlier constructors'
+ * symbols; generated marks the modifier's squash constructor. */
+typedef struct {
+    /* experimental marked signatures admitted while H1 was under review; since
+     * its release none is, and the field is always false (ABI 3 keeps it). */
+    bool admitted, experimental;
+    uint32_t modifier, sort_symbol, level_count, parameter_count, constructor_count, recorded;
+    cc_term former, level;
+} cc_signature_info;
+typedef struct {
+    uint32_t symbol, data, positions, dimensions;
+    cc_term type;
+    bool generated;
+} cc_constructor_info;
+size_t cc_kernel_signature_count(const cc_kernel *);
+bool cc_kernel_signature(const cc_kernel *, uint32_t index, cc_signature_info *);
+uint32_t cc_kernel_signature_symbol(const cc_kernel *, uint32_t index, uint32_t position);
+bool cc_kernel_signature_constructor(const cc_kernel *, uint32_t index, uint32_t constructor,
+                                     cc_constructor_info *);
 
 /* Clear a rejected request before constructing corrected raw syntax. */
 void cc_kernel_clear_error(cc_kernel *);
@@ -425,83 +486,52 @@ bool cc_kernel_commit_checkpoint(cc_kernel *);
 cc_term cc_kernel_relocated(const cc_kernel *, cc_term);
 
 /* Child order:
- * U(level) with payload zero; Var(symbol); Pi/Lam/Sigma/W(symbol; domain, body).
+ * U(level) with payload zero; Var(symbol); Pi/Lam/Sigma(symbol; domain, body).
  * Levels: LConst(tier * 65536 + n) is the constant ω·tier + n; LSucc(n; level)
  * is level + n, for n ≥ 1; LMax(level, level); a level variable is a Var.
  * LBound(tier) is a level binder's bound ω·tier, and the type of a level
  * entry; LPi/LLam(symbol; bound, body) and LApp(function, level) are level
  * quantification, Π (x < ω). B, λ (x < ω). t and f {l}. Only the bound ω,
  * LBound(1), is admitted.
- * App(fn,arg); Pair(type,first,second); Fst/Snd(pair); Succ(value).
- * NatRec(motive,zero,step,value).
+ * App(fn,arg); Pair(type,first,second); Fst/Snd(pair).
  * Path(dimension; family,left,right); PLam(dimension; family,body).
  * PApp(formula; path); Comp(dimension; family,tubes,base).
  * Tube(face-formula; partial-term,next-tube), with zero terminating the list.
- * Abort(type,impossible); Sup(W-type,label,children); WRec(motive,step,value).
+ * Abort(type,impossible).
  * Sum(left,right); Inl/Inr(sum-type,value); SumRec(motive,left,right,value).
  * UnitRec(motive,point-case,value).
  * Glue(base,system); GlueSystem(face-formula; partial-type,equivalence,next).
  * GlueTerm(Glue-type,base-value,partial-tubes); Unglue(Glue-type,value).
- * Pushout(center,left,right,maps), maps : (center -> left) x (center -> right).
- * PushLeft/PushRight(pushout,value); PushPath(interval-formula; pushout,value).
- * PushElim(motive,left-case,right-case,bridge-case) is a function on the pushout.
- * HComp(dimension; pushout-type,tubes,base) binds only tube terms.
- * Trans(dimension; pushout-family,face-tube,base) binds only the family.
+ * HComp(dimension; higher-sort-type,tubes,base) binds only tube terms.
+ * Trans(dimension; higher-sort-family,face-tube,base) binds only the family.
  * Trans's single face-tube stores phi; its term is discarded and rebuilt as base.
  * DefRef(registry-index) refers only to a previously checked definition.
- * Nat/Zero/Unit/Point/Void have no children. Missing children must be zero.
- * The checker discards an untrusted PApp's optional second child (annotation).
+ * Declared types (H1): Sort(signature-index; parameters, recorded-levels),
+ * each a List(item, next) with zero terminating it, both absent for a
+ * signature's own sort; Con(constructor-number; instance). Elim is F5's.
+ * Unit/Point/Void have no children. Missing children must be zero.
+ * The retired Nat/Zero/Succ/NatRec/W/Sup/WRec slots are refused.
+ * A PApp's optional second child is its path's type, which the instructions
+ * record; raw syntax may omit it.
  */
 cc_term cc_kernel_term(cc_kernel *, cc_term_kind, uint32_t payload,
                        cc_term a, cc_term b, cc_term c, cc_term d);
 cc_formula_id cc_kernel_formula(cc_kernel *, const cc_formula *);
 
-/* ---- Untrusted elaboration services -------------------------------------
- * The term checker below elaborates raw syntax, reconstructing annotations and
- * splitting faces, and answers the elaborator's queries. Nothing it accepts
- * is a definition the instruction kernel will use: instruction Lookup refuses
- * its definitions, and the instructions never consult it.
- *
- * Ordered assumptions are themselves checked as a telescope. An expected type
- * of zero requests inference only. On failure, result is cleared. No old
- * production-kernel handle or axiom fallback can be supplied through this API. */
-bool cc_kernel_check(cc_kernel *, cc_term, cc_term expected,
-                     const cc_assumption *, size_t count, cc_checked_result *);
-
-/* Check under named interval dimensions (bit d enables dimension d).
- * Assumption types may depend on those dimensions. No endpoints are sampled:
- * ordinary cubical rules check the whole open cube. The result remains open
- * in this telescope/cube and is not a closed definition certificate. */
-bool cc_kernel_check_in_cube(cc_kernel *, cc_term, cc_term expected,
-                             const cc_assumption *, size_t count,
-                             uint64_t dimensions, cc_checked_result *);
-
-/* Optional conversion strategy for the term checker, never a typing
- * certificate, and outside the trusted kernel: no instruction reads it.
- * References must belong to this kernel's checked definition registry. Listed definitions
- * unfold in a preliminary comparison; count zero clears the strategy. The list
- * applies to check/define operations until replaced. Invalid input preserves
- * the prior list. Clear after a scoped hint even when a check is rejected. */
-bool cc_kernel_set_unfolding_hints(cc_kernel *, const cc_term *references, size_t count);
-
-/* The term checker's own definition, checked using only earlier checked
- * references, for its checks alone: it is not admitted, and instruction
- * Lookup refuses it. Admit a definition by instruction Define instead.
- * A symbol may be registered once. On failure no definition is published.
- * The returned expression is a folded DefRef, never an assumed axiom. */
-cc_term cc_kernel_define(cc_kernel *, uint32_t symbol, cc_term value, cc_term expected_type);
+/* A definition Define admitted: its symbol, its value and its type. */
 bool cc_kernel_definition(const cc_kernel *, cc_term reference, uint32_t *symbol,
                           cc_term *value, cc_term *type);
 /* Expose only the demanded head. Like normalize, this is inspection only:
- * it accepts raw syntax but does not certify it, including under free names. */
+ * it computes on syntax and certifies nothing, including under free names. */
 cc_term cc_kernel_whnf(cc_kernel *, cc_term);
 
-/* Explicit inspection reduction. Checking itself leaves terms compact.
- * This function does not certify a raw term; pass a successful checked handle. */
+/* Explicit inspection reduction. Derivations leave terms compact. This
+ * certifies nothing; pass a term an instruction derived, whose reduction
+ * terminates. */
 cc_term cc_kernel_normalize(cc_kernel *, cc_term);
 
 /* Read-only inspection of inert syntax. It does not assert that a handle was
- * checked; callers should start from the handles in a successful result. */
+ * derived; callers should start from the handles of a judgement. */
 bool cc_kernel_node(const cc_kernel *, cc_term, cc_term_kind *, uint32_t *, cc_term children[4]);
 const cc_formula *cc_kernel_get_formula(const cc_kernel *, cc_formula_id);
 

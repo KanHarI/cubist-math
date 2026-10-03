@@ -144,7 +144,7 @@ def order_path_collapse(
 
 def partial_order_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le)) :
   FieldSet(A) {
-  have constant :
+  let constant :
     forall x : A. forall y : A. forall p : x = y. forall q : x = y.
     order_path_collapse(A, le, laws, x, y, p) = order_path_collapse(A, le, laws, x, y, q) {
     intro x, y, p, q;

@@ -273,20 +273,21 @@ def convolution_assoc_step(
   let first := mul(mul(f(0), g(0)), h(succ(n)));
   let middle := convolution(K, n, tg, h);
   let last := convolution(K, n, tf, series_mul(K, g, h));
-  have rest : convolution(K, n, series_tail(K, series_mul(K, f, g)), h) = add(
+  let rest : convolution(K, n, series_tail(K, series_mul(K, f, g)), h) = add(
     mul(f(0), middle), last
-  ) := trans(
-    cong((fun (s : FormalSeries(K)) => convolution(K, n, s, h)), series_mul_tail(K, f, g)),
+  ) :=
     trans(
-      convolution_add_left(K, n, series_scale(K, f(0), tg), series_mul(K, tf, g), h),
+      cong((fun (s : FormalSeries(K)) => convolution(K, n, s, h)), series_mul_tail(K, f, g)),
       trans(
-        cong(
-          (fun (a : A) => add(a, convolution(K, n, series_mul(K, tf, g), h))),
-          convolution_scale_left(K, f(0), n, tg, h)
-        ), cong(add(mul(f(0), middle)), previous(tf, g, h))
+        convolution_add_left(K, n, series_scale(K, f(0), tg), series_mul(K, tf, g), h),
+        trans(
+          cong(
+            (fun (a : A) => add(a, convolution(K, n, series_mul(K, tf, g), h))),
+            convolution_scale_left(K, f(0), n, tg, h)
+          ), cong(add(mul(f(0), middle)), previous(tf, g, h))
+        )
       )
-    )
-  );
+    );
   exact trans(
     cong(add(first), rest),
     trans(

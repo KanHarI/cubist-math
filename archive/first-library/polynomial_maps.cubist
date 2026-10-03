@@ -44,7 +44,7 @@ def polynomial_map_cutoff(K, L : AlgebraicField, e : FieldEmbedding(K, L), p : P
   let n := polynomial_cutoff(K, p);
   let m := polynomial_cutoff(L, q);
   obtain (zero, one, neg, add, mul) := field_embedding_preserves(K, L, e);
-  have reflected : SeriesSupport(K, polynomial_coefficients(K, p), m) {
+  let reflected : SeriesSupport(K, polynomial_coefficients(K, p), m) {
     intro j, above;
     exact field_embedding_injective(
       K, L, e, polynomial_coefficients(K, p, j), field_zero(K),
@@ -76,7 +76,7 @@ def polynomial_map_constant(K, L : AlgebraicField, e : FieldEmbedding(K, L), a :
   ) {
   let f := field_embedding_map(K, L, e);
   obtain (zero, one, neg, add, mul) := field_embedding_preserves(K, L, e);
-  have coefficient : forall j : Nat. f(series_constant(K, a, j)) = series_constant(L, f(a), j) {
+  let coefficient : forall j : Nat. f(series_constant(K, a, j)) = series_constant(L, f(a), j) {
     intro j;
     exact induction j as k return (f(series_constant(K, a, k)) = series_constant(L, f(a), k)) {
       zero => refl(f(a));
@@ -156,7 +156,7 @@ def polynomial_map_shift(K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Po
   obtain (zero, one, neg, add, mul) := field_embedding_preserves(K, L, e);
   let f := field_embedding_map(K, L, e);
   let a := polynomial_coefficients(K, p);
-  have coefficient :
+  let coefficient :
     forall j : Nat. f(series_shift(K, a, j)) = series_shift(L, (fun (i : Nat) => f(a(i))), j) {
     intro j;
     exact induction j as k return (

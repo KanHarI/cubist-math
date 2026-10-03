@@ -6,15 +6,18 @@ export class CubicalDeclarationTransaction {
     this.checker = checker;
     this.sizes = new Map([
       [kernel.definitions,kernel.definitions.size],
+      // Signature indices survive a commit and are freed by a rollback.
+      [kernel.signatures,kernel.signatures.size],
       [checker.definitionViews,checker.definitionViews.size],
       [checker.genericDefinitions,checker.genericDefinitions.size],
+      [checker.definitionExtensions,checker.definitionExtensions.size],
+      [checker.inductives,checker.inductives.size],
       [checker.scopeDefinitions,checker.scopeDefinitions.size],
       [checker.assumptions,checker.assumptions.size],
       [checker.assumptionLabels,checker.assumptionLabels.size],
       [checker.assumptionOrigins,checker.assumptionOrigins.size],
       [checker.libraryAssumptions,checker.libraryAssumptions.size],
     ]);
-    this.hints = [...kernel.unfoldingHints];
     kernel.module._cb_checkpoint(kernel.handle);
     this.active = true;
   }
@@ -36,8 +39,6 @@ export class CubicalDeclarationTransaction {
       kernel.module._cb_rollback(kernel.handle);
       for (const collection of this.sizes.keys())
         for (const key of this.added(collection)) collection.delete(key);
-      kernel.unfoldingHints = [];
-      if (this.hints.length) kernel.setUnfoldingHints(this.hints);
     }
     checker.syntax.reset();
     // Its judgements were truncated with the checkpoint, and handles moved.

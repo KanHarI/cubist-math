@@ -1,6 +1,8 @@
+import nat;
+
 // RadixDigit(n) has n inhabitants. Its leftmost alternative has value n-1;
 // this ordering makes increment and overflow structural, with no comparison.
-def RadixDigit(n : Nat) := induction n as k return U0 {
+def RadixDigit(n : Nat) := induction n return U0 {
     zero => Void;
     succ previous => Unit or previous;
   };
@@ -42,53 +44,42 @@ def radix_digit_succ(n : Nat) : RadixDigit(n) -> (RadixDigit(n) or Unit) {
 }
 
 // The parameter extra denotes radix extra+2, ensuring radix at least two.
-// Leaves supply the nonzero leading digit; unary nodes append any radix digit.
-def RadixLabel(extra : Nat) := RadixDigit(succ(extra)) or RadixDigit(succ(succ(extra)));
+// A positive numeral is its nonzero leading digit, then each appended digit,
+// the last digit outermost.
+inductive RadixPositive(extra : Nat) : U0 {
+  radix_leading_digit(leading : RadixDigit(succ(extra)));
+  radix_appended_digit(digit : RadixDigit(succ(succ(extra))), child : RadixPositive(extra));
+}
 
-def RadixArity(extra : Nat, tag : RadixLabel(extra)) := match tag return U0 {
-    left leading => Void;
-    right digit => Unit;
-  };
+def radix_leading(extra : Nat, leading : RadixDigit(succ(extra))) :
+  RadixPositive(extra) := radix_leading_digit(leading);
 
-def RadixPositive(extra : Nat) := W(RadixLabel(extra), RadixArity(extra));
+def radix_append(extra : Nat, digit : RadixDigit(succ(succ(extra))), child : RadixPositive(extra)) :
+  RadixPositive(extra) := radix_appended_digit(digit, child);
 
-def radix_leading(extra : Nat, leading : RadixDigit(succ(extra))) :=
-  sup(
-    RadixPositive(extra), typed(RadixLabel(extra), left(leading)),
-    fun (v : Void) => typed(RadixPositive(extra), absurd(v))
-  );
+// Zero is separate, so every nonzero numeral starts with a nonzero digit.
+inductive RadixNat(extra : Nat) : U0 {
+  radix_nat_zero;
+  radix_nat_positive(p : RadixPositive(extra));
+}
 
-def radix_append(extra : Nat, digit : RadixDigit(succ(succ(extra))), child : RadixPositive(extra)) :=
-  sup(RadixPositive(extra), typed(RadixLabel(extra), right(digit)), fun (u : Unit) => child);
+def radix_zero(extra : Nat) : RadixNat(extra) := radix_nat_zero;
 
-def RadixNat(extra : Nat) := Unit or RadixPositive(extra);
-
-def radix_zero(extra : Nat) := typed(RadixNat(extra), left(tt));
-
-def radix_positive(extra : Nat, p : RadixPositive(extra)) := typed(RadixNat(extra), right(p));
+def radix_positive(extra : Nat, p : RadixPositive(extra)) :
+  RadixNat(extra) := radix_nat_positive(p);
 
 def radix_one(extra : Nat) := radix_leading(extra, radix_digit_zero(extra));
 
 def radix_positive_rec(
   extra : Nat, R : U0, leading : RadixDigit(succ(extra)) -> R, digit : RadixDigit(succ(succ(extra)))
   -> RadixPositive(extra) -> R -> R, p : RadixPositive(extra)
-) :=
-  wrec(
-    RadixPositive(extra), fun (tree : RadixPositive(extra)) => R,
-    fun (
-      tag : RadixLabel(extra), children : RadixArity(extra, tag) -> RadixPositive(extra),
-      ih : RadixArity(extra, tag) -> R
-    ) => (
-      match tag as label return (
-        (RadixArity(extra, label) -> RadixPositive(extra)) -> (RadixArity(extra, label) -> R) -> R
-      ) {
-        left first => fun (f : Void -> RadixPositive(extra), h : Void -> R) => leading(first);
-        right next => fun (f : Unit -> RadixPositive(extra), h : Unit -> R) => digit(
-          next, f(tt), h(tt)
-        );
-      }
-    )(children, ih), p
-  );
+) :
+  R := match p {
+    radix_leading_digit(first) => leading(first);
+    radix_appended_digit(next, child) => digit(
+      next, child, radix_positive_rec(extra, R, leading, digit, child)
+    );
+  };
 
 def radix_positive_cases(
   extra : Nat, R : U0, leading : RadixDigit(succ(extra)) -> R, digit : RadixDigit(succ(succ(extra)))

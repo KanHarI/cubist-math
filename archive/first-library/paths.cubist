@@ -1,3 +1,5 @@
+import nat;
+
 // Cubical path foundations. Reversal and function action are pointwise;
 // composition and its laws use checked square and cube fillings.
 def inverse(U < UU0, A : U, x, y : A, p : x = y) := sym(p);

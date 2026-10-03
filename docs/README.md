@@ -11,6 +11,8 @@ Moving these documents does not change their recorded status or resume paused wo
 - [Work plan](roadmaps/work-plan.md): staged, dependency-ordered work across the
   language, its kernel support and the language reference. Broad mathematical
   rebuilding is deferred.
+- [Work-plan audit of 2026-09-28](roadmaps/audits/2026-09-28-audit.md): the
+  baseline revision and findings behind the current statuses.
 - [Historical plans and specifications](roadmaps/historical/README.md):
   completed work, including the implemented G0 universe specification.
 - [Results of the first library](library-results.md): the frontier and iconic
@@ -21,12 +23,25 @@ Moving these documents does not change their recorded status or resume paused wo
     (kernel);
   - [theories and inductive declarations](roadmaps/inductive-language-features.md)
     (language).
+- Released specifications:
+  - [H1 signatures](roadmaps/h1-signature-specification.md): one-sort data and
+    higher inductive types, their soundness note, and the truncation and
+    resizing policy. Released on 2026-10-02 after review of its model,
+    critical pairs and canonicity: declared types are on by default, with no
+    experimental option or marker. Nat, W and pushouts are source
+    declarations; see the [migration record](roadmaps/h1-program-types.md)
+    for the current behavior, validation and limits of the historical
+    comparison fixtures, and the [history](roadmaps/h1-history.md) for the
+    release checklist, the review rounds and the retired differential
+    contract.
 - The trusted kernel:
   [kernel instructions](roadmaps/kernel-instructions.md), the THTH-style
   forward kernel with every search decision in an untrusted driver, merged
   on 2026-09-26. Every later kernel item is a set of instructions; the
   [work plan](roadmaps/work-plan.md#the-instruction-kernel-and-this-plan)
-  records what that changes.
+  records what that changes. The audit of 2026-09-28 found the separation
+  from the old conversion checker incomplete; work-plan I1.2a corrected it
+  the same day.
 - Experimental designs:
   - [learned search](roadmaps/learned-search.md): a small policy and value
     network, trained against that kernel, for cheaper derivations.
@@ -54,22 +69,26 @@ finishing a language milestone does not automatically resume them.
 - [Simplification and shorter proofs](roadmaps/proof-ergonomics-roadmap.md):
   - Delivered: rewriting, calculations, `simp`/`simpa` and cubical path
     syntax, dependency tracking, `computable` and exact-value `evaluate`.
-  - Remaining: argument inference, theories, inductive declarations with
-    pattern matching, expected-value patterns and closed truncation readout.
+  - Remaining: argument inference, theories, the rest of inductive
+    declarations with pattern matching (one-sort declarations and explicit
+    `match` are experimental), expected-value patterns and closed
+    truncation readout.
   - See the [implementation plan](roadmaps/proof-ergonomics-implementation-plan.md)
     and [checked/proposed examples](examples/proof-ergonomics/README.md).
 - [HoTT and cubical proof automation](roadmaps/hott-automation-roadmap.md):
   - Delivered: A7 (baseline, regressions and canonicity fixture), the A5
-    goal-layer core, and A4/A6 deterministic fuel with residual-goal
-    diagnostics; see the
+    goal-layer core, A4/A6 deterministic fuel with residual-goal
+    diagnostics, D0a's h-level definitions and the first slice of D1's
+    `hlevel` solver; see the
     [checkpoint](tactical/hott-automation-handoff.md).
   - Planned: remaining goal-layer work, path operations,
-    path induction, transport, h-levels, dependent
+    path induction, transport, the rest of the h-level solver, dependent
     paths, structure identity and transfer.
 - [Kernel extensions for computation](roadmaps/cubical-kernel-roadmap.md):
-  G0 (universe-generic checking) delivered; H1–H4 (inductive signatures) and
-  optional extensions planned, under the requirement that computability is expressible and
-  preserved. Its [conversion probes](examples/hott-automation/README.md)
+  G0 (universe-generic checking) delivered; H1 (inductive signatures)
+  enabled by default with its mathematical review pending; H2–H4 and optional
+  extensions planned, under the requirement that computability is
+  expressible and preserved. Its [conversion probes](examples/hott-automation/README.md)
   record what the kernel already computes and which laws it rejects.
 
 ## Other sections
@@ -78,7 +97,7 @@ finishing a language milestone does not automatically resume them.
 - [Tactical notes](tactical/README.md): handoffs, implementation details, and checked proof developments.
 - Guides: [CLI](guides/cli.md), [kernel](guides/kernel.md), and [deployment](guides/deployment.md).
 - [Cubical implementation notes](cubical/): kernel constructions, performance, browser integration, and migration history. Start with the [benchmark](cubical/benchmark.md) and [checking optimizations](cubical/checking-optimizations.md) for performance work.
-- [Language reference](../web/language.html): current user-facing syntax. The [older language design notes](guides/mathscript.md) are historical.
+- [Language reference](../web/language.html): current user-facing syntax. The [older language design notes](guides/cubist.md) are historical.
 
 When handing off work, record what was checked, its assumptions and limitations,
 the commands used to verify it, and the next unfinished obligation. Update both

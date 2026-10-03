@@ -1,3 +1,4 @@
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -44,7 +45,7 @@ test("quotient universal property works for genuinely U1 targets without represe
       let projection := quotient_projection(G, S, normal);
       let descended := quotient_descend_hom(G, Q, projection, S, normal, quotient_projection_kills(G, S, normal));
       let identity := group_hom_identity_at(U1, Q);
-      have right : group_hom_compose_at(U1, group_lift(G), Q, Q, projection, identity) = projection {
+      let right : group_hom_compose_at(U1, group_lift(G), Q, Q, projection, identity) = projection {
         exact group_hom_ext_at(U1, group_lift(G), Q, group_hom_compose_at(U1, group_lift(G), Q, Q, projection, identity), projection,
           (fun (x : group_carrier(G)) => refl(left_coset(G, S, x))));
       }

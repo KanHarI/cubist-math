@@ -1,6 +1,6 @@
-/* Browser boundary for the independent cubical checker.
- * Syntax handles are not proofs. Only cb_check returns a checked judgement;
- * normalization is a separate, explicit inspection operation. */
+/* Browser boundary for the cubical kernel. Syntax handles are not proofs:
+ * only an instruction (cb_instr) derives a judgement, and normalization is a
+ * separate, explicit inspection operation. */
 #include "cubical_kernel.h"
 #include <stdlib.h>
 #include <string.h>
@@ -8,14 +8,9 @@
 typedef struct {
     cc_kernel *kernel;
     uint32_t token;
-    cc_assumption *context;
-    size_t count, capacity;
-    cc_term *unfolding;
-    size_t unfolding_count, unfolding_capacity;
     cc_formula formula;
     bool formula_open;
     const char *error;
-    cc_checked_result checked;
     uint8_t position[1024]; /* the highlighted position of the next step or replacement */
     size_t depth;
 } browser_session;
@@ -53,8 +48,6 @@ void cb_free(uint32_t token) {
     if (!s) return;
     cc_kernel_free(s->kernel);
     cc_clear(&s->formula);
-    free(s->context);
-    free(s->unfolding);
     *s = (browser_session){0};
 }
 
@@ -80,29 +73,6 @@ uint32_t cb_mismatch(uint32_t token, unsigned side) {
     return side ? expected : found;
 }
 
-/* The checker's trace (cubical_kernel.h), for inspection: a capacity starts
- * it and zero stops it. An event's fields are 0 kind, 1 depth, 2 a, 3 b, 4 c. */
-bool cb_trace(uint32_t token, uint32_t capacity) {
-    browser_session *s = lookup(token);
-    if (!s) return false;
-    if (!capacity) { cc_kernel_trace_stop(s->kernel); return true; }
-    return cc_kernel_trace_start(s->kernel, capacity);
-}
-
-uint32_t cb_trace_count(uint32_t token) {
-    browser_session *s = lookup(token);
-    size_t count = s ? cc_kernel_trace_count(s->kernel) : 0;
-    return count > UINT32_MAX ? UINT32_MAX : (uint32_t)count;
-}
-
-uint32_t cb_trace_event(uint32_t token, uint32_t index, unsigned field) {
-    browser_session *s = lookup(token);
-    cc_trace_event event;
-    if (!s || field > 4 || !cc_kernel_trace_event(s->kernel, index, &event)) return 0;
-    const uint32_t fields[] = { event.kind, event.depth, event.a, event.b, event.c };
-    return fields[field];
-}
-
 void cb_optimizations(uint32_t token, unsigned flags) {
     browser_session *s = lookup(token);
     if (s) cc_kernel_set_optimizations(s->kernel, flags);
@@ -116,18 +86,13 @@ void cb_rollback(uint32_t token) {
     browser_session *s = lookup(token);
     if (!s) return;
     cc_kernel_rollback(s->kernel);
-    s->count = 0; s->unfolding_count = 0; s->error = NULL;
-    memset(&s->checked, 0, sizeof s->checked);
+    s->error = NULL;
 }
 
 int cb_commit_checkpoint(uint32_t token) {
     browser_session *s = lookup(token);
     if (!s) return 0;
-    s->count = 0; memset(&s->checked, 0, sizeof s->checked);
-    if (!cc_kernel_commit_checkpoint(s->kernel)) return 0;
-    for (size_t i = 0; i < s->unfolding_count; ++i)
-        s->unfolding[i] = cc_kernel_relocated(s->kernel, s->unfolding[i]);
-    return 1;
+    return cc_kernel_commit_checkpoint(s->kernel) ? 1 : 0;
 }
 cc_term cb_relocated(uint32_t token, cc_term term) {
     browser_session *s = lookup(token);
@@ -155,36 +120,6 @@ double cb_work(uint32_t token, unsigned field) {
     const uint64_t fields[] = { w.instructions, w.rejected, w.instruction_steps, w.queries,
                                 w.failed_queries, w.query_steps, w.exhausted, w.deadlines };
     return (double)fields[field];
-}
-
-/* Strategy hints contain only references already checked in this session.
- * They choose reduction order; every requested conversion is still checked. */
-int cb_unfolding_clear(uint32_t token) {
-    browser_session *s = lookup(token);
-    if (!s) return 0;
-    cc_kernel_clear_error(s->kernel); s->error = NULL;
-    if (!cc_kernel_set_unfolding_hints(s->kernel, NULL, 0)) return 0;
-    s->unfolding_count = 0;
-    return 1;
-}
-
-int cb_unfolding_add(uint32_t token, cc_term reference) {
-    browser_session *s = lookup(token);
-    if (!s) return 0;
-    cc_kernel_clear_error(s->kernel); s->error = NULL;
-    if (s->unfolding_count == s->unfolding_capacity) {
-        size_t capacity = s->unfolding_capacity ? s->unfolding_capacity * 2 : 8;
-        if (capacity < s->unfolding_capacity || capacity > SIZE_MAX / sizeof(cc_term)) {
-            s->error = "Conversion hint capacity overflow."; return 0;
-        }
-        cc_term *grown = realloc(s->unfolding, capacity * sizeof(cc_term));
-        if (!grown) { s->error = "Conversion hint allocation failed."; return 0; }
-        s->unfolding = grown; s->unfolding_capacity = capacity;
-    }
-    s->unfolding[s->unfolding_count] = reference;
-    if (!cc_kernel_set_unfolding_hints(s->kernel, s->unfolding, s->unfolding_count + 1)) return 0;
-    ++s->unfolding_count;
-    return 1;
 }
 
 uint32_t cb_term(uint32_t token, unsigned kind, uint32_t payload,
@@ -232,50 +167,6 @@ uint32_t cb_formula_end(uint32_t token) {
     return cc_kernel_formula(s->kernel, &s->formula);
 }
 
-void cb_context_clear(uint32_t token) {
-    browser_session *s = lookup(token);
-    if (s) s->count = 0;
-}
-
-int cb_context_add(uint32_t token, uint32_t symbol, uint32_t type) {
-    browser_session *s = lookup(token);
-    if (!s) return 0;
-    if (s->count == s->capacity) {
-        size_t capacity = s->capacity ? s->capacity * 2 : 16;
-        if (capacity < s->capacity || capacity > SIZE_MAX / sizeof(cc_assumption)) return 0;
-        cc_assumption *context = realloc(s->context, capacity * sizeof(*context));
-        if (!context) { s->error = "Could not allocate cubical context."; return 0; }
-        s->context = context;
-        s->capacity = capacity;
-    }
-    s->context[s->count++] = (cc_assumption){symbol, type};
-    return 1;
-}
-
-int cb_check_in_cube(uint32_t token, uint32_t term, uint32_t expected,
-                     uint32_t dimensions_low, uint32_t dimensions_high) {
-    browser_session *s = lookup(token);
-    if (!s) return 0;
-    s->error = NULL;
-    s->checked = (cc_checked_result){0};
-    uint64_t dimensions = ((uint64_t)dimensions_high << 32) | dimensions_low;
-    return cc_kernel_check_in_cube(s->kernel, term, expected, s->context,
-                                   s->count, dimensions, &s->checked);
-}
-
-int cb_check(uint32_t token, uint32_t term, uint32_t expected) {
-    return cb_check_in_cube(token, term, expected, 0, 0);
-}
-
-uint32_t cb_define(uint32_t token, uint32_t symbol, uint32_t value, uint32_t expected) {
-    browser_session *s = lookup(token);
-    if (!s) return 0;
-    s->error = NULL;
-    cc_kernel_clear_error(s->kernel);
-    s->checked = (cc_checked_result){0};
-    return cc_kernel_define(s->kernel, symbol, value, expected);
-}
-
 uint32_t cb_definition(uint32_t token, uint32_t reference, unsigned field) {
     browser_session *s = lookup(token);
     uint32_t symbol;
@@ -292,31 +183,9 @@ uint32_t cb_head(uint32_t token, uint32_t term) {
     return cc_kernel_whnf(s->kernel, term);
 }
 
-double cb_result(uint32_t token, unsigned field) {
-    browser_session *s = lookup(token);
-    if (!s) return 0;
-    switch (field) {
-    case 0: return s->checked.expression;
-    case 1: return s->checked.type;
-    case 2: return s->checked.normal;
-    case 3: return (double)s->checked.checking_steps;
-    case 4: return (double)s->checked.reduction_steps;
-    case 5: return (double)s->checked.arena_nodes;
-    case 6: return (double)s->checked.arena_bytes;
-    default: return 0;
-    }
-}
-
-uint32_t cb_normalize(uint32_t token, uint32_t term) {
-    browser_session *s = lookup(token);
-    if (!s || !term || (term != s->checked.expression && term != s->checked.type && term != s->checked.normal)) return 0;
-    cc_kernel_clear_error(s->kernel);
-    return cc_kernel_normalize(s->kernel, term);
-}
-
 /* A term the page derived by instructions, and so knows to be well typed:
  * the page keeps that list; the kernel only computes. */
-uint32_t cb_normalize_derived(uint32_t token, uint32_t term) {
+uint32_t cb_normalize(uint32_t token, uint32_t term) {
     browser_session *s = lookup(token);
     if (!s || !term) return 0;
     cc_kernel_clear_error(s->kernel);
@@ -376,10 +245,6 @@ uint32_t cb_instr(uint32_t token, unsigned op, uint32_t a, uint32_t b, uint32_t 
     cc_kernel *k = s->kernel;
     switch (op) {
     case CC_INSTR_UNIVERSE: return cc_instr_universe(k, a);
-    case CC_INSTR_NAT: return cc_instr_nat(k);
-    case CC_INSTR_ZERO: return cc_instr_zero(k);
-    case CC_INSTR_SUCC: return cc_instr_succ(k, a);
-    case CC_INSTR_NAT_ELIM: return cc_instr_nat_elim(k, a, b, c, d);
     case CC_INSTR_UNIT: return cc_instr_unit(k);
     case CC_INSTR_POINT: return cc_instr_point(k);
     case CC_INSTR_UNIT_ELIM: return cc_instr_unit_elim(k, a, b, c);
@@ -418,13 +283,6 @@ uint32_t cb_instr(uint32_t token, unsigned op, uint32_t a, uint32_t b, uint32_t 
     case CC_INSTR_SYSTEM_TUBE: return cc_instr_system_tube(k, a, b, c, d);
     case CC_INSTR_COMP: return cc_instr_comp(k, a);
     case CC_INSTR_SYSTEM_OVERLAP: return cc_instr_system_overlap(k, a, b, c);
-    case CC_INSTR_PUSHOUT: return cc_instr_pushout(k, a, b, c, d);
-    case CC_INSTR_PUSH_POINT: return cc_instr_push_point(k, a, b, c != 0);
-    case CC_INSTR_PUSH_PATH: return cc_instr_push_path(k, a, b, c);
-    case CC_INSTR_PUSH_ELIM: return cc_instr_push_elim(k, a, b, c, d);
-    case CC_INSTR_W: return cc_instr_w(k, a, b);
-    case CC_INSTR_SUP: return cc_instr_sup(k, a, b, c);
-    case CC_INSTR_W_ELIM: return cc_instr_w_elim(k, a, b, c);
     case CC_INSTR_HCOMP: return cc_instr_hcomp(k, a);
     case CC_INSTR_TRANS: return cc_instr_trans(k, a, b);
     case CC_INSTR_GLUE_BASE: return cc_instr_glue_base(k, a);
@@ -441,19 +299,26 @@ uint32_t cb_instr(uint32_t token, unsigned op, uint32_t a, uint32_t b, uint32_t 
     case CC_INSTR_LEVEL_PI: return cc_instr_level_pi(k, a, b);
     case CC_INSTR_LEVEL_LAMBDA: return cc_instr_level_lambda(k, a, b);
     case CC_INSTR_LEVEL_APPLY: return cc_instr_level_apply(k, a, b);
+    /* Declared types (H1): SignatureBegin(former, modifier, sort symbol,
+     * recorded mask); SignatureConstructor(signature, type, symbol);
+     * SignatureClose(signature) gives the signature's index. */
+    case CC_INSTR_SIGNATURE_BEGIN: return cc_instr_signature_begin(k, a, b, c, d);
+    case CC_INSTR_SIGNATURE_CONSTRUCTOR: return cc_instr_signature_constructor(k, a, b, c);
+    case CC_INSTR_SIGNATURE_CLOSE: return cc_instr_signature_close(k, a);
+    /* SortBegin(signature index); SortLevel(instance, level term);
+     * SortParameter(instance, parameter); Construct(instance, constructor). */
+    case CC_INSTR_SORT_BEGIN: return cc_instr_sort_begin(k, a);
+    case CC_INSTR_SORT_LEVEL: return cc_instr_sort_level(k, a, b);
+    case CC_INSTR_SORT_PARAMETER: return cc_instr_sort_parameter(k, a, b);
+    case CC_INSTR_CONSTRUCT: return cc_instr_construct(k, a, b);
+    /* Eliminator(motive); EliminatorClause(eliminator, clause);
+     * EliminatorClose(eliminator). */
+    case CC_INSTR_ELIMINATOR: return cc_instr_eliminator(k, a);
+    case CC_INSTR_ELIMINATOR_CLAUSE: return cc_instr_eliminator_clause(k, a, b);
+    case CC_INSTR_ELIMINATOR_CLOSE: return cc_instr_eliminator_close(k, a);
     }
     s->error = "Unknown instruction.";
     return 0;
-}
-
-/* 1 when the term checker's conversion finds the terms equal, 0 when not,
- * 2 when it could not tell (its error is cleared): a search aid only. */
-unsigned cb_convertible(uint32_t token, uint32_t a, uint32_t b, uint32_t steps) {
-    browser_session *s = lookup(token);
-    if (!s) return 2;
-    bool equal = cc_kernel_convertible(s->kernel, a, b, steps);
-    if (cc_kernel_error_kind(s->kernel) != CC_ERROR_NONE) { cc_kernel_clear_error(s->kernel); return 2; }
-    return equal ? 1 : 0;
 }
 
 /* The syntax services below return 0 on failure and leave the kernel's
@@ -520,6 +385,35 @@ uint32_t cb_entry_count(uint32_t token) {
     browser_session *s = lookup(token);
     size_t count = s ? cc_kernel_entry_count(s->kernel) : 0;
     return count > UINT32_MAX ? UINT32_MAX : (uint32_t)count;
+}
+
+/* Kernel extensions (CC_EXTENSION_H1), on by default since H1's release. */
+void cb_extensions(uint32_t token, unsigned flags) {
+    browser_session *s = lookup(token);
+    if (s) cc_kernel_set_extensions(s->kernel, flags);
+}
+
+/* A signature's fields: 0 admitted, 1 experimental, 2 modifier, 3 sort
+ * symbol, 4 universe parameters, 5 term parameters, 6 constructors,
+ * 7 recorded mask, 8 former, 9 level; 10 + i its i-th parameter symbol. */
+uint32_t cb_signature(uint32_t token, uint32_t index, uint32_t field) {
+    browser_session *s = lookup(token);
+    cc_signature_info g;
+    if (!s || !cc_kernel_signature(s->kernel, index, &g)) return 0;
+    if (field >= 10) return cc_kernel_signature_symbol(s->kernel, index, field - 10);
+    const uint32_t fields[] = {g.admitted, g.experimental, g.modifier, g.sort_symbol, g.level_count,
+                               g.parameter_count, g.constructor_count, g.recorded, g.former, g.level};
+    return fields[field];
+}
+
+/* A constructor's fields: 0 symbol, 1 data, 2 positions, 3 dimensions,
+ * 4 type, 5 generated. */
+uint32_t cb_signature_constructor(uint32_t token, uint32_t index, uint32_t constructor, unsigned field) {
+    browser_session *s = lookup(token);
+    cc_constructor_info c;
+    if (!s || field > 5 || !cc_kernel_signature_constructor(s->kernel, index, constructor, &c)) return 0;
+    const uint32_t fields[] = {c.symbol, c.data, c.positions, c.dimensions, c.type, c.generated};
+    return fields[field];
 }
 
 /* Fields: 0 symbol (a dimension's index), 1 type, 2 dimension, 3 source. */

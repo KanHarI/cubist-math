@@ -1,0 +1,47 @@
+// The H1 release fixture (docs/roadmaps/h1-signature-specification.md,
+// 10.8; the work plan's stage 2): the circle as a declared higher inductive
+// type, the integers as a declared data type, and the loop's winding number
+// computed by transport along univalence. Everything here computes: each
+// equation holds by rfl, and each evaluate reads a closed normal form.
+// Check it with the experimental option: node cli/repl.mjs --experimental=h1 check docs/examples/h1/winding.cubist
+import equivalence_from_inverse;
+inductive N { zero; succ(n : N); }
+inductive Int { pos(n : N); negsucc(n : N); }
+
+def succ_int(z : Int) : Int := match z {
+  pos(n) => pos(succ(n));
+  negsucc(n) => match n { zero => pos(zero); succ(m) => negsucc(m); };
+};
+def pred_int(z : Int) : Int := match z {
+  pos(n) => match n { zero => negsucc(zero); succ(m) => pos(m); };
+  negsucc(n) => negsucc(succ(n));
+};
+def pred_succ(z : Int) : pred_int(succ_int(z)) = z := match z as w return pred_int(succ_int(w)) = w {
+  pos(n) => refl(pos(n));
+  negsucc(n) => match n as k return pred_int(succ_int(negsucc(k))) = negsucc(k) {
+    zero => refl(negsucc(zero));
+    succ(m) => refl(negsucc(succ(m)));
+  };
+};
+def succ_pred(z : Int) : succ_int(pred_int(z)) = z := match z as w return succ_int(pred_int(w)) = w {
+  pos(n) => match n as k return succ_int(pred_int(pos(k))) = pos(k) {
+    zero => refl(pos(zero));
+    succ(m) => refl(pos(succ(m)));
+  };
+  negsucc(n) => refl(negsucc(n));
+};
+def succ_equiv : Equiv(U0, Int, Int) := equiv_from_inverse(U0, Int, Int, succ_int, pred_int, pred_succ, succ_pred);
+
+inductive Circle { base; loop : base = base; }
+def code(x : Circle) : U0 := match x { base => Int; loop @ i => ua(U0, Int, Int, succ_equiv) @ i; };
+def winding(p : base = base) : Int := transport(code, base, base, p, pos(zero));
+def winding_loop : winding(loop) = pos(succ(zero)) { rfl; }
+def winding_twice : winding(trans(loop, loop)) = pos(succ(succ(zero))) { rfl; }
+def winding_back : winding(sym(loop)) = negsucc(zero) { rfl; }
+
+// The code family is ua(succ) along the loop, by computation alone.
+def code_on_loop : cong(code, loop) = ua(U0, Int, Int, succ_equiv) { rfl; }
+
+evaluate winding(loop) expecting pos(succ(zero));
+evaluate winding(trans(loop, trans(loop, loop))) expecting pos(succ(succ(succ(zero))));
+evaluate winding(trans(loop, sym(loop))) expecting pos(zero);

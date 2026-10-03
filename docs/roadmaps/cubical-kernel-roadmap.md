@@ -1,7 +1,11 @@
 # Kernel extensions for computation in Cubist
 
-Status: reviewed on 2026-09-27. G0 is delivered; H1–H4, G2's native
-truncation migration and the optional kernel extensions remain planned.
+Status: reviewed on 2026-09-28 against `02a57ef`, after the
+[work-plan audit](audits/2026-09-28-audit.md). G0 is delivered. H1 is
+implemented experimentally: its six instruction families are behind the
+`CC_EXTENSION_H1` gate with ABI version 3, its soundness review is pending,
+and its differential fixtures and G2's migration tooling are not built.
+H2–H4 and the optional kernel extensions remain planned.
 These items were split
 out of the [HoTT and cubical automation roadmap](hott-automation-roadmap.md),
 whose milestones A–F build on the existing kernel. G1–G5 keep their labels so
@@ -206,16 +210,38 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
   - clause typing through the partial eliminator;
   - the proposed semantic route.
 
-  Readable declarations are ergonomics milestone 7. The code is shared by all
-  stages; the signature checker's gate widens one stage at a time.
+  Readable declarations are ergonomics milestone 7. One code path for every
+  stage is the design's reuse goal, not the implementation contract: the
+  implemented ABI 3 represents one sort, its parameters and recorded levels,
+  and one eliminator motive, so each later stage lists its representation
+  and computation work below.
   - **H1. One sort, no indices.** Data and higher inductive types: natural
     numbers, sums, W types, pushouts, suspensions, spheres, truncation
     `Trunc`, set quotients `Quotient`.
+    - **Status (2026-09-28).** Experimental: the six families F1–F6 are
+      implemented behind the `CC_EXTENSION_H1` gate, ABI 3, with the
+      driver, one-sort `inductive` declarations and explicit `match`
+      (work-plan K2.2, K2.3, L2.1, L2.2a); the circle's winding number
+      computes in source. Review pending: D1, D4, D5, Lemma H2, the
+      critical-pair check and canonicity. Migration pending: the
+      differential fixtures X1–X8 and G2's ledger verifier. The
+      specification's [history](h1-history.md#status-and-release-record) holds
+      the release checklist and its record.
+    - **Specification.** [H1 specification](h1-signature-specification.md)
+      (K2.1 and K2.5, approved for experimental implementation): the
+      admitted signatures, generated rules, soundness note, instruction
+      families, the K2.4 representation map, and G2's truncation policy
+      with its measured migration ledger.
     - Instructions first: the signature checker and every generated rule
-      are instructions, and the driver learns to issue them.
+      are instructions, and the driver issues them.
     - The hand-coded natural-number, sum, W and pushout instructions are
-      the differential oracle. They retire only after typing, reduction and
-      composition agree on the kernel tests and on the archived library.
+      the differential oracle (K2.4a, fixtures X1–X8). By the
+      specification's 7.4 (Q16) only the `Nat` instructions retire, after
+      typing, reduction and composition agree on the kernel tests and on
+      the archived library (K2.4b); sum, W and pushout stay trusted for
+      tier-1 arguments until the tier-parametric proposal is adopted
+      (K2.4c). A mixed-tier call has no image under the translation and is
+      reported, not migrated in part.
     - Main obligation: transport along parameter lines with boundary
       correction.
   - **H2. One indexed sort.** Vectors, finite sets, well-typed syntax, and the
@@ -223,6 +249,10 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
     dedicated rules.
     - Main obligations: formal composition along varying indices, and
       stability of index-line matching under restriction to faces.
+    - Deliverables beyond the gate (work-plan K4.2): the ABI change that
+      represents indices, substitution through index lines, rollback, the
+      codec, inspection, and cross-stage regressions that keep every H1
+      case passing.
   - **H3. Several sorts, each a set or a proposition.** Quotient
     inductive-inductive types: Cauchy reals with closeness, the partiality
     monad, surreal numbers, the syntax of type theory.
@@ -230,6 +260,10 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
       partial eliminator.
     - To our knowledge no system ships this class with full computation, so
       its soundness note is new work.
+    - Deliverables beyond the gate (work-plan K5.2): the same list as H2
+      for several sorts and joint motives, and the small dependent
+      context/type interpreter as its research gate; ordinary mutual data
+      and the one-sort circle do not test H3.
   - **H4. Several sorts, some untruncated.** Adopt only for a concrete use.
   - **Trust controls at every stage.**
     - A specified fragment before implementation, and a soundness note
@@ -273,6 +307,9 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
   - Acceptance: implicit downward resizing is rejected. For each archive
     result that used resizing, the rebuild records the universe changes and
     the assumptions removed or retained, separately from LEM and choice.
+  - Status (2026-09-28): the policy is approved (specification Q12, Q17);
+    the ledger file and verifier of its 8.5 are not implemented, and no
+    archive migration is claimed. The archive keeps its legacy assumptions.
 - [ ] **G3. Superseded by H2.** An identity type with strict J computation is
   the declared family `Id(A, a) : A -> type { refl }` at H2. Its J computes on
   `refl` because transport along a varying index stays a formal composition,
@@ -315,7 +352,7 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
 | Item | Must be rejected or preserved |
 | --- | --- |
 | G0 | Bounds only in universe binders, never terms; generic statements live in `UU0` or at their body's level; instantiation only below `UU0`; level equality by normal form across tiers; symbolic cumulativity across tiers; capture-avoiding level substitution; composition at a level quantification is pointwise; instantiated closed results compute; every acceptance case passes through the instruction kernel |
-| H1–H4 | Each stage's gate opens only with its soundness note; generated rules are instructions with rejection tests; the hand-coded instructions agree with H1 before retirement; positivity, boundary, h-level and index-level errors rejected; closed data results normalize through formal compositions; the stage showcase computes |
+| H1–H4 | Each stage's gate opens only with its soundness note; generated rules are instructions with rejection tests; the hand-coded instructions agree with H1 before retirement; positivity, boundary, h-level and index-level errors rejected; closed data results normalize through formal compositions; the stage showcase computes; an acceptance matrix per stage with missing cases visible (H1: the specification's 10.10) and a recorded integration run at a pinned revision |
 | G2 | Universe preservation distinguished from resizing; implicit downward resizing rejected; retained resizing named and reported |
 | G3 (as H2's `Id`) | J computes on `refl`; checked connection to `Path`; no UIP or collapse of nontrivial loops |
 | G4 if pursued | Neutral values of declared data types transport along constant families by conversion; neutral types and other type formers do not; the archive's judgements change only where the rule applies |

@@ -15,13 +15,13 @@ def normal_target_factor(
   let S := subfield_image(F, T, j, subfield_top(F));
   let I := embedding_image_field(F, T, j);
   let jFactor := embedding_image_factor(F, T, j);
-  have lands : forall x : af_carrier(F). subfield_members(T, S, field_embedding_map(F, T, h, x)) {
+  let lands : forall x : af_carrier(F). subfield_members(T, S, field_embedding_map(F, T, h, x)) {
     intro x;
     obtain (z, value) := normal(T, j, h, same, x);
     exact (z, tt, value);
   }
   let hFactor := field_embedding_factor(F, T, h, S, lands);
-  have onto : Surjective(af_carrier(F), af_carrier(I), field_embedding_map(F, I, jFactor)) {
+  let onto : Surjective(af_carrier(F), af_carrier(I), field_embedding_map(F, I, jFactor)) {
     intro y;
     exact merely(
       Fiber(af_carrier(F), af_carrier(I), field_embedding_map(F, I, jFactor), y),
@@ -30,7 +30,7 @@ def normal_target_factor(
   }
   let inverse := field_embedding_inverse(F, I, jFactor, onto);
   let g := field_embedding_compose(F, I, F, hFactor, inverse);
-  have triangle :
+  let triangle :
     forall x : af_carrier(F).
     field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(F, T, h, x) {
     intro x;
@@ -57,7 +57,7 @@ def normal_target_automorphism_factor(
   let F := extension_field(K, E);
   let e := extension_inclusion_embedding(K, E);
   obtain (factor, triangle) := normal_target_factor(K, F, e, normal, T, j, h, same);
-  have overK :
+  let overK :
     forall a : af_carrier(K).
     field_embedding_map(F, F, factor, extension_inclusion(K, E, a)) = extension_inclusion(K, E, a) {
     intro a;
@@ -121,7 +121,7 @@ def normal_target_embeddings_automorphisms(
         )
       )
     );
-  have leftInverse : forall d : A. backwardMap(forwardMap(d)) = d {
+  let leftInverse : forall d : A. backwardMap(forwardMap(d)) = d {
     intro d;
     let h := embedding_over(K, F, e, T, base, d);
     let triangle :=
@@ -141,7 +141,7 @@ def normal_target_embeddings_automorphisms(
       )
     );
   }
-  have rightInverse : forall g : B. forwardMap(backwardMap(g)) = g {
+  let rightInverse : forall g : B. forwardMap(backwardMap(g)) = g {
     intro g;
     let d := backwardMap(g);
     let h := embedding_over(K, F, e, T, base, d);
@@ -196,7 +196,7 @@ def finite_normal_separable_automorphism_count(
 }
 
 // The counting induction only needs separability of minimal polynomials in
-// the chosen closed target. This form is stable under intermediate base change.
+// the given closed target. This form is stable under intermediate base change.
 def finite_separable_elements_embedding_count(
   K, F : AlgebraicField, e : FieldEmbedding(K, F),
   finite : FiniteExtension(K, embedding_as_extension(K, F, e)), T : AlgebraicField,
@@ -322,7 +322,7 @@ def normal_target_embeddings_self(
         )
       )
     );
-  have leftInverse : forall d : A. backwardMap(forwardMap(d)) = d {
+  let leftInverse : forall d : A. backwardMap(forwardMap(d)) = d {
     intro d;
     let h := embedding_over(K, F, e, T, base, d);
     let triangle :=
@@ -342,7 +342,7 @@ def normal_target_embeddings_self(
       )
     );
   }
-  have rightInverse : forall d : B. forwardMap(backwardMap(d)) = d {
+  let rightInverse : forall d : B. forwardMap(backwardMap(d)) = d {
     intro d;
     let mapped := backwardMap(d);
     let h := embedding_over(K, F, e, T, base, mapped);

@@ -194,7 +194,7 @@ def coordinate_rows_separating_injective(
   let C := CoordinateSpace(K, n);
   let D := CoordinateSpace(K, m);
   let h := coordinate_rows_linear(K, n, m, rows);
-  have kernel :
+  let kernel :
     forall a : vector_carrier(K, C). linear_map(K, C, D, h, a) = vector_zero(K, D)
     -> a = vector_zero(K, C) {
     intro a, vanishes;
@@ -262,11 +262,12 @@ def coordinate_nontrivial_implication_witness(
   let F := linear_map(K, C, D, f);
   let P := F(a) = vector_zero(K, D);
   let Q := a = vector_zero(K, C);
-  have vanishes : P := double_negation(
-    P, group_is_set(vector_group(K, D), F(a), vector_zero(K, D)),
-    (fun (no : P -> Void) => fails((fun (p : P) => absurd(no(p)))))
-  );
-  have nonzero : Q -> Void {
+  let vanishes : P :=
+    double_negation(
+      P, group_is_set(vector_group(K, D), F(a), vector_zero(K, D)),
+      (fun (no : P -> Void) => fails((fun (p : P) => absurd(no(p)))))
+    );
+  let nonzero : Q -> Void {
     intro zero;
     exact fails((fun (p : P) => zero));
   }
@@ -292,7 +293,7 @@ def coordinate_map_nonzero_kernel(
   let Q := fun (a : Fin(n) -> af_carrier(K)) => a = vector_zero(K, C);
   let X := Fin(n) -> af_carrier(K);
   let notKernelTrivial := coordinate_map_not_kernel_trivial(K, n, m, f, too_small);
-  have convert : (exists a : X. (P(a) -> Q(a)) -> Void) -> (exists a : X. P(a) and (Q(a) -> Void)) {
+  let convert : (exists a : X. (P(a) -> Q(a)) -> Void) -> (exists a : X. P(a) and (Q(a) -> Void)) {
     intro witness;
     obtain (a, fails) := witness;
     obtain (vanishes, nonzero) := coordinate_nontrivial_implication_witness(K, n, m, f, a, fails);
@@ -337,30 +338,31 @@ def embedding_evaluation_rank_step(
     exists a : A. exists x : af_carrier(K). ((a = vector_zero(L, C)) -> Void)
     and (forall j : Fin(m). coordinate_dot(L, n, a, rows(j)) = field_zero(L))
     and ((embedding_evaluation_dot(K, L, n, maps, a, x) = field_zero(L)) -> Void);
-  have withKernel :
+  let withKernel :
     (
       exists a : A. (linear_map(L, C, D, h, a) = vector_zero(L, D))
       and ((a = vector_zero(L, C)) -> Void)
     ) -> Mere(Result) {
     intro witness;
     obtain (a, vanishes, nonzero) := witness;
-    have allRows : forall j : Fin(m). coordinate_dot(L, n, a, rows(j)) = field_zero(L) {
+    let allRows : forall j : Fin(m). coordinate_dot(L, n, a, rows(j)) = field_zero(L) {
       intro j;
       exact cong((fun (v : Fin(m) -> af_carrier(L)) => v(j)), vanishes);
     }
-    have someIndex : Mere(exists i : Fin(n). (a(i) = field_zero(L)) -> Void) := classical_counterexample(
-      Fin(n), (fun (i : Fin(n)) => a(i) = field_zero(L)),
-      (fun (i : Fin(n)) => af_set(L, a(i), field_zero(L))),
-      (
-        fun (all : forall i : Fin(n). a(i) = field_zero(L)) => nonzero(
-          FunExt(U0, Fin(n), (fun (i : Fin(n)) => af_carrier(L)), a, vector_zero(L, C), all)
+    let someIndex : Mere(exists i : Fin(n). (a(i) = field_zero(L)) -> Void) :=
+      classical_counterexample(
+        Fin(n), (fun (i : Fin(n)) => a(i) = field_zero(L)),
+        (fun (i : Fin(n)) => af_set(L, a(i), field_zero(L))),
+        (
+          fun (all : forall i : Fin(n). a(i) = field_zero(L)) => nonzero(
+            FunExt(U0, Fin(n), (fun (i : Fin(n)) => af_carrier(L)), a, vector_zero(L, C), all)
+          )
         )
-      )
-    );
-    have withIndex : (exists i : Fin(n). (a(i) = field_zero(L)) -> Void) -> Mere(Result) {
+      );
+    let withIndex : (exists i : Fin(n). (a(i) = field_zero(L)) -> Void) -> Mere(Result) {
       intro index;
       obtain (i, coefficientNonzero) := index;
-      have withPoint :
+      let withPoint :
         (
           exists x : af_carrier(K). (embedding_evaluation_dot(K, L, n, maps, a, x) = field_zero(L))
           -> Void
@@ -427,7 +429,7 @@ def embedding_evaluation_outside_span(
         embedding_evaluation_vector(K, L, n, maps, x)
       )
     ) -> Void;
-  have convert :
+  let convert :
     (
       exists a : Fin(n) -> af_carrier(L). exists x : af_carrier(K).
       ((a = vector_zero(L, C)) -> Void)
@@ -438,15 +440,13 @@ def embedding_evaluation_outside_span(
     obtain (a, x, nonzero, allRows, detected) := witness;
     let y := embedding_evaluation_vector(K, L, n, maps, x);
     let FiberF := Fiber(Fin(m) -> af_carrier(L), Fin(n) -> af_carrier(L), F, y);
-    have reject : FiberF -> Void {
+    let reject : FiberF -> Void {
       intro preimage;
       obtain (c, same) := preimage;
-      have combination : linear_combination(L, C, m, rows, c) = y := trans(
-        sym(family_linear_evaluation(L, C, m, rows, c)), same
-      );
-      have oldZero : coordinate_dot(L, n, a, linear_combination(L, C, m, rows, c)) = field_zero(L) := coordinate_dot_rows_zero(
-        L, n, m, a, rows, c, allRows
-      );
+      let combination : linear_combination(L, C, m, rows, c) = y :=
+        trans(sym(family_linear_evaluation(L, C, m, rows, c)), same);
+      let oldZero : coordinate_dot(L, n, a, linear_combination(L, C, m, rows, c)) = field_zero(L) :=
+        coordinate_dot_rows_zero(L, n, m, a, rows, c, allRows);
       exact detected(trans(sym(cong(coordinate_dot(L, n, a), combination)), oldZero));
     }
     exact (
@@ -470,7 +470,7 @@ def embedding_evaluation_outside_span(
 }
 
 // One more evaluation vector extends any independent partial family, as long
-// as fewer than n evaluation points have been chosen.
+// as fewer than n evaluation points have been picked.
 def embedding_evaluation_extend_independent(
   K, L : AlgebraicField, n, m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
   distinct : PairwiseDistinctEmbeddings(K, L, n, maps), points : Fin(m) -> af_carrier(K),
@@ -504,7 +504,7 @@ def embedding_evaluation_extend_independent(
         (fun (j : Fin(succ(m))) => embedding_evaluation_vector(K, L, n, maps, next(j)))
       )
     );
-  have extend :
+  let extend :
     (
       exists x : af_carrier(K).
       Mere(
@@ -551,7 +551,7 @@ def coordinate_square_injective_surjective(
   let X := vector_carrier(K, C);
   let F := linear_map(K, C, C, f);
   let Image := fun (x : X) => Mere(Fiber(X, X, F, x));
-  have impossible : (exists x : X. Image(x) -> Void) -> Void {
+  let impossible : (exists x : X. Image(x) -> Void) -> Void {
     intro witness;
     obtain (x, outside) := witness;
     let h := adjoin_linear(K, C, n, f, x);

@@ -2,7 +2,7 @@
 
 Status: optional research design, reviewed on 2026-09-27. Phases 1 and 2
 are delivered (2026-09-27): the driver's branch points list their moves for
-a pluggable chooser, and the kernel counts its work; see
+a pluggable policy, and the kernel counts its work; see
 [Phases](#phases) for the baseline they measured. The learning phases 3–5
 are unimplemented. It builds on the instruction kernel
 ([kernel-instructions.md](kernel-instructions.md)), whose driver searches for
@@ -39,7 +39,7 @@ has two objectives:
 1. **Cheaper derivations.** Highlighted steps instead of normalizing whole
    types (decision 4 of the instruction kernel), where measurements show a
    lower total cost than the current heuristic.
-2. **Cheaper guidance.** Compare a learned chooser with the driver's own
+2. **Cheaper guidance.** Compare a learned policy with the driver's own
    guide, including the cost of inference. The optional
    `cc_kernel_convertible` guide remains a historical comparison while it is
    available; replacing it is no longer an outstanding prerequisite.
@@ -64,8 +64,9 @@ kind. Learning enters only where two types must agree, the driver's `agree`.
 - **State.** An equality goal: the two sides, the context entries they use,
   and the entries' types.
 - **Actions.** At a node on one side: `beta`, `iota`, `path`, `delta`,
-  `whnf`, eta expansion, or descend (congruence at that node). At the goal:
-  `symmetry` and `normalize`. Syntactic masks remove obvious mismatches
+  `whnf`, eta expansion, descend (congruence at that node), or `glue` (the
+  kernel's bounded `Glue` step, for Glue eta that the weak head decides only
+  by syntax). At the goal: `symmetry` and `normalize`. Syntactic masks remove obvious mismatches
   (a `beta` needs an application of a lambda, a `delta` a definition
   reference); the kernel checks the remaining side conditions.
 - **Episode.** One `agree` call. Descending creates subgoals with the
@@ -176,7 +177,7 @@ text JSON does not have the size of packed float32 data. Measure these on
 actual goal-size distributions in the CLI and browser before deployment.
 
 Attention is quadratic in tokens. Set token and memory limits with a
-deterministic heuristic fallback. A chooser may run only at selected branch
+deterministic heuristic fallback. A policy may run only at selected branch
 points if that improves total checking time. An optional offline mode could
 retain instruction certificates; it needs versioned serialization and
 replay checks before claiming that checking avoids network inference.
@@ -221,7 +222,7 @@ same edges, and the same heads, with message passing in place of attention.
     Absence from the judgement graph does not establish a negative witness.
 - **Expert iteration.** Search with the policy as prior and compare value
   guidance with the current heuristic; retain cheaper checked derivations
-  from training modules, retrain and repeat. Validation chooses the model;
+  from training modules, retrain and repeat. Validation selects the model;
   final test trajectories never enter training.
 - **Tooling.** PyTorch for training with dense masks and
   `scaled_dot_product_attention`; no graph library and no custom kernel at
@@ -232,8 +233,9 @@ same edges, and the same heads, with message passing in place of attention.
 
 1. **Options.** Done on 2026-09-27. Each branch point of `agree` is an
    explicit list of moves (normalize, descend, a step on either side or
-   both, whnf, eta), and a chooser ranks them
-   (`heuristicChooser` in `web/cubical-instruction-driver.mjs`). The
+   both, whnf, eta, and since I1.2a glue, ranked last), and a policy
+   ranks them
+   (`heuristicPolicy` in `web/cubical-instruction-driver.mjs`). The
    heuristic is the driver's former order; the archive's elaboration
    fingerprint is identical under it. The workbench does not show the
    options yet.
@@ -245,7 +247,7 @@ same edges, and the same heads, with message passing in place of attention.
    definition derived again, rejected instructions and guide queries
    included, and the outcome of each move; `--trajectories=FILE` writes
    every branch point of every derivation, with the kernel steps spent
-   choosing and moving (`tools/search-telemetry.mjs`). The report pins the
+   ranking and moving (`tools/search-telemetry.mjs`). The report pins the
    revision, machine, budgets and session mode. The baseline below was one
    run on an Apple M3 Pro shared with other jobs, at `d44239e` with these
    changes; times are observations, and the counts are deterministic.
@@ -267,21 +269,21 @@ same edges, and the same heads, with message passing in place of attention.
    The trajectories show where the cost is. Seven normalize moves ran out
    of their instruction's full budget of 10M steps and failed: 70M of the
    147M steps of deriving again, 47%, in seven definitions, each of which
-   then agreed by other moves. A chooser, or a smaller budget for a
+   then agreed by other moves. A policy, or a smaller budget for a
    speculative normalization, that avoided them would save more than any
    ranking of the cheap moves could.
 3. **Imitation and ablations.** Train the network on the logs; measure
    agreement with the heuristic on validation modules. Run the ablation
-   table below and choose the architecture before final test evaluation.
+   table below and select the architecture before final test evaluation.
 4. **Expert iteration** on derivation cost, measured on the held-out modules
    against the heuristic, with the oracle switched off.
-5. **Deployment.** The chooser in the driver, the options in the workbench,
+5. **Deployment.** The policy in the driver, the options in the workbench,
    and the offline certificate mode.
 
 Phases 1 and 2 stand on their own as driver inspection and measurement work;
 the [work plan](work-plan.md#stage-1-goals-diagnostics-and-inference)
 schedules them with L1.3, whose deterministic fuel is the same cost
-accounting. Phases 3–5 wait for evidence that search choices account for enough cost to
+accounting. Phases 3–5 wait for evidence that search decisions account for enough cost to
 justify learning. Instruction-kernel stage 3, including pushouts, Glue and
 `HComp`, has already landed; it supplies existing benchmark cases. Future
 declared inductive types may supply more cases, but their delivery does not
@@ -391,13 +393,13 @@ labels and budget failures separately.
 | One head per relation | one head with the union mask and a relation-type bias | cost per layer | |
 | Ancestor and descendant heads | parent and child heads only | deep terms | |
 | Binder tokens | drop them; keep the binder-distance feature | eta and replacement under binders | |
-| Cross-side head | drop it; the goal token carries the other side | congruence choices | |
+| Cross-side head | drop it; the goal token carries the other side | congruence decisions | |
 | Goal and register tokens | mean pooling instead of the goal token; no registers | the value head | |
 | `ghostmax` | plain softmax | heads with empty masks, such as the root's ancestors | |
 | Relative-depth bias | absolute depth only, as THTH | telling children from great-grandchildren | |
 | Two stages with memoization | four goal-stage layers | speed only; must cost no accuracy | |
 | Numeral collapse | a capped chain of `Succ` nodes | arithmetic modules | |
-| Definition features | drop later-than, recursion and head features | lazy delta choices | |
+| Definition features | drop later-than, recursion and head features | lazy delta decisions | |
 | Pair features `(a, b, a − b)` | the goal token alone | value accuracy | |
 | Auxiliary losses | drop each of convertibility, `whnf` head, witness | sample efficiency, held-out generalization | |
 | Random-walk data | the corpus alone | pretraining the subtree stage | |

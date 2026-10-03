@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { chromium } from "playwright";
+import { assertFreshBuild } from "../tools/build-stamp.mjs";
+// The page loads the WASM kernel from web/dist.
+assertFreshBuild();
+const natural = {tag:"Sort",signature:"nat__Nat",parameters:[],levels:[]};
+const zero = {tag:"Con",index:0,name:"zero",sort:natural};
+const one = {tag:"App",fn:{tag:"Con",index:1,name:"succ",sort:natural},arg:zero};
 const server = spawn("python3", ["tools/serve.py", "--port", "0"], { stdio: ["ignore", "pipe", "pipe"] });
 server.stderr.resume();
 let browser;
@@ -50,6 +56,54 @@ try {
   assert.equal(new URL(page.url()).hash, `#source=${example}`);
   await page.reload(); await idle();
   assert.match(await page.locator("#editor").inputValue(), /kept_after_reload/);
+  // An inductive header wrapped over lines keeps its h-level keyword, which
+  // the highlighter finds in the whole source, not the line alone (H1).
+  const wrapped = Buffer.from("inductive Wrapped(\n  A : U0\n) : prop {\n  point(a : A);\n}\n").toString("base64")
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  // Only the hash differs from the page already open, so goto alone changes
+  // the hash in place: reload to load the new source.
+  await page.goto(`http://127.0.0.1:${port}/proof.html?example=1#source=${wrapped}`); await page.reload(); await idle();
+  await page.locator("#read-mode").click();
+  const modifier = page.locator("#read-source .source-line").nth(2).locator("span, button").filter({ hasText: /^prop$/ });
+  assert.equal(await modifier.count(), 1, "the modifier is a token of its own");
+  assert.match(await modifier.getAttribute("class"), /keyword/);
+  // A declared type has no checked term: the inspector shows its signature
+  // and its eliminator's clause types (the H1 specification's 6.5).
+  await page.locator('#read-source button[data-name="Wrapped"]').first().click();
+  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "Wrapped"
+    && !document.querySelector("#inspect-signature").hidden);
+  assert.equal(await page.locator("#inspect-kind").textContent(), "Declared type · prop");
+  assert.deepEqual(await page.locator("#inspect-constructors li code").allTextContents(),
+    ["point : A -> Wrapped", "Wrapped.squash : forall x : Wrapped. forall x1 : Wrapped. x = x1"]);
+  assert.match(await page.locator("#inspect-constructors li").nth(1).textContent(), /2 positions · 1 dimension · generated/);
+  assert.equal(await page.locator("#inspect-eliminator-motive").textContent(), "For a motive P : Wrapped(A) -> U, one clause per constructor:");
+  const clauses = await page.locator("#inspect-clauses li code").allTextContents();
+  assert.equal(clauses[0], "point_case : forall x : A. P(point(x))");
+  assert.match(clauses[1], /^squash_case : .*PathP\(fun \(i : Interval\) => P\(Wrapped\.squash\(x, x1\) @ i\), x2, x3\)$/);
+  // Since H1's release a declared type carries no marker.
+  assert.doesNotMatch(await page.locator("#inspect-axioms").textContent(), /kernel extension/);
+  assert.equal(await page.locator("#kernel-terms").isVisible(), false, "no checked term to show");
+  assert.deepEqual(errors, []);
+  // Nat is an ordinary imported declaration: both occurrences in Z lead to
+  // its signature and View source opens the actual inductive, not this use.
+  await openProof("integers", "Z");
+  const naturalUses = page.locator('.source-line').filter({ hasText: "def Z := Nat or Nat;" })
+    .locator('button[data-name="Nat"]');
+  assert.equal(await naturalUses.count(), 2);
+  await naturalUses.first().click();
+  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "Nat"
+    && !document.querySelector("#inspect-signature").hidden);
+  assert.deepEqual(await page.locator("#inspect-constructors li code").allTextContents(),
+    ["zero : Nat", "succ : Nat -> Nat"]);
+  assert.match(await page.locator("#view-source").getAttribute("href"), /proof=nat&name=Nat/);
+  await page.locator("#view-source").click(); await idle();
+  assert.equal(new URL(page.url()).searchParams.get("proof"), "nat");
+  assert.equal(new URL(page.url()).searchParams.get("name"), "Nat");
+  assert.match(await page.locator(".source-line.active").textContent(), /inductive Nat : U0/);
+  assert.match(await page.locator("#editor").inputValue(), /succ\(n : Nat\)/);
+  await page.locator("#back").click(); await idle();
+  assert.equal(new URL(page.url()).searchParams.get("proof"), "integers");
+  assert.equal(await page.locator("#inspect-name").textContent(), "Nat");
   await openProof("suspension", "S1");
   for (const name of ["Suspension", "north", "south", "meridian", "suspension_induction", "suspension_meridian_beta"]) {
     const link = page.locator(`#read-source button[data-name="${name}"]`).first();
@@ -112,7 +166,7 @@ try {
   await workbench.locator("#back").click();
   await workbench.locator("details summary").click();
   // The exported type is itself a U0 term: replace it with Nat and recheck.
-  await workbench.locator("#syntax").fill('{"tag":"Nat"}');
+  await workbench.locator("#syntax").fill(JSON.stringify(natural));
   await workbench.locator("#check").click();
   assert.equal(await workbench.locator("#expression").textContent(), "Nat");
   await workbench.locator("#syntax").fill('{"tag":"Var","name":"missing"}');
@@ -209,7 +263,7 @@ try {
   reductionBench.on("pageerror", error => errors.push(error.message));
   await reductionBench.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
   await reductionBench.locator("#workbench-view").selectOption("math");
-  const chooseReduction = async (side, kind, path = []) => {
+  const selectReduction = async (side, kind, path = []) => {
     const before = await reductionBench.locator("#syntax").inputValue();
     await reductionBench.locator(`#${kind}-${side}`).click();
     assert.equal(await reductionBench.locator("#syntax").inputValue(), before, "highlighting must not reduce");
@@ -217,22 +271,22 @@ try {
     if (kind === "beta") await site.press("Enter"); else await site.click();
   };
   assert.equal(await reductionBench.locator("#type").textContent(), "Alias");
-  await chooseReduction("type", "delta");
+  await selectReduction("type", "delta");
   assert.equal(await reductionBench.locator("#type").textContent(), "IdentityType(N)");
-  await chooseReduction("type", "delta", ["fn"]);
+  await selectReduction("type", "delta", ["fn"]);
   assert.match(await reductionBench.locator("#type").textContent(), /λ/);
-  await chooseReduction("type", "beta");
+  await selectReduction("type", "beta");
   assert.equal(await reductionBench.locator("#type").textContent(), "N");
-  await chooseReduction("type", "delta");
+  await selectReduction("type", "delta");
   assert.equal(await reductionBench.locator("#type").textContent(), "Nat");
   await reductionBench.locator("#back").click();
   assert.equal(await reductionBench.locator("#type").textContent(), "N");
   await reductionBench.locator("#normalize-type").click();
   assert.equal(await reductionBench.locator("#type").textContent(), "Nat");
-  await chooseReduction("expression", "delta", ["arg", "fn"]);
+  await selectReduction("expression", "delta", ["arg", "fn"]);
   assert.match(await reductionBench.locator("#reduction-status").textContent(), /δ expression: id/);
-  await chooseReduction("expression", "beta");
-  await chooseReduction("expression", "beta");
+  await selectReduction("expression", "beta");
+  await selectReduction("expression", "beta");
   assert.equal(await reductionBench.locator("#expression").textContent(), "0");
   await reductionBench.locator("#beta-expression").click();
   assert.match(await reductionBench.locator("#reduction-status").textContent(), /No β sites/);
@@ -242,7 +296,7 @@ try {
   assert.equal(await reductionBench.locator("#expression").textContent(), "0");
   await reductionBench.locator("details summary").click();
   const ref = { tag: "DefRef", name: "cubical_paths__id" };
-  const repeated = { tag: "App", fn: ref, arg: { tag: "App", fn: ref, arg: { tag: "Zero" } } };
+  const repeated = { tag: "App", fn: ref, arg: { tag: "App", fn: ref, arg: zero } };
   await reductionBench.locator("#syntax").fill(JSON.stringify(repeated));
   await reductionBench.locator("#check").click();
   await reductionBench.locator("#delta-expression").click();
@@ -251,22 +305,22 @@ try {
   await reductionBench.keyboard.press("Escape");
   assert.equal(await reductionBench.locator(".reduction-site").count(), 0);
   assert.deepEqual(JSON.parse(await reductionBench.locator("#syntax").inputValue()), repeated);
-  await chooseReduction("expression", "delta", ["arg", "fn"]);
+  await selectReduction("expression", "delta", ["arg", "fn"]);
   assert.equal(await reductionBench.locator("#name").textContent(), "value", "reducing a name must not navigate to it");
   const reducedOccurrence = JSON.parse(await reductionBench.locator("#syntax").inputValue());
   assert.equal(reducedOccurrence.fn.tag, "DefRef");
   assert.equal(reducedOccurrence.arg.fn.tag, "Lam");
-  await chooseReduction("expression", "beta", ["arg"]);
-  const identity = { tag: "Lam", name: "x", domain: { tag: "Nat" }, body: { tag: "Var", name: "x" } };
-  const nestedBeta = { tag: "App", fn: identity, arg: { tag: "App", fn: identity, arg: { tag: "Zero" } } };
+  await selectReduction("expression", "beta", ["arg"]);
+  const identity = { tag: "Lam", name: "x", domain: natural, body: { tag: "Var", name: "x" } };
+  const nestedBeta = { tag: "App", fn: identity, arg: { tag: "App", fn: identity, arg: zero } };
   await reductionBench.locator("#syntax").fill(JSON.stringify(nestedBeta));
   await reductionBench.locator("#check").click();
   await reductionBench.locator("#beta-expression").click();
   assert.equal(await reductionBench.locator("#expression .reduction-site").count(), 2);
   await reductionBench.locator('#expression [data-reduction-path=\'["arg"]\']').click();
-  const chosenInner = JSON.parse(await reductionBench.locator("#syntax").inputValue());
-  assert.equal(chosenInner.fn.tag, "Lam");
-  assert.equal(chosenInner.arg.tag, "Zero");
+  const selectedInner = JSON.parse(await reductionBench.locator("#syntax").inputValue());
+  assert.equal(selectedInner.fn.tag, "Lam");
+  assert.deepEqual(selectedInner.arg, zero);
   await reductionBench.locator("#back").click();
   assert.deepEqual(JSON.parse(await reductionBench.locator("#syntax").inputValue()), nestedBeta);
   await reductionBench.locator("#syntax").fill(JSON.stringify(repeated));
@@ -275,10 +329,10 @@ try {
   await reductionBench.locator("#unhighlight").click();
   assert.equal(await reductionBench.locator(".reduction-site").count(), 0);
   await reductionBench.locator("#delta-expression").click();
-  await reductionBench.locator("#syntax").fill('{"tag":"Succ","value":{"tag":"Zero"}}');
+  await reductionBench.locator("#syntax").fill(JSON.stringify(one));
   assert.equal(await reductionBench.locator(".reduction-site").count(), 0);
   await reductionBench.locator("#unhighlight").click();
-  assert.equal(await reductionBench.locator("#syntax").inputValue(), '{"tag":"Succ","value":{"tag":"Zero"}}');
+  assert.deepEqual(JSON.parse(await reductionBench.locator("#syntax").inputValue()), one);
   assert.equal(await reductionBench.locator("[data-reduction]:enabled").count(), 0);
   await reductionBench.close();
   await page.locator("#edit-mode").click();
@@ -335,7 +389,7 @@ try {
       import("/dist/cubical.mjs"),import("/cubical-program.mjs"),import("/workbench-transfer.mjs")]);
     let source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
     for(let i=1;i<=28;i++)source+=`let T${i} := F(T${i-1},T${i-1});`;
-    source+="have h : forall x : T28. x = x { intro x; exact path i => x; } rfl; }";
+    source+="let h : forall x : T28. x = x { intro x; exact path i => x; } rfl; }";
     const program=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");});
     try {
       const result=await program.check(source,"browser_shared_inspection");

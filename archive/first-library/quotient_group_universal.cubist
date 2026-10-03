@@ -34,7 +34,7 @@ def killing_subgroup_respects_cosets_at(
   let f := group_hom_map_at(U1, group_lift(G), H, h);
   let d := group_multiply(G, group_inverse(G, x), y);
   let m := group_multiply_at(U1, H);
-  have cancel : group_multiply(G, x, d) = y := trans(
+  let cancel : group_multiply(G, x, d) = y := trans(
     sym(group_associative(G, x, group_inverse(G, x), y)),
     trans(
       cong((fun (z : group_carrier(G)) => group_multiply(G, z, y)), group_inverse_right(G, x)),

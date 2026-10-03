@@ -11,7 +11,10 @@ name-capture bug; see the [implementation checkpoint](../tactical/proof-ergonomi
 
 The shared goal layer's core and motive abstraction are delivered (HoTT A5),
 as are G0's checked universe binders and milestone 8's core computability
-features. Argument inference, theories and inductive declarations remain open.
+features. Argument inference and theories remain open; one-sort inductive
+declarations and the explicit expression `match` are experimental behind
+the `h1` option since 2026-09-28 (work-plan L2.1 and L2.2a), and the rest
+of milestone 7 is open.
 
 The remaining dependent, cubical, induction and shared elaboration work moved
 to the [HoTT and cubical automation roadmap](hott-automation-roadmap.md), and
@@ -267,7 +270,7 @@ work. Publish measured examples without claiming an unmeasured percentage gain.
 - [x] Moved to HoTT A5: introduce the goal/reconstruction representation.
   Done in PR #15: `rw`, `simp`, `simpa`, `ext`, `intro`, `over` and premise
   search build their proofs through one plan interface in
-  `lib/cubical/proof-goals.mjs`.
+  `web/translator/proof-goals.mjs`.
 - [x] Add `rw [p];` and `rw [<- p];`, with rules applied in listed order.
   Initially rewrite the first eligible occurrence in a documented traversal;
   add an explicit occurrence selector before supporting complicated targets.
@@ -392,7 +395,7 @@ for this release.
 Completion: imports cannot leak local rules; unrelated unused rules add no
 axiom dependencies to a proof; changes to a rule invalidate affected results;
 explicit lists reproduce the proof's success. Traces explain failed premises
-and rule choices without requiring authors to inspect kernel opcodes.
+and rule selections without requiring authors to inspect kernel opcodes.
 
 ### 4. Dependent rewriting and cubical extensions (moved)
 
@@ -496,6 +499,20 @@ arguments. Explicit matching is L2.2a; automatic clauses in L2.2b additionally n
 D0a and D1's first slice (h-level evidence). Implicit binders and level
 inference (L4.1b) are a separate release.
 
+**Status (2026-09-28).** Experimental, behind `h1`: `inductive` with
+parameters and universe parameters and no indices; h-levels by a generated
+squash constructor (`prop`, `set`, `trunc(n)`); path constructors as
+equalities and `PathP`; the expression `match` with `as … return`, one
+scrutinee, structural recursion on one argument, clauses that bind
+interval variables for path constructors, and hand-written squash clauses;
+since 2026-09-29, the closing proof statement, whose motive is the goal
+over the matched value, with the hypotheses about it generalized, and
+recursive calls that pass values of their own for the other parameters, but
+those the matched parameter's type depends on. Not delivered: several scrutinees, inferred motives with index generalization, companion
+sorts, `cell` syntax (L2.8), proof-first h-levels (L2.3b), automatic
+clauses and `obligations` (L2.2b), dependent matching, views, canonical
+quotients, `deriving`, nested declarations and the `cases` removal.
+
 - [ ] `inductive` declarations:
   - parameters, and indices after the colon;
   - h-levels, with setness proved from the generated path characterization
@@ -549,7 +566,10 @@ Completion, per release:
 
 - **H1:** natural numbers, lists, W types, suspensions, the circle, `Trunc`
   and `Quotient` are declared and matched. The circle's `code` computes, and
-  `code_meridian` holds by `rfl`.
+  `code_meridian` holds by `rfl`. Status on 2026-09-28: the circle's winding
+  number computes in source (`docs/examples/h1/winding.cubist`), with
+  `cong(code, loop)` equal to `ua(succ)` by `rfl`; `Quotient`'s elimination
+  into sets waits for L2.2b; the native comparisons are K2.4a.
 - **H2:** `Vec`, `Fin`, well-typed syntax and `Id` are declared. `J` on
   `refl` holds by `rfl`, and `head` needs no `nil` branch.
 - **H3:** a small context/type signature with genuinely dependent set/prop
@@ -592,12 +612,12 @@ Only the truncation readout extension needs H1.
 
 | Existing location | Planned work |
 | --- | --- |
-| [parser](../../web/mathscript/parser.mjs), [formatter](../../web/mathscript/formatter.mjs), [notation](../../web/mathscript/notation.mjs) | Syntax, spans, roundtrips, and readable expansions. |
-| [translator](../../lib/cubical/translate.mjs) | Proof-block statements, reconstruction, expected types, and parameter elaboration. Extract new matching/rewrite modules to keep this manageable. |
+| [parser](../../web/cubist/parser.mjs), [formatter](../../web/cubist/formatter.mjs), [notation](../../web/cubist/notation.mjs) | Syntax, spans, roundtrips, and readable expansions. |
+| [translator](../../web/translator/translate.mjs) | Proof-block statements, reconstruction, expected types, and parameter elaboration. Extract new matching/rewrite modules to keep this manageable. |
 | [native elaborator](../../web/cubical-elaborator.mjs) | Native type/conversion queries, scoped contexts, checked witnesses, and dependency tracking. |
-| [program](../../web/cubical-program.mjs), [modules](../../web/mathscript/modules.mjs) | Rule registration, import identity, invalidation, and source inspection records. |
+| [program](../../web/cubical-program.mjs), [modules](../../web/cubist/modules.mjs) | Rule registration, import identity, invalidation, and source inspection records. |
 | [kernel adapter](../../web/cubical-kernel.mjs), [syntax codec](../../web/cubical-syntax.mjs) | Preserve native checking, handle ownership, and dimensions through generated terms. |
-| [path library](../../archive/first-library/paths.cubist), [path-over builders](../../lib/cubical/path-over.mjs) | Reuse proved congruence, composition, and transport constructions. |
+| [path library](../../archive/first-library/paths.cubist), [path-over builders](../../web/translator/path-over.mjs) | Reuse proved congruence, composition, and transport constructions. |
 | New: declaration elaborator and `match` compiler | `inductive`/`theory` to H's signature normal form; motive abstraction, index unification, coverage, structural recursion and obligations to eliminator applications (milestones 6–7). |
 | Existing computability tracking | Preserve non-computing dependencies, `computable` and `evaluate`; add expected-value patterns and native truncation readout (milestone 8). |
 | [language reference](../../web/language.html), [CLI guide](../guides/cli.md), browser inspector | Document delivered syntax; show goals, inferred arguments, rewrite witnesses, generated eliminators, boundary diagrams and non-computing dependencies. The reference is rewritten into chapters with checked examples (see the [work plan](work-plan.md)). |

@@ -56,7 +56,7 @@ def restrict_linear_iso(
   exact (restrict_linear_map(K, L, e, V, W, f), restrict_linear_map(K, L, e, W, V, g), left, right);
 }
 
-// These identity isomorphisms compare operations, not the chosen proofs
+// These identity isomorphisms compare operations, not the particular proofs
 // of their laws. They avoid silently identifying different structure records.
 def restrict_coordinate_iso(K, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat) :
   LinearIso(

@@ -1,3 +1,5 @@
+import "./fresh-build.mjs";
+import {naturalSort, numeral} from "../web/translator/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
@@ -16,7 +18,7 @@ async function fixture(t) {
 }
 function checkedView(program, binding) {
   const view = program.inspect(binding);
-  const checked = program.checker.syntax.check(view.expression, view.type,
+  const checked = program.checker.checkView(view.expression, view.type,
     view.context.map(entry => [entry.name, entry.type]), new Map(view.dimensions));
   return { view, checked };
 }
@@ -45,10 +47,11 @@ test("assembly rows expose actual C opcodes, payloads, and all four operand slot
 
 test("the listing keeps checked type and inferred type roots distinct", async t => {
   const program = await fixture(t), { view, checked } = checkedView(program, "assembly__annotated");
-  const reducedTypeView = { ...view, type: { tag: "Nat" } };
-  const result = program.checker.syntax.check(view.expression, reducedTypeView.type);
+  const reducedTypeView = { ...view, type: naturalSort };
+  program.checker.checkView(view.expression, reducedTypeView.type);
+  const result = checked;
   const listing = kernelAssembly(program, reducedTypeView, result);
-  assert.equal(program.kernel.node(listing.roots.find(root => root.label === "Checked type").handle).kind, "Nat");
+  assert.equal(program.kernel.node(listing.roots.find(root => root.label === "Checked type").handle).kind, "Sort");
   assert.equal(program.kernel.node(listing.roots.find(root => root.label === "Inferred type").handle).kind, "DefRef");
 });
 
@@ -64,10 +67,10 @@ test("bounded listings retain navigable roots and can prioritize an omitted oper
 
 test("open interval contexts and full 64-bit formula masks survive assembly inspection", async t => {
   const program = await fixture(t);
-  const pType = { tag: "Path", dim: "j", family: { tag: "Nat" }, left: { tag: "Zero" }, right: { tag: "Zero" } };
+  const pType = { tag: "Path", dim: "j", family: naturalSort, left: numeral(0), right: numeral(0) };
   const view = { expression: { tag: "PApp", path: { tag: "Var", name: "p" }, arg: [["i:1"]] },
-    type: { tag: "Nat" }, context: [{ name: "p", label: "path", type: pType }], dimensions: [["i", 63]], symbols: {} };
-  const checked = program.checker.syntax.check(view.expression, view.type, [["p", pType]], new Map(view.dimensions));
+    type: naturalSort, context: [{ name: "p", label: "path", type: pType }], dimensions: [["i", 63]], symbols: {} };
+  const checked = program.checker.checkView(view.expression, view.type, [["p", pType]], new Map(view.dimensions));
   const listing = kernelAssembly(program, view, checked);
   assert.equal(listing.context[0].label, "path");
   assert.deepEqual(listing.dimensions, [["i", 63]]);

@@ -20,7 +20,12 @@ export const proofTopics = [
   { id: "contour-integration", title: "Contour Integration" },
 ];
 
-export const proofChoices = [
+// The archive's modules as the proof selector shows them: each one's title and
+// browsing topic.
+export const proofCatalog = [
+  { id: "nat", topic: "arithmetic", title: "Natural numbers · a source declaration" },
+  { id: "w", topic: "homotopy", title: "Well-founded trees · a source declaration" },
+  { id: "pushout", topic: "homotopy", title: "Pushouts · a higher inductive source declaration" },
   { id: "field_embedding_spaces", topic: "fields", title: "Spaces of field embeddings over a base" },
   { id: "algebraic_base_change", topic: "algebraic-extensions", title: "Algebraic elements · enlarging the base field" },
   { id: "basis_generators", topic: "algebraic-extensions", title: "Finite bases generate their field extensions" },
@@ -121,9 +126,9 @@ export const proofChoices = [
   { id: "radix_digit_laws", topic: "arithmetic", title: "Radix digits · increment and overflow laws" },
   { id: "radix_decode", topic: "arithmetic", title: "Radix evaluation · successor and Nat round trip" },
   { id: "radix_arithmetic_correct", topic: "arithmetic", title: "Radix arithmetic · compatibility with Nat" },
-  { id: "binary_naturals", topic: "arithmetic", title: "Binary naturals · W types and binary literals" },
+  { id: "binary_naturals", topic: "arithmetic", title: "Binary naturals · inductive digits and binary literals" },
   { id: "binary_arithmetic", topic: "arithmetic", title: "Binary arithmetic · 10! = 3628800" },
-  { id: "radix_naturals", topic: "arithmetic", title: "Arbitrary radix · finite digits and W types" },
+  { id: "radix_naturals", topic: "arithmetic", title: "Arbitrary radix · finite digits and inductive numerals" },
   { id: "radix_arithmetic", topic: "arithmetic", title: "Arbitrary radix · carries, addition and multiplication" },
   { id: "radix_factorial", topic: "arithmetic", title: "One factorial algorithm · base 2 and base 10" },
   { id: "subgroup_images", topic: "algebra", title: "Subgroups · images, adjunction and surjective factorization" },
@@ -387,7 +392,7 @@ export const proofChoices = [
   { id: "integers", topic: "arithmetic", title: "Integers · successor equivalence" },
   { id: "paths", topic: "homotopy", title: "Paths · equality reasoning" },
   { id: "fundamental_groups", topic: "homotopy", title: "Fundamental groups · set-valued loop spaces" },
-  { id: "suspension_types", topic: "homotopy", title: "Suspension · definitions from pushouts" },
+  { id: "suspension_types", topic: "homotopy", title: "Suspension · definitions from the declared pushout" },
   { id: "suspension", topic: "homotopy", title: "Suspension & the circle · foundations" },
   { id: "euclid", topic: "arithmetic", title: "Euclid · mathematical proof" },
   { id: "basics", topic: "basic-logic", title: "Functions, pairs & induction · examples" },
@@ -395,6 +400,6 @@ export const proofChoices = [
 ];
 
 export function proofsInTopic(topic) {
-  return proofChoices.filter(proof => proof.topic === topic)
+  return proofCatalog.filter(proof => proof.topic === topic)
     .sort((left, right) => left.title.localeCompare(right.title));
 }

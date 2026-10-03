@@ -66,7 +66,7 @@ def affine_dyadic_refinement_estimate(
     );
   let leftUnit := complex_add_zero(F, zero, one, addF, mulF, negF, ring);
   let assoc := complex_add_assoc(F, zero, one, addF, mulF, negF, ring);
-  have rightUnit : forall x : Complex(F). addC(x, zeroC) = x {
+  let rightUnit : forall x : Complex(F). addC(x, zeroC) = x {
     intro x;
     exact trans(complex_add_comm(F, zero, one, addF, mulF, negF, ring, x, zeroC), leftUnit(x));
   }
@@ -74,7 +74,7 @@ def affine_dyadic_refinement_estimate(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
     integrand, uniform, delta, positiveDelta
   );
-  have bounds :
+  let bounds :
     forall depth : Nat. forall extra : Nat. forall a : FieldUnitInterval(F, zero, one, lt).
     forall b : FieldUnitInterval(F, zero, one, lt).
     forall ordered : FieldLe(

@@ -1,6 +1,6 @@
 import { splitInspectionContext } from "./cubical-context.mjs";
 import { cubicalSourceFile } from "./cubical-sources.mjs";
-import { proofChoices as choices, proofTopics, proofsInTopic } from "./proof-library.mjs";
+import { proofCatalog, proofTopics, proofsInTopic } from "./proof-library.mjs";
 import { proofRequestWatchdog } from "./proof-watchdog.mjs";
 import { renderMathNotation } from "./math-notation.mjs";
 import { axiomLabels } from "./axiom-labels.mjs";
@@ -8,10 +8,11 @@ import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proof-navigation.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
-import { numeralAt, tokenStyle } from "./source-tokens.mjs";
-import { libraryModules } from "./mathscript/modules.mjs";
+import { numeralAt, tokenStyle, headerWordAt } from "./source-tokens.mjs";
+import { libraryModules } from "./cubist/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
 import { createReplConsole } from "./repl-console.mjs";
+import { withCode } from "./diagnostics.mjs";
 
 const query = new URLSearchParams(location.search);
 const backend = "cubical";
@@ -21,12 +22,12 @@ const exampleMode = query.has("example"), embedded = exampleMode && query.has("e
 // A module of the rebuilt library opens like a proof, from library/.
 const libraryModule = !exampleMode && libraryModules.includes(query.get("proof"));
 const proofId = exampleMode ? "reference_example"
-  : libraryModule || choices.some((p) => p.id === query.get("proof")) ? query.get("proof")
+  : libraryModule || proofCatalog.some((p) => p.id === query.get("proof")) ? query.get("proof")
   : "euclid";
-const choice = choices.find((p) => p.id === proofId);
+const catalogEntry = proofCatalog.find((p) => p.id === proofId);
 const sourceURL = exampleMode ? null
   : libraryModule ? `library/${proofId}.cubist`
-  : `archive/first-library/${choice.file ?? cubicalSourceFile(proofId)}`;
+  : `archive/first-library/${cubicalSourceFile(proofId)}`;
 const snapshot = readProofNavigation(query.get("restore"));
 let restoring = snapshot?.proof === proofId ? snapshot : null;
 const crossFileBack = restoring?.back ?? query.get("back");
@@ -48,7 +49,8 @@ let savedDraft = null,
   previousDraft = null,
   sourceNotice = "";
 try {
-  // An example always opens with the source it was given.
+  // An example always opens with the source it was given. Storage keys keep
+  // the language's former name, MathScript, so saved drafts still load.
   const stored = exampleMode ? null : sessionStorage.getItem("mathscript:" + proofId);
   if (stored) {
     let record;
@@ -98,10 +100,10 @@ for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) {
   $(id).checked = true;
   try { $(id).checked = localStorage.getItem("mathscript:" + id) !== "false"; } catch {}
 }
-$("proof-title").textContent = choice?.title ?? (libraryModule ? `Library: ${proofId}` : "Reference example");
-$("development-note").hidden = !choice?.realDevelopment;
-$("puncture-note").hidden = !choice?.punctureDevelopment;
-$("complex-note").hidden = !choice?.complexDevelopment;
+$("proof-title").textContent = catalogEntry?.title ?? (libraryModule ? `Library: ${proofId}` : "Reference example");
+$("development-note").hidden = !catalogEntry?.realDevelopment;
+$("puncture-note").hidden = !catalogEntry?.punctureDevelopment;
+$("complex-note").hidden = !catalogEntry?.complexDevelopment;
 $("archive-note").hidden = exampleMode || libraryModule;
 $("source-file").hidden = exampleMode;
 $("repository-source").hidden = exampleMode;
@@ -129,7 +131,7 @@ function showTopic(topic) {
   if (!proofs.some(item => item.id === proofId)) {
     const prompt = document.createElement("option");
     prompt.value = "";
-    prompt.textContent = "Choose a proof…";
+    prompt.textContent = "Select a proof…";
     prompt.disabled = true;
     prompt.selected = true;
     $("proof-picker").append(prompt);
@@ -143,7 +145,7 @@ function showTopic(topic) {
   if (proofs.some(item => item.id === proofId)) $("proof-picker").value = proofId;
   $("proof-count").textContent = `${proofs.length} proofs`;
 }
-$("proof-topic").value = choice?.topic ?? proofTopics[0].id;
+$("proof-topic").value = catalogEntry?.topic ?? proofTopics[0].id;
 showTopic($("proof-topic").value);
 $("proof-topic").onchange = () => showTopic($("proof-topic").value);
 function rememberDraft() {
@@ -379,10 +381,33 @@ function axiomInfo(binding) {
     ...[...last.outputs, ...last.imports].find(o => o.binding === binding),
   });
 }
-function renderAxioms(target, axioms) {
+// A diagnostic's code, linked to its entry in the errors chapter, and the
+// separator after it; nothing for a message without a code.
+function codeLink(code) {
+  if (!code) return [];
+  const link = document.createElement("a");
+  link.href = `reference/errors.html#${code}`;
+  link.target = "_blank";
+  link.rel = "noopener";
+  link.className = "diagnostic-code";
+  link.textContent = code;
+  return [link, " "];
+}
+function renderAxioms(target, axioms, extensions = []) {
   target.replaceChildren(document.createTextNode("Axioms used: "));
+  // A kernel extension under review is listed apart: it is not an assumption,
+  // and the result still computes.
+  const marker = () => {
+    if (!extensions.length) return;
+    const note = document.createElement("span");
+    note.className = "kernel-extensions";
+    note.textContent = ` · ${extensions.map(name => `kernel extension: ${name}`).join(", ")}`;
+    note.title = "Relies on a kernel extension under review. It is not an assumption, and the result still computes.";
+    target.append(note);
+  };
   if (!axioms.length) {
     target.append("None");
+    marker();
     return;
   }
   for (const [index, binding] of axioms.entries()) {
@@ -395,6 +420,7 @@ function renderAxioms(target, axioms) {
     button.onclick = () => inspect(axiomInfo(binding));
     target.append(button);
   }
+  marker();
 }
 function renderResult() {
   $("result").hidden = !last;
@@ -414,9 +440,18 @@ function renderResult() {
     line.append(button, document.createTextNode(" : " + output.type));
     const dependencies = document.createElement("small");
     dependencies.className = "axiom-dependencies";
-    if (last.backend === "cubical" && !output.verified) dependencies.textContent = output.reason;
-    else renderAxioms(dependencies, output.axioms ?? []);
+    if (last.backend === "cubical" && !output.verified) dependencies.append(...codeLink(output.code), output.reason);
+    else renderAxioms(dependencies, output.axioms ?? [], output.extensions ?? []);
     line.append(dependencies);
+    $("result").append(line);
+  }
+  // Lint warnings: bindings that are never used and can be removed.
+  for (const warning of last.warnings ?? []) {
+    const line = document.createElement("div"), at = document.createElement("button");
+    line.className = "lint-warning";
+    at.textContent = `line ${warning.line}`;
+    at.onclick = () => revealSource(warning);
+    line.append("Warning ", ...codeLink(warning.code), "at ", at, `: ${warning.message}`);
     $("result").append(line);
   }
   const detail = document.createElement("small");
@@ -494,7 +529,8 @@ function renderSource() {
       } else {
         const info = linkMap.get(start);
         const expansion = (last.mode === "mathematical" ? numeralAt(line, token.index, text) : null) ?? info?.expansion;
-        const style = tokenStyle(text, expansion);
+        // The whole source: a header's colon and its inductive may be on earlier lines.
+        const style = tokenStyle(text, expansion, headerWordAt(last.source, start, text));
         if (info) {
           const button = document.createElement("button");
           button.className = `reference${style ? " " + style : ""}`;
@@ -568,6 +604,7 @@ async function inspect(info, remember = true) {
   renderWitnessDetails(info);
   sourceLink(info);
   $("inspect-axioms").replaceChildren();
+  $("inspect-signature").hidden = true;
   $("locals").replaceChildren();
   $("kernel-details").hidden = info.kind === "goal";
   $("kernel-terms").hidden = info.kind === "goal";
@@ -618,15 +655,27 @@ async function inspect(info, remember = true) {
     if (last.backend === "cubical" && info.verified === false) {
       $("kernel-details").hidden = true;
       $("kernel-terms").hidden = true;
-      $("inspect-description").textContent = `Not checked by cubical C: ${info.reason}`;
+      $("inspect-description").textContent = `Not checked by cubical C: ${withCode(info.reason, info.code)}`;
       return;
     }
+    // A declared type has no checked term: its signature and eliminator.
+    const declared = last.backend === "cubical" && [info.kind, info.role].includes("inductive");
+    if (declared) {
+      $("kernel-details").hidden = true;
+      $("kernel-terms").hidden = true;
+    }
     try {
-      const view = await request("inspect", { binding: info.binding });
-      if (sequence !== inspectSerial) return;
-      if (view.statement) renderStatement(view);
-      else renderType(view.typeText, Object.values(view.symbols));
-      renderKernel(view);
+      if (declared) {
+        const view = await request("signature", { binding: info.binding });
+        if (sequence !== inspectSerial) return;
+        if (view) renderSignature(view);
+      } else {
+        const view = await request("inspect", { binding: info.binding });
+        if (sequence !== inspectSerial) return;
+        if (view.statement) renderStatement(view);
+        else renderType(view.typeText, Object.values(view.symbols));
+        renderKernel(view);
+      }
     } catch (e) {
       if (sequence === inspectSerial) diagnostic(e);
     }
@@ -634,6 +683,36 @@ async function inspect(info, remember = true) {
   if (embedded) scrollTo(0, 0);
   else if (matchMedia("(max-width:1150px)").matches)
     $("inspect-name").scrollIntoView({ block: "center" });
+}
+// A declared type: its former, its constructors in the kernel's normal form
+// with their shapes, and the clause type the eliminator asks for each
+// constructor, for a motive P (the H1 specification's 6.5).
+function renderSignature(view) {
+  const plural = (count, word) => `${count} ${word}${count === 1 ? "" : "s"}`;
+  const item = (text, note) => {
+    const row = document.createElement("li"), code = document.createElement("code");
+    code.textContent = text;
+    row.append(code);
+    if (note) {
+      const small = document.createElement("small");
+      small.textContent = note;
+      row.append(small);
+    }
+    return row;
+  };
+  $("inspect-kind").textContent = `Declared type · ${view.modifier}`;
+  renderType(view.former);
+  $("inspect-signature").hidden = false;
+  $("inspect-signature-recorded").hidden = !view.recorded.length;
+  $("inspect-signature-recorded").textContent = `Recorded universe parameters: ${view.recorded.join(", ")}`;
+  $("inspect-constructors").replaceChildren(...view.constructors.map(c => item(`${c.name} : ${c.type}`,
+    `${c.data} data · ${plural(c.positions, "position")} · ${plural(c.dimensions, "dimension")}${c.generated ? " · generated" : ""}`)));
+  const eliminator = view.eliminator;
+  $("inspect-eliminator").hidden = !eliminator;
+  $("inspect-eliminator-motive").textContent = eliminator ? `For a motive ${eliminator.motive}, one clause per constructor:` : "";
+  $("inspect-clauses").replaceChildren(...(eliminator?.clauses ?? []).map(clause => item(`${clause.name} : ${clause.type}`)),
+    ...(eliminator?.error ? [item("…", `The remaining clause types could not be computed: ${eliminator.error}`)] : []));
+  renderAxioms($("inspect-axioms"), [], view.extensions ?? []);
 }
 function renderStatement(view) {
   const append = (target, parts) => {
@@ -762,7 +841,7 @@ function renderCubicalKernel(view) {
   $("kernel-identity-options").hidden = raw;
   $("expand-kernel").textContent = "Show more of the term";
   $("expand-kernel").hidden = raw || !["kernel-expression", "kernel-type", "kernel-context-list", "kernel-axioms-list"].some(id => $(id).textContent.includes("…"));
-  renderAxioms($("inspect-axioms"), view.axioms ?? []);
+  renderAxioms($("inspect-axioms"), view.axioms ?? [], view.extensions ?? []);
 }
 $("toggle-kernel-body").onclick = () => { showKernelBody = !showKernelBody; renderKernel(checkedKernelView); };
 $("widen-inspector").onclick = () => {
@@ -887,7 +966,7 @@ $("language-guide").addEventListener("click", followInPageLink);
 let workerVersion = null;
 async function serverVersion() {
   try {
-    const r = await fetch("mathscript-version", { cache: "no-store" });
+    const r = await fetch("cubist-version", { cache: "no-store" });
     return r.ok ? (await r.json()).version : null;
   } catch {
     return null;

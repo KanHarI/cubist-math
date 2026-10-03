@@ -1,3 +1,5 @@
+import "./fresh-build.mjs";
+import {naturalSort, numeral} from "../web/translator/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
@@ -34,15 +36,16 @@ def refined(value : Unit or Unit) : Shape(value) {
 test("the kernel reports the mismatched handles, and speculative checks stay undescribed", async t => {
   const program = new CubicalProgram(await createCubical(), async () => "", { collectReferences: false });
   t.after(() => program.dispose());
+  await program.check("import nat;", "main");
   const checker = program.checker;
-  const nat = { tag: "Nat" }, unit = { tag: "Unit" }, zero = { tag: "Zero" };
+  const nat = naturalSort, unit = { tag: "Unit" }, zero = numeral(0);
   const answer = checker.attempt(zero, unit);
   assert.equal(answer.ok, false);
   assert.equal(answer.failure, "mismatch");
   assert.equal(answer.error.message, "Type mismatch.");
   assert.ok(answer.error.mismatch.found && answer.error.mismatch.expected);
   assert.throws(() => checker.check(zero, unit), /^Error: Type mismatch: found Nat, expected Unit\.$/);
-  assert.equal(checker.check(zero, nat).tag, "Zero");
+  assert.equal(checker.check(zero, nat).tag, "Con");
 });
 
 test("display renaming never merges two different names", () => {
@@ -52,5 +55,41 @@ test("display renaming never merges two different names", () => {
   assert.notEqual(shown.name, shown.body.name);
   assert.equal(shown.body.body.name, shown.name);
   // A lone generated name gets its stem back.
-  assert.equal(displayTerm({ tag: "Lam", name: "x7", domain: { tag: "Nat" }, body: { tag: "Var", name: "x7" } }).name, "x");
+  assert.equal(displayTerm({ tag: "Lam", name: "x7", domain: { tag: "Unit" }, body: { tag: "Var", name: "x7" } }).name, "x");
+});
+
+// The third review of #74: a mismatch's two sides are named together. The
+// found side prints naturals' add, so a variable named add1 cannot show its
+// stem add there; named alone, the expected side would have shown it as add.
+test("a variable reads alike on both sides of a mismatch", async t => {
+  const { readFile } = await import("node:fs/promises");
+  const { T } = await import("../web/translator/core.mjs");
+  const program = new CubicalProgram(await createCubical(), name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8"));
+  t.after(() => program.dispose());
+  await program.check("import naturals;\n", "main");
+  const add = (a, b) => T.app(T.app({ tag: "DefRef", name: "naturals__add" }, a), b);
+  const add1 = T.variable("add1"), context = [["add1", naturalSort], ["p", T.path("i", naturalSort, add(add1, numeral(1)), add1)]];
+  let message = null;
+  try { program.checker.checkView(T.variable("p"), T.path("i", naturalSort, add1, add1), context); }
+  catch (error) { message = error.message; }
+  assert.match(message ?? "", /^Type mismatch: found add1 \+ 1 = add1, expected add1 = add1\.$/);
+});
+
+// The fourth review of #74: every message that shows two terms of one scope
+// names them together, as a mismatch does. `+` is naturals' add, captured as
+// plus before a variable named add is introduced. That label prints on one
+// side only, so the variable is named apart from it there; named alone, the
+// other side would have shown it as add.
+test("calc names the two terms it shows together", async t => {
+  const { readFile } = await import("node:fs/promises");
+  const program = new CubicalProgram(await createCubical(), name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8"),
+    { collectReferences: false });
+  t.after(() => program.dispose());
+  const result = await program.check(`import naturals;
+def step_start : forall n : Nat. n = n { let plus := add; intro add; calc { add = add by refl(add); plus(add, 1) = add by refl(add); } }
+def chain_end : forall n : Nat. n = n + 1 { intro add; calc { add = add by refl(add); } }
+`, "main");
+  const reason = name => result.outputs.find(output => output.name === name).reason;
+  assert.match(reason("step_start"), /^calc step left endpoint does not match the preceding endpoint\. The step starts at (\w+) \+ 1; the chain so far ends at \1\./);
+  assert.match(reason("chain_end"), /^calc final endpoint does not match the goal\. The chain ends at (\w+); the goal's right side is \1 \+ 1\./);
 });

@@ -78,7 +78,7 @@ def ordered_square_nonnegative(
 ) :
   FieldLe(F, lt, zero, mulF(x, x)) {
   intro negativeSquare;
-  have aboveZeroWeak : FieldLe(F, lt, zero, x) {
+  let aboveZeroWeak : FieldLe(F, lt, zero, x) {
     intro belowZero;
     let positiveNeg :=
       ordered_neg_positive(
@@ -157,7 +157,7 @@ def ordered_sum_nonnegative(
   obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   intro belowZero;
-  have nonnegativeSum : FieldLe(F, lt, x, addF(x, y)) {
+  let nonnegativeSum : FieldLe(F, lt, x, addF(x, y)) {
     intro less;
     obtain (forward, backward) := translate(y, zero, x);
     let swapped :=

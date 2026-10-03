@@ -209,7 +209,7 @@ def affine_refinement_uniform_estimate(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, values, uniform, delta,
     positiveDelta
   );
-  have estimates :
+  let estimates :
     forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
     forall coarseTag : FieldUnitInterval(F, zero, one, lt).
     forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).

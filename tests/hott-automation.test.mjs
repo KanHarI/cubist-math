@@ -1,18 +1,23 @@
 // A7 regressions for the HoTT automation roadmap. They pin what the kernel
 // computes today, which probes it rejects, and why. A later milestone that
 // changes one of these outcomes must update the fixture deliberately.
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import {CubicalProgram} from "../web/cubical-program.mjs";
-import {parse} from "../web/mathscript/parser.mjs";
+import {parse} from "../web/cubist/parser.mjs";
+import {fileURLToPath} from "node:url";
+import {sourceReader} from "../tools/module-sources.mjs";
 
-const readLibrary = name => readFile(new URL(`../archive/first-library/${name}.cubist`,import.meta.url),"utf8");
-const example = name => readFile(new URL(`../docs/examples/hott-automation/${name}`,import.meta.url),"utf8");
+// An example's imports resolve as the CLI resolves them
+// (web/module-resolution.mjs): its own directory, the library, the archive.
+const examplePath = name => fileURLToPath(new URL(`../docs/examples/hott-automation/${name}`,import.meta.url));
+const example = name => readFile(examplePath(name),"utf8");
 
 async function checkExample(t,file,module) {
-  const program=new CubicalProgram(await createCubical(),readLibrary,{collectReferences:false});
+  const program=new CubicalProgram(await createCubical(),sourceReader({path:examplePath(file)}),{collectReferences:false});
   t.after(()=>program.dispose());
   const source=await example(file);
   return {source,result:await program.check(source,module)};
@@ -39,21 +44,22 @@ test("accepted cubical probes from the roadmap evidence keep checking",async t=>
   const {result}=await checkExample(t,"cubical-probes.cubist","hott_cubical_probes");
   assertCheckedFixture(result,["sigma_line","filler_rewrite","multi_hole","square_rebuild",
     "trans_as_composition","sym_sym_refl","convertible_rule","right_unit_at_u1",
-    "right_unit_at_u0","ordered_fillers"]);
+    "right_unit_at_u0","ordered_fillers","under_succ"]);
 });
 
 test("closed assumption-free results compute to canonical values (invariant 10)",async t=>{
   const {source,result}=await checkExample(t,"canonicity.cubist","hott_canonicity");
   assertCheckedFixture(result,["closed_arithmetic","closed_path_induction","closed_transport",
     "closed_dependent_transport","winding_one","winding_two","winding_minus_one",
-    "winding_integer_loop"]);
+    "winding_integer_loop","unit_center","unit_path_computes","unit_square_computes",
+    "retract_path_computes","nat_decision_computes","nat_square_computes","unit_paths_contract"]);
   // Each statement names its canonical value and is proved by computation
   // alone. Replacing rfl by a lemma would hide a result that stopped computing.
   for(const declaration of parse(source).declarations) {
     assert.deepEqual(declaration.body.map(statement=>statement.kind),["rfl"],declaration.name.text);
     assert.equal(declaration.computable,true,`${declaration.name.text} is marked computable`);
   }
-  assert.equal(result.evaluations.length,1,"the evaluate directive checks");
+  assert.equal(result.evaluations.length,2,"the evaluate directives check");
 });
 
 // Expected outcome of each probe in rejected-probes.cubist.rejected. `until`
@@ -70,7 +76,6 @@ const rejectedProbes = {
   rejected_sym_pathp:{reason:/Unbound cubical dimension/,until:"E0 or A1a"},
   rejected_rule_constant:{reason:/not determined by the matched side/,until:"A1"},
   rejected_rule_ap:{reason:/not determined by the matched side/,until:"A1"},
-  under_succ:{reason:/unresolved equality goal/,until:"A2"},
   use_ru:{reason:/unresolved equality goal/,until:"A1"},
   use_ru_at_u0:{reason:/unresolved equality goal/,until:"A1"},
 };

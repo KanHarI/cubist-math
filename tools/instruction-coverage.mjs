@@ -5,10 +5,9 @@
 // driver at its type, with a time limit per definition. Writes a report,
 // build/instruction-coverage.json unless --report names another file, and
 // prints a summary.
-//   node tools/instruction-coverage.mjs [--limit-ms=5000] [--oracle]
+//   node tools/instruction-coverage.mjs [--limit-ms=5000]
 //        [--trajectories=FILE] [--select=REGEX] [--modules=a,b] [--report=FILE]
-// The driver steers by its own guide; with --oracle, by the term checker's
-// conversion instead, for comparison. --trajectories writes one JSON line per
+// The driver steers by its own guide. --trajectories writes one JSON line per
 // re-derived definition with every branch point of its search
 // (tools/search-telemetry.mjs); --select re-derives only the definitions
 // whose names match; --modules checks only those archive modules and their
@@ -28,18 +27,18 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import os from "node:os";
 import createCubical from "../web/dist/cubical.mjs";
+import { assertFreshBuild } from "./build-stamp.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { InstructionDriver, heuristicChooser, searchLimits } from "../web/cubical-instruction-driver.mjs";
-import { sourceModules, cubicalSourceModules } from "../web/mathscript/modules.mjs";
+import { InstructionDriver, heuristicPolicy, searchLimits } from "../web/cubical-instruction-driver.mjs";
+import { archiveModules } from "../web/cubist/modules.mjs";
 import { cubicalSourceFile } from "../web/cubical-sources.mjs";
-import { addWork, countingChooser, kernelSteps, recordingChooser, workSince } from "./search-telemetry.mjs";
+import { addWork, countingPolicy, kernelSteps, recordingPolicy, workSince } from "./search-telemetry.mjs";
 
 const option = name => process.argv.find(arg => arg.startsWith(`--${name}=`))?.slice(name.length + 3);
 const limitMs = option("limit-ms") ? Number(option("limit-ms")) : 5000;
-const oracle = process.argv.includes("--oracle");
 const trajectoryFile = option("trajectories");
 const select = option("select") ? new RegExp(option("select")) : null;
-const known = /^--(limit-ms|trajectories|select|modules|report)=|^--oracle$/;
+const known = /^--(limit-ms|trajectories|select|modules|report)=/;
 const unknown = process.argv.slice(2).find(arg => !known.test(arg));
 if (unknown) throw new Error(`Unknown option: ${unknown}`);
 
@@ -52,33 +51,34 @@ const environment = {
 };
 
 const readSource = name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
+// A stale WASM kernel would measure code it does not contain.
+assertFreshBuild();
 const program = new CubicalProgram(await createCubical(), readSource);
 const kernel = program.kernel;
-kernel.conversionOracle = oracle;
 // The archive check shares one driver across declarations, the elaborator's.
-const checkChooser = countingChooser(heuristicChooser);
-kernel.chooser = checkChooser;
-const modules = option("modules")?.split(",") ?? [...new Set([...sourceModules, ...cubicalSourceModules])];
+const checkPolicy = countingPolicy(heuristicPolicy);
+kernel.policy = checkPolicy;
+const modules = option("modules")?.split(",") ?? archiveModules;
 const checkStarted = performance.now(), checkWork = kernel.work();
 const checked = await program.check(modules.map(name => `import ${name};`).join("\n"), "coverage");
 const check = { seconds: Number(((performance.now() - checkStarted) / 1000).toFixed(1)),
-  work: workSince(checkWork, kernel.work()), search: checkChooser.counts };
+  work: workSince(checkWork, kernel.work()), search: checkPolicy.counts };
 const budgets = { limitMs, stepBudget: Number(kernel.stepBudget), ...searchLimits };
 
 // Every definition again, each by a fresh driver on the checked session: the
 // kernel's caches are warm, the driver's are empty.
 const trajectories = trajectoryFile ? createWriteStream(trajectoryFile) : null;
-const failures = {}, derivations = [], total = {}, search = countingChooser(heuristicChooser);
+const failures = {}, derivations = [], total = {}, search = countingPolicy(heuristicPolicy);
 for (const [name, reference] of kernel.definitions) {
   if (select && !select.test(name)) continue;
   const { value, type } = kernel.definition(reference);
   const points = [];
-  const chooser = trajectories ? recordingChooser(search, kernel, point => points.push(point)) : search;
+  const policy = trajectories ? recordingPolicy(search, kernel, point => points.push(point)) : search;
   const before = kernel.work(), started = performance.now();
   let outcome = "derived";
   kernel.setDeadline(limitMs);
   try {
-    new InstructionDriver(kernel, { chooser }).check(value, type);
+    new InstructionDriver(kernel, { policy }).check(value, type);
   } catch (error) {
     outcome = error.message.replace(/: .*/, "");
     (failures[outcome] ??= []).push(name);
@@ -98,7 +98,7 @@ const derived = derivations.filter(d => d.derived);
 const definitions = select ? derivations.length : kernel.definitions.size;
 const top = (key, format) => [...derived].sort((a, b) => b[key] - a[key]).slice(0, 10).map(format);
 const report = {
-  environment, budgets, oracle, chooser: search.name,
+  environment, budgets, policy: search.name,
   session: "The archive is checked in one kernel session. Each declaration is derived by a driver of its own: admission and "
     + "the declaration's transaction drop the driver, and the transaction's checkpoint commit clears the kernel's checking "
     + "and reduction caches, keeping only checked definitions and interned syntax. Then each stored definition is derived "
@@ -126,7 +126,7 @@ await mkdir(dirname(reportFile), { recursive: true });
 await writeFile(reportFile, JSON.stringify(report, null, 2) + "\n");
 
 const count = n => n.toLocaleString("en-US");
-console.log(`Archive checked ${oracle ? "with the conversion oracle" : "with the driver's guide"} in ${check.seconds} s: `
+console.log(`Archive checked with the driver's guide in ${check.seconds} s: `
   + `${count(report.checked.verified)} of ${count(imports.length)} declarations in ${modules.length} module${modules.length === 1 ? "" : "s"}, `
   + `${gaps.length} gap${gaps.length === 1 ? "" : "s"}; `
   + `kernel work ${count(check.work.instructions)} instructions, ${count(kernelSteps(check.work))} steps.`);

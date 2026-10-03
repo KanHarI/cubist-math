@@ -1,3 +1,4 @@
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -53,24 +54,24 @@ test("the elaboration view shows each declaration's type, term and the kernel's 
   const ltSucc = derivation(view[1]);
   // The instruction kernel's derivation, in the style of THTH: rules on earlier steps.
   assert.deepEqual(ltSucc.slice(0, 7), [
-    "1 NatForm() // {} ⊢ Nat : U0",
-    "2 DefLookup() // {} ⊢ lt : (Nat → (Nat → U0))",
-    "3 CtxExt(1) // {n : Nat}",
-    "4 Vble(3) // {n : Nat} ⊢ n : Nat",
-    "5 PiElim(2, 4) // {n : Nat} ⊢ lt(n) : (Nat → U0)",
-    "6 NatIntroS(4) // {n : Nat} ⊢ succ(n) : Nat",
-    "7 PiElim(5, 6) // {n : Nat} ⊢ lt(n, succ(n)) : U0",
+    "1 SortBegin() // {} ⊢ Nat : U0",
+    "2 ConIntro(1) // {} ⊢ succ : (Nat → Nat)",
+    "3 DefLookup() // {} ⊢ lt : (Nat → (Nat → U0))",
+    "4 CtxExt(1) // {n : Nat}",
+    "5 Vble(4) // {n : Nat} ⊢ n : Nat",
+    "6 PiElim(3, 5) // {n : Nat} ⊢ lt(n) : (Nat → U0)",
+    "7 PiElim(2, 5) // {n : Nat} ⊢ succ(n) : Nat",
   ]);
   // The goal is unfolded at its highlighted head: lt, at [0, 0] of the other side.
   assert.ok(ltSucc.some(step => /^\d+ Delta\(\d+\) at the other \[0, 0\]: lt \/\/ \{n : Nat\} ⊢ lt\(n, succ\(n\)\) ≡ /.test(step)));
   // refl(succ(n)) proves succ(0) + n = succ(n) by computing the addition.
-  assert.ok(ltSucc.some(step => /^\d+ Iota\(\d+\) at the other \[1, 0\]: NatRec\(/.test(step)));
+  assert.ok(ltSucc.some(step => /^\d+ Iota\(\d+\) at the other \[1, 0, 1\]: Nat\.elim\(/.test(step)));
   assert.ok(ltSucc.some(step => /^\d+ Conv\(\d+, \d+\) \/\/ \{n : Nat\} ⊢ refl\(succ\(n\)\) : \(add\(1, n\) =\[/.test(step)));
   assert.ok(ltSucc.some(step => /^\d+ SigmaIntro\(\d+, \d+, \d+\) \/\/ \{n : Nat\} ⊢ \(0 , refl\(succ\(n\)\)\) : Σ \(k : Nat\)/.test(step)));
   assert.ok(ltSucc.some(step => /^\d+ Conv\(\d+, \d+\) \/\/ \{n : Nat\} ⊢ \(0 , refl\(succ\(n\)\)\) : lt\(n, succ\(n\)\)$/.test(step)));
   // exact's ascription is the elaborator's, and marked; the proof is not.
   assert.ok(ltSucc.some(step => /PiIntro.*λ \(ascription : lt\(n, succ\(n\)\)\)\. ascription.*\[elaborator\]$/.test(step)));
-  assert.ok(ltSucc.includes("8 CtxExt(7) // {n : Nat, ascription : lt(n, succ(n))} [elaborator]"));
+  assert.ok(ltSucc.includes("9 CtxExt(8) // {n : Nat, ascription : lt(n, succ(n))} [elaborator]"));
   assert.ok(!ltSucc.some(step => /SigmaIntro.*\[elaborator\]/.test(step)));
   // Every premise is an earlier step.
   for (const declaration of view) for (const step of declaration.derivation.steps)
@@ -83,7 +84,7 @@ test("the elaboration view shows each declaration's type, term and the kernel's 
 test("a declaration the instruction kernel cannot derive shows why, not a derivation", async t => {
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
-  await program.check("def Suspension(A : U0) := Pushout(A, Unit, Unit, fun (a : A) => tt, fun (a : A) => tt);\n", "suspension");
+  await program.check("def Doubled(A : U0) : U0 := A or A;\n", "suspension");
   // Whatever the driver cannot derive; here, it is made to fail.
   const check = InstructionDriver.prototype.check;
   InstructionDriver.prototype.check = () => { throw new Error("The search could not derive this."); };

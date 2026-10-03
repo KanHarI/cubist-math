@@ -35,7 +35,7 @@ its results and the expected outcome of each rejected probe.
 ```sh
 npm test -- tests/hott-automation.test.mjs
 npm test -- docs/examples/hott-automation/conversion-laws.cubist docs/examples/hott-automation/cubical-probes.cubist docs/examples/hott-automation/canonicity.cubist
-node tools/format-mathscript.mjs --check docs/examples/hott-automation/*.cubist docs/examples/hott-automation/rejected-probes.cubist.rejected
+node tools/format-cubist.mjs --check docs/examples/hott-automation/*.cubist docs/examples/hott-automation/rejected-probes.cubist.rejected
 ```
 
 On 2026-09-24, `conversion-laws.cubist` checked 25 declarations in 89,080

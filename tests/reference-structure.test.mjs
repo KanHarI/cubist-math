@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile, readdir, access } from "node:fs/promises";
 import { dirname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
-import { decode, referenceExamples, statedErrors } from "./reference-pages.mjs";
+import { decode, referenceExamples, statedErrors, statedWarnings } from "./reference-pages.mjs";
 
 // The language reference is an index page plus one page per chapter. These
 // tests keep its navigation consistent and every link and anchor working.
@@ -90,13 +90,14 @@ test("anchors of the former single-page reference redirect to their chapters", a
   }
 });
 
-test("the error chapter catalogues exactly the errors that the examples show", async () => {
+test("the error chapter catalogues exactly the errors and warnings that the examples show", async () => {
   const catalogue = [...(await read("reference/errors.html")).matchAll(/data-message="([^"]*)"/g)].map(([, message]) => decode(message));
   const stated = new Set();
   for (const page of ["language.html", ...(await chapterFiles()).map(file => `reference/${file}`)])
     for (const example of referenceExamples(page, await read(page)))
-      if (example.attrs["data-check"] === "reject") for (const error of statedErrors(example.text)) stated.add(error);
-  // Each catalogued message is shown by a checked example, and each shown error is catalogued.
+      for (const message of example.attrs["data-check"] === "reject" ? statedErrors(example.text)
+        : example.attrs["data-check"] === "accept" ? statedWarnings(example.text) : []) stated.add(message);
+  // Each catalogued message is shown by a checked example, and each shown error or warning is catalogued.
   const unshown = catalogue.filter(message => ![...stated].some(error => error.includes(message)));
   const uncatalogued = [...stated].filter(error => !catalogue.some(message => error.includes(message)));
   assert.deepEqual({ unshown, uncatalogued }, { unshown: [], uncatalogued: [] });

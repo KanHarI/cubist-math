@@ -1,6 +1,6 @@
 # Binary numbers, arbitrary radix, and proof transfer
 
-The mathematical sources now prove `10! = 3628800` using W-type binary numbers,
+The mathematical sources now prove `10! = 3628800` using inductive binary numbers,
 using one generic radix development instantiated at bases 2 and 10, and by
 transporting the results among these representations and unary `Nat`.
 
@@ -19,21 +19,26 @@ labelled as a successful cubical check. See
 
 ## Representation and syntax
 
-`W(A, B)` forms well-founded trees. `sup(T, label, children)` introduces a tree,
-and `wrec(T, motive, step, tree)` performs dependent induction. The step takes
-`label`, the child function, and a dependent recursive result for every child.
-These elaborate to the production kernel's existing W rules; no W axiom was added.
-
-`BinaryPositive` has a leaf for 1 and unary constructors for digits 0 and 1.
-`BinaryNat` adds a separate zero. Thus positive numbers have no leading-zero
+`BinaryPositive` and `BinaryNat` are ordinary `inductive` declarations, checked
+by H1. `BinaryPositive` has the constructor `binary_one` and the constructors
+`binary_bit0(p)` and `binary_bit1(p)` for a trailing digit. `BinaryNat` adds a
+separate `binary_zero`, and `binary_positive(p)`. Recursion and dependent
+induction are structural `match` definitions (`binary_positive_rec`,
+`binary_positive_induction`), which compute at each constructor. Zero is a
+constructor of its own, so positive numbers have no leading-zero
 representations. `0b110` expands to
 `binary_positive(binary_bit0(binary_bit1(binary_one)))`, with one constructor per
 bit. Hover exposes this expansion. Decimal literals retain their unary `Nat`
 meaning. The parser stores binary digits exactly as text, rejects malformed
 literals, and permits at most 256 significant bits subject to kernel depth limits.
+Until 2026-09-30 these types were encoded as W trees with sums for labels; the
+`w` module still declares `W` and `wrec`, but nothing imports it.
 
-`RadixNat(extra)` uses radix `extra + 2`. Leaves carry one of the nonzero leading
-digits; unary nodes carry any radix digit. Its finite digits, increment with
+`RadixNat(extra)` uses radix `extra + 2`. `RadixPositive(extra)` is declared with
+the constructors `radix_leading_digit`, which carries one of the nonzero leading
+digits, and `radix_appended_digit`, which appends any radix digit; `RadixNat`
+adds `radix_nat_zero`. The functions `radix_leading`, `radix_append`,
+`radix_zero` and `radix_positive` take `extra` explicitly and build them. Its finite digits, increment with
 carry, addition, multiplication, and factorial are defined uniformly. The base-2
 and base-10 factorial proofs use exactly this same implementation.
 
@@ -43,8 +48,8 @@ and base-10 factorial proofs use exactly this same implementation.
   manual `binary_factorial_ten`. No axioms.
 - `radix_naturals`, `radix_arithmetic`, `radix_factorial`: the generic representation,
   arithmetic, and manual base-2/base-10 factorial instances. No axioms.
-- `binary_induction`, `radix_induction`: dependent induction in digit notation.
-  Function extensionality identifies W child functions from `Void` and `Unit`.
+- `binary_induction`, `radix_induction`: dependent induction in digit notation,
+  each one structurally recursive `match`.
 - `binary_equivalence`: both round trips and full half-adjoint equivalences with Nat.
 - `binary_arithmetic_correct`: successor/addition/multiplication/factorial compatibility,
   and `factorial_ten_from_binary` in the **existing** Nat factorial.
@@ -90,8 +95,8 @@ the original Nat factorial compatibility theorem natively.
 directions: about 1.35 million nodes / 67 MB for the combined source arena, and
 the largest closed unary numeral remains **10**. These checks register no
 UA/FunExt axioms. Seven concrete endpoint theorems are written in
-`lib/cubical/factorial-transfer.cubist`; their native runner supplies the
-checked transport definitions from `lib/cubical/number-transport.mjs`.
+`tests/fixtures/factorial-transfer.cubist`; their native runner supplies the
+checked transport definitions from `tests/translator/number-transport.mjs`.
 Dependency checks ensure that each transfer uses its source factorial theorem,
 not the target representation's manual factorial theorem.
 

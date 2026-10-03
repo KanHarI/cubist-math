@@ -35,7 +35,7 @@ def field_close_translate(
   FieldClose(F, addF, lt, addF(shift, x), addF(shift, y), epsilon) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   obtain (upper, lower) := close;
-  have shiftLess : forall u : F. forall v : F. lt(u, v) -> lt(addF(shift, u), addF(shift, v)) {
+  let shiftLess : forall u : F. forall v : F. lt(u, v) -> lt(addF(shift, u), addF(shift, v)) {
     intro u, v, less;
     obtain (forward, backward) := translate(u, v, shift);
     let first :=
@@ -89,7 +89,7 @@ def field_magnitude_squeeze(
   FieldConverges(F, zero, addF, lt, errors, zero) {
   intro epsilon, positive;
   obtain (bound, close) := vanishes(epsilon, positive);
-  have tail : forall n : Nat. IndexLE(bound, n) -> FieldClose(F, addF, lt, errors(n), zero, epsilon) {
+  let tail : forall n : Nat. IndexLE(bound, n) -> FieldClose(F, addF, lt, errors(n), zero, epsilon) {
     intro n, large;
     obtain (upper, lower) := close(n, large);
     let small :=

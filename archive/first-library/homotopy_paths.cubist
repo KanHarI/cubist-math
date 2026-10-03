@@ -46,14 +46,16 @@ def null_homotopy_kills_loops(
 ) :
   cong(f, p) = refl(f(x)) {
   let image := cong(f, p);
-  have natural : trans(image, homotopy(x)) = homotopy(x) := trans(
-    homotopy_naturality(A, B, f, (fun (a : A) => point), homotopy, x, x, p),
+  let natural : trans(image, homotopy(x)) = homotopy(x) :=
     trans(
-      cong(
-        (fun (q : point = point) => trans(homotopy(x), q)), path_map_constant(A, B, point, x, x, p)
-      ), right_unit(B, f(x), point, homotopy(x))
-    )
-  );
+      homotopy_naturality(A, B, f, (fun (a : A) => point), homotopy, x, x, p),
+      trans(
+        cong(
+          (fun (q : point = point) => trans(homotopy(x), q)),
+          path_map_constant(A, B, point, x, x, p)
+        ), right_unit(B, f(x), point, homotopy(x))
+      )
+    );
   exact cancel_right_path(
     B, f(x), point, homotopy(x), f(x), image, refl(f(x)),
     trans(natural, sym(left_unit(B, f(x), point, homotopy(x))))

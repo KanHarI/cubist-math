@@ -47,11 +47,11 @@ def subdivision_refinement_sum_join(
   let rightTags := subdivision_tags(C, b, c, coarseRight);
   obtain (leftPieces, leftValid, leftComputes) := left;
   obtain (rightPieces, rightValid, rightComputes) := right;
-  have lastLeft : sample_last(C, n, vertices) = b := field_snd(
+  let lastLeft : sample_last(C, n, vertices) = b := field_snd(
     (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
     subdivision_endpoints(C, a, b, coarseLeft)
   );
-  have firstRight : sample_first(C, m, rightVertices) = b := field_fst(
+  let firstRight : sample_first(C, m, rightVertices) = b := field_fst(
     (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
     subdivision_endpoints(C, b, c, coarseRight)
   );

@@ -71,7 +71,7 @@ def residue_reduce_horner(K : AlgebraicField, M : PolynomialModulus(K), p : Poly
   let tail := polynomial_tail(K, p);
   let constant := polynomial_constant(K, polynomial_coefficients(K, p, 0));
   let reduce := residue_reduce(K, M);
-  have product : reduce(polynomial_shift(K, tail)) = residue_mul(
+  let product : reduce(polynomial_shift(K, tail)) = residue_mul(
     K, M, adjoined_root(K, M), reduce(tail)
   ) := with unfolding [] {
     trans(
@@ -107,7 +107,7 @@ def residue_eval_polynomial(
   };
 }
 
-// The chosen element really is a root of the original polynomial over K.
+// The selected element really is a root of the original polynomial over K.
 def adjoined_root_is_root(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M))

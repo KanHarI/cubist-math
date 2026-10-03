@@ -10,7 +10,9 @@ import { kernelAssembly, assemblyText } from "../web/cubical-assembly.mjs";
 import { reduceView } from "../web/cubical-reduction.mjs";
 import { ReplSession, replStatements } from "../web/repl-session.mjs";
 import { moduleRoots } from "../web/module-resolution.mjs";
+import { diagnosticLine, withCode } from "../web/diagnostics.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
+import { assertFreshBuild } from "../tools/build-stamp.mjs";
 const help = `Cubist Math — cubical C kernel
   let NAME := TERM;        Define a name; def and any other declaration work too
   typeof TERM;             Show the type of a term
@@ -33,14 +35,29 @@ before it. An entry continues on the next line while a bracket is open.
 
 Noninteractive: node cli/repl.mjs check euclid
                 node cli/repl.mjs "import naturals; evaluate 2 + 3;"
-Optimizations: --[no-]share-syntax, --[no-]reuse-checks, --[no-]compact-paths`;
+Optimizations: --[no-]share-syntax, --[no-]reuse-checks, --[no-]compact-paths
+Declared types (H1, inductive) are on by default. Nat is imported from the
+source prelude; import w for W(U,V,A,B), and pushout for Pushout.`;
 const args = process.argv.slice(2), optimizations = {};
 const command = [];
 for (const arg of args) {
   const match = arg.match(/^--(no-)?(share-syntax|reuse-checks|compact-paths)$/);
   if (match) optimizations[{ "share-syntax": "shareSyntax", "reuse-checks": "reuseChecks", "compact-paths": "compactPaths" }[match[2]]] = !match[1];
+  else if (/^--experimental(=|$)/.test(arg)) {
+    console.error("--experimental was removed: declared types (H1) are on by default.");
+    process.exit(2);
+  }
+  else if (/^--representation(=|$)/.test(arg)) {
+    console.error("--representation was removed with the differential fixtures: Nat, W and pushouts are source declarations.");
+    process.exit(2);
+  }
   else command.push(arg);
 }
+// A stale WASM kernel would run code it does not contain.
+assertFreshBuild();
+// An error as the checker prints it: a failed check's lines as they are,
+// any other message with its code in front.
+const shown = error => error.lines ? error.message : withCode(error.message);
 const module = await createCubical();
 let program, view, binding, checkedModule, session = null, sessionProgram = null;
 // Imports resolve as web/module-resolution.mjs specifies: an archive module
@@ -97,9 +114,13 @@ async function execute(line) {
     program?.dispose(); view = null; binding = null;
     program = new CubicalProgram(module, imports, { optimizations });
     const result = await program.check(source, main);
-    if (!result.complete) throw Error(JSON.stringify(result.gaps, null, 2));
+    // Each failure on a line of its own, with its code (web/diagnostics.mjs).
+    if (!result.complete) throw Object.assign(Error(result.gaps.map(gap => diagnosticLine({ code: gap.code, message: gap.reason,
+      declaration: gap.name && (gap.module === main ? gap.name : `${gap.module}.${gap.name}`) })).join("\n") || `${main} did not check.`), { lines: true });
     checkedModule = main;
     console.log(`Checked ${result.outputs.length} declarations · ${result.instructionCount.toLocaleString()} kernel steps`);
+    for (const warning of result.warnings ?? [])
+      console.log(diagnosticLine({ severity: "warning", ...warning }));
     for (const evaluation of result.evaluations ?? [])
       console.log(`evaluate ${evaluation.name}${evaluation.module === main ? "" : ` (${evaluation.module})`}: ${evaluation.value}`);
     return;
@@ -109,12 +130,34 @@ async function execute(line) {
     const matches = Object.values(program.symbols).filter(item => item.name === value);
     if (matches.length > 1) throw Error(`Ambiguous name; use a qualified binding: ${matches.map(item => item.binding).join(", ")}`);
     binding = matches[0]?.binding ?? value;
+    const signature = operation === "inspect" && program.signatureView(binding);
+    if (signature) {
+      // A declared type: its signature in normal form, as the kernel admitted
+      // it, and its eliminator's clause types for a motive P.
+      console.log(`inductive ${signature.name} : ${signature.former} (${signature.modifier})`);
+      if (signature.recorded.length) console.log(`Recorded universe parameters: ${signature.recorded.join(", ")}`);
+      for (const c of signature.constructors)
+        console.log(`  ${c.name} : ${c.type}  [${c.data} data, ${c.positions} position${c.positions === 1 ? "" : "s"}, `
+          + `${c.dimensions} dimension${c.dimensions === 1 ? "" : "s"}${c.generated ? ", generated" : ""}]`);
+      const eliminator = signature.eliminator;
+      if (eliminator) {
+        console.log(`Eliminator, for a motive ${eliminator.motive}:`);
+        for (const clause of eliminator.clauses) console.log(`  ${clause.name} : ${clause.type}`);
+        if (eliminator.error) console.log(`  The remaining clause types could not be computed: ${eliminator.error}`);
+      }
+      console.log(`Kernel extensions: ${signature.extensions.join(", ") || "none"}`);
+      view = null;
+      return;
+    }
     view = program.inspect(binding);
     if (operation === "inspect") {
       show();
       const assumptions = program.symbols[binding]?.axioms;
       if (assumptions) console.log(`Assumptions: ${[...new Set(assumptions.map(name =>
         program.checker.assumptionLabels.get(name) ?? name))].sort().join(", ") || "none"}`);
+      // Kernel extensions under review are listed apart: they are not assumptions.
+      const extensions = program.symbols[binding]?.extensions ?? [];
+      if (extensions.length) console.log(`Kernel extensions: ${extensions.map(name => `kernel extension: ${name}`).join(", ")}`);
     }
     else {
       const checked = program.checker.checkView(view.expression, view.type, view.context.map(e => [e.name, e.type]), new Map(view.dimensions ?? []));
@@ -125,7 +168,7 @@ async function execute(line) {
   if (!view) throw Error("Inspect a checked name first.");
   if (["beta", "delta"].includes(operation)) {
     const side = value || "expression";
-    if (!["expression", "type"].includes(side)) throw Error("Choose expression or type.");
+    if (!["expression", "type"].includes(side)) throw Error("Expected expression or type.");
     const reduced = reduceView(program, view, side, operation);
     if (reduced.change) { view = reduced.view; view.folded = null; show(); }
     else console.log("No applicable reduction.");
@@ -150,10 +193,10 @@ try {
         const entry = pending;
         pending = "";
         try { if (await execute(entry) === false) break; }
-        catch (error) { console.error(error.message); }
+        catch (error) { console.error(shown(error)); }
         prompt("cubist> ");
       }
     } finally { input.close(); }
   }
-} catch (error) { console.error(error.message); process.exitCode = 1; }
+} catch (error) { console.error(shown(error)); process.exitCode = 1; }
 finally { program?.dispose(); sessionProgram?.dispose(); }

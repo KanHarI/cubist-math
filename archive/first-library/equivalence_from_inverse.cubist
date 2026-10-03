@@ -1,3 +1,5 @@
+import nat;
+
 import paths;
 
 // Universe-polymorphic path algebra needed for adjointification. These laws
@@ -1479,11 +1481,11 @@ def adjoint_triangle(
   let q := cong(f, eta(g(f(x))));
   let s := cong(f, eta(x));
   let act := (fun (r : g(f(g(f(x)))) = g(f(x))) => cong(f, r));
-  have exchange : q = cong((fun (v : B) => f(g(v))), s) := trans(
+  let exchange : q = cong((fun (v : B) => f(g(v))), s) := trans(
     sym(cong(act, homotopy_self(U, A, (fun (v : A) => g(f(v))), eta, x))),
     ap_interchange(U, A, B, f, g, g(f(x)), x, eta(x))
   );
-  have middle : trans(q, epsilon(c)) = trans(p, s) := trans(
+  let middle : trans(q, epsilon(c)) = trans(p, s) := trans(
     cong((fun (r : a = b) => trans(r, epsilon(c))), exchange),
     homotopy_natural(U, B, (fun (v : B) => f(g(v))), epsilon, b, c, s)
   );

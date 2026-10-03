@@ -221,13 +221,13 @@ def fixed_subgroup_distinct_embeddings(
   let F := extension_field(K, E);
   let i := intermediate_ambient_embedding(K, E, M);
   let B := EmbeddingsOver(R, F, i, F, i);
-  have make : Bijection(Fin(n), A) -> DistinctFamily(B, n) {
+  let make : Bijection(Fin(n), A) -> DistinctFamily(B, n) {
     intro enumeration;
     let f :=
       fun (index : Fin(n)) => fixed_subgroup_embedding(
         K, E, H, forward(Fin(n), A, enumeration, index)
       );
-    have injective : Injective(Fin(n), B, f) {
+    let injective : Injective(Fin(n), B, f) {
       intro x, y, same;
       exact inverse_injective(
         Fin(n), A, forward(Fin(n), A, enumeration), backward(Fin(n), A, enumeration),

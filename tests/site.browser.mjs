@@ -43,7 +43,7 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
-  const version = await page.request.get(new URL("mathscript-version", base).href);
+  const version = await page.request.get(new URL("cubist-version", base).href);
   assert.equal(version.status(), 200);
   assert.match((await version.json()).version, /^[a-f0-9]{64}$/);
   console.log("PASS static landing, repository link, mobile layout, build version");
@@ -88,6 +88,20 @@ try {
   assert.match(await page.locator(".token-tip:not([hidden])").textContent(), /^\d+ expands to succ\(/);
   assert.match(await page.locator(".drawer-head a").getAttribute("href"), /proof\.html\?example=1#source=/);
   console.log("PASS reference examples: in-browser checking, linked names, embedded kernel inspector, evaluate results, instant macro tips");
+  // An excerpt is checked with the module it quotes: its names open the
+  // inspector, and its workspace link opens that module at the declaration.
+  await page.goto(new URL("reference/induction.html", base).href);
+  const excerpt = page.locator('pre > code[data-check="excerpt"][data-module="nat"]');
+  const excerptBar = excerpt.locator("xpath=../following-sibling::div[contains(@class, 'example-bar')][1]");
+  await excerpt.scrollIntoViewIfNeeded();
+  await excerpt.locator(".example-token", { hasText: /^Nat$/ }).first().waitFor();
+  assert.match(await excerptBar.locator("span").textContent(), /^Quoted from nat · Click a name/);
+  assert.match(await excerptBar.locator("a").getAttribute("href"), /proof\.html\?proof=nat&name=Nat$/);
+  await excerpt.locator(".example-token", { hasText: /^Nat$/ }).first().click();
+  await inspector.locator("#inspect-name").filter({ hasText: /^Nat$/ }).waitFor();
+  assert.deepEqual(await inspector.locator("#inspect-constructors li code").allTextContents(), ["zero : Nat", "succ : Nat -> Nat"]);
+  assert.match(await page.locator(".drawer-head a").getAttribute("href"), /proof\.html\?proof=nat&name=Nat$/);
+  console.log("PASS reference excerpts: checked with their module, linked names, the module's workspace link");
   // The reference's REPL bar opens and closes.
   const dockToggle = page.locator(".repl-dock-toggle");
   await dockToggle.click();
@@ -112,7 +126,8 @@ try {
   // A read-only REPL transcript forks into the REPL bar, with the example
   // before it loaded, and can be continued there.
   await page.goto(new URL("reference/first-proof.html", base).href);
-  await page.locator(".repl-fork", { hasText: "Fork into REPL" }).nth(1).click();
+  await page.locator("pre.repl-transcript", { hasText: "evaluate lt_succ;" })
+    .locator("xpath=following-sibling::div[contains(@class, 'example-bar')][1]").locator(".repl-fork").click();
   await page.waitForFunction(() => document.querySelectorAll(".repl-dock .repl-result").length >= 4 && !document.querySelector(".repl-form.busy"));
   await enter("evaluate exists_greater_number(10)");
   assert.deepEqual(await lastResults(2), ["(6, 0, refl(6))", "(11, 0, refl(11))"]);
@@ -129,7 +144,7 @@ try {
   console.log("PASS library module in the workspace, with its console");
   await page.goto(new URL("repl.html", base).href);
   for (const text of ["let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);
-  assert.deepEqual(await lastResults(4), ["x : Nat", "Nat", "7", "Type mismatch: found 7 = 7, expected x = 8."]);
+  assert.deepEqual(await lastResults(4), ["x : Nat", "Nat", "7", "E606: Type mismatch: found 7 = 7, expected x = 8."]);
   console.log("PASS REPL page: let, typeof, evaluate, rejected entries");
   // Slash commands: /modules lists what import can load; /clear and /restart
   // act on the console.
@@ -140,7 +155,7 @@ try {
   await enter("/restart");
   await page.waitForFunction(() => document.querySelector(".repl-log")?.textContent.includes("Started a new session."));
   await enter("typeof x;");
-  assert.deepEqual(await lastResults(1), ["Untranslated name: x"]);
+  assert.deepEqual(await lastResults(1), ["E343: Untranslated name: x"]);
   console.log("PASS REPL page: /modules, /clear and /restart");
   // The first proof's Elaboration panel opens on demand and shows every
   // declaration, down to the kernel's opcodes, with a link for more info.
@@ -153,11 +168,11 @@ try {
   assert.match(await elaboration.getByRole("link", { name: "For more info" }).first().getAttribute("href"), /kernel\.html$/);
   // The kernel's check as a THTH-style forward derivation, with comments.
   const derivation = elaboration.locator(".derivation").first();
-  assert.match(await derivation.textContent(), /\/\/ \{\} ⊢ Nat : U0\s*1 NatForm\(\)/);
-  assert.match(await derivation.textContent(), /\/\/ \{n : Nat\}\s*\d+ CtxExt\(1\)/);
+  assert.match(await derivation.textContent(), /\/\/ \{\} ⊢ Nat : U0\s*2 SortBegin\(\)/);
+  assert.match(await derivation.textContent(), /\/\/ \{n : Nat\}\s*\d+ CtxExt\(2\)/);
   assert.ok(await elaboration.locator(".derivation-scaffold").count() > 0);
   await page.goto(new URL("kernel.html", base).href);
-  assert.equal(await page.locator("#opcodes tbody tr").count(), 49);
+  assert.equal(await page.locator("#opcodes tbody tr").count(), 53);
   console.log("PASS elaboration panel and the kernel reference outline");
   await page.goto(new URL("workbench.html", base).href);
   await page.waitForFunction(() => document.querySelector("#status").textContent.includes("checked"));

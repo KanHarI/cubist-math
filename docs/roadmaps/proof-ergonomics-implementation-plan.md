@@ -33,7 +33,9 @@ Update, 2026-09-25: the roadmap adopted milestones 6–8, summarized below. The
 record sections below remain design input for theories.
 - **Milestone 6, theories:** these supersede PR 11's notation packs,
   records and sections.
-- **Milestone 7:** inductive declarations and pattern matching.
+- **Milestone 7:** inductive declarations and pattern matching; its one-sort
+  declarations and explicit `match` are experimental since 2026-09-28
+  (work-plan L2.1 and L2.2a).
 - **Milestone 8:** computability checking.
 Milestone 8's core computability checking and G0's universe-generic definitions
 are delivered. The first library is archived; `library/naturals` begins the
@@ -51,14 +53,14 @@ equivalences and transfer maps.
 
 | Existing seam | Consequence for implementation |
 | --- | --- |
-| [`Translator.block`](../../lib/cubical/translate.mjs) recursively translates the remaining statements, wrapping introductions in lambdas and checking local `have` proofs | Preserve this continuation model for one residual goal. A multi-goal scheduler is unnecessary for the first `rw` and `simp`. |
+| [`Translator.block`](../../web/translator/translate.mjs) recursively translates the remaining statements, wrapping introductions in lambdas and checking local `have` proofs | Preserve this continuation model for one residual goal. A multi-goal scheduler is unnecessary for the first `rw` and `simp`. |
 | [`NativeCubicalElaborator`](../../web/cubical-elaborator.mjs) supplies `infer`, `check`, `nf`, `equal`, `expect`, and `ascribe` | `nf` exposes the native **head**, not a full normal form. `equal` tests conversion; `expect` permits directed cumulative typing. Use each deliberately. |
-| `sym`, `trans`, and `cong` preserve compact signatures using a checked identity application; [`path-algebra.mjs`](../../lib/cubical/path-algebra.mjs) supplies inert path builders | Factor shared builders and checked signature wrappers; do not independently reimplement their semantics for tactics. |
+| `sym`, `trans`, and `cong` preserve compact signatures using a checked identity application; [`path-algebra.mjs`](../../web/translator/path-algebra.mjs) supplies inert path builders | Factor shared builders and checked signature wrappers; do not independently reimplement their semantics for tactics. |
 | Ordinary application propagates argument types, but eagerly infers its growing application spine | Add application-spine elaboration with a known signature before adding broad inference. Repeated native inference may otherwise consume any savings from shorter source. |
 | `path`/`PathP`/`comp` bind dimensions separately from terms; `FunExt` already constructs a cubical path of functions | Expected-type path notation and pointwise equality can be small elaborator extensions with ordinary core output. |
-| [`CubicalProgram`](../../web/cubical-program.mjs) records source references, qualified definitions, level arguments, and assumptions; [`proof-goals.mjs`](../../lib/cubical/proof-goals.mjs) supplies shared transitions | The core is delivered; filling, restricted-face contexts and persistent construction records remain in HoTT A5. |
+| [`CubicalProgram`](../../web/cubical-program.mjs) records source references, qualified definitions, level arguments, and assumptions; [`proof-goals.mjs`](../../web/translator/proof-goals.mjs) supplies shared transitions | The core is delivered; filling, restricted-face contexts and persistent construction records remain in HoTT A5. |
 | [`cubical-transaction.mjs`](../../web/cubical-transaction.mjs) supplies native checkpoint/rollback/compaction and JS cache cleanup to declaration checking | Reusable declaration transactions are delivered. Extend their cleanup for each new generated declaration or cache; statement rollback is a separate contract. |
-| [`build-cubical-runtime.mjs`](../../tools/build-cubical-runtime.mjs) explicitly lists copied runtime modules | Add every new shared module to that list. Never edit generated `web/dist` copies as a second implementation. |
+| [`web/translator/`](../../web/translator) is served as it is: the browser, the CLI and the tests load the same modules | A new module needs no build step or list; `web/dist` holds only the WASM kernel. |
 
 The roadmap's `finite_counting` module no longer exists. Use
 [`finite_dependent_counts`](../../archive/first-library/finite_dependent_counts.cubist),
@@ -97,7 +99,7 @@ The formatter must compare elaborated macro shapes where parser sugar changes
 AST shape; it must not drop comments or turn a checked construct into a different
 one when formatting.
 
-Choose `have h : T := e;` rather than `have h : T = e;`: the latter is
+Prefer `have h : T := e;` to `have h : T = e;`: the latter is
 ambiguous when `T` itself is an equality. Add `:=` and `<-` as tokens, then `@`
 in PR 6. Keep ASCII canonical initially. Optional Unicode aliases can later
 render path concatenation as `p · q`, inversion as `p⁻¹`, and transport as
@@ -140,7 +142,7 @@ no library-wide normalization pass runs before matching.
 
 ### Single-goal reconstruction, without kernel holes
 
-Suggested new modules under `lib/cubical/`:
+Suggested new modules under `web/translator/`:
 
 ```js
 // Proposed interfaces; these are not implemented exports.
@@ -346,7 +348,7 @@ provides higher paths witnessing them.
 With `H : forall a : A. f(a) = g(a)` and `p : x = y`, write the square as
 `path j => path i => H(p @ i) @ j`. Its outer family is
 `H(x) @ j = H(y) @ j`; the outer endpoints are `cong(f,p)` and `cong(g,p)`.
-This states the two-dimensional object directly rather than first choosing a
+This states the two-dimensional object directly rather than first picking a
 concatenation equation. The sample includes its full current-language expansion.
 
 Use the expected nested PathP to display all four edges and corner checks in
@@ -380,7 +382,7 @@ closed boundary filling.
 ### 5. Mathematical structure scopes and named Sigma views
 
 Before new record representations, support lexical notation packs backed by
-ordinary terms. The proposed field example chooses its structure once and
+ordinary terms. The proposed field example fixes its structure once and
 binds `+`, `*`, `zero`, and `one` to known field operations. The translator
 already resolves natural-number `+` through the lexical `add` binding; make
 this mechanism explicit and inspectable instead of adding typeclass search.
@@ -408,7 +410,7 @@ the bridge branch. This pairs especially well with `path i =>` and `over C along
 An `ext using lemma` facility can turn equality of structured maps into the
 obligations of a selected checked lemma. Automatically solving those obligations
 requires actual `IsProp`/`IsSet` evidence in the relevant fibers. No rule may
-erase an arbitrary loop or choose a unique transport witness in a general type.
+erase an arbitrary loop or pick a unique transport witness in a general type.
 
 Defer unrestricted higher-order unification, global coercion/instance search,
 automatic univalence, and general-purpose boundary solving. The priority here
@@ -457,9 +459,9 @@ Run focused parser/formatter/native/inspector tests in the implementing PR,
 then the existing corpus and browser checks for releases. Relevant commands:
 
 ```sh
-node tools/build-cubical-runtime.mjs
+make wasm
 npm test -- tests/cubical-program.test.mjs tests/unfolding-syntax.test.mjs
-npm test -- lib/cubical/tests/path-over.test.mjs lib/cubical/tests/dimension-slots.test.mjs
+npm test -- tests/translator/path-over.test.mjs tests/translator/dimension-slots.test.mjs
 npm test -- primes paths finite_dependent_counts group_operations field_vector_spaces
 npm run test:browser
 make lint

@@ -38,7 +38,7 @@ def conditional_rewrite(n : Nat, h : n = 0) : n + 0 = 0 {
   simp with [h];
 }
 
-// This conditional rule remains available when its whole left side is chosen.
+// This conditional rule remains available when its whole left side is selected.
 def double_zero_if(n : Nat, h : n + 0 = n) : (n + 0) + 0 = n {
   calc {
     (n + 0) + 0 = n + 0 by nat_add_zero(n + 0);

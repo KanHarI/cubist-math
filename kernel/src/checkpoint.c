@@ -13,6 +13,7 @@ void cc_kernel_checkpoint(cc_kernel *k) {
     k->checkpoint_store[2] = k->context_set_count;
     k->checkpoint_store[3] = k->context_item_count;
     k->checkpoint_store[4] = k->position_count;
+    ck_signatures_checkpoint(k);
 }
 
 /* Instruction judgements made since the checkpoint refer to syntax that a
@@ -27,15 +28,14 @@ static void truncate_store(cc_kernel *k) {
 }
 void cc_kernel_rollback(cc_kernel *k) {
     if (!k || !k->checkpoint_count) return;
-    ck_clear_check_cache(k);
     if (k->weak_cache) memset(k->weak_cache, 0, k->count * sizeof *k->weak_cache);
     if (k->syntax_memo) memset(k->syntax_memo, 0, CC_SYNTAX_MEMO_SIZE * sizeof *k->syntax_memo);
     if (k->alpha_memo) memset(k->alpha_memo, 0, CC_ALPHA_MEMO_SIZE * sizeof *k->alpha_memo);
     k->count = k->checkpoint_count;
     k->definition_count = k->checkpoint_definitions;
     truncate_store(k);
+    ck_signatures_rollback(k);
     k->checkpoint_count = 0;
-    k->unfolding_hint_count = 0;
     k->recursion = 0;
     cc_kernel_clear_error(k);
 }
@@ -47,9 +47,31 @@ cc_term cc_kernel_relocated(const cc_kernel *k, cc_term term) {
     return offset < k->relocation_count ? k->relocation[offset] : 0;
 }
 
+/* An admitted signature's recorded syntax: a commit keeps it, as it keeps a
+ * definition's value and type (H1 specification, section 5.1). */
+static void signature_terms(cc_kernel *k, size_t base, cc_term *map, bool relocate) {
+    for (size_t i = 1; i < k->signature_count; ++i) {
+        cc_signature *s = &k->signatures[i];
+        cc_term *terms[] = {&s->former, &s->level};
+        for (size_t j = 0; j < 2; ++j)
+            if (*terms[j] >= base) { if (relocate) *terms[j] = map[*terms[j] - base]; else map[*terms[j] - base] = 1; }
+        for (uint32_t j = 0; j < s->parameter_count; ++j) {
+            cc_term *t = &s->parameter_types[j];
+            if (*t >= base) { if (relocate) *t = map[*t - base]; else map[*t - base] = 1; }
+        }
+        for (uint32_t j = 0; j < s->constructor_count; ++j) {
+            cc_term *t = &s->constructors[j].type;
+            if (*t >= base) { if (relocate) *t = map[*t - base]; else map[*t - base] = 1; }
+        }
+    }
+}
+
 bool cc_kernel_commit_checkpoint(cc_kernel *k) {
     if (!k || !k->checkpoint_count || k->error[0]) return false;
     ck_standalone(k);
+    /* An open signature depends on judgements that a commit truncates. */
+    if (ck_signatures_open(k))
+        return ck_fail(k, "A signature is still open; close it before committing.");
     size_t base = k->checkpoint_count, count = k->count - base;
     cc_term *map = calloc(count ? count : 1, sizeof *map);
     if (!map) return ck_fail(k, "Checkpoint compaction allocation failed.");
@@ -60,6 +82,7 @@ bool cc_kernel_commit_checkpoint(cc_kernel *k) {
         if (d.value >= base) map[d.value - base] = 1;
         if (d.type >= base) map[d.type - base] = 1;
     }
+    signature_terms(k, base, map, false);
     for (size_t i = base; i < k->count; ++i)
         if (k->nodes[i].kind == CC_DEFREF) map[i - base] = 1;
     /* Children always precede their parent in the immutable syntax arena.
@@ -70,7 +93,6 @@ bool cc_kernel_commit_checkpoint(cc_kernel *k) {
                 cc_term child = k->nodes[i].child[j];
                 if (child >= base) map[child - base] = 1;
             }
-    ck_clear_check_cache(k);
     if (k->weak_cache) memset(k->weak_cache, 0, k->count * sizeof *k->weak_cache);
     if (k->syntax_memo) memset(k->syntax_memo, 0, CC_SYNTAX_MEMO_SIZE * sizeof *k->syntax_memo);
     if (k->alpha_memo) memset(k->alpha_memo, 0, CC_ALPHA_MEMO_SIZE * sizeof *k->alpha_memo);
@@ -87,6 +109,7 @@ bool cc_kernel_commit_checkpoint(cc_kernel *k) {
         if (d->value >= base) d->value = map[d->value - base];
         if (d->type >= base) d->type = map[d->type - base];
     }
+    signature_terms(k, base, map, true);
     k->count = next; k->checkpoint_count = 0;
     /* The survivors have new handles: index them again. */
     for (size_t i = base; i < next; ++i) ck_intern(k, (cc_term)i);

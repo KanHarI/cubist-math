@@ -1,7 +1,7 @@
 // Count checked source syntax in the canonical proof corpus, excluding comments
 // and the design fixtures under docs/examples.
 import {readdirSync,readFileSync} from 'node:fs';
-import {parse} from '../web/mathscript/parser.mjs';
+import {parse} from '../web/cubist/parser.mjs';
 
 const root=new URL('../archive/first-library/',import.meta.url);
 const features=new Map();
@@ -22,7 +22,8 @@ for(const file of readdirSync(root).filter(name=>name.endsWith('.cubist'))) {
     if(node.kind) {
       if(['binderGroup','calc','rw','rfl','ext','pathLambda','pathApply',
         'along','over','simp','simpOnly','simpa','simpaOnly','simp_rule',
-        'simp_set','haveValue'].includes(node.kind))record(node.kind,file);
+        'simp_set'].includes(node.kind))record(node.kind,file);
+      if(node.kind==='let'&&node.value&&node.type)record('typed let',file);
       if(node.kind==='call'&&node.fn?.kind==='name'&&node.fn.name==='apd_path')
         record('apd_path',file);
       if(node.kind==='lambda'&&!node.domain)record('untyped lambda',file);
@@ -33,7 +34,7 @@ for(const file of readdirSync(root).filter(name=>name.endsWith('.cubist'))) {
   for(const count of introductions.values())if(count>1)record('grouped intro',file);
 }
 
-for(const name of ['grouped intro','binderGroup','untyped lambda','haveValue',
+for(const name of ['grouped intro','binderGroup','untyped lambda','typed let',
   'calc','rfl','rw','simp','simpOnly','simpa','simpaOnly','simp_rule','simp_set',
   'pathLambda','pathApply','ext','along','over','apd_path']) {
   const entry=features.get(name)??{uses:0,files:new Set()};

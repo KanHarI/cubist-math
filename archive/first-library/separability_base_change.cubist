@@ -14,9 +14,9 @@ def separable_extension_in_closed(
 ) :
   SeparableElementsIn(K, L, e, T) {
   intro j, x, algebraic;
-  obtain (chosen, sep) := separable(x);
+  obtain (evidence, sep) := separable(x);
   let W := (exists p : Polynomial(K). PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x));
-  let same := cong(minimal_polynomial(K, L, e, x), mere_is_prop(W, chosen, algebraic));
+  let same := cong(minimal_polynomial(K, L, e, x), mere_is_prop(W, evidence, algebraic));
   let p := minimal_polynomial(K, L, e, x, algebraic);
   exact separable_polynomial_splits_in_closed(
     K, p, along SeparablePolynomial(K) by same from sep, T, closed, j
@@ -30,7 +30,7 @@ def polynomial_map_divides(
   PolynomialDivides(L, polynomial_map(K, L, e, q), polynomial_map(K, L, e, p)) {
   let Q := polynomial_map(K, L, e, q);
   let P := polynomial_map(K, L, e, p);
-  have send :
+  let send :
     (exists w : Polynomial(K). p = polynomial_mul(K, q, w))
     -> (exists w : Polynomial(L). P = polynomial_mul(L, Q, w)) {
     intro witness;
@@ -82,7 +82,7 @@ def separable_elements_enlarge_base(
     );
   let nonzeroP := polynomial_map_nonzero(R, T, j, mapped, polynomial_map_nonzero(K, R, i, p, nzP));
   let nonzeroQ := polynomial_map_nonzero(R, T, j, q, nzQ);
-  have descend : DistinctPolynomialSplitting(T, P, n) -> SeparableIn(R, T, j, q) {
+  let descend : DistinctPolynomialSplitting(T, P, n) -> SeparableIn(R, T, j, q) {
     intro splitting;
     let result :=
       distinct_splitting_divisor(T, closed, n, P, nonzeroP, splitting, Q, nonzeroQ, divides);

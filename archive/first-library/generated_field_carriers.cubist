@@ -27,7 +27,7 @@ def generated_carrier_least(
   let T := subfield_as_field(F, S);
   let j := subfield_inclusion(F, S);
   let Q := SubfieldImage(T, F, j, H);
-  have containsImage : forall x : af_carrier(F). P(x) -> Q(x) {
+  let containsImage : forall x : af_carrier(F). P(x) -> Q(x) {
     intro x, member;
     exact (generated_carrier_generator(F, P, x, member), contains(x, member), refl(x));
   }

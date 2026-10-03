@@ -40,7 +40,7 @@ def complex_scaled_close(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, difference, coefficient, delta, r,
     s, differenceBound, bounded
   );
-  have recover : addC(y, difference) = x := trans(
+  let recover : addC(y, difference) = x := trans(
     sym(ring_add_assoc(Complex(F), zeroC, oneC, addC, mulC, negC, ringC, y, negC(y), x)),
     trans(
       cong(
@@ -49,7 +49,7 @@ def complex_scaled_close(
       ), ring_add_zero(Complex(F), zeroC, oneC, addC, mulC, negC, ringC, x)
     )
   );
-  have computes : mulC(x, coefficient) = addC(mulC(y, coefficient), mulC(difference, coefficient)) := trans(
+  let computes : mulC(x, coefficient) = addC(mulC(y, coefficient), mulC(difference, coefficient)) := trans(
     cong((fun (v : Complex(F)) => mulC(v, coefficient)), sym(recover)),
     ring_distribute_left(
       Complex(F), zeroC, oneC, addC, mulC, negC, ringC, y, difference, coefficient

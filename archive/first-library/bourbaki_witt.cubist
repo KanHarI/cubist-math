@@ -10,7 +10,7 @@ def tower_separation_step(
   separated : TowerSeparation(A, le, f, a, b)
 ) :
   TowerSeparation(A, le, f, a, f(b)) {
-  have lower : le(b, a) -> TowerSeparation(A, le, f, a, f(b)) {
+  let lower : le(b, a) -> TowerSeparation(A, le, f, a, f(b)) {
     intro ba;
     cases excluded_middle(le(a, b), order_prop(A, le, laws, a, b)) {
       left ab => {
@@ -51,9 +51,9 @@ def tower_separation_sup(
       exact field_exists_intro(le(s, a) or le(f(a), s), left(sa));
     }
     right notsa => {
-      have contradiction : (le(f(a), s) -> Void) -> Void {
+      let contradiction : (le(f(a), s) -> Void) -> Void {
         intro notAbove;
-        have bounded : forall b : A. C(b) -> le(b, a) {
+        let bounded : forall b : A. C(b) -> le(b, a) {
           intro b, cb;
           exact field_or_elim(
             le(b, a), le(f(a), b), le(b, a), order_prop(A, le, laws, b, a),
@@ -110,7 +110,7 @@ def tower_stable_step(
 ) :
   TowerStable(A, le, complete, f, f(a)) {
   intro b, tb, below, strict;
-  have lower : le(b, a) -> le(f(b), f(a)) {
+  let lower : le(b, a) -> le(f(b), f(a)) {
     intro ba;
     cases excluded_middle(le(a, b), order_prop(A, le, laws, a, b)) {
       left ab => {
@@ -137,11 +137,11 @@ def tower_stable_sup(
   TowerStable(A, le, complete, f, chain_sup(A, le, complete, C, chain)) {
   let s := chain_sup(A, le, complete, C, chain);
   intro b, tb, below, strict;
-  have contradiction : (le(f(b), s) -> Void) -> Void {
+  let contradiction : (le(f(b), s) -> Void) -> Void {
     intro notBelow;
-    have bounded : forall a : A. C(a) -> le(a, b) {
+    let bounded : forall a : A. C(a) -> le(a, b) {
       intro a, ca;
-      have lower : le(b, a) -> le(a, b) {
+      let lower : le(b, a) -> le(a, b) {
         intro ba;
         cases excluded_middle(le(a, b), order_prop(A, le, laws, a, b)) {
           left ab => {

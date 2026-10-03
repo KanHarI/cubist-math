@@ -212,7 +212,7 @@ def quotient_inverse_right(
   };
 }
 
-// All laws now hold on arbitrary quotient elements, not only on chosen classes.
+// All laws now hold on arbitrary quotient elements, not only on particular classes.
 def quotient_group_laws(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :
   GroupLawsAt(
     U1, LeftCosets(G, S), left_coset(G, S, group_unit(G)), quotient_multiply(G, S, normal)

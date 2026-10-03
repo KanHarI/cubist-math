@@ -27,7 +27,7 @@ def linear_sum(K : AlgebraicField, V, W : VectorSpace(K), f, g : LinearMap(K, V,
   let add := vector_add(K, W);
   let X := vector_carrier(K, V);
   let Y := vector_carrier(K, W);
-  have additive :
+  let additive :
     forall x : X. forall y : X.
     add(F(vector_add(K, V, x, y)), G(vector_add(K, V, x, y))) = add(
       add(F(x), G(x)), add(F(y), G(y))
@@ -44,7 +44,7 @@ def linear_sum(K : AlgebraicField, V, W : VectorSpace(K), f, g : LinearMap(K, V,
       )
     );
   }
-  have scalar :
+  let scalar :
     forall a : af_carrier(K). forall x : X.
     add(F(vector_scale(K, V, a, x)), G(vector_scale(K, V, a, x))) = vector_scale(
       K, W, a, add(F(x), G(x))
@@ -65,7 +65,7 @@ def scalar_multiple_linear(K : AlgebraicField, V : VectorSpace(K), a : af_carrie
   LinearMap(K, V, V) {
   obtain (addLaws, mulLaws) := field_ring_data(af_carrier(K), af_operations(K), af_laws(K));
   obtain (assoc, comm, one, distribute) := mulLaws;
-  have scalar :
+  let scalar :
     forall b : af_carrier(K). forall x : vector_carrier(K, V).
     vector_scale(K, V, a, vector_scale(K, V, b, x)) = vector_scale(
       K, V, b, vector_scale(K, V, a, x)
@@ -218,16 +218,18 @@ def linear_kernel_injective(
   x = y {
   let f := linear_map(K, V, W, h);
   let d := vector_add(K, V, x, vector_neg(K, V, y));
-  have vanishes : f(d) = vector_zero(K, W) := trans(
-    linear_add(K, V, W, h, x, vector_neg(K, V, y)),
+  let vanishes : f(d) = vector_zero(K, W) :=
     trans(
-      cong(vector_add(K, W, f(x)), linear_neg(K, V, W, h, y)),
+      linear_add(K, V, W, h, x, vector_neg(K, V, y)),
       trans(
-        cong((fun (z : vector_carrier(K, W)) => vector_add(K, W, z, vector_neg(K, W, f(y)))), same),
-        group_inverse_right(vector_group(K, W), f(y))
+        cong(vector_add(K, W, f(x)), linear_neg(K, V, W, h, y)),
+        trans(
+          cong(
+            (fun (z : vector_carrier(K, W)) => vector_add(K, W, z, vector_neg(K, W, f(y)))), same
+          ), group_inverse_right(vector_group(K, W), f(y))
+        )
       )
-    )
-  );
+    );
   exact group_cancel_right(
     vector_group(K, V), x, y, vector_neg(K, V, y),
     trans(kernel(d, vanishes), sym(group_inverse_right(vector_group(K, V), y)))

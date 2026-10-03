@@ -58,7 +58,7 @@ def finite_basis_search_step(
   let X := vector_carrier(K, V);
   let F := linear_map(K, C, V, f);
   let Image := fun (x : X) => Mere(Fiber(vector_carrier(K, C), X, F, x));
-  have extend : (exists x : X. Image(x) -> Void) -> FiniteDimensional(K, V) {
+  let extend : (exists x : X. Image(x) -> Void) -> FiniteDimensional(K, V) {
     intro witness;
     obtain (x, outside) := witness;
     exact previous(
@@ -125,7 +125,7 @@ def coordinate_embedding_bound(
   intro f, independent;
   let C := CoordinateSpace(K, succ(n));
   let N := CoordinateSpace(K, n);
-  have composite : CoordinateInjection(K, succ(n), n, linear_compose(K, C, V, N, f, h)) {
+  let composite : CoordinateInjection(K, succ(n), n, linear_compose(K, C, V, N, f, h)) {
     intro x, y, same;
     exact independent(x, y, injective(linear_map(K, C, V, f, x), linear_map(K, C, V, f, y), same));
   }
@@ -152,7 +152,7 @@ def finite_dimensional_injection_basis(
   let N := CoordinateSpace(K, n);
   let inverse := linear_iso_inverse(K, N, W, basis);
   let coordinates := linear_iso_forward(K, W, N, inverse);
-  have composite : LinearInjective(K, V, N, linear_compose(K, V, W, N, h, coordinates)) {
+  let composite : LinearInjective(K, V, N, linear_compose(K, V, W, N, h, coordinates)) {
     intro x, y, same;
     exact injective(
       x, y,

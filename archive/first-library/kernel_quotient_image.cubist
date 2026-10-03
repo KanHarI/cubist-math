@@ -61,7 +61,7 @@ def image_fiber_class_witness(G, H : Group, h : GroupHom(G, H), y : GroupImageCa
       exists x : group_carrier(G). forall a : group_carrier(G).
       ImageFiberPredicate(G, H, h, y, a) = relation(x, a)
     );
-  have atPreimage : SubgroupImageWitness(G, H, h, subgroup_top(G), value) -> FieldExists(W) {
+  let atPreimage : SubgroupImageWitness(G, H, h, subgroup_top(G), value) -> FieldExists(W) {
     intro witness;
     obtain (x, member, fx) := witness;
     exact field_exists_intro(
@@ -106,7 +106,7 @@ def kernel_quotient_image_right(G, H : Group, h : GroupHom(G, H), y : GroupImage
   let value := subgroup_value(H, image, y);
   let q := image_to_kernel_quotient(G, H, h, y);
   let out := kernel_quotient_to_image(G, H, h, q);
-  have atPreimage : SubgroupImageWitness(G, H, h, subgroup_top(G), value) -> out = y {
+  let atPreimage : SubgroupImageWitness(G, H, h, subgroup_top(G), value) -> out = y {
     intro witness;
     obtain (x, member, fx) := witness;
     exact trans(
@@ -152,7 +152,7 @@ def kernel_quotient_image_member_inverse(
   let A := group_carrier(G);
   let relation := SameLeftCoset(G, group_kernel(G, H, h));
   let P := quotient_predicate(A, relation, q);
-  have atRepresentative : (exists b : A. forall x : A. P(x) = relation(b, x)) -> P(a) {
+  let atRepresentative : (exists b : A. forall x : A. P(x) = relation(b, x)) -> P(a) {
     intro witness;
     obtain (b, same) := witness;
     let pb :=
@@ -223,14 +223,16 @@ def kernel_image_adjoint_triangle(
   let q := cong(f, eta(g(f(x))));
   let s := cong(f, eta(x));
   let act := (fun (r : g(f(g(f(x)))) = g(f(x))) => cong(f, r));
-  have exchange : q = cong((fun (v : B) => f(g(v))), s) := trans(
-    sym(cong(act, kernel_image_homotopy_self(A, (fun (v : A) => g(f(v))), eta, x))),
-    kernel_image_ap_interchange(A, B, f, g, g(f(x)), x, eta(x))
-  );
-  have middle : trans(q, epsilon(c)) = trans(p, s) := trans(
-    cong((fun (r : a = b) => trans(r, epsilon(c))), exchange),
-    kernel_image_homotopy_natural(B, (fun (v : B) => f(g(v))), epsilon, b, c, s)
-  );
+  let exchange : q = cong((fun (v : B) => f(g(v))), s) :=
+    trans(
+      sym(cong(act, kernel_image_homotopy_self(A, (fun (v : A) => g(f(v))), eta, x))),
+      kernel_image_ap_interchange(A, B, f, g, g(f(x)), x, eta(x))
+    );
+  let middle : trans(q, epsilon(c)) = trans(p, s) :=
+    trans(
+      cong((fun (r : a = b) => trans(r, epsilon(c))), exchange),
+      kernel_image_homotopy_natural(B, (fun (v : B) => f(g(v))), epsilon, b, c, s)
+    );
   exact sym(
     trans(
       cong((fun (r : a = c) => trans(sym(p), r)), middle),

@@ -143,14 +143,14 @@ def binary_decode_positive_add(p : BinaryPositive) :
 def binary_decode_add(a, b : BinaryNat) :
   binary_to_nat(binary_add(a, b)) = binary_to_nat(a) + binary_to_nat(b) {
   exact match a as x return (binary_to_nat(binary_add(x, b)) = binary_to_nat(x) + binary_to_nat(b)) {
-    left zero => refl(binary_to_nat(b));
-    right p => match b as y return (
+    binary_zero => refl(binary_to_nat(b));
+    binary_positive(p) => match b as y return (
       binary_to_nat(binary_add(binary_positive(p), y)) = binary_positive_to_nat(p) + binary_to_nat(
         y
       )
     ) {
-      left zero => sym(nat_add_zero(binary_positive_to_nat(p)));
-      right q => binary_decode_positive_add(p, q);
+      binary_zero => sym(nat_add_zero(binary_positive_to_nat(p)));
+      binary_positive(q) => binary_decode_positive_add(p, q);
     };
   };
 }
@@ -206,14 +206,14 @@ def binary_decode_positive_mul(p, q : BinaryPositive) : BinaryMulCorrect(p, q) {
 def binary_decode_mul(a, b : BinaryNat) :
   binary_to_nat(binary_mul(a, b)) = binary_to_nat(a) * binary_to_nat(b) {
   exact match a as x return (binary_to_nat(binary_mul(x, b)) = binary_to_nat(x) * binary_to_nat(b)) {
-    left zero => refl(0);
-    right p => match b as y return (
+    binary_zero => refl(0);
+    binary_positive(p) => match b as y return (
       binary_to_nat(binary_mul(binary_positive(p), y)) = binary_positive_to_nat(p) * binary_to_nat(
         y
       )
     ) {
-      left zero => sym(nat_mul_zero(binary_positive_to_nat(p)));
-      right q => binary_decode_positive_mul(p, q);
+      binary_zero => sym(nat_mul_zero(binary_positive_to_nat(p)));
+      binary_positive(q) => binary_decode_positive_mul(p, q);
     };
   };
 }

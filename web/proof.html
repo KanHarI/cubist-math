@@ -171,6 +171,16 @@
             <summary id="inspect-parameters-label">Parameters and hypotheses</summary>
             <div id="inspect-parameters-list"></div>
           </details>
+          <section id="inspect-signature" aria-label="Declared type" hidden>
+            <p id="inspect-signature-recorded" class="hint" hidden></p>
+            <strong>Constructors</strong>
+            <ol id="inspect-constructors" class="signature-list"></ol>
+            <div id="inspect-eliminator">
+              <strong>Eliminator</strong>
+              <p id="inspect-eliminator-motive" class="hint"></p>
+              <ol id="inspect-clauses" class="signature-list"></ol>
+            </div>
+          </section>
           <p id="inspect-description" class="description"></p>
           <div id="rewrite-trace" hidden></div>
           <button id="freeze-simp" hidden>Replace with simp only</button>
@@ -220,13 +230,13 @@
           <a href="#quick-declarations">Declarations and files</a>
           <a href="#quick-terms">Types and terms</a>
           <a href="#quick-blocks">Proof blocks</a>
+          <a href="#quick-conversion">Computation and conversion</a>
           <a href="#quick-universes">Universes</a>
-          <a href="#quick-induction">Natural numbers and inductive types</a>
           <a href="#quick-paths">Equality and paths</a>
+          <a href="#quick-induction">Natural numbers and inductive types</a>
           <a href="#quick-rewriting">Equational reasoning and simplification</a>
-          <a href="#quick-cubical">Cubical paths, pushouts and suspensions</a>
-          <a href="#quick-conversion">Conversion and unfolding</a>
-          <a href="#quick-assumptions">Assumptions and computability</a>
+          <a href="#quick-cubical">Cubical paths and higher inductive types</a>
+          <a href="#quick-assumptions">Excluded middle, choice and computability</a>
         </nav>
         <h3 id="quick-declarations">Declarations and files</h3>
         <div class="quick-entry" id="quick-def">
@@ -266,7 +276,7 @@ def seven := 3 + 4;</code></pre>
         <div class="quick-entry" id="quick-functions">
           <h4>Functions: <code>fun</code></h4>
           <p><code>fun (x : A) =&gt; body</code> constructs a function, and <code>fun (x, y : A) =&gt; body</code> takes several arguments. <code>fun x =&gt; body</code> reads the domain from an expected function type.
-            <a href="reference/terms.html#functions">Terms, functions and pairs →</a></p>
+            <a href="reference/terms.html#functions">Functions, pairs and sums →</a></p>
           <pre><code data-check="accept">def twice(A : U0, f : A -&gt; A) := fun (x : A) =&gt; f(f(x));
 
 def add_two := twice(Nat, fun n =&gt; succ(n));</code></pre>
@@ -274,7 +284,7 @@ def add_two := twice(Nat, fun n =&gt; succ(n));</code></pre>
         <div class="quick-entry" id="quick-forall">
           <h4>Dependent functions: <code>forall</code></h4>
           <p><code>forall x : A. B</code> is a dependent function type (Π): its result type may mention the input. <code>A -&gt; B</code> is the case where it does not.
-            <a href="reference/terms.html#dependent-functions">Terms, functions and pairs →</a></p>
+            <a href="reference/terms.html#dependent-functions">Functions, pairs and sums →</a></p>
           <pre><code data-check="accept">def apply_at_zero(P : Nat -&gt; U0, f : forall n : Nat. P(n)) : P(0) {
   exact f(0);
 }</code></pre>
@@ -282,7 +292,7 @@ def add_two := twice(Nat, fun n =&gt; succ(n));</code></pre>
         <div class="quick-entry" id="quick-pairs">
           <h4>Pairs, tuples and <code>exists</code></h4>
           <p><code>A and B</code> is a product and <code>exists x : A. B</code> a dependent pair (Σ) with an actual witness. <code>(a, b, c)</code> abbreviates <code>(a, (b, c))</code>; hover the parentheses to see the expansion.
-            <a href="reference/terms.html#tuples">Terms, functions and pairs →</a></p>
+            <a href="reference/terms.html#tuples">Functions, pairs and sums →</a></p>
           <pre><code data-check="accept">def triple : Nat and Unit and Nat {
   exact (1, tt, 2);
 }
@@ -294,14 +304,14 @@ def two_exists : exists n : Nat. n = 2 {
         <div class="quick-entry" id="quick-unpack">
           <h4>Using a pair: <code>unpack</code></h4>
           <p><code>unpack p as (a, b) return T { … }</code> takes a pair apart in a term. For a result that depends on the whole pair, use <code>pair_induction</code>.
-            <a href="reference/terms.html#using-pairs">Terms, functions and pairs →</a></p>
+            <a href="reference/terms.html#using-pairs">Functions, pairs and sums →</a></p>
           <pre><code data-check="accept">def first_number(pair : Nat and Nat) :=
   unpack pair as (a, b) return Nat { a; };</code></pre>
         </div>
         <div class="quick-entry" id="quick-sums">
           <h4>Sums: <code>or</code>, <code>left</code>, <code>right</code></h4>
           <p><code>A or B</code> is a disjoint sum, shown as <code>A + B</code> in kernel notation. <code>left(a)</code> and <code>right(b)</code> inject into it.
-            <a href="reference/terms.html#sums">Terms, functions and pairs →</a></p>
+            <a href="reference/terms.html#sums">Functions, pairs and sums →</a></p>
           <pre><code data-check="accept">def on_the_left := typed(Unit or Nat, left(tt));
 
 def on_the_right : Unit or Nat {
@@ -311,7 +321,7 @@ def on_the_right : Unit or Nat {
         <div class="quick-entry" id="quick-match">
           <h4>Case analysis: <code>match</code></h4>
           <p><code>match value return T { left a =&gt; …; right b =&gt; …; }</code> computes by cases on a sum. With <code>as z</code>, the result type may depend on the value.
-            <a href="reference/terms.html#match">Terms, functions and pairs →</a></p>
+            <a href="reference/terms.html#match">Functions, pairs and sums →</a></p>
           <pre><code data-check="accept">def to_number(value : Unit or Nat) := match value return Nat {
   left u =&gt; 0;
   right n =&gt; n;
@@ -320,7 +330,7 @@ def on_the_right : Unit or Nat {
         <div class="quick-entry" id="quick-unit-void">
           <h4><code>Unit</code> and <code>Void</code></h4>
           <p><code>tt : Unit</code> is the one value of <code>Unit</code>. <code>Void</code> has none, and <code>absurd(v)</code> turns an impossible <code>v : Void</code> into any type.
-            <a href="reference/terms.html#unit-and-void">Terms, functions and pairs →</a></p>
+            <a href="reference/terms.html#unit-and-void">Functions, pairs and sums →</a></p>
           <pre><code data-check="accept">def from_void(A : U0, impossible : Void) : A {
   exact absurd(impossible);
 }
@@ -332,7 +342,7 @@ def unit_is_tt(u : Unit) : u = tt {
         <div class="quick-entry" id="quick-numbers">
           <h4>Numbers</h4>
           <p>Decimal literals are unary <code>Nat</code>. With <code>import naturals;</code>, <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> compute.
-            <a href="reference/terms.html#numbers">Terms, functions and pairs →</a></p>
+            <a href="reference/terms.html#numbers">Functions, pairs and sums →</a></p>
           <pre><code data-check="accept">import naturals;
 
 def two_times_three : 2 * 3 = 6 {
@@ -346,7 +356,7 @@ def two_below_three : 2 &lt; 3 {
         <div class="quick-entry" id="quick-typed">
           <h4>Stating a type: <code>typed</code></h4>
           <p><code>typed(T, term)</code> supplies an expected type, for pairs, injections and functions whose domain is not written.
-            <a href="reference/terms.html#typed">Terms, functions and pairs →</a></p>
+            <a href="reference/terms.html#typed">Functions, pairs and sums →</a></p>
           <pre><code data-check="accept">def successor := typed(Nat -&gt; Nat, fun n =&gt; succ(n));</code></pre>
         </div>
         <h3 id="quick-blocks">Proof blocks</h3>
@@ -367,26 +377,17 @@ def two_below_three : 2 &lt; 3 {
   exact fun (a : A) =&gt; a;
 }</code></pre>
         </div>
-        <div class="quick-entry" id="quick-have">
-          <h4><code>have</code></h4>
-          <p><code>have h := term;</code> names an inferred proof, <code>have h : T := term;</code> checks one, and <code>have h : T { … }</code> proves a local claim in a block.
-            <a href="reference/proof-blocks.html#have">Proof blocks →</a></p>
+        <div class="quick-entry" id="quick-let">
+          <h4><code>let</code></h4>
+          <p><code>let x := term;</code> names a term, <code>let x : T := term;</code> checks it against <code>T</code>, and <code>let x : T { … }</code> proves <code>T</code> in a block. The checker sees through every form.
+            <a href="reference/proof-blocks.html#let">Proof blocks →</a></p>
           <pre><code data-check="accept">def three_ways(n : Nat) : n = n {
-  have p := refl(n);
-  have q : n = n := p;
-  have r : n = n {
+  let p := refl(n);
+  let q : n = n := p;
+  let r : n = n {
     exact q;
   }
   exact r;
-}</code></pre>
-        </div>
-        <div class="quick-entry" id="quick-let">
-          <h4><code>let</code></h4>
-          <p>Names a term for the rest of the block. The name stands for the term itself, so the checker sees through it.
-            <a href="reference/proof-blocks.html#let">Proof blocks →</a></p>
-          <pre><code data-check="accept">def see_through(n : Nat) : succ(n) = succ(n) {
-  let m := succ(n);
-  exact refl(m);
 }</code></pre>
         </div>
         <div class="quick-entry" id="quick-obtain">
@@ -407,6 +408,23 @@ def two_below_three : 2 &lt; 3 {
     left a =&gt; { exact right(a); }
     right b =&gt; { exact left(b); }
   }
+}</code></pre>
+        </div>
+        <h3 id="quick-conversion">Computation and conversion</h3>
+        <div class="quick-entry" id="quick-computation">
+          <h4>Equal by computation</h4>
+          <p>Two terms are definitionally equal when they compute to the same normal form: functions apply, definitions unfold, and eliminators compute on constructors. <code>refl</code> and <code>rfl</code> prove exactly these equalities; <code>n + 0 = n</code> for a variable <code>n</code> is not one of them. Older proofs’ <code>with unfolding [name] { expression }</code> is still accepted, and changes nothing.
+            <a href="reference/conversion.html#conversion">Computation and conversion →</a></p>
+          <pre><code data-check="accept">import naturals;
+
+def double(n : Nat) := n + n;
+
+def double_two : double(2) = 4 {
+  rfl;
+}
+
+def applied : (fun (n : Nat) =&gt; succ(n))(0) = 1 {
+  rfl;
 }</code></pre>
         </div>
         <h3 id="quick-universes">Universes</h3>
@@ -437,45 +455,6 @@ def small_identity := identity(U0);</code></pre>
           <pre><code data-check="accept">def type_of(U &lt; UU0) : next(U) := U;
 
 def both(U, V &lt; UU0, A : U, B : V) : max(U, V) := A and B;</code></pre>
-        </div>
-        <h3 id="quick-induction">Natural numbers and inductive types</h3>
-        <div class="quick-entry" id="quick-induction">
-          <h4><code>induction</code></h4>
-          <p><code>induction n as k return C { zero =&gt; …; succ ih =&gt; …; }</code>: the zero branch gives <code>C(0)</code>, and the successor branch turns <code>ih : C(k)</code> into <code>C(succ(k))</code>.
-            <a href="reference/induction.html#induction">Natural numbers and inductive types →</a></p>
-          <pre><code data-check="accept">def copy(n : Nat) := induction n as k return Nat {
-  zero =&gt; 0;
-  succ previous =&gt; succ(previous);
-};
-
-def copy_two : copy(2) = 2 {
-  exact refl(2);
-}</code></pre>
-        </div>
-        <div class="quick-entry" id="quick-w-types">
-          <h4>W types</h4>
-          <p><code>W(A, B)</code> holds well-founded trees with a label <code>a : A</code> and a child for each <code>b : B(a)</code>. <code>sup(T, a, children)</code> builds one, and <code>wrec</code> recurses over them.
-            <a href="reference/induction.html#w-types">Natural numbers and inductive types →</a></p>
-          <pre><code data-check="accept">def Label := Unit or Unit;
-
-def Arity(tag : Label) := match tag return U0 {
-  left leaf =&gt; Void;
-  right node =&gt; Unit;
-};
-
-def Chain := W(Label, Arity);
-
-def leaf := sup(Chain, typed(Label, left(tt)), fun (v : Void) =&gt; typed(Chain, absurd(v)));
-
-def grow(c : Chain) := sup(Chain, typed(Label, right(tt)), fun (u : Unit) =&gt; c);</code></pre>
-        </div>
-        <div class="quick-entry" id="quick-binary">
-          <h4>Binary literals</h4>
-          <p>After <code>import binary_naturals;</code>, <code>0b110</code> is six in <code>BinaryNat</code>, one W constructor per bit. Hover it to see the expansion. Decimal literals stay unary.
-            <a href="reference/induction.html#w-types">Natural numbers and inductive types →</a></p>
-          <pre><code data-check="accept">import binary_naturals;
-
-def six : BinaryNat := 0b110;</code></pre>
         </div>
         <h3 id="quick-paths">Equality and paths</h3>
         <div class="quick-entry" id="quick-equality">
@@ -514,6 +493,61 @@ def by_computation : succ(succ(0)) = 2 {
   exact path_induction(A, fun (a, b : A, q : a = b) =&gt; b = a,
     fun (a : A) =&gt; refl(a), x, y, p);
 }</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-hlevel">
+          <h4>Propositions, sets and <code>hlevel</code></h4>
+          <p><code>import hlevels;</code> defines <code>IsContr</code>, <code>IsProp</code>, <code>IsSet</code> and <code>HasLevel(U, n, A)</code>, and <code>hlevel;</code> proves them from evidence and the type's shape.
+            <a href="reference/paths.html#hlevel">Equality and paths →</a></p>
+          <pre><code data-check="accept">import hlevels;
+
+def functions_into_nat(A : U0) : IsSet(U0, A -> Nat) {
+  hlevel;
+}</code></pre>
+        </div>
+        <h3 id="quick-induction">Natural numbers and inductive types</h3>
+        <div class="quick-entry" id="quick-inductive">
+          <h4><code>inductive</code></h4>
+          <p><code>inductive Name(params) : U0 { c; d(x : A, rest : Name(params)); }</code> declares a type by its constructors. A constructor takes only its declared arguments; the type's parameters come from the expected type.
+            <a href="reference/induction.html#inductive">Natural numbers and inductive types →</a></p>
+          <pre><code data-check="accept">inductive List(U &lt; UU0, A : U) : U {
+  nil;
+  cons(head : A, tail : List(U, A));
+}
+
+def numbers : List(U0, Nat) := cons(2, cons(3, nil));</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-recursion">
+          <h4><code>match</code> and structural recursion</h4>
+          <p><code>match n { zero =&gt; …; succ(k) =&gt; …; }</code> gives one branch per constructor. A definition whose body is the match can call itself on a child such as <code>k</code>. In a proof block, <code>match n { zero =&gt; { … } succ(k) =&gt; { … } }</code> proves the goal for each constructor.
+            <a href="reference/induction.html#recursion">Natural numbers and inductive types →</a></p>
+          <pre><code data-check="accept">def double(n : Nat) : Nat := match n {
+  zero =&gt; 0;
+  succ(k) =&gt; succ(succ(double(k)));
+};
+
+def double_three : double(3) = 6 { rfl; }</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-nat-induction">
+          <h4><code>induction</code></h4>
+          <p><code>induction v [as z] return C { c(xs, hs) =&gt; …; }</code> on any declared type: each clause names the constructor’s arguments, then an induction hypothesis for each recursive argument. In a proof block, <code>induction v { c(xs, hs) =&gt; { … } }</code> takes its motive from the goal. Natural numbers also have <code>zero =&gt; …; succ h =&gt; …;</code>.
+            <a href="reference/induction.html#induction">Natural numbers and inductive types →</a></p>
+          <pre><code data-check="accept">inductive List(U &lt; UU0, A : U) : U {
+  nil;
+  cons(head : A, tail : List(U, A));
+}
+
+def length(xs : List(U0, Nat)) : Nat := induction xs return Nat {
+  nil =&gt; 0;
+  cons(head, tail, ih) =&gt; succ(ih);
+};</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-binary">
+          <h4>Binary literals</h4>
+          <p>After <code>import binary_naturals;</code>, <code>0b110</code> is six in <code>BinaryNat</code>, one constructor per bit. Hover it to see the expansion. Decimal literals stay unary.
+            <a href="reference/induction.html#binary">Natural numbers and inductive types →</a></p>
+          <pre><code data-check="accept">import binary_naturals;
+
+def six : BinaryNat := 0b110;</code></pre>
         </div>
         <h3 id="quick-rewriting">Equational reasoning and simplification</h3>
         <div class="quick-entry" id="quick-rfl">
@@ -607,11 +641,11 @@ def conditional(n : Nat, h : n = 0) : n + 0 = 0 {
   simp with [h];
 }</code></pre>
         </div>
-        <h3 id="quick-cubical">Cubical paths, pushouts and suspensions</h3>
+        <h3 id="quick-cubical">Cubical paths and higher inductive types</h3>
         <div class="quick-entry" id="quick-path-shorthand">
           <h4><code>path i =&gt;</code> and <code>p @ i</code></h4>
           <p>A path is a function of an interval coordinate. Where a path type is expected, <code>path i =&gt; body</code> builds one, and <code>p @ i</code> evaluates <code>p</code> at <code>i</code>.
-            <a href="reference/cubical.html#cubical-shorthand">Cubical paths →</a></p>
+            <a href="reference/cubical.html#cubical">Cubical paths →</a></p>
           <pre><code data-check="accept">def reverse(A : U0, x, y : A, p : x = y) : y = x {
   exact path i =&gt; p @ flip(i);
 }
@@ -648,18 +682,34 @@ def at_the_start(A : U0, x, y : A, p : x = y) : p @ 0 = x {
     face(i, 1, fun (j : Interval) =&gt; q @ j));
 }</code></pre>
         </div>
+        <div class="quick-entry" id="quick-higher-inductive">
+          <h4>Path constructors</h4>
+          <p>An <code>inductive</code> declaration can have constructors that build paths, written with their endpoint equality as the result type. A <code>match</code> clause <code>loop @ i =&gt; …</code> gives the result along the path, and must agree with the point clauses at its ends.
+            <a href="reference/cubical.html#higher-constructors">Cubical paths →</a></p>
+          <pre><code data-check="accept">inductive Circle : U0 {
+  base;
+  loop : base = base;
+}
+
+def reverse(c : Circle) : Circle := match c {
+  base =&gt; base;
+  loop @ i =&gt; loop @ -i;
+};</code></pre>
+        </div>
         <div class="quick-entry" id="quick-pushouts">
           <h4>Pushouts</h4>
-          <p><code>Pushout(S, A, B, f, g)</code> glues <code>A</code> and <code>B</code> along the two maps from <code>S</code>: <code>push_path</code> joins the images of each <code>s : S</code>.
+          <p><code>import pushout;</code> declares <code>Pushout(U, V, W, C, A, B, f, g)</code>, which glues <code>A</code> and <code>B</code> along the two maps from <code>C</code>: the path constructor <code>push(c)</code> joins <code>inl(f(c))</code> to <code>inr(g(c))</code>.
             <a href="reference/cubical.html#pushouts">Cubical paths →</a></p>
-          <pre><code data-check="accept">def TwoPoints := Pushout(Nat, Unit, Unit, fun (n : Nat) =&gt; tt, fun (n : Nat) =&gt; tt);
+          <pre><code data-check="accept">import pushout;
 
-def west := push_left(TwoPoints, tt);
+def TwoPoints : U0 := Pushout(U0, U0, U0, Nat, Unit, Unit, fun (n : Nat) =&gt; tt, fun (n : Nat) =&gt; tt);
 
-def east := push_right(TwoPoints, tt);
+def west : TwoPoints := inl(tt);
+
+def east : TwoPoints := inr(tt);
 
 def bridge(n : Nat) : west = east {
-  exact push_path(TwoPoints, n);
+  exact push(n);
 }</code></pre>
         </div>
         <div class="quick-entry" id="quick-suspensions">
@@ -672,34 +722,23 @@ def pole_path(A : U0, a : A) : north(A) = south(A) {
   exact meridian(A, a);
 }</code></pre>
         </div>
-        <h3 id="quick-conversion">Conversion and unfolding</h3>
-        <div class="quick-entry" id="quick-unfolding">
-          <h4><code>with unfolding</code></h4>
-          <p>Definitions unfold as conversion needs them. <code>with unfolding [name] { expression }</code> suggests which to unfold while elaborating the expression; it assumes nothing.
-            <a href="reference/conversion.html#unfolding-hints">Conversion and unfolding →</a></p>
-          <pre><code data-check="accept">def identity(n : Nat) := n;
-
-def identity_zero : identity(0) = 0 {
-  exact with unfolding [identity] { refl(0) };
-}</code></pre>
-        </div>
-        <h3 id="quick-assumptions">Assumptions and computability</h3>
+        <h3 id="quick-assumptions">Excluded middle, choice and computability</h3>
         <div class="quick-entry" id="quick-axioms">
-          <h4>Truncation, excluded middle and choice</h4>
-          <p>There is no <code>axiom</code> declaration. <code>Truncate</code>, <code>LEM</code> and <code>Choice</code> are the library's explicit assumptions, each generic over the universes below <code>UU0</code>.
-            <a href="reference/assumptions.html#axioms">Assumptions and computability →</a></p>
-          <pre><code data-check="accept">def merely(A : U0, a : A) : Truncate(U0, A) {
-  exact TruncateIntro(U0, A, a);
+          <h4>Excluded middle and choice</h4>
+          <p>There is no <code>axiom</code> declaration. <code>LEM</code> and <code>Choice</code> are the two classical assumptions, and their conclusions are truncations, <code>Truncate</code>, an assumption too. Each is generic over the universes below <code>UU0</code>.
+            <a href="reference/assumptions.html#axioms">Excluded middle, choice and computability →</a></p>
+          <pre><code data-check="accept">def excluded_middle(A : U0, nn : (A -&gt; Void) -&gt; Void) : Truncate(U0, A) {
+  exact LEM(U0, A, nn);
 }
 
-def excluded_middle(A : U0, nn : (A -&gt; Void) -&gt; Void) : Truncate(U0, A) {
-  exact LEM(U0, A, nn);
+def merely(A : U0, a : A) : Truncate(U0, A) {
+  exact TruncateIntro(U0, A, a);
 }</code></pre>
         </div>
         <div class="quick-entry" id="quick-univalence">
           <h4>Function extensionality and univalence</h4>
           <p><code>FunExt</code>, <code>ua</code> and <code>UnivalenceBeta</code> are constructions that compute, not assumptions.
-            <a href="reference/assumptions.html#univalence">Assumptions and computability →</a></p>
+            <a href="reference/assumptions.html#univalence">Excluded middle, choice and computability →</a></p>
           <pre><code data-check="accept">computable def extensional(A : U0, B : A -&gt; U0, f, g : forall a : A. B(a),
     h : forall a : A. f(a) = g(a)) : f = g {
   exact FunExt(U0, A, B, f, g, h);
@@ -708,7 +747,7 @@ def excluded_middle(A : U0, nn : (A -&gt; Void) -&gt; Void) : Truncate(U0, A) {
         <div class="quick-entry" id="quick-computable">
           <h4><code>computable def</code></h4>
           <p>Rejects the declaration if it uses an assumption, directly or through a definition.
-            <a href="reference/assumptions.html#computable">Assumptions and computability →</a></p>
+            <a href="reference/assumptions.html#computable">Excluded middle, choice and computability →</a></p>
           <pre><code data-check="accept">import naturals;
 
 computable def double(n : Nat) := n + n;</code></pre>
@@ -716,7 +755,7 @@ computable def double(n : Nat) := n + n;</code></pre>
         <div class="quick-entry" id="quick-evaluate">
           <h4><code>evaluate</code></h4>
           <p><code>evaluate term expecting value;</code> checks what a closed term computes to. The term may use no assumption.
-            <a href="reference/assumptions.html#evaluate">Assumptions and computability →</a></p>
+            <a href="reference/assumptions.html#evaluate">Excluded middle, choice and computability →</a></p>
           <pre><code data-check="accept">import naturals;
 
 def double(n : Nat) := n + n;

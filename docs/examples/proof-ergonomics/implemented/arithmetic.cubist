@@ -11,7 +11,7 @@ def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
 }
 
 // Nested calculation step + fixed-codomain congruence.
-// Occurrences count eligible preorder matches in the chosen endpoint.
+// Occurrences count eligible preorder matches in the selected endpoint.
 def add_zero_under_function(B : U0, f : Nat -> B, n : Nat) : f((n + 0) + 0) = f(n) {
   calc {
     f((n + 0) + 0) = f(n + 0) by {
@@ -41,7 +41,7 @@ def residual_goal(n : Nat, m : Nat, h : n = m) : (n + 0) + 0 = m {
 
 // Typed have uses := to disambiguate the equality type.
 def named_step(n : Nat) : (n + 0) + 0 = n {
-  have h : n + 0 = n := nat_add_zero(n);
+  let h : n + 0 = n := nat_add_zero(n);
   exact trans(nat_add_zero(n + 0), h);
 }
 

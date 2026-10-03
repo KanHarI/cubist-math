@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { resolve, relative, basename } from "node:path";
-import { parse } from "../web/mathscript/parser.mjs";
+import { parse } from "../web/cubist/parser.mjs";
 import { moduleNamePattern, moduleRoots } from "../web/module-resolution.mjs";
 import { projectRoot, sourceReader } from "./module-sources.mjs";
 
@@ -10,8 +10,8 @@ export { projectRoot };
 export const defaultTests = readdirSync(new URL("../tests/", import.meta.url))
   .filter(name => name.endsWith(".test.mjs") && name !== "cubical-modules.test.mjs")
   .sort().map(name => `tests/${name}`).concat(
-    readdirSync(new URL("../lib/cubical/tests/", import.meta.url)).filter(name => name.endsWith(".test.mjs"))
-      .sort().map(name => `lib/cubical/tests/${name}`));
+    readdirSync(new URL("../tests/translator/", import.meta.url)).filter(name => name.endsWith(".test.mjs"))
+      .sort().map(name => `tests/translator/${name}`));
 export const help = `Usage: npm test -- [options] [module | file ...]
 
   npm test                              Full regression suite (final check)
@@ -97,7 +97,7 @@ export function selectTests(args, { root = projectRoot, changed = () => changedP
     tests.push(resolve(root, "tests/cubical-modules.test.mjs"));
   }
   if (explicitOptimizations && !proofs.length)
-    throw new Error("Compiler optimization flags require selected proof modules; regression tests choose their own compiler modes.");
+    throw new Error("Compiler optimization flags require selected proof modules; regression tests set their own compiler modes.");
   return { tests: [...new Set(tests)], proofs: [...new Set(proofs)], flags, optimizations };
 }
 

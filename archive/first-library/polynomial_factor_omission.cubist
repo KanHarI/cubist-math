@@ -1,7 +1,7 @@
 import separable_polynomials;
 import finite_omission;
 
-// Move any chosen linear factor to the front, leaving the other indices in
+// Move any given linear factor to the front, leaving the other indices in
 // their original order. The index map records exactly which factor was removed.
 def linear_factor_product_omit(K : AlgebraicField, n : Nat) :=
   induction n as k return (

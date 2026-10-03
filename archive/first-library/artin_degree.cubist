@@ -16,10 +16,10 @@ def finite_spanning_basis_size_bound(
   let f := family_linear(K, V, n, vectors);
   let h := basis_expansion(K, V, m, basis);
   let X := FiniteLinearLift(K, C, V, f, m, h);
-  have bound : X -> le(m, n) {
+  let bound : X -> le(m, n) {
     intro witness;
     obtain (lift, commute) := witness;
-    have injective : CoordinateInjection(K, m, n, lift) {
+    let injective : CoordinateInjection(K, m, n, lift) {
       intro x, y, same;
       exact linear_iso_injective(
         K, D, V, basis, x, y,
@@ -85,7 +85,7 @@ def finite_subgroup_fixed_degree_upper_bound(
         )
       )
     );
-  have fromBasis : Basis -> Result {
+  let fromBasis : Basis -> Result {
     intro witness;
     obtain (enumeration, points, basis) := witness;
     let spanning := subgroup_evaluation_spans_fixed_field(K, E, H, n, enumeration, points, basis);
@@ -160,19 +160,20 @@ def subgroup_evaluation_points_independent(
   let eval := family_linear(F, C, n, rows);
   let indexed := forward(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H), enumeration);
   obtain (evalInjective, evalOnto) := basis;
-  have kernel :
+  let kernel :
     forall a : Fin(n) -> af_carrier(R).
     linear_map(R, CoordinateSpace(R, n), V, source, a) = vector_zero(R, V)
     -> a = vector_zero(R, CoordinateSpace(R, n)) {
     intro a, vanishes;
     let c := fun (j : Fin(n)) => field_embedding_map(R, F, i, a(j));
-    have baseZero : field_sum(F, n, (fun (j : Fin(n)) => field_mul(F, c(j), points(j)))) = field_zero(
+    let baseZero : field_sum(F, n, (fun (j : Fin(n)) => field_mul(F, c(j), points(j)))) = field_zero(
       F
-    ) := trans(
-      sym(field_vector_combination_sum(R, F, i, n, points, a)),
-      trans(sym(family_linear_evaluation(R, V, n, points, a)), vanishes)
-    );
-    have evalZero :
+    ) :=
+      trans(
+        sym(field_vector_combination_sum(R, F, i, n, points, a)),
+        trans(sym(family_linear_evaluation(R, V, n, points, a)), vanishes)
+      );
+    let evalZero :
       forall t : Fin(n).
       field_sum(
         F, n,
@@ -187,7 +188,7 @@ def subgroup_evaluation_points_independent(
           F, field_embedding_map(F, F, e, c(j)), field_embedding_map(F, F, e, points(j))
         );
       let raw := fun (j : Fin(n)) => field_mul(F, c(j), field_embedding_map(F, F, e, points(j)));
-      have fixed : forall j : Fin(n). field_embedding_map(F, F, e, c(j)) = c(j) {
+      let fixed : forall j : Fin(n). field_embedding_map(F, F, e, c(j)) = c(j) {
         intro j;
         exact subgroup_member_fixes_intermediate(
           K, E, H, h, c(j), subfield_evidence(F, intermediate_subfield(K, E, M), a(j))
@@ -214,22 +215,24 @@ def subgroup_evaluation_points_independent(
         )
       );
     }
-    have combinationZero : linear_combination(F, C, n, rows, c) = vector_zero(F, C) := FunExt(
-      U0, Fin(n), (fun (t : Fin(n)) => af_carrier(F)), linear_combination(F, C, n, rows, c),
-      vector_zero(F, C),
-      (
-        fun (t : Fin(n)) => trans(
-          coordinate_combination_component(F, n, t, n, rows, c), evalZero(t)
+    let combinationZero : linear_combination(F, C, n, rows, c) = vector_zero(F, C) :=
+      FunExt(
+        U0, Fin(n), (fun (t : Fin(n)) => af_carrier(F)), linear_combination(F, C, n, rows, c),
+        vector_zero(F, C),
+        (
+          fun (t : Fin(n)) => trans(
+            coordinate_combination_component(F, n, t, n, rows, c), evalZero(t)
+          )
         )
-      )
-    );
-    have cZero : c = vector_zero(F, C) := evalInjective(
-      c, vector_zero(F, C),
-      trans(
-        family_linear_evaluation(F, C, n, rows, c),
-        trans(combinationZero, sym(linear_zero(F, C, C, eval)))
-      )
-    );
+      );
+    let cZero : c = vector_zero(F, C) :=
+      evalInjective(
+        c, vector_zero(F, C),
+        trans(
+          family_linear_evaluation(F, C, n, rows, c),
+          trans(combinationZero, sym(linear_zero(F, C, C, eval)))
+        )
+      );
     obtain (baseZeroMap, baseOne, baseNeg, baseAdd, baseMul) := field_embedding_preserves(R, F, i);
     ext j;
     exact field_embedding_injective(
@@ -252,7 +255,7 @@ def finite_independent_basis_size_bound(
   let inverse := linear_iso_inverse(K, D, V, basis);
   let coordinates := linear_iso_forward(K, V, D, inverse);
   let composite := linear_compose(K, C, V, D, f, coordinates);
-  have injective : CoordinateInjection(K, n, m, composite) {
+  let injective : CoordinateInjection(K, n, m, composite) {
     intro x, y, same;
     exact independent(
       x, y,
@@ -312,7 +315,7 @@ def finite_subgroup_fixed_degree_lower_bound(
         )
       )
     );
-  have fromBasis : Basis -> le(n, d) {
+  let fromBasis : Basis -> le(n, d) {
     intro witness;
     obtain (enumeration, points, basis) := witness;
     let independent :=

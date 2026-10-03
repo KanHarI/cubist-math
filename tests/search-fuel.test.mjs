@@ -2,6 +2,7 @@
 // L1.3): tactic searches spend counted fuel, the same in a fresh session and
 // a reused one; fuel, the kernel's steps and the time limit fail apart; and an
 // unfinished rw, simp, simpa or calc says where it stopped.
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, mkdtemp, writeFile, rm } from "node:fs/promises";
@@ -11,7 +12,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { SEARCH_FUEL, DECLARATION_FUEL, SearchFuel, SearchFuelExhausted } from "../lib/cubical/fuel.mjs";
+import { SEARCH_FUEL, DECLARATION_FUEL, SearchFuel, SearchFuelExhausted } from "../web/translator/fuel.mjs";
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 // Modules resolve as in the CLI: the rebuilt library first, then the archive.
@@ -213,13 +214,18 @@ def commuted(a, b : Nat) : a + b = b + a {
   const cli = fileURLToPath(new URL("../cli/repl.mjs", import.meta.url));
   const run = spawnSync(process.execPath, [cli, "check", "residual.cubist"], { cwd: directory, encoding: "utf8", timeout: 120000 });
   assert.equal(run.status, 1, run.stderr);
-  // A failed check lists its gaps on stderr.
-  const reported = Object.fromEntries(JSON.parse(run.stderr.slice(run.stderr.indexOf("["))).map(gap => [gap.name, gap.reason]));
+  // A failed check lists each gap on a line of its own, with its code:
+  // error CODE at line L:C (name): message.
+  const lines = run.stderr.trim().split("\n").map(line => /^error (\S+)(?: at line (\d+):(\d+))? \(([^)]+)\): (.*)$/.exec(line));
+  assert.ok(lines.every(Boolean), run.stderr);
+  const reported = Object.fromEntries(lines.map(([, , line, column, name, message]) => [name, line ? `${message} at ${line}:${column}` : message]));
   // The browser's worker runs CubicalProgram on the same runtime modules.
   const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
   t.after(() => program.dispose());
-  const checked = Object.fromEntries((await program.check(source, "residual")).outputs.map(output => [output.name, output.reason]));
+  const result = await program.check(source, "residual");
+  const checked = Object.fromEntries(result.outputs.map(output => [output.name, output.reason]));
   assert.deepEqual(reported, checked);
+  assert.deepEqual(lines.map(([, code]) => code), result.outputs.filter(output => !output.verified).map(output => output.code));
   for (const reason of Object.values(reported)) assert.match(reason, /Remaining goal: /);
 });
 
@@ -283,6 +289,21 @@ def stopped(n, m : Nat, h : n + 0 = m) : m + 0 = n {
   const late = await check(t, source, { searchFuel: { ...SEARCH_FUEL, candidates: 7 } });
   assert.equal(late.stopped.failure, "fuel");
   assert.match(late.stopped.reason, /^simpa ran out of search fuel: 7 candidate rules tried\. Simplifying the goal stopped at m \+ 0 = n\. .* The supplied type had simplified to n = m\. 1 rewrite changed the left side, using nat_add_zero\./);
+  // The fourth review of #74: the two goals are named together. A variable
+  // introduced as add is named apart from the add that + prints in the
+  // goal, and so in the supplied type too, where neither it nor the context
+  // prints an add of its own.
+  const named = await check(t, `import naturals;
+
+def stopped : forall n : Nat. forall m : Nat. n = m -> m + 0 = n {
+  intro add;
+  intro m;
+  intro h;
+  simpa only [nat_add_zero] using h;
+}
+`, { searchFuel: { ...SEARCH_FUEL, candidates: 3 } });
+  assert.match(named.stopped.reason, /Simplifying the goal stopped at m \+ 0 = (\w+)\. .* The supplied type had simplified to \1 = m\./);
+  assert.doesNotMatch(named.stopped.reason, /simplified to add = m/);
   // The supplied type's search runs out first.
   const early = await check(t, source, { searchFuel: { ...SEARCH_FUEL, candidates: 1 } });
   assert.match(early.stopped.reason, /^simpa ran out of search fuel: 1 candidate rules tried\. Simplifying the supplied type stopped at n \+ 0 = m\./);
@@ -344,8 +365,8 @@ test("the kernel's step budget is a safety bound outside the determinism guarant
     kernel.maxQuerySteps = 16n;
     return { kernel, syntax: new CubicalSyntax(kernel) };
   };
-  const nat = { tag: "Nat" }, id = { tag: "Lam", name: "x", domain: nat, body: { tag: "Var", name: "x" } };
-  const nest = depth => { let term = { tag: "Zero" }; for (let i = 0; i < depth; i++) term = { tag: "App", fn: id, arg: term }; return term; };
+  const nat = { tag: "Unit" }, id = { tag: "Lam", name: "x", domain: nat, body: { tag: "Var", name: "x" } };
+  const nest = depth => { let term = { tag: "Point" }; for (let i = 0; i < depth; i++) term = { tag: "App", fn: id, arg: term }; return term; };
   const cold = await session();
   assert.throws(() => cold.kernel.head(cold.syntax.encode(nest(8))), error => error.kind === "budget");
   const warm = await session();

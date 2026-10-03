@@ -139,10 +139,11 @@ def galois_fixed_inverse(
   let ops := af_operations(F);
   let f := extension_iso_forward(K, E, E, e);
   obtain (p0, p1, pn, pa, pm) := galois_preserves_field_ops(K, E, e);
-  have imageInverse : af_mul(A, ops, x, f(y)) = af_one(A, ops) := trans(
-    cong((fun (a : A) => af_mul(A, ops, a, f(y))), sym(fixed(e, member))),
-    trans(sym(pm(x, y)), trans(cong(f, inverseLaw), p1))
-  );
+  let imageInverse : af_mul(A, ops, x, f(y)) = af_one(A, ops) :=
+    trans(
+      cong((fun (a : A) => af_mul(A, ops, a, f(y))), sym(fixed(e, member))),
+      trans(sym(pm(x, y)), trans(cong(f, inverseLaw), p1))
+    );
   exact algebraic_inverse_unique(
     A, ops, af_set(F), field_ring_data(A, ops, af_laws(F)), x, f(y), y, imageInverse, inverseLaw
   );

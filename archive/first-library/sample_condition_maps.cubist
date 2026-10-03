@@ -17,7 +17,7 @@ def sample_tagged_map_step(
   let b := sample_first(C, n, tail);
   let tag := field_fst(C, SampleTags(C, n), tags);
   let tailTags := field_snd(C, SampleTags(C, n), tags);
-  have data : condition(a, b, tag) and SampleTagged(C, condition, n, tail, tailTags) := valid;
+  let data : condition(a, b, tag) and SampleTagged(C, condition, n, tail, tailTags) := valid;
   obtain (headValid, tailValid) := data;
   exact typed(
     (other(a, b, tag) and SampleTagged(C, other, n, tail, tailTags)),

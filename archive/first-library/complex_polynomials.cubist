@@ -1,3 +1,5 @@
+import nat;
+
 import ring_laws;
 
 // Lower coefficients of a monic polynomial, constant coefficient first.
@@ -23,7 +25,7 @@ def MonicRoot(
   exists z : F. monic_eval(F, one, addF, mulF, n, coefficients, z) = zero;
 
 // This is a target PROPERTY, not an axiom or a proof of algebraic closure.
-// Mere existence per polynomial does not choose roots simultaneously.
+// Mere existence per polynomial does not pick roots simultaneously.
 // Over a field, an invertible leading coefficient permits monic normalization.
 def MonicAlgebraicClosure(F : U1, zero, one : F, addF, mulF : F -> F -> F) :=
   forall n : Nat. forall coefficients : MonicCoefficients(F, succ(n)).

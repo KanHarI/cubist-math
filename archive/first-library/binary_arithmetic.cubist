@@ -1,3 +1,5 @@
+import nat;
+
 import binary_naturals;
 import paths;
 
@@ -9,8 +11,8 @@ def binary_positive_succ(p : BinaryPositive) :=
   );
 
 def binary_succ(n : BinaryNat) := match n return BinaryNat {
-    left zero => binary_positive(binary_one);
-    right positive => binary_positive(binary_positive_succ(positive));
+    binary_zero => binary_positive(binary_one);
+    binary_positive(positive) => binary_positive(binary_positive_succ(positive));
   };
 
 // Digitwise addition: the recursive call has one fewer bit in the first input.
@@ -30,10 +32,10 @@ def binary_positive_add(a : BinaryPositive) : BinaryPositive -> BinaryPositive {
 }
 
 def binary_add(a, b : BinaryNat) := match a return BinaryNat {
-    left zero => b;
-    right positive => match b return BinaryNat {
-      left zero => a;
-      right other => binary_positive(binary_positive_add(positive, other));
+    binary_zero => b;
+    binary_positive(positive) => match b return BinaryNat {
+      binary_zero => a;
+      binary_positive(other) => binary_positive(binary_positive_add(positive, other));
     };
   };
 
@@ -51,14 +53,14 @@ def binary_positive_mul(a : BinaryPositive) : BinaryPositive -> BinaryPositive {
 }
 
 def binary_mul(a, b : BinaryNat) := match a return BinaryNat {
-    left zero => binary_zero;
-    right positive => match b return BinaryNat {
-      left zero => binary_zero;
-      right other => binary_positive(binary_positive_mul(positive, other));
+    binary_zero => binary_zero;
+    binary_positive(positive) => match b return BinaryNat {
+      binary_zero => binary_zero;
+      binary_positive(other) => binary_positive(binary_positive_mul(positive, other));
     };
   };
 
-def binary_of_nat(n : Nat) := induction n as k return BinaryNat {
+def binary_of_nat(n : Nat) := induction n return BinaryNat {
     zero => 0b0;
     succ previous => binary_succ(previous);
   };

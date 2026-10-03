@@ -1,7 +1,8 @@
+import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parse } from "../web/mathscript/parser.mjs";
-import { leadingDocumentation } from "../web/mathscript/documentation.mjs";
+import { parse } from "../web/cubist/parser.mjs";
+import { leadingDocumentation } from "../web/cubist/documentation.mjs";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 test("declaration comments distinguish adjacent prose, paragraphs, headers and trailing comments", () => {
@@ -34,7 +35,7 @@ def proof : Nat { exact 0; }
 
 
 test("documentation is extracted from checked local and imported source", async t => {
-  const program = new CubicalProgram(await createCubical(), async () => "// Imported identity.\ndef identity(n : Nat) := n;");
+  const program = new CubicalProgram(await createCubical(), async name => name === "helper" ? "// Imported identity.\ndef identity(n : Nat) := n;" : "");
   t.after(() => program.dispose());
   const result = await program.check("import helper;\n// Local definition.\ndef value := identity(0);", "docs");
   assert.equal(result.complete, true);

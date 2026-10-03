@@ -30,7 +30,7 @@ def SpanWitness(
   exists coefficients : Fin(n) -> af_carrier(K). (forall i : Fin(n). P(vectors(i)))
   and (linear_combination(K, V, n, vectors, coefficients) = x);
 
-// Span asserts mere existence of a finite combination. It does not choose
+// Span asserts mere existence of a finite combination. It does not pick
 // coordinates and cannot be eliminated into an arbitrary data type.
 def Span(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V)
@@ -87,7 +87,7 @@ def span_included(
   member : Span(K, V, P, x)
 ) :
   Span(K, V, Q, x) {
-  have mapWitness : SpanWitness(K, V, P, x) -> Span(K, V, Q, x) {
+  let mapWitness : SpanWitness(K, V, P, x) -> Span(K, V, Q, x) {
     intro witness;
     obtain (n, vectors, coefficients, members, sum) := witness;
     exact TruncateIntro(
@@ -138,13 +138,14 @@ def independent_excludes_zero(
   let ops := af_operations(K);
   let zero := vector_zero(K, V);
   obtain (ring, nontrivial, inverses) := af_laws(K);
-  have vanishes : linear_combination(
+  let vanishes : linear_combination(
     K, V, 1, (fun (i : Fin(1)) => zero), (fun (i : Fin(1)) => af_one(A, ops))
-  ) = zero := trans(
-    cong(
-      (fun (x : vector_carrier(K, V)) => vector_add(K, V, x, zero)), vector_scale_one(K, V, zero)
-    ), group_unit_right(vector_group(K, V), zero)
-  );
+  ) = zero :=
+    trans(
+      cong(
+        (fun (x : vector_carrier(K, V)) => vector_add(K, V, x, zero)), vector_scale_one(K, V, zero)
+      ), group_unit_right(vector_group(K, V), zero)
+    );
   exact nontrivial(
     independent(
       1, (fun (i : Fin(1)) => zero),

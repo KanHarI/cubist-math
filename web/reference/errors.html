@@ -31,15 +31,15 @@
           <ol class="chapters">
             <li><a href="types.html">Types and values</a></li>
             <li><a href="first-proof.html">A first proof and files</a></li>
-            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="terms.html">Functions, pairs and sums</a></li>
             <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
             <li><a href="universes.html">Universes</a></li>
-            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
-            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
-            <li><a href="conversion.html">Conversion and unfolding</a></li>
-            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
+            <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
             <li class="current"><a href="errors.html" aria-current="page">Error messages</a></li>
           </ol>
@@ -50,175 +50,212 @@
             <li><a href="#name-errors">Names and declarations</a></li>
             <li><a href="#type-errors">Types and terms</a></li>
             <li><a href="#block-errors">Proof blocks</a></li>
+            <li><a href="#conversion-errors">Computation and conversion</a></li>
             <li><a href="#universe-errors">Universes</a></li>
             <li><a href="#path-errors">Equality and paths</a></li>
+            <li><a href="#inductive-errors">Inductive types and recursion</a></li>
             <li><a href="#rewriting-errors">Equational reasoning and simplification</a></li>
-            <li><a href="#cubical-errors">Cubical paths</a></li>
-            <li><a href="#conversion-errors">Conversion, assumptions and computability</a></li>
+            <li><a href="#cubical-errors">Cubical paths and higher inductive types</a></li>
+            <li><a href="#assumption-errors">Excluded middle, choice and computability</a></li>
+            <li><a href="#warnings">Warnings</a></li>
             <li><a href="#not-yet-available">Not yet available</a></li>
+            <li><a href="#codes">Every code</a></li>
           </ul>
         </aside>
         <article id="reference">
           <section id="errors">
             <h2>How to read an error</h2>
-            <p>Every rejected example in this reference shows its error as a <code>// Error:</code> comment, on the line where the checker reports it. This chapter lists those messages by topic, with what each means, what to do, and where an example shows it. Parts in <var>italics</var> stand for names or numbers from your source.</p>
+            <p>Every error and warning has a <strong>code</strong>, such as <code>E606</code> or <code>W703</code>. The code comes before the message wherever the checker reports one: <code>error E606 at line 2:3 (wrong): Type mismatch: …</code> on the command line, and <code>E606: Type mismatch: …</code> in the REPL and the workspace, where it links here. <code>E</code> codes come from the parser and the elaborator, <code>K</code> codes are refusals by the kernel, and <code>W</code> codes are warnings. A code keeps its meaning as the message’s wording changes, and this page has an entry for each, at <code>errors.html#E606</code>: the sections below explain the codes this reference shows, and <a href="#codes">every code</a> lists them all.</p>
+            <p>Every rejected example in this reference shows its error as a <code>// Error:</code> comment, on the line where the checker reports it. An accepted example that draws a <a href="#warnings">warning</a> shows it as a <code>// Warning:</code> comment in the same way. This chapter lists those messages by topic, with what each means, what to do, and where an example shows it. Parts in <var>italics</var> stand for names or numbers from your source.</p>
             <p>An error names the declaration it belongs to, and the workspace marks the statement it points at. A rejected declaration is not added, so every declaration that uses it fails too, with “Untranslated dependency”. Fix the first error in a file first.</p>
           </section>
           <section id="syntax-errors">
             <h2>Reading the source</h2>
             <p>These are reported before anything is checked, at the first token that does not fit.</p>
             <div class="table-scroll"><table>
-              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
-                <tr><td data-message="Imports must come before declarations.">“Imports must come before declarations.”</td><td>Move every <code>import</code> to the start of the file.</td><td><a href="first-proof.html#files">files</a></td></tr>
-                <tr><td data-message="Unexpected character">“Unexpected character <var>c</var>”</td><td>Source is ASCII. Write <code>-></code>, <code>forall</code> and <code>exists</code> instead of symbols.</td><td><a href="first-proof.html#names">names</a></td></tr>
-                <tr><td data-message="Expected a name.">“Expected a name.”</td><td>A name cannot start with a digit.</td><td><a href="first-proof.html#names">names</a></td></tr>
-                <tr><td data-message="Expected ':' or '&lt;', found">“Expected ':' or '&lt;', found <var>token</var>”</td><td>Every parameter needs a type, after a colon, or, for a universe variable, a bound after <code>&lt;</code>.</td><td><a href="first-proof.html#parameters">parameters</a></td></tr>
-                <tr><td data-message="Write := to give a value">“Write := to give a value: …”</td><td>A binding (<code>def</code>, <code>have</code>, <code>let</code>, <code>obtain</code>, <code>simp_set</code>) gives its value with <code>:=</code>; <code>=</code> is the equality type. The message shows the form to use.</td><td><a href="first-proof.html#declarations">declarations</a></td></tr>
-                <tr><td data-message="Expected ';', found">“Expected ';', found <var>token</var>”</td><td>A missing semicolon, reported at the next token.</td><td><a href="first-proof.html#declarations">declarations</a></td></tr>
-                <tr><td data-message="Separate names with commas">“Separate names with commas: (n, m : Nat)”</td><td>Names that share a type are separated by commas, in parameters, <code>fun</code> binders and after <code>forall</code> or <code>exists</code>.</td><td><a href="types.html#tour-parameters">several parameters</a></td></tr>
-                <tr><td data-message="End forall's type with a dot">“End forall's type with a dot: forall n : Nat. P(n)”</td><td>A dot, followed by a space, separates a quantifier’s type from its body; the same holds for <code>exists</code>. A comma would read as the next parameter.</td><td><a href="types.html#tour-dependent">forall and exists</a></td></tr>
-                <tr><td data-message="Expected '}', found ';'.">“Expected '}', found ';'.”</td><td>The braces of <code>with unfolding</code> hold one expression, without a semicolon.</td><td><a href="conversion.html#unfolding-hints">unfolding hints</a></td></tr>
-                <tr><td data-message="Expected '=', found">“Expected '=', found <var>token</var>”</td><td>A <code>calc</code> step is an equality; other relations cannot be chained yet.</td><td><a href="#not-yet-available">not yet available</a></td></tr>
-                <tr><td data-message="Expected a proof statement; found">“Expected a proof statement; found <var>word</var>”</td><td>The word is not a statement. <code>apply</code>, <code>refine</code> and <code>sorry</code> do not exist yet.</td><td><a href="proof-blocks.html#goals">statements</a>, <a href="#not-yet-available">not yet available</a></td></tr>
-                <tr><td data-message="Expected an expression, found '{'.">“Expected an expression, found '{'.”</td><td>A block is not a term. Prove the part first with <code>have</code>.</td><td><a href="proof-blocks.html#where-blocks-go">blocks</a></td></tr>
-                <tr><td data-message="Use obtain to unpack a pair.">“Use obtain to unpack a pair.”</td><td><code>let</code> names one term; <code>obtain</code> takes a pair apart.</td><td><a href="proof-blocks.html#let">let</a></td></tr>
-                <tr><td data-message="A pair has only the projections .1 and .2.">“A pair has only the projections .1 and .2. …”</td><td>A projection is <code>.1</code> or <code>.2</code>. A tuple nests pairs to the right, so the third component of <code>(a, b, c)</code> is <code>.2.2</code>.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
-                <tr><td data-message="suffices names its hypothesis: suffices h : T by term;">“suffices names its hypothesis: suffices h : T by term;”</td><td>Name the hypothesis that the proof after <code>by</code> uses, followed by a colon and its type.</td><td><a href="proof-blocks.html#suffices">suffices</a></td></tr>
-                <tr><td data-message="suffices needs a proof of the goal from">“suffices needs a proof of the goal from <var>h</var> after by: …”</td><td>After the type, write <code>by</code> and a term or block that proves the goal using <var>h</var>.</td><td><a href="proof-blocks.html#suffices">suffices</a></td></tr>
-                <tr><td data-message="A pair pattern needs at least two components.">“A pair pattern needs at least two components.”</td><td>Write <code>obtain (a, b) := pair;</code>, or name the whole value with <code>let</code>.</td><td><a href="proof-blocks.html#obtain">obtain</a></td></tr>
-                <tr><td data-message="Numerals are limited to 256 in this version.">“Numerals are limited to 256 in this version.”</td><td>Build larger numbers with arithmetic, or use binary literals.</td><td><a href="terms.html#numbers">numbers</a>, <a href="checking.html#limits">limits</a></td></tr>
-                <tr><td data-message="Binary literals are limited to 256 significant bits.">“Binary literals are limited to 256 significant bits.”</td><td>A resource limit of the parser.</td><td><a href="checking.html#limits">limits</a></td></tr>
-                <tr><td data-message="simp only requires an explicit rule list.">“simp only requires an explicit rule list.”</td><td>Write <code>simp only [rules];</code>, or plain <code>simp;</code> for the default rules.</td><td><a href="rewriting.html#simp">simplification</a></td></tr>
-                <tr><td data-message="simp only cannot exclude rules.">“simp only cannot exclude rules.”</td><td><code>without</code> removes default rules; <code>simp only</code> has none. Leave the rule out of the list instead.</td><td><a href="rewriting.html#simp-registration">rule selection</a></td></tr>
-                <tr><td data-message="simp_rule priority must be an integer from 0 to 1000.">“simp_rule priority must be an integer from 0 to 1000.”</td><td>Choose a priority in range.</td><td><a href="rewriting.html#simp-registration">registration</a></td></tr>
+                <tr id="E151"><td class="code"><code>E151</code></td><td data-message="Imports must come before declarations.">“Imports must come before declarations.”</td><td>Move every <code>import</code> to the start of the file.</td><td><a href="first-proof.html#files">files</a></td></tr>
+                <tr id="E106"><td class="code"><code>E106</code></td><td data-message="Unexpected character">“Unexpected character <var>c</var>”</td><td>Source is ASCII. Write <code>-></code>, <code>forall</code> and <code>exists</code> instead of symbols.</td><td><a href="first-proof.html#names">names</a></td></tr>
+                <tr id="E110"><td class="code"><code>E110</code></td><td data-message="Expected a name.">“Expected a name.”</td><td>A name cannot start with a digit.</td><td><a href="first-proof.html#names">names</a></td></tr>
+                <tr id="E112"><td class="code"><code>E112</code></td><td data-message="Expected ':' or '&lt;', found">“Expected ':' or '&lt;', found <var>token</var>”</td><td>Every parameter needs a type, after a colon, or, for a universe variable, a bound after <code>&lt;</code>.</td><td><a href="first-proof.html#parameters">parameters</a></td></tr>
+                <tr id="E109"><td class="code"><code>E109</code> <code>E153</code></td><td data-message="Write := to give a value">“Write := to give a value: …”</td><td>A binding (<code>def</code>, <code>let</code>, <code>obtain</code>, <code>simp_set</code>) gives its value with <code>:=</code>; <code>=</code> is the equality type. The message shows the form to use.</td><td><a href="first-proof.html#declarations">declarations</a></td></tr>
+                <tr id="E108"><td class="code"><code>E108</code></td><td data-message="Expected ';', found">“Expected ';', found <var>token</var>”</td><td>A missing semicolon, reported at the next token.</td><td><a href="first-proof.html#declarations">declarations</a></td></tr>
+                <tr id="E117"><td class="code"><code>E117</code></td><td data-message="Separate names with commas">“Separate names with commas: (n, m : Nat)”</td><td>Names that share a type are separated by commas, in parameters, <code>fun</code> binders and after <code>forall</code> or <code>exists</code>.</td><td><a href="types.html#tour-parameters">several parameters</a></td></tr>
+                <tr id="E128"><td class="code"><code>E128</code></td><td data-message="End forall's type with a dot">“End forall's type with a dot: forall n : Nat. P(n)”</td><td>A dot, followed by a space, separates a quantifier’s type from its body; the same holds for <code>exists</code>. A comma would read as the next parameter.</td><td><a href="types.html#tour-dependent">forall and exists</a></td></tr>
+                <tr><td class="code"><code>E108</code></td><td data-message="Expected '}', found ';'.">“Expected '}', found ';'.”</td><td>The braces of <code>with unfolding</code> hold one expression, without a semicolon.</td><td><a href="conversion.html#unfolding-hints">unfolding hints</a></td></tr>
+                <tr><td class="code"><code>E108</code></td><td data-message="Expected '=', found">“Expected '=', found <var>token</var>”</td><td>A <code>calc</code> step is an equality; other relations cannot be chained yet.</td><td><a href="#not-yet-available">not yet available</a></td></tr>
+                <tr id="E139"><td class="code"><code>E139</code></td><td data-message="Expected a proof statement; found">“Expected a proof statement; found <var>word</var>”</td><td>The word is not a statement. <code>apply</code>, <code>refine</code> and <code>sorry</code> do not exist yet.</td><td><a href="proof-blocks.html#goals">statements</a>, <a href="#not-yet-available">not yet available</a></td></tr>
+                <tr id="E136"><td class="code"><code>E136</code></td><td data-message="have was removed">“have was removed: write let name : T := term; …”</td><td><code>let</code> has <code>have</code>'s forms: <code>let name : T := term;</code> and <code>let name : T { … }</code>.</td><td><a href="proof-blocks.html#have">local lemmas</a></td></tr>
+                <tr id="E137"><td class="code"><code>E137</code></td><td data-message="show was removed">“show was removed: …”</td><td>Prove the restated goal, <code>let h : T { … }</code>, then close with <code>exact h;</code>.</td><td><a href="proof-blocks.html#show">restating the goal</a></td></tr>
+                <tr id="E138"><td class="code"><code>E138</code></td><td data-message="suffices was removed">“suffices was removed: …”</td><td>Prove the claim first, <code>let h : T { … }</code>, then prove the goal from <code>h</code>.</td><td><a href="proof-blocks.html#suffices">reasoning backwards</a></td></tr>
+                <tr id="E123"><td class="code"><code>E123</code></td><td data-message="Expected an expression, found '{'.">“Expected an expression, found '{'.”</td><td>A block is not a term. Prove the part first with <code>let name : T { … }</code>.</td><td><a href="proof-blocks.html#where-blocks-go">blocks</a></td></tr>
+                <tr id="E140"><td class="code"><code>E140</code></td><td data-message="Use obtain to unpack a pair.">“Use obtain to unpack a pair.”</td><td><code>let</code> names one term; <code>obtain</code> takes a pair apart.</td><td><a href="proof-blocks.html#let">let</a></td></tr>
+                <tr id="E120"><td class="code"><code>E120</code></td><td data-message="A pair has only the projections .1 and .2.">“A pair has only the projections .1 and .2. …”</td><td>A projection is <code>.1</code> or <code>.2</code>. A tuple nests pairs to the right, so the third component of <code>(a, b, c)</code> is <code>.2.2</code>.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
+                <tr id="E131"><td class="code"><code>E131</code></td><td data-message="A pair pattern needs at least two components.">“A pair pattern needs at least two components.”</td><td>Write <code>obtain (a, b) := pair;</code>, or name the whole value with <code>let</code>.</td><td><a href="proof-blocks.html#obtain">obtain</a></td></tr>
+                <tr id="E122"><td class="code"><code>E122</code></td><td data-message="Numerals are limited to 256 in this version.">“Numerals are limited to 256 in this version.”</td><td>Build larger numbers with arithmetic, or use binary literals.</td><td><a href="terms.html#numbers">numbers</a>, <a href="checking.html#limits">limits</a></td></tr>
+                <tr id="E121"><td class="code"><code>E121</code></td><td data-message="Binary literals are limited to 256 significant bits.">“Binary literals are limited to 256 significant bits.”</td><td>A resource limit of the parser.</td><td><a href="checking.html#limits">limits</a></td></tr>
+                <tr id="E144"><td class="code"><code>E144</code></td><td data-message="simp only requires an explicit rule list.">“simp only requires an explicit rule list.”</td><td>Write <code>simp only [rules];</code>, or plain <code>simp;</code> for the default rules.</td><td><a href="rewriting.html#simp">simplification</a></td></tr>
+                <tr id="E145"><td class="code"><code>E145</code></td><td data-message="simp only cannot exclude rules.">“simp only cannot exclude rules.”</td><td><code>without</code> removes default rules; <code>simp only</code> has none. Leave the rule out of the list instead.</td><td><a href="rewriting.html#simp-registration">rule selection</a></td></tr>
+                <tr id="E149"><td class="code"><code>E149</code></td><td data-message="simp_rule priority must be an integer from 0 to 1000.">“simp_rule priority must be an integer from 0 to 1000.”</td><td>Give a priority in range.</td><td><a href="rewriting.html#simp-registration">registration</a></td></tr>
               </tbody>
             </table></div>
           </section>
           <section id="name-errors">
             <h2>Names and declarations</h2>
             <div class="table-scroll"><table>
-              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
-                <tr><td data-message="Untranslated name:">“Untranslated name: <var>name</var>”</td><td>The name is not in scope. It may be declared later, be the declaration itself (there is no recursion), need an import (<code>+</code> needs <code>import naturals;</code>), be misspelled, or not be a construct of the language, such as <code>Interval</code> as a type or a <code>_</code> hole outside <code>calc</code>.</td><td><a href="first-proof.html#order">order</a>, <a href="terms.html#numbers">numbers</a></td></tr>
-                <tr><td data-message="Untranslated dependency:">“Untranslated dependency: <var>name</var>”</td><td>The named declaration failed, so its users are blocked. Fix the named declaration.</td><td><a href="first-proof.html#checking">checking</a></td></tr>
-                <tr><td data-message="Definition symbol is already registered.">“Definition symbol is already registered.”</td><td>A name is declared twice in one module. Rename one.</td><td><a href="first-proof.html#order">order</a></td></tr>
-                <tr><td data-message="is already registered in this module.">“Simplification rule <var>name</var> is already registered in this module.”</td><td>Register each rule once per module.</td><td><a href="rewriting.html#simp-registration">registration</a></td></tr>
+                <tr id="E343"><td class="code"><code>E343</code></td><td data-message="Untranslated name:">“Untranslated name: <var>name</var>”</td><td>The name is not in scope. It may be declared later, be the declaration itself (there is no recursion), need an import (<code>+</code> needs <code>import naturals;</code>), be misspelled, or not be a construct of the language, such as <code>Interval</code> as a type or a <code>_</code> hole outside <code>calc</code>.</td><td><a href="first-proof.html#order">order</a>, <a href="terms.html#numbers">numbers</a></td></tr>
+                <tr id="E340"><td class="code"><code>E340</code></td><td data-message="Untranslated dependency:">“Untranslated dependency: <var>name</var>”</td><td>The named declaration failed, so its users are blocked. Fix the named declaration.</td><td><a href="first-proof.html#checking">checking</a></td></tr>
+                <tr id="E604"><td class="code"><code>E604</code></td><td data-message="Definition symbol is already registered.">“Definition symbol is already registered.”</td><td>A name is declared twice in one module. Rename one.</td><td><a href="first-proof.html#order">order</a></td></tr>
+                <tr id="E327"><td class="code"><code>E327</code></td><td data-message="is already registered in this module.">“Simplification rule <var>name</var> is already registered in this module.”</td><td>Register each rule once per module.</td><td><a href="rewriting.html#simp-registration">registration</a></td></tr>
               </tbody>
             </table></div>
           </section>
           <section id="type-errors">
             <h2>Types and terms</h2>
             <div class="table-scroll"><table>
-              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
-                <tr><td data-message="Type mismatch: found">“Type mismatch: found <var>A</var>, expected <var>B</var>.”</td><td>A term of type <var>A</var> is used where a <var>B</var> is needed, and the two are not equal by computation. The message shows both types in Cubist syntax, with definitions under their source names and redexes reduced; when the whole declaration is compared, both are its full statement. Check argument order, universes and endpoints. From <code>rfl</code>, it means the two sides are only equal propositionally: use a lemma, <code>rw</code> or <code>simp</code>. In a <code>cases</code> branch, the goal is not refined; use <code>match</code>.</td><td><a href="proof-blocks.html#exact">exact</a>, <a href="conversion.html#conversion">conversion</a>, <a href="proof-blocks.html#cases">cases</a></td></tr>
-                <tr><td data-message="Source application is not a function.">“Source application is not a function.”</td><td>Something that is not a function is applied, or a function gets too many arguments.</td><td><a href="terms.html#currying">currying</a>, <a href="first-proof.html#parameters">parameters</a></td></tr>
-                <tr><td data-message="Untyped lambda requires an expected function type.">“Untyped lambda requires an expected function type.”</td><td>Give the binder a type, or put the function where a function type is expected.</td><td><a href="terms.html#functions">functions</a></td></tr>
-                <tr><td data-message="requires an expected type.">“Pair requires an expected type.”, “Sum injection requires an expected type.”, “absurd requires an expected type.”</td><td>The form needs its type from context. Supply it with a stated result type, <code>have name : T</code> or <code>typed(T, term)</code>.</td><td><a href="terms.html#typed">expected types</a></td></tr>
-                <tr><td data-message="Expected a Sigma type for pair.">“Expected a Sigma type for pair.”</td><td>A pair is checked against a type that is not a pair type, or a tuple does not match the nesting of its type.</td><td><a href="terms.html#tuples">tuples</a></td></tr>
-                <tr><td data-message="requires a dependent pair; found a value of type">“Projection <var>.1</var> requires a dependent pair; found a value of type <var>T</var>.”</td><td>Only a pair has projections. The message shows the type of the projected value.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
-                <tr><td data-message="unpack requires a dependent pair.">“unpack requires a dependent pair.”</td><td>Only pairs can be unpacked.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
-                <tr><td data-message="match requires a sum type.">“match requires a sum type.”</td><td><code>match</code> analyses <code>A or B</code>. Use <code>induction</code> for <code>Nat</code>.</td><td><a href="terms.html#match">match</a></td></tr>
+                <tr id="E606"><td class="code"><code>E606</code></td><td data-message="Type mismatch: found">“Type mismatch: found <var>A</var>, expected <var>B</var>.”</td><td>A term of type <var>A</var> is used where a <var>B</var> is needed, and the two are not equal by computation. The message shows both types in Cubist syntax, with definitions under their source names and redexes reduced; when the whole declaration is compared, both are its full statement. Check argument order, universes and endpoints. From <code>rfl</code>, it means the two sides are only equal propositionally: use a lemma, <code>rw</code> or <code>simp</code>. In a <code>cases</code> branch, the goal is not refined; use <code>match</code>.</td><td><a href="proof-blocks.html#exact">exact</a>, <a href="conversion.html#conversion">conversion</a>, <a href="proof-blocks.html#cases">cases</a></td></tr>
+                <tr id="E352"><td class="code"><code>E352</code></td><td data-message="Source application is not a function.">“Source application is not a function.”</td><td>Something that is not a function is applied, or a function gets too many arguments.</td><td><a href="terms.html#currying">currying</a>, <a href="first-proof.html#parameters">parameters</a></td></tr>
+                <tr id="E346"><td class="code"><code>E346</code></td><td data-message="Untyped lambda requires an expected function type.">“Untyped lambda requires an expected function type.”</td><td>Give the binder a type, or put the function where a function type is expected.</td><td><a href="terms.html#functions">functions</a></td></tr>
+                <tr id="E350"><td class="code"><code>E350</code> <code>E414</code> <code>E415</code></td><td data-message="requires an expected type.">“Pair requires an expected type.”, “Sum injection requires an expected type.”, “absurd requires an expected type.”</td><td>The form needs its type from context. Supply it with a stated result type, <code>let name : T</code> or <code>typed(T, term)</code>.</td><td><a href="terms.html#typed">expected types</a></td></tr>
+                <tr id="E351"><td class="code"><code>E351</code></td><td data-message="Expected a Sigma type for pair.">“Expected a Sigma type for pair.”</td><td>A pair is checked against a type that is not a pair type, or a tuple does not match the nesting of its type.</td><td><a href="terms.html#tuples">tuples</a></td></tr>
+                <tr id="E349"><td class="code"><code>E349</code></td><td data-message="requires a dependent pair; found a value of type">“Projection <var>.1</var> requires a dependent pair; found a value of type <var>T</var>.”</td><td>Only a pair has projections. The message shows the type of the projected value.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
+                <tr id="E356"><td class="code"><code>E356</code></td><td data-message="unpack requires a dependent pair.">“unpack requires a dependent pair.”</td><td>Only pairs can be unpacked.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
               </tbody>
             </table></div>
           </section>
           <section id="block-errors">
             <h2>Proof blocks</h2>
             <div class="table-scroll"><table>
-              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
-                <tr><td data-message="Proof block has no conclusion.">“Proof block has no conclusion.”</td><td>The block ends without closing its goal. Add a closing statement; after <code>ext</code>, the new goal still needs one.</td><td><a href="proof-blocks.html#goals">statements</a>, <a href="proof-blocks.html#changing-the-goal">changing the goal</a></td></tr>
-                <tr><td data-message="Statements after exact are unreachable.">“Statements after exact are unreachable.”</td><td>Nothing may follow a closing statement. Prove intermediate claims with <code>have</code> before closing.</td><td><a href="proof-blocks.html#goals">statements</a></td></tr>
-                <tr><td data-message="Statements after cases are not yet translated.">“Statements after cases are not yet translated.”</td><td><code>cases</code> must end its block. Move the rest into the branches.</td><td><a href="proof-blocks.html#cases">cases</a></td></tr>
-                <tr><td data-message="intro requires a dependent function goal.">“intro requires a dependent function goal.”</td><td>The goal is not a function type, or all its inputs are already introduced.</td><td><a href="proof-blocks.html#intro">intro</a></td></tr>
-                <tr><td data-message="show requires a type equal to the goal by computation">“show requires a type equal to the goal by computation: found <var>T</var>, expected <var>G</var>.”</td><td>The stated type differs from the goal. A type that is only provably equal needs <code>rw</code> or <code>simp</code> instead.</td><td><a href="proof-blocks.html#show">show</a></td></tr>
-                <tr><td data-message="show left the goal unproved; add a following proof statement.">“show left the goal unproved; add a following proof statement.”</td><td><code>show</code> restates the goal without proving it. Prove the restated goal next.</td><td><a href="proof-blocks.html#show">show</a></td></tr>
-                <tr><td data-message="suffices left the stated goal unproved; add a following proof statement.">“suffices left the stated goal unproved; add a following proof statement.”</td><td>After <code>suffices h : T by …;</code>, the block must go on to prove <code>T</code>.</td><td><a href="proof-blocks.html#suffices">suffices</a></td></tr>
-                <tr><td data-message="obtain requires a dependent pair matching its pattern.">“obtain requires a dependent pair matching its pattern.”</td><td>The value is not a pair, or the pattern’s nesting differs from its type’s.</td><td><a href="proof-blocks.html#obtain">obtain</a></td></tr>
-                <tr><td data-message="cases requires a sum type.">“cases requires a sum type.”</td><td><code>cases</code> splits <code>A or B</code>.</td><td><a href="proof-blocks.html#cases">cases</a></td></tr>
+                <tr id="E358"><td class="code"><code>E358</code></td><td data-message="Proof block has no conclusion.">“Proof block has no conclusion.”</td><td>The block ends without closing its goal. Add a closing statement; after <code>ext</code>, the new goal still needs one.</td><td><a href="proof-blocks.html#goals">statements</a>, <a href="proof-blocks.html#changing-the-goal">changing the goal</a></td></tr>
+                <tr id="E444"><td class="code"><code>E444</code></td><td data-message="Statements after exact are unreachable.">“Statements after exact are unreachable.”</td><td>Nothing may follow a closing statement. Prove intermediate claims with <code>let</code> before closing.</td><td><a href="proof-blocks.html#goals">statements</a></td></tr>
+                <tr id="E468"><td class="code"><code>E468</code></td><td data-message="Statements after cases are not yet translated.">“Statements after cases are not yet translated.”</td><td><code>cases</code> must end its block. Move the rest into the branches.</td><td><a href="proof-blocks.html#cases">cases</a></td></tr>
+                <tr id="E458"><td class="code"><code>E458</code></td><td data-message="intro requires a dependent function goal.">“intro requires a dependent function goal.”</td><td>The goal is not a function type, or all its inputs are already introduced.</td><td><a href="proof-blocks.html#intro">intro</a></td></tr>
+                <tr id="E466"><td class="code"><code>E466</code></td><td data-message="obtain requires a dependent pair matching its pattern.">“obtain requires a dependent pair matching its pattern.”</td><td>The value is not a pair, or the pattern’s nesting differs from its type’s.</td><td><a href="proof-blocks.html#obtain">obtain</a></td></tr>
+                <tr id="E469"><td class="code"><code>E469</code></td><td data-message="cases requires a sum type.">“cases requires a sum type.”</td><td><code>cases</code> splits <code>A or B</code>.</td><td><a href="proof-blocks.html#cases">cases</a></td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section id="conversion-errors">
+            <h2>Computation and conversion</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr id="E337"><td class="code"><code>E337</code></td><td data-message="No checked definition to unfold:">“No checked definition to unfold: <var>name</var>”</td><td>Hints name top-level checked definitions only.</td><td><a href="conversion.html#unfolding-hints">unfolding hints</a></td></tr>
               </tbody>
             </table></div>
           </section>
           <section id="universe-errors">
             <h2>Universes</h2>
             <div class="table-scroll"><table>
-              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
-                <tr><td data-message="Universe was removed: bind a universe variable as U &lt; UU0.">“Universe was removed: bind a universe variable as U &lt; UU0.”</td><td>Write <code>U &lt; UU0</code> where the source had <code>U : Universe</code>.</td><td><a href="universes.html#universe-variables">universe variables</a></td></tr>
-                <tr><td data-message="A universe variable's bound must be UU0, as in U &lt; UU0.">“A universe variable's bound must be UU0, as in U &lt; UU0.”</td><td>Only <code>UU0</code> bounds a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
-                <tr><td data-message="A universe argument must lie below UU0">“A universe argument must lie below UU0: …”</td><td>A generic declaration was used at <code>UU0</code> or above. Use <code>U0</code>, <code>U1</code>, … or a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
-                <tr><td data-message="Expected a universe:">“Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).”</td><td>A type or a term stands where a universe is required, such as <code>next(Nat)</code>.</td><td><a href="universes.html#universe-expressions">next and max</a></td></tr>
-                <tr><td data-message="is a universe constant; choose another name.">“<var>name</var> is a universe constant; choose another name.”</td><td>Names such as <code>U1</code> and <code>UU2</code> are universes.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
+                <tr id="E342"><td class="code"><code>E342</code></td><td data-message="Universe was removed: bind a universe variable as U &lt; UU0.">“Universe was removed: bind a universe variable as U &lt; UU0.”</td><td>Write <code>U &lt; UU0</code> where the source had <code>U : Universe</code>.</td><td><a href="universes.html#universe-variables">universe variables</a></td></tr>
+                <tr id="E321"><td class="code"><code>E321</code></td><td data-message="A universe variable's bound must be UU0, as in U &lt; UU0.">“A universe variable's bound must be UU0, as in U &lt; UU0.”</td><td>Only <code>UU0</code> bounds a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
+                <tr id="E518"><td class="code"><code>E518</code></td><td data-message="A universe argument must lie below UU0">“A universe argument must lie below UU0: …”</td><td>A generic declaration was used at <code>UU0</code> or above. Use <code>U0</code>, <code>U1</code>, … or a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
+                <tr id="E322"><td class="code"><code>E322</code></td><td data-message="Expected a universe:">“Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).”</td><td>A type or a term stands where a universe is required, such as <code>next(Nat)</code>.</td><td><a href="universes.html#universe-expressions">next and max</a></td></tr>
+                <tr id="E111"><td class="code"><code>E111</code></td><td data-message="is a universe constant; pick another name.">“<var>name</var> is a universe constant; pick another name.”</td><td>Names such as <code>U1</code> and <code>UU2</code> are universes.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
               </tbody>
             </table></div>
           </section>
           <section id="path-errors">
             <h2>Equality and paths</h2>
             <div class="table-scroll"><table>
-              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
-                <tr><td data-message="Path endpoints do not match.">“Path endpoints do not match.”</td><td>In <code>trans(p, q)</code>, <code>p</code> must end where <code>q</code> starts.</td><td><a href="paths.html#path-operations">operations</a></td></tr>
-                <tr><td data-message="cong requires a path.">“cong requires a path.”</td><td>The second argument must be a path.</td><td><a href="paths.html#path-operations">operations</a></td></tr>
-                <tr><td data-message="Transport endpoints do not match.">“Transport endpoints do not match.”</td><td>The stated endpoints must be the path’s, in order. Transport backwards along <code>sym(p)</code>.</td><td><a href="paths.html#transport">transport</a></td></tr>
-                <tr><td data-message="transport requires a path.">“transport requires a path.”</td><td>The fourth argument must be a path.</td><td><a href="paths.html#transport">transport</a></td></tr>
-                <tr><td data-message="Path induction endpoints/carrier do not match.">“Path induction endpoints/carrier do not match.”</td><td>The type and endpoints passed to <code>path_induction</code> must be the path’s.</td><td><a href="paths.html#path-induction">path induction</a></td></tr>
-                <tr><td data-message="Based induction needs universes.">“Based induction needs universes.”</td><td>The first two arguments of <code>based_induction</code> are universes.</td><td><a href="paths.html#path-induction">path induction</a></td></tr>
+                <tr id="E429"><td class="code"><code>E429</code></td><td data-message="Path endpoints do not match.">“Path endpoints do not match.”</td><td>In <code>trans(p, q)</code>, <code>p</code> must end where <code>q</code> starts.</td><td><a href="paths.html#path-operations">operations</a></td></tr>
+                <tr id="E417"><td class="code"><code>E417</code></td><td data-message="cong requires a path.">“cong requires a path.”</td><td>The second argument must be a path.</td><td><a href="paths.html#path-operations">operations</a></td></tr>
+                <tr id="E421"><td class="code"><code>E421</code></td><td data-message="Transport endpoints do not match.">“Transport endpoints do not match.”</td><td>The stated endpoints must be the path’s, in order. Transport backwards along <code>sym(p)</code>.</td><td><a href="paths.html#transport">transport</a></td></tr>
+                <tr id="E420"><td class="code"><code>E420</code></td><td data-message="transport requires a path.">“transport requires a path.”</td><td>The fourth argument must be a path.</td><td><a href="paths.html#transport">transport</a></td></tr>
+                <tr id="E422"><td class="code"><code>E422</code></td><td data-message="Path induction endpoints/carrier do not match.">“Path induction endpoints/carrier do not match.”</td><td>The type and endpoints passed to <code>path_induction</code> must be the path’s.</td><td><a href="paths.html#path-induction">path induction</a></td></tr>
+                <tr id="E423"><td class="code"><code>E423</code></td><td data-message="Based induction needs universes.">“Based induction needs universes.”</td><td>The first two arguments of <code>based_induction</code> are universes.</td><td><a href="paths.html#path-induction">path induction</a></td></tr>
+                <tr id="E366"><td class="code"><code>E366</code></td><td data-message="hlevel could not prove">“hlevel could not prove <var>goal</var>”</td><td>The message names each obligation the goal needs, down to the first that nothing discharges, and why. Supply that evidence as a hypothesis or with <code>hlevel with [h];</code>. Some goals are false: <code>Nat</code> is not a proposition.</td><td><a href="paths.html#hlevel">hlevel</a></td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section id="inductive-errors">
+            <h2>Inductive types and recursion</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr id="E519"><td class="code"><code>E519</code></td><td data-message="needs an expected type, to know which">“<var>nil</var> needs an expected type, to know which <var>List(…)</var> it builds: write typed(<var>List(…)</var>, <var>nil</var>).”</td><td>A constructor of a parameterized type takes only its declared arguments, so the type’s arguments come from context. Give a result type, or use <code>typed</code>.</td><td><a href="induction.html#inductive-parameters">parameters</a></td></tr>
+                <tr id="E528"><td class="code"><code>E528</code></td><td data-message="Nat has no constructor left: its constructors are zero, succ.">“<var>Nat</var> has no constructor <var>left</var>: its constructors are <var>zero, succ</var>.”</td><td>A <code>match</code> clause names a constructor that the matched type does not have, such as a sum’s <code>left</code> on <code>Nat</code>. Use the listed constructors.</td><td><a href="terms.html#match">match</a></td></tr>
+                <tr id="E557"><td class="code"><code>E557</code></td><td data-message="then its induction hypothesis if you name them">“<var>c</var> takes <var>n</var> arguments here, then its induction hypothesis if you name them: …”</td><td>An induction clause names the constructor’s arguments, then optionally one hypothesis per recursive argument; it gave another number of names.</td><td><a href="induction.html#induction">induction</a></td></tr>
+                <tr id="E547"><td class="code"><code>E547</code></td><td data-message="loop is being defined: it can call itself only on an argument of a constructor">“<var>loop</var> is being defined: it can call itself only on an argument of a constructor”</td><td>A definition calls itself, but its whole body is not a <code>match</code> on one of its parameters. Make it one, and recurse on a child bound by a clause.</td><td><a href="first-proof.html#order">order</a>, <a href="induction.html#recursion">structural recursion</a></td></tr>
+                <tr id="E552"><td class="code"><code>E552</code></td><td data-message="is not on an argument of the matched constructor: only structural recursion">“The recursive call of <var>f</var> is not on an argument of the matched constructor: only structural recursion, …”</td><td>A recursive call passes something other than a child bound by the clause, such as the original input or a new constructor value. Recurse on a child.</td><td><a href="induction.html#recursion">structural recursion</a></td></tr>
               </tbody>
             </table></div>
           </section>
           <section id="rewriting-errors">
             <h2>Equational reasoning and simplification</h2>
             <div class="table-scroll"><table>
-              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
-                <tr><td data-message="rfl requires a homogeneous equality goal.">“rfl requires a homogeneous equality goal.”</td><td>The goal is not an equality.</td><td><a href="rewriting.html#rfl">rfl</a></td></tr>
-                <tr><td data-message="calc step left endpoint does not match the preceding endpoint.">“calc step left endpoint does not match the preceding endpoint.”</td><td>Adjacent steps must share an endpoint; the message shows both. Write <code>_</code> for the previous right side.</td><td><a href="rewriting.html#calc">calc</a></td></tr>
-                <tr><td data-message="calc final endpoint does not match the goal.">“calc final endpoint does not match the goal.”</td><td>The chain must end at the goal’s right side; the message shows where it ends and what the goal needs.</td><td><a href="rewriting.html#calc">calc</a></td></tr>
-                <tr><td data-message="calc requires a homogeneous equality goal.">“calc requires a homogeneous equality goal.”</td><td>The goal is not an equality.</td><td><a href="rewriting.html#calc">calc</a></td></tr>
-                <tr><td data-message="Rewrite occurrence">“Rewrite occurrence <var>n</var> was not found (<var>m</var> eligible matches).”</td><td>Fewer matches exist than requested, or none: the rule must be instantiated at exactly the subterm that appears. Rewriting never looks under binders. The message shows the goal that was searched.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
-                <tr><td data-message="rw left an unresolved equality goal; add a following proof statement.">“rw left an unresolved equality goal; add a following proof statement.”</td><td>The rewrite worked, but the new goal does not hold by computation. The message shows that goal and the rewrites that changed it. Add another statement.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
-                <tr><td data-message="rw requires a homogeneous equality proof.">“rw requires a homogeneous equality proof.”</td><td>Instantiate the rule fully, as in <code>nat_add_zero(n)</code>, or use <code>simp only</code>.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
-                <tr><td data-message="Rewrite match occurs in an unsupported dependent position.">“Rewrite match occurs in an unsupported dependent position.”</td><td>The only match is in a dependent argument. Use an explicit <code>cong</code>.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
-                <tr><td data-message="rw requires a homogeneous equality goal.">“rw requires a homogeneous equality goal.”</td><td>The goal is a type, not an equality. <code>simp</code> rewrites types.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
-                <tr><td data-message="A simplification rule parameter is not determined by the matched side; supply arguments.">“A simplification rule parameter is not determined by the matched side; supply arguments.”</td><td>Matching cannot fix every parameter. Pass the missing arguments.</td><td><a href="rewriting.html#simp">simplification</a></td></tr>
-                <tr><td data-message="simp only left an unresolved equality goal; add a following proof statement.">“simp only left an unresolved equality goal; add a following proof statement.”</td><td>The simplified goal does not hold by computation. The message shows it, the sides that changed and the rules that fired, and may name a rule whose premise was not proved. Add a statement.</td><td><a href="rewriting.html#simp">simplification</a></td></tr>
-                <tr><td data-message="has an unproved premise at parameter">“Rule <var>name</var> has an unproved premise at parameter <var>n</var>; …”</td><td>A conditional rule could not fire. Supply a local proof with <code>simp with [h]</code>.</td><td><a href="rewriting.html#simp-conditional">conditional rules</a></td></tr>
-                <tr><td data-message="Simplification cycle detected in the selected rules.">“Simplification cycle detected in the selected rules.”</td><td>A rule rewrites its output back into its input, as commutativity does. The message names the rules that brought the goal back. Instantiate them at specific arguments.</td><td><a href="rewriting.html#simp-traversal">traversal</a></td></tr>
-                <tr><td data-message="budget exceeded.">“… budget exceeded.”</td><td>Rewriting, matching or term size hit a fixed bound; the message shows the goal where the search stopped. Narrow the rules with <code>simp only</code>, or split the proof.</td><td><a href="rewriting.html#simp-traversal">traversal</a></td></tr>
-                <tr><td data-message="simp at requires a local hypothesis:">“simp at requires a local hypothesis: <var>name</var>.”</td><td><code>simp … at h</code> simplifies a hypothesis in the context, not a library lemma.</td><td><a href="rewriting.html#simp-registration">rule selection</a></td></tr>
-                <tr><td data-message="A simplified hypothesis copy must be followed by a proof statement.">“A simplified hypothesis copy must be followed by a proof statement.”</td><td><code>simp … at h as h2</code> leaves the goal open. Use <code>h2</code> in a following statement.</td><td><a href="rewriting.html#simp-registration">rule selection</a></td></tr>
-                <tr><td data-message="Simplification premise witness must be local:">“Simplification premise witness must be local: <var>name</var>.”</td><td><code>with [h]</code> lists hypotheses from the context.</td><td><a href="rewriting.html#simp-conditional">conditional rules</a></td></tr>
+                <tr id="E446"><td class="code"><code>E446</code></td><td data-message="rfl requires a homogeneous equality goal.">“rfl requires a homogeneous equality goal.”</td><td>The goal is not an equality.</td><td><a href="rewriting.html#rfl">rfl</a></td></tr>
+                <tr id="E450"><td class="code"><code>E450</code></td><td data-message="calc step left endpoint does not match the preceding endpoint.">“calc step left endpoint does not match the preceding endpoint.”</td><td>Adjacent steps must share an endpoint; the message shows both. Write <code>_</code> for the previous right side.</td><td><a href="rewriting.html#calc">calc</a></td></tr>
+                <tr id="E451"><td class="code"><code>E451</code></td><td data-message="calc final endpoint does not match the goal.">“calc final endpoint does not match the goal.”</td><td>The chain must end at the goal’s right side; the message shows where it ends and what the goal needs.</td><td><a href="rewriting.html#calc">calc</a></td></tr>
+                <tr id="E448"><td class="code"><code>E448</code></td><td data-message="calc requires a homogeneous equality goal.">“calc requires a homogeneous equality goal.”</td><td>The goal is not an equality.</td><td><a href="rewriting.html#calc">calc</a></td></tr>
+                <tr id="E442"><td class="code"><code>E442</code></td><td data-message="Rewrite occurrence">“Rewrite occurrence <var>n</var> was not found (<var>m</var> eligible matches).”</td><td>Fewer matches exist than requested, or none: the rule must be instantiated at exactly the subterm that appears. Rewriting never looks under binders. The message shows the goal that was searched.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
+                <tr id="E452"><td class="code"><code>E452</code></td><td data-message="rw left an unresolved equality goal; add a following proof statement.">“rw left an unresolved equality goal; add a following proof statement.”</td><td>The rewrite worked, but the new goal does not hold by computation. The message shows that goal and the rewrites that changed it. Add another statement.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
+                <tr id="E431"><td class="code"><code>E431</code></td><td data-message="rw requires a homogeneous equality proof.">“rw requires a homogeneous equality proof.”</td><td>Instantiate the rule fully, as in <code>nat_add_zero(n)</code>, or use <code>simp only</code>.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
+                <tr id="E441"><td class="code"><code>E441</code></td><td data-message="Rewrite match occurs in an unsupported dependent position.">“Rewrite match occurs in an unsupported dependent position.”</td><td>The only match is in a dependent argument. Use an explicit <code>cong</code>.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
+                <tr id="E360"><td class="code"><code>E360</code></td><td data-message="rw requires a homogeneous equality goal.">“rw requires a homogeneous equality goal.”</td><td>The goal is a type, not an equality. <code>simp</code> rewrites types.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
+                <tr id="E436"><td class="code"><code>E436</code></td><td data-message="A simplification rule parameter is not determined by the matched side; supply arguments.">“A simplification rule parameter is not determined by the matched side; supply arguments.”</td><td>Matching cannot fix every parameter. Pass the missing arguments.</td><td><a href="rewriting.html#simp">simplification</a></td></tr>
+                <tr id="E456"><td class="code"><code>E456</code></td><td data-message="simp only left an unresolved equality goal; add a following proof statement.">“simp only left an unresolved equality goal; add a following proof statement.”</td><td>The simplified goal does not hold by computation. The message shows it, the sides that changed and the rules that fired, and may name a rule whose premise was not proved. Add a statement.</td><td><a href="rewriting.html#simp">simplification</a></td></tr>
+                <tr><td class="code"><code>E456</code></td><td data-message="has an unproved premise at parameter">“Rule <var>name</var> has an unproved premise at parameter <var>n</var>; …”</td><td>A conditional rule could not fire. Supply a local proof with <code>simp with [h]</code>.</td><td><a href="rewriting.html#simp-conditional">conditional rules</a></td></tr>
+                <tr id="E367"><td class="code"><code>E367</code></td><td data-message="Simplification cycle detected in the selected rules.">“Simplification cycle detected in the selected rules.”</td><td>A rule rewrites its output back into its input, as commutativity does. The message names the rules that brought the goal back. Instantiate them at specific arguments.</td><td><a href="rewriting.html#simp-traversal">traversal</a></td></tr>
+                <tr id="E369"><td class="code"><code>E369</code></td><td data-message="budget exceeded.">“… budget exceeded.”</td><td>Rewriting, matching or term size hit a fixed bound; the message shows the goal where the search stopped. Narrow the rules with <code>simp only</code>, or split the proof.</td><td><a href="rewriting.html#simp-traversal">traversal</a></td></tr>
+                <tr id="E454"><td class="code"><code>E454</code></td><td data-message="simp at requires a local hypothesis:">“simp at requires a local hypothesis: <var>name</var>.”</td><td><code>simp … at h</code> simplifies a hypothesis in the context, not a library lemma.</td><td><a href="rewriting.html#simp-registration">rule selection</a></td></tr>
+                <tr id="E453"><td class="code"><code>E453</code></td><td data-message="A simplified hypothesis copy must be followed by a proof statement.">“A simplified hypothesis copy must be followed by a proof statement.”</td><td><code>simp … at h as h2</code> leaves the goal open. Use <code>h2</code> in a following statement.</td><td><a href="rewriting.html#simp-registration">rule selection</a></td></tr>
+                <tr id="E331"><td class="code"><code>E331</code></td><td data-message="Simplification premise witness must be local:">“Simplification premise witness must be local: <var>name</var>.”</td><td><code>with [h]</code> lists hypotheses from the context.</td><td><a href="rewriting.html#simp-conditional">conditional rules</a></td></tr>
               </tbody>
             </table></div>
             <p>A search, or a declaration, that uses up its <a href="rewriting.html#simp-traversal">fuel</a> fails with “<var>search</var> ran out of search fuel: <var>n</var> <var>kind</var>.”, naming what ran out: subterm visits, candidate rules tried, rewrites, premise searches, term nodes walked or kernel queries. A search’s message also shows the goal where it stopped. The defaults are well above what the checked proofs need, so such a failure usually means a rule set that keeps rewriting. The kernel’s own step limit per operation and a checker’s time limit fail differently: “Kernel checking/reduction budget exhausted.” and “Declaration time limit exceeded.”</p>
           </section>
           <section id="cubical-errors">
-            <h2>Cubical paths</h2>
+            <h2>Cubical paths and higher inductive types</h2>
             <div class="table-scroll"><table>
-              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
-                <tr><td data-message="Interval coordinates can only be used in interval arguments.">“Interval coordinates can only be used in interval arguments.”</td><td>A coordinate is not a term. Use it only in <code>@</code>, <code>flip</code>, <code>meet</code>, <code>join</code> and faces.</td><td><a href="cubical.html#cubical">the interval</a></td></tr>
-                <tr><td data-message="path i => ... needs an expected Path or PathP type.">“path i => ... needs an expected Path or PathP type.”</td><td>Use the shorthand where a path type is expected, or write <code>path(family, body)</code>.</td><td><a href="cubical.html#cubical-shorthand">shorthand</a></td></tr>
-                <tr><td data-message="over requires an expected PathP goal.">“over requires an expected PathP goal.”</td><td><code>over</code> proves dependent paths only.</td><td><a href="cubical.html#dependent-paths">dependent paths</a></td></tr>
-                <tr><td data-message="ext requires equality of functions.">“ext requires equality of functions.”</td><td>The goal is not an equality of functions.</td><td><a href="cubical.html#ext">ext</a></td></tr>
-                <tr><td data-message="Composition tube disagrees with its base.">“Composition tube disagrees with its base.”</td><td>A wall does not start on the base. Check each wall at the base coordinate.</td><td><a href="cubical.html#composition">composition</a></td></tr>
+                <tr id="E341"><td class="code"><code>E341</code></td><td data-message="Interval coordinates can only be used in interval arguments.">“Interval coordinates can only be used in interval arguments.”</td><td>A coordinate is not a term. Use it only in <code>@</code>, <code>flip</code>, <code>meet</code>, <code>join</code> and faces.</td><td><a href="cubical.html#cubical">the interval</a></td></tr>
+                <tr id="E338"><td class="code"><code>E338</code></td><td data-message="path i => ... needs an expected Path or PathP type.">“path i => ... needs an expected Path or PathP type.”</td><td>Use the shorthand where a path type is expected, or write <code>path(family, body)</code>.</td><td><a href="cubical.html#cubical-shorthand">shorthand</a></td></tr>
+                <tr id="E463"><td class="code"><code>E463</code></td><td data-message="over requires an expected PathP goal.">“over requires an expected PathP goal.”</td><td><code>over</code> proves dependent paths only.</td><td><a href="cubical.html#dependent-paths">dependent paths</a></td></tr>
+                <tr id="E461"><td class="code"><code>E461</code></td><td data-message="ext requires equality of functions.">“ext requires equality of functions.”</td><td>The goal is not an equality of functions.</td><td><a href="cubical.html#ext">ext</a></td></tr>
+                <tr><td class="code"><code>E604</code></td><td data-message="Composition tube disagrees with its base.">“Composition tube disagrees with its base.”</td><td>A wall does not start on the base. Check each wall at the base coordinate.</td><td><a href="cubical.html#composition">composition</a></td></tr>
               </tbody>
             </table></div>
             <p>Interval and face formulas beyond 4,096 clauses fail with a lattice budget error. Split such a proof into named steps.</p>
           </section>
-          <section id="conversion-errors">
-            <h2>Conversion, assumptions and computability</h2>
+          <section id="assumption-errors">
+            <h2>Excluded middle, choice and computability</h2>
             <div class="table-scroll"><table>
-              <thead><tr><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
-                <tr><td data-message="No checked definition to unfold:">“No checked definition to unfold: <var>name</var>”</td><td>Hints name top-level checked definitions only.</td><td><a href="conversion.html#unfolding-hints">unfolding hints</a></td></tr>
-                <tr><td data-message="Logical assumptions require a universe and an explicit native context.">“Logical assumptions require a universe and an explicit native context.”</td><td>A library assumption was used without its universe argument. Write <code>Truncate(U0, A)</code>.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
-                <tr><td data-message="holds only for universes below UU0.">“<var>name</var> holds only for universes below UU0.”</td><td>A library assumption was used at <code>UU0</code> or above. It is generic over the universes below <code>UU0</code> only.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
-                <tr><td data-message="Too many arguments to">“Too many arguments to <var>name</var>.”</td><td>A library assumption got more arguments than its type allows.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
-                <tr><td data-message="This computable declaration depends on non-computing assumptions:">“This computable declaration depends on non-computing assumptions: …”</td><td>The declaration uses an assumption, directly or through a definition. The message names the chain. Replace that step, or drop <code>computable</code>.</td><td><a href="assumptions.html#computable">computable</a></td></tr>
-                <tr><td data-message="The evaluated term depends on non-computing assumptions:">“The evaluated term depends on non-computing assumptions: …”</td><td><code>evaluate</code> accepts only terms that use no assumption.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
-                <tr><td data-message="The term evaluates to">“The term evaluates to <var>a</var>, not <var>b</var>.”</td><td>The normal forms differ; the message shows both.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
+                <tr id="E406"><td class="code"><code>E406</code></td><td data-message="Logical assumptions require a universe and an explicit native context.">“Logical assumptions require a universe and an explicit native context.”</td><td>A library assumption was used without its universe argument. Write <code>Truncate(U0, A)</code>.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
+                <tr id="E407"><td class="code"><code>E407</code></td><td data-message="holds only for universes below UU0.">“<var>name</var> holds only for universes below UU0.”</td><td>A library assumption was used at <code>UU0</code> or above. It is generic over the universes below <code>UU0</code> only.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
+                <tr id="E403"><td class="code"><code>E403</code></td><td data-message="Too many arguments to">“Too many arguments to <var>name</var>.”</td><td>A library assumption got more arguments than its type allows.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
+                <tr id="E330"><td class="code"><code>E330</code></td><td data-message="This computable declaration depends on non-computing assumptions:">“This computable declaration depends on non-computing assumptions: …”</td><td>The declaration uses an assumption, directly or through a definition. The message names the chain. Replace that step, or drop <code>computable</code>.</td><td><a href="assumptions.html#computable">computable</a></td></tr>
+                <tr id="E324"><td class="code"><code>E324</code></td><td data-message="The evaluated term depends on non-computing assumptions:">“The evaluated term depends on non-computing assumptions: …”</td><td><code>evaluate</code> accepts only terms that use no assumption.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
+                <tr id="E326"><td class="code"><code>E326</code></td><td data-message="The term evaluates to">“The term evaluates to <var>a</var>, not <var>b</var>.”</td><td>The normal forms differ; the message shows both.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section id="warnings">
+            <h2>Warnings</h2>
+            <p>A warning does not reject anything: the declaration is checked. It marks a binding that is never used and can be removed; see <a href="checking.html#warnings">warnings</a>.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr id="W703"><td class="code"><code>W703</code></td><td data-message="is unused: the return type does not mention it and the successor clause does not use it.">“<var>k</var> is unused: the return type does not mention it and the successor clause does not use it. …”</td><td>The result type is the same for every number, and the successor branch does not use the predecessor. Omit <code>as k</code>.</td><td><a href="induction.html#induction">induction</a></td></tr>
+                <tr id="W704"><td class="code"><code>W704</code></td><td data-message="is unused: the return type does not mention it.">“<var>z</var> is unused: the return type does not mention it. …”</td><td>The result type is the same for every value. Omit <code>as z</code>.</td><td><a href="terms.html#match">match</a></td></tr>
+                <tr id="W705"><td class="code"><code>W705</code></td><td data-message="is unused in the body: write">“<var>x</var> is unused in the body: write <var>A</var> -&gt; … instead of forall <var>x</var> : <var>A</var>. ….”</td><td>The quantified variable is never mentioned. Write <code>A -&gt; B</code> for <code>forall x : A. B</code>, and <code>A and B</code> for <code>exists x : A. B</code>; they are the same types.</td><td><a href="paths.html#exists-and">exists and and</a></td></tr>
+                <tr id="W702"><td class="code"><code>W702</code></td><td data-message="is never used after this">“<var>name</var> is never used after this let: remove it.”</td><td>Nothing later in the block uses the name. Remove the statement.</td><td><a href="proof-blocks.html#let">let</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -249,10 +286,675 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
               <li>chains of relations other than equality in <code>calc</code>;</li>
               <li>rewriting a hypothesis together with everything that depends on it: <code>simp at</code> makes a new copy instead;</li>
               <li>solving premises of conditional rules that are not equalities;</li>
-              <li>user-declared inductive types and <code>match</code> on them, which replace today’s <a href="induction.html#induction">built-in eliminators</a>.</li>
+              <li>inductive families with indices, mutually defined inductive types, and a <code>match</code> on several values at once; see <a href="induction.html#inductive-parameters">parameters and constructors</a>.</li>
             </ul>
           </section>
 
+          <section id="codes">
+            <h2>Every code</h2>
+            <p>Each error and warning the checker can report has a code. <code>E</code> codes come from the parser and the elaborator, which turn source into kernel terms; <code>K</code> codes are refusals by the C kernel, which checks those terms; <code>W</code> codes are warnings. This index lists every code with its message, where … stands for the part that varies. A code explained in the sections above links to its explanation. Many <code>K</code> messages guard the kernel against malformed terms, and a term the elaborator builds does not reach them.</p>
+            <h3 id="codes-e1">Reading the source</h3>
+            <div class="table-scroll"><table class="codes">
+              <thead><tr><th>Code</th><th>Message</th></tr></thead>
+              <tbody>
+                <tr id="E101"><td><code>E101</code></td><td>Print width must be an integer between 40 and 240.</td></tr>
+                <tr id="E102"><td><code>E102</code></td><td>linearizeTuples must be Boolean.</td></tr>
+                <tr id="E103"><td><code>E103</code></td><td>Formatting changed source tokens.</td></tr>
+                <tr id="E104"><td><code>E104</code></td><td>Formatting changed the expanded syntax tree.</td></tr>
+                <tr id="E105"><td><code>E105</code></td><td>No folded notation for …</td></tr>
+                <tr><td><a href="#E106"><code>E106</code></a></td><td>Unexpected character …</td></tr>
+                <tr id="E107"><td><code>E107</code></td><td>Source has too many tokens.</td></tr>
+                <tr><td><a href="#E108"><code>E108</code></a></td><td>Expected '…', found '…'.</td></tr>
+                <tr><td><a href="#E109"><code>E109</code></a></td><td>Write := to give a value: …</td></tr>
+                <tr><td><a href="#E110"><code>E110</code></a></td><td>Expected a name.</td></tr>
+                <tr><td><a href="#E111"><code>E111</code></a></td><td>… is a universe constant; pick another name.</td></tr>
+                <tr><td><a href="#E112"><code>E112</code></a></td><td>Expected ':' or '&lt;', found '…', as in ….</td></tr>
+                <tr id="E113"><td><code>E113</code></td><td>A constructor's arguments are terms; bind universes in the declaration's header.</td></tr>
+                <tr id="E114"><td><code>E114</code></td><td>trunc takes an integer level n ≥ -1, as in trunc(1).</td></tr>
+                <tr id="E115"><td><code>E115</code></td><td>trunc(n) needs n ≥ -1: prop is trunc(-1), set is trunc(0).</td></tr>
+                <tr id="E116"><td><code>E116</code></td><td>After ':' give an h-level, a universe or both, as in : prop U.</td></tr>
+                <tr><td><a href="#E117"><code>E117</code></a></td><td>Separate names with commas: …</td></tr>
+                <tr id="E118"><td><code>E118</code></td><td>Expanded tuple nesting exceeds 128.</td></tr>
+                <tr id="E119"><td><code>E119</code></td><td>Expression nesting exceeds 128.</td></tr>
+                <tr><td><a href="#E120"><code>E120</code></a></td><td>A pair has only the projections .1 and .2. A tuple nests pairs to the right: the third component of (a, b, c) is .2.2.</td></tr>
+                <tr><td><a href="#E121"><code>E121</code></a></td><td>Binary literals are limited to 256 significant bits.</td></tr>
+                <tr><td><a href="#E122"><code>E122</code></a></td><td>Numerals are limited to 256 in this version.</td></tr>
+                <tr><td><a href="#E123"><code>E123</code></a></td><td>Expected an expression, found '…'.</td></tr>
+                <tr id="E124"><td><code>E124</code></td><td>Give the motive after as: match v as z return T { … }.</td></tr>
+                <tr id="E125"><td><code>E125</code></td><td>Expected '}' to close the match.</td></tr>
+                <tr id="E126"><td><code>E126</code></td><td>Separate binder groups with commas: fun (a : A, b : B) =&gt; …</td></tr>
+                <tr id="E127"><td><code>E127</code></td><td>Only forall and fun bind a universe variable: exists has no level form.</td></tr>
+                <tr><td><a href="#E128"><code>E128</code></a></td><td>End …'s type with a dot: … n : Nat. P(n)</td></tr>
+                <tr id="E129"><td><code>E129</code></td><td>Write a space after the . that ends …'s type: … n : Nat. P(n)</td></tr>
+                <tr id="E130"><td><code>E130</code></td><td>Pattern nesting exceeds 128.</td></tr>
+                <tr><td><a href="#E131"><code>E131</code></a></td><td>A pair pattern needs at least two components.</td></tr>
+                <tr id="E132"><td><code>E132</code></td><td>obligations by supports hlevel (with optional hints), rfl, a proof block, or a whole clause term; put simp or simpa inside a proof block.</td></tr>
+                <tr id="E133"><td><code>E133</code></td><td>Expected '}' to close obligations.</td></tr>
+                <tr id="E134"><td><code>E134</code></td><td>Block nesting exceeds 128.</td></tr>
+                <tr id="E135"><td><code>E135</code></td><td>Separate names with commas: intro m, n;</td></tr>
+                <tr><td><a href="#E136"><code>E136</code></a></td><td>have was removed: write let name : T := term; or prove the claim in a block, let name : T { … }.</td></tr>
+                <tr><td><a href="#E137"><code>E137</code></a></td><td>show was removed: prove the restated goal in a block, let h : T { … }, then exact h;.</td></tr>
+                <tr><td><a href="#E138"><code>E138</code></a></td><td>suffices was removed: prove the claim first, let h : T { … }, then prove the goal from h.</td></tr>
+                <tr><td><a href="#E139"><code>E139</code></a></td><td>Expected a proof statement; found '…'.</td></tr>
+                <tr><td><a href="#E140"><code>E140</code></a></td><td>Use obtain to unpack a pair.</td></tr>
+                <tr id="E141"><td><code>E141</code></td><td>rw requires a path.</td></tr>
+                <tr id="E142"><td><code>E142</code></td><td>rw target must be lhs or rhs.</td></tr>
+                <tr id="E143"><td><code>E143</code></td><td>rw occurrence must be a positive integer.</td></tr>
+                <tr><td><a href="#E144"><code>E144</code></a></td><td>simp only requires an explicit rule list.</td></tr>
+                <tr><td><a href="#E145"><code>E145</code></a></td><td>simp only cannot exclude rules.</td></tr>
+                <tr id="E146"><td><code>E146</code></td><td>The … statement takes apart one value; … the first, then the next inside each clause.</td></tr>
+                <tr id="E147"><td><code>E147</code></td><td>The … statement takes its motive from the goal: write … v { c(xs) =&gt; { … } … } without as or return.</td></tr>
+                <tr id="E148"><td><code>E148</code></td><td>A clause of the … statement is a proof block: c(xs) =&gt; { … }.</td></tr>
+                <tr><td><a href="#E149"><code>E149</code></a></td><td>simp_rule priority must be an integer from 0 to 1000.</td></tr>
+                <tr id="E150"><td><code>E150</code></td><td>Expected '}' to close the inductive declaration.</td></tr>
+                <tr><td><a href="#E151"><code>E151</code></a></td><td>Imports must come before declarations.</td></tr>
+                <tr id="E152"><td><code>E152</code></td><td>Expected a declaration or directive: def, computable def, inductive, evaluate, simp_rule or simp_set.</td></tr>
+                <tr id="E153"><td><code>E153</code></td><td>Write := to give a value: def name : T := term; here `=` read as an equality type</td></tr>
+                <tr id="E154"><td><code>E154</code></td><td>Cannot locate a right-hand pair's enclosing parentheses.</td></tr>
+                <tr id="E155"><td><code>E155</code></td><td>Tuple linearization changed the expanded syntax tree.</td></tr>
+                <tr id="E156"><td><code>E156</code></td><td>Give the motive after as: induction v as z return T { … }.</td></tr>
+                <tr id="E157"><td><code>E157</code></td><td>Expected '}' to close the induction.</td></tr>
+                <tr id="E158"><td><code>E158</code></td><td>Expected '}' to close the ….</td></tr>
+              </tbody>
+            </table></div>
+            <h3 id="codes-e2">Files, modules and tools</h3>
+            <div class="table-scroll"><table class="codes">
+              <thead><tr><th>Code</th><th>Message</th></tr></thead>
+              <tbody>
+                <tr id="E201"><td><code>E201</code></td><td>Could not load …: HTTP …</td></tr>
+                <tr id="E202"><td><code>E202</code></td><td>The declaration limit must be a positive number of milliseconds.</td></tr>
+                <tr id="E203"><td><code>E203</code></td><td>No benchmark report yet. Run npm run benchmark:cubical.</td></tr>
+                <tr id="E204"><td><code>E204</code></td><td>Syntax display limit</td></tr>
+                <tr id="E205"><td><code>E205</code></td><td>Expected a level, not ….</td></tr>
+                <tr id="E206"><td><code>E206</code></td><td>Unsupported cubical notation: …</td></tr>
+                <tr id="E207"><td><code>E207</code></td><td>The representation option was removed with the differential fixtures: Nat, W and pushouts are source declarations.</td></tr>
+                <tr id="E208"><td><code>E208</code></td><td>H1 is no longer experimental: declared types are on by default, so drop the experimental option.</td></tr>
+                <tr id="E209"><td><code>E209</code></td><td>Cyclic source import: …</td></tr>
+                <tr id="E210"><td><code>E210</code></td><td>Source was not discovered: …</td></tr>
+                <tr id="E211"><td><code>E211</code></td><td>No checked native definition for this name.</td></tr>
+                <tr id="E212"><td><code>E212</code></td><td>Unsupported cubical transfer format.</td></tr>
+                <tr id="E213"><td><code>E213</code></td><td>Missing source module ….</td></tr>
+                <tr id="E214"><td><code>E214</code></td><td>Native source is not available at ….</td></tr>
+                <tr id="E215"><td><code>E215</code></td><td>Check a proof first.</td></tr>
+                <tr id="E216"><td><code>E216</code></td><td>Unsupported cubical command.</td></tr>
+                <tr id="E217"><td><code>E217</code></td><td>Unknown mathematical display node: …</td></tr>
+                <tr id="E218"><td><code>E218</code></td><td>Unknown module place: ….</td></tr>
+                <tr id="E219"><td><code>E219</code></td><td>Invalid module name: ….</td></tr>
+                <tr id="E220"><td><code>E220</code></td><td>No module named … in …….</td></tr>
+                <tr id="E221"><td><code>E221</code></td><td>Unable to load source: </td></tr>
+                <tr id="E222"><td><code>E222</code></td><td>The checking worker stopped making progress. Reload the page to restart the kernel.</td></tr>
+                <tr id="E223"><td><code>E223</code></td><td>Recheck the current source before replacing this simplification.</td></tr>
+                <tr id="E224"><td><code>E224</code></td><td>Allow a new tab to open the kernel workbench.</td></tr>
+                <tr id="E225"><td><code>E225</code></td><td>Source exceeds 1 MB.</td></tr>
+                <tr id="E226"><td><code>E226</code></td><td>Unable to load the checking worker.</td></tr>
+                <tr id="E227"><td><code>E227</code></td><td>Unable to load the checking worker. Build with make wasm.</td></tr>
+                <tr id="E228"><td><code>E228</code></td><td>This expression transfer is no longer available. Open it again from the proof inspector.</td></tr>
+                <tr id="E229"><td><code>E229</code></td><td>check requires a module or .cubist file.</td></tr>
+                <tr id="E230"><td><code>E230</code></td><td>Check a source first.</td></tr>
+                <tr id="E231"><td><code>E231</code></td><td>Ambiguous name; use a qualified binding: …</td></tr>
+                <tr id="E232"><td><code>E232</code></td><td>Inspect a checked name first.</td></tr>
+                <tr id="E233"><td><code>E233</code></td><td>Expected expression or type.</td></tr>
+                <tr id="E234"><td><code>E234</code></td><td>export requires a filename.</td></tr>
+                <tr id="E235"><td><code>E235</code></td><td>Unknown command …. Type help.</td></tr>
+                <tr id="E236"><td><code>E236</code></td><td>… is a command of the console, not of an entry.</td></tr>
+                <tr id="E237"><td><code>E237</code></td><td>Unknown command …. /help lists the commands.</td></tr>
+                <tr id="E238"><td><code>E238</code></td><td>This session cannot list its modules.</td></tr>
+                <tr id="E239"><td><code>E239</code></td><td>Module … was not loaded.</td></tr>
+                <tr id="E240"><td><code>E240</code></td><td>… did not check.</td></tr>
+              </tbody>
+            </table></div>
+            <h3 id="codes-e3">Terms</h3>
+            <div class="table-scroll"><table class="codes">
+              <thead><tr><th>Code</th><th>Message</th></tr></thead>
+              <tbody>
+                <tr id="E301"><td><code>E301</code></td><td>Expected cubical syntax.</td></tr>
+                <tr id="E302"><td><code>E302</code></td><td>Expected a dimension binder.</td></tr>
+                <tr id="E303"><td><code>E303</code></td><td>Cubical prototype supports 64 simultaneously live dimensions.</td></tr>
+                <tr id="E304"><td><code>E304</code></td><td>Internal elaboration error: … is already bound.</td></tr>
+                <tr id="E305"><td><code>E305</code></td><td>At most 64 simultaneous cubical dimensions are supported.</td></tr>
+                <tr id="E306"><td><code>E306</code></td><td>Unglue extension requires an explicit Glue type.</td></tr>
+                <tr id="E307"><td><code>E307</code></td><td>Unglue equivalence requires an explicit Glue type.</td></tr>
+                <tr id="E308"><td><code>E308</code></td><td>Cubical lattice term-size budget exceeded.</td></tr>
+                <tr id="E309"><td><code>E309</code></td><td>Expected a lattice DNF.</td></tr>
+                <tr id="E310"><td><code>E310</code></td><td>Malformed lattice generator.</td></tr>
+                <tr id="E311"><td><code>E311</code></td><td>Invalid dimension name.</td></tr>
+                <tr id="E312"><td><code>E312</code></td><td>Expected endpoint 0 or 1.</td></tr>
+                <tr id="E313"><td><code>E313</code></td><td>Supply the checked generic native-equivalence round-trip lemma.</td></tr>
+                <tr id="E314"><td><code>E314</code></td><td>Supply the checked generic native univalence inverse laws.</td></tr>
+                <tr id="E315"><td><code>E315</code></td><td>Cubical syntax construction term-size budget exceeded.</td></tr>
+                <tr id="E316"><td><code>E316</code></td><td>Simplification term-size budget exceeded.</td></tr>
+                <tr id="E317"><td><code>E317</code></td><td>Malformed universe constant: ….</td></tr>
+                <tr id="E318"><td><code>E318</code></td><td>A translator needs a checker: the elaborator over a kernel.</td></tr>
+                <tr id="E319"><td><code>E319</code></td><td>Expected an interval coordinate: 0, 1, a coordinate name, -i, i &amp; j or i | j (or flip, meet, join).</td></tr>
+                <tr id="E320"><td><code>E320</code></td><td>Expected a face formula: on(i, 0 or 1), and/or, 0 or 1.</td></tr>
+                <tr><td><a href="#E321"><code>E321</code></a></td><td>A universe variable's bound must be UU0, as in U &lt; UU0.</td></tr>
+                <tr><td><a href="#E322"><code>E322</code></a></td><td>Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).</td></tr>
+                <tr id="E323"><td><code>E323</code></td><td>Expected fun (i : Interval) =&gt; ... in a cubical binder.</td></tr>
+                <tr><td><a href="#E324"><code>E324</code></a></td><td>The evaluated term</td></tr>
+                <tr id="E325"><td><code>E325</code></td><td>The evaluated term has type …, but the expected value has type ….</td></tr>
+                <tr><td><a href="#E326"><code>E326</code></a></td><td>The term evaluates to …, not ….</td></tr>
+                <tr><td><a href="#E327"><code>E327</code></a></td><td>Simplification rule … is already registered in this module.</td></tr>
+                <tr id="E328"><td><code>E328</code></td><td>Simplification set … is already declared in this module.</td></tr>
+                <tr id="E329"><td><code>E329</code></td><td>Native cubical check rejected: …</td></tr>
+                <tr><td><a href="#E330"><code>E330</code></a></td><td>This computable declaration</td></tr>
+                <tr><td><a href="#E331"><code>E331</code></a></td><td>Simplification premise witness must be local: ….</td></tr>
+                <tr id="E332"><td><code>E332</code></td><td>sym requires a path.</td></tr>
+                <tr id="E333"><td><code>E333</code></td><td>p ++ q concatenates paths; found no path.</td></tr>
+                <tr id="E334"><td><code>E334</code></td><td>trans requires paths.</td></tr>
+                <tr id="E335"><td><code>E335</code></td><td>Numerals and induction require an imported Nat with zero and succ constructors.</td></tr>
+                <tr id="E336"><td><code>E336</code></td><td>Missing source expression.</td></tr>
+                <tr><td><a href="#E337"><code>E337</code></a></td><td>No checked definition to unfold: …</td></tr>
+                <tr><td><a href="#E338"><code>E338</code></a></td><td>path i =&gt; ... needs an expected Path or PathP type.</td></tr>
+                <tr id="E339"><td><code>E339</code></td><td>along requires a homogeneous base path.</td></tr>
+                <tr><td><a href="#E340"><code>E340</code></a></td><td>Untranslated dependency: …</td></tr>
+                <tr><td><a href="#E341"><code>E341</code></a></td><td>Interval coordinates can only be used in interval arguments.</td></tr>
+                <tr><td><a href="#E342"><code>E342</code></a></td><td>Universe was removed: bind a universe variable as U &lt; UU0.</td></tr>
+                <tr><td><a href="#E343"><code>E343</code></a></td><td>Untranslated name: …</td></tr>
+                <tr id="E344"><td><code>E344</code></td><td>Too many lambda binders for the expected type.</td></tr>
+                <tr id="E345"><td><code>E345</code></td><td>A universe lambda needs a universe-generic type: forall U &lt; UU0. …</td></tr>
+                <tr><td><a href="#E346"><code>E346</code></a></td><td>Untyped lambda requires an expected function type.</td></tr>
+                <tr id="E347"><td><code>E347</code></td><td>… combines interval coordinates, as in p @ i … j; it is not an operation on terms.</td></tr>
+                <tr id="E348"><td><code>E348</code></td><td>Untranslated operator: …</td></tr>
+                <tr><td><a href="#E349"><code>E349</code></a></td><td>Projection .… requires a dependent pair; found a value of type ….</td></tr>
+                <tr><td><a href="#E350"><code>E350</code></a></td><td>Pair requires an expected type.</td></tr>
+                <tr><td><a href="#E351"><code>E351</code></a></td><td>Expected a Sigma type for pair.</td></tr>
+                <tr><td><a href="#E352"><code>E352</code></a></td><td>Source application is not a function.</td></tr>
+                <tr id="E353"><td><code>E353</code></td><td>match requires a value of a declared type, or of a sum.</td></tr>
+                <tr id="E354"><td><code>E354</code></td><td>match requires a sum type.</td></tr>
+                <tr id="E355"><td><code>E355</code></td><td>A match on a sum has a return type and the clauses left x =&gt; …; right y =&gt; ….</td></tr>
+                <tr><td><a href="#E356"><code>E356</code></a></td><td>unpack requires a dependent pair.</td></tr>
+                <tr id="E357"><td><code>E357</code></td><td>Untranslated syntax: …</td></tr>
+                <tr><td><a href="#E358"><code>E358</code></a></td><td>Proof block has no conclusion.</td></tr>
+                <tr id="E359"><td><code>E359</code></td><td>Proof tactic not yet translated: …</td></tr>
+                <tr><td><a href="#E360"><code>E360</code></a></td><td>rw requires a homogeneous equality goal.</td></tr>
+                <tr id="E361"><td><code>E361</code></td><td>hlevel uses the library module hlevels: add import hlevels;</td></tr>
+                <tr id="E362"><td><code>E362</code></td><td>hlevel does not use quantified hints yet: apply … to its arguments.</td></tr>
+                <tr id="E363"><td><code>E363</code></td><td>The hint … has type …, which states no h-level.</td></tr>
+                <tr id="E364"><td><code>E364</code></td><td>hlevel proves IsContr, IsProp, IsSet or HasLevel, or an equality in a proposition; the goal is ….</td></tr>
+                <tr id="E365"><td><code>E365</code></td><td>hlevel needs the type of the equality's sides to be in a universe.</td></tr>
+                <tr><td><a href="#E366"><code>E366</code></a></td><td>hlevel could not prove ……; ….</td></tr>
+                <tr><td><a href="#E367"><code>E367</code></a></td><td>Simplification cycle detected in the selected rules. … returned the goal to where it was … rewrite… earlier.</td></tr>
+                <tr id="E368"><td><code>E368</code></td><td>General simplification requires a type-valued goal.</td></tr>
+                <tr><td><a href="#E369"><code>E369</code></a></td><td>Simplification rewrite budget exceeded.</td></tr>
+                <tr id="E370"><td><code>E370</code></td><td>simp only requires a homogeneous equality goal.</td></tr>
+                <tr id="E371"><td><code>E371</code></td><td>induction requires a value of a declared type.</td></tr>
+                <tr id="E372"><td><code>E372</code></td><td>… stands for a universe that the printer could not show: write the universe in its place, such as U0 or a universe variable.</td></tr>
+              </tbody>
+            </table></div>
+            <h3 id="codes-e4">Proof statements, rewriting and simplification</h3>
+            <div class="table-scroll"><table class="codes">
+              <thead><tr><th>Code</th><th>Message</th></tr></thead>
+              <tbody>
+                <tr id="E401"><td><code>E401</code></td><td>Univalence requires a universe.</td></tr>
+                <tr id="E402"><td><code>E402</code></td><td>… takes a universe below UU0.</td></tr>
+                <tr><td><a href="#E403"><code>E403</code></a></td><td>Too many arguments to ….</td></tr>
+                <tr id="E404"><td><code>E404</code></td><td>… needs a universe argument.</td></tr>
+                <tr id="E405"><td><code>E405</code></td><td>… with a truncation former needs a universe argument.</td></tr>
+                <tr><td><a href="#E406"><code>E406</code></a></td><td>Logical assumptions require a universe and an explicit native context.</td></tr>
+                <tr><td><a href="#E407"><code>E407</code></a></td><td>… holds only for universes below UU0.</td></tr>
+                <tr id="E408"><td><code>E408</code></td><td>Invalid arguments to ….</td></tr>
+                <tr id="E409"><td><code>E409</code></td><td>A composition wall has syntax face(i, 0 or 1, fun (j : Interval) =&gt; ...).</td></tr>
+                <tr id="E410"><td><code>E410</code></td><td>A composition face needs an outer interval coordinate and endpoint 0 or 1.</td></tr>
+                <tr id="E411"><td><code>E411</code></td><td>pair_induction requires a dependent pair.</td></tr>
+                <tr id="E412"><td><code>E412</code></td><td>FunExt needs a universe.</td></tr>
+                <tr id="E413"><td><code>E413</code></td><td>FunExt takes a universe below UU0.</td></tr>
+                <tr id="E414"><td><code>E414</code></td><td>absurd requires an expected type.</td></tr>
+                <tr id="E415"><td><code>E415</code></td><td>Sum injection requires an expected type.</td></tr>
+                <tr id="E416"><td><code>E416</code></td><td>Expected a sum type.</td></tr>
+                <tr><td><a href="#E417"><code>E417</code></a></td><td>cong requires a path.</td></tr>
+                <tr id="E418"><td><code>E418</code></td><td>Dependent action needs a function and a path with the supplied endpoints.</td></tr>
+                <tr id="E419"><td><code>E419</code></td><td>apd_path needs a dependent function and a homogeneous path.</td></tr>
+                <tr><td><a href="#E420"><code>E420</code></a></td><td>transport requires a path.</td></tr>
+                <tr><td><a href="#E421"><code>E421</code></a></td><td>Transport endpoints do not match.</td></tr>
+                <tr><td><a href="#E422"><code>E422</code></a></td><td>Path induction endpoints/carrier do not match.</td></tr>
+                <tr><td><a href="#E423"><code>E423</code></a></td><td>Based induction needs universes.</td></tr>
+                <tr id="E424"><td><code>E424</code></td><td>A scrutinee depends on a hypothesis about another scrutinee; eliminate that hypothesis too.</td></tr>
+                <tr id="E425"><td><code>E425</code></td><td>Internal elaboration error: a motive instance needs one value per scrutinee.</td></tr>
+                <tr id="E426"><td><code>E426</code></td><td>Internal elaboration error: unknown plan step ….</td></tr>
+                <tr id="E427"><td><code>E427</code></td><td>Internal elaboration error: a … step has no forward direction.</td></tr>
+                <tr id="E428"><td><code>E428</code></td><td>Expected homogeneous equality paths for composition.</td></tr>
+                <tr><td><a href="#E429"><code>E429</code></a></td><td>Path endpoints do not match.</td></tr>
+                <tr id="E430"><td><code>E430</code></td><td>A general goal rewrite requires a checked path of types.</td></tr>
+                <tr><td><a href="#E431"><code>E431</code></a></td><td>rw requires a homogeneous equality proof.</td></tr>
+                <tr id="E432"><td><code>E432</code></td><td>Simplification rule has too many parameters.</td></tr>
+                <tr id="E433"><td><code>E433</code></td><td>simp only requires homogeneous equality lemmas.</td></tr>
+                <tr id="E434"><td><code>E434</code></td><td>A universe-generic rule is matched only where its universe is a bare variable; supply its universe argument, as in lemma(U0).</td></tr>
+                <tr id="E435"><td><code>E435</code></td><td>A universe-generic rule's universe is not determined by the matched side; supply it, as in lemma(U0).</td></tr>
+                <tr><td><a href="#E436"><code>E436</code></a></td><td>A simplification rule parameter is not determined by the matched side; supply arguments.</td></tr>
+                <tr id="E437"><td><code>E437</code></td><td>Simplification rule lost a parameter.</td></tr>
+                <tr id="E438"><td><code>E438</code></td><td>Invalid rewrite occurrence.</td></tr>
+                <tr id="E439"><td><code>E439</code></td><td>Rewrite traversal budget exceeded.</td></tr>
+                <tr id="E440"><td><code>E440</code></td><td>Rewrite candidate budget exceeded.</td></tr>
+                <tr><td><a href="#E441"><code>E441</code></a></td><td>Rewrite match occurs in an unsupported dependent position.</td></tr>
+                <tr><td><a href="#E442"><code>E442</code></a></td><td>Rewrite occurrence … was not found (… eligible matches).</td></tr>
+                <tr id="E443"><td><code>E443</code></td><td>Simplification set … is ambiguous: ….</td></tr>
+                <tr><td><a href="#E444"><code>E444</code></a></td><td>Statements after exact are unreachable.</td></tr>
+                <tr id="E445"><td><code>E445</code></td><td>Statements after rfl are unreachable.</td></tr>
+                <tr><td><a href="#E446"><code>E446</code></a></td><td>rfl requires a homogeneous equality goal.</td></tr>
+                <tr id="E447"><td><code>E447</code></td><td>Statements after calc are unreachable.</td></tr>
+                <tr><td><a href="#E448"><code>E448</code></a></td><td>calc requires a homogeneous equality goal.</td></tr>
+                <tr id="E449"><td><code>E449</code></td><td>calc requires at least one step.</td></tr>
+                <tr><td><a href="#E450"><code>E450</code></a></td><td>calc step left endpoint does not match the preceding endpoint. The step starts at …; the chain so far ends at ….</td></tr>
+                <tr><td><a href="#E451"><code>E451</code></a></td><td>calc final endpoint does not match the goal. The chain ends at …; the goal's right side is ….</td></tr>
+                <tr><td><a href="#E452"><code>E452</code></a></td><td>rw left an unresolved equality goal; add a following proof statement.…</td></tr>
+                <tr><td><a href="#E453"><code>E453</code></a></td><td>A simplified hypothesis copy must be followed by a proof statement.</td></tr>
+                <tr><td><a href="#E454"><code>E454</code></a></td><td>simp at requires a local hypothesis: ….</td></tr>
+                <tr id="E455"><td><code>E455</code></td><td>simp left a type goal; add a following proof statement.…</td></tr>
+                <tr><td><a href="#E456"><code>E456</code></a></td><td>simp only left an unresolved equality goal; add a following proof statement.……</td></tr>
+                <tr id="E457"><td><code>E457</code></td><td>Statements after simpa are unreachable.</td></tr>
+                <tr><td><a href="#E458"><code>E458</code></a></td><td>intro requires a dependent function goal.</td></tr>
+                <tr id="E459"><td><code>E459</code></td><td>Statements after hlevel are unreachable.</td></tr>
+                <tr id="E460"><td><code>E460</code></td><td>ext requires equality of functions with a fixed type.</td></tr>
+                <tr><td><a href="#E461"><code>E461</code></a></td><td>ext requires equality of functions.</td></tr>
+                <tr id="E462"><td><code>E462</code></td><td>Statements after over are unreachable.</td></tr>
+                <tr><td><a href="#E463"><code>E463</code></a></td><td>over requires an expected PathP goal.</td></tr>
+                <tr id="E464"><td><code>E464</code></td><td>over requires a homogeneous base path.</td></tr>
+                <tr id="E465"><td><code>E465</code></td><td>let states a type after the colon; found a value of type ….</td></tr>
+                <tr><td><a href="#E466"><code>E466</code></a></td><td>obtain requires a dependent pair matching its pattern.</td></tr>
+                <tr id="E467"><td><code>E467</code></td><td>Statements after … are unreachable: each clause's block closes the goal.</td></tr>
+                <tr><td><a href="#E468"><code>E468</code></a></td><td>Statements after cases are not yet translated.</td></tr>
+                <tr><td><a href="#E469"><code>E469</code></a></td><td>cases requires a sum type.</td></tr>
+              </tbody>
+            </table></div>
+            <h3 id="codes-e5">Inductive types and matching</h3>
+            <div class="table-scroll"><table class="codes">
+              <thead><tr><th>Code</th><th>Message</th></tr></thead>
+              <tbody>
+                <tr id="E501"><td><code>E501</code></td><td>trunc(n) is supported up to n = ….</td></tr>
+                <tr id="E502"><td><code>E502</code></td><td>A sort is type, set, prop or trunc(n) for an integer n ≥ -1.</td></tr>
+                <tr id="E503"><td><code>E503</code></td><td>The declared type … already exists.</td></tr>
+                <tr id="E504"><td><code>E504</code></td><td>A signature has too many parameters.</td></tr>
+                <tr id="E505"><td><code>E505</code></td><td>The path's fiber must live in a universe.</td></tr>
+                <tr id="E506"><td><code>E506</code></td><td>Declared types need the instruction kernel.</td></tr>
+                <tr id="E507"><td><code>E507</code></td><td>… uses the assumption …: a declared type's parameters and constructors cannot use assumptions, since its signature is closed.</td></tr>
+                <tr id="E508"><td><code>E508</code></td><td>A universe parameter cannot be named …: in a declaration's result position that word is an h-level.</td></tr>
+                <tr id="E509"><td><code>E509</code></td><td>… is already a constructor of ….</td></tr>
+                <tr id="E510"><td><code>E510</code></td><td>A constructor cannot be named …, as its type is.</td></tr>
+                <tr id="E511"><td><code>E511</code></td><td>… occurs in a negative position: …'s argument … takes an argument that mentions … or another argument of ….</td></tr>
+                <tr id="E512"><td><code>E512</code></td><td>…'s argument … mentions … but is not one: in H1 an argument is … itself, a function into it, or a path in it.</td></tr>
+                <tr id="E513"><td><code>E513</code></td><td>The type of … is not a type.</td></tr>
+                <tr id="E514"><td><code>E514</code></td><td>…'s argument … lives in a universe above …'s declared one: a declared type cannot lower its data (K2.5).</td></tr>
+                <tr id="E515"><td><code>E515</code></td><td>Inside its declaration, … is applied to its own parameters, …(…): another argument would be an index, which H1 does not admit.</td></tr>
+                <tr id="E516"><td><code>E516</code></td><td>… takes no arguments.</td></tr>
+                <tr id="E517"><td><code>E517</code></td><td>… takes … argument…: …(…).</td></tr>
+                <tr><td><a href="#E518"><code>E518</code></a></td><td>A universe argument must lie below UU0: U0, U1, … or a universe variable.</td></tr>
+                <tr><td><a href="#E519"><code>E519</code></a></td><td>… needs an expected type, to know which …(…) it builds: </td></tr>
+                <tr id="E520"><td><code>E520</code></td><td>apply it at a point where …(…) is expected, as in typed(…(…), …… @ i).</td></tr>
+                <tr id="E521"><td><code>E521</code></td><td>write typed(…(…), ……).</td></tr>
+                <tr id="E522"><td><code>E522</code></td><td>… builds …(…), but … is expected here.</td></tr>
+                <tr id="E523"><td><code>E523</code></td><td>Apply … to its … arguments: the kernel takes its data before its positions.</td></tr>
+                <tr id="E524"><td><code>E524</code></td><td>… takes … argument…; apply a path constructor at a coordinate with @.</td></tr>
+                <tr id="E525"><td><code>E525</code></td><td>Apply … to all its … arguments: the kernel takes its data before its positions.</td></tr>
+                <tr id="E526"><td><code>E526</code></td><td>… takes fewer arguments.</td></tr>
+                <tr id="E527"><td><code>E527</code></td><td>The declared type of the matched value is not in scope.</td></tr>
+                <tr><td><a href="#E528"><code>E528</code></a></td><td>… has no constructor …: its constructors are ….</td></tr>
+                <tr id="E529"><td><code>E529</code></td><td>… has two clauses.</td></tr>
+                <tr id="E530"><td><code>E530</code></td><td>… is a point constructor: give its computational clause in …, before obligations.</td></tr>
+                <tr id="E531"><td><code>E531</code></td><td>… on … needs a clause for …. Give path clauses in obligations { … }, or obligations by { … }.</td></tr>
+                <tr id="E532"><td><code>E532</code></td><td>obligations by a term or proof block needs exactly one missing declared path clause; found …. Use named obligations { … } for separate clauses.</td></tr>
+                <tr id="E533"><td><code>E533</code></td><td>The motive mentions … itself: write it over the matched value, match … as z return … z …, so that recursive calls have their own types.</td></tr>
+                <tr id="E534"><td><code>E534</code></td><td>… needs its result's type: give return T, or use it where its type is known.</td></tr>
+                <tr id="E535"><td><code>E535</code></td><td>The … statement takes apart a value of a declared type; for a sum, use cases.</td></tr>
+                <tr id="E536"><td><code>E536</code></td><td>The … statement takes apart a value of a declared type.</td></tr>
+                <tr id="E537"><td><code>E537</code></td><td>The … statement takes apart a value of a declared type, and declared types (H1) are switched off in this kernel session.</td></tr>
+                <tr id="E538"><td><code>E538</code></td><td>… takes … argument… here: …(…) with … names.</td></tr>
+                <tr id="E539"><td><code>E539</code></td><td>Write the dimension… of … after @, as the point the clause covers: ….</td></tr>
+                <tr id="E540"><td><code>E540</code></td><td>… has no dimensions to name.</td></tr>
+                <tr id="E541"><td><code>E541</code></td><td>… is a path constructor: name its … dimension… after its arguments, as in ….</td></tr>
+                <tr id="E542"><td><code>E542</code></td><td>The clause type of … has fewer arguments than expected.</td></tr>
+                <tr id="E543"><td><code>E543</code></td><td>The clause type of … has fewer dimensions than expected.</td></tr>
+                <tr id="E544"><td><code>E544</code></td><td>Cannot generate …: import hlevels and supply h-level evidence for the motive, or give the clause explicitly.</td></tr>
+                <tr id="E545"><td><code>E545</code></td><td>The obligation … is not a path clause.</td></tr>
+                <tr id="E546"><td><code>E546</code></td><td>Cannot generate …: … must be …; …. Give checked h-level evidence, or an explicit obligation.</td></tr>
+                <tr><td><a href="#E547"><code>E547</code></a></td><td>… is being defined: it can call itself only on an argument of a constructor that its match takes apart, as …(m) in succ(m) =&gt; …, when that match on one of its parameters is its whole body.</td></tr>
+                <tr id="E548"><td><code>E548</code></td><td>… takes … argument….</td></tr>
+                <tr id="E549"><td><code>E549</code></td><td>A recursive call of … changes …: the match needs its motive over its other parameters.</td></tr>
+                <tr id="E550"><td><code>E550</code></td><td>A recursive call of … passes … unchanged: the type of the matched … depends on it.</td></tr>
+                <tr id="E551"><td><code>E551</code></td><td>A recursive call of … passes the universe parameter … unchanged.</td></tr>
+                <tr><td><a href="#E552"><code>E552</code></a></td><td>The recursive call of … is not on an argument of the matched constructor: only structural recursion, ….</td></tr>
+                <tr id="E553"><td><code>E553</code></td><td>… takes … argument… here, as an argument of the matched constructor.</td></tr>
+                <tr id="E554"><td><code>E554</code></td><td>… is a …-dimensional path of the matched type, not an element: call … on it at its dimensions, as …(……).</td></tr>
+                <tr id="E555"><td><code>E555</code></td><td>… is an element of the matched type, not a path: call …(…) without @.</td></tr>
+                <tr id="E556"><td><code>E556</code></td><td>Internal elaboration error: the recursive result of … takes fewer hypotheses.</td></tr>
+                <tr><td><a href="#E557"><code>E557</code></a></td><td>… takes … argument… here, then … if you name them: …(…) with … or … names.</td></tr>
+              </tbody>
+            </table></div>
+            <h3 id="codes-e6">Checking</h3>
+            <div class="table-scroll"><table class="codes">
+              <thead><tr><th>Code</th><th>Message</th></tr></thead>
+              <tbody>
+                <tr id="E601"><td><code>E601</code></td><td>Unsupported library assumption: …</td></tr>
+                <tr id="E602"><td><code>E602</code></td><td>Only LEM and Choice have rebuilt truncation signatures.</td></tr>
+                <tr id="E603"><td><code>E603</code></td><td>Rebuilt LEM and Choice require an admitted proposition truncation.</td></tr>
+                <tr><td><a href="#E604"><code>E604</code></a></td><td>Instruction kernel: …</td></tr>
+                <tr id="E605"><td><code>E605</code></td><td>An assumption needs a checked type.</td></tr>
+                <tr><td><a href="#E606"><code>E606</code></a></td><td>Type mismatch: found …, expected ….</td></tr>
+                <tr id="E607"><td><code>E607</code></td><td>Invalid cubical dimension binding.</td></tr>
+                <tr id="E608"><td><code>E608</code></td><td>Cubical dimension indices must be distinct.</td></tr>
+                <tr id="E609"><td><code>E609</code></td><td>… is not in instruction mode yet.</td></tr>
+                <tr id="E610"><td><code>E610</code></td><td>Unbound variable ….</td></tr>
+                <tr id="E611"><td><code>E611</code></td><td>Composition tube disagrees with its base.</td></tr>
+                <tr id="E612"><td><code>E612</code></td><td>A Glue value's image disagrees with the base.</td></tr>
+                <tr id="E613"><td><code>E613</code></td><td>A constructor names an instance of a declared type.</td></tr>
+                <tr id="E614"><td><code>E614</code></td><td>The eliminator's motive is over another declared type.</td></tr>
+                <tr id="E615"><td><code>E615</code></td><td>A signature's former binds its universe parameters first.</td></tr>
+                <tr id="E616"><td><code>E616</code></td><td>A signature's former binds its parameters after its levels.</td></tr>
+                <tr id="E617"><td><code>E617</code></td><td>Could not allocate a symbol.</td></tr>
+                <tr id="E618"><td><code>E618</code></td><td>An instance takes each of its signature's parameters.</td></tr>
+                <tr id="E619"><td><code>E619</code></td><td>An instance gives each recorded universe parameter its level, and no other.</td></tr>
+                <tr id="E620"><td><code>E620</code></td><td>An erased universe parameter has no parameter to read it from.</td></tr>
+                <tr id="E621"><td><code>E621</code></td><td>Two pieces disagree where their faces meet.</td></tr>
+                <tr id="E622"><td><code>E622</code></td><td>No interval dimension is free for a binder.</td></tr>
+                <tr id="E623"><td><code>E623</code></td><td>The motive is a family over another type.</td></tr>
+                <tr id="E624"><td><code>E624</code></td><td>Expected …, found ….</td></tr>
+                <tr id="E625"><td><code>E625</code></td><td>Type mismatch.</td></tr>
+                <tr id="E626"><td><code>E626</code></td><td>The policy … ranked a move that is not open.</td></tr>
+                <tr id="E627"><td><code>E627</code></td><td>Unknown move ….</td></tr>
+                <tr id="E628"><td><code>E628</code></td><td>Invalid position.</td></tr>
+                <tr id="E629"><td><code>E629</code></td><td>Declaration time limit exceeded.</td></tr>
+                <tr id="E630"><td><code>E630</code></td><td>Unknown judgement ….</td></tr>
+                <tr id="E631"><td><code>E631</code></td><td>Unknown context entry ….</td></tr>
+                <tr id="E632"><td><code>E632</code></td><td>The cubical kernel module encodes syntax as ABI version …, but this code expects version …. Rebuild it with `make wasm`.</td></tr>
+                <tr id="E633"><td><code>E633</code></td><td>Could not allocate cubical kernel session.</td></tr>
+                <tr id="E634"><td><code>E634</code></td><td>Cubical kernel session is disposed.</td></tr>
+                <tr id="E635"><td><code>E635</code></td><td>This cubical kernel module has no work counters. Rebuild it with `make wasm`.</td></tr>
+                <tr id="E636"><td><code>E636</code></td><td>Unsupported cubical constructor: …</td></tr>
+                <tr id="E637"><td><code>E637</code></td><td>Cubical nodes have at most four children.</td></tr>
+                <tr id="E638"><td><code>E638</code></td><td>Normalize a term or type an instruction derived.</td></tr>
+                <tr id="E639"><td><code>E639</code></td><td>Unknown checked cubical definition.</td></tr>
+                <tr id="E640"><td><code>E640</code></td><td>Unknown cubical node handle.</td></tr>
+                <tr id="E641"><td><code>E641</code></td><td>Display simplification budget</td></tr>
+                <tr id="E642"><td><code>E642</code></td><td>Invalid reduction location.</td></tr>
+                <tr id="E643"><td><code>E643</code></td><td>This location does not support the selected reduction.</td></tr>
+                <tr id="E644"><td><code>E644</code></td><td>Unknown reduction operation.</td></tr>
+                <tr id="E645"><td><code>E645</code></td><td>Unknown reduction target.</td></tr>
+                <tr id="E646"><td><code>E646</code></td><td>No checked definition for ….</td></tr>
+                <tr id="E647"><td><code>E647</code></td><td>Invalid dimension literal.</td></tr>
+                <tr id="E648"><td><code>E648</code></td><td>Unbound cubical dimension: …</td></tr>
+                <tr id="E649"><td><code>E649</code></td><td>Unknown checked cubical definition: …</td></tr>
+                <tr id="E650"><td><code>E650</code></td><td>A constructor needs its number.</td></tr>
+                <tr id="E651"><td><code>E651</code></td><td>Unsupported cubical syntax: …</td></tr>
+                <tr id="E652"><td><code>E652</code></td><td>Unknown declared type: …</td></tr>
+                <tr id="E653"><td><code>E653</code></td><td>Invalid universe level: …</td></tr>
+                <tr id="E654"><td><code>E654</code></td><td>Invalid universe level constant.</td></tr>
+                <tr id="E655"><td><code>E655</code></td><td>Expected a universe level.</td></tr>
+                <tr id="E656"><td><code>E656</code></td><td>Expected a universe level, not ….</td></tr>
+                <tr id="E657"><td><code>E657</code></td><td>Invalid transport face descriptor.</td></tr>
+                <tr id="E658"><td><code>E658</code></td><td>Invalid cubical tube list.</td></tr>
+                <tr id="E659"><td><code>E659</code></td><td>Invalid cubical Glue system.</td></tr>
+                <tr id="E660"><td><code>E660</code></td><td>Invalid cubical Glue element system.</td></tr>
+                <tr id="E661"><td><code>E661</code></td><td>Unsupported cubical node: …</td></tr>
+                <tr id="E662"><td><code>E662</code></td><td>Declaration transaction was already finished.</td></tr>
+              </tbody>
+            </table></div>
+            <h3 id="codes-k1">Kernel: declared types</h3>
+            <div class="table-scroll"><table class="codes">
+              <thead><tr><th>Code</th><th>Message</th></tr></thead>
+              <tbody>
+                <tr id="K101"><td><code>K101</code></td><td>Dimension renaming allocation failed.</td></tr>
+                <tr id="K102"><td><code>K102</code></td><td>A boundary is nested too deeply.</td></tr>
+                <tr id="K103"><td><code>K103</code></td><td>A boundary applies a constructor to too many arguments.</td></tr>
+                <tr id="K104"><td><code>K104</code></td><td>A boundary applies an earlier constructor to all its arguments.</td></tr>
+                <tr id="K105"><td><code>K105</code></td><td>A boundary is not a constructor expression.</td></tr>
+                <tr id="K106"><td><code>K106</code></td><td>A cube is nested too deeply.</td></tr>
+                <tr id="K107"><td><code>K107</code></td><td>A cube is the sort or a path type over it.</td></tr>
+                <tr id="K108"><td><code>K108</code></td><td>The signature has no such constructor.</td></tr>
+                <tr id="K109"><td><code>K109</code></td><td>A constructor's type has fewer arguments than it takes.</td></tr>
+                <tr id="K110"><td><code>K110</code></td><td>A position's displayed cube does not follow its cube.</td></tr>
+                <tr id="K111"><td><code>K111</code></td><td>Unknown judgement.</td></tr>
+                <tr id="K112"><td><code>K112</code></td><td>Expected an eliminator in progress.</td></tr>
+                <tr id="K113"><td><code>K113</code></td><td>An eliminator's motive is a family of types over an instance of a declared type: Π (z : S(as)). U(l).</td></tr>
+                <tr id="K114"><td><code>K114</code></td><td>The eliminator has a clause for every constructor; close it.</td></tr>
+                <tr id="K115"><td><code>K115</code></td><td>The clause's type is not the constructor's clause type: its boundaries must be the displayed boundaries of 3.6.</td></tr>
+                <tr id="K116"><td><code>K116</code></td><td>The eliminator lacks a clause: every constructor, the squash included, needs one.</td></tr>
+                <tr id="K117"><td><code>K117</code></td><td>HIT join allocation failed.</td></tr>
+                <tr id="K118"><td><code>K118</code></td><td>HIT reversal allocation failed.</td></tr>
+                <tr id="K119"><td><code>K119</code></td><td>HIT endpoint allocation failed.</td></tr>
+                <tr id="K120"><td><code>K120</code></td><td>HIT substitution interval allocation failed.</td></tr>
+                <tr id="K121"><td><code>K121</code></td><td>Missing HIT transport face.</td></tr>
+                <tr id="K122"><td><code>K122</code></td><td>HIT elimination filling allocation failed.</td></tr>
+                <tr id="K123"><td><code>K123</code></td><td>Interval constant allocation failed.</td></tr>
+                <tr id="K124"><td><code>K124</code></td><td>A constructor's type has fewer arguments than its application.</td></tr>
+                <tr id="K125"><td><code>K125</code></td><td>A constructor's dimensions are its result type's path layers.</td></tr>
+                <tr id="K126"><td><code>K126</code></td><td>Transport filling allocation failed.</td></tr>
+                <tr id="K127"><td><code>K127</code></td><td>Unchecked homogeneous composition face.</td></tr>
+                <tr id="K128"><td><code>K128</code></td><td>Transport computation requires a declared higher sort.</td></tr>
+                <tr id="K129"><td><code>K129</code></td><td>Signature table exhausted.</td></tr>
+                <tr id="K130"><td><code>K130</code></td><td>Signature table allocation failed.</td></tr>
+                <tr id="K131"><td><code>K131</code></td><td>A signature has too many constructors.</td></tr>
+                <tr id="K132"><td><code>K132</code></td><td>Constructor table allocation failed.</td></tr>
+                <tr id="K133"><td><code>K133</code></td><td>A binder in a boundary reuses a name of the signature.</td></tr>
+                <tr id="K134"><td><code>K134</code></td><td>A binder's type in a boundary mentions the sort, a constructor or a position (section 1.4).</td></tr>
+                <tr id="K135"><td><code>K135</code></td><td>A path abstraction or application in a boundary carries a type that is not a cube over the sort (section 1.4).</td></tr>
+                <tr id="K136"><td><code>K136</code></td><td>A boundary may not contain a composition, hcomp or transport (section 1.4, Q3).</td></tr>
+                <tr id="K137"><td><code>K137</code></td><td>A boundary applies a position to exactly its arity (section 1.4).</td></tr>
+                <tr id="K138"><td><code>K138</code></td><td>A boundary applies an earlier constructor to all its data and positions (section 1.4).</td></tr>
+                <tr id="K139"><td><code>K139</code></td><td>A constructor's boundary names the constructor itself (section 1.5).</td></tr>
+                <tr id="K140"><td><code>K140</code></td><td>A boundary must be a constructor expression: a position or an earlier constructor, applied, or a path application or abstraction of one (section 1.4).</td></tr>
+                <tr id="K141"><td><code>K141</code></td><td>A constructor has too many dimensions, or a position too deep a cube.</td></tr>
+                <tr id="K142"><td><code>K142</code></td><td>A position's type and a constructor's result end in the sort, or in an iterated path type over it (section 1.2).</td></tr>
+                <tr id="K143"><td><code>K143</code></td><td>A constructor's argument reuses a name of the signature.</td></tr>
+                <tr id="K144"><td><code>K144</code></td><td>A constructor has too many arguments.</td></tr>
+                <tr id="K145"><td><code>K145</code></td><td>A position's arity reuses a name of the signature.</td></tr>
+                <tr id="K146"><td><code>K146</code></td><td>A position's arity mentions the sort, a constructor or a position: the sort occurs only at the end of a position (section 1.3).</td></tr>
+                <tr id="K147"><td><code>K147</code></td><td>A position's arity is too long.</td></tr>
+                <tr id="K148"><td><code>K148</code></td><td>A data argument follows a position; the kernel requires all data first (section 1.2).</td></tr>
+                <tr id="K149"><td><code>K149</code></td><td>Expected a signature judgement.</td></tr>
+                <tr id="K150"><td><code>K150</code></td><td>The signature judgement names no signature.</td></tr>
+                <tr id="K151"><td><code>K151</code></td><td>The signature is already admitted; an admitted signature never changes.</td></tr>
+                <tr id="K152"><td><code>K152</code></td><td>Only the signature's latest judgement continues it.</td></tr>
+                <tr id="K153"><td><code>K153</code></td><td>Declared types (H1) are switched off in this kernel; CC_EXTENSION_H1 switches them on.</td></tr>
+                <tr id="K154"><td><code>K154</code></td><td>A signature's former type must be closed.</td></tr>
+                <tr id="K155"><td><code>K155</code></td><td>A truncation level is at most the kernel's bound.</td></tr>
+                <tr id="K156"><td><code>K156</code></td><td>A signature needs a sort symbol.</td></tr>
+                <tr id="K157"><td><code>K157</code></td><td>A signature has too many universe parameters.</td></tr>
+                <tr id="K158"><td><code>K158</code></td><td>A signature's universe parameters range below UU0: x &lt; ω.</td></tr>
+                <tr id="K159"><td><code>K159</code></td><td>A signature's former type is Π (xs &lt; ω). Π (ps : Ps). U(ℓ).</td></tr>
+                <tr id="K160"><td><code>K160</code></td><td>A signature's parameters need distinct symbols, other than the sort's.</td></tr>
+                <tr id="K161"><td><code>K161</code></td><td>The classification marks a universe parameter the signature does not have.</td></tr>
+                <tr id="K162"><td><code>K162</code></td><td>An erased universe parameter needs a determining occurrence: a parameter whose type ends in U(x) (section 1.1). Otherwise it is recorded.</td></tr>
+                <tr id="K163"><td><code>K163</code></td><td>Signature allocation failed.</td></tr>
+                <tr id="K164"><td><code>K164</code></td><td>A constructor type's context holds a dimension entry.</td></tr>
+                <tr id="K165"><td><code>K165</code></td><td>A constructor's type names the constructor itself (section 1.5).</td></tr>
+                <tr id="K166"><td><code>K166</code></td><td>The sort entry's type is not the signature's universe.</td></tr>
+                <tr id="K167"><td><code>K167</code></td><td>A parameter entry's type is not the signature's.</td></tr>
+                <tr id="K168"><td><code>K168</code></td><td>A constructor entry's type is not that constructor's.</td></tr>
+                <tr id="K169"><td><code>K169</code></td><td>A constructor type's context holds an entry that is not the signature's: a later constructor, or a name from outside the signature (section 1.5).</td></tr>
+                <tr id="K170"><td><code>K170</code></td><td>A constructor type is derived in the signature's universe U(ℓ); lift it there first.</td></tr>
+                <tr id="K171"><td><code>K171</code></td><td>A constructor needs a symbol.</td></tr>
+                <tr id="K172"><td><code>K172</code></td><td>A constructor's symbol must be new to the signature.</td></tr>
+                <tr id="K173"><td><code>K173</code></td><td>A constructor type mentions an erased universe parameter; only a recorded one may occur there (section 1.1).</td></tr>
+                <tr id="K174"><td><code>K174</code></td><td>Expected an instance of a declared type.</td></tr>
+                <tr id="K175"><td><code>K175</code></td><td>Only an admitted signature has instances.</td></tr>
+                <tr id="K176"><td><code>K176</code></td><td>A parameter's type does not end in a universe where the signature's does.</td></tr>
+                <tr id="K177"><td><code>K177</code></td><td>An erased universe parameter has no determining occurrence.</td></tr>
+                <tr id="K178"><td><code>K178</code></td><td>Expected an instance in progress.</td></tr>
+                <tr id="K179"><td><code>K179</code></td><td>An instance takes its recorded levels first, one for each recorded universe parameter.</td></tr>
+                <tr id="K180"><td><code>K180</code></td><td>An instance takes its recorded levels before its parameters.</td></tr>
+                <tr id="K181"><td><code>K181</code></td><td>The instance already has all its parameters.</td></tr>
+                <tr id="K182"><td><code>K182</code></td><td>The instance's parameters and levels are not the signature's.</td></tr>
+              </tbody>
+            </table></div>
+            <h3 id="codes-k2">Kernel: instructions</h3>
+            <div class="table-scroll"><table class="codes">
+              <thead><tr><th>Code</th><th>Message</th></tr></thead>
+              <tbody>
+                <tr id="K201"><td><code>K201</code></td><td>An equality has sides 0 and 1.</td></tr>
+                <tr id="K202"><td><code>K202</code></td><td>The type is not included in the target type.</td></tr>
+                <tr id="K203"><td><code>K203</code></td><td>Interval allocation failed.</td></tr>
+                <tr id="K204"><td><code>K204</code></td><td>Eta needs a term of a Π, level Π, Σ, path or Glue type.</td></tr>
+                <tr id="K205"><td><code>K205</code></td><td>Missing position.</td></tr>
+                <tr id="K206"><td><code>K206</code></td><td>The position leaves the term.</td></tr>
+                <tr id="K207"><td><code>K207</code></td><td>Position depth exceeded.</td></tr>
+                <tr id="K208"><td><code>K208</code></td><td>Beta needs a lambda applied to an argument, or a level lambda to a level.</td></tr>
+                <tr id="K209"><td><code>K209</code></td><td>Delta needs a definition.</td></tr>
+                <tr id="K210"><td><code>K210</code></td><td>Iota needs an eliminator or projection applied to a constructor.</td></tr>
+                <tr id="K211"><td><code>K211</code></td><td>A path step needs a path application.</td></tr>
+                <tr id="K212"><td><code>K212</code></td><td>Interval copy failed.</td></tr>
+                <tr id="K213"><td><code>K213</code></td><td>A path step needs a path lambda, or an endpoint of the annotated type.</td></tr>
+                <tr id="K214"><td><code>K214</code></td><td>A face step needs a composition with a tube on a face that holds.</td></tr>
+                <tr id="K215"><td><code>K215</code></td><td>A Glue step needs glue [φ ↦ t] (unglue b) whose two Glue types agree, and whose t is b on φ, after normalization.</td></tr>
+                <tr id="K216"><td><code>K216</code></td><td>Unknown step rule.</td></tr>
+                <tr id="K217"><td><code>K217</code></td><td>A composition system is closed by Comp before it is rewritten.</td></tr>
+                <tr id="K218"><td><code>K218</code></td><td>An open signature or an instance in progress is continued by its own instructions, not rewritten.</td></tr>
+                <tr id="K219"><td><code>K219</code></td><td>A judgement has sides 0 (term), 2 (type), and 1 for an equality's other term.</td></tr>
+                <tr id="K220"><td><code>K220</code></td><td>Replacement allocation failed.</td></tr>
+                <tr id="K221"><td><code>K221</code></td><td>A path application's annotation is replaced only by a path type.</td></tr>
+                <tr id="K222"><td><code>K222</code></td><td>Replacing a subterm that uses a composition's dimension is not supported.</td></tr>
+                <tr id="K223"><td><code>K223</code></td><td>The replacing equality lacks an entry for a bound name it uses.</td></tr>
+                <tr id="K224"><td><code>K224</code></td><td>One entry would be bound twice on the path.</td></tr>
+                <tr id="K225"><td><code>K225</code></td><td>The last piece must first be shown to agree with the pieces it overlaps.</td></tr>
+                <tr id="K226"><td><code>K226</code></td><td>A piece may overlap only the first 64 pieces.</td></tr>
+                <tr id="K227"><td><code>K227</code></td><td>A Glue piece's face is one conjunction of endpoint equations, or 0.</td></tr>
+                <tr id="K228"><td><code>K228</code></td><td>A Glue piece's face must be consistent.</td></tr>
+                <tr id="K229"><td><code>K229</code></td><td>A Glue piece must already be restricted to its face.</td></tr>
+                <tr id="K230"><td><code>K230</code></td><td>That piece's face is not one clause.</td></tr>
+                <tr id="K231"><td><code>K231</code></td><td>The Glue type has no piece at that position.</td></tr>
+                <tr id="K232"><td><code>K232</code></td><td>Not a Glue type under construction.</td></tr>
+                <tr id="K233"><td><code>K233</code></td><td>The last piece does not overlap that piece, or already agrees with it.</td></tr>
+                <tr id="K234"><td><code>K234</code></td><td>A Glue term needs a Glue type.</td></tr>
+                <tr id="K235"><td><code>K235</code></td><td>The Glue term has a value for every piece of its type.</td></tr>
+                <tr id="K236"><td><code>K236</code></td><td>A Glue term's value must already be restricted to its face.</td></tr>
+                <tr id="K237"><td><code>K237</code></td><td>A value on the face 0 takes no equality.</td></tr>
+                <tr id="K238"><td><code>K238</code></td><td>Only an element of a Glue type is unglued.</td></tr>
+                <tr id="K239"><td><code>K239</code></td><td>Only a term of a path type can be applied to a dimension.</td></tr>
+                <tr id="K240"><td><code>K240</code></td><td>A path applies at a dimension, 0 or 1.</td></tr>
+                <tr id="K241"><td><code>K241</code></td><td>An endpoint is 0 or 1.</td></tr>
+                <tr id="K242"><td><code>K242</code></td><td>Only a term of a path type can be applied to an interval formula.</td></tr>
+                <tr id="K243"><td><code>K243</code></td><td>A path applies at an interval formula.</td></tr>
+                <tr id="K244"><td><code>K244</code></td><td>The base of a composition may not use its dimension.</td></tr>
+                <tr id="K245"><td><code>K245</code></td><td>That tube's face is not one clause.</td></tr>
+                <tr id="K246"><td><code>K246</code></td><td>The system has no tube at that position.</td></tr>
+                <tr id="K247"><td><code>K247</code></td><td>The last tube must first be shown to agree with the tubes it overlaps.</td></tr>
+                <tr id="K248"><td><code>K248</code></td><td>Not a composition system.</td></tr>
+                <tr id="K249"><td><code>K249</code></td><td>A tube's face is one conjunction of endpoint equations, or 0.</td></tr>
+                <tr id="K250"><td><code>K250</code></td><td>A tube on the face 0 takes no equality.</td></tr>
+                <tr id="K251"><td><code>K251</code></td><td>A tube's face must be consistent.</td></tr>
+                <tr id="K252"><td><code>K252</code></td><td>A tube's face may not use the composition's dimension.</td></tr>
+                <tr id="K253"><td><code>K253</code></td><td>A tube must already be restricted to its face.</td></tr>
+                <tr id="K254"><td><code>K254</code></td><td>A tube may overlap only the first 64 tubes of a system.</td></tr>
+                <tr id="K255"><td><code>K255</code></td><td>Not a system of tubes.</td></tr>
+                <tr id="K256"><td><code>K256</code></td><td>The last tube does not overlap that tube, or already agrees with it.</td></tr>
+                <tr id="K257"><td><code>K257</code></td><td>A declared data sort has no formal composition or transport: compose it with Comp, whose tube φ ↦ u_0 transports (Q1).</td></tr>
+                <tr id="K258"><td><code>K258</code></td><td>A homogeneous composition's type may not use its dimension.</td></tr>
+                <tr id="K259"><td><code>K259</code></td><td>A transport's face is a face formula.</td></tr>
+                <tr id="K260"><td><code>K260</code></td><td>A transport's tubes are its face's clauses, in order.</td></tr>
+                <tr id="K261"><td><code>K261</code></td><td>Instruction store handle space exhausted.</td></tr>
+                <tr id="K262"><td><code>K262</code></td><td>Instruction store allocation overflow.</td></tr>
+                <tr id="K263"><td><code>K263</code></td><td>Instruction store allocation failed.</td></tr>
+                <tr id="K264"><td><code>K264</code></td><td>Unknown context entry.</td></tr>
+                <tr id="K265"><td><code>K265</code></td><td>A universe variable is not a term: use it in a level, as U(x).</td></tr>
+                <tr id="K266"><td><code>K266</code></td><td>Expected a type: a term of a universe.</td></tr>
+                <tr id="K267"><td><code>K267</code></td><td>Two dimension entries with one index meet in a context.</td></tr>
+                <tr id="K268"><td><code>K268</code></td><td>A context entry still depends on the discharged entry.</td></tr>
+                <tr id="K269"><td><code>K269</code></td><td>The binder would capture another dimension entry with its index.</td></tr>
+                <tr id="K270"><td><code>K270</code></td><td>Entry index allocation failed.</td></tr>
+                <tr id="K271"><td><code>K271</code></td><td>A context entry needs a symbol.</td></tr>
+                <tr id="K272"><td><code>K272</code></td><td>The symbol already names a context entry.</td></tr>
+                <tr id="K273"><td><code>K273</code></td><td>Expected a level entry.</td></tr>
+                <tr id="K274"><td><code>K274</code></td><td>Dimension outside the native range.</td></tr>
+                <tr id="K275"><td><code>K275</code></td><td>Unbound level variable.</td></tr>
+                <tr id="K276"><td><code>K276</code></td><td>A term variable is not a level.</td></tr>
+                <tr id="K277"><td><code>K277</code></td><td>A universe level exceeds the kernel's bound.</td></tr>
+                <tr id="K278"><td><code>K278</code></td><td>A motive is a family of types: Π(x : A). U(l).</td></tr>
+                <tr id="K279"><td><code>K279</code></td><td>An injection needs a sum type.</td></tr>
+                <tr id="K280"><td><code>K280</code></td><td>Sum induction needs a value of a sum type.</td></tr>
+                <tr id="K281"><td><code>K281</code></td><td>Only a term of a Π type can be applied.</td></tr>
+                <tr id="K282"><td><code>K282</code></td><td>Only a term of a level Π can be instantiated at a level.</td></tr>
+                <tr id="K283"><td><code>K283</code></td><td>Instantiation needs a finite level, below ω.</td></tr>
+                <tr id="K284"><td><code>K284</code></td><td>A pair needs a Σ type.</td></tr>
+                <tr id="K285"><td><code>K285</code></td><td>Only a term of a Σ type has projections.</td></tr>
+                <tr id="K286"><td><code>K286</code></td><td>Only a Π or Σ type has a domain.</td></tr>
+                <tr id="K287"><td><code>K287</code></td><td>Only a Π or Σ type has a family.</td></tr>
+                <tr id="K288"><td><code>K288</code></td><td>Only a closed judgement can be defined.</td></tr>
+                <tr id="K289"><td><code>K289</code></td><td>Definition symbol is already registered.</td></tr>
+                <tr id="K290"><td><code>K290</code></td><td>Unknown checked definition reference.</td></tr>
+                <tr id="K291"><td><code>K291</code></td><td>A declared type's instance reads finite levels only, below ω (Q16).</td></tr>
+              </tbody>
+            </table></div>
+            <h3 id="codes-k3">Kernel: terms and computation</h3>
+            <div class="table-scroll"><table class="codes">
+              <thead><tr><th>Code</th><th>Message</th></tr></thead>
+              <tbody>
+                <tr id="K301"><td><code>K301</code></td><td>A signature is still open; close it before committing.</td></tr>
+                <tr id="K302"><td><code>K302</code></td><td>Checkpoint compaction allocation failed.</td></tr>
+                <tr id="K303"><td><code>K303</code></td><td>Unchecked composition face reached reduction.</td></tr>
+                <tr id="K304"><td><code>K304</code></td><td>Composition filling formula allocation failed.</td></tr>
+                <tr id="K305"><td><code>K305</code></td><td>Filling direction allocation failed.</td></tr>
+                <tr id="K306"><td><code>K306</code></td><td>Backward filling direction allocation failed.</td></tr>
+                <tr id="K307"><td><code>K307</code></td><td>Path composition direction allocation failed.</td></tr>
+                <tr id="K308"><td><code>K308</code></td><td>Singleton contraction interval allocation failed.</td></tr>
+                <tr id="K309"><td><code>K309</code></td><td>Glue endpoint face allocation failed.</td></tr>
+                <tr id="K310"><td><code>K310</code></td><td>Preservation interval allocation failed.</td></tr>
+                <tr id="K311"><td><code>K311</code></td><td>Glue universal face allocation failed.</td></tr>
+                <tr id="K312"><td><code>K312</code></td><td>Glue boundary face allocation failed.</td></tr>
+                <tr id="K313"><td><code>K313</code></td><td>Glue composition allocation overflow.</td></tr>
+                <tr id="K314"><td><code>K314</code></td><td>Glue composition allocation failed.</td></tr>
+                <tr id="K315"><td><code>K315</code></td><td>Universe composition interval allocation failed.</td></tr>
+                <tr id="K316"><td><code>K316</code></td><td>Level normal form too large.</td></tr>
+                <tr id="K317"><td><code>K317</code></td><td>Level normal form allocation failed.</td></tr>
+                <tr id="K318"><td><code>K318</code></td><td>Expected a level.</td></tr>
+                <tr id="K319"><td><code>K319</code></td><td>A level successor counts at least one.</td></tr>
+                <tr id="K320"><td><code>K320</code></td><td>A bound is not a level.</td></tr>
+                <tr id="K321"><td><code>K321</code></td><td>A level variable's key is not a symbol.</td></tr>
+                <tr id="K322"><td><code>K322</code></td><td>Level normalization depth exceeded.</td></tr>
+                <tr id="K323"><td><code>K323</code></td><td>Composition face allocation failed.</td></tr>
+                <tr id="K324"><td><code>K324</code></td><td>Syntax memo allocation failed.</td></tr>
+                <tr id="K325"><td><code>K325</code></td><td>Alpha-comparison scope counter exhausted.</td></tr>
+                <tr id="K326"><td><code>K326</code></td><td>Native conversion recursion depth exceeded.</td></tr>
+                <tr id="K327"><td><code>K327</code></td><td>Alpha-comparison memo allocation failed.</td></tr>
+                <tr id="K328"><td><code>K328</code></td><td>An endpoint substitution needs a dimension and 0 or 1.</td></tr>
+                <tr id="K329"><td><code>K329</code></td><td>Unchecked partial face reached reduction.</td></tr>
+                <tr id="K330"><td><code>K330</code></td><td>Unknown definition reached reduction.</td></tr>
+                <tr id="K331"><td><code>K331</code></td><td>Unchecked Glue face reached reduction.</td></tr>
+                <tr id="K332"><td><code>K332</code></td><td>Glue eta face allocation failed.</td></tr>
+                <tr id="K333"><td><code>K333</code></td><td>Unchecked Glue projection reached reduction.</td></tr>
+                <tr id="K334"><td><code>K334</code></td><td>Path application requires an interval expression.</td></tr>
+                <tr id="K335"><td><code>K335</code></td><td>Unchecked path application reached reduction.</td></tr>
+                <tr id="K336"><td><code>K336</code></td><td>Native reduction recursion depth exceeded.</td></tr>
+                <tr id="K337"><td><code>K337</code></td><td>Native normal-form depth exceeded.</td></tr>
+                <tr id="K338"><td><code>K338</code></td><td>Kernel checking/reduction budget exhausted.</td></tr>
+                <tr id="K339"><td><code>K339</code></td><td>Unknown term constructor.</td></tr>
+                <tr id="K340"><td><code>K340</code></td><td>A universe's level is its child; its payload must be zero.</td></tr>
+                <tr id="K341"><td><code>K341</code></td><td>Missing syntax child.</td></tr>
+                <tr id="K342"><td><code>K342</code></td><td>Invalid syntax child handle.</td></tr>
+                <tr id="K343"><td><code>K343</code></td><td>A formula handle names no registered formula.</td></tr>
+                <tr id="K344"><td><code>K344</code></td><td>Native prototype syntax depth exceeds 512.</td></tr>
+                <tr id="K345"><td><code>K345</code></td><td>Term handle space exhausted.</td></tr>
+                <tr id="K346"><td><code>K346</code></td><td>Term arena capacity overflow.</td></tr>
+                <tr id="K347"><td><code>K347</code></td><td>Term arena allocation failed.</td></tr>
+                <tr id="K348"><td><code>K348</code></td><td>Normal cache allocation failed.</td></tr>
+                <tr id="K349"><td><code>K349</code></td><td>Term symbol space exhausted.</td></tr>
+                <tr id="K350"><td><code>K350</code></td><td>Formula handle space exhausted.</td></tr>
+                <tr id="K351"><td><code>K351</code></td><td>Formula arena capacity overflow.</td></tr>
+                <tr id="K352"><td><code>K352</code></td><td>Formula arena allocation failed.</td></tr>
+                <tr id="K353"><td><code>K353</code></td><td>Formula copy failed.</td></tr>
+                <tr id="K354"><td><code>K354</code></td><td>Fresh symbol space exhausted.</td></tr>
+                <tr id="K355"><td><code>K355</code></td><td>Native prototype has exhausted its 64 dimension names.</td></tr>
+                <tr id="K356"><td><code>K356</code></td><td>Term substitution dimension allocation failed.</td></tr>
+                <tr id="K357"><td><code>K357</code></td><td>Malformed composition tube list.</td></tr>
+                <tr id="K358"><td><code>K358</code></td><td>Invalid dimension substitution.</td></tr>
+                <tr id="K359"><td><code>K359</code></td><td>Dimension binder outside native range.</td></tr>
+                <tr id="K360"><td><code>K360</code></td><td>Fresh dimension allocation failed.</td></tr>
+                <tr id="K361"><td><code>K361</code></td><td>Endpoint allocation failed.</td></tr>
+                <tr id="K362"><td><code>K362</code></td><td>Invalid interval variable.</td></tr>
+                <tr id="K363"><td><code>K363</code></td><td>Invalid face variable.</td></tr>
+              </tbody>
+            </table></div>
+            <h3 id="codes-w7">Warnings</h3>
+            <div class="table-scroll"><table class="codes">
+              <thead><tr><th>Code</th><th>Message</th></tr></thead>
+              <tbody>
+                <tr id="W701"><td><code>W701</code></td><td>None of … is used after this obtain: remove it.</td></tr>
+                <tr><td><a href="#W702"><code>W702</code></a></td><td>… is never used after this let: remove it.</td></tr>
+                <tr><td><a href="#W703"><code>W703</code></a></td><td>… is unused: the return type does not mention it and the successor clause does not use it. Omit as …: induction … return ….</td></tr>
+                <tr><td><a href="#W704"><code>W704</code></a></td><td>… is unused: the return type does not mention it. Omit as …: match … return ….</td></tr>
+                <tr><td><a href="#W705"><code>W705</code></a></td><td>… is unused in the body: write … instead of … … : …. ….</td></tr>
+                <tr id="W706"><td><code>W706</code></td><td>… is unused in the body: take it out of the group and write … for it.</td></tr>
+                <tr id="W707"><td><code>W707</code></td><td>… is unused: the return type does not mention it. Omit as …: induction … return ….</td></tr>
+              </tbody>
+            </table></div>
+          </section>
           <nav class="pager" aria-label="Chapter navigation">
             <a class="previous" href="checking.html">← 12. Checking and inspection</a>
           </nav>
