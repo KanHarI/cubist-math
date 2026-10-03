@@ -94,7 +94,8 @@ The trusted checker is the [instruction kernel](kernel-instructions.md).
 The untrusted driver is `web/cubical-instruction-driver.mjs`; its own guide
 has been the default since K1.4. The old conversion oracle is comparison
 only (`node tools/instruction-coverage.mjs --oracle`). The C term checker
-and JavaScript reference checker are not extended to new language features.
+is not extended to new language features; the JavaScript reference checker
+was removed on 2026-10-02.
 
 Each kernel package adds instructions in `kernel/src/instructions.c`, their
 computation rules and driver support. Acceptance includes:

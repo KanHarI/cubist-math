@@ -5,26 +5,26 @@
 import { KernelError } from "./cubical-kernel.mjs";
 
 // cc_instruction, in order.
-export const instructions = ["", "universe", "nat", "zero", "succ", "natElim", "unit", "point", "unitElim",
+// An instruction's name at its opcode. null marks a retired instruction whose
+// opcode stays reserved, Nat's, W's and pushouts' (kernel/include/cubical_kernel.h).
+export const instructions = ["", "universe", null, null, null, null, "unit", "point", "unitElim",
   "void", "abort", "sum", "inject", "sumElim", "variable", "pi", "lambda", "apply", "sigma", "pair", "first",
   "second", "domain", "family", "path", "pathLambda", "pathApply", "define", "lookup", "refl", "step", "replace",
   "eta", "side", "symmetry", "transitivity", "convert", "lift", "endpoint", "pathAt", "system", "systemTube", "comp", "systemOverlap",
-  "pushout", "pushPoint", "pushPath", "pushElim", "w", "sup", "wElim", "hcomp", "trans",
+  null, null, null, null, null, null, null, "hcomp", "trans",
   "glueBase", "gluePiece", "glueOverlap", "glue", "glueTermBase", "glueTermPiece", "glueTerm", "unglue",
   "levelPi", "levelLambda", "levelApply", "signatureBegin", "signatureConstructor", "signatureClose",
   "sortBegin", "sortLevel", "sortParameter", "construct",
   "eliminator", "eliminatorClause", "eliminatorClose"];
 // THTH's names for the rules, for display.
-export const ththNames = { universe: "UIntro", nat: "NatForm", zero: "NatIntroZ", succ: "NatIntroS",
-  natElim: "NatElim", unit: "UnitForm", point: "UnitIntro", unitElim: "UnitElim", void: "VoidForm",
+export const ththNames = { universe: "UIntro", unit: "UnitForm", point: "UnitIntro", unitElim: "UnitElim", void: "VoidForm",
   abort: "VoidElim", sum: "SumForm", inject: "SumIntro", sumElim: "SumElim", variable: "Vble", pi: "PiForm",
   lambda: "PiIntro", apply: "PiElim", sigma: "SigmaForm", pair: "SigmaIntro", first: "SigmaFst",
   second: "SigmaSnd", domain: "Domain", family: "Family", path: "PathForm", pathLambda: "PathIntro",
   pathApply: "PathElim", define: "Def", lookup: "DefLookup", refl: "DefEqRefl", step: "Step",
   replace: "HighSubs", eta: "Eta", side: "DefEqExt", symmetry: "DefEqSwp", transitivity: "DefEqTrans",
   convert: "Conv", lift: "Lift", endpoint: "Endpoint", pathAt: "PathElim", system: "CompBase", systemTube: "CompTube",
-  comp: "Comp", systemOverlap: "CompOverlap", pushout: "PushoutForm", pushPoint: "PushoutIntro",
-  pushPath: "PushoutPath", pushElim: "PushoutElim", w: "WForm", sup: "WIntro", wElim: "WElim",
+  comp: "Comp", systemOverlap: "CompOverlap",
   hcomp: "HComp", trans: "Transp", glueBase: "GlueBase", gluePiece: "GluePiece", glueOverlap: "GlueOverlap",
   glue: "GlueForm", glueTermBase: "GlueIntroBase", glueTermPiece: "GlueIntroPiece", glueTerm: "GlueIntro",
   unglue: "GlueElim", levelPi: "LevelForm", levelLambda: "LevelIntro", levelApply: "LevelElim",
@@ -49,7 +49,8 @@ export class InstructionGraph {
   }
   issue(name, ...operands) {
     this.kernel.assertOpen();
-    const code = typeof name === "number" ? name : instructions.indexOf(name);
+    const code = typeof name === "number" ? name : typeof name === "string" ? instructions.indexOf(name) : -1;
+    if (code < 1) throw new TypeError(`Unknown instruction: ${name}`);
     while (operands.length < 4) operands.push(0);
     // Every operand is a 32-bit unsigned integer: anything else would be
     // coerced, silently, into another instruction's operands.
@@ -71,10 +72,6 @@ export class InstructionGraph {
       if (!this.module._cb_position_push(this.kernel.handle, child)) throw new KernelError("Invalid position.");
   }
   universe(level) { return this.issue("universe", level); }
-  nat() { return this.issue("nat"); }
-  zero() { return this.issue("zero"); }
-  succ(n) { return this.issue("succ", n); }
-  natElim(motive, zero, step, value) { return this.issue("natElim", motive, zero, step, value); }
   unit() { return this.issue("unit"); }
   point() { return this.issue("point"); }
   unitElim(motive, point, value) { return this.issue("unitElim", motive, point, value); }
@@ -171,13 +168,6 @@ export class InstructionGraph {
   glueTermPiece(system, value, image) { return this.issue("glueTermPiece", system, value, image); }
   glueTerm(system) { return this.issue("glueTerm", system); }
   unglue(value) { return this.issue("unglue", value); }
-  pushout(source, left, right, maps) { return this.issue("pushout", source, left, right, maps); }
-  pushPoint(type, value, right) { return this.issue("pushPoint", type, value, right ? 1 : 0); }
-  pushPath(type, value, interval) { return this.issue("pushPath", type, value, interval); }
-  pushElim(motive, left, right, bridge) { return this.issue("pushElim", motive, left, right, bridge); }
-  w(entry, arities) { return this.issue("w", entry, arities); }
-  sup(type, label, children) { return this.issue("sup", type, label, children); }
-  wElim(motive, step, value) { return this.issue("wElim", motive, step, value); }
   define(name, closed) { return this.issue("define", this.kernel.symbol(name), closed); }
   lookup(reference) { return this.issue("lookup", reference); }
   refl(typing) { return this.issue("refl", typing); }

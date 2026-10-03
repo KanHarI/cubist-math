@@ -15,7 +15,7 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (!cache) { cache = new Map(); freeCache.set(term, cache); }
     if (cache.has(variable)) return cache.get(variable);
     const found = term.tag === "Var" ? term.name === variable
-      : ["Pi", "Sigma", "Lam", "W", "LPi", "LLam"].includes(term.tag)
+      : ["Pi", "Sigma", "Lam", "LPi", "LLam"].includes(term.tag)
         ? free(term.domain, variable) || (term.name !== variable && free(term.body, variable))
         : Object.values(term).some(child => free(child, variable));
     cache.set(variable, found); return found;
@@ -100,13 +100,8 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     // The bound of a universe variable x < UU0, which a context entry has in
     // place of a type: shown as the bound's universe.
     if (t.tag === "LBound") return { kind: "Universe", level: { tag: "LConst", tier: t.tier, value: 0 } };
-    if (["Nat", "Unit", "Void"].includes(t.tag)) return name(t.tag);
-    if (t.tag === "Zero") return { kind: "Number", value: 0 };
+    if (["Unit", "Void"].includes(t.tag)) return name(t.tag);
     if (t.tag === "Point") return name("⋆");
-    if (t.tag === "Succ") {
-      const value = child(t.value, "value");
-      return value.kind === "Number" ? { kind: "Number", value: value.value + 1 } : call("succ", [value]);
-    }
     if (["Pi", "Sigma"].includes(t.tag)) {
       if (!free(t.body, t.name)) return { kind: t.tag === "Pi" ? "Arrow" : "Product", left: child(t.domain, "domain"), right: child(t.body, "body") };
       const domain = child(t.domain, "domain"), binder = underBinder(t.name, t.body, () => child(t.body, "body"));
@@ -145,8 +140,6 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (t.tag === "PLam") return !depends(t.family, t.dim) && !depends(t.body, t.dim)
       ? call("refl", [child(t.body, "body")]) : call("path", [{ kind: "Lambda", name: t.dim, body: child(t.body, "body") }]);
     if (t.tag === "PApp") return call("at", [child(t.path, "path"), formula(t.arg)]);
-    if (t.tag === "PushPath") return call("push_path_at", [child(t.as, "as"), child(t.value, "value"), formula(t.arg)]);
-    if (t.tag === "W") return call("W", [child(t.domain, "domain"), { kind: "Lambda", name: t.name, body: child(t.body, "body") }]);
     if (t.tag === "Comp") return { kind: "Scope", names: [t.dim], body: call("comp", [child(t.family, "family"),
       ...t.system.map((p, index) => call("face", [formula(p.face), child(p.term, "system", index, "term")])), child(t.base, "base")]) };
     if (t.tag === "HComp") return call("hcomp", [child(t.family, "family"), ...t.system.map((p, index) => call("face", [formula(p.face),
@@ -169,12 +162,8 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     }
     if (t.tag === "Elim") return call(`${symbols[t.signature]?.name ?? t.signature}.elim`, [child(t.motive, "motive"),
       ...t.clauses.map((clause, index) => child(clause, "clauses", index))]);
-    const fields = { NatRec: ["motive", "zero", "step", "value"], UnitRec: ["motive", "point", "value"],
-      SumRec: ["motive", "left", "right", "value"], WRec: ["motive", "step", "value"],
-      Sup: ["as", "label", "children"], Inl: ["as", "value"], Inr: ["as", "value"],
-      Abort: ["as", "impossible"], Unglue: ["as", "value"],
-      Pushout: ["center", "left", "right", "maps"], PushLeft: ["as", "value"],
-      PushRight: ["as", "value"], PushElim: ["motive", "left", "right", "bridge"] };
+    const fields = { UnitRec: ["motive", "point", "value"], SumRec: ["motive", "left", "right", "value"],
+      Inl: ["as", "value"], Inr: ["as", "value"], Abort: ["as", "impossible"], Unglue: ["as", "value"] };
     if (!fields[t.tag]) throw new Error(`Unsupported cubical notation: ${t.tag}`);
     return call(t.tag, fields[t.tag].map(key => child(t[key], key)));
   }

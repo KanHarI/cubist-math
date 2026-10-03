@@ -57,8 +57,8 @@ test("the printer shows every name in a form the rules predict", () => {
     // the inner one is numbered apart, and a name that prints as itself
     // shows as it is.
     const inner = `${name}9`;
-    const binders = shown(T.lam(name, T.nat, T.lam(inner, T.nat, T.app(T.variable(name), T.variable(inner)))));
-    const [, group, applied, argument] = /^fun \(([^:]+) : Nat\) => (.+)\((.+)\)$/.exec(binders) ?? [];
+    const binders = shown(T.lam(name, T.unit, T.lam(inner, T.unit, T.app(T.variable(name), T.variable(inner)))));
+    const [, group, applied, argument] = /^fun \(([^:]+) : Unit\) => (.+)\((.+)\)$/.exec(binders) ?? [];
     const [outerShown, innerShown] = group?.split(", ") ?? [];
     assert.ok(outerShown && predicted(name, outerShown), `${name} as a binder: ${binders}`);
     assert.ok(innerShown && predicted(inner, innerShown) && innerShown !== outerShown, `${inner} inside it: ${binders}`);
@@ -79,8 +79,8 @@ test("a bound variable prints as its binder in later domains and in fallback for
     const dependent = shown(T.lam(name, T.universe(0), T.lam("y", T.variable(name), T.variable("y"))));
     const [, binder, domain] = /^fun \((\S+) : U0, y : (\S+)\) => y$/.exec(dependent) ?? [];
     assert.ok(binder && domain === binder, `${name} in a later domain: ${dependent}`);
-    const fallen = shown(T.lam(name, T.nat, T.pair(null, T.variable(name), T.unitrec(T.lam("u", T.unit, T.nat), T.variable(name), T.point))));
-    const [, bound, first, inside] = /^fun \((\S+) : Nat\) => \((\S+), UnitRec\(λ \(u : Unit\)\. Nat, (\S+), ⋆\)\)$/.exec(fallen) ?? [];
+    const fallen = shown(T.lam(name, T.unit, T.pair(null, T.variable(name), T.unitrec(T.lam("u", T.unit, T.unit), T.variable(name), T.point))));
+    const [, bound, first, inside] = /^fun \((\S+) : Unit\) => \((\S+), UnitRec\(λ \(u : Unit\)\. Unit, (\S+), ⋆\)\)$/.exec(fallen) ?? [];
     assert.ok(bound && first === bound && inside === bound, `${name} inside a fallback: ${fallen}`);
   }
   // cubicalText keeps its own binder apart from a variable bound around it:
@@ -92,6 +92,6 @@ test("a bound variable prints as its binder in later domains and in fallback for
   // The second review of #79: a definition keeps its label inside such a
   // form, though a binder the display shortens to mod__x shares its name.
   const definition = { tag: "DefRef", name: "mod__x" };
-  const labelled = shown(T.lam("mod__x42", T.nat, T.pair(null, definition, T.unitrec(T.lam("u", T.unit, T.nat), definition, T.point))));
-  assert.equal(labelled, "fun (mod__x : Nat) => (x, UnitRec(λ (u : Unit). Nat, x, ⋆))");
+  const labelled = shown(T.lam("mod__x42", T.unit, T.pair(null, definition, T.unitrec(T.lam("u", T.unit, T.unit), definition, T.point))));
+  assert.equal(labelled, "fun (mod__x : Unit) => (x, UnitRec(λ (u : Unit). Unit, x, ⋆))");
 });

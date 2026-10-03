@@ -13,12 +13,12 @@ import { KernelError } from "./cubical-kernel.mjs";
 import { freeDimensionMask } from "./cubical-syntax.mjs";
 import { levelNormal } from "./cubical-levels.mjs";
 
-const TERM_BINDERS = new Set(["Pi", "Lam", "Sigma", "W", "LPi", "LLam"]);
+const TERM_BINDERS = new Set(["Pi", "Lam", "Sigma", "LPi", "LLam"]);
 // Binders of a universe variable x < ω (G0): the level entry is found by its
 // symbol, which levels below name.
 const LEVEL_BINDERS = new Set(["LPi", "LLam"]);
 // Nodes whose payload is an interval or face formula.
-const FORMULA_PAYLOADS = new Set(["PApp", "Tube", "GlueSystem", "PushPath"]);
+const FORMULA_PAYLOADS = new Set(["PApp", "Tube", "GlueSystem"]);
 const unsupported = kind => new Error(`${kind} is not in instruction mode yet.`);
 // Whether child i of a node is under its dimension binder (the payload).
 const dimensionBound = (kind, i) => kind === "PLam" || ((kind === "Path" || kind === "Trans") && i === 0) ||
@@ -26,8 +26,8 @@ const dimensionBound = (kind, i) => kind === "PLam" || ((kind === "Path" || kind
 // Weak heads that only compute by eta, or not at all.
 // A declared type's instance, constructor and eliminator are weak heads too
 // (H1): a constructor applied computes only under an eliminator.
-const CONSTRUCTORS = new Set(["U", "Pi", "Lam", "LPi", "LLam", "Sigma", "Pair", "Nat", "Zero", "Succ", "Unit", "Point", "Void",
-  "Sum", "Inl", "Inr", "Path", "PLam", "W", "Sup", "Pushout", "PushLeft", "PushRight", "Sort", "Con", "Elim", "List"]);
+const CONSTRUCTORS = new Set(["U", "Pi", "Lam", "LPi", "LLam", "Sigma", "Pair", "Unit", "Point", "Void",
+  "Sum", "Inl", "Inr", "Path", "PLam", "Sort", "Con", "Elim", "List"]);
 // The type former a constructor's eta expansion needs. A Glue term's is
 // glue [φ ↦ g] (unglue g), for g of a Glue type.
 const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma", LLam: "LPi", GlueTerm: "Glue" };
@@ -48,15 +48,15 @@ export const searchLimits = Object.freeze({ fuel: FUEL, longComputation: LONG_CO
   guideHeadSteps: GUIDE_HEAD_STEPS, oracleSteps: ORACLE_STEPS, glueSteps: GLUE_STEPS });
 // Weak heads that are constructors: two of different kinds never agree.
 // An instance of a declared type is one (H1); so is a list of its parameters.
-const RIGID = new Set(["U", "Pi", "Sigma", "W", "LPi", "Nat", "Zero", "Succ", "Unit", "Point", "Void", "Sum",
-  "Inl", "Inr", "Path", "Sup", "Pushout", "PushLeft", "PushRight", "Lam", "LLam", "PLam", "Pair", "Sort", "List"]);
+const RIGID = new Set(["U", "Pi", "Sigma", "LPi", "Unit", "Point", "Void", "Sum",
+  "Inl", "Inr", "Path", "Lam", "LLam", "PLam", "Pair", "Sort", "List"]);
 // Constructors that eta relates to a neutral term of their type.
 const ETA_CONSTRUCTORS = new Set(["Lam", "LLam", "PLam", "Pair", "GlueTerm"]);
 // Neutral weak heads: variables and eliminations stuck on one. A declared
 // type's constructor and eliminator count here, not as rigid heads: each is
 // a function, or a path, which eta relates to a lambda. Two constructors of
 // different numbers still differ, and so does a constructor from a variable.
-const NEUTRAL = new Set(["Var", "App", "LApp", "Fst", "Snd", "NatRec", "SumRec", "UnitRec", "WRec", "PApp", "Abort",
+const NEUTRAL = new Set(["Var", "App", "LApp", "Fst", "Snd", "SumRec", "UnitRec", "PApp", "Abort",
   "Con", "Elim"]);
 // The child that is only a constructor's annotation: two equal terms may
 // carry different annotations, so a difference there proves nothing.
@@ -343,8 +343,6 @@ export class InstructionDriver {
     const within = child => this.derive(child, bound);
     switch (n.kind) {
     case "U": return g.universe(n.children[0]);
-    case "Nat": return g.nat();
-    case "Zero": return g.zero();
     case "Unit": return g.unit();
     case "Point": return g.point();
     case "Void": return g.void();
@@ -353,7 +351,6 @@ export class InstructionDriver {
       if (!scope.has(n.payload)) throw new Error(`Unbound variable ${this.kernel.symbolName(n.payload)}.`);
       return g.variable(scope.get(n.payload));
     }
-    case "Succ": return g.succ(this.convertTo(derive(a), g.nat()));
     case "LPi": case "LLam": {
       let symbol=n.payload, entry, bodyHandle=b;
       try { entry=g.levelEntry(symbol); }
@@ -374,32 +371,12 @@ export class InstructionDriver {
       return n.kind === "LPi" ? g.levelPi(entry, this.asType(body)) : g.levelLambda(entry, body);
     }
     case "LApp": return g.levelApply(this.shape(this.focus(derive(a), "type"), "LPi"), b);
-    case "Pi": case "Sigma": case "W": case "Lam": {
+    case "Pi": case "Sigma": case "Lam": {
       const entry = this.bind(n.payload, this.asType(derive(a)));
       const inner = new Map(scope).set(n.payload, entry);
       if (n.kind === "Lam") return g.lambda(entry, derive(b, inner));
       const body = this.asType(derive(b, inner));
-      return n.kind === "Pi" ? g.pi(entry, body) : n.kind === "Sigma" ? g.sigma(entry, body) : g.w(entry, body);
-    }
-    case "Sup": {
-      // sup(l, c) : T, with c : Π(i : B[l/x]). T.
-      const [type, back] = this.former(this.asType(derive(a)), "W");
-      const label = this.convertTo(derive(b), g.domain(type));
-      const index = this.freshEntry(g.family(type, label), "i");
-      return this.restore(g.sup(type, label, this.convertTo(derive(c), g.pi(index, type))), back);
-    }
-    case "WRec": {
-      // The step at Π(l : L). Π(c : Π(i : B[l]). W). Π(h : Π(i : B[l]).
-      // M(c(i))). M(sup(l, c)), built by instructions.
-      const value = this.shape(this.focus(derive(c), "type"), "W");
-      const type = this.evidence(this.focus(value, "type"));
-      const motive = this.motive(derive(a), type);
-      const label = this.freshEntry(g.domain(type), "l"), lv = g.variable(label);
-      const arity = g.family(type, lv), index = this.freshEntry(arity, "i");
-      const children = this.freshEntry(g.pi(index, type), "c"), cv = g.variable(children);
-      const hypothesis = this.freshEntry(g.pi(index, g.apply(motive, g.apply(cv, g.variable(index)))), "h");
-      const step = g.pi(label, g.pi(children, g.pi(hypothesis, g.apply(motive, g.sup(type, lv, cv)))));
-      return g.wElim(motive, this.convertTo(derive(b), step), value);
+      return n.kind === "Pi" ? g.pi(entry, body) : g.sigma(entry, body);
     }
     case "App": {
       // The argument's type and the function's domain agree in place, both
@@ -425,15 +402,6 @@ export class InstructionDriver {
       const [type, back] = this.former(this.asType(derive(a)), "Sum");
       const summand = this.evidence(this.focus(type, "term", [n.kind === "Inl" ? 0 : 1]));
       return this.restore(g.inject(type, this.convertTo(derive(b), summand), n.kind === "Inr"), back);
-    }
-    case "NatRec": {
-      const value = this.convertTo(derive(d), g.nat());
-      const motive = this.motive(derive(a), g.nat());
-      const zero = this.convertTo(derive(b), g.apply(motive, g.zero()));
-      const predecessor = this.freshEntry(g.nat(), "n"), pv = g.variable(predecessor);
-      const hypothesis = this.freshEntry(g.apply(motive, pv), "ih");
-      const stepType = g.pi(predecessor, g.pi(hypothesis, g.apply(motive, g.succ(pv))));
-      return g.natElim(motive, zero, this.convertTo(derive(c), stepType), value);
     }
     case "UnitRec": {
       const motive = this.motive(derive(a), g.unit());
@@ -585,46 +553,6 @@ export class InstructionDriver {
       return g.glueTerm(system);
     }
     case "Unglue": return g.unglue(this.convertTo(derive(b), this.asType(derive(a))));
-    case "Pushout": {
-      // The maps are a pair C → A, C → B, derived as that type's syntax.
-      const [source, left, right] = [a, b, c].map(child => this.asType(derive(child)));
-      const x = this.freshSymbol("x"), f = this.freshSymbol("f"), k = this.kernel;
-      const span = k.term("Sigma", f, k.term("Pi", x, a, b), k.term("Pi", x, a, c));
-      return g.pushout(source, left, right, this.convertTo(derive(d), this.asType(derive(span))));
-    }
-    case "PushLeft": case "PushRight": case "PushPath": {
-      const [type, back] = this.former(this.asType(derive(a)), "Pushout");
-      const slot = { PushPath: 0, PushLeft: 1, PushRight: 2 }[n.kind];
-      const value = this.convertTo(derive(b), this.evidence(this.focus(type, "term", [slot])));
-      return this.restore(n.kind === "PushPath" ? g.pushPath(type, value, n.payload)
-        : g.pushPoint(type, value, n.kind === "PushRight"), back);
-    }
-    case "PushElim": {
-      // A motive over a pushout type P = Pushout(C, A, B, (f, g)), and each
-      // case at the type the kernel asks for, derived from its syntax.
-      const motive = this.focus(this.shape(this.focus(derive(a), "type"), "Pi"), "type");
-      this.shape(this.child(motive, 0), "Pushout");
-      this.shape(this.child(motive, 1), "U");
-      const k = this.kernel, M = this.statement(motive.ref.id).term, P = this.subterm(this.child(motive, 0));
-      const [C, A, B, maps] = this.node(P).children;
-      const point = (kind, domain, stem) => {
-        const x = this.freshSymbol(stem);
-        return k.term("Pi", x, domain, k.term("App", 0, M, k.term(kind, 0, P, k.term("Var", x))));
-      };
-      // Built from judgements, the syntax names their entries: derive it in
-      // their scope, not the source's.
-      const own = this.scope(motive.ref.id);
-      const left = this.convertTo(derive(b), this.asType(derive(point("PushLeft", A, "a"), own)));
-      const right = this.convertTo(derive(c), this.asType(derive(point("PushRight", B, "b"), own)));
-      const [l, r] = [left, right].map(id => this.statement(id).term);
-      const joint = joinScopes(own, this.scope(left), this.scope(right));
-      const dimension = this.freeDimension([motive.ref.id, left, right]), x = this.freshSymbol("c");
-      const at = k.formula("interval", [[1n << BigInt(dimension), 0n]]), cv = k.term("Var", x);
-      const bridge = k.term("Pi", x, C, k.term("Path", dimension, k.term("App", 0, M, k.term("PushPath", at, P, cv)),
-        k.term("App", 0, l, k.term("App", 0, k.term("Fst", 0, maps), cv)),
-        k.term("App", 0, r, k.term("App", 0, k.term("Snd", 0, maps), cv))));
-      return g.pushElim(motive.ref.id, left, right, this.convertTo(derive(d), this.asType(derive(bridge, joint))));
-    }
     // Declared types (H1; the specification's section 6.1).
     case "Sort": return this.instance(n, scope);
     case "Con": {
@@ -875,7 +803,7 @@ export class InstructionDriver {
   }
 
   // The kernel's weak head normal form of the focused subterm, for heads the
-  // steps do not take: composition, transport, Glue, pushouts. False when it
+  // steps do not take: composition, transport and Glue. False when it
   // is one already.
   whnf(focus) {
     const before = this.subterm(focus);
@@ -1305,33 +1233,20 @@ export class InstructionDriver {
     case "App": {
       const fn = this.node(n.children[0]).kind;
       if (fn === "Lam") return { path: [], rule: "beta" };
-      // The pushout eliminator computes on a point or a path.
-      if (fn === "PushElim") {
-        const kind = this.node(n.children[1]).kind;
-        return ["PushLeft", "PushRight", "PushPath"].includes(kind) ? iota : under(1, this.headStep(n.children[1]));
-      }
       // A declared type's eliminator computes on a constructor applied to
       // its arguments and at its dimensions (H1). A constructor at an
       // endpoint is its boundary first, by the path step inside.
       if (fn === "Elim") return this.constructed(n.children[1]) ? iota : under(1, this.headStep(n.children[1]));
       return under(0, this.headStep(n.children[0]));
     }
-    // A pushout path at an endpoint is a point.
-    case "PushPath": return this.point(n.payload).endpoint !== undefined ? iota : null;
     case "Fst": case "Snd":
       return this.node(n.children[0]).kind === "Pair" ? iota : under(0, this.headStep(n.children[0]));
-    case "NatRec": {
-      const kind = this.node(n.children[3]).kind;
-      return kind === "Zero" || kind === "Succ" ? iota : under(3, this.headStep(n.children[3]));
-    }
     case "SumRec": {
       const kind = this.node(n.children[3]).kind;
       return kind === "Inl" || kind === "Inr" ? iota : under(3, this.headStep(n.children[3]));
     }
     case "UnitRec":
       return this.node(n.children[2]).kind === "Point" ? iota : under(2, this.headStep(n.children[2]));
-    case "WRec":
-      return this.node(n.children[2]).kind === "Sup" ? iota : under(2, this.headStep(n.children[2]));
     case "PApp": {
       const fn = this.node(n.children[0]);
       if (fn.kind === "PLam") {

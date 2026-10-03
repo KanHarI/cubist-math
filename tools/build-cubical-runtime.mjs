@@ -2,12 +2,14 @@
 // Generated browser copies are build artifacts, never a second implementation.
 // Under the build lock, the sources' hash is taken first, the stamp cleared
 // before copying, and the hash stamped after (build-stamp.mjs).
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { invalidate, runtimeModules, sourceHash, withLock, write } from "./build-stamp.mjs";
 const output = new URL("../web/dist/cubical-runtime/", import.meta.url);
 withLock(() => {
   const hash = sourceHash("runtime");
   invalidate("runtime");
+  // A module dropped from the list must not stay behind in the copy.
+  rmSync(output, { recursive: true, force: true });
   mkdirSync(output, { recursive: true });
   for (const name of runtimeModules) {
     const source = readFileSync(new URL(`../lib/cubical/${name}.mjs`, import.meta.url), "utf8");
