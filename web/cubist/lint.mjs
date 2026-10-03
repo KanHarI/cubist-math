@@ -3,6 +3,7 @@ import { diagnosticCode } from "../diagnostics.mjs";
 
 // Warnings for bindings that are never used and can simply be removed:
 //   induction v as k   when neither the return type nor the successor clause uses k;
+//   induction v as z   on a declared type, when the return type does not mention z;
 //   match v as z       when the return type does not mention z;
 //   forall/exists x    when the body does not mention x (write A -> B, A and B);
 //   let, obtain        when nothing after them in their block uses their names.
@@ -52,6 +53,9 @@ export function lint(source, ast = parse(source)) {
       return;
     }
     if (!node || typeof node !== "object") return;
+    if (node.kind === "induction" && node.motiveName && node.type && !used(node.motiveName.text, node.type.start, node.type.end))
+      warn(node.motiveName, `${node.motiveName.text} is unused: the return type does not mention it. `
+        + `Omit as ${node.motiveName.text}: induction ${text(node.value)} return ….`);
     if (node.kind === "induction" && node.index) {
       const k = node.index.text;
       if (!used(k, node.type.start, node.type.end) && !used(k, node.step.start, node.step.end))

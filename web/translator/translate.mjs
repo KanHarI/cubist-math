@@ -680,6 +680,8 @@ export class Translator {
         // The declaration's own name, where it is not a recursive reference:
         // recursion exists only with declared types, under their option.
         if(scope.unit.declaring===n.name&&this.checker.kernel?.extensions?.h1)throw Error(selfReference(n.name));
+        // The printer writes __U where an instance's universe is erased.
+        if(/^__U[0-9]*$/.test(n.name))throw Error(`${n.name} stands for a universe that the printer could not show: write the universe in its place, such as U0 or a universe variable.`);
         throw Error(`Untranslated name: ${n.name}`);
       }
       case "number": {
@@ -815,6 +817,14 @@ export class Translator {
         return fn;
       }
       case "induction": {
+        // On any declared type: the clauses of a match, whose names may go on
+        // to the induction hypotheses (match.mjs). Natural numbers' own form,
+        // zero => …; succ h => …;, follows.
+        if(!n.hypothesis){
+          const value=tr(n.value,null),sort=scope.nf(inferred(value).type);
+          if(sort.tag!=="Sort")throw scope.unit.locate(Error("induction requires a value of a declared type."),n.value);
+          return elaborateMatch(this,n,value,sort,scope,expected);
+        }
         // Binders keep their source names, so the checked term reads as written.
         const natural=this.naturalConstructors(scope),type=natural.type;
         const value=tr(n.value,type),k=scope.fresh(n.index?.text),ih=scope.fresh(n.hypothesis?.text);

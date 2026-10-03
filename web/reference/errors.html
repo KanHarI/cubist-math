@@ -186,6 +186,7 @@
               <tbody>
                 <tr id="E519"><td class="code"><code>E519</code></td><td data-message="needs an expected type, to know which">“<var>nil</var> needs an expected type, to know which <var>List(…)</var> it builds: write typed(<var>List(…)</var>, <var>nil</var>).”</td><td>A constructor of a parameterized type takes only its declared arguments, so the type’s arguments come from context. Give a result type, or use <code>typed</code>.</td><td><a href="induction.html#inductive-parameters">parameters</a></td></tr>
                 <tr id="E528"><td class="code"><code>E528</code></td><td data-message="Nat has no constructor left: its constructors are zero, succ.">“<var>Nat</var> has no constructor <var>left</var>: its constructors are <var>zero, succ</var>.”</td><td>A <code>match</code> clause names a constructor that the matched type does not have, such as a sum’s <code>left</code> on <code>Nat</code>. Use the listed constructors.</td><td><a href="terms.html#match">match</a></td></tr>
+                <tr id="E557"><td class="code"><code>E557</code></td><td data-message="then its induction hypothesis if you name them">“<var>c</var> takes <var>n</var> arguments here, then its induction hypothesis if you name them: …”</td><td>An induction clause names the constructor’s arguments, then optionally one hypothesis per recursive argument; it gave another number of names.</td><td><a href="induction.html#induction">induction</a></td></tr>
                 <tr id="E547"><td class="code"><code>E547</code></td><td data-message="loop is being defined: it can call itself only on an argument of a constructor">“<var>loop</var> is being defined: it can call itself only on an argument of a constructor”</td><td>A definition calls itself, but its whole body is not a <code>match</code> on one of its parameters. Make it one, and recurse on a child bound by a clause.</td><td><a href="first-proof.html#order">order</a>, <a href="induction.html#recursion">structural recursion</a></td></tr>
                 <tr id="E552"><td class="code"><code>E552</code></td><td data-message="is not on an argument of the matched constructor: only structural recursion">“The recursive call of <var>f</var> is not on an argument of the matched constructor: only structural recursion, …”</td><td>A recursive call passes something other than a child bound by the clause, such as the original input or a new constructor value. Recurse on a child.</td><td><a href="induction.html#recursion">structural recursion</a></td></tr>
               </tbody>
@@ -341,9 +342,9 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E143"><td><code>E143</code></td><td>rw occurrence must be a positive integer.</td></tr>
                 <tr><td><a href="#E144"><code>E144</code></a></td><td>simp only requires an explicit rule list.</td></tr>
                 <tr><td><a href="#E145"><code>E145</code></a></td><td>simp only cannot exclude rules.</td></tr>
-                <tr id="E146"><td><code>E146</code></td><td>The match statement takes apart one value; match on the first, then on the next inside each clause.</td></tr>
-                <tr id="E147"><td><code>E147</code></td><td>The match statement takes its motive from the goal: write match v { c(xs) =&gt; { … } … } without as or return.</td></tr>
-                <tr id="E148"><td><code>E148</code></td><td>A clause of the match statement is a proof block: c(xs) =&gt; { … }.</td></tr>
+                <tr id="E146"><td><code>E146</code></td><td>The … statement takes apart one value; … the first, then the next inside each clause.</td></tr>
+                <tr id="E147"><td><code>E147</code></td><td>The … statement takes its motive from the goal: write … v { c(xs) =&gt; { … } … } without as or return.</td></tr>
+                <tr id="E148"><td><code>E148</code></td><td>A clause of the … statement is a proof block: c(xs) =&gt; { … }.</td></tr>
                 <tr><td><a href="#E149"><code>E149</code></a></td><td>simp_rule priority must be an integer from 0 to 1000.</td></tr>
                 <tr id="E150"><td><code>E150</code></td><td>Expected '}' to close the inductive declaration.</td></tr>
                 <tr><td><a href="#E151"><code>E151</code></a></td><td>Imports must come before declarations.</td></tr>
@@ -351,6 +352,9 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E153"><td><code>E153</code></td><td>Write := to give a value: def name : T := term; here `=` read as an equality type</td></tr>
                 <tr id="E154"><td><code>E154</code></td><td>Cannot locate a right-hand pair's enclosing parentheses.</td></tr>
                 <tr id="E155"><td><code>E155</code></td><td>Tuple linearization changed the expanded syntax tree.</td></tr>
+                <tr id="E156"><td><code>E156</code></td><td>Give the motive after as: induction v as z return T { … }.</td></tr>
+                <tr id="E157"><td><code>E157</code></td><td>Expected '}' to close the induction.</td></tr>
+                <tr id="E158"><td><code>E158</code></td><td>Expected '}' to close the ….</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -473,6 +477,8 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E368"><td><code>E368</code></td><td>General simplification requires a type-valued goal.</td></tr>
                 <tr><td><a href="#E369"><code>E369</code></a></td><td>Simplification rewrite budget exceeded.</td></tr>
                 <tr id="E370"><td><code>E370</code></td><td>simp only requires a homogeneous equality goal.</td></tr>
+                <tr id="E371"><td><code>E371</code></td><td>induction requires a value of a declared type.</td></tr>
+                <tr id="E372"><td><code>E372</code></td><td>… stands for a universe that the printer could not show: write the universe in its place, such as U0 or a universe variable.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e4">Proof statements, rewriting and simplification</h3>
@@ -545,7 +551,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E464"><td><code>E464</code></td><td>over requires a homogeneous base path.</td></tr>
                 <tr id="E465"><td><code>E465</code></td><td>let states a type after the colon; found a value of type ….</td></tr>
                 <tr><td><a href="#E466"><code>E466</code></a></td><td>obtain requires a dependent pair matching its pattern.</td></tr>
-                <tr id="E467"><td><code>E467</code></td><td>Statements after match are unreachable: each clause's block closes the goal.</td></tr>
+                <tr id="E467"><td><code>E467</code></td><td>Statements after … are unreachable: each clause's block closes the goal.</td></tr>
                 <tr><td><a href="#E468"><code>E468</code></a></td><td>Statements after cases are not yet translated.</td></tr>
                 <tr><td><a href="#E469"><code>E469</code></a></td><td>cases requires a sum type.</td></tr>
               </tbody>
@@ -583,14 +589,14 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E527"><td><code>E527</code></td><td>The declared type of the matched value is not in scope.</td></tr>
                 <tr><td><a href="#E528"><code>E528</code></a></td><td>… has no constructor …: its constructors are ….</td></tr>
                 <tr id="E529"><td><code>E529</code></td><td>… has two clauses.</td></tr>
-                <tr id="E530"><td><code>E530</code></td><td>… is a point constructor: give its computational clause in match, before obligations.</td></tr>
-                <tr id="E531"><td><code>E531</code></td><td>match on … needs a clause for …. Give path clauses in obligations { … }, or obligations by { … }.</td></tr>
+                <tr id="E530"><td><code>E530</code></td><td>… is a point constructor: give its computational clause in …, before obligations.</td></tr>
+                <tr id="E531"><td><code>E531</code></td><td>… on … needs a clause for …. Give path clauses in obligations { … }, or obligations by { … }.</td></tr>
                 <tr id="E532"><td><code>E532</code></td><td>obligations by a term or proof block needs exactly one missing declared path clause; found …. Use named obligations { … } for separate clauses.</td></tr>
                 <tr id="E533"><td><code>E533</code></td><td>The motive mentions … itself: write it over the matched value, match … as z return … z …, so that recursive calls have their own types.</td></tr>
-                <tr id="E534"><td><code>E534</code></td><td>match needs its result's type: give return T, or use it where its type is known.</td></tr>
-                <tr id="E535"><td><code>E535</code></td><td>The match statement takes apart a value of a declared type; for a sum, use cases.</td></tr>
-                <tr id="E536"><td><code>E536</code></td><td>The match statement takes apart a value of a declared type.</td></tr>
-                <tr id="E537"><td><code>E537</code></td><td>The match statement takes apart a value of a declared type, and declared types (H1) are switched off in this kernel session.</td></tr>
+                <tr id="E534"><td><code>E534</code></td><td>… needs its result's type: give return T, or use it where its type is known.</td></tr>
+                <tr id="E535"><td><code>E535</code></td><td>The … statement takes apart a value of a declared type; for a sum, use cases.</td></tr>
+                <tr id="E536"><td><code>E536</code></td><td>The … statement takes apart a value of a declared type.</td></tr>
+                <tr id="E537"><td><code>E537</code></td><td>The … statement takes apart a value of a declared type, and declared types (H1) are switched off in this kernel session.</td></tr>
                 <tr id="E538"><td><code>E538</code></td><td>… takes … argument… here: …(…) with … names.</td></tr>
                 <tr id="E539"><td><code>E539</code></td><td>Write the dimension… of … after @, as the point the clause covers: ….</td></tr>
                 <tr id="E540"><td><code>E540</code></td><td>… has no dimensions to name.</td></tr>
@@ -610,6 +616,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E554"><td><code>E554</code></td><td>… is a …-dimensional path of the matched type, not an element: call … on it at its dimensions, as …(……).</td></tr>
                 <tr id="E555"><td><code>E555</code></td><td>… is an element of the matched type, not a path: call …(…) without @.</td></tr>
                 <tr id="E556"><td><code>E556</code></td><td>Internal elaboration error: the recursive result of … takes fewer hypotheses.</td></tr>
+                <tr><td><a href="#E557"><code>E557</code></a></td><td>… takes … argument… here, then … if you name them: …(…) with … or … names.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e6">Checking</h3>
@@ -944,6 +951,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr><td><a href="#W704"><code>W704</code></a></td><td>… is unused: the return type does not mention it. Omit as …: match … return ….</td></tr>
                 <tr><td><a href="#W705"><code>W705</code></a></td><td>… is unused in the body: write … instead of … … : …. ….</td></tr>
                 <tr id="W706"><td><code>W706</code></td><td>… is unused in the body: take it out of the group and write … for it.</td></tr>
+                <tr id="W707"><td><code>W707</code></td><td>… is unused: the return type does not mention it. Omit as …: induction … return ….</td></tr>
               </tbody>
             </table></div>
           </section>

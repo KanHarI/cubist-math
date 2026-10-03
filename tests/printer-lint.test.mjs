@@ -31,10 +31,12 @@ def pairs : exists n : Nat. Unit := (0, tt);
 inductive Bool : U0 { false; true; }
 def negate(value : Bool) : Bool := match value { false => true; true => false; };
 inductive Circle : U0 { base; loop : base = base; }
-def reverse(c : Circle) : Circle := match c { base => base; loop @ i => loop @ -i; };`, { name: "printed" });
+def reverse(c : Circle) : Circle := match c { base => base; loop @ i => loop @ -i; };
+inductive List(U < UU0, A : U) : U { nil; cons(head : A, tail : List(U, A)); }
+def length(xs : List(U0, Nat)) : Nat := match xs { nil => 0; cons(head, tail) => succ(length(tail)); };`, { name: "printed" });
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
   const session = new ReplSession(program, { base: "printed" });
-  for (const name of ["or_swap", "swap_sides", "default", "copy", "predecessor", "constant", "pairs", "negate", "reverse"])
+  for (const name of ["or_swap", "swap_sides", "default", "copy", "predecessor", "constant", "pairs", "negate", "reverse", "length"])
     for (const request of ["evaluate", "typeof"]) {
       const [printed] = (await session.run(`${request} ${name};`)).map(output => output.text);
       const warnings = lint(`def shown := ${printed};`).map(warning => warning.message);

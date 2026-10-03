@@ -4,9 +4,10 @@
 // (reference/errors.html) has an entry for each, at #CODE.
 //
 // A code names one message, written as its text with … where it varies. A
-// code is never renumbered or reused: a message that is no longer reported
-// keeps its code, marked "retired". tools/diagnostic-codes.mjs gives new
-// messages codes and checks that every message in the sources has one.
+// code is never renumbered or reused. A message reworded with the same
+// meaning keeps its code: edit its text here. A message that is no longer
+// reported keeps its code, marked "retired". tools/diagnostic-codes.mjs gives
+// new messages codes and checks that every message in the sources has one.
 
 // The groups, by the first two characters of a code.
 export const groups = {
@@ -69,9 +70,9 @@ export const diagnostics = [
   ["E143", "rw occurrence must be a positive integer."],
   ["E144", "simp only requires an explicit rule list."],
   ["E145", "simp only cannot exclude rules."],
-  ["E146", "The match statement takes apart one value; match on the first, then on the next inside each clause."],
-  ["E147", "The match statement takes its motive from the goal: write match v { c(xs) => { … } … } without as or return."],
-  ["E148", "A clause of the match statement is a proof block: c(xs) => { … }."],
+  ["E146", "The … statement takes apart one value; … the first, then the next inside each clause."],
+  ["E147", "The … statement takes its motive from the goal: write … v { c(xs) => { … } … } without as or return."],
+  ["E148", "A clause of the … statement is a proof block: c(xs) => { … }."],
   ["E149", "simp_rule priority must be an integer from 0 to 1000."],
   ["E150", "Expected '}' to close the inductive declaration."],
   ["E151", "Imports must come before declarations."],
@@ -79,6 +80,9 @@ export const diagnostics = [
   ["E153", "Write := to give a value: def name : T := term; here `=` read as an equality type"],
   ["E154", "Cannot locate a right-hand pair's enclosing parentheses."],
   ["E155", "Tuple linearization changed the expanded syntax tree."],
+  ["E156", "Give the motive after as: induction v as z return T { … }."],
+  ["E157", "Expected '}' to close the induction."],
+  ["E158", "Expected '}' to close the …."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
@@ -191,6 +195,8 @@ export const diagnostics = [
   ["E368", "General simplification requires a type-valued goal."],
   ["E369", "Simplification rewrite budget exceeded."],
   ["E370", "simp only requires a homogeneous equality goal."],
+  ["E371", "induction requires a value of a declared type."],
+  ["E372", "… stands for a universe that the printer could not show: write the universe in its place, such as U0 or a universe variable."],
   // Proof statements, rewriting and simplification
   ["E401", "Univalence requires a universe."],
   ["E402", "… takes a universe below UU0."],
@@ -258,7 +264,7 @@ export const diagnostics = [
   ["E464", "over requires a homogeneous base path."],
   ["E465", "let states a type after the colon; found a value of type …."],
   ["E466", "obtain requires a dependent pair matching its pattern."],
-  ["E467", "Statements after match are unreachable: each clause's block closes the goal."],
+  ["E467", "Statements after … are unreachable: each clause's block closes the goal."],
   ["E468", "Statements after cases are not yet translated."],
   ["E469", "cases requires a sum type."],
   // Inductive types and matching
@@ -291,14 +297,14 @@ export const diagnostics = [
   ["E527", "The declared type of the matched value is not in scope."],
   ["E528", "… has no constructor …: its constructors are …."],
   ["E529", "… has two clauses."],
-  ["E530", "… is a point constructor: give its computational clause in match, before obligations."],
-  ["E531", "match on … needs a clause for …. Give path clauses in obligations { … }, or obligations by { … }."],
+  ["E530", "… is a point constructor: give its computational clause in …, before obligations."],
+  ["E531", "… on … needs a clause for …. Give path clauses in obligations { … }, or obligations by { … }."],
   ["E532", "obligations by a term or proof block needs exactly one missing declared path clause; found …. Use named obligations { … } for separate clauses."],
   ["E533", "The motive mentions … itself: write it over the matched value, match … as z return … z …, so that recursive calls have their own types."],
-  ["E534", "match needs its result's type: give return T, or use it where its type is known."],
-  ["E535", "The match statement takes apart a value of a declared type; for a sum, use cases."],
-  ["E536", "The match statement takes apart a value of a declared type."],
-  ["E537", "The match statement takes apart a value of a declared type, and declared types (H1) are switched off in this kernel session."],
+  ["E534", "… needs its result's type: give return T, or use it where its type is known."],
+  ["E535", "The … statement takes apart a value of a declared type; for a sum, use cases."],
+  ["E536", "The … statement takes apart a value of a declared type."],
+  ["E537", "The … statement takes apart a value of a declared type, and declared types (H1) are switched off in this kernel session."],
   ["E538", "… takes … argument… here: …(…) with … names."],
   ["E539", "Write the dimension… of … after @, as the point the clause covers: …."],
   ["E540", "… has no dimensions to name."],
@@ -318,6 +324,7 @@ export const diagnostics = [
   ["E554", "… is a …-dimensional path of the matched type, not an element: call … on it at its dimensions, as …(……)."],
   ["E555", "… is an element of the matched type, not a path: call …(…) without @."],
   ["E556", "Internal elaboration error: the recursive result of … takes fewer hypotheses."],
+  ["E557", "… takes … argument… here, then … if you name them: …(…) with … or … names."],
   // Checking
   ["E601", "Unsupported library assumption: …"],
   ["E602", "Only LEM and Choice have rebuilt truncation signatures."],
@@ -627,6 +634,7 @@ export const diagnostics = [
   ["W704", "… is unused: the return type does not mention it. Omit as …: match … return …."],
   ["W705", "… is unused in the body: write … instead of … … : …. …."],
   ["W706", "… is unused in the body: take it out of the group and write … for it."],
+  ["W707", "… is unused: the return type does not mention it. Omit as …: induction … return …."],
 ];
 
 // A message's pattern: its text, where … matches any text, from the start

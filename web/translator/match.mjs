@@ -18,6 +18,9 @@ import {Goal} from "./proof-goals.mjs";
 import {SearchFuel} from "./fuel.mjs";
 import {HLevelSearch,HLevelUnproved,pathEvidence} from "./hlevel.mjs";
 
+// The keyword a match or an induction was written with, for messages.
+const keyword = n => n.kind === "induction" || n.induction === true ? "induction" : "match";
+
 // The environment key of the declaration's own name, for recursion: a key
 // no source name can spell.
 export const RECURSIVE = "\u0000recursive";
@@ -167,12 +170,12 @@ function constructorClauses(n, { inductive, info }, locate) {
       throw locate(Error(`${inductive.source} has no constructor ${head}: its constructors are ${keys.join(", ")}.`), clause.constructor);
     if (byIndex.has(k)) throw locate(Error(`${keys[k]} has two clauses.`), clause.constructor);
     if (clause.obligation && !info.constructors[k].dimensions)
-      throw locate(Error(`${keys[k]} is a point constructor: give its computational clause in match, before obligations.`), clause.constructor);
+      throw locate(Error(`${keys[k]} is a point constructor: give its computational clause in ${keyword(n)}, before obligations.`), clause.constructor);
     byIndex.set(k, clause);
   }
   const missing = keys.filter((_, k) => !byIndex.has(k) && k !== generated
     && !(n.obligationProof && info.constructors[k].dimensions));
-  if (missing.length) throw locate(Error(`match on ${inductive.source} needs a clause for ${missing.join(", ")}. Give path clauses in obligations { … }, or obligations by { … }.`));
+  if (missing.length) throw locate(Error(`${keyword(n)} on ${inductive.source} needs a clause for ${missing.join(", ")}. Give path clauses in obligations { … }, or obligations by { … }.`));
   const paths = keys.filter((_, k) => !byIndex.has(k) && k !== generated && info.constructors[k].dimensions);
   if (["term", "block"].includes(n.obligationProof?.kind) && paths.length !== 1)
     throw locate(Error(`obligations by a term or proof block needs exactly one missing declared path clause; found ${paths.length}. Use named obligations { … } for separate clauses.`), n.obligationsToken);
@@ -206,7 +209,7 @@ export function elaborateMatch(translator, n, value, instance, scope, expected) 
     if (recursion && freeNames(body).has(recursion.matched))
       throw locate(Error(`The motive mentions ${n.value.name} itself: write it over the matched value, match ${n.value.name} as z return … z …, so that recursive calls have their own types.`), n.type);
   } else if (expected) body = recursion ? substituteTerm(expected, recursion.matched, T.variable(z)) : expected;
-  else throw locate(Error("match needs its result's type: give return T, or use it where its type is known."));
+  else throw locate(Error(`${keyword(n)} needs its result's type: give return T, or use it where its type is known.`));
   return recursively(translator, scope, recursion, (scope, recursion, generalizing) => {
     const clauses = [];
     // A recursive match over the declaration's other parameters takes its
@@ -245,9 +248,9 @@ export function elaborateMatchStatement(translator, n, goal, scope) {
   const value = translator.term(n.value, scope, null);
   const instance = scope.nf(scope.infer(value).type);
   if (instance.tag !== "Sort")
-    throw locate(Error(instance.tag === "Sum" ? "The match statement takes apart a value of a declared type; for a sum, use cases."
-      : translator.checker.kernel?.extensions?.h1 ? "The match statement takes apart a value of a declared type."
-      : "The match statement takes apart a value of a declared type, and declared types (H1) are switched off in this kernel session."),
+    throw locate(Error(instance.tag === "Sum" ? `The ${keyword(n)} statement takes apart a value of a declared type; for a sum, use cases.`
+      : translator.checker.kernel?.extensions?.h1 ? `The ${keyword(n)} statement takes apart a value of a declared type.`
+      : `The ${keyword(n)} statement takes apart a value of a declared type, and declared types (H1) are switched off in this kernel session.`),
       n.value);
   const declared = declaredType(translator, scope, n, instance, locate);
   const recursion = recursionOf(scope, n);
@@ -313,14 +316,24 @@ function branch(translator, motive, value, scope, inner, built) {
 
 // A clause λ (data, positions, recursive results). ⟨dims⟩ body, at its
 // clause type: the source names its arguments in their declared order, and
-// its dimensions after them. `body` elaborates the clause's body at its
-// scope and type, given the constructor there.
+// its dimensions after them. In an induction, the names after the arguments
+// are the recursive results, one for each recursive argument in order: the
+// induction hypotheses. `body` elaborates the clause's body at its scope and
+// type, given the constructor there.
 function clause(translator, scope, { source, name, index, constructor, shape, obligationProof, node }, instance, clauseType, recursion, body) {
   if (!source) return automaticClause(translator, scope, clauseType, name, node, obligationProof, index);
   const locate = (error, node = source.constructor) => scope.unit.locate(error, node);
-  const args = source.args ?? [];
-  if (args.length !== constructor.arity)
-    throw locate(Error(`${name} takes ${constructor.arity} argument${constructor.arity === 1 ? "" : "s"} here: ${name}(…) with ${constructor.arity} names.`));
+  const induction = node?.kind === "induction" || node?.induction === true;
+  const named = source.args ?? [];
+  const hypotheses = induction && shape.positions && named.length === constructor.arity + shape.positions
+    ? named.slice(constructor.arity) : [];
+  const args = named.slice(0, named.length - hypotheses.length);
+  if (args.length !== constructor.arity) {
+    const s = constructor.arity === 1 ? "" : "s";
+    throw locate(Error(induction && shape.positions
+      ? `${name} takes ${constructor.arity} argument${s} here, then ${shape.positions === 1 ? "its induction hypothesis" : `its ${shape.positions} induction hypotheses`} if you name them: ${name}(…) with ${constructor.arity} or ${constructor.arity + shape.positions} names.`
+      : `${name} takes ${constructor.arity} argument${s} here: ${name}(…) with ${constructor.arity} names.`));
+  }
   // A path clause is written as the point it covers, the constructor at its
   // coordinates: loop @ i =>.
   const spelled = `${name}${constructor.arity ? "(…)" : ""}${["i", "j", "k", "l"].slice(0, constructor.dims).map(d => ` @ ${d}`).join("")} => …`;
@@ -356,9 +369,10 @@ function clause(translator, scope, { source, name, index, constructor, shape, ob
     const token = args[sourceIndex], variable = bind(token, token.text);
     if (kernelIndex >= shape.data) positions.push({ variable, token, arity, depth });
   });
-  // Each position's recursive result.
-  for (const { variable, token, arity, depth } of positions)
-    results.set(variable, { result: bind(null, `${token.text}_rec`), arity, depth });
+  // Each position's recursive result, named by its induction hypothesis
+  // when the clause gives one.
+  for (const [k, { variable, token, arity, depth }] of positions.entries())
+    results.set(variable, { result: bind(hypotheses[k] ?? null, hypotheses[k]?.text ?? `${token.text}_rec`), arity, depth });
   // The dimensions, each a path of the result.
   const lines = [];
   for (const token of source.coordinates) {
