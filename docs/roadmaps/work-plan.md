@@ -288,7 +288,8 @@ rejection tests, as this plan required. The experiments preceded review, in
 the explicitly enabled experimental mode, and every result carries
 `kernel extension: H1`, whose transitive provenance is tested apart from
 non-computing assumptions. Default admission and release require the
-finite-level checklist in the specification's header: the reviewed
+finite-level checklist, now in the specification's
+[history](h1-history.md#status-and-release-record): the reviewed
 soundness note (D1, D4, D5, Lemma H2, the critical-pair check, canonicity),
 the complete acceptance matrix, K2.3's verifier and inspection items, a
 recorded integration run, and K2.4a's differential contract, retired as a gate on 2026-10-02. A design sketch

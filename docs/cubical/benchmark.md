@@ -18,7 +18,7 @@ The subsequent F4/F2 loop-equality showcase adds 21 concrete declarations.
 The updated saved scan checks all **3,594** within 100 ms, with zero slow,
 blocked, or failed entries and 44 templates (10.74 s total; maximum 92.851 ms).
 
-Open `/benchmark.html` and choose **Run benchmark in this browser**. A worker
+Open `/benchmark.html` and select **Run benchmark in this browser**. A worker
 loads the current source corpus, checks imports once, and gives each declaration
 a 100 ms shared deadline for elaboration and the native closed check.
 The page remains responsive, supports cancellation, filters the four categories,

@@ -14,9 +14,9 @@ to that page. This document describes the workflow and implementation.
 
 ## Read and write
 
-Run `make serve`, then open http://127.0.0.1:8088/proof.html. Choose a **Topic**,
+Run `make serve`, then open http://127.0.0.1:8088/proof.html. Select a **Topic**,
 then select a **Proof** from that topic's list. Browsing topics leaves your
-current proof and draft in place until you choose another proof. Direct proof
+current proof and draft in place until you select another proof. Direct proof
 links select the corresponding topic automatically. Use **Read** to follow
 names and **Edit** to change the source. Check with the button or Ctrl/Cmd+Enter.
 While checking, the source panel shows a progress bar with completed definitions

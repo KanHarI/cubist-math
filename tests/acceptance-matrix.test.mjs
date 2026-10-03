@@ -10,7 +10,9 @@ import { existsSync, readFileSync } from "node:fs";
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const exists = path => existsSync(new URL(`../${path}`, import.meta.url));
-const specification = read("docs/roadmaps/h1-signature-specification.md");
+// The differential cases X1–X8, retired with K2.4's contract, are defined in
+// the specification's history (its 7.3); the matrix still covers them.
+const specification = `${read("docs/roadmaps/h1-signature-specification.md")}\n${read("docs/roadmaps/h1-history.md")}`;
 const prefixes = "AVNKETGRX";
 // This checker is named in the matrix's introduction too, and names cases
 // only to look for them.
