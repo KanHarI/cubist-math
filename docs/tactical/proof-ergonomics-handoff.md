@@ -371,12 +371,12 @@ changes the kernel or its equality rules.
   elaborated. A valid later statement taking over a second failed the tactic
   with "Path composition elapsed-work budget exceeded." Each rule search now
   starts its own one-second limit (`SEARCH_TIME_LIMIT_MS` in
-  `lib/cubical/translate.mjs`) after user terms are elaborated. Rebuilding
+  `web/translator/translate.mjs`) after user terms are elaborated. Rebuilding
   proofs and composing `calc` steps has no search limit: it is bounded by the
   number of rewrites or steps and still honours declaration cancellation.
 - `simp`, `simpa`, `simp at` and type-goal `simp` failed on any match in a
   dependent position, even on a goal that already held. `findRewrite` in
-  `lib/cubical/proof-rewrite.mjs` now returns a result instead of throwing
+  `web/translator/proof-rewrite.mjs` now returns a result instead of throwing
   for "no match". The simplifier skips such matches, tries the other endpoint,
   and mentions them only if the goal stays unsolved. `rw` keeps its reported
   error for an explicit endpoint and combines both sides for the default.

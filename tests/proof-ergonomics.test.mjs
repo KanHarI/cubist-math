@@ -1,5 +1,5 @@
 import "./fresh-build.mjs";
-import {naturalSort, numeral} from "../lib/cubical/numerals.mjs";
+import {naturalSort, numeral} from "../web/translator/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {spawnSync} from "node:child_process";

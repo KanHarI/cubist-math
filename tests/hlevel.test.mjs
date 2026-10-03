@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { SEARCH_FUEL } from "../lib/cubical/fuel.mjs";
+import { SEARCH_FUEL } from "../web/translator/fuel.mjs";
 import { parse } from "../web/mathscript/parser.mjs";
 import { formatMathScript } from "../web/mathscript/formatter.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";

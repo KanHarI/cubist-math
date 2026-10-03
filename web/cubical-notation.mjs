@@ -1,5 +1,5 @@
 import { renameLevel, universeText } from "./cubical-levels.mjs";
-import {numeralValue} from "./dist/cubical-runtime/numerals.mjs";
+import {numeralValue} from "./translator/numerals.mjs";
 // Display the native checked syntax itself. Definition references stay named;
 // this does not reconstruct an unchecked expression from Cubist source.
 // `scope` maps variables bound around the term by an enclosing printer to

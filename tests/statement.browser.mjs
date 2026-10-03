@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { chromium } from "playwright";
 import { assertFreshBuild } from "../tools/build-stamp.mjs";
-// The page loads the WASM kernel and the translator from web/dist.
+// The page loads the WASM kernel from web/dist.
 assertFreshBuild();
 const server = spawn("python3", ["tools/serve.py", "--port", "0"], { stdio: ["ignore", "pipe", "pipe"] });
 server.stderr.resume();

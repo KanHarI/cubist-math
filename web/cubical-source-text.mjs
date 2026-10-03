@@ -1,7 +1,7 @@
 import { cubicalText } from "./cubical-notation.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
-import { localName, numberedName } from "./dist/cubical-runtime/names.mjs";
-import {numeralValue} from "./dist/cubical-runtime/numerals.mjs";
+import { localName, numberedName } from "./translator/names.mjs";
+import {numeralValue} from "./translator/numerals.mjs";
 
 // Print a checked term in Cubist source syntax, for messages and the command
 // line: `A -> B`, `forall x : A. B`, `A and B`, `exists x : A. B`, `A or B`,

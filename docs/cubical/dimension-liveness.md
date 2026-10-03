@@ -8,7 +8,7 @@ freshened reused slots, so fixing only the encoder would not suffice.
 
 ## Syntax transport
 
-`lib/cubical/dimension-slots.mjs` computes free dimension names with
+`web/translator/dimension-slots.mjs` computes free dimension names with
 the exact scope of each constructor. `bindDimensions(term,dimensions)` returns
 `{dim,inner}` for a binder, preserving the live outer names in its bound
 children and allocating the first other slot. It does not change typing or
@@ -52,7 +52,7 @@ Root owns `web/cubical-syntax.mjs`; this checkpoint does not modify it.
 Add the import
 
 ```
-import {bindDimensions} from "../lib/cubical/dimension-slots.mjs";
+import {bindDimensions} from "./translator/dimension-slots.mjs";
 ```
 
 and replace the allocation block inside its dimension-binder case with

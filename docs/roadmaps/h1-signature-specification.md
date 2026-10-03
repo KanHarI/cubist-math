@@ -2014,7 +2014,7 @@ form. It is untrusted; the kernel checks the result.
   eliminator is reached through `match` (L2.2), and `T.rec` and
   `T.ind_prop` are L2.3's.
 
-**Implementation.** `lib/cubical/inductive.mjs` lowers a declaration, and
+**Implementation.** `web/translator/inductive.mjs` lowers a declaration, and
 `CubicalProgram` admits it; since the release of 2026-10-02 it needs no
 option. Before it, the experimental option `h1` (`--experimental=h1` in the
 CLI, "Declared types (H1)" in the workbench) admitted it, and without the

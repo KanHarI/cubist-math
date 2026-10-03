@@ -122,7 +122,7 @@ decision.
 ## Verification
 
 ```sh
-node tools/build-cubical-runtime.mjs
+make wasm
 npm test -- tests/hott-automation.test.mjs
 npm test -- homotopy_paths field_products field_asymptotics circle_degree complex_numbers identity_systems
 node docs/examples/hott-automation/measure.mjs

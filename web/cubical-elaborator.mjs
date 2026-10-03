@@ -1,7 +1,7 @@
 import { CubicalSyntax } from "./cubical-syntax.mjs";
-import { T, substituteTerm } from "./dist/cubical-runtime/core.mjs";
-import { interval as I } from "./dist/cubical-runtime/lattice.mjs";
-import { NameSupply, localName, numberedName, stem } from "./dist/cubical-runtime/names.mjs";
+import { T, substituteTerm } from "./translator/core.mjs";
+import { interval as I } from "./translator/lattice.mjs";
+import { NameSupply, localName, numberedName, stem } from "./translator/names.mjs";
 import { sourceText } from "./cubical-source-text.mjs";
 import { levelNormal } from "./cubical-levels.mjs";
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
@@ -282,7 +282,7 @@ export class NativeCubicalElaborator {
     // `kernel extension: H1` marker (h1-signature-specification.md, 6.4).
     // Visible, and not a non-computing dependency.
     this.definitionExtensions = new Map();
-    // Each declared type's lowering metadata (lib/cubical/inductive.mjs), by
+    // Each declared type's lowering metadata (web/translator/inductive.mjs), by
     // the name its signature was registered under.
     this.inductives = new Map();
   }

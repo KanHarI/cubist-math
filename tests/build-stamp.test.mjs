@@ -11,7 +11,7 @@ import { appendFileSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readF
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { buildStamp, hashOf, runtimeModules, sources, staleBuilds } from "../tools/build-stamp.mjs";
+import { buildStamp, hashOf, sources, staleBuilds } from "../tools/build-stamp.mjs";
 
 const repository = fileURLToPath(new URL("../", import.meta.url));
 const configuration = "emcc 1.0\nemcc -O3";
@@ -21,15 +21,14 @@ function fakeTree(t) {
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const path = relative => join(root, relative);
   for (const file of ["kernel/src/a.c", "kernel/src/a.h", "kernel/include/k.h", "wasm/cubical_bridge.c", "Makefile",
-    "tools/build-cubical-runtime.mjs", "archive/first-library/nat.cubist", "web/dist/cubical-runtime/nat-source.mjs", "web/dist/cubical.mjs", "web/dist/cubical.wasm",
-    ...runtimeModules.flatMap(name => [`lib/cubical/${name}.mjs`, `web/dist/cubical-runtime/${name}.mjs`])]) {
+    "web/dist/cubical.mjs", "web/dist/cubical.wasm"]) {
     mkdirSync(dirname(path(file)), { recursive: true });
     writeFileSync(path(file), file);
   }
+  mkdirSync(path("tools"));
   copyFileSync(join(repository, "tools/build-stamp.mjs"), path("tools/build-stamp.mjs"));
   const stamp = buildStamp(pathToFileURL(`${root}/`));
   stamp.write("kernel", stamp.sourceHash("kernel"), configuration);
-  stamp.write("runtime", stamp.sourceHash("runtime"));
   return { root, stamp, path };
 }
 
@@ -56,25 +55,23 @@ test("the hash covers each source by path and content", () => {
   assert.notEqual(hashOf(["b.h", "a.c"], read), before, "the order of paths is part of the hash");
 });
 
-test("each build's inputs include what changes its output", () => {
+test("the build's inputs include what changes its output", () => {
   const kernel = sources.kernel();
   for (const file of ["kernel/src/term_normalize.c", "kernel/src/term_internal.h", "kernel/include/cubical_kernel.h",
     "wasm/cubical_bridge.c", "Makefile"]) assert.ok(kernel.includes(file), file);
-  const runtime = sources.runtime();
-  assert.ok(runtimeModules.every(name => runtime.includes(`lib/cubical/${name}.mjs`)));
-  assert.ok(runtime.includes("tools/build-cubical-runtime.mjs") && runtime.includes("tools/build-stamp.mjs"));
+  // The translator is served from web/translator as it is: nothing copies it.
+  assert.deepEqual(Object.keys(sources), ["kernel"]);
 });
 
 test("a stamped build is fresh, and every change to its inputs or outputs makes it stale", async t => {
   const changes = [
     ["a kernel source edited", ({ path }) => appendFileSync(path("kernel/src/a.c"), "\n"), /kernel sources changed/],
     ["a kernel source added", ({ path }) => writeFileSync(path("kernel/src/b.c"), ""), /kernel sources changed/],
-    ["a translator module edited", ({ path }) => appendFileSync(path("lib/cubical/match.mjs"), "\n"), /runtime sources changed/],
-    ["the copying generator edited", ({ path }) => appendFileSync(path("tools/build-cubical-runtime.mjs"), "\n"), /runtime sources changed/],
+    ["the Makefile edited", ({ path }) => appendFileSync(path("Makefile"), "\n"), /kernel sources changed/],
     ["the WASM missing", ({ path }) => rmSync(path("web/dist/cubical.wasm")), /cubical\.wasm is missing/],
-    ["a copied module truncated", ({ path }) => truncateSync(path("web/dist/cubical-runtime/core.mjs")), /runtime outputs changed/],
+    ["the loader truncated", ({ path }) => truncateSync(path("web/dist/cubical.mjs")), /kernel outputs changed/],
     ["the stamp missing", ({ path }) => rmSync(path("web/dist/build-stamp.json")), /no kernel build is recorded/],
-    ["a build under way", ({ stamp }) => stamp.invalidate("runtime"), /no runtime build is recorded/],
+    ["a build under way", ({ stamp }) => stamp.invalidate("kernel"), /no kernel build is recorded/],
   ];
   for (const [what, change, reason] of changes) {
     const tree = fakeTree(t);
@@ -122,7 +119,7 @@ test("every command that loads web/dist refuses a stale build", () => {
     ["tools/verify-proof-migration.mjs", "--no-dependents", "nothing"], ["tools/elaboration-fingerprint.mjs"],
     ["tools/search-fuel-baseline.mjs"], ["tools/benchmark-cubical.mjs", "nothing"], ["tools/build-site.mjs"],
     ["tests/driver-trace.mjs"],
-    ["tests/display-names.test.mjs"], ["--test", "tests/display-names.test.mjs"],
+    ["tests/cubical-program.test.mjs"], ["--test", "tests/cubical-program.test.mjs"],
     ["tests/cubical-inspector.browser.mjs"], ["tests/cubical.browser.mjs"], ["tests/statement.browser.mjs"],
     ["tests/proof-navigation.browser.mjs"], ["tests/landing.browser.mjs"]]) {
     const result = stale(args);

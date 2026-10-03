@@ -86,7 +86,7 @@ const readOriginal = migrationSourceReader(async (place, name) => {
   }
   return originals.get(path);
 }, modules);
-// A stale WASM kernel or translator copy would run code it does not contain.
+// A stale WASM kernel would run code it does not contain.
 assertFreshBuild();
 const declarations=selected ? {[modules[0]]:selected} : null;
 const reports = await verifyMigration({ modules, readOriginal, readEdited, level, ledger, declarations });

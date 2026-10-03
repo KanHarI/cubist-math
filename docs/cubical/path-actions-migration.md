@@ -26,7 +26,7 @@ Validation used the current native WASM `CubicalProgram` on main, with an
 absolute temporary loader overriding only `path_actions` to this worktree's
 native edition. Its import graph checked 74 declarations with zero failures
 and zero gaps. The eight explicit public-contract proofs in
-`lib/cubical/fixtures/path-actions-contracts.cubist` then checked too:
+`tests/fixtures/path-actions-contracts.cubist` then checked too:
 82 declarations, zero failures, zero gaps. No legacy checker was used.
 
 A broader caller check (circle_degree, puncture_graph, loop_words, and

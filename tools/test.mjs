@@ -11,13 +11,13 @@ try {
     process.stdout.write("No added or modified .cubist files to check.\n");
   } else {
     await Promise.all([...selected.tests, ...selected.proofs].map(path => access(path)));
-    // The JavaScript tests load the WASM kernel and the translator from
-    // web/dist: a stale build would test code it does not contain.
+    // The JavaScript tests load the WASM kernel from web/dist: a stale build
+    // would test code it does not contain.
     if (selected.tests.some(path => path.startsWith(projectRoot + "tests/"))) assertFreshBuild();
     // The interval algebra's native test runs a kernel executable. Build it
     // before Node launches test files concurrently: a clean checkout must not
     // race missing or half-built files.
-    if (selected.tests.some(path => path.startsWith(projectRoot + "lib/cubical/tests/")))
+    if (selected.tests.some(path => path.startsWith(projectRoot + "tests/translator/")))
       execFileSync("make", ["-C", "kernel", "all"], { cwd: projectRoot, stdio: "inherit" });
     const environment = { ...process.env, MATHSCRIPT_TEST_PROOFS: JSON.stringify(selected.proofs), MATHSCRIPT_OPTIMIZATIONS: JSON.stringify(selected.optimizations) };
     // A nested invocation must start its own Node test run, not inherit the

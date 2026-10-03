@@ -6,7 +6,7 @@ import { sourceModules, cubicalSourceModules } from '../web/mathscript/modules.m
 import createCubical from '../web/dist/cubical.mjs';
 import { CubicalProgram } from '../web/cubical-program.mjs';
 import { assertFreshBuild } from './build-stamp.mjs';
-// A stale WASM kernel or translator copy would run code it does not contain.
+// A stale WASM kernel would run code it does not contain.
 assertFreshBuild();
 const args=process.argv.slice(2), all=args.includes('--all');
 const selected=all?[...sourceModules,...cubicalSourceModules]:args.filter(x=>!x.startsWith('--'));

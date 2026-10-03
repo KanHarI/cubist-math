@@ -51,7 +51,7 @@ const environment = {
 };
 
 const readSource = name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
-// A stale WASM kernel or translator copy would measure code it does not contain.
+// A stale WASM kernel would measure code it does not contain.
 assertFreshBuild();
 const program = new CubicalProgram(await createCubical(), readSource);
 const kernel = program.kernel;

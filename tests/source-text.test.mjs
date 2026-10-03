@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
-import { naturalSort as nat, numeral as number } from "../lib/cubical/numerals.mjs";
+import { naturalSort as nat, numeral as number } from "../web/translator/numerals.mjs";
 
 const U0 = { tag: "U", level: 0 }, unit = { tag: "Unit" }, v = { tag: "Void" };
 const variable = name => ({ tag: "Var", name });

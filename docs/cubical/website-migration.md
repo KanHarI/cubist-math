@@ -10,7 +10,7 @@ concrete declarations checked, zero slow, blocked, or failed declarations**, and
 `web/benchmark-results.json`, or run `/benchmark.html` in the browser.
 
 The cubical kernel is now the sole checker. Its C sources live under `kernel/`,
-and its supporting modules under `lib/cubical/`. Canonical sources are
+and its supporting modules under `web/translator/`. Canonical sources are
 `archive/first-library/*.cubist`; the old parallel editions and Id/J implementation have
 been removed. The public website is https://cubist.kanhar.art.
 

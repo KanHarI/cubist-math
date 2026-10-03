@@ -1,6 +1,6 @@
 // The build stamp (web/dist/build-stamp.json). web/dist is generated and not
 // versioned: the WASM kernel, compiled from kernel/src, kernel/include and the
-// bridge, and a copy of the translator's modules, which CubicalProgram loads.
+// bridge.
 // A build that no longer matches its sources, its compiler or its own outputs
 // would make a run pass or fail for code it does not contain. So a build clears
 // its stamp before it writes anything, hashes its sources, builds, and stamps
@@ -12,11 +12,6 @@ import { createHash } from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-
-// The translator modules copied for the browser (tools/build-cubical-runtime.mjs).
-export const runtimeModules = ["core", "lattice", "syntax-graph", "equivalence", "translate", "proof-rewrite",
-  "simp-registry", "path-over", "path-algebra", "public-equivalence", "dimension-slots", "names", "elaboration", "builtins", "tactics",
-  "proof-goals", "motives", "fuel", "inductive", "match", "hlevel", "numerals"];
 
 // A hash of files, by path and content, read through `read`.
 export function hashOf(paths, read) {
@@ -45,16 +40,13 @@ export function buildStamp(root, { lockTimeout = Number(process.env.CUBIST_BUILD
   const listed = (directory, keep) => existsSync(at(directory))
     ? readdirSync(at(directory)).filter(keep).sort().map(name => `${directory}${name}`) : [];
   // Each build's inputs: the kernel's include the Makefile, which holds its
-  // flags; the runtime's include the generator, and this file, which lists
-  // the modules it copies.
+  // flags.
   const sources = {
     kernel: () => [...listed("kernel/src/", name => /\.[ch]$/.test(name)), ...listed("kernel/include/", name => name.endsWith(".h")),
       "wasm/cubical_bridge.c", "Makefile"],
-    runtime: () => [...runtimeModules.map(name => `lib/cubical/${name}.mjs`), "archive/first-library/nat.cubist", "tools/build-cubical-runtime.mjs", "tools/build-stamp.mjs"],
   };
   const outputs = {
     kernel: () => ["web/dist/cubical.mjs", "web/dist/cubical.wasm"],
-    runtime: () => [...runtimeModules.map(name => `web/dist/cubical-runtime/${name}.mjs`), "web/dist/cubical-runtime/nat-source.mjs"],
   };
   const kinds = Object.keys(sources);
   const hashFiles = paths => hashOf(paths, path => readFileSync(at(path)));

@@ -1,10 +1,10 @@
 import { sourceStatement } from "./cubical-statement.mjs";
 import { CubicalKernel } from "./cubical-kernel.mjs";
 import { NativeCubicalElaborator, printedLabels } from "./cubical-elaborator.mjs";
-import { Translator } from "./dist/cubical-runtime/translate.mjs";
-import {emptySimpRegistry,mergeSimpRegistries} from "./dist/cubical-runtime/simp-registry.mjs";
-import { substituteTerm, T } from "./dist/cubical-runtime/core.mjs";
-import { localName, printedForms, printsAsItself } from "./dist/cubical-runtime/names.mjs";
+import { Translator } from "./translator/translate.mjs";
+import {emptySimpRegistry,mergeSimpRegistries} from "./translator/simp-registry.mjs";
+import { substituteTerm, T } from "./translator/core.mjs";
+import { localName, printedForms, printsAsItself } from "./translator/names.mjs";
 import { parse } from "./mathscript/parser.mjs";
 import { lint } from "./mathscript/lint.mjs";
 import { leadingDocumentation } from "./mathscript/documentation.mjs";
@@ -12,7 +12,7 @@ import { foldedInspection } from "./cubical-inspection.mjs";
 import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notation.mjs";
 import { checkReduction, simplifyTypeApplications } from "./cubical-reduction.mjs";
 import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
-import naturalSource from "./dist/cubical-runtime/nat-source.mjs";
+import naturalSource from "./translator/nat-source.mjs";
 
 const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${index}` : "";
 
@@ -30,7 +30,7 @@ export class CubicalProgram {
     // that admitted them experimentally is gone.
     if (experimental !== undefined)
       throw Error("H1 is no longer experimental: declared types are on by default, so drop the experimental option.");
-    // Fuel limits (lib/cubical/fuel.mjs), for a measurement or a test; the defaults otherwise.
+    // Fuel limits (web/translator/fuel.mjs), for a measurement or a test; the defaults otherwise.
     this.fuelLimits = { searchFuel, declarationFuel };
     this.kernel = new CubicalKernel(module);
     this.kernel.setOptimizations(optimizations);

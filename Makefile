@@ -29,7 +29,6 @@ wasm cubical-wasm:
 wasm-locked:
 	@node tools/build-stamp.mjs check-kernel -- $(EMCC) $(WASM_CFLAGS) $(WASM_LDFLAGS) 2>/dev/null || rm -f web/dist/cubical.mjs
 	$(MAKE) --no-print-directory web/dist/cubical.mjs
-	node tools/build-cubical-runtime.mjs
 # The stamp is cleared before emcc writes anything, and written after it succeeds.
 web/dist/cubical.mjs: $(CUBICAL_SRC) $(wildcard $(CUBICAL_DIR)/include/*.h) $(CUBICAL_DIR)/src/term_internal.h wasm/cubical_bridge.c Makefile
 	mkdir -p web/dist

@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { SEARCH_FUEL, DECLARATION_FUEL, SearchFuel, SearchFuelExhausted } from "../lib/cubical/fuel.mjs";
+import { SEARCH_FUEL, DECLARATION_FUEL, SearchFuel, SearchFuelExhausted } from "../web/translator/fuel.mjs";
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 // Modules resolve as in the CLI: the rebuilt library first, then the archive.

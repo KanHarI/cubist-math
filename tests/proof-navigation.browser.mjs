@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { chromium, webkit } from "playwright";
 import { assertFreshBuild } from "../tools/build-stamp.mjs";
-// The page loads the WASM kernel and the translator from web/dist.
+// The page loads the WASM kernel from web/dist.
 assertFreshBuild();
 import { proofChoices, proofTopics, proofsInTopic } from "../web/proof-library.mjs";
 import { selectProof } from "./proof-navigation.mjs";

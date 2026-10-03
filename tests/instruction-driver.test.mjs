@@ -1,5 +1,5 @@
 import "./fresh-build.mjs";
-import {naturalSort,numeral} from "../lib/cubical/numerals.mjs";
+import {naturalSort,numeral} from "../web/translator/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -481,9 +481,9 @@ test("a derivation in one context is not reused in another that types a variable
 // glue [i = 0 ↦ point] (unglue b) of a composition over G(i) must agree with
 // its base b, as b at i = 0 is p @ 0, which is point.
 test("a Glue term that is its base by eta only after a step still agrees with it", async t => {
-  const { T } = await import("../lib/cubical/core.mjs");
-  const { face: F, interval: I } = await import("../lib/cubical/lattice.mjs");
-  const { identityEquivalence } = await import("../lib/cubical/equivalence.mjs");
+  const { T } = await import("../web/translator/core.mjs");
+  const { face: F, interval: I } = await import("../web/translator/lattice.mjs");
+  const { identityEquivalence } = await import("../web/translator/equivalence.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
   await program.check("def unit_point : Unit := tt;\n", "glue_eta");
@@ -504,7 +504,7 @@ test("a Glue term that is its base by eta only after a step still agrees with it
 // where the weak head needs none; without syntax sharing, a normal form is a
 // new handle even when nothing changed.
 test("the glue move comes last, after the weak heads", async t => {
-  const { T } = await import("../lib/cubical/core.mjs");
+  const { T } = await import("../web/translator/core.mjs");
   const G = T.glueType(naturalSort, []), H = T.glueType(G, []);
   const agrees = async (base, context, optimizations) => {
     const program = new CubicalProgram(await createCubical(), readLibrary, { optimizations });
@@ -531,7 +531,7 @@ test("the glue move comes last, after the weak heads", async t => {
 
 // The second review of #73: the glue move itself, where only it is left.
 const glueSession = async (t, optimizations = {}) => {
-  const { T } = await import("../lib/cubical/core.mjs");
+  const { T } = await import("../web/translator/core.mjs");
   const { heuristicChooser } = await import("../web/cubical-instruction-driver.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary, { optimizations });
   t.after(() => program.dispose());
@@ -598,8 +598,8 @@ test("the glue move rethrows a deadline, and a Glue term needs it at every focus
   // Two tubes of one composition, each the same Glue term that is its base by
   // eta only after a step: the move rewrites one focus, and must still be
   // open at the other.
-  const { face: F, interval: I } = await import("../lib/cubical/lattice.mjs");
-  const { identityEquivalence } = await import("../lib/cubical/equivalence.mjs");
+  const { face: F, interval: I } = await import("../web/translator/lattice.mjs");
+  const { identityEquivalence } = await import("../web/translator/equivalence.mjs");
   const equivalence = identityEquivalence(T.unit);
   const Gd = face => T.glueType(T.unit, [{ face, type: T.unit, equiv: equivalence }]);
   const context = [["b1", Gd(F.bottom)], ["p", T.path("j", Gd(F.endpoint("j", 0)), T.point, T.variable("b1"))]];
@@ -619,7 +619,7 @@ test("the glue move rethrows a deadline, and a Glue term needs it at every focus
 // whose normal form is deeper than syntax may be, as the whole term's
 // normal form, which the move once took, would.
 test("the glue move waits for enclosing reductions, and reduces nothing beyond its side conditions", async t => {
-  const { T } = await import("../lib/cubical/core.mjs");
+  const { T } = await import("../web/translator/core.mjs");
   const { heuristicChooser } = await import("../web/cubical-instruction-driver.mjs");
   const numbers = ["def n0 : Nat := 0;", ...Array.from({ length: 600 }, (_, k) => `def n${k + 1} : Nat := succ(n${k});`)];
   const program = new CubicalProgram(await createCubical(), readLibrary);
@@ -649,10 +649,10 @@ test("the glue move waits for enclosing reductions, and reduces nothing beyond i
 // budget, and the tube disagreed with its base. The Glue step reduces only
 // the piece and b at i = 0, which is point.
 test("a Glue term agrees with its base though its path mentions a large shared graph", async t => {
-  const { T } = await import("../lib/cubical/core.mjs");
+  const { T } = await import("../web/translator/core.mjs");
   const { heuristicChooser } = await import("../web/cubical-instruction-driver.mjs");
-  const { face: F, interval: I } = await import("../lib/cubical/lattice.mjs");
-  const { identityEquivalence } = await import("../lib/cubical/equivalence.mjs");
+  const { face: F, interval: I } = await import("../web/translator/lattice.mjs");
+  const { identityEquivalence } = await import("../web/translator/equivalence.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
   await program.check("def unit_point : Unit := tt;\n", "glue_graph");
@@ -683,8 +683,8 @@ test("a Glue term agrees with its base though its path mentions a large shared g
 // agree with its base g: the inner Glue term is u once A' is A, and the
 // outer Glue term and g have different heads, so congruence cannot reach it.
 test("a Glue term whose base is a nested Glue eta redex agrees with its base", async t => {
-  const { T } = await import("../lib/cubical/core.mjs");
-  const { face: F } = await import("../lib/cubical/lattice.mjs");
+  const { T } = await import("../web/translator/core.mjs");
+  const { face: F } = await import("../web/translator/lattice.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
   await program.check("def unit_point : Unit := tt;\n", "glue_nested");
@@ -702,8 +702,8 @@ test("a Glue term whose base is a nested Glue eta redex agrees with its base", a
 // part: the bases by pair eta and beta, the types by one beta step, with
 // the shared parts never normalized.
 test("a Glue term agrees with its base through pair eta, and through types equal below their heads", async t => {
-  const { T } = await import("../lib/cubical/core.mjs");
-  const { face: F } = await import("../lib/cubical/lattice.mjs");
+  const { T } = await import("../web/translator/core.mjs");
+  const { face: F } = await import("../web/translator/lattice.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
   await program.check("def unit_point : Unit := tt;\n", "glue_eta_expansion");
@@ -731,9 +731,9 @@ test("a Glue term agrees with its base through pair eta, and through types equal
 // an eta expansion that the glue move contracts is not made again, which had
 // looped until the fuel ran out.
 test("generated Glue cases: a base type that computes, and no eta and glue loop", async t => {
-  const { T } = await import("../lib/cubical/core.mjs");
-  const { face: F, interval: I } = await import("../lib/cubical/lattice.mjs");
-  const { identityEquivalence } = await import("../lib/cubical/equivalence.mjs");
+  const { T } = await import("../web/translator/core.mjs");
+  const { face: F, interval: I } = await import("../web/translator/lattice.mjs");
+  const { identityEquivalence } = await import("../web/translator/equivalence.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
   await program.check("def unit_point : Unit := tt;\n", "generated_glue");

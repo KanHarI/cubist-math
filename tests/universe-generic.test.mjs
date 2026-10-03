@@ -1,12 +1,12 @@
 import "./fresh-build.mjs";
-import {naturalSort, numeral} from "../lib/cubical/numerals.mjs";
+import {naturalSort, numeral} from "../web/translator/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { parse } from "../web/mathscript/parser.mjs";
-import { T, substituteTerm } from "../lib/cubical/core.mjs";
+import { T, substituteTerm } from "../web/translator/core.mjs";
 import { canonicalHasher } from "../tools/proof-migration.mjs";
 
 // L1.1 (G0 §4.3): universe binders U < UU0, universe constants of every tier,
