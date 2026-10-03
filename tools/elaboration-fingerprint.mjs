@@ -13,7 +13,7 @@ import { readFile, readdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { canonicalHasher } from "./proof-migration.mjs";
+import { canonicalHasher } from "./canonical-hash.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));

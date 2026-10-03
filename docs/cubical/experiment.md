@@ -57,8 +57,11 @@ pointwise roundtrip, without adding an axiom. The original `basics.cubist`
 translates completely (identity, duplication, natural-number copying and the
 proof that copying two gives two). The current whole-library translation pass
 checks **117 of 2,128 declarations** in this fragment; 2,011 remain explicit gaps.
-See [the exhaustive results](translation-results.json) and
-[the source inventory](migration-inventory.md). Counts are for declarations,
+The exhaustive results (`translation-results.json`) and the source inventory
+(`migration-inventory.md`) were removed on 2026-10-02; they are in this
+directory at commit
+[`4fe0906`](https://github.com/KanHarI/cubist-math/tree/4fe0906/docs/cubical).
+Counts are for declarations,
 not entire modules, and are not an estimate of the remaining effort. The census
 includes 216 Cubist modules and separately lists 28 legacy construction
 artifacts, which the cubical translator does not admit as trusted exports.
@@ -137,8 +140,9 @@ falls back to the old kernel.
 Run `node --test tests/translator/*.test.mjs` for the experimental core.
 `lib/cubical/check-library.mjs`, which wrote `translation-results.json` with
 the JavaScript reference checker, was removed with that checker on
-2026-10-02; the JSON file is the last such record.
-Run `node tools/cubical-inventory.mjs` for the separate AST-only census.
+2026-10-02. The AST-only census that `lib/cubical/inventory.mjs` wrote, and
+`lib/cubical/benchmark.mjs`'s dimension-algebra microbenchmark, were removed
+on the same day; `make bench` still runs the C half of that benchmark.
 No experiment command changes the production WASM binary or deploys the site.
 
 ## Derived univalence milestone
