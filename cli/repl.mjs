@@ -10,6 +10,7 @@ import { kernelAssembly, assemblyText } from "../web/cubical-assembly.mjs";
 import { reduceView } from "../web/cubical-reduction.mjs";
 import { ReplSession, replStatements } from "../web/repl-session.mjs";
 import { moduleRoots } from "../web/module-resolution.mjs";
+import { diagnosticLine, withCode } from "../web/diagnostics.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { assertFreshBuild } from "../tools/build-stamp.mjs";
 const help = `Cubist Math — cubical C kernel
@@ -54,6 +55,9 @@ for (const arg of args) {
 }
 // A stale WASM kernel would run code it does not contain.
 assertFreshBuild();
+// An error as the checker prints it: a failed check's lines as they are,
+// any other message with its code in front.
+const shown = error => error.lines ? error.message : withCode(error.message);
 const module = await createCubical();
 let program, view, binding, checkedModule, session = null, sessionProgram = null;
 // Imports resolve as web/module-resolution.mjs specifies: an archive module
@@ -110,11 +114,13 @@ async function execute(line) {
     program?.dispose(); view = null; binding = null;
     program = new CubicalProgram(module, imports, { optimizations });
     const result = await program.check(source, main);
-    if (!result.complete) throw Error(JSON.stringify(result.gaps, null, 2));
+    // Each failure on a line of its own, with its code (web/diagnostics.mjs).
+    if (!result.complete) throw Object.assign(Error(result.gaps.map(gap => diagnosticLine({ code: gap.code, message: gap.reason,
+      declaration: gap.name && (gap.module === main ? gap.name : `${gap.module}.${gap.name}`) })).join("\n") || `${main} did not check.`), { lines: true });
     checkedModule = main;
     console.log(`Checked ${result.outputs.length} declarations · ${result.instructionCount.toLocaleString()} kernel steps`);
     for (const warning of result.warnings ?? [])
-      console.log(`warning at line ${warning.line}:${warning.column}${warning.declaration ? ` (${warning.declaration})` : ""}: ${warning.message}`);
+      console.log(diagnosticLine({ severity: "warning", ...warning }));
     for (const evaluation of result.evaluations ?? [])
       console.log(`evaluate ${evaluation.name}${evaluation.module === main ? "" : ` (${evaluation.module})`}: ${evaluation.value}`);
     return;
@@ -187,10 +193,10 @@ try {
         const entry = pending;
         pending = "";
         try { if (await execute(entry) === false) break; }
-        catch (error) { console.error(error.message); }
+        catch (error) { console.error(shown(error)); }
         prompt("cubist> ");
       }
     } finally { input.close(); }
   }
-} catch (error) { console.error(error.message); process.exitCode = 1; }
+} catch (error) { console.error(shown(error)); process.exitCode = 1; }
 finally { program?.dispose(); sessionProgram?.dispose(); }

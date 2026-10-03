@@ -155,3 +155,8 @@ figure.diagram .fiber { stroke: #9fb0a3; stroke-width: 1.5; stroke-dasharray: 3 
 figure.diagram .area { fill: #eef3ee; stroke: none; }
 figure.diagram .point { fill: #1f3b2a; }
 figure.diagram .moving { fill: #b5651d; }
+
+/* The errors chapter's codes. */
+td.code { white-space: nowrap; }
+table.codes td:first-child { white-space: nowrap; width: 5em; }
+tr:target { background: #fff6e8; }

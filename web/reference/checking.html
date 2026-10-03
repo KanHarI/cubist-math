@@ -90,7 +90,7 @@ def recover(P : U0, prop : Proposition(P), nn : (P -&gt; Void) -&gt; Void) : P {
 }
 
 evaluate double(2) expecting 4;</code></pre>
-            <p><code>check</code> checks the file and everything it imports. It prints the number of declarations and kernel steps, then each <a href="#warnings">warning</a> and each <a href="assumptions.html#evaluate"><code>evaluate</code></a> result, and exits with status 0. A file that does not check completely prints the failures and exits with a nonzero status.</p>
+            <p><code>check</code> checks the file and everything it imports. It prints the number of declarations and kernel steps, then each <a href="#warnings">warning</a> and each <a href="assumptions.html#evaluate"><code>evaluate</code></a> result, and exits with status 0. A file that does not check completely prints each failure on a line of its own, as <code>error E606 at line 2:3 (wrong): Type mismatch: …</code>, and exits with a nonzero status. Each code has an entry among the <a href="errors.html#errors">error messages</a>.</p>
             <pre><code data-check="cli" data-files="sample">$ node cli/repl.mjs check sample.cubist
 Checked 2 declarations · … kernel steps
 evaluate at line 11: 4</code></pre>
@@ -128,7 +128,7 @@ Assumptions: none
 sample__recover
 Assumptions: LEM, Truncate, TruncateElim
 &gt; evaluate recover
-The evaluated term depends on non-computing assumptions: LEM, Truncate, TruncateElim. Path to LEM: recover (sample) → double_negation (classical) → LEM.</code></pre>
+E324: The evaluated term depends on non-computing assumptions: LEM, Truncate, TruncateElim. Path to LEM: recover (sample) → double_negation (classical) → LEM.</code></pre>
             <p>Lines starting with <code>&gt;</code> are typed commands; the other lines are output. The inspected name is shown with its module, as <code>sample__double</code>. Use that qualified form when a short name is ambiguous. <code>inspect</code> lists the assumptions a declaration uses, or <code>none</code>. <code>evaluate</code> follows the rules of the <a href="assumptions.html#evaluate">evaluate directive</a>: a term that uses an assumption is refused, with the path through which the first one enters.</p>
             <p><code>beta</code> and <code>delta</code> reduce the first applicable occurrence in the inspected expression, or in its type. The kernel checks the result. The workbench can select a particular occurrence instead.</p>
             <pre><code data-check="cli" data-files="sample">$ node cli/repl.mjs
@@ -169,7 +169,7 @@ x_is_seven : x = 7
 &gt; def x_is_eight : x = 8 {
 &gt;   exact refl(7);
 &gt; }
-Type mismatch: found 7 = 7, expected x = 8.
+E606: Type mismatch: found 7 = 7, expected x = 8.
 &gt; x + 1
 8</code></pre>
             <p><code>let x := 7;</code> defines <code>x</code> and prints its type; <code>def</code> works the same way. An entry continues on the next line while a bracket is open, so a proof block is one entry. A term alone is evaluated, and the final <code>;</code> of an entry can be left out. <code>x_is_eight</code> is rejected, so it does not exist for later entries. <code>/help</code> lists the entries and the commands, which start with <code>/</code>: <code>/modules</code> lists the modules <code>import</code> can load, <code>/clear</code> clears the log and <code>/restart</code> starts a new session. The consoles on the website take the same commands.</p>
@@ -189,10 +189,10 @@ Type mismatch: found 7 = 7, expected x = 8.
 };
 
 def copy_two : copy(2) = 2 { rfl; }</code></pre>
-            <p>The workspace lists warnings under the checked declarations; click a line number to show the line. The command-line checker prints each with its line, column and declaration:</p>
+            <p>The workspace lists warnings under the checked declarations; click a line number to show the line. The command-line checker prints each with its code, line, column and declaration:</p>
             <pre><code data-check="cli" data-files="unused">$ node cli/repl.mjs check unused.cubist
 Checked 2 declarations · … kernel steps
-warning at line 1:37 (copy): k is unused: the return type does not mention it and the successor clause does not use it. Omit as k: induction n return ….</code></pre>
+warning W703 at line 1:37 (copy): k is unused: the return type does not mention it and the successor clause does not use it. Omit as k: induction n return ….</code></pre>
             <p><code>npm run lint:cubist -- FILE.cubist</code> reports the same warnings without checking, and exits with status 1 when there are any. Without file names it lints the library, which has none.</p>
           </section>
           <section id="tools">

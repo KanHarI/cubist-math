@@ -1,4 +1,5 @@
 import { parse } from "./parser.mjs";
+import { diagnosticCode } from "../diagnostics.mjs";
 
 // Warnings for bindings that are never used and can simply be removed:
 //   induction v as k   when neither the return type nor the successor clause uses k;
@@ -80,7 +81,7 @@ export function lint(source, ast = parse(source)) {
   return warnings.sort((a, b) => a.start - b.start).map(warning => {
     let line = lineStarts.findLastIndex(start => start <= warning.start);
     const declaration = ast.declarations.find(d => d.start <= warning.start && warning.start < d.end);
-    return { ...warning, line: line + 1, column: warning.start - lineStarts[line] + 1,
+    return { ...warning, code: diagnosticCode(warning.message), line: line + 1, column: warning.start - lineStarts[line] + 1,
       ...(declaration?.name?.text ? { declaration: declaration.name.text } : {}) };
   });
 }

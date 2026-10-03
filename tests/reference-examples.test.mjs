@@ -10,8 +10,13 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { ReplSession, replTranscript } from "../web/repl-session.mjs";
 import { budget } from "./timing.mjs";
-import { referenceExamples, statedErrors, statedWarnings, transcript } from "./reference-pages.mjs";
+import { decode, referenceExamples, statedErrors, statedWarnings, transcript } from "./reference-pages.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
+import { diagnosticCode } from "../web/diagnostics.mjs";
+
+// Every failure and warning the examples report, with its code; the errors
+// chapter's catalogue is checked against them.
+const reported = [];
 
 // Every code example in the language references declares how it is checked:
 //   data-check="accept"                     the example checks completely;
@@ -44,8 +49,12 @@ async function check(text, name) {
     const failures = result.outputs.filter(output => !output.verified)
       .map(output => `${output.name}: ${output.reason}`);
     const gaps = program.gaps.map(gap => `${gap.module ?? "?"}${gap.name ? `.${gap.name}` : ""}: ${gap.reason}`);
+    for (const { reason: message, code } of [...result.outputs.filter(output => !output.verified), ...program.gaps])
+      reported.push({ message, code });
+    for (const { message, code } of result.warnings) reported.push({ message, code });
     return { failures: [...failures, ...gaps], warnings: result.warnings.map(warning => warning.message) };
   } catch (error) {
+    reported.push({ message: error.message, code: diagnosticCode(error.message) });
     return { failures: [error.message], warnings: [] };
   } finally { program.dispose(); }
 }
@@ -155,6 +164,16 @@ test("every language reference example declares and passes its check", async t =
   assert.ok(index > 0, "the references contain examples");
   assert.deepEqual(problems, []);
   t.diagnostic(`reference examples: ${JSON.stringify(counts)}`);
+  // Each failure and warning is reported with a code (web/diagnostics.mjs).
+  assert.deepEqual(reported.filter(({ code }) => !code).map(({ message }) => message), [], "messages without a code");
+  // Each catalogue entry of the errors chapter shows the codes of the
+  // messages it describes, those the examples report that contain its text.
+  const errors = await readFile(new URL("../web/reference/errors.html", import.meta.url), "utf8");
+  for (const [, cell, raw] of errors.matchAll(/<td class="code">(.*?)<\/td><td data-message="([^"]*)">/g)) {
+    const message = decode(raw), shown = [...cell.matchAll(/<code>([EKW]\d{3})<\/code>/g)].map(match => match[1]);
+    const codes = [...new Set(reported.filter(entry => entry.message.includes(message)).map(entry => entry.code))].sort();
+    assert.deepEqual(shown, codes, `the errors chapter's codes for "${message}"`);
+  }
 });
 
 test("the harness distinguishes accepted, rejected, excerpted and unmarked examples", async () => {
@@ -200,7 +219,7 @@ test("the harness runs command-line sessions against named examples", async () =
   const named = new Map([["sample", "def two := succ(succ(0));\nevaluate two expecting 2;\n"]]);
   const session = text => ({ label: "sample.html:1", attrs: { "data-check": "cli", "data-files": "sample" }, text });
   await verify(session("$ node cli/repl.mjs check sample.cubist\nChecked 1 declarations · … kernel steps\nevaluate at line 2: 2"), 0, named);
-  await verify(session("$ node cli/repl.mjs\n> check sample.cubist\n> inspect two\nChecked …\nAssumptions: none\n> inspect missing\nNo checked native definition for this name."), 1, named);
+  await verify(session("$ node cli/repl.mjs\n> check sample.cubist\n> inspect two\nChecked …\nAssumptions: none\n> inspect missing\nE211: No checked native definition for this name."), 1, named);
   await assert.rejects(verify(session("$ node cli/repl.mjs check sample.cubist\nevaluate at line 2: 3"), 2, named), /output line not found/);
   await assert.rejects(verify(session("$ node cli/repl.mjs check sample.cubist\nAssumptions: none\nChecked …"), 3, named), /output line not found/);
   await assert.rejects(verify({ ...session("$ node cli/repl.mjs check other.cubist"), attrs: { "data-check": "cli", "data-files": "other" } }, 4, named),

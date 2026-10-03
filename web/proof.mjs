@@ -12,6 +12,7 @@ import { numeralAt, tokenStyle, headerWordAt } from "./source-tokens.mjs";
 import { libraryModules } from "./cubist/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
 import { createReplConsole } from "./repl-console.mjs";
+import { withCode } from "./diagnostics.mjs";
 
 const query = new URLSearchParams(location.search);
 const backend = "cubical";
@@ -380,6 +381,18 @@ function axiomInfo(binding) {
     ...[...last.outputs, ...last.imports].find(o => o.binding === binding),
   });
 }
+// A diagnostic's code, linked to its entry in the errors chapter, and the
+// separator after it; nothing for a message without a code.
+function codeLink(code) {
+  if (!code) return [];
+  const link = document.createElement("a");
+  link.href = `reference/errors.html#${code}`;
+  link.target = "_blank";
+  link.rel = "noopener";
+  link.className = "diagnostic-code";
+  link.textContent = code;
+  return [link, " "];
+}
 function renderAxioms(target, axioms, extensions = []) {
   target.replaceChildren(document.createTextNode("Axioms used: "));
   // A kernel extension under review is listed apart: it is not an assumption,
@@ -427,7 +440,7 @@ function renderResult() {
     line.append(button, document.createTextNode(" : " + output.type));
     const dependencies = document.createElement("small");
     dependencies.className = "axiom-dependencies";
-    if (last.backend === "cubical" && !output.verified) dependencies.textContent = output.reason;
+    if (last.backend === "cubical" && !output.verified) dependencies.append(...codeLink(output.code), output.reason);
     else renderAxioms(dependencies, output.axioms ?? [], output.extensions ?? []);
     line.append(dependencies);
     $("result").append(line);
@@ -438,7 +451,7 @@ function renderResult() {
     line.className = "lint-warning";
     at.textContent = `line ${warning.line}`;
     at.onclick = () => revealSource(warning);
-    line.append("Warning at ", at, `: ${warning.message}`);
+    line.append("Warning ", ...codeLink(warning.code), "at ", at, `: ${warning.message}`);
     $("result").append(line);
   }
   const detail = document.createElement("small");
@@ -642,7 +655,7 @@ async function inspect(info, remember = true) {
     if (last.backend === "cubical" && info.verified === false) {
       $("kernel-details").hidden = true;
       $("kernel-terms").hidden = true;
-      $("inspect-description").textContent = `Not checked by cubical C: ${info.reason}`;
+      $("inspect-description").textContent = `Not checked by cubical C: ${withCode(info.reason, info.code)}`;
       return;
     }
     // A declared type has no checked term: its signature and eliminator.
