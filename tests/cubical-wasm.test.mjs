@@ -45,7 +45,7 @@ const elaborate = (k, term, type = null, context = [], dimensions = new Map()) =
 test("the kernel derives an application and leaves reduction explicit", t => {
   const k = session(t), syntax = new CubicalSyntax(k);
   const application = syntax.encode(T.app(T.lam("x", two, swap(T.variable("x"))), left));
-  assert.throws(() => k.normalize(application), /recent successful check/);
+  assert.throws(() => k.normalize(application), /an instruction derived/);
   const result = derive(k, application, syntax.encode(two));
   assert.equal(k.node(result.expression).kind, "App");
   assert.deepEqual(syntax.decode(k.normalize(result.expression)), right);
@@ -88,7 +88,7 @@ test("disposed WASM sessions cannot accidentally access a new session", t => {
   old.dispose();
   const next = session(t);
   assert.notEqual(next.handle, token);
-  assert.equal(module._cb_check(token, 1, 0), 0);
+  assert.equal(module._cb_term(token, 1, 0, 0, 0, 0, 0), 0);
   assert.throws(() => old.term("Unit"), /disposed/);
 });
 

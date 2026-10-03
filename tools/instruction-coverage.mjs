@@ -5,10 +5,9 @@
 // driver at its type, with a time limit per definition. Writes a report,
 // build/instruction-coverage.json unless --report names another file, and
 // prints a summary.
-//   node tools/instruction-coverage.mjs [--limit-ms=5000] [--oracle]
+//   node tools/instruction-coverage.mjs [--limit-ms=5000]
 //        [--trajectories=FILE] [--select=REGEX] [--modules=a,b] [--report=FILE]
-// The driver steers by its own guide; with --oracle, by the term checker's
-// conversion instead, for comparison. --trajectories writes one JSON line per
+// The driver steers by its own guide. --trajectories writes one JSON line per
 // re-derived definition with every branch point of its search
 // (tools/search-telemetry.mjs); --select re-derives only the definitions
 // whose names match; --modules checks only those archive modules and their
@@ -37,10 +36,9 @@ import { addWork, countingChooser, kernelSteps, recordingChooser, workSince } fr
 
 const option = name => process.argv.find(arg => arg.startsWith(`--${name}=`))?.slice(name.length + 3);
 const limitMs = option("limit-ms") ? Number(option("limit-ms")) : 5000;
-const oracle = process.argv.includes("--oracle");
 const trajectoryFile = option("trajectories");
 const select = option("select") ? new RegExp(option("select")) : null;
-const known = /^--(limit-ms|trajectories|select|modules|report)=|^--oracle$/;
+const known = /^--(limit-ms|trajectories|select|modules|report)=/;
 const unknown = process.argv.slice(2).find(arg => !known.test(arg));
 if (unknown) throw new Error(`Unknown option: ${unknown}`);
 
@@ -57,7 +55,6 @@ const readSource = name => readFile(new URL(`../archive/first-library/${cubicalS
 assertFreshBuild();
 const program = new CubicalProgram(await createCubical(), readSource);
 const kernel = program.kernel;
-kernel.conversionOracle = oracle;
 // The archive check shares one driver across declarations, the elaborator's.
 const checkChooser = countingChooser(heuristicChooser);
 kernel.chooser = checkChooser;
@@ -101,7 +98,7 @@ const derived = derivations.filter(d => d.derived);
 const definitions = select ? derivations.length : kernel.definitions.size;
 const top = (key, format) => [...derived].sort((a, b) => b[key] - a[key]).slice(0, 10).map(format);
 const report = {
-  environment, budgets, oracle, chooser: search.name,
+  environment, budgets, chooser: search.name,
   session: "The archive is checked in one kernel session. Each declaration is derived by a driver of its own: admission and "
     + "the declaration's transaction drop the driver, and the transaction's checkpoint commit clears the kernel's checking "
     + "and reduction caches, keeping only checked definitions and interned syntax. Then each stored definition is derived "
@@ -129,7 +126,7 @@ await mkdir(dirname(reportFile), { recursive: true });
 await writeFile(reportFile, JSON.stringify(report, null, 2) + "\n");
 
 const count = n => n.toLocaleString("en-US");
-console.log(`Archive checked ${oracle ? "with the conversion oracle" : "with the driver's guide"} in ${check.seconds} s: `
+console.log(`Archive checked with the driver's guide in ${check.seconds} s: `
   + `${count(report.checked.verified)} of ${count(imports.length)} declarations in ${modules.length} module${modules.length === 1 ? "" : "s"}, `
   + `${gaps.length} gap${gaps.length === 1 ? "" : "s"}; `
   + `kernel work ${count(check.work.instructions)} instructions, ${count(kernelSteps(check.work))} steps.`);

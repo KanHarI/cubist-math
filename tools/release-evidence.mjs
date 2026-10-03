@@ -29,9 +29,9 @@ const coverageSummary = /^.*(Archive checked|definitions derive|Coverage complet
 // The local checks, in order: the kernel's tests and lint; the fatal
 // undefined-behaviour sanitizer, with the address sanitizer too where it runs
 // (not on macOS, whose Apple clang cannot start it; CI runs both); the WASM
-// build and its stamp; instruction coverage with the guide and with the
-// oracle, which re-derive the archive; the Node suite; and the browser and
-// site checks. A check's summary is the lines its pattern finds in its
+// build and its stamp; instruction coverage, which checks the archive and
+// re-derives every definition; the Node suite; and the browser and site
+// checks. A check's summary is the lines its pattern finds in its
 // output, or else its last line.
 export const localChecks = (platform = process.platform) => [
   { name: "Kernel tests", command: ["make", "-C", "kernel", "test"] },
@@ -40,7 +40,6 @@ export const localChecks = (platform = process.platform) => [
   { name: "WASM build", command: ["make", "wasm"] },
   { name: "Build stamp", command: ["node", "tools/build-stamp.mjs", "check"] },
   { name: "Instruction coverage", command: ["node", "tools/instruction-coverage.mjs"], summary: coverageSummary },
-  { name: "Instruction coverage with the oracle", command: ["node", "tools/instruction-coverage.mjs", "--oracle"], summary: coverageSummary },
   { name: "Node suite", command: ["npm", "test"], summary: nodeSummary },
   { name: "Workbench browser tests", command: ["npm", "run", "test:browser"], summary: pageSummary },
   ...["cubical", "statement", "proof-navigation", "landing"].map(page =>

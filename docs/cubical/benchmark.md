@@ -38,7 +38,7 @@ counts only at matching settings. Times remain sorted descending per category.
 The independent switches default on in both the proof viewer and benchmark:
 
 - `--no-share-syntax`: disable exact native syntax interning.
-- `--no-reuse-checks`: disable memoization of successful native judgements.
+- `--no-reuse-checks`: check a universe-generic definition, such as `ua`'s, at each use instead of once.
 - `--no-compact-paths`: omit the checked endpoint signatures on `sym`, `trans`,
   and `cong`. The proof term is still built from ordinary cubical primitives.
 

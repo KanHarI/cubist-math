@@ -347,8 +347,7 @@ test("Glue: univalence derives, and so does a Glue term over its Glue type", asy
   for (const rule of ["glueBase", "gluePiece", "glueOverlap", "glue", "unglue"]) assert.ok(rules.has(rule), rule);
   // λA B e (a : A). <i> glue(e(a), [i = 0 ↦ a, i = 1 ↦ e(a)]) : ua's line,
   // built on the Glue type in the body of the generic ua instantiated at U0
-  // (level β); the term checker, which knows closed levels only, accepts it
-  // first.
+  // (level β). The driver infers its type, then derives it at that type.
   const generic = kernel.definition(kernel.definitions.get("builtin__ua")).value;
   let body = kernel.head(kernel.term("LApp", 0, generic, kernel.term("LConst", 0)));
   const binders = [];
@@ -362,9 +361,9 @@ test("Glue: univalence derives, and so does a Glue term over its Glue type", asy
   const path = kernel.term("PLam", line.payload, glue, kernel.term("GlueTerm", 0, glue, image, values));
   const value = binders.reduceRight((inner, binder) => kernel.term("Lam", binder.payload, binder.children[0], inner),
     kernel.term("Lam", a, source, path));
-  const checked = kernel.check(value);
+  const inferring = new InstructionDriver(kernel), inferred = inferring.graph.judgement(inferring.infer(value));
   rules.clear();
-  derive(checked.expression, checked.type);
+  derive(inferred.term, inferred.type);
   for (const rule of ["glueTermBase", "glueTermPiece", "glueTerm"]) assert.ok(rules.has(rule), rule);
 });
 

@@ -1989,10 +1989,6 @@ static void malformed(void) {
             cc_kernel_clear_error(k);
         if (!cc_kernel_normalize(k, terms[t]))
             cc_kernel_clear_error(k);
-        cc_checked_result checked;
-        assert(!cc_kernel_check(k, terms[t], 0, NULL, 0, &checked));
-        assert(strstr(cc_kernel_error(k), "no rules for declared types"));
-        cc_kernel_clear_error(k);
     }
     cc_signature_info info;
     assert(!cc_kernel_signature(k, 9999, &info));

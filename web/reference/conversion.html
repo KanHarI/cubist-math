@@ -111,7 +111,7 @@ def opened_in_a_type(v : boxed_successor(0) = 1) : 1 = 1 {
           </section>
           <section id="unfolding-hints">
             <h2>Unfolding hints</h2>
-            <p><code>with unfolding [name₁, name₂] { expression }</code> scopes conversion hints around one expression. The list names already checked definitions; the braces hold one expression, without a trailing semicolon. Empty lists and nested scopes are allowed.</p>
+            <p><code>with unfolding [name₁, name₂] { expression }</code> checks one expression as a definition of its own. The list names already checked definitions; the braces hold one expression, without a trailing semicolon. Empty lists and nested scopes are allowed. The names once steered the kernel’s conversion search, which was retired on 2026-10-02; the checker now unfolds whatever a comparison needs, so the list has no further effect.</p>
             <pre><code data-check="accept">def identity(n : Nat) := n;
 
 def identity_zero : identity(0) = 0 {
@@ -127,7 +127,7 @@ def nested : twice(0) = 0 {
 def no_hints : 0 = 0 {
   exact with unfolding [] { refl(0) };
 }</code></pre>
-            <p>The checker first tries unfolding the listed definitions while keeping others folded; ordinary conversion remains available. The hints apply only inside the braces. The compiler may keep the result as a checked helper definition, so the enclosing proof can reuse it without expanding it again. Rechecking that helper replays its hints; they do not leak into the surrounding expression. Hints change the order of reduction, never the type, the assumptions or the proof obligations. They are guidance for performance, not evidence of an equality, and they do not normalize the whole expression. <a href="assumptions.html#evaluate"><code>evaluate</code></a> ignores them.</p>
+            <p>The compiler keeps the result as a checked helper definition, so the enclosing proof can reuse it without expanding it again. The names change nothing else: never the type, the assumptions or the proof obligations, and they are no evidence of an equality. <a href="assumptions.html#evaluate"><code>evaluate</code></a> ignores them.</p>
             <pre><code data-check="reject">def unknown_hint : 0 = 0 {
   // Error: No checked definition to unfold: missing_name
   exact with unfolding [missing_name] { refl(0) };

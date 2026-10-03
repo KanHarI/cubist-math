@@ -92,10 +92,8 @@ N1/N2/N4 need neither initial models nor a rebuilt algebra library.
 
 The trusted checker is the [instruction kernel](kernel-instructions.md).
 The untrusted driver is `web/cubical-instruction-driver.mjs`; its own guide
-has been the default since K1.4. The old conversion oracle is comparison
-only (`node tools/instruction-coverage.mjs --oracle`). The C term checker
-is not extended to new language features; the JavaScript reference checker
-was removed on 2026-10-02.
+has been the default since K1.4. The C term checker, its conversion oracle
+and the JavaScript reference checker were removed on 2026-10-02 (I1.2b).
 
 Each kernel package adds instructions in `kernel/src/instructions.c`, their
 computation rules and driver support. Acceptance includes:
@@ -135,9 +133,13 @@ side conditions the leaky memo answered are now derived. The
 [kernel instructions](kernel-instructions.md#what-remains-of-the-term-checker)
 record the boundary, the evidence and the measurements.
 
-**I1.2b, optional checker retirement (M).** K1.4 removes the runtime
-dependency, but deletion also requires migrating test-only clients and
-bridge exports. Move the trusted helpers out of the old checker files,
+**I1.2b, optional checker retirement (M). Done on 2026-10-02:** the term
+checker, the conversion search, the unfolding hints and the trace are
+deleted from the kernel and the bridge, their test-only clients moved to
+instructions, and archive coverage with the guide is unchanged; see
+[what remains of the term checker](kernel-instructions.md#what-remains-of-the-term-checker).
+K1.4 removed the runtime dependency, but deletion also required migrating
+test-only clients and bridge exports. Move the trusted helpers out of the old checker files,
 preserve required syntax builders, and remove old APIs only after the
 call graph I1.2a recorded is rechecked: the folded comparison shares its
 function with the conversion modes, and its level, formula and scope

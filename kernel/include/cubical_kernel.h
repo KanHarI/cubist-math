@@ -3,12 +3,11 @@
 
 #include "cubical.h"
 
-/* The trusted kernel is the instruction kernel (cc_instr_*, below): a
- * definition is admitted only by Define, from a closed judgement derived one
- * rule at a time, and only admitted definitions can be looked up. The term
- * checker (cc_kernel_check, cc_kernel_define), its conversion strategy and
- * the unfolding hints that steer it are untrusted elaboration services: they
- * propose checked terms, and decide nothing an instruction relies on.
+/* The kernel is the instruction kernel (cc_instr_*, below): a definition is
+ * admitted only by Define, from a closed judgement derived one rule at a
+ * time, and Lookup reads it back. Queries (normalize, whnf, rename, endpoint
+ * terms) compute on syntax and certify nothing; an untrusted driver uses
+ * them to choose the instructions it issues.
  *
  * Raw syntax constructors are deliberately NOT proof certificates. Names are
  * numeric symbols whose readable spelling is maintained by the caller;
@@ -54,45 +53,32 @@ uint32_t cc_kernel_abi_version(void);
 #define CC_LEVEL_MAX 65535u
 #define CC_TIER_MAX 255u
 
-typedef struct {
-    uint32_t symbol;
-    cc_term type;
-} cc_assumption;
-
-typedef struct {
-    cc_term expression, type, normal;
-    uint64_t checking_steps, reduction_steps;
-    size_t arena_nodes, arena_bytes;
-} cc_checked_result;
-
 cc_kernel *cc_kernel_new(void);
 void cc_kernel_free(cc_kernel *);
-/* Resource budget per checking/reduction operation; zero leaves it unchanged.
+/* Resource budget per operation; zero leaves it unchanged.
  * Raising it never bypasses a rule or certifies a previously rejected term. */
 void cc_kernel_set_step_budget(cc_kernel *, uint64_t steps);
 /* Kernel work, for measuring what a search costs (docs/roadmaps/
  * learned-search.md; the work plan's L1.3 fuel).
  *
  * The budget. Every operation starts with the step budget set above. The
- * operations are the instructions (cc_instr_*) and the queries: the term
- * checker (cc_kernel_check, cc_kernel_check_in_cube, cc_kernel_define),
- * cc_kernel_normalize, cc_kernel_whnf, cc_kernel_convertible (at most its
- * own `steps`), and the syntax services cc_kernel_endpoint_term and
- * cc_kernel_rename. One step is one unit of that budget: each type inference
- * of the term checker, weak-head or normalization step, conversion
- * comparison, substitution into a node and level normal-form node takes one,
+ * operations are the instructions (cc_instr_*) and the queries:
+ * cc_kernel_normalize, cc_kernel_whnf, and the syntax services
+ * cc_kernel_endpoint_term and cc_kernel_rename. One step is one unit of that
+ * budget: each weak-head or normalization step, syntactic comparison,
+ * substitution into a node and level normal-form node takes one,
  * and an instruction takes one on entry, so an instruction answered from the
  * derivation memo still costs a step. Work nested in an operation shares its
  * budget: nothing nested resets it, whether an instruction's computation or
- * a definition's check. An operation that runs out records a BUDGET error
+ * another derivation. An operation that runs out records a BUDGET error
  * and makes no judgement. Building syntax (cc_kernel_term, cc_kernel_formula,
  * cc_kernel_equiv_type) takes no step.
  *
  * The counters only grow. No operation, error, checkpoint, rollback or
  * commit resets them, so the difference between two readings is the work in
  * between, rejected and failed work included. A public function that starts
- * no operation, such as building syntax, cc_kernel_equiv_type or setting
- * unfolding hints, counts nothing: not its steps, which spend what budget the
+ * no operation, such as building syntax or cc_kernel_equiv_type, counts
+ * nothing: not its steps, which spend what budget the
  * last operation left, nor its error. An operation retried with a
  * larger budget counts each time it runs, as its work is done again.
  *   instructions       instructions started, whether accepted, answered from
@@ -111,9 +97,10 @@ typedef struct {
     uint64_t exhausted, deadlines;
 } cc_work_counters;
 void cc_kernel_work(const cc_kernel *, cc_work_counters *);
-/* Independent performance switches, enabled by default. Neither changes the
- * judgement rules. Disabling a cache discards its entries immediately. */
-enum { CC_SHARE_SYNTAX = 1, CC_REUSE_CHECKS = 2 };
+/* A performance switch, enabled by default, that changes no judgement rule:
+ * with CC_SHARE_SYNTAX identical syntax has one handle. Disabling it discards
+ * its table immediately. */
+enum { CC_SHARE_SYNTAX = 1 };
 void cc_kernel_set_optimizations(cc_kernel *, unsigned flags);
 /* Kernel extensions. CC_EXTENSION_H1 admits declared types (H1); it is on by
  * default since H1's release, and switching it off makes SignatureBegin
@@ -126,8 +113,7 @@ unsigned cc_kernel_extensions(const cc_kernel *);
 void cc_kernel_set_deadline_ms(cc_kernel *, double duration_ms);
 const char *cc_kernel_error(const cc_kernel *);
 /* The class of the recorded error, so callers need not read its text.
- * MISMATCH: a type is not convertible to, or cumulative with, the expected
- * type. BUDGET, DEADLINE: the step budget or the deadline ran out, so no
+ * MISMATCH: a type is not the expected type, or not included in it. BUDGET, DEADLINE: the step budget or the deadline ran out, so no
  * judgement was made. OTHER: any other rejection. NONE: no error. */
 typedef enum {
     CC_ERROR_NONE, CC_ERROR_MISMATCH, CC_ERROR_BUDGET, CC_ERROR_DEADLINE, CC_ERROR_OTHER
@@ -137,29 +123,8 @@ cc_error_kind cc_kernel_error_kind(const cc_kernel *);
  * to match, for diagnostics. Returns false for any other error or none. The
  * handles are valid until the next rollback, which also clears the error. */
 bool cc_kernel_mismatch(const cc_kernel *, cc_term *found, cc_term *expected);
-/* An optional trace of the checker's actions, for inspection only. It
- * records events as the rules run and never changes a judgement. Starting a
- * trace discards the previous one; events beyond its capacity are counted but
- * not kept. Handles in events are valid until the next rollback.
- *   INFER      a: raw term; the events that check it follow, one level deeper.
- *   INFERRED   a: raw term, b: checked term, c: its type; b = c = 0 on failure.
- *   REUSED     a: raw term, b: checked term, c: its type, from the check cache.
- *   EXTEND     a: bound symbol, b: its type: the context gains an assumption.
- *   CONVERT    a: type found, b: type expected, c: 1 when they agree.
- *   REDUCE     a: term, b: its weak head normal form, when they differ.
- * Reductions inside a conversion are not recorded. */
-typedef enum {
-    CC_TRACE_INFER = 1, CC_TRACE_INFERRED, CC_TRACE_REUSED, CC_TRACE_EXTEND, CC_TRACE_CONVERT, CC_TRACE_REDUCE
-} cc_trace_kind;
-typedef struct {
-    uint32_t kind, depth, a, b, c;
-} cc_trace_event;
-bool cc_kernel_trace_start(cc_kernel *, size_t capacity);
-void cc_kernel_trace_stop(cc_kernel *);
-size_t cc_kernel_trace_count(const cc_kernel *);
-bool cc_kernel_trace_event(const cc_kernel *, size_t index, cc_trace_event *);
 /* Instructions (instructions.c): THTH-style forward rules on a graph of
- * judgements, beside cc_kernel_check. An instruction takes earlier judgements
+ * judgements. An instruction takes earlier judgements
  * and context entries, checks its side conditions syntactically — types must
  * be identical up to bound names — and returns a new judgement, or 0 with an
  * error. Nothing is reduced or unfolded except by an equality instruction
@@ -415,7 +380,7 @@ cc_judgement_id cc_instr_eliminator_close(cc_kernel *, cc_judgement_id eliminato
  * substitution preserves typing. No other entry may depend on i. */
 cc_judgement_id cc_instr_endpoint(cc_kernel *, cc_judgement_id, cc_entry_id dimension, unsigned endpoint);
 /* A closed typing judgement becomes a definition, admitted; the result is its
- * lookup. Lookup recalls an admitted definition, and no other. */
+ * lookup. Lookup recalls a definition Define admitted. */
 cc_judgement_id cc_instr_define(cc_kernel *, uint32_t symbol, cc_judgement_id closed);
 cc_judgement_id cc_instr_lookup(cc_kernel *, cc_term reference);         /* ⊢ d : T */
 /* Equalities, and rewriting. A judgement's sides are 0, its term; 1, the
@@ -442,15 +407,7 @@ cc_judgement_id cc_instr_transitivity(cc_kernel *, cc_judgement_id first, cc_jud
 cc_judgement_id cc_instr_convert(cc_kernel *, cc_judgement_id typing, cc_judgement_id equality);
 cc_judgement_id cc_instr_lift(cc_kernel *, cc_judgement_id typing, cc_judgement_id type);
 
-/* A search aid, never evidence: whether the term checker's conversion finds
- * two terms equal, within a step budget (zero for the usual one). An
- * untrusted driver may steer its search by it; the instructions it then
- * issues are checked as any others, and its answer cannot change their
- * verdicts: their syntactic comparison keeps its own memo entries, and no
- * instruction reaches this search. False on an error, which stays recorded:
- * an exhausted budget means the answer is unknown. */
-bool cc_kernel_convertible(cc_kernel *, cc_term, cc_term, uint64_t steps);
-/* Syntax only, for the same search: a term with a free name, or dimension,
+/* Syntax only, for the driver's search: a term with a free name, or dimension,
  * renamed, avoiding capture. */
 cc_term cc_kernel_rename(cc_kernel *, cc_term, bool dimension, uint32_t from, uint32_t to);
 /* Syntax only, for the same search: a term with 0 or 1 substituted for a free
@@ -554,58 +511,27 @@ cc_term cc_kernel_relocated(const cc_kernel *, cc_term);
  * signature's own sort; Con(constructor-number; instance). Elim is F5's.
  * Unit/Point/Void have no children. Missing children must be zero.
  * The retired Nat/Zero/Succ/NatRec/W/Sup/WRec slots are refused.
- * The checker discards an untrusted PApp's optional second child (annotation).
+ * A PApp's optional second child is its path's type, which the instructions
+ * record; raw syntax may omit it.
  */
 cc_term cc_kernel_term(cc_kernel *, cc_term_kind, uint32_t payload,
                        cc_term a, cc_term b, cc_term c, cc_term d);
 cc_formula_id cc_kernel_formula(cc_kernel *, const cc_formula *);
 
-/* ---- Untrusted elaboration services -------------------------------------
- * The term checker below elaborates raw syntax, reconstructing annotations and
- * splitting faces, and answers the elaborator's queries. Nothing it accepts
- * is a definition the instruction kernel will use: instruction Lookup refuses
- * its definitions, and the instructions never consult it.
- *
- * Ordered assumptions are themselves checked as a telescope. An expected type
- * of zero requests inference only. On failure, result is cleared. No old
- * production-kernel handle or axiom fallback can be supplied through this API. */
-bool cc_kernel_check(cc_kernel *, cc_term, cc_term expected,
-                     const cc_assumption *, size_t count, cc_checked_result *);
-
-/* Check under named interval dimensions (bit d enables dimension d).
- * Assumption types may depend on those dimensions. No endpoints are sampled:
- * ordinary cubical rules check the whole open cube. The result remains open
- * in this telescope/cube and is not a closed definition certificate. */
-bool cc_kernel_check_in_cube(cc_kernel *, cc_term, cc_term expected,
-                             const cc_assumption *, size_t count,
-                             uint64_t dimensions, cc_checked_result *);
-
-/* Optional conversion strategy for the term checker, never a typing
- * certificate, and outside the trusted kernel: no instruction reads it.
- * References must belong to this kernel's checked definition registry. Listed definitions
- * unfold in a preliminary comparison; count zero clears the strategy. The list
- * applies to check/define operations until replaced. Invalid input preserves
- * the prior list. Clear after a scoped hint even when a check is rejected. */
-bool cc_kernel_set_unfolding_hints(cc_kernel *, const cc_term *references, size_t count);
-
-/* The term checker's own definition, checked using only earlier checked
- * references, for its checks alone: it is not admitted, and instruction
- * Lookup refuses it. Admit a definition by instruction Define instead.
- * A symbol may be registered once. On failure no definition is published.
- * The returned expression is a folded DefRef, never an assumed axiom. */
-cc_term cc_kernel_define(cc_kernel *, uint32_t symbol, cc_term value, cc_term expected_type);
+/* A definition Define admitted: its symbol, its value and its type. */
 bool cc_kernel_definition(const cc_kernel *, cc_term reference, uint32_t *symbol,
                           cc_term *value, cc_term *type);
 /* Expose only the demanded head. Like normalize, this is inspection only:
- * it accepts raw syntax but does not certify it, including under free names. */
+ * it computes on syntax and certifies nothing, including under free names. */
 cc_term cc_kernel_whnf(cc_kernel *, cc_term);
 
-/* Explicit inspection reduction. Checking itself leaves terms compact.
- * This function does not certify a raw term; pass a successful checked handle. */
+/* Explicit inspection reduction. Derivations leave terms compact. This
+ * certifies nothing; pass a term an instruction derived, whose reduction
+ * terminates. */
 cc_term cc_kernel_normalize(cc_kernel *, cc_term);
 
 /* Read-only inspection of inert syntax. It does not assert that a handle was
- * checked; callers should start from the handles in a successful result. */
+ * derived; callers should start from the handles of a judgement. */
 bool cc_kernel_node(const cc_kernel *, cc_term, cc_term_kind *, uint32_t *, cc_term children[4]);
 const cc_formula *cc_kernel_get_formula(const cc_kernel *, cc_formula_id);
 

@@ -107,7 +107,7 @@ test("logical assumptions remain explicit, minimal, and inspectable after native
   assert.deepEqual(replay.inspect(payload.binding).context, view.context);
 });
 
-test("source unfolding hints name checked definitions, remain scoped, and cannot prove false paths", async t => {
+test("`with unfolding` names checked definitions, checks its body apart, and cannot prove false paths", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
   const source = `
     def id(n : Nat) := n;
@@ -118,13 +118,11 @@ test("source unfolding hints name checked definitions, remain scoped, and cannot
   `;
   const result = await program.check(source, "hints");
   assert.deepEqual(result.outputs.map(d => d.verified), [true, true, true, false, false]);
-  assert.deepEqual(result.outputs[1].unfoldingHints, []);
-  assert.deepEqual(program.checker.definitionViews.get("hints__unfolding_1").unfoldingHints, ["hints__id"]);
-  assert.deepEqual(result.outputs[2].unfoldingHints, []);
-  assert.deepEqual(program.kernel.unfoldingHints, []);
+  // The body is a definition of its own; the names steer nothing since the
+  // conversion oracle's retirement.
+  assert.ok(program.checker.definitionViews.has("hints__unfolding_1"));
+  assert.match(result.outputs[4].reason, /No checked definition to unfold: unknown/);
   const view = program.inspect("hints__hinted");
-  assert.deepEqual(view.unfoldingHints, []);
-  assert.deepEqual(program.kernel.unfoldingHints, []);
   const payload = program.export("hints__hinted");
   const replay = new CubicalProgram(module, async name => payload.sources[name]); t.after(() => replay.dispose());
   await replay.check(payload.source, payload.main);
@@ -157,7 +155,6 @@ test("unfolding scopes close local variables and interval coordinates without le
   `, "scope");
   assert.deepEqual(result.outputs.map(d => [d.name, d.reason]).filter(([, reason]) => reason), []);
   assert.equal(result.complete, true);
-  assert.deepEqual(program.kernel.unfoldingHints, []);
 });
 
 test("progress totals count a shared import once, including universe-generic definitions", async t => {

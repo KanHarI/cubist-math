@@ -1,6 +1,6 @@
-/* Conversion-only regression tests use raw syntax deliberately. A successful
- * comparison is not a typing certificate; public checking tests cover that
- * separate gate. In particular, free and bound names must remain distinct. */
+/* Syntactic comparison (ck_alpha_equal) on raw syntax, deliberately: a
+ * successful comparison is not a typing certificate. Free and bound names
+ * must remain distinct, and the memo must stay exact. */
 #include "term_internal.h"
 #include <assert.h>
 #include <stdio.h>
@@ -9,62 +9,25 @@ static cc_term lambda(cc_kernel *k, uint32_t name, cc_term body) {
     return ck_make(k, CC_LAM, name, ck_make(k, CC_U, 0, ck_make(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0), body, 0, 0);
 }
 
-static void conversion_cache(void) {
+/* A different term can acquire the same numeric handle after a rollback;
+ * a comparison remembered for the old one must not answer for it. */
+static void memo_survives_no_rollback(void) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
-    cc_term nat = ck_make(k, CC_U, 0, ck_make(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
-    cc_term zero = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0);
-    cc_term one = ck_make(k, CC_SUM, 0, ck_make(k, CC_UNIT, 0, 0, 0, 0, 0), zero, 0, 0);
-    cc_term x = ck_var(k, 10), y = ck_var(k, 11);
-    cc_term beta_x = ck_make(k, CC_APP, 0, lambda(k, 12, ck_var(k, 12)), x, 0, 0);
-    assert(ck_convertible(k, beta_x, x));
-    uint64_t before = k->reduction_steps;
-    assert(ck_convertible(k, beta_x, x));
-    assert(k->reduction_steps - before == 1);
-
-    // The cached free comparison is valid under identical binders, but not
-    // when one side's x becomes bound and the other's x remains free.
-    assert(ck_convertible(k, lambda(k, 10, beta_x), lambda(k, 10, x)));
-    assert(!ck_convertible(k, lambda(k, 10, beta_x), lambda(k, 11, x)));
-    assert(ck_convertible(k, lambda(k, 10, beta_x), lambda(k, 11, y)));
-    assert(!ck_convertible(k, beta_x, y));
-
-    cc_term path = ck_make(k, CC_PATH, 2, nat, zero, zero, 0);
-    cc_term at_i = ck_make(k, CC_PAPP, ck_interval_variable(k, 0), ck_var(k, 20), path, 0, 0);
-    cc_term beta_i = ck_make(k, CC_APP, 0, lambda(k, 12, ck_var(k, 12)), at_i, 0, 0);
-    assert(ck_convertible(k, beta_i, at_i));
-    assert(!ck_convertible(k, ck_make(k, CC_PLAM, 0, nat, beta_i, 0, 0),
-                            ck_make(k, CC_PLAM, 1, nat, at_i, 0, 0)));
-
-    // A different application can acquire the same numeric handle after
-    // rollback. Its old equality must not survive arena reuse.
-    cc_term identity = lambda(k, 12, ck_var(k, 12));
+    cc_term identity = lambda(k, 10, ck_var(k, 10));
     cc_kernel_checkpoint(k);
-    cc_term old = ck_make(k, CC_APP, 0, identity, zero, 0, 0);
-    assert(old && ck_convertible(k, old, zero));
+    cc_term old = lambda(k, 12, ck_var(k, 13));
+    assert(!ck_alpha_equal(k, old, identity));
     cc_kernel_rollback(k);
-    cc_term replacement = ck_make(k, CC_APP, 0, identity, one, 0, 0);
+    cc_term replacement = lambda(k, 12, ck_var(k, 12));
     assert(replacement == old);
-    assert(!ck_convertible(k, replacement, zero));
-    assert(ck_convertible(k, replacement, one));
-
-    // Shared subexpressions may match only after beta reduction. The folded
-    // failure cache alone would revisit exponentially many equal branches.
-    cc_term left = ck_make(k, CC_APP, 0, identity, zero, 0, 0), right = zero;
-    for (unsigned i = 0; i < 24; ++i) {
-        left = ck_make(k, CC_PAIR, 0, nat, left, left, 0);
-        right = ck_make(k, CC_PAIR, 0, nat, right, right, 0);
-    }
-    before = k->reduction_steps;
-    assert(ck_convertible(k, lambda(k, 10, left), lambda(k, 11, right)));
-    assert(k->reduction_steps - before < 2000);
-
-    // Equality reuse never bypasses the typing gate or downward cumulativity.
-    cc_term u0 = ck_universe_at(k, 0);
-    cc_term u1 = ck_universe_at(k, 1);
-    assert(ck_expect(k, u0, u1));
-    assert(!ck_convertible(k, u0, u1));
-    assert(!ck_expect(k, u1, u0));
+    assert(ck_alpha_equal(k, replacement, identity));
+    /* Cumulativity raises a universe, and never lowers or identifies one. */
+    cc_term u0 = ck_universe_at(k, 0), u1 = ck_universe_at(k, 1);
+    assert(ck_syntactic_cumulative(k, u0, u1));
+    assert(!ck_alpha_equal(k, u0, u1));
+    assert(!ck_syntactic_cumulative(k, u1, u0));
+    assert(!k->error[0]);
     cc_kernel_free(k);
 }
 
@@ -160,7 +123,7 @@ static void renamings_share_work(void) {
 
 int main(void) {
     renamings_share_work();
-    conversion_cache();
+    memo_survives_no_rollback();
     cut_short_scans_are_forgotten();
     cc_kernel *k = cc_kernel_new();
     assert(k);
@@ -172,14 +135,14 @@ int main(void) {
     cc_term identity_x = lambda(k, 10, x);
     cc_term identity_y = lambda(k, 11, y);
     cc_term free_x = lambda(k, 11, x);
-    assert(ck_convertible(k, identity_x, identity_y));
-    assert(!ck_convertible(k, identity_x, free_x));
-    assert(!ck_convertible(k, free_x, identity_x));
-    assert(ck_convertible(k, identity_x, identity_y));
-    assert(ck_convertible(k, free_x, free_x));
-    assert(!ck_convertible(k, lambda(k, 10, lambda(k, 11, x)),
+    assert(ck_alpha_equal(k, identity_x, identity_y));
+    assert(!ck_alpha_equal(k, identity_x, free_x));
+    assert(!ck_alpha_equal(k, free_x, identity_x));
+    assert(ck_alpha_equal(k, identity_x, identity_y));
+    assert(ck_alpha_equal(k, free_x, free_x));
+    assert(!ck_alpha_equal(k, lambda(k, 10, lambda(k, 11, x)),
                             lambda(k, 11, lambda(k, 10, x))));
-    assert(ck_convertible(k, lambda(k, 10, lambda(k, 10, x)),
+    assert(ck_alpha_equal(k, lambda(k, 10, lambda(k, 10, x)),
                            lambda(k, 11, lambda(k, 11, y))));
 
     cc_term p = ck_var(k, 12);
@@ -189,11 +152,11 @@ int main(void) {
     cc_term line_i = ck_make(k, CC_PLAM, 0, nat, pi, 0, 0);
     cc_term line_j = ck_make(k, CC_PLAM, 1, nat, pj, 0, 0);
     cc_term free_i = ck_make(k, CC_PLAM, 1, nat, pi, 0, 0);
-    assert(ck_convertible(k, line_i, line_j));
-    assert(!ck_convertible(k, line_i, free_i));
-    assert(!ck_convertible(k, free_i, line_i));
-    assert(ck_convertible(k, line_i, line_j));
-    assert(ck_convertible(k, free_i, free_i));
+    assert(ck_alpha_equal(k, line_i, line_j));
+    assert(!ck_alpha_equal(k, line_i, free_i));
+    assert(!ck_alpha_equal(k, free_i, line_i));
+    assert(ck_alpha_equal(k, line_i, line_j));
+    assert(ck_alpha_equal(k, free_i, free_i));
 
     /* Homogeneous composition does not bind its type; transport does not
      * bind its face. A composition direction never binds a tube FACE. */
@@ -219,12 +182,8 @@ int main(void) {
     cc_term shared = zero;
     for (unsigned i = 0; i < 24; ++i)
         shared = ck_make(k, CC_SUM, 0, shared, shared, 0, 0);
-    uint64_t before = k->reduction_steps;
-    assert(ck_convertible(k, lambda(k, 10, shared), lambda(k, 11, shared)));
-    uint64_t steps = k->reduction_steps - before;
-    assert(steps < 1000);
-    assert(!k->error[0]);
-    printf("Scoped folded DAG comparison: %llu reduction steps.\n", (unsigned long long)steps);
+    assert(equal_within(k, lambda(k, 10, shared), lambda(k, 11, shared), 1000));
+    puts("Scoped comparison of a shared DAG takes fewer than 1,000 steps.");
     cc_kernel_free(k);
     return 0;
 }

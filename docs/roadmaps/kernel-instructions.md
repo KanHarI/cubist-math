@@ -15,9 +15,10 @@ only; the term checker has no rule for them. Sums stay native.
 Status: merged into `proof-ergonomics-roadmap` on 2026-09-26 (PR #38). The
 instruction kernel is the trusted kernel, and elaboration checks every term
 through it. Since K1.4 on 2026-09-27 the driver uses its own guide by
-default; the old conversion oracle is available only for comparison. Its
-retirement and conditional stage 6 remain open; see
-[what remains of it](#what-remains-of-the-term-checker). The
+default. The term checker and its conversion oracle were retired on
+2026-10-02 (work plan I1.2b; see
+[what remained of it](#what-remains-of-the-term-checker)); conditional
+stage 6 remains open. The
 [audit of 2026-09-28](audits/2026-09-28-audit.md) found that separation
 incomplete: reduction called the old conversion, and its memo could change
 an instruction's acceptance. Work-plan I1.2a corrected both the same day,
@@ -574,6 +575,23 @@ against 20 s in Stage 4. The JS test suite takes 76 s, up from 61 s.
 
 ## What remains of the term checker
 
+**Retired on 2026-10-02 (work plan I1.2b).** Nothing remains of it. The
+typing rules (`check.c` and the `check_*.c` files), the check cache, the
+restricted contexts of `face_context.c`, the unfolding hints, the trace, and
+the conversion search with its modes are deleted, with `cc_kernel_check`,
+`cc_kernel_check_in_cube`, `cc_kernel_define`, `cc_kernel_convertible`,
+`cc_kernel_set_unfolding_hints`, the trace API and `CC_REUSE_CHECKS`. The
+folded comparison stays in `term_conversion.c` as the comparison's only
+mode, unchanged; the queries the driver asks moved to `queries.c`. In
+JavaScript, `CubicalKernel.check`, `define` and `convertible`,
+`CubicalSyntax.check`, the driver's `oracle` option and the coverage tool's
+`--oracle` are gone, and so is `tools/differential-driver.mjs`, which
+compared the driver with the term checker. Source `with unfolding [names] {
+e }` is still accepted: its names must be checked definitions, and its body
+is checked as a definition of its own, but the names steer nothing. Archive
+coverage with the driver's guide is unchanged, to the instruction and the
+step. The record below is how it stood before.
+
 The instruction kernel uses two pieces of the old checker's files, and only
 they are trusted: the folded comparison of `term_conversion.c`, which is
 alpha equality (`ck_alpha_equal`) and syntactic cumulativity
@@ -688,12 +706,13 @@ JavaScript being too slow.
    the workbench; binders stay named, and ids stay dense, for now.
 6. The instruction kernel is the trusted kernel: only `Define` admits a
    definition, and only admitted definitions can be looked up. The term
-   checker and the unfolding hints are untrusted elaboration aids.
-7. Elaboration checks nothing with the term checker. Its conversion is a
-   search aid only; `CubicalSyntax.check` keeps it reachable for tests.
+   checker and the unfolding hints were untrusted elaboration aids, retired
+   on 2026-10-02.
+7. Elaboration checks nothing with the term checker. Its conversion was a
+   search aid only, until both were retired.
 8. Every later kernel feature is instructions only. The term checker's rules
-   and the JavaScript reference checker are not extended, and they retire
-   when the driver no longer benefits from the conversion oracle.
+   and the JavaScript reference checker were not extended, and they retired
+   once the driver no longer benefited from the conversion oracle.
 9. (2026-09-28) An instruction's acceptance may not depend on an untrusted
    query. The folded comparison reads only its own memo entries, reduction
    decides its eta rules by syntax, and the conversion search refuses to

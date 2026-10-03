@@ -191,12 +191,6 @@ export class InstructionGraph {
   convert(typing, equality) { return this.issue("convert", typing, equality); }
   lift(typing, type) { return this.issue("lift", typing, type); }
 
-  // A search aid, never evidence: whether the term checker's conversion finds
-  // two terms equal within `steps`; null when it could not tell.
-  convertible(a, b, steps = 0) {
-    const answer = this.module._cb_convertible(this.kernel.handle, a, b, steps);
-    return answer === 2 ? null : answer === 1;
-  }
   // Syntax only: Equiv(a, b) as the Glue rules state it.
   equivType(a, b) {
     return this.answer(this.module._cb_equiv_type(this.kernel.handle, a, b), "Could not build an equivalence type.");

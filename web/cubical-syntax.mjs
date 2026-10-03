@@ -322,18 +322,4 @@ export class CubicalSyntax {
     this.encoded.set(result, new Map([[dimensionContextKey(dimensions), id]]));
     this.decoded.set(cacheKey, result);
     return result;
-  }
-  check(term, expected = null, assumptions = [], dimensions = new Map()) {
-    let mask = 0n;
-    for (const [name, index] of dimensions) {
-      if (typeof name !== "string" || !Number.isInteger(index) || index < 0 || index >= 64)
-        throw new Error("Invalid cubical dimension binding.");
-      const bit = 1n << BigInt(index);
-      if (mask & bit) throw new Error("Cubical dimension indices must be distinct.");
-      mask |= bit;
-    }
-    const context = assumptions.map(([name, type]) => [this.kernel.symbol(name), this.encode(type, dimensions)]);
-    const result = this.kernel.check(this.encode(term, dimensions), expected ? this.encode(expected, dimensions) : 0, context, mask);
-    return { ...result, typeHandle: result.type, term: this.decode(result.expression, dimensions), type: this.decode(result.type, dimensions) };
-  }
-}
+  }}

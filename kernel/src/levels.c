@@ -104,7 +104,7 @@ static bool normal(cc_kernel *k, cc_term level, cc_level_nf *out) {
     for (;;) {
         if (!level || level >= k->count)
             return ck_fail(k, "Expected a level.");
-        if (!ck_tick(k, true))
+        if (!ck_tick(k))
             return false;
         if (k->nodes[level].kind != CC_LSUCC)
             break;
@@ -254,15 +254,6 @@ bool ck_level_leq(cc_kernel *k, cc_term a, cc_term b) {
     return below && !k->error[0];
 }
 
-/* Finite: below ω, so a natural number for every assignment. */
-bool ck_level_finite(cc_kernel *k, cc_term level) {
-    cc_level_nf nf;
-    if (!ck_level_normal(k, level, &nf))
-        return false;
-    bool finite = !nf.tier;
-    ck_level_nf_free(&nf);
-    return finite;
-}
 
 cc_term ck_level_canonical(cc_kernel *k, cc_term level) {
     cc_level_nf nf;
@@ -290,14 +281,6 @@ cc_term ck_level_max(cc_kernel *k, cc_term a, cc_term b) {
     return result;
 }
 
-cc_term ck_level_succ(cc_kernel *k, cc_term level) {
-    cc_level_nf nf;
-    if (!ck_level_normal(k, level, &nf))
-        return 0;
-    cc_term result = add(k, &nf, 1) ? ck_level_build(k, &nf) : 0;
-    ck_level_nf_free(&nf);
-    return result;
-}
 
 /* lim_x(ℓ) (§2.7): ω when x occurs in nf(ℓ), and nf(ℓ) otherwise. It is the
  * level of Π (x < ω). B when B's level is ℓ. */
@@ -339,7 +322,7 @@ cc_term ck_canonical_levels(cc_kernel *k, cc_term term) {
     uint64_t cached;
     if (ck_memo_get(k, 4, term, 0, 0, &cached))
         return (cc_term)cached;
-    if (!ck_tick(k, false))
+    if (!ck_tick(k))
         return 0;
     cc_node n = k->nodes[term];
     cc_term result = term;
@@ -377,22 +360,6 @@ cc_term ck_universe(cc_kernel *k, cc_term level) {
     return level ? ck_make(k, CC_U, 0, level, 0, 0, 0) : 0;
 }
 
-/* The term checker is not extended to levels: its universes are those at a
- * closed finite level, as before G0, and any other level is an error. */
-bool ck_universe_number(cc_kernel *k, cc_term universe, uint32_t *level) {
-    if (!universe || universe >= k->count || k->nodes[universe].kind != CC_U)
-        return ck_fail(k, "Expected a universe.");
-    cc_term child = k->nodes[universe].child[0];
-    if (small_constant(k, child, level))
-        return true;
-    cc_level_nf nf;
-    if (!ck_level_normal(k, child, &nf))
-        return false;
-    bool closed = !nf.tier && !nf.count;
-    *level = nf.constant;
-    ck_level_nf_free(&nf);
-    return closed || ck_fail(k, "The term checker takes universes at closed finite levels only.");
-}
 
 cc_term ck_universe_at(cc_kernel *k, uint32_t level) {
     return ck_universe(k, ck_level_constant(k, 0, level));
