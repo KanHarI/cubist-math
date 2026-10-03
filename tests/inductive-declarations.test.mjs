@@ -375,9 +375,10 @@ inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }
     "loop_case : PathP(fun (i : Interval) => P(loop @ i), base_case, base_case)"]);
   const truncation = program.signatureView("main__Tr");
   assert.deepEqual(truncation.eliminator.clauses.map(c => c.constructor), ["point", "Tr.squash"]);
-  // The motive's universe avoids the parameter's name.
-  assert.equal(truncation.eliminator.motive, "P : Tr(A) -> V");
-  assert.equal(truncation.eliminator.clauses[1].type, "forall x : Tr(A). forall x1 : Tr(A). forall x2 : P(x). "
+  // The motive's universe avoids the parameter's name. Tr's universe is
+  // erased, which an instance does not carry: it prints as __U.
+  assert.equal(truncation.eliminator.motive, "P : Tr(__U, A) -> V");
+  assert.equal(truncation.eliminator.clauses[1].type, "forall x : Tr(__U, A). forall x1 : Tr(__U, A). forall x2 : P(x). "
     + "forall x3 : P(x1). PathP(fun (i : Interval) => P(Tr.squash(x, x1) @ i), x2, x3)");
   // A recorded universe parameter by its name in the declaration.
   assert.deepEqual(program.signatureView("main__Pointed").recorded, ["U"]);

@@ -281,37 +281,37 @@ export function parse(source, typeOnly = false) {
     const end = take("}").end;
     return { kind: "withUnfolding", hints, body, start: t.start, end };
   }
-  // `induction n [as k] return C { … }`: as names the value in the motive
-  // and the predecessor in the successor clause; without it the motive is
-  // constant and the predecessor unnamed.
+  // `induction v [as z] [return T] { c(xs, hs) @ i => body; … }`: a clause
+  // per constructor, as in match, whose names are the constructor's
+  // arguments and then, optionally, an induction hypothesis for each
+  // recursive argument. Natural numbers keep their own form,
+  // `induction n [as k] return C { zero => …; succ h => …; }`, where as names
+  // the value in the motive and the predecessor in the successor clause, and
+  // h is the hypothesis.
   function inductionExpr(t) {
     const value = expr();
-    let index = null;
-    if (peek() === "as") { take("as"); index = name(); }
-    take("return");
-    const type = expr();
+    let motiveName = null, type = null;
+    if (peek() === "as") { take("as"); motiveName = name(); }
+    if (peek() === "return") { take("return"); type = expr(); }
+    else if (motiveName) throw Object.assign(new Error("Give the motive after as: induction v as z return T { … }."), { offset: ts[i].start });
     take("{");
-    take("zero");
-    take("=>");
-    const base = expr();
-    take(";");
-    take("succ");
-    const hypothesis = name();
-    take("=>");
-    const step = expr();
-    take(";");
+    const clauses = [];
+    while (peek() !== "}") {
+      if (peek() === "EOF") throw Object.assign(new Error("Expected '}' to close the induction."), { offset: ts[i].start });
+      const head = clauseHead();
+      const body = expr();
+      const end = take(";").end;
+      clauses.push({ kind: "clause", ...head, body, start: head.constructor.start, end });
+    }
     const end = take("}").end;
-    return {
-      kind: "induction",
-      value,
-      index,
-      type,
-      base,
-      hypothesis,
-      step,
-      start: t.start,
-      end,
-    };
+    const [zero, succ] = clauses;
+    if (type && clauses.length === 2 && zero.constructor.text === "zero" && !zero.args && !zero.binders.length && !zero.coordinates.length
+        && succ.constructor.text === "succ" && !succ.args && succ.binders.length === 1 && !succ.coordinates.length) {
+      const a = { kind: "induction", value, index: motiveName, type, base: zero.body, hypothesis: succ.binders[0], step: succ.body, start: t.start, end };
+      Object.defineProperty(a, "clauses", { value: clauses, enumerable: false });
+      return a;
+    }
+    return { kind: "induction", motiveName, value, type, clauses, start: t.start, end };
   }
   // `match v [as z] [return T] { c(xs) @ i => body; … }`: a clause per
   // constructor, its arguments in parentheses, then its dimensions. The
@@ -614,6 +614,7 @@ export function parse(source, typeOnly = false) {
       return { kind: "exact", value, start: t.start, end: e.end };
     }
     if (t.text === "match") return matchStatement(t);
+    if (t.text === "induction") return matchStatement(t, true);
     if (t.text === "cases") {
       const value = expr();
       take("{");
@@ -742,27 +743,30 @@ export function parse(source, typeOnly = false) {
   }
   // The closing statement `match v { c(xs) @ i => { … } … }` (work plan
   // L2.2a): a clause per constructor, each a proof block of the goal at
-  // that constructor. Its motive comes from the goal.
-  function matchStatement(t) {
+  // that constructor. Its motive comes from the goal. The induction
+  // statement is the same, and its clauses may also name the induction
+  // hypotheses: `induction v { c(xs, hs) => { … } … }`.
+  function matchStatement(t, induction = false) {
+    const keyword = induction ? "induction" : "match";
     const value = expr();
     if (peek() === ",")
-      throw Object.assign(new Error("The match statement takes apart one value; match on the first, then on the next inside each clause."),
+      throw Object.assign(new Error(`The ${keyword} statement takes apart one value; ${keyword === "match" ? "match on" : "take"} the first, then the next inside each clause.`),
         { offset: ts[i].start });
     if (peek() === "as" || peek() === "return")
-      throw Object.assign(new Error("The match statement takes its motive from the goal: write match v { c(xs) => { … } … } without as or return."),
+      throw Object.assign(new Error(`The ${keyword} statement takes its motive from the goal: write ${keyword} v { c(xs) => { … } … } without as or return.`),
         { offset: ts[i].start });
     take("{");
     const clauses = [];
     while (peek() !== "}") {
-      if (peek() === "EOF") throw Object.assign(new Error("Expected '}' to close the match."), { offset: ts[i].start });
+      if (peek() === "EOF") throw Object.assign(new Error(`Expected '}' to close the ${keyword}.`), { offset: ts[i].start });
       const head = clauseHead();
       if (peek() !== "{")
-        throw Object.assign(new Error("A clause of the match statement is a proof block: c(xs) => { … }."), { offset: ts[i].start });
+        throw Object.assign(new Error(`A clause of the ${keyword} statement is a proof block: c(xs) => { … }.`), { offset: ts[i].start });
       const body = block();
       clauses.push({ kind: "clause", ...head, body, start: head.constructor.start, end: ts[i - 1].end });
     }
     const e = take("}");
-    return { kind: "matchStatement", value, clauses, start: t.start, end: e.end, ...matchObligations(false) };
+    return { kind: "matchStatement", ...(induction ? { induction: true } : {}), value, clauses, start: t.start, end: e.end, ...matchObligations(false) };
   }
   if (typeOnly) {
     const result = expr();

@@ -529,16 +529,17 @@ def double_three : double(3) = 6 { rfl; }</code></pre>
         </div>
         <div class="quick-entry" id="quick-nat-induction">
           <h4><code>induction</code></h4>
-          <p><code>induction n as k return C { zero =&gt; …; succ ih =&gt; …; }</code>: the zero branch gives <code>C(0)</code>, and the successor branch turns <code>ih : C(k)</code> into <code>C(succ(k))</code>. Without <code>as k</code>, the result type is the same in every branch.
+          <p><code>induction v [as z] return C { c(xs, hs) =&gt; …; }</code> on any declared type: each clause names the constructor’s arguments, then an induction hypothesis for each recursive argument. In a proof block, <code>induction v { c(xs, hs) =&gt; { … } }</code> takes its motive from the goal. Natural numbers also have <code>zero =&gt; …; succ h =&gt; …;</code>.
             <a href="reference/induction.html#induction">Natural numbers and inductive types →</a></p>
-          <pre><code data-check="accept">def copy(n : Nat) := induction n return Nat {
-  zero =&gt; 0;
-  succ previous =&gt; succ(previous);
-};
+          <pre><code data-check="accept">inductive List(U &lt; UU0, A : U) : U {
+  nil;
+  cons(head : A, tail : List(U, A));
+}
 
-def copy_two : copy(2) = 2 {
-  exact refl(2);
-}</code></pre>
+def length(xs : List(U0, Nat)) : Nat := induction xs return Nat {
+  nil =&gt; 0;
+  cons(head, tail, ih) =&gt; succ(ih);
+};</code></pre>
         </div>
         <div class="quick-entry" id="quick-binary">
           <h4>Binary literals</h4>

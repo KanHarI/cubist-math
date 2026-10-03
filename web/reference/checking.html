@@ -178,7 +178,7 @@ E606: Type mismatch: found 7 = 7, expected x = 8.
             <h2>Warnings</h2>
             <p>A declaration that checks can still bind a name it never uses. The checker warns about such a binding when it can simply be removed:</p>
             <ul>
-              <li><code>as k</code> on an <a href="induction.html#induction"><code>induction</code></a> whose return type and successor branch do not use <code>k</code>, and <code>as z</code> on a <a href="terms.html#match"><code>match</code></a> whose return type does not mention <code>z</code>;</li>
+              <li><code>as k</code> on a natural-number <a href="induction.html#nat-induction"><code>induction</code></a> whose return type and successor branch do not use <code>k</code>, and <code>as z</code> on a <a href="terms.html#match"><code>match</code></a>, or an <a href="induction.html#induction"><code>induction</code></a> on another declared type, whose return type does not mention <code>z</code>;</li>
               <li>a variable of <code>forall</code> or <code>exists</code> that its body does not mention, which can be written with <a href="paths.html#exists-and"><code>-&gt;</code> or <code>and</code></a>;</li>
               <li>a <a href="proof-blocks.html#let"><code>let</code></a> or <code>obtain</code> whose names nothing after it in its block uses.</li>
             </ul>

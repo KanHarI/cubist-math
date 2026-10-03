@@ -272,7 +272,7 @@ const tactics = {
   },
   matchStatement(t,first,rest,goal) {
     const {scope}=goal;
-    if(rest.length)throw Error("Statements after match are unreachable: each clause's block closes the goal.");
+    if(rest.length)throw Error(`Statements after ${first.induction?"induction":"match"} are unreachable: each clause's block closes the goal.`);
     return elaborateMatchStatement(t,first,goal,scope);
   },
   cases(t,first,rest,goal) {

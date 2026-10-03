@@ -397,9 +397,15 @@ export class NativeCubicalElaborator {
   // data, positions and dimensions, so that the printer can show the type's
   // eliminator as the match that builds it. A generated constructor, such as
   // a truncation's squash, is named through its type, as a clause writes it.
+  // Its parameters' kinds in source order, so that an instance prints with
+  // every argument the source writes: "recorded" and "erased" universes and
+  // term "parameter"s. An instance carries no erased universe.
   signatureDisplay(name) {
     const record = this.kernel.signatures.get(name), shapes = this.kernel.signature(record.index).constructors;
-    return { name: localName(name), constructors: record.constructors.map((constructor, c) => ({
+    const inductive = this.inductives?.get(name);
+    return { name: localName(name), ...(inductive ? { slots: inductive.slots.map(slot => slot.level === undefined ? "parameter"
+        : inductive.levels[slot.level].recorded ? "recorded" : "erased") } : {}),
+      constructors: record.constructors.map((constructor, c) => ({
       name: shapes[c].generated ? `${localName(name)}.${constructor}` : constructor,
       data: shapes[c].data, positions: shapes[c].positions, dimensions: shapes[c].dimensions })) };
   }
