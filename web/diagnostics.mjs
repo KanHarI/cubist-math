@@ -267,6 +267,12 @@ export const diagnostics = [
   ["E467", "Statements after … are unreachable: each clause's block closes the goal."],
   ["E468", "Statements after cases are not yet translated."],
   ["E469", "cases requires a sum type."],
+  ["E470", "glue needs the Glue type it builds an element of: write typed(Glue(…), glue(…))."],
+  ["E471", "glue builds an element of a Glue type."],
+  ["E472", "unglue takes an element of a Glue type."],
+  ["E473", "A face needs an interval coordinate and endpoint 0 or 1."],
+  ["E474", "A Glue piece has syntax face(i, 0 or 1, T, e) or face_when(φ, T, e)."],
+  ["E475", "A glue value has syntax face(i, 0 or 1, t) or face_when(φ, t)."],
   // Inductive types and matching
   ["E501", "trunc(n) is supported up to n = …."],
   ["E502", "A sort is type, set, prop or trunc(n) for an integer n ≥ -1."],

@@ -2,15 +2,19 @@
 // tests and the browser worker all resolve imports through this contract, so a
 // source checks against the same modules everywhere.
 //
-// Modules live in two roots: library/, the rebuilt library, and
-// archive/first-library/, the archived first library. A checked file outside
-// both roots adds a third place, its own directory ("local").
+// Modules live in three roots: library/, the rebuilt library;
+// archive/first-library/, the archived first library; and cubist-tests/, the
+// Cubist sources the test suite checks, kept as modules so that the workspace
+// opens them too. A checked file outside the roots adds one more place, its
+// own directory ("local").
 //
 // Each module resolves its own imports by where it lives:
 // - An archive module resolves only in the archive. The archive is a closed
 //   world: its checks never change as the library grows, and a library module
 //   of the same name never replaces an archive module's import.
 // - A library module resolves in library/, then in the archive.
+// - A test module resolves in cubist-tests/, then in library/, then in the
+//   archive. Nothing else imports a test module.
 // - A local module (the checked file or a module next to it) resolves in its
 //   directory, then in library/, then in the archive.
 // - A source that is not a file (a REPL entry, a reference example, the
@@ -26,13 +30,14 @@
 // any failed import, a clash included, is incomplete, even when no declaration
 // uses that module.
 
-export const moduleRoots = Object.freeze({ library: "library/", archive: "archive/first-library/" });
+export const moduleRoots = Object.freeze({ library: "library/", archive: "archive/first-library/", tests: "cubist-tests/" });
 export const moduleNamePattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 // Where a module is searched for, by where its importer lives.
 const searchOrders = Object.freeze({
   archive: ["archive"],
   library: ["library", "archive"],
+  tests: ["tests", "library", "archive"],
   local: ["local", "library", "archive"],
   source: ["library", "archive"],
 });
@@ -45,7 +50,7 @@ export function searchOrder(place = "source") {
 // The place of a checked file, from its path relative to the repository root
 // with "/" separators.
 export const placeOfPath = path => path.startsWith(moduleRoots.archive) ? "archive"
-  : path.startsWith(moduleRoots.library) ? "library" : "local";
+  : path.startsWith(moduleRoots.library) ? "library" : path.startsWith(moduleRoots.tests) ? "tests" : "local";
 
 const where = place => place === "local" ? "the checked file's directory" : moduleRoots[place];
 const either = order => order.length === 1 ? where(order[0])
@@ -112,15 +117,16 @@ export function moduleReader(read) {
 }
 
 // Modules known by name, as the browser knows them: `listing` names the
-// modules of the library and of the archive, and fetchText(path) reads one by
-// its path from the repository root. An unlisted name is never fetched.
-// `main` is the checked module and `place` where its source came from, as the
-// page that loaded it says. Without a place, a listed name is placed where it
-// is listed, the library first; any other name is a source that is not a file.
+// modules of each root, and fetchText(path) reads one by its path from the
+// repository root. An unlisted name is never fetched. `main` is the checked
+// module and `place` where its source came from, as the page that loaded it
+// says. Without a place, a listed name is placed where it is listed, the
+// library first, then the tests, then the archive; any other name is a source
+// that is not a file.
 export function listedReader(listing, fetchText, main = null, place = null) {
   const readSource = moduleReader((where, name) =>
     listing[where]?.includes(name) ? fetchText(`${moduleRoots[where]}${name}.cubist`) : null);
-  const found = place ?? ["library", "archive"].find(root => listing[root]?.includes(main));
+  const found = place ?? ["library", "tests", "archive"].find(root => listing[root]?.includes(main));
   if (main !== null && found) readSource.place(main, found);
   return readSource;
 }

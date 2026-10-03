@@ -77,6 +77,7 @@ such as an `as` name no motive mentions; checking reports the same warnings.
 - [`docs/guides/kernel.md`](docs/guides/kernel.md): a mathematician's guide to reading the kernel.
 - [`web/translator/`](web/translator): the translator from source to kernel syntax, with elaboration and the proof tactics; the browser, the CLI and the tests load these same files. Every check is the kernel's. Their tests are in `tests/translator/`.
 - [`archive/first-library/`](archive/first-library): the archived first `.cubist` library, still checked in CI. A rebuilt library replaces it area by area; see [`docs/library-results.md`](docs/library-results.md) and the [work plan](docs/roadmaps/work-plan.md).
+- [`cubist-tests/`](cubist-tests/README.md): the Cubist sources the test suite checks, each a module the proof workspace opens as `proof.html?proof=NAME`, so that a case's derivation can be inspected there.
 - [`web/language.html`](web/language.html): the source language reference, one page per chapter under `web/reference/`.
 - [`docs/tactical/galois-handoff.md`](docs/tactical/galois-handoff.md) and [`docs/roadmaps/complex-analysis-roadmap.md`](docs/roadmaps/complex-analysis-roadmap.md): unfinished mathematical developments and resumption notes.
 

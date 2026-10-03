@@ -9,7 +9,7 @@ import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proo
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
 import { numeralAt, tokenStyle, headerWordAt } from "./source-tokens.mjs";
-import { libraryModules } from "./cubist/modules.mjs";
+import { cubistTestModules, libraryModules } from "./cubist/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
 import { createReplConsole } from "./repl-console.mjs";
 import { withCode } from "./diagnostics.mjs";
@@ -19,14 +19,17 @@ const backend = "cubical";
 // A reference example is not a library proof: its source comes from the URL
 // fragment (#source=…), or, when embedded in a reference page, by message.
 const exampleMode = query.has("example"), embedded = exampleMode && query.has("embed");
-// A module of the rebuilt library opens like a proof, from library/.
+// A module of the rebuilt library opens like a proof, from library/, and so
+// does a Cubist test, from cubist-tests/.
 const libraryModule = !exampleMode && libraryModules.includes(query.get("proof"));
+const testModule = !exampleMode && !libraryModule && cubistTestModules.includes(query.get("proof"));
 const proofId = exampleMode ? "reference_example"
-  : libraryModule || proofCatalog.some((p) => p.id === query.get("proof")) ? query.get("proof")
+  : libraryModule || testModule || proofCatalog.some((p) => p.id === query.get("proof")) ? query.get("proof")
   : "euclid";
 const catalogEntry = proofCatalog.find((p) => p.id === proofId);
 const sourceURL = exampleMode ? null
   : libraryModule ? `library/${proofId}.cubist`
+  : testModule ? `cubist-tests/${proofId}.cubist`
   : `archive/first-library/${cubicalSourceFile(proofId)}`;
 const snapshot = readProofNavigation(query.get("restore"));
 let restoring = snapshot?.proof === proofId ? snapshot : null;
@@ -100,11 +103,13 @@ for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) {
   $(id).checked = true;
   try { $(id).checked = localStorage.getItem("mathscript:" + id) !== "false"; } catch {}
 }
-$("proof-title").textContent = catalogEntry?.title ?? (libraryModule ? `Library: ${proofId}` : "Reference example");
+$("proof-title").textContent = catalogEntry?.title
+  ?? (libraryModule ? `Library: ${proofId}` : testModule ? `Cubist test: ${proofId}` : "Reference example");
 $("development-note").hidden = !catalogEntry?.realDevelopment;
 $("puncture-note").hidden = !catalogEntry?.punctureDevelopment;
 $("complex-note").hidden = !catalogEntry?.complexDevelopment;
-$("archive-note").hidden = exampleMode || libraryModule;
+$("archive-note").hidden = exampleMode || libraryModule || testModule;
+$("test-note").hidden = !testModule;
 $("source-file").hidden = exampleMode;
 $("repository-source").hidden = exampleMode;
 if (sourceURL) {
@@ -261,7 +266,7 @@ async function check() {
   try {
     // Where the source came from decides where its imports are found
     // (module-resolution.mjs): an archive proof imports only from the archive.
-    const place = exampleMode ? null : libraryModule ? "library" : "archive";
+    const place = exampleMode ? null : libraryModule ? "library" : testModule ? "tests" : "archive";
     const result = await request("check", { source, module: proofId, place, optimizations: compilerOptimizations() });
     last = result;
     history.length = 0;

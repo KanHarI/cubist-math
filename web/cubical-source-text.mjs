@@ -43,6 +43,13 @@ export function sourceText(term, symbols = {}, limit = 4000) {
   const literal = text => text.endsWith(":0") ? `-${text.slice(0, -2)}` : text.replace(/:1$/, "");
   const conjunction = clause => clause.length ? clause.map(literal).join(" & ") : "1";
   const interval = value => value.length ? value.map(conjunction).join(" | ") : "0";
+  // A face formula is a disjunction of conjunctions too, of equations `i:0`.
+  // A Glue piece or a glue value on one equation is face(i, 0, …), and on any
+  // other face face_when(on(i, 0) and on(j, 1) or …, …).
+  const equation = text => `${text.slice(0, text.lastIndexOf(":"))}, ${text.slice(-1)}`;
+  const onFace = (formula, parts) => formula.length === 1 && formula[0].length === 1
+    ? `face(${equation(formula[0][0])}, ${parts.join(", ")})`
+    : `face_when(${formula.length ? formula.map(clause => clause.length ? clause.map(text => `on(${equation(text)})`).join(" and ") : "1").join(" or ") : "0"}, ${parts.join(", ")})`;
   // A binary number from the archive's binary_naturals, in normal form:
   // binary_zero is 0b0, and binary_positive(p) holds binary_bit0 and
   // binary_bit1 digits, the last digit outermost, around the leading binary_one.
@@ -284,6 +291,13 @@ export function sourceText(term, symbols = {}, limit = 4000) {
       case "PLam":
         if (!varies(t.body, t.dim) && !varies(t.family, t.dim)) return atom(`refl(${show(t.body)})`);
         return [`path ${t.dim} => ${show(t.body)}`, LEVEL.binder];
+      // Glue, as the source writes it; a glue term without its type, which
+      // the place it is checked at gives.
+      case "Glue":
+        return atom(`Glue(${[show(t.base), ...t.system.map(piece => onFace(piece.face, [show(piece.type), show(piece.equiv)]))].join(", ")})`);
+      case "GlueTerm":
+        return atom(`glue(${[show(t.base), ...t.system.map(part => onFace(part.face, [show(part.term)]))].join(", ")})`);
+      case "Unglue": return atom(`unglue(${show(t.value)})`);
       default: return fallback(t);
     }
   }
