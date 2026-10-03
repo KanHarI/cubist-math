@@ -187,6 +187,23 @@ struct cc_kernel {
 /* The instruction machinery (instructions.c), for instruction families kept
  * in their own files. */
 bool ck_instr_ready(cc_kernel *);
+/* The machinery instruction families share (instructions.c): judgements,
+ * premises, contexts and their entries, the syntactic comparison of a side
+ * condition, and building syntax. */
+bool ck_instr_entry(cc_kernel *, cc_entry_id, bool dimension, cc_entry *out);
+cc_judgement_id ck_instr_typing(cc_kernel *, cc_term term, cc_term type, uint32_t context);
+bool ck_instr_same(cc_kernel *, cc_term found, cc_term expected, const char *message);
+bool ck_instr_universe(cc_kernel *, cc_term type, cc_term *level);
+cc_term ck_instr_make(cc_kernel *, cc_term_kind, uint32_t payload, cc_term a, cc_term b, cc_term c, cc_term d);
+cc_term ck_instr_app(cc_kernel *, cc_term f, cc_term x);
+bool ck_instr_merge3(cc_kernel *, uint32_t a, uint32_t b, uint32_t c, uint32_t *out);
+bool ck_instr_discharge(cc_kernel *, uint32_t set, const cc_entry_id *removed, size_t count, uint32_t *out);
+bool ck_instr_bind(cc_kernel *, uint32_t body, cc_entry_id, uint32_t *out);
+cc_entry_id ck_instr_dimension_entry(cc_kernel *, unsigned index);
+/* Paths and composition (instruction_paths.c), for Glue's systems. */
+bool ck_instr_formula_context(cc_kernel *, const cc_formula *, uint32_t *out);
+cc_term ck_instr_append_tube(cc_kernel *, cc_term tubes, cc_formula_id face, cc_term tube);
+cc_judgement_id ck_instr_system_fact(cc_kernel *, cc_term comp, cc_term type, uint32_t context, uint64_t pending);
 bool ck_instr_begin(cc_kernel *, cc_derivation, const uint8_t *position, size_t depth, cc_judgement_id *found);
 /* Begin an instruction whose result depends on the signature table, which
  * changes: it is never answered from the derivation cache. */
