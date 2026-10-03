@@ -7,6 +7,7 @@ import { substituteTerm, T } from "./translator/core.mjs";
 import { localName, printedForms, printsAsItself } from "./translator/names.mjs";
 import { parse } from "./cubist/parser.mjs";
 import { lint } from "./cubist/lint.mjs";
+import { diagnosticCode } from "./diagnostics.mjs";
 import { leadingDocumentation } from "./cubist/documentation.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
 import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notation.mjs";
@@ -134,7 +135,7 @@ export class CubicalProgram {
       this.directiveFuel.push({ module: name, kind: directive.kind, name: directive.name, searchFuel: directive.searchFuel ?? null });
       if(directive.status!=="checked")
         this.gaps.push({module:name,name:`${directive.kind} ${directive.name}`,
-          reason:directive.reason,directive:true});
+          reason:directive.reason,code:diagnosticCode(directive.reason),directive:true});
       else if(directive.kind==="evaluate")
         this.evaluations.push({module:name,name:directive.name,value:directive.normalText});
     }
@@ -144,7 +145,7 @@ export class CubicalProgram {
       const verified = d.status === "checked-native-cubical";
       const reason = verified ? d.reason : failure(d.reason);
       const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified,
-        status: d.status, reason, errorStart: d.errorStart, errorEnd: d.errorEnd,
+        status: d.status, reason, ...(verified ? {} : { code: diagnosticCode(reason) }), errorStart: d.errorStart, errorEnd: d.errorEnd,
         rewriteWork: d.rewriteWork, searchFuel: d.searchFuel, failure: d.failure ?? null,
         axioms: d.native?.axioms ?? [],
         // Kernel extensions under review that the result relies on, shown
@@ -160,7 +161,7 @@ export class CubicalProgram {
             .filter(([variable]) => variable)) }) : reason };
       this.symbols[binding] = info;
       if (!verified) this.gaps.push({ module: name, name: d.name,
-        reason, start: d.errorStart, end: d.errorEnd });
+        reason, code: info.code, start: d.errorStart, end: d.errorEnd });
       if (name === main) this.links.push({ ...info, start: syntax.name.start, end: syntax.name.end });
     }
   }
@@ -189,7 +190,7 @@ export class CubicalProgram {
       }
       catch (error) {
         if (name === main) throw error;
-        this.gaps.push({ module: name, reason: error.message });
+        this.gaps.push({ module: name, reason: error.message, code: diagnosticCode(error.message) });
         this.failedImports.set(name, error.message);
         failedHere.add(name);
         visiting.delete(name); return new Map();

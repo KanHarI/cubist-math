@@ -214,13 +214,18 @@ def commuted(a, b : Nat) : a + b = b + a {
   const cli = fileURLToPath(new URL("../cli/repl.mjs", import.meta.url));
   const run = spawnSync(process.execPath, [cli, "check", "residual.cubist"], { cwd: directory, encoding: "utf8", timeout: 120000 });
   assert.equal(run.status, 1, run.stderr);
-  // A failed check lists its gaps on stderr.
-  const reported = Object.fromEntries(JSON.parse(run.stderr.slice(run.stderr.indexOf("["))).map(gap => [gap.name, gap.reason]));
+  // A failed check lists each gap on a line of its own, with its code:
+  // error CODE at line L:C (name): message.
+  const lines = run.stderr.trim().split("\n").map(line => /^error (\S+)(?: at line (\d+):(\d+))? \(([^)]+)\): (.*)$/.exec(line));
+  assert.ok(lines.every(Boolean), run.stderr);
+  const reported = Object.fromEntries(lines.map(([, , line, column, name, message]) => [name, line ? `${message} at ${line}:${column}` : message]));
   // The browser's worker runs CubicalProgram on the same runtime modules.
   const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
   t.after(() => program.dispose());
-  const checked = Object.fromEntries((await program.check(source, "residual")).outputs.map(output => [output.name, output.reason]));
+  const result = await program.check(source, "residual");
+  const checked = Object.fromEntries(result.outputs.map(output => [output.name, output.reason]));
   assert.deepEqual(reported, checked);
+  assert.deepEqual(lines.map(([, code]) => code), result.outputs.filter(output => !output.verified).map(output => output.code));
   for (const reason of Object.values(reported)) assert.match(reason, /Remaining goal: /);
 });
 

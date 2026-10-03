@@ -42,9 +42,9 @@ test("imports, declarations with blocks, and errors that leave the session uncha
   assert.deepEqual(texts(await repl.run("evaluate 2 + 3 * 4;")), ["value: 14"]);
   assert.deepEqual(texts(await repl.run("def four_is_four : 2 + 2 = 4 {\n  exact refl(4);\n}")), ["defined: four_is_four : 2 + 2 = 4"]);
   assert.deepEqual(texts(await repl.run("def wrong : 2 + 2 = 5 {\n  exact refl(4);\n}")),
-    ["error: Type mismatch: found 4 = 4, expected 2 + 2 = 5."]);
-  assert.deepEqual(texts(await repl.run("typeof wrong;")), ["error: Untranslated name: wrong"]);
-  assert.deepEqual(texts(await repl.run("typeof nowhere")), ["error: Untranslated name: nowhere"]);
+    ["error: E606: Type mismatch: found 4 = 4, expected 2 + 2 = 5."]);
+  assert.deepEqual(texts(await repl.run("typeof wrong;")), ["error: E343: Untranslated name: wrong"]);
+  assert.deepEqual(texts(await repl.run("typeof nowhere")), ["error: E343: Untranslated name: nowhere"]);
   assert.deepEqual(texts(await repl.run("import nowhere;")).length, 1);
   // Later entries still see everything that checked.
   assert.deepEqual(texts(await repl.run("typeof four_is_four; evaluate double(3)")).slice(0, 1), ["type: 2 + 2 = 4"]);
@@ -75,9 +75,9 @@ test("slash commands: /modules lists what import can load, /help the commands", 
   assert.deepEqual(await repl.run("/help"), await repl.run("help"));
   assert.match(texts(await repl.run("/help"))[0], /\/modules \[TEXT\][\s\S]*\/clear[\s\S]*\/restart/);
   // The console clears and restarts itself; a session only says so.
-  assert.deepEqual(texts(await repl.run("/clear")), ["error: /clear is a command of the console, not of an entry."]);
-  assert.deepEqual(texts(await repl.run("/frobnicate")), ["error: Unknown command /frobnicate. /help lists the commands."]);
+  assert.deepEqual(texts(await repl.run("/clear")), ["error: E236: /clear is a command of the console, not of an entry."]);
+  assert.deepEqual(texts(await repl.run("/frobnicate")), ["error: E237: Unknown command /frobnicate. /help lists the commands."]);
   // A rebased session keeps its module list.
   assert.equal((await repl.rebase(program)).modules, modules);
-  assert.deepEqual(texts(await new ReplSession(program).run("/modules")), ["error: This session cannot list its modules."]);
+  assert.deepEqual(texts(await new ReplSession(program).run("/modules")), ["error: E238: This session cannot list its modules."]);
 });
