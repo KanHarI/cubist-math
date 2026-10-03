@@ -148,6 +148,15 @@ def to_end(A : U0, x, y : A, p : x = y) :
   PathP(fun (j : Interval) =&gt; p @ j = y, p, refl(y)) {
   exact path j =&gt; path i =&gt; p @ i | j;
 }</code></pre>
+            <figure class="diagram" id="connections-figure">
+              <svg viewBox="0 0 560 232" role="img" aria-label="Two squares: to_start, whose bottom and left edges are constant at x and whose top and right edges are p; and to_end, whose bottom and left edges are p and whose top and right edges are constant at y.">
+                <defs><marker id="fig1-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#346447"/></marker></defs>
+                <rect class="area" x="70" y="30" width="140" height="140"/><line class="constant" x1="70" y1="170" x2="210" y2="170"/><text x="140" y="194" text-anchor="middle">refl(x)</text><line class="constant" x1="70" y1="170" x2="70" y2="30"/><text x="56" y="104" text-anchor="end">x</text><line class="path" x1="70" y1="30" x2="210" y2="30" marker-end="url(#fig1-arrow)"/><text x="140" y="20" text-anchor="middle">p</text><line class="path" x1="210" y1="170" x2="210" y2="30" marker-end="url(#fig1-arrow)"/><text x="224" y="104" text-anchor="start">p</text><circle class="point" cx="70" cy="170" r="3.5"/><text x="62" y="186" text-anchor="end">x</text><circle class="point" cx="210" cy="170" r="3.5"/><text x="218" y="186" text-anchor="start">x</text><circle class="point" cx="70" cy="30" r="3.5"/><text x="62" y="24" text-anchor="end">x</text><circle class="point" cx="210" cy="30" r="3.5"/><text x="218" y="24" text-anchor="start">y</text><text x="140" y="222" text-anchor="middle">to_start: p @ i &amp; j</text>
+                <rect class="area" x="350" y="30" width="140" height="140"/><line class="path" x1="350" y1="170" x2="490" y2="170" marker-end="url(#fig1-arrow)"/><text x="420" y="194" text-anchor="middle">p</text><line class="path" x1="350" y1="170" x2="350" y2="30" marker-end="url(#fig1-arrow)"/><text x="336" y="104" text-anchor="end">p</text><line class="constant" x1="350" y1="30" x2="490" y2="30"/><text x="420" y="20" text-anchor="middle">refl(y)</text><line class="constant" x1="490" y1="170" x2="490" y2="30"/><text x="504" y="104" text-anchor="start">y</text><circle class="point" cx="350" cy="170" r="3.5"/><text x="342" y="186" text-anchor="end">x</text><circle class="point" cx="490" cy="170" r="3.5"/><text x="498" y="186" text-anchor="start">y</text><circle class="point" cx="350" cy="30" r="3.5"/><text x="342" y="24" text-anchor="end">y</text><circle class="point" cx="490" cy="30" r="3.5"/><text x="498" y="24" text-anchor="start">y</text><text x="420" y="222" text-anchor="middle">to_end: p @ i | j</text>
+                
+              </svg>
+              <figcaption>The two connections of a path <code>p : x = y</code>, with <code>i</code> to the right and <code>j</code> upwards. Solid edges are <code>p</code>, dashed edges are constant. Read from bottom to top, <code>to_start</code> grows <code>refl(x)</code> into <code>p</code>, and <code>to_end</code> shrinks <code>p</code> into <code>refl(y)</code>.</figcaption>
+            </figure>
             <p>The best-known use is the <em>singleton</em> of a point <code>x</code>: the type of pairs of an end <code>y</code> and a path <code>x = y</code>. It is contractible: it has a center, <code>(x, refl(x))</code>, and every element <code>w</code> is equal to it. The path from the center to <code>w</code> moves the end forward along <code>w.2</code>, and the meet grows the path along with it: at coordinate <code>j</code> the pair is the point <code>w.2 @ j</code> and the part of <code>w.2</code> that reaches it, <code>path i =&gt; w.2 @ i &amp; j</code>. At <code>j = 0</code> that part is <code>refl(x)</code>, and at <code>j = 1</code> it is all of <code>w.2</code>. Read from <code>j = 1</code> back to <code>j = 0</code>, the same path slides <code>w</code> back to the center, shrinking its path to <code>refl(x)</code>.</p>
             <pre><code data-check="accept">def Singleton(A : U0, x : A) := exists y : A. x = y;
 
@@ -164,7 +173,13 @@ def based_path_induction(A : U0, x : A, C : Singleton(A, x) -&gt; U0,
     base : C((x, refl(x))), w : Singleton(A, x)) : C(w) {
   exact along C by singletons_contractible(A, x).2(w) from base;
 }</code></pre>
-            <p><code>based_path_induction</code> is the reason this matters: a statement about every path starting at <code>x</code> follows from the single case <code>refl(x)</code>. In cubical type theory path induction is derived in this way, not assumed: the built-in <a href="paths.html#path-induction"><code>path_induction</code></a> elaborates to a transport over the segments <code>path j =&gt; p @ i &amp; j</code>, the same meet.</p>
+            <figure class="diagram" id="singleton-figure">
+              <svg viewBox="0 0 560 186" role="img" aria-label="Three stages of the singleton's contraction: at j = 0 the point x with no path; at j = 1/2 the point halfway along p with the first half of p; at j = 1 the point y with all of p.">
+                <path class="faint" d="M30,120 C75,140 115,30 170,50"/><circle class="point" cx="30" cy="120" r="3.5"/><text x="30" y="140" text-anchor="middle">x</text><circle class="point" cx="170" cy="50" r="3.5"/><text x="170" y="38" text-anchor="middle">y</text><circle class="moving" cx="30" cy="120" r="5"/><text x="100" y="172" text-anchor="middle">j = 0: (x, refl(x))</text><path class="faint" d="M215,120 C260,140 300,30 355,50"/><path class="highlight" d="M215,120 C237.5,130 258.75,107.5 281.25,85"/><circle class="point" cx="215" cy="120" r="3.5"/><text x="215" y="140" text-anchor="middle">x</text><circle class="point" cx="355" cy="50" r="3.5"/><text x="355" y="38" text-anchor="middle">y</text><circle class="moving" cx="281.25" cy="85" r="5"/><text x="285" y="172" text-anchor="middle">j = 1/2</text><path class="faint" d="M400,120 C445,140 485,30 540,50"/><path class="highlight" d="M400,120 C445,140 485,30 540,50"/><circle class="point" cx="400" cy="120" r="3.5"/><text x="400" y="140" text-anchor="middle">x</text><circle class="point" cx="540" cy="50" r="3.5"/><text x="540" y="38" text-anchor="middle">y</text><circle class="moving" cx="540" cy="50" r="5"/><text x="470" y="172" text-anchor="middle">j = 1: (y, p) = w</text><text class="small" x="296" y="76" text-anchor="start">w.2 @ j</text>
+              </svg>
+              <figcaption>The path from the center to <code>w = (y, p)</code> in <code>Singleton(A, x)</code>, at three values of <code>j</code>. At each <code>j</code> the pair is the point <code>w.2 @ j</code>, shown as a dot, and the part of <code>p</code> that reaches it, <code>path i =&gt; w.2 @ i &amp; j</code>, highlighted: one row of <code>to_start</code>’s square.</figcaption>
+            </figure>
+            <p><code>based_path_induction</code> is the reason this matters: a statement about every path starting at <code>x</code> follows from the single case <code>refl(x)</code>. In cubical type theory path induction is derived in this way, not assumed: the built-in <a href="paths.html#path-induction"><code>path_induction</code></a> elaborates to a transport over the segments <code>path j =&gt; p @ i &amp; j</code>, the same meet. For the circle, contractibility has a consequence that surprises at first; see <a href="#loops-and-based-paths">loops and based paths</a>.</p>
             <p>Picking the wrong one is caught at the edges. With a meet, the path at <code>i</code> runs from <code>x</code> to <code>p @ i</code>, not from <code>p @ i</code> to <code>y</code>:</p>
             <pre><code data-check="reject">def wrong_connection(A : U0, x, y : A, p : x = y) :
   PathP(fun (i : Interval) =&gt; p @ i = y, p, refl(y)) {
@@ -180,7 +195,32 @@ def based_path_induction(A : U0, x : A, C : Singleton(A, x) -&gt; U0,
           </section>
           <section id="dependent-paths">
             <h2>Dependent paths</h2>
-            <p>A dependent function <code>f : forall a : A. C(a)</code> sends a path <code>p : x = y</code> to a path from <code>f(x)</code> to <code>f(y)</code>, but these lie in different types, <code>C(x)</code> and <code>C(y)</code>, so it is not an equality. It is a <strong>dependent path</strong>, a <code>PathP</code> over the family <code>fun (i : Interval) =&gt; C(p @ i)</code>: at each coordinate its value lies in the type over <code>p @ i</code>. There are three ways to build one:</p>
+            <p>A path <code>p : x = y</code> in <code>A</code>, together with a family of types <code>C : A -&gt; U0</code>, gives a type at every point of the path: <code>C(p @ i)</code>, running from <code>C(x)</code> at <code>i = 0</code> to <code>C(y)</code> at <code>i = 1</code>. A <strong>dependent path</strong> over <code>p</code> runs through these types. Its value at each <code>i</code> lies in <code>C(p @ i)</code>, and it goes from <code>a : C(x)</code> to <code>b : C(y)</code>. Its type is <code>PathP(fun (i : Interval) =&gt; C(p @ i), a, b)</code>, the <code>PathP</code> of the <a href="#cubical">table above</a>.</p>
+            <figure class="diagram" id="dependent-path-figure">
+              <svg viewBox="0 0 560 250" role="img" aria-label="A path p from x to y along the bottom, with the fibers C(x), C(p @ i) and C(y) standing over it. A dependent path crosses the fibers from a in C(x) to b in C(y). The transport of a lies in C(y), joined to b by an equality within C(y).">
+                <defs><marker id="fig3-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#346447"/></marker><marker id="fig3-arrow-faint" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8a9a8f"/></marker></defs>
+                <line class="path" x1="90" y1="214" x2="470" y2="214" marker-end="url(#fig3-arrow)"/>
+                <circle class="point" cx="90" cy="214" r="3.5"/><circle class="point" cx="470" cy="214" r="3.5"/>
+                <text x="90" y="236" text-anchor="middle">x</text><text x="470" y="236" text-anchor="middle">y</text><text x="280" y="236" text-anchor="middle">p, in A</text>
+                <line class="faint" x1="90" y1="30" x2="90" y2="190"/><line class="faint" x1="470" y1="30" x2="470" y2="190"/>
+                <line class="fiber" x1="185" y1="36" x2="185" y2="190"/><line class="fiber" x1="280" y1="36" x2="280" y2="190"/><line class="fiber" x1="375" y1="36" x2="375" y2="190"/>
+                <text x="90" y="22" text-anchor="middle">C(x)</text><text x="280" y="28" text-anchor="middle">C(p @ i)</text><text x="470" y="22" text-anchor="middle">C(y)</text>
+                <path class="highlight" d="M90,150 C190,170 330,40 470,70"/>
+                <circle class="moving" cx="90" cy="150" r="5"/><circle class="moving" cx="470" cy="70" r="5"/>
+                <text x="78" y="154" text-anchor="end">a</text><text x="482" y="74" text-anchor="start">b</text>
+                <path class="constant" d="M90,150 C220,200 380,175 466,160" marker-end="url(#fig3-arrow-faint)"/>
+                <circle class="point" cx="470" cy="160" r="3.5"/>
+                <text class="small" x="482" y="164" text-anchor="start">transport</text>
+                <line class="path" x1="470" y1="156" x2="470" y2="78"/>
+                <text class="small" x="482" y="118" text-anchor="start">= b</text>
+              </svg>
+              <figcaption>Over the path <code>p</code> stand the types <code>C(p @ i)</code>. A dependent path, highlighted, crosses them from <code>a : C(x)</code> to <code>b : C(y)</code>. Transporting <code>a</code> along <code>p</code>, dashed, gives an element of <code>C(y)</code>, and an equality in <code>C(y)</code> joins it to <code>b</code>: the same fact, stated in one type.</figcaption>
+            </figure>
+            <p>When the family is constant, every value lies in the one type, and a dependent path is an ordinary path. <code>x = y</code> is <code>PathP(fun (i : Interval) =&gt; A, x, y)</code>, and the checker treats the two as the same type:</p>
+            <pre><code data-check="accept">def constant_family(A : U0, x, y : A, p : x = y) : PathP(fun (i : Interval) =&gt; A, x, y) {
+  exact p;
+}</code></pre>
+            <p>Otherwise <code>a</code> and <code>b</code> have different types, so <code>a = b</code> does not type-check, and a dependent path is the way to relate them. The commonest comes from a dependent function <code>f : forall a : A. C(a)</code>, which sends <code>p</code> to a path from <code>f(x)</code> to <code>f(y)</code>; <a href="paths.html#path-operations"><code>cong</code></a> cannot give it, since <code>f(x) = f(y)</code> is not a type. There are three ways to build it:</p>
             <pre><code data-check="accept">def section_path(A : U0, C : A -&gt; U0, f : (forall a : A. C(a)), x, y : A, p : x = y) :
   PathP(fun (i : Interval) =&gt; C(p @ i), f(x), f(y)) {
   exact apd_path(f, p);
@@ -198,12 +238,25 @@ def section_via_transport(A : U0, C : A -&gt; U0, f : (forall a : A. C(a)),
     exact apd(f, x, y, p);   // goal: transport(C, x, y, p, f(x)) = f(y)
   }
 }</code></pre>
-            <p>There are two standard ways to state that a dependent function respects a path. A <code>PathP</code> states it directly, as a path lying over <code>p</code>. The transported equality <code>transport(C, x, y, p, f(x)) = f(y)</code> states it in one fiber. <code>apd_path</code> produces the first and <code>apd</code> the second. <code>over</code> proves a <code>PathP</code> goal from the transported equality, when that is easier. The family <code>C</code> is never inferred: the elaborator does not search for a family that fits.</p>
+            <ul>
+              <li><code>apd_path(f, p)</code> is the built-in form.</li>
+              <li><code>path i =&gt; f(p @ i)</code> is the same path written out: at each <code>i</code>, <code>f</code> at the point <code>p @ i</code> lies in <code>C(p @ i)</code>, as the family requires, and the ends are <code>f(x)</code> and <code>f(y)</code>.</li>
+              <li><code>over C along p by { … }</code> proves it from the other standard statement, below.</li>
+            </ul>
+            <p>The other statement compares in one type. Transporting <code>a</code> along <code>p</code> gives an element of <code>C(y)</code>, <code>transport(C, x, y, p, a)</code>, and comparing it with <code>b</code> there is an ordinary equality, <code>transport(C, x, y, p, a) = b</code>, in <code>C(y)</code>. The two statements are equivalent. For a dependent function, <code>apd(f, x, y, p)</code> proves the second; <code>over C along p by { … }</code> turns a proof of the second into the first, its block having the transported equality as its goal. So an element and its own transport are joined by a dependent path:</p>
+            <pre><code data-check="accept">def to_its_transport(A : U0, C : A -&gt; U0, x, y : A, p : x = y, a : C(x)) :
+  PathP(fun (i : Interval) =&gt; C(p @ i), a, transport(C, x, y, p, a)) {
+  over C along p by {
+    rfl;   // goal: transport(C, x, y, p, a) = transport(C, x, y, p, a)
+  }
+}</code></pre>
+            <p>The family <code>C</code> is never inferred: the elaborator does not search for a family that fits, so <code>over</code> and <code>transport</code> name it, and <code>over</code> needs a <code>PathP</code> goal to read the path from:</p>
             <pre><code data-check="reject">def not_a_path_goal(A : U0, C : A -&gt; U0, x, y : A, p : x = y) : Nat {
   over C along p by {  // Error: over requires an expected PathP goal.
     exact 0;
   }
 }</code></pre>
+            <p>Squares are dependent paths too. The type of <code>to_start</code> in <a href="#meets-and-joins">meets and joins</a>, <code>PathP(fun (j : Interval) =&gt; x = p @ j, refl(x), p)</code>, is a dependent path over the family of path types <code>x = p @ j</code>, whose ends change with <code>j</code>.</p>
           </section>
           <section id="ext">
             <h2>Function extensionality: <code>ext</code></h2>
@@ -308,6 +361,35 @@ def flatten_loop : cong(flatten, loop) = refl(0) { rfl; }
 def flatten_again(c : Circle) : Nat := match c {
   base =&gt; 0;
 } obligations by rfl;</code></pre>
+            <h3 id="loops-and-based-paths">Loops and based paths</h3>
+            <p><code>Circle</code> has a single point constructor, <code>base</code>, so every path the declaration gives, <code>loop</code>, <code>refl(base)</code> and their compositions, starts and ends at <code>base</code>. Consider the <a href="#meets-and-joins">singleton</a> of <code>base</code>, <code>Singleton(Circle, base)</code>: the pairs of an end <code>y</code> and a path <code>base = y</code>, called <strong>based paths</strong>. Each loop <code>q : base = base</code> gives one, <code>(base, q)</code>, and these are all the pairs whose end is <code>base</code> itself. It is tempting to conclude that the based paths are just the loops. They are not. The singleton is contractible, so all of its elements are equal, in particular <code>(base, loop)</code> and <code>(base, refl(base))</code>:</p>
+            <pre><code data-check="accept">inductive Circle : U0 {
+  base;
+  loop : base = base;
+}
+
+def Singleton(A : U0, x : A) := exists y : A. x = y;
+
+def around : typed(Singleton(Circle, base), (base, refl(base))) = typed(Singleton(Circle, base), (base, loop)) {
+  exact path j =&gt; (loop @ j, path i =&gt; loop @ i &amp; j);
+}</code></pre>
+            <figure class="diagram" id="circle-singleton-figure">
+              <svg viewBox="0 0 560 200" role="img" aria-label="Three stages of a path in Singleton(Circle, base): at the start the pair of base and refl(base); halfway, the end is the point loop @ 1/2 on the far side of the circle, with half the loop; at the end, the pair of base and the whole loop.">
+                <defs><marker id="fig4-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c9d3ca"/></marker></defs>
+                <circle class="faint" cx="100" cy="92" r="48"/><path class="faint" d="M148,98 L148,90" marker-end="url(#fig4-arrow)"/><circle class="point" cx="100" cy="140" r="3.5"/><text x="100" y="158" text-anchor="middle">base</text><circle class="moving" cx="100.0" cy="140.0" r="5"/><text x="100" y="186" text-anchor="middle">j = 0: (base, refl(base))</text><circle class="faint" cx="285" cy="92" r="48"/><path class="faint" d="M333,98 L333,90" marker-end="url(#fig4-arrow)"/><path class="highlight" d="M285,140 A48,48 0 0 0 285.0,44.0"/><circle class="point" cx="285" cy="140" r="3.5"/><text x="285" y="158" text-anchor="middle">base</text><circle class="moving" cx="285.0" cy="44.0" r="5"/><text class="small" x="285.0" y="34.0" text-anchor="middle">loop @ j</text><text x="285" y="186" text-anchor="middle">j = 1/2</text><circle class="faint" cx="470" cy="92" r="48"/><path class="faint" d="M518,98 L518,90" marker-end="url(#fig4-arrow)"/><circle class="highlight" cx="470" cy="92" r="48"/><circle class="point" cx="470" cy="140" r="3.5"/><text x="470" y="158" text-anchor="middle">base</text><circle class="moving" cx="470.0" cy="140.0" r="5"/><text x="470" y="186" text-anchor="middle">j = 1: (base, loop)</text>
+              </svg>
+              <figcaption>The path <code>around</code> in <code>Singleton(Circle, base)</code>, at <code>j = 0</code>, <code>1/2</code> and <code>1</code>. The end of the pair, the dot, travels once around the circle, through points <code>loop @ j</code> that are not <code>base</code>, and the path to it, highlighted, grows into the whole loop.</figcaption>
+            </figure>
+            <p><code>around</code> is the singleton’s contraction at <code>(base, loop)</code>. It moves the end of the pair along the loop, through the points <code>loop @ j</code>, which for <code>0 &lt; j &lt; 1</code> are points of the circle other than <code>base</code>, and grows the path with it. As loops, <code>refl(base)</code> and <code>loop</code> are not equal. <code>rfl</code> does not prove it, and no proof can: the loops at <code>base</code> correspond to the integers, with <code>loop</code> as <code>1</code> and <code>refl(base)</code> as <code>0</code>, as the <a href="../proof.html?proof=circle">circle’s fundamental group</a> proves.</p>
+            <pre><code data-check="reject">inductive Circle : U0 {
+  base;
+  loop : base = base;
+}
+
+def not_by_computation : loop = refl(base) {
+  rfl;  // Error: Type mismatch: found loop = loop, expected loop = refl(base).
+}</code></pre>
+            <p>So a one-to-one match between the elements of two types, here between the loops at <code>base</code> and the based paths that end at <code>base</code>, is not an equivalence of types. An equivalence must also match the paths between elements, and the singleton has paths, like <code>around</code>, that move an element’s end through other points, where the loops at a fixed end have none.</p>
             <p>A header can also specify a truncation level. It adds a canonical constructor named <code>TypeName.squash</code> enforcing that level:</p>
             <div class="table-scroll"><table>
               <thead><tr><th>Header result</th><th>Meaning</th></tr></thead>
