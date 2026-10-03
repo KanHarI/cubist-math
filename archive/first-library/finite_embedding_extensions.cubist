@@ -55,7 +55,7 @@ def finite_embedding_extension_step(n : Nat, previous : FiniteEmbeddingExtension
     );
   let W := PolynomialRoots(K, T, j, p);
   let Goal := EmbeddingsOver(K, L, e, T, j);
-  let chooseRoot : W -> Mere(Goal) {
+  let fromRoot : W -> Mere(Goal) {
     intro witness;
     obtain (y, rootY) := witness;
     let d := adjoin_root_embedding(K, M, irr, T, j, y, rootY);
@@ -67,7 +67,7 @@ def finite_embedding_extension_step(n : Nat, previous : FiniteEmbeddingExtension
     );
   }
   exact mere_eliminate(
-    W, Mere(Goal), mere_is_prop(Goal), chooseRoot,
+    W, Mere(Goal), mere_is_prop(Goal), fromRoot,
     algebraically_closed_extension_root(
       K, T, j, closed, p, nonzero, polynomial_irreducible_nonunit(K, p, irr)
     )

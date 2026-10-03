@@ -40,7 +40,7 @@ records the decision.
 ## 0. Relation to the adopted design and to G0
 
 The design fixes one signature format for H1–H4. For H1 this document makes
-seven choices precise. Each is a question in section 11, decided as
+seven decisions precise. Each is a question in section 11, decided as
 recommended.
 
 | Design statement | H1 as specified here | Why |

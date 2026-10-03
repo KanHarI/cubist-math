@@ -35,7 +35,7 @@ Each workbench term (expression and type) has independent **β step**, **δ
 unfold**, and **Normalize** controls. Clicking beta or delta enters selection mode
 and highlights all applicable sites in the displayed term without changing it.
 Click a highlight (or focus it and press Enter/Space) to reduce that occurrence.
-Repeated uses of a shared subtree are separate choices. Escape or **Un-highlight**
+Repeated uses of a shared subtree are separate selections. Escape or **Un-highlight**
 cancels the mode. Large terms offer **Show more reduction sites** when the display
 budget hides part of the expression.
 
@@ -79,7 +79,7 @@ terminator. Source names supplement the numeric data without replacing it.
 These are native syntax constructors, not a trace of checking instructions or
 CPU/WASM instructions. They retain the shared graph and do not normalize it.
 
-The roots identify the checked expression, its chosen checked type, and the
+The roots identify the checked expression, its selected checked type, and the
 inferred type when the two use different handles. Context entries preserve their
 order and show numeric symbols and type handles. Open interval dimensions and
 formula clauses retain all 64 mask bits. A `CC_DEFREF` keeps its registry index;

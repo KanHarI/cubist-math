@@ -90,7 +90,7 @@ A separable polynomial is nonzero and admits a factorization into deg p distinct
 linear factors in some extension. Separable elements are defined using their
 minimal polynomials; a separable extension has every element separable. The
 finite root-generated subfield embeds into any algebraically closed target,
-transporting that distinct factorization. Removing a chosen linear factor,
+transporting that distinct factorization. Removing a given linear factor,
 canceling it from a divisibility equation, and induction prove the needed
 separability result for divisors. No derivative criterion is assumed.
 

@@ -18,7 +18,7 @@ def finite_mere_choice_step(
   let h := typed(Fin(succ(n)), left(tt));
   let Q := fun (i : Fin(n)) => P(typed(Fin(succ(n)), right(i)));
   let Goal := (forall i : Fin(succ(n)). P(i));
-  let chooseHead : P(h) -> Mere(Goal) {
+  let fromHead : P(h) -> Mere(Goal) {
     intro first;
     let join : (forall i : Fin(n). Q(i)) -> Goal {
       intro rest, i;
@@ -34,7 +34,7 @@ def finite_mere_choice_step(
       previous(Q, (fun (i : Fin(n)) => inhabited(typed(Fin(succ(n)), right(i)))))
     );
   }
-  exact mere_eliminate(P(h), Mere(Goal), mere_is_prop(Goal), chooseHead, inhabited(h));
+  exact mere_eliminate(P(h), Mere(Goal), mere_is_prop(Goal), fromHead, inhabited(h));
 }
 
 def finite_mere_choice(n : Nat) :=

@@ -1179,7 +1179,7 @@
     {
       "binding": "sets__choose_path",
       "module": "sets",
-      "name": "choose_path",
+      "name": "decided_path",
       "category": "checked",
       "elapsedMs": 0.615,
       "instructionMs": 0.021,
@@ -1201,7 +1201,7 @@
     {
       "binding": "sets__choose_path_constant",
       "module": "sets",
-      "name": "choose_path_constant",
+      "name": "decided_path_constant",
       "category": "checked",
       "elapsedMs": 1.957,
       "instructionMs": 0.022,
@@ -17023,7 +17023,7 @@
     {
       "binding": "finite_cancellation__swap_chosen",
       "module": "finite_cancellation",
-      "name": "swap_chosen",
+      "name": "swap_target",
       "category": "checked",
       "elapsedMs": 1.886,
       "instructionMs": 0.133,

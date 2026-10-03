@@ -394,7 +394,7 @@ harness, including rejected examples with local diagnostics. Cover:
 Use the existing canonicity fixture for releases. Do not require every
 representation of a free algebra to have canonical word or polynomial
 normal forms: its particular quotient and fold computation rules determine
-what `evaluate` can promise. Publish the chosen examples and measurements.
+what `evaluate` can promise. Publish the selected examples and measurements.
 
 The [language proposal](inductive-language-features.md) assigns monadic
 blocks tier 2 and the broader arrow capabilities tier 3 within this shared

@@ -30,7 +30,7 @@ def SpanWitness(
   exists coefficients : Fin(n) -> af_carrier(K). (forall i : Fin(n). P(vectors(i)))
   and (linear_combination(K, V, n, vectors, coefficients) = x);
 
-// Span asserts mere existence of a finite combination. It does not choose
+// Span asserts mere existence of a finite combination. It does not pick
 // coordinates and cannot be eliminated into an arbitrary data type.
 def Span(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V)

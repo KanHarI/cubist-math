@@ -27,7 +27,7 @@ def EverySurjectionHasRightInverse :=
 
 // Apply the existing set-level axiom of choice to the fibers over B.
 // Its conclusion is mere existence; truncation is eliminated only into the
-// proposition Mere(RightInverse(...)), never into an arbitrarily chosen map.
+// proposition Mere(RightInverse(...)), never into an arbitrarily selected map.
 def every_surjection_has_right_inverse : EverySurjectionHasRightInverse {
   intro A; // A : U0
   intro B; // B : U0

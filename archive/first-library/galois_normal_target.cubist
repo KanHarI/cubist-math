@@ -196,7 +196,7 @@ def finite_normal_separable_automorphism_count(
 }
 
 // The counting induction only needs separability of minimal polynomials in
-// the chosen closed target. This form is stable under intermediate base change.
+// the given closed target. This form is stable under intermediate base change.
 def finite_separable_elements_embedding_count(
   K, F : AlgebraicField, e : FieldEmbedding(K, F),
   finite : FiniteExtension(K, embedding_as_extension(K, F, e)), T : AlgebraicField,

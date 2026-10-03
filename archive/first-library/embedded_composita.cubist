@@ -114,7 +114,7 @@ def embedded_compositum_base_agreement(
   );
 }
 
-// The chosen base embedding uses the left factor; the preceding theorem
+// The selected base embedding uses the left factor; the preceding theorem
 // makes this independent of that choice whenever the ambient square commutes.
 def embedded_compositum_base(
   B, K, L, O : AlgebraicField, bk : FieldEmbedding(B, K), ko : FieldEmbedding(K, O),

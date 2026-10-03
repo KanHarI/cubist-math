@@ -267,7 +267,7 @@ rejections: capture, dependency, mismatched binder types, open definitions,
 misplaced steps, and lookups of definitions `Define` did not admit.
 
 The interval and face algebra keeps its decision procedure in the kernel: it
-decides equality of De Morgan formulas, with no strategy to choose.
+decides equality of De Morgan formulas, with no strategy to select.
 
 ### What moves to the elaborator
 
@@ -381,7 +381,7 @@ A learned policy for this search, trained against the kernel with the
 heuristic as its teacher and derivation cost as its objective, is designed
 in [learned-search.md](learned-search.md).
 
-**Choices.** Each time round, `agree` stops at a branch point and lists the
+**Branch points.** Each time round, `agree` stops at a branch point and lists the
 moves open there: normalize both sides (a long closed computation, once per
 comparison), descend by congruence, a weak-head step on either side or both
 (beta, iota, path, face or delta), a side's weak head normal form, eta, or,

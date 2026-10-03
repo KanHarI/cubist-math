@@ -2,7 +2,7 @@ import field_embeddings;
 import quotient_sets;
 
 // Embeddings over K include their commuting triangle. The triangle is a
-// proposition; it does not introduce extra choices into the embedding type.
+// proposition; it does not introduce extra data into the embedding type.
 def EmbeddingOverLaw(
   K, R : AlgebraicField, inclusion : FieldEmbedding(K, R), L : AlgebraicField,
   e : FieldEmbedding(K, L), h : FieldEmbedding(R, L)

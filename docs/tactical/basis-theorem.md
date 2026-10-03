@@ -64,7 +64,7 @@ The chain-complete form of Zorn used here is proved from choice, not assumed.
 - `vector_basis_existence`: instantiate that maximality theorem with the
   checked independent-subset order and turn a maximal subset into a basis.
 
-`Span` is a truncation of finite-combination witnesses; it does not choose
+`Span` is a truncation of finite-combination witnesses; it does not pick
 coordinates. Independence quantifies over **injective** finite lists of
 members, so repeating a vector cannot manufacture a false dependence.
 
@@ -94,7 +94,7 @@ by the cubical development rather than additional assumptions.
 The finite-coordinate development remains constructive. Scalar cancellation,
 omission maps, and partial orders being sets are axiom-free. The extension
 argument uses LEM explicitly to conclude that a coefficient is zero when it
-cannot be nonzero. The result remains truncated: there is no implicit chosen
+cannot be nonzero. The result remains truncated: there is no implicit selected
 basis or coordinate function.
 
 ## Checked route from choice to maximality
@@ -132,7 +132,7 @@ The empty subset is independent. For a chain C of independent subsets,
 its union is independent: a proposed dependence mentions only finitely
 many vectors; the chain property puts those vectors together in one member
 of C, where all coefficients must vanish. This finite-character argument, including empty chains, is checked without
-choosing a representative from each truncated membership proof.
+picking a representative from each truncated membership proof.
 
 Zorn yields a maximal independent subset B. If a vector v is outside its
 span, B union {v} is independent. Indeed, in a finite vanishing combination,

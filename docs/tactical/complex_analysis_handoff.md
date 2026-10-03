@@ -152,7 +152,7 @@ coefficients and zero lengths need no zero test.
   documented in [reals.md](../roadmaps/reals-roadmap.md#universes-and-foundational-assumptions).
 - Keep shared foundations constructive. The user permits explicit
   theorem-specific LEM or choice where needed. Do not introduce target
-  theorems as axioms, choose representatives from mere existence, or replace
+  theorems as axioms, pick representatives from mere existence, or replace
   exact roots with approximate roots without changing the stated result.
 
 ## Remaining work and sensible resumption points
