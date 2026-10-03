@@ -45,7 +45,7 @@ and that 0, 1, and 4 are not prime; it also checks small arithmetic examples.
    the least witness up to the bound or refutes every candidate in that range.
 3. Decide divisibility by `d ≥ 2`: any quotient witnessing `k*d = m` satisfies
    `k ≤ m`, so bounded search suffices.
-4. For `m ≥ 2`, choose its least divisor `p ≥ 2`. Such a divisor exists because
+4. For `m ≥ 2`, take its least divisor `p ≥ 2`. Such a divisor exists because
    `m` divides itself. A proper nontrivial divisor of `p` would divide `m` by
    transitivity, contradicting minimality. Therefore `p` is prime.
 5. Apply this to `m = n! + 1`, which is at least 2. If `p ≤ n`, then `p` divides

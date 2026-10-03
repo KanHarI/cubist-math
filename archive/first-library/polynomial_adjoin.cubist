@@ -107,7 +107,7 @@ def residue_eval_polynomial(
   };
 }
 
-// The chosen element really is a root of the original polynomial over K.
+// The selected element really is a root of the original polynomial over K.
 def adjoined_root_is_root(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M))

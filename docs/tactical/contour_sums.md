@@ -145,7 +145,7 @@ convergence of the complex tag errors to zero when `delta_n -> 0`.
 `complex_contour_tag_independent_limit` then proves that a new choice of
 tags converges to the same complex value as the old choice, provided:
 
-- both choices use the same sequence of sampled vertices;
+- both options use the same sequence of sampled vertices;
 - coordinate variation has a fixed nonnegative bound `L`;
 - the sampled changes of the integrand are bounded by nonnegative
   `delta_n` tending to zero;

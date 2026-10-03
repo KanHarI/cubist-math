@@ -14,9 +14,9 @@ def separable_extension_in_closed(
 ) :
   SeparableElementsIn(K, L, e, T) {
   intro j, x, algebraic;
-  obtain (chosen, sep) := separable(x);
+  obtain (evidence, sep) := separable(x);
   let W := (exists p : Polynomial(K). PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x));
-  let same := cong(minimal_polynomial(K, L, e, x), mere_is_prop(W, chosen, algebraic));
+  let same := cong(minimal_polynomial(K, L, e, x), mere_is_prop(W, evidence, algebraic));
   let p := minimal_polynomial(K, L, e, x, algebraic);
   exact separable_polynomial_splits_in_closed(
     K, p, along SeparablePolynomial(K) by same from sep, T, closed, j

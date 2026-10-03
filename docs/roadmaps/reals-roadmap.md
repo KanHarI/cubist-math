@@ -30,7 +30,7 @@ natural-number bound, both for Cauchyness and for convergence. The Cauchy
 completion below uses positive-rational precision, as the
 [HoTT book](https://github.com/HoTT/book/blob/master/reals.tex#L437-L450)
 does. These are different constructive APIs: a selector from arbitrary real
-precision does not follow from rational bounds merely existing. R2 chooses
+precision does not follow from rational bounds merely existing. R2 fixes
 the precision type for its computational modulus, proves the bridge between
 sequences with a modulus and the completion's approximations, and states
 which legacy adapters need extra data. The archive's parameterized

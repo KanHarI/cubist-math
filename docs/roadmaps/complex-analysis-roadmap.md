@@ -135,7 +135,7 @@ choice*](https://msp.org/pjm/2000/196-1/pjm-v196-n1-p10-p.pdf)
 discusses the difficulty already for complex square roots and develops a
 choice-free formulation using completion of root multisets. Exact roots,
 approximate root multisets, and roots over Cauchy presentations must not be
-silently interchanged. This is a reason to audit the chosen real construction
+silently interchanged. This is a reason to audit the selected real construction
 and logical assumptions; it is not a machine-checked independence result for
 this kernel.
 
@@ -144,7 +144,7 @@ already present. It needs continuous topology and polynomial estimates, but
 does not need contour integrals, the residue theorem, or Liouville. For a monic
 polynomial `p(z) = z^n + q(z)` of positive degree:
 
-1. Choose `R > 1` large enough that `|q(z)| < |z^n|` on `|z| = R`.
+1. Take `R > 1` large enough that `|q(z)| < |z^n|` on `|z| = R`.
 2. The homotopy `z^n + t*q(z)` stays away from zero on that circle. Its image
    under `p` therefore has winding `n`.
 3. If `p` had no roots, `p((1-t)*R*u)` for `|u| = 1` would contract this image
@@ -195,7 +195,7 @@ A useful intermediate formulation is that a holomorphic function on a
 punctured disk which omits two distinct values cannot have an essential
 singularity at the puncture. Turning this into the usual positive assertion
 about infinitely many preimages also needs a logical audit. We should not
-choose an exceptional value when the theorem asserts only “at most one.”
+pick an exceptional value when the theorem asserts only “at most one.”
 
 Picard requires additional analytic estimates beyond Cauchy's theorem and
 residue calculations. One route uses normal families and omitted-value

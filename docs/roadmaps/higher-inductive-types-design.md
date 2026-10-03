@@ -8,7 +8,7 @@ pending, and nothing of H2–H4 is implemented. The
 [work plan](work-plan.md) schedules it. It supersedes kernel items G1–G3 and
 the separate native-inductive and generic higher-inductive items. It depends
 on G0 (universe-generic checking). The existing literature informed this
-design without bounding it; the choices that depart from it are listed in the
+design without bounding it; the decisions that depart from it are listed in the
 section on departures. The language features built on it are proposed in
 [inductive-language-features.md](inductive-language-features.md), which
 ergonomics milestones 6 and 7 adopt. The
@@ -396,7 +396,7 @@ inductive Real : set with Close : Pos -> Real -> Real -> prop {
 - **Header.** It declares every sort, with `with` joining companion sorts.
   Parameters are in parentheses and fixed across all constructors. Indices
   come after the colon, as a function type ending in the h-level: `type`
-  (the default), `set` or `prop`. Constructors choose their own result
+  (the default), `set` or `prop`. Constructors fix their own result
   indices, as `nil` and `cons` do.
 - **Ordering.** Constructors are checked in order. Each may use every sort,
   and the constructors listed before it. `lim` uses the sort `Close`;

@@ -306,7 +306,7 @@ The proof is by induction on the conversion derivation. ∎
 
 - `f*x` is good, `id*x = x` and `(fg)*x = g*(f*x)`;
 - restriction does not depend on the order in which endpoint faces are
-  chosen;
+  taken;
 - evaluation is natural: `ev(E, env)` restricted along `g` is `ev(E, env·g)`.
 
 *Proof.* Induction on `μ`, with the cases of M1. The only nontrivial case is

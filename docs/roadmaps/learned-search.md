@@ -222,7 +222,7 @@ same edges, and the same heads, with message passing in place of attention.
     Absence from the judgement graph does not establish a negative witness.
 - **Expert iteration.** Search with the policy as prior and compare value
   guidance with the current heuristic; retain cheaper checked derivations
-  from training modules, retrain and repeat. Validation chooses the model;
+  from training modules, retrain and repeat. Validation selects the model;
   final test trajectories never enter training.
 - **Tooling.** PyTorch for training with dense masks and
   `scaled_dot_product_attention`; no graph library and no custom kernel at
@@ -274,7 +274,7 @@ same edges, and the same heads, with message passing in place of attention.
    ranking of the cheap moves could.
 3. **Imitation and ablations.** Train the network on the logs; measure
    agreement with the heuristic on validation modules. Run the ablation
-   table below and choose the architecture before final test evaluation.
+   table below and select the architecture before final test evaluation.
 4. **Expert iteration** on derivation cost, measured on the held-out modules
    against the heuristic, with the oracle switched off.
 5. **Deployment.** The policy in the driver, the options in the workbench,
@@ -283,7 +283,7 @@ same edges, and the same heads, with message passing in place of attention.
 Phases 1 and 2 stand on their own as driver inspection and measurement work;
 the [work plan](work-plan.md#stage-1-goals-diagnostics-and-inference)
 schedules them with L1.3, whose deterministic fuel is the same cost
-accounting. Phases 3–5 wait for evidence that search choices account for enough cost to
+accounting. Phases 3–5 wait for evidence that search decisions account for enough cost to
 justify learning. Instruction-kernel stage 3, including pushouts, Glue and
 `HComp`, has already landed; it supplies existing benchmark cases. Future
 declared inductive types may supply more cases, but their delivery does not
@@ -393,13 +393,13 @@ labels and budget failures separately.
 | One head per relation | one head with the union mask and a relation-type bias | cost per layer | |
 | Ancestor and descendant heads | parent and child heads only | deep terms | |
 | Binder tokens | drop them; keep the binder-distance feature | eta and replacement under binders | |
-| Cross-side head | drop it; the goal token carries the other side | congruence choices | |
+| Cross-side head | drop it; the goal token carries the other side | congruence decisions | |
 | Goal and register tokens | mean pooling instead of the goal token; no registers | the value head | |
 | `ghostmax` | plain softmax | heads with empty masks, such as the root's ancestors | |
 | Relative-depth bias | absolute depth only, as THTH | telling children from great-grandchildren | |
 | Two stages with memoization | four goal-stage layers | speed only; must cost no accuracy | |
 | Numeral collapse | a capped chain of `Succ` nodes | arithmetic modules | |
-| Definition features | drop later-than, recursion and head features | lazy delta choices | |
+| Definition features | drop later-than, recursion and head features | lazy delta decisions | |
 | Pair features `(a, b, a − b)` | the goal token alone | value accuracy | |
 | Auxiliary losses | drop each of convertibility, `whnf` head, witness | sample efficiency, held-out generalization | |
 | Random-walk data | the corpus alone | pretraining the subtree stage | |

@@ -72,7 +72,7 @@ zero. For the induction step, the image u of the first coordinate vector is
 nonzero. A finite search finds a nonzero entry; a coordinate permutation
 moves it to the first position.
 
-Write a for that entry and choose its inverse b from the field's supplied
+Write a for that entry and take its inverse b from the field's supplied
 inverse law. On the remaining source coordinates define
 
 - h(v) = f(0,v);
@@ -115,7 +115,7 @@ the product degree; uniqueness yields the numerical tower law.
 Paths of complete vector spaces transport dimension evidence. For fields,
 the existing structure-identity theorem supplies a path of full extensions
 from an extension isomorphism; `extension_degree_iso` uses it directly.
-No higher homotopies are collapsed to a chosen equality proof: dimension is
+No higher homotopies are collapsed to a particular equality proof: dimension is
 a set-valued invariant of the existing univalent structures.
 
 ## Modules
@@ -140,7 +140,7 @@ No result in this increment uses Choice, Zorn, or U1 resizing.
 
 Regression tests check zero-dimensional spaces, arbitrary bases of the
 coordinate plane and scalar space, coordinate permutations, identity degree,
-arbitrary towers, and extension isomorphisms. Negative checks reject choosing
+arbitrary towers, and extension isomorphisms. Negative checks reject picking
 a basis from truncation, an incorrect degree, substituting a bijection for a
 linear isomorphism, and silently changing the bottom embedding of a tower.
 

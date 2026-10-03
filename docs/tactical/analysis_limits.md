@@ -49,14 +49,14 @@ and then descend those values to the homotopy type's identity paths.
 
 `FieldAsymptotic` asserts arbitrary eventual closeness with **mere** existence
 of each eventual bound. `field_asymptotic_limits_equal` proves equality of
-limits from this property. It does not extract a function choosing those
+limits from this property. It does not extract a function picking those
 bounds. Truncation is eliminated only into propositions.
 
 `surjective_descent` gives the general descent construction. Given a merely
 surjective presentation `C -> B` and a set-valued function on `C` constant on
 its fibers, it constructs a function on `B` with the required computation
 law. The target `B` need not be a set. The unique value over each point forms
-a proposition, so it can be obtained from mere coverage without choosing a
+a proposition, so it can be obtained from mere coverage without picking a
 representative or using the axiom of choice.
 
 `homotopy_limit_descent` applies this to `B = (point = point)`, the actual loop

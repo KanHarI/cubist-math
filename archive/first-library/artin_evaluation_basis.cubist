@@ -20,7 +20,7 @@ def embedding_evaluation_frame_zero(
   );
 }
 
-// Iterate the checked rank-growth step. Each extension merely chooses its
+// Iterate the checked rank-growth step. Each extension merely picks its
 // next point, so the final family also remains under propositional truncation.
 def embedding_evaluation_frame_build_step(
   k : Nat, previous : forall K : AlgebraicField. forall L : AlgebraicField. forall n : Nat.

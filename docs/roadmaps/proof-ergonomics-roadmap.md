@@ -395,7 +395,7 @@ for this release.
 Completion: imports cannot leak local rules; unrelated unused rules add no
 axiom dependencies to a proof; changes to a rule invalidate affected results;
 explicit lists reproduce the proof's success. Traces explain failed premises
-and rule choices without requiring authors to inspect kernel opcodes.
+and rule selections without requiring authors to inspect kernel opcodes.
 
 ### 4. Dependent rewriting and cubical extensions (moved)
 

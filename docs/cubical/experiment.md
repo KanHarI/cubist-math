@@ -6,7 +6,7 @@
 Branch: `experiment/cubical-hott`, based on `dd3fcc8`. The production kernel and
 website remain unchanged. This experiment was explicitly requested on 2026-09-20.
 
-## Chosen calculus
+## The calculus
 
 The target is the De Morgan interval calculus of Cohen, Coquand, Huber and
 Mörtberg, [Cubical Type Theory](https://arxiv.org/abs/1611.02108), with the

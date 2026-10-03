@@ -1,6 +1,6 @@
 import finite;
 
-// Swap the first alternative with a chosen alternative. These maps will also
+// Swap the first alternative with a given alternative. These maps will also
 // split a permutation into its first image and a permutation of the remainder.
 def head(A : U0) := typed(Unit or A, left(tt));
 
@@ -57,40 +57,40 @@ def swap_right_twice(
     };
   };
 
-def swap(A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), chosen, x : Unit or A) :=
-  match chosen return (Unit or A) {
+def swap(A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), target, x : Unit or A) :=
+  match target return (Unit or A) {
     left u => x;
     right a => swap_right(A, decide, a, x);
   };
 
 def swap_twice(
-  A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), chosen, x : Unit or A
+  A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), target, x : Unit or A
 ) :=
-  match chosen as c return (swap(A, decide, c, swap(A, decide, c, x)) = x) {
+  match target as c return (swap(A, decide, c, swap(A, decide, c, x)) = x) {
     left u => refl(x);
     right a => swap_right_twice(A, decide, a, x);
   };
 
-def swap_head(A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), chosen : Unit or A) :=
-  match chosen as c return (swap(A, decide, c, head(A)) = c) {
+def swap_head(A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), target : Unit or A) :=
+  match target as c return (swap(A, decide, c, head(A)) = c) {
     left u => cong((fun (v : Unit) => typed(Unit or A, left(v))), unit_equal(u));
     right a => refl(tail(A, a));
   };
 
-def swap_chosen(A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), chosen : Unit or A) :=
+def swap_target(A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), target : Unit or A) :=
   trans(
-    sym(cong(swap(A, decide, chosen), swap_head(A, decide, chosen))),
-    swap_twice(A, decide, chosen, head(A))
+    sym(cong(swap(A, decide, target), swap_head(A, decide, target))),
+    swap_twice(A, decide, target, head(A))
   );
 
 def swap_bijection(
-  A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), chosen : Unit or A
+  A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), target : Unit or A
 ) :=
   typed(
     Bijection(Unit or A, Unit or A),
     (
-      swap(A, decide, chosen), swap(A, decide, chosen), swap_twice(A, decide, chosen),
-      swap_twice(A, decide, chosen)
+      swap(A, decide, target), swap(A, decide, target), swap_twice(A, decide, target),
+      swap_twice(A, decide, target)
     )
   );
 
@@ -182,7 +182,7 @@ def cancel_finite_successor(n, m : Nat, e : Bijection(Fin(succ(n)), Fin(succ(m))
     compose_bijection(
       Fin(succ(n)), Fin(succ(m)), Fin(succ(m)), e, swap_bijection(Fin(m), fin_decidable(m), image)
     );
-  exact restrict_bijection(Fin(n), Fin(m), adjusted, swap_chosen(Fin(m), fin_decidable(m), image));
+  exact restrict_bijection(Fin(n), Fin(m), adjusted, swap_target(Fin(m), fin_decidable(m), image));
 }
 
 // Finite cardinality is invariant under arbitrary bijections.

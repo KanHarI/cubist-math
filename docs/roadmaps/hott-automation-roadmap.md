@@ -720,7 +720,7 @@ Completion:
     declarations. D3's equivalence instance then uses this same representation.
   - Provide identity, inverse, composition and Π/Σ/product equivalence
     combinators, with checked maps and laws. Keep explicit quasi-inverse data as
-    a convenient constructor input; choose fiber centers so extracting the
+    a convenient constructor input; pick fiber centers so extracting the
     inverse of that constructor computes to the supplied inverse map.
   - Migrate the public `IsEquiv`/`Equiv` definitions, `ua` lowering, tuple
     constructors and projections, and `equiv_from_inverse`. Homotopies and
@@ -728,7 +728,7 @@ Completion:
     Canonicalizing `Equiv` does not make `idtoequiv(refl)` compute strictly.
   - The existing `Fiber` in [maps](../../archive/first-library/maps.cubist) is
     `exists x : A. f(x) = y`, the opposite orientation, with 83 uses in 19
-    files. Choose the surviving name and migrate one orientation, recording
+    files. Pick the surviving name and migrate one orientation, recording
     the changed statements.
   - Publish `is_prop_is_equiv` and `equiv_eq`: equivalences with equal
     underlying maps are equal. `ext` on `Equiv` (B3) and transfer (F2) use
@@ -742,7 +742,7 @@ Completion:
   - Before removing an old representation, record its migration map and
     changed computation/assumption behavior. Proving uniqueness of arbitrary
     public half-adjoint witnesses remains an alternative if the old public
-    representation is retained; it is not a prerequisite for the chosen redesign.
+    representation is retained; it is not a prerequisite for the selected redesign.
 
 - [ ] **D1. h-level solver.** `hlevel;` closes goals of these kinds:
   - `IsContr(T)`, `IsProp(T)`, `IsSet(T)` and the aliases that D0a identifies
@@ -771,7 +771,7 @@ Completion:
 
   Define stable priority/identity order for overlapping rules, detect active
   obligation cycles, and count every recursive attempt. A failed rule may try
-  the next candidate under the same fuel; the inspector records the chosen
+  the next candidate under the same fuel; the inspector records the selected
   witnesses. Cache only within the full checked context and rule environment.
   Failure shows the chain to the first undischarged obligation. Also use the
   solver for conditional-rule premises and the target proposition of truncation
@@ -807,7 +807,7 @@ Completion:
     paths of numbers are equal. Registered rules, and with them cycle
     detection, quantified hints, Hedberg for registered carriers, one layer
     of unfolding, `Truncate`, the solver's use for premises and truncation
-    targets, and the inspector's record of chosen witnesses remain.
+    targets, and the inspector's record of selected witnesses remain.
 - [ ] **D2. Subtype extensionality.** Add a checked lemma: given `B : A -> U`
   whose fibers are propositions and a path `p : a = a'`, any `b : B(a)` and
   `b' : B(a')` are connected by `PathP(fun (i : Interval) => B(p @ i), b, b')`.

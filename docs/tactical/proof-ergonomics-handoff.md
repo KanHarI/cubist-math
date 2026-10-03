@@ -58,7 +58,7 @@ the C/WASM cubical kernel and report no axiom dependencies.
   `simp only` list. Arbitrary proposition-premise solving remains open.
 - Expected-type `path i => body`, path application `p @ i`, `ext x;` for equality
   of functions with a fixed Pi carrier, `along C by p from v`, `apd_path(f,p)`,
-  and `over C along p by { ... }`. The last form requires an explicitly chosen
+  and `over C along p by { ... }`. The last form requires an explicitly given
   family and checks its transport-equality proof before applying the existing
   PathP bridge. Existing `apd` keeps its transported-equality result.
 - A shared declaration transaction now checkpoints native checking for normal
@@ -478,7 +478,7 @@ transports, and 336 `@` applications. Source size fell from 679,184 to
 650,845 tokens (-4.2%) and from 66,404 to 63,262 lines (-4.7%).
 `node tools/verify-proof-migration.mjs --base migration-tools` reports all 354
 modules identical, with no failures; an independent structural comparison of
-12 randomly chosen declarations agreed. The full JS suite passed 363 tests,
+12 randomly selected declarations agreed. The full JS suite passed 363 tests,
 including the canonical corpus with 3,761 checked declarations, 43 templates,
 and no failed or blocked declarations. Every source is formatter-stable.
 

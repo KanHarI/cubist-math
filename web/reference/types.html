@@ -312,7 +312,7 @@ def duplicate_again : forall A : U0. A -&gt; A and A {
 }
 
 def one_one := duplicate(Nat, 1);</code></pre>
-            <p><code>duplicate</code> takes a type <code>A</code> and then a value of that type; <code>intro A, a;</code> takes the two inputs of <code>duplicate_again</code> in the same order. Its result type, <code>A and A</code>, depends on which type it was given: <code>duplicate(Nat, 1)</code> is the pair <code>(1, 1)</code>. The chapter on terms lists the full <a href="terms.html#precedence">precedence</a> of the operators. The result must fit the type the argument chose:</p>
+            <p><code>duplicate</code> takes a type <code>A</code> and then a value of that type; <code>intro A, a;</code> takes the two inputs of <code>duplicate_again</code> in the same order. Its result type, <code>A and A</code>, depends on which type it was given: <code>duplicate(Nat, 1)</code> is the pair <code>(1, 1)</code>. The chapter on terms lists the full <a href="terms.html#precedence">precedence</a> of the operators. The result must fit the type given as the first argument:</p>
             <pre><code data-check="reject">def duplicate : forall A : U0. A -&gt; A and A {
   exact fun (A : U0, a : A) =&gt; (a, 0);  // Error: Type mismatch: found Nat, expected A.
 }</code></pre>

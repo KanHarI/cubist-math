@@ -72,7 +72,7 @@ def vector_scale_injective(
 
 // Move a term past its neighbour in an additive sum. This is the only
 
-// reordering needed to isolate any chosen term of a finite combination.
+// reordering needed to isolate any given term of a finite combination.
 def vector_add_swap(K : AlgebraicField, V : VectorSpace(K), x, y, z : vector_carrier(K, V)) :
   vector_add(K, V, x, vector_add(K, V, y, z)) = vector_add(K, V, y, vector_add(K, V, x, z)) {
   exact trans(

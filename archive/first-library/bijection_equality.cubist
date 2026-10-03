@@ -221,7 +221,7 @@ def equivalences_are_bijections(A, B : U0, setA : IsSet(A), setB : IsSet(B)) :
   );
 }
 
-// Propositionality evidence has no further choices once the proposition is known.
+// Propositionality evidence has no further freedom once the proposition is known.
 def is_prop_prop(P : U0, p, q : Proposition(P)) : p = q {
   ext x;
   exact FunExt(

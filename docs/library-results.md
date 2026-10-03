@@ -9,7 +9,7 @@ established. It lists only two kinds of result:
 - **Iconic results,** marked ★, even when later results build on them.
 
 Statements here are deliberately independent of the old formalization: they
-name no definitions, encodings or proof structure. A rebuild should choose its
+name no definitions, encodings or proof structure. A rebuild should pick its
 own. The archived modules that contain each area are listed at the end, for
 reference only.
 

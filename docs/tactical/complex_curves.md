@@ -288,7 +288,7 @@ it does not identify arbitrary sample lists merely because their sums agree.
 constructed samples, with checked equations for the initial edge and the
 join of two sampled halves. The data-producing definitions are transparent
 so these equations compute. The midpoint and its bounds are projections
-of the same constructed witness, not independently chosen points.
+of the same constructed witness, not independently picked points.
 [dyadic_refinement](../../archive/first-library/dyadic_refinement.cubist) now proves that
 level `n + k` refines level `n`: it constructs the per-edge subdivisions,
 proves their tags are admissible, and identifies their ordered total with
@@ -355,8 +355,8 @@ and uniqueness of limits. Equality along the curve needs no equality of the
 whole functions and no function-extensionality axiom.
 
 [field_uniform_radii](../../archive/first-library/field_uniform_radii.cubist) constructs a
-common positive input tolerance without choosing the smaller of two numbers:
-for positive `r,s`, choose positive `delta` with `delta*(r+s) < r*s` and cancel
+common positive input tolerance without picking the smaller of two numbers:
+for positive `r,s`, take positive `delta` with `delta*(r+s) < r*s` and cancel
 the positive factor `r+s` to bound `delta` by both. This supports
 [addition of uniformly continuous curves](../../archive/first-library/complex_uniform_operations.cubist).
 [Scalar continuity](../../archive/first-library/complex_scalar_continuity.cubist) uses
@@ -390,5 +390,5 @@ asserting such a comparison.
 Uniform continuity here varies `t` with `z` and `e` fixed. A homotopy of
 entire loops needs continuity also in the loop parameter, which remains to
 be proved. We also still need convergence and homotopy
-estimates for the chosen integrands, and the local integral
+estimates for the given integrands, and the local integral
 calculation in the residue theorem.

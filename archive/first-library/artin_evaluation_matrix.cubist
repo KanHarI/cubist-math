@@ -470,7 +470,7 @@ def embedding_evaluation_outside_span(
 }
 
 // One more evaluation vector extends any independent partial family, as long
-// as fewer than n evaluation points have been chosen.
+// as fewer than n evaluation points have been picked.
 def embedding_evaluation_extend_independent(
   K, L : AlgebraicField, n, m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
   distinct : PairwiseDistinctEmbeddings(K, L, n, maps), points : Fin(m) -> af_carrier(K),

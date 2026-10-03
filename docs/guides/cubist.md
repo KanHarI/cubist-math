@@ -283,7 +283,7 @@ def euclid : InfinitelyManyPrimes {
 For a goal `forall A : U0. IsSet(A) -> IsSet(A)`, `intro A;` introduces
 `A : U0`, then `intro setA;` introduces `setA : IsSet(A)`. The remaining goal
 is `IsSet(A)`, proved by `exact setA;`. The identifier `setA` is a name you
-choose; its type is inferred from the next input of the goal. `IsSet` comes
+pick; its type is inferred from the next input of the goal. `IsSet` comes
 from `import sets;` and asserts that any two equality proofs with the same
 endpoints are equal. Click an introduced name to see its inferred type.
 

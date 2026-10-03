@@ -1,7 +1,7 @@
 import polynomial_ideals;
 
 // Divisibility and invertibility are propositions: no arbitrary quotient or
-// inverse is chosen by the mathematical statement.
+// inverse is fixed by the mathematical statement.
 def PolynomialUnit(K : AlgebraicField, p : Polynomial(K)) :=
   Mere(exists u : Polynomial(K). polynomial_mul(K, p, u) = polynomial_one(K));
 

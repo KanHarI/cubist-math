@@ -99,7 +99,7 @@ The formatter must compare elaborated macro shapes where parser sugar changes
 AST shape; it must not drop comments or turn a checked construct into a different
 one when formatting.
 
-Choose `have h : T := e;` rather than `have h : T = e;`: the latter is
+Prefer `have h : T := e;` to `have h : T = e;`: the latter is
 ambiguous when `T` itself is an equality. Add `:=` and `<-` as tokens, then `@`
 in PR 6. Keep ASCII canonical initially. Optional Unicode aliases can later
 render path concatenation as `p · q`, inversion as `p⁻¹`, and transport as
@@ -348,7 +348,7 @@ provides higher paths witnessing them.
 With `H : forall a : A. f(a) = g(a)` and `p : x = y`, write the square as
 `path j => path i => H(p @ i) @ j`. Its outer family is
 `H(x) @ j = H(y) @ j`; the outer endpoints are `cong(f,p)` and `cong(g,p)`.
-This states the two-dimensional object directly rather than first choosing a
+This states the two-dimensional object directly rather than first picking a
 concatenation equation. The sample includes its full current-language expansion.
 
 Use the expected nested PathP to display all four edges and corner checks in
@@ -382,7 +382,7 @@ closed boundary filling.
 ### 5. Mathematical structure scopes and named Sigma views
 
 Before new record representations, support lexical notation packs backed by
-ordinary terms. The proposed field example chooses its structure once and
+ordinary terms. The proposed field example fixes its structure once and
 binds `+`, `*`, `zero`, and `one` to known field operations. The translator
 already resolves natural-number `+` through the lexical `add` binding; make
 this mechanism explicit and inspectable instead of adding typeclass search.
@@ -410,7 +410,7 @@ the bridge branch. This pairs especially well with `path i =>` and `over C along
 An `ext using lemma` facility can turn equality of structured maps into the
 obligations of a selected checked lemma. Automatically solving those obligations
 requires actual `IsProp`/`IsSet` evidence in the relevant fibers. No rule may
-erase an arbitrary loop or choose a unique transport witness in a general type.
+erase an arbitrary loop or pick a unique transport witness in a general type.
 
 Defer unrestricted higher-order unification, global coercion/instance search,
 automatic univalence, and general-purpose boundary solving. The priority here
