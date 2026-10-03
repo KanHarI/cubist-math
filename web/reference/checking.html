@@ -31,15 +31,15 @@
           <ol class="chapters">
             <li><a href="types.html">Types and values</a></li>
             <li><a href="first-proof.html">A first proof and files</a></li>
-            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="terms.html">Functions, pairs and sums</a></li>
             <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
             <li><a href="universes.html">Universes</a></li>
-            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
-            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
-            <li><a href="conversion.html">Conversion and unfolding</a></li>
-            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
+            <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
             <li class="current"><a href="checking.html" aria-current="page">Checking and inspection</a></li>
             <li><a href="errors.html">Error messages</a></li>
           </ol>
@@ -65,6 +65,7 @@
               <li><code>//</code> comments directly above a declaration are shown as its <a href="first-proof.html#descriptions">description</a>.</li>
             </ul>
             <p>The checked kernel details show the expression, its type and its open context. Folded kernel notation keeps names only where their relationship to the stored term is checked. The representation selector switches between Cubist and raw kernel terms; either can be sent to the <a href="../workbench.html">kernel workbench</a> to explore reduction and dependencies. Binder grouping, truncation notation and equality notation change only the presentation. Equality notation is on by default: <code>(A =[T] B)</code> shows the identity type with endpoints <code>A</code> and <code>B</code> and carrier <code>T</code>. Turn it off to see <code>Id</code> with the carrier as a subscript. Both views keep their links to checked definitions.</p>
+            <p>In the source reader, keywords and built-in forms are purple, and named functions are green. <code>Nat</code> and its constructors are ordinary imported names; their inspection links lead to the source declaration. Numerals, tuples and arithmetic are notation: they are amber with a dotted underline. Hover over one to see its expansion; <code>2</code> shows <code>succ(succ(0))</code> and <code>a + b</code> shows <code>add(a, b)</code>. The index of a projection, as in <code>p.2</code>, is not a numeral.</p>
           </section>
           <section id="inspecting-tactics">
             <h2>Inspecting tactics</h2>
@@ -129,7 +130,7 @@ Assumptions: LEM, Truncate, TruncateElim
 &gt; evaluate recover
 The evaluated term depends on non-computing assumptions: LEM, Truncate, TruncateElim. Path to LEM: recover (sample) → double_negation (classical) → LEM.</code></pre>
             <p>Lines starting with <code>&gt;</code> are typed commands; the other lines are output. The inspected name is shown with its module, as <code>sample__double</code>. Use that qualified form when a short name is ambiguous. <code>inspect</code> lists the assumptions a declaration uses, or <code>none</code>. <code>evaluate</code> follows the rules of the <a href="assumptions.html#evaluate">evaluate directive</a>: a term that uses an assumption is refused, with the path through which the first one enters.</p>
-            <p><code>beta</code> and <code>delta</code> reduce the first applicable occurrence in the inspected expression, or in its type. The kernel checks the result. The workbench can choose a particular occurrence instead.</p>
+            <p><code>beta</code> and <code>delta</code> reduce the first applicable occurrence in the inspected expression, or in its type. The kernel checks the result. The workbench can select a particular occurrence instead.</p>
             <pre><code data-check="cli" data-files="sample">$ node cli/repl.mjs
 &gt; check sample.cubist
 &gt; inspect double
@@ -214,7 +215,7 @@ def too_long := 0b10000000000000000000000000000000000000000000000000000000000000
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">
-            <a class="previous" href="assumptions.html">← 11. Assumptions and computability</a>
+            <a class="previous" href="assumptions.html">← 11. Excluded middle, choice and computability</a>
             <a class="next" href="errors.html">13. Error messages →</a>
           </nav>
         </article>

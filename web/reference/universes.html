@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Types of types, universe variables, and declarations checked once for every universe." />
-    <title>Cubist · 5. Universes</title>
+    <title>Cubist · 6. Universes</title>
     <link rel="stylesheet" href="../language.css" />
     <link rel="stylesheet" href="../repl.css" />
   </head>
@@ -21,7 +21,7 @@
     </header>
     <main>
       <div class="introduction">
-        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 5</p>
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 6</p>
         <h1>Universes</h1>
         <p class="lead">Types of types, universe variables, and declarations checked once for every universe.</p>
       </div>
@@ -31,15 +31,15 @@
           <ol class="chapters">
             <li><a href="types.html">Types and values</a></li>
             <li><a href="first-proof.html">A first proof and files</a></li>
-            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="terms.html">Functions, pairs and sums</a></li>
             <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
             <li class="current"><a href="universes.html" aria-current="page">Universes</a></li>
-            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
-            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
-            <li><a href="conversion.html">Conversion and unfolding</a></li>
-            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
+            <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
             <li><a href="errors.html">Error messages</a></li>
           </ol>
@@ -49,18 +49,20 @@
             <li><a href="#universe-variables">Universe variables</a></li>
             <li><a href="#universe-expressions">next and max</a></li>
             <li><a href="#large-universes">UU0 and larger universes</a></li>
-            <li><a href="#generic-library">Univalence and assumptions</a></li>
-            <li><a href="#generic-rewriting">Rewriting with generic lemmas</a></li>
             <li><a href="#inspecting-generic">Inspecting generic declarations</a></li>
           </ul>
         </aside>
         <article id="reference">
           <section id="universes">
             <h2>Universes</h2>
-            <p><code>U0</code> denotes U₀, the universe of small types such as <code>Nat</code>. <code>U1</code>, <code>U2</code>, <code>U3</code> and so on denote the larger universes U₁, U₂, U₃. Each universe is a type in the next one, so <code>U0 : U1</code>. A smaller type is also a type of every larger universe: a type is lifted, never silently lowered.</p>
+            <p><code>U0</code> denotes U₀, the universe of small types such as <code>Nat</code>. <code>U1</code>, <code>U2</code>, <code>U3</code> and so on denote the larger universes U₁, U₂, U₃. Each universe is a type in the next one, so <code>U0 : U1</code>. No universe contains itself: a type of all types, itself among them, would make the logic inconsistent (Girard’s paradox), so the universes form a tower instead.</p>
+            <p>A smaller type is also a type of every larger universe: it is <em>lifted</em>, never silently lowered. This is called <strong>cumulativity</strong>. A type built from others lives in the largest of their universes, so <code>Nat -> U0</code>, a function into <code>U0</code>, is in <code>U1</code>, and a <code>forall</code> over all of <code>U0</code> is in <code>U1</code> too, as <a href="types.html#tour-dependent">chapter 1</a> showed.</p>
             <pre><code data-check="accept">def large_identity(A : U1, x : A) := x;
 def lifted_unit := typed(U1, Unit);
-def small_in_large : U1 := U0;</code></pre>
+def small_in_large : U1 := U0;
+def families : U1 := Nat -&gt; U0;
+def one_unit := large_identity(Unit, tt);</code></pre>
+            <p><code>large_identity</code> takes a type in <code>U1</code>, and <code>Unit</code>, a type in <code>U0</code>, is lifted to it. The other direction fails: a type in <code>U1</code> is not a type in <code>U0</code>.</p>
             <pre><code data-check="reject">def small_identity(A : U0, x : A) := x;
 def lowered := small_identity(U0, Nat);
 // Error: Type mismatch: found U1, expected U0.</code></pre>
@@ -81,8 +83,8 @@ def generic_identity : forall U &lt; UU0. forall A : U. A -&gt; A {
   intro a;
   exact a;
 }
-def reverse(U &lt; UU0, A : U, x, y : A, p : x = y) : y = x {
-  exact sym(p);
+def swap(U &lt; UU0, A, B : U, p : A and B) : B and A {
+  exact (p.2, p.1);
 }</code></pre>
             <p>A universe variable stands for an arbitrary universe, so it is not a type of any fixed universe. <code>U</code> itself lives in the next universe, <code>next(U)</code>.</p>
             <pre><code data-check="reject">def fixed(U &lt; UU0, f : U2 -&gt; Nat) : Nat := f(U);
@@ -115,30 +117,14 @@ def too_large(T : UU0, x : T) := identity(UU0, T, x);
             <p>Names made of <code>U</code>s followed by digits, such as <code>U1</code> and <code>UU2</code>, are universes. They cannot name a variable or a declaration. A name such as <code>UU</code> or <code>U_1</code> is an ordinary name.</p>
             <pre><code data-check="reject">def UU2 := Nat;  // Error: UU2 is a universe constant; pick another name.</code></pre>
           </section>
-          <section id="generic-library">
-            <h2>Univalence and assumptions</h2>
-            <p>The builtins that take a universe argument are generic in the same way: <code>ua</code>, <code>UnivalenceBeta</code> and <code>FunExt</code> are each one definition, used at any universe below <code>UU0</code>. So are the logical assumptions <code>Truncate</code>, <code>LEM</code> and <code>Choice</code> and their companions. A result that uses <code>LEM</code> at <code>U0</code> and at <code>U1</code> depends on one assumption, listed once as <code>LEM</code> (<a href="assumptions.html">chapter 11</a>).</p>
-            <pre><code data-check="accept">import paths;
-def small_path(A, B : U0, e : Equiv(U0, A, B)) : A = B := ua(U0, A, B, e);
-def large_path(A, B : U1, e : Equiv(U1, A, B)) : A = B := ua(U1, A, B, e);</code></pre>
-            <p><code>IsProp(A)</code>, <code>IsSet(A)</code>, and <code>Equiv(U, A, B)</code> are library definitions, not new sorts or language keywords. In particular, <code>IsSet(A)</code> says that any two identity proofs between the same elements agree.</p>
-          </section>
-          <section id="generic-rewriting">
-            <h2>Rewriting with generic lemmas</h2>
-            <p><code>rw</code> and <code>simp</code> accept a generic lemma without its universe argument. The universe is found by matching, where the rewritten side contains it as a plain variable, as in <code>Id(U, A)</code>. When the lemma does not mention its universe, any universe will do. Otherwise, supply the universe yourself, as in <code>simp only [lemma(U2)]</code>.</p>
-            <pre><code data-check="accept">def Id(U &lt; UU0, A : U) := A;
-def id_unfold(U &lt; UU0, A : U) : Id(U, A) = A := refl(A);
-def unfolded(A : U3) : Id(U3, Id(U3, A)) = A {
-  simp only [id_unfold];
-}</code></pre>
-          </section>
           <section id="inspecting-generic">
             <h2>Inspecting generic declarations</h2>
+            <p>Universe variables work with every construct of the later chapters. Equalities between types use them (<a href="paths.html#carriers">carriers</a>), as do <a href="rewriting.html#generic-rewriting">rewriting with generic lemmas</a> and the <a href="assumptions.html#generic-library">univalence builtins and library assumptions</a>, each of which is one definition for every universe.</p>
             <p>The inspector shows a generic declaration as the kernel checked it. A universe binder is written <code>Π (U &lt; ω)</code> in a type and <code>λ (U &lt; ω)</code> in a term, where ω is the kernel’s name for <code>UU0</code>. A use shows its universe argument, as in <code>identity(U0, Nat, 3)</code>. The statement summary lists <code>U &lt; UU0</code> with the other parameters.</p>
           </section>
           <nav class="pager" aria-label="Chapter navigation">
-            <a class="previous" href="proof-blocks.html">← 4. Proof blocks</a>
-            <a class="next" href="induction.html">6. Natural numbers and inductive types →</a>
+            <a class="previous" href="conversion.html">← 5. Computation and conversion</a>
+            <a class="next" href="paths.html">7. Equality and paths →</a>
           </nav>
         </article>
       </div>

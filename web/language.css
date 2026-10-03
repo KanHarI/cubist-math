@@ -140,3 +140,18 @@ details.elaboration[open] > summary { border-bottom: 1px solid #e3e8e1; }
 .derivation-at { color: #7a4a00; white-space: normal; overflow-wrap: anywhere; }
 .derivation-equal { color: #346447; font-weight: 600; }
 .derivation-different { color: #a3322b; font-weight: 600; }
+
+/* Homotopy diagrams: paths solid, constant paths dashed, the moving part highlighted. */
+figure.diagram { margin: 18px 0 22px; padding: 16px 16px 12px; border: 1px solid #dce2dc; border-radius: 8px; background: #fff; max-width: 76ch; }
+figure.diagram svg { display: block; width: 100%; height: auto; max-width: 560px; margin: 0 auto; }
+figure.diagram figcaption { margin-top: 10px; font-size: 14px; line-height: 1.55; color: #526459; }
+figure.diagram text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; fill: #1f3b2a; }
+figure.diagram text.small { font-size: 11.5px; fill: #526459; }
+figure.diagram .path { stroke: #346447; stroke-width: 2.5; fill: none; }
+figure.diagram .constant { stroke: #8a9a8f; stroke-width: 2; stroke-dasharray: 5 4; fill: none; }
+figure.diagram .highlight { stroke: #b5651d; stroke-width: 3.5; fill: none; }
+figure.diagram .faint { stroke: #c9d3ca; stroke-width: 1.5; fill: none; }
+figure.diagram .fiber { stroke: #9fb0a3; stroke-width: 1.5; stroke-dasharray: 3 4; fill: none; }
+figure.diagram .area { fill: #eef3ee; stroke: none; }
+figure.diagram .point { fill: #1f3b2a; }
+figure.diagram .moving { fill: #b5651d; }
