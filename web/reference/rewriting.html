@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Chains of equalities, rewriting with checked lemmas, and simplification." />
-    <title>Cubist · 8. Equational reasoning and simplification</title>
+    <title>Cubist · 9. Equational reasoning and simplification</title>
     <link rel="stylesheet" href="../language.css" />
     <link rel="stylesheet" href="../repl.css" />
   </head>
@@ -21,7 +21,7 @@
     </header>
     <main>
       <div class="introduction">
-        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 8</p>
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 9</p>
         <h1>Equational reasoning and simplification</h1>
         <p class="lead">Chains of equalities, rewriting with checked lemmas, and simplification.</p>
       </div>
@@ -31,21 +31,21 @@
           <ol class="chapters">
             <li><a href="types.html">Types and values</a></li>
             <li><a href="first-proof.html">A first proof and files</a></li>
-            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="terms.html">Functions, pairs and sums</a></li>
             <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
             <li><a href="universes.html">Universes</a></li>
-            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li class="current"><a href="rewriting.html" aria-current="page">Equational reasoning and simplification</a></li>
-            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
-            <li><a href="conversion.html">Conversion and unfolding</a></li>
-            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
+            <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
             <li><a href="errors.html">Error messages</a></li>
           </ol>
           <h2>In this chapter</h2>
           <ul class="sections">
-            <li><a href="#equational">Choosing a tool</a></li>
+            <li><a href="#equational">Picking a tool</a></li>
             <li><a href="#rfl">Reflexivity: <code>rfl</code></a></li>
             <li><a href="#calc">Chains: <code>calc</code></a></li>
             <li><a href="#rw">Rewriting: <code>rw</code></a></li>
@@ -58,7 +58,7 @@
         </aside>
         <article id="reference">
           <section id="equational">
-            <h2>Choosing a tool</h2>
+            <h2>Picking a tool</h2>
             <p>Proving an equality with only <code>sym</code>, <code>trans</code> and <code>cong</code> is exact but hard to read: every intermediate endpoint is implicit. The statements in this chapter build the same checked paths from more readable source. Each produces an ordinary proof term that the kernel checks, and in the inspector each links to the term it built.</p>
             <div class="table-scroll"><table>
               <thead><tr><th>Situation</th><th>Use</th></tr></thead>
@@ -70,7 +70,7 @@
                 <tr><td>A hypothesis matches the goal after the same simplification</td><td><a href="#simpa"><code>simpa only [lemmas] using h;</code></a></td></tr>
               </tbody>
             </table></div>
-            <p><code>rfl</code>, <code>calc</code> and <code>rw</code> act on <strong>homogeneous</strong> equality goals: <code>x = y</code> with both sides in one fixed type. <code>simp</code> also rewrites goals that are types. None of them rewrites a <code>PathP</code> over a varying family; for such goals, see <a href="cubical.html#dependent-paths">dependent paths</a>.</p>
+            <p><code>rfl;</code> was introduced in <a href="types.html#tour-equality">chapter 1</a>; this chapter adds the others. <code>rfl</code>, <code>calc</code> and <code>rw</code> act on <strong>homogeneous</strong> equality goals: <code>x = y</code> with both sides in one fixed type. <code>simp</code> also rewrites goals that are types. None of them rewrites a <code>PathP</code> over a varying family; for such goals, see <a href="cubical.html#dependent-paths">dependent paths</a>.</p>
           </section>
           <section id="rfl">
             <h2>Reflexivity: <code>rfl</code></h2>
@@ -96,6 +96,7 @@ def plus_zero(n : Nat) : n + 0 = n {
           </section>
           <section id="calc">
             <h2>Chains: <code>calc</code></h2>
+            <p>A <code>calc</code> block proves <code>a = d</code> as a chain <code>a = b</code>, <code>b = c</code>, <code>c = d</code>, writing every intermediate expression and the proof of each step. The steps are composed with <code>trans</code>:</p>
             <pre><code data-check="accept">import naturals;
 
 def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
@@ -161,6 +162,7 @@ def wrong_step_proof(n : Nat) : (n + 0) + 0 = n {
           </section>
           <section id="rw">
             <h2>Rewriting: <code>rw</code></h2>
+            <p>Given a proof of <code>a = b</code>, <code>rw</code> replaces an occurrence of <code>a</code> in an equality goal by <code>b</code>, and continues with the new goal:</p>
             <pre><code data-check="accept">import naturals;
 
 def rewrite_then_finish(n, m : Nat, h : n = m) : n + 0 = m {
@@ -292,9 +294,17 @@ def growing(n, m : Nat, h : n = m) : n = m + 0 {
   simp only [&lt;- nat_add_zero];  // Error: Simplification rewrite budget exceeded.
   exact h;
 }</code></pre>
+            <h3 id="generic-rewriting">Generic lemmas</h3>
+            <p><code>rw</code> and <code>simp</code> accept a lemma with a <a href="universes.html#universe-variables">universe variable</a> without its universe argument. The universe is found by matching, where the rewritten side contains it as a plain variable, as in <code>Id(U, A)</code>. When the lemma does not mention its universe, any universe will do. Otherwise, supply the universe yourself, as in <code>simp only [lemma(U2)]</code>.</p>
+            <pre><code data-check="accept">def Id(U &lt; UU0, A : U) := A;
+def id_unfold(U &lt; UU0, A : U) : Id(U, A) = A := refl(A);
+def unfolded(A : U3) : Id(U3, Id(U3, A)) = A {
+  simp only [id_unfold];
+}</code></pre>
           </section>
           <section id="simpa">
             <h2>Using a hypothesis: <code>simpa</code></h2>
+            <p>A hypothesis often proves the goal once both are simplified the same way. <code>simpa</code> does both simplifications and closes the goal with the hypothesis:</p>
             <pre><code data-check="accept">import naturals;
 
 def simpa_example(n, m : Nat, h : n + 0 = m) : n = m + 0 {
@@ -329,6 +339,7 @@ def move_type(A, B : U0, p : A = B, a : A) : B {
           </section>
           <section id="simp-registration">
             <h2>Registering rules and sets</h2>
+            <p>A module can register lemmas as default rules, which a plain <code>simp</code> uses, and name sets of rules for <code>simp only</code>:</p>
             <pre><code data-check="accept">import naturals;
 
 simp_rule nat_add_zero priority 10;
@@ -436,8 +447,8 @@ def global_witness(n : Nat) : n + 0 = n {
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">
-            <a class="previous" href="paths.html">← 7. Equality and paths</a>
-            <a class="next" href="cubical.html">9. Cubical paths, pushouts and suspensions →</a>
+            <a class="previous" href="induction.html">← 8. Natural numbers and inductive types</a>
+            <a class="next" href="cubical.html">10. Cubical paths and higher inductive types →</a>
           </nav>
         </article>
       </div>

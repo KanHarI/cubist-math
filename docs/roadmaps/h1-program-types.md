@@ -58,7 +58,7 @@ successor clause does not use the predecessor; `mul` and `le` in
 inner case analysis of `le` is a `match`, which names the predecessor in its
 clause, `succ(j)`, instead of `as j`.
 
-A linter, `web/mathscript/lint.mjs`, warns about bindings that are never
+A linter, `web/cubist/lint.mjs`, warns about bindings that are never
 used and can be removed: `as` names on `induction` and `match`, `forall`
 and `exists` variables, and `let`, `have` and `obtain` statements. Checking
 reports its warnings in the CLI, the workspace and the reference pages, and
@@ -101,12 +101,13 @@ hypotheses, composition and transport.
 Current native suites exercise declared arithmetic and trees, signature
 admission, isolation, conversion, levels, budgets and compact shared syntax.
 The current driver/term-checker differential generator uses sums of Unit.
-Old raw primitive-calculus tests remain useful as a separate historical
-oracle: `tools/legacy-kernel.mjs` builds the exact Git revision
-`bfef585cfe09f4b94a658564dff505cd67855368` under `build/reference-kernel`.
-That binary is never loaded by production checking or included in the site.
-Historical comparisons do not certify the current producer; the current
-native, source, corpus and driver tests provide that evidence separately.
+Old raw primitive-calculus tests ran against a separate historical oracle,
+the kernel at `bfef585cfe09f4b94a658564dff505cd67855368`, until 2026-10-02.
+Then that oracle was removed, and the tests of features the current kernel
+keeps were moved to it: the translator's tests, now in `tests/translator`, check
+raw syntax through the instruction kernel (`kernel-check.mjs`), with sums
+and Unit in place of Nat. Tests of Nat, W and pushout primitives, and of
+the old line protocol, were removed.
 
 ## Source-defined pushouts
 

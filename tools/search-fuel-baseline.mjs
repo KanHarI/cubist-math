@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The baseline behind the default search fuel (lib/cubical/fuel.mjs; HoTT
+// The baseline behind the default search fuel (web/translator/fuel.mjs; HoTT
 // roadmap A4, work plan L1.3): what tactic searches and declarations spend on
 // the checked workloads, with fuel unlimited. The fuel counts are
 // deterministic; times, kernel work and memory are one run's observations.
@@ -13,12 +13,12 @@ import os from "node:os";
 import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { sourceModules, cubicalSourceModules } from "../web/mathscript/modules.mjs";
+import { archiveModules } from "../web/cubist/modules.mjs";
 import { cubicalSourceFile } from "../web/cubical-sources.mjs";
 import { referenceExamples } from "../tests/reference-pages.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
 import { sourceReader } from "./module-sources.mjs";
-// A stale WASM kernel or translator copy would run code it does not contain.
+// A stale WASM kernel would run code it does not contain.
 assertFreshBuild();
 
 const root = new URL("../", import.meta.url);
@@ -63,7 +63,7 @@ async function measure(name, source, readSource) {
 }
 
 const workloads = [];
-const modules = [...new Set([...sourceModules, ...cubicalSourceModules])];
+const modules = archiveModules;
 workloads.push(await measure("archive", modules.map(module => `import ${module};`).join("\n"), archive));
 const rebuilt = (await readdir(new URL("library/", root))).filter(file => file.endsWith(".cubist")).map(file => file.slice(0, -7));
 workloads.push(await measure("library", rebuilt.map(module => `import ${module};`).join("\n"), sourceReader()));

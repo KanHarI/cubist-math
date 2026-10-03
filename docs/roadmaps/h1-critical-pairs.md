@@ -149,7 +149,7 @@ deletion changes neither the filler nor its endpoint modulo conversion.
 
 Every applied constructor path carries a literal path-type annotation.
 Substituting an endpoint in that annotation commutes with `σ` after fresh
-dimensions are chosen. If `σ` makes another formula an endpoint, the
+dimensions are picked. If `σ` makes another formula an endpoint, the
 two boundary restrictions agree by the admitted cube's typing (CP02).
 Clause annotations created by `Iota` obey the same invariant and use the
 displayed boundary, giving CP01. Level substitution preserves the path
@@ -158,7 +158,7 @@ node and changes its family and endpoints componentwise.
 ## Overlap table
 
 The table lists the nontrivial overlaps of the generated rules with the
-baseline path and face rules. Its tests choose distinct reduction orders;
+baseline path and face rules. Its tests use distinct reduction orders;
 the existing transport property tests additionally vary constructor
 formulas and parameter lines with a fixed seed.
 
@@ -207,7 +207,7 @@ case, the statement is about the same weak head; Lemma H2 and CP01–CP10
 cover endpoint and face changes. Path eta and function eta use the same
 annotation and substituted clause type, so expanding first joins after
 application by their baseline Beta rules. No rule compares a level to
-choose a reduct.
+select a reduct.
 
 This is an overlap argument for the added rules, relative to the baseline.
 It does not infer global confluence from termination or claim normalization:

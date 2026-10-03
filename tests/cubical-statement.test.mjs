@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parse } from "../web/mathscript/parser.mjs";
+import { parse } from "../web/cubist/parser.mjs";
 import { sourceStatement } from "../web/cubical-statement.mjs";
 import { readFile } from "node:fs/promises";
 const text = parts => parts.map(part => part.text).join("");

@@ -31,15 +31,15 @@
           <ol class="chapters">
             <li><a href="types.html">Types and values</a></li>
             <li><a href="first-proof.html">A first proof and files</a></li>
-            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="terms.html">Functions, pairs and sums</a></li>
             <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
             <li><a href="universes.html">Universes</a></li>
-            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
-            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
-            <li><a href="conversion.html">Conversion and unfolding</a></li>
-            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
+            <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
             <li class="current"><a href="checking.html" aria-current="page">Checking and inspection</a></li>
             <li><a href="errors.html">Error messages</a></li>
           </ol>
@@ -57,7 +57,7 @@
         <article id="reference">
           <section id="inspection">
             <h2>The proof workspace</h2>
-            <p>Open the <a href="../proof.html">proof workspace</a>, choose a topic and a proof, then use <strong>Edit</strong> and <strong>Check proof</strong> (Ctrl/Cmd+Enter). A rejected edit leaves the last checked proof available.</p>
+            <p>Open the <a href="../proof.html">proof workspace</a>, select a topic and a proof, then use <strong>Edit</strong> and <strong>Check proof</strong> (Ctrl/Cmd+Enter). A rejected edit leaves the last checked proof available.</p>
             <ul>
               <li>In <strong>Read</strong> mode, click a name to inspect its type and source.</li>
               <li>Click a proof-step line number to see the goal and the context at that step.</li>
@@ -65,6 +65,7 @@
               <li><code>//</code> comments directly above a declaration are shown as its <a href="first-proof.html#descriptions">description</a>.</li>
             </ul>
             <p>The checked kernel details show the expression, its type and its open context. Folded kernel notation keeps names only where their relationship to the stored term is checked. The representation selector switches between Cubist and raw kernel terms; either can be sent to the <a href="../workbench.html">kernel workbench</a> to explore reduction and dependencies. Binder grouping, truncation notation and equality notation change only the presentation. Equality notation is on by default: <code>(A =[T] B)</code> shows the identity type with endpoints <code>A</code> and <code>B</code> and carrier <code>T</code>. Turn it off to see <code>Id</code> with the carrier as a subscript. Both views keep their links to checked definitions.</p>
+            <p>In the source reader, keywords and built-in forms are purple, and named functions are green. <code>Nat</code> and its constructors are ordinary imported names; their inspection links lead to the source declaration. Numerals, tuples and arithmetic are notation: they are amber with a dotted underline. Hover over one to see its expansion; <code>2</code> shows <code>succ(succ(0))</code> and <code>a + b</code> shows <code>add(a, b)</code>. The index of a projection, as in <code>p.2</code>, is not a numeral.</p>
           </section>
           <section id="inspecting-tactics">
             <h2>Inspecting tactics</h2>
@@ -89,7 +90,7 @@ def recover(P : U0, prop : Proposition(P), nn : (P -&gt; Void) -&gt; Void) : P {
 }
 
 evaluate double(2) expecting 4;</code></pre>
-            <p><code>check</code> checks the file and everything it imports. It prints the number of declarations and kernel steps, then each <a href="#warnings">warning</a> and each <a href="assumptions.html#evaluate"><code>evaluate</code></a> result, and exits with status 0. A file that does not check completely prints the failures and exits with a nonzero status.</p>
+            <p><code>check</code> checks the file and everything it imports. It prints the number of declarations and kernel steps, then each <a href="#warnings">warning</a> and each <a href="assumptions.html#evaluate"><code>evaluate</code></a> result, and exits with status 0. A file that does not check completely prints each failure on a line of its own, as <code>error E606 at line 2:3 (wrong): Type mismatch: …</code>, and exits with a nonzero status. Each code has an entry among the <a href="errors.html#errors">error messages</a>.</p>
             <pre><code data-check="cli" data-files="sample">$ node cli/repl.mjs check sample.cubist
 Checked 2 declarations · … kernel steps
 evaluate at line 11: 4</code></pre>
@@ -127,9 +128,9 @@ Assumptions: none
 sample__recover
 Assumptions: LEM, Truncate, TruncateElim
 &gt; evaluate recover
-The evaluated term depends on non-computing assumptions: LEM, Truncate, TruncateElim. Path to LEM: recover (sample) → double_negation (classical) → LEM.</code></pre>
+E324: The evaluated term depends on non-computing assumptions: LEM, Truncate, TruncateElim. Path to LEM: recover (sample) → double_negation (classical) → LEM.</code></pre>
             <p>Lines starting with <code>&gt;</code> are typed commands; the other lines are output. The inspected name is shown with its module, as <code>sample__double</code>. Use that qualified form when a short name is ambiguous. <code>inspect</code> lists the assumptions a declaration uses, or <code>none</code>. <code>evaluate</code> follows the rules of the <a href="assumptions.html#evaluate">evaluate directive</a>: a term that uses an assumption is refused, with the path through which the first one enters.</p>
-            <p><code>beta</code> and <code>delta</code> reduce the first applicable occurrence in the inspected expression, or in its type. The kernel checks the result. The workbench can choose a particular occurrence instead.</p>
+            <p><code>beta</code> and <code>delta</code> reduce the first applicable occurrence in the inspected expression, or in its type. The kernel checks the result. The workbench can select a particular occurrence instead.</p>
             <pre><code data-check="cli" data-files="sample">$ node cli/repl.mjs
 &gt; check sample.cubist
 &gt; inspect double
@@ -168,7 +169,7 @@ x_is_seven : x = 7
 &gt; def x_is_eight : x = 8 {
 &gt;   exact refl(7);
 &gt; }
-Type mismatch: found 7 = 7, expected x = 8.
+E606: Type mismatch: found 7 = 7, expected x = 8.
 &gt; x + 1
 8</code></pre>
             <p><code>let x := 7;</code> defines <code>x</code> and prints its type; <code>def</code> works the same way. An entry continues on the next line while a bracket is open, so a proof block is one entry. A term alone is evaluated, and the final <code>;</code> of an entry can be left out. <code>x_is_eight</code> is rejected, so it does not exist for later entries. <code>/help</code> lists the entries and the commands, which start with <code>/</code>: <code>/modules</code> lists the modules <code>import</code> can load, <code>/clear</code> clears the log and <code>/restart</code> starts a new session. The consoles on the website take the same commands.</p>
@@ -177,7 +178,7 @@ Type mismatch: found 7 = 7, expected x = 8.
             <h2>Warnings</h2>
             <p>A declaration that checks can still bind a name it never uses. The checker warns about such a binding when it can simply be removed:</p>
             <ul>
-              <li><code>as k</code> on an <a href="induction.html#induction"><code>induction</code></a> whose return type and successor branch do not use <code>k</code>, and <code>as z</code> on a <a href="terms.html#match"><code>match</code></a> whose return type does not mention <code>z</code>;</li>
+              <li><code>as k</code> on a natural-number <a href="induction.html#nat-induction"><code>induction</code></a> whose return type and successor branch do not use <code>k</code>, and <code>as z</code> on a <a href="terms.html#match"><code>match</code></a>, or an <a href="induction.html#induction"><code>induction</code></a> on another declared type, whose return type does not mention <code>z</code>;</li>
               <li>a variable of <code>forall</code> or <code>exists</code> that its body does not mention, which can be written with <a href="paths.html#exists-and"><code>-&gt;</code> or <code>and</code></a>;</li>
               <li>a <a href="proof-blocks.html#let"><code>let</code></a> or <code>obtain</code> whose names nothing after it in its block uses.</li>
             </ul>
@@ -188,10 +189,10 @@ Type mismatch: found 7 = 7, expected x = 8.
 };
 
 def copy_two : copy(2) = 2 { rfl; }</code></pre>
-            <p>The workspace lists warnings under the checked declarations; click a line number to show the line. The command-line checker prints each with its line, column and declaration:</p>
+            <p>The workspace lists warnings under the checked declarations; click a line number to show the line. The command-line checker prints each with its code, line, column and declaration:</p>
             <pre><code data-check="cli" data-files="unused">$ node cli/repl.mjs check unused.cubist
 Checked 2 declarations · … kernel steps
-warning at line 1:37 (copy): k is unused: the return type does not mention it and the successor clause does not use it. Omit as k: induction n return ….</code></pre>
+warning W703 at line 1:37 (copy): k is unused: the return type does not mention it and the successor clause does not use it. Omit as k: induction n return ….</code></pre>
             <p><code>npm run lint:cubist -- FILE.cubist</code> reports the same warnings without checking, and exits with status 1 when there are any. Without file names it lints the library, which has none.</p>
           </section>
           <section id="tools">
@@ -214,7 +215,7 @@ def too_long := 0b10000000000000000000000000000000000000000000000000000000000000
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">
-            <a class="previous" href="assumptions.html">← 11. Assumptions and computability</a>
+            <a class="previous" href="assumptions.html">← 11. Excluded middle, choice and computability</a>
             <a class="next" href="errors.html">13. Error messages →</a>
           </nav>
         </article>

@@ -33,7 +33,13 @@ node cli/repl.mjs check example.cubist
 ```
 
 A successful check prints the declaration and kernel-step counts and exits with
-status 0. Parse errors, missing imports, or unchecked declarations exit nonzero.
+status 0. Parse errors, missing imports, or unchecked declarations exit nonzero,
+each printed on a line of its own with its code, as
+`error E606 at line 2:3 (wrong): Type mismatch: …`; a warning prints as
+`warning W703 at line 1:37 (copy): …`. Every code has an entry in the
+[error messages](../../web/reference/errors.html) chapter of the language
+reference, and `node tools/diagnostic-codes.mjs` checks that every message
+in the sources has one.
 There is no `axiom` declaration: a source file cannot add assumptions. Each
 `evaluate` directive's result is printed after the counts.
 A declaration with a universe variable `U < UU0` is checked once, for every
@@ -90,7 +96,7 @@ checked sessions. `assembly` lists the actual native
 opcodes and operands. Use a qualified binding such as `example__self_equal`
 when a short name is ambiguous. `beta` or `delta` reduces the first applicable
 occurrence in the expression (or `type`); the native checker validates the
-result. The browser workbench supports choosing a particular occurrence.
+result. The browser workbench supports selecting a particular occurrence.
 
 `export` saves replayable source and inspection metadata for the selected
 original declaration. It does not save an interactive reduction history.

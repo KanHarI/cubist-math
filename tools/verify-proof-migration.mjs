@@ -1,7 +1,7 @@
 // Check that edited library modules keep their checked meaning.
 //   node tools/verify-proof-migration.mjs [--base REV] [--level identical|types]
 //     [--json FILE] [--ledger FILE] [--no-dependents]
-//     [--representation native|declared] [--edited-root DIR]
+//     [--edited-root DIR]
 //     [--edited-file FILE --declarations name,...] [module ...]
 // Without module names, every archive/first-library module modified relative to the base
 // revision (default HEAD) is checked. Every module that imports a checked
@@ -16,7 +16,7 @@ import { assertFreshBuild } from "./build-stamp.mjs";
 import { migrationSourceReader } from "./migration-sources.mjs";
 import { placeOfFile } from "./module-sources.mjs";
 import { moduleRoots } from "../web/module-resolution.mjs";
-import { currentSyntax } from "../web/mathscript/legacy-syntax.mjs";
+import { currentSyntax } from "../web/cubist/legacy-syntax.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const args = process.argv.slice(2), option = name => {
@@ -35,7 +35,6 @@ const base = requestedBase ?? ledger?.base ?? "HEAD";
 const editedRoot = resolve(root,option("--edited-root") ?? "archive/first-library");
 const editedFile = option("--edited-file");
 const selected = option("--declarations")?.split(",");
-const representation = option("--representation") ?? "native";
 if (args.some(arg => arg.startsWith("--"))) throw new Error(`Unknown option: ${args.find(arg => arg.startsWith("--"))}`);
 const git = gitArgs => execFileSync("git", gitArgs, { cwd: root, encoding: "utf8", maxBuffer: 1 << 28 });
 if (ledger?.base && git(["rev-parse", base]).trim() !== git(["rev-parse", ledger.base]).trim())
@@ -87,10 +86,10 @@ const readOriginal = migrationSourceReader(async (place, name) => {
   }
   return originals.get(path);
 }, modules);
-// A stale WASM kernel or translator copy would run code it does not contain.
+// A stale WASM kernel would run code it does not contain.
 assertFreshBuild();
 const declarations=selected ? {[modules[0]]:selected} : null;
-const reports = await verifyMigration({ modules, readOriginal, readEdited, level, ledger, declarations, representation });
+const reports = await verifyMigration({ modules, readOriginal, readEdited, level, ledger, declarations });
 let failures = 0;
 for (const report of reports) {
   failures += report.failures.length;

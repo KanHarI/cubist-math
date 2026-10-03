@@ -20,7 +20,9 @@ export const proofTopics = [
   { id: "contour-integration", title: "Contour Integration" },
 ];
 
-export const proofChoices = [
+// The archive's modules as the proof selector shows them: each one's title and
+// browsing topic.
+export const proofCatalog = [
   { id: "nat", topic: "arithmetic", title: "Natural numbers · a source declaration" },
   { id: "w", topic: "homotopy", title: "Well-founded trees · a source declaration" },
   { id: "pushout", topic: "homotopy", title: "Pushouts · a higher inductive source declaration" },
@@ -398,6 +400,6 @@ export const proofChoices = [
 ];
 
 export function proofsInTopic(topic) {
-  return proofChoices.filter(proof => proof.topic === topic)
+  return proofCatalog.filter(proof => proof.topic === topic)
     .sort((left, right) => left.title.localeCompare(right.title));
 }

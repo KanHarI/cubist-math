@@ -7,25 +7,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
-import { CubicalProgram } from "../web/cubical-program.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
-import { T, substituteDimension } from "../lib/cubical/core.mjs";
-import { interval as I, face as F } from "../lib/cubical/lattice.mjs";
+import { T, substituteDimension } from "../web/translator/core.mjs";
+import { interval as I, face as F } from "../web/translator/lattice.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 const module = await createCubical();
 const library = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8");
 
-async function check(t, source, reader = library) {
-  const program = new CubicalProgram(module, reader);
-  t.after(() => program.dispose());
-  const result = await program.check(source, "main");
-  return { program, get: name => {
-    const found = result.outputs.find(output => output.name === name);
-    assert.ok(found, `no declaration ${name}`);
-    return found;
-  } };
-}
+const check = (t, source, reader = library) => checkProgram(t, source, { module, reader });
 const ok = declaration => assert.ok(declaration.verified, `${declaration.name}: ${declaration.reason}`);
 const refused = (declaration, pattern) => {
   assert.equal(declaration.verified, false, `${declaration.name} was accepted`);

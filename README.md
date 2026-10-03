@@ -44,7 +44,6 @@ npm test -- --changed                    # Modified .cubist sources
 npm test -- tests/cubical-program.test.mjs
 npm test                                # Final regression and corpus check
 npm run test:browser
-node tools/differential-driver.mjs --seeds=2000   # The driver against the term checker
 make CC=clang sanitize                  # Address/undefined sanitizers
 make sanitize SANITIZERS=undefined     # macOS 26, where the address sanitizer hangs
 make lint
@@ -57,18 +56,11 @@ rewriting its outputs, and rebuilds whatever no longer matches, whatever the
 file times say. Every command that loads `web/dist` refuses a stale build
 rather than run code it does not contain: `npm test`, the browser tests, the
 site build, the CLI, the coverage, audit, fingerprint, fuel-baseline,
-migration-verifier, benchmark and differential tools, and the driver trace
+migration-verifier and benchmark tools, and the driver trace
 (`tests/driver-trace.mjs`), which checks another checkout it traces by that
 tree's own stamp. So does a test file run on its own, with `node` or
 `node --test`: each test file that loads `web/dist` imports
 `tests/fresh-build.mjs` first, and `tests/fresh-build.test.mjs` keeps it so.
-
-`tools/differential-driver.mjs` generates problems where eta and computation
-meet, each a context, a type and two terms. The terms are equal by
-construction, through beta, pair eta, Glue eta with pieces on a face, and
-type-level beta, or they differ in one variable. The tool checks each problem
-with the term checker's conversion and with the instruction driver, and
-reports any disagreement with its seed. `npm test` runs 500 seeds.
 
 The independent optimization switches are `--[no-]share-syntax`,
 `--[no-]reuse-checks`, and `--[no-]compact-paths`; all default on.
@@ -77,18 +69,13 @@ while checking that the expanded AST is unchanged. Add `-- --check` for a dry ru
 `npm run lint:cubist` reports bindings that are never used and can be removed,
 such as an `as` name no motive mentions; checking reports the same warnings.
 
-Primitive-calculus comparison tests build a historical kernel from the exact
-Git revision pinned in `tools/legacy-kernel.mjs`; they need that commit in the
-local history and Emscripten for its WASM fixtures. It is a test oracle only.
-Selected proof checks use the current kernel without building that oracle.
-
 ## Code and documentation
 
 - [`docs/README.md`](docs/README.md): documentation index and where to resume each development.
-- [`kernel/`](kernel/README.md): the trusted C kernel. Its typing rules are the instructions in `src/instructions.c`, with one file per group of computation rules; the old term checker remains as the search's untrusted oracle.
+- [`kernel/`](kernel/README.md): the trusted C kernel. Its typing rules are the instructions in `src/instructions.c`, with one file per group of computation rules.
 - [`docs/guides/cli.md`](docs/guides/cli.md): custom proofs, imports, commands, and CLI limitations.
 - [`docs/guides/kernel.md`](docs/guides/kernel.md): a mathematician's guide to reading the kernel.
-- [`lib/cubical/`](lib/cubical): elaboration, inert native adapters, and an independent JavaScript reference checker used in tests (not extended for new kernel features).
+- [`web/translator/`](web/translator): the translator from source to kernel syntax, with elaboration and the proof tactics; the browser, the CLI and the tests load these same files. Every check is the kernel's. Their tests are in `tests/translator/`.
 - [`archive/first-library/`](archive/first-library): the archived first `.cubist` library, still checked in CI. A rebuilt library replaces it area by area; see [`docs/library-results.md`](docs/library-results.md) and the [work plan](docs/roadmaps/work-plan.md).
 - [`web/language.html`](web/language.html): the source language reference, one page per chapter under `web/reference/`.
 - [`docs/tactical/galois-handoff.md`](docs/tactical/galois-handoff.md) and [`docs/roadmaps/complex-analysis-roadmap.md`](docs/roadmaps/complex-analysis-roadmap.md): unfinished mathematical developments and resumption notes.

@@ -111,7 +111,7 @@ def additive_right_cancellation(
 
 // This is a theorem about ALL paths in the puncture homotopy type, not just
 // explicitly given words. Generation is used only under propositional
-// truncation to establish an equality in the set G; no word is chosen.
+// truncation to establish an equality in the set G; no word is picked.
 def puncture_period_formula(
   n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, setG : FieldSet(G),
   laws : AddLaws(G, zero, addG, negG), period : BouquetLoops(Fin(n)) -> G,

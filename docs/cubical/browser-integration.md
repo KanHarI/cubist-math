@@ -35,7 +35,7 @@ Each workbench term (expression and type) has independent **β step**, **δ
 unfold**, and **Normalize** controls. Clicking beta or delta enters selection mode
 and highlights all applicable sites in the displayed term without changing it.
 Click a highlight (or focus it and press Enter/Space) to reduce that occurrence.
-Repeated uses of a shared subtree are separate choices. Escape or **Un-highlight**
+Repeated uses of a shared subtree are separate selections. Escape or **Un-highlight**
 cancels the mode. Large terms offer **Show more reduction sites** when the display
 budget hides part of the expression.
 
@@ -79,7 +79,7 @@ terminator. Source names supplement the numeric data without replacing it.
 These are native syntax constructors, not a trace of checking instructions or
 CPU/WASM instructions. They retain the shared graph and do not normalize it.
 
-The roots identify the checked expression, its chosen checked type, and the
+The roots identify the checked expression, its selected checked type, and the
 inferred type when the two use different handles. Context entries preserve their
 order and show numeric symbols and type handles. Open interval dimensions and
 formula clauses retain all 64 mask bits. A `CC_DEFREF` keeps its registry index;
@@ -137,7 +137,7 @@ Current independent WASM tests cover:
   including radix bases 2 and 10, followed by the derived computation law and
   arithmetic compatibility to identify the original target factorial;
 - seven concrete transferred factorial statements in
-  `lib/cubical/factorial-transfer.cubist`, including the existing
+  `tests/fixtures/factorial-transfer.cubist`, including the existing
   `Nat` statement `factorial(10) = nat_3628800`.
 
 The source translator now handles W formation/introduction/induction, sums and
@@ -170,7 +170,7 @@ proof folded avoids repeated checking of a large substituted beta body. The
 initial direct-body radix check exhausted the existing work budget; this
 factoring solves it without increasing that budget or changing a kernel rule.
 
-`lib/cubical/number-transport.mjs` contains the checked-definition
+`tests/translator/number-transport.mjs` contains the checked-definition
 assembly for this migration. The production half-adjoint `Equiv` declarations
 remain explicitly untranslated: their source inverse laws build the cubical
 contractible-fiber witnesses instead. The generic production `Equiv` API still

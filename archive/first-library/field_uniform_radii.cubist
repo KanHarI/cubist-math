@@ -27,7 +27,7 @@ def field_close_enlarge(
 }
 
 // An actual common positive radius without comparing r and s or deciding
-// which is smaller. Choose delta with delta*(r+s) < r*s, then cancel r+s.
+// which is smaller. Take delta with delta*(r+s) < r*s, then cancel r+s.
 def field_common_positive_radius(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),

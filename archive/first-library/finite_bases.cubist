@@ -236,7 +236,7 @@ def scalar_space_basis(K : AlgebraicField) : FiniteBasis(K, ScalarSpace(K), 1) {
 }
 
 // A path of vector spaces transports the entire basis, including its linear
-// maps and both roundtrips. No basis is chosen afresh at the destination.
+// maps and both roundtrips. No basis is picked afresh at the destination.
 def transport_finite_basis(
   K : AlgebraicField, V, W : VectorSpace(K), p : V = W, n : Nat, basis : FiniteBasis(K, V, n)
 ) :

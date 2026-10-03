@@ -31,15 +31,15 @@
           <ol class="chapters">
             <li><a href="types.html">Types and values</a></li>
             <li><a href="first-proof.html">A first proof and files</a></li>
-            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="terms.html">Functions, pairs and sums</a></li>
             <li class="current"><a href="proof-blocks.html" aria-current="page">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
             <li><a href="universes.html">Universes</a></li>
-            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
-            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
-            <li><a href="conversion.html">Conversion and unfolding</a></li>
-            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
+            <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
             <li><a href="errors.html">Error messages</a></li>
           </ol>
@@ -58,7 +58,7 @@
         <article id="reference">
           <section id="goals">
             <h2>Goals and statements</h2>
-            <p>A proof block is the body of a block declaration: <code>def name(params) : T { … }</code>. It starts with the goal <code>T</code> and a context holding the parameters. Each statement does one of three things:</p>
+            <p>A proof block is the body of a block declaration: <code>def name(params) : T { … }</code>. As in the <a href="first-proof.html#first-proof">first proofs</a>, it starts with the goal <code>T</code> and a context holding the parameters. Each statement does one of three things:</p>
             <ul>
               <li>it <strong>extends the context</strong> and continues with the same goal: <code>let</code>, <code>obtain</code>;</li>
               <li>it <strong>changes the goal</strong> and continues with the new one: <code>intro</code>, <code>rw</code>, <code>simp</code>, <code>ext</code>;</li>
@@ -130,15 +130,15 @@ def compose_endo(A : U0, f, g : Endo(A)) : Endo(A) {
   exact a;
 }</code></pre>
             <p>A function goal can also be closed without <code>intro</code>, by giving the function: <code>exact fun (a : A) => a;</code>.</p>
-            <p>The name after <code>intro</code> is chosen by the author. Its spelling does not determine its type; the goal does. Here <code>setA</code> gets the type <code>IsSet(A)</code> because that is the next input of the goal:</p>
-            <pre><code data-check="accept">import sets;
+            <p>The name after <code>intro</code> is picked by the author. Its spelling does not determine its type; the goal does. Here <code>decided</code> gets the type <code>Decidable(P)</code> because that is the next input of the goal, after <code>Statement</code> unfolds:</p>
+            <pre><code data-check="accept">def Decidable(P : U0) := P or (P -&gt; Void);
 
-def SetAssumption := forall A : U0. IsSet(A) -&gt; IsSet(A);
+def Statement := forall P : U0. Decidable(P) -&gt; Decidable(P);
 
-def use_set_assumption : SetAssumption {
-  intro A;       // A : U0, from the forall
-  intro setA;    // setA : IsSet(A), from the implication
-  exact setA;
+def keep_decision : Statement {
+  intro P;          // P : U0, from the forall
+  intro decided;    // decided : Decidable(P), from the implication
+  exact decided;
 }</code></pre>
           </section>
           <section id="exact">
@@ -361,21 +361,18 @@ def default(value : Unit or Unit) : Shape(value) {
           </section>
           <section id="changing-the-goal">
             <h2>Changing the goal</h2>
-            <p><code>rw</code>, <code>simp</code> and <code>ext</code> replace the goal with a new one and continue. Some of them finish the block when the new goal holds by computation; the chapters on <a href="rewriting.html#rw">rewriting</a> and <a href="cubical.html#ext">function extensionality</a> say when. Otherwise, a following statement proves the new goal.</p>
+            <p><code>rw</code>, <code>simp</code> and <code>ext</code> replace the goal with a new one and continue. Each has its own chapter: <a href="rewriting.html#rw">rewriting and simplification</a> for <code>rw</code> and <code>simp</code>, and <a href="cubical.html#ext">function extensionality</a> for <code>ext</code>. They share one pattern. <code>rw</code> and <code>simp</code> finish the block when the new goal holds by <a href="conversion.html#conversion">computation</a>; otherwise, and always after <code>ext</code>, a following statement proves the new goal. Here <code>nat_add_zero(n)</code> is the library’s proof of <code>n + 0 = n</code>, and <code>rw</code> uses it to replace the first <code>n + 0</code> in the goal by <code>n</code>:</p>
             <pre><code data-check="accept">import naturals;
 
 def rewrite_then_finish(n : Nat) : (n + 0) + 0 = n {
-  rw [nat_add_zero(n)];
+  rw [nat_add_zero(n)];      // the goal is now n + 0 = n
   exact nat_add_zero(n);
-}
-
-def pointwise(A, B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
-  ext x;
-  rfl;
 }</code></pre>
-            <p>In <code>rewrite_then_finish</code>, <code>rw</code> turns the goal into <code>n + 0 = n</code>, which <code>exact</code> then proves. In <code>pointwise</code>, <code>ext x</code> turns the goal into <code>f(x) = f(x)</code>, which still needs <code>rfl</code>:</p>
-            <pre><code data-check="reject">def pointwise(A, B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
-  ext x;  // Error: Proof block has no conclusion.
+            <p>The rewritten goal, <code>n + 0 = n</code>, does not hold by computation, so a statement must follow. Without one, <code>rw</code> reports the goal it left:</p>
+            <pre><code data-check="reject">import naturals;
+
+def rewrite_only(n : Nat) : (n + 0) + 0 = n {
+  rw [nat_add_zero(n)];  // Error: rw left an unresolved equality goal; add a following proof statement.
 }</code></pre>
           </section>
           <section id="where-blocks-go">
@@ -387,8 +384,8 @@ def pointwise(A, B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">
-            <a class="previous" href="terms.html">← 3. Terms, functions and pairs</a>
-            <a class="next" href="universes.html">5. Universes →</a>
+            <a class="previous" href="terms.html">← 3. Functions, pairs and sums</a>
+            <a class="next" href="conversion.html">5. Computation and conversion →</a>
           </nav>
         </article>
       </div>

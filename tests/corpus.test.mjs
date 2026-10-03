@@ -19,8 +19,10 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // G3 asks for the archive unchanged: every module imports, and every one
   // of its declarations checks. Declaring BinaryNat, BinaryPositive, RadixNat
   // and RadixPositive by their constructors removed 21 W-encoding helpers.
-  // The declared pushout module added Pushout and pushout_induction.
+  // The declared pushout module added Pushout and pushout_induction. The
+  // entry points basics and euclid, which no module imports, are checked
+  // too since the archive has one list of modules (web/cubist/modules.mjs).
   assert.deepEqual(report.importErrors, []);
-  assert.equal(report.declarations.length, 3788, "The corpus must not silently lose modules.");
+  assert.equal(report.declarations.length, 3794, "The corpus must not silently lose modules.");
   t.diagnostic(JSON.stringify(report.counts));
 });

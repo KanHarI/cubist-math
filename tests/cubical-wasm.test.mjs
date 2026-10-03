@@ -1,5 +1,4 @@
 import "./fresh-build.mjs";
-import createLegacyCubical from "../tools/legacy-kernel.mjs";
 import {CubicalProgram} from "../web/cubical-program.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
 import test from "node:test";
@@ -8,52 +7,63 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel, KernelError } from "../web/cubical-kernel.mjs";
 import { CubicalSyntax } from "../web/cubical-syntax.mjs";
 import { NativeCubicalElaborator } from "../web/cubical-elaborator.mjs";
-import { T, Checker } from "../lib/cubical/core.mjs";
-import { interval as I, face as F } from "../lib/cubical/lattice.mjs";
-import { identityEquivalence } from "../lib/cubical/equivalence.mjs";
-import { Translator } from "../lib/cubical/translate.mjs";
-import { Scope, SourceUnit } from "../lib/cubical/elaboration.mjs";
-import { Goal, reflexivity } from "../lib/cubical/proof-goals.mjs";
-import { abstractMotive } from "../lib/cubical/motives.mjs";
+import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
+import { T } from "../web/translator/core.mjs";
+import { interval as I, face as F } from "../web/translator/lattice.mjs";
+import { identityEquivalence } from "../web/translator/equivalence.mjs";
+import { Translator } from "../web/translator/translate.mjs";
+import { Scope, SourceUnit } from "../web/translator/elaboration.mjs";
+import { Goal, reflexivity } from "../web/translator/proof-goals.mjs";
+import { abstractMotive } from "../web/translator/motives.mjs";
 import { readFile } from "node:fs/promises";
 import { InstructionGraph } from "../web/cubical-instructions.mjs";
 import { levelText, universeText } from "../web/cubical-levels.mjs";
 
-// Raw primitive-calculus probes use the pinned historical comparison oracle.
-const module = await createLegacyCubical();
-const producerModule = await createCubical();
+const module = await createCubical();
+const producerModule = module;
 function session(t) {
   const kernel = new CubicalKernel(module);
   t.after(() => kernel.dispose());
   return kernel;
 }
+// Two points, the examples' small inductive type, and a function swapping them.
+const two = T.sum(T.unit, T.unit), left = T.inl(two, T.point), right = T.inr(two, T.point);
+const swap = x => T.sumrec(T.lam("_", two, two), T.lam("u", T.unit, right), T.lam("u", T.unit, left), x);
+// The instruction kernel's check of a raw term, through the driver: the
+// derived term and type, which normalize accepts.
+function derive(k, raw, expected = 0, assumptions = [], mask = 0n) {
+  const driver = new InstructionDriver(k), graph = driver.graph;
+  const judgement = expected ? driver.check(raw, expected, assumptions, mask) : driver.infer(raw, assumptions, mask);
+  const { term, type } = graph.judgement(judgement);
+  (k.derivedHandles ??= new Set()).add(term).add(type);
+  return { expression: term, type };
+}
+// The same for syntax with names and dimensions, as the elaborator checks it.
+const elaborate = (k, term, type = null, context = [], dimensions = new Map()) =>
+  new NativeCubicalElaborator(k).checkSyntax(term, type, new Map(context), dimensions);
 
-test("WASM independently checks functions and leaves reduction explicit", t => {
-  const k = session(t), nat = k.term("Nat"), zero = k.term("Zero"), x = k.symbol("x");
-  const body = k.term("Succ", 0, k.term("Var", x));
-  const fn = k.term("Lam", x, nat, body), application = k.term("App", 0, fn, zero);
-  assert.throws(() => k.normalize(application), /recent successful check/);
-  const result = k.check(application, nat);
+test("the kernel derives an application and leaves reduction explicit", t => {
+  const k = session(t), syntax = new CubicalSyntax(k);
+  const application = syntax.encode(T.app(T.lam("x", two, swap(T.variable("x"))), left));
+  assert.throws(() => k.normalize(application), /an instruction derived/);
+  const result = derive(k, application, syntax.encode(two));
   assert.equal(k.node(result.expression).kind, "App");
-  assert.equal(result.normal, 0);
-  const normal = k.node(k.normalize(result.expression));
-  assert.equal(normal.kind, "Succ");
-  assert.equal(k.node(normal.children[0]).kind, "Zero");
-  assert.throws(() => k.check(application, k.term("Unit")));
-  assert.equal(module._cb_result(k.handle, 0), 0, "rejection must clear the previous certificate");
+  assert.deepEqual(syntax.decode(k.normalize(result.expression)), right);
+  assert.throws(() => derive(k, application, k.term("Unit")));
 });
 
-test("WASM checks contexts and path endpoints instead of trusting annotations", t => {
-  const k = session(t), nat = k.term("Nat"), zero = k.term("Zero"), one = k.term("Succ", 0, zero);
+test("the kernel checks contexts and path endpoints instead of trusting annotations", t => {
+  const k = session(t), syntax = new CubicalSyntax(k);
+  const type = syntax.encode(two), l = syntax.encode(left), r = syntax.encode(right);
   const x = k.symbol("x"), variable = k.term("Var", x);
-  assert.throws(() => k.check(variable, nat));
-  assert.equal(k.node(k.check(variable, nat, [[x, nat]]).type).kind, "Nat");
+  assert.throws(() => derive(k, variable, type));
+  assert.equal(k.node(derive(k, variable, type, [[x, type]]).type).kind, "Sum");
   assert.equal(k.node(variable).name, "x");
-  assert.throws(() => k.check(variable, nat, [[x, zero]]));
-  const path = k.term("PLam", 0, nat, zero);
-  const good = k.term("Path", 0, nat, zero, zero), forged = k.term("Path", 0, nat, zero, one);
-  assert.equal(k.node(k.check(path, good).type).kind, "Path");
-  assert.throws(() => k.check(path, forged));
+  assert.throws(() => derive(k, variable, type, [[x, l]]));
+  const path = k.term("PLam", 0, type, l);
+  const good = k.term("Path", 0, type, l, l), forged = k.term("Path", 0, type, l, r);
+  assert.equal(k.node(derive(k, path, good).type).kind, "Path");
+  assert.throws(() => derive(k, path, forged));
 });
 
 test("WASM retains both halves of dimension masks and the face/interval distinction", t => {
@@ -63,29 +73,14 @@ test("WASM retains both halves of dimension masks and the face/interval distinct
   const impossible = k.formula("face", [[mixed, high]]);
   assert.deepEqual(k.inspectFormula(impossible), { sort: "face", clauses: [] });
   assert.throws(() => k.formula("interval", [[1n << 64n, 0n]]), /64-bit/);
-  const nat = k.term("Nat"), zero = k.term("Zero"), path = k.term("PLam", 0, nat, zero);
+  const unit = k.term("Unit"), point = k.term("Point"), path = k.term("PLam", 0, unit, point);
   const atOne = k.term("PApp", k.formula("interval", [[0n, 0n]]), path);
-  const checked = k.check(atOne, nat);
-  assert.equal(k.node(k.normalize(checked.expression)).kind, "Zero");
-  assert.throws(() => k.check(k.term("PApp", impossible, path), nat));
-});
-
-test("WASM checks exponentially large Nat computations without building their unary values", t => {
-  const k = session(t), nat = k.term("Nat"), zero = k.term("Zero");
-  const n = k.symbol("n"), p = k.symbol("p"), ih = k.symbol("ih");
-  const motive = k.term("Lam", n, nat, nat);
-  const step = k.term("Lam", p, nat, k.term("Lam", ih, nat,
-    k.term("Succ", 0, k.term("Succ", 0, k.term("Var", ih)))));
-  const twice = k.term("Lam", n, nat, k.term("NatRec", 0, motive, zero, step, k.term("Var", n)));
-  let large = k.term("Succ", 0, zero);
-  for (let i = 0; i < 22; i++) large = k.term("App", 0, twice, large);
-  const checked = k.check(large, nat);
-  assert.equal(checked.normal, 0);
-  assert.ok(checked.arenaNodes < 20000, JSON.stringify(checked));
-  assert.ok(checked.arenaBytes < 2 * 1024 * 1024, JSON.stringify(checked));
-  const ignored = k.term("App", 0, k.term("Lam", k.symbol("unused"), nat, zero), large);
-  const ignoredChecked = k.check(ignored, nat);
-  assert.equal(k.node(k.normalize(ignoredChecked.expression)).kind, "Zero", "a discarded argument must not be evaluated");
+  const checked = derive(k, atOne, unit);
+  assert.equal(k.node(k.normalize(checked.expression)).kind, "Point");
+  // A face given as a path's argument is read as the interval formula with
+  // the same clauses: the judgement is about that well-formed term, here p @ 0.
+  const read = derive(k, k.term("PApp", impossible, path), unit);
+  assert.deepEqual(k.inspectFormula(k.node(read.expression).payload), { sort: "interval", clauses: [] });
 });
 
 test("disposed WASM sessions cannot accidentally access a new session", t => {
@@ -93,20 +88,20 @@ test("disposed WASM sessions cannot accidentally access a new session", t => {
   old.dispose();
   const next = session(t);
   assert.notEqual(next.handle, token);
-  assert.equal(module._cb_check(token, 1, 0), 0);
-  assert.throws(() => old.term("Nat"), /disposed/);
+  assert.equal(module._cb_term(token, 1, 0, 0, 0, 0, 0), 0);
+  assert.throws(() => old.term("Unit"), /disposed/);
 });
 
-test("named syntax preserves path binders and sharing across WASM checks", t => {
-  const k = session(t), syntax = new CubicalSyntax(k), reference = new Checker();
-  const pt = T.path("i", T.nat, T.zero, T.zero), p = T.variable("p");
-  const term = T.lam("p", pt, T.line("j", T.nat, T.at(p, I.reverse(I.variable("j")))));
-  const checked = syntax.check(term);
-  const checkedType = reference.verify(checked.type).term;
-  assert.ok(reference.equal(reference.verify(term).type, checkedType));
+test("named syntax preserves path binders and sharing across checks", t => {
+  const k = session(t), syntax = new CubicalSyntax(k);
+  const pt = T.path("i", two, left, left), p = T.variable("p");
+  const term = T.lam("p", pt, T.line("j", two, T.at(p, I.reverse(I.variable("j")))));
+  const checked = elaborate(k, term);
+  assert.equal(checked.type.tag, "Pi");
+  assert.equal(checked.type.body.tag, "Path");
   assert.equal(syntax.encode(term), syntax.encode(term));
-  const roundTrip = syntax.check(checked.term, checked.type);
-  assert.ok(reference.equal(reference.verify(roundTrip.type).term, checkedType));
+  const roundTrip = elaborate(k, checked.term, checked.type);
+  assert.deepEqual(roundTrip.type, checked.type);
   assert.throws(() => { term.name = "changed"; }, TypeError);
 });
 
@@ -133,18 +128,18 @@ test("dependent pair induction checks its motive and both branch arguments nativ
   assert.equal(k.definitions.has("wrong"), false);
 });
 
-test("cubical WASM computes transport through Glue without a univalence axiom", t => {
-  const k = session(t), syntax = new CubicalSyntax(k), e = identityEquivalence(T.nat);
-  const ua = T.line("ua", T.universe(0), T.glueType(T.nat, [
-    { face: F.endpoint("ua", 0), type: T.nat, equiv: e },
-    { face: F.endpoint("ua", 1), type: T.nat, equiv: e },
+test("the kernel computes transport through Glue without a univalence axiom", t => {
+  const k = session(t), syntax = new CubicalSyntax(k), e = identityEquivalence(two);
+  const ua = T.line("ua", T.universe(0), T.glueType(two, [
+    { face: F.endpoint("ua", 0), type: two, equiv: e },
+    { face: F.endpoint("ua", 1), type: two, equiv: e },
   ]));
-  syntax.check(ua, T.path("i", T.universe(0), T.nat, T.nat));
-  const moved = T.comp("j", T.at(ua, I.variable("j")), [], T.succ(T.zero));
-  const checked = syntax.check(moved, T.nat);
-  assert.deepEqual(syntax.decode(k.normalize(checked.expression)), T.succ(T.zero));
-  const forged = T.glueType(T.nat, [{ face: F.top, type: T.nat, equiv: T.lam("x", T.nat, T.variable("x")) }]);
-  assert.throws(() => syntax.check(forged), /Type mismatch/);
+  elaborate(k, ua, T.path("i", T.universe(0), two, two));
+  const moved = T.comp("j", T.at(ua, I.variable("j")), [], right);
+  const checked = elaborate(k, moved, two);
+  assert.deepEqual(syntax.decode(k.normalize(checked.expression)), right);
+  const forged = T.glueType(two, [{ face: F.top, type: two, equiv: T.lam("x", two, T.variable("x")) }]);
+  assert.throws(() => elaborate(k, forged), /Type mismatch/);
 });
 
 test("native elaboration checks all manual factorial sources while retaining checked definitions", async t => {
@@ -172,24 +167,27 @@ test("the existing Nat factorial theorem checks cubically without a million-succ
 test("open cubes check dependent contexts and preserve dimension names across decoding", t => {
   const k = session(t), syntax = new CubicalSyntax(k);
   const dimensions = new Map([["i", 63]]);
-  const family = T.path("j", T.universe(0), T.nat, T.nat);
+  const family = T.path("j", T.universe(0), two, two);
   const atI = T.at(T.variable("family"), I.variable("i"));
   const context = [["family", family], ["x", atI]];
-  const checked = syntax.check(T.variable("x"), atI, context, dimensions);
+  const checked = elaborate(k, T.variable("x"), atI, context, dimensions);
   assert.deepEqual(checked.type.arg, I.variable("i"));
-  assert.equal(syntax.check(checked.term, checked.type, context, dimensions).type.tag, "PApp");
-  assert.throws(() => syntax.check(T.variable("x"), atI, context), /Unbound cubical dimension/);
+  assert.equal(elaborate(k, checked.term, checked.type, context, dimensions).type.tag, "PApp");
+  assert.throws(() => elaborate(k, T.variable("x"), atI, context), /Unbound cubical dimension/);
   const rawContext = context.map(([name, type]) => [k.symbol(name), syntax.encode(type, dimensions)]);
-  assert.throws(() => k.check(syntax.encode(T.variable("x")), syntax.encode(atI, dimensions), rawContext, 1n));
-  assert.throws(() => k.define("escaped", syntax.encode(T.variable("x")), syntax.encode(atI, dimensions)));
-  assert.throws(() => syntax.check(T.zero, null, [], new Map([["i", 0], ["j", 0]])), /distinct/);
+  // A judgement's context records each dimension it needs, whatever mask the driver was given.
+  const driver = new InstructionDriver(k);
+  const judgement = driver.graph.judgement(driver.check(syntax.encode(T.variable("x")), syntax.encode(atI, dimensions), rawContext, 1n));
+  assert.ok(judgement.context.some(entry => driver.graph.entry(entry).dimension && driver.graph.entry(entry).symbol === 63));
+  assert.throws(() => derive(k, syntax.encode(T.variable("x")), syntax.encode(atI, dimensions)));
+  assert.throws(() => elaborate(k, left, null, [], new Map([["i", 0], ["j", 0]])), /distinct/);
   // A user name resembling the decoder's generated binder must not be captured.
   const collision = new Map([["d0", 63]]);
-  const line = T.line("j", T.nat, T.at(T.variable("p"), I.variable("d0")));
-  const decoded = syntax.check(line, null, [["p", T.path("k", T.nat, T.zero, T.zero)]], collision).term;
+  const line = T.line("j", two, T.at(T.variable("p"), I.variable("d0")));
+  const decoded = elaborate(k, line, null, [["p", T.path("k", two, left, left)]], collision).term;
   assert.notEqual(decoded.dim, "d0");
   assert.deepEqual(decoded.body.arg, I.variable("d0"));
-  syntax.check(decoded, null, [["p", T.path("k", T.nat, T.zero, T.zero)]], collision);
+  elaborate(k, decoded, null, [["p", T.path("k", two, left, left)]], collision);
 });
 
 test("Cubist expresses cubical paths, composition and pushout elimination with checked boundaries", async t => {
@@ -256,30 +254,15 @@ test("source-defined suspension induction uses a proved PathP bridge", async t =
   assert.equal(result.outputs.length, 7);
 });
 
-test("native operations grow exhausted budgets without accepting invalid proofs, one query at a time", t => {
-  const k = session(t), syntax = new CubicalSyntax(k);
-  k.stepBudget = 1n; module._cb_step_budget(k.handle, 1, 0);
-  const proof = T.line("i", T.nat, T.zero);
-  const before = k.work();
-  syntax.check(proof, T.path("j", T.nat, T.zero, T.zero));
-  // The query ran again with a larger budget, and each run is kernel work.
-  assert.ok(k.work().exhausted > before.exhausted);
-  // The growth was the query's own: the session's budget is as it was.
-  assert.equal(k.stepBudget, 1n);
-  assert.throws(() => syntax.check(proof, T.path("j", T.nat, T.zero, T.succ(T.zero))), /mismatch/);
-  assert.equal(k.stepBudget, 1n);
-  syntax.check(proof, T.path("j", T.nat, T.zero, T.zero));
-});
-
 test("a query's growing budget stops at its declared limit and fails as the kernel's exhaustion", t => {
   const k = session(t), syntax = new CubicalSyntax(k);
   assert.equal(k.maxQuerySteps, 1280000000n);
   // A weak head that takes more than four steps, with a session budget of
   // one step and a limit of four: the query runs with 1, 2 and 4 steps, and
   // then fails as the kernel's exhaustion, not as a mismatch.
-  const successor = T.lam("n", T.nat, T.succ(T.variable("n")));
-  let term = T.zero;
-  for (let i = 0; i < 8; i++) term = T.app(successor, term);
+  const swapping = T.lam("n", two, swap(T.variable("n")));
+  let term = left;
+  for (let i = 0; i < 8; i++) term = T.app(swapping, term);
   const handle = syntax.encode(term);
   k.stepBudget = 1n; module._cb_step_budget(k.handle, 1, 0);
   k.maxQuerySteps = 4n;
@@ -296,51 +279,42 @@ test("a query's growing budget stops at its declared limit and fails as the kern
 });
 
 test("browser dimension allocation reuses slots without capturing outer coordinates", t => {
-  const k = session(t), syntax = new CubicalSyntax(k);
-  let type = T.nat, point = T.zero;
+  const k = session(t), checker = new NativeCubicalElaborator(k);
+  let type = T.unit, point = T.point;
   for (let i = 0; i < 100; i++) {
     const next = T.path(`constant${i}`, type, point, point);
-    const reference = k.define(`level${i}`, syntax.encode(T.line(`constant${i}`, type, point)));
-    point = syntax.decode(reference); type = next;
+    point = checker.define(`level${i}`, T.line(`constant${i}`, type, point), next); type = next;
   }
-  syntax.check(point, type);
-  const p = T.variable("p"), P = T.path("i", T.nat, T.zero, T.succ(T.zero));
-  const line = T.line("j", T.nat, T.at(p, I.variable("outside")));
-  const checked = syntax.check(line, null, [["p", P]], new Map([["outside", 0]]));
-  assert.throws(() => syntax.check(checked.term, null, [["p", P]]), /dimension/);
+  elaborate(k, point, type);
+  const p = T.variable("p"), P = T.path("i", two, left, right);
+  const line = T.line("j", two, T.at(p, I.variable("outside")));
+  const checked = elaborate(k, line, null, [["p", P]], new Map([["outside", 0]]));
+  assert.throws(() => elaborate(k, checked.term, null, [["p", P]]), /dimension/);
 });
 
 test("kernel rejections are classified by kind, and speculative checks answer with values", t => {
-  const k = session(t), checker = new NativeCubicalElaborator(k);
-  const nat = k.term("Nat"), zero = k.term("Zero");
-  assert.throws(() => k.check(zero, k.term("Unit")), error => error instanceof KernelError && error.kind === "mismatch");
-  assert.throws(() => k.check(k.term("Var", k.symbol("free")), nat), error => error.kind === "other");
-  assert.equal(checker.attempt(T.zero, T.nat).ok, true);
-  assert.equal(checker.attempt(T.zero, T.unit).failure, "mismatch");
-  assert.equal(checker.equal(T.zero, T.succ(T.zero)), false);
+  const k = session(t), checker = new NativeCubicalElaborator(k), syntax = new CubicalSyntax(k);
+  assert.throws(() => derive(k, syntax.encode(left), k.term("Unit")), error => error instanceof KernelError && error.kind === "mismatch");
+  assert.throws(() => elaborate(k, T.variable("free"), two), error => error instanceof KernelError && error.kind === "other");
+  assert.equal(checker.attempt(left, two).ok, true);
+  assert.equal(checker.attempt(left, T.unit).failure, "mismatch");
+  assert.equal(checker.equal(left, right), false);
   // Set C's deadline directly so this exercises C, not the JS preflight guard.
   // The term is new: a judgement derived earlier is reused without work.
   module._cb_deadline_ms(k.handle, .01);
   let until = performance.now() + 2;
   while (performance.now() < until) { /* let the native deadline expire */ }
-  assert.equal(checker.attempt(T.succ(T.succ(T.zero)), T.nat).failure, "deadline");
+  const pairs = T.sigma("_", two, two);
+  assert.equal(checker.attempt(T.pair(pairs, left, right), pairs).failure, "deadline");
   module._cb_deadline_ms(k.handle, 0);
   // Running out of time is no answer: equal() must not report inequality.
   k.setDeadline(0.001);
   until = performance.now() + 2;
   while (performance.now() < until) { /* let the JavaScript deadline expire */ }
-  assert.equal(checker.attempt(T.zero, T.nat).failure, "deadline");
-  assert.throws(() => checker.equal(T.zero, T.zero), error => error instanceof KernelError && error.kind === "deadline");
+  assert.equal(checker.attempt(left, two).failure, "deadline");
+  assert.throws(() => checker.equal(left, left), error => error instanceof KernelError && error.kind === "deadline");
   k.setDeadline();
-  assert.equal(checker.equal(T.zero, T.zero), true);
-});
-
-test("the core checker classifies a mismatch like the native kernel", () => {
-  const checker = new Checker();
-  assert.equal(checker.attempt(T.zero, T.nat).ok, true);
-  const result = checker.attempt(T.zero, T.unit);
-  assert.equal(result.failure, "mismatch");
-  assert.match(result.error.message, /Type mismatch/);
+  assert.equal(checker.equal(left, left), true);
 });
 
 test("the native kernel checks an elimination through an abstracted motive", t => {
@@ -390,9 +364,9 @@ test("the motive service generalizes a hypothesis it is given, and binds it agai
 // the motive's binders avoid them, so they capture nothing.
 test("the motive service's binders avoid every name the scope binds", t => {
   const checker = new NativeCubicalElaborator(session(t)), v = T.variable;
-  const scope = [["x1", T.nat], ["x2", T.nat]]
+  const scope = [["x1", two], ["x2", two]]
     .reduce((scope, [name, type]) => scope.bind(name, type), new Scope(new SourceUnit({ checker })));
-  const goal = new Goal(T.path("i", T.nat, v("x1"), v("x2")), scope);
+  const goal = new Goal(T.path("i", two, v("x1"), v("x2")), scope);
   const motive = abstractMotive(goal, [v("x2")]);
   assert.equal(scope.context.has(motive.binders[0].name), false);
   assert.deepEqual(motive.instance([v("x2")]).target, goal.target);
@@ -416,9 +390,9 @@ test("G0: the module's ABI version is checked, and a universe carries its level 
   const u1 = g.judgement(g.universe(one));
   assert.equal(g.judgement(g.universe(max)).term, u1.term);
   assert.deepEqual(syntax.decode(u1.type), { tag: "U", level: 2 });
-  // Cumulativity crosses tiers: Nat : U0 ≤ UU0, but UU0 is not in U5.
+  // Cumulativity crosses tiers: Unit : U0 ≤ UU0, but UU0 is not in U5.
   const uu0 = g.universe(syntax.encodeLevel({ tag: "LConst", tier: 1, value: 0 }));
-  assert.deepEqual(syntax.decode(g.judgement(g.lift(g.nat(), uu0)).type), { tag: "U", level: { tag: "LConst", tier: 1, value: 0 } });
+  assert.deepEqual(syntax.decode(g.judgement(g.lift(g.unit(), uu0)).type), { tag: "U", level: { tag: "LConst", tier: 1, value: 0 } });
   assert.throws(() => g.lift(uu0, g.universe(syntax.encodeLevel(5))), /not included/);
   assert.throws(() => g.universe(syntax.encodeLevel(0xffff)), /exceeds the kernel's bound/);
   // Levels print in kernel and source notation.

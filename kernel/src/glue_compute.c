@@ -1,6 +1,6 @@
 /* CCHM sections 6.2 and 7.1. Glue composition is built from ordinary
  * composition, filling and the SUPPLIED contractible-fiber equivalence.
- * There is no special ua rewrite, chosen inverse, or new theorem axiom. */
+ * There is no special ua rewrite, selected inverse, or new theorem axiom. */
 #include "term_internal.h"
 
 typedef struct {

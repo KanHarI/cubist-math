@@ -7,7 +7,7 @@ The archived first library lives in `../archive/first-library/*.cubist`; the sit
 The source inspector retains definition names, context variables, and axiom
 labels. **Open in workbench** replays the source in a fresh kernel session.
 **Back to Cubist** restores the source selection. Folded notation is a display
-choice; raw syntax and native opcode assembly remain available. Beta and delta
+option; raw syntax and native opcode assembly remain available. Beta and delta
 buttons highlight applicable occurrences, and every selected reduction is
 checked for definitional equality. **Un-highlight** clears visual selection.
 

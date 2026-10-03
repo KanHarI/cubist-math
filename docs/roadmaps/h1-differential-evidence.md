@@ -1,5 +1,14 @@
 # H1 representation replay evidence
 
+2026-10-02 removal: at the maintainer's decision, the apparatus this record
+describes is gone. The pinned historical kernel (`tools/legacy-kernel.mjs`),
+the representation option and the map τ (`web/h1-translation.mjs`), the
+replay tool (`tools/h1-instruction-replay.mjs`) and
+`tests/h1-differential.test.mjs` were removed, and the coverage tool's
+`--representation` and `--normal-forms` options with them. The commands
+below no longer run; what they showed is kept here as the evidence for
+retiring Nat, W and pushouts.
+
 2026-09-30 update: source programs now use declared Nat and W directly, with
 H1 enabled by default. Primitive Nat/W are absent from the current kernel.
 X1/X3 primitive instruction snapshots and the large primitive-W comparison
@@ -25,8 +34,9 @@ and archive replay are implemented. X2, X4 and X5 remain partially traced.
 On 2026-10-02 the maintainer retired the differential fixtures as a release
 gate (specification checklist item 6, and its 7.4): Nat, W and pushouts were
 retired by source declaration rather than through τ, and sums stay native.
-This record is historical evidence for those retirements, and its tests
-remain as regressions. X2's remainder and criterion are not pursued.
+This record is historical evidence for those retirements. Its tests were
+removed the same day, with the historical kernel. X2's remainder and
+criterion are not pursued.
 
 ## The checked representation option
 

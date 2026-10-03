@@ -161,7 +161,7 @@ def quotient_rec_member(
 }
 
 // Computation is a checked equality; the truncation axioms do not add a
-// definitional reduction rule or a chosen representative of each class.
+// definitional reduction rule or a selected representative of each class.
 def quotient_rec_beta(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
   setB : FieldSet(B), f : A -> B, respects : RespectsRelation(A, relation, B, f), a : A

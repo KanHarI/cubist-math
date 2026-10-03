@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
-import { lint } from "../web/mathscript/lint.mjs";
+import { lint } from "../web/cubist/lint.mjs";
 
 const messages = source => lint(source).map(warning => warning.message);
 const warned = (source, pattern) => assert.ok(messages(source).some(message => pattern.test(message)),

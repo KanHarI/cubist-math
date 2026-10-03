@@ -23,24 +23,26 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const nodeSummary = /^ℹ (tests|pass|fail) \d+$/gm, pageSummary = /^(PASS|FAIL) .*$/gm;
+// The Node suite's counts, with the cancelled, skipped and todo tests when there
+// are any, so that pass and fail always add up to the tests.
+const nodeSummary = /^ℹ (?:(?:tests|pass|fail) \d+|(?:cancelled|skipped|todo) [1-9]\d*)$/gm, pageSummary = /^(PASS|FAIL) .*$/gm;
 const coverageSummary = /^.*(Archive checked|definitions derive|Coverage complete).*$/gm;
 
 // The local checks, in order: the kernel's tests and lint; the fatal
 // undefined-behaviour sanitizer, with the address sanitizer too where it runs
 // (not on macOS, whose Apple clang cannot start it; CI runs both); the WASM
-// build and its stamp; instruction coverage with the guide and with the
-// oracle, which re-derive the archive; the Node suite; and the browser and
-// site checks. A check's summary is the lines its pattern finds in its
-// output, or else its last line.
+// build and its stamp; instruction coverage, which checks the archive and
+// re-derives every definition; the Node suite; and the browser and site
+// checks. A check's summary is the lines its pattern finds in its
+// output, or else its last line. The WASM build has none: its output is the
+// commands make runs, and the record's build stamp says what it built.
 export const localChecks = (platform = process.platform) => [
   { name: "Kernel tests", command: ["make", "-C", "kernel", "test"] },
   { name: "Lint", command: ["make", "lint"] },
   { name: "Sanitizers", command: ["make", "sanitize", ...(platform === "darwin" ? ["SANITIZERS=undefined"] : [])] },
-  { name: "WASM build", command: ["make", "wasm"] },
+  { name: "WASM build", command: ["make", "wasm"], summary: false },
   { name: "Build stamp", command: ["node", "tools/build-stamp.mjs", "check"] },
   { name: "Instruction coverage", command: ["node", "tools/instruction-coverage.mjs"], summary: coverageSummary },
-  { name: "Instruction coverage with the oracle", command: ["node", "tools/instruction-coverage.mjs", "--oracle"], summary: coverageSummary },
   { name: "Node suite", command: ["npm", "test"], summary: nodeSummary },
   { name: "Workbench browser tests", command: ["npm", "run", "test:browser"], summary: pageSummary },
   ...["cubical", "statement", "proof-navigation", "landing"].map(page =>
@@ -51,12 +53,14 @@ export const localChecks = (platform = process.platform) => [
 
 // A command's outcome. It passed only when it ran and exited with 0: an
 // error in running it, such as output beyond the buffer, fails it, whatever
-// it exited with.
-export function outcome({ name, command, summary }, { status, error = null, output, seconds }) {
+// it exited with. Its output is read without terminal escapes, such as the
+// colours of the Node test runner's summary.
+export function outcome({ name, command, summary }, { status, error = null, output: raw, seconds }) {
+  const output = raw.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "");
   const found = summary ? [...output.matchAll(summary)].map(match => match[0].trim()).filter(Boolean) : [];
   const last = output.trim().split("\n").at(-1)?.trim();
   return { name, command: command.join(" "), status: error ?? status, passed: !error && status === 0, seconds,
-    summary: found.length ? found : last ? [last] : [] };
+    summary: summary === false ? [] : found.length ? found : last ? [last] : [] };
 }
 function runCheck(check, cwd) {
   const started = Date.now();
@@ -118,7 +122,7 @@ export function render({ sha, date, stamp, local, ci, changed }) {
   const lines = [`# Release evidence for \`${sha.slice(0, 7)}\``, "", `- Revision: \`${sha}\``, `- Recorded: ${date}`];
   if (local) {
     lines.push("- Local checks: in a fresh checkout of the revision",
-      stamp ? `- Build stamp: kernel ${hash(stamp.kernel)}; translator copy ${hash(stamp.runtime)}` : "- Build stamp: none");
+      stamp ? `- Build stamp: kernel ${hash(stamp.kernel)}` : "- Build stamp: none");
     lines.push("", "## Local checks", "", "| Check | Command | Outcome | Seconds | Summary |", "| --- | --- | --- | --- | --- |");
     for (const check of local)
       lines.push(`| ${cell(check.name)} | ${cell(check.command)} | ${check.passed ? "passed" : `failed (${cell(check.status)})`} | ${check.seconds} | ${cell(check.summary.join("; "))} |`);

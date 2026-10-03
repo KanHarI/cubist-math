@@ -2,18 +2,13 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
-import { CubicalProgram } from "../web/cubical-program.mjs";
-import { sourceReader } from "../tools/module-sources.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
 import { instructions } from "../web/cubical-instructions.mjs";
+import { cubicalKinds } from "../web/cubical-kernel.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 const module=await createCubical();
-async function check(t,source,options={}) {
-  const program=new CubicalProgram(module,sourceReader(),options);
-  t.after(()=>program.dispose());
-  const result=await program.check(source,"main");
-  return {program,result};
-}
+const check = (t, source, options = {}) => checkProgram(t, source, { module, options });
 const ok=result=>assert.equal(result.complete,true,JSON.stringify(result.gaps));
 
 test("Nat, its constructors and W require ordinary source imports",async t=>{
@@ -90,12 +85,21 @@ test("a fresh driver replays a level binder after a conflicting term entry",asyn
 test("the producer refuses the reserved primitive syntax and instruction slots",async t=>{
   const {program,result}=await check(t,"def retained : Unit := tt;");
   ok(result);
+  // The retired kinds and instructions have no names, and their numbers
+  // stay reserved: the C kernel refuses each.
   for(const kind of ["Nat","Zero","Succ","NatRec","W","Sup","WRec","Pushout","PushLeft","PushRight","PushPath","PushElim"])
-    assert.throws(()=>program.kernel.term(kind),/Unknown term constructor/);
-  for(const operation of ["nat","zero","succ","natElim","w","sup","wElim","pushout","pushPoint","pushPath","pushElim"]) {
-    const opcode=instructions.indexOf(operation);
-    assert.ok(opcode>0,operation);
-    assert.equal(module._cb_instr(program.kernel.handle,opcode,0,0,0,0),0,operation);
+    assert.throws(()=>program.kernel.term(kind),/Unsupported cubical constructor/);
+  const kinds=cubicalKinds.flatMap((name,tag)=>name===null?[tag]:[]);
+  assert.equal(kinds.length,12);
+  for(const tag of kinds) {
+    assert.equal(module._cb_term(program.kernel.handle,tag,0,0,0,0,0),0,`kind ${tag}`);
+    assert.match(program.kernel.error(),/Unknown term constructor/);
+    module._cb_clear_error(program.kernel.handle);
+  }
+  const opcodes=instructions.flatMap((name,opcode)=>name===null?[opcode]:[]);
+  assert.equal(opcodes.length,11);
+  for(const opcode of opcodes) {
+    assert.equal(module._cb_instr(program.kernel.handle,opcode,0,0,0,0),0,`opcode ${opcode}`);
     assert.match(program.kernel.error(),/Unknown instruction/);
     module._cb_clear_error(program.kernel.handle);
   }

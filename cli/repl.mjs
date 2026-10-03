@@ -10,6 +10,7 @@ import { kernelAssembly, assemblyText } from "../web/cubical-assembly.mjs";
 import { reduceView } from "../web/cubical-reduction.mjs";
 import { ReplSession, replStatements } from "../web/repl-session.mjs";
 import { moduleRoots } from "../web/module-resolution.mjs";
+import { diagnosticLine, withCode } from "../web/diagnostics.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { assertFreshBuild } from "../tools/build-stamp.mjs";
 const help = `Cubist Math — cubical C kernel
@@ -36,24 +37,27 @@ Noninteractive: node cli/repl.mjs check euclid
                 node cli/repl.mjs "import naturals; evaluate 2 + 3;"
 Optimizations: --[no-]share-syntax, --[no-]reuse-checks, --[no-]compact-paths
 Declared types (H1, inductive) are on by default. Nat is imported from the
-source prelude; import w for W(U,V,A,B), and pushout for Pushout.
---representation=declared additionally checks the finite-tier representation map τ.`;
+source prelude; import w for W(U,V,A,B), and pushout for Pushout.`;
 const args = process.argv.slice(2), optimizations = {};
-let representation="native";
 const command = [];
 for (const arg of args) {
   const match = arg.match(/^--(no-)?(share-syntax|reuse-checks|compact-paths)$/);
-  const typeRepresentation=arg.match(/^--representation=(native|declared)$/);
   if (match) optimizations[{ "share-syntax": "shareSyntax", "reuse-checks": "reuseChecks", "compact-paths": "compactPaths" }[match[2]]] = !match[1];
   else if (/^--experimental(=|$)/.test(arg)) {
     console.error("--experimental was removed: declared types (H1) are on by default.");
     process.exit(2);
   }
-  else if(typeRepresentation) representation=typeRepresentation[1];
+  else if (/^--representation(=|$)/.test(arg)) {
+    console.error("--representation was removed with the differential fixtures: Nat, W and pushouts are source declarations.");
+    process.exit(2);
+  }
   else command.push(arg);
 }
-// A stale WASM kernel or translator copy would run code it does not contain.
+// A stale WASM kernel would run code it does not contain.
 assertFreshBuild();
+// An error as the checker prints it: a failed check's lines as they are,
+// any other message with its code in front.
+const shown = error => error.lines ? error.message : withCode(error.message);
 const module = await createCubical();
 let program, view, binding, checkedModule, session = null, sessionProgram = null;
 // Imports resolve as web/module-resolution.mjs specifies: an archive module
@@ -76,7 +80,7 @@ async function replSession() {
   if (program && session?.program !== program)
     session = session ? await session.rebase(program, checkedModule) : new ReplSession(program, { base: checkedModule, modules: importable });
   else if (!session) {
-    sessionProgram = new CubicalProgram(module, sourceReader(), { optimizations, representation });
+    sessionProgram = new CubicalProgram(module, sourceReader(), { optimizations });
     session = new ReplSession(sessionProgram, { modules: importable });
   }
   return session;
@@ -108,13 +112,15 @@ async function execute(line) {
     const source = file ? await readFile(resolve(value), "utf8") : await imports(value);
     const main = basename(value, ".cubist");
     program?.dispose(); view = null; binding = null;
-    program = new CubicalProgram(module, imports, { optimizations, representation });
+    program = new CubicalProgram(module, imports, { optimizations });
     const result = await program.check(source, main);
-    if (!result.complete) throw Error(JSON.stringify(result.gaps, null, 2));
+    // Each failure on a line of its own, with its code (web/diagnostics.mjs).
+    if (!result.complete) throw Object.assign(Error(result.gaps.map(gap => diagnosticLine({ code: gap.code, message: gap.reason,
+      declaration: gap.name && (gap.module === main ? gap.name : `${gap.module}.${gap.name}`) })).join("\n") || `${main} did not check.`), { lines: true });
     checkedModule = main;
     console.log(`Checked ${result.outputs.length} declarations · ${result.instructionCount.toLocaleString()} kernel steps`);
     for (const warning of result.warnings ?? [])
-      console.log(`warning at line ${warning.line}:${warning.column}${warning.declaration ? ` (${warning.declaration})` : ""}: ${warning.message}`);
+      console.log(diagnosticLine({ severity: "warning", ...warning }));
     for (const evaluation of result.evaluations ?? [])
       console.log(`evaluate ${evaluation.name}${evaluation.module === main ? "" : ` (${evaluation.module})`}: ${evaluation.value}`);
     return;
@@ -162,7 +168,7 @@ async function execute(line) {
   if (!view) throw Error("Inspect a checked name first.");
   if (["beta", "delta"].includes(operation)) {
     const side = value || "expression";
-    if (!["expression", "type"].includes(side)) throw Error("Choose expression or type.");
+    if (!["expression", "type"].includes(side)) throw Error("Expected expression or type.");
     const reduced = reduceView(program, view, side, operation);
     if (reduced.change) { view = reduced.view; view.folded = null; show(); }
     else console.log("No applicable reduction.");
@@ -187,10 +193,10 @@ try {
         const entry = pending;
         pending = "";
         try { if (await execute(entry) === false) break; }
-        catch (error) { console.error(error.message); }
+        catch (error) { console.error(shown(error)); }
         prompt("cubist> ");
       }
     } finally { input.close(); }
   }
-} catch (error) { console.error(error.message); process.exitCode = 1; }
+} catch (error) { console.error(shown(error)); process.exitCode = 1; }
 finally { program?.dispose(); sessionProgram?.dispose(); }

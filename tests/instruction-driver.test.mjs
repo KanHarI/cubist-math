@@ -1,6 +1,5 @@
 import "./fresh-build.mjs";
-import createLegacyCubical from "../tools/legacy-kernel.mjs";
-import {naturalSort,numeral} from "../lib/cubical/numerals.mjs";
+import {naturalSort,numeral} from "../web/translator/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -348,8 +347,7 @@ test("Glue: univalence derives, and so does a Glue term over its Glue type", asy
   for (const rule of ["glueBase", "gluePiece", "glueOverlap", "glue", "unglue"]) assert.ok(rules.has(rule), rule);
   // λA B e (a : A). <i> glue(e(a), [i = 0 ↦ a, i = 1 ↦ e(a)]) : ua's line,
   // built on the Glue type in the body of the generic ua instantiated at U0
-  // (level β); the term checker, which knows closed levels only, accepts it
-  // first.
+  // (level β). The driver infers its type, then derives it at that type.
   const generic = kernel.definition(kernel.definitions.get("builtin__ua")).value;
   let body = kernel.head(kernel.term("LApp", 0, generic, kernel.term("LConst", 0)));
   const binders = [];
@@ -363,14 +361,14 @@ test("Glue: univalence derives, and so does a Glue term over its Glue type", asy
   const path = kernel.term("PLam", line.payload, glue, kernel.term("GlueTerm", 0, glue, image, values));
   const value = binders.reduceRight((inner, binder) => kernel.term("Lam", binder.payload, binder.children[0], inner),
     kernel.term("Lam", a, source, path));
-  const checked = kernel.check(value);
+  const inferring = new InstructionDriver(kernel), inferred = inferring.graph.judgement(inferring.infer(value));
   rules.clear();
-  derive(checked.expression, checked.type);
+  derive(inferred.term, inferred.type);
   for (const rule of ["glueTermBase", "glueTermPiece", "glueTerm"]) assert.ok(rules.has(rule), rule);
 });
 
 test("G0: the driver derives universe-generic terms, and compares levels by normal form", async t => {
-  const kernel = new CubicalKernel(await createLegacyCubical());
+  const kernel = new CubicalKernel(await createCubical());
   t.after(() => kernel.dispose());
   const syntax = new CubicalSyntax(kernel);
   const v = name => ({ tag: "Var", name }), U = level => ({ tag: "U", level });
@@ -386,8 +384,8 @@ test("G0: the driver derives universe-generic terms, and compares levels by norm
   const checked = derive(id, idType);
   assert.equal(checked.context.length, 0);
   assert.deepEqual(syntax.decode(checked.term), id);
-  // The same definition at level 1: id {1} U0 Nat : U0.
-  const atOne = { tag: "App", fn: { tag: "App", fn: { tag: "LApp", fn: id, level: 1 }, arg: U(0) }, arg: { tag: "Nat" } };
+  // The same definition at level 1: id {1} U0 Unit : U0.
+  const atOne = { tag: "App", fn: { tag: "App", fn: { tag: "LApp", fn: id, level: 1 }, arg: U(0) }, arg: { tag: "Unit" } };
   assert.deepEqual(syntax.decode(derive(atOne, U(0)).type), U(0));
   // The expected type (λ (x < ω). U(x)) {1} is U(1) by a level Beta step.
   const family = { tag: "LApp", fn: { tag: "LLam", name: "x", body: U(v("x")) }, level: 1 };
@@ -398,18 +396,18 @@ test("G0: the driver derives universe-generic terms, and compares levels by norm
   const renamed = { tag: "LPi", name: "w", body: { tag: "LPi", name: "x", body: U(succ(max(v("w"), v("x")))) } };
   assert.equal(derive(nested, renamed).context.length, 0);
   // Cumulativity under a level binder (C11), and a universe not in itself (C3).
-  derive({ tag: "LLam", name: "x", body: { tag: "Nat" } }, { tag: "LPi", name: "x", body: U(1) });
+  derive({ tag: "LLam", name: "x", body: { tag: "Unit" } }, { tag: "LPi", name: "x", body: U(1) });
   assert.throws(() => derive({ tag: "LLam", name: "x", body: U(v("x")) }, { tag: "LPi", name: "x", body: U(v("x")) }),
     /Type mismatch|not included/);
   // Displays: kernel notation, and the source syntax L1.1 will parse.
   assert.equal(cubicalText(idType), "Π (y < ω), Π (B : y), (B → B)");
-  assert.equal(cubicalText(atOne), "(λ (x < ω). λ (A : x). λ (a : A). a)(U1, U0, Nat)");
+  assert.equal(cubicalText(atOne), "(λ (x < ω). λ (A : x). λ (a : A). a)(U1, U0, Unit)");
   assert.equal(sourceText(idType), "forall y < UU0. forall B : y. B -> B");
   assert.equal(sourceText(renamed), "forall w < UU0. forall x < UU0. next(max(w, x))");
 });
 
 test("G0: the driver's level normal forms agree with the kernel's on random levels", async t => {
-  const kernel = new CubicalKernel(await createLegacyCubical());
+  const kernel = new CubicalKernel(await createCubical());
   t.after(() => kernel.dispose());
   const syntax = new CubicalSyntax(kernel), g = new InstructionGraph(kernel);
   const names = ["x", "y", "z"];
@@ -438,23 +436,24 @@ test("G0: the driver's level normal forms agree with the kernel's on random leve
 });
 
 test("the driver's guide compares weak heads: equal, different, or unknown", async t => {
-  const kernel = new CubicalKernel(await createLegacyCubical());
+  const kernel = new CubicalKernel(await createCubical());
   t.after(() => kernel.dispose());
   const syntax = new CubicalSyntax(kernel), driver = new InstructionDriver(kernel), e = term => syntax.encode(term);
   const guide = (x, y) => driver.guide(x, y, null, null, { left: 400 });
-  const zero = { tag: "Zero" }, one = { tag: "Succ", value: zero }, two = { tag: "Succ", value: one }, nat = { tag: "Nat" };
-  const successor = { tag: "Lam", name: "n", domain: nat, body: { tag: "Succ", value: { tag: "Var", name: "n" } } };
+  const unit = { tag: "Unit" }, point = { tag: "Point" }, bool = { tag: "Sum", left: unit, right: unit };
+  const zero = { tag: "Inl", as: bool, value: point }, one = { tag: "Inr", as: bool, value: point };
+  const wrap = { tag: "Lam", name: "n", domain: unit, body: { tag: "Inr", as: bool, value: { tag: "Var", name: "n" } } };
   // Equal after computing heads; different constructors or neutral terms.
-  assert.equal(guide(e({ tag: "App", fn: successor, arg: one }), e(two)), true);
-  assert.equal(guide(e(one), e(two)), false);
-  assert.equal(guide(e(nat), e({ tag: "U", level: 0 })), false);
+  assert.equal(guide(e({ tag: "App", fn: wrap, arg: point }), e(one)), true);
+  assert.equal(guide(e(zero), e(one)), false);
+  assert.equal(guide(e(bool), e({ tag: "U", level: 0 })), false);
   assert.equal(guide(e({ tag: "Var", name: "x" }), e({ tag: "Var", name: "y" })), false);
   assert.equal(guide(e({ tag: "Var", name: "x" }), e(zero)), false);
   // A lambda against a neutral function may be equal by eta: unknown.
-  assert.equal(guide(e({ tag: "Lam", name: "m", domain: nat, body: { tag: "Var", name: "m" } }), e({ tag: "Var", name: "f" })), null);
+  assert.equal(guide(e({ tag: "Lam", name: "m", domain: bool, body: { tag: "Var", name: "m" } }), e({ tag: "Var", name: "f" })), null);
   // A path at an endpoint of its annotated type is that endpoint: nothing is
   // computed, and the path may be a variable.
-  const annotation = e({ tag: "Path", dim: "i", family: nat, left: zero, right: one });
+  const annotation = e({ tag: "Path", dim: "i", family: bool, left: zero, right: one });
   const at = end => kernel.term("PApp", syntax.formula(end ? [[]] : [], "interval"), e({ tag: "Var", name: "p" }), annotation);
   assert.equal(guide(at(0), e(zero)), true);
   assert.equal(guide(at(1), e(one)), true);
@@ -462,15 +461,15 @@ test("the driver's guide compares weak heads: equal, different, or unknown", asy
 });
 
 test("a derivation in one context is not reused in another that types a variable differently", async t => {
-  const kernel = new CubicalKernel(await createLegacyCubical());
+  const kernel = new CubicalKernel(await createCubical());
   t.after(() => kernel.dispose());
   const syntax = new CubicalSyntax(kernel), driver = new InstructionDriver(kernel), graph = driver.graph;
-  const x = { tag: "Var", name: "x" }, nat = { tag: "Nat" }, unit = { tag: "Unit" };
+  const x = { tag: "Var", name: "x" }, unit = { tag: "Unit" }, bool = { tag: "Sum", left: unit, right: unit };
   const typeIn = type => syntax.decode(graph.judgement(driver.infer(syntax.encode(x), [[kernel.symbol("x"), syntax.encode(type)]])).type);
-  assert.deepEqual(typeIn(nat), nat);
+  assert.deepEqual(typeIn(bool), bool);
   // Each context's scope is its own memo key, including its assumptions.
   assert.deepEqual(typeIn(unit), unit);
-  assert.throws(() => driver.check(syntax.encode(x), syntax.encode(nat), [[kernel.symbol("x"), syntax.encode(unit)]]),
+  assert.throws(() => driver.check(syntax.encode(x), syntax.encode(bool), [[kernel.symbol("x"), syntax.encode(unit)]]),
     /Type mismatch/);
 });
 
@@ -482,9 +481,9 @@ test("a derivation in one context is not reused in another that types a variable
 // glue [i = 0 ↦ point] (unglue b) of a composition over G(i) must agree with
 // its base b, as b at i = 0 is p @ 0, which is point.
 test("a Glue term that is its base by eta only after a step still agrees with it", async t => {
-  const { T } = await import("../lib/cubical/core.mjs");
-  const { face: F, interval: I } = await import("../lib/cubical/lattice.mjs");
-  const { identityEquivalence } = await import("../lib/cubical/equivalence.mjs");
+  const { T } = await import("../web/translator/core.mjs");
+  const { face: F, interval: I } = await import("../web/translator/lattice.mjs");
+  const { identityEquivalence } = await import("../web/translator/equivalence.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
   await program.check("def unit_point : Unit := tt;\n", "glue_eta");
@@ -505,7 +504,7 @@ test("a Glue term that is its base by eta only after a step still agrees with it
 // where the weak head needs none; without syntax sharing, a normal form is a
 // new handle even when nothing changed.
 test("the glue move comes last, after the weak heads", async t => {
-  const { T } = await import("../lib/cubical/core.mjs");
+  const { T } = await import("../web/translator/core.mjs");
   const G = T.glueType(naturalSort, []), H = T.glueType(G, []);
   const agrees = async (base, context, optimizations) => {
     const program = new CubicalProgram(await createCubical(), readLibrary, { optimizations });
@@ -532,15 +531,15 @@ test("the glue move comes last, after the weak heads", async t => {
 
 // The second review of #73: the glue move itself, where only it is left.
 const glueSession = async (t, optimizations = {}) => {
-  const { T } = await import("../lib/cubical/core.mjs");
-  const { heuristicChooser } = await import("../web/cubical-instruction-driver.mjs");
+  const { T } = await import("../web/translator/core.mjs");
+  const { heuristicPolicy } = await import("../web/cubical-instruction-driver.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary, { optimizations });
   t.after(() => program.dispose());
   await program.check("def unit_point : Unit := tt;\n", "glue_move");
   // Each move made, its outcome, and the kernel steps since the one before.
   const made = [], spent = [], steps = () => { const w = program.kernel.work(); return w.instructionSteps + w.querySteps; };
   let last = steps();
-  program.kernel.chooser = { name: "recording", rank: point => heuristicChooser.rank(point),
+  program.kernel.policy = { name: "recording", rank: point => heuristicPolicy.rank(point),
     observe: (point, move, outcome) => {
       const name = `${move.move}${move.side ? `:${move.side}` : ""}:${outcome}`, now = steps();
       made.push(name); spent.push([name, now - last]); last = now;
@@ -599,8 +598,8 @@ test("the glue move rethrows a deadline, and a Glue term needs it at every focus
   // Two tubes of one composition, each the same Glue term that is its base by
   // eta only after a step: the move rewrites one focus, and must still be
   // open at the other.
-  const { face: F, interval: I } = await import("../lib/cubical/lattice.mjs");
-  const { identityEquivalence } = await import("../lib/cubical/equivalence.mjs");
+  const { face: F, interval: I } = await import("../web/translator/lattice.mjs");
+  const { identityEquivalence } = await import("../web/translator/equivalence.mjs");
   const equivalence = identityEquivalence(T.unit);
   const Gd = face => T.glueType(T.unit, [{ face, type: T.unit, equiv: equivalence }]);
   const context = [["b1", Gd(F.bottom)], ["p", T.path("j", Gd(F.endpoint("j", 0)), T.point, T.variable("b1"))]];
@@ -620,14 +619,14 @@ test("the glue move rethrows a deadline, and a Glue term needs it at every focus
 // whose normal form is deeper than syntax may be, as the whole term's
 // normal form, which the move once took, would.
 test("the glue move waits for enclosing reductions, and reduces nothing beyond its side conditions", async t => {
-  const { T } = await import("../lib/cubical/core.mjs");
-  const { heuristicChooser } = await import("../web/cubical-instruction-driver.mjs");
+  const { T } = await import("../web/translator/core.mjs");
+  const { heuristicPolicy } = await import("../web/cubical-instruction-driver.mjs");
   const numbers = ["def n0 : Nat := 0;", ...Array.from({ length: 600 }, (_, k) => `def n${k + 1} : Nat := succ(n${k});`)];
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
   await program.check([...numbers, "def f(A : U0, z : A) : Unit := tt;"].join("\n") + "\n", "deep");
   const made = [];
-  program.kernel.chooser = { name: "recording", rank: point => heuristicChooser.rank(point),
+  program.kernel.policy = { name: "recording", rank: point => heuristicPolicy.rank(point),
     observe: (point, move, outcome) => made.push(`${move.move}:${point.depth}:${outcome}`) };
   const G = T.glueType(naturalSort, []), deep = T.glue(G, { tag: "DefRef", name: "deep__n600" }, []);
   const f = { tag: "DefRef", name: "deep__f" }, y = T.glue(G, T.variable("y"), []);
@@ -650,18 +649,18 @@ test("the glue move waits for enclosing reductions, and reduces nothing beyond i
 // budget, and the tube disagreed with its base. The Glue step reduces only
 // the piece and b at i = 0, which is point.
 test("a Glue term agrees with its base though its path mentions a large shared graph", async t => {
-  const { T } = await import("../lib/cubical/core.mjs");
-  const { heuristicChooser } = await import("../web/cubical-instruction-driver.mjs");
-  const { face: F, interval: I } = await import("../lib/cubical/lattice.mjs");
-  const { identityEquivalence } = await import("../lib/cubical/equivalence.mjs");
+  const { T } = await import("../web/translator/core.mjs");
+  const { heuristicPolicy } = await import("../web/cubical-instruction-driver.mjs");
+  const { face: F, interval: I } = await import("../web/translator/lattice.mjs");
+  const { identityEquivalence } = await import("../web/translator/equivalence.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
   await program.check("def unit_point : Unit := tt;\n", "glue_graph");
   // The glue moves made, and the kernel steps each took.
   const made = [], work = () => { const w = program.kernel.work(); return w.instructionSteps + w.querySteps; };
   let started = 0;
-  program.kernel.chooser = { name: "recording",
-    *rank(point) { for (const move of heuristicChooser.rank(point)) { if (move.move === "glue") started = work(); yield move; } },
+  program.kernel.policy = { name: "recording",
+    *rank(point) { for (const move of heuristicPolicy.rank(point)) { if (move.move === "glue") started = work(); yield move; } },
     observe: (point, move, outcome) => { if (move.move === "glue") made.push([outcome, work() - started]); } };
   const equivalence = identityEquivalence(T.unit);
   const G = face => T.glueType(T.unit, [{ face, type: T.unit, equiv: equivalence }]);
@@ -684,8 +683,8 @@ test("a Glue term agrees with its base though its path mentions a large shared g
 // agree with its base g: the inner Glue term is u once A' is A, and the
 // outer Glue term and g have different heads, so congruence cannot reach it.
 test("a Glue term whose base is a nested Glue eta redex agrees with its base", async t => {
-  const { T } = await import("../lib/cubical/core.mjs");
-  const { face: F } = await import("../lib/cubical/lattice.mjs");
+  const { T } = await import("../web/translator/core.mjs");
+  const { face: F } = await import("../web/translator/lattice.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
   await program.check("def unit_point : Unit := tt;\n", "glue_nested");
@@ -703,8 +702,8 @@ test("a Glue term whose base is a nested Glue eta redex agrees with its base", a
 // part: the bases by pair eta and beta, the types by one beta step, with
 // the shared parts never normalized.
 test("a Glue term agrees with its base through pair eta, and through types equal below their heads", async t => {
-  const { T } = await import("../lib/cubical/core.mjs");
-  const { face: F } = await import("../lib/cubical/lattice.mjs");
+  const { T } = await import("../web/translator/core.mjs");
+  const { face: F } = await import("../web/translator/lattice.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
   await program.check("def unit_point : Unit := tt;\n", "glue_eta_expansion");
@@ -732,9 +731,9 @@ test("a Glue term agrees with its base through pair eta, and through types equal
 // an eta expansion that the glue move contracts is not made again, which had
 // looped until the fuel ran out.
 test("generated Glue cases: a base type that computes, and no eta and glue loop", async t => {
-  const { T } = await import("../lib/cubical/core.mjs");
-  const { face: F, interval: I } = await import("../lib/cubical/lattice.mjs");
-  const { identityEquivalence } = await import("../lib/cubical/equivalence.mjs");
+  const { T } = await import("../web/translator/core.mjs");
+  const { face: F, interval: I } = await import("../web/translator/lattice.mjs");
+  const { identityEquivalence } = await import("../web/translator/equivalence.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
   await program.check("def unit_point : Unit := tt;\n", "generated_glue");

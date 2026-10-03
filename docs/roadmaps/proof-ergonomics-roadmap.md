@@ -270,7 +270,7 @@ work. Publish measured examples without claiming an unmeasured percentage gain.
 - [x] Moved to HoTT A5: introduce the goal/reconstruction representation.
   Done in PR #15: `rw`, `simp`, `simpa`, `ext`, `intro`, `over` and premise
   search build their proofs through one plan interface in
-  `lib/cubical/proof-goals.mjs`.
+  `web/translator/proof-goals.mjs`.
 - [x] Add `rw [p];` and `rw [<- p];`, with rules applied in listed order.
   Initially rewrite the first eligible occurrence in a documented traversal;
   add an explicit occurrence selector before supporting complicated targets.
@@ -395,7 +395,7 @@ for this release.
 Completion: imports cannot leak local rules; unrelated unused rules add no
 axiom dependencies to a proof; changes to a rule invalidate affected results;
 explicit lists reproduce the proof's success. Traces explain failed premises
-and rule choices without requiring authors to inspect kernel opcodes.
+and rule selections without requiring authors to inspect kernel opcodes.
 
 ### 4. Dependent rewriting and cubical extensions (moved)
 
@@ -612,12 +612,12 @@ Only the truncation readout extension needs H1.
 
 | Existing location | Planned work |
 | --- | --- |
-| [parser](../../web/mathscript/parser.mjs), [formatter](../../web/mathscript/formatter.mjs), [notation](../../web/mathscript/notation.mjs) | Syntax, spans, roundtrips, and readable expansions. |
-| [translator](../../lib/cubical/translate.mjs) | Proof-block statements, reconstruction, expected types, and parameter elaboration. Extract new matching/rewrite modules to keep this manageable. |
+| [parser](../../web/cubist/parser.mjs), [formatter](../../web/cubist/formatter.mjs), [notation](../../web/cubist/notation.mjs) | Syntax, spans, roundtrips, and readable expansions. |
+| [translator](../../web/translator/translate.mjs) | Proof-block statements, reconstruction, expected types, and parameter elaboration. Extract new matching/rewrite modules to keep this manageable. |
 | [native elaborator](../../web/cubical-elaborator.mjs) | Native type/conversion queries, scoped contexts, checked witnesses, and dependency tracking. |
-| [program](../../web/cubical-program.mjs), [modules](../../web/mathscript/modules.mjs) | Rule registration, import identity, invalidation, and source inspection records. |
+| [program](../../web/cubical-program.mjs), [modules](../../web/cubist/modules.mjs) | Rule registration, import identity, invalidation, and source inspection records. |
 | [kernel adapter](../../web/cubical-kernel.mjs), [syntax codec](../../web/cubical-syntax.mjs) | Preserve native checking, handle ownership, and dimensions through generated terms. |
-| [path library](../../archive/first-library/paths.cubist), [path-over builders](../../lib/cubical/path-over.mjs) | Reuse proved congruence, composition, and transport constructions. |
+| [path library](../../archive/first-library/paths.cubist), [path-over builders](../../web/translator/path-over.mjs) | Reuse proved congruence, composition, and transport constructions. |
 | New: declaration elaborator and `match` compiler | `inductive`/`theory` to H's signature normal form; motive abstraction, index unification, coverage, structural recursion and obligations to eliminator applications (milestones 6–7). |
 | Existing computability tracking | Preserve non-computing dependencies, `computable` and `evaluate`; add expected-value patterns and native truncation readout (milestone 8). |
 | [language reference](../../web/language.html), [CLI guide](../guides/cli.md), browser inspector | Document delivered syntax; show goals, inferred arguments, rewrite witnesses, generated eliminators, boundary diagrams and non-computing dependencies. The reference is rewritten into chapters with checked examples (see the [work plan](work-plan.md)). |

@@ -1,5 +1,5 @@
 import "./fresh-build.mjs";
-import {naturalSort, numeral} from "../lib/cubical/numerals.mjs";
+import {naturalSort, numeral} from "../web/translator/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -154,7 +154,7 @@ test("path notation and raw syntax display stay bounded on shared terms", () => 
   assert.equal(boundedSyntaxJson(shared), null);
   assert.equal(boundedSyntaxJson(nat), JSON.stringify(nat, null, 2));
   let deep = nat;
-  for (let i = 0; i < 600; i++) deep = { tag: "Succ", value: deep };
+  for (let i = 0; i < 600; i++) deep = { tag: "Inl", as: { tag: "Unit" }, value: deep };
   assert.equal(boundedSyntaxJson(deep), null);
 });
 

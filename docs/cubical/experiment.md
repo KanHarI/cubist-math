@@ -6,7 +6,7 @@
 Branch: `experiment/cubical-hott`, based on `dd3fcc8`. The production kernel and
 website remain unchanged. This experiment was explicitly requested on 2026-09-20.
 
-## Chosen calculus
+## The calculus
 
 The target is the De Morgan interval calculus of Cohen, Coquand, Huber and
 Mörtberg, [Cubical Type Theory](https://arxiv.org/abs/1611.02108), with the
@@ -57,8 +57,11 @@ pointwise roundtrip, without adding an axiom. The original `basics.cubist`
 translates completely (identity, duplication, natural-number copying and the
 proof that copying two gives two). The current whole-library translation pass
 checks **117 of 2,128 declarations** in this fragment; 2,011 remain explicit gaps.
-See [the exhaustive results](translation-results.json) and
-[the source inventory](migration-inventory.md). Counts are for declarations,
+The exhaustive results (`translation-results.json`) and the source inventory
+(`migration-inventory.md`) were removed on 2026-10-02; they are in this
+directory at commit
+[`4fe0906`](https://github.com/KanHarI/cubist-math/tree/4fe0906/docs/cubical).
+Counts are for declarations,
 not entire modules, and are not an estimate of the remaining effort. The census
 includes 216 Cubist modules and separately lists 28 legacy construction
 artifacts, which the cubical translator does not admit as trusted exports.
@@ -134,15 +137,17 @@ falls back to the old kernel.
 
 ## Verification commands
 
-Run `node --test lib/cubical/tests/*.test.mjs` for the experimental core.
-Run `node lib/cubical/check-library.mjs` to regenerate actual translation
-results; every successful declaration is checked again from inert term syntax.
-Run `node lib/cubical/inventory.mjs` for the separate AST-only census.
+Run `node --test tests/translator/*.test.mjs` for the experimental core.
+`lib/cubical/check-library.mjs`, which wrote `translation-results.json` with
+the JavaScript reference checker, was removed with that checker on
+2026-10-02. The AST-only census that `lib/cubical/inventory.mjs` wrote, and
+`lib/cubical/benchmark.mjs`'s dimension-algebra microbenchmark, were removed
+on the same day; `make bench` still runs the C half of that benchmark.
 No experiment command changes the production WASM binary or deploys the site.
 
 ## Derived univalence milestone
 
-`lib/cubical/equivalence.mjs` now builds and independently checks the
+`web/translator/equivalence.mjs` now builds and independently checks the
 CCHM theorem that `unglue` is an equivalence (contractible fibers), uniqueness of
 contractibility witnesses, and the total-space formulation of univalence:
 

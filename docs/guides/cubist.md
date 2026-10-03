@@ -1,0 +1,326 @@
+# Cubist
+
+> Historical design notes. The current project uses only the cubical C kernel;
+> see [the project README](../../README.md) and the [CLI guide](cli.md). Retired implementation paths below describe the earlier design.
+
+Cubist is a mathematical source language checked by the existing C kernel,
+compiled to WebAssembly. Authoring uses `.cubist` text, not JSON. The parser and
+elaborator are untrusted: they produce ordinary checked kernel instructions.
+
+The [full language reference](../../web/language.html) documents the current syntax,
+proof statements, eliminators, universe restrictions, and axiom wrappers, with
+examples. The proof workspace also includes a shorter quick reference linking
+to that page. This document describes the workflow and implementation.
+
+## Read and write
+
+Run `make serve`, then open http://127.0.0.1:8088/proof.html. Select a **Topic**,
+then select a **Proof** from that topic's list. Browsing topics leaves your
+current proof and draft in place until you select another proof. Direct proof
+links select the corresponding topic automatically. Use **Read** to follow
+names and **Edit** to change the source. Check with the button or Ctrl/Cmd+Enter.
+While checking, the source panel shows a progress bar with completed definitions
+(including imports), the current definition, and the number of kernel steps.
+Audit sources report completed construction statements. The bar measures work
+completed, not estimated time; it clears on success or failure.
+A rejected edit leaves the last checked proof available. Source files can be
+opened and saved; per-proof drafts survive navigation within the browser session.
+
+Click a lemma, then **View source**, to open its definition. Clicking the module
+name in `import primes` opens the foundation source. Click a line number in a
+structured proof block to inspect its goal and local assumptions. The inspector's
+Back button retraces inspections; browser Back retraces source navigation.
+
+Clicking `<` explains `isLt(a, b)`, equivalently `(isLt(a))(b)`, and links to its
+source. The definition is `le(succ(a), b)`. Other arithmetic operators also expose
+their named functions. A numeral such as `2` denotes `succ(succ(0))` of type `Nat`.
+The source explorer makes both notation and numeral meanings inspectable.
+
+## Mathematical syntax
+
+```text
+def identity(A : U0, x : A) = x;
+
+def copy(n : Nat) = induction n as k return Nat {
+  zero => 0;
+  succ previous => succ(previous);
+};
+
+def copy_of_two : copy(2) = 2 {
+  exact refl(2);
+}
+```
+
+A definition may have an explicit result type and a block, or an expression
+whose type is inferred. All parameters have explicit types. Functions can also
+be written as `fun (x : A) => body`. Application `f(a, b)` is curried.
+Use `def` for both mathematical constructions and proofs. Every definition is
+type-checked and checked for closure; a proof is a term of its stated type.
+
+Place `//` comments immediately above a declaration to document it in the
+inspector, including when it is imported by another proof:
+
+```text
+// Returns its input unchanged.
+def identity(A : U0, x : A) = x;
+```
+
+Consecutive comment lines form a paragraph; an empty `//` line starts another
+paragraph. A physical blank line separates a file or section comment from a
+declaration. Trailing comments are not used as documentation for the next
+declaration. This also works for proof blocks and construction declarations.
+Documentation is displayed as plain text and does not change the checked proof.
+
+Every definition unfolds wherever conversion needs its value; there is no way
+to keep one folded.
+
+Named definitions retain their checked bodies, which conversion can unfold
+when necessary to compare types. Function application still computes by beta
+reduction: `(fun (x : Nat) => succ(x))(1)` computes to `2`. Proof blocks appear
+by name in the inspector, with their bodies available to open. This presentation
+does not change checking or introduce an axiom.
+
+An explicit assumption uses `axiom name(params) : T;`. It has no proof body;
+the kernel checks its type and records an `Axiom` instruction. Every result and
+the inspector list the names of the axioms used by its recorded derivation,
+including dependencies in types and contexts. Click an axiom to inspect it and
+view its source. An imported but unused axiom does not appear in that result's
+list. The module-wide count is displayed separately. The CLI's `show` command
+also lists dependencies.
+
+Types include `forall x : A. B`, `exists x : A. B`, `A -> B`, `A and B`, and
+`A or B`. A pair is `(a, b)`. Its expected type supplies the dependent family;
+`typed(T, expression)` provides an annotation where inference needs one.
+A tuple `(a, b, c, d)` is a macro for `(a, (b, (c, d)))`; the same notation
+works in `obtain (a, b, c, d) = value;`. Explicit left-nesting is preserved:
+`((a, b), c, d)` means `((a, b), (c, d))`. This introduces no new kernel type
+or rule. Three-or-more-component tuple delimiters have macro styling; hover
+to see the binary-pair expansion or click to inspect the checked tuple.
+`f(a, b, c)` remains curried application; pass a tuple as `f((a, b, c))`.
+
+`p.1` and `p.2` project a pair. For `p : exists x : A. B(x)`, `p.1 : A` and
+`p.2 : B(p.1)`; the family comes from the checked type of `p`, and the
+projections are the kernel's own, so `(a, b).1` computes to `a` and
+`p = (p.1, p.2)` holds by `refl`. The dot is tight on both sides, unlike the
+dot that ends a quantifier's type. Only `.1` and `.2` exist: the third
+component of a tuple `(a, b, c)` is `.2.2`.
+
+`left(value)` and `right(value)` introduce a disjunction. `refl(x)` proves
+`x = x`; `absurd(impossible)` eliminates a proof of `Void` into the expected type.
+
+Blocks support `intro`, `let`, `obtain`, `cases`, and `exact`. See
+[Euclid](../../archive/first-library/euclid.cubist) for the complete short argument.
+`let name := term;` names a term, `let name : T := term;` checks it against
+`T`, and `let name : T { … }` proves `T` in a nested block; the checker sees
+through every form. To restate the goal, prove the restated form in a `let`
+block and close with it; to reason backwards, prove the claim first. `have`,
+`show` and `suffices` were removed on 2026-09-30 in favour of these forms.
+Induction expressions carry an explicit motive:
+
+```text
+induction n as k return C(k) {
+  zero => base;
+  succ ih => step;
+}
+```
+
+The base has type `C(0)`. In the successor branch, `k : Nat` and `ih : C(k)` are
+available, and the result must have type `C(succ(k))`. The kernel checks this
+substitution, including dependencies. Expression forms of case analysis are:
+
+```text
+match either return C {
+  left x => left_result;
+  right y => right_result;
+}
+
+unpack pair as (x, y) return C {
+  result;
+}
+```
+
+`pair_induction(C, branch, pair)` performs dependent pair elimination, where
+`C` is a motive on the entire pair and `branch(a, b)` proves `C((a, b))`. Its
+formation, substitution, and assumption discharge use the existing kernel rules.
+
+`x =[T] y` specifies equality in the carrier `T`, while `x = y` infers it.
+In particular, `A =[U] B` is equality of types `A : U` and `B : U` in the
+universe `U`. With `import paths;`, `sym(p)` reverses
+`p : x =[T] y` to give `y =[T] x`; it also reverses equalities of types.
+`trans(p, q)` composes paths and `cong(f, p)` applies a function to a path.
+These language conveniences call checked library definitions proved by path
+induction and introduce no axiom. `refl(x)` supplies the reflexive path `x = x`.
+
+Equality induction is available as
+`path_induction(A, motive, reflexive_case, x, y, equality)`, where the motive is a
+function of two endpoints and their equality proof. The foundational symmetry,
+transitivity, and congruence proofs in [primes.cubist](../../archive/first-library/primes.cubist)
+show its use. The lower-level `induct`, `cases`, and `unpack` function forms remain
+available for proof-producing source tools.
+
+## Modules and validation
+
+### Universes and universe variables
+
+`U0` denotes U0; `U1`, `U2`, `U3` and so on denote the next universes, and
+`UU0`, `UU1`, … the larger family above all of them. Definitions with an
+`A : U0` parameter still require a small type. A universe variable, bound as
+`U < UU0`, makes a declaration generic: `def identity(U < UU0, A : U, x : A) := x;`
+is checked once, for every universe, and used as `identity(U0)` or
+`identity(U2, U1, U0)`. Universe arguments are explicit and lie below `UU0`.
+`next(U)` and `max(U, V)` build universes from others, and `forall U < UU0. B`
+and `fun (U < UU0) => t` bind a universe variable in a type or a term. See the
+[Universes chapter](../../web/reference/universes.html).
+
+The following functions are the library principles and their derived
+operations, each generic over `U < UU0`. See
+[the single-axiom univalence development](../tactical/univalence.md).
+
+```text
+Truncate(U, A)
+TruncateIntro(U, A, a)
+TruncateProp(U, A)
+TruncateElim(U, A, P, proposition_proof, map)
+FunExt(U, A, B, f, g, pointwise_equality)
+Choice(U)(A, B, setA, setFibers, inhabited)
+LEM(U)(A, double_negation)
+Univalence(U)(A, B)
+idtoequiv(U, A, B, path)
+ua(U)(A, B, equivalence)
+UnivalenceBeta(U)(A, B, equivalence, x)
+UnivalenceEta(U)(A, B, path)
+```
+
+Each instance at a universe is a first-class function. The two application
+styles above are interchangeable. `Choice` still requires setness of the
+index type and every fiber and returns only a truncated section.
+`Univalence` asserts that the canonical `idtoequiv` map is an equivalence.
+`ua` is its derived inverse: it accepts `Equiv(U, A, B)` and returns
+`A =[U] B`. `UnivalenceBeta` and `UnivalenceEta` are derived theorems,
+not separate axioms. All these operations also accept a universe variable.
+A result's assumptions are listed by name, once each: `LEM`, not `LEM(U0)`.
+
+`Equiv(U, A, B)` and `IsEquiv(U, A, B, f)` in `paths.cubist` are ordinary
+universe-parameterized definitions. `x =[T] y` explicitly selects the carrier
+of equality; both endpoints are checked against `T`. Plain `x = y` still
+infers the carrier. Neither notation asserts definitional equality.
+
+`A` and the elimination target `P` must belong to `U`; `B` is a family
+`A -> U`. Smaller types can be lifted, but larger types cannot be lowered.
+For example, `Truncate(U1, U0)` is valid and
+`Truncate(U0, U0)` is rejected. A family may need an explicit lift,
+such as `fun (a : A) => typed(U1, Unit)`.
+
+The existing library truncation constructor returns U0 even when its input is
+large. These wrappers preserve that signature; they do not promise
+universe-preserving truncation. Elimination still requires evidence that its
+target is a proposition. See the [real-number foundation notes](../roadmaps/reals-roadmap.md) for
+the implications and current development status.
+
+### Source checking
+
+`import primes;` parses and checks the entire mathematical foundation source.
+It does not trust a saved proof snapshot. Human-readable interface signatures are
+also checked against the resulting definitions before use. All 42 declarations
+in that module are axiom-free. `euclid.cubist` owns both the proposition
+`InfinitelyManyPrimes` and its proof `euclid`; neither is imported from `primes`. A regression test checks that the high-level Euclid
+proposition matches the independently saved original proposition after reduction.
+
+The mathematical source backend in `tools/proofs/readable_backend.mjs` migrated
+proof-producing combinators into mathematical syntax. Its output is independently
+checked and can be edited as ordinary source. Kernel instruction histories are
+retained separately as `*.construction.cubist`; these are audit artifacts, not
+claimed mathematical translations of the older catalogue.
+
+The CLI command `prove FILE.cubist` checks the source and opens the result in the
+existing selection/reduction workbench. JSON remains an optional checked replay
+export. Source is limited to 1 MB, nesting to 128, numerals to 256, and compiled
+programs to 4,194,304 instructions. The WASM kernel allows 16,777,216 nodes
+per expanded expression and limits expression depth to 256. Shared AST and
+judgment storage grows by doubling as needed, without fixed count caps.
+The WASM heap starts at 16 MiB and may grow up to the wasm32 address-space
+ceiling of 4 GiB, subject to successful allocation; it does not reserve
+that whole amount as physical memory at startup. Mathematical
+checking has a 300-second inactivity timeout. Advancing kernel-step or
+completed-definition counters restart it; repeated progress messages with
+unchanged counters do not. Other worker requests have a 30-second timeout.
+
+The mathematical layer covers Euclid, the circle fundamental group,
+[right inverses of surjections using choice](../tactical/surjections.md), and
+[finite counting](../tactical/finite_counting.md), including functions, permutations, and
+Rijke binomial types. Ports of the
+older universe-polymorphic library are still in progress. Data types are
+`inductive` declarations with structurally recursive `match` definitions; binary
+and radix numbers are declared this way. The archive's `w` module still declares
+well-founded trees `W(U, V, A, B)` and `wrec`, but nothing imports it.
+
+With `import binary_naturals;`, `0b110` denotes a binary natural number, expanding
+to `binary_positive(binary_bit0(binary_bit1(binary_one)))`. `0b0` denotes
+`binary_zero`. Leading zeroes are ignored; malformed digits are rejected.
+There is a parser limit of 256 significant bits, subject also to kernel term
+depth limits. No machine-number conversion or unary successor chain is used.
+Decimal literals retain their existing unary `Nat` meaning. Import
+`binary_arithmetic` for `binary_add`, `binary_mul`, `binary_of_nat` and the
+axiom-free proof `binary_factorial_ten`. `radix_factorial` checks the same
+generic radix algorithm at base 2 and base 10; its parameter is radix minus two.
+
+Dedicated
+calculation blocks, implicit arguments, and editor completion are future work.
+
+A named proposition can be used directly as a definition's result type:
+
+```text
+def InfinitelyManyPrimes = forall n : Nat. exists p : Nat. Prime(p) and n < p;
+
+def euclid : InfinitelyManyPrimes {
+  intro n;
+  // Construct a prime above n, then finish with exact.
+}
+```
+
+`intro n;` opens the outer `forall` (or implication) of the checked goal, including through a definition name. It records the new local assumption and remaining goal for source inspection. The kernel checks the resulting function against the named proposition.
+
+For a goal `forall A : U0. IsSet(A) -> IsSet(A)`, `intro A;` introduces
+`A : U0`, then `intro setA;` introduces `setA : IsSet(A)`. The remaining goal
+is `IsSet(A)`, proved by `exact setA;`. The identifier `setA` is a name you
+pick; its type is inferred from the next input of the goal. `IsSet` comes
+from `import sets;` and asserts that any two equality proofs with the same
+endpoints are equal. Click an introduced name to see its inferred type.
+
+## Linearizing nested tuples
+
+`npm run linearize:cubist` scans the AST of every mathematical proof source
+and converts right-nested pairs and `obtain` patterns to tuple notation.
+It preserves left-nested pairs, function arguments, component order and comments.
+Every proposed rewrite is checked against the fully expanded original AST
+before any files are written, then formatted. Recorded construction sources
+are skipped. Run it again and it makes no further changes.
+
+```sh
+npm run linearize:cubist -- --check
+npm run linearize:cubist -- archive/first-library/circle_group_identity.cubist
+```
+
+`--check` reports remaining candidates without writing and exits nonzero if
+any exist. The ordinary formatter performs this same AST-checked tuple linearization automatically.
+All other formatting changes only whitespace. Programmatic callers can set
+`linearizeTuples: false` for whitespace-only formatting.
+
+
+### Unfolding blocks
+
+`with unfolding [name1, name2] { expression }` checks one expression as a
+checked helper definition, which the surrounding proof reuses without
+expansion. The bracketed list accepts already checked definition names only.
+The braces contain one expression, without a trailing semicolon; scopes can
+nest, and an empty list is allowed. The names once steered the kernel's
+conversion search, which was retired on 2026-10-02; the checker now unfolds
+whatever a comparison needs, so the list has no further effect. A block adds
+no equality, rewrite theorem or axiom, and an invalid proof stays invalid.
+
+```cubist
+def identity(n : Nat) = n;
+def identity_zero : identity(0) = 0 {
+  exact with unfolding [identity] { refl(0) };
+}
+```

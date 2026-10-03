@@ -1,8 +1,8 @@
 // The instruction driver's exact behaviour on a fixture, independent of its
-// chooser interface: every instruction it issues, with its operands, and every
+// policy interface: every instruction it issues, with its operands, and every
 // weak-head query its guide asks, in order. tests/driver-search.test.mjs
-// compares this with a trace recorded from the driver before the choices
-// were made explicit (tests/fixtures/driver-trace.json). The fixture covers
+// compares this with a trace recorded from the driver before its branch
+// points were made explicit (tests/fixtures/driver-trace.json). The fixture covers
 // normalizing a long closed computation, failed congruence, one-sided and
 // two-sided unfolding, and weak heads that do not compute.
 //   node tests/driver-trace.mjs [ROOT]   prints the trace summary for the tree at ROOT

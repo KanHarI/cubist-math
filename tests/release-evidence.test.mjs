@@ -54,6 +54,16 @@ test("a check's outcome: it passes only when it ran and exited with 0", () => {
   const node = localChecks().find(check => check.name === "Node suite");
   assert.deepEqual(outcome(node, { status: 0, output: "noise\nℹ tests 9\nℹ pass 9\nℹ fail 0\nℹ duration_ms 3\n", seconds: 4 }),
     { name: "Node suite", command: "npm test", status: 0, passed: true, seconds: 4, summary: ["ℹ tests 9", "ℹ pass 9", "ℹ fail 0"] });
+  // Its summary is found through the runner's colours, which it leaves out.
+  assert.deepEqual(outcome(node, { status: 0, output: "\x1b[34mℹ tests 9\x1b[39m\n\x1b[34mℹ fail 0\x1b[39m\n", seconds: 1 }).summary,
+    ["ℹ tests 9", "ℹ fail 0"]);
+  // A todo, skipped or cancelled test is counted when there is one, so pass
+  // and fail add up to the tests.
+  assert.deepEqual(outcome(node, { status: 0, output: "ℹ tests 9\nℹ pass 8\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 1\n", seconds: 1 }).summary,
+    ["ℹ tests 9", "ℹ pass 8", "ℹ fail 0", "ℹ todo 1"]);
+  // The WASM build's output is make's commands: it has no summary.
+  const wasm = localChecks().find(check => check.name === "WASM build");
+  assert.deepEqual(outcome(wasm, { status: 0, output: "mkdir -p web/dist\nhash=$(node tools/build-stamp.mjs hash kernel) && emcc -O3 …\n", seconds: 3 }).summary, []);
   // An error in running it fails it, even with status 0.
   assert.deepEqual(outcome(node, { status: 0, error: "ENOBUFS", output: "ℹ pass 9\n", seconds: 1 }).passed, false);
   assert.deepEqual(outcome(node, { status: 0, error: "ENOBUFS", output: "", seconds: 1 }).status, "ENOBUFS");
@@ -69,10 +79,9 @@ test("the local checks are the commands CI and the project's verification run", 
   assert.equal(command("Sanitizers", "darwin"), "make sanitize SANITIZERS=undefined");
   assert.equal(command("Sanitizers", "linux"), "make sanitize");
   assert.equal(command("Instruction coverage"), "node tools/instruction-coverage.mjs");
-  assert.equal(command("Instruction coverage with the oracle"), "node tools/instruction-coverage.mjs --oracle");
   assert.deepEqual(localChecks().map(check => check.command.join(" ")).filter(text => !text.startsWith("node tests/")), [
     "make -C kernel test", "make lint", localChecks()[2].command.join(" "), "make wasm", "node tools/build-stamp.mjs check",
-    "node tools/instruction-coverage.mjs", "node tools/instruction-coverage.mjs --oracle", "npm test", "npm run test:browser",
+    "node tools/instruction-coverage.mjs", "npm test", "npm run test:browser",
     "node tools/build-site.mjs"]);
 });
 
@@ -102,23 +111,22 @@ test("the revision is HEAD and the tree's changes", () => {
 });
 
 test("the record names the revision, its stamp, each outcome and the dispatched runs", () => {
-  const stamp = { kernel: { sources: "a".repeat(64), outputs: "b".repeat(64) }, runtime: { sources: "c".repeat(64), outputs: "d".repeat(64) } };
+  const stamp = { kernel: { sources: "a".repeat(64), outputs: "b".repeat(64) } };
   const local = [{ name: "Lint", command: "make lint", status: 0, passed: true, seconds: 3, summary: ["ok"] },
     { name: "Node suite", command: "npm test", status: 1, passed: false, seconds: 60, summary: ["ℹ fail 1"] }];
   const text = render({ sha, date: "2026-09-29T12:00:00Z", stamp, local, ci: ciRuns(sha, gh([run(7)])) });
   assert.match(text, /^# Release evidence for `0123456`$/m);
   assert.match(text, new RegExp(`^- Revision: \`${sha}\`$`, "m"));
   assert.match(text, /^- Local checks: in a fresh checkout of the revision$/m);
-  assert.match(text, /^- Build stamp: kernel sources `aaaaaaaaaaaa`, outputs `bbbbbbbbbbbb`; translator copy sources `cccccccccccc`, outputs `dddddddddddd`$/m);
+  assert.match(text, /^- Build stamp: kernel sources `aaaaaaaaaaaa`, outputs `bbbbbbbbbbbb`$/m);
   assert.match(text, /^\| Lint \| make lint \| passed \| 3 \| ok \|$/m);
   assert.match(text, /^\| Node suite \| npm test \| failed \(1\) \| 60 \| ℹ fail 1 \|$/m);
   assert.match(text, /^- \[Run 7\]\(https:\/\/ci\/7\), 2026-09-29T07:00:00Z: success$/m);
   assert.match(text, /^ {2}- \[lint of 7\]\(https:\/\/ci\/7\/lint\): success$/m);
   assert.match(text, /## Verdict\n\n- Node suite failed\.\n$/);
   assert.match(render({ sha, date: "d", ci: [] }), /None\. Dispatch one with `gh workflow run ci\.yml --ref BRANCH`/);
-  // A build that failed may leave a stamp of one part, or none.
-  assert.match(render({ sha, date: "d", local, stamp: { runtime: stamp.runtime } }), /^- Build stamp: kernel none; translator copy sources `cccccccccccc`/m);
-  assert.match(render({ sha, date: "d", local, stamp: { kernel: stamp.kernel } }), /; translator copy none$/m);
+  // A build that failed may leave a stamp with no kernel entry, or none.
+  assert.match(render({ sha, date: "d", local, stamp: {} }), /^- Build stamp: kernel none$/m);
   assert.match(render({ sha, date: "d", local, stamp: null }), /^- Build stamp: none$/m);
 });
 

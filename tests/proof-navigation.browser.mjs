@@ -3,9 +3,9 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { chromium, webkit } from "playwright";
 import { assertFreshBuild } from "../tools/build-stamp.mjs";
-// The page loads the WASM kernel and the translator from web/dist.
+// The page loads the WASM kernel from web/dist.
 assertFreshBuild();
-import { proofChoices, proofTopics, proofsInTopic } from "../web/proof-library.mjs";
+import { proofCatalog, proofTopics, proofsInTopic } from "../web/proof-library.mjs";
 import { selectProof } from "./proof-navigation.mjs";
 
 const server = spawn("python3", [fileURLToPath(new URL("../tools/serve.py", import.meta.url)), "--port", "0"],
@@ -93,7 +93,7 @@ try {
   assert.equal(await page.locator("#proof-picker").isVisible(), true);
   await page.screenshot({ path: "/private/tmp/thth-proof-topics.png", fullPage: false });
   assert.deepEqual(errors, []);
-  console.log(`PASS proof topic navigation (${process.env.THTH_BROWSER ?? "chromium"}); ${proofChoices.length} proofs reachable`);
+  console.log(`PASS proof topic navigation (${process.env.THTH_BROWSER ?? "chromium"}); ${proofCatalog.length} proofs reachable`);
 } finally {
   await browser?.close();
   server.kill();

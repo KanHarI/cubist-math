@@ -20,15 +20,15 @@ target statement or a supplied theorem parameter as an already proved result.
   preserved.
 - [H1 specification](h1-signature-specification.md): the design's first
   stage, one-sort data and higher inductive types (K2.1), with G2's
-  truncation and resizing policy and its migration ledger (K2.5). Approved
-  for experimental implementation, and implemented behind the `h1` option
-  (K2.2, K2.3, L2.1, L2.2a); the soundness review, the
-  differential fixtures and the migrations are pending. Its header holds
-  the release checklist.
+  truncation and resizing policy and its migration ledger (K2.5).
+  Implemented (K2.2, K2.3, L2.1, L2.2a) and released on 2026-10-02 after
+  review of its model, critical pairs and canonicity. Its
+  [history](h1-history.md) holds the release checklist and its record, the
+  review rounds and the retired differential contract.
 - [Language features for theories and inductive declarations](inductive-language-features.md):
   the adopted language proposal: theories, cells, relations and bundles,
   canonical quotients, presentations and derived declarations. One-sort
-  `inductive` and explicit `match` are experimental since 2026-09-28; the
+  `inductive` and explicit `match` are released with H1 on 2026-10-02; the
   rest is proposed, with three promises corrected by the audit.
 - [Results of the first library](../library-results.md): what the archived
   library established, in mathematical English.

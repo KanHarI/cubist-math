@@ -55,6 +55,6 @@ for (const path of await files(output)) {
     await writeFile(path, source);
   }
 }
-await writeFile(join(output, "mathscript-version"), JSON.stringify({ version }) + "\n");
+await writeFile(join(output, "cubist-version"), JSON.stringify({ version }) + "\n");
 await writeFile(join(output, ".nojekyll"), "");
 console.log(`Built build/site (${version.slice(0, 12)}).`);

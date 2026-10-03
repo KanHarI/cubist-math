@@ -1,5 +1,5 @@
 import "./fresh-build.mjs";
-import {naturalSort, numeral} from "../lib/cubical/numerals.mjs";
+import {naturalSort, numeral} from "../web/translator/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
@@ -55,7 +55,7 @@ test("display renaming never merges two different names", () => {
   assert.notEqual(shown.name, shown.body.name);
   assert.equal(shown.body.body.name, shown.name);
   // A lone generated name gets its stem back.
-  assert.equal(displayTerm({ tag: "Lam", name: "x7", domain: { tag: "Nat" }, body: { tag: "Var", name: "x7" } }).name, "x");
+  assert.equal(displayTerm({ tag: "Lam", name: "x7", domain: { tag: "Unit" }, body: { tag: "Var", name: "x7" } }).name, "x");
 });
 
 // The third review of #74: a mismatch's two sides are named together. The
@@ -63,7 +63,7 @@ test("display renaming never merges two different names", () => {
 // stem add there; named alone, the expected side would have shown it as add.
 test("a variable reads alike on both sides of a mismatch", async t => {
   const { readFile } = await import("node:fs/promises");
-  const { T } = await import("../lib/cubical/core.mjs");
+  const { T } = await import("../web/translator/core.mjs");
   const program = new CubicalProgram(await createCubical(), name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8"));
   t.after(() => program.dispose());
   await program.check("import naturals;\n", "main");

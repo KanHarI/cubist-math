@@ -37,7 +37,7 @@ static bool ready(cc_kernel *k) {
     ck_operation(k, CC_WORK_INSTRUCTION);
     k->recursion = 0;
     /* The deadline bounds instructions as it bounds checking. */
-    if (!ck_tick(k, true))
+    if (!ck_tick(k))
         return false;
     if (k->fact_count)
         return true;
@@ -111,7 +111,7 @@ static void remember(cc_kernel *k, cc_judgement_id id) {
 
 /* Start an instruction. It proceeds only when it is new: the judgement of
  * an identical earlier instruction is returned instead, as is 0 on error. */
-static bool begin(cc_kernel *k, cc_derivation how, const uint8_t *position, size_t depth, cc_judgement_id *found) {
+bool ck_instr_begin(cc_kernel *k, cc_derivation how, const uint8_t *position, size_t depth, cc_judgement_id *found) {
     *found = 0;
     if (!ready(k))
         return false;
@@ -135,7 +135,7 @@ static bool begin(cc_kernel *k, cc_derivation how, const uint8_t *position, size
     return true;
 }
 
-static bool premise(cc_kernel *k, cc_judgement_id id, uint32_t kind, cc_fact *out) {
+bool ck_instr_premise(cc_kernel *k, cc_judgement_id id, uint32_t kind, cc_fact *out) {
     if (!id || id >= k->fact_count)
         return ck_fail(k, "Unknown judgement.");
     if (k->facts[id].kind != kind)
@@ -144,7 +144,7 @@ static bool premise(cc_kernel *k, cc_judgement_id id, uint32_t kind, cc_fact *ou
     return true;
 }
 
-static bool entry(cc_kernel *k, cc_entry_id id, bool dimension, cc_entry *out) {
+bool ck_instr_entry(cc_kernel *k, cc_entry_id id, bool dimension, cc_entry *out) {
     if (!id || id >= k->entry_count)
         return ck_fail(k, "Unknown context entry.");
     if (k->entries[id].dimension != dimension)
@@ -155,7 +155,7 @@ static bool entry(cc_kernel *k, cc_entry_id id, bool dimension, cc_entry *out) {
     return true;
 }
 
-static cc_judgement_id publish(cc_kernel *k, uint32_t kind, cc_term term, cc_term other, cc_term type, uint32_t context) {
+cc_judgement_id ck_instr_publish(cc_kernel *k, uint32_t kind, cc_term term, cc_term other, cc_term type, uint32_t context) {
     if (k->error[0] || !term || !type || (kind == CC_FACT_EQUALITY && !other))
         return 0;
     cc_fact *facts = reserve(k, k->facts, &k->fact_capacity, k->fact_count + 1, sizeof *facts);
@@ -178,12 +178,12 @@ static cc_judgement_id publish(cc_kernel *k, uint32_t kind, cc_term term, cc_ter
     return id;
 }
 
-static cc_judgement_id typing(cc_kernel *k, cc_term term, cc_term type, uint32_t context) {
-    return publish(k, CC_FACT_TYPING, term, 0, type, context);
+cc_judgement_id ck_instr_typing(cc_kernel *k, cc_term term, cc_term type, uint32_t context) {
+    return ck_instr_publish(k, CC_FACT_TYPING, term, 0, type, context);
 }
 
 /* A mismatch keeps the two terms for diagnostics, as conversion does. */
-static bool same(cc_kernel *k, cc_term found, cc_term expected, const char *message) {
+bool ck_instr_same(cc_kernel *k, cc_term found, cc_term expected, const char *message) {
     if (ck_alpha_equal(k, found, expected))
         return true;
     if (k->error[0])
@@ -194,19 +194,19 @@ static bool same(cc_kernel *k, cc_term found, cc_term expected, const char *mess
 }
 
 /* A type's universe, and its level: the universe's level child. */
-static bool universe(cc_kernel *k, cc_term type, cc_term *level) {
+bool ck_instr_universe(cc_kernel *k, cc_term type, cc_term *level) {
     if (!type || k->nodes[type].kind != CC_U)
         return ck_fail(k, "Expected a type: a term of a universe.");
     *level = k->nodes[type].child[0];
     return true;
 }
 
-static cc_term make(cc_kernel *k, cc_term_kind kind, uint32_t payload, cc_term a, cc_term b, cc_term c, cc_term d) {
+cc_term ck_instr_make(cc_kernel *k, cc_term_kind kind, uint32_t payload, cc_term a, cc_term b, cc_term c, cc_term d) {
     return ck_make(k, kind, payload, a, b, c, d);
 }
 
-static cc_term app(cc_kernel *k, cc_term f, cc_term x) {
-    return make(k, CC_APP, 0, f, x, 0, 0);
+cc_term ck_instr_app(cc_kernel *k, cc_term f, cc_term x) {
+    return ck_instr_make(k, CC_APP, 0, f, x, 0, 0);
 }
 
 /* ---- Contexts ---------------------------------------------------------- */
@@ -246,7 +246,7 @@ static uint32_t *scratch(cc_kernel *k, size_t count) {
 
 /* The union of two contexts. Distinct dimension entries with one index
  * would make a dimension name ambiguous, so they never meet. */
-static bool merge(cc_kernel *k, uint32_t a, uint32_t b, uint32_t *out) {
+bool ck_instr_merge(cc_kernel *k, uint32_t a, uint32_t b, uint32_t *out) {
     if (k->error[0])
         return false;
     if (a == b || !b) { *out = a; return true; }
@@ -277,15 +277,15 @@ static bool merge(cc_kernel *k, uint32_t a, uint32_t b, uint32_t *out) {
     return publish_set(k, n, out);
 }
 
-static bool merge3(cc_kernel *k, uint32_t a, uint32_t b, uint32_t c, uint32_t *out) {
+bool ck_instr_merge3(cc_kernel *k, uint32_t a, uint32_t b, uint32_t c, uint32_t *out) {
     uint32_t ab;
-    return merge(k, a, b, &ab) && merge(k, ab, c, out);
+    return ck_instr_merge(k, a, b, &ab) && ck_instr_merge(k, ab, c, out);
 }
 
 /* Remove entries from a context. A remaining entry must not depend on a
  * removed one, and must not be another dimension entry with a removed
  * dimension's index: the binder would capture it. */
-static bool discharge(cc_kernel *k, uint32_t set, const cc_entry_id *removed, size_t count, uint32_t *out) {
+bool ck_instr_discharge(cc_kernel *k, uint32_t set, const cc_entry_id *removed, size_t count, uint32_t *out) {
     if (k->error[0])
         return false;
     cc_context_set s = k->context_sets[set];
@@ -313,9 +313,9 @@ static bool discharge(cc_kernel *k, uint32_t set, const cc_entry_id *removed, si
 }
 
 /* The context of a binder over entry e: the body's, without e, with e's. */
-static bool bind(cc_kernel *k, uint32_t body, cc_entry_id e, uint32_t *out) {
+bool ck_instr_bind(cc_kernel *k, uint32_t body, cc_entry_id e, uint32_t *out) {
     uint32_t rest;
-    return discharge(k, body, &e, 1, &rest) && merge(k, rest, k->entries[e].context, out);
+    return ck_instr_discharge(k, body, &e, 1, &rest) && ck_instr_merge(k, rest, k->entries[e].context, out);
 }
 
 /* Term entries by symbol. A slot holding a truncated id is free again, and
@@ -363,7 +363,7 @@ static void index_entry(cc_kernel *k, cc_entry_id id) {
 cc_entry_id cc_instr_extend(cc_kernel *k, cc_judgement_id type, uint32_t symbol) {
     cc_fact t = {0};
     cc_term level = 0;
-    if (!ready(k) || !premise(k, type, CC_FACT_TYPING, &t) || !universe(k, t.type, &level))
+    if (!ready(k) || !ck_instr_premise(k, type, CC_FACT_TYPING, &t) || !ck_instr_universe(k, t.type, &level))
         return 0;
     if (!symbol)
         return ck_fail(k, "A context entry needs a symbol."), 0;
@@ -391,7 +391,7 @@ cc_entry_id cc_instr_extend(cc_kernel *k, cc_judgement_id type, uint32_t symbol)
         return 0;
     *self = id;
     k->entries[id] = (cc_entry){symbol, t.term, level, t.context, 0, type, false, false};
-    if (!publish_set(k, 1, &scope) || !merge(k, t.context, scope, &scope))
+    if (!publish_set(k, 1, &scope) || !ck_instr_merge(k, t.context, scope, &scope))
         return 0;
     k->entries[id].scope = scope;
     ++k->entry_count;
@@ -414,7 +414,7 @@ cc_entry_id cc_instr_level(cc_kernel *k, uint32_t symbol) {
             return named;
         return ck_fail(k, "The symbol already names a context entry."), 0;
     }
-    cc_term bound = make(k, CC_LBOUND, 1, 0, 0, 0, 0);
+    cc_term bound = ck_instr_make(k, CC_LBOUND, 1, 0, 0, 0, 0);
     if (!bound || !ck_var(k, symbol))
         return 0;
     cc_entry *entries = reserve(k, k->entries, &k->entry_capacity, k->entry_count + 1, sizeof *entries);
@@ -444,15 +444,15 @@ static bool level_entry(cc_kernel *k, cc_entry_id id, cc_entry *out) {
     return true;
 }
 
-static cc_entry_id dimension_entry(cc_kernel *k, unsigned index);
+cc_entry_id ck_instr_dimension_entry(cc_kernel *k, unsigned index);
 
 cc_entry_id cc_instr_dimension(cc_kernel *k, unsigned index) {
     if (!ready(k))
         return 0;
-    return dimension_entry(k, index);
+    return ck_instr_dimension_entry(k, index);
 }
 
-static cc_entry_id dimension_entry(cc_kernel *k, unsigned index) {
+cc_entry_id ck_instr_dimension_entry(cc_kernel *k, unsigned index) {
     if (index >= CC_DIMENSIONS)
         return ck_fail(k, "Dimension outside the native range."), 0;
     cc_entry_id cached = k->dimension_entries[index];
@@ -478,12 +478,12 @@ static cc_entry_id dimension_entry(cc_kernel *k, unsigned index) {
 
 cc_judgement_id cc_instr_variable(cc_kernel *k, cc_entry_id id) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_VARIABLE, .entry = id}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_VARIABLE, .entry = id}, NULL, 0, &found))
         return found;
     cc_entry e = {0};
-    if (!entry(k, id, false, &e))
+    if (!ck_instr_entry(k, id, false, &e))
         return 0;
-    return typing(k, ck_var(k, e.symbol), e.type, e.scope);
+    return ck_instr_typing(k, ck_var(k, e.symbol), e.type, e.scope);
 }
 
 /* ---- Universes and inductive types -------------------------------------- */
@@ -497,7 +497,7 @@ static bool level_context(cc_kernel *k, const cc_level_nf *nf, uint32_t *context
             return ck_fail(k, "Unbound level variable.");
         if (!k->entries[id].level_variable)
             return ck_fail(k, "A term variable is not a level.");
-        if (!merge(k, *context, k->entries[id].scope, context))
+        if (!ck_instr_merge(k, *context, k->entries[id].scope, context))
             return false;
     }
     return true;
@@ -508,7 +508,7 @@ static bool level_context(cc_kernel *k, const cc_level_nf *nf, uint32_t *context
  * term; its variables' entries are the context. */
 cc_judgement_id cc_instr_universe(cc_kernel *k, cc_term level) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_UNIVERSE, .operand = {level}}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_UNIVERSE, .operand = {level}}, NULL, 0, &found))
         return found;
     cc_level_nf nf;
     if (!ck_level_normal(k, level, &nf))
@@ -527,15 +527,15 @@ cc_judgement_id cc_instr_universe(cc_kernel *k, cc_term level) {
     ck_level_nf_free(&nf);
     if (!canonical || !next)
         return 0;
-    return typing(k, ck_universe(k, canonical), ck_universe(k, next), context);
+    return ck_instr_typing(k, ck_universe(k, canonical), ck_universe(k, next), context);
 }
 
 static cc_judgement_id constant(cc_kernel *k, cc_instruction rule, cc_term_kind kind, cc_term_kind type) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = rule}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = rule}, NULL, 0, &found))
         return found;
-    cc_term sort = type == CC_U ? ck_universe_at(k, 0) : make(k, type, 0, 0, 0, 0, 0);
-    return typing(k, make(k, kind, 0, 0, 0, 0, 0), sort, 0);
+    cc_term sort = type == CC_U ? ck_universe_at(k, 0) : ck_instr_make(k, type, 0, 0, 0, 0, 0);
+    return ck_instr_typing(k, ck_instr_make(k, kind, 0, 0, 0, 0, 0), sort, 0);
 }
 
 cc_judgement_id cc_instr_unit(cc_kernel *k) { return constant(k, CC_INSTR_UNIT, CC_UNIT, CC_U); }
@@ -548,83 +548,83 @@ static bool motive(cc_kernel *k, cc_fact p, cc_term domain) {
     cc_node pi = k->nodes[p.type];
     if (pi.kind != CC_PI || k->nodes[pi.child[1]].kind != CC_U)
         return ck_fail(k, "A motive is a family of types: Π(x : A). U(l).");
-    return same(k, pi.child[0], domain, "The motive is a family over another type.");
+    return ck_instr_same(k, pi.child[0], domain, "The motive is a family over another type.");
 }
 
 cc_judgement_id cc_instr_unit_elim(cc_kernel *k, cc_judgement_id motive_id, cc_judgement_id point_id,
                                    cc_judgement_id value_id) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_UNIT_ELIM, .premise = {motive_id, point_id, value_id}}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_UNIT_ELIM, .premise = {motive_id, point_id, value_id}}, NULL, 0, &found))
         return found;
     cc_fact p = {0}, b = {0}, u = {0};
     uint32_t context = 0;
-    if (!premise(k, motive_id, CC_FACT_TYPING, &p) || !premise(k, point_id, CC_FACT_TYPING, &b) ||
-        !premise(k, value_id, CC_FACT_TYPING, &u))
+    if (!ck_instr_premise(k, motive_id, CC_FACT_TYPING, &p) || !ck_instr_premise(k, point_id, CC_FACT_TYPING, &b) ||
+        !ck_instr_premise(k, value_id, CC_FACT_TYPING, &u))
         return 0;
-    cc_term unit = make(k, CC_UNIT, 0, 0, 0, 0, 0);
-    if (!motive(k, p, unit) || !same(k, u.type, unit, "Unit induction needs a unit value.") ||
-        !same(k, b.type, app(k, p.term, make(k, CC_POINT, 0, 0, 0, 0, 0)), "The point case has the wrong type.") ||
-        !merge3(k, p.context, b.context, u.context, &context))
+    cc_term unit = ck_instr_make(k, CC_UNIT, 0, 0, 0, 0, 0);
+    if (!motive(k, p, unit) || !ck_instr_same(k, u.type, unit, "Unit induction needs a unit value.") ||
+        !ck_instr_same(k, b.type, ck_instr_app(k, p.term, ck_instr_make(k, CC_POINT, 0, 0, 0, 0, 0)), "The point case has the wrong type.") ||
+        !ck_instr_merge3(k, p.context, b.context, u.context, &context))
         return 0;
-    return typing(k, make(k, CC_UNITREC, 0, p.term, b.term, u.term, 0), app(k, p.term, u.term), context);
+    return ck_instr_typing(k, ck_instr_make(k, CC_UNITREC, 0, p.term, b.term, u.term, 0), ck_instr_app(k, p.term, u.term), context);
 }
 
 cc_judgement_id cc_instr_abort(cc_kernel *k, cc_judgement_id type_id, cc_judgement_id impossible_id) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_ABORT, .premise = {type_id, impossible_id}}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_ABORT, .premise = {type_id, impossible_id}}, NULL, 0, &found))
         return found;
     cc_fact t = {0}, e = {0};
     cc_term level = 0;
     uint32_t context = 0;
-    if (!premise(k, type_id, CC_FACT_TYPING, &t) || !premise(k, impossible_id, CC_FACT_TYPING, &e) ||
-        !universe(k, t.type, &level) ||
-        !same(k, e.type, make(k, CC_VOID, 0, 0, 0, 0, 0), "abort needs an element of the empty type.") ||
-        !merge(k, t.context, e.context, &context))
+    if (!ck_instr_premise(k, type_id, CC_FACT_TYPING, &t) || !ck_instr_premise(k, impossible_id, CC_FACT_TYPING, &e) ||
+        !ck_instr_universe(k, t.type, &level) ||
+        !ck_instr_same(k, e.type, ck_instr_make(k, CC_VOID, 0, 0, 0, 0, 0), "abort needs an element of the empty type.") ||
+        !ck_instr_merge(k, t.context, e.context, &context))
         return 0;
-    return typing(k, make(k, CC_ABORT, 0, t.term, e.term, 0, 0), t.term, context);
+    return ck_instr_typing(k, ck_instr_make(k, CC_ABORT, 0, t.term, e.term, 0, 0), t.term, context);
 }
 
 cc_judgement_id cc_instr_sum(cc_kernel *k, cc_judgement_id left_id, cc_judgement_id right_id) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_SUM, .premise = {left_id, right_id}}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_SUM, .premise = {left_id, right_id}}, NULL, 0, &found))
         return found;
     cc_fact a = {0}, b = {0};
     cc_term left = 0, right = 0;
     uint32_t context = 0;
-    if (!premise(k, left_id, CC_FACT_TYPING, &a) || !premise(k, right_id, CC_FACT_TYPING, &b) ||
-        !universe(k, a.type, &left) || !universe(k, b.type, &right) || !merge(k, a.context, b.context, &context))
+    if (!ck_instr_premise(k, left_id, CC_FACT_TYPING, &a) || !ck_instr_premise(k, right_id, CC_FACT_TYPING, &b) ||
+        !ck_instr_universe(k, a.type, &left) || !ck_instr_universe(k, b.type, &right) || !ck_instr_merge(k, a.context, b.context, &context))
         return 0;
-    return typing(k, make(k, CC_SUM, 0, a.term, b.term, 0, 0), ck_universe(k, ck_level_max(k, left, right)), context);
+    return ck_instr_typing(k, ck_instr_make(k, CC_SUM, 0, a.term, b.term, 0, 0), ck_universe(k, ck_level_max(k, left, right)), context);
 }
 
 cc_judgement_id cc_instr_inject(cc_kernel *k, cc_judgement_id type_id, cc_judgement_id value_id, bool right) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_INJECT, .premise = {type_id, value_id}, .operand = {right}}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_INJECT, .premise = {type_id, value_id}, .operand = {right}}, NULL, 0, &found))
         return found;
     cc_fact t = {0}, v = {0};
     cc_term level = 0;
     uint32_t context = 0;
-    if (!premise(k, type_id, CC_FACT_TYPING, &t) || !premise(k, value_id, CC_FACT_TYPING, &v) ||
-        !universe(k, t.type, &level))
+    if (!ck_instr_premise(k, type_id, CC_FACT_TYPING, &t) || !ck_instr_premise(k, value_id, CC_FACT_TYPING, &v) ||
+        !ck_instr_universe(k, t.type, &level))
         return 0;
     cc_node sum = k->nodes[t.term];
     if (sum.kind != CC_SUM)
         return ck_fail(k, "An injection needs a sum type."), 0;
-    if (!same(k, v.type, sum.child[right ? 1 : 0], "The injected value has the wrong type.") ||
-        !merge(k, t.context, v.context, &context))
+    if (!ck_instr_same(k, v.type, sum.child[right ? 1 : 0], "The injected value has the wrong type.") ||
+        !ck_instr_merge(k, t.context, v.context, &context))
         return 0;
-    return typing(k, make(k, right ? CC_INR : CC_INL, 0, t.term, v.term, 0, 0), t.term, context);
+    return ck_instr_typing(k, ck_instr_make(k, right ? CC_INR : CC_INL, 0, t.term, v.term, 0, 0), t.term, context);
 }
 
 cc_judgement_id cc_instr_sum_elim(cc_kernel *k, cc_judgement_id motive_id, cc_judgement_id left_id,
                                   cc_judgement_id right_id, cc_judgement_id value_id) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_SUM_ELIM, .premise = {motive_id, left_id, right_id, value_id}}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_SUM_ELIM, .premise = {motive_id, left_id, right_id, value_id}}, NULL, 0, &found))
         return found;
     cc_fact p = {0}, cases[2] = {0}, v = {0};
     uint32_t context = 0;
-    if (!premise(k, motive_id, CC_FACT_TYPING, &p) || !premise(k, left_id, CC_FACT_TYPING, &cases[0]) ||
-        !premise(k, right_id, CC_FACT_TYPING, &cases[1]) || !premise(k, value_id, CC_FACT_TYPING, &v))
+    if (!ck_instr_premise(k, motive_id, CC_FACT_TYPING, &p) || !ck_instr_premise(k, left_id, CC_FACT_TYPING, &cases[0]) ||
+        !ck_instr_premise(k, right_id, CC_FACT_TYPING, &cases[1]) || !ck_instr_premise(k, value_id, CC_FACT_TYPING, &v))
         return 0;
     cc_node sum = k->nodes[v.type];
     if (sum.kind != CC_SUM)
@@ -633,14 +633,14 @@ cc_judgement_id cc_instr_sum_elim(cc_kernel *k, cc_judgement_id motive_id, cc_ju
         return 0;
     for (unsigned side = 0; side < 2; ++side) {
         uint32_t name = ck_fresh_symbol(k);
-        cc_term injected = make(k, side ? CC_INR : CC_INL, 0, v.type, ck_var(k, name), 0, 0);
-        if (!same(k, cases[side].type, make(k, CC_PI, name, sum.child[side], app(k, p.term, injected), 0, 0),
+        cc_term injected = ck_instr_make(k, side ? CC_INR : CC_INL, 0, v.type, ck_var(k, name), 0, 0);
+        if (!ck_instr_same(k, cases[side].type, ck_instr_make(k, CC_PI, name, sum.child[side], ck_instr_app(k, p.term, injected), 0, 0),
                   side ? "The right case has the wrong type." : "The left case has the wrong type."))
             return 0;
     }
-    if (!merge(k, p.context, cases[0].context, &context) || !merge3(k, context, cases[1].context, v.context, &context))
+    if (!ck_instr_merge(k, p.context, cases[0].context, &context) || !ck_instr_merge3(k, context, cases[1].context, v.context, &context))
         return 0;
-    return typing(k, make(k, CC_SUMREC, 0, p.term, cases[0].term, cases[1].term, v.term), app(k, p.term, v.term), context);
+    return ck_instr_typing(k, ck_instr_make(k, CC_SUMREC, 0, p.term, cases[0].term, cases[1].term, v.term), ck_instr_app(k, p.term, v.term), context);
 }
 
 /* ---- Functions and pairs ------------------------------------------------ */
@@ -648,16 +648,16 @@ cc_judgement_id cc_instr_sum_elim(cc_kernel *k, cc_judgement_id motive_id, cc_ju
 static cc_judgement_id former(cc_kernel *k, cc_term_kind kind, cc_entry_id id, cc_judgement_id family) {
     cc_judgement_id found;
     unsigned rule = kind == CC_PI ? CC_INSTR_PI : CC_INSTR_SIGMA;
-    if (!begin(k, (cc_derivation){.rule = rule, .premise = {family}, .entry = id}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = rule, .premise = {family}, .entry = id}, NULL, 0, &found))
         return found;
     cc_entry e = {0};
     cc_fact b = {0};
     cc_term level = 0;
     uint32_t context = 0;
-    if (!entry(k, id, false, &e) || !premise(k, family, CC_FACT_TYPING, &b) ||
-        !universe(k, b.type, &level) || !bind(k, b.context, id, &context))
+    if (!ck_instr_entry(k, id, false, &e) || !ck_instr_premise(k, family, CC_FACT_TYPING, &b) ||
+        !ck_instr_universe(k, b.type, &level) || !ck_instr_bind(k, b.context, id, &context))
         return 0;
-    return typing(k, make(k, kind, e.symbol, e.type, b.term, 0, 0),
+    return ck_instr_typing(k, ck_instr_make(k, kind, e.symbol, e.type, b.term, 0, 0),
                   ck_universe(k, ck_level_max(k, e.level, level)), context);
 }
 
@@ -671,31 +671,31 @@ cc_judgement_id cc_instr_sigma(cc_kernel *k, cc_entry_id id, cc_judgement_id fam
 
 cc_judgement_id cc_instr_lambda(cc_kernel *k, cc_entry_id id, cc_judgement_id body_id) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_LAMBDA, .premise = {body_id}, .entry = id}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_LAMBDA, .premise = {body_id}, .entry = id}, NULL, 0, &found))
         return found;
     cc_entry e = {0};
     cc_fact b = {0};
     uint32_t context = 0;
-    if (!entry(k, id, false, &e) || !premise(k, body_id, CC_FACT_TYPING, &b) ||
-        !bind(k, b.context, id, &context))
+    if (!ck_instr_entry(k, id, false, &e) || !ck_instr_premise(k, body_id, CC_FACT_TYPING, &b) ||
+        !ck_instr_bind(k, b.context, id, &context))
         return 0;
-    return typing(k, make(k, CC_LAM, e.symbol, e.type, b.term, 0, 0), make(k, CC_PI, e.symbol, e.type, b.type, 0, 0), context);
+    return ck_instr_typing(k, ck_instr_make(k, CC_LAM, e.symbol, e.type, b.term, 0, 0), ck_instr_make(k, CC_PI, e.symbol, e.type, b.type, 0, 0), context);
 }
 
 cc_judgement_id cc_instr_apply(cc_kernel *k, cc_judgement_id function, cc_judgement_id argument) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_APPLY, .premise = {function, argument}}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_APPLY, .premise = {function, argument}}, NULL, 0, &found))
         return found;
     cc_fact f = {0}, a = {0};
     uint32_t context = 0;
-    if (!premise(k, function, CC_FACT_TYPING, &f) || !premise(k, argument, CC_FACT_TYPING, &a))
+    if (!ck_instr_premise(k, function, CC_FACT_TYPING, &f) || !ck_instr_premise(k, argument, CC_FACT_TYPING, &a))
         return 0;
     cc_node pi = k->nodes[f.type];
     if (pi.kind != CC_PI)
         return ck_fail(k, "Only a term of a Π type can be applied."), 0;
-    if (!same(k, a.type, pi.child[0], "The argument has the wrong type.") || !merge(k, f.context, a.context, &context))
+    if (!ck_instr_same(k, a.type, pi.child[0], "The argument has the wrong type.") || !ck_instr_merge(k, f.context, a.context, &context))
         return 0;
-    return typing(k, app(k, f.term, a.term), ck_substitute(k, pi.child[1], pi.payload, a.term), context);
+    return ck_instr_typing(k, ck_instr_app(k, f.term, a.term), ck_substitute(k, pi.child[1], pi.payload, a.term), context);
 }
 
 /* ---- Level quantification (G0 §2.7) ------------------------------------ */
@@ -704,31 +704,31 @@ cc_judgement_id cc_instr_apply(cc_kernel *k, cc_judgement_id function, cc_judgem
  * in the body's level and that level otherwise. */
 cc_judgement_id cc_instr_level_pi(cc_kernel *k, cc_entry_id id, cc_judgement_id body_id) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_LEVEL_PI, .premise = {body_id}, .entry = id}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_LEVEL_PI, .premise = {body_id}, .entry = id}, NULL, 0, &found))
         return found;
     cc_entry e = {0};
     cc_fact b = {0};
     cc_term level = 0;
     uint32_t context = 0;
-    if (!level_entry(k, id, &e) || !premise(k, body_id, CC_FACT_TYPING, &b) || !universe(k, b.type, &level) ||
-        !bind(k, b.context, id, &context))
+    if (!level_entry(k, id, &e) || !ck_instr_premise(k, body_id, CC_FACT_TYPING, &b) || !ck_instr_universe(k, b.type, &level) ||
+        !ck_instr_bind(k, b.context, id, &context))
         return 0;
-    return typing(k, make(k, CC_LPI, e.symbol, e.type, b.term, 0, 0),
+    return ck_instr_typing(k, ck_instr_make(k, CC_LPI, e.symbol, e.type, b.term, 0, 0),
                   ck_universe(k, ck_level_limit(k, e.symbol, level)), context);
 }
 
 /* ∀-Intro. */
 cc_judgement_id cc_instr_level_lambda(cc_kernel *k, cc_entry_id id, cc_judgement_id body_id) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_LEVEL_LAMBDA, .premise = {body_id}, .entry = id}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_LEVEL_LAMBDA, .premise = {body_id}, .entry = id}, NULL, 0, &found))
         return found;
     cc_entry e = {0};
     cc_fact b = {0};
     uint32_t context = 0;
-    if (!level_entry(k, id, &e) || !premise(k, body_id, CC_FACT_TYPING, &b) || !bind(k, b.context, id, &context))
+    if (!level_entry(k, id, &e) || !ck_instr_premise(k, body_id, CC_FACT_TYPING, &b) || !ck_instr_bind(k, b.context, id, &context))
         return 0;
-    return typing(k, make(k, CC_LLAM, e.symbol, e.type, b.term, 0, 0),
-                  make(k, CC_LPI, e.symbol, e.type, b.type, 0, 0), context);
+    return ck_instr_typing(k, ck_instr_make(k, CC_LLAM, e.symbol, e.type, b.term, 0, 0),
+                  ck_instr_make(k, CC_LPI, e.symbol, e.type, b.type, 0, 0), context);
 }
 
 /* ∀-Elim: only at a finite level, since the variable ranges over the levels
@@ -736,10 +736,10 @@ cc_judgement_id cc_instr_level_lambda(cc_kernel *k, cc_entry_id id, cc_judgement
  * are taken to normal form, and must stay within the bounds. */
 cc_judgement_id cc_instr_level_apply(cc_kernel *k, cc_judgement_id function, cc_term level) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_LEVEL_APPLY, .premise = {function}, .operand = {level}}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_LEVEL_APPLY, .premise = {function}, .operand = {level}}, NULL, 0, &found))
         return found;
     cc_fact f = {0};
-    if (!premise(k, function, CC_FACT_TYPING, &f))
+    if (!ck_instr_premise(k, function, CC_FACT_TYPING, &f))
         return 0;
     cc_node pi = k->nodes[f.type];
     if (pi.kind != CC_LPI)
@@ -754,46 +754,46 @@ cc_judgement_id cc_instr_level_apply(cc_kernel *k, cc_judgement_id function, cc_
     else if (level_context(k, &nf, &levels))
         canonical = ck_level_build(k, &nf);
     ck_level_nf_free(&nf);
-    if (!canonical || !merge(k, f.context, levels, &context))
+    if (!canonical || !ck_instr_merge(k, f.context, levels, &context))
         return 0;
     cc_term type = ck_level_instantiate(k, pi.child[1], pi.payload, canonical);
-    return type ? typing(k, make(k, CC_LAPP, 0, f.term, canonical, 0, 0), type, context) : 0;
+    return type ? ck_instr_typing(k, ck_instr_make(k, CC_LAPP, 0, f.term, canonical, 0, 0), type, context) : 0;
 }
 
 cc_judgement_id cc_instr_pair(cc_kernel *k, cc_judgement_id type_id, cc_judgement_id first_id, cc_judgement_id second_id) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_PAIR, .premise = {type_id, first_id, second_id}}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_PAIR, .premise = {type_id, first_id, second_id}}, NULL, 0, &found))
         return found;
     cc_fact t = {0}, a = {0}, b = {0};
     cc_term level = 0;
     uint32_t context = 0;
-    if (!premise(k, type_id, CC_FACT_TYPING, &t) || !premise(k, first_id, CC_FACT_TYPING, &a) ||
-        !premise(k, second_id, CC_FACT_TYPING, &b) || !universe(k, t.type, &level))
+    if (!ck_instr_premise(k, type_id, CC_FACT_TYPING, &t) || !ck_instr_premise(k, first_id, CC_FACT_TYPING, &a) ||
+        !ck_instr_premise(k, second_id, CC_FACT_TYPING, &b) || !ck_instr_universe(k, t.type, &level))
         return 0;
     cc_node sigma = k->nodes[t.term];
     if (sigma.kind != CC_SIGMA)
         return ck_fail(k, "A pair needs a Σ type."), 0;
-    if (!same(k, a.type, sigma.child[0], "The first component has the wrong type.") ||
-        !same(k, b.type, ck_substitute(k, sigma.child[1], sigma.payload, a.term), "The second component has the wrong type.") ||
-        !merge3(k, t.context, a.context, b.context, &context))
+    if (!ck_instr_same(k, a.type, sigma.child[0], "The first component has the wrong type.") ||
+        !ck_instr_same(k, b.type, ck_substitute(k, sigma.child[1], sigma.payload, a.term), "The second component has the wrong type.") ||
+        !ck_instr_merge3(k, t.context, a.context, b.context, &context))
         return 0;
-    return typing(k, make(k, CC_PAIR, 0, t.term, a.term, b.term, 0), t.term, context);
+    return ck_instr_typing(k, ck_instr_make(k, CC_PAIR, 0, t.term, a.term, b.term, 0), t.term, context);
 }
 
 static cc_judgement_id projection(cc_kernel *k, cc_judgement_id pair, bool second) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = second ? CC_INSTR_SECOND : CC_INSTR_FIRST, .premise = {pair}}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = second ? CC_INSTR_SECOND : CC_INSTR_FIRST, .premise = {pair}}, NULL, 0, &found))
         return found;
     cc_fact p = {0};
-    if (!premise(k, pair, CC_FACT_TYPING, &p))
+    if (!ck_instr_premise(k, pair, CC_FACT_TYPING, &p))
         return 0;
     cc_node sigma = k->nodes[p.type];
     if (sigma.kind != CC_SIGMA)
         return ck_fail(k, "Only a term of a Σ type has projections."), 0;
-    cc_term first = make(k, CC_FST, 0, p.term, 0, 0, 0);
+    cc_term first = ck_instr_make(k, CC_FST, 0, p.term, 0, 0, 0);
     if (!second)
-        return typing(k, first, sigma.child[0], p.context);
-    return typing(k, make(k, CC_SND, 0, p.term, 0, 0, 0), ck_substitute(k, sigma.child[1], sigma.payload, first), p.context);
+        return ck_instr_typing(k, first, sigma.child[0], p.context);
+    return ck_instr_typing(k, ck_instr_make(k, CC_SND, 0, p.term, 0, 0, 0), ck_substitute(k, sigma.child[1], sigma.payload, first), p.context);
 }
 
 cc_judgement_id cc_instr_first(cc_kernel *k, cc_judgement_id pair) { return projection(k, pair, false); }
@@ -804,644 +804,44 @@ cc_judgement_id cc_instr_second(cc_kernel *k, cc_judgement_id pair) { return pro
  * B[a/x] at a : A. */
 cc_judgement_id cc_instr_domain(cc_kernel *k, cc_judgement_id type_id) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_DOMAIN, .premise = {type_id}}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_DOMAIN, .premise = {type_id}}, NULL, 0, &found))
         return found;
     cc_fact t = {0};
     cc_term level = 0;
-    if (!premise(k, type_id, CC_FACT_TYPING, &t) || !universe(k, t.type, &level))
+    if (!ck_instr_premise(k, type_id, CC_FACT_TYPING, &t) || !ck_instr_universe(k, t.type, &level))
         return 0;
     cc_node former = k->nodes[t.term];
     if (former.kind != CC_PI && former.kind != CC_SIGMA)
         return ck_fail(k, "Only a Π or Σ type has a domain."), 0;
-    return typing(k, former.child[0], t.type, t.context);
+    return ck_instr_typing(k, former.child[0], t.type, t.context);
 }
 
 cc_judgement_id cc_instr_family(cc_kernel *k, cc_judgement_id type_id, cc_judgement_id argument) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_FAMILY, .premise = {type_id, argument}}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_FAMILY, .premise = {type_id, argument}}, NULL, 0, &found))
         return found;
     cc_fact t = {0}, a = {0};
     cc_term level = 0;
     uint32_t context = 0;
-    if (!premise(k, type_id, CC_FACT_TYPING, &t) || !premise(k, argument, CC_FACT_TYPING, &a) ||
-        !universe(k, t.type, &level))
+    if (!ck_instr_premise(k, type_id, CC_FACT_TYPING, &t) || !ck_instr_premise(k, argument, CC_FACT_TYPING, &a) ||
+        !ck_instr_universe(k, t.type, &level))
         return 0;
     cc_node former = k->nodes[t.term];
     if (former.kind != CC_PI && former.kind != CC_SIGMA)
         return ck_fail(k, "Only a Π or Σ type has a family."), 0;
-    if (!same(k, a.type, former.child[0], "The argument has the wrong type.") || !merge(k, t.context, a.context, &context))
+    if (!ck_instr_same(k, a.type, former.child[0], "The argument has the wrong type.") || !ck_instr_merge(k, t.context, a.context, &context))
         return 0;
-    return typing(k, ck_substitute(k, former.child[1], former.payload, a.term), t.type, context);
-}
-
-/* ---- Paths -------------------------------------------------------------- */
-
-cc_judgement_id cc_instr_path(cc_kernel *k, cc_entry_id dimension, cc_judgement_id family_id,
-                              cc_judgement_id left_id, cc_judgement_id right_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_PATH, .premise = {family_id, left_id, right_id}, .entry = dimension}, NULL, 0, &found))
-        return found;
-    cc_entry i = {0};
-    cc_fact a = {0}, l = {0}, r = {0};
-    cc_term level = 0;
-    uint32_t context = 0;
-    if (!entry(k, dimension, true, &i) || !premise(k, family_id, CC_FACT_TYPING, &a) ||
-        !premise(k, left_id, CC_FACT_TYPING, &l) || !premise(k, right_id, CC_FACT_TYPING, &r) ||
-        !universe(k, a.type, &level) ||
-        !same(k, l.type, ck_endpoint_term(k, a.term, i.symbol, 0), "The left endpoint has the wrong type.") ||
-        !same(k, r.type, ck_endpoint_term(k, a.term, i.symbol, 1), "The right endpoint has the wrong type.") ||
-        !bind(k, a.context, dimension, &context) || !merge3(k, context, l.context, r.context, &context))
-        return 0;
-    return typing(k, make(k, CC_PATH, i.symbol, a.term, l.term, r.term, 0), a.type, context);
-}
-
-cc_judgement_id cc_instr_path_lambda(cc_kernel *k, cc_entry_id dimension, cc_judgement_id body_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_PATH_LAMBDA, .premise = {body_id}, .entry = dimension}, NULL, 0, &found))
-        return found;
-    cc_entry i = {0};
-    cc_fact b = {0};
-    uint32_t context = 0;
-    if (!entry(k, dimension, true, &i) || !premise(k, body_id, CC_FACT_TYPING, &b) ||
-        !bind(k, b.context, dimension, &context))
-        return 0;
-    cc_term type = make(k, CC_PATH, i.symbol, b.type, ck_endpoint_term(k, b.term, i.symbol, 0),
-                        ck_endpoint_term(k, b.term, i.symbol, 1), 0);
-    return typing(k, make(k, CC_PLAM, i.symbol, b.type, b.term, 0, 0), type, context);
-}
-
-cc_judgement_id cc_instr_path_apply(cc_kernel *k, cc_judgement_id path_id, cc_entry_id dimension, unsigned endpoint) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_PATH_APPLY, .premise = {path_id}, .entry = dimension, .operand = {endpoint}}, NULL, 0, &found))
-        return found;
-    cc_fact p = {0};
-    cc_entry i = {0};
-    uint32_t context = 0;
-    if (!premise(k, path_id, CC_FACT_TYPING, &p) || (dimension && !entry(k, dimension, true, &i)))
-        return 0;
-    cc_node type = k->nodes[p.type];
-    if (type.kind != CC_PATH)
-        return ck_fail(k, "Only a term of a path type can be applied to a dimension."), 0;
-    if (!dimension && endpoint > 1)
-        return ck_fail(k, "A path applies at a dimension, 0 or 1."), 0;
-    cc_formula point;
-    cc_init(&point, CC_INTERVAL);
-    cc_status status = dimension ? cc_generator(&point, i.symbol, true) : endpoint ? cc_one(&point) : CC_OK;
-    cc_formula_id argument = status == CC_OK ? ck_formula(k, &point) : 0;
-    cc_term result = argument ? ck_dimension_substitute(k, type.child[0], type.payload, &point) : 0;
-    cc_clear(&point);
-    if (status != CC_OK)
-        return ck_fail(k, "Interval allocation failed."), 0;
-    if (!result || !merge(k, p.context, dimension ? i.scope : 0, &context))
-        return 0;
-    return typing(k, make(k, CC_PAPP, argument, p.term, p.type, 0, 0), result, context);
-}
-
-cc_judgement_id cc_instr_endpoint(cc_kernel *k, cc_judgement_id id, cc_entry_id dimension, unsigned endpoint) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_ENDPOINT, .premise = {id}, .entry = dimension, .operand = {endpoint}},
-               NULL, 0, &found))
-        return found;
-    cc_fact t = {0};
-    cc_entry i = {0};
-    uint32_t context = 0;
-    if (!premise(k, id, CC_FACT_TYPING, &t) || !entry(k, dimension, true, &i))
-        return 0;
-    if (endpoint > 1)
-        return ck_fail(k, "An endpoint is 0 or 1."), 0;
-    if (!discharge(k, t.context, &dimension, 1, &context))
-        return 0;
-    return typing(k, ck_endpoint_term(k, t.term, i.symbol, endpoint), ck_endpoint_term(k, t.type, i.symbol, endpoint), context);
-}
-
-/* The context of the dimensions an interval or face formula names. */
-static bool formula_context(cc_kernel *k, const cc_formula *f, uint32_t *out) {
-    uint64_t names = 0;
-    for (size_t i = 0; i < f->length; ++i) names |= f->clauses[i].positive | f->clauses[i].negative;
-    *out = 0;
-    for (unsigned dim = 0; dim < CC_DIMENSIONS && !k->error[0]; ++dim)
-        if (names & (UINT64_C(1) << dim)) {
-            cc_entry_id entry = dimension_entry(k, dim);
-            if (!entry || !merge(k, *out, k->entries[entry].scope, out)) return false;
-        }
-    return !k->error[0];
-}
-
-cc_judgement_id cc_instr_path_at(cc_kernel *k, cc_judgement_id path_id, cc_formula_id interval) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_PATH_AT, .premise = {path_id}, .operand = {interval}}, NULL, 0, &found))
-        return found;
-    cc_fact p = {0};
-    uint32_t dims = 0, context = 0;
-    if (!premise(k, path_id, CC_FACT_TYPING, &p))
-        return 0;
-    cc_node type = k->nodes[p.type];
-    if (type.kind != CC_PATH)
-        return ck_fail(k, "Only a term of a path type can be applied to an interval formula."), 0;
-    const cc_formula *point = cc_kernel_get_formula(k, interval);
-    if (!point || point->sort != CC_INTERVAL)
-        return ck_fail(k, "A path applies at an interval formula."), 0;
-    if (!formula_context(k, point, &dims) || !merge(k, p.context, dims, &context))
-        return 0;
-    return typing(k, make(k, CC_PAPP, interval, p.term, p.type, 0, 0),
-                  ck_dimension_substitute(k, type.child[0], type.payload, point), context);
-}
-
-cc_judgement_id cc_instr_system(cc_kernel *k, cc_entry_id dimension, cc_judgement_id family_id, cc_judgement_id base_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_SYSTEM, .premise = {family_id, base_id}, .entry = dimension}, NULL, 0, &found))
-        return found;
-    cc_entry i = {0};
-    cc_fact a = {0}, b = {0};
-    cc_term level = 0;
-    uint32_t context = 0;
-    if (!entry(k, dimension, true, &i) || !premise(k, family_id, CC_FACT_TYPING, &a) ||
-        !premise(k, base_id, CC_FACT_TYPING, &b) || !universe(k, a.type, &level) ||
-        !same(k, b.type, ck_endpoint_term(k, a.term, i.symbol, 0), "The base is not in the family at 0.") ||
-        !merge(k, a.context, b.context, &context))
-        return 0;
-    if (ck_free_dims(k, b.term) & (UINT64_C(1) << i.symbol))
-        return ck_fail(k, "The base of a composition may not use its dimension."), 0;
-    cc_term comp = make(k, CC_COMP, i.symbol, a.term, 0, b.term, 0);
-    return comp ? publish(k, CC_FACT_SYSTEM, comp, 0, ck_endpoint_term(k, a.term, i.symbol, 1), context) : 0;
-}
-
-static cc_term append_tube(cc_kernel *k, cc_term tubes, cc_formula_id face, cc_term tube) {
-    if (!tubes)
-        return make(k, CC_TUBE, face, tube, 0, 0, 0);
-    cc_node n = k->nodes[tubes];
-    cc_term rest = append_tube(k, n.child[1], face, tube);
-    return rest ? make(k, CC_TUBE, n.payload, n.child[0], rest, 0, 0) : 0;
-}
-
-/* Where a system's tubes hang: a composition's second child, a Glue term's
- * third. Zero for a term that is not a system of tubes. */
-static unsigned tube_slot(cc_kernel *k, cc_term system) {
-    cc_term_kind kind = k->nodes[system].kind;
-    return kind == CC_COMP ? 1 : kind == CC_GLUE_TERM ? 2 : 0;
-}
-
-/* The last tube of a system, its clause, and the tube at a position. */
-static bool tube_at(cc_kernel *k, cc_term comp, uint32_t position, cc_term *term, cc_clause *clause, bool last) {
-    uint32_t index = 0;
-    for (cc_term cursor = k->nodes[comp].child[tube_slot(k, comp)]; cursor; cursor = k->nodes[cursor].child[1], ++index) {
-        if (last ? k->nodes[cursor].child[1] != 0 : index != position)
-            continue;
-        const cc_formula *face = cc_kernel_get_formula(k, k->nodes[cursor].payload);
-        if (!face || face->length != 1)
-            return ck_fail(k, "That tube's face is not one clause.");
-        *term = k->nodes[cursor].child[0];
-        *clause = face->clauses[0];
-        return true;
-    }
-    return ck_fail(k, "The system has no tube at that position.");
-}
-
-static cc_judgement_id system_fact(cc_kernel *k, cc_term comp, cc_term type, uint32_t context, uint64_t pending) {
-    cc_judgement_id id = publish(k, CC_FACT_SYSTEM, comp, 0, type, context);
-    if (id)
-        k->facts[id].pending = pending;
-    return id;
-}
-
-cc_judgement_id cc_instr_system_tube(cc_kernel *k, cc_judgement_id system_id, cc_formula_id face,
-                                     cc_judgement_id tube_id, cc_judgement_id adjacency_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_SYSTEM_TUBE, .premise = {system_id, tube_id, adjacency_id},
-                                  .operand = {face}}, NULL, 0, &found))
-        return found;
-    cc_fact s = {0}, u = {0}, e = {0};
-    uint32_t dims = 0, context = 0;
-    if (!premise(k, system_id, CC_FACT_SYSTEM, &s) || !premise(k, tube_id, CC_FACT_TYPING, &u))
-        return 0;
-    if (s.pending)
-        return ck_fail(k, "The last tube must first be shown to agree with the tubes it overlaps."), 0;
-    cc_node comp = k->nodes[s.term];
-    if (comp.kind != CC_COMP)
-        return ck_fail(k, "Not a composition system."), 0;
-    unsigned dim = comp.payload;
-    const cc_formula *phi = cc_kernel_get_formula(k, face);
-    if (!phi || phi->sort != CC_FACE || phi->length > 1)
-        return ck_fail(k, "A tube's face is one conjunction of endpoint equations, or 0."), 0;
-    if (!phi->length) {
-        /* On the face 0 nothing is required of the tube: it is never used. */
-        if (adjacency_id)
-            return ck_fail(k, "A tube on the face 0 takes no equality."), 0;
-        cc_term tubes = merge(k, s.context, u.context, &context) ? append_tube(k, comp.child[1], face, u.term) : 0;
-        cc_term extended = tubes ? make(k, CC_COMP, dim, comp.child[0], tubes, comp.child[2], 0) : 0;
-        return extended ? system_fact(k, extended, s.type, context, 0) : 0;
-    }
-    if (!premise(k, adjacency_id, CC_FACT_EQUALITY, &e))
-        return 0;
-    cc_clause clause = phi->clauses[0];
-    uint64_t names = clause.positive | clause.negative;
-    if (clause.positive & clause.negative)
-        return ck_fail(k, "A tube's face must be consistent."), 0;
-    if (names & (UINT64_C(1) << dim))
-        return ck_fail(k, "A tube's face may not use the composition's dimension."), 0;
-    if (ck_free_dims(k, u.term) & names)
-        return ck_fail(k, "A tube must already be restricted to its face."), 0;
-    /* Every earlier tube whose face meets this one's must agree with it on
-     * the overlap: SystemOverlap, once for each. */
-    uint64_t pending = 0;
-    uint32_t index = 0;
-    for (cc_term cursor = comp.child[1]; cursor; cursor = k->nodes[cursor].child[1], ++index) {
-        const cc_formula *other_face = cc_kernel_get_formula(k, k->nodes[cursor].payload);
-        if (!other_face->length)
-            continue;
-        cc_clause other = other_face->clauses[0];
-        if ((clause.positive | other.positive) & (clause.negative | other.negative))
-            continue;
-        if (index >= 64)
-            return ck_fail(k, "A tube may overlap only the first 64 tubes of a system."), 0;
-        pending |= UINT64_C(1) << index;
-    }
-    if (!same(k, u.type, ck_restrict(k, comp.child[0], clause), "The tube is not in the family on its face.") ||
-        !same(k, e.term, ck_endpoint_term(k, u.term, dim, 0), "The equality does not start at the tube at 0.") ||
-        !same(k, e.other, ck_restrict(k, comp.child[2], clause), "The equality does not end at the base on the face.") ||
-        !formula_context(k, phi, &dims) || !merge(k, s.context, u.context, &context) ||
-        !merge3(k, context, e.context, dims, &context))
-        return 0;
-    cc_term tubes = append_tube(k, comp.child[1], face, u.term);
-    cc_term extended = tubes ? make(k, CC_COMP, dim, comp.child[0], tubes, comp.child[2], 0) : 0;
-    return extended ? system_fact(k, extended, s.type, context, pending) : 0;
-}
-
-/* The last tube u and the tube v at a position agree where their faces meet:
- * an equality u ≡ v, both restricted to the overlap. */
-cc_judgement_id cc_instr_system_overlap(cc_kernel *k, cc_judgement_id system_id, uint32_t position,
-                                        cc_judgement_id agreement_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_SYSTEM_OVERLAP, .premise = {system_id, agreement_id},
-                                  .operand = {position}}, NULL, 0, &found))
-        return found;
-    cc_fact s = {0}, e = {0};
-    uint32_t context = 0;
-    if (!premise(k, system_id, CC_FACT_SYSTEM, &s) || !premise(k, agreement_id, CC_FACT_EQUALITY, &e))
-        return 0;
-    if (!tube_slot(k, s.term))
-        return ck_fail(k, "Not a system of tubes."), 0;
-    if (position >= 64 || !(s.pending & (UINT64_C(1) << position)))
-        return ck_fail(k, "The last tube does not overlap that tube, or already agrees with it."), 0;
-    cc_term last = 0, other = 0;
-    cc_clause mine = {0}, theirs = {0};
-    if (!tube_at(k, s.term, 0, &last, &mine, true) || !tube_at(k, s.term, position, &other, &theirs, false))
-        return 0;
-    cc_clause overlap = {mine.positive | theirs.positive, mine.negative | theirs.negative};
-    if (!same(k, e.term, ck_restrict(k, last, overlap), "The equality does not start at the last tube on the overlap.") ||
-        !same(k, e.other, ck_restrict(k, other, overlap), "The equality does not end at the other tube on the overlap.") ||
-        !merge(k, s.context, e.context, &context))
-        return 0;
-    return system_fact(k, s.term, s.type, context, s.pending & ~(UINT64_C(1) << position));
-}
-
-cc_judgement_id cc_instr_comp(cc_kernel *k, cc_judgement_id system_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_COMP, .premise = {system_id}}, NULL, 0, &found))
-        return found;
-    cc_fact s = {0};
-    uint32_t context = 0;
-    if (!premise(k, system_id, CC_FACT_SYSTEM, &s))
-        return 0;
-    if (s.pending)
-        return ck_fail(k, "The last tube must first be shown to agree with the tubes it overlaps."), 0;
-    if (k->nodes[s.term].kind != CC_COMP)
-        return ck_fail(k, "Not a composition system."), 0;
-    cc_entry_id dimension = dimension_entry(k, k->nodes[s.term].payload);
-    if (!dimension || !discharge(k, s.context, &dimension, 1, &context))
-        return 0;
-    return typing(k, s.term, s.type, context);
-}
-
-/* Formal composition and transport are for declared higher sorts (H1 family
- * F4); a declared data sort has neither, and composes and transports by Comp
- * (Q1, 3.3). */
-static bool formal_family(cc_kernel *k, cc_term family, const char *refusal) {
-    cc_term head = ck_whnf(k, family);
-    if (!head)
-        return false;
-    if (k->nodes[head].kind == CC_SORT) {
-        const cc_signature *s = ck_instance_signature(k, head);
-        if (!s || ck_signature_higher(s))
-            return s != NULL;
-        return ck_fail(k, "A declared data sort has no formal composition or transport: compose it with Comp, "
-                          "whose tube φ ↦ u_0 transports (Q1).");
-    }
-    return k->error[0] ? false : ck_fail(k, refusal);
-}
-
-cc_judgement_id cc_instr_hcomp(cc_kernel *k, cc_judgement_id system_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_HCOMP, .premise = {system_id}}, NULL, 0, &found))
-        return found;
-    cc_fact s = {0};
-    uint32_t context = 0;
-    if (!premise(k, system_id, CC_FACT_SYSTEM, &s))
-        return 0;
-    if (s.pending)
-        return ck_fail(k, "The last tube must first be shown to agree with the tubes it overlaps."), 0;
-    if (k->nodes[s.term].kind != CC_COMP)
-        return ck_fail(k, "Not a composition system."), 0;
-    cc_node comp = k->nodes[s.term];
-    if (ck_free_dims(k, comp.child[0]) & (UINT64_C(1) << comp.payload))
-        return ck_fail(k, "A homogeneous composition's type may not use its dimension."), 0;
-    if (!formal_family(k, comp.child[0], "Homogeneous composition is for declared higher sorts."))
-        return 0;
-    cc_entry_id dimension = dimension_entry(k, comp.payload);
-    if (!dimension || !discharge(k, s.context, &dimension, 1, &context))
-        return 0;
-    return typing(k, make(k, CC_HCOMP, comp.payload, comp.child[0], comp.child[1], comp.child[2], 0), s.type, context);
-}
-
-cc_judgement_id cc_instr_trans(cc_kernel *k, cc_judgement_id system_id, cc_formula_id face) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_TRANS, .premise = {system_id}, .operand = {face}}, NULL, 0, &found))
-        return found;
-    cc_fact s = {0};
-    uint32_t context = 0, dims = 0;
-    if (!premise(k, system_id, CC_FACT_SYSTEM, &s))
-        return 0;
-    if (s.pending)
-        return ck_fail(k, "The last tube must first be shown to agree with the tubes it overlaps."), 0;
-    if (k->nodes[s.term].kind != CC_COMP)
-        return ck_fail(k, "Not a composition system."), 0;
-    const cc_formula *phi = cc_kernel_get_formula(k, face);
-    if (!phi || phi->sort != CC_FACE)
-        return ck_fail(k, "A transport's face is a face formula."), 0;
-    cc_node comp = k->nodes[s.term];
-    size_t clause = 0;
-    for (cc_term cursor = comp.child[1]; cursor; cursor = k->nodes[cursor].child[1], ++clause) {
-        const cc_formula *own = cc_kernel_get_formula(k, k->nodes[cursor].payload);
-        if (clause >= phi->length || own->length != 1 || own->clauses[0].positive != phi->clauses[clause].positive ||
-            own->clauses[0].negative != phi->clauses[clause].negative)
-            return ck_fail(k, "A transport's tubes are its face's clauses, in order."), 0;
-        if (!same(k, k->nodes[cursor].child[0], ck_restrict(k, comp.child[2], phi->clauses[clause]),
-                  "A transport's tube is its base on the face."))
-            return 0;
-    }
-    if (clause != phi->length)
-        return ck_fail(k, "A transport's tubes are its face's clauses, in order."), 0;
-    if (!formal_family(k, comp.child[0], "Transport is for families of declared higher sorts."))
-        return 0;
-    cc_entry_id dimension = dimension_entry(k, comp.payload);
-    if (!dimension || !formula_context(k, phi, &dims) || !discharge(k, s.context, &dimension, 1, &context) ||
-        !merge(k, context, dims, &context))
-        return 0;
-    cc_term tube = make(k, CC_TUBE, face, comp.child[2], 0, 0, 0);
-    return typing(k, make(k, CC_TRANS, comp.payload, comp.child[0], tube, comp.child[2], 0), s.type, context);
-}
-
-/* ---- Glue ---------------------------------------------------------------- */
-
-cc_term cc_kernel_equiv_type(cc_kernel *k, cc_term a, cc_term b) {
-    if (!k || !a || !b || a >= k->count || b >= k->count)
-        return 0;
-    ck_standalone(k);
-    return ck_equiv_type(k, a, b);
-}
-
-cc_judgement_id cc_instr_glue_base(cc_kernel *k, cc_judgement_id base_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_GLUE_BASE, .premise = {base_id}}, NULL, 0, &found))
-        return found;
-    cc_fact a = {0};
-    cc_term level = 0;
-    if (!premise(k, base_id, CC_FACT_TYPING, &a) || !universe(k, a.type, &level))
-        return 0;
-    cc_term glue = make(k, CC_GLUE, 0, a.term, 0, 0, 0);
-    return glue ? system_fact(k, glue, a.type, a.context, 0) : 0;
-}
-
-static cc_term append_piece(cc_kernel *k, cc_term pieces, cc_formula_id face, cc_term type, cc_term equivalence) {
-    if (!pieces)
-        return make(k, CC_GLUE_SYSTEM, face, type, equivalence, 0, 0);
-    cc_node n = k->nodes[pieces];
-    cc_term rest = append_piece(k, n.child[2], face, type, equivalence);
-    return rest ? make(k, CC_GLUE_SYSTEM, n.payload, n.child[0], n.child[1], rest, 0) : 0;
-}
-
-/* A system judgement whose term is of the given kind, with nothing pending. */
-static bool open_system(cc_kernel *k, cc_judgement_id id, cc_term_kind kind, cc_fact *s) {
-    if (!premise(k, id, CC_FACT_SYSTEM, s))
-        return false;
-    if (k->nodes[s->term].kind != kind)
-        return ck_fail(k, kind == CC_GLUE ? "Not a Glue type under construction." : "Not a Glue term under construction.");
-    if (s->pending)
-        return ck_fail(k, "The last piece must first be shown to agree with the pieces it overlaps.");
-    return true;
-}
-
-/* The positions of earlier pieces or tubes, chained through `next`, whose
- * one-clause faces meet a clause. */
-static bool overlapping(cc_kernel *k, cc_term cursor, unsigned next, cc_clause clause, uint64_t *out) {
-    *out = 0;
-    for (uint32_t index = 0; cursor; cursor = k->nodes[cursor].child[next], ++index) {
-        const cc_formula *face = cc_kernel_get_formula(k, k->nodes[cursor].payload);
-        if (!face->length)
-            continue;
-        cc_clause other = face->clauses[0];
-        if ((clause.positive | other.positive) & (clause.negative | other.negative))
-            continue;
-        if (index >= 64)
-            return ck_fail(k, "A piece may overlap only the first 64 pieces.");
-        *out |= UINT64_C(1) << index;
-    }
-    return true;
-}
-
-cc_judgement_id cc_instr_glue_piece(cc_kernel *k, cc_judgement_id system_id, cc_formula_id face,
-                                    cc_judgement_id type_id, cc_judgement_id equivalence_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_GLUE_PIECE, .premise = {system_id, type_id, equivalence_id},
-                                  .operand = {face}}, NULL, 0, &found))
-        return found;
-    cc_fact s = {0}, t = {0}, e = {0};
-    cc_term level = 0, own = 0;
-    uint32_t dims = 0, context = 0;
-    if (!open_system(k, system_id, CC_GLUE, &s) || !premise(k, type_id, CC_FACT_TYPING, &t) ||
-        !premise(k, equivalence_id, CC_FACT_TYPING, &e) || !universe(k, s.type, &level) || !universe(k, t.type, &own))
-        return 0;
-    const cc_formula *phi = cc_kernel_get_formula(k, face);
-    if (!phi || phi->sort != CC_FACE || phi->length > 1)
-        return ck_fail(k, "A Glue piece's face is one conjunction of endpoint equations, or 0."), 0;
-    cc_node glue = k->nodes[s.term];
-    uint64_t pending = 0;
-    if (phi->length) {
-        cc_clause clause = phi->clauses[0];
-        uint64_t names = clause.positive | clause.negative;
-        if (clause.positive & clause.negative)
-            return ck_fail(k, "A Glue piece's face must be consistent."), 0;
-        if ((ck_free_dims(k, t.term) | ck_free_dims(k, e.term)) & names)
-            return ck_fail(k, "A Glue piece must already be restricted to its face."), 0;
-        if (!same(k, e.type, ck_equiv_type(k, t.term, ck_restrict(k, glue.child[0], clause)),
-                  "The equivalence is not from the piece's type to the base on the face.") ||
-            !overlapping(k, glue.child[1], 2, clause, &pending) || !formula_context(k, phi, &dims))
-            return 0;
-    }
-    if (!merge(k, s.context, t.context, &context) || !merge3(k, context, e.context, dims, &context))
-        return 0;
-    cc_term pieces = append_piece(k, glue.child[1], face, t.term, e.term);
-    cc_term extended = pieces ? make(k, CC_GLUE, 0, glue.child[0], pieces, 0, 0) : 0;
-    cc_term sort = ck_universe(k, ck_level_max(k, own, level));
-    return extended && sort ? system_fact(k, extended, sort, context, pending) : 0;
-}
-
-/* The last piece of a Glue type under construction, and the piece at a position. */
-static bool piece_at(cc_kernel *k, cc_term glue, uint32_t position, bool last, cc_node *piece, cc_clause *clause) {
-    uint32_t index = 0;
-    for (cc_term cursor = k->nodes[glue].child[1]; cursor; cursor = k->nodes[cursor].child[2], ++index) {
-        if (last ? k->nodes[cursor].child[2] != 0 : index != position)
-            continue;
-        *piece = k->nodes[cursor];
-        const cc_formula *face = cc_kernel_get_formula(k, piece->payload);
-        if (!face || face->length != 1)
-            return ck_fail(k, "That piece's face is not one clause.");
-        *clause = face->clauses[0];
-        return true;
-    }
-    return ck_fail(k, "The Glue type has no piece at that position.");
-}
-
-cc_judgement_id cc_instr_glue_overlap(cc_kernel *k, cc_judgement_id system_id, uint32_t position,
-                                      cc_judgement_id types_id, cc_judgement_id equivalences_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_GLUE_OVERLAP, .premise = {system_id, types_id, equivalences_id},
-                                  .operand = {position}}, NULL, 0, &found))
-        return found;
-    cc_fact s = {0}, t = {0}, e = {0};
-    uint32_t context = 0;
-    if (!premise(k, system_id, CC_FACT_SYSTEM, &s) || !premise(k, types_id, CC_FACT_EQUALITY, &t) ||
-        !premise(k, equivalences_id, CC_FACT_EQUALITY, &e))
-        return 0;
-    if (k->nodes[s.term].kind != CC_GLUE)
-        return ck_fail(k, "Not a Glue type under construction."), 0;
-    if (position >= 64 || !(s.pending & (UINT64_C(1) << position)))
-        return ck_fail(k, "The last piece does not overlap that piece, or already agrees with it."), 0;
-    cc_node mine = {0}, theirs = {0};
-    cc_clause a = {0}, b = {0};
-    if (!piece_at(k, s.term, 0, true, &mine, &a) || !piece_at(k, s.term, position, false, &theirs, &b))
-        return 0;
-    cc_clause overlap = {a.positive | b.positive, a.negative | b.negative};
-    if (!same(k, t.term, ck_restrict(k, mine.child[0], overlap), "The types' equality does not start at the last piece.") ||
-        !same(k, t.other, ck_restrict(k, theirs.child[0], overlap), "The types' equality does not end at the other piece.") ||
-        !same(k, e.term, ck_restrict(k, mine.child[1], overlap), "The equivalences' equality does not start at the last piece.") ||
-        !same(k, e.other, ck_restrict(k, theirs.child[1], overlap), "The equivalences' equality does not end at the other piece.") ||
-        !merge3(k, s.context, t.context, e.context, &context))
-        return 0;
-    return system_fact(k, s.term, s.type, context, s.pending & ~(UINT64_C(1) << position));
-}
-
-cc_judgement_id cc_instr_glue(cc_kernel *k, cc_judgement_id system_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_GLUE, .premise = {system_id}}, NULL, 0, &found))
-        return found;
-    cc_fact s = {0};
-    if (!open_system(k, system_id, CC_GLUE, &s))
-        return 0;
-    return typing(k, s.term, s.type, s.context);
-}
-
-cc_judgement_id cc_instr_glue_term_base(cc_kernel *k, cc_judgement_id type_id, cc_judgement_id base_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_GLUE_TERM_BASE, .premise = {type_id, base_id}}, NULL, 0, &found))
-        return found;
-    cc_fact g = {0}, a = {0};
-    cc_term level = 0;
-    uint32_t context = 0;
-    if (!premise(k, type_id, CC_FACT_TYPING, &g) || !premise(k, base_id, CC_FACT_TYPING, &a) ||
-        !universe(k, g.type, &level))
-        return 0;
-    cc_node glue = k->nodes[g.term];
-    if (glue.kind != CC_GLUE)
-        return ck_fail(k, "A Glue term needs a Glue type."), 0;
-    if (!same(k, a.type, glue.child[0], "The base is not in the Glue type's base.") ||
-        !merge(k, g.context, a.context, &context))
-        return 0;
-    cc_term term = make(k, CC_GLUE_TERM, 0, g.term, a.term, 0, 0);
-    return term ? system_fact(k, term, g.term, context, 0) : 0;
-}
-
-cc_judgement_id cc_instr_glue_term_piece(cc_kernel *k, cc_judgement_id system_id, cc_judgement_id value_id,
-                                         cc_judgement_id image_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_GLUE_TERM_PIECE, .premise = {system_id, value_id, image_id}},
-               NULL, 0, &found))
-        return found;
-    cc_fact s = {0}, v = {0}, e = {0};
-    uint32_t dims = 0, context = 0;
-    if (!open_system(k, system_id, CC_GLUE_TERM, &s) || !premise(k, value_id, CC_FACT_TYPING, &v))
-        return 0;
-    cc_node term = k->nodes[s.term], glue = k->nodes[term.child[0]];
-    /* The piece of the type this value is for: the next one, in order. */
-    cc_term piece = glue.child[1];
-    for (cc_term cursor = term.child[2]; cursor && piece; cursor = k->nodes[cursor].child[1])
-        piece = k->nodes[piece].child[2];
-    if (!piece)
-        return ck_fail(k, "The Glue term has a value for every piece of its type."), 0;
-    cc_node part = k->nodes[piece];
-    const cc_formula *phi = cc_kernel_get_formula(k, part.payload);
-    uint64_t pending = 0;
-    if (phi->length) {
-        cc_clause clause = phi->clauses[0];
-        if (!premise(k, image_id, CC_FACT_EQUALITY, &e))
-            return 0;
-        if (ck_free_dims(k, v.term) & (clause.positive | clause.negative))
-            return ck_fail(k, "A Glue term's value must already be restricted to its face."), 0;
-        cc_term image = app(k, make(k, CC_FST, 0, part.child[1], 0, 0, 0), v.term);
-        if (!same(k, v.type, part.child[0], "The value is not in the piece's type.") ||
-            !same(k, e.term, image, "The equality does not start at the value's image.") ||
-            !same(k, e.other, ck_restrict(k, term.child[1], clause), "The equality does not end at the base on the face.") ||
-            !overlapping(k, term.child[2], 1, clause, &pending) || !formula_context(k, phi, &dims) ||
-            !merge(k, s.context, e.context, &context))
-            return 0;
-    } else {
-        if (image_id)
-            return ck_fail(k, "A value on the face 0 takes no equality."), 0;
-        context = s.context;
-    }
-    if (!merge3(k, context, v.context, dims, &context))
-        return 0;
-    cc_term tubes = append_tube(k, term.child[2], part.payload, v.term);
-    cc_term extended = tubes ? make(k, CC_GLUE_TERM, 0, term.child[0], term.child[1], tubes, 0) : 0;
-    return extended ? system_fact(k, extended, s.type, context, pending) : 0;
-}
-
-cc_judgement_id cc_instr_glue_term(cc_kernel *k, cc_judgement_id system_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_GLUE_TERM, .premise = {system_id}}, NULL, 0, &found))
-        return found;
-    cc_fact s = {0};
-    if (!open_system(k, system_id, CC_GLUE_TERM, &s))
-        return 0;
-    cc_node term = k->nodes[s.term];
-    cc_term piece = k->nodes[term.child[0]].child[1], tube = term.child[2];
-    for (; piece && tube; piece = k->nodes[piece].child[2], tube = k->nodes[tube].child[1]) {}
-    if (piece || tube)
-        return ck_fail(k, "The Glue term has a value for every piece of its type."), 0;
-    return typing(k, s.term, s.type, s.context);
-}
-
-cc_judgement_id cc_instr_unglue(cc_kernel *k, cc_judgement_id value_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_UNGLUE, .premise = {value_id}}, NULL, 0, &found))
-        return found;
-    cc_fact v = {0};
-    if (!premise(k, value_id, CC_FACT_TYPING, &v))
-        return 0;
-    cc_node glue = k->nodes[v.type];
-    if (glue.kind != CC_GLUE)
-        return ck_fail(k, "Only an element of a Glue type is unglued."), 0;
-    return typing(k, make(k, CC_UNGLUE, 0, v.type, v.term, 0, 0), glue.child[0], v.context);
+    return ck_instr_typing(k, ck_substitute(k, former.child[1], former.payload, a.term), t.type, context);
 }
 
 /* ---- Definitions -------------------------------------------------------- */
 
 cc_judgement_id cc_instr_define(cc_kernel *k, uint32_t symbol, cc_judgement_id closed) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_DEFINE, .premise = {closed}, .operand = {symbol}}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_DEFINE, .premise = {closed}, .operand = {symbol}}, NULL, 0, &found))
         return found;
     cc_fact d = {0};
-    if (!premise(k, closed, CC_FACT_TYPING, &d))
+    if (!ck_instr_premise(k, closed, CC_FACT_TYPING, &d))
         return 0;
     if (d.context)
         return ck_fail(k, "Only a closed judgement can be defined."), 0;
@@ -1453,475 +853,22 @@ cc_judgement_id cc_instr_define(cc_kernel *k, uint32_t symbol, cc_judgement_id c
         return 0;
     k->definitions = definitions;
     uint32_t index = (uint32_t)k->definition_count;
-    cc_term reference = make(k, CC_DEFREF, index, 0, 0, 0, 0);
+    cc_term reference = ck_instr_make(k, CC_DEFREF, index, 0, 0, 0, 0);
     if (!reference)
         return 0;
-    k->definitions[index] = (cc_definition){symbol, d.term, d.type, true};
+    k->definitions[index] = (cc_definition){symbol, d.term, d.type};
     ++k->definition_count;
-    return typing(k, reference, d.type, 0);
+    return ck_instr_typing(k, reference, d.type, 0);
 }
 
 cc_judgement_id cc_instr_lookup(cc_kernel *k, cc_term reference) {
     cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_LOOKUP, .operand = {reference}}, NULL, 0, &found))
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_LOOKUP, .operand = {reference}}, NULL, 0, &found))
         return found;
     if (!reference || reference >= k->count || k->nodes[reference].kind != CC_DEFREF ||
         !k->nodes[reference].payload || k->nodes[reference].payload >= k->definition_count)
         return ck_fail(k, "Unknown checked definition reference."), 0;
-    /* Only what the instructions admitted: the term checker is not trusted. */
-    if (!k->definitions[k->nodes[reference].payload].admitted)
-        return ck_fail(k, "Only a definition admitted by Define can be looked up."), 0;
-    return typing(k, reference, k->definitions[k->nodes[reference].payload].type, 0);
-}
-
-/* ---- Equality ----------------------------------------------------------- */
-
-cc_judgement_id cc_instr_refl(cc_kernel *k, cc_judgement_id typing_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_REFL, .premise = {typing_id}}, NULL, 0, &found))
-        return found;
-    cc_fact t = {0};
-    if (!premise(k, typing_id, CC_FACT_TYPING, &t))
-        return 0;
-    return publish(k, CC_FACT_EQUALITY, t.term, t.term, t.type, t.context);
-}
-
-/* Both sides of an equality have its type. */
-cc_judgement_id cc_instr_side(cc_kernel *k, cc_judgement_id equality, unsigned side) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_SIDE, .premise = {equality}, .operand = {side}}, NULL, 0, &found))
-        return found;
-    cc_fact e = {0};
-    if (!premise(k, equality, CC_FACT_EQUALITY, &e))
-        return 0;
-    if (side > 1)
-        return ck_fail(k, "An equality has sides 0 and 1."), 0;
-    return typing(k, side ? e.other : e.term, e.type, e.context);
-}
-
-cc_judgement_id cc_instr_symmetry(cc_kernel *k, cc_judgement_id equality) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_SYMMETRY, .premise = {equality}}, NULL, 0, &found))
-        return found;
-    cc_fact e = {0};
-    if (!premise(k, equality, CC_FACT_EQUALITY, &e))
-        return 0;
-    return publish(k, CC_FACT_EQUALITY, e.other, e.term, e.type, e.context);
-}
-
-cc_judgement_id cc_instr_transitivity(cc_kernel *k, cc_judgement_id first, cc_judgement_id second) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_TRANSITIVITY, .premise = {first, second}}, NULL, 0, &found))
-        return found;
-    cc_fact a = {0}, b = {0};
-    uint32_t context = 0;
-    if (!premise(k, first, CC_FACT_EQUALITY, &a) || !premise(k, second, CC_FACT_EQUALITY, &b) ||
-        !same(k, b.term, a.other, "The equalities do not meet.") ||
-        !same(k, b.type, a.type, "The equalities are at different types.") ||
-        !merge(k, a.context, b.context, &context))
-        return 0;
-    return publish(k, CC_FACT_EQUALITY, a.term, b.other, a.type, context);
-}
-
-cc_judgement_id cc_instr_convert(cc_kernel *k, cc_judgement_id typing_id, cc_judgement_id equality) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_CONVERT, .premise = {typing_id, equality}}, NULL, 0, &found))
-        return found;
-    cc_fact t = {0}, e = {0};
-    cc_term level = 0;
-    uint32_t context = 0;
-    if (!premise(k, typing_id, CC_FACT_TYPING, &t) || !premise(k, equality, CC_FACT_EQUALITY, &e) ||
-        !universe(k, e.type, &level) || !same(k, t.type, e.term, "The equality does not start at the judgement's type.") ||
-        !merge(k, t.context, e.context, &context))
-        return 0;
-    return typing(k, t.term, e.other, context);
-}
-
-cc_judgement_id cc_instr_lift(cc_kernel *k, cc_judgement_id typing_id, cc_judgement_id type_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_LIFT, .premise = {typing_id, type_id}}, NULL, 0, &found))
-        return found;
-    cc_fact t = {0}, b = {0};
-    cc_term level = 0;
-    uint32_t context = 0;
-    if (!premise(k, typing_id, CC_FACT_TYPING, &t) || !premise(k, type_id, CC_FACT_TYPING, &b) ||
-        !universe(k, b.type, &level))
-        return 0;
-    if (!ck_syntactic_cumulative(k, t.type, b.term)) {
-        if (k->error[0])
-            return 0;
-        k->mismatch_found = t.type;
-        k->mismatch_expected = b.term;
-        return ck_fail_as(k, CC_ERROR_MISMATCH, "The type is not included in the target type."), 0;
-    }
-    if (!merge(k, t.context, b.context, &context))
-        return 0;
-    return typing(k, t.term, b.term, context);
-}
-
-/* The pieces of a Glue eta expansion: the term itself on each face of the
- * Glue type's system, in its order. On its face the term has the face's
- * type, as the Glue type is that type there. */
-static cc_term eta_pieces(cc_kernel *k, cc_term system, cc_term term) {
-    if (!system || k->error[0])
-        return 0;
-    cc_node piece = k->nodes[system];
-    cc_term rest = eta_pieces(k, piece.child[2], term);
-    return k->error[0] ? 0 : make(k, CC_TUBE, piece.payload, term, rest, 0, 0);
-}
-
-cc_judgement_id cc_instr_eta(cc_kernel *k, cc_judgement_id typing_id) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_ETA, .premise = {typing_id}}, NULL, 0, &found))
-        return found;
-    cc_fact t = {0};
-    if (!premise(k, typing_id, CC_FACT_TYPING, &t))
-        return 0;
-    cc_node type = k->nodes[t.type];
-    cc_term expanded = 0;
-    if (type.kind == CC_PI) {
-        uint32_t name = ck_fresh_symbol(k);
-        expanded = make(k, CC_LAM, name, type.child[0], app(k, t.term, ck_var(k, name)), 0, 0);
-    } else if (type.kind == CC_LPI) {
-        uint32_t name = ck_fresh_symbol(k);
-        expanded = make(k, CC_LLAM, name, type.child[0], make(k, CC_LAPP, 0, t.term, ck_var(k, name), 0, 0), 0, 0);
-    } else if (type.kind == CC_SIGMA) {
-        expanded = make(k, CC_PAIR, 0, t.type, make(k, CC_FST, 0, t.term, 0, 0, 0), make(k, CC_SND, 0, t.term, 0, 0, 0), 0);
-    } else if (type.kind == CC_PATH) {
-        unsigned fresh = ck_fresh_dimension(k, ck_free_dims(k, t.term) | ck_free_dims(k, t.type));
-        if (fresh >= CC_DIMENSIONS)
-            return 0;
-        cc_formula point;
-        cc_init(&point, CC_INTERVAL);
-        cc_formula_id argument = cc_generator(&point, fresh, true) == CC_OK ? ck_formula(k, &point) : 0;
-        cc_term family = argument ? ck_dimension_substitute(k, type.child[0], type.payload, &point) : 0;
-        cc_clear(&point);
-        if (!family)
-            return ck_fail(k, "Interval allocation failed."), 0;
-        expanded = make(k, CC_PLAM, fresh, family, make(k, CC_PAPP, argument, t.term, t.type, 0, 0), 0, 0);
-    } else if (type.kind == CC_GLUE) {
-        cc_term pieces = eta_pieces(k, type.child[1], t.term);
-        if (k->error[0])
-            return 0;
-        expanded = make(k, CC_GLUE_TERM, 0, t.type, make(k, CC_UNGLUE, 0, t.type, t.term, 0, 0), pieces, 0);
-    } else {
-        return ck_fail(k, "Eta needs a term of a Π, level Π, Σ, path or Glue type."), 0;
-    }
-    return publish(k, CC_FACT_EQUALITY, t.term, expanded, t.type, t.context);
-}
-
-/* ---- Positions ---------------------------------------------------------- */
-
-/* A node on the way down to a highlighted subterm, and the child taken. */
-typedef struct {
-    cc_node node;
-    unsigned child;
-} crossing;
-
-/* Whether a child is under the node's binder: 1 for a term binder, 2 for a
- * dimension binder, 3 for a composition's tubes, where only terms are bound. */
-static unsigned bound_under(cc_term_kind kind, unsigned child) {
-    if (ck_term_binder(kind)) return child == 1 ? 1 : 0;
-    if (kind == CC_PLAM) return 2;
-    if (kind == CC_PATH || kind == CC_TRANS) return child == 0 ? 2 : 0;
-    if (kind == CC_COMP) return child == 0 ? 2 : child == 1 ? 3 : 0;
-    if (kind == CC_HCOMP) return child == 1 ? 3 : 0;
-    return 0;
-}
-
-static cc_term locate(cc_kernel *k, cc_term term, const uint8_t *position, size_t depth, crossing *crossed) {
-    if (depth && !position)
-        return ck_fail(k, "Missing position."), 0;
-    for (size_t i = 0; i < depth; ++i) {
-        cc_node n = k->nodes[term];
-        unsigned child = position[i];
-        if (child >= ck_arity(n.kind) || !n.child[child])
-            return ck_fail(k, "The position leaves the term."), 0;
-        if (crossed)
-            crossed[i] = (crossing){n, child};
-        term = n.child[child];
-    }
-    return term;
-}
-
-static cc_term rebuild(cc_kernel *k, cc_term term, const uint8_t *position, size_t depth, cc_term replacement) {
-    if (!depth || !replacement)
-        return replacement;
-    if (++k->recursion > 1024)
-        return ck_fail(k, "Position depth exceeded."), 0;
-    cc_node n = k->nodes[term];
-    n.child[position[0]] = rebuild(k, n.child[position[0]], position + 1, depth - 1, replacement);
-    --k->recursion;
-    if (!n.child[position[0]])
-        return 0;
-    return make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], n.child[3]);
-}
-
-static bool interval_constant(const cc_formula *f, unsigned *endpoint) {
-    if (!f->length) { *endpoint = 0; return true; }
-    if (f->length == 1 && !f->clauses[0].positive && !f->clauses[0].negative) { *endpoint = 1; return true; }
-    return false;
-}
-
-/* One contraction at the highlighted node, or zero with an error. */
-static cc_term contract(cc_kernel *k, cc_term term, cc_step_rule rule) {
-    cc_node n = k->nodes[term];
-    switch (rule) {
-    case CC_STEP_BETA:
-        if (n.kind == CC_APP && k->nodes[n.child[0]].kind == CC_LAM) {
-            cc_node lambda = k->nodes[n.child[0]];
-            return ck_substitute(k, lambda.child[1], lambda.payload, n.child[1]);
-        }
-        if (n.kind == CC_LAPP && k->nodes[n.child[0]].kind == CC_LLAM) {
-            cc_node lambda = k->nodes[n.child[0]];
-            return ck_level_instantiate(k, lambda.child[1], lambda.payload, n.child[1]);
-        }
-        return ck_fail(k, "Beta needs a lambda applied to an argument, or a level lambda to a level."), 0;
-    case CC_STEP_DELTA:
-        if (n.kind == CC_DEFREF && n.payload && n.payload < k->definition_count)
-            return k->definitions[n.payload].value;
-        return ck_fail(k, "Delta needs a definition."), 0;
-    case CC_STEP_IOTA: {
-        cc_node head;
-        switch (n.kind) {
-        case CC_SUMREC:
-            head = k->nodes[n.child[3]];
-            if (head.kind == CC_INL || head.kind == CC_INR)
-                return app(k, n.child[head.kind == CC_INL ? 1 : 2], head.child[1]);
-            break;
-        case CC_UNITREC:
-            if (k->nodes[n.child[2]].kind == CC_POINT)
-                return n.child[1];
-            break;
-        case CC_FST: case CC_SND:
-            head = k->nodes[n.child[0]];
-            if (head.kind == CC_PAIR)
-                return head.child[n.kind == CC_FST ? 1 : 2];
-            break;
-        case CC_APP: {
-            /* A declared type's eliminator on a constructor, at dimensions
-             * or not (3.7). */
-            if (k->nodes[n.child[0]].kind == CC_ELIM) {
-                bool reduced = false;
-                cc_term result = ck_eliminate(k, n.child[0], n.child[1], false, &reduced);
-                if (reduced || !result)
-                    return result;
-            }
-            break;
-        }
-        default:
-            break;
-        }
-        return ck_fail(k, "Iota needs an eliminator or projection applied to a constructor."), 0;
-    }
-    case CC_STEP_PATH: {
-        const cc_formula *argument = n.kind == CC_PAPP ? cc_kernel_get_formula(k, n.payload) : NULL;
-        if (!argument)
-            return ck_fail(k, "A path step needs a path application."), 0;
-        cc_node path = k->nodes[n.child[0]];
-        if (path.kind == CC_PLAM) {
-            cc_formula point;
-            cc_init(&point, CC_INTERVAL);
-            if (cc_copy(&point, argument) != CC_OK)
-                return ck_fail(k, "Interval copy failed."), 0;
-            cc_term result = ck_dimension_substitute(k, path.child[1], path.payload, &point);
-            cc_clear(&point);
-            return result;
-        }
-        unsigned endpoint;
-        cc_node type = n.child[1] ? k->nodes[n.child[1]] : (cc_node){0};
-        if (type.kind == CC_PATH && interval_constant(argument, &endpoint))
-            return type.child[endpoint ? 2 : 1];
-        return ck_fail(k, "A path step needs a path lambda, or an endpoint of the annotated type."), 0;
-    }
-    case CC_STEP_NORMALIZE:
-        return ck_normal(k, term);
-    case CC_STEP_WHNF:
-        return ck_whnf(k, term);
-    case CC_STEP_FACE:
-        /* comp^i A [1 ↦ u, …] a0 is u(1), and so is hcomp: the first rule of
-         * the term checker's composition reduction, alone. */
-        if (n.kind == CC_COMP || n.kind == CC_HCOMP) {
-            for (cc_term cursor = n.child[1]; cursor; cursor = k->nodes[cursor].child[1]) {
-                cc_node tube = k->nodes[cursor];
-                const cc_formula *face = cc_kernel_get_formula(k, tube.payload);
-                if (face && face->sort == CC_FACE && face->length == 1 && !face->clauses[0].positive &&
-                    !face->clauses[0].negative)
-                    return ck_endpoint_term(k, tube.child[0], n.payload, 1);
-            }
-        }
-        if (n.kind == CC_TRANS && n.child[1]) {
-            const cc_formula *face = cc_kernel_get_formula(k, k->nodes[n.child[1]].payload);
-            if (face && face->length == 1 && !face->clauses[0].positive && !face->clauses[0].negative)
-                return n.child[2];
-        }
-        return ck_fail(k, "A face step needs a composition with a tube on a face that holds."), 0;
-    case CC_STEP_GLUE: {
-        /* Glue eta where a piece is the base's restriction only after
-         * reduction, which Whnf leaves: the side conditions normalized, and
-         * nothing else (term_normalize.c). */
-        cc_term base = n.kind == CC_GLUE_TERM ? ck_glue_step(k, term) : term;
-        if (!base || base != term)
-            return base;
-        return ck_fail(k, "A Glue step needs glue [φ ↦ t] (unglue b) whose two Glue types agree, and whose t is b on φ, "
-                          "after normalization."), 0;
-    }
-    }
-    return ck_fail(k, "Unknown step rule."), 0;
-}
-
-/* The sides of a judgement: 0 its term, 1 the other side of an equality,
- * 2 its type. Rewriting any side by a definitional equality keeps the
- * judgement valid: a term by subject reduction, a type because a reduct
- * (or a convertible, well-typed replacement) of a type is a type. */
-static bool judgement(cc_kernel *k, cc_judgement_id id, unsigned side, cc_fact *out, cc_term *root) {
-    if (!id || id >= k->fact_count)
-        return ck_fail(k, "Unknown judgement.");
-    *out = k->facts[id];
-    if (out->kind == CC_FACT_SYSTEM)
-        return ck_fail(k, "A composition system is closed by Comp before it is rewritten.");
-    /* A declared type's judgements in progress carry state that only their
-     * own instructions advance: a rewritten copy would not. */
-    if (out->kind != CC_FACT_TYPING && out->kind != CC_FACT_EQUALITY)
-        return ck_fail(k, "An open signature or an instance in progress is continued by its own instructions, "
-                          "not rewritten.");
-    if (side > 2 || (side == 1 && out->kind != CC_FACT_EQUALITY))
-        return ck_fail(k, "A judgement has sides 0 (term), 2 (type), and 1 for an equality's other term.");
-    *root = side == 0 ? out->term : side == 1 ? out->other : out->type;
-    return true;
-}
-
-static cc_judgement_id republish(cc_kernel *k, cc_fact f, unsigned side, cc_term changed, uint32_t context) {
-    if (side == 0) f.term = changed;
-    else if (side == 1) f.other = changed;
-    else f.type = changed;
-    return publish(k, f.kind, f.term, f.other, f.type, context);
-}
-
-cc_judgement_id cc_instr_step(cc_kernel *k, cc_judgement_id id, unsigned side,
-                              const uint8_t *position, size_t depth, cc_step_rule rule) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_STEP, .premise = {id}, .operand = {side, rule}}, position, depth, &found))
-        return found;
-    cc_fact e = {0};
-    cc_term root = 0;
-    if (!judgement(k, id, side, &e, &root))
-        return 0;
-    cc_term target = locate(k, root, position, depth, NULL);
-    cc_term changed = target ? rebuild(k, root, position, depth, contract(k, target, rule)) : 0;
-    if (!changed)
-        return 0;
-    return republish(k, e, side, changed, e.context);
-}
-
-/* A term whose free names matter at a depth of the path: the two sides of
- * the replacing equality at the bottom, and the type of each discharged
- * entry at its binder, where it is that binder's domain. */
-typedef struct {
-    cc_term term;
-    size_t depth;
-} scoped_term;
-
-static bool shadowed(const crossing *crossed, size_t from, size_t to, unsigned kind, uint32_t name) {
-    for (size_t m = from + 1; m < to; ++m)
-        if (bound_under(crossed[m].node.kind, crossed[m].child) == kind && crossed[m].node.payload == name)
-            return true;
-    return false;
-}
-
-static bool needed(cc_kernel *k, const crossing *crossed, size_t at, const scoped_term *terms, size_t count) {
-    unsigned kind = bound_under(crossed[at].node.kind, crossed[at].child);
-    uint32_t name = crossed[at].node.payload;
-    for (size_t t = 0; t < count; ++t) {
-        if (terms[t].depth <= at || shadowed(crossed, at, terms[t].depth, kind == 3 ? 2 : kind, name))
-            continue;
-        bool free = kind == 1 ? ck_term_free(k, terms[t].term, name)
-                              : name < CC_DIMENSIONS && (ck_free_dims(k, terms[t].term) & (UINT64_C(1) << name));
-        if (free)
-            return true;
-    }
-    return false;
-}
-
-static cc_entry_id context_entry(const cc_kernel *k, uint32_t set, uint32_t symbol, bool dimension) {
-    cc_context_set s = k->context_sets[set];
-    for (uint32_t i = 0; i < s.count; ++i) {
-        cc_entry_id id = k->context_items[s.offset + i];
-        if (k->entries[id].dimension == dimension && k->entries[id].symbol == symbol)
-            return id;
-    }
-    return 0;
-}
-
-cc_judgement_id cc_instr_replace(cc_kernel *k, cc_judgement_id id, unsigned side,
-                                 const uint8_t *position, size_t depth, cc_judgement_id by) {
-    cc_judgement_id found;
-    if (!begin(k, (cc_derivation){.rule = CC_INSTR_REPLACE, .premise = {id, by}, .operand = {side}}, position, depth, &found))
-        return found;
-    cc_fact e = {0}, inner = {0};
-    cc_term root = 0;
-    if (!judgement(k, id, side, &e, &root) || !premise(k, by, CC_FACT_EQUALITY, &inner))
-        return 0;
-    crossing *crossed = depth ? malloc(depth * sizeof *crossed) : NULL;
-    scoped_term *terms = malloc((depth + 2) * sizeof *terms);
-    cc_entry_id *removed = depth ? malloc(depth * sizeof *removed) : NULL;
-    cc_judgement_id result = 0;
-    if ((depth && (!crossed || !removed)) || !terms) {
-        ck_fail(k, "Replacement allocation failed.");
-        goto done;
-    }
-    cc_term target = locate(k, root, position, depth, crossed);
-    if (!target || !same(k, target, inner.term, "The highlighted subterm is not the equality's left side."))
-        goto done;
-    /* A path application's annotation is the path type its endpoints are
-     * read from (boundary reduction included): it stays one. */
-    if (depth && crossed[depth - 1].node.kind == CC_PAPP && crossed[depth - 1].child == 1 &&
-        k->nodes[inner.other].kind != CC_PATH) {
-        ck_fail(k, "A path application's annotation is replaced only by a path type.");
-        goto done;
-    }
-    /* From the innermost binder out: a binder whose name the replacement
-     * uses must correspond to an entry of the replacing equality with the
-     * binder's type; that entry is discharged, and its type's names are in
-     * turn looked up further out. */
-    size_t count = 2, discharged = 0;
-    terms[0] = (scoped_term){inner.term, depth};
-    terms[1] = (scoped_term){inner.other, depth};
-    for (size_t at = depth; at-- > 0;) {
-        unsigned kind = bound_under(crossed[at].node.kind, crossed[at].child);
-        if (!kind || !needed(k, crossed, at, terms, count))
-            continue;
-        if (kind == 3) {
-            ck_fail(k, "Replacing a subterm that uses a composition's dimension is not supported.");
-            goto done;
-        }
-        cc_entry_id id = context_entry(k, inner.context, crossed[at].node.payload, kind == 2);
-        if (!id) {
-            ck_fail(k, "The replacing equality lacks an entry for a bound name it uses.");
-            goto done;
-        }
-        for (size_t r = 0; r < discharged; ++r)
-            if (removed[r] == id) {
-                ck_fail(k, "One entry would be bound twice on the path.");
-                goto done;
-            }
-        if (kind == 1) {
-            if (!same(k, k->entries[id].type, crossed[at].node.child[0], "The entry and the binder have different types."))
-                goto done;
-            terms[count++] = (scoped_term){k->entries[id].type, at};
-        }
-        removed[discharged++] = id;
-    }
-    uint32_t context = 0;
-    cc_term changed = rebuild(k, root, position, depth, inner.other);
-    if (!changed || !discharge(k, inner.context, removed, discharged, &context) || !merge(k, e.context, context, &context))
-        goto done;
-    result = republish(k, e, side, changed, context);
-done:
-    free(crossed);
-    free(terms);
-    free(removed);
-    return result;
+    return ck_instr_typing(k, reference, k->definitions[k->nodes[reference].payload].type, 0);
 }
 
 /* ---- Reading the store -------------------------------------------------- */
@@ -1932,9 +879,6 @@ size_t cc_kernel_judgement_count(const cc_kernel *k) {
 
 /* The machinery above, for instruction families in their own files. */
 bool ck_instr_ready(cc_kernel *k) { return ready(k); }
-bool ck_instr_begin(cc_kernel *k, cc_derivation how, const uint8_t *position, size_t depth, cc_judgement_id *found) {
-    return begin(k, how, position, depth, found);
-}
 bool ck_instr_begin_stateful(cc_kernel *k, cc_derivation how) {
     if (!ready(k))
         return false;
@@ -1942,14 +886,6 @@ bool ck_instr_begin_stateful(cc_kernel *k, cc_derivation how) {
     k->pending_position = NULL;
     return true;
 }
-cc_judgement_id ck_instr_publish(cc_kernel *k, uint32_t kind, cc_term term, cc_term other, cc_term type,
-                                 uint32_t context) {
-    return publish(k, kind, term, other, type, context);
-}
-bool ck_instr_premise(cc_kernel *k, cc_judgement_id id, uint32_t kind, cc_fact *out) {
-    return premise(k, id, kind, out);
-}
-bool ck_instr_merge(cc_kernel *k, uint32_t a, uint32_t b, uint32_t *out) { return merge(k, a, b, out); }
 /* A level in normal form, and its context: the level entries of its
  * variables. The finite form refuses tier 1 and above, as LevelApply does. */
 bool ck_instr_finite_level(cc_kernel *k, cc_term level, cc_term *canonical, uint32_t *context) {

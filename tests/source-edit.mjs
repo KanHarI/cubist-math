@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { tokenize } from "../web/mathscript/parser.mjs";
+import { tokenize } from "../web/cubist/parser.mjs";
 
 export const replaceAllSyntax = (source, needle, replacement) => replaceSyntax(source, needle, replacement, true);
 

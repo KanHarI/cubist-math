@@ -8,9 +8,9 @@ import { judgementGraph } from "./cubical-graph-view.mjs";
 // The rule (opcode) of THTH's forward engine that derives each kind of node.
 export const ththRules = {
   U: "UIntro", Var: "Vble", Pi: "PiForm", Lam: "PiIntro", App: "PiElim", Sigma: "SigmaForm", Pair: "SigmaIntro",
-  Fst: "SigmaElim", Snd: "SigmaElim", Nat: "NatForm", Zero: "NatIntroZ", Succ: "NatIntroS", NatRec: "NatElim",
+  Fst: "SigmaElim", Snd: "SigmaElim",
   Unit: "UnitForm", Point: "UnitIntro", UnitRec: "UnitElim", Void: "VoidForm", Abort: "VoidElim",
-  Sum: "SumForm", Inl: "SumIntroL", Inr: "SumIntroR", SumRec: "SumElim", W: "WForm", Sup: "WIntro", WRec: "WElim",
+  Sum: "SumForm", Inl: "SumIntroL", Inr: "SumIntroR", SumRec: "SumElim",
   Path: "PathForm", PLam: "PathIntro", PApp: "PathElim", DefRef: "DefLookup", Comp: "Comp", HComp: "HComp",
   Trans: "Transp", Glue: "GlueForm", GlueTerm: "GlueIntro", Unglue: "GlueElim",
 };

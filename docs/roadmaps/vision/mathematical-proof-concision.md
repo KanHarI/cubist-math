@@ -10,7 +10,7 @@ the implementation baseline is the one reviewed in the
 
 The eventual formal language should let mathematical code follow the
 thinking process and written argument of a mathematician as closely as
-possible. Its source should express the mathematical objects, choices,
+possible. Its source should express the mathematical objects, decisions,
 hypotheses and inferences at the level at which the argument is understood.
 The elaborator should construct the routine proof machinery connecting
 those steps.
@@ -34,7 +34,7 @@ induction motive, or constructing routine evidence that a proposition is a
 proposition.
 
 **Target:** each source step should communicate a meaningful mathematical
-move. The source should expose choices such as a common refinement or an
+move. The source should expose decisions such as a common refinement or an
 induction generalization while allowing their routine consequences to be
 constructed automatically and checked.
 
@@ -129,7 +129,7 @@ In
 [complex_refinement_cauchy.cubist](../../../archive/first-library/complex_refinement_cauchy.cubist),
 `complex_cauchy_from_refinements` at lines 84–119 argues as follows:
 
-1. Choose the refinement bound for half the tolerance.
+1. Pick the refinement bound for half the tolerance.
 2. Compare levels `m` and `n` through the common later level `m + n`.
 3. Reverse the second comparison and apply the triangle inequality.
 4. Simplify the sum of the two half tolerances.
@@ -168,7 +168,7 @@ selected checked lemmas.
 
 Authors must be able to name the variables generalized during induction
 and inspect the resulting hypothesis. Parameters determined by a selected
-structure or theorem application should not need to be repeated. Choices
+structure or theorem application should not need to be repeated. Decisions
 left underdetermined by that information should produce local obligations.
 
 Scoped witness elimination should use the h-level solver to establish its
@@ -274,7 +274,7 @@ formal proof. Begin with these cases:
 | Artin degree bound | Use an evaluation basis, derive spanning and the dimension bound; discharge propositionhood for witness elimination. |
 | Constant closed contour sum | A short calculation using the sum formula, closedness and cancellation. |
 | Integral additivity | Establish the required continuity, use finite-sum additivity and convergence, then uniqueness. |
-| Cauchy from refinements | Choose half the tolerance and the common refinement, then compose the two estimates and retain the bound. |
+| Cauchy from refinements | Take half the tolerance and the common refinement, then compose the two estimates and retain the bound. |
 
 For each case:
 
@@ -292,7 +292,7 @@ For each case:
    generated proof size and failures under fixed budgets. Investigate a
    shorter proof that becomes substantially more expensive or brittle.
 5. **Review the argument.** A reader should be able to identify the same
-   mathematical steps and chosen witnesses in both presentations.
+   mathematical steps and selected witnesses in both presentations.
 
 Set numerical targets after establishing comparable full-proof baselines.
 The verified 28-to-4-line example establishes a local improvement, not a

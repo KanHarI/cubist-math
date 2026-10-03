@@ -43,7 +43,7 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
-  const version = await page.request.get(new URL("mathscript-version", base).href);
+  const version = await page.request.get(new URL("cubist-version", base).href);
   assert.equal(version.status(), 200);
   assert.match((await version.json()).version, /^[a-f0-9]{64}$/);
   console.log("PASS static landing, repository link, mobile layout, build version");
@@ -126,7 +126,8 @@ try {
   // A read-only REPL transcript forks into the REPL bar, with the example
   // before it loaded, and can be continued there.
   await page.goto(new URL("reference/first-proof.html", base).href);
-  await page.locator(".repl-fork", { hasText: "Fork into REPL" }).nth(1).click();
+  await page.locator("pre.repl-transcript", { hasText: "evaluate lt_succ;" })
+    .locator("xpath=following-sibling::div[contains(@class, 'example-bar')][1]").locator(".repl-fork").click();
   await page.waitForFunction(() => document.querySelectorAll(".repl-dock .repl-result").length >= 4 && !document.querySelector(".repl-form.busy"));
   await enter("evaluate exists_greater_number(10)");
   assert.deepEqual(await lastResults(2), ["(6, 0, refl(6))", "(11, 0, refl(11))"]);
@@ -143,7 +144,7 @@ try {
   console.log("PASS library module in the workspace, with its console");
   await page.goto(new URL("repl.html", base).href);
   for (const text of ["let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);
-  assert.deepEqual(await lastResults(4), ["x : Nat", "Nat", "7", "Type mismatch: found 7 = 7, expected x = 8."]);
+  assert.deepEqual(await lastResults(4), ["x : Nat", "Nat", "7", "E606: Type mismatch: found 7 = 7, expected x = 8."]);
   console.log("PASS REPL page: let, typeof, evaluate, rejected entries");
   // Slash commands: /modules lists what import can load; /clear and /restart
   // act on the console.
@@ -154,7 +155,7 @@ try {
   await enter("/restart");
   await page.waitForFunction(() => document.querySelector(".repl-log")?.textContent.includes("Started a new session."));
   await enter("typeof x;");
-  assert.deepEqual(await lastResults(1), ["Untranslated name: x"]);
+  assert.deepEqual(await lastResults(1), ["E343: Untranslated name: x"]);
   console.log("PASS REPL page: /modules, /clear and /restart");
   // The first proof's Elaboration panel opens on demand and shows every
   // declaration, down to the kernel's opcodes, with a link for more info.

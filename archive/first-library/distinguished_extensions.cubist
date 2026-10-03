@@ -65,7 +65,7 @@ def DistinguishedComposita(C : ExtensionClass) :=
   );
 
 // Expose all three clauses of Lang's definition, and require membership to
-// be propositional. Chosen bases and splitting witnesses are separate data.
+// be propositional. Given bases and splitting witnesses are separate data.
 def Distinguished(C : ExtensionClass) :=
   ExtensionClassProp(C) and DistinguishedTower(C) and DistinguishedBaseChange(C)
   and DistinguishedComposita(C);

@@ -31,7 +31,9 @@ Moving these documents does not change their recorded status or resume paused wo
     experimental option or marker. Nat, W and pushouts are source
     declarations; see the [migration record](roadmaps/h1-program-types.md)
     for the current behavior, validation and limits of the historical
-    comparison fixtures.
+    comparison fixtures, and the [history](roadmaps/h1-history.md) for the
+    release checklist, the review rounds and the retired differential
+    contract.
 - The trusted kernel:
   [kernel instructions](roadmaps/kernel-instructions.md), the THTH-style
   forward kernel with every search decision in an untrusted driver, merged
@@ -95,7 +97,7 @@ finishing a language milestone does not automatically resume them.
 - [Tactical notes](tactical/README.md): handoffs, implementation details, and checked proof developments.
 - Guides: [CLI](guides/cli.md), [kernel](guides/kernel.md), and [deployment](guides/deployment.md).
 - [Cubical implementation notes](cubical/): kernel constructions, performance, browser integration, and migration history. Start with the [benchmark](cubical/benchmark.md) and [checking optimizations](cubical/checking-optimizations.md) for performance work.
-- [Language reference](../web/language.html): current user-facing syntax. The [older language design notes](guides/mathscript.md) are historical.
+- [Language reference](../web/language.html): current user-facing syntax. The [older language design notes](guides/cubist.md) are historical.
 
 When handing off work, record what was checked, its assumptions and limitations,
 the commands used to verify it, and the next unfinished obligation. Update both

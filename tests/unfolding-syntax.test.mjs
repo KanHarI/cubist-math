@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { parse, tokenize } from "../web/mathscript/parser.mjs";
-import { formatMathScript } from "../web/mathscript/formatter.mjs";
-import { expandedSyntax } from "../web/mathscript/tuples.mjs";
+import { parse, tokenize } from "../web/cubist/parser.mjs";
+import { formatCubist } from "../web/cubist/formatter.mjs";
+import { expandedSyntax } from "../web/cubist/tuples.mjs";
 
 const expression = text => parse(text, true);
 
@@ -49,9 +49,9 @@ with unfolding [inner] { (identity, (wrapper, inner)) }
 def application := with unfolding [identity] { identity }(0);
 def sum := with unfolding [] { 0 } + 1;`;
   for (const printWidth of [40, 80, 100]) {
-    const formatted = formatMathScript(source, { printWidth });
+    const formatted = formatCubist(source, { printWidth });
     assert.equal(expandedSyntax(parse(formatted)), expandedSyntax(parse(source)));
-    assert.equal(formatMathScript(formatted, { printWidth }), formatted);
+    assert.equal(formatCubist(formatted, { printWidth }), formatted);
     assert.match(formatted, /with unfolding \[identity\] \{\n\s+identity\n\s*\}\(0\)/);
     assert.match(formatted, /\/\/ A scoped strategy\./);
     assert.deepEqual(tokenize(formatted).filter(t => ["with", "unfolding"].includes(t.text)).map(t => t.text),
@@ -76,8 +76,8 @@ test("migrated native proof scopes format without changing their expanded syntax
     "f4_embedding_images", "group_univalence", "kernel_quotient_image", "permutations", "structured_sets"]) {
     const source = await readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
     assert.doesNotMatch(source, /with_unfolding\(/, name);
-    const formatted = formatMathScript(source);
+    const formatted = formatCubist(source);
     assert.equal(expandedSyntax(parse(formatted)), expandedSyntax(parse(source)), name);
-    assert.equal(formatMathScript(formatted), formatted, name);
+    assert.equal(formatCubist(formatted), formatted, name);
   }
 });

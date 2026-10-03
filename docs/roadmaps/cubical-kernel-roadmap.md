@@ -225,7 +225,8 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
       computes in source. Review pending: D1, D4, D5, Lemma H2, the
       critical-pair check and canonicity. Migration pending: the
       differential fixtures X1–X8 and G2's ledger verifier. The
-      specification's header holds the release checklist.
+      specification's [history](h1-history.md#status-and-release-record) holds
+      the release checklist and its record.
     - **Specification.** [H1 specification](h1-signature-specification.md)
       (K2.1 and K2.5, approved for experimental implementation): the
       admitted signatures, generated rules, soundness note, instruction

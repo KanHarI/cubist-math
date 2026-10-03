@@ -23,7 +23,7 @@ npm test -- --no-reuse-normal-forms --no-memoize-instructions sample_relations
 ```
 
 The proof viewer exposes the options separately near the top and rechecks
-the proof when the selection changes. Your saved checkbox choices take
+the proof when the selection changes. Your saved checkbox settings take
 precedence over the defaults. Exported traces contain ordinary kernel
 instructions and can be replayed without enabling compiler optimizations.
 Recorded `construction` programs already specify their instructions; the

@@ -9,23 +9,16 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { parse } from "../web/mathscript/parser.mjs";
-import { formatMathScript } from "../web/mathscript/formatter.mjs";
+import { parse } from "../web/cubist/parser.mjs";
+import { formatCubist } from "../web/cubist/formatter.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 const module = await createCubical();
 const library = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8");
 
 // Check a program, with other modules by name, and give each declaration's result.
-async function check(t, source, { modules = {} } = {}) {
-  const program = new CubicalProgram(module, name => name in modules ? modules[name] : library(name));
-  t.after(() => program.dispose());
-  const result = await program.check(source, "main");
-  return { program, result, get: name => {
-    const found = result.outputs.find(output => output.name === name);
-    assert.ok(found, `no declaration ${name}`);
-    return found;
-  } };
-}
+const check = (t, source, { modules = {} } = {}) =>
+  checkProgram(t, source, { module, reader: name => name in modules ? modules[name] : library(name) });
 const ok = (declaration, message) => assert.ok(declaration.verified, `${declaration.name}: ${declaration.reason} ${message ?? ""}`);
 const refused = (declaration, pattern) => {
   assert.equal(declaration.verified, false, `${declaration.name} was accepted`);
@@ -52,9 +45,9 @@ def prop(set : N) := set;
   assert.equal(declarations[3].result.modifier.level, 1);
   assert.equal(declarations[2].result.universe.name, "U1");
   assert.equal(declarations[4].constructors[1].type.kind, "binary");
-  const formatted = formatMathScript(source);
+  const formatted = formatCubist(source);
   assert.match(formatted, /^inductive N \{\n {2}zero;\n {2}succ\(n : N\);\n\}\n\ninductive Trunc/);
-  assert.equal(formatMathScript(formatted), formatted);
+  assert.equal(formatCubist(formatted), formatted);
   for (const [bad, message] of [["inductive X : { a; }", /h-level, a universe or both/],
     ["inductive X : trunc(x) { a; }", /integer level/], ["inductive X { a(U < UU0); }", /bind universes in the declaration's header/],
     ["inductive X { a", /Expected ';'/],
@@ -382,9 +375,10 @@ inductive Pointed(U < UU0) : next(U) { pt(X : U, x : X); }
     "loop_case : PathP(fun (i : Interval) => P(loop @ i), base_case, base_case)"]);
   const truncation = program.signatureView("main__Tr");
   assert.deepEqual(truncation.eliminator.clauses.map(c => c.constructor), ["point", "Tr.squash"]);
-  // The motive's universe avoids the parameter's name.
-  assert.equal(truncation.eliminator.motive, "P : Tr(A) -> V");
-  assert.equal(truncation.eliminator.clauses[1].type, "forall x : Tr(A). forall x1 : Tr(A). forall x2 : P(x). "
+  // The motive's universe avoids the parameter's name. Tr's universe is
+  // erased, which an instance does not carry: it prints as __U.
+  assert.equal(truncation.eliminator.motive, "P : Tr(__U, A) -> V");
+  assert.equal(truncation.eliminator.clauses[1].type, "forall x : Tr(__U, A). forall x1 : Tr(__U, A). forall x2 : P(x). "
     + "forall x3 : P(x1). PathP(fun (i : Interval) => P(Tr.squash(x, x1) @ i), x2, x3)");
   // A recorded universe parameter by its name in the declaration.
   assert.deepEqual(program.signatureView("main__Pointed").recorded, ["U"]);
@@ -491,7 +485,7 @@ inductive S : prop { squash; }
   assert.equal(squashes.eliminator.clauses[0].type, "P(squash)");
   assert.match(squashes.eliminator.clauses[1].type, /P\(S\.squash\(x, x1\) @ i\)/);
   // Any display: a variable whose name is a printed label is numbered apart.
-  const { T } = await import("../lib/cubical/core.mjs");
+  const { T } = await import("../web/translator/core.mjs");
   const constructor = T.constructor(0, T.sort("main__T"), "c");
   assert.equal(program.checker.displayText(T.app(T.app(T.variable("f"), T.variable("c")), constructor)), "f(c1, c)");
 });

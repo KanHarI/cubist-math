@@ -1,19 +1,19 @@
 import { sourceStatement } from "./cubical-statement.mjs";
 import { CubicalKernel } from "./cubical-kernel.mjs";
 import { NativeCubicalElaborator, printedLabels } from "./cubical-elaborator.mjs";
-import { Translator } from "./dist/cubical-runtime/translate.mjs";
-import {emptySimpRegistry,mergeSimpRegistries} from "./dist/cubical-runtime/simp-registry.mjs";
-import { substituteTerm, T } from "./dist/cubical-runtime/core.mjs";
-import { localName, printedForms, printsAsItself } from "./dist/cubical-runtime/names.mjs";
-import { parse } from "./mathscript/parser.mjs";
-import { lint } from "./mathscript/lint.mjs";
-import { leadingDocumentation } from "./mathscript/documentation.mjs";
+import { Translator } from "./translator/translate.mjs";
+import {emptySimpRegistry,mergeSimpRegistries} from "./translator/simp-registry.mjs";
+import { substituteTerm, T } from "./translator/core.mjs";
+import { localName, printedForms, printsAsItself } from "./translator/names.mjs";
+import { parse } from "./cubist/parser.mjs";
+import { lint } from "./cubist/lint.mjs";
+import { diagnosticCode } from "./diagnostics.mjs";
+import { leadingDocumentation } from "./cubist/documentation.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
 import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notation.mjs";
 import { checkReduction, simplifyTypeApplications } from "./cubical-reduction.mjs";
 import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
-import { H1Translation } from "./h1-translation.mjs";
-import naturalSource from "./dist/cubical-runtime/nat-source.mjs";
+import naturalSource from "./translator/nat-source.mjs";
 
 const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${index}` : "";
 
@@ -22,19 +22,20 @@ const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${
 // an earlier checked reference. Unsupported declarations never become axioms.
 export class CubicalProgram {
   constructor(module, readSource, { onDeclarationStart, onDeclaration, collectReferences = true, optimizations = {}, manageTransactions = true,
-    searchFuel, declarationFuel, experimental, representation = "native", prelude = true } = {}) {
-    if (!["native","declared"].includes(representation)) throw Error(`Unknown type representation: ${representation}.`);
+    searchFuel, declarationFuel, experimental, representation, prelude = true } = {}) {
+    // The representation map τ to declared counterparts was the differential
+    // fixtures' (H1 specification, 7.4), retired with them.
+    if (representation !== undefined)
+      throw Error("The representation option was removed with the differential fixtures: Nat, W and pushouts are source declarations.");
     // Declared types (H1) are on by default since their release; the option
     // that admitted them experimentally is gone.
     if (experimental !== undefined)
       throw Error("H1 is no longer experimental: declared types are on by default, so drop the experimental option.");
-    // Fuel limits (lib/cubical/fuel.mjs), for a measurement or a test; the defaults otherwise.
+    // Fuel limits (web/translator/fuel.mjs), for a measurement or a test; the defaults otherwise.
     this.fuelLimits = { searchFuel, declarationFuel };
     this.kernel = new CubicalKernel(module);
     this.kernel.setOptimizations(optimizations);
     this.checker = new NativeCubicalElaborator(this.kernel);
-    this.representation = representation;
-    this.translation = representation === "declared" ? new H1Translation(module,this.checker) : null;
     this.readSource = readSource;
     this.prelude=prelude;
     this.onDeclarationStart = onDeclarationStart; this.onDeclaration = onDeclaration;
@@ -52,7 +53,7 @@ export class CubicalProgram {
     this.moduleSteps = new Map();
     this.failedImports = new Map();
   }
-  dispose() { this.translation?.dispose(); this.kernel.dispose(); }
+  dispose() { this.kernel.dispose(); }
   assumptionSymbols() {
     return Object.fromEntries([...this.checker.assumptions].map(([binding, type]) => [binding, {
       binding, name: this.checker.assumptionLabels.get(binding) ?? binding, kind: "axiom", role: "explicit axiom",
@@ -60,39 +61,119 @@ export class CubicalProgram {
       description: "An explicit logical assumption from the library. Its full signature is shown in the Axioms section.",
     }]));
   }
+  // Read and parse a module and, before it, its imports, into
+  // `discovery.prepared`, counting their declarations into `discovery.total`.
+  // The reader is told which module imports each name, since where a module
+  // lives decides where its imports are found (module-resolution.mjs). A
+  // reader may refuse a module whose import this check already holds under
+  // another file; a check holds one module per name. Each check reads afresh,
+  // so a failed read is retried.
+  async discover(discovery, name, text, importer, onProgress) {
+    const { prepared } = discovery;
+    if (this.modules.has(name) || prepared.has(name)) return;
+    try {
+      if(text===null) {
+        try { text=await this.readSource(name,importer); }
+        catch(error) {if(name!=="nat"||!this.prelude)throw error;}
+        // Readers with no standard library (such as an exported inspection)
+        // can still load the bundled source of the ordinary prelude module.
+        if(name==="nat"&&this.prelude&&!text)text=naturalSource;
+      }
+      const ast = parse(text);
+      if(this.prelude&&name!=="nat"&&!ast.imports.includes("nat"))ast.imports.unshift("nat");
+      prepared.set(name, { text, ast });
+      discovery.total += ast.declarations.length;
+      onProgress({ completed: this.completed, total: null, current: name,
+        phase: "loading", unit: "declarations", instructions: this.checker.steps });
+      for (const dependency of ast.imports) await this.discover(discovery, dependency, null, name, onProgress);
+      const refused = await this.readSource.checkImports?.(name, ast.imports);
+      if (refused) prepared.set(name, { error: new Error(refused) });
+    } catch (error) { prepared.set(name, { error }); }
+  }
+  // The references a checked declaration's elaboration reported: its local
+  // bindings and their views, each name's binding, and, in the checked
+  // module, its source links.
+  recordReferences(name, main, declaration, result, pending) {
+    this.declarationBindings.set(`${name}__${result.name}`, pending.filter(item => item.node.isBinding));
+    const references = [];
+    const declarationLinks = [];
+    this.declarationReferences.set(`${name}__${result.name}`, references);
+    for (const item of pending) {
+      if (!Number.isInteger(item.node.start)) continue;
+      let head = item.term; while (head.tag === "App" || head.tag === "LApp") head = head.fn;
+      const source = item.aliases?.find(alias => alias.name === item.node.name && alias.term === item.term);
+      const declared = !source && !item.node.expressionSite && item.node.declarationBinding;
+      const definition = !!declared || head.tag === "DefRef" && !source && !item.node.expressionSite;
+      const binding = definition ? declared || head.name : `${name}__local_${item.node.start}${
+        expansionSuffix(item.node.role,item.node.expansionIndex)}`;
+      references.push({ start: item.node.start, binding });
+      if (!definition && !this.views.has(binding)) this.views.set(binding, { ...item, module: name });
+      if (!definition) this.localSymbols[binding] = { binding, name: item.node.name,
+        role: item.node.role ?? (item.term.tag === "Var" ? "Local assumption" : "Local definition"), verified: true,
+        expansion: item.node.expansion, description: item.node.description,
+        definitionStart: source?.start ?? item.node.start,
+        ...(name === main ? {} : { sourceModule: name, sourceName: declaration.name.text }) };
+      if (name === main) {
+        const link={ name: item.node.name, binding, start: item.node.start,
+        end: item.node.end, definitionStart: source?.start, role: item.node.role ?? (declared ? "inductive" : definition ? "definition" : "local"),
+        expansion: item.node.expansion, description: item.node.description,
+        freeze:item.node.freeze,traceParent:item.node.traceParent };
+        this.links.push(link);declarationLinks.push(link);
+      }
+    }
+    for(const link of declarationLinks)if(link.role==="simplification witness")
+      link.rewriteSteps=declarationLinks.filter(step=>step.role==="simplification step"
+        &&step.traceParent===link.start).map(step=>({name:step.name,binding:step.binding,
+          role:step.role,description:step.description,start:step.start,end:step.end}));
+  }
+  // A module's results: its simplification rules, its directives' fuel and
+  // gaps, and each declaration's symbol, gap and, in the checked module, link.
+  // `failure` adds a failed import's note to a reason.
+  recordModule(name, main, text, ast, result, failure) {
+    this.simpRegistries.set(name,result.simpRegistry);
+    for(const directive of result.directives??[]) {
+      this.directiveFuel.push({ module: name, kind: directive.kind, name: directive.name, searchFuel: directive.searchFuel ?? null });
+      if(directive.status!=="checked")
+        this.gaps.push({module:name,name:`${directive.kind} ${directive.name}`,
+          reason:directive.reason,code:diagnosticCode(directive.reason),directive:true});
+      else if(directive.kind==="evaluate")
+        this.evaluations.push({module:name,name:directive.name,value:directive.normalText});
+    }
+    const byName = new Map(ast.declarations.map(d => [d.name.text, d]));
+    for (const d of result.declarations) {
+      const syntax = byName.get(d.name), binding = `${name}__${d.name}`;
+      const verified = d.status === "checked-native-cubical";
+      const reason = verified ? d.reason : failure(d.reason);
+      const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified,
+        status: d.status, reason, ...(verified ? {} : { code: diagnosticCode(reason) }), errorStart: d.errorStart, errorEnd: d.errorEnd,
+        rewriteWork: d.rewriteWork, searchFuel: d.searchFuel, failure: d.failure ?? null,
+        axioms: d.native?.axioms ?? [],
+        // Kernel extensions under review that the result relies on, shown
+        // apart from assumptions; computable accepts them. None is under
+        // review since H1's release, so this list is empty.
+        extensions: d.native?.extensions ?? [], start: syntax.start, end: syntax.end,
+        definitionStart: syntax.start, description: leadingDocumentation(text, syntax.start)?.text ?? "",
+        ...(name === main ? {} : { sourceModule: name, sourceName: d.name }),
+        // A universe variable's source name stands for U(x): it names x.
+        type: verified ? cubicalText(d.type, { ...this.symbols, ...Object.fromEntries(
+          (this.declarationBindings.get(binding) ?? []).map(item => [item.term.tag === "Var" ? item.term.name
+            : item.term.tag === "U" && item.term.level?.tag === "Var" ? item.term.level.name : null, { name: item.node.name }])
+            .filter(([variable]) => variable)) }) : reason };
+      this.symbols[binding] = info;
+      if (!verified) this.gaps.push({ module: name, name: d.name,
+        reason, code: info.code, start: d.errorStart, end: d.errorEnd });
+      if (name === main) this.links.push({ ...info, start: syntax.name.start, end: syntax.name.end });
+    }
+  }
   async check(source, main = "current", onProgress = () => {}) {
-    // Discover the source graph before checking. This only reads/parses source;
-    // it does not run the mathematical library or count repeated imports twice.
-    const prepared = new Map();
-    let total = this.completed;
-    // The reader is told which module imports each name, since where a module
-    // lives decides where its imports are found (module-resolution.mjs). A
-    // reader may refuse a module whose import this check already holds under
-    // another file; a check holds one module per name. Each check reads afresh,
-    // so a failed read is retried.
+    // Discover the source graph before checking. This only reads and parses
+    // source; it does not run the mathematical library or count repeated
+    // imports twice.
     this.readSource.beginCheck?.();
-    const prepare = async (name, text = null, importer = null) => {
-      if (this.modules.has(name) || prepared.has(name)) return;
-      try {
-        if(text===null) {
-          try { text=await this.readSource(name,importer); }
-          catch(error) {if(name!=="nat"||!this.prelude)throw error;}
-          // Readers with no standard library (such as an exported inspection)
-          // can still load the bundled source of the ordinary prelude module.
-          if(name==="nat"&&this.prelude&&!text)text=naturalSource;
-        }
-        const ast = parse(text);
-        if(this.prelude&&name!=="nat"&&!ast.imports.includes("nat"))ast.imports.unshift("nat");
-        prepared.set(name, { text, ast });
-        total += ast.declarations.length;
-        onProgress({ completed: this.completed, total: null, current: name,
-          phase: "loading", unit: "declarations", instructions: this.checker.steps });
-        for (const dependency of ast.imports) await prepare(dependency, null, name);
-        const refused = await this.readSource.checkImports?.(name, ast.imports);
-        if (refused) prepared.set(name, { error: new Error(refused) });
-      } catch (error) { prepared.set(name, { error }); }
-    };
-    await prepare(main, source);
+    const discovery = { prepared: new Map(), total: this.completed };
+    await this.discover(discovery, main, source, null, onProgress);
+    const { prepared } = discovery;
+    let total = discovery.total;
     // Imports that failed in this check, used or not: any makes it incomplete.
     const failedHere = new Set();
     const visiting = new Set();
@@ -109,7 +190,7 @@ export class CubicalProgram {
       }
       catch (error) {
         if (name === main) throw error;
-        this.gaps.push({ module: name, reason: error.message });
+        this.gaps.push({ module: name, reason: error.message, code: diagnosticCode(error.message) });
         this.failedImports.set(name, error.message);
         failedHere.add(name);
         visiting.delete(name); return new Map();
@@ -138,7 +219,6 @@ export class CubicalProgram {
       const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
         ...Object.fromEntries(Object.entries(this.fuelLimits).filter(([, limits]) => limits)),
         onStep: step => statements.push({ ...step, declaration: current }),
-        onEvaluation: (directive,result,expected) => this.translation?.checkEvaluation(directive,result,expected),
         onDeclarationStart: declaration => {
           current = declaration.name.text;
           if (this.manageTransactions) transaction = new CubicalDeclarationTransaction(this.kernel,this.checker);
@@ -152,16 +232,8 @@ export class CubicalProgram {
             throw error;
           }
         },
-        onReference: this.collectReferences ? (node, term, context, dimensions, aliases) => pending.push({ node, term, context, dimensions, aliases, unfoldingHints: [...this.kernel.unfoldingHints] }) : null,
+        onReference: this.collectReferences ? (node, term, context, dimensions, aliases) => pending.push({ node, term, context, dimensions, aliases }) : null,
         onDeclaration: (declaration, result) => {
-          if (this.translation && result.status === "checked-native-cubical") {
-            try {
-              const image = this.translation.checkDeclaration(`${name}__${result.name}`,declaration.kind);
-              if (result.native) result.native = {...result.native,extensions:image.extensions};
-            } catch (error) {
-              result.status = "not-translated"; result.reason = error.message; result.failure = error.kind;
-            }
-          }
           try {this.onDeclaration?.(name, declaration, result, checker);}
           catch(error) {
             transaction?.finish(false);
@@ -173,80 +245,15 @@ export class CubicalProgram {
             transaction = null;
           }
           this.completed++;
-          if (result.status === "checked-native-cubical") {
-            this.declarationBindings.set(`${name}__${result.name}`, pending.filter(item => item.node.isBinding));
-            const references = [];
-            const declarationLinks = [];
-            this.declarationReferences.set(`${name}__${result.name}`, references);
-            for (const item of pending) {
-              if (!Number.isInteger(item.node.start)) continue;
-              let head = item.term; while (head.tag === "App" || head.tag === "LApp") head = head.fn;
-              const source = item.aliases?.find(alias => alias.name === item.node.name && alias.term === item.term);
-              const declared = !source && !item.node.expressionSite && item.node.declarationBinding;
-              const definition = !!declared || head.tag === "DefRef" && !source && !item.node.expressionSite;
-              const binding = definition ? declared || head.name : `${name}__local_${item.node.start}${
-                expansionSuffix(item.node.role,item.node.expansionIndex)}`;
-              references.push({ start: item.node.start, binding });
-              if (!definition && !this.views.has(binding)) this.views.set(binding, { ...item, module: name });
-              if (!definition) this.localSymbols[binding] = { binding, name: item.node.name,
-                role: item.node.role ?? (item.term.tag === "Var" ? "Local assumption" : "Local definition"), verified: true,
-                expansion: item.node.expansion, description: item.node.description,
-                definitionStart: source?.start ?? item.node.start,
-                ...(name === main ? {} : { sourceModule: name, sourceName: declaration.name.text }) };
-              if (name === main) {
-                const link={ name: item.node.name, binding, start: item.node.start,
-                end: item.node.end, definitionStart: source?.start, role: item.node.role ?? (declared ? "inductive" : definition ? "definition" : "local"),
-                expansion: item.node.expansion, description: item.node.description,
-                freeze:item.node.freeze,traceParent:item.node.traceParent };
-                this.links.push(link);declarationLinks.push(link);
-              }
-            }
-            for(const link of declarationLinks)if(link.role==="simplification witness")
-              link.rewriteSteps=declarationLinks.filter(step=>step.role==="simplification step"
-                &&step.traceParent===link.start).map(step=>({name:step.name,binding:step.binding,
-                  role:step.role,description:step.description,start:step.start,end:step.end}));
-          }
+          if (result.status === "checked-native-cubical") this.recordReferences(name, main, declaration, result, pending);
           pending = [];
           onProgress({ completed: this.completed, total,
             current: `${name}.${result.name}`, phase: "checked", unit: "declarations", instructions: checker.steps });
         },
       });
       const result = translator.translate(text, env);
-      this.simpRegistries.set(name,result.simpRegistry);
-      for(const directive of result.directives??[]) {
-        this.directiveFuel.push({ module: name, kind: directive.kind, name: directive.name, searchFuel: directive.searchFuel ?? null });
-        if(directive.status!=="checked")
-          this.gaps.push({module:name,name:`${directive.kind} ${directive.name}`,
-            reason:directive.reason,directive:true});
-        else if(directive.kind==="evaluate")
-          this.evaluations.push({module:name,name:directive.name,value:directive.normalText});
-      }
       this.checker.steps = checker.steps;
-      const byName = new Map(ast.declarations.map(d => [d.name.text, d]));
-      for (const d of result.declarations) {
-        const syntax = byName.get(d.name), binding = `${name}__${d.name}`;
-        const verified = d.status === "checked-native-cubical";
-        const reason = verified ? d.reason : failure(d.reason);
-        const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified,
-          status: d.status, reason, errorStart: d.errorStart, errorEnd: d.errorEnd,
-          rewriteWork: d.rewriteWork, searchFuel: d.searchFuel, failure: d.failure ?? null,
-          unfoldingHints: d.native?.unfoldingHints ?? [], axioms: d.native?.axioms ?? [],
-          // Kernel extensions under review that the result relies on, shown
-          // apart from assumptions; computable accepts them. None is under
-          // review since H1's release, so this list is empty.
-          extensions: d.native?.extensions ?? [], start: syntax.start, end: syntax.end,
-          definitionStart: syntax.start, description: leadingDocumentation(text, syntax.start)?.text ?? "",
-          ...(name === main ? {} : { sourceModule: name, sourceName: d.name }),
-          // A universe variable's source name stands for U(x): it names x.
-          type: verified ? cubicalText(d.type, { ...this.symbols, ...Object.fromEntries(
-            (this.declarationBindings.get(binding) ?? []).map(item => [item.term.tag === "Var" ? item.term.name
-              : item.term.tag === "U" && item.term.level?.tag === "Var" ? item.term.level.name : null, { name: item.node.name }])
-              .filter(([variable]) => variable)) }) : reason };
-        this.symbols[binding] = info;
-        if (!verified) this.gaps.push({ module: name, name: d.name,
-          reason, start: d.errorStart, end: d.errorEnd });
-        if (name === main) this.links.push({ ...info, start: syntax.name.start, end: syntax.name.end });
-      }
+      this.recordModule(name, main, text, ast, result, failure);
       this.moduleSteps.set(name, statements);
       this.modules.set(name, result.env); visiting.delete(name);
       return result.env;
@@ -482,15 +489,15 @@ export class CubicalProgram {
     this.kernel.instructionDriver = null;
     const info = this.symbols[binding], local = this.views.get(binding);
     if (info && !info.verified) throw new Error(info.reason);
-    let term, expected = null, context = [], dimensions = new Map(), unfoldingHints = [];
-    if (local) { term = local.term; context = [...local.context]; dimensions = local.dimensions; unfoldingHints = local.unfoldingHints ?? []; }
+    let term, expected = null, context = [], dimensions = new Map();
+    if (local) { term = local.term; context = [...local.context]; dimensions = local.dimensions; }
     else if (this.checker.assumptions.has(binding)) {
       term = { tag: "Var", name: binding }; expected = this.checker.assumptions.get(binding);
     } else {
       const reference = this.kernel.definitions.get(binding);
       if (!reference) throw new Error("No checked native definition for this name.");
       const definition = this.checker.definitionViews.get(binding);
-      term = definition.term; expected = definition.type; unfoldingHints = definition.unfoldingHints;
+      term = definition.term; expected = definition.type;
     }
     const assumptions = this.checker.requiredAssumptions(term, expected, context.map(([, type]) => type));
     context = [...assumptions, ...context];
@@ -512,7 +519,7 @@ export class CubicalProgram {
       .filter(alias => alias.variable).reverse().map(alias => [alias.variable, { name: alias.name, binding: alias.binding }]));
     for (const [name, value] of Object.entries(variableNames)) symbols[name] = { ...value, local: true };
     const view = { backend: "cubical", name: binding,
-      unfoldingHints, expression: checked.term, type: checked.type,
+      expression: checked.term, type: checked.type,
       expressionText: cubicalText(checked.term, this.symbols), typeText: cubicalText(checked.type, this.symbols),
       dimensions: [...dimensions], context: context.map(([name, type]) => ({ name,
         label: variableNames[name]?.name ?? this.checker.assumptionLabels.get(name) ?? name,

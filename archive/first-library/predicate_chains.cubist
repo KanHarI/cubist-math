@@ -42,7 +42,7 @@ def predicate_chain_directed(I : U1, A : U0, P : I -> A -> U0, chain : Predicate
   intro i, j;
   let Upper := exists k : I. PredicateIncluded(A, P(i), P(k)) and PredicateIncluded(A, P(j), P(k));
   let Either := PredicateIncluded(A, P(i), P(j)) or PredicateIncluded(A, P(j), P(i));
-  let chooseUpper : Either -> FieldExists(Upper) {
+  let upperBound : Either -> FieldExists(Upper) {
     intro comparison;
     cases comparison {
       left ij => {
@@ -54,7 +54,7 @@ def predicate_chain_directed(I : U1, A : U0, P : I -> A -> U0, chain : Predicate
     }
   }
   exact field_exists_elim(
-    Either, FieldExists(Upper), field_exists_prop(Upper), chooseUpper, chain(i, j)
+    Either, FieldExists(Upper), field_exists_prop(Upper), upperBound, chain(i, j)
   );
 }
 

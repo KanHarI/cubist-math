@@ -1,9 +1,9 @@
 // Telemetry for the instruction driver's search (docs/roadmaps/
-// learned-search.md, phases 1 and 2): choosers that make another chooser's
+// learned-search.md, phases 1 and 2): policies that make another policy's
 // moves while counting or recording them, and kernel work read as
-// differences (CubicalKernel.work). Measurement only: a wrapped chooser
+// differences (CubicalKernel.work). Measurement only: a wrapped policy
 // makes exactly the moves of the one it wraps.
-import { heuristicChooser } from "../web/cubical-instruction-driver.mjs";
+import { heuristicPolicy } from "../web/cubical-instruction-driver.mjs";
 
 // A move's name: normalize, descend, step:left:beta, step:both:delta,
 // whnf:right, eta.
@@ -19,10 +19,10 @@ export function addWork(total, work) {
   return total;
 }
 
-// A chooser making `inner`'s moves, with counts: branch points, listings
+// A policy making `inner`'s moves, with counts: branch points, listings
 // (a point is listed again after a failed normalize or descend), and each
 // move's outcomes by name.
-export function countingChooser(inner = heuristicChooser) {
+export function countingPolicy(inner = heuristicPolicy) {
   const counts = { points: 0, listings: 0, moves: {} };
   return {
     name: inner.name, counts,
@@ -39,17 +39,17 @@ export function countingChooser(inner = heuristicChooser) {
   };
 }
 
-// A chooser making `inner`'s moves that records each branch point for
+// A policy making `inner`'s moves that records each branch point for
 // `sink`, in the order reached: its depth (comparisons nest, as descending
 // compares parts), the steps the comparison had taken, the kinds of the two
-// heads, and each listing's open moves, the kernel steps spent choosing (the
+// heads, and each listing's open moves, the kernel steps spent ranking (the
 // guide's queries), and the moves made with their outcomes and kernel steps,
 // a move that threw included. A move's steps include the comparisons nested
 // in it. Reads the kernel's
 // work before and after each move, so it costs more than counting.
-export function recordingChooser(inner, kernel, sink) {
+export function recordingPolicy(inner, kernel, sink) {
   const steps = () => kernelSteps(kernel.work());
-  // Each point's record, and the kernel steps when choosing or moving began.
+  // Each point's record, and the kernel steps when ranking or moving began.
   const open = new WeakMap();
   return {
     name: inner.name,
@@ -60,16 +60,16 @@ export function recordingChooser(inner, kernel, sink) {
         open.set(at, state);
         sink(state.record);
       }
-      const listing = { moves: at.moves.map(moveName), choosing: 0, made: [] };
+      const listing = { moves: at.moves.map(moveName), ranking: 0, made: [] };
       state.record.listings.push(listing);
       state.mark = steps();
       for (const move of inner.rank(at)) {
         state.before = steps();
-        listing.choosing += state.before - state.mark;
+        listing.ranking += state.before - state.mark;
         listing.made.push([moveName(move)]);
         yield move;
       }
-      listing.choosing += steps() - state.mark;
+      listing.ranking += steps() - state.mark;
     },
     observe(at, move, outcome, error) {
       const state = open.get(at), after = steps();

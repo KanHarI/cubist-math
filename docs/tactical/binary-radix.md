@@ -95,8 +95,8 @@ the original Nat factorial compatibility theorem natively.
 directions: about 1.35 million nodes / 67 MB for the combined source arena, and
 the largest closed unary numeral remains **10**. These checks register no
 UA/FunExt axioms. Seven concrete endpoint theorems are written in
-`lib/cubical/factorial-transfer.cubist`; their native runner supplies the
-checked transport definitions from `lib/cubical/number-transport.mjs`.
+`tests/fixtures/factorial-transfer.cubist`; their native runner supplies the
+checked transport definitions from `tests/translator/number-transport.mjs`.
 Dependency checks ensure that each transfer uses its source factorial theorem,
 not the target representation's manual factorial theorem.
 

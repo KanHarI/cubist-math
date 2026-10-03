@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Write a first proof, then learn how a source file is laid out: imports, names, comments and declarations." />
+    <meta name="description" content="First proofs about pairs, alternatives and numbers, then how a source file is laid out: imports, names, comments and declarations." />
     <title>Cubist · 2. A first proof and files</title>
     <link rel="stylesheet" href="../language.css" />
     <link rel="stylesheet" href="../repl.css" />
@@ -23,7 +23,7 @@
       <div class="introduction">
         <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 2</p>
         <h1>A first proof and files</h1>
-        <p class="lead">Write a first proof, then learn how a source file is laid out: imports, names, comments and declarations.</p>
+        <p class="lead">First proofs about pairs, alternatives and numbers, then how a source file is laid out: imports, names, comments and declarations.</p>
       </div>
       <div class="reference-layout">
         <aside class="contents" aria-label="Chapters and sections">
@@ -31,21 +31,22 @@
           <ol class="chapters">
             <li><a href="types.html">Types and values</a></li>
             <li class="current"><a href="first-proof.html" aria-current="page">A first proof and files</a></li>
-            <li><a href="terms.html">Terms, functions and pairs</a></li>
+            <li><a href="terms.html">Functions, pairs and sums</a></li>
             <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
             <li><a href="universes.html">Universes</a></li>
-            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
-            <li><a href="cubical.html">Cubical paths, pushouts and suspensions</a></li>
-            <li><a href="conversion.html">Conversion and unfolding</a></li>
-            <li><a href="assumptions.html">Assumptions and computability</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
+            <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
             <li><a href="errors.html">Error messages</a></li>
           </ol>
           <h2>In this chapter</h2>
           <ul class="sections">
             <li><a href="#first-proof">A first proof</a></li>
+            <li><a href="#numbers-proof">A proof about numbers</a></li>
             <li><a href="#elaboration">The elaborator</a></li>
             <li><a href="#checking">What checking means</a></li>
             <li><a href="#files">Files and imports</a></li>
@@ -58,6 +59,62 @@
         <article id="reference">
           <section id="first-proof">
             <h2>A first proof</h2>
+            <p>A statement is a type, and a proof of it is a value of that type (<a href="types.html#introduction">chapter 1</a>). The first statements to prove are about any two statements <code>A</code> and <code>B</code>. If both hold, then both hold in the other order: <code>A and B -&gt; B and A</code>.</p>
+            <pre><code data-check="accept">def and_swap(A, B : U0) : A and B -&gt; B and A {
+  intro both;               // both : A and B
+  exact (both.2, both.1);   // a B, then an A
+}</code></pre>
+            <p><code>A</code> and <code>B</code> are parameters of type <code>U0</code>: any two small types, read as statements. The stated type is an implication, so a proof of it is a function. Given evidence that <code>A and B</code> holds, a pair, it returns evidence that <code>B and A</code> holds, another pair.</p>
+            <p>The proof is a block. At every point in a block there is a <strong>goal</strong>, the type still to be proved, and a <strong>context</strong>, the names available and their types. At the start, the goal is the stated type, <code>A and B -&gt; B and A</code>, and the context holds the parameters, <code>A, B : U0</code>.</p>
+            <ul>
+              <li><code>intro both;</code> takes the input of the implication, as in <a href="types.html#tour-intro">chapter 1</a>. The context gains <code>both : A and B</code>, and the goal becomes <code>B and A</code>.</li>
+              <li><code>both.1</code> and <code>both.2</code> are the two components of the pair <code>both</code>: <code>both.1 : A</code> and <code>both.2 : B</code>. So <code>(both.2, both.1)</code> is a pair of a <code>B</code> and an <code>A</code>, a value of exactly the goal type. <code>exact</code> gives it, and that finishes the proof.</li>
+            </ul>
+            <p>In the proof workspace, click the line number of a statement to see its goal and context; <em>Open in workspace</em> opens any example of this reference there. The REPL at the bottom of this page checks Cubist one entry at a time. <code>typeof</code> shows the type of a term, and <code>evaluate</code> computes its value. Here the REPL has the example above loaded:</p>
+            <pre><code data-check="repl">&gt; typeof and_swap;
+forall A : U0. forall B : U0. A and B -&gt; B and A
+&gt; evaluate and_swap;
+fun (A, B : U0, both : A and B) =&gt; (both.2, both.1)
+&gt; evaluate and_swap(Nat, Unit, (3, tt));
+(tt, 3)</code></pre>
+            <p>The proof is a function of three arguments: the two statements, and the evidence for the first. The block built it, and <code>evaluate</code> shows it as a term. Applied to the types <code>Nat</code> and <code>Unit</code> and the pair <code>(3, tt)</code>, it swaps the pair. <em>Fork into REPL</em> copies the session into the REPL bar, to continue it there.</p>
+            <p>The components can also be named. <code>obtain (a, b) := both;</code> splits the pair into <code>a : A</code> and <code>b : B</code>:</p>
+            <pre><code data-check="accept">def and_swap_again(A, B : U0) : A and B -&gt; B and A {
+  intro both;
+  obtain (a, b) := both;   // a : A and b : B
+  exact (b, a);
+}</code></pre>
+            <p>The checker accepts a proof only when every value has the type it is given. Here the components are in the wrong order. The first component of a <code>B and A</code> must be a <code>B</code>, and <code>both.1</code> is an <code>A</code>:</p>
+            <pre><code data-check="reject">def wrong_order(A, B : U0) : A and B -&gt; B and A {
+  intro both;
+  exact (both.1, both.2);  // Error: Type mismatch: found A, expected B.
+}</code></pre>
+            <h3 id="first-proof-cases">Using an alternative: <code>cases</code></h3>
+            <p>Evidence of <code>A or B</code> is either a value of <code>A</code> or a value of <code>B</code>, and it records which (<a href="types.html#tour-alternatives">chapter 1</a>). To use it, prove the goal in each case. If <code>A or B</code> holds, then so does <code>B or A</code>:</p>
+            <pre><code data-check="accept">def or_swap(A, B : U0) : A or B -&gt; B or A {
+  intro either;                      // either : A or B
+  cases either {
+    left a =&gt; { exact right(a); }    // a : A
+    right b =&gt; { exact left(b); }    // b : B
+  }
+}</code></pre>
+            <p><code>cases either { … }</code> splits the proof in two, one branch for each way <code>either</code> can have been built. In the branch <code>left a</code>, it is <code>left(a)</code> for some <code>a : A</code>, and the proof gives <code>right(a)</code>: <code>a</code> on the <code>A</code> side of <code>B or A</code>. In the branch <code>right b</code>, it gives <code>left(b)</code>. Each branch is a block of its own, with the component in its context and the same goal, <code>B or A</code>. <code>cases</code> finishes the proof once both branches do, so it is the last statement of its block.</p>
+            <pre><code data-check="repl">&gt; evaluate or_swap(Nat, Unit, left(3));
+right(3)
+&gt; evaluate or_swap(Nat, Unit, right(tt));
+left(tt)</code></pre>
+            <p>Putting <code>a</code> on the wrong side is a type error, since <code>left</code> of <code>B or A</code> takes a <code>B</code>:</p>
+            <pre><code data-check="reject">def same_side(A, B : U0) : A or B -&gt; B or A {
+  intro either;
+  cases either {
+    left a =&gt; { exact left(a); }  // Error: Type mismatch: found A, expected B.
+    right b =&gt; { exact left(b); }
+  }
+}</code></pre>
+            <p>An <code>or</code> is evidence of one side in particular, so a proof that uses it must handle both sides. There is no way to ask which side holds without <code>cases</code> or a <a href="terms.html#match"><code>match</code></a>.</p>
+          </section>
+          <section id="numbers-proof">
+            <h2>A proof about numbers</h2>
             <p>Every natural number has a greater one. As a type, the statement is <code>forall n : Nat. exists m : Nat. lt(n, m)</code>: for every <code>n</code> there is an <code>m</code> with <code>n &lt; m</code>. First define <code>lt</code>, and try it on two numbers:</p>
             <pre><code data-check="accept">import naturals;
 
@@ -72,7 +129,7 @@ def two_lt_seven : lt(2, 7) {
 }</code></pre>
             <p><code>lt</code> is a function that returns a type, so its value is a type in <code>U0</code>: <code>lt(n, m)</code> is the statement that <code>n</code> is less than <code>m</code>. A value of it is evidence: a number <code>k</code> together with a proof that <code>succ(k) + n = m</code>. This <code>lt</code> is written out to show <code>exists</code> at work. <code>naturals</code> has its own <code>&lt;</code>, computed rather than existential; <a href="#library-order">a note at the end of this section</a> shows how to use it.</p>
             <p><code>two_lt_seven</code> proves <code>lt(2, 7)</code>, which unfolds to <code>exists k : Nat. succ(k) + 2 = 7</code>. The pair <code>(4, refl(7))</code> takes <code>k = 4</code>, and <code>refl(7)</code> is accepted as evidence because <code>succ(4) + 2</code> computes to <code>7</code>. Any other <code>k</code> fails, because <code>succ(k) + 2</code> would compute to a different number.</p>
-            <p>The REPL at the bottom of this page checks Cubist one entry at a time. <code>typeof</code> shows the type of a term, and <code>evaluate</code> computes its value; unlike the directive, it needs no expected value. Here the REPL has the example above loaded:</p>
+            <p>In the REPL, with the example above loaded, <code>evaluate</code> needs no expected value, unlike the directive:</p>
             <pre><code data-check="repl">&gt; typeof lt;
 Nat -&gt; Nat -&gt; U0
 &gt; evaluate lt;
@@ -81,7 +138,7 @@ fun (n, m : Nat) =&gt; exists k : Nat. succ(induction k return Nat { zero =&gt; 
 lt(2, 7)
 &gt; evaluate two_lt_seven;
 (4, refl(7))</code></pre>
-            <p><code>lt</code> takes two numbers and returns a type in <code>U0</code>. Evaluating it unfolds every definition, <code>+</code> included. <code>naturals</code> defines <code>+</code> by recursion on its first argument: <code>0 + b</code> is <code>b</code>, and <code>succ(a) + b</code> is <code>succ(a + b)</code>. So <code>succ(k) + n</code> computes one step, to <code>succ(k + n)</code>. Then <code>k + n</code> is stuck, because <code>k</code> is a variable, not a numeral. The recursive definition waits for a constructor; the REPL shows it as the eliminator it elaborates to, <code>induction k return Nat { zero =&gt; n; succ h =&gt; succ(h); }</code>, where <code>h</code> is the sum for the predecessor. With a numeral in place of <code>k</code>, it runs to the end: <code>succ(4) + 2</code> computes to <code>7</code>. The chapter on <a href="induction.html#recursion">structural recursion</a> shows the definition of addition. <em>Fork into REPL</em> copies the session into the REPL bar, to continue it there.</p>
+            <p><code>lt</code> takes two numbers and returns a type in <code>U0</code>. Evaluating it unfolds every definition, <code>+</code> included. <code>naturals</code> defines <code>+</code> by recursion on its first argument: <code>0 + b</code> is <code>b</code>, and <code>succ(a) + b</code> is <code>succ(a + b)</code>. So <code>succ(k) + n</code> computes one step, to <code>succ(k + n)</code>. Then <code>k + n</code> is stuck, because <code>k</code> is a variable, not a numeral. The recursive definition waits for a constructor; the REPL shows it as the eliminator it elaborates to, <code>induction k return Nat { zero =&gt; n; succ h =&gt; succ(h); }</code>, where <code>h</code> is the sum for the predecessor. With a numeral in place of <code>k</code>, it runs to the end: <code>succ(4) + 2</code> computes to <code>7</code>. The chapter on <a href="induction.html#recursion">structural recursion</a> shows the definition of addition.</p>
             <p>The same idea works for every <code>n</code>: <code>succ(n)</code> is greater than <code>n</code>, with <code>k = 0</code>. That gives the statement:</p>
             <pre><code data-check="accept">import naturals;
 
@@ -100,12 +157,12 @@ def exists_greater_number : forall n : Nat. exists m : Nat. lt(n, m) {
   exact (succ(n), lt_succ(n));   // the witness, and the evidence
 }</code></pre>
             <p><code>lt_succ</code> proves <code>lt(n, succ(n))</code>, which unfolds to <code>exists k : Nat. succ(k) + n = succ(n)</code>. The pair <code>(0, refl(succ(n)))</code> takes <code>k = 0</code>, and <code>refl(succ(n))</code> is accepted as evidence because <code>succ(0) + n</code> computes to <code>succ(0 + n)</code> and then to <code>succ(n)</code>.</p>
-            <p><code>exists_greater_number</code> is proved in a block. At every point in a block there is a <strong>goal</strong>, the type still to be proved, and a <strong>context</strong>, the names available and their types. At the start the goal is the whole statement and the context is empty.</p>
+            <p><code>exists_greater_number</code> is proved in a block, as <code>and_swap</code> is. Its statement has no parameters, so at the start the context is empty and the goal is the whole statement.</p>
             <ul>
               <li><code>intro n;</code> takes the input of the <code>forall</code> and adds it to the context, as in <a href="types.html#tour-intro">chapter 1</a>. The context holds <code>n : Nat</code>, and the goal becomes <code>exists m : Nat. lt(n, m)</code>.</li>
               <li><code>exact (succ(n), lt_succ(n));</code> gives a value of exactly the goal type: the witness <code>succ(n)</code>, and the evidence <code>lt_succ(n) : lt(n, succ(n))</code>. It finishes the proof.</li>
             </ul>
-            <p>In the proof workspace, click the line number of a proof statement to see its goal and the names in scope. <em>Open in workspace</em> opens any example of this reference there, and <a href="#elaboration">the elaborator</a> section below shows every step of this proof.</p>
+            <p><a href="#elaboration">The elaborator</a> section below shows every step of this proof.</p>
             <p>A proof is a value like any other. Evaluating one shows the term its block built:</p>
             <pre><code data-check="repl">&gt; evaluate lt_succ;
 fun (n : Nat) =&gt; (0, refl(succ(n)))
@@ -243,7 +300,7 @@ def Value := 1;</code></pre>
 //
 // A second paragraph of the same description.
 def same_number(n : Nat) := n;</code></pre>
-            <p>Here the first comment is a section comment, because a blank line follows it. The next three lines are the description of <code>next</code>.</p>
+            <p>Here the first comment is a section comment, because a blank line follows it. The next three lines are the description of <code>same_number</code>.</p>
           </section>
           <section id="declarations">
             <h2>Declarations</h2>
@@ -338,12 +395,12 @@ def later := 0;</code></pre>
             <pre><code data-check="reject">def twice_named := 0;
 
 def twice_named := 1;  // Error: Definition symbol is already registered.</code></pre>
-            <p>Inside a declaration, parameters and local names shadow outer ones. Choose fresh local names when a clash would be confusing to the reader.</p>
+            <p>Inside a declaration, parameters and local names shadow outer ones. Pick fresh local names when a clash would be confusing to the reader.</p>
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">
             <a class="previous" href="types.html">← 1. Types and values</a>
-            <a class="next" href="terms.html">3. Terms, functions and pairs →</a>
+            <a class="next" href="terms.html">3. Functions, pairs and sums →</a>
           </nav>
         </article>
       </div>

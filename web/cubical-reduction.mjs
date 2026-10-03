@@ -1,5 +1,5 @@
 // Workbench transformations propose syntax; only the C checker accepts it.
-import { substituteTerm, substituteDimension } from "./dist/cubical-runtime/core.mjs";
+import { substituteTerm, substituteDimension } from "./translator/core.mjs";
 
 // Simplify administrative lambda applications in displayed types. Do not
 // unfold definitions or evaluate recursors (which may encode huge numerals).

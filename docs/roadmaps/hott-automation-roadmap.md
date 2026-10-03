@@ -290,7 +290,7 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     strategy must still yield convertible proofs. Record the strategy/version
     and native steps against the [cost table](#cost-of-the-current-proof-shape).
 - [x] **A4. Deterministic fuel.** Delivered on 2026-09-27 as work-plan L1.3
-  ([fuel.mjs](../../lib/cubical/fuel.mjs)). Each tactic search spends counted
+  ([fuel.mjs](../../web/translator/fuel.mjs)). Each tactic search spends counted
   fuel: subterm visits, candidate rules, rewrites, premise searches, term
   nodes walked and kernel queries, failed ones included. A declaration has
   fuel of its own for every kernel query it asks. No search reads the clock.
@@ -341,7 +341,7 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
   with Σ extensionality, hypothesis substitution, inspection and persistent
   frozen output. Extract telescope abstraction independently of any tactic so
   registered eliminators and structure descriptions can reuse it.
-  - Delivered core: [proof-goals.mjs](../../lib/cubical/proof-goals.mjs)
+  - Delivered core: [proof-goals.mjs](../../web/translator/proof-goals.mjs)
     defines `Goal`, a target at a scope (term and interval context), and
     `Transition`: a goal, the goal that remains, a plan and the search trace.
     Plan steps are composition, transport, congruence, abstraction and lemma
@@ -349,7 +349,7 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     `rw`, `simp`, `simpa`, `ext`, `intro` and `over` rebuild through the
     plan's one interface, and `calc` shares its path composition. Tactics
     share inspector records.
-    [motives.mjs](../../lib/cubical/motives.mjs) abstracts a goal over
+    [motives.mjs](../../web/translator/motives.mjs) abstracts a goal over
     several scrutinees, independently of any tactic. It generalizes the
     hypotheses that depend on them and introduces them again in each branch.
     Since 2026-09-29 the experimental `match` (L2.2a) uses it: the closing
@@ -365,7 +365,7 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
       share one string namespace with kernel symbols. A generated-name
       collision once captured a variable in a theorem statement; unique
       `Translator.fresh` names and binding assertions were the interim fix.
-      Delivered in [names.mjs](../../lib/cubical/names.mjs): each source unit
+      Delivered in [names.mjs](../../web/translator/names.mjs): each source unit
       (a module, or one template inspection) has one supply, which the
       translator, the rewriting service and checker queries all use. Its names
       never spell an assumption or a kernel symbol, and elaborating the same
@@ -384,7 +384,7 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     - [x] One computation of source link sites. The parser records keyword spans,
       as it now does for each `calc` step's `by`; concrete declarations and
       unelaborated templates use the same sites. Delivered in
-      [link-sites.mjs](../../web/mathscript/link-sites.mjs): the parser records
+      [link-sites.mjs](../../web/cubist/link-sites.mjs): the parser records
       each proof statement's keyword and each `fun`, `forall` and `exists`
       keyword. The elaborator takes tactic, `calc` step, operator and binder
       sites from there, and template links take the same tactic and `calc` step
@@ -393,7 +393,7 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     - [x] An explicit elaboration context passed down, instead of Translator
       fields (`source`, `simpRegistry`, `moduleName`, `onReference`,
       `dimensions`, `rewriteWork`) swapped in and out for templates and freeze
-      replays. Delivered in [elaboration.mjs](../../lib/cubical/elaboration.mjs):
+      replays. Delivered in [elaboration.mjs](../../web/translator/elaboration.mjs):
       a `SourceUnit` (source, module, rules, inspector sink, freeze policy,
       work counters, names) and an immutable `Scope` (telescope, source names,
       dimensions) are passed down; checker queries take the scope's context,
@@ -409,7 +409,7 @@ scoped-metavariable prerequisites; they need not wait for all of D–F.
     Index generalization for indexed families belongs to L4.2 (H2) and
     companion motives to L5.1 (H3); neither gates the H1 release (audit of
     2026-09-28, finding 5). Status: the experimental `match`
-    (`lib/cubical/match.mjs`) calls `motives.mjs` for the closing statement
+    (`web/translator/match.mjs`) calls `motives.mjs` for the closing statement
     and for recursion whose calls change another parameter (2026-09-29); any
     other expression keeps its explicit or expected motive.
 - [x] **A6. Diagnostics.** Delivered on 2026-09-27 with A4. An unfinished
@@ -715,12 +715,12 @@ Completion:
   This is a deliberate public representation change using existing core syntax.
   - Publish the checked native witness-uniqueness, total-space contraction,
     `idtoequiv`, `ua`, beta, eta and counit constructions from
-    [equivalence.mjs](../../lib/cubical/equivalence.mjs) and
-    [public-equivalence.mjs](../../lib/cubical/public-equivalence.mjs) as library
+    [equivalence.mjs](../../web/translator/equivalence.mjs) and
+    [public-equivalence.mjs](../../web/translator/public-equivalence.mjs) as library
     declarations. D3's equivalence instance then uses this same representation.
   - Provide identity, inverse, composition and Π/Σ/product equivalence
     combinators, with checked maps and laws. Keep explicit quasi-inverse data as
-    a convenient constructor input; choose fiber centers so extracting the
+    a convenient constructor input; pick fiber centers so extracting the
     inverse of that constructor computes to the supplied inverse map.
   - Migrate the public `IsEquiv`/`Equiv` definitions, `ua` lowering, tuple
     constructors and projections, and `equiv_from_inverse`. Homotopies and
@@ -728,7 +728,7 @@ Completion:
     Canonicalizing `Equiv` does not make `idtoequiv(refl)` compute strictly.
   - The existing `Fiber` in [maps](../../archive/first-library/maps.cubist) is
     `exists x : A. f(x) = y`, the opposite orientation, with 83 uses in 19
-    files. Choose the surviving name and migrate one orientation, recording
+    files. Pick the surviving name and migrate one orientation, recording
     the changed statements.
   - Publish `is_prop_is_equiv` and `equiv_eq`: equivalences with equal
     underlying maps are equal. `ext` on `Equiv` (B3) and transfer (F2) use
@@ -742,7 +742,7 @@ Completion:
   - Before removing an old representation, record its migration map and
     changed computation/assumption behavior. Proving uniqueness of arbitrary
     public half-adjoint witnesses remains an alternative if the old public
-    representation is retained; it is not a prerequisite for the chosen redesign.
+    representation is retained; it is not a prerequisite for the selected redesign.
 
 - [ ] **D1. h-level solver.** `hlevel;` closes goals of these kinds:
   - `IsContr(T)`, `IsProp(T)`, `IsSet(T)` and the aliases that D0a identifies
@@ -771,7 +771,7 @@ Completion:
 
   Define stable priority/identity order for overlapping rules, detect active
   obligation cycles, and count every recursive attempt. A failed rule may try
-  the next candidate under the same fuel; the inspector records the chosen
+  the next candidate under the same fuel; the inspector records the selected
   witnesses. Cache only within the full checked context and rule environment.
   Failure shows the chain to the first undischarged obligation. Also use the
   solver for conditional-rule premises and the target proposition of truncation
@@ -792,7 +792,7 @@ Completion:
       would be added;
     - for deleting reflexive index equations in dependent pattern matching.
   - First slice on 2026-09-29 (work-plan L2.5b):
-    [`lib/cubical/hlevel.mjs`](../../lib/cubical/hlevel.mjs) proves
+    [`web/translator/hlevel.mjs`](../../web/translator/hlevel.mjs) proves
     `IsContr`, `IsProp`, `IsSet` and `HasLevel`, stated with D0a's
     definitions, and `x = y` when `IsProp(T)` is proved, which covers
     `p = q` when `IsSet(T)` is. It tries local evidence and explicit hints,
@@ -807,7 +807,7 @@ Completion:
     paths of numbers are equal. Registered rules, and with them cycle
     detection, quantified hints, Hedberg for registered carriers, one layer
     of unfolding, `Truncate`, the solver's use for premises and truncation
-    targets, and the inspector's record of chosen witnesses remain.
+    targets, and the inspector's record of selected witnesses remain.
 - [ ] **D2. Subtype extensionality.** Add a checked lemma: given `B : A -> U`
   whose fibers are propositions and a path `p : a = a'`, any `b : B(a)` and
   `b' : B(a')` are connected by `PathP(fun (i : Interval) => B(p @ i), b, b')`.
@@ -833,7 +833,7 @@ Completion:
     - group isomorphisms, from `group_isomorphism_total_contractible`;
     - structured sets, from `structure_total_contractible`;
     - equivalences, from the total-space form of univalence. That form is
-      checked in `lib/cubical/equivalence.mjs` ([derived univalence milestone](../cubical/experiment.md#derived-univalence-milestone))
+      checked in `web/translator/equivalence.mjs` ([derived univalence milestone](../cubical/experiment.md#derived-univalence-milestone))
       and published at D0b's canonical public representation. Do not assume the
       native contraction already has the old half-adjoint public type.
 - [ ] **D4. Total-space contraction combinators.** Identity systems (D3) and
@@ -1099,25 +1099,24 @@ The matcher, resource limits and witness reconstruction must support it first.
 
 | Existing location | Planned work |
 | --- | --- |
-| [translator](../../lib/cubical/translate.mjs) | Builtin lowering (A1), goal/scope plans (A5), projections (A8), canonical `ua` input (D0b), new statements; `match` and views are ergonomics milestone 7 |
-| [proof-rewrite.mjs](../../lib/cubical/proof-rewrite.mjs) | Traversal (A2), congruence lines (A3), alias and view matching (A1), fillers (E1) |
-| [path-algebra.mjs](../../lib/cubical/path-algebra.mjs), [paths](../../archive/first-library/paths.cubist), [path_actions](../../archive/first-library/path_actions.cubist) | Prelude bodies, C3 laws, dependent path operations (E0), double composition and squares (E2), missing lemmas |
+| [translator](../../web/translator/translate.mjs) | Builtin lowering (A1), goal/scope plans (A5), projections (A8), canonical `ua` input (D0b), new statements; `match` and views are ergonomics milestone 7 |
+| [proof-rewrite.mjs](../../web/translator/proof-rewrite.mjs) | Traversal (A2), congruence lines (A3), alias and view matching (A1), fillers (E1) |
+| [path-algebra.mjs](../../web/translator/path-algebra.mjs), [paths](../../archive/first-library/paths.cubist), [path_actions](../../archive/first-library/path_actions.cubist) | Prelude bodies, C3 laws, dependent path operations (E0), double composition and squares (E2), missing lemmas |
 | [suspension_types](../../archive/first-library/suspension_types.cubist), [suspension](../../archive/first-library/suspension.cubist), [circle](../../archive/first-library/circle.cubist) | Evidence only (archived): replaced by H1 declarations in the rebuild |
 | [homotopy_paths](../../archive/first-library/homotopy_paths.cubist), [field_extensionality](../../archive/first-library/field_extensionality.cubist), [primes](../../archive/first-library/primes.cubist) | Conversion audit of proofs by induction (A7) |
 | [loop_words](../../archive/first-library/loop_words.cubist) | Reflective loop normalizer (C4) |
-| [simp-registry.mjs](../../lib/cubical/simp-registry.mjs) | Aliases, distinct conversion/equality entries, bounded `hlevel_rule` and `ext_rule` registries |
+| [simp-registry.mjs](../../web/translator/simp-registry.mjs) | Aliases, distinct conversion/equality entries, bounded `hlevel_rule` and `ext_rule` registries |
 | [sets](../../archive/first-library/sets.cubist), [truncation](../../archive/first-library/truncation.cubist), [bijection_equality](../../archive/first-library/bijection_equality.cubist) | Numeric h-level templates and their aliases (D0a) |
-| [equivalence.mjs](../../lib/cubical/equivalence.mjs), [public-equivalence.mjs](../../lib/cubical/public-equivalence.mjs), [paths](../../archive/first-library/paths.cubist), [maps](../../archive/first-library/maps.cubist) | Canonical public equivalences, `Fiber` orientation and checked univalence API (D0b) |
+| [equivalence.mjs](../../web/translator/equivalence.mjs), [public-equivalence.mjs](../../web/translator/public-equivalence.mjs), [paths](../../archive/first-library/paths.cubist), [maps](../../archive/first-library/maps.cubist) | Canonical public equivalences, `Fiber` orientation and checked univalence API (D0b) |
 | [identity_systems](../../archive/first-library/identity_systems.cubist) | Eliminator, computation law and universe templates (D3); contraction combinators (D4) |
 | [fundamental_groups](../../archive/first-library/fundamental_groups.cubist) | Pointed types and loop spaces (F4) |
 | [structured_sets](../../archive/first-library/structured_sets.cubist), [algebraic_fields](../../archive/first-library/algebraic_fields.cubist), [field_embedding_spaces](../../archive/first-library/field_embedding_spaces.cubist) | Compositional descriptions, property fields and derived identity (F1) |
 | [quotient_descent](../../archive/first-library/quotient_descent.cubist), [quotient_operations](../../archive/first-library/quotient_operations.cubist) | Evidence only (archived): replaced by the `Quotient` declaration and milestone 7's multi-argument `match` |
 | [native elaborator](../../web/cubical-elaborator.mjs), [kernel adapter](../../web/cubical-kernel.mjs) | Fuel accounting (A4), prelude definitions (A1), face-restricted query (E2) |
 | [assumption schemas](../../web/cubical-assumptions.mjs), [field_logic](../../archive/first-library/field_logic.cubist), [kernel](../../kernel/README.md) | Replaced by H1's `Trunc` and `Quotient` and G2's resizing policy ([kernel roadmap](cubical-kernel-roadmap.md)) |
-| [parser](../../web/mathscript/parser.mjs), [formatter](../../web/mathscript/formatter.mjs) | New statement syntax, projection syntax (A8), spans and roundtrips |
+| [parser](../../web/cubist/parser.mjs), [formatter](../../web/cubist/formatter.mjs) | New statement syntax, projection syntax (A8), spans and roundtrips |
 | [measurement script](../examples/proof-ergonomics/measure.mjs) | HoTT baseline (A7) |
 | [conversion probes](../examples/hott-automation/conversion-laws.cubist), [rejected laws](../examples/hott-automation/README.md#rejected-laws) | Conversion fixture and expected failures (A7) |
-| [runtime build](../../tools/build-cubical-runtime.mjs) | List every new shared module |
 | [language reference](../../web/language.html) | Document delivered syntax only |
 
 A–F require no new C kernel rule. The face-restricted query exposes a judgement
@@ -1162,7 +1161,7 @@ Mandatory cases:
 Future gates, not claimed results:
 
 ```sh
-node tools/build-cubical-runtime.mjs
+make wasm
 npm test -- tests/proof-ergonomics.test.mjs tests/cubical-program.test.mjs
 npm test -- paths circle group_identity group_total_identity identity_systems equivalence_from_inverse
 npm test -- suspension_types suspension homotopy_paths loop_words fundamental_groups
@@ -1260,9 +1259,9 @@ Causes, in the current source:
 
 1. `refl`, `sym`, `trans`, `cong`, `transport`, `path_induction` and
    `based_induction` lower directly to `PLam`, `PApp` and `Comp` syntax in
-   `Translator.termBody` ([translator](../../lib/cubical/translate.mjs)). The
+   `Translator.termBody` ([translator](../../web/translator/translate.mjs)). The
    quantified-rule matcher, `simplificationRule` in
-   [proof-rewrite.mjs](../../lib/cubical/proof-rewrite.mjs), understands only
+   [proof-rewrite.mjs](../../web/translator/proof-rewrite.mjs), understands only
    variables, definition references, applications, `Succ` and a few constants.
    A rule stated with `trans` therefore never matches, and `rw` cannot reach the
    path argument of any `transport`.
@@ -1442,14 +1441,14 @@ the same way. There, the ergonomic forms of its arithmetic examples use 1.7 to
 - The `cases` statement uses a constant motive. Its branch goals do not replace
   the scrutinee by `left(x)` or `right(y)`.
 - The kernel has no regularity. Transport along a constant family need not
-  compute for a neutral type ([path-algebra.mjs](../../lib/cubical/path-algebra.mjs),
+  compute for a neutral type ([path-algebra.mjs](../../web/translator/path-algebra.mjs),
   [kernel overview](../../kernel/README.md)). Consequently, `based_induction`
   at `refl` need not reduce to its base case.
 - The kernel adapter's [withGrowingBudget](../../web/cubical-kernel.mjs)
   doubles an exhausted native step budget up to the unsigned 64-bit maximum.
   Frontend fuel alone therefore does not bound native work.
 - Public [Equiv](../../archive/first-library/paths.cubist) uses half-adjoint data;
-  [native equivalences](../../lib/cubical/equivalence.mjs) use contractible
+  [native equivalences](../../web/translator/equivalence.mjs) use contractible
   fibers. The native total-space univalence theorem cannot simply be published
   at the existing public type: the reverse public roundtrip remains an
   [open obligation](../cubical/public-equivalence.md#validation-and-remaining-obligations).
