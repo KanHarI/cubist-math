@@ -23,7 +23,9 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const nodeSummary = /^ℹ (tests|pass|fail) \d+$/gm, pageSummary = /^(PASS|FAIL) .*$/gm;
+// The Node suite's counts, with the cancelled, skipped and todo tests when there
+// are any, so that pass and fail always add up to the tests.
+const nodeSummary = /^ℹ (?:(?:tests|pass|fail) \d+|(?:cancelled|skipped|todo) [1-9]\d*)$/gm, pageSummary = /^(PASS|FAIL) .*$/gm;
 const coverageSummary = /^.*(Archive checked|definitions derive|Coverage complete).*$/gm;
 
 // The local checks, in order: the kernel's tests and lint; the fatal
@@ -32,12 +34,13 @@ const coverageSummary = /^.*(Archive checked|definitions derive|Coverage complet
 // build and its stamp; instruction coverage, which checks the archive and
 // re-derives every definition; the Node suite; and the browser and site
 // checks. A check's summary is the lines its pattern finds in its
-// output, or else its last line.
+// output, or else its last line. The WASM build has none: its output is the
+// commands make runs, and the record's build stamp says what it built.
 export const localChecks = (platform = process.platform) => [
   { name: "Kernel tests", command: ["make", "-C", "kernel", "test"] },
   { name: "Lint", command: ["make", "lint"] },
   { name: "Sanitizers", command: ["make", "sanitize", ...(platform === "darwin" ? ["SANITIZERS=undefined"] : [])] },
-  { name: "WASM build", command: ["make", "wasm"] },
+  { name: "WASM build", command: ["make", "wasm"], summary: false },
   { name: "Build stamp", command: ["node", "tools/build-stamp.mjs", "check"] },
   { name: "Instruction coverage", command: ["node", "tools/instruction-coverage.mjs"], summary: coverageSummary },
   { name: "Node suite", command: ["npm", "test"], summary: nodeSummary },
@@ -57,7 +60,7 @@ export function outcome({ name, command, summary }, { status, error = null, outp
   const found = summary ? [...output.matchAll(summary)].map(match => match[0].trim()).filter(Boolean) : [];
   const last = output.trim().split("\n").at(-1)?.trim();
   return { name, command: command.join(" "), status: error ?? status, passed: !error && status === 0, seconds,
-    summary: found.length ? found : last ? [last] : [] };
+    summary: summary === false ? [] : found.length ? found : last ? [last] : [] };
 }
 function runCheck(check, cwd) {
   const started = Date.now();

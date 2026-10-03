@@ -12,6 +12,11 @@ specification, except that section 7 and its subsections are below.
 The specification's opening, as it read on 2026-10-02 after the release.
 Its dated paragraphs were added at the top as each step happened.
 
+The [release evidence](h1-release-evidence.md) it links now records the
+revision merged into `main`: item 5 was run again on 2026-10-03 at
+`8229181`, after the refactors of #120–#132, and every check passed. The
+first record, of `581e03c`, is that file as commit `cb0b0dd` wrote it.
+
 2026-10-02 release. With checklist items 1–4 approved and item 6 retired as
 a gate, the experimental option is removed and default admission granted:
 the kernel admits declared types by default (5.7), no CLI, workbench or

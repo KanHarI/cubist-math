@@ -297,7 +297,9 @@ is not a reviewed soundness note, and passing examples do not remove the
 option. **Released on 2026-10-02:** with the checklist's items 1–4 approved
 and item 6 retired as a gate, the option was removed and default admission
 granted; results carry no marker. Item 5's run at that revision, `581e03c`,
-passed the same day: the [release evidence](h1-release-evidence.md).
+passed the same day, and again on 2026-10-03 at `8229181`, the revision
+merged into `main` after the refactors of #120–#132: the
+[release evidence](h1-release-evidence.md).
 
 Universe fixtures cover phantom parameters, stored data, arities, indices
 and quotient relations: parameters contribute only through those types.

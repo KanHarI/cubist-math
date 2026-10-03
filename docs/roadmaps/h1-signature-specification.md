@@ -18,7 +18,7 @@ assumed baseline of 4.1 and to premise P1 of the model; 4.5 lists what is
 proved, argued and assumed. Normalization and decidable conversion are not
 claimed, and a canonicity fixture is not a proof of them. The
 [release evidence](h1-release-evidence.md) records every check at the
-release revision, `581e03c`.
+release revision, `8229181`.
 
 The [history](h1-history.md) keeps what this document said along the way:
 the release checklist and its record, the experimental mode and its

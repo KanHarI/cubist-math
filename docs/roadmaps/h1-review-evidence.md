@@ -27,7 +27,7 @@ found, the tests that exercise the behaviour the argument relies on, and what
 a review decision still needs. As the specification's 4.5 says, the tests are
 evidence for the specified behaviour, not for these claims. **Items 1, 2
 and 3 are approved**, relative to the assumed baseline and premise P1. The checklist's other items are not
-mathematical: the acceptance matrix (item 4, approved on 2026-10-02), a pinned run (item 5, [recorded at the release revision](h1-release-evidence.md) on 2026-10-02) and the
+mathematical: the acceptance matrix (item 4, approved on 2026-10-02), a pinned run (item 5, [recorded at the release revision](h1-release-evidence.md) on 2026-10-02, and again on 2026-10-03 after the refactors of #120–#132) and the
 differential fixtures (item 6, retired as a gate on 2026-10-02).
 
 ## Summary
