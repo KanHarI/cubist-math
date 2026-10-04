@@ -9,12 +9,12 @@ def euclid : InfinitelyManyPrimes {
   obtain (i, hp, hd) := prime_divisor_exists(m, factorial_positive(n));
   let p := 2 + i;
   let bigger : n < p {
-    cases nat_le_total(p, n) {
-      left bounded => {
+    match nat_le_total(p, n) {
+      left(bounded) => {
         let divides_factorial := bounded_divisor_of_factorial(i, n, bounded);
         exact absurd(nontrivial_divisor_not_consecutive(i, factorial(n), divides_factorial, hd));
       }
-      right greater => {
+      right(greater) => {
         exact greater;
       }
     }

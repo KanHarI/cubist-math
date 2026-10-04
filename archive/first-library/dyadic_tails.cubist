@@ -56,14 +56,14 @@ def field_sequence_antitone_step(
   ordered : IndexLE(m, succ(n))
 ) :
   FieldLe(F, lt, sequence(succ(n)), sequence(m)) {
-  cases nat_le_succ_split(m, n, ordered) {
-    left earlier => {
+  match nat_le_succ_split(m, n, ordered) {
+    left(earlier) => {
       exact order_le_trans(
         F, zero, one, addF, mulF, lt, arithmetic, sequence(succ(n)), sequence(n), sequence(m),
         decreasing(n), previous(m, earlier)
       );
     }
-    right same => {
+    right(same) => {
       exact along((fun (k : Nat) => FieldLe(F, lt, sequence(succ(n)), sequence(k)))) by sym(same) from order_le_refl(
         F, lt, order, sequence(succ(n))
       );

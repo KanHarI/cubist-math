@@ -264,10 +264,12 @@ export function elaborateMatch(translator, n, value, instance, scope, expected) 
 export function elaborateMatchStatement(translator, n, goal, scope) {
   const locate = (error, node = n) => scope.unit.locate(error, node);
   const value = translator.term(n.value, scope, null);
-  const instance = scope.nf(scope.infer(value).type);
+  const type = scope.infer(value).type, instance = scope.nf(type);
+  if (instance.tag === "Sum" && !n.induction) return sumStatement(translator, n, goal, scope, value, type, instance);
   if (instance.tag !== "Sort")
-    throw locate(Error(instance.tag === "Sum" ? `The ${keyword(n)} statement takes apart a value of a declared type; for a sum, use cases.`
-      : translator.checker.kernel?.extensions?.h1 ? `The ${keyword(n)} statement takes apart a value of a declared type.`
+    throw locate(Error(instance.tag === "Sum" ? `The induction statement takes apart a value of a declared type; for a sum, use match.`
+      : translator.checker.kernel?.extensions?.h1 ? n.induction ? `The ${keyword(n)} statement takes apart a value of a declared type.`
+      : `The ${keyword(n)} statement takes apart a value of a declared type, or of a sum.`
       : `The ${keyword(n)} statement takes apart a value of a declared type, and declared types (H1) are switched off in this kernel session.`),
       n.value);
   const declared = declaredType(translator, scope, n, instance, locate);
@@ -284,6 +286,36 @@ export function elaborateMatchStatement(translator, n, goal, scope) {
         }));
     return motive.apply(T.app(T.eliminator(instance.signature, motive.term, clauses), value));
   });
+}
+
+// The match statement on a sum, `match v { left(a) => { … } right(b) => { … } }`:
+// its motive is the goal over v, and each clause proves it at its side's
+// injection, with the hypotheses about v bound again, as on a declared type.
+function sumStatement(translator, n, goal, scope, value, type, sum) {
+  const locate = (error, node = n) => scope.unit.locate(error, node);
+  const sides = new Map();
+  for (const clause of n.clauses) {
+    const side = clause.constructor.text;
+    if (side !== "left" && side !== "right")
+      throw locate(Error(`A sum's clauses are left(a) => { … } and right(b) => { … }; found ${side}.`), clause.constructor);
+    if (sides.has(side)) throw locate(Error(`${side} has two clauses.`), clause.constructor);
+    const names = clause.args ?? clause.binders;
+    if (names.length !== 1 || names[0].kind === "pattern" || clause.coordinates.length || clause.more)
+      throw locate(Error(`A sum's clause names its side's value: ${side}(a) => { … }.`), clause.constructor);
+    sides.set(side, { clause, token: names[0] });
+  }
+  for (const side of ["left", "right"]) if (!sides.has(side))
+    throw locate(Error(`The match on a sum needs a clause for ${side}: ${side}(a) => { … }.`));
+  const motive = abstractMotive(goal.at(scope), [value], { contracted: true });
+  const clause = side => {
+    const { clause, token } = sides.get(side);
+    const name = scope.fresh(token.text), domain = sum[side];
+    const inner = translator.sourceBinding(token, T.variable(name), scope.bind(name, domain));
+    const injected = (side === "left" ? T.inl : T.inr)(type, T.variable(name));
+    const { transition, goal: at } = branch(translator, motive, value, scope, inner, injected);
+    return T.lam(name, domain, transition.rebuild(translator.block(clause.body, at)));
+  };
+  return motive.apply(T.sumrec(motive.term, clause("left"), clause("right"), value));
 }
 
 // A clause's goal, from a motive of the motive service: the motive at the

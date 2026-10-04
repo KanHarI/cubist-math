@@ -82,43 +82,43 @@ def field_closure_step_into_subfield(
   step : FieldClosureStep(F, P, x)
 ) :
   Q(x) {
-  cases step {
-    left member => {
+  match step {
+    left(member) => {
       exact included(x, member);
     }
-    right alternatives => {
-      cases alternatives {
-        left zeroPath => {
+    right(alternatives) => {
+      match alternatives {
+        left(zeroPath) => {
           exact along Q by sym(zeroPath) from subfield_zero(F, Q, laws);
         }
-        right nonzeroAlternatives => {
-          cases nonzeroAlternatives {
-            left onePath => {
+        right(nonzeroAlternatives) => {
+          match nonzeroAlternatives {
+            left(onePath) => {
               exact along Q by sym(onePath) from subfield_one(F, Q, laws);
             }
-            right operation => {
-              cases operation {
-                left negated => {
+            right(operation) => {
+              match operation {
+                left(negated) => {
                   obtain (y, py, same) := negated;
                   exact along Q by same from subfield_neg(F, Q, laws, y, included(y, py));
                 }
-                right binaryOrInverse => {
-                  cases binaryOrInverse {
-                    left added => {
+                right(binaryOrInverse) => {
+                  match binaryOrInverse {
+                    left(added) => {
                       obtain (y, z, py, pz, same) := added;
                       exact along Q by same from subfield_add(
                         F, Q, laws, y, z, included(y, py), included(z, pz)
                       );
                     }
-                    right productOrInverse => {
-                      cases productOrInverse {
-                        left multiplied => {
+                    right(productOrInverse) => {
+                      match productOrInverse {
+                        left(multiplied) => {
                           obtain (y, z, py, pz, same) := multiplied;
                           exact along Q by same from subfield_mul(
                             F, Q, laws, y, z, included(y, py), included(z, pz)
                           );
                         }
-                        right inverted => {
+                        right(inverted) => {
                           obtain (y, py, inverseLaw) := inverted;
                           exact subfield_inverse(F, Q, laws, y, x, included(y, py), inverseLaw);
                         }

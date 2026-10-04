@@ -41,11 +41,11 @@ def selected_decidable(
   let P := fun (x : A) => Truth(p(x));
   let x := sigma_first(A, P, u);
   let y := sigma_first(A, P, v);
-  cases decide(x, y) {
-    left h => {
+  match decide(x, y) {
+    left(h) => {
       exact left(subtype_ext(A, P, (fun (a : A) => truth_prop(p(a))), u, v, h));
     }
-    right different => {
+    right(different) => {
       exact right(fun (h : u = v) => different(cong(sigma_first(A, P), h)));
     }
   }

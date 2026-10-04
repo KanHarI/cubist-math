@@ -18,14 +18,16 @@ def not_unit : Unit {
   exact 0;
 }
 
-// Error: E606: Type mismatch: found Unit -> Nat, expected Unit -> Shape(value).
+// The match refines the goal: in the left clause it is Shape(left(a)), the
+// motive at left(a), which computes to Nat.
+// Error: E606: Type mismatch: found Unit -> Unit, expected forall x' : Unit. Shape(left(x')).
 def refined(value : Unit or Unit) : Shape(value) {
-  cases value {
-    left a => {
-      exact 0;
-    }
-    right b => {
+  match value {
+    left(a) => {
       exact tt;
+    }
+    right(b) => {
+      exact 0;
     }
   }
 }
