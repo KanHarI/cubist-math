@@ -136,7 +136,8 @@ nest in L2.4.
 `extends` takes the parents' fields, in order, before the theory's own. A
 theory may extend several parents. An ancestor that two parents reach
 contributes its fields once when it arrives with the same fields under the
-same names: `CommGroup extends AbelianGroup, CommMonoid` has one `Monoid`.
+same names: `CommGroup extends Group, CommMonoid` has one `Monoid`, and
+`Group`'s `inv` with `CommMonoid`'s `mul_comm`.
 An ancestor that arrives renamed is another copy: below, the additive and
 the multiplicative structure each have their own `Monoid`, with `add` and
 `mul`, on the one sort `R`.

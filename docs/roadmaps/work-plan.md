@@ -22,8 +22,8 @@ option and the marker were removed.
 
 **Current scope.** Advance the language, elaborator, tooling and the kernel
 features they require. Use small checked programs as acceptance evidence. On
-2026-10-05 the library rebuild resumed for its foundations: the prelude's
-arithmetic, quotients, the integers and rationals, and the algebraic
+2026-10-05 the library rebuild resumed for its foundations: the natural
+numbers' arithmetic, quotients, the integers and rationals, and the algebraic
 hierarchy through L2.4's theories ([first actions](#first-actions)). Real
 and complex analysis, Galois theory and RH stay paused; reaching a language
 milestone does not resume them. Their old B-package IDs are retained in the
@@ -617,10 +617,12 @@ merge into `main`, the checker's retirement (I1.2b), face restriction
 (I1.2c), argument inference (L4.1a, L4.1b, L4.4, 2026-10-04), and the rest
 of explicit matching with the `cases` migration (L2.2a, 2026-10-04).
 
-1. **One prelude for the natural numbers.** `nat` and `naturals` become one
-   module, the prelude every module imports, written in today's syntax:
-   `Nat`, its arithmetic and order, and their laws. The archive's copies of
-   that arithmetic are removed, its dependents using the prelude's.
+1. **One module for the natural numbers.** `nat` and `naturals` become one
+   module, `nat`, written in today's syntax: `Nat`, its arithmetic and
+   order, and their laws. Nothing is imported automatically: a module that
+   uses the natural numbers, numerals included, imports `nat` itself. The
+   archive's copies of that arithmetic are removed, its dependents
+   importing `nat`.
 2. **Effective quotients.** In `quotients`, related elements are exactly
    those with equal classes, for a relation that is an equivalence of
    propositions: the integers' and rationals' decidable equality needs it.
