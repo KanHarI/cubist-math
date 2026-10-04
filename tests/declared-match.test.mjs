@@ -93,14 +93,8 @@ test("recursion whose other arguments vary: an abandoned attempt spends nothing"
   assert.ok(spent("once")[0] > spent("plain")[0] && spent("once")[1] === spent("plain")[1]);
 });
 
-// An operator that stands for the declaration calls it as its name does.
-test("recursion whose other arguments vary: a call spelled with an operator", async t => {
-  const { get } = await check(t, `inductive N { zero; succ(n : N); }
-def add(n, a : N) : N := match n { zero => a; succ(m) => m + succ(a); };
-def five : add(succ(succ(zero)), succ(succ(succ(zero)))) = succ(succ(succ(succ(succ(zero))))) { rfl; }
-`);
-  for (const name of ["add", "five"]) ok(get(name));
-});
+// An operator that stands for the declaration calls it as its name does:
+// cubist-tests/declared_match_operator_call.cubist.
 
 // A clause's goal shows a generalized parameter under its own name, without
 // the parameter it supersedes; its recursive result quantifies over it. A
