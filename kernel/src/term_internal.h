@@ -321,6 +321,9 @@ cc_term ck_fiber_type(cc_kernel *, cc_term, cc_term, cc_term, cc_term);
 cc_term ck_contractible_type(cc_kernel *, cc_term);
 cc_term ck_identity_equiv(cc_kernel *, cc_term);
 cc_term ck_append_tube(cc_kernel *, cc_term, cc_formula_id, cc_term);
+/* A composition's system one clause to a tube, and with `drop_empty`
+ * without its tubes on the face 0 (CC_STEP_SPLIT). */
+cc_term ck_clause_tubes(cc_kernel *, cc_term, bool drop_empty);
 cc_term ck_fill(cc_kernel *, unsigned, cc_term, cc_term, cc_term, const cc_formula *);
 cc_term ck_glue_composition(cc_kernel *, unsigned, cc_term, cc_term, cc_term);
 cc_term ck_universe_composition(cc_kernel *, unsigned, cc_term, cc_term);

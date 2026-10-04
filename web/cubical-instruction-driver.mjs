@@ -98,6 +98,11 @@ const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: 
 //   { move: "whnf", side }             the kernel's weak head normal form
 //   { move: "eta" }                    eta-expand the side that is not a
 //                                      constructor, against one that is
+//   { move: "split", side }            a composition's tubes one clause to
+//                                      a tube, those on the face 0 dropped,
+//                                      by the kernel's split step: offered
+//                                      when two compositions' tubes are on
+//                                      different faces
 //   { move: "glue", side }             Glue eta by the kernel's Glue step,
 //                                      within GLUE_STEPS: a piece may be the
 //                                      base's restriction only once both are
@@ -128,7 +133,8 @@ const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: 
 //
 // The heuristic is the driver's own order, lazily, since its tests ask the
 // guide: normalize a long closed computation unless the guide finds the
-// sides different; descend when no parts are known to differ; computation
+// sides different; split a composition's tubes so that they face the other
+// side's; descend when no parts are known to differ; computation
 // steps before unfolding, left before right; unfold the later definition,
 // or both when it is the same (lazy delta reduction); then weak head normal
 // forms, left then right; then eta.
@@ -138,6 +144,8 @@ export const heuristicPolicy = Object.freeze({
     const { driver, moves } = point, find = (move, side) => moves.find(m => m.move === move && (!side || m.side === side));
     const normalize = find("normalize");
     if (normalize && driver.equal(point.x, point.y, point.terms, point.dims) !== false) yield normalize;
+    const split = find("split");
+    if (split) return yield split;
     const descend = find("descend");
     if (descend && driver.partsEqual(point.nx, point.ny, point.terms, point.dims)) yield descend;
     const left = find("step", "left"), right = find("step", "right");
@@ -444,6 +452,10 @@ export class InstructionDriver {
       return g.pathLambda(dimension, a ? this.convertTo(body, this.asType(within(a))) : body);
     }
     case "PApp": {
+      // A path is applied at an interval point. A face formula there is
+      // refused, not read as the interval with the same clauses.
+      if (this.kernel.inspectFormula(n.payload).sort !== "interval")
+        throw new Error("A path is applied at an interval point; found a face formula.");
       const path = this.shape(this.focus(derive(a), "type"), "Path");
       const point = this.point(n.payload);
       if (point.dimension !== undefined) return g.pathApply(path, g.dimension(point.dimension), 0);
@@ -490,7 +502,8 @@ export class InstructionDriver {
       // the family there, which is constant.
       const dimension = g.dimension(n.payload), family = this.asType(within(a));
       const base = this.convertTo(derive(c), g.endpoint(family, dimension, 0));
-      const face = this.node(b).payload, { clauses } = this.kernel.inspectFormula(face);
+      const face = this.node(b).payload, { sort, clauses } = this.kernel.inspectFormula(face);
+      if (sort !== "face") throw new Error("A transport's face is a face formula; found an interval point.");
       let system = g.system(dimension, family, base);
       clauses.forEach((clause, index) => {
         const value = this.convertTo(this.restrict(base, clause), this.restrict(family, clause));
@@ -730,7 +743,9 @@ export class InstructionDriver {
     for (let part = chain; part; part = this.node(part).children[next]) {
       const { payload: face, children } = this.node(part);
       const term = pair ? [children[0], children[1]] : children[0];
-      const { clauses } = this.kernel.inspectFormula(face);
+      // A part's face is a face formula, never an interval point read as one.
+      const { sort, clauses } = this.kernel.inspectFormula(face);
+      if (sort !== "face") throw new Error("A partial element's face is a face formula; found an interval point.");
       if (!clauses.length) { yield { face, term, clause: null }; continue; }
       for (const clause of clauses) {
         const restrict = handle => this.restrictSyntax(handle, clause);
@@ -953,8 +968,13 @@ export class InstructionDriver {
       : Object.assign(new KernelError("Type mismatch.", "mismatch"), { mismatch: { found, expected: wanted }, search: error?.message });
     if (!this.agree(a, b, null, null, budget)) {
       // Too long, or stuck: compare normal forms, when they can be computed.
+      // Normal forms keep each system's faces as they were written, so two
+      // whose compositions split their tubes otherwise are compared again,
+      // where the split move can bring their systems together.
       try { for (const focus of [a, b]) this.reduce(focus, { path: [], rule: "normalize" }); }
       catch (error) { throw mismatch(error); }
+      if (!this.alpha(this.subterm(a), this.subterm(b)) && [a, b].some(focus => this.splits(this.subterm(focus))))
+        this.agree(a, b, null, null, { left: this.fuel });
     }
     if (!this.alpha(this.subterm(a), this.subterm(b))) {
       // Universes and families of universes are cumulative.
@@ -1111,6 +1131,12 @@ export class InstructionDriver {
   moves(point) {
     const { a, b, nx, ny, terms, dims } = point, moves = [];
     if (point.normalize) moves.push({ move: "normalize" });
+    // Two compositions' systems are one partial element whichever clauses
+    // their faces are written in: a side with a tube on several clauses, or
+    // on the face 0, splits it, so that congruence can compare tube with
+    // tube.
+    if (nx.kind === ny.kind && (nx.kind === "Comp" || nx.kind === "HComp") && !this.sameFaces(nx, ny, dims))
+      for (const [side, node] of [["left", nx], ["right", ny]]) if (this.looseTube(node)) moves.push({ move: "split", side });
     if (!point.descended && nx.kind === ny.kind && !point.failed.has(`${point.x},${point.y}`) && this.sameHead(nx, ny, terms, dims))
       moves.push({ move: "descend" });
     const x = this.subterm(a), y = this.subterm(b), left = this.headStep(x), right = this.headStep(y);
@@ -1165,6 +1191,9 @@ export class InstructionDriver {
       if (this.eta(a, b)) { point.failed.add(`eta:${point.x},${point.y}`); return "progress"; }
       point.stuck.add("eta");
       return "stuck";
+    case "split":
+      this.reduce(move.side === "left" ? a : b, { path: [], rule: "split" });
+      return "progress";
     case "glue":
       if (this.glue(move.side === "left" ? a : b)) return "progress";
       point.stuck.add(`glue:${move.side}`);
@@ -1188,6 +1217,33 @@ export class InstructionDriver {
     try { for (const focus of [a, b]) this.reduce(focus, { path: [], rule: "normalize" }); }
     catch { return false; }
     return this.alpha(this.subterm(a), this.subterm(b), terms, dims);
+  }
+  // Whether two compositions' tubes are on the same faces, in order. Their
+  // faces are in the outer cube, named through `dims`.
+  sameFaces(x, y, dims) {
+    let a = x.children[1], b = y.children[1];
+    for (; a && b; a = this.node(a).children[1], b = this.node(b).children[1])
+      if (!this.sameFormula(this.node(a).payload, this.node(b).payload, dims)) return false;
+    return !a && !b;
+  }
+  // Whether a term has a composition with a tube on a face that is not one
+  // clause, anywhere: the graph is shared, so each node is visited once.
+  splits(term, seen = new Map()) {
+    if (!term) return false;
+    if (seen.has(term)) return seen.get(term);
+    seen.set(term, false);
+    const n = this.node(term);
+    const found = ((n.kind === "Comp" || n.kind === "HComp") && this.looseTube(n))
+      || n.children.some(child => this.splits(child, seen));
+    seen.set(term, found);
+    return found;
+  }
+  // Whether a composition has a tube on a face that is not one clause:
+  // several, or none (the face 0), which the split step writes otherwise.
+  looseTube(n) {
+    for (let tube = n.children[1]; tube; tube = this.node(tube).children[1])
+      if (this.kernel.inspectFormula(this.node(tube).payload).clauses.length !== 1) return true;
+    return false;
   }
   // The registry index of the definition a delta step unfolds.
   definitionAt(term, step) {

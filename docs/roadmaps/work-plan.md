@@ -40,7 +40,7 @@ between columns.
 
 | Area | Delivered | Still open |
 | --- | --- | --- |
-| Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default; explicit driver options and cumulative kernel-work counters (learned-search phases 1–2); I1.2a, instruction isolation: no untrusted query can change an instruction's verdict; I1.2b, the term checker and conversion oracle retired (2026-10-02); I1.2c, judgements on a face and partial elements on a face-dependent context (2026-10-04) | I1.2c's two remaining gaps; stage-6 performance and certificate work |
+| Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default; explicit driver options and cumulative kernel-work counters (learned-search phases 1–2); I1.2a, instruction isolation: no untrusted query can change an instruction's verdict; I1.2b, the term checker and conversion oracle retired (2026-10-02); I1.2c, judgements on a face and partial elements on a face-dependent context, with its two remaining gaps closed (2026-10-04) | Stage-6 performance and certificate work |
 | G0 universes | K1.1–K1.4 and L1.1; `U < UU0`, `next`, `max`, generic builtins and rewriting; all 43 former templates check generically | E1 and E2, deferred proposals |
 | Proof ergonomics | Grouped binders, `let` with a stated type or a proof block (which replaced `have`, `show` and `suffices` on 2026-09-30), `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand; Σ projections `p.1`/`p.2` (L1.5); path-operator notation (`-i`, `&`, `\|`, `path i =>`) and readable path diagnostics (PR #71); `hlevel`, L2.5b's first slice; holes `_` and named arguments (L4.1a) | L4.1b and L4.4 (implicit binders and level inference, `apply`/`refine`), L1.4 (folded path rules, constructor descent), B1 (`Path` induction), broader dependent rewriting, L2.5b's remainder |
 | Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | L1.2r |
@@ -177,18 +177,41 @@ rest as Cubist: unglue's equivalence along a line of Glue types, the
 contraction of the type of types equivalent to a type, `idtoequiv` after
 `glue_path`, and univalence, all computable; the JavaScript builders they
 replace were retired. Archive coverage is unchanged, to the instruction
-and the step. Two gaps remain, and neither accepts a false judgement;
-they are the next kernel work ([first actions](#first-actions)):
+and the step. Two gaps remained, neither accepting a false judgement;
+both were closed later on 2026-10-04:
 
 - **(a) Systems split differently.** The normal form of unglue's
-  equivalence over a Glue type on `i = 0` is not checked again: there two
-  tubes' agreement is a composition that the kernel's normal form splits
-  into tubes otherwise than the other side, and the driver compares no
-  systems split differently.
-- **(b) A face given as an interval.** The driver reads a face-sorted
+  equivalence over a Glue type on `i = 0` was not checked again: there two
+  tubes' agreement is a composition whose tube a substitution of a
+  compound point leaves on `i = 0 ∨ j = 0`, where the other side has a
+  tube on each, and the driver compared no systems split differently.
+  **Closed:** the kernel's step rule `Split` writes a composition's system
+  one clause to a tube, each the same term, and drops a tube on the face 0
+  (CCHM's systems are partial elements, the same however their faces are
+  written; `kernel/tests/test_faces.c`). The driver's split move makes it,
+  first, where two compositions' tubes are on different faces, and a
+  conversion that falls back to normal forms that differ compares them
+  again when either has such a tube, since normal forms keep faces as
+  written. The normal form now checks again
+  (`tests/translator/univalence-derived.test.mjs`, from the retired builder
+  kept as a fixture), and the move is tested on its own
+  (`tests/driver-search.test.mjs`). Archive coverage stays complete, with
+  less kernel work: 5,685,090 checking and 2,120,554 re-derivation
+  instructions, against 5,710,965 and 2,149,815 before. Making normal forms
+  split their systems instead was tried and refused: a face's clauses are
+  ordered by dimension index, so two normal forms alike up to bound names
+  could split into different orders.
+- **(b) A face given as an interval.** The driver read a face-sorted
   formula given as a path's argument as the interval with the same
-  clauses and derives that well-formed term, where it could refuse the
-  input.
+  clauses, and a system's or a transport's interval-sorted face as a face,
+  and derived those well-formed terms. **Closed:** it refuses each, with
+  its own message (E663–E665).
+
+Rechecking the normal forms of `library/univalence.cubist` finds limits
+that are not these gaps, the same on `main`: `glue_path_idtoequiv`'s normal
+form meets a type mismatch between two compositions, and those of
+`glue_line_equiv`, `equivalent_types_contractible`, `idtoequiv_glue_path`
+and `univalence` exhaust the kernel's step budget.
 
 ## Stage 0: delivered baseline and remaining documentation
 
@@ -563,39 +586,38 @@ results from the corresponding library area.
   resolution.
 - Refresh the archive baseline, and replace the completed first actions
   with the current sequence: L4.1a, I1.2c's remaining gaps, then the rest
-  of matching and the `cases` migration.
+  of matching and the `cases` migration. The same day L4.1a and both
+  gaps were delivered.
 
 ## First actions
 
 Revised on 2026-10-04. Done since the audit: instruction isolation (I1.2a),
 H1's release scope and integration, with its release on 2026-10-02 and its
 merge into `main`, the checker's retirement (I1.2b), and face restriction
-(I1.2c).
+(I1.2c), with its two remaining gaps closed the same day.
 
 1. **Argument inference.** L4.1a, holes and named arguments, is done
    (2026-10-04). Next L4.1b (opt-in implicit binders, level inference)
    and L4.4 (`apply`, `refine`). H2's indexed families need implicit
    indices.
-2. **I1.2c's two remaining gaps**, (a) systems split differently and (b) a
-   face given as an interval.
-3. **The rest of explicit matching (L2.2a), then the `cases` migration.**
+2. **The rest of explicit matching (L2.2a), then the `cases` migration.**
    Several scrutinees, the expression form's use of the motive service
    outside recursion, broader patterns. Then migrate the remaining `cases`
    statements, 24 in 11 archive modules and two test sources, under the
    strict verifier, and remove the statement.
-4. **Independent language work.** L2.5b's remainder; core L2.4 records;
+3. **Independent language work.** L2.5b's remainder; core L2.4 records;
    the universal-property contract before L2.6 and L2.3's `universal`
    slice; L1.3's worker cancellation.
-5. **Equivalences (L3.1), from the library's univalence.** Then L3.2's
+4. **Equivalences (L3.1), from the library's univalence.** Then L3.2's
    Σ/universe `ext`. In the library, one module for the classical
    assumptions, over the computing `Trunc`.
-6. **K2.5's remaining archive remedies.** The two H2-dependent tower
+5. **K2.5's remaining archive remedies.** The two H2-dependent tower
    declarations stay deferred; complete removal of the legacy truncation
    assumptions is not required.
-7. **Derived interfaces and notation on small examples.** N0/N1 with their
+6. **Derived interfaces and notation on small examples.** N0/N1 with their
    record prerequisites; N2/N4 after inference. Keep canonical quotient and
    view examples finite and computable.
-8. **H2, then the H3 research gate.** Specify the representation and
+7. **H2, then the H3 research gate.** Specify the representation and
    computation changes (K4.2, K5.2) before implementing them. Keep the full
    Cauchy reals deferred; the reals roadmap's corrected R2 interface and R3
    obligations give later work a usable contract.
