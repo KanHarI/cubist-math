@@ -1,0 +1,7 @@
+// From tests/documentation.test.mjs: documentation is extracted from checked
+// local and imported source: the comment directly above a declaration is its
+// documentation, and this header is none.
+import documentation_helper;
+
+// Local definition.
+def value := identity(0);

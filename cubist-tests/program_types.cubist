@@ -1,0 +1,63 @@
+// Nat and W as ordinary source declarations, from
+// tests/program-types.test.mjs: imported Nat has generic constructors,
+// literals and elimination; source W and its dependent eliminator compute at
+// finite universes; and an ordinary W declaration at a fixed higher universe
+// checks.
+import nat;
+import w;
+
+// Imported Nat has generic constructors, literals and elimination.
+def two : Nat := 2;
+
+// Nat is a declared type, and W too.
+// Output: inductive Nat : U0 (type) { zero : Nat [0 data, 0 positions, 0 dimensions]; succ : Nat ->
+//   Nat [0 data, 1 position, 0 dimensions]; } eliminator for P : Nat -> U { zero_case : P(0);
+//   succ_case : forall x : Nat. P(x) -> P(succ(x)); }
+print(inspect(Nat));
+// Output: inductive W : forall U < UU0. forall V < UU0. forall A1 : U. (A1 -> V) -> max(U, V)
+//   (type) { sup : forall a : A. (B(a) -> W) -> W [1 data, 1 position, 0 dimensions]; } eliminator
+//   for P : W(__U, __U, A, B) -> X { sup_case : forall x : A. forall x1 : B(x) -> W(__U, __U, A,
+//   B). (forall x2 : B(x). P(x1(x2))) -> P(sup(x, x1)); }
+print(inspect(W));
+
+def double(n : Nat) : Nat := match n {
+    zero => zero;
+    succ(k) => succ(succ(double(k)));
+  };
+
+def four : double(two) = 4 {
+  rfl;
+}
+
+def predecessor(n : Nat) := induction n as k return Nat {
+    zero => 0;
+    succ h => k;
+  };
+
+def pred_two : predecessor(two) = 1 {
+  rfl;
+}
+
+// Source W and its dependent eliminator compute at finite universes.
+def Tree := W(U1, U0, Unit, fun (a : Unit) => Void);
+
+def leaf : Tree := sup(tt, fun (v : Void) => typed(Tree, absurd(v)));
+
+def result :=
+  wrec(
+    U1, U0, U0, Unit, (fun (a : Unit) => Void), (fun (t : Tree) => Nat),
+    (fun (a : Unit, children : Void -> Tree, ih : Void -> Nat) => 2), leaf
+  );
+
+def computed : result = 2 {
+  rfl;
+}
+
+// An ordinary W declaration at a fixed higher universe checks.
+inductive BigW(A : UU0, B : A -> UU0) : UU0 {
+  big_sup(a : A, children : B(a) -> BigW(A, B));
+}
+
+def Small := BigW(Unit, fun (a : Unit) => Void);
+
+def big_leaf : Small := big_sup(tt, fun (v : Void) => typed(Small, absurd(v)));

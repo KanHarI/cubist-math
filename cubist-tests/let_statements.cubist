@@ -1,0 +1,53 @@
+// From tests/projections-let.test.mjs: HoTT B4 by let: a restated goal,
+// reasoning backwards, and a stated type.
+// The block's result is checked against the stated type at the let.
+// The block proves its type without the name it defines.
+// The block sees the stated type as its goal. A let names a term rather
+// than a context entry, so the displayed context does not list b; the
+// final exact uses it all the same.
+
+def Endo(A : U0) := A -> A;
+
+def identity_endo(A : U0) : Endo(A) {
+  let restated : A -> A {
+    intro a;
+    exact a;
+  }
+  exact restated;
+}
+
+def contrapositive(A, B : U0, f : A -> B, not_b : B -> Void) : A -> Void {
+  intro a;
+  let b : B {
+    exact f(a);
+  }
+  exact not_b(b);
+}
+
+def stated(n : Nat) : n = n {
+  let same : n = n := refl(n);
+  exact same;
+}
+
+// Error: E606: Type mismatch: found A, expected B.
+// Warning: W702: x is never used after this let: remove it.
+def wrong_block(A, B : U0, a : A) : A {
+  let x : B {
+    exact a;
+  }
+  exact a;
+}
+
+// Error: E465: let states a type after the colon; found a value of type A.
+def not_a_type(A : U0, a : A) : A {
+  let x : a := a;
+  exact x;
+}
+
+// Error: E343: Untranslated name: x
+def out_of_scope(A : U0, a : A) : A {
+  let x : A {
+    exact x;
+  }
+  exact x;
+}

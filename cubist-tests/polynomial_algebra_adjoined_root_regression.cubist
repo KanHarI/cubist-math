@@ -1,0 +1,14 @@
+// From tests/polynomial-algebra.test.mjs: Adjoined roots and embeddings
+// into a root field are constructed, not assumed.
+import polynomial_root_embeddings;
+import polynomial_annihilator;
+def root(
+  K : AlgebraicField, M : PolynomialModulus(K),
+  irr : PolynomialIrreducible(K, modulus_polynomial(K, M))
+) :
+  PolynomialRoot(
+    K, PolynomialResidueField(K, M, irr), residue_embedding(K, M, irr), modulus_polynomial(K, M),
+    adjoined_root(K, M)
+  ) {
+  exact adjoined_root_is_root(K, M, irr);
+}

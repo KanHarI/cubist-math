@@ -1,0 +1,26 @@
+// From tests/inductive-declarations.test.mjs: Higher constructors: paths
+// between constructors, used at coordinates.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+inductive Circle {
+  base;
+  loop : base = base;
+}
+
+inductive Susp(U < UU0, A : U) {
+  north;
+  south;
+  merid(a : A) : north = south;
+}
+
+def round : base = base := loop;
+
+def at_end : loop @ 1 = base {
+  rfl;
+}
+
+def meridian_zero : typed(Susp(U0, N), north) = south := merid(zero);

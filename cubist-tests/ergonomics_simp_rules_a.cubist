@@ -1,0 +1,12 @@
+// From tests/proof-ergonomics.test.mjs: Imported simp registrations are
+// scoped, and conflicting named sets fail only on use. This module registers
+// nat_add_zero by default and as units; ergonomics_simp_rules_b does too, at
+// priority 7.
+import primes;
+
+simp_rule nat_add_zero;
+simp_set units := [nat_add_zero];
+
+def registered(n : Nat) : n + 0 = n {
+  simp;
+}

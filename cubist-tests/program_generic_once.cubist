@@ -1,0 +1,18 @@
+// From tests/cubical-program.test.mjs: a universe-generic definition is
+// checked once, as one kernel definition, and instantiated at each level.
+
+def identity(U < UU0, A : U, x : A) := x;
+
+def first := identity(U0, Nat, 0);
+
+def second := identity(U0, Nat, 1);
+
+def higher := identity(U1, U0, Nat);
+
+// Error: E606: Type mismatch: found identity(U0, Nat, 0) = identity(U0, Nat, 0), expected 0 = 1.
+def wrong : 0 = 1 {
+  exact refl(identity(U0, Nat, 0));
+}
+
+// Output: forall U < UU0. forall A : U. A -> A
+print(typeof(identity));

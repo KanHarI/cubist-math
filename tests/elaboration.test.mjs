@@ -6,28 +6,15 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { elaboration } from "../web/cubical-elaboration.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
+import { checkTestModule } from "./check-program.mjs";
 
 const readLibrary = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8");
-const source = `import naturals;
-
-def lt(n, m : Nat) : U0 {
-  exact exists k : Nat. succ(k) + n = m;
-}
-
-def lt_succ(n : Nat) : lt(n, succ(n)) {
-  exact (0, refl(succ(n)));
-}
-
-def exists_greater_number : forall n : Nat. exists m : Nat. lt(n, m) {
-  intro n;
-  exact (succ(n), lt_succ(n));
-}
-`;
+// The first proof is cubist-tests/driver_first_proof.cubist, which the
+// instruction driver's tests derive too.
+const firstProof = t => checkTestModule(t, "driver_first_proof");
 
 test("each proof statement reports its goal, the names in scope and the term it built", async t => {
-  const program = new CubicalProgram(await createCubical(), readLibrary);
-  t.after(() => program.dispose());
-  const result = await program.check(source, "first");
+  const { source, result } = await firstProof(t);
   const steps = result.steps.map(step => [source.slice(step.start, step.end), step.locals.map(local => `${local.name} : ${local.type}`).join(", "), step.goal, step.built]);
   assert.deepEqual(steps, [
     ["exact exists k : Nat. succ(k) + n = m;", "n : Nat, m : Nat", "U0", "exists k : Nat. succ(k) + n = m"],
@@ -39,10 +26,8 @@ test("each proof statement reports its goal, the names in scope and the term it 
 });
 
 test("the elaboration view shows each declaration's type, term and the kernel's derivation", async t => {
-  const program = new CubicalProgram(await createCubical(), readLibrary);
-  t.after(() => program.dispose());
-  await program.check(source, "first");
-  const view = elaboration(program, "first");
+  const { program } = await firstProof(t);
+  const view = elaboration(program, "driver_first_proof");
   assert.deepEqual(view.map(declaration => [declaration.name, declaration.type, declaration.term]), [
     ["lt", "Nat -> Nat -> U0", "fun (n, m : Nat) => exists k : Nat. succ(k) + n = m"],
     ["lt_succ", "forall n : Nat. lt(n, succ(n))", "fun (n : Nat) => (0, refl(succ(n)))"],

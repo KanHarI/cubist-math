@@ -7,8 +7,7 @@ import {checkKernel} from './kernel-check.mjs';
 import {equiv,strictIsomorphismEquivalence,identityEquivalence,univalencePath} from '../../web/translator/equivalence.mjs';
 import {halfAdjointEquiv,halfAdjointToNative,nativeToHalfAdjoint,
   publicUnivalencePath,publicUnivalenceBeta,nativeEquivalenceRoundTrip,
-  nativeIdentityToEquivalence,nativeUnivalenceEta,publicIdentityToEquivalence,publicUnivalenceEta,
-  nativeUnivalenceCounit,nativeUnivalenceEquivalence} from '../../web/translator/public-equivalence.mjs';
+  nativeIdentityToEquivalence,nativeUnivalenceEta,publicIdentityToEquivalence,publicUnivalenceEta} from '../../web/translator/public-equivalence.mjs';
 // Two points, the examples' small inductive type.
 const two=T.sum(T.unit,T.unit),left=T.inl(two,T.point),right=T.inr(two,T.point);
 const v=T.variable;
@@ -109,37 +108,5 @@ test('public eta requires explicit sharing of its checked round-trip lemma',()=>
   assert.throws(()=>publicUnivalenceEta(v('A'),v('B'),v('p')),/checked generic/);
 });
 
-for(const level of [0,2])test(`native idtoequiv after ua returns the original equivalence at U${level}`,()=>{
-  const A=v('A'),B=v('B'),e=v('e');
-  const context=[['A',T.universe(level)],['B',T.universe(level)],['e',equiv(A,B)]];
-  const definitions=[{name:'identity',value:T.lam('B',T.universe(level),identityEquivalence(B))}];
-  const identity=T.app({tag:'Ref',name:'identity'},B);
-  const term=close(nativeUnivalenceCounit(A,B,e,level,identity),context,T.lam);
-  const type=close(T.path('k',equiv(A,B),nativeIdentityToEquivalence(A,B,
-    univalencePath(A,B,e,level),identity),e),context,T.pi);
-  const result=checkKernel(term,type,[],{definitions,normalize:false});
-  assert(result.ok,result.error);
-});
-
-test('full native univalence assembles from checked eta and counit definitions',()=>{
-  const A=v('A'),B=v('B'),e=v('e'),p=v('p'),level=0;
-  const P=T.path('i',T.universe(level),A,B),E=equiv(A,B);
-  const context=[['A',T.universe(level)],['B',T.universe(level)]];
-  const ref=name=>({tag:'Ref',name});
-  const identity=T.app(ref('identity'),B);
-  const to=p=>nativeIdentityToEquivalence(A,B,p,identity),ua=e=>univalencePath(A,B,e,level);
-  const ascribed=(term,type)=>T.app(T.lam('checked_lemma',type,v('checked_lemma')),term);
-  const etaType=close(T.pi('p',P,T.path('k',P,ua(to(p)),p)),context,T.pi);
-  const counitType=close(T.pi('e',E,T.path('k',E,to(ua(e)),e)),context,T.pi);
-  const definitions=[
-    {name:'identity',value:T.lam('B',T.universe(level),identityEquivalence(B))},
-    {name:'eta',value:ascribed(close(T.lam('p',P,nativeUnivalenceEta(A,B,p,level,identity)),context,T.lam),etaType)},
-    {name:'counit',value:ascribed(close(T.lam('e',E,nativeUnivalenceCounit(A,B,e,level,identity)),context,T.lam),counitType)},
-  ];
-  const eta=T.app(T.app(ref('eta'),A),B),counit=T.app(T.app(ref('counit'),A),B);
-  const term=close(nativeUnivalenceEquivalence(A,B,{level,identity,eta,counit}),context,T.lam);
-  const type=close(equiv(P,E),context,T.pi);
-  const result=checkKernel(term,type,[],{definitions,normalize:false});
-  assert(result.ok,result.error);
-});
-
+// idtoequiv after ua, and univalence itself, are proved in Cubist, in
+// library/univalence.cubist.

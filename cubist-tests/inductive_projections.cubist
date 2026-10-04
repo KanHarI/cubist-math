@@ -1,0 +1,43 @@
+// From tests/inductive-declarations.test.mjs: Fourth review: projections
+// contract, constructor-headed rules simplify, normalized views keep the
+// marker.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+inductive List(U < UU0, A : U) : U {
+  nil;
+  cons(x : A, xs : List(U, A));
+}
+
+inductive P : U0 {
+  z;
+  s(x : typed(U0 and U0, (P, Nat)).1);
+  l : typed(P and P, (z, z)).2 = z;
+}
+
+inductive H {
+  b;
+  s(n : H);
+  law(n : H) : s(n) = n;
+}
+
+def fired : s(b) = b {
+  simp only [law];
+}
+
+inductive Stack(U < UU0, A : U) : U {
+  empty;
+  push(x : A, s : Stack(U, A));
+  pop(x : A, s : Stack(U, A)) : push(x, s) = s;
+}
+
+def popped(A : U0, x : A, s : Stack(U0, A)) : push(x, s) = s := pop(x, s);
+
+def instance_matched(y : N) : typed(Stack(U0, N), push(y, empty)) = empty {
+  simp only [popped];
+}
+
+def through : Nat := (fun (x : N) => 0)(zero);

@@ -1,0 +1,24 @@
+// From tests/inductive-declarations.test.mjs: Binders written in a
+// constructor's result are its arguments.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+inductive M {
+  z;
+  s : M -> M;
+  w : N -> M;
+}
+
+def one : M := s(z);
+
+def lifted : M := w(succ(zero));
+
+// s's argument is a position, and w's a datum.
+// Output: inductive M : U0 (type) { z : M [0 data, 0 positions, 0 dimensions]; s : M -> M [0 data,
+//   1 position, 0 dimensions]; w : N -> M [1 data, 0 positions, 0 dimensions]; } eliminator for P :
+//   M -> U { z_case : P(z); s_case : forall x : M. P(x) -> P(s(x)); w_case : forall x : N. P(w(x));
+//   }
+print(inspect(M));

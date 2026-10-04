@@ -7,24 +7,18 @@ import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
+import { testModulePath } from "../tools/inline-errors.mjs";
 
-const readLibrary = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8");
-const source = `import naturals;
-
-def two : Nat {
-  exact 2;
-}
-
-def two_is_two : two = 2 {
-  let same : 2 = 2 := refl(2);
-  exact same;
-}
-`;
+// The definitions are cubist-tests/admission_two.cubist, checked here with
+// the module's reader under each test's watch.
+const path = testModulePath("admission_two"), source = await readFile(path, "utf8");
+const reader = sourceReader({ path });
 
 test("every definition is admitted by Define, and only admitted definitions can be looked up", async t => {
-  const program = new CubicalProgram(await createCubical(), readLibrary);
+  const program = new CubicalProgram(await createCubical(), reader);
   t.after(() => program.dispose());
-  const result = await program.check(source, "admitted");
+  const result = await program.check(source, "admission_two");
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
   const kernel = program.kernel, graph = new InstructionDriver(kernel).graph;
   for (const [name, reference] of kernel.definitions) {
@@ -39,7 +33,7 @@ test("every definition is admitted by Define, and only admitted definitions can 
 });
 
 test("a tactic's check is derived as it runs, and fails at the tactic", async t => {
-  const program = new CubicalProgram(await createCubical(), readLibrary);
+  const program = new CubicalProgram(await createCubical(), reader);
   t.after(() => program.dispose());
   const check = InstructionDriver.prototype.check;
   const issued = [];
@@ -47,7 +41,7 @@ test("a tactic's check is derived as it runs, and fails at the tactic", async t 
     issued.push(this.kernel.node(expression).kind);
     return check.call(this, expression, type, context);
   };
-  try { await program.check(source, "issued"); }
+  try { await program.check(source, "admission_two"); }
   finally { InstructionDriver.prototype.check = check; }
   // let's value, refl(2), is derived when let is elaborated; the
   // definitions are admitted after.
@@ -58,18 +52,19 @@ test("a tactic's check is derived as it runs, and fails at the tactic", async t 
     return check.call(this, expression, type, context);
   };
   let result;
-  try { result = await new CubicalProgram(await createCubical(), readLibrary).check(source, "failing"); }
+  try { result = await new CubicalProgram(await createCubical(), reader).check(source, "admission_two"); }
   finally { InstructionDriver.prototype.check = check; }
   const failed = result.outputs.find(output => output.name === "two_is_two");
   assert.equal(failed.verified, false);
-  // Reported at let, line 8, not at the declaration.
-  assert.match(failed.reason, /^Instruction kernel: No rule for this yet\. at 8:3$/);
+  // Reported at let, not at the declaration.
+  const before = source.slice(0, source.indexOf("let same"));
+  assert.equal(failed.reason, `Instruction kernel: No rule for this yet. at ${before.split("\n").length}:${before.length - before.lastIndexOf("\n")}`);
 });
 
 test("the driver steers by its own guide: every definition derives again from nothing", async t => {
-  const program = new CubicalProgram(await createCubical(), readLibrary);
+  const program = new CubicalProgram(await createCubical(), reader);
   t.after(() => program.dispose());
-  const result = await program.check(source, "unaided");
+  const result = await program.check(source, "admission_two");
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
   const graph = new InstructionDriver(program.kernel).graph;
   for (const [name, reference] of program.kernel.definitions) {

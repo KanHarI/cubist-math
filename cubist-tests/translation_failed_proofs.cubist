@@ -1,0 +1,13 @@
+// From tests/translator/translation.test.mjs: failed proofs never become
+// axioms or usable definitions: a use of one fails, and the rest of the
+// module checks.
+
+// Error: E606: Type mismatch: found 0 = 0, expected 0 = 1.
+def wrong : 0 = 1 {
+  exact refl(0);
+}
+
+// Error: E340: Untranslated dependency: wrong
+def bad := wrong;
+
+def good := 0;

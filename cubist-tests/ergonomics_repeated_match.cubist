@@ -1,0 +1,19 @@
+// From tests/proof-ergonomics.test.mjs: A quantified simp rule enforces
+// repeated parameter consistency.
+
+import primes;
+
+def duplicated(n : Nat) : n + n = n + n {
+  rfl;
+}
+
+def different : 0 + 1 = 0 + 1 {
+  simp only [duplicated];
+}
+
+// Error: E367: Simplification cycle detected in the selected rules. duplicated returned the goal to
+//   where it was 1 rewrite earlier. Remaining goal: 1 + 1 = 1 + 1. 1 rewrite changed the left side,
+//   using duplicated.
+def same : 1 + 1 = 1 + 1 {
+  simp only [duplicated];
+}

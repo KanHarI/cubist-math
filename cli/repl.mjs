@@ -123,6 +123,8 @@ async function execute(line) {
       console.log(diagnosticLine({ severity: "warning", ...warning }));
     for (const evaluation of result.evaluations ?? [])
       console.log(`evaluate ${evaluation.name}${evaluation.module === main ? "" : ` (${evaluation.module})`}: ${evaluation.value}`);
+    for (const print of result.prints ?? [])
+      console.log(`print ${print.name}${print.module === main ? "" : ` (${print.module})`}: ${print.text}`);
     return;
   }
   if (!program) throw Error("Check a source first.");

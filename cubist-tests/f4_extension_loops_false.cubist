@@ -1,0 +1,9 @@
+// From tests/f4-extension-loops.test.mjs: the two-loop equality cannot
+// certify a one-element loop type.
+import f4_galois_group;
+
+// Error: E606: Type mismatch: found (F4OverF2 = F4OverF2) = group_carrier(CyclicTwo), expected
+//   F4ExtensionLoops = Unit.
+def loops_are_contractible : F4ExtensionLoops =[U1] Unit {
+  exact f4_extension_loops_equal_cyclic_two;
+}

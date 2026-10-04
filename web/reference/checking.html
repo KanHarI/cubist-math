@@ -49,6 +49,7 @@
             <li><a href="#inspecting-tactics">Inspecting tactics</a></li>
             <li><a href="#cli">The command-line checker</a></li>
             <li><a href="#repl">The REPL</a></li>
+            <li><a href="#print">Printing values, types and terms</a></li>
             <li><a href="#warnings">Warnings</a></li>
             <li><a href="#tools">Formatting and tests</a></li>
             <li><a href="#limits">Limits</a></li>
@@ -173,6 +174,21 @@ E606: Type mismatch: found 7 = 7, expected x = 8.
 &gt; x + 1
 8</code></pre>
             <p><code>let x := 7;</code> defines <code>x</code> and prints its type; <code>def</code> works the same way. An entry continues on the next line while a bracket is open, so a proof block is one entry. A term alone is evaluated, and the final <code>;</code> of an entry can be left out. <code>x_is_eight</code> is rejected, so it does not exist for later entries. <code>/help</code> lists the entries and the commands, which start with <code>/</code>: <code>/modules</code> lists the modules <code>import</code> can load, <code>/clear</code> clears the log and <code>/restart</code> starts a new session. The consoles on the website take the same commands.</p>
+          </section>
+          <section id="print">
+            <h2>Printing values, types and terms</h2>
+            <p>Three top-level directives show what the checker makes of a closed term, and define no name. <code>print(evaluate(term));</code> shows the term’s normal form, under the rule of <a href="assumptions.html#evaluate"><code>evaluate</code></a>: the term may use no assumption. <code>print(typeof(term));</code> shows its type. <code>print(inspect(term));</code> shows the term the kernel checked, in the kernel’s notation, as the inspector does: what notation and omitted arguments elaborate to. The name of a definition shows the definition’s checked body. A directive that fails is an error that makes the module incomplete, as a failed <code>evaluate</code> does.</p>
+            <pre><code data-check="accept">import naturals;
+
+def double(n : Nat) := n + n;
+
+// Output: 6
+print(evaluate(double(3)));
+// Output: Nat -&gt; Nat
+print(typeof(double));
+// Output: λ (n : Nat). add(n, n)
+print(inspect(double));</code></pre>
+            <p>An <code>// Output:</code> comment above a directive states what it shows. The test suite checks these comments in the examples of this reference and in the test modules of <code>cubist-tests/</code>, where <code>npm run inline-errors</code> writes them. The command-line checker prints each output as <code>print evaluate at line N: text</code>, and the REPL takes the directives as entries. <code>print</code>, <code>typeof</code> and <code>inspect</code> are keywords only in a directive. Elsewhere they are ordinary names.</p>
           </section>
           <section id="warnings">
             <h2>Warnings</h2>

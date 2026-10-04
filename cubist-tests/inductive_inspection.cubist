@@ -1,0 +1,40 @@
+// From tests/inductive-declarations.test.mjs: Inspection: a declared type's
+// constructors and its eliminator's clause types.
+// The H1 specification's 6.5: a declared type's signature, and the clause
+// type its eliminator asks for each constructor, for a motive P over the type
+// at its own parameters. The CLI's inspect and the workbench show this view.
+
+inductive S1 {
+  base;
+  loop : base = base;
+}
+
+inductive Tr(U < UU0, A : U) : prop {
+  point(a : A);
+}
+
+inductive Pointed(U < UU0) : next(U) {
+  pt(X : U, x : X);
+}
+
+// The sort prints by its name: a variable named S1 would print as its stem.
+// A dependent path type prints as the source writes it.
+// Output: inductive S1 : U0 (type) { base : S1 [0 data, 0 positions, 0 dimensions]; loop : base =
+//   base [0 data, 0 positions, 1 dimension]; } eliminator for P : S1 -> U { base_case : P(base);
+//   loop_case : PathP(fun (i : Interval) => P(loop @ i), base_case, base_case); }
+print(inspect(S1));
+
+// The motive's universe avoids the parameter's name. Tr's universe is
+// erased, which an instance does not carry: it prints as __U.
+// Output: inductive Tr : forall U < UU0. U -> U (prop) { point : A -> Tr [1 data, 0 positions, 0
+//   dimensions]; Tr.squash : forall x : Tr. forall x1 : Tr. x = x1 [0 data, 2 positions, 1
+//   dimension, generated]; } eliminator for P : Tr(__U, A) -> V { point_case : forall x : A.
+//   P(point(x)); squash_case : forall x : Tr(__U, A). forall x1 : Tr(__U, A). forall x2 : P(x).
+//   forall x3 : P(x1). PathP(fun (i : Interval) => P(Tr.squash(x, x1) @ i), x2, x3); }
+print(inspect(Tr));
+
+// A recorded universe parameter by its name in the declaration.
+// Output: inductive Pointed : forall U_1 < UU0. next(U_1) (type, recorded U) { pt : forall X : U. X
+//   -> Pointed [2 data, 0 positions, 0 dimensions]; } eliminator for P : Pointed(U) -> V { pt_case
+//   : forall x : U. forall x1 : x. P(pt(x, x1)); }
+print(inspect(Pointed));

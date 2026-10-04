@@ -1,0 +1,18 @@
+// From tests/proof-ergonomics.test.mjs: Generic proof tactics link their
+// checked witnesses from source.
+// One check covers every level, so a generic proof is offered the same
+// edit as a concrete one.
+
+def generic_calc(U < UU0, x : Nat) : x = x {
+  calc {
+    x = x by refl(x);
+  }
+}
+
+def generic_rw(U < UU0, x, y : Nat, p : x = y) : x = y {
+  rw [p];
+}
+
+def generic_simp(U < UU0, f : Nat -> Nat, n : Nat, h : f(n) = n) : f(n) = n {
+  simp [h];
+}

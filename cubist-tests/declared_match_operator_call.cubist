@@ -1,0 +1,17 @@
+// From tests/declared-match.test.mjs: recursion whose other arguments vary,
+// with the call spelled with an operator: `+`, which stands for add, calls
+// the declaration as its name does.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+def add(n, a : N) : N := match n {
+    zero => a;
+    succ(m) => m + succ(a);
+  };
+
+def five : add(succ(succ(zero)), succ(succ(succ(zero)))) = succ(succ(succ(succ(succ(zero))))) {
+  rfl;
+}

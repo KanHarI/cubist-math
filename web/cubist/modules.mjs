@@ -382,9 +382,64 @@ export const archiveModules = [
 // Modules of the rebuilt library, served from library/. A name here shadows an
 // archive module of the same name.
 export const libraryModules = ["naturals", "classical_axioms", "universe_automorphisms", "hlevels",
-  "h1_truncation", "h1_classical", "h1_cauchy_quotient", "h1_zorn_step", "contractible_maps", "univalence"];
+  "h1_truncation", "h1_classical", "h1_cauchy_quotient", "h1_zorn_step", "contractible_maps", "univalence",
+  "lists", "quotients"];
 
 // The Cubist sources the test suite checks (cubist-tests/), each a module the
 // workspace opens as proof.html?proof=NAME. tests/cubist-tests.test.mjs
 // checks that every file is listed.
-export const cubistTestModules = ["glue", "face_restriction"];
+export const cubistTestModules = [
+  "glue", "face_restriction", "declared_match", "induction", "automatic_clauses",
+  "automatic_clauses_groupoid", "automatic_clauses_without_hlevels", "hlevel_lemmas", "hlevel_tactic",
+  "hlevel_without_import", "h1_acceptance_levels", "h1_acceptance_formers", "h1_acceptance_instances",
+  "h1_acceptance_paths", "program_types", "program_types_nat_as_name", "program_types_constructor_shadowing",
+  "projections", "projections_archive_helpers", "let_statements", "path_operators", "universe_generic",
+  "universe_generic_bounds", "universe_generic_builtins", "universe_generic_rewriting", "inductive_values",
+  "inductive_universes", "inductive_levels", "inductive_data_first", "inductive_higher",
+  "inductive_rejections", "inductive_failed", "inductive_computable", "inductive_square", "inductive_beta",
+  "inductive_binders", "inductive_former_values", "inductive_instance_from_position", "inductive_reduction",
+  "inductive_naturals", "inductive_telescope", "inductive_imports", "inductive_shape_errors",
+  "inductive_no_marker", "inductive_path_lambda", "inductive_projections", "inductive_trunc_minus_one",
+  "inductive_inspection", "inductive_inspection_names", "inductive_generated_names",
+  "inductive_printed_forms", "inductive_assumptions", "inductive_one_parameter_name", "computability",
+  "computability_evaluation", "computability_unfolding", "induction_printed",
+  "ergonomics_rewrite_obligations", "ergonomics_simp_rejections", "ergonomics_simpa_reconstruction",
+  "ergonomics_type_transport_rejections", "ergonomics_simp_child_order",
+  "ergonomics_simp_incompatible_candidate", "ergonomics_grouped_binder_shadowing",
+  "ergonomics_grouped_universes", "ergonomics_mixed_universes", "ergonomics_generic_calc",
+  "ergonomics_generic_proof_locals", "ergonomics_generic_failure", "ergonomics_repeated_match",
+  "ergonomics_invalid_registry", "ergonomics_local_simp", "ergonomics_conditional_simp",
+  "ergonomics_nested_premises", "ergonomics_rule_diagnostics", "ergonomics_calc_step_links",
+  "ergonomics_binder_sites", "ergonomics_generic_tactic_links", "ergonomics_freeze_premise_search",
+  "ergonomics_freeze_set_collision", "ergonomics_freeze_witness", "ergonomics_search_time_scope",
+  "ergonomics_simp_dependent_positions", "ergonomics_rewrite_eligible_rhs", "ergonomics_generated_names",
+  "ergonomics_rule_scope_rules", "ergonomics_rule_scope", "ergonomics_simp_freeze_path_identity",
+  "ergonomics_simpa_freeze_path_identity", "ergonomics_simp_type_freeze_path_identity",
+  "ergonomics_simpa_type_freeze_path_identity", "ergonomics_imported_failure_rules",
+  "ergonomics_imported_failure", "ergonomics_simp_rules_a", "ergonomics_simp_rules_b",
+  "ergonomics_simp_client_a", "ergonomics_simp_client_isolated", "ergonomics_simp_client_conflict",
+  "ergonomics_simp_client_reverse_order", "ergonomics_simp_client_shadowed_rule",
+  "ergonomics_multi_binder_fun", "ergonomics_tactic_sites", "ergonomics_tactic_sites_generic", "fuel_tactics",
+  "fuel_residual_goals", "fuel_search_spending", "program_generic_once", "program_shadow_first",
+  "program_shadow_second", "program_shadowing", "program_assumptions", "program_unfolding_hints",
+  "program_unfolding_scopes", "program_optimizations", "program_generic_identity", "program_generic_caller",
+  "program_unused_generic", "program_untyped_generic", "wasm_binary_literal", "wasm_bad_factorial",
+  "wasm_invalid_paths", "wasm_moving_maps", "wasm_suspension_use", "driver_first_proof", "driver_sums",
+  "dimension_regression", "dimension_degree_regression", "dimension_tower_regression", "dimension_invalid",
+  "algebraic_extensions_invalid_embedding_claims", "algebraic_extensions_invalid_f4_root",
+  "finite_spanning_finite_tower_regression", "finite_spanning_invalid_spanning",
+  "finite_spanning_spanning_regression", "linear_algebra_basis_regression", "linear_algebra_chain_regression",
+  "linear_algebra_general_basis_regression", "linear_algebra_invalid_basis_selection",
+  "linear_algebra_invalid_linear", "linear_algebra_s3_regression",
+  "polynomial_algebra_adjoined_root_regression", "polynomial_algebra_invalid_polynomial_claims",
+  "polynomial_algebra_polynomial_regression", "quotient_groups_invalid_quotient",
+  "quotient_groups_quotient_regression", "quotient_universal_hom_universe_regression",
+  "quotient_universal_regression", "quotient_universal_bad_factorization", "truncation_small_mere",
+  "truncation_cauchy_same", "truncation_resize", "truncation_strict_successor",
+  "truncation_rebuilt_classical", "printer_lint", "translation_failed_proofs", "translation_path_induction",
+  "translation_weak_j", "mismatch_source_syntax", "mismatch_calc_naming", "source_text_messages",
+  "inspection_declared_types", "inspection_shadowed_nat", "inspection_axiom_labels", "inspection_let_alias",
+  "assembly_fixture", "assembly_generic_assumptions", "glue_printed", "admission_two", "reduction_demo",
+  "f4_extension_loops", "f4_extension_loops_false", "fingerprint_fixture", "documentation_helper",
+  "documentation_use", "declared_match_operator_call", "declarations_definitions"
+];

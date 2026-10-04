@@ -1,0 +1,6 @@
+// From tests/cubical-program.test.mjs: value, which program_shadow_second
+// defines again, for program_shadowing.
+
+def value := 0;
+
+def remembered := value;

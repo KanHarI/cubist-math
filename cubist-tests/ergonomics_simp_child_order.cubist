@@ -1,0 +1,14 @@
+// From tests/proof-ergonomics.test.mjs: Simp tries rules at each child before
+// rewriting its parent.
+
+computable def equality(f : Nat -> Nat, a, b, c, d : Nat, p : f(a) = c, q : a = b, r : f(b) = d) :
+  f(a) = d {
+  simp only [p, q, r];
+}
+
+computable def type_goal(
+  P : Nat -> U0, f : Nat -> Nat, a, b, c, d : Nat, p : f(a) = c, q : a = b, r : f(b) = d, h : P(d)
+) :
+  P(f(a)) {
+  simpa only [p, q, r] using h;
+}

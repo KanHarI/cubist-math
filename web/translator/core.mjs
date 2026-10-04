@@ -186,14 +186,19 @@ function substitute(t, n, value, dimension = false, memo = new WeakMap()) {
     result.levels = t.levels.map(level => levelSubstitute(level, n, value));
   if(dimension&&t.tag==="Trans")result.face=F.substitute(t.face,n,value);
   if (dimension && t.tag === "PApp") result.arg = I.substitute(t.arg,n,value);
-  if(["Comp","HComp"].includes(t.tag))result.system=result.system.map(p=>({
-    face:dimension?F.substitute(p.face,n,value):p.face,
-    term:dimension&&binder===n?p.term:substitute(p.term,n,value,dimension,memo),
-  }));
-  if(["Glue","GlueTerm"].includes(t.tag))result.system=t.system.map(piece=>{
+  // A part whose face the substitution makes 0 is never used, and need not
+  // be well typed (CCHM: Γ, 0 ⊢ anything): it is dropped, as the kernel's
+  // reduction drops it, so that no elaboration or derivation meets it.
+  const used=(part,face)=>!dimension||face.length>0||part.face.length===0;
+  if(["Comp","HComp"].includes(t.tag))result.system=result.system.flatMap(p=>{
+    const face=dimension?F.substitute(p.face,n,value):p.face;
+    return used(p,face)?[{face,term:dimension&&binder===n?p.term:substitute(p.term,n,value,dimension,memo)}]:[];
+  });
+  if(["Glue","GlueTerm"].includes(t.tag))result.system=t.system.flatMap(piece=>{
     const changed={...piece,face:dimension?F.substitute(piece.face,n,value):piece.face};
+    if(!used(piece,changed.face))return [];
     for(const key of t.tag==="Glue"?["type","equiv"]:["term"])changed[key]=substitute(piece[key],n,value,dimension,memo);
-    return changed;
+    return [changed];
   });
   memo.set(t,result);
   return result;
@@ -207,6 +212,33 @@ export function onFace(term,face) {
   return face[0].reduce((restricted,literal)=>dsub(restricted,literal.slice(0,literal.lastIndexOf(":")),
     literal.endsWith(":1")?I.one:I.zero),term);
 }
+// A term without the parts of its systems on the face 0: composition tubes,
+// Glue pieces and glue values that are never used (CCHM: Γ, 0 ⊢ anything),
+// and need not be well typed. The kernel's reduction drops them too, so the
+// result is the same term to it; a type the kernel inferred by substitution
+// can carry them, and the instruction driver derives what it is given.
+export function withoutEmptyFaces(term,memo=new WeakMap()) {
+  if(!term||typeof term!=="object")return term;
+  if(memo.has(term))return memo.get(term);
+  if(Array.isArray(term)) {
+    const result=term.map(item=>withoutEmptyFaces(item,memo));
+    memo.set(term,result.every((item,index)=>item===term[index])?term:result);
+    return memo.get(term);
+  }
+  let changed=false;
+  const result={};
+  for(const [key,value] of Object.entries(term)) {
+    let next=value;
+    if(key==="system"&&Array.isArray(value)&&["Comp","HComp","Glue","GlueTerm"].includes(term.tag))
+      next=value.filter(part=>!Array.isArray(part.face)||part.face.length>0);
+    next=withoutEmptyFaces(next,memo);
+    if(next!==value)changed=true;
+    result[key]=next;
+  }
+  memo.set(term,changed?result:term);
+  return memo.get(term);
+}
+
 // Syntax manipulation only; callers must independently check the result.
 // DefRef denotes a closed definition, so substitution does not enter its body.
 export {substitute as substituteTerm};

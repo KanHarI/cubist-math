@@ -2,11 +2,12 @@ import contractible_maps;
 
 // Univalence by Glue (Cohen, Coquand, Huber and Mörtberg, sections 5 and 7),
 // constructively and with no assumption: an equivalence glues a path of
-// types, a path of types transports the identity to an equivalence, and
-// gluing along the equivalence a path gives returns the path. The other
-// inverse law, and univalence itself, are still to come. The equivalences
-// are those of contractible_maps, the kernel's own form; the `ua` builtin
-// takes the Equiv of `import paths;`, with an inverse and its laws.
+// types, a path of types transports the identity to an equivalence, and the
+// two are inverse, so idtoequiv is an equivalence. Unglue is an equivalence
+// along every line of Glue types, and the type of types equivalent to a type
+// is contractible. The equivalences are those of contractible_maps, the
+// kernel's own form; the `ua` builtin takes the Equiv of `import paths;`,
+// with an inverse and its laws.
 
 // The path of types an equivalence gives: A glued along it at 0, and B along
 // the identity at 1.
@@ -26,4 +27,153 @@ computable def glue_path_idtoequiv(U < UU0, A, B : U, p : A = B) :
     face(
       k, 1, p @ i, fill(fun (j : Interval) => ContrEquiv(U, p @ -j, B), id_contr_equiv(U, B), -i)
     )
+  );
+
+// The line of types glued over A from T0 along e0 at 0 and from T1 along e1
+// at 1.
+computable def glue_line(
+  U < UU0, A, T0, T1 : U, e0 : ContrEquiv(U, T0, A), e1 : ContrEquiv(U, T1, A)
+) :
+  T0 = T1 := path i => Glue(A, face(i, 0, T0, e0), face(i, 1, T1, e1));
+
+// The center of unglue's fiber over b, at each point of the line: on each
+// face, the center of that equivalence's fiber, glued over the end of its
+// path from b.
+computable def unglue_center(
+  U < UU0, A, T0, T1 : U, e0 : ContrEquiv(U, T0, A), e1 : ContrEquiv(U, T1, A), b : A
+) :=
+  path(
+    fun (i : Interval) => Fiber(
+      U, glue_line(U, A, T0, T1, e0, e1) @ i, A,
+      fun (g : glue_line(U, A, T0, T1, e0, e1) @ i) => unglue(g), b
+    ),
+    fun (i : Interval) => (
+      glue(
+        comp(
+          fun (l : Interval) => A, b, face(i, 0, fun (l : Interval) => e0.2(b).1.2 @ l),
+          face(i, 1, fun (l : Interval) => e1.2(b).1.2 @ l)
+        ), face(i, 0, e0.2(b).1.1), face(i, 1, e1.2(b).1.1)
+      ),
+      path l => fill(
+        fun (m : Interval) => A, b, l, face(i, 0, fun (m : Interval) => e0.2(b).1.2 @ m),
+        face(i, 1, fun (m : Interval) => e1.2(b).1.2 @ m)
+      )
+    )
+  );
+
+// Unglue is an equivalence along the line, joining e0 to e1. Its fibers are
+// contractible at each point of the line: a point w of a fiber is joined to
+// the center, on each face along the path between them in that face's
+// contractible fiber, and over it by gluing above the base path. At the ends,
+// where the line is T0 and T1, the witness is the given one, since being
+// contractible is a proposition.
+computable def glue_line_equiv(
+  U < UU0, A, T0, T1 : U, e0 : ContrEquiv(U, T0, A), e1 : ContrEquiv(U, T1, A)
+) :
+  PathP(fun (i : Interval) => ContrEquiv(U, glue_line(U, A, T0, T1, e0, e1) @ i, A), e0, e1) := path i => (
+    fun (
+      contractible : IsContrMap(
+        U, glue_line(U, A, T0, T1, e0, e1) @ i, A,
+        fun (g : glue_line(U, A, T0, T1, e0, e1) @ i) => unglue(g)
+      )
+    ) => comp(
+      fun (j : Interval) => ContrEquiv(U, glue_line(U, A, T0, T1, e0, e1) @ i, A),
+      (fun (g : glue_line(U, A, T0, T1, e0, e1) @ i) => unglue(g), contractible),
+      face(
+        i, 0, fun (j : Interval) => contr_equiv_witness_path(U, T0, A, e0.1, contractible, e0.2) @ j
+      ),
+      face(
+        i, 1, fun (j : Interval) => contr_equiv_witness_path(U, T1, A, e1.1, contractible, e1.2) @ j
+      )
+    )
+  )(
+    fun (b : A) => (
+      fun (
+        center : Fiber(
+          U, glue_line(U, A, T0, T1, e0, e1) @ i, A,
+          fun (g : glue_line(U, A, T0, T1, e0, e1) @ i) => unglue(g), b
+        )
+      ) => typed(
+        IsContr(
+          U,
+          Fiber(
+            U, glue_line(U, A, T0, T1, e0, e1) @ i, A,
+            fun (g : glue_line(U, A, T0, T1, e0, e1) @ i) => unglue(g), b
+          )
+        ),
+        (
+          center,
+          fun (
+            w : Fiber(
+              U, glue_line(U, A, T0, T1, e0, e1) @ i, A,
+              fun (g : glue_line(U, A, T0, T1, e0, e1) @ i) => unglue(g), b
+            )
+          ) => path k => (
+            glue(
+              comp(
+                fun (l : Interval) => A, b,
+                face(
+                  i, 0,
+                  fun (l : Interval) => (
+                    contr_is_prop(U, Fiber(U, T0, A, e0.1, b), e0.2(b), center, w) @ k
+                  ).2 @ l
+                ),
+                face(
+                  i, 1,
+                  fun (l : Interval) => (
+                    contr_is_prop(U, Fiber(U, T1, A, e1.1, b), e1.2(b), center, w) @ k
+                  ).2 @ l
+                ), face(k, 0, fun (l : Interval) => center.2 @ l),
+                face(k, 1, fun (l : Interval) => w.2 @ l)
+              ), face(i, 0, (contr_is_prop(U, Fiber(U, T0, A, e0.1, b), e0.2(b), center, w) @ k).1),
+              face(i, 1, (contr_is_prop(U, Fiber(U, T1, A, e1.1, b), e1.2(b), center, w) @ k).1)
+            ),
+            path l => fill(
+              fun (n : Interval) => A, b, l,
+              face(
+                i, 0,
+                fun (n : Interval) => (
+                  contr_is_prop(U, Fiber(U, T0, A, e0.1, b), e0.2(b), center, w) @ k
+                ).2 @ n
+              ),
+              face(
+                i, 1,
+                fun (n : Interval) => (
+                  contr_is_prop(U, Fiber(U, T1, A, e1.1, b), e1.2(b), center, w) @ k
+                ).2 @ n
+              ), face(k, 0, fun (n : Interval) => center.2 @ n),
+              face(k, 1, fun (n : Interval) => w.2 @ n)
+            )
+          )
+        )
+      )
+    )(unglue_center(U, A, T0, T1, e0, e1, b) @ i)
+  );
+
+// The type of types equivalent to A is contractible (CCHM, corollary 10):
+// every pair of a type and an equivalence to A is joined to (A, the
+// identity) by the line glued from them.
+computable def equivalent_types_contractible(U < UU0, A : U) :
+  IsContr(next(U), exists X : U. ContrEquiv(U, X, A)) := (
+    (A, id_contr_equiv(U, A)),
+    fun (z : exists X : U. ContrEquiv(U, X, A)) => path i => (
+      glue_line(U, A, A, z.1, id_contr_equiv(U, A), z.2) @ i,
+      glue_line_equiv(U, A, A, z.1, id_contr_equiv(U, A), z.2) @ i
+    )
+  );
+
+// idtoequiv undoes glue_path: the identity, transported back along the line
+// glued from e, is e, since unglue's equivalences along that line join e to
+// the identity.
+computable def idtoequiv_glue_path(U < UU0, A, B : U, e : ContrEquiv(U, A, B)) :
+  idtoequiv(U, A, B, glue_path(U, A, B, e)) = e := path k => comp(
+    fun (j : Interval) => ContrEquiv(U, glue_path(U, A, B, e) @ -k & -j, B),
+    glue_line_equiv(U, B, A, B, e, id_contr_equiv(U, B)) @ -k, face(k, 1, fun (j : Interval) => e)
+  );
+
+// Univalence: idtoequiv is an equivalence, with glue_path its inverse.
+computable def univalence(U < UU0, A, B : U) :
+  ContrEquiv(next(U), A = B, ContrEquiv(U, A, B)) := inverse_equiv(
+    next(U), A = B, ContrEquiv(U, A, B), idtoequiv(U, A, B), glue_path(U, A, B),
+    idtoequiv_glue_path(U, A, B), glue_path_idtoequiv(U, A, B)
   );

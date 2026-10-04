@@ -3,36 +3,33 @@ import {naturalSort, numeral} from "../web/translator/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
-import { CubicalProgram } from "../web/cubical-program.mjs";
 import { reduceView, reductionStep, checkReduction, reductionAt, reductionRule, termAtPath } from "../web/cubical-reduction.mjs";
 import { cubicalMathTree } from "../web/cubical-notation.mjs";
+import { checkTestModule } from "./check-program.mjs";
 
 const module = await createCubical(), nat = naturalSort, zero = numeral(0);
 const variable = name => ({ tag: "Var", name });
 const lambda = (name, body) => ({ tag: "Lam", name, domain: nat, body });
 const app = (fn, arg) => ({ tag: "App", fn, arg });
-const programFor = async t => {
-  const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  await program.check("def N := Nat; def id(n : Nat) := n; def value := typed(N, id(0));", "demo");
-  return program;
-};
+// The declarations are cubist-tests/reduction_demo.cubist.
+const programFor = async t => (await checkTestModule(t, "reduction_demo", { module })).program;
 
 test("delta unfolds one closed kernel definition; beta leaves other definitions intact", async t => {
-  const program = await programFor(t), before = program.inspect("demo__value");
+  const program = await programFor(t), before = program.inspect("reduction_demo__value");
   const original = structuredClone(before.expression);
   const delta = reduceView(program, before, "expression", "delta");
-  assert.equal(delta.change.name, "demo__id");
+  assert.equal(delta.change.name, "reduction_demo__id");
   assert.equal(delta.view.expression.arg.fn.tag, "Lam");
   assert.deepEqual(before.expression, original);
   const beta = reduceView(program, before, "expression", "beta");
-  assert.equal(beta.view.expression.fn.name, "demo__id");
+  assert.equal(beta.view.expression.fn.name, "reduction_demo__id");
   assert.equal(reduceView(program, beta.view, "expression", "beta").change, null);
   const unfolded = reduceView(program, beta.view, "expression", "delta");
   assert.equal(reduceView(program, unfolded.view, "expression", "beta").view.expression.tag, "Con");
 });
 
 test("type delta and beta are retained even when the inferred type uses an alias", async t => {
-  const program = await programFor(t), original = program.inspect("demo__value");
+  const program = await programFor(t), original = program.inspect("reduction_demo__value");
   const delta = reduceView(program, original, "type", "delta");
   assert.deepEqual(delta.view.type, nat);
   assert.deepEqual(delta.view.expression, original.expression);
@@ -43,7 +40,7 @@ test("type delta and beta are retained even when the inferred type uses an alias
 });
 
 test("reduction must preserve definitional equality, not just inhabitation", async t => {
-  const program = await programFor(t), original = program.inspect("demo__value");
+  const program = await programFor(t), original = program.inspect("reduction_demo__value");
   assert.throws(() => checkReduction(program, original, "expression", numeral(1)), /mismatch/i);
   assert.throws(() => checkReduction(program, original, "type", { tag: "Unit" }), /mismatch/i);
 });
@@ -56,7 +53,7 @@ test("term beta avoids capture and preserves named definitions under lambdas", a
   const result = reduceView(program, view, "expression", "beta");
   assert.notEqual(result.view.expression.name, "y");
   assert.equal(result.view.expression.body.name, "y");
-  const named = app(lambda("x", app({ tag: "DefRef", name: "demo__id" }, variable("x"))), zero);
+  const named = app(lambda("x", app({ tag: "DefRef", name: "reduction_demo__id" }, variable("x"))), zero);
   assert.equal(reductionStep(named, "beta").term.fn.tag, "DefRef");
 });
 
@@ -87,8 +84,8 @@ test("delta retains explicit assumption arguments rather than opening an unbound
 });
 
 test("selecting a shared occurrence reduces only that occurrence", async t => {
-  const program = await programFor(t), view = program.inspect("demo__value");
-  const ref = { tag: "DefRef", name: "demo__id" };
+  const program = await programFor(t), view = program.inspect("reduction_demo__value");
+  const ref = { tag: "DefRef", name: "reduction_demo__id" };
   const expression = app(ref, app(ref, zero));
   const delta = reduceView(program, { ...view, expression }, "expression", "delta", ["arg", "fn"]);
   assert.equal(delta.view.expression.fn.tag, "DefRef");

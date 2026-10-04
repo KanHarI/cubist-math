@@ -11,6 +11,7 @@ export const replHelp = [
   "typeof TERM;          the type of a term",
   "evaluate TERM;        the value of a term",
   "TERM;                 a term alone is evaluated",
+  "print(inspect(TERM)); the term the kernel checks, in kernel notation",
   "import MODULE;        load a module, such as naturals",
   "/modules [TEXT]       the modules import can load, or those whose names contain TEXT",
   "/clear                clear the log",
@@ -107,6 +108,7 @@ export class ReplSession {
     if ((match = /^import\s+([A-Za-z_][A-Za-z_0-9]*)$/.exec(source))) return this.import(match[1], text);
     if (/^evaluate\s/.test(source) && !/\bexpecting\b/.test(source)) return this.evaluate(source.replace(/^evaluate\s+/, ""));
     if (/^let\s/.test(source)) return this.declare(`def${source.slice(3)};`, text);
+    if (/^print\s*\(/.test(source)) return this.declare(`${source};`, text);
     if (/^(def|computable|simp_rule|simp_set|evaluate|inductive)\s/.test(source))
       return this.declare(/[;}]$/.test(text.trim()) ? text.trim() : `${source};`, text);
     return this.evaluate(source);
@@ -160,6 +162,7 @@ export class ReplSession {
     return [
       ...defined.map(info => ({ kind: "defined", text: `${info.name} : ${this.typeText(info)}` })),
       ...(result.evaluations ?? []).map(evaluation => ({ kind: "value", text: evaluation.value })),
+      ...(result.prints ?? []).map(print => ({ kind: "value", text: print.text })),
       ...failures,
     ];
   }

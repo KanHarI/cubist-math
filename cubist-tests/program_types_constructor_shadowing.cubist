@@ -1,0 +1,17 @@
+// Constructor shadowing does not retarget literals in imported Nat: N's zero
+// and succ shadow Nat's, and the numeral 2 is still Nat's. From
+// tests/program-types.test.mjs.
+import nat;
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+def ordinary : N := succ(zero);
+
+def literal : Nat := 2;
+
+def same : literal = 2 {
+  rfl;
+}

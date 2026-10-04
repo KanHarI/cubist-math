@@ -6,7 +6,7 @@
 // mutated matrices its reviews found it had to refuse.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const exists = path => existsSync(new URL(`../${path}`, import.meta.url));
@@ -59,6 +59,8 @@ function layers(traced) {
   return result;
 }
 
+const modulesIn = directory => readdirSync(new URL(`../${directory}`, import.meta.url))
+  .filter(name => name.endsWith(".cubist")).sort().map(name => `${directory}${name}`);
 // The matrix of a specification, with the sources of the tests it names;
 // `groups` are its groups' prefixes, in order.
 function matrix(text, source, groups = prefixes) {
@@ -66,7 +68,9 @@ function matrix(text, source, groups = prefixes) {
   const defined = new Set([...text.matchAll(new RegExp(`^\\| ([${groups}]\\d+) \\|`, "gm"))].map(match => match[1]));
   const coverage = section(text, coverageHeading);
   const introduction = coverage.slice(0, coverage.indexOf("\n|"));
-  const testFiles = [...introduction.matchAll(/`([^`]+\.(?:c|mjs))`/g)].map(match => match[1]).filter(path => path !== checker);
+  // A directory, written with its slash, stands for each Cubist module in it.
+  const testFiles = [...[...introduction.matchAll(/`([^`]+\.(?:c|mjs|cubist))`/g)].map(match => match[1]),
+    ...[...introduction.matchAll(/`([\w-]+\/)`/g)].flatMap(match => modulesIn(match[1]))].filter(path => path !== checker);
   const sources = new Map(testFiles.map(path => [path, source(path)]));
   const namedIn = id => [...sources].filter(([, text]) => new RegExp(`\\b${id}(?!\\d|\\.[\\da-z])`).test(text)).map(([path]) => path);
   const rows = coverage.split("\n").filter(line => /^\| [A-Z][a-z]/.test(line) && !line.startsWith("| Group")).map(line => {

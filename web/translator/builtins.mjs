@@ -90,17 +90,27 @@ export function builtinTerm(t,builtin,n,scope,expected) {
     if(builtin==="PathP")return T.path(dim,family,tr(n.args[1],null),tr(n.args[2],null));
     // Each wall is translated on its face, at the family there.
     const onItsFace=(face,wall)=>({face,term:t.dimensionBody(wall,dim,scope.onFace(face),onFace(family,face))});
-    const system=n.args.slice(builtin==="fill"?3:2).map(part=>{
-      if(part.kind==="call"&&part.fn.kind==="name"&&part.fn.name==="face_when"&&part.args.length===2)
-        return onItsFace(t.cofibration(part.args[0],env),part.args[1]);
-      if(part.kind!=="call"||part.fn.kind!=="name"||part.fn.name!=="face"||part.args.length!==3)
-        throw Error("A composition wall has syntax face(i, 0 or 1, fun (j : Interval) => ...).");
-      const [coordinate,endpoint,wall]=part.args;
-      if(coordinate.kind!=="name"||env.get(coordinate.name)?.tag!=="Dimension"||endpoint.kind!=="number"||![0,1].includes(endpoint.value))
-        throw Error("A composition face needs an outer interval coordinate and endpoint 0 or 1.");
-      return onItsFace(faceAt(env.get(coordinate.name),endpoint.value),wall);
-    });
-    const base=tr(n.args[1],null);
+    // A wall's face, and its wall translated there. A wall whose face is 0
+    // where a coordinate is fixed is never used there, and is not
+    // translated; one written on the face 0 is kept as written.
+    const walls=part=>{
+      let face,wall;
+      if(part.kind==="call"&&part.fn.kind==="name"&&part.fn.name==="face_when"&&part.args.length===2) {
+        [face,wall]=[t.cofibration(part.args[0],env),part.args[1]];
+        if(part.args[0].kind==="number")return [onItsFace(face,wall)];
+      } else {
+        if(part.kind!=="call"||part.fn.kind!=="name"||part.fn.name!=="face"||part.args.length!==3)
+          throw Error("A composition wall has syntax face(i, 0 or 1, fun (j : Interval) => ...).");
+        const [coordinate,endpoint]=part.args;
+        if(coordinate.kind!=="name"||env.get(coordinate.name)?.tag!=="Dimension"||endpoint.kind!=="number"||![0,1].includes(endpoint.value))
+          throw Error("A composition face needs an outer interval coordinate and endpoint 0 or 1.");
+        [face,wall]=[faceAt(env.get(coordinate.name),endpoint.value),part.args[2]];
+      }
+      return face.length?[onItsFace(face,wall)]:[];
+    };
+    const system=n.args.slice(builtin==="fill"?3:2).flatMap(walls);
+    // The base is at the family's start.
+    const base=tr(n.args[1],onFace(family,F.endpoint(dim,0)));
     return builtin==="fill"?withNativeReferences([family,system,base],(family,system,base)=>fill(dim,family,system,base,t.interval(n.args[2],env))):T.comp(dim,family,system,base);
   }
   // Glue(A, face(i, 0, T, e), face_when(φ, T, e), …): the Glue type over A,
@@ -109,27 +119,36 @@ export function builtinTerm(t,builtin,n,scope,expected) {
   // exists c : (exists x : T. y = f(x)). forall p : (exists x : T. y = f(x)). c = p.
   if(builtin==="Glue"&&n.args.length>=1) {
     const base=tr(n.args[0],null);
-    return T.glueType(base,n.args.slice(1).map(part=>{
+    return T.glueType(base,n.args.slice(1).flatMap(part=>{
       const piece=systemPart(t,part,env,2);
       if(!piece)throw Error("A Glue piece has syntax face(i, 0 or 1, T, e) or face_when(φ, T, e).");
-      // On its face, at the types there.
+      // On its face, at the types there; a piece on the face 0 is never used.
       const {face,parts}=piece,there=scope.onFace(face);
+      if(!face.length)return [];
       const type=t.term(parts[0],there,null);
-      return {face,type,equiv:t.term(parts[1],there,equiv(type,onFace(base,face)))};
+      return [{face,type,equiv:t.term(parts[1],there,equiv(type,onFace(base,face)))}];
     }));
   }
   // glue(a, face(i, 0, t), …) at a Glue type: the element over the base a
   // that is t on each face, a value for each piece of the type in order.
   if(builtin==="glue"&&n.args.length>=1) {
+    const values=n.args.slice(1).map(part=>{
+      const value=systemPart(t,part,env,1);
+      if(!value)throw Error("A glue value has syntax face(i, 0 or 1, t) or face_when(φ, t).");
+      return value;
+    });
+    // On a face that holds, glue [1 ↦ t] a is t (CCHM), at the type there.
+    const holding=values.find(value=>value.face.length===1&&value.face[0].length===0);
+    if(holding)return t.term(holding.parts[0],scope,expected);
     if(!expected)throw Error("glue needs the Glue type it builds an element of: write typed(Glue(…), glue(…)).");
     // A type written as Glue is taken as it is: on a face that holds, its
     // head is the glued type.
-    const glue=expected.tag==="Glue"?expected:scope.nf(expected);
-    if(glue.tag!=="Glue")throw Error("glue builds an element of a Glue type.");
-    return T.glue(glue,tr(n.args[0],glue.base),n.args.slice(1).map((part,index)=>{
-      const value=systemPart(t,part,env,1);
-      if(!value)throw Error("A glue value has syntax face(i, 0 or 1, t) or face_when(φ, t).");
-      const {face,parts}=value,type=glue.system[index]?.type;
+    const written=expected.tag==="Glue"?expected:scope.nf(expected);
+    if(written.tag!=="Glue")throw Error("glue builds an element of a Glue type.");
+    // Pieces and values on the face 0 are never used, and are left out.
+    const glue={...written,system:written.system.filter(piece=>piece.face.length)};
+    return T.glue(glue,tr(n.args[0],glue.base),values.filter(value=>value.face.length).map(({face,parts},index)=>{
+      const type=glue.system[index]?.type;
       return {face,term:t.term(parts[0],scope.onFace(face),type?onFace(type,face):null)};
     }));
   }

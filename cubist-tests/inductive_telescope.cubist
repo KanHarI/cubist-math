@@ -1,0 +1,6 @@
+// A declared type with a telescope of parameters, for another module to
+// import, from tests/inductive-declarations.test.mjs.
+
+inductive S(A : U0, B : U0, a : A) {
+  c;
+}

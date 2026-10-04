@@ -1,0 +1,12 @@
+// From tests/quotient-groups.test.mjs: Quotient construction rejects
+// omitted normality and silent universe lowering.
+import quotient_groups;
+// Error: E606: Type mismatch: found IsNormal(G, S) -> GroupAt(U1), expected GroupAt(U1).
+def missing_normal(G : Group, S : Subgroup(G)) : GroupAt(U1) {
+  exact QuotientGroup(G, S);
+}
+
+// Error: E606: Type mismatch: found GroupAt(U1), expected Group.
+def resize_quotient(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) : Group {
+  exact QuotientGroup(G, S, normal);
+}

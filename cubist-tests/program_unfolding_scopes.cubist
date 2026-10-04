@@ -1,0 +1,19 @@
+// From tests/cubical-program.test.mjs: unfolding scopes close local
+// variables and interval coordinates without leaking hints.
+
+def id(n : Nat) := n;
+
+def local(n : Nat) : id(n) = n {
+  exact with unfolding [id] {
+    refl(n)
+  };
+}
+
+def scoped_path(n : Nat, p : n = n) :=
+  path(fun (i : Interval) => Nat, fun (i : Interval) => with unfolding [id] {
+      at(p, i)
+    });
+
+def endpoint(n : Nat, p : n = n) : at(scoped_path(n, p), 0) = n {
+  exact refl(n);
+}

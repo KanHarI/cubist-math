@@ -1,0 +1,8 @@
+// From tests/proof-ergonomics.test.mjs: In either order of imports, the rule
+// keeps the higher priority.
+import ergonomics_simp_rules_b;
+import ergonomics_simp_rules_a;
+
+def works(n : Nat) : n + 0 = n {
+  simp;
+}

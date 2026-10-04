@@ -1,0 +1,12 @@
+// From tests/proof-ergonomics.test.mjs: Each calc by keyword links to its
+// checked step in an ordinary declaration.
+// No other link starts at `by`, so the source view shows this one.
+
+import primes;
+
+def ordinary(B : U0, f : Nat -> B, n : Nat) : f((n + 0) + 0) = f(n) {
+  calc {
+    f((n + 0) + 0) = f(n + 0) by cong(f, nat_add_zero(n + 0));
+    _ = f(n) by cong(f, nat_add_zero(n));
+  }
+}

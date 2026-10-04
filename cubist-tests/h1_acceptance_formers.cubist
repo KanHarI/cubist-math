@@ -1,0 +1,44 @@
+// From tests/h1-acceptance.test.mjs: V9, V10, V11: a former as a function, a
+// signature at tier 1, and an instance at a successor level.
+// V9: Tr used as a value is fun (U < UU0, A : U) => Tr(U, A).
+// V10: Big(A : UU0) lives in UU0, and its eliminator's motive in UU1.
+// V11: a generic definition instantiated at next(U), and elimination on
+// point computing there.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+inductive Tr(U < UU0, A : U) : prop {
+  point(a : A);
+}
+
+def trunc_former : forall U < UU0. U -> U := Tr;
+
+def former_applied : trunc_former(U0, N) = Tr(U0, N) {
+  rfl;
+}
+
+inductive Big(A : UU0) {
+  wrap(a : A);
+}
+
+def big_nat : UU0 := Big(N);
+
+def carrier(A : UU0, b : Big(A)) : UU0 := match b {
+    wrap(a) => A;
+  };
+
+def wrap_point(U < UU0, A : U, a : A) : Tr(U, A) := point(a);
+
+def at_next(U < UU0, A : U, a : A) : Tr(next(U), A) := wrap_point(next(U), A, a);
+
+def rebuilt(U < UU0, A : U, t : Tr(U, A)) : Tr(U, A) := match t {
+    point(a) => point(a);
+    squash(x, y) @ i => Tr.squash(rebuilt(U, A, x), rebuilt(U, A, y)) @ i;
+  };
+
+def computes(U < UU0, A : U, a : A) : rebuilt(next(U), A, at_next(U, A, a)) = point(a) {
+  rfl;
+}

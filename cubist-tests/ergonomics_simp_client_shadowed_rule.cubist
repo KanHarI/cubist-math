@@ -1,0 +1,10 @@
+// From tests/proof-ergonomics.test.mjs: A local definition named as an
+// imported rule shadows it in the source, so simp is offered no frozen form
+// that would name it.
+import ergonomics_simp_rules_a;
+
+def nat_add_zero(n : Nat) := n;
+
+def proven(n : Nat) : n + 0 = n {
+  simp;
+}

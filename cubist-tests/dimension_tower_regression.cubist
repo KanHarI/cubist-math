@@ -1,0 +1,33 @@
+// From tests/dimension.test.mjs: The product basis and numerical tower law
+// check for arbitrary fields and a commuting triangle.
+
+import extension_degree;
+
+def arbitrary_tower(
+  K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
+  d : FieldEmbedding(L, M), c : FieldEmbedding(K, M), triangle : FieldTower(K, L, M, e, d, c),
+  lower : FiniteExtension(K, embedding_as_extension(K, L, e)),
+  upper : FiniteExtension(L, embedding_as_extension(L, M, d)),
+  whole : FiniteExtension(K, embedding_as_extension(K, M, c))
+) :
+  extension_degree(K, embedding_as_extension(K, M, c), whole) = multiply_count(
+    extension_degree(L, embedding_as_extension(L, M, d), upper),
+    extension_degree(K, embedding_as_extension(K, L, e), lower)
+  ) {
+  exact tower_law(K, L, M, e, d, c, triangle, lower, upper, whole);
+}
+
+def identity_triangle(K : AlgebraicField) :
+  FieldTower(
+    K, K, K, field_embedding_identity(K), field_embedding_identity(K), field_embedding_identity(K)
+  ) {
+  exact field_embedding_left_identity(K, K, field_embedding_identity(K));
+}
+
+def identity_tower(K : AlgebraicField) :
+  ExtensionDegree(K, embedding_as_extension(K, K, field_embedding_identity(K)), 1) {
+  exact extension_degree_tower(
+    K, K, K, field_embedding_identity(K), field_embedding_identity(K), field_embedding_identity(K),
+    identity_triangle(K), 1, 1, identity_extension_degree(K), identity_extension_degree(K)
+  );
+}

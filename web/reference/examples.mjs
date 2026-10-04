@@ -270,9 +270,10 @@ function enhance(pre, code) {
     const links = result?.links ?? [];
     if (links.length) render(code, source, links);
     const evaluations = (result?.evaluations ?? []).map(evaluation => `${evaluation.name}: ${evaluation.value}`);
+    const prints = (result?.prints ?? []).map(print => `print ${print.name}: ${print.text}`);
     const warnings = (result?.warnings ?? []).map(warning => `warning at line ${warning.line}: ${warning.message}`);
     status.textContent = [links.length ? "Click a name to inspect its kernel term" : result?.error ? "Not checked" : "",
-      ...evaluations.map(text => `evaluate ${text}`), ...warnings].filter(Boolean).join(" · ");
+      ...evaluations.map(text => `evaluate ${text}`), ...prints, ...warnings].filter(Boolean).join(" · ");
   });
 }
 

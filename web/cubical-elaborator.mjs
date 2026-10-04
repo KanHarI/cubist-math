@@ -1,8 +1,9 @@
 import { CubicalSyntax } from "./cubical-syntax.mjs";
-import { T, substituteTerm } from "./translator/core.mjs";
+import { T, substituteTerm, withoutEmptyFaces } from "./translator/core.mjs";
 import { interval as I } from "./translator/lattice.mjs";
 import { NameSupply, localName, numberedName, stem } from "./translator/names.mjs";
 import { sourceText } from "./cubical-source-text.mjs";
+import { cubicalText } from "./cubical-notation.mjs";
 import { levelNormal } from "./cubical-levels.mjs";
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { KernelError } from "./cubical-kernel.mjs";
@@ -412,6 +413,11 @@ export class NativeCubicalElaborator {
   displayText(term, width = 160, limit = 4000) {
     return this.printed(readableDimensions([displayTerm(term)])[0], width, limit);
   }
+  // A term in kernel notation as it was checked, no redex reduced.
+  kernelText(term, width = 160) {
+    const text = cubicalText(readableDimensions([displayTerm(term, 0)])[0], this.displayNames);
+    return text.length > width ? `${text.slice(0, width - 1)}…` : text;
+  }
   // Several terms shown with one naming: a variable they share has one name
   // in all of them, apart from every label any of them prints.
   displayTexts(terms, width = 160, limit = 4000) {
@@ -597,7 +603,16 @@ export class NativeCubicalElaborator {
     }
     let reference, admission;
     try { ({ reference, admission } = this.admit(name, this.syntax.encode(body), this.syntax.encode(signature))); }
-    catch (error) { throw this.describeMismatch(error, new Map()); }
+    catch (error) {
+      // A type the kernel inferred by substitution can carry parts on the
+      // face 0, which need not be well typed and the driver may fail to
+      // derive. They are never used: without them, the type is the same.
+      const cleaned = withoutEmptyFaces(signature);
+      if (cleaned === signature) throw this.describeMismatch(error, new Map());
+      try { ({ reference, admission } = this.admit(name, this.syntax.encode(body), this.syntax.encode(cleaned))); }
+      catch { throw this.describeMismatch(error, new Map()); }
+      type = withoutEmptyFaces(type);
+    }
     this.definitionViews.set(name, { term, type, assumptions, admission });
     this.definitionExtensions.set(name, this.extensionsOf(term, type, ...assumptions.values()));
     let result = this.syntax.decode(reference);

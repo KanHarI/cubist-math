@@ -10,6 +10,7 @@
     "benchmark:cubical": "make wasm && node tools/benchmark-cubical.mjs",
     "format:cubist": "node tools/format-cubist.mjs",
     "lint:cubist": "node tools/lint-cubist.mjs",
+    "inline-errors": "node tools/inline-errors.mjs --write",
     "linearize:cubist": "node tools/linearize-cubist.mjs"
   },
   "devDependencies": {

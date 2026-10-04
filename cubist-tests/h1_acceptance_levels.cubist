@@ -1,0 +1,73 @@
+// From tests/h1-acceptance.test.mjs: V2, V3, V5, V6, V12: the sort's level
+// counts stored data and relations, never a phantom parameter.
+// V2: Box's parameter is a phantom: Box(A) lives in U0 at every level.
+// V3, V5: stored data and a relation count toward the level, max(U, V);
+// declared at U, each is refused at the argument that lives above it.
+// V6: lowering is refused at the argument.
+// V12: a level-dependent signature, with its universe parameter recorded.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+inductive Box(U < UU0, A : U) {
+  mk(n : N);
+}
+
+def box_small : U0 := Box(U0, N);
+
+def box_large : U0 := Box(U2, U1);
+
+inductive Pair(U, V < UU0, A : U, B : V) {
+  pair(a : A, b : B);
+}
+
+def pair_at_max : U1 := Pair(U0, U1, N, U0);
+
+// Error: E606: Type mismatch: found U1, expected U0.
+def pair_lowered : U0 := Pair(U0, U1, N, U0);
+
+// Error: E514: low_pair's argument b lives in a universe above PairLow's declared one: a declared
+//   type cannot lower its data (K2.5).
+inductive PairLow(U, V < UU0, A : U, B : V) : U {
+  low_pair(a : A, b : B);
+}
+
+inductive Quotient(U, V < UU0, A : U, R : A -> A -> V) : set {
+  class(a : A);
+  glue(a, b : A, r : R(a, b)) : class(a) = class(b);
+}
+
+def big_relation(a, b : N) : U1 := U0;
+
+def quotient_at_max : U1 := Quotient(U0, U1, N, big_relation);
+
+// Error: E514: low_glue's argument r lives in a universe above QuotientLow's declared one: a
+//   declared type cannot lower its data (K2.5).
+inductive QuotientLow(U, V < UU0, A : U, R : A -> A -> V) : set U {
+  low_class(a : A);
+  low_glue(a, b : A, r : R(a, b)) : low_class(a) = low_class(b);
+}
+
+// Error: E514: wrap's argument a lives in a universe above Small's declared one: a declared type
+//   cannot lower its data (K2.5).
+inductive Small(U < UU0, A : U) : U0 {
+  wrap(a : A);
+}
+
+inductive Wrap(U < UU0) : next(U) {
+  hold(B : U);
+}
+
+def wrap_small : U1 := Wrap(U0);
+
+// V2: Box's universe is erased, as no instance needs it. V12: Wrap's is
+// recorded.
+// Output: inductive Box : forall U < UU0. U -> U0 (type) { mk : N -> Box [1 data, 0 positions, 0
+//   dimensions]; } eliminator for P : Box(__U, A) -> V { mk_case : forall x : N. P(mk(x)); }
+print(inspect(Box));
+// Output: inductive Wrap : forall U_1 < UU0. next(U_1) (type, recorded U) { hold : U -> Wrap [1
+//   data, 0 positions, 0 dimensions]; } eliminator for P : Wrap(U) -> V { hold_case : forall x : U.
+//   P(hold(x)); }
+print(inspect(Wrap));

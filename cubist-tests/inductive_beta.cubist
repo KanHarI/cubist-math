@@ -1,0 +1,20 @@
+// From tests/inductive-declarations.test.mjs: Constructor types are
+// beta-reduced before they are classified and admitted.
+// The ascription's identity redex would not be a constructor expression,
+// and the redex that mentions Beta is data, of type N.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+inductive C {
+  b;
+  l : typed(C, b) = b;
+}
+
+inductive Beta : U0 {
+  mk(x : (fun (X : U0) => N)(Beta));
+}
+
+def made : Beta := mk(zero);

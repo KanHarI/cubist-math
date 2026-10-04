@@ -1,0 +1,34 @@
+// From tests/proof-ergonomics.test.mjs: Exclusions remove defaults and
+// hypothesis simplification keeps the source.
+
+import primes;
+
+simp_rule nat_add_zero;
+simp_set units := [nat_add_zero];
+// Error: E456: simp only left an unresolved equality goal; add a following proof statement.
+//   Remaining goal: n + 0 = n. No rule fired.
+def removed(n : Nat) : n + 0 = n {
+  simp without [nat_add_zero];
+}
+
+// Error: E456: simp only left an unresolved equality goal; add a following proof statement.
+//   Remaining goal: n + 0 = n. No rule fired.
+def removed_set(n : Nat) : n + 0 = n {
+  simp [units] without [units];
+}
+
+def retained(n : Nat, h : n + 0 = n) : n + 0 = n {
+  simp at h as normalized;
+  exact h;
+}
+
+computable def normalized(n : Nat, h : n + 0 = n) : n = n {
+  simp at h as shorter;
+  exact shorter;
+}
+
+// Error: E454: simp at requires a local hypothesis: nat_add_zero.
+def global_rejected(n : Nat) : n = n {
+  simp only [] at nat_add_zero as bad;
+  rfl;
+}

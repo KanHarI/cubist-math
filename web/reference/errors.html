@@ -350,13 +350,14 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr><td><a href="#E149"><code>E149</code></a></td><td>simp_rule priority must be an integer from 0 to 1000.</td></tr>
                 <tr id="E150"><td><code>E150</code></td><td>Expected '}' to close the inductive declaration.</td></tr>
                 <tr><td><a href="#E151"><code>E151</code></a></td><td>Imports must come before declarations.</td></tr>
-                <tr id="E152"><td><code>E152</code></td><td>Expected a declaration or directive: def, computable def, inductive, evaluate, simp_rule or simp_set.</td></tr>
+                <tr id="E152"><td><code>E152</code></td><td>Expected a declaration or directive: def, computable def, inductive, evaluate, print, simp_rule or simp_set.</td></tr>
                 <tr id="E153"><td><code>E153</code></td><td>Write := to give a value: def name : T := term; here `=` read as an equality type</td></tr>
                 <tr id="E154"><td><code>E154</code></td><td>Cannot locate a right-hand pair's enclosing parentheses.</td></tr>
                 <tr id="E155"><td><code>E155</code></td><td>Tuple linearization changed the expanded syntax tree.</td></tr>
                 <tr id="E156"><td><code>E156</code></td><td>Give the motive after as: induction v as z return T { … }.</td></tr>
                 <tr id="E157"><td><code>E157</code></td><td>Expected '}' to close the induction.</td></tr>
                 <tr id="E158"><td><code>E158</code></td><td>Expected '}' to close the ….</td></tr>
+                <tr id="E159"><td><code>E159</code></td><td>print shows evaluate(term), typeof(term) or inspect(term).</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -414,15 +415,15 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E303"><td><code>E303</code></td><td>Cubical prototype supports 64 simultaneously live dimensions.</td></tr>
                 <tr id="E304"><td><code>E304</code></td><td>Internal elaboration error: … is already bound.</td></tr>
                 <tr id="E305"><td><code>E305</code></td><td>At most 64 simultaneous cubical dimensions are supported.</td></tr>
-                <tr id="E306"><td><code>E306</code></td><td>Unglue extension requires an explicit Glue type.</td></tr>
-                <tr id="E307"><td><code>E307</code></td><td>Unglue equivalence requires an explicit Glue type.</td></tr>
+                <tr id="E306"><td><code>E306</code></td><td>Unglue extension requires an explicit Glue type. (retired)</td></tr>
+                <tr id="E307"><td><code>E307</code></td><td>Unglue equivalence requires an explicit Glue type. (retired)</td></tr>
                 <tr id="E308"><td><code>E308</code></td><td>Cubical lattice term-size budget exceeded.</td></tr>
                 <tr id="E309"><td><code>E309</code></td><td>Expected a lattice DNF.</td></tr>
                 <tr id="E310"><td><code>E310</code></td><td>Malformed lattice generator.</td></tr>
                 <tr id="E311"><td><code>E311</code></td><td>Invalid dimension name.</td></tr>
                 <tr id="E312"><td><code>E312</code></td><td>Expected endpoint 0 or 1.</td></tr>
                 <tr id="E313"><td><code>E313</code></td><td>Supply the checked generic native-equivalence round-trip lemma.</td></tr>
-                <tr id="E314"><td><code>E314</code></td><td>Supply the checked generic native univalence inverse laws.</td></tr>
+                <tr id="E314"><td><code>E314</code></td><td>Supply the checked generic native univalence inverse laws. (retired)</td></tr>
                 <tr id="E315"><td><code>E315</code></td><td>Cubical syntax construction term-size budget exceeded.</td></tr>
                 <tr id="E316"><td><code>E316</code></td><td>Simplification term-size budget exceeded.</td></tr>
                 <tr id="E317"><td><code>E317</code></td><td>Malformed universe constant: ….</td></tr>
@@ -481,6 +482,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E370"><td><code>E370</code></td><td>simp only requires a homogeneous equality goal.</td></tr>
                 <tr id="E371"><td><code>E371</code></td><td>induction requires a value of a declared type.</td></tr>
                 <tr id="E372"><td><code>E372</code></td><td>… stands for a universe that the printer could not show: write the universe in its place, such as U0 or a universe variable.</td></tr>
+                <tr id="E373"><td><code>E373</code></td><td>-p reverses a path; found no path.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e4">Proof statements, rewriting and simplification</h3>

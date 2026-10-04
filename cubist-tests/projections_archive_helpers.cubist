@@ -1,0 +1,20 @@
+// From tests/projections-let.test.mjs: HoTT A8: projections convert to the
+// archive's projection helpers.
+
+import equivalences;
+import field_logic;
+def first_helper(A : U0, B : A -> U0, p : exists x : A. B(x)) :
+  p.1 = sigma_first(A, B, p) := refl(p.1);
+
+def second_helper(A : U0, B : A -> U0, p : exists x : A. B(x)) :
+  p.2 = sigma_second(A, B, p) := refl(p.2);
+
+def field_first_helper(A : U1, P : A -> U1, p : exists a : A. P(a)) :
+  p.1 = field_first(A, P, p) := refl(p.1);
+
+def field_second_helper(A : U1, P : A -> U1, p : exists a : A. P(a)) :
+  p.2 = field_second(A, P, p) := refl(p.2);
+
+def fst_helper(A, B : U1, p : A and B) : p.1 = field_fst(A, B, p) := refl(p.1);
+
+def snd_helper(A, B : U1, p : A and B) : p.2 = field_snd(A, B, p) := refl(p.2);

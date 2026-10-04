@@ -10,23 +10,19 @@ import { foldedInspection } from "../web/cubical-inspection.mjs";
 import { cubicalMathTree } from "../web/cubical-notation.mjs";
 import { boundedSyntaxJson } from "../web/cubical-json.mjs";
 import { simplifyTypeApplications } from "../web/cubical-reduction.mjs";
+import { checkTestModule } from "./check-program.mjs";
 
 const module = await createCubical();
 const readSource = name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
 const variable = name => ({ tag: "Var", name });
+// Programs whose links and views are the test are
+// cubist-tests/inspection_*.cubist (tests/cubist-tests.test.mjs checks them).
+const cases = (t, name) => checkTestModule(t, `inspection_${name}`, { module });
 const nat = naturalSort;
 
 test("declared type occurrences link to their imported and local source declarations", async t => {
-  const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
-  const source = `import w;
-def Z := Nat or Nat;
-def Tree := W(U0, U0, Unit, fun (a : Unit) => Void);
-def former := W;
-inductive N { zero; succ(n : N); }
-def two : N := succ(succ(zero));`;
-  const result = await program.check(source, "main");
-  assert.equal(result.complete, true, JSON.stringify(result.gaps));
-  for (const [name, binding] of [["Nat", "nat__Nat"], ["W", "w__W"], ["N", "main__N"]]) {
+  const { program, result } = await cases(t, "declared_types");
+  for (const [name, binding] of [["Nat", "nat__Nat"], ["W", "w__W"], ["N", "inspection_declared_types__N"]]) {
     const links = result.links.filter(link => link.name === name);
     assert.equal(links.length, name === "N" ? 3 : 2, name);
     for (const link of links) {
@@ -42,17 +38,14 @@ def two : N := succ(succ(zero));`;
 });
 
 test("shadowed Nat names retain their own local source targets", async t => {
-  const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
-  const source = "def identity(Nat : U0, x : Nat) : Nat := x; def Nat := Unit; def point : Nat := tt;";
-  const result = await program.check(source, "shadow");
-  assert.equal(result.complete, true, JSON.stringify(result.gaps));
+  const { result } = await cases(t, "shadowed_nat");
   const links = result.links.filter(link => link.name === "Nat");
   assert.equal(links.length, 5);
   for (const link of links.slice(0, 3)) {
     assert.notEqual(link.binding, "nat__Nat");
     assert.notEqual(link.role, "inductive");
   }
-  assert.equal(links.at(-1).binding, "shadow__Nat");
+  assert.equal(links.at(-1).binding, "inspection_shadowed_nat__Nat");
   assert.equal(links.at(-1).role, "def");
 });
 
@@ -159,10 +152,8 @@ test("path notation and raw syntax display stay bounded on shared terms", () => 
 });
 
 test("axiom labels and derived cubical helpers remain inspectable", async t => {
-  const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  const result = await program.check("def Mere(A : U1) := Truncate(U1, A); def refl_nat(n : Nat) : n = n { exact refl(n); }", "sample");
-  assert.equal(result.complete, true);
-  const view = program.inspect("sample__Mere");
+  const { program } = await cases(t, "axiom_labels");
+  const view = program.inspect("inspection_axiom_labels__Mere");
   const tree = cubicalMathTree(view.folded.expression, view.symbols);
   assert.equal(tree.body.fn.axiomNotation, "truncation");
   assert.equal(tree.body.fn.truncationArgument, 1);
@@ -172,13 +163,10 @@ test("axiom labels and derived cubical helpers remain inspectable", async t => {
 });
 
 test("a let alias preserves the original local's name and does not leak to later declarations", async t => {
-  const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  const source = "def zero := 0; def aliases(n : Nat) : n = n { let m := n; exact refl(n); } def after := zero;";
-  const result = await program.check(source, "aliases");
-  assert.equal(result.complete, true);
+  const { source, program, result } = await cases(t, "let_alias");
   const n = result.links.filter(link => link.name === "n").at(-1);
   const view = program.inspect(n.binding);
   assert.equal(view.expressionText, "n");
   assert.equal(view.context[0].label, "n");
-  assert.equal(result.links.find(link => link.start === source.lastIndexOf("zero")).binding, "aliases__zero");
+  assert.equal(result.links.find(link => link.start === source.lastIndexOf("zero")).binding, "inspection_let_alias__zero");
 });

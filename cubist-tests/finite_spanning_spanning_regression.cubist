@@ -1,0 +1,18 @@
+// From tests/finite-spanning.test.mjs: Finite spanning families contain an
+// indexed subfamily basis without choice.
+import spanning_subfamilies;
+def extract(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V),
+  spans : FiniteSpanningFamily(K, V, n, v)
+) :
+  Mere(SubfamilyBasis(K, V, n, v)) {
+  exact finite_spanning_subfamily_basis(K, V, n, v, spans);
+}
+
+def generator_coordinates(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V),
+  basis : FamilyBasis(K, V, n, v)
+) :
+  FiniteBasis(K, V, n) {
+  exact family_basis_coordinates(K, V, n, v, basis);
+}

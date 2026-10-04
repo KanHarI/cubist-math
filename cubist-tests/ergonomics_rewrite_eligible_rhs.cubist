@@ -1,0 +1,18 @@
+// From tests/proof-ergonomics.test.mjs: Rw skips an unsupported left
+// occurrence to reach an eligible right one.
+
+computable def default_target(
+  A : U0, C : A -> U0, f : forall a : A. C(a), x, y : A, k : A -> C(x), p : x = y, h : f(x) = k(y)
+) :
+  f(x) = k(x) {
+  rw [p];
+  exact h;
+}
+
+computable def explicit_target(
+  A : U0, C : A -> U0, f : forall a : A. C(a), x, y : A, k : A -> C(x), p : x = y, h : f(x) = k(y)
+) :
+  f(x) = k(x) {
+  rw [p] at rhs;
+  exact h;
+}

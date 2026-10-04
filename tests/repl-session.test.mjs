@@ -34,6 +34,10 @@ test("let binds, typeof shows the type, and evaluate the value", async t => {
   // A term alone is evaluated, and a last statement may omit its `;`.
   assert.deepEqual(texts(await repl.run("x")), ["value: 7"]);
   assert.deepEqual(texts(await repl.run("typeof fun (n : Nat) => succ(n)")), ["type: Nat -> Nat"]);
+  // A print directive is an entry too.
+  assert.deepEqual(texts(await repl.run("print(evaluate(succ(x)));")), ["value: 8"]);
+  assert.deepEqual(texts(await repl.run("print(typeof(x))")), ["value: Nat"]);
+  assert.deepEqual(texts(await repl.run("print(inspect(succ(x)));")), ["value: succ(x)"]);
 });
 
 test("imports, declarations with blocks, and errors that leave the session unchanged", async t => {

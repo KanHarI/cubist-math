@@ -1,0 +1,10 @@
+// From tests/proof-ergonomics.test.mjs: Freeze withholds a rule name shadowed
+// by a named simplification set.
+
+import primes;
+
+simp_rule nat_add_zero;
+simp_set nat_add_zero := [];
+def checked(n : Nat) : n + 0 = n {
+  simp;
+}

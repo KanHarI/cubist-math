@@ -1,0 +1,1099 @@
+// match on declared types (work-plan L2.2a): clauses elaborated against the
+// clause types the kernel computes, dependent motives, path and squash
+// clauses, structural recursion, the match statement, recursion whose other
+// arguments vary, and the refusals. tests/declared-match.test.mjs checks each
+// case by name.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+def add(n, m : N) : N := match n {
+    zero => m;
+    succ(k) => succ(add(k, m));
+  };
+
+// The types the cases take apart.
+inductive Tree(U < UU0, A : U) {
+  leaf;
+  node(l : Tree(U, A), a : A, r : Tree(U, A));
+}
+
+inductive Circle {
+  base;
+  loop : base = base;
+}
+
+inductive Trunc(U < UU0, A : U) : prop {
+  point(a : A);
+}
+
+inductive Tag(n : N) : U0 {
+  tag;
+}
+
+def Rep(n : N) : U0 := match n {
+    zero => Unit;
+    succ(m) => N and Rep(m);
+  };
+
+// Structural recursion computes, with a parameter held fixed.
+def double(n : N) : N := match n {
+    zero => zero;
+    succ(m) => succ(succ(double(m)));
+  };
+
+def four : double(succ(succ(zero))) = succ(succ(succ(succ(zero)))) {
+  rfl;
+}
+
+def three : add(succ(succ(zero)), succ(zero)) = succ(succ(succ(zero))) {
+  rfl;
+}
+
+// Refused: double(succ(zero)) computes to succ(succ(zero)), not succ(zero).
+// Error: E606: Type mismatch: found double(succ(zero)) = double(succ(zero)), expected
+//   double(succ(zero)) = succ(zero).
+def wrong : double(succ(zero)) = succ(zero) {
+  rfl;
+}
+
+// A dependent motive: each clause is checked at its own instance.
+def zero_right(n : N) : add(n, zero) = n := match n as k return add(k, zero) = k {
+    zero => refl(zero);
+    succ(m) => cong(succ, zero_right(m));
+  };
+
+// Data before positions: clauses name arguments in the order declared.
+def size(A : U0, t : Tree(U0, A)) : N := match t {
+    leaf => zero;
+    node(l, a, r) => succ(add(size(A, l), size(A, r)));
+  };
+
+def labels(t : Tree(U0, N)) : N := match t {
+    leaf => zero;
+    node(l, a, r) => add(a, add(labels(l), labels(r)));
+  };
+
+def small : Tree(U0, N) := node(node(leaf, succ(zero), leaf), zero, leaf);
+
+def two : size(N, small) = succ(succ(zero)) {
+  rfl;
+}
+
+def one : labels(small) = succ(zero) {
+  rfl;
+}
+
+// A path constructor's clause is a path between the clauses at its ends.
+def flat(x : Circle) : N := match x {
+    base => zero;
+    loop @ i => zero;
+  };
+
+def at_loop : flat(loop @ 1) = zero {
+  rfl;
+}
+
+// Refused: loop's clause must be a path between base's clause at both ends, zero to
+// zero, and succ(zero) is not.
+// Error: E606: Type mismatch: found succ(zero) = succ(zero), expected zero = zero.
+def torn(x : Circle) : N := match x {
+    base => zero;
+    loop @ i => succ(zero);
+  };
+
+// Refused: a path constructor's clause names its dimension: loop @ i =>.
+// Error: E541: loop is a path constructor: name its 1 dimension after its arguments, as in loop @ i
+//   => ….
+def unnamed(x : Circle) : N := match x {
+    base => zero;
+    loop => zero;
+  };
+
+// Refused: base is a point: it has no dimension to name.
+// Error: E540: base has no dimensions to name.
+def extra(x : Circle) : N := match x {
+    base @ i => zero;
+    loop @ i => zero;
+  };
+
+// Refused: the dimension follows @, as in the term loop @ i.
+// Error: E539: Write the dimension of loop after @, as the point the clause covers: loop @ i => ….
+def bare(x : Circle) : N := match x {
+    base => zero;
+    loop i => zero;
+  };
+
+// E3: a truncation's squash clause, with T.squash and recursive results.
+// E8: without an explicit squash clause or checked h-level evidence, refused.
+def same(x, y : Trunc(U0, N)) : x = y := Trunc.squash(x, y);
+
+def rebuilt(t : Trunc(U0, N)) : Trunc(U0, N) := match t {
+    point(a) => point(a);
+    squash(x, y) @ i => Trunc.squash(rebuilt(x), rebuilt(y)) @ i;
+  };
+
+def rebuilt_point : rebuilt(point(zero)) = point(zero) {
+  rfl;
+}
+
+// Refused: a match on a truncation needs its squash clause, or h-level evidence to
+// generate it.
+// Error: E544: Cannot generate Trunc.squash: import hlevels and supply h-level evidence for the
+//   motive, or give the clause explicitly.
+def unsquashed(t : Trunc(U0, N)) : Trunc(U0, N) := match t {
+    point(a) => point(a);
+  };
+
+// E8: the refusals name the clause or the call: a missing clause, a
+// duplicate clause and an unknown constructor among them.
+// Refused: N has no constructor tail.
+// Error: E528: N has no constructor tail: its constructors are zero, succ.
+def unknown(n : N) : N := match n {
+    zero => zero;
+    succ(m) => m;
+    tail(x) => x;
+  };
+
+// Refused: two clauses for zero.
+// Error: E529: zero has two clauses.
+def twice(n : N) : N := match n {
+    zero => zero;
+    zero => zero;
+    succ(m) => m;
+  };
+
+// Refused: no clause for succ.
+// Error: E531: match on N needs a clause for succ. Give path clauses in obligations { … }, or
+//   obligations by { … }.
+def partial(n : N) : N := match n {
+    zero => zero;
+  };
+
+// Refused: succ's clause names no argument.
+// Error: E538: succ takes 1 argument here: succ(…) with 1 names.
+def arity(n : N) : N := match n {
+    zero => zero;
+    succ => zero;
+  };
+
+// Refused: the recursive call is on succ(m), not on m: not structural.
+// Error: E552: The recursive call of growing is not on an argument of the matched constructor: only
+//   structural recursion, as growing(m) in succ(m) => ….
+def growing(n : N) : N := match n {
+    zero => zero;
+    succ(m) => growing(succ(m));
+  };
+
+// Refused: the call is outside the match, so it is on no constructor's argument.
+// Error: E547: outside is being defined: it can call itself only on an argument of a constructor
+//   that its match takes apart, as outside(m) in succ(m) => …, when that match on one of its
+//   parameters is its whole body.
+def outside(n : N) : N := add(outside(n), match n {
+      zero => zero;
+      succ(m) => m;
+    });
+
+// Refused: the match has no type: neither a declared type nor return.
+// Error: E534: match needs its result's type: give return T, or use it where its type is known.
+def untyped(n : N) := match n {
+    zero => zero;
+    succ(m) => m;
+  };
+
+// Refused: Unit is neither a declared type nor a sum.
+// Error: E353: match requires a value of a declared type, or of a sum.
+def on_nat(n : Unit) : Unit := match n {
+    zero => tt;
+    succ(m) => tt;
+  };
+
+// Recursion recognizes the declaration's own parameter by its binder, not by
+// its name.
+// Refused: the inner n is another variable: a call there is not recursion on it.
+// Error: E547: tricky is being defined: it can call itself only on an argument of a constructor
+//   that its match takes apart, as tricky(m) in succ(m) => …, when that match on one of its
+//   parameters is its whole body.
+def tricky(n : N) : N := (fun (n : N) => match n return N {
+      zero => zero;
+      succ(m) => tricky(m);
+    })(zero);
+
+def shadowed(n : N) : N := match n {
+    zero => zero;
+    succ(n) => shadowed(n);
+  };
+
+// Recursion only where the match is the whole body, and with the matched
+// parameter rebound.
+// Refused: around the match, a call's recursive result would omit the succ.
+// Error: E547: wrapped is being defined: it can call itself only on an argument of a constructor
+//   that its match takes apart, as wrapped(m) in succ(m) => …, when that match on one of its
+//   parameters is its whole body.
+def wrapped(n : N) : N := succ(match n return N {
+      zero => zero;
+      succ(k) => wrapped(k);
+    });
+
+def captured(n : N) : N := match n {
+    zero => n;
+    succ(k) => captured(k);
+  };
+
+def constant_zero : captured(succ(succ(zero))) = zero {
+  rfl;
+}
+
+// Refused: captured is constant zero: n in the zero clause is zero.
+// Error: E606: Type mismatch: found captured(succ(zero)) = captured(succ(zero)), expected
+//   captured(succ(zero)) = succ(zero).
+def not_identity : captured(succ(zero)) = succ(zero) {
+  rfl;
+}
+
+def via_block(n : N) : N {
+  exact match n {
+    zero => zero;
+    succ(k) => via_block(k);
+  };
+}
+
+def via_value(n : N) := match n return N {
+    zero => zero;
+    succ(k) => via_value(k);
+  };
+
+// A clause's own names shadow the declaration's name and its matched
+// parameter.
+def f(n : N) : N := match n {
+    zero => zero;
+    succ(f) => f;
+  };
+
+def predecessor : f(succ(succ(zero))) = succ(zero) {
+  rfl;
+}
+
+def g(n : N) : N := match n {
+    zero => zero;
+    succ(n) => n;
+  };
+
+def also_predecessor : g(succ(succ(zero))) = succ(zero) {
+  rfl;
+}
+
+// Recursive calls are the calls written: their types, arities and arguments.
+// Refused: tagged(m) has type Tag(m), and the succ clause needs Tag(succ(m)).
+// Error: E606: Type mismatch: found forall m : N. Tag(m) -> Tag(m), expected forall x : N. Tag(x)
+//   -> Tag(succ(x)).
+def tagged(n : N) : Tag(n) := match n {
+    zero => tag;
+    succ(m) => tagged(m);
+  };
+
+// Refused: the motive mentions n, not the matched value z.
+// Error: E533: The motive mentions n itself: write it over the matched value, match n as z return …
+//   z …, so that recursive calls have their own types.
+// Warning: W704: z is unused: the return type does not mention it. Omit as z: match n return ….
+def outer_motive(n : N) : Tag(n) := match n as z return Tag(n) {
+    zero => tag;
+    succ(m) => outer_motive(m);
+  };
+
+def refl_all(n : N) : n = n := match n {
+    zero => refl(zero);
+    succ(m) => refl(succ(m));
+  };
+
+// Refused: m is an argument of the matched constructor, not a function.
+// Error: E553: m takes 0 arguments here, as an argument of the matched constructor.
+def applied(n : N) : N -> N := match n {
+    zero => fun (x : N) => x;
+    succ(m) => fun (x : N) => applied(m(x));
+  };
+
+// Refused: p is generalized: in the succ clause it proves succ(m) = zero, and the
+// call needs m = zero.
+// Error: E606: Type mismatch: found succ(m) = zero, expected m = zero.
+def dep(n : N, p : n = zero) : N := match n {
+    zero => zero;
+    succ(m) => dep(m, p);
+  };
+
+def h(h : N -> N, n : N) : N := match n {
+    zero => h(zero);
+    succ(m) => h(m);
+  };
+
+def shadowed_by_parameter : h(succ, succ(succ(zero))) = succ(succ(zero)) {
+  rfl;
+}
+
+// A path of the matched type is recursed on at its dimensions.
+inductive S : set {
+  pt;
+}
+
+// Refused: p : x = y is a path, not an S: ill_typed(p) would be ill-typed.
+// Error: E554: p is a 1-dimensional path of the matched type, not an element: call ill_typed on it
+//   at its dimensions, as ill_typed(p @ i).
+def ill_typed(s : S) : S := match s {
+    pt => pt;
+    squash(x, y, p, q) @ i @ j => S.squash(ill_typed(x), ill_typed(y), ill_typed(p), ill_typed(q)) @ i @ j;
+  };
+
+def rebuilt_set(s : S) : S := match s {
+    pt => pt;
+    squash(x, y, p, q) @ i @ j => S.squash(
+      rebuilt_set(x), rebuilt_set(y), path k => rebuilt_set(p @ k), path k => rebuilt_set(q @ k)
+    ) @ i @ j;
+  };
+
+def rebuilt_set_point : rebuilt_set(pt) = pt {
+  rfl;
+}
+
+// Refused: x is an element, and has no dimension to apply.
+// Error: E555: x is an element of the matched type, not a path: call too_many(x) without @.
+def too_many(s : S) : S := match s {
+    pt => pt;
+    squash(x, y, p, q) @ i @ j => S.squash(
+      too_many(x @ i), too_many(y), path k => too_many(p @ k), path k => too_many(q @ k)
+    ) @ i @ j;
+  };
+
+// A parameter that shadows its type's name still matches.
+def count(N : N) : Nat := match N {
+    zero => 0;
+    succ(k) => count(k);
+  };
+
+def counted : count(succ(succ(zero))) = 0 {
+  rfl;
+}
+
+// A user constructor named squash and the generated Q.squash are distinct
+// clauses.
+inductive Q : prop {
+  squash;
+}
+
+def keep(s : Q) : Q := match s {
+    squash => squash;
+    Q.squash(x, y) @ i => Q.squash(keep(x), keep(y)) @ i;
+  };
+
+def kept : keep(squash) = squash {
+  rfl;
+}
+
+// Refused: squash here is the user's constructor, so it has two clauses.
+// Error: E529: squash has two clauses.
+def ambiguous(s : Q) : Q := match s {
+    squash => squash;
+    squash(x, y) @ i => Q.squash(x, y) @ i;
+  };
+
+def qualified(t : Trunc(U0, N)) : Trunc(U0, N) := match t {
+    point(a) => point(a);
+    Trunc.squash(x, y) @ i => Trunc.squash(qualified(x), qualified(y)) @ i;
+  };
+
+// A position's arguments may be curried in a recursive call.
+inductive Curried {
+  stem;
+  branch(p : N -> N -> Curried);
+}
+
+def curried_size(w : Curried) : N := match w {
+    stem => zero;
+    branch(p) => succ(curried_size(p(zero)(zero)));
+  };
+
+def curried_size_flat(w : Curried) : N := match w {
+    stem => zero;
+    branch(p) => succ(curried_size(p(zero, zero)));
+  };
+
+def curried_one : curried_size(branch(fun (a : N) => fun (b : N) => stem)) = succ(zero) {
+  rfl;
+}
+
+// Refused: p takes two arguments, and the call gives one.
+// Error: E553: p takes 2 arguments here, as an argument of the matched constructor.
+def curried_partial(w : Curried) : N := match w {
+    stem => zero;
+    branch(p) => succ(curried_partial(p(zero)));
+  };
+
+// The match statement proves the goal at each constructor, recursing by name.
+def add_zero(n : N) : add(n, zero) = n {
+  match n {
+    zero => {
+      rfl;
+    }
+    succ(m) => {
+      exact cong(succ, add_zero(m));
+    }
+  }
+}
+
+def IsZero(n : N) : U0 := match n {
+    zero => Unit;
+    succ(m) => Void;
+  };
+
+def zero_of(n : N, h : IsZero(n)) : n = zero {
+  match n {
+    zero => {
+      rfl;
+    }
+    succ(m) => {
+      exact absurd(h);
+    }
+  }
+}
+
+def zero_named(n : N, h : IsZero(n)) : n = zero {
+  match n {
+    zero => {
+      exact refl(n);
+    }
+    succ(m) => {
+      exact absurd(h);
+    }
+  }
+}
+
+def zero_named_after_intro : forall n : N. IsZero(n) -> n = zero {
+  intro n, h;
+  match n {
+    zero => {
+      exact refl(n);
+    }
+    succ(m) => {
+      exact absurd(h);
+    }
+  }
+}
+
+def local_fact(n : N, h : IsZero(n)) : n = zero {
+  let k : IsZero(n) {
+    exact h;
+  }
+  match n {
+    zero => {
+      rfl;
+    }
+    succ(m) => {
+      exact absurd(k);
+    }
+  }
+}
+
+def local_value(n : N) : add(n, zero) = n {
+  let copy := n;
+  let twice := add(n, n);
+  match n {
+    zero => {
+      exact refl(add(copy, twice));
+    }
+    succ(m) => {
+      exact cong(succ, add_zero(m));
+    }
+  }
+}
+
+def nested_copy(n : N) : add(n, zero) = n {
+  let copy := n;
+  match n {
+    zero => {
+      rfl;
+    }
+    succ(m) => {
+      match m {
+        zero => {
+          exact refl(copy);
+        }
+        succ(k) => {
+          exact cong(succ, add_zero(succ(k)));
+        }
+      }
+    }
+  }
+}
+
+def simp_at_generalized(n : N, h : n = n) : n = n {
+  match n {
+    zero => {
+      simp only [] at h as k;
+      exact k;
+    }
+    succ(m) => {
+      exact h;
+    }
+  }
+}
+
+def constructor_scrutinee(n : N) : succ(n) = succ(n) {
+  match succ(n) {
+    zero => {
+      exact refl(zero);
+    }
+    succ(k) => {
+      exact refl(succ(k));
+    }
+  }
+}
+
+def same_value(n : N) : N {
+  match n {
+    zero => {
+      exact n;
+    }
+    succ(m) => {
+      exact n;
+    }
+  }
+}
+
+def same_value_two : same_value(succ(succ(zero))) = succ(succ(zero)) {
+  rfl;
+}
+
+def after_intro : forall n : N. add(n, zero) = n {
+  intro n;
+  match n {
+    zero => {
+      rfl;
+    }
+    succ(m) => {
+      exact cong(succ, add_zero(m));
+    }
+  }
+}
+
+// A match statement's generalized hypothesis takes its own value at a
+// recursive call.
+def total_by_statement(n : N, r : Rep(n)) : N {
+  match n {
+    zero => {
+      exact zero;
+    }
+    succ(m) => {
+      exact add(r.1, total_by_statement(m, r.2));
+    }
+  }
+}
+
+def seven_by_statement :
+  total_by_statement(succ(succ(zero)), (succ(zero), succ(succ(zero)), tt)) = succ(succ(succ(zero))) {
+  rfl;
+}
+
+// Refused: the recursive call passes r unchanged, but at m it must have type Rep(m).
+// Error: E606: Type mismatch: found N and (induction m return U0 { zero => Unit; succ(m1, m_rec) =>
+//   N and m_rec; }), expected induction m return U0 { zero => Unit; succ(m1, m_rec) => N and m_rec;
+//   }.
+def unchanged(n : N, r : Rep(n)) : N {
+  match n {
+    zero => {
+      exact zero;
+    }
+    succ(m) => {
+      exact unchanged(m, r);
+    }
+  }
+}
+
+// A nested match statement keeps the enclosing recursion: the recursive call
+// still names the variable the inner match takes apart. A position the inner
+// match generalizes, as p : Tag(k) -> W is, is recursed on under its new
+// variable.
+def nested(n : N) : add(n, zero) = n {
+  match n {
+    zero => {
+      rfl;
+    }
+    succ(m) => {
+      match m {
+        zero => {
+          rfl;
+        }
+        succ(k) => {
+          exact cong(succ, nested(m));
+        }
+      }
+    }
+  }
+}
+
+def deep(n : N) : add(n, zero) = n {
+  match n {
+    zero => {
+      rfl;
+    }
+    succ(m) => {
+      match m {
+        zero => {
+          rfl;
+        }
+        succ(k) => {
+          match k {
+            zero => {
+              rfl;
+            }
+            succ(j) => {
+              exact cong(succ, deep(m));
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+def keep_acc(n, a : N) : N {
+  match n {
+    zero => {
+      exact a;
+    }
+    succ(m) => {
+      match a {
+        zero => {
+          exact keep_acc(m, a);
+        }
+        succ(b) => {
+          exact succ(keep_acc(m, a));
+        }
+      }
+    }
+  }
+}
+
+def keep_acc_two : keep_acc(succ(zero), succ(zero)) = succ(succ(zero)) {
+  rfl;
+}
+
+inductive W {
+  wleaf;
+  wnode(k : N, p : Tag(k) -> W);
+}
+
+def count_w(w : W) : N {
+  match w {
+    wleaf => {
+      exact zero;
+    }
+    wnode(k, p) => {
+      match k {
+        zero => {
+          exact succ(count_w(p(tag)));
+        }
+        succ(j) => {
+          exact count_w(p(tag));
+        }
+      }
+    }
+  }
+}
+
+// Refused: the call is on n itself, not on a smaller argument.
+// Error: E552: The recursive call of not_smaller is not on an argument of the matched constructor:
+//   only structural recursion, as not_smaller(m) in succ(m) => ….
+def not_smaller(n : N) : N {
+  match n {
+    zero => {
+      exact zero;
+    }
+    succ(m) => {
+      match m {
+        zero => {
+          exact zero;
+        }
+        succ(k) => {
+          exact not_smaller(n);
+        }
+      }
+    }
+  }
+}
+
+// A match statement recurses on several arguments of a constructor, with a
+// parameter fixed.
+def mirror(A : U0, t : Tree(U0, A)) : Tree(U0, A) {
+  match t {
+    leaf => {
+      exact leaf;
+    }
+    node(l, a, r) => {
+      exact node(mirror(A, r), a, mirror(A, l));
+    }
+  }
+}
+
+def mirror_mirror(A : U0, t : Tree(U0, A)) : mirror(A, mirror(A, t)) = t {
+  match t {
+    leaf => {
+      rfl;
+    }
+    node(l, a, r) => {
+      exact path i => node(mirror_mirror(A, l) @ i, a, mirror_mirror(A, r) @ i);
+    }
+  }
+}
+
+// A match statement's squash clause: a path between the recursive results at
+// its ends. A universe parameter passes unchanged as a type parameter does.
+def rebuilt_by_statement(t : Trunc(U0, N)) : Trunc(U0, N) {
+  match t {
+    point(a) => {
+      exact point(a);
+    }
+    squash(x, y) @ i => {
+      exact Trunc.squash(rebuilt_by_statement(x), rebuilt_by_statement(y)) @ i;
+    }
+  }
+}
+
+def rebuilt_by_statement_point : rebuilt_by_statement(point(zero)) = point(zero) {
+  rfl;
+}
+
+def generic(U < UU0, A : U, t : Trunc(U, A)) : Trunc(U, A) {
+  match t {
+    point(a) => {
+      exact point(a);
+    }
+    squash(x, y) @ i => {
+      exact Trunc.squash(generic(U, A, x), generic(U, A, y)) @ i;
+    }
+  }
+}
+
+def generic_point(U < UU0, A : U, a : A) : generic(U, A, point(a)) = point(a) {
+  rfl;
+}
+
+// A match statement's path clause is a path between the clauses at its ends.
+def flat_constant(x : Circle) : flat(x) = zero {
+  match x {
+    base => {
+      rfl;
+    }
+    loop @ i => {
+      rfl;
+    }
+  }
+}
+
+// The match statement's refusals.
+// Refused: each clause closes the goal, so the last statement is never reached.
+// Error: E467: Statements after match are unreachable: each clause's block closes the goal.
+def unreachable(n : N) : N {
+  match n {
+    zero => {
+      exact zero;
+    }
+    succ(m) => {
+      exact m;
+    }
+  }
+  exact n;
+}
+
+// Refused: no clause for succ.
+// Error: E531: match on N needs a clause for succ. Give path clauses in obligations { … }, or
+//   obligations by { … }.
+def missing(n : N) : N {
+  match n {
+    zero => {
+      exact zero;
+    }
+  }
+}
+
+// Refused: a sum is taken apart by cases, not by the match statement.
+// Error: E535: The match statement takes apart a value of a declared type; for a sum, use cases.
+def of_a_sum(p : N or N) : N {
+  match p {
+    left x => {
+      exact x;
+    }
+    right y => {
+      exact y;
+    }
+  }
+}
+
+// Refused: in the succ clause the goal is add(succ(m), zero) = succ(m): rfl does not
+// prove it.
+// Error: E606: Type mismatch: found add(succ(m), zero) = add(succ(m), zero), expected add(succ(m),
+//   zero) = succ(m).
+def wrong_clause(n : N) : add(n, zero) = n {
+  match n {
+    zero => {
+      rfl;
+    }
+    succ(m) => {
+      rfl;
+    }
+  }
+}
+
+// Recursion whose other arguments vary: the accumulator, computed and proved.
+// The motive quantifies over each other parameter but those the matched
+// parameter's type depends on, and each clause binds them again.
+def acc(n, a : N) : N := match n {
+    zero => a;
+    succ(m) => acc(m, succ(a));
+  };
+
+def acc_first(a, n : N) : N := match n {
+    zero => a;
+    succ(m) => acc_first(succ(a), m);
+  };
+
+def two_three : acc(succ(succ(zero)), succ(zero)) = succ(succ(succ(zero))) {
+  rfl;
+}
+
+def add_succ(n, a : N) : add(n, succ(a)) = succ(add(n, a)) {
+  match n {
+    zero => {
+      rfl;
+    }
+    succ(m) => {
+      exact cong(succ, add_succ(m, a));
+    }
+  }
+}
+
+def acc_add(n, a : N) : acc(n, a) = add(n, a) {
+  match n {
+    zero => {
+      rfl;
+    }
+    succ(m) => {
+      exact trans(acc_add(m, succ(a)), add_succ(m, a));
+    }
+  }
+}
+
+evaluate acc(succ(succ(zero)), zero) expecting succ(succ(zero));
+evaluate acc_first(zero, succ(succ(succ(zero)))) expecting succ(succ(succ(zero)));
+
+// Dependent, shadowed and nested parameters. A parameter whose type mentions
+// a generalized one is generalized too; a clause's own name shadows a
+// parameter's; a nested match takes apart a generalized parameter, and a
+// call passes its constructor.
+def dep_ok(n : N, p : n = n) : N := match n {
+    zero => zero;
+    succ(m) => dep_ok(m, refl(m));
+  };
+
+def bounded(n, a : N, h : a = a) : N {
+  match n {
+    zero => {
+      exact a;
+    }
+    succ(m) => {
+      exact bounded(m, succ(a), refl(succ(a)));
+    }
+  }
+}
+
+def sh(n, a : N) : N := match n {
+    zero => a;
+    succ(a) => sh(a, a);
+  };
+
+def sh_value : sh(succ(succ(zero)), succ(zero)) = zero {
+  rfl;
+}
+
+def inner(n, k : N, r : Rep(k)) : N {
+  match n {
+    zero => {
+      exact zero;
+    }
+    succ(m) => {
+      match k {
+        zero => {
+          exact inner(m, zero, tt);
+        }
+        succ(j) => {
+          exact add(r.1, inner(m, k, r));
+        }
+      }
+    }
+  }
+}
+
+def inner_value : inner(succ(zero), succ(zero), (succ(zero), tt)) = succ(zero) {
+  rfl;
+}
+
+def total(n : N, r : Rep(n)) : N := match n {
+    zero => zero;
+    succ(m) => add(r.1, total(m, r.2));
+  };
+
+def seven : total(succ(succ(zero)), (succ(zero), succ(succ(zero)), tt)) = succ(succ(succ(zero))) {
+  rfl;
+}
+
+// Refused: with no recursive call, the match is as written, and its motive does not
+// refine r: in the succ clause r is still a Rep(n).
+// Error: E349: Projection .1 requires a dependent pair; found a value of type Rep(n).
+def first(n : N, r : Rep(n)) : N := match n {
+    zero => zero;
+    succ(m) => r.1;
+  };
+
+// An abandoned first attempt spends nothing of the declaration's. once and
+// again are the same proof but for their type's constructor order: once's
+// first attempt checks its simp before reaching the call that changes a, and
+// abandons it; again's reaches that call first.
+def once(n, a : N) : acc(n, a) = acc(n, a) {
+  match n {
+    zero => {
+      simp only [];
+    }
+    succ(m) => {
+      exact once(m, succ(a));
+    }
+  }
+}
+
+inductive M {
+  more(n : M);
+  none;
+}
+
+def macc(n : M, a : N) : N := match n {
+    none => a;
+    more(m) => macc(m, succ(a));
+  };
+
+def again(n : M, a : N) : macc(n, a) = macc(n, a) {
+  match n {
+    none => {
+      simp only [];
+    }
+    more(m) => {
+      exact again(m, succ(a));
+    }
+  }
+}
+
+def plain(a : N) : add(zero, a) = add(zero, a) {
+  simp only [];
+}
+
+// What stays fixed, and path and squash clauses over varying arguments.
+// Refused: the matched t's type depends on A, so a recursive call keeps it.
+// Error: E550: A recursive call of relabel passes A unchanged: the type of the matched t depends on
+//   it.
+def relabel(A : U0, t : Tree(U0, A)) : N := match t {
+    leaf => zero;
+    node(l, a, r) => relabel(N, l);
+  };
+
+// Refused: a recursive call keeps the universe parameter U.
+// Error: E551: A recursive call of lift passes the universe parameter U unchanged.
+def lift(U < UU0, n : N) : N := match n {
+    zero => zero;
+    succ(m) => lift(U0, m);
+  };
+
+def pick(n, a : N) : N := match n {
+    zero => a;
+    succ(m) => m;
+  };
+
+def pick_unfolds(n, a : N) : pick(n, a) = (match n return N {
+      zero => a;
+      succ(m) => m;
+    }) {
+  rfl;
+}
+
+def own(n, a : N) : N := match n {
+    zero => a;
+    succ(own) => own;
+  };
+
+def own_unfolds(n, a : N) : own(n, a) = (match n return N {
+      zero => a;
+      succ(k) => k;
+    }) {
+  rfl;
+}
+
+def around(x : Circle, a : N) : N := match x {
+    base => a;
+    loop @ i => a;
+  };
+
+def around_loop(a : N) : around(loop @ 1, succ(a)) = succ(a) {
+  rfl;
+}
+
+// Refused: loop's clause must be a path between base's clause at both ends, a to
+// a, and succ(a) is not.
+// Error: E606: Type mismatch: found succ(a) = succ(a), expected a = a.
+def torn_varying(x : Circle, a : N) : N := match x {
+    base => a;
+    loop @ i => succ(a);
+  };
+
+inductive Steps : prop {
+  stop;
+  next(s : Steps);
+}
+
+def count_steps(s : Steps, b : N) : Trunc(U0, N) := match s {
+    stop => point(b);
+    next(r) => count_steps(r, succ(b));
+    squash(x, y) @ i => Trunc.squash(count_steps(x, b), count_steps(y, b)) @ i;
+  };
+
+def count_steps_two : count_steps(next(next(stop)), zero) = point(succ(succ(zero))) {
+  rfl;
+}
+
+// Refused: the squash clause recurses with succ(b) on one side and b on the other,
+// so it is no path between the recursive results at its ends.
+// Error: E606: Type mismatch: found Steps -> Steps -> (forall x_rec : N -> Trunc(__U, N). forall
+//   y_rec : N -> Trunc(__U, N). (fun (b : N) => squash(x_rec(succ(b)), y_rec(b)) @ 0) = (fun (b :
+//   N) =…, expected Steps -> Steps -> (forall x2 : N -> Trunc(__U, N). forall x3 : N -> Trunc(__U,
+//   N). x2 = x3).
+def skewed(s : Steps, b : N) : Trunc(U0, N) := match s {
+    stop => point(b);
+    next(r) => skewed(r, succ(b));
+    squash(x, y) @ i => Trunc.squash(skewed(x, succ(b)), skewed(y, b)) @ i;
+  };
+
+// A clause's goal shows a generalized parameter under its source name; a
+// parameter whose name ends in a digit is shown once.
+def same_a1(n, a1 : N) : acc(n, a1) = acc(n, a1) {
+  match n {
+    zero => {
+      rfl;
+    }
+    succ(m) => {
+      exact same_a1(m, succ(a1));
+    }
+  }
+}
+
+// The expression reports a missing motive before a missing clause.
+// Refused: the match has no type, and that is reported before the missing clause.
+// Error: E534: match needs its result's type: give return T, or use it where its type is known.
+def unknown_motive := match succ(zero) {
+    zero => zero;
+  };

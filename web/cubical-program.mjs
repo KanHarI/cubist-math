@@ -46,8 +46,8 @@ export class CubicalProgram {
     this.modules = new Map(); this.symbols = {}; this.views = new Map();
     this.sourceAsts = new Map();
     this.simpRegistries = new Map();
-    this.gaps = []; this.evaluations = []; this.links = []; this.sources = {}; this.completed = 0;
-    // What each directive (evaluate, simp_rule, simp_set) spent (fuel.mjs).
+    this.gaps = []; this.evaluations = []; this.prints = []; this.links = []; this.sources = {}; this.completed = 0;
+    // What each directive (evaluate, print, simp_rule, simp_set) spent (fuel.mjs).
     this.directiveFuel = [];
     // Proof statements of each checked module, with their goals (see steps()).
     this.moduleSteps = new Map();
@@ -135,9 +135,11 @@ export class CubicalProgram {
       this.directiveFuel.push({ module: name, kind: directive.kind, name: directive.name, searchFuel: directive.searchFuel ?? null });
       if(directive.status!=="checked")
         this.gaps.push({module:name,name:`${directive.kind} ${directive.name}`,
-          reason:directive.reason,code:diagnosticCode(directive.reason),directive:true});
+          reason:directive.reason,code:diagnosticCode(directive.reason),directive:true,start:directive.start});
       else if(directive.kind==="evaluate")
         this.evaluations.push({module:name,name:directive.name,value:directive.normalText});
+      else if(directive.kind==="print")
+        this.prints.push({module:name,name:directive.name,text:directive.text,start:directive.start});
     }
     const byName = new Map(ast.declarations.map(d => [d.name.text, d]));
     for (const d of result.declarations) {
@@ -217,6 +219,7 @@ export class CubicalProgram {
       const statements = [];
       let current = null;
       const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
+        inspectSignature: binding => this.signatureText(binding),
         ...Object.fromEntries(Object.entries(this.fuelLimits).filter(([, limits]) => limits)),
         onStep: step => statements.push({ ...step, declaration: current }),
         onDeclarationStart: declaration => {
@@ -268,7 +271,7 @@ export class CubicalProgram {
       get steps() { return steps ??= program.steps(main); }, backend: "cubical", mode: "mathematical", source, outputs,
       imports: all.filter(d => d.sourceModule), symbols: [...all, ...Object.values(this.assumptionSymbols())], assumptionLabels: Object.fromEntries(this.checker.assumptionLabels), declarations: outputs, links: this.links,
       declarationCount: total, instructionCount: this.checker.steps, axiomCount: new Set(outputs.flatMap(d => d.axioms)).size, gaps: this.gaps,
-      evaluations: this.evaluations, directiveFuel: this.directiveFuel,
+      evaluations: this.evaluations, prints: this.prints, directiveFuel: this.directiveFuel,
       // Unused bindings that can be removed, in the checked module only; a
       // fresh parse, since elaboration annotates the syntax it checks.
       warnings: lint(source),
@@ -289,7 +292,9 @@ export class CubicalProgram {
     // the admission's variables. They are shown as the sort and constructors
     // they stand for, which print by their declared names: a variable named
     // S1 would print as its stem S.
-    const name = this.symbols[binding]?.name ?? binding;
+    // Within the check that declares it, before its symbols are recorded, a
+    // type is named without its module.
+    const name = this.symbols[binding]?.name ?? localName(binding);
     const sort = T.sort(binding);
     const shown = [[info.sort, sort], ...info.constructors.map((c, index) =>
       [c.symbol, T.constructor(index, sort, record.constructors[index])])]
@@ -411,6 +416,21 @@ export class CubicalProgram {
         universe: eliminator.universe, error: eliminator.error ?? null,
         clauses: eliminator.clauses.map(c => ({ constructor: c.constructor, name: c.name, type: text() })) } };
   }
+  // A declared type's signature on one line, as `print(inspect(T));` shows
+  // it: what the CLI's inspect shows, each constructor and clause ended by `;`.
+  signatureText(binding) {
+    const view = this.signatureView(binding);
+    if (!view) return null;
+    const counted = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+    const constructors = view.constructors.map(c => `${c.name} : ${c.type} [${c.data} data, `
+      + `${counted(c.positions, "position")}, ${counted(c.dimensions, "dimension")}${c.generated ? ", generated" : ""}];`);
+    const eliminator = view.eliminator && [`eliminator for ${view.eliminator.motive} {`,
+      ...view.eliminator.clauses.map(c => `${c.name} : ${c.type};`),
+      ...(view.eliminator.error ? [`the remaining clause types could not be computed: ${view.eliminator.error}`] : []), "}"];
+    return [`inductive ${view.name} : ${view.former} (${[view.modifier, ...view.recorded.length ? [`recorded ${view.recorded.join(", ")}`] : []].join(", ")})`,
+      "{", ...constructors, "}", ...eliminator ?? [],
+      ...view.extensions.length ? [`kernel extensions: ${view.extensions.join(", ")}`] : []].join(" ");
+  }
   // A signature's generated constructor as the source writes it, T.squash:
   // a user constructor may be named squash too.
   qualifyGenerated(term) {
@@ -465,15 +485,17 @@ export class CubicalProgram {
   // module: inspection, export and metadata are unchanged.
   async checkEntry(source, name) {
     const kept = { main: this.main, metadata: this.metadata, links: this.links.length,
-      gaps: this.gaps.length, evaluations: this.evaluations.length };
+      gaps: this.gaps.length, evaluations: this.evaluations.length, prints: this.prints.length };
     try {
       await this.check(source, name);
       const declarations = Object.values(this.symbols).filter(info => !info.sourceModule && info.binding.startsWith(`${name}__`));
       for (const info of declarations) Object.assign(info, { sourceModule: name, sourceName: info.name });
-      return { declarations, evaluations: this.evaluations.slice(kept.evaluations), gaps: this.gaps.slice(kept.gaps) };
+      return { declarations, evaluations: this.evaluations.slice(kept.evaluations), prints: this.prints.slice(kept.prints),
+        gaps: this.gaps.slice(kept.gaps) };
     } finally {
       Object.assign(this, { main: kept.main, metadata: kept.metadata });
       this.links.length = kept.links; this.gaps.length = kept.gaps; this.evaluations.length = kept.evaluations;
+      this.prints.length = kept.prints;
     }
   }
   generatedSymbols() {

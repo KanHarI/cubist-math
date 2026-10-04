@@ -1,0 +1,38 @@
+// From tests/dimension.test.mjs: Finite dimensions include zero, are unique
+// for arbitrary bases, and need no choice.
+
+import dimension;
+
+def empty_dimension(K : AlgebraicField) :
+  dimension(
+    K, CoordinateSpace(K, 0),
+    finite_dimensional_basis(K, CoordinateSpace(K, 0), 0, standard_basis(K, 0))
+  ) = 0 {
+  exact refl(0);
+}
+
+def plane_dimension(K : AlgebraicField, n : Nat, basis : FiniteBasis(K, CoordinateSpace(K, 2), n)) :
+  n = 2 {
+  exact finite_dimension_invariance(K, CoordinateSpace(K, 2), n, 2, basis, standard_basis(K, 2));
+}
+
+def scalar_dimension(K : AlgebraicField, n : Nat, basis : FiniteBasis(K, ScalarSpace(K), n)) : n = 1 {
+  exact finite_dimension_invariance(K, ScalarSpace(K), n, 1, basis, scalar_space_basis(K));
+}
+
+def mere_coordinates_suffice(
+  K : AlgebraicField, V : VectorSpace(K), finite : Mere(exists n : Nat. FiniteBasis(K, V, n))
+) :
+  FiniteDimensional(K, V) {
+  exact finite_dimensional_from_mere(K, V, finite);
+}
+
+def swap_coordinates(
+  K : AlgebraicField, n : Nat, i : Fin(succ(n)),
+  finite : FiniteDimensional(K, CoordinateSpace(K, succ(n)))
+) :
+  dimension(K, CoordinateSpace(K, succ(n)), finite) = succ(n) {
+  exact dimension_of_basis(
+    K, CoordinateSpace(K, succ(n)), finite, succ(n), coordinate_swap_iso(K, n, i)
+  );
+}

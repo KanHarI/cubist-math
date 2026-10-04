@@ -1,0 +1,12 @@
+// From tests/cubical-assembly.test.mjs: a generic assumption is one kernel
+// entry, and each use is a level application. Choice's statement mentions
+// Truncate, and Truncate keeps the archive's resizing signature.
+
+def choice0 := Choice(U0);
+
+def choice1 := Choice(U1);
+
+def truncate1 := Truncate(U1);
+
+// Output: U1 -> U0
+print(typeof(truncate1));

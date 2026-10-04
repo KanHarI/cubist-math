@@ -1,0 +1,35 @@
+// From tests/proof-ergonomics.test.mjs: Tactic search time limits exclude
+// later statements and calc steps.
+// Checking slow_step advances a fake clock by five seconds, as if that
+// later statement were slow. No rewrite search runs while it is checked.
+
+import primes;
+
+def slow_step(n : Nat) : n = n {
+  rfl;
+}
+
+// Warning: W702: s is never used after this let: remove it.
+def after_rw(n : Nat) : n + 0 = n {
+  rw [nat_add_zero(n)] at lhs;
+  let s := slow_step(n);
+  rfl;
+}
+
+// Warning: W702: s is never used after this let: remove it.
+def after_simp(n : Nat) : n + 0 = n {
+  simp only [nat_add_zero];
+  let s := slow_step(n);
+  rfl;
+}
+
+// Warning: W702: s is never used after this let: remove it.
+def inside_calc(n : Nat) : (n + 0) + 0 = n {
+  calc {
+    (n + 0) + 0 = n + 0 by nat_add_zero(n + 0);
+    _ = n by {
+      let s := slow_step(n);
+      exact nat_add_zero(n);
+    }
+  }
+}

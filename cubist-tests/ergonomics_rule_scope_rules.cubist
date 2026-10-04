@@ -1,0 +1,14 @@
+// From tests/proof-ergonomics.test.mjs: Generic definitions keep their
+// defining simplification sets when used: the rules, which
+// ergonomics_rule_scope uses where units means another set.
+import primes;
+
+simp_set units := [nat_add_zero];
+
+def generic(U < UU0, n : Nat) : n + 0 = n {
+  simp only [units];
+}
+
+// One check covers every level.
+// Output: forall U < UU0. forall n : Nat. n + 0 = n
+print(typeof(generic));

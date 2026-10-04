@@ -8,7 +8,15 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { cubicalMathTree } from "../web/cubical-notation.mjs";
 import naturalSource from "../web/translator/nat-source.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
+import { testModulePath } from "../tools/inline-errors.mjs";
+import { checkTestModule } from "./check-program.mjs";
 const module = await createCubical();
+// The Cubist cases are cubist-tests/program_*.cubist, whose comments state
+// each refusal and what each print shows (tests/cubist-tests.test.mjs); here,
+// what the program's inspection, export and switches do with them, and the
+// programs that need a reader of their own.
+const cases = (t, name, options = {}) => checkTestModule(t, `program_${name}`, { module, options });
 
 // A reader with no library, such as the first test's, still loads `nat`.
 test("the bundled prelude source is the archive's nat module", async () => {
@@ -16,18 +24,10 @@ test("the bundled prelude source is the archive's nat module", async () => {
     "Regenerate web/translator/nat-source.mjs from archive/first-library/nat.cubist.");
 });
 
-test("a universe-generic definition is checked once and instantiated at each level", async t => {
-  const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  await program.check(`def identity(U < UU0, A : U, x : A) := x;
-    def first := identity(U0, Nat, 0); def second := identity(U0, Nat, 1);
-    def higher := identity(U1, U0, Nat);
-    def wrong : 0 = 1 { exact refl(identity(U0, Nat, 0)); }`, "generic");
-  assert.equal(program.symbols.generic__identity.verified, true);
-  assert.equal(program.inspect("generic__identity").type.tag, "LPi");
-  assert.deepEqual([...program.kernel.definitions.keys()].filter(name => name.startsWith("generic__identity")), ["generic__identity"]);
-  assert.equal(program.symbols.generic__second.verified, true);
-  assert.equal(program.symbols.generic__higher.verified, true);
-  assert.equal(program.symbols.generic__wrong.verified, false);
+test("a universe-generic definition is one kernel definition", async t => {
+  const { program } = await cases(t, "generic_once");
+  assert.deepEqual([...program.kernel.definitions.keys()].filter(name => name.startsWith("program_generic_once__identity")),
+    ["program_generic_once__identity"]);
 });
 
 test("the browser program checks Euclid from source and exports a replayable native inspection", async t => {
@@ -49,13 +49,10 @@ test("the browser program checks Euclid from source and exports a replayable nat
 });
 
 test("module shadowing cannot retarget earlier checked native definitions", async t => {
-  const sources = { first: "def value := 0; def remembered := value;", second: "def value := 1;" };
-  const program = new CubicalProgram(module, async name => sources[name]); t.after(() => program.dispose());
-  const result = await program.check("import first; import second; def preserved : remembered = 0 { exact refl(0); }", "example");
-  assert.equal(result.complete, true);
-  assert.equal(program.inspect("first__remembered").expression.name, "first__value");
-  assert.equal(program.inspect("first__value", { normalize: true }).expression.tag, "Con");
-  assert.equal(program.inspect("second__value", { normalize: true }).expression.tag, "App");
+  const { program } = await cases(t, "shadowing");
+  assert.equal(program.inspect("program_shadow_first__remembered").expression.name, "program_shadow_first__value");
+  assert.equal(program.inspect("program_shadow_first__value", { normalize: true }).expression.tag, "Con");
+  assert.equal(program.inspect("program_shadow_second__value", { normalize: true }).expression.tag, "App");
 });
 
 test("unsupported foundations and invalid proofs remain explicitly unverified", async t => {
@@ -93,44 +90,24 @@ test("native path interiors retain their interval context in the inspector and r
 });
 
 test("logical assumptions remain explicit, minimal, and inspectable after native closure", async t => {
-  const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  const result = await program.check(`
-    def Mere(A : U1) := Truncate(U1, A);
-    def introduction(A : U1, a : A) := TruncateIntro(U1, A, a);
-    def innocent : 0 = 0 { exact refl(0); }
-    def wrong : 0 = 1 { exact refl(0); }
-  `, "assumptions");
-  assert.deepEqual(result.outputs.map(d => d.verified), [true, true, true, false]);
-  assert.equal(result.outputs[1].axioms.length, 2);
-  assert.deepEqual(result.outputs[2].axioms, []);
-  const view = program.inspect("assumptions__introduction");
+  const { result, program } = await cases(t, "assumptions");
+  assert.equal(result.outputs.find(d => d.name === "introduction").axioms.length, 2);
+  const view = program.inspect("program_assumptions__introduction");
   assert.equal(view.context.length, 2);
   assert.ok(view.context.some(entry => entry.label === "Truncate"));
   const assumption = program.inspect(view.axioms[0]);
   assert.equal(assumption.expression.tag, "Var");
-  const payload = program.export("assumptions__introduction");
+  const payload = program.export("program_assumptions__introduction");
   const replay = new CubicalProgram(module, async name => payload.sources[name]); t.after(() => replay.dispose());
   await replay.check(payload.source, payload.main);
   assert.deepEqual(replay.inspect(payload.binding).context, view.context);
 });
 
-test("`with unfolding` names checked definitions, checks its body apart, and cannot prove false paths", async t => {
-  const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  const source = `
-    def id(n : Nat) := n;
-    def hinted : id(0) = 0 { exact with unfolding [id] { refl(0) }; }
-    def ordinary : 0 = 0 { exact refl(0); }
-    def false_hint : id(0) = 1 { exact with unfolding [id] { refl(0) }; }
-    def missing : 0 = 0 { exact with unfolding [unknown] { refl(0) }; }
-  `;
-  const result = await program.check(source, "hints");
-  assert.deepEqual(result.outputs.map(d => d.verified), [true, true, true, false, false]);
-  // The body is a definition of its own; the names steer nothing since the
-  // conversion oracle's retirement.
-  assert.ok(program.checker.definitionViews.has("hints__unfolding_1"));
-  assert.match(result.outputs[4].reason, /No checked definition to unfold: unknown/);
-  const view = program.inspect("hints__hinted");
-  const payload = program.export("hints__hinted");
+test("`with unfolding` checks its body as a definition of its own, which replays", async t => {
+  const { program } = await cases(t, "unfolding_hints");
+  assert.ok(program.checker.definitionViews.has("program_unfolding_hints__unfolding_1"));
+  const view = program.inspect("program_unfolding_hints__hinted");
+  const payload = program.export("program_unfolding_hints__hinted");
   const replay = new CubicalProgram(module, async name => payload.sources[name]); t.after(() => replay.dispose());
   await replay.check(payload.source, payload.main);
   assert.deepEqual(replay.inspect(payload.binding).type, view.type);
@@ -149,20 +126,6 @@ test("native progress identifies the active declaration before it is checked", a
   ]);
 });
 
-test("unfolding scopes close local variables and interval coordinates without leaking hints", async t => {
-  const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  const result = await program.check(`
-    def id(n : Nat) := n;
-    def local(n : Nat) : id(n) = n { exact with unfolding [id] { refl(n) }; }
-    def scoped_path(n : Nat, p : n = n) := path(
-      fun (i : Interval) => Nat,
-      fun (i : Interval) => with unfolding [id] { at(p, i) }
-    );
-    def endpoint(n : Nat, p : n = n) : at(scoped_path(n, p), 0) = n { exact refl(n); }
-  `, "scope");
-  assert.deepEqual(result.outputs.map(d => [d.name, d.reason]).filter(([, reason]) => reason), []);
-  assert.equal(result.complete, true);
-});
 
 test("progress totals count a shared import once, including universe-generic definitions", async t => {
   const sources = {
@@ -182,18 +145,12 @@ test("progress totals count a shared import once, including universe-generic def
 });
 
 test("native optimization switches preserve path proofs and rejection independently", async () => {
+  const name = "program_optimizations", path = testModulePath(name), source = await readFile(path, "utf8");
   for (let flags = 0; flags < 8; flags++) {
     const optimizations = { shareSyntax: !!(flags & 1), reuseChecks: !!(flags & 2), compactPaths: !!(flags & 4) };
-    const program = new CubicalProgram(module, async () => "", { optimizations });
+    const program = new CubicalProgram(module, sourceReader({ path }), { optimizations });
     try {
-      const result = await program.check(`
-        def compose(x : Nat, y : Nat, z : Nat, p : x = y, q : y = z) : succ(x) = succ(z) {
-          exact cong(succ, trans(p, q));
-        }
-        def reverse(x : Nat, y : Nat, p : x = y) : y = x { exact sym(p); }
-        def wrong : 0 = 1 { exact trans(refl(0), refl(0)); }
-        def disconnected : 0 = 1 { exact trans(refl(0), refl(1)); }
-      `, "options");
+      const result = await program.check(source, name);
       assert.deepEqual(result.outputs.map(d => d.verified), [true, true, false, false], JSON.stringify(optimizations));
       assert.deepEqual(program.kernel.optimizations, optimizations);
     } finally { program.dispose(); }
@@ -201,38 +158,26 @@ test("native optimization switches preserve path proofs and rejection independen
 });
 
 test("calls of an imported generic definition link to the definition itself", async t => {
-  const sources = { generic: "def identity(U < UU0, A : U, x : A) := x;" };
   for (const reuseChecks of [true, false]) {
-    const program = new CubicalProgram(module, async name => sources[name], { optimizations: { reuseChecks } });
-    t.after(() => program.dispose());
-    const source = "import generic; def zero := identity(U0, Nat, 0); def identity1 := identity(U1);";
-    const result = await program.check(source, "caller");
-    assert.equal(result.complete, true, JSON.stringify(result.gaps));
-    const references = result.links.filter(link => link.binding === "generic__identity");
+    const { source, result, program } = await cases(t, "generic_caller", { optimizations: { reuseChecks } });
+    const binding = "program_generic_identity__identity";
+    const references = result.links.filter(link => link.binding === binding);
     assert.equal(references.length, 2);
     for (const link of references) {
       assert.equal(source.slice(link.start, link.end), "identity");
       const view = program.inspect(link.binding);
       assert.equal(view.type.tag, "LPi");
-      assert.equal(view.symbols[link.binding].sourceModule, "generic");
+      assert.equal(view.symbols[link.binding].sourceModule, "program_generic_identity");
       assert.deepEqual(view.axioms, []);
     }
     for (const link of result.links)
       assert.equal(source.slice(link.start, link.end), link.name, "imported offsets must not leak into the caller");
-    assert.deepEqual(program.inspect("caller__identity1").type.domain, { tag: "U", level: 1 });
+    assert.deepEqual(program.inspect("program_generic_caller__identity1").type.domain, { tag: "U", level: 1 });
   }
 });
 
-test("an unused generic definition is checked, and its locals inspect and replay under the universe binder", async t => {
-  const source = `def identity(U < UU0, A : U, x : A) := x;
-    def constant(U, V < UU0, A : U, B : V, x : A, y : B) := x;
-    def invalid(U < UU0, A : U, x : A) : Void { exact x; }`;
-  const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  const result = await program.check(source, "generic");
-  assert.deepEqual(result.outputs.map(d => d.verified), [true, true, false]);
-  assert.match(result.outputs[2].reason, /Void/);
-  const constant = program.inspect("generic__constant").type;
-  assert.deepEqual([constant.tag, constant.body.tag], ["LPi", "LPi"]);
+test("an unused generic definition's locals inspect and replay under the universe binder", async t => {
+  const { source, result, program } = await cases(t, "unused_generic");
   const local = result.links.find(link => link.name === "x" && source.slice(link.end, link.end + 1) === ";");
   const view = program.inspect(local.binding);
   assert.equal(view.expression.tag, "Var");
@@ -248,20 +193,9 @@ test("an unused generic definition is checked, and its locals inspect and replay
   assert.deepEqual(restored.context, view.context);
 });
 
-test("untyped lambdas in generic definitions report errors without aborting later declarations",async t=>{
-  const program=new CubicalProgram(module,async()=>""); t.after(()=>program.dispose());
-  const result=await program.check(`
-    def generic(U < UU0) := fun x => x;
-    def use := generic(U0);
-    def good := 0;
-    def ordinary := fun x => x;
-    def after := 1;
-  `,"untyped_generic");
-  assert.deepEqual(result.outputs.map(item=>item.verified),[false,false,true,false,true]);
-  assert.match(result.outputs[0].reason,/Untyped lambda requires an expected function type/);
-  assert.match(result.outputs[1].reason,/Untranslated dependency: generic/);
-  assert.match(result.outputs[3].reason,/Untyped lambda requires an expected function type/);
-  assert.throws(()=>program.inspect("untyped_generic__generic"),
+test("a refused generic definition cannot be inspected",async t=>{
+  const {program}=await cases(t,"untyped_generic");
+  assert.throws(()=>program.inspect("program_untyped_generic__generic"),
     /Untyped lambda requires an expected function type/);
 });
 

@@ -1,0 +1,20 @@
+// A constructor at a type that reduces: tests/instruction-driver.test.mjs
+// derives left_zero and tag_left_zero, whose derived terms are their source,
+// each injection kept at NatSum.
+import naturals;
+
+def NatSum : U0 {
+  exact Nat or Nat;
+}
+
+def left_zero : NatSum {
+  exact typed(NatSum, left(0));
+}
+
+def tag(c : NatSum) : Nat {
+  exact 1;
+}
+
+def tag_left_zero : tag(typed(NatSum, left(0))) = 1 {
+  exact refl(1);
+}

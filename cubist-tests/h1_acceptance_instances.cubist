@@ -1,0 +1,33 @@
+// From tests/h1-acceptance.test.mjs: V21, V22, V23, V29: maps between
+// recorded instances, and universes written in the header.
+// V21: a map between instances by match, X : U0 used at U1.
+// V22: a Pointed(U0) value is not a Pointed(U1) value.
+// V23: the stored type lives in next(U), above the declared U.
+// V29: an h-level with a written universe; lowering would be resizing.
+
+inductive Pointed(U < UU0) : next(U) {
+  pt(X : U, x : X);
+}
+
+def lift(p : Pointed(U0)) : Pointed(U1) := match p {
+    pt(X, x) => pt(X, x);
+  };
+
+// Error: E606: Type mismatch: found Pointed(U0), expected Pointed(U1).
+def same(p : Pointed(U0)) : Pointed(U1) := p;
+
+// Error: E514: low_pt's argument X lives in a universe above PointedLow's declared one: a declared
+//   type cannot lower its data (K2.5).
+inductive PointedLow(U < UU0) : U {
+  low_pt(X : U, x : X);
+}
+
+inductive Tr(U < UU0, A : U) : prop U {
+  point(a : A);
+}
+
+// Error: E514: small_point's argument a lives in a universe above SmallTr's declared one: a
+//   declared type cannot lower its data (K2.5).
+inductive SmallTr(A : U1) : prop U0 {
+  small_point(a : A);
+}

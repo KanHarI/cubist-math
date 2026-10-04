@@ -1,68 +1,23 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { parse } from "../web/cubist/parser.mjs";
 import { formatCubist } from "../web/cubist/formatter.mjs";
-import { checkProgram } from "./check-program.mjs";
+import { testModule } from "./check-program.mjs";
 
-const readLibrary = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
-async function check(source, t) {
-  const { program, result, verdicts } = await checkProgram(t, source,
-    { reader: readLibrary, name: "computability_sample", options: { collectReferences: false } });
-  return { result, outcome: verdicts, gaps: program.gaps.filter(gap => gap.directive).map(gap => `${gap.name}: ${gap.reason}`) };
-}
+// computable and evaluate. The cases are cubist-tests/computability*.cubist,
+// whose comments state each refusal, each failed evaluation and what each
+// print shows (tests/cubist-tests.test.mjs); here, what a failed evaluation
+// does to its module, the values evaluations report, and the syntax.
+const evaluation = testModule("computability_evaluation");
 
-test("a computable declaration is rejected when it depends on an assumption, naming the path", async t => {
-  const { outcome } = await check(`import classical;
-computable def successor(n : Nat) := succ(n);
-computable def uses_lem(P : U0, prop : Proposition(P), nn : (P -> Void) -> Void) : P {
-  exact double_negation(P, prop, nn);
-}
-def after_failure := uses_lem;
-def ordinary(P : U0, prop : Proposition(P), nn : (P -> Void) -> Void) : P {
-  exact double_negation(P, prop, nn);
-}
-`, t);
-  assert.equal(outcome.successor, true);
-  assert.match(outcome.uses_lem, /depends on non-computing assumptions: LEM, Truncate, TruncateElim/);
-  assert.match(outcome.uses_lem, /Path to LEM: double_negation \(classical\) → LEM/);
-  // A rejected declaration is not committed, so its dependents are blocked.
-  assert.match(outcome.after_failure, /Untranslated dependency: uses_lem/);
-  // Without the modifier the same proof is accepted, with its assumptions reported.
-  assert.equal(outcome.ordinary, true);
-});
-
-test("evaluate checks the normal form of a closed assumption-free term", async t => {
-  const { result, gaps } = await check(`import primes;
-import classical;
-import binary_arithmetic;
-evaluate 2 + 2 expecting 4;
-evaluate 2 + 2 expecting 5;
-evaluate binary_mul(0b1101, 0b1011) expecting 0b10001111;
-evaluate double_negation expecting double_negation;
-evaluate 2 + 2 expecting tt;
-`, t);
-  assert.deepEqual(result.evaluations.map(evaluation => [evaluation.name, evaluation.value]),
-    [["at line 4", "4"], ["at line 6", "0b10001111"]]);
-  assert.equal(gaps.length, 3);
-  assert.match(gaps[0], /^evaluate at line 5: The term evaluates to 4, not 5\.$/);
-  assert.match(gaps[1], /^evaluate at line 7: The evaluated term depends on non-computing assumptions: .*LEM/);
-  assert.match(gaps[2], /^evaluate at line 8: The evaluated term has type .*, but the expected value has type /);
+test("evaluate reports the normal form, and a failed evaluation makes its module incomplete", async () => {
+  const { result } = await evaluation();
+  // Only the evaluations that pass have values; each that fails states its
+  // error in the module.
+  assert.deepEqual(result.evaluations.map(item => item.value), ["4", "0b10001111"]);
   assert.equal(result.complete, false, "a failed evaluation makes the module incomplete");
 });
-
-test("evaluation unfolds every definition and ignores unfolding hints", async t => {
-  const { result, gaps } = await check(`def boxed(n : Nat) := succ(n);
-def identity(n : Nat) := n;
-evaluate boxed(1) expecting 2;
-evaluate with unfolding [identity] { identity(boxed(2)) } expecting 3;
-evaluate with unfolding [] { boxed(boxed(0)) } expecting boxed(1);
-`, t);
-  assert.deepEqual(gaps, []);
-  assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["2", "3", "2"]);
-});
-
 test("computable and evaluate parse, format stably and stay ordinary names elsewhere", () => {
   const source = `import primes;
 computable def one := 1;

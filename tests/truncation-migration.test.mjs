@@ -5,32 +5,27 @@ import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { validateLedger } from "../tools/migration-ledger.mjs";
 import { execFileSync } from "node:child_process";
-import { checkProgram } from "./check-program.mjs";
+import { checkTestModule } from "./check-program.mjs";
 
 const module = await createCubical();
-async function check(t,source) {
-  const {program,result}=await checkProgram(t,source,{module,name:"migration_cases"});
+// The programs are cubist-tests/truncation_*.cubist, whose comments state
+// each refusal (tests/cubist-tests.test.mjs); here, their assumptions.
+async function check(t,name) {
+  const {program,result}=await checkTestModule(t,name,{module});
   const get=name=>[...result.outputs,...result.imports].find(output=>output.name===name);
   const assumptions=output=>output.axioms.map(name=>result.assumptionLabels[name] ?? name).sort();
   return {program,result,get,assumptions};
 }
 
 test("G2: small_mere_eliminate uses the declared eliminator into U1 without assumptions",async t=>{
-  const {result,get,assumptions}=await check(t,`import h1_truncation;
-computable def replay(A : U0, P : U1, prop : IsProp(U1, P), f : A -> P, h : Trunc(U0, A)) : P :=
-  small_mere_eliminate(A, P, prop, f, h);
-computable def computes : small_mere_eliminate(Unit, Unit, unit_is_prop, fun (x : Unit) => tt, point(tt)) = tt { rfl; }
-`);
+  const {result,get,assumptions}=await check(t,"truncation_small_mere");
   assert.ok(result.complete,JSON.stringify(result.gaps));
   assert.deepEqual(assumptions(get("replay")),[]);
   assert.deepEqual(get("replay").extensions,[]);
 });
 
 test("G5: the rebuilt CauchySame relation and EventualClose stay in U0 without assumptions",async t=>{
-  const {result,get,assumptions}=await check(t,`import h1_cauchy_quotient;
-computable def relation(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0,
-    x, y : CauchySequence(Q, zero, addQ, ltQ)) : U0 := CauchySame(Q, zero, addQ, ltQ, x, y);
-`);
+  const {result,get,assumptions}=await check(t,"truncation_cauchy_same");
   assert.ok(result.complete,JSON.stringify(result.gaps));
   for(const name of ["EventualClose","CauchySame","relation"]) {
     assert.ok(get(name)?.verified,name); assert.deepEqual(assumptions(get(name)),[],name);
@@ -38,11 +33,7 @@ computable def relation(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0
 });
 
 test("G6: resizing a proposition uses only LEM; a StrictlyAbove witness cannot use set evidence",async t=>{
-  const {get,assumptions}=await check(t,`import h1_zorn_step;
-def resized(P : U1, prop : IsProp(U1, P)) : PropResize(P) := resize_prop(P, prop);
-def rejected(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), x : A) :=
-  resize_prop(StrictlyAbove(A, le, x), strict_above_is_set(A, le, laws, x));
-`);
+  const {get,assumptions}=await check(t,"truncation_resize");
   assert.ok(get("resized")?.verified,get("resized")?.reason);
   assert.deepEqual(assumptions(get("resized")),["LEM[h1_truncation.Trunc]"]);
   assert.equal(get("rejected").verified,false);
@@ -50,11 +41,7 @@ def rejected(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), x : 
 });
 
 test("G7: no_maximal_strict_successor applies double negation at U1 and retains LEM",async t=>{
-  const {get,assumptions}=await check(t,`import h1_zorn_step;
-def replay(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le),
-    none : Trunc(U1, exists x : A. OrderMaximal(A, le, x)) -> Void, x : A) : Trunc(U1, StrictlyAbove(A, le, x)) :=
-  no_maximal_strict_successor(A, le, laws, none, x);
-`);
+  const {get,assumptions}=await check(t,"truncation_strict_successor");
   assert.ok(get("replay")?.verified,get("replay")?.reason);
   assert.deepEqual(assumptions(get("replay")),["LEM[h1_truncation.Trunc]"]);
 });
@@ -103,17 +90,7 @@ test("all four documented ledger comparisons verify their pinned changes and loc
 });
 
 test("rebuilt classical assumptions coexist with legacy signatures and reject a false truncation former",async t=>{
-  const {get,assumptions}=await check(t,`import h1_classical;
-def old(P : U1, h : (P -> Void) -> Void) := LEM(U1, P, h);
-def rebuilt(P : U1, h : (P -> Void) -> Void) : Trunc(U1, P) := LEM(Trunc, U1, P, h);
-def both(P : U1, h : (P -> Void) -> Void) : Truncate(U1, P) and Trunc(U1, P) := (LEM(U1, P, h), LEM(Trunc, U1, P, h));
-def Alias(U < UU0, A : U) : U := Trunc(U, A);
-def aliased(P : U1, h : (P -> Void) -> Void) := LEM(Alias, U1, P, h);
-inductive Other(U < UU0, A : U) : prop U { other_point(a : A); }
-def other(P : U1, h : (P -> Void) -> Void) := LEM(Other, U1, P, h);
-inductive Empty(U < UU0, A : U) : prop U {}
-def rejected(P : U1, h : (P -> Void) -> Void) := LEM(Empty, U1, P, h);
-`);
+  const {get,assumptions}=await check(t,"truncation_rebuilt_classical");
   assert.ok(get("old").verified); assert.ok(get("rebuilt").verified);
   assert.deepEqual(assumptions(get("old")),["LEM","Truncate"]);
   assert.deepEqual(assumptions(get("rebuilt")),["LEM[h1_truncation.Trunc]"]);
@@ -121,7 +98,7 @@ def rejected(P : U1, h : (P -> Void) -> Void) := LEM(Empty, U1, P, h);
   assert.ok(get("aliased").verified,get("aliased").reason);
   assert.deepEqual(get("aliased").axioms,get("rebuilt").axioms);
   assert.ok(get("other").verified,get("other").reason);
-  assert.deepEqual(assumptions(get("other")),["LEM[migration_cases.Other]"]);
+  assert.deepEqual(assumptions(get("other")),["LEM[truncation_rebuilt_classical.Other]"]);
   assert.equal(get("rejected").verified,false);
   assert.match(get("rejected").reason,/admitted proposition truncation/);
 });

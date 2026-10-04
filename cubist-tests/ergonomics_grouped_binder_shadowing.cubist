@@ -1,0 +1,21 @@
+// From tests/proof-ergonomics.test.mjs: A grouped binder checks its shared
+// domain before a binder shadows that name.
+
+def Carrier := Nat;
+
+def grouped(Carrier, item : Carrier) : item = item {
+  rfl;
+}
+
+def applied : grouped(0, 1) = grouped(0, 1) {
+  rfl;
+}
+
+def inferred_lambda(A : U0) : A -> A {
+  exact fun x => x;
+}
+
+def quantified : forall A, B : U0. A -> B -> A {
+  intro A, B, x, y;
+  exact x;
+}

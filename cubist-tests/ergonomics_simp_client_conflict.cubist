@@ -1,0 +1,20 @@
+// From tests/proof-ergonomics.test.mjs: Two imports register one rule, kept
+// once at the higher priority, and name two sets units: only a use of units
+// fails, until this module declares its own.
+import ergonomics_simp_rules_a;
+import ergonomics_simp_rules_b;
+
+def default_ok(n : Nat) : n + 0 = n {
+  simp;
+}
+
+// Error: E443: Simplification set units is ambiguous: ergonomics_simp_rules_a,
+//   ergonomics_simp_rules_b.
+def ambiguous(n : Nat) : n + 0 = n {
+  simp only [units];
+}
+
+simp_set units := [nat_add_zero];
+def locally_resolved(n : Nat) : n + 0 = n {
+  simp only [units];
+}

@@ -1,0 +1,12 @@
+// From tests/translator/translation.test.mjs: weak path J is not falsely
+// given the old strict reflexivity beta rule.
+
+def stuck(A : U0, x : A) :=
+  path_induction(
+    A, fun (a : A) => fun (b : A) => fun (q : a = b) => A, fun (a : A) => a, x, x, refl(x)
+  );
+
+// Error: E606: Type mismatch: found x = x, expected stuck(A, x) = x.
+def not_definitional(A : U0, x : A) : stuck(A, x) = x {
+  exact refl(x);
+}

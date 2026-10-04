@@ -3,9 +3,8 @@
 import {T,fill} from './core.mjs';
 import {interval as I,face as F} from './lattice.mjs';
 import {equiv,fiber,contractible,equivalenceFromInverse,equivalenceWitnessPath,withNativeReferences,withFreshSyntaxNames,
-  identityEquivalence,unglueEquivalence,univalencePath,univalenceTransportBeta} from './equivalence.mjs';
+  identityEquivalence,univalencePath,univalenceTransportBeta} from './equivalence.mjs';
 import {pathRefl,pathInverse,pathApply,pathConcat} from './path-algebra.mjs';
-import {dependentPathToTransport} from './path-over.mjs';
 const v=T.variable,app=T.app,fst=T.first,snd=T.second;
 const at=(p,i)=>T.at(p,I.variable(i));
 const eq=(i,A,x,y)=>T.path(i,A,x,y);
@@ -144,54 +143,3 @@ export function publicUnivalenceEta(A,B,p,level=0,identity=identityEquivalence(B
 }
 
 
-// The equivalence over the Glue line is unglue. Repair its endpoint witnesses
-// at their unchanged forward maps, then apply the dependent-path bridge.
-export function nativeUnivalenceCounit(A,B,e,level=0,identity=identityEquivalence(B)) {
-  return build([A,B,e,identity],(fresh,A,B,e,identity)=>{
-    const i=fresh('path'),j=fresh('repair'),r=fresh('reverse'),w=fresh('witness');
-    const G=T.glueType(B,[
-      {face:F.endpoint(i,0),type:A,equiv:e},
-      {face:F.endpoint(i,1),type:B,equiv:identity},
-    ]);
-    const b=fresh('argument'),y=fresh('target');
-    const forward=T.lam(b,G,T.unglue(G,v(b)));
-    const witnessType=T.pi(y,B,contractible(fiber(G,B,forward,v(y))));
-    const current=T.pair(equiv(G,B),forward,v(w));
-    const initial=at(equivalenceWitnessPath(A,B,current,e),j);
-    const final=at(equivalenceWitnessPath(B,B,current,identity),j);
-    const repaired=T.comp(j,equiv(G,B),[
-      {face:F.endpoint(i,0),term:initial},
-      {face:F.endpoint(i,1),term:final},
-    ],current);
-    const shared=app(T.lam(w,witnessType,repaired),snd(unglueEquivalence(G)));
-    const dependent=T.line(i,equiv(G,B),shared);
-    const ua=univalencePath(A,B,e,level);
-    const backwards=I.reverse(I.variable(r));
-    const family=equiv(T.at(ua,backwards),B);
-    const reverse=T.line(r,family,T.at(dependent,backwards));
-    return app(dependentPathToTransport(r,family,identity,e),reverse);
-  });
-}
-
-// Assemble full univalence for the native presentation from its independently
-// checked inverse laws. Passing named checked lemmas keeps this theorem small.
-export function nativeUnivalenceEquivalence(A,B,{level=0,identity=identityEquivalence(B),eta,counit}={}) {
-  if(!eta||!counit)throw Error('Supply the checked generic native univalence inverse laws.');
-  return build([A,B,identity,eta,counit],(fresh,A,B,identity,eta,counit)=>{
-    const p=fresh('equality'),e=fresh('equivalence'),i=fresh('path');
-    const P=eq(i,T.universe(level),A,B),E=equiv(A,B);
-    const forward=T.lam(p,P,nativeIdentityToEquivalence(A,B,v(p),identity));
-    const backward=T.lam(e,E,univalencePath(A,B,v(e),level));
-    const f=fresh('forward'),g=fresh('backward'),a=fresh('eta'),b=fresh('counit');
-    const bindings=[
-      [f,T.pi(p,P,E),forward],
-      [g,T.pi(e,E,P),backward],
-      [a,T.pi(p,P,eq(i,P,app(v(g),app(v(f),v(p))),v(p))),eta],
-      [b,T.pi(e,E,eq(i,E,app(v(f),app(v(g),v(e))),v(e))),counit],
-    ];
-    let result=equivalenceFromInverse(P,E,v(f),v(g),v(a),v(b));
-    for(const [name,type]of [...bindings].reverse())result=T.lam(name,type,result);
-    for(const [,,value]of bindings)result=app(result,value);
-    return result;
-  });
-}

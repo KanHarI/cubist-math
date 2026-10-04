@@ -1,0 +1,8 @@
+// The declarations tests/cubical-reduction.test.mjs reduces step by step:
+// delta unfolds one definition, and beta leaves the others intact.
+
+def N := Nat;
+
+def id(n : Nat) := n;
+
+def value := typed(N, id(0));
