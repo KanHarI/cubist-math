@@ -22,6 +22,16 @@ def named(n : Nat) : Nat := same(A := Nat, n);
 
 def named_universe(T : U1) : U1 := same(U := U2, T);
 
+// A call of a call: the second gives the parameters the first left.
+def choose{A : U0}(x, y : A) : A := y;
+
+def two_calls : Nat := choose(1)(2);
+
+// Output: 2
+print(evaluate(two_calls));
+
+def named_then : Nat := same(A := Nat)(3);
+
 // The library's lists read their universe and element type off the lists.
 def joined := append(cons(1, typed(List(U0, Nat), nil)), cons(2, nil));
 

@@ -42,12 +42,17 @@ let placeholders = 0;
 const isLimit = error => ["fuel", "budget", "deadline"].includes(error?.kind);
 
 // A definition's own parameters, {name, implicit}, as its source declares
-// them, or null: a function that is not a definition has none.
+// them, or null: a function that is not a definition has none. A head that
+// is already a call, as choose(1) in choose(1)(2), has those the earlier call
+// left; the assumptions a definition uses are applied to it already
+// (define), and are none of its parameters.
 function sourceParameters(t, head) {
-  let core = head;
-  // The assumptions a definition uses are applied to it already (define).
-  while (core.tag === "App") core = core.fn;
-  return core.tag === "DefRef" ? t.checker.definitionViews?.get(core.name)?.parameters ?? null : null;
+  let core = head, applied = 0;
+  for (; core.tag === "App" || core.tag === "LApp"; core = core.fn) applied++;
+  const view = core.tag === "DefRef" ? t.checker.definitionViews?.get(core.name) : null;
+  if (!view?.parameters) return null;
+  const consumed = applied - (view.assumptions?.size ?? 0);
+  return consumed > 0 ? view.parameters.slice(consumed) : view.parameters;
 }
 
 // What a call's arguments give, parameter by parameter: a written argument,
