@@ -1,0 +1,16 @@
+// From tests/proof-ergonomics.test.mjs: Grouped universe binders elaborate
+// like separate ones.
+
+def separate(U < UU0, V < UU0, A : U, B : V, x : A, y : B) := x;
+
+def grouped(U, V < UU0, A : U, B : V, x : A, y : B) := x;
+
+def use_separate := separate(U0, U1, Nat, U0, 0, Nat);
+
+def use_grouped := grouped(U0, U1, Nat, U0, 0, Nat);
+
+// Grouped universe binders bind as separate ones do.
+// Output: forall U < UU0. forall V < UU0. forall A : U. forall B : V. A -> B -> A
+print(typeof(separate));
+// Output: forall U < UU0. forall V < UU0. forall A : U. forall B : V. A -> B -> A
+print(typeof(grouped));

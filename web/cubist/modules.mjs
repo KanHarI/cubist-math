@@ -401,5 +401,22 @@ export const cubistTestModules = [
   "inductive_no_marker", "inductive_path_lambda", "inductive_projections", "inductive_trunc_minus_one",
   "inductive_inspection", "inductive_inspection_names", "inductive_generated_names",
   "inductive_printed_forms", "inductive_assumptions", "inductive_one_parameter_name", "computability",
-  "computability_evaluation", "computability_unfolding", "induction_printed"
+  "computability_evaluation", "computability_unfolding", "induction_printed",
+  "ergonomics_rewrite_obligations", "ergonomics_simp_rejections", "ergonomics_simpa_reconstruction",
+  "ergonomics_type_transport_rejections", "ergonomics_simp_child_order",
+  "ergonomics_simp_incompatible_candidate", "ergonomics_grouped_binder_shadowing",
+  "ergonomics_grouped_universes", "ergonomics_mixed_universes", "ergonomics_generic_calc",
+  "ergonomics_generic_proof_locals", "ergonomics_generic_failure", "ergonomics_repeated_match",
+  "ergonomics_invalid_registry", "ergonomics_local_simp", "ergonomics_conditional_simp",
+  "ergonomics_nested_premises", "ergonomics_rule_diagnostics", "ergonomics_calc_step_links",
+  "ergonomics_binder_sites", "ergonomics_generic_tactic_links", "ergonomics_freeze_premise_search",
+  "ergonomics_freeze_set_collision", "ergonomics_freeze_witness", "ergonomics_search_time_scope",
+  "ergonomics_simp_dependent_positions", "ergonomics_rewrite_eligible_rhs", "ergonomics_generated_names",
+  "ergonomics_rule_scope_rules", "ergonomics_rule_scope", "ergonomics_simp_freeze_path_identity",
+  "ergonomics_simpa_freeze_path_identity", "ergonomics_simp_type_freeze_path_identity",
+  "ergonomics_simpa_type_freeze_path_identity", "ergonomics_imported_failure_rules",
+  "ergonomics_imported_failure", "ergonomics_simp_rules_a", "ergonomics_simp_rules_b",
+  "ergonomics_simp_client_a", "ergonomics_simp_client_isolated", "ergonomics_simp_client_conflict",
+  "ergonomics_simp_client_reverse_order", "ergonomics_simp_client_shadowed_rule",
+  "ergonomics_multi_binder_fun", "ergonomics_tactic_sites", "ergonomics_tactic_sites_generic"
 ];

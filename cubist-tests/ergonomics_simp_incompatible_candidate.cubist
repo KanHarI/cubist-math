@@ -1,0 +1,12 @@
+// From tests/proof-ergonomics.test.mjs: A quantified rule with an
+// incompatible parameter type leaves later rules available.
+
+import primes;
+
+computable def through(f : Nat -> Nat, n : Nat) : f(n + 0) = f(n) {
+  exact cong(f, nat_add_zero(n));
+}
+
+computable def family(P : Nat -> U0, n : Nat) : P(n + 0) = P(n) {
+  simp only [through, nat_add_zero];
+}

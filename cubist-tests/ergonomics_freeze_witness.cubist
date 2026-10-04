@@ -1,0 +1,23 @@
+// From tests/proof-ergonomics.test.mjs: Freezing a simplified hypothesis
+// preserves its witness for dependent proofs.
+
+import primes;
+
+// Warning: W702: stable is never used after this let: remove it.
+def dependent(
+  f, g, k : Nat -> Nat, a, b : Nat, c : forall n : Nat. g(n) = n -> f(n) = k(n), divert : g(a) = b,
+  unit : forall n : Nat. g(n) = n, fallback : f(a) = k(a), h : f(a) + f(b) = k(a) + k(b)
+) :
+  0 = 0 {
+  simp only [c, divert, unit, fallback] at h as h1;
+  simp [c, divert, unit, fallback] at h as h2;
+  let stable : h2 = h1 {
+    rfl;
+  }
+  rfl;
+}
+
+def stable(n : Nat, h : n + 0 = n, unused : 2 = 3) : n = n {
+  simp [h, unused] at h as h2;
+  exact h2;
+}

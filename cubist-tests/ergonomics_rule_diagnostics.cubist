@@ -1,0 +1,29 @@
+// From tests/proof-ergonomics.test.mjs: Rewrite errors identify the selected
+// rule and explain an unproved premise. Each error is reported at the rule
+// it names: tests/proof-ergonomics.test.mjs checks where.
+import primes;
+
+// Error: E442: Rewrite occurrence 2 was not found (1 eligible matches). Remaining goal: n + 0 = n.
+//   No rule fired.
+def bad_rw(n : Nat) : n + 0 = n {
+  rw [nat_add_zero(n)] at lhs occurrence 2;
+}
+
+// Error: E433: simp only requires homogeneous equality lemmas.
+def bad_simp(n : Nat) : n = n {
+  simp only [0];
+}
+
+def zero_if(n : Nat, h : n = 0) : n + 0 = 0 {
+  calc {
+    n + 0 = n by nat_add_zero(n);
+    _ = 0 by h;
+  }
+}
+
+// Error: E456: simp only left an unresolved equality goal; add a following proof statement. Rule
+//   zero_if has an unproved premise at parameter 2; supply a local witness with simp with [name].
+//   Remaining goal: n + 0 = 0. No rule fired.
+def missing_premise(n : Nat) : n + 0 = 0 {
+  simp only [zero_if];
+}

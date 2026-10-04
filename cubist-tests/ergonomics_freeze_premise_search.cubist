@@ -1,0 +1,12 @@
+// From tests/proof-ergonomics.test.mjs: Freeze is withheld when removing a
+// rule changes conditional premise search.
+
+import primes;
+
+def freeze_case(
+  f, g, k : Nat -> Nat, a, b, t : Nat, c : forall n : Nat. g(n) = n -> f(n) = k(n),
+  divert : g(a) = b, unit : forall n : Nat. g(n) = n, fallback : f(a) = t
+) :
+  f(a) + f(b) = t + k(b) {
+  simp [c, divert, unit, fallback];
+}

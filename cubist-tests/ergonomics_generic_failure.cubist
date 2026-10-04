@@ -1,0 +1,13 @@
+// From tests/proof-ergonomics.test.mjs: A failed use of a generic definition
+// leaves the definition and later uses intact.
+
+def identity(U < UU0, A : U, x : A) := x;
+
+def before := identity(U0, Nat, 0);
+
+// Error: E606: Type mismatch: found U0, expected 0 = 1.
+def failed : 0 = 1 {
+  exact identity(U1, U0, Nat);
+}
+
+def after := identity(U0, Nat, 1);

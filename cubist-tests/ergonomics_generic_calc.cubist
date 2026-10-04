@@ -1,0 +1,11 @@
+// From tests/proof-ergonomics.test.mjs: Generic calc endpoints stay separate
+// from step witnesses.
+// The step's checked path belongs to its `by` keyword, not its left endpoint.
+
+import primes;
+
+def generic(U < UU0, n : Nat) : n + 0 = n {
+  calc {
+    n + 0 = n by nat_add_zero(n);
+  }
+}

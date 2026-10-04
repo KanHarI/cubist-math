@@ -92,3 +92,49 @@ workbench's Kernel graph.
 | [`computability_evaluation`](computability_evaluation.cubist) | evaluate checks the normal form of a closed, assumption-free term; each failed evaluation's error is stated above it. |
 | [`computability_unfolding`](computability_unfolding.cubist) | Evaluation unfolds every definition and ignores unfolding hints. |
 | [`induction_printed`](induction_printed.cubist) | How an eliminator prints, for `tests/induction.test.mjs`: as the induction that builds it, with `__U` for an erased universe, and the printed source written back. |
+| [`ergonomics_rewrite_obligations`](ergonomics_rewrite_obligations.cubist) | `rw` at an occurrence, in reverse and on either side, and the refusals of a missing occurrence and a dependent position. |
+| [`ergonomics_simp_rejections`](ergonomics_simp_rejections.cubist) | `simp` stops on a cycle, and does not prove a false equality or a loop equal to reflexivity. |
+| [`ergonomics_simpa_reconstruction`](ergonomics_simpa_reconstruction.cubist) | `simpa` reconstructs the stated equality, and refuses a false supplied term. |
+| [`ergonomics_type_transport_rejections`](ergonomics_type_transport_rejections.cubist) | `simpa` transports only along paths of types: no path, functions that are no type path, a nontrivial loop. |
+| [`ergonomics_simp_child_order`](ergonomics_simp_child_order.cubist) | `simp` tries the rules at each child before rewriting its parent. |
+| [`ergonomics_simp_incompatible_candidate`](ergonomics_simp_incompatible_candidate.cubist) | A quantified rule whose parameter type does not fit leaves the later rules available. |
+| [`ergonomics_grouped_binder_shadowing`](ergonomics_grouped_binder_shadowing.cubist) | A grouped binder checks its shared domain before a binder shadows that name. |
+| [`ergonomics_grouped_universes`](ergonomics_grouped_universes.cubist) | Grouped universe binders bind as separate ones do. |
+| [`ergonomics_mixed_universes`](ergonomics_mixed_universes.cubist) | Consecutive mixed universe groups bind every parameter, for the binder link of `tests/proof-ergonomics.test.mjs`. |
+| [`ergonomics_generic_calc`](ergonomics_generic_calc.cubist) | A generic `calc`, whose endpoint and step links `tests/proof-ergonomics.test.mjs` inspects and exports. |
+| [`ergonomics_generic_proof_locals`](ergonomics_generic_proof_locals.cubist) | Generic proofs whose `ext` and simplified hypothesis binders `tests/proof-ergonomics.test.mjs` links. |
+| [`ergonomics_generic_failure`](ergonomics_generic_failure.cubist) | A failed use of a generic definition leaves the definition and later uses intact. |
+| [`ergonomics_repeated_match`](ergonomics_repeated_match.cubist) | A quantified simp rule matches a repeated parameter consistently. |
+| [`ergonomics_invalid_registry`](ergonomics_invalid_registry.cubist) | Registrations of rules that are no equalities, and sets of them, are refused and enter no rule set. |
+| [`ergonomics_local_simp`](ergonomics_local_simp.cubist) | `without` removes default rules and sets, `simp at h as h2` keeps the source hypothesis, and a global name is no hypothesis. |
+| [`ergonomics_conditional_simp`](ergonomics_conditional_simp.cubist) | A conditional rule with a selected, missing, reflexive or wrong premise. |
+| [`ergonomics_nested_premises`](ergonomics_nested_premises.cubist) | Premises simplified with nested witnesses, and the refusals without a base rule or with the rule alone. |
+| [`ergonomics_rule_diagnostics`](ergonomics_rule_diagnostics.cubist) | Rewrite errors at the rule they name, and an unproved premise explained. |
+| [`ergonomics_calc_step_links`](ergonomics_calc_step_links.cubist) | Each `calc` step, whose `by` link `tests/proof-ergonomics.test.mjs` checks. |
+| [`ergonomics_binder_sites`](ergonomics_binder_sites.cubist) | `fun` and `forall`, bare and parenthesized, linked from their keywords. |
+| [`ergonomics_generic_tactic_links`](ergonomics_generic_tactic_links.cubist) | Generic `calc`, `rw` and `simp`, linked to their checked witnesses. |
+| [`ergonomics_freeze_premise_search`](ergonomics_freeze_premise_search.cubist) | A `simp` whose frozen form is withheld, as removing a rule changes its premise search. |
+| [`ergonomics_freeze_set_collision`](ergonomics_freeze_set_collision.cubist) | A `simp` whose frozen form is withheld, as a named set shadows its rule. |
+| [`ergonomics_freeze_witness`](ergonomics_freeze_witness.cubist) | Hypotheses simplified, whose frozen forms keep the witness a later proof compares. |
+| [`ergonomics_search_time_scope`](ergonomics_search_time_scope.cubist) | Statements after `rw`, `simp` and a `calc` step, outside their search time. |
+| [`ergonomics_simp_dependent_positions`](ergonomics_simp_dependent_positions.cubist) | `simp` skips matches in dependent positions instead of failing. |
+| [`ergonomics_rewrite_eligible_rhs`](ergonomics_rewrite_eligible_rhs.cubist) | `rw` skips an unsupported left occurrence for an eligible right one. |
+| [`ergonomics_generated_names`](ergonomics_generated_names.cubist) | Generated names stay distinct when a source name ends in a digit. |
+| [`ergonomics_rule_scope_rules`](ergonomics_rule_scope_rules.cubist) | A generic definition simplified with its own module's set, for `ergonomics_rule_scope`. |
+| [`ergonomics_rule_scope`](ergonomics_rule_scope.cubist) | A generic definition keeps its defining set where the set's name means another. |
+| [`ergonomics_simp_freeze_path_identity`](ergonomics_simp_freeze_path_identity.cubist) | A `simp` offered no frozen form, as a later proof compares its path. |
+| [`ergonomics_simpa_freeze_path_identity`](ergonomics_simpa_freeze_path_identity.cubist) | A `simpa` offered no frozen form, as a later proof compares its path. |
+| [`ergonomics_simp_type_freeze_path_identity`](ergonomics_simp_type_freeze_path_identity.cubist) | `simp` along a type path: frozen only where no later proof compares it. |
+| [`ergonomics_simpa_type_freeze_path_identity`](ergonomics_simpa_type_freeze_path_identity.cubist) | `simpa` along a type path: frozen only where no later proof compares it. |
+| [`ergonomics_imported_failure_rules`](ergonomics_imported_failure_rules.cubist) | A generic definition that fails, for `ergonomics_imported_failure`. |
+| [`ergonomics_imported_failure`](ergonomics_imported_failure.cubist) | A use of an imported definition that failed, reported in its own module. |
+| [`ergonomics_simp_rules_a`](ergonomics_simp_rules_a.cubist) | Default and named registrations of a rule, for the `ergonomics_simp_client_*` modules. |
+| [`ergonomics_simp_rules_b`](ergonomics_simp_rules_b.cubist) | The same registrations at priority 7. |
+| [`ergonomics_simp_client_a`](ergonomics_simp_client_a.cubist) | Imported registrations simplify. |
+| [`ergonomics_simp_client_isolated`](ergonomics_simp_client_isolated.cubist) | Without the import, no registration. |
+| [`ergonomics_simp_client_conflict`](ergonomics_simp_client_conflict.cubist) | Two imports of one rule and two sets of one name: only a use of the name fails. |
+| [`ergonomics_simp_client_reverse_order`](ergonomics_simp_client_reverse_order.cubist) | Imports in the other order keep the higher priority. |
+| [`ergonomics_simp_client_shadowed_rule`](ergonomics_simp_client_shadowed_rule.cubist) | A local definition shadows an imported rule's name: no frozen form. |
+| [`ergonomics_multi_binder_fun`](ergonomics_multi_binder_fun.cubist) | Multi-binder `fun`, whose link inspects the whole closed function. |
+| [`ergonomics_tactic_sites`](ergonomics_tactic_sites.cubist) | Concrete `calc`, `rw` and `simp`, linked from their keyword sites. |
+| [`ergonomics_tactic_sites_generic`](ergonomics_tactic_sites_generic.cubist) | The same, universe-generic. |

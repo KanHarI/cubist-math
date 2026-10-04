@@ -1,0 +1,45 @@
+// From tests/proof-ergonomics.test.mjs: Simp skips matches in dependent
+// positions instead of failing.
+import primes;
+
+def reflexive(P : Nat -> U0, f : (forall m : Nat. P(m) -> Nat), n : Nat, v : P(n + 0)) :
+  f(n + 0, v) = f(n + 0, v) {
+  simp only [nat_add_zero];
+}
+
+def after_rewrite(P : Nat -> U0, f : (forall m : Nat. P(m) -> Nat), n : Nat, v : P(n + 0)) :
+  add(f(n + 0, v), n + 0) = add(f(n + 0, v), n) {
+  simp only [nat_add_zero];
+}
+
+def supplied(
+  P : Nat -> U0, f : (forall m : Nat. P(m) -> Nat), n : Nat, v : P(n + 0), h : f(n + 0, v) = 3
+) :
+  f(n + 0, v) = 3 {
+  simpa only [nat_add_zero] using h;
+}
+
+def hypothesis(
+  P : Nat -> U0, f : (forall m : Nat. P(m) -> Nat), n : Nat, v : P(n + 0), h : f(n + 0, v) = 3
+) :
+  f(n + 0, v) = 3 {
+  simp only [nat_add_zero] at h as h2;
+  exact h2;
+}
+
+def type_goal(
+  P : Nat -> U0, f : (forall m : Nat. P(m) -> Nat), n : Nat, v : P(n + 0),
+  Q : (forall m : Nat. P(m) -> U0), w : Q(n + 0, v)
+) :
+  Q(n + 0, v) {
+  simp only [nat_add_zero];
+  exact w;
+}
+
+// Error: E456: simp only left an unresolved equality goal; add a following proof statement. Some
+//   rule matches were skipped because they occur in a dependent position; rewrite there with an
+//   explicit cong context. Remaining goal: f(n + 0, v) = m. No rule fired.
+def unsolved(P : Nat -> U0, f : (forall m : Nat. P(m) -> Nat), n : Nat, v : P(n + 0), m : Nat) :
+  f(n + 0, v) = m {
+  simp only [nat_add_zero];
+}

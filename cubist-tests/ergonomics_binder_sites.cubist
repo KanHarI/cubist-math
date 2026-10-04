@@ -1,0 +1,10 @@
+// From tests/proof-ergonomics.test.mjs: A parenthesized binder links from its
+// keyword like an unparenthesized one.
+
+def bare := fun (n : Nat) => n;
+
+def parenthesized := (fun (n : Nat) => n);
+
+def bare_type := forall n : Nat. n = n;
+
+def parenthesized_type := (forall n : Nat. n = n);
