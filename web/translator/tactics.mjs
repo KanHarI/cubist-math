@@ -1,5 +1,5 @@
 // Proof-block statements: exact, rfl, calc, rw, simp only, simpa, intro,
-// hlevel, ext, over, let, obtain, match and cases. tacticProof elaborates a
+// hlevel, ext, over, let, obtain and match. tacticProof elaborates a
 // block's first statement into a proof of the goal, with the rest of the
 // block after it, or returns undefined when it is no statement here.
 import {calcStepSite} from "../cubist/link-sites.mjs";
@@ -286,20 +286,5 @@ const tactics = {
   // The rest of a compiled match statement, in one of its clauses.
   patternMatchStatement(t,first,rest,goal) {
     return continueMatch(t,first,goal.scope,{goal});
-  },
-  cases(t,first,rest,goal) {
-    const {scope}=goal;
-    if(rest.length)throw Error("Statements after cases are not yet translated.");
-    const value=t.term(first.value,scope,null),type=scope.infer(value).type;
-    const sum=scope.nf(type);
-    if(sum.tag!=="Sum")throw Error("cases requires a sum type.");
-    const motive=T.lam(scope.fresh(),type,goal.target);
-    const branch=side=>{
-      // Each branch's binder keeps its source name.
-      const name=scope.fresh(first[side]?.text),domain=sum[side];
-      const inner=t.sourceBinding(first[side],T.variable(name),scope.bind(name,domain));
-      return T.lam(name,domain,t.block(first[side+"Body"],goal.at(inner)));
-    };
-    return T.sumrec(motive,branch("left"),branch("right"),value);
   },
 };

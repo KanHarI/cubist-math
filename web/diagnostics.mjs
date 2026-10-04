@@ -86,6 +86,7 @@ export const diagnostics = [
   ["E159", "print shows evaluate(term), typeof(term) or inspect(term)."],
   ["E162", "A match on several values takes its motive from return T or the type expected of it, without as."],
   ["E163", "The induction statement takes apart one value; take the first, then the next inside each clause."],
+  ["E164", "cases was removed: write match value { left(a) => { … } right(b) => { … } }."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
@@ -289,8 +290,8 @@ export const diagnostics = [
   ["E465", "let states a type after the colon; found a value of type …."],
   ["E466", "obtain requires a dependent pair matching its pattern."],
   ["E467", "Statements after … are unreachable: each clause's block closes the goal."],
-  ["E468", "Statements after cases are not yet translated."],
-  ["E469", "cases requires a sum type."],
+  ["E468", "Statements after cases are not yet translated.", "retired"],
+  ["E469", "cases requires a sum type.", "retired"],
   ["E470", "glue needs the Glue type it builds an element of: write typed(Glue(…), glue(…))."],
   ["E471", "glue builds an element of a Glue type."],
   ["E472", "unglue takes an element of a Glue type."],

@@ -11,7 +11,6 @@ export const keywords = new Set([
   "let",
   "obtain",
   "intro",
-  "cases",
   "left",
   "right",
   "exact",

@@ -67,7 +67,7 @@
                 <tr><td><code>forall x : A. B(x)</code></td><td>Dependent functions, <span class="math">Π<sub>x:A</sub> B(x)</span></td><td>The same as for <code>-></code></td><td>Application <code>f(a) : B(a)</code></td></tr>
                 <tr><td><code>A and B</code></td><td>Pairs, <span class="math">A × B</span></td><td><code>(a, b)</code></td><td>Projections <code>p.1</code>, <code>p.2</code>; <code>obtain</code>, <code>unpack</code></td></tr>
                 <tr><td><code>exists x : A. B(x)</code></td><td>Dependent pairs, <span class="math">Σ<sub>x:A</sub> B(x)</span></td><td><code>(witness, evidence)</code></td><td>Projections <code>p.1 : A</code>, <code>p.2 : B(p.1)</code>; <code>obtain</code>, <code>unpack</code>, <code>pair_induction</code></td></tr>
-                <tr><td><code>A or B</code></td><td>Disjoint sums, <span class="math">A + B</span></td><td><code>left(a)</code>, <code>right(b)</code></td><td><code>match</code>, <code>cases</code></td></tr>
+                <tr><td><code>A or B</code></td><td>Disjoint sums, <span class="math">A + B</span></td><td><code>left(a)</code>, <code>right(b)</code></td><td><code>match</code></td></tr>
                 <tr><td><code>Unit</code></td><td>The one-element type</td><td><code>tt</code></td><td><code>unit_induction</code></td></tr>
                 <tr><td><code>Void</code></td><td>The empty type, falsehood</td><td>None</td><td><code>absurd</code></td></tr>
                 <tr><td><code>Nat</code></td><td>Natural numbers</td><td><code>0</code>, <code>succ(n)</code>, numerals</td><td><a href="induction.html#match"><code>match</code></a>, <a href="induction.html#induction"><code>induction</code></a></td></tr>
@@ -288,7 +288,7 @@ def default(value : Unit or Unit) := match value as z return Shape(z) {
   left a =&gt; 0;
   right b =&gt; 1;
 };</code></pre>
-            <p>The result type is the expected type of each branch, so <code>right(a)</code> needs no annotation. In a proof block, <a href="first-proof.html#first-proof-cases"><code>cases</code></a> does the same with a block for each side, but without refining the goal; <a href="proof-blocks.html#cases">proof blocks</a> compares the two.</p>
+            <p>The result type is the expected type of each branch, so <code>right(a)</code> needs no annotation. In a proof block, the <a href="proof-blocks.html#sums"><code>match</code> statement</a> takes a sum apart with a block for each side, each proving the goal at its side.</p>
           </section>
           <section id="unit-and-void">
             <h2>Unit, Void and negation</h2>
