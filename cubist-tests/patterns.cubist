@@ -97,6 +97,38 @@ def kept(n : Nat, h : Choice(n)) : Choice(n) := match n {
     succ(m) => h;
   };
 
+// A name a clause binds never captures a value the match takes apart: the
+// second value is still the parameter y.
+def shadowing(x, y : Nat) : Nat := match x, y {
+    zero, _ => 0;
+    succ(y), zero => 1;
+    succ(y), succ(z) => 2;
+  };
+
+// Output: 2
+print(evaluate(shadowing(1, 1)));
+// Output: 1
+print(evaluate(shadowing(2, 0)));
+
+// A nested pattern keeps the motive's name.
+def identity_path(n : Nat) : n = n := match n as z return z = z {
+    zero => refl(0);
+    succ(succ(p)) => refl(succ(succ(p)));
+    succ(zero) => refl(1);
+  };
+
+// A return type is checked where no clause takes the value apart too.
+// Error: E606: Type mismatch: found Nat, expected Unit.
+def unchecked(n : Nat) := match n return Unit {
+    _ => n;
+  };
+
+// Error: E570: y is bound twice in this clause: name each variable once.
+def twice(xs : List(U0, Nat)) : Nat := match xs {
+    cons(y, cons(y, rest)) => y;
+    _ => 0;
+  };
+
 // Error: E561: The match has no case for cons(…) in the tail of xs.
 def missing(xs : List(U0, Nat)) : Nat := match xs {
     cons(x, nil) => 1;

@@ -360,6 +360,7 @@ export const diagnostics = [
   ["E560", "… is not of a declared type: its patterns are variables or _."],
   ["E561", "The match has no case for …… in …."],
   ["E562", "… is a path constructor: name its … dimension… after its arguments."],
+  ["E570", "… is bound twice in this clause: name each variable once."],
   // Checking
   ["E601", "Unsupported library assumption: …"],
   ["E602", "Only LEM and Choice have rebuilt truncation signatures."],

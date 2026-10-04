@@ -47,6 +47,9 @@ const pattern = head => head.kind === "pattern" || !bare(head)
   ? { kind: "constructor", token: head.constructor, args: (head.args ?? []).map(argument), coordinates: head.coordinates ?? [] }
   : { kind: "name", token: head.constructor };
 const argument = arg => arg.kind === "pattern" ? pattern(arg) : { kind: "name", token: arg };
+// The tokens a pattern binds: its variables and coordinates, and the bare
+// names that may be constructors, which the caller tells apart.
+const variables = p => p.kind === "name" ? [p.token] : [...p.args.flatMap(variables), ...p.coordinates];
 const wildcard = { kind: "name", token: { text: "_" } };
 
 let serial = 0;
@@ -60,17 +63,38 @@ const generatedToken = (stem, at) => ({ text: `${stem}'${++serial}`, start: at.s
 export function compileMatch(t, n, scope, {statement, expected, goal, typeOf}) {
   const locate = (error, node = n) => scope.unit.locate(error, node);
   const values = n.values ?? [n.value];
-  // Each clause, with the names its patterns bind so far.
+  // Each clause, with the names its patterns bind so far. A clause names
+  // each variable once.
   const clauses = n.clauses.map(clause => ({ clause, used: false }));
   const rows = clauses.map(origin => {
     const patterns = [origin.clause, ...origin.clause.more ?? []].map(pattern);
     if (patterns.length !== values.length)
       throw locate(Error(`This clause has ${patterns.length} pattern${patterns.length === 1 ? "" : "s"}; the match takes apart ${values.length} value${values.length === 1 ? "" : "s"}.`), origin.clause.constructor);
+    const bound = new Set();
+    for (const token of patterns.flatMap(variables)) {
+      if (token.text === "_" || constructorWithout(scope, token.text)) continue;
+      if (bound.has(token.text)) throw locate(Error(`${token.text} is bound twice in this clause: name each variable once.`), token);
+      bound.add(token.text);
+    }
     return { patterns, bindings: [], origin };
   });
-  const columns = values.map(node => ({ node, describe: scope.unit.source.slice(node.start, node.end).trim() }));
-  const context = { n, statement, typeOf, locate, top: true };
-  const result = compile(t, scope, columns, rows, { ...context, expected, goal });
+  // Each value is elaborated where the match is written, once, and named
+  // apart, so that no name a clause binds captures it: in match x, y with a
+  // clause succ(y), _, the second value is still the parameter y. A
+  // variable keeps its binding, so that recursion sees the parameter it is.
+  let at = scope;
+  const columns = values.map(node => {
+    const name = `\u0000value'${++serial}`;
+    at = at.alias(name, node.kind === "name" && at.env.has(node.name) ? at.env.get(node.name) : t.term(node, at, null));
+    return { node: { kind: "name", name, start: node.start, end: node.end }, describe: scope.unit.source.slice(node.start, node.end).trim() };
+  });
+  // A return type is the match's type at its values. Where no clause takes
+  // a value apart, no match checks the clause against it, so the clause is
+  // checked here.
+  const annotated = !statement && n.type
+    ? t.term(n.type, n.motiveName ? t.sourceBinding(n.motiveName, t.term(columns[0].node, at, null), at) : at, null) : null;
+  const context = { n, statement, typeOf, locate, top: true, annotated };
+  const result = compile(t, at, columns, rows, { ...context, expected, goal });
   const unreached = clauses.find(origin => !origin.used);
   if (unreached) throw locate(Error("This clause is never reached: the clauses before it take every case it would."), unreached.clause.constructor);
   return result;
@@ -84,7 +108,12 @@ function compile(t, scope, columns, rows, context) {
     row.origin.used = true;
     let inner = scope;
     for (const [token, target] of row.bindings) inner = bind(t, inner, token, target);
-    return statement ? t.block(row.origin.clause.body, context.goal.at(inner)) : t.term(row.origin.clause.body, inner, context.expected);
+    if (statement) return t.block(row.origin.clause.body, context.goal.at(inner));
+    if (context.top && context.annotated) {
+      const type = context.annotated;
+      return inner.ascribe(inner.check(t.term(row.origin.clause.body, inner, type), type), type);
+    }
+    return t.term(row.origin.clause.body, inner, context.expected);
   }
   const [column, ...others] = columns;
   const value = t.term(column.node, scope, null), type = context.typeOf(value, scope);
@@ -163,7 +192,8 @@ function compile(t, scope, columns, rows, context) {
   // so recursion follows it (match.mjs, recursionSite).
   const top = context.top ? context.n : null;
   const node = { kind: statement ? "matchStatement" : "match", value: column.node, clauses,
-    ...(top?.type ? { type: top.type } : {}), ...(top ? obligationsOf(top) : {}), start: column.node.start, end: column.node.end };
+    ...(top?.type ? { type: top.type } : {}), ...(top?.motiveName ? { motiveName: top.motiveName } : {}),
+    ...(top ? obligationsOf(top) : {}), start: column.node.start, end: column.node.end };
   const recursive = scope.env.get(RECURSIVE), at = top && recursive?.site === top ? scope.alias(RECURSIVE, { ...recursive, site: node }) : scope;
   return statement ? t.block([node], context.goal.at(at)) : t.term(node, at, context.expected);
 }
