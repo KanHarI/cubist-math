@@ -31,7 +31,7 @@ export const ththNames = { universe: "UIntro", unit: "UnitForm", point: "UnitInt
   signatureBegin: "SignatureBegin", signatureConstructor: "SignatureCons", signatureClose: "SignatureClose",
   sortBegin: "SortBegin", sortLevel: "SortLevel", sortParameter: "SortParameter", construct: "ConIntro",
   eliminator: "ElimBegin", eliminatorClause: "ElimClause", eliminatorClose: "ElimClose", restrict: "Restrict" };
-export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf", "face", "glue"];
+export const stepRules = ["", "beta", "delta", "iota", "path", "normalize", "whnf", "face", "glue", "split"];
 // A judgement's sides: its term, an equality's other term, its type.
 export const sides = ["term", "other", "type"];
 const EXTEND = 100, DIMENSION = 101, LEVEL = 102;

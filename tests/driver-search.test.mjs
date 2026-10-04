@@ -150,6 +150,58 @@ test("the default policy makes the driver's pinned moves: a recorded trace", asy
   } finally { program.dispose(); }
 });
 
+// Two compositions that are one partial element, split otherwise: (path k.
+// comp^z A [k = 0 ↦ x] x) @ (i ∧ j), whose tube is on i = 0 ∨ j = 0 once the
+// path is applied, and comp^z A [i = 0 ↦ x, j = 0 ↦ x] x, over a type A
+// whose compositions do not compute.
+async function splitSides(t, policy) {
+  const { kernel, syntax, graph } = await session(t);
+  const driver = new InstructionDriver(kernel, { policy });
+  const A = { tag: "Var", name: "A" }, x = { tag: "Var", name: "x" };
+  const at0 = name => [[`${name}:0`]];
+  const dimensions = new Map([["i", 2], ["j", 3]]);
+  const context = [[kernel.symbol("A"), syntax.encode({ tag: "U", level: 0 })], [kernel.symbol("x"), syntax.encode(A)]];
+  const line = { tag: "PLam", dim: "k", family: A, body: { tag: "Comp", dim: "z", family: A, system: [{ face: at0("k"), term: x }], base: x } };
+  const meet = [["i:1", "j:1"]];
+  const left = { tag: "PApp", path: line, arg: meet };
+  const right = { tag: "Comp", dim: "z", family: A, system: [{ face: at0("i"), term: x }, { face: at0("j"), term: x }], base: x };
+  const focus = term => driver.focus(graph.refl(driver.infer(syntax.encode(term, dimensions), context, 0b1100n)), "other");
+  return { kernel, driver, a: focus(left), b: focus(right) };
+}
+
+test("agree: compositions whose tubes are split otherwise agree by the kernel's split step", async t => {
+  const points = [];
+  const { kernel, driver, a, b } = await splitSides(t, null);
+  driver.policy = recordingPolicy(heuristicPolicy, kernel, point => points.push(point));
+  assert.equal(driver.agree(a, b), true);
+  const made = points.flatMap(point => point.listings.flatMap(listing => listing.made.map(([name]) => name)));
+  assert.ok(made.includes("split:left"), made.join(", "));
+  // Without the split move, the two systems cannot be compared.
+  const withoutSplit = { name: "without split", *rank(point) {
+    for (const move of heuristicPolicy.rank(point)) if (move.move !== "split") yield move;
+  } };
+  const again = await splitSides(t, withoutSplit);
+  assert.equal(again.driver.agree(again.a, again.b), false);
+});
+
+test("a formula of the wrong sort is refused, not read as the other sort", async t => {
+  const { kernel, syntax } = await session(t);
+  const driver = new InstructionDriver(kernel);
+  // A path applied at the face 1, which the driver read as the endpoint 1.
+  const line = syntax.encode({ tag: "PLam", dim: "k", family: unit, body: point });
+  const one = clauses => [[0n, 0n], ...clauses];
+  const atFace = kernel.term("PApp", kernel.formula("face", one([])), line, 0);
+  assert.throws(() => driver.infer(atFace), /A path is applied at an interval point; found a face formula\./);
+  assert.ok(driver.infer(kernel.term("PApp", kernel.formula("interval", one([])), line, 0)));
+  // A tube on the interval point 1, which the driver read as the face 1.
+  const tube = kernel.term("Tube", kernel.formula("interval", one([])), syntax.encode(point), 0);
+  const comp = kernel.term("Comp", 0, syntax.encode(unit), tube, syntax.encode(point));
+  assert.throws(() => driver.infer(comp), /A partial element's face is a face formula; found an interval point\./);
+  const faced = kernel.term("Comp", 0, syntax.encode(unit),
+    kernel.term("Tube", kernel.formula("face", one([])), syntax.encode(point), 0), syntax.encode(point));
+  assert.ok(driver.infer(faced));
+});
+
 test("agree: policies are pluggable and untrusted", async t => {
   // A policy that makes no move: the comparison fails.
   const none = await sides(t, { name: "none", *rank() {} });

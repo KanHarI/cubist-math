@@ -233,7 +233,8 @@ same edges, and the same heads, with message passing in place of attention.
 
 1. **Options.** Done on 2026-09-27. Each branch point of `agree` is an
    explicit list of moves (normalize, descend, a step on either side or
-   both, whnf, eta, and since I1.2a glue, ranked last), and a policy
+   both, whnf, eta, since I1.2a glue, ranked last, and since I1.2c's
+   remaining gaps split, ranked first where it is offered), and a policy
    ranks them
    (`heuristicPolicy` in `web/cubical-instruction-driver.mjs`). The
    heuristic is the driver's former order; the archive's elaboration

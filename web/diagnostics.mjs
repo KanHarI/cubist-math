@@ -412,6 +412,9 @@ export const diagnostics = [
   ["E660", "Invalid cubical Glue element system."],
   ["E661", "Unsupported cubical node: …"],
   ["E662", "Declaration transaction was already finished."],
+  ["E663", "A path is applied at an interval point; found a face formula."],
+  ["E664", "A transport's face is a face formula; found an interval point."],
+  ["E665", "A partial element's face is a face formula; found an interval point."],
   // Kernel: declared types
   ["K101", "Dimension renaming allocation failed."],
   ["K102", "A boundary is nested too deeply."],
@@ -589,6 +592,7 @@ export const diagnostics = [
   ["K291", "A declared type's instance reads finite levels only, below ω (Q16)."],
   ["K292", "A restriction's face is one consistent conjunction of endpoint equations."],
   ["K293", "A face entry is an assumption, not a variable or a dimension."],
+  ["K294", "A split step needs a composition with a tube on a face of several clauses, or on the face 0."],
   // Kernel: terms and computation
   ["K301", "A signature is still open; close it before committing."],
   ["K302", "Checkpoint compaction allocation failed."],
@@ -653,6 +657,7 @@ export const diagnostics = [
   ["K361", "Endpoint allocation failed."],
   ["K362", "Invalid interval variable."],
   ["K363", "Invalid face variable."],
+  ["K364", "Face copy failed."],
   // Warnings
   ["W701", "None of … is used after this obtain: remove it."],
   ["W702", "… is never used after this let: remove it."],

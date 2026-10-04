@@ -186,7 +186,7 @@ typedef enum {
     CC_STEP_FACE,      /* a composition with a tube on a face that holds, to
                         * that tube at the end of the composition's dimension;
                         * a transport on a face that holds, to its base */
-    CC_STEP_GLUE       /* Glue eta: glue [φ ↦ t] (unglue b) to b, the unglue
+    CC_STEP_GLUE,      /* Glue eta: glue [φ ↦ t] (unglue b) to b, the unglue
                         * being the base's weak head or what a nested Glue
                         * step exposes, when the side conditions agree by
                         * syntax, as they are, as weak heads, part by part
@@ -194,6 +194,10 @@ typedef enum {
                         * nothing else is reduced: the two Glue types, and t
                         * and b restricted to each clause of φ
                         * (term_normalize.c) */
+    CC_STEP_SPLIT      /* a composition's tube on a face of several clauses,
+                        * to one tube per clause, each the same term: a
+                        * system is a partial element, the same whichever
+                        * clauses its faces are written in */
 } cc_step_rule;
 
 /* Γ ⊢ U(l) : U(l+1), for a level l whose successor is within CC_LEVEL_MAX.

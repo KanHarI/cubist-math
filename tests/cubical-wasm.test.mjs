@@ -88,10 +88,10 @@ test("WASM retains both halves of dimension masks and the face/interval distinct
   const atOne = k.term("PApp", k.formula("interval", [[0n, 0n]]), path);
   const checked = derive(k, atOne, unit);
   assert.equal(k.node(k.normalize(checked.expression)).kind, "Point");
-  // A face given as a path's argument is read as the interval formula with
-  // the same clauses: the judgement is about that well-formed term, here p @ 0.
-  const read = derive(k, k.term("PApp", impossible, path), unit);
-  assert.deepEqual(k.inspectFormula(k.node(read.expression).payload), { sort: "interval", clauses: [] });
+  // A face given as a path's argument is refused, not read as the interval
+  // formula with the same clauses (work plan I1.2c).
+  assert.throws(() => derive(k, k.term("PApp", impossible, path), unit),
+    /A path is applied at an interval point; found a face formula\./);
 });
 
 test("disposed WASM sessions cannot accidentally access a new session", t => {

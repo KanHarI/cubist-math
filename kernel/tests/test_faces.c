@@ -185,9 +185,74 @@ static void variables_on_a_face(void) {
     cc_kernel_free(k);
 }
 
+/* The tubes of a composition, as faces' clause counts. */
+static size_t tube_clauses(cc_term composition, size_t *counts, size_t room) {
+    size_t n = 0;
+    for (cc_term tube = k->nodes[composition].child[1]; tube && n < room; tube = k->nodes[tube].child[1])
+        counts[n++] = cc_kernel_get_formula(k, k->nodes[tube].payload)->length;
+    return n;
+}
+
+/* The split step (CC_STEP_SPLIT): a composition that a substitution has
+ * left with a tube on a face of several clauses is the same composition
+ * with one tube per clause, each the same term, and a tube on the face 0
+ * goes. Every other composition, and anything else, is refused. */
+static void split_systems(void) {
+    k = cc_kernel_new();
+    assert(k);
+    cc_term l0 = cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0);
+    cc_judgement_id u0 = OK(cc_instr_universe(k, l0));
+    cc_entry_id a = OK(cc_instr_extend(k, u0, 100));
+    cc_entry_id x = OK(cc_instr_extend(k, var(a), 101));
+    cc_entry_id kd = OK(cc_instr_dimension(k, 0)), zd = OK(cc_instr_dimension(k, 1));
+    OK(cc_instr_dimension(k, 2));
+    OK(cc_instr_dimension(k, 3));
+    /* comp^z A [k = 0 ↦ x] x as a line over k. */
+    cc_judgement_id xv = var(x);
+    cc_formula_id k0 = face(1, (const unsigned[][2]){{0, 0}}, false);
+    cc_judgement_id comp = OK(cc_instr_comp(k, OK(cc_instr_system_tube(k, OK(cc_instr_system(k, zd, var(a), xv)),
+                                                                           k0, xv, OK(cc_instr_refl(k, xv))))));
+    cc_judgement_id line = OK(cc_instr_path_lambda(k, kd, comp));
+    rejects(cc_instr_step(k, OK(cc_instr_refl(k, comp)), 1, NULL, 0, CC_STEP_SPLIT), "A split step needs");
+    rejects(cc_instr_step(k, OK(cc_instr_refl(k, xv)), 1, NULL, 0, CC_STEP_SPLIT), "A split step needs");
+
+    /* At i ∧ j, its tube is on (i ∧ j) = 0, that is i = 0 ∨ j = 0. */
+    cc_formula meet, j;
+    cc_init(&meet, CC_INTERVAL);
+    cc_init(&j, CC_INTERVAL);
+    assert(cc_generator(&meet, 2, true) == CC_OK && cc_generator(&j, 3, true) == CC_OK && cc_meet(&meet, &meet, &j) == CC_OK);
+    cc_formula_id at_meet = cc_kernel_formula(k, &meet);
+    cc_clear(&meet);
+    cc_clear(&j);
+    cc_judgement_id moved = OK(cc_instr_step(k, OK(cc_instr_refl(k, OK(cc_instr_path_at(k, line, at_meet)))), 1,
+                                             NULL, 0, CC_STEP_PATH));
+    cc_term two = info(moved).other;
+    size_t counts[4];
+    assert(k->nodes[two].kind == CC_COMP && tube_clauses(two, counts, 4) == 1 && counts[0] == 2);
+    cc_judgement_id split = OK(cc_instr_step(k, moved, 1, NULL, 0, CC_STEP_SPLIT));
+    cc_term apart = info(split).other;
+    assert(k->nodes[apart].kind == CC_COMP && tube_clauses(apart, counts, 4) == 2 && counts[0] == 1 && counts[1] == 1);
+    cc_term first = k->nodes[apart].child[1], second = k->nodes[first].child[1];
+    cc_term tube = k->nodes[k->nodes[two].child[1]].child[0];
+    assert(k->nodes[first].child[0] == tube && k->nodes[second].child[0] == tube);
+    assert(k->nodes[apart].child[0] == k->nodes[two].child[0] && k->nodes[apart].child[2] == k->nodes[two].child[2]);
+    /* The equality stands at the same type, and splits once. */
+    assert(info(split).type == info(moved).type && info(split).term == info(moved).term);
+    rejects(cc_instr_step(k, split, 1, NULL, 0, CC_STEP_SPLIT), "A split step needs");
+
+    /* At k = 1, the tube is on the face 0, and goes. */
+    cc_judgement_id ended = OK(cc_instr_step(k, OK(cc_instr_refl(k, OK(cc_instr_path_apply(k, line, 0, 1)))), 1,
+                                             NULL, 0, CC_STEP_PATH));
+    assert(tube_clauses(info(ended).other, counts, 4) == 1 && counts[0] == 0);
+    cc_term bare = info(OK(cc_instr_step(k, ended, 1, NULL, 0, CC_STEP_SPLIT))).other;
+    assert(k->nodes[bare].kind == CC_COMP && !k->nodes[bare].child[1]);
+    cc_kernel_free(k);
+}
+
 int main(void) {
     restricted_tubes();
     variables_on_a_face();
+    split_systems();
     printf("face entries: ok\n");
     return 0;
 }

@@ -176,7 +176,12 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
     is `b` on each clause of `φ`, compared as they are, as weak heads, part
     by part under a common head, or as normal forms, with nothing else
     reduced; the `unglue` is the base's weak head, or what a nested Glue step
-    exposes).
+    exposes), or `Split` (a composition's system written one clause to a
+    tube: a tube on a face of several clauses becomes one tube per clause,
+    each the same term, and a tube on the face 0 goes; CCHM's systems are
+    partial elements, the same whichever clauses their faces are written in,
+    and a substitution of a compound point, `p @ (i ∧ j)`, leaves a tube on
+    `i = 0 ∨ j = 0` where a derivation has one tube per clause).
   - `Replace(eq, side, position, a ≡ b)` swaps a highlighted occurrence of `a`
     for `b`: a targeted definitional-equality rewrite. When `a` or `b` uses a
     name bound on the way down, the given equality must have that name as a
@@ -428,9 +433,14 @@ in [learned-search.md](learned-search.md).
 
 **Branch points.** Each time round, `agree` stops at a branch point and lists the
 moves open there: normalize both sides (a long closed computation, once per
-comparison), descend by congruence, a weak-head step on either side or both
+comparison), split a side's composition where two compositions' tubes are
+on different faces and its tubes are not one clause each (the split move,
+first), descend by congruence, a weak-head step on either side or both
 (beta, iota, path, face or delta), a side's weak head normal form, eta, or,
-last, a `Glue` step on a side that is a Glue term (the glue move). The list
+last, a `Glue` step on a side that is a Glue term (the glue move). Normal
+forms keep each system's faces as written, so when a conversion falls back
+to normal forms that differ and either has a tube on several clauses, it
+compares them once more, where the split move applies. The list
 is syntactic; the kernel checks the rest when a move is made. A
 policy (`heuristicPolicy` and the interface beside it) ranks the moves,
 and the driver makes them in that order until one applies. The default

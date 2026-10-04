@@ -296,6 +296,15 @@ static cc_term contract(cc_kernel *k, cc_term term, cc_step_rule rule) {
         return ck_fail(k, "A Glue step needs glue [φ ↦ t] (unglue b) whose two Glue types agree, and whose t is b on φ, "
                           "after normalization."), 0;
     }
+    case CC_STEP_SPLIT:
+        if (n.kind == CC_COMP || n.kind == CC_HCOMP) {
+            cc_term system = ck_clause_tubes(k, n.child[1], true);
+            if (k->error[0])
+                return 0;
+            if (system != n.child[1])
+                return ck_make(k, n.kind, n.payload, n.child[0], system, n.child[2], n.child[3]);
+        }
+        return ck_fail(k, "A split step needs a composition with a tube on a face of several clauses, or on the face 0."), 0;
     }
     return ck_fail(k, "Unknown step rule."), 0;
 }

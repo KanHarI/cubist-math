@@ -15,6 +15,42 @@ cc_term ck_append_tube(cc_kernel *k, cc_term system, cc_formula_id face, cc_term
     return ck_make(k, CC_TUBE, tube.payload, tube.child[0], tail, 0, 0);
 }
 
+/* A system written one clause to a tube: a tube on a face of several
+ * clauses becomes one tube per clause, in the face's order, each the same
+ * term, and a tube on the face 0 goes. A tube's term is a partial element on
+ * its whole face, so on each clause of it, and on the face 0 it is never
+ * used: [φ ∨ ψ ↦ u, 0 ↦ v] and [φ ↦ u, ψ ↦ u] are one partial element
+ * (CCHM §4.1), whose overlap φ ∧ ψ agrees, u with itself. The system as it
+ * was when nothing changes. */
+cc_term ck_clause_tubes(cc_kernel *k, cc_term system, bool drop_empty) {
+    if (!system)
+        return 0;
+    cc_node tube = k->nodes[system];
+    cc_term tail = ck_clause_tubes(k, tube.child[1], drop_empty);
+    if (k->error[0])
+        return 0;
+    const cc_formula *stored = cc_kernel_get_formula(k, tube.payload);
+    if (!stored || stored->sort != CC_FACE)
+        return ck_fail(k, "Unchecked composition face reached reduction."), 0;
+    if (!stored->length && drop_empty)
+        return tail;
+    if (stored->length <= 1)
+        return tail == tube.child[1] ? system : ck_make(k, CC_TUBE, tube.payload, tube.child[0], tail, 0, 0);
+    /* Interning a clause can move the stored formulas: copy the face first. */
+    cc_formula face;
+    cc_init(&face, CC_FACE);
+    if (cc_copy(&face, stored) != CC_OK)
+        return ck_fail(k, "Face copy failed."), 0;
+    for (size_t c = face.length; c-- > 0 && !k->error[0];) {
+        cc_formula clause = {CC_FACE, &face.clauses[c], 1, 1};
+        cc_formula_id id = ck_formula(k, &clause);
+        if (id)
+            tail = ck_make(k, CC_TUBE, id, tube.child[0], tail, 0, 0);
+    }
+    cc_clear(&face);
+    return k->error[0] ? 0 : tail;
+}
+
 static cc_term remove_empty_tubes(cc_kernel *k, cc_term system) {
     if (!system)
         return 0;
