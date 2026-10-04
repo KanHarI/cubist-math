@@ -36,6 +36,15 @@ export function parse(source, typeOnly = false) {
   }
   // A binding gives a name its value with `:=`; `=` is the equality type.
   const binds = () => peek() === ":=";
+  // Implicit parameters and arguments are in double braces, {{ … }}: two
+  // braces with nothing between them, which no block or clause list starts
+  // with. Inside them, }} closes the group.
+  const doubleBrace = () => peek() === "{" && ts[i + 1].text === "{" && ts[i].end === ts[i + 1].start;
+  const closeDoubleBrace = (first = take("}")) => {
+    if (peek() !== "}" || ts[i].start !== first.end)
+      throw Object.assign(new Error("Close double braces with }}, two braces together."), { offset: first.start });
+    return { first, last: take("}") };
+  };
   function define(form) {
     if (binds()) return take();
     throw Object.assign(new Error(`Write := to give a value: ${form}`), { offset: ts[i].start });
@@ -165,19 +174,38 @@ export function parse(source, typeOnly = false) {
       const value = expr();
       return { kind: "namedArgument", name: parameter, value, start: parameter.start, end: value.end };
     };
+    // A call's arguments in parentheses, and where they end.
+    const callArguments = () => {
+      take("(");
+      const args = [];
+      if (peek() !== ")") {
+        args.push(argument());
+        while (peek() === ",") {
+          take(",");
+          args.push(argument());
+        }
+      }
+      return { args, end: take(")").end };
+    };
     while (true) {
       if (peek() === "(") {
-        take("(");
-        const args = [];
-        if (peek() !== ")") {
-          args.push(argument());
-          while (peek() === ",") {
-            take(",");
-            args.push(argument());
-          }
+        const { args, end } = callArguments();
+        a = { kind: "call", fn: a, args, start: a.start, end };
+        continue;
+      }
+      // Implicit arguments by position, f{{U0, Nat}}(x) (L4.1b): a double
+      // brace group after a name, then the call's own arguments, if any.
+      if (a.kind === "name" && doubleBrace()) {
+        const open = take("{"), inner = take("{"), implicitArgs = [expr()];
+        while (peek() === ",") {
+          take(",");
+          implicitArgs.push(expr());
         }
-        const end = take(")");
-        a = { kind: "call", fn: a, args, start: a.start, end: end.end };
+        const { first, last } = closeDoubleBrace();
+        const { args, end } = peek() === "(" ? callArguments() : { args: [], end: last.end };
+        a = { kind: "call", fn: a, args, implicitArgs,
+          implicitGroup: { opens: [open.start, inner.start], closes: [first.end, last.end], start: open.start, end: last.end },
+          start: a.start, end };
         continue;
       }
       // A qualified name, T.squash, is tight too: a name, a dot and a name.
@@ -878,13 +906,13 @@ export function parse(source, typeOnly = false) {
     const n = name(),
       params = [];
     // A declaration's parameter list, `(n, m : Nat, U < UU0)` or, before it,
-    // the implicit ones, `{U < UU0, A : U}`, which a call fills as holes
-    // unless it names them (L4.1b).
+    // the implicit ones, `{{U < UU0, A : U}}`, which a call fills as holes
+    // unless it gives them (L4.1b).
     const telescope = (close, implicit) => {
       if (peek() !== close) {
         while (true) {
           const names = sharedNames();
-          const { type, bound } = binderType(implicit ? "{U < UU0, A : U}" : "(U < UU0, A : U)");
+          const { type, bound } = binderType(implicit ? "{{U < UU0, A : U}}" : "(U < UU0, A : U)");
           const group = params.length;
           for (const p of names) params.push({ name:p, ...(bound ? { bound } : { type }), group, ...(implicit ? { implicit } : {}) });
           if (peek() !== ",") break;
@@ -894,10 +922,12 @@ export function parse(source, typeOnly = false) {
       return take(close);
     };
     let implicitParameters = null;
-    if (peek() === "{") {
-      const open = take("{");
-      implicitParameters = { start: open.start, end: telescope("}", true).end };
-    }
+    if (doubleBrace()) {
+      const open = take("{"), inner = take("{");
+      const { first, last } = closeDoubleBrace(telescope("}", true));
+      implicitParameters = { opens: [open.start, inner.start], closes: [first.end, last.end], start: open.start, end: last.end };
+    } else if (peek() === "{")
+      throw Object.assign(new Error("Implicit parameters are in double braces: def f{{U < UU0, A : U}}(…)."), { offset: ts[i].start });
     const header = implicitParameters ? { implicitParameters } : {};
     if (!params.length && binds()) {
       take();

@@ -53,3 +53,15 @@ def needs_type := nil;
 
 // Error: E606: Type mismatch: found forall U < UU0. U -> U, expected U0.
 def needs_arguments : U0 := List;
+
+// A declared type names its parameters apart, and each constructor its
+// arguments.
+// Error: E568: SameParameter has two parameters named A: give each its own name.
+inductive SameParameter(A : U0, A : U0) {
+  mk(a : A);
+}
+
+// Error: E569: pair has two arguments named x: give each its own name.
+inductive SameField {
+  pair(x : N, x : N);
+}

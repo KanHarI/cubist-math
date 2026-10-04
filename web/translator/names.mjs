@@ -52,3 +52,10 @@ export const printedForms = name => [...new Set([name, stem(name)].flatMap(form 
 // A name the display shows as it is wherever it occurs: its own stem and
 // local name, and no numbered name.
 export const printsAsItself = name => stem(name) === name && localName(name) === name && !/\d$/.test(name);
+// The first parameter whose name an earlier one has, or null: a declaration
+// names its parameters apart, since a call may give each one by its name. _
+// names none.
+export const repeatedName = params => {
+  const seen = new Set();
+  return params.find(p => p.name.text !== "_" && seen.size === seen.add(p.name.text).size) ?? null;
+};

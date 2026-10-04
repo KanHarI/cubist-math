@@ -387,12 +387,18 @@ export class NativeCubicalElaborator {
     return error;
   }
   // Definitions show their source names, without the module prefix, and
-  // assumptions their labels.
+  // assumptions their labels. A definition with implicit parameters says how
+  // many, and how many assumptions come before them, so that a call shows
+  // them in double braces, as the source writes it.
   get displayNames() {
     return this.displaySymbols ??= new Proxy({}, { get: (_, name) => typeof name !== "string" ? undefined
       : this.assumptionLabels.has(name) ? { name: this.assumptionLabels.get(name), kind: "axiom" }
       : this.kernel.signatures?.has(name) ? this.signatureDisplay(name)
-      : localName(name) !== name ? { name: localName(name) } : undefined });
+      : localName(name) !== name ? { name: localName(name), ...this.implicitDisplay(name) } : undefined });
+  }
+  implicitDisplay(name) {
+    const view = this.definitionViews.get(name), implicit = view?.parameters?.filter(parameter => parameter.implicit).length;
+    return implicit ? { implicit, assumed: view.assumptions.size } : {};
   }
   // A declared type's name and its constructors, each with its numbers of
   // data, positions and dimensions, so that the printer can show the type's

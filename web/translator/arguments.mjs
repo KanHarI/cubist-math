@@ -2,8 +2,9 @@
 // argument's place, and a named argument `x := e`, which gives the parameter
 // x: the parameters before it that no argument gives are holes too, and those
 // after the last one given are left to a later application, as in f(a). A
-// definition's implicit parameters, `def f{A : U}(x : A)`, are never given by
-// position: before the last argument given, each is a hole unless named.
+// definition's implicit parameters, `def f{{A : U}}(x : A)`, are not given
+// among its other arguments: before the last argument given, each is a hole
+// unless double braces after the name, f{{Nat}}(x), or its name give it.
 //
 // A universe argument that is a hole is the least universe the call needs:
 // the largest of the universes its arguments' types say it must contain, or
@@ -31,9 +32,10 @@ import {INDUCTIVE_TAGS} from "./inductive.mjs";
 import {stem} from "./names.mjs";
 
 export const isHole = node => node?.kind === "name" && node.name === "_";
-// Whether a call needs this elaboration: it has a hole or a named argument.
+// Whether a call needs this elaboration: it has a hole, a named argument or
+// implicit arguments in braces.
 export const determinesArguments = node =>
-  node.kind === "call" && node.args.some(arg => arg.kind === "namedArgument" || isHole(arg));
+  node.kind === "call" && (!!node.implicitArgs || node.args.some(arg => arg.kind === "namedArgument" || isHole(arg)));
 
 // Placeholders for parameters' values, numbered apart from every name supply.
 let placeholders = 0;
@@ -57,7 +59,8 @@ function sourceParameters(t, head) {
 
 // What a call's arguments give, parameter by parameter: a written argument,
 // a hole, an omitted parameter (before the last one given), or nothing more.
-// Arguments without names fill the explicit parameters no name gives, in
+// Arguments in double braces fill the implicit parameters, in order;
+// arguments without names fill the explicit parameters no name gives, in
 // order, and then whatever the result takes.
 function assign(n, parameters, unit, called) {
   const positional = [], named = new Map(), names = parameters?.map(parameter => parameter.name);
@@ -69,15 +72,27 @@ function assign(n, parameters, unit, called) {
     const index = names.indexOf(name);
     if (index < 0)
       throw unit.locate(Error(`${called} has no parameter ${name}; its parameters are ${names.join(", ")}.`), arg.name);
-    if (names.lastIndexOf(name) !== index)
-      throw unit.locate(Error(`${called} has two parameters named ${name}: give them by position.`), arg.name);
     if (named.has(index)) throw unit.locate(Error(`The argument ${name} is given twice.`), arg.name);
     named.set(index, arg.value);
+  }
+  const braced = new Map();
+  if (n.implicitArgs) {
+    const implicit = parameters?.flatMap((parameter, index) => parameter.implicit ? [index] : []) ?? [];
+    if (!implicit.length)
+      throw unit.locate(Error(`${called} has no implicit parameters: give its arguments in parentheses, as ${called}(…).`), n.implicitArgs[0]);
+    if (n.implicitArgs.length > implicit.length)
+      throw unit.locate(Error(`${called} has ${implicit.length} implicit parameter${implicit.length === 1 ? "" : "s"}, ${
+        implicit.map(index => names[index]).join(", ")}; the double braces give ${n.implicitArgs.length}.`), n.implicitArgs[implicit.length]);
+    n.implicitArgs.forEach((arg, k) => {
+      if (named.has(implicit[k])) throw unit.locate(Error(`The argument ${names[implicit[k]]} is given twice.`), arg);
+      braced.set(implicit[k], arg);
+    });
   }
   const given = new Map(), count = parameters?.length ?? 0;
   let next = 0;
   for (let index = 0; index < count; index++) {
     if (named.has(index)) given.set(index, named.get(index));
+    else if (braced.has(index)) given.set(index, braced.get(index));
     else if (!parameters[index].implicit && next < positional.length) given.set(index, positional[next++]);
   }
   for (let index = count; next < positional.length; index++) given.set(index, positional[next++]);
@@ -92,6 +107,12 @@ export function elaborateCall(t, n, scope, expected) {
   const headName = n.fn.kind === "name" ? n.fn.name : null;
   const called = headName ?? "This function";
   const bound = headName ? env.get(headName) : undefined;
+  if (n.implicitArgs) {
+    if (headName && !env.has(headName) || INDUCTIVE_TAGS.has(bound?.tag))
+      throw unit.locate(Error(`${headName} has no implicit parameters: give its arguments in parentheses, as ${headName}(…).`), n.fn);
+    if (bound?.tag === "Recursive")
+      throw unit.locate(Error(`A recursive call of ${headName} passes its implicit parameters unchanged: give only the others, as ${headName}(…).`), n.fn);
+  }
   if (determinesArguments(n)) {
     if (headName && !env.has(headName))
       throw unit.locate(Error(`${headName} takes its arguments explicitly: a hole _ or a named argument is an argument of a definition or a function.`), n.fn);
@@ -139,7 +160,7 @@ export function elaborateCall(t, n, scope, expected) {
       const implicit = parameters?.filter(parameter => parameter.implicit).map(parameter => parameter.name) ?? [];
       const explicit = index - implicit.length;
       throw unit.locate(Error(!index ? "Source application is not a function."
-        : implicit.length ? `${called} takes ${explicit} argument${explicit === 1 ? "" : "s"} by position; give its implicit parameters ${implicit.join(", ")} by name, as ${implicit[0]} := ….`
+        : implicit.length ? `${called} takes ${explicit} argument${explicit === 1 ? "" : "s"} by position; give its implicit parameters ${implicit.join(", ")} in double braces, as ${called}{{…}}(…), or by name, as ${implicit[0]} := ….`
         : `${called} takes ${index} argument${index === 1 ? "" : "s"}; this is one more.`), site);
     }
     // A name no source or name supply spells, so that a call without holes

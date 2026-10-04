@@ -427,9 +427,11 @@ Delivered here ahead of that work: `path i =>`, `p @ i`, `ext x;`,
   families are impractical without implicit indices, as in
   `cons(x, k + n, append(A, k, n, rest, ys))`.
 - [x] Add opt-in implicit binders, and infer level arguments where
-  constraints determine them. Delivered on 2026-10-04 as L4.1b: braces
-  before a definition's parameter list, and a universe hole as the least
-  universe the call needs. After G0, universes are level expressions, and
+  constraints determine them. Delivered on 2026-10-04 as L4.1b: double
+  braces before a definition's parameter list, `def f{{A : U}}(…)`, and
+  after a definition's name at a call, `f{{Nat}}(x)`, which supplies the
+  implicit arguments explicitly; and a universe hole as the least universe
+  the call needs. After G0, universes are level expressions, and
   this item absorbs HoTT A9. Retain a way to supply every implicit argument
   explicitly. Reject ambiguous inference and universe lowering. This is
   L4.1b; it follows L4.1a and G0 without waiting for indexed-family kernels.
