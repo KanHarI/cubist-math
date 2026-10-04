@@ -1,5 +1,6 @@
-// From tests/algebraic-extensions.test.mjs: The formal F2 polynomial
-// computes the two F4 roots and rejects zero as a root.
+// From tests/algebraic-extensions.test.mjs: zero is no root of the formal F2
+// polynomial whose roots in F4 are 2 and 3, and the root lemma for 2 does
+// not stand for it.
 import f4_formal_polynomial;
 // Error: K338: Kernel checking/reduction budget exhausted.
 def zero_is_a_root : PolynomialRoot(F2, F4, f2_f4_embedding, f2_quadratic, f4_0) {

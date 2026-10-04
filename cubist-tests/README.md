@@ -154,9 +154,7 @@ workbench's Kernel graph.
 | [`program_unused_generic`](program_unused_generic.cubist) | Unused generic definitions, whose locals inspect and replay under the universe binder. |
 | [`program_untyped_generic`](program_untyped_generic.cubist) | Untyped lambdas, refused in generic definitions and ordinary ones, without stopping later declarations. |
 | [`wasm_binary_literal`](wasm_binary_literal.cubist) | The binary naturals checked in WASM, and a false binary literal equation refused. |
-| [`wasm_factorials`](wasm_factorials.cubist) | The manual factorial sources, whose checked definitions `tests/cubical-wasm.test.mjs` measures. |
 | [`wasm_bad_factorial`](wasm_bad_factorial.cubist) | A false factorial value, refused. |
-| [`wasm_factorial_theorem`](wasm_factorial_theorem.cubist) | The Nat factorial theorem, without a million-successor expression. |
 | [`wasm_invalid_paths`](wasm_invalid_paths.cubist) | Paths, compositions and pushout eliminations with wrong boundaries, refused. |
 | [`wasm_moving_maps`](wasm_moving_maps.cubist) | A path constructor of the declared pushout transported along changing maps, with its boundary corrected. |
 | [`wasm_suspension_use`](wasm_suspension_use.cubist) | Suspension induction through a proved PathP bridge. |
@@ -166,10 +164,8 @@ workbench's Kernel graph.
 | [`dimension_degree_regression`](dimension_degree_regression.cubist) | Extension degree: positive, one for the identity, invariant under extension equality. |
 | [`dimension_tower_regression`](dimension_tower_regression.cubist) | The product basis and the numerical tower law, for arbitrary fields and a commuting triangle. |
 | [`dimension_invalid`](dimension_invalid.cubist) | Dimension chooses no basis, keeps linearity and a tower's embedding: four refusals. |
-| [`algebraic_extensions_algebraic_milestones`](algebraic_extensions_algebraic_milestones.cubist) | Finite algebraic extensions, actual splitting fields, normality and general separable embedding counts are checked. |
-| [`algebraic_extensions_formal_f4_regression`](algebraic_extensions_formal_f4_regression.cubist) | The formal F2 polynomial computes the two F4 roots and rejects zero as a root. |
-| [`algebraic_extensions_invalid_embedding_claims`](algebraic_extensions_invalid_embedding_claims.cubist) | Finite algebraic extensions, actual splitting fields, normality and general separable embedding counts are checked. |
-| [`algebraic_extensions_invalid_f4_root`](algebraic_extensions_invalid_f4_root.cubist) | The formal F2 polynomial computes the two F4 roots and rejects zero as a root. |
+| [`algebraic_extensions_invalid_embedding_claims`](algebraic_extensions_invalid_embedding_claims.cubist) | Embedding claims the archive does not make, refused: into a target that is not algebraically closed, and one embedding for every separable extension. |
+| [`algebraic_extensions_invalid_f4_root`](algebraic_extensions_invalid_f4_root.cubist) | Zero is no root of the formal F2 polynomial whose F4 roots are 2 and 3. |
 | [`finite_spanning_finite_tower_regression`](finite_spanning_finite_tower_regression.cubist) | Arbitrary finite subspaces have bases and finiteness descends both ways in a tower. |
 | [`finite_spanning_invalid_spanning`](finite_spanning_invalid_spanning.cubist) | Finite extraction does not choose a basis or equate finiteness with independence. |
 | [`finite_spanning_spanning_regression`](finite_spanning_spanning_regression.cubist) | Finite spanning families contain an indexed subfamily basis without choice. |
@@ -208,7 +204,7 @@ workbench's Kernel graph.
 | [`glue_printed`](glue_printed.cubist) | A Glue line as the printer shows it, written back: it checks, and equals the line. |
 | [`admission_two`](admission_two.cubist) | Definitions whose admission and derivation `tests/instruction-admission.test.mjs` watches. |
 | [`reduction_demo`](reduction_demo.cubist) | Declarations that `tests/cubical-reduction.test.mjs` reduces by delta and beta steps. |
-| [`f4_extension_loops`](f4_extension_loops.cubist) | The F4 extension's loop type equals C2, through the archive's axiom-free lemmas. |
+| [`f4_extension_loops`](f4_extension_loops.cubist) | The F4 extension's loop type equals C2: each lemma of the archive that says so is computable. |
 | [`f4_extension_loops_false`](f4_extension_loops_false.cubist) | The two-loop equality certifies no one-element loop type. |
 | [`fingerprint_fixture`](fingerprint_fixture.cubist) | Declarations whose elaboration fingerprints `tests/elaboration-fingerprint.test.mjs` takes and compares after edits. |
 | [`documentation_helper`](documentation_helper.cubist) | An imported definition documented by its comment. |

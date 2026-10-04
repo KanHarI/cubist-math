@@ -1,8 +1,0 @@
-// From tests/cubical-wasm.test.mjs: native elaboration checks all manual
-// factorial sources, retaining checked definitions small enough to check
-// again, which tests/cubical-wasm.test.mjs measures.
-import binary_arithmetic;
-import binary_induction;
-import radix_factorial;
-
-def retained : Unit := tt;

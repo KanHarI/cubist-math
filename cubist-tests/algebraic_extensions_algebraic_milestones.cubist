@@ -1,9 +1,0 @@
-// From tests/algebraic-extensions.test.mjs: Finite algebraic extensions,
-// actual splitting fields, normality and general separable embedding counts
-// are checked.
-import embedding_counts;
-import normal_extensions;
-import finitely_generated_algebraic;
-def checked : Unit {
-  exact tt;
-}

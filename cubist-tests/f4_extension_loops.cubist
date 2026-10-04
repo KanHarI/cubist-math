@@ -1,8 +1,25 @@
-// From tests/f4-extension-loops.test.mjs: the extension's identity type
-// equals C2, with the specified transport and group law, all axiom-free
-// (tests/f4-extension-loops.test.mjs checks the archive's lemmas).
+// From tests/f4-extension-loops.test.mjs: the F4 extension's identity type
+// equals C2, with the specified transport and group law, and each lemma of
+// the archive's f4_galois_group that says so computes: it uses no assumption.
 import f4_galois_group;
 
-def checked : Unit {
-  exact tt;
-}
+computable def automorphisms_equal_loops := f4_automorphisms_equal_loops;
+
+computable def extension_loops_equal_cyclic_two := f4_extension_loops_equal_cyclic_two;
+
+computable def extension_loop_equality_action := f4_extension_loop_equality_action;
+
+computable def loop_zero := f4_loop_zero;
+
+computable def loop_one := f4_loop_one;
+
+computable def loop_bit_roundtrip := f4_loop_bit_roundtrip;
+
+computable def extension_loop_roundtrip := f4_extension_loop_roundtrip;
+
+computable def loop_bit_concatenate := f4_loop_bit_concatenate;
+
+computable def extension_loop_group_is_cyclic_two := f4_extension_loop_group_is_cyclic_two;
+
+computable def extension_fundamental_group_is_cyclic_two :=
+  f4_extension_fundamental_group_is_cyclic_two;

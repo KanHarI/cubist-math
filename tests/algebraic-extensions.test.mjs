@@ -13,10 +13,19 @@ const module = await createCubical();
 const cases = (t, name) => checkTestModule(t, name, { module, options: { collectReferences: false } });
 const readSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
 const allowed = /^(LEM|Truncate(?:Intro|Prop|Elim)?)$/;
+// Archive modules, each checked as a program's main module.
+async function archive(t, ...names) {
+  const p = new CubicalProgram(module, readSource, { collectReferences: false });
+  t.after(() => p.dispose());
+  for (const name of names) {
+    const result = await p.check(await readSource(name), name);
+    assert.equal(result.complete, true, `${name}: ${JSON.stringify(result.gaps)}`);
+  }
+  return p;
+}
 
 test("finite algebraic extensions, actual splitting fields, normality and general separable embedding counts are checked", async t => {
-  const { program: p, result } = await cases(t, "algebraic_extensions_algebraic_milestones");
-  assert.equal(result.complete, true, JSON.stringify(result.gaps));
+  const p = await archive(t, "embedding_counts", "normal_extensions", "finitely_generated_algebraic");
   for (const name of [
     "minimal_polynomials__minimal_polynomial_irreducible",
     "finite_algebraic_extensions__finite_extension_algebraic",
@@ -47,8 +56,7 @@ test("finite algebraic extensions, actual splitting fields, normality and genera
 });
 
 test("the formal F2 polynomial computes the two F4 roots and rejects zero as a root", async t => {
-  const { program: p, result } = await cases(t, "algebraic_extensions_formal_f4_regression");
-  assert.equal(result.complete, true, JSON.stringify(result.gaps));
+  const p = await archive(t, "f4_formal_polynomial");
   for (const name of ["f2_quadratic_alpha_root", "f2_quadratic_other_root", "f2_quadratic_nonzero", "f2_quadratic_roots_distinct"])
     assert.equal(p.symbols[`f4_formal_polynomial__${name}`]?.verified, true, name);
   const { result: invalid } = await cases(t, "algebraic_extensions_invalid_f4_root");

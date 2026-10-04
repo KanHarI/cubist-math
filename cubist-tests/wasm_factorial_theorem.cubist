@@ -1,5 +1,0 @@
-// From tests/cubical-wasm.test.mjs: the existing Nat factorial theorem
-// checks cubically without a million-successor expression.
-import binary_arithmetic_correct;
-
-def retained : Unit := tt;

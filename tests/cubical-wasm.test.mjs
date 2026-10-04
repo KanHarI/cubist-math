@@ -40,6 +40,16 @@ function derive(k, raw, expected = 0, assumptions = [], mask = 0n) {
   return { expression: term, type };
 }
 // The same for syntax with names and dimensions, as the elaborator checks it.
+// Archive modules, each checked as a program's main module.
+async function archive(t, ...names) {
+  const program = new CubicalProgram(producerModule, sourceReader(), { collectReferences: false });
+  t.after(() => program.dispose());
+  for (const name of names) {
+    const result = await program.check(await sourceReader()(name), name);
+    assert.equal(result.complete, true, `${name}: ${JSON.stringify(result.gaps)}`);
+  }
+  return program;
+}
 const elaborate = (k, term, type = null, context = [], dimensions = new Map()) =>
   new NativeCubicalElaborator(k).checkSyntax(term, type, new Map(context), dimensions);
 
@@ -141,7 +151,7 @@ test("the kernel computes transport through Glue without a univalence axiom", t 
 });
 
 test("native elaboration checks all manual factorial sources while retaining checked definitions", async t => {
-  const { program } = await checkTestModule(t, "wasm_factorials", { module: producerModule, options: { collectReferences: false } });
+  const program = await archive(t, "binary_arithmetic", "binary_induction", "radix_factorial");
   for(const name of ["binary_arithmetic__binary_factorial_ten", "radix_factorial__radix_factorial_ten_base_two", "radix_factorial__radix_factorial_ten_base_ten"]) {
     const view=program.inspect(name),checked=program.checker.checkView(view.expression,view.type);
     assert.ok(checked.arenaNodes<500000 && checked.arenaBytes<32*1024*1024);
@@ -149,7 +159,7 @@ test("native elaboration checks all manual factorial sources while retaining che
 });
 
 test("the existing Nat factorial theorem checks cubically without a million-successor expression",async t=>{
-  const { program } = await checkTestModule(t, "wasm_factorial_theorem", { module: producerModule, options: { collectReferences: false } });
+  const program = await archive(t, "binary_arithmetic_correct");
   const view=program.inspect("binary_arithmetic_correct__factorial_ten_from_binary"),checked=program.checker.checkView(view.expression,view.type);
   assert.ok(checked.arenaNodes<500000 && checked.arenaBytes<32*1024*1024);
 });
