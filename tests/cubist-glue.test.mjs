@@ -3,25 +3,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { checkTestModule, checkProgram } from "./check-program.mjs";
 import { ReplSession } from "../web/repl-session.mjs";
-import { diagnosticCode } from "../web/diagnostics.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 
-// Glue types, glue and unglue in Cubist source (cubist-tests/glue.cubist).
-test("Glue, glue and unglue check, and each misuse is refused with its code", async t => {
-  const { verdicts, get } = await checkTestModule(t, "glue");
-  for (const name of ["glued_line", "unglue_glue", "glued_ends"]) assert.equal(verdicts[name], true, `${name}: ${verdicts[name]}`);
-  const refused = {
-    not_an_equivalence: /^Type mismatch: found A -> A, expected exists /,
-    misplaced_value: /^Instruction kernel: A Glue value's image disagrees with the base\./,
-    untyped_glue: /^glue needs the Glue type it builds an element of: write typed\(Glue\(…\), glue\(…\)\)\.$/,
-    unglue_a_point: /^unglue takes an element of a Glue type\.$/,
-  };
-  for (const [name, reason] of Object.entries(refused)) {
-    assert.match(get(name).reason, reason, name);
-    assert.equal(get(name).code, diagnosticCode(get(name).reason), name);
-  }
-});
-
+// Glue types, glue and unglue in Cubist source (cubist-tests/glue.cubist,
+// whose comments state each refusal: tests/cubist-tests.test.mjs).
 // A printed path carries no type: the declaration gives it.
 test("a Glue line prints as the source writes it, and the printed source checks", async t => {
   const { program } = await checkTestModule(t, "glue");

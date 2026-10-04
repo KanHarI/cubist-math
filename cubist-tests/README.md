@@ -8,14 +8,25 @@ workbench's Kernel graph.
 - Every module is listed in `cubistTestModules` in
   [`web/cubist/modules.mjs`](../web/cubist/modules.mjs), and
   `tests/cubist-tests.test.mjs` checks that every file is.
-- A module's JavaScript test checks it with `checkTestModule` from
-  [`tests/check-program.mjs`](../tests/check-program.mjs), and looks its
+- Every error and warning a module's check reports is a comment directly
+  above the declaration or directive it belongs to, as
+  `// Error: E606: Type mismatch: …` or `// Warning: W704: …`.
+  `npm run inline-errors` writes them
+  ([`tools/inline-errors.mjs`](../tools/inline-errors.mjs)), and
+  `tests/cubist-tests.test.mjs` checks that they are exactly what the
+  checker reports: a case that checks states nothing, and a refused case
+  states its reason. A `// Refused: …` note above a case says why, in words;
+  the tool keeps every comment but its own.
+- A module's JavaScript test, where it has one, checks what a verdict does
+  not show (an evaluation, the fuel spent, the goals shown), with
+  `testModule` or `checkTestModule` from
+  [`tests/check-program.mjs`](../tests/check-program.mjs), looking
   declarations up by name.
 - A test module imports other test modules, then the library, then the
   archive (`web/module-resolution.mjs`). Nothing else imports a test module.
-- A case meant to be refused is a declaration like any other; its test says
-  which reason, and which code, it is refused with. A module may hold what
-  the linter flags, so `npm run lint:cubist` lints the library only.
+- A case meant to be refused is a declaration like any other. A module may
+  hold what the linter flags, so `npm run lint:cubist` lints the library
+  only.
 
 | Module | Cases |
 | --- | --- |

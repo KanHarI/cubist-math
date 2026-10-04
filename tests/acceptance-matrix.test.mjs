@@ -66,7 +66,7 @@ function matrix(text, source, groups = prefixes) {
   const defined = new Set([...text.matchAll(new RegExp(`^\\| ([${groups}]\\d+) \\|`, "gm"))].map(match => match[1]));
   const coverage = section(text, coverageHeading);
   const introduction = coverage.slice(0, coverage.indexOf("\n|"));
-  const testFiles = [...introduction.matchAll(/`([^`]+\.(?:c|mjs))`/g)].map(match => match[1]).filter(path => path !== checker);
+  const testFiles = [...introduction.matchAll(/`([^`]+\.(?:c|mjs|cubist))`/g)].map(match => match[1]).filter(path => path !== checker);
   const sources = new Map(testFiles.map(path => [path, source(path)]));
   const namedIn = id => [...sources].filter(([, text]) => new RegExp(`\\b${id}(?!\\d|\\.[\\da-z])`).test(text)).map(([path]) => path);
   const rows = coverage.split("\n").filter(line => /^\| [A-Z][a-z]/.test(line) && !line.startsWith("| Group")).map(line => {
