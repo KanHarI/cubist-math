@@ -1,0 +1,44 @@
+// From tests/projections-let.test.mjs: P.1 and p.2 are the kernel's
+// projections, with the family read from the pair's type.
+// The pair's type may be a definition that computes to a pair type.
+
+def first_of(p : Nat and Unit) : Nat := p.1;
+
+def second_of(p : Nat and Unit) : Unit := p.2;
+
+def witness(A : U0, B : A -> U0, p : exists x : A. B(x)) : A := p.1;
+
+def evidence(A : U0, B : A -> U0, p : exists x : A. B(x)) : B(p.1) := p.2;
+
+def third(t : Nat and Unit and Nat) : Nat := t.2.2;
+
+def middle(t : Nat and Unit and Nat) : Unit := t.2.1;
+
+def applied(f : Nat -> Nat and (Nat -> Nat), n : Nat) : Nat := f(n).2(n);
+
+def swap(A, B : U0, p : A and B) : B and A := (p.2, p.1);
+
+def eta(A : U0, B : A -> U0, p : exists x : A. B(x)) : p = (p.1, p.2) := refl(p);
+
+def beta : typed(Nat and Unit, (3, tt)).1 = 3 := refl(3);
+
+def universe_generic(U < UU0, A : U, B : A -> U, p : exists x : A. B(x)) : A := p.1;
+
+// The pair's type may be a definition that computes to a pair type.
+def Pairing := Nat and Unit;
+
+def through_definition(p : Pairing) : Nat := p.1;
+
+def Box(U < UU0, A : U) := A and A;
+
+def through_generic_definition(U < UU0, A : U, b : Box(U, A)) : A := b.2;
+
+evaluate typed(Nat and Nat, (2, 5)).2 expecting 5;
+
+// Misused projections are rejected with precise messages, reported at the
+// projection itself.
+// Error: E349: Projection .1 requires a dependent pair; found a value of type Nat.
+def not_a_pair(n : Nat) : Nat := n.1;
+
+// Error: E349: Projection .2 requires a dependent pair; found a value of type Nat -> Nat.
+def function_projection(f : Nat -> Nat) : Nat := f.2;

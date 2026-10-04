@@ -47,3 +47,6 @@ workbench's Kernel graph.
 | [`program_types`](program_types.cubist) | Nat and W as source declarations, for `tests/program-types.test.mjs`: imported Nat's constructors, literals and elimination, W's dependent eliminator computing, and a W declaration at a fixed higher universe. |
 | [`program_types_nat_as_name`](program_types_nat_as_name.cubist) | Nat is an ordinary name, bound or shadowed. |
 | [`program_types_constructor_shadowing`](program_types_constructor_shadowing.cubist) | A declared type's zero and succ shadow Nat's constructors, not its literals. |
+| [`projections`](projections.cubist) | Projections p.1 and p.2 (L1.5, HoTT A8), for `tests/projections-let.test.mjs`: the kernel's projections with the family read from the pair's type, and misused projections. |
+| [`projections_archive_helpers`](projections_archive_helpers.cubist) | Projections convert to the archive's projection helpers (HoTT A8). |
+| [`let_statements`](let_statements.cubist) | let with a stated type and a proof block (HoTT B4): a restated goal, reasoning backwards, and the refusals. |
