@@ -358,7 +358,7 @@ def two := 2;  // Error: Expected ';', found 'def'.</code></pre>
 def pick_second(A, B : U0, x, y : A, b : B) := y;
 
 def picked := pick_second(Nat, Nat, 1, 2, 3);</code></pre>
-            <p>A declaration with parameters is a function of them. Every argument is written at each use: there are no implicit arguments, so <code>pick_second</code> takes both types explicitly, here <code>Nat</code> twice. Arguments can also be supplied a few at a time:</p>
+            <p>A declaration with parameters is a function of them. There are no implicit arguments, so <code>pick_second</code> takes both types, here <code>Nat</code> twice; an argument that the others determine can be a hole, <code>_</code> (<a href="terms.html#holes">holes</a>). Arguments can also be supplied a few at a time:</p>
             <pre><code data-check="accept">def first(A, B : U0, a : A, b : B) := a;
 
 def first_number := first(Nat, Nat, 5);
@@ -367,7 +367,7 @@ def five := first_number(7);</code></pre>
             <p><code>first_number</code> has type <code>Nat -> Nat</code>: it waits for the last argument. Supplying more arguments than a function takes is an error:</p>
             <pre><code data-check="reject">def pick_first(A, B : U0, a : A, b : B) := a;
 
-def too_many := pick_first(Nat, Nat, 1, 2, 3);  // Error: Source application is not a function.</code></pre>
+def too_many := pick_first(Nat, Nat, 1, 2, 3);  // Error: pick_first takes 4 arguments; this is one more.</code></pre>
             <p>Every parameter needs a type. After <code>x</code>, the parser expects a colon, or a comma and another name sharing the type. A universe variable has <code>&lt;</code> in place of the colon, as in <code>U &lt; UU0</code> (<a href="universes.html#universe-variables">chapter 5</a>):</p>
             <pre><code data-check="reject">def untyped_parameter(x) := x;  // Error: Expected ':' or '&lt;', found ')'</code></pre>
             <h3 id="statement-placement">Parameters or a quantified type</h3>

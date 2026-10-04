@@ -1511,6 +1511,10 @@
    "summary": "Zero is no root of the formal F2 polynomial whose F4 roots are 2 and 3."
   },
   {
+   "path": "cubist-tests/arguments.cubist",
+   "summary": "Holes `_` and named arguments `x := e` (L4.1a): holes solved from the arguments' types and the expected type, path endpoints, lambdas that wait for their type, nested holes, named arguments in any order and partial application, and the refusals: a hole nothing determines, a universe cumulativity leaves open, a solution that would mention a bound variable, universe holes, unknown or repeated names, builtins, constructors and local functions."
+  },
+  {
    "path": "cubist-tests/assembly_fixture.cubist",
    "summary": "Declarations whose kernel assembly `tests/cubical-assembly.test.mjs` lists."
   },

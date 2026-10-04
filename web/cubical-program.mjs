@@ -213,7 +213,7 @@ export class CubicalProgram {
       const define = this.checker.define.bind(this.checker);
       const checker = Object.create(this.checker);
       checker.bindingName = local => `${name}__${local}`;
-      checker.define = (local, term, type) => define(`${name}__${local}`, term, type);
+      checker.define = (local, term, type, parameters) => define(`${name}__${local}`, term, type, parameters);
       let pending = [];
       let transaction = null;
       const statements = [];

@@ -102,7 +102,7 @@ def successor_function := typed(Nat -&gt; Nat, fun n =&gt; succ(n));</code></pre
             <pre><code data-check="reject">def no_expected_type := fun x =&gt; x;  // Error: Untyped lambda requires an expected function type.</code></pre>
             <p>All typed binders go in one parenthesized list, separated by commas, as in parameters. An untyped binder stands alone: <code>fun x => fun y => …</code>.</p>
             <h3 id="currying">Currying</h3>
-            <p>A function of several parameters takes them one at a time. Its type is a chain of arrows, <code>A -> B -> C</code>, which reads <code>A -> (B -> C)</code>: given an <code>A</code>, it returns a function that waits for a <code>B</code>. This is called <strong>currying</strong>. So <code>f(a, b)</code> means <code>f(a)(b)</code>, and <code>f(a)</code> alone is a function waiting for the rest. Arguments can be supplied all at once, one at a time, or a few at a time; every argument is explicit.</p>
+            <p>A function of several parameters takes them one at a time. Its type is a chain of arrows, <code>A -> B -> C</code>, which reads <code>A -> (B -> C)</code>: given an <code>A</code>, it returns a function that waits for a <code>B</code>. This is called <strong>currying</strong>. So <code>f(a, b)</code> means <code>f(a)(b)</code>, and <code>f(a)</code> alone is a function waiting for the rest. Arguments can be supplied all at once, one at a time, or a few at a time; every argument is written, or is a <a href="#holes">hole</a> that the others determine.</p>
             <pre><code data-check="accept">import naturals;
 
 def apply_twice(A : U0, f : A -&gt; A, a : A) := f(f(a));
@@ -142,6 +142,26 @@ def swap_arguments(A : U0, P : A -&gt; A -&gt; U0, f : forall x, y : A. P(x, y))
   exact f(0);  // Error: Type mismatch: found P(0), expected P(1).
 }</code></pre>
             <p>Functions defined by cases, on <a href="#match">sums</a> below or on <a href="induction.html#match">inductive types</a>, use <code>match</code>. A function that calls itself on smaller values uses <a href="induction.html#recursion">structural recursion</a>.</p>
+            <h3 id="holes">Holes and named arguments</h3>
+            <p>An argument that the call's other arguments determine can be left as a <strong>hole</strong>, <code>_</code>. The elaborator reads it off the types of the other arguments and the type the call is expected to have, and the kernel checks the call as though the argument had been written. In <code>joined</code>, the carrier and the three endpoints come from the two paths:</p>
+            <pre><code data-check="accept">def concat(U &lt; UU0, A : U, x, y, z : A, p : x = y, q : y = z) : x = z := trans(p, q);
+
+def joined(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat(U0, _, _, _, _, p, q);</code></pre>
+            <p>A <strong>named argument</strong>, <code>x := e</code>, gives the parameter <code>x</code> of a definition. Each parameter before the last one given that no argument gives is a hole, and the arguments without names fill the other parameters in order. The parameters after the last one given are left for a later application, as in <code>f(a)</code>:</p>
+            <pre><code data-check="accept">def apply(U &lt; UU0, A, B : U, f : A -&gt; B, a : A) : B := f(a);
+
+def by_name(n : Nat) : Nat := apply(U0, a := n, f := fun x =&gt; succ(x));
+def successor : Nat -&gt; Nat := apply(U0, f := fun (x : Nat) =&gt; succ(x));</code></pre>
+            <p>In <code>by_name</code>, <code>A</code> and <code>B</code> are holes: <code>n</code> gives <code>A</code> and the expected type gives <code>B</code>. The untyped <code>fun x =&gt; succ(x)</code> waits for both, then is checked against <code>Nat -&gt; Nat</code>. Click a hole in the workspace to see what it became.</p>
+            <p>A hole is filled only by what determines it. Nothing is searched for, so a hole whose type has an inhabitant, such as a proof of <code>n = n</code>, is still refused. A universe argument is written out, and so are the arguments of a built-in form, such as <code>refl</code>, and of a constructor:</p>
+            <pre><code data-check="reject">def same(U &lt; UU0, A : U, a : A) : A := a;
+
+def no_search(n : Nat) : n = n := same(U0, n = n, _);  // Error: Nothing determines the parameter a of same, of type n = n: not the other arguments' types, nor the type expected of the call. Give it explicitly.
+def universe_hole(n : Nat) : Nat := same(_, Nat, n);  // Error: Give the universe U of same explicitly: a universe argument is not inferred.</code></pre>
+            <p>Cumulativity can leave a type open: <code>Nat</code> is in <code>U0</code>, and in every larger universe too. Where a larger universe would do as well, the hole is refused rather than guessed:</p>
+            <pre><code data-check="reject">def same(U &lt; UU0, A : U, a : A) : A := a;
+
+def universe_open := same(U2, _, Nat);  // Error: The parameter A of same is not determined: U0 fits, and so would a larger universe. Give it explicitly.</code></pre>
           </section>
           <section id="pairs">
             <h2>Pairs and dependent pairs</h2>

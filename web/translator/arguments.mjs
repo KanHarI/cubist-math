@@ -1,0 +1,417 @@
+// Arguments a call determines (work-plan L4.1a). A hole `_` in an argument's
+// place, and a named argument `x := e`, which gives the parameter x: the
+// parameters before it that no argument gives are holes too, and those after
+// the last one given are left to a later application, as in f(a).
+//
+// A hole is solved at its own call, from the types of the call's other
+// arguments and the type the call is expected to have, by first-order
+// unification that descends only where equality is equality of parts: type
+// formers, constructors and neutral terms. A definition is unfolded rather
+// than matched by its arguments, since a defined function need not be
+// injective. A solution is accepted only when it is determined: it mentions
+// neither the hole nor a variable bound inside the constraint, and it is not
+// a universe where cumulativity would admit a larger one as well. The kernel
+// checks every solution at its type, and every written argument is checked
+// against its parameter's type, as in a call without holes, so an unsolved
+// hole never reaches the kernel. Nothing is searched for: a hole is never
+// filled because some inhabitant of its type exists.
+import {T,finiteLevel,substituteTerm,substituteDimension,freeNames} from "./core.mjs";
+import {interval as I} from "./lattice.mjs";
+import {freeDimensions} from "./dimension-slots.mjs";
+import {INDUCTIVE_TAGS} from "./inductive.mjs";
+import {stem} from "./names.mjs";
+
+export const isHole = node => node?.kind === "name" && node.name === "_";
+// Whether a call needs this elaboration: it has a hole or a named argument.
+export const determinesArguments = node =>
+  node.kind === "call" && node.args.some(arg => arg.kind === "namedArgument" || isHole(arg));
+
+// Placeholders for parameters' values, numbered apart from every name supply.
+let placeholders = 0;
+
+// Running out of fuel, steps or time ends the elaboration that asked.
+const isLimit = error => ["fuel", "budget", "deadline"].includes(error?.kind);
+
+// The source names of a definition's own parameters, recorded when it was
+// declared, or null: a function that is not a definition has none.
+function sourceParameters(t, head) {
+  let core = head;
+  // The assumptions a definition uses are applied to it already (define).
+  while (core.tag === "App") core = core.fn;
+  return core.tag === "DefRef" ? t.checker.definitionViews?.get(core.name)?.parameters ?? null : null;
+}
+
+// What a call's arguments give, parameter by parameter: a written argument,
+// a hole, an omitted parameter (before a named one), or nothing more.
+function assign(n, parameters, unit, called) {
+  const positional = [], named = new Map();
+  for (const arg of n.args) {
+    if (arg.kind !== "namedArgument") { positional.push(arg); continue; }
+    const name = arg.name.text;
+    if (!parameters)
+      throw unit.locate(Error(`${called} has no named parameters: a named argument gives a parameter that a definition declares.`), arg.name);
+    const index = parameters.indexOf(name);
+    if (index < 0)
+      throw unit.locate(Error(`${called} has no parameter ${name}; its parameters are ${parameters.join(", ")}.`), arg.name);
+    if (parameters.lastIndexOf(name) !== index)
+      throw unit.locate(Error(`${called} has two parameters named ${name}: give them by position.`), arg.name);
+    if (named.has(index)) throw unit.locate(Error(`The argument ${name} is given twice.`), arg.name);
+    named.set(index, arg.value);
+  }
+  const last = Math.max(-1, ...named.keys());
+  let next = 0;
+  return index => named.has(index) ? named.get(index)
+    : next < positional.length ? positional[next++]
+    : index < last ? null : undefined;
+}
+
+// Elaborate a call of a definition or a function: its written arguments,
+// its holes and its named arguments, from the function's type.
+export function elaborateCall(t, n, scope, expected) {
+  const {env, unit} = scope;
+  const headName = n.fn.kind === "name" ? n.fn.name : null;
+  const called = headName ?? "This function";
+  const bound = headName ? env.get(headName) : undefined;
+  if (determinesArguments(n)) {
+    if (headName && !env.has(headName))
+      throw unit.locate(Error(`${headName} takes its arguments explicitly: a hole _ or a named argument is an argument of a definition or a function.`), n.fn);
+    if (INDUCTIVE_TAGS.has(bound?.tag))
+      throw unit.locate(Error(`${headName} is a declared type or a constructor, whose arguments are written out: a hole _ or a named argument is an argument of a definition or a function.`), n.fn);
+    if (bound?.tag === "Recursive")
+      throw unit.locate(Error(`A recursive call of ${headName} takes its arguments explicitly.`), n.fn);
+  }
+  const head = t.term(n.fn, scope, null);
+  const parameters = sourceParameters(t, head);
+  const given = assign(n, parameters, unit, called);
+  // Each parameter in turn, from the head's type, with the earlier ones
+  // replaced by variables that stand for their values: no argument's type is
+  // inferred again from the growing application.
+  const slots = [], solver = new ArgumentSolver(t, scope, slots, called, n);
+  let type = scope.infer(head).type;
+  for (let index = 0; ; index++) {
+    const node = given(index);
+    if (node === undefined) break;
+    // A type that computes to a function type may need the earlier
+    // arguments' values: those are elaborated first.
+    if (type.tag !== "Pi" && type.tag !== "LPi") {
+      solver.run(false);
+      type = scope.nf(solver.zonk(type));
+    }
+    const parameter = parameters?.[index] ?? null;
+    const site = node ?? n.fn;
+    // Instantiation at a universe, below UU0 (G0 §2.7).
+    if (type.tag === "LPi") {
+      if (!node || isHole(node))
+        throw unit.locate(Error(`Give the universe ${parameter ?? "argument"} of ${called} explicitly: a universe argument is not inferred.`), site);
+      const level = t.levelOf(node, scope);
+      if (!finiteLevel(level)) throw unit.locate(Error("A universe argument must lie below UU0: U0, U1, … or a universe variable."), node);
+      slots.push({index, parameter, node, level});
+      type = substituteTerm(type.body, type.name, level);
+      continue;
+    }
+    if (type.tag !== "Pi")
+      throw unit.locate(Error(index ? `${called} takes ${index} argument${index === 1 ? "" : "s"}; this is one more.`
+        : "Source application is not a function."), site);
+    // A name no source or name supply spells, so that a call without holes
+    // leaves the declaration's generated names as they were.
+    const variable = `${parameter ?? "argument"}?${++placeholders}`;
+    solver.add({index, parameter, node, variable, domain: type.domain,
+      kind: node === null ? "omitted" : isHole(node) ? "hole" : "argument"});
+    type = substituteTerm(type.body, type.name, T.variable(variable));
+  }
+  if (expected) solver.require(type, expected, {expected: true});
+  solver.run();
+  solver.checkSolutions();
+  // The call, each argument as elaborated and each hole's solution, all
+  // checked at their types.
+  let term = head;
+  for (const slot of slots)
+    term = slot.level !== undefined ? T.levelApply(term, slot.level)
+      : T.app(term, slot.kind === "argument" ? slot.value : solver.zonk(T.variable(slot.variable)));
+  solver.record(n, term);
+  return term;
+}
+
+// The unknowns of one call and its constraints. Each slot's variable stands
+// for its value: a hole's is found by unification, a written argument's by
+// elaborating it once its parameter's type mentions no unknown.
+class ArgumentSolver {
+  constructor(t, scope, slots, called, call) {
+    Object.assign(this, {t, scope, slots, called, call});
+    // Whether the call has a hole or a named argument.
+    this.determined = determinesArguments(call);
+    this.byVariable = new Map();
+    this.solution = new Map();
+    this.pending = [];
+    // A hole a universe would solve, were a larger one not as good.
+    this.ambiguous = new Map();
+    // A hole that only a term mentioning a bound variable would solve.
+    this.escaping = new Map();
+    this.clashes = [];
+  }
+  // The term with every solved unknown replaced by its value. A solution
+  // never mentions its own variable, so this ends.
+  zonk(term) {
+    for (let round = 0; round <= this.slots.length; round++) {
+      const solved = [...freeNames(term)].filter(name => this.solution.has(name));
+      if (!solved.length) return term;
+      for (const name of solved) term = substituteTerm(term, name, this.solution.get(name));
+    }
+    return term;
+  }
+  unknowns(term) {return [...freeNames(term)].filter(name => this.byVariable.has(name) && !this.solution.has(name));}
+  // A hole's variable, unsolved: the only unknowns unification may solve.
+  flexible(term) {
+    const slot = term?.tag === "Var" ? this.byVariable.get(term.name) : null;
+    return slot && slot.kind !== "argument" && !this.solution.has(term.name) ? slot : null;
+  }
+  add(slot) {
+    this.slots.push(slot);
+    this.byVariable.set(slot.variable, slot);
+  }
+  // `smaller` has to inhabit what `larger` does: an argument's type and its
+  // parameter's, or the call's type and the one expected of it.
+  require(smaller, larger, origin) {
+    this.pending.push({smaller, larger, origin});
+  }
+  // Elaborate the arguments and solve the holes, as far as they go; when
+  // `complete`, a hole left open is an error.
+  run(complete = true) {
+    for (;;) {
+      let progress = this.retry();
+      for (const slot of this.slots) {
+        if (slot.kind !== "argument" || this.solution.has(slot.variable)) continue;
+        const domain = this.zonk(slot.domain);
+        if (!this.unknowns(domain).length) {
+          // The holes its type mentions are checked first, so that the type
+          // it is checked at is a type.
+          this.checkSolutions(slot.index);
+          slot.value = this.t.term(slot.node, this.scope, domain);
+          // The later parameters' types take the term the kernel derived,
+          // which carries its annotations, as a type the kernel inferred does.
+          // Where unification found holes, the argument is checked at its
+          // parameter's type, so that a wrong solution is reported here;
+          // otherwise the call's own check compares the two, at no extra
+          // kernel work.
+          try { this.solution.set(slot.variable, this.determined ? this.scope.check(slot.value, domain) : this.scope.infer(slot.value).term); }
+          catch (error) { throw this.scope.unit.locate(error, slot.node); }
+          progress = true;
+        } else if (!slot.tried) {
+          // Its type, to solve the holes its parameter's type mentions; the
+          // argument itself is elaborated again against that type once the
+          // holes are solved.
+          slot.tried = true;
+          const inferred = this.infer(slot.node);
+          if (inferred) { this.require(inferred, domain, {slot}); progress = true; }
+        }
+      }
+      if (!progress) break;
+    }
+    const open = this.slots.find(slot => slot.variable && !this.solution.has(slot.variable));
+    if (open && complete) throw this.undetermined(open);
+  }
+  // Each pending constraint, once more; those still blocked stay.
+  retry() {
+    let progress = false;
+    for (let changed = true; changed;) {
+      changed = false;
+      const pending = this.pending.splice(0);
+      for (const constraint of pending) {
+        const before = this.solution.size;
+        const outcome = this.unify(constraint.smaller, constraint.larger, constraint.origin, "covariant", new Set(), this.scope);
+        if (outcome === "stuck") this.pending.push(constraint);
+        // The kernel's check of the argument reports it, unless a hole it
+        // leaves open is reported first, with this as the reason.
+        if (outcome === "clash") this.clashes.push(constraint);
+        if (this.solution.size > before || outcome === "done") changed = progress = true;
+      }
+    }
+    return progress;
+  }
+  // An argument's type with no expected type, or null when it needs one. The
+  // attempt records no inspector references and no proof steps.
+  infer(node) {
+    const {t, scope} = this, quiet = scope.withUnit(scope.unit.with({references: null}));
+    const onStep = t.onStep;
+    t.onStep = null;
+    try { return quiet.infer(t.term(node, quiet, null)).type; }
+    catch (error) {
+      if (isLimit(error)) throw error;
+      return null;
+    }
+    finally { t.onStep = onStep; }
+  }
+  // One constraint between two terms: "done", "stuck" (for now) or "clash",
+  // when they cannot agree. `polarity` is "covariant" where a larger
+  // universe would also do, `bound` the variables and `at` the scope, with
+  // its dimensions, that the constraint has descended under.
+  unify(left, right, origin, polarity, bound, at, normal = false) {
+    left = this.zonk(left); right = this.zonk(right);
+    const unknown = [...this.unknowns(left), ...this.unknowns(right)];
+    // Only a hole is solved here; an argument's value is waited for.
+    if (!unknown.some(name => this.byVariable.get(name).kind !== "argument")) return unknown.length ? "stuck" : "done";
+    const hole = this.flexible(left), other = this.flexible(right);
+    if (hole && other && hole === other) return "done";
+    if (hole) return this.solve(hole, right, polarity, bound, at);
+    if (other) return this.solve(other, left, polarity, bound, at);
+    // An argument's variable stands for a value still to be elaborated.
+    if (left.tag === "Var" && this.byVariable.has(left.name) || right.tag === "Var" && this.byVariable.has(right.name)) return "stuck";
+    if (left.tag === right.tag && rigid(left, right, normal, this.byVariable)) {
+      const outcome = this.parts(left, right, origin, polarity, bound, at);
+      if (outcome !== "clash" || normal) return outcome;
+    }
+    // Different type formers never agree; other heads may, by eta.
+    if (normal) return left.tag !== right.tag && CANONICAL.has(left.tag) && CANONICAL.has(right.tag) ? "clash" : "stuck";
+    // A definition, a redex or a projection: compare head normal forms.
+    let leftHead, rightHead;
+    try { leftHead = at.nf(left); rightHead = at.nf(right); }
+    catch (error) {
+      if (isLimit(error)) throw error;
+      return "stuck";
+    }
+    return this.unify(leftHead, rightHead, origin, polarity, bound, at, true);
+  }
+  // The parts of two terms with the same rigid head.
+  parts(left, right, origin, polarity, bound, at) {
+    const same = (l, r, p = "invariant", b = bound, s = at) => this.unify(l, r, origin, p, b, s);
+    const all = outcomes => outcomes.includes("clash") ? "clash" : outcomes.includes("stuck") ? "stuck" : "done";
+    // Both binders renamed to one fresh name.
+    const under = (l, r, p) => {
+      const name = at.fresh(stem(left.name));
+      return same(substituteTerm(l.body, l.name, T.variable(name)), substituteTerm(r.body, r.name, T.variable(name)),
+        p, new Set(bound).add(name));
+    };
+    const dimension = (l, r, key, p) => {
+      const dim = at.fresh("i"), inner = at.bindDimension(dim);
+      return same(substituteDimension(l[key], l.dim, I.variable(dim)), substituteDimension(r[key], r.dim, I.variable(dim)),
+        p, new Set(bound).add(dim), inner);
+    };
+    switch (left.tag) {
+      case "Pi": return all([same(left.domain, right.domain), under(left, right, polarity)]);
+      case "Sigma": return all([same(left.domain, right.domain, polarity), under(left, right, polarity)]);
+      case "Lam": return all([same(left.domain, right.domain), under(left, right)]);
+      case "Path": return all([dimension(left, right, "family", polarity), same(left.left, right.left), same(left.right, right.right)]);
+      case "PLam": return all([dimension(left, right, "family"), dimension(left, right, "body")]);
+      case "PApp": return I.equal(left.arg, right.arg) ? same(left.path, right.path) : "stuck";
+      case "App": return all([same(left.fn, right.fn), same(left.arg, right.arg)]);
+      case "LApp": return JSON.stringify(left.level) === JSON.stringify(right.level) ? same(left.fn, right.fn) : "clash";
+      case "Fst": case "Snd": return same(left.pair, right.pair);
+      case "Sum": return all([same(left.left, right.left, polarity), same(left.right, right.right, polarity)]);
+      case "Sort":
+        if (left.signature !== right.signature || left.parameters.length !== right.parameters.length) return "clash";
+        return all(left.parameters.map((parameter, index) => same(parameter, right.parameters[index])));
+      case "Con": return left.index === right.index ? same(left.sort, right.sort) : "clash";
+      case "Elim":
+        if (left.signature !== right.signature || left.clauses.length !== right.clauses.length) return "clash";
+        return all([same(left.motive, right.motive), ...left.clauses.map((clause, index) => same(clause, right.clauses[index]))]);
+      case "Var": case "DefRef": return left.name === right.name ? "done" : "clash";
+      case "U": return JSON.stringify(left.level) === JSON.stringify(right.level) ? "done" : "stuck";
+      case "Unit": case "Void": case "Point": return "done";
+      default: return "stuck";
+    }
+  }
+  // A hole's solution, when it is determined.
+  solve(slot, value, polarity, bound, at) {
+    value = this.zonk(value);
+    const names = freeNames(value);
+    // It would mention itself, or a variable bound inside the constraint.
+    if (names.has(slot.variable)) return "stuck";
+    const escaping = [...names].find(name => bound.has(name));
+    if (escaping) { this.escaping.set(slot.variable, value); return "stuck"; }
+    if ([...freeDimensions(value)].some(dim => bound.has(dim) || !this.scope.dimensions.has(dim))) return "stuck";
+    if (polarity === "covariant" && universeAt(value)) {
+      this.ambiguous.set(slot.variable, value);
+      return "stuck";
+    }
+    this.solution.set(slot.variable, value);
+    this.ambiguous.delete(slot.variable);
+    return "done";
+  }
+  // Why a constraint failed, in words.
+  mismatch({smaller, larger, origin}) {
+    const [found, wanted] = this.t.shownTogether([this.display(this.zonk(smaller)), this.display(this.zonk(larger))]);
+    return origin.expected ? `the call has type ${found}, where ${wanted} is expected`
+      : `${this.source(origin.slot.node)} has type ${found}, where its ${this.describe(origin.slot)} has type ${wanted}`;
+  }
+  // The solved holes before `before`, each at its type, once: the kernel
+  // checks them.
+  checkSolutions(before = Infinity) {
+    for (const slot of this.slots) {
+      if (slot.index >= before) break;
+      if (slot.kind === "argument" || !slot.variable || slot.checked || !this.solution.has(slot.variable)) continue;
+      slot.checked = true;
+      this.checkSolution(slot, this.zonk(T.variable(slot.variable)));
+    }
+  }
+  checkSolution(slot, value) {
+    const type = this.zonk(slot.domain), result = this.scope.attempt(value, type);
+    if (result.ok) { this.solution.set(slot.variable, result.term); return; }
+    if (result.failure !== "mismatch") throw result.error;
+    const [shown, typeText] = this.t.shownTogether([value, type]);
+    throw this.scope.unit.locate(Error(`The hole for ${this.describe(slot)} of ${this.called} was solved as ${shown}, which does not have its type ${typeText}.`), slot.node ?? this.call.fn);
+  }
+  undetermined(slot) {
+    const type = this.t.shown(this.display(this.zonk(slot.domain)));
+    const candidate = this.ambiguous.get(slot.variable), {called} = this, parameter = this.describe(slot);
+    const escaping = this.escaping.get(slot.variable);
+    const clash = this.clashes.length ? ` (${this.mismatch(this.clashes[0])})` : "";
+    const error = slot.kind === "argument"
+      ? Error(`The argument ${this.source(slot.node)} of ${called} needs the type of its ${parameter}, ${type}, which mentions a hole nothing determines${clash}. Give the hole explicitly.`)
+      : candidate ? Error(`The ${parameter} of ${called} is not determined: ${this.t.shown(candidate)} fits, and so would a larger universe${clash}. Give it explicitly.`)
+      : escaping ? Error(`The ${parameter} of ${called} would be ${this.t.shown(this.display(escaping))}, which mentions a variable bound inside an argument, out of its scope${clash}. Give it explicitly.`)
+      : Error(`Nothing determines the ${parameter} of ${called}, of type ${type}: not the other arguments' types, nor the type expected of the call${clash}. Give it explicitly.`);
+    return this.scope.unit.locate(error, slot.node ?? this.call.fn);
+  }
+  describe(slot) {return slot.parameter ? `parameter ${slot.parameter}` : `argument ${slot.index + 1}`;}
+  source(node) {return this.scope.unit.source.slice(node.start, node.end).trim();}
+  // A term to show, with each unknown as ?name.
+  display(term) {
+    for (const name of this.unknowns(term)) {
+      const slot = this.byVariable.get(name);
+      term = substituteTerm(term, name, T.variable(`?${slot.parameter ?? slot.index + 1}`));
+    }
+    return term;
+  }
+  // The inspector shows what each hole and omitted parameter became.
+  record(n, term) {
+    const {t, scope} = this;
+    const omitted = [];
+    for (const slot of this.slots) {
+      if (!slot.variable || slot.kind === "argument") continue;
+      const value = this.zonk(T.variable(slot.variable));
+      if (slot.kind === "hole")
+        t.reference(scope, {...slot.node, name: "_", expressionSite: true, role: "inferred argument",
+          description: `The ${this.describe(slot)} of ${this.called}, inferred: ${t.shown(value)}.`}, value);
+      else omitted.push(`${slot.parameter} := ${t.shown(value)}`);
+    }
+    if (omitted.length && Number.isInteger(n.end))
+      t.reference(scope, {name: ")", start: n.end - 1, end: n.end, expressionSite: true, role: "inferred arguments",
+        description: `Arguments of ${this.called} inferred: ${omitted.join(", ")}.`}, term);
+  }
+}
+
+// Type formers: two with different heads are never equal.
+const CANONICAL = new Set(["Pi", "Sigma", "Path", "U", "Sum", "Sort", "Unit", "Void"]);
+// Whether two terms' parts can be compared as they are: a type former, a
+// constructor, or a neutral term once in head normal form. A term headed by
+// a definition, a redex or a projection is compared in head normal form.
+function rigid(left, right, normal, unknown) {
+  if (["Pi", "Sigma", "Lam", "Path", "PLam", "Sum", "Sort", "Con", "U", "Unit", "Void", "Point"].includes(left.tag)) return true;
+  if (left.tag === "Var") return !unknown.has(left.name) && !unknown.has(right.name);
+  if (left.tag === "DefRef") return left.name === right.name;
+  // An application whose head is a local variable is neutral as it stands.
+  if (left.tag === "App" || left.tag === "PApp") return normal || [left, right].every(term => neutralHead(term, unknown));
+  return normal;
+}
+function neutralHead(term, unknown) {
+  while (["App", "PApp", "Fst", "Snd"].includes(term.tag)) term = term.fn ?? term.path ?? term.pair;
+  return term.tag === "Var" && !unknown.has(term.name);
+}
+// Whether a term is, or ends in, a universe where cumulativity applies: as
+// itself, a function's codomain or a pair's component.
+function universeAt(term) {
+  if (term.tag === "U") return true;
+  if (term.tag === "Pi") return universeAt(term.body);
+  if (term.tag === "Sigma") return universeAt(term.domain) || universeAt(term.body);
+  return false;
+}

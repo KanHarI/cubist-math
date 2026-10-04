@@ -389,7 +389,7 @@ export const libraryModules = ["nat", "naturals", "classical_axioms", "universe_
 // workspace opens as proof.html?proof=NAME. tests/cubist-tests.test.mjs
 // checks that every file is listed.
 export const cubistTestModules = [
-  "glue", "face_restriction", "declared_match", "induction", "automatic_clauses",
+  "arguments", "glue", "face_restriction", "declared_match", "induction", "automatic_clauses",
   "automatic_clauses_groupoid", "automatic_clauses_without_hlevels", "hlevel_lemmas", "hlevel_tactic",
   "hlevel_without_import", "h1_acceptance_levels", "h1_acceptance_formers", "h1_acceptance_instances",
   "h1_acceptance_paths", "program_types", "program_types_nat_as_name", "program_types_constructor_shadowing",
