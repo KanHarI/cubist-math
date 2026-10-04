@@ -92,6 +92,12 @@ test("implicit parameters are a double brace group before the parameter list, ea
   // two, opened and closed together.
   assert.throws(() => parse("def f{U < UU0}(a : Nat) : Nat := a;"), /Implicit parameters are in double braces: def f\{\{/);
   assert.throws(() => parse("def f{{U < UU0} }(a : Nat) : Nat := a;"), /Close double braces with \}\}/);
+  // A group wider than a line breaks inside its braces, never between them.
+  const wide = "def f{{first_parameter, second_parameter, third_parameter, fourth_parameter, fifth_parameter, sixth_parameter : Nat}}(n : Nat) : Nat := n;\n";
+  const wrapped = formatCubist(wide);
+  assert.match(wrapped, /^def f\{\{\n/);
+  assert.match(wrapped, /\n\}\}\(n : Nat\)/);
+  assert.equal(formatCubist(wrapped), wrapped);
 });
 
 test("implicit arguments are a double brace group after a name; a block after a name stays a block", () => {

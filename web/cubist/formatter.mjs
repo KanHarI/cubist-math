@@ -84,6 +84,9 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
   // A declaration's implicit parameters, `{{A : U}}`, are a list like its
   // parameters, not a block, and so are a call's implicit arguments.
   const implicitOpens = new Set(), implicitCloses = new Set();
+  // Each {{ … }} pair is one delimiter: a line may break inside it, never
+  // between its two braces, which the parser requires together.
+  const doubleOpens = new Set();
   const tokenBefore = new Map(tokens.map((token, index) => [token.start, tokens[index - 1]]));
   const tokenAfter = new Map(tokens.map((token, index) => [token.end, tokens[index + 1]]));
   function visit(node) {
@@ -97,6 +100,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
     for (const group of [node.implicitParameters, node.implicitGroup]) if (group) {
       for (const at of group.opens) implicitOpens.add(at);
       for (const at of group.closes) implicitCloses.add(at);
+      doubleOpens.add(group.opens[0]);
     }
     // Only declaration/let assignments introduce an indented right-hand side.
     // An equality inside an annotated definition's type is not an assignment.
@@ -183,7 +187,13 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
         else statement.push(operators.has(text) && ["->", "and", "or"].includes(text)
           && !domains.some(([start, end]) => start <= token.start && token.end <= end) ? line : " ");
       }
-      if (["(", "[", "{"].includes(text)) {
+      if (text === "{" && doubleOpens.has(token.start)) {
+        position++;
+        const body = sequence("}");
+        position++;
+        statement.push(group(["{{", indent([soft, body]), soft, "}}"]));
+        previous = { text: "}", end: all[position - 1].end };
+      } else if (["(", "[", "{"].includes(text)) {
         const end = { "(": ")", "[": "]", "{": "}" }[text];
         const body = sequence(end);
         statement.push(text === "{" && !implicitOpens.has(token.start) ? ["{", indent([hard, body]), hard, "}"]
