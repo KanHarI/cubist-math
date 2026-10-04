@@ -5,7 +5,7 @@
 // over a that is t on each face, and unglue(g) is the base of g. On a face
 // that holds, Glue is the glued type.
 
-import univalence;
+import contractible_maps;
 
 // A line of types: at each end the face holds, and Glue is the type glued there.
 def glued_line(A : U0) :

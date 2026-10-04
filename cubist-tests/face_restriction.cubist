@@ -6,7 +6,7 @@
 // in a context that assumes the face, and only the partial element on that
 // face discharges the assumption. Each case opens in the workspace, where the
 // Kernel graph shows the Restrict steps.
-import univalence;
+import contractible_maps;
 
 // Glue eta for a variable: glue(unglue(g), face(k, 0, g)) is g, and its value
 // on k = 0 is g itself, of the Glue type, which is A there.

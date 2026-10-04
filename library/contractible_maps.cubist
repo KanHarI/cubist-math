@@ -1,0 +1,32 @@
+import hlevels;
+
+// Equivalences as contractible maps: a function whose fibers are all
+// contractible (the HoTT book's section 4.4). This is the form the kernel
+// checks a Glue type's equivalences in; the `Equiv` of `import paths;` gives
+// an inverse and its laws instead.
+
+// The fiber of f over y, and a function whose fibers are all contractible.
+def Fiber(U < UU0, A, B : U, f : A -> B, y : B) : U := exists x : A. y = f(x);
+
+def IsContrMap(U < UU0, A, B : U, f : A -> B) : U := forall y : B. IsContr(U, Fiber(U, A, B, f, y));
+
+def ContrEquiv(U < UU0, A, B : U) : U := exists f : A -> B. IsContrMap(U, A, B, f);
+
+// The identity: the fiber over y contracts onto (y, refl(y)) along its path.
+computable def id_contr_equiv(U < UU0, A : U) :
+  ContrEquiv(U, A, A) := (
+    fun (x : A) => x,
+    fun (y : A) => (
+      (y, refl(y)),
+      fun (p : Fiber(U, A, A, fun (x : A) => x, y)) => path i => (p.2 @ i, path j => p.2 @ (i & j))
+    )
+  );
+
+// Two equivalences with one forward map are equal: their witnesses that the
+// fibers are contractible are, since being contractible is a proposition.
+computable def contr_equiv_witness_path(
+  U < UU0, A, B : U, f : A -> B, w0, w1 : IsContrMap(U, A, B, f)
+) :
+  typed(ContrEquiv(U, A, B), (f, w0)) = (f, w1) := path i => (
+    f, fun (y : B) => is_contr_is_prop(U, Fiber(U, A, B, f, y), w0(y), w1(y)) @ i
+  );
