@@ -192,3 +192,4 @@ workbench's Kernel graph.
 | [`truncation_resize`](truncation_resize.cubist) | G6: resizing a proposition with LEM alone, and a `StrictlyAbove` witness refused set evidence. |
 | [`truncation_strict_successor`](truncation_strict_successor.cubist) | G7: `no_maximal_strict_successor`, double negation at U1, LEM retained. |
 | [`truncation_rebuilt_classical`](truncation_rebuilt_classical.cubist) | Rebuilt classical assumptions beside the legacy signatures, and a false truncation former refused. |
+| [`printer_lint`](printer_lint.cubist) | The printer's values and types of matches, inductions, binders and declared types, which `tests/printer-lint.test.mjs` lints: eliminators print as the match or induction that builds them. |

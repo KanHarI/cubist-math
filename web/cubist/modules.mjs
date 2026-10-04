@@ -437,5 +437,5 @@ export const cubistTestModules = [
   "quotient_groups_quotient_regression", "quotient_universal_hom_universe_regression",
   "quotient_universal_regression", "quotient_universal_bad_factorization", "truncation_small_mere",
   "truncation_cauchy_same", "truncation_resize", "truncation_strict_successor",
-  "truncation_rebuilt_classical"
+  "truncation_rebuilt_classical", "printer_lint"
 ];

@@ -1,0 +1,124 @@
+// What the printer shows is source the linter accepts: it writes no binding
+// the linter would ask to remove, such as an `as` name the return type does
+// not use, or a quantified variable its body does not mention.
+// tests/printer-lint.test.mjs lints each output below. Eliminators print as
+// the induction or match that builds them, not as kernel notation: a sum's
+// clauses keep the names the source gave them.
+
+def or_swap(A, B : U0) : A or B -> B or A {
+  intro either;
+  cases either {
+    left a => {
+      exact right(a);
+    }
+    right b => {
+      exact left(b);
+    }
+  }
+}
+
+def swap_sides(A, B : U0, value : A or B) := match value return B or A {
+    left a => right(a);
+    right b => left(b);
+  };
+
+def Shape(value : Unit or Unit) := match value return U0 {
+    left a => Nat;
+    right b => Unit;
+  };
+
+def default(value : Unit or Unit) := match value as z return Shape(z) {
+    left a => 0;
+    right b => tt;
+  };
+
+def copy(n : Nat) := induction n return Nat {
+    zero => 0;
+    succ previous => succ(previous);
+  };
+
+def predecessor(n : Nat) := induction n as k return Nat {
+    zero => 0;
+    succ previous => k;
+  };
+
+// Warning: W705: x is unused in the body: write Nat -> … instead of forall x : Nat. ….
+def constant : forall x : Nat. Nat := fun (x : Nat) => 0;
+
+// Warning: W705: n is unused in the body: write Nat and … instead of exists n : Nat. ….
+def pairs : exists n : Nat. Unit := (0, tt);
+
+inductive Bool : U0 {
+  false;
+  true;
+}
+
+def negate(value : Bool) : Bool := match value {
+    false => true;
+    true => false;
+  };
+
+inductive Circle : U0 {
+  base;
+  loop : base = base;
+}
+
+def reverse(c : Circle) : Circle := match c {
+    base => base;
+    loop @ i => loop @ -i;
+  };
+
+inductive List(U < UU0, A : U) : U {
+  nil;
+  cons(head : A, tail : List(U, A));
+}
+
+def length(xs : List(U0, Nat)) : Nat := match xs {
+    nil => 0;
+    cons(head, tail) => succ(length(tail));
+  };
+
+// Output: fun (A, B : U0, either : A or B) => match either return B or A { left a => right(a);
+//   right b => left(b); }
+print(evaluate(or_swap));
+// Output: forall A : U0. forall B : U0. A or B -> B or A
+print(typeof(or_swap));
+// Output: fun (A, B : U0, value : A or B) => match value return B or A { left a => right(a); right
+//   b => left(b); }
+print(evaluate(swap_sides));
+// Output: forall A : U0. forall B : U0. A or B -> B or A
+print(typeof(swap_sides));
+// Output: fun (value : Unit or Unit) => match value as value1 return match value1 return U0 { left
+//   a => Nat; right b => Unit; } { left a => 0; right b => tt; }
+print(evaluate(default));
+// Output: forall value : Unit or Unit. Shape(value)
+print(typeof(default));
+// Output: fun (n : Nat) => induction n return Nat { zero => 0; succ h => succ(h); }
+print(evaluate(copy));
+// Output: Nat -> Nat
+print(typeof(copy));
+// Output: fun (n : Nat) => induction n as k return Nat { zero => 0; succ previous => k; }
+print(evaluate(predecessor));
+// Output: Nat -> Nat
+print(typeof(predecessor));
+// Output: fun (x : Nat) => 0
+print(evaluate(constant));
+// Output: Nat -> Nat
+print(typeof(constant));
+// Output: (0, tt)
+print(evaluate(pairs));
+// Output: Nat and Unit
+print(typeof(pairs));
+// Output: fun (x : Bool) => match x return Bool { false => true; true => false; }
+print(evaluate(negate));
+// Output: Bool -> Bool
+print(typeof(negate));
+// Output: fun (x : Circle) => match x return Circle { base => base; loop @ i => loop @ -i; }
+print(evaluate(reverse));
+// Output: Circle -> Circle
+print(typeof(reverse));
+// Output: fun (x : List(__U, Nat)) => induction x return Nat { nil => 0; cons(head, tail, ih) =>
+//   succ(ih); }
+print(evaluate(length));
+// Output: List(__U, Nat) -> Nat
+print(typeof(length));
