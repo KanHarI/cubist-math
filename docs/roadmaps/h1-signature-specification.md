@@ -1905,7 +1905,10 @@ ID, in the layer its entry gives: a kernel case in `kernel/tests/test_signatures
 source or verifier case in `tests/h1-acceptance.test.mjs`,
 `tests/h1-admission.test.mjs`, `tests/h1-driver.test.mjs`,
 `tests/inductive-declarations.test.mjs`, `tests/declared-match.test.mjs` (its
-cases in `cubist-tests/declared_match.cubist`), `tests/corpus.test.mjs`, `tests/automatic-clauses.test.mjs`,
+cases in `cubist-tests/declared_match.cubist`), the Cubist modules
+`cubist-tests/h1_acceptance_levels.cubist`, `cubist-tests/h1_acceptance_formers.cubist`,
+`cubist-tests/h1_acceptance_instances.cubist`, `cubist-tests/h1_acceptance_paths.cubist`,
+`tests/corpus.test.mjs`, `tests/automatic-clauses.test.mjs`,
 `tests/truncation-migration.test.mjs` or `tests/proof-migration.test.mjs`. *In part* marks a case whose rest is listed as
 not traced, and *in substance* a test that differs from its case in a
 detail the entry states. *Not traced* means no test covers it yet, and

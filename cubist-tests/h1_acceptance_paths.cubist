@@ -1,0 +1,26 @@
+// From tests/h1-acceptance.test.mjs: N5, N6, G1: path eta at a constructor, a
+// boundary that does not hold, and no downward resizing.
+// N5: loop is its eta expansion.
+// N6: loop @ i is not base, so loop is not the constant path.
+// G1: Tr(A) for A : U1 lives in U1, not U0.
+
+inductive Circle {
+  base;
+  loop : base = base;
+}
+
+def eta_loop : loop = (path i => loop @ i) {
+  rfl;
+}
+
+// Error: E606: Type mismatch: found loop = loop, expected loop = refl(base).
+def flat_loop : loop = (path i => base) {
+  rfl;
+}
+
+inductive Tr(U < UU0, A : U) : prop {
+  point(a : A);
+}
+
+// Error: E606: Type mismatch: found U1, expected U0.
+def resized : U0 := Tr(U1, U0);
