@@ -84,6 +84,33 @@ cc_judgement_id cc_instr_endpoint(cc_kernel *k, cc_judgement_id id, cc_entry_id 
     return ck_instr_typing(k, ck_endpoint_term(k, t.term, i.symbol, endpoint), ck_endpoint_term(k, t.type, i.symbol, endpoint), context);
 }
 
+/* Restrict: Γ ⊢ t : T on a clause φ gives Γ, φ ⊢ t|φ : T|φ, each of the
+ * clause's dimensions at its endpoint, in the context with φ's face entry.
+ * On φ the dimensions are their endpoints, so t and T equal their
+ * restrictions there. Endpoint gives the same terms with no assumption, but
+ * only when no entry depends on the dimensions: a variable whose type
+ * mentions one, as g : Glue [i = 0 ↦ (T, e)] A does i, keeps its type, and
+ * Restrict is what types it on the face. Only a partial element on a face
+ * implying φ discharges the face entry (ck_instr_on_face). */
+cc_judgement_id cc_instr_restrict(cc_kernel *k, cc_judgement_id id, cc_formula_id face) {
+    cc_judgement_id found;
+    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_RESTRICT, .premise = {id}, .operand = {face}}, NULL, 0, &found))
+        return found;
+    cc_fact t = {0};
+    uint32_t context = 0;
+    if (!ck_instr_premise(k, id, CC_FACT_TYPING, &t))
+        return 0;
+    const cc_formula *phi = cc_kernel_get_formula(k, face);
+    if (!phi || phi->sort != CC_FACE || phi->length != 1 || !(phi->clauses[0].positive | phi->clauses[0].negative) ||
+        phi->clauses[0].positive & phi->clauses[0].negative)
+        return ck_fail(k, "A restriction's face is one consistent conjunction of endpoint equations."), 0;
+    cc_clause clause = phi->clauses[0];
+    cc_entry_id entry = ck_instr_face_entry(k, clause);
+    if (!entry || !ck_instr_merge(k, t.context, k->entries[entry].scope, &context))
+        return 0;
+    return ck_instr_typing(k, ck_restrict(k, t.term, clause), ck_restrict(k, t.type, clause), context);
+}
+
 /* The context of the dimensions an interval or face formula names. */
 bool ck_instr_formula_context(cc_kernel *k, const cc_formula *f, uint32_t *out) {
     uint64_t names = 0;
@@ -226,11 +253,13 @@ cc_judgement_id cc_instr_system_tube(cc_kernel *k, cc_judgement_id system_id, cc
             return ck_fail(k, "A tube may overlap only the first 64 tubes of a system."), 0;
         pending |= UINT64_C(1) << index;
     }
+    uint32_t on_face = 0, adjacent = 0;
     if (!ck_instr_same(k, u.type, ck_restrict(k, comp.child[0], clause), "The tube is not in the family on its face.") ||
         !ck_instr_same(k, e.term, ck_endpoint_term(k, u.term, dim, 0), "The equality does not start at the tube at 0.") ||
         !ck_instr_same(k, e.other, ck_restrict(k, comp.child[2], clause), "The equality does not end at the base on the face.") ||
-        !ck_instr_formula_context(k, phi, &dims) || !ck_instr_merge(k, s.context, u.context, &context) ||
-        !ck_instr_merge3(k, context, e.context, dims, &context))
+        !ck_instr_on_face(k, u.context, clause, &on_face) || !ck_instr_on_face(k, e.context, clause, &adjacent) ||
+        !ck_instr_formula_context(k, phi, &dims) || !ck_instr_merge(k, s.context, on_face, &context) ||
+        !ck_instr_merge3(k, context, adjacent, dims, &context))
         return 0;
     cc_term tubes = ck_instr_append_tube(k, comp.child[1], face, u.term);
     cc_term extended = tubes ? ck_instr_make(k, CC_COMP, dim, comp.child[0], tubes, comp.child[2], 0) : 0;
@@ -258,9 +287,10 @@ cc_judgement_id cc_instr_system_overlap(cc_kernel *k, cc_judgement_id system_id,
     if (!tube_at(k, s.term, 0, &last, &mine, true) || !tube_at(k, s.term, position, &other, &theirs, false))
         return 0;
     cc_clause overlap = {mine.positive | theirs.positive, mine.negative | theirs.negative};
+    uint32_t on_face = 0;
     if (!ck_instr_same(k, e.term, ck_restrict(k, last, overlap), "The equality does not start at the last tube on the overlap.") ||
         !ck_instr_same(k, e.other, ck_restrict(k, other, overlap), "The equality does not end at the other tube on the overlap.") ||
-        !ck_instr_merge(k, s.context, e.context, &context))
+        !ck_instr_on_face(k, e.context, overlap, &on_face) || !ck_instr_merge(k, s.context, on_face, &context))
         return 0;
     return ck_instr_system_fact(k, s.term, s.type, context, s.pending & ~(UINT64_C(1) << position));
 }

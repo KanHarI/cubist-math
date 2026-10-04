@@ -76,17 +76,6 @@ test('universe composition builds a checked Glue equivalence',()=>{
   const check=new Kernel(),result=check.verify(T.line('k',T.universe(0),body));
   check.verify(result.normal,result.type);
 });
-// The instruction kernel does not yet check a tube whose term is a variable
-// of the Glue type on a face other than the whole cube: on the face, the
-// variable's type is not reduced to the glued type. The term checker this
-// test was written for accepted it.
-test('Glue eta reconstructs a neutral element',{todo:'a Glue-typed variable as a partial tube'},()=>{
-  const G=T.glueType(two,[{face:F.endpoint('k',0),type:two,equiv:identityEquivalence(two)}]);
-  const g=v('g'),rebuilt=T.glue(G,T.unglue(G,g),[{face:F.endpoint('k',0),term:g}]);
-  const body=T.lam('g',G,T.line('i',G,rebuilt));
-  const expected=T.pi('g',G,T.path('i',G,g,g));
-  new Kernel().verify(T.line('k',expected,body));
-});
 test('empty gluing faces disappear before conversion',()=>{
   const empty=T.glueType(two,[]),vacuous=T.glueType(two,[{face:F.bottom,type:two,equiv:identityEquivalence(two)}]);
   const g=v('g'),proof=T.line('i',empty,g);

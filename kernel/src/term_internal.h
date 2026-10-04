@@ -59,6 +59,13 @@ typedef struct {
     uint32_t source;  /* the judgement that the type is a type */
     bool dimension;
     bool level_variable; /* a level entry x < ω: its type is LBound(1) */
+    /* A face entry, Γ, φ: the assumption that a clause holds, which Restrict
+     * adds. It has no symbol and no type; its context is the clause's
+     * dimension entries, so no binder discharges them while it is there.
+     * Only an instruction that takes a value on a face implying the clause,
+     * a partial element, discharges it. */
+    bool face;
+    cc_clause clause;
 } cc_entry;
 typedef struct {
     size_t offset;
@@ -200,6 +207,8 @@ bool ck_instr_merge3(cc_kernel *, uint32_t a, uint32_t b, uint32_t c, uint32_t *
 bool ck_instr_discharge(cc_kernel *, uint32_t set, const cc_entry_id *removed, size_t count, uint32_t *out);
 bool ck_instr_bind(cc_kernel *, uint32_t body, cc_entry_id, uint32_t *out);
 cc_entry_id ck_instr_dimension_entry(cc_kernel *, unsigned index);
+cc_entry_id ck_instr_face_entry(cc_kernel *, cc_clause);
+bool ck_instr_on_face(cc_kernel *, uint32_t set, cc_clause, uint32_t *out);
 /* Paths and composition (instruction_paths.c), for Glue's systems. */
 bool ck_instr_formula_context(cc_kernel *, const cc_formula *, uint32_t *out);
 cc_term ck_instr_append_tube(cc_kernel *, cc_term tubes, cc_formula_id face, cc_term tube);

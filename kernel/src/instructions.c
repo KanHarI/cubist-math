@@ -147,6 +147,8 @@ bool ck_instr_premise(cc_kernel *k, cc_judgement_id id, uint32_t kind, cc_fact *
 bool ck_instr_entry(cc_kernel *k, cc_entry_id id, bool dimension, cc_entry *out) {
     if (!id || id >= k->entry_count)
         return ck_fail(k, "Unknown context entry.");
+    if (k->entries[id].face)
+        return ck_fail(k, "A face entry is an assumption, not a variable or a dimension.");
     if (k->entries[id].dimension != dimension)
         return ck_fail(k, dimension ? "Expected a dimension entry." : "Expected a term entry.");
     if (k->entries[id].level_variable)
@@ -349,7 +351,7 @@ static void index_entry(cc_kernel *k, cc_entry_id id) {
         k->entry_index_capacity = capacity;
         k->entry_index_used = 0;
         for (cc_entry_id old = 1; old < id; ++old)
-            if (!k->entries[old].dimension) index_entry(k, old);
+            if (!k->entries[old].dimension && !k->entries[old].face) index_entry(k, old);
     }
     size_t mask = k->entry_index_capacity - 1, slot = symbol_slot(k->entries[id].symbol, k->entry_index_capacity);
     while (k->entry_index[slot] && k->entry_index[slot] < k->entry_count && k->entry_index[slot] != id)
@@ -390,7 +392,7 @@ cc_entry_id cc_instr_extend(cc_kernel *k, cc_judgement_id type, uint32_t symbol)
     if (!self)
         return 0;
     *self = id;
-    k->entries[id] = (cc_entry){symbol, t.term, level, t.context, 0, type, false, false};
+    k->entries[id] = (cc_entry){.symbol = symbol, .type = t.term, .level = level, .context = t.context, .source = type};
     if (!publish_set(k, 1, &scope) || !ck_instr_merge(k, t.context, scope, &scope))
         return 0;
     k->entries[id].scope = scope;
@@ -426,7 +428,7 @@ cc_entry_id cc_instr_level(cc_kernel *k, uint32_t symbol) {
     if (!self)
         return 0;
     *self = id;
-    k->entries[id] = (cc_entry){symbol, bound, 0, 0, 0, 0, false, true};
+    k->entries[id] = (cc_entry){.symbol = symbol, .type = bound, .level_variable = true};
     if (!publish_set(k, 1, &scope))
         return 0;
     k->entries[id].scope = scope;
@@ -467,13 +469,71 @@ cc_entry_id ck_instr_dimension_entry(cc_kernel *k, unsigned index) {
     if (!self)
         return 0;
     *self = id;
-    k->entries[id] = (cc_entry){index, 0, 0, 0, 0, 0, true, false};
+    k->entries[id] = (cc_entry){.symbol = index, .dimension = true};
     if (!publish_set(k, 1, &scope))
         return 0;
     k->entries[id].scope = scope;
     ++k->entry_count;
     k->dimension_entries[index] = id;
     return id;
+}
+
+/* The face entry of a consistent clause with at least one equation: one
+ * entry per clause. Its context is the clause's dimension entries. */
+cc_entry_id ck_instr_face_entry(cc_kernel *k, cc_clause clause) {
+    for (cc_entry_id id = 1; id < k->entry_count; ++id)
+        if (k->entries[id].face && k->entries[id].clause.positive == clause.positive &&
+            k->entries[id].clause.negative == clause.negative)
+            return id;
+    uint64_t names = clause.positive | clause.negative;
+    uint32_t context = 0;
+    for (unsigned dim = 0; dim < CC_DIMENSIONS; ++dim) {
+        if (!(names >> dim & 1))
+            continue;
+        cc_entry_id entry = ck_instr_dimension_entry(k, dim);
+        if (!entry || !ck_instr_merge(k, context, k->entries[entry].scope, &context))
+            return 0;
+    }
+    cc_entry *entries = reserve(k, k->entries, &k->entry_capacity, k->entry_count + 1, sizeof *entries);
+    if (!entries)
+        return 0;
+    k->entries = entries;
+    cc_entry_id id = (cc_entry_id)k->entry_count;
+    uint32_t *self = scratch(k, 1), scope = 0;
+    if (!self)
+        return 0;
+    *self = id;
+    k->entries[id] = (cc_entry){.context = context, .face = true, .clause = clause};
+    if (!publish_set(k, 1, &scope) || !ck_instr_merge(k, context, scope, &scope))
+        return 0;
+    k->entries[id].scope = scope;
+    ++k->entry_count;
+    return id;
+}
+
+/* A premise of a partial element on a clause: its context without the face
+ * entries the clause implies, each a conjunction of some of its equations.
+ * On the clause they hold, so the premise holds there (Γ, φ ⊢ J). A face
+ * entry the clause does not imply stays. One that a remaining entry depends
+ * on, a variable whose type holds only on that face, is refused, as any
+ * discharge is. */
+bool ck_instr_on_face(cc_kernel *k, uint32_t set, cc_clause clause, uint32_t *out) {
+    *out = set;
+    for (bool again = true; again && !k->error[0];) {
+        again = false;
+        cc_context_set s = k->context_sets[*out];
+        for (uint32_t i = 0; i < s.count; ++i) {
+            cc_entry_id id = k->context_items[s.offset + i];
+            cc_entry e = k->entries[id];
+            if (!e.face || e.clause.positive & ~clause.positive || e.clause.negative & ~clause.negative)
+                continue;
+            if (!ck_instr_discharge(k, *out, &id, 1, out))
+                return false;
+            again = true;
+            break;
+        }
+    }
+    return !k->error[0];
 }
 
 cc_judgement_id cc_instr_variable(cc_kernel *k, cc_entry_id id) {
@@ -939,5 +999,12 @@ bool cc_kernel_entry(const cc_kernel *k, cc_entry_id id, uint32_t *symbol, cc_te
     if (type) *type = e.type;
     if (dimension) *dimension = e.dimension;
     if (source) *source = e.source;
+    return true;
+}
+
+bool cc_kernel_entry_face(const cc_kernel *k, cc_entry_id id, cc_clause *clause) {
+    if (!k || !id || id >= k->entry_count || !k->entries[id].face)
+        return false;
+    if (clause) *clause = k->entries[id].clause;
     return true;
 }

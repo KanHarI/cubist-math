@@ -65,9 +65,21 @@ const ANNOTATION = { Pair: 0, Inl: 0, Inr: 0, Sup: 0, PushLeft: 0, PushRight: 0,
 const LIVE = "dims";
 const liveIn = scope => scope.get(LIVE) ?? 0n;
 const withLive = (scope, dimension) => new Map(scope).set(LIVE, liveIn(scope) | 1n << BigInt(dimension));
-// Scopes of several judgements together: their entries, and every live dimension.
-const joinScopes = (...scopes) => new Map([...scopes.flatMap(scope => [...scope]),
-  [LIVE, scopes.reduce((mask, scope) => mask | liveIn(scope), 0n)]]);
+// Under this key, the faces a partial element is derived on, Γ, φ, ψ, …:
+// a clause [positive, negative] for each partial element around it,
+// outermost first. A variable whose type mentions a clause's dimensions is
+// restricted to it where it is used, once for each such clause, so that
+// each face entry is the one its own partial element discharges.
+const FACE = "faces";
+const facesIn = scope => scope.get(FACE) ?? [];
+const withFace = (scope, clause) => new Map(scope).set(FACE, [...facesIn(scope), clause]);
+// Scopes of several judgements together: their entries, every live
+// dimension, and every face, each once.
+const joinScopes = (...scopes) => {
+  const faces = [...new Map(scopes.flatMap(facesIn).map(clause => [String(clause), clause])).values()];
+  return new Map([...scopes.flatMap(scope => [...scope]),
+    [LIVE, scopes.reduce((mask, scope) => mask | liveIn(scope), 0n)], ...faces.length ? [[FACE, faces]] : []]);
+};
 // The children of a dimension binder that it binds.
 const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: [0] };
 
@@ -158,6 +170,7 @@ export class InstructionDriver {
     this.scopes = new Map();
     this.scopeKeys = new WeakMap();
     this.mentions = new Map();
+    this.pins = new Map();
     this.derived = new Map();
     this.stable = new Set();
     // Glue terms the glue move need not try again: no Glue eta redex, even
@@ -226,17 +239,20 @@ export class InstructionDriver {
     focus.ref.id = this.graph.step(focus.ref.id, focus.side, [...focus.path, ...step.path], step.rule);
   }
 
-  // The variables of a judgement's context, by symbol, for deriving its terms.
+  // The variables of a judgement's context, by symbol, for deriving its
+  // terms, and the faces its face entries assume.
   scope(id) {
     const context = this.statement(id).context, key = context.join(",");
     if (!this.scopes.has(key)) {
-      const scope = new Map();
+      const scope = new Map(), faces = [];
       let live = 0n;
       for (const entry of context) {
         const info = this.graph.entry(entry);
         if (info.dimension) live |= 1n << BigInt(info.symbol);
+        else if (info.face) faces.push(info.clause);
         else scope.set(info.symbol, entry);
       }
+      if (faces.length) scope.set(FACE, faces);
       this.scopes.set(key, scope.set(LIVE, live));
     }
     return this.scopes.get(key);
@@ -245,7 +261,7 @@ export class InstructionDriver {
   typesMention(scope, dimension) {
     const key = `${this.scopeKey(scope)}|${dimension}`;
     if (!this.mentions.has(key))
-      this.mentions.set(key, [...scope].some(([symbol, entry]) => symbol !== LIVE && this.graph.entry(entry).source &&
+      this.mentions.set(key, [...scope].some(([symbol, entry]) => symbol !== LIVE && symbol !== FACE && this.graph.entry(entry).source &&
         this.statement(this.graph.entry(entry).source).context.some(other => {
           const info = this.graph.entry(other);
           return info.dimension && info.symbol === dimension;
@@ -342,7 +358,12 @@ export class InstructionDriver {
     case "DefRef": return g.lookup(handle);
     case "Var": {
       if (!scope.has(n.payload)) throw new Error(`Unbound variable ${this.kernel.symbolName(n.payload)}.`);
-      return g.variable(scope.get(n.payload));
+      // On a face, a variable whose type mentions its dimensions is at its
+      // type there.
+      let variable = g.variable(scope.get(n.payload));
+      for (const clause of facesIn(scope))
+        if (this.pinned(variable, clause)) variable = g.restrict(variable, this.kernel.formula("face", [clause]));
+      return variable;
     }
     case "LPi": case "LLam": {
       let symbol=n.payload, entry, bodyHandle=b;
@@ -447,11 +468,13 @@ export class InstructionDriver {
           continue;
         }
         const restricted = this.restrict(family, clause);
-        const value = this.convertTo(within(term), restricted);
-        const start = this.focus(g.refl(g.endpoint(value, dimension, 0)), "other");
-        const end = this.focus(g.refl(this.restrict(base, clause)), "other");
-        if (!this.agree(start, end)) throw new Error("Composition tube disagrees with its base.");
-        const adjacency = g.transitivity(start.ref.id, g.symmetry(end.ref.id));
+        const { value, adjacency } = this.onFace(bound, clause, inner => {
+          const value = this.convertTo(this.derive(term, inner), restricted);
+          const start = this.focus(g.refl(g.endpoint(value, dimension, 0)), "other");
+          const end = this.focus(g.refl(this.restrict(base, clause)), "other");
+          if (!this.agree(start, end)) throw new Error("Composition tube disagrees with its base.");
+          return { value, adjacency: g.transitivity(start.ref.id, g.symmetry(end.ref.id)) };
+        });
         system = g.systemTube(system, face, value, adjacency);
         tubes.forEach((earlier, position) => {
           const overlap = earlier && [clause[0] | earlier.clause[0], clause[1] | earlier.clause[1]];
@@ -493,10 +516,12 @@ export class InstructionDriver {
           pieces.push(null);
           continue;
         }
-        const type = this.asType(derive(T)), target = this.restrict(base, clause);
-        const equivalenceType = this.graph.equivType(this.statement(type).term, this.statement(target).term);
-        const equivalence = this.convertTo(derive(e),
-          this.asType(this.derive(equivalenceType, joinScopes(this.scope(type), this.scope(target)))));
+        const { type, equivalence } = this.onFace(scope, clause, inner => {
+          const type = this.asType(derive(T, inner)), target = this.restrict(base, clause);
+          const equivalenceType = this.graph.equivType(this.statement(type).term, this.statement(target).term);
+          return { type, equivalence: this.convertTo(derive(e, inner),
+            this.asType(this.derive(equivalenceType, joinScopes(this.scope(type), this.scope(target))))) };
+        });
         system = g.gluePiece(system, face, type, equivalence);
         pieces.forEach((earlier, position) => {
           const overlap = earlier && [clause[0] | earlier.clause[0], clause[1] | earlier.clause[1]];
@@ -524,18 +549,22 @@ export class InstructionDriver {
           values.push(null);
           continue;
         }
-        const value = this.convertTo(derive(t), this.evidence(this.focus(annotation, "term", [...here, 0])));
         const equivalence = this.subterm(this.focus(annotation, "term", [...here, 1]));
-        // The image lives in the equivalence's codomain, and the base on the
-        // face in the Glue type's base: equal types, perhaps only up to
-        // computation, as (λ X. X)(Unit) and Unit. The two equalities below
-        // are joined at one type, so the image is converted to the base's.
         const restricted = this.restrict(base, clause);
-        const image = this.convertTo(this.derive(k.term("App", 0, k.term("Fst", 0, equivalence), this.statement(value).term),
-          joinScopes(this.scope(annotation), this.scope(value))), this.evidence(this.focus(restricted, "type")));
-        const start = this.focus(g.refl(image), "other"), end = this.focus(g.refl(restricted), "other");
-        if (!this.agree(start, end)) throw new Error("A Glue value's image disagrees with the base.");
-        system = g.glueTermPiece(system, value, g.transitivity(start.ref.id, g.symmetry(end.ref.id)));
+        const { value, image } = this.onFace(scope, clause, inner => {
+          const value = this.convertTo(derive(t, inner), this.evidence(this.focus(annotation, "term", [...here, 0])));
+          // The image lives in the equivalence's codomain, and the base on
+          // the face in the Glue type's base: equal types, perhaps only up to
+          // computation, as (λ X. X)(Unit) and Unit. The two equalities below
+          // are joined at one type, so the image is converted to the base's.
+          // A restricted value's scope is restricted too.
+          const applied = this.convertTo(this.derive(k.term("App", 0, k.term("Fst", 0, equivalence), this.statement(value).term),
+            joinScopes(this.scope(annotation), this.scope(value))), this.evidence(this.focus(restricted, "type")));
+          const start = this.focus(g.refl(applied), "other"), end = this.focus(g.refl(restricted), "other");
+          if (!this.agree(start, end)) throw new Error("A Glue value's image disagrees with the base.");
+          return { value, image: g.transitivity(start.ref.id, g.symmetry(end.ref.id)) };
+        });
+        system = g.glueTermPiece(system, value, image);
         values.forEach((earlier, position) => {
           const overlap = earlier && [clause[0] | earlier.clause[0], clause[1] | earlier.clause[1]];
           if (!overlap || overlap[0] & overlap[1]) return;
@@ -678,11 +707,16 @@ export class InstructionDriver {
   }
 
   // Two typing judgements agree where two faces meet: an equality between
-  // their terms, both restricted to the overlap.
+  // their terms, both restricted to the overlap. The two are joined at one
+  // type, so where their types differ there, as Equiv(A, B) and
+  // Equiv(p @ 0, B) can, the second is converted to the first's.
   overlapAgreement(mine, theirs, overlap) {
-    const g = this.graph;
-    const x = this.focus(g.refl(this.restrict(mine, overlap)), "other");
-    const y = this.focus(g.refl(this.restrict(theirs, overlap)), "other");
+    const g = this.graph, here = this.restrict(mine, overlap);
+    let there = this.restrict(theirs, overlap);
+    if (this.statement(there).type !== this.statement(here).type)
+      there = this.convertTo(there, this.evidence(this.focus(here, "type")));
+    const x = this.focus(g.refl(here), "other");
+    const y = this.focus(g.refl(there), "other");
     if (!this.agree(x, y)) throw new Error("Two pieces disagree where their faces meet.");
     return g.transitivity(x.ref.id, g.symmetry(y.ref.id));
   }
@@ -769,8 +803,46 @@ export class InstructionDriver {
       return { dimension: positive.toString(2).length - 1 };
     return { compound: true };
   }
-  // A typing judgement restricted to a face clause: its dimensions at their endpoints.
-  restrict(judgement, [positive, negative]) {
+  // A partial element's part on its clause: derived in its scope, and where
+  // that fails while a variable's type there mentions the clause's
+  // dimensions, derived again on the clause (Γ, φ), each such variable at
+  // its type there. A part that needs no restriction is derived as it
+  // always was. Running out of budget or time is no reason to try again.
+  onFace(scope, clause, build) {
+    try { return build(scope); }
+    catch (error) {
+      const names = clause[0] | clause[1];
+      if (["budget", "deadline"].includes(error?.kind) ||
+          ![...Array(64).keys()].some(dim => names >> BigInt(dim) & 1n && this.typesMention(scope, dim)))
+        throw error;
+      return build(withFace(scope, clause));
+    }
+  }
+
+  // Whether an entry of a judgement's context other than a dimension depends
+  // on one of a clause's dimensions: a variable whose type mentions one, or a
+  // face entry that names one. Endpoint cannot then restrict the judgement to
+  // the clause, since it discharges the dimensions, and Restrict does.
+  pinned(judgement, [positive, negative]) {
+    const context = this.statement(judgement).context, names = positive | negative;
+    const key = `${context.join(",")}|${names}`;
+    if (!this.pins.has(key))
+      this.pins.set(key, context.some(entry => {
+        const info = this.graph.entry(entry);
+        if (info.face) return !!((info.clause[0] | info.clause[1]) & names);
+        return !info.dimension && !!info.source && this.statement(info.source).context.some(other => {
+          const inner = this.graph.entry(other);
+          return inner.dimension && !!(names >> BigInt(inner.symbol) & 1n);
+        });
+      }));
+    return this.pins.get(key);
+  }
+  // A typing judgement restricted to a face clause: its dimensions at their
+  // endpoints, by Endpoint, or by Restrict where a context entry depends on
+  // them.
+  restrict(judgement, clause) {
+    if (this.pinned(judgement, clause)) return this.graph.restrict(judgement, this.kernel.formula("face", [clause]));
+    const [positive, negative] = clause;
     for (let dim = 0n; (positive | negative) >> dim; dim++) {
       const bit = 1n << dim;
       if ((positive | negative) & bit) judgement = this.graph.endpoint(judgement, this.graph.dimension(Number(dim)), positive & bit ? 1 : 0);

@@ -263,7 +263,12 @@ export function sourceText(term, symbols = {}, limit = 4000) {
       case "PApp": return [`${sub(t.path, LEVEL.at + 1)} @ ${interval(t.arg)}`, LEVEL.at];
       case "Inl": case "Inr": return atom(`${t.tag === "Inl" ? "left" : "right"}(${show(t.value)})`);
       case "Abort": return atom(`absurd(${show(t.impossible)})`);
-      case "Fst": case "Snd": return atom(`${sub(t.pair, LEVEL.atom)}.${t.tag === "Fst" ? 1 : 2}`);
+      // A projection of a pair as written: the pair has no type to be checked
+      // at there, so it is given its own.
+      case "Fst": case "Snd": {
+        const pair = t.pair?.tag === "Pair" && t.pair.as ? `typed(${show(t.pair.as)}, ${show(t.pair)})` : sub(t.pair, LEVEL.atom);
+        return atom(`${pair}.${t.tag === "Fst" ? 1 : 2}`);
+      }
       // Declared types (H1): an instance is its name applied to its recorded
       // levels, as universes, and its parameters; a constructor is its name.
       // An eliminator has no source form before `match`: it falls back.
@@ -298,6 +303,12 @@ export function sourceText(term, symbols = {}, limit = 4000) {
       case "GlueTerm":
         return atom(`glue(${[show(t.base), ...t.system.map(part => onFace(part.face, [show(part.term)]))].join(", ")})`);
       case "Unglue": return atom(`unglue(${show(t.value)})`);
+      // A composition, as the source writes it: its family and each wall a
+      // line along its dimension, the base between them.
+      case "Comp": {
+        const along = `fun (${t.dim} : Interval) => `;
+        return atom(`comp(${[along + show(t.family), show(t.base), ...t.system.map(tube => onFace(tube.face, [along + show(tube.term)]))].join(", ")})`);
+      }
       default: return fallback(t);
     }
   }

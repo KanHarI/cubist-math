@@ -193,11 +193,31 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
   type is a type, so no typing judgement for the type is needed.
 - **Endpoints:** `Endpoint` substitutes 0 or 1 for a dimension in a typing
   judgement, for the endpoint types of a dependent path family.
+- **Faces:** `Restrict` gives `Γ, φ ⊢ t|φ : T|φ` from `Γ ⊢ t : T` and a
+  face `φ` of one consistent clause: each of the clause's dimensions at its
+  endpoint, in the context with `φ`'s face entry (see Contexts). It is what
+  a partial element needs when it names a variable whose type mentions the
+  face's dimensions, as a Glue term's value `g` on `i = 0` does for
+  `g : Glue [i = 0 ↦ (T, e)] A`: there `g : T`, and Endpoint cannot show it,
+  since `g` depends on `i`. The driver restricts a judgement by Restrict
+  only where Endpoint would fail. It derives a partial element as it always
+  did, and only where that fails, while a variable in scope has a type that
+  mentions the face's dimensions, derives it again in a restricted scope,
+  where each such variable is restricted where it is used, once for each
+  face around it. So every derivation that needed no restriction is
+  unchanged, and archive coverage is the same to the instruction and the
+  step. The translator reads source the same way: it translates a part of a
+  partial element on its face, where each of the face's coordinates is its
+  endpoint (`Scope.onFace`), so `typed(loop @ 0, x)` inside a wall on
+  `k = 0` checks for `x : loop @ k`. The cases are Cubist modules,
+  `cubist-tests/face_restriction.cubist`, which the workspace opens to show
+  each `Restrict` step.
 - **Composition:** `comp^i A [φ ↦ u] a0` is built one tube at a time.
   - `System` starts from the family `A : U` over `i` and the base `a0 : A(0)`.
   - `SystemTube` adds a tube on a face of one clause. The tube is typed at `A`
     restricted to the face, and an equality shows it starts at the base
-    there: `u(0) ≡ a0` on the face. The face may be `1`, the clause with no
+    there: `u(0) ≡ a0` on the face. Both may hold only on the face, typed
+    by `Restrict`: the tube discharges the face entries its face implies. The face may be `1`, the clause with no
     equations. A tube on the face `0`, as a substitution into a type can
     leave it, is never used and needs only a typing judgement.
   - `SystemOverlap` shows that the newest tube agrees with an earlier one
@@ -230,6 +250,8 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
   their types and of their equivalences; `Glue` closes it. A Glue term is
   built the same way, a value `t : T` for each piece in order with an
   equality `fst(e)(t) ≡ a` on its face, and `SystemOverlap` where faces meet;
+  as with tubes, a piece, a value and the equalities may hold only on their
+  face, and the instruction that takes them discharges its face's entries;
   `Unglue` gives the base. A search aid, `cc_kernel_equiv_type`, builds
   `Equiv(T, A)` as syntax for the driver. Glue computes by `Whnf`.
 - **W types:** `W` forms `W(x : L). B` from an entry and a family, as `Π` and
@@ -250,6 +272,19 @@ The free names and dimensions of a judgement's terms are always entries of its
 context; this is what makes discharging, and replacement under binders,
 capture-free.
 
+A context may also hold **face entries**, CCHM's `Γ, φ`: the assumption that
+a clause `φ`, a conjunction of endpoint equations, holds. `Restrict` adds
+one, at most one per clause. A face entry is no variable: it has no symbol
+and no type, and `Variable` and the binders refuse it. Its own context is
+the clause's dimension entries, so while it is there no binder or `Endpoint`
+discharges those dimensions, and `Define`, which takes only a closed
+judgement, refuses it. It is discharged only by an instruction that takes a
+partial element on a face implying its clause: `SystemTube` and
+`SystemOverlap`, `GluePiece`, `GlueOverlap` and `GlueTermPiece`, each for its
+own premises on its face. A face entry its face does not imply stays in the
+result. One that an entry still depends on, a variable extended at a type
+that holds only on the face, is refused, as any discharge is.
+
 ### Soundness
 
 The trusted base is the instructions and what they call: the single-step
@@ -268,6 +303,16 @@ misplaced steps, and lookups of definitions `Define` did not admit.
 
 The interval and face algebra keeps its decision procedure in the kernel: it
 decides equality of De Morgan formulas, with no strategy to select.
+
+Face entries rest on two facts of the cubical type theory, for a clause `φ`
+and its substitution `σ` of each dimension by its endpoint: `Γ ⊢ J` gives
+`Γ, φ ⊢ J`, and under `φ`, `t ≡ tσ` and `T ≡ Tσ`, since each dimension of
+the clause equals its endpoint there. So `Restrict` derives only what holds
+on `φ`. An instruction that discharges a face entry `ψ` takes premises that
+CCHM's rule asks to hold on its face `φ` (a tube's `Γ, φ ⊢ u : A`, a Glue
+value's `Γ, φ ⊢ t : T`, …); when `φ` implies `ψ`, `Γ, ψ ⊢ J` gives
+`Γ, φ ⊢ J`. No other instruction removes a face entry, so a judgement whose
+context holds none holds on the whole cube.
 
 ### What moves to the elaborator
 

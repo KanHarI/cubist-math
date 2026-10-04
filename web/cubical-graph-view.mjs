@@ -82,17 +82,19 @@ export function judgementGraph(program, view, checked = null, { limit = 1500, ex
   // {x : A, …}; one renaming keeps the names in agreement. Each entry is
   // shown under the name it first appears with.
   const shownNames = new Map();
+  // A dimension, or a face entry, its clause: shown without a type.
+  const bare = item => item.dimension ? `${item.name} : 𝕀` : item.face ? `[${item.name}]` : null;
   const text = (judgement, first, second = null) => {
     const scope = new Map(), terms = [];
     for (const entry of judgement.context) {
       const info = entries.get(entry);
-      if (!info.dimension) { scope.set(info.name, decode(info.type)); terms.push(entry); }
+      if (!info.dimension && !info.face) { scope.set(info.name, decode(info.type)); terms.push(entry); }
     }
     const shown = checker.displayGoal(scope, decode(first), second ? decode(second) : null, 240, cubicalText, false);
     terms.forEach((entry, index) => { if (!shownNames.has(entry)) shownNames.set(entry, shown.locals[index]?.name); });
     const names = judgement.context.map(entry => {
       const info = entries.get(entry), index = terms.indexOf(entry);
-      return info.dimension ? `${info.name} : 𝕀` : `${shown.locals[index]?.name ?? info.name} ${shown.locals[index]?.relation ?? ":"} ${shown.locals[index]?.type ?? "…"}`;
+      return info.dimension || info.face ? bare(info) : `${shown.locals[index]?.name ?? info.name} ${shown.locals[index]?.relation ?? ":"} ${shown.locals[index]?.type ?? "…"}`;
     });
     return { scope: `{${names.join(", ")}}`, entries: judgement.context.map((entry, index) => ({ entry, text: names[index] })),
       first: shown.goal, second: shown.built };
@@ -121,17 +123,17 @@ export function judgementGraph(program, view, checked = null, { limit = 1500, ex
   // Each entry's fragment, as THTH wrote it: the context its type needs, and
   // the entry itself, in one renaming.
   for (const info of entries.values()) {
-    if (info.dimension) { info.fragment = [`${info.name} : 𝕀`]; continue; }
+    if (info.dimension || info.face) { info.fragment = [bare(info)]; continue; }
     const source = judgements.get(info.source);
     const needed = (source?.context ?? []).map(entry => entries.get(entry) ?? graph.entry(entry));
-    const scope = new Map([...needed.filter(item => !item.dimension), info].map(item => [item.name, decode(item.type)]));
+    const scope = new Map([...needed.filter(item => !bare(item)), info].map(item => [item.name, decode(item.type)]));
     const shown = checker.displayGoal(scope, { tag: "Unit" }, null, 240, cubicalText, false);
     const locals = [...shown.locals];
-    info.fragment = [...needed.map(item => item.dimension ? `${item.name} : 𝕀` : locals.shift()).map(local =>
+    info.fragment = [...needed.map(item => bare(item) ?? locals.shift()).map(local =>
       typeof local === "string" ? local : `${local.name} ${local.relation} ${local.type}`), `${locals.at(-1)?.name ?? info.name} ${locals.at(-1)?.relation ?? ":"} ${locals.at(-1)?.type ?? "…"}`];
     if (!shownNames.has(info.id)) shownNames.set(info.id, locals.at(-1)?.name);
   }
-  for (const info of entries.values()) info.shown = info.dimension ? info.name : shownNames.get(info.id) ?? info.name;
+  for (const info of entries.values()) info.shown = info.dimension ? info.name : info.face ? `[${info.name}]` : shownNames.get(info.id) ?? info.name;
   for (const row of rows) if (row.entry) row.entry = entries.get(row.entry.id);
   // A judgement that A is a type justifies the entries x : A made from it.
   for (const info of entries.values()) if (info.sourceNumber) {
@@ -215,8 +217,9 @@ export function renderJudgementGraph(container, listing, { jumpNode, expand } = 
   entries.append(make("h3", null, "Context entries"));
   const table = make("ul", "graph-entry-list");
   for (const entry of listing.entries) {
-    const item = make("li", null, entry.dimension ? `${entry.shown} : 𝕀, an interval dimension` : `${entry.shown}, of the type derived at `);
-    if (!entry.dimension && entry.sourceNumber) item.append(link(entry.sourceNumber));
+    const item = make("li", null, entry.dimension ? `${entry.shown} : 𝕀, an interval dimension`
+      : entry.face ? `${entry.shown}, the assumption that the face holds, from Restrict` : `${entry.shown}, of the type derived at `);
+    if (!entry.dimension && !entry.face && entry.sourceNumber) item.append(link(entry.sourceNumber));
     table.append(item);
   }
   entries.append(table);

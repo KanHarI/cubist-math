@@ -170,7 +170,8 @@ typedef enum {
     CC_INSTR_LEVEL_PI, CC_INSTR_LEVEL_LAMBDA, CC_INSTR_LEVEL_APPLY,
     CC_INSTR_SIGNATURE_BEGIN, CC_INSTR_SIGNATURE_CONSTRUCTOR, CC_INSTR_SIGNATURE_CLOSE,
     CC_INSTR_SORT_BEGIN, CC_INSTR_SORT_LEVEL, CC_INSTR_SORT_PARAMETER, CC_INSTR_CONSTRUCT,
-    CC_INSTR_ELIMINATOR, CC_INSTR_ELIMINATOR_CLAUSE, CC_INSTR_ELIMINATOR_CLOSE
+    CC_INSTR_ELIMINATOR, CC_INSTR_ELIMINATOR_CLAUSE, CC_INSTR_ELIMINATOR_CLOSE,
+    CC_INSTR_RESTRICT
 } cc_instruction;
 typedef enum {
     CC_STEP_BETA = 1,  /* App(Lam(x. b), a) to b[a/x] */
@@ -379,6 +380,14 @@ cc_judgement_id cc_instr_eliminator_close(cc_kernel *, cc_judgement_id eliminato
 /* Γ, i ⊢ t : T gives Γ ⊢ t[e/i] : T[e/i] at an endpoint e: interval
  * substitution preserves typing. No other entry may depend on i. */
 cc_judgement_id cc_instr_endpoint(cc_kernel *, cc_judgement_id, cc_entry_id dimension, unsigned endpoint);
+/* Γ ⊢ t : T gives Γ, φ ⊢ t|φ : T|φ on a face φ of one consistent clause
+ * with at least one equation, in the context with φ's face entry: what a
+ * partial element on φ needs when an entry's type depends on φ's
+ * dimensions, which Endpoint cannot discharge. SystemTube, SystemOverlap,
+ * GluePiece, GlueOverlap and GlueTermPiece discharge the face entries their
+ * own face implies; no binder discharges a dimension a face entry needs, and
+ * Define refuses a context that holds one. */
+cc_judgement_id cc_instr_restrict(cc_kernel *, cc_judgement_id, cc_formula_id face);
 /* A closed typing judgement becomes a definition, admitted; the result is its
  * lookup. Lookup recalls a definition Define admitted. */
 cc_judgement_id cc_instr_define(cc_kernel *, uint32_t symbol, cc_judgement_id closed);
@@ -446,10 +455,13 @@ bool cc_kernel_judgement(const cc_kernel *, cc_judgement_id, cc_judgement_info *
 /* The index-th entry of a judgement's context, in creation order, or 0. */
 cc_entry_id cc_kernel_judgement_context(const cc_kernel *, cc_judgement_id, size_t index);
 /* Entries run from 1 to count - 1. A term entry records the judgement that
- * its type is a type; a dimension entry has symbol = index and no type. */
+ * its type is a type; a dimension entry has symbol = index and no type; a
+ * face entry, from Restrict, has neither, and cc_kernel_entry_face gives its
+ * clause. */
 size_t cc_kernel_entry_count(const cc_kernel *);
 bool cc_kernel_entry(const cc_kernel *, cc_entry_id, uint32_t *symbol, cc_term *type, bool *dimension,
                      cc_judgement_id *source);
+bool cc_kernel_entry_face(const cc_kernel *, cc_entry_id, cc_clause *clause);
 /* Signatures run from 1 to count - 1. Symbols are the admission context's:
  * the universe parameters, then the term parameters. A constructor's type
  * is over those symbols, the sort symbol and the earlier constructors'

@@ -569,6 +569,8 @@ export const diagnostics = [
   ["K289", "Definition symbol is already registered."],
   ["K290", "Unknown checked definition reference."],
   ["K291", "A declared type's instance reads finite levels only, below ω (Q16)."],
+  ["K292", "A restriction's face is one consistent conjunction of endpoint equations."],
+  ["K293", "A face entry is an assumption, not a variable or a dimension."],
   // Kernel: terms and computation
   ["K301", "A signature is still open; close it before committing."],
   ["K302", "Checkpoint compaction allocation failed."],

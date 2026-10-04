@@ -1,0 +1,29 @@
+import contractible_maps;
+
+// Univalence by Glue (Cohen, Coquand, Huber and Mörtberg, sections 5 and 7),
+// constructively and with no assumption: an equivalence glues a path of
+// types, a path of types transports the identity to an equivalence, and
+// gluing along the equivalence a path gives returns the path. The other
+// inverse law, and univalence itself, are still to come. The equivalences
+// are those of contractible_maps, the kernel's own form; the `ua` builtin
+// takes the Equiv of `import paths;`, with an inverse and its laws.
+
+// The path of types an equivalence gives: A glued along it at 0, and B along
+// the identity at 1.
+computable def glue_path(U < UU0, A, B : U, e : ContrEquiv(U, A, B)) :
+  A = B := path i => Glue(B, face(i, 0, A, e), face(i, 1, B, id_contr_equiv(U, B)));
+
+// The equivalence a path of types gives: the identity on B, transported back
+// along the path.
+computable def idtoequiv(U < UU0, A, B : U, p : A = B) :
+  ContrEquiv(U, A, B) := comp(fun (j : Interval) => ContrEquiv(U, p @ -j, B), id_contr_equiv(U, B));
+
+// Eta: the path glued along idtoequiv(p) is p. A third piece, where k = 1,
+// glues p @ i along the identity transported up to -i.
+computable def glue_path_idtoequiv(U < UU0, A, B : U, p : A = B) :
+  glue_path(U, A, B, idtoequiv(U, A, B, p)) = p := path k => path i => Glue(
+    B, face(i, 0, A, idtoequiv(U, A, B, p)), face(i, 1, B, id_contr_equiv(U, B)),
+    face(
+      k, 1, p @ i, fill(fun (j : Interval) => ContrEquiv(U, p @ -j, B), id_contr_equiv(U, B), -i)
+    )
+  );
