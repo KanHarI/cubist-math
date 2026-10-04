@@ -11,7 +11,8 @@ import { diagnosticCode } from "../diagnostics.mjs";
 // a clause's argument or coordinate, an induction hypothesis, intro.
 //
 // A use is an identifier of the same name inside the binding's scope, so a
-// shadowing binder can hide an unused binding but never invents one. hlevel
+// shadowing binder can hide an unused binding but never invents one; a named
+// argument's parameter name is not a use. hlevel
 // and generated squash clauses search the context for evidence without
 // naming it, so let and obtain are not reported before an hlevel or a match
 // in the same block.
@@ -23,7 +24,15 @@ export function lint(source, ast = parse(source)) {
     if (!positions.has(match[0])) positions.set(match[0], []);
     positions.get(match[0]).push(match.index);
   }
-  const used = (name, start, end) => (positions.get(name) ?? []).some(at => at >= start && at < end);
+  // A named argument's name, f(x := e), is f's parameter, not a use of x.
+  const parameterNames = new Set();
+  const named = node => {
+    if (!node || typeof node !== "object") return;
+    if (node.kind === "namedArgument") parameterNames.add(node.name.start);
+    for (const value of Object.values(node)) if (value && typeof value === "object") named(value);
+  };
+  named(ast.declarations);
+  const used = (name, start, end) => (positions.get(name) ?? []).some(at => at >= start && at < end && !parameterNames.has(at));
   const text = node => source.slice(node.start, node.end);
   const warnings = [];
   const warn = (at, message) => warnings.push({ start: at.start, end: at.end, message });

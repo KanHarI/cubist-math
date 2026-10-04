@@ -594,7 +594,10 @@ export class NativeCubicalElaborator {
     // A query, not a proof step: nothing is issued to the instruction kernel.
     this.check({ tag: "Var", name }, expected, new Map(context).set(name, actual), dimensions);
   }
-  define(name, term, type) {
+  // `parameters` names the declaration's own parameters, as the source
+  // declares them, for named arguments (L4.1a): the kernel's binders have
+  // generated names.
+  define(name, term, type, parameters = null) {
     const assumptions = this.requiredAssumptions(term, type);
     let body = term, signature = type;
     for (const [parameter, domain] of [...assumptions].reverse()) {
@@ -613,7 +616,7 @@ export class NativeCubicalElaborator {
       catch { throw this.describeMismatch(error, new Map()); }
       type = withoutEmptyFaces(type);
     }
-    this.definitionViews.set(name, { term, type, assumptions, admission });
+    this.definitionViews.set(name, { term, type, assumptions, admission, ...(parameters ? { parameters } : {}) });
     this.definitionExtensions.set(name, this.extensionsOf(term, type, ...assumptions.values()));
     let result = this.syntax.decode(reference);
     for (const parameter of assumptions.keys()) result = { tag: "App", fn: result, arg: { tag: "Var", name: parameter } };

@@ -324,6 +324,15 @@ def add_two := twice(Nat, fun n =&gt; succ(n));</code></pre>
   exact f(0);
 }</code></pre>
         </div>
+        <div class="quick-entry" id="quick-holes">
+          <h4>Holes and named arguments: <code>_</code>, <code>x := e</code></h4>
+          <p>A hole <code>_</code> is an argument the other arguments' types or the expected type determine. <code>x := e</code> gives the parameter <code>x</code>; the parameters before it that nothing gives are holes. Click a hole to see its value.
+            <a href="reference/terms.html#holes">Functions, pairs and sums →</a></p>
+          <pre><code data-check="accept">def concat(U &lt; UU0, A : U, x, y, z : A, p : x = y, q : y = z) : x = z := trans(p, q);
+
+def joined(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat(U0, _, _, _, _, p, q);
+def named(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat(U0, p := p, q := q);</code></pre>
+        </div>
         <div class="quick-entry" id="quick-pairs">
           <h4>Pairs, tuples and <code>exists</code></h4>
           <p><code>A and B</code> is a product and <code>exists x : A. B</code> a dependent pair (Σ) with an actual witness. <code>(a, b, c)</code> abbreviates <code>(a, (b, c))</code>; hover the parentheses to see the expansion.

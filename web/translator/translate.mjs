@@ -4,7 +4,7 @@ import {parse} from "../cubist/parser.mjs";
 import {tacticSite,expressionSite} from "../cubist/link-sites.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
 import {binaryLiteralSyntax} from "../cubist/binary-literals.mjs";
-import {T,finiteLevel,substituteTerm,substituteDimension} from "./core.mjs";
+import {T,substituteTerm,substituteDimension} from "./core.mjs";
 import {interval as I,face as F,latticeBudget} from "./lattice.mjs";
 import {freeDimensions} from "./dimension-slots.mjs";
 import {equalityRule,simplificationRule,findRewrite,SearchLimit} from "./proof-rewrite.mjs";
@@ -18,6 +18,7 @@ import {INDUCTIVE_TAGS,lowerInductive,resolveInductive} from "./inductive.mjs";
 import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference} from "./match.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName} from "./hlevel.mjs";
 import {stem} from "./names.mjs";
+import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
 // hlevel's) spends counted fuel (fuel.mjs), never elapsed time. Its fuel
@@ -368,7 +369,9 @@ export class Translator {
             assumptions,checked.term,checked.type));
         }
         if(this.checker.define)unit.fuel.spend("queries");
-        const definition=this.checker.define?.(d.name.text,checked.term,checked.type)??checked.term;
+        // Its parameters' source names, for named arguments.
+        const definition=this.checker.define?.(d.name.text,checked.term,checked.type,
+          own.length?own.map(p=>p.name.text):null)??checked.term;
         this.checker.kernel?.checkDeadline();
         env.set(d.name.text,definition);
         declarations.push({name:d.name.text,status:native?"checked-native-cubical":"checked-cubical-fragment",term:checked.term,type:checked.type,normal:checked.normal,native});
@@ -703,6 +706,8 @@ export class Translator {
         return T.comp(dim,T.app(family,T.at(path,I.variable(dim))),[],value);
       }
       case "name": {
+        // A binder _ binds nothing to refer to; a hole is a call's argument.
+        if(isHole(n))throw Error("A hole _ stands for an argument of a call, which the call's other arguments or the type expected of it determine; anywhere else, write the term.");
         if(env.has(n.name)) {
           const value=env.get(n.name);
           if(value.tag==="Untranslated") {
@@ -840,26 +845,17 @@ export class Translator {
         return result;
       }
       case "call": {
+        // Holes and named arguments: arguments the call determines (L4.1a).
+        if(determinesArguments(n))return elaborateCall(this,n,scope,expected);
         if(n.fn.kind==="name"&&INDUCTIVE_TAGS.has(env.get(n.fn.name)?.tag))
           return resolveInductive(this,n.fn,env.get(n.fn.name),n.args,scope,expected);
         if(n.fn.kind==="name"&&env.get(n.fn.name)?.tag==="Recursive")
           return resolveRecursive(this,n.fn,env.get(n.fn.name),n.args,scope);
         const builtin=n.fn.kind==="name"&&!env.has(n.fn.name)?n.fn.name:null;
         if(builtin){const value=builtinTerm(this,builtin,n,scope,expected);if(value)return value;}
-        let fn=tr(n.fn,null);
-        for(const arg of n.args) {
-          const pi=scope.nf(inferred(fn).type);
-          if(pi.tag==="LPi") {
-            // Instantiation at a universe, below UU0 (G0 §2.7).
-            const level=this.levelOf(arg,scope);
-            if(!finiteLevel(level))throw scope.unit.locate(Error("A universe argument must lie below UU0: U0, U1, … or a universe variable."),arg);
-            fn=T.levelApply(fn,level);
-            continue;
-          }
-          if(pi.tag!=="Pi")throw Error("Source application is not a function.");
-          fn=T.app(fn,tr(arg,pi.domain));
-        }
-        return fn;
+        // Each argument at its parameter's type, read from the function's
+        // type once (arguments.mjs); a universe argument instantiates it.
+        return elaborateCall(this,n,scope,expected);
       }
       case "induction": {
         // On any declared type: the clauses of a match, whose names may go on

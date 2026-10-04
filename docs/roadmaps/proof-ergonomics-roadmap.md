@@ -417,12 +417,13 @@ Delivered here ahead of that work: `path i =>`, `p @ i`, `ext x;`,
 
 ### 5. Inferred arguments and goal-directed proof construction
 
-- [ ] Add named arguments and `_` holes for values determined by a known
+- [x] Add named arguments and `_` holes for values determined by a known
   function type, supplied arguments, or the expected result type. Implement
   scoped metavariables, occurs checks, and unresolved-hole diagnostics.
-  Builds on the HoTT roadmap's goal layer (A5). This is work-plan L4.1a,
-  scheduled in stage 1; it improves the first new `match` release without
-  gating it. Also needed by H2: indexed
+  This is work-plan L4.1a, delivered on 2026-10-04
+  (`web/translator/arguments.mjs`, `cubist-tests/arguments.cubist`,
+  reference [holes](../../web/reference/terms.html#holes)). Universe
+  arguments stay explicit until L4.1b. Also needed by H2: indexed
   families are impractical without implicit indices, as in
   `cons(x, k + n, append(A, k, n, rest, ys))`.
 - [ ] Add opt-in implicit binders, and infer level arguments where

@@ -107,7 +107,7 @@
             <div class="table-scroll"><table>
               <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
-                <tr id="E343"><td class="code"><code>E343</code></td><td data-message="Untranslated name:">“Untranslated name: <var>name</var>”</td><td>The name is not in scope. It may be declared later, be the declaration itself (there is no recursion), need an import (<code>+</code> needs <code>import naturals;</code>), be misspelled, or not be a construct of the language, such as <code>Interval</code> as a type or a <code>_</code> hole outside <code>calc</code>.</td><td><a href="first-proof.html#order">order</a>, <a href="terms.html#numbers">numbers</a></td></tr>
+                <tr id="E343"><td class="code"><code>E343</code></td><td data-message="Untranslated name:">“Untranslated name: <var>name</var>”</td><td>The name is not in scope. It may be declared later, be the declaration itself (there is no recursion), need an import (<code>+</code> needs <code>import naturals;</code>), be misspelled, or not be a construct of the language, such as <code>Interval</code> as a type.</td><td><a href="first-proof.html#order">order</a>, <a href="terms.html#numbers">numbers</a></td></tr>
                 <tr id="E340"><td class="code"><code>E340</code></td><td data-message="Untranslated dependency:">“Untranslated dependency: <var>name</var>”</td><td>The named declaration failed, so its users are blocked. Fix the named declaration.</td><td><a href="first-proof.html#checking">checking</a></td></tr>
                 <tr id="E604"><td class="code"><code>E604</code></td><td data-message="Definition symbol is already registered.">“Definition symbol is already registered.”</td><td>A name is declared twice in one module. Rename one.</td><td><a href="first-proof.html#order">order</a></td></tr>
                 <tr id="E327"><td class="code"><code>E327</code></td><td data-message="is already registered in this module.">“Simplification rule <var>name</var> is already registered in this module.”</td><td>Register each rule once per module.</td><td><a href="rewriting.html#simp-registration">registration</a></td></tr>
@@ -120,7 +120,12 @@
               <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
                 <tr id="E606"><td class="code"><code>E606</code></td><td data-message="Type mismatch: found">“Type mismatch: found <var>A</var>, expected <var>B</var>.”</td><td>A term of type <var>A</var> is used where a <var>B</var> is needed, and the two are not equal by computation. The message shows both types in Cubist syntax, with definitions under their source names and redexes reduced; when the whole declaration is compared, both are its full statement. Check argument order, universes and endpoints. From <code>rfl</code>, it means the two sides are only equal propositionally: use a lemma, <code>rw</code> or <code>simp</code>. In a <code>cases</code> branch, the goal is not refined; use <code>match</code>.</td><td><a href="proof-blocks.html#exact">exact</a>, <a href="conversion.html#conversion">conversion</a>, <a href="proof-blocks.html#cases">cases</a></td></tr>
-                <tr id="E352"><td class="code"><code>E352</code></td><td data-message="Source application is not a function.">“Source application is not a function.”</td><td>Something that is not a function is applied, or a function gets too many arguments.</td><td><a href="terms.html#currying">currying</a>, <a href="first-proof.html#parameters">parameters</a></td></tr>
+                <tr id="E352"><td class="code"><code>E352</code></td><td data-message="Source application is not a function.">“Source application is not a function.”</td><td>Something that is not a function is applied.</td><td><a href="terms.html#currying">currying</a></td></tr>
+                <tr id="E382"><td class="code"><code>E382</code></td><td data-message="; this is one more.">“<var>f</var> takes <var>n</var> arguments; this is one more.”</td><td>The call gives more arguments than the function takes. Remove the extra ones, or apply the result separately if it is itself a function.</td><td><a href="first-proof.html#parameters">parameters</a></td></tr>
+                <tr id="E388"><td class="code"><code>E388</code></td><td data-message="Nothing determines the">“Nothing determines the parameter <var>x</var> of <var>f</var>, of type <var>T</var>: …”</td><td>A hole <code>_</code>, or a parameter left out before a named argument, is not fixed by the other arguments' types or by the type expected of the call. Holes are never filled by searching for a term of their type. Write the argument.</td><td><a href="terms.html#holes">holes</a></td></tr>
+                <tr id="E387"><td class="code"><code>E387</code></td><td data-message="fits, and so would a larger universe.">“The parameter <var>x</var> of <var>f</var> is not determined: <var>U0</var> fits, and so would a larger universe. …”</td><td>The hole is a type that cumulativity leaves open: a type in <code>U0</code> is in every larger universe too. Write the universe or type.</td><td><a href="terms.html#holes">holes</a></td></tr>
+                <tr id="E381"><td class="code"><code>E381</code></td><td data-message="a universe argument is not inferred.">“Give the universe <var>U</var> of <var>f</var> explicitly: a universe argument is not inferred.”</td><td>A universe argument is written out, by position or by name, as <code>U := U0</code>.</td><td><a href="terms.html#holes">holes</a></td></tr>
+                <tr id="E385"><td class="code"><code>E385</code></td><td data-message="A hole _ stands for an argument of a call">“A hole _ stands for an argument of a call, …”</td><td>A hole is an argument of a call to a definition or a function, which the call determines. Anywhere else, such as a whole proof, write the term.</td><td><a href="terms.html#holes">holes</a></td></tr>
                 <tr id="E346"><td class="code"><code>E346</code></td><td data-message="Untyped lambda requires an expected function type.">“Untyped lambda requires an expected function type.”</td><td>Give the binder a type, or put the function where a function type is expected.</td><td><a href="terms.html#functions">functions</a></td></tr>
                 <tr id="E350"><td class="code"><code>E350</code> <code>E414</code> <code>E415</code></td><td data-message="requires an expected type.">“Pair requires an expected type.”, “Sum injection requires an expected type.”, “absurd requires an expected type.”</td><td>The form needs its type from context. Supply it with a stated result type, <code>let name : T</code> or <code>typed(T, term)</code>.</td><td><a href="terms.html#typed">expected types</a></td></tr>
                 <tr id="E351"><td class="code"><code>E351</code></td><td data-message="Expected a Sigma type for pair.">“Expected a Sigma type for pair.”</td><td>A pair is checked against a type that is not a pair type, or a tuple does not match the nesting of its type.</td><td><a href="terms.html#tuples">tuples</a></td></tr>
@@ -273,7 +278,7 @@
   sorry;  // Error: Expected a proof statement; found 'sorry'.
 }</code></pre>
             <pre><code data-check="reject">def hole : Nat {
-  exact _;  // Error: Untranslated name: _
+  exact _;  // Error: A hole _ stands for an argument of a call, which the call's other arguments or the type expected of it determine; anywhere else, write the term.
 }</code></pre>
             <pre><code data-check="reject">import naturals;
 
@@ -485,6 +490,21 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E371"><td><code>E371</code></td><td>induction requires a value of a declared type.</td></tr>
                 <tr id="E372"><td><code>E372</code></td><td>… stands for a universe that the printer could not show: write the universe in its place, such as U0 or a universe variable.</td></tr>
                 <tr id="E373"><td><code>E373</code></td><td>-p reverses a path; found no path.</td></tr>
+                <tr id="E374"><td><code>E374</code></td><td>… has no named parameters: a named argument gives a parameter that a definition declares.</td></tr>
+                <tr id="E375"><td><code>E375</code></td><td>… has no parameter …; its parameters are ….</td></tr>
+                <tr id="E376"><td><code>E376</code></td><td>… has two parameters named …: give them by position.</td></tr>
+                <tr id="E377"><td><code>E377</code></td><td>The argument … is given twice.</td></tr>
+                <tr id="E378"><td><code>E378</code></td><td>… takes its arguments explicitly: a hole _ or a named argument is an argument of a definition or a function.</td></tr>
+                <tr id="E379"><td><code>E379</code></td><td>… is a declared type or a constructor, whose arguments are written out: a hole _ or a named argument is an argument of a definition or a function.</td></tr>
+                <tr id="E380"><td><code>E380</code></td><td>A recursive call of … takes its arguments explicitly.</td></tr>
+                <tr><td><a href="#E381"><code>E381</code></a></td><td>Give the universe … of … explicitly: a universe argument is not inferred.</td></tr>
+                <tr><td><a href="#E382"><code>E382</code></a></td><td>… takes … argument…; this is one more.</td></tr>
+                <tr id="E383"><td><code>E383</code></td><td>The hole for … of … was solved as …, which does not have its type ….</td></tr>
+                <tr><td><a href="#E385"><code>E385</code></a></td><td>A hole _ stands for an argument of a call, which the call's other arguments or the type expected of it determine; anywhere else, write the term.</td></tr>
+                <tr id="E386"><td><code>E386</code></td><td>The argument … of … needs the type of its …, …, which mentions a hole nothing determines…. Give the hole explicitly.</td></tr>
+                <tr><td><a href="#E387"><code>E387</code></a></td><td>The … of … is not determined: … fits, and so would a larger universe…. Give it explicitly.</td></tr>
+                <tr><td><a href="#E388"><code>E388</code></a></td><td>Nothing determines the … of …, of type …: not the other arguments' types, nor the type expected of the call…. Give it explicitly.</td></tr>
+                <tr id="E389"><td><code>E389</code></td><td>The … of … would be …, which mentions a variable bound inside an argument, out of its scope…. Give it explicitly.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e4">Proof statements, rewriting and simplification</h3>

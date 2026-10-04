@@ -157,15 +157,23 @@ export function parse(source, typeOnly = false) {
         offset: ts[i].start,
       });
     let a = prefix(take());
+    // An argument, or a named one, `x := e`, which gives the parameter x.
+    const argument = () => {
+      if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(peek()) || ts[i + 1]?.text !== ":=") return expr();
+      const parameter = name();
+      take(":=");
+      const value = expr();
+      return { kind: "namedArgument", name: parameter, value, start: parameter.start, end: value.end };
+    };
     while (true) {
       if (peek() === "(") {
         take("(");
         const args = [];
         if (peek() !== ")") {
-          args.push(expr());
+          args.push(argument());
           while (peek() === ",") {
             take(",");
-            args.push(expr());
+            args.push(argument());
           }
         }
         const end = take(")");

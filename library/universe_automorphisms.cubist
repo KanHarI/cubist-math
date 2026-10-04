@@ -16,9 +16,10 @@ def UnitToVoidAutomorphism := exists e : ContrEquiv(U1, U0, U0). ContrEquiv(U0, 
 // An inhabited proposition is Unit.
 computable def inhabited_is_unit(P : U0, prop : IsProp(U0, P), p : P) : P = Unit {
   exact glue_path(
-    U0, P, Unit, inverse_equiv(
-      U0, P, Unit, fun (x : P) => tt, fun (u : Unit) => p, fun (u : Unit) => unit_is_prop(tt, u),
-      fun (x : P) => prop(p, x)
+    U0,
+    e := inverse_equiv(
+      U0, f := fun (x : P) => tt, g := fun (u : Unit) => p,
+      sec := fun (u : Unit) => unit_is_prop(tt, u), ret := fun (x : P) => prop(p, x)
     )
   );
 }
@@ -26,9 +27,10 @@ computable def inhabited_is_unit(P : U0, prop : IsProp(U0, P), p : P) : P = Unit
 // Two empty types are equal.
 computable def empty_types_equal(A, B : U0, a : A -> Void, b : B -> Void) : A = B {
   exact glue_path(
-    U0, A, B, inverse_equiv(
-      U0, A, B, fun (x : A) => absurd(a(x)), fun (y : B) => absurd(b(y)),
-      fun (y : B) => absurd(b(y)), fun (x : A) => absurd(a(x))
+    U0,
+    e := inverse_equiv(
+      U0, f := fun (x : A) => absurd(a(x)), g := fun (y : B) => absurd(b(y)),
+      sec := fun (y : B) => absurd(b(y)), ret := fun (x : A) => absurd(a(x))
     )
   );
 }
@@ -110,8 +112,8 @@ computable def double_negation_equiv(decide : PropositionsDecidable, X : U0, pro
   };
   let back := fun (x : X) => fun (k : X -> Void) => k(x);
   exact inverse_equiv(
-    U0, (X -> Void) -> Void, X, forth, back, fun (x : X) => prop(forth(back(x)), x),
-    fun (nn : (X -> Void) -> Void) => not_is_prop(U0, X -> Void, back(forth(nn)), nn)
+    U0, f := forth, g := back, sec := fun (x : X) => prop(forth(back(x)), x),
+    ret := fun (nn : (X -> Void) -> Void) => not_is_prop(U0, X -> Void, back(forth(nn)), nn)
   );
 }
 
@@ -159,15 +161,15 @@ computable def swap_involution(decide : PropositionsDecidable, X : U0) :
 
 computable def swap_equiv(decide : PropositionsDecidable) : ContrEquiv(U1, U0, U0) {
   exact inverse_equiv(
-    U1, U0, U0, swap_map(decide), swap_map(decide), swap_involution(decide),
-    swap_involution(decide)
+    U1, f := swap_map(decide), g := swap_map(decide), sec := swap_involution(decide),
+    ret := swap_involution(decide)
   );
 }
 
 computable def negated_unit_empty : ContrEquiv(U0, Unit -> Void, Void) {
   exact inverse_equiv(
-    U0, Unit -> Void, Void, fun (k : Unit -> Void) => k(tt), fun (v : Void) => fun (u : Unit) => v,
-    fun (v : Void) => absurd(v), fun (k : Unit -> Void) => absurd(k(tt))
+    U0, f := fun (k : Unit -> Void) => k(tt), g := fun (v : Void) => fun (u : Unit) => v,
+    sec := fun (v : Void) => absurd(v), ret := fun (k : Unit -> Void) => absurd(k(tt))
   );
 }
 
