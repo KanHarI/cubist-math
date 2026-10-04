@@ -3,7 +3,8 @@ import hlevels;
 // Equivalences as contractible maps: a function whose fibers are all
 // contractible (the HoTT book's section 4.4). This is the form the kernel
 // checks a Glue type's equivalences in; the `Equiv` of `import paths;` gives
-// an inverse and its laws instead.
+// an inverse and its laws instead, and every function with an inverse is one
+// (inverse_equiv).
 
 // The fiber of f over y, and a function whose fibers are all contractible.
 def Fiber(U < UU0, A, B : U, f : A -> B, y : B) : U := exists x : A. y = f(x);
@@ -30,3 +31,108 @@ computable def contr_equiv_witness_path(
   typed(ContrEquiv(U, A, B), (f, w0)) = (f, w1) := path i => (
     f, fun (y : B) => is_contr_is_prop(U, Fiber(U, A, B, f, y), w0(y), w1(y)) @ i
   );
+
+// Equivalences from inverses: a function with an inverse and both inverse
+// laws has contractible fibers, since any two points of a fiber are equal
+// (Cubical Agda's lemIso, for fibers whose paths run from y). The pieces of
+// that path come first.
+
+// A point (x, q) of f's fiber over y gives a path from g(y) to x: along g
+// of q to g(f(x)), then by the inverse law; the square below fills it.
+computable def inverse_line(
+  U < UU0, A, B : U, f : A -> B, g : B -> A, ret : (forall a : A. g(f(a)) = a), y : B, x : A,
+  q : y = f(x)
+) :
+  g(y) = x := path m => comp(
+    fun (n : Interval) => A, g(q @ m), face(m, 1, fun (n : Interval) => ret(x) @ n),
+    face(m, 0, fun (n : Interval) => g(y))
+  );
+
+computable def inverse_square(
+  U < UU0, A, B : U, f : A -> B, g : B -> A, ret : (forall a : A. g(f(a)) = a), y : B, x : A,
+  q : y = f(x)
+) :
+  PathP(
+    fun (j : Interval) => g(q @ j) = inverse_line(U, A, B, f, g, ret, y, x, q) @ j, refl(g(y)),
+    ret(x)
+  ) := path j => path k => fill(
+    fun (m : Interval) => A, g(q @ j), k, face(j, 1, fun (m : Interval) => ret(x) @ m),
+    face(j, 0, fun (m : Interval) => g(y))
+  );
+
+// Two points of the fiber: their first components joined through g(y), and
+// the square that fills the join.
+computable def inverse_point_path(
+  U < UU0, A, B : U, f : A -> B, g : B -> A, ret : (forall a : A. g(f(a)) = a), y : B, x0, x1 : A,
+  q0 : y = f(x0), q1 : y = f(x1)
+) :
+  x0 = x1 := path i => comp(
+    fun (m : Interval) => A, g(y),
+    face(i, 1, fun (m : Interval) => inverse_line(U, A, B, f, g, ret, y, x1, q1) @ m),
+    face(i, 0, fun (m : Interval) => inverse_line(U, A, B, f, g, ret, y, x0, q0) @ m)
+  );
+
+computable def inverse_point_square(
+  U < UU0, A, B : U, f : A -> B, g : B -> A, ret : (forall a : A. g(f(a)) = a), y : B, x0, x1 : A,
+  q0 : y = f(x0), q1 : y = f(x1)
+) :
+  PathP(
+    fun (i : Interval) => g(y) = inverse_point_path(U, A, B, f, g, ret, y, x0, x1, q0, q1) @ i,
+    inverse_line(U, A, B, f, g, ret, y, x0, q0), inverse_line(U, A, B, f, g, ret, y, x1, q1)
+  ) := path i => path k => fill(
+    fun (m : Interval) => A, g(y), k,
+    face(i, 1, fun (m : Interval) => inverse_line(U, A, B, f, g, ret, y, x1, q1) @ m),
+    face(i, 0, fun (m : Interval) => inverse_line(U, A, B, f, g, ret, y, x0, q0) @ m)
+  );
+
+// Any two points of the fiber are equal: their first components by the
+// path above, and their paths from y by filling the square between them,
+// first in A from the squares, then under f, by the other inverse law.
+computable def inverse_fiber_path(
+  U < UU0, A, B : U, f : A -> B, g : B -> A, sec : (forall b : B. f(g(b)) = b),
+  ret : (forall a : A. g(f(a)) = a), y : B, x0, x1 : A, q0 : y = f(x0), q1 : y = f(x1)
+) :
+  typed(Fiber(U, A, B, f, y), (x0, q0)) = (x1, q1) := path i => (
+    inverse_point_path(U, A, B, f, g, ret, y, x0, x1, q0, q1) @ i,
+    path j => comp(
+      fun (k : Interval) => B,
+      f(
+        comp(
+          fun (k : Interval) => A,
+          (inverse_point_square(U, A, B, f, g, ret, y, x0, x1, q0, q1) @ i) @ j,
+          face(i, 1, fun (k : Interval) => (inverse_square(U, A, B, f, g, ret, y, x1, q1) @ j) @ -k),
+          face(i, 0, fun (k : Interval) => (inverse_square(U, A, B, f, g, ret, y, x0, q0) @ j) @ -k),
+          face(
+            j, 1,
+            fun (k : Interval) => ret(inverse_point_path(U, A, B, f, g, ret, y, x0, x1, q0, q1) @ i) @ -k
+          ), face(j, 0, fun (k : Interval) => g(y))
+        )
+      ), face(i, 1, fun (k : Interval) => sec(q1 @ j) @ k),
+      face(i, 0, fun (k : Interval) => sec(q0 @ j) @ k),
+      face(
+        j, 1,
+        fun (k : Interval) => sec(f(inverse_point_path(U, A, B, f, g, ret, y, x0, x1, q0, q1) @ i)) @ k
+      ), face(j, 0, fun (k : Interval) => sec(y) @ k)
+    )
+  );
+
+// A function with an inverse, and both inverse laws, has contractible
+// fibers: each fiber has the center (g(y), y = f(g(y))), and every point is
+// joined to it.
+computable def inverse_contractible_map(
+  U < UU0, A, B : U, f : A -> B, g : B -> A, sec : (forall b : B. f(g(b)) = b),
+  ret : (forall a : A. g(f(a)) = a)
+) :
+  IsContrMap(U, A, B, f) := fun (y : B) => (
+    (g(y), path i => sec(y) @ -i),
+    fun (z : Fiber(U, A, B, f, y)) => inverse_fiber_path(
+      U, A, B, f, g, sec, ret, y, g(y), z.1, path i => sec(y) @ -i, z.2
+    )
+  );
+
+// The equivalence a function with an inverse and both inverse laws is.
+computable def inverse_equiv(
+  U < UU0, A, B : U, f : A -> B, g : B -> A, sec : (forall b : B. f(g(b)) = b),
+  ret : (forall a : A. g(f(a)) = a)
+) :
+  ContrEquiv(U, A, B) := (f, inverse_contractible_map(U, A, B, f, g, sec, ret));
