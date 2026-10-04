@@ -30,8 +30,12 @@ test("each Cubist test module's inlined errors and warnings are the checker's", 
   const module = await createCubical();
   for (const name of cubistTestModules) {
     const { source, result } = await checkedModule(name, module);
-    assert.deepEqual(stated(source), reported(source, result, name),
+    const diagnostics = reported(source, result, name);
+    assert.deepEqual(stated(source), diagnostics,
       `${name}: its diagnostic comments differ from the check; run node tools/inline-errors.mjs --write ${name}`);
+    // Each has a code (web/diagnostics.mjs): one without is a message the
+    // registry missed.
+    for (const { text } of diagnostics) assert.match(text, /^[EKW]\d{3}: /, `${name}: no code for "${text}"`);
   }
 });
 

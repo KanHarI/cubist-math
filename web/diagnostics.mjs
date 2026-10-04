@@ -197,6 +197,7 @@ export const diagnostics = [
   ["E370", "simp only requires a homogeneous equality goal."],
   ["E371", "induction requires a value of a declared type."],
   ["E372", "… stands for a universe that the printer could not show: write the universe in its place, such as U0 or a universe variable."],
+  ["E373", "-p reverses a path; found no path."],
   // Proof statements, rewriting and simplification
   ["E401", "Univalence requires a universe."],
   ["E402", "… takes a universe below UU0."],

@@ -50,3 +50,4 @@ workbench's Kernel graph.
 | [`projections`](projections.cubist) | Projections p.1 and p.2 (L1.5, HoTT A8), for `tests/projections-let.test.mjs`: the kernel's projections with the family read from the pair's type, and misused projections. |
 | [`projections_archive_helpers`](projections_archive_helpers.cubist) | Projections convert to the archive's projection helpers (HoTT A8). |
 | [`let_statements`](let_statements.cubist) | let with a stated type and a proof block (HoTT B4): a restated goal, reasoning backwards, and the refusals. |
+| [`path_operators`](path_operators.cubist) | Path and coordinate operators, for `tests/path-operators.test.mjs`: -p, p ++ q, -i, & and | elaborate as sym, trans, flip, meet and join do, and each says which operator failed on a non-path. |
