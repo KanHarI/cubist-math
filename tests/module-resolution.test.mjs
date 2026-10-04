@@ -21,16 +21,18 @@ import { budget } from "./timing.mjs";
 test("a module resolves its imports by where it lives", async () => {
   assert.deepEqual(searchOrder("archive"), ["archive"]);
   assert.deepEqual(searchOrder("library"), ["library", "archive"]);
+  assert.deepEqual(searchOrder("tests"), ["tests", "library", "archive"]);
   assert.deepEqual(searchOrder("local"), ["local", "library", "archive"]);
   assert.deepEqual(searchOrder(), ["library", "archive"], "a source that is not a file");
   assert.throws(() => searchOrder("elsewhere"), /Unknown module place/);
   assert.equal(placeOfPath("archive/first-library/euclid.cubist"), "archive");
   assert.equal(placeOfPath("library/naturals.cubist"), "library");
+  assert.equal(placeOfPath("cubist-tests/glue.cubist"), "tests");
   assert.equal(placeOfPath("scratch/mine.cubist"), "local");
   assert.equal(placeOfFile(join(projectRoot, "archive/first-library/euclid.cubist")), "archive");
 
   const files = { "library/x": "library x", "archive/x": "archive x", "library/only": "library only",
-    "local/helper": "local helper" };
+    "local/helper": "local helper", "tests/case": "tests case" };
   const reader = () => moduleReader((place, name) => files[`${place}/${name}`] ?? null);
   const source = reader();
   assert.equal(await source("x"), "library x", "the library shadows the archive");
@@ -46,6 +48,13 @@ test("a module resolves its imports by where it lives", async () => {
   assert.equal(await local("x", "main"), "library x");
   await assert.rejects(local("missing", "main"),
     { message: "No module named missing in the checked file's directory, library/ or archive/first-library/." });
+  // A test module imports another test module first, then the library; no
+  // other module sees the tests.
+  const tests = reader();
+  tests.place("main", "tests");
+  assert.equal(await tests("case", "main"), "tests case");
+  assert.equal(await tests("x", "main"), "library x");
+  await assert.rejects(reader()("case"), { message: "No module named case in library/ or archive/first-library/." });
   // A REPL entry imports the checked file it runs on top of.
   assert.equal(await local.checkImports("repl_1", ["main", "x"]), null);
   // An archive module never sees a module this check loaded from the library.
@@ -63,6 +72,8 @@ test("a module resolves its imports by where it lives", async () => {
   assert.equal(await listed("x", "a"), "archive/first-library/x.cubist");
   assert.equal(await listedReader({ library: ["x"], archive: ["x"] }, async path => path)("x"), "library/x.cubist");
   assert.deepEqual(fetched, ["archive/first-library/x.cubist"], "an unlisted place is never fetched");
+  // A listed test module is placed in the tests' root.
+  assert.equal(listedReader({ library: [], archive: [], tests: ["t"] }, async path => path, "t").placeOf("t"), "tests");
   // A page that loaded its source from the archive says so, listed or not.
   const told = listedReader({ library: ["only"], archive: [] }, async path => path, "entry", "archive");
   assert.equal(told.placeOf("entry"), "archive");
@@ -75,6 +86,7 @@ test("the browser lists every module the CLI finds on disk", async () => {
   assert.deepEqual([...moduleListing.archive].sort(), await names(moduleRoots.archive),
     "every archive module, entry points such as euclid and basics included");
   assert.deepEqual([...moduleListing.library].sort(), await names(moduleRoots.library));
+  assert.deepEqual([...moduleListing.tests].sort(), await names(moduleRoots.tests));
   // So the page's default proof is placed in the archive and imports only from it.
   const reader = listedReader(moduleListing, async () => "", "euclid");
   assert.equal(reader.placeOf("euclid"), "archive");

@@ -4,6 +4,8 @@
 // verified and otherwise to its reason. Without a `module`, the program has a
 // WASM instance of its own.
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
@@ -19,4 +21,13 @@ export async function checkProgram(t, source, { module, reader = sourceReader(),
   };
   const verdicts = Object.fromEntries(result.outputs.map(output => [output.name, output.verified ? true : output.reason]));
   return { program, result, get, verdicts };
+}
+
+// A Cubist test, cubist-tests/NAME.cubist, checked as the command line checks
+// the file: its imports resolve in cubist-tests/, then library/, then the
+// archive. It gives what checkProgram does, and the module's source.
+export async function checkTestModule(t, name, options = {}) {
+  const path = fileURLToPath(new URL(`../cubist-tests/${name}.cubist`, import.meta.url));
+  const source = await readFile(path, "utf8");
+  return { source, ...await checkProgram(t, source, { reader: sourceReader({ path }), name, ...options }) };
 }

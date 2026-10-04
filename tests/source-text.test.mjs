@@ -141,3 +141,15 @@ test("messages name unnamed dimensions once, keep sharing, and avoid the names t
   assert.equal(sourceText(found), "p @ i & i1");
   assert.equal(sourceText(expected), "p @ j & k & l & m & n & i1");
 });
+
+test("Glue, glue and unglue print as the source writes them", () => {
+  const A = variable("A"), e = variable("e"), g = variable("g");
+  const G = { tag: "Glue", base: A, system: [
+    { face: [["k:0"]], type: A, equiv: e },
+    { face: [["k:1", "j:0"], ["i:1"]], type: A, equiv: e }] };
+  assert.equal(sourceText(G), "Glue(A, face(k, 0, A, e), face_when(on(k, 1) and on(j, 0) or on(i, 1), A, e))");
+  const unglued = { tag: "Unglue", as: G, value: g };
+  assert.equal(sourceText(unglued), "unglue(g)");
+  assert.equal(sourceText({ tag: "GlueTerm", as: G, base: unglued, system: [{ face: [["k:0"]], term: g }] }),
+    "glue(unglue(g), face(k, 0, g))");
+});

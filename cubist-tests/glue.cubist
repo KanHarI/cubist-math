@@ -1,0 +1,40 @@
+// Glue types, glue and unglue, as the language writes them.
+//
+// Glue(A, face(i, 0, T, e), …) glues a type T onto A on each face, along an
+// equivalence e from T to A there. glue(a, face(i, 0, t), …) is the element
+// over a that is t on each face, and unglue(g) is the base of g. On a face
+// that holds, Glue is the glued type.
+
+import contractible_maps;
+
+// A line of types: at each end the face holds, and Glue is the type glued there.
+def glued_line(A : U0) :
+  A = A := path i => Glue(
+    A, face(i, 0, A, id_contr_equiv(U0, A)), face(i, 1, A, id_contr_equiv(U0, A))
+  );
+
+// unglue of a glue term is its base, on the face and off it.
+def unglue_glue(A : U0, a : A) :
+  a = a := path i => unglue(
+    typed(Glue(A, face(i, 0, A, id_contr_equiv(U0, A))), glue(a, face(i, 0, a)))
+  );
+
+// One piece on a face of two clauses, both ends at once.
+def glued_ends(A : U0) :
+  A = A := path i => Glue(A, face_when(on(i, 0) or on(i, 1), A, id_contr_equiv(U0, A)));
+
+// Refused: the function is no equivalence, though it is the identity.
+def not_an_equivalence(A : U0) :
+  A = A := path i => Glue(A, face(i, 0, A, fun (x : A) => x), face(i, 1, A, id_contr_equiv(U0, A)));
+
+// Refused: on the face, the value's image is b, but the base is a.
+def misplaced_value(A : U0, a, b : A) :
+  a = a := path i => unglue(
+    typed(Glue(A, face(i, 0, A, id_contr_equiv(U0, A))), glue(a, face(i, 0, b)))
+  );
+
+// Refused: glue has no Glue type to build an element of.
+def untyped_glue(A : U0, a : A) := glue(a);
+
+// Refused: unglue takes an element of a Glue type.
+def unglue_a_point(A : U0, a : A) := unglue(a);

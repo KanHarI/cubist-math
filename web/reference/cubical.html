@@ -51,6 +51,7 @@
             <li><a href="#dependent-paths">Dependent paths</a></li>
             <li><a href="#ext">Function extensionality: <code>ext</code></a></li>
             <li><a href="#composition">Composition</a></li>
+            <li><a href="#glue">Glue types</a></li>
             <li><a href="#higher-constructors">Higher inductive types</a></li>
             <li><a href="#pushouts">Pushouts</a></li>
             <li><a href="#suspensions">Suspensions</a></li>
@@ -309,6 +310,26 @@ def join_by_formulas(A : U0, x, y, z : A, p : x = y, q : y = z) : x = z {
     face_when(on(i, 1), fun (j : Interval) =&gt; q @ j));
 }</code></pre>
             <p>Interval and face formulas are kept in a normal form of joins of meets. Some compact formulas have exponentially large normal forms. Rather than exhaust memory, the checker refuses any expansion beyond 4,096 clauses or a fixed work budget, with a lattice budget error. Split such a proof into smaller named steps.</p>
+          </section>
+          <section id="glue">
+            <h2>Glue types</h2>
+            <p><code>Glue(A, face(i, 0, T, e), …)</code> is the type <code>A</code>, except that on each face it is <code>T</code>, glued to <code>A</code> along an equivalence <code>e</code> from <code>T</code> to <code>A</code> there. On a face that holds it is <code>T</code>, so a line of Glue types connects the types at its ends: this is how <a href="assumptions.html#univalence"><code>ua</code></a> turns an equivalence into a path. Here <code>e</code> is an equivalence in the form the kernel checks, a function whose fibers are contractible: <code>ContrEquiv(U, T, A)</code> of the library’s <code>import contractible_maps;</code>, not the <code>Equiv</code> of <code>import paths;</code>. <code>face_when(formula, T, e)</code> states a face as in <a href="#composition">composition</a>.</p>
+            <p><code>glue(a, face(i, 0, t), …)</code> is an element of a Glue type: <code>a</code> in <code>A</code>, and on each face, for each piece in order, a value <code>t</code> of that piece’s type whose image under its equivalence is <code>a</code> there. Its Glue type is the one it is checked at, given here by <code>typed</code>. <code>unglue(g)</code> is the base of <code>g</code>, so <code>unglue</code> of a <code>glue</code> term is its base. Composition through a line of Glue types transports along it:</p>
+            <pre><code data-check="accept">import contractible_maps;
+
+def glued(A : U0) : A = A :=
+  path i =&gt; Glue(A, face(i, 0, A, id_contr_equiv(U0, A)), face(i, 1, A, id_contr_equiv(U0, A)));
+
+def moved(A : U0, a : A) : A := comp(fun (j : Interval) =&gt; glued(A) @ j, a);
+
+def moved_computes : moved(Unit or Unit, left(tt)) = left(tt) := refl(typed(Unit or Unit, left(tt)));
+
+def unglue_glue(A : U0, a : A) : a = a :=
+  path i =&gt; unglue(typed(Glue(A, face(i, 0, A, id_contr_equiv(U0, A))), glue(a, face(i, 0, a))));</code></pre>
+            <p>A <code>glue</code> term with no Glue type to be checked at is refused, and so is <code>unglue</code> of anything but an element of a Glue type:</p>
+            <pre><code data-check="reject">def untyped_glue(A : U0, a : A) := glue(a);  // Error: glue needs the Glue type it builds an element of: write typed(Glue(…), glue(…)).
+
+def unglue_a_point(A : U0, a : A) := unglue(a);  // Error: unglue takes an element of a Glue type.</code></pre>
           </section>
           <section id="higher-constructors">
             <h2>Higher inductive types</h2>

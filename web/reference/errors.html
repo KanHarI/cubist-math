@@ -228,6 +228,8 @@
                 <tr id="E463"><td class="code"><code>E463</code></td><td data-message="over requires an expected PathP goal.">“over requires an expected PathP goal.”</td><td><code>over</code> proves dependent paths only.</td><td><a href="cubical.html#dependent-paths">dependent paths</a></td></tr>
                 <tr id="E461"><td class="code"><code>E461</code></td><td data-message="ext requires equality of functions.">“ext requires equality of functions.”</td><td>The goal is not an equality of functions.</td><td><a href="cubical.html#ext">ext</a></td></tr>
                 <tr><td class="code"><code>E604</code></td><td data-message="Composition tube disagrees with its base.">“Composition tube disagrees with its base.”</td><td>A wall does not start on the base. Check each wall at the base coordinate.</td><td><a href="cubical.html#composition">composition</a></td></tr>
+                <tr id="E470"><td class="code"><code>E470</code></td><td data-message="glue needs the Glue type it builds an element of: write typed(Glue(…), glue(…)).">“glue needs the Glue type it builds an element of: write typed(Glue(…), glue(…)).”</td><td>A <code>glue</code> term is checked at a Glue type: give it one with <code>typed</code>, or use it where one is expected.</td><td><a href="cubical.html#glue">Glue types</a></td></tr>
+                <tr id="E472"><td class="code"><code>E472</code></td><td data-message="unglue takes an element of a Glue type.">“unglue takes an element of a Glue type.”</td><td>The argument of <code>unglue</code> is not of a Glue type.</td><td><a href="cubical.html#glue">Glue types</a></td></tr>
               </tbody>
             </table></div>
             <p>Interval and face formulas beyond 4,096 clauses fail with a lattice budget error. Split such a proof into named steps.</p>
@@ -554,6 +556,12 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E467"><td><code>E467</code></td><td>Statements after … are unreachable: each clause's block closes the goal.</td></tr>
                 <tr><td><a href="#E468"><code>E468</code></a></td><td>Statements after cases are not yet translated.</td></tr>
                 <tr><td><a href="#E469"><code>E469</code></a></td><td>cases requires a sum type.</td></tr>
+                <tr><td><a href="#E470"><code>E470</code></a></td><td>glue needs the Glue type it builds an element of: write typed(Glue(…), glue(…)).</td></tr>
+                <tr id="E471"><td><code>E471</code></td><td>glue builds an element of a Glue type.</td></tr>
+                <tr><td><a href="#E472"><code>E472</code></a></td><td>unglue takes an element of a Glue type.</td></tr>
+                <tr id="E473"><td><code>E473</code></td><td>A face needs an interval coordinate and endpoint 0 or 1.</td></tr>
+                <tr id="E474"><td><code>E474</code></td><td>A Glue piece has syntax face(i, 0 or 1, T, e) or face_when(φ, T, e).</td></tr>
+                <tr id="E475"><td><code>E475</code></td><td>A glue value has syntax face(i, 0 or 1, t) or face_when(φ, t).</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e5">Inductive types and matching</h3>

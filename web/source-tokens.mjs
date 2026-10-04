@@ -39,7 +39,7 @@ export const keywords = new Set([
 // Language-provided forms share the keyword palette; ordinary library and
 // user-defined functions retain the green reference style.
 export const builtinForms = new Set([
-  "Interval", "path", "PathP", "at", "comp", "face", "flip", "meet", "join",
+  "Interval", "path", "PathP", "at", "comp", "face", "flip", "meet", "join", "Glue", "glue", "unglue",
   "Nat", "Unit", "Void", "next", "max", "tt", "succ", "refl", "absurd",
   "sym", "trans", "cong", "transport", "apd", "apd_path", "Eq", "typed",
   "induct", "unpack", "pair_induction", "unit_induction", "path_induction",

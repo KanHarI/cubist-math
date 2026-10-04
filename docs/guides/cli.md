@@ -50,7 +50,7 @@ and write `import helpers;`. No extension appears in an import statement, and
 nested module directories are not supported. Each module resolves its imports
 by where it lives:
 
-- A file outside the two libraries, and each module beside it, imports from
+- A file outside the two libraries and `cubist-tests/`, and each module beside it, imports from
   its own directory first, then from the rebuilt `library/`, then from the
   archived `archive/first-library/`. A local module can intentionally shadow a
   bundled module of the same name.
@@ -58,6 +58,10 @@ by where it lives:
   library module shadows the archive module of the same name.
 - A module of the archive imports only from the archive. The archive is a
   closed world: checking an archive module never uses the rebuilt library.
+- A module of `cubist-tests/`, the Cubist sources the test suite checks,
+  imports from `cubist-tests/`, then from `library/`, then from the archive.
+  Nothing else imports a test module. Check one by its path:
+  `node cli/repl.mjs check cubist-tests/glue.cubist`.
 
 A check holds one module per name. When two modules of one check would load a
 name from different places, for example an archive module and a library module
