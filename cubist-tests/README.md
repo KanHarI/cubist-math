@@ -205,3 +205,5 @@ workbench's Kernel graph.
 | [`inspection_let_alias`](inspection_let_alias.cubist) | A let alias keeps the original local's name. |
 | [`assembly_fixture`](assembly_fixture.cubist) | Declarations whose kernel assembly `tests/cubical-assembly.test.mjs` lists. |
 | [`assembly_generic_assumptions`](assembly_generic_assumptions.cubist) | A generic assumption, one kernel entry used at two levels. |
+| [`glue_printed`](glue_printed.cubist) | A Glue line as the printer shows it, written back: it checks, and equals the line. |
+| [`admission_two`](admission_two.cubist) | Definitions whose admission and derivation `tests/instruction-admission.test.mjs` watches. |

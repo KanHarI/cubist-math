@@ -1,0 +1,14 @@
+// The definitions tests/instruction-admission.test.mjs checks with its
+// instruction driver watched: Define admits each, a tactic's check is
+// derived as the tactic runs, and every definition derives again from
+// nothing.
+import naturals;
+
+def two : Nat {
+  exact 2;
+}
+
+def two_is_two : two = 2 {
+  let same : 2 = 2 := refl(2);
+  exact same;
+}
