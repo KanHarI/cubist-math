@@ -389,4 +389,4 @@ export const libraryModules = ["naturals", "classical_axioms", "universe_automor
 // checks that every file is listed.
 export const cubistTestModules = ["glue", "face_restriction", "declared_match", "induction",
   "automatic_clauses", "automatic_clauses_groupoid", "automatic_clauses_without_hlevels",
-  "hlevel_lemmas"];
+  "hlevel_lemmas", "hlevel_tactic", "hlevel_without_import"];

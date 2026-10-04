@@ -38,3 +38,5 @@ workbench's Kernel graph.
 | [`automatic_clauses_groupoid`](automatic_clauses_groupoid.cubist) | A groupoid's generated three-dimensional squash, with a dependent motive (E11). |
 | [`automatic_clauses_without_hlevels`](automatic_clauses_without_hlevels.cubist) | A truncation's squash clause with no import of hlevels to generate it. |
 | [`hlevel_lemmas`](hlevel_lemmas.cubist) | The library's h-levels at work, from the former `tests/hlevels.test.mjs`: each named level by conversion, the lemmas in a universe above U0, retracts, functions, pairs, products and subtypes, contractible types, Hedberg, and lemmas that prove no more than they state. |
+| [`hlevel_tactic`](hlevel_tactic.cubist) | The hlevel tactic, for `tests/hlevel.test.mjs`: each kind of goal it proves, from evidence, hints and the type's shape, dependent path h-levels, and its refusals, each naming the first obligation nothing discharges. |
+| [`hlevel_without_import`](hlevel_without_import.cubist) | hlevel with no import of hlevels, which it names. |
