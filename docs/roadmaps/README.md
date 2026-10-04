@@ -8,7 +8,9 @@ target statement or a supplied theorem parameter as an already proved result.
 
 - [Work plan](work-plan.md): the staged, dependency-ordered plan across all
   roadmaps. Start here. The active scope is language features and their
-  kernel support; concrete mathematical development is paused.
+  kernel support, and since 2026-10-05 the library's foundations: the
+  natural numbers, quotients, the integers and rationals, and the algebraic
+  hierarchy. Other mathematical development is paused.
 - [Work-plan audit of 2026-09-28](audits/2026-09-28-audit.md): the baseline
   revision (`02a57ef`) and findings behind the current statuses, including
   the instruction-isolation defect, corrected the same day (work-plan I1.2a).
@@ -30,6 +32,9 @@ target statement or a supplied theorem parameter as an already proved result.
   canonical quotients, presentations and derived declarations. One-sort
   `inductive` and explicit `match` are released with H1 on 2026-10-02; the
   rest is proposed, with three promises corrected by the audit.
+- [Core theories](core-theories.md): the contract of work-plan L2.4,
+  theory declarations, models, scoped notation, sections, extension,
+  homomorphisms and isomorphisms, specified on 2026-10-05.
 - [Results of the first library](../library-results.md): what the archived
   library established, in mathematical English.
 - [Kernel instructions](kernel-instructions.md): the trusted kernel since
