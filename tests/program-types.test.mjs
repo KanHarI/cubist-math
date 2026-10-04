@@ -5,11 +5,17 @@ import createCubical from "../web/dist/cubical.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
 import { instructions } from "../web/cubical-instructions.mjs";
 import { cubicalKinds } from "../web/cubical-kernel.mjs";
-import { checkProgram } from "./check-program.mjs";
+import { checkProgram, testModule } from "./check-program.mjs";
+
+// Nat and W as source declarations. The cases whose verdicts are the test are
+// cubist-tests/program_types*.cubist (tests/cubist-tests.test.mjs compares
+// them); here, what a verdict does not show, and the programs that need an
+// option or are generated.
 
 const module=await createCubical();
 const check = (t, source, options = {}) => checkProgram(t, source, { module, options });
 const ok=result=>assert.equal(result.complete,true,JSON.stringify(result.gaps));
+const types=testModule("program_types",{module});
 
 test("Nat, its constructors and W require ordinary source imports",async t=>{
   const {result}=await check(t,`def missing : Nat := 0;
@@ -21,52 +27,17 @@ def tree := W(U0, U0, Unit, fun (a : Unit) => Void);
   for(const output of result.outputs)assert.match(output.reason,/Untranslated name/);
 });
 
-test("Nat is an ordinary name that can be bound or shadowed",async t=>{
-  const {result}=await check(t,`def identity(Nat : U0, x : Nat) := x;
-def Nat := Unit;
-def point : Nat := tt;
-`);
-  ok(result);
-});
-
-test("imported Nat has generic constructors, literals and elimination",async t=>{
-  const {program,result}=await check(t,`import nat;
-def two : Nat := 2;
-def double(n : Nat) : Nat := match n { zero => zero; succ(k) => succ(succ(double(k))); };
-def four : double(two) = 4 { rfl; }
-def predecessor(n : Nat) := induction n as k return Nat { zero => 0; succ h => k; };
-def pred_two : predecessor(two) = 1 { rfl; }
-`);
-  ok(result);
-  assert.equal(program.inspect("main__two").type.tag,"Sort");
-  const tags=new Set(),seen=new WeakSet();
-  const visit=value=>{if(!value||typeof value!=="object"||seen.has(value))return;seen.add(value);if(value.tag)tags.add(value.tag);Object.values(value).forEach(visit);};
-  for(const [name] of program.kernel.definitions){const view=program.inspect(name);visit(view.expression);visit(view.type);}
-  for(const tag of ["Nat","Zero","Succ","NatRec","W","Sup","WRec"])assert.equal(tags.has(tag),false,tag);
-  assert.ok(tags.has("Con"));assert.ok(tags.has("Elim"));
-});
-
-test("constructor shadowing does not retarget literals in imported Nat",async t=>{
-  const {result}=await check(t,`import nat;
-inductive N { zero; succ(n : N); }
-def ordinary : N := succ(zero);
-def literal : Nat := 2;
-def same : literal = 2 { rfl; }
-`);
-  ok(result);
-});
-
-test("source W and its dependent eliminator compute at finite universes",async t=>{
-  const {result}=await check(t,`import nat;
-import w;
-def Tree := W(U1, U0, Unit, fun (a : Unit) => Void);
-def leaf : Tree := sup(tt, fun (v : Void) => typed(Tree, absurd(v)));
-def result := wrec(U1, U0, U0, Unit, (fun (a : Unit) => Void),
-  (fun (t : Tree) => Nat),
-  (fun (a : Unit, children : Void -> Tree, ih : Void -> Nat) => 2), leaf);
-def computed : result = 2 { rfl; }
-`);
-  ok(result);
+// Imported Nat and W are source declarations: no definition the program
+// holds uses a retired primitive, and they build with constructors and
+// eliminators.
+test("imported Nat and W use no retired primitive", async () => {
+  const { program } = await types();
+  assert.equal(program.inspect("program_types__two").type.tag, "Sort");
+  const tags = new Set(), seen = new WeakSet();
+  const visit = value => { if (!value || typeof value !== "object" || seen.has(value)) return; seen.add(value); if (value.tag) tags.add(value.tag); Object.values(value).forEach(visit); };
+  for (const [name] of program.kernel.definitions) { const view = program.inspect(name); visit(view.expression); visit(view.type); }
+  for (const tag of ["Nat", "Zero", "Succ", "NatRec", "W", "Sup", "WRec"]) assert.equal(tags.has(tag), false, tag);
+  assert.ok(tags.has("Con")); assert.ok(tags.has("Elim"));
 });
 
 test("a fresh driver replays a level binder after a conflicting term entry",async t=>{
@@ -116,12 +87,3 @@ test("imported Nat keeps a folded 2^22 value and discards it without unary evalu
   assert.equal(program.inspect("main__discarded",{normalize:true}).expression.index,0);
 });
 
-test("an ordinary W declaration at a fixed higher universe checks",async t=>{
-  const {result}=await check(t,`inductive BigW(A : UU0, B : A -> UU0) : UU0 {
-    big_sup(a : A, children : B(a) -> BigW(A,B));
-  }
-  def Small := BigW(Unit, fun (a : Unit) => Void);
-  def leaf : Small := big_sup(tt, fun (v : Void) => typed(Small, absurd(v)));
-  `);
-  ok(result);
-});

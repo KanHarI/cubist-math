@@ -44,3 +44,6 @@ workbench's Kernel graph.
 | [`h1_acceptance_formers`](h1_acceptance_formers.cubist) | H1 acceptance V9, V10, V11: a former as a function, a signature at tier 1, and an instance at a successor level. |
 | [`h1_acceptance_instances`](h1_acceptance_instances.cubist) | H1 acceptance V21, V22, V23, V29: maps between recorded instances, and universes written in the header. |
 | [`h1_acceptance_paths`](h1_acceptance_paths.cubist) | H1 acceptance N5, N6, G1: path eta at a constructor, a boundary that does not hold, and no downward resizing. |
+| [`program_types`](program_types.cubist) | Nat and W as source declarations, for `tests/program-types.test.mjs`: imported Nat's constructors, literals and elimination, W's dependent eliminator computing, and a W declaration at a fixed higher universe. |
+| [`program_types_nat_as_name`](program_types_nat_as_name.cubist) | Nat is an ordinary name, bound or shadowed. |
+| [`program_types_constructor_shadowing`](program_types_constructor_shadowing.cubist) | A declared type's zero and succ shadow Nat's constructors, not its literals. |
