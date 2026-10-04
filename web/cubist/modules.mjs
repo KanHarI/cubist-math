@@ -441,5 +441,6 @@ export const cubistTestModules = [
   "translation_weak_j", "mismatch_source_syntax", "mismatch_calc_naming", "source_text_messages",
   "inspection_declared_types", "inspection_shadowed_nat", "inspection_axiom_labels", "inspection_let_alias",
   "assembly_fixture", "assembly_generic_assumptions", "glue_printed", "admission_two", "reduction_demo",
-  "f4_extension_loops", "f4_extension_loops_false"
+  "f4_extension_loops", "f4_extension_loops_false", "fingerprint_fixture", "documentation_helper",
+  "documentation_use"
 ];

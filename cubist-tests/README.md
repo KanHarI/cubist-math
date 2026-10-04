@@ -210,3 +210,6 @@ workbench's Kernel graph.
 | [`reduction_demo`](reduction_demo.cubist) | Declarations that `tests/cubical-reduction.test.mjs` reduces by delta and beta steps. |
 | [`f4_extension_loops`](f4_extension_loops.cubist) | The F4 extension's loop type equals C2, through the archive's axiom-free lemmas. |
 | [`f4_extension_loops_false`](f4_extension_loops_false.cubist) | The two-loop equality certifies no one-element loop type. |
+| [`fingerprint_fixture`](fingerprint_fixture.cubist) | Declarations whose elaboration fingerprints `tests/elaboration-fingerprint.test.mjs` takes and compares after edits. |
+| [`documentation_helper`](documentation_helper.cubist) | An imported definition documented by its comment. |
+| [`documentation_use`](documentation_use.cubist) | Documentation from local and imported source: the comment directly above a declaration. |
