@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
-import { cubistTestModules } from "../web/cubist/modules.mjs";
+import { archiveModules, cubistTestModules, libraryModules } from "../web/cubist/modules.mjs";
 import { checkedModule, inlined, reported, stated, stripped } from "../tools/inline-errors.mjs";
 
 // The Cubist tests under cubist-tests/: every module is listed, so that the
@@ -14,6 +14,13 @@ test("every Cubist test module is listed, and the README names it", async () => 
   assert.deepEqual(files, [...cubistTestModules].sort());
   const readme = await readFile(new URL("../cubist-tests/README.md", import.meta.url), "utf8");
   for (const name of cubistTestModules) assert.ok(readme.includes(`[\`${name}\`](${name}.cubist)`), name);
+});
+
+// A test module's name is its own: one shared with a library or archive
+// module would stand for it in the imports of the other test modules.
+test("no Cubist test module shares its name with a library or archive module", () => {
+  const shadowed = cubistTestModules.filter(name => libraryModules.includes(name) || archiveModules.includes(name));
+  assert.deepEqual(shadowed, []);
 });
 
 // Each module's comments state every error and warning its check reports,
