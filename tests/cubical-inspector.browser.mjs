@@ -371,8 +371,12 @@ try {
       def generic(U < UU0, n : Nat) : n + 0 = n {
         calc { n + 0 = n by nat_add_zero(n); }
       }`;
-    const program=new CubicalProgram(await createCubical(),async name=>
-      (await fetch(`/archive/first-library/${name}.cubist`)).text());
+    // A module the archive does not hold, such as the prelude nat, is read
+    // as missing; the program then loads its bundled prelude.
+    const program=new CubicalProgram(await createCubical(),async name=>{
+      const response=await fetch(`/archive/first-library/${name}.cubist`);
+      return response.ok?response.text():null;
+    });
     try {
       const result=await program.check(source,"browser_generic_calc");
       const offset=source.indexOf("by nat_add_zero");
@@ -402,9 +406,10 @@ try {
   assert.match(await page.locator("#syntax").inputValue(),/Raw syntax exceeds the display limit/);
   assert.equal(await page.locator("#check").isDisabled(),true);
   assert.ok((await page.locator("#expression").textContent()).length>0);
-  // An archive proof imports only from the archive, as the CLI checks it: in
-  // the default Euclid page, importing the rebuilt library leaves the check
-  // incomplete, while the library's own page imports it.
+  // A page's imports resolve by where its source lives, as the CLI checks it:
+  // the library is self-contained, so on a library page importing an archive
+  // module leaves the check incomplete, while an archive proof, such as the
+  // default Euclid page, may import the library.
   // The page keeps an edited draft across visits, so each edit starts from
   // the repository's source.
   const statusAfterImport = async (proof, root, header) => {
@@ -415,9 +420,10 @@ try {
     await page.locator("#check").click(); await idle();
     return page.locator("#status").textContent();
   };
-  assert.match(await statusAfterImport("euclid", "archive/first-library", "import classical_axioms;"), /check incomplete/);
+  assert.match(await statusAfterImport("universe_automorphisms", "library", "import classical;"), /check incomplete/);
+  assert.match(await statusAfterImport("euclid", "archive/first-library", "import classical_axioms;"), /· checked/);
   assert.match(await statusAfterImport("euclid", "archive/first-library", "import classical;"), /· checked/);
   assert.match(await statusAfterImport("universe_automorphisms", "library", "import naturals;"), /· checked/);
   assert.deepEqual(errors, []);
-  console.log("PASS cubical inspector: folding, navigation, simp trace/freeze, generic transfer, bounded raw syntax, workbench editing, and archive-isolated imports");
+  console.log("PASS cubical inspector: folding, navigation, simp trace/freeze, generic transfer, bounded raw syntax, workbench editing, and imports by place");
 } finally { await browser?.close(); server.kill(); }

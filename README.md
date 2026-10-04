@@ -10,7 +10,7 @@ terms to the native kernel compiled to WebAssembly. Definitions remain named;
 conversion unfolds them on demand. Explicit assumptions are shown with each proof.
 
 `Nat`, `zero`, and `succ` come from the ordinary source module
-[`nat.cubist`](archive/first-library/nat.cubist), imported as the standard prelude.
+[`nat.cubist`](library/nat.cubist), imported as the standard prelude.
 They are ordinary names and can be shadowed. Binary and radix numbers are
 ordinary inductive declarations too. The source module `w` keeps the inductive
 `W(U,V,A,B)` and its structurally recursive `wrec`, though nothing imports it.

@@ -10,15 +10,14 @@ import { sourceReader } from "../tools/module-sources.mjs";
 
 // The rebuilt library under library/: every module is listed and checks completely.
 // Imports resolve as the CLI's check resolves them (web/module-resolution.mjs):
-// a library module imports from the library, then the archive.
+// a library module imports only from the library, so a module that checks is
+// self-contained.
 
 // The assumptions each module's declarations use; a module not listed uses none.
 const assumptions = {
   classical_axioms: ["Choice", "LEM", "Truncate"],
   universe_automorphisms: ["LEM", "Truncate", "TruncateElim", "TruncateIntro", "TruncateProp"],
   h1_classical: ["Choice[h1_truncation.Trunc]", "LEM[h1_truncation.Trunc]"],
-  h1_cauchy_quotient: ["Truncate", "TruncateElim", "TruncateIntro", "TruncateProp"],
-  h1_zorn_step: ["LEM[h1_truncation.Trunc]"],
 };
 
 test("every library module is listed and checks completely", async t => {

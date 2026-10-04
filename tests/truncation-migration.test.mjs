@@ -76,9 +76,9 @@ test("archive module names check from the CLI and the verifier, with no marker",
 
 test("all four documented ledger comparisons verify their pinned changes and local public dependencies",()=>{
   const cases = [
-    ["cauchy_quotient","library/h1_cauchy_quotient.cubist",null,11],
+    ["cauchy_quotient","cubist-tests/h1_cauchy_quotient.cubist",null,11],
     ["field_logic","docs/examples/h1/migrations/field_logic.cubist","FieldProp,small_mere_eliminate",1],
-    ["zorn_chain_complete","library/h1_zorn_step.cubist","OrderMaximal,StrictlyAbove,strict_above_point,strict_above_laws,strict_above_is_set,no_maximal_strict_successor",1],
+    ["zorn_chain_complete","cubist-tests/h1_zorn_step.cubist","OrderMaximal,StrictlyAbove,strict_above_point,strict_above_laws,strict_above_is_set,no_maximal_strict_successor",1],
     ["classical_axioms","library/h1_classical.cubist","ExcludedMiddle,AxiomOfChoice,excluded_middle_assumed,axiom_of_choice_assumed",4]
   ];
   for (const [module,file,scope,count] of cases) {

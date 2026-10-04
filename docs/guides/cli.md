@@ -54,10 +54,11 @@ by where it lives:
   its own directory first, then from the rebuilt `library/`, then from the
   archived `archive/first-library/`. A local module can intentionally shadow a
   bundled module of the same name.
-- A module of `library/` imports from `library/`, then from the archive, so a
-  library module shadows the archive module of the same name.
-- A module of the archive imports only from the archive. The archive is a
-  closed world: checking an archive module never uses the rebuilt library.
+- A module of `library/` imports only from `library/`: the library is
+  self-contained.
+- A module of the archive imports from the archive, then from `library/`, where
+  the prelude `nat` lives. An archive module of a name always comes before a
+  library module of that name, so the archive's checks keep their modules.
 - A module of `cubist-tests/`, the Cubist sources the test suite checks,
   imports from `cubist-tests/`, then from `library/`, then from the archive.
   Nothing else imports a test module. Check one by its path:

@@ -1,6 +1,7 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { mkdtemp, mkdir, readFile, readdir, writeFile, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -19,8 +20,8 @@ import { budget } from "./timing.mjs";
 // runner, the library and reference tests and the browser worker share.
 
 test("a module resolves its imports by where it lives", async () => {
-  assert.deepEqual(searchOrder("archive"), ["archive"]);
-  assert.deepEqual(searchOrder("library"), ["library", "archive"]);
+  assert.deepEqual(searchOrder("archive"), ["archive", "library"]);
+  assert.deepEqual(searchOrder("library"), ["library"]);
   assert.deepEqual(searchOrder("tests"), ["tests", "library", "archive"]);
   assert.deepEqual(searchOrder("local"), ["local", "library", "archive"]);
   assert.deepEqual(searchOrder(), ["library", "archive"], "a source that is not a file");
@@ -32,16 +33,22 @@ test("a module resolves its imports by where it lives", async () => {
   assert.equal(placeOfFile(join(projectRoot, "archive/first-library/euclid.cubist")), "archive");
 
   const files = { "library/x": "library x", "archive/x": "archive x", "library/only": "library only",
-    "local/helper": "local helper", "tests/case": "tests case" };
+    "archive/old": "archive old", "local/helper": "local helper", "tests/case": "tests case" };
   const reader = () => moduleReader((place, name) => files[`${place}/${name}`] ?? null);
   const source = reader();
   assert.equal(await source("x"), "library x", "the library shadows the archive");
   assert.equal(source.placeOf("x"), "library");
+  // A library module sees only the library; an archive module sees the
+  // archive first, then the library.
+  const library = reader();
+  library.place("main", "library");
+  assert.equal(await library("x", "main"), "library x");
+  await assert.rejects(library("old", "main"),
+    { message: "No module named old in library/: a library module imports only from the library." });
   const archive = reader();
   archive.place("main", "archive");
-  assert.equal(await archive("x", "main"), "archive x", "an archive module never sees the library");
-  await assert.rejects(archive("only", "main"),
-    { message: "No module named only in archive/first-library/: an archive module imports only from the archive." });
+  assert.equal(await archive("x", "main"), "archive x", "a library module never replaces an archive module");
+  assert.equal(await archive("only", "main"), "library only", "the archive may build on the library");
   const local = reader();
   local.place("main", "local");
   assert.equal(await local("helper", "main"), "local helper");
@@ -57,11 +64,11 @@ test("a module resolves its imports by where it lives", async () => {
   await assert.rejects(reader()("case"), { message: "No module named case in library/ or archive/first-library/." });
   // A REPL entry imports the checked file it runs on top of.
   assert.equal(await local.checkImports("repl_1", ["main", "x"]), null);
-  // An archive module never sees a module this check loaded from the library.
-  assert.equal(await source("only"), "library only");
-  source.place("old", "archive");
-  assert.equal(await source.checkImports("old", ["only"]), "old imports only, but archive/first-library/ has "
-    + "no only; this check loaded only from library/, which old does not see.");
+  // A library module never sees a module this check loaded from the archive.
+  assert.equal(await source("old"), "archive old");
+  source.place("mine", "library");
+  assert.equal(await source.checkImports("mine", ["old"]), "mine imports old, but library/ has "
+    + "no old; this check loaded old from archive/first-library/, which mine does not see.");
   await assert.rejects(source("missing"), { message: "No module named missing in library/ or archive/first-library/." });
 
   // The browser knows modules by name: a listed module is fetched from its root.
@@ -74,10 +81,10 @@ test("a module resolves its imports by where it lives", async () => {
   assert.deepEqual(fetched, ["archive/first-library/x.cubist"], "an unlisted place is never fetched");
   // A listed test module is placed in the tests' root.
   assert.equal(listedReader({ library: [], archive: [], tests: ["t"] }, async path => path, "t").placeOf("t"), "tests");
-  // A page that loaded its source from the archive says so, listed or not.
-  const told = listedReader({ library: ["only"], archive: [] }, async path => path, "entry", "archive");
-  assert.equal(told.placeOf("entry"), "archive");
-  await assert.rejects(told("only", "entry"), /an archive module imports only from the archive/);
+  // A page that loaded its source from the library says so, listed or not.
+  const told = listedReader({ library: [], archive: ["old"] }, async path => path, "entry", "library");
+  assert.equal(told.placeOf("entry"), "library");
+  await assert.rejects(told("old", "entry"), /a library module imports only from the library/);
 });
 
 test("the browser lists every module the CLI finds on disk", async () => {
@@ -87,11 +94,13 @@ test("the browser lists every module the CLI finds on disk", async () => {
     "every archive module, entry points such as euclid and basics included");
   assert.deepEqual([...moduleListing.library].sort(), await names(moduleRoots.library));
   assert.deepEqual([...moduleListing.tests].sort(), await names(moduleRoots.tests));
-  // So the page's default proof is placed in the archive and imports only from it.
-  const reader = listedReader(moduleListing, async () => "", "euclid");
-  assert.equal(reader.placeOf("euclid"), "archive");
-  await assert.rejects(reader("classical_axioms", "euclid"),
-    { message: "No module named classical_axioms in archive/first-library/: an archive module imports only from the archive." });
+  // So the page's default proof is placed in the archive, and a library
+  // module imports only from the library.
+  assert.equal(listedReader(moduleListing, async () => "", "euclid").placeOf("euclid"), "archive");
+  const reader = listedReader(moduleListing, async () => "", "naturals");
+  assert.equal(reader.placeOf("naturals"), "library");
+  await assert.rejects(reader("euclid", "naturals"),
+    { message: "No module named euclid in library/: a library module imports only from the library." });
 });
 
 // A repository-shaped directory with a module x in both roots, an archive
@@ -129,7 +138,7 @@ test("same-name modules: each importer loads the module its place sees, one per 
   ({ program, result } = await checked(t, root, "import x;\ndef mine : Nat := x_value;\n"));
   assert.equal(result.complete, true, JSON.stringify(program.gaps));
   assert.equal(program.sources.x, await text("library/x.cubist"));
-  // Checking the archive file is archive-isolated.
+  // Checking the archive file is archive-first.
   const archived = join(root, "archive/first-library/a.cubist");
   ({ program, result } = await checked(t, root, await text("archive/first-library/a.cubist"), { path: archived, main: "a" }));
   assert.equal(result.complete, true, JSON.stringify(program.gaps));
@@ -192,23 +201,29 @@ test("test selection finds a module as the CLI does and loads the same imports",
     await text("archive/first-library/x.cubist"));
   const local = await loadProof(join(root, "work/main.cubist"), root);
   assert.deepEqual(local.sources, { x: await text("work/x.cubist"), helper: await text("work/helper.cubist") });
-  // A library module's imports: the library's own module, and archive modules.
+  // A library module's imports are the library's; an archive module's
+  // prelude is the library's nat.
   const library = await loadProof(join(projectRoot, "library/universe_automorphisms.cubist"));
   assert.equal(library.sources.classical_axioms, await readFile(join(projectRoot, "library/classical_axioms.cubist"), "utf8"));
-  assert.equal(library.sources.classical, await readFile(join(projectRoot, "archive/first-library/classical.cubist"), "utf8"));
+  assert.ok(Object.keys(library.sources).every(name => existsSync(join(projectRoot, "library", `${name}.cubist`))),
+    Object.keys(library.sources).join(", "));
+  assert.equal((await loadProof(join(projectRoot, "archive/first-library/basics.cubist"))).sources.nat,
+    await readFile(join(projectRoot, "library/nat.cubist"), "utf8"));
 });
 
 test("loading a selected proof refuses a clash in either order, as a check does", async t => {
   const { root } = await fixture(t);
-  await writeFile(join(root, "library/both.cubist"), "import x;\nimport a;\n");
-  await writeFile(join(root, "library/both_reversed.cubist"), "import a;\nimport x;\n");
-  await assert.rejects(loadProof(join(root, "library/both.cubist"), root), { message: "a imports x from "
+  // Files outside the roots, which import library-first.
+  await mkdir(join(root, "other"));
+  await writeFile(join(root, "other/both.cubist"), "import x;\nimport a;\n");
+  await writeFile(join(root, "other/both_reversed.cubist"), "import a;\nimport x;\n");
+  await assert.rejects(loadProof(join(root, "other/both.cubist"), root), { message: "a imports x from "
     + "archive/first-library/, but this check already loaded x from library/; a check holds one module per name." });
-  await assert.rejects(loadProof(join(root, "library/both_reversed.cubist"), root), { message: "both_reversed imports x "
+  await assert.rejects(loadProof(join(root, "other/both_reversed.cubist"), root), { message: "both_reversed imports x "
     + "from library/, but this check already loaded x from archive/first-library/; a check holds one module per name." });
   // A check of the same files refuses them too.
   for (const main of ["both", "both_reversed"]) {
-    const path = join(root, `library/${main}.cubist`);
+    const path = join(root, `other/${main}.cubist`);
     const program = new CubicalProgram(await createCubical(), sourceReader({ path, root }), { collectReferences: false });
     t.after(() => program.dispose());
     const outcome = await program.check(`${await readFile(path, "utf8")}def mine : Nat := x_value;\n`, main)

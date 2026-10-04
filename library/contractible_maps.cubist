@@ -2,9 +2,9 @@ import hlevels;
 
 // Equivalences as contractible maps: a function whose fibers are all
 // contractible (the HoTT book's section 4.4). This is the form the kernel
-// checks a Glue type's equivalences in; the `Equiv` of `import paths;` gives
-// an inverse and its laws instead, and every function with an inverse is one
-// (inverse_equiv).
+// checks a Glue type's equivalences in. An equivalence has an inverse with
+// both inverse laws (equiv_inverse), and every function with an inverse is
+// one (inverse_equiv).
 
 // The fiber of f over y, and a function whose fibers are all contractible.
 def Fiber(U < UU0, A, B : U, f : A -> B, y : B) : U := exists x : A. y = f(x);
@@ -31,6 +31,17 @@ computable def contr_equiv_witness_path(
   typed(ContrEquiv(U, A, B), (f, w0)) = (f, w1) := path i => (
     f, fun (y : B) => is_contr_is_prop(U, Fiber(U, A, B, f, y), w0(y), w1(y)) @ i
   );
+
+// The inverse of an equivalence sends y to the point of its fiber's center.
+// It is a section, by the center's path, and a retraction, since the point
+// (x, refl) of the fiber over f(x) is joined to the center.
+computable def equiv_inverse(U < UU0, A, B : U, e : ContrEquiv(U, A, B), y : B) : A := e.2(y).1.1;
+
+computable def equiv_inverse_section(U < UU0, A, B : U, e : ContrEquiv(U, A, B), y : B) :
+  e.1(equiv_inverse(U, A, B, e, y)) = y := path i => e.2(y).1.2 @ -i;
+
+computable def equiv_inverse_retraction(U < UU0, A, B : U, e : ContrEquiv(U, A, B), x : A) :
+  equiv_inverse(U, A, B, e, e.1(x)) = x := path i => (e.2(e.1(x)).2((x, refl(e.1(x)))) @ i).1;
 
 // Equivalences from inverses: a function with an inverse and both inverse
 // laws has contractible fibers, since any two points of a fiber are equal

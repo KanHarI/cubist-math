@@ -7,6 +7,7 @@
 // revision (default HEAD) is checked. Every module that imports a checked
 // module, directly or not, is compared too, against the edited definitions;
 // --no-dependents skips them. See tools/proof-migration.mjs.
+import { existsSync } from "node:fs";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -71,8 +72,16 @@ if (!noDependents) {
 }
 const originals = new Map();
 const available = new Set(git(["ls-tree","-r","--name-only",base,"--","library","archive/first-library"]).trim().split("\n"));
+// A module moved from the archive into the library since the base, as the
+// prelude nat was, is read from its old path but lives in the library, where
+// today's checks place it, so that a check holds it once.
+const movedToLibrary = new Set([...available].filter(path => path.startsWith(moduleRoots.archive))
+  .map(path => path.slice(moduleRoots.archive.length, -".cubist".length))
+  .filter(name => existsSync(`${root}${moduleRoots.library}${name}.cubist`)
+    && !existsSync(`${root}${moduleRoots.archive}${name}.cubist`)));
 const readOriginal = migrationSourceReader(async (place, name) => {
-  const path = `${moduleRoots[place]}${name}.cubist`;
+  if (movedToLibrary.has(name) && place !== "library") return null;
+  const path = movedToLibrary.has(name) ? `${moduleRoots.archive}${name}.cubist` : `${moduleRoots[place]}${name}.cubist`;
   if (!originals.has(path)) {
     // A baseline may predate a syntax change; it is read in today's syntax.
     let text = available.has(path) ? currentSyntax(git(["show",`${base}:${path}`])) : null;

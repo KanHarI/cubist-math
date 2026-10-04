@@ -151,6 +151,30 @@ computable def void_is_prop : IsProp(U0, Void) {
   exact absurd(x);
 }
 
+// A negation is a proposition: a function into Void, which is one.
+computable def not_is_prop(U < UU0, A : U) : IsProp(U, A -> Void) :=
+  pi_is_prop(U, A, fun (a : A) => Void, fun (a : A) => void_is_prop);
+
+// A type is decidable when it or its negation holds.
+def Decidable(U < UU0, A : U) : U := A or (A -> Void);
+
+// The decision of a proposition is a proposition: two decisions on the same
+// side agree, by the proposition or since negations are propositions, and
+// decisions on opposite sides contradict each other.
+computable def decision_is_prop(U < UU0, P : U, prop : IsProp(U, P)) : IsProp(U, Decidable(U, P)) {
+  intro x, y;
+  exact match x as v return (v = y) {
+    left p => match y as w return (typed(P or (P -> Void), left(p)) = w) {
+      left q => cong(fun (a : P) => typed(P or (P -> Void), left(a)), prop(p, q));
+      right no => absurd(no(p));
+    };
+    right no => match y as w return (typed(P or (P -> Void), right(no)) = w) {
+      left p => absurd(no(p));
+      right never => cong(fun (a : P -> Void) => typed(P or (P -> Void), right(a)), not_is_prop(U, P, no, never));
+    };
+  };
+}
+
 // Over a path p of A, a family of propositions connects any element over
 // its start to any element over its end: at each point of p, the two
 // elements, carried there along p, are equal.
@@ -262,10 +286,9 @@ computable def reflexive_prop_is_set(U < UU0, A : U, R : A -> A -> U,
 // Hedberg's theorem: a type with decidable equality is a set. Not-not
 // equality is a reflexive family of propositions, and a decision turns it
 // into equality.
-computable def hedberg(U < UU0, A : U, decide : forall x, y : A. (x = y) or ((x = y) -> Void)) : IsSet(U, A) :=
+computable def hedberg(U < UU0, A : U, decide : forall x, y : A. Decidable(U, x = y)) : IsSet(U, A) :=
   reflexive_prop_is_set(U, A, fun (x, y : A) => ((x = y) -> Void) -> Void,
-    fun (x, y : A) => pi_is_prop(U, (x = y) -> Void, fun (n : (x = y) -> Void) => Void,
-      fun (n : (x = y) -> Void) => void_is_prop),
+    fun (x, y : A) => not_is_prop(U, (x = y) -> Void),
     fun (x : A) => fun (n : (x = x) -> Void) => n(refl(x)),
     fun (x, y : A, c : ((x = y) -> Void) -> Void) => match decide(x, y) return (x = y) {
       left q => q;

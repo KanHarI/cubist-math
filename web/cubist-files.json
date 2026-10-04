@@ -919,10 +919,6 @@
    "summary": "Algebraic elements · canonical minimal polynomials"
   },
   {
-   "path": "archive/first-library/nat.cubist",
-   "summary": "Natural numbers · a source declaration"
-  },
-  {
    "path": "archive/first-library/natural_minimum.cubist",
    "summary": "Natural numbers · least witnesses"
   },
@@ -1839,6 +1835,14 @@
    "summary": "H1 acceptance N5, N6, G1: path eta at a constructor, a boundary that does not hold, and no downward resizing."
   },
   {
+   "path": "cubist-tests/h1_cauchy_quotient.cubist",
+   "summary": "The H1 migration of the archive's `cauchy_quotient` (see [`docs/roadmaps/h1-truncation-migration.md`](../docs/roadmaps/h1-truncation-migration.md)): Cauchy sequences with moduli and their equivalence relation over the declared truncation, still on the archive's fields and predicate quotient."
+  },
+  {
+   "path": "cubist-tests/h1_zorn_step.cubist",
+   "summary": "The H1 migration of a step of the archive's `zorn_chain_complete`: maximal elements, strict successors and double negation at U1 over the declared truncation, still on the archive's Bourbaki–Witt development."
+  },
+  {
    "path": "cubist-tests/hlevel_lemmas.cubist",
    "summary": "The library's h-levels at work, from the former `tests/hlevels.test.mjs`: each named level by conversion, the lemmas in a universe above U0, retracts, functions, pairs, products and subtypes, contractible types, Hedberg, and lemmas that prove no more than they state."
   },
@@ -2276,31 +2280,27 @@
   },
   {
    "path": "library/contractible_maps.cubist",
-   "summary": "Equivalences as contractible maps, the form the kernel checks a Glue type's equivalences in: the fiber of a function, a function whose fibers are contractible (`IsContrMap`), the type of such equivalences (`ContrEquiv`), the identity, and the equality of two equivalences with one forward map, since being contractible is a proposition. Every function with an inverse and both inverse laws is one (`inverse_equiv`, after Cubical Agda's `isoToIsEquiv`)."
-  },
-  {
-   "path": "library/h1_cauchy_quotient.cubist",
-   "summary": "Ordinary sequences equipped with moduli, followed by an equivalence-class quotient."
+   "summary": "Equivalences as contractible maps, the form the kernel checks a Glue type's equivalences in: the fiber of a function, a function whose fibers are contractible (`IsContrMap`), the type of such equivalences (`ContrEquiv`), the identity, and the equality of two equivalences with one forward map, since being contractible is a proposition. An equivalence has an inverse with both inverse laws (`equiv_inverse`), and every function with an inverse and both inverse laws is one (`inverse_equiv`, after Cubical Agda's `isoToIsEquiv`)."
   },
   {
    "path": "library/h1_classical.cubist",
-   "summary": "The same two non-computing assumptions, explicitly restated over Trunc."
+   "summary": "Excluded middle and choice stated over `Trunc`, as `LEM(Trunc, U)` and `Choice(Trunc, U)` give them; double-negation elimination for propositions, deciding a proposition, and resizing a proposition in `U1` to one in `U0`."
   },
   {
    "path": "library/h1_truncation.cubist",
-   "summary": "Universe-preserving truncation; the archive keeps its legacy assumptions."
-  },
-  {
-   "path": "library/h1_zorn_step.cubist",
-   "summary": "If there is no maximal element, each point merely has a strict successor."
+   "summary": "The propositional truncation `Trunc(U, A)` as a declared type that computes: `merely`, that it is a proposition, maps between truncations, and elimination into a proposition of any universe below `UU0`."
   },
   {
    "path": "library/hlevels.cubist",
-   "summary": "Contractible types, propositions and sets in every universe below `UU0`, with `HasLevel(U, n, A)` defined by recursion on `n`, so that `IsSet` is level 1 by conversion. Propositions are sets, levels are cumulative, having a level is a proposition, and a retract, such as a type equivalent to another by an inverse, a function type, a type of pairs, a product or a subtype keeps the level of the types it is made from. Contractible types are closed under the same constructions except subtypes, since a subtype can be empty, and being contractible is a proposition. A type with decidable equality, such as `Nat`, is a set (Hedberg)."
+   "summary": "Contractible types, propositions and sets in every universe below `UU0`, with `HasLevel(U, n, A)` defined by recursion on `n`, so that `IsSet` is level 1 by conversion. Propositions are sets, levels are cumulative, having a level is a proposition, and a retract, such as a type equivalent to another by an inverse, a function type, a type of pairs, a product or a subtype keeps the level of the types it is made from. Contractible types are closed under the same constructions except subtypes, since a subtype can be empty, and being contractible is a proposition. Negations are propositions (`not_is_prop`), and so is the decision of a proposition (`Decidable`, `decision_is_prop`). A type with decidable equality, such as `Nat`, is a set (Hedberg)."
   },
   {
    "path": "library/lists.cubist",
    "summary": "Lists of elements of a type in any universe below `UU0`, with their length and concatenation (`append`): `nil` is a unit on both sides, concatenation is associative, and the length of a concatenation is the sum of the lengths."
+  },
+  {
+   "path": "library/nat.cubist",
+   "summary": "The natural numbers, `Nat` with `zero` and `succ`: the prelude, which every module imports."
   },
   {
    "path": "library/naturals.cubist",
@@ -2316,7 +2316,7 @@
   },
   {
    "path": "library/universe_automorphisms.cubist",
-   "summary": "Excluded middle for `U0` holds exactly when there merely is an automorphism of `U0` sending `Unit` to `Void`. Both directions without the truncations use no assumption."
+   "summary": "Excluded middle for `U0` holds exactly when there merely is an automorphism of `U0` sending `Unit` to `Void`, for the equivalences of [`contractible_maps`](contractible_maps.cubist), with equal types from [`univalence`](univalence.cubist)'s `glue_path`. Both directions without the truncations use no assumption."
   }
  ]
 }
