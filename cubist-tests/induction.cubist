@@ -1,0 +1,132 @@
+// `induction` on any declared type: a clause per constructor, as in match,
+// whose names are the constructor's arguments and then, optionally, an
+// induction hypothesis for each recursive argument. Natural numbers keep
+// their own form, zero => …; succ h => …;, as well. From
+// tests/induction.test.mjs.
+
+inductive List(U < UU0, A : U) : U {
+  nil;
+  cons(head : A, tail : List(U, A));
+}
+
+// An induction expression names its hypotheses after the arguments.
+def length(xs : List(U0, Nat)) : Nat := induction xs return Nat {
+    nil => 0;
+    cons(head, tail, ih) => succ(ih);
+  };
+
+def append(xs, ys : List(U0, Nat)) : List(U0, Nat) := induction xs return List(U0, Nat) {
+    nil => ys;
+    cons(head, tail, rest) => cons(head, rest);
+  };
+
+// The motive may depend on the value, so the hypothesis is the statement for the tail.
+def append_nil(xs : List(U0, Nat)) :
+  append(xs, nil) = xs := induction xs as v return append(v, nil) = v {
+    nil => refl(typed(List(U0, Nat), nil));
+    cons(head, tail, ih) => cong(
+      fun (rest : List(U0, Nat)) => typed(List(U0, Nat), cons(head, rest)), ih
+    );
+  };
+
+// Hypotheses may be left out, as a match does.
+def head_or_zero(xs : List(U0, Nat)) : Nat := induction xs return Nat {
+    nil => 0;
+    cons(head, tail) => head;
+  };
+
+def two : length(cons(1, cons(2, nil))) = 2 {
+  rfl;
+}
+
+def joined : append(cons(1, nil), cons(2, nil)) = cons(1, cons(2, nil)) {
+  rfl;
+}
+
+// The induction statement proves a goal with a hypothesis for each recursive
+// argument.
+def append_assoc(xs, ys, zs : List(U0, Nat)) :
+  append(append(xs, ys), zs) = append(xs, append(ys, zs)) {
+  induction xs {
+    nil => {
+      rfl;
+    }
+    cons(head, tail, ih) => {
+      exact cong(fun (rest : List(U0, Nat)) => typed(List(U0, Nat), cons(head, rest)), ih);
+    }
+  }
+}
+
+// Natural numbers take the general form and their own, which agree.
+def general(n : Nat) : Nat := induction n return Nat {
+    zero => 0;
+    succ(k, h) => succ(succ(h));
+  };
+
+def own(n : Nat) : Nat := induction n return Nat {
+    zero => 0;
+    succ h => succ(succ(h));
+  };
+
+def same : general = own {
+  rfl;
+}
+
+def six : general(3) = 6 {
+  rfl;
+}
+
+// Path constructors and function-typed recursive arguments.
+inductive Circle : U0 {
+  base;
+  loop : base = base;
+}
+
+def flat(c : Circle) : Nat := induction c return Nat {
+    base => 0;
+    loop @ i => 0;
+  };
+
+inductive Tree : U0 {
+  leaf;
+  node(children : Nat -> Tree);
+}
+
+// The hypothesis for children is a function: the result for each child.
+def leftmost_depth(t : Tree) : Nat := induction t return Nat {
+    leaf => 0;
+    node(children, below) => succ(below(0));
+  };
+
+// Refusals and the warning, each with its code.
+// Error: E557: cons takes 2 arguments here, then its induction hypothesis if you name them: cons(…)
+//   with 2 or 3 names.
+def too_few(xs : List(U0, Nat)) : Nat := induction xs return Nat {
+    nil => 0;
+    cons(head) => 1;
+  };
+
+// Error: E371: induction requires a value of a declared type.
+def a_pair(p : Nat and Nat) : Nat := induction p return Nat {
+    pair(a, b) => a;
+  };
+
+// Error: E467: Statements after induction are unreachable: each clause's block closes the goal.
+def after(n : Nat) : Nat {
+  induction n {
+    zero => {
+      exact 0;
+    }
+    succ(k, h) => {
+      exact h;
+    }
+  }
+  exact 0;
+}
+
+// Warning: W707: v is unused: the return type does not mention it. Omit as v: induction xs return
+//   ….
+def unused(xs : List(U0, Nat)) : Nat := induction xs as v return Nat {
+    nil => 0;
+    cons(head, tail, ih) => ih;
+  };
