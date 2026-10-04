@@ -9,10 +9,12 @@
 // own directory ("local").
 //
 // Each module resolves its own imports by where it lives:
-// - An archive module resolves only in the archive. The archive is a closed
-//   world: its checks never change as the library grows, and a library module
-//   of the same name never replaces an archive module's import.
-// - A library module resolves in library/, then in the archive.
+// - A library module resolves only in library/. The library is
+//   self-contained: nothing in it depends on the archive.
+// - An archive module resolves in the archive, then in library/. The archive
+//   may build on the library, as every module builds on the prelude, nat,
+//   which lives there; a library module of the same name never replaces an
+//   archive module's import, so the archive's checks keep their modules.
 // - A test module resolves in cubist-tests/, then in library/, then in the
 //   archive. Nothing else imports a test module.
 // - A local module (the checked file or a module next to it) resolves in its
@@ -20,8 +22,9 @@
 // - A source that is not a file (a REPL entry, a reference example, the
 //   browser's workspace) resolves in library/, then in the archive. It also
 //   sees the checked source it is entered on top of, by that source's name.
-// So checking an archive module is archive-isolated, and checking anything else
-// is library-first: a library module shadows the archive module of that name.
+// So checking a library module is library-only, checking an archive module is
+// archive-first, and checking anything else is library-first: a library
+// module shadows the archive module of that name.
 //
 // A check holds one module per name. When two modules of one check would
 // resolve the same name to different files, for example a library module and
@@ -35,8 +38,8 @@ export const moduleNamePattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 // Where a module is searched for, by where its importer lives.
 const searchOrders = Object.freeze({
-  archive: ["archive"],
-  library: ["library", "archive"],
+  archive: ["archive", "library"],
+  library: ["library"],
   tests: ["tests", "library", "archive"],
   local: ["local", "library", "archive"],
   source: ["library", "archive"],
@@ -83,7 +86,7 @@ export function moduleReader(read) {
     const order = searchOrder(placed.get(importer));
     const place = await locate(name, order);
     if (place === null) throw new Error(`No module named ${name} in ${either(order)}${
-      order.length === 1 ? ": an archive module imports only from the archive" : ""}.`);
+      placed.get(importer) === "library" ? ": a library module imports only from the library" : ""}.`);
     placed.set(name, place);
     return probe(place, name);
   };

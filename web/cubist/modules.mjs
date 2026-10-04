@@ -3,7 +3,6 @@
 // each a title and a browsing topic, and web/module-listing.mjs lists them
 // for the browser.
 export const archiveModules = [
-  "nat",
   "w",
   "pushout",
   "fundamental_groups",
@@ -380,9 +379,10 @@ export const archiveModules = [
 ];
 
 // Modules of the rebuilt library, served from library/. A name here shadows an
-// archive module of the same name.
-export const libraryModules = ["naturals", "classical_axioms", "universe_automorphisms", "hlevels",
-  "h1_truncation", "h1_classical", "h1_cauchy_quotient", "h1_zorn_step", "contractible_maps", "univalence",
+// archive module of the same name. The first, nat, is the prelude every
+// module imports.
+export const libraryModules = ["nat", "naturals", "classical_axioms", "universe_automorphisms", "hlevels",
+  "h1_truncation", "h1_classical", "contractible_maps", "univalence",
   "lists", "quotients"];
 
 // The Cubist sources the test suite checks (cubist-tests/), each a module the
@@ -434,8 +434,8 @@ export const cubistTestModules = [
   "polynomial_algebra_adjoined_root_regression", "polynomial_algebra_invalid_polynomial_claims",
   "polynomial_algebra_polynomial_regression", "quotient_groups_invalid_quotient",
   "quotient_groups_quotient_regression", "quotient_universal_hom_universe_regression",
-  "quotient_universal_regression", "quotient_universal_bad_factorization", "truncation_small_mere",
-  "truncation_cauchy_same", "truncation_resize", "truncation_strict_successor",
+  "quotient_universal_regression", "quotient_universal_bad_factorization", "h1_cauchy_quotient", "h1_zorn_step",
+  "truncation_small_mere", "truncation_cauchy_same", "truncation_resize", "truncation_strict_successor",
   "truncation_rebuilt_classical", "printer_lint", "translation_failed_proofs", "translation_path_induction",
   "translation_weak_j", "mismatch_source_syntax", "mismatch_calc_naming", "source_text_messages",
   "inspection_declared_types", "inspection_shadowed_nat", "inspection_axiom_labels", "inspection_let_alias",

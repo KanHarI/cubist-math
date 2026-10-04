@@ -9,7 +9,7 @@ remains (the specification's 5.7 and 6.4).
 
 ## Source and imports
 
-[`nat.cubist`](../../archive/first-library/nat.cubist) contains the ordinary
+[`nat.cubist`](../../library/nat.cubist) contains the ordinary
 declaration:
 
 ```cubist

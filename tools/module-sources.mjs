@@ -29,7 +29,7 @@ export const placeOfFile = (path, root = projectRoot) =>
 
 // A readSource for CubicalProgram. With `path`, it checks that file: the file
 // is placed where it really lives, so an archive file is checked
-// archive-isolated, and a file outside both roots imports from its own real
+// archive-first, and a file outside both roots imports from its own real
 // directory first. It keeps the name it is checked under. Without a path, the
 // checked source is not a file (a REPL entry, a reference example) and imports
 // library-first. Call it with a module name alone to read a main module

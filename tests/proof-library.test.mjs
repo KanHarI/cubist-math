@@ -2,12 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import { proofCatalog, proofTopics, proofsInTopic } from "../web/proof-library.mjs";
-import { archiveModules } from "../web/cubist/modules.mjs";
+import { archiveModules, libraryModules } from "../web/cubist/modules.mjs";
 import { parse } from "../web/cubist/parser.mjs";
 
+// An archive module imports from the archive, then from the library.
 test("every bundled import is available to the browser worker", async () => {
-  const available = new Set(archiveModules);
-  await Promise.all([...available].map(async name => {
+  const available = new Set([...archiveModules, ...libraryModules]);
+  await Promise.all(archiveModules.map(async name => {
     const source = await readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
     for (const dependency of parse(source).imports) {
       assert.ok(available.has(dependency), `${name} imports unregistered module ${dependency}`);

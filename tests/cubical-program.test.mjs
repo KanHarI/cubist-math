@@ -19,9 +19,9 @@ const module = await createCubical();
 const cases = (t, name, options = {}) => checkTestModule(t, `program_${name}`, { module, options });
 
 // A reader with no library, such as the first test's, still loads `nat`.
-test("the bundled prelude source is the archive's nat module", async () => {
-  assert.equal(naturalSource, await readFile(new URL("../archive/first-library/nat.cubist", import.meta.url), "utf8"),
-    "Regenerate web/translator/nat-source.mjs from archive/first-library/nat.cubist.");
+test("the bundled prelude source is the library's nat module", async () => {
+  assert.equal(naturalSource, await readFile(new URL("../library/nat.cubist", import.meta.url), "utf8"),
+    "Regenerate web/translator/nat-source.mjs from library/nat.cubist.");
 });
 
 test("a universe-generic definition is one kernel definition", async t => {

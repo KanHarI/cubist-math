@@ -183,6 +183,8 @@ workbench's Kernel graph.
 | [`quotient_universal_hom_universe_regression`](quotient_universal_hom_universe_regression.cubist) | The homomorphism universe schemas at U0 to U3, each computable, and agreeing with small homomorphisms. |
 | [`quotient_universal_regression`](quotient_universal_regression.cubist) | The quotient universal property for a genuinely U1 target, without representative choice. |
 | [`quotient_universal_bad_factorization`](quotient_universal_bad_factorization.cubist) | A factorization without the subgroup-killing hypothesis, refused. |
+| [`h1_cauchy_quotient`](h1_cauchy_quotient.cubist) | The H1 migration of the archive's `cauchy_quotient` (see [`docs/roadmaps/h1-truncation-migration.md`](../docs/roadmaps/h1-truncation-migration.md)): Cauchy sequences with moduli and their equivalence relation over the declared truncation, still on the archive's fields and predicate quotient. |
+| [`h1_zorn_step`](h1_zorn_step.cubist) | The H1 migration of a step of the archive's `zorn_chain_complete`: maximal elements, strict successors and double negation at U1 over the declared truncation, still on the archive's Bourbaki–Witt development. |
 | [`truncation_small_mere`](truncation_small_mere.cubist) | G2: `small_mere_eliminate` into U1 through the declared eliminator, computable. |
 | [`truncation_cauchy_same`](truncation_cauchy_same.cubist) | G5: the rebuilt `CauchySame` and `EventualClose` in U0, computable. |
 | [`truncation_resize`](truncation_resize.cubist) | G6: resizing a proposition with LEM alone, and a `StrictlyAbove` witness refused set evidence. |

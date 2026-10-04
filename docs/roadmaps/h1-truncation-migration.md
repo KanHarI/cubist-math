@@ -19,7 +19,7 @@ have no logical assumptions. The legacy archive stays isolated and unchanged.
 | G6 | `resize_prop` decides a proposition using rebuilt LEM at U1, returning Unit or Void with proposition evidence and maps both ways | `LEM[h1_truncation.Trunc]` only; set evidence for `StrictlyAbove` is rejected |
 | G7 | Rebuilt `no_maximal_strict_successor` uses double-negation elimination at U1 on its large truncated conclusion | Legacy LEM explicitly replaced by `LEM[h1_truncation.Trunc]`; the four legacy truncation dependencies removed |
 
-`library/h1_cauchy_quotient.cubist` has 16 declarations: five verify as identical and
+`cubist-tests/h1_cauchy_quotient.cubist` has 16 declarations: five verify as identical and
 eleven have exact ledger changes. Its representative-selection wrappers
 still call the archived predicate quotient and retain its legacy truncation
 dependencies. Those wrappers are recorded explicitly; this slice rebuilds
@@ -31,6 +31,12 @@ unchanged `FieldProp` predicate alongside `small_mere_eliminate`. Neither
 claims to rebuild `zorn_chain_complete`, the tower or all of the other remedy
 groups. `tower_induction_large` and `tower_relative_induction` are explicitly
 deferred to H2, and group 5 is refused by the implemented ledger validator.
+
+The two slices that build on archive developments, `h1_cauchy_quotient` and
+`h1_zorn_step`, live in `cubist-tests/`, since a library module imports only
+library modules. The prelude `nat` has since moved from the archive into the
+library; the verifier reads its baseline from the old path and places it in
+the library, as today's checks do.
 
 ## Classical signatures
 
@@ -69,9 +75,9 @@ definitions and admitted signatures, so a folded name cannot hide a changed
 dependency even when its public type stays the same.
 
 ```sh
-node tools/verify-proof-migration.mjs --base cc6b50f --no-dependents --edited-file library/h1_cauchy_quotient.cubist --ledger docs/roadmaps/h1-truncation-ledger.json cauchy_quotient
+node tools/verify-proof-migration.mjs --base cc6b50f --no-dependents --edited-file cubist-tests/h1_cauchy_quotient.cubist --ledger docs/roadmaps/h1-truncation-ledger.json cauchy_quotient
 node tools/verify-proof-migration.mjs --base cc6b50f --no-dependents --edited-file docs/examples/h1/migrations/field_logic.cubist --declarations FieldProp,small_mere_eliminate --ledger docs/roadmaps/h1-truncation-ledger.json field_logic
-node tools/verify-proof-migration.mjs --base cc6b50f --no-dependents --edited-file library/h1_zorn_step.cubist --declarations OrderMaximal,StrictlyAbove,strict_above_point,strict_above_laws,strict_above_is_set,no_maximal_strict_successor --ledger docs/roadmaps/h1-truncation-ledger.json zorn_chain_complete
+node tools/verify-proof-migration.mjs --base cc6b50f --no-dependents --edited-file cubist-tests/h1_zorn_step.cubist --declarations OrderMaximal,StrictlyAbove,strict_above_point,strict_above_laws,strict_above_is_set,no_maximal_strict_successor --ledger docs/roadmaps/h1-truncation-ledger.json zorn_chain_complete
 node tools/verify-proof-migration.mjs --base cc6b50f --no-dependents --edited-file library/h1_classical.cubist --declarations ExcludedMiddle,AxiomOfChoice,excluded_middle_assumed,axiom_of_choice_assumed --ledger docs/roadmaps/h1-truncation-ledger.json classical_axioms
 ```
 

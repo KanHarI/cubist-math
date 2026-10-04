@@ -14,25 +14,6 @@ def axiom_of_choice_assumed(U < UU0) : AxiomOfChoice(U) := Choice(Trunc, U);
 def double_negation(U < UU0, P : U, prop : IsProp(U, P), h : (P -> Void) -> Void) :
   P := mere_eliminate(U, U, P, P, prop, fun (p : P) => p, LEM(Trunc, U, P, h));
 
-// P or not P is a proposition when P is: like cases use proposition
-// evidence; unlike cases contradict the negative branch.
-computable def decision_is_prop(U < UU0, P : U, prop : IsProp(U, P)) : IsProp(U, P or (P -> Void)) {
-  intro x, y;
-  exact match x as v return (v = y) {
-    left p => match y as w return (typed(P or (P -> Void), left(p)) = w) {
-      left q => cong(fun (a : P) => typed(P or (P -> Void), left(a)), prop(p, q));
-      right no => absurd(no(p));
-    };
-    right no => match y as w return (typed(P or (P -> Void), right(no)) = w) {
-      left p => absurd(no(p));
-      right never => cong(
-        fun (a : P -> Void) => typed(P or (P -> Void), right(a)),
-        pi_is_prop(U, P, fun (p : P) => Void, fun (p : P) => void_is_prop, no, never)
-      );
-    };
-  };
-}
-
 def decide_prop(U < UU0, P : U, prop : IsProp(U, P)) :
   P
   or (P -> Void) := double_negation(

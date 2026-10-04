@@ -23,7 +23,6 @@ export const proofTopics = [
 // The archive's modules as the proof selector shows them: each one's title and
 // browsing topic.
 export const proofCatalog = [
-  { id: "nat", topic: "arithmetic", title: "Natural numbers · a source declaration" },
   { id: "w", topic: "homotopy", title: "Well-founded trees · a source declaration" },
   { id: "pushout", topic: "homotopy", title: "Pushouts · a higher inductive source declaration" },
   { id: "field_embedding_spaces", topic: "fields", title: "Spaces of field embeddings over a base" },
