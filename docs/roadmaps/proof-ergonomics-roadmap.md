@@ -12,9 +12,8 @@ name-capture bug; see the [implementation checkpoint](../tactical/proof-ergonomi
 The shared goal layer's core and motive abstraction are delivered (HoTT A5),
 as are G0's checked universe binders and milestone 8's core computability
 features. Argument inference and theories remain open; one-sort inductive
-declarations and the explicit expression `match` are experimental behind
-the `h1` option since 2026-09-28 (work-plan L2.1 and L2.2a), and the rest
-of milestone 7 is open.
+declarations and explicit `match` were released with H1 on 2026-10-02
+(work-plan L2.1 and L2.2a), and the rest of milestone 7 is open.
 
 The remaining dependent, cubical, induction and shared elaboration work moved
 to the [HoTT and cubical automation roadmap](hott-automation-roadmap.md), and
@@ -499,7 +498,7 @@ arguments. Explicit matching is L2.2a; automatic clauses in L2.2b additionally n
 D0a and D1's first slice (h-level evidence). Implicit binders and level
 inference (L4.1b) are a separate release.
 
-**Status (2026-09-28).** Experimental, behind `h1`: `inductive` with
+**Status (2026-10-04).** Released with H1 on 2026-10-02: `inductive` with
 parameters and universe parameters and no indices; h-levels by a generated
 squash constructor (`prop`, `set`, `trunc(n)`); path constructors as
 equalities and `PathP`; the expression `match` with `as … return`, one

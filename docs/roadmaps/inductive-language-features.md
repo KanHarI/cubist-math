@@ -1,10 +1,10 @@
 # Language features for theories, inductive and higher inductive declarations
 
 Status: adopted on 2026-09-25 by [ergonomics](proof-ergonomics-roadmap.md)
-milestones 6 and 7. As of 2026-09-28, one-sort `inductive` declarations
-(work-plan L2.1) and the explicit expression `match` (L2.2a) are
-implemented experimentally behind the `h1` option, in the subset the
-[H1 specification](h1-signature-specification.md) admits; theories, cells,
+milestones 6 and 7. One-sort `inductive` declarations (work-plan L2.1) and
+explicit `match` (L2.2a) were released with H1 on 2026-10-02, on by
+default, in the subset the [H1 specification](h1-signature-specification.md)
+admits; theories, cells,
 relations and bundles, proof-first h-levels, `obligations`, dependent
 matching, canonical quotients, presentations and derivations remain
 proposals. The [audit of 2026-09-28](audits/2026-09-28-audit.md) corrected
@@ -249,7 +249,7 @@ canonical and costs computation for nothing. Proving setness instead keeps
 it.
 
 **Status (2026-09-28): not implemented, and not part of H1's lowering.**
-The experimental `: set` and `: prop` always generate the squash
+The released `: set` and `: prop` always generate the squash
 constructor of the specification's 1.6, named `T.squash` in clauses. The
 proof-first pass is work-plan L2.3b: it needs `paths` (section 9) for the
 characterization and the h-level evidence of L2.5. It is not an editorial

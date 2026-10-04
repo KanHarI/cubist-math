@@ -71,7 +71,7 @@ finishing a language milestone does not automatically resume them.
     syntax, dependency tracking, `computable` and exact-value `evaluate`.
   - Remaining: argument inference, theories, the rest of inductive
     declarations with pattern matching (one-sort declarations and explicit
-    `match` are experimental), expected-value patterns and closed
+    `match` were released with H1), expected-value patterns and closed
     truncation readout.
   - See the [implementation plan](roadmaps/proof-ergonomics-implementation-plan.md)
     and [checked/proposed examples](examples/proof-ergonomics/README.md).
@@ -86,7 +86,7 @@ finishing a language milestone does not automatically resume them.
     paths, structure identity and transfer.
 - [Kernel extensions for computation](roadmaps/cubical-kernel-roadmap.md):
   G0 (universe-generic checking) delivered; H1 (inductive signatures)
-  enabled by default with its mathematical review pending; H2–H4 and optional
+  released on 2026-10-02 after its mathematical review; H2–H4 and optional
   extensions planned, under the requirement that computability is
   expressible and preserved. Its [conversion probes](examples/hott-automation/README.md)
   record what the kernel already computes and which laws it rejects.
