@@ -122,6 +122,7 @@
                 <tr id="E606"><td class="code"><code>E606</code></td><td data-message="Type mismatch: found">“Type mismatch: found <var>A</var>, expected <var>B</var>.”</td><td>A term of type <var>A</var> is used where a <var>B</var> is needed, and the two are not equal by computation. The message shows both types in Cubist syntax, with definitions under their source names and redexes reduced; when the whole declaration is compared, both are its full statement. Check argument order, universes and endpoints. From <code>rfl</code>, it means the two sides are only equal propositionally: use a lemma, <code>rw</code> or <code>simp</code>. In a <code>cases</code> branch, the goal is not refined; use <code>match</code>.</td><td><a href="proof-blocks.html#exact">exact</a>, <a href="conversion.html#conversion">conversion</a>, <a href="proof-blocks.html#cases">cases</a></td></tr>
                 <tr id="E352"><td class="code"><code>E352</code></td><td data-message="Source application is not a function.">“Source application is not a function.”</td><td>Something that is not a function is applied.</td><td><a href="terms.html#currying">currying</a></td></tr>
                 <tr id="E382"><td class="code"><code>E382</code></td><td data-message="; this is one more.">“<var>f</var> takes <var>n</var> arguments; this is one more.”</td><td>The call gives more arguments than the function takes. Remove the extra ones, or apply the result separately if it is itself a function.</td><td><a href="first-proof.html#parameters">parameters</a></td></tr>
+                <tr id="E395"><td class="code"><code>E395</code></td><td data-message="not the goal, nor the other arguments">“Nothing determines the parameter <var>x</var> of <var>f</var>, of type <var>T</var>: not the goal, nor the other arguments. …”</td><td>An argument of <code>apply</code> that neither the goal nor the other arguments fix. Prove it in a clause, <code>x =&gt; { … }</code>, or write it in the call, <code>apply f(x := …)</code>.</td><td><a href="proof-blocks.html#apply">apply</a></td></tr>
                 <tr id="E388"><td class="code"><code>E388</code></td><td data-message="not the other arguments' types, nor the type expected of the call">“Nothing determines the parameter <var>x</var> of <var>f</var>, of type <var>T</var>: …”</td><td>A hole <code>_</code>, or a parameter left out before a named argument, is not fixed by the other arguments' types or by the type expected of the call. Holes are never filled by searching for a term of their type. Write the argument.</td><td><a href="terms.html#holes">holes</a></td></tr>
                 <tr id="E392"><td class="code"><code>E392</code></td><td data-message="fits, and so would">“The parameter <var>x</var> of <var>f</var> is not determined: <var>U0</var> fits, and so would a larger universe. …”</td><td>The hole is a type that cumulativity leaves open: a type in <code>U0</code> is in every larger universe too. A bound from the expected type that agrees settles it; otherwise write the type.</td><td><a href="terms.html#holes">holes</a></td></tr>
                 <tr id="E391"><td class="code"><code>E391</code></td><td data-message="Nothing determines the universe">“Nothing determines the universe <var>U</var> of <var>f</var>: …”</td><td>A universe hole that no argument's type bounds, where the call's type depends on it. Write the universe, by position or as <code>U := U0</code>.</td><td><a href="terms.html#universe-arguments">universe arguments</a></td></tr>
@@ -270,10 +271,6 @@
           <section id="not-yet-available">
             <h2>Not yet available</h2>
             <p>These are planned; see the work plan. Until then, they are rejected:</p>
-            <pre><code data-check="reject">def uses_apply(A, B : U0, f : A -&gt; B, a : A) : B {
-  apply f;  // Error: Expected a proof statement; found 'apply'.
-  exact a;
-}</code></pre>
             <pre><code data-check="reject">def unfinished : Nat {
   sorry;  // Error: Expected a proof statement; found 'sorry'.
 }</code></pre>
@@ -364,6 +361,8 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E157"><td><code>E157</code></td><td>Expected '}' to close the induction.</td></tr>
                 <tr id="E158"><td><code>E158</code></td><td>Expected '}' to close the ….</td></tr>
                 <tr id="E159"><td><code>E159</code></td><td>print shows evaluate(term), typeof(term) or inspect(term).</td></tr>
+                <tr id="E160"><td><code>E160</code></td><td>A subgoal is ? and its clause's name, with no space: ?p.</td></tr>
+                <tr id="E161"><td><code>E161</code></td><td>A subgoal's clause is a proof block: … =&gt; { … }.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -509,6 +508,12 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr><td><a href="#E391"><code>E391</code></a></td><td>Nothing determines the universe … of …: no argument's type bounds it, and the call's type depends on it. Give it explicitly.</td></tr>
                 <tr><td><a href="#E392"><code>E392</code></a></td><td>The … of … is not determined: … fits, and so would … universe…. Give it explicitly.</td></tr>
                 <tr id="E393"><td><code>E393</code></td><td>… takes … argument… by position; give its implicit parameters … by name, as … := ….</td></tr>
+                <tr id="E394"><td><code>E394</code></td><td>apply needs a definition, whose parameters have names; for …, write refine …(…, ?p) { p =&gt; { … } }.</td></tr>
+                <tr><td><a href="#E395"><code>E395</code></a></td><td>Nothing determines the … of …, of type …: not the goal, nor the other arguments…. Prove it in a clause, … =&gt; { … }, or give it, as …(… := …).</td></tr>
+                <tr id="E396"><td><code>E396</code></td><td>The subgoal ?… has no clause: write … =&gt; { … } after the term.</td></tr>
+                <tr id="E397"><td><code>E397</code></td><td>The subgoal ?… is proved by a clause of apply or refine, and stands only in their terms.</td></tr>
+                <tr id="E398"><td><code>E398</code></td><td>The subgoal ?… is used twice: each subgoal has one place.</td></tr>
+                <tr id="E399"><td><code>E399</code></td><td>The subgoal ?… needs the type its place gives it, or a clause that is one exact.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e4">Proof statements, rewriting and simplification</h3>
@@ -590,6 +595,10 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E473"><td><code>E473</code></td><td>A face needs an interval coordinate and endpoint 0 or 1.</td></tr>
                 <tr id="E474"><td><code>E474</code></td><td>A Glue piece has syntax face(i, 0 or 1, T, e) or face_when(φ, T, e).</td></tr>
                 <tr id="E475"><td><code>E475</code></td><td>A glue value has syntax face(i, 0 or 1, t) or face_when(φ, t).</td></tr>
+                <tr id="E476"><td><code>E476</code></td><td>Statements after refine are unreachable.</td></tr>
+                <tr id="E477"><td><code>E477</code></td><td>Statements after apply are unreachable.</td></tr>
+                <tr id="E478"><td><code>E478</code></td><td>Two clauses prove ….</td></tr>
+                <tr id="E479"><td><code>E479</code></td><td>The clause … proves no subgoal: the term has no ?….</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e5">Inductive types and matching</h3>

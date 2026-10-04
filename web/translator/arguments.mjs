@@ -69,6 +69,9 @@ function assign(n, parameters, unit, called) {
     if (named.has(index)) throw unit.locate(Error(`The argument ${name} is given twice.`), arg.name);
     named.set(index, arg.value);
   }
+  // apply takes every parameter a definition declares.
+  if (n.saturate && !parameters)
+    throw unit.locate(Error(`apply needs a definition, whose parameters have names; for ${called}, write refine ${called}(…, ?p) { p => { … } }.`), n.fn);
   const given = new Map(), count = parameters?.length ?? 0;
   let next = 0;
   for (let index = 0; index < count; index++) {
@@ -76,7 +79,7 @@ function assign(n, parameters, unit, called) {
     else if (!parameters[index].implicit && next < positional.length) given.set(index, positional[next++]);
   }
   for (let index = count; next < positional.length; index++) given.set(index, positional[next++]);
-  const last = Math.max(-1, ...given.keys());
+  const last = Math.max(n.saturate ? count : -1, ...given.keys());
   return index => given.has(index) ? given.get(index) : index < last ? null : undefined;
 }
 
@@ -325,14 +328,15 @@ class ArgumentSolver {
   // attempt records no inspector references and no proof steps.
   infer(node) {
     const {t, scope} = this, quiet = scope.withUnit(scope.unit.with({references: null}));
-    const onStep = t.onStep;
+    const onStep = t.onStep, speculative = t.speculative;
     t.onStep = null;
+    t.speculative = true;
     try { return quiet.infer(t.term(node, quiet, null)).type; }
     catch (error) {
       if (isLimit(error)) throw error;
       return null;
     }
-    finally { t.onStep = onStep; }
+    finally { t.onStep = onStep; t.speculative = speculative; }
   }
   // One constraint between two terms: "done", "stuck" (for now) or "clash",
   // when they cannot agree. `polarity` is "covariant" where a larger
@@ -470,6 +474,7 @@ class ArgumentSolver {
       ? Error(`The argument ${this.source(slot.node)} of ${called} needs the type of its ${parameter}, ${type}, which mentions a hole nothing determines${clash}. Give the hole explicitly.`)
       : candidate ? Error(`The ${parameter} of ${called} is not determined: ${this.t.shown(candidate.lower[0] ?? candidate.upper[0])} fits, and so would ${candidate.lower.length ? "a larger" : "a smaller"} universe${clash}. Give it explicitly.`)
       : escaping ? Error(`The ${parameter} of ${called} would be ${this.t.shown(this.display(escaping))}, which mentions a variable bound inside an argument, out of its scope${clash}. Give it explicitly.`)
+      : this.call.saturate ? Error(`Nothing determines the ${parameter} of ${called}, of type ${type}: not the goal, nor the other arguments${clash}. Prove it in a clause, ${slot.parameter} => { … }, or give it, as ${called}(${slot.parameter} := …).`)
       : Error(`Nothing determines the ${parameter} of ${called}, of type ${type}: not the other arguments' types, nor the type expected of the call${clash}. Give it explicitly.`);
     return this.scope.unit.locate(error, slot.node ?? this.call.fn);
   }

@@ -433,8 +433,10 @@ Delivered here ahead of that work: `path i =>`, `p @ i`, `ext x;`,
   this item absorbs HoTT A9. Retain a way to supply every implicit argument
   explicitly. Reject ambiguous inference and universe lowering. This is
   L4.1b; it follows L4.1a and G0 without waiting for indexed-family kernels.
-- [ ] Add `apply theorem;` and `refine term;` with visible subgoals and explicit
-  witness obligations. Reuse the goal machinery (HoTT A5) rather than inventing
+- [x] Add `apply theorem;` and `refine term;` with visible subgoals and explicit
+  witness obligations. Delivered on 2026-10-04 as L4.4: subgoals are named
+  clauses, `apply f { x => { … } }` and `refine e { p => { … } }` with `?p`
+  in the term. Reuse the goal machinery (HoTT A5) rather than inventing
   assumed inhabitants for missing arguments.
 - [ ] Goal-derived induction is milestone 7's `match`; `Path` induction
   remains HoTT B1. `constructor`/witness conveniences stay here, as ordinary

@@ -429,6 +429,18 @@ def two_below_three : 2 &lt; 3 {
   exact fun (a : A) =&gt; a;
 }</code></pre>
         </div>
+        <div class="quick-entry" id="quick-apply">
+          <h4><code>apply</code> and <code>refine</code></h4>
+          <p><code>apply f { x =&gt; { … } }</code> applies a definition to every parameter: the goal determines some, and each clause proves one as a subgoal. <code>refine e { p =&gt; { … } }</code> proves the goal with a term whose subgoals are written <code>?p</code>.
+            <a href="reference/proof-blocks.html#apply">Proof blocks →</a></p>
+          <pre><code data-check="accept">def witness : exists n : Nat. n = 2 {
+  refine (2, ?evidence) {
+    evidence =&gt; {
+      rfl;
+    }
+  }
+}</code></pre>
+        </div>
         <div class="quick-entry" id="quick-let">
           <h4><code>let</code></h4>
           <p><code>let x := term;</code> names a term, <code>let x : T := term;</code> checks it against <code>T</code>, and <code>let x : T { … }</code> proves <code>T</code> in a block. The checker sees through every form.

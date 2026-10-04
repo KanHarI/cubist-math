@@ -84,6 +84,8 @@ export const diagnostics = [
   ["E157", "Expected '}' to close the induction."],
   ["E158", "Expected '}' to close the …."],
   ["E159", "print shows evaluate(term), typeof(term) or inspect(term)."],
+  ["E160", "A subgoal is ? and its clause's name, with no space: ?p."],
+  ["E161", "A subgoal's clause is a proof block: … => { … }."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
@@ -219,6 +221,12 @@ export const diagnostics = [
   ["E391", "Nothing determines the universe … of …: no argument's type bounds it, and the call's type depends on it. Give it explicitly."],
   ["E392", "The … of … is not determined: … fits, and so would … universe…. Give it explicitly."],
   ["E393", "… takes … argument… by position; give its implicit parameters … by name, as … := …."],
+  ["E394", "apply needs a definition, whose parameters have names; for …, write refine …(…, ?p) { p => { … } }."],
+  ["E395", "Nothing determines the … of …, of type …: not the goal, nor the other arguments…. Prove it in a clause, … => { … }, or give it, as …(… := …)."],
+  ["E396", "The subgoal ?… has no clause: write … => { … } after the term."],
+  ["E397", "The subgoal ?… is proved by a clause of apply or refine, and stands only in their terms."],
+  ["E398", "The subgoal ?… is used twice: each subgoal has one place."],
+  ["E399", "The subgoal ?… needs the type its place gives it, or a clause that is one exact."],
   // Proof statements, rewriting and simplification
   ["E401", "Univalence requires a universe."],
   ["E402", "… takes a universe below UU0."],
@@ -295,6 +303,10 @@ export const diagnostics = [
   ["E473", "A face needs an interval coordinate and endpoint 0 or 1."],
   ["E474", "A Glue piece has syntax face(i, 0 or 1, T, e) or face_when(φ, T, e)."],
   ["E475", "A glue value has syntax face(i, 0 or 1, t) or face_when(φ, t)."],
+  ["E476", "Statements after refine are unreachable."],
+  ["E477", "Statements after apply are unreachable."],
+  ["E478", "Two clauses prove …."],
+  ["E479", "The clause … proves no subgoal: the term has no ?…."],
   // Inductive types and matching
   ["E501", "trunc(n) is supported up to n = …."],
   ["E502", "A sort is type, set, prop or trunc(n) for an integer n ≥ -1."],

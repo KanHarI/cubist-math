@@ -27,6 +27,24 @@ const tactics = {
     if(rest.length)throw Error("Statements after exact are unreachable.");
     return t.term(first.value,scope,goal.target);
   },
+  // refine e { p => { … } }: the term e for the goal, each subgoal ?p in it
+  // proved by its clause, at the type its place in e gives it (L4.4).
+  refine(t,first,rest,goal) {
+    if(rest.length)throw Error("Statements after refine are unreachable.");
+    return withSubgoals(t,first,goal,()=>t.term(first.value,goal.scope,goal.target));
+  },
+  // apply f { x => { … } }: f applied to every parameter it declares, those
+  // the goal and the other arguments determine as holes, and each named in a
+  // clause a subgoal that its clause proves.
+  apply(t,first,rest,goal) {
+    if(rest.length)throw Error("Statements after apply are unreachable.");
+    // apply f(y := e) { … } gives f's argument y as well.
+    const {value}=first,written=value.kind==="call"?value:null;
+    const call={kind:"call",fn:written?written.fn:value,saturate:true,start:value.start,end:value.end,args:[...written?written.args:[],
+      ...first.clauses.map(clause=>({kind:"namedArgument",name:clause.name,start:clause.name.start,end:clause.name.end,
+        value:{kind:"goalHole",name:clause.name,start:clause.name.start,end:clause.name.end}}))]};
+    return withSubgoals(t,first,goal,()=>t.term(call,goal.scope,goal.target));
+  },
   rfl(t,first,rest,goal) {
     const {scope}=goal;
     if(rest.length)throw Error("Statements after rfl are unreachable.");
@@ -291,3 +309,21 @@ const tactics = {
     return T.sumrec(motive,branch("left"),branch("right"),value);
   },
 };
+
+// Elaborate with the statement's clauses as the subgoals ?name stands for;
+// every clause must be some subgoal's.
+function withSubgoals(t,first,goal,elaborate) {
+  const {unit}=goal.scope,clauses=new Map();
+  for(const clause of first.clauses) {
+    if(clauses.has(clause.name.text))throw unit.locate(Error(`Two clauses prove ${clause.name.text}.`),clause.name);
+    clauses.set(clause.name.text,{clause,used:false});
+  }
+  t.subgoals.push(clauses);
+  let proof;
+  try {proof=elaborate();}
+  finally {t.subgoals.pop();}
+  const unused=[...clauses.values()].find(entry=>!entry.used);
+  if(unused)throw unit.locate(Error(`The clause ${unused.clause.name.text} proves no subgoal: the term has no ?${
+    unused.clause.name.text}.`),unused.clause.name);
+  return proof;
+}

@@ -84,6 +84,8 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
   // A declaration's implicit parameters, `{A : U}`, are a list like its
   // parameters, not a block.
   const implicitOpens = new Set(), implicitCloses = new Set();
+  // A subgoal ?p is tight.
+  const goalHoles = new Set();
   const tokenBefore = new Map(tokens.map((token, index) => [token.start, tokens[index - 1]]));
   const tokenAfter = new Map(tokens.map((token, index) => [token.end, tokens[index + 1]]));
   function visit(node) {
@@ -93,6 +95,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
     // A qualified name's dot is tight too: T.squash.
     if (node.qualifiedDot) projectionDots.add(node.qualifiedDot.start);
     if (node.kind === "unary") prefixMinus.add(node.operatorStart);
+    if (node.kind === "goalHole") goalHoles.add(node.start);
     if (node.implicitParameters) {
       implicitOpens.add(node.implicitParameters.start);
       implicitCloses.add(node.implicitParameters.end);
@@ -171,6 +174,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
         flush(); docs.push(hard, hard); previous = null;
       }
       const space = previous && !punctuation.has(text) && !["(", "["].includes(previous.text)
+        && !(previous.text === "?" && goalHoles.has(previous.start))
         && !prefixMinus.has(previous.start)
         && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or"].includes(previous.text) || [")", "]"].includes(previous.text) || previous.text === "}" && (expressionBlockEnds.has(previous.end) || implicitCloses.has(previous.end))))
         && !(text === "{" && implicitOpens.has(token.start))

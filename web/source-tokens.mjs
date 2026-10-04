@@ -38,6 +38,8 @@ export const keywords = new Set([
   "match",
   "return",
   "as",
+  "apply",
+  "refine",
 ]);
 // Language-provided forms share the keyword palette; ordinary library and
 // user-defined functions retain the green reference style.

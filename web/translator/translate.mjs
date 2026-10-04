@@ -84,6 +84,11 @@ export class Translator {
     this.checker=checker;
     this.normalize=normalize;
     this.localSources=new WeakMap();
+    // The subgoals of each apply and refine being elaborated, innermost
+    // last (tactics.mjs), and whether an elaboration is an attempt that is
+    // made again (arguments.mjs).
+    this.subgoals=[];
+    this.speculative=false;
     // An inspector record carries the context and dimensions of its scope and
     // the source aliases in `env`.
     this.references=onReference ? (node,term,scope,env)=>onReference(node,term,new Map(scope.context),
@@ -705,6 +710,21 @@ export class Translator {
           throw Error("along requires a homogeneous base path.");
         const dim=scope.fresh("i");
         return T.comp(dim,T.app(family,T.at(path,I.variable(dim))),[],value);
+      }
+      case "goalHole": {
+        // ?p, a subgoal of apply or refine: its clause, proved at the type
+        // this place gives it (L4.4). An attempt at the argument's type alone
+        // does not take the clause.
+        const name=n.name.text,clauses=this.subgoals.at(-1),entry=clauses?.get(name);
+        if(!entry)throw Error(clauses?`The subgoal ?${name} has no clause: write ${name} => { … } after the term.`
+          :`The subgoal ?${name} is proved by a clause of apply or refine, and stands only in their terms.`);
+        if(entry.used&&!this.speculative)throw Error(`The subgoal ?${name} is used twice: each subgoal has one place.`);
+        // A clause that is one exact gives its term's type where nothing
+        // else gives one, so that it can determine the call's other holes.
+        const [only]=entry.clause.body,exact=entry.clause.body.length===1&&only.kind==="exact"?only:null;
+        if(!expected&&!exact)throw Error(`The subgoal ?${name} needs the type its place gives it, or a clause that is one exact.`);
+        if(!this.speculative)entry.used=true;
+        return expected?this.block(entry.clause.body,new Goal(expected,scope)):this.term(exact.value,scope,null);
       }
       case "name": {
         // A binder _ binds nothing to refer to; a hole is a call's argument.

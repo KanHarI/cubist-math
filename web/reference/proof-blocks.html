@@ -49,6 +49,7 @@
             <li><a href="#goals">Goals and statements</a></li>
             <li><a href="#intro"><code>intro</code></a></li>
             <li><a href="#exact"><code>exact</code></a></li>
+            <li><a href="#apply"><code>apply</code> and <code>refine</code></a></li>
             <li><a href="#let"><code>let</code></a></li>
             <li><a href="#obtain"><code>obtain</code></a></li>
             <li><a href="#cases"><code>cases</code></a></li>
@@ -156,6 +157,43 @@ def identity_function(A : U0) : A -&gt; A {
 }</code></pre>
             <pre><code data-check="reject">def wrong_type(A, B : U0, a : A) : B {
   exact a;  // Error: Type mismatch: found A, expected B.
+}</code></pre>
+          </section>
+          <section id="apply">
+            <h2><code>apply</code> and <code>refine</code></h2>
+            <p><code>apply f { x =&gt; { … } … }</code> proves the goal with the definition <code>f</code> applied to every parameter it declares. The parameters the goal and the other arguments determine are <a href="terms.html#holes">holes</a>, solved as in a call, and each parameter named in a clause is a <strong>subgoal</strong>, which its clause proves as a block. A clause that is one <code>exact</code> also tells the call its term's type, so it can determine another argument: here <code>p</code>'s proof gives <code>y</code>.</p>
+            <pre><code data-check="accept">def concat{U &lt; UU0, A : U, x, y, z : A}(p : x = y, q : y = z) : x = z := trans(p, q);
+
+def joined(a, b, c : Nat, p : a = b, q : b = c) : a = c {
+  apply concat {
+    p =&gt; {
+      exact p;
+    }
+    q =&gt; {
+      exact q;
+    }
+  }
+}</code></pre>
+            <p><code>refine e { p =&gt; { … } … }</code> proves the goal with the term <code>e</code>, in which each subgoal is written <code>?p</code>: its type is the one its place in <code>e</code> gives it, and the clause <code>p</code> proves it. Each statement in a clause shows its own goal in the workspace.</p>
+            <pre><code data-check="accept">def witness : exists n : Nat. n = 2 {
+  refine (2, ?evidence) {
+    evidence =&gt; {
+      rfl;
+    }
+  }
+}</code></pre>
+            <p>An argument nothing determines is reported with its remedy: a clause for it, or the argument written in the call, as <code>apply concat(y := a) { … }</code>. A hypothesis has no named parameters, so it is used with <code>refine h(…, ?p)</code>. Both statements close the block.</p>
+            <pre><code data-check="reject">def concat{U &lt; UU0, A : U, x, y, z : A}(p : x = y, q : y = z) : x = z := trans(p, q);
+
+def middle(a : Nat) : a = a {
+  apply concat {  // Error: Nothing determines the parameter y of concat, of type Nat: not the goal, nor the other arguments. Prove it in a clause, y =&gt; { … }, or give it, as concat(y := …).
+    p =&gt; {
+      rfl;
+    }
+    q =&gt; {
+      rfl;
+    }
+  }
 }</code></pre>
           </section>
           <section id="let">

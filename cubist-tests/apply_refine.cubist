@@ -1,0 +1,129 @@
+// apply and refine (work-plan L4.4). apply f { x => { … } } applies the
+// definition f to every parameter it declares: those the goal and the other
+// arguments determine are holes, and each one named in a clause is a
+// subgoal its clause proves. refine e { p => { … } } is the term e for the
+// goal, each subgoal ?p in it proved by its clause, at the type its place
+// gives it. A clause that is one exact gives its term's type where the
+// subgoal's type still has a hole in it.
+def concat{U < UU0, A : U, x, y, z : A}(p : x = y, q : y = z) : x = z := trans(p, q);
+
+// The goal gives x, z and the carrier; p's proof gives y.
+def joined(a, b, c : Nat, p : a = b, q : b = c) : a = c {
+  apply concat {
+    p => {
+      exact p;
+    }
+    q => {
+      exact q;
+    }
+  }
+}
+
+// An argument written with apply, and subgoals proved by statements.
+def around(a : Nat) : a = a {
+  apply concat(y := a) {
+    p => {
+      rfl;
+    }
+    q => {
+      let back : a = a := refl(a);
+      exact back;
+    }
+  }
+}
+
+// A subgoal in the middle of a term.
+def refined(a, b, c : Nat, p : a = b, q : b = c) : a = c {
+  refine concat(?first, q) {
+    first => {
+      exact p;
+    }
+  }
+}
+
+// A witness given, its evidence a subgoal.
+def witness : exists n : Nat. n = 2 {
+  refine(2, ?evidence) {
+    evidence => {
+      rfl;
+    }
+  }
+}
+
+// Without subgoals, apply is the call with every hole solved.
+def flip{U < UU0, A : U, x, y : A}(p : x = y) : y = x := sym(p);
+
+def flipped(a, b : Nat, p : a = b) : b = a {
+  apply flip(p := p);
+}
+
+// What nothing determines is named, with its remedy.
+// Error: E395: Nothing determines the parameter y of concat, of type Nat: not the goal, nor the
+//   other arguments. Prove it in a clause, y => { … }, or give it, as concat(y := …).
+def middle(a : Nat) : a = a {
+  apply concat {
+    p => {
+      rfl;
+    }
+    q => {
+      rfl;
+    }
+  }
+}
+
+// Error: E395: Nothing determines the parameter q of concat, of type b = c: not the goal, nor the
+//   other arguments. Prove it in a clause, q => { … }, or give it, as concat(q := …).
+def missing(a, b, c : Nat, p : a = b, q : b = c) : a = c {
+  apply concat {
+    p => {
+      exact p;
+    }
+  }
+}
+
+// Error: E479: The clause x proves no subgoal: the term has no ?x.
+def no_such_subgoal(a : Nat) : a = a {
+  refine refl(a) {
+    x => {
+      rfl;
+    }
+  }
+}
+
+// Error: E396: The subgoal ?q has no clause: write q => { … } after the term.
+def unproved(a : Nat) : a = a {
+  refine concat(y := a, ?p, ?q) {
+    p => {
+      rfl;
+    }
+  }
+}
+
+// Error: E398: The subgoal ?p is used twice: each subgoal has one place.
+def twice(a : Nat) : a = a {
+  refine concat(y := a, ?p, ?p) {
+    p => {
+      rfl;
+    }
+  }
+}
+
+// Error: E394: apply needs a definition, whose parameters have names; for h, write refine h(…, ?p)
+//   { p => { … } }.
+def hypothesis(P, Q : Nat -> U0, h : forall n : Nat. P(n) -> Q(n), p : P(3)) : Q(3) {
+  apply h;
+}
+
+def by_refine(P, Q : Nat -> U0, h : forall n : Nat. P(n) -> Q(n), p : P(3)) : Q(3) {
+  refine h(3, ?evidence) {
+    evidence => {
+      exact p;
+    }
+  }
+}
+
+// Error: E476: Statements after refine are unreachable.
+def after(a : Nat) : a = a {
+  refine refl(a);
+  rfl;
+}

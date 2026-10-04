@@ -4,12 +4,12 @@ export function tokenize(source) {
     throw new Error("Source exceeds 1 MB.");
   const tokens = [];
   const re =
-    /\s+|\/\/[^\n]*|(?:<=|=>|->|:=|<-|\+\+)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[\[\](){}:,;.+*<=>@&|-]|./gy;
+    /\s+|\/\/[^\n]*|(?:<=|=>|->|:=|<-|\+\+)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[\[\](){}:,;.+*<=>@&|?-]|./gy;
   for (const match of source.matchAll(re)) {
     const text = match[0];
     if (/^\s|^\/\//.test(text)) continue;
     if (
-      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|=>|->|:=|<-|\+\+|[\[\](){}:,;.+*<=>@&|-])$/.test(text)
+      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|=>|->|:=|<-|\+\+|[\[\](){}:,;.+*<=>@&|?-])$/.test(text)
     )
       throw Object.assign(new Error(`Unexpected character ${text}`), {
         offset: match.index,
@@ -227,6 +227,13 @@ export function parse(source, typeOnly = false) {
   // The expression a token starts: a keyword form, a negation, a tuple, a
   // literal or a name.
   function prefix(t) {
+    // ?p, a subgoal of refine, proved by its clause p. The name is tight.
+    if (t.text === "?" && /^[A-Za-z_]/.test(peek()) && ts[i].start === t.end) {
+      const goal = name();
+      return { kind: "goalHole", name: goal, start: t.start, end: goal.end };
+    }
+    if (t.text === "?")
+      throw Object.assign(new Error("A subgoal is ? and its clause's name, with no space: ?p."), { offset: t.start });
     if (t.text === "with") return unfoldingExpr(t);
     if (t.text === "induction") return inductionExpr(t);
     if (t.text === "match") return matchExpr(t);
@@ -623,6 +630,7 @@ export function parse(source, typeOnly = false) {
     }
     if (t.text === "match") return matchStatement(t);
     if (t.text === "induction") return matchStatement(t, true);
+    if (t.text === "apply" || t.text === "refine") return goalStatement(t);
     if (t.text === "cases") {
       const value = expr();
       take("{");
@@ -754,6 +762,29 @@ export function parse(source, typeOnly = false) {
   // that constructor. Its motive comes from the goal. The induction
   // statement is the same, and its clauses may also name the induction
   // hypotheses: `induction v { c(xs, hs) => { … } … }`.
+  // `apply f { x => { … } … }` and `refine e { p => { … } … }`: a term for
+  // the goal whose subgoals, ?p in refine's term and the named parameters
+  // in apply's, are proved by the clauses of their names (L4.4). Without
+  // subgoals, `apply f;` and `refine e;`.
+  function goalStatement(t) {
+    const value = expr(), clauses = [];
+    if (peek() !== "{") {
+      const e = take(";");
+      return { kind: t.text, value, clauses, start: t.start, end: e.end };
+    }
+    take("{");
+    while (peek() !== "}") {
+      if (peek() === "EOF") throw Object.assign(new Error(`Expected '}' to close the ${t.text}.`), { offset: ts[i].start });
+      const goal = name();
+      take("=>");
+      if (peek() !== "{")
+        throw Object.assign(new Error(`A subgoal's clause is a proof block: ${goal.text} => { … }.`), { offset: ts[i].start });
+      const body = block();
+      clauses.push({ kind: "goalClause", name: goal, body, start: goal.start, end: ts[i - 1].end });
+    }
+    const e = take("}");
+    return { kind: t.text, value, clauses, start: t.start, end: e.end };
+  }
   function matchStatement(t, induction = false) {
     const keyword = induction ? "induction" : "match";
     const value = expr();
