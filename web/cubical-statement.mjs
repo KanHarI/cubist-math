@@ -20,8 +20,10 @@ export function sourceStatement(source, declaration, references = []) {
   };
   return {
     conclusion: fragment(declaration.type),
-    // A universe parameter U < UU0 has a bound where others have a type.
+    // A universe parameter U < UU0 has a bound where others have a type; an
+    // implicit one is shown in braces, as declared.
     parameters: declaration.params.map(parameter => ({ name: fragment(parameter.name),
-      relation: parameter.bound ? "<" : ":", type: fragment(parameter.bound ?? parameter.type) })),
+      relation: parameter.bound ? "<" : ":", type: fragment(parameter.bound ?? parameter.type),
+      ...(parameter.implicit ? { implicit: true } : {}) })),
   };
 }

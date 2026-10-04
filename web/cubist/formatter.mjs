@@ -81,6 +81,9 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
   // A projection's dot is tight on both sides: p.1, never p. 1. A prefix minus
   // is tight before its operand: -p, never - p.
   const projectionDots = new Set(), prefixMinus = new Set();
+  // A declaration's implicit parameters, `{A : U}`, are a list like its
+  // parameters, not a block.
+  const implicitOpens = new Set(), implicitCloses = new Set();
   const tokenBefore = new Map(tokens.map((token, index) => [token.start, tokens[index - 1]]));
   const tokenAfter = new Map(tokens.map((token, index) => [token.end, tokens[index + 1]]));
   function visit(node) {
@@ -90,6 +93,10 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
     // A qualified name's dot is tight too: T.squash.
     if (node.qualifiedDot) projectionDots.add(node.qualifiedDot.start);
     if (node.kind === "unary") prefixMinus.add(node.operatorStart);
+    if (node.implicitParameters) {
+      implicitOpens.add(node.implicitParameters.start);
+      implicitCloses.add(node.implicitParameters.end);
+    }
     // Only declaration/let assignments introduce an indented right-hand side.
     // An equality inside an annotated definition's type is not an assignment.
     const valueStart = node.valueStart ?? (node.kind === "let" ? node.value?.start : undefined);
@@ -165,7 +172,8 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
       }
       const space = previous && !punctuation.has(text) && !["(", "["].includes(previous.text)
         && !prefixMinus.has(previous.start)
-        && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or"].includes(previous.text) || [")", "]"].includes(previous.text) || previous.text === "}" && expressionBlockEnds.has(previous.end)))
+        && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or"].includes(previous.text) || [")", "]"].includes(previous.text) || previous.text === "}" && (expressionBlockEnds.has(previous.end) || implicitCloses.has(previous.end))))
+        && !(text === "{" && implicitOpens.has(token.start))
         && !(text === "[" && previous.text === "=");
       if (space && ![",", "."].includes(previous.text)) {
         if (annotationStarts.has(token.start)) annotation = statement.length;
@@ -177,7 +185,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
       if (["(", "[", "{"].includes(text)) {
         const end = { "(": ")", "[": "]", "{": "}" }[text];
         const body = sequence(end);
-        statement.push(text === "{" ? ["{", indent([hard, body]), hard, "}"]
+        statement.push(text === "{" && !implicitOpens.has(token.start) ? ["{", indent([hard, body]), hard, "}"]
           : group([text, indent([soft, body]), soft, end]));
         previous = { text: end, end: all[position - 1].end };
         if (!close && declarationEnds.has(previous.end)) {
@@ -186,7 +194,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
           if (!(all[position]?.comment && !source.slice(previous.end, all[position].start).includes("\n"))) {
             flush(); docs.push(hard, hard); previous = null;
           }
-        } else if (text === "{" && !expressionBlockEnds.has(previous.end) && all[position] && ![";", ",", ")", "]", "}"].includes(all[position].text)
+        } else if (text === "{" && !implicitOpens.has(token.start) && !expressionBlockEnds.has(previous.end) && all[position] && ![";", ",", ")", "]", "}"].includes(all[position].text)
             // A projection of a block expression, as in induction … { … }.1, keeps its dot tight.
             && !projectionDots.has(all[position].start) && !all[position].comment) {
           flush(); docs.push(hard); previous = null;

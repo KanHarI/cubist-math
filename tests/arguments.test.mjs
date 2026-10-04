@@ -1,5 +1,6 @@
-// Holes and named arguments (work-plan L4.1a): what the verdicts and prints of
-// cubist-tests/arguments.cubist do not show. The syntax and its formatting,
+// Holes and named arguments (work-plan L4.1a), implicit parameters and
+// universe holes (L4.1b): what the verdicts and prints of
+// cubist-tests/arguments.cubist and implicit_parameters.cubist do not show. The syntax and its formatting,
 // the linter, the inspector's record of each solved hole, and the
 // known-signature elaboration of a call, which never asks the kernel for the
 // type of the growing application.
@@ -14,6 +15,7 @@ import { checkProgram, testModule } from "./check-program.mjs";
 
 const module = await createCubical();
 const cases = testModule("arguments", { module });
+const implicit = testModule("implicit_parameters", { module });
 
 test("a named argument is a node of its call; a hole is a name", () => {
   const { declarations: [declaration] } = parse("def d := f(_, x := a, b);");
@@ -73,4 +75,27 @@ test("a call asks for its function's type once, never for the growing applicatio
   const spines = asked.filter(term => head(term).tag === "DefRef" && head(term).name.endsWith("concat"));
   // Only the function itself: each argument's type is read off its type.
   assert.deepEqual(spines.map(term => term.tag), ["DefRef"]);
+});
+
+test("implicit parameters are a brace group before the parameter list, each marked", () => {
+  const { declarations } = parse("def f{U < UU0, A : U}(a : A) : A := a;\ndef g{A : U0} := fun (x : A) => x;");
+  const [f, g] = declarations;
+  assert.deepEqual(f.params.map(p => [p.name.text, !!p.implicit]), [["U", true], ["A", true], ["a", false]]);
+  assert.deepEqual(g.valueParameters.map(p => [p.name.text, !!p.implicit]), [["A", true]]);
+  assert.deepEqual(f.implicitParameters, { start: 5, end: 21 });
+  // The formatter keeps the group on the name, as it keeps the parameter list.
+  const source = "def f{U < UU0, A : U}(a : A) : A := a;\n";
+  assert.equal(formatCubist(source), source);
+  assert.equal(formatCubist("def f { U < UU0, A : U } ( a : A ) : A := a;\n"), source);
+});
+
+test("the inspector shows each inferred universe, and the omitted implicit arguments", async () => {
+  const { result, verdicts } = await implicit();
+  assert.equal(verdicts.from_argument, true);
+  const omitted = result.links.filter(link => link.role === "inferred arguments").map(link => link.description);
+  assert.ok(omitted.includes("Arguments of same inferred: U := U0, A := Nat."), omitted.join("\n"));
+  assert.ok(omitted.includes("Arguments of same inferred: U := U1, A := U0."), omitted.join("\n"));
+  assert.ok(omitted.includes("Arguments of append inferred: U := U0, A := Nat."), omitted.join("\n"));
+  const holes = result.links.filter(link => link.role === "inferred argument").map(link => link.description);
+  assert.ok(holes.includes("The universe U of same, inferred: U2."), holes.join("\n"));
 });

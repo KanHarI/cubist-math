@@ -877,7 +877,29 @@ export function parse(source, typeOnly = false) {
       });
     const n = name(),
       params = [];
-    if (binds()) {
+    // A declaration's parameter list, `(n, m : Nat, U < UU0)` or, before it,
+    // the implicit ones, `{U < UU0, A : U}`, which a call fills as holes
+    // unless it names them (L4.1b).
+    const telescope = (close, implicit) => {
+      if (peek() !== close) {
+        while (true) {
+          const names = sharedNames();
+          const { type, bound } = binderType(implicit ? "{U < UU0, A : U}" : "(U < UU0, A : U)");
+          const group = params.length;
+          for (const p of names) params.push({ name:p, ...(bound ? { bound } : { type }), group, ...(implicit ? { implicit } : {}) });
+          if (peek() !== ",") break;
+          take(",");
+        }
+      }
+      return take(close);
+    };
+    let implicitParameters = null;
+    if (peek() === "{") {
+      const open = take("{");
+      implicitParameters = { start: open.start, end: telescope("}", true).end };
+    }
+    const header = implicitParameters ? { implicitParameters } : {};
+    if (!params.length && binds()) {
       take();
       const value = expr();
       const end = take(";").end;
@@ -897,17 +919,7 @@ export function parse(source, typeOnly = false) {
     }
     if (peek() === "(") {
       take("(");
-      if (peek() !== ")") {
-        while (true) {
-          const names = sharedNames();
-          const { type, bound } = binderType("(U < UU0, A : U)");
-          const group = params.length;
-          for (const p of names) params.push({ name:p, ...(bound ? { bound } : { type }), group });
-          if (peek() !== ",") break;
-          take(",");
-        }
-      }
-      take(")");
+      telescope(")", false);
     }
     if (binds()) {
       take();
@@ -933,6 +945,7 @@ export function parse(source, typeOnly = false) {
         valueEnd,
         valueParameters: params,
         params: [],
+        ...header,
         start: t.start,
         end,
       });items.push(declarations.at(-1));
@@ -946,7 +959,7 @@ export function parse(source, typeOnly = false) {
     if (peek() === ":=") {
       const assign = take(":="), value = expr(), end = take(";").end;
       declarations.push({
-        kind: t.text, ...(computable ? { computable, modifierStart } : {}), name: n, params, type,
+        kind: t.text, ...(computable ? { computable, modifierStart } : {}), name: n, params, type, ...header,
         body: [{ kind: "exact", value, start: assign.start, end }], typedValue: true, start: t.start, end,
       });items.push(declarations.at(-1));
       continue;
@@ -961,6 +974,7 @@ export function parse(source, typeOnly = false) {
       params,
       type,
       body,
+      ...header,
       start: t.start,
       end: ts[i - 1].end,
     });items.push(declarations.at(-1));

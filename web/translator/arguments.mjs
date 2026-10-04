@@ -1,7 +1,15 @@
-// Arguments a call determines (work-plan L4.1a). A hole `_` in an argument's
-// place, and a named argument `x := e`, which gives the parameter x: the
-// parameters before it that no argument gives are holes too, and those after
-// the last one given are left to a later application, as in f(a).
+// Arguments a call determines (work-plan L4.1a, L4.1b). A hole `_` in an
+// argument's place, and a named argument `x := e`, which gives the parameter
+// x: the parameters before it that no argument gives are holes too, and those
+// after the last one given are left to a later application, as in f(a). A
+// definition's implicit parameters, `def f{A : U}(x : A)`, are never given by
+// position: before the last argument given, each is a hole unless named.
+//
+// A universe argument that is a hole is the least universe the call needs:
+// the largest of the universes its arguments' types say it must contain, or
+// the one an equality of types fixes. Where nothing bounds it and the call's
+// type depends on it, it is refused; where the call's type does not, any
+// universe would do, and it is the least, U0.
 //
 // A hole is solved at its own call, from the types of the call's other
 // arguments and the type the call is expected to have, by first-order
@@ -15,7 +23,8 @@
 // against its parameter's type, as in a call without holes, so an unsolved
 // hole never reaches the kernel. Nothing is searched for: a hole is never
 // filled because some inhabitant of its type exists.
-import {T,finiteLevel,substituteTerm,substituteDimension,freeNames} from "./core.mjs";
+import {T,finiteLevel,substituteTerm,substituteDimension,freeNames,levelNames} from "./core.mjs";
+import {universeText} from "../cubical-levels.mjs";
 import {interval as I} from "./lattice.mjs";
 import {freeDimensions} from "./dimension-slots.mjs";
 import {INDUCTIVE_TAGS} from "./inductive.mjs";
@@ -32,8 +41,8 @@ let placeholders = 0;
 // Running out of fuel, steps or time ends the elaboration that asked.
 const isLimit = error => ["fuel", "budget", "deadline"].includes(error?.kind);
 
-// The source names of a definition's own parameters, recorded when it was
-// declared, or null: a function that is not a definition has none.
+// A definition's own parameters, {name, implicit}, as its source declares
+// them, or null: a function that is not a definition has none.
 function sourceParameters(t, head) {
   let core = head;
   // The assumptions a definition uses are applied to it already (define).
@@ -42,27 +51,33 @@ function sourceParameters(t, head) {
 }
 
 // What a call's arguments give, parameter by parameter: a written argument,
-// a hole, an omitted parameter (before a named one), or nothing more.
+// a hole, an omitted parameter (before the last one given), or nothing more.
+// Arguments without names fill the explicit parameters no name gives, in
+// order, and then whatever the result takes.
 function assign(n, parameters, unit, called) {
-  const positional = [], named = new Map();
+  const positional = [], named = new Map(), names = parameters?.map(parameter => parameter.name);
   for (const arg of n.args) {
     if (arg.kind !== "namedArgument") { positional.push(arg); continue; }
     const name = arg.name.text;
     if (!parameters)
       throw unit.locate(Error(`${called} has no named parameters: a named argument gives a parameter that a definition declares.`), arg.name);
-    const index = parameters.indexOf(name);
+    const index = names.indexOf(name);
     if (index < 0)
-      throw unit.locate(Error(`${called} has no parameter ${name}; its parameters are ${parameters.join(", ")}.`), arg.name);
-    if (parameters.lastIndexOf(name) !== index)
+      throw unit.locate(Error(`${called} has no parameter ${name}; its parameters are ${names.join(", ")}.`), arg.name);
+    if (names.lastIndexOf(name) !== index)
       throw unit.locate(Error(`${called} has two parameters named ${name}: give them by position.`), arg.name);
     if (named.has(index)) throw unit.locate(Error(`The argument ${name} is given twice.`), arg.name);
     named.set(index, arg.value);
   }
-  const last = Math.max(-1, ...named.keys());
+  const given = new Map(), count = parameters?.length ?? 0;
   let next = 0;
-  return index => named.has(index) ? named.get(index)
-    : next < positional.length ? positional[next++]
-    : index < last ? null : undefined;
+  for (let index = 0; index < count; index++) {
+    if (named.has(index)) given.set(index, named.get(index));
+    else if (!parameters[index].implicit && next < positional.length) given.set(index, positional[next++]);
+  }
+  for (let index = count; next < positional.length; index++) given.set(index, positional[next++]);
+  const last = Math.max(-1, ...given.keys());
+  return index => given.has(index) ? given.get(index) : index < last ? null : undefined;
 }
 
 // Elaborate a call of a definition or a function: its written arguments,
@@ -97,21 +112,31 @@ export function elaborateCall(t, n, scope, expected) {
       solver.run(false);
       type = scope.nf(solver.zonk(type));
     }
-    const parameter = parameters?.[index] ?? null;
+    const parameter = parameters?.[index]?.name ?? null;
     const site = node ?? n.fn;
-    // Instantiation at a universe, below UU0 (G0 §2.7).
+    // Instantiation at a universe, below UU0 (G0 §2.7); a hole there is a
+    // universe to infer, a placeholder level until it is solved.
     if (type.tag === "LPi") {
-      if (!node || isHole(node))
-        throw unit.locate(Error(`Give the universe ${parameter ?? "argument"} of ${called} explicitly: a universe argument is not inferred.`), site);
+      if (!node || isHole(node)) {
+        const variable = `${parameter ?? "universe"}?${++placeholders}`;
+        solver.add({index, parameter, node, variable, universe: true, kind: node === null ? "omitted" : "hole"});
+        type = substituteTerm(type.body, type.name, {tag: "Var", name: variable});
+        continue;
+      }
       const level = t.levelOf(node, scope);
       if (!finiteLevel(level)) throw unit.locate(Error("A universe argument must lie below UU0: U0, U1, … or a universe variable."), node);
       slots.push({index, parameter, node, level});
       type = substituteTerm(type.body, type.name, level);
       continue;
     }
-    if (type.tag !== "Pi")
-      throw unit.locate(Error(index ? `${called} takes ${index} argument${index === 1 ? "" : "s"}; this is one more.`
-        : "Source application is not a function."), site);
+    if (type.tag !== "Pi") {
+      // Arguments by position skip the implicit parameters.
+      const implicit = parameters?.filter(parameter => parameter.implicit).map(parameter => parameter.name) ?? [];
+      const explicit = index - implicit.length;
+      throw unit.locate(Error(!index ? "Source application is not a function."
+        : implicit.length ? `${called} takes ${explicit} argument${explicit === 1 ? "" : "s"} by position; give its implicit parameters ${implicit.join(", ")} by name, as ${implicit[0]} := ….`
+        : `${called} takes ${index} argument${index === 1 ? "" : "s"}; this is one more.`), site);
+    }
     // A name no source or name supply spells, so that a call without holes
     // leaves the declaration's generated names as they were.
     const variable = `${parameter ?? "argument"}?${++placeholders}`;
@@ -120,6 +145,7 @@ export function elaborateCall(t, n, scope, expected) {
     type = substituteTerm(type.body, type.name, T.variable(variable));
   }
   if (expected) solver.require(type, expected, {expected: true});
+  solver.result = type;
   solver.run();
   solver.checkSolutions();
   // The call, each argument as elaborated and each hole's solution, all
@@ -127,6 +153,7 @@ export function elaborateCall(t, n, scope, expected) {
   let term = head;
   for (const slot of slots)
     term = slot.level !== undefined ? T.levelApply(term, slot.level)
+      : slot.universe ? T.levelApply(term, solver.solution.get(slot.variable))
       : T.app(term, slot.kind === "argument" ? slot.value : solver.zonk(T.variable(slot.variable)));
   solver.record(n, term);
   return term;
@@ -138,9 +165,11 @@ export function elaborateCall(t, n, scope, expected) {
 class ArgumentSolver {
   constructor(t, scope, slots, called, call) {
     Object.assign(this, {t, scope, slots, called, call});
-    // Whether the call has a hole or a named argument.
-    this.determined = determinesArguments(call);
+    // Whether the call has a hole or a named argument as written.
+    this.written = determinesArguments(call);
     this.byVariable = new Map();
+    // Each universe placeholder's bounds: {lower, upper, equal}.
+    this.bounds = new Map();
     this.solution = new Map();
     this.pending = [];
     // A hole a universe would solve, were a larger one not as good.
@@ -160,14 +189,66 @@ class ArgumentSolver {
     return term;
   }
   unknowns(term) {return [...freeNames(term)].filter(name => this.byVariable.has(name) && !this.solution.has(name));}
+  // Whether the call has a hole: one written, an omitted parameter, or an
+  // implicit one.
+  get determined() {return this.written || this.slots.some(slot => slot.kind === "hole" || slot.kind === "omitted");}
   // A hole's variable, unsolved: the only unknowns unification may solve.
   flexible(term) {
     const slot = term?.tag === "Var" ? this.byVariable.get(term.name) : null;
-    return slot && slot.kind !== "argument" && !this.solution.has(term.name) ? slot : null;
+    return slot && slot.kind !== "argument" && !slot.universe && !this.solution.has(term.name) ? slot : null;
   }
   add(slot) {
     this.slots.push(slot);
     this.byVariable.set(slot.variable, slot);
+    if (slot.universe) this.bounds.set(slot.variable, {lower: [], upper: [], equal: null});
+  }
+  // A level with each solved universe placeholder replaced, as in zonk.
+  zonkLevel(level) {return this.zonk({tag: "U", level}).level;}
+  // The universe placeholder a level is, unsolved, or null.
+  placeholder(level) {
+    const slot = level?.tag === "Var" ? this.byVariable.get(level.name) : null;
+    return slot?.universe && !this.solution.has(level.name) ? slot : null;
+  }
+  // Whether a level mentions a universe placeholder not yet solved.
+  levelUnknown(level) {return [...levelNames(level)].some(name => this.byVariable.has(name) && !this.solution.has(name));}
+  // Two levels where `polarity` relates them: covariant, the first at most
+  // the second, as U(a) inhabits U(b) when a ≤ b; invariant, equal. A bound
+  // on a placeholder is recorded; anything else waits for the kernel.
+  relateLevels(smaller, larger, polarity) {
+    smaller = this.zonkLevel(smaller); larger = this.zonkLevel(larger);
+    if (!this.levelUnknown(smaller) && !this.levelUnknown(larger)) return "done";
+    const below = this.placeholder(smaller), above = this.placeholder(larger);
+    if (polarity === "invariant") {
+      if (below && !this.levelUnknown(larger)) this.bounds.get(below.variable).equal ??= larger;
+      else if (above && !this.levelUnknown(smaller)) this.bounds.get(above.variable).equal ??= smaller;
+      else return "stuck";
+      return "done";
+    }
+    if (above && !this.levelUnknown(smaller)) this.bounds.get(above.variable).lower.push(smaller);
+    else if (below && !this.levelUnknown(larger)) this.bounds.get(below.variable).upper.push(larger);
+    else return "stuck";
+    return "done";
+  }
+  // Solve the universe placeholders that bounds determine: by an equality,
+  // or as the largest lower bound. With `last`, also those nothing bounds
+  // that the call's type does not mention, as U0. True when one was solved.
+  solveUniverses(last = false) {
+    let solved = false;
+    for (const [variable, {lower, equal}] of this.bounds) {
+      if (this.solution.has(variable)) continue;
+      let level = equal;
+      if (level === null && lower.length)
+        level = lower.every(bound => typeof bound === "number") ? Math.max(...lower)
+          : lower.reduce((left, right) => ({tag: "LMax", left, right}));
+      if (level === null && last && !freeNames(this.zonk(this.result ?? T.unit)).has(variable)) level = 0;
+      if (level === null) continue;
+      const slot = this.byVariable.get(variable);
+      if (!finiteLevel(level))
+        throw this.scope.unit.locate(Error(`The universe ${slot.parameter ?? "argument"} of ${this.called} would be ${universeText(level)}, which is not below UU0. Give it explicitly.`), slot.node ?? this.call.fn);
+      this.solution.set(variable, level);
+      solved = true;
+    }
+    return solved;
   }
   // `smaller` has to inhabit what `larger` does: an argument's type and its
   // parameter's, or the call's type and the one expected of it.
@@ -205,7 +286,19 @@ class ArgumentSolver {
           if (inferred) { this.require(inferred, domain, {slot}); progress = true; }
         }
       }
-      if (!progress) break;
+      // A hole solved at a type that mentions a placeholder bounds it by the
+      // solution's own type, as a written argument's type does.
+      for (const slot of this.slots) {
+        if (slot.kind === "argument" || slot.universe || slot.typed || !this.solution.has(slot.variable)) continue;
+        const domain = this.zonk(slot.domain), value = this.zonk(T.variable(slot.variable));
+        if (!this.unknowns(domain).length || this.unknowns(value).length) continue;
+        slot.typed = true;
+        this.require(this.scope.infer(value).type, domain, {slot});
+        progress = true;
+      }
+      if (progress) continue;
+      // Universes last: once every argument has said what it needs.
+      if (!complete || (!this.solveUniverses() && !this.solveUniverses(true))) break;
     }
     const open = this.slots.find(slot => slot.variable && !this.solution.has(slot.variable));
     if (open && complete) throw this.undetermined(open);
@@ -252,8 +345,9 @@ class ArgumentSolver {
     if (!unknown.some(name => this.byVariable.get(name).kind !== "argument")) return unknown.length ? "stuck" : "done";
     const hole = this.flexible(left), other = this.flexible(right);
     if (hole && other && hole === other) return "done";
-    if (hole) return this.solve(hole, right, polarity, bound, at);
-    if (other) return this.solve(other, left, polarity, bound, at);
+    // A hole on the smaller side is at most the other; on the larger, at least.
+    if (hole) return this.solve(hole, right, polarity, bound, at, "upper");
+    if (other) return this.solve(other, left, polarity, bound, at, "lower");
     // An argument's variable stands for a value still to be elaborated.
     if (left.tag === "Var" && this.byVariable.has(left.name) || right.tag === "Var" && this.byVariable.has(right.name)) return "stuck";
     if (left.tag === right.tag && rigid(left, right, normal, this.byVariable)) {
@@ -294,24 +388,34 @@ class ArgumentSolver {
       case "PLam": return all([dimension(left, right, "family"), dimension(left, right, "body")]);
       case "PApp": return I.equal(left.arg, right.arg) ? same(left.path, right.path) : "stuck";
       case "App": return all([same(left.fn, right.fn), same(left.arg, right.arg)]);
-      case "LApp": return JSON.stringify(left.level) === JSON.stringify(right.level) ? same(left.fn, right.fn) : "clash";
+      case "LApp":
+        if (this.levelUnknown(left.level) || this.levelUnknown(right.level))
+          return all([this.relateLevels(left.level, right.level, "invariant"), same(left.fn, right.fn)]);
+        return JSON.stringify(left.level) === JSON.stringify(right.level) ? same(left.fn, right.fn) : "clash";
       case "Fst": case "Snd": return same(left.pair, right.pair);
       case "Sum": return all([same(left.left, right.left, polarity), same(left.right, right.right, polarity)]);
-      case "Sort":
+      case "Sort": {
         if (left.signature !== right.signature || left.parameters.length !== right.parameters.length) return "clash";
-        return all(left.parameters.map((parameter, index) => same(parameter, right.parameters[index])));
+        // An instance's recorded universes are its own: equal on both sides.
+        const levels = (left.levels ?? []).map((level, index) => right.levels?.[index] === undefined ? "done"
+          : this.relateLevels(level, right.levels[index], "invariant"));
+        return all([...levels, ...left.parameters.map((parameter, index) => same(parameter, right.parameters[index]))]);
+      }
       case "Con": return left.index === right.index ? same(left.sort, right.sort) : "clash";
       case "Elim":
         if (left.signature !== right.signature || left.clauses.length !== right.clauses.length) return "clash";
         return all([same(left.motive, right.motive), ...left.clauses.map((clause, index) => same(clause, right.clauses[index]))]);
       case "Var": case "DefRef": return left.name === right.name ? "done" : "clash";
-      case "U": return JSON.stringify(left.level) === JSON.stringify(right.level) ? "done" : "stuck";
+      case "U":
+        if (this.levelUnknown(left.level) || this.levelUnknown(right.level))
+          return this.relateLevels(left.level, right.level, polarity);
+        return JSON.stringify(left.level) === JSON.stringify(right.level) ? "done" : "stuck";
       case "Unit": case "Void": case "Point": return "done";
       default: return "stuck";
     }
   }
   // A hole's solution, when it is determined.
-  solve(slot, value, polarity, bound, at) {
+  solve(slot, value, polarity, bound, at, side) {
     value = this.zonk(value);
     const names = freeNames(value);
     // It would mention itself, or a variable bound inside the constraint.
@@ -319,9 +423,13 @@ class ArgumentSolver {
     const escaping = [...names].find(name => bound.has(name));
     if (escaping) { this.escaping.set(slot.variable, value); return "stuck"; }
     if ([...freeDimensions(value)].some(dim => bound.has(dim) || !this.scope.dimensions.has(dim))) return "stuck";
+    // A universe where a larger one would do as well is a bound, not a
+    // solution, unless a bound on the other side is the same universe.
     if (polarity === "covariant" && universeAt(value)) {
-      this.ambiguous.set(slot.variable, value);
-      return "stuck";
+      const bounds = this.ambiguous.get(slot.variable) ?? {lower: [], upper: []}, key = JSON.stringify(value);
+      bounds[side].push(value);
+      this.ambiguous.set(slot.variable, bounds);
+      if (!bounds[side === "lower" ? "upper" : "lower"].some(other => JSON.stringify(other) === key)) return "stuck";
     }
     this.solution.set(slot.variable, value);
     this.ambiguous.delete(slot.variable);
@@ -338,7 +446,8 @@ class ArgumentSolver {
   checkSolutions(before = Infinity) {
     for (const slot of this.slots) {
       if (slot.index >= before) break;
-      if (slot.kind === "argument" || !slot.variable || slot.checked || !this.solution.has(slot.variable)) continue;
+      if (slot.kind === "argument" || slot.universe || !slot.variable || slot.checked || !this.solution.has(slot.variable)) continue;
+      if (this.unknowns(this.zonk(slot.domain)).length) continue;
       slot.checked = true;
       this.checkSolution(slot, this.zonk(T.variable(slot.variable)));
     }
@@ -351,13 +460,15 @@ class ArgumentSolver {
     throw this.scope.unit.locate(Error(`The hole for ${this.describe(slot)} of ${this.called} was solved as ${shown}, which does not have its type ${typeText}.`), slot.node ?? this.call.fn);
   }
   undetermined(slot) {
+    if (slot.universe)
+      return this.scope.unit.locate(Error(`Nothing determines the universe ${slot.parameter ?? "argument"} of ${this.called}: no argument's type bounds it, and the call's type depends on it. Give it explicitly.`), slot.node ?? this.call.fn);
     const type = this.t.shown(this.display(this.zonk(slot.domain)));
     const candidate = this.ambiguous.get(slot.variable), {called} = this, parameter = this.describe(slot);
     const escaping = this.escaping.get(slot.variable);
     const clash = this.clashes.length ? ` (${this.mismatch(this.clashes[0])})` : "";
     const error = slot.kind === "argument"
       ? Error(`The argument ${this.source(slot.node)} of ${called} needs the type of its ${parameter}, ${type}, which mentions a hole nothing determines${clash}. Give the hole explicitly.`)
-      : candidate ? Error(`The ${parameter} of ${called} is not determined: ${this.t.shown(candidate)} fits, and so would a larger universe${clash}. Give it explicitly.`)
+      : candidate ? Error(`The ${parameter} of ${called} is not determined: ${this.t.shown(candidate.lower[0] ?? candidate.upper[0])} fits, and so would ${candidate.lower.length ? "a larger" : "a smaller"} universe${clash}. Give it explicitly.`)
       : escaping ? Error(`The ${parameter} of ${called} would be ${this.t.shown(this.display(escaping))}, which mentions a variable bound inside an argument, out of its scope${clash}. Give it explicitly.`)
       : Error(`Nothing determines the ${parameter} of ${called}, of type ${type}: not the other arguments' types, nor the type expected of the call${clash}. Give it explicitly.`);
     return this.scope.unit.locate(error, slot.node ?? this.call.fn);
@@ -378,11 +489,13 @@ class ArgumentSolver {
     const omitted = [];
     for (const slot of this.slots) {
       if (!slot.variable || slot.kind === "argument") continue;
-      const value = this.zonk(T.variable(slot.variable));
+      // A universe is shown as the universe it is.
+      const value = slot.universe ? T.universe(this.solution.get(slot.variable)) : this.zonk(T.variable(slot.variable));
+      const shown = slot.universe ? universeText(this.solution.get(slot.variable)) : t.shown(value);
       if (slot.kind === "hole")
         t.reference(scope, {...slot.node, name: "_", expressionSite: true, role: "inferred argument",
-          description: `The ${this.describe(slot)} of ${this.called}, inferred: ${t.shown(value)}.`}, value);
-      else omitted.push(`${slot.parameter} := ${t.shown(value)}`);
+          description: `The ${slot.universe ? `universe ${slot.parameter ?? "argument"}` : this.describe(slot)} of ${this.called}, inferred: ${shown}.`}, value);
+      else omitted.push(`${slot.parameter} := ${shown}`);
     }
     if (omitted.length && Number.isInteger(n.end))
       t.reference(scope, {name: ")", start: n.end - 1, end: n.end, expressionSite: true, role: "inferred arguments",

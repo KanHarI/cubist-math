@@ -333,6 +333,14 @@ def add_two := twice(Nat, fun n =&gt; succ(n));</code></pre>
 def joined(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat(U0, _, _, _, _, p, q);
 def named(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat(U0, p := p, q := q);</code></pre>
         </div>
+        <div class="quick-entry" id="quick-implicit">
+          <h4>Implicit parameters: <code>def f{A : U}(…)</code></h4>
+          <p>Parameters in braces before the parameter list are implicit: a call never gives them by position, and reads them off its other arguments, universes included. Name one to give it, as <code>A := Nat</code>.
+            <a href="reference/terms.html#implicit-parameters">Functions, pairs and sums →</a></p>
+          <pre><code data-check="accept">def concat{U &lt; UU0, A : U, x, y, z : A}(p : x = y, q : y = z) : x = z := trans(p, q);
+
+def joined(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat(p, q);</code></pre>
+        </div>
         <div class="quick-entry" id="quick-pairs">
           <h4>Pairs, tuples and <code>exists</code></h4>
           <p><code>A and B</code> is a product and <code>exists x : A. B</code> a dependent pair (Σ) with an actual witness. <code>(a, b, c)</code> abbreviates <code>(a, (b, c))</code>; hover the parentheses to see the expansion.

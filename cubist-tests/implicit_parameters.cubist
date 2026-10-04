@@ -1,0 +1,73 @@
+// Implicit parameters and universe arguments as holes (work-plan L4.1b). A
+// definition's parameters in braces are never given by position: each one
+// before the last argument given is a hole, and a named argument can give
+// it. A universe hole is the least universe the call needs.
+import lists;
+
+def same{U < UU0, A : U}(a : A) : A := a;
+
+def concat{U < UU0, A : U, x, y, z : A}(p : x = y, q : y = z) : x = z := trans(p, q);
+
+// The universe and the type from the argument.
+def from_argument(n : Nat) : Nat := same(n);
+
+// Output: λ (n : Nat). (λ (ascription : Nat). ascription)(same(U0, Nat, n))
+print(inspect(from_argument));
+
+// The endpoints and the carrier from the paths.
+def endpoints(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat(p, q);
+
+// A named argument gives an implicit parameter; the others stay holes.
+def named(n : Nat) : Nat := same(A := Nat, n);
+
+def named_universe(T : U1) : U1 := same(U := U2, T);
+
+// The library's lists read their universe and element type off the lists.
+def joined := append(cons(1, typed(List(U0, Nat), nil)), cons(2, nil));
+
+// Output: 2
+print(evaluate(length(joined)));
+
+// A definition that calls itself passes its implicit parameters unchanged.
+def size{U < UU0, A : U}(xs : List(U, A)) : Nat := match xs {
+    nil => 0;
+    cons(head, tail) => succ(size(tail));
+  };
+
+// Output: 2
+print(evaluate(size(joined)));
+
+// A type of types: T : U0 and the expected type U0 make A U0, so U is U1,
+// the least universe that holds U0. Given A := U1, U is U2.
+def types(T : U0) : U0 := same(T);
+
+def universes(T : U1) : U1 := same(U := _, A := U1, T);
+
+// A type that cumulativity leaves open is settled by bounds on both sides:
+// T : U1 needs A to hold T, and the expected type needs A at most U1.
+def pinned(T : U1) : U1 := same(T);
+
+// With U0 below and U1 above, both fit A.
+// Error: E392: The parameter A of same is not determined: U0 fits, and so would a larger universe.
+//   Give it explicitly.
+def open_type(T : U0) : U1 := same(T);
+
+// A universe nothing bounds: the least, U0, where the call's type does not
+// mention it; refused where it does.
+def counted{U < UU0}(n : Nat) : Nat := n;
+
+def counted_at(n : Nat) : Nat := counted(n);
+
+def the_universe{U < UU0}(n : Nat) : next(U) := U;
+
+// Error: E391: Nothing determines the universe U of the_universe: no argument's type bounds it, and
+//   the call's type depends on it. Give it explicitly.
+def which(n : Nat) := the_universe(n);
+
+def which_given(n : Nat) : U1 := the_universe(U := U0, n);
+
+// An implicit parameter is not given by position: Nat is a, and n is one
+// argument too many.
+// Error: E393: same takes 1 argument by position; give its implicit parameters U, A by name, as U
+//   := ….
+def by_position(n : Nat) : Nat := same(Nat, n);
