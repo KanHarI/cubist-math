@@ -1,0 +1,23 @@
+// From tests/finite-spanning.test.mjs: Finite extraction does not choose a
+// basis or equate finiteness with independence.
+import spanning_subfamilies;
+// Error: E606: Type mismatch: found Mere(Truncate, SubfamilyBasis(Truncate, K, V, n, v)), expected
+//   SubfamilyBasis(Truncate, K, V, n, v).
+def cannot_choose(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V),
+  spans : FiniteSpanningFamily(K, V, n, v)
+) :
+  SubfamilyBasis(K, V, n, v) {
+  exact finite_spanning_subfamily_basis(K, V, n, v, spans);
+}
+
+// Error: E606: Type mismatch: found LinearSurjective(Truncate, K, CoordinateSpace(K, n), V,
+//   family_linear(K, V, n, v)), expected LinearInjective(K, CoordinateSpace(K, n), V,
+//   family_linear(K, V, n, v)).
+def cannot_keep_duplicates(
+  K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V),
+  spans : FiniteSpanningFamily(K, V, n, v)
+) :
+  FamilyBasis(K, V, n, v) {
+  exact (family_linear_surjective(K, V, n, v, spans), family_linear_surjective(K, V, n, v, spans));
+}

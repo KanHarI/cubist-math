@@ -1,0 +1,11 @@
+// From tests/quotient-universal.test.mjs: Factorization cannot omit the
+// subgroup-killing hypothesis.
+import quotient_group_universal;
+// Error: K338: Kernel checking/reduction budget exhausted.
+def unjustified_factor(
+  G : Group, H : GroupAt(U1), h : GroupHomAt(U1, group_lift(G), H), S : Subgroup(G),
+  normal : IsNormal(G, S)
+) :
+  GroupHomAt(U1, QuotientGroup(G, S, normal), H) {
+  exact quotient_descend_hom(G, H, h, S, normal);
+}

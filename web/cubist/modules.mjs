@@ -425,5 +425,15 @@ export const cubistTestModules = [
   "program_unused_generic", "program_untyped_generic", "wasm_binary_literal", "wasm_factorials",
   "wasm_bad_factorial", "wasm_factorial_theorem", "wasm_invalid_paths", "wasm_moving_maps",
   "wasm_suspension_use", "driver_first_proof", "driver_sums", "dimension_regression",
-  "dimension_degree_regression", "dimension_tower_regression", "dimension_invalid"
+  "dimension_degree_regression", "dimension_tower_regression", "dimension_invalid",
+  "algebraic_extensions_algebraic_milestones", "algebraic_extensions_formal_f4_regression",
+  "algebraic_extensions_invalid_embedding_claims", "algebraic_extensions_invalid_f4_root",
+  "finite_spanning_finite_tower_regression", "finite_spanning_invalid_spanning",
+  "finite_spanning_spanning_regression", "linear_algebra_basis_regression", "linear_algebra_chain_regression",
+  "linear_algebra_general_basis_regression", "linear_algebra_invalid_basis_selection",
+  "linear_algebra_invalid_linear", "linear_algebra_s3_regression",
+  "polynomial_algebra_adjoined_root_regression", "polynomial_algebra_invalid_polynomial_claims",
+  "polynomial_algebra_polynomial_regression", "quotient_groups_invalid_quotient",
+  "quotient_groups_quotient_regression", "quotient_universal_hom_universe_regression",
+  "quotient_universal_regression", "quotient_universal_bad_factorization"
 ];

@@ -1,0 +1,6 @@
+// From tests/algebraic-extensions.test.mjs: The formal F2 polynomial
+// computes the two F4 roots and rejects zero as a root.
+import f4_formal_polynomial;
+def checked : Unit {
+  exact tt;
+}

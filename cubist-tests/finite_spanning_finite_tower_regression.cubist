@@ -1,0 +1,20 @@
+// From tests/finite-spanning.test.mjs: Arbitrary finite subspaces have
+// bases and finiteness descends both ways in a tower.
+import subspace_carriers;
+import finite_towers;
+def subspace_basis(
+  K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V), S : Subspace(K, V)
+) :
+  Mere(exists n : Nat. FiniteBasis(K, SubspaceVectorSpace(K, V, S), n)) {
+  exact finite_subspace_basis(K, V, finite, S);
+}
+
+def tower_converse(
+  K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
+  d : FieldEmbedding(L, M), c : FieldEmbedding(K, M), triangle : FieldTower(K, L, M, e, d, c),
+  finite : FiniteExtension(K, embedding_as_extension(K, M, c))
+) :
+  FiniteExtension(K, embedding_as_extension(K, L, e))
+  and FiniteExtension(L, embedding_as_extension(L, M, d)) {
+  exact finite_extension_tower_converse(K, L, M, e, d, c, triangle, finite);
+}

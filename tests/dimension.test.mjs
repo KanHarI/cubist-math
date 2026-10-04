@@ -49,7 +49,7 @@ test("the product basis and numerical tower law check for arbitrary fields and a
 });
 
 test("dimension does not choose a basis, forget linearity, or ignore a tower's embedding", async t => {
-  const { program, result } = await cases(t, "dimension_invalid");
+  const { result } = await cases(t, "dimension_invalid");
   assert.equal(result.outputs.length, 4);
   // Each refusal is the module's own: the archive it imports checks.
   assert.ok(result.gaps.every(gap => gap.module === "dimension_invalid"), JSON.stringify(result.gaps));

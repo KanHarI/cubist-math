@@ -1,0 +1,6 @@
+// From tests/linear-algebra.test.mjs: S3 has six elements and a genuinely
+// non-normal point stabilizer, without axioms.
+import non_normal_subgroup;
+def verified_example : IsNormal(S3, S3PointStabilizer) -> Void {
+  exact s3_point_stabilizer_not_normal;
+}

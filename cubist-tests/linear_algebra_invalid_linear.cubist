@@ -1,0 +1,19 @@
+// From tests/linear-algebra.test.mjs: Nonlinear constant maps and a
+// silently changed basis length are rejected.
+import finite_bases;
+import finite_fields;
+// Error: E606: Type mismatch: found F2Carrier -> F2Carrier -> f2_1 = f2_1, expected
+//   GroupHomLaws(vector_group(F2, ScalarSpace(F2)), vector_group(F2, ScalarSpace(F2)), fun (x :
+//   F2Carrier) => f2_1).
+def constant_one_is_not_linear : LinearMap(F2, ScalarSpace(F2), ScalarSpace(F2)) {
+  exact (
+    (fun (x : F2Carrier) => f2_1), (fun (x : F2Carrier) => fun (y : F2Carrier) => refl(f2_1)),
+    (fun (a : F2Carrier) => fun (x : F2Carrier) => refl(f2_1))
+  );
+}
+
+// Error: E606: Type mismatch: found FiniteBasis(K, CoordinateSpace(K, 1), 1), expected
+//   FiniteBasis(K, CoordinateSpace(K, 0), 1).
+def wrong_basis(K : AlgebraicField) : FiniteBasis(K, CoordinateSpace(K, 0), 1) {
+  exact standard_basis(K, 1);
+}

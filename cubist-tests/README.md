@@ -166,3 +166,24 @@ workbench's Kernel graph.
 | [`dimension_degree_regression`](dimension_degree_regression.cubist) | Extension degree: positive, one for the identity, invariant under extension equality. |
 | [`dimension_tower_regression`](dimension_tower_regression.cubist) | The product basis and the numerical tower law, for arbitrary fields and a commuting triangle. |
 | [`dimension_invalid`](dimension_invalid.cubist) | Dimension chooses no basis, keeps linearity and a tower's embedding: four refusals. |
+| [`algebraic_extensions_algebraic_milestones`](algebraic_extensions_algebraic_milestones.cubist) | Finite algebraic extensions, actual splitting fields, normality and general separable embedding counts are checked. |
+| [`algebraic_extensions_formal_f4_regression`](algebraic_extensions_formal_f4_regression.cubist) | The formal F2 polynomial computes the two F4 roots and rejects zero as a root. |
+| [`algebraic_extensions_invalid_embedding_claims`](algebraic_extensions_invalid_embedding_claims.cubist) | Finite algebraic extensions, actual splitting fields, normality and general separable embedding counts are checked. |
+| [`algebraic_extensions_invalid_f4_root`](algebraic_extensions_invalid_f4_root.cubist) | The formal F2 polynomial computes the two F4 roots and rejects zero as a root. |
+| [`finite_spanning_finite_tower_regression`](finite_spanning_finite_tower_regression.cubist) | Arbitrary finite subspaces have bases and finiteness descends both ways in a tower. |
+| [`finite_spanning_invalid_spanning`](finite_spanning_invalid_spanning.cubist) | Finite extraction does not choose a basis or equate finiteness with independence. |
+| [`finite_spanning_spanning_regression`](finite_spanning_spanning_regression.cubist) | Finite spanning families contain an indexed subfamily basis without choice. |
+| [`linear_algebra_basis_regression`](linear_algebra_basis_regression.cubist) | Finite bases give unique coordinates and cubical carrier transport without choice. |
+| [`linear_algebra_chain_regression`](linear_algebra_chain_regression.cubist) | Spans are least subspaces and independent chains have bounds, including empty and U1-indexed chains. |
+| [`linear_algebra_general_basis_regression`](linear_algebra_general_basis_regression.cubist) | The general basis theorem derives maximality from choice, with its exact assumptions visible. |
+| [`linear_algebra_invalid_basis_selection`](linear_algebra_invalid_basis_selection.cubist) | Basis existence cannot silently select a basis or justify adjoining the zero vector. |
+| [`linear_algebra_invalid_linear`](linear_algebra_invalid_linear.cubist) | Nonlinear constant maps and a silently changed basis length are rejected. |
+| [`linear_algebra_s3_regression`](linear_algebra_s3_regression.cubist) | S3 has six elements and a genuinely non-normal point stabilizer, without axioms. |
+| [`polynomial_algebra_adjoined_root_regression`](polynomial_algebra_adjoined_root_regression.cubist) | Adjoined roots and embeddings into a root field are constructed, not assumed. |
+| [`polynomial_algebra_invalid_polynomial_claims`](polynomial_algebra_invalid_polynomial_claims.cubist) | Zero polynomial is excluded from root bounds and division by zero. |
+| [`polynomial_algebra_polynomial_regression`](polynomial_algebra_polynomial_regression.cubist) | Formal division, uniqueness, root bounds and Bezout are checked without extra axioms. |
+| [`quotient_groups_invalid_quotient`](quotient_groups_invalid_quotient.cubist) | Quotient construction rejects omitted normality and silent universe lowering. |
+| [`quotient_groups_quotient_regression`](quotient_groups_quotient_regression.cubist) | Quotient groups and the first isomorphism theorem check constructively across universes. |
+| [`quotient_universal_hom_universe_regression`](quotient_universal_hom_universe_regression.cubist) | The homomorphism universe schemas at U0 to U3, each computable, and agreeing with small homomorphisms. |
+| [`quotient_universal_regression`](quotient_universal_regression.cubist) | The quotient universal property for a genuinely U1 target, without representative choice. |
+| [`quotient_universal_bad_factorization`](quotient_universal_bad_factorization.cubist) | A factorization without the subgroup-killing hypothesis, refused. |
