@@ -125,6 +125,7 @@ export const diagnostics = [
   ["E238", "This session cannot list its modules."],
   ["E239", "Module … was not loaded."],
   ["E240", "… did not check."],
+  ["E241", "Could not load the file index: HTTP …"],
   // Terms
   ["E301", "Expected cubical syntax."],
   ["E302", "Expected a dimension binder."],

@@ -79,6 +79,7 @@ such as an `as` name no motive mentions; checking reports the same warnings.
 - [`archive/first-library/`](archive/first-library): the archived first `.cubist` library, still checked in CI. A rebuilt library replaces it area by area; see [`docs/library-results.md`](docs/library-results.md) and the [work plan](docs/roadmaps/work-plan.md).
 - [`cubist-tests/`](cubist-tests/README.md): the Cubist sources the test suite checks, each a module the proof workspace opens as `proof.html?proof=NAME`, so that a case's derivation can be inspected there.
 - [`web/language.html`](web/language.html): the source language reference, one page per chapter under `web/reference/`.
+- The proof workspace's explorer, a collapsible sidebar, lists every published `.cubist` source by folder (library, Cubist tests, archive and documentation examples); each opens in the workspace as `proof.html?file=PATH`. The Files page, [`web/files.html`](web/files.html), shows the same tree with each file's summary and source. Their index, `web/cubist-files.json`, is written by `npm run files:index`; a test keeps it current.
 - [`docs/tactical/galois-handoff.md`](docs/tactical/galois-handoff.md) and [`docs/roadmaps/complex-analysis-roadmap.md`](docs/roadmaps/complex-analysis-roadmap.md): unfinished mathematical developments and resumption notes.
 
 ## Resuming development

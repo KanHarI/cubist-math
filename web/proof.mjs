@@ -9,30 +9,58 @@ import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proo
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
 import { numeralAt, tokenStyle, headerWordAt } from "./source-tokens.mjs";
-import { cubistTestModules, libraryModules } from "./cubist/modules.mjs";
+import { archiveModules, cubistTestModules, libraryModules } from "./cubist/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
 import { createReplConsole } from "./repl-console.mjs";
 import { withCode } from "./diagnostics.mjs";
+import { showExplorer } from "./proof-explorer.mjs";
 
 const query = new URLSearchParams(location.search);
 const backend = "cubical";
 // A reference example is not a library proof: its source comes from the URL
 // fragment (#source=…), or, when embedded in a reference page, by message.
 const exampleMode = query.has("example"), embedded = exampleMode && query.has("embed");
-// A module of the rebuilt library opens like a proof, from library/, and so
-// does a Cubist test, from cubist-tests/.
-const libraryModule = !exampleMode && libraryModules.includes(query.get("proof"));
-const testModule = !exampleMode && !libraryModule && cubistTestModules.includes(query.get("proof"));
+// A source opens by its module's name (?proof=name), or by its path from the
+// repository root (?file=path), as the explorer and the Files page link it.
+// A module of the rebuilt library opens from library/, a Cubist test from
+// cubist-tests/ and any other module from the archive; a name in more than
+// one root opens as the library's, as an import of it would. By path, a
+// documentation example opens too: a source that is not a module, importing
+// library-first.
+const filePath = exampleMode ? null : query.get("file");
+const fileName = filePath?.match(/^(?:[\w-]+\/)*([\w-]+)\.cubist$/)?.[1] ?? null;
+const fileRoot = !fileName ? null
+  : filePath === `library/${fileName}.cubist` ? "library"
+  : filePath === `cubist-tests/${fileName}.cubist` ? "tests"
+  : filePath === `archive/first-library/${fileName}.cubist` ? "archive"
+  : filePath.startsWith("docs/") ? "docs" : null;
+const requested = fileRoot ? fileName : query.get("proof");
+const libraryModule = !exampleMode && (fileRoot ? fileRoot === "library" : true) && libraryModules.includes(requested);
+const testModule = !exampleMode && !libraryModule && (fileRoot ? fileRoot === "tests" : true) && cubistTestModules.includes(requested);
+const archiveModule = !exampleMode && !libraryModule && !testModule && (fileRoot ? fileRoot === "archive" : true)
+  && (archiveModules.includes(requested) || proofCatalog.some((p) => p.id === requested));
+const documentationExample = fileRoot === "docs";
+// A documentation example is checked under its file's name, as a name.
 const proofId = exampleMode ? "reference_example"
-  : libraryModule || testModule || proofCatalog.some((p) => p.id === query.get("proof")) ? query.get("proof")
+  : documentationExample ? fileName.replace(/\W/g, "_").replace(/^(?=\d)/, "_")
+  : libraryModule || testModule || archiveModule ? requested
   : "euclid";
 const catalogEntry = proofCatalog.find((p) => p.id === proofId);
 const sourceURL = exampleMode ? null
+  : documentationExample ? filePath
   : libraryModule ? `library/${proofId}.cubist`
   : testModule ? `cubist-tests/${proofId}.cubist`
   : `archive/first-library/${cubicalSourceFile(proofId)}`;
+// Edited drafts are kept per source: an archive module named as a library
+// module, and a documentation example, keep theirs apart.
+const draftKey = documentationExample ? `file:${filePath}`
+  : archiveModule && libraryModules.includes(proofId) ? `archive:${proofId}` : proofId;
+// Where its imports resolve from (module-resolution.mjs).
+const place = exampleMode || documentationExample ? null : libraryModule ? "library" : testModule ? "tests" : "archive";
+// The explorer lists every source; the one open here is current.
+if (!embedded) showExplorer(sourceURL).catch(error => console.error(error));
 const snapshot = readProofNavigation(query.get("restore"));
-let restoring = snapshot?.proof === proofId ? snapshot : null;
+let restoring = snapshot?.proof === proofId && (snapshot.file ?? null) === (documentationExample ? filePath : null) ? snapshot : null;
 const crossFileBack = restoring?.back ?? query.get("back");
 function exampleSource() {
   const encoded = new URLSearchParams(location.hash.slice(1)).get("source");
@@ -54,7 +82,7 @@ let savedDraft = null,
 try {
   // An example always opens with the source it was given. Storage keys keep
   // the language's former name, MathScript, so saved drafts still load.
-  const stored = exampleMode ? null : sessionStorage.getItem("mathscript:" + proofId);
+  const stored = exampleMode ? null : sessionStorage.getItem("mathscript:" + draftKey);
   if (stored) {
     let record;
     try {
@@ -75,7 +103,7 @@ try {
         (repositoryChanged && record.source === record.baseline)
       ) {
         previousDraft = record.source;
-        sessionStorage.setItem("mathscript:previous:" + proofId, previousDraft);
+        sessionStorage.setItem("mathscript:previous:" + draftKey, previousDraft);
         sourceNotice =
           "Loaded the current repository source. Your previous saved source is preserved.";
       } else {
@@ -86,7 +114,7 @@ try {
       }
     }
   }
-  previousDraft ??= sessionStorage.getItem("mathscript:previous:" + proofId);
+  previousDraft ??= sessionStorage.getItem("mathscript:previous:" + draftKey);
 } catch {}
 const example = restoring?.source ?? savedDraft ?? original;
 const $ = (id) => document.getElementById(id);
@@ -104,11 +132,12 @@ for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) {
   try { $(id).checked = localStorage.getItem("mathscript:" + id) !== "false"; } catch {}
 }
 $("proof-title").textContent = catalogEntry?.title
-  ?? (libraryModule ? `Library: ${proofId}` : testModule ? `Cubist test: ${proofId}` : "Reference example");
+  ?? (libraryModule ? `Library: ${proofId}` : testModule ? `Cubist test: ${proofId}`
+    : documentationExample ? `Documentation example: ${filePath}` : archiveModule ? `Archive: ${proofId}` : "Reference example");
 $("development-note").hidden = !catalogEntry?.realDevelopment;
 $("puncture-note").hidden = !catalogEntry?.punctureDevelopment;
 $("complex-note").hidden = !catalogEntry?.complexDevelopment;
-$("archive-note").hidden = exampleMode || libraryModule || testModule;
+$("archive-note").hidden = exampleMode || libraryModule || testModule || documentationExample;
 $("test-note").hidden = !testModule;
 $("source-file").hidden = exampleMode;
 $("repository-source").hidden = exampleMode;
@@ -116,8 +145,9 @@ if (sourceURL) {
   $("source-file").href = sourceURL;
   $("source-file").textContent = `web/${sourceURL}`;
 }
-$("repository-source").href =
-  `proof.html?proof=${encodeURIComponent(proofId)}&source=repo`;
+$("repository-source").href = documentationExample
+  ? `proof.html?file=${encodeURIComponent(filePath)}&source=repo`
+  : `proof.html?proof=${encodeURIComponent(proofId)}&source=repo`;
 $("source-notice").textContent = sourceNotice;
 $("source-notice").hidden = !sourceNotice;
 $("previous-draft").hidden = !previousDraft;
@@ -156,7 +186,7 @@ $("proof-topic").onchange = () => showTopic($("proof-topic").value);
 function rememberDraft() {
   try {
     sessionStorage.setItem(
-      "mathscript:" + proofId,
+      "mathscript:" + draftKey,
       JSON.stringify({ source: $("editor").value, baseline: original }),
     );
   } catch {}
@@ -266,7 +296,6 @@ async function check() {
   try {
     // Where the source came from decides where its imports are found
     // (module-resolution.mjs): an archive proof imports only from the archive.
-    const place = exampleMode ? null : libraryModule ? "library" : testModule ? "tests" : "archive";
     const result = await request("check", { source, module: proofId, place, optimizations: compilerOptimizations() });
     last = result;
     history.length = 0;
@@ -907,7 +936,7 @@ $("editor").onkeydown = (e) => {
   }
 };
 function rememberInspection() {
-  return saveProofNavigation({ proof: proofId, backend, source: last.source,
+  return saveProofNavigation({ proof: proofId, file: documentationExample ? filePath : undefined, backend, source: last.source,
     selected, history, back: crossFileBack, scroll: window.scrollY,
     sourceScroll: $("read-source").scrollTop });
 }

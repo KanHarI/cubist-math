@@ -1,0 +1,47 @@
+/* The folder tree of the Cubist sources (file-tree.mjs), on the Files page
+   and in the proof workspace's explorer. */
+.file-filter { display: flex; flex-direction: column; gap: 5px; width: 100%; color: #526459; font-size: 12px; font-weight: 600; }
+.file-filter input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid #cfd8cf;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  color: #1f3b2a;
+  background: white;
+}
+.file-filter input:focus-visible { outline: 2px solid #346447; outline-offset: 1px; }
+.file-count { margin: 8px 0 6px; color: #6a7b70; font-size: 12px; }
+.file-tree ul { margin: 0; padding-left: 14px; list-style: none; }
+.file-tree .file-roots > details > ul { padding-left: 4px; }
+.folder > summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #1f3b2a;
+}
+.folder > summary:hover { background: #f1f5ef; }
+.folder > summary:focus-visible { outline: 2px solid #346447; outline-offset: 1px; }
+.file-tree .file-roots > .folder > summary { font-weight: 700; }
+.folder-count { color: #7a8a80; font-size: 12px; font-variant-numeric: tabular-nums; }
+.folder-description { margin: 2px 6px 6px 20px; color: #6a7b70; font-size: 12px; line-height: 1.5; }
+.file-tree .file a {
+  display: block;
+  padding: 2px 6px 2px 18px;
+  text-indent: -12px;
+  border-radius: 5px;
+  color: #346447;
+  text-decoration: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.file-tree .file a:hover { background: #f1f5ef; text-decoration: underline; }
+.file-tree .file a:focus-visible { outline: 2px solid #346447; outline-offset: 1px; }
+.file-tree .file a[aria-current] { background: #e3ede0; color: #1f3b2a; font-weight: 600; }

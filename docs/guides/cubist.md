@@ -26,6 +26,13 @@ completed, not estimated time; it clears on success or failure.
 A rejected edit leaves the last checked proof available. Source files can be
 opened and saved; per-proof drafts survive navigation within the browser session.
 
+The explorer on the workspace's left lists every source by folder: the
+library, the Cubist tests, the archive and the documentation's examples. A
+file opens in the workspace as `proof.html?file=PATH`; the explorer closes to a
+narrow rail and stays as it was left. The Files page,
+http://127.0.0.1:8088/files.html, shows the same tree with each file's summary
+and source.
+
 Click a lemma, then **View source**, to open its definition. Clicking the module
 name in `import primes` opens the foundation source. Click a line number in a
 structured proof block to inspect its goal and local assumptions. The inspector's

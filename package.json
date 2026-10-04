@@ -11,6 +11,7 @@
     "format:cubist": "node tools/format-cubist.mjs",
     "lint:cubist": "node tools/lint-cubist.mjs",
     "inline-errors": "node tools/inline-errors.mjs --write",
+    "files:index": "node tools/cubist-files.mjs",
     "linearize:cubist": "node tools/linearize-cubist.mjs"
   },
   "devDependencies": {
