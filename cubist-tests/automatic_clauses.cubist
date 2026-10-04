@@ -1,0 +1,234 @@
+// Automatic squash clauses and explicit obligations, from
+// tests/automatic-clauses.test.mjs: a quotient's dependent eliminator
+// generates its set squash, explicit obligations keep the kernel's check,
+// trailing proofs fill declared paths, and hlevel hints supply evidence.
+import hlevels;
+
+inductive Quotient(A : U0, R : A -> A -> U0) : set {
+  class(a : A);
+  glue(a, b : A, r : R(a, b)) : class(a) = class(b);
+}
+
+def link(A : U0, R : A -> A -> U0, a, b : A, r : R(a, b)) :
+  typed(Quotient(A, R), class(a)) = typed(Quotient(A, R), class(b)) := glue(a, b, r);
+
+// E4: a quotient's dependent eliminator generates its set squash; the motive
+// is a family of sets, not just a constant set.
+def descend(
+  A : U0, R : A -> A -> U0, B : Quotient(A, R) -> U0, h : forall z : Quotient(A, R).
+  IsSet(U0, B(z)), f : forall a : A. B(class(a)), respects : forall a, b : A. forall r : R(a, b).
+  PathP(fun (i : Interval) => B(link(A, R, a, b, r) @ i), f(a), f(b)), q : Quotient(A, R)
+) :
+  B(q) := match q as z return B(z) {
+    class(a) => f(a);
+  }
+obligations {
+  glue(a, b, r) @ i => respects(a, b, r) @ i;
+};
+
+def class_computes(
+  A : U0, R : A -> A -> U0, B : Quotient(A, R) -> U0, h : forall z : Quotient(A, R).
+  IsSet(U0, B(z)), f : forall a : A. B(class(a)), respects : forall a, b : A. forall r : R(a, b).
+  PathP(fun (i : Interval) => B(link(A, R, a, b, r) @ i), f(a), f(b)), a : A
+) :
+  descend(A, R, B, h, f, respects, class(a)) = f(a) {
+  rfl;
+}
+
+def glue_image(
+  A : U0, R : A -> A -> U0, B : Quotient(A, R) -> U0, h : forall z : Quotient(A, R).
+  IsSet(U0, B(z)), f : forall a : A. B(class(a)), respects : forall a, b : A. forall r : R(a, b).
+  PathP(fun (i : Interval) => B(link(A, R, a, b, r) @ i), f(a), f(b)), a, b : A, r : R(a, b)
+) :
+  PathP(fun (i : Interval) => B(link(A, R, a, b, r) @ i), f(a), f(b)) := path i => descend(
+    A, R, B, h, f, respects, link(A, R, a, b, r) @ i
+  );
+
+def glue_computes(
+  A : U0, R : A -> A -> U0, B : Quotient(A, R) -> U0, h : forall z : Quotient(A, R).
+  IsSet(U0, B(z)), f : forall a : A. B(class(a)), respects : forall a, b : A. forall r : R(a, b).
+  PathP(fun (i : Interval) => B(link(A, R, a, b, r) @ i), f(a), f(b)), a, b : A, r : R(a, b)
+) :
+  glue_image(A, R, B, h, f, respects, a, b, r) = respects(a, b, r) {
+  rfl;
+}
+
+// Explicit obligations retain kernel checking and require all computational
+// clauses.
+inductive Circle {
+  base;
+  loop : base = base;
+}
+
+def flat(x : Circle) : Nat := match x {
+    base => 0;
+  }
+obligations by rfl;
+
+def checked : flat(loop @ 1) = 0 {
+  rfl;
+}
+
+// Error: E606: Type mismatch: found 1 = 1, expected 0 = 0.
+def wrong(x : Circle) : Nat := match x {
+    base => 0;
+  }
+obligations {
+  loop @ i => 1;
+};
+
+// Error: E531: match on Circle needs a clause for base. Give path clauses in obligations { … }, or
+//   obligations by { … }.
+def missing(x : Circle) : Nat := match x {
+
+  }
+obligations by hlevel;
+
+// Error: E530: base is a point constructor: give its computational clause in match, before
+//   obligations.
+def misplaced(x : Circle) : Nat := match x {
+
+  }
+obligations {
+  base => 0;
+  loop @ i => 0;
+};
+
+// Missing h-level evidence fails rather than admitting an unsquashed
+// eliminator.
+// Error: E546: Cannot generate Quotient.squash: U0 must be of h-level 1; no local evidence, hint or
+//   rule gives that. Give checked h-level evidence, or an explicit obligation.
+def unsound(A : U0, R : A -> A -> U0, q : Quotient(A, R)) : U0 := match q {
+    class(a) => A;
+    glue(a, b, r) @ i => A;
+  };
+
+// Automatic clauses work in the match statement, and use the declared
+// target's squash.
+inductive Tr(A : U0) : prop {
+  point(a : A);
+}
+
+def rebuilt(A : U0, x : Tr(A)) : Tr(A) {
+  match x {
+    point(a) => {
+      exact point(a);
+    }
+  }
+}
+
+def point_computes : rebuilt(Nat, point(2)) = point(2) {
+  rfl;
+}
+
+def flat_statement(x : Circle) : Nat {
+  match x {
+    base => {
+      exact 0;
+    }
+  }
+  obligations {
+    loop @ i => {
+      exact 0;
+    }
+  }
+}
+
+def by_level(x : Circle) : Unit {
+  match x {
+    base => {
+      exact tt;
+    }
+  }
+  obligations by hlevel;
+}
+
+// Trailing proofs fill declared paths without replacing a generated squash.
+def by_rfl(A : U0, R : A -> A -> U0, q : Quotient(A, R)) : Nat := match q {
+    class(a) => 0;
+    glue(a, b, r) @ i => 0;
+  }
+obligations by rfl;
+
+def by_block(A : U0, R : A -> A -> U0, q : Quotient(A, R)) : Nat := match q {
+    class(a) => 0;
+  }
+obligations by {
+  intro a, b, r;
+  rfl;
+};
+
+def by_term(A : U0, R : A -> A -> U0, q : Quotient(A, R)) : Nat := match q {
+    class(a) => 0;
+  }
+obligations by(fun (a, b : A, r : R(a, b)) => path i => 0);
+
+def statement_block(A : U0, R : A -> A -> U0, q : Quotient(A, R)) : Nat {
+  match q {
+    class(a) => {
+      exact 0;
+    }
+  }
+  obligations by {
+    intro a, b, r;
+    rfl;
+  }
+}
+
+def statement_term(A : U0, R : A -> A -> U0, q : Quotient(A, R)) : Nat {
+  match q {
+    class(a) => {
+      exact 0;
+    }
+  }
+  obligations by(fun (a, b : A, r : R(a, b)) => path i => 0);
+}
+
+def computes : by_term(Unit, fun (a, b : Unit) => Unit, class(tt)) = 0 {
+  rfl;
+}
+
+// A whole-clause proof is refused when several declared paths are missing.
+inductive TwoLoops {
+  hub;
+  first : hub = hub;
+  second : hub = hub;
+}
+
+def tactics(x : TwoLoops) : Nat := match x {
+    hub => 0;
+  }
+obligations by rfl;
+
+// Error: E532: obligations by a term or proof block needs exactly one missing declared path clause;
+//   found 2. Use named obligations { … } for separate clauses.
+def ambiguous_block(x : TwoLoops) : Nat := match x {
+    hub => 0;
+  }
+obligations by {
+  rfl;
+};
+
+// Error: E532: obligations by a term or proof block needs exactly one missing declared path clause;
+//   found 2. Use named obligations { … } for separate clauses.
+def ambiguous_term(x : TwoLoops) : Nat := match x {
+    hub => 0;
+  }
+obligations by(path i => 0);
+
+// hlevel hints supply evidence unavailable to automatic squash without the
+// hint.
+def hinted(A : U0, R : A -> A -> U0, B : U0, h : Unit -> IsSet(U0, B), b : B, q : Quotient(A, R)) :
+  B := match q {
+    class(a) => b;
+    glue(a, a2, r) @ i => b;
+  }
+obligations by hlevel with [h(tt)];
+
+// Error: E546: Cannot generate Quotient.squash: B must be of h-level 1; no local evidence, hint or
+//   rule gives that. Give checked h-level evidence, or an explicit obligation.
+def no_hint(A : U0, R : A -> A -> U0, B : U0, h : Unit -> IsSet(U0, B), b : B, q : Quotient(A, R)) :
+  B := match q {
+    class(a) => b;
+    glue(a, a2, r) @ i => b;
+  };

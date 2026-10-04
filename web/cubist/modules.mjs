@@ -387,4 +387,5 @@ export const libraryModules = ["naturals", "classical_axioms", "universe_automor
 // The Cubist sources the test suite checks (cubist-tests/), each a module the
 // workspace opens as proof.html?proof=NAME. tests/cubist-tests.test.mjs
 // checks that every file is listed.
-export const cubistTestModules = ["glue", "face_restriction", "declared_match", "induction"];
+export const cubistTestModules = ["glue", "face_restriction", "declared_match", "induction",
+  "automatic_clauses", "automatic_clauses_groupoid", "automatic_clauses_without_hlevels"];
