@@ -1,0 +1,8 @@
+// From tests/polynomial-algebra.test.mjs: Formal division, uniqueness, root
+// bounds and Bezout are checked without extra axioms.
+import polynomial_root_bound;
+import polynomial_irreducible;
+def division(K : AlgebraicField, p : Polynomial(K), q : Polynomial(K), nz : PolynomialNonzero(K, q)) :
+  PolynomialDivision(K, p, q) {
+  exact polynomial_division(K, p, q, nz);
+}

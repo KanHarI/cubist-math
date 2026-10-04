@@ -1,0 +1,20 @@
+// From tests/computability.test.mjs: Evaluation unfolds every definition and
+// ignores unfolding hints.
+
+def boxed(n : Nat) := succ(n);
+
+def identity(n : Nat) := n;
+
+evaluate boxed(1) expecting 2;
+evaluate with unfolding [identity] {
+  identity(boxed(2))
+} expecting 3;
+evaluate with unfolding [] {
+  boxed(boxed(0))
+} expecting boxed(1);
+
+// Evaluation unfolds boxed, though the hint names no definition.
+// Output: 2
+print(evaluate(with unfolding [] {
+      boxed(boxed(0))
+    }));

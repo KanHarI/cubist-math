@@ -1,0 +1,4 @@
+// From tests/cubical-program.test.mjs: a second value, for
+// program_shadowing.
+
+def value := 1;

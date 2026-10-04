@@ -1,0 +1,26 @@
+// E11: a groupoid's dependent eliminator generates its three-dimensional
+// squash, with a dependent groupoid motive. From
+// tests/automatic-clauses.test.mjs.
+import hlevels;
+
+inductive Gpd(A : U0) : trunc(1) {
+  point(a : A);
+}
+
+def descend(
+  A : U0, B : Gpd(A) -> U0, h : forall z : Gpd(A). HasLevel(U0, 2, B(z)), f : forall a : A.
+  B(point(a)), q : Gpd(A)
+) :
+  B(q) := match q as z return B(z) {
+    point(a) => f(a);
+  };
+
+computable def read(q : Gpd(Nat)) : Nat := match q {
+    point(a) => a;
+  };
+
+computable def read_point : read(point(3)) = 3 {
+  rfl;
+}
+
+evaluate read(point(3)) expecting 3;

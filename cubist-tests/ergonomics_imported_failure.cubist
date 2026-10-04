@@ -1,0 +1,9 @@
+// From tests/proof-ergonomics.test.mjs: An imported generic definition that
+// fails is reported in its own module, ergonomics_imported_failure_rules; a
+// use of it here fails, and the rest of this module checks.
+import ergonomics_imported_failure_rules;
+
+// Error: E340: Untranslated dependency: broken__rule
+def use := broken__rule(U0, 0);
+
+def good := 0;

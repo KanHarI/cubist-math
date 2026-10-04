@@ -1,0 +1,43 @@
+// From tests/proof-ergonomics.test.mjs: Rewrites retain occurrence, carrier
+// and dependent-position obligations.
+
+import primes;
+
+def first(n : Nat) : (n + 0) + (n + 0) = n + (n + 0) {
+  rw [nat_add_zero(n)] at lhs occurrence 1;
+}
+
+def second(n : Nat) : (n + 0) + (n + 0) = (n + 0) + n {
+  rw [nat_add_zero(n)] at lhs occurrence 2;
+}
+
+def reverse(n : Nat) : n = n + 0 {
+  rw [<- nat_add_zero(n)] at lhs;
+}
+
+def default_second(n : Nat) : n + 0 = n + 0 {
+  rw [nat_add_zero(n)] occurrence 2;
+  exact nat_add_zero(n);
+}
+
+// Error: E442: Rewrite occurrence 2 was not found (1 eligible matches). Remaining goal: n + 0 = n.
+//   No rule fired.
+def missing(n : Nat) : n + 0 = n {
+  rw [nat_add_zero(n)] at lhs occurrence 2;
+}
+
+// Error: E442: Rewrite occurrence 2 was not found (1 eligible matches). Remaining goal: n + 0 = n.
+//   No rule fired.
+def missing_default(n : Nat) : n + 0 = n {
+  rw [nat_add_zero(n)] occurrence 2;
+}
+
+// Error: E441: Rewrite match occurs in an unsupported dependent position. Remaining goal: f(x) =
+//   f(x). No rule fired.
+def dependent(A : U0, C : A -> U0, f : forall a : A. C(a), x : A, y : A, p : x = y) : f(x) = f(x) {
+  rw [p] at lhs;
+}
+
+def after : 0 = 0 {
+  rfl;
+}

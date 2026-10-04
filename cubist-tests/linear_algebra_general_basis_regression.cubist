@@ -1,0 +1,15 @@
+// From tests/linear-algebra.test.mjs: The general basis theorem derives
+// maximality from choice, with its exact assumptions visible.
+import vector_basis_existence;
+import finite_fields;
+def any_vector_space(K : AlgebraicField, V : VectorSpace(K)) : FieldExists(VectorBasis(K, V)) {
+  exact vector_space_has_basis(K, V);
+}
+
+def empty_coordinate_space(K : AlgebraicField) : FieldExists(VectorBasis(K, CoordinateSpace(K, 0))) {
+  exact vector_space_has_basis(K, CoordinateSpace(K, 0));
+}
+
+def binary_field_basis : FieldExists(VectorBasis(F2, ScalarSpace(F2))) {
+  exact vector_space_has_basis(F2, ScalarSpace(F2));
+}

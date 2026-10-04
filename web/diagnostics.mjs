@@ -76,13 +76,14 @@ export const diagnostics = [
   ["E149", "simp_rule priority must be an integer from 0 to 1000."],
   ["E150", "Expected '}' to close the inductive declaration."],
   ["E151", "Imports must come before declarations."],
-  ["E152", "Expected a declaration or directive: def, computable def, inductive, evaluate, simp_rule or simp_set."],
+  ["E152", "Expected a declaration or directive: def, computable def, inductive, evaluate, print, simp_rule or simp_set."],
   ["E153", "Write := to give a value: def name : T := term; here `=` read as an equality type"],
   ["E154", "Cannot locate a right-hand pair's enclosing parentheses."],
   ["E155", "Tuple linearization changed the expanded syntax tree."],
   ["E156", "Give the motive after as: induction v as z return T { … }."],
   ["E157", "Expected '}' to close the induction."],
   ["E158", "Expected '}' to close the …."],
+  ["E159", "print shows evaluate(term), typeof(term) or inspect(term)."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
@@ -197,6 +198,7 @@ export const diagnostics = [
   ["E370", "simp only requires a homogeneous equality goal."],
   ["E371", "induction requires a value of a declared type."],
   ["E372", "… stands for a universe that the printer could not show: write the universe in its place, such as U0 or a universe variable."],
+  ["E373", "-p reverses a path; found no path."],
   // Proof statements, rewriting and simplification
   ["E401", "Univalence requires a universe."],
   ["E402", "… takes a universe below UU0."],

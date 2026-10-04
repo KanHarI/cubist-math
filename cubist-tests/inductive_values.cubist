@@ -1,0 +1,32 @@
+// From tests/inductive-declarations.test.mjs: Constructors build values,
+// computations hold by rfl, and no result carries a marker.
+// T2, directly and through a definition: since H1's release, no result that
+// uses a declared type carries the marker (the specification's 6.4).
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+inductive List(U < UU0, A : U) : U {
+  nil;
+  cons(x : A, xs : List(U, A));
+}
+
+def two : N := succ(succ(zero));
+
+def two_is_two : two = succ(succ(zero)) {
+  rfl;
+}
+
+def one_two : List(U0, N) := cons(succ(zero), cons(two, nil));
+
+computable def counted : N := two;
+
+def plain : Nat := 2;
+
+// Types print by name.
+// Output: N
+print(typeof(two));
+// Output: List(__U, N)
+print(typeof(one_two));

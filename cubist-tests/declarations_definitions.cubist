@@ -1,0 +1,20 @@
+// From tests/declarations.test.mjs: definitions check constructions and
+// proofs, and expose their checked bodies; a false claim is refused and
+// admits nothing.
+
+def identity(A : U0, x : A) := x;
+
+def identity_proof : forall A : U0. A -> A {
+  intro A;
+  intro x;
+  exact x;
+}
+
+def computes : identity_proof(Nat, 0) = identity(Nat, 0) {
+  exact refl(0);
+}
+
+// Error: E606: Type mismatch: found 0 = 0, expected 0 = 1.
+def false_claim : 0 = 1 {
+  exact refl(0);
+}

@@ -1,0 +1,8 @@
+// From tests/truncation-migration.test.mjs: G5: the rebuilt CauchySame relation and EventualClose stay in U0 without
+// assumptions.
+import h1_cauchy_quotient;
+computable def relation(
+  Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x,
+  y : CauchySequence(Q, zero, addQ, ltQ)
+) :
+  U0 := CauchySame(Q, zero, addQ, ltQ, x, y);

@@ -1,0 +1,21 @@
+// From tests/inductive-declarations.test.mjs: Inspection: a parameter has one
+// name in the whole view, and T.squash is distinct from squash.
+// The second review of #74: one naming for the whole view, and the
+// generated constructor as the source writes it.
+
+inductive T(c : U0) {
+  c(x : c);
+}
+
+inductive S : prop {
+  squash;
+}
+
+// Output: inductive T : U0 -> U0 (type) { c : c1 -> T [1 data, 0 positions, 0 dimensions]; }
+//   eliminator for P : T(c1) -> U { c_case : forall x : c1. P(c(x)); }
+print(inspect(T));
+// Output: inductive S : U0 (prop) { squash : S [0 data, 0 positions, 0 dimensions]; S.squash :
+//   forall x : S. forall x1 : S. x = x1 [0 data, 2 positions, 1 dimension, generated]; } eliminator
+//   for P : S -> U { squash_case : P(squash); squash_clause : forall x : S. forall x1 : S. forall
+//   x2 : P(x). forall x3 : P(x1). PathP(fun (i : Interval) => P(S.squash(x, x1) @ i), x2, x3); }
+print(inspect(S));

@@ -3,18 +3,13 @@ import {naturalSort, numeral} from "../web/translator/numerals.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
-import { CubicalProgram } from "../web/cubical-program.mjs";
+import { checkTestModule } from "./check-program.mjs";
 import { kernelAssembly, assemblyText } from "../web/cubical-assembly.mjs";
 
 const module = await createCubical();
+// The declarations are cubist-tests/assembly_*.cubist.
 async function fixture(t) {
-  const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  const result = await program.check(`def N := Nat; def id(n : Nat) := n;
-    def twice := id(id(0)); def annotated := typed(N, 0);
-    def along(A : U0, x : A, y : A, p : x = y) :=
-      path(fun (i : Interval) => A, fun (i : Interval) => at(p, i));`, "assembly");
-  assert.equal(result.complete, true);
-  return program;
+  return (await checkTestModule(t, "assembly_fixture", { module })).program;
 }
 function checkedView(program, binding) {
   const view = program.inspect(binding);
@@ -24,7 +19,7 @@ function checkedView(program, binding) {
 }
 
 test("assembly rows expose actual C opcodes, payloads, and all four operand slots", async t => {
-  const program = await fixture(t), { view, checked } = checkedView(program, "assembly__twice");
+  const program = await fixture(t), { view, checked } = checkedView(program, "assembly_fixture__twice");
   const listing = kernelAssembly(program, view, checked);
   assert.equal(listing.roots[0].handle, checked.expression);
   assert.equal(listing.nodes[0].mnemonic, "CC_APP");
@@ -37,16 +32,16 @@ test("assembly rows expose actual C opcodes, payloads, and all four operand slot
     assert.deepEqual(node.operands.map(operand => operand.handle), native.children);
   }
   const ref = listing.nodes.find(node => node.kind === "DefRef");
-  assert.ok(ref.annotation.includes("assembly__id"));
+  assert.ok(ref.annotation.includes("assembly_fixture__id"));
   assert.equal(listing.nodes.some(node => node.id === ref.definition.value), false);
   const expanded = kernelAssembly(program, view, checked, { expanded: [ref.id] });
   assert.equal(expanded.nodes.some(node => node.id === ref.definition.value), true);
   assert.match(assemblyText(expanded), /CC_LAM \[4\]/);
-  assert.equal(program.inspect("assembly__twice").expression.tag, "App", "reading assembly must not normalize");
+  assert.equal(program.inspect("assembly_fixture__twice").expression.tag, "App", "reading assembly must not normalize");
 });
 
 test("the listing keeps checked type and inferred type roots distinct", async t => {
-  const program = await fixture(t), { view, checked } = checkedView(program, "assembly__annotated");
+  const program = await fixture(t), { view, checked } = checkedView(program, "assembly_fixture__annotated");
   const reducedTypeView = { ...view, type: naturalSort };
   program.checker.checkView(view.expression, reducedTypeView.type);
   const result = checked;
@@ -56,7 +51,7 @@ test("the listing keeps checked type and inferred type roots distinct", async t 
 });
 
 test("bounded listings retain navigable roots and can prioritize an omitted operand", async t => {
-  const program = await fixture(t), { view, checked } = checkedView(program, "assembly__twice");
+  const program = await fixture(t), { view, checked } = checkedView(program, "assembly_fixture__twice");
   const partial = kernelAssembly(program, view, checked, { limit: 1 });
   assert.equal(partial.nodes.length, 1); assert.ok(partial.pending > 0);
   assert.match(assemblyText(partial), /Partial listing/);
@@ -79,10 +74,7 @@ test("open interval contexts and full 64-bit formula masks survive assembly insp
 });
 
 test("a generic assumption is one kernel entry, and each use is a level application", async t => {
-  const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  const result = await program.check(`def choice0 := Choice(U0); def choice1 := Choice(U1);
-    def truncate1 := Truncate(U1);`, "generic");
-  assert.equal(result.complete, true);
+  const { program } = await checkTestModule(t, "assembly_generic_assumptions", { module });
   // The command line and the workbench check through the instruction kernel;
   // the term checker has no level rules.
   const view = program.inspect("__assumption_Choice");
@@ -93,16 +85,15 @@ test("a generic assumption is one kernel entry, and each use is a level applicat
   assert.equal(program.kernel.node(listing.roots[0].handle).kind, "Var");
   assert.equal(program.kernel.node(listing.roots.find(root => root.label === "Checked type").handle).kind, "LPi");
   for (const level of [0, 1]) {
-    const use = program.inspect(`generic__choice${level}`).expression;
+    const use = program.inspect(`assembly_generic_assumptions__choice${level}`).expression;
     assert.equal(use.tag, "LApp");
     assert.deepEqual([use.fn, use.level], [{ tag: "Var", name: "__assumption_Choice" }, level]);
   }
   // One assumption, whatever levels it is used at (G0 Q4).
   // Choice's statement mentions Truncate.
   const labels = name => program.symbols[name].axioms.map(id => program.checker.assumptionLabels.get(id)).sort();
-  assert.deepEqual(labels("generic__choice0"), ["Choice", "Truncate"]);
-  assert.deepEqual(labels("generic__choice1"), ["Choice", "Truncate"]);
-  // Truncate keeps the archive's resizing signature until H1 (G0 Q5).
-  const truncation = program.inspect("generic__truncate1").type;
-  assert.deepEqual([truncation.tag, truncation.domain, truncation.body], ["Pi", { tag: "U", level: 1 }, { tag: "U", level: 0 }]);
+  assert.deepEqual(labels("assembly_generic_assumptions__choice0"), ["Choice", "Truncate"]);
+  assert.deepEqual(labels("assembly_generic_assumptions__choice1"), ["Choice", "Truncate"]);
+  // Truncate keeps the archive's resizing signature until H1 (G0 Q5): the
+  // module prints its type.
 });

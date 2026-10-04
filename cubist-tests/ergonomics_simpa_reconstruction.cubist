@@ -1,0 +1,14 @@
+// From tests/proof-ergonomics.test.mjs: Simpa reconstructs the original
+// equality and rejects a false supplied term.
+
+import primes;
+
+computable def good(n : Nat) : n + 0 = n {
+  simpa only [nat_add_zero] using refl(n);
+}
+
+// Error: E606: Type mismatch: found 0 = 0, expected 0 = 1. Simplifying the supplied type: No rule
+//   fired. Simplifying the goal: No rule fired.
+def bad : 0 = 1 {
+  simpa only [] using refl(0);
+}

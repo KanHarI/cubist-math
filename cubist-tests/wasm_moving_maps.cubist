@@ -1,0 +1,30 @@
+// From tests/cubical-wasm.test.mjs: the declared pushout transports a path
+// constructor along changing maps, with boundary correction. Glued(p)'s left
+// map sends tt to p, which moves from north to south along the meridian:
+// transporting push(tt) must correct its left endpoint. The transport ends
+// over south, not north, and its normal form is the corrected composition of
+// 3.5, not a bare constructor.
+import pushout;
+import suspension_types;
+
+def Glued(p : Suspension(Unit)) :
+  U0 := Pushout(U0, U0, U0, Unit, Suspension(Unit), Unit, fun (x : Unit) => p, fun (x : Unit) => tt);
+
+def Edge(p : Suspension(Unit)) : U0 := typed(Glued(p), inl(p)) = typed(Glued(p), inr(tt));
+
+def moved :
+  Edge(south(Unit)) := along Edge by meridian(Unit, tt) from typed(Edge(north(Unit)), push(tt));
+
+def collapse(p : Suspension(Unit), z : Glued(p)) : Unit := match z {
+    inl(a) => tt;
+    inr(b) => tt;
+    push(c) @ i => tt;
+  };
+
+def collapsed : cong(fun (z : Glued(south(Unit))) => collapse(south(Unit), z), moved) = refl(tt) {
+  rfl;
+}
+
+// Error: E606: Type mismatch: found Edge(meridian(Unit, tt) @ 1), expected Edge(north(Unit)).
+def unmoved :
+  Edge(north(Unit)) := along Edge by meridian(Unit, tt) from typed(Edge(north(Unit)), push(tt));

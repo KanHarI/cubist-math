@@ -63,7 +63,11 @@ const universeConstant = name => {
 // supply; nothing is swapped in translator fields for replays.
 export class Translator {
   constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,
-    onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel}={}) {
+    onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
+    inspectSignature=null}={}) {
+    // A declared type's signature as `print(inspect(T));` shows it, from the
+    // program that admitted it (web/cubical-program.mjs).
+    this.inspectSignature=inspectSignature;
     // The fuel limits of each tactic search and of each declaration (fuel.mjs).
     this.searchFuel=searchFuel;
     this.declarationFuel=declarationFuel;
@@ -229,6 +233,29 @@ export class Translator {
       throw Error(`The term evaluates to ${this.shown(result.normal)}, not ${this.shown(expected.normal)}.`);
     return this.shown(result.normal);
   }
+  // `print(evaluate(e));` shows the normal form of a closed, assumption-free
+  // term, as `evaluate` computes one; `print(typeof(e));` its type; and
+  // `print(inspect(e));` the term the kernel checked, in kernel notation. A
+  // name shows what the CLI's inspect shows: a definition's checked body, or
+  // a declared type's signature and its eliminator's clause types.
+  printed(d,scope) {
+    if(d.show==="evaluate") {
+      scope.spend("queries");
+      const result=this.checker.verify(this.term(d.value,scope));
+      const assumptions=result.native.axioms;
+      if(assumptions.length)throw Error(this.nonComputingMessage("The evaluated term",assumptions,result.term,result.type));
+      return this.shown(result.normal);
+    }
+    const result=scope.infer(this.term(d.value,scope));
+    if(d.show==="typeof")return this.shown(result.type);
+    if(d.value.kind==="name") {
+      let body=result.term;
+      while(body.tag==="Lam"||body.tag==="LLam")body=body.body;
+      if(body.tag==="Sort"&&this.inspectSignature)return this.inspectSignature(body.signature);
+    }
+    const definition=d.value.kind==="name"&&result.term.tag==="DefRef"?this.checker.definitionViews?.get(result.term.name):null;
+    return this.checker.kernelText(definition?.term??result.term,1000);
+  }
   // A term as messages show it: source names, generated suffixes removed.
   shown(term) {return this.checker.displayText?.(term,1000)??sourceText(term);}
   // Terms in one scope that a message shows, named together: a variable
@@ -248,6 +275,20 @@ export class Translator {
             normalText:this.evaluate(d,new Scope(unit,new Map(),env))});
         } catch(error) {
           directives.push({kind:"evaluate",name:`at line ${line}`,status:"not-translated",
+            reason:error.message,start:d.start,failure:error.kind});
+        }
+        unit.fuel.close();
+        directives.at(-1).searchFuel=this.fuelRecord(unit);
+        continue;
+      }
+      if(d.kind==="print") {
+        const line=source.slice(0,d.start).split("\n").length;
+        const unit=module.declaration(this.declarationFuel);
+        try {
+          directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"checked",start:d.start,
+            text:this.printed(d,new Scope(unit,new Map(),env))});
+        } catch(error) {
+          directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"not-translated",
             reason:error.message,start:d.start,failure:error.kind});
         }
         unit.fuel.close();

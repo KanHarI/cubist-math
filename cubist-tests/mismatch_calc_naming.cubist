@@ -1,0 +1,27 @@
+// From tests/mismatch-messages.test.mjs, the fourth review of #74: every
+// message that shows two terms of one scope names them together, as a
+// mismatch does. `+` is naturals' add, captured as plus before a variable
+// named add is introduced. That label prints on one side only, so the
+// variable is named apart from it there; named alone, the other side would
+// have shown it as add.
+import naturals;
+
+// Error: E450: calc step left endpoint does not match the preceding endpoint. The step starts at
+//   add3 + 1; the chain so far ends at add3.
+def step_start : forall n : Nat. n = n {
+  let plus := add;
+  intro add;
+  calc {
+    add = add by refl(add);
+    plus(add, 1) = add by refl(add);
+  }
+}
+
+// Error: E451: calc final endpoint does not match the goal. The chain ends at add11; the goal's
+//   right side is add11 + 1.
+def chain_end : forall n : Nat. n = n + 1 {
+  intro add;
+  calc {
+    add = add by refl(add);
+  }
+}

@@ -1,0 +1,20 @@
+// From tests/proof-ergonomics.test.mjs: Simpa transports through checked
+// paths of types without inventing equivalences.
+
+// Error: E606: Type mismatch: found A, expected B. Simplifying the supplied type: No rule fired.
+//   Simplifying the goal: No rule fired.
+def no_path(A, B : U0, a : A) : B {
+  simpa only [] using a;
+}
+
+// Error: E433: simp only requires homogeneous equality lemmas.
+def maps_are_not_type_paths(A, B : U0, f : A -> B, g : B -> A, a : A) : B {
+  simpa only [f, g] using a;
+}
+
+// Error: E367: Simplification cycle detected in the selected rules. p returned the goal to where it
+//   was 1 rewrite earlier. Simplifying the supplied type stopped at A. 1 rewrite changed the type,
+//   using p.
+def nontrivial_loop(A : U0, p : A = A, a : A) : A {
+  simpa only [p] using a;
+}

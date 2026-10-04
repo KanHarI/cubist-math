@@ -1,0 +1,14 @@
+// From tests/inductive-declarations.test.mjs: imported declared types are
+// used by name, with no marker (T2, through an import), and each module
+// numbers its own names: here the importer's B and A get the names the
+// declaration's A and B had, and are still not them.
+import inductive_naturals;
+import inductive_telescope;
+
+def three : N := nsucc(nsucc(nsucc(nzero)));
+
+def three_again : three = nsucc(nsucc(nsucc(nzero))) {
+  rfl;
+}
+
+def use(dummy : Nat, B : U0, A : U0, b : B) := S(B, A, b);

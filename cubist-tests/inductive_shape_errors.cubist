@@ -1,0 +1,29 @@
+// From tests/inductive-declarations.test.mjs: Second review: shape errors
+// name the constructor and its argument, where they are.
+// A boundary with a composition, refused by the kernel (Q3), at its constructor.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+// Error: E511: Negative occurs in a negative position: c's argument x takes an argument that
+//   mentions Negative or another argument of c.
+inductive Negative {
+  c(x : Negative -> N);
+}
+
+// Error: E512: c's argument x mentions Nested but is not one: in H1 an argument is Nested itself, a
+//   function into it, or a path in it.
+inductive Nested {
+  c(x : Nested and N);
+}
+
+// Error: E604: Instruction kernel: Constructor s: A boundary may not contain a composition, hcomp
+//   or transport (section 1.4, Q3).
+inductive Composed {
+  a;
+  p : a = a;
+  q : a = a;
+  s : trans(p, q) = p;
+}

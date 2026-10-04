@@ -1,0 +1,19 @@
+// From tests/polynomial-algebra.test.mjs: Zero polynomial is excluded from
+// root bounds and division by zero.
+import polynomial_root_bound;
+// Error: E606: Type mismatch: found (fun (n : Nat) => induction n return af_carrier(K) { zero =>
+//   field_one(K); succ ignored => field_zero(K); }, merely(Truncate, TruncateIntro, exists k : Nat.
+//   Se…, expected (fun (n : Nat) => K.2.1.1.1, merely(Truncate, TruncateIntro, exists k : Nat.
+//   SeriesSupport(K, series_zero(K), k), (0, fun (k : Nat, above : 0 <= k) => refl(fie….
+def zero_has_no_roots(K : AlgebraicField) : RootFamily(K, polynomial_zero(K), 1) -> Void {
+  exact polynomial_root_bound(K, polynomial_zero(K), polynomial_one_not_zero(K));
+}
+
+// Error: E606: Type mismatch: found (fun (n : Nat) => induction n return af_carrier(K) { zero =>
+//   field_one(K); succ ignored => field_zero(K); }, merely(Truncate, TruncateIntro, exists k : Nat.
+//   Se…, expected (fun (n : Nat) => K.2.1.1.1, merely(Truncate, TruncateIntro, exists k : Nat.
+//   SeriesSupport(K, series_zero(K), k), (0, fun (k : Nat, above : 0 <= k) => refl(fie….
+def divide_by_zero(K : AlgebraicField, p : Polynomial(K)) :
+  PolynomialDivision(K, p, polynomial_zero(K)) {
+  exact polynomial_division(K, p, polynomial_zero(K), polynomial_one_not_zero(K));
+}

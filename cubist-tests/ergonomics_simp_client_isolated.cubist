@@ -1,0 +1,13 @@
+// From tests/proof-ergonomics.test.mjs: A module that does not import the
+// registrations has none.
+import primes;
+
+// Error: E456: simp only left an unresolved equality goal; add a following proof statement.
+//   Remaining goal: n + 0 = n. No rule fired.
+def absent(n : Nat) : n + 0 = n {
+  simp;
+}
+
+def explicit(n : Nat) : n + 0 = n {
+  simp only [nat_add_zero];
+}

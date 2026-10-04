@@ -1,0 +1,58 @@
+// How an eliminator prints: as the induction that builds it, and written
+// back, that source checks. tests/induction.test.mjs checks that each copy
+// below is what the print before it shows.
+
+inductive Tree {
+  leaf;
+  node(left : Tree, right : Tree);
+}
+
+inductive List(U < UU0, A : U) : U {
+  nil;
+  cons(head : A, tail : List(U, A));
+}
+
+// A match's recursion prints as an induction, with a hypothesis for each
+// recursive argument.
+def size(t : Tree) : Nat := match t {
+    leaf => 1;
+    node(left, right) => succ(size(left));
+  };
+
+// Output: fun (x : Tree) => induction x return Nat { leaf => 1; node(left, right, left_rec,
+//   right_rec) => succ(left_rec); }
+print(evaluate(size));
+
+def size_again := fun (x : Tree) => induction x return Nat {
+    leaf => 1;
+    node(left, right, left_rec, right_rec) => succ(left_rec);
+  };
+
+def size_same : size = size_again {
+  rfl;
+}
+
+def length(xs : List(U0, Nat)) : Nat := induction xs return Nat {
+    nil => 0;
+    cons(head, tail, ih) => succ(ih);
+  };
+
+// An instance carries no erased universe, so the printer writes __U in its
+// place, and whoever writes the instance out supplies it: the elaborator
+// says what __U stands for.
+// Output: fun (x : List(__U, Nat)) => induction x return Nat { nil => 0; cons(head, tail, ih) =>
+//   succ(ih); }
+print(evaluate(length));
+
+// Error: E372: __U stands for a universe that the printer could not show: write the universe in its
+//   place, such as U0 or a universe variable.
+def length_again := fun (x : List(__U, Nat)) => induction x return Nat {
+    nil => 0;
+    cons(head, tail, ih) => succ(ih);
+  };
+
+// Written out, it checks.
+def length_written := fun (x : List(U0, Nat)) => induction x return Nat {
+    nil => 0;
+    cons(head, tail, ih) => succ(ih);
+  };

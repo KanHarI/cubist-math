@@ -1,0 +1,58 @@
+// From tests/universe-generic.test.mjs: Rewriting matches a generic rule's
+// universe only where it is a bare variable.
+
+import primes;
+
+def Id(U < UU0, A : U) := A;
+
+def id_unfold(U < UU0, A : U) : Id(U, A) = A := refl(A);
+
+def void_id(U < UU0) : Id(U, Void) = Void := refl(typed(U, Void));
+
+def plus_zero(U < UU0, n : Nat) : n + 0 = n := nat_add_zero(n);
+
+def zero_at(U < UU0, f : U -> Nat, A : U, h : f(A) = 0) : f(A) = 0 := h;
+
+def next_rule(U < UU0, A : next(U)) : Id(next(U), A) = A := refl(A);
+
+simp_set identities := [id_unfold];
+def by_rw : Id(U2, Void) = Void {
+  rw [void_id];
+}
+
+def by_rw_twice : Id(U1, Id(U1, Void)) = Void {
+  rw [void_id];
+  rw [void_id];
+}
+
+def by_simp(A : U0) : Id(U0, Id(U0, A)) = A {
+  simp only [id_unfold];
+}
+
+def by_set(A : U3) : Id(U3, A) = A {
+  simp only [identities];
+}
+
+def level_free(n : Nat) : (n + 0) + 0 = n {
+  simp only [plus_zero];
+}
+
+def from_parameter(g : U1 -> Nat, h : g(U0) = 0) : g(U0) + 0 = 0 {
+  simp only [zero_at, nat_add_zero] with [h];
+}
+
+// Error: E434: A universe-generic rule is matched only where its universe is a bare variable;
+//   supply its universe argument, as in lemma(U0).
+def not_bare(A : U3) : Id(U3, A) = A {
+  simp only [next_rule];
+}
+
+def explicit(A : U3) : Id(U3, A) = A {
+  simp only [next_rule(U2)];
+}
+
+// Error: E435: A universe-generic rule's universe is not determined by the matched side; supply it,
+//   as in lemma(U0).
+def undetermined : Void = Id(U3, Void) {
+  rw [<- void_id];
+}

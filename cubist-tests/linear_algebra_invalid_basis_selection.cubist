@@ -1,0 +1,18 @@
+// From tests/linear-algebra.test.mjs: Basis existence cannot silently
+// select a basis or justify adjoining the zero vector.
+import vector_basis_existence;
+// Error: E606: Type mismatch: found FieldExists(Truncate, VectorBasis(Truncate, K, V)), expected
+//   VectorBasis(Truncate, K, V).
+def cannot_untruncate(K : AlgebraicField, V : VectorSpace(K)) : VectorBasis(K, V) {
+  exact vector_space_has_basis(K, V);
+}
+
+// Error: E606: Type mismatch: found Span(Truncate, K, V, fun (x : vector_carrier(K, V)) => Void,
+//   vector_zero(K, V)) -> Span(Truncate, K, V, fun (x : vector_carrier(K, V)) => Void,
+//   vector_zero(K, …, expected Span(Truncate, K, V, fun (x : vector_carrier(K, V)) => Void,
+//   vector_zero(K, V)) -> Void.
+def zero_is_not_outside(K : AlgebraicField, V : VectorSpace(K)) :
+  Span(K, V, (fun (x : vector_carrier(K, V)) => Void), vector_zero(K, V)) -> Void {
+  intro member;
+  exact member;
+}

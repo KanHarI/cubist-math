@@ -1,0 +1,64 @@
+// From tests/inductive-declarations.test.mjs: Universe parameters: an erased
+// one is read from its parameter, a recorded one carried.
+// V7 and V20 in substance: an erased parameter is read, a recorded one
+// carried. V26 in substance: Pointed(U0) stores a small type in U1. V30:
+// Lifted's universe is recorded, so Lifted(U0) and Lifted(U1) are distinct.
+// pt(N, zero) is also a Pointed(U1), with N : U0 in U1.
+// Instances at different recorded levels are distinct types.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+inductive List(U < UU0, A : U) : U {
+  nil;
+  cons(x : A, xs : List(U, A));
+}
+
+inductive Pointed(U < UU0) : next(U) {
+  pt(X : U, x : X);
+}
+
+inductive Lifted(U < UU0) : U {
+  mk;
+}
+
+def list_small : U0 := List(U0, N);
+
+def list_read : U0 := List(U1, N);
+
+def pointed_small : U1 := Pointed(U0);
+
+// Error: E606: Type mismatch: found U1, expected U0.
+def pointed_lowered : U0 := Pointed(U0);
+
+def base_point : Pointed(U0) := pt(N, zero);
+
+def lifted_point : Pointed(U1) := pt(N, zero);
+
+// Error: E606: Type mismatch: found Pointed(U0), expected Pointed(U1).
+def other_level : Pointed(U1) := base_point;
+
+def lifted : U2 := Lifted(U2);
+
+def lifted_zero : Lifted(U0) := mk;
+
+// Error: E606: Type mismatch: found Lifted(U0), expected Lifted(U1).
+def lifted_moved : Lifted(U1) := lifted_zero;
+
+// An erased universe parameter is read from a parameter: List's only bounds
+// A's type. A recorded one is carried: Pointed stores a type of its own
+// universe, and no parameter can read Lifted's.
+// Output: inductive List : forall U < UU0. U -> U (type) { nil : List [0 data, 0 positions, 0
+//   dimensions]; cons : A -> List -> List [1 data, 1 position, 0 dimensions]; } eliminator for P :
+//   List(__U, A) -> V { nil_case : P(nil); cons_case : forall x : A. forall x1 : List(__U, A).
+//   P(x1) -> P(cons(x, x1)); }
+print(inspect(List));
+// Output: inductive Pointed : forall U_1 < UU0. next(U_1) (type, recorded U) { pt : forall X : U. X
+//   -> Pointed [2 data, 0 positions, 0 dimensions]; } eliminator for P : Pointed(U) -> V { pt_case
+//   : forall x : U. forall x1 : x. P(pt(x, x1)); }
+print(inspect(Pointed));
+// Output: inductive Lifted : forall U_1 < UU0. U_1 (type, recorded U) { mk : Lifted [0 data, 0
+//   positions, 0 dimensions]; } eliminator for P : Lifted(U) -> V { mk_case : P(mk); }
+print(inspect(Lifted));

@@ -1,0 +1,16 @@
+// From tests/inductive-declarations.test.mjs: Third review: a path lambda at
+// a point is contracted in constructor types.
+
+inductive P : U0 {
+  z;
+  s(x : refl(P) @ 0);
+  c : refl(P) @ 1;
+}
+
+def two : P := s(s(z));
+
+// s's argument, refl(P) @ 0, is the position P.
+// Output: inductive P : U0 (type) { z : P [0 data, 0 positions, 0 dimensions]; s : P -> P [0 data,
+//   1 position, 0 dimensions]; c : P [0 data, 0 positions, 0 dimensions]; } eliminator for Q : P ->
+//   U { z_case : Q(z); s_case : forall x : P. Q(x) -> Q(s(x)); c_case : Q(c); }
+print(inspect(P));

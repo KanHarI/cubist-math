@@ -1,20 +1,11 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { compareFingerprints, elaborationFingerprint } from "../tools/elaboration-fingerprint.mjs";
 
-const fixture = `def two : succ(1) = 2 {
-  rfl;
-}
-def moved(x, y : Nat, p : x = y, q : y = x) : x = x {
-  rw [p];
-  exact q;
-}
-def mirror(U < UU0, A : U, x, y : A, p : x = y) : y = x {
-  exact path(fun (i : Interval) => A, fun (i : Interval) => at(p, flip(i)));
-}
-def mirror_nat := mirror(U0, Nat);
-`;
+// The fixture is cubist-tests/fingerprint_fixture.cubist.
+const fixture = await readFile(new URL("../cubist-tests/fingerprint_fixture.cubist", import.meta.url), "utf8");
 const fingerprint = source => elaborationFingerprint({ modules: ["fingerprint_fixture"],
   readSource: async name => { if (name !== "fingerprint_fixture") throw Error(`Unexpected import: ${name}`); return source; } });
 

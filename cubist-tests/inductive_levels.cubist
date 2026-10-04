@@ -1,0 +1,45 @@
+// From tests/inductive-declarations.test.mjs: The sort's level is the least
+// containing its data and arities, or the one written.
+// V27: Bad is refused at mk, naming X. V28: Flag lives in U1, not in U0.
+// Lowering is refused at the constructor, naming the argument.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+inductive Quotient(U, V < UU0, A : U, R : A -> A -> V) : set {
+  class(a : A);
+  glue(a, b : A, r : R(a, b)) : class(a) = class(b);
+}
+
+def related(a, b : N) : U0 := N;
+
+def big_relation(a, b : N) : U1 := U0;
+
+def small_quotient : U0 := Quotient(U0, U0, N, related);
+
+def large_quotient : U1 := Quotient(U0, U1, N, big_relation);
+
+// Error: E606: Type mismatch: found U1, expected U0.
+def large_lowered : U0 := Quotient(U0, U1, N, big_relation);
+
+inductive Flag : U1 {
+  on;
+  off;
+}
+
+def flag_up : U1 := Flag;
+
+// Error: E606: Type mismatch: found U1, expected U0.
+def flag_down : U0 := Flag;
+
+// Error: E514: mk's argument X lives in a universe above Bad's declared one: a declared type cannot
+//   lower its data (K2.5).
+inductive Bad : U0 {
+  mk(X : U0);
+}
+
+inductive Boxed : prop U1 {
+  box(X : U0);
+}

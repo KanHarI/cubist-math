@@ -1,0 +1,55 @@
+// From tests/inductive-declarations.test.mjs: Declarations are checked before
+// they are admitted: the rejections name what is wrong.
+// A4: Negative takes itself in a function's domain. A8: Ahead's boundary
+// names a later constructor. V31: a universe parameter named prop.
+// Alone, List is its former, a function: not a type in U0.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+// Error: E511: Negative occurs in a negative position: mk's argument f takes an argument that
+//   mentions Negative or another argument of mk.
+inductive Negative {
+  mk(f : Negative -> N);
+}
+
+// Error: E343: Untranslated name: b
+inductive Ahead {
+  a : b = b;
+  b;
+}
+
+// Error: E515: Inside its declaration, Index is applied to its own parameters, Index(U, A): another
+//   argument would be an index, which H1 does not admit.
+inductive Index(U < UU0, A : U) {
+  mk(x : Index(U, N));
+}
+
+// Error: E508: A universe parameter cannot be named prop: in a declaration's result position that
+//   word is an h-level.
+inductive Word(prop < UU0) {
+  mk;
+}
+
+// Error: E509: a is already a constructor of Twice.
+inductive Twice {
+  a;
+  a;
+}
+
+// Error: E343: Untranslated name: nil
+def orphan := nil;
+
+inductive List(U < UU0, A : U) : U {
+  nil;
+  cons(x : A, xs : List(U, A));
+}
+
+// Error: E519: nil needs an expected type, to know which List(…) it builds: write typed(List(…),
+//   nil).
+def needs_type := nil;
+
+// Error: E606: Type mismatch: found forall U < UU0. U -> U, expected U0.
+def needs_arguments : U0 := List;

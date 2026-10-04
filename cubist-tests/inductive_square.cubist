@@ -1,0 +1,17 @@
+// From tests/inductive-declarations.test.mjs: A two-dimensional constructor
+// of a type with parameters takes its instance from a square's type.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+inductive Sq(U < UU0, A : U) {
+  b;
+  l : b = b;
+  s : PathP(fun (i : Interval) => l @ i = l @ i, l, l);
+}
+
+def loop_n : typed(Sq(U0, N), b) = b := l;
+
+def square : PathP(fun (i : Interval) => loop_n @ i = loop_n @ i, loop_n, loop_n) := s;

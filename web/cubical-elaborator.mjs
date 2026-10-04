@@ -3,6 +3,7 @@ import { T, substituteTerm } from "./translator/core.mjs";
 import { interval as I } from "./translator/lattice.mjs";
 import { NameSupply, localName, numberedName, stem } from "./translator/names.mjs";
 import { sourceText } from "./cubical-source-text.mjs";
+import { cubicalText } from "./cubical-notation.mjs";
 import { levelNormal } from "./cubical-levels.mjs";
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { KernelError } from "./cubical-kernel.mjs";
@@ -411,6 +412,11 @@ export class NativeCubicalElaborator {
   }
   displayText(term, width = 160, limit = 4000) {
     return this.printed(readableDimensions([displayTerm(term)])[0], width, limit);
+  }
+  // A term in kernel notation as it was checked, no redex reduced.
+  kernelText(term, width = 160) {
+    const text = cubicalText(readableDimensions([displayTerm(term, 0)])[0], this.displayNames);
+    return text.length > width ? `${text.slice(0, width - 1)}…` : text;
   }
   // Several terms shown with one naming: a variable they share has one name
   // in all of them, apart from every label any of them prints.

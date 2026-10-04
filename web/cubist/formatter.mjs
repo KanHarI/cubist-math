@@ -67,11 +67,11 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
   const construction = tokens[0]?.text === "construction";
   const syntax = construction ? null : parse(source);
   const declarationEnds = new Set(syntax?.declarations.map(node => node.end) ?? []);
-  // `computable` and `evaluate` are ordinary names except where the parser
-  // found a top-level modifier or directive.
+  // `computable`, `evaluate` and `print` are ordinary names except where the
+  // parser found a top-level modifier or directive.
   const itemStarts = new Set([
     ...(syntax?.declarations ?? []).map(node => node.modifierStart).filter(Number.isInteger),
-    ...(syntax?.directives ?? []).filter(node => node.kind === "evaluate").map(node => node.start),
+    ...(syntax?.directives ?? []).filter(node => ["evaluate", "print"].includes(node.kind)).map(node => node.start),
   ]);
   // A binder's short domain is one phrase: `forall f : A -> B.` must not
   // split the arrow merely because the surrounding theorem is long.

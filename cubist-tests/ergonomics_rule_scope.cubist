@@ -1,0 +1,10 @@
+// From tests/proof-ergonomics.test.mjs: Generic definitions keep their
+// defining simplification sets when used: generic was checked with its own
+// module's units, whatever units means here.
+import ergonomics_rule_scope_rules;
+
+simp_set units := [];
+
+computable def use(n : Nat) : n + 0 = n {
+  exact generic(U0, n);
+}

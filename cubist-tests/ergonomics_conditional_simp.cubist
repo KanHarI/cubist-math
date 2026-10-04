@@ -1,0 +1,34 @@
+// From tests/proof-ergonomics.test.mjs: Conditional simp retains an
+// explicitly selected or reflexive premise proof.
+
+import primes;
+
+def zero_if(n : Nat, h : n = 0) : n + 0 = 0 {
+  calc {
+    n + 0 = n by nat_add_zero(n);
+    _ = 0 by h;
+  }
+}
+
+simp_rule zero_if;
+computable def selected(n : Nat, h : n = 0) : n + 0 = 0 {
+  simp with [h];
+}
+
+// Error: E456: simp only left an unresolved equality goal; add a following proof statement. Rule
+//   zero_if has an unproved premise at parameter 2; supply a local witness with simp with [name].
+//   Remaining goal: n + 0 = 0. No rule fired.
+def missing(n : Nat) : n + 0 = 0 {
+  simp;
+}
+
+def reflexive : 0 + 0 = 0 {
+  simp;
+}
+
+// Error: E456: simp only left an unresolved equality goal; add a following proof statement. Rule
+//   zero_if has an unproved premise at parameter 2; supply a local witness with simp with [name].
+//   Remaining goal: n + 0 = 0. No rule fired.
+def wrong(n : Nat, h : n = 1) : n + 0 = 0 {
+  simp with [h];
+}

@@ -1,0 +1,93 @@
+// From tests/quotient-universal.test.mjs: homomorphism universe schemas
+// check at U0–U3 and agree with small homomorphisms, each computable.
+import group_homomorphisms;
+
+computable def check_GroupHomLawsAt_0 := GroupHomLawsAt(U0);
+
+computable def check_GroupHomAt_0 := GroupHomAt(U0);
+
+computable def check_group_hom_map_at_0 := group_hom_map_at(U0);
+
+computable def check_group_hom_multiply_at_0 := group_hom_multiply_at(U0);
+
+computable def check_group_is_set_at_0 := group_is_set_at(U0);
+
+computable def check_group_hom_laws_prop_at_0 := group_hom_laws_prop_at(U0);
+
+computable def check_group_hom_ext_at_0 := group_hom_ext_at(U0);
+
+computable def check_group_hom_identity_at_0 := group_hom_identity_at(U0);
+
+computable def check_group_hom_compose_at_0 := group_hom_compose_at(U0);
+
+computable def check_group_hom_object_at_0 := group_hom_object_at(U0);
+
+computable def check_GroupHomLawsAt_1 := GroupHomLawsAt(U1);
+
+computable def check_GroupHomAt_1 := GroupHomAt(U1);
+
+computable def check_group_hom_map_at_1 := group_hom_map_at(U1);
+
+computable def check_group_hom_multiply_at_1 := group_hom_multiply_at(U1);
+
+computable def check_group_is_set_at_1 := group_is_set_at(U1);
+
+computable def check_group_hom_laws_prop_at_1 := group_hom_laws_prop_at(U1);
+
+computable def check_group_hom_ext_at_1 := group_hom_ext_at(U1);
+
+computable def check_group_hom_identity_at_1 := group_hom_identity_at(U1);
+
+computable def check_group_hom_compose_at_1 := group_hom_compose_at(U1);
+
+computable def check_group_hom_object_at_1 := group_hom_object_at(U1);
+
+computable def check_GroupHomLawsAt_2 := GroupHomLawsAt(U2);
+
+computable def check_GroupHomAt_2 := GroupHomAt(U2);
+
+computable def check_group_hom_map_at_2 := group_hom_map_at(U2);
+
+computable def check_group_hom_multiply_at_2 := group_hom_multiply_at(U2);
+
+computable def check_group_is_set_at_2 := group_is_set_at(U2);
+
+computable def check_group_hom_laws_prop_at_2 := group_hom_laws_prop_at(U2);
+
+computable def check_group_hom_ext_at_2 := group_hom_ext_at(U2);
+
+computable def check_group_hom_identity_at_2 := group_hom_identity_at(U2);
+
+computable def check_group_hom_compose_at_2 := group_hom_compose_at(U2);
+
+computable def check_group_hom_object_at_2 := group_hom_object_at(U2);
+
+computable def check_GroupHomLawsAt_3 := GroupHomLawsAt(U3);
+
+computable def check_GroupHomAt_3 := GroupHomAt(U3);
+
+computable def check_group_hom_map_at_3 := group_hom_map_at(U3);
+
+computable def check_group_hom_multiply_at_3 := group_hom_multiply_at(U3);
+
+computable def check_group_is_set_at_3 := group_is_set_at(U3);
+
+computable def check_group_hom_laws_prop_at_3 := group_hom_laws_prop_at(U3);
+
+computable def check_group_hom_ext_at_3 := group_hom_ext_at(U3);
+
+computable def check_group_hom_identity_at_3 := group_hom_identity_at(U3);
+
+computable def check_group_hom_compose_at_3 := group_hom_compose_at(U3);
+
+computable def check_group_hom_object_at_3 := group_hom_object_at(U3);
+
+computable def small_hom_specialization(G : Group, H : Group) :
+  GroupHomAt(U0, G, H) =[U0] GroupHom(G, H) {
+  exact refl(GroupHom(G, H));
+}
+
+computable def identity_computes(G : GroupAt(U2), x : group_carrier_at(U2, G)) :
+  group_hom_map_at(U2, G, G, group_hom_identity_at(U2, G), x) = x {
+  exact refl(x);
+}

@@ -1,0 +1,8 @@
+// From tests/proof-ergonomics.test.mjs: An imported generic definition that
+// fails is reported in its own module, where its source writes the failure,
+// though a long line comes before it:
+// ........................................................................................
+// Error: E433: simp only requires homogeneous equality lemmas.
+def broken__rule(U < UU0, n : Nat) : n = n {
+  simp only [0];
+}

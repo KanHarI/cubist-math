@@ -1,0 +1,22 @@
+// From tests/inductive-declarations.test.mjs: Without an expected type, a
+// constructor's instance is read from a position argument.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+inductive List(U < UU0, A : U) : U {
+  nil;
+  cons(x : A, xs : List(U, A));
+}
+
+def prepend(xs : List(U0, N)) := cons(zero, xs);
+
+// Error: E519: nil needs an expected type, to know which List(…) it builds: write typed(List(…),
+//   nil).
+def still_needs := nil;
+
+// cons's instance is read from xs.
+// Output: List(__U, N) -> List(__U, N)
+print(typeof(prepend));

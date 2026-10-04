@@ -1,0 +1,17 @@
+// From tests/inductive-declarations.test.mjs: A failed declaration leaves its
+// names untranslated and nothing admitted.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+// Error: E511: Broken occurs in a negative position: mk's argument f takes an argument that
+//   mentions Broken or another argument of mk.
+inductive Broken {
+  mk(f : Broken -> N);
+  fine;
+}
+
+// Error: E340: Untranslated dependency: Broken
+def uses : Broken := fine;

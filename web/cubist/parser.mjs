@@ -821,6 +821,22 @@ export function parse(source, typeOnly = false) {
       const directive = { kind: "evaluate", value, expected, start: t.start, end };
       directives.push(directive); items.push(directive); continue;
     }
+    // `print(evaluate(term));`, `print(typeof(term));` and
+    // `print(inspect(term));` show what a closed term computes to, its type,
+    // and the term the kernel checked.
+    if (t.text === "print" && peek() === "(") {
+      take("(");
+      const show = take();
+      if (!["evaluate", "typeof", "inspect"].includes(show.text))
+        throw Object.assign(new Error("print shows evaluate(term), typeof(term) or inspect(term)."), { offset: show.start });
+      take("(");
+      const value = expr();
+      take(")");
+      take(")");
+      const end = take(";").end;
+      const directive = { kind: "print", show: show.text, value, start: t.start, end };
+      directives.push(directive); items.push(directive); continue;
+    }
     // `inductive T(params) : R { constructors }` declares a type (H1; the
     // specification's section 9). R is an h-level, a universe or both.
     if (t.text === "inductive") {
@@ -848,7 +864,7 @@ export function parse(source, typeOnly = false) {
     if (computable) t = take();
     if (t.text !== "def")
       throw Object.assign(new Error(t.text === "import" ? "Imports must come before declarations."
-        : "Expected a declaration or directive: def, computable def, inductive, evaluate, simp_rule or simp_set."), {
+        : "Expected a declaration or directive: def, computable def, inductive, evaluate, print, simp_rule or simp_set."), {
         offset: t.start,
       });
     const n = name(),

@@ -1,0 +1,17 @@
+// From tests/proof-ergonomics.test.mjs: universe-generic declarations link tactics
+// from the parser's keyword sites, as the other of ergonomics_tactic_sites
+// and ergonomics_tactic_sites_generic does.
+
+def calc_site(U < UU0, x, y : Nat, p : x = y) : x = y {
+  calc {
+    x = y by p;
+  }
+}
+
+def rw_site(U < UU0, x, y : Nat, p : x = y) : x = y {
+  rw [p];
+}
+
+def simp_site(U < UU0, f : Nat -> Nat, n : Nat, h : f(n) = n) : f(n) = n {
+  simp [h];
+}

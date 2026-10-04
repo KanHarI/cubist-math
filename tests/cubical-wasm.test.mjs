@@ -1,6 +1,7 @@
 import "./fresh-build.mjs";
 import {CubicalProgram} from "../web/cubical-program.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
+import { checkTestModule } from "./check-program.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
@@ -39,6 +40,16 @@ function derive(k, raw, expected = 0, assumptions = [], mask = 0n) {
   return { expression: term, type };
 }
 // The same for syntax with names and dimensions, as the elaborator checks it.
+// Archive modules, each checked as a program's main module.
+async function archive(t, ...names) {
+  const program = new CubicalProgram(producerModule, sourceReader(), { collectReferences: false });
+  t.after(() => program.dispose());
+  for (const name of names) {
+    const result = await program.check(await sourceReader()(name), name);
+    assert.equal(result.complete, true, `${name}: ${JSON.stringify(result.gaps)}`);
+  }
+  return program;
+}
 const elaborate = (k, term, type = null, context = [], dimensions = new Map()) =>
   new NativeCubicalElaborator(k).checkSyntax(term, type, new Map(context), dimensions);
 
@@ -106,11 +117,8 @@ test("named syntax preserves path binders and sharing across checks", t => {
 });
 
 test("the actual binary source checks entirely in cubical WASM", async t => {
-  const program = new CubicalProgram(producerModule, sourceReader());
-  t.after(()=>program.dispose());
-  const result=await program.check("import binary_naturals; def bad_binary_literal : 0b110 = 0b111 { exact refl(0b110); }", "binary_probe");
+  const { result } = await checkTestModule(t, "wasm_binary_literal", { module: producerModule });
   assert.equal(result.imports.filter(d=>d.sourceModule==="binary_naturals" && d.verified).length,6);
-  assert.equal(result.outputs[0].verified,false);
 });
 
 test("dependent pair induction checks its motive and both branch arguments natively", t => {
@@ -143,23 +151,15 @@ test("the kernel computes transport through Glue without a univalence axiom", t 
 });
 
 test("native elaboration checks all manual factorial sources while retaining checked definitions", async t => {
-  const program=new CubicalProgram(producerModule,sourceReader(),{collectReferences:false});
-  t.after(()=>program.dispose());
-  const result=await program.check("import binary_arithmetic; import binary_induction; import radix_factorial; def retained : Unit := tt;", "factorials");
-  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  const program = await archive(t, "binary_arithmetic", "binary_induction", "radix_factorial");
   for(const name of ["binary_arithmetic__binary_factorial_ten", "radix_factorial__radix_factorial_ten_base_two", "radix_factorial__radix_factorial_ten_base_ten"]) {
     const view=program.inspect(name),checked=program.checker.checkView(view.expression,view.type);
     assert.ok(checked.arenaNodes<500000 && checked.arenaBytes<32*1024*1024);
   }
-  const bad=await program.check("import binary_induction; def wrong_factorial : binary_factorial(3) = 0b111 { exact refl(0b111); }", "bad_factorial");
-  assert.equal(bad.outputs.find(d=>d.name === "wrong_factorial").verified,false);
 });
 
 test("the existing Nat factorial theorem checks cubically without a million-successor expression",async t=>{
-  const program=new CubicalProgram(producerModule,sourceReader(),{collectReferences:false});
-  t.after(()=>program.dispose());
-  const result=await program.check("import binary_arithmetic_correct; def retained : Unit := tt;", "factorial");
-  assert.equal(result.complete,true,JSON.stringify(result.gaps));
+  const program = await archive(t, "binary_arithmetic_correct");
   const view=program.inspect("binary_arithmetic_correct__factorial_ten_from_binary"),checked=program.checker.checkView(view.expression,view.type);
   assert.ok(checked.arenaNodes<500000 && checked.arenaBytes<32*1024*1024);
 });
@@ -190,68 +190,29 @@ test("open cubes check dependent contexts and preserve dimension names across de
   elaborate(k, decoded, null, [["p", T.path("k", two, left, left)]], collision);
 });
 
+// The refusals are wasm_invalid_paths.
 test("Cubist expresses cubical paths, composition and pushout elimination with checked boundaries", async t => {
   const program=new CubicalProgram(producerModule,sourceReader());
   t.after(()=>program.dispose());
   const result=await program.check(await sourceReader()("cubical_paths"),"cubical_paths");
   assert.equal(result.complete,true,JSON.stringify(result.gaps));
   assert.equal(result.outputs.length,15);
-  const invalid=await program.check(`import suspension_types;
-    def escaped := path(fun (i : Interval) => Nat, fun (i : Interval) => i);
-    def wrong : 0 = 1 { exact path(fun (i : Interval) => Nat, fun (i : Interval) => 0); }
-    def malformed := comp(fun (i : Interval) => Nat, 0, face(i, 0, fun (j : Interval) => 0));
-    def bad_bridge(z : Suspension(Unit)) : Nat := match z { inl(a) => 0; inr(b) => 1; push(a) @ i => 0; };`,"invalid_paths");
-  const rejected=invalid.outputs.filter(d=>["escaped","wrong","malformed","bad_bridge"].includes(d.name));
-  assert.equal(rejected.length,4);
-  assert.ok(rejected.every(d=>!d.verified));
-  // The push clause is constant 0, but the inr clause is 1: its boundary fails.
-  assert.match(rejected.find(d=>d.name==="bad_bridge").reason,/expected Unit -> 0 = 1/);
 });
 
-test("the declared pushout transports a path constructor along changing maps, with boundary correction", async t => {
-  const program=new CubicalProgram(producerModule,sourceReader());
-  t.after(()=>program.dispose());
-  // Glued(p)'s left map sends tt to p, which moves from north to south along
-  // the meridian: transporting push(tt) must correct its left endpoint.
-  const result=await program.check(`import pushout;
-import suspension_types;
-def Glued(p : Suspension(Unit)) : U0 := Pushout(U0, U0, U0, Unit, Suspension(Unit), Unit, fun (x : Unit) => p, fun (x : Unit) => tt);
-def Edge(p : Suspension(Unit)) : U0 := typed(Glued(p), inl(p)) = typed(Glued(p), inr(tt));
-def moved : Edge(south(Unit)) := along Edge by meridian(Unit, tt) from typed(Edge(north(Unit)), push(tt));
-def collapse(p : Suspension(Unit), z : Glued(p)) : Unit := match z { inl(a) => tt; inr(b) => tt; push(c) @ i => tt; };
-def collapsed : cong(fun (z : Glued(south(Unit))) => collapse(south(Unit), z), moved) = refl(tt) { rfl; }
-def unmoved : Edge(north(Unit)) := along Edge by meridian(Unit, tt) from typed(Edge(north(Unit)), push(tt));
-`,"moving_maps");
-  const get=name=>result.outputs.find(output=>output.name===name);
-  for (const name of ["Glued","Edge","moved","collapse","collapsed"]) assert.equal(get(name)?.verified,true,`${name}: ${get(name)?.reason}`);
-  // The transport ends over south, not north.
-  assert.equal(get("unmoved").verified,false);
-  // Its normal form is the corrected composition of 3.5, not a bare constructor.
-  assert.match(JSON.stringify(program.inspect("moving_maps__moved",{normalize:true}).expression),/"tag":"HComp"/);
+// The verdicts are wasm_moving_maps'; here, the transport's normal form,
+// the corrected composition of 3.5, not a bare constructor.
+test("the declared pushout's transported path constructor is a composition", async t => {
+  const { program } = await checkTestModule(t, "wasm_moving_maps", { module: producerModule });
+  assert.match(JSON.stringify(program.inspect("wasm_moving_maps__moved",{normalize:true}).expression),/"tag":"HComp"/);
 });
 
-test("source-defined suspension induction uses a proved PathP bridge", async t => {
+// Its use is wasm_suspension_use.
+test("source-defined suspension induction checks", async t => {
   const libraryProgram = new CubicalProgram(producerModule, sourceReader());
   t.after(() => libraryProgram.dispose());
   const library = await libraryProgram.check(await sourceReader()("suspension_types"), "suspension_types");
   assert.ok(library.complete, JSON.stringify(library.gaps));
   assert.ok(library.outputs.every(output => output.verified));
-  const program = new CubicalProgram(producerModule, sourceReader());
-  t.after(() => program.dispose());
-  const result = await program.check(`import suspension_types;
-    def C := Suspension(Unit);
-    def family(p : C) := Unit;
-    def unique(u : Unit) := unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
-    def boundary(a : Unit) := unique(transport(family, north(Unit), south(Unit), meridian(Unit, a), tt));
-    def collapse(p : C) := suspension_induction(Unit, family, tt, tt, boundary, p);
-    def point_beta : collapse(north(Unit)) = tt { exact refl(tt); }
-    def bridge_beta(a : Unit) :
-      apd(collapse, north(Unit), south(Unit), meridian(Unit, a)) = boundary(a) {
-      exact suspension_meridian_beta(Unit, family, tt, tt, boundary, a);
-    }
-  `, "suspension_use");
-  assert.deepEqual(result.outputs.filter(output => !output.verified).map(output => output.name), []);
-  assert.equal(result.outputs.length, 7);
 });
 
 test("a query's growing budget stops at its declared limit and fails as the kernel's exhaustion", t => {

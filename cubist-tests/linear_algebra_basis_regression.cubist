@@ -1,0 +1,30 @@
+// From tests/linear-algebra.test.mjs: Finite bases give unique coordinates
+// and cubical carrier transport without choice: each case is computable.
+import linear_span;
+import finite_fields;
+computable def f2_basis : FiniteBasis(F2, ScalarSpace(F2), 1) {
+  exact scalar_space_basis(F2);
+}
+
+computable def f4_basis_over_itself : FiniteBasis(F4, ScalarSpace(F4), 1) {
+  exact scalar_space_basis(F4);
+}
+
+computable def coordinate_plane_basis(K : AlgebraicField) : FiniteBasis(K, CoordinateSpace(K, 2), 2) {
+  exact standard_basis(K, 2);
+}
+
+computable def scalar_transport_computes(K : AlgebraicField, x : af_carrier(K)) :
+  transport(
+    (fun (A : U0) => A), (Fin(1) -> af_carrier(K)), af_carrier(K),
+    ua(
+      U0, (Fin(1) -> af_carrier(K)), af_carrier(K),
+      linear_iso_equiv(K, CoordinateSpace(K, 1), ScalarSpace(K), scalar_space_basis(K))
+    ), (fun (i : Fin(1)) => x)
+  ) = x {
+  exact UnivalenceBeta(
+    U0, (Fin(1) -> af_carrier(K)), af_carrier(K),
+    linear_iso_equiv(K, CoordinateSpace(K, 1), ScalarSpace(K), scalar_space_basis(K)),
+    (fun (i : Fin(1)) => x)
+  );
+}

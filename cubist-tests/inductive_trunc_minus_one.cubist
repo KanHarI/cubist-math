@@ -1,0 +1,14 @@
+// From tests/inductive-declarations.test.mjs: With the path notation's minus
+// sign, trunc(-1) is prop.
+// V31: trunc(-1) is prop.
+
+inductive Tr(U < UU0, A : U) : trunc(- 1) {
+  point(a : A);
+}
+
+// Output: inductive Tr : forall U < UU0. U -> U (prop) { point : A -> Tr [1 data, 0 positions, 0
+//   dimensions]; Tr.squash : forall x : Tr. forall x1 : Tr. x = x1 [0 data, 2 positions, 1
+//   dimension, generated]; } eliminator for P : Tr(__U, A) -> V { point_case : forall x : A.
+//   P(point(x)); squash_case : forall x : Tr(__U, A). forall x1 : Tr(__U, A). forall x2 : P(x).
+//   forall x3 : P(x1). PathP(fun (i : Interval) => P(Tr.squash(x, x1) @ i), x2, x3); }
+print(inspect(Tr));

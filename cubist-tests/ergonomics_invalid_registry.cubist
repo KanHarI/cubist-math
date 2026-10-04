@@ -1,0 +1,27 @@
+// From tests/proof-ergonomics.test.mjs: Invalid registrations do not enter
+// the default rule set.
+
+import primes;
+
+def ordinary(n : Nat) := n;
+
+def useless(n : Nat) : 0 = 0 {
+  rfl;
+}
+
+// Error: E433: simp only requires homogeneous equality lemmas.
+simp_rule ordinary;
+// Error: E436: A simplification rule parameter is not determined by the matched side; supply
+//   arguments.
+simp_rule useless;
+// Error: E433: simp only requires homogeneous equality lemmas.
+simp_set bad := [ordinary];
+// Error: E456: simp only left an unresolved equality goal; add a following proof statement.
+//   Remaining goal: n + 0 = n. No rule fired.
+def missing(n : Nat) : n + 0 = n {
+  simp;
+}
+
+def explicit(n : Nat) : n + 0 = n {
+  simp only [nat_add_zero];
+}

@@ -1,0 +1,23 @@
+// From tests/source-text.test.mjs: messages and evaluate results use source
+// syntax.
+import naturals;
+
+// Error: E606: Type mismatch: found 4 = 4, expected 2 + 2 = 5.
+def wrong_sum : 2 + 2 = 5 {
+  exact refl(4);
+}
+
+// Error: E606: Type mismatch: found Nat, expected Unit or Unit or Nat.
+def three_ways : Unit or Unit or Nat {
+  exact 3;
+}
+
+def sum_and_point : Nat and Unit := (1 + 2, tt);
+
+def three_and_point : Nat and Unit := (3, tt);
+
+evaluate sum_and_point expecting three_and_point;
+// Error: E326: The term evaluates to 4, not 5.
+evaluate 2 + 2 expecting 5;
+// Output: (3, tt)
+print(evaluate(sum_and_point));

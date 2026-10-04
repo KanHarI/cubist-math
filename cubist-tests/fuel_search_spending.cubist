@@ -1,0 +1,18 @@
+// From tests/search-fuel.test.mjs: a search's own questions and rewrites
+// are on its fuel. Reading the goal's endpoints is the search's question,
+// and each rewrite is counted.
+import naturals;
+
+def nothing(n : Nat) : n = n {
+  simp only [];
+}
+
+def rewritten(n, m : Nat, h : n = m) : n + 0 = m {
+  rw [nat_add_zero(n)];
+  exact h;
+}
+
+def targeted(n, m : Nat, h : n = m) : n + 0 = m {
+  rw [nat_add_zero(n)] at lhs;
+  exact h;
+}

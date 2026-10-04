@@ -1,0 +1,29 @@
+// From tests/proof-ergonomics.test.mjs: simp type-path freeze preserves a
+// proof later compared with another: the second simp in dependent is
+// offered no frozen form, and the one in stable is.
+import primes;
+
+// Warning: W702: stable is never used after this let: remove it.
+computable def dependent(
+  P : Nat -> U0, f, g, k : Nat -> Nat, a, b : Nat, c : forall n : Nat. g(n) = n -> f(n) = k(n),
+  divert : g(a) = b, unit : forall n : Nat. g(n) = n, fallback : f(a) = k(a), h : P(k(a) + k(b))
+) :
+  0 = 0 {
+  let h1 : P(f(a) + f(b)) {
+    simp only [c, divert, unit, fallback];
+    exact h;
+  }
+  let h2 : P(f(a) + f(b)) {
+    simp [c, divert, unit, fallback];
+    exact h;
+  }
+  let stable : h2 = h1 {
+    rfl;
+  }
+  rfl;
+}
+
+computable def stable(P : Nat -> U0, n : Nat, h : P(n), unused : 2 = 3) : P(n + 0) {
+  simp [nat_add_zero, unused];
+  exact h;
+}

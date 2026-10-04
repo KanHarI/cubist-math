@@ -14,29 +14,15 @@ import { cubicalText } from "../web/cubical-notation.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
 import { levelNormal } from "../web/cubical-levels.mjs";
 import { InstructionGraph } from "../web/cubical-instructions.mjs";
+import { checkTestModule } from "./check-program.mjs";
 
 const readLibrary = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8");
-const source = `import naturals;
-
-def lt(n, m : Nat) : U0 {
-  exact exists k : Nat. succ(k) + n = m;
-}
-
-def lt_succ(n : Nat) : lt(n, succ(n)) {
-  exact (0, refl(succ(n)));
-}
-
-def exists_greater_number : forall n : Nat. exists m : Nat. lt(n, m) {
-  intro n;
-  exact (succ(n), lt_succ(n));
-}
-`;
+// The Cubist cases are cubist-tests/driver_*.cubist (tests/cubist-tests.test.mjs
+// compares their verdicts); here, their derivations.
+const firstProof = t => checkTestModule(t, "driver_first_proof");
 
 async function checked(t) {
-  const program = new CubicalProgram(await createCubical(), readLibrary);
-  t.after(() => program.dispose());
-  await program.check(source, "first");
-  return program.kernel;
+  return (await firstProof(t)).program.kernel;
 }
 
 test("the first proof and the naturals library, trans included, derive in instruction mode, at their checked types", async t => {
@@ -56,12 +42,12 @@ test("the first proof and the naturals library, trans included, derive in instru
   assert.deepEqual(derived, ["naturals__add", "naturals__mul", "naturals__le", "naturals__isLt",
     "naturals__nat_add_zero", "naturals__nat_add_succ", "naturals__nat_add_assoc", "naturals__nat_add_comm",
     "naturals__nat_le_refl",
-    "first__lt", "first__lt_succ", "first__exists_greater_number"]);
+    "driver_first_proof__lt", "driver_first_proof__lt_succ", "driver_first_proof__exists_greater_number"]);
 });
 
 test("the judgement graph records each derivation: rule, premises, highlighted steps and entries", async t => {
   const kernel = await checked(t);
-  const { value, type } = kernel.definition(kernel.definitions.get("first__lt_succ"));
+  const { value, type } = kernel.definition(kernel.definitions.get("driver_first_proof__lt_succ"));
   const driver = new InstructionDriver(kernel), graph = driver.graph;
   const root = graph.judgement(driver.check(value, type));
   // Walk the derivation from its conclusion.
@@ -91,10 +77,8 @@ test("the judgement graph records each derivation: rule, premises, highlighted s
 });
 
 test("the workbench's kernel graph lists lt_succ's derivation in THTH style", async t => {
-  const program = new CubicalProgram(await createCubical(), readLibrary);
-  t.after(() => program.dispose());
-  await program.check(source, "first");
-  const view = program.inspect("first__lt_succ");
+  const { program } = await firstProof(t);
+  const view = program.inspect("driver_first_proof__lt_succ");
   const checked = program.checker.checkView(view.expression, view.type, [], new Map());
   const listing = judgementGraph(program, view, checked);
   const root = listing.rows.at(-1);
@@ -116,10 +100,8 @@ test("the workbench's kernel graph lists lt_succ's derivation in THTH style", as
 });
 
 test("a definition's body is derived on request, as its lookup's premise", async t => {
-  const program = new CubicalProgram(await createCubical(), readLibrary);
-  t.after(() => program.dispose());
-  await program.check(source, "first");
-  const view = program.inspect("first__lt_succ");
+  const { program } = await firstProof(t);
+  const view = program.inspect("driver_first_proof__lt_succ");
   const checked = program.checker.checkView(view.expression, view.type, [], new Map());
   const folded = judgementGraph(program, view, checked);
   const lookup = folded.rows.find(row => row.definition?.name === "lt");
@@ -173,28 +155,9 @@ test("every definition behind Euclid's theorem derives in instruction mode", asy
 });
 
 test("a derived term is its source: a constructor at a type that reduces keeps that type", async t => {
-  const program = new CubicalProgram(await createCubical(), readLibrary);
-  t.after(() => program.dispose());
-  await program.check(`import naturals;
-
-def NatSum : U0 {
-  exact Nat or Nat;
-}
-
-def left_zero : NatSum {
-  exact typed(NatSum, left(0));
-}
-
-def tag(c : NatSum) : Nat {
-  exact 1;
-}
-
-def tag_left_zero : tag(typed(NatSum, left(0))) = 1 {
-  exact refl(1);
-}
-`, "sums");
+  const { program } = await checkTestModule(t, "driver_sums");
   const kernel = program.kernel;
-  for (const name of ["sums__left_zero", "sums__tag_left_zero"]) {
+  for (const name of ["driver_sums__left_zero", "driver_sums__tag_left_zero"]) {
     const { value, type } = kernel.definition(kernel.definitions.get(name));
     const driver = new InstructionDriver(kernel);
     const judgement = driver.graph.judgement(driver.check(value, type));

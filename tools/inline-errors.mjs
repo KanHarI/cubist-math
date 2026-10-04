@@ -1,19 +1,22 @@
-// The checker's diagnostics of the Cubist test modules, inlined as comments.
+// The checker's diagnostics and outputs of the Cubist test modules, inlined
+// as comments.
 //
 //   node tools/inline-errors.mjs [--write] [module …]
 //
 // Each test module of cubist-tests/ (all of them, unless some are named) is
-// checked as the command line checks the file, and every error and warning
-// the checker reports is a comment directly above the declaration or
-// directive it belongs to:
+// checked as the command line checks the file. Every error and warning the
+// checker reports is a comment directly above the declaration or directive
+// it belongs to, and so is what each print directive shows:
 //
 //   // Error: E606: Type mismatch: found succ(zero) = succ(zero), expected zero = zero.
 //   // Warning: W703: z is unused: the return type does not mention it. …
+//   // Output: succ(succ(zero))
+//   print(evaluate(double(1)));
 //
-// A message too long for a line continues on `//   …` lines. Positions are
+// A comment too long for a line continues on `//   …` lines. Positions are
 // left out: the comments themselves move what follows them. Every other
 // comment stays as it is. With --write the tool rewrites each module's
-// diagnostic comments; without it, it reports each module whose comments
+// checked comments; without it, it reports each module whose comments
 // differ from what the checker reports, and exits with status 1.
 // tests/cubist-tests.test.mjs makes the same comparison.
 import { readFile, writeFile } from "node:fs/promises";
@@ -26,12 +29,15 @@ import { assertFreshBuild } from "./build-stamp.mjs";
 
 export const testModulePath = name => fileURLToPath(new URL(`../cubist-tests/${name}.cubist`, import.meta.url));
 const WIDTH = 100;
-const comment = /^\s*\/\/ (Error|Warning): (.*)$/, continued = /^\s*\/\/ {3}(.*)$/;
-// A message as a comment holds it: its whitespace collapsed, and without the
-// position that ends a reason.
-const normal = text => text.replace(/\s+/g, " ").trim().replace(/ at \d+:\d+$/, "");
+const comment = /^\s*\/\/ (Error|Warning|Output): (.*)$/, continued = /^\s*\/\/ {3}(.*)$/;
+// Text as a comment holds it: its whitespace collapsed, and a message
+// without the position that ends a reason.
+const collapsed = text => text.replace(/\s+/g, " ").trim();
+const normal = (text, label = "Error") => label === "Output" ? collapsed(text) : collapsed(text).replace(/ at \d+:\d+$/, "");
+// Comments above one line come in this order.
+const rank = { Output: 0, Error: 1, Warning: 2 };
 
-// The source without its diagnostic comments.
+// The source without its checked comments.
 export function stripped(source) {
   const lines = source.split("\n"), kept = [];
   for (let i = 0; i < lines.length; i++) {
@@ -41,13 +47,14 @@ export function stripped(source) {
   return kept.join("\n");
 }
 
-// What a check reports, each diagnostic at the line (from 0) of the
-// declaration or directive it belongs to: a refused declaration's reason, a
-// failed directive's, and each warning, at the declaration or directive it
-// falls in.
+// What a check reports, each item at the line (from 0) of the declaration
+// or directive it belongs to: a refused declaration's reason, a failed
+// directive's, what a print directive shows, and each warning, at the
+// declaration or directive it falls in.
 export function reported(source, result, main) {
   const lineAt = offset => source.slice(0, offset).split("\n").length - 1;
-  const starts = [...result.outputs.map(output => lineAt(output.start)),
+  const prints = (result.prints ?? []).filter(print => print.module === main);
+  const starts = [...result.outputs.map(output => lineAt(output.start)), ...prints.map(print => lineAt(print.start)),
     ...(result.gaps ?? []).filter(gap => gap.directive && gap.module === main && gap.start !== undefined).map(gap => lineAt(gap.start))]
     .sort((a, b) => a - b);
   const labelled = (code, message) => normal(code ? `${code}: ${message}` : message);
@@ -56,11 +63,12 @@ export function reported(source, result, main) {
     if (!output.verified) items.push({ line: lineAt(output.start), label: "Error", text: labelled(output.code, output.reason) });
   for (const gap of result.gaps ?? [])
     if (gap.directive && gap.module === main) items.push({ line: lineAt(gap.start ?? 0), label: "Error", text: labelled(gap.code, gap.reason) });
+  for (const print of prints) items.push({ line: lineAt(print.start), label: "Output", text: normal(print.text, "Output") });
   for (const warning of result.warnings ?? []) {
     const line = warning.line - 1;
     items.push({ line: starts.filter(start => start <= line).at(-1) ?? 0, label: "Warning", text: labelled(warning.code, warning.message) });
   }
-  return items.sort((a, b) => a.line - b.line || (a.label === b.label ? 0 : a.label === "Error" ? -1 : 1));
+  return items.sort((a, b) => a.line - b.line || rank[a.label] - rank[b.label]);
 }
 
 // What the comments state, each at the line below its comment block.
@@ -72,7 +80,7 @@ export function stated(source) {
     if (match) {
       let text = match[2];
       while (i + 1 < lines.length && continued.test(lines[i + 1])) text += ` ${lines[++i].match(continued)[1]}`;
-      pending.push({ label: match[1], text: normal(text) });
+      pending.push({ label: match[1], text: normal(text, match[1]) });
       continue;
     }
     if (/^\s*\/\//.test(lines[i])) continue;
@@ -82,7 +90,7 @@ export function stated(source) {
   return items;
 }
 
-// A diagnostic as comment lines, wrapped at spaces.
+// An item as comment lines, wrapped at spaces.
 function commentLines(indent, label, text) {
   const out = [], words = text.split(" ");
   let line = `${indent}// ${label}:`;
@@ -94,7 +102,7 @@ function commentLines(indent, label, text) {
   return out;
 }
 
-// The stripped source with each diagnostic written above its line.
+// The stripped source with each item written above its line.
 export function inlined(source, items) {
   const lines = source.split("\n"), out = [];
   for (let i = 0; i < lines.length; i++) {
@@ -133,7 +141,7 @@ if (process.argv[1]?.endsWith("inline-errors.mjs")) {
       const { result } = await checkedModule(name, module);
       if (JSON.stringify(reported(source, result, name)) !== JSON.stringify(stated(source))) {
         differing++;
-        console.log(`${name}: its diagnostic comments differ from what the checker reports`);
+        console.log(`${name}: its checked comments differ from what the checker reports`);
       }
     }
   }

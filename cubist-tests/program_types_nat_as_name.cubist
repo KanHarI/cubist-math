@@ -1,0 +1,8 @@
+// Nat is an ordinary name that can be bound or shadowed. From
+// tests/program-types.test.mjs.
+
+def identity(Nat : U0, x : Nat) := x;
+
+def Nat := Unit;
+
+def point : Nat := tt;

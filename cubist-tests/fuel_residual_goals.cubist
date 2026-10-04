@@ -1,0 +1,68 @@
+// From tests/search-fuel.test.mjs: unfinished rw, simp, simpa and calc show
+// the remaining goal, the side that changed and the rules that fired. A
+// cycle names the rules that make it; a bound says where the search
+// stopped, and a long goal is cut short. The command-line checker reports
+// the same as this module's comments.
+import naturals;
+
+// Error: E456: simp only left an unresolved equality goal; add a following proof statement.
+//   Remaining goal: n = m. 1 rewrite changed the left side, using nat_add_zero.
+def simp_unfinished(n, m : Nat) : n + 0 = m {
+  simp only [nat_add_zero];
+}
+
+// Error: E456: simp only left an unresolved equality goal; add a following proof statement.
+//   Remaining goal: n = m. No rule fired.
+def simp_nothing(n, m : Nat) : n = m {
+  simp only [nat_add_zero];
+}
+
+// Error: E452: rw left an unresolved equality goal; add a following proof statement. Remaining
+//   goal: n = m. 1 rewrite changed the left side, using nat_add_zero(n).
+def rw_unfinished(n, m : Nat) : n + 0 = m {
+  rw [nat_add_zero(n)];
+}
+
+// Error: E442: Rewrite occurrence 3 was not found (2 eligible matches). Remaining goal: n + 0 + (n
+//   + 0) = n + 0 + n. No rule fired.
+def rw_missing(n : Nat) : (n + 0) + (n + 0) = (n + 0) + n {
+  rw [nat_add_zero(n)] at lhs occurrence 3;
+}
+
+// Error: E606: Type mismatch: found n = m, expected m = n. Simplifying the supplied type: 1 rewrite
+//   changed the left side, using nat_add_zero. Simplifying the goal: No rule fired.
+def simpa_mismatch(n, m : Nat, h : n + 0 = m) : m = n {
+  simpa only [nat_add_zero] using h;
+}
+
+// Error: E451: calc final endpoint does not match the goal. The chain ends at n; the goal's right
+//   side is succ(n).
+def calc_end(n : Nat) : n + 0 = succ(n) {
+  calc {
+    n + 0 = n by nat_add_zero(n);
+  }
+}
+
+// Error: E450: calc step left endpoint does not match the preceding endpoint. The step starts at m;
+//   the chain so far ends at n.
+def calc_step(n, m : Nat) : n + 0 = n {
+  calc {
+    n + 0 = n by nat_add_zero(n);
+    m = n by nat_add_zero(n);
+  }
+}
+
+// Error: E367: Simplification cycle detected in the selected rules. nat_add_comm returned the goal
+//   to where it was 2 rewrites earlier. Remaining goal: a + b = b + a. 2 rewrites changed the left
+//   side, using nat_add_comm.
+def commuted(a, b : Nat) : a + b = b + a {
+  simp only [nat_add_comm];
+}
+
+// Error: E369: Simplification rewrite budget exceeded. Remaining goal: n + 0 + 0 + 0 + 0 + 0 + 0 +
+//   0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+//   0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +… 64 rewrites changed the left side, using nat_add_zero.
+def growing(n, m : Nat, h : n = m) : n = m + 0 {
+  simp only [<- nat_add_zero];
+  exact h;
+}

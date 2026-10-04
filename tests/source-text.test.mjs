@@ -46,29 +46,8 @@ test("values and arithmetic print in source syntax", () => {
   assert.equal(sourceText(app({ tag: "Lam", name: "x", domain: nat, body: variable("x") }, number(1))), "(fun (x : Nat) => x)(1)");
 });
 
-test("messages and evaluate results use source syntax", async t => {
-  const program = new CubicalProgram(await createCubical(), async name => name === "naturals"
-    ? (await import("node:fs/promises")).readFile(new URL("../library/naturals.cubist", import.meta.url), "utf8") : "",
-  { collectReferences: false });
-  t.after(() => program.dispose());
-  const result = await program.check(`import naturals;
-def wrong_sum : 2 + 2 = 5 {
-  exact refl(4);
-}
-def three_ways : Unit or Unit or Nat {
-  exact 3;
-}
-def sum_and_point : Nat and Unit := (1 + 2, tt);
-def three_and_point : Nat and Unit := (3, tt);
-evaluate sum_and_point expecting three_and_point;
-evaluate 2 + 2 expecting 5;
-`, "source_messages");
-  const reason = name => result.outputs.find(output => output.name === name).reason;
-  assert.equal(reason("wrong_sum"), "Type mismatch: found 4 = 4, expected 2 + 2 = 5.");
-  assert.equal(reason("three_ways"), "Type mismatch: found Nat, expected Unit or Unit or Nat.");
-  assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["(3, tt)"]);
-  assert.deepEqual(result.gaps.filter(gap => gap.directive).map(gap => gap.reason), ["The term evaluates to 4, not 5."]);
-});
+// Messages, evaluations and prints in source syntax are
+// cubist-tests/source_text_messages.cubist (tests/cubist-tests.test.mjs).
 
 test("paths print as equalities when their type does not vary, and path application as @", () => {
   const p = variable("p");

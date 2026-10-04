@@ -17,7 +17,8 @@ export function referenceExamples(file, source) {
 // its own, it may continue on following `//   …` lines at the same indent.
 // A rejected example states every error it causes. `// Warning: message`
 // states a lint warning in the same way; an accepted example states every
-// warning it causes.
+// warning it causes. `// Output: text` states what a print directive shows,
+// and every print directive's output is stated, in order.
 const stated = label => text => {
   const messages = [], lines = text.split("\n");
   for (let i = 0; i < lines.length; i++) {
@@ -30,7 +31,7 @@ const stated = label => text => {
   }
   return messages;
 };
-export const statedErrors = stated("Error"), statedWarnings = stated("Warning");
+export const statedErrors = stated("Error"), statedWarnings = stated("Warning"), statedOutputs = stated("Output");
 
 // `$ node cli/repl.mjs …` starts the checker, `> …` lines are its input, and
 // every other line is output that must appear in order within stdout or

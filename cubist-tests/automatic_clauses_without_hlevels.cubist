@@ -1,0 +1,13 @@
+// Obligations report a missing import directly: with no import of hlevels,
+// a truncation's squash clause cannot be generated. From
+// tests/automatic-clauses.test.mjs.
+
+inductive Tr(A : U0) : prop {
+  point(a : A);
+}
+
+// Error: E544: Cannot generate Tr.squash: import hlevels and supply h-level evidence for the
+//   motive, or give the clause explicitly.
+def absent(A : U0, x : Tr(A)) : Unit := match x {
+    point(a) => tt;
+  };

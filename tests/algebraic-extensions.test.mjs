@@ -4,22 +4,28 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
+import { checkTestModule } from "./check-program.mjs";
 
 const module = await createCubical();
+// The programs are cubist-tests/algebraic_extensions_*.cubist, whose
+// comments state each refusal (tests/cubist-tests.test.mjs); here, the
+// assumptions of the archive's lemmas and of the cases.
+const cases = (t, name) => checkTestModule(t, name, { module, options: { collectReferences: false } });
 const readSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
-const create = t => {
+const allowed = /^(LEM|Truncate(?:Intro|Prop|Elim)?)$/;
+// Archive modules, each checked as a program's main module.
+async function archive(t, ...names) {
   const p = new CubicalProgram(module, readSource, { collectReferences: false });
   t.after(() => p.dispose());
+  for (const name of names) {
+    const result = await p.check(await readSource(name), name);
+    assert.equal(result.complete, true, `${name}: ${JSON.stringify(result.gaps)}`);
+  }
   return p;
-};
-const allowed = /^(LEM|Truncate(?:Intro|Prop|Elim)?)$/;
+}
 
 test("finite algebraic extensions, actual splitting fields, normality and general separable embedding counts are checked", async t => {
-  const p = create(t);
-  const result = await p.check(`import embedding_counts;
-    import normal_extensions;
-    import finitely_generated_algebraic; def checked : Unit { exact tt; }`, "algebraic_milestones");
-  assert.equal(result.complete, true, JSON.stringify(result.gaps));
+  const p = await archive(t, "embedding_counts", "normal_extensions", "finitely_generated_algebraic");
   for (const name of [
     "minimal_polynomials__minimal_polynomial_irreducible",
     "finite_algebraic_extensions__finite_extension_algebraic",
@@ -42,39 +48,21 @@ test("finite algebraic extensions, actual splitting fields, normality and genera
   // transports the resulting count; it is not an extra axiom in this kernel.
   assert.ok(p.symbols.finite_dependent_counts__finite_mere_choice.axioms.every(id => /^Truncate(?:Intro|Prop|Elim)?$/.test(p.checker.assumptionLabels.get(id))));
 
-  const negative = create(t);
-  const invalid = await negative.check(`import embedding_counts;
-    def embedding_without_closed_target(K : AlgebraicField, L : AlgebraicField,
-      e : FieldEmbedding(K, L), finite : FiniteExtension(K, embedding_as_extension(K, L, e)),
-      T : AlgebraicField, j : FieldEmbedding(K, T)) : Mere(EmbeddingsOver(K, L, e, T, j)) {
-      exact finite_extension_embedding_exists(K, L, e, finite, T, j);
-    }
-    def all_separable_extensions_have_one_embedding(K : AlgebraicField, L : AlgebraicField,
-      e : FieldEmbedding(K, L), finite : FiniteExtension(K, embedding_as_extension(K, L, e)),
-      separable : SeparableExtension(K, L, e), T : AlgebraicField, closed : AlgebraicallyClosed(T),
-      j : FieldEmbedding(K, T)) : HasCardinality(EmbeddingsOver(K, L, e, T, j), 1) {
-      exact finite_separable_embedding_count(K, L, e, finite, separable, T, closed, j);
-    }`, "invalid_embedding_claims");
+  const { result: invalid } = await cases(t, "algebraic_extensions_invalid_embedding_claims");
   assert.equal(invalid.complete, false);
   assert.equal(invalid.outputs.length, 2);
   assert.ok(invalid.outputs.every(o => !o.verified));
-  assert.ok(invalid.gaps.every(g => g.module === "invalid_embedding_claims"), JSON.stringify(invalid.gaps));
+  assert.ok(invalid.gaps.every(g => g.module === "algebraic_extensions_invalid_embedding_claims"), JSON.stringify(invalid.gaps));
 });
 
 test("the formal F2 polynomial computes the two F4 roots and rejects zero as a root", async t => {
-  const p = create(t);
-  const result = await p.check("import f4_formal_polynomial; def checked : Unit { exact tt; }", "formal_f4_regression");
-  assert.equal(result.complete, true, JSON.stringify(result.gaps));
+  const p = await archive(t, "f4_formal_polynomial");
   for (const name of ["f2_quadratic_alpha_root", "f2_quadratic_other_root", "f2_quadratic_nonzero", "f2_quadratic_roots_distinct"])
     assert.equal(p.symbols[`f4_formal_polynomial__${name}`]?.verified, true, name);
-  const negative = create(t);
-  const invalid = await negative.check(`import f4_formal_polynomial;
-    def zero_is_a_root : PolynomialRoot(F2, F4, f2_f4_embedding, f2_quadratic, f4_0) {
-      exact f2_quadratic_alpha_root;
-    }`, "invalid_f4_root");
+  const { result: invalid } = await cases(t, "algebraic_extensions_invalid_f4_root");
   assert.equal(invalid.complete, false);
   assert.equal(invalid.outputs[0].verified, false);
-  assert.ok(invalid.gaps.every(g => g.module === "invalid_f4_root"), JSON.stringify(invalid.gaps));
+  assert.ok(invalid.gaps.every(g => g.module === "algebraic_extensions_invalid_f4_root"), JSON.stringify(invalid.gaps));
 });
 
 test("embedding roundtrip stays within the conversion budget with inspector references enabled", async t => {

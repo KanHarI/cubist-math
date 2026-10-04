@@ -1,0 +1,40 @@
+// The tactics tests/search-fuel.test.mjs checks with the default search fuel
+// and with less, in fresh and reused sessions: each spends counted fuel,
+// the same in every session. commuted cycles, and growing reaches the
+// rewrite budget.
+import naturals;
+
+def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
+  simp only [nat_add_zero];
+}
+
+def rewritten(n, m : Nat, h : n = m) : n + 0 = m {
+  rw [nat_add_zero(n)];
+  exact h;
+}
+
+def through(n, m : Nat, h : n + 0 = m) : n = m {
+  simpa only [nat_add_zero] using h;
+}
+
+def chain(n : Nat) : (n + 0) + 0 = n {
+  calc {
+    (n + 0) + 0 = n + 0 by nat_add_zero(n + 0);
+    _ = n by nat_add_zero(n);
+  }
+}
+
+// Error: E367: Simplification cycle detected in the selected rules. nat_add_comm returned the goal
+//   to where it was 2 rewrites earlier. Remaining goal: a + b = b + a. 2 rewrites changed the left
+//   side, using nat_add_comm.
+def commuted(a, b : Nat) : a + b = b + a {
+  simp only [nat_add_comm];
+}
+
+// Error: E369: Simplification rewrite budget exceeded. Remaining goal: n + 0 + 0 + 0 + 0 + 0 + 0 +
+//   0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +
+//   0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +… 64 rewrites changed the left side, using nat_add_zero.
+def growing(n, m : Nat, h : n = m) : n = m + 0 {
+  simp only [<- nat_add_zero];
+  exact h;
+}
