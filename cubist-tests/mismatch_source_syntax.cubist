@@ -1,0 +1,31 @@
+// From tests/mismatch-messages.test.mjs: a type mismatch names the type
+// found and the type expected, in source syntax. Module prefixes, generated
+// suffixes and beta-redexes do not reach the message.
+
+// Warning: W704: z is unused: the return type does not mention it. Omit as z: match value return ….
+def Shape(value : Unit or Unit) := match value as z return U0 {
+    left a => Nat;
+    right b => Unit;
+  };
+
+// Error: E606: Type mismatch: found P(0), expected P(1).
+def wrong_index(P : Nat -> U0, f : forall n : Nat. P(n)) : P(1) {
+  exact f(0);
+}
+
+// Error: E606: Type mismatch: found Nat, expected Unit.
+def not_unit : Unit {
+  exact 0;
+}
+
+// Error: E606: Type mismatch: found Unit -> Nat, expected Unit -> Shape(value).
+def refined(value : Unit or Unit) : Shape(value) {
+  cases value {
+    left a => {
+      exact 0;
+    }
+    right b => {
+      exact tt;
+    }
+  }
+}

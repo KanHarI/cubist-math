@@ -6,32 +6,8 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { displayTerm } from "../web/cubical-elaborator.mjs";
 
-test("a type mismatch names the type found and the type expected, in source syntax", async t => {
-  const program = new CubicalProgram(await createCubical(), async () => "", { collectReferences: false });
-  t.after(() => program.dispose());
-  const result = await program.check(`def Shape(value : Unit or Unit) := match value as z return U0 {
-  left a => Nat;
-  right b => Unit;
-};
-def wrong_index(P : Nat -> U0, f : forall n : Nat. P(n)) : P(1) {
-  exact f(0);
-}
-def not_unit : Unit {
-  exact 0;
-}
-def refined(value : Unit or Unit) : Shape(value) {
-  cases value {
-    left a => { exact 0; }
-    right b => { exact tt; }
-  }
-}
-`, "mismatches");
-  const reason = name => result.outputs.find(output => output.name === name).reason;
-  assert.equal(reason("wrong_index"), "Type mismatch: found P(0), expected P(1).");
-  assert.equal(reason("not_unit"), "Type mismatch: found Nat, expected Unit.");
-  // Module prefixes, generated suffixes and beta-redexes do not reach the message.
-  assert.equal(reason("refined"), "Type mismatch: found Unit -> Nat, expected Unit -> Shape(value).");
-});
+// Mismatches in source syntax, and calc's two terms named together, are
+// cubist-tests/mismatch_*.cubist (tests/cubist-tests.test.mjs).
 
 test("the kernel reports the mismatched handles, and speculative checks stay undescribed", async t => {
   const program = new CubicalProgram(await createCubical(), async () => "", { collectReferences: false });
@@ -73,23 +49,4 @@ test("a variable reads alike on both sides of a mismatch", async t => {
   try { program.checker.checkView(T.variable("p"), T.path("i", naturalSort, add1, add1), context); }
   catch (error) { message = error.message; }
   assert.match(message ?? "", /^Type mismatch: found add1 \+ 1 = add1, expected add1 = add1\.$/);
-});
-
-// The fourth review of #74: every message that shows two terms of one scope
-// names them together, as a mismatch does. `+` is naturals' add, captured as
-// plus before a variable named add is introduced. That label prints on one
-// side only, so the variable is named apart from it there; named alone, the
-// other side would have shown it as add.
-test("calc names the two terms it shows together", async t => {
-  const { readFile } = await import("node:fs/promises");
-  const program = new CubicalProgram(await createCubical(), name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8"),
-    { collectReferences: false });
-  t.after(() => program.dispose());
-  const result = await program.check(`import naturals;
-def step_start : forall n : Nat. n = n { let plus := add; intro add; calc { add = add by refl(add); plus(add, 1) = add by refl(add); } }
-def chain_end : forall n : Nat. n = n + 1 { intro add; calc { add = add by refl(add); } }
-`, "main");
-  const reason = name => result.outputs.find(output => output.name === name).reason;
-  assert.match(reason("step_start"), /^calc step left endpoint does not match the preceding endpoint\. The step starts at (\w+) \+ 1; the chain so far ends at \1\./);
-  assert.match(reason("chain_end"), /^calc final endpoint does not match the goal\. The chain ends at (\w+); the goal's right side is \1 \+ 1\./);
 });

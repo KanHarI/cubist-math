@@ -193,3 +193,9 @@ workbench's Kernel graph.
 | [`truncation_strict_successor`](truncation_strict_successor.cubist) | G7: `no_maximal_strict_successor`, double negation at U1, LEM retained. |
 | [`truncation_rebuilt_classical`](truncation_rebuilt_classical.cubist) | Rebuilt classical assumptions beside the legacy signatures, and a false truncation former refused. |
 | [`printer_lint`](printer_lint.cubist) | The printer's values and types of matches, inductions, binders and declared types, which `tests/printer-lint.test.mjs` lints: eliminators print as the match or induction that builds them. |
+| [`translation_failed_proofs`](translation_failed_proofs.cubist) | A failed proof becomes no axiom: a use of it fails, and the rest checks. |
+| [`translation_path_induction`](translation_path_induction.cubist) | Weak J from composition and singleton contraction. |
+| [`translation_weak_j`](translation_weak_j.cubist) | Weak J has no strict reflexivity beta rule. |
+| [`mismatch_source_syntax`](mismatch_source_syntax.cubist) | Mismatches in source syntax, without module prefixes, generated suffixes or redexes. |
+| [`mismatch_calc_naming`](mismatch_calc_naming.cubist) | `calc` names the two terms it shows together, apart from a captured label. |
+| [`source_text_messages`](source_text_messages.cubist) | Messages, evaluations and prints in source syntax. |
