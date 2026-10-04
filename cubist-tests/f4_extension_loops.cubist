@@ -1,0 +1,8 @@
+// From tests/f4-extension-loops.test.mjs: the extension's identity type
+// equals C2, with the specified transport and group law, all axiom-free
+// (tests/f4-extension-loops.test.mjs checks the archive's lemmas).
+import f4_galois_group;
+
+def checked : Unit {
+  exact tt;
+}

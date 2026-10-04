@@ -1,17 +1,15 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
-import { CubicalProgram } from "../web/cubical-program.mjs";
+import { checkTestModule } from "./check-program.mjs";
 
 const module = await createCubical();
-const readSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
+// The programs are cubist-tests/f4_extension_loops*.cubist
+// (tests/cubist-tests.test.mjs states their verdicts).
 
 test("the extension's identity type equals C2, with the specified transport and group law", async t => {
-  const p = new CubicalProgram(module, readSource);
-  t.after(() => p.dispose());
-  const result = await p.check("import f4_galois_group; def checked : Unit { exact tt; }", "loop_highlight");
+  const { program: p, result } = await checkTestModule(t, "f4_extension_loops", { module });
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
   for (const name of [
     "f4_automorphisms_equal_loops", "f4_extension_loops_equal_cyclic_two",
@@ -27,13 +25,7 @@ test("the extension's identity type equals C2, with the specified transport and 
 });
 
 test("the two-loop equality cannot certify a one-element loop type", async t => {
-  const p = new CubicalProgram(module, readSource, { collectReferences: false });
-  t.after(() => p.dispose());
-  const result = await p.check(`import f4_galois_group;
-    def loops_are_contractible : F4ExtensionLoops =[U1] Unit {
-      exact f4_extension_loops_equal_cyclic_two;
-    }`, "false_loop_highlight");
-  assert.equal(result.complete, false);
-  assert.equal(p.symbols.false_loop_highlight__loops_are_contractible.verified, false);
-  assert.ok(result.gaps.every(gap => gap.module === "false_loop_highlight"), JSON.stringify(result.gaps));
+  // Its refusal is the module's own: the archive it imports checks.
+  const { result } = await checkTestModule(t, "f4_extension_loops_false", { module, options: { collectReferences: false } });
+  assert.ok(result.gaps.every(gap => gap.module === "f4_extension_loops_false"), JSON.stringify(result.gaps));
 });

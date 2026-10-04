@@ -207,3 +207,6 @@ workbench's Kernel graph.
 | [`assembly_generic_assumptions`](assembly_generic_assumptions.cubist) | A generic assumption, one kernel entry used at two levels. |
 | [`glue_printed`](glue_printed.cubist) | A Glue line as the printer shows it, written back: it checks, and equals the line. |
 | [`admission_two`](admission_two.cubist) | Definitions whose admission and derivation `tests/instruction-admission.test.mjs` watches. |
+| [`reduction_demo`](reduction_demo.cubist) | Declarations that `tests/cubical-reduction.test.mjs` reduces by delta and beta steps. |
+| [`f4_extension_loops`](f4_extension_loops.cubist) | The F4 extension's loop type equals C2, through the archive's axiom-free lemmas. |
+| [`f4_extension_loops_false`](f4_extension_loops_false.cubist) | The two-loop equality certifies no one-element loop type. |
