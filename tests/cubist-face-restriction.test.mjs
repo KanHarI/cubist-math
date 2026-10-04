@@ -9,7 +9,8 @@ import { elaboration } from "../web/cubical-elaboration.mjs";
 // types a part on its face with Restrict, as the workspace's Kernel graph
 // shows.
 test("partial elements on a face their variables' types mention check, through Restrict", async t => {
-  const cases = ["glue_eta", "tube_on_its_face", "variable_inside_a_tube", "typed_inside_a_tube", "overlapping_tubes"];
+  const cases = ["glue_eta", "tube_on_its_face", "variable_inside_a_tube", "typed_inside_a_tube", "overlapping_tubes",
+    "tubes_on_both_ends"];
   const { program, result, verdicts } = await checkTestModule(t, "face_restriction");
   assert.equal(result.complete, true, JSON.stringify(verdicts));
   const views = elaboration(program, "face_restriction");
