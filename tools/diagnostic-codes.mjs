@@ -33,7 +33,7 @@ const fileGroups = [
   [/^web\/cubist\/lint\.mjs$/, "W7"],
   [/^web\/cubist\//, "E1"],
   [/^web\/translator\/(builtins|tactics|proof-rewrite|proof-goals|motives|simp-registry|fuel)\.mjs$/, "E4"],
-  [/^web\/translator\/(inductive|match|hlevel)\.mjs$/, "E5"],
+  [/^web\/translator\/(inductive|match|patterns|hlevel)\.mjs$/, "E5"],
   [/^web\/cubical-signatures\.mjs$/, "E5"],
   [/^web\/translator\//, "E3"],
   [/^web\/(cubical-instruction-driver|cubical-syntax|cubical-kernel|cubical-reduction|cubical-elaborator|cubical-instructions|cubical-assumptions|cubical-transaction)\.mjs$/, "E6"],

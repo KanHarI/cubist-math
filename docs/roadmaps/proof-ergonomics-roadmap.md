@@ -510,7 +510,9 @@ interval variables for path constructors, and hand-written squash clauses;
 since 2026-09-29, the closing proof statement, whose motive is the goal
 over the matched value, with the hypotheses about it generalized, and
 recursive calls that pass values of their own for the other parameters, but
-those the matched parameter's type depends on. Not delivered: several scrutinees, inferred motives with index generalization, companion
+those the matched parameter's type depends on; since 2026-10-04, several
+scrutinees, nested patterns, variables and `_`, and the expression's motive
+from the motive service where its expected type mentions the value. Not delivered: inferred motives with index generalization, companion
 sorts, `cell` syntax (L2.8), proof-first h-levels (L2.3b), automatic
 clauses and `obligations` (L2.2b), dependent matching, views, canonical
 quotients, `deriving`, nested declarations and the `cases` removal.

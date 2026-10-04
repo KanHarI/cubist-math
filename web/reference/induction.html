@@ -49,6 +49,7 @@
             <li><a href="#inductive">Declaring an inductive type</a></li>
             <li><a href="#inductive-parameters">Parameters and constructors</a></li>
             <li><a href="#match">Functions by pattern matching</a></li>
+            <li><a href="#patterns">Several values and nested patterns</a></li>
             <li><a href="#recursion">Structural recursion</a></li>
             <li><a href="#dependent-match">Proofs and dependent results</a></li>
             <li><a href="#induction">Induction</a></li>
@@ -118,8 +119,54 @@ def predecessor(n : Nat) := match n return Nat {
 };
 
 def predecessor_three : predecessor(3) = 2 { rfl; }</code></pre>
-            <p>Each branch names a constructor and binds its arguments in their declared order. In <code>succ(k)</code>, <code>k</code> is the predecessor, a value of type <code>Nat</code>. Branches are expressions ending in <code>;</code>. Supply one branch for every point constructor; missing, duplicate, or unknown constructors are rejected.</p>
+            <p>Each branch names a constructor and binds its arguments in their declared order. In <code>succ(k)</code>, <code>k</code> is the predecessor, a value of type <code>Nat</code>. Branches are expressions ending in <code>;</code>. Every case must be covered, and an unknown constructor is rejected.</p>
             <p>Matching a constructor computes to its branch. Thus <code>negate(true)</code> computes to <code>false</code> and <code>predecessor(3)</code> to <code>2</code>; <code>rfl</code> checks both equalities by computation. Matching an unknown variable waits until its constructor is known.</p>
+          </section>
+          <section id="patterns">
+            <h2>Several values and nested patterns</h2>
+            <p>A match can take apart several values at once, <code>match xs, ys { … }</code>, with a pattern for each in every clause. A pattern is a constructor with patterns for its arguments, a variable, which names the value, or <code>_</code>, which ignores it. A name that is a constructor without arguments of the type matched there is that constructor, as <code>nil</code> in <code>cons(x, nil)</code>. The clauses are tried in order, and the first that fits a case takes it:</p>
+            <pre><code data-check="accept">inductive List(U &lt; UU0, A : U) : U {
+  nil;
+  cons(head : A, tail : List(U, A));
+}
+
+def shorter(xs, ys : List(U0, Nat)) : Nat := match xs, ys {
+  nil, _ =&gt; 0;
+  _, nil =&gt; 1;
+  cons(x, rest), cons(y, more) =&gt; 2;
+};
+
+def second(xs : List(U0, Nat)) : Nat := match xs {
+  cons(x, cons(y, rest)) =&gt; y;
+  other =&gt; 0;
+};
+
+def second_of_two : second(cons(1, cons(7, nil))) = 7 { rfl; }</code></pre>
+            <p>Such a match is a match on one value at a time, each clause matching what remains, so it computes as one: <code>second</code> takes its list apart, then the list's tail. A case no clause covers, and a clause that no case reaches, are rejected:</p>
+            <pre><code data-check="reject">inductive List(U &lt; UU0, A : U) : U {
+  nil;
+  cons(head : A, tail : List(U, A));
+}
+
+def single(xs : List(U0, Nat)) : Nat := match xs {  // Error: The match has no case for cons(…) in the tail of xs.
+  cons(x, nil) =&gt; 1;
+  nil =&gt; 0;
+};
+
+def first_wins(n : Nat) : Nat := match n {
+  m =&gt; 0;
+  zero =&gt; 1;  // Error: This clause is never reached: the clauses before it take every case it would.
+};</code></pre>
+            <p>When the expected type mentions the matched variable, each clause is checked at its constructor, as in the <a href="#dependent-match">match statement</a>: in <code>pick</code>, the zero clause gives a <code>Unit</code> and the successor clause a number.</p>
+            <pre><code data-check="accept">def Choice(n : Nat) : U0 := match n {
+  zero =&gt; Unit;
+  succ(m) =&gt; Nat;
+};
+
+def pick(n : Nat) : Choice(n) := match n {
+  zero =&gt; tt;
+  succ(m) =&gt; m;
+};</code></pre>
           </section>
           <section id="recursion">
             <h2>Structural recursion</h2>

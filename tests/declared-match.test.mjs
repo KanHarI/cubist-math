@@ -139,7 +139,7 @@ test("the match statement parses and formats, one statement to a line", async ()
     /The match statement takes its motive from the goal/);
   assert.throws(() => parse("def f(n : N) : N {\n  match n { zero => n; }\n}\n"),
     /A clause of the match statement is a proof block/);
-  assert.throws(() => parse("def f(n, m : N) : N {\n  match n, m { zero => { exact m; } }\n}\n"),
-    /The match statement takes apart one value/);
+  // Several values, each clause a pattern for each (cubist-tests/patterns).
+  assert.equal(parse("def f(n, m : N) : N {\n  match n, m { zero, k => { exact m; } }\n}\n").declarations[0].body[0].values.length, 2);
 });
 

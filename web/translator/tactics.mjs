@@ -8,7 +8,8 @@ import {interval as I} from "./lattice.mjs";
 import {freeDimensions} from "./dimension-slots.mjs";
 import {transportToDependentPath} from "./path-over.mjs";
 import {Goal,Transition,steps,reflexivity,composePaths} from "./proof-goals.mjs";
-import {elaborateMatchStatement} from "./match.mjs";
+import {elaborateMatchStatement,matchedType} from "./match.mjs";
+import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 
 // A conditional rule whose premises cannot be proved stops firing after this
 // many distinct premise searches in one simplification; it does not fail it.
@@ -273,7 +274,18 @@ const tactics = {
   matchStatement(t,first,rest,goal) {
     const {scope}=goal;
     if(rest.length)throw Error(`Statements after ${first.induction?"induction":"match"} are unreachable: each clause's block closes the goal.`);
+    // Several values, nested patterns, variables and _ compile to matches
+    // on one value each (patterns.mjs).
+    if(!first.induction) {
+      const declared=first.values?null:matchedType(t,scope,t.term(first.value,scope,null));
+      if(first.values||declared&&needsCompiling(first,new Set(declared.constructors.map(constructor=>constructor.name)),scope))
+        return compileMatch(t,first,scope,{statement:true,goal,typeOf:(value,at)=>matchedType(t,at,value)});
+    }
     return elaborateMatchStatement(t,first,goal,scope);
+  },
+  // The rest of a compiled match statement, in one of its clauses.
+  patternMatchStatement(t,first,rest,goal) {
+    return continueMatch(t,first,goal.scope,{goal});
   },
   cases(t,first,rest,goal) {
     const {scope}=goal;

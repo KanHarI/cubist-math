@@ -85,8 +85,8 @@ function recursionOf(scope, n) {
 // them, or passes one whose type mentions the matched parameter, marks that
 // attempt varied, and the match is elaborated again with a motive over every
 // generalizable parameter. That second elaboration also stands when the first
-// fails before any call, and the second makes one: a dependent parameter used
-// at its refined type before the call fails as written. The decision is the
+// fails and it does not: a dependent parameter used at its refined type, before
+// a call or with none, fails as written. The decision is the
 // one name resolution makes, so no spelling of a call or of a binder changes
 // it, and a match that passes its parameters unchanged, or never calls
 // itself, is the match as written.
@@ -97,7 +97,7 @@ function recursively(translator, scope, recursion, elaborate) {
   if (!first.state.varied && !first.failure) return first.keep();
   const second = attempt(translator, scope, recursion,
     recursion.fixed.filter((_, i) => recursion.generalizable[i]).map(binding => binding.name), elaborate);
-  return (first.state.varied || !first.state.called && second.state.called ? second : first).keep();
+  return (first.state.varied || first.failure && !second.failure ? second : first).keep();
 }
 
 // One elaboration of a recursive match, apart: its fuel starts where the
@@ -142,6 +142,20 @@ function rebind(translator, previous, term) {
   const alias = { ...term }, source = translator.localSources.get(previous);
   if (source) translator.localSources.set(alias, source);
   return alias;
+}
+
+// The declared type of a value, as the pattern compiler (patterns.mjs) reads
+// it: its source name, its instance and its constructors but the generated
+// one, or null for a value of another type.
+export function matchedType(translator, scope, value) {
+  const instance = scope.nf(scope.infer(value).type);
+  if (instance.tag !== "Sort") return null;
+  const inductive = inductiveOf(translator, scope, instance.signature);
+  if (!inductive) return null;
+  const info = translator.checker.kernel.signature(inductive.record.index);
+  return { source: inductive.source, instance, constructors: inductive.record.constructors
+    .map((name, k) => ({ name, ...inductive.constructors[k] }))
+    .filter((_, k) => k < inductive.constructors.length && !info.constructors[k]?.generated) };
 }
 
 // The declared type of the matched value, and its signature.
@@ -210,15 +224,19 @@ export function elaborateMatch(translator, n, value, instance, scope, expected) 
       throw locate(Error(`The motive mentions ${n.value.name} itself: write it over the matched value, match ${n.value.name} as z return … z …, so that recursive calls have their own types.`), n.type);
   } else if (expected) body = recursion ? substituteTerm(expected, recursion.matched, T.variable(z)) : expected;
   else throw locate(Error(`${keyword(n)} needs its result's type: give return T, or use it where its type is known.`));
+  // An expected type that mentions the matched variable gives the motive
+  // through the motive service, as the statement's goal does: each clause
+  // is at its constructor, with the hypotheses about the variable again.
+  const dependent = !n.type && !recursion && value.tag === "Var" && freeNames(body).has(value.name);
   return recursively(translator, scope, recursion, (scope, recursion, generalizing) => {
     const clauses = [];
     // A recursive match over the declaration's other parameters takes its
     // motive from the motive service, as the statement does: each clause
     // binds them again under their own names, and the eliminator's result is
     // applied to them.
-    if (generalizing.length) {
+    if (generalizing.length || dependent) {
       const motive = abstractMotive(new Goal(substituteTerm(body, z, value), scope), [value], { generalizing });
-      const generalized = { ...recursion, generalized: generalizedParameters(recursion, motive) };
+      const generalized = recursion ? { ...recursion, generalized: generalizedParameters(recursion, motive) } : null;
       for (const each of constructorClauses(n, declared, locate))
         clauses.push(clause(translator, scope, each, instance, scope.clauseType(motive.term, clauses), generalized,
           (inner, type, built) => {

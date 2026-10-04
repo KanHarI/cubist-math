@@ -15,7 +15,8 @@ import {tacticProof,PREMISE_ATTEMPT_LIMIT,dependentNote} from "./tactics.mjs";
 import {Scope,SourceUnit,emptyRewriteWork} from "./elaboration.mjs";
 import {Goal,Transition,steps,byConversion,composePaths} from "./proof-goals.mjs";
 import {INDUCTIVE_TAGS,lowerInductive,resolveInductive} from "./inductive.mjs";
-import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference} from "./match.mjs";
+import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference,matchedType} from "./match.mjs";
+import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName} from "./hlevel.mjs";
 import {stem} from "./names.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
@@ -878,8 +879,15 @@ export class Translator {
         const step=T.lam(k,type,T.lam(ih,motiveBody,this.term(n.step,hypothesisScope,T.app(motive,T.app(natural.succ,T.variable(k))))));
         return T.app(T.eliminator(type.signature,motive,[zero,step]),value);
       }
+      case "patternMatch": return continueMatch(this,n,scope,{expected});
       case "match": {
+        // Several values, nested patterns, variables and _ compile to
+        // matches on one value each (patterns.mjs).
+        if(n.values)return compileMatch(this,n,scope,{expected,typeOf:(value,at)=>matchedType(this,at,value)});
         const value=tr(n.value,null),type=inferred(value).type,sum=scope.nf(type);
+        const declared=sum.tag==="Sort"&&n.clauses?matchedType(this,scope,value):null;
+        if(declared&&needsCompiling(n,new Set(declared.constructors.map(constructor=>constructor.name)),scope))
+          return compileMatch(this,n,scope,{expected,typeOf:(value,at)=>matchedType(this,at,value)});
         // A declared type's value (L2.2a); otherwise the legacy match on a sum.
         if(sum.tag==="Sort")return elaborateMatch(this,n,value,sum,scope,expected);
         // Declared types are mentioned only where the kernel admits them (H1).
