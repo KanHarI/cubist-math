@@ -83,3 +83,6 @@ workbench's Kernel graph.
 | [`inductive_printed_forms`](inductive_printed_forms.cubist) | Inspection: generated names avoid the printed form of every name. |
 | [`inductive_assumptions`](inductive_assumptions.cubist) | Inspection: no declared type mentions an assumption, and each refusal names it. |
 | [`inductive_one_parameter_name`](inductive_one_parameter_name.cubist) | Inspection: a parameter has one name in the whole view, and T.squash is distinct from squash. |
+| [`computability`](computability.cubist) | For `tests/computability.test.mjs`: a computable declaration is refused when it depends on an assumption, naming the path, and its dependents with it. |
+| [`computability_evaluation`](computability_evaluation.cubist) | evaluate checks the normal form of a closed, assumption-free term; each failed evaluation's error is stated above it. |
+| [`computability_unfolding`](computability_unfolding.cubist) | Evaluation unfolds every definition and ignores unfolding hints. |

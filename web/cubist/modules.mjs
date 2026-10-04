@@ -400,5 +400,6 @@ export const cubistTestModules = [
   "inductive_naturals", "inductive_telescope", "inductive_imports", "inductive_shape_errors",
   "inductive_no_marker", "inductive_path_lambda", "inductive_projections", "inductive_trunc_minus_one",
   "inductive_inspection", "inductive_inspection_names", "inductive_generated_names",
-  "inductive_printed_forms", "inductive_assumptions", "inductive_one_parameter_name"
+  "inductive_printed_forms", "inductive_assumptions", "inductive_one_parameter_name", "computability",
+  "computability_evaluation", "computability_unfolding"
 ];
