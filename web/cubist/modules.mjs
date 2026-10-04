@@ -418,5 +418,6 @@ export const cubistTestModules = [
   "ergonomics_imported_failure", "ergonomics_simp_rules_a", "ergonomics_simp_rules_b",
   "ergonomics_simp_client_a", "ergonomics_simp_client_isolated", "ergonomics_simp_client_conflict",
   "ergonomics_simp_client_reverse_order", "ergonomics_simp_client_shadowed_rule",
-  "ergonomics_multi_binder_fun", "ergonomics_tactic_sites", "ergonomics_tactic_sites_generic"
+  "ergonomics_multi_binder_fun", "ergonomics_tactic_sites", "ergonomics_tactic_sites_generic", "fuel_tactics",
+  "fuel_residual_goals", "fuel_search_spending"
 ];

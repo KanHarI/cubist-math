@@ -138,3 +138,6 @@ workbench's Kernel graph.
 | [`ergonomics_multi_binder_fun`](ergonomics_multi_binder_fun.cubist) | Multi-binder `fun`, whose link inspects the whole closed function. |
 | [`ergonomics_tactic_sites`](ergonomics_tactic_sites.cubist) | Concrete `calc`, `rw` and `simp`, linked from their keyword sites. |
 | [`ergonomics_tactic_sites_generic`](ergonomics_tactic_sites_generic.cubist) | The same, universe-generic. |
+| [`fuel_tactics`](fuel_tactics.cubist) | Tactics that `tests/search-fuel.test.mjs` checks with the default fuel and with less, in fresh and reused sessions: a cycle and the rewrite budget among them. |
+| [`fuel_residual_goals`](fuel_residual_goals.cubist) | Unfinished `rw`, `simp`, `simpa` and `calc`: each states the remaining goal, the side that changed and the rules that fired; the command-line checker reports the same. |
+| [`fuel_search_spending`](fuel_search_spending.cubist) | Searches whose questions and rewrites `tests/search-fuel.test.mjs` counts. |

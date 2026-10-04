@@ -5,14 +5,13 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile, mkdtemp, writeFile, rm } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { SEARCH_FUEL, DECLARATION_FUEL, SearchFuel, SearchFuelExhausted } from "../web/translator/fuel.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 // Modules resolve as in the CLI: the rebuilt library first, then the archive.
@@ -28,33 +27,10 @@ async function check(t, source, options = {}, warmup = []) {
     .map(output => [output.name, output]));
 }
 
-const tactics = `import naturals;
-
-def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
-  simp only [nat_add_zero];
-}
-def rewritten(n, m : Nat, h : n = m) : n + 0 = m {
-  rw [nat_add_zero(n)];
-  exact h;
-}
-def through(n, m : Nat, h : n + 0 = m) : n = m {
-  simpa only [nat_add_zero] using h;
-}
-def chain(n : Nat) : (n + 0) + 0 = n {
-  calc {
-    (n + 0) + 0 = n + 0 by nat_add_zero(n + 0);
-    _ = n by nat_add_zero(n);
-  }
-}
-def commuted(a, b : Nat) : a + b = b + a {
-  simp only [nat_add_comm];
-}
-def growing(n, m : Nat, h : n = m) : n = m + 0 {
-  simp only [<- nat_add_zero];
-  exact h;
-}
-`;
-const fuelOf = outputs => Object.fromEntries(Object.entries(outputs).map(([name, output]) =>
+// The tactics' cases, and the residual goals and search spending below, are
+// cubist-tests/fuel_*.cubist, whose comments state each refusal with the
+// default fuel (tests/cubist-tests.test.mjs).
+const tactics = await read("cubist-tests/fuel_tactics.cubist");const fuelOf = outputs => Object.fromEntries(Object.entries(outputs).map(([name, output]) =>
   [name, { status: output.status, reason: output.reason ?? null, failure: output.failure, fuel: output.searchFuel }]));
 
 test("the default fuel is the recorded baseline's, several times what any measured search spent", async () => {
@@ -127,56 +103,6 @@ test("fuel, the kernel's steps and the time limit are three kinds of failure", a
   assert.match(late.reason, /Declaration time limit exceeded/);
 });
 
-test("unfinished rw, simp, simpa and calc show the remaining goal, the side that changed and the rules that fired", async t => {
-  const outputs = await check(t, `import naturals;
-
-def simp_unfinished(n, m : Nat) : n + 0 = m {
-  simp only [nat_add_zero];
-}
-def simp_nothing(n, m : Nat) : n = m {
-  simp only [nat_add_zero];
-}
-def rw_unfinished(n, m : Nat) : n + 0 = m {
-  rw [nat_add_zero(n)];
-}
-def rw_missing(n : Nat) : (n + 0) + (n + 0) = (n + 0) + n {
-  rw [nat_add_zero(n)] at lhs occurrence 3;
-}
-def simpa_mismatch(n, m : Nat, h : n + 0 = m) : m = n {
-  simpa only [nat_add_zero] using h;
-}
-def calc_end(n : Nat) : n + 0 = succ(n) {
-  calc {
-    n + 0 = n by nat_add_zero(n);
-  }
-}
-def calc_step(n, m : Nat) : n + 0 = n {
-  calc {
-    n + 0 = n by nat_add_zero(n);
-    m = n by nat_add_zero(n);
-  }
-}
-def commuted(a, b : Nat) : a + b = b + a {
-  simp only [nat_add_comm];
-}
-def growing(n, m : Nat, h : n = m) : n = m + 0 {
-  simp only [<- nat_add_zero];
-  exact h;
-}
-`);
-  const reason = name => outputs[name].reason;
-  assert.match(reason("simp_unfinished"), /unresolved equality goal; add a following proof statement\. Remaining goal: n = m\. 1 rewrite changed the left side, using nat_add_zero\./);
-  assert.match(reason("simp_nothing"), /Remaining goal: n = m\. No rule fired\./);
-  assert.match(reason("rw_unfinished"), /^rw left an unresolved equality goal; add a following proof statement\. Remaining goal: n = m\. 1 rewrite changed the left side, using nat_add_zero\(n\)\./);
-  assert.match(reason("rw_missing"), /^Rewrite occurrence 3 was not found \(2 eligible matches\)\. Remaining goal: n \+ 0 \+ \(n \+ 0\) = n \+ 0 \+ n\./);
-  assert.match(reason("simpa_mismatch"), /Simplifying the supplied type: 1 rewrite changed the left side, using nat_add_zero\. Simplifying the goal: No rule fired\./);
-  assert.match(reason("calc_end"), /^calc final endpoint does not match the goal\. The chain ends at n; the goal's right side is succ\(n\)\./);
-  assert.match(reason("calc_step"), /^calc step left endpoint does not match the preceding endpoint\. The step starts at m; the chain so far ends at n\./);
-  // A cycle names the rules that make it.
-  assert.match(reason("commuted"), /^Simplification cycle detected in the selected rules\. nat_add_comm returned the goal to where it was 2 rewrites earlier\. Remaining goal: a \+ b = b \+ a\./);
-  // A bound says where the search stopped; a long goal is cut short.
-  assert.match(reason("growing"), /^Simplification rewrite budget exceeded\. Remaining goal: n \+ 0 \+ 0 .*… 64 rewrites changed the left side, using nat_add_zero\./);
-});
 
 test("fuel: a closed search's spending counts toward its declaration, and only an open one's limits apply", () => {
   const declaration = new SearchFuel("The declaration's elaboration", { queries: 3 }, { declaration: true });
@@ -194,25 +120,9 @@ test("fuel: a closed search's spending counts toward its declaration, and only a
 });
 
 test("the CLI reports the same residual goals as the checker the browser runs", async t => {
-  const source = `import naturals;
-
-def simp_unfinished(n, m : Nat) : n + 0 = m {
-  simp only [nat_add_zero];
-}
-
-def rw_unfinished(n, m : Nat) : n + 0 = m {
-  rw [nat_add_zero(n)];
-}
-
-def commuted(a, b : Nat) : a + b = b + a {
-  simp only [nat_add_comm];
-}
-`;
-  const directory = await mkdtemp(join(tmpdir(), "cubist-fuel-"));
-  t.after(() => rm(directory, { recursive: true, force: true }));
-  await writeFile(join(directory, "residual.cubist"), source);
+  const path = fileURLToPath(new URL("../cubist-tests/fuel_residual_goals.cubist", import.meta.url));
   const cli = fileURLToPath(new URL("../cli/repl.mjs", import.meta.url));
-  const run = spawnSync(process.execPath, [cli, "check", "residual.cubist"], { cwd: directory, encoding: "utf8", timeout: 120000 });
+  const run = spawnSync(process.execPath, [cli, "check", path], { encoding: "utf8", timeout: 120000 });
   assert.equal(run.status, 1, run.stderr);
   // A failed check lists each gap on a line of its own, with its code:
   // error CODE at line L:C (name): message.
@@ -220,13 +130,12 @@ def commuted(a, b : Nat) : a + b = b + a {
   assert.ok(lines.every(Boolean), run.stderr);
   const reported = Object.fromEntries(lines.map(([, , line, column, name, message]) => [name, line ? `${message} at ${line}:${column}` : message]));
   // The browser's worker runs CubicalProgram on the same runtime modules.
-  const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
+  const program = new CubicalProgram(await createCubical(), sourceReader({ path }), { collectReferences: false });
   t.after(() => program.dispose());
-  const result = await program.check(source, "residual");
-  const checked = Object.fromEntries(result.outputs.map(output => [output.name, output.reason]));
+  const result = await program.check(await readFile(path, "utf8"), "fuel_residual_goals");
+  const checked = Object.fromEntries(result.outputs.filter(output => !output.verified).map(output => [output.name, output.reason]));
   assert.deepEqual(reported, checked);
   assert.deepEqual(lines.map(([, code]) => code), result.outputs.filter(output => !output.verified).map(output => output.code));
-  for (const reason of Object.values(reported)) assert.match(reason, /Remaining goal: /);
 });
 
 test("a declaration's closing check and admission, and an evaluation, are on fuel", async t => {
@@ -242,20 +151,7 @@ test("a declaration's closing check and admission, and an evaluation, are on fue
 });
 
 test("a search's own questions and rewrites are on its fuel", async t => {
-  const outputs = await check(t, `import naturals;
-
-def nothing(n : Nat) : n = n {
-  simp only [];
-}
-def rewritten(n, m : Nat, h : n = m) : n + 0 = m {
-  rw [nat_add_zero(n)];
-  exact h;
-}
-def targeted(n, m : Nat, h : n = m) : n + 0 = m {
-  rw [nat_add_zero(n)] at lhs;
-  exact h;
-}
-`);
+  const outputs = await check(t, await read("cubist-tests/fuel_search_spending.cubist"));
   // Reading the goal's endpoints is the search's question.
   assert.ok(outputs.nothing.searchFuel.most.queries > 0, JSON.stringify(outputs.nothing.searchFuel));
   for (const name of ["rewritten", "targeted"]) {
