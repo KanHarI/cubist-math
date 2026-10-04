@@ -115,25 +115,24 @@ sharing, not a new axiom or unchecked dependency.
 
 ## Full native univalence
 
-`nativeUnivalenceCounit(A,B,e,level,identity)` proves
-`idtoequiv(ua(e))=e`. Over the Glue line, `unglueEquivalence` supplies a dependent
-line of equivalences to `B`. Its endpoint forward maps are already correct;
-uniqueness of native equivalence witnesses repairs the endpoint witnesses.
-Reverse this dependent line and use the path-over bridge to obtain the counit.
-
-`nativeUnivalenceEquivalence(A,B,{level,identity,eta,counit})` packages the two
-checked inverse laws into
+Univalence for native equivalences is proved in Cubist, in
+[`library/univalence.cubist`](../../library/univalence.cubist), rather than by
+builders here. `idtoequiv_glue_path` proves `idtoequiv(glue_path(e)) = e`:
+along the Glue line, `glue_line_equiv` joins `e` to the identity, as unglue's
+equivalences with their endpoint witnesses repaired, and transporting back
+along the line gives the counit. `univalence` packages the two inverse laws
+into
 
 ```
-Equiv_native(Path U_level A B, Equiv_native(A,B)).
+ContrEquiv(Path U A B, ContrEquiv(A, B))
 ```
 
-Its forward map is the concrete `nativeIdentityToEquivalence` above. Pass
-named checked eta and counit functions specialized to `A,B`. The generic
-quasi-inverse construction is checked under lambda-bound maps before those
-maps and laws are applied, keeping the proof compact.
+through `inverse_equiv` of
+[`library/contractible_maps.cubist`](../../library/contractible_maps.cubist),
+which turns a function with an inverse into a contractible-map equivalence.
+`equivalent_types_contractible` proves the contractible total-space form
+(CCHM, corollary 10).
 
-Native eta and counit check at U0 and U2. The complete native equivalence and
-public eta also check against closed checked lemma registries. No universe
-composition, Glue behavior, or path computation rule has been added or
-relaxed for these results.
+Native eta checks at U0 and U2, and public eta against closed checked lemma
+registries. No universe composition, Glue behavior, or path computation rule
+has been added or relaxed for these results.
