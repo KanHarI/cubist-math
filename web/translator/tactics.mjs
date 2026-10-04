@@ -278,7 +278,7 @@ const tactics = {
     // on one value each (patterns.mjs).
     if(!first.induction) {
       const declared=first.values?null:matchedType(t,scope,t.term(first.value,scope,null));
-      if(first.values||declared&&needsCompiling(first,new Set(declared.constructors.map(constructor=>constructor.name)),scope))
+      if(first.values||declared&&needsCompiling(t,first,new Set(declared.constructors.map(constructor=>constructor.name)),scope))
         return compileMatch(t,first,scope,{statement:true,goal,typeOf:(value,at)=>matchedType(t,at,value)});
     }
     return elaborateMatchStatement(t,first,goal,scope);

@@ -886,7 +886,7 @@ export class Translator {
         if(n.values)return compileMatch(this,n,scope,{expected,typeOf:(value,at)=>matchedType(this,at,value)});
         const value=tr(n.value,null),type=inferred(value).type,sum=scope.nf(type);
         const declared=sum.tag==="Sort"&&n.clauses?matchedType(this,scope,value):null;
-        if(declared&&needsCompiling(n,new Set(declared.constructors.map(constructor=>constructor.name)),scope))
+        if(declared&&needsCompiling(this,n,new Set(declared.constructors.map(constructor=>constructor.name)),scope))
           return compileMatch(this,n,scope,{expected,typeOf:(value,at)=>matchedType(this,at,value)});
         // A declared type's value (L2.2a); otherwise the legacy match on a sum.
         if(sum.tag==="Sort")return elaborateMatch(this,n,value,sum,scope,expected);

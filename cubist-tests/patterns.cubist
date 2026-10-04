@@ -110,6 +110,23 @@ print(evaluate(shadowing(1, 1)));
 // Output: 1
 print(evaluate(shadowing(2, 0)));
 
+// A bare name is a constructor where its type has one by that name, even
+// where a variable shadows it: both zeros here are Nat's.
+def both_zero(zero, x, y : Nat) : Nat := match x, y {
+    zero, zero => 1;
+    _, _ => 0;
+  };
+
+// Output: 1
+print(evaluate(both_zero(9, 0, 0)));
+
+// So succ(zero) leaves succ(succ(…)) without a case.
+// Error: E561: The match has no case for succ(…) in the n of n.
+def shadowed_inside(zero, n : Nat) : Nat := match n {
+    zero => 0;
+    succ(zero) => 1;
+  };
+
 // A nested pattern keeps the motive's name.
 def identity_path(n : Nat) : n = n := match n as z return z = z {
     zero => refl(0);

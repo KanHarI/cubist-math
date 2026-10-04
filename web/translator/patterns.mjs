@@ -23,17 +23,18 @@ const RECURSIVE = "\u0000recursive";
 const bare = head => !head.args && !head.coordinates?.length && !head.binders?.length;
 
 // Whether a match needs compiling: several values, a nested pattern, _, a
-// constructor without arguments in an argument's place, a bare name that is
-// no constructor of the value's type, or a constructor's clause twice. A
+// name in an argument's place that may be a constructor without arguments,
+// a bare name that is no constructor of the value's type, or a
+// constructor's clause twice. A
 // legacy clause with names after its constructor, as `succ h =>`, is
 // match.mjs's.
-export function needsCompiling(n, constructorNames, scope) {
+export function needsCompiling(t, n, constructorNames, scope) {
   if (n.values?.length > 1) return true;
   const heads = n.clauses ?? [];
   if (heads.some(head => head.binders?.length)) return false;
   const seen = new Set();
   for (const head of heads) {
-    if (head.args?.some(arg => arg.kind === "pattern" || arg.text === "_" || constructorWithout(scope, arg.text))) return true;
+    if (head.args?.some(arg => arg.kind === "pattern" || arg.text === "_" || mayBeConstructor(t, scope, arg.text))) return true;
     if (bare(head) && !constructorNames.has(head.constructor.text)) return true;
     if (seen.has(head.constructor.text)) return true;
     seen.add(head.constructor.text);
@@ -47,9 +48,6 @@ const pattern = head => head.kind === "pattern" || !bare(head)
   ? { kind: "constructor", token: head.constructor, args: (head.args ?? []).map(argument), coordinates: head.coordinates ?? [] }
   : { kind: "name", token: head.constructor };
 const argument = arg => arg.kind === "pattern" ? pattern(arg) : { kind: "name", token: arg };
-// The tokens a pattern binds: its variables and coordinates, and the bare
-// names that may be constructors, which the caller tells apart.
-const variables = p => p.kind === "name" ? [p.token] : [...p.args.flatMap(variables), ...p.coordinates];
 const wildcard = { kind: "name", token: { text: "_" } };
 
 let serial = 0;
@@ -63,20 +61,14 @@ const generatedToken = (stem, at) => ({ text: `${stem}'${++serial}`, start: at.s
 export function compileMatch(t, n, scope, {statement, expected, goal, typeOf}) {
   const locate = (error, node = n) => scope.unit.locate(error, node);
   const values = n.values ?? [n.value];
-  // Each clause, with the names its patterns bind so far. A clause names
-  // each variable once.
+  // Each clause, with the names its patterns bind so far, which compile
+  // checks are bound once each.
   const clauses = n.clauses.map(clause => ({ clause, used: false }));
   const rows = clauses.map(origin => {
     const patterns = [origin.clause, ...origin.clause.more ?? []].map(pattern);
     if (patterns.length !== values.length)
       throw locate(Error(`This clause has ${patterns.length} pattern${patterns.length === 1 ? "" : "s"}; the match takes apart ${values.length} value${values.length === 1 ? "" : "s"}.`), origin.clause.constructor);
-    const bound = new Set();
-    for (const token of patterns.flatMap(variables)) {
-      if (token.text === "_" || constructorWithout(scope, token.text)) continue;
-      if (bound.has(token.text)) throw locate(Error(`${token.text} is bound twice in this clause: name each variable once.`), token);
-      bound.add(token.text);
-    }
-    return { patterns, bindings: [], origin };
+    return { patterns, bindings: [], bound: new Set(), origin };
   });
   // Each value is elaborated where the match is written, once, and named
   // apart, so that no name a clause binds captures it: in match x, y with a
@@ -131,10 +123,17 @@ function compile(t, scope, columns, rows, context) {
       throw locate(Error(`${type.source} has no constructor ${head.token.text}: its constructors are ${type.constructors.map(c => c.name).join(", ")}.`), head.token);
     return { row, head, rest };
   });
+  // A clause names each variable once. A name is a variable only once its
+  // type has decided it is no constructor, so it is counted here.
+  const bindOnce = (row, token) => {
+    if (token.text === "_") return row;
+    if (row.bound.has(token.text)) throw locate(Error(`${token.text} is bound twice in this clause: name each variable once.`), token);
+    return { ...row, bound: new Set(row.bound).add(token.text) };
+  };
   // No constructor here: each variable names the value.
   if (resolved.every(({head}) => head.kind === "name"))
-    return compile(t, scope, others, resolved.map(({row, head, rest}) => ({ ...row, patterns: rest,
-      bindings: head.token.text === "_" ? row.bindings : [...row.bindings, [head.token, { node: column.node }]] })), context);
+    return compile(t, scope, others, resolved.map(({row, head, rest}) => bindOnce({ ...row, patterns: rest,
+      bindings: head.token.text === "_" ? row.bindings : [...row.bindings, [head.token, { node: column.node }]] }, head.token)), context);
   // Take the value apart: a clause per constructor, matching the rest.
   const clauses = [];
   for (const constructor of type.constructors) {
@@ -155,30 +154,34 @@ function compile(t, scope, columns, rows, context) {
     const first = fitting.find(({head}) => head.kind === "constructor")?.head, at = first?.token ?? column.node;
     // An argument is named as every clause that takes it apart names it, or
     // else by a name of its own, from the constructor's name for it. A name
-    // that is a constructor without arguments is a pattern, which its own
-    // type decides.
-    const variable = arg => arg.kind === "name" && arg.token.text !== "_" && !constructorWithout(scope, arg.token.text);
-    const args = Array.from({ length: constructor.arity }, (_, k) => {
+    // that may be a constructor without arguments is a pattern, which the
+    // argument's own type decides: in scope or not, since a variable can
+    // shadow it.
+    const variable = arg => arg.kind === "name" && arg.token.text !== "_" && !mayBeConstructor(t, scope, arg.token.text);
+    const direct = Array.from({ length: constructor.arity }, (_, k) => {
       const names = new Set(fitting.map(({head}) => head.kind === "constructor" && variable(head.args[k]) ? head.args[k].token.text : null));
       const [only] = names;
-      return names.size === 1 && only !== null ? first.args[k].token
-        : generatedToken(constructor.fields?.[k] ?? "x", at);
+      return names.size === 1 && only !== null;
     });
+    const args = direct.map((named, k) => named ? first.args[k].token : generatedToken(constructor.fields?.[k] ?? "x", at));
     const coordinates = Array.from({ length: constructor.dims }, (_, k) => first?.coordinates[k] ?? generatedToken("i", at));
     const specialized = fitting.map(({row, head, rest}) => {
       if (head.kind === "name") {
         // A variable names the constructor here; _ names nothing.
         const bindings = head.token.text === "_" ? row.bindings
           : [...row.bindings, [head.token, { constructor, args, coordinates, instance: type.instance }]];
-        return { ...row, patterns: [...Array.from({ length: constructor.arity }, () => wildcard), ...rest], bindings };
+        return bindOnce({ ...row, patterns: [...Array.from({ length: constructor.arity }, () => wildcard), ...rest], bindings }, head.token);
       }
       // The clause's own arguments are matched next; its coordinates name
-      // the clause's.
+      // the clause's. An argument named here, and each coordinate, is bound.
       const bindings = [...row.bindings];
       head.coordinates.forEach((coordinate, k) => {
         if (coordinate.text !== coordinates[k].text) bindings.push([coordinate, { dimension: coordinates[k] }]);
       });
-      return { ...row, patterns: [...head.args.map((arg, k) => arg.kind === "name" && arg.token.text === args[k].text ? wildcard : arg), ...rest], bindings };
+      let next = { ...row, patterns: [...head.args.map((arg, k) => direct[k] ? wildcard : arg), ...rest], bindings };
+      for (const [k, arg] of head.args.entries()) if (direct[k]) next = bindOnce(next, arg.token);
+      for (const coordinate of head.coordinates) next = bindOnce(next, coordinate);
+      return next;
     });
     // A generated argument is described by the constructor's name for it.
     const argumentColumns = args.map((arg, k) => ({ node: { kind: "name", name: arg.text, start: arg.start, end: arg.end },
@@ -217,6 +220,11 @@ function bind(t, scope, token, target) {
   for (const coordinate of coordinates) point = { kind: "pathApply", left: point, right: { kind: "name", name: coordinate.text } };
   return scope.alias(token.text, t.term(point, scope, instance));
 }
+
+// Whether a name may be a constructor without arguments: one in scope, or
+// one of a declared type a variable in scope shadows.
+const mayBeConstructor = (t, scope, name) => constructorWithout(scope, name)
+  || [...t.checker.inductives?.values() ?? []].some(inductive => inductive.constructors?.some(c => c.source === name && !c.arity && !c.dims));
 
 // Whether a name is, in scope, a constructor without arguments.
 const constructorWithout = (scope, name) => {
