@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Browse every Cubist source the site publishes, by folder: the library, the Cubist tests, the archived first library and the documentation's examples." />
+    <title>Cubist · Files</title>
+    <link rel="stylesheet" href="language.css" />
+    <link rel="stylesheet" href="file-tree.css" />
+    <link rel="stylesheet" href="files.css" />
+  </head>
+  <body class="files-page">
+    <a class="skip-link" href="#files">Skip to the files</a>
+    <header>
+      <a class="brand" href="index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="proof.html">Proof workspace</a>
+        <a href="files.html" aria-current="page">Files</a>
+        <a href="workbench.html">Kernel workbench</a>
+        <a href="language.html">Language reference</a>
+        <a href="repl.html">REPL</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">EVERY CUBIST SOURCE</p>
+        <h1>Files</h1>
+        <p class="lead">Browse the Cubist sources by folder: the rebuilt library, the Cubist tests, the archived first library and the documentation's examples. Select a file to read it, and open it in the proof workspace to check it and inspect its terms.</p>
+      </div>
+      <div class="files-layout" id="files">
+        <nav class="file-tree" aria-label="Files">
+          <label class="file-filter">
+            <span>Filter</span>
+            <input id="file-filter" type="search" placeholder="Name or path" autocomplete="off" spellcheck="false" />
+          </label>
+          <p id="file-count" class="file-count" aria-live="polite"></p>
+          <div id="tree" class="file-roots"></div>
+        </nav>
+        <section class="file-view" aria-label="Selected file">
+          <p id="file-empty" class="file-empty">Select a file to read it here.</p>
+          <div id="file-details" hidden>
+            <p id="file-path" class="file-path"></p>
+            <h2 id="file-name"></h2>
+            <p id="file-summary" class="file-summary"></p>
+            <p class="file-actions">
+              <a id="file-open" class="file-open" href="proof.html">Open in the proof workspace</a>
+              <a id="file-raw" href="#">View the file</a>
+            </p>
+            <pre class="file-source"><code id="file-source"></code></pre>
+          </div>
+        </section>
+      </div>
+    </main>
+    <footer>Cubist · Files · <a href="proof.html">Proof workspace</a> · <a href="language.html">Language reference</a></footer>
+    <script type="module" src="files.mjs"></script>
+  </body>
+</html>

@@ -1,0 +1,2322 @@
+{
+ "roots": [
+  {
+   "path": "library",
+   "title": "Library",
+   "description": "The rebuilt library. Its modules come first wherever a source imports by name."
+  },
+  {
+   "path": "cubist-tests",
+   "title": "Cubist tests",
+   "description": "The Cubist sources the test suite checks. Each states its errors, warnings and outputs in comments."
+  },
+  {
+   "path": "archive",
+   "title": "Archive",
+   "description": "The first library, kept unchanged. Its modules import only from the archive."
+  },
+  {
+   "path": "docs",
+   "title": "Documentation examples",
+   "description": "The examples the documentation discusses, as files."
+  }
+ ],
+ "files": [
+  {
+   "path": "archive/first-library/affine_dyadic_limits.cubist",
+   "summary": "Curve integrals · actual dyadic sums are Cauchy"
+  },
+  {
+   "path": "archive/first-library/affine_integral_constants.cubist",
+   "summary": "Curve integrals · integrating a constant"
+  },
+  {
+   "path": "archive/first-library/affine_integral_linearity.cubist",
+   "summary": "Curve integrals · complex linearity and equality along the curve"
+  },
+  {
+   "path": "archive/first-library/affine_integral_midpoint.cubist",
+   "summary": "Curve integrals · splitting at the midpoint"
+  },
+  {
+   "path": "archive/first-library/affine_integrals.cubist",
+   "summary": "Curve integrals · construct the affine dyadic limit"
+  },
+  {
+   "path": "archive/first-library/affine_partition_refinement.cubist",
+   "summary": "Curve contours · uniform refinement across an entire partition"
+  },
+  {
+   "path": "archive/first-library/affine_refinement.cubist",
+   "summary": "Curve contours · width-scaled finite refinement errors"
+  },
+  {
+   "path": "archive/first-library/affine_variation.cubist",
+   "summary": "Curve sampling · ordered affine increment bounds"
+  },
+  {
+   "path": "archive/first-library/algebraic_base_change.cubist",
+   "summary": "Algebraic elements · enlarging the base field"
+  },
+  {
+   "path": "archive/first-library/algebraic_fields.cubist",
+   "summary": "Fields · unordered algebraic fields and isomorphisms"
+  },
+  {
+   "path": "archive/first-library/artin_classification.cubist",
+   "summary": "Artin automorphism classification"
+  },
+  {
+   "path": "archive/first-library/artin_degree.cubist",
+   "summary": "Artin's fixed-field degree theorem"
+  },
+  {
+   "path": "archive/first-library/artin_embedding_bound.cubist",
+   "summary": "Finite embedding bound"
+  },
+  {
+   "path": "archive/first-library/artin_equivariance.cubist",
+   "summary": "Finite evaluation and automorphism sums"
+  },
+  {
+   "path": "archive/first-library/artin_evaluation_basis.cubist",
+   "summary": "Evaluation basis for distinct embeddings"
+  },
+  {
+   "path": "archive/first-library/artin_evaluation_matrix.cubist",
+   "summary": "Finite evaluation matrix bound"
+  },
+  {
+   "path": "archive/first-library/artin_evaluation.cubist",
+   "summary": "Evaluation vectors separate coefficients"
+  },
+  {
+   "path": "archive/first-library/artin_finite_relations.cubist",
+   "summary": "Finite independence of field embeddings"
+  },
+  {
+   "path": "archive/first-library/artin_fixed_embeddings.cubist",
+   "summary": "Fixed-field automorphisms as embeddings"
+  },
+  {
+   "path": "archive/first-library/artin_fixed_evaluation.cubist",
+   "summary": "Finite subgroup evaluation basis"
+  },
+  {
+   "path": "archive/first-library/artin_hom_independence.cubist",
+   "summary": "Independence of two field embeddings"
+  },
+  {
+   "path": "archive/first-library/artin_loop_independence.cubist",
+   "summary": "Independent extension loops"
+  },
+  {
+   "path": "archive/first-library/basics.cubist",
+   "summary": "Functions, pairs & induction · examples"
+  },
+  {
+   "path": "archive/first-library/basis_generators.cubist",
+   "summary": "Finite bases generate their field extensions"
+  },
+  {
+   "path": "archive/first-library/bijection_equality.cubist",
+   "summary": "Bijections · equality and coherence"
+  },
+  {
+   "path": "archive/first-library/bijective_field_embeddings.cubist",
+   "summary": "Surjective field embeddings are isomorphisms"
+  },
+  {
+   "path": "archive/first-library/binary_arithmetic_correct.cubist",
+   "summary": "Binary arithmetic · compatibility with Nat"
+  },
+  {
+   "path": "archive/first-library/binary_arithmetic.cubist",
+   "summary": "Binary arithmetic · 10! = 3628800"
+  },
+  {
+   "path": "archive/first-library/binary_equivalence.cubist",
+   "summary": "Binary and unary naturals · equivalence"
+  },
+  {
+   "path": "archive/first-library/binary_induction.cubist",
+   "summary": "Binary numbers · dependent induction"
+  },
+  {
+   "path": "archive/first-library/binary_naturals.cubist",
+   "summary": "Binary naturals · inductive digits and binary literals"
+  },
+  {
+   "path": "archive/first-library/binary_univalence_transfer.cubist",
+   "summary": "Binary and unary factorial · univalence transport"
+  },
+  {
+   "path": "archive/first-library/binomial_counting.cubist",
+   "summary": "Binomial types · finite cardinality"
+  },
+  {
+   "path": "archive/first-library/binomial_pascal.cubist",
+   "summary": "Binomial types · Pascal bijection"
+  },
+  {
+   "path": "archive/first-library/binomial_types.cubist",
+   "summary": "Binomial types · Rijke construction"
+  },
+  {
+   "path": "archive/first-library/binomial.cubist",
+   "summary": "Subsets · Pascal counting"
+  },
+  {
+   "path": "archive/first-library/boolean_cuts.cubist",
+   "summary": "Real numbers · classical Boolean cuts"
+  },
+  {
+   "path": "archive/first-library/bouquet_actions.cubist",
+   "summary": "Loop actions · transport in local systems"
+  },
+  {
+   "path": "archive/first-library/bouquet_cover.cubist",
+   "summary": "Loop generation · auxiliary family"
+  },
+  {
+   "path": "archive/first-library/bouquet_generation.cubist",
+   "summary": "Punctures · every loop is a word"
+  },
+  {
+   "path": "archive/first-library/bouquet_invariants.cubist",
+   "summary": "Loop invariants · determined by generators"
+  },
+  {
+   "path": "archive/first-library/bourbaki_tower.cubist",
+   "summary": "Order theory · the least closed tower"
+  },
+  {
+   "path": "archive/first-library/bourbaki_witt.cubist",
+   "summary": "Bourbaki–Witt fixed-point theorem"
+  },
+  {
+   "path": "archive/first-library/cauchy_ordered.cubist",
+   "summary": "Cauchy quotient · closeness assumptions proved"
+  },
+  {
+   "path": "archive/first-library/cauchy_quotient.cubist",
+   "summary": "Real numbers · ordinary Cauchy quotient"
+  },
+  {
+   "path": "archive/first-library/chain_complete_orders.cubist",
+   "summary": "Order theory · chain completeness"
+  },
+  {
+   "path": "archive/first-library/circle_degree.cubist",
+   "summary": "Circle degree · obstruction to contraction"
+  },
+  {
+   "path": "archive/first-library/circle_group_identity.cubist",
+   "summary": "Circle · the loop group equals the integer group"
+  },
+  {
+   "path": "archive/first-library/circle.cubist",
+   "summary": "Circle · fundamental group is Z"
+  },
+  {
+   "path": "archive/first-library/classical_complex_inverses.cubist",
+   "summary": "Complex numbers · nonzero inverses using excluded middle"
+  },
+  {
+   "path": "archive/first-library/classical.cubist",
+   "summary": "Classical logic · excluded middle"
+  },
+  {
+   "path": "archive/first-library/complete_fields.cubist",
+   "summary": "Real numbers · shared completeness interface"
+  },
+  {
+   "path": "archive/first-library/complex_affine.cubist",
+   "summary": "Complex curves · constructive uniform continuity"
+  },
+  {
+   "path": "archive/first-library/complex_algebra.cubist",
+   "summary": "Complex numbers · ring, conjugation and inverses"
+  },
+  {
+   "path": "archive/first-library/complex_contour_bounds.cubist",
+   "summary": "Complex contours · coordinate variation estimates"
+  },
+  {
+   "path": "archive/first-library/complex_contour_samples.cubist",
+   "summary": "Complex contours · finite sums"
+  },
+  {
+   "path": "archive/first-library/complex_contour_sums.cubist",
+   "summary": "Contour sums · complex composition and backtracking"
+  },
+  {
+   "path": "archive/first-library/complex_contour_tag_limits.cubist",
+   "summary": "Complex contours · tag-independent limits"
+  },
+  {
+   "path": "archive/first-library/complex_convergence.cubist",
+   "summary": "Complex limits · convergence and Cauchy definitions"
+  },
+  {
+   "path": "archive/first-library/complex_coordinates.cubist",
+   "summary": "Complex numbers · coordinate identities"
+  },
+  {
+   "path": "archive/first-library/complex_curve_variation.cubist",
+   "summary": "Complex curves · bounded coordinate variation"
+  },
+  {
+   "path": "archive/first-library/complex_curves.cubist",
+   "summary": "Complex curves · continuous straight segments and endpoints"
+  },
+  {
+   "path": "archive/first-library/complex_deformation.cubist",
+   "summary": "Complex deformations · dominant term avoids zero"
+  },
+  {
+   "path": "archive/first-library/complex_inverses.cubist",
+   "summary": "Complex numbers · constructive inverses and apartness"
+  },
+  {
+   "path": "archive/first-library/complex_limit_periods.cubist",
+   "summary": "Complex periods · constructed from Cauchy approximations"
+  },
+  {
+   "path": "archive/first-library/complex_limits.cubist",
+   "summary": "Complex analysis · completeness and limit laws"
+  },
+  {
+   "path": "archive/first-library/complex_magnitude.cubist",
+   "summary": "Complex estimates · coordinate bounds without square roots"
+  },
+  {
+   "path": "archive/first-library/complex_norm_coordinates.cubist",
+   "summary": "Complex numbers · multiplicative norm"
+  },
+  {
+   "path": "archive/first-library/complex_numbers.cubist",
+   "summary": "Complex numbers · coordinates and operations"
+  },
+  {
+   "path": "archive/first-library/complex_periods.cubist",
+   "summary": "Complex periods · local contributions and winding"
+  },
+  {
+   "path": "archive/first-library/complex_perturbations.cubist",
+   "summary": "Complex estimates · explicit additive error certificates"
+  },
+  {
+   "path": "archive/first-library/complex_polynomials.cubist",
+   "summary": "Polynomials · roots and algebraic closure target"
+  },
+  {
+   "path": "archive/first-library/complex_refinement_cauchy.cubist",
+   "summary": "Complex limits · common refinements give a Cauchy modulus"
+  },
+  {
+   "path": "archive/first-library/complex_scalar_continuity.cubist",
+   "summary": "Complex continuity · fixed scalar multiplication and limits"
+  },
+  {
+   "path": "archive/first-library/complex_subdivision_estimates.cubist",
+   "summary": "Curve contours · sum subdivision errors across a partition"
+  },
+  {
+   "path": "archive/first-library/complex_uniform_operations.cubist",
+   "summary": "Complex continuity · addition with an explicit modulus"
+  },
+  {
+   "path": "archive/first-library/compositum_embeddings.cubist",
+   "summary": "Subfields · embeddings preserve composita"
+  },
+  {
+   "path": "archive/first-library/contour_error_bounds.cubist",
+   "summary": "Contour estimates · error times variation"
+  },
+  {
+   "path": "archive/first-library/contour_examples.cubist",
+   "summary": "Contour sums · finite backtracking errors"
+  },
+  {
+   "path": "archive/first-library/contour_refinement.cubist",
+   "summary": "Contour sums · refinement and tag errors"
+  },
+  {
+   "path": "archive/first-library/contour_samples.cubist",
+   "summary": "Contour sums · samples and oriented increments"
+  },
+  {
+   "path": "archive/first-library/contour_sums.cubist",
+   "summary": "Contour sums · linearity and telescoping"
+  },
+  {
+   "path": "archive/first-library/contour_tag_limits.cubist",
+   "summary": "Contour estimates · vanishing tag errors"
+  },
+  {
+   "path": "archive/first-library/coordinate_elimination.cubist",
+   "summary": "Linear algebra · Gaussian elimination preserves injectivity"
+  },
+  {
+   "path": "archive/first-library/coordinate_splitting.cubist",
+   "summary": "Linear algebra · splitting finite coordinates"
+  },
+  {
+   "path": "archive/first-library/cubical_paths.cubist",
+   "summary": "Cubical paths · computation, composition and pushouts"
+  },
+  {
+   "path": "archive/first-library/curve_contour_estimates.cubist",
+   "summary": "Curve contours · finite tag-change estimates"
+  },
+  {
+   "path": "archive/first-library/curve_contour_limits.cubist",
+   "summary": "Curve contours · affine tag-independent limits"
+  },
+  {
+   "path": "archive/first-library/curve_integrand_sums.cubist",
+   "summary": "Curve contours · linearity in the sampled integrand"
+  },
+  {
+   "path": "archive/first-library/curve_refinement_estimates.cubist",
+   "summary": "Curve contours · estimates for specified fine samples"
+  },
+  {
+   "path": "archive/first-library/curve_sample_sums.cubist",
+   "summary": "Curve contours · concatenating the actual mapped sums"
+  },
+  {
+   "path": "archive/first-library/curve_tag_stability.cubist",
+   "summary": "Curve contours · fine meshes control admissible tag changes"
+  },
+  {
+   "path": "archive/first-library/decidable_subobjects.cubist",
+   "summary": "Subobjects · explicit decidable membership"
+  },
+  {
+   "path": "archive/first-library/dedekind_cuts.cubist",
+   "summary": "Real numbers · constructive Dedekind cuts"
+  },
+  {
+   "path": "archive/first-library/descent_loop_laws.cubist",
+   "summary": "Homotopy periods · composition through representatives"
+  },
+  {
+   "path": "archive/first-library/dimension.cubist",
+   "summary": "Linear algebra · dimension as a basis-independent invariant"
+  },
+  {
+   "path": "archive/first-library/distinguished_extensions.cubist",
+   "summary": "Galois theory · Lang’s distinguished classes"
+  },
+  {
+   "path": "archive/first-library/dyadic_contour_estimates.cubist",
+   "summary": "Curve contours · uniform errors between dyadic levels"
+  },
+  {
+   "path": "archive/first-library/dyadic_convergence.cubist",
+   "summary": "Curve sampling · explicit bounds and dyadic convergence"
+  },
+  {
+   "path": "archive/first-library/dyadic_data.cubist",
+   "summary": "Curve sampling · exact dyadic construction equations"
+  },
+  {
+   "path": "archive/first-library/dyadic_decay.cubist",
+   "summary": "Curve sampling · Archimedean decay of dyadic widths"
+  },
+  {
+   "path": "archive/first-library/dyadic_mesh.cubist",
+   "summary": "Curve sampling · dyadic bounds imply strict mesh bounds"
+  },
+  {
+   "path": "archive/first-library/dyadic_refinement_mesh.cubist",
+   "summary": "Curve sampling · dyadic refinement below a requested mesh"
+  },
+  {
+   "path": "archive/first-library/dyadic_refinement.cubist",
+   "summary": "Curve sampling · later dyadic levels refine earlier ones"
+  },
+  {
+   "path": "archive/first-library/dyadic_sampling.cubist",
+   "summary": "Curve sampling · repeated bisection with exact edge counts"
+  },
+  {
+   "path": "archive/first-library/dyadic_tails.cubist",
+   "summary": "Curve sampling · monotone widths and eventual mesh bounds"
+  },
+  {
+   "path": "archive/first-library/dyadic_width_bounds.cubist",
+   "summary": "Curve sampling · scalar bounds for repeated halving"
+  },
+  {
+   "path": "archive/first-library/embedded_composita.cubist",
+   "summary": "Fields · composita of embedded fields"
+  },
+  {
+   "path": "archive/first-library/embedding_counts.cubist",
+   "summary": "Finite separable extensions · embeddings counted by degree"
+  },
+  {
+   "path": "archive/first-library/embedding_tower_types.cubist",
+   "summary": "Embedding towers · equality of dependent types"
+  },
+  {
+   "path": "archive/first-library/embedding_transport.cubist",
+   "summary": "Embeddings · changing an isomorphic presentation"
+  },
+  {
+   "path": "archive/first-library/equivalence_from_inverse.cubist",
+   "summary": "Equivalences · coherent inverses by path algebra"
+  },
+  {
+   "path": "archive/first-library/equivalences.cubist",
+   "summary": "Bijections · reusable constructions"
+  },
+  {
+   "path": "archive/first-library/euclid.cubist",
+   "summary": "Euclid · mathematical proof"
+  },
+  {
+   "path": "archive/first-library/extension_degree.cubist",
+   "summary": "Extension degree and the tower law"
+  },
+  {
+   "path": "archive/first-library/f4_embedded_composita.cubist",
+   "summary": "Galois theory · the compositum of F₂ with itself"
+  },
+  {
+   "path": "archive/first-library/f4_embedding_images.cubist",
+   "summary": "Galois theory · the embedded F₂ as a field"
+  },
+  {
+   "path": "archive/first-library/f4_fixed_field.cubist",
+   "summary": "Galois theory · the fixed field of Gal(F₄/F₂)"
+  },
+  {
+   "path": "archive/first-library/f4_formal_polynomial.cubist",
+   "summary": "F4 · the formal polynomial X² + X + 1"
+  },
+  {
+   "path": "archive/first-library/f4_galois_connection.cubist",
+   "summary": "Galois theory · recovering decidable subobjects of F₄/F₂"
+  },
+  {
+   "path": "archive/first-library/f4_galois_correspondence.cubist",
+   "summary": "Galois theory · the decidable F₄/F₂ correspondence"
+  },
+  {
+   "path": "archive/first-library/f4_galois_group.cubist",
+   "summary": "Galois theory · Gal(F₄/F₂) is cyclic of order two"
+  },
+  {
+   "path": "archive/first-library/f4_galois.cubist",
+   "summary": "Galois theory · Frobenius as a nontrivial loop"
+  },
+  {
+   "path": "archive/first-library/f4_generated_subfields.cubist",
+   "summary": "Galois theory · F₄ generated by alpha"
+  },
+  {
+   "path": "archive/first-library/f4_intermediate_fields.cubist",
+   "summary": "Galois theory · intermediate fields of F₄/F₂"
+  },
+  {
+   "path": "archive/first-library/f4_normal_subgroups.cubist",
+   "summary": "Galois theory · normal subgroups of Gal(F₄/F₂)"
+  },
+  {
+   "path": "archive/first-library/field_affine.cubist",
+   "summary": "Affine estimates · parameter differences control increments"
+  },
+  {
+   "path": "archive/first-library/field_arithmetic.cubist",
+   "summary": "Fields · arithmetic identities"
+  },
+  {
+   "path": "archive/first-library/field_asymptotics.cubist",
+   "summary": "Limits · vanishing errors preserve the limit"
+  },
+  {
+   "path": "archive/first-library/field_closeness.cubist",
+   "summary": "Error bounds · triangle, addition and separation"
+  },
+  {
+   "path": "archive/first-library/field_embedding_factorization.cubist",
+   "summary": "Fields · unique factorization through subfields"
+  },
+  {
+   "path": "archive/first-library/field_embedding_image.cubist",
+   "summary": "Fields · isomorphism onto the image"
+  },
+  {
+   "path": "archive/first-library/field_embedding_spaces.cubist",
+   "summary": "Spaces of field embeddings over a base"
+  },
+  {
+   "path": "archive/first-library/field_embeddings.cubist",
+   "summary": "Fields · embeddings, composition and towers"
+  },
+  {
+   "path": "archive/first-library/field_extensionality.cubist",
+   "summary": "Field foundations · predicate equality"
+  },
+  {
+   "path": "archive/first-library/field_extensions.cubist",
+   "summary": "Galois theory · automorphisms are loops"
+  },
+  {
+   "path": "archive/first-library/field_homomorphisms.cubist",
+   "summary": "Fields · unital homomorphisms are injective"
+  },
+  {
+   "path": "archive/first-library/field_interval.cubist",
+   "summary": "Curve parameters · the closed unit interval"
+  },
+  {
+   "path": "archive/first-library/field_limits.cubist",
+   "summary": "Limits · uniqueness, addition and Cauchy sequences"
+  },
+  {
+   "path": "archive/first-library/field_logic.cubist",
+   "summary": "Logic in U1 · propositions and truncation"
+  },
+  {
+   "path": "archive/first-library/field_magnitude_close.cubist",
+   "summary": "Error bounds · closeness and convergence to zero"
+  },
+  {
+   "path": "archive/first-library/field_magnitude.cubist",
+   "summary": "Ordered estimates · constructive magnitude bounds"
+  },
+  {
+   "path": "archive/first-library/field_products.cubist",
+   "summary": "Field foundations · products are sets"
+  },
+  {
+   "path": "archive/first-library/field_scale_limits.cubist",
+   "summary": "Limits · fixed factors preserve vanishing errors"
+  },
+  {
+   "path": "archive/first-library/field_uniform_radii.cubist",
+   "summary": "Uniform continuity · constructive common positive radii"
+  },
+  {
+   "path": "archive/first-library/field_vector_spaces.cubist",
+   "summary": "Linear algebra · field extensions as vector spaces"
+  },
+  {
+   "path": "archive/first-library/fine_interval_samples.cubist",
+   "summary": "Curve sampling · arbitrarily fine constructive subdivisions"
+  },
+  {
+   "path": "archive/first-library/fine_interval_tails.cubist",
+   "summary": "Curve sampling · fine samples at every sufficiently deep level"
+  },
+  {
+   "path": "archive/first-library/finite_algebraic_extensions.cubist",
+   "summary": "Every finite field extension is algebraic"
+  },
+  {
+   "path": "archive/first-library/finite_bases.cubist",
+   "summary": "Linear algebra · finite coordinates and explicit bases"
+  },
+  {
+   "path": "archive/first-library/finite_basis_search.cubist",
+   "summary": "Linear algebra · finite basis extraction from a dimension bound"
+  },
+  {
+   "path": "archive/first-library/finite_cancellation.cubist",
+   "summary": "Finite types · cancellation and cardinality"
+  },
+  {
+   "path": "archive/first-library/finite_cardinalities.cubist",
+   "summary": "Finite cardinalities and transport"
+  },
+  {
+   "path": "archive/first-library/finite_combinations.cubist",
+   "summary": "Linear algebra · finite combination laws"
+  },
+  {
+   "path": "archive/first-library/finite_decidable_subtypes.cubist",
+   "summary": "Finite proposition-valued subgroups"
+  },
+  {
+   "path": "archive/first-library/finite_decisions.cubist",
+   "summary": "Finite types · constructive membership decisions"
+  },
+  {
+   "path": "archive/first-library/finite_dependent_counts.cubist",
+   "summary": "Finite choice and counting dependent families"
+  },
+  {
+   "path": "archive/first-library/finite_dimension.cubist",
+   "summary": "Finite dimension invariance"
+  },
+  {
+   "path": "archive/first-library/finite_embedding_extensions.cubist",
+   "summary": "Finite extensions · extending embeddings"
+  },
+  {
+   "path": "archive/first-library/finite_equal_dimension.cubist",
+   "summary": "Equal finite dimensions and degree one"
+  },
+  {
+   "path": "archive/first-library/finite_family_images.cubist",
+   "summary": "Linear algebra · generators and linear images"
+  },
+  {
+   "path": "archive/first-library/finite_field_generators.cubist",
+   "summary": "Finite field generators and simple towers"
+  },
+  {
+   "path": "archive/first-library/finite_fields.cubist",
+   "summary": "Finite fields · F₂ and F₄ from explicit tables"
+  },
+  {
+   "path": "archive/first-library/finite_linear_lifts.cubist",
+   "summary": "Linear algebra · finite free spaces are projective"
+  },
+  {
+   "path": "archive/first-library/finite_omission.cubist",
+   "summary": "Linear algebra · deleting a finite summand"
+  },
+  {
+   "path": "archive/first-library/finite_remainders.cubist",
+   "summary": "Linear algebra · isolating a finite summand"
+  },
+  {
+   "path": "archive/first-library/finite_spanning.cubist",
+   "summary": "Linear algebra · finite spanning families"
+  },
+  {
+   "path": "archive/first-library/finite_splitting_extensions.cubist",
+   "summary": "Every polynomial splits in a finite extension"
+  },
+  {
+   "path": "archive/first-library/finite_sums.cubist",
+   "summary": "Finite sums · additivity and single terms"
+  },
+  {
+   "path": "archive/first-library/finite_towers.cubist",
+   "summary": "Finite extensions · the tower criterion in both directions"
+  },
+  {
+   "path": "archive/first-library/finite.cubist",
+   "summary": "Finite types · sums of Unit"
+  },
+  {
+   "path": "archive/first-library/finitely_generated_algebraic.cubist",
+   "summary": "Finitely generated algebraic extensions are finite"
+  },
+  {
+   "path": "archive/first-library/formal_series.cubist",
+   "summary": "Formal series · convolution and ring identities"
+  },
+  {
+   "path": "archive/first-library/function_counting.cubist",
+   "summary": "Finite functions · powers"
+  },
+  {
+   "path": "archive/first-library/function_linear_isos.cubist",
+   "summary": "Linear algebra · reindexing and product coordinates"
+  },
+  {
+   "path": "archive/first-library/fundamental_groups.cubist",
+   "summary": "Fundamental groups · set-valued loop spaces"
+  },
+  {
+   "path": "archive/first-library/galois_fixed_fields.cubist",
+   "summary": "Galois theory · fixed subfields"
+  },
+  {
+   "path": "archive/first-library/galois_fixed_points.cubist",
+   "summary": "Galois theory · the order-reversing connection"
+  },
+  {
+   "path": "archive/first-library/galois_fixing_subgroups.cubist",
+   "summary": "Galois theory · fixing subgroups"
+  },
+  {
+   "path": "archive/first-library/galois_intermediate_roundtrip.cubist",
+   "summary": "General finite Galois correspondence"
+  },
+  {
+   "path": "archive/first-library/galois_normal_bridge.cubist",
+   "summary": "Normality and intermediate automorphisms"
+  },
+  {
+   "path": "archive/first-library/galois_normal_target.cubist",
+   "summary": "Normal separable automorphism counts"
+  },
+  {
+   "path": "archive/first-library/galois_orders.cubist",
+   "summary": "Galois theory · order reversal and closure operators"
+  },
+  {
+   "path": "archive/first-library/galois_paths.cubist",
+   "summary": "Galois theory · transport and composition"
+  },
+  {
+   "path": "archive/first-library/generated_field_carriers.cubist",
+   "summary": "Generated fields · leastness on their carriers"
+  },
+  {
+   "path": "archive/first-library/generated_subfields.cubist",
+   "summary": "Subfields · generated fields and leastness"
+  },
+  {
+   "path": "archive/first-library/group_cosets.cubist",
+   "summary": "Cosets · normality, quotient paths and homomorphism fibers"
+  },
+  {
+   "path": "archive/first-library/group_first_isomorphism.cubist",
+   "summary": "Groups · the first isomorphism theorem"
+  },
+  {
+   "path": "archive/first-library/group_hom_universes.cubist",
+   "summary": "Groups · homomorphisms across universes"
+  },
+  {
+   "path": "archive/first-library/group_homomorphisms.cubist",
+   "summary": "Groups · homomorphisms and composition"
+  },
+  {
+   "path": "archive/first-library/group_identity.cubist",
+   "summary": "Groups · uniqueness of inverses and laws"
+  },
+  {
+   "path": "archive/first-library/group_isomorphisms.cubist",
+   "summary": "Groups · extensionality of isomorphisms"
+  },
+  {
+   "path": "archive/first-library/group_operations.cubist",
+   "summary": "Groups · inverses, cancellation and conjugation"
+  },
+  {
+   "path": "archive/first-library/group_quotient_maps.cubist",
+   "summary": "Cosets · unique descent of homomorphisms"
+  },
+  {
+   "path": "archive/first-library/group_total_identity.cubist",
+   "summary": "Groups · the contractible isomorphism family"
+  },
+  {
+   "path": "archive/first-library/group_univalence.cubist",
+   "summary": "Groups · isomorphism is equality"
+  },
+  {
+   "path": "archive/first-library/group_universes.cubist",
+   "summary": "Groups · structures across universes"
+  },
+  {
+   "path": "archive/first-library/groups.cubist",
+   "summary": "Groups · structures and isomorphisms"
+  },
+  {
+   "path": "archive/first-library/homotopy_limits.cubist",
+   "summary": "Homotopy periods · limits descend from curves"
+  },
+  {
+   "path": "archive/first-library/homotopy_paths.cubist",
+   "summary": "Homotopies · moving basepoints and contractions"
+  },
+  {
+   "path": "archive/first-library/identity_systems.cubist",
+   "summary": "Identity systems · canonical path equivalences"
+  },
+  {
+   "path": "archive/first-library/independent_extension.cubist",
+   "summary": "Linear algebra · extending independent subsets"
+  },
+  {
+   "path": "archive/first-library/independent_order.cubist",
+   "summary": "Independent subsets · univalent order and chain bounds"
+  },
+  {
+   "path": "archive/first-library/independent_unions.cubist",
+   "summary": "Linear algebra · independent chain unions"
+  },
+  {
+   "path": "archive/first-library/integer_multiples.cubist",
+   "summary": "Additive groups · signed integer multiples"
+  },
+  {
+   "path": "archive/first-library/integers.cubist",
+   "summary": "Integers · successor equivalence"
+  },
+  {
+   "path": "archive/first-library/intermediate_fields.cubist",
+   "summary": "Galois theory · intermediate fields"
+  },
+  {
+   "path": "archive/first-library/intermediate_towers.cubist",
+   "summary": "Galois theory · intermediate-field towers"
+  },
+  {
+   "path": "archive/first-library/interval_bisection.cubist",
+   "summary": "Curve sampling · constructive midpoint subdivisions"
+  },
+  {
+   "path": "archive/first-library/interval_midpoint_data.cubist",
+   "summary": "Curve sampling · a midpoint and its checked bounds"
+  },
+  {
+   "path": "archive/first-library/interval_refinement.cubist",
+   "summary": "Curve sampling · refinement tags in a common interval"
+  },
+  {
+   "path": "archive/first-library/interval_sampling.cubist",
+   "summary": "Curve sampling · admissible endpoint tags and mesh bounds"
+  },
+  {
+   "path": "archive/first-library/interval_subdivisions.cubist",
+   "summary": "Curve sampling · subdivision admissibility and total error radius"
+  },
+  {
+   "path": "archive/first-library/interval_tag_bounds.cubist",
+   "summary": "Curve sampling · tags in a short interval are close"
+  },
+  {
+   "path": "archive/first-library/interval_weights.cubist",
+   "summary": "Curve sampling · telescoping interval weights"
+  },
+  {
+   "path": "archive/first-library/kernel_quotient_image.cubist",
+   "summary": "First isomorphism theorem · kernel quotient and image carriers"
+  },
+  {
+   "path": "archive/first-library/limit_periods.cubist",
+   "summary": "Homotopy periods · limits of approximate laws"
+  },
+  {
+   "path": "archive/first-library/linear_bijections.cubist",
+   "summary": "Linear algebra · bijective maps and independent extension"
+  },
+  {
+   "path": "archive/first-library/linear_constructions.cubist",
+   "summary": "Linear algebra · linear maps and isomorphism constructions"
+  },
+  {
+   "path": "archive/first-library/linear_maps.cubist",
+   "summary": "Linear algebra · maps and isomorphisms"
+  },
+  {
+   "path": "archive/first-library/linear_span.cubist",
+   "summary": "Linear algebra · spans and general bases"
+  },
+  {
+   "path": "archive/first-library/loop_words.cubist",
+   "summary": "Loop words · evaluation and cancellation"
+  },
+  {
+   "path": "archive/first-library/maps.cubist",
+   "summary": "Maps · injections, embeddings and fibers"
+  },
+  {
+   "path": "archive/first-library/minimal_polynomials.cubist",
+   "summary": "Algebraic elements · canonical minimal polynomials"
+  },
+  {
+   "path": "archive/first-library/nat.cubist",
+   "summary": "Natural numbers · a source declaration"
+  },
+  {
+   "path": "archive/first-library/natural_minimum.cubist",
+   "summary": "Natural numbers · least witnesses"
+  },
+  {
+   "path": "archive/first-library/non_normal_subgroup.cubist",
+   "summary": "Groups · a non-normal subgroup of S3"
+  },
+  {
+   "path": "archive/first-library/normal_extensions.cubist",
+   "summary": "Splitting fields are normal extensions"
+  },
+  {
+   "path": "archive/first-library/normal_subgroups.cubist",
+   "summary": "Groups · normal subgroups, kernels and transport"
+  },
+  {
+   "path": "archive/first-library/order_maps.cubist",
+   "summary": "Order theory · monotone maps and Galois connections"
+  },
+  {
+   "path": "archive/first-library/ordered_bounds.cubist",
+   "summary": "Ordered fields · constructive inequality bounds"
+  },
+  {
+   "path": "archive/first-library/ordered_fields.cubist",
+   "summary": "Ordered fields · laws and algebraic lemmas"
+  },
+  {
+   "path": "archive/first-library/ordered_halves.cubist",
+   "summary": "Ordered fields · constructive halving"
+  },
+  {
+   "path": "archive/first-library/ordered_squares.cubist",
+   "summary": "Ordered fields · constructive square positivity"
+  },
+  {
+   "path": "archive/first-library/parameter_contour_bounds.cubist",
+   "summary": "Curve contours · parameter-based error estimates"
+  },
+  {
+   "path": "archive/first-library/parameter_contour_estimates.cubist",
+   "summary": "Curve contours · finite estimates with parameter weights"
+  },
+  {
+   "path": "archive/first-library/parameter_contour_limits.cubist",
+   "summary": "Curve contours · limits with parameter weights"
+  },
+  {
+   "path": "archive/first-library/parameter_contours.cubist",
+   "summary": "Curve contours · sums on mapped samples"
+  },
+  {
+   "path": "archive/first-library/parameter_increment_bounds.cubist",
+   "summary": "Curve contours · coordinate increment certificates"
+  },
+  {
+   "path": "archive/first-library/parameter_refinement.cubist",
+   "summary": "Curve contours · coarse edge and refined sum identity"
+  },
+  {
+   "path": "archive/first-library/parameter_tag_sampling.cubist",
+   "summary": "Curve sampling · local tag bounds control all samples"
+  },
+  {
+   "path": "archive/first-library/path_actions.cubist",
+   "summary": "Paths · append, map and reconnect"
+  },
+  {
+   "path": "archive/first-library/paths.cubist",
+   "summary": "Paths · equality reasoning"
+  },
+  {
+   "path": "archive/first-library/permutation_groups.cubist",
+   "summary": "Groups · permutations and point stabilizers"
+  },
+  {
+   "path": "archive/first-library/permutations.cubist",
+   "summary": "Permutations · factorials"
+  },
+  {
+   "path": "archive/first-library/polynomial_adjoin_universal.cubist",
+   "summary": "Adjoining a root · unique extension of embeddings"
+  },
+  {
+   "path": "archive/first-library/polynomial_adjoin.cubist",
+   "summary": "Adjoining a root of an irreducible polynomial"
+  },
+  {
+   "path": "archive/first-library/polynomial_annihilator.cubist",
+   "summary": "Algebraic elements · annihilator ideals and irreducibility"
+  },
+  {
+   "path": "archive/first-library/polynomial_arithmetic.cubist",
+   "summary": "Polynomials · shift, scaling and decomposition"
+  },
+  {
+   "path": "archive/first-library/polynomial_bezout.cubist",
+   "summary": "Polynomials · Bézout’s identity"
+  },
+  {
+   "path": "archive/first-library/polynomial_cancellation.cubist",
+   "summary": "Polynomials · cancellation and divisibility"
+  },
+  {
+   "path": "archive/first-library/polynomial_constants.cubist",
+   "summary": "Polynomials · constant coefficients"
+  },
+  {
+   "path": "archive/first-library/polynomial_coordinate_maps.cubist",
+   "summary": "Polynomials · linear evaluation of coefficient arrays"
+  },
+  {
+   "path": "archive/first-library/polynomial_coordinates.cubist",
+   "summary": "Polynomials · finite coefficient arrays"
+  },
+  {
+   "path": "archive/first-library/polynomial_degree.cubist",
+   "summary": "Polynomials · canonical degree and leading coefficient"
+  },
+  {
+   "path": "archive/first-library/polynomial_difference.cubist",
+   "summary": "Polynomials · difference and factor identities"
+  },
+  {
+   "path": "archive/first-library/polynomial_division_unique.cubist",
+   "summary": "Polynomial division · uniqueness"
+  },
+  {
+   "path": "archive/first-library/polynomial_division.cubist",
+   "summary": "Polynomial division with remainder"
+  },
+  {
+   "path": "archive/first-library/polynomial_eval_characterization.cubist",
+   "summary": "Polynomials · evaluation is characterized by Horner equations"
+  },
+  {
+   "path": "archive/first-library/polynomial_eval_embeddings.cubist",
+   "summary": "Evaluation commutes with field embeddings"
+  },
+  {
+   "path": "archive/first-library/polynomial_evaluation.cubist",
+   "summary": "Polynomials · evaluation in extension fields"
+  },
+  {
+   "path": "archive/first-library/polynomial_extension_roots.cubist",
+   "summary": "Root bounds in arbitrary extensions"
+  },
+  {
+   "path": "archive/first-library/polynomial_factor_omission.cubist",
+   "summary": "Linear factors · removing one root"
+  },
+  {
+   "path": "archive/first-library/polynomial_ideals.cubist",
+   "summary": "Every nonzero polynomial ideal is principal"
+  },
+  {
+   "path": "archive/first-library/polynomial_irreducible_factors.cubist",
+   "summary": "Nonconstant polynomials have irreducible factors"
+  },
+  {
+   "path": "archive/first-library/polynomial_irreducible.cubist",
+   "summary": "Polynomials · irreducibility and coprimality"
+  },
+  {
+   "path": "archive/first-library/polynomial_leading.cubist",
+   "summary": "Polynomials · degree of a product and integral domain"
+  },
+  {
+   "path": "archive/first-library/polynomial_maps.cubist",
+   "summary": "Polynomials · changing coefficient fields"
+  },
+  {
+   "path": "archive/first-library/polynomial_monic.cubist",
+   "summary": "Polynomials · monic normalization and degree comparisons"
+  },
+  {
+   "path": "archive/first-library/polynomial_remainders.cubist",
+   "summary": "Polynomials · canonical remainders"
+  },
+  {
+   "path": "archive/first-library/polynomial_residue_basis.cubist",
+   "summary": "Adjoining a root · basis and extension degree"
+  },
+  {
+   "path": "archive/first-library/polynomial_residue_field.cubist",
+   "summary": "An irreducible polynomial defines a residue field"
+  },
+  {
+   "path": "archive/first-library/polynomial_residue_ring.cubist",
+   "summary": "Polynomials · residue ring construction"
+  },
+  {
+   "path": "archive/first-library/polynomial_ring.cubist",
+   "summary": "Polynomials form a commutative ring"
+  },
+  {
+   "path": "archive/first-library/polynomial_root_bound.cubist",
+   "summary": "A polynomial has at most its degree many roots"
+  },
+  {
+   "path": "archive/first-library/polynomial_root_embeddings.cubist",
+   "summary": "Roots determine embeddings of the adjoined field"
+  },
+  {
+   "path": "archive/first-library/polynomial_root_enumeration.cubist",
+   "summary": "Splitting polynomials · enumerating their roots"
+  },
+  {
+   "path": "archive/first-library/polynomial_root_evaluation.cubist",
+   "summary": "Polynomials · evaluation descends to residues"
+  },
+  {
+   "path": "archive/first-library/polynomial_root_existence.cubist",
+   "summary": "Every nonconstant polynomial has a root in a finite extension"
+  },
+  {
+   "path": "archive/first-library/polynomial_roots.cubist",
+   "summary": "Polynomials · roots and the factor theorem"
+  },
+  {
+   "path": "archive/first-library/polynomial_splitting_leading.cubist",
+   "summary": "Splitting polynomials · leading coefficients"
+  },
+  {
+   "path": "archive/first-library/polynomial_splitting.cubist",
+   "summary": "Polynomials · splitting into linear factors"
+  },
+  {
+   "path": "archive/first-library/polynomial_support.cubist",
+   "summary": "Polynomials · finite coefficient support"
+  },
+  {
+   "path": "archive/first-library/predicate_chains.cubist",
+   "summary": "Subset chains · finite covers of directed unions"
+  },
+  {
+   "path": "archive/first-library/primes.cubist",
+   "summary": "Primes · mathematical foundations"
+  },
+  {
+   "path": "archive/first-library/puncture_graph.cubist",
+   "summary": "Punctures · graph and generating loops"
+  },
+  {
+   "path": "archive/first-library/puncture_noncommutative.cubist",
+   "summary": "Punctures · zero winding, nontrivial loop"
+  },
+  {
+   "path": "archive/first-library/puncture_period_examples.cubist",
+   "summary": "Periods · noncontractible loop with zero period"
+  },
+  {
+   "path": "archive/first-library/puncture_periods.cubist",
+   "summary": "Puncture periods · the winding sum formula"
+  },
+  {
+   "path": "archive/first-library/puncture_winding.cubist",
+   "summary": "Punctures · winding around each generator"
+  },
+  {
+   "path": "archive/first-library/pushout.cubist",
+   "summary": "Pushouts · a higher inductive source declaration"
+  },
+  {
+   "path": "archive/first-library/quadratic_identities.cubist",
+   "summary": "Quadratic algebra · parallelogram identity"
+  },
+  {
+   "path": "archive/first-library/quotient_descent.cubist",
+   "summary": "Quotients · constructive descent and unique factorization"
+  },
+  {
+   "path": "archive/first-library/quotient_group_universal.cubist",
+   "summary": "Groups · quotient universal property"
+  },
+  {
+   "path": "archive/first-library/quotient_groups.cubist",
+   "summary": "Groups · quotient by a normal subgroup"
+  },
+  {
+   "path": "archive/first-library/quotient_operations.cubist",
+   "summary": "Quotients · descending binary operations"
+  },
+  {
+   "path": "archive/first-library/quotient_sets.cubist",
+   "summary": "Quotients · setness and paths between functions"
+  },
+  {
+   "path": "archive/first-library/radix_arithmetic_correct.cubist",
+   "summary": "Radix arithmetic · compatibility with Nat"
+  },
+  {
+   "path": "archive/first-library/radix_arithmetic.cubist",
+   "summary": "Arbitrary radix · carries, addition and multiplication"
+  },
+  {
+   "path": "archive/first-library/radix_binary_equivalence.cubist",
+   "summary": "Binary and arbitrary radix · direct digit equivalence"
+  },
+  {
+   "path": "archive/first-library/radix_decode.cubist",
+   "summary": "Radix evaluation · successor and Nat round trip"
+  },
+  {
+   "path": "archive/first-library/radix_digit_laws.cubist",
+   "summary": "Radix digits · increment and overflow laws"
+  },
+  {
+   "path": "archive/first-library/radix_equivalence.cubist",
+   "summary": "Arbitrary radix and Nat · full equivalence"
+  },
+  {
+   "path": "archive/first-library/radix_factorial.cubist",
+   "summary": "One factorial algorithm · base 2 and base 10"
+  },
+  {
+   "path": "archive/first-library/radix_induction.cubist",
+   "summary": "Radix numbers · dependent induction"
+  },
+  {
+   "path": "archive/first-library/radix_naturals.cubist",
+   "summary": "Arbitrary radix · finite digits and inductive numerals"
+  },
+  {
+   "path": "archive/first-library/radix_uniqueness.cubist",
+   "summary": "Radix notation · uniqueness of bounded remainders"
+  },
+  {
+   "path": "archive/first-library/radix_univalence_transfer.cubist",
+   "summary": "Factorial across representations · univalence transport"
+  },
+  {
+   "path": "archive/first-library/ring_laws.cubist",
+   "summary": "Ring algebra · derived identities"
+  },
+  {
+   "path": "archive/first-library/root_generated_fields.cubist",
+   "summary": "Fields generated by a finite list of roots"
+  },
+  {
+   "path": "archive/first-library/sample_chains.cubist",
+   "summary": "Sampling data · vertices, tags and concatenation"
+  },
+  {
+   "path": "archive/first-library/sample_condition_maps.cubist",
+   "summary": "Curve sampling · map local tag conditions"
+  },
+  {
+   "path": "archive/first-library/sample_error_bounds.cubist",
+   "summary": "Finite sums · accumulated error bounds"
+  },
+  {
+   "path": "archive/first-library/sample_join_conditions.cubist",
+   "summary": "Curve sampling · concatenation preserves admissible tags"
+  },
+  {
+   "path": "archive/first-library/sample_magnitude_bounds.cubist",
+   "summary": "Finite estimates · weighted sums and variation"
+  },
+  {
+   "path": "archive/first-library/sample_magnitude.cubist",
+   "summary": "Finite estimates · bounds at sampled edges"
+  },
+  {
+   "path": "archive/first-library/sample_maps.cubist",
+   "summary": "Curve sampling · mapping vertices and tags"
+  },
+  {
+   "path": "archive/first-library/sample_refinement_tags.cubist",
+   "summary": "Curve sampling · repeated tags and endpoint containment"
+  },
+  {
+   "path": "archive/first-library/sample_relations.cubist",
+   "summary": "Curve sampling · conditions on adjacent vertices"
+  },
+  {
+   "path": "archive/first-library/sample_subdivision_conditions.cubist",
+   "summary": "Curve sampling · conditions on each tagged subdivision"
+  },
+  {
+   "path": "archive/first-library/sample_subdivisions.cubist",
+   "summary": "Curve sampling · flatten subdivisions across a partition"
+  },
+  {
+   "path": "archive/first-library/sample_sum_laws.cubist",
+   "summary": "Finite sums · composition and telescoping"
+  },
+  {
+   "path": "archive/first-library/sample_tagged.cubist",
+   "summary": "Curve sampling · explicit endpoint tag lists"
+  },
+  {
+   "path": "archive/first-library/scalar_extension_finiteness.cubist",
+   "summary": "Linear algebra · finiteness under extension of scalars"
+  },
+  {
+   "path": "archive/first-library/scalar_restriction.cubist",
+   "summary": "Linear algebra · restriction of scalars and product bases"
+  },
+  {
+   "path": "archive/first-library/schroeder_bernstein.cubist",
+   "summary": "Cantor–Schröder–Bernstein · mutual injections"
+  },
+  {
+   "path": "archive/first-library/separability_base_change.cubist",
+   "summary": "Separability along intermediate fields"
+  },
+  {
+   "path": "archive/first-library/separable_closed_targets.cubist",
+   "summary": "Separable polynomials in algebraically closed targets"
+  },
+  {
+   "path": "archive/first-library/separable_divisors.cubist",
+   "summary": "Divisors of distinct-root factorizations"
+  },
+  {
+   "path": "archive/first-library/separable_polynomials.cubist",
+   "summary": "Separable polynomials and simple embedding counts"
+  },
+  {
+   "path": "archive/first-library/set_quotients.cubist",
+   "summary": "Equivalence classes · representatives and choice"
+  },
+  {
+   "path": "archive/first-library/sets.cubist",
+   "summary": "Sets · decidable equality"
+  },
+  {
+   "path": "archive/first-library/simple_algebraic_extensions.cubist",
+   "summary": "Simple algebraic extensions and residue fields"
+  },
+  {
+   "path": "archive/first-library/simple_extension_embeddings.cubist",
+   "summary": "Embeddings of a simple extension are its roots"
+  },
+  {
+   "path": "archive/first-library/span_exchange.cubist",
+   "summary": "Linear algebra · nonzero coefficients and span"
+  },
+  {
+   "path": "archive/first-library/span_subspace.cubist",
+   "summary": "Linear algebra · span is a subspace"
+  },
+  {
+   "path": "archive/first-library/spanning_subfamilies.cubist",
+   "summary": "Every finite spanning family contains a basis"
+  },
+  {
+   "path": "archive/first-library/splitting_fields.cubist",
+   "summary": "Existence of finite splitting fields"
+  },
+  {
+   "path": "archive/first-library/structured_sets.cubist",
+   "summary": "Univalence · structure identity for sets"
+  },
+  {
+   "path": "archive/first-library/subdivision_join_conditions.cubist",
+   "summary": "Curve sampling · preserve refinement conditions under joins"
+  },
+  {
+   "path": "archive/first-library/subdivision_join.cubist",
+   "summary": "Curve sampling · join per-edge refinement families"
+  },
+  {
+   "path": "archive/first-library/subdivision_refinement.cubist",
+   "summary": "Curve sampling · compose refinement sum certificates"
+  },
+  {
+   "path": "archive/first-library/subdivision_tagged_zip.cubist",
+   "summary": "Curve sampling · combine coarse and refined tag conditions"
+  },
+  {
+   "path": "archive/first-library/subdivision_transport.cubist",
+   "summary": "Curve sampling · transport refinement endpoints"
+  },
+  {
+   "path": "archive/first-library/subfield_carriers.cubist",
+   "summary": "Subfields · realized fields and inclusions"
+  },
+  {
+   "path": "archive/first-library/subfield_composita.cubist",
+   "summary": "Subfields · composita and the prime subfield"
+  },
+  {
+   "path": "archive/first-library/subfield_generation_steps.cubist",
+   "summary": "Subfields · finite closure derivations"
+  },
+  {
+   "path": "archive/first-library/subfield_image_orders.cubist",
+   "summary": "Subfields · image and inverse-image adjunction"
+  },
+  {
+   "path": "archive/first-library/subfield_images.cubist",
+   "summary": "Subfields · images under embeddings"
+  },
+  {
+   "path": "archive/first-library/subfield_intersections.cubist",
+   "summary": "Subfields · intersections and inclusion"
+  },
+  {
+   "path": "archive/first-library/subfield_preimages.cubist",
+   "summary": "Subfields · inverse images and contravariance"
+  },
+  {
+   "path": "archive/first-library/subfield_transport.cubist",
+   "summary": "Subfields · transport of composita along isomorphisms"
+  },
+  {
+   "path": "archive/first-library/subfields.cubist",
+   "summary": "Subfields · closure and equality"
+  },
+  {
+   "path": "archive/first-library/subgroup_carriers.cubist",
+   "summary": "Subgroups · realized groups and unique factorization"
+  },
+  {
+   "path": "archive/first-library/subgroup_constructions.cubist",
+   "summary": "Subgroups · inverse images and intersections"
+  },
+  {
+   "path": "archive/first-library/subgroup_images.cubist",
+   "summary": "Subgroups · images, adjunction and surjective factorization"
+  },
+  {
+   "path": "archive/first-library/subgroups.cubist",
+   "summary": "Subgroups · membership and equality"
+  },
+  {
+   "path": "archive/first-library/subspace_carriers.cubist",
+   "summary": "Linear algebra · finite subspace bases"
+  },
+  {
+   "path": "archive/first-library/surjections.cubist",
+   "summary": "Surjections · right inverses and choice"
+  },
+  {
+   "path": "archive/first-library/surjective_descent.cubist",
+   "summary": "Descent · unique values without chosen representatives"
+  },
+  {
+   "path": "archive/first-library/suspension_types.cubist",
+   "summary": "Suspension · definitions from the declared pushout"
+  },
+  {
+   "path": "archive/first-library/suspension.cubist",
+   "summary": "Suspension & the circle · foundations"
+  },
+  {
+   "path": "archive/first-library/truncation.cubist",
+   "summary": "Propositional truncation · explicit principles"
+  },
+  {
+   "path": "archive/first-library/uniform_curve_tags.cubist",
+   "summary": "Curve sampling · continuity bounds integrand errors"
+  },
+  {
+   "path": "archive/first-library/vector_arithmetic.cubist",
+   "summary": "Linear algebra · scalar cancellation"
+  },
+  {
+   "path": "archive/first-library/vector_basis_existence.cubist",
+   "summary": "Every vector space has a basis"
+  },
+  {
+   "path": "archive/first-library/vector_spaces.cubist",
+   "summary": "Linear algebra · vector spaces"
+  },
+  {
+   "path": "archive/first-library/vector_subspaces.cubist",
+   "summary": "Linear algebra · subspaces and least span"
+  },
+  {
+   "path": "archive/first-library/w.cubist",
+   "summary": "Well-founded trees · a source declaration"
+  },
+  {
+   "path": "archive/first-library/zorn_chain_complete.cubist",
+   "summary": "Zorn for chain-complete orders · from choice"
+  },
+  {
+   "path": "cubist-tests/admission_two.cubist",
+   "summary": "Definitions whose admission and derivation `tests/instruction-admission.test.mjs` watches."
+  },
+  {
+   "path": "cubist-tests/algebraic_extensions_invalid_embedding_claims.cubist",
+   "summary": "Embedding claims the archive does not make, refused: into a target that is not algebraically closed, and one embedding for every separable extension."
+  },
+  {
+   "path": "cubist-tests/algebraic_extensions_invalid_f4_root.cubist",
+   "summary": "Zero is no root of the formal F2 polynomial whose F4 roots are 2 and 3."
+  },
+  {
+   "path": "cubist-tests/assembly_fixture.cubist",
+   "summary": "Declarations whose kernel assembly `tests/cubical-assembly.test.mjs` lists."
+  },
+  {
+   "path": "cubist-tests/assembly_generic_assumptions.cubist",
+   "summary": "A generic assumption, one kernel entry used at two levels."
+  },
+  {
+   "path": "cubist-tests/automatic_clauses_groupoid.cubist",
+   "summary": "A groupoid's generated three-dimensional squash, with a dependent motive (E11)."
+  },
+  {
+   "path": "cubist-tests/automatic_clauses_without_hlevels.cubist",
+   "summary": "A truncation's squash clause with no import of hlevels to generate it."
+  },
+  {
+   "path": "cubist-tests/automatic_clauses.cubist",
+   "summary": "For `tests/automatic-clauses.test.mjs`: the generated set squash (E4) of the library's quotients, explicit obligations, missing h-level evidence, automatic clauses in the match statement, trailing proofs, ambiguous whole-clause proofs and hlevel hints."
+  },
+  {
+   "path": "cubist-tests/computability_evaluation.cubist",
+   "summary": "evaluate checks the normal form of a closed, assumption-free term; each failed evaluation's error is stated above it."
+  },
+  {
+   "path": "cubist-tests/computability_unfolding.cubist",
+   "summary": "Evaluation unfolds every definition and ignores unfolding hints."
+  },
+  {
+   "path": "cubist-tests/computability.cubist",
+   "summary": "For `tests/computability.test.mjs`: a computable declaration is refused when it depends on an assumption, naming the path, and its dependents with it."
+  },
+  {
+   "path": "cubist-tests/declarations_definitions.cubist",
+   "summary": "Constructions and proofs checked with their bodies exposed, and a false claim refused."
+  },
+  {
+   "path": "cubist-tests/declared_match_operator_call.cubist",
+   "summary": "A recursive call spelled with an operator that stands for the declaration."
+  },
+  {
+   "path": "cubist-tests/declared_match.cubist",
+   "summary": "`match` on declared types, for `tests/declared-match.test.mjs`: clauses against the kernel's clause types, dependent motives, path and squash clauses, structural recursion, the match statement, recursion whose other arguments vary, and each refusal."
+  },
+  {
+   "path": "cubist-tests/dimension_degree_regression.cubist",
+   "summary": "Extension degree: positive, one for the identity, invariant under extension equality."
+  },
+  {
+   "path": "cubist-tests/dimension_invalid.cubist",
+   "summary": "Dimension chooses no basis, keeps linearity and a tower's embedding: four refusals."
+  },
+  {
+   "path": "cubist-tests/dimension_regression.cubist",
+   "summary": "Finite dimensions, zero included, unique for arbitrary bases, without choice."
+  },
+  {
+   "path": "cubist-tests/dimension_tower_regression.cubist",
+   "summary": "The product basis and the numerical tower law, for arbitrary fields and a commuting triangle."
+  },
+  {
+   "path": "cubist-tests/documentation_helper.cubist",
+   "summary": "An imported definition documented by its comment."
+  },
+  {
+   "path": "cubist-tests/documentation_use.cubist",
+   "summary": "Documentation from local and imported source: the comment directly above a declaration."
+  },
+  {
+   "path": "cubist-tests/driver_first_proof.cubist",
+   "summary": "The first proof, whose derivations `tests/instruction-driver.test.mjs` walks in instruction mode, and whose `lt_succ` the workbench lists as a judgement graph."
+  },
+  {
+   "path": "cubist-tests/driver_sums.cubist",
+   "summary": "Constructors at a type that reduces, derived as their source."
+  },
+  {
+   "path": "cubist-tests/ergonomics_binder_sites.cubist",
+   "summary": "`fun` and `forall`, bare and parenthesized, linked from their keywords."
+  },
+  {
+   "path": "cubist-tests/ergonomics_calc_step_links.cubist",
+   "summary": "Each `calc` step, whose `by` link `tests/proof-ergonomics.test.mjs` checks."
+  },
+  {
+   "path": "cubist-tests/ergonomics_conditional_simp.cubist",
+   "summary": "A conditional rule with a selected, missing, reflexive or wrong premise."
+  },
+  {
+   "path": "cubist-tests/ergonomics_freeze_premise_search.cubist",
+   "summary": "A `simp` whose frozen form is withheld, as removing a rule changes its premise search."
+  },
+  {
+   "path": "cubist-tests/ergonomics_freeze_set_collision.cubist",
+   "summary": "A `simp` whose frozen form is withheld, as a named set shadows its rule."
+  },
+  {
+   "path": "cubist-tests/ergonomics_freeze_witness.cubist",
+   "summary": "Hypotheses simplified, whose frozen forms keep the witness a later proof compares."
+  },
+  {
+   "path": "cubist-tests/ergonomics_generated_names.cubist",
+   "summary": "Generated names stay distinct when a source name ends in a digit."
+  },
+  {
+   "path": "cubist-tests/ergonomics_generic_calc.cubist",
+   "summary": "A generic `calc`, whose endpoint and step links `tests/proof-ergonomics.test.mjs` inspects and exports."
+  },
+  {
+   "path": "cubist-tests/ergonomics_generic_failure.cubist",
+   "summary": "A failed use of a generic definition leaves the definition and later uses intact."
+  },
+  {
+   "path": "cubist-tests/ergonomics_generic_proof_locals.cubist",
+   "summary": "Generic proofs whose `ext` and simplified hypothesis binders `tests/proof-ergonomics.test.mjs` links."
+  },
+  {
+   "path": "cubist-tests/ergonomics_generic_tactic_links.cubist",
+   "summary": "Generic `calc`, `rw` and `simp`, linked to their checked witnesses."
+  },
+  {
+   "path": "cubist-tests/ergonomics_grouped_binder_shadowing.cubist",
+   "summary": "A grouped binder checks its shared domain before a binder shadows that name."
+  },
+  {
+   "path": "cubist-tests/ergonomics_grouped_universes.cubist",
+   "summary": "Grouped universe binders bind as separate ones do."
+  },
+  {
+   "path": "cubist-tests/ergonomics_imported_failure_rules.cubist",
+   "summary": "A generic definition that fails, for `ergonomics_imported_failure`."
+  },
+  {
+   "path": "cubist-tests/ergonomics_imported_failure.cubist",
+   "summary": "A use of an imported definition that failed, reported in its own module."
+  },
+  {
+   "path": "cubist-tests/ergonomics_invalid_registry.cubist",
+   "summary": "Registrations of rules that are no equalities, and sets of them, are refused and enter no rule set."
+  },
+  {
+   "path": "cubist-tests/ergonomics_local_simp.cubist",
+   "summary": "`without` removes default rules and sets, `simp at h as h2` keeps the source hypothesis, and a global name is no hypothesis."
+  },
+  {
+   "path": "cubist-tests/ergonomics_mixed_universes.cubist",
+   "summary": "Consecutive mixed universe groups bind every parameter, for the binder link of `tests/proof-ergonomics.test.mjs`."
+  },
+  {
+   "path": "cubist-tests/ergonomics_multi_binder_fun.cubist",
+   "summary": "Multi-binder `fun`, whose link inspects the whole closed function."
+  },
+  {
+   "path": "cubist-tests/ergonomics_nested_premises.cubist",
+   "summary": "Premises simplified with nested witnesses, and the refusals without a base rule or with the rule alone."
+  },
+  {
+   "path": "cubist-tests/ergonomics_repeated_match.cubist",
+   "summary": "A quantified simp rule matches a repeated parameter consistently."
+  },
+  {
+   "path": "cubist-tests/ergonomics_rewrite_eligible_rhs.cubist",
+   "summary": "`rw` skips an unsupported left occurrence for an eligible right one."
+  },
+  {
+   "path": "cubist-tests/ergonomics_rewrite_obligations.cubist",
+   "summary": "`rw` at an occurrence, in reverse and on either side, and the refusals of a missing occurrence and a dependent position."
+  },
+  {
+   "path": "cubist-tests/ergonomics_rule_diagnostics.cubist",
+   "summary": "Rewrite errors at the rule they name, and an unproved premise explained."
+  },
+  {
+   "path": "cubist-tests/ergonomics_rule_scope_rules.cubist",
+   "summary": "A generic definition simplified with its own module's set, for `ergonomics_rule_scope`."
+  },
+  {
+   "path": "cubist-tests/ergonomics_rule_scope.cubist",
+   "summary": "A generic definition keeps its defining set where the set's name means another."
+  },
+  {
+   "path": "cubist-tests/ergonomics_search_time_scope.cubist",
+   "summary": "Statements after `rw`, `simp` and a `calc` step, outside their search time."
+  },
+  {
+   "path": "cubist-tests/ergonomics_simp_child_order.cubist",
+   "summary": "`simp` tries the rules at each child before rewriting its parent."
+  },
+  {
+   "path": "cubist-tests/ergonomics_simp_client_a.cubist",
+   "summary": "Imported registrations simplify."
+  },
+  {
+   "path": "cubist-tests/ergonomics_simp_client_conflict.cubist",
+   "summary": "Two imports of one rule and two sets of one name: only a use of the name fails."
+  },
+  {
+   "path": "cubist-tests/ergonomics_simp_client_isolated.cubist",
+   "summary": "Without the import, no registration."
+  },
+  {
+   "path": "cubist-tests/ergonomics_simp_client_reverse_order.cubist",
+   "summary": "Imports in the other order keep the higher priority."
+  },
+  {
+   "path": "cubist-tests/ergonomics_simp_client_shadowed_rule.cubist",
+   "summary": "A local definition shadows an imported rule's name: no frozen form."
+  },
+  {
+   "path": "cubist-tests/ergonomics_simp_dependent_positions.cubist",
+   "summary": "`simp` skips matches in dependent positions instead of failing."
+  },
+  {
+   "path": "cubist-tests/ergonomics_simp_freeze_path_identity.cubist",
+   "summary": "A `simp` offered no frozen form, as a later proof compares its path."
+  },
+  {
+   "path": "cubist-tests/ergonomics_simp_incompatible_candidate.cubist",
+   "summary": "A quantified rule whose parameter type does not fit leaves the later rules available."
+  },
+  {
+   "path": "cubist-tests/ergonomics_simp_rejections.cubist",
+   "summary": "`simp` stops on a cycle, and does not prove a false equality or a loop equal to reflexivity."
+  },
+  {
+   "path": "cubist-tests/ergonomics_simp_rules_a.cubist",
+   "summary": "Default and named registrations of a rule, for the `ergonomics_simp_client_*` modules."
+  },
+  {
+   "path": "cubist-tests/ergonomics_simp_rules_b.cubist",
+   "summary": "The same registrations at priority 7."
+  },
+  {
+   "path": "cubist-tests/ergonomics_simp_type_freeze_path_identity.cubist",
+   "summary": "`simp` along a type path: frozen only where no later proof compares it."
+  },
+  {
+   "path": "cubist-tests/ergonomics_simpa_freeze_path_identity.cubist",
+   "summary": "A `simpa` offered no frozen form, as a later proof compares its path."
+  },
+  {
+   "path": "cubist-tests/ergonomics_simpa_reconstruction.cubist",
+   "summary": "`simpa` reconstructs the stated equality, and refuses a false supplied term."
+  },
+  {
+   "path": "cubist-tests/ergonomics_simpa_type_freeze_path_identity.cubist",
+   "summary": "`simpa` along a type path: frozen only where no later proof compares it."
+  },
+  {
+   "path": "cubist-tests/ergonomics_tactic_sites_generic.cubist",
+   "summary": "The same, universe-generic."
+  },
+  {
+   "path": "cubist-tests/ergonomics_tactic_sites.cubist",
+   "summary": "Concrete `calc`, `rw` and `simp`, linked from their keyword sites."
+  },
+  {
+   "path": "cubist-tests/ergonomics_type_transport_rejections.cubist",
+   "summary": "`simpa` transports only along paths of types: no path, functions that are no type path, a nontrivial loop."
+  },
+  {
+   "path": "cubist-tests/f4_extension_loops_false.cubist",
+   "summary": "The two-loop equality certifies no one-element loop type."
+  },
+  {
+   "path": "cubist-tests/f4_extension_loops.cubist",
+   "summary": "The F4 extension's loop type equals C2: each lemma of the archive that says so is computable."
+  },
+  {
+   "path": "cubist-tests/face_restriction.cubist",
+   "summary": "Partial elements that use a variable whose type mentions their face, which the kernel types there with `Restrict`: Glue eta for a variable, a composition whose tube is such a variable, alone, inside an application or under `typed`, and two such tubes that overlap."
+  },
+  {
+   "path": "cubist-tests/fingerprint_fixture.cubist",
+   "summary": "Declarations whose elaboration fingerprints `tests/elaboration-fingerprint.test.mjs` takes and compares after edits."
+  },
+  {
+   "path": "cubist-tests/finite_spanning_finite_tower_regression.cubist",
+   "summary": "Arbitrary finite subspaces have bases and finiteness descends both ways in a tower."
+  },
+  {
+   "path": "cubist-tests/finite_spanning_invalid_spanning.cubist",
+   "summary": "Finite extraction does not choose a basis or equate finiteness with independence."
+  },
+  {
+   "path": "cubist-tests/finite_spanning_spanning_regression.cubist",
+   "summary": "Finite spanning families contain an indexed subfamily basis without choice."
+  },
+  {
+   "path": "cubist-tests/fuel_residual_goals.cubist",
+   "summary": "Unfinished `rw`, `simp`, `simpa` and `calc`: each states the remaining goal, the side that changed and the rules that fired; the command-line checker reports the same."
+  },
+  {
+   "path": "cubist-tests/fuel_search_spending.cubist",
+   "summary": "Searches whose questions and rewrites `tests/search-fuel.test.mjs` counts."
+  },
+  {
+   "path": "cubist-tests/fuel_tactics.cubist",
+   "summary": "Tactics that `tests/search-fuel.test.mjs` checks with the default fuel and with less, in fresh and reused sessions: a cycle and the rewrite budget among them."
+  },
+  {
+   "path": "cubist-tests/glue_printed.cubist",
+   "summary": "A Glue line as the printer shows it, written back: it checks, and equals the line."
+  },
+  {
+   "path": "cubist-tests/glue.cubist",
+   "summary": "Glue types, `glue` and `unglue`, along the library's [`contractible_maps`](../library/contractible_maps.cubist) equivalences: a line of types glued along the identity, unglue of a glue term, a piece on a face of two clauses, and the refusals of a function that is no equivalence, a misplaced value, `glue` with no Glue type and `unglue` of a point."
+  },
+  {
+   "path": "cubist-tests/h1_acceptance_formers.cubist",
+   "summary": "H1 acceptance V9, V10, V11: a former as a function, a signature at tier 1, and an instance at a successor level."
+  },
+  {
+   "path": "cubist-tests/h1_acceptance_instances.cubist",
+   "summary": "H1 acceptance V21, V22, V23, V29: maps between recorded instances, and universes written in the header."
+  },
+  {
+   "path": "cubist-tests/h1_acceptance_levels.cubist",
+   "summary": "H1 acceptance V2, V3, V5, V6, V12: a declared type's level counts stored data and relations, never a phantom parameter."
+  },
+  {
+   "path": "cubist-tests/h1_acceptance_paths.cubist",
+   "summary": "H1 acceptance N5, N6, G1: path eta at a constructor, a boundary that does not hold, and no downward resizing."
+  },
+  {
+   "path": "cubist-tests/hlevel_lemmas.cubist",
+   "summary": "The library's h-levels at work, from the former `tests/hlevels.test.mjs`: each named level by conversion, the lemmas in a universe above U0, retracts, functions, pairs, products and subtypes, contractible types, Hedberg, and lemmas that prove no more than they state."
+  },
+  {
+   "path": "cubist-tests/hlevel_tactic.cubist",
+   "summary": "The hlevel tactic, for `tests/hlevel.test.mjs`: each kind of goal it proves, from evidence, hints and the type's shape, dependent path h-levels, and its refusals, each naming the first obligation nothing discharges."
+  },
+  {
+   "path": "cubist-tests/hlevel_without_import.cubist",
+   "summary": "hlevel with no import of hlevels, which it names."
+  },
+  {
+   "path": "cubist-tests/induction_printed.cubist",
+   "summary": "How an eliminator prints, for `tests/induction.test.mjs`: as the induction that builds it, with `__U` for an erased universe, and the printed source written back."
+  },
+  {
+   "path": "cubist-tests/induction.cubist",
+   "summary": "`induction` on any declared type, for `tests/induction.test.mjs`: the expression and the statement on the library's lists, Nat's two forms, path constructors and function-typed recursive arguments, and the refusals and the warning."
+  },
+  {
+   "path": "cubist-tests/inductive_assumptions.cubist",
+   "summary": "Inspection: no declared type mentions an assumption, and each refusal names it."
+  },
+  {
+   "path": "cubist-tests/inductive_beta.cubist",
+   "summary": "Constructor types are beta-reduced before they are classified and admitted."
+  },
+  {
+   "path": "cubist-tests/inductive_binders.cubist",
+   "summary": "Binders written in a constructor's result are its arguments."
+  },
+  {
+   "path": "cubist-tests/inductive_computable.cubist",
+   "summary": "computable accepts a declared type, and refuses an assumption, naming it (T3, T4)."
+  },
+  {
+   "path": "cubist-tests/inductive_data_first.cubist",
+   "summary": "Data are moved ahead of positions, and uses keep the source's order (A11)."
+  },
+  {
+   "path": "cubist-tests/inductive_failed.cubist",
+   "summary": "A failed declaration leaves its names untranslated and nothing admitted."
+  },
+  {
+   "path": "cubist-tests/inductive_former_values.cubist",
+   "summary": "A type former used as a value is a lambda over its universes and parameters."
+  },
+  {
+   "path": "cubist-tests/inductive_generated_names.cubist",
+   "summary": "Inspection: generated names print as themselves after every round of suffixes."
+  },
+  {
+   "path": "cubist-tests/inductive_higher.cubist",
+   "summary": "Higher constructors: paths between constructors, used at coordinates."
+  },
+  {
+   "path": "cubist-tests/inductive_imports.cubist",
+   "summary": "Imported declared types are used by name, with no marker; each module numbers its own names."
+  },
+  {
+   "path": "cubist-tests/inductive_inspection_names.cubist",
+   "summary": "Inspection: names are distinct, clause types whole, and repeated inspection keeps no state."
+  },
+  {
+   "path": "cubist-tests/inductive_inspection.cubist",
+   "summary": "Inspection: a declared type's constructors and its eliminator's clause types."
+  },
+  {
+   "path": "cubist-tests/inductive_instance_from_position.cubist",
+   "summary": "Without an expected type, a constructor's instance is read from a position argument."
+  },
+  {
+   "path": "cubist-tests/inductive_levels.cubist",
+   "summary": "The sort's level is the least containing its data and arities, or the one written (V27, V28)."
+  },
+  {
+   "path": "cubist-tests/inductive_naturals.cubist",
+   "summary": "A declared type for other modules to import."
+  },
+  {
+   "path": "cubist-tests/inductive_no_marker.cubist",
+   "summary": "Inspection shows no marker."
+  },
+  {
+   "path": "cubist-tests/inductive_one_parameter_name.cubist",
+   "summary": "Inspection: a parameter has one name in the whole view, and T.squash is distinct from squash."
+  },
+  {
+   "path": "cubist-tests/inductive_path_lambda.cubist",
+   "summary": "A path lambda at a point is contracted in constructor types."
+  },
+  {
+   "path": "cubist-tests/inductive_printed_forms.cubist",
+   "summary": "Inspection: generated names avoid the printed form of every name."
+  },
+  {
+   "path": "cubist-tests/inductive_projections.cubist",
+   "summary": "Projections contract, and constructor-headed rules simplify, in constructor types."
+  },
+  {
+   "path": "cubist-tests/inductive_reduction.cubist",
+   "summary": "Types are checked before reduction, and level redexes reduce."
+  },
+  {
+   "path": "cubist-tests/inductive_rejections.cubist",
+   "summary": "Declarations are checked before they are admitted: each rejection names what is wrong (A4, A8, V31)."
+  },
+  {
+   "path": "cubist-tests/inductive_shape_errors.cubist",
+   "summary": "Shape errors name the constructor and its argument, where they are."
+  },
+  {
+   "path": "cubist-tests/inductive_square.cubist",
+   "summary": "A two-dimensional constructor takes its instance from a square's type."
+  },
+  {
+   "path": "cubist-tests/inductive_telescope.cubist",
+   "summary": "A declared type with a telescope of parameters, for another module to import."
+  },
+  {
+   "path": "cubist-tests/inductive_trunc_minus_one.cubist",
+   "summary": "trunc(-1) is prop (V31)."
+  },
+  {
+   "path": "cubist-tests/inductive_universes.cubist",
+   "summary": "Universe parameters: an erased one is read from its parameter, a recorded one carried (V7, V20, V26, V30)."
+  },
+  {
+   "path": "cubist-tests/inductive_values.cubist",
+   "summary": "For `tests/inductive-declarations.test.mjs` (as are the inductive_* modules below): constructors build values, computations hold by rfl, and no result carries a marker (T2)."
+  },
+  {
+   "path": "cubist-tests/inspection_axiom_labels.cubist",
+   "summary": "An assumption's label and a derived helper, inspected."
+  },
+  {
+   "path": "cubist-tests/inspection_declared_types.cubist",
+   "summary": "Declared types linked to their imported and local declarations."
+  },
+  {
+   "path": "cubist-tests/inspection_let_alias.cubist",
+   "summary": "A let alias keeps the original local's name."
+  },
+  {
+   "path": "cubist-tests/inspection_shadowed_nat.cubist",
+   "summary": "Names that shadow the natural numbers' type, linked to their own declarations."
+  },
+  {
+   "path": "cubist-tests/let_statements.cubist",
+   "summary": "let with a stated type and a proof block (HoTT B4): a restated goal, reasoning backwards, and the refusals."
+  },
+  {
+   "path": "cubist-tests/linear_algebra_basis_regression.cubist",
+   "summary": "Finite bases give unique coordinates and cubical carrier transport without choice."
+  },
+  {
+   "path": "cubist-tests/linear_algebra_chain_regression.cubist",
+   "summary": "Spans are least subspaces and independent chains have bounds, including empty and U1-indexed chains."
+  },
+  {
+   "path": "cubist-tests/linear_algebra_general_basis_regression.cubist",
+   "summary": "The general basis theorem derives maximality from choice, with its exact assumptions visible."
+  },
+  {
+   "path": "cubist-tests/linear_algebra_invalid_basis_selection.cubist",
+   "summary": "Basis existence cannot silently select a basis or justify adjoining the zero vector."
+  },
+  {
+   "path": "cubist-tests/linear_algebra_invalid_linear.cubist",
+   "summary": "Nonlinear constant maps and a silently changed basis length are rejected."
+  },
+  {
+   "path": "cubist-tests/linear_algebra_s3_regression.cubist",
+   "summary": "S3 has six elements and a genuinely non-normal point stabilizer, without axioms."
+  },
+  {
+   "path": "cubist-tests/mismatch_calc_naming.cubist",
+   "summary": "`calc` names the two terms it shows together, apart from a captured label."
+  },
+  {
+   "path": "cubist-tests/mismatch_source_syntax.cubist",
+   "summary": "Mismatches in source syntax, without module prefixes, generated suffixes or redexes."
+  },
+  {
+   "path": "cubist-tests/path_operators.cubist",
+   "summary": "Path and coordinate operators, for `tests/path-operators.test.mjs`: -p, p ++ q, -i, & and"
+  },
+  {
+   "path": "cubist-tests/polynomial_algebra_adjoined_root_regression.cubist",
+   "summary": "Adjoined roots and embeddings into a root field are constructed, not assumed."
+  },
+  {
+   "path": "cubist-tests/polynomial_algebra_invalid_polynomial_claims.cubist",
+   "summary": "Zero polynomial is excluded from root bounds and division by zero."
+  },
+  {
+   "path": "cubist-tests/polynomial_algebra_polynomial_regression.cubist",
+   "summary": "Formal division, uniqueness, root bounds and Bezout are checked without extra axioms."
+  },
+  {
+   "path": "cubist-tests/printer_lint.cubist",
+   "summary": "The printer's values and types of matches, inductions, binders and declared types, which `tests/printer-lint.test.mjs` lints: eliminators print as the match or induction that builds them."
+  },
+  {
+   "path": "cubist-tests/program_assumptions.cubist",
+   "summary": "Assumptions explicit and minimal, for the inspection and replay of `tests/cubical-program.test.mjs`."
+  },
+  {
+   "path": "cubist-tests/program_generic_caller.cubist",
+   "summary": "Calls of an imported generic definition, linked to it."
+  },
+  {
+   "path": "cubist-tests/program_generic_identity.cubist",
+   "summary": "A generic definition, for `program_generic_caller`."
+  },
+  {
+   "path": "cubist-tests/program_generic_once.cubist",
+   "summary": "A universe-generic definition, one kernel definition instantiated at each level."
+  },
+  {
+   "path": "cubist-tests/program_optimizations.cubist",
+   "summary": "Path proofs and refusals that every combination of the kernel's optimization switches checks alike."
+  },
+  {
+   "path": "cubist-tests/program_shadow_first.cubist",
+   "summary": "A value that `program_shadow_second` defines again."
+  },
+  {
+   "path": "cubist-tests/program_shadow_second.cubist",
+   "summary": "The second value."
+  },
+  {
+   "path": "cubist-tests/program_shadowing.cubist",
+   "summary": "A shadowed import cannot retarget a definition checked before it."
+  },
+  {
+   "path": "cubist-tests/program_types_constructor_shadowing.cubist",
+   "summary": "A declared type's zero and succ shadow Nat's constructors, not its literals."
+  },
+  {
+   "path": "cubist-tests/program_types_nat_as_name.cubist",
+   "summary": "Nat is an ordinary name, bound or shadowed."
+  },
+  {
+   "path": "cubist-tests/program_types.cubist",
+   "summary": "Nat and W as source declarations, for `tests/program-types.test.mjs`: imported Nat's constructors, literals and elimination, W's dependent eliminator computing, and a W declaration at a fixed higher universe."
+  },
+  {
+   "path": "cubist-tests/program_unfolding_hints.cubist",
+   "summary": "`with unfolding`: checked definitions only, its body checked apart, and no false path."
+  },
+  {
+   "path": "cubist-tests/program_unfolding_scopes.cubist",
+   "summary": "Unfolding scopes close local variables and interval coordinates."
+  },
+  {
+   "path": "cubist-tests/program_untyped_generic.cubist",
+   "summary": "Untyped lambdas, refused in generic definitions and ordinary ones, without stopping later declarations."
+  },
+  {
+   "path": "cubist-tests/program_unused_generic.cubist",
+   "summary": "Unused generic definitions, whose locals inspect and replay under the universe binder."
+  },
+  {
+   "path": "cubist-tests/projections_archive_helpers.cubist",
+   "summary": "Projections convert to the archive's projection helpers (HoTT A8)."
+  },
+  {
+   "path": "cubist-tests/projections.cubist",
+   "summary": "Projections p.1 and p.2 (L1.5, HoTT A8), for `tests/projections-let.test.mjs`: the kernel's projections with the family read from the pair's type, and misused projections."
+  },
+  {
+   "path": "cubist-tests/quotient_groups_invalid_quotient.cubist",
+   "summary": "Quotient construction rejects omitted normality and silent universe lowering."
+  },
+  {
+   "path": "cubist-tests/quotient_groups_quotient_regression.cubist",
+   "summary": "Quotient groups and the first isomorphism theorem check constructively across universes."
+  },
+  {
+   "path": "cubist-tests/quotient_universal_bad_factorization.cubist",
+   "summary": "A factorization without the subgroup-killing hypothesis, refused."
+  },
+  {
+   "path": "cubist-tests/quotient_universal_hom_universe_regression.cubist",
+   "summary": "The homomorphism universe schemas at U0 to U3, each computable, and agreeing with small homomorphisms."
+  },
+  {
+   "path": "cubist-tests/quotient_universal_regression.cubist",
+   "summary": "The quotient universal property for a genuinely U1 target, without representative choice."
+  },
+  {
+   "path": "cubist-tests/reduction_demo.cubist",
+   "summary": "Declarations that `tests/cubical-reduction.test.mjs` reduces by delta and beta steps."
+  },
+  {
+   "path": "cubist-tests/source_text_messages.cubist",
+   "summary": "Messages, evaluations and prints in source syntax."
+  },
+  {
+   "path": "cubist-tests/translation_failed_proofs.cubist",
+   "summary": "A failed proof becomes no axiom: a use of it fails, and the rest checks."
+  },
+  {
+   "path": "cubist-tests/translation_path_induction.cubist",
+   "summary": "Weak J from composition and singleton contraction."
+  },
+  {
+   "path": "cubist-tests/translation_weak_j.cubist",
+   "summary": "Weak J has no strict reflexivity beta rule."
+  },
+  {
+   "path": "cubist-tests/truncation_cauchy_same.cubist",
+   "summary": "G5: the rebuilt `CauchySame` and `EventualClose` in U0, computable."
+  },
+  {
+   "path": "cubist-tests/truncation_rebuilt_classical.cubist",
+   "summary": "Rebuilt classical assumptions beside the legacy signatures, and a false truncation former refused."
+  },
+  {
+   "path": "cubist-tests/truncation_resize.cubist",
+   "summary": "G6: resizing a proposition with LEM alone, and a `StrictlyAbove` witness refused set evidence."
+  },
+  {
+   "path": "cubist-tests/truncation_small_mere.cubist",
+   "summary": "G2: `small_mere_eliminate` into U1 through the declared eliminator, computable."
+  },
+  {
+   "path": "cubist-tests/truncation_strict_successor.cubist",
+   "summary": "G7: `no_maximal_strict_successor`, double negation at U1, LEM retained."
+  },
+  {
+   "path": "cubist-tests/universe_generic_bounds.cubist",
+   "summary": "Universe is removed, and bounds, reserved names and universes are checked (B11–B14, B16, B17)."
+  },
+  {
+   "path": "cubist-tests/universe_generic_builtins.cubist",
+   "summary": "Instantiation, assumptions and builtins take universes below UU0 (S12, D4, Q10), and univalence is one generic definition."
+  },
+  {
+   "path": "cubist-tests/universe_generic_rewriting.cubist",
+   "summary": "Rewriting matches a generic rule's universe only where it is a bare variable."
+  },
+  {
+   "path": "cubist-tests/universe_generic.cubist",
+   "summary": "Universe binders and constants (L1.1, G0 §4.3), for `tests/universe-generic.test.mjs`: generic definitions at tier 0, both tiers' universes (B15), generic statements, proofs under binders, a generic assumption (D6) and inspection."
+  },
+  {
+   "path": "cubist-tests/wasm_bad_factorial.cubist",
+   "summary": "A false factorial value, refused."
+  },
+  {
+   "path": "cubist-tests/wasm_binary_literal.cubist",
+   "summary": "The binary naturals checked in WASM, and a false binary literal equation refused."
+  },
+  {
+   "path": "cubist-tests/wasm_invalid_paths.cubist",
+   "summary": "Paths, compositions and pushout eliminations with wrong boundaries, refused."
+  },
+  {
+   "path": "cubist-tests/wasm_moving_maps.cubist",
+   "summary": "A path constructor of the declared pushout transported along changing maps, with its boundary corrected."
+  },
+  {
+   "path": "cubist-tests/wasm_suspension_use.cubist",
+   "summary": "Suspension induction through a proved PathP bridge."
+  },
+  {
+   "path": "docs/examples/h1/migrations/field_logic.cubist",
+   "summary": "Keep the original public predicate in scope for the ledger comparison."
+  },
+  {
+   "path": "docs/examples/h1/winding.cubist",
+   "summary": "The H1 release fixture (docs/roadmaps/h1-signature-specification.md, 10.8; the work plan's stage 2): the circle as a declared higher inductive type, the integers as a declared data type, and the loop…"
+  },
+  {
+   "path": "docs/examples/hott-automation/canonicity.cubist",
+   "summary": "Invariant 10 of the HoTT roadmap: every closed result that uses no truncation or other assumption reduces to a canonical value."
+  },
+  {
+   "path": "docs/examples/hott-automation/conversion-laws.cubist",
+   "summary": "Evidence for the HoTT and cubical automation roadmap."
+  },
+  {
+   "path": "docs/examples/hott-automation/cubical-probes.cubist",
+   "summary": "Accepted probes from the HoTT roadmap's evidence sections."
+  },
+  {
+   "path": "docs/examples/proof-ergonomics/current/arithmetic.cubist",
+   "summary": "Current expansion for a two-step calc or simp only [nat_add_zero]."
+  },
+  {
+   "path": "docs/examples/proof-ergonomics/current/dependent-transport.cubist",
+   "summary": "A rewrite of the index changes the fiber and therefore carries transport."
+  },
+  {
+   "path": "docs/examples/proof-ergonomics/current/path-coherence.cubist",
+   "summary": "This is a higher path between paths; it does not say that p is reflexivity."
+  },
+  {
+   "path": "docs/examples/proof-ergonomics/current/pointwise.cubist",
+   "summary": "A pointwise proof becomes a function path by swapping term and interval binders."
+  },
+  {
+   "path": "docs/examples/proof-ergonomics/current/scoped-algebra.cubist",
+   "summary": "Explicit structure projections are the expansion for scoped field notation."
+  },
+  {
+   "path": "docs/examples/proof-ergonomics/current/type-transport.cubist",
+   "summary": "Explicit predecessors for checked type-goal simpa."
+  },
+  {
+   "path": "docs/examples/proof-ergonomics/implemented/arithmetic.cubist",
+   "summary": "Checked arithmetic ergonomics examples."
+  },
+  {
+   "path": "docs/examples/proof-ergonomics/implemented/cubical.cubist",
+   "summary": "Checked expected-type paths and grouped binders."
+  },
+  {
+   "path": "docs/examples/proof-ergonomics/implemented/dependent.cubist",
+   "summary": "Checked dependent path and transport conveniences."
+  },
+  {
+   "path": "docs/examples/proof-ergonomics/implemented/registered-simp.cubist",
+   "summary": "Registrations refer to already checked equality proofs."
+  },
+  {
+   "path": "docs/examples/proof-ergonomics/implemented/type-transport.cubist",
+   "summary": "Checked transport through paths of types and type-valued families."
+  },
+  {
+   "path": "library/classical_axioms.cubist",
+   "summary": "The statements of the classical assumptions as types, `ExcludedMiddle(U)` and `AxiomOfChoice(U)`, with checks that `LEM(U)` and `Choice(U)` have them."
+  },
+  {
+   "path": "library/contractible_maps.cubist",
+   "summary": "Equivalences as contractible maps, the form the kernel checks a Glue type's equivalences in: the fiber of a function, a function whose fibers are contractible (`IsContrMap`), the type of such equivalences (`ContrEquiv`), the identity, and the equality of two equivalences with one forward map, since being contractible is a proposition. Every function with an inverse and both inverse laws is one (`inverse_equiv`, after Cubical Agda's `isoToIsEquiv`)."
+  },
+  {
+   "path": "library/h1_cauchy_quotient.cubist",
+   "summary": "Ordinary sequences equipped with moduli, followed by an equivalence-class quotient."
+  },
+  {
+   "path": "library/h1_classical.cubist",
+   "summary": "The same two non-computing assumptions, explicitly restated over Trunc."
+  },
+  {
+   "path": "library/h1_truncation.cubist",
+   "summary": "Universe-preserving truncation; the archive keeps its legacy assumptions."
+  },
+  {
+   "path": "library/h1_zorn_step.cubist",
+   "summary": "If there is no maximal element, each point merely has a strict successor."
+  },
+  {
+   "path": "library/hlevels.cubist",
+   "summary": "Contractible types, propositions and sets in every universe below `UU0`, with `HasLevel(U, n, A)` defined by recursion on `n`, so that `IsSet` is level 1 by conversion. Propositions are sets, levels are cumulative, having a level is a proposition, and a retract, such as a type equivalent to another by an inverse, a function type, a type of pairs, a product or a subtype keeps the level of the types it is made from. Contractible types are closed under the same constructions except subtypes, since a subtype can be empty, and being contractible is a proposition. A type with decidable equality, such as `Nat`, is a set (Hedberg)."
+  },
+  {
+   "path": "library/lists.cubist",
+   "summary": "Lists of elements of a type in any universe below `UU0`, with their length and concatenation (`append`): `nil` is a unit on both sides, concatenation is associative, and the length of a concatenation is the sum of the lengths."
+  },
+  {
+   "path": "library/naturals.cubist",
+   "summary": "Addition, multiplication and order on `Nat`, with the basic laws of addition. `+`, `*`, `<` and `<=` need it."
+  },
+  {
+   "path": "library/quotients.cubist",
+   "summary": "Set quotients as a declared type: the quotient of a type by a relation, with a class for each element and a path between related classes. It is a set; it has induction into families of sets; and a map into a set that respects the relation descends to it, uniquely. No representative is chosen. Effectiveness, that related elements are exactly those with equal classes, is still to come."
+  },
+  {
+   "path": "library/univalence.cubist",
+   "summary": "Univalence by Glue, for the equivalences of [`contractible_maps`](contractible_maps.cubist). An equivalence glues a path of types (`glue_path`), and a path of types transports the identity to an equivalence (`idtoequiv`). The two are inverse (`glue_path_idtoequiv`, `idtoequiv_glue_path`), so `idtoequiv` is an equivalence (`univalence`). Along every line of Glue types, unglue is an equivalence (`glue_line_equiv`), and the type of types equivalent to a type is contractible (`equivalent_types_contractible`). The `ua` builtin takes the `Equiv` of `import paths;` instead."
+  },
+  {
+   "path": "library/universe_automorphisms.cubist",
+   "summary": "Excluded middle for `U0` holds exactly when there merely is an automorphism of `U0` sending `Unit` to `Void`. Both directions without the truncations use no assumption."
+  }
+ ]
+}

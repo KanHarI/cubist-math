@@ -1,0 +1,45 @@
+/* The Files page (files.mjs): the folder tree (file-tree.css) beside the
+   selected file. */
+.files-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+  padding-bottom: 60px;
+}
+.file-tree {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 14px;
+  border: 1px solid #d7e0d7;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+}
+.file-view { min-width: 0; }
+.file-empty { padding: 40px 24px; border: 1px dashed #cfd8cf; border-radius: 10px; color: #6a7b70; text-align: center; }
+.file-path { margin: 0; color: #6a7b70; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; overflow-wrap: anywhere; }
+.file-view h2 { margin: 2px 0 8px; font-size: 24px; overflow-wrap: anywhere; }
+.file-summary { max-width: 76ch; color: #3d5245; line-height: 1.6; }
+.file-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.file-actions a { color: #346447; text-underline-offset: 3px; }
+.file-actions .file-open {
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: #346447;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+.file-actions .file-open:hover { background: #2a5239; }
+.file-actions .file-open:focus-visible { outline: 2px solid #1f3b2a; outline-offset: 2px; }
+.file-source { max-height: 75vh; overflow: auto; font-size: 13px; }
+.file-source .keyword { color: #735689; font-weight: 600; }
+.file-source .macro { color: #98531c; font-weight: 600; }
+.file-source .comment { color: #7c8d80; }
+@media (max-width: 850px) {
+  .files-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .file-tree { position: static; max-height: 50vh; }
+}

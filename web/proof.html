@@ -6,6 +6,7 @@
     <title>Cubist · Proof workspace</title>
     <link rel="stylesheet" href="proof.css" />
     <link rel="stylesheet" href="repl.css" />
+    <link rel="stylesheet" href="file-tree.css" />
   </head>
   <body>
     <header>
@@ -20,6 +21,35 @@
         <a href="https://github.com/KanHarI/cubist-math">GitHub repository</a>
       </nav>
     </header>
+    <div class="page">
+    <aside id="explorer" class="explorer" aria-label="Files">
+      <button id="explorer-toggle" class="explorer-toggle" type="button" aria-expanded="true" aria-controls="explorer-body" title="Hide the files">
+        <span class="explorer-label">Files</span><span class="explorer-chevron" aria-hidden="true"></span>
+      </button>
+      <script>
+        // The explorer opens as it was left, before the page paints; on a
+        // narrow screen it starts closed (proof-explorer.mjs). Embedded in a
+        // reference page, the workspace shows no explorer.
+        const query = new URLSearchParams(location.search);
+        if (query.has("example") && query.has("embed")) document.body.classList.add("embedded");
+        try {
+          const open = localStorage.getItem("cubist.explorer.open");
+          if (open ? open === "false" : !matchMedia("(min-width: 951px)").matches) {
+            document.getElementById("explorer").classList.add("collapsed");
+            document.getElementById("explorer-toggle").setAttribute("aria-expanded", "false");
+          }
+        } catch {}
+      </script>
+      <div id="explorer-body" class="explorer-body">
+        <label class="file-filter">
+          <span>Filter</span>
+          <input id="explorer-filter" type="search" placeholder="Name or path" autocomplete="off" spellcheck="false" />
+        </label>
+        <p id="explorer-count" class="file-count" aria-live="polite"></p>
+        <nav class="file-tree" aria-label="Cubist sources"><div id="explorer-tree" class="file-roots"></div></nav>
+        <p class="explorer-more"><a href="files.html">Read the files with their summaries</a></p>
+      </div>
+    </aside>
     <main>
       <section class="introduction">
         <div>
@@ -769,6 +799,7 @@ evaluate double(3) expecting 6;</code></pre>
         </div>
       </details>
     </main>
+    </div>
     <script type="module" src="proof.mjs?version=kernel-math-notation-1"></script>
     <!-- The same version as proof.mjs, so the dev server gives both one copy of
          their shared modules, such as the single tooltip of token-tips.mjs. -->
