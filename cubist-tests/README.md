@@ -160,3 +160,5 @@ workbench's Kernel graph.
 | [`wasm_invalid_paths`](wasm_invalid_paths.cubist) | Paths, compositions and pushout eliminations with wrong boundaries, refused. |
 | [`wasm_moving_maps`](wasm_moving_maps.cubist) | A path constructor of the declared pushout transported along changing maps, with its boundary corrected. |
 | [`wasm_suspension_use`](wasm_suspension_use.cubist) | Suspension induction through a proved PathP bridge. |
+| [`driver_first_proof`](driver_first_proof.cubist) | The first proof, whose derivations `tests/instruction-driver.test.mjs` walks in instruction mode, and whose `lt_succ` the workbench lists as a judgement graph. |
+| [`driver_sums`](driver_sums.cubist) | Constructors at a type that reduces, derived as their source. |

@@ -1,0 +1,18 @@
+// The first proof, whose derivations tests/instruction-driver.test.mjs walks
+// in instruction mode: every definition, the naturals library's included,
+// derives at its checked type, and lt_succ's judgement graph is the one the
+// workbench lists.
+import naturals;
+
+def lt(n, m : Nat) : U0 {
+  exact exists k : Nat. succ(k) + n = m;
+}
+
+def lt_succ(n : Nat) : lt(n, succ(n)) {
+  exact (0, refl(succ(n)));
+}
+
+def exists_greater_number : forall n : Nat. exists m : Nat. lt(n, m) {
+  intro n;
+  exact (succ(n), lt_succ(n));
+}

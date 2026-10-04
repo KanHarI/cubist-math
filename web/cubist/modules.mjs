@@ -424,5 +424,5 @@ export const cubistTestModules = [
   "program_unfolding_scopes", "program_optimizations", "program_generic_identity", "program_generic_caller",
   "program_unused_generic", "program_untyped_generic", "wasm_binary_literal", "wasm_factorials",
   "wasm_bad_factorial", "wasm_factorial_theorem", "wasm_invalid_paths", "wasm_moving_maps",
-  "wasm_suspension_use"
+  "wasm_suspension_use", "driver_first_proof", "driver_sums"
 ];
