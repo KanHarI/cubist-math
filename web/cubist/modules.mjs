@@ -392,5 +392,6 @@ export const cubistTestModules = [
   "automatic_clauses_groupoid", "automatic_clauses_without_hlevels", "hlevel_lemmas", "hlevel_tactic",
   "hlevel_without_import", "h1_acceptance_levels", "h1_acceptance_formers", "h1_acceptance_instances",
   "h1_acceptance_paths", "program_types", "program_types_nat_as_name", "program_types_constructor_shadowing",
-  "projections", "projections_archive_helpers", "let_statements", "path_operators"
+  "projections", "projections_archive_helpers", "let_statements", "path_operators", "universe_generic",
+  "universe_generic_bounds", "universe_generic_builtins", "universe_generic_rewriting"
 ];

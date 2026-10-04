@@ -1,0 +1,81 @@
+// From tests/universe-generic.test.mjs.
+
+// A generic definition checks once and is instantiated at universes of tier
+// 0.
+def identity(U < UU0, A : U, x : A) : A := x;
+
+def three := identity(U0, Nat, 3);
+
+def nat_again : U0 := identity(U1, U0, Nat);
+
+def Endo := forall U < UU0. U -> U;
+
+def pairing(U, V < UU0, A : U, B : V) : U0 := Nat;
+
+def mixed(U < UU0) : next(U) := U;
+
+def bigger(U, V < UU0) : next(max(U, V)) := max(U, V);
+
+def generic_lambda : forall U < UU0. U -> U := fun (U < UU0, A : U) => A;
+
+def at_variable(V < UU0, B : V, b : B) : B := identity(V, B, b);
+
+def at_successor(V < UU0) : V := identity(next(V), V, Nat);
+
+// B15: universes of both tiers are terms, and cumulativity crosses tiers.
+def v : UU1 := UU0;
+
+def w : UU0 := U7;
+
+def x : UU3 := UU1;
+
+// Error: E606: Type mismatch: found UU1, expected U7.
+def down : U7 := UU0;
+
+// Error: E606: Type mismatch: found UU1, expected UU0.
+def same : UU0 := UU0;
+
+// A generic statement cannot use its universe as an element of a fixed
+// universe.
+// Error: E606: Type mismatch: found next(U), expected U2.
+def fixed(U < UU0, f : U2 -> Nat) : Nat := f(U);
+
+// Error: E606: Type mismatch: found next(U), expected U.
+def member(U < UU0) : U := U;
+
+// Error: E606: Type mismatch: found next(U), expected U.
+def downward(U < UU0, A : next(U)) : U := A;
+
+// Proofs under universe binders introduce, reverse and transport like
+// concrete ones.
+// Goal displays, which the browser worker sends with every check, show a
+// universe variable by its bound.
+def endo_id : forall U < UU0. forall A : U. A -> A {
+  intro U;
+  intro A;
+  intro a;
+  exact a;
+}
+
+def reflexive(U < UU0, A : U, x : A) : x = x {
+  rfl;
+}
+
+def reverse(U < UU0, A : U, x, y : A, p : x = y) : y = x {
+  exact sym(p);
+}
+
+def congruence(U < UU0, A, B : U, f : A -> B, x, y : A, p : x = y) : f(x) = f(y) {
+  exact cong(f, p);
+}
+
+def moved(U < UU0, A : U, C : A -> U, x, y : A, p : x = y, c : C(x)) : C(y) {
+  exact along C by p from c;
+}
+
+// D6: a generic assumption is named once, whatever universes it is used at.
+def both(nn0 : (Nat -> Void) -> Void, nn1 : (U0 -> Void) -> Void) :
+  Truncate(U0, Nat) and Truncate(U1, U0) := (LEM(U0, Nat, nn0), LEM(U1, U0, nn1));
+
+// Inspection names universe variables by their source names.
+def lifted(V < UU0) := identity(next(V), V);

@@ -1,0 +1,37 @@
+// From tests/universe-generic.test.mjs: B11–B14, B16, B17: Universe is
+// removed, and bounds, reserved names and universes are checked.
+// B13: universe constants are reserved names.
+
+// Error: E342: Universe was removed: bind a universe variable as U < UU0.
+def u := Universe;
+
+// Error: E342: Universe was removed: bind a universe variable as U < UU0.
+def f(U : Universe, A : U) := A;
+
+// Error: E321: A universe variable's bound must be UU0, as in U < UU0.
+def f1(U < UU1, A : U) := A;
+
+// Error: E321: A universe variable's bound must be UU0, as in U < UU0.
+def f2(U < U5, A : U) := A;
+
+// Error: E321: A universe variable's bound must be UU0, as in U < UU0.
+def f3(U < UUU0, A : U) := A;
+
+// Error: E317: Malformed universe constant: U01.
+def malformed := U01;
+
+def g(UU : U1, x : UU) := x;
+
+// Error: E343: Untranslated name: UU
+def h := UU;
+
+// Error: E322: Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).
+def not_a_universe(U < UU0) := next(Nat);
+
+def identity(U < UU0, A : U, x : A) := x;
+
+// Error: E322: Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).
+def bad_identity := identity(Nat, Nat, 0);
+
+// Error: E321: A universe variable's bound must be UU0, as in U < UU0.
+def numeral_bound := forall n < 3. n = n;

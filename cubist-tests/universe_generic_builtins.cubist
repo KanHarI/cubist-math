@@ -1,0 +1,29 @@
+// From tests/universe-generic.test.mjs.
+
+import paths;
+
+// S12, D4 and Q10: instantiation, assumptions and builtins take universes
+// below UU0.
+def identity(U < UU0, A : U, x : A) := x;
+
+// Error: E518: A universe argument must lie below UU0: U0, U1, … or a universe variable.
+def S12(T : UU0, x : T) := identity(UU0, T, x);
+
+// Error: E407: LEM holds only for universes below UU0.
+def D4(T : UU0, nn : (T -> Void) -> Void) := LEM(UU0, T, nn);
+
+def D4_small(T : U1, nn : (T -> Void) -> Void) := LEM(U1, T, nn);
+
+// Error: E402: ua takes a universe below UU0.
+def Q10(A, B : UU0) := ua(UU0, A, B);
+
+def Q10_small(A, B : U1, e : Equiv(U1, A, B)) := ua(U1, A, B, e);
+
+// Error: E413: FunExt takes a universe below UU0.
+def funext(A : UU0, f, g : A -> A, h : forall a : A. f(a) = g(a)) :=
+  FunExt(UU0, A, (fun (a : A) => A), f, g, h);
+
+// Univalence is one generic definition, used at U0 and U1.
+def small(A, B : U0, e : Equiv(U0, A, B)) : A = B := ua(U0, A, B, e);
+
+def large(A, B : U1, e : Equiv(U1, A, B)) : A = B := ua(U1, A, B, e);
