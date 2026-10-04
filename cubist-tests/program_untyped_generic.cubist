@@ -1,0 +1,15 @@
+// From tests/cubical-program.test.mjs: untyped lambdas in generic
+// definitions report errors without aborting later declarations.
+
+// Error: E346: Untyped lambda requires an expected function type.
+def generic(U < UU0) := fun x => x;
+
+// Error: E340: Untranslated dependency: generic
+def use := generic(U0);
+
+def good := 0;
+
+// Error: E346: Untyped lambda requires an expected function type.
+def ordinary := fun x => x;
+
+def after := 1;

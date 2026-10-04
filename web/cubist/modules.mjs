@@ -419,5 +419,8 @@ export const cubistTestModules = [
   "ergonomics_simp_client_a", "ergonomics_simp_client_isolated", "ergonomics_simp_client_conflict",
   "ergonomics_simp_client_reverse_order", "ergonomics_simp_client_shadowed_rule",
   "ergonomics_multi_binder_fun", "ergonomics_tactic_sites", "ergonomics_tactic_sites_generic", "fuel_tactics",
-  "fuel_residual_goals", "fuel_search_spending"
+  "fuel_residual_goals", "fuel_search_spending", "program_generic_once", "program_shadow_first",
+  "program_shadow_second", "program_shadowing", "program_assumptions", "program_unfolding_hints",
+  "program_unfolding_scopes", "program_optimizations", "program_generic_identity", "program_generic_caller",
+  "program_unused_generic", "program_untyped_generic"
 ];

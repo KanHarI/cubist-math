@@ -1,0 +1,14 @@
+// From tests/cubical-program.test.mjs: an unused generic definition is
+// checked, and its locals inspect and replay under the universe binder.
+
+def identity(U < UU0, A : U, x : A) := x;
+
+def constant(U, V < UU0, A : U, B : V, x : A, y : B) := x;
+
+// Error: E606: Type mismatch: found A, expected Void.
+def invalid(U < UU0, A : U, x : A) : Void {
+  exact x;
+}
+
+// Output: forall U < UU0. forall V < UU0. forall A : U. forall B : V. A -> B -> A
+print(typeof(constant));

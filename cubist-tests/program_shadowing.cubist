@@ -1,0 +1,9 @@
+// From tests/cubical-program.test.mjs: module shadowing cannot retarget
+// earlier checked native definitions. remembered keeps the first module's
+// value, though the second module's value shadows it here.
+import program_shadow_first;
+import program_shadow_second;
+
+def preserved : remembered = 0 {
+  exact refl(0);
+}

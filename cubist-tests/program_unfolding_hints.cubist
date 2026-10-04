@@ -1,0 +1,30 @@
+// From tests/cubical-program.test.mjs: `with unfolding` names checked
+// definitions, checks its body apart, and cannot prove false paths. The
+// body is a definition of its own; the names steer nothing since the
+// conversion oracle's retirement.
+
+def id(n : Nat) := n;
+
+def hinted : id(0) = 0 {
+  exact with unfolding [id] {
+    refl(0)
+  };
+}
+
+def ordinary : 0 = 0 {
+  exact refl(0);
+}
+
+// Error: E606: Type mismatch: found 0 = 0, expected id(0) = 1.
+def false_hint : id(0) = 1 {
+  exact with unfolding [id] {
+    refl(0)
+  };
+}
+
+// Error: E337: No checked definition to unfold: unknown
+def missing : 0 = 0 {
+  exact with unfolding [unknown] {
+    refl(0)
+  };
+}

@@ -1,0 +1,4 @@
+// From tests/cubical-program.test.mjs: a generic definition that
+// program_generic_caller calls.
+
+def identity(U < UU0, A : U, x : A) := x;

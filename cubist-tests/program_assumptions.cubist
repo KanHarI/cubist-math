@@ -1,0 +1,16 @@
+// From tests/cubical-program.test.mjs: logical assumptions remain explicit,
+// minimal, and inspectable after native closure: introduction uses Truncate
+// and TruncateIntro, and innocent none.
+
+def Mere(A : U1) := Truncate(U1, A);
+
+def introduction(A : U1, a : A) := TruncateIntro(U1, A, a);
+
+computable def innocent : 0 = 0 {
+  exact refl(0);
+}
+
+// Error: E606: Type mismatch: found 0 = 0, expected 0 = 1.
+def wrong : 0 = 1 {
+  exact refl(0);
+}

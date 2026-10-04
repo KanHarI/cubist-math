@@ -141,3 +141,15 @@ workbench's Kernel graph.
 | [`fuel_tactics`](fuel_tactics.cubist) | Tactics that `tests/search-fuel.test.mjs` checks with the default fuel and with less, in fresh and reused sessions: a cycle and the rewrite budget among them. |
 | [`fuel_residual_goals`](fuel_residual_goals.cubist) | Unfinished `rw`, `simp`, `simpa` and `calc`: each states the remaining goal, the side that changed and the rules that fired; the command-line checker reports the same. |
 | [`fuel_search_spending`](fuel_search_spending.cubist) | Searches whose questions and rewrites `tests/search-fuel.test.mjs` counts. |
+| [`program_generic_once`](program_generic_once.cubist) | A universe-generic definition, one kernel definition instantiated at each level. |
+| [`program_shadow_first`](program_shadow_first.cubist) | A value that `program_shadow_second` defines again. |
+| [`program_shadow_second`](program_shadow_second.cubist) | The second value. |
+| [`program_shadowing`](program_shadowing.cubist) | A shadowed import cannot retarget a definition checked before it. |
+| [`program_assumptions`](program_assumptions.cubist) | Assumptions explicit and minimal, for the inspection and replay of `tests/cubical-program.test.mjs`. |
+| [`program_unfolding_hints`](program_unfolding_hints.cubist) | `with unfolding`: checked definitions only, its body checked apart, and no false path. |
+| [`program_unfolding_scopes`](program_unfolding_scopes.cubist) | Unfolding scopes close local variables and interval coordinates. |
+| [`program_optimizations`](program_optimizations.cubist) | Path proofs and refusals that every combination of the kernel's optimization switches checks alike. |
+| [`program_generic_identity`](program_generic_identity.cubist) | A generic definition, for `program_generic_caller`. |
+| [`program_generic_caller`](program_generic_caller.cubist) | Calls of an imported generic definition, linked to it. |
+| [`program_unused_generic`](program_unused_generic.cubist) | Unused generic definitions, whose locals inspect and replay under the universe binder. |
+| [`program_untyped_generic`](program_untyped_generic.cubist) | Untyped lambdas, refused in generic definitions and ordinary ones, without stopping later declarations. |
