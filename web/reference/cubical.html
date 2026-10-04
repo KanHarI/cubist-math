@@ -313,25 +313,28 @@ def join_by_formulas(A : U0, x, y, z : A, p : x = y, q : y = z) : x = z {
           </section>
           <section id="glue">
             <h2>Glue types</h2>
-            <p><code>Glue(A, face(i, 0, T, e), …)</code> is the type <code>A</code>, except that on each face it is <code>T</code>, glued to <code>A</code> along an equivalence <code>e</code> from <code>T</code> to <code>A</code> there. On a face that holds it is <code>T</code>, so a line of Glue types connects the types at its ends: this is how <a href="assumptions.html#univalence"><code>ua</code></a> turns an equivalence into a path. Here <code>e</code> is an equivalence in the form the kernel checks, a function whose fibers are contractible, not the <code>Equiv</code> of <code>import paths;</code>. <code>face_when(formula, T, e)</code> states a face as in <a href="#composition">composition</a>.</p>
+            <p><code>Glue(A, face(i, 0, T, e), …)</code> is the type <code>A</code>, except that on each face it is <code>T</code>, glued to <code>A</code> along an equivalence <code>e</code> from <code>T</code> to <code>A</code> there. On a face that holds it is <code>T</code>, so a line of Glue types connects the types at its ends: this is how <a href="assumptions.html#univalence"><code>ua</code></a> turns an equivalence into a path. Here <code>e</code> is an equivalence in the form the kernel checks, a function whose fibers are contractible: <code>ContrEquiv(U, T, A)</code> of the library’s <code>import univalence;</code>, not the <code>Equiv</code> of <code>import paths;</code>. That module also builds univalence this way. <code>face_when(formula, T, e)</code> states a face as in <a href="#composition">composition</a>.</p>
             <p><code>glue(a, face(i, 0, t), …)</code> is an element of a Glue type: <code>a</code> in <code>A</code>, and on each face, for each piece in order, a value <code>t</code> of that piece’s type whose image under its equivalence is <code>a</code> there. Its Glue type is the one it is checked at, given here by <code>typed</code>. <code>unglue(g)</code> is the base of <code>g</code>, so <code>unglue</code> of a <code>glue</code> term is its base. Composition through a line of Glue types transports along it:</p>
-            <pre><code data-check="accept">def IsContr(U &lt; UU0, A : U) := exists c : A. forall x : A. c = x;
-def Fiber(U &lt; UU0, A, B : U, f : A -&gt; B, y : B) := exists x : A. y = f(x);
-def FiberEquiv(U &lt; UU0, A, B : U) := exists f : A -&gt; B. forall y : B. IsContr(U, Fiber(U, A, B, f, y));
-
-def id_equiv(U &lt; UU0, A : U) : FiberEquiv(U, A, A) :=
-  (fun (x : A) =&gt; x, fun (y : A) =&gt; ((y, refl(y)),
-    fun (p : Fiber(U, A, A, fun (x : A) =&gt; x, y)) =&gt; path i =&gt; (p.2 @ i, path j =&gt; p.2 @ (i &amp; j))));
+            <pre><code data-check="accept">import univalence;
 
 def glued(A : U0) : A = A :=
-  path i =&gt; Glue(A, face(i, 0, A, id_equiv(U0, A)), face(i, 1, A, id_equiv(U0, A)));
+  path i =&gt; Glue(A, face(i, 0, A, id_contr_equiv(U0, A)), face(i, 1, A, id_contr_equiv(U0, A)));
 
 def moved(A : U0, a : A) : A := comp(fun (j : Interval) =&gt; glued(A) @ j, a);
 
 def moved_computes : moved(Unit or Unit, left(tt)) = left(tt) := refl(typed(Unit or Unit, left(tt)));
 
 def unglue_glue(A : U0, a : A) : a = a :=
-  path i =&gt; unglue(typed(Glue(A, face(i, 0, A, id_equiv(U0, A))), glue(a, face(i, 0, a))));</code></pre>
+  path i =&gt; unglue(typed(Glue(A, face(i, 0, A, id_contr_equiv(U0, A))), glue(a, face(i, 0, a))));</code></pre>
+            <p>A part on a face is checked there, where each of the face’s coordinates is its endpoint: in <code>face(k, 0, …)</code>, <code>k</code> is 0, and a variable whose type mentions <code>k</code> has its type at 0. So a value may be an element <code>g</code> of the Glue type itself, which on its face is the glued type, and <code>glue(unglue(g), face(k, 0, g))</code> is <code>g</code>:</p>
+            <pre><code data-check="accept">import univalence;
+
+def glue_eta(A : U0) :=
+  path(
+    fun (k : Interval) =&gt; forall g : Glue(A, face(k, 0, A, id_contr_equiv(U0, A))). g = g,
+    fun (k : Interval) =&gt; fun (g : Glue(A, face(k, 0, A, id_contr_equiv(U0, A)))) =&gt;
+      path i =&gt; glue(unglue(g), face(k, 0, g))
+  );</code></pre>
             <p>A <code>glue</code> term with no Glue type to be checked at is refused, and so is <code>unglue</code> of anything but an element of a Glue type:</p>
             <pre><code data-check="reject">def untyped_glue(A : U0, a : A) := glue(a);  // Error: glue needs the Glue type it builds an element of: write typed(Glue(…), glue(…)).
 

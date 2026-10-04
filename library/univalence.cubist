@@ -1,0 +1,54 @@
+import hlevels;
+
+// Univalence by Glue (Cohen, Coquand, Huber and Mörtberg, sections 5 and 7):
+// an equivalence glues a path of types, a path of types transports the
+// identity to an equivalence, and the two are inverse, so univalence holds,
+// constructively and with no assumption. The equivalences here are the
+// kernel's own form, a function whose fibers are contractible; the `ua`
+// builtin takes the Equiv of `import paths;`, with an inverse and its laws.
+
+// The fiber of f over y, and a function whose fibers are all contractible.
+def Fiber(U < UU0, A, B : U, f : A -> B, y : B) : U := exists x : A. y = f(x);
+
+def IsContrMap(U < UU0, A, B : U, f : A -> B) : U := forall y : B. IsContr(U, Fiber(U, A, B, f, y));
+
+def ContrEquiv(U < UU0, A, B : U) : U := exists f : A -> B. IsContrMap(U, A, B, f);
+
+// The identity: the fiber over y contracts onto (y, refl(y)) along its path.
+computable def id_contr_equiv(U < UU0, A : U) :
+  ContrEquiv(U, A, A) := (
+    fun (x : A) => x,
+    fun (y : A) => (
+      (y, refl(y)),
+      fun (p : Fiber(U, A, A, fun (x : A) => x, y)) => path i => (p.2 @ i, path j => p.2 @ (i & j))
+    )
+  );
+
+// Two equivalences with one forward map are equal: their witnesses that the
+// fibers are contractible are, since being contractible is a proposition.
+computable def contr_equiv_witness_path(
+  U < UU0, A, B : U, f : A -> B, w0, w1 : IsContrMap(U, A, B, f)
+) :
+  typed(ContrEquiv(U, A, B), (f, w0)) = (f, w1) := path i => (
+    f, fun (y : B) => is_contr_is_prop(U, Fiber(U, A, B, f, y), w0(y), w1(y)) @ i
+  );
+
+// The path of types an equivalence gives: A glued along it at 0, and B along
+// the identity at 1.
+computable def glue_path(U < UU0, A, B : U, e : ContrEquiv(U, A, B)) :
+  A = B := path i => Glue(B, face(i, 0, A, e), face(i, 1, B, id_contr_equiv(U, B)));
+
+// The equivalence a path of types gives: the identity on B, transported back
+// along the path.
+computable def idtoequiv(U < UU0, A, B : U, p : A = B) :
+  ContrEquiv(U, A, B) := comp(fun (j : Interval) => ContrEquiv(U, p @ -j, B), id_contr_equiv(U, B));
+
+// Eta: the path glued along idtoequiv(p) is p. A third piece, where k = 1,
+// glues p @ i along the identity transported up to -i.
+computable def glue_path_idtoequiv(U < UU0, A, B : U, p : A = B) :
+  glue_path(U, A, B, idtoequiv(U, A, B, p)) = p := path k => path i => Glue(
+    B, face(i, 0, A, idtoequiv(U, A, B, p)), face(i, 1, B, id_contr_equiv(U, B)),
+    face(
+      k, 1, p @ i, fill(fun (j : Interval) => ContrEquiv(U, p @ -j, B), id_contr_equiv(U, B), -i)
+    )
+  );

@@ -2,7 +2,7 @@
 // as `ua`, `path`, `comp`, `transport` or `refl`, elaborated by its own rule.
 // builtinTerm returns the elaborated term, or undefined when the name and the
 // number of arguments match no builtin, and the call is an ordinary one.
-import {T,fill,finiteLevel,substituteDimension} from "./core.mjs";
+import {T,fill,finiteLevel,onFace} from "./core.mjs";
 import {interval as I,face as F} from "./lattice.mjs";
 import {freeDimensions} from "./dimension-slots.mjs";
 import {equiv,withNativeReferences} from "./equivalence.mjs";
@@ -88,15 +88,17 @@ export function builtinTerm(t,builtin,n,scope,expected) {
     const dim=scope.fresh("i"),family=t.dimensionBody(n.args[0],dim,scope);
     if(builtin==="path")return T.line(dim,family,t.dimensionBody(n.args[1],dim,scope,family));
     if(builtin==="PathP")return T.path(dim,family,tr(n.args[1],null),tr(n.args[2],null));
+    // Each wall is translated on its face, at the family there.
+    const onItsFace=(face,wall)=>({face,term:t.dimensionBody(wall,dim,scope.onFace(face),onFace(family,face))});
     const system=n.args.slice(builtin==="fill"?3:2).map(part=>{
       if(part.kind==="call"&&part.fn.kind==="name"&&part.fn.name==="face_when"&&part.args.length===2)
-        return {face:t.cofibration(part.args[0],env),term:t.dimensionBody(part.args[1],dim,scope,family)};
+        return onItsFace(t.cofibration(part.args[0],env),part.args[1]);
       if(part.kind!=="call"||part.fn.kind!=="name"||part.fn.name!=="face"||part.args.length!==3)
         throw Error("A composition wall has syntax face(i, 0 or 1, fun (j : Interval) => ...).");
       const [coordinate,endpoint,wall]=part.args;
       if(coordinate.kind!=="name"||env.get(coordinate.name)?.tag!=="Dimension"||endpoint.kind!=="number"||![0,1].includes(endpoint.value))
         throw Error("A composition face needs an outer interval coordinate and endpoint 0 or 1.");
-      return {face:F.endpoint(env.get(coordinate.name).name,endpoint.value),term:t.dimensionBody(wall,dim,scope,family)};
+      return onItsFace(faceAt(env.get(coordinate.name),endpoint.value),wall);
     });
     const base=tr(n.args[1],null);
     return builtin==="fill"?withNativeReferences([family,system,base],(family,system,base)=>fill(dim,family,system,base,t.interval(n.args[2],env))):T.comp(dim,family,system,base);
@@ -110,27 +112,30 @@ export function builtinTerm(t,builtin,n,scope,expected) {
     return T.glueType(base,n.args.slice(1).map(part=>{
       const piece=systemPart(t,part,env,2);
       if(!piece)throw Error("A Glue piece has syntax face(i, 0 or 1, T, e) or face_when(φ, T, e).");
-      const {face,parts}=piece;
-      const type=tr(parts[0],null);
-      return {face,type,equiv:tr(parts[1],equiv(type,onFace(base,face)))};
+      // On its face, at the types there.
+      const {face,parts}=piece,there=scope.onFace(face);
+      const type=t.term(parts[0],there,null);
+      return {face,type,equiv:t.term(parts[1],there,equiv(type,onFace(base,face)))};
     }));
   }
   // glue(a, face(i, 0, t), …) at a Glue type: the element over the base a
   // that is t on each face, a value for each piece of the type in order.
   if(builtin==="glue"&&n.args.length>=1) {
     if(!expected)throw Error("glue needs the Glue type it builds an element of: write typed(Glue(…), glue(…)).");
-    const glue=scope.nf(expected);
+    // A type written as Glue is taken as it is: on a face that holds, its
+    // head is the glued type.
+    const glue=expected.tag==="Glue"?expected:scope.nf(expected);
     if(glue.tag!=="Glue")throw Error("glue builds an element of a Glue type.");
     return T.glue(glue,tr(n.args[0],glue.base),n.args.slice(1).map((part,index)=>{
       const value=systemPart(t,part,env,1);
       if(!value)throw Error("A glue value has syntax face(i, 0 or 1, t) or face_when(φ, t).");
-      const {face,parts}=value;
-      return {face,term:tr(parts[0],glue.system[index]?.type??null)};
+      const {face,parts}=value,type=glue.system[index]?.type;
+      return {face,term:t.term(parts[0],scope.onFace(face),type?onFace(type,face):null)};
     }));
   }
   // unglue(g): the base of an element of a Glue type.
   if(builtin==="unglue"&&n.args.length===1) {
-    const value=tr(n.args[0],null),glue=scope.nf(inferred(value).type);
+    const value=tr(n.args[0],null),type=inferred(value).type,glue=type.tag==="Glue"?type:scope.nf(type);
     if(glue.tag!=="Glue")throw Error("unglue takes an element of a Glue type.");
     return T.unglue(glue,value);
   }
@@ -254,12 +259,11 @@ function systemPart(t,part,env,size) {
   const [coordinate,endpoint]=part.args;
   if(coordinate.kind!=="name"||env.get(coordinate.name)?.tag!=="Dimension"||endpoint.kind!=="number"||![0,1].includes(endpoint.value))
     throw Error("A face needs an interval coordinate and endpoint 0 or 1.");
-  return {face:F.endpoint(env.get(coordinate.name).name,endpoint.value),parts:part.args.slice(2)};
+  return {face:faceAt(env.get(coordinate.name),endpoint.value),parts:part.args.slice(2)};
 }
-// A term on a face of one clause, each of its coordinates at its endpoint; on
-// any other face, the term as it is.
-function onFace(term,face) {
-  if(face.length!==1)return term;
-  return face[0].reduce((restricted,literal)=>substituteDimension(restricted,literal.slice(0,literal.lastIndexOf(":")),
-    literal.endsWith(":1")?I.one:I.zero),term);
+// The face where a coordinate is at an endpoint: on a face that already fixes
+// the coordinate (Scope.onFace), the face 1 where it agrees and 0 where not.
+function faceAt(dimension,endpoint) {
+  if(dimension.endpoint===undefined)return F.endpoint(dimension.name,endpoint);
+  return dimension.endpoint===endpoint?F.top:F.bottom;
 }

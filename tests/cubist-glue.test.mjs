@@ -9,7 +9,7 @@ import { sourceReader } from "../tools/module-sources.mjs";
 // Glue types, glue and unglue in Cubist source (cubist-tests/glue.cubist).
 test("Glue, glue and unglue check, and each misuse is refused with its code", async t => {
   const { verdicts, get } = await checkTestModule(t, "glue");
-  for (const name of ["id_equiv", "glued_line", "unglue_glue", "glued_ends"]) assert.equal(verdicts[name], true, `${name}: ${verdicts[name]}`);
+  for (const name of ["glued_line", "unglue_glue", "glued_ends"]) assert.equal(verdicts[name], true, `${name}: ${verdicts[name]}`);
   const refused = {
     not_an_equivalence: /^Type mismatch: found A -> A, expected exists /,
     misplaced_value: /^Instruction kernel: A Glue value's image disagrees with the base\./,

@@ -206,7 +206,12 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
   where each such variable is restricted where it is used, once for each
   face around it. So every derivation that needed no restriction is
   unchanged, and archive coverage is the same to the instruction and the
-  step.
+  step. The translator reads source the same way: it translates a part of a
+  partial element on its face, where each of the face's coordinates is its
+  endpoint (`Scope.onFace`), so `typed(loop @ 0, x)` inside a wall on
+  `k = 0` checks for `x : loop @ k`. The cases are Cubist modules,
+  `cubist-tests/face_restriction.cubist`, which the workspace opens to show
+  each `Restrict` step.
 - **Composition:** `comp^i A [φ ↦ u] a0` is built one tube at a time.
   - `System` starts from the family `A : U` over `i` and the base `a0 : A(0)`.
   - `SystemTube` adds a tube on a face of one clause. The tube is typed at `A`

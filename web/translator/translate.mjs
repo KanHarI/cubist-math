@@ -136,7 +136,11 @@ export class Translator {
     if(n.kind==="unary"&&n.operator==="-")return I.reverse(this.interval(n.operand,env,budget),budget);
     if(n.kind==="binary"&&["&","|"].includes(n.operator))
       return (n.operator==="&"?I.meet:I.join)(this.interval(n.left,env,budget),this.interval(n.right,env,budget),budget);
-    if(n.kind==="name"&&env.get(n.name)?.tag==="Dimension")return I.variable(env.get(n.name).name,budget);
+    // A coordinate on a face that fixes it is its endpoint there (Scope.onFace).
+    if(n.kind==="name"&&env.get(n.name)?.tag==="Dimension") {
+      const {name,endpoint}=env.get(n.name);
+      return endpoint===undefined?I.variable(name,budget):endpoint?I.one:I.zero;
+    }
     if(n.kind==="call"&&n.fn.kind==="name") {
       const args=n.args.map(a=>this.interval(a,env,budget));
       if(n.fn.name==="flip"&&args.length===1)return I.reverse(args[0],budget);

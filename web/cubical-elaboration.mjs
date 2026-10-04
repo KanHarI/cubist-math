@@ -19,7 +19,8 @@ export const ththRules = {
 // The derivation as the instruction kernel checks it (web/cubical-graph-view.mjs),
 // in the panel's form: each step one rule on earlier steps, under a comment
 // with the judgement it derives. Context entries are CtxExt steps, placed just
-// before their first use; a highlighted step names its rule and position.
+// before their first use, except a face entry, which comes with the Restrict
+// step that assumes it; a highlighted step names its rule and position.
 const stepNames = { beta: "Beta", delta: "Delta", iota: "Iota", path: "PathBeta", normalize: "Normalize", whnf: "Whnf", face: "Face" };
 export function instructionDerivation(program, view, { limit = 400 } = {}) {
   const graph = judgementGraph(program, view);
@@ -33,7 +34,7 @@ export function instructionDerivation(program, view, { limit = 400 } = {}) {
     return number;
   };
   for (const row of graph.rows) {
-    for (const entry of row.context) if (entry) place(entry);
+    for (const entry of row.context) if (entry && !entry.face) place(entry);
     const bound = row.entry ? [place(row.entry)] : [];
     const rule = row.rule === "step" ? stepNames[row.highlight.rule] : row.label;
     const note = row.highlight ? `at the ${row.highlight.side}${row.highlight.position.length ? ` [${row.highlight.position.join(", ")}]` : ""}: ${row.highlight.text}` : null;

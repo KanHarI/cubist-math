@@ -5,44 +5,33 @@
 // over a that is t on each face, and unglue(g) is the base of g. On a face
 // that holds, Glue is the glued type.
 
-// An equivalence in the form Glue takes: a function whose fibers are
-// contractible.
-def IsContr(U < UU0, A : U) := exists c : A. forall x : A. c = x;
-
-def Fiber(U < UU0, A, B : U, f : A -> B, y : B) := exists x : A. y = f(x);
-
-def FiberEquiv(U < UU0, A, B : U) :=
-  exists f : A -> B. forall y : B. IsContr(U, Fiber(U, A, B, f, y));
-
-// The identity: the fiber over y contracts onto (y, refl(y)) along its path.
-def id_equiv(U < UU0, A : U) :
-  FiberEquiv(U, A, A) := (
-    fun (x : A) => x,
-    fun (y : A) => (
-      (y, refl(y)),
-      fun (p : Fiber(U, A, A, fun (x : A) => x, y)) => path i => (p.2 @ i, path j => p.2 @ (i & j))
-    )
-  );
+import univalence;
 
 // A line of types: at each end the face holds, and Glue is the type glued there.
 def glued_line(A : U0) :
-  A = A := path i => Glue(A, face(i, 0, A, id_equiv(U0, A)), face(i, 1, A, id_equiv(U0, A)));
+  A = A := path i => Glue(
+    A, face(i, 0, A, id_contr_equiv(U0, A)), face(i, 1, A, id_contr_equiv(U0, A))
+  );
 
 // unglue of a glue term is its base, on the face and off it.
 def unglue_glue(A : U0, a : A) :
-  a = a := path i => unglue(typed(Glue(A, face(i, 0, A, id_equiv(U0, A))), glue(a, face(i, 0, a))));
+  a = a := path i => unglue(
+    typed(Glue(A, face(i, 0, A, id_contr_equiv(U0, A))), glue(a, face(i, 0, a)))
+  );
 
 // One piece on a face of two clauses, both ends at once.
 def glued_ends(A : U0) :
-  A = A := path i => Glue(A, face_when(on(i, 0) or on(i, 1), A, id_equiv(U0, A)));
+  A = A := path i => Glue(A, face_when(on(i, 0) or on(i, 1), A, id_contr_equiv(U0, A)));
 
 // Refused: the function is no equivalence, though it is the identity.
 def not_an_equivalence(A : U0) :
-  A = A := path i => Glue(A, face(i, 0, A, fun (x : A) => x), face(i, 1, A, id_equiv(U0, A)));
+  A = A := path i => Glue(A, face(i, 0, A, fun (x : A) => x), face(i, 1, A, id_contr_equiv(U0, A)));
 
 // Refused: on the face, the value's image is b, but the base is a.
 def misplaced_value(A : U0, a, b : A) :
-  a = a := path i => unglue(typed(Glue(A, face(i, 0, A, id_equiv(U0, A))), glue(a, face(i, 0, b))));
+  a = a := path i => unglue(
+    typed(Glue(A, face(i, 0, A, id_contr_equiv(U0, A))), glue(a, face(i, 0, b)))
+  );
 
 // Refused: glue has no Glue type to build an element of.
 def untyped_glue(A : U0, a : A) := glue(a);

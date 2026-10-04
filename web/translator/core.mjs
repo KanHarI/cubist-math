@@ -200,6 +200,13 @@ function substitute(t, n, value, dimension = false, memo = new WeakMap()) {
 }
 const dsub = (t,n,r) => substitute(t,n,r,true);
 export {dsub as substituteDimension};
+// A term on a face of one clause, each of its coordinates at its endpoint; on
+// any other face, the term as it is.
+export function onFace(term,face) {
+  if(face.length!==1)return term;
+  return face[0].reduce((restricted,literal)=>dsub(restricted,literal.slice(0,literal.lastIndexOf(":")),
+    literal.endsWith(":1")?I.one:I.zero),term);
+}
 // Syntax manipulation only; callers must independently check the result.
 // DefRef denotes a closed definition, so substitution does not enter its body.
 export {substitute as substituteTerm};

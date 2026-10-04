@@ -1,7 +1,7 @@
 import "../fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import {T,substituteDimension} from "../../web/translator/core.mjs";
+import {T} from "../../web/translator/core.mjs";
 import {interval as I,face as F} from "../../web/translator/lattice.mjs";
 import {checkKernel} from "./kernel-check.mjs";
 // The kernel checks the term, and its normal form checks at the same type.
@@ -98,21 +98,4 @@ test("function transport handles a genuinely varying domain",()=>{
   const family=T.pi("x",at(P,I.variable("i")),two);
   const result=check.verify(T.comp("i",family,[],v("f")),T.pi("x",T.unit,two),local);
   check.verify(result.normal,T.pi("x",T.unit,two),local);
-});
-// A tube that is a variable whose type mentions the tube's own face: x :
-// loop @ k on k = 0 is in the family there, loop @ 0, only on the face.
-// Endpoint cannot restrict x, which depends on k; Restrict types it on the
-// face, and the tube discharges the assumption.
-test("a tube may be a variable whose type mentions its face",()=>{
-  const loop=v("loop"),x=v("x"),k=I.variable("k"),fibre=at(loop,k),endo=T.pi("x",fibre,fibre);
-  const loopCtx=[["A",T.universe(0)],["loop",T.path("r",T.universe(0),A,A)]];
-  const fill=T.line("k",endo,T.lam("x",fibre,T.comp("i",fibre,[{face:F.endpoint("k",0),term:x}],x)));
-  new Kernel().verify(fill,null,loopCtx);
-  // With a second tube where j = 0, the two agree where both faces hold.
-  const body=T.lam("x",fibre,T.comp("i",fibre,[
-    {face:F.endpoint("j",0),term:x},
-    {face:F.endpoint("k",0),term:x},
-  ],x));
-  const end=e=>substituteDimension(body,"k",e);
-  new Kernel().verify(T.line("j",T.path("k",endo,end(I.zero),end(I.one)),T.line("k",endo,body)),null,loopCtx);
 });
