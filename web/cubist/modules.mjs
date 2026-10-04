@@ -438,5 +438,6 @@ export const cubistTestModules = [
   "quotient_universal_regression", "quotient_universal_bad_factorization", "truncation_small_mere",
   "truncation_cauchy_same", "truncation_resize", "truncation_strict_successor",
   "truncation_rebuilt_classical", "printer_lint", "translation_failed_proofs", "translation_path_induction",
-  "translation_weak_j", "mismatch_source_syntax", "mismatch_calc_naming", "source_text_messages"
+  "translation_weak_j", "mismatch_source_syntax", "mismatch_calc_naming", "source_text_messages",
+  "inspection_declared_types", "inspection_shadowed_nat", "inspection_axiom_labels", "inspection_let_alias"
 ];

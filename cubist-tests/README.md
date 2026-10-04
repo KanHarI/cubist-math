@@ -199,3 +199,7 @@ workbench's Kernel graph.
 | [`mismatch_source_syntax`](mismatch_source_syntax.cubist) | Mismatches in source syntax, without module prefixes, generated suffixes or redexes. |
 | [`mismatch_calc_naming`](mismatch_calc_naming.cubist) | `calc` names the two terms it shows together, apart from a captured label. |
 | [`source_text_messages`](source_text_messages.cubist) | Messages, evaluations and prints in source syntax. |
+| [`inspection_declared_types`](inspection_declared_types.cubist) | Declared types linked to their imported and local declarations. |
+| [`inspection_shadowed_nat`](inspection_shadowed_nat.cubist) | Names that shadow the natural numbers' type, linked to their own declarations. |
+| [`inspection_axiom_labels`](inspection_axiom_labels.cubist) | An assumption's label and a derived helper, inspected. |
+| [`inspection_let_alias`](inspection_let_alias.cubist) | A let alias keeps the original local's name. |

@@ -1,0 +1,16 @@
+// From tests/cubical-inspection.test.mjs: declared type occurrences link to
+// their imported and local source declarations.
+import w;
+
+def Z := Nat or Nat;
+
+def Tree := W(U0, U0, Unit, fun (a : Unit) => Void);
+
+def former := W;
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+def two : N := succ(succ(zero));
