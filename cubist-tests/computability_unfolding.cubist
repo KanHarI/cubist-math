@@ -12,3 +12,9 @@ evaluate with unfolding [identity] {
 evaluate with unfolding [] {
   boxed(boxed(0))
 } expecting boxed(1);
+
+// Evaluation unfolds boxed, though the hint names no definition.
+// Output: 2
+print(evaluate(with unfolding [] {
+      boxed(boxed(0))
+    }));

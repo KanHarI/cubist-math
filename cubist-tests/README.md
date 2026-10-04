@@ -17,8 +17,13 @@ workbench's Kernel graph.
   checker reports: a case that checks states nothing, and a refused case
   states its reason. A `// Refused: …` note above a case says why, in words;
   the tool keeps every comment but its own.
-- A module's JavaScript test, where it has one, checks what a verdict does
-  not show (an evaluation, the fuel spent, the goals shown), with
+- A value, a type or an elaborated term is a print directive, with what it
+  shows in an `// Output: …` comment above it, which the tool writes and the
+  test compares in the same way: `print(evaluate(e));` shows the normal form
+  of a closed term, `print(typeof(e));` its type and `print(inspect(e));`
+  the term the kernel checked, in kernel notation.
+- A module's JavaScript test, where it has one, checks what neither a
+  verdict nor a print shows (the fuel spent, the goals shown), with
   `testModule` or `checkTestModule` from
   [`tests/check-program.mjs`](../tests/check-program.mjs), looking
   declarations up by name.
@@ -86,3 +91,4 @@ workbench's Kernel graph.
 | [`computability`](computability.cubist) | For `tests/computability.test.mjs`: a computable declaration is refused when it depends on an assumption, naming the path, and its dependents with it. |
 | [`computability_evaluation`](computability_evaluation.cubist) | evaluate checks the normal form of a closed, assumption-free term; each failed evaluation's error is stated above it. |
 | [`computability_unfolding`](computability_unfolding.cubist) | Evaluation unfolds every definition and ignores unfolding hints. |
+| [`induction_printed`](induction_printed.cubist) | How an eliminator prints, for `tests/induction.test.mjs`: as the induction that builds it, with `__U` for an erased universe, and the printed source written back. |

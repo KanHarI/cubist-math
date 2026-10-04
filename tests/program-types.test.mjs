@@ -7,9 +7,9 @@ import { instructions } from "../web/cubical-instructions.mjs";
 import { cubicalKinds } from "../web/cubical-kernel.mjs";
 import { checkProgram, testModule } from "./check-program.mjs";
 
-// Nat and W as source declarations. The cases whose verdicts are the test are
-// cubist-tests/program_types*.cubist (tests/cubist-tests.test.mjs compares
-// them); here, what a verdict does not show, and the programs that need an
+// Nat and W as source declarations. The cases whose verdicts and prints are
+// the test are cubist-tests/program_types*.cubist (tests/cubist-tests.test.mjs
+// compares them); here, what neither shows, and the programs that need an
 // option or are generated.
 
 const module=await createCubical();
@@ -27,12 +27,11 @@ def tree := W(U0, U0, Unit, fun (a : Unit) => Void);
   for(const output of result.outputs)assert.match(output.reason,/Untranslated name/);
 });
 
-// Imported Nat and W are source declarations: no definition the program
-// holds uses a retired primitive, and they build with constructors and
-// eliminators.
+// Imported Nat and W are source declarations, as the module's prints show:
+// no definition the program holds uses a retired primitive, and they build
+// with constructors and eliminators.
 test("imported Nat and W use no retired primitive", async () => {
   const { program } = await types();
-  assert.equal(program.inspect("program_types__two").type.tag, "Sort");
   const tags = new Set(), seen = new WeakSet();
   const visit = value => { if (!value || typeof value !== "object" || seen.has(value)) return; seen.add(value); if (value.tag) tags.add(value.tag); Object.values(value).forEach(visit); };
   for (const [name] of program.kernel.definitions) { const view = program.inspect(name); visit(view.expression); visit(view.type); }

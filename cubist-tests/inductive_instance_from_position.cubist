@@ -16,3 +16,7 @@ def prepend(xs : List(U0, N)) := cons(zero, xs);
 // Error: E519: nil needs an expected type, to know which List(…) it builds: write typed(List(…),
 //   nil).
 def still_needs := nil;
+
+// cons's instance is read from xs.
+// Output: List(__U, N) -> List(__U, N)
+print(typeof(prepend));

@@ -14,18 +14,12 @@ import { testModule } from "./check-program.mjs";
 // Source cases carry the IDs of the G0 specification's section 5.
 const module = await createCubical();
 // The cases are cubist-tests/universe_generic*.cubist, whose comments state
-// each refusal (tests/cubist-tests.test.mjs); here, what a verdict does not
-// show.
+// each refusal and what each print shows (tests/cubist-tests.test.mjs); here,
+// what neither shows.
 const generic = testModule("universe_generic", { module }), builtins = testModule("universe_generic_builtins", { module });
 const parseError = source => { try { parse(source); return null; } catch (error) { return error.message; } };
 const labels = (program, binding) => program.symbols[binding].axioms.map(id => program.checker.assumptionLabels.get(id)).sort();
 
-test("a generic definition checks once and is instantiated at universes of tier 0", async () => {
-  const { program } = await generic();
-  assert.equal(program.inspect("universe_generic__identity").type.tag, "LPi");
-  assert.equal(program.checker.verify(T.app(T.levelApply({ tag: "DefRef", name: "universe_generic__identity" }, 0), naturalSort)).type.tag, "Pi");
-  assert.deepEqual(program.checker.verify({ tag: "DefRef", name: "universe_generic__three" }).normal, numeral(3));
-});
 test("B13: universe constants are reserved names", () => {
   assert.equal(parseError("def UU2 := Nat;"), "UU2 is a universe constant; pick another name.");
   assert.equal(parseError("def f := fun (U1 : U0) => U1;"), "U1 is a universe constant; pick another name.");
@@ -58,7 +52,6 @@ test("inspection names universe variables by their source names", async () => {
   assert.equal(view.typeText, "Π (U < ω), Π (A : U), (A → A)");
   assert.deepEqual(view.statement.parameters.map(p => [p.name[0].text, p.relation, p.type.map(part => part.text).join("")]),
     [["U", "<", "UU0"], ["A", ":", "U"], ["x", ":", "A"]]);
-  assert.equal(program.inspect("universe_generic__lifted").expressionText, "λ (V < ω). identity(next(V), V)");
 });
 // Seeded, so a failure reproduces.
 function generator(seed) {

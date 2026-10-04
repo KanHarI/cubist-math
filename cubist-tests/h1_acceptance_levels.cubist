@@ -61,3 +61,13 @@ inductive Wrap(U < UU0) : next(U) {
 }
 
 def wrap_small : U1 := Wrap(U0);
+
+// V2: Box's universe is erased, as no instance needs it. V12: Wrap's is
+// recorded.
+// Output: inductive Box : forall U < UU0. U -> U0 (type) { mk : N -> Box [1 data, 0 positions, 0
+//   dimensions]; } eliminator for P : Box(__U, A) -> V { mk_case : forall x : N. P(mk(x)); }
+print(inspect(Box));
+// Output: inductive Wrap : forall U_1 < UU0. next(U_1) (type, recorded U) { hold : U -> Wrap [1
+//   data, 0 positions, 0 dimensions]; } eliminator for P : Wrap(U) -> V { hold_case : forall x : U.
+//   P(hold(x)); }
+print(inspect(Wrap));

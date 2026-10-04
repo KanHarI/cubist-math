@@ -6,6 +6,14 @@ def identity(U < UU0, A : U, x : A) : A := x;
 
 def three := identity(U0, Nat, 3);
 
+// identity checks once, generic in U, and is instantiated at U0.
+// Output: forall U < UU0. forall A : U. A -> A
+print(typeof(identity));
+// Output: Nat -> Nat
+print(typeof(identity(U0, Nat)));
+// Output: 3
+print(evaluate(three));
+
 def nat_again : U0 := identity(U1, U0, Nat);
 
 def Endo := forall U < UU0. U -> U;
@@ -79,3 +87,7 @@ def both(nn0 : (Nat -> Void) -> Void, nn1 : (U0 -> Void) -> Void) :
 
 // Inspection names universe variables by their source names.
 def lifted(V < UU0) := identity(next(V), V);
+
+// Inspection names a universe variable by its source name.
+// Output: λ (V < ω). identity(next(V), V)
+print(inspect(lifted));

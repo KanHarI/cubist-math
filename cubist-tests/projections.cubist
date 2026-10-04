@@ -35,6 +35,19 @@ def through_generic_definition(U < UU0, A : U, b : Box(U, A)) : A := b.2;
 
 evaluate typed(Nat and Nat, (2, 5)).2 expecting 5;
 
+// The kernel's projections, under the parameter's lambda and the ascription
+// that keeps the stated result type.
+// Output: λ (p : (Nat × Unit)). (λ (ascription : Nat). ascription)(p.1)
+print(inspect(first_of));
+// Output: λ (p : (Nat × Unit)). (λ (ascription : Unit). ascription)(p.2)
+print(inspect(second_of));
+// Output: λ (t : (Nat × (Unit × Nat))). (λ (ascription : Nat). ascription)(t.2.2)
+print(inspect(third));
+
+// The family is read from the pair's type.
+// Output: forall A : U0. forall B : A -> U0. forall p : exists x : A. B(x). B(p.1)
+print(typeof(evidence));
+
 // Misused projections are rejected with precise messages, reported at the
 // projection itself.
 // Error: E349: Projection .1 requires a dependent pair; found a value of type Nat.

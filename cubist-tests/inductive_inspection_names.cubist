@@ -1,11 +1,8 @@
 // From tests/inductive-declarations.test.mjs: Inspection: names are distinct,
 // clause types whole, and repeated inspection keeps no state.
 // The first review of #74: names in the view are never ambiguous, clause
-// types print whole, and inspecting again leaves nothing behind.
-// A binder named as the type is shown apart from it.
-// The motive is not named as a type the clauses mention, nor as a parameter.
-// A groupoid's squash clause, whole: its boundary comes last.
-// Inspecting again names no new symbols.
+// types print whole, and inspecting again leaves nothing behind
+// (tests/inductive-declarations.test.mjs inspects Tr).
 
 inductive C {
   point(C : U0, x : C);
@@ -30,3 +27,31 @@ inductive G : trunc(1) {
 inductive Tr(U < UU0, A : U) : set {
   point(a : A);
 }
+
+// A binder named as the type is shown apart from it.
+// Output: inductive C : U1 (type) { point : forall C1 : U0. C1 -> C [2 data, 0 positions, 0
+//   dimensions]; } eliminator for P : C -> U { point_case : forall x : U0. forall x1 : x.
+//   P(point(x, x1)); }
+print(inspect(C));
+
+// The motive is not named as a type the clauses mention, nor as a parameter.
+// Output: inductive D : U0 (type) { d : P -> D [1 data, 0 positions, 0 dimensions]; } eliminator
+//   for Q : D -> U { d_case : forall x : P. Q(d(x)); }
+print(inspect(D));
+// Output: inductive E : U0 -> U0 -> U0 -> U0 -> U0 -> U0 (type) { e : E [0 data, 0 positions, 0
+//   dimensions]; } eliminator for Q_ : E(P, Q, M, R, P_) -> U { e_case : Q_(e); }
+print(inspect(E));
+
+// A groupoid's squash clause, whole: its boundary comes last.
+// Output: inductive G : U0 (trunc(1)) { g : G [0 data, 0 positions, 0 dimensions]; G.squash :
+//   forall x : G. forall x1 : G. forall x2 : x = x1. forall x3 : x = x1. forall x4 : x2 = x3.
+//   forall x5 : x2 = x3. x4 = x5 [0 data, 6 positions, 3 dimensions, generated]; } eliminator for P
+//   : G -> U { g_case : P(g); squash_case : forall x : G. forall x1 : G. forall x2 : x = x1. forall
+//   x3 : x = x1. forall x4 : x2 = x3. forall x5 : x2 = x3. forall x6 : P(x). forall x7 : P(x1).
+//   forall x8 : PathP(fun (i : Interval) => P(x2 @ i), x6, x7). forall x9 : PathP(fun (i :
+//   Interval) => P(x3 @ i), x6, x7). forall x10 : PathP(fun (i : Interval) => PathP(fun (j :
+//   Interval) => P((x4 @ i) @ j), x6, x7), x8, x9). forall x11 : PathP(fun (i : Interval) =>
+//   PathP(fun (j : Interval) => P((x5 @ i) @ j), x6, x7), x8, x9). PathP(fun (i : Interval) =>
+//   PathP(fun (j : Interval) => PathP(fun (k : Interval) => P(((G.squash(x, x1, x2, x3, x4, x5) @
+//   i) @ j) @ k), x6, x7), x8, x9), x10, x11); }
+print(inspect(G));

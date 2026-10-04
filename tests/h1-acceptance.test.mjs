@@ -14,7 +14,7 @@ import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { T, substituteDimension } from "../web/translator/core.mjs";
 import { interval as I, face as F } from "../web/translator/lattice.mjs";
-import { checkProgram, testModule } from "./check-program.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 const module = await createCubical();
 const library = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8");
@@ -25,17 +25,6 @@ const refused = (declaration, pattern) => {
   assert.equal(declaration.verified, false, `${declaration.name} was accepted`);
   assert.match(declaration.reason, pattern);
 };
-const levels = testModule("h1_acceptance_levels", { module });
-
-// V12: a level-dependent signature records its universe parameter; V2: a
-// phantom parameter's universe is not recorded.
-test("V2, V12: a phantom parameter's universe is erased, and a level-dependent signature's recorded", async () => {
-  const { program } = await levels();
-  const recorded = name => program.kernel.signature(program.kernel.signatures.get(`h1_acceptance_levels__${name}`).index).recorded;
-  assert.equal(recorded("Box"), 0);
-  assert.equal(recorded("Wrap"), 1);
-});
-
 test("R4: a kernel module of another ABI version is refused", () => {
   assert.throws(() => new CubicalKernel({ _cb_abi_version: () => 2 }), /ABI version 2, but this code expects version 3/);
 });

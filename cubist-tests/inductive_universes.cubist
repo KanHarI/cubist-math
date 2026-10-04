@@ -46,3 +46,19 @@ def lifted_zero : Lifted(U0) := mk;
 
 // Error: E606: Type mismatch: found Lifted(U0), expected Lifted(U1).
 def lifted_moved : Lifted(U1) := lifted_zero;
+
+// An erased universe parameter is read from a parameter: List's only bounds
+// A's type. A recorded one is carried: Pointed stores a type of its own
+// universe, and no parameter can read Lifted's.
+// Output: inductive List : forall U < UU0. U -> U (type) { nil : List [0 data, 0 positions, 0
+//   dimensions]; cons : A -> List -> List [1 data, 1 position, 0 dimensions]; } eliminator for P :
+//   List(__U, A) -> V { nil_case : P(nil); cons_case : forall x : A. forall x1 : List(__U, A).
+//   P(x1) -> P(cons(x, x1)); }
+print(inspect(List));
+// Output: inductive Pointed : forall U_1 < UU0. next(U_1) (type, recorded U) { pt : forall X : U. X
+//   -> Pointed [2 data, 0 positions, 0 dimensions]; } eliminator for P : Pointed(U) -> V { pt_case
+//   : forall x : U. forall x1 : x. P(pt(x, x1)); }
+print(inspect(Pointed));
+// Output: inductive Lifted : forall U_1 < UU0. U_1 (type, recorded U) { mk : Lifted [0 data, 0
+//   positions, 0 dimensions]; } eliminator for P : Lifted(U) -> V { mk_case : P(mk); }
+print(inspect(Lifted));

@@ -19,3 +19,10 @@ def partly : N -> Tree(U0, N) := node(leaf);
 
 // Error: E522: leaf builds Tree(…), but N is expected here.
 def swapped : Tree(U0, N) := node(zero, leaf, leaf);
+
+// node's datum a comes first, then its positions l and r.
+// Output: inductive Tree : forall U < UU0. U -> U (type) { leaf : Tree [0 data, 0 positions, 0
+//   dimensions]; node : A -> Tree -> Tree -> Tree [1 data, 2 positions, 0 dimensions]; } eliminator
+//   for P : Tree(__U, A) -> V { leaf_case : P(leaf); node_case : forall x : A. forall x1 :
+//   Tree(__U, A). forall x2 : Tree(__U, A). P(x1) -> P(x2) -> P(node(x, x1, x2)); }
+print(inspect(Tree));

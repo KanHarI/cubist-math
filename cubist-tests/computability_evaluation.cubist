@@ -9,6 +9,9 @@ evaluate 2 + 2 expecting 4;
 // Error: E326: The term evaluates to 4, not 5.
 evaluate 2 + 2 expecting 5;
 evaluate binary_mul(0b1101, 0b1011) expecting 0b10001111;
+// A binary value prints as a binary literal.
+// Output: 0b10001111
+print(evaluate(binary_mul(0b1101, 0b1011)));
 // Error: E324: The evaluated term depends on non-computing assumptions: LEM, Truncate,
 //   TruncateElim. Path to LEM: double_negation (classical) → LEM.
 evaluate double_negation expecting double_negation;

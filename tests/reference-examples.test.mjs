@@ -10,7 +10,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { ReplSession, replTranscript } from "../web/repl-session.mjs";
 import { budget } from "./timing.mjs";
-import { decode, referenceExamples, statedErrors, statedWarnings, transcript } from "./reference-pages.mjs";
+import { decode, referenceExamples, statedErrors, statedOutputs, statedWarnings, transcript } from "./reference-pages.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { diagnosticCode } from "../web/diagnostics.mjs";
 
@@ -52,10 +52,11 @@ async function check(text, name) {
     for (const { reason: message, code } of [...result.outputs.filter(output => !output.verified), ...program.gaps])
       reported.push({ message, code });
     for (const { message, code } of result.warnings) reported.push({ message, code });
-    return { failures: [...failures, ...gaps], warnings: result.warnings.map(warning => warning.message) };
+    return { failures: [...failures, ...gaps], warnings: result.warnings.map(warning => warning.message),
+      prints: result.prints.filter(print => print.module === name).map(print => print.text.replace(/\s+/g, " ")) };
   } catch (error) {
     reported.push({ message: error.message, code: diagnosticCode(error.message) });
-    return { failures: [error.message], warnings: [] };
+    return { failures: [error.message], warnings: [], prints: [] };
   } finally { program.dispose(); }
 }
 
@@ -108,8 +109,9 @@ async function verify(example, index, named = new Map(), base = null) {
   assert.ok(!("data-error" in attrs), `${label}: state the error as an \`// Error:\` comment, not data-error`);
   if (kind === "accept") {
     assert.deepEqual(statedErrors(text), [], `${label}: an accepted example states no error`);
-    const { failures, warnings } = await check(text, `reference_example_${index}`);
+    const { failures, warnings, prints } = await check(text, `reference_example_${index}`);
     assert.deepEqual(failures, [], `${label} should check`);
+    assert.deepEqual(statedOutputs(text), prints, `${label}: each print directive's output is stated in an \`// Output:\` comment`);
     // Lint warnings, like errors, are stated where they occur.
     const stated = statedWarnings(text);
     for (const warning of stated)
@@ -120,8 +122,9 @@ async function verify(example, index, named = new Map(), base = null) {
     assert.deepEqual(statedWarnings(text), [], `${label}: a rejected example states errors, not warnings`);
     const stated = statedErrors(text);
     assert.ok(stated.length, `${label}: a rejected example states its errors in \`// Error:\` comments`);
-    const { failures } = await check(text, `reference_example_${index}`);
+    const { failures, prints } = await check(text, `reference_example_${index}`);
     assert.ok(failures.length, `${label} should be rejected`);
+    assert.deepEqual(statedOutputs(text), prints, `${label}: each print directive's output is stated in an \`// Output:\` comment`);
     for (const error of stated)
       assert.ok(failures.some(failure => failure.includes(error)),
         `${label} should fail with "${error}", got ${JSON.stringify(failures)}`);
@@ -203,6 +206,11 @@ test("the harness distinguishes accepted, rejected, excerpted and unmarked examp
   await assert.rejects(verify({ ...accepted, text: unused }, 11), /is not stated in a comment/);
   await verify({ ...accepted, text: `${unused}  // Warning: k is unused` }, 12);
   await assert.rejects(verify({ ...accepted, text: "def one := 1;  // Warning: k is unused" }, 13), /should warn/);
+  // It states what each print directive shows, and only that.
+  const printed = "def two := succ(succ(0));\n// Output: 2\nprint(evaluate(two));";
+  await verify({ ...accepted, text: printed }, 14);
+  await assert.rejects(verify({ ...accepted, text: printed.replace("Output: 2", "Output: 3") }, 15), /Output:/);
+  await assert.rejects(verify({ ...accepted, text: printed.replace("// Output: 2\n", "") }, 16), /Output:/);
 });
 
 test("the harness replays REPL transcripts on the example before them", async () => {

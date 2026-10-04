@@ -9,6 +9,17 @@ import w;
 // Imported Nat has generic constructors, literals and elimination.
 def two : Nat := 2;
 
+// Nat is a declared type, and W too.
+// Output: inductive Nat : U0 (type) { zero : Nat [0 data, 0 positions, 0 dimensions]; succ : Nat ->
+//   Nat [0 data, 1 position, 0 dimensions]; } eliminator for P : Nat -> U { zero_case : P(0);
+//   succ_case : forall x : Nat. P(x) -> P(succ(x)); }
+print(inspect(Nat));
+// Output: inductive W : forall U < UU0. forall V < UU0. forall A1 : U. (A1 -> V) -> max(U, V)
+//   (type) { sup : forall a : A. (B(a) -> W) -> W [1 data, 1 position, 0 dimensions]; } eliminator
+//   for P : W(__U, __U, A, B) -> X { sup_case : forall x : A. forall x1 : B(x) -> W(__U, __U, A,
+//   B). (forall x2 : B(x). P(x1(x2))) -> P(sup(x, x1)); }
+print(inspect(W));
+
 def double(n : Nat) : Nat := match n {
     zero => zero;
     succ(k) => succ(succ(double(k)));

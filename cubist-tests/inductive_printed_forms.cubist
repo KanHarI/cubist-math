@@ -8,3 +8,7 @@
 inductive D(a__P : U0) {
   d(x : a__P);
 }
+
+// Output: inductive D : U0 -> U0 (type) { d : P -> D [1 data, 0 positions, 0 dimensions]; }
+//   eliminator for Q : D(P) -> U { d_case : forall x : P. Q(d(x)); }
+print(inspect(D));

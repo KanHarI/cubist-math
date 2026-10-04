@@ -24,3 +24,9 @@ def one_two : List(U0, N) := cons(succ(zero), cons(two, nil));
 computable def counted : N := two;
 
 def plain : Nat := 2;
+
+// Types print by name.
+// Output: N
+print(typeof(two));
+// Output: List(__U, N)
+print(typeof(one_two));

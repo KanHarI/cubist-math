@@ -44,3 +44,7 @@ inductive InResult {
 inductive Clear {
   c(n : Nat);
 }
+
+// Output: inductive Clear : U0 (type) { c : Nat -> Clear [1 data, 0 positions, 0 dimensions]; }
+//   eliminator for P : Clear -> U { c_case : forall x : Nat. P(c(x)); }
+print(inspect(Clear));

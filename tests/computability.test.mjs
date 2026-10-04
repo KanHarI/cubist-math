@@ -6,21 +6,17 @@ import { formatCubist } from "../web/cubist/formatter.mjs";
 import { testModule } from "./check-program.mjs";
 
 // computable and evaluate. The cases are cubist-tests/computability*.cubist,
-// whose comments state each refusal and each failed evaluation
-// (tests/cubist-tests.test.mjs); here, the values the evaluations compute,
-// and the syntax.
-const evaluation = testModule("computability_evaluation"), unfolding = testModule("computability_unfolding");
+// whose comments state each refusal, each failed evaluation and what each
+// print shows (tests/cubist-tests.test.mjs); here, what a failed evaluation
+// does to its module, the values evaluations report, and the syntax.
+const evaluation = testModule("computability_evaluation");
 
-test("evaluate checks the normal form of a closed assumption-free term", async () => {
+test("evaluate reports the normal form, and a failed evaluation makes its module incomplete", async () => {
   const { result } = await evaluation();
   // Only the evaluations that pass have values; each that fails states its
   // error in the module.
   assert.deepEqual(result.evaluations.map(item => item.value), ["4", "0b10001111"]);
   assert.equal(result.complete, false, "a failed evaluation makes the module incomplete");
-});
-test("evaluation unfolds every definition and ignores unfolding hints", async () => {
-  const { result } = await unfolding();
-  assert.deepEqual(result.evaluations.map(item => item.value), ["2", "3", "2"]);
 });
 test("computable and evaluate parse, format stably and stay ordinary names elsewhere", () => {
   const source = `import primes;

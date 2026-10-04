@@ -15,35 +15,16 @@ import { testModule } from "./check-program.mjs";
 // the stated type.
 const module = await createCubical();
 // The cases are cubist-tests/projections.cubist, projections_archive_helpers
-// and let_statements, whose comments state each refusal
-// (tests/cubist-tests.test.mjs); here, the checked terms, positions, goals
-// and links a verdict does not show.
+// and let_statements, whose comments state each refusal and what each print
+// shows, the checked projections among them (tests/cubist-tests.test.mjs);
+// here, the positions, goals and links neither shows.
 const projections = testModule("projections", { module }), lets = testModule("let_statements", { module });
 const parseError = source => { try { parse(source); return null; } catch (error) { return error.message; } };
-// The checked term of a declaration, under its parameters' lambdas and the
-// ascription that keeps a stated result type.
-const body = (program, name) => {
-  const ascription = term => term.tag === "App" && term.fn.tag === "Lam" && term.fn.body.tag === "Var" && term.fn.body.name === term.fn.name;
-  let term = program.inspect(`projections__${name}`).expression;
-  while (term.tag === "Lam" || ascription(term)) term = term.tag === "Lam" ? term.body : term.arg;
-  return term;
-};
 // The line:column where errors report the first `text` after `anchor` in `source`.
 const at = (source, text, anchor = "") => {
   const before = source.slice(0, source.indexOf(text, source.indexOf(anchor)));
   return `${before.split("\n").length}:${before.length - before.lastIndexOf("\n")}`;
 };
-
-test("p.1 and p.2 are the kernel's projections, with the family read from the pair's type", async () => {
-  const { program } = await projections();
-  assert.deepEqual(body(program, "first_of"), { tag: "Fst", pair: { tag: "Var", name: body(program, "first_of").pair.name } });
-  assert.equal(body(program, "second_of").tag, "Snd");
-  assert.equal(body(program, "third").tag, "Snd");
-  assert.equal(body(program, "third").pair.tag, "Snd");
-  assert.equal(program.checker.displayText(program.inspect("projections__evidence").type),
-    "forall A : U0. forall B : A -> U0. forall p : exists x : A. B(x). B(p.1)");
-  assert.deepEqual(program.evaluations.map(item => item.value), ["5"]);
-});
 
 test("misused projections are rejected with precise messages", async () => {
   const tuple = "A pair has only the projections .1 and .2. A tuple nests pairs to the right: the third component of (a, b, c) is .2.2.";
