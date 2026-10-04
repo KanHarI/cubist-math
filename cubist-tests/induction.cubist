@@ -2,30 +2,27 @@
 // whose names are the constructor's arguments and then, optionally, an
 // induction hypothesis for each recursive argument. Natural numbers keep
 // their own form, zero => …; succ h => …;, as well. From
-// tests/induction.test.mjs.
+// tests/induction.test.mjs. The lists are the library's, whose length,
+// concatenation and laws are proved by induction too.
+import naturals;
+import lists;
 
-inductive List(U < UU0, A : U) : U {
-  nil;
-  cons(head : A, tail : List(U, A));
-}
-
-// An induction expression names its hypotheses after the arguments.
-def length(xs : List(U0, Nat)) : Nat := induction xs return Nat {
+// An induction expression names its hypotheses after the arguments: the sum
+// of a list of numbers.
+def sum(xs : List(U0, Nat)) : Nat := induction xs return Nat {
     nil => 0;
-    cons(head, tail, ih) => succ(ih);
+    cons(head, tail, rest) => head + rest;
   };
 
-def append(xs, ys : List(U0, Nat)) : List(U0, Nat) := induction xs return List(U0, Nat) {
-    nil => ys;
-    cons(head, tail, rest) => cons(head, rest);
-  };
-
-// The motive may depend on the value, so the hypothesis is the statement for the tail.
-def append_nil(xs : List(U0, Nat)) :
-  append(xs, nil) = xs := induction xs as v return append(v, nil) = v {
-    nil => refl(typed(List(U0, Nat), nil));
-    cons(head, tail, ih) => cong(
-      fun (rest : List(U0, Nat)) => typed(List(U0, Nat), cons(head, rest)), ih
+// The motive may depend on the value, so the hypothesis is the statement for
+// the tail.
+def sum_append(xs, ys : List(U0, Nat)) :
+  sum(append(U0, Nat, xs, ys)) = sum(xs) + sum(ys) := induction xs as v return sum(
+    append(U0, Nat, v, ys)
+  ) = sum(v) + sum(ys) {
+    nil => refl(sum(ys));
+    cons(head, tail, ih) => trans(
+      cong(fun (m : Nat) => head + m, ih), sym(nat_add_assoc(head, sum(tail), sum(ys)))
     );
   };
 
@@ -35,24 +32,24 @@ def head_or_zero(xs : List(U0, Nat)) : Nat := induction xs return Nat {
     cons(head, tail) => head;
   };
 
-def two : length(cons(1, cons(2, nil))) = 2 {
+def three : sum(cons(1, cons(2, nil))) = 3 {
   rfl;
 }
 
-def joined : append(cons(1, nil), cons(2, nil)) = cons(1, cons(2, nil)) {
+def joined_sum : sum(append(U0, Nat, cons(1, nil), cons(2, nil))) = 3 {
   rfl;
 }
 
 // The induction statement proves a goal with a hypothesis for each recursive
 // argument.
-def append_assoc(xs, ys, zs : List(U0, Nat)) :
-  append(append(xs, ys), zs) = append(xs, append(ys, zs)) {
+def length_append_nil(xs : List(U0, Nat)) :
+  length(U0, Nat, append(U0, Nat, xs, nil)) = length(U0, Nat, xs) {
   induction xs {
     nil => {
       rfl;
     }
     cons(head, tail, ih) => {
-      exact cong(fun (rest : List(U0, Nat)) => typed(List(U0, Nat), cons(head, rest)), ih);
+      exact cong(succ, ih);
     }
   }
 }
