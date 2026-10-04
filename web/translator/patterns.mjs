@@ -50,9 +50,9 @@ const pattern = head => head.kind === "pattern" || !bare(head)
 const argument = arg => arg.kind === "pattern" ? pattern(arg) : { kind: "name", token: arg };
 const wildcard = { kind: "name", token: { text: "_" } };
 
-let serial = 0;
-// A name no source spells, for an argument the compiled match binds.
-const generatedToken = (stem, at) => ({ text: `${stem}'${++serial}`, start: at.start, end: at.end });
+// A name no source spells, for an argument the compiled match binds,
+// numbered within the match, so that an elaboration names alike every time.
+const generatedToken = (names, stem, at) => ({ text: `${stem}'${++names.next}`, start: at.start, end: at.end });
 
 // Compile and elaborate the match `n`: an expression at its expected type,
 // or a statement for its goal. `typeOf(value, scope)` gives the declared
@@ -75,8 +75,9 @@ export function compileMatch(t, n, scope, {statement, expected, goal, typeOf}) {
   // clause succ(y), _, the second value is still the parameter y. A
   // variable keeps its binding, so that recursion sees the parameter it is.
   let at = scope;
-  const columns = values.map(node => {
-    const name = `\u0000value'${++serial}`;
+  const names = { next: 0 };
+  const columns = values.map((node, k) => {
+    const name = `\u0000value'${k}`;
     at = at.alias(name, node.kind === "name" && at.env.has(node.name) ? at.env.get(node.name) : t.term(node, at, null));
     return { node: { kind: "name", name, start: node.start, end: node.end }, describe: scope.unit.source.slice(node.start, node.end).trim() };
   });
@@ -85,7 +86,7 @@ export function compileMatch(t, n, scope, {statement, expected, goal, typeOf}) {
   // checked here.
   const annotated = !statement && n.type
     ? t.term(n.type, n.motiveName ? t.sourceBinding(n.motiveName, t.term(columns[0].node, at, null), at) : at, null) : null;
-  const context = { n, statement, typeOf, locate, top: true, annotated };
+  const context = { n, statement, typeOf, locate, top: true, annotated, names };
   const result = compile(t, at, columns, rows, { ...context, expected, goal });
   const unreached = clauses.find(origin => !origin.used);
   if (unreached) throw locate(Error("This clause is never reached: the clauses before it take every case it would."), unreached.clause.constructor);
@@ -163,8 +164,8 @@ function compile(t, scope, columns, rows, context) {
       const [only] = names;
       return names.size === 1 && only !== null;
     });
-    const args = direct.map((named, k) => named ? first.args[k].token : generatedToken(constructor.fields?.[k] ?? "x", at));
-    const coordinates = Array.from({ length: constructor.dims }, (_, k) => first?.coordinates[k] ?? generatedToken("i", at));
+    const args = direct.map((named, k) => named ? first.args[k].token : generatedToken(context.names, constructor.fields?.[k] ?? "x", at));
+    const coordinates = Array.from({ length: constructor.dims }, (_, k) => first?.coordinates[k] ?? generatedToken(context.names, "i", at));
     const specialized = fitting.map(({row, head, rest}) => {
       if (head.kind === "name") {
         // A variable names the constructor here; _ names nothing.
