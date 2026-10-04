@@ -382,7 +382,7 @@ export const archiveModules = [
 // Modules of the rebuilt library, served from library/. A name here shadows an
 // archive module of the same name.
 export const libraryModules = ["naturals", "classical_axioms", "universe_automorphisms", "hlevels",
-  "h1_truncation", "h1_classical", "h1_cauchy_quotient", "h1_zorn_step"];
+  "h1_truncation", "h1_classical", "h1_cauchy_quotient", "h1_zorn_step", "contractible_maps"];
 
 // The Cubist sources the test suite checks (cubist-tests/), each a module the
 // workspace opens as proof.html?proof=NAME. tests/cubist-tests.test.mjs
