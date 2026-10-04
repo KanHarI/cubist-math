@@ -1,0 +1,22 @@
+// From tests/cubical-wasm.test.mjs: paths, compositions and pushout
+// eliminations with wrong boundaries are refused. The push clause of
+// bad_bridge is constant 0, but its inr clause is 1: its boundary fails.
+import suspension_types;
+
+// Error: E341: Interval coordinates can only be used in interval arguments.
+def escaped := path(fun (i : Interval) => Nat, fun (i : Interval) => i);
+
+// Error: E606: Type mismatch: found 0 = 0, expected 0 = 1.
+def wrong : 0 = 1 {
+  exact path(fun (i : Interval) => Nat, fun (i : Interval) => 0);
+}
+
+// Error: E410: A composition face needs an outer interval coordinate and endpoint 0 or 1.
+def malformed := comp(fun (i : Interval) => Nat, 0, face(i, 0, fun (j : Interval) => 0));
+
+// Error: E606: Type mismatch: found Unit -> 0 = 0, expected Unit -> 0 = 1.
+def bad_bridge(z : Suspension(Unit)) : Nat := match z {
+    inl(a) => 0;
+    inr(b) => 1;
+    push(a) @ i => 0;
+  };

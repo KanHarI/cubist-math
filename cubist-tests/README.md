@@ -153,3 +153,10 @@ workbench's Kernel graph.
 | [`program_generic_caller`](program_generic_caller.cubist) | Calls of an imported generic definition, linked to it. |
 | [`program_unused_generic`](program_unused_generic.cubist) | Unused generic definitions, whose locals inspect and replay under the universe binder. |
 | [`program_untyped_generic`](program_untyped_generic.cubist) | Untyped lambdas, refused in generic definitions and ordinary ones, without stopping later declarations. |
+| [`wasm_binary_literal`](wasm_binary_literal.cubist) | The binary naturals checked in WASM, and a false binary literal equation refused. |
+| [`wasm_factorials`](wasm_factorials.cubist) | The manual factorial sources, whose checked definitions `tests/cubical-wasm.test.mjs` measures. |
+| [`wasm_bad_factorial`](wasm_bad_factorial.cubist) | A false factorial value, refused. |
+| [`wasm_factorial_theorem`](wasm_factorial_theorem.cubist) | The Nat factorial theorem, without a million-successor expression. |
+| [`wasm_invalid_paths`](wasm_invalid_paths.cubist) | Paths, compositions and pushout eliminations with wrong boundaries, refused. |
+| [`wasm_moving_maps`](wasm_moving_maps.cubist) | A path constructor of the declared pushout transported along changing maps, with its boundary corrected. |
+| [`wasm_suspension_use`](wasm_suspension_use.cubist) | Suspension induction through a proved PathP bridge. |

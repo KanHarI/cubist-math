@@ -422,5 +422,7 @@ export const cubistTestModules = [
   "fuel_residual_goals", "fuel_search_spending", "program_generic_once", "program_shadow_first",
   "program_shadow_second", "program_shadowing", "program_assumptions", "program_unfolding_hints",
   "program_unfolding_scopes", "program_optimizations", "program_generic_identity", "program_generic_caller",
-  "program_unused_generic", "program_untyped_generic"
+  "program_unused_generic", "program_untyped_generic", "wasm_binary_literal", "wasm_factorials",
+  "wasm_bad_factorial", "wasm_factorial_theorem", "wasm_invalid_paths", "wasm_moving_maps",
+  "wasm_suspension_use"
 ];

@@ -1,0 +1,9 @@
+// From tests/cubical-wasm.test.mjs: a false factorial value is refused:
+// binary_factorial(3) is 0b110. (The JS test imported binary_induction
+// alone, and was refused for the missing name.)
+import binary_arithmetic;
+
+// Error: E606: Type mismatch: found 0b111 = 0b111, expected binary_factorial(3) = 0b111.
+def wrong_factorial : binary_factorial(3) = 0b111 {
+  exact refl(0b111);
+}
