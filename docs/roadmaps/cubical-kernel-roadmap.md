@@ -1,11 +1,12 @@
 # Kernel extensions for computation in Cubist
 
 Status: reviewed on 2026-09-28 against `02a57ef`, after the
-[work-plan audit](audits/2026-09-28-audit.md). G0 is delivered. H1 is
-implemented experimentally: its six instruction families are behind the
-`CC_EXTENSION_H1` gate with ABI version 3, its soundness review is pending,
-and its differential fixtures and G2's migration tooling are not built.
-H2–H4 and the optional kernel extensions remain planned.
+[work-plan audit](audits/2026-09-28-audit.md); H1's status updated on
+2026-10-04. G0 is delivered. H1 was released on 2026-10-02 after review of
+its model, critical pairs and canonicity: its six instruction families,
+ABI version 3, admit declarations by default, with no experimental option
+or marker, and its differential fixtures and G2's ledger verifier are
+implemented. H2–H4 and the optional kernel extensions remain planned.
 These items were split
 out of the [HoTT and cubical automation roadmap](hott-automation-roadmap.md),
 whose milestones A–F build on the existing kernel. G1–G5 keep their labels so
@@ -218,13 +219,14 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
   - **H1. One sort, no indices.** Data and higher inductive types: natural
     numbers, sums, W types, pushouts, suspensions, spheres, truncation
     `Trunc`, set quotients `Quotient`.
-    - **Status (2026-09-28).** Experimental: the six families F1–F6 are
-      implemented behind the `CC_EXTENSION_H1` gate, ABI 3, with the
-      driver, one-sort `inductive` declarations and explicit `match`
-      (work-plan K2.2, K2.3, L2.1, L2.2a); the circle's winding number
-      computes in source. Review pending: D1, D4, D5, Lemma H2, the
-      critical-pair check and canonicity. Migration pending: the
-      differential fixtures X1–X8 and G2's ledger verifier. The
+    - **Status (2026-10-04).** Released on 2026-10-02: the six families
+      F1–F6, ABI 3, with the driver, one-sort `inductive` declarations and
+      explicit `match` (work-plan K2.2, K2.3, L2.1, L2.2a), on by default;
+      the circle's winding number computes in source. D1, D4, D5, Lemma
+      H2, the critical-pair check and canonicity were approved on
+      2026-09-30 and 2026-10-02. The differential fixtures X1–X8 and G2's
+      ledger verifier are implemented; K2.5's other archive remedies are
+      pending. The
       specification's [history](h1-history.md#status-and-release-record) holds
       the release checklist and its record.
     - **Specification.** [H1 specification](h1-signature-specification.md)

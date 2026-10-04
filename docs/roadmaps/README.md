@@ -60,8 +60,8 @@ target statement or a supplied theorem parameter as an already proved result.
     `computable` and exact-value `evaluate`.
   - Remaining: argument inference and `apply`/`refine` (5), theories (6),
     the rest of inductive declarations and pattern matching (7), whose
-    one-sort declarations and explicit `match` are experimental since
-    2026-09-28, plus expected-value patterns and closed truncation readout
+    one-sort declarations and explicit `match` were released with H1 on
+    2026-10-02, plus expected-value patterns and closed truncation readout
     from milestone 8.
   - The [concrete implementation plan](proof-ergonomics-implementation-plan.md)
     adds PR-sized steps, lowering contracts, cubical notation proposals, and
@@ -79,10 +79,9 @@ target statement or a supplied theorem parameter as an already proved result.
   - B0, B2, B5, F3 and A9 are superseded by the kernel's item H and
     ergonomics milestone 7.
 - [Kernel extensions for computation](cubical-kernel-roadmap.md): G0 delivered;
-  H1 experimental behind a gate, with its review and migrations pending;
-  H2–H4 and the other extensions planned. Each is a set of instructions,
-  governed by the requirement that computability is expressible and
-  preserved:
+  H1 released on 2026-10-02 after its review; H2–H4 and the other
+  extensions planned. Each is a set of instructions, governed by the
+  requirement that computability is expressible and preserved:
   - G0, universe-generic checking over tiered universes (done: K1.2–K1.4 and
     L1.1);
   - H1–H4, one signature mechanism for inductive, indexed, higher and
