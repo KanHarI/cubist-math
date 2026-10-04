@@ -114,8 +114,14 @@ export function judgementGraph(program, view, checked = null, { limit = 1500, ex
     if (j.rule === "step" || j.rule === "replace") {
       // The highlighted subterm, on the side of the premise it rewrote.
       const premise = judgements.get(j.premises[0]);
-      let handle = premise[j.side === "term" ? "term" : j.side === "other" ? "other" : "type"];
-      for (const child of j.position) handle = kernel.node(handle).children[child];
+      // A step inside a system (a composition's tubes, a Glue type's or term's
+      // pieces) highlights the term the system belongs to.
+      let handle = premise[j.side === "term" ? "term" : j.side === "other" ? "other" : "type"], shown = handle;
+      for (const child of j.position) {
+        handle = kernel.node(handle).children[child];
+        if (!["Tube", "GlueSystem"].includes(kernel.node(handle).kind)) shown = handle;
+      }
+      handle = shown;
       row.highlight = { side: j.side, position: j.position, rule: j.stepRule ?? "replace", text: text(premise, handle).first };
     }
     return row;

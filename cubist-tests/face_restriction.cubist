@@ -68,3 +68,25 @@ def overlapping_tubes(A : U0, loop : A = A) :=
       face(k, 0, fun (i : Interval) => x)
     )
   );
+
+// Tubes on both ends of one coordinate, each typing g at the piece of its
+// face, T0 where i = 0 and T1 where i = 1. At either end of the line the
+// other tube's face is 0: it is never used, and is not typed.
+def tubes_on_both_ends(A, T0, T1 : U0, e0 : ContrEquiv(U0, T0, A), e1 : ContrEquiv(U0, T1, A)) :=
+  path(
+    fun (i : Interval) => Glue(A, face(i, 0, T0, e0), face(i, 1, T1, e1)) -> A,
+    fun (i : Interval) => fun (g : Glue(A, face(i, 0, T0, e0), face(i, 1, T1, e1))) => comp(
+      fun (l : Interval) => A, unglue(g), face(i, 0, fun (l : Interval) => e0.1(g)),
+      face(i, 1, fun (l : Interval) => e1.1(g))
+    )
+  );
+
+// glue where its face holds is its value there, at the type expected: in
+// the tube, i is 0, so the glue is t, of T0.
+def glue_where_its_face_holds(A, T0 : U0, e0 : ContrEquiv(U0, T0, A), t : T0) :=
+  path(
+    fun (i : Interval) => T0,
+    fun (i : Interval) => comp(
+      fun (l : Interval) => T0, t, face(i, 0, fun (l : Interval) => glue(e0.1(t), face(i, 0, t)))
+    )
+  );

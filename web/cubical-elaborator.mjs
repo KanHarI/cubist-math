@@ -1,5 +1,5 @@
 import { CubicalSyntax } from "./cubical-syntax.mjs";
-import { T, substituteTerm } from "./translator/core.mjs";
+import { T, substituteTerm, withoutEmptyFaces } from "./translator/core.mjs";
 import { interval as I } from "./translator/lattice.mjs";
 import { NameSupply, localName, numberedName, stem } from "./translator/names.mjs";
 import { sourceText } from "./cubical-source-text.mjs";
@@ -603,7 +603,16 @@ export class NativeCubicalElaborator {
     }
     let reference, admission;
     try { ({ reference, admission } = this.admit(name, this.syntax.encode(body), this.syntax.encode(signature))); }
-    catch (error) { throw this.describeMismatch(error, new Map()); }
+    catch (error) {
+      // A type the kernel inferred by substitution can carry parts on the
+      // face 0, which need not be well typed and the driver may fail to
+      // derive. They are never used: without them, the type is the same.
+      const cleaned = withoutEmptyFaces(signature);
+      if (cleaned === signature) throw this.describeMismatch(error, new Map());
+      try { ({ reference, admission } = this.admit(name, this.syntax.encode(body), this.syntax.encode(cleaned))); }
+      catch { throw this.describeMismatch(error, new Map()); }
+      type = withoutEmptyFaces(type);
+    }
     this.definitionViews.set(name, { term, type, assumptions, admission });
     this.definitionExtensions.set(name, this.extensionsOf(term, type, ...assumptions.values()));
     let result = this.syntax.decode(reference);
