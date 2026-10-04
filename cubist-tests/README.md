@@ -187,3 +187,8 @@ workbench's Kernel graph.
 | [`quotient_universal_hom_universe_regression`](quotient_universal_hom_universe_regression.cubist) | The homomorphism universe schemas at U0 to U3, each computable, and agreeing with small homomorphisms. |
 | [`quotient_universal_regression`](quotient_universal_regression.cubist) | The quotient universal property for a genuinely U1 target, without representative choice. |
 | [`quotient_universal_bad_factorization`](quotient_universal_bad_factorization.cubist) | A factorization without the subgroup-killing hypothesis, refused. |
+| [`truncation_small_mere`](truncation_small_mere.cubist) | G2: `small_mere_eliminate` into U1 through the declared eliminator, computable. |
+| [`truncation_cauchy_same`](truncation_cauchy_same.cubist) | G5: the rebuilt `CauchySame` and `EventualClose` in U0, computable. |
+| [`truncation_resize`](truncation_resize.cubist) | G6: resizing a proposition with LEM alone, and a `StrictlyAbove` witness refused set evidence. |
+| [`truncation_strict_successor`](truncation_strict_successor.cubist) | G7: `no_maximal_strict_successor`, double negation at U1, LEM retained. |
+| [`truncation_rebuilt_classical`](truncation_rebuilt_classical.cubist) | Rebuilt classical assumptions beside the legacy signatures, and a false truncation former refused. |

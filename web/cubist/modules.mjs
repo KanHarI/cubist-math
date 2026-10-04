@@ -435,5 +435,7 @@ export const cubistTestModules = [
   "polynomial_algebra_adjoined_root_regression", "polynomial_algebra_invalid_polynomial_claims",
   "polynomial_algebra_polynomial_regression", "quotient_groups_invalid_quotient",
   "quotient_groups_quotient_regression", "quotient_universal_hom_universe_regression",
-  "quotient_universal_regression", "quotient_universal_bad_factorization"
+  "quotient_universal_regression", "quotient_universal_bad_factorization", "truncation_small_mere",
+  "truncation_cauchy_same", "truncation_resize", "truncation_strict_successor",
+  "truncation_rebuilt_classical"
 ];

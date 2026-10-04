@@ -1,0 +1,8 @@
+// From tests/truncation-migration.test.mjs: G7: no_maximal_strict_successor applies double negation at U1 and retains
+// LEM.
+import h1_zorn_step;
+def replay(
+  A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le),
+  none : Trunc(U1, exists x : A. OrderMaximal(A, le, x)) -> Void, x : A
+) :
+  Trunc(U1, StrictlyAbove(A, le, x)) := no_maximal_strict_successor(A, le, laws, none, x);
