@@ -134,13 +134,21 @@ nest in L2.4.
 ## Extension
 
 `extends` takes the parents' fields, in order, before the theory's own. A
-parent that is reached twice through one ancestor, as two theories that
-both extend `Semigroup` on one sort, contributes its fields once.
+theory may extend several parents. An ancestor that two parents reach
+contributes its fields once when it arrives with the same fields under the
+same names: `CommGroup extends AbelianGroup, CommMonoid` has one `Monoid`.
+An ancestor that arrives renamed is another copy: below, the additive and
+the multiplicative structure each have their own `Monoid`, with `add` and
+`mul`, on the one sort `R`.
 
 A parent can be renamed and labelled:
 
 ```
 theory AbelianGroup extends Group {
+  law mul_comm(x, y : M) : x * y = y * x;
+}
+
+theory CommMonoid extends Monoid {
   law mul_comm(x, y : M) : x * y = y * x;
 }
 
@@ -154,8 +162,10 @@ theory CommRing extends
 ```
 
 A renaming gives a parent's field a name in the child, and an operation a
-notation in place of its own. Two fields of one name from different parents
-are refused; the error names both and asks for a renaming. A child model has
+notation in place of its own; renaming a sort to one name in two parents, as
+`M := R` above, makes it one sort of the child. Two fields of one name from
+different parents are refused unless they are one ancestor's field shared
+as above; the error names both and asks for a renaming. A child model has
 each parent's model: `T.p(m) : P.Model(U)` for a parent `P` labelled `p`, and
 `m.p` writes it. An unlabelled parent's label is its name in snake case,
 `G.monoid` for `Group extends Monoid`.
