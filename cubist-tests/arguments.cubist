@@ -73,7 +73,7 @@ print(evaluate(partial(2)));
 def no_search(n : Nat) : n = n := same(U0, n = n, _);
 
 // A universe that cumulativity leaves open: Nat is in U0, and in U1 as well.
-// Error: E387: The parameter A of same is not determined: U0 fits, and so would a larger universe.
+// Error: E392: The parameter A of same is not determined: U0 fits, and so would a larger universe.
 //   Give it explicitly.
 def universe_open := same(U2, _, Nat);
 
@@ -85,8 +85,8 @@ def universe_given := same(U2, U0, Nat);
 //   inside an argument, out of its scope. Give it explicitly.
 def bound_variable := function_of(U0, _, _, fun (n : Nat) => refl(n));
 
-// A universe argument is given, not inferred.
-// Error: E381: Give the universe U of same explicitly: a universe argument is not inferred.
+// A universe argument can be a hole: the least universe the call needs,
+// here U0, which holds A := Nat (cubist-tests/implicit_parameters).
 def universe_hole(n : Nat) : Nat := same(_, Nat, n);
 
 // Error: E375: same has no parameter b; its parameters are U, A, a.

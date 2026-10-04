@@ -1859,6 +1859,10 @@
    "summary": "hlevel with no import of hlevels, which it names."
   },
   {
+   "path": "cubist-tests/implicit_parameters.cubist",
+   "summary": "Implicit parameters `{…}` and universe holes (L4.1b): implicit arguments read off the others, named ones, the library's lists, recursion that passes them unchanged, universes inferred as the least the call needs, bounds on both sides, and the refusals: a type cumulativity leaves open, a universe the call's type depends on that nothing bounds, and an implicit parameter given by position."
+  },
+  {
    "path": "cubist-tests/induction_printed.cubist",
    "summary": "How an eliminator prints, for `tests/induction.test.mjs`: as the induction that builds it, with `__U` for an erased universe, and the printed source written back."
   },
@@ -2300,7 +2304,7 @@
   },
   {
    "path": "library/lists.cubist",
-   "summary": "Lists of elements of a type in any universe below `UU0`, with their length and concatenation (`append`): `nil` is a unit on both sides, concatenation is associative, and the length of a concatenation is the sum of the lengths."
+   "summary": "Lists of elements of a type in any universe below `UU0`, with their length and concatenation (`append`), whose universe and element type are implicit parameters, read off the lists: `nil` is a unit on both sides, concatenation is associative, and the length of a concatenation is the sum of the lengths."
   },
   {
    "path": "library/nat.cubist",

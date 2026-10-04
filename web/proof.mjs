@@ -769,7 +769,7 @@ function renderStatement(view) {
     const name = document.createElement("span"), type = document.createElement("span");
     append(name, parameter.name);
     append(type, parameter.type);
-    row.append(name, ` ${parameter.relation} `, type);
+    row.append(...parameter.implicit ? ["{", name] : [name], ` ${parameter.relation} `, type, ...parameter.implicit ? ["}"] : []);
     $("inspect-parameters-list").append(row);
   }
 }

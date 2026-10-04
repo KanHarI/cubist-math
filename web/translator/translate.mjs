@@ -350,7 +350,7 @@ export class Translator {
         if(site) {
           // Its parameters are known by their binders' tokens, and each is
           // recorded where it is bound (ownParameter), never looked up by name.
-          const recursive={tag:"Recursive",source:d.name.text,params:own.map(p=>p.name.text),
+          const recursive={tag:"Recursive",source:d.name.text,params:own.map(p=>p.name.text),implicit:own.map(p=>!!p.implicit),
             tokens:own.map(p=>p.name),bindings:new Map(),site};
           bodyEnv=new Map(env).set(d.name.text,recursive).set(RECURSIVE,recursive);
         }
@@ -369,9 +369,10 @@ export class Translator {
             assumptions,checked.term,checked.type));
         }
         if(this.checker.define)unit.fuel.spend("queries");
-        // Its parameters' source names, for named arguments.
+        // Its parameters as the source declares them, for named arguments
+        // and implicit parameters.
         const definition=this.checker.define?.(d.name.text,checked.term,checked.type,
-          own.length?own.map(p=>p.name.text):null)??checked.term;
+          own.length?own.map(p=>({name:p.name.text,implicit:!!p.implicit})):null)??checked.term;
         this.checker.kernel?.checkDeadline();
         env.set(d.name.text,definition);
         declarations.push({name:d.name.text,status:native?"checked-native-cubical":"checked-cubical-fragment",term:checked.term,type:checked.type,normal:checked.normal,native});

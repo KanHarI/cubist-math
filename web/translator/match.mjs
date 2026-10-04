@@ -476,6 +476,14 @@ export function resolveRecursive(translator, node, value, args, scope) {
   };
   const example = `as ${value.source}(m) in succ(m) => …`;
   if (!value.results) throw locate(Error(selfReference(value.source)));
+  // A call gives the explicit parameters; each implicit one is passed
+  // unchanged, as its own name.
+  const explicit = value.implicit?.filter(implicit => !implicit).length ?? value.params.length;
+  if (args && explicit < value.params.length && args.length === explicit) {
+    const given = [...args];
+    args = value.implicit.map((implicit, index) => implicit
+      ? {kind: "name", name: value.params[index], start: node.start, end: node.end} : given.shift());
+  }
   if (!args || args.length !== value.params.length)
     throw locate(Error(`${value.source} takes ${value.params.length} argument${value.params.length === 1 ? "" : "s"}.`));
   args.forEach((arg, index) => {
