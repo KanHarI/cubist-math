@@ -1,0 +1,19 @@
+// From tests/inductive-declarations.test.mjs: Inspection: generated names
+// print as themselves after every round of suffixes.
+// The fifth review of #74: a generated name prints as itself after every
+// round of suffixes. P__ printed as nothing, as the display reads __ as a
+// module's separator: the motive vanished from its clause, and U__ left the
+// universe blank. After one underscore, names take a letter.
+
+inductive E(P, Q, M, R, P_, Q_, M_, R_ : U0) {
+  e;
+}
+
+inductive F(U, V, W, X, Y, V_, W_, X_, Y_ : U0) {
+  f;
+}
+
+inductive D {
+  c_;
+  d(x : D);
+}

@@ -393,5 +393,12 @@ export const cubistTestModules = [
   "hlevel_without_import", "h1_acceptance_levels", "h1_acceptance_formers", "h1_acceptance_instances",
   "h1_acceptance_paths", "program_types", "program_types_nat_as_name", "program_types_constructor_shadowing",
   "projections", "projections_archive_helpers", "let_statements", "path_operators", "universe_generic",
-  "universe_generic_bounds", "universe_generic_builtins", "universe_generic_rewriting"
+  "universe_generic_bounds", "universe_generic_builtins", "universe_generic_rewriting", "inductive_values",
+  "inductive_universes", "inductive_levels", "inductive_data_first", "inductive_higher",
+  "inductive_rejections", "inductive_failed", "inductive_computable", "inductive_square", "inductive_beta",
+  "inductive_binders", "inductive_former_values", "inductive_instance_from_position", "inductive_reduction",
+  "inductive_naturals", "inductive_telescope", "inductive_imports", "inductive_shape_errors",
+  "inductive_no_marker", "inductive_path_lambda", "inductive_projections", "inductive_trunc_minus_one",
+  "inductive_inspection", "inductive_inspection_names", "inductive_generated_names",
+  "inductive_printed_forms", "inductive_assumptions", "inductive_one_parameter_name"
 ];

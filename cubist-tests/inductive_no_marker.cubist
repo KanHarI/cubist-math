@@ -1,0 +1,9 @@
+// From tests/inductive-declarations.test.mjs: Second review: inspection shows
+// no marker, and only the result position's words are keywords.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+def n : N := zero;

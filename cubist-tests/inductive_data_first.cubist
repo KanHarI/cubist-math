@@ -1,0 +1,21 @@
+// From tests/inductive-declarations.test.mjs: Data are moved ahead of
+// positions, and uses keep the source's order.
+// A11: data are moved ahead of positions, as the kernel requires.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+inductive Tree(U < UU0, A : U) {
+  leaf;
+  node(l : Tree(U, A), a : A, r : Tree(U, A));
+}
+
+def small : Tree(U0, N) := node(leaf, zero, node(leaf, succ(zero), leaf));
+
+// Error: E525: Apply node to all its 3 arguments: the kernel takes its data before its positions.
+def partly : N -> Tree(U0, N) := node(leaf);
+
+// Error: E522: leaf builds Tree(…), but N is expected here.
+def swapped : Tree(U0, N) := node(zero, leaf, leaf);

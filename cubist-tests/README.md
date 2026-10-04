@@ -55,3 +55,31 @@ workbench's Kernel graph.
 | [`universe_generic_bounds`](universe_generic_bounds.cubist) | Universe is removed, and bounds, reserved names and universes are checked (B11–B14, B16, B17). |
 | [`universe_generic_builtins`](universe_generic_builtins.cubist) | Instantiation, assumptions and builtins take universes below UU0 (S12, D4, Q10), and univalence is one generic definition. |
 | [`universe_generic_rewriting`](universe_generic_rewriting.cubist) | Rewriting matches a generic rule's universe only where it is a bare variable. |
+| [`inductive_values`](inductive_values.cubist) | For `tests/inductive-declarations.test.mjs` (as are the inductive_* modules below): constructors build values, computations hold by rfl, and no result carries a marker (T2). |
+| [`inductive_universes`](inductive_universes.cubist) | Universe parameters: an erased one is read from its parameter, a recorded one carried (V7, V20, V26, V30). |
+| [`inductive_levels`](inductive_levels.cubist) | The sort's level is the least containing its data and arities, or the one written (V27, V28). |
+| [`inductive_data_first`](inductive_data_first.cubist) | Data are moved ahead of positions, and uses keep the source's order (A11). |
+| [`inductive_higher`](inductive_higher.cubist) | Higher constructors: paths between constructors, used at coordinates. |
+| [`inductive_rejections`](inductive_rejections.cubist) | Declarations are checked before they are admitted: each rejection names what is wrong (A4, A8, V31). |
+| [`inductive_failed`](inductive_failed.cubist) | A failed declaration leaves its names untranslated and nothing admitted. |
+| [`inductive_computable`](inductive_computable.cubist) | computable accepts a declared type, and refuses an assumption, naming it (T3, T4). |
+| [`inductive_square`](inductive_square.cubist) | A two-dimensional constructor takes its instance from a square's type. |
+| [`inductive_beta`](inductive_beta.cubist) | Constructor types are beta-reduced before they are classified and admitted. |
+| [`inductive_binders`](inductive_binders.cubist) | Binders written in a constructor's result are its arguments. |
+| [`inductive_former_values`](inductive_former_values.cubist) | A type former used as a value is a lambda over its universes and parameters. |
+| [`inductive_instance_from_position`](inductive_instance_from_position.cubist) | Without an expected type, a constructor's instance is read from a position argument. |
+| [`inductive_reduction`](inductive_reduction.cubist) | Types are checked before reduction, and level redexes reduce. |
+| [`inductive_naturals`](inductive_naturals.cubist) | A declared type for other modules to import. |
+| [`inductive_telescope`](inductive_telescope.cubist) | A declared type with a telescope of parameters, for another module to import. |
+| [`inductive_imports`](inductive_imports.cubist) | Imported declared types are used by name, with no marker; each module numbers its own names. |
+| [`inductive_shape_errors`](inductive_shape_errors.cubist) | Shape errors name the constructor and its argument, where they are. |
+| [`inductive_no_marker`](inductive_no_marker.cubist) | Inspection shows no marker. |
+| [`inductive_path_lambda`](inductive_path_lambda.cubist) | A path lambda at a point is contracted in constructor types. |
+| [`inductive_projections`](inductive_projections.cubist) | Projections contract, and constructor-headed rules simplify, in constructor types. |
+| [`inductive_trunc_minus_one`](inductive_trunc_minus_one.cubist) | trunc(-1) is prop (V31). |
+| [`inductive_inspection`](inductive_inspection.cubist) | Inspection: a declared type's constructors and its eliminator's clause types. |
+| [`inductive_inspection_names`](inductive_inspection_names.cubist) | Inspection: names are distinct, clause types whole, and repeated inspection keeps no state. |
+| [`inductive_generated_names`](inductive_generated_names.cubist) | Inspection: generated names print as themselves after every round of suffixes. |
+| [`inductive_printed_forms`](inductive_printed_forms.cubist) | Inspection: generated names avoid the printed form of every name. |
+| [`inductive_assumptions`](inductive_assumptions.cubist) | Inspection: no declared type mentions an assumption, and each refusal names it. |
+| [`inductive_one_parameter_name`](inductive_one_parameter_name.cubist) | Inspection: a parameter has one name in the whole view, and T.squash is distinct from squash. |

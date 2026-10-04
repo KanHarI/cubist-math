@@ -1,0 +1,10 @@
+// From tests/inductive-declarations.test.mjs: Inspection: generated names
+// avoid the printed form of every name.
+// The sixth review of #74: a parameter named a__P prints as P, as the
+// display shows the part after a module's separator; the motive was named P
+// too, and its clause read forall x : P. P(d(x)). Names are new to every form
+// a name prints in.
+
+inductive D(a__P : U0) {
+  d(x : a__P);
+}

@@ -1,0 +1,13 @@
+// From tests/inductive-declarations.test.mjs: Inspection: a parameter has one
+// name in the whole view, and T.squash is distinct from squash.
+// The second review of #74: one naming for the whole view, and the
+// generated constructor as the source writes it.
+// Any display: a variable whose name is a printed label is numbered apart.
+
+inductive T(c : U0) {
+  c(x : c);
+}
+
+inductive S : prop {
+  squash;
+}

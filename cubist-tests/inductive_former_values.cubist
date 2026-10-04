@@ -1,0 +1,24 @@
+// From tests/inductive-declarations.test.mjs: A type former used as a value
+// is a lambda over its universes and parameters.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+inductive List(U < UU0, A : U) : U {
+  nil;
+  cons(x : A, xs : List(U, A));
+}
+
+inductive Pointed(U < UU0) : next(U) {
+  pt(X : U, x : X);
+}
+
+def former : forall U < UU0. next(U) := Pointed;
+
+def list_former : forall U < UU0. U -> U := List;
+
+def applied : List(U0, N) = list_former(U0, N) {
+  rfl;
+}

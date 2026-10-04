@@ -1,0 +1,10 @@
+// From tests/inductive-declarations.test.mjs: Third review: a path lambda at
+// a point is contracted in constructor types.
+
+inductive P : U0 {
+  z;
+  s(x : refl(P) @ 0);
+  c : refl(P) @ 1;
+}
+
+def two : P := s(s(z));

@@ -30,6 +30,7 @@ test("each Cubist test module's inlined errors and warnings are the checker's", 
   const module = await createCubical();
   for (const name of cubistTestModules) {
     const { source, result } = await checkedModule(name, module);
+    assert.ok(result.outputs.length || result.evaluations.length, `${name} declares nothing`);
     const diagnostics = reported(source, result, name);
     assert.deepEqual(stated(source), diagnostics,
       `${name}: its diagnostic comments differ from the check; run node tools/inline-errors.mjs --write ${name}`);

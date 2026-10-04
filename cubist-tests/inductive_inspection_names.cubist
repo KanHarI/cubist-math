@@ -1,0 +1,32 @@
+// From tests/inductive-declarations.test.mjs: Inspection: names are distinct,
+// clause types whole, and repeated inspection keeps no state.
+// The first review of #74: names in the view are never ambiguous, clause
+// types print whole, and inspecting again leaves nothing behind.
+// A binder named as the type is shown apart from it.
+// The motive is not named as a type the clauses mention, nor as a parameter.
+// A groupoid's squash clause, whole: its boundary comes last.
+// Inspecting again names no new symbols.
+
+inductive C {
+  point(C : U0, x : C);
+}
+
+inductive P {
+  p;
+}
+
+inductive D {
+  d(x : P);
+}
+
+inductive E(P, Q, M, R, P_ : U0) {
+  e;
+}
+
+inductive G : trunc(1) {
+  g;
+}
+
+inductive Tr(U < UU0, A : U) : set {
+  point(a : A);
+}

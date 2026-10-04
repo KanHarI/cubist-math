@@ -1,0 +1,20 @@
+// From tests/inductive-declarations.test.mjs: Second review: types are
+// checked before reduction, level redexes reduce, telescopes substitute at
+// once. The redex's argument U0 is not a Nat: the kernel sees it before
+// reduction drops it.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+// Error: E606: Type mismatch: found U1, expected Nat.
+inductive Discarded {
+  c(x : (fun (n : Nat) => Nat)(U0));
+}
+
+inductive Level {
+  b;
+  c : (fun (U < UU0) => Level)(U0);
+  d(x : (fun (U < UU0) => Nat)(U0));
+}

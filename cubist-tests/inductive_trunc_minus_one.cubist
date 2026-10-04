@@ -1,0 +1,7 @@
+// From tests/inductive-declarations.test.mjs: With the path notation's minus
+// sign, trunc(-1) is prop.
+// V31: trunc(-1) is prop.
+
+inductive Tr(U < UU0, A : U) : trunc(- 1) {
+  point(a : A);
+}

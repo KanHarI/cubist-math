@@ -1,0 +1,17 @@
+// From tests/inductive-declarations.test.mjs: Binders written in a
+// constructor's result are its arguments.
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+inductive M {
+  z;
+  s : M -> M;
+  w : N -> M;
+}
+
+def one : M := s(z);
+
+def lifted : M := w(succ(zero));

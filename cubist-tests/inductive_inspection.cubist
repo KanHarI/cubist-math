@@ -1,0 +1,25 @@
+// From tests/inductive-declarations.test.mjs: Inspection: a declared type's
+// constructors and its eliminator's clause types.
+// The H1 specification's 6.5: a declared type's signature, and the clause
+// type its eliminator asks for each constructor, for a motive P over the type
+// at its own parameters. The CLI's inspect and the workbench show this view.
+// The fourth review of #74: the first inspection computes the eliminator's
+// clause types in a kernel transaction, and rolls it back.
+// The sort prints by its name: a variable named S1 would print as its stem.
+// A dependent path type prints as the source writes it.
+// The motive's universe avoids the parameter's name. Tr's universe is
+// erased, which an instance does not carry: it prints as __U.
+// A recorded universe parameter by its name in the declaration.
+
+inductive S1 {
+  base;
+  loop : base = base;
+}
+
+inductive Tr(U < UU0, A : U) : prop {
+  point(a : A);
+}
+
+inductive Pointed(U < UU0) : next(U) {
+  pt(X : U, x : X);
+}

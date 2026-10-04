@@ -1,0 +1,17 @@
+// From tests/inductive-declarations.test.mjs: Computable accepts a declared
+// type, and still refuses an assumption, naming it.
+// T3: computable accepts a declared type. T4: an assumption is refused, and
+// named alone.
+
+import classical_axioms;
+
+inductive N {
+  zero;
+  succ(n : N);
+}
+
+computable def marked : N := succ(zero);
+
+// Error: E330: This computable declaration depends on non-computing assumptions: LEM, Truncate.
+//   Path to LEM: LEM.
+computable def both : N and ExcludedMiddle(U0) := (zero, LEM(U0));
