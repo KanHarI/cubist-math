@@ -104,6 +104,11 @@ test("implicit arguments are a double brace group after a name; a block after a 
   // Without parentheses, the double braces alone; nested, one inside another.
   assert.deepEqual([value("def d := f{{U0}};").args, value("def d := f{{U0}};").implicitArgs.length], [[], 1]);
   assert.equal(value("def d := f{{g{{A}}}}(x);").implicitArgs[0].implicitArgs[0].name, "A");
+  // A named argument in double braces names an implicit parameter.
+  const named = value("def d := f{{A := Nat, U0}}(x);").implicitArgs;
+  assert.deepEqual(named.map(arg => arg.kind), ["namedArgument", "name"]);
+  assert.equal(named[0].name.text, "A");
+  assert.equal(formatCubist("def d := f{{ A:=Nat }}(x);\n"), "def d := f{{A := Nat}}(x);\n");
   // Clauses or a proof block after a name, even written tight, are what
   // they were.
   assert.equal(value("def d := match n{ zero => 0; succ(m) => m; };").kind, "match");

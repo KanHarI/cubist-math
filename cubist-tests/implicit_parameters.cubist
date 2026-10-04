@@ -1,9 +1,9 @@
 // Implicit parameters and universe arguments as holes (work-plan L4.1b). A
 // definition's parameters in double braces are not given among its other
-// arguments: each one before the last argument given is a hole, and a named
-// argument, or double braces after the name, f{{U0, Nat}}(x), can give it. A
-// universe hole is the least universe the call needs. A definition names its
-// parameters apart.
+// arguments: each one before the last argument given is a hole, and double
+// braces after the name give them, in order, f{{U0, Nat}}(x), or by name,
+// f{{A := Nat}}(x). A universe hole is the least universe the call needs. A
+// definition names its parameters apart.
 import lists;
 
 def same{{U < UU0, A : U}}(a : A) : A := a;
@@ -19,10 +19,10 @@ print(inspect(from_argument));
 // The endpoints and the carrier from the paths.
 def endpoints(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat(p, q);
 
-// A named argument gives an implicit parameter; the others stay holes.
-def named(n : Nat) : Nat := same(A := Nat, n);
+// An implicit parameter by name, in double braces; the others stay holes.
+def named(n : Nat) : Nat := same{{A := Nat}}(n);
 
-def named_universe(T : U1) : U1 := same(U := U2, T);
+def named_universe(T : U1) : U1 := same{{U := U2}}(T);
 
 // A call of a call: the second gives the parameters the first left.
 def choose{{A : U0}}(x, y : A) : A := y;
@@ -32,7 +32,7 @@ def two_calls : Nat := choose(1)(2);
 // Output: 2
 print(evaluate(two_calls));
 
-def named_then : Nat := same(A := Nat)(3);
+def named_then : Nat := (same{{A := Nat}})(3);
 
 // The library's lists read their universe and element type off the lists.
 def joined := append(cons(1, typed(List(U0, Nat), nil)), cons(2, nil));
@@ -53,7 +53,7 @@ print(evaluate(size(joined)));
 // the least universe that holds U0. Given A := U1, U is U2.
 def types(T : U0) : U0 := same(T);
 
-def universes(T : U1) : U1 := same(U := _, A := U1, T);
+def universes(T : U1) : U1 := same{{U := _, A := U1}}(T);
 
 // A type that cumulativity leaves open is settled by bounds on both sides:
 // T : U1 needs A to hold T, and the expected type needs A at most U1.
@@ -76,12 +76,12 @@ def the_universe{{U < UU0}}(n : Nat) : next(U) := U;
 //   the call's type depends on it. Give it explicitly.
 def which(n : Nat) := the_universe(n);
 
-def which_given(n : Nat) : U1 := the_universe(U := U0, n);
+def which_given(n : Nat) : U1 := the_universe{{U := U0}}(n);
 
 // An implicit parameter is not given by position: Nat is a, and n is one
 // argument too many.
 // Error: E393: same takes 1 argument by position; give its implicit parameters U, A in double
-//   braces, as same{{…}}(…), or by name, as U := ….
+//   braces, in order or by name, as same{{…}}(…) or same{{U := …}}(…).
 def by_position(n : Nat) : Nat := same(Nat, n);
 
 // Implicit arguments in double braces, in order: all of them, the first
@@ -108,8 +108,20 @@ def still_open(T : U0) : U1 := same{{U1}}(T);
 // Error: E702: same has 2 implicit parameters, U, A; the double braces give 3.
 def too_many(n : Nat) : Nat := same{{U0, Nat, n}}(n);
 
+// Named and in order together: the others fill the implicit parameters no
+// name gives.
+def named_first(n : Nat) : Nat := same{{A := Nat, U0}}(n);
+
 // Error: E377: The argument A is given twice.
-def given_twice(n : Nat) : Nat := same{{U0, Nat}}(A := Nat, n);
+def given_twice(n : Nat) : Nat := same{{A := Nat, A := Nat}}(n);
+
+// An implicit parameter is named in double braces, an explicit one in
+// parentheses.
+// Error: E705: A is an implicit parameter of same: give it in double braces, as same{{A := …}}(…).
+def named_in_parentheses(n : Nat) : Nat := same(A := Nat, n);
+
+// Error: E704: a is not an implicit parameter of same: give it in parentheses, as same(a := …).
+def explicit_in_braces(n : Nat) : Nat := same{{a := n}};
 
 // Error: E701: sym has no implicit parameters: give its arguments in parentheses, as sym(…).
 def no_implicit(n : Nat) : n = n := sym{{Nat}}(refl(n));

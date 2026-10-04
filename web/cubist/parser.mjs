@@ -193,13 +193,14 @@ export function parse(source, typeOnly = false) {
         a = { kind: "call", fn: a, args, start: a.start, end };
         continue;
       }
-      // Implicit arguments by position, f{{U0, Nat}}(x) (L4.1b): a double
-      // brace group after a name, then the call's own arguments, if any.
+      // Implicit arguments, f{{U0, Nat}}(x) or f{{A := Nat}}(x) (L4.1b): a
+      // double brace group after a name, then the call's own arguments, if
+      // any.
       if (a.kind === "name" && doubleBrace()) {
-        const open = take("{"), inner = take("{"), implicitArgs = [expr()];
+        const open = take("{"), inner = take("{"), implicitArgs = [argument()];
         while (peek() === ",") {
           take(",");
-          implicitArgs.push(expr());
+          implicitArgs.push(argument());
         }
         const { first, last } = closeDoubleBrace();
         const { args, end } = peek() === "(" ? callArguments() : { args: [], end: last.end };

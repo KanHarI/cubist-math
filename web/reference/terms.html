@@ -184,12 +184,12 @@ evaluate three expecting 3;
 def concat{{U &lt; UU0, A : U, x, y, z : A}}(p : x = y, q : y = z) : x = z := trans(p, q);
 
 def joined(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat(p, q);</code></pre>
-            <p>To give implicit arguments yourself, write them in double braces after the name, in order: <code>concat{{U0, Nat}}(p, q)</code> gives <code>U</code> and <code>A</code>, and the endpoints after them are still inferred. <code>_</code> leaves one to infer. A named argument, as <code>A := Nat</code>, gives one by its name:</p>
+            <p>To give implicit arguments yourself, write them in double braces after the name, in order: <code>concat{{U0, Nat}}(p, q)</code> gives <code>U</code> and <code>A</code>, and the endpoints after them are still inferred. <code>_</code> leaves one to infer. Inside them, a named argument gives an implicit parameter by its name, as <code>concat{{A := Nat}}(p, q)</code>, and the others fill the rest in order; an implicit parameter is not named in parentheses, nor an explicit one in double braces:</p>
             <pre><code data-check="accept">def concat{{U &lt; UU0, A : U, x, y, z : A}}(p : x = y, q : y = z) : x = z := trans(p, q);
 
 def all_given(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat{{U0, Nat, a, b, c}}(p, q);
 def middle(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat{{_, _, _, b}}(p, q);
-def named(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat(A := Nat, p, q);</code></pre>
+def named(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat{{A := Nat}}(p, q);</code></pre>
             <p>Double braces settle what the call leaves open. Here <code>T : U0</code> and the expected type <code>U1</code> both fit <code>A := U0</code> and <code>A := U1</code>:</p>
             <pre><code data-check="reject">def same{{U &lt; UU0, A : U}}(a : A) : A := a;
 

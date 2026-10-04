@@ -59,13 +59,14 @@ function sourceParameters(t, head) {
 
 // What a call's arguments give, parameter by parameter: a written argument,
 // a hole, an omitted parameter (before the last one given), or nothing more.
-// Arguments in double braces fill the implicit parameters, in order;
-// arguments without names fill the explicit parameters no name gives, in
-// order, and then whatever the result takes.
+// A named argument gives the parameter it names: an implicit one in double
+// braces, f{{A := Nat}}(x), an explicit one in parentheses. The others in
+// double braces fill the implicit parameters no name gives, in order; those
+// in parentheses fill the explicit parameters no name gives, in order, and
+// then whatever the result takes.
 function assign(n, parameters, unit, called) {
   const positional = [], named = new Map(), names = parameters?.map(parameter => parameter.name);
-  for (const arg of n.args) {
-    if (arg.kind !== "namedArgument") { positional.push(arg); continue; }
+  const name = (arg, braced) => {
     const name = arg.name.text;
     if (!parameters)
       throw unit.locate(Error(`${called} has no named parameters: a named argument gives a parameter that a definition declares.`), arg.name);
@@ -73,20 +74,30 @@ function assign(n, parameters, unit, called) {
     if (index < 0)
       throw unit.locate(Error(`${called} has no parameter ${name}; its parameters are ${names.join(", ")}.`), arg.name);
     if (named.has(index)) throw unit.locate(Error(`The argument ${name} is given twice.`), arg.name);
+    if (!!parameters[index].implicit !== braced)
+      throw unit.locate(Error(braced ? `${name} is not an implicit parameter of ${called}: give it in parentheses, as ${called}(${name} := …).`
+        : `${name} is an implicit parameter of ${called}: give it in double braces, as ${called}{{${name} := …}}(…).`), arg.name);
     named.set(index, arg.value);
+  };
+  for (const arg of n.args) {
+    if (arg.kind === "namedArgument") name(arg, false);
+    else positional.push(arg);
   }
   const braced = new Map();
   if (n.implicitArgs) {
     const implicit = parameters?.flatMap((parameter, index) => parameter.implicit ? [index] : []) ?? [];
     if (!implicit.length)
       throw unit.locate(Error(`${called} has no implicit parameters: give its arguments in parentheses, as ${called}(…).`), n.implicitArgs[0]);
-    if (n.implicitArgs.length > implicit.length)
+    const unnamed = [];
+    for (const arg of n.implicitArgs) {
+      if (arg.kind === "namedArgument") name(arg, true);
+      else unnamed.push(arg);
+    }
+    const open = implicit.filter(index => !named.has(index));
+    if (unnamed.length > open.length)
       throw unit.locate(Error(`${called} has ${implicit.length} implicit parameter${implicit.length === 1 ? "" : "s"}, ${
-        implicit.map(index => names[index]).join(", ")}; the double braces give ${n.implicitArgs.length}.`), n.implicitArgs[implicit.length]);
-    n.implicitArgs.forEach((arg, k) => {
-      if (named.has(implicit[k])) throw unit.locate(Error(`The argument ${names[implicit[k]]} is given twice.`), arg);
-      braced.set(implicit[k], arg);
-    });
+        implicit.map(index => names[index]).join(", ")}; the double braces give ${n.implicitArgs.length}.`), unnamed[open.length]);
+    unnamed.forEach((arg, k) => braced.set(open[k], arg));
   }
   const given = new Map(), count = parameters?.length ?? 0;
   let next = 0;
@@ -160,7 +171,7 @@ export function elaborateCall(t, n, scope, expected) {
       const implicit = parameters?.filter(parameter => parameter.implicit).map(parameter => parameter.name) ?? [];
       const explicit = index - implicit.length;
       throw unit.locate(Error(!index ? "Source application is not a function."
-        : implicit.length ? `${called} takes ${explicit} argument${explicit === 1 ? "" : "s"} by position; give its implicit parameters ${implicit.join(", ")} in double braces, as ${called}{{…}}(…), or by name, as ${implicit[0]} := ….`
+        : implicit.length ? `${called} takes ${explicit} argument${explicit === 1 ? "" : "s"} by position; give its implicit parameters ${implicit.join(", ")} in double braces, in order or by name, as ${called}{{…}}(…) or ${called}{{${implicit[0]} := …}}(…).`
         : `${called} takes ${index} argument${index === 1 ? "" : "s"}; this is one more.`), site);
     }
     // A name no source or name supply spells, so that a call without holes

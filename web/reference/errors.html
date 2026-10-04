@@ -126,7 +126,7 @@
                 <tr id="E382"><td class="code"><code>E382</code></td><td data-message="; this is one more.">“<var>f</var> takes <var>n</var> arguments; this is one more.”</td><td>The call gives more arguments than the function takes. Remove the extra ones, or apply the result separately if it is itself a function.</td><td><a href="first-proof.html#parameters">parameters</a></td></tr>
                 <tr id="E388"><td class="code"><code>E388</code></td><td data-message="not the other arguments' types, nor the type expected of the call">“Nothing determines the parameter <var>x</var> of <var>f</var>, of type <var>T</var>: …”</td><td>A hole <code>_</code>, or a parameter left out before a named argument, is not fixed by the other arguments' types or by the type expected of the call. Holes are never filled by searching for a term of their type. Write the argument.</td><td><a href="terms.html#holes">holes</a></td></tr>
                 <tr id="E392"><td class="code"><code>E392</code></td><td data-message="fits, and so would">“The parameter <var>x</var> of <var>f</var> is not determined: <var>U0</var> fits, and so would a larger universe. …”</td><td>The hole is a type that cumulativity leaves open: a type in <code>U0</code> is in every larger universe too. A bound from the expected type that agrees settles it; otherwise write the type: by position, in double braces for an implicit parameter, as <code>same{{_, U0}}(T)</code>, or by name.</td><td><a href="terms.html#holes">holes</a></td></tr>
-                <tr id="E391"><td class="code"><code>E391</code></td><td data-message="Nothing determines the universe">“Nothing determines the universe <var>U</var> of <var>f</var>: …”</td><td>A universe hole that no argument's type bounds, where the call's type depends on it. Write the universe: by position, in double braces for an implicit one, as <code>f{{U0}}(…)</code>, or by name, as <code>U := U0</code>.</td><td><a href="terms.html#universe-arguments">universe arguments</a></td></tr>
+                <tr id="E391"><td class="code"><code>E391</code></td><td data-message="Nothing determines the universe">“Nothing determines the universe <var>U</var> of <var>f</var>: …”</td><td>A universe hole that no argument's type bounds, where the call's type depends on it. Write the universe: by position, in double braces for an implicit one, as <code>f{{U0}}(…)</code> or <code>f{{U := U0}}(…)</code>, or by name in parentheses for an explicit one.</td><td><a href="terms.html#universe-arguments">universe arguments</a></td></tr>
                 <tr id="E385"><td class="code"><code>E385</code></td><td data-message="A hole _ stands for an argument of a call">“A hole _ stands for an argument of a call, …”</td><td>A hole is an argument of a call to a definition or a function, which the call determines. Anywhere else, such as a whole proof, write the term.</td><td><a href="terms.html#holes">holes</a></td></tr>
                 <tr id="E346"><td class="code"><code>E346</code></td><td data-message="Untyped lambda requires an expected function type.">“Untyped lambda requires an expected function type.”</td><td>Give the binder a type, or put the function where a function type is expected.</td><td><a href="terms.html#functions">functions</a></td></tr>
                 <tr id="E350"><td class="code"><code>E350</code> <code>E414</code> <code>E415</code></td><td data-message="requires an expected type.">“Pair requires an expected type.”, “Sum injection requires an expected type.”, “absurd requires an expected type.”</td><td>The form needs its type from context. Supply it with a stated result type, <code>let name : T</code> or <code>typed(T, term)</code>.</td><td><a href="terms.html#typed">expected types</a></td></tr>
@@ -273,10 +273,6 @@
           <section id="not-yet-available">
             <h2>Not yet available</h2>
             <p>These are planned; see the work plan. Until then, they are rejected:</p>
-            <pre><code data-check="reject">def uses_apply(A, B : U0, f : A -&gt; B, a : A) : B {
-  apply f;  // Error: Expected a proof statement; found 'apply'.
-  exact a;
-}</code></pre>
             <pre><code data-check="reject">def unfinished : Nat {
   sorry;  // Error: Expected a proof statement; found 'sorry'.
 }</code></pre>
@@ -292,12 +288,12 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
   }
 }</code></pre>
             <ul>
-              <li><code>apply</code>, <code>refine</code> and <code>sorry</code>;</li>
-              <li>implicit or named arguments, and <code>_</code> holes outside <code>calc</code>;</li>
+              <li><code>sorry</code>;</li>
+              <li><code>_</code> holes anywhere but a call's arguments;</li>
               <li>chains of relations other than equality in <code>calc</code>;</li>
               <li>rewriting a hypothesis together with everything that depends on it: <code>simp at</code> makes a new copy instead;</li>
               <li>solving premises of conditional rules that are not equalities;</li>
-              <li>inductive families with indices, mutually defined inductive types, and a <code>match</code> on several values at once; see <a href="induction.html#inductive-parameters">parameters and constructors</a>.</li>
+              <li>inductive families with indices, and mutually defined inductive types; see <a href="induction.html#inductive-parameters">parameters and constructors</a>.</li>
             </ul>
           </section>
 
@@ -516,7 +512,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E390"><td><code>E390</code></td><td>The universe … of … would be …, which is not below UU0. Give it explicitly.</td></tr>
                 <tr><td><a href="#E391"><code>E391</code></a></td><td>Nothing determines the universe … of …: no argument's type bounds it, and the call's type depends on it. Give it explicitly.</td></tr>
                 <tr><td><a href="#E392"><code>E392</code></a></td><td>The … of … is not determined: … fits, and so would … universe…. Give it explicitly.</td></tr>
-                <tr id="E393"><td><code>E393</code></td><td>… takes … argument… by position; give its implicit parameters … in double braces, as …{{…}}(…), or by name, as … := ….</td></tr>
+                <tr id="E393"><td><code>E393</code></td><td>… takes … argument… by position; give its implicit parameters … in double braces, in order or by name, as …{{…}}(…) or …{{… := …}}(…).</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e4">Proof statements, rewriting and simplification</h3>
@@ -754,6 +750,8 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E701"><td><code>E701</code></td><td>… has no implicit parameters: give its arguments in parentheses, as …(…).</td></tr>
                 <tr id="E702"><td><code>E702</code></td><td>… has … implicit parameter…, …; the double braces give ….</td></tr>
                 <tr id="E703"><td><code>E703</code></td><td>A recursive call of … passes its implicit parameters unchanged: give only the others, as …(…).</td></tr>
+                <tr id="E704"><td><code>E704</code></td><td>… is not an implicit parameter of …: give it in parentheses, as …(… := …).</td></tr>
+                <tr id="E705"><td><code>E705</code></td><td>… is an implicit parameter of …: give it in double braces, as …{{… := …}}(…).</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-k1">Kernel: declared types</h3>
