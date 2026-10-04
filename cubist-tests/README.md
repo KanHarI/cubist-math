@@ -162,3 +162,7 @@ workbench's Kernel graph.
 | [`wasm_suspension_use`](wasm_suspension_use.cubist) | Suspension induction through a proved PathP bridge. |
 | [`driver_first_proof`](driver_first_proof.cubist) | The first proof, whose derivations `tests/instruction-driver.test.mjs` walks in instruction mode, and whose `lt_succ` the workbench lists as a judgement graph. |
 | [`driver_sums`](driver_sums.cubist) | Constructors at a type that reduces, derived as their source. |
+| [`dimension_regression`](dimension_regression.cubist) | Finite dimensions, zero included, unique for arbitrary bases, without choice. |
+| [`dimension_degree_regression`](dimension_degree_regression.cubist) | Extension degree: positive, one for the identity, invariant under extension equality. |
+| [`dimension_tower_regression`](dimension_tower_regression.cubist) | The product basis and the numerical tower law, for arbitrary fields and a commuting triangle. |
+| [`dimension_invalid`](dimension_invalid.cubist) | Dimension chooses no basis, keeps linearity and a tower's embedding: four refusals. |

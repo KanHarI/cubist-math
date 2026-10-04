@@ -1,0 +1,24 @@
+// From tests/dimension.test.mjs: Extension degree is positive, has identity
+// degree one, and respects univalent extension equality.
+
+import extension_degree;
+import finite_fields;
+
+def degree_of_identity :
+  extension_degree(
+    F2, embedding_as_extension(F2, F2, field_embedding_identity(F2)), identity_extension_finite(F2)
+  ) = 1 {
+  exact refl(1);
+}
+
+def no_zero_degree(K : AlgebraicField, E : FieldExt(K), degree : ExtensionDegree(K, E, 0)) : Void {
+  exact extension_dimension_not_zero(K, E, degree);
+}
+
+def equivalent_extensions(
+  K : AlgebraicField, E : FieldExt(K), F : FieldExt(K), iso : ExtensionIso(K, E, F),
+  finiteE : FiniteExtension(K, E), finiteF : FiniteExtension(K, F)
+) :
+  extension_degree(K, E, finiteE) = extension_degree(K, F, finiteF) {
+  exact extension_degree_iso(K, E, F, iso, finiteE, finiteF);
+}
