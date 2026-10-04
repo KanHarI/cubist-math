@@ -203,3 +203,5 @@ workbench's Kernel graph.
 | [`inspection_shadowed_nat`](inspection_shadowed_nat.cubist) | Names that shadow the natural numbers' type, linked to their own declarations. |
 | [`inspection_axiom_labels`](inspection_axiom_labels.cubist) | An assumption's label and a derived helper, inspected. |
 | [`inspection_let_alias`](inspection_let_alias.cubist) | A let alias keeps the original local's name. |
+| [`assembly_fixture`](assembly_fixture.cubist) | Declarations whose kernel assembly `tests/cubical-assembly.test.mjs` lists. |
+| [`assembly_generic_assumptions`](assembly_generic_assumptions.cubist) | A generic assumption, one kernel entry used at two levels. |

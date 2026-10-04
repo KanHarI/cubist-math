@@ -1,0 +1,14 @@
+// The declarations whose kernel assembly tests/cubical-assembly.test.mjs
+// lists: opcodes, payloads and operand slots, checked and inferred type
+// roots, and an open interval context.
+
+def N := Nat;
+
+def id(n : Nat) := n;
+
+def twice := id(id(0));
+
+def annotated := typed(N, 0);
+
+def along(A : U0, x : A, y : A, p : x = y) :=
+  path(fun (i : Interval) => A, fun (i : Interval) => at(p, i));

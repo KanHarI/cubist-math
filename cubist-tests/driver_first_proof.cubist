@@ -1,7 +1,8 @@
 // The first proof, whose derivations tests/instruction-driver.test.mjs walks
 // in instruction mode: every definition, the naturals library's included,
 // derives at its checked type, and lt_succ's judgement graph is the one the
-// workbench lists.
+// workbench lists. tests/elaboration.test.mjs shows its proof statements'
+// goals and its elaboration view.
 import naturals;
 
 def lt(n, m : Nat) : U0 {
