@@ -64,7 +64,7 @@ function assign(n, parameters, unit, called) {
   for (const arg of n.args) {
     if (arg.kind !== "namedArgument") { positional.push(arg); continue; }
     const name = arg.name.text;
-    if (!parameters)
+    if (!parameters?.length)
       throw unit.locate(Error(`${called} has no named parameters: a named argument gives a parameter that a definition declares.`), arg.name);
     const index = names.indexOf(name);
     if (index < 0)

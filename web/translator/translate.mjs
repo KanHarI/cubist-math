@@ -374,10 +374,11 @@ export class Translator {
             assumptions,checked.term,checked.type));
         }
         if(this.checker.define)unit.fuel.spend("queries");
-        // Its parameters as the source declares them, for named arguments
-        // and implicit parameters.
+        // Its parameters as the source declares them, for named arguments,
+        // implicit parameters and apply: none is an empty list, which a
+        // function that is no definition does not have.
         const definition=this.checker.define?.(d.name.text,checked.term,checked.type,
-          own.length?own.map(p=>({name:p.name.text,implicit:!!p.implicit})):null)??checked.term;
+          own.map(p=>({name:p.name.text,implicit:!!p.implicit})))??checked.term;
         this.checker.kernel?.checkDeadline();
         env.set(d.name.text,definition);
         declarations.push({name:d.name.text,status:native?"checked-native-cubical":"checked-cubical-fragment",term:checked.term,type:checked.type,normal:checked.normal,native});

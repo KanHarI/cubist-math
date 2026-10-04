@@ -57,6 +57,13 @@ def flipped(a, b : Nat, p : a = b) : b = a {
   apply flip(p := p);
 }
 
+// A definition without parameters is applied as it is.
+def refl_two : 2 = 2 := refl(2);
+
+def closed : 2 = 2 {
+  apply refl_two;
+}
+
 // What nothing determines is named, with its remedy.
 // Error: E395: Nothing determines the parameter y of concat, of type Nat: not the goal, nor the
 //   other arguments. Prove it in a clause, y => { … }, or give it, as concat(y := …).
