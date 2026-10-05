@@ -1,0 +1,101 @@
+// Effective quotients, from the library's propositions and quotients: the
+// propositions of a universe form a set, so relatedness to an element
+// descends to the quotient, and equal classes have related elements. Here
+// the natural numbers modulo parity, a relation into a set, whose classes
+// compute.
+import nat;
+import hlevels;
+import propositions;
+import quotients;
+
+computable def parity(n : Nat) : Nat := match n {
+    zero => 0;
+    succ(k) => match parity(k) {
+      zero => 1;
+      succ(j) => 0;
+    };
+  };
+
+def SameParity(m, n : Nat) : U0 := parity(m) = parity(n);
+
+computable def same_parity_props(m, n : Nat) :
+  IsProp(U0, SameParity(m, n)) := nat_is_set(parity(m), parity(n));
+
+computable def same_parity_reflexive(n : Nat) : SameParity(n, n) := refl(parity(n));
+
+computable def same_parity_symmetric(m, n : Nat, r : SameParity(m, n)) : SameParity(n, m) := sym(r);
+
+computable def same_parity_transitive(k, m, n : Nat, r : SameParity(k, m), s : SameParity(m, n)) :
+  SameParity(k, n) := trans(r, s);
+
+def Parities : U0 := Quotient(U0, Nat, SameParity);
+
+// One and three have the same class, and so the same parity, read back
+// from the path between their classes.
+computable def one_three :
+  typed(Parities, class(1)) = typed(Parities, class(3)) := class_path(
+    U0, Nat, SameParity, 1, 3, refl(1)
+  );
+
+computable def one_three_related :
+  SameParity(1, 3) := quotient_effective(
+    U0, Nat, SameParity, same_parity_props, same_parity_reflexive, same_parity_symmetric,
+    same_parity_transitive, 1, 3, one_three
+  );
+
+// Output: refl(1)
+print(evaluate(one_three_related));
+
+// Two classes are equal exactly when their elements are related.
+computable def parity_classes(m, n : Nat) :
+  ContrEquiv(U0, typed(Parities, class(m)) = typed(Parities, class(n)), SameParity(m, n)) := class_path_equiv(
+    U0, Nat, SameParity, same_parity_props, same_parity_reflexive, same_parity_symmetric,
+    same_parity_transitive, m, n
+  );
+
+// Distinct classes: the class of 0 is not the class of 1, since 0 is not 1.
+computable def zero_one_distinct(p : typed(Parities, class(0)) = typed(Parities, class(1))) :
+  Void := comp(
+    fun (i : Interval) => nat_is_zero(
+      quotient_effective(
+        U0, Nat, SameParity, same_parity_props, same_parity_reflexive, same_parity_symmetric,
+        same_parity_transitive, 0, 1, p
+      ) @ i
+    ), tt
+  );
+
+// Relatedness to 0, as a proposition at each class.
+computable def related_to_zero :
+  Parities
+  -> Prop(U0) := related_to(
+    U0, Nat, SameParity, same_parity_props, same_parity_symmetric, same_parity_transitive, 0
+  );
+
+// Output: 0 = 0
+print(evaluate(related_to_zero(class(2)).1));
+
+// Propositional extensionality: propositions that imply each other are
+// equal, as types and as propositions. Transport along the path is the map
+// given, and computes.
+computable def unit_to_unit_is_prop :
+  IsProp(U0, Unit -> Unit) := pi_is_prop(
+    U0, Unit, fun (u : Unit) => Unit, fun (u : Unit) => unit_is_prop
+  );
+
+computable def unit_paths :
+  Unit = (Unit -> Unit) := prop_ext(
+    U0, Unit, Unit -> Unit, unit_is_prop, unit_to_unit_is_prop,
+    fun (u : Unit) => fun (v : Unit) => v, fun (f : Unit -> Unit) => tt
+  );
+
+// Output: tt
+print(evaluate(comp(fun (i : Interval) => unit_paths @ i, tt)(tt)));
+
+computable def unit_props :
+  typed(Prop(U0), (Unit, unit_is_prop)) = (Unit -> Unit, unit_to_unit_is_prop) := prop_path(
+    U0, (Unit, unit_is_prop), (Unit -> Unit, unit_to_unit_is_prop),
+    fun (u : Unit) => fun (v : Unit) => v, fun (f : Unit -> Unit) => tt
+  );
+
+// The propositions of U0 form a set, in U1.
+computable def props_are_a_set : IsSet(U1, Prop(U0)) := prop_type_is_set(U0);

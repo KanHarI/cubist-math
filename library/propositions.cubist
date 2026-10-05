@@ -1,0 +1,76 @@
+import univalence;
+
+// The propositions of a universe, as a type one universe up. Propositions
+// that imply each other are equal, by univalence, and so the propositions
+// form a set: a family of propositions over a set quotient can be given by
+// its values at the classes (quotients, quotient_effective).
+
+// A proposition of U: a type of U, any two of whose elements are equal.
+def Prop(U < UU0) : next(U) := exists P : U. IsProp(U, P);
+
+// Propositional extensionality: propositions that imply each other are
+// equal, glued along the equivalence the two maps make.
+computable def prop_ext(
+  U < UU0, P, Q : U, hP : IsProp(U, P), hQ : IsProp(U, Q), f : P -> Q, g : Q -> P
+) :
+  P = Q := glue_path(
+    U, P, Q,
+    inverse_equiv(U, P, Q, f, g, fun (q : Q) => hQ(f(g(q)), q), fun (p : P) => hP(g(f(p)), p))
+  );
+
+// The equivalences into a proposition form a proposition: each is a map into
+// it, and a witness that its fibers are contractible.
+computable def equiv_into_prop_is_prop(U < UU0, A, P : U, h : IsProp(U, P)) :
+  IsProp(U, ContrEquiv(U, A, P)) := subtype_has_level(
+    U, 0, A -> P, fun (f : A -> P) => IsContrMap(U, A, P, f),
+    pi_is_prop(U, A, fun (a : A) => P, fun (a : A) => h),
+    fun (f : A -> P) => pi_is_prop(
+      U, P, fun (y : P) => IsContr(U, Fiber(U, A, P, f, y)),
+      fun (y : P) => is_contr_is_prop(U, Fiber(U, A, P, f, y))
+    )
+  );
+
+// So do the paths into a proposition: a path of types is a retract of the
+// equivalence it gives, by univalence.
+computable def path_into_prop_is_prop(U < UU0, A, P : U, h : IsProp(U, P)) :
+  IsProp(next(U), A = P) := retract_has_level(
+    next(U), 0, ContrEquiv(U, A, P), A = P, idtoequiv(U, A, P), glue_path(U, A, P),
+    glue_path_idtoequiv(U, A, P), equiv_into_prop_is_prop(U, A, P, h)
+  );
+
+// Two propositions that imply each other are equal as propositions: their
+// evidence that they are propositions follows the path between them.
+computable def prop_path(U < UU0, x, y : Prop(U), f : x.1 -> y.1, g : y.1 -> x.1) : x = y {
+  let p := prop_ext(U, x.1, y.1, x.2, y.2, f, g);
+  exact path i => (
+    p @ i,
+    prop_over(
+      next(U), U, fun (X : U) => IsProp(U, X), fun (X : U) => is_prop_is_prop(U, X), x.1, y.1, p,
+      x.2, y.2
+    ) @ i
+  );
+}
+
+// The propositions form a set. A path between two is a path between their
+// types, a proposition, with a path over it between their evidence, which
+// is one too.
+computable def prop_type_is_set(U < UU0) : IsSet(next(U), Prop(U)) {
+  intro x, y;
+  exact retract_has_level(
+    next(U), 0, exists p : x.1 = y.1. PathP(fun (i : Interval) => IsProp(U, p @ i), x.2, y.2),
+    x = y, fun (w : x = y) => (path i => (w @ i).1, path i => (w @ i).2),
+    fun (q : exists p : x.1 = y.1. PathP(fun (i : Interval) => IsProp(U, p @ i), x.2, y.2)) => path i => (
+      q.1 @ i, q.2 @ i
+    ), fun (w : x = y) => refl(w),
+    sigma_has_level(
+      next(U), 0, x.1 = y.1,
+      fun (p : x.1 = y.1) => PathP(fun (i : Interval) => IsProp(U, p @ i), x.2, y.2),
+      path_into_prop_is_prop(U, x.1, y.1, y.2),
+      fun (p : x.1 = y.1) => pathp_has_level(
+        next(U), 0, U, fun (X : U) => IsProp(U, X),
+        fun (X : U) => prop_is_set(next(U), IsProp(U, X), is_prop_is_prop(U, X)), x.1, x.2, y.1, p,
+        y.2
+      )
+    )
+  );
+}
