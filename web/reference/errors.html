@@ -401,6 +401,10 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E181"><td><code>E181</code></td><td>A theory's universes are below UU0: … &lt; UU0.</td></tr>
                 <tr id="E182"><td><code>E182</code></td><td>Expected ':' and the type of …, as in (x, y : M) or (A : set U).</td></tr>
                 <tr id="E183"><td><code>E183</code></td><td>open is now use: write use m; to select a model's fields and notation.</td></tr>
+                <tr id="E184"><td><code>E184</code></td><td>Expected '}' to close the notation.</td></tr>
+                <tr id="E185"><td><code>E185</code></td><td>A notation's rule binds a binary operator: x + y, x * y, x &lt; y or x &lt;= y.</td></tr>
+                <tr id="E186"><td><code>E186</code></td><td>A rule's pattern names its two operands apart, as x … y.</td></tr>
+                <tr id="E187"><td><code>E187</code></td><td>… binds … twice: a notation has one rule for each operator.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -550,6 +554,8 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E394"><td><code>E394</code></td><td>… is a theory: its models are ….Model(U), built with ….make(…). (retired)</td></tr>
                 <tr id="E395"><td><code>E395</code></td><td>A definition in a section has the section's implicit parameters, not its own: add them to the section's {{…}}.</td></tr>
                 <tr id="E396"><td><code>E396</code></td><td>….Model is now …: a theory's name is the type of its models, as in …(U0).</td></tr>
+                <tr id="E397"><td><code>E397</code></td><td>… is not in …'s notation, which is selected here: select a notation that binds it, as nat.(x … y), or write the operation.</td></tr>
+                <tr id="E398"><td><code>E398</code></td><td>….(…) is an operation when its rule applies one to its operands, as x … y := f(x, y).</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e4">Proof statements, rewriting and simplification</h3>
@@ -832,6 +838,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr><td><a href="#E834"><code>E834</code></a></td><td>use selects a model of a theory, such as m : Group(U0); this is a value of type ….</td></tr>
                 <tr id="E835"><td><code>E835</code></td><td>….(…) takes a model of a theory; … is not one.</td></tr>
                 <tr id="E836"><td><code>E836</code></td><td>… binds no operation to ….</td></tr>
+                <tr id="E837"><td><code>E837</code></td><td>… binds no rule to ….</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-k1">Kernel: declared types</h3>

@@ -2039,6 +2039,10 @@
    "summary": "Mismatches in source syntax, without module prefixes, generated suffixes or redexes."
   },
   {
+   "path": "cubist-tests/notation_views.cubist",
+   "summary": "Named notations (L2.10a): the library's `nat`, a notation of one's own, its rules read where declared, the operation alone, two models on one carrier, nested selections, and the refusals of an operator a selection does not bind."
+  },
+  {
    "path": "cubist-tests/path_operators.cubist",
    "summary": "Path and coordinate operators, for `tests/path-operators.test.mjs`: -p, p ++ q, -i, & and"
   },

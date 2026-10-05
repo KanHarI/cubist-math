@@ -19,7 +19,7 @@ import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference,ma
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName} from "./hlevel.mjs";
 import {repeatedName,stem} from "./names.mjs";
-import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipTheory,sectionScope,selected,qualifiedOperator} from "./theories.mjs";
+import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipTheory,sectionScope,selected,qualifiedOperator,notationDeclaration,appliedRule,SELECTION} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -290,6 +290,8 @@ export class Translator {
       // A file-level use m; selects m for the definitions after it, which
       // record it (L2.4c).
       if(d.kind==="use")continue;
+      // A named notation's rules, read where it is declared (L2.10a).
+      if(d.kind==="notation") { notationDeclaration(this,module,d,env); continue; }
       if(d.kind==="evaluate") {
         const line=source.slice(0,d.start).split("\n").length;
         // An evaluation asks the kernel as a declaration does, with fuel of its own.
@@ -853,14 +855,32 @@ export class Translator {
       case "binary": {
         if(["&","|"].includes(n.operator))
           throw Error(`${n.operator} combines interval coordinates, as in p @ i ${n.operator} j; it is not an operation on terms.`);
-        // a m.(+) b: m's operation that + names, applied (L2.4c).
-        if(n.qualifier)return tr({kind:"call",fn:qualifiedOperator(this,scope,n.qualifier?{...n,model:n.qualifier}:n),args:[n.left,n.right],start:n.start,end:n.end},expected);
+        // a m.(+) b: m's operation that + names, applied (L2.4c), or a named
+        // notation's rule (L2.10a).
+        if(n.qualifier) {
+          const operation=qualifiedOperator(this,scope,{...n,model:n.qualifier});
+          if(operation.kind==="notationRule") {
+            const applied=appliedRule(scope,operation.rule,n.left,n.right);
+            return this.term(applied.node,applied.scope,expected);
+          }
+          return tr({kind:"call",fn:operation,args:[n.left,n.right],start:n.start,end:n.end},expected);
+        }
         const left=tr(n.left,null);
         // p ++ q is trans(p, q), whatever the name trans is bound to here.
         if(n.operator==="++")return this.concatenatePaths(scope,left,tr(n.right,null),"++");
         if(["->","and"].includes(n.operator)) return (n.operator==="->"?T.pi:T.sigma)(scope.fresh(),left,tr(n.right,null));
         if(n.operator==="or")return T.sum(left,tr(n.right,null));
         if(["+","*","<=","<"].includes(n.operator)) {
+          // A selected notation is complete: an operator it does not bind is
+          // an error, never an earlier selection's or add's (L2.10a).
+          const selection=env.get(SELECTION);
+          if(selection&&!selection.operators.has(n.operator))
+            throw Error(`${n.operator} is not in ${selection.name}'s notation, which is selected here: select a notation that binds it, as nat.(x ${n.operator} y), or write the operation.`);
+          // A named notation's rule, applied to the operands.
+          if(env.get(operatorBinding(n.operator))?.tag==="NotationRule") {
+            const applied=appliedRule(scope,env.get(operatorBinding(n.operator)).rule,n.left,n.right);
+            return this.term(applied.node,applied.scope,expected);
+          }
           // A notation open binds means the model's operation (L2.4).
           if(env.has(operatorBinding(n.operator)))
             return tr({kind:"call",fn:{kind:"name",name:operatorBinding(n.operator),start:n.operatorStart,end:n.operatorEnd},
@@ -881,7 +901,18 @@ export class Translator {
       // use m; at a file's top level, and m.(e) for one expression (L2.4c).
       case "useScope": return this.term(n.body,n.uses.reduce((inner,model)=>selected(this,inner,model),scope),expected);
       case "select": return this.term(n.body,selected(this,scope,n.model),expected);
-      case "operatorOf": return tr(qualifiedOperator(this,scope,n),expected);
+      case "operatorOf": {
+        const operation=qualifiedOperator(this,scope,n);
+        if(operation.kind!=="notationRule")return tr(operation,expected);
+        // A named notation's operator alone: the function its rule applies
+        // to the pattern's names, x + y := add(x, y).
+        const {value,left,right,aliases}=operation.rule;
+        if(value.kind!=="call"||value.args.length!==2||value.args[0].name!==left||value.args[1].name!==right||value.fn.kind!=="name")
+          throw Error(`${n.model.name}.(${n.operator}) is an operation when its rule applies one to its operands, as x ${n.operator} y := f(x, y).`);
+        let inner=scope;
+        for(const [key,alias] of aliases)inner=inner.alias(key,alias);
+        return this.term(value.fn,inner,expected);
+      }
       case "projection": {
         // p.1 and p.2 are the kernel's projections; the family comes from the
         // checked type of p, so nothing is passed explicitly (HoTT A8).
