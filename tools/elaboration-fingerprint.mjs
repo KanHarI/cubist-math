@@ -113,7 +113,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   }
   const started = performance.now();
   const fingerprint = await elaborationFingerprint({ modules,
-    readSource: name => readFile(sources.get(name) ?? `${root}archive/first-library/${name}.cubist`, "utf8") });
+    // A module the archive imports from the library, such as hlevels, is
+    // read there.
+    readSource: name => readFile(sources.get(name) ?? `${root}library/${name}.cubist`, "utf8") });
   const seconds = ((performance.now() - started) / 1000).toFixed(1);
   const counts = Object.fromEntries(Object.entries(fingerprint).map(([key, value]) =>
     [key, Array.isArray(value) ? value.length : Object.keys(value).length]));

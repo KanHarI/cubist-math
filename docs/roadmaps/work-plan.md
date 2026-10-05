@@ -32,7 +32,13 @@ milestone does not resume them. Their old B-package IDs are retained in the
 **The archive is a reference.** The first library in `archive/first-library/`
 is not rebuilt as it is and is not relied on. Where the library implements a
 part of it, that part is removed from the archive and its dependents import
-the library instead; the archive keeps checking completely.
+the library instead; the archive keeps checking completely. So far `nat`'s
+arithmetic (from `primes`) and `sets` (for `hlevels`) are gone. What the
+library builds differently stays until it is migrated: the archive's
+`truncation` and `classical` rest on the legacy `Truncate` assumptions
+(K2.5's remedies, first action 7), its `set_quotients` are predicate
+quotients over them, and its `equivalences` are bijections and half-adjoint
+equivalences, where the library has contractible maps.
 
 **Governing requirement.** Computability is expressible and preserved.
 Every applicable release extends the canonicity fixture; results with no
@@ -54,7 +60,7 @@ between columns.
 | Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release | L2.9a, L2.9b |
 | Declarations | **Released** on 2026-10-02, on by default with no marker, after K2.1's review (Lemma H2 and the critical pairs approved on 2026-09-30, the model and canonicity on 2026-10-02): K2.2, K2.3, L2.1, L2.2a's first three slices (the expression `match`, the closing statement, and recursion whose other arguments vary), and since 2026-10-04 its fourth (several values and nested patterns), the match statement on sums, which replaced `cases`, and L2.2b's automatic clauses. Nat, W and pushouts are source declarations; sums stay native; the circle's winding number computes in source. K2.4a's differential fixtures and K2.5's ledger verifier are implemented | K2.5's other archive remedies; a review record per K2.2 family; L2.3, L2.3b, L2.4, L2.6–L2.9; stages 4 and 5 |
 | Computation notation | Design only | N0–N5 |
-| Reference and library | Checked-reference harness; universe chapter rewritten; induction chapter rewritten for declared types: declarations, `match`, structural recursion, dependent matches, path and truncation clauses (D2.1); quick reference (`proof.html`), with a file explorer over every published source. The library's eleven modules, self-contained since 2026-10-04: the prelude `nat`, `naturals`, `lists`, `quotients`, `hlevels` (L2.5a), `contractible_maps` and `univalence` (L3.1's start), `h1_truncation`, `h1_classical`, `classical_axioms` and `universe_automorphisms`. The test suite's Cubist sources are modules in `cubist-tests/` | An H1 chapter on higher constructors, obligations and truncation clauses beyond chapter 6's introduction (D0.2, D2.1); one module for the classical assumptions, which `classical_axioms` and `h1_classical` state over two truncations; the library is foundations, not a rebuild wave |
+| Reference and library | Checked-reference harness; universe chapter rewritten; induction chapter rewritten for declared types: declarations, `match`, structural recursion, dependent matches, path and truncation clauses (D2.1); quick reference (`proof.html`), with a file explorer over every published source. The library's ten modules, self-contained since 2026-10-04: `nat`, `lists`, `quotients`, `hlevels` (L2.5a), `contractible_maps` and `univalence` (L3.1's start), `h1_truncation`, `h1_classical`, `classical_axioms` and `universe_automorphisms`. The test suite's Cubist sources are modules in `cubist-tests/` | An H1 chapter on higher constructors, obligations and truncation clauses beyond chapter 6's introduction (D0.2, D2.1); one module for the classical assumptions, which `classical_axioms` and `h1_classical` state over two truncations; the library is foundations, not a rebuild wave |
 
 Evidence lives in `tests/universe-generic.test.mjs`,
 `tests/proof-ergonomics.test.mjs`, `tests/computability.test.mjs`,
@@ -225,7 +231,7 @@ and `univalence` exhaust the kernel's step budget.
 | ID | Package | Status / next obligation |
 | --- | --- | --- |
 | I0.1 | Merge the development branch into `main` | Done on 2026-10-03: #118 merged `h1-signatures` into `main`, where work has landed since |
-| I0.2 | Archive the first library | Done: 369 sources in `archive/first-library/`; keep it as regression evidence. Its prelude `nat` moved to `library/` on 2026-10-04 |
+| I0.2 | Archive the first library | Done: 369 sources in `archive/first-library/`; keep it as regression evidence. Its prelude `nat` moved to `library/` on 2026-10-04, and `sets` gave way to the library's `hlevels` on 2026-10-05 |
 | I0.3 | Start `library/` | Done: the modules listed above, self-contained since 2026-10-04; broader topic coverage is deferred |
 | I0.4 | Remove local scratch state | Recorded done on 2026-09-25 |
 | L0.1 | Non-computing dependencies, `computable`, `evaluate` | Done; extensions have explicit L2.9 packages below |

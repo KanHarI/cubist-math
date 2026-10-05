@@ -25,7 +25,7 @@ def subfield_value_ext(
   );
 }
 
-def subfield_carrier_is_set(F : AlgebraicField, S : Subfield(F)) : IsSet(SubfieldCarrier(F, S)) {
+def subfield_carrier_is_set(F : AlgebraicField, S : Subfield(F)) : IsSet(U0, SubfieldCarrier(F, S)) {
   exact subtype_is_set(
     af_carrier(F), subfield_members(F, S), af_set(F),
     subfield_prop(F, subfield_members(F, S), subfield_laws(F, S))

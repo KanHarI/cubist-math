@@ -1,6 +1,5 @@
 import "./fresh-build.mjs";
 import {naturalSort, numeral} from "../web/translator/numerals.mjs";
-import { cubicalSourceFile } from "../web/cubical-sources.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -31,7 +30,7 @@ test("a universe-generic definition is one kernel definition", async t => {
 });
 
 test("the browser program checks Euclid from source and exports a replayable native inspection", async t => {
-  const readSource = name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
+  const readSource = sourceReader();
   const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
   const result = await program.check(await readSource("euclid"), "euclid");
   assert.equal(result.complete, true);
@@ -74,7 +73,7 @@ test("native notation preserves named references and dependent path families", (
 });
 
 test("native path interiors retain their interval context in the inspector and replay", async t => {
-  const readSource = name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
+  const readSource = sourceReader();
   const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
   const source = await readSource("cubical_paths");
   const result = await program.check(source, "cubical_paths");
@@ -199,7 +198,7 @@ test("a refused generic definition cannot be inspected",async t=>{
 });
 
 test("every named reference in the generic group definitions is inspectable with source labels", async t => {
-  const readSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
+  const readSource = sourceReader();
   const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
   const result = await program.check(await readSource("group_universes"), "group_universes");
   assert.equal(result.complete, true, JSON.stringify(result.gaps));

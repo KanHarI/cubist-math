@@ -87,13 +87,13 @@ def decide(P : U0, prop : Proposition(P)) : P or (P -&gt; Void) {
             <p><code>Proposition(P)</code> is <code>forall x, y : P. x = y</code>. <code>decide</code> is excluded middle as it is usually stated: every proposition holds or fails. Both use <code>LEM</code>, and the inspector lists it.</p>
             <h3 id="choice">The axiom of choice</h3>
             <p>If every <code>B(a)</code> has an element, there is a function picking one for each <code>a</code>. When the elements are actually given, as <code>f : forall a : A. B(a)</code>, the function is <code>f</code> itself, and no assumption is needed. The axiom of choice covers the case where each <code>B(a)</code> only merely has an element: it concludes that such a function merely exists.</p>
-            <pre><code data-check="accept">import sets;
+            <pre><code data-check="accept">import hlevels;
 
-def choose(A : U0, B : A -&gt; U0, setA : IsSet(A), setB : forall a : A. IsSet(B(a)),
+def choose(A : U0, B : A -&gt; U0, setA : IsSet(U0, A), setB : forall a : A. IsSet(U0, B(a)),
     inhabited : forall a : A. Truncate(U0, B(a))) : Truncate(U0, forall a : A. B(a)) {
   exact Choice(U0, A, B, setA, setB, inhabited);
 }</code></pre>
-            <p><code>A</code> and every <code>B(a)</code> must be <strong>sets</strong>, types in which any two paths between the same elements are equal (<a href="paths.html#hlevels">propositions and sets</a>); here <code>IsSet</code> comes from the first library’s <code>sets</code> module. Without these conditions the statement can fail: with univalence, there is a family of sets over a type that is not a set for which it is false (<em>Homotopy Type Theory</em>, Lemma 3.8.5). The library’s <a href="../proof.html?proof=surjections">surjections</a> module uses choice to show that every surjection between sets merely has a right inverse.</p>
+            <p><code>A</code> and every <code>B(a)</code> must be <strong>sets</strong>, types in which any two paths between the same elements are equal (<a href="paths.html#hlevels">propositions and sets</a>); here <code>IsSet(U0, A)</code> comes from the library’s <code>hlevels</code> module. Without these conditions the statement can fail: with univalence, there is a family of sets over a type that is not a set for which it is false (<em>Homotopy Type Theory</em>, Lemma 3.8.5). The library’s <a href="../proof.html?proof=surjections">surjections</a> module uses choice to show that every surjection between sets merely has a right inverse.</p>
             <h3 id="truncation">Mere existence: <code>Truncate</code></h3>
             <p>The conclusions of both assumptions are truncations. <code>Truncate(U0, A)</code>, which the library often names <code>Mere(A)</code>, is the <strong>propositional truncation</strong> of <code>A</code>: it says that <code>A</code> is inhabited, and any two of its elements are equal. The inspector displays it as <span class="math">‖A‖</span>; that is display notation, not source syntax. It is given by four more assumptions:</p>
             <div class="table-scroll"><table>

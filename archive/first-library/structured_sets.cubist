@@ -4,35 +4,35 @@ import identity_systems;
 // Structures on small sets. S contains the operations and their law evidence.
 // R states preservation by a function; the hypotheses below are proved for
 // each signature, never postulated as axioms.
-def Structure(S : U0 -> U0) := exists A : U0. S(A) and IsSet(A);
+def Structure(S : U0 -> U0) := exists A : U0. S(A) and IsSet(U0, A);
 
-def structure_object(S : U0 -> U0, A : U0, data : S(A), setA : IsSet(A)) :=
+def structure_object(S : U0 -> U0, A : U0, data : S(A), setA : IsSet(U0, A)) :=
   typed(Structure(S), (A, data, setA));
 
 def structure_carrier(S : U0 -> U0, X : Structure(S)) :=
-  field_first(U0, (fun (A : U0) => typed(U1, S(A) and IsSet(A))), X);
+  field_first(U0, (fun (A : U0) => typed(U1, S(A) and IsSet(U0, A))), X);
 
 def structure_bundle(S : U0 -> U0, X : Structure(S)) :=
-  field_second(U0, (fun (A : U0) => typed(U1, S(A) and IsSet(A))), X);
+  field_second(U0, (fun (A : U0) => typed(U1, S(A) and IsSet(U0, A))), X);
 
 def structure_data(S : U0 -> U0, X : Structure(S)) :=
-  fst(S(structure_carrier(S, X)), IsSet(structure_carrier(S, X)), structure_bundle(S, X));
+  fst(S(structure_carrier(S, X)), IsSet(U0, structure_carrier(S, X)), structure_bundle(S, X));
 
-def structure_set(S : U0 -> U0, X : Structure(S)) : IsSet(structure_carrier(S, X)) {
-  exact snd(S(structure_carrier(S, X)), IsSet(structure_carrier(S, X)), structure_bundle(S, X));
+def structure_set(S : U0 -> U0, X : Structure(S)) : IsSet(U0, structure_carrier(S, X)) {
+  exact snd(S(structure_carrier(S, X)), IsSet(U0, structure_carrier(S, X)), structure_bundle(S, X));
 }
 
 def StructureRelation(S : U0 -> U0) := forall A : U0. forall B : U0. (A -> B) -> S(A) -> S(B) -> U0;
 
 def RelationProp(S : U0 -> U0, R : StructureRelation(S)) :=
-  forall A : U0. forall B : U0. IsSet(A) -> IsSet(B) -> forall f : A -> B. forall a : S(A).
+  forall A : U0. forall B : U0. IsSet(U0, A) -> IsSet(U0, B) -> forall f : A -> B. forall a : S(A).
   forall b : S(B). Proposition(R(A, B, f, a, b));
 
 def RelationIdentity(S : U0 -> U0, R : StructureRelation(S)) :=
   forall A : U0. forall a : S(A). R(A, A, (fun (x : A) => x), a, a);
 
 def RelationReflects(S : U0 -> U0, R : StructureRelation(S)) :=
-  forall A : U0. IsSet(A) -> forall a : S(A). forall b : S(A). R(A, A, (fun (x : A) => x), a, b)
+  forall A : U0. IsSet(U0, A) -> forall a : S(A). forall b : S(A). R(A, A, (fun (x : A) => x), a, b)
   -> (a = b);
 
 def StructureMapLaws(
@@ -165,7 +165,7 @@ def structure_iso_center(
 // At a fixed carrier and fixed data, sethood evidence contributes no extra paths.
 def structure_total_set_path(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
-  identity : RelationIdentity(S, R), A : U0, a : S(A), setA, setB : IsSet(A)
+  identity : RelationIdentity(S, R), A : U0, a : S(A), setA, setB : IsSet(U0, A)
 ) :
   forall e : StructureIso(S, R, structure_object(S, A, a, setA), structure_object(S, A, a, setB)).
   (
@@ -180,9 +180,9 @@ def structure_total_set_path(
     )
   ) {
   exact path_induction(
-    IsSet(A),
+    IsSet(U0, A),
     (
-      fun (setA, setB : IsSet(A), p : setA = setB) => forall e : StructureIso(
+      fun (setA, setB : IsSet(U0, A), p : setA = setB) => forall e : StructureIso(
         S, R, structure_object(S, A, a, setA), structure_object(S, A, a, setB)
       ).
       (
@@ -199,7 +199,7 @@ def structure_total_set_path(
     ),
     (
       fun (
-        setA : IsSet(A),
+        setA : IsSet(U0, A),
         e : StructureIso(S, R, structure_object(S, A, a, setA), structure_object(S, A, a, setA)),
         same : (
           forall x : A.
@@ -222,7 +222,7 @@ def structure_total_data_path(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
   identity : RelationIdentity(S, R), A : U0, a, b : S(A), p : a = b
 ) :
-  forall setA : IsSet(A). forall setB : IsSet(A).
+  forall setA : IsSet(U0, A). forall setB : IsSet(U0, A).
   forall e : StructureIso(S, R, structure_object(S, A, a, setA), structure_object(S, A, b, setB)).
   (
     forall x : structure_carrier(S, structure_object(S, A, a, setA)).
@@ -238,7 +238,7 @@ def structure_total_data_path(
   exact path_induction(
     S(A),
     (
-      fun (a, b : S(A), p : a = b) => forall setA : IsSet(A). forall setB : IsSet(A).
+      fun (a, b : S(A), p : a = b) => forall setA : IsSet(U0, A). forall setB : IsSet(U0, A).
       forall e : StructureIso(
         S, R, structure_object(S, A, a, setA), structure_object(S, A, b, setB)
       ).
@@ -260,7 +260,7 @@ def structure_total_data_path(
 def structure_total_same_carrier(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
   identity : RelationIdentity(S, R), reflects : RelationReflects(S, R), A : U0, a, b : S(A),
-  setA, setB : IsSet(A),
+  setA, setB : IsSet(U0, A),
   e : StructureIso(S, R, structure_object(S, A, a, setA), structure_object(S, A, b, setB)),
   same : (
     forall x : A.
@@ -292,7 +292,7 @@ def structure_total_constant_transport(
 ) :=
   (
     fun (
-      A : U0, a, b : S(A), setA, setB : IsSet(A),
+      A : U0, a, b : S(A), setA, setB : IsSet(U0, A),
       e : StructureIso(S, R, structure_object(S, A, a, setA), structure_object(S, A, b, setB)),
       same : (
         forall x : A.
@@ -311,7 +311,7 @@ def structure_total_transport(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
   identity : RelationIdentity(S, R), reflects : RelationReflects(S, R), A, B : U0, p : A = B
 ) :
-  forall a : S(A). forall b : S(B). forall setA : IsSet(A). forall setB : IsSet(B).
+  forall a : S(A). forall b : S(B). forall setA : IsSet(U0, A). forall setB : IsSet(U0, B).
   forall e : StructureIso(S, R, structure_object(S, A, a, setA), structure_object(S, B, b, setB)).
   (
     forall x : A.
@@ -327,8 +327,8 @@ def structure_total_transport(
   exact path_induction(
     U0,
     (
-      fun (A, B : U0, p : A = B) => forall a : S(A). forall b : S(B). forall setA : IsSet(A).
-      forall setB : IsSet(B).
+      fun (A, B : U0, p : A = B) => forall a : S(A). forall b : S(B). forall setA : IsSet(U0, A).
+      forall setB : IsSet(U0, B).
       forall e : StructureIso(
         S, R, structure_object(S, A, a, setA), structure_object(S, B, b, setB)
       ).
@@ -350,7 +350,7 @@ def structure_total_transport(
 def structure_objects_total(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R),
   identity : RelationIdentity(S, R), reflects : RelationReflects(S, R), A, B : U0, a : S(A),
-  b : S(B), setA : IsSet(A), setB : IsSet(B),
+  b : S(B), setA : IsSet(U0, A), setB : IsSet(U0, B),
   e : StructureIso(S, R, structure_object(S, A, a, setA), structure_object(S, B, b, setB))
 ) :
   structure_iso_center(S, R, identity, structure_object(S, A, a, setA)) = structure_iso_point(
@@ -373,15 +373,15 @@ def structure_objects_total(
 def structure_induction(
   S : U0 -> U0, P : Structure(S) -> U1,
   step : (
-    forall A : U0. forall a : S(A). forall setA : IsSet(A). P(structure_object(S, A, a, setA))
+    forall A : U0. forall a : S(A). forall setA : IsSet(U0, A). P(structure_object(S, A, a, setA))
   ), X : Structure(S)
 ) :
   P(X) {
   exact pair_induction(
     P,
     (
-      fun (A : U0, data : S(A) and IsSet(A)) => pair_induction(
-        (fun (data : S(A) and IsSet(A)) => P(typed(Structure(S), (A, data)))), step(A), data
+      fun (A : U0, data : S(A) and IsSet(U0, A)) => pair_induction(
+        (fun (data : S(A) and IsSet(U0, A)) => P(typed(Structure(S), (A, data)))), step(A), data
       )
     ), X
   );
@@ -400,7 +400,7 @@ def structure_total_contractible(
       structure_iso_center(S, R, identity, X) = structure_iso_point(S, R, X, Y, e)
     ),
     (
-      fun (A : U0, a : S(A), setA : IsSet(A)) => structure_induction(
+      fun (A : U0, a : S(A), setA : IsSet(U0, A)) => structure_induction(
         S,
         (
           fun (Y : Structure(S)) => forall e : StructureIso(
@@ -411,7 +411,7 @@ def structure_total_contractible(
           )
         ),
         (
-          fun (B : U0, b : S(B), setB : IsSet(B)) => structure_objects_total(
+          fun (B : U0, b : S(B), setB : IsSet(U0, B)) => structure_objects_total(
             S, R, prop, identity, reflects, A, B, a, b, setA, setB
           )
         )
@@ -447,7 +447,7 @@ def structure_iso_choose_path(
 def structure_iso_set(
   S : U0 -> U0, R : StructureRelation(S), prop : RelationProp(S, R), X, Y : Structure(S)
 ) :
-  IsSet(StructureIso(S, R, X, Y)) {
+  IsSet(U0, StructureIso(S, R, X, Y)) {
   let constant :
     forall e : StructureIso(S, R, X, Y). forall d : StructureIso(S, R, X, Y). forall p : e = d.
     forall q : e = d.

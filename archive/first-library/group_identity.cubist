@@ -87,7 +87,7 @@ def group_laws_prop(A : U0, unit : A, multiply : A -> A -> A, p, q : GroupLaws(A
       group_inverse_evidence_prop(A, unit, multiply, p)
     );
   exact product_prop(
-    IsSet(A),
+    IsSet(U0, A),
     (
       GroupAssociative(A, multiply) and GroupLeftUnit(A, unit, multiply)
       and GroupRightUnit(A, unit, multiply) and GroupInverses(A, unit, multiply)

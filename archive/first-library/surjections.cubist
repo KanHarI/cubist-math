@@ -16,13 +16,13 @@ def right_inverse_from_preimages(
   exact (g, (fun (y : B) => sigma_second(A, (fun (x : A) => f(x) = y), preimages(y))));
 }
 
-def fiber_is_set(A, B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B, y : B) :
-  IsSet(Fiber(A, B, f, y)) {
+def fiber_is_set(A, B : U0, setA : IsSet(U0, A), setB : IsSet(U0, B), f : A -> B, y : B) :
+  IsSet(U0, Fiber(A, B, f, y)) {
   exact subtype_is_set(A, (fun (x : A) => f(x) = y), setA, (fun (x : A) => setB(f(x), y)));
 }
 
 def EverySurjectionHasRightInverse :=
-  forall A : U0. forall B : U0. IsSet(A) -> IsSet(B) -> forall f : A -> B. Surjective(A, B, f)
+  forall A : U0. forall B : U0. IsSet(U0, A) -> IsSet(U0, B) -> forall f : A -> B. Surjective(A, B, f)
   -> Mere(RightInverse(A, B, f));
 
 // Apply the existing set-level axiom of choice to the fibers over B.
@@ -31,8 +31,8 @@ def EverySurjectionHasRightInverse :=
 def every_surjection_has_right_inverse : EverySurjectionHasRightInverse {
   intro A; // A : U0
   intro B; // B : U0
-  intro setA; // setA : IsSet(A), from the first implication above
-  intro setB; // setB : IsSet(B), from the second implication above
+  intro setA; // setA : IsSet(U0, A), from the first implication above
+  intro setB; // setB : IsSet(U0, B), from the second implication above
   intro f; // f : A -> B
   intro surjective; // surjective : Surjective(A, B, f)
   let preimages :=

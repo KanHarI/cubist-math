@@ -1,7 +1,6 @@
 import circle;
 import field_extensionality;
-import sets;
-import truncation;
+import hlevels;
 
 // Evidence for the HoTT and cubical automation roadmap. Each statement below
 // checks by conversion or by one existing lemma. The README lists the laws
@@ -127,15 +126,15 @@ def closed_constant_transport(x : Nat) : transport(fun (t : Nat) => Nat, x, x, r
 
 // Truncation levels counted from propositions: 0 is IsProp and 1 is IsSet.
 def PropLevel(n : Nat) := induction n as k return (U0 -> U0) {
-    zero => fun (A : U0) => IsProp(A);
+    zero => fun (A : U0) => IsProp(U0, A);
     succ previous => fun (A : U0) => forall x : A. forall y : A. previous(x = y);
   };
 
-def prop_level_zero(A : U0) : PropLevel(0, A) =[U0] IsProp(A) {
+def prop_level_zero(A : U0) : PropLevel(0, A) =[U0] IsProp(U0, A) {
   rfl;
 }
 
-def prop_level_one(A : U0) : PropLevel(1, A) =[U0] IsSet(A) {
+def prop_level_one(A : U0) : PropLevel(1, A) =[U0] IsSet(U0, A) {
   rfl;
 }
 

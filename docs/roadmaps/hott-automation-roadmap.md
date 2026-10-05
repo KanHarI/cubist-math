@@ -1106,7 +1106,7 @@ The matcher, resource limits and witness reconstruction must support it first.
 | [homotopy_paths](../../archive/first-library/homotopy_paths.cubist), [field_extensionality](../../archive/first-library/field_extensionality.cubist), [primes](../../archive/first-library/primes.cubist) | Conversion audit of proofs by induction (A7) |
 | [loop_words](../../archive/first-library/loop_words.cubist) | Reflective loop normalizer (C4) |
 | [simp-registry.mjs](../../web/translator/simp-registry.mjs) | Aliases, distinct conversion/equality entries, bounded `hlevel_rule` and `ext_rule` registries |
-| [sets](../../archive/first-library/sets.cubist), [truncation](../../archive/first-library/truncation.cubist), [bijection_equality](../../archive/first-library/bijection_equality.cubist) | Numeric h-level templates and their aliases (D0a) |
+| [hlevels](../../library/hlevels.cubist), [truncation](../../archive/first-library/truncation.cubist), [bijection_equality](../../archive/first-library/bijection_equality.cubist) | Numeric h-level templates and their aliases (D0a) |
 | [equivalence.mjs](../../web/translator/equivalence.mjs), [public-equivalence.mjs](../../web/translator/public-equivalence.mjs), [paths](../../archive/first-library/paths.cubist), [maps](../../archive/first-library/maps.cubist) | Canonical public equivalences, `Fiber` orientation and checked univalence API (D0b) |
 | [identity_systems](../../archive/first-library/identity_systems.cubist) | Eliminator, computation law and universe templates (D3); contraction combinators (D4) |
 | [fundamental_groups](../../archive/first-library/fundamental_groups.cubist) | Pointed types and loop spaces (F4) |
@@ -1379,15 +1379,14 @@ also proves does not identify witnesses: `close_path` in
 `origin = origin`, which `rfl` inhabits, but its witness is a nontrivial loop.
 
 **Numeric h-levels can agree with the existing definitions by conversion.**
-With this definition, `PropLevel(0, A) =[U0] IsProp(A)` and
-`PropLevel(1, A) =[U0] IsSet(A)` both check by `rfl`:
+With this definition, `PropLevel(0, A) =[U0] IsProp(U0, A)` and
+`PropLevel(1, A) =[U0] IsSet(U0, A)` both check by `rfl`:
 
 ```text
-import sets;
-import truncation;
+import hlevels;
 
 def PropLevel(n : Nat) := induction n as k return (U0 -> U0) {
-    zero => fun (A : U0) => IsProp(A);
+    zero => fun (A : U0) => IsProp(U0, A);
     succ previous => fun (A : U0) => forall x : A. forall y : A. previous(x = y);
   };
 ```

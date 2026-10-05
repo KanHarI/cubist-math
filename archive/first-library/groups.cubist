@@ -1,4 +1,4 @@
-import sets;
+import hlevels;
 import group_universes;
 import equivalences;
 
@@ -97,7 +97,7 @@ def group_iso_forward(G, H : Group, iso : GroupIso(G, H)) : group_carrier(G) -> 
 
 // Access the laws by naming the fields, instead of repeating nested projections.
 def group_set_law(A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply)) :
-  IsSet(A) {
+  IsSet(U0, A) {
   obtain (setA, associative, leftUnit, rightUnit, inverses) := laws;
   exact setA;
 }
@@ -135,7 +135,7 @@ def group_inverses_law(
 }
 
 // The carrier of a bundled group is a set, by its first law.
-def group_is_set(G : Group) : IsSet(group_carrier(G)) {
+def group_is_set(G : Group) : IsSet(U0, group_carrier(G)) {
   exact group_set_law(group_carrier(G), group_unit(G), group_multiply(G), group_laws(G));
 }
 

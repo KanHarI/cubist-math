@@ -1,15 +1,14 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
+import { archiveReader } from "../tools/module-sources.mjs";
 
 const module = await createCubical();
-const readSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
 
 test("a finite automorphism subgroup gives distinct embeddings over its fixed field", async t => {
-  const p = new CubicalProgram(module, readSource, { collectReferences: false });
+  const p = new CubicalProgram(module, archiveReader("artin_fixed_regression"), { collectReferences: false });
   t.after(() => p.dispose());
   const result = await p.check("import artin_fixed_embeddings; def checked : Unit { exact tt; }", "artin_fixed_regression");
   assert.deepEqual(result.gaps, []);

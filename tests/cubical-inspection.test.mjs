@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { cubicalSourceFile } from "../web/cubical-sources.mjs";
+import { archiveReader } from "../tools/module-sources.mjs";
 import { foldedInspection } from "../web/cubical-inspection.mjs";
 import { cubicalMathTree } from "../web/cubical-notation.mjs";
 import { boundedSyntaxJson } from "../web/cubical-json.mjs";
@@ -13,7 +13,7 @@ import { simplifyTypeApplications } from "../web/cubical-reduction.mjs";
 import { checkTestModule } from "./check-program.mjs";
 
 const module = await createCubical();
-const readSource = name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
+const archiveSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
 const variable = name => ({ tag: "Var", name });
 // Programs whose links and views are the test are
 // cubist-tests/inspection_*.cubist (tests/cubist-tests.test.mjs checks them).
@@ -50,8 +50,8 @@ test("shadowed Nat names retain their own local source targets", async t => {
 });
 
 test("inferred induction statements simplify the motive and retain source binder names", async t => {
-  const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
-  assert.equal((await program.check(await readSource("finite_combinations"), "finite_combinations")).complete, true);
+  const program = new CubicalProgram(module, archiveReader("finite_combinations")); t.after(() => program.dispose());
+  assert.equal((await program.check(await archiveSource("finite_combinations"), "finite_combinations")).complete, true);
   const view = program.inspect("finite_combinations__linear_combination_scale");
   assert.equal(view.statement.inferred, true);
   assert.deepEqual(view.statement.parameters.map(p => p.name[0].text), ["K", "V", "a", "n", "v", "b"]);
@@ -81,8 +81,8 @@ test("type simplification avoids capture, preserves definitions, and has a budge
 });
 
 test("Euclid locals retain checked syntax, source aliases, and navigable assumptions", async t => {
-  const program = new CubicalProgram(module, readSource); t.after(() => program.dispose());
-  const source = await readSource("euclid"), result = await program.check(source, "euclid");
+  const program = new CubicalProgram(module, archiveReader("euclid")); t.after(() => program.dispose());
+  const source = await archiveSource("euclid"), result = await program.check(source, "euclid");
   assert.equal(result.complete, true);
   const link = result.links.find(link => link.name === "hd");
   const view = program.inspect(link.binding);

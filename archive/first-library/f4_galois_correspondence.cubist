@@ -20,9 +20,9 @@ def f4_fixed_from_representatives(
 }
 
 def f4_fixed_decision(
-  H : F4Automorphism -> U0, decide : (forall e : F4Automorphism. Decidable(H(e))), x : F4Carrier
+  H : F4Automorphism -> U0, decide : (forall e : F4Automorphism. Decidable(U0, H(e))), x : F4Carrier
 ) :
-  Decidable(GaloisFixed(F2, F4OverF2, H, x)) {
+  Decidable(U0, GaloisFixed(F2, F4OverF2, H, x)) {
   let tested :=
     finite_forall_decidable(
       2, (fun (b : F2Carrier) => H(f4_symmetry(b)) -> (f4_auto_apply(f4_symmetry(b), x) = x)),
@@ -41,9 +41,9 @@ def f4_fixed_decision(
 }
 
 def f4_fixing_decision(
-  P : F4Carrier -> U0, decide : (forall x : F4Carrier. Decidable(P(x))), e : F4Automorphism
+  P : F4Carrier -> U0, decide : (forall x : F4Carrier. Decidable(U0, P(x))), e : F4Automorphism
 ) :
-  Decidable(GaloisFixing(F2, F4OverF2, P, e)) {
+  Decidable(U0, GaloisFixing(F2, F4OverF2, P, e)) {
   exact finite_forall_decidable(
     4, (fun (x : F4Carrier) => P(x) -> (f4_auto_apply(e, x) = x)),
     (

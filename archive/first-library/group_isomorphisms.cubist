@@ -3,8 +3,8 @@ import group_identity;
 // Isomorphisms are determined by their forward maps. All remaining fields
 // are propositions because group carriers are sets.
 def group_map_laws_prop(
-  A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, setA : IsSet(A),
-  setB : IsSet(B), f : A -> B, g : B -> A
+  A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, setA : IsSet(U0, A),
+  setB : IsSet(U0, B), f : A -> B, g : B -> A
 ) :
   Proposition(GroupMapLaws(A, multiplyA, B, multiplyB, f, g)) {
   exact product_prop(
@@ -28,8 +28,8 @@ def group_map_laws_prop(
 }
 
 def group_map_evidence_prop(
-  A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, setA : IsSet(A),
-  setB : IsSet(B), f : A -> B, p, q : GroupMapEvidence(A, multiplyA, B, multiplyB, f)
+  A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, setA : IsSet(U0, A),
+  setB : IsSet(U0, B), f : A -> B, p, q : GroupMapEvidence(A, multiplyA, B, multiplyB, f)
 ) :
   p = q {
   let g := typed((B -> A), sigma_first((B -> A), GroupMapLaws(A, multiplyA, B, multiplyB, f), p));

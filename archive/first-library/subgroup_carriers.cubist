@@ -24,7 +24,7 @@ def subgroup_value_ext(
   );
 }
 
-def subgroup_carrier_is_set(G : Group, S : Subgroup(G)) : IsSet(SubgroupCarrier(G, S)) {
+def subgroup_carrier_is_set(G : Group, S : Subgroup(G)) : IsSet(U0, SubgroupCarrier(G, S)) {
   exact subtype_is_set(
     group_carrier(G), subgroup_members(G, S), group_is_set(G),
     subgroup_prop(G, subgroup_members(G, S), subgroup_laws(G, S))

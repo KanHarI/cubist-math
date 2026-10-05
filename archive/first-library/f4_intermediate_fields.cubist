@@ -56,7 +56,7 @@ def F4IntermediateAlternatives(M : IntermediateField(F2, F4OverF2)) :=
 
 def f4_intermediate_classification(
   M : IntermediateField(F2, F4OverF2),
-  decideAlpha : Decidable(intermediate_members(F2, F4OverF2, M, f4_2))
+  decideAlpha : Decidable(U0, intermediate_members(F2, F4OverF2, M, f4_2))
 ) :
   F4IntermediateAlternatives(M) {
   let P := intermediate_members(F2, F4OverF2, M);

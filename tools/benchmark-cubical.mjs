@@ -6,7 +6,7 @@ import { execFileSync } from "node:child_process";
 import { cpus } from "node:os";
 import { pathToFileURL } from "node:url";
 import { benchmark } from "../web/benchmark-runner.mjs";
-import { cubicalSourceFile } from "../web/cubical-sources.mjs";
+import { archiveReader } from "./module-sources.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
 
 
@@ -24,7 +24,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const revision = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   const dirty = !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim();
   const report = await benchmark({ limitMs, optimizations, ...(selected.length ? { modules: selected } : {}),
-    readSource: name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8"),
+    readSource: archiveReader("benchmark"),
     onResult: row => {
       if (verbose || row.category === "optimize" || row.category === "failed")
         console.log(`${row.category.padEnd(8)} ${row.elapsedMs.toFixed(1)}ms ${row.module}.${row.name}${row.reason ? ` — ${row.reason}` : ""}`);

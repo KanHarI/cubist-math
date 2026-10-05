@@ -9,7 +9,7 @@ def HasCardinality(A : U0, n : Nat) := Mere(Bijection(Fin(n), A));
 def has_cardinality_prop(A : U0, n : Nat) := mere_is_prop(Bijection(Fin(n), A));
 
 def bijective_map_bijection(
-  A, B : U0, setB : IsSet(B), f : A -> B, injective : Injective(A, B, f), onto : Surjective(A, B, f)
+  A, B : U0, setB : IsSet(U0, B), f : A -> B, injective : Injective(A, B, f), onto : Surjective(A, B, f)
 ) :
   Bijection(A, B) {
   let fiber := Fiber(A, B, f);
@@ -28,7 +28,7 @@ def cardinality_unique(A : U0, n, m : Nat, hn : HasCardinality(A, n), hm : HasCa
   let first : Bijection(Fin(n), A) -> n = m {
     intro e;
     exact mere_eliminate(
-      Bijection(Fin(m), A), (n = m), hedberg(Nat, nat_eq_decidable, n, m),
+      Bijection(Fin(m), A), (n = m), hedberg(U0, Nat, nat_eq_decidable, n, m),
       (
         fun (d : Bijection(Fin(m), A)) => finite_cardinality_unique(
           n, m, compose_bijection(Fin(n), A, Fin(m), e, reverse_bijection(Fin(m), A, d))
@@ -37,7 +37,7 @@ def cardinality_unique(A : U0, n, m : Nat, hn : HasCardinality(A, n), hm : HasCa
     );
   }
   exact mere_eliminate(
-    Bijection(Fin(n), A), (n = m), hedberg(Nat, nat_eq_decidable, n, m), first, hn
+    Bijection(Fin(n), A), (n = m), hedberg(U0, Nat, nat_eq_decidable, n, m), first, hn
   );
 }
 

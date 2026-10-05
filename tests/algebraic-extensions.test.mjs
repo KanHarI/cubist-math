@@ -1,17 +1,18 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { checkTestModule } from "./check-program.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 
 const module = await createCubical();
 // The programs are cubist-tests/algebraic_extensions_*.cubist, whose
 // comments state each refusal (tests/cubist-tests.test.mjs); here, the
 // assumptions of the archive's lemmas and of the cases.
 const cases = (t, name) => checkTestModule(t, name, { module, options: { collectReferences: false } });
-const readSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
+// Archive modules resolve their imports in the archive, then the library.
+const readSource = sourceReader();
 const allowed = /^(LEM|Truncate(?:Intro|Prop|Elim)?)$/;
 // Archive modules, each checked as a program's main module.
 async function archive(t, ...names) {

@@ -34,7 +34,7 @@ def f4_family_without_frobenius_fixes_alpha(
 // H = Aut(F4 / Fix(H)); the identity belongs by the subgroup laws.
 def f4_fixing_fixed_recovers_members(
   H : F4Automorphism -> U0, laws : GaloisSubgroupLaws(F2, F4OverF2, H),
-  decideFrobenius : Decidable(H(f4_frobenius_automorphism)), e : F4Automorphism,
+  decideFrobenius : Decidable(U0, H(f4_frobenius_automorphism)), e : F4Automorphism,
   fixes : GaloisFixing(F2, F4OverF2, GaloisFixed(F2, F4OverF2, H), e)
 ) :
   H(e) {
@@ -75,7 +75,7 @@ def f4_fixing_fixed_recovers_members(
 // the subgroup of automorphisms fixing it pointwise.
 def f4_fixed_fixing_recovers_members(
   P : F4Carrier -> U0, laws : IntermediateFieldLaws(F2, F4OverF2, P),
-  decideAlpha : Decidable(P(f4_2)), x : F4Carrier,
+  decideAlpha : Decidable(U0, P(f4_2)), x : F4Carrier,
   fixed : GaloisFixed(F2, F4OverF2, GaloisFixing(F2, F4OverF2, P), x)
 ) :
   P(x) {
@@ -101,7 +101,7 @@ def f4_fixed_fixing_recovers_members(
 // These are equalities of complete subobjects, with the two decisions explicit.
 def f4_fixing_fixed_subgroup(
   H : GaloisSubgroup(F2, F4OverF2),
-  decideFrobenius : Decidable(galois_subgroup_members(F2, F4OverF2, H, f4_frobenius_automorphism))
+  decideFrobenius : Decidable(U0, galois_subgroup_members(F2, F4OverF2, H, f4_frobenius_automorphism))
 ) :
   fixing_galois_subgroup(F2, F4OverF2, fixed_intermediate_field(F2, F4OverF2, H)) =[
     GaloisSubgroup(F2, F4OverF2)
@@ -132,7 +132,7 @@ def f4_fixing_fixed_subgroup(
 
 def f4_fixed_fixing_intermediate(
   M : IntermediateField(F2, F4OverF2),
-  decideAlpha : Decidable(intermediate_members(F2, F4OverF2, M, f4_2))
+  decideAlpha : Decidable(U0, intermediate_members(F2, F4OverF2, M, f4_2))
 ) :
   fixed_intermediate_field(F2, F4OverF2, fixing_galois_subgroup(F2, F4OverF2, M)) =[
     IntermediateField(F2, F4OverF2)

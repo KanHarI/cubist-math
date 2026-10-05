@@ -6,7 +6,8 @@
 import createCubical from "./dist/cubical.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
 import { archiveModules } from "./cubist/modules.mjs";
-import { cubicalSourceFile } from "./cubical-sources.mjs";
+import { moduleListing } from "./module-listing.mjs";
+import { listedReader } from "./module-resolution.mjs";
 import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
 
 export function category(result, elapsedMs, limitMs) {
@@ -16,11 +17,13 @@ export function category(result, elapsedMs, limitMs) {
 }
 
 export async function benchmark({ modules = archiveModules, limitMs = 100, optimizations = {},
-  readSource = async name => {
-    const response = await fetch(new URL(`./archive/first-library/${cubicalSourceFile(name)}`, import.meta.url));
-    if (!response.ok) throw Error(`Could not load ${name}: HTTP ${response.status}`);
+  // The benchmark's check imports archive modules as an archive module
+  // does: from the archive, then the library.
+  readSource = listedReader(moduleListing, async path => {
+    const response = await fetch(new URL(`./${path}`, import.meta.url));
+    if (!response.ok) throw Error(`Could not load ${path}: HTTP ${response.status}`);
     return response.text();
-  },
+  }, "benchmark", "archive"),
   onResult = () => {}, onSnapshot = () => {} } = {}) {
   if (!Number.isFinite(limitMs) || limitMs <= 0) throw new Error("The declaration limit must be a positive number of milliseconds.");
   const started = performance.now(), declarations = [];
