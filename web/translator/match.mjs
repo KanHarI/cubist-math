@@ -526,13 +526,16 @@ export function resolveRecursive(translator, node, value, args, scope) {
   };
   const example = `as ${value.source}(m) in succ(m) => …`;
   if (!value.results) throw locate(Error(selfReference(value.source)));
-  // A call gives the explicit parameters; each implicit one is passed
-  // unchanged, as its own name.
-  const explicit = value.implicit?.filter(implicit => !implicit).length ?? value.params.length;
+  // A call gives the definition's own explicit parameters; each implicit
+  // one, and each of its section's, is passed unchanged: the parameter's
+  // own binding, never its name looked up again, which a pattern variable
+  // of the same name would capture.
+  const passed = value.params.map((_, index) => Boolean(value.implicit?.[index] || value.section?.[index]));
+  const explicit = passed.filter(unchanged => !unchanged).length;
   if (args && explicit < value.params.length && args.length === explicit) {
     const given = [...args];
-    args = value.implicit.map((implicit, index) => implicit
-      ? {kind: "name", name: value.params[index], start: node.start, end: node.end} : given.shift());
+    args = passed.map((unchanged, index) => unchanged
+      ? {kind: "passedParameter", index, name: value.params[index], start: node.start, end: node.end} : given.shift());
   }
   if (!args || args.length !== value.params.length)
     throw locate(Error(`${value.source} takes ${value.params.length} argument${value.params.length === 1 ? "" : "s"}.`));
@@ -542,6 +545,13 @@ export function resolveRecursive(translator, node, value, args, scope) {
     // A fixed one is passed as the parameter's own binding, of whatever kind
     // (a universe parameter's is none of a variable's), or as the variable a
     // match statement took apart.
+    if (arg.kind === "passedParameter") {
+      if (value.generalizable[index] && value.dependent[index]) {
+        value.state.varied = true;
+        throw locate(Error(`A recursive call of ${value.source} changes ${value.params[index]}: the match needs its motive over its other parameters.`), arg);
+      }
+      return;
+    }
     const current = arg.kind === "name" ? scope.env.get(arg.name) : undefined, taken = arg.kind === "name" ? value.destructed?.get(arg.name) : undefined;
     const unchanged = current !== undefined && (current === value.fixed[index]
       || taken && current === taken.alias && value.fixed[index]?.tag === "Var" && value.fixed[index].name === taken.variable);
@@ -592,7 +602,7 @@ export function resolveRecursive(translator, node, value, args, scope) {
     if (!value.generalized[index]) return;
     const pi = scope.nf(scope.infer(term).type);
     if (pi.tag !== "Pi") throw locate(Error(`Internal elaboration error: the recursive result of ${value.source} takes fewer hypotheses.`), arg);
-    term = T.app(term, translator.term(arg, scope, pi.domain));
+    term = T.app(term, arg.kind === "passedParameter" ? value.fixed[index] : translator.term(arg, scope, pi.domain));
   });
   value.state.called = true;
   translator.reference(scope, node, term);

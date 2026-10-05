@@ -1,0 +1,104 @@
+// Sections (L2.4): a section's parameters are the first parameters of each
+// definition in it. A parameter that is a model is opened for each one's
+// statement and proof, and inside the section an earlier definition is
+// applied to the section's parameters already.
+import nat;
+import hlevels;
+
+theory Monoid {
+  sort M : set;
+  mul(x, y : M) : M notation x * y;
+  law mul_assoc(x, y, z : M) : (x * y) * z = x * (y * z);
+  one : M;
+  law one_mul(x : M) : one * x = x;
+  law mul_one(x : M) : x * one = x;
+}
+
+section {{U < UU0}}(G : Monoid.Model(U)) {
+  def square(x : M) : M := x * x;
+
+  def square_one : square(one) = one {
+    exact one_mul(one);
+  }
+
+  def fourth(x : M) : M := square(square(x));
+
+  computable def fourth_one : fourth(one) = one {
+    exact trans(cong(fun (y : M) => square(y), square_one), square_one);
+  }
+}
+
+// Outside, each takes the section's parameters first.
+// Output: forall U < UU0. forall G : Monoid.Model(U). fourth{{U}}(G, G.one) = G.one
+print(typeof(fourth_one));
+
+def additive : Monoid.Model(U0) := Monoid.make(
+  M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := 0,
+  one_mul := nat_zero_add, mul_one := nat_add_zero
+);
+
+def four : square(additive, 2) = 4 {
+  rfl;
+}
+
+// Output: 12
+print(evaluate(fourth(additive, 3)));
+
+// A section's parameters need not be models.
+section (n : Nat) {
+  def double := n + n;
+
+  def double_again : double = n + n {
+    rfl;
+  }
+}
+
+// Output: 8
+print(evaluate(double(4)));
+
+// A recursive call passes the section's parameters unchanged, as a call of
+// an earlier definition does: plus(k) is plus(n, k).
+section (n : Nat) {
+  def plus(m : Nat) : Nat := match m {
+    zero => n;
+    succ(k) => succ(plus(k));
+  };
+}
+
+// Output: 5
+print(evaluate(plus(2, 3)));
+
+// The section's parameter is passed as itself, even where a pattern
+// variable of the same name shadows it: here succ(n) names the predecessor.
+section (n : Nat) {
+  def plus_shadowed(m : Nat) : Nat := match m {
+    zero => n;
+    succ(n) => succ(plus_shadowed(n));
+  };
+}
+
+// Output: 5
+print(evaluate(plus_shadowed(2, 3)));
+
+// Recursion over a model's operations: x to the power n.
+section {{U < UU0}}(G : Monoid.Model(U)) {
+  def power(x : M, n : Nat) : M := match n {
+    zero => one;
+    succ(k) => x * power(x, k);
+  };
+}
+
+// Output: 8
+print(evaluate(power(additive, 2, 4)));
+
+// Refusals.
+section (n : Nat) {
+  // Error: E568: own_name has two parameters named n: give each its own name.
+  def own_name(n : Nat) : Nat := n;
+}
+
+section (n : Nat) {
+  // Error: E395: A definition in a section has the section's implicit parameters, not its own: add
+  //   them to the section's {{…}}.
+  def own_implicit{{A : U0}}(a : A) : A := a;
+}

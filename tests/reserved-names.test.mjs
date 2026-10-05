@@ -28,6 +28,7 @@ test("Unit and Void cannot be declared or bound at any binding site", () => {
       constructor: `inductive T {\n  ${word};\n}`,
       theory: `theory T {\n  sort M : set;\n  ${word} : M;\n}`,
       sort: `theory T {\n  sort ${word} : set;\n}`,
+      section: `section (${word} : U0) {\n  def x := 0;\n}`,
     };
     for (const [site, source] of Object.entries(sites))
       assert.equal(parseError(source), reserved(word), `${word} as a ${site}`);

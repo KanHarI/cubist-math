@@ -69,8 +69,13 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
   const declarationEnds = new Set(syntax?.declarations.map(node => node.end) ?? []);
   // `computable`, `evaluate` and `print` are ordinary names except where the
   // parser found a top-level modifier or directive.
+  // A section's keyword and the brace opening its body (L2.4).
+  const sections = [...new Map((syntax?.declarations ?? []).filter(node => node.section)
+    .map(node => [node.section.start, node.section])).values()];
+  const sectionStarts = new Set(sections.map(section => section.start)), sectionBodies = new Set(sections.map(section => section.bodyStart));
   const itemStarts = new Set([
     ...(syntax?.declarations ?? []).map(node => node.modifierStart).filter(Number.isInteger),
+    ...(syntax?.declarations ?? []).filter(node => node.kind === "theory").map(node => node.start), ...sectionStarts,
     ...(syntax?.directives ?? []).filter(node => ["evaluate", "print"].includes(node.kind)).map(node => node.start),
   ]);
   // A binder's short domain is one phrase: `forall f : A -> B.` must not
@@ -125,7 +130,8 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
   const comments = [...source.matchAll(/\/\/[^\n\r]*/g)].map(m => ({ text: m[0], start: m.index, end: m.index + m[0].length, comment: true }));
   const all = [...tokens, ...comments].sort((a, b) => a.start - b.start);
   let position = 0;
-  function sequence(close = null) {
+  // `items`: a sequence of declarations, as the source's and a section's are.
+  function sequence(close = null, items = !close) {
     const docs = [], statement = [];
     let previous = null;
     let assignment = -1;
@@ -173,10 +179,10 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
       }
       const itemStart = ["def", "construction", "simp_rule", "simp_set", "inductive"].includes(text)
         || itemStarts.has(token.start);
-      if (!close && itemStart && previous && !(previous.text === "computable" && text === "def")) {
+      if (items && itemStart && previous && !(previous.text === "computable" && text === "def")) {
         flush(); docs.push(hard, hard); previous = null;
       }
-      const space = previous && !punctuation.has(text) && !["(", "["].includes(previous.text)
+      const space = previous && sectionStarts.has(previous.start) || previous && !punctuation.has(text) && !["(", "["].includes(previous.text)
         && !prefixMinus.has(previous.start)
         && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or"].includes(previous.text) || [")", "]"].includes(previous.text) || previous.text === "}" && (expressionBlockEnds.has(previous.end) || implicitCloses.has(previous.end))))
         && !(text === "{" && implicitOpens.has(token.start))
@@ -196,11 +202,11 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
         previous = { text: "}", end: all[position - 1].end };
       } else if (["(", "[", "{"].includes(text)) {
         const end = { "(": ")", "[": "]", "{": "}" }[text];
-        const body = sequence(end);
+        const body = sequence(end, sectionBodies.has(token.start));
         statement.push(text === "{" && !implicitOpens.has(token.start) ? ["{", indent([hard, body]), hard, "}"]
           : group([text, indent([soft, body]), soft, end]));
         previous = { text: end, end: all[position - 1].end };
-        if (!close && declarationEnds.has(previous.end)) {
+        if (items && (declarationEnds.has(previous.end) || sectionBodies.has(token.start))) {
           // A trailing comment stays beside its declaration; separate the
           // next declaration (and its documentation) with one empty line.
           if (!(all[position]?.comment && !source.slice(previous.end, all[position].start).includes("\n"))) {
@@ -216,7 +222,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
         // A following line comment belongs to this statement.
         if (!(all[position]?.comment && !source.slice(token.end, all[position].start).includes("\n"))) {
           flush(); docs.push(hard);
-          if (!close && declarationEnds.has(token.end)) docs.push(hard);
+          if (items && declarationEnds.has(token.end)) docs.push(hard);
           previous = null;
         } else {
           previous = token;

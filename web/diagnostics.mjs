@@ -95,6 +95,10 @@ export const diagnostics = [
   ["E168", "Expected '}' to close the theory."],
   ["E169", "A sort is a set or a proposition: sort M : set; or sort P : prop;"],
   ["E170", "Expected ':' and the type of …, as in …"],
+  ["E171", "Sections do not nest: close this one with } first."],
+  ["E172", "A section gives its definitions parameters: section (G : Group.Model(U0)) { … }."],
+  ["E173", "Expected '}' to close the section."],
+  ["E174", "A section holds definitions: def and computable def."],
   ["E175", "… is reserved, as a keyword or a built-in type of the language; pick another name."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
@@ -233,6 +237,7 @@ export const diagnostics = [
   ["E392", "The … of … is not determined: … fits, and so would … universe…. Give it explicitly."],
   ["E393", "… takes … argument… by position; give its implicit parameters … in double braces, in order or by name, as …{{…}}(…) or …{{… := …}}(…)."],
   ["E394", "… is a theory: its models are ….Model(U), built with ….make(…)."],
+  ["E395", "A definition in a section has the section's implicit parameters, not its own: add them to the section's {{…}}."],
   // Proof statements, rewriting and simplification
   ["E401", "Univalence requires a universe."],
   ["E402", "… takes a universe below UU0."],

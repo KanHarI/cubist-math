@@ -50,6 +50,7 @@
             <li><a href="#theories">Declaring a theory</a></li>
             <li><a href="#models">Models</a></li>
             <li><a href="#open">Opening a model: <code>open</code></a></li>
+            <li><a href="#sections">Sections</a></li>
             <li><a href="#extends">Extension: <code>extends</code></a></li>
             <li><a href="#morphisms">Homomorphisms and isomorphisms</a></li>
             <li><a href="#generated">What a theory declares</a></li>
@@ -140,6 +141,37 @@ def square_one(G : Monoid.Model(U0)) : square(G, G.one) = G.one {
   exact one_mul(one);
 }</code></pre>
             <p>A name that <code>open</code> binds shadows the one it had, as <code>let</code> does, until the block ends, and a later <code>open</code> shadows an earlier one. Elsewhere, and in a declaration's statement, which is outside its block, <code>+</code> and <code>*</code> mean <code>add</code> and <code>mul</code> in scope, as for <code>Nat</code>. An operator means one thing in a scope, chosen by <code>open</code>, never by the types of its operands.</p>
+          </section>
+
+          <section id="sections">
+            <h2>Sections</h2>
+            <p>A <strong>section</strong> gives a group of definitions the same first parameters. Each parameter that is a model is opened for each definition's statement and proof, and inside the section a definition of the section is already applied to the section's parameters:</p>
+            <pre><code data-check="accept">import nat;
+import hlevels;
+
+theory Monoid {
+  sort M : set;
+  mul(x, y : M) : M notation x * y;
+  one : M;
+  law one_mul(x : M) : one * x = x;
+}
+
+section {{U &lt; UU0}}(G : Monoid.Model(U)) {
+  def square(x : M) : M := x * x;
+
+  def square_one : square(one) = one {
+    exact one_mul(one);
+  }
+}
+
+def additive : Monoid.Model(U0) := Monoid.make(
+  M := Nat, M_is_set := nat_is_set, mul := add, one := 0, one_mul := nat_zero_add
+);
+
+def four : square(additive, 2) = 4 {
+  rfl;
+}</code></pre>
+            <p>Inside the section, <code>square(one)</code> is <code>square{{U}}(G, G.one)</code>; outside, <code>square</code> takes <code>G</code> first, and <code>U</code> in braces, and <code>square_one</code> states <code>forall U &lt; UU0. forall G : Monoid.Model(U). square{{U}}(G, G.one) = G.one</code>. A recursive call passes the section's parameters unchanged too: in a section over <code>G</code>, <code>power(x, k)</code> inside <code>power</code>'s own definition is <code>power{{U}}(G, x, k)</code>. A section's parameters, in braces or not, come before each definition's own, so a definition in a section has no implicit parameters of its own, and no parameter of a section's name. A section holds definitions only, and sections do not nest.</p>
           </section>
 
           <section id="extends">

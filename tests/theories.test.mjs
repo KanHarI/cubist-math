@@ -85,6 +85,22 @@ test("the parser refuses a theory's malformed fields", () => {
   assert.equal(parse("theory T { law : Unit; sort : Unit; }").declarations[0].fields.map(f => f.name.text).join(), "law,sort");
 });
 
+test("a section is parsed and formatted as one item, and refused in its form", () => {
+  const source = "section {{U < UU0}}(n : U) { def a := n; def b(m : Nat) : Nat := m;\n}\ndef c := 0;\n";
+  const [a, b, c] = parse(source).declarations;
+  assert.deepEqual([a.section.declared, b.section.declared, c.section], [[], ["a"], undefined]);
+  assert.deepEqual(b.section.params.map(p => [p.name.text, !!p.implicit]), [["U", true], ["n", false]]);
+  const formatted = formatCubist(source);
+  assert.equal(formatted, "section {{U < UU0}}(n : U) {\n  def a := n;\n\n  def b(m : Nat) : Nat := m;\n}\n\ndef c := 0;\n");
+  assert.equal(formatCubist(formatted), formatted);
+  assert.throws(() => parse("section (n : Nat) { section (m : Nat) { } }"), /Sections do not nest: close this one with \} first\./);
+  assert.throws(() => parse("section { def a := 0; }"), /A section gives its definitions parameters/);
+  assert.throws(() => parse("section (n : Nat) { def a := n;"), /Expected '}' to close the section\./);
+  assert.throws(() => parse("section (n : Nat) { inductive T { t; } }"), /A section holds definitions: def and computable def\./);
+  // section is a keyword only where a top-level item starts.
+  assert.equal(parse("def f(section : Nat) := section;").declarations[0].name.text, "f");
+});
+
 test("a theory declared in one module is read, opened and printed in another", async t => {
   const modules = {
     structures: `import hlevels;

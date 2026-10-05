@@ -1,11 +1,12 @@
 # Core theories (L2.4)
 
-Status: design, 2026-10-05; slices 1, 2 and 4 implemented the same day
+Status: design, 2026-10-05; all four slices implemented the same day
 (`web/cubist/theories.mjs`, `web/cubist/morphisms.mjs`,
 `web/translator/theories.mjs`; evidence `cubist-tests/theories.cubist`,
-`cubist-tests/theory_morphisms.cubist`, `tests/theories.test.mjs`, the
-reference's [theories and models](../../web/reference/theories.html)).
-Sections are next. Two additions the slices needed: `e.f` reads a field of
+`cubist-tests/theory_morphisms.cubist`, `cubist-tests/theory_sections.cubist`,
+`tests/theories.test.mjs`, the reference's
+[theories and models](../../web/reference/theories.html)). A definition in
+a section has no implicit parameters of its own: the section's come first. Two additions the slices needed: `e.f` reads a field of
 any value whose type is a theory's record, not only of a name, as
 `T.Iso.inverse(f).to.map(x)`; and argument inference matches one
 definition applied on both sides, `T.Hom(A, B)` against `T.Hom(M, N)`,
@@ -143,8 +144,9 @@ declaration in it, as written: the rule takes all of them, so it does not
 depend on what a declaration uses. A parameter whose type is a model is
 opened for each declaration's statement and proof. Inside the section a
 declaration of the section is applied to the section's parameters already,
-so `square(one)` there is `square{{U}}(G, one)` outside. Sections do not
-nest in L2.4.
+so `square(one)` there is `square{{U}}(G, one)` outside. A recursive call
+passes them unchanged too: in `power(x, n)`, `power(x, k)` is
+`power{{U}}(G, x, k)`. Sections do not nest in L2.4.
 
 ## Extension
 

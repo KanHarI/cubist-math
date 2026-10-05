@@ -19,7 +19,7 @@ import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference,ma
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName} from "./hlevel.mjs";
 import {repeatedName,stem} from "./names.mjs";
-import {operatorBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipTheory} from "./theories.mjs";
+import {operatorBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipTheory,sectionScope} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -64,6 +64,20 @@ const universeConstant = name => {
 // term and proof statement. Its source unit carries the source text, module,
 // simplification rules, inspector sink, freeze policy, work counters and name
 // supply; nothing is swapped in translator fields for replays.
+// The lambdas over a declaration's parameters, a group of names with one
+// type one binder group, around `body`.
+function lambdas(params,body) {
+  for(let j=params.length-1;j>=0;) {
+    const group=params[j].group??j,members=[];
+    while(j>=0&&(params[j].group??j)===group)members.unshift(params[j--]);
+    const binder=members[0].bound?{bound:members[0].bound}:{domain:members[0].type};
+    body=members.length===1
+      ? {kind:"lambda",name:members[0].name,...binder,body}
+      : {kind:"binderGroup",binderKind:"lambda",names:members.map(p=>p.name),...binder,body};
+  }
+  return body;
+}
+
 export class Translator {
   constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
@@ -337,31 +351,30 @@ export class Translator {
         // A theory's sorts need their evidence's definitions (L2.4).
         const missing=missingEvidence(d,env);
         if(missing)throw unit.locate(missing,d.name);
-        const repeated=repeatedName(d.params.length?d.params:d.valueParameters??[]);
+        const repeated=repeatedName([...(d.section?.params??[]),...(d.params.length?d.params:d.valueParameters??[])]);
         if(repeated)throw unit.locate(Error(`${d.name.text} has two parameters named ${repeated.name.text}: give each its own name.`),repeated.name);
-        let expression=d.value;
-        if(!expression) {
-          expression={kind:"proof",type:d.type,statements:d.body};
-          for(let j=d.params.length-1;j>=0;) {
-            const group=d.params[j].group??j,members=[];
-            while(j>=0&&(d.params[j].group??j)===group)members.unshift(d.params[j--]);
-            const binder=members[0].bound?{bound:members[0].bound}:{domain:members[0].type};
-            expression=members.length===1
-              ? {kind:"lambda",name:members[0].name,...binder,body:expression}
-              : {kind:"binderGroup",binderKind:"lambda",names:members.map(p=>p.name),
-                ...binder,body:expression};
-          }
-        }
+        // A section's definition takes the section's implicit parameters, which
+        // come first, and none of its own (L2.4).
+        const ownImplicit=d.section&&(d.params.length?d.params:d.valueParameters??[]).find(p=>p.implicit);
+        if(ownImplicit)throw unit.locate(Error("A definition in a section has the section's implicit parameters, not its own: add them to the section's {{…}}."),ownImplicit.name);
+        let expression=d.value??lambdas(d.params,{kind:"proof",type:d.type,statements:d.body});
+        // In a section, the section's parameters come first, and its scope
+        // holds the rest: its models opened, its earlier definitions
+        // applied (L2.4).
+        if(d.section)expression=lambdas(d.section.params,{kind:"sectionScope",section:d.section,body:expression,
+          start:d.start,end:d.start});
         // A body that is, as a whole, a match on a declared type may call the
         // declaration on a constructor's argument: its own name is a recursive
         // reference there. Only then is that argument's recursive result the
         // declaration's value on it.
         let bodyEnv=env;
-        const own=d.params.length?d.params:d.valueParameters??[],site=recursionSite(d,own);
+        const own=[...(d.section?.params??[]),...(d.params.length?d.params:d.valueParameters??[])],site=recursionSite(d,own);
         if(site) {
           // Its parameters are known by their binders' tokens, and each is
           // recorded where it is bound (ownParameter), never looked up by name.
+          const sectional=d.section?.params.length??0;
           const recursive={tag:"Recursive",source:d.name.text,params:own.map(p=>p.name.text),implicit:own.map(p=>!!p.implicit),
+            section:own.map((p,k)=>k<sectional),
             tokens:own.map(p=>p.name),bindings:new Map(),site};
           bodyEnv=new Map(env).set(d.name.text,recursive).set(RECURSIVE,recursive);
         }
@@ -853,6 +866,7 @@ export class Translator {
       }
       // e.f, a field of a model that is not a name (L2.4).
       case "member": return tr(memberField(this,scope,n),expected);
+      case "sectionScope": return this.term(n.body,sectionScope(this,scope,n),expected);
       case "projection": {
         // p.1 and p.2 are the kernel's projections; the family comes from the
         // checked type of p, so nothing is passed explicitly (HoTT A8).

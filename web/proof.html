@@ -764,6 +764,24 @@ def cube(G : Magma.Model(U0), x : G.M) : G.M {
   exact x * x * x;
 }</code></pre>
         </div>
+        <div class="quick-entry" id="quick-section">
+          <h4><code>section</code></h4>
+          <p><code>section {{U &lt; UU0}}(G : Monoid.Model(U)) { def …; }</code> gives each definition in it the section's parameters first, opens each model among them, and applies the section's earlier definitions to them.
+            <a href="reference/theories.html#sections">Theories and models →</a></p>
+          <pre><code data-check="accept">import nat;
+
+section (n : Nat) {
+  def twice := n + n;
+
+  def twice_unfolds : twice = n + n {
+    rfl;
+  }
+}
+
+def six : twice(3) = 6 {
+  rfl;
+}</code></pre>
+        </div>
         <h3 id="quick-cubical">Cubical paths and higher inductive types</h3>
         <div class="quick-entry" id="quick-path-shorthand">
           <h4><code>path i =&gt;</code> and <code>p @ i</code></h4>

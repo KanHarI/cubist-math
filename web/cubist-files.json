@@ -2171,6 +2171,10 @@
    "summary": "Homomorphisms and isomorphisms (L2.4): built field by field, their fields' types, identity, composition and a parent's homomorphism computing on closed models, isomorphisms' identity, composition and inverse, and a theory whose operation takes a non-sort, which has none."
   },
   {
+   "path": "cubist-tests/theory_sections.cubist",
+   "summary": "Sections (L2.4): a model opened for each statement and proof, earlier definitions applied to the section's parameters, what they are outside, a section whose parameter is no model, and the refusals: a parameter of the section's name, and an implicit parameter of a definition's own."
+  },
+  {
    "path": "cubist-tests/translation_failed_proofs.cubist",
    "summary": "A failed proof becomes no axiom: a use of it fails, and the rest checks."
   },
