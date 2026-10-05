@@ -745,23 +745,27 @@ generated `Hom` requires every operation to take and return sorts
 ([`web/cubist/morphisms.mjs`](../../web/cubist/morphisms.mjs)), so an
 operation `inv(x : R, nonzero : x = zero -> Void) : R` would cost `Field`
 its homomorphisms. Invertibility becomes a law instead, and `inv` is
-derived from it:
+derived from it.
+
+A law must state an evident proposition (L2.4's check, E818): an equation
+between elements of a sort, `Void`, or `forall`, `->` and `and` over those.
+`exists y : R. x * y = one` is a proposition, since inverses in a
+commutative ring are unique and `R` is a set, but not by its form, so the
+check refuses it. The law states the truncated existence instead:
 
 ```
 theory Field extends CommRing {
-  law inverses(x : R, nonzero : x = zero -> Void) : exists y : R. x * y = one;
+  law inverses(x : R, nonzero : x = zero -> Void) : Trunc(U, exists y : R. x * y = one);
   law zero_ne_one : zero = one -> Void;
-}
-
-section {{U < UU0}}(F : Field.Model(U)) {
-  computable def inv(x : R, nonzero : x = zero -> Void) : R := inverses(x, nonzero).1;
 }
 ```
 
-- `exists` is a dependent pair, so `inv` computes.
-- The law is a proposition, as a law must be, because inverses in a
-  commutative ring are unique and `R` is a set. The library proves that
-  once.
+- `inv(x, nonzero)` is derived by unique choice: because the inverse is
+  unique, `exists y : R. x * y = one` is a proposition, and the
+  truncation's eliminator into it gives the inverse. The library proves the
+  uniqueness once.
+- A model supplies the law as `merely` of an inverse and its proof, so on
+  the rationals the elimination computes, and so does `inv`.
 - Being a field becomes a property of a ring, so `Field.Hom` is
   `CommRing`'s, which is the right notion.
 - Division between variables is `div(x, y, nonzero)`, and no field's view
@@ -771,7 +775,13 @@ section {{U < UU0}}(F : Field.Model(U)) {
 This changes [`library/algebra.cubist`](../../library/algebra.cubist) and
 the rationals' model in
 [`library/rationals.cubist`](../../library/rationals.cubist). It does not
-depend on views and can land before them.
+depend on views and can land before them, once two gaps in theories close:
+
+- The law check must accept a truncation: an application of an inductive
+  declared at `prop`, as `Trunc` is
+  ([`library/h1_truncation.cubist`](../../library/h1_truncation.cubist)).
+- A law must be able to name the theory's universe, which `Trunc` takes
+  first; today the universe of a theory's sorts has no name in its body.
 
 ## Acceptance cases
 
@@ -799,7 +809,7 @@ change implements or passes them.
 | Scope compatibility | Existing `open`/section fixtures keep their meanings. Inside `using nat;`, a section over a group reads `*` as the group's, and a nested `nat.(…)` reads it as the naturals' again. |
 | No name-based operators | After L2.10j, `x + y` or `3` outside any view, `open` or section is an error that suggests `using nat;`, even where a function named `add` or a type named `Nat` is in scope. |
 | Mixed decimal and binary literals | Under `using nat;`, `binary.(0b1101)` is the `BinaryNat` today's `0b1101` is, definitionally; a bare `0b1101` there is refused; a printed binary value is qualified outside the `binary` view. |
-| Partial inverse | A field's `inv` requires evidence that its argument is not zero; `Field.Hom` is generated as before; the rationals' literals need no evidence. |
+| Partial inverse | A field's `inv` requires evidence that its argument is not zero; the `inverses` law passes the law check as a truncation; `Field.Hom` is generated as before; the rationals' literals need no evidence. |
 
 ## Deferred work
 
@@ -891,7 +901,7 @@ gate and remains optional. Explicit views are always available.
 | L2.10h | Notation rules: patterns with typed, repeated and binding holes, and side conditions. Proposed, not decided | Separate grammar and tooling contract; L2.10a–d |
 | L2.10i | `~` for path and coordinate reversal, migrated while `-` still parses, then `-` retired as reversal | None: first |
 | L2.10j | Retiring the name-based operator and numeral fallbacks: a `using nat;` migration, a `binary` view for binary literals, then removal | L2.10a–c |
-| L2.10k | `Field` with invertibility as a law and a derived partial `inv`; the rationals' model | L2.4; independent of views |
+| L2.10k | `Field` with invertibility as a truncated law and `inv` derived by unique choice; the rationals' model | L2.4, with truncations in laws and a name for a theory's universe; independent of views |
 
 The explicit-view direction is chosen. Before implementation, settle and
 review these concrete contracts without reopening it by default:
