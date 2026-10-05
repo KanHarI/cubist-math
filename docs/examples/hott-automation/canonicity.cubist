@@ -7,6 +7,7 @@
 import primes;
 import circle;
 import hlevels;
+import quotients;
 
 // Natural-number recursion.
 computable def closed_arithmetic : add(mul(3, 4), 5) = 17 {
@@ -88,6 +89,18 @@ computable def nat_square_computes : nat_is_set(1, 1, refl(1), refl(1)) = refl(r
 }
 
 computable def unit_paths_contract : path_is_contr(U0, Unit, unit_is_contr, tt, tt).1 = refl(tt) {
+  rfl;
+}
+
+// Effective quotients: the path between two closed classes gives back the
+// relation between their elements, through the set of propositions and
+// univalence's Glue types.
+computable def effective_class_computes :
+  quotient_effective(
+    U0, Nat, fun (m, n : Nat) => m = n, fun (m, n : Nat) => nat_is_set(m, n), fun (n : Nat) => refl(n),
+    fun (m, n : Nat, r : m = n) => sym(r), fun (k, m, n : Nat, r : k = m, s : m = n) => trans(r, s), 2, 2,
+    class_path(U0, Nat, fun (m, n : Nat) => m = n, 2, 2, refl(2))
+  ) = refl(2) {
   rfl;
 }
 

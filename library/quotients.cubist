@@ -1,10 +1,13 @@
-import hlevels;
+import propositions;
 
 // Set quotients: the quotient of a type by a relation, a set whose elements
 // are classes of elements. Related elements have equal classes, and the
 // quotient is a set by its declaration, which adds the squash constructor.
-// No class carries a chosen representative, and nothing here uses an
-// assumption: a closed instance computes.
+// For an equivalence relation valued in propositions, elements with equal
+// classes are related: the quotient is effective. No class carries a chosen
+// representative, and nothing here uses an assumption: a closed instance
+// computes. The eliminators' motive universe V is independent of the
+// quotient's universe U.
 
 inductive Quotient(U < UU0, A : U, R : A -> A -> U) : set U {
   class(a : A);
@@ -23,18 +26,18 @@ computable def class_path(U < UU0, A : U, R : A -> A -> U, a, b : A, r : R(a, b)
 // Values at the classes of a family over the quotient that the paths between
 // related classes carry to each other.
 def RespectsOver(
-  U < UU0, A : U, R : A -> A -> U, B : Quotient(U, A, R) -> U, f : (forall a : A. B(class(a)))
+  U, V < UU0, A : U, R : A -> A -> U, B : Quotient(U, A, R) -> V, f : (forall a : A. B(class(a)))
 ) :
-  U := forall a, b : A. forall r : R(a, b).
+  max(U, V) := forall a, b : A. forall r : R(a, b).
   PathP(fun (i : Interval) => B(class_path(U, A, R, a, b, r) @ i), f(a), f(b));
 
 // Induction into a family of sets: values at the classes that respect the
 // relation give a value at every element. The clause for the set squash is
 // generated from the family's level.
 computable def quotient_induction(
-  U < UU0, A : U, R : A -> A -> U, B : Quotient(U, A, R) -> U,
-  sets : (forall z : Quotient(U, A, R). IsSet(U, B(z))), f : (forall a : A. B(class(a))),
-  respects : RespectsOver(U, A, R, B, f), q : Quotient(U, A, R)
+  U, V < UU0, A : U, R : A -> A -> U, B : Quotient(U, A, R) -> V,
+  sets : (forall z : Quotient(U, A, R). IsSet(V, B(z))), f : (forall a : A. B(class(a))),
+  respects : RespectsOver(U, V, A, R, B, f), q : Quotient(U, A, R)
 ) :
   B(q) := match q as z return B(z) {
     class(a) => f(a);
@@ -45,47 +48,47 @@ obligations {
 
 // Its values at classes, and along the paths between them, are those given.
 computable def quotient_induction_class(
-  U < UU0, A : U, R : A -> A -> U, B : Quotient(U, A, R) -> U,
-  sets : (forall z : Quotient(U, A, R). IsSet(U, B(z))), f : (forall a : A. B(class(a))),
-  respects : RespectsOver(U, A, R, B, f), a : A
+  U, V < UU0, A : U, R : A -> A -> U, B : Quotient(U, A, R) -> V,
+  sets : (forall z : Quotient(U, A, R). IsSet(V, B(z))), f : (forall a : A. B(class(a))),
+  respects : RespectsOver(U, V, A, R, B, f), a : A
 ) :
-  quotient_induction(U, A, R, B, sets, f, respects, class(a)) = f(a) := refl(f(a));
+  quotient_induction(U, V, A, R, B, sets, f, respects, class(a)) = f(a) := refl(f(a));
 
 computable def quotient_induction_relate(
-  U < UU0, A : U, R : A -> A -> U, B : Quotient(U, A, R) -> U,
-  sets : (forall z : Quotient(U, A, R). IsSet(U, B(z))), f : (forall a : A. B(class(a))),
-  respects : RespectsOver(U, A, R, B, f), a, b : A, r : R(a, b)
+  U, V < UU0, A : U, R : A -> A -> U, B : Quotient(U, A, R) -> V,
+  sets : (forall z : Quotient(U, A, R). IsSet(V, B(z))), f : (forall a : A. B(class(a))),
+  respects : RespectsOver(U, V, A, R, B, f), a, b : A, r : R(a, b)
 ) :
   typed(
     PathP(fun (i : Interval) => B(class_path(U, A, R, a, b, r) @ i), f(a), f(b)),
-    path i => quotient_induction(U, A, R, B, sets, f, respects, class_path(U, A, R, a, b, r) @ i)
+    path i => quotient_induction(U, V, A, R, B, sets, f, respects, class_path(U, A, R, a, b, r) @ i)
   ) = respects(a, b, r) := refl(respects(a, b, r));
 
 // A map that sends related elements to equal values.
-def Respects(U < UU0, A : U, R : A -> A -> U, B : U, f : A -> B) :
-  U := forall a, b : A. R(a, b) -> f(a) = f(b);
+def Respects(U, V < UU0, A : U, R : A -> A -> U, B : V, f : A -> B) :
+  max(U, V) := forall a, b : A. R(a, b) -> f(a) = f(b);
 
 // The universal property: a map into a set that respects the relation
 // descends to the quotient, computes on classes, and is the only map that
 // does.
 computable def descend(
-  U < UU0, A : U, R : A -> A -> U, B : U, set : IsSet(U, B), f : A -> B,
-  respects : Respects(U, A, R, B, f), q : Quotient(U, A, R)
+  U, V < UU0, A : U, R : A -> A -> U, B : V, set : IsSet(V, B), f : A -> B,
+  respects : Respects(U, V, A, R, B, f), q : Quotient(U, A, R)
 ) :
   B := quotient_induction(
-    U, A, R, fun (z : Quotient(U, A, R)) => B, fun (z : Quotient(U, A, R)) => set, f, respects, q
+    U, V, A, R, fun (z : Quotient(U, A, R)) => B, fun (z : Quotient(U, A, R)) => set, f, respects, q
   );
 
 computable def descend_class(
-  U < UU0, A : U, R : A -> A -> U, B : U, set : IsSet(U, B), f : A -> B,
-  respects : Respects(U, A, R, B, f), a : A
+  U, V < UU0, A : U, R : A -> A -> U, B : V, set : IsSet(V, B), f : A -> B,
+  respects : Respects(U, V, A, R, B, f), a : A
 ) :
-  descend(U, A, R, B, set, f, respects, class(a)) = f(a) := refl(f(a));
+  descend(U, V, A, R, B, set, f, respects, class(a)) = f(a) := refl(f(a));
 
 // Two maps into a set that agree on classes are equal: equality in a set is
 // a proposition, so their agreement carries along every relation.
 computable def maps_agreeing_on_classes(
-  U < UU0, A : U, R : A -> A -> U, B : U, set : IsSet(U, B), g, h : Quotient(U, A, R) -> B,
+  U, V < UU0, A : U, R : A -> A -> U, B : V, set : IsSet(V, B), g, h : Quotient(U, A, R) -> B,
   agree : (forall a : A. g(class(a)) = h(class(a)))
 ) :
   g = h {
@@ -93,19 +96,69 @@ computable def maps_agreeing_on_classes(
   let props := fun (z : Quotient(U, A, R)) => set(g(z), h(z));
   ext q;
   exact quotient_induction(
-    U, A, R, Agree, fun (z : Quotient(U, A, R)) => prop_is_set(U, Agree(z), props(z)), agree,
+    U, V, A, R, Agree, fun (z : Quotient(U, A, R)) => prop_is_set(V, Agree(z), props(z)), agree,
     fun (a, b : A, r : R(a, b)) => prop_over(
-      U, Quotient(U, A, R), Agree, props, class(a), class(b), class_path(U, A, R, a, b, r),
+      max(U, V), Quotient(U, A, R), Agree, props, class(a), class(b), class_path(U, A, R, a, b, r),
       agree(a), agree(b)
     ), q
   );
 }
 
 computable def descend_unique(
-  U < UU0, A : U, R : A -> A -> U, B : U, set : IsSet(U, B), f : A -> B,
-  respects : Respects(U, A, R, B, f), g : Quotient(U, A, R) -> B,
+  U, V < UU0, A : U, R : A -> A -> U, B : V, set : IsSet(V, B), f : A -> B,
+  respects : Respects(U, V, A, R, B, f), g : Quotient(U, A, R) -> B,
   agree : (forall a : A. g(class(a)) = f(a))
 ) :
-  g = descend(U, A, R, B, set, f, respects) := maps_agreeing_on_classes(
-    U, A, R, B, set, g, descend(U, A, R, B, set, f, respects), agree
+  g = descend(U, V, A, R, B, set, f, respects) := maps_agreeing_on_classes(
+    U, V, A, R, B, set, g, descend(U, V, A, R, B, set, f, respects), agree
   );
+
+// Relatedness to a, as a family of propositions over the quotient: at the
+// class of b, R(a, b). Elements related to each other are related to the
+// same elements, so their propositions are equal, and the family descends
+// into the set of propositions.
+computable def related_to(
+  U < UU0, A : U, R : A -> A -> U, props : (forall a, b : A. IsProp(U, R(a, b))),
+  symmetric : (forall a, b : A. R(a, b) -> R(b, a)),
+  transitive : (forall a, b, c : A. R(a, b) -> R(b, c) -> R(a, c)), a : A, q : Quotient(U, A, R)
+) :
+  Prop(U) := descend(
+    U, next(U), A, R, Prop(U), prop_type_is_set(U), fun (b : A) => (R(a, b), props(a, b)),
+    fun (b, c : A, r : R(b, c)) => prop_path(
+      U, (R(a, b), props(a, b)), (R(a, c), props(a, c)),
+      fun (s : R(a, b)) => transitive(a, b, c, s, r),
+      fun (s : R(a, c)) => transitive(a, c, b, s, symmetric(b, c, r))
+    ), q
+  );
+
+// Effectiveness: for an equivalence relation valued in propositions,
+// elements with equal classes are related. A path from the class of a to
+// the class of b carries R(a, a) along relatedness to a, to R(a, b).
+computable def quotient_effective(
+  U < UU0, A : U, R : A -> A -> U, props : (forall a, b : A. IsProp(U, R(a, b))),
+  reflexive : (forall a : A. R(a, a)), symmetric : (forall a, b : A. R(a, b) -> R(b, a)),
+  transitive : (forall a, b, c : A. R(a, b) -> R(b, c) -> R(a, c)), a, b : A,
+  p : typed(Quotient(U, A, R), class(a)) = typed(Quotient(U, A, R), class(b))
+) :
+  R(a, b) := comp(
+    fun (i : Interval) => related_to(U, A, R, props, symmetric, transitive, a, p @ i).1,
+    reflexive(a)
+  );
+
+// So the paths between two classes are the relation between their
+// elements: an equivalence, both sides being propositions.
+computable def class_path_equiv(
+  U < UU0, A : U, R : A -> A -> U, props : (forall a, b : A. IsProp(U, R(a, b))),
+  reflexive : (forall a : A. R(a, a)), symmetric : (forall a, b : A. R(a, b) -> R(b, a)),
+  transitive : (forall a, b, c : A. R(a, b) -> R(b, c) -> R(a, c)), a, b : A
+) :
+  ContrEquiv(U, typed(Quotient(U, A, R), class(a)) = typed(Quotient(U, A, R), class(b)), R(a, b)) {
+  let ClassPath := typed(Quotient(U, A, R), class(a)) = typed(Quotient(U, A, R), class(b));
+  let effective := quotient_effective(U, A, R, props, reflexive, symmetric, transitive, a, b);
+  let related := class_path(U, A, R, a, b);
+  exact inverse_equiv(
+    U, ClassPath, R(a, b), effective, related,
+    fun (r : R(a, b)) => props(a, b, effective(related(r)), r),
+    fun (p : ClassPath) => quotient_is_set(U, A, R, class(a), class(b), related(effective(p)), p)
+  );
+}

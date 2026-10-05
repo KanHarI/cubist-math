@@ -2123,6 +2123,10 @@
    "summary": "Projections p.1 and p.2 (L1.5, HoTT A8), for `tests/projections-let.test.mjs`: the kernel's projections with the family read from the pair's type, and misused projections."
   },
   {
+   "path": "cubist-tests/quotient_effectiveness.cubist",
+   "summary": "Effective quotients: the natural numbers modulo parity, whose related elements are exactly those with equal classes, computed on closed classes; distinct classes; relatedness to an element as a proposition at each class; propositional extensionality, with transport along it; and the set of propositions."
+  },
+  {
    "path": "cubist-tests/quotient_groups_invalid_quotient.cubist",
    "summary": "Quotient construction rejects omitted normality and silent universe lowering."
   },
@@ -2315,8 +2319,12 @@
    "summary": "The natural numbers, `Nat` with `zero` and `succ`, with addition, multiplication and order, and the laws of addition. Numerals and `+`, `*`, `<` and `<=` need it."
   },
   {
+   "path": "library/propositions.cubist",
+   "summary": "The propositions of a universe as a type one universe up, `Prop(U)`. Propositions that imply each other are equal (`prop_ext`, by [`univalence`](univalence.cubist)'s `glue_path`), and equal as propositions (`prop_path`). The equivalences and the paths into a proposition are propositions, so the propositions form a set (`prop_type_is_set`)."
+  },
+  {
    "path": "library/quotients.cubist",
-   "summary": "Set quotients as a declared type: the quotient of a type by a relation, with a class for each element and a path between related classes. It is a set; it has induction into families of sets; and a map into a set that respects the relation descends to it, uniquely. No representative is chosen. Effectiveness, that related elements are exactly those with equal classes, is still to come."
+   "summary": "Set quotients as a declared type: the quotient of a type by a relation, with a class for each element and a path between related classes. It is a set; it has induction into families of sets, of any universe below `UU0`; and a map into a set that respects the relation descends to it, uniquely. No representative is chosen. For an equivalence relation valued in propositions, related elements are exactly those with equal classes (`quotient_effective`, `class_path_equiv`): relatedness to an element descends into [`propositions`](propositions.cubist)' `Prop(U)`."
   },
   {
    "path": "library/univalence.cubist",
