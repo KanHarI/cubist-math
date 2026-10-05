@@ -277,6 +277,12 @@ export class NativeCubicalElaborator {
     this.assumptionLabels = new Map();
     this.assumptionOrigins = new Map();
     this.definitionViews = new Map();
+    // Theories' records, by the binding of their type of models, and the
+    // field each projection reads, which it prints as m.f (L2.4). Every
+    // module's check shares them, so a theory is known where its module is
+    // imported.
+    this.theories = new Map();
+    this.theoryProjections = new Map();
     this.genericDefinitions = new Map();
     this.scopeDefinitions = new Set();
     // Each definition's kernel extensions under review, such as H1: the
