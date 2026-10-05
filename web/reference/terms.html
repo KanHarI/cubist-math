@@ -218,6 +218,14 @@ def named(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat{{A := Nat}}(p, 
 
 def open_type(T : U0) : U1 := same(T);  // Error: The parameter A of same is not determined: U0 fits, and so would a larger universe. Give it explicitly.
 def settled(T : U0) : U1 := same{{_, U0}}(T);</code></pre>
+            <p>An argument whose type applies a definition, as <code>Tagged(U0, Unit)</code>, matches a parameter's type that applies the same definition, as <code>Tagged(U, A)</code>, argument by argument, before either is unfolded. So the arguments are read off even where the definition's value forgets them: <code>Tagged(U, A)</code> is <code>Nat</code> whatever <code>A</code> is, and <code>untag(t)</code> still finds <code>A := Unit</code>. When the arguments do not all match, nothing they solved is kept, and the unfolded types are compared instead. A theory's homomorphisms rely on this: <code>f.map</code> reads <code>f</code>'s models off <code>f : Monoid.Hom(A, B)</code> (<a href="theories.html#morphisms">homomorphisms</a>).</p>
+            <pre><code data-check="accept">import nat;
+
+def Tagged(U &lt; UU0, A : U) : U0 := Nat;
+
+def untag{{U &lt; UU0, A : U}}(t : Tagged(U, A)) : Nat := t;
+
+def tag_of(t : Tagged(U0, Unit)) : Nat := untag(t);</code></pre>
             <p>The library's <code>lists</code> declares <code>append{{U &lt; UU0, A : U}}(xs, ys : List(U, A))</code>. A definition that calls itself passes its implicit parameters unchanged: <code>length(tail)</code> in its own clause, never <code>length{{U, A}}(tail)</code>. Double braces without parentheses give the function of the other parameters, so <code>same{{U0, Nat}}</code> is the identity on <code>Nat</code>; the name of a definition alone is the function of all its parameters. Goals and messages show a definition's implicit arguments in double braces too: <code>append{{U, A}}(xs, nil) = xs</code>.</p>
             <p>A definition names its parameters apart, implicit or not, since a call can give each one by its name. So does a declared type, and each constructor its arguments:</p>
             <pre><code data-check="reject">def twice{{x : Nat}}(x : Nat) : Nat := x;  // Error: twice has two parameters named x: give each its own name.</code></pre>
@@ -381,7 +389,7 @@ def three_is_three : three = 3 {
   exact refl(3);
 }</code></pre>
             <pre><code data-check="reject">def too_big := 257;  // Error: Numerals are limited to 256 in this version.</code></pre>
-            <p>The operators <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> are notation for <code>add</code>, <code>mul</code>, <code>isLt</code> and <code>le</code>, which the arithmetic library defines. Import it with <code>import nat;</code>. The operators are not overloaded: they apply to <code>Nat</code> only.</p>
+            <p>The operators <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> are notation for <code>add</code>, <code>mul</code>, <code>isLt</code> and <code>le</code>, which the arithmetic library defines. Import it with <code>import nat;</code>. The operators are not overloaded by the types of their operands: they mean the <code>add</code> and <code>mul</code> in scope, <code>Nat</code>'s here, unless <a href="theories.html#open"><code>open</code></a> binds them to a model's operations for a block.</p>
             <pre><code data-check="accept">import nat;
 
 def two_times_three : 2 * 3 = 6 {
@@ -408,7 +416,35 @@ def plus_zero(n : Nat) : n + 0 = n {
 def plus_zero_by_computation(n : Nat) : n + 0 = n {
   exact refl(n);  // Error: Type mismatch: found n = n, expected n + 0 = n.
 }</code></pre>
-            <p>Induction on <code>Nat</code> and binary numerals are described in <a href="induction.html#induction">natural numbers and inductive types</a>.</p>
+            <p><code>nat</code> proves the laws of its arithmetic, each by induction or from the others:</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Laws</th><th>Statements</th></tr></thead>
+              <tbody>
+                <tr><td>Addition</td><td><code>nat_zero_add</code>, <code>nat_add_zero</code>, <code>nat_add_succ</code>, <code>nat_add_assoc</code>, <code>nat_add_comm</code>, and the regroupings <code>nat_add_left_comm</code>, <code>a + (b + c) = b + (a + c)</code>, and <code>nat_add_interchange</code>, <code>(a + b) + (c + d) = (a + c) + (b + d)</code></td></tr>
+                <tr><td>Multiplication</td><td><code>nat_mul_zero</code>, <code>nat_mul_succ</code>, <code>nat_one_mul</code>, <code>nat_mul_one</code>, <code>nat_mul_comm</code>, <code>nat_mul_assoc</code>, and distributivity, <code>nat_add_mul</code>, <code>(x + y) * z = x * z + y * z</code>, and <code>nat_mul_add</code>, <code>x * (y + z) = x * y + x * z</code></td></tr>
+                <tr><td>Cancellation</td><td><code>nat_add_cancel</code>, from <code>k + x = k + y</code> to <code>x = y</code>, and <code>nat_mul_cancel</code>, from <code>x * succ(k) = y * succ(k)</code> to <code>x = y</code></td></tr>
+                <tr><td>Successors</td><td><code>pred</code>, <code>nat_succ_injective</code>, and <code>nat_zero_ne_succ</code>: <code>0 = succ(n)</code> is impossible</td></tr>
+                <tr><td>Order</td><td><code>nat_le_refl</code>, and <code>nat_trichotomy(a, b)</code>: <code>a</code> exceeds <code>b</code> by a successor, they are equal, or <code>b</code> exceeds <code>a</code>, each with its evidence</td></tr>
+              </tbody>
+            </table></div>
+            <pre><code data-check="accept">import nat;
+
+def distributes(a, b : Nat) : 2 * (a + b) = 2 * a + 2 * b {
+  exact nat_mul_add(2, a, b);
+}
+
+// 2 when a exceeds b, 1 when they are equal, 0 when b exceeds a.
+def compare(a, b : Nat) : Nat := match nat_trichotomy(a, b) return Nat {
+  left above =&gt; 2;
+  right rest =&gt; match rest return Nat {
+    left same =&gt; 1;
+    right below =&gt; 0;
+  };
+};
+
+evaluate compare(4, 3) expecting 2;
+evaluate compare(3, 3) expecting 1;</code></pre>
+            <p>The library builds the integers and the rationals from the naturals, as <a href="cubical.html#quotients">quotients</a>, and the <a href="theories.html#library-algebra">algebraic structures</a> they carry. Induction on <code>Nat</code> and binary numerals are described in <a href="induction.html#induction">natural numbers and inductive types</a>.</p>
           </section>
           <section id="typed">
             <h2>Expected types and <code>typed</code></h2>

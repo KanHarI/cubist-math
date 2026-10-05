@@ -8,7 +8,7 @@ import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proof-navigation.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
-import { numeralAt, tokenStyle, headerWordAt } from "./source-tokens.mjs";
+import { numeralAt, tokenStyle, keywordAt, linkedWord } from "./source-tokens.mjs";
 import { archiveModules, cubistTestModules, libraryModules } from "./cubist/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
 import { createReplConsole } from "./repl-console.mjs";
@@ -564,7 +564,7 @@ function renderSource() {
         const info = linkMap.get(start);
         const expansion = (last.mode === "mathematical" ? numeralAt(line, token.index, text) : null) ?? info?.expansion;
         // The whole source: a header's colon and its inductive may be on earlier lines.
-        const style = tokenStyle(text, expansion, headerWordAt(last.source, start, text));
+        const style = tokenStyle(text, expansion, keywordAt(last.source, start, text) ?? linkedWord(text, info));
         if (info) {
           const button = document.createElement("button");
           button.className = `reference${style ? " " + style : ""}`;

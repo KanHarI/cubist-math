@@ -764,6 +764,14 @@ def cube(G : Magma.Model(U0), x : G.M) : G.M {
   exact x * x * x;
 }</code></pre>
         </div>
+        <div class="quick-entry" id="quick-library-algebra">
+          <h4>The library's algebra</h4>
+          <p><code>import algebra;</code> gives <code>Semigroup</code>, <code>Monoid</code>, <code>CommMonoid</code>, <code>Group</code>, <code>AbelianGroup</code>, <code>CommRing</code> and <code>Field</code>, and lemmas that take a model first, as <code>mul_zero(A, x)</code>. <code>integers</code> is a commutative ring and <code>rationals</code> a field.
+            <a href="reference/theories.html#library-algebra">Theories and models →</a></p>
+          <pre><code data-check="accept">import rationals;
+
+def times_zero(x : Q) : rationals.mul(x, rationals.zero) = rationals.zero := mul_zero(rationals.comm_ring, x);</code></pre>
+        </div>
         <div class="quick-entry" id="quick-section">
           <h4><code>section</code></h4>
           <p><code>section {{U &lt; UU0}}(G : Monoid.Model(U)) { def …; }</code> gives each definition in it the section's parameters first, opens each model among them, and applies the section's earlier definitions to them.
@@ -836,6 +844,20 @@ def reverse(c : Circle) : Circle := match c {
   base =&gt; base;
   loop @ i =&gt; loop @ -i;
 };</code></pre>
+        </div>
+        <div class="quick-entry" id="quick-quotients">
+          <h4>Set quotients</h4>
+          <p><code>import quotients;</code> gives <code>Quotient(U, A, R)</code>, with a <code>class</code> for each element and a path between related classes. A map into a set that respects the relation descends to it (<code>descend</code>, <code>descend2</code>), and for an equivalence relation valued in propositions, equal classes have related elements (<code>quotient_effective</code>).
+            <a href="reference/cubical.html#quotients">Cubical paths and higher inductive types →</a></p>
+          <pre><code data-check="accept">import quotients;
+
+// Nat with every two numbers related: one class.
+def Everything(m, n : Nat) : U0 := Unit;
+
+def Collapsed : U0 := Quotient(U0, Nat, Everything);
+
+def one_class(m, n : Nat) : typed(Collapsed, class(m)) = typed(Collapsed, class(n)) :=
+  class_path(U0, Nat, Everything, m, n, tt);</code></pre>
         </div>
         <div class="quick-entry" id="quick-pushouts">
           <h4>Pushouts</h4>

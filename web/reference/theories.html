@@ -53,6 +53,7 @@
             <li><a href="#sections">Sections</a></li>
             <li><a href="#extends">Extension: <code>extends</code></a></li>
             <li><a href="#morphisms">Homomorphisms and isomorphisms</a></li>
+            <li><a href="#library-algebra">The library's algebra</a></li>
             <li><a href="#generated">What a theory declares</a></li>
             <li><a href="#theory-errors">What is refused</a></li>
           </ul>
@@ -273,6 +274,71 @@ theory Indexed {
 }
 
 def no_homs(A, B : Indexed.Model(U0)) := Indexed.Hom(A, B);  // Error: Indexed's models have no homomorphisms: its power takes or returns something other than a sort.</code></pre>
+          </section>
+
+          <section id="library-algebra">
+            <h2>The library's algebra</h2>
+            <p><code>import algebra;</code> declares the usual hierarchy as theories, each on one set, with its models, homomorphisms and isomorphisms:</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Theory</th><th>Extends</th><th>Adds</th></tr></thead>
+              <tbody>
+                <tr><td><code>Semigroup</code></td><td></td><td><code>sort M : set</code>, <code>mul</code> written <code>x * y</code>, <code>mul_assoc</code></td></tr>
+                <tr><td><code>Monoid</code></td><td><code>Semigroup</code></td><td><code>one</code>, <code>one_mul</code>, <code>mul_one</code></td></tr>
+                <tr><td><code>CommMonoid</code></td><td><code>Monoid</code></td><td><code>mul_comm</code></td></tr>
+                <tr><td><code>Group</code></td><td><code>Monoid</code></td><td><code>inv</code>, <code>inv_mul</code>, <code>mul_inv</code></td></tr>
+                <tr><td><code>AbelianGroup</code></td><td><code>Group</code>, <code>CommMonoid</code></td><td>Nothing: the two parents share their monoid</td></tr>
+                <tr><td><code>CommRing</code></td><td><code>additive : AbelianGroup</code>, renamed to <code>R</code>, <code>add</code> written <code>x + y</code>, <code>zero</code>, <code>neg</code>, <code>add_assoc</code>, <code>zero_add</code>, <code>add_zero</code>, <code>neg_add</code>, <code>add_neg</code>, <code>add_comm</code>; and <code>multiplicative : CommMonoid</code> on <code>R</code></td><td><code>mul_add</code>: <code>x * (y + z) = x * y + x * z</code></td></tr>
+                <tr><td><code>Field</code></td><td><code>CommRing</code></td><td><code>inv</code>; <code>mul_inv</code>, <code>x * inv(x) = one</code> for <code>x</code> other than <code>zero</code>; and <code>zero_ne_one</code></td></tr>
+              </tbody>
+            </table></div>
+            <p>A field's <code>inv</code> is total, with no constraint at <code>zero</code>. The module's sections prove general lemmas, which take a model first:</p>
+            <ul>
+              <li>in any commutative monoid, <code>mul_left_comm</code>, <code>mul_right_comm</code> and <code>mul_interchange</code>, <code>(w * x) * (y * z) = (w * y) * (x * z)</code>;</li>
+              <li>in any group, <code>left_cancel</code>, <code>right_cancel</code>, <code>inv_unique</code>, <code>inv_inv</code> and <code>inv_one</code>;</li>
+              <li>in any commutative ring, <code>mul_zero</code>, <code>zero_mul</code>, <code>add_mul</code> and <code>neg_mul</code>, <code>neg(x) * y = neg(x * y)</code>.</li>
+            </ul>
+            <p>A ring's parts are models too, so a monoid's or a group's lemma applies to them: <code>mul_interchange(A.multiplicative, …)</code>, <code>right_cancel(A.additive.group, …)</code>. The natural numbers are a commutative monoid twice, <code>nat_additive</code> and <code>nat_multiplicative</code>. The library's <code>integers</code> are a commutative ring, <code>integers</code>, and its <code>rationals</code> a field, <code>rationals</code>, both <a href="cubical.html#quotients">quotients</a>. <code>rationals</code> builds the field of fractions once, in a section over any commutative ring with decidable equality, no zero divisors and zero not one (<code>fraction_field</code>), and takes it at the integers. <code>rat(a, k)</code> is <code>a / (k + 1)</code>, and the field's arithmetic, the inverse included, computes:</p>
+            <pre><code data-check="accept">import rationals;
+
+def equal_or_not(x, y : Q) : Nat := match rat_decide(x, y) return Nat {
+  left same =&gt; 1;
+  right different =&gt; 0;
+};
+
+// 1/2 + 1/3 = 5/6, and -2/3 times its inverse is one.
+evaluate equal_or_not(rationals.add(rat(int(1, 0), 1), rat(int(1, 0), 2)), rat(int(5, 0), 5)) expecting 1;
+evaluate equal_or_not(rationals.mul(rat(int(0, 2), 2), rationals.inv(rat(int(0, 2), 2))), rationals.one) expecting 1;
+
+// A commutative ring's lemma, at the integers and at the rationals' ring.
+def int_times_zero(x : Z) : int_mul(x, int_zero) = int_zero := mul_zero(integers, x);
+def rat_times_zero(x : Q) : rationals.mul(x, rationals.zero) = rationals.zero := mul_zero(rationals.comm_ring, x);</code></pre>
+            <p>A homomorphism between the library's models is built field by field, as any other. Powers of two carry the naturals' addition to their multiplication:</p>
+            <pre><code data-check="accept">import algebra;
+
+def two_to(n : Nat) : Nat := match n {
+  zero =&gt; 1;
+  succ(k) =&gt; 2 * two_to(k);
+};
+
+def two_to_add(x, y : Nat) : two_to(x + y) = two_to(x) * two_to(y) {
+  match x {
+    zero =&gt; {
+      exact sym(nat_one_mul(two_to(y)));
+    }
+    succ(k) =&gt; {
+      calc {
+        2 * two_to(k + y) = 2 * (two_to(k) * two_to(y)) by cong(fun (m : Nat) =&gt; 2 * m, two_to_add(k, y));
+        _ = (2 * two_to(k)) * two_to(y) by sym(nat_mul_assoc(2, two_to(k), two_to(y)));
+      }
+    }
+  }
+}
+
+def powers_of_two : CommMonoid.Hom(nat_additive, nat_multiplicative) := CommMonoid.Hom.make(
+  nat_additive, nat_multiplicative, map := two_to, map_mul := two_to_add, map_one := refl(1)
+);
+
+evaluate powers_of_two.map(4) expecting 16;</code></pre>
           </section>
 
           <section id="generated">

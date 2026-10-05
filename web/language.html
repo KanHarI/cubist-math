@@ -90,7 +90,7 @@
           <li><a href="reference/induction.html">Natural numbers and inductive types</a><span>Inductive declarations, constructors, pattern matching, recursive functions and proofs, induction, and binary numbers.</span></li>
           <li><a href="reference/rewriting.html">Equational reasoning and simplification</a><span>Chains of equalities, rewriting with checked lemmas, and simplification.</span></li>
           <li><a href="reference/theories.html">Theories and models</a><span>Theories of algebraic structures: sorts, operations with notation and laws, their models, extension and open.</span></li>
-          <li><a href="reference/cubical.html">Cubical paths and higher inductive types</a><span>Paths as functions of an interval, dependent paths, composition, and types with path constructors: the circle, truncations, pushouts and suspensions.</span></li>
+          <li><a href="reference/cubical.html">Cubical paths and higher inductive types</a><span>Paths as functions of an interval, dependent paths, composition, and types with path constructors: the circle, truncations, set quotients, pushouts and suspensions.</span></li>
           <li><a href="reference/assumptions.html">Excluded middle, choice and computability</a><span>The two classical assumptions, excluded middle and choice, the mere existence they conclude, univalence and extensionality, which compute, and how a result states and checks that it computes.</span></li>
           <li><a href="reference/checking.html">Checking and inspection</a><span>Where to check a proof, and how to read what the checker found.</span></li>
           <li><a href="reference/errors.html">Error messages</a><span>Every error message shown in this reference, what it means, and what to do.</span></li>
@@ -98,6 +98,16 @@
       </section>
       <section id="examples">
         <h2>Library examples</h2>
+        <p>The library, under <code>library/</code>, is built in today's language, and a module imports it by name:</p>
+        <ul>
+          <li><a href="proof.html?proof=nat">nat</a>: the natural numbers, their arithmetic and order, and their laws, by <code>match</code> and <code>calc</code>.</li>
+          <li><a href="proof.html?proof=hlevels">hlevels</a>: contractible types, propositions and sets in every universe, Hedberg's theorem, and the lemmas <code>hlevel</code> builds its proofs from.</li>
+          <li><a href="proof.html?proof=univalence">univalence</a> and <a href="proof.html?proof=propositions">propositions</a>: univalence from Glue types, and propositional extensionality.</li>
+          <li><a href="proof.html?proof=quotients">quotients</a>: set quotients, their universal property and effectiveness.</li>
+          <li><a href="proof.html?proof=algebra">algebra</a>: semigroups to fields as theories, with lemmas in sections.</li>
+          <li><a href="proof.html?proof=integers">integers</a> and <a href="proof.html?proof=rationals">rationals</a>: a commutative ring and a field, built as quotients, whose arithmetic computes.</li>
+        </ul>
+        <p>The first library, archived under <code>archive/first-library/</code>, is kept as a reference:</p>
         <ul>
           <li><a href="proof.html?proof=euclid">Euclid</a>: introductions, local claims, pair witnesses, and sum cases.</li>
           <li><a href="proof.html?proof=paths">Paths</a>: identity induction, symmetry, composition, congruence, <code>path i =&gt;</code> and <code>apd_path</code>.</li>
