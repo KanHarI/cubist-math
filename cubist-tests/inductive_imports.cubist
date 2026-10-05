@@ -2,6 +2,8 @@
 // used by name, with no marker (T2, through an import), and each module
 // numbers its own names: here the importer's B and A get the names the
 // declaration's A and B had, and are still not them.
+
+import nat;
 import inductive_naturals;
 import inductive_telescope;
 

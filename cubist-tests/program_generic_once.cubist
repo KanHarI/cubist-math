@@ -1,6 +1,8 @@
 // From tests/cubical-program.test.mjs: a universe-generic definition is
 // checked once, as one kernel definition, and instantiated at each level.
 
+import nat;
+
 def identity(U < UU0, A : U, x : A) := x;
 
 def first := identity(U0, Nat, 0);

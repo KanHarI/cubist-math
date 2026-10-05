@@ -2,6 +2,8 @@
 // from the parser's keyword sites, as the other of ergonomics_tactic_sites
 // and ergonomics_tactic_sites_generic does.
 
+import nat;
+
 def calc_site(U < UU0, x, y : Nat, p : x = y) : x = y {
   calc {
     x = y by p;

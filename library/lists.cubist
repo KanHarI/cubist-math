@@ -1,4 +1,4 @@
-import naturals;
+import nat;
 
 // Lists: finite sequences of elements of a type, in any universe below UU0,
 // with their length and concatenation. Concatenation is associative with

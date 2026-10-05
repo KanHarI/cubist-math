@@ -104,7 +104,7 @@ function generator(seed) {
 
 test("Lemma 5: instantiating a level commutes with normalization", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  await program.check("def retained : Unit := tt;", "properties");
+  await program.check("import nat; def retained : Unit := tt;", "properties");
   const nf = term => program.checker.verify(term).normal, hash = canonicalHasher();
   const same = (a, b) => hash(a) === hash(b);
   const { x, type, number } = generator(12345);
@@ -126,7 +126,7 @@ test("Lemma 5: instantiating a level commutes with normalization", async t => {
 
 test("composition at a level Π is pointwise: its reduct instantiated is the composition at the instance", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  await program.check("def retained : Unit := tt;", "properties");
+  await program.check("import nat; def retained : Unit := tt;", "properties");
   const nf = term => program.checker.verify(term).normal, hash = canonicalHasher();
   const { x, inhabited } = generator(777);
   for (let i = 0; i < 30; i++) {

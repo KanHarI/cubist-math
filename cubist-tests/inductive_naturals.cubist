@@ -1,6 +1,6 @@
 // A declared type for other modules to import, from
 // tests/inductive-declarations.test.mjs. Its constructors are named apart
-// from Nat's, which the prelude brings into every importer.
+// from Nat's, which its importers may import too.
 
 inductive N {
   nzero;

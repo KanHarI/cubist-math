@@ -1,6 +1,8 @@
 // From tests/proof-ergonomics.test.mjs: A parenthesized binder links from its
 // keyword like an unparenthesized one.
 
+import nat;
+
 def bare := fun (n : Nat) => n;
 
 def parenthesized := (fun (n : Nat) => n);

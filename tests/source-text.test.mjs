@@ -15,7 +15,7 @@ const app = (fn, ...args) => args.reduce((f, arg) => ({ tag: "App", fn: f, arg }
 const succ = value => app({ tag: "Con", index: 1, sort: nat, name: "succ" }, value);
 // The source Nat's eliminator applied, which prints as `induction`.
 const induction = ({ motive, zero, step, value }) => app({ tag: "Elim", signature: "nat__Nat", motive, clauses: [zero, step] }, value);
-const add = (a, b) => app({ tag: "DefRef", name: "naturals__add" }, a, b);
+const add = (a, b) => app({ tag: "DefRef", name: "nat__add" }, a, b);
 const equal = (left, right) => ({ tag: "Path", dim: "i", family: nat, left, right });
 
 test("types print as they are written, with only the parentheses the parser needs", () => {
@@ -37,8 +37,8 @@ test("values and arithmetic print in source syntax", () => {
   assert.equal(sourceText(equal(add(number(2), number(2)), number(5))), "2 + 2 = 5");
   assert.equal(sourceText(add(add(number(1), number(2)), number(3))), "1 + 2 + 3");
   assert.equal(sourceText(add(number(1), add(number(2), number(3)))), "1 + (2 + 3)");
-  assert.equal(sourceText(app({ tag: "DefRef", name: "naturals__mul" }, add(number(1), number(2)), number(3))), "(1 + 2) * 3");
-  assert.equal(sourceText(app({ tag: "DefRef", name: "naturals__isLt" }, variable("n"), succ(variable("n")))), "n < succ(n)");
+  assert.equal(sourceText(app({ tag: "DefRef", name: "nat__mul" }, add(number(1), number(2)), number(3))), "(1 + 2) * 3");
+  assert.equal(sourceText(app({ tag: "DefRef", name: "nat__isLt" }, variable("n"), succ(variable("n")))), "n < succ(n)");
   assert.equal(sourceText({ tag: "Pair", first: number(3), second: { tag: "Pair", first: { tag: "Point" }, second: number(1) } }), "(3, tt, 1)");
   assert.equal(sourceText({ tag: "Inl", as: sum(unit, nat), value: { tag: "Point" } }), "left(tt)");
   assert.equal(sourceText({ tag: "Lam", name: "m", domain: nat, body: { tag: "Lam", name: "n", domain: nat,

@@ -1,6 +1,8 @@
 // From tests/cubical-program.test.mjs: untyped lambdas in generic
 // definitions report errors without aborting later declarations.
 
+import nat;
+
 // Error: E346: Untyped lambda requires an expected function type.
 def generic(U < UU0) := fun x => x;
 

@@ -1,5 +1,7 @@
 // From tests/universe-generic.test.mjs.
 
+import nat;
+
 // A generic definition checks once and is instantiated at universes of tier
 // 0.
 def identity(U < UU0, A : U, x : A) : A := x;

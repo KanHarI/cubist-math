@@ -13,7 +13,7 @@ import {numeralValue} from "./translator/numerals.mjs";
 // `and` group to the right, `+` and `*` to the left.
 const LEVEL = { binder: 0, arrow: 1, or: 2, and: 3, compare: 4, plus: 5, times: 6, at: 7, atom: 9 };
 const infix = { add: ["+", LEVEL.plus], mul: ["*", LEVEL.times], le: ["<=", LEVEL.compare], isLt: ["<", LEVEL.compare] };
-const arithmetic = /^(?:naturals|primes)__(add|mul|le|isLt)$/;
+const arithmetic = /^nat__(add|mul|le|isLt)$/;
 
 // `symbols` maps kernel names to their display names, as for cubicalText.
 // Without an entry, a definition shows its name without the module prefix.

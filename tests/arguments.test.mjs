@@ -61,7 +61,7 @@ test("the inspector shows what each hole and each omitted parameter became", asy
 });
 
 test("a call asks for its function's type once, never for the growing application's", async t => {
-  const source = "def concat(U < UU0, A : U, x, y, z : A, p : x = y, q : y = z) : x = z := trans(p, q);\n"
+  const source = "import nat;\ndef concat(U < UU0, A : U, x, y, z : A, p : x = y, q : y = z) : x = z := trans(p, q);\n"
     + "def joined(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat(U0, Nat, a, b, c, p, q);\n";
   const asked = [];
   const { verdicts } = await checkProgram(t, source, { module, options: {

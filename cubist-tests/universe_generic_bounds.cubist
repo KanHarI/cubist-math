@@ -2,6 +2,8 @@
 // removed, and bounds, reserved names and universes are checked.
 // B13: universe constants are reserved names.
 
+import nat;
+
 // Error: E342: Universe was removed: bind a universe variable as U < UU0.
 def u := Universe;
 

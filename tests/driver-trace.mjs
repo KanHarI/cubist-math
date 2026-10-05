@@ -13,7 +13,7 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 import { assertFreshBuild } from "../tools/build-stamp.mjs";
 
 const repository = new URL("../", import.meta.url);
-export const traceSource = `import naturals;
+export const traceSource = `import nat;
 
 def lt(n, m : Nat) : U0 {
   exact exists k : Nat. succ(k) + n = m;

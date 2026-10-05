@@ -58,20 +58,26 @@
             <h2>Universes</h2>
             <p><code>U0</code> denotes U₀, the universe of small types such as <code>Nat</code>. <code>U1</code>, <code>U2</code>, <code>U3</code> and so on denote the larger universes U₁, U₂, U₃. Each universe is a type in the next one, so <code>U0 : U1</code>. No universe contains itself: a type of all types, itself among them, would make the logic inconsistent (Girard’s paradox), so the universes form a tower instead.</p>
             <p>A smaller type is also a type of every larger universe: it is <em>lifted</em>, never silently lowered. This is called <strong>cumulativity</strong>. A type built from others lives in the largest of their universes, so <code>Nat -> U0</code>, a function into <code>U0</code>, is in <code>U1</code>, and a <code>forall</code> over all of <code>U0</code> is in <code>U1</code> too, as <a href="types.html#tour-dependent">chapter 1</a> showed.</p>
-            <pre><code data-check="accept">def large_identity(A : U1, x : A) := x;
+            <pre><code data-check="accept">import nat;
+
+def large_identity(A : U1, x : A) := x;
 def lifted_unit := typed(U1, Unit);
 def small_in_large : U1 := U0;
 def families : U1 := Nat -&gt; U0;
 def one_unit := large_identity(Unit, tt);</code></pre>
             <p><code>large_identity</code> takes a type in <code>U1</code>, and <code>Unit</code>, a type in <code>U0</code>, is lifted to it. The other direction fails: a type in <code>U1</code> is not a type in <code>U0</code>.</p>
-            <pre><code data-check="reject">def small_identity(A : U0, x : A) := x;
+            <pre><code data-check="reject">import nat;
+
+def small_identity(A : U0, x : A) := x;
 def lowered := small_identity(U0, Nat);
 // Error: Type mismatch: found U1, expected U0.</code></pre>
           </section>
           <section id="universe-variables">
             <h2>Universe variables</h2>
             <p>A declaration with <code>A : U0</code> works only for small types. To work at every universe, bind a <strong>universe variable</strong> with <code>U &lt; UU0</code>, read “U is a universe below UU0”. Inside the declaration, <code>U</code> is a universe like <code>U0</code>, so <code>A : U</code> is a type of that universe. The declaration is checked once, for every universe at the same time.</p>
-            <pre><code data-check="accept">def identity(U &lt; UU0, A : U, x : A) : A := x;
+            <pre><code data-check="accept">import nat;
+
+def identity(U &lt; UU0, A : U, x : A) : A := x;
 def three := identity(U0, Nat, 3);
 def small_identity := identity(U0);
 def universe_identity := identity(U2, U1, U0);</code></pre>
@@ -88,7 +94,9 @@ def swap(U &lt; UU0, A, B : U, p : A and B) : B and A {
   exact (p.2, p.1);
 }</code></pre>
             <p>A universe variable stands for an arbitrary universe, so it is not a type of any fixed universe. <code>U</code> itself lives in the next universe, <code>next(U)</code>.</p>
-            <pre><code data-check="reject">def fixed(U &lt; UU0, f : U2 -&gt; Nat) : Nat := f(U);
+            <pre><code data-check="reject">import nat;
+
+def fixed(U &lt; UU0, f : U2 -&gt; Nat) : Nat := f(U);
 // Error: Type mismatch: found next(U), expected U2.</code></pre>
             <p>The word <code>Universe</code> is gone. A parameter written <code>U : Universe</code> is now written <code>U &lt; UU0</code>.</p>
             <pre><code data-check="reject">def old_identity(U : Universe, A : U, x : A) := x;
@@ -100,7 +108,9 @@ def swap(U &lt; UU0, A, B : U, p : A and B) : B and A {
             <pre><code data-check="accept">def type_of(U &lt; UU0) : next(U) := U;
 def both(U, V &lt; UU0, A : U, B : V) : max(U, V) := A and B;
 def one_level_up(U &lt; UU0, A : U) : next(U) := A;</code></pre>
-            <pre><code data-check="reject">def not_a_universe(U &lt; UU0) := next(Nat);
+            <pre><code data-check="reject">import nat;
+
+def not_a_universe(U &lt; UU0) := next(Nat);
 // Error: Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).</code></pre>
             <p>The checker compares universe expressions by value: <code>max(U, U)</code> is <code>U</code>, <code>next(max(U, V))</code> is <code>max(next(U), next(V))</code>, and <code>max(U, U0)</code> is <code>U</code>.</p>
           </section>

@@ -12,8 +12,8 @@
 // - A library module resolves only in library/. The library is
 //   self-contained: nothing in it depends on the archive.
 // - An archive module resolves in the archive, then in library/. The archive
-//   may build on the library, as every module builds on the prelude, nat,
-//   which lives there; a library module of the same name never replaces an
+//   may build on the library, as many modules build on nat, which lives
+//   there; a library module of the same name never replaces an
 //   archive module's import, so the archive's checks keep their modules.
 // - A test module resolves in cubist-tests/, then in library/, then in the
 //   archive. Nothing else imports a test module.

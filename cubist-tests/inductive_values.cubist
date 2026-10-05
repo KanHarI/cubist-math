@@ -3,6 +3,8 @@
 // T2, directly and through a definition: since H1's release, no result that
 // uses a declared type carries the marker (the specification's 6.4).
 
+import nat;
+
 inductive N {
   zero;
   succ(n : N);

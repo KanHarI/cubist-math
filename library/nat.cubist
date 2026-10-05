@@ -1,5 +1,64 @@
-// Natural numbers, defined and checked from source like any other data type.
+// The natural numbers: Nat, its addition, multiplication and order, and
+// the laws of addition. A module that uses them, numerals included, imports
+// nat. `+`, `*`, `<` and `<=` stand for `add`, `mul`, `isLt` and `le`.
 inductive Nat : U0 {
   zero;
   succ(n : Nat);
 }
+
+// Addition, by recursion on the first argument: 0 + b = b and
+// succ(a) + b = succ(a + b).
+computable def add(x, y : Nat) : Nat := match x {
+    zero => y;
+    succ(k) => succ(add(k, y));
+  };
+
+// Multiplication: 0 * b = 0 and succ(a) * b = b + a * b.
+computable def mul(x, y : Nat) : Nat := match x {
+    zero => 0;
+    succ(k) => y + mul(k, y);
+  };
+
+// Order, computed: 0 <= b holds, succ(a) <= 0 does not, and
+// succ(a) <= succ(b) is a <= b.
+computable def le(x, y : Nat) : U0 := match x, y {
+    zero, _ => Unit;
+    succ(a), zero => Void;
+    succ(a), succ(b) => le(a, b);
+  };
+
+// Strict order: n < p is succ(n) <= p.
+computable def isLt(n, p : Nat) : U0 := le(succ(n), p);
+
+// 0 + n = n, by computation.
+computable def nat_zero_add(n : Nat) : 0 + n = n := refl(n);
+
+// n + 0 = n, by induction, since addition recurses on its first argument.
+computable def nat_add_zero(n : Nat) : n + 0 = n := match n {
+    zero => refl(0);
+    succ(k) => cong(fun (m : Nat) => succ(m), nat_add_zero(k));
+  };
+
+// n + succ(m) = succ(n + m).
+computable def nat_add_succ(x, y : Nat) : x + succ(y) = succ(x + y) := match x {
+    zero => refl(succ(y));
+    succ(k) => cong(fun (m : Nat) => succ(m), nat_add_succ(k, y));
+  };
+
+// Addition is associative.
+computable def nat_add_assoc(x, y, z : Nat) : (x + y) + z = x + (y + z) := match x {
+    zero => refl(y + z);
+    succ(k) => cong(fun (m : Nat) => succ(m), nat_add_assoc(k, y, z));
+  };
+
+// Addition is commutative.
+computable def nat_add_comm(x, y : Nat) : x + y = y + x := match x {
+    zero => sym(nat_add_zero(y));
+    succ(k) => trans(cong(fun (m : Nat) => succ(m), nat_add_comm(k, y)), sym(nat_add_succ(y, k)));
+  };
+
+// Order is reflexive.
+computable def nat_le_refl(n : Nat) : n <= n := match n {
+    zero => tt;
+    succ(k) => nat_le_refl(k);
+  };

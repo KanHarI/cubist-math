@@ -2316,11 +2316,7 @@
   },
   {
    "path": "library/nat.cubist",
-   "summary": "The natural numbers, `Nat` with `zero` and `succ`: the prelude, which every module imports."
-  },
-  {
-   "path": "library/naturals.cubist",
-   "summary": "Addition, multiplication and order on `Nat`, with the basic laws of addition. `+`, `*`, `<` and `<=` need it."
+   "summary": "The natural numbers, `Nat` with `zero` and `succ`, with addition, multiplication and order, and the laws of addition. Numerals and `+`, `*`, `<` and `<=` need it."
   },
   {
    "path": "library/quotients.cubist",

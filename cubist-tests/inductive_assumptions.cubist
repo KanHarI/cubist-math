@@ -9,6 +9,7 @@
 // Each refusal names the assumption by its label, and the parameter or
 // argument that uses it, where the source writes it.
 
+import nat;
 import classical_axioms;
 
 // Error: E507: InParameter's parameter t uses the assumption Truncate: a declared type's parameters

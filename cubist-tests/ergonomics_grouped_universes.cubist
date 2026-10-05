@@ -1,6 +1,8 @@
 // From tests/proof-ergonomics.test.mjs: Grouped universe binders elaborate
 // like separate ones.
 
+import nat;
+
 def separate(U < UU0, V < UU0, A : U, B : V, x : A, y : B) := x;
 
 def grouped(U, V < UU0, A : U, B : V, x : A, y : B) := x;

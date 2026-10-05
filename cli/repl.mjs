@@ -34,10 +34,10 @@ Each entry is checked by the kernel as a small module on top of the ones
 before it. An entry continues on the next line while a bracket is open.
 
 Noninteractive: node cli/repl.mjs check euclid
-                node cli/repl.mjs "import naturals; evaluate 2 + 3;"
+                node cli/repl.mjs "import nat; evaluate 2 + 3;"
 Optimizations: --[no-]share-syntax, --[no-]reuse-checks, --[no-]compact-paths
-Declared types (H1, inductive) are on by default. Nat is imported from the
-source prelude; import w for W(U,V,A,B), and pushout for Pushout.`;
+Declared types (H1, inductive) are on by default. Import nat for Nat and its
+numerals, w for W(U,V,A,B), and pushout for Pushout.`;
 const args = process.argv.slice(2), optimizations = {};
 const command = [];
 for (const arg of args) {

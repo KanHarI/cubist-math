@@ -1,6 +1,8 @@
 // From tests/cubical-program.test.mjs: unfolding scopes close local
 // variables and interval coordinates without leaking hints.
 
+import nat;
+
 def id(n : Nat) := n;
 
 def local(n : Nat) : id(n) = n {

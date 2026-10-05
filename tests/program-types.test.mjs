@@ -21,7 +21,7 @@ test("Nat, its constructors and W require ordinary source imports",async t=>{
   const {result}=await check(t,`def missing : Nat := 0;
 def successor := succ;
 def tree := W(U0, U0, Unit, fun (a : Unit) => Void);
-`,{prelude:false});
+`);
   assert.equal(result.complete,false);
   assert.deepEqual(result.outputs.map(d=>d.verified),[false,false,false]);
   for(const output of result.outputs)assert.match(output.reason,/Untranslated name/);
@@ -76,7 +76,8 @@ test("the producer refuses the reserved primitive syntax and instruction slots",
 });
 
 test("imported Nat keeps a folded 2^22 value and discards it without unary evaluation",async t=>{
-  let source=`def double(n : Nat) : Nat := match n { zero => 0; succ(k) => succ(succ(double(k))); };\ndef power0 : Nat := 1;\n`;
+  let source=`import nat;
+def double(n : Nat) : Nat := match n { zero => 0; succ(k) => succ(succ(double(k))); };\ndef power0 : Nat := 1;\n`;
   for(let n=1;n<=22;n++)source+=`def power${n} : Nat := double(power${n-1});\n`;
   source+="def folded : power22 = power22 { rfl; }\ndef discarded := (fun (unused : Nat) => 0)(power22);\ndef zero_result : discarded = 0 { rfl; }\n";
   const {program,result}=await check(t,source);

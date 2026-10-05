@@ -2,7 +2,7 @@
 // and with less, in fresh and reused sessions: each spends counted fuel,
 // the same in every session. commuted cycles, and growing reaches the
 // rewrite budget.
-import naturals;
+import nat;
 
 def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
   simp only [nat_add_zero];

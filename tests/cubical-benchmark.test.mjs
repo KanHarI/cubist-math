@@ -25,7 +25,7 @@ async function session(t) {
 
 test("benchmark distinguishes invalid proofs, blocked uses, and independent checked declarations", async () => {
   const report = await benchmark({ modules: ["sample"], readSource: async name => name === "sample" ?
-    "def good := 0; def bad : 0 = 1 { exact refl(0); } def dependent := bad; def independent := 2;" : sourceReader()(name) });
+    "import nat; def good := 0; def bad : 0 = 1 { exact refl(0); } def dependent := bad; def independent := 2;" : sourceReader()(name) });
   assert.deepEqual(report.declarations.filter(d=>d.module === "sample").map(d => d.category), ["checked", "failed", "blocked", "checked"]);
   assert.equal(report.declarations.find(d=>d.name === "dependent").rootBlocker, "sample__bad");
   for(const row of report.declarations.filter(d=>d.module === "sample")) {
@@ -91,10 +91,10 @@ test("successful compaction retains definitions and translates references", asyn
 
 test("benchmark reports the selected deadline and optimizations and rejects invalid deadlines", async () => {
   const optimizations = { shareSyntax: false, reuseChecks: false, compactPaths: false };
-  const report = await benchmark({ modules: ["sample"], limitMs: 250, optimizations, readSource: async name => name === "sample" ? "def one := 1;" : sourceReader()(name) });
+  const report = await benchmark({ modules: ["sample"], limitMs: 250, optimizations, readSource: async name => name === "sample" ? "def one := tt;" : sourceReader()(name) });
   assert.equal(report.limitMs, 250);
   assert.deepEqual(report.optimizations, optimizations);
-  assert.equal(report.counts.checked, 2);
+  assert.equal(report.counts.checked, 1);
   for (const limitMs of [0, -1, NaN, Infinity]) await assert.rejects(benchmark({ limitMs }), /positive number/);
 });
 
@@ -120,7 +120,7 @@ test("benchmark checks local simp witnesses without collecting inspector referen
 });
 
 test("the instruction kernel admits each declaration the benchmark counts", async () => {
-  const readSource = async name => name === "sample" ? "def good := 0; def uses := good;" : sourceReader()(name);
+  const readSource = async name => name === "sample" ? "import nat; def good := 0; def uses := good;" : sourceReader()(name);
   const report = await benchmark({ modules: ["sample"], readSource });
   for (const row of report.declarations.filter(d=>d.module === "sample")) {
     assert.equal(row.category, "checked");

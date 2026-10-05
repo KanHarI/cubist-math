@@ -17,7 +17,7 @@ import { assertFreshBuild } from "./build-stamp.mjs";
 import { migrationSourceReader } from "./migration-sources.mjs";
 import { placeOfFile } from "./module-sources.mjs";
 import { moduleRoots } from "../web/module-resolution.mjs";
-import { currentSyntax } from "../web/cubist/legacy-syntax.mjs";
+import { historicalSource } from "../web/cubist/legacy-syntax.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const args = process.argv.slice(2), option = name => {
@@ -72,8 +72,8 @@ if (!noDependents) {
 }
 const originals = new Map();
 const available = new Set(git(["ls-tree","-r","--name-only",base,"--","library","archive/first-library"]).trim().split("\n"));
-// A module moved from the archive into the library since the base, as the
-// prelude nat was, is read from its old path but lives in the library, where
+// A module moved from the archive into the library since the base, as nat
+// was, is read from its old path but lives in the library, where
 // today's checks place it, so that a check holds it once.
 const movedToLibrary = new Set([...available].filter(path => path.startsWith(moduleRoots.archive))
   .map(path => path.slice(moduleRoots.archive.length, -".cubist".length))
@@ -83,8 +83,9 @@ const readOriginal = migrationSourceReader(async (place, name) => {
   if (movedToLibrary.has(name) && place !== "library") return null;
   const path = movedToLibrary.has(name) ? `${moduleRoots.archive}${name}.cubist` : `${moduleRoots[place]}${name}.cubist`;
   if (!originals.has(path)) {
-    // A baseline may predate a syntax change; it is read in today's syntax.
-    let text = available.has(path) ? currentSyntax(git(["show",`${base}:${path}`])) : null;
+    // A baseline may predate a syntax change, or the implicit import of nat;
+    // it is read in today's syntax, with the imports it had then.
+    let text = available.has(path) ? historicalSource(git(["show",`${base}:${path}`]), name) : null;
     // A new shared foundation has no predecessor. It is available only in
     // library resolution; archive importers never see this fallback.
     if (text === null && place === "library" && !modules.includes(name)) {

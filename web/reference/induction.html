@@ -57,7 +57,7 @@
           </ul>
         </aside>
         <article id="reference">
-          <p class="note status">Natural numbers are not built into the kernel. <code>Nat</code> is an ordinary inductive declaration, which every file imports from the prelude module <code>nat</code>, and its numerals, <code>match</code> and <code>induction</code> work as they do for any declared type.</p>
+          <p class="note status">Natural numbers are not built into the kernel. <code>Nat</code> is an ordinary inductive declaration in the module <code>nat</code>, which a file imports to use it, and its numerals, <code>match</code> and <code>induction</code> work as they do for any declared type.</p>
           <section id="inductive">
             <h2>Declaring an inductive type</h2>
             <p>An <code>inductive</code> declaration introduces a type and the constructors that build its values. This type has two constructors, each taking no arguments:</p>
@@ -73,13 +73,15 @@ def enabled : Bool := true;</code></pre>
   zero;
   succ(n : Nat);
 }</code></pre>
-            <p><code>zero : Nat</code> builds zero, and <code>succ(n)</code> builds the successor of <code>n : Nat</code>. Decimal numerals abbreviate these constructors: <code>2</code> is <code>succ(succ(zero))</code>. <code>Nat</code>, <code>zero</code> and <code>succ</code> are ordinary imported names. They are available through the standard prelude; an explicit <code>import nat;</code> also works. In the proof workspace, click <code>Nat</code> and select <em>View source</em> to open its declaration.</p>
+            <p><code>zero : Nat</code> builds zero, and <code>succ(n)</code> builds the successor of <code>n : Nat</code>. Decimal numerals abbreviate these constructors: <code>2</code> is <code>succ(succ(zero))</code>. <code>Nat</code>, <code>zero</code> and <code>succ</code> are ordinary imported names. A file imports them, with addition, multiplication and order, by <code>import nat;</code>; nothing is imported without being asked for. In the proof workspace, click <code>Nat</code> and select <em>View source</em> to open its declaration.</p>
             <p>You can put your own inductive declaration in a module and import it like a <code>def</code>. Declarations become available in source order. If you omit the universe after <code>:</code>, the checker picks the least universe containing the constructor data and recursive argument domains. An explicit universe must be large enough for them. See <a href="universes.html">universes</a> for the level notation.</p>
           </section>
           <section id="inductive-parameters">
             <h2>Parameters and constructors</h2>
             <p>A type can take parameters. Here <code>U</code> ranges over finite universes, and <code>A : U</code> is the type of the elements stored in the list:</p>
-            <pre><code data-check="accept">inductive List(U &lt; UU0, A : U) : U {
+            <pre><code data-check="accept">import nat;
+
+inductive List(U &lt; UU0, A : U) : U {
   nil;
   cons(head : A, tail : List(U, A));
 }
@@ -101,7 +103,9 @@ def ambiguous := nil;  // Error: nil needs an expected type, to know which List(
           <section id="match">
             <h2>Functions by pattern matching</h2>
             <p>Use <code>match</code> to define what a function does at each constructor. Give the result type in the function header or with <code>return</code> on the match:</p>
-            <pre><code data-check="accept">inductive Bool : U0 {
+            <pre><code data-check="accept">import nat;
+
+inductive Bool : U0 {
   false;
   true;
 }
@@ -125,7 +129,9 @@ def predecessor_three : predecessor(3) = 2 { rfl; }</code></pre>
           <section id="patterns">
             <h2>Several values and nested patterns</h2>
             <p>A match can take apart several values at once, <code>match xs, ys { … }</code>, with a pattern for each in every clause. A pattern is a constructor with patterns for its arguments, a variable, which names the value, or <code>_</code>, which ignores it. A name that is a constructor without arguments of the type matched there is that constructor, as <code>nil</code> in <code>cons(x, nil)</code>. The clauses are tried in order, and the first that fits a case takes it:</p>
-            <pre><code data-check="accept">inductive List(U &lt; UU0, A : U) : U {
+            <pre><code data-check="accept">import nat;
+
+inductive List(U &lt; UU0, A : U) : U {
   nil;
   cons(head : A, tail : List(U, A));
 }
@@ -143,7 +149,9 @@ def second(xs : List(U0, Nat)) : Nat := match xs {
 
 def second_of_two : second(cons(1, cons(7, nil))) = 7 { rfl; }</code></pre>
             <p>Such a match is a match on one value at a time, each clause matching what remains, so it computes as one: <code>second</code> takes its list apart, then the list's tail. A case no clause covers, and a clause that no case reaches, are rejected:</p>
-            <pre><code data-check="reject">inductive List(U &lt; UU0, A : U) : U {
+            <pre><code data-check="reject">import nat;
+
+inductive List(U &lt; UU0, A : U) : U {
   nil;
   cons(head : A, tail : List(U, A));
 }
@@ -158,7 +166,9 @@ def first_wins(n : Nat) : Nat := match n {
   zero =&gt; 1;  // Error: This clause is never reached: the clauses before it take every case it would.
 };</code></pre>
             <p>When the expected type mentions the matched variable, each clause is checked at its constructor, as in the <a href="#dependent-match">match statement</a>: in <code>pick</code>, the zero clause gives a <code>Unit</code> and the successor clause a number.</p>
-            <pre><code data-check="accept">def Choice(n : Nat) : U0 := match n {
+            <pre><code data-check="accept">import nat;
+
+def Choice(n : Nat) : U0 := match n {
   zero =&gt; Unit;
   succ(m) =&gt; Nat;
 };
@@ -170,13 +180,15 @@ def pick(n : Nat) : Choice(n) := match n {
           </section>
           <section id="recursion">
             <h2>Structural recursion</h2>
-            <p>A definition can call itself on a recursive child bound by its match. The arithmetic library defines addition this way:</p>
-            <pre><code data-check="excerpt" data-module="naturals">def add(x, y : Nat) : Nat := match x {
+            <p>A definition can call itself on a recursive child bound by its match. The module <code>nat</code> defines addition this way:</p>
+            <pre><code data-check="excerpt" data-module="nat">computable def add(x, y : Nat) : Nat := match x {
     zero =&gt; y;
     succ(k) =&gt; succ(add(k, y));
   };</code></pre>
             <p>For zero, return <code>y</code>. For <code>succ(k)</code>, recursively add <code>k</code> and <code>y</code>, then take the successor. The recursive call uses the smaller child <code>k</code>. The same rule works on your own inductive types:</p>
-            <pre><code data-check="accept">inductive List(U &lt; UU0, A : U) : U {
+            <pre><code data-check="accept">import nat;
+
+inductive List(U &lt; UU0, A : U) : U {
   nil;
   cons(head : A, tail : List(U, A));
 }
@@ -189,14 +201,18 @@ def length(U &lt; UU0, A : U, xs : List(U, A)) : Nat := match xs {
 def numbers : List(U0, Nat) := cons(2, cons(3, nil));
 def length_two : length(U0, Nat, numbers) = 2 { rfl; }</code></pre>
             <p>Give a recursive definition a result type. Its body must be a match on one of its parameters, either a match expression or a <a href="#dependent-match">match in a proof block</a>. A recursive call passes a child for that parameter. Universe parameters and parameters on which the matched type depends stay the same: <code>length</code> keeps <code>U</code> and <code>A</code>. Other arguments can change, which allows an accumulator:</p>
-            <pre><code data-check="accept">def count_into(n, total : Nat) : Nat := match n {
+            <pre><code data-check="accept">import nat;
+
+def count_into(n, total : Nat) : Nat := match n {
   zero =&gt; total;
   succ(k) =&gt; count_into(k, succ(total));
 };
 
 def counted : count_into(2, 3) = 5 { rfl; }</code></pre>
             <p>A call on the original input or on a newly constructed value does not satisfy the structural rule:</p>
-            <pre><code data-check="reject">def growing(n : Nat) : Nat := match n {
+            <pre><code data-check="reject">import nat;
+
+def growing(n : Nat) : Nat := match n {
   zero =&gt; 0;
   // Error: The recursive call of growing is not on an argument of the matched constructor: only structural recursion, as growing(m) in succ(m) =&gt; ….
   succ(k) =&gt; growing(succ(k));
@@ -206,7 +222,7 @@ def counted : count_into(2, 3) = 5 { rfl; }</code></pre>
           <section id="dependent-match">
             <h2>Proofs and dependent results</h2>
             <p>A proof about an inductive value is a function whose result type can depend on that value. In a proof block, <code>match</code> specializes the goal to each constructor, and each branch contains a proof block:</p>
-            <pre><code data-check="accept">import naturals;
+            <pre><code data-check="accept">import nat;
 
 def add_zero(n : Nat) : n + 0 = n {
   match n {
@@ -216,7 +232,7 @@ def add_zero(n : Nat) : n + 0 = n {
 }</code></pre>
             <p>The zero branch proves <code>0 + 0 = 0</code> by computation. The successor branch needs <code>succ(k) + 0 = succ(k)</code>, which computes to <code>succ(k + 0) = succ(k)</code>. The recursive proof <code>add_zero(k)</code> has type <code>k + 0 = k</code>; applying <a href="paths.html#path-operations"><code>cong</code></a> of <code>succ</code> to it gives the required proof. Here <code>k</code> is the predecessor, and <code>add_zero(k)</code> supplies the induction hypothesis.</p>
             <p>A match expression can state its dependent result explicitly. Bind the matched value with <code>as</code> and write the family after <code>return</code>:</p>
-            <pre><code data-check="accept">import naturals;
+            <pre><code data-check="accept">import nat;
 
 def add_zero(n : Nat) : n + 0 = n :=
   match n as value return value + 0 = value {
@@ -228,7 +244,9 @@ def add_zero(n : Nat) : n + 0 = n :=
           <section id="induction">
             <h2>Induction</h2>
             <p>A recursive definition reaches the result for a smaller value by calling itself. <code>induction</code> gives that result a name instead, so it needs no named function: each clause names the constructor’s arguments, then, after them, an <strong>induction hypothesis</strong> for each recursive argument, the result for that argument. It works on every declared type:</p>
-            <pre><code data-check="accept">inductive List(U &lt; UU0, A : U) : U {
+            <pre><code data-check="accept">import nat;
+
+inductive List(U &lt; UU0, A : U) : U {
   nil;
   cons(head : A, tail : List(U, A));
 }
@@ -246,7 +264,9 @@ def append(xs, ys : List(U0, Nat)) : List(U0, Nat) := induction xs return List(U
 def length_two : length(cons(4, cons(5, nil))) = 2 { rfl; }</code></pre>
             <p><code>cons</code> has two arguments, and one of them, <code>tail</code>, is recursive, so its clause may name three things: <code>head</code>, <code>tail</code> and the hypothesis, here <code>ih : Nat</code>, the length of <code>tail</code>. In <code>append</code> the hypothesis <code>rest</code> is <code>tail</code> appended to <code>ys</code>. The hypotheses come in the order of the recursive arguments, and a clause that does not use them can leave them out, as a <code>match</code> clause does. A recursive argument that is a function, as in <code>node(children : Nat -&gt; Tree)</code>, has a function as its hypothesis: the result for each child. A path constructor’s clause is written as the point it covers, <code>loop @ i =&gt; …</code>, as in a <code>match</code>.</p>
             <p>When the result type depends on the value, name the value with <code>as</code>, as for <code>match</code>: in <code>induction xs as v return C(v)</code>, the <code>nil</code> clause proves <code>C(nil)</code>, and the <code>cons</code> clause proves <code>C(cons(head, tail))</code> with the hypothesis <code>ih : C(tail)</code>. This is a proof by induction:</p>
-            <pre><code data-check="accept">inductive List(U &lt; UU0, A : U) : U {
+            <pre><code data-check="accept">import nat;
+
+inductive List(U &lt; UU0, A : U) : U {
   nil;
   cons(head : A, tail : List(U, A));
 }
@@ -261,7 +281,9 @@ def append_nil(xs : List(U0, Nat)) : append(xs, nil) = xs := induction xs as v r
   cons(head, tail, ih) =&gt; cong(fun (rest : List(U0, Nat)) =&gt; typed(List(U0, Nat), cons(head, rest)), ih);
 };</code></pre>
             <p>The <code>cons</code> clause needs <code>append(cons(head, tail), nil) = cons(head, tail)</code>, which computes to <code>cons(head, append(tail, nil)) = cons(head, tail)</code>; <code>ih : append(tail, nil) = tail</code> gives it, under <code>cons(head, …)</code>. A clause with the wrong number of names is refused, with the numbers it accepts:</p>
-            <pre><code data-check="reject">inductive List(U &lt; UU0, A : U) : U {
+            <pre><code data-check="reject">import nat;
+
+inductive List(U &lt; UU0, A : U) : U {
   nil;
   cons(head : A, tail : List(U, A));
 }
@@ -272,7 +294,9 @@ def first(xs : List(U0, Nat)) : Nat := induction xs return Nat {
 };</code></pre>
             <h3 id="induction-statement">In a proof</h3>
             <p>In a proof block, <code>induction</code> is a closing statement, as <a href="#dependent-match"><code>match</code></a> is: it takes its motive from the goal, and each clause is a proof block of the goal at its constructor, with the hypotheses for the recursive arguments in its context.</p>
-            <pre><code data-check="accept">inductive List(U &lt; UU0, A : U) : U {
+            <pre><code data-check="accept">import nat;
+
+inductive List(U &lt; UU0, A : U) : U {
   nil;
   cons(head : A, tail : List(U, A));
 }
@@ -294,7 +318,9 @@ def append_assoc(xs, ys, zs : List(U0, Nat)) :
 }</code></pre>
             <h3 id="nat-induction">Natural numbers</h3>
             <p>On natural numbers the general form reads <code>zero =&gt; …; succ(k, h) =&gt; …;</code>, with <code>k</code> the predecessor and <code>h</code> the hypothesis. Natural numbers also have a form of their own, which the first library uses throughout: the successor clause binds only the hypothesis, <code>succ h</code>, and <code>as</code> names the predecessor as well as the value in the motive:</p>
-            <pre><code data-check="accept">def copy(n : Nat) := induction n return Nat {
+            <pre><code data-check="accept">import nat;
+
+def copy(n : Nat) := induction n return Nat {
   zero =&gt; 0;
   succ previous =&gt; succ(previous);
 };
@@ -304,44 +330,45 @@ def copy_two : copy(2) = 2 {
 }</code></pre>
             <p>The zero branch gives the result for <code>0</code>. In the successor branch, <code>previous</code> is the result for the predecessor, and the branch gives the result for its successor. Each branch is an expression, not a proof block; for a proof block, use the <a href="#induction-statement">induction statement</a>.</p>
             <p>When the result type depends on the number, or the successor branch uses the predecessor, name the number with <code>as</code>. In <code>induction n as k return C(k)</code>, the zero branch must have type <code>C(0)</code>. In the successor branch, <code>k : Nat</code> is the predecessor and <code>previous : C(k)</code> is the induction hypothesis. The branch must produce <code>C(succ(k))</code>. Without <code>as</code>, as in <code>copy</code>, every branch has the one type after <code>return</code>, and the predecessor is unnamed. An <code>as</code> name that neither the return type nor the successor branch uses draws a <a href="checking.html#warnings">warning</a>:</p>
-            <pre><code data-check="accept">def copy(n : Nat) := induction n as k return Nat {  // Warning: k is unused: the return type does not mention it and the successor clause does not use it.
+            <pre><code data-check="accept">import nat;
+
+def copy(n : Nat) := induction n as k return Nat {  // Warning: k is unused: the return type does not mention it and the successor clause does not use it.
   zero =&gt; 0;
   succ previous =&gt; succ(previous);
 };</code></pre>
-            <p>The motive <code>C(k)</code> is what makes this a proof by induction rather than just recursion. For a theorem, it is the statement at <code>k</code>. For example, the library proves <code>n + 0 = n</code> with the motive <code>(k + 0) = k</code>:</p>
-            <pre><code data-check="excerpt" data-module="naturals">def nat_add_zero(x : Nat) := induction x as k return ((k + 0) = k) {
+            <p>The motive <code>C(k)</code> is what makes this a proof by induction rather than just recursion. For a theorem, it is the statement at <code>k</code>. For example, <code>n + 0 = n</code> holds with the motive <code>(k + 0) = k</code>:</p>
+            <pre><code data-check="accept">import nat;
+
+def add_zero(x : Nat) := induction x as k return ((k + 0) = k) {
     zero =&gt; refl(0);
     succ h =&gt; cong((fun (n : Nat) =&gt; succ(n)), h);
   };</code></pre>
             <p>The zero branch needs <code>0 + 0 = 0</code>, which holds by computation. The successor branch has <code>h : k + 0 = k</code> and needs <code>succ(k) + 0 = succ(k)</code>. That computes to <code>succ(k + 0) = succ(k)</code>, which is <code>cong</code> of <code>succ</code> applied to <code>h</code>. When a statement quantifies over further variables, put them inside the motive, as in <code>return (forall y : Nat, …)</code>, so the induction hypothesis is general enough.</p>
             <aside class="note" id="motive-over-the-value">
-            <p><strong>Why the motive is not written over <code>x</code>.</strong> <code>x</code> is one fixed number, the input of <code>nat_add_zero</code>. A return type that mentions <code>x</code> states one fact about that number, the same in every branch. Without <code>as</code>, the zero branch would have to prove <code>x + 0 = x</code> rather than <code>0 + 0 = 0</code>, which <code>refl(0)</code> does not prove. The hypothesis <code>h</code> would also be <code>x + 0 = x</code>, the theorem itself, not the statement for the predecessor:</p>
-            <pre><code data-check="reject">import naturals;
+            <p><strong>Why the motive is not written over <code>x</code>.</strong> <code>x</code> is one fixed number, the input of <code>add_zero</code>. A return type that mentions <code>x</code> states one fact about that number, the same in every branch. Without <code>as</code>, the zero branch would have to prove <code>x + 0 = x</code> rather than <code>0 + 0 = 0</code>, which <code>refl(0)</code> does not prove. The hypothesis <code>h</code> would also be <code>x + 0 = x</code>, the theorem itself, not the statement for the predecessor:</p>
+            <pre><code data-check="reject">import nat;
 
-def nat_add_zero(x : Nat) := induction x return ((x + 0) = x) {  // Error: Type mismatch: found 0 = 0, expected x + 0 = x.
+def add_zero(x : Nat) := induction x return ((x + 0) = x) {  // Error: Type mismatch: found 0 = 0, expected x + 0 = x.
     zero =&gt; refl(0);
     succ h =&gt; cong((fun (n : Nat) =&gt; succ(n)), h);
   };</code></pre>
             <p><code>as k</code> introduces a new name for the number that varies from branch to branch. The motive <code>(k + 0) = k</code> is then a family: <code>0 + 0 = 0</code> at zero, and <code>succ(k) + 0 = succ(k)</code> at a successor, with <code>h : k + 0 = k</code>. The new name may repeat the input's: in <code>induction x as x return ((x + 0) = x)</code>, the motive's <code>x</code> is the varying one. A recursive <a href="#dependent-match"><code>match</code></a> states the theorem once in the header, <code>add_zero(n : Nat) : n + 0 = n</code>, and specializes it to each constructor for you.</p>
             </aside>
             <h3 id="order-by-induction">The order on natural numbers</h3>
-            <p>The arithmetic library defines <code>&lt;=</code> by induction on its first argument, with the motive <code>Nat -> U0</code>. For each <code>x</code>, the induction builds a function that takes <code>y</code> and returns the type <code>x &lt;= y</code>: <code>Unit</code> when it holds and <code>Void</code> when it does not. <code>&lt;</code> is defined from it.</p>
-            <pre><code data-check="excerpt" data-module="naturals">// Order, computed: 0 &lt;= b is Unit; succ(a) &lt;= 0 is Void;
+            <p>The module <code>nat</code> defines <code>&lt;=</code> by matching both numbers at once, so that a comparison returns the type <code>x &lt;= y</code>: <code>Unit</code> when it holds and <code>Void</code> when it does not. <code>&lt;</code> is defined from it.</p>
+            <pre><code data-check="excerpt" data-module="nat">// Order, computed: 0 &lt;= b holds, succ(a) &lt;= 0 does not, and
 // succ(a) &lt;= succ(b) is a &lt;= b.
-def le(x : Nat) := induction x return (Nat -&gt; U0) {
-    zero =&gt; (fun (x2 : Nat) =&gt; Unit);
-    succ h =&gt; (fun (y : Nat) =&gt; match y return U0 {
-        zero =&gt; Void;
-        succ(j) =&gt; h(j);
-      });
+computable def le(x, y : Nat) : U0 := match x, y {
+    zero, _ =&gt; Unit;
+    succ(a), zero =&gt; Void;
+    succ(a), succ(b) =&gt; le(a, b);
   };
 
 // Strict order: n &lt; p is succ(n) &lt;= p.
-def isLt(n, p : Nat) := le(succ(n), p);</code></pre>
-            <p><code>0 &lt;= y</code> is <code>Unit</code> for every <code>y</code>. For <code>succ(k) &lt;= y</code>, a <code>match</code> looks at <code>y</code>. <code>succ(k) &lt;= 0</code> is <code>Void</code>, and <code>succ(k) &lt;= succ(j)</code> is <code>h(j)</code>, where <code>h</code> is the function built for the predecessor <code>k</code>, so it is <code>k &lt;= j</code>. A comparison of numerals therefore computes all the way to <code>Unit</code> or <code>Void</code>, and <code>tt</code> proves a true one.</p>
-            <p>The induction needs no <code>as</code>: its motive <code>Nat -&gt; U0</code> is the same for every number, and its successor branch uses only <code>h</code>. The inner case analysis needs the predecessor <code>j</code> of <code>y</code> but no recursive result, so it is a <code>match</code>, whose clause <code>succ(j)</code> names the predecessor where it is used.</p>
+computable def isLt(n, p : Nat) : U0 := le(succ(n), p);</code></pre>
+            <p><code>0 &lt;= y</code> is <code>Unit</code> for every <code>y</code>. <code>succ(a) &lt;= 0</code> is <code>Void</code>, and <code>succ(a) &lt;= succ(b)</code> calls <code>le</code> again on both predecessors: a recursion on the first value taken apart, with the second taken apart too (<a href="#patterns">patterns</a>). A comparison of numerals therefore computes all the way to <code>Unit</code> or <code>Void</code>, and <code>tt</code> proves a true one.</p>
             <p>With a variable, the computation stops at the variable, and a proof goes by induction:</p>
-            <pre><code data-check="accept">import naturals;
+            <pre><code data-check="accept">import nat;
 
 // 0 &lt;= n computes to Unit.
 def zero_le(n : Nat) : 0 &lt;= n {
@@ -372,7 +399,7 @@ inductive BinaryNat : U0 {
 }</code></pre>
             <p>A positive number is its leading <code>binary_one</code> with its other digits appended, the last digit outermost: <code>binary_bit0(p)</code> is <span class="math">2p</span> and <code>binary_bit1(p)</code> is <span class="math">2p + 1</span>. Zero is a constructor of its own, so no number has a leading zero and each has one representation. Functions on binary numbers use <code>match</code> and structural recursion, like functions on <code>Nat</code>:</p>
             <pre><code data-check="accept">import binary_naturals;
-import naturals;
+import nat;
 
 def positive_value(p : BinaryPositive) : Nat := match p {
   binary_one =&gt; 1;

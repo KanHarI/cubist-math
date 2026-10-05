@@ -27,7 +27,7 @@ test("a module resolves its imports by where it lives", async () => {
   assert.deepEqual(searchOrder(), ["library", "archive"], "a source that is not a file");
   assert.throws(() => searchOrder("elsewhere"), /Unknown module place/);
   assert.equal(placeOfPath("archive/first-library/euclid.cubist"), "archive");
-  assert.equal(placeOfPath("library/naturals.cubist"), "library");
+  assert.equal(placeOfPath("library/lists.cubist"), "library");
   assert.equal(placeOfPath("cubist-tests/glue.cubist"), "tests");
   assert.equal(placeOfPath("scratch/mine.cubist"), "local");
   assert.equal(placeOfFile(join(projectRoot, "archive/first-library/euclid.cubist")), "archive");
@@ -97,9 +97,9 @@ test("the browser lists every module the CLI finds on disk", async () => {
   // So the page's default proof is placed in the archive, and a library
   // module imports only from the library.
   assert.equal(listedReader(moduleListing, async () => "", "euclid").placeOf("euclid"), "archive");
-  const reader = listedReader(moduleListing, async () => "", "naturals");
-  assert.equal(reader.placeOf("naturals"), "library");
-  await assert.rejects(reader("euclid", "naturals"),
+  const reader = listedReader(moduleListing, async () => "", "lists");
+  assert.equal(reader.placeOf("lists"), "library");
+  await assert.rejects(reader("euclid", "lists"),
     { message: "No module named euclid in library/: a library module imports only from the library." });
 });
 
@@ -112,12 +112,14 @@ async function fixture(t) {
     await mkdir(join(root, path, ".."), { recursive: true });
     await writeFile(join(root, path), text);
   };
-  await file("library/x.cubist", "def x_value : Nat := 1;\n");
-  await file("archive/first-library/x.cubist", "def x_value : Nat := 2;\n");
-  await file("archive/first-library/a.cubist", "import x;\ndef a_value : Nat := x_value;\n");
-  await file("work/x.cubist", "def x_value : Nat := 4;\n");
-  await file("work/helper.cubist", "def helper_value : Nat := 3;\n");
-  await file("work/main.cubist", "import x;\nimport helper;\ndef main_value : Nat := x_value;\n");
+  // nat, which the modules import, as the library holds it.
+  await file("library/nat.cubist", await readFile(new URL("../library/nat.cubist", import.meta.url), "utf8"));
+  await file("library/x.cubist", "import nat;\ndef x_value : Nat := 1;\n");
+  await file("archive/first-library/x.cubist", "import nat;\ndef x_value : Nat := 2;\n");
+  await file("archive/first-library/a.cubist", "import nat;\nimport x;\ndef a_value : Nat := x_value;\n");
+  await file("work/x.cubist", "import nat;\ndef x_value : Nat := 4;\n");
+  await file("work/helper.cubist", "import nat;\ndef helper_value : Nat := 3;\n");
+  await file("work/main.cubist", "import nat;\nimport x;\nimport helper;\ndef main_value : Nat := x_value;\n");
   const text = path => readFile(join(root, path), "utf8");
   return { root, text };
 }
@@ -132,10 +134,10 @@ async function checked(t, root, source, { path = null, main = "current" } = {}) 
 test("same-name modules: each importer loads the module its place sees, one per name", async t => {
   const { root, text } = await fixture(t);
   // An archive module imported into a library-first check keeps the archive's x.
-  let { program, result } = await checked(t, root, "import a;\ndef mine : Nat := a_value;\n");
+  let { program, result } = await checked(t, root, "import nat;\nimport a;\ndef mine : Nat := a_value;\n");
   assert.equal(result.complete, true, JSON.stringify(program.gaps));
   assert.equal(program.sources.x, await text("archive/first-library/x.cubist"));
-  ({ program, result } = await checked(t, root, "import x;\ndef mine : Nat := x_value;\n"));
+  ({ program, result } = await checked(t, root, "import nat;\nimport x;\ndef mine : Nat := x_value;\n"));
   assert.equal(result.complete, true, JSON.stringify(program.gaps));
   assert.equal(program.sources.x, await text("library/x.cubist"));
   // Checking the archive file is archive-first.
@@ -148,11 +150,11 @@ test("same-name modules: each importer loads the module its place sees, one per 
     + "but this check already loaded x from archive/first-library/; a check holds one module per name." });
   const clash = "a imports x from archive/first-library/, but this check already loaded x from library/; "
     + "a check holds one module per name.";
-  ({ program, result } = await checked(t, root, "import x;\nimport a;\ndef mine : Nat := a_value;\n"));
+  ({ program, result } = await checked(t, root, "import nat;\nimport x;\nimport a;\ndef mine : Nat := a_value;\n"));
   assert.equal(result.complete, false);
   assert.deepEqual(program.gaps.filter(gap => gap.module === "a").map(gap => gap.reason), [clash]);
   // The clash fails the check even when no declaration uses the refused module.
-  ({ program, result } = await checked(t, root, "import x;\nimport a;\ndef independent : Nat := 0;\n"));
+  ({ program, result } = await checked(t, root, "import nat;\nimport x;\nimport a;\ndef independent : Nat := 0;\n"));
   assert.equal(result.outputs.every(output => output.verified), true);
   assert.equal(result.complete, false, "a refused import leaves the check incomplete");
   assert.deepEqual(program.gaps.map(gap => gap.reason), [clash]);
@@ -161,14 +163,14 @@ test("same-name modules: each importer loads the module its place sees, one per 
 test("a failed import fails the check, even when nothing uses it", async t => {
   const directory = await mkdtemp(join(tmpdir(), "cubist-unused-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
-  await writeFile(join(directory, "unused.cubist"), "import no_such_module;\ndef independent : Nat := 0;\n");
+  await writeFile(join(directory, "unused.cubist"), "import nat;\nimport no_such_module;\ndef independent : Nat := 0;\n");
   const program = new CubicalProgram(await createCubical(), sourceReader({ path: join(directory, "unused.cubist") }),
     { collectReferences: false });
   t.after(() => program.dispose());
   const result = await program.check(await readFile(join(directory, "unused.cubist"), "utf8"), "unused");
   assert.equal(result.complete, false);
   // A later check of the same program that imports nothing new is complete again.
-  assert.equal((await program.check("def later : Nat := 1;\n", "later")).complete, true);
+  assert.equal((await program.check("import nat;\ndef later : Nat := 1;\n", "later")).complete, true);
   const cli = spawnSync(process.execPath, [fileURLToPath(new URL("../cli/repl.mjs", import.meta.url)), "check", "unused.cubist"],
     { cwd: directory, encoding: "utf8", timeout: budget(60000) });
   assert.notEqual(cli.status, 0, cli.stdout);
@@ -193,16 +195,17 @@ test("a checked file outside both roots imports from its own directory first", a
 
 test("test selection finds a module as the CLI does and loads the same imports", async t => {
   const { root, text } = await fixture(t);
-  assert.deepEqual(selectTests(["naturals"]).proofs, [resolve(projectRoot, "library/naturals.cubist")]);
+  assert.deepEqual(selectTests(["lists"]).proofs, [resolve(projectRoot, "library/lists.cubist")]);
   assert.deepEqual(selectTests(["euclid"]).proofs, [resolve(projectRoot, "archive/first-library/euclid.cubist")]);
   assert.deepEqual(selectTests(["x", "a"], { root }).proofs,
     [resolve(root, "library/x.cubist"), resolve(root, "archive/first-library/a.cubist")]);
   assert.equal((await loadProof(join(root, "archive/first-library/a.cubist"), root)).sources.x,
     await text("archive/first-library/x.cubist"));
   const local = await loadProof(join(root, "work/main.cubist"), root);
-  assert.deepEqual(local.sources, { x: await text("work/x.cubist"), helper: await text("work/helper.cubist") });
-  // A library module's imports are the library's; an archive module's
-  // prelude is the library's nat.
+  assert.deepEqual(local.sources, { nat: await text("library/nat.cubist"), x: await text("work/x.cubist"),
+    helper: await text("work/helper.cubist") });
+  // A library module's imports are the library's; an archive module's nat
+  // is the library's.
   const library = await loadProof(join(projectRoot, "library/universe_automorphisms.cubist"));
   assert.equal(library.sources.classical_axioms, await readFile(join(projectRoot, "library/classical_axioms.cubist"), "utf8"));
   assert.ok(Object.keys(library.sources).every(name => existsSync(join(projectRoot, "library", `${name}.cubist`))),
@@ -215,8 +218,8 @@ test("loading a selected proof refuses a clash in either order, as a check does"
   const { root } = await fixture(t);
   // Files outside the roots, which import library-first.
   await mkdir(join(root, "other"));
-  await writeFile(join(root, "other/both.cubist"), "import x;\nimport a;\n");
-  await writeFile(join(root, "other/both_reversed.cubist"), "import a;\nimport x;\n");
+  await writeFile(join(root, "other/both.cubist"), "import nat;\nimport x;\nimport a;\n");
+  await writeFile(join(root, "other/both_reversed.cubist"), "import nat;\nimport a;\nimport x;\n");
   await assert.rejects(loadProof(join(root, "other/both.cubist"), root), { message: "a imports x from "
     + "archive/first-library/, but this check already loaded x from library/; a check holds one module per name." });
   await assert.rejects(loadProof(join(root, "other/both_reversed.cubist"), root), { message: "both_reversed imports x "
@@ -233,7 +236,7 @@ test("loading a selected proof refuses a clash in either order, as a check does"
 });
 
 test("a failed read is retried in the next check, while placements persist", async t => {
-  const files = { "library/flaky": "def flaky_value : Nat := 1;\n" };
+  const files = { "library/flaky": "import nat;\ndef flaky_value : Nat := 1;\n" };
   let down = true;
   const reader = moduleReader(async (place, name) => {
     if (name === "flaky" && down) { down = false; throw new Error("The network is down."); }
@@ -241,7 +244,7 @@ test("a failed read is retried in the next check, while placements persist", asy
   });
   await assert.rejects(reader("flaky"), /The network is down/);
   await assert.rejects(reader("later"), /No module named later/);
-  files["library/later"] = "def later_value : Nat := 2;\n";
+  files["library/later"] = "import nat;\ndef later_value : Nat := 2;\n";
   // Within one check, answers are kept; the next check reads again.
   await assert.rejects(reader("later"), /No module named later/);
   reader.beginCheck();
@@ -265,7 +268,7 @@ test("a failed read is retried in the next check, while placements persist", asy
   assert.deepEqual(texts(await repl.run("import x;")), ["error: The network is down."]);
   assert.deepEqual(texts(await repl.run("import x;")), ["info: Imported x."]);
   assert.match(texts(await repl.run("import created_later;")).join(), /No module named created_later in library\//);
-  await writeFile(join(root, "library/created_later.cubist"), "def created_value : Nat := 5;\n");
+  await writeFile(join(root, "library/created_later.cubist"), "import nat;\ndef created_value : Nat := 5;\n");
   assert.deepEqual(texts(await repl.run("import created_later;")), ["info: Imported created_later."]);
 });
 
@@ -286,7 +289,7 @@ test("a checked file is placed where it really is, through symbolic links", asyn
   await symlink(join(root, "work/main.cubist"), local);
   assert.equal(placeOfFile(local, root), "local");
   assert.deepEqual((await loadProof(local, root)).sources,
-    { x: await text("work/x.cubist"), helper: await text("work/helper.cubist") });
+    { nat: await text("library/nat.cubist"), x: await text("work/x.cubist"), helper: await text("work/helper.cubist") });
   // A root reached through a link places its files as the real root does.
   const linkedRoot = join(elsewhere, "repository");
   await symlink(root, linkedRoot);
@@ -297,9 +300,9 @@ test("a checked file is placed where it really is, through symbolic links", asyn
 test("the CLI and the test runner check a file with local and library imports alike", async t => {
   const directory = await mkdtemp(join(tmpdir(), "cubist-parity-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
-  await writeFile(join(directory, "helper.cubist"), "def helper_value : Nat := 3;\n");
+  await writeFile(join(directory, "helper.cubist"), "import nat;\ndef helper_value : Nat := 3;\n");
   await writeFile(join(directory, "parity.cubist"),
-    "import helper;\nimport classical_axioms;\ndef total : Nat := helper_value;\n");
+    "import nat;\nimport helper;\nimport classical_axioms;\ndef total : Nat := helper_value;\n");
   const cli = spawnSync(process.execPath, [fileURLToPath(new URL("../cli/repl.mjs", import.meta.url)), "check", "parity.cubist"],
     { cwd: directory, encoding: "utf8", timeout: budget(60000) });
   assert.equal(cli.status, 0, cli.stderr);

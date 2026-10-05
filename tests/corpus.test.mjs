@@ -23,6 +23,6 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // entry points basics and euclid, which no module imports, are checked
   // too since the archive has one list of modules (web/cubist/modules.mjs).
   assert.deepEqual(report.importErrors, []);
-  assert.equal(report.declarations.length, 3794, "The corpus must not silently lose modules.");
+  assert.equal(report.declarations.length, 3795, "The corpus must not silently lose modules.");
   t.diagnostic(JSON.stringify(report.counts));
 });

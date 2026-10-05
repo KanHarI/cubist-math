@@ -4,6 +4,8 @@
 // arguments vary, and the refusals. tests/declared-match.test.mjs checks each
 // case by name.
 
+import nat;
+
 inductive N {
   zero;
   succ(n : N);

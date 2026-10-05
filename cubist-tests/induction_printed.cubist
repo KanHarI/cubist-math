@@ -2,6 +2,8 @@
 // back, that source checks. tests/induction.test.mjs checks that each copy
 // below is what the print before it shows.
 
+import nat;
+
 inductive Tree {
   leaf;
   node(left : Tree, right : Tree);

@@ -1,8 +1,8 @@
 {
-  "recordedFrom": "54ab56f + known-signature application elaboration (L4.1a)",
+  "recordedFrom": "one nat module: nat and naturals unified, add and le by match (2026-10-05), after 54ab56f + known-signature application elaboration (L4.1a)",
   "method": "tests/driver-trace.mjs run on the implementation tree. Every instruction the driver issued with its operands and result, and every weak-head query with its budget and answer, in order, hashed. Source-defined Nat uses signature instances, constructors and generic eliminators. Rewriting library/naturals add with match and an explicit Nat result removes motive applications from its public type, changing the derivation trace. The inner case analysis of le is a match, which names the predecessor in its clause instead of `as j`; that adds 18 issued instructions and no weak-head query. Dropping unused `as` names alone leaves the trace unchanged. The eight fixture declarations still check. L4.1a reads each parameter's type from the function's type and asks the kernel for each argument's derivation, instead of the growing application's type: the elaboration's queries intern other terms first, which renumbers the handles the admissions' instructions take. Issued, heads and checked are unchanged.",
-  "issued": 3128,
-  "heads": 481,
+  "issued": 3493,
+  "heads": 487,
   "checked": 8,
-  "sha256": "4e1544cb342077cd592a7b5e567b3295d35e462fec8d065870b072cb70bed502"
+  "sha256": "bd5921073e1a5b1fea4c977fe4edfae280183f30dc47f0a98216b64ea84f6f55"
 }

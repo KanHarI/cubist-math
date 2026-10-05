@@ -3,7 +3,7 @@
 // cycle names the rules that make it; a bound says where the search
 // stopped, and a long goal is cut short. The command-line checker reports
 // the same as this module's comments.
-import naturals;
+import nat;
 
 // Error: E456: simp only left an unresolved equality goal; add a following proof statement.
 //   Remaining goal: n = m. 1 rewrite changed the left side, using nat_add_zero.

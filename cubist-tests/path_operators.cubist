@@ -4,6 +4,8 @@
 // their join. Each elaborates through the same code as its built-in form,
 // and on a non-path each says which operator failed.
 
+import nat;
+
 // -p, p ++ q and -i elaborate as sym, trans and flip do.
 def inverse(A : U0, x, y : A, p : x = y) : y = x := -p;
 

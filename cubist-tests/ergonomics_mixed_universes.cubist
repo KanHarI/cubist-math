@@ -1,6 +1,8 @@
 // From tests/proof-ergonomics.test.mjs: Consecutive mixed universe groups
 // bind and inspect every parameter.
 
+import nat;
+
 def mixed(U < UU0, V, W < UU0, A : U, B : V, x : A, y : B) := x;
 
 def multiple(U, V < UU0, W, X < UU0, A : U, B : W, x : A, y : B) := x;

@@ -1,6 +1,8 @@
 // From tests/translator/translation.test.mjs: path induction derives weak J
 // from composition and singleton contraction.
 
+import nat;
+
 def transport_nat(A : U0, x : A, y : A, p : x = y, n : Nat) :=
   path_induction(A, fun (a : A) => fun (b : A) => fun (q : a = b) => Nat, fun (a : A) => n, x, y, p);
 

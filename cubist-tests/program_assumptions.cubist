@@ -2,6 +2,8 @@
 // minimal, and inspectable after native closure: introduction uses Truncate
 // and TruncateIntro, and innocent none.
 
+import nat;
+
 def Mere(A : U1) := Truncate(U1, A);
 
 def introduction(A : U1, a : A) := TruncateIntro(U1, A, a);

@@ -101,7 +101,9 @@ def value_at_one(A : U0, x, y : A, p : x = y) : p @ 1 = y {
             <pre><code data-check="reject">// Error: path i =&gt; ... needs an expected Path or PathP type.
 def no_expected_type(A : U0, x : A) := path i =&gt; x;</code></pre>
             <p>A coordinate is not a term, and <code>Interval</code> is not a type:</p>
-            <pre><code data-check="reject">def coordinate_as_term(A : U0, x : A) : x = x {
+            <pre><code data-check="reject">import nat;
+
+def coordinate_as_term(A : U0, x : A) : x = x {
   // Error: Interval coordinates can only be used in interval arguments.
   exact path i =&gt; typed(Nat, i);
 }</code></pre>
@@ -253,7 +255,9 @@ def section_via_transport(A : U0, C : A -&gt; U0, f : (forall a : A. C(a)),
   }
 }</code></pre>
             <p>The family <code>C</code> is never inferred: the elaborator does not search for a family that fits, so <code>over</code> and <code>transport</code> name it, and <code>over</code> needs a <code>PathP</code> goal to read the path from:</p>
-            <pre><code data-check="reject">def not_a_path_goal(A : U0, C : A -&gt; U0, x, y : A, p : x = y) : Nat {
+            <pre><code data-check="reject">import nat;
+
+def not_a_path_goal(A : U0, C : A -&gt; U0, x, y : A, p : x = y) : Nat {
   over C along p by {  // Error: over requires an expected PathP goal.
     exact 0;
   }
@@ -274,7 +278,9 @@ def dependent_pointwise(A : U0, C : A -&gt; U0, f, g : forall a : A. C(a),
   exact h(a);
 }</code></pre>
             <p>Cubical paths make function extensionality provable: <code>path i => fun x => h(x) @ i</code> is a path from <code>f</code> to <code>g</code>. <code>ext x;</code> builds that term. It works for dependent functions too, provided the goal is <code>f = g</code> with <code>f, g : forall x : A. C(x)</code>. It uses no assumption; <a href="assumptions.html#univalence"><code>FunExt</code></a> builds the same term. Unlike <code>rw</code>, <code>ext</code> never closes the block: a statement proving <code>f(x) = g(x)</code> must follow, even when that holds by <code>rfl</code>.</p>
-            <pre><code data-check="reject">def not_functions(n : Nat) : n = n {
+            <pre><code data-check="reject">import nat;
+
+def not_functions(n : Nat) : n = n {
   ext x;  // Error: ext requires equality of functions.
   rfl;
 }</code></pre>
@@ -367,7 +373,9 @@ def reverse(c : Circle) : Circle := match c {
 def reverse_loop : cong(reverse, loop) = sym(loop) { rfl; }</code></pre>
             <p>At <code>loop @ i</code>, <code>reverse</code> returns <code>loop @ -i</code>, where <code>-i</code> is <span class="math">1 − i</span>. At <code>i = 0</code> and <code>i = 1</code> the point is <code>base</code>, so there the clause must agree with the <code>base</code> clause: <code>loop @ -0</code> is <code>loop @ 1</code>, which is <code>base</code>, and <code>loop @ -1</code> is <code>loop @ 0</code>, also <code>base</code>. Taken over all <code>i</code>, the clause traces a path between the results at <code>base</code>. Applying <code>reverse</code> along the whole loop, <code>cong(reverse, loop)</code>, gives that path, <code>sym(loop)</code>, and <code>rfl</code> checks this by computation.</p>
             <p>A clause whose ends disagree with the point clause is rejected. Here the loop clause traces a path from <code>1</code> to <code>1</code>, but the <code>base</code> clause requires one from <code>0</code> to <code>0</code>:</p>
-            <pre><code data-check="reject">inductive Circle : U0 {
+            <pre><code data-check="reject">import nat;
+
+inductive Circle : U0 {
   base;
   loop : base = base;
 }
@@ -377,7 +385,9 @@ def broken(c : Circle) : Nat := match c {  // Error: Type mismatch: found 1 = 1,
   loop @ i =&gt; 1;
 };</code></pre>
             <p>A constant clause traces the constant path. <code>flatten</code> sends every point of the loop to <code>0</code>, so along the loop it gives <code>refl(0)</code>. A path clause can also be omitted and its path proved instead: <code>obligations by rfl</code> proves the path the missing loop clause must give, <code>0 = 0</code>.</p>
-            <pre><code data-check="accept">inductive Circle : U0 {
+            <pre><code data-check="accept">import nat;
+
+inductive Circle : U0 {
   base;
   loop : base = base;
 }
@@ -456,7 +466,9 @@ def discard(A : U0, x : Mere(A)) : Unit := match x {
   push(c : C) : inl(f(c)) = inr(g(c));
 }</code></pre>
             <p>After <code>import pushout;</code>, write its universe arguments explicitly, as for any declaration with universe parameters. The constructors take their instance from the expected type, and <code>match</code> eliminates a pushout: a clause for each side and a path clause <code>push(c) @ i</code>, which the kernel checks against the two side clauses at <code>i = 0</code> and <code>i = 1</code>.</p>
-            <pre><code data-check="accept">import pushout;
+            <pre><code data-check="accept">import nat;
+
+import pushout;
 
 def TwoPoints : U0 := Pushout(U0, U0, U0, Nat, Unit, Unit, fun (n : Nat) =&gt; tt, fun (n : Nat) =&gt; tt);
 

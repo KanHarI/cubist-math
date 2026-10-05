@@ -1,5 +1,7 @@
 // From tests/documentation.test.mjs: an imported definition whose comment is
 // its documentation, for documentation_use.
 
+import nat;
+
 // Imported identity.
 def identity(n : Nat) := n;

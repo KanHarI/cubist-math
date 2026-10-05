@@ -57,7 +57,7 @@ by where it lives:
 - A module of `library/` imports only from `library/`: the library is
   self-contained.
 - A module of the archive imports from the archive, then from `library/`, where
-  the prelude `nat` lives. An archive module of a name always comes before a
+  `nat` lives. An archive module of a name always comes before a
   library module of that name, so the archive's checks keep their modules.
 - A module of `cubist-tests/`, the Cubist sources the test suite checks,
   imports from `cubist-tests/`, then from `library/`, then from the archive.
@@ -117,7 +117,7 @@ see the checked module's names.
 let x := 7;          x : Nat
 typeof x;            Nat
 evaluate x;          7
-import naturals;     Imported naturals.
+import nat;          Imported nat.
 x + 3 * 4            19
 ```
 
@@ -129,7 +129,7 @@ is open, so a proof block is one entry. A rejected entry changes nothing.
 Entries also work noninteractively:
 
 ```sh
-node cli/repl.mjs "import naturals; evaluate 2 + 3;"
+node cli/repl.mjs "import nat; evaluate 2 + 3;"
 ```
 
 The same REPL runs in the browser, on `repl.html`, under each proof in the

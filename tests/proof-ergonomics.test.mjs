@@ -82,7 +82,7 @@ test("constant path reversal avoids exponential native interval expansion",async
   while(terms.length>1)terms=Array.from({length:Math.ceil(terms.length/2)},(_,i)=>
     terms[2*i+1]?`join(${terms[2*i]},${terms[2*i+1]})`:terms[2*i]);
   const lets=dimensions.map((_,i)=>`let t${i} := ${i?`refl(t${i-1})`:"0"};`).join("\n");
-  const source=`def native_interval_budget : 0 = 0 {
+  const source=`import nat; def native_interval_budget : 0 = 0 {
     ${lets}
     let h : t31 = t31 {
       exact ${dimensions.map(d=>`path ${d} => `).join("")}sym(refl(0)) @ ${terms[0]};
@@ -126,7 +126,7 @@ test("positive composition faces use only the needed endpoint of a compact inter
   while(terms.length>1)terms=Array.from({length:Math.ceil(terms.length/2)},(_,i)=>
     terms[2*i+1]?`join(${terms[2*i]},${terms[2*i+1]})`:terms[2*i]);
   const lets=dimensions.map((_,i)=>`let t${i} := ${i?`refl(t${i-1})`:"0"};`).join("\n");
-  const source=`def positive_face_budget : 0 = 0 {
+  const source=`import nat; def positive_face_budget : 0 = 0 {
     ${lets}
     let h : t31 = t31 {
       exact ${dimensions.map(d=>`path ${d} => `).join("")}
@@ -147,7 +147,7 @@ test("positive composition faces use only the needed endpoint of a compact inter
 test("a pushout instance visits shared source types within the proof deadline",()=>{
   const wasm=new URL("../web/dist/cubical.mjs",import.meta.url).href;
   const programPath=new URL("../web/cubical-program.mjs",import.meta.url).href;
-  let source="import pushout;\ndef shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
+  let source="import nat;\nimport pushout;\ndef shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
   for(let i=1;i<=sharedDepth;i++)source+=`let T${i} := F(T${i-1},T${i-1});`;
   source+=`let P := Pushout(U0, U0, U0, T${sharedDepth}, Unit, Unit, fun (x : T${sharedDepth}) => tt, fun (x : T${sharedDepth}) => tt);
     let h : forall x : P. x = x { intro x; exact path i => x; } rfl; }
@@ -197,7 +197,7 @@ test("simp size budget interrupts serialization of a compact shared term",()=>{
   const program=new URL("../web/cubical-program.mjs",import.meta.url).href;
   const script=`import createCubical from ${JSON.stringify(wasm)};
     import {CubicalProgram} from ${JSON.stringify(program)};
-    let source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
+    let source="import nat; def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
     for(let i=1;i<=${sharedDepth};i++)source+="let t"+i+" := f(t"+(i-1)+", t"+(i-1)+");";
     source+="let h : t${sharedDepth} = t${sharedDepth} { simp only []; } rfl; }";
     const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
@@ -220,7 +220,7 @@ test("simp rule selection and exclusion bound compact shared identities",()=>{
   for(const tactic of ["simp only [h]","simp without [h]"]) {
     const script=`import createCubical from ${JSON.stringify(wasm)};
       import {CubicalProgram} from ${JSON.stringify(program)};
-      let source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
+      let source="import nat; def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
       for(let i=1;i<=${sharedDepth};i++)source+="let t"+i+" := f(t"+(i-1)+", t"+(i-1)+");";
       source+="let h : t${sharedDepth} = t${sharedDepth} { rfl; } ${tactic}; }";
       const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
@@ -244,7 +244,7 @@ test("quantified simp rules scan each shared pattern node once",()=>{
   for(const tactic of ["simp only [h]","simp without [h]"]) {
     const script=`import createCubical from ${JSON.stringify(wasm)};
       import {CubicalProgram} from ${JSON.stringify(program)};
-      let source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
+      let source="import nat; def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
       for(let i=1;i<=${sharedDepth};i++)source+="let t"+i+" := f(t"+(i-1)+", t"+(i-1)+");";
       source+="let helper : (forall k : Nat. f(t${sharedDepth},k) = k) -> n = n { intro h; ${tactic}; } rfl; }";
       const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
@@ -265,13 +265,13 @@ test("path reconstruction preserves compact shared terms within the proof deadli
   const wasm=new URL("../web/dist/cubical.mjs",import.meta.url).href;
   const program=new URL("../web/cubical-program.mjs",import.meta.url).href;
   const cases=[
-    ["rw","def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;",
+    ["rw","import nat; def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;",
       "f", `let proof : t${sharedDepth} = t${sharedDepth} { rw [refl(t${sharedDepth})] at lhs; } rfl; }`],
-    ["calc","def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;",
+    ["calc","import nat; def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;",
       "f", `let proof : t${sharedDepth} = t${sharedDepth} { calc { t${sharedDepth} = t${sharedDepth} by refl(t${sharedDepth}); _ = t${sharedDepth} by refl(t${sharedDepth}); } } rfl; }`],
-    ["simp","def shared(f : Nat -> Nat, g : Nat -> Nat -> Nat, n : Nat, c : forall k : Nat. n = n -> f(k) = k) : f(n) = n { let t0 := n;",
+    ["simp","import nat; def shared(f : Nat -> Nat, g : Nat -> Nat -> Nat, n : Nat, c : forall k : Nat. n = n -> f(k) = k) : f(n) = n { let t0 := n;",
       "g", `let h : n = n := (fun (unused : Nat) => refl(n))(t${sharedDepth}); simp only [c] with [h]; }`],
-    ["simpa","def shared(f : Nat -> Nat, g : Nat -> Nat -> Nat, n : Nat, c : forall k : Nat. n = n -> f(k) = k) : f(n) = n { let t0 := n;",
+    ["simpa","import nat; def shared(f : Nat -> Nat, g : Nat -> Nat -> Nat, n : Nat, c : forall k : Nat. n = n -> f(k) = k) : f(n) = n { let t0 := n;",
       "g", `let h : n = n := (fun (unused : Nat) => refl(n))(t${sharedDepth}); simpa only [c] with [h] using refl(n); }`],
   ];
   for(const [name,prefix,fn,suffix] of cases) {
@@ -303,11 +303,11 @@ test("path abstraction and dependent-path transport keep shared inputs compact",
       import {CubicalProgram} from ${JSON.stringify(program)};
       let source;
       if(${JSON.stringify(mode)}==="path") {
-        source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
+        source="import nat; def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
         for(let i=1;i<=${sharedDepth};i++)source+="let T"+i+" := F(T"+(i-1)+",T"+(i-1)+");";
         source+="let h : forall x : T${sharedDepth}. x = x { intro x; exact path i => x; } rfl; }";
       } else {
-        source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
+        source="import nat; def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
         for(let i=1;i<=${sharedDepth};i++)source+="let t"+i+" := f(t"+(i-1)+",t"+(i-1)+");";
         source+="let h : (along (fun (n : Nat) => Nat) by refl(0) from t${sharedDepth}) = t${sharedDepth} -> t${sharedDepth} = t${sharedDepth} { intro q; over (fun (n : Nat) => Nat) along refl(0) by { exact q; } } rfl; }";
       }
@@ -334,7 +334,7 @@ test("interval expansion is bounded while later declarations still elaborate",()
     let formula=Array.from({length:pairs},(_,i)=>`join(d${2*i},d${2*i+1})`);
     while(formula.length>1)formula=Array.from({length:Math.ceil(formula.length/2)},(_,i)=>
       formula[2*i+1]?`meet(${formula[2*i]},${formula[2*i+1]})`:formula[2*i]);
-    let source="def interval_budget : 0 = 0 { let t0 := 0;";
+    let source="import nat; def interval_budget : 0 = 0 { let t0 := 0;";
     for(let i=1;i<dimensions.length;i++)source+=`let t${i} := refl(t${i-1});`;
     source+=`let h : t${dimensions.length-1} = t${dimensions.length-1} { exact `;
     source+=dimensions.map(d=>`path ${d} => `).join("");
@@ -369,11 +369,11 @@ test("shared path and transport proofs remain inspectable without expanding raw 
   for(const mode of ["path","over"]) {
     let source;
     if(mode==="path") {
-      source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
+      source="import nat; def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
       for(let i=1;i<=sharedDepth;i++)source+=`let T${i} := F(T${i-1},T${i-1});`;
       source+=`let h : forall x : T${sharedDepth}. x = x { intro x; exact path i => x; } rfl; }`;
     } else {
-      source="def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
+      source="import nat; def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
       for(let i=1;i<=sharedDepth;i++)source+=`let t${i} := f(t${i-1},t${i-1});`;
       source+=`let h : (along (fun (n : Nat) => Nat) by refl(0) from t${sharedDepth}) = t${sharedDepth} -> t${sharedDepth} = t${sharedDepth} { intro q; over (fun (n : Nat) => Nat) along refl(0) by { exact q; } } rfl; }`;
     }
@@ -565,9 +565,9 @@ test("a late declaration observer error rolls back its native definition",async 
     onDeclaration() {if(reject){reject=false;throw Error("observer rejected declaration");}}
   });
   t.after(()=>program.dispose());
-  await assert.rejects(program.check("def discarded := 0;","observer_failure"),/observer rejected declaration/);
+  await assert.rejects(program.check("import nat; def discarded := 0;","observer_failure"),/observer rejected declaration/);
   assert.equal(program.kernel.definitions.has("observer_failure__discarded"),false);
-  const recovered=await program.check("def accepted := 1;","observer_recovery");
+  const recovered=await program.check("import nat; def accepted := 1;","observer_recovery");
   assert.equal(recovered.outputs[0].verified,true);
 });
 

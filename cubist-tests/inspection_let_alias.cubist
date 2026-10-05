@@ -1,6 +1,8 @@
 // From tests/cubical-inspection.test.mjs: a let alias preserves the original
 // local's name and does not leak to later declarations.
 
+import nat;
+
 def zero := 0;
 
 // Warning: W702: m is never used after this let: remove it.
