@@ -105,15 +105,16 @@ work if a use needs it.
 
 ### Theory families
 
-A carrier may be a family, indexed by any type, a carrier included:
+A carrier may be a family, indexed by any type, a carrier included, and an
+index may carry an h-level, as a carrier does:
 
 ```
 theory Monad(U < UU0) {
-  F(A : U) : set U;
-  pure(A : U, a : A) : F(A);
-  bind(A, B : U, m : F(A), k : A -> F(B)) : F(B);
-  law left_unit(A, B : U, a : A, k : A -> F(B)) : bind(A, B, pure(A, a), k) = k(a);
-  law right_unit(A : U, m : F(A)) : bind(A, A, m, fun (a : A) => pure(A, a)) = m;
+  F(A : set U) : set U;
+  pure(A : set U, a : A) : F(A);
+  bind(A, B : set U, m : F(A), k : A -> F(B)) : F(B);
+  law left_unit(A, B : set U, a : A, k : A -> F(B)) : bind(A, B, pure(A, a), k) = k(a);
+  law right_unit(A : set U, m : F(A)) : bind(A, A, m, fun (a : A) => pure(A, a)) = m;
 }
 
 theory Graded(U < UU0) {
@@ -129,13 +130,25 @@ theory Preorder(U < UU0) {
 }
 ```
 
-- `F(A : U) : set U` holds `F(A : U) : U` and
-  `F_is_set(A : U) : IsSet(U, F(A))`. An equation between elements of
-  `F(A)` is a proposition, so the monad laws pass the law check, which
-  refuses them today. Computation notation's N1 uses this.
-- A homomorphism maps each index: `map_F(A : U) : M.F(A) -> N.F(A)`, and
-  preserves each operation at each index. It has no naturality field: the
-  signature has no action on maps to be natural for, and a monad's
+- `Monad` is a monad on sets. An index `A : set U` holds `A : U` and
+  `A_is_set : IsSet(U, A)`, as a field `M : set U` does, so
+  `F(A : set U) : set U` holds `F(A : U, A_is_set : IsSet(U, A)) : U` and
+  `F_is_set(A : U, A_is_set : IsSet(U, A)) : IsSet(U, F(A, A_is_set))`,
+  and `pure`, `bind` and the laws take each index with its evidence. The
+  identity monad is a model: `F(A) := A`, whose setness is `A_is_set`.
+  Indexed by every type, `F(A : U) : set U`, it would not be: its
+  `F_is_set` would prove every type in `U` a set, and the circle is not
+  one. `Maybe`, `List` and truncation take sets to sets, so those monads
+  are models too. A monad on all of `U` with untruncated values is not a
+  theory: its laws would be data, needing coherence (open question 4).
+- An equation between elements of `F(A)` is a proposition, so the monad
+  laws pass the law check, which refuses them today. Computation
+  notation's N1 uses this theory, monads on sets.
+- At a use, `G.F(Nat)`, the index's evidence is an argument; whether the
+  author writes it or the h-level solver supplies it is open (question 5).
+- A homomorphism maps each index: `map_F(A : set U) : M.F(A) -> N.F(A)`,
+  and preserves each operation at each index. It has no naturality field:
+  the signature has no action on maps to be natural for, and a monad's
   naturality follows from preserving `pure` and `bind`.
 - Indices match definitionally, as all types do: no generator inserts a
   transport. An index equal only by a proof, as `m + n` and `n + m` are,
@@ -150,11 +163,20 @@ theory Preorder(U < UU0) {
   homomorphisms are exactly the monotone maps, with nothing to write. The
   ordered rings and fields of the numbers' order (work-plan first actions)
   are theories of this kind.
-- An isomorphism has round trips on set carriers only. On a proposition
-  carrier or family they hold of themselves, and on a family indexed by a
-  carrier they would need a transport along the carrier's round trip, so
-  none is generated: an isomorphism of preorders is a bijection monotone
-  both ways.
+- An isomorphism has round trips on each set carrier and, on a set family
+  indexed by no carrier, at each index:
+  `from_to_F(A : set U, x : M.F(A)) : from.map_F(A)(to.map_F(A)(x)) = x`.
+  On a proposition carrier or family they hold of themselves, so none is
+  generated: an isomorphism of preorders is a bijection monotone both
+  ways.
+- A set family indexed by a carrier, `F(x : M) : set U`, gets a `T.Hom`
+  and no `T.Iso` for now. Its round trip sends `y : A.F(x)` to
+  `from.map_F(to.map_M(x))(to.map_F(x)(y))`, which lies in
+  `A.F(from.map_M(to.map_M(x)))`, not `A.F(x)`, so it can equal `y` only
+  after a transport along the carrier's round trip. Without that field,
+  maps that are not inverse on the fibers would pass: over `M = Unit` with
+  `F(tt) = Nat`, identity on the carrier and zero on the fibers both ways.
+  The transported field is open question 6.
 
 **Variance.** Checking needs none: there is no subtyping beyond universe
 cumulativity, and types match by conversion. Generating homomorphisms does.
@@ -271,8 +293,10 @@ replaces today's `open` (its decision 7).
   carrier today.
 - A parameter: `Module(U0, integers)`, whose homomorphisms have only
   `map_V`.
-- Families: the identity monad as a `Monad`; `Graded`; `Preorder`, whose
-  homomorphisms are monotone, and the law check accepting `x <= x`.
+- Families: the identity monad as a `Monad` on sets; `Graded`; `Preorder`,
+  whose homomorphisms are monotone, with isomorphisms that have no round
+  trips on `le`, and the law check accepting `x <= x`; a set family
+  indexed by a carrier, with a `T.Hom` and no `T.Iso`.
 - Variance: an input with no carrier (`power(x : M, n : Nat)` gets its
   `Hom`); a covariant input (`bind`); a contravariant input, pulled back,
   with identity and composition; a mixed input, refused with a message
@@ -289,6 +313,12 @@ replaces today's `open` (its decision 7).
 3. Whether a child can drop a parent's notation without giving it another.
 4. Homomorphisms of theories with carriers of no h-level: the coherence
    fields of path-valued operations, and how far up to generate them.
+5. How a family's index evidence is given at a use, as `Nat`'s setness in
+   `G.F(Nat)`: written by the author, or supplied by the h-level solver.
+   Two proofs of it are equal but not definitionally, so `G.F(Nat)` under
+   two proofs is two types, which meet only through a transport.
+6. The round trip of a set family indexed by a carrier, after a transport
+   along the carrier's round trip, and with it that theory's `T.Iso`.
 
 ## Scope
 

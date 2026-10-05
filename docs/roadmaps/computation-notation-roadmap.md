@@ -364,10 +364,13 @@ elements of a sort, `Unit`, `Void`, or `forall`, `->` and `and` over those
 (E818). A monad's carrier is a family, `F(A : U0) : U0`, which a theory
 accepts as an operation, but its laws are equations in `F(B)`, not in a
 sort, and are refused. **Decided** the same day: theory families
-(work-plan L2.4c, [core theories](core-theories.md#theory-families)),
-`F(A : U) : set U`, whose equations are propositions, so `Monad` is a
-theory with generated homomorphisms, `bind`'s continuation `A -> F(B)`
-mentioning `F` covariantly. N1 follows L2.4c.
+(work-plan L2.4c, [core theories](core-theories.md#theory-families)).
+N1's `Monad` is a monad on sets, `F(A : set U) : set U`: its equations
+are propositions, the identity monad, `F(A) := A`, is a model, and it has
+generated homomorphisms, `bind`'s continuation `A -> F(B)` mentioning `F`
+covariantly. Indexed by every type, `F(A : U) : set U`, it could not have
+the identity monad as a model, since not every type is a set. N1 follows
+L2.4c.
 N0 may cite the archived span proof and specify future substitution examples
 without rebuilding their mathematics. N2 and N4 retain a fully explicit
 argument spelling alongside inference; their release tests cover both.
