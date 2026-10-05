@@ -214,6 +214,9 @@ class ArgumentSolver {
     // A hole that only a term mentioning a bound variable would solve.
     this.escaping = new Map();
     this.clashes = [];
+    // Whether one definition applied on both sides may be matched argument
+    // by argument: only as a last resort (approximate).
+    this.approximating = false;
   }
   // The term with every solved unknown replaced by its value. A solution
   // never mentions its own variable, so this ends.
@@ -334,11 +337,35 @@ class ArgumentSolver {
         progress = true;
       }
       if (progress) continue;
+      if (complete && this.approximate()) continue;
       // Universes last: once every argument has said what it needs.
       if (!complete || (!this.solveUniverses() && !this.solveUniverses(true))) break;
     }
     const open = this.slots.find(slot => slot.variable && !this.solution.has(slot.variable));
     if (open && complete) throw this.undetermined(open);
+  }
+  // When nothing else makes progress: a pending constraint between one
+  // definition applied on both sides, as T.Hom(A, B) against T.Hom(M, N),
+  // matched argument by argument. That solves what unfolding cannot, but
+  // it is a guess where the definition does not determine its arguments,
+  // as Family(n) := Nat does not determine n, so it waits until every other
+  // constraint has had its say, and keeps a constraint's solutions only
+  // when all of it agrees. True when one was kept.
+  approximate() {
+    let progress = false;
+    this.approximating = true;
+    try {
+      for (const constraint of this.pending.splice(0)) {
+        const saved = this.snapshot();
+        if (this.unify(constraint.smaller, constraint.larger, constraint.origin, "covariant", new Set(), this.scope) === "done") {
+          progress = true;
+          continue;
+        }
+        this.restore(saved);
+        this.pending.push(constraint);
+      }
+    } finally { this.approximating = false; }
+    return progress;
   }
   // Each pending constraint, once more; those still blocked stay.
   retry() {
@@ -391,10 +418,11 @@ class ArgumentSolver {
       const outcome = this.parts(left, right, origin, polarity, bound, at);
       if (outcome !== "clash" || normal) return outcome;
     }
-    // One definition applied on both sides, as T.Hom(A, B): first its
-    // arguments, as they stand. Unless they agree, nothing they solved is
-    // kept, and the definition's unfolding is compared instead.
-    if (!normal && sameDefinitionHead(left, right)) {
+    // One definition applied on both sides, as T.Hom(A, B), when nothing
+    // else made progress (approximate): first its arguments, as they stand.
+    // Unless they agree, nothing they solved is kept, and the definition's
+    // unfolding is compared instead.
+    if (!normal && this.approximating && sameDefinitionHead(left, right)) {
       const saved = this.snapshot(), outcome = this.parts(left, right, origin, "invariant", bound, at);
       if (outcome === "done") return outcome;
       this.restore(saved);

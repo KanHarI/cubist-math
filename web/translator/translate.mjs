@@ -372,7 +372,9 @@ export class Translator {
         if(site) {
           // Its parameters are known by their binders' tokens, and each is
           // recorded where it is bound (ownParameter), never looked up by name.
+          const sectional=d.section?.params.length??0;
           const recursive={tag:"Recursive",source:d.name.text,params:own.map(p=>p.name.text),implicit:own.map(p=>!!p.implicit),
+            section:own.map((p,k)=>k<sectional),
             tokens:own.map(p=>p.name),bindings:new Map(),site};
           bodyEnv=new Map(env).set(d.name.text,recursive).set(RECURSIVE,recursive);
         }
