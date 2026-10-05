@@ -79,7 +79,8 @@ A theory's body lists, in order:
   elements of a sort (the sorts are sets or propositions), `Void` or `Unit`,
   an element of a proposition sort, or `forall`, `->` into one, or `and` of
   two. Anything else, such as `law point : M;` or an `exists`, is refused,
-  since homomorphisms ignore laws.
+  since homomorphisms ignore laws. `Unit` and `Void` are reserved names, so
+  no declaration can stand in for them here.
 
 Inside the body the theory's own notation, and its parents', is in scope, and
 each field is in scope by its name from its declaration on.

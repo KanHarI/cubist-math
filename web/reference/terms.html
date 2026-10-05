@@ -354,6 +354,8 @@ def not_a_sum(n : Nat) := match n return Nat {  // Error: Nat has no constructor
           <section id="unit-and-void">
             <h2>Unit, Void and negation</h2>
             <p><code>tt</code> is the element of <code>Unit</code>. <code>Void</code> has no elements: <code>absurd(impossible)</code> turns <code>impossible : Void</code> into an element of any expected type. Negation is <code>A -> Void</code>; there is no <code>not</code> keyword.</p>
+            <p><code>Unit</code> and <code>Void</code> are reserved, as the keywords that begin a term or a statement are (<code>fun</code>, <code>match</code>, <code>let</code>, <code>exact</code> and the others): no declaration, parameter, binder, pattern or field can take their names, since checking relies on what they mean. A word that means something only in one place stays an ordinary name elsewhere: <code>def</code>, <code>theory</code> and <code>evaluate</code> at the start of a declaration or a directive, <code>sort</code> and <code>law</code> in a theory, <code>prop</code> in a header.</p>
+            <pre><code data-check="reject">def Unit : U0 := Nat;  // Error: Unit is reserved, as a keyword or a built-in type of the language; pick another name.</code></pre>
             <pre><code data-check="accept">def anything_from_void(A : U0, impossible : Void) : A {
   exact absurd(impossible);
 }
