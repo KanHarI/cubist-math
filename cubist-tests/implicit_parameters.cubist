@@ -62,6 +62,16 @@ def joined := append(cons(1, typed(List(U0, Nat), nil)), cons(2, nil));
 // Output: 2
 print(evaluate(length(joined)));
 
+// A recursive call passes the implicit parameters as themselves, even where
+// a pattern variable of the same name, here the head A, shadows one.
+def heads{{U < UU0, A : U}}(xs : List(U, A)) : Nat := match xs {
+  nil => 0;
+  cons(A, rest) => succ(heads(rest));
+};
+
+// Output: 2
+print(evaluate(heads(joined)));
+
 // A definition that calls itself passes its implicit parameters unchanged.
 def size{{U < UU0, A : U}}(xs : List(U, A)) : Nat := match xs {
     nil => 0;
