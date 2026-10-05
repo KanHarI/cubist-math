@@ -175,7 +175,8 @@ composition are generated as now. A mixed input relates `g_A` and `g_B`
 only by a hypothesis, `map ∘ g_A = g_B ∘ map`, and two such
 homomorphisms do not compose in general: there need be no input in the
 middle model related to both. A theory with a mixed input gets no
-`T.Hom`, as with E817 today; its isomorphisms, which carry any input
+`T.Hom`, as with E817 today: no homomorphisms are generated that cannot
+compose (decided on 2026-10-05). Its isomorphisms, which carry any input
 across with `to` and `from`, can be generated later. This replaces
 E817's rule, which admits only inputs and results that are carriers and
 so refuses `power(x : M, n : Nat) : M`, whose `n` passes unchanged.
@@ -288,8 +289,6 @@ replaces today's `open` (its decision 7).
 3. Whether a child can drop a parent's notation without giving it another.
 4. Homomorphisms of theories with carriers of no h-level: the coherence
    fields of path-valued operations, and how far up to generate them.
-5. Mixed inputs: whether to generate homomorphisms without composition,
-   for the related-input notion, or only isomorphisms.
 
 ## Scope
 
