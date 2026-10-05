@@ -218,14 +218,20 @@ def named(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat{{A := Nat}}(p, 
 
 def open_type(T : U0) : U1 := same(T);  // Error: The parameter A of same is not determined: U0 fits, and so would a larger universe. Give it explicitly.
 def settled(T : U0) : U1 := same{{_, U0}}(T);</code></pre>
-            <p>An argument whose type applies a definition, as <code>Tagged(U0, Unit)</code>, matches a parameter's type that applies the same definition, as <code>Tagged(U, A)</code>, argument by argument, before either is unfolded. So the arguments are read off even where the definition's value forgets them: <code>Tagged(U, A)</code> is <code>Nat</code> whatever <code>A</code> is, and <code>untag(t)</code> still finds <code>A := Unit</code>. When the arguments do not all match, nothing they solved is kept, and the unfolded types are compared instead. A theory's homomorphisms rely on this: <code>f.map</code> reads <code>f</code>'s models off <code>f : Monoid.Hom(A, B)</code> (<a href="theories.html#morphisms">homomorphisms</a>).</p>
+            <p>An argument whose type applies a definition, as <code>Tagged(U0, Unit)</code>, and a parameter's type that applies the same definition, as <code>Tagged(U, A)</code>, are compared unfolded first. Where that leaves a parameter open, the other arguments and the expected type settle it if they can; only then are the two matched argument by argument. So the arguments are read off even where the definition's value forgets them: <code>Tagged(U, A)</code> is <code>Nat</code> whatever <code>A</code> is, and <code>untag(t)</code> still finds <code>A := Unit</code>. But an argument that does determine the parameter comes first: <code>Family(n)</code> is <code>Nat</code> too, and <code>pick(a, refl(1))</code> finds <code>n := 1</code> from <code>refl(1)</code>, not <code>0</code> from <code>a</code>'s type. When the arguments do not all match, nothing they solved is kept. A theory's homomorphisms rely on this: <code>f.map</code> reads <code>f</code>'s models off <code>f : Monoid.Hom(A, B)</code> (<a href="theories.html#morphisms">homomorphisms</a>).</p>
             <pre><code data-check="accept">import nat;
 
 def Tagged(U &lt; UU0, A : U) : U0 := Nat;
 
 def untag{{U &lt; UU0, A : U}}(t : Tagged(U, A)) : Nat := t;
 
-def tag_of(t : Tagged(U0, Unit)) : Nat := untag(t);</code></pre>
+def tag_of(t : Tagged(U0, Unit)) : Nat := untag(t);
+
+def Family(n : Nat) : U0 := Nat;
+
+def pick{{n : Nat}}(a : Family(n), h : n = 1) : Nat := n;
+
+def picked(a : Family(0)) : Nat := pick(a, refl(1));</code></pre>
             <p>The library's <code>lists</code> declares <code>append{{U &lt; UU0, A : U}}(xs, ys : List(U, A))</code>. A definition that calls itself passes its implicit parameters unchanged: <code>length(tail)</code> in its own clause, never <code>length{{U, A}}(tail)</code>. Double braces without parentheses give the function of the other parameters, so <code>same{{U0, Nat}}</code> is the identity on <code>Nat</code>; the name of a definition alone is the function of all its parameters. Goals and messages show a definition's implicit arguments in double braces too: <code>append{{U, A}}(xs, nil) = xs</code>.</p>
             <p>A definition names its parameters apart, implicit or not, since a call can give each one by its name. So does a declared type, and each constructor its arguments:</p>
             <pre><code data-check="reject">def twice{{x : Nat}}(x : Nat) : Nat := x;  // Error: twice has two parameters named x: give each its own name.</code></pre>
