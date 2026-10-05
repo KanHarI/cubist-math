@@ -68,7 +68,11 @@ A theory's body lists, in order:
   argument and result types are sorts of the theory, each with an optional
   `notation`;
 - **laws**, `law name(binders) : statement;`, propositions about the earlier
-  fields. Since the sorts are sets, every law is a proposition.
+  fields. A statement must be evidently a proposition: an equation between
+  elements of a sort (the sorts are sets or propositions), `Void` or `Unit`,
+  an element of a proposition sort, or `forall`, `->` into one, or `and` of
+  two. Anything else, such as `law point : M;` or an `exists`, is refused,
+  since homomorphisms ignore laws.
 
 Inside the body the theory's own notation, and its parents', is in scope, and
 each field is in scope by its name from its declaration on.
@@ -222,5 +226,6 @@ scope.
 - Homomorphisms compose, identity is a unit for composition, and an
   isomorphism's inverse is an isomorphism, on closed models by `evaluate`.
 - Refusals: a field whose name two parents give, a law that is not about the
-  theory's fields, an operation whose arguments are not sorts (for `Hom`), a
-  notation that is not an operator, an `open` of a value that is not a model.
+  theory's fields or is not evidently a proposition, an operation whose
+  arguments are not sorts (for `Hom`), a notation that is not an operator, an
+  `open` of a value that is not a model.
