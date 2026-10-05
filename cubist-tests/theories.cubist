@@ -5,6 +5,7 @@
 // the refusals.
 import nat;
 import hlevels;
+import h1_truncation;
 
 theory Semigroup(U < UU0) {
   M : set U;
@@ -47,6 +48,15 @@ theory Nontrivial(U < UU0) extends Monoid {
   law zero_ne_one : zero = one -> Void;
   law trivially : Unit;
 }
+
+// A declared proposition, as a truncation, states a law (L2.10k): an
+// inhabited set merely has an element.
+theory Inhabited(U < UU0) {
+  M : set U;
+  law inhabited : Trunc(U, M);
+}
+
+def nat_inhabited : Inhabited(U0) := Inhabited.make(M := Nat, M_is_set := nat_is_set, inhabited := merely(U0, Nat, 0));
 
 // A sort renamed twice takes its evidence's name along each time.
 theory Carrier(U < UU0) extends Monoid(M := R) {
@@ -147,8 +157,9 @@ theory SharedOperator(U < UU0) {
 }
 
 // Error: E818: The law point must state a proposition: an equation between elements of a sort,
-//   Void, or forall, -> or and over those; M is a sort, whose elements are data. A law holds no
-//   data, and homomorphisms ignore laws: declare data as an operation or a constant.
+//   Void, a type declared at prop, or forall, -> or and over those; M is a sort, whose elements are
+//   data. A law holds no data, and homomorphisms ignore laws: declare data as an operation or a
+//   constant.
 theory Pointed(U < UU0) {
   M : set U;
   law point : M;

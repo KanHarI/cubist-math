@@ -92,9 +92,11 @@ const sameSyntax = (a, b) => JSON.stringify(a, (key, value) => ["start", "end"].
 // Laws are propositions: homomorphisms ignore them (L2.4). Accepted are an
 // equation between elements of a sort (every sort is a set or a
 // proposition, so its equations are propositions), Void and Unit, an
-// element of a proposition sort, and forall, -> into one, and `and` of two.
-// `byName` holds the fields declared so far.
-function notAProposition(statement, byName) {
+// element of a proposition sort, a declared type whose header says it is a
+// proposition, as Trunc(U, A) (L2.10k), and forall, -> into one, and `and`
+// of two. `byName` holds the fields declared so far, and `proposition`
+// says whether a name is such a declared type.
+function notAProposition(statement, byName, proposition = () => false) {
   // A carrier, M, or a family's member, F(A).
   const sortNamed = (node, bound) =>
     node?.kind === "name" && !bound.has(node.name) && byName.get(node.name)?.kind === "sort" ? node.name
@@ -133,6 +135,9 @@ function notAProposition(statement, byName) {
       && (["Void", "Unit"].includes(node.name) && !byName.has(node.name) || propositionSort(node.name))) return null;
     // A member of a family of propositions, as a relation's x <= y.
     if (node.kind === "call" && sortNamed(node, bound) && propositionSort(node.fn.name)) return null;
+    // A declared proposition, as a truncation.
+    const head = node.kind === "call" ? node.fn : node;
+    if (head.kind === "name" && !bound.has(head.name) && !byName.has(head.name) && proposition(head.name)) return null;
     return { node, why: node.kind === "name" && byName.get(node.name)?.kind === "sort"
       ? `${node.name} is a sort, whose elements are data` : "its statement is none of these" };
   };
@@ -142,7 +147,7 @@ function notAProposition(statement, byName) {
 // A theory's fields, in order, with types over the earlier fields' names,
 // its notations and its parents, as the theory records them (`lookup` gives
 // a parent's record by name).
-function theoryFields(theory, lookup) {
+function theoryFields(theory, lookup, proposition) {
   const T = theory.name.text, fields = [], notations = new Map(), parents = [], byName = new Map();
   // The header's universes are the model's, which each expansion names
   // afresh; a theory without a header has one. Its parameters are every
@@ -410,9 +415,9 @@ function theoryFields(theory, lookup) {
     });
     type = operatorsAsCalls(type);
     if (item.kind === "law") {
-      const data = notAProposition(type, byName);
+      const data = notAProposition(type, byName, proposition);
       if (data)
-        throw located(Error(`The law ${item.name.text} must state a proposition: an equation between elements of a sort, Void, or forall, -> or and over those; ${data.why}. A law holds no data, and homomorphisms ignore laws: declare data as an operation or a constant.`), data.node);
+        throw located(Error(`The law ${item.name.text} must state a proposition: an equation between elements of a sort, Void, a type declared at prop, or forall, -> or and over those; ${data.why}. A law holds no data, and homomorphisms ignore laws: declare data as an operation or a constant.`), data.node);
     }
     add({ name: item.name.text, kind: item.kind, arity: item.params.length, type, origin,
       ...(leveled.size ? { visible: item.params.map(p => p.level ?? null) } : {}) }, item.name);
@@ -428,9 +433,9 @@ function theoryFields(theory, lookup) {
 
 // The declarations a theory expands to, and its record, which a theory
 // that extends it reads (`lookup` gives the record of a theory by name).
-export function expandTheory(theory, lookup = () => null) {
+export function expandTheory(theory, lookup = () => null, proposition = () => false) {
   const T = theory.name.text, at = theory.name;
-  const { fields, notations, parents, universes: headerUniverses, params, ambiguous, ambiguousNotations } = theoryFields(theory, lookup);
+  const { fields, notations, parents, universes: headerUniverses, params, ambiguous, ambiguousNotations } = theoryFields(theory, lookup, proposition);
   if (!fields.length) throw located(Error(`${T} has no fields: a theory declares sorts, operations and laws.`), at);
   const taken = new Set([...namesIn(theory), ...fields.map(field => field.name), ...fields.flatMap(field => [...namesIn(field.type)])]);
   // The header's names for the universes, or fresh ones without a header.

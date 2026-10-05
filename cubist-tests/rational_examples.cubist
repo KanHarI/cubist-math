@@ -25,14 +25,21 @@ print(evaluate(equal_or_not(rat(int(2, 0), 3), rat(int(1, 0), 1))));
 // Output: 0
 print(evaluate(equal_or_not(rat(int(1, 0), 1), rat(int(1, 0), 2))));
 
+// A field's inverse takes evidence that its argument is not zero, which the
+// rationals decide; it computes, by unique choice from the field's law.
+computable def inverse_or_zero(x : Q) : Q := match rat_decide(x, rationals.zero) return Q {
+    left same => rationals.zero;
+    right different => inv(rationals, x, different);
+  };
+
 // The inverse of -2/3 is -3/2, and -2/3 times it is one.
 // Output: 1
-print(evaluate(equal_or_not(rationals.inv(rat(int(0, 2), 2)), rat(int(0, 3), 1))));
+print(evaluate(equal_or_not(inverse_or_zero(rat(int(0, 2), 2)), rat(int(0, 3), 1))));
 
 // Output: 1
 print(
   evaluate(
-    equal_or_not(rationals.mul(rat(int(0, 2), 2), rationals.inv(rat(int(0, 2), 2))), rationals.one)
+    equal_or_not(rationals.mul(rat(int(0, 2), 2), inverse_or_zero(rat(int(0, 2), 2))), rationals.one)
   )
 );
 

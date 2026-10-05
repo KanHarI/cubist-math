@@ -655,9 +655,9 @@ Found since the slices landed, each a candidate for a later slice rather
 than a defect in this contract:
 
 - **A law cannot be a truncation.** `Trunc(U, exists y : R. x * y = one)`
-  is a proposition by its declaration at `prop`, but not by the law check's
-  form. L2.10k's partial field inverse needs the check to accept an
-  application of a type declared at `prop`.
+  is a proposition by its declaration at `prop`, but was not by the law
+  check's form. Done with L2.10k (2026-10-06): the check accepts a type
+  declared at `prop`.
 - **A law cannot name the theory's universe,** which `Trunc` takes first:
   the universe of a theory's sorts had no name in its body. L2.10k needs
   that too. Done: the header names it ([L2.4c](#revision-l24c),

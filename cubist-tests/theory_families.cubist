@@ -94,9 +94,9 @@ def fibred_iso := Fibred.Iso;
 
 // A family with no h-level: its equations are not propositions.
 // Error: E818: The law same must state a proposition: an equation between elements of a sort, Void,
-//   or forall, -> or and over those; P has no h-level, so an equation between its elements is not a
-//   proposition. A law holds no data, and homomorphisms ignore laws: declare data as an operation
-//   or a constant.
+//   a type declared at prop, or forall, -> or and over those; P has no h-level, so an equation
+//   between its elements is not a proposition. A law holds no data, and homomorphisms ignore laws:
+//   declare data as an operation or a constant.
 theory Bare(U < UU0) {
   M : set U;
   P(x : M) : U;

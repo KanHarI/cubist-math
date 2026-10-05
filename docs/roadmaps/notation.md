@@ -817,6 +817,19 @@ surrounding view is not `binary`.
 
 ## L2.10k. Fields with a partial inverse
 
+**Done** on 2026-10-06. The law check accepts a declared proposition, as
+`Trunc(U, …)`, by its header (`web/translator/theories.mjs` passes the
+check whether a name is an inductive declared at `prop`); with L2.4c's
+header universe, `Field` states `inverses` as the truncated law below.
+`library/algebra.cubist` proves `inverse_unique` and `inverse_is_prop` in
+any commutative ring and derives `inverse`, `inv` and `mul_inv` in any
+field by unique choice, `mere_eliminate` into the proposition of having an
+inverse; `library/rationals.cubist` supplies the law as `merely` of its
+inverse, so `inv(rationals, x, nonzero)` computes. `Field.Hom` has only
+`CommRing`'s fields. Evidence: `cubist-tests/rational_examples.cubist`,
+`cubist-tests/theories.cubist`'s `Inhabited`, and the reference's
+library-algebra section.
+
 `Field`'s inverse is total today, `inv(x : R) : R`: `mul_inv` assumes `x`
 is not zero, and nothing is said of `inv(zero)`. It becomes partial. A
 generated `Hom` requires every operation to take and return sorts

@@ -1,5 +1,6 @@
 import nat;
 import hlevels;
+import h1_truncation;
 import quotients;
 import algebra;
 import integers;
@@ -576,7 +577,11 @@ section {{U < UU0}}(
       zero_add := q_zero_add, add_zero := q_add_zero, neg := q_neg, neg_add := q_neg_add,
       add_neg := q_add_neg, add_comm := q_add_comm, mul := q_mul, mul_assoc := q_mul_assoc,
       one := q_one, one_mul := q_one_mul, mul_one := q_mul_one, mul_comm := q_mul_comm,
-      mul_add := q_mul_add, inv := q_inv, mul_inv := q_mul_inv, zero_ne_one := q_zero_ne_one
+      mul_add := q_mul_add,
+      inverses := fun (x : Frac, nonzero : x = q_zero -> Void) => merely(
+        U, exists y : Frac. q_mul(x, y) = q_one, (q_inv(x), q_mul_inv(x, nonzero))
+      ),
+      zero_ne_one := q_zero_ne_one
     );
 }
 

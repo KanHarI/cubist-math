@@ -191,7 +191,7 @@ export function lowerInductive(translator, d, scope) {
     const constructor = d.constructors.find(c => c.name.text === error.constructor);
     throw locate(error, constructor?.name ?? d.name);
   }
-  const inductive = { tag: "Inductive", source: d.name.text, binding, record, slots,
+  const inductive = { tag: "Inductive", source: d.name.text, binding, record, slots, modifier,
     levels: levels.map((l, j) => ({ name: l.name, recorded: recorded[j] })), parameters,
     // Each user constructor's argument order, arity and dimensions, for match.
     constructors: constructors.map(c => ({ source: c.source, order: c.order, arity: c.arity, dims: c.dims, fields: c.fields })) };
