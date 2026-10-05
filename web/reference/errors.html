@@ -166,6 +166,7 @@
               <tbody>
                 <tr id="E342"><td class="code"><code>E342</code></td><td data-message="Universe was removed: bind a universe variable as U &lt; UU0.">“Universe was removed: bind a universe variable as U &lt; UU0.”</td><td>Write <code>U &lt; UU0</code> where the source had <code>U : Universe</code>.</td><td><a href="universes.html#universe-variables">universe variables</a></td></tr>
                 <tr id="E321"><td class="code"><code>E321</code></td><td data-message="A universe variable's bound must be UU0, as in U &lt; UU0.">“A universe variable's bound must be UU0, as in U &lt; UU0.”</td><td>Only <code>UU0</code> bounds a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
+                <tr id="E175"><td class="code"><code>E175</code></td><td data-message="is reserved, as a keyword or a built-in type of the language; pick another name.">“<var>name</var> is reserved, as a keyword or a built-in type of the language; pick another name.”</td><td>Keywords such as <code>fun</code> and <code>let</code>, and the built-in types <code>Unit</code> and <code>Void</code>, cannot be bound.</td><td><a href="terms.html#unit-and-void">Unit and Void</a></td></tr>
                 <tr id="E518"><td class="code"><code>E518</code></td><td data-message="A universe argument must lie below UU0">“A universe argument must lie below UU0: …”</td><td>A generic declaration was used at <code>UU0</code> or above. Use <code>U0</code>, <code>U1</code>, … or a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
                 <tr id="E322"><td class="code"><code>E322</code></td><td data-message="Expected a universe:">“Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).”</td><td>A type or a term stands where a universe is required, such as <code>next(Nat)</code>.</td><td><a href="universes.html#universe-expressions">next and max</a></td></tr>
                 <tr id="E111"><td class="code"><code>E111</code></td><td data-message="is a universe constant; pick another name.">“<var>name</var> is a universe constant; pick another name.”</td><td>Names such as <code>U1</code> and <code>UU2</code> are universes.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
@@ -388,6 +389,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E168"><td><code>E168</code></td><td>Expected '}' to close the theory.</td></tr>
                 <tr id="E169"><td><code>E169</code></td><td>A sort is a set or a proposition: sort M : set; or sort P : prop;</td></tr>
                 <tr id="E170"><td><code>E170</code></td><td>Expected ':' and the type of …, as in …</td></tr>
+                <tr><td><a href="#E175"><code>E175</code></a></td><td>… is reserved, as a keyword or a built-in type of the language; pick another name.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>

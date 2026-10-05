@@ -95,6 +95,7 @@ export const diagnostics = [
   ["E168", "Expected '}' to close the theory."],
   ["E169", "A sort is a set or a proposition: sort M : set; or sort P : prop;"],
   ["E170", "Expected ':' and the type of …, as in …"],
+  ["E175", "… is reserved, as a keyword or a built-in type of the language; pick another name."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
