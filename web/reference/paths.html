@@ -247,7 +247,7 @@ def pairs_of_sets(A : U0, B : A -> U0, hA : IsSet(U0, A), hB : forall a : A. IsS
   IsSet(U0, exists a : A. B(a)) {
   exact sigma_has_level(U0, 1, A, B, hA, hB);
 }</code></pre>
-            <p>The module also proves that levels are cumulative and that having a level is a proposition. Retracts, function types, pairs, products and path types keep levels and contractibility, and subtypes keep levels. Hedberg's theorem says that a type with decidable equality is a set, as <code>nat_is_set</code> shows for <code>Nat</code>.</p>
+            <p>The module also proves that levels are cumulative and that having a level is a proposition. Retracts, function types, pairs, products and path types keep levels and contractibility, and subtypes keep levels. Hedberg's theorem says that a type with decidable equality is a set, as <code>nat_is_set</code> shows for <code>Nat</code>. The propositions of a universe form a set too, by univalence (<a href="assumptions.html#library-univalence">propositional extensionality</a>), and a <a href="cubical.html#quotients">set quotient</a> is a set by its declaration.</p>
           </section>
           <section id="hlevel">
             <h2>Proving levels: <code>hlevel</code></h2>

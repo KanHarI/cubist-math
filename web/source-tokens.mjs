@@ -1,5 +1,7 @@
 // Token classes of the source view, shared by the proof workspace and the
 // language reference so that both highlight source the same way.
+import { notationOperators } from "./cubist/parser.mjs";
+
 export const keywords = new Set([
   "import",
   "def",
@@ -37,6 +39,7 @@ export const keywords = new Set([
   "match",
   "return",
   "as",
+  "open",
 ]);
 // Language-provided forms share the keyword palette; ordinary library and
 // user-defined functions retain the green reference style.
@@ -61,10 +64,74 @@ export const projectionIndex = (source, start) => source[start - 1] === "." && /
 // The expansion of the numeral at `start` in `source`, if it is one.
 export const numeralAt = (source, start, text) => projectionIndex(source, start) ? null : numeralExpansion(text);
 // Keywords and language-provided forms share one palette; notation is a
-// macro, unless it stands for itself.
-export const tokenStyle = (text, expansion, headerWord = false) =>
-  headerWord || keywords.has(text) || builtinForms.has(text) || /^U+[0-9]+$/.test(text) ? "keyword"
+// macro, unless it stands for itself. `here` is what keywordAt says of the
+// word where it stands: true, a keyword there; false, a name there; otherwise
+// the word's usual style.
+export const tokenStyle = (text, expansion, here) =>
+  here === true || here !== false && (keywords.has(text) || builtinForms.has(text) || /^U+[0-9]+$/.test(text)) ? "keyword"
     : expansion && expansion !== text ? "macro" : "";
+// zero and succ that link to a definition, such as a ring's zero after
+// `open A;`, are names; Nat's constructors link to no definition.
+export const linkedWord = (text, link) => ["zero", "succ"].includes(text) && link?.role === "definition" ? false : undefined;
+// The words a theory gives a role, by offset, found once per source from its
+// tokens, so that comments and nested braces do not move them (L2.4). In a
+// theory's header, extends after its name, and notation in a parent's
+// renaming; in its body, law and sort starting a field and followed by its
+// name, a sort's h-level, and notation after an operation's type, followed by
+// x + y. Each of these is a keyword, and the words are names elsewhere, as
+// the parser reads them: a field may be named law, sort or notation. zero and
+// succ in a theory name its fields, not Nat's constructors.
+let rolesOf = { source: null, roles: new Map() };
+function theoryRoles(source) {
+  if (rolesOf.source === source) return rolesOf.roles;
+  const tokens = [...source.matchAll(tokenPattern)].filter(([text]) => !/^\s/.test(text) && !text.startsWith("//"))
+    .map(match => ({ text: match[0], start: match.index }));
+  const roles = new Map(), text = at => tokens[at]?.text;
+  const isWord = at => /^[A-Za-z_]/.test(text(at) ?? "");
+  const notationAt = at => text(at) === "notation" && isWord(at + 1) && notationOperators.includes(text(at + 2)) && isWord(at + 3);
+  const fieldWord = at => { if (["zero", "succ"].includes(text(at))) roles.set(tokens[at].start, false); };
+  for (let at = 0; at < tokens.length; at++) {
+    if (text(at) !== "theory" || !startsLine(source, tokens[at].start) || !isWord(at + 1)) continue;
+    let next = at + 2;
+    if (text(next) === "extends") roles.set(tokens[next].start, true);
+    for (; next < tokens.length && !["{", ";", "}"].includes(text(next)); next++) {
+      if (notationAt(next)) roles.set(tokens[next].start, true);
+      fieldWord(next);
+    }
+    if (text(next) !== "{") { at = next; continue; }
+    // The body, to its own closing brace: a field's type may hold braces.
+    let depth = 0, field = next + 1, law = false;
+    for (next++; next < tokens.length; next++) {
+      const word = text(next);
+      if (depth === 0 && word === "}") break;
+      depth = Math.max(0, depth + (["{", "("].includes(word) ? 1 : ["}", ")"].includes(word) ? -1 : 0));
+      fieldWord(next);
+      if (depth === 0 && word === ";") { field = next + 1; law = false; continue; }
+      if (next !== field) {
+        if (depth === 0 && !law && notationAt(next)) roles.set(tokens[next].start, true);
+        continue;
+      }
+      if (word === "law" && isWord(next + 1)) { roles.set(tokens[next].start, true); law = true; }
+      if (word === "sort" && isWord(next + 1)) {
+        roles.set(tokens[next].start, true);
+        if (text(next + 2) === ":" && ["set", "prop"].includes(text(next + 3))) roles.set(tokens[next + 3].start, true);
+      }
+    }
+    at = next;
+  }
+  rolesOf = { source, roles };
+  return roles;
+}
+// theory and section start an item on a line of their own.
+const startsLine = (source, start) => /^\n?\s*$/.test(source.slice(Math.max(0, source.lastIndexOf("\n", start - 1)), start));
+// Words that are keywords only where they stand: an inductive header's
+// h-level; theory and section starting an item; and a theory's words, above.
+export function keywordAt(source, start, text) {
+  if (headerWordAt(source, start, text)) return true;
+  const role = theoryRoles(source).get(start);
+  if (role !== undefined) return role;
+  return ["theory", "section"].includes(text) && startsLine(source, start) || undefined;
+}
 // type, set, prop and trunc are h-level keywords only as the first word of an
 // inductive header's result position, after its colon, and names elsewhere.
 export function headerWordAt(source, start, text) {

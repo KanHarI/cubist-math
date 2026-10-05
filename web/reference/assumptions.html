@@ -189,7 +189,23 @@ evaluate along (fun (T : U0) =&gt; T) by swapped from typed(Unit and Nat, (tt, 3
             <pre><code data-check="accept">import paths;
 def small_path(A, B : U0, e : Equiv(U0, A, B)) : A = B := ua(U0, A, B, e);
 def large_path(A, B : U1, e : Equiv(U1, A, B)) : A = B := ua(U1, A, B, e);</code></pre>
-            <p><code>Equiv(U, A, B)</code>, like <code>IsProp</code> and <code>IsSet</code>, is a library definition, not a new sort or a keyword. Two modules define the levels: <code>hlevels</code>’ <code>IsProp(U, A)</code> and <code>IsSet(U, A)</code> take a universe (<a href="paths.html#hlevels">propositions and sets</a>), and the first library’s <code>sets</code> module defines <code>IsSet(A)</code> for a type <code>A : U0</code>, as <code>Choice</code> above uses it. Both say that any two paths between the same elements are equal.</p>
+            <p><code>Equiv(U, A, B)</code>, like <code>IsProp</code> and <code>IsSet</code>, is a library definition, not a new sort or a keyword. <code>hlevels</code> defines the levels, <code>IsProp(U, A)</code> and <code>IsSet(U, A)</code>, for a type in any universe below <code>UU0</code>, as <code>Choice</code> above uses them (<a href="paths.html#hlevels">propositions and sets</a>).</p>
+            <h3 id="library-univalence">In the library: univalence and propositional extensionality</h3>
+            <p>The library proves univalence in Cubist, from Glue types (<a href="cubical.html#glue">Glue types</a>), for the equivalences of <code>contractible_maps</code>: a function whose fibers are all contractible, <code>ContrEquiv(U, A, B)</code>. <code>inverse_equiv</code> makes one from a function with an inverse and both inverse laws. <code>univalence</code>'s <code>glue_path(U, A, B, e)</code> is the path <code>A = B</code> an equivalence glues, and <code>idtoequiv</code> the equivalence a path gives; they are inverse, so <code>univalence(U, A, B)</code> is an equivalence between <code>A = B</code> and <code>ContrEquiv(U, A, B)</code>.</p>
+            <p><code>propositions</code> takes it to the propositions of a universe, <code>Prop(U)</code>, a type one universe up: propositions that imply each other are equal (<code>prop_ext</code>), and equal as propositions (<code>prop_path</code>), and the propositions form a set (<code>prop_type_is_set</code>). The <a href="cubical.html#quotients">effectiveness of quotients</a> rests on it. None of it uses an assumption, and transport along <code>prop_ext</code> is the map it was given:</p>
+            <pre><code data-check="accept">import propositions;
+
+computable def unit_to_unit_is_prop : IsProp(U0, Unit -&gt; Unit) :=
+  pi_is_prop(U0, Unit, fun (u : Unit) =&gt; Unit, fun (u : Unit) =&gt; unit_is_prop);
+
+computable def units : Unit = (Unit -&gt; Unit) := prop_ext(
+  U0, Unit, Unit -&gt; Unit, unit_is_prop, unit_to_unit_is_prop, fun (u : Unit) =&gt; fun (v : Unit) =&gt; v,
+  fun (f : Unit -&gt; Unit) =&gt; tt
+);
+
+evaluate comp(fun (i : Interval) =&gt; units @ i, tt)(tt) expecting tt;
+
+computable def props_form_a_set : IsSet(U1, Prop(U0)) := prop_type_is_set(U0);</code></pre>
           </section>
           <section id="computability">
             <h2>Computability</h2>

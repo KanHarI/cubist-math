@@ -41,9 +41,15 @@ T.Iso(M, N)`, and displayed models (L2.4b, through HoTT F1); sorts that are
 not sets or propositions, whose homomorphisms need coherence fields; relation
 fields; `initial T` and `free T on A` (L2.6, whose contract is specified
 separately); numerals interpreted in a model; type-directed overloading and
-instance search, which the roadmaps defer. Structure scope stays explicit:
-an operator means one thing in a scope, chosen by `open` or `section`, never
-by the types of its operands.
+instance search. Structure scope stays explicit: an operator means one thing
+in a scope, chosen by `open` or `section`, never by the types of its operands.
+The [notation roadmap](notation.md), L2.10, adopts explicit model notation
+views as the next direction: an expression or block selects its model before
+its operators and literals are elaborated. `v.(expression)` and `using v;`
+are its decided spellings; its remaining grammar and elaboration gates are
+draft. Existing `open` and section semantics remain compatible
+during that migration; type-based automation is optional later work, requiring
+evidence that it preserves the explicit semantics.
 
 ## Theories
 
@@ -89,6 +95,10 @@ A notation is one of the binary operators the grammar already has, `x + y`
 or `x * y`, or a relation, `x < y` or `x <= y`. Unary minus stays path
 inversion, so negation and inverses are named operations.
 
+This is the implemented L2.4 grammar. L2.10's proposed operators and literals
+are separate work. They move reversal to `~` first (L2.10i), keeping the
+groupings of `-p @ i` and `p @ -i & j`, so that `-` becomes arithmetic.
+
 ## Models
 
 A theory `T` declares, in its module:
@@ -128,7 +138,15 @@ def square(G : Group.Model(U0), x : G.M) : G.M {
 A name or operator that `open` binds shadows the one it had, as `let` does,
 until the block ends; a later `open` of another model shadows an earlier
 one. Where no model's notation binds `+` or `*`, they keep their meaning
-today: `add` and `mul` in scope, as for `Nat`.
+today: `add` and `mul` in scope, as for `Nat`. L2.10j retires that
+fallback; an operator then means only what a view, an `open` or a section
+binds, and a section or `open` selects its model's view, innermost first.
+
+L2.10 extends this explicit selection to expression views, including theorem
+statements, with operand views determining numeral interpretations and a
+printer that retains the model whenever omitting it would change meaning.
+It does not change the behavior of existing `open` declarations or sections
+as an incidental part of introducing that syntax.
 
 ## Sections
 

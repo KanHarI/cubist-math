@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Paths as functions of an interval, dependent paths, composition, and types with path constructors: the circle, truncations, pushouts and suspensions." />
+    <meta name="description" content="Paths as functions of an interval, dependent paths, composition, and types with path constructors: the circle, truncations, set quotients, pushouts and suspensions." />
     <title>Cubist · 11. Cubical paths and higher inductive types</title>
     <link rel="stylesheet" href="../language.css" />
     <link rel="stylesheet" href="../repl.css" />
@@ -24,7 +24,7 @@
       <div class="introduction">
         <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 11</p>
         <h1>Cubical paths and higher inductive types</h1>
-        <p class="lead">Paths as functions of an interval, dependent paths, composition, and types with path constructors: the circle, truncations, pushouts and suspensions.</p>
+        <p class="lead">Paths as functions of an interval, dependent paths, composition, and types with path constructors: the circle, truncations, set quotients, pushouts and suspensions.</p>
       </div>
       <div class="reference-layout">
         <aside class="contents" aria-label="Chapters and sections">
@@ -55,6 +55,7 @@
             <li><a href="#composition">Composition</a></li>
             <li><a href="#glue">Glue types</a></li>
             <li><a href="#higher-constructors">Higher inductive types</a></li>
+            <li><a href="#quotients">Set quotients</a></li>
             <li><a href="#pushouts">Pushouts</a></li>
             <li><a href="#suspensions">Suspensions</a></li>
           </ul>
@@ -455,6 +456,86 @@ def discard(A : U0, x : Mere(A)) : Unit := match x {
   point(value) =&gt; tt;
 };</code></pre>
             <p>A match on a truncated type must also respect its squash constructor. Importing <code>hlevels</code> lets the checker generate that branch when it can establish the required level of the result; <code>Unit</code> is a proposition in <code>discard</code>. Otherwise, write the squash clause, as the point it covers: <code>Mere.squash(x, y) @ i =&gt; …</code>, or give level evidence. Declared path clauses can be written in the match itself, or in a trailing <code>obligations { … }</code> block. Omitting a path clause requires a checked proof of its path, such as <code>obligations by rfl</code> above.</p>
+          </section>
+          <section id="quotients">
+            <h2>Set quotients</h2>
+            <p>The <strong>quotient</strong> of a type by a relation has a class for each element, with related elements' classes equal. <code>import quotients;</code> declares it as a higher inductive type that is a set, so a path constructor makes related classes equal and the set squash makes it a set:</p>
+            <pre><code data-check="excerpt" data-module="quotients">inductive Quotient(U &lt; UU0, A : U, R : A -&gt; A -&gt; U) : set U {
+  class(a : A);
+  relate(a, b : A, r : R(a, b)) : class(a) = class(b);
+}</code></pre>
+            <p>No class carries a chosen element, and nothing about quotients uses an assumption: a closed computation with them evaluates. A map into a set that sends related elements to equal values <strong>descends</strong> to the quotient, and computes on classes. Here the naturals modulo parity, and parity read off a class:</p>
+            <pre><code data-check="accept">import nat;
+import hlevels;
+import quotients;
+
+def parity(n : Nat) : Nat := match n {
+  zero =&gt; 0;
+  succ(k) =&gt; match parity(k) {
+    zero =&gt; 1;
+    succ(j) =&gt; 0;
+  };
+};
+
+def SameParity(m, n : Nat) : U0 := parity(m) = parity(n);
+
+def Parities : U0 := Quotient(U0, Nat, SameParity);
+
+def parity_of(x : Parities) : Nat :=
+  descend(U0, U0, Nat, SameParity, Nat, nat_is_set, parity, fun (m, n : Nat, r : SameParity(m, n)) =&gt; r, x);
+
+evaluate parity_of(class(7)) expecting 1;</code></pre>
+            <p><code>descend(U, V, A, R, B, set, f, respects, q)</code> takes the map <code>f : A -&gt; B</code>, evidence that <code>B</code> is a set, and <code>respects : forall a, b : A. R(a, b) -&gt; f(a) = f(b)</code>. The quotient's universe <code>U</code> and the result's <code>V</code> are independent. At a class it is <code>f</code>, by computation (<code>descend_class</code>), and it is the only map that is (<code>descend_unique</code>). The module also gives:</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Definition</th><th>What it gives</th></tr></thead>
+              <tbody>
+                <tr><td><code>class_path(U, A, R, a, b, r)</code></td><td>The path between the classes of related elements</td></tr>
+                <tr><td><code>quotient_is_set(U, A, R)</code></td><td>The quotient is a set</td></tr>
+                <tr><td><code>quotient_induction</code></td><td>A value in a family of sets at every element, from values at the classes that the relation's paths carry to each other</td></tr>
+                <tr><td><code>quotient_induction_prop</code></td><td>The same into a family of propositions, where values at the classes are enough</td></tr>
+                <tr><td><code>maps_agreeing_on_classes</code></td><td>Two maps into a set that agree on the classes are equal</td></tr>
+                <tr><td><code>descend2</code></td><td>A map of two arguments that respects the relation in each descends, one argument after the other</td></tr>
+                <tr><td><code>quotient_effective</code>, <code>class_path_equiv</code></td><td>For an equivalence relation valued in propositions, elements with equal classes are related, and the paths between two classes are equivalent to the relation</td></tr>
+              </tbody>
+            </table></div>
+            <p><strong>Effectiveness</strong> reads the relation back from a path of classes. It needs the relation to be an equivalence valued in propositions: <code>quotient_effective</code> takes that evidence, then the two elements and the path. The proof descends relatedness to an element into the set of propositions, which univalence makes a set (<a href="assumptions.html#library-univalence">propositional extensionality</a>), so it uses no assumption, and on closed classes it computes:</p>
+            <pre><code data-check="accept">import nat;
+import hlevels;
+import quotients;
+
+def parity(n : Nat) : Nat := match n {
+  zero =&gt; 0;
+  succ(k) =&gt; match parity(k) {
+    zero =&gt; 1;
+    succ(j) =&gt; 0;
+  };
+};
+
+def SameParity(m, n : Nat) : U0 := parity(m) = parity(n);
+
+def Parities : U0 := Quotient(U0, Nat, SameParity);
+
+computable def one_three : typed(Parities, class(1)) = typed(Parities, class(3)) :=
+  class_path(U0, Nat, SameParity, 1, 3, refl(1));
+
+computable def same_parity : SameParity(1, 3) := quotient_effective(
+  U0, Nat, SameParity, fun (m, n : Nat) =&gt; nat_is_set(parity(m), parity(n)), fun (n : Nat) =&gt; refl(parity(n)),
+  fun (m, n : Nat, r : SameParity(m, n)) =&gt; sym(r), fun (k, m, n : Nat, r : SameParity(k, m), t : SameParity(m, n)) =&gt; trans(r, t),
+  1, 3, one_three
+);
+
+evaluate same_parity expecting refl(1);</code></pre>
+            <p>The library builds number systems this way. <code>integers</code> takes the quotient of pairs of naturals, <code>(a, b)</code> standing for <code>a - b</code>, by having the same difference, <code>a + d = c + b</code>: <code>int(a, b)</code> is that integer, and <code>int_add</code>, <code>int_mul</code> and <code>int_neg</code> descend from pairs. Effectiveness makes its equality decidable (<code>int_decide</code>), since pairs have the same difference or not. <code>rationals</code> takes the quotient of fractions, as the integers' field of fractions. Both are <a href="theories.html#library-algebra">models of the algebraic theories</a>, and their arithmetic computes:</p>
+            <pre><code data-check="accept">import integers;
+
+def equal_or_not(x, y : Z) : Nat := match int_decide(x, y) return Nat {
+  left same =&gt; 1;
+  right different =&gt; 0;
+};
+
+// 2 - 5 and 0 - 3 are one integer, and (-2) * (-3) is 6.
+evaluate equal_or_not(int(2, 5), int(0, 3)) expecting 1;
+evaluate equal_or_not(int_mul(int(0, 2), int(0, 3)), int(6, 0)) expecting 1;</code></pre>
           </section>
           <section id="pushouts">
             <h2>Pushouts</h2>

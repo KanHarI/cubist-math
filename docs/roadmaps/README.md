@@ -32,6 +32,14 @@ target statement or a supplied theorem parameter as an already proved result.
   canonical quotients, presentations and derived declarations. One-sort
   `inductive` and explicit `match` are released with H1 on 2026-10-02; the
   rest is proposed, with three promises corrected by the audit.
+- [Notation views and literals](notation.md): work-plan L2.10's roadmap for explicit
+  notation views, declared operand views, literals read by the library's
+  parsers and faithful printing, without instance search. The direction and
+  its decisions are recorded: no name-based operators or numerals, `~` for
+  reversal with the cubical operators tightest, notation declared as used,
+  sections and `open` as view selections, `Lexeme` literals and a partial
+  field inverse. Notation rules remain open, and the remaining grammar and
+  elaboration contracts are draft.
 - [Core theories](core-theories.md): the contract of work-plan L2.4,
   theory declarations, models, scoped notation, sections, extension,
   homomorphisms and isomorphisms, specified on 2026-10-05.
