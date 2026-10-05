@@ -8,6 +8,8 @@ import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import { parse } from "../web/cubist/parser.mjs";
 import { formatCubist } from "../web/cubist/formatter.mjs";
+import { CubicalProgram } from "../web/cubical-program.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 import { testModule } from "./check-program.mjs";
 
 const theories = testModule("theories", { module: await createCubical() });
@@ -78,4 +80,41 @@ test("the parser refuses a theory's malformed fields", () => {
   assert.throws(() => parse("theory T {\n  sort M : set;\n"), /Expected '}' to close the theory\./);
   // law, sort and notation are keywords only where a field starts.
   assert.equal(parse("theory T { law : Unit; sort : Unit; }").declarations[0].fields.map(f => f.name.text).join(), "law,sort");
+});
+
+test("a theory declared in one module is read, opened and printed in another", async t => {
+  const modules = {
+    structures: `import hlevels;
+
+theory Magma {
+  sort M : set;
+  mul(x, y : M) : M notation x * y;
+}
+`,
+    uses: `import structures;
+
+def square(G : Magma.Model(U0), x : G.M) : G.M {
+  open G;
+  exact x * x;
+}
+
+def twice(G : Magma.Model(U0), x : G.M) : G.M := G.mul(x, x);
+
+def same(G : Magma.Model(U0), x : G.M) : square(G, x) = twice(G, x) {
+  rfl;
+}
+
+def idempotent(G : Magma.Model(U0), x : G.M) : G.mul(x, x) = x {
+  rfl;
+}
+`,
+  };
+  const library = sourceReader();
+  const readSource = async (name, importer) => modules[name] ?? library(name, importer);
+  const program = new CubicalProgram(await createCubical(), readSource);
+  t.after(() => program.dispose());
+  const result = await program.check(modules.uses, "uses");
+  // Only the false claim is refused, and its message shows the field as G.mul.
+  assert.deepEqual(result.gaps.map(gap => gap.name), ["idempotent"]);
+  assert.match(result.gaps[0].reason, /expected G\.mul\(x, x\) = x/);
 });
