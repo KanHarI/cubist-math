@@ -1,3 +1,4 @@
+import nat;
 import radix_arithmetic;
 import radix_induction;
 import radix_digit_laws;

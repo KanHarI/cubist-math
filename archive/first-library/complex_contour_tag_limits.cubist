@@ -1,3 +1,4 @@
+import nat;
 import complex_contour_bounds;
 import field_scale_limits;
 import complex_algebra;

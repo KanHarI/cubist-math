@@ -1,3 +1,4 @@
+import nat;
 import integer_multiples;
 import finite;
 

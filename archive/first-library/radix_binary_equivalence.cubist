@@ -1,3 +1,4 @@
+import nat;
 import radix_equivalence;
 import radix_arithmetic_correct;
 import binary_arithmetic_correct;

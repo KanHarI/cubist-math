@@ -1,3 +1,4 @@
+import nat;
 import polynomial_roots;
 
 // A nonzero polynomial of degree d cannot have d+1 distinct roots.

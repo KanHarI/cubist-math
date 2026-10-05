@@ -1,3 +1,4 @@
+import nat;
 import finite_algebraic_extensions;
 import polynomial_extension_roots;
 import polynomial_eval_embeddings;

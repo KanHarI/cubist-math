@@ -1,3 +1,4 @@
+import nat;
 import interval_subdivisions;
 import ordered_halves;
 

@@ -1,3 +1,4 @@
+import nat;
 import affine_integrals;
 import complex_scalar_continuity;
 import curve_integrand_sums;

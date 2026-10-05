@@ -56,8 +56,8 @@ try {
     assert.doesNotMatch(await page.locator("#kernel-view-note").textContent(), /unavailable/);
     if (proof === "euclid") {
       // A line number shows the goal at that proof statement and the names in scope.
-      await page.locator('.source-line[data-line="8"] .line-number').click();
-      assert.equal(await page.locator("#inspect-name").textContent(), "Goal at line 8");
+      await page.locator('.source-line[data-line="9"] .line-number').click();
+      assert.equal(await page.locator("#inspect-name").textContent(), "Goal at line 9");
       assert.match(await page.locator("#inspect-type").textContent(), /exists p : Nat\. Prime\(p\) and n < p/);
       assert.match(await page.locator("#locals").textContent(), /n\s*Nat/);
     }

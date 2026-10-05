@@ -1,3 +1,4 @@
+import nat;
 import sample_tagged;
 import sample_subdivisions;
 

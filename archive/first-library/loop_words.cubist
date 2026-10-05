@@ -1,3 +1,4 @@
+import nat;
 import path_actions;
 import truncation;
 

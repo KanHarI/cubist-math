@@ -1,3 +1,4 @@
+import nat;
 import polynomial_eval_characterization;
 
 def polynomial_eval_horner(

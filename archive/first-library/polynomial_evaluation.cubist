@@ -1,3 +1,4 @@
+import nat;
 import polynomial_arithmetic;
 
 // Evaluate through a specified field embedding, so the same definition works

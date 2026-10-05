@@ -1,3 +1,4 @@
+import nat;
 import finite_remainders;
 
 def fin_omit(n : Nat) := induction n as k return (Fin(succ(k)) -> Fin(k) -> Fin(succ(k))) {

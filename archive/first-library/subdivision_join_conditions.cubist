@@ -1,3 +1,4 @@
+import nat;
 import subdivision_join;
 
 // The condition can depend on the actual fine subdivision, not just on

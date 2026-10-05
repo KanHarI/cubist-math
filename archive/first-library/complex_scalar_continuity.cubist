@@ -1,3 +1,4 @@
+import nat;
 import complex_uniform_operations;
 
 // Right multiplication is convenient for the product-box estimate. Complex

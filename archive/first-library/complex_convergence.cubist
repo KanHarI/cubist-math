@@ -1,3 +1,4 @@
+import nat;
 import complex_numbers;
 import complete_fields;
 

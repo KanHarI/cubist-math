@@ -1,3 +1,4 @@
+import nat;
 import subfields;
 import order_maps;
 import primes;

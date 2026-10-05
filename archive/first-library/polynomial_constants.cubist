@@ -1,3 +1,4 @@
+import nat;
 import polynomial_leading;
 
 def polynomial_constant_mul(K : AlgebraicField, a, b : af_carrier(K)) :

@@ -1,3 +1,4 @@
+import nat;
 import sample_sum_laws;
 
 // One finite subdivision with specified outer endpoints. This is sampling

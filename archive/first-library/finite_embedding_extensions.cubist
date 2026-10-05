@@ -1,3 +1,4 @@
+import nat;
 import finite_field_generators;
 
 // Algebraic extensions with n specified field generators admit extensions

@@ -1,3 +1,4 @@
+import nat;
 import radix_arithmetic;
 
 // The same radix arithmetic and factorial are checked at radix 2 and radix 10.

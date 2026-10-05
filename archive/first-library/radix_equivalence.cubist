@@ -1,3 +1,4 @@
+import nat;
 import radix_uniqueness;
 import equivalence_from_inverse;
 

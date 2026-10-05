@@ -1,3 +1,4 @@
+import nat;
 import polynomial_splitting;
 import simple_extension_embeddings;
 import finite_cardinalities;

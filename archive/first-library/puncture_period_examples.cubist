@@ -1,3 +1,4 @@
+import nat;
 import puncture_periods;
 import puncture_noncommutative;
 

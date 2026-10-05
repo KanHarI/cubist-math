@@ -1,3 +1,4 @@
+import nat;
 import finite_bases;
 
 // A finite linear combination has an explicit list of vectors and scalars.

@@ -1,3 +1,4 @@
+import nat;
 import field_affine;
 import interval_weights;
 import sample_relations;

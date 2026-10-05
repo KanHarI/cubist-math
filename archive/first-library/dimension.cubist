@@ -1,3 +1,4 @@
+import nat;
 import finite_dimension;
 
 // A dimension asserts existence of coordinates, without choosing coordinates.

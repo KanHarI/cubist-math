@@ -1,3 +1,4 @@
+import nat;
 import galois_fixing_subgroups;
 import intermediate_towers;
 import field_embedding_spaces;

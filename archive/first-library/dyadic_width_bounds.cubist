@@ -1,3 +1,4 @@
+import nat;
 import dyadic_sampling;
 
 // Scalar estimates for mesh decay; these use no Archimedean or completeness

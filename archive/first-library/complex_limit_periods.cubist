@@ -1,3 +1,4 @@
+import nat;
 import limit_periods;
 import complex_numbers;
 

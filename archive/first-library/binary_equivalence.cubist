@@ -1,3 +1,4 @@
+import nat;
 import binary_arithmetic;
 import binary_induction;
 import primes;

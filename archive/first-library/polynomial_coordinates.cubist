@@ -1,3 +1,4 @@
+import nat;
 import polynomial_arithmetic;
 import coordinate_splitting;
 

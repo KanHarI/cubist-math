@@ -1,3 +1,4 @@
+import nat;
 import finite_combinations;
 
 // A subspace is a proposition-valued subset containing zero and closed under

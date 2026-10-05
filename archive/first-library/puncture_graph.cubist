@@ -1,3 +1,4 @@
+import nat;
 import finite;
 import suspension;
 import path_actions;

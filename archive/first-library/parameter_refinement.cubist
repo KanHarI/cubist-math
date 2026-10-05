@@ -1,3 +1,4 @@
+import nat;
 import parameter_contours;
 import sample_refinement_tags;
 

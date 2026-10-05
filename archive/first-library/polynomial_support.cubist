@@ -1,3 +1,4 @@
+import nat;
 import formal_series;
 import dimension;
 

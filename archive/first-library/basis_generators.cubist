@@ -1,3 +1,4 @@
+import nat;
 import finite_family_images;
 import vector_subspaces;
 import root_generated_fields;

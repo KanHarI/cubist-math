@@ -1,3 +1,4 @@
+import nat;
 import sample_subdivisions;
 
 // A condition for each coarse tag together with its own finite subdivision.

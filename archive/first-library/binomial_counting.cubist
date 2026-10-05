@@ -1,3 +1,4 @@
+import nat;
 import binomial_pascal;
 import binomial;
 

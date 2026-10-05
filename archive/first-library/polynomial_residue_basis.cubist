@@ -1,3 +1,4 @@
+import nat;
 import polynomial_adjoin;
 import polynomial_coordinates;
 import linear_bijections;

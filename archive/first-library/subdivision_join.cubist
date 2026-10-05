@@ -1,3 +1,4 @@
+import nat;
 import subdivision_transport;
 
 // Join the per-edge refinements of two coarse sample lists. The endpoint of

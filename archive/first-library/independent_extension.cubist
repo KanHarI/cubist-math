@@ -1,3 +1,4 @@
+import nat;
 import span_exchange;
 import finite_omission;
 import independent_order;

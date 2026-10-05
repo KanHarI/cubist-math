@@ -1,3 +1,4 @@
+import nat;
 import basis_generators;
 import simple_algebraic_extensions;
 import algebraic_base_change;

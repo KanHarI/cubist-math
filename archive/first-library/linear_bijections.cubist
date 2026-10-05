@@ -1,3 +1,4 @@
+import nat;
 import dimension;
 import surjections;
 

@@ -1,3 +1,4 @@
+import nat;
 import linear_span;
 
 // Concatenate two explicitly indexed finite families. No comparison of their

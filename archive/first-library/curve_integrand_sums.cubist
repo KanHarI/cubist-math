@@ -1,3 +1,4 @@
+import nat;
 import curve_sample_sums;
 import contour_sums;
 

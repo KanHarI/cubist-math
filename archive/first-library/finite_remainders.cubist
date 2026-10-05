@@ -1,3 +1,4 @@
+import nat;
 import vector_arithmetic;
 import vector_subspaces;
 

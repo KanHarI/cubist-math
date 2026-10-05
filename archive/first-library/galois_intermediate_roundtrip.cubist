@@ -1,3 +1,4 @@
+import nat;
 import galois_normal_target;
 import finite_equal_dimension;
 import galois_orders;

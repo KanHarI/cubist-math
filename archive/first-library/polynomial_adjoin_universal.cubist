@@ -1,3 +1,4 @@
+import nat;
 import polynomial_root_embeddings;
 import polynomial_eval_embeddings;
 

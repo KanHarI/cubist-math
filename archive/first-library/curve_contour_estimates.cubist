@@ -1,3 +1,4 @@
+import nat;
 import parameter_contour_estimates;
 import parameter_increment_bounds;
 import complex_curve_variation;

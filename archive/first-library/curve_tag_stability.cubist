@@ -1,3 +1,4 @@
+import nat;
 import curve_contour_estimates;
 import uniform_curve_tags;
 

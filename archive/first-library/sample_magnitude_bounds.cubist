@@ -1,3 +1,4 @@
+import nat;
 import sample_magnitude;
 import sample_sum_laws;
 

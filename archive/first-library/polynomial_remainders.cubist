@@ -1,3 +1,4 @@
+import nat;
 import polynomial_irreducible;
 
 // A nonzero modulus with its degree certified once for all reductions.

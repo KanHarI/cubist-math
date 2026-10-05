@@ -1,3 +1,4 @@
+import nat;
 import affine_refinement;
 import interval_subdivisions;
 import complex_subdivision_estimates;

@@ -1,3 +1,4 @@
+import nat;
 import finite;
 
 // Multiplication and exponentiation are recurrences on ordinary Nat.

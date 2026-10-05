@@ -1,3 +1,4 @@
+import nat;
 import polynomial_splitting;
 import polynomial_irreducible_factors;
 

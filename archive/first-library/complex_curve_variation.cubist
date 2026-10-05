@@ -1,3 +1,4 @@
+import nat;
 import complex_curves;
 import affine_variation;
 

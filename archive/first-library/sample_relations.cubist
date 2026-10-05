@@ -1,3 +1,4 @@
+import nat;
 import sample_magnitude;
 
 // Adjacent vertices satisfy a relation; no condition is imposed on tags.

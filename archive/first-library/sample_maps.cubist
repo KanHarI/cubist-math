@@ -1,3 +1,4 @@
+import nat;
 import sample_chains;
 
 // Map both kinds of finite sampling data, preserving their lengths.

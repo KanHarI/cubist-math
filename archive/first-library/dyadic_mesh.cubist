@@ -1,3 +1,4 @@
+import nat;
 import dyadic_sampling;
 import sample_condition_maps;
 

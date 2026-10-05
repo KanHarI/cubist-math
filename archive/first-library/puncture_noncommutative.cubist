@@ -1,3 +1,4 @@
+import nat;
 import bouquet_actions;
 import puncture_winding;
 import finite_cancellation;

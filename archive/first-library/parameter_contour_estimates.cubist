@@ -1,3 +1,4 @@
+import nat;
 import parameter_contour_bounds;
 import complex_algebra;
 

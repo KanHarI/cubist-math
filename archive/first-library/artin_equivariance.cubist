@@ -1,3 +1,4 @@
+import nat;
 import artin_fixed_evaluation;
 
 // A field automorphism commutes with a finite sum. The proof is by finite

@@ -1,3 +1,4 @@
+import nat;
 import sample_relations;
 
 def SampleTagged(C : U1, condition : C -> C -> C -> U0, n : Nat) :=

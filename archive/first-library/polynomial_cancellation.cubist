@@ -1,3 +1,4 @@
+import nat;
 import polynomial_irreducible;
 
 def polynomial_cancel_nonzero(

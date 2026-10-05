@@ -1,3 +1,4 @@
+import nat;
 import coordinate_elimination;
 import primes;
 import finite_cancellation;

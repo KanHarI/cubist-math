@@ -1,3 +1,4 @@
+import nat;
 import curve_refinement_estimates;
 import dyadic_refinement_mesh;
 

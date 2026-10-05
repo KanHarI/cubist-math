@@ -1,3 +1,4 @@
+import nat;
 import contour_refinement;
 
 // Explicit two-edge sampling data, not a replacement for homotopy paths.

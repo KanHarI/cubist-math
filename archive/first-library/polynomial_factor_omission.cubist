@@ -1,3 +1,4 @@
+import nat;
 import separable_polynomials;
 import finite_omission;
 

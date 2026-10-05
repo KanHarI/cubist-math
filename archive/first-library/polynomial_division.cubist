@@ -1,3 +1,4 @@
+import nat;
 import polynomial_arithmetic;
 
 // The remainder bound is strict: coefficients at d and above vanish.

@@ -1,3 +1,4 @@
+import nat;
 import binomial_types;
 import equivalence_from_inverse;
 import finite_cardinalities;

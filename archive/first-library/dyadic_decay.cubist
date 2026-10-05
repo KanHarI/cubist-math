@@ -1,3 +1,4 @@
+import nat;
 import dyadic_width_bounds;
 import field_scale_limits;
 
