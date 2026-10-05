@@ -38,16 +38,19 @@ inferring a mathematical structure from an operand's type.
 
 Settled on 2026-10-05:
 
-1. **No name-based operators.** An operator means what the selected view
-   binds, and nothing else. Today `+`, `*`, `<` and `<=` fall back to
-   whatever `add`, `mul`, `isLt` and `le` are in scope; that fallback is
-   retired ([L2.10j](#l210j-retiring-name-based-operators)). Code that used
-   it selects the natural numbers' view with `using nat;`. Where that does
-   not fit, it is explicit: `nat.(a + b)`, or `add(a, b)`.
+1. **No name-based operators or numerals.** An operator or a literal means
+   what the selected view binds, and nothing else. Today `+`, `*`, `<` and
+   `<=` fall back to whatever `add`, `mul`, `isLt` and `le` are in scope,
+   and a numeral to whatever `Nat` is. Both fallbacks are retired
+   ([L2.10j](#l210j-retiring-name-based-operators)): an operator or literal
+   outside any view is an error. A file that uses natural numbers starts
+   with `using nat;`. Where that does not fit, it is explicit:
+   `nat.(a + b)`, or `add(a, b)`.
 2. **`~` reverses; `-` is arithmetic.** `~p` reverses a path and `~i` a
    coordinate, replacing `-p` and `-i`
    ([L2.10i](#l210i-the-reversal-token)). `-`, binary or unary, then means only
-   what a view binds.
+   what a view binds. The cubical operators `@`, `~`, `&` and `|` bind
+   tighter than any operator a view binds.
 3. **Notation is declared as it is used.** A rule's left side is written
    as the notation is used, and its right side is an ordinary term: a named
    view is `notation nat { x + y := add(x, y); … }`, and theories keep
@@ -66,6 +69,10 @@ Settled on 2026-10-05:
    is not zero. No field's view binds `/` between variables; a rational such
    as `1/2` is a literal
    ([L2.10k](#l210k-fields-with-a-partial-inverse)).
+6. **Sections and `open` select views.** A section's model parameter and an
+   `open` select their model's view, and the innermost selection wins. So
+   `using nat;` at the top of a file leaves its sections' operators to their
+   models.
 
 What remains undecided is listed under [Open questions](#open-questions).
 
@@ -213,9 +220,11 @@ a qualifier is not a cast.
 ### Imports and aliases
 
 Views are defined with their contents and exported as such. There is no
-global `(operator, type-head)` registration table in this release. Another
-module can define a new named view, but cannot add a binding to an existing
-one by importing an extension. Two independently named views may support
+global `(operator, type-head)` registration table in this release. The
+module that declares a model may add rules to that model's view (L2.10c);
+once the module is imported, the view is fixed. Another module can define a
+new named view, but cannot add a binding to an existing one by importing an
+extension. Two independently named views may support
 the same operators on the same carrier without conflict.
 
 Normal name resolution still applies to view selectors. Adding an
@@ -321,15 +330,18 @@ moves to `~` with L2.10i and keeps its groupings.
 
 Binary `-` shares addition's precedence and left associativity; `/` shares
 multiplication's. The new comparisons join the existing comparison level.
-With reversal on `~`, arithmetic unary `-` no longer needs to bind tighter
-than `@`. The proposed order, from loosest, is `+ -`, then `* /`, then
-unary `-`, then right-associative `^`, then `@`, as in Python's `-x**2`:
+The cubical operators `@`, `~`, `&` and `|` bind tighter than any operator
+a view binds, so a point on a path, or a coordinate expression, is always a
+single operand. Among the arithmetic operators the order, from loosest, is
+`+ -`, then `* /`, then unary `-`, then right-associative `^`, as in
+Python's `-x**2`:
 
 ```
 -x^2         means -(x^2)
 -x * y       means (-x) * y
 -p @ i       means -(p @ i), negating a point on a path
 p @ i^2      means (p @ i)^2
+x * p @ i    means x * (p @ i)
 ```
 
 Call and member syntax keep their tight binding. Parser and formatter tests
@@ -383,6 +395,36 @@ function:
   `T`, reads any numeric token from its characters.
 
 A view with neither rejects literals rather than inventing an element.
+
+### Which rule reads a literal
+
+A view reads each numeric token with exactly one rule:
+
+1. If the view has a `literal` rule, it reads every numeric token, plain
+   numerals included.
+2. Otherwise a plain numeral goes to the view's `numeral` rule, and any
+   other token is refused.
+3. Otherwise the view has no literals.
+
+One declaration cannot give both rules; a parser that should read plain
+numerals in a particular way does so itself. A model's view starts from its
+theory's rules, so `rationals` inherits `CommRing`'s `numeral` rule,
+`of_nat`. The module that declares a model may add rules to that model's
+view, before anything imports it; no other module can, so the view is fixed
+once exported:
+
+```
+// library/rationals.cubist, after the model's declaration
+notation rationals {
+  literal(s : Lexeme) := rational_literal(s);
+}
+```
+
+`rationals.(2)` and `rationals.(1/2)` are then read by `rational_literal`.
+The inherited `of_nat` still reads numerals in code over an arbitrary field,
+where the model is a parameter. Nothing forces the two to agree: the parser
+decides what `2` means in the concrete view, and a library may prove that it
+agrees with `of_nat`.
 
 ### The token
 
@@ -455,8 +497,9 @@ Expected types check the resulting term; they do not choose a different
 literal rule when two carriers happen to agree. An explicit `nat.(3)`
 always uses natural numerals, including inside another view.
 
-Outside the new syntax, legacy source keeps today's natural numerals and
-existing operator rules until L2.10j retires them. Within the explicit `nat`
+Until L2.10j, a numeral outside any view keeps today's reading as the
+`Nat` in scope; after it, a literal outside any view is an error. Within the
+explicit `nat`
 view, both operators and numerals are fixed by that view. It has no division
 binding and no lexeme rule, so `nat.(1/2)` is an error. There is no rule
 that defaults by examining all surrounding operators and no retry in
@@ -587,17 +630,20 @@ metadata to a theory must not silently activate arithmetic `-` or model
 numerals in old `open` blocks or sections. New view metadata is consumed
 only at explicit view sites during this transition.
 
-Within a new explicit view region, legacy `open` may still bind field names;
-its operator bindings do not replace the selected view. A different
-arithmetic interpretation requires an explicit nested view. Entering a view
-does not itself open names. These interactions need fixtures covering both
-directions of nesting.
+A section's model parameter and an `open` select their model's view, and
+the innermost selection wins. Inside `using nat;`, a section over a group
+reads `*` as the group's, and a nested `nat.(…)` reads it as the naturals'
+again. Entering a view does not itself open names. Before L2.10j, outside
+any explicit region, a section or `open` keeps its released behavior,
+falling back by name for an operator it does not bind; inside a region,
+every selected view is complete. These interactions need fixtures covering
+both directions of nesting.
 
 The view slices force no migration: the archive and other released sources
 keep checking unchanged. Retiring the name-based fallback is decided, and is
 its own slice, L2.10j, with its own migration; it is not hidden in the view
-slices. Retiring `open`'s and sections' operator binding is not decided. New
-examples should teach explicit views.
+slices. Sections and `open` keep binding operators, as view selections.
+New examples should teach explicit views.
 
 This extends the [core theories](core-theories.md) principle that scope
 chooses operations. It also agrees with the explicit structure selection
@@ -640,11 +686,12 @@ turn `-` into `~` only for revisions before the swap, because arithmetic
 
 Today `x + y` means `add(x, y)` for whatever `add` is in scope, and `*`,
 `<` and `<=` likewise mean `mul`, `isLt` (or `succ(x) <= y` through `le`)
-and `le` ([`web/translator/translate.mjs`](../../web/translator/translate.mjs)).
+and `le`; a numeral is built from whatever `Nat` is in scope
+([`web/translator/translate.mjs`](../../web/translator/translate.mjs)).
 Naming a function `add` changes what `+` means without declaring any
-notation. After this slice an operator means only what the selected view,
-an `open` or a section binds. Anywhere else it is an error that suggests
-`using nat;`.
+notation. After this slice an operator or a literal means only what the
+selected view, an `open` or a section binds. Anywhere else it is an error
+that suggests `using nat;`.
 
 Once the `nat` view exists (L2.10a–c), the slice lands in two commits, as
 L2.10i does:
@@ -659,9 +706,36 @@ The three test modules that declare their own `add`
 ([`patterns`](../../cubist-tests/patterns.cubist),
 [`declared_match`](../../cubist-tests/declared_match.cubist) and
 [`declared_match_operator_call`](../../cubist-tests/declared_match_operator_call.cubist))
-move to explicit calls or a view of their own. How a section or `open`
-inside a `using nat;` region binds operators must be settled first
-([open question 2](#open-questions)).
+move to explicit calls or a view of their own. A section or `open` inside
+the `using nat;` region selects its own model's view, innermost first, so
+the sections of [`library/algebra.cubist`](../../library/algebra.cubist)
+keep their operators.
+
+Binary literals need the same treatment. `0b110` is a `BinaryNat` today,
+built from whatever `binary_zero`, `binary_one`, `binary_bit0`,
+`binary_bit1` and `binary_positive` are in scope
+([`web/cubist/binary-literals.mjs`](../../web/cubist/binary-literals.mjs)),
+the same name-based reading. There are 117 such literals in 9 files: three
+test modules and six archive modules. The `nat` view has no `literal` rule,
+so `using nat;` alone would refuse them, and after this slice a literal
+outside any view is an error. So the module that declares `BinaryNat`,
+[`archive/first-library/binary_naturals.cubist`](../../archive/first-library/binary_naturals.cubist),
+declares a `binary` view whose `literal` rule reads `0b` tokens into the
+same constructors. A module that mixes the two selects one and qualifies
+the other, as in
+[`cubist-tests/computability_evaluation.cubist`](../../cubist-tests/computability_evaluation.cubist):
+
+```
+using nat;
+
+evaluate 2 + 2 expecting 4;
+evaluate binary_mul(binary.(0b1101), binary.(0b1011)) expecting binary.(0b10001111);
+```
+
+A binary literal's parse computes to today's expansion, so the migration
+checks that each elaborates to a definitionally equal term rather than an
+identical one. The printer qualifies a binary value wherever the
+surrounding view is not `binary`.
 
 ## L2.10k. Fields with a partial inverse
 
@@ -715,14 +789,16 @@ change implements or passes them.
 | Inherited recipes | An inherited, renamed operation rebinds its current-view role to the child's selected view while preserving an explicitly named `nat` role's declaration identity. |
 | Comparison and equality | A comparison's proposition result does not select a view. `x > y` elaborates as `y < x`, and a view that declares `>` is refused. A carrier annotation checks endpoints without changing their views; mismatched carriers fail. |
 | Ordinary function argument | In a rational view, a function requiring a natural numeral accepts `f(nat.(3))`; an unqualified rational numeral is not silently converted. |
+| Literal precedence | A fixture model inherits a `numeral` rule and adds a `literal` rule that read `2` as different values. `m.(2)` is the `literal` rule's value; a section over the theory reads `2` with the inherited rule. One declaration giving both rules is refused, and a module other than the model's cannot add a rule to its view. |
 | Literal and qualifier refusals | A view without literal rules rejects literals. A lexeme parser's error refuses the literal at its position, as for `rationals.(1/0)`. A nested qualifier overrides an operand recipe, but a resulting argument of the wrong type is rejected. |
 | Lexemes | Tokens split as L2.10c's table says: `2.3+5i` is three tokens, `p.2.1` still projects, and `0` and `1` in a coordinate position keep their meaning. A literal read from a lexeme prints as that lexeme. |
 | Closed goals and printing | Closed integer and rational numeral equations round-trip with their selected views. Test both standalone output and output inside a displayed view context. |
 | Model identity in printing | Terms using different operations on the same carrier remain distinct after print/re-elaborate; shadowed view names are qualified. |
 | Natural data in printer fallbacks | An ordinary call containing natural numeral data round-trips inside a different numeral view even when that view's carrier equals `Nat`; print `f(nat.(3))` when required. |
-| Reversal | After L2.10i, `~p @ i` and `p @ ~i & j` group as `-p @ i` and `p @ -i & j` did, and check to the same terms. `-x^2`, `-x * y`, `-p @ i` and `p @ i^2` follow the arithmetic order of L2.10b; `-p` on a path is an error, not reversal. |
-| Scope compatibility | Existing `open`/section fixtures keep their meanings, and new view/legacy-open nesting follows the explicit-region rule. |
-| No name-based operators | After L2.10j, `x + y` outside any view, `open` or section is an error that suggests `using nat;`, even where a function named `add` is in scope. |
+| Reversal | After L2.10i, `~p @ i` and `p @ ~i & j` group as `-p @ i` and `p @ -i & j` did, and check to the same terms. `-x^2`, `-x * y`, `-p @ i`, `p @ i^2` and `x * p @ i` follow L2.10b's order, with the cubical operators tightest; `-p` on a path is an error, not reversal. |
+| Scope compatibility | Existing `open`/section fixtures keep their meanings. Inside `using nat;`, a section over a group reads `*` as the group's, and a nested `nat.(…)` reads it as the naturals' again. |
+| No name-based operators | After L2.10j, `x + y` or `3` outside any view, `open` or section is an error that suggests `using nat;`, even where a function named `add` or a type named `Nat` is in scope. |
+| Mixed decimal and binary literals | Under `using nat;`, `binary.(0b1101)` is the `BinaryNat` today's `0b1101` is, definitionally; a bare `0b1101` there is refused; a printed binary value is qualified outside the `binary` view. |
 | Partial inverse | A field's `inv` requires evidence that its argument is not zero; `Field.Hom` is generated as before; the rationals' literals need no evidence. |
 
 ## Deferred work
@@ -798,19 +874,8 @@ gate and remains optional. Explicit views are always available.
 
 ## Open questions
 
-1. **Numerals outside any view.** A numeral outside any view reads as
-   whatever `Nat` is in scope, as `+` reads as whatever `add` is. Should
-   that reading retire with the operator fallback in L2.10j? Recommended:
-   yes. `using nat;` covers both.
-2. **Sections and `open` inside a view region.** A legacy `open` inside a
-   view region binds names, not operators. With `using nat;` at the top of
-   `library/algebra.cubist`, its sections' `*` would then be the naturals'.
-   Recommended: a section's model parameter and an `open` select their
-   model's view, innermost first, so that L2.10j's migration leaves
-   sections as they are. This must be settled before L2.10j.
-3. **Notation rules.** L2.10h is proposed, not decided.
-4. **The arithmetic order.** L2.10b proposes unary `-` between `*` and `^`,
-   and `^` looser than `@`.
+1. **Notation rules.** L2.10h is proposed, not decided. Nothing in
+   L2.10a–e or L2.10i–k depends on it.
 
 ## Roadmap and implementation gates
 
@@ -825,15 +890,15 @@ gate and remains optional. Explicit views are always available.
 | L2.10g | Explicit decidability and a checked, bounded `decide` proof statement | Separate proof-statement contract; not required by L2.10a–e |
 | L2.10h | Notation rules: patterns with typed, repeated and binding holes, and side conditions. Proposed, not decided | Separate grammar and tooling contract; L2.10a–d |
 | L2.10i | `~` for path and coordinate reversal, migrated while `-` still parses, then `-` retired as reversal | None: first |
-| L2.10j | Retiring the name-based operator fallback: a `using nat;` migration, then removal | L2.10a–c; open question 2 |
+| L2.10j | Retiring the name-based operator and numeral fallbacks: a `using nat;` migration, a `binary` view for binary literals, then removal | L2.10a–c |
 | L2.10k | `Field` with invertibility as a law and a derived partial `inv`; the rationals' model | L2.4; independent of views |
 
 The explicit-view direction is chosen. Before implementation, settle and
 review these concrete contracts without reopening it by default:
 
-1. The grammar's remaining details: nested qualifiers, member selectors,
-   and the arithmetic order proposed in L2.10b. The forms of `v.(e)`,
-   `using v;`, `notation v { … }` and operand views in patterns are decided.
+1. The grammar's remaining details: nested qualifiers and member
+   selectors. The forms of `v.(e)`, `using v;`, `notation v { … }`, operand
+   views in patterns and the operator order are decided.
 2. The representation of model-specific view metadata, inherited recipes,
    derived definitions and literal rules; no recovery by carrier equality
    and no change to old `open`/section behavior before L2.10j.

@@ -343,7 +343,7 @@ has an explicit spelling.
 | L2.8 | Squares and `cell` face syntax with boundary inspection (HoTT E2) | L2.1; face/source metadata from L1.2r | M |
 | L2.9a | Expected-value patterns for `evaluate` | L0.1; own pattern contract and L4.1a infrastructure | S |
 | L2.9b | Closed truncation witness readout: a closed computable input, a checked error certificate, and the extracted witness's type specified under transported truncations, which its tests include. Native truncation alone supplies no approximation result | Native H1 `Trunc`, K2.5, L0.1 | M |
-| L2.10 | Explicit notation views and literals: select a view before elaborating an operator, use declared operand views for literals and subexpressions, and preserve that meaning when printing. `v.(e)` and `using v;` extend explicit structure scope; existing `open` and section semantics remain compatible during migration. **Direction adopted** in the [notation roadmap](notation.md), with **decisions** recorded on 2026-10-05: no name-based operators (L2.10j), `~` for path and coordinate reversal so that `-` is arithmetic (L2.10i), notation declared as it is used, literals read by the library's total parsers from their `Lexeme` and checked by evaluation (L2.10c), and a partial field inverse (L2.10k). Implementation has not started. L2.10i comes first; L2.10a–e are the primary slices, beginning with small library pilots; type-based automation needs separate evidence later. L2.10f (large numerals), L2.10g (independent `decide`) and L2.10h (notation rules, proposed) stay deferred | L2.4 | L |
+| L2.10 | Explicit notation views and literals: select a view before elaborating an operator, use declared operand views for literals and subexpressions, and preserve that meaning when printing. `v.(e)` and `using v;` extend explicit structure scope; existing `open` and section semantics remain compatible during migration. **Direction adopted** in the [notation roadmap](notation.md), with **decisions** recorded on 2026-10-05: no name-based operators or numerals, so that an operator or literal outside any view is an error (L2.10j); `~` for path and coordinate reversal so that `-` is arithmetic, with `@`, `~`, `&` and `|` binding tighter than any view's operator (L2.10i); notation declared as it is used; sections and `open` selecting their model's view, innermost first; literals read by the library's total parsers from their `Lexeme` and checked by evaluation (L2.10c); and a partial field inverse (L2.10k). Implementation has not started. L2.10i comes first; L2.10a–e are the primary slices, beginning with small library pilots; type-based automation needs separate evidence later. L2.10f (large numerals), L2.10g (independent `decide`) and L2.10h (notation rules, proposed) stay deferred | L2.4 | L |
 | D2.1 | Checked reference, formatter and inspection for each released construct | Corresponding package, including L2.8/L2.9 | L |
 
 L2.2 means both slices when another package needs automatic clauses.
@@ -664,11 +664,11 @@ of explicit matching with the `cases` migration (L2.2a, 2026-10-04).
    for the [roadmap](notation.md)'s L2.10a–e contracts, including two models
    on one carrier, heterogeneous operations, literals read from their
    `Lexeme` and faithful printing. The decisions are recorded; settle the
-   remaining grammar and elaboration gates, and the roadmap's open
-   questions, before implementing them. Illustrative statements are
+   remaining grammar and elaboration gates before implementing them. The one
+   open question, L2.10h's notation rules, blocks none of these slices. Illustrative statements are
    `integers.(x + y = y + x)` and `rationals.(1/2 + 1/3 = 5/6)`, where `1/2`
    is one literal. Preserve existing `open`/section behavior until L2.10j
-   retires the name-based operators. L2.10f's large numerals, L2.10g's
+   retires the name-based operators and numerals. L2.10f's large numerals, L2.10g's
    independent `decide`, and L2.10h's notation rules remain deferred.
 6. **Independent language work.** L2.5b's remainder; the universal-property
    contract before L2.6 and L2.3's `universal` slice; L1.3's worker
