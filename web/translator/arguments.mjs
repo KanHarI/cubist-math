@@ -418,18 +418,32 @@ class ArgumentSolver {
       const outcome = this.parts(left, right, origin, polarity, bound, at);
       if (outcome !== "clash" || normal) return outcome;
     }
-    // One definition applied on both sides, as T.Hom(A, B), when nothing
-    // else made progress (approximate): first its arguments, as they stand.
-    // Unless they agree, nothing they solved is kept, and the definition's
-    // unfolding is compared instead.
-    if (!normal && this.approximating && sameDefinitionHead(left, right)) {
-      const saved = this.snapshot(), outcome = this.parts(left, right, origin, "invariant", bound, at);
-      if (outcome === "done") return outcome;
-      this.restore(saved);
+    // One definition applied on both sides, as T.Hom(A, B) or Tagged(U, A).
+    if (!normal && sameDefinitionHead(left, right)) {
+      // When nothing else made progress (approximate): its arguments, as
+      // they stand. Unless they agree, nothing they solved is kept, and the
+      // unfoldings are compared instead.
+      if (this.approximating) {
+        const saved = this.snapshot(), outcome = this.parts(left, right, origin, "invariant", bound, at);
+        if (outcome === "done") return outcome;
+        this.restore(saved);
+      } else {
+        // Otherwise the unfoldings first. Where they agree with a hole in
+        // the arguments still open, as Tagged(U, A) := Nat leaves A, the
+        // constraint waits: for other constraints to solve the hole, or for
+        // approximate() to read it off the arguments.
+        const outcome = this.unfolded(left, right, origin, polarity, bound, at);
+        const open = [...this.unknowns(this.zonk(left)), ...this.unknowns(this.zonk(right))]
+          .some(name => this.byVariable.get(name).kind !== "argument");
+        return outcome === "done" && open ? "stuck" : outcome;
+      }
     }
     // Different type formers never agree; other heads may, by eta.
     if (normal) return left.tag !== right.tag && CANONICAL.has(left.tag) && CANONICAL.has(right.tag) ? "clash" : "stuck";
-    // A definition, a redex or a projection: compare head normal forms.
+    return this.unfolded(left, right, origin, polarity, bound, at);
+  }
+  // A definition, a redex or a projection: their head normal forms compared.
+  unfolded(left, right, origin, polarity, bound, at) {
     let leftHead, rightHead;
     try { leftHead = at.nf(left); rightHead = at.nf(right); }
     catch (error) {
