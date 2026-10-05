@@ -38,7 +38,7 @@ theory Ring extends additive : Group(one := zero) {
 }
 
 section (n : Nat) {
-  def f(section : Nat, open : Nat) : Nat {
+  def f(section : Nat) : Nat {
     open G;
     exact zero;
   }
@@ -54,10 +54,10 @@ def g(sort : Nat) := succ(zero);`;
   // Inside a theory, and in a parent's renaming, zero is a field.
   assert.equal(style("zero"), "");
   assert.equal(style("zero", 1), "");
-  // Elsewhere, the words are names: a parameter named section, open or sort.
+  // Elsewhere, the words are names: a parameter named section or sort. open
+  // is reserved, a keyword everywhere.
   assert.equal(style("section", 1), "");
-  assert.equal(style("open"), "");
-  assert.equal(style("open", 1), "keyword");
+  assert.equal(style("open"), "keyword");
   assert.equal(style("sort", 1), "");
   // Outside a theory, zero and succ are Nat's constructors, unless they link
   // to a definition, as a ring's zero after open does.
@@ -65,4 +65,49 @@ def g(sort : Nat) := succ(zero);`;
   assert.equal(style("succ"), "keyword");
   assert.equal(tokenStyle("zero", null, linkedWord("zero", { role: "definition" })), "");
   assert.equal(tokenStyle("zero", null, linkedWord("zero", { role: "local" })), "keyword");
+});
+
+test("a theory's words keep their roles past comments and nested braces, and are names where the parser reads names", () => {
+  const source = `import nat;
+import hlevels;
+theory Ring {
+  // Carrier
+  sort R : set;
+  zero : R;
+  // Identity }
+  law identity(x : R) : x = x;
+  law trivial : (match 0 return R { zero => zero; succ(k) => zero; }) = zero;
+  add(x, y : R) : R notation x + y;
+  law sum(notation : R) : notation + zero = notation + zero;
+}
+theory T { sort M : set; law : M; sort : M; notation : M; }
+def f(A : Ring.Model(U0)) : A.R {
+  // Select model
+  open A;
+  exact zero;
+}`;
+  // The word's nth occurrence as a whole word, outside comments.
+  const code = source.replace(/\/\/.*/g, line => " ".repeat(line.length));
+  const style = (word, nth = 0) => {
+    const at = [...code.matchAll(new RegExp(`\\b${word}\\b`, "g"))][nth].index;
+    return tokenStyle(word, null, keywordAt(source, at, word));
+  };
+  // A comment before a field or a statement, and a brace in one, change nothing.
+  assert.equal(style("sort"), "keyword");
+  assert.equal(style("set"), "keyword");
+  assert.equal(style("law"), "keyword");
+  assert.equal(style("open"), "keyword");
+  // A match's braces in a law are not the theory's: the fields after it are
+  // still fields, zero among them.
+  assert.equal(style("law", 2), "keyword");
+  for (let nth = 0; nth < 7; nth++) assert.equal(style("zero", nth), "", `zero ${nth}`);
+  assert.equal(style("notation"), "keyword");
+  // A field or a parameter named law, sort or notation is a name.
+  for (let nth = 1; nth < 5; nth++) assert.equal(style("notation", nth), "", `notation ${nth}`);
+  assert.equal(style("law", 3), "");
+  assert.equal(style("sort", 2), "");
+  assert.equal(style("set", 1), "keyword");
+  // After the theories, zero is Nat's constructor, unless it links to a
+  // definition, as the ring's zero after open A does.
+  assert.equal(style("zero", 7), "keyword");
 });
