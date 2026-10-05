@@ -190,6 +190,8 @@
             <div class="table-scroll"><table>
               <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
+                <tr id="E561"><td class="code"><code>E561</code></td><td data-message="The match has no case for">“The match has no case for <var>c</var>(…) in <var>value</var>.”</td><td>No clause fits that constructor of the value, here or nested inside another pattern. Add a clause for it, or a variable or <code>_</code> that covers it.</td><td><a href="induction.html#patterns">patterns</a></td></tr>
+                <tr id="E559"><td class="code"><code>E559</code></td><td data-message="This clause is never reached">“This clause is never reached: the clauses before it take every case it would.”</td><td>Clauses are tried in order, and earlier ones, a variable or <code>_</code> among them, already take every case this one fits. Move it before them, or remove it.</td><td><a href="induction.html#patterns">patterns</a></td></tr>
                 <tr id="E519"><td class="code"><code>E519</code></td><td data-message="needs an expected type, to know which">“<var>nil</var> needs an expected type, to know which <var>List(…)</var> it builds: write typed(<var>List(…)</var>, <var>nil</var>).”</td><td>A constructor of a parameterized type takes only its declared arguments, so the type’s arguments come from context. Give a result type, or use <code>typed</code>.</td><td><a href="induction.html#inductive-parameters">parameters</a></td></tr>
                 <tr id="E528"><td class="code"><code>E528</code></td><td data-message="Nat has no constructor left: its constructors are zero, succ.">“<var>Nat</var> has no constructor <var>left</var>: its constructors are <var>zero, succ</var>.”</td><td>A <code>match</code> clause names a constructor that the matched type does not have, such as a sum’s <code>left</code> on <code>Nat</code>. Use the listed constructors.</td><td><a href="terms.html#match">match</a></td></tr>
                 <tr id="E557"><td class="code"><code>E557</code></td><td data-message="then its induction hypothesis if you name them">“<var>c</var> takes <var>n</var> arguments here, then its induction hypothesis if you name them: …”</td><td>An induction clause names the constructor’s arguments, then optionally one hypothesis per recursive argument; it gave another number of names.</td><td><a href="induction.html#induction">induction</a></td></tr>
@@ -350,7 +352,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E143"><td><code>E143</code></td><td>rw occurrence must be a positive integer.</td></tr>
                 <tr><td><a href="#E144"><code>E144</code></a></td><td>simp only requires an explicit rule list.</td></tr>
                 <tr><td><a href="#E145"><code>E145</code></a></td><td>simp only cannot exclude rules.</td></tr>
-                <tr id="E146"><td><code>E146</code></td><td>The … statement takes apart one value; … the first, then the next inside each clause.</td></tr>
+                <tr id="E146"><td><code>E146</code></td><td>The … statement takes apart one value; … the first, then the next inside each clause. (retired)</td></tr>
                 <tr id="E147"><td><code>E147</code></td><td>The … statement takes its motive from the goal: write … v { c(xs) =&gt; { … } … } without as or return.</td></tr>
                 <tr id="E148"><td><code>E148</code></td><td>A clause of the … statement is a proof block: c(xs) =&gt; { … }.</td></tr>
                 <tr><td><a href="#E149"><code>E149</code></a></td><td>simp_rule priority must be an integer from 0 to 1000.</td></tr>
@@ -364,6 +366,8 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E157"><td><code>E157</code></td><td>Expected '}' to close the induction.</td></tr>
                 <tr id="E158"><td><code>E158</code></td><td>Expected '}' to close the ….</td></tr>
                 <tr id="E159"><td><code>E159</code></td><td>print shows evaluate(term), typeof(term) or inspect(term).</td></tr>
+                <tr id="E162"><td><code>E162</code></td><td>A match on several values takes its motive from return T or the type expected of it, without as.</td></tr>
+                <tr id="E163"><td><code>E163</code></td><td>The induction statement takes apart one value; take the first, then the next inside each clause.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -653,6 +657,12 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E555"><td><code>E555</code></td><td>… is an element of the matched type, not a path: call …(…) without @.</td></tr>
                 <tr id="E556"><td><code>E556</code></td><td>Internal elaboration error: the recursive result of … takes fewer hypotheses.</td></tr>
                 <tr><td><a href="#E557"><code>E557</code></a></td><td>… takes … argument… here, then … if you name them: …(…) with … or … names.</td></tr>
+                <tr id="E558"><td><code>E558</code></td><td>This clause has … pattern…; the match takes apart … value….</td></tr>
+                <tr><td><a href="#E559"><code>E559</code></a></td><td>This clause is never reached: the clauses before it take every case it would.</td></tr>
+                <tr id="E560"><td><code>E560</code></td><td>… is not of a declared type: its patterns are variables or _.</td></tr>
+                <tr><td><a href="#E561"><code>E561</code></a></td><td>The match has no case for …… in ….</td></tr>
+                <tr id="E562"><td><code>E562</code></td><td>… is a path constructor: name its … dimension… after its arguments.</td></tr>
+                <tr id="E570"><td><code>E570</code></td><td>… is bound twice in this clause: name each variable once.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e6">Checking</h3>

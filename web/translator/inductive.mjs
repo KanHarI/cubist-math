@@ -155,7 +155,7 @@ export function lowerInductive(translator, d, scope) {
       where = where.bind(a.name, a.type);
     }
     const name = inner.fresh(c.name.text), order = kernelOrder.map(a => args.indexOf(a));
-    constructors.push({ source: c.name.text, name, type, order, arity: args.length, dims });
+    constructors.push({ source: c.name.text, name, type, order, arity: args.length, dims, fields: args.map(a => a.source) });
     inner = inner.bind(name, type).alias(c.name.text,
       { tag: "InductiveConstructor", source: c.name.text, head: T.variable(name), order, arity: args.length, dims });
   }
@@ -188,7 +188,7 @@ export function lowerInductive(translator, d, scope) {
   const inductive = { tag: "Inductive", source: d.name.text, binding, record, slots,
     levels: levels.map((l, j) => ({ name: l.name, recorded: recorded[j] })), parameters,
     // Each user constructor's argument order, arity and dimensions, for match.
-    constructors: constructors.map(c => ({ source: c.source, order: c.order, arity: c.arity, dims: c.dims })) };
+    constructors: constructors.map(c => ({ source: c.source, order: c.order, arity: c.arity, dims: c.dims, fields: c.fields })) };
   // Registered by signature, for a match whose type's name is shadowed.
   checker.inductives?.set(binding, inductive);
   // A truncated sort's generated constructor is T.squash (section 9): its

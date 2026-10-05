@@ -2039,6 +2039,10 @@
    "summary": "Path and coordinate operators, for `tests/path-operators.test.mjs`: -p, p ++ q, -i, & and"
   },
   {
+   "path": "cubist-tests/patterns.cubist",
+   "summary": "Patterns (L2.2a): a match on several values, nested patterns, variables and `_` in a constructor's place, a constructor without arguments inside a pattern, recursion on the first value, the statement form on two values, `_` over a path constructor, an expected type that mentions the value, and the refusals: a missing case, a clause never reached, a clause with too few patterns, and a constructor matched against a value of no declared type."
+  },
+  {
    "path": "cubist-tests/polynomial_algebra_adjoined_root_regression.cubist",
    "summary": "Adjoined roots and embeddings into a root field are constructed, not assumed."
   },

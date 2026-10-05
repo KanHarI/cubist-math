@@ -158,7 +158,7 @@ def unknown(n : N) : N := match n {
   };
 
 // Refused: two clauses for zero.
-// Error: E529: zero has two clauses.
+// Error: E559: This clause is never reached: the clauses before it take every case it would.
 def twice(n : N) : N := match n {
     zero => zero;
     zero => zero;
@@ -390,8 +390,8 @@ def kept : keep(squash) = squash {
   rfl;
 }
 
-// Refused: squash here is the user's constructor, so it has two clauses.
-// Error: E529: squash has two clauses.
+// Refused: squash here is the user's constructor, which takes no arguments.
+// Error: E538: squash takes 0 arguments here: squash(…) with 0 names.
 def ambiguous(s : Q) : Q := match s {
     squash => squash;
     squash(x, y) @ i => Q.squash(x, y) @ i;
@@ -946,9 +946,9 @@ def seven : total(succ(succ(zero)), (succ(zero), succ(succ(zero)), tt)) = succ(s
   rfl;
 }
 
-// Refused: with no recursive call, the match is as written, and its motive does not
-// refine r: in the succ clause r is still a Rep(n).
-// Error: E349: Projection .1 requires a dependent pair; found a value of type Rep(n).
+// With no recursive call, the match as written fails, since its motive does not
+// refine r; elaborated again with its motive over r, the succ clause has r at
+// Rep(succ(m)).
 def first(n : N, r : Rep(n)) : N := match n {
     zero => zero;
     succ(m) => r.1;

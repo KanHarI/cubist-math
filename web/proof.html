@@ -570,7 +570,7 @@ def numbers : List(U0, Nat) := cons(2, cons(3, nil));</code></pre>
         </div>
         <div class="quick-entry" id="quick-recursion">
           <h4><code>match</code> and structural recursion</h4>
-          <p><code>match n { zero =&gt; …; succ(k) =&gt; …; }</code> gives one branch per constructor. A definition whose body is the match can call itself on a child such as <code>k</code>. In a proof block, <code>match n { zero =&gt; { … } succ(k) =&gt; { … } }</code> proves the goal for each constructor.
+          <p><code>match n { zero =&gt; …; succ(k) =&gt; …; }</code> gives one branch per constructor. A definition whose body is the match can call itself on a child such as <code>k</code>. In a proof block, <code>match n { zero =&gt; { … } succ(k) =&gt; { … } }</code> proves the goal for each constructor. A match can take apart several values, <code>match m, n { … }</code>, with nested patterns, variables and <code>_</code>; the first clause that fits a case takes it.
             <a href="reference/induction.html#recursion">Natural numbers and inductive types →</a></p>
           <pre><code data-check="accept">def double(n : Nat) : Nat := match n {
   zero =&gt; 0;

@@ -1,0 +1,171 @@
+// Patterns (work-plan L2.2a): a match on several values, nested patterns, a
+// variable or _ in a constructor's place, and the expression form's motive
+// from the motive service. Clauses are tried in order, the first that fits
+// taking a case; a missing case and a clause never reached are refused.
+import lists;
+
+// Two values, with _ for either.
+def shorter(xs, ys : List(U0, Nat)) : Nat := match xs, ys {
+    nil, _ => 0;
+    _, nil => 1;
+    cons(x, rest), cons(y, more) => 2;
+  };
+
+// Output: 0
+print(evaluate(shorter(nil, cons(1, nil))));
+// Output: 1
+print(evaluate(shorter(cons(1, nil), nil)));
+// Output: 2
+print(evaluate(shorter(cons(1, nil), cons(2, nil))));
+
+// A nested pattern, and a variable that takes the rest.
+def second(xs : List(U0, Nat)) : Nat := match xs {
+    cons(x, cons(y, rest)) => y;
+    other => 0;
+  };
+
+// Output: 7
+print(evaluate(second(cons(1, cons(7, nil)))));
+// Output: 0
+print(evaluate(second(cons(1, nil))));
+
+// A constructor without arguments inside a pattern is that constructor.
+def single(xs : List(U0, Nat)) : Nat := match xs {
+    cons(x, nil) => 1;
+    _ => 0;
+  };
+
+// Output: 1
+print(evaluate(single(cons(5, nil))));
+// Output: 0
+print(evaluate(single(cons(5, cons(6, nil)))));
+
+// Recursion on the first value, the second named by a variable.
+def add(m, n : Nat) : Nat := match m, n {
+    zero, k => k;
+    succ(p), k => succ(add(p, k));
+  };
+
+// Output: 5
+print(evaluate(add(2, 3)));
+
+// The statement form, on two values.
+def first_or_zero(xs, ys : List(U0, Nat)) : Nat {
+  match xs, ys {
+    cons(x, rest), _ => {
+      exact x;
+    }
+    nil, cons(y, more) => {
+      exact y;
+    }
+    nil, nil => {
+      exact 0;
+    }
+  }
+}
+
+// Output: 8
+print(evaluate(first_or_zero(nil, cons(8, nil))));
+
+// _ covers a path constructor too: on the circle, a constant.
+inductive S1 {
+  base;
+  loop : base = base;
+}
+
+def constant(c : S1) : Unit := match c {
+    _ => tt;
+  };
+
+// An expected type that mentions the value: each clause at its constructor,
+// with a hypothesis about it again.
+def Choice(n : Nat) : U0 := match n {
+    zero => Unit;
+    succ(m) => Nat;
+  };
+
+def pick(n : Nat) : Choice(n) := match n {
+    zero => tt;
+    succ(m) => m;
+  };
+
+// Output: 2
+print(evaluate(pick(3)));
+
+def kept(n : Nat, h : Choice(n)) : Choice(n) := match n {
+    zero => h;
+    succ(m) => h;
+  };
+
+// A name a clause binds never captures a value the match takes apart: the
+// second value is still the parameter y.
+def shadowing(x, y : Nat) : Nat := match x, y {
+    zero, _ => 0;
+    succ(y), zero => 1;
+    succ(y), succ(z) => 2;
+  };
+
+// Output: 2
+print(evaluate(shadowing(1, 1)));
+// Output: 1
+print(evaluate(shadowing(2, 0)));
+
+// A bare name is a constructor where its type has one by that name, even
+// where a variable shadows it: both zeros here are Nat's.
+def both_zero(zero, x, y : Nat) : Nat := match x, y {
+    zero, zero => 1;
+    _, _ => 0;
+  };
+
+// Output: 1
+print(evaluate(both_zero(9, 0, 0)));
+
+// So succ(zero) leaves succ(succ(…)) without a case.
+// Error: E561: The match has no case for succ(…) in the n of n.
+def shadowed_inside(zero, n : Nat) : Nat := match n {
+    zero => 0;
+    succ(zero) => 1;
+  };
+
+// A nested pattern keeps the motive's name.
+def identity_path(n : Nat) : n = n := match n as z return z = z {
+    zero => refl(0);
+    succ(succ(p)) => refl(succ(succ(p)));
+    succ(zero) => refl(1);
+  };
+
+// A return type is checked where no clause takes the value apart too.
+// Error: E606: Type mismatch: found Nat, expected Unit.
+def unchecked(n : Nat) := match n return Unit {
+    _ => n;
+  };
+
+// Error: E570: y is bound twice in this clause: name each variable once.
+def twice(xs : List(U0, Nat)) : Nat := match xs {
+    cons(y, cons(y, rest)) => y;
+    _ => 0;
+  };
+
+// Error: E561: The match has no case for cons(…) in the tail of xs.
+def missing(xs : List(U0, Nat)) : Nat := match xs {
+    cons(x, nil) => 1;
+    nil => 0;
+  };
+
+// Error: E559: This clause is never reached: the clauses before it take every case it would.
+def never_reached(n : Nat) : Nat := match n {
+    m => 0;
+    zero => 1;
+  };
+
+// Error: E558: This clause has 1 pattern; the match takes apart 2 values.
+def too_few(xs, ys : List(U0, Nat)) : Nat := match xs, ys {
+    nil => 0;
+    _, _ => 1;
+  };
+
+// Error: E560: f is not of a declared type: its patterns are variables or _.
+def not_declared(f : Nat -> Nat) : Nat := match f, f {
+    g, zero => 0;
+    _, _ => 1;
+  };

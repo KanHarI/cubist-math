@@ -325,7 +325,8 @@ export function parse(source, typeOnly = false) {
   // constructor, its arguments in parentheses, then its dimensions. The
   // legacy match on a sum, `left x => …; right y => …;`, keeps its fields.
   function matchExpr(t) {
-    const value = expr();
+    const value = expr(), values = [value];
+    while (peek() === ",") { take(","); values.push(expr()); }
     let motiveName = null, type = null;
     if (peek() === "as") { take("as"); motiveName = name(); }
     if (peek() === "return") { take("return"); type = expr(); }
@@ -341,7 +342,9 @@ export function parse(source, typeOnly = false) {
     }
     const end = take("}").end;
     const obligations = matchObligations(true);
-    const a = { kind: "match", motiveName, value, type, start: t.start, end, ...obligations };
+    if (values.length > 1 && motiveName)
+      throw Object.assign(new Error("A match on several values takes its motive from return T or the type expected of it, without as."), { offset: t.start });
+    const a = { kind: "match", motiveName, value, ...(values.length > 1 ? { values } : {}), type, start: t.start, end, ...obligations };
     // The legacy shape keeps its fields; its clauses stay readable but are
     // not enumerated, so a walk over the tree meets each body once.
     if (!obligations.obligationsToken && clauses.length === 2 && clauses[0].constructor.text === "left" && clauses[1].constructor.text === "right"
@@ -454,7 +457,20 @@ export function parse(source, typeOnly = false) {
   // A match clause's head, `c(xs) @ i =>`: its constructor, which a generated
   // one may name with its type, T.squash; its arguments in parentheses; then
   // its dimensions.
+  // A clause's head: one pattern for each value matched, separated by
+  // commas, then =>. The first pattern's fields are the clause's own, as
+  // they were before several values could be matched; the others are
+  // `more`. A pattern is a constructor, with its arguments in parentheses,
+  // each a name or a pattern itself, and a path constructor's coordinates
+  // after @; a bare name is a constructor without arguments, a variable or
+  // _, which the elaborator tells apart by the matched type.
   function clauseHead() {
+    const first = clausePattern(false), more = [];
+    while (peek() === ",") { take(","); more.push(clausePattern(false)); }
+    take("=>");
+    return { ...first, ...(more.length ? { more } : {}) };
+  }
+  function clausePattern(nested) {
     let constructor = name(), qualifiedDot = null;
     if (peek() === "." && ts[i - 1].end === ts[i].start && /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text)
         && ts[i + 1].start === ts[i].end) {
@@ -463,12 +479,15 @@ export function parse(source, typeOnly = false) {
       constructor = { text: `${constructor.text}.${member.text}`, start: constructor.start, end: member.end };
     }
     let args = null;
+    // An argument: a name, or a constructor pattern with its own arguments.
+    const argument = () => /^[A-Za-z_][A-Za-z_0-9]*$/.test(peek()) && (ts[i + 1]?.text === "("
+      || ts[i + 1]?.text === "." && ts[i + 1].start === ts[i].end) ? clausePattern(true) : name();
     if (peek() === "(") {
       take("(");
       args = [];
       if (peek() !== ")") {
-        args.push(name());
-        while (peek() === ",") { take(","); args.push(name()); }
+        args.push(argument());
+        while (peek() === ",") { take(","); args.push(argument()); }
       }
       take(")");
     }
@@ -476,10 +495,10 @@ export function parse(source, typeOnly = false) {
     // constructor's coordinates follow @, as in the point the clause covers:
     // loop @ i =>.
     const binders = [], coordinates = [];
-    while (peek() !== "=>" && peek() !== "@") binders.push(name());
+    if (!nested) while (peek() !== "=>" && peek() !== "@" && peek() !== ",") binders.push(name());
     while (peek() === "@") { take("@"); coordinates.push(name()); }
-    take("=>");
-    return { constructor, args, binders, coordinates, ...(qualifiedDot ? { qualifiedDot } : {}) };
+    return { ...(nested ? { kind: "pattern", start: constructor.start, end: ts[i - 1].end } : {}),
+      constructor, args, binders, coordinates, ...(qualifiedDot ? { qualifiedDot } : {}) };
   }
 
   function matchObligations(expression) {
@@ -756,10 +775,11 @@ export function parse(source, typeOnly = false) {
   // hypotheses: `induction v { c(xs, hs) => { … } … }`.
   function matchStatement(t, induction = false) {
     const keyword = induction ? "induction" : "match";
-    const value = expr();
-    if (peek() === ",")
-      throw Object.assign(new Error(`The ${keyword} statement takes apart one value; ${keyword === "match" ? "match on" : "take"} the first, then the next inside each clause.`),
+    const value = expr(), values = [value];
+    if (peek() === "," && induction)
+      throw Object.assign(new Error("The induction statement takes apart one value; take the first, then the next inside each clause."),
         { offset: ts[i].start });
+    while (peek() === ",") { take(","); values.push(expr()); }
     if (peek() === "as" || peek() === "return")
       throw Object.assign(new Error(`The ${keyword} statement takes its motive from the goal: write ${keyword} v { c(xs) => { … } … } without as or return.`),
         { offset: ts[i].start });
@@ -774,7 +794,7 @@ export function parse(source, typeOnly = false) {
       clauses.push({ kind: "clause", ...head, body, start: head.constructor.start, end: ts[i - 1].end });
     }
     const e = take("}");
-    return { kind: "matchStatement", ...(induction ? { induction: true } : {}), value, clauses, start: t.start, end: e.end, ...matchObligations(false) };
+    return { kind: "matchStatement", ...(induction ? { induction: true } : {}), value, ...(values.length > 1 ? { values } : {}), clauses, start: t.start, end: e.end, ...matchObligations(false) };
   }
   if (typeOnly) {
     const result = expr();

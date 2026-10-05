@@ -26,3 +26,15 @@ test("elaboration fingerprints detect a changed proof term and a changed source 
   const moved = compareFingerprints(before, await fingerprint(`\n${fixture}`));
   assert.ok(moved.some(line => line.startsWith("fingerprint.references.")));
 });
+
+test("a compiled match names its generated binders alike in every elaboration", async () => {
+  // Several values make a compiled match (web/translator/patterns.mjs), whose
+  // generated names are numbered within the match, not across elaborations.
+  const source = "inductive N { zero; succ(n : N); }\n"
+    + "def both(x, y : N) : N := match x, y { zero, _ => zero; succ(a), zero => a; succ(a), succ(b) => b; };\n";
+  const once = () => elaborationFingerprint({ modules: ["compiled_match"],
+    readSource: async name => { if (name !== "compiled_match") throw Error(`Unexpected import: ${name}`); return source; } });
+  const [first, second] = [await once(), await once()];
+  assert.equal(first.declarations.compiled_match__both.status, "checked-native-cubical");
+  assert.deepEqual(compareFingerprints(first, second), []);
+});
