@@ -511,11 +511,12 @@ since 2026-09-29, the closing proof statement, whose motive is the goal
 over the matched value, with the hypotheses about it generalized, and
 recursive calls that pass values of their own for the other parameters, but
 those the matched parameter's type depends on; since 2026-10-04, several
-scrutinees, nested patterns, variables and `_`, and the expression's motive
-from the motive service where its expected type mentions the value. Not delivered: inferred motives with index generalization, companion
+scrutinees, nested patterns, variables and `_`, the expression's motive
+from the motive service where its expected type mentions the value, and the
+match statement on sums, which replaced `cases`. Not delivered: inferred motives with index generalization, companion
 sorts, `cell` syntax (L2.8), proof-first h-levels (L2.3b), automatic
 clauses and `obligations` (L2.2b), dependent matching, views, canonical
-quotients, `deriving`, nested declarations and the `cases` removal.
+quotients, `deriving` and nested declarations.
 
 - [ ] `inductive` declarations:
   - parameters, and indices after the colon;
@@ -560,11 +561,14 @@ quotients, `deriving`, nested declarations and the `cases` removal.
 - [ ] Legacy eliminator syntax (`induction … as … return`, the current
   expression `match`, `unpack`) stays parseable, so the archive keeps
   checking. The rebuilt library and the new reference use only `match`.
-- [ ] Remove the `cases` statement once `match` is released. `cases` never
+- [x] Remove the `cases` statement once `match` is released. `cases` never
   refines its goal, and `match` supersedes it. Its 24 uses in 11 archive
   modules are first rewritten to `match`, checked by the migration verifier.
   Then the parser, elaborator, formatter, highlighter, reference chapter 3
-  and the error tables drop it.
+  and the error tables drop it. Done on 2026-10-04: the match statement
+  takes sums apart, and the 24 archive uses and two in test sources
+  migrated with identical terms. `cases` is refused with its match form,
+  and the migration verifier reads a historical `cases` as `match`.
 
 Completion, per release:
 

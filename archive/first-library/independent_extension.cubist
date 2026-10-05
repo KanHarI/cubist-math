@@ -82,11 +82,11 @@ def independent_zero_omission(
     ), (fun (t : Fin(n)) => others(omit(t), fin_omit_avoids(n, i, t))), omittedA,
     trans(linear_combination_omit(K, V, n, v, a, i), restZero)
   );
-  cases fin_omit_cover(n, i, j) {
-    left same => {
+  match fin_omit_cover(n, i, j) {
+    left(same) => {
       exact trans(cong(a, same), zero);
     }
-    right witness => {
+    right(witness) => {
       obtain (t, same) := witness;
       exact trans(sym(cong(a, same)), omittedZero(t));
     }
@@ -152,8 +152,8 @@ def adjoin_independent_step(
 ) :
   a(j) = af_zero(af_carrier(K), af_operations(K)) {
   let Occurs := exists i : Fin(succ(n)). v(i) = x;
-  cases excluded_middle(Truncate(U0, Occurs), TruncateProp(U0, Occurs)) {
-    left occurs => {
+  match excluded_middle(Truncate(U0, Occurs), TruncateProp(U0, Occurs)) {
+    left(occurs) => {
       let descend : Occurs -> (a(j) = af_zero(af_carrier(K), af_operations(K))) {
         intro witness;
         obtain (i, same) := witness;
@@ -166,7 +166,7 @@ def adjoin_independent_step(
         af_set(K, a(j), af_zero(af_carrier(K), af_operations(K))), descend, occurs
       );
     }
-    right absent => {
+    right(absent) => {
       let oldMembers : forall i : Fin(succ(n)). P(v(i)) {
         intro i;
         exact adjoin_vector_other(

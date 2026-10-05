@@ -90,16 +90,16 @@ fun (A, B : U0, both : A and B) =&gt; (both.2, both.1)
   intro both;
   exact (both.1, both.2);  // Error: Type mismatch: found A, expected B.
 }</code></pre>
-            <h3 id="first-proof-cases">Using an alternative: <code>cases</code></h3>
+            <h3 id="first-proof-sums">Using an alternative: <code>match</code></h3>
             <p>Evidence of <code>A or B</code> is either a value of <code>A</code> or a value of <code>B</code>, and it records which (<a href="types.html#tour-alternatives">chapter 1</a>). To use it, prove the goal in each case. If <code>A or B</code> holds, then so does <code>B or A</code>:</p>
             <pre><code data-check="accept">def or_swap(A, B : U0) : A or B -&gt; B or A {
-  intro either;                      // either : A or B
-  cases either {
-    left a =&gt; { exact right(a); }    // a : A
-    right b =&gt; { exact left(b); }    // b : B
+  intro either;                       // either : A or B
+  match either {
+    left(a) =&gt; { exact right(a); }    // a : A
+    right(b) =&gt; { exact left(b); }    // b : B
   }
 }</code></pre>
-            <p><code>cases either { … }</code> splits the proof in two, one branch for each way <code>either</code> can have been built. In the branch <code>left a</code>, it is <code>left(a)</code> for some <code>a : A</code>, and the proof gives <code>right(a)</code>: <code>a</code> on the <code>A</code> side of <code>B or A</code>. In the branch <code>right b</code>, it gives <code>left(b)</code>. Each branch is a block of its own, with the component in its context and the same goal, <code>B or A</code>. <code>cases</code> finishes the proof once both branches do, so it is the last statement of its block.</p>
+            <p><code>match either { … }</code> splits the proof in two, one clause for each way <code>either</code> can have been built. In the clause <code>left(a)</code>, it is <code>left(a)</code> for some <code>a : A</code>, and the proof gives <code>right(a)</code>: <code>a</code> on the <code>A</code> side of <code>B or A</code>. In the clause <code>right(b)</code>, it gives <code>left(b)</code>. Each clause is a block of its own, with the component in its context and the goal, <code>B or A</code>. <code>match</code> finishes the proof once both clauses do, so it is the last statement of its block.</p>
             <pre><code data-check="repl">&gt; evaluate or_swap(Nat, Unit, left(3));
 right(3)
 &gt; evaluate or_swap(Nat, Unit, right(tt));
@@ -107,12 +107,12 @@ left(tt)</code></pre>
             <p>Putting <code>a</code> on the wrong side is a type error, since <code>left</code> of <code>B or A</code> takes a <code>B</code>:</p>
             <pre><code data-check="reject">def same_side(A, B : U0) : A or B -&gt; B or A {
   intro either;
-  cases either {
-    left a =&gt; { exact left(a); }  // Error: Type mismatch: found A, expected B.
-    right b =&gt; { exact left(b); }
+  match either {
+    left(a) =&gt; { exact left(a); }  // Error: Type mismatch: found A, expected B.
+    right(b) =&gt; { exact left(b); }
   }
 }</code></pre>
-            <p>An <code>or</code> is evidence of one side in particular, so a proof that uses it must handle both sides. There is no way to ask which side holds without <code>cases</code> or a <a href="terms.html#match"><code>match</code></a>.</p>
+            <p>An <code>or</code> is evidence of one side in particular, so a proof that uses it must handle both sides. There is no way to ask which side holds without a <code>match</code>, the statement here or the <a href="terms.html#match">expression</a>.</p>
           </section>
           <section id="numbers-proof">
             <h2>A proof about numbers</h2>

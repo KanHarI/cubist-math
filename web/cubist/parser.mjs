@@ -642,29 +642,9 @@ export function parse(source, typeOnly = false) {
     }
     if (t.text === "match") return matchStatement(t);
     if (t.text === "induction") return matchStatement(t, true);
-    if (t.text === "cases") {
-      const value = expr();
-      take("{");
-      take("left");
-      const left = name();
-      take("=>");
-      const leftBody = block();
-      take("right");
-      const right = name();
-      take("=>");
-      const rightBody = block();
-      const e = take("}");
-      return {
-        kind: "cases",
-        value,
-        left,
-        leftBody,
-        right,
-        rightBody,
-        start: t.start,
-        end: e.end,
-      };
-    }
+    if (t.text === "cases")
+      throw Object.assign(new Error("cases was removed: write match value { left(a) => { … } right(b) => { … } }."),
+        { offset: t.start });
     throw Object.assign(
       new Error(
         `Expected a proof statement; found '${t.text}'.`,

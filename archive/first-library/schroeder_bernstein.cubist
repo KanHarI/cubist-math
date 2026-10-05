@@ -175,26 +175,26 @@ def csb_injective(
 ) :
   Injective(A, B, csb_map(A, B, f, g, embedG)) {
   intro x, z, same;
-  cases decide_gpoint(A, B, f, g, embedG, x) {
-    left goodX => {
-      cases decide_gpoint(A, B, f, g, embedG, z) {
-        left goodZ => {
+  match decide_gpoint(A, B, f, g, embedG, x) {
+    left(goodX) => {
+      match decide_gpoint(A, B, f, g, embedG, z) {
+        left(goodZ) => {
           exact trans(
             sym(csb_good(A, B, f, g, embedG, x, goodX)),
             trans(cong(g, same), csb_good(A, B, f, g, embedG, z, goodZ))
           );
         }
-        right badZ => {
+        right(badZ) => {
           exact absurd(csb_disjoint(A, B, f, g, embedG, x, z, goodX, badZ, same));
         }
       }
     }
-    right badX => {
-      cases decide_gpoint(A, B, f, g, embedG, z) {
-        left goodZ => {
+    right(badX) => {
+      match decide_gpoint(A, B, f, g, embedG, z) {
+        left(goodZ) => {
           exact absurd(csb_disjoint(A, B, f, g, embedG, z, x, goodZ, badX, sym(same)));
         }
-        right badZ => {
+        right(badZ) => {
           exact injF(
             x, z,
             trans(
@@ -213,13 +213,13 @@ def csb_preimages(
   embedF : Embedding(A, B, f), embedG : Embedding(B, A, g), y : B
 ) :
   Fiber(A, B, csb_map(A, B, f, g, embedG), y) {
-  cases decide_gpoint(A, B, f, g, embedG, g(y)) {
-    left good => {
+  match decide_gpoint(A, B, f, g, embedG, g(y)) {
+    left(good) => {
       exact (
         g(y), injG(csb_map(A, B, f, g, embedG, g(y)), y, csb_good(A, B, f, g, embedG, g(y), good))
       );
     }
-    right bad => {
+    right(bad) => {
       let preimage := f_preimage(A, B, f, g, embedF, injG, y, bad);
       let x := sigma_first(A, (fun (x : A) => f(x) = y), preimage);
       let p := typed((f(x) = y), sigma_second(A, (fun (x : A) => f(x) = y), preimage));

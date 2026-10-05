@@ -423,7 +423,7 @@ def two_below_three : 2 &lt; 3 {
         </div>
         <div class="quick-entry" id="quick-exact">
           <h4><code>exact</code></h4>
-          <p>Supplies a term of the goal's type and finishes the block. Like <code>cases</code>, <code>rfl</code>, <code>calc</code> and <code>simpa</code>, nothing follows it in its block.
+          <p>Supplies a term of the goal's type and finishes the block. Like <code>match</code>, <code>rfl</code>, <code>calc</code> and <code>simpa</code>, nothing follows it in its block.
             <a href="reference/proof-blocks.html#exact">Proof blocks →</a></p>
           <pre><code data-check="accept">def identity_function(A : U0) : A -&gt; A {
   exact fun (a : A) =&gt; a;
@@ -451,14 +451,14 @@ def two_below_three : 2 &lt; 3 {
   exact n;
 }</code></pre>
         </div>
-        <div class="quick-entry" id="quick-cases">
-          <h4><code>cases</code></h4>
-          <p>Splits a sum into one block per side.
-            <a href="reference/proof-blocks.html#cases">Proof blocks →</a></p>
+        <div class="quick-entry" id="quick-sum-match">
+          <h4><code>match</code> on a sum</h4>
+          <p>Splits a sum into one block per side, each proving the goal at its side.
+            <a href="reference/proof-blocks.html#sums">Proof blocks →</a></p>
           <pre><code data-check="accept">def swap_sum(A, B : U0, value : A or B) : B or A {
-  cases value {
-    left a =&gt; { exact right(a); }
-    right b =&gt; { exact left(b); }
+  match value {
+    left(a) =&gt; { exact right(a); }
+    right(b) =&gt; { exact left(b); }
   }
 }</code></pre>
         </div>

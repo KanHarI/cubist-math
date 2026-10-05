@@ -14,7 +14,12 @@
 // definitions, numerals and applications, compared syntactically, never under
 // a binder of one of the scrutinee's names. The kernel checks the motive and
 // every term built from it.
-import {T,substituteTerm} from "./core.mjs";
+//
+// With `contracted`, a goal that mentions the scrutinees only in redexes that
+// drop them, and no hypothesis about them, does not depend on them: the goal,
+// redexes and all, is the motive's body. An `intro` before a match leaves such
+// a redex; the sum's match keeps it, as `cases` did.
+import {T,betaReduce,substituteTerm} from "./core.mjs";
 import {syntaxGraphBudget,syntaxNames} from "./syntax-graph.mjs";
 import {Goal,Transition,steps} from "./proof-goals.mjs";
 import {stem} from "./names.mjs";
@@ -71,7 +76,7 @@ function abstractOccurrences(term,patterns,budget) {
   return visit(term,patterns);
 }
 
-export function abstractMotive(goal,scrutinees,{generalizing=[]}={}) {
+export function abstractMotive(goal,scrutinees,{generalizing=[],contracted=false}={}) {
   const {scope}=goal;
   const budget=syntaxGraphBudget({checkDeadline:()=>scope.checkDeadline()});
   const patterns=[];
@@ -101,6 +106,10 @@ export function abstractMotive(goal,scrutinees,{generalizing=[]}={}) {
     if(abstract(term,hypotheses)!==term)
       throw Error("A scrutinee depends on a hypothesis about another scrutinee; eliminate that hypothesis too.");
   let body=abstract(goal.target);
+  if(contracted&&body!==goal.target&&!generalized.length) {
+    const reduced=betaReduce(goal.target);
+    if(abstract(reduced)===reduced)body=goal.target;
+  }
   for(const hypothesis of [...generalized].reverse())body=T.pi(hypothesis.binder,hypothesis.type,body);
   let term=body;
   for(const binder of [...binders].reverse())term=T.lam(binder.name,binder.type,term);

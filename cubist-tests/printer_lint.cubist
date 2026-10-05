@@ -7,11 +7,11 @@
 
 def or_swap(A, B : U0) : A or B -> B or A {
   intro either;
-  cases either {
-    left a => {
+  match either {
+    left(a) => {
       exact right(a);
     }
-    right b => {
+    right(b) => {
       exact left(b);
     }
   }

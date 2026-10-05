@@ -1,0 +1,123 @@
+// The match statement on a sum (work-plan L2.2a), which replaced cases: a
+// clause left(a) => { … } and a clause right(b) => { … }, each proving the
+// goal at its side. The goal and the hypotheses about the value are taken at
+// each side, as for a declared type; a goal that does not depend on the
+// value is the motive itself, as cases made it.
+
+def swapped(A, B : U0, either : A or B) : B or A {
+  match either {
+    left(a) => {
+      exact right(a);
+    }
+    right(b) => {
+      exact left(b);
+    }
+  }
+}
+
+// After intro, the goal mentions the value only in a redex that drops it.
+def swapped_intro(A, B : U0) : A or B -> B or A {
+  intro either;
+  match either {
+    left(a) => {
+      exact right(a);
+    }
+    right(b) => {
+      exact left(b);
+    }
+  }
+}
+
+// A clause names its side's value as cases did, too.
+def unwrapped(A : U0, p : A or A) : A {
+  match p {
+    left x => {
+      exact x;
+    }
+    right y => {
+      exact y;
+    }
+  }
+}
+
+// The goal mentions the value: each clause proves it at its side.
+def sides(A, B : U0, s : A or B) : (exists a : A. s = typed(A or B, left(a))) or (exists b : B. s = typed(A or B, right(b))) {
+  match s {
+    left(a) => {
+      exact left((a, refl(typed(A or B, left(a)))));
+    }
+    right(b) => {
+      exact right((b, refl(typed(A or B, right(b)))));
+    }
+  }
+}
+
+// A hypothesis about the value is taken at each side, under its own name.
+def kept(A : U0, s : A or A, h : s = s) : s = s {
+  match s {
+    left(a) => {
+      exact h;
+    }
+    right(b) => {
+      exact h;
+    }
+  }
+}
+
+// Error: E565: A sum's clauses are left(a) => { … } and right(b) => { … }; found inl.
+def other_side(A : U0, p : A or A) : A {
+  match p {
+    inl(x) => {
+      exact x;
+    }
+    right(y) => {
+      exact y;
+    }
+  }
+}
+
+// Error: E529: left has two clauses.
+def twice(A : U0, p : A or A) : A {
+  match p {
+    left(x) => {
+      exact x;
+    }
+    left(y) => {
+      exact y;
+    }
+  }
+}
+
+// Error: E566: A sum's clause names its side's value: right(a) => { … }.
+def two_names(A : U0, p : A or A) : A {
+  match p {
+    left(x) => {
+      exact x;
+    }
+    right(y, z) => {
+      exact y;
+    }
+  }
+}
+
+// Error: E567: The match on a sum needs a clause for right: right(a) => { … }.
+def one_side(A : U0, p : A or A) : A {
+  match p {
+    left(x) => {
+      exact x;
+    }
+  }
+}
+
+// Error: E563: The induction statement takes apart a value of a declared type; for a sum, use
+//   match.
+def by_induction(A : U0, p : A or A) : A {
+  induction p {
+    left(x) => {
+      exact x;
+    }
+    right(y) => {
+      exact y;
+    }
+  }
+}

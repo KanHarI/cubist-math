@@ -51,7 +51,7 @@
             <li><a href="#exact"><code>exact</code></a></li>
             <li><a href="#let"><code>let</code></a></li>
             <li><a href="#obtain"><code>obtain</code></a></li>
-            <li><a href="#cases"><code>cases</code></a></li>
+            <li><a href="#sums">Taking a sum apart</a></li>
             <li><a href="#changing-the-goal">Changing the goal</a></li>
             <li><a href="#where-blocks-go">Where blocks can appear</a></li>
           </ul>
@@ -63,7 +63,7 @@
             <ul>
               <li>it <strong>extends the context</strong> and continues with the same goal: <code>let</code>, <code>obtain</code>;</li>
               <li>it <strong>changes the goal</strong> and continues with the new one: <code>intro</code>, <code>rw</code>, <code>simp</code>, <code>ext</code>;</li>
-              <li>it <strong>closes the goal</strong> and ends the block: <code>exact</code>, <code>cases</code>, <code>match</code>, <code>rfl</code>, <code>calc</code>, <code>simpa</code>, <code>over</code>, <code>hlevel</code>.</li>
+              <li>it <strong>closes the goal</strong> and ends the block: <code>exact</code>, <code>match</code>, <code>rfl</code>, <code>calc</code>, <code>simpa</code>, <code>over</code>, <code>hlevel</code>.</li>
             </ul>
             <pre><code data-check="accept">def swap_product(A, B : U0) : (A and B) -&gt; (B and A) {
   intro pair;            // goal: B and A
@@ -94,7 +94,7 @@
                 <tr><td><code>exact term;</code></td><td>Closes</td><td><a href="#exact">exact</a></td></tr>
                 <tr><td><code>let name := term;</code>, <code>let name : T := term;</code>, <code>let name : T { … }</code></td><td>Extends the context</td><td><a href="#let">let</a></td></tr>
                 <tr><td><code>obtain (a, b) := pair;</code></td><td>Extends the context</td><td><a href="#obtain">obtain</a></td></tr>
-                <tr><td><code>cases value { left x => { … } right y => { … } }</code></td><td>Closes</td><td><a href="#cases">cases</a></td></tr>
+                <tr><td><code>match value { left(a) => { … } right(b) => { … } }</code></td><td>Closes</td><td><a href="#sums">taking a sum apart</a></td></tr>
                 <tr><td><code>match n { zero => { … } succ(k) => { … } }</code></td><td>Closes</td><td><a href="induction.html#dependent-match">proofs by matching</a></td></tr>
                 <tr><td><code>rfl;</code></td><td>Closes</td><td><a href="rewriting.html#rfl">reflexivity</a></td></tr>
                 <tr><td><code>calc { … }</code></td><td>Closes</td><td><a href="rewriting.html#calc">chains</a></td></tr>
@@ -299,65 +299,51 @@ def inner_unit(t : (Nat and Unit) and Nat) : Unit {
 }</code></pre>
             <p><code>obtain</code> does not open a <a href="assumptions.html#axioms">propositional truncation</a>: a merely existing witness cannot be named.</p>
           </section>
-          <section id="cases">
-            <h2><code>cases</code></h2>
-            <p><code>cases value { left x => { … } right y => { … } }</code> proves the goal once for each side of a sum. Each branch is a block with the side’s component in its context. <code>cases</code> closes the goal.</p>
+          <section id="sums">
+            <h2>Taking a sum apart</h2>
+            <p><code>match value { left(a) =&gt; { … } right(b) =&gt; { … } }</code> proves the goal once for each side of a sum. Each clause is a block with its side’s value in its context. The match closes the goal.</p>
             <pre><code data-check="accept">def swap_sum(A, B : U0, value : A or B) : B or A {
-  cases value {
-    left a =&gt; { exact right(a); }
-    right b =&gt; { exact left(b); }
+  match value {
+    left(a) =&gt; { exact right(a); }
+    right(b) =&gt; { exact left(b); }
   }
 }
 
 def reassociate(A, B, C : U0, value : A or (B or C)) : (A or B) or C {
-  cases value {
-    left a =&gt; { exact left(left(a)); }
-    right rest =&gt; {
-      cases rest {
-        left b =&gt; { exact left(right(b)); }
-        right c =&gt; { exact right(c); }
+  match value {
+    left(a) =&gt; { exact left(left(a)); }
+    right(rest) =&gt; {
+      match rest {
+        left(b) =&gt; { exact left(right(b)); }
+        right(c) =&gt; { exact right(c); }
       }
     }
   }
 }</code></pre>
-            <pre><code data-check="reject">def not_a_sum(n : Nat) : Nat {
-  cases n {  // Error: cases requires a sum type.
-    left a =&gt; { exact 0; }
-    right b =&gt; { exact 1; }
-  }
-}</code></pre>
-            <p><code>cases</code> must be the last statement of its block:</p>
-            <pre><code data-check="reject">def after_cases(value : Unit or Unit) : Unit {
-  cases value {
-    left a =&gt; { exact a; }
-    right b =&gt; { exact b; }
-  }
-  exact tt;  // Error: Statements after cases are not yet translated.
-}</code></pre>
-            <p><code>cases</code> does not change the goal in each branch. If the goal mentions <code>value</code>, both branches still see <code>value</code>, not <code>left(x)</code> or <code>right(y)</code>, and a branch that needs the refined goal fails:</p>
-            <pre><code data-check="reject">def Shape(value : Unit or Unit) := match value return U0 {
-  left a =&gt; Nat;
-  right b =&gt; Unit;
-};
-
-def default(value : Unit or Unit) : Shape(value) {
-  cases value {
-    // Error: Type mismatch: found Unit -&gt; Nat, expected Unit -&gt; Shape(value).
-    left a =&gt; { exact 0; }
-    right b =&gt; { exact tt; }
-  }
-}</code></pre>
-            <p>For such a goal, use a dependent <a href="terms.html#match"><code>match</code></a>, which substitutes each side into the result type. On a declared inductive type such as <code>Nat</code>, <code>match</code> is also a closing statement that refines the goal in each branch; see <a href="induction.html#dependent-match">proofs by matching</a>.</p>
+            <p>Each clause proves the goal at its side. Where the goal mentions <code>value</code>, the left clause sees <code>left(a)</code> in its place and the right clause <code>right(b)</code>, as a <a href="induction.html#dependent-match">match on a declared type</a> does; a hypothesis about <code>value</code> is taken at each side too, under its own name.</p>
             <pre><code data-check="accept">def Shape(value : Unit or Unit) := match value return U0 {
   left a =&gt; Nat;
   right b =&gt; Unit;
 };
 
 def default(value : Unit or Unit) : Shape(value) {
-  exact match value as z return Shape(z) {
-    left a =&gt; 0;
-    right b =&gt; tt;
-  };
+  match value {
+    left(a) =&gt; { exact 0; }
+    right(b) =&gt; { exact tt; }
+  }
+}</code></pre>
+            <p>A sum has two clauses, one for each side, each naming its side’s value:</p>
+            <pre><code data-check="reject">def one_side(A : U0, value : A or A) : A {
+  match value {  // Error: The match on a sum needs a clause for right: right(a) =&gt; { … }.
+    left(a) =&gt; { exact a; }
+  }
+}</code></pre>
+            <p>The <code>cases</code> statement, which took a sum apart without changing the goal, was removed on 2026-10-04. It is refused with the match that replaces it, which also takes its clauses as <code>cases</code> wrote them, <code>left a =&gt; { … }</code>:</p>
+            <pre><code data-check="reject">def swap_cases(A, B : U0, value : A or B) : B or A {
+  cases value {  // Error: cases was removed: write match value { left(a) =&gt; { … } right(b) =&gt; { … } }.
+    left a =&gt; { exact right(a); }
+    right b =&gt; { exact left(b); }
+  }
 }</code></pre>
           </section>
           <section id="changing-the-goal">
@@ -378,7 +364,7 @@ def rewrite_only(n : Nat) : (n + 0) + 0 = n {
           </section>
           <section id="where-blocks-go">
             <h2>Where blocks can appear</h2>
-            <p>A block can appear as the body of a block declaration, of a <code>let</code> with a stated type, of each <code>cases</code> branch, of a <code>calc</code> step, and of <code>over</code>. A block is not an expression: to use a proof inside a term, prove it first with <code>let name : T { … }</code>, or move it into its own declaration.</p>
+            <p>A block can appear as the body of a block declaration, of a <code>let</code> with a stated type, of each clause of a <code>match</code>, of a <code>calc</code> step, and of <code>over</code>. A block is not an expression: to use a proof inside a term, prove it first with <code>let name : T { … }</code>, or move it into its own declaration.</p>
             <pre><code data-check="reject">def block_as_term : Nat and Nat {
   exact ({ exact 0; }, 1);  // Error: Expected an expression, found '{'.
 }</code></pre>

@@ -33,11 +33,11 @@ def compositum_least(
   let includesUnion :
     PredicateIncluded(af_carrier(F), SubfieldUnion(F, S, T), subfield_members(F, V)) {
     intro x, member;
-    cases typed(SubfieldUnion(F, S, T, x), member) {
-      left inS => {
+    match typed(SubfieldUnion(F, S, T, x), member) {
+      left(inS) => {
         exact sv(x, inS);
       }
-      right inT => {
+      right(inT) => {
         exact tv(x, inT);
       }
     }

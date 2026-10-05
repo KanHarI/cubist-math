@@ -12,8 +12,8 @@ def tower_separation_step(
   TowerSeparation(A, le, f, a, f(b)) {
   let lower : le(b, a) -> TowerSeparation(A, le, f, a, f(b)) {
     intro ba;
-    cases excluded_middle(le(a, b), order_prop(A, le, laws, a, b)) {
-      left ab => {
+    match excluded_middle(le(a, b), order_prop(A, le, laws, a, b)) {
+      left(ab) => {
         let same := order_antisym(A, le, laws, b, a, ba, ab);
         exact field_exists_intro(
           le(f(b), a) or le(f(a), f(b)),
@@ -22,7 +22,7 @@ def tower_separation_step(
           )
         );
       }
-      right strict => {
+      right(strict) => {
         exact field_exists_intro(le(f(b), a) or le(f(a), f(b)), left(stable(b, tb, ba, strict)));
       }
     }
@@ -46,11 +46,11 @@ def tower_separation_sup(
 ) :
   TowerSeparation(A, le, f, a, chain_sup(A, le, complete, C, chain)) {
   let s := chain_sup(A, le, complete, C, chain);
-  cases excluded_middle(le(s, a), order_prop(A, le, laws, s, a)) {
-    left sa => {
+  match excluded_middle(le(s, a), order_prop(A, le, laws, s, a)) {
+    left(sa) => {
       exact field_exists_intro(le(s, a) or le(f(a), s), left(sa));
     }
-    right notsa => {
+    right(notsa) => {
       let contradiction : (le(f(a), s) -> Void) -> Void {
         intro notAbove;
         let bounded : forall b : A. C(b) -> le(b, a) {
@@ -112,12 +112,12 @@ def tower_stable_step(
   intro b, tb, below, strict;
   let lower : le(b, a) -> le(f(b), f(a)) {
     intro ba;
-    cases excluded_middle(le(a, b), order_prop(A, le, laws, a, b)) {
-      left ab => {
+    match excluded_middle(le(a, b), order_prop(A, le, laws, a, b)) {
+      left(ab) => {
         let same := order_antisym(A, le, laws, b, a, ba, ab);
         exact along((fun (y : A) => le(f(y), f(a)))) by sym(same) from order_refl(A, le, laws, f(a));
       }
-      right notab => {
+      right(notab) => {
         exact order_trans(A, le, laws, f(b), a, f(a), stable(b, tb, ba, notab), progressive(a));
       }
     }
@@ -143,11 +143,11 @@ def tower_stable_sup(
       intro a, ca;
       let lower : le(b, a) -> le(a, b) {
         intro ba;
-        cases excluded_middle(le(a, b), order_prop(A, le, laws, a, b)) {
-          left ab => {
+        match excluded_middle(le(a, b), order_prop(A, le, laws, a, b)) {
+          left(ab) => {
             exact ab;
           }
-          right notab => {
+          right(notab) => {
             exact absurd(
               notBelow(
                 order_trans(

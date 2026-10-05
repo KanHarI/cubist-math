@@ -42,11 +42,11 @@ def f4_fixing_fixed_recovers_members(
     GaloisFixing(F2, F4OverF2, GaloisFixed(F2, F4OverF2, H), f4_frobenius_automorphism)
     -> H(f4_frobenius_automorphism) {
     intro fixesFrobenius;
-    cases decideFrobenius {
-      left member => {
+    match decideFrobenius {
+      left(member) => {
         exact member;
       }
-      right noFrobenius => {
+      right(noFrobenius) => {
         exact absurd(
           f4_3_not_2(fixesFrobenius(f4_2, f4_family_without_frobenius_fixes_alpha(H, noFrobenius)))
         );
@@ -79,11 +79,11 @@ def f4_fixed_fixing_recovers_members(
   fixed : GaloisFixed(F2, F4OverF2, GaloisFixing(F2, F4OverF2, P), x)
 ) :
   P(x) {
-  cases decideAlpha {
-    left alpha => {
+  match decideAlpha {
+    left(alpha) => {
       exact f4_intermediate_with_alpha(P, laws, alpha, x);
     }
-    right noAlpha => {
+    right(noAlpha) => {
       let fixesP : GaloisFixing(F2, F4OverF2, P, f4_frobenius_automorphism) {
         intro y, member;
         exact f4_base_is_fixed(

@@ -816,19 +816,6 @@ def missing(n : N) : N {
   }
 }
 
-// Refused: a sum is taken apart by cases, not by the match statement.
-// Error: E535: The match statement takes apart a value of a declared type; for a sum, use cases.
-def of_a_sum(p : N or N) : N {
-  match p {
-    left x => {
-      exact x;
-    }
-    right y => {
-      exact y;
-    }
-  }
-}
-
 // Refused: in the succ clause the goal is add(succ(m), zero) = succ(m): rfl does not
 // prove it.
 // Error: E606: Type mismatch: found add(succ(m), zero) = add(succ(m), zero), expected add(succ(m),
