@@ -19,7 +19,8 @@
 // theory's own. A field two parents give is one field when it comes from one
 // ancestor's field, with one name and one type; otherwise it is refused.
 
-export const notationOperators = ["+", "*", "<", "<="];
+import { parse } from "./parser.mjs";
+import { morphismSource } from "./morphisms.mjs";
 
 // The universe of a theory's sorts, in the fields a theory records: each
 // expansion names it afresh.
@@ -139,7 +140,7 @@ function theoryFields(theory, lookup) {
     }
     for (const [field, operator] of renotated) notate(operator, field, at);
     parents.push({ label, theory: record.name, model: record.model, make: record.make, projection: `${T}.${label}`,
-      fields: record.fields.map(field => names.get(field.name) ?? field.name) });
+      fields: record.fields.map(field => names.get(field.name) ?? field.name), kinds: record.fields.map(field => field.kind) });
   }
   for (const item of theory.fields) {
     const origin = `${T}.${item.name.text}`;
@@ -233,6 +234,20 @@ export function expandTheory(theory, lookup = () => null) {
       { name: token(model, span), type: modelType(T, span), group: 1 }], modelType(parent.theory, span),
     call(parent.make, parent.fields.map(field => call(`${T}.${field}`, [name(model, span)], span)), span), span,
     { role: "projection", field: parent.label }));
+  }
+  // Homomorphisms and isomorphisms, when every operation takes and returns
+  // sorts (morphisms.mjs): their source, parsed and placed at the theory's
+  // name. A generated definition's name is dotted, which a def cannot
+  // spell, so each is parsed under a placeholder and then renamed.
+  const morphisms = morphismSource(record);
+  if (morphisms.missing) record.noMorphisms = morphisms.missing;
+  else {
+    const parsed = parse(morphisms.declarations.map((d, k) => d.source.replace(/^def \S+?(?=[{(:])/, `def generated_${k}`)).join("\n")).declarations;
+    parsed.forEach((d, k) => {
+      const { name: declName, role, field, record: morphismRecord } = morphisms.declarations[k];
+      out.push({ ...relocated(d, at), name: token(declName, at),
+        generated: { theory: T, role, ...(field ? { field } : {}) }, ...(morphismRecord ? { theory: morphismRecord } : {}) });
+    });
   }
   return out;
 }

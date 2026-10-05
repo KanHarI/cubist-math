@@ -92,7 +92,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
   function visit(node) {
     if (!node || typeof node !== "object") return;
     if (node.kind === "withUnfolding") expressionBlockEnds.add(node.end);
-    if (node.kind === "projection") projectionDots.add(node.dot.start);
+    if (node.kind === "projection" || node.kind === "member") projectionDots.add(node.dot.start);
     // A qualified name's dot is tight too: T.squash.
     if (node.qualifiedDot) projectionDots.add(node.qualifiedDot.start);
     if (node.kind === "unary") prefixMinus.add(node.operatorStart);

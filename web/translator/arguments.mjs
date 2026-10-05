@@ -391,6 +391,14 @@ class ArgumentSolver {
       const outcome = this.parts(left, right, origin, polarity, bound, at);
       if (outcome !== "clash" || normal) return outcome;
     }
+    // One definition applied on both sides, as T.Hom(A, B): first its
+    // arguments, as they stand. Unless they agree, nothing they solved is
+    // kept, and the definition's unfolding is compared instead.
+    if (!normal && sameDefinitionHead(left, right)) {
+      const saved = this.snapshot(), outcome = this.parts(left, right, origin, "invariant", bound, at);
+      if (outcome === "done") return outcome;
+      this.restore(saved);
+    }
     // Different type formers never agree; other heads may, by eta.
     if (normal) return left.tag !== right.tag && CANONICAL.has(left.tag) && CANONICAL.has(right.tag) ? "clash" : "stuck";
     // A definition, a redex or a projection: compare head normal forms.
@@ -402,6 +410,13 @@ class ArgumentSolver {
     }
     return this.unify(leftHead, rightHead, origin, polarity, bound, at, true);
   }
+  // What the solver has found, to return to after a failed attempt.
+  snapshot() {
+    return { solution: new Map(this.solution), ambiguous: new Map(this.ambiguous), escaping: new Map(this.escaping),
+      clashes: [...this.clashes], bounds: new Map([...this.bounds].map(([variable, bounds]) =>
+        [variable, { ...bounds, lower: [...bounds.lower], upper: [...bounds.upper] }])) };
+  }
+  restore(saved) { Object.assign(this, saved); }
   // The parts of two terms with the same rigid head.
   parts(left, right, origin, polarity, bound, at) {
     const same = (l, r, p = "invariant", b = bound, s = at) => this.unify(l, r, origin, p, b, s);
@@ -552,6 +567,18 @@ function rigid(left, right, normal, unknown) {
   // An application whose head is a local variable is neutral as it stands.
   if (left.tag === "App" || left.tag === "PApp") return normal || [left, right].every(term => neutralHead(term, unknown));
   return normal;
+}
+// Two applications, to terms and universes, of one definition, with as many
+// arguments each.
+function sameDefinitionHead(left, right) {
+  const spine = term => {
+    let length = 0;
+    while (term.tag === "App" || term.tag === "LApp") { term = term.fn; length++; }
+    return { head: term, length };
+  };
+  if (!["App", "LApp"].includes(left.tag) || left.tag !== right.tag) return false;
+  const a = spine(left), b = spine(right);
+  return a.head.tag === "DefRef" && b.head.tag === "DefRef" && a.head.name === b.head.name && a.length === b.length;
 }
 function neutralHead(term, unknown) {
   while (["App", "PApp", "Fst", "Snd"].includes(term.tag)) term = term.fn ?? term.path ?? term.pair;

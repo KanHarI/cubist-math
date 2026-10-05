@@ -51,6 +51,7 @@
             <li><a href="#models">Models</a></li>
             <li><a href="#open">Opening a model: <code>open</code></a></li>
             <li><a href="#extends">Extension: <code>extends</code></a></li>
+            <li><a href="#morphisms">Homomorphisms and isomorphisms</a></li>
             <li><a href="#generated">What a theory declares</a></li>
             <li><a href="#theory-errors">What is refused</a></li>
           </ul>
@@ -194,6 +195,54 @@ def twice_plus(R : Semiring.Model(U0), x : R.R) : R.R {
             <p>Renaming a sort to one name in two parents, as <code>M := R</code> twice above, makes it one sort of the child; its evidence follows it, as <code>R_is_set</code>. An ancestor that arrives renamed is another copy: here each monoid has its own unit, <code>zero</code> and <code>one</code>, and its own law.</p>
           </section>
 
+          <section id="morphisms">
+            <h2>Homomorphisms and isomorphisms</h2>
+            <p>A <strong>homomorphism</strong> between two models of a theory, <code>Monoid.Hom(A, B)</code>, is a map of their sort, <code>map : A.M -&gt; B.M</code>, with, for each operation and constant, a proof that the map preserves it: <code>map_mul</code> and <code>map_one</code>. With several sorts there is a map for each, <code>map_M</code>, <code>map_N</code>. Laws need no field: they are propositions about sets. <code>Monoid.Hom.make</code> builds one, and <code>f.map</code> and the rest read it:</p>
+            <pre><code data-check="accept">import nat;
+import hlevels;
+
+theory Monoid {
+  sort M : set;
+  mul(x, y : M) : M notation x * y;
+  one : M;
+  law one_mul(x : M) : one * x = x;
+}
+
+def additive : Monoid.Model(U0) := Monoid.make(
+  M := Nat, M_is_set := nat_is_set, mul := add, one := 0, one_mul := nat_zero_add
+);
+
+def trivial : Monoid.Model(U0) := Monoid.make(
+  M := Unit, M_is_set := prop_is_set(U0, Unit, unit_is_prop), mul := fun (x, y : Unit) =&gt; tt,
+  one := tt, one_mul := fun (x : Unit) =&gt; unit_is_prop(tt, x)
+);
+
+def collapse : Monoid.Hom(additive, trivial) := Monoid.Hom.make(
+  additive, trivial, map := fun (n : Nat) =&gt; tt, map_mul := fun (x, y : Nat) =&gt; refl(tt), map_one := refl(tt)
+);
+
+def unit_into(B : Monoid.Model(U0)) : Monoid.Hom(trivial, B) := Monoid.Hom.make(
+  trivial, B, map := fun (x : Unit) =&gt; B.one, map_mul := fun (x, y : Unit) =&gt; sym(B.one_mul(B.one)),
+  map_one := refl(B.one)
+);
+
+def round : Monoid.Hom(additive, additive) := Monoid.Hom.compose(unit_into(additive), collapse);
+
+evaluate round.map(7) expecting 0;</code></pre>
+            <p><code>Monoid.Hom.id(A)</code> is the identity and <code>Monoid.Hom.compose(g, f)</code> is <code>g</code> after <code>f</code>; on closed models both compute. A child theory's homomorphisms preserve its parents' operations too, and <code>f.monoid</code> is the homomorphism of the parent's models.</p>
+            <p>An <strong>isomorphism</strong>, <code>Monoid.Iso(A, B)</code>, is a homomorphism each way, <code>to</code> and <code>from</code>, with the round trips on each sort: <code>from_to : forall x : A.M. from.map(to.map(x)) = x</code> and <code>to_from</code>. <code>Monoid.Iso.id(A)</code>, <code>Monoid.Iso.compose(g, f)</code> and <code>Monoid.Iso.inverse(f)</code> are isomorphisms too. A field of a value that is not a name is read the same way: <code>Monoid.Iso.inverse(f).to.map(x)</code>.</p>
+            <p>A theory has homomorphisms when each of its operations and constants takes and returns its sorts:</p>
+            <pre><code data-check="reject">import nat;
+import hlevels;
+
+theory Indexed {
+  sort M : set;
+  power(x : M, n : Nat) : M;
+}
+
+def no_homs(A, B : Indexed.Model(U0)) := Indexed.Hom(A, B);  // Error: Indexed's models have no homomorphisms: its power takes or returns something other than a sort.</code></pre>
+          </section>
+
           <section id="generated">
             <h2>What a theory declares</h2>
             <p>A theory is checked as ordinary definitions, which it declares in its module, in this order. Each is inspectable by name, uses no assumption, and computes:</p>
@@ -204,9 +253,11 @@ def twice_plus(R : Semiring.Model(U0), x : R.R) : R.R {
                 <tr><td><code>T.make{{U &lt; UU0}}(…)</code></td><td>The model with the given fields, one parameter for each, so that named arguments build a model field by field</td></tr>
                 <tr><td><code>T.f{{U &lt; UU0}}(m : T.Model(U))</code></td><td>For each field <code>f</code>, its projection, written <code>m.f</code></td></tr>
                 <tr><td><code>T.p{{U &lt; UU0}}(m : T.Model(U))</code></td><td>For each parent labelled <code>p</code>, the model of the parent, written <code>m.p</code></td></tr>
+                <tr><td><code>T.Hom(A, B)</code>, <code>T.Hom.make</code>, <code>f.map</code> …, <code>T.Hom.id</code>, <code>T.Hom.compose</code>, <code>f.p</code></td><td>Homomorphisms, when every operation takes and returns sorts</td></tr>
+                <tr><td><code>T.Iso(A, B)</code>, <code>T.Iso.make</code>, <code>f.to</code> …, <code>T.Iso.id</code>, <code>T.Iso.compose</code>, <code>T.Iso.inverse</code></td><td>Isomorphisms</td></tr>
               </tbody>
             </table></div>
-            <p>The theory's name itself is not a term: its models are <code>T.Model(U)</code>.</p>
+            <p>The theory's name itself is not a term: its models are <code>T.Model(U)</code>. The universes of a homomorphism's models, and the models themselves, are implicit in its operations: <code>f.map</code> and <code>Monoid.Hom.compose(g, f)</code> read them from the types of <code>f</code> and <code>g</code>.</p>
           </section>
 
           <section id="theory-errors">

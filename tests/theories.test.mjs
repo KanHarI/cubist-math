@@ -1,5 +1,5 @@
 // Theories (L2.4): what the verdicts and prints of cubist-tests/theories.cubist
-// do not show. A theory is checked as the declarations it expands to, each
+// and theory_morphisms.cubist do not show. A theory is checked as the declarations it expands to, each
 // inspectable by name and assumption-free; its syntax parses and formats
 // stably; and its own refusals of form are the parser's.
 import "./fresh-build.mjs";
@@ -12,12 +12,17 @@ import { testModule } from "./check-program.mjs";
 
 const theories = testModule("theories", { module: await createCubical() });
 
-test("a theory checks as its model type, constructor, projections and parents' models", async () => {
+test("a theory checks as its model type, constructor, projections, parents' models, homomorphisms and isomorphisms", async () => {
   const { program } = await theories();
   const generated = Object.values(program.symbols).filter(info => info.binding.startsWith("theories__Group."))
     .map(info => info.name);
   assert.deepEqual(generated, ["Group.Model", "Group.make", "Group.M", "Group.M_is_set", "Group.mul", "Group.mul_assoc",
-    "Group.one", "Group.one_mul", "Group.mul_one", "Group.inv", "Group.inv_mul", "Group.monoid"]);
+    "Group.one", "Group.one_mul", "Group.mul_one", "Group.inv", "Group.inv_mul", "Group.monoid",
+    // Its homomorphisms: a map preserving mul, one and inv; and isomorphisms.
+    "Group.Hom", "Group.Hom.make", "Group.Hom.map", "Group.Hom.map_mul", "Group.Hom.map_one", "Group.Hom.map_inv",
+    "Group.Hom.id", "Group.Hom.compose", "Group.Hom.monoid",
+    "Group.Iso", "Group.Iso.make", "Group.Iso.to", "Group.Iso.from", "Group.Iso.from_to", "Group.Iso.to_from",
+    "Group.Iso.id", "Group.Iso.compose", "Group.Iso.inverse"]);
   for (const name of generated) {
     const info = program.symbols[`theories__${name}`];
     assert.equal(info.verified, true, name);

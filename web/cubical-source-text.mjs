@@ -252,15 +252,14 @@ export function sourceText(term, symbols = {}, limit = 4000) {
           const [symbol, level] = infix[operator], left = level === LEVEL.compare ? level + 1 : level;
           return [`${sub(args[0], left)} ${symbol} ${sub(args[1], level + 1)}`, level];
         }
-        // A theory's projection of a model that prints as a name is m.f, and
-        // applied further, m.f(x, y), as the source writes it (L2.4).
+        // A theory's projection of a model is m.f, and applied further,
+        // m.f(x, y), as the source writes it (L2.4).
         const projection = head.tag === "DefRef" ? symbols[head.name]?.projection : undefined;
         if (projection) {
-          const model = args[(symbols[head.name].assumed ?? 0) + (symbols[head.name].implicit ?? 0)];
-          const owner = model && sub(model, LEVEL.atom);
-          if (owner && /^[A-Za-z_][A-Za-z_0-9.]*$/.test(owner)) {
-            const rest = args.slice(args.indexOf(model) + 1);
-            return atom(`${owner}.${projection}${rest.length ? `(${rest.map(show).join(", ")})` : ""}`);
+          const at = (symbols[head.name].assumed ?? 0) + (symbols[head.name].implicit ?? 0), model = args[at];
+          if (model) {
+            const rest = args.slice(at + 1);
+            return atom(`${sub(model, LEVEL.atom)}.${projection}${rest.length ? `(${rest.map(show).join(", ")})` : ""}`);
           }
         }
         // A definition's implicit arguments are in double braces, as a call

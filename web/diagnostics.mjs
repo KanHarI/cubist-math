@@ -468,6 +468,8 @@ export const diagnostics = [
   ["E813", "… has no fields: a theory declares sorts, operations and laws."],
   ["E814", "The sorts of … need …, from hlevels: import hlevels;"],
   ["E815", "… is a model of …, which has no field …: it has ……."],
+  ["E816", "This is a model of …, which has no field …: it has ……."],
+  ["E817", "…'s models have no homomorphisms: …."],
   // Kernel: declared types
   ["K101", "Dimension renaming allocation failed."],
   ["K102", "A boundary is nested too deeply."],
