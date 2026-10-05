@@ -67,7 +67,7 @@ inductive Circle : U0 {
 
 def reverse(c : Circle) : Circle := match c {
     base => base;
-    loop @ i => loop @ -i;
+    loop @ i => loop @ ~i;
   };
 
 inductive List(U < UU0, A : U) : U {
@@ -115,7 +115,7 @@ print(typeof(pairs));
 print(evaluate(negate));
 // Output: Bool -> Bool
 print(typeof(negate));
-// Output: fun (x : Circle) => match x return Circle { base => base; loop @ i => loop @ -i; }
+// Output: fun (x : Circle) => match x return Circle { base => base; loop @ i => loop @ ~i; }
 print(evaluate(reverse));
 // Output: Circle -> Circle
 print(typeof(reverse));
