@@ -38,10 +38,16 @@ export function modelField(t,scope,n) {
   if(!record)return null;
   const field=n.name.slice(dot+1);
   const known=record.fields.find(f=>f.name===field)??record.parents.find(p=>p.label===field);
+  if(!known&&record.ambiguous?.[field])throw ambiguousField(record,owner.name,field);
   if(!known)throw Error(`${owner.name} is a model of ${record.name}, which has no field ${field}: it has ${record.fields.map(f=>f.name).join(", ")}${
     record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`);
   return {kind:"call",fn:{...n,name:known.projection},args:[owner],start:n.start,end:n.end};
 }
+
+// A field that two independent parents give under one name (L2.4c): the
+// error that names the qualified forms.
+const ambiguousField=(record,model,field)=>Error(`${field} is ambiguous in ${record.name}: it is ${
+  record.ambiguous[field].map(e=>`${e.label}'s`).join(" and ")}. Write ${record.ambiguous[field].map(e=>`${model}.${e.label}.${e.parentField}`).join(" or ")}.`);
 
 // e.f, for a value e that is not a name: when e is a model, the node of the
 // call T.f(e); otherwise the error that says so.
@@ -49,6 +55,7 @@ export function memberField(t,scope,n) {
   const record=recordOf(t,scope,t.term(n.value,scope,null)),field=n.field.text;
   if(!record)throw Error(`.${field} reads a field of a model of a theory; this value is not one.`);
   const known=record.fields.find(f=>f.name===field)??record.parents.find(p=>p.label===field);
+  if(!known&&record.ambiguous?.[field])throw ambiguousField(record,"m",field);
   if(!known)throw Error(`This is a model of ${record.name}, which has no field ${field}: it has ${record.fields.map(f=>f.name).join(", ")}${
     record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`);
   return {kind:"call",fn:{kind:"name",name:known.projection,start:n.field.start,end:n.field.end},args:[n.value],start:n.start,end:n.end};
@@ -66,6 +73,12 @@ export function opened(t,scope,node) {
   let inner=scope;
   for(const [name,value] of values)inner=inner.alias(name,value);
   for(const [operator,field] of Object.entries(record.notations))inner=inner.alias(operatorBinding(operator),values.get(field));
+  // An ambiguous name or operator is refused where it is used.
+  for(const field of Object.keys(record.ambiguous??{}))
+    inner=inner.alias(field,{tag:"Ambiguous",message:ambiguousField(record,node.name??"m",field).message});
+  for(const [operator,list] of Object.entries(record.ambiguousNotations??{}))
+    inner=inner.alias(operatorBinding(operator),{tag:"Ambiguous",message:`${operator} is ambiguous in ${record.name}: it is ${
+      list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>`${node.name??"m"}.${e.label}.${e.parentField}(…, …)`).join(" or ")}.`});
   return inner;
 }
 

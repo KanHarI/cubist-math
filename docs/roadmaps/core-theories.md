@@ -86,8 +86,24 @@ indexed by a carrier leaves the theory without isomorphisms (E825). The
 identity monad is a `Monad`, and its homomorphisms and isomorphisms
 compute. Evidence: `cubist-tests/theory_families.cubist` and the
 reference's [families](../../web/reference/theories.html#families)
-section. Independent parents and qualified operators are the later
-slices.
+section.
+
+**Fifth slice, done on 2026-10-06:** [combining independent
+theories](#combining-independent-theories). Carriers two parents give
+under one name, kind and type merge; carriers of one name and different
+kinds or indices (E828), or a name that is a carrier in one parent and not
+in another (E827), are refused. Another field of one name from two
+parents stays each parent's, named `label_name` in the child, and the
+name is ambiguous: refused where it is used, in the theory (E830), on a
+model (E832) and under `open`, with the qualified forms. An operator two
+parents bind to two fields is ambiguous the same way (E831), and a
+child's own notation for it is refused (E826). Inside the theory,
+`label.f` names the field that parent gave as `f` (E829). Renaming in
+`extends` still gives a name or notation of its own. Evidence:
+`cubist-tests/theory_independent.cubist` and the reference's
+[extension](../../web/reference/theories.html#extends) section. The
+qualified operator forms, `magma.(x * x)` and `a G.(+) b`, are the last
+slice.
 
 ### Carriers are fields with an h-level
 

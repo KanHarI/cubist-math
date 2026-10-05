@@ -1,0 +1,91 @@
+// Independent parents (L2.4c): two theories written without knowing of each
+// other, and a theory that is both, changing neither. Carriers of one name,
+// kind and type merge; another field or operator of one name from two
+// parents is ambiguous in the child, refused where it is used, and reached
+// through the parents' labels.
+import nat;
+import hlevels;
+
+theory Magma(U < UU0) {
+  M : set U;
+  mul(x, y : M) : M notation x * y;
+}
+
+theory Action(U < UU0) {
+  M : set U;
+  act(x, y : M) : M notation x * y;
+  law act_idem(x : M) : x * x = x;
+}
+
+// Both binds * twice, so inside it each is written through its label.
+theory Both(U < UU0) extends Magma, Action {
+  law mixed(x : M) : magma.mul(x, x) = action.act(x, x);
+}
+
+// One carrier: Both's fields are M, M_is_set, mul, act, act_idem and mixed.
+def both_nat : Both(U0) := Both.make(M := Nat, M_is_set := nat_is_set, mul := fun (x, y : Nat) => x,
+  act := fun (x, y : Nat) => x, act_idem := fun (x : Nat) => refl(x), mixed := fun (x : Nat) => refl(x));
+
+def first_of(G : Both(U0), x, y : G.M) : G.M := G.magma.mul(x, y);
+
+// Output: 5
+print(evaluate(first_of(both_nat, 5, 6)));
+
+// Under open, * is ambiguous where it is used.
+// Error: E832: * is ambiguous in Both: it is magma's mul and action's act. Write G.magma.mul(…, …)
+//   or G.action.act(…, …).
+def square(G : Both(U0), x : G.M) : G.M {
+  open G;
+  exact x * x;
+}
+
+// Renaming one parent's operator gives it a notation of its own.
+theory Renamed(U < UU0) extends Magma, Action(act := act notation x + y) {
+  law both(x : M) : x * x = x + x;
+}
+
+theory Left(U < UU0) {
+  M : set U;
+  point : M;
+}
+
+theory Right(U < UU0) {
+  M : set U;
+  point : M;
+}
+
+// Two points of one name: each its parent's, left_point and right_point.
+theory Bipointed(U < UU0) extends Left, Right {
+}
+
+def zero_one : Bipointed(U0) := Bipointed.make(M := Nat, M_is_set := nat_is_set, left_point := 0, right_point := 1);
+
+def left_is_zero : zero_one.left.point = 0 {
+  rfl;
+}
+
+// Error: E832: point is ambiguous in Bipointed: it is left's and right's. Write zero_one.left.point
+//   or zero_one.right.point.
+def which := zero_one.point;
+
+// Homomorphisms name each by its label.
+// Output: forall U < UU0. forall V < UU0. forall A : Bipointed(U). forall B : Bipointed(V). forall
+//   f : Bipointed.Hom{{U, V}}(A, B). f.map(A.left_point) = B.left_point
+print(typeof(Bipointed.Hom.map_left_point));
+
+// Inside the theory, an ambiguous operator is refused.
+// Error: E831: * is ambiguous in BadUse: it is magma's mul and action's act. Write magma.mul(…, …)
+//   or action.act(…, …), or give one another notation in extends.
+theory BadUse(U < UU0) extends Magma, Action {
+  law square(x : M) : x * x = x;
+}
+
+theory Proposition(U < UU0) {
+  M : prop U;
+}
+
+// Carriers of one name and different kinds are refused.
+// Error: E828: Kinds gets the carrier M from Magma and Proposition with different kinds or indices:
+//   rename one, as in Proposition(M := …).
+theory Kinds(U < UU0) extends Magma, Proposition {
+}

@@ -2187,6 +2187,10 @@
    "summary": "A theory's header (L2.4c): carriers in two universes with homomorphisms across them, a parameter that every model shares and homomorphisms keep, a child taking its parent's parameter by name, and the refusals: a parent's universe or parameter missing, a binder bound twice or named as a field."
   },
   {
+   "path": "cubist-tests/theory_independent.cubist",
+   "summary": "Independent parents (L2.4c): two theories with one carrier and one operator, and a theory that is both without changing either; carriers merged, fields and operators of one name ambiguous where used and reached through labels, a renamed notation, homomorphisms named by label, and carriers of different kinds refused."
+  },
+  {
    "path": "cubist-tests/theory_morphisms.cubist",
    "summary": "Homomorphisms and isomorphisms (L2.4): built field by field, their fields' types, identity, composition and a parent's homomorphism computing on closed models, isomorphisms' identity, composition and inverse, and a theory whose operation takes a non-sort, which has none."
   },

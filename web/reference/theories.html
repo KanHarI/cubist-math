@@ -297,6 +297,31 @@ def twice_plus(R : Semiring(U0), x : R.R) : R.R {
   exact x * x + x;
 }</code></pre>
             <p>Renaming a carrier to one name in two parents, as <code>M := R</code> twice above, makes it one carrier of the child; its evidence follows it, as <code>R_is_set</code>. An ancestor that arrives renamed is another copy: here each monoid has its own unit, <code>zero</code> and <code>one</code>, and its own law.</p>
+            <p>Two <strong>independent</strong> theories, written without knowing of each other, combine without changing either. A carrier both give under one name, with one kind and type, is one carrier of the child. Any other field of one name from both, or an operator both bind, stays each parent's: the name is ambiguous in the child and refused where it is used, with the qualified forms in the message, and each is reached through its parent's label, <code>G.magma.mul</code> or, inside the theory, <code>magma.mul</code>. A homomorphism's fields name them by label too, <code>map_left_point</code>. Renaming one in <code>extends</code> gives it a name or a notation of its own:</p>
+            <pre><code data-check="accept">import nat;
+import hlevels;
+
+theory Magma(U &lt; UU0) {
+  M : set U;
+  mul(x, y : M) : M notation x * y;
+}
+
+theory Action(U &lt; UU0) {
+  M : set U;
+  act(x, y : M) : M notation x * y;
+  law act_idem(x : M) : x * x = x;
+}
+
+theory Both(U &lt; UU0) extends Magma, Action {
+  law mixed(x : M) : magma.mul(x, x) = action.act(x, x);
+}
+
+theory Renamed(U &lt; UU0) extends Magma, Action(act := act notation x + y) {
+  law both(x : M) : x * x = x + x;
+}
+
+def first_of(G : Both(U0), x, y : G.M) : G.M := G.magma.mul(x, y);</code></pre>
+            <p>Carriers of one name and different kinds, a set in one parent and a proposition in the other, are refused; so is a name that is a carrier in one parent and another field in the other.</p>
           </section>
 
           <section id="morphisms">
@@ -450,7 +475,7 @@ theory Twice(U &lt; UU0) {  // Error: Twice has two fields named one: give each 
   one : M;
   one : M;
 }</code></pre>
-            <p>Two parents that give fields of one name refuse unless the field is one ancestor's, shared:</p>
+            <p>Two parents may give a carrier of one name only with one kind and type:</p>
             <pre><code data-check="reject">import hlevels;
 
 theory Left(U &lt; UU0) {
@@ -458,12 +483,11 @@ theory Left(U &lt; UU0) {
   point : M;
 }
 
-theory Right(U &lt; UU0) {
-  M : set U;
-  point : M;
+theory Truth(U &lt; UU0) {
+  M : prop U;
 }
 
-theory Clash(U &lt; UU0) extends Left, Right {  // Error: Clash gets a field named M from both Left and Right: rename one, as in Right(M := …).
+theory Clash(U &lt; UU0) extends Left, Truth {  // Error: Clash gets the carrier M from Left and Truth with different kinds or indices: rename one, as in Truth(M := …).
 }</code></pre>
             <p><code>open</code> takes a model, and <code>m.f</code> a field the theory has:</p>
             <pre><code data-check="reject">import nat;

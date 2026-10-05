@@ -236,9 +236,9 @@
               <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
                 <tr id="E803"><td class="code"><code>E803</code></td><td data-message="has two fields named">“<var>T</var> has two fields named <var>f</var>: give each its own name.”</td><td>A model's fields are read by name, so a theory's fields, its own and its parents', have distinct names. Rename one.</td><td><a href="theories.html#theory-errors">theories</a></td></tr>
-                <tr id="E802"><td class="code"><code>E802</code></td><td data-message="gets a field named">“<var>T</var> gets a field named <var>f</var> from both <var>P</var> and <var>Q</var>: rename one, as in <var>Q</var>(<var>f</var> := …).”</td><td>Two parents give a field of one name, and it is not one ancestor's field, shared, with one type. Rename it in one parent.</td><td><a href="theories.html#extends">extension</a></td></tr>
-                <tr id="E817"><td class="code"><code>E817</code></td><td data-message="models have no homomorphisms">“<var>T</var>'s models have no homomorphisms: …”</td><td>A homomorphism preserves each operation, so each must take and return the theory's sorts. The message names an operation that does not.</td><td><a href="theories.html#morphisms">homomorphisms</a></td></tr>
-                <tr id="E476"><td class="code"><code>E476</code></td><td data-message="open takes a model of a theory">“open takes a model of a theory, such as m : Group.Model(U0); this is a value of type <var>A</var>.”</td><td><code>open</code> puts a model's fields in scope; the value given is not a model of a theory.</td><td><a href="theories.html#open">open</a></td></tr>
+                <tr id="E828"><td class="code"><code>E828</code></td><td data-message="with different kinds or indices">“<var>T</var> gets the carrier <var>M</var> from <var>P</var> and <var>Q</var> with different kinds or indices: rename one, as in <var>Q</var>(<var>M</var> := …).”</td><td>Two parents give a carrier of one name, merged into one carrier of the child only when both are sets, or both propositions, of one type. Rename it in one parent to keep them apart.</td><td><a href="theories.html#extends">extension</a></td></tr>
+                <tr id="E817"><td class="code"><code>E817</code></td><td data-message="models have no homomorphisms">“<var>T</var>'s models have no homomorphisms: …”</td><td>A homomorphism preserves each operation, pushing each argument that holds a carrier forward and pulling one with a carrier left of an arrow back. An argument with a carrier on both sides of an arrow, a carrier with no h-level, and a few other forms leave a theory without homomorphisms; the message names which.</td><td><a href="theories.html#morphisms">homomorphisms</a></td></tr>
+                <tr id="E476"><td class="code"><code>E476</code></td><td data-message="open takes a model of a theory">“open takes a model of a theory, such as m : Group(U0); this is a value of type <var>A</var>.”</td><td><code>open</code> puts a model's fields in scope; the value given is not a model of a theory.</td><td><a href="theories.html#open">open</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -796,7 +796,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
               <thead><tr><th>Code</th><th>Message</th></tr></thead>
               <tbody>
                 <tr id="E801"><td><code>E801</code></td><td>Renaming … to … would capture a variable named …; pick another name.</td></tr>
-                <tr><td><a href="#E802"><code>E802</code></a></td><td>… gets a field named … from both … and …: rename one, as in …(… := …).</td></tr>
+                <tr id="E802"><td><code>E802</code></td><td>… gets a field named … from both … and …: rename one, as in …(… := …).</td></tr>
                 <tr><td><a href="#E803"><code>E803</code></a></td><td>… has two fields named …: give each its own name.</td></tr>
                 <tr id="E804"><td><code>E804</code></td><td>… would stand for both … and … in …: a notation means one operation; rename one's notation.</td></tr>
                 <tr id="E805"><td><code>E805</code></td><td>… is not a theory here: … extends theories in scope.</td></tr>
@@ -820,6 +820,13 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E823"><td><code>E823</code></td><td>…'s argument … is a … with its evidence: give an index bound as one, (A : … U), or write its evidence after it, …(…, A, A_is_…, …).</td></tr>
                 <tr id="E824"><td><code>E824</code></td><td>A notation names a family's two indices in order, as in le(x, y : M) : prop U notation x &lt;= y.</td></tr>
                 <tr id="E825"><td><code>E825</code></td><td>…'s models have homomorphisms but no isomorphisms: ….</td></tr>
+                <tr id="E826"><td><code>E826</code></td><td>… would stand for … in …, and its parents bind it to …: a notation means one operation; rename one's notation.</td></tr>
+                <tr id="E827"><td><code>E827</code></td><td>… gets … from …, a carrier in one and not in another: rename one, as in …(… := …).</td></tr>
+                <tr><td><a href="#E828"><code>E828</code></a></td><td>… gets the carrier … from … with different kinds or indices: rename one, as in …(… := …).</td></tr>
+                <tr id="E829"><td><code>E829</code></td><td>…, …'s parent …, has no field ….</td></tr>
+                <tr id="E830"><td><code>E830</code></td><td>… is ambiguous in …: …. Write …, or rename one in extends.</td></tr>
+                <tr id="E831"><td><code>E831</code></td><td>… is ambiguous in …: it is …. Write …, or give one another notation in extends.</td></tr>
+                <tr id="E832"><td><code>E832</code></td><td>… is ambiguous in …: it is …. Write ….</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-k1">Kernel: declared types</h3>
