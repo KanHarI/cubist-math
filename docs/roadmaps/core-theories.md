@@ -246,6 +246,9 @@ scope.
 
 ## Acceptance
 
+Met on 2026-10-05: the library's `algebra`, `integers` and `rationals`, and
+the fixtures named in the status above.
+
 - `Semigroup`, `Monoid`, `Group`, `AbelianGroup`, `CommRing` and `Field` as
   library theories, with `Nat` a commutative monoid twice, the integers a
   commutative ring and the rationals a field, as quotients.
@@ -256,3 +259,23 @@ scope.
   theory's fields or is not evidently a proposition, an operation whose
   arguments are not sorts (for `Hom`), a notation that is not an operator, an
   `open` of a value that is not a model.
+
+## Known limits
+
+Found since the slices landed, each a candidate for a later slice rather
+than a defect in this contract:
+
+- **A law cannot be a truncation.** `Trunc(U, exists y : R. x * y = one)`
+  is a proposition by its declaration at `prop`, but not by the law check's
+  form. L2.10k's partial field inverse needs the check to accept an
+  application of a type declared at `prop`.
+- **A law cannot name the theory's universe,** which `Trunc` takes first:
+  the universe of a theory's sorts has no name in its body. L2.10k needs
+  that too.
+- **Sorts are single sets or propositions, not families.** A monad's
+  carrier `F(A : U0) : U0` is accepted as an operation, but its laws are
+  equations in `F(B)` and are refused (E818). Computation notation's N1
+  needs sort families, `sort F(A : U) : set;`, or records written by hand.
+- **No fixture records a wrong homomorphism's refusal.** Doubling offered
+  as a homomorphism of `Nat`'s multiplicative monoid is refused, by the
+  type of its preservation field, but only an ad hoc check shows it.

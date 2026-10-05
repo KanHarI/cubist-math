@@ -181,8 +181,10 @@ and D0b together:
 The library-first slice can ship before any tooling. The first tooling release
 is A7, A5 and B1, with inspection and tests; the next adds A4, A6, A1/A2 and
 B4. A3 is independently gated. D1/D2 and Σ extensionality form the next small
-release. Argument inference, `apply` and `refine` retain the ergonomics plan's
-scoped-metavariable prerequisites; they need not wait for all of D–F.
+release. Argument inference retained the ergonomics plan's
+scoped-metavariable prerequisites and was delivered on 2026-10-04 (work-plan
+L4.1a, L4.1b) without waiting for D–F; `apply` and `refine` were withdrawn
+on 2026-10-05 (L4.4).
 
 ### A. Core representation for paths
 
@@ -989,8 +991,11 @@ F1 starts after D0's foundations, D4, B3 and D1/D2; registration of its
 identity systems additionally uses D3 and milestone 7's views. F2 uses D0b's canonical `Equiv` API,
 including `equiv_eq`, and C2's transport laws. F4 uses D0a's h-level
 definitions. Theories
-(ergonomics milestone 6) are the record syntax. Kernel extensions are
-separate work.
+(ergonomics milestone 6) are the record syntax, delivered as work-plan L2.4
+on 2026-10-05: a theory's laws are propositions by their form (E818), and
+its `T.Iso` exists, so F1's group target can start from
+`library/algebra.cubist`'s `Group` and its generated isomorphisms. Kernel
+extensions are separate work.
 
 - [ ] **F1. Compositional structure descriptions and SIP.** Implement checked
   descriptions for carrier data, constants, products, function operations and
@@ -1083,7 +1088,7 @@ them, except where marked (H).
 | Milestone 4: dependent applications, pairs and hypotheses | A2, E1 and B1's `subst` |
 | Milestone 4: cubical constructors | E2 squares and bounded boundary-filling experiments |
 | Milestone 5: goal-derived induction | Ergonomics milestone 7 (`match`); B1 remains for `Path` induction |
-| Milestone 5: named and implicit arguments, `apply`, `refine` | Retain scoped-metavariable prerequisites; do not wait for all D–F |
+| Milestone 5: named and implicit arguments, `apply`, `refine` | Arguments delivered 2026-10-04 (L4.1a, L4.1b) without waiting for D–F; `apply` and `refine` withdrawn (L4.4) |
 | Milestone 5: universe specialization inference | Level-argument inference after G0; A9 superseded |
 | Milestone 6: `ext` with selected lemmas | B3 and D2 |
 | Milestone 6: records, notation, sections, algebra normalization | Ergonomics milestone 6 (theories) supplies records, notation and sections; A8 projections and F1 identity serve it |

@@ -1,6 +1,7 @@
 # Real-number roadmap
 
-Status: paused during language development; corrected on 2026-09-28 after
+Status: paused during language development, but for R1's integers and
+rationals, built on 2026-10-05; corrected on 2026-09-28 after
 the [work-plan audit](audits/2026-09-28-audit.md) (previously reviewed
 2026-09-27); restructured on 2026-09-25 for the rebuild of the library. The
 first library's development is described below, under "The first library's
@@ -9,7 +10,10 @@ development", and is archived with that library. Its results are summarized in
 rebuilt number systems; they are deferred in the
 [work plan](work-plan.md#deferred-library-backlog) as B3 (integers), B4
 (rationals and the field interface) and B5 (reals), and no language
-milestone resumes them automatically.
+milestone resumes them automatically. On 2026-10-05 the library's
+foundations resumed, and R1's integers and rationals were built, as
+quotients rather than as planned below: see R1. Their order, and the rest
+of this roadmap, stay deferred.
 
 ## Plan for the rebuilt library
 
@@ -38,8 +42,8 @@ definitions are not claimed to fail to check; the obligation is the bridge.
 
 | Carrier | Construction | Needs | Computation |
 | --- | --- | --- | --- |
-| Integers | `inductive Int { pos(n : Nat); negsucc(n : Nat); }`, with "difference of naturals" and "point with an equivalence" as presentations | L2.1 and L2.2a, experimental since 2026-09-28; L2.7 for the presentations | Constructor normal forms; decidable equality |
-| Rationals | Canonical quotient of `Int and PosNat` by cross-multiplication, represented in lowest terms | L2.7 (canonical quotients), with gcd, normalization correctness and uniqueness | Closed rationals print reduced; equality decidable |
+| Integers | **Built** on 2026-10-05 as the quotient of `Nat and Nat` by the same difference (`library/integers.cubist`): a commutative ring with no zero divisors. Planned: `inductive Int { pos(n : Nat); negsucc(n : Nat); }`, with "difference of naturals" and "point with an equivalence" as presentations; the archive's `signed_integers` is `Nat or Nat` | The library's effective quotients; L2.7 for the presentations | Operations compute on closed integers; equality decidable through effectiveness. Closed integers are classes of pairs, not constructor normal forms |
+| Rationals | **Built** on 2026-10-05 as the field of fractions (`library/rationals.cubist`): fractions `x / d`, `d` not zero, by cross-multiplication, over any commutative ring with decidable equality, no zero divisors and zero not one, at the integers. Planned: the canonical quotient of `Int and PosNat`, in lowest terms | The built field: L2.4's theories and effective quotients. In lowest terms: L2.7 (canonical quotients), with gcd, normalization correctness and uniqueness | Operations and equality compute. Closed rationals are classes of fractions and do not print reduced until the canonical form exists |
 | Reals (primary) | `Real = initial CauchyStructure`: the book's Cauchy completion, a higher inductive-inductive type with its closeness relation, at precision `PosRat` | Kernel H3 (K5.1, K5.2, L5.1); L2.6 initial models and folds; the rational prerequisites | Closed reals normalize to the constructors `rat`/`lim` or to the stage's formal Kan forms; a closed rational approximation comes from a proved approximation theorem, read out through L2.9b |
 | Reals (fallback) | Dedekind reals: located two-sided cuts of the rationals, in `next(U0)` | Kernel H1 (`Trunc`) and the cut and field mathematics; with canonical rationals, no generic quotient is needed for cuts | Approximations through locatedness, given a proved approximation result, a closed computable input and L2.9b's checked readout; native truncation alone supplies none of these |
 
@@ -90,12 +94,22 @@ definitions are not claimed to fail to check; the obligation is the bridge.
    arithmetic, with `evaluate` tests. A generic H1 set quotient is a
    separate presentation: the quotient constructor does not supply the
    fixed-point canonical representation.
+
+   **Done in part** on 2026-10-05, with the quotients as the primary
+   presentations: arithmetic, setness, decidable equality and computing
+   operations for both, and the field laws for the rationals. Open: the
+   order on both, decidable, with the ordered-field laws, the positive
+   rationals `PosRat` and the Archimedean property, which R2 and R3 need;
+   the inductive integers as a presentation; and the canonical, lowest-terms
+   rationals.
 2. **R2. The interface** (B4). The theories `OrderedField` and
    `CompleteOrderedField`, with limits, uniqueness and the algebra of limits
    stated generically, on L2.4's core theories and L2.5a's h-level fields.
    Settle the precision and modulus types (`PosRat` or `Nat`) and prove the
    bridge above before porting clients. It needs no H3 and can proceed with
-   any model, even before a concrete reals construction exists.
+   any model, even before a concrete reals construction exists. L2.4 was
+   delivered on 2026-10-05, and the library's `Field` is the starting
+   point; its inverse becomes partial with L2.10k.
 3. **R3. Cauchy reals** (B5), scheduled as separate obligations
    (corrected: "field operations by folding" hid most of them):
    - `CauchyStructure` and its initial model at H3;
@@ -124,16 +138,17 @@ complete ordered field.
 
 | Package | Explicit dependencies and acceptance |
 | --- | --- |
-| R1 integers | L2.1/L2.2a; arithmetic, setness and decidable-equality proofs; L2.7 for the alternate presentations |
-| R1 canonical rationals | L2.7, with gcd, normalization correctness and uniqueness, and the arithmetic and order laws; the generic set quotient is a separate presentation |
+| R1 integers | Built as a quotient, with arithmetic, setness and decidable equality (2026-10-05); open: the order; L2.7 for the inductive presentation |
+| R1 rationals | Built as the field of fractions (2026-10-05); open: the order laws and `PosRat`. Canonical rationals: L2.7, with gcd, normalization correctness and uniqueness |
 | R2 field interface | L2.4 core theories and L2.5a h-level fields; the precision and modulus types settled and the sequence/approximation bridge proved before clients are ported; no H3 |
 | R3 Cauchy reals | K5.1/K5.2/L5.1; L2.6 initial models and folds; R1 and R2; the construction proofs listed above; L2.9b for the closed approximation readout |
 | R4 Dedekind fallback | H1 truncation and the cut and field mathematics; canonical rationals in place of a generic quotient; L2.9b for readout |
 
 The work plan replaces Cauchy reals and √2 as the active H3 release gate
 with a small context/type interpreter; the mathematical example remains
-deferred integration acceptance. No concrete rational ordered field or
-complete ordered field has been constructed in the rebuilt library, and the
+deferred integration acceptance. The rebuilt library's rationals are a
+field, not yet an ordered one, and no complete ordered field has been
+constructed in it; the
 archive records that its abstract `Q` and its candidate real carriers did
 not supply those certificates.
 
