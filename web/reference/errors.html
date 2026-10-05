@@ -387,7 +387,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E166"><td><code>E166</code></td><td>Implicit parameters are in double braces: def f{{U &lt; UU0, A : U}}(…).</td></tr>
                 <tr id="E167"><td><code>E167</code></td><td>A notation is a binary operator: x + y, x * y, x &lt; y or x &lt;= y.</td></tr>
                 <tr id="E168"><td><code>E168</code></td><td>Expected '}' to close the theory.</td></tr>
-                <tr id="E169"><td><code>E169</code></td><td>A sort is a set or a proposition: sort M : set; or sort P : prop;</td></tr>
+                <tr id="E169"><td><code>E169</code></td><td>A sort is a set or a proposition: sort M : set; or sort P : prop; (retired)</td></tr>
                 <tr id="E170"><td><code>E170</code></td><td>Expected ':' and the type of …, as in …</td></tr>
                 <tr id="E171"><td><code>E171</code></td><td>Sections do not nest: close this one with } first.</td></tr>
                 <tr id="E172"><td><code>E172</code></td><td>A section gives its definitions parameters: section (G : Group(U0)) { … }.</td></tr>
@@ -397,6 +397,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E177"><td><code>E177</code></td><td>… binds … universes; a theory binds one, the universe of its carriers.</td></tr>
                 <tr id="E178"><td><code>E178</code></td><td>… is not the universe of …'s carriers: name it in the header, as in theory …(… &lt; UU0).</td></tr>
                 <tr id="E179"><td><code>E179</code></td><td>A theory's header binds the universe of its carriers, as in theory …(U &lt; UU0).</td></tr>
+                <tr id="E180"><td><code>E180</code></td><td>A carrier is a field: write … : set U; or … : prop U;, with the universe named in the header, theory …(U &lt; UU0).</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -545,6 +546,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E393"><td><code>E393</code></td><td>… takes … argument… by position; give its implicit parameters … in double braces, in order or by name, as …{{…}}(…) or …{{… := …}}(…).</td></tr>
                 <tr id="E394"><td><code>E394</code></td><td>… is a theory: its models are ….Model(U), built with ….make(…). (retired)</td></tr>
                 <tr id="E395"><td><code>E395</code></td><td>A definition in a section has the section's implicit parameters, not its own: add them to the section's {{…}}.</td></tr>
+                <tr id="E396"><td><code>E396</code></td><td>….Model is now …: a theory's name is the type of its models, as in …(U0).</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e4">Proof statements, rewriting and simplification</h3>

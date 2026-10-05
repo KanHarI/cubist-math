@@ -189,6 +189,8 @@ def open_a_number(n : Nat) : Nat {
 //   one, one_mul, mul_one, and the parents semigroup.
 def no_such_field(G : Monoid(U0)) : G.M := G.zero;
 
-// A theory's name is the type of its models (L2.4c); T.Model is its earlier
-// name, the same definition.
+// A theory's name is the type of its models (L2.4c); T.Model, its earlier
+// name, is refused.
+// Error: E396: Monoid.Model is now Monoid: a theory's name is the type of its models, as in
+//   Monoid(U0).
 def model_type_names(G : Monoid(U0)) : Monoid.Model(U0) := G;

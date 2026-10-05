@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import { parse } from "../web/cubist/parser.mjs";
 import { formatCubist } from "../web/cubist/formatter.mjs";
+import { currentSyntax } from "../web/cubist/legacy-syntax.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { testModule } from "./check-program.mjs";
@@ -90,18 +91,19 @@ test("a carrier is a set, a proposition or a bare type in the header's universe,
   assert.throws(() => parse("theory T(U, V < UU0) { }"), /T binds 2 universes; a theory binds one, the universe of its carriers\./);
 });
 
-test("until the migration's second commit, sort and T.Model are the earlier spelling", () => {
-  const [old] = parse("theory T { sort M : set; sort P : prop; }").declarations;
-  assert.deepEqual(old.fields.map(field => [field.kind, field.name.text, field.level]), [["sort", "M", "set"], ["sort", "P", "prop"]]);
+test("sort, a carrier's spelling until L2.4c, is refused with the field that replaces it", () => {
+  assert.throws(() => parse("theory T { sort M : set; }"),
+    /A carrier is a field: write M : set U; or M : prop U;, with the universe named in the header, theory T\(U < UU0\)\./);
+  // A field named sort is a field.
+  assert.deepEqual(parse("theory T(U < UU0) { sort : U; }").declarations[0].fields.map(f => f.name.text), ["sort"]);
 });
 
 test("the parser refuses a theory's malformed fields", () => {
-  const refused = (body, message) => assert.throws(() => parse(`theory T {\n${body}\n}`), message);
-  refused("sort M : type;", /A sort is a set or a proposition: sort M : set; or sort P : prop;/);
-  refused("sort M : set; mul(x, y : M) : M notation x ++ y;", /A notation is a binary operator: x \+ y, x \* y, x < y or x <= y\./);
-  refused("sort M : set; one M;", /Expected ':' and the type of one, as in mul\(x, y : M\) : M;/);
-  refused("sort M : set; law unit(x : M) x = x;", /Expected ':' and the type of unit, as in law mul_one\(x : M\) : x \* one = x;/);
-  assert.throws(() => parse("theory T {\n  sort M : set;\n"), /Expected '}' to close the theory\./);
+  const refused = (body, message) => assert.throws(() => parse(`theory T(U < UU0) {\n${body}\n}`), message);
+  refused("M : set U; mul(x, y : M) : M notation x ++ y;", /A notation is a binary operator: x \+ y, x \* y, x < y or x <= y\./);
+  refused("M : set U; one M;", /Expected ':' and the type of one, as in mul\(x, y : M\) : M;/);
+  refused("M : set U; law unit(x : M) x = x;", /Expected ':' and the type of unit, as in law mul_one\(x : M\) : x \* one = x;/);
+  assert.throws(() => parse("theory T(U < UU0) {\n  M : set U;\n"), /Expected '}' to close the theory\./);
   // law, sort and notation are keywords only where a field starts.
   assert.equal(parse("theory T { law : Unit; sort : Unit; }").declarations[0].fields.map(f => f.name.text).join(), "law,sort");
 });
@@ -157,4 +159,11 @@ def idempotent(G : Magma(U0), x : G.M) : G.mul(x, x) = x {
   // Only the false claim is refused, and its message shows the field as G.mul.
   assert.deepEqual(result.gaps.map(gap => gap.name), ["idempotent"]);
   assert.match(result.gaps[0].reason, /expected G\.mul\(x, x\) = x/);
+});
+
+test("a source from before L2.4c is read with carriers, a header and T for T.Model", () => {
+  const old = "theory Monoid extends Semigroup {\n  sort M : set;\n  sort P : prop;\n}\ndef f(G : Monoid.Model(U0), sort : Nat) : G.M := G.one;\n";
+  assert.equal(currentSyntax(old),
+    "theory Monoid(U < UU0) extends Semigroup {\n  M : set U;\n  P : prop U;\n}\ndef f(G : Monoid(U0), sort : Nat) : G.M := G.one;\n");
+  assert.doesNotThrow(() => parse(currentSyntax(old)));
 });

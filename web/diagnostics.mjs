@@ -93,7 +93,7 @@ export const diagnostics = [
   ["E166", "Implicit parameters are in double braces: def f{{U < UU0, A : U}}(…)."],
   ["E167", "A notation is a binary operator: x + y, x * y, x < y or x <= y."],
   ["E168", "Expected '}' to close the theory."],
-  ["E169", "A sort is a set or a proposition: sort M : set; or sort P : prop;"],
+  ["E169", "A sort is a set or a proposition: sort M : set; or sort P : prop;", "retired"],
   ["E170", "Expected ':' and the type of …, as in …"],
   ["E171", "Sections do not nest: close this one with } first."],
   ["E172", "A section gives its definitions parameters: section (G : Group(U0)) { … }."],
@@ -103,6 +103,7 @@ export const diagnostics = [
   ["E177", "… binds … universes; a theory binds one, the universe of its carriers."],
   ["E178", "… is not the universe of …'s carriers: name it in the header, as in theory …(… < UU0)."],
   ["E179", "A theory's header binds the universe of its carriers, as in theory …(U < UU0)."],
+  ["E180", "A carrier is a field: write … : set U; or … : prop U;, with the universe named in the header, theory …(U < UU0)."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
@@ -241,6 +242,7 @@ export const diagnostics = [
   ["E393", "… takes … argument… by position; give its implicit parameters … in double braces, in order or by name, as …{{…}}(…) or …{{… := …}}(…)."],
   ["E394", "… is a theory: its models are ….Model(U), built with ….make(…).", "retired"],
   ["E395", "A definition in a section has the section's implicit parameters, not its own: add them to the section's {{…}}."],
+  ["E396", "….Model is now …: a theory's name is the type of its models, as in …(U0)."],
   // Proof statements, rewriting and simplification
   ["E401", "Univalence requires a universe."],
   ["E402", "… takes a universe below UU0."],

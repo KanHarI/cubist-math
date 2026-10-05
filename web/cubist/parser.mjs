@@ -1012,16 +1012,10 @@ export function parse(source, typeOnly = false) {
       while (peek() !== "}") {
         if (peek() === "EOF") throw Object.assign(new Error("Expected '}' to close the theory."), { offset: ts[i].start });
         const start = ts[i].start;
-        if (word("sort")) {
-          take("sort");
-          const sort = name();
-          take(":");
-          const level = take();
-          if (!["set", "prop"].includes(level.text))
-            throw Object.assign(new Error("A sort is a set or a proposition: sort M : set; or sort P : prop;"), { offset: level.start });
-          fields.push({ kind: "sort", name: sort, level: level.text, levelToken: level, start, end: take(";").end });
-          continue;
-        }
+        // sort M : set; was a carrier's spelling until L2.4c.
+        if (word("sort"))
+          throw Object.assign(new Error(`A carrier is a field: write ${ts[i + 1].text} : set U; or ${ts[i + 1].text} : prop U;, with the universe named in the header, theory ${n.text}(U < UU0).`),
+            { offset: ts[i].start });
         const law = word("law");
         const keyword = law ? take("law") : null;
         const field = name(), params = peek() === "(" ? parameters("(x, y : M)", false) : [];

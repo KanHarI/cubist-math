@@ -76,11 +76,12 @@ export const linkedWord = (text, link) => ["zero", "succ"].includes(text) && lin
 // The words a theory gives a role, by offset, found once per source from its
 // tokens, so that comments and nested braces do not move them (L2.4). In a
 // theory's header, extends after its name and universe, and notation in a
-// parent's renaming; in its body, law and sort starting a field and followed
-// by its name, a carrier's h-level, as set in M : set U;, and notation after
-// an operation's type, followed by x + y. Each of these is a keyword, and the words are names elsewhere, as
-// the parser reads them: a field may be named law, sort or notation. zero and
-// succ in a theory name its fields, not Nat's constructors.
+// parent's renaming; in its body, law starting a field and followed by its
+// name, a carrier's h-level, as set in M : set U;, and notation after an
+// operation's type, followed by x + y. Each of these is a keyword, and the
+// words are names elsewhere, as the parser reads them: a field may be named
+// law, set or notation. zero and succ in a theory name its fields, not
+// Nat's constructors.
 let rolesOf = { source: null, roles: new Map() };
 function theoryRoles(source) {
   if (rolesOf.source === source) return rolesOf.roles;
@@ -117,10 +118,6 @@ function theoryRoles(source) {
         continue;
       }
       if (word === "law" && isWord(next + 1)) { roles.set(tokens[next].start, true); law = true; }
-      if (word === "sort" && isWord(next + 1)) {
-        roles.set(tokens[next].start, true);
-        if (text(next + 2) === ":" && ["set", "prop"].includes(text(next + 3))) roles.set(tokens[next + 3].start, true);
-      }
       // A carrier's h-level: M : set U; and P : prop U;.
       if (isWord(next) && text(next + 1) === ":" && ["set", "prop"].includes(text(next + 2)) && isWord(next + 3)
         && text(next + 4) === ";") roles.set(tokens[next + 2].start, true);
