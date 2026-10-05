@@ -86,7 +86,7 @@ try {
   assert.deepEqual(errors, []);
   // Nat is an ordinary imported declaration: both occurrences in Z lead to
   // its signature and View source opens the actual inductive, not this use.
-  await openProof("integers", "Z");
+  await openProof("signed_integers", "Z");
   const naturalUses = page.locator('.source-line').filter({ hasText: "def Z := Nat or Nat;" })
     .locator('button[data-name="Nat"]');
   assert.equal(await naturalUses.count(), 2);
@@ -102,7 +102,7 @@ try {
   assert.match(await page.locator(".source-line.active").textContent(), /inductive Nat : U0/);
   assert.match(await page.locator("#editor").inputValue(), /succ\(n : Nat\)/);
   await page.locator("#back").click(); await idle();
-  assert.equal(new URL(page.url()).searchParams.get("proof"), "integers");
+  assert.equal(new URL(page.url()).searchParams.get("proof"), "signed_integers");
   assert.equal(await page.locator("#inspect-name").textContent(), "Nat");
   await openProof("suspension", "S1");
   for (const name of ["Suspension", "north", "south", "meridian", "suspension_induction", "suspension_meridian_beta"]) {

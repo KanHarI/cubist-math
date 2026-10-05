@@ -250,7 +250,7 @@ test("instruction coverage: the report pins what it measured, and the exit statu
   const report = join(directory, "report.json"), trajectories = join(directory, "trajectories.jsonl");
   const passed = coverage(["--modules=basics", `--trajectories=${trajectories}`], report);
   assert.equal(passed.status, 0, passed.stderr + passed.stdout);
-  assert.match(passed.stdout, /23 of 23 declarations in 1 module, 0 gaps/);
+  assert.match(passed.stdout, /28 of 28 declarations in 1 module, 0 gaps/);
   assert.match(passed.stdout, /Coverage complete\./);
   const written = JSON.parse(await readFile(report, "utf8"));
   assert.equal(written.success, true);

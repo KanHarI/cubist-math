@@ -23,12 +23,6 @@ def nat_zero_ne_succ(n : Nat, p : (0 = succ(n))) :=
             })(x)) => t)), 0, succ(n), p
   )(tt);
 
-def nat_succ_injective(x, y : Nat, p : (succ(x) = succ(y))) :=
-  cong((fun (n : Nat) => induction n as k return Nat {
-        zero => 0;
-        succ ignored => k;
-      }), p);
-
 def nat_le_zero(n : Nat) := induction n as k return ((k <= 0) -> (k = 0)) {
     zero => (fun (x : Unit) => refl(0));
     succ ignored => (fun (h : Void) => typed((succ(k) = 0), absurd(h)));
@@ -138,28 +132,6 @@ def nat_eq_decidable(a : Nat) :=
       }
     );
   };
-
-def nat_add_cancel(a : Nat) :=
-  induction a as a2 return (forall c : Nat. (forall d : Nat. (((a2 + c) = (a2 + d)) -> (c = d)))) {
-    zero => (fun (c : Nat) => (fun (d : Nat) => (fun (p : (c = d)) => p)));
-    succ h => (
-      fun (c : Nat) => (
-        fun (d : Nat) => (
-          fun (p : (succ((a2 + c)) = succ((a2 + d)))) => h(
-            c, d, nat_succ_injective((a2 + c), (a2 + d), p)
-          )
-        )
-      )
-    );
-  };
-
-def nat_add_shuffle(a, c, d : Nat) : (a + (c + d)) = (c + (a + d)) {
-  calc {
-    a + (c + d) = (a + c) + d by sym(nat_add_assoc(a, c, d));
-    _ = (c + a) + d by cong((fun (x : Nat) => x + d), nat_add_comm(a, c));
-    _ = c + (a + d) by nat_add_assoc(c, a, d);
-  }
-}
 
 def nat_quotient_bound(d, q : Nat) := induction q as q2 return (q2 <= (q2 * succ(succ(d)))) {
     zero => tt;

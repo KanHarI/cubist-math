@@ -1,0 +1,43 @@
+// The library's integers at work: a pair of naturals (a, b) stands for
+// a - b. Equality is decided by computation, arithmetic computes on
+// representatives, the ring's lemmas apply to them, and the natural
+// numbers embed into them as a homomorphism of additive monoids.
+import nat;
+import algebra;
+import integers;
+
+computable def equal_or_not(x, y : Z) : Nat := match int_decide(x, y) return Nat {
+    left same => 1;
+    right different => 0;
+  };
+
+// 2 - 5 and 0 - 3 are one integer, -3; 3 - 0 is another.
+// Output: 1
+print(evaluate(equal_or_not(int(2, 5), int(0, 3))));
+
+// Output: 0
+print(evaluate(equal_or_not(int(2, 5), int(3, 0))));
+
+// (2 - 5) + (4 - 0) is the pair 6 - 5, which is 1.
+// Output: class((6, 5))
+print(evaluate(int_add(int(2, 5), int(4, 0))));
+
+// Output: 1
+print(evaluate(equal_or_not(int_add(int(2, 5), int(4, 0)), int_one)));
+
+// (-2) * (-3) = 6.
+// Output: 1
+print(evaluate(equal_or_not(int_mul(int(0, 2), int(0, 3)), int(6, 0))));
+
+// A commutative ring's lemma, at the integers.
+computable def times_zero(x : Z) : int_mul(x, int_zero) = int_zero := mul_zero(integers, x);
+
+// n is the integer n - 0, and addition is preserved.
+computable def naturals_in_integers :
+  CommMonoid.Hom(nat_additive, integers.additive.comm_monoid) := CommMonoid.Hom.make(
+    nat_additive, integers.additive.comm_monoid, map := fun (n : Nat) => int(n, 0),
+    map_mul := fun (x, y : Nat) => refl(int(x + y, 0)), map_one := refl(int_zero)
+  );
+
+// Output: 1
+print(evaluate(equal_or_not(naturals_in_integers.map(4), int(7, 3))));

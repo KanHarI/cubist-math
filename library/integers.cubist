@@ -1,0 +1,397 @@
+import nat;
+import hlevels;
+import quotients;
+import algebra;
+
+// The integers as a quotient: a pair of naturals (a, b) stands for a - b,
+// and two pairs stand for one integer when a + d = c + b. The integers are
+// a commutative ring with decidable equality, and every operation computes
+// on closed integers.
+
+// (a, b) and (c, d) have the same difference: a + d = c + b.
+def SameDifference(p, q : Nat and Nat) : U0 := p.1 + q.2 = q.1 + p.2;
+
+computable def same_difference_props(p, q : Nat and Nat) :
+  IsProp(U0, SameDifference(p, q)) := nat_is_set(p.1 + q.2, q.1 + p.2);
+
+computable def same_difference_refl(p : Nat and Nat) : SameDifference(p, p) := refl(p.1 + p.2);
+
+computable def same_difference_sym(p, q : Nat and Nat, r : SameDifference(p, q)) :
+  SameDifference(q, p) := sym(r);
+
+// From a + d = c + b and c + f = e + d, a + f = e + b: both sides plus d
+// agree, and addition cancels.
+computable def same_difference_trans(
+  p, q, s : Nat and Nat, r : SameDifference(p, q), t : SameDifference(q, s)
+) :
+  SameDifference(p, s) {
+  let shifted : q.2 + (p.1 + s.2) = q.2 + (s.1 + p.2) {
+    calc {
+      q.2 + (p.1 + s.2) = (p.1 + q.2) + s.2 by trans(
+        sym(nat_add_assoc(q.2, p.1, s.2)), cong(fun (m : Nat) => m + s.2, nat_add_comm(q.2, p.1))
+      );
+      _ = (q.1 + p.2) + s.2 by cong(fun (m : Nat) => m + s.2, r);
+      _ = (q.1 + s.2) + p.2 by trans(
+        nat_add_assoc(q.1, p.2, s.2),
+        trans(
+          cong(fun (m : Nat) => q.1 + m, nat_add_comm(p.2, s.2)), sym(nat_add_assoc(q.1, s.2, p.2))
+        )
+      );
+      _ = (s.1 + q.2) + p.2 by cong(fun (m : Nat) => m + p.2, t);
+      _ = q.2 + (s.1 + p.2) by trans(
+        cong(fun (m : Nat) => m + p.2, nat_add_comm(s.1, q.2)), nat_add_assoc(q.2, s.1, p.2)
+      );
+    }
+  }
+  exact nat_add_cancel(q.2, p.1 + s.2, s.1 + p.2, shifted);
+}
+
+def Z : U0 := Quotient(U0, Nat and Nat, SameDifference);
+
+computable def int_is_set : IsSet(U0, Z) := quotient_is_set(U0, Nat and Nat, SameDifference);
+
+// The integer a - b.
+computable def int(a, b : Nat) : Z := class((a, b));
+
+// Pairs with the same difference are one integer.
+computable def int_path(p, q : Nat and Nat, r : SameDifference(p, q)) :
+  typed(Z, class(p)) = typed(Z, class(q)) := class_path(U0, Nat and Nat, SameDifference, p, q, r);
+
+// Equal pairs are one integer.
+computable def int_pairs(p, q : Nat and Nat, e : p = q) :
+  typed(Z, class(p)) = typed(Z, class(q)) := cong(fun (s : Nat and Nat) => typed(Z, class(s)), e);
+
+// An equation of integers holds when it holds at every class.
+computable def int_induction(
+  P : Z -> U0, props : (forall z : Z. IsProp(U0, P(z))), f : (forall p : Nat and Nat. P(class(p))),
+  z : Z
+) :
+  P(z) := quotient_induction_prop(U0, U0, Nat and Nat, SameDifference, P, props, f, z);
+
+computable def int_zero : Z := int(0, 0);
+
+computable def int_one : Z := int(1, 0);
+
+// Negation swaps a pair: -(a - b) = b - a.
+computable def int_neg(x : Z) :
+  Z := descend(
+    U0, U0, Nat and Nat, SameDifference, Z, int_is_set,
+    fun (p : Nat and Nat) => typed(Z, class((p.2, p.1))),
+    fun (p, q : Nat and Nat, r : SameDifference(p, q)) => int_path(
+      (p.2, p.1), (q.2, q.1), trans(nat_add_comm(p.2, q.1), trans(sym(r), nat_add_comm(p.1, q.2)))
+    ), x
+  );
+
+// Addition adds pairs: (a - b) + (c - d) = (a + c) - (b + d).
+computable def add_pairs(p, q : Nat and Nat) : Nat and Nat := (p.1 + q.1, p.2 + q.2);
+
+// The sums of pairs with the same difference have the same difference.
+computable def add_pairs_left(p, s, q : Nat and Nat, r : SameDifference(p, s)) :
+  SameDifference(add_pairs(p, q), add_pairs(s, q)) {
+  calc {
+    (p.1 + q.1) + (s.2 + q.2) = (p.1 + s.2) + (q.1 + q.2) by nat_add_interchange(p.1, q.1, s.2, q.2);
+    _ = (s.1 + p.2) + (q.1 + q.2) by cong(fun (m : Nat) => m + (q.1 + q.2), r);
+    _ = (s.1 + q.1) + (p.2 + q.2) by nat_add_interchange(s.1, p.2, q.1, q.2);
+  }
+}
+
+computable def add_pairs_comm(p, q : Nat and Nat) :
+  add_pairs(p, q) = add_pairs(q, p) := path i => (
+    nat_add_comm(p.1, q.1) @ i, nat_add_comm(p.2, q.2) @ i
+  );
+
+computable def int_add(x, y : Z) :
+  Z := descend2(
+    U0, U0, Nat and Nat, SameDifference, Z, int_is_set,
+    fun (p, q : Nat and Nat) => typed(Z, class(add_pairs(p, q))),
+    fun (p, s, q : Nat and Nat, r : SameDifference(p, s)) => int_path(
+      add_pairs(p, q), add_pairs(s, q), add_pairs_left(p, s, q, r)
+    ),
+    fun (p, q, s : Nat and Nat, r : SameDifference(q, s)) => trans(
+      int_pairs(add_pairs(p, q), add_pairs(q, p), add_pairs_comm(p, q)),
+      trans(
+        int_path(add_pairs(q, p), add_pairs(s, p), add_pairs_left(q, s, p, r)),
+        int_pairs(add_pairs(s, p), add_pairs(p, s), add_pairs_comm(s, p))
+      )
+    ), x, y
+  );
+
+// Multiplication: (a - b) * (c - d) = (a * c + b * d) - (a * d + b * c).
+computable def mul_pairs(p, q : Nat and Nat) :
+  Nat and Nat := (p.1 * q.1 + p.2 * q.2, p.1 * q.2 + p.2 * q.1);
+
+// With a + b' = a' + b, both sides are (a + b') * c + (b + a') * d,
+// regrouped.
+computable def mul_pairs_left(p, s, q : Nat and Nat, r : SameDifference(p, s)) :
+  SameDifference(mul_pairs(p, q), mul_pairs(s, q)) {
+  let swapped : p.2 + s.1 = s.2 + p.1 :=
+    trans(nat_add_comm(p.2, s.1), trans(sym(r), nat_add_comm(p.1, s.2)));
+  calc {
+    (p.1 * q.1 + p.2 * q.2) + (s.1 * q.2 + s.2 * q.1) = (p.1 * q.1 + s.2 * q.1) + (
+      p.2 * q.2 + s.1 * q.2
+    ) by trans(
+      cong(fun (m : Nat) => (p.1 * q.1 + p.2 * q.2) + m, nat_add_comm(s.1 * q.2, s.2 * q.1)),
+      nat_add_interchange(p.1 * q.1, p.2 * q.2, s.2 * q.1, s.1 * q.2)
+    );
+    _ = (p.1 + s.2) * q.1 + (p.2 + s.1) * q.2 by sym(
+      trans(
+        cong(fun (m : Nat) => m + (p.2 + s.1) * q.2, nat_add_mul(p.1, s.2, q.1)),
+        cong(fun (m : Nat) => (p.1 * q.1 + s.2 * q.1) + m, nat_add_mul(p.2, s.1, q.2))
+      )
+    );
+    _ = (s.1 + p.2) * q.1 + (s.2 + p.1) * q.2 by trans(
+      cong(fun (m : Nat) => m * q.1 + (p.2 + s.1) * q.2, r),
+      cong(fun (m : Nat) => (s.1 + p.2) * q.1 + m * q.2, swapped)
+    );
+    _ = (s.1 * q.1 + p.2 * q.1) + (s.2 * q.2 + p.1 * q.2) by trans(
+      cong(fun (m : Nat) => m + (s.2 + p.1) * q.2, nat_add_mul(s.1, p.2, q.1)),
+      cong(fun (m : Nat) => (s.1 * q.1 + p.2 * q.1) + m, nat_add_mul(s.2, p.1, q.2))
+    );
+    _ = (s.1 * q.1 + s.2 * q.2) + (p.1 * q.2 + p.2 * q.1) by trans(
+      nat_add_interchange(s.1 * q.1, p.2 * q.1, s.2 * q.2, p.1 * q.2),
+      cong(fun (m : Nat) => (s.1 * q.1 + s.2 * q.2) + m, nat_add_comm(p.2 * q.1, p.1 * q.2))
+    );
+  }
+}
+
+computable def mul_pairs_comm(p, q : Nat and Nat) :
+  mul_pairs(p, q) = mul_pairs(q, p) := path i => (
+    (
+      cong(fun (m : Nat) => m + p.2 * q.2, nat_mul_comm(p.1, q.1)) ++ cong(
+        fun (m : Nat) => q.1 * p.1 + m, nat_mul_comm(p.2, q.2)
+      )
+    ) @ i,
+    (
+      nat_add_comm(p.1 * q.2, p.2 * q.1) ++ cong(
+        fun (m : Nat) => m + p.1 * q.2, nat_mul_comm(p.2, q.1)
+      ) ++ cong(fun (m : Nat) => q.1 * p.2 + m, nat_mul_comm(p.1, q.2))
+    ) @ i
+  );
+
+computable def int_mul(x, y : Z) :
+  Z := descend2(
+    U0, U0, Nat and Nat, SameDifference, Z, int_is_set,
+    fun (p, q : Nat and Nat) => typed(Z, class(mul_pairs(p, q))),
+    fun (p, s, q : Nat and Nat, r : SameDifference(p, s)) => int_path(
+      mul_pairs(p, q), mul_pairs(s, q), mul_pairs_left(p, s, q, r)
+    ),
+    fun (p, q, s : Nat and Nat, r : SameDifference(q, s)) => trans(
+      int_pairs(mul_pairs(p, q), mul_pairs(q, p), mul_pairs_comm(p, q)),
+      trans(
+        int_path(mul_pairs(q, p), mul_pairs(s, p), mul_pairs_left(q, s, p, r)),
+        int_pairs(mul_pairs(s, p), mul_pairs(p, s), mul_pairs_comm(s, p))
+      )
+    ), x, y
+  );
+
+// An equation of integers in one, two or three of them holds when it holds
+// at their classes.
+computable def int_equation(
+  f, g : Z -> Z, e : (forall p : Nat and Nat. f(class(p)) = g(class(p))), x : Z
+) :
+  f(x) = g(x) := int_induction(
+    fun (z : Z) => f(z) = g(z), fun (z : Z) => int_is_set(f(z), g(z)), e, x
+  );
+
+computable def int_equation2(
+  f, g : Z -> Z -> Z,
+  e : (forall p, q : Nat and Nat. f(class(p), class(q)) = g(class(p), class(q))), x, y : Z
+) :
+  f(x, y) = g(x, y) := int_equation(
+    fun (a : Z) => f(a, y), fun (a : Z) => g(a, y),
+    fun (p : Nat and Nat) => int_equation(
+      fun (b : Z) => f(class(p), b), fun (b : Z) => g(class(p), b),
+      fun (q : Nat and Nat) => e(p, q), y
+    ), x
+  );
+
+computable def int_equation3(
+  f, g : Z -> Z -> Z -> Z,
+  e : (
+    forall p, q, s : Nat and Nat. f(class(p), class(q), class(s)) = g(class(p), class(q), class(s))
+  ), x, y, z : Z
+) :
+  f(x, y, z) = g(x, y, z) := int_equation(
+    fun (a : Z) => f(a, y, z), fun (a : Z) => g(a, y, z),
+    fun (p : Nat and Nat) => int_equation2(
+      fun (b, c : Z) => f(class(p), b, c), fun (b, c : Z) => g(class(p), b, c),
+      fun (q, s : Nat and Nat) => e(p, q, s), y, z
+    ), x
+  );
+
+// Addition is associative and commutative, with zero a unit and negation an
+// inverse.
+computable def int_add_assoc(x, y, z : Z) :
+  int_add(int_add(x, y), z) = int_add(x, int_add(y, z)) := int_equation3(
+    fun (a, b, c : Z) => int_add(int_add(a, b), c), fun (a, b, c : Z) => int_add(a, int_add(b, c)),
+    fun (p, q, s : Nat and Nat) => int_pairs(
+      add_pairs(add_pairs(p, q), s), add_pairs(p, add_pairs(q, s)),
+      path i => (nat_add_assoc(p.1, q.1, s.1) @ i, nat_add_assoc(p.2, q.2, s.2) @ i)
+    ), x, y, z
+  );
+
+computable def int_add_comm(x, y : Z) :
+  int_add(x, y) = int_add(y, x) := int_equation2(
+    fun (a, b : Z) => int_add(a, b), fun (a, b : Z) => int_add(b, a),
+    fun (p, q : Nat and Nat) => int_pairs(add_pairs(p, q), add_pairs(q, p), add_pairs_comm(p, q)),
+    x, y
+  );
+
+computable def int_zero_add(x : Z) :
+  int_add(int_zero, x) = x := int_equation(
+    fun (a : Z) => int_add(int_zero, a), fun (a : Z) => a,
+    fun (p : Nat and Nat) => refl(typed(Z, class(p))), x
+  );
+
+computable def int_add_zero(x : Z) :
+  int_add(x, int_zero) = x := trans(int_add_comm(x, int_zero), int_zero_add(x));
+
+computable def int_neg_add(x : Z) :
+  int_add(int_neg(x), x) = int_zero := int_equation(
+    fun (a : Z) => int_add(int_neg(a), a), fun (a : Z) => int_zero,
+    fun (p : Nat and Nat) => int_path(
+      (p.2 + p.1, p.1 + p.2), (0, 0), trans(nat_add_zero(p.2 + p.1), nat_add_comm(p.2, p.1))
+    ), x
+  );
+
+computable def int_add_neg(x : Z) :
+  int_add(x, int_neg(x)) = int_zero := trans(int_add_comm(x, int_neg(x)), int_neg_add(x));
+
+// The components of a product of three pairs, and of a product with a sum,
+// regrouped: ((a c + b d) e + (a d + b c) f) is a (c e + d f) + b (c f + d e),
+// and a (c + e) + b (d + f) is (a c + b d) + (a e + b f).
+computable def pairs_mul_assoc(a, b, c, d, e, f : Nat) :
+  (a * c + b * d) * e + (a * d + b * c) * f = a * (c * e + d * f) + b * (c * f + d * e) {
+  calc {
+    (a * c + b * d) * e + (a * d + b * c) * f = ((a * c) * e + (b * d) * e) + (
+      (a * d) * f + (b * c) * f
+    ) by trans(
+      cong(fun (m : Nat) => m + (a * d + b * c) * f, nat_add_mul(a * c, b * d, e)),
+      cong(fun (m : Nat) => ((a * c) * e + (b * d) * e) + m, nat_add_mul(a * d, b * c, f))
+    );
+    _ = (a * (c * e) + b * (d * e)) + (a * (d * f) + b * (c * f)) by trans(
+      cong(fun (m : Nat) => (m + (b * d) * e) + ((a * d) * f + (b * c) * f), nat_mul_assoc(a, c, e)),
+      trans(
+        cong(
+          fun (m : Nat) => (a * (c * e) + m) + ((a * d) * f + (b * c) * f), nat_mul_assoc(b, d, e)
+        ),
+        trans(
+          cong(
+            fun (m : Nat) => (a * (c * e) + b * (d * e)) + (m + (b * c) * f), nat_mul_assoc(a, d, f)
+          ),
+          cong(
+            fun (m : Nat) => (a * (c * e) + b * (d * e)) + (a * (d * f) + m), nat_mul_assoc(b, c, f)
+          )
+        )
+      )
+    );
+    _ = (a * (c * e) + a * (d * f)) + (b * (c * f) + b * (d * e)) by trans(
+      nat_add_interchange(a * (c * e), b * (d * e), a * (d * f), b * (c * f)),
+      cong(fun (m : Nat) => (a * (c * e) + a * (d * f)) + m, nat_add_comm(b * (d * e), b * (c * f)))
+    );
+    _ = a * (c * e + d * f) + b * (c * f + d * e) by sym(
+      trans(
+        cong(fun (m : Nat) => m + b * (c * f + d * e), nat_mul_add(a, c * e, d * f)),
+        cong(fun (m : Nat) => (a * (c * e) + a * (d * f)) + m, nat_mul_add(b, c * f, d * e))
+      )
+    );
+  }
+}
+
+computable def pairs_mul_add(a, b, c, d, e, f : Nat) :
+  a * (c + e) + b * (d + f) = (a * c + b * d) + (a * e + b * f) {
+  calc {
+    a * (c + e) + b * (d + f) = (a * c + a * e) + (b * d + b * f) by trans(
+      cong(fun (m : Nat) => m + b * (d + f), nat_mul_add(a, c, e)),
+      cong(fun (m : Nat) => (a * c + a * e) + m, nat_mul_add(b, d, f))
+    );
+    _ = (a * c + b * d) + (a * e + b * f) by nat_add_interchange(a * c, a * e, b * d, b * f);
+  }
+}
+
+// Multiplication is associative and commutative, with one a unit, and
+// distributes over addition.
+computable def int_mul_assoc(x, y, z : Z) :
+  int_mul(int_mul(x, y), z) = int_mul(x, int_mul(y, z)) := int_equation3(
+    fun (a, b, c : Z) => int_mul(int_mul(a, b), c), fun (a, b, c : Z) => int_mul(a, int_mul(b, c)),
+    fun (p, q, s : Nat and Nat) => int_pairs(
+      mul_pairs(mul_pairs(p, q), s), mul_pairs(p, mul_pairs(q, s)),
+      path i => (
+        pairs_mul_assoc(p.1, p.2, q.1, q.2, s.1, s.2) @ i,
+        pairs_mul_assoc(p.1, p.2, q.1, q.2, s.2, s.1) @ i
+      )
+    ), x, y, z
+  );
+
+computable def int_mul_comm(x, y : Z) :
+  int_mul(x, y) = int_mul(y, x) := int_equation2(
+    fun (a, b : Z) => int_mul(a, b), fun (a, b : Z) => int_mul(b, a),
+    fun (p, q : Nat and Nat) => int_pairs(mul_pairs(p, q), mul_pairs(q, p), mul_pairs_comm(p, q)),
+    x, y
+  );
+
+computable def int_one_mul(x : Z) :
+  int_mul(int_one, x) = x := int_equation(
+    fun (a : Z) => int_mul(int_one, a), fun (a : Z) => a,
+    fun (p : Nat and Nat) => int_pairs(
+      mul_pairs((1, 0), p), p,
+      path i => (
+        trans(nat_add_zero(p.1 + 0), nat_add_zero(p.1)) @ i,
+        trans(nat_add_zero(p.2 + 0), nat_add_zero(p.2)) @ i
+      )
+    ), x
+  );
+
+computable def int_mul_one(x : Z) :
+  int_mul(x, int_one) = x := trans(int_mul_comm(x, int_one), int_one_mul(x));
+
+computable def int_mul_add(x, y, z : Z) :
+  int_mul(x, int_add(y, z)) = int_add(int_mul(x, y), int_mul(x, z)) := int_equation3(
+    fun (a, b, c : Z) => int_mul(a, int_add(b, c)),
+    fun (a, b, c : Z) => int_add(int_mul(a, b), int_mul(a, c)),
+    fun (p, q, s : Nat and Nat) => int_pairs(
+      mul_pairs(p, add_pairs(q, s)), add_pairs(mul_pairs(p, q), mul_pairs(p, s)),
+      path i => (
+        pairs_mul_add(p.1, p.2, q.1, q.2, s.1, s.2) @ i,
+        pairs_mul_add(p.1, p.2, q.2, q.1, s.2, s.1) @ i
+      )
+    ), x, y, z
+  );
+
+// Equality of integers is decidable: pairs have the same difference or not,
+// and equal classes have related pairs (quotient_effective).
+computable def int_decide(x, y : Z) :
+  Decidable(U0, x = y) := int_induction(
+    fun (a : Z) => forall b : Z. Decidable(U0, a = b),
+    fun (a : Z) => pi_is_prop(
+      U0, Z, fun (b : Z) => Decidable(U0, a = b),
+      fun (b : Z) => decision_is_prop(U0, a = b, int_is_set(a, b))
+    ),
+    fun (p : Nat and Nat) => fun (b : Z) => int_induction(
+      fun (c : Z) => Decidable(U0, typed(Z, class(p)) = c),
+      fun (c : Z) => decision_is_prop(U0, typed(Z, class(p)) = c, int_is_set(class(p), c)),
+      fun (q : Nat and Nat) => match nat_decide(p.1 + q.2, q.1 + p.2) return (
+        Decidable(U0, typed(Z, class(p)) = typed(Z, class(q)))
+      ) {
+        left e => left(int_path(p, q, e));
+        right no => right(
+          fun (same : typed(Z, class(p)) = typed(Z, class(q))) => no(
+            quotient_effective(
+              U0, Nat and Nat, SameDifference, same_difference_props, same_difference_refl,
+              same_difference_sym, same_difference_trans, p, q, same
+            )
+          )
+        );
+      }, b
+    ), x
+  )(y);
+
+// The integers, a commutative ring.
+def integers :
+  CommRing.Model(U0) := CommRing.make(
+    R := Z, R_is_set := int_is_set, add := int_add, add_assoc := int_add_assoc, zero := int_zero,
+    zero_add := int_zero_add, add_zero := int_add_zero, neg := int_neg, neg_add := int_neg_add,
+    add_neg := int_add_neg, add_comm := int_add_comm, mul := int_mul, mul_assoc := int_mul_assoc,
+    one := int_one, one_mul := int_one_mul, mul_one := int_mul_one, mul_comm := int_mul_comm,
+    mul_add := int_mul_add
+  );

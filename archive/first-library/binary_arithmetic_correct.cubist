@@ -9,7 +9,7 @@ def nat_add_one(n : Nat) : n + 1 = succ(n) {
 def nat_double_add(a, b : Nat) : (a + b) + (a + b) = (a + a) + (b + b) {
   calc {
     (a + b) + (a + b) = a + (b + (a + b)) by nat_add_assoc(a, b, a + b);
-    _ = a + (a + (b + b)) by cong(add(a), nat_add_shuffle(b, a, b));
+    _ = a + (a + (b + b)) by cong(add(a), nat_add_left_comm(b, a, b));
     _ = (a + a) + (b + b) by sym(nat_add_assoc(a, a, b + b));
   }
 }
