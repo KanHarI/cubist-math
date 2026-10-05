@@ -69,6 +69,9 @@ theory Rig extends additive : Monoid(
   const formatted = formatCubist(squeezed);
   assert.equal(formatted, "import hlevels;\ntheory Magma {\n  sort M : set;\n  mul(x, y : M) : M notation x * y;\n  law idem(x : M) : x * x = x;\n}\n");
   assert.equal(formatCubist(formatted), formatted);
+  // Each dot of a longer qualified name stays tight.
+  const nested = "def forget(G : CommGroup.Model(U0)) : Monoid.Model(U0) := G.comm_monoid.monoid;\n";
+  assert.equal(formatCubist(nested), nested);
 });
 
 test("the parser refuses a theory's malformed fields", () => {
