@@ -343,7 +343,7 @@ has an explicit spelling.
 | L2.8 | Squares and `cell` face syntax with boundary inspection (HoTT E2) | L2.1; face/source metadata from L1.2r | M |
 | L2.9a | Expected-value patterns for `evaluate` | L0.1; own pattern contract and L4.1a infrastructure | S |
 | L2.9b | Closed truncation witness readout: a closed computable input, a checked error certificate, and the extracted witness's type specified under transported truncations, which its tests include. Native truncation alone supplies no approximation result | Native H1 `Trunc`, K2.5, L0.1 | M |
-| L2.10 | Explicit notation views and literals: select a view before elaborating an operator, use declared operand views for literals and subexpressions, and preserve that meaning when printing. Expression views and `using` blocks (illustrative syntax) extend explicit structure scope; existing `open` and section semantics remain compatible during migration. Keep existing parses while adding operators. **Direction adopted** in the [notation roadmap](notation.md); syntax and elaboration contracts remain draft, and implementation has not started. L2.10a–e are the primary slices, beginning with small library pilots; type-based automation needs separate evidence later. L2.10f (binary and decimal literal work), L2.10g (independent `decide`) and L2.10h (mixfix) stay deferred | L2.4 | L |
+| L2.10 | Explicit notation views and literals: select a view before elaborating an operator, use declared operand views for literals and subexpressions, and preserve that meaning when printing. `v.(e)` and `using v;` extend explicit structure scope; existing `open` and section semantics remain compatible during migration. **Direction adopted** in the [notation roadmap](notation.md), with **decisions** recorded on 2026-10-05: no name-based operators (L2.10j), `~` for path and coordinate reversal so that `-` is arithmetic (L2.10i), notation declared as it is used, literals read by the library's total parsers from their `Lexeme` and checked by evaluation (L2.10c), and a partial field inverse (L2.10k). Implementation has not started. L2.10i comes first; L2.10a–e are the primary slices, beginning with small library pilots; type-based automation needs separate evidence later. L2.10f (large numerals), L2.10g (independent `decide`) and L2.10h (notation rules, proposed) stay deferred | L2.4 | L |
 | D2.1 | Checked reference, formatter and inspection for each released construct | Corresponding package, including L2.8/L2.9 | L |
 
 L2.2 means both slices when another package needs automatic clauses.
@@ -658,16 +658,18 @@ of explicit matching with the `cases` migration (L2.2a, 2026-10-04).
    ring with decidable equality, no zero divisors and zero not one, written
    once in a section over the ring, at the integers; their arithmetic and
    equality compute. **First action 4 is done** (2026-10-05).
-5. **Explicit notation views and literals (L2.10).** Start with small library
-   pilots for the [roadmap](notation.md)'s L2.10a–e contracts, including two
-   models on one carrier, heterogeneous operations, numeral operand views
-   and faithful printing. The direction is adopted; settle the draft syntax
-   and elaboration gates before implementing it. Illustrative statements are
-   `integers.(x + y = y + x)` and
-   `rationals.(1/2 + 1/3 = 5/6)`. Preserve existing `open`/section behavior and
-   parses; broaden the library migration only after the pilots validate those
-   contracts. L2.10f's binary/decimal literal work, L2.10g's independent
-   `decide`, and L2.10h's mixfix remain deferred.
+5. **Explicit notation views and literals (L2.10).** First L2.10i, `~` for
+   path and coordinate reversal, which frees `-` for arithmetic; L2.10k, a
+   partial field inverse, can land independently. Then small library pilots
+   for the [roadmap](notation.md)'s L2.10a–e contracts, including two models
+   on one carrier, heterogeneous operations, literals read from their
+   `Lexeme` and faithful printing. The decisions are recorded; settle the
+   remaining grammar and elaboration gates, and the roadmap's open
+   questions, before implementing them. Illustrative statements are
+   `integers.(x + y = y + x)` and `rationals.(1/2 + 1/3 = 5/6)`, where `1/2`
+   is one literal. Preserve existing `open`/section behavior until L2.10j
+   retires the name-based operators. L2.10f's large numerals, L2.10g's
+   independent `decide`, and L2.10h's notation rules remain deferred.
 6. **Independent language work.** L2.5b's remainder; the universal-property
    contract before L2.6 and L2.3's `universal` slice; L1.3's worker
    cancellation.
