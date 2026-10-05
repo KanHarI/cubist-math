@@ -1,0 +1,122 @@
+import nat;
+import hlevels;
+
+// The algebraic hierarchy as theories (L2.4): semigroups, monoids, groups,
+// their commutative kinds, commutative rings and fields, each a theory of
+// one set with its operations and laws. A model of a theory is a structure
+// of its kind, Monoid.Model(U), and a theory's homomorphisms and
+// isomorphisms come with it. The natural numbers are a commutative monoid
+// for addition and for multiplication.
+
+theory Semigroup {
+  sort M : set;
+  mul(x, y : M) : M notation x * y;
+  law mul_assoc(x, y, z : M) : (x * y) * z = x * (y * z);
+}
+
+theory Monoid extends Semigroup {
+  one : M;
+  law one_mul(x : M) : one * x = x;
+  law mul_one(x : M) : x * one = x;
+}
+
+theory CommMonoid extends Monoid {
+  law mul_comm(x, y : M) : x * y = y * x;
+}
+
+theory Group extends Monoid {
+  inv(x : M) : M;
+  law inv_mul(x : M) : inv(x) * x = one;
+  law mul_inv(x : M) : x * inv(x) = one;
+}
+
+// An abelian group: a group whose monoid is commutative. Monoid comes once,
+// through both parents.
+theory AbelianGroup extends Group, CommMonoid {
+
+}
+
+// A commutative ring: an abelian group for addition, written +, with zero
+// and neg, and a commutative monoid for multiplication on the same set,
+// over which multiplication distributes.
+theory CommRing extends additive : AbelianGroup(
+  M := R, mul := add notation x + y, mul_assoc := add_assoc, one := zero, one_mul := zero_add,
+  mul_one := add_zero, inv := neg, inv_mul := neg_add, mul_inv := add_neg, mul_comm := add_comm
+), multiplicative : CommMonoid(M := R) {
+  law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;
+}
+
+// A field: a commutative ring in which zero is not one and every element
+// but zero has a multiplicative inverse. inv is total; its value at zero
+// is not constrained.
+theory Field extends CommRing {
+  inv(x : R) : R;
+  law mul_inv(x : R) : (x = zero -> Void) -> x * inv(x) = one;
+  law zero_ne_one : zero = one -> Void;
+}
+
+// The natural numbers under addition, with 0, and under multiplication,
+// with 1.
+def nat_additive :
+  CommMonoid.Model(U0) := CommMonoid.make(
+    M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := 0,
+    one_mul := nat_zero_add, mul_one := nat_add_zero, mul_comm := nat_add_comm
+  );
+
+def nat_multiplicative :
+  CommMonoid.Model(U0) := CommMonoid.make(
+    M := Nat, M_is_set := nat_is_set, mul := mul, mul_assoc := nat_mul_assoc, one := 1,
+    one_mul := nat_one_mul, mul_one := nat_mul_one, mul_comm := nat_mul_comm
+  );
+
+// In any group: cancellation on both sides, and inverses are unique.
+section {{U < UU0}}(G : Group.Model(U)) {
+  computable def left_cancel(x, y, z : M, p : x * y = x * z) : y = z {
+    calc {
+      y = one * y by sym(one_mul(y));
+      _ = (inv(x) * x) * y by cong(fun (w : M) => w * y, sym(inv_mul(x)));
+      _ = inv(x) * (x * y) by mul_assoc(inv(x), x, y);
+      _ = inv(x) * (x * z) by cong(fun (w : M) => inv(x) * w, p);
+      _ = (inv(x) * x) * z by sym(mul_assoc(inv(x), x, z));
+      _ = one * z by cong(fun (w : M) => w * z, inv_mul(x));
+      _ = z by one_mul(z);
+    }
+  }
+
+  computable def right_cancel(x, y, z : M, p : y * x = z * x) : y = z {
+    calc {
+      y = y * one by sym(mul_one(y));
+      _ = y * (x * inv(x)) by cong(fun (w : M) => y * w, sym(mul_inv(x)));
+      _ = (y * x) * inv(x) by sym(mul_assoc(y, x, inv(x)));
+      _ = (z * x) * inv(x) by cong(fun (w : M) => w * inv(x), p);
+      _ = z * (x * inv(x)) by mul_assoc(z, x, inv(x));
+      _ = z * one by cong(fun (w : M) => z * w, mul_inv(x));
+      _ = z by mul_one(z);
+    }
+  }
+
+  // An element that multiplies x to one on the left is x's inverse.
+  computable def inv_unique(x, y : M, p : y * x = one) :
+    y = inv(x) := right_cancel(x, y, inv(x), trans(p, sym(inv_mul(x))));
+
+  computable def inv_inv(x : M) : inv(inv(x)) = x := sym(inv_unique(inv(x), x, mul_inv(x)));
+
+  computable def inv_one : inv(one) = one := sym(inv_unique(one, one, one_mul(one)));
+}
+
+// In any commutative ring, zero absorbs: x * zero = zero, since
+// x * zero + x * zero = x * zero = zero + x * zero, and addition cancels.
+section {{U < UU0}}(A : CommRing.Model(U)) {
+  computable def mul_zero(x : R) : x * zero = zero {
+    let doubled : (x * zero) + (x * zero) = zero + (x * zero) {
+      calc {
+        (x * zero) + (x * zero) = x * (zero + zero) by sym(mul_add(x, zero, zero));
+        _ = x * zero by cong(fun (w : R) => x * w, zero_add(zero));
+        _ = zero + (x * zero) by sym(zero_add(x * zero));
+      }
+    }
+    exact right_cancel(A.additive.group, x * zero, x * zero, zero, doubled);
+  }
+
+  computable def zero_mul(x : R) : zero * x = zero := trans(mul_comm(zero, x), mul_zero(x));
+}

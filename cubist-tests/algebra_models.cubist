@@ -1,0 +1,47 @@
+// The library's algebraic hierarchy at work: the natural numbers as two
+// commutative monoids, and powers of two a homomorphism from the additive
+// one to the multiplicative one, which computes.
+import nat;
+import algebra;
+
+computable def two_to(n : Nat) : Nat := match n {
+    zero => 1;
+    succ(k) => 2 * two_to(k);
+  };
+
+// 2^(x + y) = 2^x * 2^y.
+computable def two_to_add(x, y : Nat) : two_to(x + y) = two_to(x) * two_to(y) {
+  match x {
+    zero => {
+      exact sym(nat_one_mul(two_to(y)));
+    }
+    succ(k) => {
+      calc {
+        2 * two_to(k + y) = 2 * (two_to(k) * two_to(y)) by cong(
+          fun (m : Nat) => 2 * m, two_to_add(k, y)
+        );
+        _ = (2 * two_to(k)) * two_to(y) by sym(nat_mul_assoc(2, two_to(k), two_to(y)));
+      }
+    }
+  }
+}
+
+computable def powers_of_two :
+  CommMonoid.Hom(nat_additive, nat_multiplicative) := CommMonoid.Hom.make(
+    nat_additive, nat_multiplicative, map := two_to, map_mul := two_to_add, map_one := refl(1)
+  );
+
+// Output: 32
+print(evaluate(powers_of_two.map(5)));
+
+// Its Monoid homomorphism, and composition with the identity.
+// Output: 8
+print(
+  evaluate(
+    CommMonoid.Hom.compose(CommMonoid.Hom.id(nat_multiplicative), powers_of_two).monoid.map(3)
+  )
+);
+
+// The section lemmas, at a model: inverses in a group are unique.
+// Output: forall U < UU0. forall G : Group.Model(U). forall x : G.M. G.inv(G.inv(x)) = x
+print(typeof(inv_inv));

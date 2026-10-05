@@ -1,6 +1,7 @@
 // The natural numbers: Nat, its addition, multiplication and order, and
-// the laws of addition. A module that uses them, numerals included, imports
-// nat. `+`, `*`, `<` and `<=` stand for `add`, `mul`, `isLt` and `le`.
+// the laws of addition and multiplication. A module that uses them,
+// numerals included, imports nat. `+`, `*`, `<` and `<=` stand for `add`,
+// `mul`, `isLt` and `le`.
 inductive Nat : U0 {
   zero;
   succ(n : Nat);
@@ -56,6 +57,87 @@ computable def nat_add_comm(x, y : Nat) : x + y = y + x := match x {
     zero => sym(nat_add_zero(y));
     succ(k) => trans(cong(fun (m : Nat) => succ(m), nat_add_comm(k, y)), sym(nat_add_succ(y, k)));
   };
+
+// n * 0 = 0, since 0 * b = 0 and succ(a) * 0 = 0 + a * 0.
+computable def nat_mul_zero(n : Nat) : n * 0 = 0 := match n {
+    zero => refl(0);
+    succ(k) => nat_mul_zero(k);
+  };
+
+// n * succ(m) = n + n * m: both are succ(m) added n times, regrouped.
+computable def nat_mul_succ(x, y : Nat) : x * succ(y) = x + x * y {
+  match x {
+    zero => {
+      rfl;
+    }
+    succ(k) => {
+      calc {
+        succ(y + k * succ(y)) = succ(y + (k + k * y)) by cong(
+          fun (m : Nat) => succ(y + m), nat_mul_succ(k, y)
+        );
+        _ = succ((y + k) + k * y) by cong(fun (m : Nat) => succ(m), sym(nat_add_assoc(y, k, k * y)));
+        _ = succ((k + y) + k * y) by cong(fun (m : Nat) => succ(m + k * y), nat_add_comm(y, k));
+        _ = succ(k + (y + k * y)) by cong(fun (m : Nat) => succ(m), nat_add_assoc(k, y, k * y));
+      }
+    }
+  }
+}
+
+// 1 is a unit for multiplication on both sides.
+computable def nat_one_mul(n : Nat) : 1 * n = n := nat_add_zero(n);
+
+computable def nat_mul_one(n : Nat) : n * 1 = n {
+  calc {
+    n * 1 = n + n * 0 by nat_mul_succ(n, 0);
+    _ = n + 0 by cong(fun (m : Nat) => n + m, nat_mul_zero(n));
+    _ = n by nat_add_zero(n);
+  }
+}
+
+// Multiplication is commutative.
+computable def nat_mul_comm(x, y : Nat) : x * y = y * x := match x {
+    zero => sym(nat_mul_zero(y));
+    succ(k) => trans(cong(fun (m : Nat) => y + m, nat_mul_comm(k, y)), sym(nat_mul_succ(y, k)));
+  };
+
+// Multiplication distributes over addition, on the right and on the left.
+computable def nat_add_mul(x, y, z : Nat) : (x + y) * z = x * z + y * z {
+  match x {
+    zero => {
+      rfl;
+    }
+    succ(k) => {
+      calc {
+        z + (k + y) * z = z + (k * z + y * z) by cong(fun (m : Nat) => z + m, nat_add_mul(k, y, z));
+        _ = (z + k * z) + y * z by sym(nat_add_assoc(z, k * z, y * z));
+      }
+    }
+  }
+}
+
+computable def nat_mul_add(x, y, z : Nat) : x * (y + z) = x * y + x * z {
+  calc {
+    x * (y + z) = (y + z) * x by nat_mul_comm(x, y + z);
+    _ = y * x + z * x by nat_add_mul(y, z, x);
+    _ = x * y + z * x by cong(fun (m : Nat) => m + z * x, nat_mul_comm(y, x));
+    _ = x * y + x * z by cong(fun (m : Nat) => x * y + m, nat_mul_comm(z, x));
+  }
+}
+
+// Multiplication is associative.
+computable def nat_mul_assoc(x, y, z : Nat) : (x * y) * z = x * (y * z) {
+  match x {
+    zero => {
+      rfl;
+    }
+    succ(k) => {
+      calc {
+        (y + k * y) * z = y * z + (k * y) * z by nat_add_mul(y, k * y, z);
+        _ = y * z + k * (y * z) by cong(fun (m : Nat) => y * z + m, nat_mul_assoc(k, y, z));
+      }
+    }
+  }
+}
 
 // Order is reflexive.
 computable def nat_le_refl(n : Nat) : n <= n := match n {

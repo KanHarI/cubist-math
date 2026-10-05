@@ -277,8 +277,9 @@ export class NativeCubicalElaborator {
     this.assumptionLabels = new Map();
     this.assumptionOrigins = new Map();
     this.definitionViews = new Map();
-    // Theories' records, by the binding of their type of models, and the
-    // field each projection reads, which it prints as m.f (L2.4). Every
+    // Theories' records, by the binding of the type each describes (a type
+    // of models, of homomorphisms or of isomorphisms), and the field each
+    // projection reads, which it prints as m.f (L2.4). Every
     // module's check shares them, so a theory is known where its module is
     // imported.
     this.theories = new Map();
