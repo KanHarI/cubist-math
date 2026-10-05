@@ -1,11 +1,12 @@
 # Core theories (L2.4)
 
-Status: design, 2026-10-05; slices 1, 2 and 4 implemented the same day
+Status: design, 2026-10-05; all four slices implemented the same day
 (`web/cubist/theories.mjs`, `web/cubist/morphisms.mjs`,
 `web/translator/theories.mjs`; evidence `cubist-tests/theories.cubist`,
-`cubist-tests/theory_morphisms.cubist`, `tests/theories.test.mjs`, the
-reference's [theories and models](../../web/reference/theories.html)).
-Sections are next. Two additions the slices needed: `e.f` reads a field of
+`cubist-tests/theory_morphisms.cubist`, `cubist-tests/theory_sections.cubist`,
+`tests/theories.test.mjs`, the reference's
+[theories and models](../../web/reference/theories.html)). A definition in
+a section has no implicit parameters of its own: the section's come first. Two additions the slices needed: `e.f` reads a field of
 any value whose type is a theory's record, not only of a name, as
 `T.Iso.inverse(f).to.map(x)`; and argument inference matches one
 definition applied on both sides, `T.Hom(A, B)` against `T.Hom(M, N)`,

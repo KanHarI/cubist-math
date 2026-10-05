@@ -110,3 +110,19 @@ export function skipTheory(t,queue,env,model) {
       reason:`Untranslated dependency: ${model.name.text}`});
   }
 }
+
+// A section's scope, inside its parameters (L2.4): each earlier definition of
+// the section applied to the section's parameters, as the section writes
+// it, and each parameter that is a model opened.
+export function sectionScope(t,scope,n) {
+  const at={start:n.start,end:n.end},name=text=>({kind:"name",name:text,...at});
+  const implicit=n.section.params.filter(p=>p.implicit),explicit=n.section.params.filter(p=>!p.implicit);
+  let inner=scope;
+  for(const declared of n.section.declared) {
+    if(!scope.env.has(declared)||scope.env.get(declared)?.tag==="Untranslated")continue;
+    inner=inner.alias(declared,t.term({kind:"call",fn:name(declared),args:explicit.map(p=>name(p.name.text)),
+      ...(implicit.length?{implicitArgs:implicit.map(p=>name(p.name.text))}:{}),...at},scope,null));
+  }
+  for(const p of n.section.params)if(p.type)inner=opened(t,inner,name(p.name.text))??inner;
+  return inner;
+}

@@ -838,8 +838,53 @@ export function parse(source, typeOnly = false) {
     imports.push(imported);
     take(";");
   }
+  // An open section (L2.4): its parameters, and the names of the definitions
+  // made in it so far, which each later one sees applied to them.
+  let section = null;
+  // A definition, listed in order; in a section, with the section's
+  // parameters before its own.
+  const placed = d => {
+    if (section) {
+      d.section = { ...section, declared: [...section.declared] };
+      section.declared.push(d.name.text);
+    }
+    items.push(d);
+  };
   while (peek() !== "EOF") {
     let t = take();
+    if (section && t.text === "}") { section = null; continue; }
+    // `section {{U < UU0}}(G : Group.Model(U)) { definitions }`.
+    if (t.text === "section") {
+      if (section) throw Object.assign(new Error("Sections do not nest: close this one with } first."), { offset: t.start });
+      const params = [];
+      const telescope = (close, implicit) => {
+        if (peek() !== close) {
+          while (true) {
+            const names = sharedNames();
+            const { type, bound } = binderType(implicit ? "{{U < UU0}}" : "(G : Group.Model(U))");
+            const group = params.length;
+            for (const p of names) params.push({ name: p, ...(bound ? { bound } : { type }), group, ...(implicit ? { implicit } : {}) });
+            if (peek() !== ",") break;
+            take(",");
+          }
+        }
+        return take(close);
+      };
+      let implicitParameters = null;
+      if (doubleBrace()) {
+        const open = take("{"), inner = take("{");
+        const { first, last } = closeDoubleBrace(telescope("}", true));
+        implicitParameters = { opens: [open.start, inner.start], closes: [first.end, last.end], start: open.start, end: last.end };
+      }
+      if (peek() === "(") { take("("); telescope(")", false); }
+      if (!params.length) throw Object.assign(new Error("A section gives its definitions parameters: section (G : Group.Model(U0)) { … }."), { offset: t.start });
+      const body = take("{");
+      section = { params, declared: [], start: t.start, bodyStart: body.start, ...(implicitParameters ? { implicitParameters } : {}) };
+      continue;
+    }
+    if (section && t.text !== "def" && !(t.text === "computable" && peek() === "def"))
+      throw Object.assign(new Error(peek() === "EOF" && t.text === "EOF" ? "Expected '}' to close the section."
+        : "A section holds definitions: def and computable def."), { offset: t.start });
     if(t.text==="simp_rule") {
       const rule=name();
       let priority=0;
@@ -1031,7 +1076,7 @@ export function parse(source, typeOnly = false) {
         params,
         start: t.start,
         end,
-      });items.push(declarations.at(-1));
+      });placed(declarations.at(-1));
       continue;
     }
     if (peek() === "(") {
@@ -1065,7 +1110,7 @@ export function parse(source, typeOnly = false) {
         ...header,
         start: t.start,
         end,
-      });items.push(declarations.at(-1));
+      });placed(declarations.at(-1));
       continue;
     }
     if (peek() === "=") define("def name := term;");
@@ -1078,7 +1123,7 @@ export function parse(source, typeOnly = false) {
       declarations.push({
         kind: t.text, ...(computable ? { computable, modifierStart } : {}), name: n, params, type, ...header,
         body: [{ kind: "exact", value, start: assign.start, end }], typedValue: true, start: t.start, end,
-      });items.push(declarations.at(-1));
+      });placed(declarations.at(-1));
       continue;
     }
     if (peek() === ";" && type.kind === "binary" && type.operator === "=")
@@ -1094,8 +1139,9 @@ export function parse(source, typeOnly = false) {
       ...header,
       start: t.start,
       end: ts[i - 1].end,
-    });items.push(declarations.at(-1));
+    });placed(declarations.at(-1));
   }
+  if (section) throw Object.assign(new Error("Expected '}' to close the section."), { offset: ts[i].start });
   return { module, imports, declarations,
     ...(directives.length?{directives,items}:{}) };
 }
