@@ -147,7 +147,8 @@ export class CubicalProgram {
     }
     const byName = new Map(ast.declarations.map(d => [d.name.text, d]));
     for (const d of result.declarations) {
-      const syntax = byName.get(d.name), binding = `${name}__${d.name}`;
+      // A theory's declarations bring their generated syntax (theories.mjs).
+      const syntax = d.syntax ?? byName.get(d.name), binding = `${name}__${d.name}`;
       const verified = d.status === "checked-native-cubical";
       const reason = verified ? d.reason : failure(d.reason);
       const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified,
@@ -168,7 +169,9 @@ export class CubicalProgram {
       this.symbols[binding] = info;
       if (!verified) this.gaps.push({ module: name, name: d.name,
         reason, code: info.code, start: d.errorStart, end: d.errorEnd });
-      if (name === main) this.links.push({ ...info, start: syntax.name.start, end: syntax.name.end });
+      // A theory's name links to its models' type, a field's to its projection.
+      if (name === main && syntax.generated?.role !== "make")
+        this.links.push({ ...info, start: syntax.name.start, end: syntax.name.end });
     }
   }
   async check(source, main = "current", onProgress = () => {}) {

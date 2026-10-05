@@ -1,8 +1,12 @@
 # Core theories (L2.4)
 
-Status: design, 2026-10-05. This document fixes the contract of work-plan
-L2.4 before its implementation: theory declarations, their models, scoped
-notation, sections, extension, homomorphisms and isomorphisms. It follows
+Status: design, 2026-10-05; slices 1 and 2 implemented the same day
+(`web/cubist/theories.mjs`, `web/translator/theories.mjs`; evidence
+`cubist-tests/theories.cubist`, `tests/theories.test.mjs`, the reference's
+[theories and models](../../web/reference/theories.html)). Sections and
+homomorphisms are next. This document fixes the contract of work-plan
+L2.4: theory declarations, their models, scoped notation, sections,
+extension, homomorphisms and isomorphisms. It follows
 section 1 of the [language features proposal](inductive-language-features.md)
 and milestone 6 of the [ergonomics roadmap](proof-ergonomics-roadmap.md),
 and narrows both to what L2.4 delivers.

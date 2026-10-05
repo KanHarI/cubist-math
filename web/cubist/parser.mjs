@@ -1,4 +1,6 @@
 // A small mathematical proof language. Parsing never evaluates JavaScript.
+import { notationOperators } from "./theories.mjs";
+
 export function tokenize(source) {
   if (typeof source !== "string" || source.length > 1000000)
     throw new Error("Source exceeds 1 MB.");
@@ -622,6 +624,12 @@ export function parse(source, typeOnly = false) {
       return names.map(n => ({ kind: "intro", name: n, start: t.start, end: end.end }));
     }
     if (t.text === "let" || t.text === "obtain") return letStatement(t);
+    // `open m;` puts a model's fields and notation in scope for the rest of
+    // the block (L2.4).
+    if (t.text === "open") {
+      const model = expr(), end = take(";");
+      return { kind: "open", model, start: t.start, end: end.end };
+    }
     if (t.text === "have")
       throw Object.assign(new Error("have was removed: write let name : T := term; or prove the claim in a block, let name : T { … }."),
         { offset: t.start });
@@ -874,6 +882,74 @@ export function parse(source, typeOnly = false) {
       const directive = { kind: "print", show: show.text, value, start: t.start, end };
       directives.push(directive); items.push(directive); continue;
     }
+    // `theory T [extends P, label : Q(f := g notation x + y)] { fields }`
+    // declares a theory (L2.4): its parents, sorts, operations with their
+    // notations, and laws. The translator expands it into the definitions of
+    // its models (theories.mjs).
+    if (t.text === "theory") {
+      const n = name(), parents = [];
+      const notationAfter = () => {
+        const notationKeyword = take(), left = name(), operator = take(), right = name();
+        if (!notationOperators.includes(operator.text))
+          throw Object.assign(new Error("A notation is a binary operator: x + y, x * y, x < y or x <= y."), { offset: operator.start });
+        return { operator: operator.text, left, right, keyword: notationKeyword, operatorToken: operator,
+          start: notationKeyword.start, end: right.end };
+      };
+      if (peek() === "extends") {
+        take("extends");
+        while (true) {
+          const start = ts[i].start, label = ts[i + 1].text === ":" ? name() : null;
+          if (label) take(":");
+          const parent = name(), renaming = [];
+          if (peek() === "(") {
+            take("(");
+            while (peek() !== ")") {
+              const from = name();
+              take(":=");
+              const to = name(), notation = peek() === "notation" ? notationAfter() : null;
+              renaming.push({ from, to, notation });
+              if (peek() !== ",") break;
+              take(",");
+            }
+            take(")");
+          }
+          parents.push({ label, name: parent, renaming, start, end: ts[i - 1].end });
+          if (peek() !== ",") break;
+          take(",");
+        }
+      }
+      take("{");
+      const fields = [];
+      const word = text => peek() === text && /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text);
+      while (peek() !== "}") {
+        if (peek() === "EOF") throw Object.assign(new Error("Expected '}' to close the theory."), { offset: ts[i].start });
+        const start = ts[i].start;
+        if (word("sort")) {
+          take("sort");
+          const sort = name();
+          take(":");
+          const level = take();
+          if (!["set", "prop"].includes(level.text))
+            throw Object.assign(new Error("A sort is a set or a proposition: sort M : set; or sort P : prop;"), { offset: level.start });
+          fields.push({ kind: "sort", name: sort, level: level.text, levelToken: level, start, end: take(";").end });
+          continue;
+        }
+        const law = word("law");
+        const keyword = law ? take("law") : null;
+        const field = name(), params = peek() === "(" ? parameters("(x, y : M)", false) : [];
+        if (peek() !== ":")
+          throw Object.assign(new Error(`Expected ':' and the type of ${field.text}, as in ${law ? "law mul_one(x : M) : x * one = x;" : "mul(x, y : M) : M;"}`), { offset: ts[i].start });
+        take(":");
+        const type = expr();
+        const notation = !law && peek() === "notation" ? notationAfter() : null;
+        fields.push({ kind: law ? "law" : "operation", name: field, params, type, notation,
+          ...(keyword ? { keyword } : {}), start, end: take(";").end });
+      }
+      const end = take("}").end;
+      declarations.push({ kind: "theory", name: n, parents, fields, start: t.start, end });
+      items.push(declarations.at(-1));
+      continue;
+    }
     // `inductive T(params) : R { constructors }` declares a type (H1; the
     // specification's section 9). R is an h-level, a universe or both.
     if (t.text === "inductive") {
@@ -901,7 +977,7 @@ export function parse(source, typeOnly = false) {
     if (computable) t = take();
     if (t.text !== "def")
       throw Object.assign(new Error(t.text === "import" ? "Imports must come before declarations."
-        : "Expected a declaration or directive: def, computable def, inductive, evaluate, print, simp_rule or simp_set."), {
+        : "Expected a declaration or directive: def, computable def, inductive, evaluate, print, simp_rule, simp_set or theory."), {
         offset: t.start,
       });
     const n = name(),

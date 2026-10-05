@@ -1,0 +1,168 @@
+// Theories (L2.4, docs/roadmaps/core-theories.md): declarations of sorts,
+// operations with notation and laws; their models, built field by field and
+// read by projections, m.f; extension, with labels, renaming and shared
+// ancestors; open, which puts a model's fields and notation in scope; and
+// the refusals.
+import nat;
+import hlevels;
+
+theory Semigroup {
+  sort M : set;
+  mul(x, y : M) : M notation x * y;
+  law mul_assoc(x, y, z : M) : (x * y) * z = x * (y * z);
+}
+
+theory Monoid extends Semigroup {
+  one : M;
+  law one_mul(x : M) : one * x = x;
+  law mul_one(x : M) : x * one = x;
+}
+
+theory CommMonoid extends Monoid {
+  law mul_comm(x, y : M) : x * y = y * x;
+}
+
+theory Group extends Monoid {
+  inv(x : M) : M;
+  law inv_mul(x : M) : inv(x) * x = one;
+}
+
+// Monoid comes once, through both parents.
+theory CommGroup extends Group, CommMonoid {
+}
+
+// Two copies of Monoid on one sort R, the additive one renamed, with + for
+// its operation; * keeps meaning the multiplicative one.
+theory Semiring extends
+    additive : CommMonoid(M := R, mul := add notation x + y, one := zero, mul_assoc := add_assoc,
+      one_mul := zero_add, mul_one := add_zero, mul_comm := add_comm),
+    multiplicative : Monoid(M := R) {
+  law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;
+}
+
+// A model is built field by field, by name.
+def additive_nat : CommMonoid.Model(U0) := CommMonoid.make(
+  M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := 0,
+  one_mul := nat_zero_add, mul_one := nat_add_zero, mul_comm := nat_add_comm
+);
+
+// Its fields are read by m.f, and compute.
+def two_plus_three : additive_nat.mul(2, 3) = 5 {
+  rfl;
+}
+
+// Output: 5
+print(evaluate(additive_nat.mul(2, 3)));
+
+// A projection's type is written through the earlier projections, and a
+// projection of a model prints as m.f.
+// Output: forall U < UU0. forall m : Monoid.Model(U). forall x : m.M. m.mul(m.one, x) = x
+print(typeof(Monoid.one_mul));
+
+// A model's parents: G.group is its Group-model, and G.group.monoid that
+// one's Monoid-model.
+def parent_mul(G : CommGroup.Model(U0), x, y : G.M) : G.group.monoid.mul(x, y) = G.mul(x, y) {
+  rfl;
+}
+
+def forget(G : CommGroup.Model(U0)) : Monoid.Model(U0) := G.comm_monoid.monoid;
+
+// open puts the fields and the notation in scope for the rest of the block.
+def square(G : Monoid.Model(U0), x : G.M) : G.M {
+  open G;
+  exact x * x;
+}
+
+def square_one(G : Monoid.Model(U0)) : square(G, G.one) = G.one {
+  open G;
+  exact one_mul(one);
+}
+
+def twice_plus_square(R : Semiring.Model(U0), x : R.R) : R.R {
+  open R;
+  exact x * x + x;
+}
+
+// Outside an open, + and * mean add and mul in scope, Nat's here.
+def still_nat(n : Nat) : 0 + n * 1 = n * 1 {
+  rfl;
+}
+
+// Models in any universe below UU0.
+def large_square(U < UU0, G : Monoid.Model(U), x : G.M) : G.M {
+  open G;
+  exact x * x;
+}
+
+// Refusals. A projection of a model shows as m.f in messages.
+// Error: E606: Type mismatch: found G.mul(G.one, x) = x, expected G.mul(x, G.one) = x.
+def wrong_side(G : Monoid.Model(U0), x : G.M) : G.mul(x, G.one) = x {
+  open G;
+  exact one_mul(x);
+}
+
+// Error: E803: Twice has two fields named one: give each its own name.
+theory Twice {
+  sort M : set;
+  one : M;
+  one : M;
+}
+
+// Error: E810: A notation names an operation's two arguments, as in mul(x, y : M) : M notation x *
+//   y; one has none.
+theory ConstantNotation {
+  sort M : set;
+  one : M notation x * y;
+}
+
+// Error: E811: The notation of mul writes its arguments in order: x * y.
+theory Reversed {
+  sort M : set;
+  mul(x, y : M) : M notation y * x;
+}
+
+// Error: E804: * would stand for both mul and times in SharedOperator: a notation means one
+//   operation; rename one's notation.
+theory SharedOperator {
+  sort M : set;
+  mul(x, y : M) : M notation x * y;
+  times(x, y : M) : M notation x * y;
+}
+
+theory Left {
+  sort M : set;
+  point : M;
+}
+
+theory Right {
+  sort M : set;
+  point : M;
+}
+
+// Error: E802: Clash gets a field named M from both Left and Right: rename one, as in Right(M :=
+//   …).
+theory Clash extends Left, Right {
+}
+
+// Error: E805: Missing is not a theory here: Unknown extends theories in scope.
+theory Unknown extends Missing {
+}
+
+// Error: E807: Monoid has no field unit; its fields are M, M_is_set, mul, mul_assoc, one, one_mul,
+//   mul_one.
+theory BadRenaming extends Monoid(unit := one) {
+}
+
+// Error: E476: open takes a model of a theory, such as m : Group.Model(U0); this is a value of type
+//   Nat.
+def open_a_number(n : Nat) : Nat {
+  open n;
+  exact n;
+}
+
+// Error: E815: G is a model of Monoid, which has no field zero: it has M, M_is_set, mul, mul_assoc,
+//   one, one_mul, mul_one, and the parents semigroup.
+def no_such_field(G : Monoid.Model(U0)) : G.M := G.zero;
+
+// Error: E394: Monoid is a theory: its models are Monoid.Model(U), built with Monoid.make(…).
+def theory_as_term := Monoid;

@@ -2159,6 +2159,14 @@
    "summary": "The match statement on a sum, which replaced `cases`: clauses `left(a)` and `right(b)`, or `cases`' `left a`, each proving the goal at its side; a goal after `intro` kept as the motive; a hypothesis about the value taken at each side; and the refusals: another clause name, a side twice, two names, a missing side, and `induction` on a sum."
   },
   {
+   "path": "cubist-tests/theories_without_hlevels.cubist",
+   "summary": "A theory's sorts without `hlevels`, which its model type names."
+  },
+  {
+   "path": "cubist-tests/theories.cubist",
+   "summary": "Theories (L2.4): sorts, operations with notation and laws; models built field by field and read by `m.f`, computing; parents' models; extension with a shared ancestor, labels and renaming; `open` and its notation; and the refusals: a field twice, a notation on a constant or out of order, one operator for two operations, two parents' fields of one name, an unknown parent or field, `open` of a non-model, a missing field, and a theory used as a term."
+  },
+  {
    "path": "cubist-tests/translation_failed_proofs.cubist",
    "summary": "A failed proof becomes no axiom: a use of it fails, and the rest checks."
   },

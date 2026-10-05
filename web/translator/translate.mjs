@@ -19,6 +19,7 @@ import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference,ma
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName} from "./hlevel.mjs";
 import {repeatedName,stem} from "./names.mjs";
+import {operatorBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -267,7 +268,11 @@ export class Translator {
   translate(source, imported=new Map()) {
     const module=this.unit({source});
     const ast=parse(source),env=new Map(imported),declarations=[],directives=[];
-    for(const d of ast.items??ast.declarations) {
+    // A theory is checked as the declarations it expands to, in its place.
+    const queue=[...(ast.items??ast.declarations)];
+    while(queue.length) {
+      const d=queue.shift();
+      if(d.kind==="theory") { queue.unshift(...theoryDeclarations(this,module,d,env,declarations)); continue; }
       if(d.kind==="evaluate") {
         const line=source.slice(0,d.start).split("\n").length;
         // An evaluation asks the kernel as a declaration does, with fuel of its own.
@@ -329,6 +334,9 @@ export class Translator {
       const unit=module.declaration(this.declarationFuel).with({declaring:d.name.text});
       this.onDeclarationStart?.(d);
       try {
+        // A theory's sorts need their evidence's definitions (L2.4).
+        const missing=missingEvidence(d,env);
+        if(missing)throw unit.locate(missing,d.name);
         const repeated=repeatedName(d.params.length?d.params:d.valueParameters??[]);
         if(repeated)throw unit.locate(Error(`${d.name.text} has two parameters named ${repeated.name.text}: give each its own name.`),repeated.name);
         let expression=d.value;
@@ -378,7 +386,11 @@ export class Translator {
           own.length?own.map(p=>({name:p.name.text,implicit:!!p.implicit})):null)??checked.term;
         this.checker.kernel?.checkDeadline();
         env.set(d.name.text,definition);
-        declarations.push({name:d.name.text,status:native?"checked-native-cubical":"checked-cubical-fragment",term:checked.term,type:checked.type,normal:checked.normal,native});
+        // A theory's type of models, by which m.f reads its fields, and its
+        // projections, which print as m.f (L2.4).
+        if(d.generated)registerTheoryDeclaration(this,d);
+        declarations.push({name:d.name.text,status:native?"checked-native-cubical":"checked-cubical-fragment",term:checked.term,type:checked.type,normal:checked.normal,native,
+          ...(d.generated?{syntax:d}:{})});
       } catch(error) {
         // Remove a same-named imported symbol: a failed local declaration must
         // never silently refer to that other declaration in subsequent proofs.
@@ -386,7 +398,8 @@ export class Translator {
         // `failure` classifies a checker rejection ("mismatch", "budget",
         // "deadline" or "other"), so callers need not read the reason.
         declarations.push({name:d.name.text,status:"not-translated",reason:error.message,
-          errorStart:error.offset,errorEnd:error.sourceEnd,blockedBy:error.blockedBy,failure:error.kind});
+          errorStart:error.offset,errorEnd:error.sourceEnd,blockedBy:error.blockedBy,failure:error.kind,
+          ...(d.generated?{syntax:d}:{})});
       }
       declarations.at(-1).rewriteWork={...unit.work};
       // What the declaration asked of the kernel, and what its searches spent.
@@ -720,6 +733,7 @@ export class Translator {
             throw error;
           }
           if(value.tag==="Dimension")throw Error("Interval coordinates can only be used in interval arguments.");
+          if(value.tag==="Theory")throw Error(`${n.name} is a theory: its models are ${n.name}.Model(U), built with ${n.name}.make(…).`);
           // A declared type or constructor (L2.1), or the declaration's own name.
           if(INDUCTIVE_TAGS.has(value.tag))return resolveInductive(this,n,value,null,scope,expected);
           if(value.tag==="Recursive")return resolveRecursive(this,n,value,null,scope);
@@ -734,6 +748,9 @@ export class Translator {
         // The declaration's own name, where it is not a recursive reference:
         // recursion exists only with declared types, under their option.
         if(scope.unit.declaring===n.name&&this.checker.kernel?.extensions?.h1)throw Error(selfReference(n.name));
+        // m.f, for a model m of a theory, is the projection T.f(m) (L2.4).
+        const projection=modelField(this,scope,n);
+        if(projection)return tr(projection,expected);
         // The printer writes __U where an instance's universe is erased.
         if(/^__U[0-9]*$/.test(n.name))throw Error(`${n.name} stands for a universe that the printer could not show: write the universe in its place, such as U0 or a universe variable.`);
         throw Error(`Untranslated name: ${n.name}`);
@@ -814,6 +831,10 @@ export class Translator {
         if(["->","and"].includes(n.operator)) return (n.operator==="->"?T.pi:T.sigma)(scope.fresh(),left,tr(n.right,null));
         if(n.operator==="or")return T.sum(left,tr(n.right,null));
         if(["+","*","<=","<"].includes(n.operator)) {
+          // A notation open binds means the model's operation (L2.4).
+          if(env.has(operatorBinding(n.operator)))
+            return tr({kind:"call",fn:{kind:"name",name:operatorBinding(n.operator),start:n.operatorStart,end:n.operatorEnd},
+              args:[n.left,n.right],start:n.start,end:n.end},expected);
           const name=n.operator==="+"?"add":n.operator==="*"?"mul":n.operator==="<"&&env.has("isLt")?"isLt":"le";
           const first=n.operator==="<"&&name==="le"?{kind:"call",fn:{kind:"name",name:"succ"},args:[n.left]}:n.left;
           return tr({kind:"call",fn:{kind:"name",name},args:[first,n.right]},null);

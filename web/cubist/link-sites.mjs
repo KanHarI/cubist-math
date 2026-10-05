@@ -26,10 +26,11 @@ export function calcStepSite(step, index) {
 }
 
 // A logical or path operator or a binder keyword links to the checked expression, and
-// a projection's index to the projection.
+// a projection's index to the projection. Syntax a theory generates
+// (theories.mjs) has no tokens of its own, and links nothing.
 export function expressionSite(node) {
   if (node.kind === "projection")
-    return { name: `.${node.index}`, start: node.digit.start, end: node.digit.end };
+    return node.digit ? { name: `.${node.index}`, start: node.digit.start, end: node.digit.end } : null;
   if ((node.kind === "binary" && ["=", "->", "and", "or", "++"].includes(node.operator)) || node.kind === "unary")
     return { name: node.operator, start: node.operatorStart, end: node.operatorEnd };
   if (node.keyword && ["lambda", "forall", "exists", "binderGroup"].includes(node.kind)) {

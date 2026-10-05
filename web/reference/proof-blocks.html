@@ -39,6 +39,7 @@
             <li><a href="paths.html">Equality and paths</a></li>
             <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
+            <li><a href="theories.html">Theories and models</a></li>
             <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
             <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
@@ -94,6 +95,7 @@
                 <tr><td><code>exact term;</code></td><td>Closes</td><td><a href="#exact">exact</a></td></tr>
                 <tr><td><code>let name := term;</code>, <code>let name : T := term;</code>, <code>let name : T { … }</code></td><td>Extends the context</td><td><a href="#let">let</a></td></tr>
                 <tr><td><code>obtain (a, b) := pair;</code></td><td>Extends the context</td><td><a href="#obtain">obtain</a></td></tr>
+                <tr><td><code>open m;</code></td><td>Extends the context</td><td><a href="theories.html#open">opening a model</a></td></tr>
                 <tr><td><code>match value { left(a) => { … } right(b) => { … } }</code></td><td>Closes</td><td><a href="#sums">taking a sum apart</a></td></tr>
                 <tr><td><code>match n { zero => { … } succ(k) => { … } }</code></td><td>Closes</td><td><a href="induction.html#dependent-match">proofs by matching</a></td></tr>
                 <tr><td><code>rfl;</code></td><td>Closes</td><td><a href="rewriting.html#rfl">reflexivity</a></td></tr>
