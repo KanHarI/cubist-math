@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import { parse } from "../web/cubist/parser.mjs";
-import { currentSyntax } from "../web/cubist/legacy-syntax.mjs";
+import { currentSyntax, historicalSource } from "../web/cubist/legacy-syntax.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
 import { cubicalMathTree, cubicalText } from "../web/cubical-notation.mjs";
 import { testModule } from "./check-program.mjs";
@@ -91,4 +91,12 @@ test("projections link to their checked terms", async () => {
   const { program } = await projections();
   const roles = program.links.map(link => [link.name, link.role]);
   assert.ok(roles.some(([name]) => name === ".1"), JSON.stringify(roles));
+});
+
+test("a historical module imports nat, as every module did before 2026-10-05", () => {
+  assert.equal(historicalSource("def two := 2;\n", "old"), "import nat;\ndef two := 2;\n");
+  // nat itself, a module that imports it, and a base that imports it explicitly are left alone.
+  assert.equal(historicalSource("inductive Nat : U0 { zero; succ(n : Nat); }\n", "nat"), "inductive Nat : U0 { zero; succ(n : Nat); }\n");
+  assert.equal(historicalSource("import lists, nat;\ndef two := 2;\n", "old"), "import lists, nat;\ndef two := 2;\n");
+  assert.equal(historicalSource("def two := tt;\n", "new", { implicitNat: false }), "def two := tt;\n");
 });

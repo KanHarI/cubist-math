@@ -2,7 +2,7 @@
 
 Status: experimental implementation and review draft, 2026-09-30. The
 [ledger](h1-truncation-ledger.json) pins 17 checked public changes against
-`cc6b50f`. Its acceptance permits the listed changes; it does not certify
+`f4d1961`, rebased from `cc6b50f` on 2026-10-05. Its acceptance permits the listed changes; it does not certify
 that the old and new proofs are identical or that all 47 declarations of
 specification section 8.4 have been rebuilt.
 
@@ -75,10 +75,10 @@ definitions and admitted signatures, so a folded name cannot hide a changed
 dependency even when its public type stays the same.
 
 ```sh
-node tools/verify-proof-migration.mjs --base cc6b50f --no-dependents --edited-file cubist-tests/h1_cauchy_quotient.cubist --ledger docs/roadmaps/h1-truncation-ledger.json cauchy_quotient
-node tools/verify-proof-migration.mjs --base cc6b50f --no-dependents --edited-file docs/examples/h1/migrations/field_logic.cubist --declarations FieldProp,small_mere_eliminate --ledger docs/roadmaps/h1-truncation-ledger.json field_logic
-node tools/verify-proof-migration.mjs --base cc6b50f --no-dependents --edited-file cubist-tests/h1_zorn_step.cubist --declarations OrderMaximal,StrictlyAbove,strict_above_point,strict_above_laws,strict_above_is_set,no_maximal_strict_successor --ledger docs/roadmaps/h1-truncation-ledger.json zorn_chain_complete
-node tools/verify-proof-migration.mjs --base cc6b50f --no-dependents --edited-file library/h1_classical.cubist --declarations ExcludedMiddle,AxiomOfChoice,excluded_middle_assumed,axiom_of_choice_assumed --ledger docs/roadmaps/h1-truncation-ledger.json classical_axioms
+node tools/verify-proof-migration.mjs --base f4d1961 --no-dependents --edited-file cubist-tests/h1_cauchy_quotient.cubist --ledger docs/roadmaps/h1-truncation-ledger.json cauchy_quotient
+node tools/verify-proof-migration.mjs --base f4d1961 --no-dependents --edited-file docs/examples/h1/migrations/field_logic.cubist --declarations FieldProp,small_mere_eliminate --ledger docs/roadmaps/h1-truncation-ledger.json field_logic
+node tools/verify-proof-migration.mjs --base f4d1961 --no-dependents --edited-file cubist-tests/h1_zorn_step.cubist --declarations OrderMaximal,StrictlyAbove,strict_above_point,strict_above_laws,strict_above_is_set,no_maximal_strict_successor --ledger docs/roadmaps/h1-truncation-ledger.json zorn_chain_complete
+node tools/verify-proof-migration.mjs --base f4d1961 --no-dependents --edited-file library/h1_classical.cubist --declarations ExcludedMiddle,AxiomOfChoice,excluded_middle_assumed,axiom_of_choice_assumed --ledger docs/roadmaps/h1-truncation-ledger.json classical_axioms
 ```
 
 The pins were refreshed at H1's release on 2026-10-02. Results no longer
@@ -87,6 +87,17 @@ carry the `kernel extension: H1` marker, so every change's
 fingerprint no longer includes the retired `experimental` flag, so 52 type
 and value hashes changed. Every assumption list, type text and value text
 is unchanged, which the refresh checked before writing the new hashes.
+
+The pins were refreshed again on 2026-10-05, with the base moved to
+`f4d1961`, where `nat` and `naturals` became one module and the archive's
+`primes` gave up its copies of their arithmetic. Against `cc6b50f`, whose
+`primes` still had its own `add` and order, `cauchy_quotient`'s
+declarations that use them differed by which definitions they named,
+though no source changed. At the new base both versions use `nat`'s:
+`close_tails_compose` is identical again, and four value hashes changed,
+the old and new values of `sequence_same_transitive` and
+`cauchy_same_equivalence`. Every assumption list, type text and value text
+is unchanged, which the refresh checked before writing them.
 
 `tests/truncation-migration.test.mjs` checks G2 and G5–G7, the ledger file,
 coexistence with the legacy signatures and rejection of a false truncation

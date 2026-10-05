@@ -53,16 +53,16 @@ test("G4: the checked migration ledger has exact pins and defers the H2 tower de
 });
 
 test("G4: the CLI uses a pinned library baseline and refuses a new module without a baseline",()=>{
-  const args=["tools/verify-proof-migration.mjs","--base","cc6b50f","--no-dependents",
+  const args=["tools/verify-proof-migration.mjs","--base","f4d1961","--no-dependents",
     "--edited-file","library/h1_classical.cubist"];
   const report=execFileSync(process.execPath,[...args,"--declarations",
     "ExcludedMiddle,AxiomOfChoice,excluded_middle_assumed,axiom_of_choice_assumed",
     "--ledger","docs/roadmaps/h1-truncation-ledger.json","classical_axioms"],{encoding:"utf8"});
   assert.match(report,/4 exact ledger changes/); assert.match(report,/0 failures/);
-  assert.throws(()=>execFileSync(process.execPath,[...args.slice(0,2),"HEAD",...args.slice(3),"--declarations",
+  assert.throws(()=>execFileSync(process.execPath,[...args.slice(0,2),"cc6b50f",...args.slice(3),"--declarations",
     "ExcludedMiddle,AxiomOfChoice,excluded_middle_assumed,axiom_of_choice_assumed",
     "--ledger","docs/roadmaps/h1-truncation-ledger.json","classical_axioms"],{stdio:"pipe"}),
-    error=>error.status===1 && /Ledger baseline is cc6b50f.*different revision/.test(String(error.stderr)));
+    error=>error.status===1 && /Ledger baseline is f4d1961.*different revision/.test(String(error.stderr)));
   assert.throws(()=>execFileSync(process.execPath,[...args,"migration_no_baseline_fixture"],{stdio:"pipe"}),
     error=>error.status===1 && /No baseline for compared module migration_no_baseline_fixture/.test(String(error.stderr)));
 });

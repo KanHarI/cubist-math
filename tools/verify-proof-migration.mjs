@@ -72,6 +72,11 @@ if (!noDependents) {
 }
 const originals = new Map();
 const available = new Set(git(["ls-tree","-r","--name-only",base,"--","library","archive/first-library"]).trim().split("\n"));
+// Until 2026-10-05 every module had Nat without importing it, from the
+// kernel and then from an implicit import of nat; a base of that time is read
+// with the import (legacy-syntax.mjs, historicalSource). A later base has
+// bundledNat in its program and imports nat where it uses it.
+const implicitNat = (() => { try { return !git(["show",`${base}:web/cubical-program.mjs`]).includes("bundledNat"); } catch { return true; } })();
 // A module moved from the archive into the library since the base, as nat
 // was, is read from its old path but lives in the library, where
 // today's checks place it, so that a check holds it once.
@@ -85,7 +90,7 @@ const readOriginal = migrationSourceReader(async (place, name) => {
   if (!originals.has(path)) {
     // A baseline may predate a syntax change, or the implicit import of nat;
     // it is read in today's syntax, with the imports it had then.
-    let text = available.has(path) ? historicalSource(git(["show",`${base}:${path}`]), name) : null;
+    let text = available.has(path) ? historicalSource(git(["show",`${base}:${path}`]), name, { implicitNat }) : null;
     // A new shared foundation has no predecessor. It is available only in
     // library resolution; archive importers never see this fallback.
     if (text === null && place === "library" && !modules.includes(name)) {

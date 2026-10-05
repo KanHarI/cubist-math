@@ -15,11 +15,11 @@ export const currentSyntax = source => source
   .replace(/(?<![A-Za-z0-9_'])have(\s+[A-Za-z_][A-Za-z0-9_]*\s*:)/g, "let$1")
   .replace(/(?<![A-Za-z0-9_'])cases(?=\s+[^{};]*\{\s*left\s+[A-Za-z_][A-Za-z0-9_']*\s*=>)/g, "match");
 
-// Before 2026-10-05 every module imported nat without asking. A historical
-// module, read in today's syntax, imports it, unless it is nat or already
-// does: so a baseline sees the names it saw then.
-export const historicalSource = (source, module) => {
+// Before 2026-10-05 every module imported nat without asking. A module of
+// a revision that did so (implicitNat), read in today's syntax, imports it,
+// unless it is nat or already does: so a baseline sees the names it saw then.
+export const historicalSource = (source, module, { implicitNat = true } = {}) => {
   const text = currentSyntax(source);
-  if (module === "nat" || /(?:^|\n)\s*import\s+(?:[^;]*,\s*)?nat\s*[;,]/.test(text)) return text;
+  if (!implicitNat || module === "nat" || /(?:^|\n)\s*import\s+(?:[^;]*,\s*)?nat\s*[;,]/.test(text)) return text;
   return `import nat;\n${text}`;
 };
