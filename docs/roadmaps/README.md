@@ -10,7 +10,9 @@ target statement or a supplied theorem parameter as an already proved result.
   roadmaps. Start here. The active scope is language features and their
   kernel support, and since 2026-10-05 the library's foundations: the
   natural numbers, quotients, the integers and rationals, and the algebraic
-  hierarchy. Other mathematical development is paused.
+  hierarchy, all done that day. Its first actions suggest what comes next,
+  starting with `~` for reversal and a partial field inverse. Other
+  mathematical development is paused.
 - [Work-plan audit of 2026-09-28](audits/2026-09-28-audit.md): the baseline
   revision (`02a57ef`) and findings behind the current statuses, including
   the instruction-isolation defect, corrected the same day (work-plan I1.2a).
@@ -30,8 +32,9 @@ target statement or a supplied theorem parameter as an already proved result.
 - [Language features for theories and inductive declarations](inductive-language-features.md):
   the adopted language proposal: theories, cells, relations and bundles,
   canonical quotients, presentations and derived declarations. One-sort
-  `inductive` and explicit `match` are released with H1 on 2026-10-02; the
-  rest is proposed, with three promises corrected by the audit.
+  `inductive`, explicit `match` and `obligations` are released with H1 on
+  2026-10-02, and core theories (L2.4) on 2026-10-05; the rest is proposed,
+  with three promises corrected by the audit.
 - [Notation views and literals](notation.md): work-plan L2.10's roadmap for explicit
   notation views, declared operand views, literals read by the library's
   parsers and faithful printing, without instance search. The direction and
@@ -42,7 +45,8 @@ target statement or a supplied theorem parameter as an already proved result.
   elaboration contracts are draft.
 - [Core theories](core-theories.md): the contract of work-plan L2.4,
   theory declarations, models, scoped notation, sections, extension,
-  homomorphisms and isomorphisms, specified on 2026-10-05.
+  homomorphisms and isomorphisms, specified and implemented on 2026-10-05.
+  The library's algebraic hierarchy is written in it.
 - [Results of the first library](../library-results.md): what the archived
   library established, in mathematical English.
 - [Kernel instructions](kernel-instructions.md): the trusted kernel since
@@ -71,10 +75,13 @@ target statement or a supplied theorem parameter as an already proved result.
   - Delivered: `rw`, `calc`, `rfl`, `simp`/`simpa` with registered rule sets
     and conditional rules, cubical path shorthand, dependency tracking,
     `computable` and exact-value `evaluate`.
-  - Remaining: argument inference and `apply`/`refine` (5), theories (6),
-    the rest of inductive declarations and pattern matching (7), whose
-    one-sort declarations and explicit `match` were released with H1 on
-    2026-10-02, plus expected-value patterns and closed truncation readout
+  - Delivered since: argument inference and implicit parameters (5,
+    2026-10-04; `apply` and `refine` withdrawn), explicit `match` with
+    several values and nested patterns (7), and core theories, notation and
+    sections (6, 2026-10-05).
+  - Remaining: initial and free models, algebraic normalization and
+    structure identity (6), the rest of inductive declarations and pattern
+    matching (7), plus expected-value patterns and closed truncation readout
     from milestone 8.
   - The [concrete implementation plan](proof-ergonomics-implementation-plan.md)
     adds PR-sized steps, lowering contracts, cubical notation proposals, and
@@ -117,10 +124,12 @@ deferred backlog.
 - [Complex analysis](complex-analysis-roadmap.md): algebraic closure, the
   residue theorem, and Great Picard. Read the
   [complex-analysis checkpoint](../tactical/complex_analysis_handoff.md).
-- [Real numbers](reals-roadmap.md): the rebuild's number systems. Integers
-  are an inductive type, rationals a canonical quotient, and reals the Cauchy
-  completion (kernel H3), with Dedekind reals as the fallback. The first
-  library's constructions are described as archived.
+- [Real numbers](reals-roadmap.md): the rebuild's number systems. The
+  library's integers and rationals, done on 2026-10-05, are quotients: pairs
+  of naturals by their difference, and the field of fractions. Reals are the
+  Cauchy completion (kernel H3), with Dedekind reals as the fallback; both
+  need the rationals' order first. The first library's constructions are
+  described as archived.
 - [RH and the prime-counting error](rh-prime-counting-roadmap.md): a planned
   proof that RH for zeta implies a prime-counting error of
   \(O(\sqrt{x}\log x)\) relative to the logarithmic integral. Planning only.

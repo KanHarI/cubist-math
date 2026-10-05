@@ -4,10 +4,13 @@ Status: adopted on 2026-09-25 by [ergonomics](proof-ergonomics-roadmap.md)
 milestones 6 and 7. One-sort `inductive` declarations (work-plan L2.1) and
 explicit `match` (L2.2a) were released with H1 on 2026-10-02, on by
 default, in the subset the [H1 specification](h1-signature-specification.md)
-admits; theories, cells,
-relations and bundles, proof-first h-levels, `obligations`, dependent
-matching, canonical quotients, presentations and derivations remain
-proposals. The [audit of 2026-09-28](audits/2026-09-28-audit.md) corrected
+admits, with explicit `obligations` (L2.2b). Core theories, section 1's
+models, homomorphisms, isomorphisms, notation, sections and `extends`, were
+implemented on 2026-10-05 (work-plan L2.4, [core theories](core-theories.md)),
+and the library's algebraic hierarchy is written in them. Initial and free
+models, generated identity, cells, relations and bundles, proof-first
+h-levels, per-argument obligations, dependent matching, canonical
+quotients, presentations and derivations remain proposals. The [audit of 2026-09-28](audits/2026-09-28-audit.md) corrected
 three promises here: the universal property of section 1, `Torus2` in
 section 2 and proof-first h-levels in section 4.
 G0 and the shared goal-layer core are delivered as of 2026-09-27. It builds on
@@ -347,6 +350,13 @@ quotient Rat = Int and Pos by (a, b) ~ (c, d) := a * d = c * b
 **Stage:** none; it is a subtype and a view. **Computability** improves: this
 is how we get decimal-style answers out of the rationals.
 
+The library's rationals (2026-10-05, `library/rationals.cubist`) are the
+plain quotient, the field of fractions of the integers. Their operations
+and equality compute, but a closed rational is a class of some fraction,
+not one in lowest terms, so closed results are compared with the decidable
+equality rather than printed reduced. This section remains the way to
+canonical forms.
+
 ## 8. Presentations: matching with another type's constructors
 
 When two types are equivalent, one can be matched using the other's
@@ -402,7 +412,9 @@ checked declarations:
   and its own acceptance cases.
 - **Sections over models.** `section (R : CommRing.Model) { open R; … }`
   shares the model and its notation across lemmas. This replaces milestone
-  6's separate section feature.
+  6's separate section feature. Implemented with L2.4 on 2026-10-05: a
+  section's models are opened in each of its definitions, as in
+  `library/algebra.cubist`'s ring lemmas and `library/rationals.cubist`.
 - **Theory morphisms.** `interpret Group in Monoid by …` records a translation
   between theories. Forgetful maps and free-model adjunctions are generated
   from it. This is later work.
@@ -445,7 +457,8 @@ is required; particular instances depend on H1 or H3.
 - **The rebuild** can state its algebra as theories from the start: monoids,
   groups, rings, fields, vector spaces and ordered fields. Its numbers can use
   canonical quotients for the rationals, and its reals the initial model of
-  `CauchyStructure`.
+  `CauchyStructure`. Since 2026-10-05 the library states monoids to fields
+  as theories; its rationals are the plain quotient for now (section 7).
 
 ## Open questions
 

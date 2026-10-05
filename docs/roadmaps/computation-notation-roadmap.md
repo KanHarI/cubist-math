@@ -2,7 +2,10 @@
 
 Status: planned on 2026-09-25; reviewed on 2026-09-27. No notation or
 supporting interfaces in this roadmap are implemented. G0, the core
-goal/scope layer and computability checking are available prerequisites.
+goal/scope layer, computability checking, argument inference and implicit
+parameters (L4.1a, L4.1b, 2026-10-04) and core theories (L2.4, 2026-10-05)
+are available prerequisites; theories do not yet state a monad's laws (see
+N1 below).
 Code blocks are proposed syntax or schematic signatures, not checked
 examples. Existing proofs cited below are evidence
 for the work, not implementations of it.
@@ -354,6 +357,16 @@ features, using small checked fixtures and existing archive examples.
 
 N1 uses L2.4's core record and theory facilities. Automatic structure
 identity, free models and concrete algebra developments are separate work.
+
+**L2.4 delivered (2026-10-05), with a gap for N1.** A theory's sorts are
+single sets or propositions, and a law must be an equation between
+elements of a sort, `Unit`, `Void`, or `forall`, `->` and `and` over those
+(E818). A monad's carrier is a family, `F(A : U0) : U0`, which a theory
+accepts as an operation, but its laws are equations in `F(B)`, not in a
+sort, and are refused. So N1 needs either sort families, `sort F(A : U) :
+set;`, whose equations are propositions, as an extension of L2.4, or
+records written as Σ types by hand, without generated homomorphisms. Decide
+which before N1's implementation.
 N0 may cite the archived span proof and specify future substitution examples
 without rebuilding their mathematics. N2 and N4 retain a fully explicit
 argument spelling alongside inference; their release tests cover both.

@@ -11,9 +11,14 @@ name-capture bug; see the [implementation checkpoint](../tactical/proof-ergonomi
 
 The shared goal layer's core and motive abstraction are delivered (HoTT A5),
 as are G0's checked universe binders and milestone 8's core computability
-features. Argument inference and theories remain open; one-sort inductive
-declarations and explicit `match` were released with H1 on 2026-10-02
-(work-plan L2.1 and L2.2a), and the rest of milestone 7 is open.
+features. One-sort inductive declarations and explicit `match` were
+released with H1 on 2026-10-02 (work-plan L2.1 and L2.2a), and the rest of
+milestone 7 is open. Milestone 5's argument inference and implicit
+parameters were delivered on 2026-10-04 (L4.1a, L4.1b), and its `apply` and
+`refine` withdrawn. Milestone 6's core theories, with their notation and
+sections, were delivered on 2026-10-05 (L2.4); its initial and free models,
+algebraic normalization and structure identity remain open, and its
+notation becomes explicit views (L2.10).
 
 The remaining dependent, cubical, induction and shared elaboration work moved
 to the [HoTT and cubical automation roadmap](hott-automation-roadmap.md), and
@@ -460,8 +465,10 @@ checked h-level definitions; automatic evidence uses the later D1 solver.
 Generated structure identity is a separate L2.4b
 release through HoTT F1 and its prerequisites; it does not gate core theories.
 
-- [ ] `theory` declarations: sorts with h-levels, operations with notation,
-  laws, and `extends`. They generate:
+- [x] `theory` declarations: sorts with h-levels, operations with notation,
+  laws, and `extends`. Delivered on 2026-10-05 as L2.4
+  ([core theories](core-theories.md)), all but the L2.4b items. They
+  generate:
   - `T.Model` as a Σ record with named fields and eta;
   - `T.Hom`;
   - `T.Iso`;
@@ -470,11 +477,14 @@ release through HoTT F1 and its prerequisites; it does not gate core theories.
   - in L2.4b, supported `T.Displayed` and coherence interfaces.
 
   Projections use HoTT A8's syntax.
-- [ ] Scoped notation declared by a theory and opened with `open M`. Keep the
-  current natural-number operators.
-- [ ] `section (M : T.Model) { … }`: shared models and parameters,
+- [x] Scoped notation declared by a theory and opened with `open M`. Keep the
+  current natural-number operators. Delivered with L2.4; the
+  [notation roadmap](notation.md) (L2.10) replaces it with explicit views
+  and retires the name-based operators.
+- [x] `section (M : T.Model) { … }`: shared models and parameters,
   generalized deterministically, including dependencies that occur in types.
-  Resulting signatures are shown.
+  Resulting signatures are shown. Delivered with L2.4; the library's
+  rationals are one section over a ring.
 - [ ] `initial T` and `free T on A` with `fold`, `fold_unique` and
   `universal`. These need milestone 7 and kernel H: H1 for single-sort
   theories, H3 for theories such as `CauchyStructure` and `CwF`.
@@ -487,11 +497,17 @@ General typeclass search, implicit coercion networks, unrestricted higher-order
 unification and broad proof search remain deferred. Structure scope stays
 explicit.
 
-Completion, with generated identity required for L2.4b:
-- a ring lemma takes one model argument and uses its notation;
-- group structure identity is a generated instance, not a development;
-- the forgetful map of an `extends` theory is generated;
-- incorrect homomorphism preservation is rejected.
+Completion, with generated identity required for L2.4b. Met by L2.4 on
+2026-10-05 but for structure identity:
+- a ring lemma takes one model argument and uses its notation (met: the
+  ring lemmas of `library/algebra.cubist`);
+- group structure identity is a generated instance, not a development
+  (open: L2.4b);
+- the forgetful map of an `extends` theory is generated (met: a model's
+  parents' models);
+- incorrect homomorphism preservation is rejected (met, as the type of
+  the preservation field: doubling offered as a homomorphism of `Nat`'s
+  multiplicative monoid is refused; no fixture records it yet).
 
 ### 7. Inductive declarations and pattern matching
 
