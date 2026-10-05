@@ -143,8 +143,9 @@ declaration in it, as written: the rule takes all of them, so it does not
 depend on what a declaration uses. A parameter whose type is a model is
 opened for each declaration's statement and proof. Inside the section a
 declaration of the section is applied to the section's parameters already,
-so `square(one)` there is `square{{U}}(G, one)` outside. Sections do not
-nest in L2.4.
+so `square(one)` there is `square{{U}}(G, one)` outside. A recursive call
+passes them unchanged too: in `power(x, n)`, `power(x, k)` is
+`power{{U}}(G, x, k)`. Sections do not nest in L2.4.
 
 ## Extension
 

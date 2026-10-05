@@ -171,7 +171,7 @@ def additive : Monoid.Model(U0) := Monoid.make(
 def four : square(additive, 2) = 4 {
   rfl;
 }</code></pre>
-            <p>Inside the section, <code>square(one)</code> is <code>square{{U}}(G, G.one)</code>; outside, <code>square</code> takes <code>G</code> first, and <code>U</code> in braces, and <code>square_one</code> states <code>forall U &lt; UU0. forall G : Monoid.Model(U). square{{U}}(G, G.one) = G.one</code>. A section's parameters, in braces or not, come before each definition's own, so a definition in a section has no implicit parameters of its own, and no parameter of a section's name. A section holds definitions only, and sections do not nest.</p>
+            <p>Inside the section, <code>square(one)</code> is <code>square{{U}}(G, G.one)</code>; outside, <code>square</code> takes <code>G</code> first, and <code>U</code> in braces, and <code>square_one</code> states <code>forall U &lt; UU0. forall G : Monoid.Model(U). square{{U}}(G, G.one) = G.one</code>. A recursive call passes the section's parameters unchanged too: in a section over <code>G</code>, <code>power(x, k)</code> inside <code>power</code>'s own definition is <code>power{{U}}(G, x, k)</code>. A section's parameters, in braces or not, come before each definition's own, so a definition in a section has no implicit parameters of its own, and no parameter of a section's name. A section holds definitions only, and sections do not nest.</p>
           </section>
 
           <section id="extends">
