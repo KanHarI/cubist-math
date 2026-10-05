@@ -1,7 +1,7 @@
 import nat;
 
 import suspension;
-import integers;
+import signed_integers;
 import groups;
 
 // The cover has fiber Z at both poles. Crossing upper applies successor;

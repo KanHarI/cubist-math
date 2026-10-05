@@ -1,7 +1,7 @@
 import nat;
 
 import ordered_fields;
-import integers;
+import signed_integers;
 
 // Integer multiples in an arbitrary abelian group, constructed by recursion.
 // No field, order, choice, or excluded-middle assumption is used.

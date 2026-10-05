@@ -58,6 +58,39 @@ computable def nat_add_comm(x, y : Nat) : x + y = y + x := match x {
     succ(k) => trans(cong(fun (m : Nat) => succ(m), nat_add_comm(k, y)), sym(nat_add_succ(y, k)));
   };
 
+// a + (b + c) = b + (a + c).
+computable def nat_add_left_comm(a, b, c : Nat) : a + (b + c) = b + (a + c) {
+  calc {
+    a + (b + c) = (a + b) + c by sym(nat_add_assoc(a, b, c));
+    _ = (b + a) + c by cong(fun (m : Nat) => m + c, nat_add_comm(a, b));
+    _ = b + (a + c) by nat_add_assoc(b, a, c);
+  }
+}
+
+// (a + b) + (c + d) = (a + c) + (b + d): the middle two trade places.
+computable def nat_add_interchange(a, b, c, d : Nat) : (a + b) + (c + d) = (a + c) + (b + d) {
+  calc {
+    (a + b) + (c + d) = a + (b + (c + d)) by nat_add_assoc(a, b, c + d);
+    _ = a + (c + (b + d)) by cong(fun (m : Nat) => a + m, nat_add_left_comm(b, c, d));
+    _ = (a + c) + (b + d) by sym(nat_add_assoc(a, c, b + d));
+  }
+}
+
+// The predecessor: pred(0) = 0 and pred(succ(n)) = n.
+computable def pred(n : Nat) : Nat := match n {
+    zero => 0;
+    succ(k) => k;
+  };
+
+// succ is injective: equal successors have equal predecessors.
+computable def nat_succ_injective(x, y : Nat, p : succ(x) = succ(y)) : x = y := cong(pred, p);
+
+// Addition cancels: k + x = k + y gives x = y.
+computable def nat_add_cancel(k, x, y : Nat, p : k + x = k + y) : x = y := match k {
+    zero => p;
+    succ(j) => nat_add_cancel(j, x, y, nat_succ_injective(j + x, j + y, p));
+  };
+
 // n * 0 = 0, since 0 * b = 0 and succ(a) * 0 = 0 + a * 0.
 computable def nat_mul_zero(n : Nat) : n * 0 = 0 := match n {
     zero => refl(0);

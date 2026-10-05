@@ -64,6 +64,21 @@ computable def quotient_induction_relate(
     path i => quotient_induction(U, V, A, R, B, sets, f, respects, class_path(U, A, R, a, b, r) @ i)
   ) = respects(a, b, r) := refl(respects(a, b, r));
 
+// Induction into a family of propositions: their values at the classes are
+// enough, since a proposition's values agree along every relation.
+computable def quotient_induction_prop(
+  U, V < UU0, A : U, R : A -> A -> U, P : Quotient(U, A, R) -> V,
+  props : (forall z : Quotient(U, A, R). IsProp(V, P(z))), f : (forall a : A. P(class(a))),
+  q : Quotient(U, A, R)
+) :
+  P(q) := quotient_induction(
+    U, V, A, R, P, fun (z : Quotient(U, A, R)) => prop_is_set(V, P(z), props(z)), f,
+    fun (a, b : A, r : R(a, b)) => prop_over(
+      max(U, V), Quotient(U, A, R), P, props, class(a), class(b), class_path(U, A, R, a, b, r),
+      f(a), f(b)
+    ), q
+  );
+
 // A map that sends related elements to equal values.
 def Respects(U, V < UU0, A : U, R : A -> A -> U, B : V, f : A -> B) :
   max(U, V) := forall a, b : A. R(a, b) -> f(a) = f(b);
@@ -92,15 +107,10 @@ computable def maps_agreeing_on_classes(
   agree : (forall a : A. g(class(a)) = h(class(a)))
 ) :
   g = h {
-  let Agree := fun (z : Quotient(U, A, R)) => g(z) = h(z);
-  let props := fun (z : Quotient(U, A, R)) => set(g(z), h(z));
   ext q;
-  exact quotient_induction(
-    U, V, A, R, Agree, fun (z : Quotient(U, A, R)) => prop_is_set(V, Agree(z), props(z)), agree,
-    fun (a, b : A, r : R(a, b)) => prop_over(
-      max(U, V), Quotient(U, A, R), Agree, props, class(a), class(b), class_path(U, A, R, a, b, r),
-      agree(a), agree(b)
-    ), q
+  exact quotient_induction_prop(
+    U, V, A, R, fun (z : Quotient(U, A, R)) => g(z) = h(z),
+    fun (z : Quotient(U, A, R)) => set(g(z), h(z)), agree, q
   );
 }
 
@@ -112,6 +122,27 @@ computable def descend_unique(
   g = descend(U, V, A, R, B, set, f, respects) := maps_agreeing_on_classes(
     U, V, A, R, B, set, g, descend(U, V, A, R, B, set, f, respects), agree
   );
+
+// A map of two arguments into a set that respects the relation in each
+// descends to the quotient, one argument after the other: for each a, b
+// descends; and these maps agree on related a, being maps into a set that
+// agree on classes.
+computable def descend2(
+  U, V < UU0, A : U, R : A -> A -> U, B : V, set : IsSet(V, B), f : A -> A -> B,
+  left : (forall a, c, b : A. R(a, c) -> f(a, b) = f(c, b)),
+  right : (forall a, b, d : A. R(b, d) -> f(a, b) = f(a, d)), x, y : Quotient(U, A, R)
+) :
+  B := descend(
+    U, max(U, V), A, R, Quotient(U, A, R) -> B,
+    pi_is_set(
+      max(U, V), Quotient(U, A, R), fun (z : Quotient(U, A, R)) => B,
+      fun (z : Quotient(U, A, R)) => set
+    ), fun (a : A) => descend(U, V, A, R, B, set, f(a), right(a)),
+    fun (a, c : A, r : R(a, c)) => maps_agreeing_on_classes(
+      U, V, A, R, B, set, descend(U, V, A, R, B, set, f(a), right(a)),
+      descend(U, V, A, R, B, set, f(c), right(c)), fun (b : A) => left(a, c, b, r)
+    ), x
+  )(y);
 
 // Relatedness to a, as a family of propositions over the quotient: at the
 // class of b, R(a, b). Elements related to each other are related to the

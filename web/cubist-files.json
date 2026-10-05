@@ -843,10 +843,6 @@
    "summary": "Additive groups · signed integer multiples"
   },
   {
-   "path": "archive/first-library/integers.cubist",
-   "summary": "Integers · successor equivalence"
-  },
-  {
    "path": "archive/first-library/intermediate_fields.cubist",
    "summary": "Galois theory · intermediate fields"
   },
@@ -1341,6 +1337,10 @@
   {
    "path": "archive/first-library/set_quotients.cubist",
    "summary": "Equivalence classes · representatives and choice"
+  },
+  {
+   "path": "archive/first-library/signed_integers.cubist",
+   "summary": "Signed integers · successor equivalence"
   },
   {
    "path": "archive/first-library/simple_algebraic_extensions.cubist",
@@ -1999,6 +1999,10 @@
    "summary": "Names that shadow the natural numbers' type, linked to their own declarations."
   },
   {
+   "path": "cubist-tests/integer_examples.cubist",
+   "summary": "The library's integers at work: equality decided and arithmetic computed on closed integers, a commutative ring's lemma at the integers, and the natural numbers embedded as a homomorphism of additive monoids."
+  },
+  {
    "path": "cubist-tests/let_statements.cubist",
    "summary": "let with a stated type and a proof block (HoTT B4): a restated goal, reasoning backwards, and the refusals."
   },
@@ -2335,12 +2339,16 @@
    "summary": "Contractible types, propositions and sets in every universe below `UU0`, with `HasLevel(U, n, A)` defined by recursion on `n`, so that `IsSet` is level 1 by conversion. Propositions are sets, levels are cumulative, having a level is a proposition, and a retract, such as a type equivalent to another by an inverse, a function type, a type of pairs, a product or a subtype keeps the level of the types it is made from. Contractible types are closed under the same constructions except subtypes, since a subtype can be empty, and being contractible is a proposition. Negations are propositions (`not_is_prop`), and so is the decision of a proposition (`Decidable`, `decision_is_prop`). A type with decidable equality, such as `Nat`, is a set (Hedberg)."
   },
   {
+   "path": "library/integers.cubist",
+   "summary": "The integers as a quotient: a pair of naturals `(a, b)` stands for `a - b`, and pairs with the same difference are one integer, `Z`. Negation, addition and multiplication descend to it; it is a commutative ring (`integers`), and its equality is decidable (`int_decide`), through the quotient's effectiveness. Every operation computes on closed integers."
+  },
+  {
    "path": "library/lists.cubist",
    "summary": "Lists of elements of a type in any universe below `UU0`, with their length and concatenation (`append`), whose universe and element type are implicit parameters, read off the lists: `nil` is a unit on both sides, concatenation is associative, and the length of a concatenation is the sum of the lengths."
   },
   {
    "path": "library/nat.cubist",
-   "summary": "The natural numbers, `Nat` with `zero` and `succ`, with addition, multiplication and order, and the laws of addition and multiplication: units, commutativity, associativity and distributivity. Numerals and `+`, `*`, `<` and `<=` need it."
+   "summary": "The natural numbers, `Nat` with `zero` and `succ`, with addition, multiplication and order, and the laws of addition and multiplication: units, commutativity, associativity and distributivity; the predecessor, the injectivity of `succ` and cancellation of addition. Numerals and `+`, `*`, `<` and `<=` need it."
   },
   {
    "path": "library/propositions.cubist",
@@ -2348,7 +2356,7 @@
   },
   {
    "path": "library/quotients.cubist",
-   "summary": "Set quotients as a declared type: the quotient of a type by a relation, with a class for each element and a path between related classes. It is a set; it has induction into families of sets, of any universe below `UU0`; and a map into a set that respects the relation descends to it, uniquely. No representative is chosen. For an equivalence relation valued in propositions, related elements are exactly those with equal classes (`quotient_effective`, `class_path_equiv`): relatedness to an element descends into [`propositions`](propositions.cubist)' `Prop(U)`."
+   "summary": "Set quotients as a declared type: the quotient of a type by a relation, with a class for each element and a path between related classes. It is a set; it has induction into families of sets, of any universe below `UU0`; and a map into a set that respects the relation descends to it, uniquely. No representative is chosen. For an equivalence relation valued in propositions, related elements are exactly those with equal classes (`quotient_effective`, `class_path_equiv`): relatedness to an element descends into [`propositions`](propositions.cubist)' `Prop(U)`. Induction into a family of propositions needs only the classes (`quotient_induction_prop`), and a map of two arguments that respects the relation in each descends (`descend2`)."
   },
   {
    "path": "library/univalence.cubist",
