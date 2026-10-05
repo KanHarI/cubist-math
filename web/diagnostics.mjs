@@ -99,6 +99,7 @@ export const diagnostics = [
   ["E172", "A section gives its definitions parameters: section (G : Group.Model(U0)) { … }."],
   ["E173", "Expected '}' to close the section."],
   ["E174", "A section holds definitions: def and computable def."],
+  ["E175", "… is reserved, as a keyword or a built-in type of the language; pick another name."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
