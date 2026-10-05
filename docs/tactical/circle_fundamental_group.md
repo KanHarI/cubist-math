@@ -19,7 +19,7 @@ ordinary addition, and a multiplication-preserving bijection between them.
 | --- | --- |
 | [suspension.cubist](../../archive/first-library/suspension.cubist) | `S0 = Unit or Unit`, `S1 = Suspension(S0)`, the generating loop, and a derived recursor with its path computation law |
 | [paths.cubist](../../archive/first-library/paths.cubist) | Path algebra, transport, based path induction, and half-adjoint equivalences |
-| [sets.cubist](../../archive/first-library/sets.cubist) | Decidable equality and Hedberg's theorem |
+| [hlevels.cubist](../../library/hlevels.cubist) | Decidable equality and Hedberg's theorem, in the library |
 | [groups.cubist](../../archive/first-library/groups.cubist) | Group and group-isomorphism statements |
 | [integers.cubist](../../archive/first-library/integers.cubist) | Signed integers, successor equivalence, arithmetic addition, and setness |
 | [circle.cubist](../../archive/first-library/circle.cubist) | Integer cover, encode/decode, winding, inverse laws, group laws, and the final theorem |

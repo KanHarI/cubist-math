@@ -20,7 +20,7 @@
 //
 // The command succeeds when every import checks, there are no gaps, and
 // every stored definition derives again; otherwise its exit status is 1.
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir } from "node:fs/promises";
 import { createWriteStream } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
@@ -31,7 +31,7 @@ import { assertFreshBuild } from "./build-stamp.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { InstructionDriver, heuristicPolicy, searchLimits } from "../web/cubical-instruction-driver.mjs";
 import { archiveModules } from "../web/cubist/modules.mjs";
-import { cubicalSourceFile } from "../web/cubical-sources.mjs";
+import { archiveReader } from "./module-sources.mjs";
 import { addWork, countingPolicy, kernelSteps, recordingPolicy, workSince } from "./search-telemetry.mjs";
 
 const option = name => process.argv.find(arg => arg.startsWith(`--${name}=`))?.slice(name.length + 3);
@@ -50,7 +50,7 @@ const environment = {
   cpus: os.cpus().length, memoryGiB: Math.round(os.totalmem() / 2 ** 30),
 };
 
-const readSource = name => readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`, import.meta.url), "utf8");
+const readSource = archiveReader("coverage");
 // A stale WASM kernel would measure code it does not contain.
 assertFreshBuild();
 const program = new CubicalProgram(await createCubical(), readSource);

@@ -21,7 +21,9 @@ import {checkProgram,checkTestModule} from "./check-program.mjs";
 // childLimit a child process's startup and check together.
 const sharedDepth=30, checkLimit=budget(2000), childLimit=budget(15000);
 
-const readLibrary = name => readFile(new URL(`../archive/first-library/${name}.cubist`,import.meta.url),"utf8");
+// The examples import archive modules: they resolve in the library, then the
+// archive, as any source that is not a file does.
+const readLibrary = sourceReader();
 const sample = name => readFile(new URL(`../docs/examples/proof-ergonomics/implemented/${name}.cubist`,import.meta.url),"utf8");
 // The Cubist cases are cubist-tests/ergonomics_*.cubist, whose comments
 // state each refusal and what each print shows (tests/cubist-tests.test.mjs);

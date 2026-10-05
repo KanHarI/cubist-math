@@ -1343,10 +1343,6 @@
    "summary": "Equivalence classes · representatives and choice"
   },
   {
-   "path": "archive/first-library/sets.cubist",
-   "summary": "Sets · decidable equality"
-  },
-  {
    "path": "archive/first-library/simple_algebraic_extensions.cubist",
    "summary": "Simple algebraic extensions and residue fields"
   },

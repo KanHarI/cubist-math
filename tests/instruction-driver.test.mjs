@@ -15,6 +15,7 @@ import { sourceText } from "../web/cubical-source-text.mjs";
 import { levelNormal } from "../web/cubical-levels.mjs";
 import { InstructionGraph } from "../web/cubical-instructions.mjs";
 import { checkTestModule } from "./check-program.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 
 const readLibrary = name => readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8");
 // The Cubist cases are cubist-tests/driver_*.cubist (tests/cubist-tests.test.mjs
@@ -122,7 +123,7 @@ test("a definition's body is derived on request, as its lookup's premise", async
 });
 
 test("every definition behind Euclid's theorem derives in instruction mode", async t => {
-  const readArchive = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
+  const readArchive = sourceReader();
   const program = new CubicalProgram(await createCubical(), readArchive);
   t.after(() => program.dispose());
   await program.check(await readArchive("euclid"), "euclid");
@@ -168,7 +169,7 @@ test("a derived term is its source: a constructor at a type that reduces keeps t
 });
 
 test("search: a composition whose face holds contracts by one step, and a failed congruence is not retried", async t => {
-  const readArchive = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
+  const readArchive = sourceReader();
   for (const [module, name, rule] of [
     // Unfolding the other side here would compute 10! in unary.
     ["binary_univalence_transfer", "binary_univalence_transfer__binary_factorial_ten_via_nat", "face"],
@@ -193,7 +194,7 @@ test("search: a composition whose face holds contracts by one step, and a failed
 });
 
 test("composition with overlapping faces: each overlap has its equality, and a tube on the face 0 is vacuous", async t => {
-  const readArchive = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
+  const readArchive = sourceReader();
   const program = new CubicalProgram(await createCubical(), readArchive);
   t.after(() => program.dispose());
   await program.check(await readArchive("paths"), "paths");
@@ -230,7 +231,7 @@ test("composition with overlapping faces: each overlap has its equality, and a t
 });
 
 test("declared pushouts: the suspension, its points and meridian, and its induction principle derive", async t => {
-  const readArchive = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
+  const readArchive = sourceReader();
   const program = new CubicalProgram(await createCubical(), readArchive);
   t.after(() => program.dispose());
   await program.check(await readArchive("suspension_types"), "suspension_types");
@@ -257,7 +258,7 @@ test("declared pushouts: the suspension, its points and meridian, and its induct
 });
 
 test("W types: binary positive numbers, their constructors and their recursion derive", async t => {
-  const readArchive = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
+  const readArchive = sourceReader();
   const program = new CubicalProgram(await createCubical(), readArchive);
   t.after(() => program.dispose());
   await program.check(await readArchive("binary_naturals"), "binary_naturals");
@@ -284,7 +285,7 @@ test("W types: binary positive numbers, their constructors and their recursion d
 });
 
 test("Glue: univalence derives, and so does a Glue term over its Glue type", async t => {
-  const readArchive = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
+  const readArchive = sourceReader();
   const program = new CubicalProgram(await createCubical(), readArchive);
   t.after(() => program.dispose());
   await program.check(await readArchive("binary_univalence_transfer"), "binary_univalence_transfer");

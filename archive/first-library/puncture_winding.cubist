@@ -5,7 +5,7 @@ import circle;
 
 // Collapse all but one labelled generator to the constant loop of S1.
 // Finite equality is decided constructively, without excluded middle.
-def decision_circle_loop(P : U0, decision : Decidable(P)) := match decision return LoopsS1 {
+def decision_circle_loop(P : U0, decision : Decidable(U0, P)) := match decision return LoopsS1 {
     left yes => loop;
     right no => refl(base);
   };

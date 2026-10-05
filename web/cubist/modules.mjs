@@ -222,7 +222,6 @@ export const archiveModules = [
   "binomial_pascal",
   "binomial_counting",
   "paths",
-  "sets",
   "groups",
   "group_universes",
   "integers",

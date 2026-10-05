@@ -14,21 +14,20 @@ import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { archiveModules } from "../web/cubist/modules.mjs";
-import { cubicalSourceFile } from "../web/cubical-sources.mjs";
 import { referenceExamples } from "../tests/reference-pages.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
-import { sourceReader } from "./module-sources.mjs";
+import { archiveReader, sourceReader } from "./module-sources.mjs";
 // A stale WASM kernel would run code it does not contain.
 assertFreshBuild();
 
 const root = new URL("../", import.meta.url);
 const text = path => readFile(new URL(path, root), "utf8");
 // Each workload resolves its imports as its tests do. The archive's modules
-// come from the archive, as do the proof-ergonomics examples' imports. The
+// and the proof-ergonomics examples import as an archive module does, from
+// the archive, then the library. The
 // library, the reference's examples and the HoTT automation examples resolve
 // by the CLI's contract (web/module-resolution.mjs): an example from its own
 // directory first, then the library, then the archive.
-const archive = name => text(`archive/first-library/${cubicalSourceFile(name)}`);
 const exampleReader = path => sourceReader({ path: fileURLToPath(new URL(path, root)) });
 const unlimited = Object.fromEntries(["visits", "candidates", "rewrites", "premises", "nodes", "queries"].map(kind => [kind, Infinity]));
 const kinds = Object.keys(unlimited);
@@ -64,16 +63,16 @@ async function measure(name, source, readSource) {
 
 const workloads = [];
 const modules = archiveModules;
-workloads.push(await measure("archive", modules.map(module => `import ${module};`).join("\n"), archive));
+workloads.push(await measure("archive", modules.map(module => `import ${module};`).join("\n"), archiveReader("archive")));
 const rebuilt = (await readdir(new URL("library/", root))).filter(file => file.endsWith(".cubist")).map(file => file.slice(0, -7));
 workloads.push(await measure("library", rebuilt.map(module => `import ${module};`).join("\n"), sourceReader()));
 const examples = [
   ...["conversion-laws", "cubical-probes", "canonicity"].map(file => `docs/examples/hott-automation/${file}.cubist`)
     .map(path => [path, exampleReader(path)]),
   ...(await readdir(new URL("docs/examples/proof-ergonomics/implemented/", root))).map(file => `docs/examples/proof-ergonomics/implemented/${file}`)
-    .map(path => [path, archive]),
+    .map(path => [path, archiveReader(path)]),
   ...(await readdir(new URL("docs/examples/proof-ergonomics/current/", root))).filter(file => file.endsWith(".cubist"))
-    .map(file => [`docs/examples/proof-ergonomics/current/${file}`, archive]),
+    .map(file => `docs/examples/proof-ergonomics/current/${file}`).map(path => [path, archiveReader(path)]),
 ];
 for (const [path, readSource] of examples) workloads.push(await measure(path, await text(path), readSource));
 // The reference's checked examples, accepted and rejected: a rejected one's

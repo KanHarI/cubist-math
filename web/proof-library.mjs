@@ -386,7 +386,6 @@ export const proofCatalog = [
   { id: "equivalences", topic: "sets-maps", title: "Bijections · reusable constructions" },
   { id: "groups", topic: "algebra", title: "Groups · structures and isomorphisms" },
   { id: "group_universes", topic: "algebra", title: "Groups · structures across universes" },
-  { id: "sets", topic: "sets-maps", title: "Sets · decidable equality" },
   { id: "circle", topic: "homotopy", title: "Circle · fundamental group is Z" },
   { id: "integers", topic: "arithmetic", title: "Integers · successor equivalence" },
   { id: "paths", topic: "homotopy", title: "Paths · equality reasoning" },

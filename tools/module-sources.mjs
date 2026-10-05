@@ -42,3 +42,12 @@ export function sourceReader({ path = null, root = projectRoot } = {}) {
   if (path !== null) readSource.place(basename(path, ".cubist"), placeOfFile(path, root));
   return readSource;
 }
+
+// A readSource for a source that checks archive modules, such as a list of
+// their imports, named `main`: it is placed in the archive, so its imports
+// resolve as an archive module's do, in the archive, then in the library.
+export function archiveReader(main, root = projectRoot) {
+  const readSource = sourceReader({ root });
+  readSource.place(main, "archive");
+  return readSource;
+}

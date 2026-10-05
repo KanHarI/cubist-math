@@ -10,7 +10,7 @@ def group_iso_path_data(G, H : Group, p, q : GroupIso(G, H), r : p = q) :=
 def group_iso_choose_path(G, H : Group, p, q : GroupIso(G, H), r : p = q) :=
   group_iso_ext(G, H, p, q, group_iso_path_data(G, H, p, q, r));
 
-def group_iso_is_set(G, H : Group) : IsSet(GroupIso(G, H)) {
+def group_iso_is_set(G, H : Group) : IsSet(U0, GroupIso(G, H)) {
   let setH := group_is_set(H);
   let constant :
     forall p : GroupIso(G, H). forall q : GroupIso(G, H). forall r : p = q. forall s : p = q.

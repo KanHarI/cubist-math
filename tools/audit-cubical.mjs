@@ -1,17 +1,17 @@
-import { cubicalSourceFile } from "../web/cubical-sources.mjs";
 // Check the selected source import graph once, and report every rejected declaration.
 // No theorem-specific replacement, assumption, or legacy certificate is accepted.
-import { readFile, writeFile } from 'node:fs/promises';
+import { writeFile } from 'node:fs/promises';
 import { archiveModules } from '../web/cubist/modules.mjs';
 import createCubical from '../web/dist/cubical.mjs';
 import { CubicalProgram } from '../web/cubical-program.mjs';
 import { assertFreshBuild } from './build-stamp.mjs';
+import { archiveReader } from './module-sources.mjs';
 // A stale WASM kernel would run code it does not contain.
 assertFreshBuild();
 const args=process.argv.slice(2), all=args.includes('--all');
 const selected=all?archiveModules:args.filter(x=>!x.startsWith('--'));
 if(!selected.length)throw Error('Usage: node tools/audit-cubical.mjs MODULE... | --all');
-const program=new CubicalProgram(await createCubical(),name=>readFile(new URL(`../archive/first-library/${cubicalSourceFile(name)}`,import.meta.url),'utf8'));
+const program=new CubicalProgram(await createCubical(),archiveReader('audit'));
 const budgetOption=args.find(arg=>arg.startsWith('--diagnostic-budget='));
 const diagnosticBudget=budgetOption?BigInt(budgetOption.split('=')[1]):null;
 if(diagnosticBudget!==null) {

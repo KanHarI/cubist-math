@@ -7,29 +7,29 @@ def head(A : U0) := typed(Unit or A, left(tt));
 
 def tail(A : U0, a : A) := typed(Unit or A, right(a));
 
-def swap_tail(A : U0, a, b : A, d : Decidable(a = b)) := match d return (Unit or A) {
+def swap_tail(A : U0, a, b : A, d : Decidable(U0, a = b)) := match d return (Unit or A) {
     left p => head(A);
     right no => tail(A, b);
   };
 
-def swap_tail_equal(A : U0, a, b : A, d : Decidable(a = b), p : a = b) :=
+def swap_tail_equal(A : U0, a, b : A, d : Decidable(U0, a = b), p : a = b) :=
   match d as decision return (swap_tail(A, a, b, decision) = head(A)) {
     left yes => refl(head(A));
     right no => typed(
-      (swap_tail(A, a, b, typed(Decidable(a = b), right(no))) = head(A)), absurd(no(p))
+      (swap_tail(A, a, b, typed(Decidable(U0, a = b), right(no))) = head(A)), absurd(no(p))
     );
   };
 
-def swap_tail_different(A : U0, a, b : A, d : Decidable(a = b), no : (a = b) -> Void) :=
+def swap_tail_different(A : U0, a, b : A, d : Decidable(U0, a = b), no : (a = b) -> Void) :=
   match d as decision return (swap_tail(A, a, b, decision) = tail(A, b)) {
     left yes => typed(
-      (swap_tail(A, a, b, typed(Decidable(a = b), left(yes))) = tail(A, b)), absurd(no(yes))
+      (swap_tail(A, a, b, typed(Decidable(U0, a = b), left(yes))) = tail(A, b)), absurd(no(yes))
     );
     right impossible => refl(tail(A, b));
   };
 
 def swap_right(
-  A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), a : A, x : Unit or A
+  A : U0, decide : (forall a : A. forall b : A. Decidable(U0, a = b)), a : A, x : Unit or A
 ) :=
   match x return (Unit or A) {
     left u => tail(A, a);
@@ -37,7 +37,7 @@ def swap_right(
   };
 
 def swap_right_twice(
-  A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), a : A, x : Unit or A
+  A : U0, decide : (forall a : A. forall b : A. Decidable(U0, a = b)), a : A, x : Unit or A
 ) :=
   match x as z return (swap_right(A, decide, a, swap_right(A, decide, a, z)) = z) {
     left u => trans(
@@ -58,34 +58,34 @@ def swap_right_twice(
     };
   };
 
-def swap(A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), target, x : Unit or A) :=
+def swap(A : U0, decide : (forall a : A. forall b : A. Decidable(U0, a = b)), target, x : Unit or A) :=
   match target return (Unit or A) {
     left u => x;
     right a => swap_right(A, decide, a, x);
   };
 
 def swap_twice(
-  A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), target, x : Unit or A
+  A : U0, decide : (forall a : A. forall b : A. Decidable(U0, a = b)), target, x : Unit or A
 ) :=
   match target as c return (swap(A, decide, c, swap(A, decide, c, x)) = x) {
     left u => refl(x);
     right a => swap_right_twice(A, decide, a, x);
   };
 
-def swap_head(A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), target : Unit or A) :=
+def swap_head(A : U0, decide : (forall a : A. forall b : A. Decidable(U0, a = b)), target : Unit or A) :=
   match target as c return (swap(A, decide, c, head(A)) = c) {
     left u => cong((fun (v : Unit) => typed(Unit or A, left(v))), unit_equal(u));
     right a => refl(tail(A, a));
   };
 
-def swap_target(A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), target : Unit or A) :=
+def swap_target(A : U0, decide : (forall a : A. forall b : A. Decidable(U0, a = b)), target : Unit or A) :=
   trans(
     sym(cong(swap(A, decide, target), swap_head(A, decide, target))),
     swap_twice(A, decide, target, head(A))
   );
 
 def swap_bijection(
-  A : U0, decide : (forall a : A. forall b : A. Decidable(a = b)), target : Unit or A
+  A : U0, decide : (forall a : A. forall b : A. Decidable(U0, a = b)), target : Unit or A
 ) :=
   typed(
     Bijection(Unit or A, Unit or A),

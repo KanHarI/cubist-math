@@ -114,7 +114,7 @@ def f_preimage(
   );
 }
 
-def csb_map_at(A, B : U0, f : A -> B, g : B -> A, x : A, decision : Decidable(GPoint(A, B, f, g, x))) :=
+def csb_map_at(A, B : U0, f : A -> B, g : B -> A, x : A, decision : Decidable(U0, GPoint(A, B, f, g, x))) :=
   match decision return B {
     left good => g_preimage(A, B, f, g, x, good);
     right bad => f(x);
@@ -125,7 +125,7 @@ def csb_map(A, B : U0, f : A -> B, g : B -> A, embedG : Embedding(B, A, g), x : 
 
 def csb_good_at(
   A, B : U0, f : A -> B, g : B -> A, x : A, good : GPoint(A, B, f, g, x),
-  decision : Decidable(GPoint(A, B, f, g, x))
+  decision : Decidable(U0, GPoint(A, B, f, g, x))
 ) :
   g(csb_map_at(A, B, f, g, x, decision)) = x {
   exact match decision as d return (g(csb_map_at(A, B, f, g, x, d)) = x) {
@@ -141,7 +141,7 @@ def csb_good(
 
 def csb_bad_at(
   A, B : U0, f : A -> B, g : B -> A, x : A, bad : GPoint(A, B, f, g, x) -> Void,
-  decision : Decidable(GPoint(A, B, f, g, x))
+  decision : Decidable(U0, GPoint(A, B, f, g, x))
 ) :
   csb_map_at(A, B, f, g, x, decision) = f(x) {
   exact match decision as d return (csb_map_at(A, B, f, g, x, d) = f(x)) {
@@ -250,7 +250,7 @@ def injective_split_bijection(
 }
 
 def CantorSchroederBernstein :=
-  forall A : U0. forall B : U0. IsSet(A) -> IsSet(B) -> forall f : A -> B. forall g : B -> A.
+  forall A : U0. forall B : U0. IsSet(U0, A) -> IsSet(U0, B) -> forall f : A -> B. forall g : B -> A.
   Injective(A, B, f) -> Injective(B, A, g) -> Equiv(U0, A, B);
 
 def cantor_schroeder_bernstein : CantorSchroederBernstein {

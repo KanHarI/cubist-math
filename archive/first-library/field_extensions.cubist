@@ -32,7 +32,7 @@ def extension_embed(K : AlgebraicField, A : U0, data : ExtensionData(K, A)) : af
 }
 
 def field_embedding_laws_prop(
-  K : AlgebraicField, A : U0, setA : IsSet(A), data : FieldData(A), f : af_carrier(K) -> A
+  K : AlgebraicField, A : U0, setA : IsSet(U0, A), data : FieldData(A), f : af_carrier(K) -> A
 ) :
   Proposition(FieldEmbeddingLaws(K, A, data, f)) {
   exact product_prop(
@@ -64,7 +64,7 @@ def ExtensionPreserved(
   and (forall k : af_carrier(K). f(extension_embed(K, A, a, k)) = extension_embed(K, B, b, k));
 
 def extension_preserved_prop(
-  K : AlgebraicField, A, B : U0, setA : IsSet(A), setB : IsSet(B), f : A -> B,
+  K : AlgebraicField, A, B : U0, setA : IsSet(U0, A), setB : IsSet(U0, B), f : A -> B,
   a : ExtensionData(K, A), b : ExtensionData(K, B)
 ) :=
   product_prop(
@@ -88,7 +88,7 @@ def extension_preserved_identity(K : AlgebraicField, A : U0, a : ExtensionData(K
   );
 }
 
-def extension_data_path(K : AlgebraicField, A : U0, setA : IsSet(A), a, b : FieldData(A), p : a = b) :
+def extension_data_path(K : AlgebraicField, A : U0, setA : IsSet(U0, A), a, b : FieldData(A), p : a = b) :
   forall e : FieldEmbeddingData(K, A, a). forall d : FieldEmbeddingData(K, A, b).
   (
     forall k : af_carrier(K).
@@ -127,7 +127,7 @@ def extension_data_path(K : AlgebraicField, A : U0, setA : IsSet(A), a, b : Fiel
 }
 
 def extension_preserved_reflect(
-  K : AlgebraicField, A : U0, setA : IsSet(A), a, b : ExtensionData(K, A),
+  K : AlgebraicField, A : U0, setA : IsSet(U0, A), a, b : ExtensionData(K, A),
   preserves : ExtensionPreserved(K, A, A, (fun (x : A) => x), a, b)
 ) :
   a = b {

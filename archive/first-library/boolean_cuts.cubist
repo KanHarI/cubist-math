@@ -16,12 +16,12 @@ def cut_truth_prop(b : CutBool) := match b as value return FieldProp(CutTruth(va
     right no => fun (u, v : Void) => typed((u = v), absurd(u));
   };
 
-def truth_of_decision(P : U0, decision : Decidable(P)) := match decision return CutBool {
+def truth_of_decision(P : U0, decision : Decidable(U0, P)) := match decision return CutBool {
     left yes => left(tt);
     right no => right(tt);
   };
 
-def decision_truth(P : U0, decision : Decidable(P)) :
+def decision_truth(P : U0, decision : Decidable(U0, P)) :
   FieldIff(CutTruth(truth_of_decision(P, decision)), P) {
   exact match decision as d return FieldIff(CutTruth(truth_of_decision(P, d)), P) {
     left yes => ((fun (u : Unit) => yes), (fun (p : P) => tt));

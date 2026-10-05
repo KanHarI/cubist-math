@@ -34,10 +34,10 @@ def truth_prop(b : Bool) := match b as c return Proposition(Truth(c)) {
 def void_prop(x, y : Void) := typed((x = y), absurd(x));
 
 def selected_decidable(
-  A : U0, decide : (forall x : A. forall y : A. Decidable(x = y)), p : A -> Bool,
+  A : U0, decide : (forall x : A. forall y : A. Decidable(U0, x = y)), p : A -> Bool,
   u, v : Selected(A, p)
 ) :
-  Decidable(u = v) {
+  Decidable(U0, u = v) {
   let P := fun (x : A) => Truth(p(x));
   let x := sigma_first(A, P, u);
   let y := sigma_first(A, P, v);
@@ -51,9 +51,9 @@ def selected_decidable(
   }
 }
 
-def selected_is_set(A : U0, decide : (forall x : A. forall y : A. Decidable(x = y)), p : A -> Bool) :
-  IsSet(Selected(A, p)) {
-  exact hedberg(Selected(A, p), selected_decidable(A, decide, p));
+def selected_is_set(A : U0, decide : (forall x : A. forall y : A. Decidable(U0, x = y)), p : A -> Bool) :
+  IsSet(U0, Selected(A, p)) {
+  exact hedberg(U0, Selected(A, p), selected_decidable(A, decide, p));
 }
 
 def subtype_map(A : U0, P, Q : A -> U0, f : (forall x : A. P(x) -> Q(x)), u : (exists x : A. P(x))) :=
@@ -138,7 +138,7 @@ def cardinal_compose(A, B, C : U0, h : Mere(Bijection(A, B)), e : Bijection(B, C
   );
 
 def cancel_unit_bijection(
-  A, B : U0, decide : (forall x : B. forall y : B. Decidable(x = y)),
+  A, B : U0, decide : (forall x : B. forall y : B. Decidable(U0, x = y)),
   e : Bijection(Unit or A, Unit or B)
 ) :
   Bijection(A, B) {

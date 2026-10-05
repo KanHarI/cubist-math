@@ -19,7 +19,7 @@ def dimension_unique(
   second : HasDimension(K, V, n)
 ) :
   m = n {
-  let equal_is_prop := hedberg(Nat, nat_eq_decidable, m, n);
+  let equal_is_prop := hedberg(U0, Nat, nat_eq_decidable, m, n);
   exact mere_eliminate(
     FiniteBasis(K, V, m), m = n, equal_is_prop,
     (

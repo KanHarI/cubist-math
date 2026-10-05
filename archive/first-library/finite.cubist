@@ -1,7 +1,7 @@
 import nat;
 
 import equivalences;
-import sets;
+import hlevels;
 
 // The natural-number-to-type bridge: n distinct alternatives, built from sums.
 // Fin(0) = Void; Fin(n+1) = Unit or Fin(n).
@@ -156,16 +156,16 @@ def tail_injective(A : U0, a, b : A, p : typed(Unit or A, right(a)) = typed(Unit
   cong(tail_or(A, a), p);
 
 def fin_decidable(n : Nat) :=
-  induction n as k return (forall a : Fin(k). forall b : Fin(k). Decidable(a = b)) {
-    zero => fun (a, b : Fin(0)) => typed(Decidable(a = b), absurd(a));
-    succ previous => fun (a, b : Fin(succ(k))) => match typed(Unit or Fin(k), a) as x return Decidable(
+  induction n as k return (forall a : Fin(k). forall b : Fin(k). Decidable(U0, a = b)) {
+    zero => fun (a, b : Fin(0)) => typed(Decidable(U0, a = b), absurd(a));
+    succ previous => fun (a, b : Fin(succ(k))) => match typed(Unit or Fin(k), a) as x return Decidable(U0, 
       x = b
     ) {
-      left u => match typed(Unit or Fin(k), b) as y return Decidable(
+      left u => match typed(Unit or Fin(k), b) as y return Decidable(U0, 
         typed(Unit or Fin(k), left(u)) = y
       ) {
         left v => typed(
-          Decidable(typed(Unit or Fin(k), left(u)) = typed(Unit or Fin(k), left(v))),
+          Decidable(U0, typed(Unit or Fin(k), left(u)) = typed(Unit or Fin(k), left(v))),
           left(
             cong(
               (fun (w : Unit) => typed(Unit or Fin(k), left(w))),
@@ -174,7 +174,7 @@ def fin_decidable(n : Nat) :=
           )
         );
         right j => typed(
-          Decidable(typed(Unit or Fin(k), left(u)) = typed(Unit or Fin(k), right(j))),
+          Decidable(U0, typed(Unit or Fin(k), left(u)) = typed(Unit or Fin(k), right(j))),
           right(
             fun (p : typed(Unit or Fin(k), left(u)) = typed(Unit or Fin(k), right(j))) => sum_disjoint(
               Fin(k), u, j, p
@@ -182,26 +182,26 @@ def fin_decidable(n : Nat) :=
           )
         );
       };
-      right i => match typed(Unit or Fin(k), b) as y return Decidable(
+      right i => match typed(Unit or Fin(k), b) as y return Decidable(U0, 
         typed(Unit or Fin(k), right(i)) = y
       ) {
         left v => typed(
-          Decidable(typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), left(v))),
+          Decidable(U0, typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), left(v))),
           right(
             fun (p : typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), left(v))) => sum_disjoint(
               Fin(k), v, i, sym(p)
             )
           )
         );
-        right j => match previous(i, j) return Decidable(
+        right j => match previous(i, j) return Decidable(U0, 
           typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), right(j))
         ) {
           left p => typed(
-            Decidable(typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), right(j))),
+            Decidable(U0, typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), right(j))),
             left(cong((fun (w : Fin(k)) => typed(Unit or Fin(k), right(w))), typed((i = j), p)))
           );
           right no => typed(
-            Decidable(typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), right(j))),
+            Decidable(U0, typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), right(j))),
             right(
               fun (p : typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), right(j))) => no(
                 tail_injective(Fin(k), i, j, p)
@@ -213,6 +213,6 @@ def fin_decidable(n : Nat) :=
     };
   };
 
-def fin_is_set(n : Nat) : IsSet(Fin(n)) {
-  exact hedberg(Fin(n), fin_decidable(n));
+def fin_is_set(n : Nat) : IsSet(U0, Fin(n)) {
+  exact hedberg(U0, Fin(n), fin_decidable(n));
 }

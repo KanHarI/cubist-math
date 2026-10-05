@@ -10,28 +10,28 @@ def double_negation(P : U0, prop : Proposition(P), nn : (P -> Void) -> Void) : P
 def negation_is_prop(P : U0, f, g : P -> Void) :=
   FunExt(U0, P, (fun (p : P) => Void), f, g, (fun (p : P) => typed((f(p) = g(p)), absurd(f(p)))));
 
-def decision_is_prop(P : U0, prop : Proposition(P), u, v : Decidable(P)) : u = v {
+def decision_is_prop(P : U0, prop : Proposition(P), u, v : Decidable(U0, P)) : u = v {
   exact match u as a return (a = v) {
-    left p => match v as b return (typed(Decidable(P), left(p)) = b) {
-      left q => cong((fun (r : P) => typed(Decidable(P), left(r))), prop(p, q));
+    left p => match v as b return (typed(Decidable(U0, P), left(p)) = b) {
+      left q => cong((fun (r : P) => typed(Decidable(U0, P), left(r))), prop(p, q));
       right no => absurd(no(p));
     };
-    right no => match v as b return (typed(Decidable(P), right(no)) = b) {
+    right no => match v as b return (typed(Decidable(U0, P), right(no)) = b) {
       left p => absurd(no(p));
       right other => cong(
-        (fun (r : P -> Void) => typed(Decidable(P), right(r))),
+        (fun (r : P -> Void) => typed(Decidable(U0, P), right(r))),
         typed((no = other), negation_is_prop(P, no, other))
       );
     };
   };
 }
 
-def excluded_middle(P : U0, prop : Proposition(P)) : Decidable(P) {
+def excluded_middle(P : U0, prop : Proposition(P)) : Decidable(U0, P) {
   exact double_negation(
-    Decidable(P), decision_is_prop(P, prop),
+    Decidable(U0, P), decision_is_prop(P, prop),
     (
-      fun (no : Decidable(P) -> Void) => no(
-        typed(Decidable(P), right(fun (p : P) => no(typed(Decidable(P), left(p)))))
+      fun (no : Decidable(U0, P) -> Void) => no(
+        typed(Decidable(U0, P), right(fun (p : P) => no(typed(Decidable(U0, P), left(p)))))
       )
     )
   );

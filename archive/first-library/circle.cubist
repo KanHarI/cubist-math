@@ -265,9 +265,9 @@ def LoopsS1 := base = base;
 def loop_multiply(p, q : LoopsS1) := trans(p, q);
 
 def loop_equal_decidable(p, q : LoopsS1) :=
-  match integer_equal_decidable(winding(p), winding(q)) return Decidable(p = q) {
+  match integer_equal_decidable(winding(p), winding(q)) return Decidable(U0, p = q) {
     left h => typed(
-      Decidable(p = q),
+      Decidable(U0, p = q),
       left(
         trans(
           sym(integer_loop_winding(p)),
@@ -275,11 +275,11 @@ def loop_equal_decidable(p, q : LoopsS1) :=
         )
       )
     );
-    right no => typed(Decidable(p = q), right(fun (h : p = q) => no(cong(winding, h))));
+    right no => typed(Decidable(U0, p = q), right(fun (h : p = q) => no(cong(winding, h))));
   };
 
-def loops_are_a_set : IsSet(LoopsS1) {
-  exact hedberg(LoopsS1, loop_equal_decidable);
+def loops_are_a_set : IsSet(U0, LoopsS1) {
+  exact hedberg(U0, LoopsS1, loop_equal_decidable);
 }
 
 def loop_group : GroupLaws(LoopsS1, refl(base), loop_multiply) {

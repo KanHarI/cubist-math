@@ -1,15 +1,14 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
+import { archiveReader } from "../tools/module-sources.mjs";
 
 const module = await createCubical();
-const readSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
 
 test("finite families of distinct field embeddings and extension loops are linearly independent", async t => {
-  const p = new CubicalProgram(module, readSource, { collectReferences: false });
+  const p = new CubicalProgram(module, archiveReader("artin_independence_regression"), { collectReferences: false });
   t.after(() => p.dispose());
   const result = await p.check(
     "import artin_finite_relations; import artin_loop_independence; def checked : Unit { exact tt; }",

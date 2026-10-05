@@ -47,7 +47,7 @@ def finite_mere_choice(n : Nat) :=
   };
 
 def UniformFiberCount(A : U0, n, m : Nat) :=
-  forall B : A -> U0. (forall a : A. IsSet(B(a))) -> (forall a : A. HasCardinality(B(a), m))
+  forall B : A -> U0. (forall a : A. IsSet(U0, B(a))) -> (forall a : A. HasCardinality(B(a), m))
   -> HasCardinality((exists a : A. B(a)), multiply_count(n, m));
 
 // Equal-size finite fibers multiply their size by the size of the base.
@@ -79,7 +79,7 @@ def finite_uniform_fiber_count(n, m : Nat) : UniformFiberCount(Fin(n), n, m) {
   );
 }
 
-def uniform_fiber_count(A : U0, setA : IsSet(A), n, m : Nat, countA : HasCardinality(A, n)) :
+def uniform_fiber_count(A : U0, setA : IsSet(U0, A), n, m : Nat, countA : HasCardinality(A, n)) :
   UniformFiberCount(A, n, m) {
   intro B, sets, counts;
   let Goal := HasCardinality((exists a : A. B(a)), multiply_count(n, m));
