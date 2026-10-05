@@ -1499,6 +1499,10 @@
    "summary": "Definitions whose admission and derivation `tests/instruction-admission.test.mjs` watches."
   },
   {
+   "path": "cubist-tests/algebra_models.cubist",
+   "summary": "The library's `algebra` at work: powers of two a homomorphism from the natural numbers' additive monoid to their multiplicative one, evaluated, with its monoid homomorphism and a composite, and a group lemma's statement outside its section."
+  },
+  {
    "path": "cubist-tests/algebraic_extensions_invalid_embedding_claims.cubist",
    "summary": "Embedding claims the archive does not make, refused: into a target that is not algebraically closed, and one embedding for every separable extension."
   },
@@ -2307,6 +2311,10 @@
    "summary": "Checked transport through paths of types and type-valued families."
   },
   {
+   "path": "library/algebra.cubist",
+   "summary": "The algebraic hierarchy as [theories](../web/reference/theories.html): `Semigroup`, `Monoid`, `CommMonoid`, `Group`, `AbelianGroup` (a group and a commutative monoid, sharing their monoid), `CommRing` (an abelian group written `+`, with `zero` and `neg`, and a commutative monoid on one set, with distributivity) and `Field` (a commutative ring with inverses of all but zero, and zero not one), each with its models, homomorphisms and isomorphisms. The natural numbers as a commutative monoid for addition and for multiplication. In any group, cancellation on both sides and the uniqueness of inverses; in any commutative ring, `x * zero = zero`."
+  },
+  {
    "path": "library/classical_axioms.cubist",
    "summary": "The statements of the classical assumptions as types, `ExcludedMiddle(U)` and `AxiomOfChoice(U)`, with checks that `LEM(U)` and `Choice(U)` have them."
   },
@@ -2332,7 +2340,7 @@
   },
   {
    "path": "library/nat.cubist",
-   "summary": "The natural numbers, `Nat` with `zero` and `succ`, with addition, multiplication and order, and the laws of addition. Numerals and `+`, `*`, `<` and `<=` need it."
+   "summary": "The natural numbers, `Nat` with `zero` and `succ`, with addition, multiplication and order, and the laws of addition and multiplication: units, commutativity, associativity and distributivity. Numerals and `+`, `*`, `<` and `<=` need it."
   },
   {
    "path": "library/propositions.cubist",

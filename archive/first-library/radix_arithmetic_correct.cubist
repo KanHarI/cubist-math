@@ -6,7 +6,7 @@ def radix_nat_distribute(r, a, b : Nat) : r * (a + b) = r * a + r * b {
   exact trans(
     nat_mul_comm(r, a + b),
     trans(
-      nat_mul_add(a, b, r),
+      nat_add_mul(a, b, r),
       trans(
         cong((fun (v : Nat) => v + b * r), nat_mul_comm(a, r)), cong(add(r * a), nat_mul_comm(b, r))
       )
@@ -192,7 +192,7 @@ def radix_mul_append_correct(
         cong((fun (v : Nat) => base * v + digit * b), ih),
         trans(
           cong((fun (v : Nat) => v + digit * b), sym(nat_mul_assoc(base, a, b))),
-          sym(nat_mul_add(base * a, digit, b))
+          sym(nat_add_mul(base * a, digit, b))
         )
       )
     )

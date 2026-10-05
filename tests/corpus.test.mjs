@@ -24,8 +24,9 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // too since the archive has one list of modules (web/cubist/modules.mjs).
   // The count includes the library modules the archive imports: replacing
   // the archive's sets by the library's hlevels removed 6 declarations and
-  // added hlevels' 40.
+  // added hlevels' 40, and nat's multiplication laws added 8 and removed
+  // primes' 5 copies.
   assert.deepEqual(report.importErrors, []);
-  assert.equal(report.declarations.length, 3829, "The corpus must not silently lose modules.");
+  assert.equal(report.declarations.length, 3832, "The corpus must not silently lose modules.");
   t.diagnostic(JSON.stringify(report.counts));
 });

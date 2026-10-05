@@ -168,7 +168,7 @@ def binary_mul_even(p, q : BinaryPositive, ih : BinaryMulCorrect(p, q)) :
     trans(
       cong((fun (v : Nat) => v + v), ih),
       sym(
-        nat_mul_add(binary_positive_to_nat(p), binary_positive_to_nat(p), binary_positive_to_nat(q))
+        nat_add_mul(binary_positive_to_nat(p), binary_positive_to_nat(p), binary_positive_to_nat(q))
       )
     )
   );
@@ -185,7 +185,7 @@ def binary_mul_odd(p, q : BinaryPositive, ih : BinaryMulCorrect(p, q)) :
         trans(
           cong((fun (v : Nat) => v + v), ih),
           sym(
-            nat_mul_add(
+            nat_add_mul(
               binary_positive_to_nat(p), binary_positive_to_nat(p), binary_positive_to_nat(q)
             )
           )
