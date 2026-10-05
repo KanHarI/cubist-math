@@ -84,6 +84,49 @@ const snake = text => text.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
 const sameSyntax = (a, b) => JSON.stringify(a, (key, value) => ["start", "end"].includes(key) ? undefined : value)
   === JSON.stringify(b, (key, value) => ["start", "end"].includes(key) ? undefined : value);
 
+// Why a law's statement is not evidently a proposition, or null when it is.
+// Laws are propositions: homomorphisms ignore them (L2.4). Accepted are an
+// equation between elements of a sort (every sort is a set or a
+// proposition, so its equations are propositions), Void and Unit, an
+// element of a proposition sort, and forall, -> into one, and `and` of two.
+// `byName` holds the fields declared so far.
+function notAProposition(statement, byName) {
+  const sortNamed = (node, bound) =>
+    node?.kind === "name" && !bound.has(node.name) && byName.get(node.name)?.kind === "sort" ? node.name : null;
+  // The sort an operation or a constant returns: its type past the foralls.
+  const returns = field => {
+    if (field?.kind !== "operation") return null;
+    let type = field.type;
+    while (type.kind === "forall" || type.kind === "binderGroup") type = type.body;
+    return sortNamed(type, new Map());
+  };
+  // The sort a term lies in, where the theory's own syntax says so; `bound`
+  // maps a bound variable to its sort, or to null.
+  const sortOf = (term, bound) =>
+    term.kind === "name" ? (bound.has(term.name) ? bound.get(term.name) : returns(byName.get(term.name)))
+      : term.kind === "call" && term.fn.kind === "name" && !bound.has(term.fn.name) ? returns(byName.get(term.fn.name))
+        : null;
+  const propositionSort = name => byName.get(name)?.kind === "sort"
+    && [...byName.values()].some(field => field.kind === "evidence" && field.of === name && field.evidence === "IsProp");
+  const check = (node, bound) => {
+    if (node.kind === "forall" || node.kind === "binderGroup" && node.binderKind === "forall") {
+      const sort = sortNamed(node.domain, bound), inner = new Map(bound);
+      for (const binder of node.kind === "forall" ? [node.name] : node.names) inner.set(binder.text, sort);
+      return check(node.body, inner);
+    }
+    if (node.kind === "binary" && node.operator === "->") return check(node.right, bound);
+    if (node.kind === "binary" && node.operator === "and") return check(node.left, bound) ?? check(node.right, bound);
+    if (node.kind === "binary" && node.operator === "=")
+      return (node.carrier ? sortNamed(node.carrier, bound) : sortOf(node.left, bound) ?? sortOf(node.right, bound))
+        ? null : { node, why: "the sides of an equation in it are not elements of one of the theory's sorts" };
+    if (node.kind === "name" && !bound.has(node.name)
+      && (["Void", "Unit"].includes(node.name) && !byName.has(node.name) || propositionSort(node.name))) return null;
+    return { node, why: node.kind === "name" && byName.get(node.name)?.kind === "sort"
+      ? `${node.name} is a sort, whose elements are data` : "its statement is none of these" };
+  };
+  return check(statement, new Map());
+}
+
 // A theory's fields, in order, with types over the earlier fields' names,
 // its notations and its parents, as the theory records them (`lookup` gives
 // a parent's record by name).
@@ -131,8 +174,11 @@ function theoryFields(theory, lookup) {
       if (field.kind === "evidence" && names.has(field.of) && !names.has(field.name))
         names.set(field.name, `${names.get(field.of)}_is_${field.evidence === "IsSet" ? "set" : "prop"}`);
     const at = { start: parent.start, end: parent.end };
+    // Evidence names its sort by the sort's new name, so a later renaming
+    // of that sort renames the evidence too.
     for (const field of record.fields)
-      add({ ...field, name: names.get(field.name) ?? field.name, type: relocated(renamed(field.type, names, at), at) },
+      add({ ...field, name: names.get(field.name) ?? field.name, type: relocated(renamed(field.type, names, at), at),
+        ...(field.kind === "evidence" ? { of: names.get(field.of) ?? field.of } : {}) },
         at, parent.name.text);
     for (const [operator, field] of Object.entries(record.notations)) {
       const child = names.get(field) ?? field;
@@ -169,7 +215,13 @@ function theoryFields(theory, lookup) {
       n.kind === "binary" && notations.has(n.operator) && !bound.has(notations.get(n.operator))
         ? call(notations.get(n.operator), [operatorsAsCalls(n.left), operatorsAsCalls(n.right)], n)
         : n);
-    add({ name: item.name.text, kind: item.kind, arity: item.params.length, type: operatorsAsCalls(type), origin }, item.name);
+    type = operatorsAsCalls(type);
+    if (item.kind === "law") {
+      const data = notAProposition(type, byName);
+      if (data)
+        throw located(Error(`The law ${item.name.text} must state a proposition: an equation between elements of a sort, Void, or forall, -> or and over those; ${data.why}. A law holds no data, and homomorphisms ignore laws: declare data as an operation or a constant.`), data.node);
+    }
+    add({ name: item.name.text, kind: item.kind, arity: item.params.length, type, origin }, item.name);
   }
   for (const field of fields)
     if (field.name.includes(".")) throw located(Error(`A field's name is a plain name; ${field.name} is not.`), field.at);
@@ -239,7 +291,7 @@ export function expandTheory(theory, lookup = () => null) {
   // sorts (morphisms.mjs): their source, parsed and placed at the theory's
   // name. A generated definition's name is dotted, which a def cannot
   // spell, so each is parsed under a placeholder and then renamed.
-  const morphisms = morphismSource(record);
+  const morphisms = morphismSource(record, other => Boolean(lookup(other)));
   if (morphisms.missing) record.noMorphisms = morphisms.missing;
   else {
     const parsed = parse(morphisms.declarations.map((d, k) => d.source.replace(/^def \S+?(?=[{(:])/, `def generated_${k}`)).join("\n")).declarations;
