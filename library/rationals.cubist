@@ -10,7 +10,7 @@ import integers;
 // fractions, and every operation on them computes.
 
 section {{U < UU0}}(
-  A : CommRing.Model(U), decide : (forall x, y : A.R. Decidable(U, x = y)),
+  A : CommRing(U), decide : (forall x, y : A.R. Decidable(U, x = y)),
   domain : (
     forall x, y : A.R. (x = A.zero -> Void) -> (y = A.zero -> Void) -> A.mul(x, y) = A.zero -> Void
   ), nontrivial : A.zero = A.one -> Void
@@ -571,7 +571,7 @@ section {{U < UU0}}(
 
   // The field of fractions.
   def fraction_field :
-    Field.Model(U) := Field.make(
+    Field(U) := Field.make(
       R := Frac, R_is_set := frac_is_set, add := q_add, add_assoc := q_add_assoc, zero := q_zero,
       zero_add := q_zero_add, add_zero := q_add_zero, neg := q_neg, neg_add := q_neg_add,
       add_neg := q_add_neg, add_comm := q_add_comm, mul := q_mul, mul_assoc := q_mul_assoc,
@@ -582,7 +582,7 @@ section {{U < UU0}}(
 
 // The rationals: the integers' field of fractions.
 def rationals :
-  Field.Model(U0) := fraction_field(integers, int_decide, int_mul_nonzero, int_zero_ne_one);
+  Field(U0) := fraction_field(integers, int_decide, int_mul_nonzero, int_zero_ne_one);
 
 def Q : U0 := rationals.R;
 

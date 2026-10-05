@@ -2,14 +2,17 @@
 // theory declaration into ordinary declarations, which it then checks like a
 // user's own, so each is inspectable by name:
 //
-//   T.Model(U < UU0) : next(U)   the type of models: a Σ of the fields, in order;
+//   T(U < UU0) : next(U)         the type of models: a Σ of the fields, in order;
 //   T.make{{U < UU0}}(f1, …)     its constructor, one parameter per field;
 //   T.f{{U < UU0}}(m)            for each field f, its projection, typed
 //                                through the earlier projections;
 //   T.p{{U < UU0}}(m)            for each parent P labelled p, m's P-model.
 //
-// A sort `M : set` is a type in the model's universe followed by the field
-// M_is_set : IsSet(U, M); a sort `P : prop`, by P_is_prop : IsProp(U, P).
+// `theory T(U < UU0)` names the universe of the carriers (L2.4c). A carrier
+// `M : set U` is a type in it followed by the field M_is_set : IsSet(U, M);
+// `P : prop U`, by P_is_prop : IsProp(U, P); and `M : U` is the type alone,
+// whose equations are no propositions. `sort M : set;` and `sort P : prop;`
+// are the earlier spelling of the first two.
 // An operation `mul(x, y : M) : M` is a field of type forall x, y : M. M, a
 // constant `one : M` one of type M, and a law `law l(x : M) : S` one of type
 // forall x : M. S. Inside the theory, a notation means its operation: with
@@ -116,9 +119,12 @@ function notAProposition(statement, byName) {
     }
     if (node.kind === "binary" && node.operator === "->") return check(node.right, bound);
     if (node.kind === "binary" && node.operator === "and") return check(node.left, bound) ?? check(node.right, bound);
-    if (node.kind === "binary" && node.operator === "=")
-      return (node.carrier ? sortNamed(node.carrier, bound) : sortOf(node.left, bound) ?? sortOf(node.right, bound))
-        ? null : { node, why: "the sides of an equation in it are not elements of one of the theory's sorts" };
+    if (node.kind === "binary" && node.operator === "=") {
+      const sort = node.carrier ? sortNamed(node.carrier, bound) : sortOf(node.left, bound) ?? sortOf(node.right, bound);
+      if (!sort) return { node, why: "the sides of an equation in it are not elements of one of the theory's sorts" };
+      return [...byName.values()].some(field => field.kind === "evidence" && field.of === sort) ? null
+        : { node, why: `${sort} has no h-level, so an equation between its elements is not a proposition` };
+    }
     if (node.kind === "name" && !bound.has(node.name)
       && (["Void", "Unit"].includes(node.name) && !byName.has(node.name) || propositionSort(node.name))) return null;
     return { node, why: node.kind === "name" && byName.get(node.name)?.kind === "sort"
@@ -132,6 +138,9 @@ function notAProposition(statement, byName) {
 // a parent's record by name).
 function theoryFields(theory, lookup) {
   const T = theory.name.text, fields = [], notations = new Map(), parents = [], byName = new Map();
+  // The header's universe is the model's, which each expansion names afresh.
+  const universe = new Map((theory.universes ?? []).map(u => [u.text, UNIVERSE]));
+  const inTheoryUniverse = (node, at) => universe.size ? renamed(node, universe, at) : node;
   const add = (field, at, from = null) => {
     const existing = byName.get(field.name);
     if (existing) {
@@ -192,6 +201,7 @@ function theoryFields(theory, lookup) {
     const origin = `${T}.${item.name.text}`;
     if (item.kind === "sort") {
       add({ name: item.name.text, kind: "sort", type: name(UNIVERSE, item.name), origin }, item.name);
+      if (!item.level) continue;
       const evidence = item.level === "set" ? "IsSet" : "IsProp";
       add({ name: `${item.name.text}_is_${item.level}`, kind: "evidence", evidence, of: item.name.text,
         type: call(evidence, [name(UNIVERSE, item.name), name(item.name.text, item.name)], item.name),
@@ -210,6 +220,7 @@ function theoryFields(theory, lookup) {
     let type = item.type;
     for (let j = item.params.length - 1; j >= 0; j--)
       type = quantifier("forall", item.params[j].name, item.params[j].type, type, item);
+    type = inTheoryUniverse(type, item);
     // Inside the theory, a notation means its operation.
     const operatorsAsCalls = node => rewritten(node, (n, bound) =>
       n.kind === "binary" && notations.has(n.operator) && !bound.has(notations.get(n.operator))
@@ -235,10 +246,12 @@ export function expandTheory(theory, lookup = () => null) {
   const { fields, notations, parents } = theoryFields(theory, lookup);
   if (!fields.length) throw located(Error(`${T} has no fields: a theory declares sorts, operations and laws.`), at);
   const taken = new Set([...namesIn(theory), ...fields.map(field => field.name), ...fields.flatMap(field => [...namesIn(field.type)])]);
-  const universe = fresh("U", taken), model = fresh("m", taken);
+  // The header's name for the universe, unless a field takes it.
+  const named = theory.universes?.[0]?.text;
+  const universe = named && !fields.some(field => field.name === named) ? named : fresh("U", taken), model = fresh("m", taken);
   const inUniverse = node => renamed(node, new Map([[UNIVERSE, universe]]), at);
   const universeParameter = implicit => ({ name: token(universe, at), bound: name("UU0", at), group: 0, ...(implicit ? { implicit } : {}) });
-  const modelType = (theoryName, span) => call(`${theoryName}.Model`, [name(universe, span)], span);
+  const modelType = (theoryName, span) => call(theoryName, [name(universe, span)], span);
   const declaration = (declName, params, type, value, span, generated, extra = {}) => ({
     kind: "def", name: token(declName, span), params, type,
     ...(params.some(p => p.implicit) ? { implicitParameters: place(span) } : {}),
@@ -246,26 +259,26 @@ export function expandTheory(theory, lookup = () => null) {
     generated: { theory: T, ...generated }, ...extra,
   });
   const record = {
-    name: T, model: `${T}.Model`, make: `${T}.make`,
+    name: T, model: T, make: `${T}.make`,
     fields: fields.map(({ at: _, from: __, ...field }) => ({ ...field, projection: `${T}.${field.name}` })),
     notations: Object.fromEntries(notations), parents,
   };
   // The sorts' evidence comes from hlevels.
   const requires = [...new Set(fields.filter(field => field.evidence).map(field => field.evidence))];
   const out = [];
-  // T.Model(U < UU0) : next(U) := exists f1 : A1. … An;
+  // T(U < UU0) : next(U) := exists f1 : A1. … An;
   let modelBody = inUniverse(fields.at(-1).type);
   for (let k = fields.length - 2; k >= 0; k--)
     modelBody = quantifier("exists", token(fields[k].name, fields[k].at), inUniverse(fields[k].type), modelBody, fields[k].at);
-  out.push(declaration(`${T}.Model`, [universeParameter(false)], call("next", [name(universe, at)], at), modelBody, at,
+  out.push(declaration(T, [universeParameter(false)], call("next", [name(universe, at)], at), modelBody, at,
     { role: "model" }, { theory: record, requires }));
-  // T.make{{U < UU0}}(f1 : A1, …) : T.Model(U) := (f1, …, fn);
+  // T.make{{U < UU0}}(f1 : A1, …) : T(U) := (f1, …, fn);
   let tuple = name(fields.at(-1).name, fields.at(-1).at);
   for (let k = fields.length - 2; k >= 0; k--) tuple = pair(name(fields[k].name, fields[k].at), tuple, at);
   out.push(declaration(`${T}.make`, [universeParameter(true),
     ...fields.map((field, k) => ({ name: token(field.name, field.at), type: inUniverse(field.type), group: k + 1 }))],
   modelType(T, at), tuple, at, { role: "make" }, { requires }));
-  // T.f{{U < UU0}}(m : T.Model(U)) : A[earlier fields := their projections] := m.2…2.1;
+  // T.f{{U < UU0}}(m : T(U)) : A[earlier fields := their projections] := m.2…2.1;
   const projected = new Map();
   fields.forEach((field, k) => {
     const type = rewritten(inUniverse(field.type), (n, bound) => n.kind === "name" && projected.has(n.name) && !bound.has(n.name)
@@ -278,7 +291,7 @@ export function expandTheory(theory, lookup = () => null) {
     { role: "projection", field: field.name }));
     projected.set(field.name, `${T}.${field.name}`);
   });
-  // T.p{{U < UU0}}(m : T.Model(U)) : P.Model(U) := P.make(T.f(m), …), each
+  // T.p{{U < UU0}}(m : T(U)) : P(U) := P.make(T.f(m), …), each
   // of P's fields from the child's field it became.
   for (const [index, parent] of parents.entries()) {
     const span = theory.parents[index];

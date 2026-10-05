@@ -734,17 +734,17 @@ def conditional(n : Nat, h : n = 0) : n + 0 = 0 {
         <h3 id="quick-theories">Theories and models</h3>
         <div class="quick-entry" id="quick-theory">
           <h4><code>theory</code></h4>
-          <p><code>theory T { sort M : set; mul(x, y : M) : M notation x * y; law … ; }</code> declares a kind of structure. <code>T.Model(U)</code> is the type of its models, <code>T.make(…)</code> builds one field by field, and <code>m.f</code> reads a field. <code>theory T extends P, label : Q(f := g) { … }</code> takes its parents' fields, renamed; <code>m.label</code> is the parent's model.
+          <p><code>theory T(U &lt; UU0) { M : set U; mul(x, y : M) : M notation x * y; law … ; }</code> declares a kind of structure. <code>T(U)</code> is the type of its models, <code>T.make(…)</code> builds one field by field, and <code>m.f</code> reads a field. <code>theory T(U &lt; UU0) extends P, label : Q(f := g) { … }</code> takes its parents' fields, renamed; <code>m.label</code> is the parent's model.
             <a href="reference/theories.html#theories">Theories and models →</a></p>
           <pre><code data-check="accept">import nat;
 import hlevels;
 
-theory Pointed {
-  sort M : set;
+theory Pointed(U &lt; UU0) {
+  M : set U;
   point : M;
 }
 
-def zero_pointed : Pointed.Model(U0) := Pointed.make(M := Nat, M_is_set := nat_is_set, point := 0);
+def zero_pointed : Pointed(U0) := Pointed.make(M := Nat, M_is_set := nat_is_set, point := 0);
 
 def zero_point : zero_pointed.point = 0 { rfl; }</code></pre>
         </div>
@@ -754,12 +754,12 @@ def zero_point : zero_pointed.point = 0 { rfl; }</code></pre>
             <a href="reference/theories.html#open">Theories and models →</a></p>
           <pre><code data-check="accept">import hlevels;
 
-theory Magma {
-  sort M : set;
+theory Magma(U &lt; UU0) {
+  M : set U;
   mul(x, y : M) : M notation x * y;
 }
 
-def cube(G : Magma.Model(U0), x : G.M) : G.M {
+def cube(G : Magma(U0), x : G.M) : G.M {
   open G;
   exact x * x * x;
 }</code></pre>
@@ -774,7 +774,7 @@ def times_zero(x : Q) : rationals.mul(x, rationals.zero) = rationals.zero := mul
         </div>
         <div class="quick-entry" id="quick-section">
           <h4><code>section</code></h4>
-          <p><code>section {{U &lt; UU0}}(G : Monoid.Model(U)) { def …; }</code> gives each definition in it the section's parameters first, opens each model among them, and applies the section's earlier definitions to them.
+          <p><code>section {{U &lt; UU0}}(G : Monoid(U)) { def …; }</code> gives each definition in it the section's parameters first, opens each model among them, and applies the section's earlier definitions to them.
             <a href="reference/theories.html#sections">Theories and models →</a></p>
           <pre><code data-check="accept">import nat;
 

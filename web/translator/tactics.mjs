@@ -264,7 +264,7 @@ const tactics = {
   open(t,first,rest,goal) {
     const {scope}=goal,{unit}=scope;
     const inner=opened(t,scope,first.model);
-    if(!inner)throw unit.locate(Error(`open takes a model of a theory, such as m : Group.Model(U0); this is a value of type ${
+    if(!inner)throw unit.locate(Error(`open takes a model of a theory, such as m : Group(U0); this is a value of type ${
       t.shown(scope.infer(t.term(first.model,scope,null)).type)}.`),first.model);
     return t.block(rest,goal.at(inner));
   },

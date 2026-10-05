@@ -3,13 +3,13 @@
 // rest of the theory is unavailable.
 
 // Error: E814: The sorts of Magma need IsSet, from hlevels: import hlevels;
-theory Magma {
-  sort M : set;
+theory Magma(U < UU0) {
+  M : set U;
   mul(x, y : M) : M notation x * y;
 }
 
 // A theory without sorts needs nothing.
-theory Pointed {
+theory Pointed(U < UU0) {
   point : Unit;
 }
 

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Theories of algebraic structures: sorts, operations with notation and laws, their models, extension and open." />
+    <meta name="description" content="Theories of algebraic structures: carriers, operations with notation and laws, their models, extension and open." />
     <title>Cubist · 10. Theories and models</title>
     <link rel="stylesheet" href="../language.css" />
     <link rel="stylesheet" href="../repl.css" />
@@ -24,7 +24,7 @@
       <div class="introduction">
         <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 10</p>
         <h1>Theories and models</h1>
-        <p class="lead">Theories of algebraic structures: sorts, operations with notation and laws, their models, extension and <code>open</code>.</p>
+        <p class="lead">Theories of algebraic structures: carriers, operations with notation and laws, their models, extension and <code>open</code>.</p>
       </div>
       <div class="reference-layout">
         <aside class="contents" aria-label="Chapters and sections">
@@ -64,31 +64,31 @@
             <p>A <strong>theory</strong> describes a kind of structure: the types it has, its operations and the laws they satisfy. A monoid, for instance, has one type, an associative multiplication and a unit:</p>
             <pre><code data-check="accept">import hlevels;
 
-theory Monoid {
-  sort M : set;
+theory Monoid(U &lt; UU0) {
+  M : set U;
   mul(x, y : M) : M notation x * y;
   law mul_assoc(x, y, z : M) : (x * y) * z = x * (y * z);
   one : M;
   law one_mul(x : M) : one * x = x;
   law mul_one(x : M) : x * one = x;
 }</code></pre>
-            <p>A theory's body lists its <strong>fields</strong>, in order:</p>
+            <p>The header, <code>theory Monoid(U &lt; UU0)</code>, names the universe of the structure's types, so that a field can mention it. A theory's body lists its <strong>fields</strong>, in order:</p>
             <ul>
-              <li>a <strong>sort</strong>, <code>sort M : set;</code> or <code>sort P : prop;</code>, is a type of the structure. Its evidence of being a set or a proposition is a field too, <code>M_is_set : IsSet(U, M)</code> or <code>P_is_prop : IsProp(U, P)</code>, so a module that declares sorts imports <code>hlevels</code>;</li>
+              <li>a <strong>carrier</strong>, <code>M : set U;</code> or <code>P : prop U;</code>, is a type of the structure, a set or a proposition. Its evidence of being one is a field too, <code>M_is_set : IsSet(U, M)</code> or <code>P_is_prop : IsProp(U, P)</code>, so a module that declares carriers imports <code>hlevels</code>. A carrier <code>M : U;</code> has no h-level: its equations are not propositions, so no law can state one, and its models have no homomorphisms;</li>
               <li>an <strong>operation</strong>, <code>mul(x, y : M) : M</code>, or a <strong>constant</strong>, <code>one : M</code>, may have a <strong>notation</strong>: one of the operators <code>x + y</code>, <code>x * y</code>, <code>x &lt; y</code> and <code>x &lt;= y</code>, written with the operation's two arguments in order;</li>
-              <li>a <strong>law</strong>, <code>law name(binders) : statement;</code>, states a property of the earlier fields. A law must be a proposition: an equation between elements of a sort (sorts are sets or propositions), <code>Void</code>, or <code>forall</code>, <code>-&gt;</code> and <code>and</code> over those, such as <code>zero = one -&gt; Void</code>. A law holds no data, so <code>law point : M;</code> is refused: declare it as a constant.</li>
+              <li>a <strong>law</strong>, <code>law name(binders) : statement;</code>, states a property of the earlier fields. A law must be a proposition: an equation between elements of a carrier that is a set or a proposition, <code>Void</code>, or <code>forall</code>, <code>-&gt;</code> and <code>and</code> over those, such as <code>zero = one -&gt; Void</code>. A law holds no data, so <code>law point : M;</code> is refused: declare it as a constant.</li>
             </ul>
-            <p>Each field is in scope by its name after it is declared, and inside the theory a notation means its operation: <code>x * y</code> there is <code>mul(x, y)</code>. The words <code>sort</code>, <code>law</code> and <code>notation</code> are keywords only in a theory's body.</p>
+            <p>Each field is in scope by its name after it is declared, and inside the theory a notation means its operation: <code>x * y</code> there is <code>mul(x, y)</code>. The words <code>law</code> and <code>notation</code>, and <code>set</code> and <code>prop</code> in a carrier, are keywords only in a theory's body.</p>
           </section>
 
           <section id="models">
             <h2>Models</h2>
-            <p>A <strong>model</strong> of a theory is a structure of its kind: a value for each field. Its type is <code>Monoid.Model(U)</code>, for models whose sorts are in the universe <code>U</code>, and <code>Monoid.make</code> builds one, field by field. The natural numbers with addition are a monoid:</p>
+            <p>A <strong>model</strong> of a theory is a structure of its kind: a value for each field. Its type is the theory's name, <code>Monoid(U)</code>, for models whose carriers are in the universe <code>U</code>, and <code>Monoid.make</code> builds one, field by field. The natural numbers with addition are a monoid:</p>
             <pre><code data-check="accept">import nat;
 import hlevels;
 
-theory Monoid {
-  sort M : set;
+theory Monoid(U &lt; UU0) {
+  M : set U;
   mul(x, y : M) : M notation x * y;
   law mul_assoc(x, y, z : M) : (x * y) * z = x * (y * z);
   one : M;
@@ -96,7 +96,7 @@ theory Monoid {
   law mul_one(x : M) : x * one = x;
 }
 
-def additive : Monoid.Model(U0) := Monoid.make(
+def additive : Monoid(U0) := Monoid.make(
   M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := 0,
   one_mul := nat_zero_add, mul_one := nat_add_zero
 );
@@ -108,14 +108,14 @@ def two_plus_three : additive.mul(2, 3) = 5 {
             <p>A parameter whose type is a theory's models makes a statement about every structure of that kind, in a universe of your choice:</p>
             <pre><code data-check="accept">import hlevels;
 
-theory Monoid {
-  sort M : set;
+theory Monoid(U &lt; UU0) {
+  M : set U;
   mul(x, y : M) : M notation x * y;
   one : M;
   law one_mul(x : M) : one * x = x;
 }
 
-def one_one(U &lt; UU0, G : Monoid.Model(U)) : G.mul(G.one, G.one) = G.one {
+def one_one(U &lt; UU0, G : Monoid(U)) : G.mul(G.one, G.one) = G.one {
   exact G.one_mul(G.one);
 }</code></pre>
           </section>
@@ -125,19 +125,19 @@ def one_one(U &lt; UU0, G : Monoid.Model(U)) : G.mul(G.one, G.one) = G.one {
             <p><code>open m;</code> is a proof statement. For the rest of its block, each field of the model <code>m</code> is in scope by its name, and each notation of its theory means <code>m</code>'s operation:</p>
             <pre><code data-check="accept">import hlevels;
 
-theory Monoid {
-  sort M : set;
+theory Monoid(U &lt; UU0) {
+  M : set U;
   mul(x, y : M) : M notation x * y;
   one : M;
   law one_mul(x : M) : one * x = x;
 }
 
-def square(G : Monoid.Model(U0), x : G.M) : G.M {
+def square(G : Monoid(U0), x : G.M) : G.M {
   open G;
   exact x * x;
 }
 
-def square_one(G : Monoid.Model(U0)) : square(G, G.one) = G.one {
+def square_one(G : Monoid(U0)) : square(G, G.one) = G.one {
   open G;
   exact one_mul(one);
 }</code></pre>
@@ -150,14 +150,14 @@ def square_one(G : Monoid.Model(U0)) : square(G, G.one) = G.one {
             <pre><code data-check="accept">import nat;
 import hlevels;
 
-theory Monoid {
-  sort M : set;
+theory Monoid(U &lt; UU0) {
+  M : set U;
   mul(x, y : M) : M notation x * y;
   one : M;
   law one_mul(x : M) : one * x = x;
 }
 
-section {{U &lt; UU0}}(G : Monoid.Model(U)) {
+section {{U &lt; UU0}}(G : Monoid(U)) {
   def square(x : M) : M := x * x;
 
   def square_one : square(one) = one {
@@ -165,14 +165,14 @@ section {{U &lt; UU0}}(G : Monoid.Model(U)) {
   }
 }
 
-def additive : Monoid.Model(U0) := Monoid.make(
+def additive : Monoid(U0) := Monoid.make(
   M := Nat, M_is_set := nat_is_set, mul := add, one := 0, one_mul := nat_zero_add
 );
 
 def four : square(additive, 2) = 4 {
   rfl;
 }</code></pre>
-            <p>Inside the section, <code>square(one)</code> is <code>square{{U}}(G, G.one)</code>; outside, <code>square</code> takes <code>G</code> first, and <code>U</code> in braces, and <code>square_one</code> states <code>forall U &lt; UU0. forall G : Monoid.Model(U). square{{U}}(G, G.one) = G.one</code>. A recursive call passes the section's parameters unchanged too: in a section over <code>G</code>, <code>power(x, k)</code> inside <code>power</code>'s own definition is <code>power{{U}}(G, x, k)</code>. A section's parameters, in braces or not, come before each definition's own, so a definition in a section has no implicit parameters of its own, and no parameter of a section's name. A section holds definitions only, and sections do not nest.</p>
+            <p>Inside the section, <code>square(one)</code> is <code>square{{U}}(G, G.one)</code>; outside, <code>square</code> takes <code>G</code> first, and <code>U</code> in braces, and <code>square_one</code> states <code>forall U &lt; UU0. forall G : Monoid(U). square{{U}}(G, G.one) = G.one</code>. A recursive call passes the section's parameters unchanged too: in a section over <code>G</code>, <code>power(x, k)</code> inside <code>power</code>'s own definition is <code>power{{U}}(G, x, k)</code>. A section's parameters, in braces or not, come before each definition's own, so a definition in a section has no implicit parameters of its own, and no parameter of a section's name. A section holds definitions only, and sections do not nest.</p>
           </section>
 
           <section id="extends">
@@ -180,72 +180,72 @@ def four : square(additive, 2) = 4 {
             <p>A theory can extend others. It has its parents' fields, in order, and then its own:</p>
             <pre><code data-check="accept">import hlevels;
 
-theory Monoid {
-  sort M : set;
+theory Monoid(U &lt; UU0) {
+  M : set U;
   mul(x, y : M) : M notation x * y;
   one : M;
   law one_mul(x : M) : one * x = x;
 }
 
-theory Group extends Monoid {
+theory Group(U &lt; UU0) extends Monoid {
   inv(x : M) : M;
   law inv_mul(x : M) : inv(x) * x = one;
 }
 
-theory CommMonoid extends Monoid {
+theory CommMonoid(U &lt; UU0) extends Monoid {
   law mul_comm(x, y : M) : x * y = y * x;
 }
 
-theory CommGroup extends Group, CommMonoid {
+theory CommGroup(U &lt; UU0) extends Group, CommMonoid {
 }
 
-def forget(G : CommGroup.Model(U0)) : Monoid.Model(U0) := G.group.monoid;
+def forget(G : CommGroup(U0)) : Monoid(U0) := G.group.monoid;
 
-def same(G : CommGroup.Model(U0), x, y : G.M) : G.group.monoid.mul(x, y) = G.mul(x, y) {
+def same(G : CommGroup(U0), x, y : G.M) : G.group.monoid.mul(x, y) = G.mul(x, y) {
   rfl;
 }</code></pre>
             <p>A theory may extend several parents. An ancestor that two parents reach, as <code>Monoid</code> through <code>Group</code> and <code>CommMonoid</code> above, contributes its fields once, when it arrives with the same fields under the same names. A model of a theory has a model of each parent, by the parent's <strong>label</strong>: <code>G.group</code>, and then <code>G.group.monoid</code>. An unlabelled parent's label is its name in snake case: <code>comm_monoid</code> for <code>CommMonoid</code>. Each computes to the model built from the child's fields.</p>
-            <p>A parent can be labelled and its fields <strong>renamed</strong>, with a new notation for an operation. A semiring has two monoids on one sort, the additive one written with <code>+</code>:</p>
+            <p>A parent can be labelled and its fields <strong>renamed</strong>, with a new notation for an operation. A semiring has two monoids on one carrier, the additive one written with <code>+</code>:</p>
             <pre><code data-check="accept">import hlevels;
 
-theory Monoid {
-  sort M : set;
+theory Monoid(U &lt; UU0) {
+  M : set U;
   mul(x, y : M) : M notation x * y;
   one : M;
   law one_mul(x : M) : one * x = x;
 }
 
-theory Semiring extends
+theory Semiring(U &lt; UU0) extends
     additive : Monoid(M := R, mul := add notation x + y, one := zero, one_mul := zero_add),
     multiplicative : Monoid(M := R) {
   law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;
 }
 
-def twice_plus(R : Semiring.Model(U0), x : R.R) : R.R {
+def twice_plus(R : Semiring(U0), x : R.R) : R.R {
   open R;
   exact x * x + x;
 }</code></pre>
-            <p>Renaming a sort to one name in two parents, as <code>M := R</code> twice above, makes it one sort of the child; its evidence follows it, as <code>R_is_set</code>. An ancestor that arrives renamed is another copy: here each monoid has its own unit, <code>zero</code> and <code>one</code>, and its own law.</p>
+            <p>Renaming a carrier to one name in two parents, as <code>M := R</code> twice above, makes it one carrier of the child; its evidence follows it, as <code>R_is_set</code>. An ancestor that arrives renamed is another copy: here each monoid has its own unit, <code>zero</code> and <code>one</code>, and its own law.</p>
           </section>
 
           <section id="morphisms">
             <h2>Homomorphisms and isomorphisms</h2>
-            <p>A <strong>homomorphism</strong> between two models of a theory, <code>Monoid.Hom(A, B)</code>, is a map of their sort, <code>map : A.M -&gt; B.M</code>, with, for each operation and constant, a proof that the map preserves it: <code>map_mul</code> and <code>map_one</code>. With several sorts there is a map for each, <code>map_M</code>, <code>map_N</code>. Laws need no field: they are propositions about sets. <code>Monoid.Hom.make</code> builds one, and <code>f.map</code> and the rest read it:</p>
+            <p>A <strong>homomorphism</strong> between two models of a theory, <code>Monoid.Hom(A, B)</code>, is a map of their carrier, <code>map : A.M -&gt; B.M</code>, with, for each operation and constant, a proof that the map preserves it: <code>map_mul</code> and <code>map_one</code>. With several sorts there is a map for each, <code>map_M</code>, <code>map_N</code>. Laws need no field: they are propositions about sets. <code>Monoid.Hom.make</code> builds one, and <code>f.map</code> and the rest read it:</p>
             <pre><code data-check="accept">import nat;
 import hlevels;
 
-theory Monoid {
-  sort M : set;
+theory Monoid(U &lt; UU0) {
+  M : set U;
   mul(x, y : M) : M notation x * y;
   one : M;
   law one_mul(x : M) : one * x = x;
 }
 
-def additive : Monoid.Model(U0) := Monoid.make(
+def additive : Monoid(U0) := Monoid.make(
   M := Nat, M_is_set := nat_is_set, mul := add, one := 0, one_mul := nat_zero_add
 );
 
-def trivial : Monoid.Model(U0) := Monoid.make(
+def trivial : Monoid(U0) := Monoid.make(
   M := Unit, M_is_set := prop_is_set(U0, Unit, unit_is_prop), mul := fun (x, y : Unit) =&gt; tt,
   one := tt, one_mul := fun (x : Unit) =&gt; unit_is_prop(tt, x)
 );
@@ -254,7 +254,7 @@ def collapse : Monoid.Hom(additive, trivial) := Monoid.Hom.make(
   additive, trivial, map := fun (n : Nat) =&gt; tt, map_mul := fun (x, y : Nat) =&gt; refl(tt), map_one := refl(tt)
 );
 
-def unit_into(B : Monoid.Model(U0)) : Monoid.Hom(trivial, B) := Monoid.Hom.make(
+def unit_into(B : Monoid(U0)) : Monoid.Hom(trivial, B) := Monoid.Hom.make(
   trivial, B, map := fun (x : Unit) =&gt; B.one, map_mul := fun (x, y : Unit) =&gt; sym(B.one_mul(B.one)),
   map_one := refl(B.one)
 );
@@ -263,17 +263,17 @@ def round : Monoid.Hom(additive, additive) := Monoid.Hom.compose(unit_into(addit
 
 evaluate round.map(7) expecting 0;</code></pre>
             <p><code>Monoid.Hom.id(A)</code> is the identity and <code>Monoid.Hom.compose(g, f)</code> is <code>g</code> after <code>f</code>; on closed models both compute. A child theory's homomorphisms preserve its parents' operations too, and <code>f.monoid</code> is the homomorphism of the parent's models.</p>
-            <p>An <strong>isomorphism</strong>, <code>Monoid.Iso(A, B)</code>, is a homomorphism each way, <code>to</code> and <code>from</code>, with the round trips on each sort: <code>from_to : forall x : A.M. from.map(to.map(x)) = x</code> and <code>to_from</code>. <code>Monoid.Iso.id(A)</code>, <code>Monoid.Iso.compose(g, f)</code> and <code>Monoid.Iso.inverse(f)</code> are isomorphisms too. A field of a value that is not a name is read the same way: <code>Monoid.Iso.inverse(f).to.map(x)</code>.</p>
-            <p>A theory has homomorphisms when each of its operations and constants takes and returns its sorts:</p>
+            <p>An <strong>isomorphism</strong>, <code>Monoid.Iso(A, B)</code>, is a homomorphism each way, <code>to</code> and <code>from</code>, with the round trips on each carrier: <code>from_to : forall x : A.M. from.map(to.map(x)) = x</code> and <code>to_from</code>. <code>Monoid.Iso.id(A)</code>, <code>Monoid.Iso.compose(g, f)</code> and <code>Monoid.Iso.inverse(f)</code> are isomorphisms too. A field of a value that is not a name is read the same way: <code>Monoid.Iso.inverse(f).to.map(x)</code>.</p>
+            <p>A theory has homomorphisms when each of its operations and constants takes and returns its carriers:</p>
             <pre><code data-check="reject">import nat;
 import hlevels;
 
-theory Indexed {
-  sort M : set;
+theory Indexed(U &lt; UU0) {
+  M : set U;
   power(x : M, n : Nat) : M;
 }
 
-def no_homs(A, B : Indexed.Model(U0)) := Indexed.Hom(A, B);  // Error: Indexed's models have no homomorphisms: its power takes or returns something other than a sort.</code></pre>
+def no_homs(A, B : Indexed(U0)) := Indexed.Hom(A, B);  // Error: Indexed's models have no homomorphisms: its power takes or returns something other than a sort.</code></pre>
           </section>
 
           <section id="library-algebra">
@@ -282,7 +282,7 @@ def no_homs(A, B : Indexed.Model(U0)) := Indexed.Hom(A, B);  // Error: Indexed's
             <div class="table-scroll"><table>
               <thead><tr><th>Theory</th><th>Extends</th><th>Adds</th></tr></thead>
               <tbody>
-                <tr><td><code>Semigroup</code></td><td></td><td><code>sort M : set</code>, <code>mul</code> written <code>x * y</code>, <code>mul_assoc</code></td></tr>
+                <tr><td><code>Semigroup</code></td><td></td><td><code>M : set U</code>, <code>mul</code> written <code>x * y</code>, <code>mul_assoc</code></td></tr>
                 <tr><td><code>Monoid</code></td><td><code>Semigroup</code></td><td><code>one</code>, <code>one_mul</code>, <code>mul_one</code></td></tr>
                 <tr><td><code>CommMonoid</code></td><td><code>Monoid</code></td><td><code>mul_comm</code></td></tr>
                 <tr><td><code>Group</code></td><td><code>Monoid</code></td><td><code>inv</code>, <code>inv_mul</code>, <code>mul_inv</code></td></tr>
@@ -347,15 +347,15 @@ evaluate powers_of_two.map(4) expecting 16;</code></pre>
             <div class="table-scroll"><table>
               <thead><tr><th>Definition</th><th>What it is</th></tr></thead>
               <tbody>
-                <tr><td><code>T.Model(U &lt; UU0) : next(U)</code></td><td>The type of models whose sorts are in <code>U</code>: the type of pairs of the fields, in order</td></tr>
+                <tr><td><code>T(U &lt; UU0) : next(U)</code></td><td>The type of models whose carriers are in <code>U</code>: the type of pairs of the fields, in order</td></tr>
                 <tr><td><code>T.make{{U &lt; UU0}}(…)</code></td><td>The model with the given fields, one parameter for each, so that named arguments build a model field by field</td></tr>
-                <tr><td><code>T.f{{U &lt; UU0}}(m : T.Model(U))</code></td><td>For each field <code>f</code>, its projection, written <code>m.f</code></td></tr>
-                <tr><td><code>T.p{{U &lt; UU0}}(m : T.Model(U))</code></td><td>For each parent labelled <code>p</code>, the model of the parent, written <code>m.p</code></td></tr>
-                <tr><td><code>T.Hom(A, B)</code>, <code>T.Hom.make</code>, <code>f.map</code> …, <code>T.Hom.id</code>, <code>T.Hom.compose</code>, <code>f.p</code></td><td>Homomorphisms, when every operation takes and returns sorts</td></tr>
+                <tr><td><code>T.f{{U &lt; UU0}}(m : T(U))</code></td><td>For each field <code>f</code>, its projection, written <code>m.f</code></td></tr>
+                <tr><td><code>T.p{{U &lt; UU0}}(m : T(U))</code></td><td>For each parent labelled <code>p</code>, the model of the parent, written <code>m.p</code></td></tr>
+                <tr><td><code>T.Hom(A, B)</code>, <code>T.Hom.make</code>, <code>f.map</code> …, <code>T.Hom.id</code>, <code>T.Hom.compose</code>, <code>f.p</code></td><td>Homomorphisms, when every operation takes and returns carriers, each a set or a proposition</td></tr>
                 <tr><td><code>T.Iso(A, B)</code>, <code>T.Iso.make</code>, <code>f.to</code> …, <code>T.Iso.id</code>, <code>T.Iso.compose</code>, <code>T.Iso.inverse</code></td><td>Isomorphisms</td></tr>
               </tbody>
             </table></div>
-            <p>The theory's name itself is not a term: its models are <code>T.Model(U)</code>. The universes of a homomorphism's models, and the models themselves, are implicit in its operations: <code>f.map</code> and <code>Monoid.Hom.compose(g, f)</code> read them from the types of <code>f</code> and <code>g</code>.</p>
+            <p>The theory's name is the type of its models, <code>T(U)</code>. The universes of a homomorphism's models, and the models themselves, are implicit in its operations: <code>f.map</code> and <code>Monoid.Hom.compose(g, f)</code> read them from the types of <code>f</code> and <code>g</code>.</p>
           </section>
 
           <section id="theory-errors">
@@ -363,31 +363,31 @@ evaluate powers_of_two.map(4) expecting 16;</code></pre>
             <p>A field's name, and an operator's meaning, are each one thing:</p>
             <pre><code data-check="reject">import hlevels;
 
-theory Twice {  // Error: Twice has two fields named one: give each its own name.
-  sort M : set;
+theory Twice(U &lt; UU0) {  // Error: Twice has two fields named one: give each its own name.
+  M : set U;
   one : M;
   one : M;
 }</code></pre>
             <p>Two parents that give fields of one name refuse unless the field is one ancestor's, shared:</p>
             <pre><code data-check="reject">import hlevels;
 
-theory Left {
-  sort M : set;
+theory Left(U &lt; UU0) {
+  M : set U;
   point : M;
 }
 
-theory Right {
-  sort M : set;
+theory Right(U &lt; UU0) {
+  M : set U;
   point : M;
 }
 
-theory Clash extends Left, Right {  // Error: Clash gets a field named M from both Left and Right: rename one, as in Right(M := …).
+theory Clash(U &lt; UU0) extends Left, Right {  // Error: Clash gets a field named M from both Left and Right: rename one, as in Right(M := …).
 }</code></pre>
             <p><code>open</code> takes a model, and <code>m.f</code> a field the theory has:</p>
             <pre><code data-check="reject">import nat;
 
 def open_a_number(n : Nat) : Nat {
-  open n;  // Error: open takes a model of a theory, such as m : Group.Model(U0); this is a value of type Nat.
+  open n;  // Error: open takes a model of a theory, such as m : Group(U0); this is a value of type Nat.
   exact n;
 }</code></pre>
           </section>

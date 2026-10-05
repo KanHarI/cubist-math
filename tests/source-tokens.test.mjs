@@ -111,3 +111,27 @@ def f(A : Ring.Model(U0)) : A.R {
   // definition, as the ring's zero after open A does.
   assert.equal(style("zero", 7), "keyword");
 });
+
+test("a theory's header comes before extends, and a carrier's h-level is a keyword (L2.4c)", () => {
+  const source = `theory Ring(U < UU0) extends additive : Group(one := zero) {
+  R : set U;
+  P : prop U;
+  L : U;
+  set : U;
+  point : set;
+  law l(x : R) : x = x;
+}
+def f(set : Nat, prop : Nat) := set;`;
+  const style = (word, nth = 0) => {
+    const at = [...source.matchAll(new RegExp(`\\b${word}\\b`, "g"))][nth].index;
+    return tokenStyle(word, null, keywordAt(source, at, word));
+  };
+  assert.equal(style("extends"), "keyword");
+  assert.equal(style("zero"), "");
+  assert.equal(style("set"), "keyword");
+  assert.equal(style("prop"), "keyword");
+  assert.equal(style("law"), "keyword");
+  // A field named set, a type written set, and parameters named set and prop are names.
+  for (let nth = 1; nth < 5; nth++) assert.equal(style("set", nth), "", `set ${nth}`);
+  assert.equal(style("prop", 1), "");
+});

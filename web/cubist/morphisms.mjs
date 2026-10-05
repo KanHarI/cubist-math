@@ -47,6 +47,10 @@ export function morphismSource(record, isTheory = () => false) {
   const A = own("A"), B = own("B"), C = own("C"), f = own("f"), g = own("g");
   const sorts = record.fields.filter(field => field.kind === "sort").map(field => field.name);
   if (!sorts.length) return { missing: `${T} has no sorts` };
+  // A carrier with no h-level has paths that are data: its homomorphisms
+  // would need coherence fields, which are not specified (L2.4c).
+  const untruncated = sorts.find(sort => !record.fields.some(field => field.kind === "evidence" && field.of === sort));
+  if (untruncated) return { missing: `its carrier ${untruncated} has no h-level, and homomorphisms of such a carrier need coherences that are not generated` };
   const sortSet = new Set(sorts), operations = new Map();
   for (const field of record.fields.filter(field => field.kind === "operation")) {
     const shape = signature(field, sortSet);
@@ -81,9 +85,9 @@ export function morphismSource(record, isTheory = () => false) {
   const sigma = (fields, typeOf) => fields.map((field, k) => k === fields.length - 1 ? typeOf(field)
     : `exists ${field.name} : (${typeOf(field)}). `).join("");
   const tuple = values => values.length === 1 ? values[0] : `(${values.join(", ")})`;
-  const models = more => `{{U, V < UU0}}(${[`${A} : ${T}.Model(U)`, `${B} : ${T}.Model(V)`, ...more].join(", ")})`;
-  const implicitModels = `{{U, V < UU0, ${A} : ${T}.Model(U), ${B} : ${T}.Model(V)}}`;
-  const threeModels = `{{U, V, W < UU0, ${A} : ${T}.Model(U), ${B} : ${T}.Model(V), ${C} : ${T}.Model(W)}}`;
+  const models = more => `{{U, V < UU0}}(${[`${A} : ${T}(U)`, `${B} : ${T}(V)`, ...more].join(", ")})`;
+  const implicitModels = `{{U, V < UU0, ${A} : ${T}(U), ${B} : ${T}(V)}}`;
+  const threeModels = `{{U, V, W < UU0, ${A} : ${T}(U), ${B} : ${T}(V), ${C} : ${T}(W)}}`;
   const declarations = [];
   const declare = (name, source, role, extra = {}) => declarations.push({ name, source: `def ${name}${source}`, role, ...extra });
   // The projections of a record type, each typed over the earlier ones.
@@ -106,7 +110,7 @@ export function morphismSource(record, isTheory = () => false) {
     tuple(homFields.map(field => field.name))};`, "make");
   projections(hom, homFields, field => fieldType(field, sort => mapping(f, sort)));
   // The identity: each map the identity, preserving by reflexivity.
-  declare(`${hom}.id`, `{{U < UU0}}(${A} : ${T}.Model(U)) : ${hom}(${A}, ${A}) := ${hom}.make(${A}, ${A}, ${homFields.map(field => {
+  declare(`${hom}.id`, `{{U < UU0}}(${A} : ${T}(U)) : ${hom}(${A}, ${A}) := ${hom}.make(${A}, ${A}, ${homFields.map(field => {
     if (field.sort) return `fun (x : ${A}.${field.sort}) => x`;
     const { name, args } = field.operation;
     return args.length ? `fun (${binders(args, A)}) => refl(${applied(`${A}.${name}`, xs(args.length))})` : `refl(${A}.${name})`;
@@ -143,7 +147,7 @@ export function morphismSource(record, isTheory = () => false) {
   declare(`${iso}.make`, `${models(isoFields.map(field => `${field.name} : ${isoType(field, "to", "from")}`))} : ${iso}(${A}, ${B}) := ${
     tuple(isoFields.map(field => field.name))};`, "make");
   projections(iso, isoFields, field => isoType(field, `${iso}.to(${f})`, `${iso}.from(${f})`));
-  declare(`${iso}.id`, `{{U < UU0}}(${A} : ${T}.Model(U)) : ${iso}(${A}, ${A}) := ${iso}.make(${A}, ${A}, ${hom}.id(${A}), ${hom}.id(${A})${
+  declare(`${iso}.id`, `{{U < UU0}}(${A} : ${T}(U)) : ${iso}(${A}, ${A}) := ${iso}.make(${A}, ${A}, ${hom}.id(${A}), ${hom}.id(${A})${
     isoFields.slice(2).map(field => `, fun (x : ${A}.${field.sort}) => refl(x)`).join("")});`, "id");
   // Composition: each way, the composite of the two homomorphisms; their
   // round trips, the inner one carried along the outer map, then the outer.

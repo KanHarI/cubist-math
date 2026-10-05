@@ -399,6 +399,9 @@ export class Translator {
           own.length?own.map(p=>({name:p.name.text,implicit:!!p.implicit})):null)??checked.term;
         this.checker.kernel?.checkDeadline();
         env.set(d.name.text,definition);
+        // T.Model, the earlier name of a theory's type of models, until every
+        // source writes T (L2.4c).
+        if(d.generated?.role==="model")env.set(`${d.name.text}.Model`,definition);
         // A theory's type of models, by which m.f reads its fields, and its
         // projections, which print as m.f (L2.4).
         if(d.generated)registerTheoryDeclaration(this,d);
@@ -750,7 +753,6 @@ export class Translator {
             throw error;
           }
           if(value.tag==="Dimension")throw Error("Interval coordinates can only be used in interval arguments.");
-          if(value.tag==="Theory")throw Error(`${n.name} is a theory: its models are ${n.name}.Model(U), built with ${n.name}.make(…).`);
           // A declared type or constructor (L2.1), or the declaration's own name.
           if(INDUCTIVE_TAGS.has(value.tag))return resolveInductive(this,n,value,null,scope,expected);
           if(value.tag==="Recursive")return resolveRecursive(this,n,value,null,scope);

@@ -388,7 +388,7 @@ computable def int_decide(x, y : Z) :
 
 // The integers, a commutative ring.
 def integers :
-  CommRing.Model(U0) := CommRing.make(
+  CommRing(U0) := CommRing.make(
     R := Z, R_is_set := int_is_set, add := int_add, add_assoc := int_add_assoc, zero := int_zero,
     zero_add := int_zero_add, add_zero := int_add_zero, neg := int_neg, neg_add := int_neg_add,
     add_neg := int_add_neg, add_comm := int_add_comm, mul := int_mul, mul_assoc := int_mul_assoc,
