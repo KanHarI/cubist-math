@@ -2179,6 +2179,10 @@
    "summary": "Theories (L2.4): sorts, operations with notation and laws; models built field by field and read by `m.f`, computing; parents' models; extension with a shared ancestor, labels and renaming; `open` and its notation; and the refusals: a field twice, a notation on a constant or out of order, one operator for two operations, two parents' fields of one name, an unknown parent or field, `open` of a non-model, a missing field, and a theory used as a term."
   },
   {
+   "path": "cubist-tests/theory_headers.cubist",
+   "summary": "A theory's header (L2.4c): carriers in two universes with homomorphisms across them, a parameter that every model shares and homomorphisms keep, a child taking its parent's parameter by name, and the refusals: a parent's universe or parameter missing, a binder bound twice or named as a field."
+  },
+  {
    "path": "cubist-tests/theory_morphisms.cubist",
    "summary": "Homomorphisms and isomorphisms (L2.4): built field by field, their fields' types, identity, composition and a parent's homomorphism computing on closed models, isomorphisms' identity, composition and inverse, and a theory whose operation takes a non-sort, which has none."
   },

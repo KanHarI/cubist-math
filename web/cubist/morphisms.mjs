@@ -29,15 +29,24 @@ function signature(field, sorts) {
   return type.kind === "name" && sorts.has(type.name) ? { args, result: type.name } : null;
 }
 
+// A parameter's type stands in a homomorphism's source as a marker, which
+// the expansion replaces by the type (theories.mjs).
+const parameterMarker = k => `__theory_parameter_${k}`;
+
 // The declarations of T's homomorphisms and isomorphisms, each {name,
 // source, role}, or, as `missing`, why T's models have none. `isTheory`
-// says whether a name is a theory in scope.
+// says whether a name is a theory in scope. `universes` are the models'
+// universes, or the first model's, in which a parameter's type is written.
 export function morphismSource(record, isTheory = () => false) {
   const T = record.name, hom = `${T}.Hom`, iso = `${T}.Iso`;
   // The source's models, A, B and C, and homomorphisms, f and g. A theory's
   // name begins its qualified names, as A.M, which a binder of that name
   // would not shadow, so each avoids every theory in scope, T included.
-  const taken = new Set();
+  // Every model of a theory with parameters shares them, and its universes:
+  // a homomorphism keeps them fixed (L2.4c). Otherwise each model has its
+  // own universes, as many as the theory's header binds.
+  const params = record.params ?? [], count = Math.max(1, record.universes?.length ?? 0);
+  const taken = new Set(params.map(p => p.name));
   const own = stem => {
     let name = stem;
     for (let k = 1; name === T || isTheory(name) || taken.has(name); k++) name = `${stem}${k}`;
@@ -85,9 +94,21 @@ export function morphismSource(record, isTheory = () => false) {
   const sigma = (fields, typeOf) => fields.map((field, k) => k === fields.length - 1 ? typeOf(field)
     : `exists ${field.name} : (${typeOf(field)}). `).join("");
   const tuple = values => values.length === 1 ? values[0] : `(${values.join(", ")})`;
-  const models = more => `{{U, V < UU0}}(${[`${A} : ${T}(U)`, `${B} : ${T}(V)`, ...more].join(", ")})`;
-  const implicitModels = `{{U, V < UU0, ${A} : ${T}(U), ${B} : ${T}(V)}}`;
-  const threeModels = `{{U, V, W < UU0, ${A} : ${T}(U), ${B} : ${T}(V), ${C} : ${T}(W)}}`;
+  // Each model's universes: U, V and W, or U_1, U_2, … when there are
+  // several (U1 is a universe constant); the shared ones are U's.
+  const universesOf = letter => count === 1 ? [own(letter)] : Array.from({ length: count }, (_, k) => own(`${letter}_${k + 1}`));
+  const [uA, uB, uC] = params.length ? Array(3).fill(universesOf("U")) : [universesOf("U"), universesOf("V"), universesOf("W")];
+  const headerBinders = (...lists) => {
+    const universes = [...new Set(lists.flat())];
+    return [`${universes.join(", ")} < UU0`, ...params.map((p, k) => `${p.name} : ${parameterMarker(k)}`)].join(", ");
+  };
+  const modelOf = universes => `${T}(${[...universes, ...params.map(p => p.name)].join(", ")})`;
+  const largest = list => list.length === 1 ? list[0] : `max(${list[0]}, ${largest(list.slice(1))})`;
+  const homUniverse = largest([...new Set([...uA, ...uB])]);
+  const models = more => `{{${headerBinders(uA, uB)}}}(${[`${A} : ${modelOf(uA)}`, `${B} : ${modelOf(uB)}`, ...more].join(", ")})`;
+  const implicitModels = `{{${headerBinders(uA, uB)}, ${A} : ${modelOf(uA)}, ${B} : ${modelOf(uB)}}}`;
+  const threeModels = `{{${headerBinders(uA, uB, uC)}, ${A} : ${modelOf(uA)}, ${B} : ${modelOf(uB)}, ${C} : ${modelOf(uC)}}}`;
+  const oneModel = `{{${headerBinders(uA)}}}(${A} : ${modelOf(uA)})`;
   const declarations = [];
   const declare = (name, source, role, extra = {}) => declarations.push({ name, source: `def ${name}${source}`, role, ...extra });
   // The projections of a record type, each typed over the earlier ones.
@@ -104,13 +125,13 @@ export function morphismSource(record, isTheory = () => false) {
 
   // T.Hom(A, B), its constructor and its fields.
   const ownType = field => fieldType(field, sort => map(sort));
-  declare(hom, `${models([])} : max(U, V) := ${sigma(homFields, ownType)};`, "hom",
+  declare(hom, `${models([])} : ${homUniverse} := ${sigma(homFields, ownType)};`, "hom",
     { record: record_(hom, homFields, record.parents.map(parent => parent.label)) });
   declare(`${hom}.make`, `${models(homFields.map(field => `${field.name} : ${ownType(field)}`))} : ${hom}(${A}, ${B}) := ${
     tuple(homFields.map(field => field.name))};`, "make");
   projections(hom, homFields, field => fieldType(field, sort => mapping(f, sort)));
   // The identity: each map the identity, preserving by reflexivity.
-  declare(`${hom}.id`, `{{U < UU0}}(${A} : ${T}(U)) : ${hom}(${A}, ${A}) := ${hom}.make(${A}, ${A}, ${homFields.map(field => {
+  declare(`${hom}.id`, `${oneModel} : ${hom}(${A}, ${A}) := ${hom}.make(${A}, ${A}, ${homFields.map(field => {
     if (field.sort) return `fun (x : ${A}.${field.sort}) => x`;
     const { name, args } = field.operation;
     return args.length ? `fun (${binders(args, A)}) => refl(${applied(`${A}.${name}`, xs(args.length))})` : `refl(${A}.${name})`;
@@ -142,12 +163,12 @@ export function morphismSource(record, isTheory = () => false) {
   const isoType = (field, to, from) => field.name === "to" ? `${hom}(${A}, ${B})` : field.name === "from" ? `${hom}(${B}, ${A})`
     : field.way === "from_to" ? `forall x : ${A}.${field.sort}. ${mapping(from, field.sort)}(${mapping(to, field.sort)}(x)) = x`
       : `forall y : ${B}.${field.sort}. ${mapping(to, field.sort)}(${mapping(from, field.sort)}(y)) = y`;
-  declare(iso, `${models([])} : max(U, V) := ${sigma(isoFields, field => isoType(field, "to", "from"))};`, "iso",
+  declare(iso, `${models([])} : ${homUniverse} := ${sigma(isoFields, field => isoType(field, "to", "from"))};`, "iso",
     { record: record_(iso, isoFields) });
   declare(`${iso}.make`, `${models(isoFields.map(field => `${field.name} : ${isoType(field, "to", "from")}`))} : ${iso}(${A}, ${B}) := ${
     tuple(isoFields.map(field => field.name))};`, "make");
   projections(iso, isoFields, field => isoType(field, `${iso}.to(${f})`, `${iso}.from(${f})`));
-  declare(`${iso}.id`, `{{U < UU0}}(${A} : ${T}(U)) : ${iso}(${A}, ${A}) := ${iso}.make(${A}, ${A}, ${hom}.id(${A}), ${hom}.id(${A})${
+  declare(`${iso}.id`, `${oneModel} : ${iso}(${A}, ${A}) := ${iso}.make(${A}, ${A}, ${hom}.id(${A}), ${hom}.id(${A})${
     isoFields.slice(2).map(field => `, fun (x : ${A}.${field.sort}) => refl(x)`).join("")});`, "id");
   // Composition: each way, the composite of the two homomorphisms; their
   // round trips, the inner one carried along the outer map, then the outer.
@@ -159,5 +180,5 @@ export function morphismSource(record, isTheory = () => false) {
   // The inverse: the two homomorphisms and the two round trips swapped.
   declare(`${iso}.inverse`, `${implicitModels}(${f} : ${iso}(${A}, ${B})) : ${iso}(${B}, ${A}) := ${iso}.make(${B}, ${A}, ${f}.from, ${f}.to${
     isoFields.slice(2).map(field => `, ${f}.${other(field)}`).join("")});`, "inverse");
-  return { declarations };
+  return { declarations, universes: uA, parameterMarker };
 }

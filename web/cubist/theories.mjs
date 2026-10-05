@@ -25,9 +25,10 @@
 import { parse } from "./parser.mjs";
 import { morphismSource } from "./morphisms.mjs";
 
-// The universe of a theory's sorts, in the fields a theory records: each
-// expansion names it afresh.
+// The universes of a theory's carriers, in the fields a theory records, the
+// first, UNIVERSE, and the k-th: each expansion names them afresh.
 const UNIVERSE = "\u0000universe";
+export const universeAt = k => k === 0 ? UNIVERSE : `${UNIVERSE}${k}`;
 
 // An error at a node of the theory's text.
 const located = (error, node) => Object.assign(error, { offset: node.start });
@@ -138,9 +139,19 @@ function notAProposition(statement, byName) {
 // a parent's record by name).
 function theoryFields(theory, lookup) {
   const T = theory.name.text, fields = [], notations = new Map(), parents = [], byName = new Map();
-  // The header's universe is the model's, which each expansion names afresh.
-  const universe = new Map((theory.universes ?? []).map(u => [u.text, UNIVERSE]));
+  // The header's universes are the model's, which each expansion names
+  // afresh; a theory without a header has one. Its parameters are every
+  // model's, as the header writes them (L2.4c).
+  const headerUniverses = (theory.universes ?? []).map(u => u.text);
+  const universeCount = Math.max(1, headerUniverses.length);
+  const universe = new Map(headerUniverses.map((u, k) => [u, universeAt(k)]));
   const inTheoryUniverse = (node, at) => universe.size ? renamed(node, universe, at) : node;
+  const params = (theory.params ?? []).map(p => ({ name: p.name.text, type: inTheoryUniverse(p.type, p.name), at: p.name }));
+  const header = [...(theory.universes ?? []), ...(theory.params ?? []).map(p => p.name)];
+  header.forEach((binder, k) => {
+    if (header.slice(0, k).some(other => other.text === binder.text))
+      throw located(Error(`${T}'s header binds ${binder.text} twice: give each its own name.`), binder);
+  });
   const add = (field, at, from = null) => {
     const existing = byName.get(field.name);
     if (existing) {
@@ -165,8 +176,23 @@ function theoryFields(theory, lookup) {
     const label = parent.label?.text ?? snake(record.name);
     if (parents.some(other => other.label === label))
       throw located(Error(`${T} has two parents labelled ${label}: label one, as in other : ${parent.name.text}.`), parent.label ?? parent.name);
+    // The parent's universes are the child's: its one universe the child's
+    // one, or each by its name. Its parameters are the child's of the same
+    // names and types.
+    const universes = new Map(), parentCount = Math.max(1, record.universes.length);
+    if (parentCount === 1 && universeCount === 1) universes.set(UNIVERSE, UNIVERSE);
+    else record.universes.forEach((u, k) => {
+      const own = headerUniverses.indexOf(u);
+      if (own < 0) throw located(Error(`${T} extends ${record.name}, whose header binds the universe ${u}: bind ${u} in ${T}'s header too.`), parent.name);
+      universes.set(universeAt(k), universeAt(own));
+    });
+    for (const p of record.params) {
+      const own = params.find(q => q.name === p.name);
+      if (!own || !sameSyntax(own.type, renamed(p.type, universes, parent.name)))
+        throw located(Error(`${T} extends ${record.name}, whose header has the parameter ${p.name}: give ${T} the parameter ${p.name} with the same type.`), parent.name);
+    }
     // Each renaming names a field of the parent, once.
-    const names = new Map(), renotated = new Map();
+    const names = new Map(universes), renotated = new Map();
     for (const { from, to, notation } of parent.renaming) {
       const field = record.fields.find(f => f.name === from.text);
       if (!field) throw located(Error(`${record.name} has no field ${from.text}; its fields are ${record.fields.map(f => f.name).join(", ")}.`), from);
@@ -195,16 +221,18 @@ function theoryFields(theory, lookup) {
     }
     for (const [field, operator] of renotated) notate(operator, field, at);
     parents.push({ label, theory: record.name, model: record.model, make: record.make, projection: `${T}.${label}`,
+      universes: Array.from({ length: parentCount }, (_, k) => universes.get(universeAt(k))), params: record.params.map(p => p.name),
       fields: record.fields.map(field => names.get(field.name) ?? field.name), kinds: record.fields.map(field => field.kind) });
   }
   for (const item of theory.fields) {
     const origin = `${T}.${item.name.text}`;
     if (item.kind === "sort") {
-      add({ name: item.name.text, kind: "sort", type: name(UNIVERSE, item.name), origin }, item.name);
+      const own = universeAt(Math.max(0, headerUniverses.indexOf(item.universe?.text)));
+      add({ name: item.name.text, kind: "sort", type: name(own, item.name), origin }, item.name);
       if (!item.level) continue;
       const evidence = item.level === "set" ? "IsSet" : "IsProp";
       add({ name: `${item.name.text}_is_${item.level}`, kind: "evidence", evidence, of: item.name.text,
-        type: call(evidence, [name(UNIVERSE, item.name), name(item.name.text, item.name)], item.name),
+        type: call(evidence, [name(own, item.name), name(item.name.text, item.name)], item.name),
         origin: `${origin}_is_${item.level}` }, item.name);
       continue;
     }
@@ -234,51 +262,60 @@ function theoryFields(theory, lookup) {
     }
     add({ name: item.name.text, kind: item.kind, arity: item.params.length, type, origin }, item.name);
   }
-  for (const field of fields)
+  for (const field of fields) {
     if (field.name.includes(".")) throw located(Error(`A field's name is a plain name; ${field.name} is not.`), field.at);
-  return { fields, notations, parents };
+    if (header.some(binder => binder.text === field.name))
+      throw located(Error(`${T}'s header binds ${field.name}, which names a field too: give each its own name.`), field.at);
+  }
+  return { fields, notations, parents, universes: headerUniverses, params: params.map(({ at: _, ...p }) => p) };
 }
 
 // The declarations a theory expands to, and its record, which a theory
 // that extends it reads (`lookup` gives the record of a theory by name).
 export function expandTheory(theory, lookup = () => null) {
   const T = theory.name.text, at = theory.name;
-  const { fields, notations, parents } = theoryFields(theory, lookup);
+  const { fields, notations, parents, universes: headerUniverses, params } = theoryFields(theory, lookup);
   if (!fields.length) throw located(Error(`${T} has no fields: a theory declares sorts, operations and laws.`), at);
   const taken = new Set([...namesIn(theory), ...fields.map(field => field.name), ...fields.flatMap(field => [...namesIn(field.type)])]);
-  // The header's name for the universe, unless a field takes it.
-  const named = theory.universes?.[0]?.text;
-  const universe = named && !fields.some(field => field.name === named) ? named : fresh("U", taken), model = fresh("m", taken);
-  const inUniverse = node => renamed(node, new Map([[UNIVERSE, universe]]), at);
-  const universeParameter = implicit => ({ name: token(universe, at), bound: name("UU0", at), group: 0, ...(implicit ? { implicit } : {}) });
-  const modelType = (theoryName, span) => call(theoryName, [name(universe, span)], span);
-  const declaration = (declName, params, type, value, span, generated, extra = {}) => ({
-    kind: "def", name: token(declName, span), params, type,
-    ...(params.some(p => p.implicit) ? { implicitParameters: place(span) } : {}),
+  // The header's names for the universes, or fresh ones without a header.
+  const universes = headerUniverses.length ? headerUniverses : [fresh("U", taken)], model = fresh("m", taken);
+  const inUniverse = node => renamed(node, new Map(universes.map((u, k) => [universeAt(k), u])), at);
+  // The header's binders, the universes in one group and then each
+  // parameter; `implicit` says which are implicit.
+  const headerParameters = ({ universe = false, parameter = false } = {}) => [
+    ...universes.map(u => ({ name: token(u, at), bound: name("UU0", at), group: 0, ...(universe ? { implicit: true } : {}) })),
+    ...params.map((p, k) => ({ name: token(p.name, at), type: inUniverse(p.type), group: k + 1, ...(parameter ? { implicit: true } : {}) })),
+  ];
+  const nextGroup = params.length + 1;
+  const modelType = span => call(T, [...universes, ...params.map(p => p.name)].map(text => name(text, span)), span);
+  const largest = list => list.length === 1 ? name(list[0], at) : call("max", [name(list[0], at), largest(list.slice(1))], at);
+  const declaration = (declName, declParams, type, value, span, generated, extra = {}) => ({
+    kind: "def", name: token(declName, span), params: declParams, type,
+    ...(declParams.some(p => p.implicit) ? { implicitParameters: place(span) } : {}),
     body: [{ kind: "exact", value, ...place(span) }], typedValue: true, ...place(span),
     generated: { theory: T, ...generated }, ...extra,
   });
   const record = {
-    name: T, model: T, make: `${T}.make`,
+    name: T, model: T, make: `${T}.make`, universes: headerUniverses, params,
     fields: fields.map(({ at: _, from: __, ...field }) => ({ ...field, projection: `${T}.${field.name}` })),
     notations: Object.fromEntries(notations), parents,
   };
   // The sorts' evidence comes from hlevels.
   const requires = [...new Set(fields.filter(field => field.evidence).map(field => field.evidence))];
   const out = [];
-  // T(U < UU0) : next(U) := exists f1 : A1. … An;
+  // T(U < UU0, params) : next(U) := exists f1 : A1. … An;
   let modelBody = inUniverse(fields.at(-1).type);
   for (let k = fields.length - 2; k >= 0; k--)
     modelBody = quantifier("exists", token(fields[k].name, fields[k].at), inUniverse(fields[k].type), modelBody, fields[k].at);
-  out.push(declaration(T, [universeParameter(false)], call("next", [name(universe, at)], at), modelBody, at,
+  out.push(declaration(T, headerParameters(), call("next", [largest(universes)], at), modelBody, at,
     { role: "model" }, { theory: record, requires }));
-  // T.make{{U < UU0}}(f1 : A1, …) : T(U) := (f1, …, fn);
+  // T.make{{U < UU0}}(params, f1 : A1, …) : T(U, params) := (f1, …, fn);
   let tuple = name(fields.at(-1).name, fields.at(-1).at);
   for (let k = fields.length - 2; k >= 0; k--) tuple = pair(name(fields[k].name, fields[k].at), tuple, at);
-  out.push(declaration(`${T}.make`, [universeParameter(true),
-    ...fields.map((field, k) => ({ name: token(field.name, field.at), type: inUniverse(field.type), group: k + 1 }))],
-  modelType(T, at), tuple, at, { role: "make" }, { requires }));
-  // T.f{{U < UU0}}(m : T(U)) : A[earlier fields := their projections] := m.2…2.1;
+  out.push(declaration(`${T}.make`, [...headerParameters({ universe: true }),
+    ...fields.map((field, k) => ({ name: token(field.name, field.at), type: inUniverse(field.type), group: nextGroup + k }))],
+  modelType(at), tuple, at, { role: "make" }, { requires }));
+  // T.f{{U < UU0, params}}(m : T(U, params)) : A[earlier fields := their projections] := m.2…2.1;
   const projected = new Map();
   fields.forEach((field, k) => {
     const type = rewritten(inUniverse(field.type), (n, bound) => n.kind === "name" && projected.has(n.name) && !bound.has(n.name)
@@ -286,18 +323,19 @@ export function expandTheory(theory, lookup = () => null) {
     let value = name(model, field.at);
     for (let j = 0; j < k; j++) value = projection(value, 2, field.at);
     if (k < fields.length - 1) value = projection(value, 1, field.at);
-    out.push(declaration(`${T}.${field.name}`, [universeParameter(true),
-      { name: token(model, field.at), type: modelType(T, field.at), group: 1 }], type, value, field.at,
+    out.push(declaration(`${T}.${field.name}`, [...headerParameters({ universe: true, parameter: true }),
+      { name: token(model, field.at), type: modelType(field.at), group: nextGroup }], type, value, field.at,
     { role: "projection", field: field.name }));
     projected.set(field.name, `${T}.${field.name}`);
   });
-  // T.p{{U < UU0}}(m : T(U)) : P(U) := P.make(T.f(m), …), each
-  // of P's fields from the child's field it became.
+  // T.p{{U < UU0, params}}(m : T(U, params)) : P(U, params) := P.make(params, T.f(m), …),
+  // each of P's fields from the child's field it became.
   for (const [index, parent] of parents.entries()) {
     const span = theory.parents[index];
-    out.push(declaration(parent.projection, [universeParameter(true),
-      { name: token(model, span), type: modelType(T, span), group: 1 }], modelType(parent.theory, span),
-    call(parent.make, parent.fields.map(field => call(`${T}.${field}`, [name(model, span)], span)), span), span,
+    const parentModel = call(parent.theory, [...parent.universes.map(u => inUniverse(name(u, span))), ...parent.params.map(p => name(p, span))], span);
+    out.push(declaration(parent.projection, [...headerParameters({ universe: true, parameter: true }),
+      { name: token(model, span), type: modelType(span), group: nextGroup }], parentModel,
+    call(parent.make, [...parent.params.map(p => name(p, span)), ...parent.fields.map(field => call(`${T}.${field}`, [name(model, span)], span))], span), span,
     { role: "projection", field: parent.label }));
   }
   // Homomorphisms and isomorphisms, when every operation takes and returns
@@ -307,7 +345,13 @@ export function expandTheory(theory, lookup = () => null) {
   const morphisms = morphismSource(record, other => Boolean(lookup(other)));
   if (morphisms.missing) record.noMorphisms = morphisms.missing;
   else {
-    const parsed = parse(morphisms.declarations.map((d, k) => d.source.replace(/^def \S+?(?=[{(:])/, `def generated_${k}`)).join("\n")).declarations;
+    // A parameter's type is written in place of its marker, in the
+    // homomorphism's universes.
+    const parameterType = new Map(params.map((p, k) => [morphisms.parameterMarker(k),
+      renamed(p.type, new Map(morphisms.universes.map((u, j) => [universeAt(j), u])), at)]));
+    const parsed = parse(morphisms.declarations.map((d, k) => d.source.replace(/^def \S+?(?=[{(:])/, `def generated_${k}`)).join("\n")).declarations
+      .map(d => JSON.parse(JSON.stringify(d), (key, value) =>
+        value?.kind === "name" && parameterType.has(value.name) ? parameterType.get(value.name) : value));
     parsed.forEach((d, k) => {
       const { name: declName, role, field, record: morphismRecord } = morphisms.declarations[k];
       out.push({ ...relocated(d, at), name: token(declName, at),

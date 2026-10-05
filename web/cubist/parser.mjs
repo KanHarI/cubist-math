@@ -961,21 +961,21 @@ export function parse(source, typeOnly = false) {
       directives.push(directive); items.push(directive); continue;
     }
     // `theory T(U < UU0) [extends P, label : Q(f := g notation x + y)] {
-    // fields }` declares a theory (L2.4): the universe of its carriers, its
-    // parents, carriers, operations with their notations, and laws. The
+    // fields }` declares a theory (L2.4): the universes of its carriers and
+    // its parameters, its parents, carriers, operations with their
+    // notations, and laws. The
     // translator expands it into the definitions of its models
     // (theories.mjs).
     if (t.text === "theory") {
       const n = name(), parents = [];
-      // The header binds the universe of the theory's carriers (L2.4c).
-      const header = peek() === "(" ? parameters("(U < UU0)", true) : [];
+      // The header binds the universes of the theory's carriers, and the
+      // parameters every model shares (L2.4c): theory Module(U < UU0, R :
+      // CommRing(U)).
+      const header = peek() === "(" ? parameters("(U < UU0, R : CommRing(U))", true) : [];
       for (const p of header)
-        if (!p.bound) throw Object.assign(new Error(`A theory's header binds the universe of its carriers, as in theory ${n.text}(U < UU0).`),
-          { offset: p.name.start });
-      if (header.length > 1)
-        throw Object.assign(new Error(`${n.text} binds ${header.length} universes; a theory binds one, the universe of its carriers.`),
-          { offset: header[1].name.start });
-      const universes = new Set(header.map(p => p.name.text));
+        if (p.bound && !(p.bound.kind === "name" && p.bound.name === "UU0"))
+          throw Object.assign(new Error(`A theory's universes are below UU0: ${p.name.text} < UU0.`), { offset: p.bound.start });
+      const universes = new Set(header.filter(p => p.bound).map(p => p.name.text));
       const notationAfter = () => {
         const notationKeyword = take(), left = name(), operator = take(), right = name();
         if (!notationOperators.includes(operator.text))
@@ -1043,7 +1043,8 @@ export function parse(source, typeOnly = false) {
           ...(keyword ? { keyword } : {}), start, end: take(";").end });
       }
       const end = take("}").end;
-      declarations.push({ kind: "theory", name: n, universes: header.map(p => p.name), parents, fields, start: t.start, end });
+      declarations.push({ kind: "theory", name: n, universes: header.filter(p => p.bound).map(p => p.name),
+        params: header.filter(p => !p.bound).map(p => ({ name: p.name, type: p.type })), parents, fields, start: t.start, end });
       items.push(declarations.at(-1));
       continue;
     }

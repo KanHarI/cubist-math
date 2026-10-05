@@ -1,0 +1,79 @@
+// A theory's header (L2.4c): the universes of its carriers, several if it
+// names them, and parameters that every model shares and no homomorphism
+// changes. A child takes its parents' universes and parameters by name.
+import nat;
+import hlevels;
+
+// Two carriers in two universes, and a map between them.
+theory Arrow(U, V < UU0) {
+  Source : set U;
+  Target : set V;
+  apply(a : Source) : Target;
+}
+
+def nat_arrow : Arrow(U0, U0) := Arrow.make(Source := Nat, Source_is_set := nat_is_set, Target := Nat,
+  Target_is_set := nat_is_set, apply := succ);
+
+// Output: forall U < UU0. forall V < UU0. max(next(U), next(V))
+print(typeof(Arrow));
+
+// A homomorphism maps each carrier, and its models may lie in other universes.
+def arrow_id : Arrow.Hom(nat_arrow, nat_arrow) := Arrow.Hom.id(nat_arrow);
+
+def arrow_id_target(n : Nat) : Arrow.Hom.map_Target(arrow_id)(n) = n {
+  rfl;
+}
+
+theory Magma(U < UU0) {
+  M : set U;
+  mul(x, y : M) : M notation x * y;
+}
+
+def nat_magma : Magma(U0) := Magma.make(M := Nat, M_is_set := nat_is_set, mul := add);
+
+// A parameter: every model is pointed over one magma G. The model's type
+// names it, Pointed(U0, nat_magma), and make takes it first.
+theory Pointed(U < UU0, G : Magma(U)) {
+  X : set U;
+  point : X;
+  shift(x : X) : X;
+}
+
+def pointed_nat : Pointed(U0, nat_magma) := Pointed.make(nat_magma, X := Nat, X_is_set := nat_is_set, point := 0,
+  shift := succ);
+
+def pointed_point : pointed_nat.point = 0 {
+  rfl;
+}
+
+// Output: forall U < UU0. forall G : Magma(U). forall m : Pointed(U, G). m.X
+print(typeof(Pointed.point));
+
+// Homomorphisms keep the parameter: both models are pointed over G.
+def pointed_id : Pointed.Hom(pointed_nat, pointed_nat) := Pointed.Hom.id(pointed_nat);
+
+// A child binds its parent's parameter, with the same type, by its name.
+theory Fixed(U < UU0, G : Magma(U)) extends Pointed {
+  law fixed : shift(point) = point;
+}
+
+def forget_fixed(F : Fixed(U0, nat_magma)) : Pointed(U0, nat_magma) := F.pointed;
+
+// Error: E820: Lost extends Arrow, whose header binds the universe U: bind U in Lost's header too.
+theory Lost(V < UU0) extends Arrow {
+}
+
+// Error: E821: Retyped extends Pointed, whose header has the parameter G: give Retyped the
+//   parameter G with the same type.
+theory Retyped(U < UU0, G : Arrow(U, U)) extends Pointed {
+}
+
+// Error: E819: Twice's header binds U twice: give each its own name.
+theory Twice(U, U < UU0) {
+  M : set U;
+}
+
+// Error: E822: Shadowed's header binds G, which names a field too: give each its own name.
+theory Shadowed(U < UU0, G : Magma(U)) {
+  G : set U;
+}

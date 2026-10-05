@@ -394,10 +394,11 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E173"><td><code>E173</code></td><td>Expected '}' to close the section.</td></tr>
                 <tr id="E174"><td><code>E174</code></td><td>A section holds definitions: def and computable def.</td></tr>
                 <tr><td><a href="#E175"><code>E175</code></a></td><td>… is reserved, as a keyword or a built-in type of the language; pick another name.</td></tr>
-                <tr id="E177"><td><code>E177</code></td><td>… binds … universes; a theory binds one, the universe of its carriers.</td></tr>
+                <tr id="E177"><td><code>E177</code></td><td>… binds … universes; a theory binds one, the universe of its carriers. (retired)</td></tr>
                 <tr id="E178"><td><code>E178</code></td><td>… is not the universe of …'s carriers: name it in the header, as in theory …(… &lt; UU0).</td></tr>
-                <tr id="E179"><td><code>E179</code></td><td>A theory's header binds the universe of its carriers, as in theory …(U &lt; UU0).</td></tr>
+                <tr id="E179"><td><code>E179</code></td><td>A theory's header binds the universe of its carriers, as in theory …(U &lt; UU0). (retired)</td></tr>
                 <tr id="E180"><td><code>E180</code></td><td>A carrier is a field: write … : set U; or … : prop U;, with the universe named in the header, theory …(U &lt; UU0).</td></tr>
+                <tr id="E181"><td><code>E181</code></td><td>A theory's universes are below UU0: … &lt; UU0.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -811,6 +812,10 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E816"><td><code>E816</code></td><td>This is a model of …, which has no field …: it has …….</td></tr>
                 <tr><td><a href="#E817"><code>E817</code></a></td><td>…'s models have no homomorphisms: ….</td></tr>
                 <tr id="E818"><td><code>E818</code></td><td>The law … must state a proposition: an equation between elements of a sort, Void, or forall, -&gt; or and over those; …. A law holds no data, and homomorphisms ignore laws: declare data as an operation or a constant.</td></tr>
+                <tr id="E819"><td><code>E819</code></td><td>…'s header binds … twice: give each its own name.</td></tr>
+                <tr id="E820"><td><code>E820</code></td><td>… extends …, whose header binds the universe …: bind … in …'s header too.</td></tr>
+                <tr id="E821"><td><code>E821</code></td><td>… extends …, whose header has the parameter …: give … the parameter … with the same type.</td></tr>
+                <tr id="E822"><td><code>E822</code></td><td>…'s header binds …, which names a field too: give each its own name.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-k1">Kernel: declared types</h3>
