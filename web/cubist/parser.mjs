@@ -216,7 +216,9 @@ export function parse(source, typeOnly = false) {
           && /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text) && ts[i + 1].start === ts[i].end) {
         const dot = take(".");
         const member = take();
+        // Every dot of a longer one, m.group.monoid, is tight.
         a = { kind: "name", name: `${a.name}.${member.text}`, qualifiedDot: { start: dot.start, end: dot.end },
+          ...(a.qualifiedDot ? { qualifiedDots: [...(a.qualifiedDots ?? [a.qualifiedDot]), { start: dot.start, end: dot.end }] } : {}),
           start: a.start, end: member.end };
         continue;
       }
