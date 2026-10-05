@@ -4,8 +4,8 @@ Status: planned on 2026-09-25; reviewed on 2026-09-27. No notation or
 supporting interfaces in this roadmap are implemented. G0, the core
 goal/scope layer, computability checking, argument inference and implicit
 parameters (L4.1a, L4.1b, 2026-10-04) and core theories (L2.4, 2026-10-05)
-are available prerequisites; theories do not yet state a monad's laws (see
-N1 below).
+are available prerequisites; theories state a monad's laws once L2.4c's
+theory families land (see N1 below).
 Code blocks are proposed syntax or schematic signatures, not checked
 examples. Existing proofs cited below are evidence
 for the work, not implementations of it.
@@ -363,10 +363,14 @@ single sets or propositions, and a law must be an equation between
 elements of a sort, `Unit`, `Void`, or `forall`, `->` and `and` over those
 (E818). A monad's carrier is a family, `F(A : U0) : U0`, which a theory
 accepts as an operation, but its laws are equations in `F(B)`, not in a
-sort, and are refused. So N1 needs either sort families, `sort F(A : U) :
-set;`, whose equations are propositions, as an extension of L2.4, or
-records written as Σ types by hand, without generated homomorphisms. Decide
-which before N1's implementation.
+sort, and are refused. **Decided** the same day: theory families
+(work-plan L2.4c, [core theories](core-theories.md#theory-families)).
+N1's `Monad` is a monad on sets, `F(A : set U) : set U`: its equations
+are propositions, the identity monad, `F(A) := A`, is a model, and it has
+generated homomorphisms, `bind`'s continuation `A -> F(B)` mentioning `F`
+covariantly. Indexed by every type, `F(A : U) : set U`, it could not have
+the identity monad as a model, since not every type is a set. N1 follows
+L2.4c.
 N0 may cite the archived span proof and specify future substitution examples
 without rebuilding their mathematics. N2 and N4 retain a fully explicit
 argument spelling alongside inference; their release tests cover both.

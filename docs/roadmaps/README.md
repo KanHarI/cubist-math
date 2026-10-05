@@ -40,13 +40,17 @@ target statement or a supplied theorem parameter as an already proved result.
   parsers and faithful printing, without instance search. The direction and
   its decisions are recorded: no name-based operators or numerals, `~` for
   reversal with the cubical operators tightest, notation declared as used,
-  sections and `open` as view selections, `Lexeme` literals and a partial
+  one selection form, `use`, which replaces `open`, with sections, and
+  qualified operators such as `a G.(+) b`, `Lexeme` literals and a partial
   field inverse. Notation rules remain open, and the remaining grammar and
   elaboration contracts are draft.
 - [Core theories](core-theories.md): the contract of work-plan L2.4,
   theory declarations, models, scoped notation, sections, extension,
   homomorphisms and isomorphisms, specified and implemented on 2026-10-05.
-  The library's algebraic hierarchy is written in it.
+  The library's algebraic hierarchy is written in it. A revision, L2.4c,
+  is decided: `M : set U` in place of `sort`, the universe named in the
+  header, `Monoid(U)` as the type of models, theory families, and
+  independent theories combined without changing either.
 - [Results of the first library](../library-results.md): what the archived
   library established, in mathematical English.
 - [Kernel instructions](kernel-instructions.md): the trusted kernel since
