@@ -85,7 +85,10 @@ Settled on 2026-10-05:
    ([switching](#switching-and-reaching-another-notation)). A file-level
    `use` of a model can shadow many names: a warning names a shadowed name
    that the file goes on to use, and the qualified forms stay available.
-   Today's `open` moves to `use` in two commits, as `cases` did.
+   `open` moved to `use` in two commits on 2026-10-06, as `cases` did
+   (L2.4c's sixth slice): `use` and `x.(e)` of a model, and qualified
+   operators, are implemented; named notations such as `nat`, and the
+   shadowing warning, come with L2.10a.
 8. **Qualified operators.** `a G.(+) b` applies `G`'s binding of `+`,
    with `+`'s precedence and associativity; `G.(-) x` is the unary form,
    and `G.(+)` alone the operation as a function. A parent's operator is

@@ -232,7 +232,7 @@ def doubled(R : CommRing(U0), x : R.R) : R.R := x R.additive.(*) x;
 use multiplicative;
 
 def squared(x : Nat) : Nat := x * x;</code></pre>
-            <p>Elsewhere, <code>+</code> and <code>*</code> mean <code>add</code> and <code>mul</code> in scope, as for <code>Nat</code>. An operator means one thing in a scope, chosen by <code>use</code> or a qualifier, never by the types of its operands. <code>open m;</code> is the earlier spelling of <code>use m;</code>.</p>
+            <p>Elsewhere, <code>+</code> and <code>*</code> mean <code>add</code> and <code>mul</code> in scope, as for <code>Nat</code>. An operator means one thing in a scope, chosen by <code>use</code> or a qualifier, never by the types of its operands. <code>open m;</code>, the earlier spelling of <code>use m;</code>, is refused with a message naming it.</p>
           </section>
 
           <section id="sections">

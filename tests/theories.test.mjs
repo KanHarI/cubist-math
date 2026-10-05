@@ -169,6 +169,11 @@ def idempotent(G : Magma(U0), x : G.M) : G.mul(x, x) = x {
   assert.match(result.gaps[0].reason, /expected G\.mul\(x, x\) = x/);
 });
 
+test("open, use's earlier spelling, is refused with a message naming use", () => {
+  assert.throws(() => parse("def f(G : M) : Nat { open G; exact 0; }"), /open is now use: write use m; to select a model's fields and notation\./);
+  assert.equal(currentSyntax("def f(G : M) : Nat {\n  open G;\n  exact 0;\n}\n"), "def f(G : M) : Nat {\n  use G;\n  exact 0;\n}\n");
+});
+
 test("a source from before L2.4c is read with carriers, a header and T for T.Model", () => {
   const old = "theory Monoid extends Semigroup {\n  sort M : set;\n  sort P : prop;\n}\ndef f(G : Monoid.Model(U0), sort : Nat) : G.M := G.one;\n";
   assert.equal(currentSyntax(old),

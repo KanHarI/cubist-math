@@ -112,8 +112,10 @@ A parent's operator is reached through its label, `x R.additive.(*) y` on
 a model, `magma.(x * x)` and `x magma.(*) y` inside a theory. `open m;`,
 its earlier spelling, migrates in two commits (E834 for a `use` of no
 model; E835, E836 for a qualifier that is no model or an operator its
-theory does not bind). The unary form `G.(-) x` waits for arithmetic `-`
-(L2.10b). Evidence: `cubist-tests/theory_use.cubist` and the reference's
+theory does not bind); `open` is then refused with a message naming
+`use`, and an earlier revision's `open m;` is read as `use m;`. The unary
+form `G.(-) x` waits for arithmetic `-` (L2.10b), and the file-level
+shadowing warning for L2.10a's named notations. Evidence: `cubist-tests/theory_use.cubist` and the reference's
 [selecting a model](../../web/reference/theories.html#open) section.
 L2.4c is then complete; its open questions remain as recorded.
 

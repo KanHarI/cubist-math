@@ -106,6 +106,7 @@ export const diagnostics = [
   ["E180", "A carrier is a field: write … : set U; or … : prop U;, with the universe named in the header, theory …(U < UU0)."],
   ["E181", "A theory's universes are below UU0: … < UU0."],
   ["E182", "Expected ':' and the type of …, as in (x, y : M) or (A : set U)."],
+  ["E183", "open is now use: write use m; to select a model's fields and notation."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
@@ -321,7 +322,7 @@ export const diagnostics = [
   ["E473", "A face needs an interval coordinate and endpoint 0 or 1."],
   ["E474", "A Glue piece has syntax face(i, 0 or 1, T, e) or face_when(φ, T, e)."],
   ["E475", "A glue value has syntax face(i, 0 or 1, t) or face_when(φ, t)."],
-  ["E476", "open takes a model of a theory, such as m : Group(U0); this is a value of type …."],
+  ["E476", "open takes a model of a theory, such as m : Group(U0); this is a value of type ….", "retired"],
   // Inductive types and matching
   ["E501", "trunc(n) is supported up to n = …."],
   ["E502", "A sort is type, set, prop or trunc(n) for an integer n ≥ -1."],

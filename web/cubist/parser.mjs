@@ -703,15 +703,13 @@ export function parse(source, typeOnly = false) {
     }
     if (t.text === "let" || t.text === "obtain") return letStatement(t);
     // `use m;` puts a model's fields and notation in scope for the rest of
-    // the block (L2.4c); `open m;` is its earlier spelling.
+    // the block (L2.4c); `open m;` was its spelling until 2026-10-06.
     if (t.text === "use") {
       const model = expr(), end = take(";");
       return { kind: "use", model, start: t.start, end: end.end };
     }
-    if (t.text === "open") {
-      const model = expr(), end = take(";");
-      return { kind: "open", model, start: t.start, end: end.end };
-    }
+    if (t.text === "open")
+      throw Object.assign(new Error("open is now use: write use m; to select a model's fields and notation."), { offset: t.start });
     if (t.text === "have")
       throw Object.assign(new Error("have was removed: write let name : T := term; or prove the claim in a block, let name : T { … }."),
         { offset: t.start });
