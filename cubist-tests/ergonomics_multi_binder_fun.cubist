@@ -6,5 +6,3 @@ import nat;
 def written := fun (x : Nat, y : Nat) => x;
 
 def grouped := fun (x, y : Nat) => x;
-
-def named_fun := fun (x : Nat, fun : Nat) => x;

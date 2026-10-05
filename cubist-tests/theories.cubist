@@ -45,6 +45,7 @@ theory Semiring extends
 theory Nontrivial extends Monoid {
   zero : M;
   law zero_ne_one : zero = one -> Void;
+  law trivially : Unit;
 }
 
 // A sort renamed twice takes its evidence's name along each time.

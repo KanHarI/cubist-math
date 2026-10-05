@@ -68,6 +68,18 @@ section (n : Nat) {
 // Output: 5
 print(evaluate(plus(2, 3)));
 
+// The section's parameter is passed as itself, even where a pattern
+// variable of the same name shadows it: here succ(n) names the predecessor.
+section (n : Nat) {
+  def plus_shadowed(m : Nat) : Nat := match m {
+    zero => n;
+    succ(n) => succ(plus_shadowed(n));
+  };
+}
+
+// Output: 5
+print(evaluate(plus_shadowed(2, 3)));
+
 // Recursion over a model's operations: x to the power n.
 section {{U < UU0}}(G : Monoid.Model(U)) {
   def power(x : M, n : Nat) : M := match n {
