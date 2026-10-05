@@ -53,11 +53,23 @@ each model has its own universes. A child takes its parents' parameters by
 name, with the same types (E821), and their universes: the one universe of
 each, or each by its name when there are several (E820). Evidence:
 `cubist-tests/theory_headers.cubist` and the reference's
-[header](../../web/reference/theories.html#header) section. Until the
-variance slice, an operation with an input that is not a carrier, as
-`Module`'s `smul(r : R.R, v : V)`, still leaves the theory without
-homomorphisms (E817). Families, relations, variance, independent parents
-and qualified operators are the later slices.
+[header](../../web/reference/theories.html#header) section.
+
+**Third slice, done on 2026-10-06:** homomorphisms by
+[variance](#variance), replacing E817's rule that every input and result be
+a carrier. An input with no carrier, as `n : Nat` or a parameter's
+`g : G.M`, is the same value on both sides; a covariant input, with
+carriers right of every arrow, is pushed forward; a contravariant one is
+pulled back; and a result is pushed forward. Pushing and pulling follow
+arrows, non-dependent `forall` and pairs, so identity and composition are
+generated and compute. An input mixed in a carrier, a contravariant
+result, a dependent argument or another form mentioning a carrier leaves
+the theory without homomorphisms, E817 saying which. The library's
+generated terms are unchanged (the verifier: identical). Evidence:
+`cubist-tests/theory_variance.cubist` and the reference's
+[homomorphisms](../../web/reference/theories.html#morphisms) section.
+Families, relations, independent parents and qualified operators are the
+later slices.
 
 ### Carriers are fields with an h-level
 

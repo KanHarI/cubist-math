@@ -338,17 +338,23 @@ export function expandTheory(theory, lookup = () => null) {
     call(parent.make, [...parent.params.map(p => name(p, span)), ...parent.fields.map(field => call(`${T}.${field}`, [name(model, span)], span))], span), span,
     { role: "projection", field: parent.label }));
   }
-  // Homomorphisms and isomorphisms, when every operation takes and returns
-  // sorts (morphisms.mjs): their source, parsed and placed at the theory's
+  // Homomorphisms and isomorphisms, unless an operation's argument mixes a
+  // carrier's variance (morphisms.mjs): their source, parsed and placed at the theory's
   // name. A generated definition's name is dotted, which a def cannot
   // spell, so each is parsed under a placeholder and then renamed.
   const morphisms = morphismSource(record, other => Boolean(lookup(other)));
   if (morphisms.missing) record.noMorphisms = morphisms.missing;
   else {
     // A parameter's type is written in place of its marker, in the
-    // homomorphism's universes.
-    const parameterType = new Map(params.map((p, k) => [morphisms.parameterMarker(k),
-      renamed(p.type, new Map(morphisms.universes.map((u, j) => [universeAt(j), u])), at)]));
+    // homomorphism's universes, and an operation's type in a model's: its
+    // carriers that model's, A.M.
+    const inUniverses = list => list.map((u, j) => [universeAt(j), u]);
+    const carriers = fields.filter(field => field.kind === "sort").map(field => field.name);
+    const parameterType = new Map([
+      ...params.map((p, k) => [morphisms.parameterMarker(k), renamed(p.type, new Map(inUniverses(morphisms.universes)), at)]),
+      ...[...morphisms.typeMarkers].map(([marker, { type, model, universes }]) => [marker,
+        renamed(type, new Map([...carriers.map(c => [c, `${model}.${c}`]), ...inUniverses(universes)]), at)]),
+    ]);
     const parsed = parse(morphisms.declarations.map((d, k) => d.source.replace(/^def \S+?(?=[{(:])/, `def generated_${k}`)).join("\n")).declarations
       .map(d => JSON.parse(JSON.stringify(d), (key, value) =>
         value?.kind === "name" && parameterType.has(value.name) ? parameterType.get(value.name) : value));
