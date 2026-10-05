@@ -14,8 +14,8 @@ theory Powered(U < UU0) {
 }
 
 // Output: forall U < UU0. forall V < UU0. forall A : Powered(U). forall B : Powered(V). forall f :
-//   Powered.Hom{{U, V}}(A, B). forall x : A.M. forall y : Nat. f.map(A.power(x, y)) =
-//   B.power(f.map(x), y)
+//   Powered.Hom{{U, V}}(A, B). forall x : A.M. forall n : Nat. f.map(A.power(x, n)) =
+//   B.power(f.map(x), n)
 print(typeof(Powered.Hom.map_power));
 
 // Output: forall U < UU0. forall V < UU0. forall A : Powered(U). forall B : Powered(V). forall f :
@@ -37,8 +37,8 @@ theory Acted(U < UU0, G : Magma(U)) {
 }
 
 // Output: forall U < UU0. forall G : Magma(U). forall A : Acted(U, G). forall B : Acted(U, G).
-//   forall f : Acted.Hom{{U, G}}(A, B). forall x : G.M. forall y : A.V. f.map(A.act(x, y)) =
-//   B.act(x, f.map(y))
+//   forall f : Acted.Hom{{U, G}}(A, B). forall g : G.M. forall v : A.V. f.map(A.act(g, v)) =
+//   B.act(g, f.map(v))
 print(typeof(Acted.Hom.map_act));
 
 def shifting : Acted(U0, nat_magma) := Acted.make(nat_magma, V := Nat, V_is_set := nat_is_set, act := add);
@@ -54,8 +54,8 @@ theory Sequences(U < UU0) {
 }
 
 // Output: forall U < UU0. forall V < UU0. forall A : Sequences(U). forall B : Sequences(V). forall
-//   f : Sequences.Hom{{U, V}}(A, B). forall x : Nat -> A.M. f.map(A.first(x)) = B.first(fun (v3_ :
-//   Nat) => f.map(x(v3_)))
+//   f : Sequences.Hom{{U, V}}(A, B). forall s : Nat -> A.M. f.map(A.first(s)) = B.first(fun (v3_ :
+//   Nat) => f.map(s(v3_)))
 print(typeof(Sequences.Hom.map_first));
 
 def sequences_compose := Sequences.Hom.compose;
@@ -67,9 +67,9 @@ theory Measure(U < UU0) {
   integrate(f : X -> Nat) : Nat;
 }
 
-// Output: forall U < UU0. forall V < UU0. forall A : Measure(U). forall B : Measure(V). forall f :
-//   Measure.Hom{{U, V}}(A, B). forall x : B.X -> Nat. A.integrate(fun (v3_ : A.X) => x(f.map(v3_)))
-//   = B.integrate(x)
+// Output: forall U < UU0. forall V < UU0. forall A : Measure(U). forall B : Measure(V). forall f1_
+//   : Measure.Hom{{U, V}}(A, B). forall f : B.X -> Nat. A.integrate(fun (v3_ : A.X) =>
+//   f(f1_.map(v3_))) = B.integrate(f)
 print(typeof(Measure.Hom.map_integrate));
 
 def at_zero : Measure(U0) := Measure.make(X := Nat, X_is_set := nat_is_set, integrate := fun (k : Nat -> Nat) => k(0));

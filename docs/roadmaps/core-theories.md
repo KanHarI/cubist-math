@@ -68,8 +68,26 @@ the theory without homomorphisms, E817 saying which. The library's
 generated terms are unchanged (the verifier: identical). Evidence:
 `cubist-tests/theory_variance.cubist` and the reference's
 [homomorphisms](../../web/reference/theories.html#morphisms) section.
-Families, relations, independent parents and qualified operators are the
-later slices.
+
+**Fourth slice, done on 2026-10-06:** [theory families](#theory-families).
+A carrier with indices, `F(A : set U) : set U`, where an index
+`(A : set U)` holds `A` and its evidence; inside the theory `F(A)` passes
+the evidence along (E823 when the index is not bound as one), and outside
+it is written, `m.F(Nat, nat_is_set)` (open question 5's interim answer).
+A relation is a family of propositions indexed by carriers, with a
+notation (E824 for its form). Laws over a family's members are
+propositions when the family is a set or a proposition. An operation's
+argument may name an earlier argument that is the same on both sides or
+pushed. A homomorphism maps each family at each index, pushing an index
+that is an element of a carrier, so the homomorphisms of preorders are
+the monotone maps; an isomorphism has round trips on each family of sets
+at each index, none on a family of propositions, and a family of sets
+indexed by a carrier leaves the theory without isomorphisms (E825). The
+identity monad is a `Monad`, and its homomorphisms and isomorphisms
+compute. Evidence: `cubist-tests/theory_families.cubist` and the
+reference's [families](../../web/reference/theories.html#families)
+section. Independent parents and qualified operators are the later
+slices.
 
 ### Carriers are fields with an h-level
 

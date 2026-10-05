@@ -50,6 +50,7 @@
             <li><a href="#theories">Declaring a theory</a></li>
             <li><a href="#models">Models</a></li>
             <li><a href="#header">The header: universes and parameters</a></li>
+            <li><a href="#families">Families and relations</a></li>
             <li><a href="#open">Opening a model: <code>open</code></a></li>
             <li><a href="#sections">Sections</a></li>
             <li><a href="#extends">Extension: <code>extends</code></a></li>
@@ -147,6 +148,47 @@ def counting_point : counting.point = 0 {
   rfl;
 }</code></pre>
             <p>A parameter is not a carrier: a homomorphism maps the carriers and keeps the parameters, so <code>Pointed.Hom(A, B)</code> relates two models pointed over one <code>G</code>, in one universe. A child takes its parents' parameters by name, with the same types, <code>theory Fixed(U &lt; UU0, G : Magma(U)) extends Pointed</code>, and their universes: the one universe of each, or each by its name when there are several.</p>
+          </section>
+
+          <section id="families">
+            <h2>Families and relations</h2>
+            <p>A carrier may have indices: a <strong>family</strong>, one type for each index. <code>F(A : set U) : set U</code> is a set for each set <code>A</code>, as a monad on sets has. An index <code>(A : set U)</code> holds <code>A</code> and its evidence <code>A_is_set : IsSet(U, A)</code>; inside the theory, <code>F(A)</code> passes that evidence along, and outside it is written, as in <code>m.F(Nat, nat_is_set)</code>. An equation between members of a family of sets is a proposition, so the monad laws are laws, and the identity monad is a model:</p>
+            <pre><code data-check="accept">import nat;
+import hlevels;
+
+theory Monad(U &lt; UU0) {
+  F(A : set U) : set U;
+  pure(A : set U, a : A) : F(A);
+  bind(A, B : set U, m : F(A), k : A -&gt; F(B)) : F(B);
+  law left_unit(A, B : set U, a : A, k : A -&gt; F(B)) : bind(A, B, pure(A, a), k) = k(a);
+  law right_unit(A : set U, m : F(A)) : bind(A, A, m, fun (a : A) =&gt; pure(A, a)) = m;
+}
+
+def identity : Monad(U0) := Monad.make(
+  F := fun (A : U0, h : IsSet(U0, A)) =&gt; A,
+  F_is_set := fun (A : U0, h : IsSet(U0, A)) =&gt; h,
+  pure := fun (A : U0, h : IsSet(U0, A), a : A) =&gt; a,
+  bind := fun (A : U0, h : IsSet(U0, A), B : U0, k : IsSet(U0, B), m : A, f : A -&gt; B) =&gt; f(m),
+  left_unit := fun (A : U0, h : IsSet(U0, A), B : U0, k : IsSet(U0, B), a : A, f : A -&gt; B) =&gt; refl(f(a)),
+  right_unit := fun (A : U0, h : IsSet(U0, A), m : A) =&gt; refl(m)
+);
+
+def three : identity.bind(Nat, nat_is_set, Nat, nat_is_set, identity.pure(Nat, nat_is_set, 2), succ) = 3 {
+  rfl;
+}</code></pre>
+            <p>A <strong>relation</strong> is a family of propositions indexed by carriers, and may have a notation. Its members are propositions, so <code>x &lt;= x</code> is a law. A homomorphism maps a family at each index, pushing an index that is an element of a carrier, so the homomorphisms of preorders are the monotone maps, <code>map_le : A.le(x, y) -&gt; B.le(map(x), map(y))</code>, with nothing to write:</p>
+            <pre><code data-check="accept">import hlevels;
+
+theory Preorder(U &lt; UU0) {
+  M : set U;
+  le(x, y : M) : prop U notation x &lt;= y;
+  law le_refl(x : M) : x &lt;= x;
+  law le_trans(x, y, z : M) : x &lt;= y -&gt; y &lt;= z -&gt; x &lt;= z;
+}
+
+def monotone(A, B : Preorder(U0), f : Preorder.Hom(A, B), x, y : A.M, p : A.le(x, y)) :
+  B.le(f.map_M(x), f.map_M(y)) := f.map_le(x, y, p);</code></pre>
+            <p>An isomorphism has round trips on each carrier and on each family of sets at each index; a family of propositions needs none. A family of sets indexed by a carrier, <code>Fiber(x : M) : set U</code>, has homomorphisms but no isomorphisms: its round trip would need a transport along the carrier's.</p>
           </section>
 
           <section id="open">

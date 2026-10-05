@@ -97,9 +97,10 @@ export function missingEvidence(d,env) {
 // T.Hom or T.Iso, or one of their operations, for a theory T whose models
 // have no homomorphisms: the error that says why, or null.
 export function missingMorphisms(scope,name) {
-  const theory=/^(.+?)\.(?:Hom|Iso)(?:\.|$)/.exec(name)?.[1],entry=theory&&scope.env.get(theoryBinding(theory));
-  return entry?.record.noMorphisms
-    ?Error(`${theory}'s models have no homomorphisms: ${entry.record.noMorphisms}.`):null;
+  const [,theory,kind]=/^(.+?)\.(Hom|Iso)(?:\.|$)/.exec(name)??[],entry=theory&&scope.env.get(theoryBinding(theory));
+  if(entry?.record.noMorphisms)return Error(`${theory}'s models have no homomorphisms: ${entry.record.noMorphisms}.`);
+  return kind==="Iso"&&entry?.record.noIsomorphisms
+    ?Error(`${theory}'s models have homomorphisms but no isomorphisms: ${entry.record.noIsomorphisms}.`):null;
 }
 
 // The rest of a theory whose type of models failed, `model`: taken off the
