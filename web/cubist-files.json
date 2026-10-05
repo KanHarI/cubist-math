@@ -2155,6 +2155,10 @@
    "summary": "The quotient universal property for a genuinely U1 target, without representative choice."
   },
   {
+   "path": "cubist-tests/rational_examples.cubist",
+   "summary": "The library's rationals at work: sums, equal fractions and the inverse of a negative fraction, decided by computation, and a ring lemma at the rationals' ring."
+  },
+  {
    "path": "cubist-tests/reduction_demo.cubist",
    "summary": "Declarations that `tests/cubical-reduction.test.mjs` reduces by delta and beta steps."
   },
@@ -2316,7 +2320,7 @@
   },
   {
    "path": "library/algebra.cubist",
-   "summary": "The algebraic hierarchy as [theories](../web/reference/theories.html): `Semigroup`, `Monoid`, `CommMonoid`, `Group`, `AbelianGroup` (a group and a commutative monoid, sharing their monoid), `CommRing` (an abelian group written `+`, with `zero` and `neg`, and a commutative monoid on one set, with distributivity) and `Field` (a commutative ring with inverses of all but zero, and zero not one), each with its models, homomorphisms and isomorphisms. The natural numbers as a commutative monoid for addition and for multiplication. In any group, cancellation on both sides and the uniqueness of inverses; in any commutative ring, `x * zero = zero`."
+   "summary": "The algebraic hierarchy as [theories](../web/reference/theories.html): `Semigroup`, `Monoid`, `CommMonoid`, `Group`, `AbelianGroup` (a group and a commutative monoid, sharing their monoid), `CommRing` (an abelian group written `+`, with `zero` and `neg`, and a commutative monoid on one set, with distributivity) and `Field` (a commutative ring with inverses of all but zero, and zero not one), each with its models, homomorphisms and isomorphisms. The natural numbers as a commutative monoid for addition and for multiplication. In any commutative monoid, products regroup (`mul_left_comm`, `mul_right_comm`, `mul_interchange`); in any group, cancellation on both sides and the uniqueness of inverses; in any commutative ring, `x * zero = zero`, right distributivity and `neg(x) * y = neg(x * y)`."
   },
   {
    "path": "library/classical_axioms.cubist",
@@ -2340,7 +2344,7 @@
   },
   {
    "path": "library/integers.cubist",
-   "summary": "The integers as a quotient: a pair of naturals `(a, b)` stands for `a - b`, and pairs with the same difference are one integer, `Z`. Negation, addition and multiplication descend to it; it is a commutative ring (`integers`), and its equality is decidable (`int_decide`), through the quotient's effectiveness. Every operation computes on closed integers."
+   "summary": "The integers as a quotient: a pair of naturals `(a, b)` stands for `a - b`, and pairs with the same difference are one integer, `Z`. Negation, addition and multiplication descend to it; it is a commutative ring (`integers`), with no zero divisors (`int_mul_nonzero`) and zero not one, and its equality is decidable (`int_decide`), through the quotient's effectiveness. Every operation computes on closed integers."
   },
   {
    "path": "library/lists.cubist",
@@ -2348,7 +2352,7 @@
   },
   {
    "path": "library/nat.cubist",
-   "summary": "The natural numbers, `Nat` with `zero` and `succ`, with addition, multiplication and order, and the laws of addition and multiplication: units, commutativity, associativity and distributivity; the predecessor, the injectivity of `succ` and cancellation of addition. Numerals and `+`, `*`, `<` and `<=` need it."
+   "summary": "The natural numbers, `Nat` with `zero` and `succ`, with addition, multiplication and order, and the laws of addition and multiplication: units, commutativity, associativity and distributivity; the predecessor, the injectivity of `succ`, that 0 is no successor, cancellation of addition and of multiplication by a successor, and trichotomy. Numerals and `+`, `*`, `<` and `<=` need it."
   },
   {
    "path": "library/propositions.cubist",
@@ -2357,6 +2361,10 @@
   {
    "path": "library/quotients.cubist",
    "summary": "Set quotients as a declared type: the quotient of a type by a relation, with a class for each element and a path between related classes. It is a set; it has induction into families of sets, of any universe below `UU0`; and a map into a set that respects the relation descends to it, uniquely. No representative is chosen. For an equivalence relation valued in propositions, related elements are exactly those with equal classes (`quotient_effective`, `class_path_equiv`): relatedness to an element descends into [`propositions`](propositions.cubist)' `Prop(U)`. Induction into a family of propositions needs only the classes (`quotient_induction_prop`), and a map of two arguments that respects the relation in each descends (`descend2`)."
+  },
+  {
+   "path": "library/rationals.cubist",
+   "summary": "The field of fractions of a commutative ring with decidable equality, no zero divisors and zero not one, in a section over the ring: fractions `x / d` with `d` not zero, equal when `x * d' = x' * d`, a quotient whose operations descend, with the inverse turning a fraction over, and a field (`fraction_field`) with decidable equality (`q_decide`). The rationals are the integers' (`rationals`, `Q`, `rat(a, k)` for `a / (k + 1)`), and their arithmetic computes."
   },
   {
    "path": "library/univalence.cubist",

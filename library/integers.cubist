@@ -395,3 +395,147 @@ def integers :
     one := int_one, one_mul := int_one_mul, mul_one := int_mul_one, mul_comm := int_mul_comm,
     mul_add := int_mul_add
   );
+
+// With c and d unequal by a successor's multiple on each side, the
+// multiples are equal: from (b + S) * c + b * d = (b + S) * d + b * c,
+// S * c = S * d, and so c = d.
+computable def pairs_product_cancel(
+  b, s, c, d : Nat, h : (b + succ(s)) * c + b * d = (b + succ(s)) * d + b * c
+) :
+  c = d {
+  let shifted : (b * c + b * d) + succ(s) * c = (b * c + b * d) + succ(s) * d {
+    calc {
+      (b * c + b * d) + succ(s) * c = (b * c + succ(s) * c) + b * d by mul_right_comm(
+        nat_additive, b * c, b * d, succ(s) * c
+      );
+      _ = (b + succ(s)) * c + b * d by cong(
+        fun (m : Nat) => m + b * d, sym(nat_add_mul(b, succ(s), c))
+      );
+      _ = (b + succ(s)) * d + b * c by h;
+      _ = (b * d + succ(s) * d) + b * c by cong(
+        fun (m : Nat) => m + b * c, nat_add_mul(b, succ(s), d)
+      );
+      _ = (b * c + b * d) + succ(s) * d by trans(
+        nat_add_comm(b * d + succ(s) * d, b * c), sym(nat_add_assoc(b * c, b * d, succ(s) * d))
+      );
+    }
+  }
+  let multiples : c * succ(s) = d * succ(s) :=
+    trans(
+      nat_mul_comm(c, succ(s)),
+      trans(
+        nat_add_cancel(b * c + b * d, succ(s) * c, succ(s) * d, shifted), nat_mul_comm(succ(s), d)
+      )
+    );
+  exact nat_mul_cancel(s, c, d, multiples);
+}
+
+// At pairs: if the product of p and q is zero, p's components or q's are
+// equal, by trichotomy on p's and cancellation, so p or q is zero.
+computable def int_zero_divisors(
+  p, q : Nat and Nat, np : typed(Z, class(p)) = int_zero -> Void, nq : typed(Z, class(q)) = int_zero
+  -> Void, r : SameDifference(mul_pairs(p, q), (0, 0))
+) :
+  Void {
+  let products : p.1 * q.1 + p.2 * q.2 = p.1 * q.2 + p.2 * q.1 :=
+    trans(sym(nat_add_zero(p.1 * q.1 + p.2 * q.2)), r);
+  let q_zero := fun (e : q.1 = q.2) => nq(int_path(q, (0, 0), trans(nat_add_zero(q.1), e)));
+  match nat_trichotomy(p.1, p.2) {
+    left(above) => {
+      let shifted :
+        (p.2 + succ(above.1)) * q.1 + p.2 * q.2 = (p.2 + succ(above.1)) * q.2 + p.2 * q.1 {
+        calc {
+          (p.2 + succ(above.1)) * q.1 + p.2 * q.2 = p.1 * q.1 + p.2 * q.2 by cong(
+            fun (m : Nat) => m * q.1 + p.2 * q.2, sym(above.2)
+          );
+          _ = p.1 * q.2 + p.2 * q.1 by products;
+          _ = (p.2 + succ(above.1)) * q.2 + p.2 * q.1 by cong(
+            fun (m : Nat) => m * q.2 + p.2 * q.1, above.2
+          );
+        }
+      }
+      exact q_zero(pairs_product_cancel(p.2, above.1, q.1, q.2, shifted));
+    }
+    right(rest) => {
+      match rest {
+        left(same) => {
+          exact np(int_path(p, (0, 0), trans(nat_add_zero(p.1), same)));
+        }
+        right(below) => {
+          let shifted :
+            (p.1 + succ(below.1)) * q.2 + p.1 * q.1 = (p.1 + succ(below.1)) * q.1 + p.1 * q.2 {
+            calc {
+              (p.1 + succ(below.1)) * q.2 + p.1 * q.1 = p.1 * q.1 + (p.1 + succ(below.1)) * q.2 by nat_add_comm(
+                (p.1 + succ(below.1)) * q.2, p.1 * q.1
+              );
+              _ = p.1 * q.1 + p.2 * q.2 by cong(fun (m : Nat) => p.1 * q.1 + m * q.2, sym(below.2));
+              _ = p.1 * q.2 + p.2 * q.1 by products;
+              _ = p.1 * q.2 + (p.1 + succ(below.1)) * q.1 by cong(
+                fun (m : Nat) => p.1 * q.2 + m * q.1, below.2
+              );
+              _ = (p.1 + succ(below.1)) * q.1 + p.1 * q.2 by nat_add_comm(
+                p.1 * q.2, (p.1 + succ(below.1)) * q.1
+              );
+            }
+          }
+          exact q_zero(sym(pairs_product_cancel(p.1, below.1, q.2, q.1, shifted)));
+        }
+      }
+    }
+  }
+}
+
+// The integers have no zero divisors: a product of integers other than
+// zero is not zero.
+computable def int_mul_nonzero(
+  x, y : Z, nx : x = int_zero -> Void, ny : y = int_zero -> Void, p : int_mul(x, y) = int_zero
+) :
+  Void := int_induction(
+    fun (a : Z) => forall b : Z. (a = int_zero -> Void) -> (b = int_zero -> Void)
+    -> int_mul(a, b) = int_zero -> Void,
+    fun (a : Z) => pi_is_prop(
+      U0, Z, fun (b : Z) => (a = int_zero -> Void) -> (b = int_zero -> Void)
+      -> int_mul(a, b) = int_zero -> Void,
+      fun (b : Z) => pi_is_prop(
+        U0, a = int_zero -> Void, fun (na : a = int_zero -> Void) => (b = int_zero -> Void)
+        -> int_mul(a, b) = int_zero -> Void,
+        fun (na : a = int_zero -> Void) => pi_is_prop(
+          U0, b = int_zero -> Void, fun (nb : b = int_zero -> Void) => int_mul(a, b) = int_zero
+          -> Void, fun (nb : b = int_zero -> Void) => not_is_prop(U0, int_mul(a, b) = int_zero)
+        )
+      )
+    ),
+    fun (p1 : Nat and Nat) => fun (b : Z) => int_induction(
+      fun (c : Z) => (typed(Z, class(p1)) = int_zero -> Void) -> (c = int_zero -> Void)
+      -> int_mul(class(p1), c) = int_zero -> Void,
+      fun (c : Z) => pi_is_prop(
+        U0, typed(Z, class(p1)) = int_zero -> Void,
+        fun (na : typed(Z, class(p1)) = int_zero -> Void) => (c = int_zero -> Void)
+        -> int_mul(class(p1), c) = int_zero -> Void,
+        fun (na : typed(Z, class(p1)) = int_zero -> Void) => pi_is_prop(
+          U0, c = int_zero -> Void,
+          fun (nc : c = int_zero -> Void) => int_mul(class(p1), c) = int_zero -> Void,
+          fun (nc : c = int_zero -> Void) => not_is_prop(U0, int_mul(class(p1), c) = int_zero)
+        )
+      ),
+      fun (q : Nat and Nat) => fun (na : typed(Z, class(p1)) = int_zero -> Void) => fun (
+        nc : typed(Z, class(q)) = int_zero -> Void
+      ) => fun (zero_product : int_mul(class(p1), class(q)) = int_zero) => int_zero_divisors(
+        p1, q, na, nc,
+        quotient_effective(
+          U0, Nat and Nat, SameDifference, same_difference_props, same_difference_refl,
+          same_difference_sym, same_difference_trans, mul_pairs(p1, q), (0, 0), zero_product
+        )
+      ), b
+    ), x
+  )(y, nx, ny, p);
+
+// Zero is not one: (0, 0) and (1, 0) do not have the same difference.
+computable def int_zero_ne_one(p : int_zero = int_one) :
+  Void := nat_zero_ne_succ(
+    0,
+    quotient_effective(
+      U0, Nat and Nat, SameDifference, same_difference_props, same_difference_refl,
+      same_difference_sym, same_difference_trans, (0, 0), (1, 0), p
+    )
+  );

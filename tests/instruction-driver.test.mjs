@@ -42,9 +42,10 @@ test("the first proof and nat, trans included, derive in instruction mode, at th
   }
   assert.deepEqual(derived, ["nat__add", "nat__mul", "nat__le", "nat__isLt", "nat__nat_zero_add",
     "nat__nat_add_zero", "nat__nat_add_succ", "nat__nat_add_assoc", "nat__nat_add_comm", "nat__nat_add_left_comm",
-    "nat__nat_add_interchange", "nat__pred", "nat__nat_succ_injective", "nat__nat_add_cancel", "nat__nat_mul_zero",
-    "nat__nat_mul_succ", "nat__nat_one_mul", "nat__nat_mul_one", "nat__nat_mul_comm", "nat__nat_add_mul",
-    "nat__nat_mul_add", "nat__nat_mul_assoc", "nat__nat_le_refl",
+    "nat__nat_add_interchange", "nat__pred", "nat__nat_succ_injective", "nat__nat_is_zero", "nat__nat_zero_ne_succ",
+    "nat__nat_add_cancel", "nat__nat_mul_zero", "nat__nat_mul_succ", "nat__nat_one_mul", "nat__nat_mul_one",
+    "nat__nat_mul_comm", "nat__nat_add_mul", "nat__nat_mul_add", "nat__nat_mul_assoc", "nat__nat_mul_cancel",
+    "nat__Trichotomy", "nat__nat_trichotomy", "nat__nat_le_refl",
     "driver_first_proof__lt", "driver_first_proof__lt_succ", "driver_first_proof__exists_greater_number"]);
 });
 

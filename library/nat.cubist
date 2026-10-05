@@ -85,6 +85,16 @@ computable def pred(n : Nat) : Nat := match n {
 // succ is injective: equal successors have equal predecessors.
 computable def nat_succ_injective(x, y : Nat, p : succ(x) = succ(y)) : x = y := cong(pred, p);
 
+// 0 is no successor: nat_is_zero holds at 0 and fails at every successor,
+// so a path from 0 to a successor carries tt to an element of Void.
+computable def nat_is_zero(n : Nat) : U0 := match n {
+    zero => Unit;
+    succ(k) => Void;
+  };
+
+computable def nat_zero_ne_succ(n : Nat, p : 0 = succ(n)) :
+  Void := comp(fun (i : Interval) => nat_is_zero(p @ i), tt);
+
 // Addition cancels: k + x = k + y gives x = y.
 computable def nat_add_cancel(k, x, y : Nat, p : k + x = k + y) : x = y := match k {
     zero => p;
@@ -171,6 +181,36 @@ computable def nat_mul_assoc(x, y, z : Nat) : (x * y) * z = x * (y * z) {
     }
   }
 }
+
+// Multiplication by a successor cancels.
+computable def nat_mul_cancel(k, x, y : Nat, p : x * succ(k) = y * succ(k)) : x = y := match x, y {
+    zero, zero => refl(0);
+    zero, succ(j) => absurd(nat_zero_ne_succ(k + j * succ(k), p));
+    succ(i), zero => absurd(nat_zero_ne_succ(k + i * succ(k), sym(p)));
+    succ(i),
+    succ(j) => cong(
+      fun (m : Nat) => succ(m),
+      nat_mul_cancel(k, i, j, nat_add_cancel(succ(k), i * succ(k), j * succ(k), p))
+    );
+  };
+
+// Of two naturals, the first exceeds the second, they are equal, or the
+// second exceeds the first, each by a successor that the evidence names.
+def Trichotomy(a, b : Nat) :
+  U0 := (exists t : Nat. a = b + succ(t)) or ((a = b) or (exists t : Nat. b = a + succ(t)));
+
+computable def nat_trichotomy(a, b : Nat) : Trichotomy(a, b) := match a, b {
+    zero, zero => right(left(refl(0)));
+    zero, succ(j) => right(right((j, refl(succ(j)))));
+    succ(i), zero => left((i, refl(succ(i))));
+    succ(i), succ(j) => match nat_trichotomy(i, j) return Trichotomy(succ(i), succ(j)) {
+      left above => left((above.1, cong(fun (m : Nat) => succ(m), above.2)));
+      right rest => match rest return Trichotomy(succ(i), succ(j)) {
+        left same => right(left(cong(fun (m : Nat) => succ(m), same)));
+        right below => right(right((below.1, cong(fun (m : Nat) => succ(m), below.2))));
+      };
+    };
+  };
 
 // Order is reflexive.
 computable def nat_le_refl(n : Nat) : n <= n := match n {

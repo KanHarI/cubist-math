@@ -69,6 +69,36 @@ def nat_multiplicative :
     one_mul := nat_one_mul, mul_one := nat_mul_one, mul_comm := nat_mul_comm
   );
 
+// In any commutative monoid, products regroup freely; for a ring, at its
+// multiplicative monoid, A.multiplicative, and its additive one,
+// A.additive.comm_monoid.
+section {{U < UU0}}(G : CommMonoid.Model(U)) {
+  computable def mul_left_comm(x, y, z : M) : x * (y * z) = y * (x * z) {
+    calc {
+      x * (y * z) = (x * y) * z by sym(mul_assoc(x, y, z));
+      _ = (y * x) * z by cong(fun (w : M) => w * z, mul_comm(x, y));
+      _ = y * (x * z) by mul_assoc(y, x, z);
+    }
+  }
+
+  computable def mul_right_comm(x, y, z : M) : (x * y) * z = (x * z) * y {
+    calc {
+      (x * y) * z = x * (y * z) by mul_assoc(x, y, z);
+      _ = x * (z * y) by cong(fun (w : M) => x * w, mul_comm(y, z));
+      _ = (x * z) * y by sym(mul_assoc(x, z, y));
+    }
+  }
+
+  // (w * x) * (y * z) = (w * y) * (x * z): the middle two trade places.
+  computable def mul_interchange(w, x, y, z : M) : (w * x) * (y * z) = (w * y) * (x * z) {
+    calc {
+      (w * x) * (y * z) = w * (x * (y * z)) by mul_assoc(w, x, y * z);
+      _ = w * (y * (x * z)) by cong(fun (v : M) => w * v, mul_left_comm(x, y, z));
+      _ = (w * y) * (x * z) by sym(mul_assoc(w, y, x * z));
+    }
+  }
+}
+
 // In any group: cancellation on both sides, and inverses are unique.
 section {{U < UU0}}(G : Group.Model(U)) {
   computable def left_cancel(x, y, z : M, p : x * y = x * z) : y = z {
@@ -119,4 +149,26 @@ section {{U < UU0}}(A : CommRing.Model(U)) {
   }
 
   computable def zero_mul(x : R) : zero * x = zero := trans(mul_comm(zero, x), mul_zero(x));
+
+  // Multiplication distributes over addition on the right too.
+  computable def add_mul(x, y, z : R) : (x + y) * z = x * z + y * z {
+    calc {
+      (x + y) * z = z * (x + y) by mul_comm(x + y, z);
+      _ = z * x + z * y by mul_add(z, x, y);
+      _ = x * z + z * y by cong(fun (w : R) => w + z * y, mul_comm(z, x));
+      _ = x * z + y * z by cong(fun (w : R) => x * z + w, mul_comm(z, y));
+    }
+  }
+
+  // neg(x) * y is the additive inverse of x * y.
+  computable def neg_mul(x, y : R) : neg(x) * y = neg(x * y) {
+    let inverse : neg(x) * y + x * y = zero {
+      calc {
+        neg(x) * y + x * y = (neg(x) + x) * y by sym(add_mul(neg(x), x, y));
+        _ = zero * y by cong(fun (w : R) => w * y, neg_add(x));
+        _ = zero by zero_mul(y);
+      }
+    }
+    exact inv_unique(A.additive.group, x * y, neg(x) * y, inverse);
+  }
 }

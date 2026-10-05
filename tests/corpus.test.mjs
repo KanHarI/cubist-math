@@ -27,8 +27,9 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // added hlevels' 40; nat's multiplication laws added 8 and removed
   // primes' 5 copies; and nat's predecessor, injectivity, cancellation and
   // two rearrangements added 5 and removed hlevels' predecessor and primes'
-  // 3 copies.
+  // 3 copies; and nat's zero test, multiplicative cancellation and
+  // trichotomy added 5 and removed hlevels' zero test.
   assert.deepEqual(report.importErrors, []);
-  assert.equal(report.declarations.length, 3833, "The corpus must not silently lose modules.");
+  assert.equal(report.declarations.length, 3837, "The corpus must not silently lose modules.");
   t.diagnostic(JSON.stringify(report.counts));
 });

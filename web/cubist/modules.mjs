@@ -382,14 +382,14 @@ export const archiveModules = [
 // which a module imports to use them.
 export const libraryModules = ["nat", "classical_axioms", "universe_automorphisms", "hlevels",
   "h1_truncation", "h1_classical", "contractible_maps", "univalence", "propositions",
-  "lists", "quotients", "algebra", "integers"];
+  "lists", "quotients", "algebra", "integers", "rationals"];
 
 // The Cubist sources the test suite checks (cubist-tests/), each a module the
 // workspace opens as proof.html?proof=NAME. tests/cubist-tests.test.mjs
 // checks that every file is listed.
 export const cubistTestModules = [
   "arguments", "implicit_parameters", "patterns", "sum_match", "glue", "face_restriction", "declared_match", "induction", "automatic_clauses",
-  "automatic_clauses_groupoid", "automatic_clauses_without_hlevels", "quotient_effectiveness", "theories", "theories_without_hlevels", "theory_morphisms", "theory_sections", "algebra_models", "integer_examples", "hlevel_lemmas", "hlevel_tactic",
+  "automatic_clauses_groupoid", "automatic_clauses_without_hlevels", "quotient_effectiveness", "theories", "theories_without_hlevels", "theory_morphisms", "theory_sections", "algebra_models", "integer_examples", "rational_examples", "hlevel_lemmas", "hlevel_tactic",
   "hlevel_without_import", "h1_acceptance_levels", "h1_acceptance_formers", "h1_acceptance_instances",
   "h1_acceptance_paths", "program_types", "program_types_nat_as_name", "program_types_constructor_shadowing",
   "projections", "projections_archive_helpers", "let_statements", "path_operators", "universe_generic",
