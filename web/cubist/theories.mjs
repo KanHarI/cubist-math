@@ -291,7 +291,7 @@ export function expandTheory(theory, lookup = () => null) {
   // sorts (morphisms.mjs): their source, parsed and placed at the theory's
   // name. A generated definition's name is dotted, which a def cannot
   // spell, so each is parsed under a placeholder and then renamed.
-  const morphisms = morphismSource(record);
+  const morphisms = morphismSource(record, other => Boolean(lookup(other)));
   if (morphisms.missing) record.noMorphisms = morphisms.missing;
   else {
     const parsed = parse(morphisms.declarations.map((d, k) => d.source.replace(/^def \S+?(?=[{(:])/, `def generated_${k}`)).join("\n")).declarations;
