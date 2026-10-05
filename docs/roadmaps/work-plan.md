@@ -42,7 +42,7 @@ the library instead; the archive keeps checking completely. So far `nat`'s
 arithmetic (from `primes`) and `sets` (for `hlevels`) are gone. What the
 library builds differently stays until it is migrated: the archive's
 `truncation` and `classical` rest on the legacy `Truncate` assumptions
-(K2.5's remedies, first action 9), its `set_quotients` are predicate
+(K2.5's remedies, first action 10), its `set_quotients` are predicate
 quotients over them, and its `equivalences` are bijections and half-adjoint
 equivalences, where the library has contractible maps.
 
@@ -350,11 +350,12 @@ has an explicit spelling.
 | L2.3 | Supported `deriving`: `paths`, `decidable_equality`, `irrelevance`, `ind_prop`, `rec`; `universal` slice, once L2.6's contract is specified | L2.2; `universal` also uses L2.4/L2.6 | L |
 | L2.3b | Proof-first h-levels: `: set` and `: prop` proved from the generated path characterization instead of a squash constructor, and `set!` to force the constructor (proposal section 4). It changes the admitted signature and the clauses a `match` needs, so a declaration that switches is a migration the verifier must see | L2.3's `paths`, L2.5a/b | M |
 | L2.4 | Core theories: named model records, explicit homomorphisms/isomorphisms, scoped notation, sections, `extends`. **Specified** on 2026-10-05 in [core theories](core-theories.md): `theory` declarations of set and proposition sorts, constants, operations with notation and laws; `T.Model` as a Σ record with a constructor and projections, `m.f`; `open`; sections; `extends` with labels and renaming; `T.Hom` and `T.Iso` with identity, composition and inverse. Slices: notation packs and `open`, theories with models and extension, sections, homomorphisms and isomorphisms. **First two slices done** on 2026-10-05: a theory expands, in the translator, to `T.Model`, `T.make`, a projection per field and a model per parent, each checked and computable; `m.f` reads a field or a parent's model and prints so; `open m;` binds fields and notation for the rest of a block; parents are labelled and renamed, and an ancestor two parents reach with one field and one type is shared. Refusals have codes E801–E815. **Homomorphisms and isomorphisms done** the same day: `T.Hom` and `T.Iso` with their constructors, fields, identity, composition, inverse and parents' homomorphisms, generated when every operation takes and returns sorts (E817 otherwise), computing on closed models; `e.f` on any value whose type is a theory's record; and argument inference reads a homomorphism's models off its type: a definition applied on both sides is compared unfolded first, and matched argument by argument only where the other arguments and the expected type leave a parameter open. **Sections done** the same day: a section's parameters come first in each definition in it, its models are opened for each statement and proof, and its earlier definitions are applied to its parameters; a definition in a section has no implicit parameters of its own, and its recursive calls pass the section's parameters unchanged. The slices' review, the same day, added: a law states an evident proposition, an equation between elements of a sort, `Unit`, `Void`, a proposition sort, or `forall`, `->` and `and` over those (E818); `Unit` and `Void` are reserved names, with the keywords of terms and statements (E175); and generated homomorphisms name their models and maps apart from the theory's own names. Evidence: `cubist-tests/theories.cubist`, `cubist-tests/theory_morphisms.cubist`, `cubist-tests/theory_sections.cubist`, `tests/theories.test.mjs`, the reference's [theories and models](../../web/reference/theories.html). **L2.4 is complete**; structure identity and displayed models are L2.4b | L1.1, L1.5 projections, L2.5a for h-level fields | L |
+| L2.4c | Theory syntax revision, **decided** on 2026-10-05 ([core theories](core-theories.md#revision-l24c)): carriers as fields with an h-level, `M : set U;`, `P : prop U;` or `M : U;`, replacing `sort`; the universe named in the header, `theory Monoid(U < UU0)`; the theory's name as the type of its models, `G : Monoid(U0)`, retiring `T.Model`; theory families, `F(A : U) : set U`, with homomorphisms for operations whose arguments mention carriers only covariantly; independent theories combined without changing either, carriers merging by name and other clashes ambiguous only where used, reachable through their parents' labels; and qualified operators, `a G.(+) b`. Migrated in two commits, the old forms parsing until every source moves. Not implemented | L2.4 | M |
 | L2.6 | Single-sort `initial T`, `free T on A`, `fold`, checked uniqueness/universal interface. **Specify first** (audit finding 4): the proposal's `universal : (initial T → M) ≃ T.Hom(…)` is not a valid contract. State separately the contractibility of `T.Hom(initial T, M)` for a fixed model `M`, the free-model property relating homomorphisms out of `free T on A` to generator assignments `A → M`, and any maps-out characterization in terms of the constructor and clause data, with higher theories' coherence fields | L2.2, L2.4; H1-admissible signature | M |
 | L2.8 | Squares and `cell` face syntax with boundary inspection (HoTT E2) | L2.1; face/source metadata from L1.2r | M |
 | L2.9a | Expected-value patterns for `evaluate` | L0.1; own pattern contract and L4.1a infrastructure | S |
 | L2.9b | Closed truncation witness readout: a closed computable input, a checked error certificate, and the extracted witness's type specified under transported truncations, which its tests include. Native truncation alone supplies no approximation result | Native H1 `Trunc`, K2.5, L0.1 | M |
-| L2.10 | Explicit notation views and literals: select a view before elaborating an operator, use declared operand views for literals and subexpressions, and preserve that meaning when printing. `v.(e)` and `using v;` extend explicit structure scope; existing `open` and section semantics remain compatible during migration. **Direction adopted** in the [notation roadmap](notation.md), with **decisions** recorded on 2026-10-05: no name-based operators or numerals, so that an operator or literal outside any view is an error (L2.10j); `~` for path and coordinate reversal so that `-` is arithmetic, with `@`, `~`, `&` and `|` binding tighter than any view's operator (L2.10i); notation declared as it is used; sections and `open` selecting their model's view, innermost first; literals read by the library's total parsers from their `Lexeme` and checked by evaluation (L2.10c); and a partial field inverse (L2.10k). Implementation has not started. L2.10i comes first; L2.10a–e are the primary slices, beginning with small library pilots; type-based automation needs separate evidence later. L2.10f (large numerals), L2.10g (independent `decide`) and L2.10h (notation rules, proposed) stay deferred | L2.4 | L |
+| L2.10 | Explicit notation views and literals: select a view before elaborating an operator, use declared operand views for literals and subexpressions, and preserve that meaning when printing. `v.(e)` and `open v;`, now one selection form that also works at a file's top level (decided later the same day, replacing `using v;`), extend explicit structure scope, with qualified operators `a G.(+) b`; existing `open` and section semantics remain compatible during migration. **Direction adopted** in the [notation roadmap](notation.md), with **decisions** recorded on 2026-10-05: no name-based operators or numerals, so that an operator or literal outside any view is an error (L2.10j); `~` for path and coordinate reversal so that `-` is arithmetic, with `@`, `~`, `&` and `|` binding tighter than any view's operator (L2.10i); notation declared as it is used; sections and `open` selecting their model's view, innermost first; literals read by the library's total parsers from their `Lexeme` and checked by evaluation (L2.10c); and a partial field inverse (L2.10k). Implementation has not started. L2.10i comes first; L2.10a–e are the primary slices, beginning with small library pilots; type-based automation needs separate evidence later. L2.10f (large numerals), L2.10g (independent `decide`) and L2.10h (notation rules, proposed) stay deferred | L2.4 | L |
 | D2.1 | Checked reference, formatter and inspection for each released construct | Corresponding package, including L2.8/L2.9 | L |
 
 L2.2 means both slices when another package needs automatic clauses.
@@ -503,8 +504,8 @@ The exact syntax remains proposed; none is delivered.
   evidence; use identity/function/static-option fixtures for language work.
 - **N1:** checked operations and law records after G0 and L2.4's core record
   slice, both delivered. A monad's laws are equations in `F(B)`, not in a
-  sort, so L2.4's law check refuses them: N1 first decides between sort
-  families in theories and hand-written records
+  carrier, so L2.4's law check refuses them; L2.4c's theory families,
+  decided on 2026-10-05, admit them, so N1 follows L2.4c
   ([computation roadmap](computation-notation-roadmap.md)). No initial
   model or generated structure identity is required.
 - **N2 and N4:** monadic `do` and basic `proc` after N1, the goal layer and
@@ -681,51 +682,57 @@ Suggested next, in order:
    `-` stops reversing, with a message naming `~`. The goal printer,
    `tests/path-operators.test.mjs` and the reference's `cubical.html` and
    `paths.html` move with it.
-2. **L2.10k, a partial field inverse (M).** First the two gaps in theories
-   it names: the law check accepts a type declared at `prop`, as `Trunc`
-   is, and a law can name the theory's universe. Then `Field` states
+2. **L2.4c, the theory syntax revision (M).** As
+   [decided](core-theories.md#revision-l24c): carriers as fields with an
+   h-level, the universe named in the header, `Monoid(U)` as the type of
+   models, theory families, the combination of independent theories, and
+   qualified operators. First, because L2.10k needs the named universe and
+   N1 the families, and because the library's theories are few today.
+3. **L2.10k, a partial field inverse (M).** First the gap in theories
+   it names that L2.4c leaves: the law check accepts a type declared at
+   `prop`, as `Trunc` is. Then `Field` states
    invertibility as a truncated law, `inv` is derived by unique choice,
    the rationals supply the law with `merely`, and `Field.Hom` becomes
    `CommRing`'s. It does not depend on views.
-3. **The views' pilots, L2.10a–e (L).** Settle the
+4. **The views' pilots, L2.10a–e (L).** Settle the
    [notation roadmap](notation.md)'s remaining grammar and elaboration
    contracts first, then pilot them on the library: two models on one
    carrier, `Nat`'s two monoids; `integers.(x + y = y + x)`; literals read
    from their `Lexeme` by the library's parsers and checked by evaluation,
    as `rationals.(1/2 + 1/3 = 5/6)`, where `1/2` is one literal; and
    faithful printing. Existing `open` and sections keep their meaning.
-4. **L2.10j, retiring name-based operators and numerals (M),** once the
+5. **L2.10j, retiring name-based operators and numerals (M),** once the
    `nat` view exists: every module that relies on the fallback gains
-   `using nat;`, checked while the fallback still works; then an operator
-   or numeral outside any view is an error that suggests `using nat;`.
-5. **Equivalences, then structure identity (L3.1, L3.2, L2.4b).**
+   `open nat;`, checked while the fallback still works; then an operator
+   or numeral outside any view is an error that suggests `open nat;`.
+6. **Equivalences, then structure identity (L3.1, L3.2, L2.4b).**
    Composition and the Π, Σ and product equivalences, `equiv_eq`, and the
    `ua` builtin on `ContrEquiv`; then Σ and universe `ext`; then each
    theory's generated `T.equality : (M = N) ≃ T.Iso(M, N)`, beginning with
    groups: the first result to use theories and univalence together.
-6. **h-level rules, L2.5b's remainder (M).** `hlevel_rule` registration, so
+7. **h-level rules, L2.5b's remainder (M).** `hlevel_rule` registration, so
    that `hlevel` proves a registered carrier, such as `Z` or `Q`, a set and
    fills a model's setness field; then quantified hints, one layer of
    unfolding for registered definitions, `Truncate`, and the inspector's
    record of the witnesses chosen.
-7. **The order on the numbers (M). Proposed; it extends the resumed
+8. **The order on the numbers (M). Proposed; it extends the resumed
    library scope, so it waits for the maintainer's decision.** Ordered
    commutative rings and fields as theories with `<` and `<=`; the
    integers' and the rationals' orders, decidable; and the positive
    rationals. The [reals roadmap](reals-roadmap.md)'s R1 acceptance and R2
    interface need them; no language package does. Rationals in lowest
    terms, which print reduced, wait for L2.7's canonical quotients.
-8. **Independent language work.** The universal-property contract before
+9. **Independent language work.** The universal-property contract before
    L2.6 and L2.3's `universal` slice; L1.3's worker cancellation; N0, and
-   N1's checked operation and law records, after deciding how a theory
-   states a monad's laws (sort families, or records by hand), then N2/N4;
+   N1's checked operation and law records on L2.4c's theory families, then
+   N2/N4;
    L2.9a's expected-value patterns. Keep canonical quotient and
    view examples finite and computable.
-9. **K2.5's remaining archive remedies,** and in the library one module for
+10. **K2.5's remaining archive remedies,** and in the library one module for
    the classical assumptions over the computing `Trunc`. The two
    H2-dependent tower declarations stay deferred; complete removal of the
    legacy truncation assumptions is not required.
-10. **H2, then the H3 research gate.** Specify the representation and
+11. **H2, then the H3 research gate.** Specify the representation and
    computation changes (K4.2, K5.2) before implementing them. H2's indexed
    families will need implicit indices, which L4.1b supplies. Keep the full
    Cauchy reals deferred; the reals roadmap's corrected R2 interface and R3

@@ -46,7 +46,10 @@ target statement or a supplied theorem parameter as an already proved result.
 - [Core theories](core-theories.md): the contract of work-plan L2.4,
   theory declarations, models, scoped notation, sections, extension,
   homomorphisms and isomorphisms, specified and implemented on 2026-10-05.
-  The library's algebraic hierarchy is written in it.
+  The library's algebraic hierarchy is written in it. A revision, L2.4c,
+  is decided: `M : set U` in place of `sort`, the universe named in the
+  header, `Monoid(U)` as the type of models, theory families, and
+  independent theories combined without changing either.
 - [Results of the first library](../library-results.md): what the archived
   library established, in mathematical English.
 - [Kernel instructions](kernel-instructions.md): the trusted kernel since
