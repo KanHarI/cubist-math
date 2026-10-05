@@ -145,7 +145,7 @@ theory SharedOperator {
   times(x, y : M) : M notation x * y;
 }
 
-// Error: E816: The law point must state a proposition: an equation between elements of a sort,
+// Error: E818: The law point must state a proposition: an equation between elements of a sort,
 //   Void, or forall, -> or and over those; M is a sort, whose elements are data. A law holds no
 //   data, and homomorphisms ignore laws: declare data as an operation or a constant.
 theory Pointed {
