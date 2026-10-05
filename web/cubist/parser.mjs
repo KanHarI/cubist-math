@@ -22,20 +22,20 @@ export function tokenize(source) {
   tokens.push({ text: "EOF", start: source.length, end: source.length });
   return tokens;
 }
-// Reserved names: the language's keywords, which begin a declaration, a
-// statement or a term, or join terms, and its built-in types Unit and Void,
-// whose meaning checking relies on (a theory's laws, for one). None can be
-// bound: not by a declaration, a parameter, a binder, a pattern, a field or
-// a constructor. Every binding site reads its name through name(), which
-// refuses them, as it does universe constants. A word that means something
-// only inside one construct is a contextual keyword and stays a name
-// elsewhere: the words of directives (computable, evaluate, expecting,
-// print, typeof, inspect, simp_rule, simp_set), sort, law, notation and
-// extends in a theory, set, prop, type and trunc in a header, and with, at,
-// by, from, over, along, only, using and the like in particular statements.
-// The library and the archive bind prop, set, law and evaluate.
+// Reserved names: the keywords that begin a term or a statement, or join
+// terms, and the built-in types Unit and Void, whose meaning checking relies
+// on (a theory's laws, for one). None can be bound: not by a declaration, a
+// parameter, a binder, a pattern, a field or a constructor. Every binding
+// site reads its name through name(), which refuses them, as it does
+// universe constants. Every other word is a name outside the construct that
+// gives it a meaning, a contextual keyword: those that begin a declaration
+// or a directive at a module's top level, where no name stands (import,
+// def, computable, inductive, theory, section, evaluate, print, typeof,
+// inspect, simp_rule, simp_set), sort, law, notation and extends in a
+// theory, set, prop, type and trunc in a header, and with, at, by, from,
+// over, along, only, using and the like inside particular statements. The
+// library and the archive bind prop, set, law and evaluate.
 export const reservedNames = new Set([
-  "import", "def", "inductive", "theory", "section",
   "let", "obtain", "exact", "calc", "open", "match", "rfl", "rw", "simp", "simpa", "intro", "ext", "hlevel", "induction",
   "fun", "forall", "exists", "and", "or", "as", "return",
   "Unit", "Void",

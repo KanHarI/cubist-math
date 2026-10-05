@@ -1,9 +1,9 @@
-// Reserved names (web/cubist/parser.mjs, reservedNames): the language's
-// keywords and its built-in types Unit and Void cannot be bound, at any
-// binding site. A user's own Unit would otherwise pass a theory's law check
-// while holding data. Contextual keywords stay names outside their
-// constructs. That the real Unit and Void still state laws is
-// cubist-tests/theories.cubist's Nontrivial.
+// Reserved names (web/cubist/parser.mjs, reservedNames): the keywords that
+// begin a term or a statement, or join terms, and the built-in types Unit
+// and Void cannot be bound, at any binding site. A user's own Unit would
+// otherwise pass a theory's law check while holding data. Contextual
+// keywords stay names outside their constructs. That the real Unit and Void
+// still state laws is cubist-tests/theories.cubist's Nontrivial.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { parse, reservedNames } from "../web/cubist/parser.mjs";
@@ -37,7 +37,8 @@ test("Unit and Void cannot be declared or bound at any binding site", () => {
 test("every keyword is reserved, and contextual keywords stay names", () => {
   for (const word of reservedNames) assert.equal(parseError(`def f(${word} : Nat) : Nat := 0;`), reserved(word), word);
   // Words with a meaning only inside one construct, which the library binds.
-  for (const word of ["computable", "evaluate", "expecting", "print", "typeof", "inspect", "simp_rule", "simp_set",
+  for (const word of ["import", "def", "inductive", "theory", "section",
+    "computable", "evaluate", "expecting", "print", "typeof", "inspect", "simp_rule", "simp_set",
     "prop", "set", "law", "sort", "notation", "extends", "type", "trunc", "with", "at", "by", "from", "over",
     "along", "only", "using", "path", "left", "right", "zero", "succ"])
     assert.equal(parseError(`def f(${word} : Nat) : Nat := 0;`), null, word);
