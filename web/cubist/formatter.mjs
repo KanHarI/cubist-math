@@ -95,6 +95,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
     if (node.kind === "projection") projectionDots.add(node.dot.start);
     // A qualified name's dot is tight too: T.squash.
     if (node.qualifiedDot) projectionDots.add(node.qualifiedDot.start);
+    for (const dot of node.qualifiedDots ?? []) projectionDots.add(dot.start);
     if (node.kind === "unary") prefixMinus.add(node.operatorStart);
     // A call's implicit arguments, f{{U0, Nat}}(x), are tight on both sides.
     for (const group of [node.implicitParameters, node.implicitGroup]) if (group) {

@@ -1,8 +1,12 @@
 # Core theories (L2.4)
 
-Status: design, 2026-10-05. This document fixes the contract of work-plan
-L2.4 before its implementation: theory declarations, their models, scoped
-notation, sections, extension, homomorphisms and isomorphisms. It follows
+Status: design, 2026-10-05; slices 1 and 2 implemented the same day
+(`web/cubist/theories.mjs`, `web/translator/theories.mjs`; evidence
+`cubist-tests/theories.cubist`, `tests/theories.test.mjs`, the reference's
+[theories and models](../../web/reference/theories.html)). Sections and
+homomorphisms are next. This document fixes the contract of work-plan
+L2.4: theory declarations, their models, scoped notation, sections,
+extension, homomorphisms and isomorphisms. It follows
 section 1 of the [language features proposal](inductive-language-features.md)
 and milestone 6 of the [ergonomics roadmap](proof-ergonomics-roadmap.md),
 and narrows both to what L2.4 delivers.
@@ -64,7 +68,12 @@ A theory's body lists, in order:
   argument and result types are sorts of the theory, each with an optional
   `notation`;
 - **laws**, `law name(binders) : statement;`, propositions about the earlier
-  fields. Since the sorts are sets, every law is a proposition.
+  fields. A statement must be evidently a proposition: an equation between
+  elements of a sort (the sorts are sets or propositions), `Void` or `Unit`,
+  an element of a proposition sort, or `forall`, `->` into one, or `and` of
+  two. Anything else, such as `law point : M;` or an `exists`, is refused,
+  since homomorphisms ignore laws. `Unit` and `Void` are reserved names, so
+  no declaration can stand in for them here.
 
 Inside the body the theory's own notation, and its parents', is in scope, and
 each field is in scope by its name from its declaration on.
@@ -218,5 +227,6 @@ scope.
 - Homomorphisms compose, identity is a unit for composition, and an
   isomorphism's inverse is an isomorphism, on closed models by `evaluate`.
 - Refusals: a field whose name two parents give, a law that is not about the
-  theory's fields, an operation whose arguments are not sorts (for `Hom`), a
-  notation that is not an operator, an `open` of a value that is not a model.
+  theory's fields or is not evidently a proposition, an operation whose
+  arguments are not sorts (for `Hom`), a notation that is not an operator, an
+  `open` of a value that is not a model.

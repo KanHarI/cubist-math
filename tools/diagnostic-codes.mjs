@@ -31,6 +31,7 @@ const sourceFiles = directory => readdirSync(join(root, directory)).filter(name 
 // The group of a source file's messages, by what the file does.
 const fileGroups = [
   [/^web\/cubist\/lint\.mjs$/, "W7"],
+  [/^web\/(cubist|translator)\/theories\.mjs$/, "E8"],
   [/^web\/cubist\//, "E1"],
   [/^web\/translator\/(builtins|tactics|proof-rewrite|proof-goals|motives|simp-registry|fuel)\.mjs$/, "E4"],
   [/^web\/translator\/(inductive|match|patterns|hlevel)\.mjs$/, "E5"],

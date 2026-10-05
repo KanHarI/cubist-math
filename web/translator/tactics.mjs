@@ -1,5 +1,5 @@
 // Proof-block statements: exact, rfl, calc, rw, simp only, simpa, intro,
-// hlevel, ext, over, let, obtain and match. tacticProof elaborates a
+// hlevel, ext, over, let, open, obtain and match. tacticProof elaborates a
 // block's first statement into a proof of the goal, with the rest of the
 // block after it, or returns undefined when it is no statement here.
 import {calcStepSite} from "../cubist/link-sites.mjs";
@@ -10,6 +10,7 @@ import {transportToDependentPath} from "./path-over.mjs";
 import {Goal,Transition,steps,reflexivity,composePaths} from "./proof-goals.mjs";
 import {elaborateMatchStatement,matchedType} from "./match.mjs";
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
+import {opened} from "./theories.mjs";
 
 // A conditional rule whose premises cannot be proved stops firing after this
 // many distinct premise searches in one simplification; it does not fail it.
@@ -257,6 +258,15 @@ const tactics = {
     const value=t.term(first.value,scope,null);
     scope.infer(value);
     return t.block(rest,goal.at(t.sourceBinding(first.target,value,scope)));
+  },
+  // open m; puts the model m's fields and notation in scope for the rest of
+  // the block (theories.mjs).
+  open(t,first,rest,goal) {
+    const {scope}=goal,{unit}=scope;
+    const inner=opened(t,scope,first.model);
+    if(!inner)throw unit.locate(Error(`open takes a model of a theory, such as m : Group.Model(U0); this is a value of type ${
+      t.shown(scope.infer(t.term(first.model,scope,null)).type)}.`),first.model);
+    return t.block(rest,goal.at(inner));
   },
   obtain(t,first,rest,goal) {
     const {scope}=goal;

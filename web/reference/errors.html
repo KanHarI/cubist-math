@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Every error message shown in this reference, what it means, and what to do." />
-    <title>Cubist · 13. Error messages</title>
+    <title>Cubist · 14. Error messages</title>
     <link rel="stylesheet" href="../language.css" />
     <link rel="stylesheet" href="../repl.css" />
   </head>
@@ -22,7 +22,7 @@
     </header>
     <main>
       <div class="introduction">
-        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 13</p>
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 14</p>
         <h1>Error messages</h1>
         <p class="lead">Every error message shown in this reference, what it means, and what to do.</p>
       </div>
@@ -39,6 +39,7 @@
             <li><a href="paths.html">Equality and paths</a></li>
             <li><a href="induction.html">Natural numbers and inductive types</a></li>
             <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
+            <li><a href="theories.html">Theories and models</a></li>
             <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
             <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
@@ -56,6 +57,7 @@
             <li><a href="#path-errors">Equality and paths</a></li>
             <li><a href="#inductive-errors">Inductive types and recursion</a></li>
             <li><a href="#rewriting-errors">Equational reasoning and simplification</a></li>
+            <li><a href="#theory-errors">Theories and models</a></li>
             <li><a href="#cubical-errors">Cubical paths and higher inductive types</a></li>
             <li><a href="#assumption-errors">Excluded middle, choice and computability</a></li>
             <li><a href="#warnings">Warnings</a></li>
@@ -112,7 +114,7 @@
                 <tr id="E340"><td class="code"><code>E340</code></td><td data-message="Untranslated dependency:">“Untranslated dependency: <var>name</var>”</td><td>The named declaration failed, so its users are blocked. Fix the named declaration.</td><td><a href="first-proof.html#checking">checking</a></td></tr>
                 <tr id="E604"><td class="code"><code>E604</code></td><td data-message="Definition symbol is already registered.">“Definition symbol is already registered.”</td><td>A name is declared twice in one module. Rename one.</td><td><a href="first-proof.html#order">order</a></td></tr>
                 <tr id="E327"><td class="code"><code>E327</code></td><td data-message="is already registered in this module.">“Simplification rule <var>name</var> is already registered in this module.”</td><td>Register each rule once per module.</td><td><a href="rewriting.html#simp-registration">registration</a></td></tr>
-                <tr id="E568"><td class="code"><code>E568</code></td><td data-message="give each its own name">“<var>f</var> has two parameters named <var>x</var>: give each its own name.”</td><td>A definition's parameters, implicit or not, and a declared type's, have distinct names, since a call can give each one by its name. A constructor's arguments do too (E569). Rename one.</td><td><a href="terms.html#implicit-parameters">implicit parameters</a></td></tr>
+                <tr id="E568"><td class="code"><code>E568</code></td><td data-message="has two parameters named">“<var>f</var> has two parameters named <var>x</var>: give each its own name.”</td><td>A definition's parameters, implicit or not, and a declared type's, have distinct names, since a call can give each one by its name. A constructor's arguments do too (E569). Rename one.</td><td><a href="terms.html#implicit-parameters">implicit parameters</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -164,6 +166,7 @@
               <tbody>
                 <tr id="E342"><td class="code"><code>E342</code></td><td data-message="Universe was removed: bind a universe variable as U &lt; UU0.">“Universe was removed: bind a universe variable as U &lt; UU0.”</td><td>Write <code>U &lt; UU0</code> where the source had <code>U : Universe</code>.</td><td><a href="universes.html#universe-variables">universe variables</a></td></tr>
                 <tr id="E321"><td class="code"><code>E321</code></td><td data-message="A universe variable's bound must be UU0, as in U &lt; UU0.">“A universe variable's bound must be UU0, as in U &lt; UU0.”</td><td>Only <code>UU0</code> bounds a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
+                <tr id="E175"><td class="code"><code>E175</code></td><td data-message="is reserved, as a keyword or a built-in type of the language; pick another name.">“<var>name</var> is reserved, as a keyword or a built-in type of the language; pick another name.”</td><td>Keywords such as <code>fun</code> and <code>let</code>, and the built-in types <code>Unit</code> and <code>Void</code>, cannot be bound.</td><td><a href="terms.html#unit-and-void">Unit and Void</a></td></tr>
                 <tr id="E518"><td class="code"><code>E518</code></td><td data-message="A universe argument must lie below UU0">“A universe argument must lie below UU0: …”</td><td>A generic declaration was used at <code>UU0</code> or above. Use <code>U0</code>, <code>U1</code>, … or a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
                 <tr id="E322"><td class="code"><code>E322</code></td><td data-message="Expected a universe:">“Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).”</td><td>A type or a term stands where a universe is required, such as <code>next(Nat)</code>.</td><td><a href="universes.html#universe-expressions">next and max</a></td></tr>
                 <tr id="E111"><td class="code"><code>E111</code></td><td data-message="is a universe constant; pick another name.">“<var>name</var> is a universe constant; pick another name.”</td><td>Names such as <code>U1</code> and <code>UU2</code> are universes.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
@@ -226,6 +229,17 @@
               </tbody>
             </table></div>
             <p>A search, or a declaration, that uses up its <a href="rewriting.html#simp-traversal">fuel</a> fails with “<var>search</var> ran out of search fuel: <var>n</var> <var>kind</var>.”, naming what ran out: subterm visits, candidate rules tried, rewrites, premise searches, term nodes walked or kernel queries. A search’s message also shows the goal where it stopped. The defaults are well above what the checked proofs need, so such a failure usually means a rule set that keeps rewriting. The kernel’s own step limit per operation and a checker’s time limit fail differently: “Kernel checking/reduction budget exhausted.” and “Declaration time limit exceeded.”</p>
+          </section>
+          <section id="theory-errors">
+            <h2>Theories and models</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr id="E803"><td class="code"><code>E803</code></td><td data-message="has two fields named">“<var>T</var> has two fields named <var>f</var>: give each its own name.”</td><td>A model's fields are read by name, so a theory's fields, its own and its parents', have distinct names. Rename one.</td><td><a href="theories.html#theory-errors">theories</a></td></tr>
+                <tr id="E802"><td class="code"><code>E802</code></td><td data-message="gets a field named">“<var>T</var> gets a field named <var>f</var> from both <var>P</var> and <var>Q</var>: rename one, as in <var>Q</var>(<var>f</var> := …).”</td><td>Two parents give a field of one name, and it is not one ancestor's field, shared, with one type. Rename it in one parent.</td><td><a href="theories.html#extends">extension</a></td></tr>
+                <tr id="E476"><td class="code"><code>E476</code></td><td data-message="open takes a model of a theory">“open takes a model of a theory, such as m : Group.Model(U0); this is a value of type <var>A</var>.”</td><td><code>open</code> puts a model's fields in scope; the value given is not a model of a theory.</td><td><a href="theories.html#open">open</a></td></tr>
+              </tbody>
+            </table></div>
           </section>
           <section id="cubical-errors">
             <h2>Cubical paths and higher inductive types</h2>
@@ -357,7 +371,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr><td><a href="#E149"><code>E149</code></a></td><td>simp_rule priority must be an integer from 0 to 1000.</td></tr>
                 <tr id="E150"><td><code>E150</code></td><td>Expected '}' to close the inductive declaration.</td></tr>
                 <tr><td><a href="#E151"><code>E151</code></a></td><td>Imports must come before declarations.</td></tr>
-                <tr id="E152"><td><code>E152</code></td><td>Expected a declaration or directive: def, computable def, inductive, evaluate, print, simp_rule or simp_set.</td></tr>
+                <tr id="E152"><td><code>E152</code></td><td>Expected a declaration or directive: def, computable def, inductive, evaluate, print, simp_rule, simp_set or theory.</td></tr>
                 <tr id="E153"><td><code>E153</code></td><td>Write := to give a value: def name : T := term; here `=` read as an equality type</td></tr>
                 <tr id="E154"><td><code>E154</code></td><td>Cannot locate a right-hand pair's enclosing parentheses.</td></tr>
                 <tr id="E155"><td><code>E155</code></td><td>Tuple linearization changed the expanded syntax tree.</td></tr>
@@ -370,6 +384,11 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr><td><a href="#E164"><code>E164</code></a></td><td>cases was removed: write match value { left(a) =&gt; { … } right(b) =&gt; { … } }.</td></tr>
                 <tr id="E165"><td><code>E165</code></td><td>Close double braces with }}, two braces together.</td></tr>
                 <tr id="E166"><td><code>E166</code></td><td>Implicit parameters are in double braces: def f{{U &lt; UU0, A : U}}(…).</td></tr>
+                <tr id="E167"><td><code>E167</code></td><td>A notation is a binary operator: x + y, x * y, x &lt; y or x &lt;= y.</td></tr>
+                <tr id="E168"><td><code>E168</code></td><td>Expected '}' to close the theory.</td></tr>
+                <tr id="E169"><td><code>E169</code></td><td>A sort is a set or a proposition: sort M : set; or sort P : prop;</td></tr>
+                <tr id="E170"><td><code>E170</code></td><td>Expected ':' and the type of …, as in …</td></tr>
+                <tr><td><a href="#E175"><code>E175</code></a></td><td>… is reserved, as a keyword or a built-in type of the language; pick another name.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -516,6 +535,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr><td><a href="#E391"><code>E391</code></a></td><td>Nothing determines the universe … of …: no argument's type bounds it, and the call's type depends on it. Give it explicitly.</td></tr>
                 <tr><td><a href="#E392"><code>E392</code></a></td><td>The … of … is not determined: … fits, and so would … universe…. Give it explicitly.</td></tr>
                 <tr id="E393"><td><code>E393</code></td><td>… takes … argument… by position; give its implicit parameters … in double braces, in order or by name, as …{{…}}(…) or …{{… := …}}(…).</td></tr>
+                <tr id="E394"><td><code>E394</code></td><td>… is a theory: its models are ….Model(U), built with ….make(…).</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e4">Proof statements, rewriting and simplification</h3>
@@ -597,6 +617,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E473"><td><code>E473</code></td><td>A face needs an interval coordinate and endpoint 0 or 1.</td></tr>
                 <tr id="E474"><td><code>E474</code></td><td>A Glue piece has syntax face(i, 0 or 1, T, e) or face_when(φ, T, e).</td></tr>
                 <tr id="E475"><td><code>E475</code></td><td>A glue value has syntax face(i, 0 or 1, t) or face_when(φ, t).</td></tr>
+                <tr><td><a href="#E476"><code>E476</code></a></td><td>open takes a model of a theory, such as m : Group.Model(U0); this is a value of type ….</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e5">Inductive types and matching</h3>
@@ -755,6 +776,28 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E703"><td><code>E703</code></td><td>A recursive call of … passes its implicit parameters unchanged: give only the others, as …(…).</td></tr>
                 <tr id="E704"><td><code>E704</code></td><td>… is not an implicit parameter of …: give it in parentheses, as …(… := …).</td></tr>
                 <tr id="E705"><td><code>E705</code></td><td>… is an implicit parameter of …: give it in double braces, as …{{… := …}}(…).</td></tr>
+              </tbody>
+            </table></div>
+            <h3 id="codes-e8">Theories and models</h3>
+            <div class="table-scroll"><table class="codes">
+              <thead><tr><th>Code</th><th>Message</th></tr></thead>
+              <tbody>
+                <tr id="E801"><td><code>E801</code></td><td>Renaming … to … would capture a variable named …; pick another name.</td></tr>
+                <tr><td><a href="#E802"><code>E802</code></a></td><td>… gets a field named … from both … and …: rename one, as in …(… := …).</td></tr>
+                <tr><td><a href="#E803"><code>E803</code></a></td><td>… has two fields named …: give each its own name.</td></tr>
+                <tr id="E804"><td><code>E804</code></td><td>… would stand for both … and … in …: a notation means one operation; rename one's notation.</td></tr>
+                <tr id="E805"><td><code>E805</code></td><td>… is not a theory here: … extends theories in scope.</td></tr>
+                <tr id="E806"><td><code>E806</code></td><td>… has two parents labelled …: label one, as in other : ….</td></tr>
+                <tr id="E807"><td><code>E807</code></td><td>… has no field …; its fields are ….</td></tr>
+                <tr id="E808"><td><code>E808</code></td><td>… is renamed twice.</td></tr>
+                <tr id="E809"><td><code>E809</code></td><td>A notation names an operation's two arguments; … is not an operation of two.</td></tr>
+                <tr id="E810"><td><code>E810</code></td><td>A notation names an operation's two arguments, as in mul(x, y : M) : M notation x * y; … has ….</td></tr>
+                <tr id="E811"><td><code>E811</code></td><td>The notation of … writes its arguments in order: … … ….</td></tr>
+                <tr id="E812"><td><code>E812</code></td><td>A field's name is a plain name; … is not.</td></tr>
+                <tr id="E813"><td><code>E813</code></td><td>… has no fields: a theory declares sorts, operations and laws.</td></tr>
+                <tr id="E814"><td><code>E814</code></td><td>The sorts of … need …, from hlevels: import hlevels;</td></tr>
+                <tr id="E815"><td><code>E815</code></td><td>… is a model of …, which has no field …: it has …….</td></tr>
+                <tr id="E818"><td><code>E818</code></td><td>The law … must state a proposition: an equation between elements of a sort, Void, or forall, -&gt; or and over those; …. A law holds no data, and homomorphisms ignore laws: declare data as an operation or a constant.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-k1">Kernel: declared types</h3>
@@ -1030,7 +1073,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
             </table></div>
           </section>
           <nav class="pager" aria-label="Chapter navigation">
-            <a class="previous" href="checking.html">← 12. Checking and inspection</a>
+            <a class="previous" href="checking.html">← 13. Checking and inspection</a>
           </nav>
         </article>
       </div>

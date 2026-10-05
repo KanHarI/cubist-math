@@ -1,0 +1,17 @@
+// A theory's sorts are sets or propositions, whose evidence is hlevels':
+// without its import, the theory's model type and constructor name it.
+
+// Error: E814: The sorts of Magma need IsSet, from hlevels: import hlevels;
+// Error: E814: The sorts of Magma need IsSet, from hlevels: import hlevels;
+theory Magma {
+  // Error: E340: Untranslated dependency: Magma.Model
+  // Error: E340: Untranslated dependency: Magma.Model
+  sort M : set;
+  // Error: E340: Untranslated dependency: Magma.Model
+  mul(x, y : M) : M notation x * y;
+}
+
+// A theory without sorts needs nothing.
+theory Pointed {
+  point : Unit;
+}

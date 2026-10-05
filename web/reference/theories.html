@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Theories of algebraic structures: sorts, operations with notation and laws, their models, extension and open." />
+    <title>Cubist · 10. Theories and models</title>
+    <link rel="stylesheet" href="../language.css" />
+    <link rel="stylesheet" href="../repl.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to chapter</a>
+    <header>
+      <a class="brand" href="../index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="../proof.html">Proof workspace</a>
+        <a href="../files.html">Files</a>
+        <a href="../workbench.html">Kernel workbench</a>
+        <a href="../language.html">Language reference</a>
+        <a href="../repl.html">REPL</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 10</p>
+        <h1>Theories and models</h1>
+        <p class="lead">Theories of algebraic structures: sorts, operations with notation and laws, their models, extension and <code>open</code>.</p>
+      </div>
+      <div class="reference-layout">
+        <aside class="contents" aria-label="Chapters and sections">
+          <h2><a href="../language.html">Chapters</a></h2>
+          <ol class="chapters">
+            <li><a href="types.html">Types and values</a></li>
+            <li><a href="first-proof.html">A first proof and files</a></li>
+            <li><a href="terms.html">Functions, pairs and sums</a></li>
+            <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
+            <li><a href="universes.html">Universes</a></li>
+            <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
+            <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
+            <li class="current"><a href="theories.html" aria-current="page">Theories and models</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
+            <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
+            <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="errors.html">Error messages</a></li>
+          </ol>
+          <h2>In this chapter</h2>
+          <ul class="sections">
+            <li><a href="#theories">Declaring a theory</a></li>
+            <li><a href="#models">Models</a></li>
+            <li><a href="#open">Opening a model: <code>open</code></a></li>
+            <li><a href="#extends">Extension: <code>extends</code></a></li>
+            <li><a href="#generated">What a theory declares</a></li>
+            <li><a href="#theory-errors">What is refused</a></li>
+          </ul>
+        </aside>
+        <article id="reference">
+          <section id="theories">
+            <h2>Declaring a theory</h2>
+            <p>A <strong>theory</strong> describes a kind of structure: the types it has, its operations and the laws they satisfy. A monoid, for instance, has one type, an associative multiplication and a unit:</p>
+            <pre><code data-check="accept">import hlevels;
+
+theory Monoid {
+  sort M : set;
+  mul(x, y : M) : M notation x * y;
+  law mul_assoc(x, y, z : M) : (x * y) * z = x * (y * z);
+  one : M;
+  law one_mul(x : M) : one * x = x;
+  law mul_one(x : M) : x * one = x;
+}</code></pre>
+            <p>A theory's body lists its <strong>fields</strong>, in order:</p>
+            <ul>
+              <li>a <strong>sort</strong>, <code>sort M : set;</code> or <code>sort P : prop;</code>, is a type of the structure. Its evidence of being a set or a proposition is a field too, <code>M_is_set : IsSet(U, M)</code> or <code>P_is_prop : IsProp(U, P)</code>, so a module that declares sorts imports <code>hlevels</code>;</li>
+              <li>an <strong>operation</strong>, <code>mul(x, y : M) : M</code>, or a <strong>constant</strong>, <code>one : M</code>, may have a <strong>notation</strong>: one of the operators <code>x + y</code>, <code>x * y</code>, <code>x &lt; y</code> and <code>x &lt;= y</code>, written with the operation's two arguments in order;</li>
+              <li>a <strong>law</strong>, <code>law name(binders) : statement;</code>, states a property of the earlier fields. A law must be a proposition: an equation between elements of a sort (sorts are sets or propositions), <code>Void</code>, or <code>forall</code>, <code>-&gt;</code> and <code>and</code> over those, such as <code>zero = one -&gt; Void</code>. A law holds no data, so <code>law point : M;</code> is refused: declare it as a constant.</li>
+            </ul>
+            <p>Each field is in scope by its name after it is declared, and inside the theory a notation means its operation: <code>x * y</code> there is <code>mul(x, y)</code>. The words <code>sort</code>, <code>law</code> and <code>notation</code> are keywords only in a theory's body.</p>
+          </section>
+
+          <section id="models">
+            <h2>Models</h2>
+            <p>A <strong>model</strong> of a theory is a structure of its kind: a value for each field. Its type is <code>Monoid.Model(U)</code>, for models whose sorts are in the universe <code>U</code>, and <code>Monoid.make</code> builds one, field by field. The natural numbers with addition are a monoid:</p>
+            <pre><code data-check="accept">import nat;
+import hlevels;
+
+theory Monoid {
+  sort M : set;
+  mul(x, y : M) : M notation x * y;
+  law mul_assoc(x, y, z : M) : (x * y) * z = x * (y * z);
+  one : M;
+  law one_mul(x : M) : one * x = x;
+  law mul_one(x : M) : x * one = x;
+}
+
+def additive : Monoid.Model(U0) := Monoid.make(
+  M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := 0,
+  one_mul := nat_zero_add, mul_one := nat_add_zero
+);
+
+def two_plus_three : additive.mul(2, 3) = 5 {
+  rfl;
+}</code></pre>
+            <p>For a model <code>m</code>, <code>m.f</code> is its field <code>f</code>: <code>additive.M</code> is <code>Nat</code> and <code>additive.mul(2, 3)</code> computes to <code>5</code>. A field's type is written through the earlier fields of the same model, so <code>m.one_mul</code> has type <code>forall x : m.M. m.mul(m.one, x) = x</code>, and goals and messages show fields this way. <code>m.f</code> is the projection <code>Monoid.f(m)</code>, a definition like any other.</p>
+            <p>A parameter whose type is a theory's models makes a statement about every structure of that kind, in a universe of your choice:</p>
+            <pre><code data-check="accept">import hlevels;
+
+theory Monoid {
+  sort M : set;
+  mul(x, y : M) : M notation x * y;
+  one : M;
+  law one_mul(x : M) : one * x = x;
+}
+
+def one_one(U &lt; UU0, G : Monoid.Model(U)) : G.mul(G.one, G.one) = G.one {
+  exact G.one_mul(G.one);
+}</code></pre>
+          </section>
+
+          <section id="open">
+            <h2>Opening a model: <code>open</code></h2>
+            <p><code>open m;</code> is a proof statement. For the rest of its block, each field of the model <code>m</code> is in scope by its name, and each notation of its theory means <code>m</code>'s operation:</p>
+            <pre><code data-check="accept">import hlevels;
+
+theory Monoid {
+  sort M : set;
+  mul(x, y : M) : M notation x * y;
+  one : M;
+  law one_mul(x : M) : one * x = x;
+}
+
+def square(G : Monoid.Model(U0), x : G.M) : G.M {
+  open G;
+  exact x * x;
+}
+
+def square_one(G : Monoid.Model(U0)) : square(G, G.one) = G.one {
+  open G;
+  exact one_mul(one);
+}</code></pre>
+            <p>A name that <code>open</code> binds shadows the one it had, as <code>let</code> does, until the block ends, and a later <code>open</code> shadows an earlier one. Elsewhere, and in a declaration's statement, which is outside its block, <code>+</code> and <code>*</code> mean <code>add</code> and <code>mul</code> in scope, as for <code>Nat</code>. An operator means one thing in a scope, chosen by <code>open</code>, never by the types of its operands.</p>
+          </section>
+
+          <section id="extends">
+            <h2>Extension: <code>extends</code></h2>
+            <p>A theory can extend others. It has its parents' fields, in order, and then its own:</p>
+            <pre><code data-check="accept">import hlevels;
+
+theory Monoid {
+  sort M : set;
+  mul(x, y : M) : M notation x * y;
+  one : M;
+  law one_mul(x : M) : one * x = x;
+}
+
+theory Group extends Monoid {
+  inv(x : M) : M;
+  law inv_mul(x : M) : inv(x) * x = one;
+}
+
+theory CommMonoid extends Monoid {
+  law mul_comm(x, y : M) : x * y = y * x;
+}
+
+theory CommGroup extends Group, CommMonoid {
+}
+
+def forget(G : CommGroup.Model(U0)) : Monoid.Model(U0) := G.group.monoid;
+
+def same(G : CommGroup.Model(U0), x, y : G.M) : G.group.monoid.mul(x, y) = G.mul(x, y) {
+  rfl;
+}</code></pre>
+            <p>A theory may extend several parents. An ancestor that two parents reach, as <code>Monoid</code> through <code>Group</code> and <code>CommMonoid</code> above, contributes its fields once, when it arrives with the same fields under the same names. A model of a theory has a model of each parent, by the parent's <strong>label</strong>: <code>G.group</code>, and then <code>G.group.monoid</code>. An unlabelled parent's label is its name in snake case: <code>comm_monoid</code> for <code>CommMonoid</code>. Each computes to the model built from the child's fields.</p>
+            <p>A parent can be labelled and its fields <strong>renamed</strong>, with a new notation for an operation. A semiring has two monoids on one sort, the additive one written with <code>+</code>:</p>
+            <pre><code data-check="accept">import hlevels;
+
+theory Monoid {
+  sort M : set;
+  mul(x, y : M) : M notation x * y;
+  one : M;
+  law one_mul(x : M) : one * x = x;
+}
+
+theory Semiring extends
+    additive : Monoid(M := R, mul := add notation x + y, one := zero, one_mul := zero_add),
+    multiplicative : Monoid(M := R) {
+  law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;
+}
+
+def twice_plus(R : Semiring.Model(U0), x : R.R) : R.R {
+  open R;
+  exact x * x + x;
+}</code></pre>
+            <p>Renaming a sort to one name in two parents, as <code>M := R</code> twice above, makes it one sort of the child; its evidence follows it, as <code>R_is_set</code>. An ancestor that arrives renamed is another copy: here each monoid has its own unit, <code>zero</code> and <code>one</code>, and its own law.</p>
+          </section>
+
+          <section id="generated">
+            <h2>What a theory declares</h2>
+            <p>A theory is checked as ordinary definitions, which it declares in its module, in this order. Each is inspectable by name, uses no assumption, and computes:</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Definition</th><th>What it is</th></tr></thead>
+              <tbody>
+                <tr><td><code>T.Model(U &lt; UU0) : next(U)</code></td><td>The type of models whose sorts are in <code>U</code>: the type of pairs of the fields, in order</td></tr>
+                <tr><td><code>T.make{{U &lt; UU0}}(…)</code></td><td>The model with the given fields, one parameter for each, so that named arguments build a model field by field</td></tr>
+                <tr><td><code>T.f{{U &lt; UU0}}(m : T.Model(U))</code></td><td>For each field <code>f</code>, its projection, written <code>m.f</code></td></tr>
+                <tr><td><code>T.p{{U &lt; UU0}}(m : T.Model(U))</code></td><td>For each parent labelled <code>p</code>, the model of the parent, written <code>m.p</code></td></tr>
+              </tbody>
+            </table></div>
+            <p>The theory's name itself is not a term: its models are <code>T.Model(U)</code>.</p>
+          </section>
+
+          <section id="theory-errors">
+            <h2>What is refused</h2>
+            <p>A field's name, and an operator's meaning, are each one thing:</p>
+            <pre><code data-check="reject">import hlevels;
+
+theory Twice {  // Error: Twice has two fields named one: give each its own name.
+  sort M : set;
+  one : M;
+  one : M;
+}</code></pre>
+            <p>Two parents that give fields of one name refuse unless the field is one ancestor's, shared:</p>
+            <pre><code data-check="reject">import hlevels;
+
+theory Left {
+  sort M : set;
+  point : M;
+}
+
+theory Right {
+  sort M : set;
+  point : M;
+}
+
+theory Clash extends Left, Right {  // Error: Clash gets a field named M from both Left and Right: rename one, as in Right(M := …).
+}</code></pre>
+            <p><code>open</code> takes a model, and <code>m.f</code> a field the theory has:</p>
+            <pre><code data-check="reject">import nat;
+
+def open_a_number(n : Nat) : Nat {
+  open n;  // Error: open takes a model of a theory, such as m : Group.Model(U0); this is a value of type Nat.
+  exact n;
+}</code></pre>
+          </section>
+
+          <nav class="pager" aria-label="Chapter navigation">
+            <a class="previous" href="rewriting.html">← 9. Equational reasoning and simplification</a>
+            <a class="next" href="cubical.html">11. Cubical paths and higher inductive types →</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+    <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
+    <script type="module" src="examples.mjs"></script>
+    <script type="module" src="repl-dock.mjs"></script>
+  </body>
+</html>

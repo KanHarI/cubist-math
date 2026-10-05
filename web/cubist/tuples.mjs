@@ -4,7 +4,7 @@ import { parse, tokenize } from "./parser.mjs";
 export function expandedSyntax(tree) {
   return JSON.stringify(tree, (key, value) => [
     "start", "end", "operatorStart", "operatorEnd", "definitionStart", "modifierStart", "valueStart", "valueEnd",
-    "tupleStart", "tupleEnd", "syntheticTuplePair", "opens", "closes",
+    "tupleStart", "tupleEnd", "syntheticTuplePair", "opens", "closes", "qualifiedDots",
   ].includes(key) ? undefined : value);
 }
 
