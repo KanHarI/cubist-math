@@ -18,7 +18,7 @@ import {INDUCTIVE_TAGS,lowerInductive,resolveInductive} from "./inductive.mjs";
 import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference,matchedType} from "./match.mjs";
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName} from "./hlevel.mjs";
-import {stem} from "./names.mjs";
+import {repeatedName,stem} from "./names.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -329,6 +329,8 @@ export class Translator {
       const unit=module.declaration(this.declarationFuel).with({declaring:d.name.text});
       this.onDeclarationStart?.(d);
       try {
+        const repeated=repeatedName(d.params.length?d.params:d.valueParameters??[]);
+        if(repeated)throw unit.locate(Error(`${d.name.text} has two parameters named ${repeated.name.text}: give each its own name.`),repeated.name);
         let expression=d.value;
         if(!expression) {
           expression={kind:"proof",type:d.type,statements:d.body};

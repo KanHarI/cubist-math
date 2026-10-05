@@ -5,7 +5,7 @@ import {numeralValue} from "./translator/numerals.mjs";
 
 // Print a checked term in Cubist source syntax, for messages and the command
 // line: `A -> B`, `forall x : A. B`, `A and B`, `exists x : A. B`, `A or B`,
-// `x = y`, `p @ i`, `fun (x, y : A) => b`, `f(a, b)`, `(a, b)`, `p.1`, `left(a)`, `tt`,
+// `x = y`, `p @ i`, `fun (x, y : A) => b`, `f(a, b)`, `f{{U0, A}}(a)`, `(a, b)`, `p.1`, `left(a)`, `tt`,
 // numerals and binary numerals, and `+`, `*`, `<`, `<=` for the arithmetic
 // library. Forms without a source spelling fall back to the inspector's
 // notation. Parentheses follow the
@@ -251,6 +251,16 @@ export function sourceText(term, symbols = {}, limit = 4000) {
         if (operator) {
           const [symbol, level] = infix[operator], left = level === LEVEL.compare ? level + 1 : level;
           return [`${sub(args[0], left)} ${symbol} ${sub(args[1], level + 1)}`, level];
+        }
+        // A definition's implicit arguments are in double braces, as a call
+        // writes them, after the assumptions applied to it:
+        // append{{U0, Nat}}(xs, ys).
+        const implicit = head.tag === "DefRef" ? symbols[head.name]?.implicit : 0;
+        if (implicit) {
+          const assumed = symbols[head.name].assumed ?? 0, braced = args.slice(assumed, assumed + implicit);
+          const rest = [...args.slice(0, assumed), ...args.slice(assumed + implicit)];
+          if (braced.length)
+            return atom(`${sub(head, LEVEL.atom)}{{${braced.map(show).join(", ")}}}${rest.length ? `(${rest.map(show).join(", ")})` : ""}`);
         }
         return atom(`${sub(head, LEVEL.atom)}(${args.map(show).join(", ")})`);
       }

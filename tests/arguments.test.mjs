@@ -1,6 +1,7 @@
-// Holes and named arguments (work-plan L4.1a), implicit parameters and
-// universe holes (L4.1b): what the verdicts and prints of
-// cubist-tests/arguments.cubist and implicit_parameters.cubist do not show. The syntax and its formatting,
+// Holes and named arguments (work-plan L4.1a), implicit parameters, implicit
+// arguments in double braces and universe holes (L4.1b): what the verdicts and prints
+// of cubist-tests/arguments.cubist and implicit_parameters.cubist do not show.
+// The syntax and its formatting, goals that show implicit arguments,
 // the linter, the inspector's record of each solved hole, and the
 // known-signature elaboration of a call, which never asks the kernel for the
 // type of the growing application.
@@ -77,16 +78,60 @@ test("a call asks for its function's type once, never for the growing applicatio
   assert.deepEqual(spines.map(term => term.tag), ["DefRef"]);
 });
 
-test("implicit parameters are a brace group before the parameter list, each marked", () => {
-  const { declarations } = parse("def f{U < UU0, A : U}(a : A) : A := a;\ndef g{A : U0} := fun (x : A) => x;");
+test("implicit parameters are a double brace group before the parameter list, each marked", () => {
+  const { declarations } = parse("def f{{U < UU0, A : U}}(a : A) : A := a;\ndef g{{A : U0}} := fun (x : A) => x;");
   const [f, g] = declarations;
   assert.deepEqual(f.params.map(p => [p.name.text, !!p.implicit]), [["U", true], ["A", true], ["a", false]]);
   assert.deepEqual(g.valueParameters.map(p => [p.name.text, !!p.implicit]), [["A", true]]);
-  assert.deepEqual(f.implicitParameters, { start: 5, end: 21 });
+  assert.deepEqual(f.implicitParameters, { opens: [5, 6], closes: [22, 23], start: 5, end: 23 });
   // The formatter keeps the group on the name, as it keeps the parameter list.
-  const source = "def f{U < UU0, A : U}(a : A) : A := a;\n";
+  const source = "def f{{U < UU0, A : U}}(a : A) : A := a;\n";
   assert.equal(formatCubist(source), source);
-  assert.equal(formatCubist("def f { U < UU0, A : U } ( a : A ) : A := a;\n"), source);
+  assert.equal(formatCubist("def f {{ U < UU0, A : U }} ( a : A ) : A := a;\n"), source);
+  // One brace is a block's, or a clause list's: implicit parameters are in
+  // two, opened and closed together.
+  assert.throws(() => parse("def f{U < UU0}(a : Nat) : Nat := a;"), /Implicit parameters are in double braces: def f\{\{/);
+  assert.throws(() => parse("def f{{U < UU0} }(a : Nat) : Nat := a;"), /Close double braces with \}\}/);
+  // A group wider than a line breaks inside its braces, never between them.
+  const wide = "def f{{first_parameter, second_parameter, third_parameter, fourth_parameter, fifth_parameter, sixth_parameter : Nat}}(n : Nat) : Nat := n;\n";
+  const wrapped = formatCubist(wide);
+  assert.match(wrapped, /^def f\{\{\n/);
+  assert.match(wrapped, /\n\}\}\(n : Nat\)/);
+  assert.equal(formatCubist(wrapped), wrapped);
+});
+
+test("implicit arguments are a double brace group after a name; a block after a name stays a block", () => {
+  const value = source => parse(source).declarations[0].value;
+  const call = value("def d := f{{U0, _}}(x, y := b);");
+  assert.equal(call.kind, "call");
+  assert.deepEqual(call.implicitArgs.map(arg => arg.name), ["U0", "_"]);
+  assert.deepEqual(call.args.map(arg => arg.kind), ["name", "namedArgument"]);
+  assert.deepEqual(call.implicitGroup, { opens: [10, 11], closes: [18, 19], start: 10, end: 19 });
+  // Without parentheses, the double braces alone; nested, one inside another.
+  assert.deepEqual([value("def d := f{{U0}};").args, value("def d := f{{U0}};").implicitArgs.length], [[], 1]);
+  assert.equal(value("def d := f{{g{{A}}}}(x);").implicitArgs[0].implicitArgs[0].name, "A");
+  // A named argument in double braces names an implicit parameter.
+  const named = value("def d := f{{A := Nat, U0}}(x);").implicitArgs;
+  assert.deepEqual(named.map(arg => arg.kind), ["namedArgument", "name"]);
+  assert.equal(named[0].name.text, "A");
+  assert.equal(formatCubist("def d := f{{ A:=Nat }}(x);\n"), "def d := f{{A := Nat}}(x);\n");
+  // Clauses or a proof block after a name, even written tight, are what
+  // they were.
+  assert.equal(value("def d := match n{ zero => 0; succ(m) => m; };").kind, "match");
+  assert.equal(parse("def d : Nat{ exact 1; }").declarations[0].body[0].kind, "exact");
+  assert.equal(parse("def d(n : Nat) : Nat { match n{ zero => { exact 0; } succ(m) => { exact m; } } }")
+    .declarations[0].body[0].kind, "matchStatement");
+  // One brace after a name is no argument list.
+  assert.throws(() => parse("def d := f{U0}(x);"), /Expected ';'/);
+  assert.equal(formatCubist("def d := concat{{ U0,Nat }}(p,q);\n"), "def d := concat{{U0, Nat}}(p, q);\n");
+  assert.equal(formatCubist("def d := same{{U0, Nat}};\n"), "def d := same{{U0, Nat}};\n");
+});
+
+test("a goal shows a definition's implicit arguments in double braces, as a call writes them", async () => {
+  const { program } = await implicit();
+  const goals = name => program.steps("lists").filter(step => step.declaration === name).map(step => step.goal);
+  assert.deepEqual(goals("append_nil"), ["append{{U, A}}(xs, nil) = xs", "append{{U, A}}(nil, nil) = nil",
+    "append{{U, A}}(cons(head, tail), nil) = cons(head, tail)"]);
 });
 
 test("the inspector shows each inferred universe, and the omitted implicit arguments", async () => {

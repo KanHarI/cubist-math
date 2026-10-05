@@ -17,6 +17,7 @@ export const groups = {
   E4: "Proof statements, rewriting and simplification",
   E5: "Inductive types and matching",
   E6: "Checking",
+  E7: "Arguments and their inference",
   K1: "Kernel: declared types",
   K2: "Kernel: instructions",
   K3: "Kernel: terms and computation",
@@ -87,6 +88,8 @@ export const diagnostics = [
   ["E162", "A match on several values takes its motive from return T or the type expected of it, without as."],
   ["E163", "The induction statement takes apart one value; take the first, then the next inside each clause."],
   ["E164", "cases was removed: write match value { left(a) => { … } right(b) => { … } }."],
+  ["E165", "Close double braces with }}, two braces together."],
+  ["E166", "Implicit parameters are in double braces: def f{{U < UU0, A : U}}(…)."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
@@ -205,7 +208,7 @@ export const diagnostics = [
   ["E373", "-p reverses a path; found no path."],
   ["E374", "… has no named parameters: a named argument gives a parameter that a definition declares."],
   ["E375", "… has no parameter …; its parameters are …."],
-  ["E376", "… has two parameters named …: give them by position."],
+  ["E376", "… has two parameters named …: give them by position.", "retired"],
   ["E377", "The argument … is given twice."],
   ["E378", "… takes its arguments explicitly: a hole _ or a named argument is an argument of a definition or a function."],
   ["E379", "… is a declared type or a constructor, whose arguments are written out: a hole _ or a named argument is an argument of a definition or a function."],
@@ -221,7 +224,7 @@ export const diagnostics = [
   ["E390", "The universe … of … would be …, which is not below UU0. Give it explicitly."],
   ["E391", "Nothing determines the universe … of …: no argument's type bounds it, and the call's type depends on it. Give it explicitly."],
   ["E392", "The … of … is not determined: … fits, and so would … universe…. Give it explicitly."],
-  ["E393", "… takes … argument… by position; give its implicit parameters … by name, as … := …."],
+  ["E393", "… takes … argument… by position; give its implicit parameters … in double braces, in order or by name, as …{{…}}(…) or …{{… := …}}(…)."],
   // Proof statements, rewriting and simplification
   ["E401", "Univalence requires a universe."],
   ["E402", "… takes a universe below UU0."],
@@ -366,6 +369,8 @@ export const diagnostics = [
   ["E565", "A sum's clauses are left(a) => { … } and right(b) => { … }; found …."],
   ["E566", "A sum's clause names its side's value: …(a) => { … }."],
   ["E567", "The match on a sum needs a clause for …: …(a) => { … }."],
+  ["E568", "… has two parameters named …: give each its own name."],
+  ["E569", "… has two arguments named …: give each its own name."],
   ["E570", "… is bound twice in this clause: name each variable once."],
   // Checking
   ["E601", "Unsupported library assumption: …"],
@@ -433,6 +438,12 @@ export const diagnostics = [
   ["E663", "A path is applied at an interval point; found a face formula."],
   ["E664", "A transport's face is a face formula; found an interval point."],
   ["E665", "A partial element's face is a face formula; found an interval point."],
+  // Arguments and their inference
+  ["E701", "… has no implicit parameters: give its arguments in parentheses, as …(…)."],
+  ["E702", "… has … implicit parameter…, …; the double braces give …."],
+  ["E703", "A recursive call of … passes its implicit parameters unchanged: give only the others, as …(…)."],
+  ["E704", "… is not an implicit parameter of …: give it in parentheses, as …(… := …)."],
+  ["E705", "… is an implicit parameter of …: give it in double braces, as …{{… := …}}(…)."],
   // Kernel: declared types
   ["K101", "Dimension renaming allocation failed."],
   ["K102", "A boundary is nested too deeply."],

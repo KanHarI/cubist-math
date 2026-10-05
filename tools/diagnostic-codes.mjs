@@ -35,6 +35,8 @@ const fileGroups = [
   [/^web\/translator\/(builtins|tactics|proof-rewrite|proof-goals|motives|simp-registry|fuel)\.mjs$/, "E4"],
   [/^web\/translator\/(inductive|match|patterns|hlevel)\.mjs$/, "E5"],
   [/^web\/cubical-signatures\.mjs$/, "E5"],
+  // Argument inference's earlier messages are E3's, which is full.
+  [/^web\/translator\/arguments\.mjs$/, "E7"],
   [/^web\/translator\//, "E3"],
   [/^web\/(cubical-instruction-driver|cubical-syntax|cubical-kernel|cubical-reduction|cubical-elaborator|cubical-instructions|cubical-assumptions|cubical-transaction)\.mjs$/, "E6"],
   [/^(web|cli)\//, "E2"],

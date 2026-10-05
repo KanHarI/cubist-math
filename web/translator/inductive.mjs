@@ -5,6 +5,7 @@
 // universes, and derives every constructor type again.
 import {T,finiteLevel,freeNames,substituteTerm,substituteDimension,betaReduce} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
+import {repeatedName} from "./names.mjs";
 
 export const INDUCTIVE_TAGS = new Set(["Inductive","InductiveSelf","InductiveConstructor"]);
 // Words that are h-levels in a header's result position (section 9).
@@ -49,6 +50,8 @@ export function lowerInductive(translator, d, scope) {
   };
   const binding = checker.bindingName?.(d.name.text) ?? d.name.text;
   // The header's parameters: universes as level parameters, then terms.
+  const repeated = repeatedName(d.params);
+  if (repeated) throw locate(Error(`${d.name.text} has two parameters named ${repeated.name.text}: give each its own name.`), repeated.name);
   let at = scope;
   const levels = [], parameters = [], slots = [];
   for (const group of groups(d.params)) {
@@ -88,6 +91,9 @@ export function lowerInductive(translator, d, scope) {
     if (constructors.some(k => k.source === c.name.text))
       throw locate(Error(`${c.name.text} is already a constructor of ${d.name.text}.`), c.name);
     if (c.name.text === d.name.text) throw locate(Error(`A constructor cannot be named ${d.name.text}, as its type is.`), c.name);
+    const repeatedField = repeatedName(c.params);
+    if (repeatedField)
+      throw locate(Error(`${c.name.text} has two arguments named ${repeatedField.name.text}: give each its own name.`), repeatedField.name);
     let cs = inner;
     const args = [];
     // Types are beta-reduced: a boundary must be a constructor expression,

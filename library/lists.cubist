@@ -12,22 +12,22 @@ inductive List(U < UU0, A : U) : U {
 }
 
 // The number of elements.
-computable def length{U < UU0, A : U}(xs : List(U, A)) : Nat := induction xs return Nat {
+computable def length{{U < UU0, A : U}}(xs : List(U, A)) : Nat := induction xs return Nat {
     nil => 0;
     cons(head, tail, n) => succ(n);
   };
 
 // The elements of xs, then those of ys; by recursion on xs.
-computable def append{U < UU0, A : U}(xs, ys : List(U, A)) :
+computable def append{{U < UU0, A : U}}(xs, ys : List(U, A)) :
   List(U, A) := induction xs return List(U, A) {
     nil => ys;
     cons(head, tail, rest) => cons(head, rest);
   };
 
 // nil is a unit on the left by computation, and on the right by induction.
-computable def nil_append{U < UU0, A : U}(ys : List(U, A)) : append(nil, ys) = ys := refl(ys);
+computable def nil_append{{U < UU0, A : U}}(ys : List(U, A)) : append(nil, ys) = ys := refl(ys);
 
-computable def append_nil{U < UU0, A : U}(xs : List(U, A)) : append(xs, nil) = xs {
+computable def append_nil{{U < UU0, A : U}}(xs : List(U, A)) : append(xs, nil) = xs {
   induction xs {
     nil => {
       rfl;
@@ -38,7 +38,7 @@ computable def append_nil{U < UU0, A : U}(xs : List(U, A)) : append(xs, nil) = x
   }
 }
 
-computable def append_assoc{U < UU0, A : U}(xs, ys, zs : List(U, A)) :
+computable def append_assoc{{U < UU0, A : U}}(xs, ys, zs : List(U, A)) :
   append(append(xs, ys), zs) = append(xs, append(ys, zs)) {
   induction xs {
     nil => {
@@ -50,7 +50,7 @@ computable def append_assoc{U < UU0, A : U}(xs, ys, zs : List(U, A)) :
   }
 }
 
-computable def length_append{U < UU0, A : U}(xs, ys : List(U, A)) :
+computable def length_append{{U < UU0, A : U}}(xs, ys : List(U, A)) :
   length(append(xs, ys)) = length(xs) + length(ys) {
   induction xs {
     nil => {

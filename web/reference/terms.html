@@ -175,17 +175,29 @@ def at_types(T : U1) : U1 := same(_, U1, T);</code></pre>
 
 def which(n : Nat) := the_universe(_, n);  // Error: Nothing determines the universe U of the_universe: no argument's type bounds it, and the call's type depends on it. Give it explicitly.</code></pre>
             <h3 id="implicit-parameters">Implicit parameters</h3>
-            <p>Parameters in braces before a definition's parameter list are <strong>implicit</strong>: a call never gives them by position. Each one before the last argument given is a hole, and a named argument can still give it. So <code>append</code> reads its universe and element type off its lists:</p>
+            <p>Parameters in double braces, <code>{{ … }}</code>, before a definition's parameter list are <strong>implicit</strong>: a call reads them off its other arguments and the type expected of it, universes included, and gives only the others, in parentheses. Each implicit parameter before the last argument given is a hole. So <code>append</code> reads its universe and element type off its lists:</p>
             <pre><code data-check="accept">import lists;
 
 def three := length(append(cons(1, typed(List(U0, Nat), nil)), cons(2, cons(3, nil))));
 evaluate three expecting 3;
 
-def concat{U &lt; UU0, A : U, x, y, z : A}(p : x = y, q : y = z) : x = z := trans(p, q);
+def concat{{U &lt; UU0, A : U, x, y, z : A}}(p : x = y, q : y = z) : x = z := trans(p, q);
 
-def joined(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat(p, q);
-def named(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat(A := Nat, p, q);</code></pre>
-            <p>The library's <code>lists</code> declares <code>append{U &lt; UU0, A : U}(xs, ys : List(U, A))</code>. A definition that calls itself passes its implicit parameters unchanged: <code>length(tail)</code> in its own clause. Implicit parameters are filled at a call that gives a later argument; the name of a definition alone, without a call, is the function of all its parameters.</p>
+def joined(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat(p, q);</code></pre>
+            <p>To give implicit arguments yourself, write them in double braces after the name, in order: <code>concat{{U0, Nat}}(p, q)</code> gives <code>U</code> and <code>A</code>, and the endpoints after them are still inferred. <code>_</code> leaves one to infer. Inside them, a named argument gives an implicit parameter by its name, as <code>concat{{A := Nat}}(p, q)</code>, and the others fill the rest in order; an implicit parameter is not named in parentheses, nor an explicit one in double braces:</p>
+            <pre><code data-check="accept">def concat{{U &lt; UU0, A : U, x, y, z : A}}(p : x = y, q : y = z) : x = z := trans(p, q);
+
+def all_given(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat{{U0, Nat, a, b, c}}(p, q);
+def middle(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat{{_, _, _, b}}(p, q);
+def named(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat{{A := Nat}}(p, q);</code></pre>
+            <p>Double braces settle what the call leaves open. Here <code>T : U0</code> and the expected type <code>U1</code> both fit <code>A := U0</code> and <code>A := U1</code>:</p>
+            <pre><code data-check="reject">def same{{U &lt; UU0, A : U}}(a : A) : A := a;
+
+def open_type(T : U0) : U1 := same(T);  // Error: The parameter A of same is not determined: U0 fits, and so would a larger universe. Give it explicitly.
+def settled(T : U0) : U1 := same{{_, U0}}(T);</code></pre>
+            <p>The library's <code>lists</code> declares <code>append{{U &lt; UU0, A : U}}(xs, ys : List(U, A))</code>. A definition that calls itself passes its implicit parameters unchanged: <code>length(tail)</code> in its own clause, never <code>length{{U, A}}(tail)</code>. Double braces without parentheses give the function of the other parameters, so <code>same{{U0, Nat}}</code> is the identity on <code>Nat</code>; the name of a definition alone is the function of all its parameters. Goals and messages show a definition's implicit arguments in double braces too: <code>append{{U, A}}(xs, nil) = xs</code>.</p>
+            <p>A definition names its parameters apart, implicit or not, since a call can give each one by its name. So does a declared type, and each constructor its arguments:</p>
+            <pre><code data-check="reject">def twice{{x : Nat}}(x : Nat) : Nat := x;  // Error: twice has two parameters named x: give each its own name.</code></pre>
           </section>
           <section id="pairs">
             <h2>Pairs and dependent pairs</h2>
