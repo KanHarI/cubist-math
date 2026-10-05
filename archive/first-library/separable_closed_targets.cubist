@@ -1,3 +1,4 @@
+import nat;
 import finite_embedding_extensions;
 import separable_polynomials;
 import splitting_fields;

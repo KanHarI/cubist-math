@@ -1,3 +1,4 @@
+import nat;
 import finite_basis_search;
 
 // A finite free vector space is projective: lift its generators through a

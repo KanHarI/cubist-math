@@ -1,3 +1,4 @@
+import nat;
 import dyadic_refinement;
 import subdivision_tagged_zip;
 import interval_subdivisions;

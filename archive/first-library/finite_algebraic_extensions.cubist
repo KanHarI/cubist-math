@@ -1,3 +1,4 @@
+import nat;
 import polynomial_coordinate_maps;
 import minimal_polynomials;
 import finite_basis_search;

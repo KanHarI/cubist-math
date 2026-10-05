@@ -1,3 +1,4 @@
+import nat;
 import finite_cardinalities;
 import function_counting;
 

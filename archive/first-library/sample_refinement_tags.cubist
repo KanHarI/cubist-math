@@ -1,3 +1,4 @@
+import nat;
 import sample_tagged;
 
 // Repeat one coarse tag on every refined edge. It need not lie inside each

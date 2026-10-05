@@ -22,7 +22,7 @@ const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${
 // an earlier checked reference. Unsupported declarations never become axioms.
 export class CubicalProgram {
   constructor(module, readSource, { onDeclarationStart, onDeclaration, collectReferences = true, optimizations = {}, manageTransactions = true,
-    searchFuel, declarationFuel, experimental, representation, prelude = true } = {}) {
+    searchFuel, declarationFuel, experimental, representation, bundledNat = true, prelude } = {}) {
     // The representation map τ to declared counterparts was the differential
     // fixtures' (H1 specification, 7.4), retired with them.
     if (representation !== undefined)
@@ -37,7 +37,12 @@ export class CubicalProgram {
     this.kernel.setOptimizations(optimizations);
     this.checker = new NativeCubicalElaborator(this.kernel);
     this.readSource = readSource;
-    this.prelude=prelude;
+    // Nothing is imported automatically. A module that uses the natural
+    // numbers imports nat, which a reader with no library can still load from
+    // its bundled source unless bundledNat is false.
+    if (prelude !== undefined)
+      throw Error("The prelude option was removed: no module is imported automatically, so a module imports nat itself; bundledNat controls nat's bundled source.");
+    this.bundledNat=bundledNat;
     this.onDeclarationStart = onDeclarationStart; this.onDeclaration = onDeclaration;
     this.collectReferences = collectReferences;
     this.manageTransactions = manageTransactions;
@@ -74,13 +79,12 @@ export class CubicalProgram {
     try {
       if(text===null) {
         try { text=await this.readSource(name,importer); }
-        catch(error) {if(name!=="nat"||!this.prelude)throw error;}
+        catch(error) {if(name!=="nat"||!this.bundledNat)throw error;}
         // Readers with no standard library (such as an exported inspection)
-        // can still load the bundled source of the ordinary prelude module.
-        if(name==="nat"&&this.prelude&&!text)text=naturalSource;
+        // can still load nat's bundled source.
+        if(name==="nat"&&this.bundledNat&&!text)text=naturalSource;
       }
       const ast = parse(text);
-      if(this.prelude&&name!=="nat"&&!ast.imports.includes("nat"))ast.imports.unshift("nat");
       prepared.set(name, { text, ast });
       discovery.total += ast.declarations.length;
       onProgress({ completed: this.completed, total: null, current: name,

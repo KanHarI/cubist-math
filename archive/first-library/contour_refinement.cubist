@@ -1,3 +1,4 @@
+import nat;
 import contour_samples;
 
 // Exact error terms from tag changes and splitting an oriented edge.

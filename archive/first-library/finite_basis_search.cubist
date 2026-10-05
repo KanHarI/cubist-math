@@ -1,3 +1,4 @@
+import nat;
 import linear_bijections;
 
 // Classical counterexamples are produced only under propositional truncation.

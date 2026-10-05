@@ -379,9 +379,9 @@ export const archiveModules = [
 ];
 
 // Modules of the rebuilt library, served from library/. A name here shadows an
-// archive module of the same name. The first, nat, is the prelude every
-// module imports.
-export const libraryModules = ["nat", "naturals", "classical_axioms", "universe_automorphisms", "hlevels",
+// archive module of the same name. The first, nat, is the natural numbers,
+// which a module imports to use them.
+export const libraryModules = ["nat", "classical_axioms", "universe_automorphisms", "hlevels",
   "h1_truncation", "h1_classical", "contractible_maps", "univalence",
   "lists", "quotients"];
 

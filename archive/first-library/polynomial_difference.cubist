@@ -1,3 +1,4 @@
+import nat;
 import complex_polynomials;
 
 // The algebraic step in Horner division by X - r.

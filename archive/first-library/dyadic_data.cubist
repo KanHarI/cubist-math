@@ -1,3 +1,4 @@
+import nat;
 import dyadic_mesh;
 
 // The actual samples produced by the checked recursive construction.

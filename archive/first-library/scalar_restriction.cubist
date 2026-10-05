@@ -1,3 +1,4 @@
+import nat;
 import function_linear_isos;
 
 def restricted_action(

@@ -1,3 +1,4 @@
+import nat;
 import polynomial_coordinates;
 import polynomial_evaluation;
 

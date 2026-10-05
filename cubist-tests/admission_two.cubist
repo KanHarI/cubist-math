@@ -2,7 +2,7 @@
 // instruction driver watched: Define admits each, a tactic's check is
 // derived as the tactic runs, and every definition derives again from
 // nothing.
-import naturals;
+import nat;
 
 def two : Nat {
   exact 2;

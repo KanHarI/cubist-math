@@ -1,6 +1,8 @@
 // From tests/cubical-program.test.mjs: value, which program_shadow_second
 // defines again, for program_shadowing.
 
+import nat;
+
 def value := 0;
 
 def remembered := value;

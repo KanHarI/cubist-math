@@ -1,3 +1,4 @@
+import nat;
 import finite_sums;
 import puncture_winding;
 import bouquet_invariants;

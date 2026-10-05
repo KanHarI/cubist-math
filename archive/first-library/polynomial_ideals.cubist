@@ -1,3 +1,4 @@
+import nat;
 import polynomial_division_unique;
 
 // Ideals are proposition-valued subsets, with explicit closure evidence.

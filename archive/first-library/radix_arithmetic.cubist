@@ -1,3 +1,4 @@
+import nat;
 import radix_naturals;
 import paths;
 

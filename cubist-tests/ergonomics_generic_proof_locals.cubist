@@ -1,6 +1,8 @@
 // From tests/proof-ergonomics.test.mjs: Generic proofs link ext and
 // simplified hypothesis binders and uses.
 
+import nat;
+
 def ext_case(U < UU0, f : Nat -> Nat) : f = f {
   ext x;
   exact refl(f(x));

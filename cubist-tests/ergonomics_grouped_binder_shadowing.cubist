@@ -1,6 +1,8 @@
 // From tests/proof-ergonomics.test.mjs: A grouped binder checks its shared
 // domain before a binder shadows that name.
 
+import nat;
+
 def Carrier := Nat;
 
 def grouped(Carrier, item : Carrier) : item = item {

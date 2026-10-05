@@ -1,3 +1,4 @@
+import nat;
 import generated_field_carriers;
 import field_embedding_factorization;
 import polynomial_splitting;

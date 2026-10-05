@@ -6,6 +6,8 @@
 // than a context entry, so the displayed context does not list b; the
 // final exact uses it all the same.
 
+import nat;
+
 def Endo(A : U0) := A -> A;
 
 def identity_endo(A : U0) : Endo(A) {

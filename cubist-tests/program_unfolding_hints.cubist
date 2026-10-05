@@ -3,6 +3,8 @@
 // body is a definition of its own; the names steer nothing since the
 // conversion oracle's retirement.
 
+import nat;
+
 def id(n : Nat) := n;
 
 def hinted : id(0) = 0 {

@@ -5,6 +5,8 @@
 // the induction or match that builds them, not as kernel notation: a sum's
 // clauses keep the names the source gave them.
 
+import nat;
+
 def or_swap(A, B : U0) : A or B -> B or A {
   intro either;
   match either {

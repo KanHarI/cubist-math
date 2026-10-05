@@ -1,3 +1,4 @@
+import nat;
 import polynomial_root_enumeration;
 import minimal_polynomials;
 

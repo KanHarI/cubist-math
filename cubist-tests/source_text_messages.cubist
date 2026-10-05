@@ -1,6 +1,6 @@
 // From tests/source-text.test.mjs: messages and evaluate results use source
 // syntax.
-import naturals;
+import nat;
 
 // Error: E606: Type mismatch: found 4 = 4, expected 2 + 2 = 5.
 def wrong_sum : 2 + 2 = 5 {

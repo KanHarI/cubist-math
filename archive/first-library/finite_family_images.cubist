@@ -1,3 +1,4 @@
+import nat;
 import finite_spanning;
 
 // Individual generators have explicit unit-coordinate preimages.

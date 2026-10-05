@@ -1,3 +1,4 @@
+import nat;
 import artin_evaluation_matrix;
 
 def EmbeddingEvaluationFrame(K, L : AlgebraicField, n, m : Nat, maps : Fin(n) -> FieldEmbedding(K, L)) :=

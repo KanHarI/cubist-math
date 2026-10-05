@@ -56,8 +56,8 @@ try {
     assert.doesNotMatch(await page.locator("#kernel-view-note").textContent(), /unavailable/);
     if (proof === "euclid") {
       // A line number shows the goal at that proof statement and the names in scope.
-      await page.locator('.source-line[data-line="8"] .line-number').click();
-      assert.equal(await page.locator("#inspect-name").textContent(), "Goal at line 8");
+      await page.locator('.source-line[data-line="9"] .line-number').click();
+      assert.equal(await page.locator("#inspect-name").textContent(), "Goal at line 9");
       assert.match(await page.locator("#inspect-type").textContent(), /exists p : Nat\. Prime\(p\) and n < p/);
       assert.match(await page.locator("#locals").textContent(), /n\s*Nat/);
     }
@@ -78,8 +78,8 @@ try {
   assert.match(await page.locator("#tour-numbers .example-bar span").first().textContent(), /evaluate at line 7: 6/);
   // An imported module's name opens the module in the workspace.
   const moduleLink = page.locator("#tour-numbers a.example-module").first();
-  assert.equal(await moduleLink.textContent(), "naturals");
-  assert.match(await moduleLink.getAttribute("href"), /proof\.html\?proof=naturals$/);
+  assert.equal(await moduleLink.textContent(), "nat");
+  assert.match(await moduleLink.getAttribute("href"), /proof\.html\?proof=nat$/);
   // 0 is the constructor itself, not notation.
   assert.deepEqual(await page.locator("#tour-numbers pre code").first().evaluate(code =>
     [...code.querySelectorAll("*")].filter(node => node.textContent === "0").map(node => node.classList.contains("macro"))), [false]);
@@ -91,7 +91,8 @@ try {
   // An excerpt is checked with the module it quotes: its names open the
   // inspector, and its workspace link opens that module at the declaration.
   await page.goto(new URL("reference/induction.html", base).href);
-  const excerpt = page.locator('pre > code[data-check="excerpt"][data-module="nat"]');
+  // The first of nat's excerpts is its declaration of Nat.
+  const excerpt = page.locator('pre > code[data-check="excerpt"][data-module="nat"]').first();
   const excerptBar = excerpt.locator("xpath=../following-sibling::div[contains(@class, 'example-bar')][1]");
   await excerpt.scrollIntoViewIfNeeded();
   await excerpt.locator(".example-token", { hasText: /^Nat$/ }).first().waitFor();
@@ -132,9 +133,9 @@ try {
   await enter("evaluate exists_greater_number(10)");
   assert.deepEqual(await lastResults(2), ["(6, 0, refl(6))", "(11, 0, refl(11))"]);
   console.log("PASS read-only REPL transcripts fork into the REPL bar");
-  await page.goto(new URL("proof.html?proof=naturals", base).href);
+  await page.goto(new URL("proof.html?proof=nat", base).href);
   await page.locator("#read-source .reference").first().waitFor();
-  assert.equal(await page.locator("#proof-title").textContent(), "Library: naturals");
+  assert.equal(await page.locator("#proof-title").textContent(), "Library: nat");
   assert.equal(await page.locator("#archive-note").isHidden(), true);
   // The console under a proof has the proof's names loaded.
   await enter("typeof nat_add_comm;");
@@ -143,13 +144,13 @@ try {
   assert.deepEqual(await lastResults(3), ["forall x : Nat. forall y : Nat. x + y = y + x", "y : Nat", "5"]);
   console.log("PASS library module in the workspace, with its console");
   await page.goto(new URL("repl.html", base).href);
-  for (const text of ["let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);
+  for (const text of ["import nat;", "let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);
   assert.deepEqual(await lastResults(4), ["x : Nat", "Nat", "7", "E606: Type mismatch: found 7 = 7, expected x = 8."]);
   console.log("PASS REPL page: let, typeof, evaluate, rejected entries");
   // Slash commands: /modules lists what import can load; /clear and /restart
   // act on the console.
-  await enter("/modules natural");
-  assert.match((await lastResults(1))[0], /^Library \(1\): naturals\nArchive, the first library \(\d+\): .*binary_naturals/);
+  await enter("/modules lists");
+  assert.match((await lastResults(1))[0], /^Library \(1\): lists\n/);
   await enter("/clear");
   assert.equal(await page.locator(".repl-log").last().locator(".repl-result, .repl-entry").count(), 0);
   await enter("/restart");
@@ -173,7 +174,7 @@ try {
   console.log("PASS Files page: folders, filter, preview, and a documentation example checked in the workspace");
   // The workspace's explorer marks the open file and opens another in its
   // place; closed, it stays closed. Its folders stay as they were left: the
-  // library's is open since naturals opened in this tab.
+  // library's is open since nat opened in this tab.
   assert.ok(await page.locator('#explorer-tree a[data-path="docs/examples/h1/winding.cubist"][aria-current]').isVisible());
   assert.ok(await page.locator('#explorer-tree details[data-path="library"]').evaluate(details => details.open));
   await page.locator('#explorer-tree a[data-path="library/lists.cubist"]').click();

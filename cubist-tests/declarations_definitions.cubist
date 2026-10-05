@@ -2,6 +2,8 @@
 // proofs, and expose their checked bodies; a false claim is refused and
 // admits nothing.
 
+import nat;
+
 def identity(A : U0, x : A) := x;
 
 def identity_proof : forall A : U0. A -> A {

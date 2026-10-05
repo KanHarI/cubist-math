@@ -12,7 +12,7 @@ export const replHelp = [
   "evaluate TERM;        the value of a term",
   "TERM;                 a term alone is evaluated",
   "print(inspect(TERM)); the term the kernel checks, in kernel notation",
-  "import MODULE;        load a module, such as naturals",
+  "import MODULE;        load a module, such as nat",
   "/modules [TEXT]       the modules import can load, or those whose names contain TEXT",
   "/clear                clear the log",
   "/restart              start a new session: forget every name defined here",

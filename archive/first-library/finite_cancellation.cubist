@@ -1,3 +1,4 @@
+import nat;
 import finite;
 
 // Swap the first alternative with a given alternative. These maps will also

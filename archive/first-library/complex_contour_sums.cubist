@@ -1,3 +1,4 @@
+import nat;
 import complex_algebra;
 import complex_contour_samples;
 import contour_examples;

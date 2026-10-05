@@ -2,6 +2,8 @@
 // found and the type expected, in source syntax. Module prefixes, generated
 // suffixes and beta-redexes do not reach the message.
 
+import nat;
+
 // Warning: W704: z is unused: the return type does not mention it. Omit as z: match value return ….
 def Shape(value : Unit or Unit) := match value as z return U0 {
     left a => Nat;

@@ -1,3 +1,4 @@
+import nat;
 import polynomial_monic;
 
 // A nonzero degree-zero polynomial is an invertible constant.

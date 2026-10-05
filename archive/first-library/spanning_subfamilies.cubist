@@ -1,3 +1,4 @@
+import nat;
 import finite_family_images;
 
 // A basis extracted from a finite family retains its original indices.

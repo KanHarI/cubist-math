@@ -1,3 +1,4 @@
+import nat;
 import finite_cancellation;
 import bijection_equality;
 import function_counting;

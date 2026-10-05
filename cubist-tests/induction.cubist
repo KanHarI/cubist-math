@@ -4,7 +4,7 @@
 // their own form, zero => …; succ h => …;, as well. From
 // tests/induction.test.mjs. The lists are the library's, whose length,
 // concatenation and laws are proved by induction too.
-import naturals;
+import nat;
 import lists;
 
 // An induction expression names its hypotheses after the arguments: the sum

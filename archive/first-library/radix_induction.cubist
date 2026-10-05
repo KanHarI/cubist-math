@@ -1,3 +1,4 @@
+import nat;
 import radix_naturals;
 
 def radix_positive_induction(

@@ -1,11 +1,12 @@
 # The rebuilt library
 
 This is the root of the rebuilt proof library (work-plan item I0.3). The
-first library is kept, unchanged but for the prelude `nat`, which moved here,
-in [`archive/first-library/`](../archive/first-library/).
-Its results are catalogued in English in
-[`docs/library-results.md`](../docs/library-results.md), which is what the
-rebuild follows.
+first library is kept in [`archive/first-library/`](../archive/first-library/)
+as a reference, not relied on: where this library implements a part of it,
+that part is removed from the archive and its dependents import the library
+instead. Its results are catalogued in English in
+[`docs/library-results.md`](../docs/library-results.md), which the rebuild
+follows.
 
 - Modules here take precedence over archive modules of the same name, in the
   command-line checker, the proof workspace and the language reference.
@@ -16,12 +17,13 @@ rebuild follows.
   the assumptions listed for it there.
 - The library is self-contained: a module here imports only modules here
   (`web/module-resolution.mjs`). An archive module may import a library
-  module, as every module imports the prelude `nat`.
+  module, as many import `nat`.
+- Nothing is imported automatically: a module that uses the natural numbers,
+  numerals included, imports `nat`.
 
 | Module | Contents | Assumptions |
 | --- | --- | --- |
-| [`nat`](nat.cubist) | The natural numbers, `Nat` with `zero` and `succ`: the prelude, which every module imports. | None |
-| [`naturals`](naturals.cubist) | Addition, multiplication and order on `Nat`, with the basic laws of addition. `+`, `*`, `<` and `<=` need it. | None |
+| [`nat`](nat.cubist) | The natural numbers, `Nat` with `zero` and `succ`, with addition, multiplication and order, and the laws of addition. Numerals and `+`, `*`, `<` and `<=` need it. | None |
 | [`classical_axioms`](classical_axioms.cubist) | The statements of the classical assumptions as types, `ExcludedMiddle(U)` and `AxiomOfChoice(U)`, with checks that `LEM(U)` and `Choice(U)` have them. | `LEM`, `Choice`, `Truncate` |
 | [`hlevels`](hlevels.cubist) | Contractible types, propositions and sets in every universe below `UU0`, with `HasLevel(U, n, A)` defined by recursion on `n`, so that `IsSet` is level 1 by conversion. Propositions are sets, levels are cumulative, having a level is a proposition, and a retract, such as a type equivalent to another by an inverse, a function type, a type of pairs, a product or a subtype keeps the level of the types it is made from. Contractible types are closed under the same constructions except subtypes, since a subtype can be empty, and being contractible is a proposition. Negations are propositions (`not_is_prop`), and so is the decision of a proposition (`Decidable`, `decision_is_prop`). A type with decidable equality, such as `Nat`, is a set (Hedberg). | None |
 | [`h1_truncation`](h1_truncation.cubist) | The propositional truncation `Trunc(U, A)` as a declared type that computes: `merely`, that it is a proposition, maps between truncations, and elimination into a proposition of any universe below `UU0`. | None |

@@ -1,3 +1,4 @@
+import nat;
 import affine_integrals;
 import curve_sample_sums;
 

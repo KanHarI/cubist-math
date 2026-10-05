@@ -1,3 +1,4 @@
+import nat;
 import polynomial_roots;
 
 // Change coefficients through a specified field embedding. Formal support,

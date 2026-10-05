@@ -1,3 +1,4 @@
+import nat;
 import finite_remainders;
 import span_subspace;
 

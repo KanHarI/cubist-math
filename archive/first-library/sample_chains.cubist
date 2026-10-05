@@ -1,3 +1,4 @@
+import nat;
 import field_logic;
 import primes;
 

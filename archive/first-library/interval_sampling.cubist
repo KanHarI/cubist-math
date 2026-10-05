@@ -1,3 +1,4 @@
+import nat;
 import interval_tag_bounds;
 import sample_tagged;
 

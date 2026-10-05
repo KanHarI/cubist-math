@@ -1,3 +1,4 @@
+import nat;
 import complex_contour_samples;
 import complex_magnitude;
 import complex_convergence;

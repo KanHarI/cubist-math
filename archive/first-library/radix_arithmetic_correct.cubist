@@ -1,3 +1,4 @@
+import nat;
 import radix_decode;
 
 // Ring-like natural-number rearrangements, proved from the existing arithmetic.

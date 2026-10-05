@@ -108,7 +108,7 @@
             <div class="table-scroll"><table>
               <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
-                <tr id="E343"><td class="code"><code>E343</code></td><td data-message="Untranslated name:">“Untranslated name: <var>name</var>”</td><td>The name is not in scope. It may be declared later, be the declaration itself (there is no recursion), need an import (<code>+</code> needs <code>import naturals;</code>), be misspelled, or not be a construct of the language, such as <code>Interval</code> as a type.</td><td><a href="first-proof.html#order">order</a>, <a href="terms.html#numbers">numbers</a></td></tr>
+                <tr id="E343"><td class="code"><code>E343</code></td><td data-message="Untranslated name:">“Untranslated name: <var>name</var>”</td><td>The name is not in scope. It may be declared later, be the declaration itself (there is no recursion), need an import (<code>+</code> needs <code>import nat;</code>), be misspelled, or not be a construct of the language, such as <code>Interval</code> as a type.</td><td><a href="first-proof.html#order">order</a>, <a href="terms.html#numbers">numbers</a></td></tr>
                 <tr id="E340"><td class="code"><code>E340</code></td><td data-message="Untranslated dependency:">“Untranslated dependency: <var>name</var>”</td><td>The named declaration failed, so its users are blocked. Fix the named declaration.</td><td><a href="first-proof.html#checking">checking</a></td></tr>
                 <tr id="E604"><td class="code"><code>E604</code></td><td data-message="Definition symbol is already registered.">“Definition symbol is already registered.”</td><td>A name is declared twice in one module. Rename one.</td><td><a href="first-proof.html#order">order</a></td></tr>
                 <tr id="E327"><td class="code"><code>E327</code></td><td data-message="is already registered in this module.">“Simplification rule <var>name</var> is already registered in this module.”</td><td>Register each rule once per module.</td><td><a href="rewriting.html#simp-registration">registration</a></td></tr>
@@ -276,10 +276,12 @@
             <pre><code data-check="reject">def unfinished : Nat {
   sorry;  // Error: Expected a proof statement; found 'sorry'.
 }</code></pre>
-            <pre><code data-check="reject">def hole : Nat {
+            <pre><code data-check="reject">import nat;
+
+def hole : Nat {
   exact _;  // Error: A hole _ stands for an argument of a call, which the call's other arguments or the type expected of it determine; anywhere else, write the term.
 }</code></pre>
-            <pre><code data-check="reject">import naturals;
+            <pre><code data-check="reject">import nat;
 
 def mixed(a, b : Nat, h : a = b) : a &lt;= b {
   calc {
@@ -415,6 +417,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E239"><td><code>E239</code></td><td>Module … was not loaded.</td></tr>
                 <tr id="E240"><td><code>E240</code></td><td>… did not check.</td></tr>
                 <tr id="E241"><td><code>E241</code></td><td>Could not load the file index: HTTP …</td></tr>
+                <tr id="E242"><td><code>E242</code></td><td>The prelude option was removed: no module is imported automatically, so a module imports nat itself; bundledNat controls nat's bundled source.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e3">Terms</h3>

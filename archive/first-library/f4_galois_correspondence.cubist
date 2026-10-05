@@ -1,3 +1,4 @@
+import nat;
 import f4_galois_connection;
 import decidable_subobjects;
 import equivalence_from_inverse;

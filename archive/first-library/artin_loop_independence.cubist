@@ -1,3 +1,4 @@
+import nat;
 import artin_finite_relations;
 import artin_fixed_embeddings;
 

@@ -1,3 +1,4 @@
+import nat;
 import curve_contour_estimates;
 import parameter_contour_limits;
 

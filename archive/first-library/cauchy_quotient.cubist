@@ -1,3 +1,4 @@
+import nat;
 import complete_fields;
 import set_quotients;
 import primes;

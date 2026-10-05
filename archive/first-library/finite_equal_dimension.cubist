@@ -1,3 +1,4 @@
+import nat;
 import artin_evaluation_matrix;
 import extension_degree;
 

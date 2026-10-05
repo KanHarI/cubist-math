@@ -1,3 +1,4 @@
+import nat;
 import sample_chains;
 import integer_multiples;
 

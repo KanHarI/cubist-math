@@ -1,3 +1,4 @@
+import nat;
 import radix_binary_equivalence;
 import binary_univalence_transfer;
 import radix_factorial;

@@ -1,3 +1,4 @@
+import nat;
 import puncture_graph;
 import loop_words;
 import circle;

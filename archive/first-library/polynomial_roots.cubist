@@ -1,3 +1,4 @@
+import nat;
 import polynomial_evaluation;
 import polynomial_leading;
 

@@ -1,3 +1,4 @@
+import nat;
 import interval_midpoint_data;
 import sample_join_conditions;
 

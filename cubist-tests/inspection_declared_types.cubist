@@ -1,5 +1,7 @@
 // From tests/cubical-inspection.test.mjs: declared type occurrences link to
 // their imported and local source declarations.
+
+import nat;
 import w;
 
 def Z := Nat or Nat;

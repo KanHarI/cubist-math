@@ -1,3 +1,4 @@
+import nat;
 import finite_cancellation;
 import surjections;
 import primes;

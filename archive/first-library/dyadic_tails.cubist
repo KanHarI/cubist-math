@@ -1,3 +1,4 @@
+import nat;
 import dyadic_decay;
 
 // Halving a nonnegative width cannot increase it.

@@ -132,6 +132,7 @@ export const diagnostics = [
   ["E239", "Module … was not loaded."],
   ["E240", "… did not check."],
   ["E241", "Could not load the file index: HTTP …"],
+  ["E242", "The prelude option was removed: no module is imported automatically, so a module imports nat itself; bundledNat controls nat's bundled source."],
   // Terms
   ["E301", "Expected cubical syntax."],
   ["E302", "Expected a dimension binder."],

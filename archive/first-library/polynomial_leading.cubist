@@ -1,3 +1,4 @@
+import nat;
 import polynomial_division;
 
 // A polynomial with support below 1 is a constant coefficient function.

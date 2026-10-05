@@ -2,6 +2,8 @@
 // lists: opcodes, payloads and operand slots, checked and inferred type
 // roots, and an open interval context.
 
+import nat;
+
 def N := Nat;
 
 def id(n : Nat) := n;

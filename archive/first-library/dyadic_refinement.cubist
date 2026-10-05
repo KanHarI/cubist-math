@@ -1,3 +1,4 @@
+import nat;
 import dyadic_data;
 import subdivision_refinement;
 

@@ -1,3 +1,4 @@
+import nat;
 import polynomial_remainders;
 
 // Canonical representatives, rather than a larger universe of equivalence

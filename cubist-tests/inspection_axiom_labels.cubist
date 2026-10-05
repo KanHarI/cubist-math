@@ -1,6 +1,8 @@
 // From tests/cubical-inspection.test.mjs: axiom labels and derived cubical
 // helpers remain inspectable.
 
+import nat;
+
 def Mere(A : U1) := Truncate(U1, A);
 
 def refl_nat(n : Nat) : n = n {

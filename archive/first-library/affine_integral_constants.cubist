@@ -1,3 +1,4 @@
+import nat;
 import affine_integrals;
 import contour_sums;
 

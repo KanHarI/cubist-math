@@ -1,3 +1,4 @@
+import nat;
 import polynomial_residue_field;
 import polynomial_constants;
 import polynomial_eval_characterization;

@@ -1,3 +1,4 @@
+import nat;
 import fine_interval_samples;
 import dyadic_convergence;
 

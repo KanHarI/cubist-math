@@ -1,3 +1,4 @@
+import nat;
 import binary_equivalence;
 
 // Small scalar identities used to check the four digit-addition cases.

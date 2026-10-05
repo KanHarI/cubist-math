@@ -1,3 +1,4 @@
+import nat;
 import complex_algebra;
 import puncture_periods;
 

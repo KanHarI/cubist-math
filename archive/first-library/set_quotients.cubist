@@ -1,3 +1,4 @@
+import nat;
 import field_extensionality;
 
 // Equivalence classes as predicates, not an additional quotient axiom.

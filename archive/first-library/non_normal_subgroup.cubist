@@ -1,3 +1,4 @@
+import nat;
 import permutation_groups;
 import finite_cancellation;
 import permutations;

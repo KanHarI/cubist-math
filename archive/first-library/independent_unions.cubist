@@ -1,3 +1,4 @@
+import nat;
 import predicate_chains;
 
 // A finite dependence in a directed union already occurs in one independent

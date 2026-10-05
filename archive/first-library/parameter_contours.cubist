@@ -1,3 +1,4 @@
+import nat;
 import contour_refinement;
 import sample_maps;
 

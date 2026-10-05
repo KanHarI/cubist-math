@@ -81,7 +81,7 @@
           <section id="cli">
             <h2>The command-line checker</h2>
             <p><code>node cli/repl.mjs</code> checks source files with the same C kernel as the workspace. It needs the kernel built once with <code>make wasm</code>. Given a command, it runs that command and exits; with none, it reads one command per line. A line that is not a command is a <a href="#repl">REPL</a> entry. The examples below use this file, saved as <code>sample.cubist</code>:</p>
-            <pre><code data-check="accept" data-name="sample">import naturals;
+            <pre><code data-check="accept" data-name="sample">import nat;
 import classical;
 
 // Twice a number.
@@ -96,7 +96,7 @@ evaluate double(2) expecting 4;</code></pre>
             <pre><code data-check="cli" data-files="sample">$ node cli/repl.mjs check sample.cubist
 Checked 2 declarations · … kernel steps
 evaluate at line 11: 4</code></pre>
-            <p>Imports are looked up first in the directory of the checked file, then in the rebuilt library under <code>library/</code>, then in the archived first library. So a local module can shadow a library module of the same name, and a library module shadows an archive module. A module of the library imports only from the library, which is self-contained. A module of the archive imports from the archive, then from the library, where the prelude <code>nat</code> lives; an archive module always comes before a library module of the same name. One check holds one module per name: if two of its modules would load a name from different places, the check fails and names both. A bare module name, as in <code>node cli/repl.mjs check euclid</code>, is found in <code>library/</code> first, then in the archive. The test runner, <code>npm test -- euclid</code>, resolves imports the same way.</p>
+            <p>Imports are looked up first in the directory of the checked file, then in the rebuilt library under <code>library/</code>, then in the archived first library. So a local module can shadow a library module of the same name, and a library module shadows an archive module. A module of the library imports only from the library, which is self-contained. A module of the archive imports from the archive, then from the library, where <code>nat</code> lives; an archive module always comes before a library module of the same name. One check holds one module per name: if two of its modules would load a name from different places, the check fails and names both. A bare module name, as in <code>node cli/repl.mjs check euclid</code>, is found in <code>library/</code> first, then in the archive. The test runner, <code>npm test -- euclid</code>, resolves imports the same way.</p>
             <h3 id="cli-commands">Commands</h3>
             <div class="table-scroll"><table>
               <thead><tr><th>Command</th><th>Effect</th></tr></thead>
@@ -154,14 +154,16 @@ Expression: λ (n : Nat). (λ …)(n, n)</code></pre>
               <li>On the command line, <code>node cli/repl.mjs</code> reads entries along with its commands. After <code>check</code>, entries see the checked module’s names.</li>
             </ul>
             <pre><code data-check="cli">$ node cli/repl.mjs
+&gt; import nat;
+Imported nat.
 &gt; let x := 7;
 x : Nat
 &gt; typeof x;
 Nat
 &gt; evaluate x;
 7
-&gt; import naturals;
-Imported naturals.
+&gt; import nat;
+Imported nat.
 &gt; evaluate x + 3 * 4;
 19
 &gt; def x_is_seven : x = 7 {
@@ -179,7 +181,7 @@ E606: Type mismatch: found 7 = 7, expected x = 8.
           <section id="print">
             <h2>Printing values, types and terms</h2>
             <p>Three top-level directives show what the checker makes of a closed term, and define no name. <code>print(evaluate(term));</code> shows the term’s normal form, under the rule of <a href="assumptions.html#evaluate"><code>evaluate</code></a>: the term may use no assumption. <code>print(typeof(term));</code> shows its type. <code>print(inspect(term));</code> shows the term the kernel checked, in the kernel’s notation, as the inspector does: what notation and omitted arguments elaborate to. The name of a definition shows the definition’s checked body. A directive that fails is an error that makes the module incomplete, as a failed <code>evaluate</code> does.</p>
-            <pre><code data-check="accept">import naturals;
+            <pre><code data-check="accept">import nat;
 
 def double(n : Nat) := n + n;
 
@@ -200,7 +202,9 @@ print(inspect(double));</code></pre>
               <li>a <a href="proof-blocks.html#let"><code>let</code></a> or <code>obtain</code> whose names nothing after it in its block uses.</li>
             </ul>
             <p>A name the syntax requires is never reported, even when it is unused: a parameter, a <code>fun</code> binder, a constructor argument or coordinate in a clause, an induction hypothesis, or a name given to <code>intro</code>. Nor is a <code>let</code> or <code>obtain</code> before an <code>hlevel</code> or a <code>match</code> in the same block, because those can use hypotheses without naming them. A warning does not affect checking: the declaration is checked and can be used.</p>
-            <pre><code data-check="accept" data-name="unused">def copy(n : Nat) := induction n as k return Nat {  // Warning: k is unused: the return type does not mention it and the successor clause does not use it.
+            <pre><code data-check="accept" data-name="unused">import nat;
+
+def copy(n : Nat) := induction n as k return Nat {  // Warning: k is unused: the return type does not mention it and the successor clause does not use it.
   zero =&gt; 0;
   succ previous =&gt; succ(previous);
 };
@@ -209,7 +213,7 @@ def copy_two : copy(2) = 2 { rfl; }</code></pre>
             <p>The workspace lists warnings under the checked declarations; click a line number to show the line. The command-line checker prints each with its code, line, column and declaration:</p>
             <pre><code data-check="cli" data-files="unused">$ node cli/repl.mjs check unused.cubist
 Checked 2 declarations · … kernel steps
-warning W703 at line 1:37 (copy): k is unused: the return type does not mention it and the successor clause does not use it. Omit as k: induction n return ….</code></pre>
+warning W703 at line 3:37 (copy): k is unused: the return type does not mention it and the successor clause does not use it. Omit as k: induction n return ….</code></pre>
             <p><code>npm run lint:cubist -- FILE.cubist</code> reports the same warnings without checking, and exits with status 1 when there are any. Without file names it lints the library, which has none.</p>
           </section>
           <section id="tools">

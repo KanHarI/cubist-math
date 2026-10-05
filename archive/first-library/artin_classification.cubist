@@ -1,3 +1,4 @@
+import nat;
 import artin_embedding_bound;
 
 def outside_subgroup_extra_embedding_distinct(

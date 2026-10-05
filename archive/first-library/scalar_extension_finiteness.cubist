@@ -1,3 +1,4 @@
+import nat;
 import finite_spanning;
 import scalar_restriction;
 

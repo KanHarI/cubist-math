@@ -1,3 +1,4 @@
+import nat;
 import artin_loop_independence;
 import finite_basis_search;
 

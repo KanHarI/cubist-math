@@ -1,3 +1,4 @@
+import nat;
 import linear_constructions;
 import function_counting;
 

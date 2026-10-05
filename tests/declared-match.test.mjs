@@ -119,7 +119,7 @@ test("a clause's goal shows a generalized parameter under its source name", asyn
 });
 
 test("with declared types switched off in the kernel, the match statement says so", async t => {
-  const program = new CubicalProgram(module, sourceReader(), {prelude:false});
+  const program = new CubicalProgram(module, sourceReader());
   t.after(() => program.dispose());
   program.kernel.setExtensions({ h1: false });
   const result = await program.check("def f(n : Unit) : Unit {\n  match n {\n    zero => { exact n; }\n  }\n}\n", "main");

@@ -1,3 +1,4 @@
+import nat;
 import finite_splitting_extensions;
 import polynomial_splitting_leading;
 import root_generated_fields;

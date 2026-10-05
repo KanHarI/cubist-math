@@ -1,3 +1,4 @@
+import nat;
 import artin_equivariance;
 import finite_linear_lifts;
 import extension_degree;

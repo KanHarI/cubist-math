@@ -1,3 +1,4 @@
+import nat;
 import interval_sampling;
 import parameter_tag_sampling;
 import complex_curves;

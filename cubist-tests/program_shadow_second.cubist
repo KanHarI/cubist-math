@@ -1,4 +1,6 @@
 // From tests/cubical-program.test.mjs: a second value, for
 // program_shadowing.
 
+import nat;
+
 def value := 1;

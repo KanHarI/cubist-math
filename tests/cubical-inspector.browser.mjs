@@ -251,7 +251,8 @@ try {
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator("#edit-mode").click();
-  await page.locator("#editor").fill(`def N := Nat;
+  await page.locator("#editor").fill(`import nat;
+    def N := Nat;
     def IdentityType(A : U0) := A;
     def Alias := IdentityType(N);
     def id(n : Nat) := n;
@@ -350,7 +351,8 @@ try {
   assert.match(await page.locator("#editor").inputValue(),/simp only \[nat_add_zero\];/);
   assert.equal(await page.locator("#diagnostic").isVisible(),false);
   if(!await page.locator("#editor").isVisible()) await page.locator("#edit-mode").click();
-  await page.locator("#editor").fill(`def generic_calc(U < UU0, x : Nat) : x = x {
+  await page.locator("#editor").fill(`import nat;
+    def generic_calc(U < UU0, x : Nat) : x = x {
       calc { x = x by refl(x); }
     }
     def generic_simp(U < UU0, f : Nat -> Nat, n : Nat, h : f(n) = n) : f(n) = n {
@@ -371,8 +373,8 @@ try {
       def generic(U < UU0, n : Nat) : n + 0 = n {
         calc { n + 0 = n by nat_add_zero(n); }
       }`;
-    // A module the archive does not hold, such as the prelude nat, is read
-    // as missing; the program then loads its bundled prelude.
+    // A module the archive does not hold, such as nat, is read as missing;
+    // the program then loads nat's bundled source.
     const program=new CubicalProgram(await createCubical(),async name=>{
       const response=await fetch(`/archive/first-library/${name}.cubist`);
       return response.ok?response.text():null;
@@ -391,7 +393,7 @@ try {
   const sharedTransfer=await page.evaluate(async()=>{
     const [{default:createCubical},{CubicalProgram},{saveWorkbenchTransfer}]=await Promise.all([
       import("/dist/cubical.mjs"),import("/cubical-program.mjs"),import("/workbench-transfer.mjs")]);
-    let source="def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
+    let source="import nat; def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
     for(let i=1;i<=28;i++)source+=`let T${i} := F(T${i-1},T${i-1});`;
     source+="let h : forall x : T28. x = x { intro x; exact path i => x; } rfl; }";
     const program=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");});
@@ -423,7 +425,7 @@ try {
   assert.match(await statusAfterImport("universe_automorphisms", "library", "import classical;"), /check incomplete/);
   assert.match(await statusAfterImport("euclid", "archive/first-library", "import classical_axioms;"), /· checked/);
   assert.match(await statusAfterImport("euclid", "archive/first-library", "import classical;"), /· checked/);
-  assert.match(await statusAfterImport("universe_automorphisms", "library", "import naturals;"), /· checked/);
+  assert.match(await statusAfterImport("universe_automorphisms", "library", "import nat;"), /· checked/);
   assert.deepEqual(errors, []);
   console.log("PASS cubical inspector: folding, navigation, simp trace/freeze, generic transfer, bounded raw syntax, workbench editing, and imports by place");
 } finally { await browser?.close(); server.kill(); }

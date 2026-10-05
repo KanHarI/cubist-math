@@ -1,3 +1,4 @@
+import nat;
 import circle;
 import path_actions;
 import homotopy_paths;

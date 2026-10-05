@@ -3,6 +3,8 @@
 // definition and its use. The test edits a proof and moves the source, and
 // the fingerprints tell.
 
+import nat;
+
 def two : succ(1) = 2 {
   rfl;
 }

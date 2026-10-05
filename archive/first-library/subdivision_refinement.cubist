@@ -1,3 +1,4 @@
+import nat;
 import subdivision_join_conditions;
 import dyadic_sampling;
 

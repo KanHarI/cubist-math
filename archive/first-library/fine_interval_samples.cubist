@@ -1,3 +1,4 @@
+import nat;
 import dyadic_mesh;
 import dyadic_decay;
 

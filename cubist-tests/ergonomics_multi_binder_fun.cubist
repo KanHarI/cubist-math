@@ -1,6 +1,8 @@
 // From tests/proof-ergonomics.test.mjs: A multi-binder fun source link
 // inspects the complete closed function.
 
+import nat;
+
 def written := fun (x : Nat, y : Nat) => x;
 
 def grouped := fun (x, y : Nat) => x;

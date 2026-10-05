@@ -1,6 +1,8 @@
 // hlevel names the library module it needs: with no import of hlevels, it
 // says to add one. From tests/hlevel.test.mjs.
 
+import nat;
+
 // Error: E361: hlevel uses the library module hlevels: add import hlevels;
 def nat_equal(p, q : 0 = 0) : p = q {
   hlevel;

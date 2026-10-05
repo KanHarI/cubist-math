@@ -19,7 +19,7 @@ const module = await createCubical();
 const cases = (t, name, options = {}) => checkTestModule(t, `program_${name}`, { module, options });
 
 // A reader with no library, such as the first test's, still loads `nat`.
-test("the bundled prelude source is the library's nat module", async () => {
+test("nat's bundled source is the library's nat module", async () => {
   assert.equal(naturalSource, await readFile(new URL("../library/nat.cubist", import.meta.url), "utf8"),
     "Regenerate web/translator/nat-source.mjs from library/nat.cubist.");
 });
@@ -57,7 +57,7 @@ test("module shadowing cannot retarget earlier checked native definitions", asyn
 
 test("unsupported foundations and invalid proofs remain explicitly unverified", async t => {
   const program = new CubicalProgram(module, async () => { throw new Error("Source unavailable"); }); t.after(() => program.dispose());
-  const result = await program.check("import missing; def wrong : 0 = 1 { exact refl(0); } def dependent := wrong; def fine := 0;", "example");
+  const result = await program.check("import nat; import missing; def wrong : 0 = 1 { exact refl(0); } def dependent := wrong; def fine := 0;", "example");
   assert.equal(result.complete, false);
   assert.deepEqual(result.outputs.map(d => d.verified), [false, false, true]);
   assert.ok(result.gaps.some(g => g.module === "missing"));
@@ -116,20 +116,19 @@ test("`with unfolding` checks its body as a definition of its own, which replays
 test("native progress identifies the active declaration before it is checked", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
   const progress = [];
-  await program.check("def first := 0; def second := 1;", "progress", event => progress.push(event));
+  await program.check("def first := tt; def second := tt;", "progress", event => progress.push(event));
   const checking = progress.filter(p => p.phase !== "loading");
-  assert.ok(checking.every(p => p.total === 3));
+  assert.ok(checking.every(p => p.total === 2));
   assert.deepEqual(checking.map(p => [p.current, p.phase, p.completed]), [
-    ["nat.Nat", "checking", 0], ["nat.Nat", "checked", 1],
-    ["progress.first", "checking", 1], ["progress.first", "checked", 2],
-    ["progress.second", "checking", 2], ["progress.second", "checked", 3],
+    ["progress.first", "checking", 0], ["progress.first", "checked", 1],
+    ["progress.second", "checking", 1], ["progress.second", "checked", 2],
   ]);
 });
 
 
 test("progress totals count a shared import once, including universe-generic definitions", async t => {
   const sources = {
-    common: "def generic(U < UU0, A : U, a : A) := a; def shared := 0;",
+    common: "def generic(U < UU0, A : U, a : A) := a; def shared := tt;",
     left: "import common; def fromLeft := shared;",
     right: "import common; def fromRight := shared;",
   };
@@ -138,10 +137,10 @@ test("progress totals count a shared import once, including universe-generic def
   t.after(() => program.dispose());
   const progress = [];
   const result = await program.check("import left; import right; def final := fromLeft;", "root", p => progress.push(p));
-  assert.equal(result.declarationCount, 6);
+  assert.equal(result.declarationCount, 5);
   assert.equal(reads.filter(name => name === "common").length, 1);
-  assert.ok(progress.filter(p => p.phase !== "loading").every(p => p.total === 6));
-  assert.equal(progress.at(-1).completed, 6);
+  assert.ok(progress.filter(p => p.phase !== "loading").every(p => p.total === 5));
+  assert.equal(progress.at(-1).completed, 5);
 });
 
 test("native optimization switches preserve path proofs and rejection independently", async () => {
@@ -222,10 +221,10 @@ test("a declaration that fails after a failed import names the import", async t 
     throw new Error(`Native source is not available for ${name}.`);
   }, { collectReferences: false });
   t.after(() => program.dispose());
-  const result = await program.check("import naturals;\ndef four := 2 + 2;\ndef five := 5;\ndef six : Nat {\n  exact 3 + 3;\n}\n", "imports_missing");
+  const result = await program.check("import nat;\nimport lists;\ndef four := append;\ndef five := 5;\ndef six : Nat {\n  exact length;\n}\n", "imports_missing");
   const reason = name => result.outputs.find(output => output.name === name).reason;
   assert.equal(reason("four"),
-    "Untranslated name: add (import naturals failed: Native source is not available for naturals.)");
-  assert.match(reason("six"), /^Untranslated name: add \(import naturals failed: .*\)( at \d+:\d+)?$/);
+    "Untranslated name: append (import lists failed: Native source is not available for lists.)");
+  assert.match(reason("six"), /^Untranslated name: length \(import lists failed: .*\)( at \d+:\d+)?$/);
   assert.equal(result.outputs.find(output => output.name === "five").verified, true);
 });

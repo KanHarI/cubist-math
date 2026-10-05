@@ -1,3 +1,4 @@
+import nat;
 import sample_subdivision_conditions;
 import interval_sampling;
 

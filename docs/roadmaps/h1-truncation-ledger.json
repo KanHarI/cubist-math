@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "base": "cc6b50f",
+  "base": "f4d1961",
   "status": "Review draft; exact checked changes, not proof identity.",
   "scope": {
     "field_logic": [
@@ -296,11 +296,11 @@
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. CloseComposition(Q, zero, addQ, ltQ) -> (forall x : Nat -> Q. forall y : Nat -> Q. forall z : Nat -> Q. SequenceSame(Q, zero, addQ, ltQ, x, y) -> SequenceSame(Q, zero, addQ, ltQ, y, z) -> SequenceSame(Q, zero, addQ, ltQ, x, z))"
       },
       "oldValue": {
-        "hash": "27320c65ac75490ab88b3eb4a98164a93a590a35",
+        "hash": "ae7807d6d831e28865fabf334e9dcee2d0088371",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, composeClose : CloseComposition(Q, zero, addQ, ltQ), x, y, z : Nat -> Q, xy : SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, x, y), yz : SequenceSame(__assumption_Truncate, Q, zero, addQ, ltQ, y, z), epsilon : Q, positive : ltQ(zero, epsilon)) => field_exists_elim(__assumption_Truncate, __assumption_TruncateElim, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), composeClose(epsilon, positive).1), FieldExists(__assumption_Truncate, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), z(n), epsilon)), field_exists_prop(__assumption_Truncate, __assumption_TruncateProp, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), z(n), epsilon)), fun (leftActual : exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), composeClose(epsilon, positive).1)) => field_exists_map(__assumption_Truncate, __assumption_TruncateIntro, __assumption_TruncateProp, __assumption_TruncateElim, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, y(n), z(n), composeClose(epsilon, positive).1), exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), z(n), epsilon), close_tails_compose(Q, addQ, ltQ, x, y, z, epsilon, composeClose(epsilon, positive).1, composeClose(epsilon, positive).2.2, leftActual), yz(composeClose(epsilon, positive).1, composeClose(epsilon, positive).2.1)), xy(composeClose(epsilon, positive).1, composeClose(epsilon, positive).2.1))"
       },
       "newValue": {
-        "hash": "d8323e115d3e3e85099722917d95092df398afd1",
+        "hash": "42af5d46ed4b0edeea21c0fa73727984a6378c76",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, composeClose : CloseComposition(Q, zero, addQ, ltQ), x, y, z : Nat -> Q, xy : SequenceSame(Q, zero, addQ, ltQ, x, y), yz : SequenceSame(Q, zero, addQ, ltQ, y, z), epsilon : Q, positive : ltQ(zero, epsilon)) => mere_eliminate(U0, U0, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), composeClose(epsilon, positive).1), Trunc(exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), z(n), epsilon)), mere_is_prop(U0, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), z(n), epsilon)), fun (leftActual : exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), y(n), composeClose(epsilon, positive).1)) => mere_map(U0, U0, exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, y(n), z(n), composeClose(epsilon, positive).1), exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(Q, addQ, ltQ, x(n), z(n), epsilon), close_tails_compose(Q, addQ, ltQ, x, y, z, epsilon, composeClose(epsilon, positive).1, composeClose(epsilon, positive).2.2, leftActual), yz(composeClose(epsilon, positive).1, composeClose(epsilon, positive).2.1)), xy(composeClose(epsilon, positive).1, composeClose(epsilon, positive).2.1))"
       },
       "assumptionsReplaced": [],
@@ -330,11 +330,11 @@
         "text": "forall Q : U0. forall zero : Q. forall addQ : Q -> Q -> Q. forall ltQ : Q -> Q -> U0. (forall x : Q. forall epsilon : Q. ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon)) -> CloseComposition(Q, zero, addQ, ltQ) -> EquivalenceRelation(CauchySequence(Q, zero, addQ, ltQ), CauchySame(Q, zero, addQ, ltQ))"
       },
       "oldValue": {
-        "hash": "e5bc5b5a1556de9c0b319ac433e7fb478370471a",
+        "hash": "65c75bffcb8815818a059918bb20be1ce4bf2e52",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, closeSelf : forall x : Q. forall epsilon : Q. ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon), composeClose : CloseComposition(Q, zero, addQ, ltQ)) => (fun (x, y : CauchySequence(Q, zero, addQ, ltQ)) => sequence_same_prop(__assumption_Truncate, __assumption_TruncateProp, Q, zero, addQ, ltQ, cauchy_sequence(Q, zero, addQ, ltQ, x), cauchy_sequence(Q, zero, addQ, ltQ, y)), fun (x : CauchySequence(Q, zero, addQ, ltQ)) => sequence_same_reflexive(__assumption_Truncate, __assumption_TruncateIntro, Q, zero, addQ, ltQ, closeSelf, cauchy_sequence(Q, zero, addQ, ltQ, x)), fun (x, y : CauchySequence(Q, zero, addQ, ltQ)) => sequence_same_symmetric(__assumption_Truncate, __assumption_TruncateIntro, __assumption_TruncateProp, __assumption_TruncateElim, Q, zero, addQ, ltQ, cauchy_sequence(Q, zero, addQ, ltQ, x), cauchy_sequence(Q, zero, addQ, ltQ, y)), fun (x, y, z : CauchySequence(Q, zero, addQ, ltQ)) => sequence_same_transitive(__assumption_Truncate, __assumption_TruncateIntro, __assumption_TruncateProp, __assumption_TruncateElim, Q, zero, addQ, ltQ, composeClose, cauchy_sequence(Q, zero, addQ, ltQ, x), cauchy_sequence(Q, zero, addQ, ltQ, y), cauchy_sequence(Q, zero, addQ, ltQ, z)))"
       },
       "newValue": {
-        "hash": "66f6bd527b7874436e244b0b8fdd24d3415341fe",
+        "hash": "b9d8f2119356423a28f832123e3d05a3e7401966",
         "text": "fun (Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, closeSelf : forall x : Q. forall epsilon : Q. ltQ(zero, epsilon) -> FieldClose(Q, addQ, ltQ, x, x, epsilon), composeClose : CloseComposition(Q, zero, addQ, ltQ)) => (fun (x, y : CauchySequence(Q, zero, addQ, ltQ)) => sequence_same_prop(Q, zero, addQ, ltQ, cauchy_sequence(Q, zero, addQ, ltQ, x), cauchy_sequence(Q, zero, addQ, ltQ, y)), fun (x : CauchySequence(Q, zero, addQ, ltQ)) => sequence_same_reflexive(Q, zero, addQ, ltQ, closeSelf, cauchy_sequence(Q, zero, addQ, ltQ, x)), fun (x, y : CauchySequence(Q, zero, addQ, ltQ)) => sequence_same_symmetric(Q, zero, addQ, ltQ, cauchy_sequence(Q, zero, addQ, ltQ, x), cauchy_sequence(Q, zero, addQ, ltQ, y)), fun (x, y, z : CauchySequence(Q, zero, addQ, ltQ)) => sequence_same_transitive(Q, zero, addQ, ltQ, composeClose, cauchy_sequence(Q, zero, addQ, ltQ, x), cauchy_sequence(Q, zero, addQ, ltQ, y), cauchy_sequence(Q, zero, addQ, ltQ, z)))"
       },
       "assumptionsReplaced": [],

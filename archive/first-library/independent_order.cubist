@@ -1,3 +1,4 @@
+import nat;
 import independent_unions;
 
 // Independence is a property, not extra structure. Pointwise paths between

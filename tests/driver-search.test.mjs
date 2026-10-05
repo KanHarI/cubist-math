@@ -218,11 +218,11 @@ test("agree: policies are pluggable and untrusted", async t => {
 });
 
 test("the heuristic policy, counted, derives the first library exactly as the default driver does", async t => {
-  const source = await readFile(new URL("../library/naturals.cubist", import.meta.url), "utf8");
+  const source = await readFile(new URL("../library/nat.cubist", import.meta.url), "utf8");
   const derive = async policy => {
     const program = new CubicalProgram(await createCubical(), async () => { throw new Error("no imports"); });
     t.after(() => program.dispose());
-    await program.check(source, "naturals");
+    await program.check(source, "nat");
     const kernel = program.kernel, before = kernel.work(), judgements = [];
     for (const [name, reference] of kernel.definitions) {
       const { value, type } = kernel.definition(reference);
@@ -250,7 +250,7 @@ test("instruction coverage: the report pins what it measured, and the exit statu
   const report = join(directory, "report.json"), trajectories = join(directory, "trajectories.jsonl");
   const passed = coverage(["--modules=basics", `--trajectories=${trajectories}`], report);
   assert.equal(passed.status, 0, passed.stderr + passed.stdout);
-  assert.match(passed.stdout, /5 of 5 declarations in 1 module, 0 gaps/);
+  assert.match(passed.stdout, /15 of 15 declarations in 1 module, 0 gaps/);
   assert.match(passed.stdout, /Coverage complete\./);
   const written = JSON.parse(await readFile(report, "utf8"));
   assert.equal(written.success, true);

@@ -1,3 +1,4 @@
+import nat;
 import polynomial_ideals;
 import polynomial_maps;
 import polynomial_root_bound;

@@ -1,3 +1,4 @@
+import nat;
 import polynomial_extension_roots;
 import polynomial_constants;
 import coordinate_splitting;

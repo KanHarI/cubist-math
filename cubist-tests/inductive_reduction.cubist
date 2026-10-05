@@ -3,6 +3,8 @@
 // once. The redex's argument U0 is not a Nat: the kernel sees it before
 // reduction drops it.
 
+import nat;
+
 inductive N {
   zero;
   succ(n : N);

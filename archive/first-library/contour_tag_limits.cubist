@@ -1,3 +1,4 @@
+import nat;
 import contour_error_bounds;
 import field_magnitude_close;
 import field_scale_limits;

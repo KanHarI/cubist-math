@@ -1,3 +1,4 @@
+import nat;
 import polynomial_support;
 
 // Equality is coefficientwise equality of formal polynomials, with support

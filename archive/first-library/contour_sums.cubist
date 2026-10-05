@@ -1,3 +1,4 @@
+import nat;
 import contour_samples;
 import sample_sum_laws;
 

@@ -1,3 +1,4 @@
+import nat;
 import polynomial_factor_omission;
 import algebraic_base_change;
 import polynomial_root_existence;

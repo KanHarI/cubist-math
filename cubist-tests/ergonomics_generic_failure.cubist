@@ -1,6 +1,8 @@
 // From tests/proof-ergonomics.test.mjs: A failed use of a generic definition
 // leaves the definition and later uses intact.
 
+import nat;
+
 def identity(U < UU0, A : U, x : A) := x;
 
 def before := identity(U0, Nat, 0);

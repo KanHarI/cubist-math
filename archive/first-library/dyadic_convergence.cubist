@@ -1,3 +1,4 @@
+import nat;
 import dyadic_tails;
 
 // Actual Archimedean witnesses, kept separate from the merely existential

@@ -1,31 +1,8 @@
 import nat;
 
-// Constructive arithmetic and prime numbers. Every definition below is checked from source.
-// No axioms and no imported instruction snapshots.
-
-// Addition.
-// 0 + b = b; succ(a) + b = succ(a + b).
-def add(x, y : Nat) := induction x as k return Nat {
-    zero => y;
-    succ h => succ(h);
-  };
-
-// Multiplication.
-// 0 * b = 0; succ(a) * b = b + a * b.
-def mul(x, y : Nat) := induction x as k return Nat {
-    zero => 0;
-    succ h => (y + h);
-  };
-
-// Natural-number order.
-// 0 <= b is Unit; succ(a) <= 0 is Void; succ(a) <= succ(b) is a <= b.
-def le(x : Nat) := induction x as k return (Nat -> U0) {
-    zero => (fun (x2 : Nat) => Unit);
-    succ h => (fun (y : Nat) => induction y as j return U0 {
-        zero => Void;
-        succ ignored => h(j);
-      });
-  };
+// Prime numbers and the order on the natural numbers, over nat's arithmetic.
+// Every definition below is checked from source. No axioms and no imported
+// instruction snapshots.
 
 def nat_zero_ne_succ(n : Nat, p : (0 = succ(n))) :=
   path_induction(
@@ -51,35 +28,6 @@ def nat_succ_injective(x, y : Nat, p : (succ(x) = succ(y))) :=
         zero => 0;
         succ ignored => k;
       }), p);
-
-def nat_add_zero(x : Nat) := induction x as k return ((k + 0) = k) {
-    zero => refl(0);
-    succ h => cong((fun (n : Nat) => succ(n)), h);
-  };
-
-def nat_add_succ(x : Nat) :=
-  induction x as k return (forall y : Nat. ((k + succ(y)) = succ((k + y)))) {
-    zero => (fun (y : Nat) => refl(succ(y)));
-    succ h => (fun (y : Nat) => cong((fun (n : Nat) => succ(n)), h(y)));
-  };
-
-def nat_add_assoc(x : Nat) :=
-  induction x as k return (forall y : Nat. (forall z : Nat. (((k + y) + z) = (k + (y + z))))) {
-    zero => (fun (y : Nat) => (fun (z : Nat) => refl((y + z))));
-    succ h => (fun (y : Nat) => (fun (z : Nat) => cong((fun (n : Nat) => succ(n)), h(y, z))));
-  };
-
-def nat_add_comm(x : Nat) := induction x as k return (forall y : Nat. ((k + y) = (y + k))) {
-    zero => (fun (y : Nat) => sym(nat_add_zero(y)));
-    succ h => (
-      fun (y : Nat) => trans(cong((fun (n : Nat) => succ(n)), h(y)), sym(nat_add_succ(y, k)))
-    );
-  };
-
-def nat_le_refl(n : Nat) := induction n as k return (k <= k) {
-    zero => tt;
-    succ h => h;
-  };
 
 def nat_le_zero(n : Nat) := induction n as k return ((k <= 0) -> (k = 0)) {
     zero => (fun (x : Unit) => refl(0));
@@ -749,4 +697,3 @@ def prime_divisor_exists(n : Nat) :=
     };
   };
 
-def isLt(n, p : Nat) := le(succ(n), p);

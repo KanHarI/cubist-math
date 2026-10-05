@@ -1,7 +1,7 @@
 // From tests/search-fuel.test.mjs: a search's own questions and rewrites
 // are on its fuel. Reading the goal's endpoints is the search's question,
 // and each rewrite is counted.
-import naturals;
+import nat;
 
 def nothing(n : Nat) : n = n {
   simp only [];
