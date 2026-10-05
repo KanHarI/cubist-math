@@ -36,7 +36,7 @@ the library instead; the archive keeps checking completely. So far `nat`'s
 arithmetic (from `primes`) and `sets` (for `hlevels`) are gone. What the
 library builds differently stays until it is migrated: the archive's
 `truncation` and `classical` rest on the legacy `Truncate` assumptions
-(K2.5's remedies, first action 7), its `set_quotients` are predicate
+(K2.5's remedies, first action 8), its `set_quotients` are predicate
 quotients over them, and its `equivalences` are bijections and half-adjoint
 equivalences, where the library has contractible maps.
 
@@ -343,6 +343,7 @@ has an explicit spelling.
 | L2.8 | Squares and `cell` face syntax with boundary inspection (HoTT E2) | L2.1; face/source metadata from L1.2r | M |
 | L2.9a | Expected-value patterns for `evaluate` | L0.1; own pattern contract and L4.1a infrastructure | S |
 | L2.9b | Closed truncation witness readout: a closed computable input, a checked error certificate, and the extracted witness's type specified under transported truncations, which its tests include. Native truncation alone supplies no approximation result | Native H1 `Trunc`, K2.5, L0.1 | M |
+| L2.10 | Notation by type, and literals: operators and numerals take their meaning from the type they are applied to, through a table keyed by the type's head, with no search, in place of the name-based `add` and `open`'s operator binding; binary `-`, `/`, `^`, `>`, `>=` and unary `-` by type; numerals in any structure, with a faithful default; faithful printing; later, literal interpretation functions and, on demand, mixfix. **Roadmap** written on 2026-10-05 ([notation](notation.md)), with decisions requested; not started | L2.4 | L |
 | D2.1 | Checked reference, formatter and inspection for each released construct | Corresponding package, including L2.8/L2.9 | L |
 
 L2.2 means both slices when another package needs automatic clauses.
@@ -657,19 +658,23 @@ of explicit matching with the `cases` migration (L2.2a, 2026-10-04).
    ring with decidable equality, no zero divisors and zero not one, written
    once in a section over the ring, at the integers; their arithmetic and
    equality compute. **First action 4 is done** (2026-10-05).
-5. **Independent language work.** L2.5b's remainder; the universal-property
+5. **Notation by type, and literals (L2.10),** once its
+   [roadmap](notation.md)'s decisions are made: slices L2.10a to L2.10e, so that the
+   library's statements read `x + y = y + x` for integers and
+   `1/2 + 1/3 =[Q] 5/6` for rationals.
+6. **Independent language work.** L2.5b's remainder; the universal-property
    contract before L2.6 and L2.3's `universal` slice; L1.3's worker
    cancellation.
-6. **Equivalences (L3.1), from the library's univalence.** Then L3.2's
+7. **Equivalences (L3.1), from the library's univalence.** Then L3.2's
    Σ/universe `ext`. In the library, one module for the classical
    assumptions, over the computing `Trunc`.
-7. **K2.5's remaining archive remedies.** The two H2-dependent tower
+8. **K2.5's remaining archive remedies.** The two H2-dependent tower
    declarations stay deferred; complete removal of the legacy truncation
    assumptions is not required.
-8. **Derived interfaces and notation on small examples.** N0/N1 after the
+9. **Derived interfaces and notation on small examples.** N0/N1 after the
    theories of first action 3; N2/N4 after inference. Keep canonical
    quotient and view examples finite and computable.
-9. **H2, then the H3 research gate.** Specify the representation and
+10. **H2, then the H3 research gate.** Specify the representation and
    computation changes (K4.2, K5.2) before implementing them. H2's indexed
    families will need implicit indices. Keep the full Cauchy reals deferred;
    the reals roadmap's corrected R2 interface and R3 obligations give later
