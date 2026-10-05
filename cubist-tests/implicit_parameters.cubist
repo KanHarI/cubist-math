@@ -29,6 +29,28 @@ def choose{{A : U0}}(x, y : A) : A := y;
 
 def two_calls : Nat := choose(1)(2);
 
+// A definition that does not determine its arguments, Family(n) := Nat, does
+// not fix n from the first argument's type, Family(0); refl(1) fixes it.
+def Family(n : Nat) : U0 := Nat;
+
+def pick{{n : Nat}}(a : Family(n), h : n = 1) : Nat := n;
+
+def zero_family : Family(0) := 0;
+
+def picked : Nat := pick(zero_family, refl(1));
+
+// Output: 1
+print(evaluate(picked));
+
+// Where nothing else determines them, the arguments are read off the
+// definition applied on both sides, even though Tagged(U, A) := Nat forgets
+// A: untag(t) finds A := Unit.
+def Tagged(U < UU0, A : U) : U0 := Nat;
+
+def untag{{U < UU0, A : U}}(t : Tagged(U, A)) : Nat := t;
+
+def tag_of(t : Tagged(U0, Unit)) : Nat := untag(t);
+
 // Output: 2
 print(evaluate(two_calls));
 

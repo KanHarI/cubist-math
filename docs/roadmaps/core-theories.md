@@ -78,7 +78,11 @@ A theory's body lists, in order:
   argument and result types are sorts of the theory, each with an optional
   `notation`;
 - **laws**, `law name(binders) : statement;`, propositions about the earlier
-  fields. Since the sorts are sets, every law is a proposition.
+  fields. A statement must be evidently a proposition: an equation between
+  elements of a sort (the sorts are sets or propositions), `Void` or `Unit`,
+  an element of a proposition sort, or `forall`, `->` into one, or `and` of
+  two. Anything else, such as `law point : M;` or an `exists`, is refused,
+  since homomorphisms ignore laws.
 
 Inside the body the theory's own notation, and its parents', is in scope, and
 each field is in scope by its name from its declaration on.
@@ -142,8 +146,9 @@ declaration in it, as written: the rule takes all of them, so it does not
 depend on what a declaration uses. A parameter whose type is a model is
 opened for each declaration's statement and proof. Inside the section a
 declaration of the section is applied to the section's parameters already,
-so `square(one)` there is `square{{U}}(G, one)` outside. Sections do not
-nest in L2.4.
+so `square(one)` there is `square{{U}}(G, one)` outside. A recursive call
+passes them unchanged too: in `power(x, n)`, `power(x, k)` is
+`power{{U}}(G, x, k)`. Sections do not nest in L2.4.
 
 ## Extension
 
@@ -232,5 +237,6 @@ scope.
 - Homomorphisms compose, identity is a unit for composition, and an
   isomorphism's inverse is an isomorphism, on closed models by `evaluate`.
 - Refusals: a field whose name two parents give, a law that is not about the
-  theory's fields, an operation whose arguments are not sorts (for `Hom`), a
-  notation that is not an operator, an `open` of a value that is not a model.
+  theory's fields or is not evidently a proposition, an operation whose
+  arguments are not sorts (for `Hom`), a notation that is not an operator, an
+  `open` of a value that is not a model.
