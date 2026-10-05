@@ -475,6 +475,7 @@ export const diagnostics = [
   ["E815", "… is a model of …, which has no field …: it has ……."],
   ["E816", "This is a model of …, which has no field …: it has ……."],
   ["E817", "…'s models have no homomorphisms: …."],
+  ["E818", "The law … must state a proposition: an equation between elements of a sort, Void, or forall, -> or and over those; …. A law holds no data, and homomorphisms ignore laws: declare data as an operation or a constant."],
   // Kernel: declared types
   ["K101", "Dimension renaming allocation failed."],
   ["K102", "A boundary is nested too deeply."],

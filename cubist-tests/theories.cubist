@@ -40,6 +40,22 @@ theory Semiring extends
   law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;
 }
 
+// A law is a proposition: an equation between elements of a sort, Void,
+// or forall, -> and `and` over those.
+theory Nontrivial extends Monoid {
+  zero : M;
+  law zero_ne_one : zero = one -> Void;
+}
+
+// A sort renamed twice takes its evidence's name along each time.
+theory Carrier extends Monoid(M := R) {
+}
+
+theory Recarried extends Carrier(R := S) {
+}
+
+def recarried_evidence(A : Recarried.Model(U0)) : IsSet(U0, A.S) := A.S_is_set;
+
 // A model is built field by field, by name.
 def additive_nat : CommMonoid.Model(U0) := CommMonoid.make(
   M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := 0,
@@ -127,6 +143,14 @@ theory SharedOperator {
   sort M : set;
   mul(x, y : M) : M notation x * y;
   times(x, y : M) : M notation x * y;
+}
+
+// Error: E818: The law point must state a proposition: an equation between elements of a sort,
+//   Void, or forall, -> or and over those; M is a sort, whose elements are data. A law holds no
+//   data, and homomorphisms ignore laws: declare data as an operation or a constant.
+theory Pointed {
+  sort M : set;
+  law point : M;
 }
 
 theory Left {
