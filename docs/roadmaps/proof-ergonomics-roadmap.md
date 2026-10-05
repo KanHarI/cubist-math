@@ -19,7 +19,7 @@ The remaining dependent, cubical, induction and shared elaboration work moved
 to the [HoTT and cubical automation roadmap](hott-automation-roadmap.md), and
 kernel-facing interval work to the [kernel roadmap](cubical-kernel-roadmap.md).
 Each open item below names its new owner. This roadmap keeps:
-- general argument inference with `apply` and `refine` (milestone 5);
+- general argument inference (milestone 5);
 - theories, structures and notation (milestone 6);
 - inductive declarations and pattern matching (milestone 7);
 - computability as a checked property (milestone 8).
@@ -435,9 +435,10 @@ Delivered here ahead of that work: `path i =>`, `p @ i`, `ext x;`,
   this item absorbs HoTT A9. Retain a way to supply every implicit argument
   explicitly. Reject ambiguous inference and universe lowering. This is
   L4.1b; it follows L4.1a and G0 without waiting for indexed-family kernels.
-- [ ] Add `apply theorem;` and `refine term;` with visible subgoals and explicit
-  witness obligations. Reuse the goal machinery (HoTT A5) rather than inventing
-  assumed inhabitants for missing arguments.
+- [ ] ~~Add `apply theorem;` and `refine term;` with visible subgoals and explicit
+  witness obligations.~~ Withdrawn on 2026-10-05 (work-plan L4.4): `let` and
+  `exact` express both, and holes and implicit parameters infer what `apply`
+  would.
 - [ ] Goal-derived induction is milestone 7's `match`; `Path` induction
   remains HoTT B1. `constructor`/witness conveniences stay here, as ordinary
   pair or sum construction respecting truncation elimination restrictions.
