@@ -100,6 +100,7 @@ export const diagnostics = [
   ["E173", "Expected '}' to close the section."],
   ["E174", "A section holds definitions: def and computable def."],
   ["E175", "… is reserved, as a keyword or a built-in type of the language; pick another name."],
+  ["E176", "Reversal is written ~: ~p reverses a path and ~i a coordinate. Prefix - is kept for arithmetic."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],

@@ -1,3 +1,5 @@
+import { tokenize } from "./parser.mjs";
+
 // Sources written before 2026-09-30 may use `have`, which `let` replaced with
 // the same forms: have name : T := term; and have name : T { … } elaborate as
 // let does. A historical source, such as a migration baseline read from an
@@ -15,11 +17,25 @@ export const currentSyntax = source => source
   .replace(/(?<![A-Za-z0-9_'])have(\s+[A-Za-z_][A-Za-z0-9_]*\s*:)/g, "let$1")
   .replace(/(?<![A-Za-z0-9_'])cases(?=\s+[^{};]*\{\s*left\s+[A-Za-z_][A-Za-z0-9_']*\s*=>)/g, "match");
 
+// Until 2026-10-06 prefix - reversed, as ~ does now: -p a path and -i a
+// coordinate. A revision of that time (minusReverses) is read with ~ for each
+// prefix -; trunc(-1)'s minus is a level's sign and stays. Arithmetic - is to
+// return (notation roadmap, L2.10b), so a later revision is read as it is.
+const reversalsAsTilde = source => {
+  let tokens;
+  try { tokens = tokenize(source); } catch { return source; }
+  const starts = tokens.filter((token, k) => token.text === "-"
+    && !(tokens[k - 1]?.text === "(" && tokens[k - 2]?.text === "trunc")).map(token => token.start);
+  let text = source;
+  for (const start of starts.reverse()) text = `${text.slice(0, start)}~${text.slice(start + 1)}`;
+  return text;
+};
+
 // Before 2026-10-05 every module imported nat without asking. A module of
 // a revision that did so (implicitNat), read in today's syntax, imports it,
 // unless it is nat or already does: so a baseline sees the names it saw then.
-export const historicalSource = (source, module, { implicitNat = true } = {}) => {
-  const text = currentSyntax(source);
+export const historicalSource = (source, module, { implicitNat = true, minusReverses = true } = {}) => {
+  const rewritten = currentSyntax(source), text = minusReverses ? reversalsAsTilde(rewritten) : rewritten;
   if (!implicitNat || module === "nat" || /(?:^|\n)\s*import\s+(?:[^;]*,\s*)?nat\s*[;,]/.test(text)) return text;
   return `import nat;\n${text}`;
 };

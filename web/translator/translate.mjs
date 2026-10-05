@@ -839,7 +839,7 @@ export class Translator {
       }
       case "unary": {
         // ~p is sym(p), whatever the name sym is bound to here.
-        return this.reversePath(scope,tr(n.operand,null),n.operator);
+        return this.reversePath(scope,tr(n.operand,null),"~");
       }
       case "binary": {
         if(["&","|"].includes(n.operator))
