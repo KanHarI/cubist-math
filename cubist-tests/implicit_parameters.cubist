@@ -29,6 +29,19 @@ def choose{{A : U0}}(x, y : A) : A := y;
 
 def two_calls : Nat := choose(1)(2);
 
+// A definition that does not determine its arguments, Family(n) := Nat, does
+// not fix n from the first argument's type, Family(0); refl(1) fixes it.
+def Family(n : Nat) : U0 := Nat;
+
+def pick{{n : Nat}}(a : Family(n), h : n = 1) : Nat := n;
+
+def zero_family : Family(0) := 0;
+
+def picked : Nat := pick(zero_family, refl(1));
+
+// Output: 1
+print(evaluate(picked));
+
 // Output: 2
 print(evaluate(two_calls));
 

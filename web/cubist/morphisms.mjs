@@ -30,9 +30,21 @@ function signature(field, sorts) {
 }
 
 // The declarations of T's homomorphisms and isomorphisms, each {name,
-// source, role}, or, as `missing`, why T's models have none.
-export function morphismSource(record) {
+// source, role}, or, as `missing`, why T's models have none. `isTheory`
+// says whether a name is a theory in scope.
+export function morphismSource(record, isTheory = () => false) {
   const T = record.name, hom = `${T}.Hom`, iso = `${T}.Iso`;
+  // The source's models, A, B and C, and homomorphisms, f and g. A theory's
+  // name begins its qualified names, as A.M, which a binder of that name
+  // would not shadow, so each avoids every theory in scope, T included.
+  const taken = new Set();
+  const own = stem => {
+    let name = stem;
+    for (let k = 1; name === T || isTheory(name) || taken.has(name); k++) name = `${stem}${k}`;
+    taken.add(name);
+    return name;
+  };
+  const A = own("A"), B = own("B"), C = own("C"), f = own("f"), g = own("g");
   const sorts = record.fields.filter(field => field.kind === "sort").map(field => field.name);
   if (!sorts.length) return { missing: `${T} has no sorts` };
   const sortSet = new Set(sorts), operations = new Map();
@@ -59,27 +71,27 @@ export function morphismSource(record) {
   const mapping = (h, sort) => `${hom}.${map(sort)}(${h})`;
   // The type of a homomorphism field over A and B, `mapOf(sort)` the maps.
   const fieldType = (field, mapOf) => {
-    if (field.sort) return `A.${field.sort} -> B.${field.sort}`;
+    if (field.sort) return `${A}.${field.sort} -> ${B}.${field.sort}`;
     const { name, args, result } = field.operation;
-    const statement = `${mapOf(result)}(${applied(`A.${name}`, xs(args.length))}) = ${
-      applied(`B.${name}`, args.map((sort, k) => `${mapOf(sort)}(${argument(k)})`))}`;
-    return quantified(args, "A", statement);
+    const statement = `${mapOf(result)}(${applied(`${A}.${name}`, xs(args.length))}) = ${
+      applied(`${B}.${name}`, args.map((sort, k) => `${mapOf(sort)}(${argument(k)})`))}`;
+    return quantified(args, A, statement);
   };
   // A Σ of fields, the last one bare; a tuple of values.
   const sigma = (fields, typeOf) => fields.map((field, k) => k === fields.length - 1 ? typeOf(field)
     : `exists ${field.name} : (${typeOf(field)}). `).join("");
   const tuple = values => values.length === 1 ? values[0] : `(${values.join(", ")})`;
-  const models = more => `{{U, V < UU0}}(${[`A : ${T}.Model(U)`, `B : ${T}.Model(V)`, ...more].join(", ")})`;
-  const implicitModels = `{{U, V < UU0, A : ${T}.Model(U), B : ${T}.Model(V)}}`;
-  const threeModels = `{{U, V, W < UU0, A : ${T}.Model(U), B : ${T}.Model(V), C : ${T}.Model(W)}}`;
+  const models = more => `{{U, V < UU0}}(${[`${A} : ${T}.Model(U)`, `${B} : ${T}.Model(V)`, ...more].join(", ")})`;
+  const implicitModels = `{{U, V < UU0, ${A} : ${T}.Model(U), ${B} : ${T}.Model(V)}}`;
+  const threeModels = `{{U, V, W < UU0, ${A} : ${T}.Model(U), ${B} : ${T}.Model(V), ${C} : ${T}.Model(W)}}`;
   const declarations = [];
   const declare = (name, source, role, extra = {}) => declarations.push({ name, source: `def ${name}${source}`, role, ...extra });
   // The projections of a record type, each typed over the earlier ones.
   const projections = (owner, fields, typeOf) => fields.forEach((field, k) => {
-    let value = "f";
+    let value = f;
     for (let j = 0; j < k; j++) value += ".2";
     if (k < fields.length - 1) value += ".1";
-    declare(`${owner}.${field.name}`, `${implicitModels}(f : ${owner}(A, B)) : ${typeOf(field)} := ${value};`, "projection",
+    declare(`${owner}.${field.name}`, `${implicitModels}(${f} : ${owner}(${A}, ${B})) : ${typeOf(field)} := ${value};`, "projection",
       { field: field.name });
   });
   const record_ = (name, fields, parents = []) => ({ name, model: name, make: `${name}.make`,
@@ -90,31 +102,31 @@ export function morphismSource(record) {
   const ownType = field => fieldType(field, sort => map(sort));
   declare(hom, `${models([])} : max(U, V) := ${sigma(homFields, ownType)};`, "hom",
     { record: record_(hom, homFields, record.parents.map(parent => parent.label)) });
-  declare(`${hom}.make`, `${models(homFields.map(field => `${field.name} : ${ownType(field)}`))} : ${hom}(A, B) := ${
+  declare(`${hom}.make`, `${models(homFields.map(field => `${field.name} : ${ownType(field)}`))} : ${hom}(${A}, ${B}) := ${
     tuple(homFields.map(field => field.name))};`, "make");
-  projections(hom, homFields, field => fieldType(field, sort => mapping("f", sort)));
+  projections(hom, homFields, field => fieldType(field, sort => mapping(f, sort)));
   // The identity: each map the identity, preserving by reflexivity.
-  declare(`${hom}.id`, `{{U < UU0}}(A : ${T}.Model(U)) : ${hom}(A, A) := ${hom}.make(A, A, ${homFields.map(field => {
-    if (field.sort) return `fun (x : A.${field.sort}) => x`;
+  declare(`${hom}.id`, `{{U < UU0}}(${A} : ${T}.Model(U)) : ${hom}(${A}, ${A}) := ${hom}.make(${A}, ${A}, ${homFields.map(field => {
+    if (field.sort) return `fun (x : ${A}.${field.sort}) => x`;
     const { name, args } = field.operation;
-    return args.length ? `fun (${binders(args, "A")}) => refl(${applied(`A.${name}`, xs(args.length))})` : `refl(A.${name})`;
+    return args.length ? `fun (${binders(args, A)}) => refl(${applied(`${A}.${name}`, xs(args.length))})` : `refl(${A}.${name})`;
   }).join(", ")});`, "id");
   // Composition: g after f, preserving by f's preservation carried along
   // g's map, then g's.
-  declare(`${hom}.compose`, `${threeModels}(g : ${hom}(B, C), f : ${hom}(A, B)) : ${hom}(A, C) := ${hom}.make(A, C, ${homFields.map(field => {
-    if (field.sort) return `fun (x : A.${field.sort}) => g.${field.name}(f.${field.name}(x))`;
+  declare(`${hom}.compose`, `${threeModels}(${g} : ${hom}(${B}, ${C}), ${f} : ${hom}(${A}, ${B})) : ${hom}(${A}, ${C}) := ${hom}.make(${A}, ${C}, ${homFields.map(field => {
+    if (field.sort) return `fun (x : ${A}.${field.sort}) => ${g}.${field.name}(${f}.${field.name}(x))`;
     const { args, result } = field.operation;
-    const proof = `trans(cong(fun (image : B.${result}) => g.${map(result)}(image), ${applied(`f.${field.name}`, xs(args.length))}), ${
-      applied(`g.${field.name}`, args.map((sort, k) => `f.${map(sort)}(${argument(k)})`))})`;
-    return args.length ? `fun (${binders(args, "A")}) => ${proof}` : proof;
+    const proof = `trans(cong(fun (image : ${B}.${result}) => ${g}.${map(result)}(image), ${applied(`${f}.${field.name}`, xs(args.length))}), ${
+      applied(`${g}.${field.name}`, args.map((sort, k) => `${f}.${map(sort)}(${argument(k)})`))})`;
+    return args.length ? `fun (${binders(args, A)}) => ${proof}` : proof;
   }).join(", ")});`, "compose");
   // A parent's homomorphism: its fields are the child's fields its sorts
   // and operations became, in its order.
   for (const parent of record.parents) {
     const fields = parent.fields.flatMap((child, k) => parent.kinds[k] === "sort" ? [map(child)]
       : parent.kinds[k] === "operation" ? [`map_${child}`] : []);
-    declare(`${hom}.${parent.label}`, `${implicitModels}(f : ${hom}(A, B)) : ${parent.theory}.Hom(A.${parent.label}, B.${parent.label}) := ${
-      parent.theory}.Hom.make(A.${parent.label}, B.${parent.label}${fields.map(field => `, f.${field}`).join("")});`, "projection",
+    declare(`${hom}.${parent.label}`, `${implicitModels}(${f} : ${hom}(${A}, ${B})) : ${parent.theory}.Hom(${A}.${parent.label}, ${B}.${parent.label}) := ${
+      parent.theory}.Hom.make(${A}.${parent.label}, ${B}.${parent.label}${fields.map(field => `, ${f}.${field}`).join("")});`, "projection",
     { field: parent.label });
   }
 
@@ -123,25 +135,25 @@ export function morphismSource(record) {
     ...sorts.map(sort => ({ name: sorts.length === 1 ? "from_to" : `from_to_${sort}`, sort, way: "from_to" })),
     ...sorts.map(sort => ({ name: sorts.length === 1 ? "to_from" : `to_from_${sort}`, sort, way: "to_from" }))];
   const other = field => isoFields.find(f => f.sort === field.sort && f.way !== field.way).name;
-  const isoType = (field, to, from) => field.name === "to" ? `${hom}(A, B)` : field.name === "from" ? `${hom}(B, A)`
-    : field.way === "from_to" ? `forall x : A.${field.sort}. ${mapping(from, field.sort)}(${mapping(to, field.sort)}(x)) = x`
-      : `forall y : B.${field.sort}. ${mapping(to, field.sort)}(${mapping(from, field.sort)}(y)) = y`;
+  const isoType = (field, to, from) => field.name === "to" ? `${hom}(${A}, ${B})` : field.name === "from" ? `${hom}(${B}, ${A})`
+    : field.way === "from_to" ? `forall x : ${A}.${field.sort}. ${mapping(from, field.sort)}(${mapping(to, field.sort)}(x)) = x`
+      : `forall y : ${B}.${field.sort}. ${mapping(to, field.sort)}(${mapping(from, field.sort)}(y)) = y`;
   declare(iso, `${models([])} : max(U, V) := ${sigma(isoFields, field => isoType(field, "to", "from"))};`, "iso",
     { record: record_(iso, isoFields) });
-  declare(`${iso}.make`, `${models(isoFields.map(field => `${field.name} : ${isoType(field, "to", "from")}`))} : ${iso}(A, B) := ${
+  declare(`${iso}.make`, `${models(isoFields.map(field => `${field.name} : ${isoType(field, "to", "from")}`))} : ${iso}(${A}, ${B}) := ${
     tuple(isoFields.map(field => field.name))};`, "make");
-  projections(iso, isoFields, field => isoType(field, `${iso}.to(f)`, `${iso}.from(f)`));
-  declare(`${iso}.id`, `{{U < UU0}}(A : ${T}.Model(U)) : ${iso}(A, A) := ${iso}.make(A, A, ${hom}.id(A), ${hom}.id(A)${
-    isoFields.slice(2).map(field => `, fun (x : A.${field.sort}) => refl(x)`).join("")});`, "id");
+  projections(iso, isoFields, field => isoType(field, `${iso}.to(${f})`, `${iso}.from(${f})`));
+  declare(`${iso}.id`, `{{U < UU0}}(${A} : ${T}.Model(U)) : ${iso}(${A}, ${A}) := ${iso}.make(${A}, ${A}, ${hom}.id(${A}), ${hom}.id(${A})${
+    isoFields.slice(2).map(field => `, fun (x : ${A}.${field.sort}) => refl(x)`).join("")});`, "id");
   // Composition: each way, the composite of the two homomorphisms; their
   // round trips, the inner one carried along the outer map, then the outer.
-  declare(`${iso}.compose`, `${threeModels}(g : ${iso}(B, C), f : ${iso}(A, B)) : ${iso}(A, C) := ${iso}.make(A, C, ${
-    hom}.compose(g.to, f.to), ${hom}.compose(f.from, g.from)${isoFields.slice(2).map(field => field.way === "from_to"
-    ? `, fun (x : A.${field.sort}) => trans(cong(fun (image : B.${field.sort}) => f.from.${map(field.sort)}(image), g.${field.name}(f.to.${map(field.sort)}(x))), f.${field.name}(x))`
-    : `, fun (y : C.${field.sort}) => trans(cong(fun (image : B.${field.sort}) => g.to.${map(field.sort)}(image), f.${field.name}(g.from.${map(field.sort)}(y))), g.${field.name}(y))`).join("")});`,
+  declare(`${iso}.compose`, `${threeModels}(${g} : ${iso}(${B}, ${C}), ${f} : ${iso}(${A}, ${B})) : ${iso}(${A}, ${C}) := ${iso}.make(${A}, ${C}, ${
+    hom}.compose(${g}.to, ${f}.to), ${hom}.compose(${f}.from, ${g}.from)${isoFields.slice(2).map(field => field.way === "from_to"
+    ? `, fun (x : ${A}.${field.sort}) => trans(cong(fun (image : ${B}.${field.sort}) => ${f}.from.${map(field.sort)}(image), ${g}.${field.name}(${f}.to.${map(field.sort)}(x))), ${f}.${field.name}(x))`
+    : `, fun (y : ${C}.${field.sort}) => trans(cong(fun (image : ${B}.${field.sort}) => ${g}.to.${map(field.sort)}(image), ${f}.${field.name}(${g}.from.${map(field.sort)}(y))), ${g}.${field.name}(y))`).join("")});`,
   "compose");
   // The inverse: the two homomorphisms and the two round trips swapped.
-  declare(`${iso}.inverse`, `${implicitModels}(f : ${iso}(A, B)) : ${iso}(B, A) := ${iso}.make(B, A, f.from, f.to${
-    isoFields.slice(2).map(field => `, f.${other(field)}`).join("")});`, "inverse");
+  declare(`${iso}.inverse`, `${implicitModels}(${f} : ${iso}(${A}, ${B})) : ${iso}(${B}, ${A}) := ${iso}.make(${B}, ${A}, ${f}.from, ${f}.to${
+    isoFields.slice(2).map(field => `, ${f}.${other(field)}`).join("")});`, "inverse");
   return { declarations };
 }
