@@ -27,8 +27,9 @@ export function registerTheoryDeclaration(t,d) {
 // n.name is m.f: when m is a model of a theory, the node of the call T.f(m),
 // or T.p(m) for a parent labelled p; otherwise null.
 export function modelField(t,scope,n) {
-  const dot=n.name.lastIndexOf(".");
-  if(dot<=0||!scope.env.has(n.name.slice(0,n.name.indexOf("."))))return null;
+  const dot=n.name.lastIndexOf("."),root=dot>0?scope.env.get(n.name.slice(0,n.name.indexOf("."))):null;
+  // A name under a theory's, T.Hom, is a qualified name, not a field.
+  if(!root||root.tag==="Theory")return null;
   const owner={...n,name:n.name.slice(0,dot),end:n.start+dot};
   const record=recordOf(t,scope,t.term(owner,scope,null));
   if(!record)return null;
@@ -37,6 +38,17 @@ export function modelField(t,scope,n) {
   if(!known)throw Error(`${owner.name} is a model of ${record.name}, which has no field ${field}: it has ${record.fields.map(f=>f.name).join(", ")}${
     record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`);
   return {kind:"call",fn:{...n,name:known.projection},args:[owner],start:n.start,end:n.end};
+}
+
+// e.f, for a value e that is not a name: when e is a model, the node of the
+// call T.f(e); otherwise the error that says so.
+export function memberField(t,scope,n) {
+  const record=recordOf(t,scope,t.term(n.value,scope,null)),field=n.field.text;
+  if(!record)throw Error(`.${field} reads a field of a model of a theory; this value is not one.`);
+  const known=record.fields.find(f=>f.name===field)??record.parents.find(p=>p.label===field);
+  if(!known)throw Error(`This is a model of ${record.name}, which has no field ${field}: it has ${record.fields.map(f=>f.name).join(", ")}${
+    record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`);
+  return {kind:"call",fn:{kind:"name",name:known.projection,start:n.field.start,end:n.field.end},args:[n.value],start:n.start,end:n.end};
 }
 
 // The scope with the model `node` opened, or null when it is no model: each
@@ -77,4 +89,24 @@ export function theoryDeclarations(t,module,d,env,declarations) {
 export function missingEvidence(d,env) {
   const missing=(d.requires??[]).filter(name=>!env.has(name));
   return missing.length?Error(`The sorts of ${d.generated.theory} need ${missing.join(" and ")}, from hlevels: import hlevels;`):null;
+}
+
+// T.Hom or T.Iso, or one of their operations, for a theory T whose models
+// have no homomorphisms: the error that says why, or null.
+export function missingMorphisms(scope,name) {
+  const theory=/^(.+?)\.(?:Hom|Iso)(?:\.|$)/.exec(name)?.[1],entry=theory&&scope.env.get(theory);
+  return entry?.tag==="Theory"&&entry.record.noMorphisms
+    ?Error(`${theory}'s models have no homomorphisms: ${entry.record.noMorphisms}.`):null;
+}
+
+// The rest of a theory whose type of models failed, `model`: taken off the
+// queue, each unavailable as a dependency of that type.
+export function skipTheory(t,queue,env,model) {
+  for(let k=queue.length-1;k>=0;k--) {
+    const d=queue[k];
+    if(d.generated?.theory!==model.generated.theory)continue;
+    queue.splice(k,1);
+    env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:t.checker.bindingName?.(d.name.text)??d.name.text,
+      reason:`Untranslated dependency: ${model.name.text}`});
+  }
 }

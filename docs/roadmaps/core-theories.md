@@ -1,10 +1,16 @@
 # Core theories (L2.4)
 
-Status: design, 2026-10-05; slices 1 and 2 implemented the same day
-(`web/cubist/theories.mjs`, `web/translator/theories.mjs`; evidence
-`cubist-tests/theories.cubist`, `tests/theories.test.mjs`, the reference's
-[theories and models](../../web/reference/theories.html)). Sections and
-homomorphisms are next. This document fixes the contract of work-plan
+Status: design, 2026-10-05; slices 1, 2 and 4 implemented the same day
+(`web/cubist/theories.mjs`, `web/cubist/morphisms.mjs`,
+`web/translator/theories.mjs`; evidence `cubist-tests/theories.cubist`,
+`cubist-tests/theory_morphisms.cubist`, `tests/theories.test.mjs`, the
+reference's [theories and models](../../web/reference/theories.html)).
+Sections are next. Two additions the slices needed: `e.f` reads a field of
+any value whose type is a theory's record, not only of a name, as
+`T.Iso.inverse(f).to.map(x)`; and argument inference matches one
+definition applied on both sides, `T.Hom(A, B)` against `T.Hom(M, N)`,
+argument by argument before unfolding it, so a homomorphism's models are
+implicit in its operations. This document fixes the contract of work-plan
 L2.4: theory declarations, their models, scoped notation, sections,
 extension, homomorphisms and isomorphisms. It follows
 section 1 of the [language features proposal](inductive-language-features.md)

@@ -19,7 +19,7 @@ import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference,ma
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName} from "./hlevel.mjs";
 import {repeatedName,stem} from "./names.mjs";
-import {operatorBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence} from "./theories.mjs";
+import {operatorBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipTheory} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -410,6 +410,10 @@ export class Translator {
       // result must not remain available to subsequent declarations.
       if (declarations.at(-1).status === "not-translated")
         env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:this.checker.bindingName?.(d.name.text)??d.name.text,reason:declarations.at(-1).reason});
+      // Without its type of models, the rest of a theory cannot check: it is
+      // unavailable, and its failure is reported once.
+      if (d.generated?.role==="model"&&declarations.at(-1).status==="not-translated")
+        skipTheory(this,queue,env,d);
     }
     return {declarations,env,directives,simpRegistry:this.simpRegistry,
       normalizationVisits:this.checker.steps};
@@ -751,6 +755,8 @@ export class Translator {
         // m.f, for a model m of a theory, is the projection T.f(m) (L2.4).
         const projection=modelField(this,scope,n);
         if(projection)return tr(projection,expected);
+        const noMorphisms=missingMorphisms(scope,n.name);
+        if(noMorphisms)throw noMorphisms;
         // The printer writes __U where an instance's universe is erased.
         if(/^__U[0-9]*$/.test(n.name))throw Error(`${n.name} stands for a universe that the printer could not show: write the universe in its place, such as U0 or a universe variable.`);
         throw Error(`Untranslated name: ${n.name}`);
@@ -845,6 +851,8 @@ export class Translator {
         }
         throw Error(`Untranslated operator: ${n.operator}`);
       }
+      // e.f, a field of a model that is not a name (L2.4).
+      case "member": return tr(memberField(this,scope,n),expected);
       case "projection": {
         // p.1 and p.2 are the kernel's projections; the family comes from the
         // checked type of p, so nothing is passed explicitly (HoTT A8).

@@ -1,5 +1,7 @@
 // A small mathematical proof language. Parsing never evaluates JavaScript.
-import { notationOperators } from "./theories.mjs";
+
+// The operators a theory's notation can bind (theories.mjs).
+export const notationOperators = ["+", "*", "<", "<="];
 
 export function tokenize(source) {
   if (typeof source !== "string" || source.length > 1000000)
@@ -241,6 +243,14 @@ export function parse(source, typeOnly = false) {
         a = { kind: "name", name: `${a.name}.${member.text}`, qualifiedDot: { start: dot.start, end: dot.end },
           ...(a.qualifiedDot ? { qualifiedDots: [...(a.qualifiedDots ?? [a.qualifiedDot]), { start: dot.start, end: dot.end }] } : {}),
           start: a.start, end: member.end };
+        continue;
+      }
+      // A field of any other value, f(x).map, is tight too: a model's field
+      // (L2.4), which the translator reads from the value's type.
+      if (peek() === "." && ts[i - 1].end === ts[i].start
+          && /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text) && ts[i + 1].start === ts[i].end) {
+        const dot = take("."), member = take();
+        a = { kind: "member", value: a, field: member, dot: { start: dot.start, end: dot.end }, start: a.start, end: member.end };
         continue;
       }
       // A projection p.1 or p.2 is tight: no space on either side of the dot.

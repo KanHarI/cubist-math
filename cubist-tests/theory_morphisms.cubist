@@ -1,0 +1,110 @@
+// Homomorphisms and isomorphisms of a theory's models (L2.4): T.Hom(A, B),
+// a map of each sort preserving each operation and constant, with identity,
+// composition and each parent's homomorphism; T.Iso(A, B), a homomorphism
+// each way, inverse on each sort, with identity, composition and inverse.
+// On closed models they compute.
+import nat;
+import hlevels;
+
+theory Monoid {
+  sort M : set;
+  mul(x, y : M) : M notation x * y;
+  law mul_assoc(x, y, z : M) : (x * y) * z = x * (y * z);
+  one : M;
+  law one_mul(x : M) : one * x = x;
+  law mul_one(x : M) : x * one = x;
+}
+
+theory CommMonoid extends Monoid {
+  law mul_comm(x, y : M) : x * y = y * x;
+}
+
+def additive_nat : CommMonoid.Model(U0) := CommMonoid.make(
+  M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := 0,
+  one_mul := nat_zero_add, mul_one := nat_add_zero, mul_comm := nat_add_comm
+);
+
+// The trivial monoid, on Unit.
+def trivial : CommMonoid.Model(U0) := CommMonoid.make(
+  M := Unit, M_is_set := prop_is_set(U0, Unit, unit_is_prop), mul := fun (x, y : Unit) => tt,
+  mul_assoc := fun (x, y, z : Unit) => refl(tt), one := tt, one_mul := fun (x : Unit) => unit_is_prop(tt, x),
+  mul_one := fun (x : Unit) => unit_is_prop(tt, x), mul_comm := fun (x, y : Unit) => refl(tt)
+);
+
+// A homomorphism is built field by field: its map, and that the map
+// preserves the operation and the unit.
+def collapse : CommMonoid.Hom(additive_nat, trivial) := CommMonoid.Hom.make(
+  additive_nat, trivial, map := fun (n : Nat) => tt, map_mul := fun (x, y : Nat) => refl(tt), map_one := refl(tt)
+);
+
+// Into any monoid, the trivial one goes to its unit.
+def unit_into(U < UU0, B : CommMonoid.Model(U)) : CommMonoid.Hom(trivial, B) := CommMonoid.Hom.make(
+  trivial, B, map := fun (x : Unit) => B.one, map_mul := fun (x, y : Unit) => sym(B.one_mul(B.one)),
+  map_one := refl(B.one)
+);
+
+// The fields of a homomorphism, f.map and the rest, each typed through the
+// earlier ones.
+// Output: forall U < UU0. forall V < UU0. forall A : CommMonoid.Model(U). forall B :
+//   CommMonoid.Model(V). forall f : CommMonoid.Hom{{U, V}}(A, B). forall x : A.M. forall y : A.M.
+//   f.map(A.mul(x, y)) = B.mul(f.map(x), f.map(y))
+print(typeof(CommMonoid.Hom.map_mul));
+
+// Composition and the identity compute on closed models.
+def round : CommMonoid.Hom(trivial, trivial) := CommMonoid.Hom.compose(collapse, unit_into(U0, additive_nat));
+
+// Output: tt
+print(evaluate(round.map(tt)));
+
+// Output: 3
+print(evaluate(CommMonoid.Hom.compose(CommMonoid.Hom.id(additive_nat), CommMonoid.Hom.id(additive_nat)).map(3)));
+
+// Output: 0
+print(evaluate(unit_into(U0, additive_nat).map(tt)));
+
+// A child's homomorphism has its parent's: f.monoid preserves the
+// Monoid-models' operations.
+def forgotten : Monoid.Hom(additive_nat.monoid, trivial.monoid) := CommMonoid.Hom.monoid(collapse);
+
+// Output: tt
+print(evaluate(forgotten.map(5)));
+
+// Isomorphisms: the identity, composition and inverse.
+def trivial_twice : CommMonoid.Iso(trivial, trivial) := CommMonoid.Iso.make(
+  trivial, trivial, round, CommMonoid.Hom.id(trivial), fun (x : Unit) => unit_is_prop(tt, x),
+  fun (y : Unit) => unit_is_prop(tt, y)
+);
+
+def nat_itself : CommMonoid.Iso(additive_nat, additive_nat) := CommMonoid.Iso.inverse(
+  CommMonoid.Iso.compose(CommMonoid.Iso.id(additive_nat), CommMonoid.Iso.id(additive_nat))
+);
+
+// Output: 4
+print(evaluate(nat_itself.from.map(nat_itself.to.map(4))));
+
+def inverse_round(x : Unit) : CommMonoid.Iso.inverse(trivial_twice).to.map(x) = x {
+  rfl;
+}
+
+// The generated source names its models apart from every theory in scope,
+// so a theory may be called A, as its first model would be.
+theory A {
+  sort M : set;
+  one : M;
+}
+
+def nat_point : A.Model(U0) := A.make(Nat, nat_is_set, 0);
+
+// Output: 3
+print(evaluate(A.Hom.compose(A.Hom.id(nat_point), A.Hom.id(nat_point)).map(3)));
+
+// A theory whose operation takes something other than a sort has models,
+// but no homomorphisms.
+theory Indexed {
+  sort M : set;
+  power(x : M, n : Nat) : M;
+}
+
+// Error: E817: Indexed's models have no homomorphisms: its power takes or returns something other
+//   than a sort.
+def no_homs(A, B : Indexed.Model(U0)) := Indexed.Hom(A, B);

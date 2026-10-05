@@ -2167,6 +2167,10 @@
    "summary": "Theories (L2.4): sorts, operations with notation and laws; models built field by field and read by `m.f`, computing; parents' models; extension with a shared ancestor, labels and renaming; `open` and its notation; and the refusals: a field twice, a notation on a constant or out of order, one operator for two operations, two parents' fields of one name, an unknown parent or field, `open` of a non-model, a missing field, and a theory used as a term."
   },
   {
+   "path": "cubist-tests/theory_morphisms.cubist",
+   "summary": "Homomorphisms and isomorphisms (L2.4): built field by field, their fields' types, identity, composition and a parent's homomorphism computing on closed models, isomorphisms' identity, composition and inverse, and a theory whose operation takes a non-sort, which has none."
+  },
+  {
    "path": "cubist-tests/translation_failed_proofs.cubist",
    "summary": "A failed proof becomes no axiom: a use of it fails, and the rest checks."
   },
