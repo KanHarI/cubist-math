@@ -43,7 +43,10 @@ fields; `initial T` and `free T on A` (L2.6, whose contract is specified
 separately); numerals interpreted in a model; type-directed overloading and
 instance search, which the roadmaps defer. Structure scope stays explicit:
 an operator means one thing in a scope, chosen by `open` or `section`, never
-by the types of its operands.
+by the types of its operands. (The [notation roadmap](notation.md), L2.10,
+proposes revising this, pending its decisions: an operator would take its
+meaning from its operands' types through a table keyed by the type's head,
+still without search.)
 
 ## Theories
 
