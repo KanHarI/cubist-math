@@ -298,11 +298,6 @@ computable def hedberg(U < UU0, A : U, decide : forall x, y : A. Decidable(U, x 
 // Natural numbers form a set, by Hedberg's theorem: equality is decided by
 // recursion on both numbers, since 0 is no successor and a successor
 // determines its predecessor (nat's nat_succ_injective).
-def nat_is_zero(n : Nat) := induction n return U0 {
-    zero => Unit;
-    succ previous => Void;
-  };
-
 computable def nat_decide(m : Nat) := induction m as k return (forall n : Nat. (k = n) or ((k = n) -> Void)) {
     zero => (fun (n : Nat) => induction n as j return ((0 = j) or ((0 = j) -> Void)) {
       zero => typed((0 = 0) or ((0 = 0) -> Void), left(refl(0)));

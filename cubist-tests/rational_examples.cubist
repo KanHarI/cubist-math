@@ -1,0 +1,41 @@
+// The library's rationals at work: the integers' field of fractions, rat(a,
+// k) being a / (k + 1). Its equality is decided and its arithmetic, the
+// inverse included, computes on closed rationals, and the field's lemmas
+// apply to it.
+import nat;
+import algebra;
+import integers;
+import rationals;
+
+computable def equal_or_not(x, y : Q) : Nat := match rat_decide(x, y) return Nat {
+    left same => 1;
+    right different => 0;
+  };
+
+// 1/2 + 1/3 = 5/6.
+// Output: 1
+print(
+  evaluate(equal_or_not(rationals.add(rat(int(1, 0), 1), rat(int(1, 0), 2)), rat(int(5, 0), 5)))
+);
+
+// 2/4 = 1/2, and 1/2 is not 1/3.
+// Output: 1
+print(evaluate(equal_or_not(rat(int(2, 0), 3), rat(int(1, 0), 1))));
+
+// Output: 0
+print(evaluate(equal_or_not(rat(int(1, 0), 1), rat(int(1, 0), 2))));
+
+// The inverse of -2/3 is -3/2, and -2/3 times it is one.
+// Output: 1
+print(evaluate(equal_or_not(rationals.inv(rat(int(0, 2), 2)), rat(int(0, 3), 1))));
+
+// Output: 1
+print(
+  evaluate(
+    equal_or_not(rationals.mul(rat(int(0, 2), 2), rationals.inv(rat(int(0, 2), 2))), rationals.one)
+  )
+);
+
+// A commutative ring's lemma, at the rationals' ring.
+computable def times_zero(x : Q) :
+  rationals.mul(x, rationals.zero) = rationals.zero := mul_zero(rationals.comm_ring, x);
