@@ -755,30 +755,37 @@ beyond the library's foundations remains paused.
 
 ## Open decisions
 
-These wait for the maintainer. Each names the work it gates.
+These wait for the maintainer. Two are needed before the work they name;
+the rest stay open without blocking any scheduled slice, whose contract
+keeps a conservative behavior until a design is chosen.
+
+**Needed before the named work**
 
 1. **The order on the numbers** (first action 8) extends the resumed
    library scope: ordered commutative rings and fields, the integers' and
    rationals' decidable orders, and the positive rationals. The reals
    roadmap's R1 and R2 need it; no language package does.
-2. **L2.4c's open questions**
-   ([core theories](core-theories.md#open-questions)), to settle during
-   first action 2:
-   - whether the header's universe binder is required, or `M : set` names
-     the model's universe;
-   - how a qualified operator's operands are read, also notation's
-     question 3;
-   - whether a child can drop a parent's notation without giving another;
-   - homomorphisms of carriers with no h-level, whose path-valued
-     operations need coherence fields;
-   - how an index's evidence is given at a use, as `Nat`'s setness in
-     `G.F(Nat)`;
-   - the round trip of a set family indexed by a carrier, and with it that
-     theory's `T.Iso`.
-3. **The notation roadmap's open questions**
-   ([notation](notation.md#open-questions)), to settle before the views'
-   pilots, first action 4:
-   - notation rules (L2.10h), which nothing scheduled needs;
-   - whether notation keeps the word "view", which MMT, OBJ and L2.7
-     use otherwise;
-   - whether `do using M` and `match … using view` take `use`'s word.
+2. **Whether notation keeps the word "view"**
+   ([notation](notation.md#open-questions), question 2), which MMT, OBJ
+   and L2.7 use otherwise: before L2.10a, since renaming costs least while
+   nothing is implemented.
+
+**Open, not blocking**
+
+Each slice ships with the behavior in parentheses until the question is
+decided.
+
+- L2.4c's questions ([core theories](core-theories.md#open-questions)):
+  - whether the header's universe binder is required (a carrier names a
+    universe the header binds);
+  - how a qualified operator's operands are read, also notation's
+    question 3 (where they stand, as decided);
+  - whether a child can drop a parent's notation without giving another
+    (it renames it);
+  - homomorphisms of carriers with no h-level (none, E817);
+  - how an index's evidence is given at a use, as `Nat`'s setness in
+    `G.F(Nat)` (the author writes it);
+  - the round trip of a set family indexed by a carrier (no `T.Iso`).
+- Notation rules, L2.10h, proposed: nothing in L2.10a–e or i–k needs them.
+- Whether `do using M` and `match … using view` take `use`'s word
+  (notation's question 4): before N2 and L2.7 fix their syntax.
