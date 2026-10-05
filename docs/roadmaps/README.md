@@ -40,7 +40,8 @@ target statement or a supplied theorem parameter as an already proved result.
   parsers and faithful printing, without instance search. The direction and
   its decisions are recorded: no name-based operators or numerals, `~` for
   reversal with the cubical operators tightest, notation declared as used,
-  sections and `open` as view selections, `Lexeme` literals and a partial
+  one selection form, `use`, which replaces `open`, with sections, and
+  qualified operators such as `a G.(+) b`, `Lexeme` literals and a partial
   field inverse. Notation rules remain open, and the remaining grammar and
   elaboration contracts are draft.
 - [Core theories](core-theories.md): the contract of work-plan L2.4,

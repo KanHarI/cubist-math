@@ -191,7 +191,10 @@ hold a lone operator are this form; anything else in them is `G.(e)`. A
 parent's operator is reached through its label, `x R.additive.(*) y`.
 Only the operator is qualified: `a` and `b` are read where they stand,
 not in `G`. Whether they should be read in `G`'s notation instead, as in
-`G.(a + b)`, is open.
+`G.(a + b)`, is open. The notation roadmap lists every way to reach another
+notation under a selection, and how a later `use` switches it
+([switching](notation.md#switching-and-reaching-another-notation)); `use`
+replaces today's `open` (its decision 7).
 
 ### Open questions
 
@@ -226,7 +229,7 @@ instance search. Structure scope stays explicit: an operator means one thing
 in a scope, chosen by `open` or `section`, never by the types of its operands.
 The [notation roadmap](notation.md), L2.10, adopts explicit model notation
 views as the next direction: an expression or block selects its model before
-its operators and literals are elaborated. `v.(expression)` and `open v;`
+its operators and literals are elaborated. `v.(expression)` and `use v;`
 are its decided spellings; its remaining grammar and elaboration gates are
 draft. Existing `open` and section semantics remain compatible
 during that migration; type-based automation is optional later work, requiring
