@@ -74,7 +74,7 @@ theory Monoid {
             <ul>
               <li>a <strong>sort</strong>, <code>sort M : set;</code> or <code>sort P : prop;</code>, is a type of the structure. Its evidence of being a set or a proposition is a field too, <code>M_is_set : IsSet(U, M)</code> or <code>P_is_prop : IsProp(U, P)</code>, so a module that declares sorts imports <code>hlevels</code>;</li>
               <li>an <strong>operation</strong>, <code>mul(x, y : M) : M</code>, or a <strong>constant</strong>, <code>one : M</code>, may have a <strong>notation</strong>: one of the operators <code>x + y</code>, <code>x * y</code>, <code>x &lt; y</code> and <code>x &lt;= y</code>, written with the operation's two arguments in order;</li>
-              <li>a <strong>law</strong>, <code>law name(binders) : statement;</code>, states a property of the earlier fields. Since the sorts are sets, a law about their elements is a proposition.</li>
+              <li>a <strong>law</strong>, <code>law name(binders) : statement;</code>, states a property of the earlier fields. A law must be a proposition: an equation between elements of a sort (sorts are sets or propositions), <code>Void</code>, or <code>forall</code>, <code>-&gt;</code> and <code>and</code> over those, such as <code>zero = one -&gt; Void</code>. A law holds no data, so <code>law point : M;</code> is refused: declare it as a constant.</li>
             </ul>
             <p>Each field is in scope by its name after it is declared, and inside the theory a notation means its operation: <code>x * y</code> there is <code>mul(x, y)</code>. The words <code>sort</code>, <code>law</code> and <code>notation</code> are keywords only in a theory's body.</p>
           </section>
