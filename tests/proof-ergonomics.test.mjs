@@ -494,7 +494,7 @@ test("a naturality square must preserve its varying right boundary",async t=>{
 test("a multi-binder fun source link inspects the complete closed function",async t=>{
   const {source,result,program}=await cases(t,"multi_binder_fun");
   assert.equal(expandedSyntax(parse(formatCubist(source))),expandedSyntax(parse(source)));
-  for(const name of ["written","grouped","named_fun"]) {
+  for(const name of ["written","grouped"]) {
     const start=source.indexOf(":= fun",source.indexOf(`def ${name}`))+3;
     const links=result.links.filter(link=>link.name==="fun"&&link.start===start);
     assert.equal(links.length,1,name);

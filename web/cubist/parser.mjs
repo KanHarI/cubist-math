@@ -24,6 +24,25 @@ export function tokenize(source) {
   tokens.push({ text: "EOF", start: source.length, end: source.length });
   return tokens;
 }
+// Reserved names: the language's keywords, which begin a declaration, a
+// statement or a term, or join terms, and its built-in types Unit and Void,
+// whose meaning checking relies on (a theory's laws, for one). None can be
+// bound: not by a declaration, a parameter, a binder, a pattern, a field or
+// a constructor. Every binding site reads its name through name(), which
+// refuses them, as it does universe constants. A word that means something
+// only inside one construct is a contextual keyword and stays a name
+// elsewhere: the words of directives (computable, evaluate, expecting,
+// print, typeof, inspect, simp_rule, simp_set), sort, law, notation and
+// extends in a theory, set, prop, type and trunc in a header, and with, at,
+// by, from, over, along, only, using and the like in particular statements.
+// The library and the archive bind prop, set, law and evaluate.
+export const reservedNames = new Set([
+  "import", "def", "inductive", "theory", "section",
+  "let", "obtain", "exact", "calc", "open", "match", "rfl", "rw", "simp", "simpa", "intro", "ext", "hlevel", "induction",
+  "fun", "forall", "exists", "and", "or", "as", "return",
+  "Unit", "Void",
+]);
+
 export function parse(source, typeOnly = false) {
   const ts = tokenize(source);
   let i = 0,
@@ -60,6 +79,8 @@ export function parse(source, typeOnly = false) {
     // U0, UU3 and the like name universes: they cannot be bound or declared.
     if (/^U+[0-9]+$/.test(t.text))
       throw Object.assign(new Error(`${t.text} is a universe constant; pick another name.`), { offset: t.start });
+    if (reservedNames.has(t.text))
+      throw Object.assign(new Error(`${t.text} is reserved, as a keyword or a built-in type of the language; pick another name.`), { offset: t.start });
     return t;
   }
   // A binder's type, or a universe binder's bound: `x : A` or `U < UU0`.
