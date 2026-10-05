@@ -144,7 +144,7 @@ theory Magma(U < UU0) {
     uses: `import structures;
 
 def square(G : Magma(U0), x : G.M) : G.M {
-  open G;
+  use G;
   exact x * x;
 }
 

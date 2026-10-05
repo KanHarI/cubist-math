@@ -749,8 +749,8 @@ def zero_pointed : Pointed(U0) := Pointed.make(M := Nat, M_is_set := nat_is_set,
 def zero_point : zero_pointed.point = 0 { rfl; }</code></pre>
         </div>
         <div class="quick-entry" id="quick-open">
-          <h4><code>open</code></h4>
-          <p><code>open m;</code> puts the model <code>m</code>'s fields in scope by their names for the rest of the block, and its theory's notations mean its operations.
+          <h4><code>use</code></h4>
+          <p><code>use m;</code> puts the model <code>m</code>'s fields in scope by their names for the rest of the block, or of the file at its top level, and its theory's notations mean its operations; <code>m.(e)</code> does so for one expression, and <code>a m.(*) b</code> qualifies one operator.
             <a href="reference/theories.html#open">Theories and models →</a></p>
           <pre><code data-check="accept">import hlevels;
 
@@ -760,7 +760,7 @@ theory Magma(U &lt; UU0) {
 }
 
 def cube(G : Magma(U0), x : G.M) : G.M {
-  open G;
+  use G;
   exact x * x * x;
 }</code></pre>
         </div>

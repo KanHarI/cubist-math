@@ -101,9 +101,21 @@ child's own notation for it is refused (E826). Inside the theory,
 `label.f` names the field that parent gave as `f` (E829). Renaming in
 `extends` still gives a name or notation of its own. Evidence:
 `cubist-tests/theory_independent.cubist` and the reference's
-[extension](../../web/reference/theories.html#extends) section. The
-qualified operator forms, `magma.(x * x)` and `a G.(+) b`, are the last
-slice.
+[extension](../../web/reference/theories.html#extends) section.
+
+**Sixth slice, done on 2026-10-06:** [qualified operators](#qualified-operators)
+and `use`. `use m;` puts a model's fields and notation in scope for the
+rest of a block, or of the file at its top level, a later `use` switching
+it; `m.(e)` does so for one expression; `a m.(*) b` qualifies one
+operator, with its usual precedence, and `m.(*)` alone is the operation.
+A parent's operator is reached through its label, `x R.additive.(*) y` on
+a model, `magma.(x * x)` and `x magma.(*) y` inside a theory. `open m;`,
+its earlier spelling, migrates in two commits (E834 for a `use` of no
+model; E835, E836 for a qualifier that is no model or an operator its
+theory does not bind). The unary form `G.(-) x` waits for arithmetic `-`
+(L2.10b). Evidence: `cubist-tests/theory_use.cubist` and the reference's
+[selecting a model](../../web/reference/theories.html#open) section.
+L2.4c is then complete; its open questions remain as recorded.
 
 ### Carriers are fields with an h-level
 

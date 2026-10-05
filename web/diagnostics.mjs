@@ -498,6 +498,10 @@ export const diagnostics = [
   ["E830", "… is ambiguous in …: …. Write …, or rename one in extends."],
   ["E831", "… is ambiguous in …: it is …. Write …, or give one another notation in extends."],
   ["E832", "… is ambiguous in …: it is …. Write …."],
+  ["E833", "…, …'s parent …, binds no operation to …."],
+  ["E834", "use selects a model of a theory, such as m : Group(U0); this is a value of type …."],
+  ["E835", "….(…) takes a model of a theory; … is not one."],
+  ["E836", "… binds no operation to …."],
   // Kernel: declared types
   ["K101", "Dimension renaming allocation failed."],
   ["K102", "A boundary is nested too deeply."],

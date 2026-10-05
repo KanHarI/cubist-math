@@ -185,6 +185,22 @@ export function parse(source, typeOnly = false) {
     return { ...result, start: open.start, end: close.end,
       tupleStart: open.start, tupleEnd: close.start };
   }
+  // A qualified operator at token `at`, G.(+) or R.additive.(*): its
+  // model's name, the operator, its dots and the token after it; or null.
+  function qualifiedOperatorAt(at) {
+    const word = k => /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[k]?.text ?? "");
+    const tight = k => ts[k - 1].end === ts[k].start;
+    if (!word(at)) return null;
+    let k = at + 1;
+    const dots = [];
+    while (ts[k]?.text === "." && tight(k) && word(k + 1) && tight(k + 1)) { dots.push({ start: ts[k].start, end: ts[k].end }); k += 2; }
+    if (!(ts[k]?.text === "." && tight(k) && ts[k + 1]?.text === "(" && tight(k + 1)
+      && notationOperators.includes(ts[k + 2]?.text) && ts[k + 3]?.text === ")")) return null;
+    const text = ts.slice(at, k).map(token => token.text).join("");
+    dots.push({ start: ts[k].start, end: ts[k].end });
+    return { model: { kind: "name", name: text, start: ts[at].start, end: ts[k - 1].end,
+      ...(dots.length > 1 ? { qualifiedDots: dots.slice(0, -1) } : {}) }, operator: ts[k + 2], dots, next: k + 4 };
+  }
   function expr(min = 0) {
     if (++depth > 128)
       throw Object.assign(new Error("Expression nesting exceeds 128."), {
@@ -234,6 +250,23 @@ export function parse(source, typeOnly = false) {
           start: a.start, end };
         continue;
       }
+      // A model's notation selected, G.(e), for one expression, and its
+      // operator as a function, G.(*) (L2.4c): a name, a tight dot and a
+      // parenthesized expression or a lone operator.
+      if (a.kind === "name" && peek() === "." && ts[i - 1].end === ts[i].start && ts[i + 1].text === "("
+          && ts[i + 1].start === ts[i].end) {
+        const dot = take("."), open = take("(");
+        if (notationOperators.includes(peek()) && ts[i + 1].text === ")") {
+          const operator = take(), close = take(")");
+          a = { kind: "operatorOf", model: a, operator: operator.text, operatorStart: operator.start, operatorEnd: operator.end,
+            dot: { start: dot.start, end: dot.end }, open: open.start, close: close.start, start: a.start, end: close.end };
+        } else {
+          const body = expr(), close = take(")");
+          a = { kind: "select", model: a, body, dot: { start: dot.start, end: dot.end }, open: open.start, close: close.start,
+            start: a.start, end: close.end };
+        }
+        continue;
+      }
       // A qualified name, T.squash, is tight too: a name, a dot and a name.
       if (a.kind === "name" && peek() === "." && ts[i - 1].end === ts[i].start
           && /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text) && ts[i + 1].start === ts[i].end) {
@@ -263,6 +296,18 @@ export function parse(source, typeOnly = false) {
         a = { kind: "projection", value: a, index: Number(digit.text),
           dot: { start: dot.start, end: dot.end }, digit: { start: digit.start, end: digit.end },
           start: a.start, end: digit.end };
+        continue;
+      }
+      // a G.(+) b applies G's binding of + to a and b, with +'s precedence
+      // (L2.4c): a model's name, tight dots, and a lone operator in
+      // parentheses.
+      const qualified = qualifiedOperatorAt(i);
+      if (qualified && prec[qualified.operator.text] >= min) {
+        const p = prec[qualified.operator.text], model = qualified.model;
+        i = qualified.next;
+        const right = expr(p + 1);
+        a = { kind: "binary", operator: qualified.operator.text, qualifier: model, operatorStart: qualified.operator.start,
+          operatorEnd: qualified.operator.end, qualifierDots: qualified.dots, left: a, right, start: a.start, end: right.end };
         continue;
       }
       const p = prec[peek()];
@@ -657,8 +702,12 @@ export function parse(source, typeOnly = false) {
       return names.map(n => ({ kind: "intro", name: n, start: t.start, end: end.end }));
     }
     if (t.text === "let" || t.text === "obtain") return letStatement(t);
-    // `open m;` puts a model's fields and notation in scope for the rest of
-    // the block (L2.4).
+    // `use m;` puts a model's fields and notation in scope for the rest of
+    // the block (L2.4c); `open m;` is its earlier spelling.
+    if (t.text === "use") {
+      const model = expr(), end = take(";");
+      return { kind: "use", model, start: t.start, end: end.end };
+    }
     if (t.text === "open") {
       const model = expr(), end = take(";");
       return { kind: "open", model, start: t.start, end: end.end };
@@ -864,9 +913,13 @@ export function parse(source, typeOnly = false) {
   // An open section (L2.4): its parameters, and the names of the definitions
   // made in it so far, which each later one sees applied to them.
   let section = null;
+  // The models a file-level `use m;` has selected so far, for the rest of
+  // the file (L2.4c).
+  let uses = [];
   // A definition, listed in order; in a section, with the section's
   // parameters before its own.
   const placed = d => {
+    if (uses.length) d.uses = [...uses];
     if (section) {
       d.section = { ...section, declared: [...section.declared] };
       section.declared.push(d.name.text);
@@ -903,6 +956,14 @@ export function parse(source, typeOnly = false) {
       if (!params.length) throw Object.assign(new Error("A section gives its definitions parameters: section (G : Group(U0)) { … }."), { offset: t.start });
       const body = take("{");
       section = { params, declared: [], start: t.start, bodyStart: body.start, ...(implicitParameters ? { implicitParameters } : {}) };
+      continue;
+    }
+    // `use m;` at a file's top level selects m for the definitions after it.
+    if (!section && t.text === "use" && /^[A-Za-z_]/.test(peek())) {
+      const model = expr(), end = take(";").end;
+      uses = [...uses, model];
+      const directive = { kind: "use", model, start: t.start, end };
+      items.push(directive);
       continue;
     }
     if (section && t.text !== "def" && !(t.text === "computable" && peek() === "def"))

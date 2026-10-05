@@ -10,7 +10,7 @@ import {transportToDependentPath} from "./path-over.mjs";
 import {Goal,Transition,steps,reflexivity,composePaths} from "./proof-goals.mjs";
 import {elaborateMatchStatement,matchedType} from "./match.mjs";
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
-import {opened} from "./theories.mjs";
+import {opened,selected} from "./theories.mjs";
 
 // A conditional rule whose premises cannot be proved stops firing after this
 // many distinct premise searches in one simplification; it does not fail it.
@@ -259,8 +259,12 @@ const tactics = {
     scope.infer(value);
     return t.block(rest,goal.at(t.sourceBinding(first.target,value,scope)));
   },
-  // open m; puts the model m's fields and notation in scope for the rest of
-  // the block (theories.mjs).
+  // use m; puts the model m's fields and notation in scope for the rest of
+  // the block (theories.mjs); open m; is its earlier spelling.
+  use(t,first,rest,goal) {
+    const {scope}=goal;
+    return t.block(rest,goal.at(selected(t,scope,first.model)));
+  },
   open(t,first,rest,goal) {
     const {scope}=goal,{unit}=scope;
     const inner=opened(t,scope,first.model);
