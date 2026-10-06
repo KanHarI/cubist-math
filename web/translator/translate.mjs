@@ -154,7 +154,7 @@ export class Translator {
   interval(n,env,budget=latticeBudget(()=>this.checker.kernel?.checkDeadline())) {
     budget.tick();
     if(n.kind==="number"&&(n.value===0||n.value===1))return n.value===0?I.zero:I.one;
-    if(n.kind==="unary"&&n.operator==="-")return I.reverse(this.interval(n.operand,env,budget),budget);
+    if(n.kind==="unary")return I.reverse(this.interval(n.operand,env,budget),budget);
     if(n.kind==="binary"&&["&","|"].includes(n.operator))
       return (n.operator==="&"?I.meet:I.join)(this.interval(n.left,env,budget),this.interval(n.right,env,budget),budget);
     // A coordinate on a face that fixes it is its endpoint there (Scope.onFace).
@@ -168,7 +168,7 @@ export class Translator {
       if(n.fn.name==="meet"&&args.length===2)return I.meet(args[0],args[1],budget);
       if(n.fn.name==="join"&&args.length===2)return I.join(args[0],args[1],budget);
     }
-    throw Error("Expected an interval coordinate: 0, 1, a coordinate name, -i, i & j or i | j (or flip, meet, join).");
+    throw Error("Expected an interval coordinate: 0, 1, a coordinate name, ~i, i & j or i | j (or flip, meet, join).");
   }
   cofibration(n,env,budget=latticeBudget(()=>this.checker.kernel?.checkDeadline())) {
     budget.tick();
@@ -648,12 +648,12 @@ export class Translator {
     return {start:first.start,end:first.end,
       original:unit.source.slice(first.start,first.end),text};
   }
-  // sym(p) and -p: the reversed path. A constant path is its own reversal.
+  // sym(p) and ~p: the reversed path. A constant path is its own reversal.
   // Retain the ordinary path term so applying it to a large interval need not
   // distribute the reversal inside the native checker.
   reversePath(scope,p,spelling) {
     const type=scope.nf(scope.infer(p).type);
-    if(type.tag!=="Path")throw Error(spelling==="-"?"-p reverses a path; found no path.":"sym requires a path.");
+    if(type.tag!=="Path")throw Error(spelling==="sym"?"sym requires a path.":"~p reverses a path; found no path.");
     if(p.tag==="PLam"&&!freeDimensions(p.body).has(p.dim)
       &&!freeDimensions(p.family).has(p.dim))return p;
     // Cubist equality has a constant carrier (dependent Path reversal
@@ -849,8 +849,8 @@ export class Translator {
         return (n.kind==="lambda"?T.lam:n.kind==="forall"?T.pi:T.sigma)(name,domain,body);
       }
       case "unary": {
-        // -p is sym(p), whatever the name sym is bound to here.
-        return this.reversePath(scope,tr(n.operand,null),"-");
+        // ~p is sym(p), whatever the name sym is bound to here.
+        return this.reversePath(scope,tr(n.operand,null),"~");
       }
       case "binary": {
         if(["&","|"].includes(n.operator))

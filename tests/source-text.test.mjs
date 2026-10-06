@@ -53,10 +53,10 @@ test("paths print as equalities when their type does not vary, and path applicat
   const p = variable("p");
   const at = arg => ({ tag: "PApp", path: p, arg });
   assert.equal(sourceText(equal(at([["i:1"]]), at([]))), "p @ i = p @ 0");
-  // Coordinates print in the source's notation: -i, & and |.
-  assert.equal(sourceText(at([["i:0", "j:1"]])), "p @ -i & j");
+  // Coordinates print in the source's notation: ~i, & and |.
+  assert.equal(sourceText(at([["i:0", "j:1"]])), "p @ ~i & j");
   assert.equal(sourceText(at([["i:1"], ["j:1"]])), "p @ i | j");
-  assert.equal(sourceText(at([["i:1", "j:1"], ["k:0"]])), "p @ i & j | -k");
+  assert.equal(sourceText(at([["i:1", "j:1"], ["k:0"]])), "p @ i & j | ~k");
   assert.equal(sourceText(at([[]])), "p @ 1");
   const varying = { tag: "Path", dim: "i", family: { tag: "PApp", path: variable("q"), arg: [["i:1"]] }, left: variable("a"), right: variable("b") };
   assert.doesNotMatch(sourceText(varying), / = /);
