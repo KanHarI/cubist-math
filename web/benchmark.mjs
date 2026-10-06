@@ -26,17 +26,20 @@ function renderRows() {
   const bindings = new Map(report.declarations.map(row => [row.binding, row]));
   for (const row of rows) {
     const tr = document.createElement("tr"); tr.dataset.category = row.category;
-    const cells = Array.from({ length: 5 }, () => document.createElement("td"));
+    const cells = Array.from({ length: 7 }, () => document.createElement("td"));
     const ms = value => `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })} ms`;
     cells[0].append(link(row)); cells[1].textContent = labels[row.category];
     cells[2].textContent = ms(row.elapsedMs);
-    // The instruction kernel's derivation, in reports that record it.
-    cells[3].textContent = row.instructionMs == null ? "—"
-      : `${ms(row.instructionMs)}${row.instructionJudgements != null ? ` · ${row.instructionJudgements.toLocaleString()} judgements` : ""}`;
-    cells[4].textContent = row.category === "intended" ? `As its comment states: ${row.reason}` : row.reason ?? (row.instructionJudgements != null
+    // The time split between the elaborator and the instruction kernel's
+    // derivations; a report from before the split records the admission's.
+    const kernelMs = row.kernelMs ?? row.instructionMs, judgements = row.kernelJudgements ?? row.instructionJudgements;
+    cells[3].textContent = kernelMs == null ? "—" : ms(Math.max(0, row.elapsedMs - kernelMs));
+    cells[4].textContent = kernelMs == null ? "—" : ms(kernelMs);
+    cells[5].textContent = judgements?.toLocaleString() ?? "—";
+    cells[6].textContent = row.category === "intended" ? `As its comment states: ${row.reason}` : row.reason ?? (row.instructionJudgements != null
       ? "Checked, and derived by the instruction kernel." : "Native kernel check passed.");
     const root = bindings.get(row.rootBlocker);
-    if (root) { const small = document.createElement("small"); small.append("Root blocker: ", link(root)); cells[4].append(small); }
+    if (root) { const small = document.createElement("small"); small.append("Root blocker: ", link(root)); cells[6].append(small); }
     tr.append(...cells); fragment.append(tr);
   }
   $("entries").replaceChildren(fragment);
