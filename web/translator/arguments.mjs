@@ -224,6 +224,7 @@ class ArgumentSolver {
   // The term with every solved unknown replaced by its value. A solution
   // never mentions its own variable, so this ends.
   zonk(term) {
+    if (!this.solution.size) return term;
     for (let round = 0; round <= this.slots.length; round++) {
       const solved = [...freeNames(term)].filter(name => this.solution.has(name));
       if (!solved.length) return term;

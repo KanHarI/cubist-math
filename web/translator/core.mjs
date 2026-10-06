@@ -88,10 +88,15 @@ const levelShaped = value => typeof value === "number" || ["LConst","LSucc","LMa
 // variables are its names.
 const plainLevel = value => typeof value === "number" || ["LConst","LSucc","LMax"].includes(value?.tag);
 const dimBinder = t => ["Path","PLam","Comp","HComp","Trans"].includes(t.tag);
-function free(t, dimension = false, result = new Set(), memo = new WeakMap()) {
+// A term's free names, and its free dimensions, by the term: terms are
+// never changed once built (every operation copies), so what a term holds
+// free is computed once, however often unification asks. The set is the
+// cache's own: callers read it and never change it.
+const freeTerms = new WeakMap(), freeDimensions = new WeakMap();
+function free(t, dimension = false) {
   if (!t || !children[t.tag]) fail("Unknown term constructor.");
-  const cached=memo.get(t);
-  if(cached) {for(const name of cached)result.add(name);return result;}
+  const memo = dimension ? freeDimensions : freeTerms, cached = memo.get(t);
+  if (cached) return cached;
   const local=new Set();
   if (dimension && t.tag === "PApp") for (const n of I.names(t.arg)) local.add(n);
   if(dimension&&t.tag==="Trans")for(const n of I.names(t.face))local.add(n);
@@ -101,25 +106,22 @@ function free(t, dimension = false, result = new Set(), memo = new WeakMap()) {
   if (!dimension && t.tag === "Sort") for (const level of t.levels ?? []) levelNames(level, local);
   if(["Glue","GlueTerm"].includes(t.tag))for(const piece of t.system) {
     for(const key of t.tag==="Glue"?["type","equiv"]:["term"])
-      for(const n of free(piece[key],dimension,new Set(),memo))local.add(n);
+      for(const n of free(piece[key],dimension))local.add(n);
     if(dimension)for(const n of I.names(piece.face))local.add(n);
   }
   if(["Comp","HComp"].includes(t.tag))for(const piece of t.system) {
-    const sub=free(piece.term,dimension,new Set(),memo);
-    for(const n of sub)if(!dimension||n!==t.dim)local.add(n);
+    for(const n of free(piece.term,dimension))if(!dimension||n!==t.dim)local.add(n);
     if(dimension)for(const n of I.names(piece.face))local.add(n);
   }
   for (const key of children[t.tag]) if (t[key]) for (const item of items(t[key])) {
-    const sub = free(item, dimension,new Set(),memo);
-    for(const n of sub) {
+    for(const n of free(item, dimension)) {
       if(!dimension && termBinder(t) && key==="body" && n===t.name)continue;
       if(dimension && dimBinder(t) && t.tag!=="HComp" && ["family","body"].includes(key) && n===t.dim)continue;
       local.add(n);
     }
   }
   memo.set(t,local);
-  for(const n of local)result.add(n);
-  return result;
+  return local;
 }
 function fresh(n, avoid) { while (avoid.has(n)) n += "_"; return n; }
 // The free term names of a term, universe variables included.
@@ -150,6 +152,10 @@ export function betaReduce(term, budget = 256) {
 }
 function substitute(t, n, value, dimension = false, memo = new WeakMap()) {
   if(memo.has(t))return memo.get(t);
+  // A term that does not hold the name free is itself: kept, not copied, so
+  // that its subterms stay shared and what is known of them, as their free
+  // names, stays known.
+  if(!free(t,dimension).has(n)) {memo.set(t,t);return t;}
   if (!dimension && t.tag === "Var" && t.name === n) {memo.set(t,value);return value;}
   let result = {...t};
   // A term argument can contain free dimensions. Avoid capturing them under
