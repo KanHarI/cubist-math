@@ -53,6 +53,16 @@ print(typeof(Pointed.point));
 // Homomorphisms keep the parameter: both models are pointed over G.
 def pointed_id : Pointed.Hom(pointed_nat, pointed_nat) := Pointed.Hom.id(pointed_nat);
 
+// A parameter may have a name that the generated declarations use, as U,
+// map and to are here: their own binders are then named apart from it.
+theory Named(V < UU0, U : Nat, map : Nat, to : Nat) {
+  M : set V;
+  point : M;
+}
+
+def named_iso(m : Named(U0, zero, zero, zero)) : Named.Iso(m, m) := Named.Iso.compose(Named.Iso.id(m),
+  Named.Iso.inverse(Named.Iso.id(m)));
+
 // A child binds its parent's parameter, with the same type, by its name.
 theory Fixed(U < UU0, G : Magma(U)) extends Pointed {
   law fixed : shift(point) = point;
