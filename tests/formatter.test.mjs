@@ -129,3 +129,20 @@ test("lambda binder groups are one comma-separated list; separate groups are rej
   assert.match(formatted, /fun \(a : Nat, b : F\(0\)\(1\)\) => a;/);
   assert.throws(() => parse("def f := fun (a : Nat) (b : Nat) => a;"), /Separate binder groups with commas/);
 });
+
+test("an empty block is {} on its declaration's line", () => {
+  assert.equal(formatCubist("theory AbelianGroup(U < UU0) extends Group, CommMonoid {\n\n}\n"),
+    "theory AbelianGroup(U < UU0) extends Group, CommMonoid {}\n");
+  // A comment is no empty body.
+  assert.equal(formatCubist("theory Later(U < UU0) extends Group {\n  // nothing yet\n}\n"),
+    "theory Later(U < UU0) extends Group {\n  // nothing yet\n}\n");
+});
+
+test("a long value ending in brackets breaks inside them, its definition on one line", () => {
+  const fields = "M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := zero";
+  assert.equal(formatCubist(`def additive : Monoid(U0) := Monoid.make(${fields}, one_mul := nat_zero_add);\n`),
+    `def additive : Monoid(U0) := Monoid.make(\n  ${fields},\n  one_mul := nat_zero_add\n);\n`);
+  // A value that fits on a line of its own goes there, whole.
+  assert.equal(formatCubist("computable def same_ratio_props(f, g : Fraction) : IsProp(U, SameRatio(f, g)) := R_is_set(f.1 * g.2.1, g.1);\n"),
+    "computable def same_ratio_props(f, g : Fraction) :\n  IsProp(U, SameRatio(f, g)) := R_is_set(f.1 * g.2.1, g.1);\n");
+});

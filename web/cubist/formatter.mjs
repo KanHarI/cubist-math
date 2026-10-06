@@ -8,6 +8,11 @@ const indent = body => ({ kind: "indent", body });
 // A paragraph packs complete phrases, instead of breaking every separator when
 // the whole statement exceeds the width. Nested delimiters still have groups.
 const flow = body => ({ kind: "flow", body });
+// A definition whose value ends in brackets, f(…): when neither it nor its
+// type and value fit on a line, the brackets break and the rest stays on
+// the first line, as in def m : T(U0) := T.make(\n  …\n);, if that line
+// fits; otherwise the line breaks before the type or value, as `broken` says.
+const hug = (head, rest, broken) => ({ kind: "hug", head, rest, broken });
 // A quantifier's `.` ends its type like a comma: no space before, a break after.
 const punctuation = new Set([",", ".", ";", ")", "]", "}"]);
 const operators = new Set(["=", "->", "=>", "++", "+", "*", "&", "|", "<", "<=", "and", "or"]);
@@ -48,6 +53,17 @@ function render(document, width) {
     else if (doc.kind === "flowBreak") {
       if (flat || fits(doc.next, width - column - 1)) { output += " "; column++; }
       else { output = output.replace(/ +$/, "") + "\n" + " ".repeat(level); column = level; }
+    }
+    else if (doc.kind === "hug") {
+      const last = doc.rest.findLastIndex(d => d?.kind === "group");
+      const opening = [doc.head, " ", ...doc.rest.slice(0, last), doc.rest[last]?.body[0]];
+      // Only a value too long for a line of its own is hugged: a short one
+      // reads better on the next line, whole.
+      const hugs = last >= 0 && doc.rest.slice(last + 1).every(d => d === ";") && !fits(doc.broken.body, width - column)
+        && !fits(doc.rest, width - level - 2) && fits(opening, width - column);
+      // Hugged, the lines before the brackets are spaces; the brackets' own
+      // group breaks as it needs.
+      stack.push(hugs ? { doc: [doc.head, " ", ...doc.rest], level, flat: true } : { doc: doc.broken, level, flat });
     }
     else if (doc.kind === "indent") stack.push({ doc: doc.body, level: level + 2, flat });
     else if (doc.kind === "line" && flat) { output += doc.flat; column += doc.flat.length; }
@@ -145,10 +161,14 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
         // Keep the whole right-hand side indented, not just its first token.
         if (annotation >= 0) {
           const signature = parts.slice(0, proofBody < 0 ? parts.length : proofBody);
-          docs.push(group([signature.slice(0, annotation), indent([line, flow(signature.slice(annotation))])]));
+          const broken = group([signature.slice(0, annotation), indent([line, flow(signature.slice(annotation))])]);
+          docs.push(proofBody < 0 && signature.slice(annotation).includes(":=") ? hug(signature.slice(0, annotation), signature.slice(annotation), broken) : broken);
           if (proofBody >= 0) docs.push(" ", parts.slice(proofBody));
-        } else docs.push(group(assignment < 0 ? flow(parts)
-          : [parts.slice(0, assignment), indent([line, flow(parts.slice(assignment))])]));
+        } else if (assignment < 0) docs.push(group(flow(parts)));
+        else {
+          const broken = group([parts.slice(0, assignment), indent([line, flow(parts.slice(assignment))])]);
+          docs.push(hug(parts.slice(0, assignment), parts.slice(assignment), broken));
+        }
       }
       assignment = -1;
       annotation = -1; proofBody = -1;
@@ -206,7 +226,9 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
       } else if (["(", "[", "{"].includes(text)) {
         const end = { "(": ")", "[": "]", "{": "}" }[text];
         const body = sequence(end, sectionBodies.has(token.start));
-        statement.push(text === "{" && !implicitOpens.has(token.start) ? ["{", indent([hard, body]), hard, "}"]
+        // An empty block, as a theory's that only extends others, is {} on
+        // its declaration's line.
+        statement.push(text === "{" && !implicitOpens.has(token.start) ? (body.length ? ["{", indent([hard, body]), hard, "}"] : "{}")
           : group([text, indent([soft, body]), soft, end]));
         previous = { text: end, end: all[position - 1].end };
         if (items && (declarationEnds.has(previous.end) || sectionBodies.has(token.start))) {
