@@ -182,6 +182,14 @@ export function parse(source, typeOnly = false) {
   };
   const NEGATION = 7.5;
   const PREFIX = 11;
+  // A binary operator's right operand: a right-associative one's admits its
+  // own level, a left-associative one's the next level up, whatever its
+  // number, so that x * y ^ z is x * (y ^ z). Written plain or qualified, as
+  // x G.(^) y, an operator groups alike.
+  const rightAssociative = new Set(["->", "and", "or", "^"]);
+  const levels = [...new Set(Object.values(prec))].sort((a, b) => a - b);
+  const rightMinimum = operator => rightAssociative.has(operator) ? prec[operator]
+    : levels.find(level => level > prec[operator]) ?? Infinity;
   // Tuples are notation for right-associated binary dependent pairs. Preserve
   // the delimiter locations for macro inspection; elaboration sees only pairs.
   function tuple(open, first, item) {
@@ -354,9 +362,9 @@ export function parse(source, typeOnly = false) {
       // parentheses.
       const qualified = qualifiedOperatorAt(i);
       if (qualified && prec[qualified.operator.text] >= min) {
-        const p = prec[qualified.operator.text], model = qualified.model;
+        const model = qualified.model;
         i = qualified.next;
-        const right = expr(p + 1);
+        const right = expr(rightMinimum(qualified.operator.text));
         a = { kind: "binary", operator: qualified.operator.text, qualifier: model, operatorStart: qualified.operator.start,
           operatorEnd: qualified.operator.end, qualifierDots: qualified.dots, left: a, right, start: a.start, end: right.end };
         continue;
@@ -368,7 +376,7 @@ export function parse(source, typeOnly = false) {
       if (operator === "=" && peek() === "[") {
         take("["); carrier = expr(); take("]");
       }
-      const right = expr(p + (["->", "and", "or", "^"].includes(operator) ? 0 : 1));
+      const right = expr(rightMinimum(operator));
       a = {
         kind: operator === "@" ? "pathApply" : "binary",
         operator,
