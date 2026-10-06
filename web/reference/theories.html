@@ -253,6 +253,27 @@ def twelve : times.(3 + 4) = 12 {
   rfl;
 }</code></pre>
             <p>A selection is <strong>complete</strong>: an operator the selected notation or model does not bind is an error, never an outer selection's or a function named <code>add</code> in scope. A selection inside another wins for its expression, so <code>multiplicative.(x * nat.(x + 1))</code> reads the inner <code>+</code> as the naturals'. Outside any selection, <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> still mean <code>add</code>, <code>mul</code>, <code>isLt</code> and <code>le</code> in scope, until the name-based reading is retired.</p>
+            <p>A notation binds <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>^</code>, <code>&lt;</code>, <code>&lt;=</code> and unary <code>-x</code>; <code>x &gt; y</code> is <code>y &lt; x</code> and <code>x &gt;= y</code> is <code>y &lt;= x</code>, so no notation declares them. From loosest: <code>+ -</code>, then <code>* /</code>, then unary <code>-</code>, then right-associative <code>^</code>, so <code>-x^2</code> is <code>-(x^2)</code>; the cubical <code>@</code>, <code>~</code>, <code>&amp;</code> and <code>|</code> bind tighter still. An operand that is no carrier's element names the notation it is read in, <code>x ^ nat.(n)</code>, so <code>x ^ (n + 1)</code> adds in <code>nat</code>. A theory may define an operation over its fields, <code>def sub(x, y : R) : R := x + -y notation x - y;</code>, which every model has without giving it, and which homomorphisms ignore:</p>
+            <pre><code data-check="accept">import nat;
+import hlevels;
+
+theory Ring(U &lt; UU0) {
+  R : set U;
+  add(x, y : R) : R notation x + y;
+  neg(x : R) : R notation -x;
+  mul(x, y : R) : R notation x * y;
+  pow(x : R, n : Nat) : R notation x ^ nat.(n);
+  def sub(x, y : R) : R := x + -y notation x - y;
+  law pow_succ(x : R, n : Nat) : x ^ (n + 1) = x * x ^ n;
+}
+
+def grouped(A : Ring(U0), x, y : A.R) : A.(-x^2 * y) = A.mul(A.neg(A.pow(x, 2)), y) {
+  rfl;
+}
+
+def subtracted(A : Ring(U0), x, y : A.R) : A.(x - y) = A.sub(x, y) {
+  rfl;
+}</code></pre>
           </section>
 
           <section id="sections">
@@ -434,7 +455,7 @@ def no_homs(A, B : Iterate(U0)) := Iterate.Hom(A, B);  // Error: Iterate's model
                 <tr><td><code>CommMonoid</code></td><td><code>Monoid</code></td><td><code>mul_comm</code></td></tr>
                 <tr><td><code>Group</code></td><td><code>Monoid</code></td><td><code>inv</code>, <code>inv_mul</code>, <code>mul_inv</code></td></tr>
                 <tr><td><code>AbelianGroup</code></td><td><code>Group</code>, <code>CommMonoid</code></td><td>Nothing: the two parents share their monoid</td></tr>
-                <tr><td><code>CommRing</code></td><td><code>additive : AbelianGroup</code>, renamed to <code>R</code>, <code>add</code> written <code>x + y</code>, <code>zero</code>, <code>neg</code>, <code>add_assoc</code>, <code>zero_add</code>, <code>add_zero</code>, <code>neg_add</code>, <code>add_neg</code>, <code>add_comm</code>; and <code>multiplicative : CommMonoid</code> on <code>R</code></td><td><code>mul_add</code>: <code>x * (y + z) = x * y + x * z</code></td></tr>
+                <tr><td><code>CommRing</code></td><td><code>additive : AbelianGroup</code>, renamed to <code>R</code>, <code>add</code> written <code>x + y</code>, <code>zero</code>, <code>neg</code> written <code>-x</code>, <code>add_assoc</code>, <code>zero_add</code>, <code>add_zero</code>, <code>neg_add</code>, <code>add_neg</code>, <code>add_comm</code>; and <code>multiplicative : CommMonoid</code> on <code>R</code></td><td><code>mul_add</code>: <code>x * (y + z) = x * y + x * z</code>; derived, <code>sub</code>, written <code>x - y</code></td></tr>
                 <tr><td><code>Field</code></td><td><code>CommRing</code></td><td><code>inverses</code>, <code>Trunc(U, exists y : R. x * y = one)</code> for <code>x</code> other than <code>zero</code>, and <code>zero_ne_one</code>: laws, so being a field is a property of a ring, and a field's homomorphisms are its ring's</td></tr>
               </tbody>
             </table></div>

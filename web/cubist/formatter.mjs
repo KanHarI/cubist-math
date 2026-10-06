@@ -101,7 +101,10 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
     // A qualified name's dot is tight too: T.squash.
     if (node.qualifiedDot) projectionDots.add(node.qualifiedDot.start);
     for (const dot of node.qualifiedDots ?? []) projectionDots.add(dot.start);
-    if (node.kind === "unary") prefixOperators.add(node.operatorStart);
+    if (node.kind === "unary" || node.kind === "negation" && !node.qualifier) prefixOperators.add(node.operatorStart);
+    // A selection's or a qualified operator's dots are tight: G.(e), x G.(+) y.
+    if (["select", "operatorOf"].includes(node.kind) || node.kind === "negation" && node.dot) projectionDots.add(node.dot.start);
+    for (const dot of node.qualifierDots ?? []) projectionDots.add(dot.start);
     // A call's implicit arguments, f{{U0, Nat}}(x), are tight on both sides.
     for (const group of [node.implicitParameters, node.implicitGroup]) if (group) {
       for (const at of group.opens) implicitOpens.add(at);

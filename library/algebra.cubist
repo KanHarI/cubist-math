@@ -38,13 +38,15 @@ theory AbelianGroup(U < UU0) extends Group, CommMonoid {
 }
 
 // A commutative ring: an abelian group for addition, written +, with zero
-// and neg, and a commutative monoid for multiplication on the same set,
-// over which multiplication distributes.
+// and neg, written -x, and a commutative monoid for multiplication on the
+// same set, over which multiplication distributes. Subtraction, x - y, is
+// derived: x + -y.
 theory CommRing(U < UU0) extends additive : AbelianGroup(
   M := R, mul := add notation x + y, mul_assoc := add_assoc, one := zero, one_mul := zero_add,
-  mul_one := add_zero, inv := neg, inv_mul := neg_add, mul_inv := add_neg, mul_comm := add_comm
+  mul_one := add_zero, inv := neg notation -x, inv_mul := neg_add, mul_inv := add_neg, mul_comm := add_comm
 ), multiplicative : CommMonoid(M := R) {
   law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;
+  def sub(x, y : R) : R := x + -y notation x - y;
 }
 
 // A field: a commutative ring in which zero is not one and every element

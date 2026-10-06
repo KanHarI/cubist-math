@@ -33,10 +33,13 @@ test("~p binds tighter than @, and ++ associates to the left between + and =", (
   assert.equal(grouping("(~p) @ i"), "((~p) @ i)");
 });
 
-test("prefix - no longer reverses: the message names ~", () => {
-  for (const source of ["-p", "p @ -i", "~p ++ -q", "- -p"])
-    assert.throws(() => parse(source, true), /^Error: Reversal is written ~: ~p reverses a path and ~i a coordinate\. Prefix - is kept for arithmetic\.$/);
-  // A truncation level's sign is not a reversal.
+test("prefix - is arithmetic negation, never reversal (L2.10b)", () => {
+  // It parses as negation, which only a selected notation binds; on a path
+  // it is refused in elaboration with a message naming ~
+  // (cubist-tests/notation_operators.cubist).
+  for (const source of ["-p", "- -p"]) assert.equal(parse(source, true).kind, "negation");
+  assert.equal(parse("p @ -i", true).right.kind, "negation");
+  // A truncation level's sign is not a negation.
   assert.doesNotThrow(() => parse("inductive T(U < UU0, A : U) : trunc(-1) U { c; }"));
 });
 

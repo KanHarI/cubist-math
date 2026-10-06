@@ -17,8 +17,8 @@ export const theoryBinding = name => "\u0000theory " + name;
 // never an earlier selection's or a function named add.
 export const notationBinding = name => "\u0000notation " + name;
 export const SELECTION = "\u0000selection";
-// The extensible operators a notation can bind.
-export const notationOperators = ["+", "*", "<", "<="];
+// The extensible operators a notation can bind, unary - as "unary -".
+export const notationOperators = ["+", "-", "*", "/", "^", "<", "<=", "unary -"];
 
 // The record of the theory whose models `value` is one of, from the head of
 // its type, T(U), or null.
@@ -47,7 +47,7 @@ export function modelField(t,scope,n) {
   const record=recordOf(t,scope,t.term(owner,scope,null));
   if(!record)return null;
   const field=n.name.slice(dot+1);
-  const known=record.fields.find(f=>f.name===field)??record.parents.find(p=>p.label===field);
+  const known=record.fields.find(f=>f.name===field)??record.derived?.find(d=>d.name===field)??record.parents.find(p=>p.label===field);
   if(!known&&record.ambiguous?.[field])throw ambiguousField(record,owner.name,field);
   if(!known)throw Error(`${owner.name} is a model of ${record.name}, which has no field ${field}: it has ${record.fields.map(f=>f.name).join(", ")}${
     record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`);
@@ -70,7 +70,7 @@ function theoryRoot(t,scope,name,root) {
 export function memberField(t,scope,n) {
   const record=recordOf(t,scope,t.term(n.value,scope,null)),field=n.field.text;
   if(!record)throw Error(`.${field} reads a field of a model of a theory; this value is not one.`);
-  const known=record.fields.find(f=>f.name===field)??record.parents.find(p=>p.label===field);
+  const known=record.fields.find(f=>f.name===field)??record.derived?.find(d=>d.name===field)??record.parents.find(p=>p.label===field);
   if(!known&&record.ambiguous?.[field])throw ambiguousField(record,"m",field);
   if(!known)throw Error(`This is a model of ${record.name}, which has no field ${field}: it has ${record.fields.map(f=>f.name).join(", ")}${
     record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`);
@@ -80,11 +80,11 @@ export function memberField(t,scope,n) {
 // The scope with the model `node` opened, or null when it is no model: each
 // field by its name, as its projection T.f(m), and each notation of the
 // theory as m's operation. A later binding of a name or operator shadows it.
-export function opened(t,scope,node) {
+export function opened(t,scope,node,{complete=true}={}) {
   const record=recordOf(t,scope,t.term(node,scope,null));
   if(!record)return null;
   const at={start:node.start,end:node.end};
-  const values=new Map(record.fields.map(field=>
+  const values=new Map([...record.fields,...record.derived??[]].map(field=>
     [field.name,t.term({kind:"call",fn:{kind:"name",name:field.projection,...at},args:[node],...at},scope,null)]));
   let inner=scope;
   for(const [name,value] of values)inner=inner.alias(name,value);
@@ -95,8 +95,10 @@ export function opened(t,scope,node) {
   for(const [operator,list] of Object.entries(record.ambiguousNotations??{}))
     inner=inner.alias(operatorBinding(operator),{tag:"Ambiguous",message:`${operator} is ambiguous in ${record.name}: it is ${
       list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>`x ${node.name??"m"}.${e.label}.(${operator}) y`).join(" or ")}.`});
-  // The model's notation is the selection (L2.10a).
-  return inner.alias(SELECTION,{name:node.name??"this model",
+  // The model's notation is the selection (L2.10a). A section's is not
+  // complete until L2.10j: an operator it does not bind falls back by name,
+  // as before views.
+  return inner.alias(SELECTION,{name:node.name??"this model",recipes:record.recipes??{},complete,
     operators:new Set([...Object.keys(record.notations),...Object.keys(record.ambiguousNotations??{})])});
 }
 
@@ -108,7 +110,7 @@ export function opened(t,scope,node) {
 export function notationDeclaration(t,module,d,env) {
   const rules=new Map();
   for(const rule of d.rules) {
-    const aliases=new Map(),pattern=new Set([rule.left.text,rule.right.text]);
+    const aliases=new Map(),pattern=new Set([rule.left.text,rule.right?.text].filter(Boolean));
     const alias=name=>{
       const key=`\u0000notation ${d.name.text} ${name}`;
       aliases.set(key,env.get(name));
@@ -120,7 +122,8 @@ export function notationDeclaration(t,module,d,env) {
       const dot=name.indexOf("."),root=dot>0?name.slice(0,dot):null;
       return root&&env.has(root)?`${alias(root)}${name.slice(dot)}`:null;
     });
-    rules.set(rule.operator,{left:rule.left.text,right:rule.right.text,value,aliases,source:rule.value});
+    rules.set(rule.unary?"unary -":rule.operator,{left:rule.left.text,right:rule.right?.text??null,value,aliases,source:rule.value,
+      recipe:{left:rule.leftView?.text??null,right:rule.rightView?.text??null}});
   }
   env.set(notationBinding(d.name.text),{tag:"Notation",name:d.name.text,rules});
 }
@@ -142,7 +145,7 @@ export function appliedRule(scope,rule,left,right) {
   let inner=scope;
   for(const [key,value] of rule.aliases)inner=inner.alias(key,value);
   const operands=new Map();
-  for(const [name,node] of [[rule.left,left],[rule.right,right]]) {
+  for(const [name,node] of [[rule.left,left],...(rule.right?[[rule.right,right]]:[])]) {
     const key=`\u0000operand ${name}`;
     inner=inner.alias(key,{tag:"Operand",node,scope});
     operands.set(name,{kind:"name",name:key,start:node.start,end:node.end});
@@ -157,7 +160,8 @@ const substitute=(node,operands)=>rewritten(node,(n,bound)=>
 function notationSelected(scope,notation) {
   let inner=scope;
   for(const [operator,rule] of notation.rules)inner=inner.alias(operatorBinding(operator),{tag:"NotationRule",rule});
-  return inner.alias(SELECTION,{name:notation.name,operators:new Set(notation.rules.keys())});
+  return inner.alias(SELECTION,{name:notation.name,complete:true,operators:new Set(notation.rules.keys()),
+    recipes:Object.fromEntries([...notation.rules].map(([key,rule])=>[key,rule.recipe]))});
 }
 
 // The scope with the model `node` selected, by use m; or m.(e) (L2.4c):
@@ -256,6 +260,6 @@ export function sectionScope(t,scope,n) {
     inner=inner.alias(declared,t.term({kind:"call",fn:name(declared),args:explicit.map(p=>name(p.name.text)),
       ...(implicit.length?{implicitArgs:implicit.map(p=>name(p.name.text))}:{}),...at},scope,null));
   }
-  for(const p of n.section.params)if(p.type)inner=opened(t,inner,name(p.name.text))??inner;
+  for(const p of n.section.params)if(p.type)inner=opened(t,inner,name(p.name.text),{complete:false})??inner;
   return inner;
 }

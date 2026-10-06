@@ -1,0 +1,157 @@
+// Operators, operand views and derived operations (L2.10b): binary -, / and
+// ^, unary -, and x > y and x >= y, which are y < x and y <= x; an operand
+// read in another notation, as x ^ nat.(n); and derived operations, which
+// a theory defines over its fields and models do not give again. Each
+// operator means only what the selected notation binds.
+import nat;
+import hlevels;
+import algebra;
+import integers;
+
+theory Ring(U < UU0) {
+  R : set U;
+  add(x, y : R) : R notation x + y;
+  neg(x : R) : R notation -x;
+  mul(x, y : R) : R notation x * y;
+  one : R;
+  pow(x : R, n : Nat) : R notation x ^ nat.(n);
+  // A derived operation: subtraction, x + -y.
+  def sub(x, y : R) : R := x + -y notation x - y;
+  // n + 1 is read in nat's notation, as pow's exponent is.
+  law pow_succ(x : R, n : Nat) : x ^ (n + 1) = x * x ^ n;
+}
+
+// -x^2 is -(x^2), -x * y is (-x) * y, and ^ groups to the right.
+def grouped(A : Ring(U0), x, y : A.R) : A.(-x^2 * y) = A.mul(A.neg(A.pow(x, 2)), y) {
+  rfl;
+}
+
+def subtracted(A : Ring(U0), x, y : A.R) : A.(x - y) = A.sub(x, y) {
+  rfl;
+}
+
+def exponent(A : Ring(U0), x : A.R, n : Nat) : A.(x ^ (n + 1)) = A.pow(x, add(n, 1)) {
+  rfl;
+}
+
+// ^ binds tighter than * on either side: x * x ^ n is x * (x ^ n), as
+// pow_succ states.
+def power_inside(A : Ring(U0), x : A.R, n : Nat) : A.(x * x ^ n) = A.mul(x, A.pow(x, n)) {
+  rfl;
+}
+
+def power(x, n : Nat) : Nat := induction n return Nat { zero => 1; succ h => mul(x, h); };
+
+notation arithmetic {
+  x * y := mul(x, y);
+  x ^ y := power(x, y);
+}
+
+def times_power(x, y, n : Nat) : arithmetic.(x * y ^ n) = mul(x, power(y, n)) {
+  rfl;
+}
+
+// A qualified ^ groups to the right too.
+def power_tower(x, y, z : Nat) : x arithmetic.(^) y arithmetic.(^) z = power(x, power(y, z)) {
+  rfl;
+}
+
+// An operand with a recipe is read in its notation before anything else:
+// x + y here is nat's.
+notation shifted {
+  nat.(x) ^ y := add(x, y);
+}
+
+def recipe_first(x, y, z : Nat) : shifted.((x + y) ^ z) = add(add(x, y), z) {
+  rfl;
+}
+
+// A derived operation's binder captures no argument: keep(z, c) is z.
+theory Kept(U < UU0) {
+  M : set U;
+  c : M;
+  def keep(x, y : M) : M := (fun (z : M) => x)(y);
+  law same(z : M) : keep(z, c) = z;
+}
+
+// Output: forall U < UU0. forall m : Kept(U). forall z : m.M. z = z
+print(typeof(Kept.same));
+
+// Nor does an induction's hypothesis: z in the step is renamed apart from the
+// argument z, and a model proves the law by reflexivity.
+theory Chosen(U < UU0) {
+  M : set U;
+  c : M;
+  def choose(x : M, n : Nat) : M := induction n return M { zero => c; succ z => x; };
+  law chosen(z : M) : choose(z, succ(zero)) = z;
+}
+
+def nat_chosen : Chosen(U0) := Chosen.make(M := Nat, M_is_set := nat_is_set, c := zero,
+  chosen := fun (z : Nat) => refl(z));
+
+// Each side of a match is renamed apart in its own branch: left x's
+// renaming leaves the right branch's x, the argument y here.
+theory Sided(U < UU0) {
+  M : set U;
+  def pick(a, x : M, s : M or M) : M := match s return M { left x => a; right y => x; };
+  law picked(x, y : M, s : M or M) : pick(x, y, s) =[M] pick(x, y, s);
+}
+
+// Output: forall U < UU0. forall m : Sided(U). forall x : m.M. forall y : m.M. forall s : m.M or
+//   m.M. (match s return m.M { left x1_ => x; right y1_ => y; }) = (match s return m.M { left x1_
+//   => x; right y1_ => y; })
+print(typeof(Sided.picked));
+
+// An induction's index and hypothesis may share a name: in the step it is
+// the hypothesis, which stays so when both are renamed apart from z.
+theory Shadow(U < UU0) {
+  M : set U;
+  def keep(a : M, n : Nat) : M := induction n as z return M { zero => a; succ z => (fun (t : M) => z)(a); };
+  law kept(z : M) : keep(z, succ(zero)) = z;
+}
+
+def nat_shadow : Shadow(U0) := Shadow.make(M := Nat, M_is_set := nat_is_set, kept := fun (z : Nat) => refl(z));
+
+// A pattern's argument may name a constructor, so it is not renamed apart:
+// one an argument names is refused.
+// Error: E860: pick's pattern binds k, which an argument here names: rename it in pick.
+theory Picked(U < UU0) {
+  M : set U;
+  c : M;
+  def pick(x : M, n : Nat) : M := match n return M { zero => c; succ(k) => x; };
+  law picked(k : M) : pick(k, zero) = c;
+}
+
+def negated(A : Ring(U0), x : A.R) : A.R := A.(-) x;
+
+def difference(A : Ring(U0), x : A.R) : A.R := x A.(-) x;
+
+// The library's rings: negation and subtraction on the integers.
+def three : integers.(int(5, 0) - int(2, 0)) = int(5, 2) {
+  rfl;
+}
+
+// x > y is y < x.
+def greater : nat.(3 > 2) := tt;
+
+def at_least : nat.(3 >= 3) := tt;
+
+// nat binds no negation, and -p is no reversal.
+// Error: E902: -x is not in nat's notation, which is selected here: select a notation that binds
+//   it, as integers.(-x).
+def no_negation(x : Nat) : Nat := nat.(-x);
+
+// Error: E399: x - y means what a selected notation binds - to: select one, as integers.(x - y).
+def outside(x : Nat) : Nat := x - x;
+
+// Error: E901: -x negates in a selected notation that binds it, as integers.(-x); a path's reversal
+//   is ~p.
+def not_reversal(A : U0, x, y : A, p : x = y) : y = x := -p;
+
+// An operand that is no carrier's element names its notation.
+// Error: E838: The notation of pow reads n in the notation selected where it is used, which is
+//   BarePower's; n is no carrier's element: name the notation it is read in, as x ^ nat.(n).
+theory BarePower(U < UU0) {
+  R : set U;
+  pow(x : R, n : Nat) : R notation x ^ n;
+}

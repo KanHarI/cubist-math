@@ -16,8 +16,8 @@
 // value assigned to `.message`, `detail` or `reason`, a linter warning, a
 // function that returns a message template, and a kernel failure, ck_fail(k,
 // "…"). A template's `${…}` becomes `…`, which matches any text. A literal
-// counts only when it reads as a sentence: it starts with a letter, … or a
-// tilde (as ~p does), and has a space and at least ten other
+// counts only when it reads as a sentence: it starts with a letter, …, a
+// tilde (as ~p does) or a minus (as -x does), and has a space and at least ten other
 // characters, so names and keys are not messages.
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -38,6 +38,8 @@ const fileGroups = [
   [/^web\/cubical-signatures\.mjs$/, "E5"],
   // Argument inference's earlier messages are E3's, which is full.
   [/^web\/translator\/arguments\.mjs$/, "E7"],
+  // Notation's messages in elaboration, also beyond full E3 (L2.10).
+  [/^web\/translator\/notations\.mjs$/, "E9"],
   [/^web\/translator\//, "E3"],
   [/^web\/(cubical-instruction-driver|cubical-syntax|cubical-kernel|cubical-reduction|cubical-elaborator|cubical-instructions|cubical-assumptions|cubical-transaction)\.mjs$/, "E6"],
   [/^(web|cli)\//, "E2"],
@@ -68,7 +70,7 @@ function literal(source, at) {
   }
   return { text, end: i + 1 };
 }
-const sentence = text => /^[~A-Za-z…]/.test(text) && /\s/.test(text.trim()) && text.replace(/…/g, "").trim().length >= 10;
+const sentence = text => /^[-~A-Za-z…]/.test(text) && /\s/.test(text.trim()) && text.replace(/…/g, "").trim().length >= 10;
 
 // Where a JavaScript source reports a message: a call's arguments, or an
 // assigned or returned value up to the end of its statement.

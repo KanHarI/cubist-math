@@ -27,7 +27,7 @@ import { morphismSource } from "./morphisms.mjs";
 // A copy of a syntax tree with `rewrite(node, bound)` applied to each node,
 // outermost first; `bound` holds the names bound there, by every binding
 // form (scopes.mjs).
-import { rewritten } from "./scopes.mjs";
+import { rewritten, substituted } from "./scopes.mjs";
 
 // The universes of a theory's carriers, in the fields a theory records, the
 // first, UNIVERSE, and the k-th: each expansion names them afresh.
@@ -139,6 +139,22 @@ function notAProposition(statement, byName, proposition = () => false, header = 
 // a parent's record by name).
 function theoryFields(theory, lookup, proposition) {
   const T = theory.name.text, fields = [], notations = new Map(), parents = [], byName = new Map();
+  // Each notation's operand recipes: the notation an operand is read in,
+  // other than the current one (L2.10b), as nat for x ^ nat.(n).
+  const recipes = new Map();
+  // A notation's key: its operator, or unary - for -x.
+  const keyOf = notation => notation.unary ? "unary -" : notation.operator;
+  // Derived operations, a theory's own and its parents' (L2.10b): each
+  // applied in a later field is its value, its parameters substituted.
+  const derived = [], derivedByName = new Map();
+  const inlineDerived = node => rewritten(node, (n, bound) => {
+    const d = n.kind === "call" && n.fn.kind === "name" && !bound.has(n.fn.name) ? derivedByName.get(n.fn.name) : null;
+    if (!d || n.args.length !== d.params.length) return n;
+    const args = new Map(d.params.map((p, k) => [p.name, inlineDerived(n.args[k])]));
+    // A binder of the operation that would capture an argument's name is
+    // renamed apart; a pattern's, which may name a constructor, is refused.
+    return substituted(d.value, args, name => located(Error(`${d.name}'s pattern binds ${name}, which an argument here names: rename it in ${d.name}.`), n));
+  });
   // The header's universes are the model's, which each expansion names
   // afresh; a theory without a header has one. Its parameters are every
   // model's, as the header writes them (L2.4c).
@@ -236,9 +252,11 @@ function theoryFields(theory, lookup, proposition) {
       if (names.has(from.text)) throw located(Error(`${from.text} is renamed twice.`), from);
       names.set(from.text, to.text);
       if (notation) {
-        if (field.kind !== "operation" || field.arity !== 2)
-          throw located(Error(`A notation names an operation's two arguments; ${from.text} is not an operation of two.`), notation);
-        renotated.set(from.text, notation.operator);
+        if (field.kind !== "operation" || field.arity !== (notation.unary ? 1 : 2))
+          throw located(Error(notation.unary ? `-x names an operation's one argument; ${from.text} is not an operation of one.`
+            : `A notation names an operation's two arguments; ${from.text} is not an operation of two.`), notation);
+        renotated.set(from.text, keyOf(notation));
+        recipes.set(keyOf(notation), { left: notation.leftView?.text ?? null, right: notation.rightView?.text ?? null });
       }
     }
     // A sort's evidence follows the sort's name.
@@ -299,12 +317,22 @@ function theoryFields(theory, lookup, proposition) {
       add({ ...field, name: names.get(field.name) ?? field.name, type: relocated(renamed(field.type, names, at), at),
         ...(field.kind === "evidence" ? { of: names.get(field.of) ?? field.of } : {}) },
         at, record.name);
+    for (const d of record.derived ?? []) {
+      if (derivedByName.has(d.name)) continue;
+      const entry = { ...d, params: d.params.map(q => ({ ...q, type: relocated(renamed(q.type, names, at), at) })),
+        type: relocated(renamed(d.type, names, at), at), value: relocated(renamed(d.value, names, at), at), at };
+      derived.push(entry);
+      derivedByName.set(entry.name, entry);
+    }
     const bind = (operator, field, parentField) => {
       if (!inherited.has(operator)) inherited.set(operator, []);
       inherited.get(operator).push({ label, field, parentField, at });
     };
-    for (const [operator, field] of Object.entries(record.notations))
-      if (!renotated.has(field)) bind(operator, names.get(field) ?? field, field);
+    for (const [operator, field] of Object.entries(record.notations)) {
+      if (renotated.has(field)) continue;
+      bind(operator, names.get(field) ?? field, field);
+      if (record.recipes?.[operator]) recipes.set(operator, record.recipes[operator]);
+    }
     for (const [operator, list] of Object.entries(record.ambiguousNotations ?? {}))
       for (const entry of list) bind(operator, names.get(entry.field) ?? entry.field, entry.field);
     for (const [field, operator] of renotated) bind(operator, names.get(field) ?? field, field);
@@ -382,8 +410,8 @@ function theoryFields(theory, lookup, proposition) {
       add({ name: item.name.text, kind: "sort", type: quantified(binders, name(own, item.name), item), origin,
         ...(family ? { family: true, visible: item.params.map(p => p.level ?? null) } : {}) }, item.name);
       if (item.notation) {
-        const { operator, left, right } = item.notation;
-        if (item.params.length !== 2 || left.text !== item.params[0].name.text || right.text !== item.params[1].name.text)
+        const { operator, left, right, unary } = item.notation;
+        if (unary || item.params.length !== 2 || left.text !== item.params[0].name.text || right.text !== item.params[1].name.text)
           throw located(Error(`A notation names a family's two indices in order, as in le(x, y : M) : prop U notation x <= y.`), item.notation);
         notate(operator, item.name.text, item.notation);
       }
@@ -396,12 +424,25 @@ function theoryFields(theory, lookup, proposition) {
       continue;
     }
     if (item.notation) {
-      const { operator, left, right } = item.notation;
-      if (item.kind !== "operation" || item.params.length !== 2)
-        throw located(Error(`A notation names an operation's two arguments, as in mul(x, y : M) : M notation x * y; ${item.name.text} has ${["none", "one"][item.params.length] ?? item.params.length}.`), item.notation);
-      if (left.text !== item.params[0].name.text || right.text !== item.params[1].name.text)
-        throw located(Error(`The notation of ${item.name.text} writes its arguments in order: ${item.params[0].name.text} ${operator} ${item.params[1].name.text}.`), item.notation);
-      notate(operator, item.name.text, item.notation);
+      const { operator, left, right, unary, leftView, rightView } = item.notation;
+      if (unary) {
+        if (!["operation", "derived"].includes(item.kind) || item.params.length !== 1 || left.text !== item.params[0].name.text)
+          throw located(Error(`-x names an operation's one argument, as in neg(x : M) : M notation -x.`), item.notation);
+      } else {
+        if (!["operation", "derived"].includes(item.kind) || item.params.length !== 2)
+          throw located(Error(`A notation names an operation's two arguments, as in mul(x, y : M) : M notation x * y; ${item.name.text} has ${["none", "one"][item.params.length] ?? item.params.length}.`), item.notation);
+        if (left.text !== item.params[0].name.text || right.text !== item.params[1].name.text)
+          throw located(Error(`The notation of ${item.name.text} writes its arguments in order: ${item.params[0].name.text} ${operator} ${item.params[1].name.text}.`), item.notation);
+      }
+      // An operand that is a carrier's element is read in the current
+      // notation; any other names its own, as x ^ nat.(n) (L2.10b).
+      for (const [k, token, view] of unary ? [[0, left, leftView]] : [[0, left, leftView], [1, right, rightView]]) {
+        const type = item.params[k].type;
+        if (!view && !(type.kind === "name" && byName.get(type.name)?.kind === "sort"))
+          throw located(Error(`The notation of ${item.name.text} reads ${token.text} in the notation selected where it is used, which is ${T}'s; ${token.text} is no carrier's element: name the notation it is read in, as ${token.text === left?.text && !unary ? `nat.(${token.text}) ^ y` : `x ^ nat.(${token.text})`}.`), token);
+      }
+      notate(keyOf(item.notation), item.name.text, item.notation);
+      recipes.set(keyOf(item.notation), { left: leftView?.text ?? null, right: rightView?.text ?? null });
     }
     // forall over the parameters, innermost last, each index's evidence
     // after it.
@@ -409,17 +450,40 @@ function theoryFields(theory, lookup, proposition) {
     let type = quantified(expanded(item).map(p => ({ ...p, type: evidenced(p.type, leveled) })), evidenced(item.type, leveled), item);
     type = inTheoryUniverse(type, item);
     // Inside the theory, a notation means its operation.
+    // An operand with a recipe is read in its notation, which the theory's
+    // own does not rewrite.
+    const operand = (node, view) => view ? { kind: "select", model: name(view, node), body: node, start: node.start, end: node.end }
+      : operatorsAsCalls(node);
     const operatorsAsCalls = node => rewritten(node, (n, bound) => {
-      if (n.kind === "binary" && ambiguousNotations.has(n.operator)) {
-        const list = ambiguousNotations.get(n.operator);
-        throw located(Error(`${n.operator} is ambiguous in ${T}: it is ${list.map(e => `${e.label}'s ${e.parentField}`).join(" and ")}. Write ${
-          list.map(e => `x ${e.label}.(${n.operator}) y`).join(" or ")}, or give one another notation in extends.`), n);
+      // Another notation's selection, nat.(n + 1), is that notation's.
+      if (n.kind === "select") return n;
+      // x > y is y < x, and x >= y is y <= x.
+      if (n.kind === "binary" && [">", ">="].includes(n.operator) && notations.has(n.operator === ">" ? "<" : "<="))
+        return operatorsAsCalls({ ...n, operator: n.operator === ">" ? "<" : "<=", left: n.right, right: n.left });
+      const key = n.kind === "negation" ? "unary -" : n.kind === "binary" && !n.qualifier ? n.operator : null;
+      if (key && ambiguousNotations.has(key)) {
+        const list = ambiguousNotations.get(key);
+        throw located(Error(`${key} is ambiguous in ${T}: it is ${list.map(e => `${e.label}'s ${e.parentField}`).join(" and ")}. Write ${
+          list.map(e => `x ${e.label}.(${key}) y`).join(" or ")}, or give one another notation in extends.`), n);
       }
-      return n.kind === "binary" && notations.has(n.operator) && !bound.has(notations.get(n.operator))
-        ? call(notations.get(n.operator), [operatorsAsCalls(n.left), operatorsAsCalls(n.right)], n)
-        : n;
+      if (!key || !notations.has(key) || bound.has(notations.get(key))) return n;
+      const recipe = recipes.get(key) ?? {};
+      return n.kind === "negation" ? call(notations.get(key), [operand(n.operand, recipe.left)], n)
+        : call(notations.get(key), [operand(n.left, recipe.left), operand(n.right, recipe.right)], n);
     });
-    type = operatorsAsCalls(type);
+    // A derived operation (L2.10b) is no field: its type and value, over
+    // the fields, generate T.f(m, …); later fields read it inlined.
+    if (item.kind === "derived") {
+      if (byName.has(item.name.text) || derivedByName.has(item.name.text))
+        throw located(Error(`${T} has two fields named ${item.name.text}: give each its own name.`), item.name);
+      const process = node => inlineDerived(operatorsAsCalls(inTheoryUniverse(evidenced(node, leveled), item)));
+      const entry = { name: item.name.text, params: expanded(item).map(p => ({ name: p.name.text, type: process(p.type) })),
+        type: process(item.type), value: process(item.value), origin, at: item.name };
+      derived.push(entry);
+      derivedByName.set(entry.name, entry);
+      continue;
+    }
+    type = inlineDerived(operatorsAsCalls(type));
     if (item.kind === "law") {
       const data = notAProposition(type, byName, proposition, header.map(binder => binder.text));
       if (data)
@@ -437,7 +501,7 @@ function theoryFields(theory, lookup, proposition) {
   for (const p of prepared)
     if (byName.has(p.label))
       throw located(Error(`${T}'s parent ${p.record.name} is labelled ${p.label}, which names a field of ${T} too: label it apart, as in base : ${p.record.name}.`), p.parent.label ?? p.parent.name);
-  return { fields, notations, parents, universes: headerUniverses, params: params.map(({ at: _, ...p }) => p),
+  return { fields, notations, recipes, derived, parents, universes: headerUniverses, params: params.map(({ at: _, ...p }) => p),
     ambiguous: Object.fromEntries([...ambiguous].map(([n, list]) => [n, list])), ambiguousNotations: Object.fromEntries(ambiguousNotations) };
 }
 
@@ -445,7 +509,7 @@ function theoryFields(theory, lookup, proposition) {
 // that extends it reads (`lookup` gives the record of a theory by name).
 export function expandTheory(theory, lookup = () => null, proposition = () => false) {
   const T = theory.name.text, at = theory.name;
-  const { fields, notations, parents, universes: headerUniverses, params, ambiguous, ambiguousNotations } = theoryFields(theory, lookup, proposition);
+  const { fields, notations, recipes, derived, parents, universes: headerUniverses, params, ambiguous, ambiguousNotations } = theoryFields(theory, lookup, proposition);
   if (!fields.length) throw located(Error(`${T} has no fields: a theory declares sorts, operations and laws.`), at);
   const taken = new Set([...namesIn(theory), ...fields.map(field => field.name), ...fields.flatMap(field => [...namesIn(field.type)])]);
   // The header's names for the universes, or fresh ones without a header.
@@ -469,7 +533,8 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
   const record = {
     name: T, model: T, make: `${T}.make`, universes: headerUniverses, params, ambiguous, ambiguousNotations,
     fields: fields.map(({ at: _, from: __, ...field }) => ({ ...field, projection: `${T}.${field.name}` })),
-    notations: Object.fromEntries(notations), parents,
+    notations: Object.fromEntries(notations), recipes: Object.fromEntries(recipes), parents,
+    derived: derived.map(({ at: _, ...d }) => ({ ...d, projection: `${T}.${d.name}` })),
   };
   // The sorts' evidence comes from hlevels.
   const requires = [...new Set(fields.filter(field => field.evidence).map(field => field.evidence))];
@@ -499,6 +564,17 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
     { role: "projection", field: field.name }));
     projected.set(field.name, `${T}.${field.name}`);
   });
+  // T.d{{U < UU0, params}}(m : T(U, params), args…) : A := value, for each
+  // derived operation, its fields read through m (L2.10b).
+  for (const d of derived) {
+    const own = new Set(d.params.map(p => p.name));
+    const through = node => rewritten(inUniverse(node), (n, bound) => n.kind === "name" && projected.has(n.name)
+      && !bound.has(n.name) && !own.has(n.name) ? call(projected.get(n.name), [name(model, n)], n) : n);
+    out.push(declaration(`${T}.${d.name}`, [...headerParameters({ universe: true, parameter: true }),
+      { name: token(model, d.at), type: modelType(d.at), group: nextGroup },
+      ...d.params.map((p, k) => ({ name: token(p.name, d.at), type: through(p.type), group: nextGroup + 1 + k }))],
+    through(d.type), through(d.value), d.at, { role: "derived", field: d.name }));
+  }
   // T.p{{U < UU0, params}}(m : T(U, params)) : P(U, params) := P.make(params, T.f(m), …),
   // each of P's fields from the child's field it became.
   for (const [index, parent] of parents.entries()) {

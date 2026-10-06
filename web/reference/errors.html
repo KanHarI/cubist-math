@@ -385,7 +385,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr><td><a href="#E164"><code>E164</code></a></td><td>cases was removed: write match value { left(a) =&gt; { … } right(b) =&gt; { … } }.</td></tr>
                 <tr id="E165"><td><code>E165</code></td><td>Close double braces with }}, two braces together.</td></tr>
                 <tr id="E166"><td><code>E166</code></td><td>Implicit parameters are in double braces: def f{{U &lt; UU0, A : U}}(…).</td></tr>
-                <tr id="E167"><td><code>E167</code></td><td>A notation is a binary operator: x + y, x * y, x &lt; y or x &lt;= y.</td></tr>
+                <tr id="E167"><td><code>E167</code></td><td>A notation is a binary operator: x + y, x * y, x &lt; y or x &lt;= y. (retired)</td></tr>
                 <tr id="E168"><td><code>E168</code></td><td>Expected '}' to close the theory.</td></tr>
                 <tr id="E169"><td><code>E169</code></td><td>A sort is a set or a proposition: sort M : set; or sort P : prop; (retired)</td></tr>
                 <tr id="E170"><td><code>E170</code></td><td>Expected ':' and the type of …, as in …</td></tr>
@@ -394,7 +394,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E173"><td><code>E173</code></td><td>Expected '}' to close the section.</td></tr>
                 <tr id="E174"><td><code>E174</code></td><td>A section holds definitions: def and computable def.</td></tr>
                 <tr><td><a href="#E175"><code>E175</code></a></td><td>… is reserved, as a keyword or a built-in type of the language; pick another name.</td></tr>
-                <tr id="E176"><td><code>E176</code></td><td>Reversal is written ~: ~p reverses a path and ~i a coordinate. Prefix - is kept for arithmetic.</td></tr>
+                <tr id="E176"><td><code>E176</code></td><td>Reversal is written ~: ~p reverses a path and ~i a coordinate. Prefix - is kept for arithmetic. (retired)</td></tr>
                 <tr id="E177"><td><code>E177</code></td><td>… binds … universes; a theory binds one, the universe of its carriers. (retired)</td></tr>
                 <tr id="E178"><td><code>E178</code></td><td>… is not the universe of …'s carriers: name it in the header, as in theory …(… &lt; UU0).</td></tr>
                 <tr id="E179"><td><code>E179</code></td><td>A theory's header binds the universe of its carriers, as in theory …(U &lt; UU0). (retired)</td></tr>
@@ -403,9 +403,12 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E182"><td><code>E182</code></td><td>Expected ':' and the type of …, as in (x, y : M) or (A : set U).</td></tr>
                 <tr id="E183"><td><code>E183</code></td><td>open is now use: write use m; to select a model's fields and notation.</td></tr>
                 <tr id="E184"><td><code>E184</code></td><td>Expected '}' to close the notation.</td></tr>
-                <tr id="E185"><td><code>E185</code></td><td>A notation's rule binds a binary operator: x + y, x * y, x &lt; y or x &lt;= y.</td></tr>
-                <tr id="E186"><td><code>E186</code></td><td>A rule's pattern names its two operands apart, as x … y.</td></tr>
+                <tr id="E185"><td><code>E185</code></td><td>A notation's rule binds a binary operator: x + y, x * y, x &lt; y or x &lt;= y. (retired)</td></tr>
+                <tr id="E186"><td><code>E186</code></td><td>A rule's pattern names its two operands apart, as x … y. (retired)</td></tr>
                 <tr id="E187"><td><code>E187</code></td><td>… binds … twice: a notation has one rule for each operator.</td></tr>
+                <tr id="E188"><td><code>E188</code></td><td>x … y is y … x: a notation binds &lt; and &lt;=, and &gt; and &gt;= follow them.</td></tr>
+                <tr id="E189"><td><code>E189</code></td><td>A notation binds an operator: x + y, x - y, x * y, x / y, x ^ y, x &lt; y, x &lt;= y, or -x.</td></tr>
+                <tr id="E190"><td><code>E190</code></td><td>A pattern names its two operands apart, as x … y.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -557,6 +560,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E396"><td><code>E396</code></td><td>….Model is now …: a theory's name is the type of its models, as in …(U0).</td></tr>
                 <tr id="E397"><td><code>E397</code></td><td>… is not in …'s notation, which is selected here: select a notation that binds it, as nat.(x … y), or write the operation.</td></tr>
                 <tr id="E398"><td><code>E398</code></td><td>….(…) is an operation when its rule applies one to its operands, as x … y := f(x, y).</td></tr>
+                <tr id="E399"><td><code>E399</code></td><td>x … y means what a selected notation binds … to: select one, as integers.(x … y).</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e4">Proof statements, rewriting and simplification</h3>
@@ -840,7 +844,19 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E835"><td><code>E835</code></td><td>….(…) takes a model of a theory; … is not one.</td></tr>
                 <tr id="E836"><td><code>E836</code></td><td>… binds no operation to ….</td></tr>
                 <tr id="E837"><td><code>E837</code></td><td>… binds no rule to ….</td></tr>
+                <tr id="E838"><td><code>E838</code></td><td>The notation of … reads … in the notation selected where it is used, which is …'s; … is no carrier's element: name the notation it is read in, as ….</td></tr>
+                <tr id="E839"><td><code>E839</code></td><td>-x names an operation's one argument; … is not an operation of one.</td></tr>
+                <tr id="E840"><td><code>E840</code></td><td>-x names an operation's one argument, as in neg(x : M) : M notation -x.</td></tr>
                 <tr id="E859"><td><code>E859</code></td><td>…'s parent … is labelled …, which names a field of … too: label it apart, as in base : ….</td></tr>
+                <tr id="E860"><td><code>E860</code></td><td>…'s pattern binds …, which an argument here names: rename it in ….</td></tr>
+              </tbody>
+            </table></div>
+            <h3 id="codes-e9">Notation and operators</h3>
+            <div class="table-scroll"><table class="codes">
+              <thead><tr><th>Code</th><th>Message</th></tr></thead>
+              <tbody>
+                <tr id="E901"><td><code>E901</code></td><td>-x negates in a selected notation that binds it, as integers.(-x); a path's reversal is ~p.</td></tr>
+                <tr id="E902"><td><code>E902</code></td><td>-x is not in …'s notation, which is selected here: select a notation that binds it, as integers.(-x).</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-k1">Kernel: declared types</h3>
