@@ -75,8 +75,9 @@ Settled on 2026-10-05:
    `use nat;` at the top of a file leaves its sections' operators to their
    models.
 7. **One selection form, `use`** (revised the same day). It replaces both
-   today's `open G;` and the proposed `using v;`; `using` keeps its one
-   meaning, in `simpa … using h`. `use x;` selects `x`'s notation and, when
+   today's `open G;` and the proposed `using v;`; `using` stays in
+   `simpa … using h`, and two other proposals select with it
+   ([open question 4](#open-questions)). `use x;` selects `x`'s notation and, when
    `x` is a model, binds its field names, to the end of the enclosing
    block, or, at a file's top level, to the end of the file, covering
    statements too. `x` is a model or a named notation such as `nat`, which
@@ -1116,6 +1117,10 @@ gate and remains optional. Explicit views are always available.
    eliminator views, `match … using view`, also use it, with `using`.
 3. **Qualified operators' operands:** read where they stand, as decided,
    or in the operator's notation, as in `G.(a + b)`.
+4. **`using` in other proposals.** Computation notation's `do using M` and
+   L2.7's `match … using view` select a structure, as `use` does. Whether
+   they take `use`'s word or keep `using`, beside `simpa … using h`, is
+   undecided; neither is implemented.
 
 ## Roadmap and implementation gates
 
