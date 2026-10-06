@@ -577,7 +577,10 @@ export class NativeCubicalElaborator {
   nf(term, dimensions = this.dimensions) {
     // Translator's nf calls ask for Pi/Sigma/Path heads, not full normal forms.
     // Unification asks for the same term's head again and again: the kernel
-    // computes it once a declaration, for the term's node.
+    // computes it once a declaration, for the term's node. A head served
+    // again is no kernel query, so the deadline is polled here too, as
+    // derived() polls it for a judgement reused.
+    this.kernel.checkDeadline();
     const node = this.syntax.encode(term, dimensions);
     let head = this.syntax.heads.get(node);
     if (head === undefined) { head = this.kernel.head(node); this.syntax.heads.set(node, head); }
