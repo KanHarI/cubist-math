@@ -94,9 +94,10 @@ const sameSyntax = (a, b) => JSON.stringify(a, (key, value) => ["start", "end"].
 // proposition, so its equations are propositions), Void and Unit, an
 // element of a proposition sort, a declared type whose header says it is a
 // proposition, as Trunc(U, A) (L2.10k), and forall, -> into one, and `and`
-// of two. `byName` holds the fields declared so far, and `proposition`
-// says whether a name is such a declared type.
-function notAProposition(statement, byName, proposition = () => false) {
+// of two. `byName` holds the fields declared so far, `proposition` says
+// whether a name is such a declared type, and `header` lists the names the
+// theory's header binds.
+function notAProposition(statement, byName, proposition = () => false, header = []) {
   // A carrier, M, or a family's member, F(A).
   const sortNamed = (node, bound) =>
     node?.kind === "name" && !bound.has(node.name) && byName.get(node.name)?.kind === "sort" ? node.name
@@ -141,7 +142,9 @@ function notAProposition(statement, byName, proposition = () => false) {
     return { node, why: node.kind === "name" && byName.get(node.name)?.kind === "sort"
       ? `${node.name} is a sort, whose elements are data` : "its statement is none of these" };
   };
-  return check(statement, new Map());
+  // The header's universes and parameters are bound, with no sort: a
+  // parameter that takes a proposition's name is not that proposition.
+  return check(statement, new Map(header.map(binder => [binder, null])));
 }
 
 // A theory's fields, in order, with types over the earlier fields' names,
@@ -431,7 +434,7 @@ function theoryFields(theory, lookup, proposition) {
     });
     type = operatorsAsCalls(type);
     if (item.kind === "law") {
-      const data = notAProposition(type, byName, proposition);
+      const data = notAProposition(type, byName, proposition, header.map(binder => binder.text));
       if (data)
         throw located(Error(`The law ${item.name.text} must state a proposition: an equation between elements of a sort, Void, a type declared at prop, or forall, -> or and over those; ${data.why}. A law holds no data, and homomorphisms ignore laws: declare data as an operation or a constant.`), data.node);
     }
