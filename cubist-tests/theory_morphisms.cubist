@@ -98,6 +98,14 @@ def nat_point : A(U0) := A.make(Nat, nat_is_set, 0);
 // Output: 3
 print(evaluate(A.Hom.compose(A.Hom.id(nat_point), A.Hom.id(nat_point)).map(3)));
 
+// Or map, as its homomorphisms' field is: the constructor still takes that
+// field by its name.
+theory map(U < UU0) {
+  M : set U;
+}
+
+def map_identity(B : map(U0)) : map.Hom(B, B) := map.Hom.make(B, B, map := fun (x : B.M) => x);
+
 // A theory whose operation takes something other than a sort has models,
 // but no homomorphisms.
 theory Indexed(U < UU0) {

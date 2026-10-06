@@ -49,6 +49,7 @@
           <ul class="sections">
             <li><a href="#theories">Declaring a theory</a></li>
             <li><a href="#models">Models</a></li>
+            <li><a href="#header">The header: universes and parameters</a></li>
             <li><a href="#open">Opening a model: <code>open</code></a></li>
             <li><a href="#sections">Sections</a></li>
             <li><a href="#extends">Extension: <code>extends</code></a></li>
@@ -118,6 +119,34 @@ theory Monoid(U &lt; UU0) {
 def one_one(U &lt; UU0, G : Monoid(U)) : G.mul(G.one, G.one) = G.one {
   exact G.one_mul(G.one);
 }</code></pre>
+          </section>
+
+          <section id="header">
+            <h2>The header: universes and parameters</h2>
+            <p>A theory's header binds the universes of its carriers, one or several, and <strong>parameters</strong> that every model shares. The type of models takes them in order: <code>Arrow(U0, U1)</code> for an arrow from a set in <code>U0</code> to one in <code>U1</code>, and <code>Pointed(U0, G)</code> for a set pointed over the magma <code>G</code>. <code>make</code> takes the parameters first, and a field's projection reads them from the model's type:</p>
+            <pre><code data-check="accept">import nat;
+import hlevels;
+
+theory Magma(U &lt; UU0) {
+  M : set U;
+  mul(x, y : M) : M notation x * y;
+}
+
+theory Pointed(U &lt; UU0, G : Magma(U)) {
+  X : set U;
+  point : X;
+  shift(x : X) : X;
+}
+
+def nat_magma : Magma(U0) := Magma.make(M := Nat, M_is_set := nat_is_set, mul := add);
+
+def counting : Pointed(U0, nat_magma) := Pointed.make(nat_magma, X := Nat, X_is_set := nat_is_set,
+  point := 0, shift := succ);
+
+def counting_point : counting.point = 0 {
+  rfl;
+}</code></pre>
+            <p>A parameter is not a carrier: a homomorphism maps the carriers and keeps the parameters, so <code>Pointed.Hom(A, B)</code> relates two models pointed over one <code>G</code>, in one universe. A child takes its parents' parameters by name, with the same types, <code>theory Fixed(U &lt; UU0, G : Magma(U)) extends Pointed</code>, and their universes: the one universe of each, or each by its name when there are several.</p>
           </section>
 
           <section id="open">

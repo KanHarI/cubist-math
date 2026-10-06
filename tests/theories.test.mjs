@@ -87,8 +87,16 @@ test("a carrier is a set, a proposition or a bare type in the header's universe,
   assert.throws(() => parse("theory T(U < UU0) { M : set V; }"),
     /V is not the universe of T's carriers: name it in the header, as in theory T\(V < UU0\)\./);
   assert.throws(() => parse("theory T { M : set U; }"), /U is not the universe of T's carriers/);
-  assert.throws(() => parse("theory T(A : U0) { }"), /A theory's header binds the universe of its carriers, as in theory T\(U < UU0\)\./);
-  assert.throws(() => parse("theory T(U, V < UU0) { }"), /T binds 2 universes; a theory binds one, the universe of its carriers\./);
+  assert.throws(() => parse("theory T(U < U1) { }"), /A theory's universes are below UU0: U < UU0\./);
+});
+
+test("a theory's header binds several universes and parameters, in order", () => {
+  const [module, pair] = parse("theory Module(U < UU0, R : CommRing(U)) { V : set U; }\ntheory Pair(U, V < UU0) { A : set U; B : set V; }")
+    .declarations;
+  assert.deepEqual([module.universes.map(u => u.text), module.params.map(p => p.name.text)], [["U"], ["R"]]);
+  assert.deepEqual([pair.universes.map(u => u.text), pair.fields.map(f => f.universe.text)], [["U", "V"], ["U", "V"]]);
+  const source = "theory Module(U < UU0, R : CommRing(U)) {\n  V : set U;\n}\n";
+  assert.equal(formatCubist(source), source);
 });
 
 test("sort, a carrier's spelling until L2.4c, is refused with the field that replaces it", () => {

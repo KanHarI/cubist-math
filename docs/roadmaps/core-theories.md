@@ -41,9 +41,23 @@ theory in `library/`, `cubist-tests/` and the reference moved while the
 old forms parsed, and the verifier found the library's terms identical
 (243, 44 and 59 declarations of `algebra`, `integers` and `rationals`). A
 source of an earlier revision is read in the new forms
-(`web/cubist/legacy-syntax.mjs`). Several universes in the header,
-parameters, families, relations, variance, independent parents and
-qualified operators are the later slices.
+(`web/cubist/legacy-syntax.mjs`).
+
+**Second slice, done on 2026-10-06:** the header binds several universes,
+`theory Arrow(U, V < UU0)`, each carrier in one of them, and parameters,
+`theory Pointed(U < UU0, G : Magma(U))`. The type of models takes them in
+order, `make` takes the parameters first, and the projections read them
+from the model's type. A homomorphism of a theory with parameters relates
+two models with the same parameters and universes; without parameters,
+each model has its own universes. A child takes its parents' parameters by
+name, with the same types (E821), and their universes: the one universe of
+each, or each by its name when there are several (E820). Evidence:
+`cubist-tests/theory_headers.cubist` and the reference's
+[header](../../web/reference/theories.html#header) section. Until the
+variance slice, an operation with an input that is not a carrier, as
+`Module`'s `smul(r : R.R, v : V)`, still leaves the theory without
+homomorphisms (E817). Families, relations, variance, independent parents
+and qualified operators are the later slices.
 
 ### Carriers are fields with an h-level
 
