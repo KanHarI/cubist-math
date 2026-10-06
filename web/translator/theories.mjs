@@ -237,15 +237,17 @@ export function missingMorphisms(scope,name) {
 }
 
 // The rest of a theory whose type of models failed, `model`: taken off the
-// queue, each unavailable as a dependency of that type.
+// queue, each unavailable as a dependency of that type. How many were taken.
 export function skipTheory(t,queue,env,model) {
+  let skipped=0;
   for(let k=queue.length-1;k>=0;k--) {
     const d=queue[k];
     if(d.generated?.theory!==model.generated.theory)continue;
-    queue.splice(k,1);
+    queue.splice(k,1); skipped++;
     env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:t.checker.bindingName?.(d.name.text)??d.name.text,
       reason:`Untranslated dependency: ${model.name.text}`});
   }
+  return skipped;
 }
 
 // A section's scope, inside its parameters (L2.4): each earlier definition of

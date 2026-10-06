@@ -229,6 +229,16 @@ export class CubicalProgram {
         inspectSignature: binding => this.signatureText(binding),
         ...Object.fromEntries(Object.entries(this.fuelLimits).filter(([, limits]) => limits)),
         onStep: step => statements.push({ ...step, declaration: current }),
+        // A theory's expansion adds declarations the source does not write,
+        // and a failed type of models takes the rest of its theory off: the
+        // total follows both, so that it is never below what is done and
+        // ends at it. Each change is reported, as the last event may be one,
+        // when a theory whose type of models fails ends the source.
+        onQueued: change => {
+          total += change;
+          onProgress({ completed: this.completed, total, current: current && `${name}.${current}`,
+            phase: "checked", unit: "declarations", instructions: checker.steps });
+        },
         onDeclarationStart: declaration => {
           current = declaration.name.text;
           if (this.manageTransactions) transaction = new CubicalDeclarationTransaction(this.kernel,this.checker);
