@@ -43,6 +43,18 @@ const quantifier = (kind, binder, domain, body, at) =>
 const projection = (value, index, at) => ({ kind: "projection", value, index, ...place(at) });
 const pair = (left, right, at) => ({ kind: "pair", left, right, ...place(at) });
 
+// The names a node binds, as their tokens, in its body: a lambda's, a
+// quantifier's, a path's coordinate, and a clause's names and coordinates.
+// (A clause's nested patterns are left out: a name there may be a
+// constructor.)
+function bindersOf(node) {
+  if (node.kind === "binderGroup") return node.names;
+  if (["forall", "exists", "lambda"].includes(node.kind) && node.name?.text) return [node.name];
+  if (node.kind === "pathLambda" && node.dimension?.text) return [node.dimension];
+  if (node.kind === "clause") return [...(node.binders ?? []), ...(node.coordinates ?? [])];
+  return [];
+}
+
 // A copy of a syntax tree with `rewrite(node, bound)` applied to each node,
 // outermost first; `bound` holds the names its binders bind there.
 function rewritten(node, rewrite, bound = new Set()) {
@@ -50,8 +62,7 @@ function rewritten(node, rewrite, bound = new Set()) {
   if (!node || typeof node !== "object" || !node.kind) return node;
   const replaced = rewrite(node, bound);
   if (replaced !== node) return replaced;
-  const binders = node.kind === "binderGroup" ? node.names
-    : ["forall", "exists", "lambda"].includes(node.kind) && node.name?.text ? [node.name] : [];
+  const binders = bindersOf(node);
   const copy = {};
   for (const [key, value] of Object.entries(node)) {
     // A binder's own domain is outside its scope; its body is inside.
@@ -59,6 +70,41 @@ function rewritten(node, rewrite, bound = new Set()) {
     copy[key] = rewritten(value, rewrite, scope);
   }
   return copy;
+}
+// The names a syntax tree mentions free; a qualified name, m.f, by its root.
+function freeIn(node) {
+  const free = new Set();
+  rewritten(node, (n, bound) => {
+    if (n.kind === "name" && !bound.has(n.name.split(".")[0])) free.add(n.name.split(".")[0]);
+    return n;
+  });
+  return free;
+}
+// `node` with each free name that `args` maps replaced by its syntax. A
+// binder of `node` that would capture a free name of an argument is renamed
+// first, apart from every name either mentions.
+function substituted(node, args) {
+  const free = new Set([...args.values()].flatMap(arg => [...freeIn(arg)]));
+  const taken = new Set([...free, ...namesIn(node)]);
+  const go = (tree, bound) => rewritten(tree, (n, inner) => {
+    if (n.kind === "name" && args.has(n.name) && !inner.has(n.name)) return args.get(n.name);
+    const clashing = bindersOf(n).filter(binder => free.has(binder.text));
+    if (!clashing.length) return n;
+    const renaming = new Map(clashing.map(binder => {
+      const other = fresh(binder.text, taken);
+      taken.add(other);
+      return [binder.text, other];
+    }));
+    const copy = { ...n };
+    for (const key of Object.keys(n)) if (key === "body") copy.body = renamed(n.body, renaming, n);
+    const rename = token => renaming.has(token?.text) ? { ...token, text: renaming.get(token.text) } : token;
+    if (n.kind === "binderGroup") copy.names = n.names.map(rename);
+    else if (n.kind === "pathLambda") copy.dimension = rename(n.dimension);
+    else if (n.kind === "clause") Object.assign(copy, { binders: (n.binders ?? []).map(rename), coordinates: (n.coordinates ?? []).map(rename) });
+    else copy.name = rename(n.name);
+    return go(copy, inner);
+  }, bound);
+  return go(node, new Set());
 }
 // Every position in a tree set to `at`: inherited syntax comes from another
 // theory's text, perhaps another module's.
@@ -164,7 +210,7 @@ function theoryFields(theory, lookup, proposition) {
     const d = n.kind === "call" && n.fn.kind === "name" && !bound.has(n.fn.name) ? derivedByName.get(n.fn.name) : null;
     if (!d || n.args.length !== d.params.length) return n;
     const args = new Map(d.params.map((p, k) => [p.name, inlineDerived(n.args[k])]));
-    return rewritten(d.value, (m, inner) => m.kind === "name" && args.has(m.name) && !inner.has(m.name) ? args.get(m.name) : m);
+    return substituted(d.value, args);
   });
   // The header's universes are the model's, which each expansion names
   // afresh; a theory without a header has one. Its parameters are every
