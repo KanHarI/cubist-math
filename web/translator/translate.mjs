@@ -20,6 +20,7 @@ import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleShape,noRule,ruleTwice} from "./hlevel.mjs";
 import {repeatedName,stem} from "./names.mjs";
 import {numeralValue} from "./numerals.mjs";
+import {hasHole,mismatch,valueMismatch} from "./evaluation.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
 import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipTheory,sectionScope,selected,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
@@ -288,6 +289,15 @@ export class Translator {
     const result=this.checker.verify(this.term(d.value,scope));
     const assumptions=result.native?.axioms??[...(this.checker.requiredAssumptions?.(result.term,result.type).keys()??[])];
     if(assumptions.length)throw Error(this.nonComputingMessage("The evaluated term",assumptions,result.term,result.type));
+    // An expected value with holes is a pattern, matched part by part
+    // (evaluation.mjs, L2.9a).
+    if(hasHole(d.expected)) {
+      const source=node=>scope.unit.source.slice(node.start,node.end).trim();
+      const found=mismatch(d.expected,result.normal,result.type,scope,
+        (node,type)=>{scope.spend("queries");return this.checker.verify(this.term(node,scope,type)).normal;},source);
+      if(found)throw valueMismatch(this.shown(result.normal),source(d.expected),this.shown(found.value),source(found.pattern));
+      return this.shown(result.normal);
+    }
     scope.spend("queries");
     const expected=this.checker.verify(this.term(d.expected,scope));
     if(!scope.equal(result.type,expected.type))

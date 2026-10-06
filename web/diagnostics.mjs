@@ -337,6 +337,8 @@ export const diagnostics = [
   ["E474", "A Glue piece has syntax face(i, 0 or 1, T, e) or face_when(φ, T, e)."],
   ["E475", "A glue value has syntax face(i, 0 or 1, t) or face_when(φ, t)."],
   ["E476", "open takes a model of a theory, such as m : Group(U0); this is a value of type ….", "retired"],
+  ["E477", "The term evaluates to …, which does not match …: … is not …."],
+  ["E478", "A hole in an expected value stands for a pair's component, an injection's value or a constructor's argument; … is none of these, so write it out."],
   // Inductive types and matching
   ["E501", "trunc(n) is supported up to n = …."],
   ["E502", "A sort is type, set, prop or trunc(n) for an integer n ≥ -1."],

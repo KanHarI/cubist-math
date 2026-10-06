@@ -1775,6 +1775,10 @@
    "summary": "`simpa` transports only along paths of types: no path, functions that are no type path, a nontrivial loop."
   },
   {
+   "path": "cubist-tests/evaluate_patterns.cubist",
+   "summary": "`evaluate … expecting` a pattern: holes, pairs, injections and constructors matched part by part, other expressions by normal form, and the part a mismatch names."
+  },
+  {
    "path": "cubist-tests/f4_extension_loops_false.cubist",
    "summary": "The two-loop equality certifies no one-element loop type."
   },

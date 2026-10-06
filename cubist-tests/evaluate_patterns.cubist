@@ -1,0 +1,41 @@
+// Patterns on the expected side of evaluate (L2.9a): an expected value with
+// holes is matched against the term's normal form part by part. A hole
+// matches anything; a pair, an injection or a constructor matches a value
+// built so; any other expression is elaborated at the part's type and
+// compared by normal form.
+import nat;
+import lists;
+use nat;
+
+def pairs : Nat and (Unit or Nat) := (3, right(2 + 2));
+
+evaluate pairs expecting (3, _);
+
+evaluate pairs expecting (_, right(4));
+
+evaluate pairs expecting (1 + 2, right(_));
+
+def numbers : List(U0, Nat) := cons(1, cons(2, cons(3, nil)));
+
+evaluate numbers expecting cons(1, _);
+
+evaluate numbers expecting cons(_, cons(2, _));
+
+evaluate append(numbers, numbers) expecting cons(1, cons(2, cons(3, cons(1, _))));
+
+// A mismatch names the part that differs.
+// Error: E477: The term evaluates to (3, right(4)), which does not match (4, _): 3 is not 4.
+evaluate pairs expecting (4, _);
+
+// Error: E477: The term evaluates to (3, right(4)), which does not match (_, left(_)): right(4) is
+//   not left(_).
+evaluate pairs expecting (_, left(_));
+
+// Error: E477: The term evaluates to cons(1, cons(2, cons(3, nil))), which does not match cons(_,
+//   nil): cons(2, cons(3, nil)) is not nil.
+evaluate numbers expecting cons(_, nil);
+
+// A hole must stand where a part can be read.
+// Error: E478: A hole in an expected value stands for a pair's component, an injection's value or a
+//   constructor's argument; append(_, nil) is none of these, so write it out.
+evaluate numbers expecting append(_, nil);

@@ -269,7 +269,7 @@
                 <tr id="E403"><td class="code"><code>E403</code></td><td data-message="Too many arguments to">“Too many arguments to <var>name</var>.”</td><td>A library assumption got more arguments than its type allows.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
                 <tr id="E330"><td class="code"><code>E330</code></td><td data-message="This computable declaration depends on non-computing assumptions:">“This computable declaration depends on non-computing assumptions: …”</td><td>The declaration uses an assumption, directly or through a definition. The message names the chain. Replace that step, or drop <code>computable</code>.</td><td><a href="assumptions.html#computable">computable</a></td></tr>
                 <tr id="E324"><td class="code"><code>E324</code></td><td data-message="The evaluated term depends on non-computing assumptions:">“The evaluated term depends on non-computing assumptions: …”</td><td><code>evaluate</code> accepts only terms that use no assumption.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
-                <tr id="E326"><td class="code"><code>E326</code></td><td data-message="The term evaluates to">“The term evaluates to <var>a</var>, not <var>b</var>.”</td><td>The normal forms differ; the message shows both.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
+                <tr id="E326"><td class="code"><code>E326</code> <code>E477</code></td><td data-message="The term evaluates to">“The term evaluates to <var>a</var>, not <var>b</var>.”, “The term evaluates to <var>a</var>, which does not match <var>p</var>: <var>c</var> is not <var>q</var>.”</td><td>The normal forms differ; the message shows both. Against a pattern, it names the first part of the value that does not match, and the part of the pattern it fails.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -646,6 +646,8 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E474"><td><code>E474</code></td><td>A Glue piece has syntax face(i, 0 or 1, T, e) or face_when(φ, T, e).</td></tr>
                 <tr id="E475"><td><code>E475</code></td><td>A glue value has syntax face(i, 0 or 1, t) or face_when(φ, t).</td></tr>
                 <tr id="E476"><td><code>E476</code></td><td>open takes a model of a theory, such as m : Group(U0); this is a value of type …. (retired)</td></tr>
+                <tr id="E477"><td><code>E477</code></td><td>The term evaluates to …, which does not match …: … is not ….</td></tr>
+                <tr id="E478"><td><code>E478</code></td><td>A hole in an expected value stands for a pair's component, an injection's value or a constructor's argument; … is none of these, so write it out.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e5">Inductive types and matching</h3>

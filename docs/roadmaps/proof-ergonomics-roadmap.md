@@ -622,9 +622,12 @@ reference's Computability section.
   shown but is not a non-computing dependency. The marker arrives with H1.
 - [x] `evaluate term expecting value;`, a checked normal-form test, and the
   CLI's `evaluate EXPRESSION` command.
-- [ ] L2.9a: patterns with holes on the expected side of `evaluate`, with
+- [x] L2.9a: patterns with holes on the expected side of `evaluate`, with
   an explicit matching contract and mismatch diagnostics. This does not
-  inherently depend on H1.
+  inherently depend on H1. Done on 2026-10-06
+  ([`evaluation.mjs`](../../web/translator/evaluation.mjs)): holes, pairs,
+  injections and constructors match part by part, other expressions by
+  normal form, and a mismatch names the part that differs.
 - [ ] L2.9b: witness readout from closed normalized truncations in the CLI's
   `evaluate` command. This needs native H1 truncation and G2's policy;
   it does not introduce a source eliminator from `Trunc(A)` to `A`.
