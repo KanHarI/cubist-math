@@ -1330,13 +1330,29 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
       items.push(declarations.at(-1));
       continue;
     }
+    // `initial N : T(…);` declares a theory's initial model, and
+    // `free W(A : U0) : T(…) on A;` its free model on A (L2.6): a declared
+    // type with a constructor for each operation and a path constructor for
+    // each law, its model, and fold (web/translator/initial-models.mjs).
+    if ((t.text === "initial" || t.text === "free") && /^[A-Za-z_]/.test(peek())
+        && [":", "("].includes(ts[i + 1].text)) {
+      const n = name(), params = t.text === "free" && peek() === "(" ? parameters("(A : U0)", false) : [];
+      take(":");
+      const theory = expr();
+      const on = t.text === "free" ? (take("on"), expr()) : null;
+      const end = take(";").end;
+      declarations.push({ kind: t.text, name: n, params, theory, ...(on ? { on } : {}),
+        ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end });
+      items.push(declarations.at(-1));
+      continue;
+    }
     // `computable def` asserts that the checked result uses no assumption.
     const computable = t.text === "computable" && peek() === "def";
     const modifierStart = computable ? t.start : undefined;
     if (computable) t = take();
     if (t.text !== "def")
       throw Object.assign(new Error(t.text === "import" ? "Imports must come before declarations."
-        : "Expected a declaration or directive: def, computable def, inductive, evaluate, print, simp_rule, simp_set, hlevel_rule or theory."), {
+        : "Expected a declaration or directive: def, computable def, inductive, evaluate, print, simp_rule, simp_set, hlevel_rule, theory, initial or free."), {
         offset: t.start,
       });
     const n = name(),

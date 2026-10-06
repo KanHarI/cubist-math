@@ -1995,6 +1995,10 @@
    "summary": "For `tests/inductive-declarations.test.mjs` (as are the inductive_* modules below): constructors build values, computations hold by rfl, and no result carries a marker (T2)."
   },
   {
+   "path": "cubist-tests/initial_models.cubist",
+   "summary": "`initial` and `free` models of a theory: the declared type, its model and `fold`, computing on constructors and generators; theories with no such model."
+  },
+  {
    "path": "cubist-tests/inspection_axiom_labels.cubist",
    "summary": "An assumption's label and a derived helper, inspected."
   },

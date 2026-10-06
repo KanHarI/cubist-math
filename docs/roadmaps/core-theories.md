@@ -638,7 +638,11 @@ scope.
 
 ## Initial and free models (L2.6)
 
-**Specified** on 2026-10-06, not implemented. This is the contract the
+**Specified** on 2026-10-06; **the first slice done** the same day
+(`web/translator/initial-models.mjs`): `initial` and `free` declare the
+type, its model and `fold`, which computes on constructors and generators,
+with the refusals; the library's monoids, commutative monoids, groups and
+commutative rings have them (`cubist-tests/initial_models.cubist`). This is the contract the
 audit's finding 4 asks for before any `universal` is generated: separate
 typed results, each stated for a fixed target model, and none of the form
 `(initial T → M) ≃ T.Hom(…)`, which is false (the initial monoid has one

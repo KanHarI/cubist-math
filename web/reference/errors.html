@@ -240,6 +240,7 @@
                 <tr id="E828"><td class="code"><code>E828</code></td><td data-message="with different kinds or indices">“<var>T</var> gets the carrier <var>M</var> from <var>P</var> and <var>Q</var> with different kinds or indices: rename one, as in <var>Q</var>(<var>M</var> := …).”</td><td>Two parents give a carrier of one name, merged into one carrier of the child only when both are sets, or both propositions, of one type. Rename it in one parent to keep them apart.</td><td><a href="theories.html#extends">extension</a></td></tr>
                 <tr id="E817"><td class="code"><code>E817</code></td><td data-message="models have no homomorphisms">“<var>T</var>'s models have no homomorphisms: …”</td><td>A homomorphism preserves each operation, pushing each argument that holds a carrier forward and pulling one with a carrier left of an arrow back. An argument with a carrier on both sides of an arrow, a carrier with no h-level, and a few other forms leave a theory without homomorphisms; the message names which.</td><td><a href="theories.html#morphisms">homomorphisms</a></td></tr>
                 <tr id="E834"><td class="code"><code>E834</code></td><td data-message="use selects a model of a theory">“use selects a model of a theory, such as m : Group(U0); this is a value of type <var>A</var>.”</td><td><code>use</code> puts a model's fields and notation in scope; the value given is not a model of a theory.</td><td><a href="theories.html#open">use</a></td></tr>
+                <tr id="E856"><td class="code"><code>E856</code></td><td data-message="is no equation: an initial model's laws are equations">“The law <var>l</var> is no equation: an initial model's laws are equations between its operations' terms.”</td><td><code>initial</code> and <code>free</code> present a theory by its operations and laws, each law a path constructor; a law that is a truncation or another proposition has no such presentation.</td><td><a href="theories.html#initial-models">initial models</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -373,7 +374,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr><td><a href="#E149"><code>E149</code></a></td><td>simp_rule priority must be an integer from 0 to 1000.</td></tr>
                 <tr id="E150"><td><code>E150</code></td><td>Expected '}' to close the inductive declaration.</td></tr>
                 <tr><td><a href="#E151"><code>E151</code></a></td><td>Imports must come before declarations.</td></tr>
-                <tr id="E152"><td><code>E152</code></td><td>Expected a declaration or directive: def, computable def, inductive, evaluate, print, simp_rule, simp_set, hlevel_rule or theory.</td></tr>
+                <tr id="E152"><td><code>E152</code></td><td>Expected a declaration or directive: def, computable def, inductive, evaluate, print, simp_rule, simp_set, hlevel_rule, theory, initial or free.</td></tr>
                 <tr id="E153"><td><code>E153</code></td><td>Write := to give a value: def name : T := term; here `=` read as an equality type</td></tr>
                 <tr id="E154"><td><code>E154</code></td><td>Cannot locate a right-hand pair's enclosing parentheses.</td></tr>
                 <tr id="E155"><td><code>E155</code></td><td>Tuple linearization changed the expanded syntax tree.</td></tr>
@@ -867,6 +868,15 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E846"><td><code>E846</code></td><td>notation numeral reads a plain numeral: it marks a derived operation of one natural number, as def of_nat(n : Nat) : R := … notation numeral.</td></tr>
                 <tr id="E847"><td><code>E847</code></td><td>A numeral rule reads a natural number: import nat.</td></tr>
                 <tr id="E848"><td><code>E848</code></td><td>…'s label would be …, which is reserved: label it, as in other : ….</td></tr>
+                <tr id="E850"><td><code>E850</code></td><td>… takes a theory at its universes and parameters, as … N : Monoid(U0); … is none.</td></tr>
+                <tr id="E851"><td><code>E851</code></td><td>… takes … argument…, its universes and parameters; this gives ….</td></tr>
+                <tr id="E852"><td><code>E852</code></td><td>An initial model needs one carrier, not a family; … has ….</td></tr>
+                <tr id="E853"><td><code>E853</code></td><td>…'s carrier … is neither a set nor a proposition: its models have no homomorphisms yet, so it has no initial model here.</td></tr>
+                <tr id="E854"><td><code>E854</code></td><td>… takes … with the carrier … inside its type: an initial model's operations take the carrier, or types without it.</td></tr>
+                <tr id="E855"><td><code>E855</code></td><td>… gives no element of the carrier …: an initial model's operations do.</td></tr>
+                <tr><td><a href="#E856"><code>E856</code></a></td><td>The law … is no equation: an initial model's laws are equations between its operations' terms.</td></tr>
+                <tr id="E857"><td><code>E857</code></td><td>The law … uses the derived operation …: an initial model's laws use its operations.</td></tr>
+                <tr id="E858"><td><code>E858</code></td><td>…'s field … is neither an operation nor a law: an initial model has only those.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e9">Notation and operators</h3>

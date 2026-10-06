@@ -56,6 +56,7 @@
             <li><a href="#sections">Sections</a></li>
             <li><a href="#extends">Extension: <code>extends</code></a></li>
             <li><a href="#morphisms">Homomorphisms and isomorphisms</a></li>
+            <li><a href="#initial-models">Initial and free models</a></li>
             <li><a href="#library-algebra">The library's algebra</a></li>
             <li><a href="#generated">What a theory declares</a></li>
             <li><a href="#theory-errors">What is refused</a></li>
@@ -465,6 +466,29 @@ theory Iterate(U &lt; UU0) {
 def no_homs(A, B : Iterate(U0)) := Iterate.Hom(A, B);  // Error: Iterate's models have no homomorphisms: its iterate's argument g mentions a carrier on both sides of an arrow, and such homomorphisms need not compose.</code></pre>
           </section>
 
+          <section id="initial-models">
+            <h2>Initial and free models</h2>
+            <p><code>initial N : T(…);</code> declares the initial model of a theory: a declared type <code>N</code> with a constructor for each of the theory's operations, <code>N.mul</code> and <code>N.one</code>, a path constructor for each law, <code>N.mul_assoc</code>, and the squash of the carrier's level; its model, <code>N.model : T(…)</code>; and <code>N.fold(M) : T.Hom(N.model, M)</code> into any model <code>M</code>, whose map computes on the constructors. <code>free W(A : U0) : T(…) on A;</code> adds the generators, <code>W.gen(a)</code>, and its fold takes their images, <code>W.fold(A, M, g)</code>. A theory has such a model when it has one carrier, a set or a proposition, operations that take the carrier or types without it, and laws that are equations.</p>
+            <pre><code data-check="accept">import nat;
+import hlevels;
+import algebra;
+use nat;
+
+free W(A : U0) : Monoid(U0) on A;
+
+// A word's length: each generator is 1 in Nat's additive monoid.
+def length{{A : U0}}(w : W(A)) : Nat := W.fold(A, nat_additive.monoid, fun (a : A) =&gt; 1).map(w);
+
+// Output: 3
+print(evaluate(length{{Unit}}(W.mul(W.gen(tt), W.mul(W.gen(tt), W.gen(tt))))));
+
+def unit_left{{A : U0}}(x : W(A)) : W.mul(W.one, x) = x := W.one_mul(x);</code></pre>
+            <p>A field has none: its inverse is a truncated law, not an equation. The uniqueness of a fold, and with it the universal properties, are the next slices of this feature.</p>
+            <pre><code data-check="reject">import hlevels;
+import algebra;
+
+initial F : Field(U0);  // Error: The law inverses is no equation: an initial model's laws are equations between its operations' terms.</code></pre>
+          </section>
           <section id="library-algebra">
             <h2>The library's algebra</h2>
             <p><code>import algebra;</code> declares the usual hierarchy as theories, each on one set, with its models, homomorphisms and isomorphisms:</p>
