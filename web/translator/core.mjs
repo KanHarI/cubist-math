@@ -140,6 +140,8 @@ function free(t, dimension = false) {
 function fresh(n, avoid) { while (avoid.has(n)) n += "_"; return n; }
 // The free term names of a term, universe variables included.
 export function freeNames(t) { return free(t); }
+// Whether a value is a term, as opposed to another kind of entry in scope.
+export const isTerm = t => !!(t && typeof t === "object" && typeof t.tag === "string" && children[t.tag]);
 // A term with its beta redexes contracted, within a budget of substitutions,
 // keeping every name: syntax only, as for display or a normal form's shape.
 export function betaReduce(term, budget = 256) {
@@ -262,6 +264,34 @@ export function withoutEmptyFaces(term,memo=new WeakMap()) {
 // Syntax manipulation only; callers must independently check the result.
 // DefRef denotes a closed definition, so substitution does not enter its body.
 export {substitute as substituteTerm};
+// A key for terms up to the names of their binders, of terms and of
+// dimensions: each renamed, in the order met, to a name no source spells,
+// and `renamed` names written as it gives them. Terms with the same key are
+// the same up to those names.
+export function alphaKey(term, renamed = new Map()) {
+  let count = 0;
+  const canonical = t => {
+    if (!t || typeof t !== "object") return t;
+    if (Array.isArray(t)) return t.map(canonical);
+    let node = t;
+    if (typeof t.tag === "string" && children[t.tag] && termBinder(t)) {
+      const name = `\u0000bound${count++}`;
+      node = {...t, name, body: substitute(t.body, t.name, {tag: "Var", name})};
+    } else if (typeof t.tag === "string" && children[t.tag] && dimBinder(t)) {
+      // The parts a dimension binds, as free counts them: an HComp's family
+      // is outside it.
+      // A dimension's name is an identifier: apart from those free here, so
+      // that terms the same up to bound names choose the same one.
+      const dim = fresh(`dimension${count++}`, free(t, true)), renamedIn = part => dsub(part, t.dim, I.variable(dim));
+      node = {...t, dim};
+      if (t.tag !== "HComp") node.family = renamedIn(t.family);
+      if (t.tag === "PLam") node.body = renamedIn(t.body);
+      if (t.tag === "Comp" || t.tag === "HComp") node.system = t.system.map(piece => ({...piece, term: renamedIn(piece.term)}));
+    }
+    return Object.fromEntries(Object.entries(node).map(([key, value]) => [key, canonical(value)]));
+  };
+  return JSON.stringify(canonical(term), (key, value) => typeof value === "string" && renamed.has(value) ? renamed.get(value) : value);
+}
 
 // Derived filling, CCHM section 4.4. The added r=0 wall keeps the starting lid
 // fixed. This is syntax built from comp, never an additional trusted axiom.
