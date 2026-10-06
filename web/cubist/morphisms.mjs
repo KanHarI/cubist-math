@@ -37,23 +37,10 @@
 // argument that is the same on both sides or pushed forward, as a monad's
 // m : F(A) names A.
 
-// The names a type mentions free; a qualified name, R.R, by its root.
-function freeNames(node, bound = new Set(), out = new Set()) {
-  if (Array.isArray(node)) { for (const item of node) freeNames(item, bound, out); return out; }
-  if (!node || typeof node !== "object") return out;
-  if (node.kind === "name") {
-    const root = node.name.split(".")[0];
-    if (!bound.has(root)) out.add(root);
-    return out;
-  }
-  const binders = node.kind === "binderGroup" ? node.names.map(n => n.text)
-    : ["forall", "exists", "lambda"].includes(node.kind) && node.name?.text ? [node.name.text] : [];
-  for (const [key, value] of Object.entries(node)) {
-    if (!value || typeof value !== "object") continue;
-    freeNames(value, binders.length && key === "body" ? new Set([...bound, ...binders]) : bound, out);
-  }
-  return out;
-}
+// The names a type mentions free, a qualified name R.R by its root, by
+// every binding form (scopes.mjs).
+import { freeNames } from "./scopes.mjs";
+
 
 // How a type is mapped: "fixed" when it mentions no carrier; a carrier, or
 // a family's member, whose index that is an element of a carrier is a name
