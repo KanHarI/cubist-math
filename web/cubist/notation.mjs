@@ -43,7 +43,7 @@ export function notationFromSyntax(node, globals = new Map(), bound = new Set())
   }
   if (node.kind === "pair") return { kind: "Pair", left: visit(node.left), right: visit(node.right) };
   if (node.kind === "projection") return { kind: "Projection", index: node.index, value: visit(node.value) };
-  // -p and p ++ q fold as the built-ins they elaborate to.
+  // ~p and p ++ q fold as the built-ins they elaborate to.
   if (node.kind === "unary")
     return visit({ kind: "call", fn: { kind: "name", name: "sym" }, args: [node.operand], checked: node.checked });
   if (node.kind === "binary" && node.operator === "++")

@@ -38,9 +38,9 @@ export function sourceText(term, symbols = {}, limit = 4000) {
     return Object.values(t).some(child => varies(child, dim, seen));
   };
   // Interval formulas are disjunctions of conjunctions of literals; `i:0` is
-  // the reversed coordinate. They print in the source's notation: -i, i & j
+  // the reversed coordinate. They print in the source's notation: ~i, i & j
   // and i | j, where & binds tighter than |, and both tighter than @.
-  const literal = text => text.endsWith(":0") ? `-${text.slice(0, -2)}` : text.replace(/:1$/, "");
+  const literal = text => text.endsWith(":0") ? `~${text.slice(0, -2)}` : text.replace(/:1$/, "");
   const conjunction = clause => clause.length ? clause.map(literal).join(" & ") : "1";
   const interval = value => value.length ? value.map(conjunction).join(" | ") : "0";
   // A face formula is a disjunction of conjunctions too, of equations `i:0`.

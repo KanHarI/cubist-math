@@ -2044,7 +2044,7 @@
   },
   {
    "path": "cubist-tests/path_operators.cubist",
-   "summary": "Path and coordinate operators, for `tests/path-operators.test.mjs`: -p, p ++ q, -i, & and"
+   "summary": "Path and coordinate operators, for `tests/path-operators.test.mjs`: ~p, p ++ q, ~i, & and"
   },
   {
    "path": "cubist-tests/patterns.cubist",
