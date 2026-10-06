@@ -1,0 +1,69 @@
+// Operators, operand views and derived operations (L2.10b): binary -, / and
+// ^, unary -, and x > y and x >= y, which are y < x and y <= x; an operand
+// read in another notation, as x ^ nat.(n); and derived operations, which
+// a theory defines over its fields and models do not give again. Each
+// operator means only what the selected notation binds.
+import nat;
+import hlevels;
+import algebra;
+import integers;
+
+theory Ring(U < UU0) {
+  R : set U;
+  add(x, y : R) : R notation x + y;
+  neg(x : R) : R notation -x;
+  mul(x, y : R) : R notation x * y;
+  one : R;
+  pow(x : R, n : Nat) : R notation x ^ nat.(n);
+  // A derived operation: subtraction, x + -y.
+  def sub(x, y : R) : R := x + -y notation x - y;
+  // n + 1 is read in nat's notation, as pow's exponent is.
+  law pow_succ(x : R, n : Nat) : x ^ (n + 1) = x * x ^ n;
+}
+
+// -x^2 is -(x^2), -x * y is (-x) * y, and ^ groups to the right.
+def grouped(A : Ring(U0), x, y : A.R) : A.(-x^2 * y) = A.mul(A.neg(A.pow(x, 2)), y) {
+  rfl;
+}
+
+def subtracted(A : Ring(U0), x, y : A.R) : A.(x - y) = A.sub(x, y) {
+  rfl;
+}
+
+def exponent(A : Ring(U0), x : A.R, n : Nat) : A.(x ^ (n + 1)) = A.pow(x, add(n, 1)) {
+  rfl;
+}
+
+def negated(A : Ring(U0), x : A.R) : A.R := A.(-) x;
+
+def difference(A : Ring(U0), x : A.R) : A.R := x A.(-) x;
+
+// The library's rings: negation and subtraction on the integers.
+def three : integers.(int(5, 0) - int(2, 0)) = int(5, 2) {
+  rfl;
+}
+
+// x > y is y < x.
+def greater : nat.(3 > 2) := tt;
+
+def at_least : nat.(3 >= 3) := tt;
+
+// nat binds no negation, and -p is no reversal.
+// Error: E902: -x is not in nat's notation, which is selected here: select a notation that binds
+//   it, as integers.(-x).
+def no_negation(x : Nat) : Nat := nat.(-x);
+
+// Error: E399: x - y means what a selected notation binds - to: select one, as integers.(x - y).
+def outside(x : Nat) : Nat := x - x;
+
+// Error: E901: -x negates in a selected notation that binds it, as integers.(-x); a path's reversal
+//   is ~p.
+def not_reversal(A : U0, x, y : A, p : x = y) : y = x := -p;
+
+// An operand that is no carrier's element names its notation.
+// Error: E838: The notation of pow reads n in the notation selected where it is used, which is
+//   BarePower's; n is no carrier's element: name the notation it is read in, as x ^ nat.(n).
+theory BarePower(U < UU0) {
+  R : set U;
+  pow(x : R, n : Nat) : R notation x ^ n;
+}

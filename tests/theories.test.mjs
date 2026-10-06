@@ -108,7 +108,8 @@ test("sort, a carrier's spelling until L2.4c, is refused with the field that rep
 
 test("the parser refuses a theory's malformed fields", () => {
   const refused = (body, message) => assert.throws(() => parse(`theory T(U < UU0) {\n${body}\n}`), message);
-  refused("M : set U; mul(x, y : M) : M notation x ++ y;", /A notation is a binary operator: x \+ y, x \* y, x < y or x <= y\./);
+  refused("M : set U; mul(x, y : M) : M notation x ++ y;", /A notation binds an operator: x \+ y, x - y, x \* y, x \/ y, x \^ y, x < y, x <= y, or -x\./);
+  refused("M : set U; gt(x, y : M) : U notation x > y;", /x > y is y < x: a notation binds < and <=, and > and >= follow them\./);
   refused("M : set U; one M;", /Expected ':' and the type of one, as in mul\(x, y : M\) : M;/);
   refused("M : set U; law unit(x : M) x = x;", /Expected ':' and the type of unit, as in law mul_one\(x : M\) : x \* one = x;/);
   assert.throws(() => parse("theory T(U < UU0) {\n  M : set U;\n"), /Expected '}' to close the theory\./);
@@ -179,4 +180,27 @@ test("a source from before L2.4c is read with carriers, a header and T for T.Mod
   assert.equal(currentSyntax(old),
     "theory Monoid(U < UU0) extends Semigroup {\n  M : set U;\n  P : prop U;\n}\ndef f(G : Monoid(U0), sort : Nat) : G.M := G.one;\n");
   assert.doesNotThrow(() => parse(currentSyntax(old)));
+});
+
+test("arithmetic groups as L2.10b says, with the cubical operators tightest", () => {
+  const show = n => n.kind === "binary" || n.kind === "pathApply" ? `(${show(n.left)} ${n.operator} ${show(n.right)})`
+    : n.kind === "negation" ? `(-${show(n.operand)})` : n.kind === "unary" ? `(~${show(n.operand)})` : n.name ?? String(n.value);
+  const grouping = source => show(parse(source, true));
+  assert.equal(grouping("-x^2"), "(-(x ^ 2))");
+  assert.equal(grouping("-x * y"), "((-x) * y)");
+  assert.equal(grouping("-p @ i"), "(-(p @ i))");
+  assert.equal(grouping("p @ i^2"), "((p @ i) ^ 2)");
+  assert.equal(grouping("x * p @ i"), "(x * (p @ i))");
+  assert.equal(grouping("a - b - c"), "((a - b) - c)");
+  assert.equal(grouping("a / b * c"), "((a / b) * c)");
+  assert.equal(grouping("x ^ y ^ z"), "(x ^ (y ^ z))");
+  assert.equal(grouping("x >= y + 1"), "(x >= (y + 1))");
+  assert.equal(grouping("~p @ i"), "((~p) @ i)");
+  // A qualified negation after a space; a qualified operation called.
+  assert.equal(parse("G.(-) x", true).kind, "negation");
+  assert.equal(parse("G.(-)(x, y)", true).kind, "call");
+  for (const source of ["x - y;", "a / b;", "x ^ 2;", "x >= y;"]) {
+    const formatted = formatCubist(`def f := ${source}\n`);
+    assert.equal(formatCubist(formatted), formatted);
+  }
 });

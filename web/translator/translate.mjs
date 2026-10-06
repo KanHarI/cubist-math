@@ -19,6 +19,7 @@ import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference,ma
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName} from "./hlevel.mjs";
 import {repeatedName,stem} from "./names.mjs";
+import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation} from "./notations.mjs";
 import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipTheory,sectionScope,selected,qualifiedOperator,notationDeclaration,appliedRule,SELECTION} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
@@ -870,21 +871,31 @@ export class Translator {
         if(n.operator==="++")return this.concatenatePaths(scope,left,tr(n.right,null),"++");
         if(["->","and"].includes(n.operator)) return (n.operator==="->"?T.pi:T.sigma)(scope.fresh(),left,tr(n.right,null));
         if(n.operator==="or")return T.sum(left,tr(n.right,null));
-        if(["+","*","<=","<"].includes(n.operator)) {
+        // x > y is y < x, and x >= y is y <= x (L2.10b).
+        if([">",">="].includes(n.operator))
+          return tr({...n,operator:n.operator===">"?"<":"<=",left:n.right,right:n.left},expected);
+        if(["+","-","*","/","^","<=","<"].includes(n.operator)) {
           // A selected notation is complete: an operator it does not bind is
           // an error, never an earlier selection's or add's (L2.10a).
-          const selection=env.get(SELECTION);
-          if(selection&&!selection.operators.has(n.operator))
-            throw Error(`${n.operator} is not in ${selection.name}'s notation, which is selected here: select a notation that binds it, as nat.(x ${n.operator} y), or write the operation.`);
+          const found=env.get(SELECTION),bound=found?.operators.has(n.operator);
+          if(found?.complete&&!bound)throw unboundOperator(found,n.operator);
+          // Outside a complete selection, an operator it does not bind is
+          // read by name, as before views (until L2.10j).
+          const selection=bound?found:null;
+          if(!selection&&!["+","*","<=","<"].includes(n.operator))throw unselectedOperator(n.operator);
+          // An operand with a recipe is read in its notation (L2.10b).
+          const recipe=selection?.recipes?.[n.operator]??{},operand=(node,view)=>view
+            ?{kind:"select",model:{kind:"name",name:view,start:node.start,end:node.end},body:node,start:node.start,end:node.end}:node;
+          const left=operand(n.left,recipe.left),right=operand(n.right,recipe.right);
           // A named notation's rule, applied to the operands.
-          if(env.get(operatorBinding(n.operator))?.tag==="NotationRule") {
-            const applied=appliedRule(scope,env.get(operatorBinding(n.operator)).rule,n.left,n.right);
+          if(selection&&env.get(operatorBinding(n.operator))?.tag==="NotationRule") {
+            const applied=appliedRule(scope,env.get(operatorBinding(n.operator)).rule,left,right);
             return this.term(applied.node,applied.scope,expected);
           }
           // A notation open binds means the model's operation (L2.4).
-          if(env.has(operatorBinding(n.operator)))
+          if(selection&&env.has(operatorBinding(n.operator)))
             return tr({kind:"call",fn:{kind:"name",name:operatorBinding(n.operator),start:n.operatorStart,end:n.operatorEnd},
-              args:[n.left,n.right],start:n.start,end:n.end},expected);
+              args:[left,right],start:n.start,end:n.end},expected);
           const name=n.operator==="+"?"add":n.operator==="*"?"mul":n.operator==="<"&&env.has("isLt")?"isLt":"le";
           const first=n.operator==="<"&&name==="le"?{kind:"call",fn:{kind:"name",name:"succ"},args:[n.left]}:n.left;
           return tr({kind:"call",fn:{kind:"name",name},args:[first,n.right]},null);
@@ -898,6 +909,29 @@ export class Translator {
       // e.f, a field of a model that is not a name (L2.4).
       case "member": return tr(memberField(this,scope,n),expected);
       case "sectionScope": return this.term(n.body,sectionScope(this,scope,n),expected);
+      // -x negates in the selected notation (L2.10b), or in a qualifier's.
+      case "negation": {
+        if(n.qualifier) {
+          const operation=qualifiedOperator(this,scope,{...n,model:n.qualifier,operator:"unary -"});
+          if(operation.kind==="notationRule") {
+            const applied=appliedRule(scope,operation.rule,n.operand,null);
+            return this.term(applied.node,applied.scope,expected);
+          }
+          return tr({kind:"call",fn:operation,args:[n.operand],start:n.start,end:n.end},expected);
+        }
+        const selection=env.get(SELECTION);
+        if(!selection||!selection.complete&&!selection.operators.has("unary -"))throw unselectedNegation();
+        if(!selection.operators.has("unary -"))throw unboundNegation(selection);
+        const view=selection.recipes?.["unary -"]?.left;
+        const operand=view?{kind:"select",model:{kind:"name",name:view,start:n.start,end:n.end},body:n.operand,start:n.start,end:n.end}:n.operand;
+        const binding=env.get(operatorBinding("unary -"));
+        if(binding?.tag==="NotationRule") {
+          const applied=appliedRule(scope,binding.rule,operand,null);
+          return this.term(applied.node,applied.scope,expected);
+        }
+        return tr({kind:"call",fn:{kind:"name",name:operatorBinding("unary -"),start:n.operatorStart,end:n.operatorEnd},
+          args:[operand],start:n.start,end:n.end},expected);
+      }
       // use m; at a file's top level, and m.(e) for one expression (L2.4c).
       case "useScope": return this.term(n.body,n.uses.reduce((inner,model)=>selected(this,inner,model),scope),expected);
       case "select": return this.term(n.body,selected(this,scope,n.model),expected);

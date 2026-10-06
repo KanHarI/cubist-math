@@ -2039,6 +2039,10 @@
    "summary": "Mismatches in source syntax, without module prefixes, generated suffixes or redexes."
   },
   {
+   "path": "cubist-tests/notation_operators.cubist",
+   "summary": "Operators, operand views and derived operations (L2.10b): `-`, `/`, `^`, unary `-`, `>` and `>=`, their grouping, an exponent read in `nat`, a derived subtraction, the integers' negation and subtraction, qualified negation, and the refusals of an operator no selection binds, `-p` as reversal, and an operand with no view."
+  },
+  {
    "path": "cubist-tests/notation_views.cubist",
    "summary": "Named notations (L2.10a): the library's `nat`, a notation of one's own, its rules read where declared, the operation alone, two models on one carrier, nested selections, and the refusals of an operator a selection does not bind."
   },

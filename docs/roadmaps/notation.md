@@ -330,6 +330,22 @@ different arithmetic interpretation.
 
 ## L2.10b. Operators, operand views and derived operations
 
+**Done** on 2026-10-06. The grammar has binary `-`, `/` and `^`, unary
+`-`, and `>` and `>=`, grouped as below (`tests/theories.test.mjs`).
+Theories and named notations bind `-x` and the binary operators, and a
+pattern names an operand's view, `x ^ nat.(n)`; a theory's notation whose
+operand is no carrier's element must (E838). `x > y` is `y < x`, and a
+notation that declares `>` is refused (E188). Unary and binary `-` mean
+only what the selected notation binds (E399, E901, E902); `-p` is no
+reversal. A theory's `def f(…) : T := value notation …;` is a derived
+operation: `T.f(m, …)` over the fields, inherited by children, inlined
+where a later law uses it, and ignored by homomorphisms; the library's
+`CommRing` binds `-x` to `neg` and derives `sub`, `x - y`. Notation's
+elaboration messages are group E9 (`web/translator/notations.mjs`), E3
+being full. Evidence: `cubist-tests/notation_operators.cubist` and the
+reference's [named notations](../../web/reference/theories.html#notations)
+section. A numeral rule, `notation numeral`, is L2.10c's.
+
 ### Select before checking arguments
 
 Once `O` is selected, `O.(2 ^ n)` selects `O.pow` before considering the

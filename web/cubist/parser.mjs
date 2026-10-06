@@ -1,19 +1,20 @@
 // A small mathematical proof language. Parsing never evaluates JavaScript.
 
-// The operators a theory's notation can bind (theories.mjs).
-export const notationOperators = ["+", "*", "<", "<="];
+// The binary operators a notation can bind (theories.mjs, L2.10b); a
+// notation can bind unary -x too. x > y and x >= y are y < x and y <= x.
+export const notationOperators = ["+", "-", "*", "/", "^", "<", "<="];
 
 export function tokenize(source) {
   if (typeof source !== "string" || source.length > 1000000)
     throw new Error("Source exceeds 1 MB.");
   const tokens = [];
   const re =
-    /\s+|\/\/[^\n]*|(?:<=|=>|->|:=|<-|\+\+)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[\[\](){}:,;.+*<=>@&|~-]|./gy;
+    /\s+|\/\/[^\n]*|(?:<=|>=|=>|->|:=|<-|\+\+)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[\[\](){}:,;.+*\/^<=>@&|~-]|./gy;
   for (const match of source.matchAll(re)) {
     const text = match[0];
     if (/^\s|^\/\//.test(text)) continue;
     if (
-      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|=>|->|:=|<-|\+\+|[\[\](){}:,;.+*<=>@&|~-])$/.test(text)
+      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|>=|=>|->|:=|<-|\+\+|[\[\](){}:,;.+*\/^<=>@&|~-])$/.test(text)
     )
       throw Object.assign(new Error(`Unexpected character ${text}`), {
         offset: match.index,
@@ -153,6 +154,9 @@ export function parse(source, typeOnly = false) {
   // prefix ~i reverses one, so p @ ~i & j | k is p @ (((~i) & j) | k). Prefix
   // ~p reverses a path, tighter still: ~p @ i is (~p) @ i. Prefix - reversed
   // until 2026-10-06 and is kept for arithmetic (notation roadmap, L2.10i).
+  // Arithmetic, from loosest (L2.10b): + and -, then * and /, then unary
+  // -, then right-associative ^, as in Python's -x**2; the cubical
+  // operators bind tighter still, so a point on a path is one operand.
   const prec = {
     "->": 1,
     or: 2,
@@ -160,13 +164,19 @@ export function parse(source, typeOnly = false) {
     "=": 4,
     "<": 4,
     "<=": 4,
+    ">": 4,
+    ">=": 4,
     "++": 5,
     "+": 6,
+    "-": 6,
     "*": 7,
+    "/": 7,
+    "^": 7.7,
     "@": 8,
     "|": 9,
     "&": 10,
   };
+  const NEGATION = 7.5;
   const PREFIX = 11;
   // Tuples are notation for right-associated binary dependent pairs. Preserve
   // the delimiter locations for macro inspection; elaboration sees only pairs.
@@ -185,6 +195,34 @@ export function parse(source, typeOnly = false) {
         start: items[j].start, end: result.end, syntheticTuplePair: j !== 0 };
     return { ...result, start: open.start, end: close.end,
       tupleStart: open.start, tupleEnd: close.start };
+  }
+  // A notation's pattern, as the notation is used (L2.10b): x + y, -x, or
+  // with an operand's view named, x ^ nat.(n). x > y and x >= y are not
+  // declared: they are y < x and y <= x.
+  function notationPattern() {
+    const operand = () => {
+      const first = name();
+      if (peek() !== "." || ts[i + 1].text !== "(") return { token: first, view: null };
+      take("."); take("(");
+      const inner = name();
+      take(")");
+      return { token: inner, view: first };
+    };
+    if (peek() === "-") {
+      const operator = take(), right = operand();
+      return { operator: "-", unary: true, left: right.token, leftView: right.view, right: null, rightView: null, operatorToken: operator,
+        end: right.token.end };
+    }
+    const left = operand(), operator = take(), right = operand();
+    if ([">", ">="].includes(operator.text))
+      throw Object.assign(new Error(`x ${operator.text} y is y ${operator.text === ">" ? "<" : "<="} x: a notation binds < and <=, and > and >= follow them.`),
+        { offset: operator.start });
+    if (!notationOperators.includes(operator.text))
+      throw Object.assign(new Error("A notation binds an operator: x + y, x - y, x * y, x / y, x ^ y, x < y, x <= y, or -x."), { offset: operator.start });
+    if (left.token.text === right.token.text)
+      throw Object.assign(new Error(`A pattern names its two operands apart, as x ${operator.text} y.`), { offset: right.token.start });
+    return { operator: operator.text, unary: false, left: left.token, leftView: left.view, right: right.token, rightView: right.view,
+      operatorToken: operator, end: right.token.end };
   }
   // A qualified operator at token `at`, G.(+) or R.additive.(*): its
   // model's name, the operator, its dots and the token after it; or null.
@@ -259,6 +297,14 @@ export function parse(source, typeOnly = false) {
         const dot = take("."), open = take("(");
         if (notationOperators.includes(peek()) && ts[i + 1].text === ")") {
           const operator = take(), close = take(")");
+          // G.(-) x, G's negation of an operand after a space (L2.10b);
+          // G.(-)(x, y) calls its binary operation.
+          if (operator.text === "-" && ts[i].start !== close.end && /^(?:[A-Za-z_0-9(~]|-$)/.test(peek()) && peek() !== "EOF") {
+            const operand = expr(NEGATION);
+            a = { kind: "negation", qualifier: a, operand, operatorStart: operator.start, operatorEnd: operator.end,
+              dot: { start: dot.start, end: dot.end }, start: a.start, end: operand.end };
+            continue;
+          }
           a = { kind: "operatorOf", model: a, operator: operator.text, operatorStart: operator.start, operatorEnd: operator.end,
             dot: { start: dot.start, end: dot.end }, open: open.start, close: close.start, start: a.start, end: close.end };
         } else {
@@ -318,7 +364,7 @@ export function parse(source, typeOnly = false) {
       if (operator === "=" && peek() === "[") {
         take("["); carrier = expr(); take("]");
       }
-      const right = expr(p + (["->", "and", "or"].includes(operator) ? 0 : 1));
+      const right = expr(p + (["->", "and", "or", "^"].includes(operator) ? 0 : 1));
       a = {
         kind: operator === "@" ? "pathApply" : "binary",
         operator,
@@ -357,9 +403,11 @@ export function parse(source, typeOnly = false) {
     }
     if (t.text === "fun") return lambdaExpr(t);
     if (t.text === "forall" || t.text === "exists") return quantifierExpr(t);
-    if (t.text === "-")
-      throw Object.assign(new Error("Reversal is written ~: ~p reverses a path and ~i a coordinate. Prefix - is kept for arithmetic."),
-        { offset: t.start });
+    // -x negates in the selected notation (L2.10b); reversal is ~p.
+    if (t.text === "-") {
+      const operand = expr(NEGATION);
+      return { kind: "negation", operand, operatorStart: t.start, operatorEnd: t.end, start: t.start, end: operand.end };
+    }
     if (t.text === "~") {
       const operand = expr(PREFIX);
       return { kind: "unary", operator: "~", operand, operatorStart: t.start, operatorEnd: t.end,
@@ -1038,16 +1086,13 @@ export function parse(source, typeOnly = false) {
       const rules = [];
       while (peek() !== "}") {
         if (peek() === "EOF") throw Object.assign(new Error("Expected '}' to close the notation."), { offset: ts[i].start });
-        const start = ts[i].start, left = name(), operator = take(), right = name();
-        if (!notationOperators.includes(operator.text))
-          throw Object.assign(new Error("A notation's rule binds a binary operator: x + y, x * y, x < y or x <= y."), { offset: operator.start });
-        if (left.text === right.text)
-          throw Object.assign(new Error(`A rule's pattern names its two operands apart, as x ${operator.text} y.`), { offset: right.start });
-        if (rules.some(rule => rule.operator === operator.text))
-          throw Object.assign(new Error(`${n.text} binds ${operator.text} twice: a notation has one rule for each operator.`), { offset: operator.start });
+        const start = ts[i].start, pattern = notationPattern(), key = pattern.unary ? "unary -" : pattern.operator;
+        if (rules.some(rule => (rule.unary ? "unary -" : rule.operator) === key))
+          throw Object.assign(new Error(`${n.text} binds ${pattern.unary ? "-x" : pattern.operator} twice: a notation has one rule for each operator.`),
+            { offset: pattern.operatorToken.start });
         take(":=");
         const value = expr();
-        rules.push({ operator: operator.text, left, right, value, operatorToken: operator, start, end: take(";").end });
+        rules.push({ ...pattern, value, start, end: take(";").end });
       }
       const end = take("}").end;
       items.push({ kind: "notation", name: n, rules, start: t.start, end });
@@ -1064,11 +1109,8 @@ export function parse(source, typeOnly = false) {
           throw Object.assign(new Error(`A theory's universes are below UU0: ${p.name.text} < UU0.`), { offset: p.bound.start });
       const universes = new Set(header.filter(p => p.bound).map(p => p.name.text));
       const notationAfter = () => {
-        const notationKeyword = take(), left = name(), operator = take(), right = name();
-        if (!notationOperators.includes(operator.text))
-          throw Object.assign(new Error("A notation is a binary operator: x + y, x * y, x < y or x <= y."), { offset: operator.start });
-        return { operator: operator.text, left, right, keyword: notationKeyword, operatorToken: operator,
-          start: notationKeyword.start, end: right.end };
+        const notationKeyword = take(), pattern = notationPattern();
+        return { ...pattern, keyword: notationKeyword, start: notationKeyword.start };
       };
       if (peek() === "extends") {
         take("extends");
@@ -1123,6 +1165,19 @@ export function parse(source, typeOnly = false) {
         if (word("sort"))
           throw Object.assign(new Error(`A carrier is a field: write ${ts[i + 1].text} : set U; or ${ts[i + 1].text} : prop U;, with the universe named in the header, theory ${n.text}(U < UU0).`),
             { offset: ts[i].start });
+        // A derived operation (L2.10b): def f(params) : T := value, an
+        // ordinary definition over the model's fields, with an optional
+        // notation; no model gives it again.
+        if (word("def")) {
+          const keyword = take("def"), derived = name(), params = peek() === "(" ? fieldParameters() : [];
+          take(":");
+          const type = expr();
+          take(":=");
+          const value = expr();
+          const notation = peek() === "notation" ? notationAfter() : null;
+          fields.push({ kind: "derived", name: derived, params, type, value, notation, keyword, start, end: take(";").end });
+          continue;
+        }
         const law = word("law");
         const keyword = law ? take("law") : null;
         const field = name(), params = peek() === "(" ? fieldParameters() : [];
