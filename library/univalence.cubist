@@ -17,7 +17,7 @@ computable def glue_path(U < UU0, A, B : U, e : ContrEquiv(U, A, B)) :
 // The equivalence a path of types gives: the identity on B, transported back
 // along the path.
 computable def idtoequiv(U < UU0, A, B : U, p : A = B) :
-  ContrEquiv(U, A, B) := comp(fun (j : Interval) => ContrEquiv(U, p @ -j, B), id_contr_equiv(U, B));
+  ContrEquiv(U, A, B) := comp(fun (j : Interval) => ContrEquiv(U, p @ ~j, B), id_contr_equiv(U, B));
 
 // Eta: the path glued along idtoequiv(p) is p. A third piece, where k = 1,
 // glues p @ i along the identity transported up to -i.
@@ -25,7 +25,7 @@ computable def glue_path_idtoequiv(U < UU0, A, B : U, p : A = B) :
   glue_path(U, A, B, idtoequiv(U, A, B, p)) = p := path k => path i => Glue(
     B, face(i, 0, A, idtoequiv(U, A, B, p)), face(i, 1, B, id_contr_equiv(U, B)),
     face(
-      k, 1, p @ i, fill(fun (j : Interval) => ContrEquiv(U, p @ -j, B), id_contr_equiv(U, B), -i)
+      k, 1, p @ i, fill(fun (j : Interval) => ContrEquiv(U, p @ ~j, B), id_contr_equiv(U, B), ~i)
     )
   );
 
@@ -167,8 +167,8 @@ computable def equivalent_types_contractible(U < UU0, A : U) :
 // the identity.
 computable def idtoequiv_glue_path(U < UU0, A, B : U, e : ContrEquiv(U, A, B)) :
   idtoequiv(U, A, B, glue_path(U, A, B, e)) = e := path k => comp(
-    fun (j : Interval) => ContrEquiv(U, glue_path(U, A, B, e) @ -k & -j, B),
-    glue_line_equiv(U, B, A, B, e, id_contr_equiv(U, B)) @ -k, face(k, 1, fun (j : Interval) => e)
+    fun (j : Interval) => ContrEquiv(U, glue_path(U, A, B, e) @ ~k & ~j, B),
+    glue_line_equiv(U, B, A, B, e, id_contr_equiv(U, B)) @ ~k, face(k, 1, fun (j : Interval) => e)
   );
 
 // Univalence: idtoequiv is an equivalence, with glue_path its inverse.
