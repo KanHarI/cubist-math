@@ -360,8 +360,10 @@ export class NativeCubicalElaborator {
   requiredAssumptions(...terms) {
     const names = new Set();
     // Compute free names once per shared subtree. Removing the local binder
-    // after visiting its body keeps this independent of the surrounding scope.
-    const memo = new WeakMap();
+    // after visiting its body keeps this independent of the surrounding scope,
+    // and terms never change: so the names are kept from one check to the
+    // next, which ask about the same parts again and again.
+    const memo = this.requiredNames ??= new WeakMap();
     const free = term => {
       if (!term || typeof term !== "object") return new Set();
       if (memo.has(term)) return memo.get(term);
