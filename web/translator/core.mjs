@@ -91,36 +91,50 @@ const dimBinder = t => ["Path","PLam","Comp","HComp","Trans"].includes(t.tag);
 // A term's free names, and its free dimensions, by the term: terms are
 // never changed once built (every operation copies), so what a term holds
 // free is computed once, however often unification asks. The set is the
-// cache's own: callers read it and never change it.
-const freeTerms = new WeakMap(), freeDimensions = new WeakMap();
+// cache's own: callers read it and never change it. So a part's set is the
+// term's own where it is the only part with names, as for most terms: a
+// set is made only where two parts' names meet, or a binder takes one off.
+// The names keep the order of a walk through the parts, as zonk reads them.
+const freeTerms = new WeakMap(), freeDimensions = new WeakMap(), noNames = new Set();
 function free(t, dimension = false) {
   if (!t || !children[t.tag]) fail("Unknown term constructor.");
   const memo = dimension ? freeDimensions : freeTerms, cached = memo.get(t);
   if (cached) return cached;
-  const local=new Set();
-  if (dimension && t.tag === "PApp") for (const n of I.names(t.arg)) local.add(n);
-  if(dimension&&t.tag==="Trans")for(const n of I.names(t.face))local.add(n);
-  if (!dimension && t.tag === "Var") local.add(t.name);
-  if (!dimension && t.tag === "U") levelNames(t.level, local);
-  if (!dimension && t.tag === "LApp") levelNames(t.level, local);
-  if (!dimension && t.tag === "Sort") for (const level of t.levels ?? []) levelNames(level, local);
-  if(["Glue","GlueTerm"].includes(t.tag))for(const piece of t.system) {
-    for(const key of t.tag==="Glue"?["type","equiv"]:["term"])
-      for(const n of free(piece[key],dimension))local.add(n);
-    if(dimension)for(const n of I.names(piece.face))local.add(n);
+  let local = noNames, owned = false;
+  const own = () => { if (!owned) { local = new Set(local); owned = true; } };
+  const name = n => { if (!local.has(n)) { own(); local.add(n); } };
+  const union = names => {
+    if (!names.size || names === local) return;
+    if (!local.size) { local = names; return; }
+    own();
+    for (const n of names) local.add(n);
+  };
+  const without = (names, n) => {
+    if (!names.has(n)) return names;
+    const rest = new Set(names);
+    rest.delete(n);
+    return rest;
+  };
+  if (dimension && t.tag === "PApp") for (const n of I.names(t.arg)) name(n);
+  if (dimension && t.tag === "Trans") for (const n of I.names(t.face)) name(n);
+  if (!dimension && t.tag === "Var") name(t.name);
+  if (!dimension && (t.tag === "U" || t.tag === "LApp")) for (const n of levelNames(t.level)) name(n);
+  if (!dimension && t.tag === "Sort") for (const level of t.levels ?? []) for (const n of levelNames(level)) name(n);
+  if (t.tag === "Glue" || t.tag === "GlueTerm") for (const piece of t.system) {
+    for (const key of t.tag === "Glue" ? ["type", "equiv"] : ["term"]) union(free(piece[key], dimension));
+    if (dimension) for (const n of I.names(piece.face)) name(n);
   }
-  if(["Comp","HComp"].includes(t.tag))for(const piece of t.system) {
-    for(const n of free(piece.term,dimension))if(!dimension||n!==t.dim)local.add(n);
-    if(dimension)for(const n of I.names(piece.face))local.add(n);
+  if (t.tag === "Comp" || t.tag === "HComp") for (const piece of t.system) {
+    union(dimension ? without(free(piece.term, dimension), t.dim) : free(piece.term, dimension));
+    if (dimension) for (const n of I.names(piece.face)) name(n);
   }
+  const termBound = !dimension && termBinder(t), dimensionBound = dimension && dimBinder(t) && t.tag !== "HComp";
   for (const key of children[t.tag]) if (t[key]) for (const item of items(t[key])) {
-    for(const n of free(item, dimension)) {
-      if(!dimension && termBinder(t) && key==="body" && n===t.name)continue;
-      if(dimension && dimBinder(t) && t.tag!=="HComp" && ["family","body"].includes(key) && n===t.dim)continue;
-      local.add(n);
-    }
+    const names = free(item, dimension);
+    union(termBound && key === "body" ? without(names, t.name)
+      : dimensionBound && (key === "family" || key === "body") ? without(names, t.dim) : names);
   }
-  memo.set(t,local);
+  memo.set(t, local);
   return local;
 }
 function fresh(n, avoid) { while (avoid.has(n)) n += "_"; return n; }
