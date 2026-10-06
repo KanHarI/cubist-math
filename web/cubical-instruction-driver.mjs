@@ -243,13 +243,20 @@ export class InstructionDriver {
     const j = this.statement(id);
     return side === "term" ? j.term : side === "other" ? j.other : j.type;
   }
+  // The focused subterm. A focus keeps it while its judgement is the same,
+  // and a child reads it off its parent's: agree asks for both sides' each
+  // time round, and walking a deep focus's path from the root each time
+  // was a sixth of a congruence-heavy proof's time.
   subterm(focus) {
-    let term = this.sideOf(focus.ref.id, focus.side);
-    for (const child of focus.path) term = this.node(term).children[child];
+    const id = focus.ref.id;
+    if (focus.at === id) return focus.term;
+    const term = focus.parent ? this.node(this.subterm(focus.parent)).children[focus.path.at(-1)]
+      : focus.path.reduce((t, child) => this.node(t).children[child], this.sideOf(id, focus.side));
+    focus.at = id; focus.term = term;
     return term;
   }
   focus(id, side, path = []) { return { ref: { id }, side, path }; }
-  child(focus, index) { return { ref: focus.ref, side: focus.side, path: [...focus.path, index] }; }
+  child(focus, index) { return { ref: focus.ref, side: focus.side, path: [...focus.path, index], parent: focus }; }
   reduce(focus, step) {
     focus.ref.id = this.graph.step(focus.ref.id, focus.side, [...focus.path, ...step.path], step.rule);
   }
