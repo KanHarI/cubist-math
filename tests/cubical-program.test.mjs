@@ -142,6 +142,20 @@ test("progress totals count a shared import once, including universe-generic def
   assert.equal(progress.at(-1).completed, 5);
 });
 
+test("progress totals count the declarations a theory expands to, so that none exceeds its total", async t => {
+  const sources = { hlevels: await readFile(new URL("../library/hlevels.cubist", import.meta.url), "utf8") };
+  const program = new CubicalProgram(module, async name => sources[name] ?? sourceReader()(name));
+  t.after(() => program.dispose());
+  const progress = [];
+  const result = await program.check("import hlevels; theory Pointed(U < UU0) { M : set U; point : M; } def after := tt;", "root", p => progress.push(p));
+  const counted = progress.filter(p => p.phase !== "loading");
+  // The page shows "N of total" only while the total is at least N.
+  assert.ok(counted.every(p => p.completed <= p.total), JSON.stringify(counted.find(p => p.completed > p.total)));
+  assert.equal(progress.at(-1).completed, result.declarationCount);
+  assert.equal(progress.at(-1).total, result.declarationCount);
+  assert.ok(result.outputs.filter(output => output.name.startsWith("Pointed")).length > 2);
+});
+
 test("native optimization switches preserve path proofs and rejection independently", async () => {
   const name = "program_optimizations", path = testModulePath(name), source = await readFile(path, "utf8");
   for (let flags = 0; flags < 8; flags++) {

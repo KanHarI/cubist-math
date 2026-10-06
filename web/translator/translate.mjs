@@ -80,7 +80,7 @@ function lambdas(params,body) {
 }
 
 export class Translator {
-  constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,
+  constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onExpansion=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
     inspectSignature=null}={}) {
     // A declared type's signature as `print(inspect(T));` shows it, from the
@@ -110,6 +110,8 @@ export class Translator {
       })) : null;
     this.onDeclaration=onDeclaration;
     this.onDeclarationStart=onDeclarationStart;
+    // A theory expanded: how many declarations it adds beyond itself.
+    this.onExpansion=onExpansion;
     this.simpRegistry=copySimpRegistry(simpRegistry);
     this.moduleName=moduleName;
   }
@@ -287,7 +289,13 @@ export class Translator {
     const queue=[...(ast.items??ast.declarations)];
     while(queue.length) {
       const d=queue.shift();
-      if(d.kind==="theory") { queue.unshift(...theoryDeclarations(this,module,d,env,declarations)); continue; }
+      if(d.kind==="theory") {
+        // A theory is checked as the declarations it expands to: the ones
+        // beyond its own are declarations to count too.
+        const generated=theoryDeclarations(this,module,d,env,declarations);
+        if(generated.length)this.onExpansion?.(generated.length-1);
+        queue.unshift(...generated); continue;
+      }
       // A file-level use m; selects m for the definitions and directives
       // after it, which record it (L2.4c).
       if(d.kind==="use")continue;

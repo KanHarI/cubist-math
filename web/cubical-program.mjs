@@ -229,6 +229,9 @@ export class CubicalProgram {
         inspectSignature: binding => this.signatureText(binding),
         ...Object.fromEntries(Object.entries(this.fuelLimits).filter(([, limits]) => limits)),
         onStep: step => statements.push({ ...step, declaration: current }),
+        // A theory's expansion adds declarations the source does not write:
+        // the total counts them, so that it is never below what is done.
+        onExpansion: added => { total += added; },
         onDeclarationStart: declaration => {
           current = declaration.name.text;
           if (this.manageTransactions) transaction = new CubicalDeclarationTransaction(this.kernel,this.checker);
