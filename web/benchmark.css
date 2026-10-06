@@ -18,7 +18,9 @@ table { border-collapse: collapse; width: 100%; font-size: .9rem; }
 th { text-align: left; }
 th, td { padding: 12px; border-bottom: 1px solid #d7dfd5; vertical-align: top; }
 td:first-child { overflow-wrap: anywhere; min-width: 220px; }
-td:nth-child(3) { white-space: nowrap; font-family: ui-monospace, monospace; }
+/* The times and the judgements: numbers, aligned. */
+td:nth-child(n+3):nth-child(-n+6) { white-space: nowrap; font-family: ui-monospace, monospace; text-align: right; }
+th:nth-child(n+3):nth-child(-n+6) { text-align: right; }
 td small { display: block; margin-top: 4px; color: #667368; }
 tr[data-category="failed"] td:nth-child(2) { color: #9e3832; }
 tr[data-category="optimize"] td:nth-child(2) { color: #805615; }

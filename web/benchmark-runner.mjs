@@ -2,7 +2,8 @@
 // Each declaration is elaborated, and the instruction kernel admits it: the
 // untrusted driver derives its checked body one kernel instruction (cc_instr_*)
 // per rule, and Define registers the closed judgement. The row records the
-// time and judgements of that derivation.
+// time and judgements of that derivation, and of every derivation the
+// declaration needed, the elaborator's included: the kernel's share.
 import createCubical from "./dist/cubical.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
 import { archiveModules, cubistTestModules, libraryModules } from "./cubist/modules.mjs";
@@ -53,17 +54,18 @@ export async function benchmark({ area = "archive", modules = benchmarkAreas[kno
     }
     return intended.get(module);
   };
-  let declarationStart, declarationStartSteps, transaction;
+  let declarationStart, declarationStartSteps, kernelStart, transaction;
   const program = new CubicalProgram(await createCubical(), readSource, {
     collectReferences: false, optimizations, manageTransactions: false,
     onDeclarationStart(_module,_syntax,checker) {
       transaction = new CubicalDeclarationTransaction(program.kernel,program.checker);
       declarationStart = performance.now();
       declarationStartSteps = checker.steps;
+      kernelStart = { ...program.checker.instructionWork };
       program.kernel.setDeadline(limitMs);
     },
     onDeclaration(module, syntax, result, checker) {
-      const elapsedMs = performance.now() - declarationStart;
+      const elapsedMs = performance.now() - declarationStart, kernel = program.checker.instructionWork;
       program.kernel.setDeadline();
       const binding = `${module}__${result.name}`;
       const admission = result.status === "checked-native-cubical" ? program.checker.definitionViews.get(binding)?.admission : null;
@@ -78,6 +80,9 @@ export async function benchmark({ area = "archive", modules = benchmarkAreas[kno
       const row = { binding, module, name: result.name,
         category: rowCategory, elapsedMs: +elapsedMs.toFixed(3),
         instructionMs: admission?.ms ?? null, instructionJudgements: admission?.judgements ?? null,
+        // Every derivation the declaration needed, its admission's and the
+        // elaborator's as it checked its parts: the kernel's share of the time.
+        kernelMs: +(kernel.ms - kernelStart.ms).toFixed(3), kernelJudgements: kernel.judgements - kernelStart.judgements,
         nativeCheckingSteps: checker.steps-declarationStartSteps,
         rewriteWork: result.rewriteWork,
         finalCheckArenaNodes: result.native?.arenaNodes ?? null,

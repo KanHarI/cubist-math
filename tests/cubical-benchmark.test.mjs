@@ -169,7 +169,9 @@ test("the instruction kernel admits each declaration the benchmark counts", asyn
   for (const row of report.declarations.filter(d=>d.module === "sample")) {
     assert.equal(row.category, "checked");
     assert.ok(row.instructionJudgements > 0 && row.instructionMs >= 0, row.binding);
-    assert.ok(row.elapsedMs >= row.instructionMs);
+    // The kernel's share: the admission, and the elaborator's derivations.
+    assert.ok(row.kernelMs >= row.instructionMs && row.kernelJudgements >= row.instructionJudgements, row.binding);
+    assert.ok(row.elapsedMs >= row.kernelMs);
   }
   // What the instruction kernel cannot derive fails, and blocks what uses it.
   const check = InstructionDriver.prototype.check;
@@ -180,6 +182,8 @@ test("the instruction kernel admits each declaration the benchmark counts", asyn
   try {
     const failing = await benchmark({ modules: ["sample"], readSource });
     assert.deepEqual(failing.declarations.filter(d=>d.module === "sample").map(d => d.category), ["failed", "blocked"]);
+    // A declaration not admitted still has the derivations it needed.
+    assert.ok(failing.declarations.filter(d=>d.module === "sample").every(d => d.instructionMs === null && d.kernelMs >= 0 && d.kernelJudgements >= 0));
     assert.match(failing.declarations.find(d=>d.name === "good").reason, /^Instruction kernel: No rule for this yet/);
     assert.equal(failing.declarations.find(d=>d.name === "uses").rootBlocker, "sample__good");
   } finally { InstructionDriver.prototype.check = check; }
