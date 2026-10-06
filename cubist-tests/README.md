@@ -70,7 +70,7 @@ workbench's Kernel graph.
 | [`projections`](projections.cubist) | Projections p.1 and p.2 (L1.5, HoTT A8), for `tests/projections-let.test.mjs`: the kernel's projections with the family read from the pair's type, and misused projections. |
 | [`projections_archive_helpers`](projections_archive_helpers.cubist) | Projections convert to the archive's projection helpers (HoTT A8). |
 | [`let_statements`](let_statements.cubist) | let with a stated type and a proof block (HoTT B4): a restated goal, reasoning backwards, and the refusals. |
-| [`path_operators`](path_operators.cubist) | Path and coordinate operators, for `tests/path-operators.test.mjs`: -p, p ++ q, -i, & and | elaborate as sym, trans, flip, meet and join do, and each says which operator failed on a non-path. |
+| [`path_operators`](path_operators.cubist) | Path and coordinate operators, for `tests/path-operators.test.mjs`: ~p, p ++ q, ~i, & and | elaborate as sym, trans, flip, meet and join do, and each says which operator failed on a non-path. |
 | [`universe_generic`](universe_generic.cubist) | Universe binders and constants (L1.1, G0 §4.3), for `tests/universe-generic.test.mjs`: generic definitions at tier 0, both tiers' universes (B15), generic statements, proofs under binders, a generic assumption (D6) and inspection. |
 | [`universe_generic_bounds`](universe_generic_bounds.cubist) | Universe is removed, and bounds, reserved names and universes are checked (B11–B14, B16, B17). |
 | [`universe_generic_builtins`](universe_generic_builtins.cubist) | Instantiation, assumptions and builtins take universes below UU0 (S12, D4, Q10), and univalence is one generic definition. |

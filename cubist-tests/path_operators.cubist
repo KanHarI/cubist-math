@@ -1,25 +1,25 @@
-// Path operators, from tests/path-operators.test.mjs: -p reverses a path,
-// as sym(p) does; p ++ q concatenates two paths, as trans(p, q) does. -i
+// Path operators, from tests/path-operators.test.mjs: ~p reverses a path,
+// as sym(p) does; p ++ q concatenates two paths, as trans(p, q) does. ~i
 // reverses a coordinate, as flip(i) does; i & j is their meet and i | j
 // their join. Each elaborates through the same code as its built-in form,
 // and on a non-path each says which operator failed.
 
 import nat;
 
-// -p, p ++ q and -i elaborate as sym, trans and flip do.
-def inverse(A : U0, x, y : A, p : x = y) : y = x := -p;
+// ~p, p ++ q and ~i elaborate as sym, trans and flip do.
+def inverse(A : U0, x, y : A, p : x = y) : y = x := ~p;
 
 def concatenation(A : U0, x, y, z : A, p : x = y, q : y = z) : x = z := p ++ q;
 
 def three(A : U0, w, x, y, z : A, p : w = x, q : x = y, r : y = z) : w = z := p ++ q ++ r;
 
-def mixed(A : U0, x, y, z : A, p : y = x, q : y = z) : x = z := -p ++ q;
+def mixed(A : U0, x, y, z : A, p : y = x, q : y = z) : x = z := ~p ++ q;
 
-def reversed(A : U0, x, y : A, p : x = y) : y = x := path i => p @ -i;
+def reversed(A : U0, x, y : A, p : x = y) : y = x := path i => p @ ~i;
 
-def twice(A : U0, x, y : A, p : x = y) : x = y := --p;
+def twice(A : U0, x, y : A, p : x = y) : x = y := ~~p;
 
-def inverse_is_sym(A : U0, x, y : A, p : x = y) : -p = sym(p) := refl(sym(p));
+def inverse_is_sym(A : U0, x, y : A, p : x = y) : ~p = sym(p) := refl(sym(p));
 
 def concatenation_is_trans(A : U0, x, y, z : A, p : x = y, q : y = z) :
   p ++ q = trans(p, q) := refl(trans(p, q));
@@ -27,7 +27,7 @@ def concatenation_is_trans(A : U0, x, y, z : A, p : x = y, q : y = z) :
 def left_nested(A : U0, w, x, y, z : A, p : w = x, q : x = y, r : y = z) :
   p ++ q ++ r = trans(trans(p, q), r) := refl(trans(trans(p, q), r));
 
-def coordinate(A : U0, x, y : A, p : x = y) : p @ -0 = y := refl(y);
+def coordinate(A : U0, x, y : A, p : x = y) : p @ ~0 = y := refl(y);
 
 // The connection of the reference's cubical chapter, both ways.
 def to_start(A : U0, x, y : A, p : x = y) :
@@ -42,15 +42,15 @@ def meet_is_meet(A : U0, x, y : A, p : x = y) :
 def same_square(A : U0, x, y : A, p : x = y) :
   to_start(A, x, y, p) = meet_is_meet(A, x, y, p) := refl(to_start(A, x, y, p));
 
-def reversed_meet(A : U0, x, y : A, p : x = y) : y = x := path i => p @ -(i & 1) | 0;
+def reversed_meet(A : U0, x, y : A, p : x = y) : y = x := path i => p @ ~(i & 1) | 0;
 
 // The operators do not depend on what the names sym and trans mean here.
 def shadowed(A : U0, x, y : A, p : x = y, sym : Nat, trans : Nat) :
-  y = x := -p ++ refl(x) ++ p ++ -p;
+  y = x := ~p ++ refl(x) ++ p ++ ~p;
 
 // The operators on a non-path say which operator failed.
-// Error: E373: -p reverses a path; found no path.
-def negated(n : Nat) : Nat := -n;
+// Error: E373: ~p reverses a path; found no path.
+def negated(n : Nat) : Nat := ~n;
 
 // Error: E333: p ++ q concatenates paths; found no path.
 def appended(n, m : Nat) : Nat := n ++ m;

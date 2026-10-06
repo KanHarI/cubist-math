@@ -8,12 +8,12 @@ export function tokenize(source) {
     throw new Error("Source exceeds 1 MB.");
   const tokens = [];
   const re =
-    /\s+|\/\/[^\n]*|(?:<=|=>|->|:=|<-|\+\+)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[\[\](){}:,;.+*<=>@&|-]|./gy;
+    /\s+|\/\/[^\n]*|(?:<=|=>|->|:=|<-|\+\+)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[\[\](){}:,;.+*<=>@&|~-]|./gy;
   for (const match of source.matchAll(re)) {
     const text = match[0];
     if (/^\s|^\/\//.test(text)) continue;
     if (
-      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|=>|->|:=|<-|\+\+|[\[\](){}:,;.+*<=>@&|-])$/.test(text)
+      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|=>|->|:=|<-|\+\+|[\[\](){}:,;.+*<=>@&|~-])$/.test(text)
     )
       throw Object.assign(new Error(`Unexpected character ${text}`), {
         offset: match.index,
@@ -150,8 +150,9 @@ export function parse(source, typeOnly = false) {
   // p ++ q concatenates paths, left to right as calc chains do; it binds
   // looser than arithmetic and tighter than =. Coordinates combine tighter
   // than @: i & j is their meet (minimum), i | j their join (maximum), and
-  // prefix -i reverses one, so p @ -i & j | k is p @ (((-i) & j) | k). Prefix
-  // -p reverses a path, tighter still: -p @ i is (-p) @ i.
+  // prefix ~i reverses one, so p @ ~i & j | k is p @ (((~i) & j) | k). Prefix
+  // ~p reverses a path, tighter still: ~p @ i is (~p) @ i. Prefix - reversed
+  // until 2026-10-06 and is kept for arithmetic (notation roadmap, L2.10i).
   const prec = {
     "->": 1,
     or: 2,
@@ -311,9 +312,12 @@ export function parse(source, typeOnly = false) {
     }
     if (t.text === "fun") return lambdaExpr(t);
     if (t.text === "forall" || t.text === "exists") return quantifierExpr(t);
-    if (t.text === "-") {
+    if (t.text === "-")
+      throw Object.assign(new Error("Reversal is written ~: ~p reverses a path and ~i a coordinate. Prefix - is kept for arithmetic."),
+        { offset: t.start });
+    if (t.text === "~") {
       const operand = expr(PREFIX);
-      return { kind: "unary", operator: "-", operand, operatorStart: t.start, operatorEnd: t.end,
+      return { kind: "unary", operator: "~", operand, operatorStart: t.start, operatorEnd: t.end,
         start: t.start, end: operand.end };
     }
     if (t.text === "(") return tuple(t, expr(), () => expr());
