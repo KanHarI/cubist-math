@@ -43,5 +43,5 @@ print(
 );
 
 // The section lemmas, at a model: inverses in a group are unique.
-// Output: forall U < UU0. forall G : Group.Model(U). forall x : G.M. G.inv(G.inv(x)) = x
+// Output: forall U < UU0. forall G : Group(U). forall x : G.M. G.inv(G.inv(x)) = x
 print(typeof(inv_inv));

@@ -7,9 +7,12 @@ import {expandTheory} from "../cubist/theories.mjs";
 // The scope's key for an operator a model's notation binds: no source name
 // can spell it.
 export const operatorBinding = operator => "\u0000operator " + operator;
+// The environment's key for a theory's record. The theory's name is its type
+// of models (L2.4c), a definition like any other.
+export const theoryBinding = name => "\u0000theory " + name;
 
 // The record of the theory whose models `value` is one of, from the head of
-// its type, T.Model(U), or null.
+// its type, T(U), or null.
 export function recordOf(t,scope,value) {
   let head=scope.infer(value).type;
   while(head&&["App","LApp"].includes(head.tag))head=head.fn;
@@ -27,9 +30,10 @@ export function registerTheoryDeclaration(t,d) {
 // n.name is m.f: when m is a model of a theory, the node of the call T.f(m),
 // or T.p(m) for a parent labelled p; otherwise null.
 export function modelField(t,scope,n) {
-  const dot=n.name.lastIndexOf("."),root=dot>0?scope.env.get(n.name.slice(0,n.name.indexOf("."))):null;
-  // A name under a theory's, T.Hom, is a qualified name, not a field.
-  if(!root||root.tag==="Theory")return null;
+  const dot=n.name.lastIndexOf("."),first=dot>0?n.name.slice(0,n.name.indexOf(".")):null,root=first?scope.env.get(first):null;
+  // A name under a theory's, T.Hom, is a qualified name, not a field. A
+  // local model that shadows the theory's name is a model like any other.
+  if(!root||theoryRoot(t,scope,first,root))return null;
   const owner={...n,name:n.name.slice(0,dot),end:n.start+dot};
   const record=recordOf(t,scope,t.term(owner,scope,null));
   if(!record)return null;
@@ -38,6 +42,12 @@ export function modelField(t,scope,n) {
   if(!known)throw Error(`${owner.name} is a model of ${record.name}, which has no field ${field}: it has ${record.fields.map(f=>f.name).join(", ")}${
     record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`);
   return {kind:"call",fn:{...n,name:known.projection},args:[owner],start:n.start,end:n.end};
+}
+
+// Whether `name`, bound to `root`, is the theory of that name: its type of
+// models, or its declaration where that failed.
+function theoryRoot(t,scope,name,root) {
+  return scope.env.has(theoryBinding(name))&&(root.tag==="Untranslated"||root.tag==="DefRef"&&!!t.checker.theories?.has(root.name));
 }
 
 // e.f, for a value e that is not a name: when e is a model, the node of the
@@ -71,8 +81,8 @@ export function opened(t,scope,node) {
 // does not expand fails as a declaration of its name.
 export function theoryDeclarations(t,module,d,env,declarations) {
   try {
-    const generated=expandTheory(d,name=>env.get(name)?.tag==="Theory"?env.get(name).record:null);
-    env.set(d.name.text,{tag:"Theory",name:d.name.text,record:generated[0].theory});
+    const generated=expandTheory(d,name=>env.get(theoryBinding(name))?.record??null);
+    env.set(theoryBinding(d.name.text),{tag:"Theory",name:d.name.text,record:generated[0].theory});
     return generated;
   } catch(failure) {
     // The message says where, as an elaboration error does.
@@ -94,8 +104,8 @@ export function missingEvidence(d,env) {
 // T.Hom or T.Iso, or one of their operations, for a theory T whose models
 // have no homomorphisms: the error that says why, or null.
 export function missingMorphisms(scope,name) {
-  const theory=/^(.+?)\.(?:Hom|Iso)(?:\.|$)/.exec(name)?.[1],entry=theory&&scope.env.get(theory);
-  return entry?.tag==="Theory"&&entry.record.noMorphisms
+  const theory=/^(.+?)\.(?:Hom|Iso)(?:\.|$)/.exec(name)?.[1],entry=theory&&scope.env.get(theoryBinding(theory));
+  return entry?.record.noMorphisms
     ?Error(`${theory}'s models have no homomorphisms: ${entry.record.noMorphisms}.`):null;
 }
 

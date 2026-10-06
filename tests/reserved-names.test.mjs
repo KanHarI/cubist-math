@@ -26,8 +26,9 @@ test("Unit and Void cannot be declared or bound at any binding site", () => {
       motive: `def f(n : Nat) : Nat := match n as ${word} {\n  zero => n;\n  succ(k) => n;\n};`,
       inductive: `inductive ${word} {\n  c;\n}`,
       constructor: `inductive T {\n  ${word};\n}`,
-      theory: `theory T {\n  sort M : set;\n  ${word} : M;\n}`,
-      sort: `theory T {\n  sort ${word} : set;\n}`,
+      theory: `theory T(U < UU0) {\n  M : set U;\n  ${word} : M;\n}`,
+      carrier: `theory T(U < UU0) {\n  ${word} : set U;\n}`,
+      universe: `theory T(${word} < UU0) {\n  M : set U;\n}`,
       section: `section (${word} : U0) {\n  def x := 0;\n}`,
     };
     for (const [site, source] of Object.entries(sites))

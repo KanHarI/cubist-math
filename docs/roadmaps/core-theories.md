@@ -22,16 +22,28 @@ Everything here is elaboration: a theory expands to ordinary definitions,
 which the kernel checks like any other. No kernel rule changes.
 
 A revision of the syntax, with theory families and the combination of
-independent theories, was decided on 2026-10-05 and is not implemented:
-[L2.4c](#revision-l24c). The sections after it describe the implemented
-L2.4 grammar.
+independent theories, was decided on 2026-10-05: [L2.4c](#revision-l24c).
+Its first slice, carriers as fields, the universe in the header and the
+theory's name as the type of its models, is implemented (2026-10-06); the
+rest is not. The sections after it describe the implemented grammar.
 
 ## Revision (L2.4c)
 
-Decided on 2026-10-05; nothing here is implemented yet. Existing theories
-keep checking until the migration, which lands in two commits, as the
+Decided on 2026-10-05. Each slice migrates in two commits, as the
 retirement of `cases` did: the new forms beside the old, every source
 moved and checked while the old still parse, then the old forms refused.
+
+**First slice, done on 2026-10-06:** carriers as fields, `M : set U;`,
+`P : prop U;` and `M : U;`; one universe named in the header,
+`theory T(U < UU0)`; and the theory's name as the type of its models,
+`Monoid(U0)`. `sort` is refused (E180) and so is `T.Model` (E396). Every
+theory in `library/`, `cubist-tests/` and the reference moved while the
+old forms parsed, and the verifier found the library's terms identical
+(243, 44 and 59 declarations of `algebra`, `integers` and `rationals`). A
+source of an earlier revision is read in the new forms
+(`web/cubist/legacy-syntax.mjs`). Several universes in the header,
+parameters, families, relations, variance, independent parents and
+qualified operators are the later slices.
 
 ### Carriers are fields with an h-level
 
@@ -99,7 +111,7 @@ homomorphism would map them too.
 `G : Monoid(U0)`, not `G : Monoid.Model(U0)`: `Monoid.Model` is retired.
 `Monoid.make`, `Monoid.Hom`, `Monoid.Iso` and the projections stay beside
 it, as `Trunc` and `Trunc.squash` do. Models do not lift along universe
-cumulativity: `CommMonoid.Model(U0)` is not a `CommMonoid.Model(U1)` today
+cumulativity: `CommMonoid(U0)` is not a `CommMonoid(U1)` today
 (a type mismatch, though its carrier lifts), and a generated lift is later
 work if a use needs it.
 
@@ -353,29 +365,32 @@ evidence that it preserves the explicit semantics.
 ## Theories
 
 ```
-theory Semigroup {
-  sort M : set;
+theory Semigroup(U < UU0) {
+  M : set U;
   mul(x, y : M) : M notation x * y;
   law mul_assoc(x, y, z : M) : (x * y) * z = x * (y * z);
 }
 
-theory Monoid extends Semigroup {
+theory Monoid(U < UU0) extends Semigroup {
   one : M;
   law one_mul(x : M) : one * x = x;
   law mul_one(x : M) : x * one = x;
 }
 
-theory Group extends Monoid {
+theory Group(U < UU0) extends Monoid {
   inv(x : M) : M;
   law inv_mul(x : M) : inv(x) * x = one;
 }
 ```
 
+The header names the universe of the carriers, which a field may mention.
 A theory's body lists, in order:
 
-- **sorts**, `sort M : set;` or `sort P : prop;`: a type in the model's
-  universe, with the evidence of its h-level as a field (`M_is_set`,
-  `P_is_prop`);
+- **carriers** (sorts), `M : set U;` or `P : prop U;`: a type in the
+  model's universe, with the evidence of its h-level as a field
+  (`M_is_set`, `P_is_prop`); or `M : U;`, with no h-level, whose equations
+  are not propositions and whose models have no homomorphisms (until
+  L2.4c's slice of 2026-10-06, `sort M : set;`);
 - **constants**, `one : M;`, and **operations**, `mul(x, y : M) : M`, whose
   argument and result types are sorts of the theory, each with an optional
   `notation`;
@@ -404,11 +419,12 @@ become arithmetic.
 
 A theory `T` declares, in its module:
 
-- `T.Model(U < UU0) : next(U)`, the type of models whose sorts are in `U`: a
-  Σ record of the fields in order, with the kernel's pair eta;
+- `T(U < UU0) : next(U)`, the type of models whose sorts are in `U`: a
+  Σ record of the fields in order, with the kernel's pair eta (`T.Model`
+  until L2.4c);
 - `T.make{{U < UU0}}(…)`, its constructor, one parameter per field, so that
   named arguments build a model field by field;
-- for each field `f`, `T.f{{U < UU0}}(m : T.Model(U))`, its projection, typed
+- for each field `f`, `T.f{{U < UU0}}(m : T(U))`, its projection, typed
   through the earlier projections, so that `T.one(m) : T.M(m)`.
 
 `m.f` is `T.f(m)` wherever `m`'s type is a theory's record, and `T.f` is
@@ -418,7 +434,7 @@ otherwise a qualified name, as `Trunc.squash` is. Goals and messages show
 ```
 import nat, hlevels;
 
-def additive : Monoid.Model(U0) := Monoid.make(M := Nat, M_is_set := nat_is_set,
+def additive : Monoid(U0) := Monoid.make(M := Nat, M_is_set := nat_is_set,
   mul := add, mul_assoc := nat_add_assoc, one := 0, one_mul := nat_zero_add,
   mul_one := nat_add_zero);
 ```
@@ -430,7 +446,7 @@ is in scope by its name, as the projection `m.f`, and each notation of `m`'s
 theory means `m`'s operation:
 
 ```
-def square(G : Group.Model(U0), x : G.M) : G.M {
+def square(G : Group(U0), x : G.M) : G.M {
   open G;
   exact x * x;
 }
@@ -452,7 +468,7 @@ as an incidental part of introducing that syntax.
 ## Sections
 
 ```
-section {{U < UU0}}(G : Group.Model(U)) {
+section {{U < UU0}}(G : Group(U)) {
   def square(x : G.M) : G.M := x * x;
   def square_one : square(one) = one { … }
 }
@@ -503,7 +519,7 @@ notation in place of its own; renaming a sort to one name in two parents, as
 `M := R` above, makes it one sort of the child. Two fields of one name from
 different parents are refused unless they are one ancestor's field shared
 as above; the error names both and asks for a renaming. A child model has
-each parent's model: `T.p(m) : P.Model(U)` for a parent `P` labelled `p`, and
+each parent's model: `T.p(m) : P(U)` for a parent `P` labelled `p`, and
 `m.p` writes it. An unlabelled parent's label is its name in snake case,
 `G.monoid` for `Group extends Monoid`.
 
@@ -512,7 +528,7 @@ each parent's model: `T.p(m) : P.Model(U)` for a parent `P` labelled `p`, and
 For a theory whose sorts are sets or propositions and whose operations take
 and return sorts:
 
-- `T.Hom{{U, V < UU0}}(A : T.Model(U), B : T.Model(V)) : max(U, V)` has a map
+- `T.Hom{{U, V < UU0}}(A : T(U), B : T(V)) : max(U, V)` has a map
   for each sort, `map_M : A.M -> B.M` (`map` when there is one sort), and
   for each constant and operation a field that the map preserves it:
   `map_one : map(A.one) = B.one`, `map_mul(x, y : A.M) : map(x * y) =
@@ -571,15 +587,16 @@ than a defect in this contract:
   form. L2.10k's partial field inverse needs the check to accept an
   application of a type declared at `prop`.
 - **A law cannot name the theory's universe,** which `Trunc` takes first:
-  the universe of a theory's sorts has no name in its body. L2.10k needs
-  that too. Decided: the header names it ([L2.4c](#revision-l24c)).
+  the universe of a theory's sorts had no name in its body. L2.10k needs
+  that too. Done: the header names it ([L2.4c](#revision-l24c),
+  2026-10-06).
 - **Sorts are single sets or propositions, not families.** A monad's
   carrier `F(A : U0) : U0` is accepted as an operation, but its laws are
   equations in `F(B)` and are refused (E818). Computation notation's N1
   needs carrier families. Decided: theory families
   ([L2.4c](#revision-l24c)).
 - **Independent theories cannot be combined on one carrier.** Two parents
-  that each declare `sort M : set;` clash on `M`, and renaming both to one
+  that each declare `M : set U;` clash on `M`, and renaming both to one
   name clashes too: carriers merge only as copies of one ancestor. An
   operator that two unrelated parents bind is refused (E804) unless the
   child renames one. Decided: carriers merge by name, and other clashes are

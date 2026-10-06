@@ -880,7 +880,7 @@ export function parse(source, typeOnly = false) {
   while (peek() !== "EOF") {
     let t = take();
     if (section && t.text === "}") { section = null; continue; }
-    // `section {{U < UU0}}(G : Group.Model(U)) { definitions }`.
+    // `section {{U < UU0}}(G : Group(U)) { definitions }`.
     if (t.text === "section") {
       if (section) throw Object.assign(new Error("Sections do not nest: close this one with } first."), { offset: t.start });
       const params = [];
@@ -888,7 +888,7 @@ export function parse(source, typeOnly = false) {
         if (peek() !== close) {
           while (true) {
             const names = sharedNames();
-            const { type, bound } = binderType(implicit ? "{{U < UU0}}" : "(G : Group.Model(U))");
+            const { type, bound } = binderType(implicit ? "{{U < UU0}}" : "(G : Group(U))");
             const group = params.length;
             for (const p of names) params.push({ name: p, ...(bound ? { bound } : { type }), group, ...(implicit ? { implicit } : {}) });
             if (peek() !== ",") break;
@@ -904,7 +904,7 @@ export function parse(source, typeOnly = false) {
         implicitParameters = { opens: [open.start, inner.start], closes: [first.end, last.end], start: open.start, end: last.end };
       }
       if (peek() === "(") { take("("); telescope(")", false); }
-      if (!params.length) throw Object.assign(new Error("A section gives its definitions parameters: section (G : Group.Model(U0)) { … }."), { offset: t.start });
+      if (!params.length) throw Object.assign(new Error("A section gives its definitions parameters: section (G : Group(U0)) { … }."), { offset: t.start });
       const body = take("{");
       section = { params, declared: [], start: t.start, bodyStart: body.start, ...(implicitParameters ? { implicitParameters } : {}) };
       continue;
@@ -964,12 +964,22 @@ export function parse(source, typeOnly = false) {
       const directive = { kind: "print", show: show.text, value, start: t.start, end };
       directives.push(directive); items.push(directive); continue;
     }
-    // `theory T [extends P, label : Q(f := g notation x + y)] { fields }`
-    // declares a theory (L2.4): its parents, sorts, operations with their
-    // notations, and laws. The translator expands it into the definitions of
-    // its models (theories.mjs).
+    // `theory T(U < UU0) [extends P, label : Q(f := g notation x + y)] {
+    // fields }` declares a theory (L2.4): the universe of its carriers, its
+    // parents, carriers, operations with their notations, and laws. The
+    // translator expands it into the definitions of its models
+    // (theories.mjs).
     if (t.text === "theory") {
       const n = name(), parents = [];
+      // The header binds the universe of the theory's carriers (L2.4c).
+      const header = peek() === "(" ? parameters("(U < UU0)", true) : [];
+      for (const p of header)
+        if (!p.bound) throw Object.assign(new Error(`A theory's header binds the universe of its carriers, as in theory ${n.text}(U < UU0).`),
+          { offset: p.name.start });
+      if (header.length > 1)
+        throw Object.assign(new Error(`${n.text} binds ${header.length} universes; a theory binds one, the universe of its carriers.`),
+          { offset: header[1].name.start });
+      const universes = new Set(header.map(p => p.name.text));
       const notationAfter = () => {
         const notationKeyword = take(), left = name(), operator = take(), right = name();
         if (!notationOperators.includes(operator.text))
@@ -1006,29 +1016,38 @@ export function parse(source, typeOnly = false) {
       while (peek() !== "}") {
         if (peek() === "EOF") throw Object.assign(new Error("Expected '}' to close the theory."), { offset: ts[i].start });
         const start = ts[i].start;
-        if (word("sort")) {
-          take("sort");
-          const sort = name();
-          take(":");
-          const level = take();
-          if (!["set", "prop"].includes(level.text))
-            throw Object.assign(new Error("A sort is a set or a proposition: sort M : set; or sort P : prop;"), { offset: level.start });
-          fields.push({ kind: "sort", name: sort, level: level.text, levelToken: level, start, end: take(";").end });
-          continue;
-        }
+        // sort M : set; was a carrier's spelling until L2.4c.
+        if (word("sort"))
+          throw Object.assign(new Error(`A carrier is a field: write ${ts[i + 1].text} : set U; or ${ts[i + 1].text} : prop U;, with the universe named in the header, theory ${n.text}(U < UU0).`),
+            { offset: ts[i].start });
         const law = word("law");
         const keyword = law ? take("law") : null;
         const field = name(), params = peek() === "(" ? parameters("(x, y : M)", false) : [];
         if (peek() !== ":")
           throw Object.assign(new Error(`Expected ':' and the type of ${field.text}, as in ${law ? "law mul_one(x : M) : x * one = x;" : "mul(x, y : M) : M;"}`), { offset: ts[i].start });
         take(":");
+        // A carrier: a field whose type is the theory's universe, with an
+        // h-level, M : set U; or P : prop U;, or with none, M : U;. set and
+        // prop are keywords only here, before a name and the field's end.
+        if (!law && !params.length) {
+          const level = ["set", "prop"].includes(peek()) && /^[A-Za-z_]/.test(ts[i + 1].text) && ts[i + 2].text === ";" ? take() : null;
+          if (level || universes.has(peek()) && ts[i + 1].text === ";") {
+            const universe = name();
+            if (!universes.has(universe.text))
+              throw Object.assign(new Error(`${universe.text} is not the universe of ${n.text}'s carriers: name it in the header, as in theory ${n.text}(${universe.text} < UU0).`),
+                { offset: universe.start });
+            fields.push({ kind: "sort", name: field, level: level?.text ?? null, ...(level ? { levelToken: level } : {}), universe,
+              start, end: take(";").end });
+            continue;
+          }
+        }
         const type = expr();
         const notation = !law && peek() === "notation" ? notationAfter() : null;
         fields.push({ kind: law ? "law" : "operation", name: field, params, type, notation,
           ...(keyword ? { keyword } : {}), start, end: take(";").end });
       }
       const end = take("}").end;
-      declarations.push({ kind: "theory", name: n, parents, fields, start: t.start, end });
+      declarations.push({ kind: "theory", name: n, universes: header.map(p => p.name), parents, fields, start: t.start, end });
       items.push(declarations.at(-1));
       continue;
     }

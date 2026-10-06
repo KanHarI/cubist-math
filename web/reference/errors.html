@@ -387,14 +387,18 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E166"><td><code>E166</code></td><td>Implicit parameters are in double braces: def f{{U &lt; UU0, A : U}}(…).</td></tr>
                 <tr id="E167"><td><code>E167</code></td><td>A notation is a binary operator: x + y, x * y, x &lt; y or x &lt;= y.</td></tr>
                 <tr id="E168"><td><code>E168</code></td><td>Expected '}' to close the theory.</td></tr>
-                <tr id="E169"><td><code>E169</code></td><td>A sort is a set or a proposition: sort M : set; or sort P : prop;</td></tr>
+                <tr id="E169"><td><code>E169</code></td><td>A sort is a set or a proposition: sort M : set; or sort P : prop; (retired)</td></tr>
                 <tr id="E170"><td><code>E170</code></td><td>Expected ':' and the type of …, as in …</td></tr>
                 <tr id="E171"><td><code>E171</code></td><td>Sections do not nest: close this one with } first.</td></tr>
-                <tr id="E172"><td><code>E172</code></td><td>A section gives its definitions parameters: section (G : Group.Model(U0)) { … }.</td></tr>
+                <tr id="E172"><td><code>E172</code></td><td>A section gives its definitions parameters: section (G : Group(U0)) { … }.</td></tr>
                 <tr id="E173"><td><code>E173</code></td><td>Expected '}' to close the section.</td></tr>
                 <tr id="E174"><td><code>E174</code></td><td>A section holds definitions: def and computable def.</td></tr>
                 <tr><td><a href="#E175"><code>E175</code></a></td><td>… is reserved, as a keyword or a built-in type of the language; pick another name.</td></tr>
                 <tr id="E176"><td><code>E176</code></td><td>Reversal is written ~: ~p reverses a path and ~i a coordinate. Prefix - is kept for arithmetic.</td></tr>
+                <tr id="E177"><td><code>E177</code></td><td>… binds … universes; a theory binds one, the universe of its carriers.</td></tr>
+                <tr id="E178"><td><code>E178</code></td><td>… is not the universe of …'s carriers: name it in the header, as in theory …(… &lt; UU0).</td></tr>
+                <tr id="E179"><td><code>E179</code></td><td>A theory's header binds the universe of its carriers, as in theory …(U &lt; UU0).</td></tr>
+                <tr id="E180"><td><code>E180</code></td><td>A carrier is a field: write … : set U; or … : prop U;, with the universe named in the header, theory …(U &lt; UU0).</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -541,8 +545,9 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr><td><a href="#E391"><code>E391</code></a></td><td>Nothing determines the universe … of …: no argument's type bounds it, and the call's type depends on it. Give it explicitly.</td></tr>
                 <tr><td><a href="#E392"><code>E392</code></a></td><td>The … of … is not determined: … fits, and so would … universe…. Give it explicitly.</td></tr>
                 <tr id="E393"><td><code>E393</code></td><td>… takes … argument… by position; give its implicit parameters … in double braces, in order or by name, as …{{…}}(…) or …{{… := …}}(…).</td></tr>
-                <tr id="E394"><td><code>E394</code></td><td>… is a theory: its models are ….Model(U), built with ….make(…).</td></tr>
+                <tr id="E394"><td><code>E394</code></td><td>… is a theory: its models are ….Model(U), built with ….make(…). (retired)</td></tr>
                 <tr id="E395"><td><code>E395</code></td><td>A definition in a section has the section's implicit parameters, not its own: add them to the section's {{…}}.</td></tr>
+                <tr id="E396"><td><code>E396</code></td><td>….Model is now …: a theory's name is the type of its models, as in …(U0).</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e4">Proof statements, rewriting and simplification</h3>
@@ -624,7 +629,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E473"><td><code>E473</code></td><td>A face needs an interval coordinate and endpoint 0 or 1.</td></tr>
                 <tr id="E474"><td><code>E474</code></td><td>A Glue piece has syntax face(i, 0 or 1, T, e) or face_when(φ, T, e).</td></tr>
                 <tr id="E475"><td><code>E475</code></td><td>A glue value has syntax face(i, 0 or 1, t) or face_when(φ, t).</td></tr>
-                <tr><td><a href="#E476"><code>E476</code></a></td><td>open takes a model of a theory, such as m : Group.Model(U0); this is a value of type ….</td></tr>
+                <tr><td><a href="#E476"><code>E476</code></a></td><td>open takes a model of a theory, such as m : Group(U0); this is a value of type ….</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e5">Inductive types and matching</h3>

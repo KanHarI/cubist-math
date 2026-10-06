@@ -28,8 +28,8 @@ test("a projection's index is not a numeral, and the removed have, show and suff
 });
 
 test("a theory's words are keywords where they stand, and its fields zero and succ are names", () => {
-  const source = `theory Field extends CommRing {
-  sort P : prop;
+  const source = `theory Field(U < UU0) extends CommRing {
+  P : prop U;
   inv(x : R) : R notation x * y;
   law zero_ne_one : zero = one -> Void;
 }
@@ -50,7 +50,7 @@ def g(sort : Nat) := succ(zero);`;
     const at = [...source.matchAll(new RegExp(`\\b${word}\\b`, "g"))][nth].index;
     return tokenStyle(word, null, keywordAt(source, at, word));
   };
-  for (const word of ["theory", "extends", "sort", "prop", "notation", "law", "section"]) assert.equal(style(word), "keyword", word);
+  for (const word of ["theory", "extends", "prop", "notation", "law", "section"]) assert.equal(style(word), "keyword", word);
   // Inside a theory, and in a parent's renaming, zero is a field.
   assert.equal(style("zero"), "");
   assert.equal(style("zero", 1), "");
@@ -58,7 +58,7 @@ def g(sort : Nat) := succ(zero);`;
   // is reserved, a keyword everywhere.
   assert.equal(style("section", 1), "");
   assert.equal(style("open"), "keyword");
-  assert.equal(style("sort", 1), "");
+  assert.equal(style("sort"), "");
   // Outside a theory, zero and succ are Nat's constructors, unless they link
   // to a definition, as a ring's zero after open does.
   assert.equal(style("zero", 2), "keyword");
@@ -70,9 +70,9 @@ def g(sort : Nat) := succ(zero);`;
 test("a theory's words keep their roles past comments and nested braces, and are names where the parser reads names", () => {
   const source = `import nat;
 import hlevels;
-theory Ring {
+theory Ring(U < UU0) {
   // Carrier
-  sort R : set;
+  R : set U;
   zero : R;
   // Identity }
   law identity(x : R) : x = x;
@@ -80,8 +80,8 @@ theory Ring {
   add(x, y : R) : R notation x + y;
   law sum(notation : R) : notation + zero = notation + zero;
 }
-theory T { sort M : set; law : M; sort : M; notation : M; }
-def f(A : Ring.Model(U0)) : A.R {
+theory T(U < UU0) { M : set U; law : M; sort : M; notation : M; }
+def f(A : Ring(U0)) : A.R {
   // Select model
   open A;
   exact zero;
@@ -93,7 +93,6 @@ def f(A : Ring.Model(U0)) : A.R {
     return tokenStyle(word, null, keywordAt(source, at, word));
   };
   // A comment before a field or a statement, and a brace in one, change nothing.
-  assert.equal(style("sort"), "keyword");
   assert.equal(style("set"), "keyword");
   assert.equal(style("law"), "keyword");
   assert.equal(style("open"), "keyword");
@@ -105,9 +104,33 @@ def f(A : Ring.Model(U0)) : A.R {
   // A field or a parameter named law, sort or notation is a name.
   for (let nth = 1; nth < 5; nth++) assert.equal(style("notation", nth), "", `notation ${nth}`);
   assert.equal(style("law", 3), "");
-  assert.equal(style("sort", 2), "");
+  assert.equal(style("sort"), "");
   assert.equal(style("set", 1), "keyword");
   // After the theories, zero is Nat's constructor, unless it links to a
   // definition, as the ring's zero after open A does.
   assert.equal(style("zero", 7), "keyword");
+});
+
+test("a theory's header comes before extends, and a carrier's h-level is a keyword (L2.4c)", () => {
+  const source = `theory Ring(U < UU0) extends additive : Group(one := zero) {
+  R : set U;
+  P : prop U;
+  L : U;
+  set : U;
+  point : set;
+  law l(x : R) : x = x;
+}
+def f(set : Nat, prop : Nat) := set;`;
+  const style = (word, nth = 0) => {
+    const at = [...source.matchAll(new RegExp(`\\b${word}\\b`, "g"))][nth].index;
+    return tokenStyle(word, null, keywordAt(source, at, word));
+  };
+  assert.equal(style("extends"), "keyword");
+  assert.equal(style("zero"), "");
+  assert.equal(style("set"), "keyword");
+  assert.equal(style("prop"), "keyword");
+  assert.equal(style("law"), "keyword");
+  // A field named set, a type written set, and parameters named set and prop are names.
+  for (let nth = 1; nth < 5; nth++) assert.equal(style("set", nth), "", `set ${nth}`);
+  assert.equal(style("prop", 1), "");
 });

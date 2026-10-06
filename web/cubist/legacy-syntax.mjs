@@ -13,9 +13,17 @@ import { tokenize } from "./parser.mjs";
 // depends on v it elaborates to cases' term: the goal itself is the motive.
 // Every cases statement of the archive was such a one: its migration
 // (1118c1a), checked while cases still parsed, kept every term identical.
+//
+// Sources written before 2026-10-06 declare a theory's carriers as sorts,
+// theory T { sort M : set; }, and name its type of models T.Model. They are
+// read as theory T(U < UU0) { M : set U; } and T, which elaborate the same
+// (L2.4c): U is the theory's universe, which no field of those theories took.
 export const currentSyntax = source => source
   .replace(/(?<![A-Za-z0-9_'])have(\s+[A-Za-z_][A-Za-z0-9_]*\s*:)/g, "let$1")
-  .replace(/(?<![A-Za-z0-9_'])cases(?=\s+[^{};]*\{\s*left\s+[A-Za-z_][A-Za-z0-9_']*\s*=>)/g, "match");
+  .replace(/(?<![A-Za-z0-9_'])cases(?=\s+[^{};]*\{\s*left\s+[A-Za-z_][A-Za-z0-9_']*\s*=>)/g, "match")
+  .replace(/(?<![A-Za-z0-9_'.])(theory\s+[A-Z][A-Za-z0-9_]*)(?=\s+(?:extends\b|\{))/g, "$1(U < UU0)")
+  .replace(/(?<![A-Za-z0-9_'.])sort\s+([A-Za-z_][A-Za-z0-9_]*\s*:\s*)(set|prop)(\s*;)/g, "$1$2 U$3")
+  .replace(/(?<![A-Za-z0-9_'.])([A-Z][A-Za-z0-9_]*)\.Model(?![A-Za-z0-9_])/g, "$1");
 
 // Until 2026-10-06 prefix - reversed, as ~ does now: -p a path and -i a
 // coordinate. A revision of that time (minusReverses) is read with ~ for each

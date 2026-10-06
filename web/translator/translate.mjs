@@ -19,7 +19,7 @@ import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference,ma
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName} from "./hlevel.mjs";
 import {repeatedName,stem} from "./names.mjs";
-import {operatorBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipTheory,sectionScope} from "./theories.mjs";
+import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipTheory,sectionScope} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -750,7 +750,6 @@ export class Translator {
             throw error;
           }
           if(value.tag==="Dimension")throw Error("Interval coordinates can only be used in interval arguments.");
-          if(value.tag==="Theory")throw Error(`${n.name} is a theory: its models are ${n.name}.Model(U), built with ${n.name}.make(…).`);
           // A declared type or constructor (L2.1), or the declaration's own name.
           if(INDUCTIVE_TAGS.has(value.tag))return resolveInductive(this,n,value,null,scope,expected);
           if(value.tag==="Recursive")return resolveRecursive(this,n,value,null,scope);
@@ -770,6 +769,10 @@ export class Translator {
         if(projection)return tr(projection,expected);
         const noMorphisms=missingMorphisms(scope,n.name);
         if(noMorphisms)throw noMorphisms;
+        // T.Model named a theory's type of models until L2.4c.
+        const theory=/^(.+)\.Model$/.exec(n.name)?.[1];
+        if(theory&&env.has(theoryBinding(theory)))
+          throw Error(`${theory}.Model is now ${theory}: a theory's name is the type of its models, as in ${theory}(U0).`);
         // The printer writes __U where an instance's universe is erased.
         if(/^__U[0-9]*$/.test(n.name))throw Error(`${n.name} stands for a universe that the printer could not show: write the universe in its place, such as U0 or a universe variable.`);
         throw Error(`Untranslated name: ${n.name}`);

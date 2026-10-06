@@ -75,12 +75,13 @@ export const tokenStyle = (text, expansion, here) =>
 export const linkedWord = (text, link) => ["zero", "succ"].includes(text) && link?.role === "definition" ? false : undefined;
 // The words a theory gives a role, by offset, found once per source from its
 // tokens, so that comments and nested braces do not move them (L2.4). In a
-// theory's header, extends after its name, and notation in a parent's
-// renaming; in its body, law and sort starting a field and followed by its
-// name, a sort's h-level, and notation after an operation's type, followed by
-// x + y. Each of these is a keyword, and the words are names elsewhere, as
-// the parser reads them: a field may be named law, sort or notation. zero and
-// succ in a theory name its fields, not Nat's constructors.
+// theory's header, extends after its name and universe, and notation in a
+// parent's renaming; in its body, law starting a field and followed by its
+// name, a carrier's h-level, as set in M : set U;, and notation after an
+// operation's type, followed by x + y. Each of these is a keyword, and the
+// words are names elsewhere, as the parser reads them: a field may be named
+// law, set or notation. zero and succ in a theory name its fields, not
+// Nat's constructors.
 let rolesOf = { source: null, roles: new Map() };
 function theoryRoles(source) {
   if (rolesOf.source === source) return rolesOf.roles;
@@ -93,6 +94,11 @@ function theoryRoles(source) {
   for (let at = 0; at < tokens.length; at++) {
     if (text(at) !== "theory" || !startsLine(source, tokens[at].start) || !isWord(at + 1)) continue;
     let next = at + 2;
+    // The header, theory T(U < UU0), comes before extends.
+    if (text(next) === "(") for (let depth = 0; next < tokens.length; next++) {
+      depth += text(next) === "(" ? 1 : text(next) === ")" ? -1 : 0;
+      if (depth === 0) { next++; break; }
+    }
     if (text(next) === "extends") roles.set(tokens[next].start, true);
     for (; next < tokens.length && !["{", ";", "}"].includes(text(next)); next++) {
       if (notationAt(next)) roles.set(tokens[next].start, true);
@@ -112,10 +118,9 @@ function theoryRoles(source) {
         continue;
       }
       if (word === "law" && isWord(next + 1)) { roles.set(tokens[next].start, true); law = true; }
-      if (word === "sort" && isWord(next + 1)) {
-        roles.set(tokens[next].start, true);
-        if (text(next + 2) === ":" && ["set", "prop"].includes(text(next + 3))) roles.set(tokens[next + 3].start, true);
-      }
+      // A carrier's h-level: M : set U; and P : prop U;.
+      if (isWord(next) && text(next + 1) === ":" && ["set", "prop"].includes(text(next + 2)) && isWord(next + 3)
+        && text(next + 4) === ";") roles.set(tokens[next + 2].start, true);
     }
     at = next;
   }

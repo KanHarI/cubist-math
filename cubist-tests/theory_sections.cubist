@@ -5,8 +5,8 @@
 import nat;
 import hlevels;
 
-theory Monoid {
-  sort M : set;
+theory Monoid(U < UU0) {
+  M : set U;
   mul(x, y : M) : M notation x * y;
   law mul_assoc(x, y, z : M) : (x * y) * z = x * (y * z);
   one : M;
@@ -14,7 +14,7 @@ theory Monoid {
   law mul_one(x : M) : x * one = x;
 }
 
-section {{U < UU0}}(G : Monoid.Model(U)) {
+section {{U < UU0}}(G : Monoid(U)) {
   def square(x : M) : M := x * x;
 
   def square_one : square(one) = one {
@@ -29,10 +29,10 @@ section {{U < UU0}}(G : Monoid.Model(U)) {
 }
 
 // Outside, each takes the section's parameters first.
-// Output: forall U < UU0. forall G : Monoid.Model(U). fourth{{U}}(G, G.one) = G.one
+// Output: forall U < UU0. forall G : Monoid(U). fourth{{U}}(G, G.one) = G.one
 print(typeof(fourth_one));
 
-def additive : Monoid.Model(U0) := Monoid.make(
+def additive : Monoid(U0) := Monoid.make(
   M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := 0,
   one_mul := nat_zero_add, mul_one := nat_add_zero
 );
@@ -81,7 +81,7 @@ section (n : Nat) {
 print(evaluate(plus_shadowed(2, 3)));
 
 // Recursion over a model's operations: x to the power n.
-section {{U < UU0}}(G : Monoid.Model(U)) {
+section {{U < UU0}}(G : Monoid(U)) {
   def power(x : M, n : Nat) : M := match n {
     zero => one;
     succ(k) => x * power(x, k);
