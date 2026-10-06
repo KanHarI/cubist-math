@@ -208,39 +208,35 @@ def f4_other_root : f4_root_polynomial(f4_3) = f4_0 {
   rfl;
 }
 
-def f4_3_not_2(p : f4_3 = f4_2) :=
-  sum_disjoint(
-    Fin(1), tt, typed((Unit or Fin(0)), left(tt)),
-    sym(
+def f4_3_not_2(p : f4_3 = f4_2) := sum_disjoint(
+  Fin(1), tt, typed((Unit or Fin(0)), left(tt)),
+  sym(
+    tail_injective(
+      Fin(2), typed((Unit or Fin(1)), right(typed((Unit or Fin(0)), left(tt)))),
+      typed((Unit or Fin(1)), left(tt)),
       tail_injective(
-        Fin(2), typed((Unit or Fin(1)), right(typed((Unit or Fin(0)), left(tt)))),
-        typed((Unit or Fin(1)), left(tt)),
-        tail_injective(
-          Fin(3),
-          typed(
-            (Unit or Fin(2)),
-            right(typed((Unit or Fin(1)), right(typed((Unit or Fin(0)), left(tt)))))
-          ), typed((Unit or Fin(2)), right(typed((Unit or Fin(1)), left(tt)))), p
-        )
+        Fin(3),
+        typed(
+          (Unit or Fin(2)), right(typed((Unit or Fin(1)), right(typed((Unit or Fin(0)), left(tt)))))
+        ), typed((Unit or Fin(2)), right(typed((Unit or Fin(1)), left(tt)))), p
       )
     )
-  );
+  )
+);
 
-def f4_2_not_0(p : f4_2 = f4_0) :=
-  sum_disjoint(
-    Fin(3), tt, typed((Unit or Fin(2)), right(typed((Unit or Fin(1)), left(tt)))), sym(p)
-  );
+def f4_2_not_0(p : f4_2 = f4_0) := sum_disjoint(
+  Fin(3), tt, typed((Unit or Fin(2)), right(typed((Unit or Fin(1)), left(tt)))), sym(p)
+);
 
-def f4_2_not_1(p : f4_2 = f4_1) :=
-  sum_disjoint(
-    Fin(2), tt, typed((Unit or Fin(1)), left(tt)),
-    sym(
-      tail_injective(
-        Fin(3), typed((Unit or Fin(2)), right(typed((Unit or Fin(1)), left(tt)))),
-        typed((Unit or Fin(2)), left(tt)), p
-      )
+def f4_2_not_1(p : f4_2 = f4_1) := sum_disjoint(
+  Fin(2), tt, typed((Unit or Fin(1)), left(tt)),
+  sym(
+    tail_injective(
+      Fin(3), typed((Unit or Fin(2)), right(typed((Unit or Fin(1)), left(tt)))),
+      typed((Unit or Fin(2)), left(tt)), p
     )
-  );
+  )
+);
 
 // This is a path of whole field extensions, not a path between field elements.
 def f4_galois_loop := extension_iso_path(F2, F4OverF2, F4OverF2, f4_frobenius_automorphism);

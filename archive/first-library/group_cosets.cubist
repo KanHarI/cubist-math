@@ -187,10 +187,9 @@ def normal_coset_inverse(
   let m := group_multiply(G);
   let ix := group_inverse(G, x);
   let iy := group_inverse(G, y);
-  let shifted :=
-    same_coset_multiply_left(
-      G, S, ix, m(x, iy), m(y, iy), same_coset_multiply_right(G, S, normal, x, y, iy, same)
-    );
+  let shifted := same_coset_multiply_left(
+    G, S, ix, m(x, iy), m(y, iy), same_coset_multiply_right(G, S, normal, x, y, iy, same)
+  );
   let first :=
     along((fun (a : group_carrier(G)) => SameLeftCoset(G, S, a, m(ix, m(y, iy))))) by group_cancel_left_value(
       G, x, iy
@@ -233,11 +232,10 @@ def kernel_coset_equal_images(
 ) :
   group_hom_map(G, H, h, x) = group_hom_map(G, H, h, y) {
   let f := group_hom_map(G, H, h);
-  let equalUnit :=
-    trans(
-      sym(group_hom_difference(G, H, h, x, y)),
-      typed((f(group_multiply(G, group_inverse(G, x), y)) = group_unit(H)), same)
-    );
+  let equalUnit := trans(
+    sym(group_hom_difference(G, H, h, x, y)),
+    typed((f(group_multiply(G, group_inverse(G, x), y)) = group_unit(H)), same)
+  );
   exact group_cancel_left(
     H, group_inverse(H, f(x)), f(x), f(y), trans(group_inverse_left(H, f(x)), sym(equalUnit))
   );

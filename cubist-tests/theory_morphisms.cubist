@@ -28,14 +28,16 @@ def additive_nat : CommMonoid(U0) := CommMonoid.make(
 // The trivial monoid, on Unit.
 def trivial : CommMonoid(U0) := CommMonoid.make(
   M := Unit, M_is_set := prop_is_set(U0, Unit, unit_is_prop), mul := fun (x, y : Unit) => tt,
-  mul_assoc := fun (x, y, z : Unit) => refl(tt), one := tt, one_mul := fun (x : Unit) => unit_is_prop(tt, x),
+  mul_assoc := fun (x, y, z : Unit) => refl(tt), one := tt,
+  one_mul := fun (x : Unit) => unit_is_prop(tt, x),
   mul_one := fun (x : Unit) => unit_is_prop(tt, x), mul_comm := fun (x, y : Unit) => refl(tt)
 );
 
 // A homomorphism is built field by field: its map, and that the map
 // preserves the operation and the unit.
 def collapse : CommMonoid.Hom(additive_nat, trivial) := CommMonoid.Hom.make(
-  additive_nat, trivial, map := fun (n : Nat) => tt, map_mul := fun (x, y : Nat) => refl(tt), map_one := refl(tt)
+  additive_nat, trivial, map := fun (n : Nat) => tt, map_mul := fun (x, y : Nat) => refl(tt),
+  map_one := refl(tt)
 );
 
 // Into any monoid, the trivial one goes to its unit.
@@ -52,13 +54,18 @@ def unit_into(U < UU0, B : CommMonoid(U)) : CommMonoid.Hom(trivial, B) := CommMo
 print(typeof(CommMonoid.Hom.map_mul));
 
 // Composition and the identity compute on closed models.
-def round : CommMonoid.Hom(trivial, trivial) := CommMonoid.Hom.compose(collapse, unit_into(U0, additive_nat));
+def round :
+  CommMonoid.Hom(trivial, trivial) := CommMonoid.Hom.compose(collapse, unit_into(U0, additive_nat));
 
 // Output: tt
 print(evaluate(round.map(tt)));
 
 // Output: 3
-print(evaluate(CommMonoid.Hom.compose(CommMonoid.Hom.id(additive_nat), CommMonoid.Hom.id(additive_nat)).map(3)));
+print(
+  evaluate(
+    CommMonoid.Hom.compose(CommMonoid.Hom.id(additive_nat), CommMonoid.Hom.id(additive_nat)).map(3)
+  )
+);
 
 // Output: 0
 print(evaluate(unit_into(U0, additive_nat).map(tt)));

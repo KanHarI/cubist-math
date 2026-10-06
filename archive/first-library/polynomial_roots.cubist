@@ -164,10 +164,9 @@ def polynomial_factor_theorem(
     };
   let constantZero : polynomial_coefficients(K, s, 0) = field_zero(K) :=
     trans(sym(support_one_eval(K, s, support, r)), trans(sym(evaluated), root));
-  let zero :=
-    support_zero_polynomial(
-      K, s, support_predecessor(K, polynomial_coefficients(K, s), 0, support, constantZero)
-    );
+  let zero := support_zero_polynomial(
+    K, s, support_predecessor(K, polynomial_coefficients(K, s), 0, support, constantZero)
+  );
   exact (
     q,
     trans(

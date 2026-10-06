@@ -72,9 +72,9 @@ def finite_subgroup_fixed_degree_upper_bound(
   let F := extension_field(K, E);
   let i := intermediate_ambient_embedding(K, E, M);
   let V := field_vector_space(R, F, i);
-  let Result :=
-    exists finiteExtension : FiniteExtension(R, intermediate_overfield(K, E, M)).
-    le(extension_degree(R, intermediate_overfield(K, E, M), finiteExtension), n);
+  let Result := exists finiteExtension : FiniteExtension(R, intermediate_overfield(K, E, M)). le(
+    extension_degree(R, intermediate_overfield(K, E, M), finiteExtension), n
+  );
   let Basis :=
     exists enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)).
     exists points : Fin(n) -> extension_carrier(K, E).
@@ -91,12 +91,11 @@ def finite_subgroup_fixed_degree_upper_bound(
     obtain (enumeration, points, basis) := witness;
     let spanning := subgroup_evaluation_spans_fixed_field(K, E, H, n, enumeration, points, basis);
     let finiteExtension := finite_spanning_dimension(R, V, n, points, spanning);
-    let bound :=
-      finite_spanning_dimension_bound(
-        R, V, n, points, spanning,
-        extension_degree(R, intermediate_overfield(K, E, M), finiteExtension),
-        extension_degree_specification(R, intermediate_overfield(K, E, M), finiteExtension)
-      );
+    let bound := finite_spanning_dimension_bound(
+      R, V, n, points, spanning,
+      extension_degree(R, intermediate_overfield(K, E, M), finiteExtension),
+      extension_degree_specification(R, intermediate_overfield(K, E, M), finiteExtension)
+    );
     exact (finiteExtension, bound);
   }
   exact mere_eliminate(
@@ -184,10 +183,9 @@ def subgroup_evaluation_points_independent(
       let h := indexed(t);
       let e := maps(t);
       obtain (zero, one, neg, add, mul) := field_embedding_preserves(F, F, e);
-      let mapped :=
-        fun (j : Fin(n)) => field_mul(
-          F, field_embedding_map(F, F, e, c(j)), field_embedding_map(F, F, e, points(j))
-        );
+      let mapped := fun (j : Fin(n)) => field_mul(
+        F, field_embedding_map(F, F, e, c(j)), field_embedding_map(F, F, e, points(j))
+      );
       let raw := fun (j : Fin(n)) => field_mul(F, c(j), field_embedding_map(F, F, e, points(j)));
       let fixed : forall j : Fin(n). field_embedding_map(F, F, e, c(j)) = c(j) {
         intro j;
@@ -216,24 +214,22 @@ def subgroup_evaluation_points_independent(
         )
       );
     }
-    let combinationZero : linear_combination(F, C, n, rows, c) = vector_zero(F, C) :=
-      FunExt(
-        U0, Fin(n), (fun (t : Fin(n)) => af_carrier(F)), linear_combination(F, C, n, rows, c),
-        vector_zero(F, C),
-        (
-          fun (t : Fin(n)) => trans(
-            coordinate_combination_component(F, n, t, n, rows, c), evalZero(t)
-          )
+    let combinationZero : linear_combination(F, C, n, rows, c) = vector_zero(F, C) := FunExt(
+      U0, Fin(n), (fun (t : Fin(n)) => af_carrier(F)), linear_combination(F, C, n, rows, c),
+      vector_zero(F, C),
+      (
+        fun (t : Fin(n)) => trans(
+          coordinate_combination_component(F, n, t, n, rows, c), evalZero(t)
         )
-      );
-    let cZero : c = vector_zero(F, C) :=
-      evalInjective(
-        c, vector_zero(F, C),
-        trans(
-          family_linear_evaluation(F, C, n, rows, c),
-          trans(combinationZero, sym(linear_zero(F, C, C, eval)))
-        )
-      );
+      )
+    );
+    let cZero : c = vector_zero(F, C) := evalInjective(
+      c, vector_zero(F, C),
+      trans(
+        family_linear_evaluation(F, C, n, rows, c),
+        trans(combinationZero, sym(linear_zero(F, C, C, eval)))
+      )
+    );
     obtain (baseZeroMap, baseOne, baseNeg, baseAdd, baseMul) := field_embedding_preserves(R, F, i);
     ext j;
     exact field_embedding_injective(

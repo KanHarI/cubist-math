@@ -19,11 +19,10 @@ def coordinates_in_subspace_zero(K : AlgebraicField, V : VectorSpace(K), S : Sub
   CoordinatesInSubspace(K, V, S, 0) {
   intro h, units, a;
   let z := vector_zero(K, CoordinateSpace(K, 0));
-  let same : a = z :=
-    FunExt(
-      U0, Fin(0), (fun (i : Fin(0)) => af_carrier(K)), a, z,
-      (fun (i : Fin(0)) => typed((a(i) = z(i)), absurd(i)))
-    );
+  let same : a = z := FunExt(
+    U0, Fin(0), (fun (i : Fin(0)) => af_carrier(K)), a, z,
+    (fun (i : Fin(0)) => typed((a(i) = z(i)), absurd(i)))
+  );
   exact along subspace_members(K, V, S) by sym(
     trans(
       cong(linear_map(K, CoordinateSpace(K, 0), V, h), same),
@@ -48,16 +47,13 @@ def coordinates_in_subspace_step(
   let smaller := previous(rest, (fun (i : Fin(n)) => units(typed(Fin(succ(n)), right(i)))), tail);
   let head := subspace_scale(K, V, S, b, f(u), units(typed(Fin(succ(n)), left(tt))));
   let contained := subspace_add(K, V, S, vector_scale(K, V, b, f(u)), f(v), head, smaller);
-  let same :=
-    trans(
-      sym(linear_add(K, C, V, h, vector_scale(K, C, b, u), v)),
-      cong(f, coordinate_decompose(K, n, a))
-    );
-  let scaled :=
-    cong(
-      (fun (x : vector_carrier(K, V)) => vector_add(K, V, x, f(v))),
-      sym(linear_scale(K, C, V, h, b, u))
-    );
+  let same := trans(
+    sym(linear_add(K, C, V, h, vector_scale(K, C, b, u), v)), cong(f, coordinate_decompose(K, n, a))
+  );
+  let scaled := cong(
+    (fun (x : vector_carrier(K, V)) => vector_add(K, V, x, f(v))),
+    sym(linear_scale(K, C, V, h, b, u))
+  );
   exact along subspace_members(K, V, S) by trans(scaled, same) from contained;
 }
 

@@ -41,8 +41,8 @@ def additive_cancel_negative_last(
 }
 
 def additive_shuffle(
-  G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG),
-  x, y, u, v : G
+  G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x, y, u,
+  v : G
 ) :
   addG(addG(x, y), addG(u, v)) = addG(addG(x, u), addG(y, v)) {
   obtain (assoc, comm, unit, inverseLaw) := laws;

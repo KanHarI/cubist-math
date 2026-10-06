@@ -178,7 +178,8 @@ def extension_degree_iso(
 }
 
 def finite_extension_iso(
-  K : AlgebraicField, E, F : FieldExt(K), iso : ExtensionIso(K, E, F), finite : FiniteExtension(K, E)
+  K : AlgebraicField, E, F : FieldExt(K), iso : ExtensionIso(K, E, F),
+  finite : FiniteExtension(K, E)
 ) :
   FiniteExtension(K, F) {
   exact along FiniteExtension(K) by extension_iso_path(K, E, F, iso) from finite;
@@ -206,16 +207,14 @@ def extension_basis_positive(
   let h := linear_compose(K, C, V, N, intoV, outV);
   let injective : CoordinateInjection(K, 1, n, h) {
     intro x, y, same;
-    let sameV :=
-      linear_iso_injective(
-        K, V, N, linear_iso_inverse(K, N, V, basis), linear_map(K, C, V, intoV, x),
-        linear_map(K, C, V, intoV, y), same
-      );
-    let sameK :=
-      field_embedding_injective(
-        K, L, e, linear_map(K, C, ScalarSpace(K), scalar, x),
-        linear_map(K, C, ScalarSpace(K), scalar, y), sameV
-      );
+    let sameV := linear_iso_injective(
+      K, V, N, linear_iso_inverse(K, N, V, basis), linear_map(K, C, V, intoV, x),
+      linear_map(K, C, V, intoV, y), same
+    );
+    let sameK := field_embedding_injective(
+      K, L, e, linear_map(K, C, ScalarSpace(K), scalar, x),
+      linear_map(K, C, ScalarSpace(K), scalar, y), sameV
+    );
     exact linear_iso_injective(K, C, ScalarSpace(K), scalar_space_basis(K), x, y, sameK);
   }
   exact coordinate_injection_bound(K, n, 1, h, injective);

@@ -12,7 +12,8 @@ def BezoutCombination(K : AlgebraicField, p, q, r : Polynomial(K)) :=
   exists a : Polynomial(K). exists b : Polynomial(K).
   r = polynomial_add(K, polynomial_mul(K, a, p), polynomial_mul(K, b, q));
 
-def GeneratedPair(K : AlgebraicField, p, q, r : Polynomial(K)) := Mere(BezoutCombination(K, p, q, r));
+def GeneratedPair(K : AlgebraicField, p, q, r : Polynomial(K)) :=
+  Mere(BezoutCombination(K, p, q, r));
 
 def polynomial_zero_mul(K : AlgebraicField, p : Polynomial(K)) :=
   trans(polynomial_mul_comm(K, polynomial_zero(K), p), polynomial_mul_zero(K, p));
@@ -198,10 +199,9 @@ def polynomial_bezout(
   let fromGenerator : IdealPrincipalGenerator(K, I) -> Result {
     intro witness;
     obtain (g, member, nz, divides) := witness;
-    let unit :=
-      coprime(
-        g, divides(p, generated_pair_left(K, p, q)), divides(q, generated_pair_right(K, p, q))
-      );
+    let unit := coprime(
+      g, divides(p, generated_pair_left(K, p, q)), divides(q, generated_pair_right(K, p, q))
+    );
     let fromInverse :
       (exists u : Polynomial(K). polynomial_mul(K, g, u) = polynomial_one(K)) -> Result {
       intro inverse;
@@ -216,14 +216,13 @@ def polynomial_bezout(
       mere_is_prop(BezoutCombination(K, p, q, polynomial_one(K))), fromInverse, unit
     );
   }
-  let inhabited :=
-    merely(
+  let inhabited := merely(
+    (exists g : Polynomial(K). polynomial_ideal_members(K, I, g) and PolynomialNonzero(K, g)),
+    typed(
       (exists g : Polynomial(K). polynomial_ideal_members(K, I, g) and PolynomialNonzero(K, g)),
-      typed(
-        (exists g : Polynomial(K). polynomial_ideal_members(K, I, g) and PolynomialNonzero(K, g)),
-        (p, generated_pair_left(K, p, q), nonzero)
-      )
-    );
+      (p, generated_pair_left(K, p, q), nonzero)
+    )
+  );
   exact mere_eliminate(
     IdealPrincipalGenerator(K, I), Result,
     mere_is_prop(BezoutCombination(K, p, q, polynomial_one(K))), fromGenerator,

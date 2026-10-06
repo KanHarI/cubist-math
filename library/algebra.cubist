@@ -34,9 +34,7 @@ theory Group(U < UU0) extends Monoid {
 
 // An abelian group: a group whose monoid is commutative. Monoid comes once,
 // through both parents.
-theory AbelianGroup(U < UU0) extends Group, CommMonoid {
-
-}
+theory AbelianGroup(U < UU0) extends Group, CommMonoid {}
 
 // A commutative ring: an abelian group for addition, written +, with zero
 // and neg, written -x, and a commutative monoid for multiplication on the
@@ -44,16 +42,18 @@ theory AbelianGroup(U < UU0) extends Group, CommMonoid {
 // derived: x + -y.
 theory CommRing(U < UU0) extends additive : AbelianGroup(
   M := R, mul := add notation x + y, mul_assoc := add_assoc, one := zero, one_mul := zero_add,
-  mul_one := add_zero, inv := neg notation -x, inv_mul := neg_add, mul_inv := add_neg, mul_comm := add_comm
+  mul_one := add_zero, inv := neg notation - x, inv_mul := neg_add, mul_inv := add_neg,
+  mul_comm := add_comm
 ), multiplicative : CommMonoid(M := R) {
   law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;
   def sub(x, y : R) : R := x + -y notation x - y;
   // A natural number in the ring, which reads plain numerals in its
   // notation: one added to itself n times (L2.10c).
   def of_nat(n : Nat) : R := match n {
-      zero => zero;
-      succ(k) => one + of_nat(k);
-    } notation numeral;
+    zero => zero;
+    succ(k) => one + of_nat(k);
+  }
+  notation numeral;
 }
 
 // A field: a commutative ring in which zero is not one and every element
@@ -67,17 +67,15 @@ theory Field(U < UU0) extends CommRing {
 
 // The natural numbers under addition, with 0, and under multiplication,
 // with 1.
-def nat_additive :
-  CommMonoid(U0) := CommMonoid.make(
-    M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := 0,
-    one_mul := nat_zero_add, mul_one := nat_add_zero, mul_comm := nat_add_comm
-  );
+def nat_additive : CommMonoid(U0) := CommMonoid.make(
+  M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := 0,
+  one_mul := nat_zero_add, mul_one := nat_add_zero, mul_comm := nat_add_comm
+);
 
-def nat_multiplicative :
-  CommMonoid(U0) := CommMonoid.make(
-    M := Nat, M_is_set := nat_is_set, mul := mul, mul_assoc := nat_mul_assoc, one := 1,
-    one_mul := nat_one_mul, mul_one := nat_mul_one, mul_comm := nat_mul_comm
-  );
+def nat_multiplicative : CommMonoid(U0) := CommMonoid.make(
+  M := Nat, M_is_set := nat_is_set, mul := mul, mul_assoc := nat_mul_assoc, one := 1,
+  one_mul := nat_one_mul, mul_one := nat_mul_one, mul_comm := nat_mul_comm
+);
 
 // In any commutative monoid, products regroup freely; for a ring, at its
 // multiplicative monoid, A.multiplicative, and its additive one,
@@ -198,8 +196,8 @@ section {{U < UU0}}(A : CommRing(U)) {
     }
   }
 
-  computable def inverse_is_prop(x : R) : IsProp(U, exists y : R. x * y = one) :=
-    fun (a, b : exists y : R. x * y = one) => path i => (
+  computable def inverse_is_prop(x : R) :
+    IsProp(U, exists y : R. x * y = one) := fun (a, b : exists y : R. x * y = one) => path i => (
       inverse_unique(x, a.1, b.1, a.2, b.2) @ i,
       prop_over(
         U, R, fun (y : R) => x * y = one, fun (y : R) => R_is_set(x * y, one), a.1, b.1,
@@ -213,12 +211,14 @@ section {{U < UU0}}(A : CommRing(U)) {
 // model whose law is merely of an inverse, as the rationals', it computes.
 section {{U < UU0}}(F : Field(U)) {
   computable def inverse(x : R, nonzero : x = zero -> Void) :
-    exists y : R. x * y = one := mere_eliminate(
+    exists y : R.
+    x * y = one := mere_eliminate(
       U, U, exists y : R. x * y = one, exists y : R. x * y = one, inverse_is_prop(F.comm_ring, x),
       fun (w : exists y : R. x * y = one) => w, inverses(x, nonzero)
     );
 
   computable def inv(x : R, nonzero : x = zero -> Void) : R := inverse(x, nonzero).1;
 
-  computable def mul_inv(x : R, nonzero : x = zero -> Void) : x * inv(x, nonzero) = one := inverse(x, nonzero).2;
+  computable def mul_inv(x : R, nonzero : x = zero -> Void) :
+    x * inv(x, nonzero) = one := inverse(x, nonzero).2;
 }

@@ -200,15 +200,15 @@ def sequence_same_transitive(
   SequenceSame(Q, zero, addQ, ltQ, x, z) {
   intro epsilon, positive;
   obtain (delta, deltaPositive, composeAt) := composeClose(epsilon, positive);
-  let leftTail :=
-    exists bound : Nat. forall n : Nat. IndexLE(bound, n)
-    -> FieldClose(Q, addQ, ltQ, x(n), y(n), delta);
-  let rightTail :=
-    exists bound : Nat. forall n : Nat. IndexLE(bound, n)
-    -> FieldClose(Q, addQ, ltQ, y(n), z(n), delta);
-  let resultTail :=
-    exists bound : Nat. forall n : Nat. IndexLE(bound, n)
-    -> FieldClose(Q, addQ, ltQ, x(n), z(n), epsilon);
+  let leftTail := exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(
+    Q, addQ, ltQ, x(n), y(n), delta
+  );
+  let rightTail := exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(
+    Q, addQ, ltQ, y(n), z(n), delta
+  );
+  let resultTail := exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(
+    Q, addQ, ltQ, x(n), z(n), epsilon
+  );
   exact mere_eliminate(
     U0, U0, leftTail, Trunc(U0, resultTail), mere_is_prop(U0, resultTail),
     (

@@ -14,15 +14,14 @@ def FiniteEmbeddingExtension(n : Nat) :=
 def finite_embedding_extension_zero : FiniteEmbeddingExtension(0) {
   intro K, L, e, generators, algebraic, generates, T, closed, j;
   let onto := field_generated_empty_surjective(K, L, e, generators, generates);
-  let extension :=
-    embedding_over_surjective_source(
-      K, K, L, field_embedding_identity(K), e, e,
-      (fun (a : af_carrier(K)) => refl(field_embedding_map(K, L, e, a))), onto, T, j,
-      typed(
-        EmbeddingsOver(K, K, field_embedding_identity(K), T, j),
-        (j, (fun (a : af_carrier(K)) => refl(field_embedding_map(K, T, j, a))))
-      )
-    );
+  let extension := embedding_over_surjective_source(
+    K, K, L, field_embedding_identity(K), e, e,
+    (fun (a : af_carrier(K)) => refl(field_embedding_map(K, L, e, a))), onto, T, j,
+    typed(
+      EmbeddingsOver(K, K, field_embedding_identity(K), T, j),
+      (j, (fun (a : af_carrier(K)) => refl(field_embedding_map(K, T, j, a))))
+    )
+  );
   exact merely(EmbeddingsOver(K, L, e, T, j), extension);
 }
 
@@ -42,19 +41,17 @@ def finite_embedding_extension_step(n : Nat, previous : FiniteEmbeddingExtension
   let tower : FieldTower(K, R, L, i, h, e) := with unfolding [FieldTower] {
       field_embedding_ext(K, L, field_embedding_compose(K, R, L, i, h), e, triangle)
     };
-  let algebraicR :=
-    (
-      fun (index : Fin(n)) => algebraic_element_enlarge_base(
-        K, R, L, i, h, e, tower, generators(typed(Fin(succ(n)), right(index))),
-        algebraic(typed(Fin(succ(n)), right(index)))
-      )
-    );
+  let algebraicR := (
+    fun (index : Fin(n)) => algebraic_element_enlarge_base(
+      K, R, L, i, h, e, tower, generators(typed(Fin(succ(n)), right(index))),
+      algebraic(typed(Fin(succ(n)), right(index)))
+    )
+  );
   let tail := finite_tail(af_carrier(L), n, generators);
-  let generatesR :=
-    field_generated_adjoin_tail(
-      K, R, L, i, h, e, triangle, n, generators, generates, adjoined_root(K, M),
-      residue_evaluate_generator(K, M, L, e, x, root)
-    );
+  let generatesR := field_generated_adjoin_tail(
+    K, R, L, i, h, e, triangle, n, generators, generates, adjoined_root(K, M),
+    residue_evaluate_generator(K, M, L, e, x, root)
+  );
   let W := PolynomialRoots(K, T, j, p);
   let Goal := EmbeddingsOver(K, L, e, T, j);
   let fromRoot : W -> Mere(Goal) {

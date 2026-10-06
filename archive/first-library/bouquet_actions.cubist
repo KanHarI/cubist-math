@@ -99,14 +99,13 @@ def loop_action_generator(A, F : U0, actions : A -> Equiv(U0, F, F), a : A, v : 
 def loop_action_inverse(A, F : U0, actions : A -> Equiv(U0, F, F), a : A, v : F) :
   loop_action(A, F, actions, sym(bouquet_generator(A, a)), v) = action_backward(F, actions(a), v) {
   let before := loop_action(A, F, actions, sym(bouquet_generator(A, a)), v);
-  let same :=
-    trans(
-      sym(loop_action_generator(A, F, actions, a, before)),
-      transport_after_inverse(
-        Bouquet(A), action_family(A, F, actions), bouquet_base(A), bouquet_base(A),
-        bouquet_generator(A, a), v
-      )
-    );
+  let same := trans(
+    sym(loop_action_generator(A, F, actions, a, before)),
+    transport_after_inverse(
+      Bouquet(A), action_family(A, F, actions), bouquet_base(A), bouquet_base(A),
+      bouquet_generator(A, a), v
+    )
+  );
   exact trans(
     sym(action_left_law(F, actions(a), before)), cong(action_backward(F, actions(a)), same)
   );

@@ -48,11 +48,9 @@ section {{U < UU0}}(
             _ = zero by zero_mul(A, z);
           }
         }
-        let nonzero : x + neg(y) = zero
-        -> Void :=
-          fun (e : x + neg(y) = zero) => different(
-            trans(inv_unique(A.additive.group, neg(y), x, e), inv_inv(A.additive.group, y))
-          );
+        let nonzero : x + neg(y) = zero -> Void := fun (e : x + neg(y) = zero) => different(
+          trans(inv_unique(A.additive.group, neg(y), x, e), inv_inv(A.additive.group, y))
+        );
         exact absurd(domain(x + neg(y), z, nonzero, nz, difference));
       }
     }
@@ -228,55 +226,51 @@ section {{U < UU0}}(
     }
   }
 
-  computable def q_add(x, y : Frac) :
-    Frac := descend2(
-      U, U, Fraction, SameRatio, Frac, frac_is_set,
-      fun (f, g : Fraction) => typed(Frac, class(frac_add(f, g))),
-      fun (f, f2, g : Fraction, r : SameRatio(f, f2)) => frac_path(
-        frac_add(f, g), frac_add(f2, g), frac_add_left(f, f2, g, r)
-      ),
-      fun (f, g, g2 : Fraction, r : SameRatio(g, g2)) => trans(
-        frac_path(frac_add(f, g), frac_add(g, f), frac_add_comm_ratio(f, g)),
-        trans(
-          frac_path(frac_add(g, f), frac_add(g2, f), frac_add_left(g, g2, f, r)),
-          frac_path(frac_add(g2, f), frac_add(f, g2), frac_add_comm_ratio(g2, f))
-        )
-      ), x, y
-    );
+  computable def q_add(x, y : Frac) : Frac := descend2(
+    U, U, Fraction, SameRatio, Frac, frac_is_set,
+    fun (f, g : Fraction) => typed(Frac, class(frac_add(f, g))),
+    fun (f, f2, g : Fraction, r : SameRatio(f, f2)) => frac_path(
+      frac_add(f, g), frac_add(f2, g), frac_add_left(f, f2, g, r)
+    ),
+    fun (f, g, g2 : Fraction, r : SameRatio(g, g2)) => trans(
+      frac_path(frac_add(f, g), frac_add(g, f), frac_add_comm_ratio(f, g)),
+      trans(
+        frac_path(frac_add(g, f), frac_add(g2, f), frac_add_left(g, g2, f, r)),
+        frac_path(frac_add(g2, f), frac_add(f, g2), frac_add_comm_ratio(g2, f))
+      )
+    ), x, y
+  );
 
-  computable def q_mul(x, y : Frac) :
-    Frac := descend2(
-      U, U, Fraction, SameRatio, Frac, frac_is_set,
-      fun (f, g : Fraction) => typed(Frac, class(frac_mul(f, g))),
-      fun (f, f2, g : Fraction, r : SameRatio(f, f2)) => frac_path(
-        frac_mul(f, g), frac_mul(f2, g), frac_mul_left(f, f2, g, r)
-      ),
-      fun (f, g, g2 : Fraction, r : SameRatio(g, g2)) => trans(
-        frac_path(frac_mul(f, g), frac_mul(g, f), frac_mul_comm_ratio(f, g)),
-        trans(
-          frac_path(frac_mul(g, f), frac_mul(g2, f), frac_mul_left(g, g2, f, r)),
-          frac_path(frac_mul(g2, f), frac_mul(f, g2), frac_mul_comm_ratio(g2, f))
-        )
-      ), x, y
-    );
+  computable def q_mul(x, y : Frac) : Frac := descend2(
+    U, U, Fraction, SameRatio, Frac, frac_is_set,
+    fun (f, g : Fraction) => typed(Frac, class(frac_mul(f, g))),
+    fun (f, f2, g : Fraction, r : SameRatio(f, f2)) => frac_path(
+      frac_mul(f, g), frac_mul(f2, g), frac_mul_left(f, f2, g, r)
+    ),
+    fun (f, g, g2 : Fraction, r : SameRatio(g, g2)) => trans(
+      frac_path(frac_mul(f, g), frac_mul(g, f), frac_mul_comm_ratio(f, g)),
+      trans(
+        frac_path(frac_mul(g, f), frac_mul(g2, f), frac_mul_left(g, g2, f, r)),
+        frac_path(frac_mul(g2, f), frac_mul(f, g2), frac_mul_comm_ratio(g2, f))
+      )
+    ), x, y
+  );
 
-  computable def q_neg(x : Frac) :
-    Frac := descend(
-      U, U, Fraction, SameRatio, Frac, frac_is_set,
-      fun (f : Fraction) => typed(Frac, class(frac_neg(f))),
-      fun (f, g : Fraction, r : SameRatio(f, g)) => frac_path(
-        frac_neg(f), frac_neg(g), frac_neg_ratio(f, g, r)
-      ), x
-    );
+  computable def q_neg(x : Frac) : Frac := descend(
+    U, U, Fraction, SameRatio, Frac, frac_is_set,
+    fun (f : Fraction) => typed(Frac, class(frac_neg(f))),
+    fun (f, g : Fraction, r : SameRatio(f, g)) => frac_path(
+      frac_neg(f), frac_neg(g), frac_neg_ratio(f, g, r)
+    ), x
+  );
 
-  computable def q_inv(x : Frac) :
-    Frac := descend(
-      U, U, Fraction, SameRatio, Frac, frac_is_set,
-      fun (f : Fraction) => typed(Frac, class(frac_inv(f))),
-      fun (f, g : Fraction, r : SameRatio(f, g)) => frac_path(
-        frac_inv(f), frac_inv(g), frac_inv_ratio(f, g, r, decide(f.1, zero), decide(g.1, zero))
-      ), x
-    );
+  computable def q_inv(x : Frac) : Frac := descend(
+    U, U, Fraction, SameRatio, Frac, frac_is_set,
+    fun (f : Fraction) => typed(Frac, class(frac_inv(f))),
+    fun (f, g : Fraction, r : SameRatio(f, g)) => frac_path(
+      frac_inv(f), frac_inv(g), frac_inv_ratio(f, g, r, decide(f.1, zero), decide(g.1, zero))
+    ), x
+  );
 
   computable def q_zero : Frac := class(frac_zero);
 
@@ -372,47 +366,44 @@ section {{U < UU0}}(
       ), x, y, z
     );
 
-  computable def q_add_comm(x, y : Frac) :
-    q_add(x, y) = q_add(y, x) := frac_equation2(
-      fun (a, b : Frac) => q_add(a, b), fun (a, b : Frac) => q_add(b, a),
-      fun (f, g : Fraction) => frac_path(frac_add(f, g), frac_add(g, f), frac_add_comm_ratio(f, g)),
-      x, y
-    );
+  computable def q_add_comm(x, y : Frac) : q_add(x, y) = q_add(y, x) := frac_equation2(
+    fun (a, b : Frac) => q_add(a, b), fun (a, b : Frac) => q_add(b, a),
+    fun (f, g : Fraction) => frac_path(frac_add(f, g), frac_add(g, f), frac_add_comm_ratio(f, g)),
+    x, y
+  );
 
-  computable def q_zero_add(x : Frac) :
-    q_add(q_zero, x) = x := frac_equation(
-      fun (a : Frac) => q_add(q_zero, a), fun (a : Frac) => a,
-      fun (f : Fraction) => frac_path(
+  computable def q_zero_add(x : Frac) : q_add(q_zero, x) = x := frac_equation(
+    fun (a : Frac) => q_add(q_zero, a), fun (a : Frac) => a,
+    fun (f : Fraction) => frac_path(
+      frac_add(frac_zero, f), f,
+      same_ratio_equal(
         frac_add(frac_zero, f), f,
-        same_ratio_equal(
-          frac_add(frac_zero, f), f,
-          trans(
-            cong(fun (w : R) => w + f.1 * one, zero_mul(A, f.2.1)),
-            trans(zero_add(f.1 * one), mul_one(f.1))
-          ), one_mul(f.2.1)
-        )
-      ), x
-    );
+        trans(
+          cong(fun (w : R) => w + f.1 * one, zero_mul(A, f.2.1)),
+          trans(zero_add(f.1 * one), mul_one(f.1))
+        ), one_mul(f.2.1)
+      )
+    ), x
+  );
 
   computable def q_add_zero(x : Frac) :
     q_add(x, q_zero) = x := trans(q_add_comm(x, q_zero), q_zero_add(x));
 
-  computable def q_neg_add(x : Frac) :
-    q_add(q_neg(x), x) = q_zero := frac_equation(
-      fun (a : Frac) => q_add(q_neg(a), a), fun (a : Frac) => q_zero,
-      fun (f : Fraction) => frac_path(
-        frac_add(frac_neg(f), f), frac_zero,
+  computable def q_neg_add(x : Frac) : q_add(q_neg(x), x) = q_zero := frac_equation(
+    fun (a : Frac) => q_add(q_neg(a), a), fun (a : Frac) => q_zero,
+    fun (f : Fraction) => frac_path(
+      frac_add(frac_neg(f), f), frac_zero,
+      trans(
         trans(
+          mul_one(neg(f.1) * f.2.1 + f.1 * f.2.1),
           trans(
-            mul_one(neg(f.1) * f.2.1 + f.1 * f.2.1),
-            trans(
-              sym(add_mul(A, neg(f.1), f.1, f.2.1)),
-              trans(cong(fun (w : R) => w * f.2.1, neg_add(f.1)), zero_mul(A, f.2.1))
-            )
-          ), sym(zero_mul(A, f.2.1 * f.2.1))
-        )
-      ), x
-    );
+            sym(add_mul(A, neg(f.1), f.1, f.2.1)),
+            trans(cong(fun (w : R) => w * f.2.1, neg_add(f.1)), zero_mul(A, f.2.1))
+          )
+        ), sym(zero_mul(A, f.2.1 * f.2.1))
+      )
+    ), x
+  );
 
   computable def q_add_neg(x : Frac) :
     q_add(x, q_neg(x)) = q_zero := trans(q_add_comm(x, q_neg(x)), q_neg_add(x));
@@ -431,21 +422,19 @@ section {{U < UU0}}(
       ), x, y, z
     );
 
-  computable def q_mul_comm(x, y : Frac) :
-    q_mul(x, y) = q_mul(y, x) := frac_equation2(
-      fun (a, b : Frac) => q_mul(a, b), fun (a, b : Frac) => q_mul(b, a),
-      fun (f, g : Fraction) => frac_path(frac_mul(f, g), frac_mul(g, f), frac_mul_comm_ratio(f, g)),
-      x, y
-    );
+  computable def q_mul_comm(x, y : Frac) : q_mul(x, y) = q_mul(y, x) := frac_equation2(
+    fun (a, b : Frac) => q_mul(a, b), fun (a, b : Frac) => q_mul(b, a),
+    fun (f, g : Fraction) => frac_path(frac_mul(f, g), frac_mul(g, f), frac_mul_comm_ratio(f, g)),
+    x, y
+  );
 
-  computable def q_one_mul(x : Frac) :
-    q_mul(q_one, x) = x := frac_equation(
-      fun (a : Frac) => q_mul(q_one, a), fun (a : Frac) => a,
-      fun (f : Fraction) => frac_path(
-        frac_mul(frac_one, f), f,
-        same_ratio_equal(frac_mul(frac_one, f), f, one_mul(f.1), one_mul(f.2.1))
-      ), x
-    );
+  computable def q_one_mul(x : Frac) : q_mul(q_one, x) = x := frac_equation(
+    fun (a : Frac) => q_mul(q_one, a), fun (a : Frac) => a,
+    fun (f : Fraction) => frac_path(
+      frac_mul(frac_one, f), f,
+      same_ratio_equal(frac_mul(frac_one, f), f, one_mul(f.1), one_mul(f.2.1))
+    ), x
+  );
 
   computable def q_mul_one(x : Frac) :
     q_mul(x, q_one) = x := trans(q_mul_comm(x, q_one), q_one_mul(x));
@@ -543,10 +532,9 @@ section {{U < UU0}}(
       ), x
     )(nz);
 
-  computable def q_zero_ne_one(p : q_zero = q_one) :
-    Void := nontrivial(
-      trans(sym(mul_one(zero)), trans(frac_effective(frac_zero, frac_one, p), mul_one(one)))
-    );
+  computable def q_zero_ne_one(p : q_zero = q_one) : Void := nontrivial(
+    trans(sym(mul_one(zero)), trans(frac_effective(frac_zero, frac_one, p), mul_one(one)))
+  );
 
   // Equality in the field of fractions is decidable: fractions have the
   // same ratio or not, and equal classes have related fractions.
@@ -574,37 +562,33 @@ section {{U < UU0}}(
     )(y);
 
   // The field of fractions.
-  def fraction_field :
-    Field(U) := Field.make(
-      R := Frac, R_is_set := frac_is_set, add := q_add, add_assoc := q_add_assoc, zero := q_zero,
-      zero_add := q_zero_add, add_zero := q_add_zero, neg := q_neg, neg_add := q_neg_add,
-      add_neg := q_add_neg, add_comm := q_add_comm, mul := q_mul, mul_assoc := q_mul_assoc,
-      one := q_one, one_mul := q_one_mul, mul_one := q_mul_one, mul_comm := q_mul_comm,
-      mul_add := q_mul_add,
-      inverses := fun (x : Frac, nonzero : x = q_zero -> Void) => merely(
-        U, exists y : Frac. q_mul(x, y) = q_one, (q_inv(x), q_mul_inv(x, nonzero))
-      ),
-      zero_ne_one := q_zero_ne_one
-    );
+  def fraction_field : Field(U) := Field.make(
+    R := Frac, R_is_set := frac_is_set, add := q_add, add_assoc := q_add_assoc, zero := q_zero,
+    zero_add := q_zero_add, add_zero := q_add_zero, neg := q_neg, neg_add := q_neg_add,
+    add_neg := q_add_neg, add_comm := q_add_comm, mul := q_mul, mul_assoc := q_mul_assoc,
+    one := q_one, one_mul := q_one_mul, mul_one := q_mul_one, mul_comm := q_mul_comm,
+    mul_add := q_mul_add,
+    inverses := fun (x : Frac, nonzero : x = q_zero -> Void) => merely(
+      U, exists y : Frac. q_mul(x, y) = q_one, (q_inv(x), q_mul_inv(x, nonzero))
+    ), zero_ne_one := q_zero_ne_one
+  );
 }
 
 // The rationals: the integers' field of fractions.
-def rationals :
-  Field(U0) := fraction_field(integers, int_decide, int_mul_nonzero, int_zero_ne_one);
+def rationals : Field(U0) := fraction_field(integers, int_decide, int_mul_nonzero, int_zero_ne_one);
 
 def Q : U0 := rationals.R;
 
 // k + 1 is not zero.
-computable def int_succ_nonzero(k : Nat, p : int(succ(k), 0) = int_zero) :
-  Void := nat_zero_ne_succ(
-    k + 0,
-    sym(
-      quotient_effective(
-        U0, Nat and Nat, SameDifference, same_difference_props, same_difference_refl,
-        same_difference_sym, same_difference_trans, (succ(k), 0), (0, 0), p
-      )
+computable def int_succ_nonzero(k : Nat, p : int(succ(k), 0) = int_zero) : Void := nat_zero_ne_succ(
+  k + 0,
+  sym(
+    quotient_effective(
+      U0, Nat and Nat, SameDifference, same_difference_props, same_difference_refl,
+      same_difference_sym, same_difference_trans, (succ(k), 0), (0, 0), p
     )
-  );
+  )
+);
 
 // The rational a / (k + 1).
 computable def rat(a : Z, k : Nat) : Q := class((a, int(succ(k), 0), int_succ_nonzero(k)));

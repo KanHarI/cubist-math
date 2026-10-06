@@ -54,10 +54,9 @@ def field_close_self(
   positive : lt(zero, epsilon)
 ) :
   FieldClose(F, addF, lt, x, x, epsilon) {
-  let shifted :=
-    order_lt_add_left(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, epsilon, x, positive
-    );
+  let shifted := order_lt_add_left(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, epsilon, x, positive
+  );
   let bound :=
     along((fun (v : F) => lt(v, addF(x, epsilon)))) by ring_add_zero_right(
       F, zero, one, addF, mulF, negF, ring, x
@@ -135,10 +134,9 @@ def field_close_all_le(
   obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
   intro reversed;
   let gap := addF(x, negF(y));
-  let positive :=
-    order_difference_positive(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, y, x, reversed
-    );
+  let positive := order_difference_positive(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, y, x, reversed
+  );
   obtain (upper, lower) := close(gap, positive);
   let recovers : addF(y, gap) = x := trans(
     ring_add_swap(F, zero, one, addF, mulF, negF, ring, y, x, negF(y)),
@@ -176,8 +174,8 @@ def field_close_halved_triangle(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall epsilon : F. addF(half(epsilon), half(epsilon)) = epsilon), x, y, z, epsilon : F,
-  xy : FieldClose(F, addF, lt, x, y, half(epsilon)),
+  halfSum : (forall epsilon : F. addF(half(epsilon), half(epsilon)) = epsilon), x, y, z,
+  epsilon : F, xy : FieldClose(F, addF, lt, x, y, half(epsilon)),
   yz : FieldClose(F, addF, lt, y, z, half(epsilon))
 ) :
   FieldClose(F, addF, lt, x, z, epsilon) {

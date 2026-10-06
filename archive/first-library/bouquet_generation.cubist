@@ -84,11 +84,10 @@ def bouquet_generation_edges(A : U0, label : Unit or A) :=
     right a => bouquet_generation_edge(A, a);
   };
 
-def bouquet_generation_predicate(A : U0, x : Bouquet(A)) :=
-  suspension_induction(
-    (Unit or A), bouquet_generation_family(A), BouquetGenerated(A), BouquetGenerated(A),
-    bouquet_generation_edges(A), x
-  );
+def bouquet_generation_predicate(A : U0, x : Bouquet(A)) := suspension_induction(
+  (Unit or A), bouquet_generation_family(A), BouquetGenerated(A), BouquetGenerated(A),
+  bouquet_generation_edges(A), x
+);
 
 def bouquet_encoded_generated(A : U0, x : Bouquet(A), p : bouquet_base(A) = x) :
   bouquet_generation_predicate(A, x, bouquet_encode(A, x, p)) {
@@ -132,13 +131,12 @@ def every_puncture_loop_generated(n : Nat, p : bouquet_base(Fin(n)) = bouquet_ba
 // choice of a path from the base to every point.
 def bouquet_connection_family(A : U0, x : Bouquet(A)) := Mere(bouquet_base(A) = x);
 
-def bouquet_connection_edges(A : U0, label : Unit or A) :=
-  mere_is_prop(
-    (bouquet_base(A) = bouquet_tip(A)),
-    along bouquet_connection_family(A) by meridian(Unit or A, label) from merely(
-      (bouquet_base(A) = bouquet_base(A)), refl(bouquet_base(A))
-    ), merely((bouquet_base(A) = bouquet_tip(A)), bouquet_spoke(A))
-  );
+def bouquet_connection_edges(A : U0, label : Unit or A) := mere_is_prop(
+  (bouquet_base(A) = bouquet_tip(A)),
+  along bouquet_connection_family(A) by meridian(Unit or A, label) from merely(
+    (bouquet_base(A) = bouquet_base(A)), refl(bouquet_base(A))
+  ), merely((bouquet_base(A) = bouquet_tip(A)), bouquet_spoke(A))
+);
 
 def bouquet_connected(A : U0, x : Bouquet(A)) : Mere(bouquet_base(A) = x) {
   exact suspension_induction(

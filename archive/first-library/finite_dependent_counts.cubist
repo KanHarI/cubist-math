@@ -61,15 +61,10 @@ def finite_uniform_fiber_count(n, m : Nat) : UniformFiberCount(Fin(n), n, m) {
   let P := fun (i : Fin(n)) => Bijection(Fin(m), B(i));
   let enumerate : (forall i : Fin(n). P(i)) -> HasCardinality(A, k) {
     intro e;
-    let same :=
-      FunExt(
-        U1, Fin(n), (fun (i : Fin(n)) => U0), B, (fun (i : Fin(n)) => Fin(m)),
-        (
-          fun (i : Fin(n)) => sym(
-            ua(U0, Fin(m), B(i), bijection_equiv(Fin(m), B(i), sets(i), e(i)))
-          )
-        )
-      );
+    let same := FunExt(
+      U1, Fin(n), (fun (i : Fin(n)) => U0), B, (fun (i : Fin(n)) => Fin(m)),
+      (fun (i : Fin(n)) => sym(ua(U0, Fin(m), B(i), bijection_equiv(Fin(m), B(i), sets(i), e(i)))))
+    );
     let path := cong((fun (F : Fin(n) -> U0) => (exists i : Fin(n). F(i))), same);
     let product := merely(Bijection(Fin(k), C), reverse_bijection(C, Fin(k), fin_product(n, m)));
     exact cardinality_path(C, A, sym(path), k, product);

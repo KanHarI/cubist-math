@@ -5,27 +5,23 @@ import polynomial_irreducible;
 def PolynomialModulus(K : AlgebraicField) :=
   exists p : Polynomial(K). exists d : Nat. polynomial_cutoff(K, p) = succ(d);
 
-def modulus_polynomial(K : AlgebraicField, M : PolynomialModulus(K)) :=
-  sigma_first(
-    Polynomial(K), (fun (p : Polynomial(K)) => exists d : Nat. polynomial_cutoff(K, p) = succ(d)), M
-  );
+def modulus_polynomial(K : AlgebraicField, M : PolynomialModulus(K)) := sigma_first(
+  Polynomial(K), (fun (p : Polynomial(K)) => exists d : Nat. polynomial_cutoff(K, p) = succ(d)), M
+);
 
-def modulus_degree_data(K : AlgebraicField, M : PolynomialModulus(K)) :=
-  sigma_second(
-    Polynomial(K), (fun (p : Polynomial(K)) => exists d : Nat. polynomial_cutoff(K, p) = succ(d)), M
-  );
+def modulus_degree_data(K : AlgebraicField, M : PolynomialModulus(K)) := sigma_second(
+  Polynomial(K), (fun (p : Polynomial(K)) => exists d : Nat. polynomial_cutoff(K, p) = succ(d)), M
+);
 
-def modulus_degree(K : AlgebraicField, M : PolynomialModulus(K)) :=
-  sigma_first(
-    Nat, (fun (d : Nat) => polynomial_cutoff(K, modulus_polynomial(K, M)) = succ(d)),
-    modulus_degree_data(K, M)
-  );
+def modulus_degree(K : AlgebraicField, M : PolynomialModulus(K)) := sigma_first(
+  Nat, (fun (d : Nat) => polynomial_cutoff(K, modulus_polynomial(K, M)) = succ(d)),
+  modulus_degree_data(K, M)
+);
 
-def modulus_degree_equality(K : AlgebraicField, M : PolynomialModulus(K)) :=
-  sigma_second(
-    Nat, (fun (d : Nat) => polynomial_cutoff(K, modulus_polynomial(K, M)) = succ(d)),
-    modulus_degree_data(K, M)
-  );
+def modulus_degree_equality(K : AlgebraicField, M : PolynomialModulus(K)) := sigma_second(
+  Nat, (fun (d : Nat) => polynomial_cutoff(K, modulus_polynomial(K, M)) = succ(d)),
+  modulus_degree_data(K, M)
+);
 
 def polynomial_reduction_data(K : AlgebraicField, M : PolynomialModulus(K), p : Polynomial(K)) :
   DivisionResult(K, p, modulus_polynomial(K, M), modulus_degree(K, M)) {
@@ -111,24 +107,25 @@ def polynomial_remainder_add(K : AlgebraicField, M : PolynomialModulus(K), p, q 
   let rq := polynomial_remainder(K, M, q);
   let equation : polynomial_add(K, p, q) = polynomial_add(
     K, polynomial_mul(K, polynomial_add(K, qp, qq), D), polynomial_add(K, rp, rq)
-  ) := trans(
-    cong(
-      (fun (s : Polynomial(K)) => polynomial_add(K, s, q)), polynomial_remainder_equation(K, M, p)
-    ),
+  ) :=
     trans(
       cong(
-        polynomial_add(K, polynomial_add(K, polynomial_mul(K, qp, D), rp)),
-        polynomial_remainder_equation(K, M, q)
+        (fun (s : Polynomial(K)) => polynomial_add(K, s, q)), polynomial_remainder_equation(K, M, p)
       ),
       trans(
-        polynomial_add_shuffle(K, polynomial_mul(K, qp, D), rp, polynomial_mul(K, qq, D), rq),
         cong(
-          (fun (s : Polynomial(K)) => polynomial_add(K, s, polynomial_add(K, rp, rq))),
-          sym(polynomial_distribute_left(K, qp, qq, D))
+          polynomial_add(K, polynomial_add(K, polynomial_mul(K, qp, D), rp)),
+          polynomial_remainder_equation(K, M, q)
+        ),
+        trans(
+          polynomial_add_shuffle(K, polynomial_mul(K, qp, D), rp, polynomial_mul(K, qq, D), rq),
+          cong(
+            (fun (s : Polynomial(K)) => polynomial_add(K, s, polynomial_add(K, rp, rq))),
+            sym(polynomial_distribute_left(K, qp, qq, D))
+          )
         )
       )
-    )
-  );
+    );
   exact polynomial_remainder_unique(
     K, M, polynomial_add(K, p, q), polynomial_add(K, qp, qq), polynomial_add(K, rp, rq), equation,
     support_add_same(
@@ -147,7 +144,9 @@ def polynomial_remainder_multiple(K : AlgebraicField, M : PolynomialModulus(K), 
   );
 }
 
-def polynomial_remainder_mul_left(K : AlgebraicField, M : PolynomialModulus(K), p, q : Polynomial(K)) :
+def polynomial_remainder_mul_left(
+  K : AlgebraicField, M : PolynomialModulus(K), p, q : Polynomial(K)
+) :
   polynomial_remainder(K, M, polynomial_mul(K, p, q)) = polynomial_remainder(
     K, M, polynomial_mul(K, polynomial_remainder(K, M, p), q)
   ) {
@@ -157,30 +156,29 @@ def polynomial_remainder_mul_left(K : AlgebraicField, M : PolynomialModulus(K), 
   let t := polynomial_mul(K, qp, q);
   let r := polynomial_mul(K, rp, q);
   let reduce := polynomial_remainder(K, M);
-  let rearrange : polynomial_mul(K, polynomial_mul(K, qp, D), q) = polynomial_mul(K, t, D) := with unfolding [
-
-  ] {
-    trans(
-      polynomial_mul_assoc(K, qp, D, q),
+  let rearrange : polynomial_mul(K, polynomial_mul(K, qp, D), q) = polynomial_mul(K, t, D) :=
+    with unfolding [] {
       trans(
-        cong(polynomial_mul(K, qp), polynomial_mul_comm(K, D, q)),
-        sym(polynomial_mul_assoc(K, qp, q, D))
+        polynomial_mul_assoc(K, qp, D, q),
+        trans(
+          cong(polynomial_mul(K, qp), polynomial_mul_comm(K, D, q)),
+          sym(polynomial_mul_assoc(K, qp, q, D))
+        )
       )
-    )
-  };
-  let equation : polynomial_mul(K, p, q) = polynomial_add(K, polynomial_mul(K, t, D), r) := with unfolding [
-
-  ] {
-    trans(
-      cong(
-        (fun (s : Polynomial(K)) => polynomial_mul(K, s, q)), polynomial_remainder_equation(K, M, p)
-      ),
+    };
+  let equation : polynomial_mul(K, p, q) = polynomial_add(K, polynomial_mul(K, t, D), r) :=
+    with unfolding [] {
       trans(
-        polynomial_distribute_left(K, polynomial_mul(K, qp, D), rp, q),
-        cong((fun (s : Polynomial(K)) => polynomial_add(K, s, r)), rearrange)
+        cong(
+          (fun (s : Polynomial(K)) => polynomial_mul(K, s, q)),
+          polynomial_remainder_equation(K, M, p)
+        ),
+        trans(
+          polynomial_distribute_left(K, polynomial_mul(K, qp, D), rp, q),
+          cong((fun (s : Polynomial(K)) => polynomial_add(K, s, r)), rearrange)
+        )
       )
-    )
-  };
+    };
   exact with unfolding [] {
     trans(
       cong(reduce, equation),
@@ -219,14 +217,14 @@ def polynomial_remainder_neg(K : AlgebraicField, M : PolynomialModulus(K), p : P
   let r := polynomial_remainder(K, M, p);
   let rn := polynomial_remainder(K, M, polynomial_neg(K, p));
   let inverse : polynomial_add(K, rn, r) = polynomial_zero(K) := with unfolding [] {
-    trans(
-      sym(polynomial_remainder_add(K, M, polynomial_neg(K, p), p)),
       trans(
-        cong(polynomial_remainder(K, M), polynomial_add_inverse(K, p)),
-        polynomial_remainder_zero(K, M)
+        sym(polynomial_remainder_add(K, M, polynomial_neg(K, p), p)),
+        trans(
+          cong(polynomial_remainder(K, M), polynomial_add_inverse(K, p)),
+          polynomial_remainder_zero(K, M)
+        )
       )
-    )
-  };
+    };
   exact with unfolding [] {
     group_cancel_right(
       PolynomialAdditiveGroup(K), rn, polynomial_neg(K, r), r,

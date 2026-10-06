@@ -79,29 +79,25 @@ def interval_midpoint(
   let width := coordinate_difference(F, addF, negF, x, y);
   let h := half(width);
   let m := addF(x, h);
-  let nonnegativeWidth :=
-    field_difference_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, x, y, ordered
-    );
-  let nonnegativeHalf :=
-    nonnegative_half_from_sum(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, h, halfSum(width),
-      nonnegativeWidth
-    );
-  let leftBound :=
-    order_le_add_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, x, h, nonnegativeHalf
-    );
+  let nonnegativeWidth := field_difference_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, arithmetic, x, y, ordered
+  );
+  let nonnegativeHalf := nonnegative_half_from_sum(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, h, halfSum(width),
+    nonnegativeWidth
+  );
+  let leftBound := order_le_add_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, arithmetic, x, h, nonnegativeHalf
+  );
   let completes : addF(m, h) = y := trans(
     ring_add_assoc(F, zero, one, addF, mulF, negF, ring, x, h, h),
     trans(
       cong(addF(x), halfSum(width)), difference_add_back(F, zero, one, addF, mulF, negF, ring, x, y)
     )
   );
-  let rightBound :=
-    along FieldLe(F, lt, m) by completes from order_le_add_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, m, h, nonnegativeHalf
-    );
+  let rightBound := along FieldLe(F, lt, m) by completes from order_le_add_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, arithmetic, m, h, nonnegativeHalf
+  );
   obtain (lowerA, upperA) := field_interval_bounds(F, zero, one, lt, a);
   obtain (lowerB, upperB) := field_interval_bounds(F, zero, one, lt, b);
   let midpoint : FieldUnitInterval(F, zero, one, lt) := (
@@ -124,8 +120,8 @@ def two_edge_subdivision(C : U1, a, midpoint, b : C) : SampleSubdivision(C, a, b
 }
 
 def two_edge_subdivision_admissible(
-  F : U1, zero, one : F, lt : F -> F -> U0, order : StrictOrder(F, lt),
-  a, midpoint, b : FieldUnitInterval(F, zero, one, lt),
+  F : U1, zero, one : F, lt : F -> F -> U0, order : StrictOrder(F, lt), a, midpoint,
+  b : FieldUnitInterval(F, zero, one, lt),
   within : IntervalTagWithin(F, zero, one, lt, a, b, midpoint)
 ) :
   IntervalAdmissibleTags(

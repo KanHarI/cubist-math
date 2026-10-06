@@ -84,8 +84,8 @@ def family_unit_value(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
   };
 
 def linear_image_combine(
-  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W), a : af_carrier(K),
-  x, y : vector_carrier(K, W),
+  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W), a : af_carrier(K), x,
+  y : vector_carrier(K, W),
   px : Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), x),
   py : Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), y)
 ) :
@@ -116,8 +116,8 @@ def linear_image_combine(
 }
 
 def linear_image_combine_mere(
-  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W), a : af_carrier(K),
-  x, y : vector_carrier(K, W),
+  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W), a : af_carrier(K), x,
+  y : vector_carrier(K, W),
   px : Mere(Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), x)),
   py : Mere(Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), y))
 ) :

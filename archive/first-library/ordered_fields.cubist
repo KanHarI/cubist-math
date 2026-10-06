@@ -74,8 +74,8 @@ def field_add_right_unit(
 }
 
 def field_add_cancel(
-  F : U1, zero : F, addF : F -> F -> F, negF : F -> F, laws : AddLaws(F, zero, addF, negF),
-  x, y, z : F, same : addF(x, y) = addF(x, z)
+  F : U1, zero : F, addF : F -> F -> F, negF : F -> F, laws : AddLaws(F, zero, addF, negF), x, y,
+  z : F, same : addF(x, y) = addF(x, z)
 ) :
   y = z {
   obtain (assoc, comm, unit, additiveInverse) := laws;

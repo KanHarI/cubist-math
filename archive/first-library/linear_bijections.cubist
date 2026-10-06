@@ -35,14 +35,12 @@ def linear_bijective_iso(
   let X := vector_carrier(K, V);
   let Y := vector_carrier(K, W);
   let F := linear_map(K, V, W, f);
-  let g :=
-    fun (y : Y) => sigma_first(
-      X, (fun (x : X) => F(x) = y), linear_unique_preimage(K, V, W, f, injective, onto, y)
-    );
-  let right_ :=
-    fun (y : Y) => sigma_second(
-      X, (fun (x : X) => F(x) = y), linear_unique_preimage(K, V, W, f, injective, onto, y)
-    );
+  let g := fun (y : Y) => sigma_first(
+    X, (fun (x : X) => F(x) = y), linear_unique_preimage(K, V, W, f, injective, onto, y)
+  );
+  let right_ := fun (y : Y) => sigma_second(
+    X, (fun (x : X) => F(x) = y), linear_unique_preimage(K, V, W, f, injective, onto, y)
+  );
   let additive :
     forall y : Y. forall z : Y. g(vector_add(K, W, y, z)) = vector_add(K, V, g(y), g(z)) {
     intro y, z;
@@ -134,22 +132,18 @@ def adjoin_nonzero_impossible(
   obtain (addLaws, assoc, comm, one, distribute) := ring;
   obtain (b, inverse) := inverses(a, nonzero);
   let leftInverse := trans(comm(b, a), inverse);
-  let solve : vector_scale(K, V, a, x) = vector_neg(K, V, y) :=
-    group_inverse_unique(
-      vector_carrier(K, V), vector_zero(K, V), vector_add(K, V), group_laws(G), y,
-      vector_scale(K, V, a, x), vector_neg(K, V, y), vanishes, group_inverse_right(G, y)
-    );
+  let solve : vector_scale(K, V, a, x) = vector_neg(K, V, y) := group_inverse_unique(
+    vector_carrier(K, V), vector_zero(K, V), vector_add(K, V), group_laws(G), y,
+    vector_scale(K, V, a, x), vector_neg(K, V, y), vanishes, group_inverse_right(G, y)
+  );
   let preimage := vector_scale(K, C, b, vector_neg(K, C, rest));
-  let image : F(preimage) = x :=
+  let image : F(preimage) = x := trans(
+    linear_scale(K, C, V, f, b, vector_neg(K, C, rest)),
     trans(
-      linear_scale(K, C, V, f, b, vector_neg(K, C, rest)),
-      trans(
-        cong(vector_scale(K, V, b), linear_neg(K, C, V, f, rest)),
-        trans(
-          sym(cong(vector_scale(K, V, b), solve)), vector_scale_undo(K, V, a, b, leftInverse, x)
-        )
-      )
-    );
+      cong(vector_scale(K, V, b), linear_neg(K, C, V, f, rest)),
+      trans(sym(cong(vector_scale(K, V, b), solve)), vector_scale_undo(K, V, a, b, leftInverse, x))
+    )
+  );
   exact outside(
     merely(
       Fiber(vector_carrier(K, C), vector_carrier(K, V), F, x),
@@ -181,28 +175,26 @@ def adjoin_linear_kernel(
   let rest := finite_tail(A, m, v);
   let y := F(rest);
   let G := vector_group(K, V);
-  let coefficient_zero : a = af_zero(A, ops) :=
-    double_negation(
-      a = af_zero(A, ops), af_set(K, a, af_zero(A, ops)),
-      (
-        fun (nonzero : (a = af_zero(A, ops)) -> Void) => adjoin_nonzero_impossible(
-          K, V, m, f, x, outside, a, rest, vanishes, nonzero
+  let coefficient_zero : a = af_zero(A, ops) := double_negation(
+    a = af_zero(A, ops), af_set(K, a, af_zero(A, ops)),
+    (
+      fun (nonzero : (a = af_zero(A, ops)) -> Void) => adjoin_nonzero_impossible(
+        K, V, m, f, x, outside, a, rest, vanishes, nonzero
+      )
+    )
+  );
+  let rest_zero : rest = vector_zero(K, C) {
+    let image_zero : y = vector_zero(K, V) := trans(
+      sym(group_unit_left(G, y)),
+      trans(
+        cong((fun (z : X) => vector_add(K, V, z, y)), sym(vector_zero_scale(K, V, x))),
+        trans(
+          cong(
+            (fun (b : A) => vector_add(K, V, vector_scale(K, V, b, x), y)), sym(coefficient_zero)
+          ), vanishes
         )
       )
     );
-  let rest_zero : rest = vector_zero(K, C) {
-    let image_zero : y = vector_zero(K, V) :=
-      trans(
-        sym(group_unit_left(G, y)),
-        trans(
-          cong((fun (z : X) => vector_add(K, V, z, y)), sym(vector_zero_scale(K, V, x))),
-          trans(
-            cong(
-              (fun (b : A) => vector_add(K, V, vector_scale(K, V, b, x), y)), sym(coefficient_zero)
-            ), vanishes
-          )
-        )
-      );
     exact injective(rest, vector_zero(K, C), trans(image_zero, sym(linear_zero(K, C, V, f))));
   }
   exact finite_function_ext(

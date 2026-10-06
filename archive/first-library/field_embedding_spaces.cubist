@@ -51,15 +51,14 @@ def embedding_over_law_prop(
 
 // The only extra data in an embedding over a base is a proposition-valued
 // commuting triangle. The embedding space is a set.
-def field_embeddings_are_set(K, L : AlgebraicField) :=
-  subtype_is_set(
-    (af_carrier(K) -> af_carrier(L)),
-    FieldEmbeddingLaws(K, af_carrier(L), structure_data(FieldData, L)),
-    dependent_functions_are_set(
-      af_carrier(K), (fun (x : af_carrier(K)) => typed(U1, af_carrier(L))),
-      (fun (x : af_carrier(K)) => af_set(L))
-    ), field_embedding_laws_prop(K, af_carrier(L), af_set(L), structure_data(FieldData, L))
-  );
+def field_embeddings_are_set(K, L : AlgebraicField) := subtype_is_set(
+  (af_carrier(K) -> af_carrier(L)),
+  FieldEmbeddingLaws(K, af_carrier(L), structure_data(FieldData, L)),
+  dependent_functions_are_set(
+    af_carrier(K), (fun (x : af_carrier(K)) => typed(U1, af_carrier(L))),
+    (fun (x : af_carrier(K)) => af_set(L))
+  ), field_embedding_laws_prop(K, af_carrier(L), af_set(L), structure_data(FieldData, L))
+);
 
 def embeddings_over_are_set(
   K, L : AlgebraicField, e : FieldEmbedding(K, L), T : AlgebraicField, j : FieldEmbedding(K, T)
@@ -70,8 +69,8 @@ def embeddings_over_are_set(
   );
 
 def embeddings_over_ext(
-  K, L : AlgebraicField, e : FieldEmbedding(K, L), T : AlgebraicField, j : FieldEmbedding(K, T),
-  a, b : EmbeddingsOver(K, L, e, T, j),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), T : AlgebraicField, j : FieldEmbedding(K, T), a,
+  b : EmbeddingsOver(K, L, e, T, j),
   same : embedding_over(K, L, e, T, j, a) = embedding_over(K, L, e, T, j, b)
 ) :=
   subtype_ext(

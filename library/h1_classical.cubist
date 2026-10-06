@@ -14,14 +14,12 @@ def axiom_of_choice_assumed(U < UU0) : AxiomOfChoice(U) := Choice(Trunc, U);
 def double_negation(U < UU0, P : U, prop : IsProp(U, P), h : (P -> Void) -> Void) :
   P := mere_eliminate(U, U, P, P, prop, fun (p : P) => p, LEM(Trunc, U, P, h));
 
-def decide_prop(U < UU0, P : U, prop : IsProp(U, P)) :
-  P
-  or (P -> Void) := double_negation(
-    U, P or (P -> Void), decision_is_prop(U, P, prop),
-    fun (no : (P or (P -> Void)) -> Void) => no(
-      typed(P or (P -> Void), right(fun (p : P) => no(typed(P or (P -> Void), left(p)))))
-    )
-  );
+def decide_prop(U < UU0, P : U, prop : IsProp(U, P)) : P or (P -> Void) := double_negation(
+  U, P or (P -> Void), decision_is_prop(U, P, prop),
+  fun (no : (P or (P -> Void)) -> Void) => no(
+    typed(P or (P -> Void), right(fun (p : P) => no(typed(P or (P -> Void), left(p)))))
+  )
+);
 
 // G6: this packages a small proposition and maps in both directions.
 // The hypothesis prop prevents its use on an arbitrary witness type.

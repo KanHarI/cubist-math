@@ -75,17 +75,16 @@ def complex_apart_from_imag(
   apartImag : FieldApart(F, lt, complex_imag(F, z), zero)
 ) :
   ComplexApartZero(F, zero, addF, mulF, lt, z) {
-  let positive :=
-    ordered_positive_plus_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
-      mulF(complex_imag(F, z), complex_imag(F, z)), mulF(complex_real(F, z), complex_real(F, z)),
-      ordered_square_of_apart(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, z), apartImag
-      ),
-      ordered_square_nonnegative(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z)
-      )
-    );
+  let positive := ordered_positive_plus_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
+    mulF(complex_imag(F, z), complex_imag(F, z)), mulF(complex_real(F, z), complex_real(F, z)),
+    ordered_square_of_apart(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, z), apartImag
+    ),
+    ordered_square_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z)
+    )
+  );
   exact along lt(zero) by ring_add_comm(
     F, zero, one, addF, mulF, negF, ring, mulF(complex_imag(F, z), complex_imag(F, z)),
     mulF(complex_real(F, z), complex_real(F, z))
@@ -102,11 +101,10 @@ def complex_apart_inverse(
   ComplexUnit(F, zero, one, addF, mulF, negF, z) {
   let squaredNorm := complex_norm_squared(F, addF, mulF, z);
   obtain (forward, backward) := inverses(squaredNorm);
-  let apartNorm :=
-    field_exists_intro(
-      (lt(squaredNorm, zero) or lt(zero, squaredNorm)),
-      typed((lt(squaredNorm, zero) or lt(zero, squaredNorm)), right(positiveNorm))
-    );
+  let apartNorm := field_exists_intro(
+    (lt(squaredNorm, zero) or lt(zero, squaredNorm)),
+    typed((lt(squaredNorm, zero) or lt(zero, squaredNorm)), right(positiveNorm))
+  );
   let scalarInverse : exists v : F. mulF(squaredNorm, v) = one := forward(apartNorm);
   obtain (reciprocal, normLaw) := scalarInverse;
   exact complex_inverse_from_norm(F, zero, one, addF, mulF, negF, ring, z, reciprocal, normLaw);
@@ -130,13 +128,11 @@ def complex_inverse_apart(
     )
   );
   obtain (forward, backward) := inverses(squaredNorm);
-  let apartNorm :=
-    backward(
-      typed(
-        (exists v : F. mulF(squaredNorm, v) = one),
-        (complex_norm_squared(F, addF, mulF, w), normLaw)
-      )
-    );
+  let apartNorm := backward(
+    typed(
+      (exists v : F. mulF(squaredNorm, v) = one), (complex_norm_squared(F, addF, mulF, w), normLaw)
+    )
+  );
   let nonnegativeNorm :=
     complex_norm_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, z);
   obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
@@ -202,36 +198,34 @@ def complex_apart_tight(
   notApart : ComplexApartZero(F, zero, addF, mulF, lt, z) -> Void
 ) :
   z = complex_zero(F, zero) {
-  let realZero :=
-    ordered_not_apart_zero(
-      F, zero, lt, order, complex_real(F, z),
-      (
-        fun (apartReal : FieldApart(F, lt, complex_real(F, z), zero)) => notApart(
-          complex_apart_from_real(
-            F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, z, apartReal
-          )
+  let realZero := ordered_not_apart_zero(
+    F, zero, lt, order, complex_real(F, z),
+    (
+      fun (apartReal : FieldApart(F, lt, complex_real(F, z), zero)) => notApart(
+        complex_apart_from_real(
+          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, z, apartReal
         )
       )
-    );
-  let imagZero :=
-    ordered_not_apart_zero(
-      F, zero, lt, order, complex_imag(F, z),
-      (
-        fun (apartImag : FieldApart(F, lt, complex_imag(F, z), zero)) => notApart(
-          complex_apart_from_imag(
-            F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, z, apartImag
-          )
+    )
+  );
+  let imagZero := ordered_not_apart_zero(
+    F, zero, lt, order, complex_imag(F, z),
+    (
+      fun (apartImag : FieldApart(F, lt, complex_imag(F, z), zero)) => notApart(
+        complex_apart_from_imag(
+          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, z, apartImag
         )
       )
-    );
+    )
+  );
   exact field_pair_path(F, F, z, complex_zero(F, zero), realZero, imagZero);
 }
 
 // Directly usable with each future real-field construction. Neither
 // completeness nor classical logic is required by this algebraic result.
 def complex_ordered_field_inverses(
-  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, minF, maxF : F -> F -> F, lt : F -> F
-  -> U0, field : OrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt), z : Complex(F)
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, minF, maxF : F -> F -> F, lt : F
+  -> F -> U0, field : OrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt), z : Complex(F)
 ) :
   FieldIff(
     ComplexApartZero(F, zero, addF, mulF, lt, z), ComplexUnit(F, zero, one, addF, mulF, negF, z)

@@ -39,11 +39,10 @@ def generated_splitting_roots_algebraic(
   let d := root_generated_embedding(K, L, e, n, roots);
   let h := subfield_inclusion(L, S);
   let x := root_generated_root(K, L, e, n, roots, index);
-  let root :=
-    trans(
-      sym(polynomial_eval_mapped(K, L, e, p, roots(index))),
-      splitting_listed_root(L, polynomial_map(K, L, e, p), n, roots, a, equation, index)
-    );
+  let root := trans(
+    sym(polynomial_eval_mapped(K, L, e, p, roots(index))),
+    splitting_listed_root(L, polynomial_map(K, L, e, p), n, roots, a, equation, index)
+  );
   let triangle :=
     field_embedding_factor_triangle(K, L, e, S, root_generated_contains_base(K, L, e, n, roots));
   exact merely(
@@ -78,21 +77,19 @@ def distinct_splitting_to_closed(
     exact distinct(i, k, cong(subfield_value(L, S), same));
   }
   let b := field_embedding_map(K, R, d, polynomial_coefficients(K, p, n));
-  let factor :=
-    typed(
-      DistinctPolynomialSplitting(R, q, n),
-      (rs, b, root_generated_factorization(K, L, e, p, n, roots, a, equation), distinctR)
-    );
+  let factor := typed(
+    DistinctPolynomialSplitting(R, q, n),
+    (rs, b, root_generated_factorization(K, L, e, p, n, roots, a, equation), distinctR)
+  );
   let send :
     EmbeddingsOver(K, R, d, T, j) -> DistinctPolynomialSplitting(T, polynomial_map(K, T, j, p), n) {
     intro extension;
     obtain (h, over) := extension;
     let tower := field_embedding_ext(K, T, field_embedding_compose(K, R, T, d, h), j, over);
-    let same :=
-      trans(
-        polynomial_map_composition(K, R, T, d, h, p),
-        cong((fun (i : FieldEmbedding(K, T)) => polynomial_map(K, T, i, p)), tower)
-      );
+    let same := trans(
+      polynomial_map_composition(K, R, T, d, h, p),
+      cong((fun (i : FieldEmbedding(K, T)) => polynomial_map(K, T, i, p)), tower)
+    );
     exact along((fun (s : Polynomial(T)) => DistinctPolynomialSplitting(T, s, n))) by same from distinct_polynomial_splitting_map(
       R, T, h, q, n, factor
     );

@@ -137,10 +137,9 @@ def integer_loop_successor(z : Z) :=
 def integer_loop_predecessor(z : Z) :
   integer_loop(predecessorZ(z)) = trans(integer_loop(z), loop_inverse) {
   let previous := integer_loop(predecessorZ(z));
-  let step :=
-    trans(
-      sym(integer_loop_successor(predecessorZ(z))), cong(integer_loop, successor_predecessor(z))
-    );
+  let step := trans(
+    sym(integer_loop_successor(predecessorZ(z))), cong(integer_loop, successor_predecessor(z))
+  );
   let append_inverse := fun (p : base = base) => trans(p, loop_inverse);
   exact trans(
     sym(append_cancel_inverse(S1, base, base, base, previous, loop)), cong(append_inverse, step)
@@ -153,10 +152,9 @@ def upper_transition(z : Z) : trans(integer_loop(predecessorZ(z)), upper) = sout
   let previous := integer_loop(predecessorZ(z));
   let append_previous := fun (p : base = south_pole) => trans(previous, p);
   let upper_expansion := sym(append_inverse_cancel(S1, base, south_pole, base, upper, lower));
-  let step :=
-    trans(
-      sym(integer_loop_successor(predecessorZ(z))), cong(integer_loop, successor_predecessor(z))
-    );
+  let step := trans(
+    sym(integer_loop_successor(predecessorZ(z))), cong(integer_loop, successor_predecessor(z))
+  );
   let append_lower := fun (p : base = base) => trans(p, lower);
   exact trans(
     cong(append_previous, upper_expansion),
@@ -304,14 +302,13 @@ def integer_loop_add(x, y : Z) :
   integer_loop(addZ(x, y)) = loop_multiply(integer_loop(x), integer_loop(y)) {
   let p := integer_loop(x);
   let q := integer_loop(y);
-  let h :=
+  let h := trans(
+    winding_concatenate(p, q),
     trans(
-      winding_concatenate(p, q),
-      trans(
-        cong((fun (v : Z) => addZ(v, winding(q))), winding_integer_loop(x)),
-        cong((fun (v : Z) => addZ(x, v)), winding_integer_loop(y))
-      )
-    );
+      cong((fun (v : Z) => addZ(v, winding(q))), winding_integer_loop(x)),
+      cong((fun (v : Z) => addZ(x, v)), winding_integer_loop(y))
+    )
+  );
   exact trans(cong(integer_loop, sym(h)), integer_loop_winding(loop_multiply(p, q)));
 }
 

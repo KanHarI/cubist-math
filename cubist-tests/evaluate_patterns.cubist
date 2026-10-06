@@ -9,11 +9,11 @@ use nat;
 
 def pairs : Nat and (Unit or Nat) := (3, right(2 + 2));
 
-evaluate pairs expecting (3, _);
+evaluate pairs expecting(3, _);
 
-evaluate pairs expecting (_, right(4));
+evaluate pairs expecting(_, right(4));
 
-evaluate pairs expecting (1 + 2, right(_));
+evaluate pairs expecting(1 + 2, right(_));
 
 def numbers : List(U0, Nat) := cons(1, cons(2, cons(3, nil)));
 
@@ -25,11 +25,11 @@ evaluate append(numbers, numbers) expecting cons(1, cons(2, cons(3, cons(1, _)))
 
 // A mismatch names the part that differs.
 // Error: E477: The term evaluates to (3, right(4)), which does not match (4, _): 3 is not 4.
-evaluate pairs expecting (4, _);
+evaluate pairs expecting(4, _);
 
 // Error: E477: The term evaluates to (3, right(4)), which does not match (_, left(_)): right(4) is
 //   not left(_).
-evaluate pairs expecting (_, left(_));
+evaluate pairs expecting(_, left(_));
 
 // Error: E477: The term evaluates to cons(1, cons(2, cons(3, nil))), which does not match cons(_,
 //   nil): cons(2, cons(3, nil)) is not nil.

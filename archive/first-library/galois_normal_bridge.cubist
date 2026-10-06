@@ -155,10 +155,9 @@ def normal_intermediate_embeddings_automorphisms(
   let A := EmbeddingsOver(R, F, i, F, i);
   let B := SubgroupCarrier(G, H);
   let forwardMap := normal_embedding_over_intermediate_automorphism(K, E, M, normal);
-  let backwardMap :=
-    fun (b : B) => fixing_automorphism_over_intermediate(
-      K, E, M, subgroup_value(G, H, b), subgroup_evidence(G, H, b)
-    );
+  let backwardMap := fun (b : B) => fixing_automorphism_over_intermediate(
+    K, E, M, subgroup_value(G, H, b), subgroup_evidence(G, H, b)
+  );
   let leftInverse : forall d : A. backwardMap(forwardMap(d)) = d {
     intro d;
     let g := subgroup_value(G, H, forwardMap(d));

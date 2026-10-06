@@ -5,7 +5,8 @@ import quotient_sets;
 // composition: (f * g)(a) = f(g(a)), with the right factor acting first.
 def permutation_multiply(A : U0, f, g : Bijection(A, A)) := compose_bijection(A, A, A, g, f);
 
-def bijections_are_set(A, B : U0, setA : IsSet(U0, A), setB : IsSet(U0, B)) : IsSet(U0, Bijection(A, B)) {
+def bijections_are_set(A, B : U0, setA : IsSet(U0, A), setB : IsSet(U0, B)) :
+  IsSet(U0, Bijection(A, B)) {
   exact subtype_is_set(
     A -> B, InverseData(A, B),
     dependent_functions_are_set(A, (fun (a : A) => typed(U1, B)), (fun (a : A) => setB)),
@@ -87,10 +88,9 @@ def permutation_group_laws(A : U0, setA : IsSet(U0, A)) :
   );
 }
 
-def PermutationGroup(A : U0, setA : IsSet(U0, A)) :=
-  group_object(
-    Bijection(A, A), identity_bijection(A), permutation_multiply(A), permutation_group_laws(A, setA)
-  );
+def PermutationGroup(A : U0, setA : IsSet(U0, A)) := group_object(
+  Bijection(A, A), identity_bijection(A), permutation_multiply(A), permutation_group_laws(A, setA)
+);
 
 // Fixing a specified point is a subgroup condition. Membership is a
 // proposition because A is a set; inverse closure uses the supplied inverse law.

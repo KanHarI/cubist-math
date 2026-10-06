@@ -41,7 +41,8 @@ computable def binary_twice_succ(n : BinaryNat) : BinaryNat := match n {
   };
 
 // The binary digits from position `at` of a lexeme, read after `value`.
-computable def binary_digits(s : Lexeme, value : BinaryNat, at : Nat) : Parsed(U0, BinaryNat) := match s {
+computable def binary_digits(s : Lexeme, value : BinaryNat, at : Nat) :
+  Parsed(U0, BinaryNat) := match s {
     nil => ok(value);
     cons(digit(zero), rest) => binary_digits(rest, binary_twice(value), succ(at));
     cons(digit(succ(zero)), rest) => binary_digits(rest, binary_twice_succ(value), succ(at));
@@ -51,7 +52,9 @@ computable def binary_digits(s : Lexeme, value : BinaryNat, at : Nat) : Parsed(U
 // The binary literals (L2.10j): 0b and binary digits, read from their
 // characters, so binary.(0b110) is the numeral with digits 1, 1 and 0.
 computable def binary_literal(s : Lexeme) : Parsed(U0, BinaryNat) := match s {
-    cons(digit(zero), cons(lower(succ(zero)), cons(g, rest))) => binary_digits(cons(g, rest), binary_zero, succ(succ(zero)));
+    cons(digit(zero), cons(lower(succ(zero)), cons(g, rest))) => binary_digits(
+      cons(g, rest), binary_zero, succ(succ(zero))
+    );
     cons(digit(zero), cons(lower(succ(zero)), nil)) => error(succ(succ(zero)));
     cons(digit(zero), _) => error(succ(zero));
     _ => error(zero);

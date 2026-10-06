@@ -112,7 +112,8 @@ def has_dimension_iso(
 }
 
 def finite_dimensional_iso(
-  K : AlgebraicField, V, W : VectorSpace(K), e : LinearIso(K, V, W), finite : FiniteDimensional(K, V)
+  K : AlgebraicField, V, W : VectorSpace(K), e : LinearIso(K, V, W),
+  finite : FiniteDimensional(K, V)
 ) :
   FiniteDimensional(K, W) {
   exact (

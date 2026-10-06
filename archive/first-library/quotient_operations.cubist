@@ -19,7 +19,8 @@ def quotient_binary_right(
 
 def quotient_binary_right_beta(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
-  setB : FieldSet(B), f : A -> A -> B, respects : RespectsBinaryRelation(A, relation, B, f), a, b : A
+  setB : FieldSet(B), f : A -> A -> B, respects : RespectsBinaryRelation(A, relation, B, f), a,
+  b : A
 ) :
   quotient_binary_right(A, relation, laws, B, setB, f, respects, a, quotient_class(A, relation, b)) = f(
     a, b
@@ -71,7 +72,8 @@ def quotient_binary_rec(
 
 def quotient_binary_rec_beta(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
-  setB : FieldSet(B), f : A -> A -> B, respects : RespectsBinaryRelation(A, relation, B, f), a, b : A
+  setB : FieldSet(B), f : A -> A -> B, respects : RespectsBinaryRelation(A, relation, B, f), a,
+  b : A
 ) :
   quotient_binary_rec(
     A, relation, laws, B, setB, f, respects, quotient_class(A, relation, a),

@@ -20,7 +20,8 @@ def order_le_trans(
 
 def order_le_translate(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, lt : F -> F -> U0,
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y, z : F, xy : FieldLe(F, lt, x, y)
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y, z : F,
+  xy : FieldLe(F, lt, x, y)
 ) :
   FieldLe(F, lt, addF(x, z), addF(y, z)) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;

@@ -136,14 +136,13 @@ def monic_difference_support(
   let sq := along SeriesSupport(K, g) by dq from polynomial_cutoff_support(K, q);
   let p1 := trans(cong(f, sym(cong(natural_predecessor, dp))), monicP);
   let q1 := trans(cong(g, sym(cong(natural_predecessor, dq))), monicQ);
-  let topZero : field_add(K, f(d), field_neg(K, g(d))) = field_zero(K) :=
+  let topZero : field_add(K, f(d), field_neg(K, g(d))) = field_zero(K) := trans(
+    cong((fun (a : af_carrier(K)) => field_add(K, a, field_neg(K, g(d)))), p1),
     trans(
-      cong((fun (a : af_carrier(K)) => field_add(K, a, field_neg(K, g(d)))), p1),
-      trans(
-        cong((fun (a : af_carrier(K)) => field_add(K, field_one(K), field_neg(K, a))), q1),
-        scalar_add_inverse_right(K, field_one(K))
-      )
-    );
+      cong((fun (a : af_carrier(K)) => field_add(K, field_one(K), field_neg(K, a))), q1),
+      scalar_add_inverse_right(K, field_one(K))
+    )
+  );
   exact support_predecessor(
     K, polynomial_coefficients(K, polynomial_subtract(K, p, q)), d,
     support_add_same(

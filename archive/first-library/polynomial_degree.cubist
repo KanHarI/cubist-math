@@ -5,21 +5,18 @@ use nat;
 
 // The cutoff is the least support bound. It is zero for the zero polynomial
 // and degree+1 otherwise; this avoids giving zero a misleading leading term.
-def polynomial_minimum(K : AlgebraicField, p : Polynomial(K)) :=
-  natural_minimum(
-    SeriesSupport(K, polynomial_coefficients(K, p)),
-    series_support_prop(K, polynomial_coefficients(K, p)), polynomial_support(K, p)
-  );
+def polynomial_minimum(K : AlgebraicField, p : Polynomial(K)) := natural_minimum(
+  SeriesSupport(K, polynomial_coefficients(K, p)),
+  series_support_prop(K, polynomial_coefficients(K, p)), polynomial_support(K, p)
+);
 
-def polynomial_cutoff(K : AlgebraicField, p : Polynomial(K)) :=
-  sigma_first(
-    Nat, MinimumAt(SeriesSupport(K, polynomial_coefficients(K, p))), polynomial_minimum(K, p)
-  );
+def polynomial_cutoff(K : AlgebraicField, p : Polynomial(K)) := sigma_first(
+  Nat, MinimumAt(SeriesSupport(K, polynomial_coefficients(K, p))), polynomial_minimum(K, p)
+);
 
-def polynomial_cutoff_data(K : AlgebraicField, p : Polynomial(K)) :=
-  sigma_second(
-    Nat, MinimumAt(SeriesSupport(K, polynomial_coefficients(K, p))), polynomial_minimum(K, p)
-  );
+def polynomial_cutoff_data(K : AlgebraicField, p : Polynomial(K)) := sigma_second(
+  Nat, MinimumAt(SeriesSupport(K, polynomial_coefficients(K, p))), polynomial_minimum(K, p)
+);
 
 def polynomial_cutoff_support(K : AlgebraicField, p : Polynomial(K)) :
   SeriesSupport(K, polynomial_coefficients(K, p), polynomial_cutoff(K, p)) {

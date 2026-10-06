@@ -117,36 +117,31 @@ def field_magnitude_product_upper(
   FieldLe(F, lt, mulF(x, y), mulF(r, s)) {
   obtain (upperX, lowerX) := boundX;
   obtain (upperY, lowerY) := boundY;
-  let nonnegativeR :=
-    field_magnitude_radius_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, r, boundX
-    );
+  let nonnegativeR := field_magnitude_radius_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, r, boundX
+  );
   intro tooLarge;
   // The conclusion is a negation: a hypothetical counterexample yields
   // nonnegativity of y, so no sign decision or excluded middle is needed.
   let nonnegativeY : FieldLe(F, lt, zero, y) {
     intro negativeY;
-    let positiveNegY :=
-      ordered_neg_positive(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, y, negativeY
-      );
-    let nonnegativeNegY :=
-      ordered_lt_implies_le(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, negF(y), positiveNegY
-      );
-    let negBound :=
-      order_product_upper_nonnegative(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, negF(x), negF(y), r, s, lowerX,
-        lowerY, nonnegativeR, nonnegativeNegY
-      );
-    let doubleNegative : mulF(negF(x), negF(y)) = mulF(x, y) :=
+    let positiveNegY := ordered_neg_positive(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, y, negativeY
+    );
+    let nonnegativeNegY := ordered_lt_implies_le(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, negF(y), positiveNegY
+    );
+    let negBound := order_product_upper_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, negF(x), negF(y), r, s, lowerX,
+      lowerY, nonnegativeR, nonnegativeNegY
+    );
+    let doubleNegative : mulF(negF(x), negF(y)) = mulF(x, y) := trans(
+      ring_neg_mul(F, zero, one, addF, mulF, negF, ring, x, negF(y)),
       trans(
-        ring_neg_mul(F, zero, one, addF, mulF, negF, ring, x, negF(y)),
-        trans(
-          cong(negF, ring_mul_neg(F, zero, one, addF, mulF, negF, ring, x, y)),
-          ring_neg_neg(F, zero, one, addF, mulF, negF, ring, mulF(x, y))
-        )
-      );
+        cong(negF, ring_mul_neg(F, zero, one, addF, mulF, negF, ring, x, y)),
+        ring_neg_neg(F, zero, one, addF, mulF, negF, ring, mulF(x, y))
+      )
+    );
     let bound :=
       along((fun (v : F) => FieldLe(F, lt, v, mulF(r, s)))) by doubleNegative from negBound;
     exact bound(tooLarge);
@@ -164,16 +159,14 @@ def field_magnitude_mul(
   boundX : FieldMagnitudeBound(F, negF, lt, x, r), boundY : FieldMagnitudeBound(F, negF, lt, y, s)
 ) :
   FieldMagnitudeBound(F, negF, lt, mulF(x, y), mulF(r, s)) {
-  let upper :=
-    field_magnitude_product_upper(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, r, s, boundX, boundY
-    );
-  let lower :=
-    field_magnitude_product_upper(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, negF(x), y, r, s,
-      field_magnitude_neg(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, r, boundX),
-      boundY
-    );
+  let upper := field_magnitude_product_upper(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, r, s, boundX, boundY
+  );
+  let lower := field_magnitude_product_upper(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, negF(x), y, r, s,
+    field_magnitude_neg(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, r, boundX),
+    boundY
+  );
   exact (
     upper,
     along((fun (v : F) => FieldLe(F, lt, v, mulF(r, s)))) by ring_neg_mul(

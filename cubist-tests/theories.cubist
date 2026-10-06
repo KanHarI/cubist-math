@@ -30,15 +30,14 @@ theory Group(U < UU0) extends Monoid {
 }
 
 // Monoid comes once, through both parents.
-theory CommGroup(U < UU0) extends Group, CommMonoid {
-}
+theory CommGroup(U < UU0) extends Group, CommMonoid {}
 
 // Two copies of Monoid on one sort R, the additive one renamed, with + for
 // its operation; * keeps meaning the multiplicative one.
-theory Semiring(U < UU0) extends
-    additive : CommMonoid(M := R, mul := add notation x + y, one := zero, mul_assoc := add_assoc,
-      one_mul := zero_add, mul_one := add_zero, mul_comm := add_comm),
-    multiplicative : Monoid(M := R) {
+theory Semiring(U < UU0) extends additive : CommMonoid(
+  M := R, mul := add notation x + y, one := zero, mul_assoc := add_assoc, one_mul := zero_add,
+  mul_one := add_zero, mul_comm := add_comm
+), multiplicative : Monoid(M := R) {
   law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;
 }
 
@@ -57,7 +56,9 @@ theory Inhabited(U < UU0) {
   law inhabited : Trunc(U, M);
 }
 
-def nat_inhabited : Inhabited(U0) := Inhabited.make(M := Nat, M_is_set := nat_is_set, inhabited := merely(U0, Nat, 0));
+def nat_inhabited : Inhabited(U0) := Inhabited.make(
+  M := Nat, M_is_set := nat_is_set, inhabited := merely(U0, Nat, 0)
+);
 
 // A header parameter that takes a proposition's name is the parameter: its
 // elements are data.
@@ -70,11 +71,9 @@ theory Shadowed(U < UU0, Trunc : U) {
 }
 
 // A sort renamed twice takes its evidence's name along each time.
-theory Carrier(U < UU0) extends Monoid(M := R) {
-}
+theory Carrier(U < UU0) extends Monoid(M := R) {}
 
-theory Recarried(U < UU0) extends Carrier(R := S) {
-}
+theory Recarried(U < UU0) extends Carrier(R := S) {}
 
 def recarried_evidence(A : Recarried(U0)) : IsSet(U0, A.S) := A.S_is_set;
 
@@ -188,23 +187,19 @@ theory Second(U < UU0) {
 
 // Two unrelated parents' points are two fields, each its parent's; their
 // carriers are one (theory_independent).
-theory Clash(U < UU0) extends First, Second {
-}
+theory Clash(U < UU0) extends First, Second {}
 
 // One ancestor's field, reached twice with two types, is refused.
 // Error: E802: Twice2 gets a field named point from both First and First: rename one, as in
 //   First(point := …).
-theory Twice2(U < UU0) extends First, first2 : First(M := N) {
-}
+theory Twice2(U < UU0) extends First, first2 : First(M := N) {}
 
 // Error: E805: Missing is not a theory here: Unknown extends theories in scope.
-theory Unknown(U < UU0) extends Missing {
-}
+theory Unknown(U < UU0) extends Missing {}
 
 // Error: E807: Monoid has no field unit; its fields are M, M_is_set, mul, mul_assoc, one, one_mul,
 //   mul_one.
-theory BadRenaming(U < UU0) extends Monoid(unit := one) {
-}
+theory BadRenaming(U < UU0) extends Monoid(unit := one) {}
 
 // Error: E834: use selects a model of a theory, such as m : Group(U0); this is a value of type Nat.
 def open_a_number(n : Nat) : Nat {
@@ -214,8 +209,8 @@ def open_a_number(n : Nat) : Nat {
 
 // A local model may take a theory's name, as First does here; its fields
 // are then the model's.
-def shadowing_model(First : Monoid(U0)) : First.mul(First.one, First.one) = First.one :=
-  First.one_mul(First.one);
+def shadowing_model(First : Monoid(U0)) :
+  First.mul(First.one, First.one) = First.one := First.one_mul(First.one);
 
 // Error: E815: G is a model of Monoid, which has no field zero: it has M, M_is_set, mul, mul_assoc,
 //   one, one_mul, mul_one, and the parents semigroup.

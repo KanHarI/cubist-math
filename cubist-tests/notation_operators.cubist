@@ -11,10 +11,10 @@ import integers;
 theory Ring(U < UU0) {
   R : set U;
   add(x, y : R) : R notation x + y;
-  neg(x : R) : R notation -x;
+  neg(x : R) : R notation - x;
   mul(x, y : R) : R notation x * y;
   one : R;
-  pow(x : R, n : Nat) : R notation x ^ nat.(n);
+  pow(x : R, n : Nat) : R notation x ^ nat. (n);
   // A derived operation: subtraction, x + -y.
   def sub(x, y : R) : R := x + -y notation x - y;
   // n + 1 is read in nat's notation, as pow's exponent is.
@@ -22,7 +22,7 @@ theory Ring(U < UU0) {
 }
 
 // -x^2 is -(x^2), -x * y is (-x) * y, and ^ groups to the right.
-def grouped(A : Ring(U0), x, y : A.R) : A.(-x^2 * y) = A.mul(A.neg(A.pow(x, nat.(2))), y) {
+def grouped(A : Ring(U0), x, y : A.R) : A.(-x ^ 2 * y) = A.mul(A.neg(A.pow(x, nat.(2))), y) {
   rfl;
 }
 
@@ -40,7 +40,10 @@ def power_inside(A : Ring(U0), x : A.R, n : Nat) : A.(x * x ^ n) = A.mul(x, A.po
   rfl;
 }
 
-def power(x, n : Nat) : Nat := induction n return Nat { zero => nat.(1); succ h => mul(x, h); };
+def power(x, n : Nat) : Nat := induction n return Nat {
+    zero => nat.(1);
+    succ h => mul(x, h);
+  };
 
 notation arithmetic {
   x * y := mul(x, y);
@@ -59,7 +62,7 @@ def power_tower(x, y, z : Nat) : x arithmetic.(^) y arithmetic.(^) z = power(x, 
 // An operand with a recipe is read in its notation before anything else:
 // x + y here is nat's.
 notation shifted {
-  nat.(x) ^ y := add(x, y);
+  nat. (x) ^ y := add(x, y);
 }
 
 def recipe_first(x, y, z : Nat) : shifted.((x + y) ^ z) = add(add(x, y), z) {

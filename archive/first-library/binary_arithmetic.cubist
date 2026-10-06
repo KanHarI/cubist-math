@@ -5,11 +5,10 @@ import paths;
 use nat;
 
 // Increment follows a carry only through trailing one bits.
-def binary_positive_succ(p : BinaryPositive) :=
-  binary_positive_rec(
-    BinaryPositive, binary_bit0(binary_one), fun (child, ih : BinaryPositive) => binary_bit1(child),
-    fun (child, ih : BinaryPositive) => binary_bit0(ih), p
-  );
+def binary_positive_succ(p : BinaryPositive) := binary_positive_rec(
+  BinaryPositive, binary_bit0(binary_one), fun (child, ih : BinaryPositive) => binary_bit1(child),
+  fun (child, ih : BinaryPositive) => binary_bit0(ih), p
+);
 
 def binary_succ(n : BinaryNat) := match n return BinaryNat {
     binary_zero => binary_positive(binary_one);

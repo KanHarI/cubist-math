@@ -44,16 +44,12 @@ obligations {
 
 // Error: E531: match on Circle needs a clause for base. Give path clauses in obligations { … }, or
 //   obligations by { … }.
-def missing(x : Circle) : Nat := match x {
-
-  }
+def missing(x : Circle) : Nat := match x {}
 obligations by hlevel;
 
 // Error: E530: base is a point constructor: give its computational clause in match, before
 //   obligations.
-def misplaced(x : Circle) : Nat := match x {
-
-  }
+def misplaced(x : Circle) : Nat := match x {}
 obligations {
   base => 0;
   loop @ i => 0;

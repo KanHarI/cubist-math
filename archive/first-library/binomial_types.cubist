@@ -34,8 +34,8 @@ def truth_prop(b : Bool) := match b as c return Proposition(Truth(c)) {
 def void_prop(x, y : Void) := typed((x = y), absurd(x));
 
 def selected_decidable(
-  A : U0, decide : (forall x : A. forall y : A. Decidable(U0, x = y)), p : A -> Bool,
-  u, v : Selected(A, p)
+  A : U0, decide : (forall x : A. forall y : A. Decidable(U0, x = y)), p : A -> Bool, u,
+  v : Selected(A, p)
 ) :
   Decidable(U0, u = v) {
   let P := fun (x : A) => Truth(p(x));
@@ -51,7 +51,9 @@ def selected_decidable(
   }
 }
 
-def selected_is_set(A : U0, decide : (forall x : A. forall y : A. Decidable(U0, x = y)), p : A -> Bool) :
+def selected_is_set(
+  A : U0, decide : (forall x : A. forall y : A. Decidable(U0, x = y)), p : A -> Bool
+) :
   IsSet(U0, Selected(A, p)) {
   exact hedberg(U0, Selected(A, p), selected_decidable(A, decide, p));
 }
@@ -119,23 +121,20 @@ def predicate_eta(A : U0, p : (Unit or A) -> Bool) : predicate_normal(A, p) = p 
   exact function_join_split_point(A, Bool, p)(x);
 }
 
-def type_path_bijection(A, B : U0, path : A = B) :=
-  path_induction(
-    U0, (fun (X, Y : U0, q : X = Y) => Bijection(X, Y)), (fun (X : U0) => identity_bijection(X)), A,
-    B, path
-  );
+def type_path_bijection(A, B : U0, path : A = B) := path_induction(
+  U0, (fun (X, Y : U0, q : X = Y) => Bijection(X, Y)), (fun (X : U0) => identity_bijection(X)), A,
+  B, path
+);
 
-def selected_normalize(A : U0, p : (Unit or A) -> Bool) :=
-  type_path_bijection(
-    Selected(Unit or A, p), Selected(Unit or A, predicate_normal(A, p)),
-    sym(cong(Selected(Unit or A), predicate_eta(A, p)))
-  );
+def selected_normalize(A : U0, p : (Unit or A) -> Bool) := type_path_bijection(
+  Selected(Unit or A, p), Selected(Unit or A, predicate_normal(A, p)),
+  sym(cong(Selected(Unit or A), predicate_eta(A, p)))
+);
 
-def cardinal_compose(A, B, C : U0, h : Mere(Bijection(A, B)), e : Bijection(B, C)) :=
-  mere_map(
-    Bijection(A, B), Bijection(A, C),
-    (fun (d : Bijection(A, B)) => compose_bijection(A, B, C, d, e)), h
-  );
+def cardinal_compose(A, B, C : U0, h : Mere(Bijection(A, B)), e : Bijection(B, C)) := mere_map(
+  Bijection(A, B), Bijection(A, C), (fun (d : Bijection(A, B)) => compose_bijection(A, B, C, d, e)),
+  h
+);
 
 def cancel_unit_bijection(
   A, B : U0, decide : (forall x : B. forall y : B. Decidable(U0, x = y)),
@@ -229,11 +228,10 @@ def selected_false_out(A : U0, p : A -> Bool, s : Selected(Unit or A, predicate_
     selected_witness(Unit or A, predicate_join(A, no, p), s)
   );
 
-def selected_false_in(A : U0, p : A -> Bool, s : Selected(A, p)) :=
-  typed(
-    Selected(Unit or A, predicate_join(A, no, p)),
-    (tail(A, selected_index(A, p, s)), selected_witness(A, p, s))
-  );
+def selected_false_in(A : U0, p : A -> Bool, s : Selected(A, p)) := typed(
+  Selected(Unit or A, predicate_join(A, no, p)),
+  (tail(A, selected_index(A, p, s)), selected_witness(A, p, s))
+);
 
 def selected_false_index_path(A : U0, p : A -> Bool, x : Unit or A) :=
   match x as z return (

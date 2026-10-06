@@ -60,7 +60,8 @@ def subgroup_preimage_normal(
 }
 
 // The kernel is the inverse image of the identity subgroup, hence normal.
-def group_kernel(G, H : Group, h : GroupHom(G, H)) := subgroup_preimage(G, H, h, subgroup_bottom(H));
+def group_kernel(G, H : Group, h : GroupHom(G, H)) :=
+  subgroup_preimage(G, H, h, subgroup_bottom(H));
 
 def group_kernel_normal(G, H : Group, h : GroupHom(G, H)) : IsNormal(G, group_kernel(G, H, h)) {
   exact subgroup_preimage_normal(G, H, h, subgroup_bottom(H), subgroup_bottom_normal(H));

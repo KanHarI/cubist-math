@@ -73,13 +73,17 @@ def swap_twice(
     right a => swap_right_twice(A, decide, a, x);
   };
 
-def swap_head(A : U0, decide : (forall a : A. forall b : A. Decidable(U0, a = b)), target : Unit or A) :=
+def swap_head(
+  A : U0, decide : (forall a : A. forall b : A. Decidable(U0, a = b)), target : Unit or A
+) :=
   match target as c return (swap(A, decide, c, head(A)) = c) {
     left u => cong((fun (v : Unit) => typed(Unit or A, left(v))), unit_equal(u));
     right a => refl(tail(A, a));
   };
 
-def swap_target(A : U0, decide : (forall a : A. forall b : A. Decidable(U0, a = b)), target : Unit or A) :=
+def swap_target(
+  A : U0, decide : (forall a : A. forall b : A. Decidable(U0, a = b)), target : Unit or A
+) :=
   trans(
     sym(cong(swap(A, decide, target), swap_head(A, decide, target))),
     swap_twice(A, decide, target, head(A))
@@ -180,10 +184,9 @@ def restrict_bijection(
 def cancel_finite_successor(n, m : Nat, e : Bijection(Fin(succ(n)), Fin(succ(m)))) :
   Bijection(Fin(n), Fin(m)) {
   let image := forward(Fin(succ(n)), Fin(succ(m)), e, head(Fin(n)));
-  let adjusted :=
-    compose_bijection(
-      Fin(succ(n)), Fin(succ(m)), Fin(succ(m)), e, swap_bijection(Fin(m), fin_decidable(m), image)
-    );
+  let adjusted := compose_bijection(
+    Fin(succ(n)), Fin(succ(m)), Fin(succ(m)), e, swap_bijection(Fin(m), fin_decidable(m), image)
+  );
   exact restrict_bijection(Fin(n), Fin(m), adjusted, swap_target(Fin(m), fin_decidable(m), image));
 }
 

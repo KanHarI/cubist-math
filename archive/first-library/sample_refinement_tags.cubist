@@ -55,7 +55,9 @@ def sample_adjacent_constant(C : U1, P : U0, witness : P, n : Nat) :
     succ previous => fun (vertices : SampleVertices(C, succ(k))) => typed(
       (
         P
-        and SampleAdjacent(C, (fun (a, b : C) => P), k, field_snd(C, SampleVertices(C, k), vertices))
+        and SampleAdjacent(
+          C, (fun (a, b : C) => P), k, field_snd(C, SampleVertices(C, k), vertices)
+        )
       ), (witness, previous(field_snd(C, SampleVertices(C, k), vertices)))
     );
   };
@@ -109,7 +111,9 @@ def SampleBetweenGlobal(C : U1, related : C -> C -> U0, n : Nat) :=
   forall a : C. forall b : C. forall vertices : SampleVertices(C, n).
   forall tags : SampleTags(C, n). related(a, sample_first(C, n, vertices))
   -> related(sample_last(C, n, vertices), b) -> SampleBetween(C, related, n, vertices, tags)
-  -> SampleTagged(C, (fun (x, y, tag : C) => related(a, tag) and related(tag, b)), n, vertices, tags);
+  -> SampleTagged(
+    C, (fun (x, y, tag : C) => related(a, tag) and related(tag, b)), n, vertices, tags
+  );
 
 def sample_between_global_step(
   C : U1, related : C -> C -> U0, reflexivity : (forall x : C. related(x, x)),
@@ -125,16 +129,17 @@ def sample_between_global_step(
   let tailTags := field_snd(C, SampleTags(C, n), tags);
   let validData : (
     related(headVertex, headTag) and related(headTag, sample_first(C, n, tailVertices))
-  ) and SampleBetween(C, related, n, tailVertices, tailTags) := valid;
+  )
+  and SampleBetween(C, related, n, tailVertices, tailTags) :=
+    valid;
   obtain ((lowerTag, upperTag), tailValid) := validData;
   let nextVertex := sample_first(C, n, tailVertices);
   let lastVertex := sample_last(C, n, tailVertices);
   let tailOrdered :=
     sample_between_ordered(C, related, transitiveRelation, n, tailVertices, tailTags, tailValid);
-  let tailEndpoints :=
-    sample_adjacent_endpoints(
-      C, related, reflexivity, transitiveRelation, n, tailVertices, tailOrdered
-    );
+  let tailEndpoints := sample_adjacent_endpoints(
+    C, related, reflexivity, transitiveRelation, n, tailVertices, tailOrdered
+  );
   let lowerHeadTag := transitiveRelation(a, headVertex, headTag, lowerFirst, lowerTag);
   let nextBelowB := transitiveRelation(nextVertex, lastVertex, b, tailEndpoints, upperLast);
   let upperHeadTag := transitiveRelation(headTag, nextVertex, b, upperTag, nextBelowB);

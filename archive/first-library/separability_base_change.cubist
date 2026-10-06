@@ -64,13 +64,10 @@ def separable_elements_enlarge_base(
   let mapped := polynomial_map(K, R, i, p);
   obtain (nzP, monicP, rootP, dividesP) := minimal_polynomial_spec(K, L, e, x, alg);
   obtain (nzQ, monicQ, rootQ, dividesQ) := minimal_polynomial_spec(R, L, h, x, algebraicR);
-  let rootMapped :=
-    trans(
-      polynomial_eval_base_change(K, R, L, i, h, p, x),
-      trans(
-        cong((fun (d : FieldEmbedding(K, L)) => polynomial_eval(K, L, d, p, x)), triangle), rootP
-      )
-    );
+  let rootMapped := trans(
+    polynomial_eval_base_change(K, R, L, i, h, p, x),
+    trans(cong((fun (d : FieldEmbedding(K, L)) => polynomial_eval(K, L, d, p, x)), triangle), rootP)
+  );
   let divides := polynomial_map_divides(R, T, j, q, mapped, dividesQ(mapped, rootMapped));
   let c := field_embedding_compose(K, R, T, i, j);
   let P := polynomial_map(R, T, j, mapped);

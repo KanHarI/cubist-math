@@ -248,15 +248,13 @@ def hom_family_twisted_relation(
   let first :=
     fun (i : Fin(n)) => field_mul(L, coefficients(i), field_embedding_map(K, L, maps(i), t));
   let second := fun (i : Fin(n)) => field_mul(L, b, coefficients(i));
-  let firstZero :=
-    trans(
-      sym(hom_family_sum_product(K, L, n, maps, coefficients, t, x)), relation(field_mul(K, t, x))
-    );
-  let secondZero :=
-    trans(
-      hom_family_sum_scaled(K, L, n, maps, coefficients, b, x),
-      trans(cong(field_mul(L, b), relation(x)), scalar_mul_zero(L, b))
-    );
+  let firstZero := trans(
+    sym(hom_family_sum_product(K, L, n, maps, coefficients, t, x)), relation(field_mul(K, t, x))
+  );
+  let secondZero := trans(
+    hom_family_sum_scaled(K, L, n, maps, coefficients, b, x),
+    trans(cong(field_mul(L, b), relation(x)), scalar_mul_zero(L, b))
+  );
   exact trans(
     hom_family_difference(K, L, n, maps, first, second, x),
     trans(
@@ -277,7 +275,9 @@ def hom_family_twisted_relation(
   );
 }
 
-def PairwiseDistinctEmbeddings(K, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L)) :=
+def PairwiseDistinctEmbeddings(
+  K, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L)
+) :=
   forall i : Fin(n). forall j : Fin(n). maps(i) = maps(j) -> i = j;
 
 def HomFamilyIndependent(n : Nat) :=
@@ -357,21 +357,19 @@ def hom_family_twisted_tail_relation(
   ) = field_zero(L) {
   let head := typed(Fin(succ(n)), left(tt));
   let pivot := field_embedding_map(K, L, maps(head), t);
-  let twisted :=
-    fun (i : Fin(succ(n))) => field_add(
-      L, field_mul(L, coefficients(i), field_embedding_map(K, L, maps(i), t)),
-      field_neg(L, field_mul(L, pivot, coefficients(i)))
-    );
+  let twisted := fun (i : Fin(succ(n))) => field_add(
+    L, field_mul(L, coefficients(i), field_embedding_map(K, L, maps(i), t)),
+    field_neg(L, field_mul(L, pivot, coefficients(i)))
+  );
   let tail := finite_tail(af_carrier(L), n, twisted);
   let tailMaps := finite_tail(FieldEmbedding(K, L), n, maps);
   let tailSum := hom_family_sum(K, L, n, tailMaps, tail, x);
-  let headZero :=
-    trans(
-      cong(
-        (fun (z : af_carrier(L)) => field_mul(L, z, field_embedding_map(K, L, maps(head), x))),
-        hom_family_twisted_head_zero(K, L, n, maps, coefficients, t)
-      ), scalar_zero_mul(L, field_embedding_map(K, L, maps(head), x))
-    );
+  let headZero := trans(
+    cong(
+      (fun (z : af_carrier(L)) => field_mul(L, z, field_embedding_map(K, L, maps(head), x))),
+      hom_family_twisted_head_zero(K, L, n, maps, coefficients, t)
+    ), scalar_zero_mul(L, field_embedding_map(K, L, maps(head), x))
+  );
   exact trans(
     sym(scalar_add_zero(L, tailSum)),
     trans(
@@ -402,14 +400,13 @@ def hom_family_tail_coefficient_zero(
     ) = field_zero(L) {
     intro t;
     let pivot := field_embedding_map(K, L, g, t);
-    let tailCoefficients :=
-      fun (j : Fin(n)) => field_add(
-        L,
-        field_mul(
-          L, coefficients(typed(Fin(succ(n)), right(j))),
-          field_embedding_map(K, L, maps(typed(Fin(succ(n)), right(j))), t)
-        ), field_neg(L, field_mul(L, pivot, coefficients(typed(Fin(succ(n)), right(j)))))
-      );
+    let tailCoefficients := fun (j : Fin(n)) => field_add(
+      L,
+      field_mul(
+        L, coefficients(typed(Fin(succ(n)), right(j))),
+        field_embedding_map(K, L, maps(typed(Fin(succ(n)), right(j))), t)
+      ), field_neg(L, field_mul(L, pivot, coefficients(typed(Fin(succ(n)), right(j)))))
+    );
     exact previous(
       K, L, tailMaps, hom_family_tail_distinct(K, L, n, maps, distinct), tailCoefficients,
       (
@@ -427,13 +424,12 @@ def hom_family_tail_coefficient_zero(
       let ft := field_embedding_map(K, L, f, t);
       let gt := field_embedding_map(K, L, g, t);
       let product := field_mul(L, gt, c);
-      let equalProducts :=
-        trans(
-          group_cancel_right(
-            FieldAdditiveGroup(L), field_mul(L, c, ft), product, field_neg(L, product),
-            trans(twistedZero(t), sym(scalar_add_inverse_right(L, product)))
-          ), scalar_mul_comm(L, gt, c)
-        );
+      let equalProducts := trans(
+        group_cancel_right(
+          FieldAdditiveGroup(L), field_mul(L, c, ft), product, field_neg(L, product),
+          trans(twistedZero(t), sym(scalar_add_inverse_right(L, product)))
+        ), scalar_mul_comm(L, gt, c)
+      );
       exact field_mul_left_cancel_nonzero(L, c, ft, gt, nonzero, equalProducts);
     }
     exact sum_disjoint(

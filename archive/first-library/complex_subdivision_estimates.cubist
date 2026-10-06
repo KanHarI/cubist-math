@@ -156,11 +156,10 @@ def complex_subdivision_flat_estimate(
       sample_first(C, n, vertices), sample_last(C, n, vertices), flat
     ), sample_sum(C, F, zero, addF, radius, n, vertices, tags)
   ) {
-  let bound :=
-    complex_subdivision_total_estimate(
-      C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, edge, radius, n, vertices,
-      tags, pieces, estimates
-    );
+  let bound := complex_subdivision_total_estimate(
+    C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, edge, radius, n, vertices, tags,
+    pieces, estimates
+  );
   obtain (error, identity, bounded) := bound;
   obtain (flat, computes) := sample_subdivisions_flatten(
     C, Complex(F), complex_zero(F, zero), complex_add(F, addF),

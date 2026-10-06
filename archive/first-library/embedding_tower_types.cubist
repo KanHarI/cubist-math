@@ -91,29 +91,26 @@ def embedding_tower_pair_roundtrip(
   ) = tower {
   let A := EmbeddingsOver(K, R, i, T, j);
   let B := EmbeddingTowerFiber(K, R, L, T, i, h, j);
-  let back :=
-    embedding_tower_decompose(
-      K, R, L, T, i, h, e, triangle, j,
-      embedding_tower_compose(K, R, L, T, i, h, e, triangle, j, tower)
-    );
+  let back := embedding_tower_decompose(
+    K, R, L, T, i, h, e, triangle, j,
+    embedding_tower_compose(K, R, L, T, i, h, e, triangle, j, tower)
+  );
   let d := sigma_first(A, B, tower);
   let d2 := sigma_first(A, B, back);
   let u := sigma_second(A, B, back);
   let v := sigma_second(A, B, tower);
   let over := embedding_over_law(R, L, h, T, embedding_over(K, R, i, T, j, d), v);
-  let same :=
-    embeddings_over_ext(
-      K, R, i, T, j, d2, d,
-      field_embedding_ext(
-        R, T, embedding_over(K, R, i, T, j, d2), embedding_over(K, R, i, T, j, d), over
-      )
-    );
+  let same := embeddings_over_ext(
+    K, R, i, T, j, d2, d,
+    field_embedding_ext(
+      R, T, embedding_over(K, R, i, T, j, d2), embedding_over(K, R, i, T, j, d), over
+    )
+  );
   let P := fun (d : A) => EmbeddingOverLaw(R, L, h, T, embedding_over(K, R, i, T, j, d));
   let value := transported_subtype_value(A, FieldEmbedding(L, T), P, d2, d, same, u);
-  let tail :=
-    embeddings_over_ext(
-      R, L, h, T, embedding_over(K, R, i, T, j, d), along B by same from u, v, value
-    );
+  let tail := embeddings_over_ext(
+    R, L, h, T, embedding_over(K, R, i, T, j, d), along B by same from u, v, value
+  );
   exact trans(
     sym(sigma_eta(A, B, back)),
     trans(dependent_pair_path(A, B, d2, d, same, u, v, tail), sigma_eta(A, B, tower))

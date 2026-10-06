@@ -39,19 +39,20 @@ computable def empty_types_equal(A, B : U0, a : A -> Void, b : B -> Void) : A = 
 // F(P) = F(Unit), which is empty.
 computable def holds_then_image_empty(
   F : U0 -> U0, empty : F(Unit) -> Void, P : U0, prop : IsProp(U0, P), p : P
-) : F(P) -> Void {
+) :
+  F(P) -> Void {
   intro x;
   exact empty(along((fun (T : U0) => T)) by cong(F, inhabited_is_unit(P, prop, p)) from x);
 }
 
 // If F(P) is empty then F(P) = F(Unit); the inverse G gives P = Unit.
 computable def image_empty_then_holds(
-  F, G : U0 -> U0, eta : forall X : U0. G(F(X)) = X, empty : F(Unit) -> Void, P : U0,
-  none : F(P) -> Void
-) : P {
-  let same : P = Unit := trans(
-    sym(eta(P)), trans(cong(G, empty_types_equal(F(P), F(Unit), none, empty)), eta(Unit))
-  );
+  F, G : U0 -> U0, eta : forall X : U0. G(F(X)) = X, empty : F(Unit) -> Void, P : U0, none : F(P)
+  -> Void
+) :
+  P {
+  let same : P = Unit :=
+    trans(sym(eta(P)), trans(cong(G, empty_types_equal(F(P), F(Unit), none, empty)), eta(Unit)));
   exact along((fun (T : U0) => T)) by sym(same) from tt;
 }
 
@@ -59,7 +60,8 @@ computable def image_empty_then_holds(
 // double negation.
 computable def stable_from_swap(
   s : UnitToVoidAutomorphism, P : U0, prop : IsProp(U0, P), nn : (P -> Void) -> Void
-) : P {
+) :
+  P {
   obtain (e, zero) := s;
   exact image_empty_then_holds(
     e.1, equiv_inverse(U1, U0, U0, e), equiv_inverse_retraction(U1, U0, U0, e), zero.1, P,
@@ -92,8 +94,11 @@ def excluded_middle_from_swap(t : Truncate(U1, UnitToVoidAutomorphism)) : Exclud
 def decided_from_excluded_middle(lem : ExcludedMiddle(U0)) : PropositionsDecidable {
   intro P, prop;
   exact TruncateElim(
-    U0, Decidable(U0, P), Decidable(U0, P), decision_is_prop(U0, P, prop), fun (d : Decidable(U0, P)) => d,
-    lem(Decidable(U0, P), fun (no : Decidable(U0, P) -> Void) => no(right(fun (p : P) => no(left(p)))))
+    U0, Decidable(U0, P), Decidable(U0, P), decision_is_prop(U0, P, prop),
+    fun (d : Decidable(U0, P)) => d,
+    lem(
+      Decidable(U0, P), fun (no : Decidable(U0, P) -> Void) => no(right(fun (p : P) => no(left(p))))
+    )
   );
 }
 
@@ -107,9 +112,9 @@ def NegateProposition(X : U0, decision : Decidable(U0, IsProp(U0, X))) : U0 {
 computable def double_negation_equiv(decide : PropositionsDecidable, X : U0, prop : IsProp(U0, X)) :
   ContrEquiv(U0, (X -> Void) -> Void, X) {
   let forth := fun (nn : (X -> Void) -> Void) => match decide(X, prop) return X {
-    left x => x;
-    right no => absurd(nn(no));
-  };
+      left x => x;
+      right no => absurd(nn(no));
+    };
   let back := fun (x : X) => fun (k : X -> Void) => k(x);
   exact inverse_equiv(
     U0, f := forth, g := back, sec := fun (x : X) => prop(forth(back(x)), x),

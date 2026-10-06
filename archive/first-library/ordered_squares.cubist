@@ -80,18 +80,15 @@ def ordered_square_nonnegative(
   intro negativeSquare;
   let aboveZeroWeak : FieldLe(F, lt, zero, x) {
     intro belowZero;
-    let positiveNeg :=
-      ordered_neg_positive(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, belowZero
-      );
-    let nonnegativeNeg :=
-      ordered_lt_implies_le(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, negF(x), positiveNeg
-      );
-    let squareNeg :=
-      ordered_square_of_nonnegative(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, negF(x), nonnegativeNeg
-      );
+    let positiveNeg := ordered_neg_positive(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, belowZero
+    );
+    let nonnegativeNeg := ordered_lt_implies_le(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, negF(x), positiveNeg
+    );
+    let squareNeg := ordered_square_of_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, negF(x), nonnegativeNeg
+    );
     let square :=
       along((fun (v : F) => FieldLe(F, lt, zero, v))) by ordered_negative_square(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x

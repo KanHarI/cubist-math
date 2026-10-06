@@ -133,10 +133,9 @@ def finite_linear_lift_step(
   let Y := vector_carrier(K, W);
   let F := linear_map(K, V, W, f);
   let first := linear_map(K, CoordinateSpace(K, succ(m)), W, h, coordinate_first(K, m));
-  let tailMap :=
-    linear_compose(
-      K, CoordinateSpace(K, m), CoordinateSpace(K, succ(m)), W, coordinate_insert_linear(K, m), h
-    );
+  let tailMap := linear_compose(
+    K, CoordinateSpace(K, m), CoordinateSpace(K, succ(m)), W, coordinate_insert_linear(K, m), h
+  );
   let Result := FiniteLinearLift(K, V, W, f, succ(m), h);
   let withFirst : Fiber(X, Y, F, first) -> Mere(Result) {
     intro witness;
@@ -183,8 +182,9 @@ def coordinate_surjection_bound(
     exact successor_not_le_self(n, coordinate_injection_bound(K, n, succ(n), l, injective));
   }
   exact mere_eliminate(
-    FiniteLinearLift(K, N, V, f, succ(n), h), Void, (fun (x, y : Void) => typed((x = y), absurd(x))),
-    noLift, finite_linear_lift(K, N, V, f, onto, succ(n), h)
+    FiniteLinearLift(K, N, V, f, succ(n), h), Void,
+    (fun (x, y : Void) => typed((x = y), absurd(x))), noLift,
+    finite_linear_lift(K, N, V, f, onto, succ(n), h)
   );
 }
 

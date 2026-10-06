@@ -27,34 +27,29 @@ def division_adjust(
   let a := field_mul(K, b, last);
   let scaled := polynomial_scale(K, a, divisor);
   let r := polynomial_add(K, p, polynomial_neg(K, scaled));
-  let remainder_top : polynomial_coefficients(K, r, d) = field_zero(K) :=
+  let remainder_top : polynomial_coefficients(K, r, d) = field_zero(K) := trans(
+    cong(
+      (fun (c : af_carrier(K)) => field_add(K, last, field_neg(K, c))),
+      polynomial_scale_coefficient(K, a, divisor, d)
+    ),
     trans(
       cong(
         (fun (c : af_carrier(K)) => field_add(K, last, field_neg(K, c))),
-        polynomial_scale_coefficient(K, a, divisor, d)
-      ),
-      trans(
-        cong(
-          (fun (c : af_carrier(K)) => field_add(K, last, field_neg(K, c))),
-          scalar_pivot_cancel(K, lead, b, inverse, last)
-        ), scalar_add_inverse_right(K, last)
-      )
-    );
-  let equation : p = polynomial_add(K, scaled, r) :=
-    sym(
-      trans(
-        cong(polynomial_add(K, scaled), polynomial_add_comm(K, p, polynomial_neg(K, scaled))),
-        polynomial_add_cancel_prefix(K, scaled, p)
-      )
-    );
-  let support :=
-    support_add_same(
-      K, polynomial_coefficients(K, p), polynomial_coefficients(K, polynomial_neg(K, scaled)),
-      succ(d), sp,
-      polynomial_neg_support(
-        K, scaled, succ(d), polynomial_scale_support(K, a, divisor, succ(d), sd)
-      )
-    );
+        scalar_pivot_cancel(K, lead, b, inverse, last)
+      ), scalar_add_inverse_right(K, last)
+    )
+  );
+  let equation : p = polynomial_add(K, scaled, r) := sym(
+    trans(
+      cong(polynomial_add(K, scaled), polynomial_add_comm(K, p, polynomial_neg(K, scaled))),
+      polynomial_add_cancel_prefix(K, scaled, p)
+    )
+  );
+  let support := support_add_same(
+    K, polynomial_coefficients(K, p), polynomial_coefficients(K, polynomial_neg(K, scaled)),
+    succ(d), sp,
+    polynomial_neg_support(K, scaled, succ(d), polynomial_scale_support(K, a, divisor, succ(d), sd))
+  );
   exact (
     a, r, equation, support_predecessor(K, polynomial_coefficients(K, r), d, support, remainder_top)
   );
@@ -121,16 +116,14 @@ def division_horner_step(
   obtain (q, r, equation, support) := tailResult;
   let constant := polynomial_constant(K, polynomial_coefficients(K, p, 0));
   let temporary := polynomial_add(K, constant, polynomial_shift(K, r));
-  let constantSupport :=
-    support_weaken(
-      K, polynomial_coefficients(K, constant), 1, succ(d), tt,
-      support_constant(K, polynomial_coefficients(K, p, 0))
-    );
-  let temporarySupport :=
-    support_add_same(
-      K, polynomial_coefficients(K, constant), polynomial_coefficients(K, polynomial_shift(K, r)),
-      succ(d), constantSupport, support_shift(K, polynomial_coefficients(K, r), d, support)
-    );
+  let constantSupport := support_weaken(
+    K, polynomial_coefficients(K, constant), 1, succ(d), tt,
+    support_constant(K, polynomial_coefficients(K, p, 0))
+  );
+  let temporarySupport := support_add_same(
+    K, polynomial_coefficients(K, constant), polynomial_coefficients(K, polynomial_shift(K, r)),
+    succ(d), constantSupport, support_shift(K, polynomial_coefficients(K, r), d, support)
+  );
   obtain (a, remainder, adjustment, remainderSupport) := division_adjust(
     K, divisor, d, b, inverse, sd, temporary, temporarySupport
   );

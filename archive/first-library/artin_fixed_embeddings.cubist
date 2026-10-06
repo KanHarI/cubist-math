@@ -112,8 +112,8 @@ def fixed_subgroup_embedding(
 }
 
 def fixed_subgroup_embedding_injective(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E),
-  h, k : SubgroupCarrier(GaloisGroup(K, E), H),
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), h,
+  k : SubgroupCarrier(GaloisGroup(K, E), H),
   same : fixed_subgroup_embedding(K, E, H, h) = fixed_subgroup_embedding(K, E, H, k)
 ) :
   h = k {
@@ -187,11 +187,10 @@ def fixed_subgroup_loop_embedding_injective(
   let i := intermediate_ambient_embedding(K, E, M);
   let e := extension_path_iso(K, E, E, p);
   let d := extension_path_iso(K, E, E, q);
-  let eq :=
-    galois_field_embedding_injective(
-      K, E, e, d,
-      cong((fun (v : EmbeddingsOver(R, F, i, F, i)) => embedding_over(R, F, i, F, i, v)), same)
-    );
+  let eq := galois_field_embedding_injective(
+    K, E, e, d,
+    cong((fun (v : EmbeddingsOver(R, F, i, F, i)) => embedding_over(R, F, i, F, i, v)), same)
+  );
   exact trans(
     sym(extension_path_roundtrip(K, E, E, p)),
     trans(cong(extension_iso_path(K, E, E), eq), extension_path_roundtrip(K, E, E, q))
@@ -224,10 +223,9 @@ def fixed_subgroup_distinct_embeddings(
   let B := EmbeddingsOver(R, F, i, F, i);
   let make : Bijection(Fin(n), A) -> DistinctFamily(B, n) {
     intro enumeration;
-    let f :=
-      fun (index : Fin(n)) => fixed_subgroup_embedding(
-        K, E, H, forward(Fin(n), A, enumeration, index)
-      );
+    let f := fun (index : Fin(n)) => fixed_subgroup_embedding(
+      K, E, H, forward(Fin(n), A, enumeration, index)
+    );
     let injective : Injective(Fin(n), B, f) {
       intro x, y, same;
       exact inverse_injective(

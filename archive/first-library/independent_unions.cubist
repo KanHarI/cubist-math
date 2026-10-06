@@ -72,15 +72,14 @@ def independent_law(K : AlgebraicField, V : VectorSpace(K), S : IndependentSubse
   exact law;
 }
 
-def EmptyIndependentSubset(K : AlgebraicField, V : VectorSpace(K)) :=
-  typed(
-    IndependentSubset(K, V),
-    (
-      (fun (x : vector_carrier(K, V)) => Void),
-      (fun (x : vector_carrier(K, V), p, q : Void) => typed((p = q), absurd(p))),
-      empty_linearly_independent(K, V)
-    )
-  );
+def EmptyIndependentSubset(K : AlgebraicField, V : VectorSpace(K)) := typed(
+  IndependentSubset(K, V),
+  (
+    (fun (x : vector_carrier(K, V)) => Void),
+    (fun (x : vector_carrier(K, V), p, q : Void) => typed((p = q), absurd(p))),
+    empty_linearly_independent(K, V)
+  )
+);
 
 def IndependentUnion(
   K : AlgebraicField, V : VectorSpace(K), I : U1, family : I -> IndependentSubset(K, V),

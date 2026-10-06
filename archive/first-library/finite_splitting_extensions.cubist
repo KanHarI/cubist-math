@@ -36,20 +36,19 @@ def splitting_extension_compose(
   let y := field_embedding_map(L, T, h, x);
   let mappedP := polynomial_map(K, T, c, p);
   let mappedQ := polynomial_map(L, T, h, q);
-  let equation : mappedP = polynomial_mul(T, polynomial_linear_factor(T, y), mappedQ) :=
+  let equation : mappedP = polynomial_mul(T, polynomial_linear_factor(T, y), mappedQ) := trans(
+    sym(polynomial_map_composition(K, L, T, e, h, p)),
     trans(
-      sym(polynomial_map_composition(K, L, T, e, h, p)),
+      cong(polynomial_map(L, T, h), factor),
       trans(
-        cong(polynomial_map(L, T, h), factor),
-        trans(
-          polynomial_map_mul(L, T, h, polynomial_linear_factor(L, x), q),
-          cong(
-            (fun (r : Polynomial(T)) => polynomial_mul(T, r, mappedQ)),
-            polynomial_map_linear_factor(L, T, h, x)
-          )
+        polynomial_map_mul(L, T, h, polynomial_linear_factor(L, x), q),
+        cong(
+          (fun (r : Polynomial(T)) => polynomial_mul(T, r, mappedQ)),
+          polynomial_map_linear_factor(L, T, h, x)
         )
       )
-    );
+    )
+  );
   exact (
     T, c, finite_extension_tower(K, L, T, e, h, c, refl(c), finite, finiteT),
     polynomial_splitting_prepend(T, mappedP, mappedQ, y, equation, n, splitting)

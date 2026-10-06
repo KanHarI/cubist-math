@@ -5,8 +5,8 @@ import complex_limits;
 def complex_close_add(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y, u, v : Complex(F),
-  epsilon, delta : F, xy : ComplexClose(F, addF, lt, x, y, epsilon),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y, u, v : Complex(F), epsilon,
+  delta : F, xy : ComplexClose(F, addF, lt, x, y, epsilon),
   uv : ComplexClose(F, addF, lt, u, v, delta)
 ) :
   ComplexClose(
@@ -64,22 +64,18 @@ def complex_uniform_curve_add(
     intro a, b, nearby;
     let x := field_interval_coordinate(F, zero, one, lt)(a);
     let y := field_interval_coordinate(F, zero, one, lt)(b);
-    let first :=
-      closeF(
-        a, b,
-        field_close_enlarge(
-          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, delta, r, belowR,
-          nearby
-        )
-      );
-    let second :=
-      closeG(
-        a, b,
-        field_close_enlarge(
-          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, delta, s, belowS,
-          nearby
-        )
-      );
+    let first := closeF(
+      a, b,
+      field_close_enlarge(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, delta, r, belowR, nearby
+      )
+    );
+    let second := closeG(
+      a, b,
+      field_close_enlarge(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, delta, s, belowS, nearby
+      )
+    );
     exact along(
       (
         fun (radius : F) => ComplexClose(
