@@ -500,17 +500,23 @@ def not_a_number := typed(Nat, tt);  // Error: Type mismatch: found Unit, expect
           <section id="precedence">
             <h2>Precedence</h2>
             <p>From tightest to loosest:</p>
-            <ol>
+            <ol class="precedence">
               <li>application <code>f(a)</code> and projection <code>p.1</code>, from left to right, so <code>f(a).2(b)</code> applies the second component of <code>f(a)</code> to <code>b</code>;</li>
-              <li>interval application <code>p @ i</code>, for <a href="cubical.html#cubical">cubical paths</a>;</li>
-              <li><code>*</code>;</li>
-              <li><code>+</code>;</li>
-              <li><code>=</code>, <code>&lt;</code>, <code>&lt;=</code>;</li>
-              <li><code>and</code>;</li>
-              <li><code>or</code>;</li>
-              <li><code>-></code>.</li>
+              <li data-operators="~" data-group="prefix">reversal <code>~p</code>, so <code>~p @ i</code> is <code>(~p) @ i</code>;</li>
+              <li data-operators="&amp;" data-group="left">the meet of coordinates <code>i &amp; j</code>;</li>
+              <li data-operators="|" data-group="left">their join <code>i | j</code>;</li>
+              <li data-operators="@" data-group="left">interval application <code>p @ i</code>, for <a href="cubical.html#cubical">cubical paths</a>;</li>
+              <li data-operators="^" data-group="right"><code>^</code>, grouping to the right;</li>
+              <li data-operators="-" data-group="prefix">negation <code>-x</code>, so <code>-x ^ 2</code> is <code>-(x ^ 2)</code> and <code>-x * y</code> is <code>(-x) * y</code>;</li>
+              <li data-operators="* /" data-group="left"><code>*</code> and <code>/</code>;</li>
+              <li data-operators="+ -" data-group="left"><code>+</code> and <code>-</code>;</li>
+              <li data-operators="++" data-group="left">path composition <code>p ++ q</code>;</li>
+              <li data-operators="= &lt; &lt;= &gt; &gt;=" data-group="left"><code>=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>;</li>
+              <li data-operators="and" data-group="right"><code>and</code>;</li>
+              <li data-operators="or" data-group="right"><code>or</code>;</li>
+              <li data-operators="->" data-group="right"><code>-></code>.</li>
             </ol>
-            <p><code>-></code>, <code>and</code> and <code>or</code> group to the right. The other operators group to the left. The body of <code>fun</code>, <code>forall</code> and <code>exists</code> extends as far as possible. So <code>A -> B -> C</code> means <code>A -> (B -> C)</code>, and <code>forall x : A. P(x) -> Q(x)</code> means <code>forall x : A. (P(x) -> Q(x))</code>.</p>
+            <p><code>-></code>, <code>and</code>, <code>or</code> and <code>^</code> group to the right. The other operators group to the left, so <code>2 * 3 ^ 2</code> is <code>2 * (3 ^ 2)</code> and <code>a - b - c</code> is <code>(a - b) - c</code>. A qualified operator, <code>x G.(^) y</code>, has its operator's place in this list. The body of <code>fun</code>, <code>forall</code> and <code>exists</code> extends as far as possible. So <code>A -> B -> C</code> means <code>A -> (B -> C)</code>, and <code>forall x : A. P(x) -> Q(x)</code> means <code>forall x : A. (P(x) -> Q(x))</code>.</p>
             <pre><code data-check="accept">def arrows_group_right(A, B, C : U0, f : A -&gt; B -&gt; C) : A -&gt; (B -&gt; C) {
   exact f;
 }
