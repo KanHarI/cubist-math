@@ -1,5 +1,6 @@
 import nat;
 import dyadic_mesh;
+use nat;
 
 // The actual samples produced by the checked recursive construction.
 def dyadic_piece(

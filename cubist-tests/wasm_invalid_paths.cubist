@@ -2,6 +2,7 @@
 // eliminations with wrong boundaries are refused. The push clause of
 // bad_bridge is constant 0, but its inr clause is 1: its boundary fails.
 import suspension_types;
+use nat;
 
 // Error: E341: Interval coordinates can only be used in interval arguments.
 def escaped := path(fun (i : Interval) => Nat, fun (i : Interval) => i);

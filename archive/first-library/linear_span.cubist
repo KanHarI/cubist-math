@@ -1,5 +1,6 @@
 import nat;
 import finite_bases;
+use nat;
 
 // A finite linear combination has an explicit list of vectors and scalars.
 // Fin(n) supplies its indices, including the empty combination when n = 0.

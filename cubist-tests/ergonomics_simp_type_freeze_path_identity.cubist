@@ -2,6 +2,7 @@
 // proof later compared with another: the second simp in dependent is
 // offered no frozen form, and the one in stable is.
 import primes;
+use nat;
 
 // Warning: W702: stable is never used after this let: remove it.
 computable def dependent(

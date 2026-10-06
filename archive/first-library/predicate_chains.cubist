@@ -2,6 +2,7 @@ import nat;
 import field_extensionality;
 import finite_combinations;
 import order_maps;
+use nat;
 
 // Families may be indexed in U1, since the collection of small subsets is
 // itself large. The union uses the existing U1 truncation signature explicitly.

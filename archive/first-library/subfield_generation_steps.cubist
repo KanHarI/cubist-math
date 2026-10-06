@@ -2,6 +2,7 @@ import nat;
 import subfields;
 import order_maps;
 import primes;
+use nat;
 
 // A finite derivation step. Its witnesses live in U0, including inverse
 // witnesses; the construction never tests whether an element equals zero.

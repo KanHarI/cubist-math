@@ -68,6 +68,7 @@
             </ul>
             <p><code>refl(x)</code> is the path from <code>x</code> to itself. It proves <code>x = y</code> exactly when <code>x</code> and <code>y</code> are definitionally equal, so it connects the two notions:</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def zero_is_zero : 0 = 0 {
   exact refl(0);
@@ -81,6 +82,7 @@ def path_between_paths(A : U0, x : A) : refl(x) = refl(x) {
   exact refl(refl(x));
 }</code></pre>
             <pre><code data-check="reject">import nat;
+use nat;
 
 def zero_is_one : 0 = 1 {
   exact refl(0);  // Error: Type mismatch: found 0 = 0, expected 0 = 1.
@@ -185,6 +187,7 @@ def respects(A : U0, C : A -&gt; U0, f : forall a : A. C(a), x, y : A, p : x = y
   exact transport(C, y, x, p, v);  // Error: Transport endpoints do not match.
 }</code></pre>
             <pre><code data-check="reject">import nat;
+use nat;
 
 def not_a_path(C : Nat -&gt; U0, v : C(0)) : C(0) {
   exact transport(C, 0, 0, 0, v);  // Error: transport requires a path.
@@ -234,6 +237,7 @@ def cancel(A : U0, x, y : A, p : x = y) : trans(sym(p), p) = refl(y) {
             <h2>Propositions and sets</h2>
             <p><code>import hlevels;</code> measures how much a type's paths carry, in every universe <code>U</code> below <code>UU0</code>. <code>IsContr(U, A)</code> says that <code>A</code> has a center with a path to every element, and <code>IsProp(U, A)</code> that any two elements are equal. <code>HasLevel(U, n, A)</code> is <code>IsProp</code> at <code>n = 0</code>, and at <code>n + 1</code> it says that every path type of <code>A</code> has level <code>n</code>. <code>IsSet(U, A)</code> is level 1, so by conversion it says that any two parallel paths are equal.</p>
             <pre><code data-check="accept">import hlevels;
+use nat;
 
 def set_unfolds(A : U0) : IsSet(U0, A) = (forall x, y : A. forall p, q : x = y. p = q) {
   rfl;
@@ -273,6 +277,7 @@ def from_a_hint(A : U0, B : A -> U0, h : forall x : A. IsSet(U0, B(x)), a : A) :
 }</code></pre>
             <p>A set's evidence never equates two elements: <code>Nat</code> is a set, but not a proposition. A failure names the obligation nothing discharges:</p>
             <pre><code data-check="reject">import hlevels;
+use nat;
 
 def zero_is_one : 0 = 1 {
   hlevel;  // Error: hlevel could not prove 0 = 1; Nat is not a proposition: 0 and 1 differ.

@@ -2,6 +2,7 @@
 // maximality from choice, with its exact assumptions visible.
 import vector_basis_existence;
 import finite_fields;
+use nat;
 def any_vector_space(K : AlgebraicField, V : VectorSpace(K)) : FieldExists(VectorBasis(K, V)) {
   exact vector_space_has_basis(K, V);
 }

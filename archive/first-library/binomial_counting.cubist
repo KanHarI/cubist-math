@@ -1,6 +1,7 @@
 import nat;
 import binomial_pascal;
 import binomial;
+use nat;
 
 // There is exactly one empty subset, for any finite ambient type.
 def empty_predicate(A : U0, x : A) := no;

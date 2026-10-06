@@ -1,6 +1,7 @@
 import nat;
 import polynomial_arithmetic;
 import coordinate_splitting;
+use nat;
 
 // Finite coefficient arrays and supported coefficient functions are inverse
 // representations. No equality of polynomial evaluation functions is used.

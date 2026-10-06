@@ -1,6 +1,7 @@
 import nat;
 import interval_midpoint_data;
 import sample_join_conditions;
+use nat;
 
 // Counts double while widths are repeatedly halved. Iterating on the inside
 // makes the recursive width of a half-interval exactly the next outer width.

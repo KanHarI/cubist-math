@@ -2,6 +2,7 @@
 // check for arbitrary fields and a commuting triangle.
 
 import extension_degree;
+use nat;
 
 def arbitrary_tower(
   K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),

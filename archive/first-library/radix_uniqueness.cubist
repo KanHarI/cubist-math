@@ -1,6 +1,7 @@
 import nat;
 import radix_decode;
 import equivalences;
+use nat;
 
 // Uniqueness of quotient and bounded remainder, without division or choice.
 def radix_nat_no_smaller_self(n : Nat) : (succ(n) <= n) -> Void {

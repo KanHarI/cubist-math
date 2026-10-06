@@ -2,6 +2,7 @@
 // silently changed basis length are rejected.
 import finite_bases;
 import finite_fields;
+use nat;
 // Error: E606: Type mismatch: found F2Carrier -> F2Carrier -> f2_1 = f2_1, expected
 //   GroupHomLaws(vector_group(F2, ScalarSpace(F2)), vector_group(F2, ScalarSpace(F2)), fun (x :
 //   F2Carrier) => f2_1).

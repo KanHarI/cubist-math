@@ -5,6 +5,7 @@
 // variable is named apart from it there; named alone, the other side would
 // have shown it as add.
 import nat;
+use nat;
 
 // Error: E450: calc step left endpoint does not match the preceding endpoint. The step starts at
 //   add3 + 1; the chain so far ends at add3.

@@ -2,6 +2,7 @@
 // hypothesis simplification keeps the source.
 
 import primes;
+use nat;
 
 simp_rule nat_add_zero;
 simp_set units := [nat_add_zero];

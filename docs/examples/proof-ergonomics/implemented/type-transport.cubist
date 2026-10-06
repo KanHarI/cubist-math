@@ -1,5 +1,6 @@
 // Checked transport through paths of types and type-valued families.
 import primes;
+use nat;
 
 simp_rule nat_add_zero;
 

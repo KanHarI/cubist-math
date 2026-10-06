@@ -1,4 +1,5 @@
 import nat;
+use nat;
 
 // Prime numbers and the order on the natural numbers, over nat's arithmetic.
 // Every definition below is checked from source. No axioms and no imported

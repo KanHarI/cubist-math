@@ -107,6 +107,7 @@ def successor_function := typed(Nat -&gt; Nat, fun n =&gt; succ(n));</code></pre
             <h3 id="currying">Currying</h3>
             <p>A function of several parameters takes them one at a time. Its type is a chain of arrows, <code>A -> B -> C</code>, which reads <code>A -> (B -> C)</code>: given an <code>A</code>, it returns a function that waits for a <code>B</code>. This is called <strong>currying</strong>. So <code>f(a, b)</code> means <code>f(a)(b)</code>, and <code>f(a)</code> alone is a function waiting for the rest. Arguments can be supplied all at once, one at a time, or a few at a time; every argument is written, or is a <a href="#holes">hole</a> that the others determine.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def apply_twice(A : U0, f : A -&gt; A, a : A) := f(f(a));
 
@@ -130,11 +131,13 @@ fun (a : Nat) =&gt; succ(succ(a))</code></pre>
             <p><code>apply_twice(Nat)</code> is a function of the other two parameters, and <code>add_two</code>, with a function supplied too, waits only for the number. Evaluating it shows the function it is: it applies <code>succ</code> twice.</p>
             <p>Only a function can be applied:</p>
             <pre><code data-check="reject">import nat;
+use nat;
 
 def not_a_function := 0(1);  // Error: Source application is not a function.</code></pre>
             <h3 id="dependent-functions">Dependent functions</h3>
             <p>In <code>forall x : A. B(x)</code>, the result type depends on the argument. Applying <code>f : forall n : Nat. P(n)</code> to <code>0</code> gives an element of <code>P(0)</code>. <code>forall x, y : A. B</code> abbreviates two nested quantifiers over the same type.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def apply_at_zero(P : Nat -&gt; U0, f : forall n : Nat. P(n)) : P(0) {
   exact f(0);
@@ -146,6 +149,7 @@ def swap_arguments(A : U0, P : A -&gt; A -&gt; U0, f : forall x, y : A. P(x, y))
 }</code></pre>
             <p>The argument decides the result type, so <code>f(0)</code> does not prove <code>P(1)</code>:</p>
             <pre><code data-check="reject">import nat;
+use nat;
 
 def wrong_index(P : Nat -&gt; U0, f : forall n : Nat. P(n)) : P(1) {
   exact f(0);  // Error: Type mismatch: found P(0), expected P(1).
@@ -198,6 +202,7 @@ def which(n : Nat) := the_universe(_, n);  // Error: Nothing determines the univ
             <h3 id="implicit-parameters">Implicit parameters</h3>
             <p>Parameters in double braces, <code>{{ … }}</code>, before a definition's parameter list are <strong>implicit</strong>: a call reads them off its other arguments and the type expected of it, universes included, and gives only the others, in parentheses. Each implicit parameter before the last argument given is a hole. So <code>append</code> reads its universe and element type off its lists:</p>
             <pre><code data-check="accept">import lists;
+use nat;
 
 def three := length(append(cons(1, typed(List(U0, Nat), nil)), cons(2, cons(3, nil))));
 evaluate three expecting 3;
@@ -220,6 +225,7 @@ def open_type(T : U0) : U1 := same(T);  // Error: The parameter A of same is not
 def settled(T : U0) : U1 := same{{_, U0}}(T);</code></pre>
             <p>An argument whose type applies a definition, as <code>Tagged(U0, Unit)</code>, and a parameter's type that applies the same definition, as <code>Tagged(U, A)</code>, are compared unfolded first. Where that leaves a parameter open, the other arguments and the expected type settle it if they can; only then are the two matched argument by argument. So the arguments are read off even where the definition's value forgets them: <code>Tagged(U, A)</code> is <code>Nat</code> whatever <code>A</code> is, and <code>untag(t)</code> still finds <code>A := Unit</code>. But an argument that does determine the parameter comes first: <code>Family(n)</code> is <code>Nat</code> too, and <code>pick(a, refl(1))</code> finds <code>n := 1</code> from <code>refl(1)</code>, not <code>0</code> from <code>a</code>'s type. When the arguments do not all match, nothing they solved is kept. A theory's homomorphisms rely on this: <code>f.map</code> reads <code>f</code>'s models off <code>f : Monoid.Hom(A, B)</code> (<a href="theories.html#morphisms">homomorphisms</a>).</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def Tagged(U &lt; UU0, A : U) : U0 := Nat;
 
@@ -240,6 +246,7 @@ def picked(a : Family(0)) : Nat := pick(a, refl(1));</code></pre>
             <h2>Pairs and dependent pairs</h2>
             <p><code>(a, b)</code> builds an element of <code>A and B</code>, or of <code>exists x : A. B(x)</code> when <code>b : B(a)</code>. For an existential, the first component is the witness and the second is the evidence about it.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def two_units := typed(Unit and Unit, (tt, tt));
 
@@ -251,6 +258,7 @@ def two_exists : exists n : Nat. n = 2 {
             <h3 id="tuples">Tuples</h3>
             <p>The kernel has only binary pairs. Tuple notation <code>(a, b, c)</code> means <code>(a, (b, c))</code>, and the same notation works for types: <code>A and B and C</code> means <code>A and (B and C)</code>. Explicit left nesting <code>((a, b), c)</code> is a different shape.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def flat_triple : Nat and Unit and Nat {
   exact (1, tt, 2);
@@ -268,6 +276,7 @@ def first_of_three(t : Nat and Nat and Nat) : Nat {
 def one := first_of_three((1, 2, 3));</code></pre>
             <p>To pass a tuple as one argument, keep its parentheses: <code>f((1, 2, 3))</code>. <code>f(1, 2, 3)</code> passes three arguments. A tuple must match the nesting of its type:</p>
             <pre><code data-check="reject">import nat;
+use nat;
 
 def wrong_nesting : (Nat and Unit) and Nat {
   exact (1, tt, 2);  // Error: Expected a Sigma type for pair.
@@ -286,6 +295,7 @@ def swap_pair(A, B : U0, p : A and B) : B and A := (p.2, p.1);
 def last_of_three(t : Nat and Unit and Nat) : Nat := t.2.2;</code></pre>
             <p>Projections compute. A projection of a pair is its component, and every pair is the pair of its projections, so <code>p = (p.1, p.2)</code> holds by <code>refl</code>:</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def pair_of_projections(A, B : U0, p : A and B) : p = (p.1, p.2) := refl(p);
 
@@ -317,6 +327,7 @@ def not_a_pair(n : Nat) := unpack n as (a, b) return Nat { a; };</code></pre>
             <h2>Sums</h2>
             <p><code>left(a)</code> and <code>right(b)</code> build elements of <code>A or B</code>. Like pairs, they need an expected type, because the other side is not determined:</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def unit_on_the_left := typed(Unit or Nat, left(tt));
 
@@ -328,6 +339,7 @@ def three_on_the_right : Unit or Nat {
             <p><code>match</code> works on sums and on <a href="induction.html#match">declared inductive types</a>, such as <code>Nat</code> and your own types. This section shows the sum cases.</p>
             <p><code>match value return T { left x => …; right y => …; }</code> computes a result of type <code>T</code> from each side. Each branch is an expression and ends with <code>;</code>.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def to_number(value : Unit or Nat) := match value return Nat {
   left u =&gt; 0;
@@ -340,6 +352,7 @@ def swap_sides(A, B : U0, value : A or B) := match value return B or A {
 };</code></pre>
             <p>When the result type depends on the value, name it with <code>as</code>: <code>match value as z return C(z) { … }</code>. The left branch must produce <code>C(left(x))</code> and the right branch <code>C(right(y))</code>.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def Shape(value : Unit or Unit) := match value return U0 {
   left a =&gt; Nat;
@@ -352,6 +365,7 @@ def default(value : Unit or Unit) := match value as z return Shape(z) {
 };</code></pre>
             <p><code>Shape</code> needs no <code>as</code>: its result type, <code>U0</code>, is the same for both sides. An <code>as</code> name that the result type does not mention is accepted, with a <a href="checking.html#warnings">warning</a>:</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def to_number(value : Unit or Nat) := match value as z return Nat {  // Warning: z is unused: the return type does not mention it.
   left u =&gt; 0;
@@ -390,6 +404,7 @@ def unannotated(impossible : Void) := absurd(impossible);</code></pre>
             <h2>Numbers and arithmetic</h2>
             <p><code>Nat</code> is built from <code>0</code> and <code>succ</code>. A numeral is notation for repeated <code>succ</code>: <code>3</code> is <code>succ(succ(succ(0)))</code>, not a machine integer. Numerals go up to 256.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def three := succ(succ(succ(0)));
 
@@ -399,6 +414,7 @@ def three_is_three : three = 3 {
             <pre><code data-check="reject">def too_big := 257;  // Error: Numerals are limited to 256 in this version.</code></pre>
             <p>The operators <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> are notation for <code>add</code>, <code>mul</code>, <code>isLt</code> and <code>le</code>, which the arithmetic library defines. Import it with <code>import nat;</code>. The operators are not overloaded by the types of their operands: they mean the <code>add</code> and <code>mul</code> in scope, <code>Nat</code>'s here, unless <a href="theories.html#open"><code>open</code></a> binds them to a model's operations for a block.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def two_times_three : 2 * 3 = 6 {
   exact refl(6);
@@ -411,6 +427,7 @@ def two_below_three : 2 &lt; 3 {
             <pre><code data-check="reject">def four := 2 + 2;  // Error: Untranslated name: Nat</code></pre>
             <p>Addition recurses on its first argument. <code>0 + n</code> computes to <code>n</code>, but <code>n + 0</code> is stuck on the variable <code>n</code>, so it needs a proof by induction. The library proves it as <code>nat_add_zero(n)</code>.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def zero_plus(n : Nat) : 0 + n = n {
   exact refl(n);
@@ -420,6 +437,7 @@ def plus_zero(n : Nat) : n + 0 = n {
   exact nat_add_zero(n);
 }</code></pre>
             <pre><code data-check="reject">import nat;
+use nat;
 
 def plus_zero_by_computation(n : Nat) : n + 0 = n {
   exact refl(n);  // Error: Type mismatch: found n = n, expected n + 0 = n.
@@ -436,6 +454,7 @@ def plus_zero_by_computation(n : Nat) : n + 0 = n {
               </tbody>
             </table></div>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def distributes(a, b : Nat) : 2 * (a + b) = 2 * a + 2 * b {
   exact nat_mul_add(2, a, b);
@@ -465,6 +484,7 @@ evaluate compare(3, 3) expecting 1;</code></pre>
               <li><code>typed(T, term)</code>, which checks <code>term</code> against <code>T</code>.</li>
             </ul>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def number := typed(Nat, 3);
 
@@ -498,6 +518,7 @@ def and_before_or(A, B, C : U0, x : A and B or C) : (A and B) or C {
 }</code></pre>
             <p>Comparisons do not chain. <code>1 &lt; 2 &lt; 3</code> means <code>(1 &lt; 2) &lt; 3</code>, which compares a type with a number. Write <code>(1 &lt; 2) and (2 &lt; 3)</code>.</p>
             <pre><code data-check="reject">import nat;
+use nat;
 
 def chained : 1 &lt; 2 &lt; 3 {
   exact tt;  // Error: Type mismatch: found U0, expected Nat.

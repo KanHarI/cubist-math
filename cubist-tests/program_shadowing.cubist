@@ -3,6 +3,7 @@
 // value, though the second module's value shadows it here.
 import program_shadow_first;
 import program_shadow_second;
+use nat;
 
 def preserved : remembered = 0 {
   exact refl(0);

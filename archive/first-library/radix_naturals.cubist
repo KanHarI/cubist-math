@@ -1,4 +1,5 @@
 import nat;
+use nat;
 
 // RadixDigit(n) has n inhabitants. Its leftmost alternative has value n-1;
 // this ordering makes increment and overflow structural, with no comparison.

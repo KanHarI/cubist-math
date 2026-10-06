@@ -1,6 +1,7 @@
 import nat;
 import affine_integrals;
 import contour_sums;
+use nat;
 
 // The constant-integrand formula holds already for every finite subdivision,
 // without a continuity, fineness, or limiting assumption.

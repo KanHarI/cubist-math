@@ -2,6 +2,7 @@
 // bounded and keeps nested witnesses.
 
 import primes;
+use nat;
 
 def folded(n : Nat) := n + 0;
 

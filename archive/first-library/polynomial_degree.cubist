@@ -1,6 +1,7 @@
 import nat;
 import polynomial_ring;
 import natural_minimum;
+use nat;
 
 // The cutoff is the least support bound. It is zero for the zero polynomial
 // and degree+1 otherwise; this avoids giving zero a misleading leading term.

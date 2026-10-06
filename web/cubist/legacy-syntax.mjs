@@ -42,11 +42,26 @@ const reversalsAsTilde = source => {
   return text;
 };
 
+// Until L2.10a (2026-10-06) nat declared no notation: + and numerals read
+// add and Nat by name. A revision's nat without one is read with the
+// notation it had in effect, so that a module of today that imports it can
+// select it with use nat; it adds no declaration.
+const withNatNotation = text => /(?:^|\n)\s*notation\s+nat\b/.test(text) ? text : `${text.replace(/\s*$/, "\n")}
+notation nat {
+  x + y := add(x, y);
+  x * y := mul(x, y);
+  x <= y := le(x, y);
+  x < y := ${/\bdef\s+isLt\b/.test(text) ? "isLt(x, y)" : "le(succ(x), y)"};
+  numeral(n : Nat) := n;
+}
+`;
+
 // Before 2026-10-05 every module imported nat without asking. A module of
 // a revision that did so (implicitNat), read in today's syntax, imports it,
 // unless it is nat or already does: so a baseline sees the names it saw then.
 export const historicalSource = (source, module, { implicitNat = true, minusReverses = true } = {}) => {
   const rewritten = currentSyntax(source), text = minusReverses ? reversalsAsTilde(rewritten) : rewritten;
-  if (!implicitNat || module === "nat" || /(?:^|\n)\s*import\s+(?:[^;]*,\s*)?nat\s*[;,]/.test(text)) return text;
+  if (module === "nat") return withNatNotation(text);
+  if (!implicitNat || /(?:^|\n)\s*import\s+(?:[^;]*,\s*)?nat\s*[;,]/.test(text)) return text;
   return `import nat;\n${text}`;
 };

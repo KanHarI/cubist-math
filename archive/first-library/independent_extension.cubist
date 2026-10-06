@@ -3,6 +3,7 @@ import span_exchange;
 import finite_omission;
 import independent_order;
 import classical;
+use nat;
 
 // Adjoining one vector gives a proposition-valued subset. Membership is
 // truncated; it does not expose a particular side of the disjunction.

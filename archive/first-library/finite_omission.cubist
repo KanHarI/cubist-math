@@ -1,5 +1,6 @@
 import nat;
 import finite_remainders;
+use nat;
 
 def fin_omit(n : Nat) := induction n as k return (Fin(succ(k)) -> Fin(k) -> Fin(succ(k))) {
     zero => fun (i : Fin(1), j : Fin(0)) => typed(Fin(1), absurd(j));

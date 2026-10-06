@@ -1,6 +1,7 @@
 import nat;
 import finite;
 import bijection_equality;
+use nat;
 
 // Transport a decision along two implications; no excluded middle is used.
 def decision_transfer(P, Q : U0, toQ : P -> Q, toP : Q -> P, decision : Decidable(U0, P)) :=

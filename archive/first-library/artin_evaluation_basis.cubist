@@ -1,5 +1,6 @@
 import nat;
 import artin_evaluation_matrix;
+use nat;
 
 def EmbeddingEvaluationFrame(K, L : AlgebraicField, n, m : Nat, maps : Fin(n) -> FieldEmbedding(K, L)) :=
   exists points : Fin(m) -> af_carrier(K).

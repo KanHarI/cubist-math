@@ -2,6 +2,7 @@
 // derives left_zero and tag_left_zero, whose derived terms are their source,
 // each injection kept at NatSum.
 import nat;
+use nat;
 
 def NatSum : U0 {
   exact Nat or Nat;

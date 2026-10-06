@@ -1,4 +1,5 @@
 import univalence;
+use nat;
 
 // The propositions of a universe, as a type one universe up. Propositions
 // that imply each other are equal, by univalence, and so the propositions

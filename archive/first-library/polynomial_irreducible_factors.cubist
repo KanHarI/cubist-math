@@ -1,5 +1,6 @@
 import nat;
 import polynomial_monic;
+use nat;
 
 // A nonzero degree-zero polynomial is an invertible constant.
 def polynomial_degree_zero_unit(

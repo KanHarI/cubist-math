@@ -3,6 +3,7 @@
 // nat_add_zero by default and as units; ergonomics_simp_rules_b does too, at
 // priority 7.
 import primes;
+use nat;
 
 simp_rule nat_add_zero;
 simp_set units := [nat_add_zero];

@@ -491,6 +491,12 @@ export class CubicalProgram {
   // Check one more module on top of the loaded ones, as a REPL entry does,
   // and report only what it added. The program keeps presenting its main
   // module: inspection, export and metadata are unchanged.
+  // What a module's top-level `use` statements select at its end, as their
+  // source text: a REPL entry after the module reads in them (L2.10j).
+  selectionsAfter(name) {
+    const ast = this.sourceAsts.get(name), text = this.sources[name];
+    return (ast?.items ?? []).filter(item => item.kind === "use").map(item => text.slice(item.model.start, item.model.end));
+  }
   async checkEntry(source, name) {
     const kept = { main: this.main, metadata: this.metadata, links: this.links.length,
       gaps: this.gaps.length, evaluations: this.evaluations.length, prints: this.prints.length };

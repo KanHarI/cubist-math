@@ -1,5 +1,6 @@
 import nat;
 import binary_arithmetic_correct;
+use nat;
 
 // This is ordinary HoTT univalence transport on the current kernel. The
 // cubical migration must derive its univalence computationally before this
@@ -26,7 +27,7 @@ def factorial_ten_via_univalence : factorial(10) = nat_3628800 {
   exact trans(
     sym(binary_factorial_correct(10)),
     univalence_transfer_equality(
-      BinaryNat, Nat, binary_nat_equiv, binary_factorial(10), 0b1101110101111100000000,
+      BinaryNat, Nat, binary_nat_equiv, binary_factorial(10), binary.(0b1101110101111100000000),
       binary_factorial_ten
     )
   );
@@ -39,13 +40,13 @@ def binary_encode_factorial(n : Nat) : binary_factorial(n) = binary_of_nat(facto
 }
 
 // The opposite direction transports the Nat theorem back to binary numbers.
-def binary_factorial_ten_via_nat : binary_factorial(10) = 0b1101110101111100000000 {
+def binary_factorial_ten_via_nat : binary_factorial(10) = binary.(0b1101110101111100000000) {
   exact trans(
     binary_encode_factorial(10),
     trans(
       univalence_transfer_equality(
         Nat, BinaryNat, nat_binary_equiv, factorial(10), nat_3628800, factorial_ten_via_univalence
-      ), binary_roundtrip(0b1101110101111100000000)
+      ), binary_roundtrip(binary.(0b1101110101111100000000))
     )
   );
 }

@@ -526,6 +526,7 @@ export const diagnostics = [
   ["E844", "A literal rule reads a Lexeme: import lexemes, which defines …."],
   ["E845", "… is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory."],
   ["E846", "notation numeral reads a plain numeral: it marks a derived operation of one natural number, as def of_nat(n : Nat) : R := … notation numeral."],
+  ["E847", "A numeral rule reads a natural number: import nat."],
   // Notation and operators
   ["E901", "-x negates in a selected notation that binds it, as integers.(-x); a path's reversal is ~p."],
   ["E902", "-x is not in …'s notation, which is selected here: select a notation that binds it, as integers.(-x)."],
@@ -535,6 +536,9 @@ export const diagnostics = [
   ["E906", "…'s literal rule does not evaluate … to an answer; it gives …."],
   ["E907", "…'s notation reads no numeral …: write nat.(…) for a natural number, or select a notation that reads it."],
   ["E908", "…'s notation reads no literal …: select a notation whose literal rule reads it, as rationals.(…)."],
+  ["E909", "… is a binary literal, which a selected notation's literal rule reads, as the archive's binary.(…)."],
+  ["E910", "…'s notation reads no binary literal …: select one whose literal rule reads it, as the archive's binary.(…)."],
+  ["E911", "… means the natural number in a selected notation that reads it: use nat; or write nat.(…)."],
   // Kernel: declared types
   ["K101", "Dimension renaming allocation failed."],
   ["K102", "A boundary is nested too deeply."],

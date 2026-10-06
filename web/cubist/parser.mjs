@@ -1119,7 +1119,7 @@ export function parse(source, typeOnly = false) {
         rules.push({ ...pattern, value, start, end: take(";").end });
       }
       const end = take("}").end;
-      items.push({ kind: "notation", name: n, rules, start: t.start, end });
+      items.push({ kind: "notation", name: n, rules, ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end });
       continue;
     }
     if (t.text === "theory") {
@@ -1241,7 +1241,7 @@ export function parse(source, typeOnly = false) {
           ...(keyword ? { keyword } : {}), start, end: take(";").end });
       }
       const end = take("}").end;
-      declarations.push({ kind: "theory", name: n, universes: header.filter(p => p.bound).map(p => p.name),
+      declarations.push({ kind: "theory", name: n, ...(uses.length ? { uses: [...uses] } : {}), universes: header.filter(p => p.bound).map(p => p.name),
         params: header.filter(p => !p.bound).map(p => ({ name: p.name, type: p.type })), parents, fields, start: t.start, end });
       items.push(declarations.at(-1));
       continue;

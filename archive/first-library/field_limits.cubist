@@ -1,6 +1,7 @@
 import nat;
 import field_closeness;
 import primes;
+use nat;
 
 // Actual natural moduli are combined explicitly. No countable choice is used.
 def index_sum_left(n, m : Nat) :=

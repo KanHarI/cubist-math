@@ -1,5 +1,6 @@
 import nat;
 import polynomial_eval_characterization;
+use nat;
 
 def polynomial_eval_horner(
   K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), p : Polynomial(K)

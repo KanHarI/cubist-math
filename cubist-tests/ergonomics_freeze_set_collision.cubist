@@ -2,6 +2,7 @@
 // by a named simplification set.
 
 import primes;
+use nat;
 
 simp_rule nat_add_zero;
 simp_set nat_add_zero := [];

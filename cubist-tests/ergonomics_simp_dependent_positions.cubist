@@ -1,6 +1,7 @@
 // From tests/proof-ergonomics.test.mjs: Simp skips matches in dependent
 // positions instead of failing.
 import primes;
+use nat;
 
 def reflexive(P : Nat -> U0, f : (forall m : Nat. P(m) -> Nat), n : Nat, v : P(n + 0)) :
   f(n + 0, v) = f(n + 0, v) {

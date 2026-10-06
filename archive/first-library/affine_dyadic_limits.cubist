@@ -2,6 +2,7 @@ import nat;
 import dyadic_contour_estimates;
 import dyadic_convergence;
 import complex_refinement_cauchy;
+use nat;
 
 // This sequence is the actual recursively constructed sampling, with all
 // vertices, tags and endpoint proofs retained in each dyadic piece.

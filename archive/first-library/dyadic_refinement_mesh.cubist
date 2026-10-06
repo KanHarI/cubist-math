@@ -2,6 +2,7 @@ import nat;
 import dyadic_refinement;
 import subdivision_tagged_zip;
 import interval_subdivisions;
+use nat;
 
 // Coarse width bounds and fine admissibility refer to the same actual family.
 def interval_refinement_mesh(

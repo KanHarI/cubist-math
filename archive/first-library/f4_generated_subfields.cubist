@@ -1,6 +1,7 @@
 import nat;
 import subfield_transport;
 import f4_intermediate_fields;
+use nat;
 
 // Zero and one already give the embedded F2, for any choice of generators.
 def f4_generated_contains_base(P : F4Carrier -> U0, k : F2Carrier) :

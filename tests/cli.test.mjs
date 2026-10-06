@@ -25,7 +25,7 @@ test("CLI reports assumptions and evaluates closed terms", async t => {
   const directory = await mkdtemp(join(tmpdir(), "cubist-cli-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
   await writeFile(join(directory, "sample.cubist"), `import primes;
-import classical;
+import classical; use nat;
 def double(n : Nat) := n + n;
 def recover(P : U0, prop : Proposition(P), nn : (P -> Void) -> Void) : P {
   exact double_negation(P, prop, nn);

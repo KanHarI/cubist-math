@@ -1,5 +1,6 @@
 import nat;
 import polynomial_division;
+use nat;
 
 // A polynomial with support below 1 is a constant coefficient function.
 def series_support_one(K : AlgebraicField, f : FormalSeries(K), support : SeriesSupport(K, f, 1)) :

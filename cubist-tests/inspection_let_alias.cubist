@@ -2,6 +2,7 @@
 // local's name and does not leak to later declarations.
 
 import nat;
+use nat;
 
 def zero := 0;
 

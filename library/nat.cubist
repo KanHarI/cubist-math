@@ -16,8 +16,8 @@ computable def add(x, y : Nat) : Nat := match x {
 
 // Multiplication: 0 * b = 0 and succ(a) * b = b + a * b.
 computable def mul(x, y : Nat) : Nat := match x {
-    zero => 0;
-    succ(k) => y + mul(k, y);
+    zero => zero;
+    succ(k) => add(y, mul(k, y));
   };
 
 // Order, computed: 0 <= b holds, succ(a) <= 0 does not, and
@@ -39,6 +39,8 @@ notation nat {
   x < y := isLt(x, y);
   numeral(n : Nat) := n;
 }
+
+use nat;
 
 // 0 + n = n, by computation.
 computable def nat_zero_add(n : Nat) : 0 + n = n := refl(n);

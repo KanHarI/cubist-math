@@ -1,5 +1,6 @@
 import nat;
 import dyadic_decay;
+use nat;
 
 // Halving a nonnegative width cannot increase it.
 def nonnegative_half_le(

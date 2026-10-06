@@ -1,6 +1,7 @@
 import nat;
 import sample_tagged;
 import sample_subdivisions;
+use nat;
 
 // Concatenation preserves each tag's condition when the shared endpoints
 // agree. This includes a zero-edge prefix or suffix.

@@ -1,6 +1,7 @@
 import nat;
 import dimension;
 import scalar_restriction;
+use nat;
 
 // The degree is the unique finite dimension of the extension as a vector
 // space over its base. Infinite extensions are not assigned a default value.

@@ -1,5 +1,6 @@
 import nat;
 import finite_spanning;
+use nat;
 
 // Individual generators have explicit unit-coordinate preimages.
 def coordinate_unit(K : AlgebraicField, n : Nat) :=

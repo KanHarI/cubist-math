@@ -1,5 +1,6 @@
 import nat;
 import finite_linear_lifts;
+use nat;
 
 // The linear map associated with a finite family is constructed by adjoining
 // generators. Its evaluation is the existing finite linear combination.

@@ -2,6 +2,7 @@ import nat;
 import puncture_graph;
 import loop_words;
 import circle;
+use nat;
 
 // Collapse all but one labelled generator to the constant loop of S1.
 // Finite equality is decided constructively, without excluded middle.

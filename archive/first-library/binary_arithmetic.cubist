@@ -2,6 +2,7 @@ import nat;
 
 import binary_naturals;
 import paths;
+use nat;
 
 // Increment follows a carry only through trailing one bits.
 def binary_positive_succ(p : BinaryPositive) :=
@@ -61,25 +62,25 @@ def binary_mul(a, b : BinaryNat) := match a return BinaryNat {
   };
 
 def binary_of_nat(n : Nat) := induction n return BinaryNat {
-    zero => 0b0;
+    zero => binary.(0b0);
     succ previous => binary_succ(previous);
   };
 
 // The recursion index is small; all intermediate products are binary W trees.
 def binary_factorial(n : Nat) := induction n as k return BinaryNat {
-    zero => 0b1;
+    zero => binary.(0b1);
     succ previous => binary_mul(binary_of_nat(succ(k)), previous);
   };
 
-def binary_carry_example : binary_succ(0b11111111) = 0b100000000 {
+def binary_carry_example : binary_succ(binary.(0b11111111)) = binary.(0b100000000) {
   rfl;
 }
 
-def binary_add_example : binary_add(0b1101, 0b1011) = 0b11000 {
+def binary_add_example : binary_add(binary.(0b1101), binary.(0b1011)) = binary.(0b11000) {
   rfl;
 }
 
-def binary_mul_example : binary_mul(0b1101, 0b1011) = 0b10001111 {
+def binary_mul_example : binary_mul(binary.(0b1101), binary.(0b1011)) = binary.(0b10001111) {
   rfl;
 }
 
@@ -94,46 +95,46 @@ def binary_factorial_value_step(n : Nat, value : BinaryNat, previous : binary_fa
   rw [binary_factorial_step(n), previous] at lhs;
 }
 
-def binary_factorial_zero : binary_factorial(0) = 0b1 {
+def binary_factorial_zero : binary_factorial(0) = binary.(0b1) {
   rfl;
 }
 
-def binary_factorial_1 : binary_factorial(1) = 0b1 {
-  exact binary_factorial_value_step(0, 0b1, binary_factorial_zero);
+def binary_factorial_1 : binary_factorial(1) = binary.(0b1) {
+  exact binary_factorial_value_step(0, binary.(0b1), binary_factorial_zero);
 }
 
-def binary_factorial_2 : binary_factorial(2) = 0b10 {
-  exact binary_factorial_value_step(1, 0b1, binary_factorial_1);
+def binary_factorial_2 : binary_factorial(2) = binary.(0b10) {
+  exact binary_factorial_value_step(1, binary.(0b1), binary_factorial_1);
 }
 
-def binary_factorial_3 : binary_factorial(3) = 0b110 {
-  exact binary_factorial_value_step(2, 0b10, binary_factorial_2);
+def binary_factorial_3 : binary_factorial(3) = binary.(0b110) {
+  exact binary_factorial_value_step(2, binary.(0b10), binary_factorial_2);
 }
 
-def binary_factorial_4 : binary_factorial(4) = 0b11000 {
-  exact binary_factorial_value_step(3, 0b110, binary_factorial_3);
+def binary_factorial_4 : binary_factorial(4) = binary.(0b11000) {
+  exact binary_factorial_value_step(3, binary.(0b110), binary_factorial_3);
 }
 
-def binary_factorial_5 : binary_factorial(5) = 0b1111000 {
-  exact binary_factorial_value_step(4, 0b11000, binary_factorial_4);
+def binary_factorial_5 : binary_factorial(5) = binary.(0b1111000) {
+  exact binary_factorial_value_step(4, binary.(0b11000), binary_factorial_4);
 }
 
-def binary_factorial_6 : binary_factorial(6) = 0b1011010000 {
-  exact binary_factorial_value_step(5, 0b1111000, binary_factorial_5);
+def binary_factorial_6 : binary_factorial(6) = binary.(0b1011010000) {
+  exact binary_factorial_value_step(5, binary.(0b1111000), binary_factorial_5);
 }
 
-def binary_factorial_7 : binary_factorial(7) = 0b1001110110000 {
-  exact binary_factorial_value_step(6, 0b1011010000, binary_factorial_6);
+def binary_factorial_7 : binary_factorial(7) = binary.(0b1001110110000) {
+  exact binary_factorial_value_step(6, binary.(0b1011010000), binary_factorial_6);
 }
 
-def binary_factorial_8 : binary_factorial(8) = 0b1001110110000000 {
-  exact binary_factorial_value_step(7, 0b1001110110000, binary_factorial_7);
+def binary_factorial_8 : binary_factorial(8) = binary.(0b1001110110000000) {
+  exact binary_factorial_value_step(7, binary.(0b1001110110000), binary_factorial_7);
 }
 
-def binary_factorial_9 : binary_factorial(9) = 0b1011000100110000000 {
-  exact binary_factorial_value_step(8, 0b1001110110000000, binary_factorial_8);
+def binary_factorial_9 : binary_factorial(9) = binary.(0b1011000100110000000) {
+  exact binary_factorial_value_step(8, binary.(0b1001110110000000), binary_factorial_8);
 }
 
-def binary_factorial_ten : binary_factorial(10) = 0b1101110101111100000000 {
-  exact binary_factorial_value_step(9, 0b1011000100110000000, binary_factorial_9);
+def binary_factorial_ten : binary_factorial(10) = binary.(0b1101110101111100000000) {
+  exact binary_factorial_value_step(9, binary.(0b1011000100110000000), binary_factorial_9);
 }

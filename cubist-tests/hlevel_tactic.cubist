@@ -3,6 +3,7 @@
 // propositions, from the lemmas of library/hlevels.cubist, evidence in scope
 // and hints, under counted fuel.
 import hlevels;
+use nat;
 
 // hlevel proves each kind of goal, from evidence, hints and the type's shape.
 // Every proof is built from computable lemmas and uses no assumption, so it

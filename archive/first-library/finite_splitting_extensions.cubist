@@ -1,6 +1,7 @@
 import nat;
 import polynomial_splitting;
 import polynomial_root_existence;
+use nat;
 
 // This first construction gives a finite extension where the polynomial
 // splits. The splitting-field construction then restricts to the roots' field.

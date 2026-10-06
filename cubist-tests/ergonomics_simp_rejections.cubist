@@ -2,6 +2,7 @@
 // equate a loop with reflexivity.
 
 import primes;
+use nat;
 
 // Error: E369: Simplification rewrite budget exceeded. Remaining goal: n + 0 + 0 + 0 + 0 + 0 + 0 +
 //   0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 +

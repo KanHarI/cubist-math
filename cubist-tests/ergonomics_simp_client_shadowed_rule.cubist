@@ -2,6 +2,7 @@
 // imported rule shadows it in the source, so simp is offered no frozen form
 // that would name it.
 import ergonomics_simp_rules_a;
+use nat;
 
 def nat_add_zero(n : Nat) := n;
 

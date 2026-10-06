@@ -3,6 +3,7 @@ import radix_arithmetic;
 import radix_induction;
 import radix_digit_laws;
 import primes;
+use nat;
 
 def radix_positive_to_nat(extra : Nat, p : RadixPositive(extra)) :=
   radix_positive_rec(

@@ -3,6 +3,7 @@
 // leaves, by which m.f reads a field of a model m and `open m;` puts a
 // model's fields and notation in scope.
 import {expandTheory} from "../cubist/theories.mjs";
+import {Scope} from "./elaboration.mjs";
 
 // The scope's key for an operator a model's notation binds: no source name
 // can spell it.
@@ -106,10 +107,15 @@ export function opened(t,scope,node,{complete=true}={}) {
 // where the notation is declared, under keys no source name can spell, so
 // that no later binding changes what a rule means.
 // The library's names a literal's lexeme is built from (lexemes.cubist).
-const LEXEME_NAMES=["cons","nil","digit","lower","upper","period","slash","underscore","plus","minus","parsed_value","parse_answer"];
+const LEXEME_NAMES=["cons","nil","digit","lower","upper","period","slash","underscore","plus","minus","parsed_value","parse_answer","Nat"];
 export const lexemeKey=name=>`\u0000lexeme ${name}`;
 export function notationDeclaration(t,module,d,env,declared=new Set()) {
   const rules=new Map();
+  // The rules are read in the selection where the notation is declared, a
+  // file-level use's (L2.10j): their names, and their numerals and operators,
+  // wherever they are applied.
+  const at=(d.uses??[]).reduce((inner,model)=>selected(t,inner,model),new Scope(module,new Map(),env)).env;
+  const selection=[...at].filter(([key,value])=>(key===SELECTION||key.startsWith(operatorBinding("")))&&env.get(key)!==value);
   // A notation named after a model of this module adds literal rules to
   // that model's notation (L2.10c); no other module can.
   const model=env.has(d.name.text)&&env.get(d.name.text)?.tag!=="Untranslated";
@@ -120,9 +126,9 @@ export function notationDeclaration(t,module,d,env,declared=new Set()) {
       throw module.locate(Error(`A model's notation is its theory's; ${d.name.text}'s adds only a numeral or a literal rule.`),rule.keyword??rule.operatorToken??d.name);
     const aliases=new Map(),pattern=new Set([rule.left?.text,rule.right?.text,rule.param?.text].filter(Boolean));
     const value=renameFree(rule.value,name=>{
-      if(pattern.has(name)||!env.has(name))return null;
+      if(pattern.has(name)||!at.has(name))return null;
       const key=`\u0000notation ${d.name.text} ${name}`;
-      aliases.set(key,env.get(name));
+      aliases.set(key,at.get(name));
       return key;
     });
     // A literal rule builds its lexeme from the library's glyphs, read here.
@@ -130,8 +136,14 @@ export function notationDeclaration(t,module,d,env,declared=new Set()) {
       if(!env.has(name))throw module.locate(Error(`A literal rule reads a Lexeme: import lexemes, which defines ${name}.`),rule.keyword);
       aliases.set(lexemeKey(name),env.get(name));
     }
+    // A numeral rule's natural number is built from the Nat read here.
+    if(rule.kind==="numeral") {
+      if(!env.has("Nat"))throw module.locate(Error("A numeral rule reads a natural number: import nat."),rule.keyword);
+      aliases.set("\u0000notation Nat",env.get("Nat"));
+    }
     const key=rule.kind??(rule.unary?"unary -":rule.operator);
-    rules.set(key,{left:rule.left?.text??rule.param?.text,right:rule.right?.text??null,value,aliases,source:rule.value,
+    rules.set(key,{left:rule.left?.text??rule.param?.text,right:rule.right?.text??null,value,aliases,selection,source:rule.value,
+      ...(rule.kind==="numeral"?{natural:"\u0000notation Nat"}:{}),
       recipe:{left:rule.leftView?.text??null,right:rule.rightView?.text??null}});
   }
   env.set(notationBinding(d.name.text),{tag:"Notation",name:d.name.text,rules,model});
@@ -178,10 +190,11 @@ function renameFree(node,rename,bound=new Set()) {
 // A named notation's rule applied to two operands: its right side with the
 // pattern's names replaced by them, and the scope that resolves its names.
 export function appliedRule(scope,rule,left,right) {
-  // The rule's own names are read in a scope with no selection, where it
-  // was declared; its operands where they stand, in the use's scope.
+  // The rule's own names are read as where it was declared, in that
+  // place's selection or none; its operands where they stand, in the use's
+  // scope.
   let inner=scope.alias(SELECTION,null);
-  for(const [key,value] of rule.aliases)inner=inner.alias(key,value);
+  for(const [key,value] of [...rule.aliases,...rule.selection??[]])inner=inner.alias(key,value);
   const scoped=node=>node&&{kind:"scoped",node,scope,start:node.start,end:node.end};
   const operands=new Map([[rule.left,scoped(left)],...(rule.right?[[rule.right,scoped(right)]]:[])]);
   const substituted=substitute(rule.value,operands);

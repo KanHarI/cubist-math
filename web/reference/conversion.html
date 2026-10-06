@@ -66,6 +66,7 @@
             </ul>
             <p>The checker compares two types this way wherever one must match another: when <code>exact</code> gives a value for the goal, when an argument meets its parameter’s type, when <code>intro</code> looks for a function type in the goal, and when <code>let name : T := term;</code> checks <code>term</code>. In the REPL, <code>evaluate</code> shows a term’s normal form.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def beta : (fun (n : Nat) =&gt; succ(n))(0) = 1 {
   rfl;
@@ -81,6 +82,7 @@ def eliminators : match typed(Unit or Nat, right(4)) return Nat { left u =&gt; 0
   rfl;
 }</code></pre>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def function_eta(A, B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
   rfl;
@@ -96,6 +98,7 @@ def pair_projection : typed(Nat and Nat, (2, 5)).2 = 5 {
 }</code></pre>
             <p>An eliminator applied to a variable does not compute, so an equality that needs a case analysis or induction on the variable is not definitional. It is a theorem, proved with a lemma, <code>rw</code> or <code>simp</code>:</p>
             <pre><code data-check="reject">import nat;
+use nat;
 
 def plus_zero(n : Nat) : n + 0 = n {
   rfl;  // Error: Type mismatch: found n + 0 = n + 0, expected n + 0 = n.
@@ -106,6 +109,7 @@ def plus_zero(n : Nat) : n + 0 = n {
             <h2>Definitions unfold</h2>
             <p>A definition unfolds wherever conversion needs its value: conversion opens <code>boxed_successor(1)</code> to <code>succ(1)</code>, which is the numeral <code>2</code>. There is no separate operation that unfolds a term on request, and no way to keep a definition folded; conversion unfolds definitions as it needs them.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def boxed_successor(n : Nat) := succ(n);
 
@@ -121,6 +125,7 @@ def opened_in_a_type(v : boxed_successor(0) = 1) : 1 = 1 {
             <h2>Unfolding hints</h2>
             <p>Earlier versions of the checker needed to be told which definitions to unfold. The syntax remains, so older proofs still check, but new proofs do not need it. <code>with unfolding [name₁, name₂] { expression }</code> checks one expression as a definition of its own. The list names already checked definitions; the braces hold one expression, without a trailing semicolon. Empty lists and nested scopes are allowed. The names once steered the kernel’s conversion search, which was retired on 2026-10-02; the checker now unfolds whatever a comparison needs, so the list has no further effect.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def identity(n : Nat) := n;
 
@@ -139,6 +144,7 @@ def no_hints : 0 = 0 {
 }</code></pre>
             <p>The compiler keeps the result as a checked helper definition, so the enclosing proof can reuse it without expanding it again. The names change nothing else: never the type, the assumptions or the proof obligations, and they are no evidence of an equality. <a href="assumptions.html#evaluate"><code>evaluate</code></a> ignores them.</p>
             <pre><code data-check="reject">import nat;
+use nat;
 
 def unknown_hint : 0 = 0 {
   // Error: No checked definition to unfold: missing_name

@@ -2,6 +2,7 @@
 // repeated parameter consistency.
 
 import primes;
+use nat;
 
 def duplicated(n : Nat) : n + n = n + n {
   rfl;

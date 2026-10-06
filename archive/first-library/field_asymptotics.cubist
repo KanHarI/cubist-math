@@ -1,6 +1,7 @@
 import nat;
 import field_limits;
 import field_products;
+use nat;
 
 // Mere eventual closeness is enough to identify limits. No selection of a
 // bound for every radius is needed when the conclusion is an equality.

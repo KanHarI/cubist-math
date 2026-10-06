@@ -2,6 +2,7 @@
 // and dependent-position obligations.
 
 import primes;
+use nat;
 
 def first(n : Nat) : (n + 0) + (n + 0) = n + (n + 0) {
   rw [nat_add_zero(n)] at lhs occurrence 1;

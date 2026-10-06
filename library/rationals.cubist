@@ -6,6 +6,7 @@ import lexemes;
 import quotients;
 import algebra;
 import integers;
+use nat;
 
 // The field of fractions of a commutative ring with decidable equality, no
 // zero divisors and zero not one: fractions x / d with d not zero, two of

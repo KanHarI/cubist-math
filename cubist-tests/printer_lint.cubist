@@ -6,6 +6,7 @@
 // clauses keep the names the source gave them.
 
 import nat;
+use nat;
 
 def or_swap(A, B : U0) : A or B -> B or A {
   intro either;

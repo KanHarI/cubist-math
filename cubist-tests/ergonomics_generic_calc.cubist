@@ -3,6 +3,7 @@
 // The step's checked path belongs to its `by` keyword, not its left endpoint.
 
 import primes;
+use nat;
 
 def generic(U < UU0, n : Nat) : n + 0 = n {
   calc {

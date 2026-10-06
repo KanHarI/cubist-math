@@ -1,3 +1,6 @@
+import nat;
+import lexemes;
+
 // Binary positive integers: the leading one, then each trailing digit, the
 // last digit outermost. They have no leading-zero representation.
 inductive BinaryPositive : U0 {
@@ -26,11 +29,43 @@ def binary_positive_cases(R : U0, one : R, even, odd : BinaryPositive -> R, p : 
     fun (child : BinaryPositive, ignored : R) => odd(child), p
   );
 
+// n with one more binary digit: 2n, or 2n + 1.
+computable def binary_twice(n : BinaryNat) : BinaryNat := match n {
+    binary_zero => binary_zero;
+    binary_positive(p) => binary_positive(binary_bit0(p));
+  };
+
+computable def binary_twice_succ(n : BinaryNat) : BinaryNat := match n {
+    binary_zero => binary_positive(binary_one);
+    binary_positive(p) => binary_positive(binary_bit1(p));
+  };
+
+// The binary digits from position `at` of a lexeme, read after `value`.
+computable def binary_digits(s : Lexeme, value : BinaryNat, at : Nat) : Parsed(U0, BinaryNat) := match s {
+    nil => ok(value);
+    cons(digit(zero), rest) => binary_digits(rest, binary_twice(value), succ(at));
+    cons(digit(succ(zero)), rest) => binary_digits(rest, binary_twice_succ(value), succ(at));
+    cons(_, rest) => error(at);
+  };
+
+// The binary literals (L2.10j): 0b and binary digits, read from their
+// characters, so binary.(0b110) is the numeral with digits 1, 1 and 0.
+computable def binary_literal(s : Lexeme) : Parsed(U0, BinaryNat) := match s {
+    cons(digit(zero), cons(lower(succ(zero)), cons(g, rest))) => binary_digits(cons(g, rest), binary_zero, succ(succ(zero)));
+    cons(digit(zero), cons(lower(succ(zero)), nil)) => error(succ(succ(zero)));
+    cons(digit(zero), _) => error(succ(zero));
+    _ => error(zero);
+  };
+
+notation binary {
+  literal(s : Lexeme) := binary_literal(s);
+}
+
 // These examples reduce by constructor computation alone.
-def binary_literal_digits : 0b110 = binary_positive(binary_bit0(binary_bit1(binary_one))) {
+def binary_literal_digits : binary.(0b110) = binary_positive(binary_bit0(binary_bit1(binary_one))) {
   rfl;
 }
 
-def binary_literal_leading_zeroes : 0b000110 = 0b110 {
+def binary_literal_leading_zeroes : binary.(0b000110) = binary.(0b110) {
   rfl;
 }

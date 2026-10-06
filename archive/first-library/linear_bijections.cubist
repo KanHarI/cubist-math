@@ -1,6 +1,7 @@
 import nat;
 import dimension;
 import surjections;
+use nat;
 
 // Injectivity and surjectivity refer to the underlying map of a checked
 // linear map. Surjectivity promises only truncated preimages.

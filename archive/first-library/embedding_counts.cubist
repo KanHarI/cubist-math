@@ -2,6 +2,7 @@ import nat;
 import embedding_tower_types;
 import separability_base_change;
 import finite_towers;
+use nat;
 
 // A surjective base embedding leaves exactly one embedding over that base.
 def embeddings_over_surjective_prop(

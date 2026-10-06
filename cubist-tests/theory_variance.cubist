@@ -5,6 +5,7 @@
 // that mentions a carrier on both sides of an arrow has no homomorphisms.
 import nat;
 import hlevels;
+use nat;
 
 // No carrier: n is the same value on both sides, and size's result too.
 theory Powered(U < UU0) {

@@ -3,6 +3,7 @@
 // The pair's type may be a definition that computes to a pair type.
 
 import nat;
+use nat;
 
 def first_of(p : Nat and Unit) : Nat := p.1;
 

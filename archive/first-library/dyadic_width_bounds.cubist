@@ -1,5 +1,6 @@
 import nat;
 import dyadic_sampling;
+use nat;
 
 // Scalar estimates for mesh decay; these use no Archimedean or completeness
 // assumption and do not extract witnesses from propositional truncation.

@@ -2,6 +2,7 @@
 // are on its fuel. Reading the goal's endpoints is the search's question,
 // and each rewrite is counted.
 import nat;
+use nat;
 
 def nothing(n : Nat) : n = n {
   simp only [];

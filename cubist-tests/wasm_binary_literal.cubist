@@ -1,8 +1,10 @@
 // From tests/cubical-wasm.test.mjs: the binary naturals' source checks
 // entirely in cubical WASM, and a false binary literal equation is refused.
 import binary_naturals;
+use binary;
 
-// Error: E606: Type mismatch: found 0b110 = 0b110, expected 0b110 = 0b111.
+// Error: E606: Type mismatch: found binary.(0b110) = binary.(0b110), expected binary.(0b110) =
+//   binary.(0b111).
 def bad_binary_literal : 0b110 = 0b111 {
   exact refl(0b110);
 }

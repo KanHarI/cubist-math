@@ -1,6 +1,7 @@
 import nat;
 import polynomial_coordinates;
 import polynomial_evaluation;
+use nat;
 
 // Finite polynomials as arrays. Their linear laws follow from coefficient
 // round trips, independently of any chosen evaluation point.

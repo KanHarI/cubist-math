@@ -2,6 +2,7 @@
 // for arbitrary bases, and need no choice.
 
 import dimension;
+use nat;
 
 def empty_dimension(K : AlgebraicField) :
   dimension(

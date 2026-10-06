@@ -1,5 +1,6 @@
 import nat;
 import binary_equivalence;
+use nat;
 
 // Small scalar identities used to check the four digit-addition cases.
 def nat_add_one(n : Nat) : n + 1 = succ(n) {
@@ -239,7 +240,7 @@ def binary_factorial_correct(n : Nat) : binary_to_nat(binary_factorial(n)) = fac
 // The right side denotes 3628800 in unary Nat but remains a compact expression.
 // This manual transfer uses the proved compatibility theorem. It is not yet
 // the computational cubical-univalence transport regression.
-def nat_3628800 := binary_to_nat(0b1101110101111100000000);
+def nat_3628800 := binary_to_nat(binary.(0b1101110101111100000000));
 
 def factorial_ten_from_binary : factorial(10) = nat_3628800 {
   exact trans(sym(binary_factorial_correct(10)), cong(binary_to_nat, binary_factorial_ten));

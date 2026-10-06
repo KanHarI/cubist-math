@@ -2,6 +2,7 @@ import nat;
 import circle;
 import path_actions;
 import homotopy_paths;
+use nat;
 
 // A circle map specified by the image of its generating loop. These are
 // maps of homotopy types, not yet functions on the geometric unit circle.

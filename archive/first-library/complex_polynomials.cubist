@@ -1,6 +1,7 @@
 import nat;
 
 import ring_laws;
+use nat;
 
 // Lower coefficients of a monic polynomial, constant coefficient first.
 // The implicit leading coefficient is one, so its formal degree is n.

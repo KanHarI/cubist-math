@@ -4,6 +4,7 @@
 // ........................................................................................
 
 import nat;
+use nat;
 
 // Error: E433: simp only requires homogeneous equality lemmas.
 def broken__rule(U < UU0, n : Nat) : n = n {

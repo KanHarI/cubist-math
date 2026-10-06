@@ -1,6 +1,7 @@
 import nat;
 import contour_samples;
 import sample_sum_laws;
+use nat;
 
 def contour_sum_join(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,

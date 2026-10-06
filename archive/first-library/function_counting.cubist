@@ -1,5 +1,6 @@
 import nat;
 import finite;
+use nat;
 
 // Multiplication and exponentiation are recurrences on ordinary Nat.
 def multiply_count(n, m : Nat) := induction n as k return Nat {

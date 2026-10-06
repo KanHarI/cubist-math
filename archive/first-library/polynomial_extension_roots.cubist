@@ -2,6 +2,7 @@ import nat;
 import polynomial_ideals;
 import polynomial_maps;
 import polynomial_root_bound;
+use nat;
 
 def bounded_eval_mapped(K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat) :=
   induction n as k return (

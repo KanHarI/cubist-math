@@ -1,6 +1,7 @@
 import nat;
 import maps;
 import classical;
+use nat;
 
 // Iterate g after f. A g-point has a g-preimage at every possible ancestor.
 def iterate(A : U0, step : A -> A, x : A, n : Nat) := induction n as k return A {

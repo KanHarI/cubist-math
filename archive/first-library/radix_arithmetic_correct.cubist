@@ -1,5 +1,6 @@
 import nat;
 import radix_decode;
+use nat;
 
 // Ring-like natural-number rearrangements, proved from the existing arithmetic.
 def radix_nat_distribute(r, a, b : Nat) : r * (a + b) = r * a + r * b {

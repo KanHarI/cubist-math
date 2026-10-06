@@ -8,7 +8,7 @@ import hlevels;
 import algebra;
 
 // The library's nat: 2 + 3 * 4 is add(2, mul(3, 4)).
-def fourteen : nat.(2 + 3 * 4) = 14 {
+def fourteen : nat.(2 + 3 * 4 = 14) {
   rfl;
 }
 
@@ -22,7 +22,7 @@ notation times {
 print(evaluate(times.(3 + 4)));
 
 // A rule's names are read where it was declared: a local add changes nothing.
-def hygienic(add : Nat) : times.(2 + 3) = 6 {
+def hygienic(add : Nat) : times.(2 + 3 = 6) {
   rfl;
 }
 
@@ -30,7 +30,7 @@ def hygienic(add : Nat) : times.(2 + 3) = 6 {
 def plus := nat.(+);
 
 // Output: 7
-print(evaluate(plus(3, 4)));
+print(evaluate(nat.(plus(3, 4))));
 
 // Two models on one carrier: * is addition in one and multiplication in
 // the other.
@@ -39,16 +39,16 @@ def additive : Monoid(U0) := nat_additive.monoid;
 def multiplicative : Monoid(U0) := nat_multiplicative.monoid;
 
 // Output: 7
-print(evaluate(3 additive.(*) 4));
+print(evaluate(nat.(3 additive.(*) 4)));
 
 // Output: 12
-print(evaluate(3 multiplicative.(*) 4));
+print(evaluate(nat.(3 multiplicative.(*) 4)));
 
 // Selections nest, the innermost winning.
 def nested(x : Nat) : Nat := multiplicative.(x * nat.(x + 1));
 
 // Output: 12
-print(evaluate(nested(3)));
+print(evaluate(nat.(nested(3))));
 
 // A selection is complete: + is not the additive monoid's, whose
 // operation is *.

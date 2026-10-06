@@ -1,5 +1,6 @@
 import nat;
 import finite_basis_search;
+use nat;
 
 // A finite free vector space is projective: lift its generators through a
 // surjection and extend linearly. The result is truncated; finite recursion

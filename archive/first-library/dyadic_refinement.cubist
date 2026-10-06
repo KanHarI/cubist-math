@@ -1,6 +1,7 @@
 import nat;
 import dyadic_data;
 import subdivision_refinement;
+use nat;
 
 // The fine samples on each coarse edge remain inside that edge.
 def IntervalRefinementAdmissible(

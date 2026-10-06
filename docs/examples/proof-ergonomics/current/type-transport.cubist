@@ -1,5 +1,6 @@
 // Explicit predecessors for checked type-goal simpa.
 import primes;
+use nat;
 
 def move_type(A, B : U0, p : A = B, a : A) : B {
   exact transport(fun (X : U0) => X, A, B, p, a);

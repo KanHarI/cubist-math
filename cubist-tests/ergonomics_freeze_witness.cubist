@@ -2,6 +2,7 @@
 // preserves its witness for dependent proofs.
 
 import primes;
+use nat;
 
 // Warning: W702: stable is never used after this let: remove it.
 def dependent(

@@ -2,6 +2,7 @@
 // lemmas do not make are refused: an embedding into a target that is not
 // algebraically closed, and one embedding for every separable extension.
 import embedding_counts;
+use nat;
 // Error: E606: Type mismatch: found exists f : af_carrier(K) -> af_carrier(T).
 //   FieldEmbeddingLaws(K, af_carrier(T), structure_data(FieldData, T), f), expected forall p :
 //   Polynomial(Truncate, T). PolynomialNonzero(Truncate, TruncateIntro, T, p) ->

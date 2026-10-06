@@ -118,7 +118,8 @@ test("named syntax preserves path binders and sharing across checks", t => {
 
 test("the actual binary source checks entirely in cubical WASM", async t => {
   const { result } = await checkTestModule(t, "wasm_binary_literal", { module: producerModule });
-  assert.equal(result.imports.filter(d=>d.sourceModule==="binary_naturals" && d.verified).length,6);
+  // Its 6 declarations and the 4 of its binary notation's parser.
+  assert.equal(result.imports.filter(d=>d.sourceModule==="binary_naturals" && d.verified).length,10);
 });
 
 test("dependent pair induction checks its motive and both branch arguments natively", t => {

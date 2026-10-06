@@ -5,6 +5,7 @@
 import nat;
 import algebra;
 import integers;
+use nat;
 
 computable def equal_or_not(x, y : Z) : Nat := match int_decide(x, y) return Nat {
     left same => 1;

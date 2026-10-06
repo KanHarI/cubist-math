@@ -3,6 +3,7 @@
 // changes. A child takes its parents' universes and parameters by name.
 import nat;
 import hlevels;
+use nat;
 
 // Two carriers in two universes, and a map between them.
 theory Arrow(U, V < UU0) {

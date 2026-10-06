@@ -3,6 +3,7 @@ import polynomial_residue_field;
 import polynomial_constants;
 import polynomial_eval_characterization;
 import field_homomorphisms;
+use nat;
 
 // The coefficient-field inclusion sends a coefficient to its constant residue.
 def residue_constant(K : AlgebraicField, M : PolynomialModulus(K), a : af_carrier(K)) :=

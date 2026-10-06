@@ -6,6 +6,7 @@ import nat;
 import algebra;
 import integers;
 import rationals;
+use nat;
 
 computable def equal_or_not(x, y : Q) : Nat := match rat_decide(x, y) return Nat {
     left same => 1;

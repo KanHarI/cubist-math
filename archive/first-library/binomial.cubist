@@ -1,6 +1,7 @@
 import nat;
 
 import finite;
+use nat;
 
 // Pascal's recurrence, computed entirely in Nat.
 def choose(n : Nat) := induction n as row return (Nat -> Nat) {

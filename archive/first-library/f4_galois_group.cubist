@@ -2,6 +2,7 @@ import nat;
 import f4_galois;
 import group_univalence;
 import fundamental_groups;
+use nat;
 
 // Every automorphism is determined by the image of alpha. The only possible
 // images are alpha and alpha+1, so the Galois group has exactly two elements.

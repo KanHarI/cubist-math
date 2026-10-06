@@ -1,6 +1,7 @@
 // From tests/polynomial-algebra.test.mjs: Zero polynomial is excluded from
 // root bounds and division by zero.
 import polynomial_root_bound;
+use nat;
 // Error: E606: Type mismatch: found (fun (n : Nat) => induction n return af_carrier(K) { zero =>
 //   field_one(K); succ ignored => field_zero(K); }, merely(Truncate, TruncateIntro, exists k : Nat.
 //   Se…, expected (fun (n : Nat) => K.2.1.1.1, merely(Truncate, TruncateIntro, exists k : Nat.

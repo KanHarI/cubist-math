@@ -1,6 +1,7 @@
 import nat;
 import separable_polynomials;
 import finite_omission;
+use nat;
 
 // Move any given linear factor to the front, leaving the other indices in
 // their original order. The index map records exactly which factor was removed.

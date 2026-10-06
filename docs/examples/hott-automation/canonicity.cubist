@@ -8,6 +8,7 @@ import primes;
 import circle;
 import hlevels;
 import quotients;
+use nat;
 
 // Natural-number recursion.
 computable def closed_arithmetic : add(mul(3, 4), 5) = 17 {

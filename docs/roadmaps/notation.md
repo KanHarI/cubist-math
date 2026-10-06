@@ -857,6 +857,27 @@ turn `-` into `~` only for revisions before the swap, because arithmetic
 
 ## L2.10j. Retiring name-based operators
 
+**The migration landed** on 2026-10-06, the first of the two commits
+below. Every source that reads a numeral or an operator by name selects
+`nat`: 7 library modules besides nat, which selects its own notation after
+declaring it, 125 archive modules, 111 test modules, 8 documentation
+examples, about 170 reference examples and the JavaScript tests' inline
+sources. A module whose only `0` and `1` are a path's endpoints, as
+`loop @ 1`, selects nothing. The archive's `binary_naturals` declares
+`binary`, whose literal rule reads `0b` and binary digits with the
+library's lexemes, and its 97 binary literals are written `binary.(0b…)`.
+Three changes support it: a notation's rules are read in the selection
+in force where it is declared, so the integers' `int(n, 0)` reads its `0`
+in nat wherever it is applied; a file-level `use` is checked where it
+stands; and a REPL keeps each `use`, and the selections its base file
+ends with, for the entries after it. Checked against the previous
+revision, every library declaration elaborates to the identical term, and
+so does every archive declaration but the 60 that hold binary literals,
+each of whose 39 distinct literals is proved equal to its old expansion by
+`rfl`. A revision's nat without a notation is read with one
+(`web/cubist/legacy-syntax.mjs`), so today's modules can be compared with
+it.
+
 Today `x + y` means `add(x, y)` for whatever `add` is in scope, and `*`,
 `<` and `<=` likewise mean `mul`, `isLt` (or `succ(x) <= y` through `le`)
 and `le`; a numeral is built from whatever `Nat` is in scope

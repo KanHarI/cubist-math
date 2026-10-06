@@ -3,6 +3,7 @@ import f4_galois_connection;
 import decidable_subobjects;
 import equivalence_from_inverse;
 import galois_orders;
+use nat;
 
 // Fixedness can be checked on the two representatives of the automorphism
 // type. The classification path transports the result to any automorphism.

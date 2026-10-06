@@ -2,6 +2,7 @@ import nat;
 import radix_equivalence;
 import radix_arithmetic_correct;
 import binary_arithmetic_correct;
+use nat;
 
 // Direct digit conversion computes in binary. It does not first construct a
 // unary natural number; unary evaluation is used only in the correctness proof.

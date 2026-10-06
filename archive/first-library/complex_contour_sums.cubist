@@ -3,6 +3,7 @@ import complex_algebra;
 import complex_contour_samples;
 import contour_examples;
 import contour_sums;
+use nat;
 
 // Specialization of the finite quadrature laws to complex coordinates.
 // These are finite sums; existence of a contour integral is not asserted.

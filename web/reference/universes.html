@@ -77,6 +77,7 @@ def lowered := small_identity(U0, Nat);
             <h2>Universe variables</h2>
             <p>A declaration with <code>A : U0</code> works only for small types. To work at every universe, bind a <strong>universe variable</strong> with <code>U &lt; UU0</code>, read “U is a universe below UU0”. Inside the declaration, <code>U</code> is a universe like <code>U0</code>, so <code>A : U</code> is a type of that universe. The declaration is checked once, for every universe at the same time.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def identity(U &lt; UU0, A : U, x : A) : A := x;
 def three := identity(U0, Nat, 3);

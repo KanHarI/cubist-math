@@ -1,6 +1,7 @@
 import nat;
 import integer_multiples;
 import finite;
+use nat;
 
 // Finite sums and the single-supported-term identity.
 

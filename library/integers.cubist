@@ -2,6 +2,7 @@ import nat;
 import hlevels;
 import quotients;
 import algebra;
+use nat;
 
 // The integers as a quotient: a pair of naturals (a, b) stands for a - b,
 // and two pairs stand for one integer when a + d = c + b. The integers are

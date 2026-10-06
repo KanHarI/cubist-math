@@ -4,6 +4,7 @@
 // uses a declared type carries the marker (the specification's 6.4).
 
 import nat;
+use nat;
 
 inductive N {
   zero;

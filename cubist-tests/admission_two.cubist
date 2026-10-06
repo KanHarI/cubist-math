@@ -3,6 +3,7 @@
 // derived as the tactic runs, and every definition derives again from
 // nothing.
 import nat;
+use nat;
 
 def two : Nat {
   exact 2;

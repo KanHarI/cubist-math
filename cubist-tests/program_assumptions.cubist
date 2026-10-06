@@ -3,6 +3,7 @@
 // and TruncateIntro, and innocent none.
 
 import nat;
+use nat;
 
 def Mere(A : U1) := Truncate(U1, A);
 

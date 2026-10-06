@@ -3,6 +3,7 @@
 // below is what the print before it shows.
 
 import nat;
+use nat;
 
 inductive Tree {
   leaf;

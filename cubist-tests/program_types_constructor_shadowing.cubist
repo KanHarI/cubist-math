@@ -2,6 +2,7 @@
 // and succ shadow Nat's, and the numeral 2 is still Nat's. From
 // tests/program-types.test.mjs.
 import nat;
+use nat;
 
 inductive N {
   zero;

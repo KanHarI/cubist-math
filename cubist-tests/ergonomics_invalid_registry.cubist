@@ -2,6 +2,7 @@
 // the default rule set.
 
 import primes;
+use nat;
 
 def ordinary(n : Nat) := n;
 

@@ -2,6 +2,7 @@
 // domain before a binder shadows that name.
 
 import nat;
+use nat;
 
 def Carrier := Nat;
 

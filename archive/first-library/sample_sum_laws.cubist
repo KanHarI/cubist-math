@@ -1,6 +1,7 @@
 import nat;
 import sample_chains;
 import integer_multiples;
+use nat;
 
 // Finite-sum laws, independent of any continuity or integration axiom.
 

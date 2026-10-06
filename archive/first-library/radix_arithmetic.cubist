@@ -1,6 +1,7 @@
 import nat;
 import radix_naturals;
 import paths;
+use nat;
 
 // The carry cases use structural finite-digit increment, at any radix >= 2.
 def radix_positive_succ(extra : Nat, p : RadixPositive(extra)) :=

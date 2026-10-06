@@ -3,6 +3,7 @@
 // roots, and an open interval context.
 
 import nat;
+use nat;
 
 def N := Nat;
 

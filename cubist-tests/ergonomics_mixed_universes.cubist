@@ -2,6 +2,7 @@
 // bind and inspect every parameter.
 
 import nat;
+use nat;
 
 def mixed(U < UU0, V, W < UU0, A : U, B : V, x : A, y : B) := x;
 

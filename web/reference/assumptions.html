@@ -164,6 +164,7 @@ def merely_assumed(A : U0, nn : (A -&gt; Void) -&gt; Void) : Truncate(U0, A) {
             </dl>
             <p>All three need every argument; there is no separate univalence axiom. Because they use no assumption, results built on them can be marked <a href="#computable"><code>computable</code></a>, and transport along <code>ua</code> computes:</p>
             <pre><code data-check="accept">import paths;
+use nat;
 
 def swap(p : Unit and Nat) := unpack p as (u, n) return Nat and Unit { typed(Nat and Unit, (n, u)); };
 
@@ -213,6 +214,7 @@ computable def props_form_a_set : IsSet(U1, Prop(U0)) := prop_type_is_set(U0);</
             <h3 id="computable"><code>computable def</code></h3>
             <p>Writing <code>computable</code> before <code>def</code> requires the declaration to use no assumption. The checker collects the assumptions of the checked term, of its type and of every definition they mention; this is the same list that the inspector shows. If the list is not empty, the declaration is rejected. The error names every assumption, and one chain of definitions through which the first one enters. A rejected declaration is not added, so the declarations that use it are blocked too.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 computable def double(n : Nat) := n + n;
 
@@ -238,17 +240,20 @@ computable def recover(P : U0, prop : Proposition(P), nn : (P -&gt; Void) -&gt; 
             <h3 id="evaluate"><code>evaluate</code></h3>
             <p><code>evaluate term expecting value;</code> is a top-level directive, placed between declarations. It checks both terms and requires <code>term</code> to use no assumption. It requires the two to have the same type, then compares their normal forms. It defines no name. A success is reported with the normal form. A failure is an error that makes the module incomplete, so every evaluation is rechecked with the rest of its module.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def double(n : Nat) := n + n;
 
 evaluate double(3) expecting 6;
 evaluate double(double(1)) expecting 2 + 2;</code></pre>
             <pre><code data-check="reject">import nat;
+use nat;
 
 def double(n : Nat) := n + n;
 
 evaluate double(3) expecting 7;  // Error: The term evaluates to 6, not 7.</code></pre>
             <pre><code data-check="reject">import nat;
+use nat;
 
 // Error: The evaluated term depends on non-computing assumptions: Truncate, TruncateIntro.
 //   Path to Truncate: Truncate.

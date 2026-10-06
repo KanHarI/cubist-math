@@ -2,6 +2,7 @@
 // like separate ones.
 
 import nat;
+use nat;
 
 def separate(U < UU0, V < UU0, A : U, B : V, x : A, y : B) := x;
 

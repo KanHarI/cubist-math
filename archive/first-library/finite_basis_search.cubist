@@ -1,5 +1,6 @@
 import nat;
 import linear_bijections;
+use nat;
 
 // Classical counterexamples are produced only under propositional truncation.
 // No global selection function or axiom of choice is required.

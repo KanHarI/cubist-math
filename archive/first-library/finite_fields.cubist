@@ -1,5 +1,6 @@
 import nat;
 import field_extensions;
+use nat;
 
 // F2 and F4 are constructed by finite tables. F4 represents F2[t]/(t^2+t+1):
 // the four entries are 0, 1, alpha, alpha+1. Every algebraic law below is

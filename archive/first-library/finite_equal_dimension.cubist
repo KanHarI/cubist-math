@@ -1,6 +1,7 @@
 import nat;
 import artin_evaluation_matrix;
 import extension_degree;
+use nat;
 
 // An injective map between two n-dimensional spaces is onto. The proof
 // transports both spaces to the same coordinate space and uses the checked

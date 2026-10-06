@@ -5,6 +5,7 @@
 // f{{A := Nat}}(x). A universe hole is the least universe the call needs. A
 // definition names its parameters apart.
 import lists;
+use nat;
 
 def same{{U < UU0, A : U}}(a : A) : A := a;
 

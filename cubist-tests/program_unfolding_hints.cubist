@@ -4,6 +4,7 @@
 // conversion oracle's retirement.
 
 import nat;
+use nat;
 
 def id(n : Nat) := n;
 

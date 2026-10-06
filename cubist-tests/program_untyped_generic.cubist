@@ -2,6 +2,7 @@
 // definitions report errors without aborting later declarations.
 
 import nat;
+use nat;
 
 // Error: E346: Untyped lambda requires an expected function type.
 def generic(U < UU0) := fun x => x;

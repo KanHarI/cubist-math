@@ -1,6 +1,7 @@
 // From tests/universe-generic.test.mjs.
 
 import nat;
+use nat;
 
 // A generic definition checks once and is instantiated at universes of tier
 // 0.

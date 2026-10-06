@@ -2,6 +2,7 @@ import nat;
 import complex_perturbations;
 import complex_limits;
 import field_magnitude_close;
+use nat;
 
 // Dropping the first term keeps the same limit and the same sufficient bound.
 def complex_converges_successor(

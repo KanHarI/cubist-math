@@ -5,6 +5,7 @@
 // through the parents' labels.
 import nat;
 import hlevels;
+use nat;
 
 theory Magma(U < UU0) {
   M : set U;
