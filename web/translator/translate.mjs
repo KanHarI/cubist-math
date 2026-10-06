@@ -351,8 +351,9 @@ export class Translator {
       if(this.checker)this.checker.notation={selection:selectionName(d.uses)};
       if(d.kind==="theory") { queue.unshift(...theoryDeclarations(this,module,d,env,declarations)); continue; }
       // A file-level use m; selects m for the definitions and directives
-      // after it, which record it (L2.4c). It is checked where it stands, so one that selects
-      // nothing is refused even with nothing after it, as at a REPL (L2.10j).
+      // after it, which record it (L2.4c). It is checked where it stands, so
+      // one that selects nothing is refused even with nothing after it, as at
+      // a REPL (L2.10j).
       if(d.kind==="use") {
         const unit=module.declaration(this.declarationFuel);
         try { selected(this,new Scope(unit,new Map(),env),d.model); }
