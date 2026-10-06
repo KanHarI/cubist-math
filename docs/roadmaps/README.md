@@ -42,15 +42,19 @@ target statement or a supplied theorem parameter as an already proved result.
   reversal with the cubical operators tightest, notation declared as used,
   one selection form, `use`, which replaces `open`, with sections, and
   qualified operators such as `a G.(+) b`, `Lexeme` literals and a partial
-  field inverse. Notation rules remain open, and the remaining grammar and
-  elaboration contracts are draft.
+  field inverse. L2.10a–e and i–k are done, and with L2.10j (2026-10-06)
+  every source selects `nat`, and an operator or numeral outside any
+  selection is an error. Notation rules (L2.10h), large numerals and
+  `decide` remain deferred.
 - [Core theories](core-theories.md): the contract of work-plan L2.4,
   theory declarations, models, scoped notation, sections, extension,
   homomorphisms and isomorphisms, specified and implemented on 2026-10-05.
-  The library's algebraic hierarchy is written in it. A revision, L2.4c,
-  is decided: `M : set U` in place of `sort`, the universe named in the
-  header, `Monoid(U)` as the type of models, theory families, and
-  independent theories combined without changing either.
+  The library's algebraic hierarchy is written in it. Its revision, L2.4c,
+  is done (2026-10-06): `M : set U` in place of `sort`, the universe named
+  in the header, `Monoid(U)` as the type of models, theory families, and
+  independent theories combined without changing either. Initial and free
+  models (L2.6) are specified, and their first slice, `initial` and `free`
+  with `fold`, is done.
 - [Results of the first library](../library-results.md): what the archived
   library established, in mathematical English.
 - [Kernel instructions](kernel-instructions.md): the trusted kernel since
@@ -83,10 +87,13 @@ target statement or a supplied theorem parameter as an already proved result.
     2026-10-04; `apply` and `refine` withdrawn), explicit `match` with
     several values and nested patterns (7), and core theories, notation and
     sections (6, 2026-10-05).
-  - Remaining: initial and free models, algebraic normalization and
-    structure identity (6), the rest of inductive declarations and pattern
-    matching (7), plus expected-value patterns and closed truncation readout
-    from milestone 8.
+  - Delivered on 2026-10-06: expected-value patterns and closed truncation
+    readout (milestone 8), `hlevel_rule` and quantified hints, the box
+    notation for compositions and the squares library (HoTT E2), and the
+    first slice of initial and free models.
+  - Remaining: the rest of initial and free models, algebraic normalization
+    and structure identity (6), and the rest of inductive declarations and
+    pattern matching (7).
   - The [concrete implementation plan](proof-ergonomics-implementation-plan.md)
     adds PR-sized steps, lowering contracts, cubical notation proposals, and
     checked current-language sample expansions.
