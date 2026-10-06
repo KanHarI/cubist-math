@@ -57,6 +57,24 @@ def rebinds : rebound.(nat.(7) + nat.(1)) = zero {
   rfl;
 }
 
+// An induction's index is the predecessor in its step too: x there is the
+// predecessor of 1, not the left operand, and z not the global z.
+notation indexed {
+  x + y := induction y as x return Nat { zero => zero; succ h => x; };
+}
+
+def predecessor : indexed.(nat.(7) + nat.(1)) = zero {
+  rfl;
+}
+
+notation reindexed {
+  x + y := induction y as z return Nat { zero => zero; succ h => z; };
+}
+
+def repredecessor : reindexed.(nat.(7) + nat.(1)) = zero {
+  rfl;
+}
+
 // The operation alone.
 def plus := nat.(+);
 

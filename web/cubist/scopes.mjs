@@ -31,9 +31,11 @@ const SCOPES = {
   binderGroup: n => [{ binders: present(n.names), keys: ["body"], renamable: true }],
   pathLambda: n => [{ binders: present([n.dimension]), keys: ["body"], renamable: true }],
   // induction n as k return P(k) { zero => …; succ h => …; }: the index in
-  // the motive, the hypothesis in the step; a general induction's clauses
-  // bind their own names.
-  induction: n => [{ binders: present([n.index, n.motiveName]), keys: ["type"], renamable: true },
+  // the motive and, as the predecessor, in the step; the hypothesis in the
+  // step. A general induction's motive name is in its motive only, and its
+  // clauses bind their own names.
+  induction: n => [{ binders: present([n.index]), keys: ["type", "step"], renamable: true },
+    { binders: present([n.motiveName]), keys: ["type"], renamable: true },
     { binders: present([n.hypothesis]), keys: ["step"], renamable: true }],
   // match s as k return P(k) { left x => …; right y => …; }, or clauses.
   match: n => [{ binders: present([n.motiveName]), keys: ["type"], renamable: true },
@@ -157,16 +159,20 @@ export function substituted(node, args, refuse) {
 // would put an argument under its binders.
 const occursFree = (node, scope, name) => scope.keys.some(key => freeNames(node[key] ?? null).has(name));
 // The node with each scope's binders that `free` holds renamed fresh, in the
-// binder and in the children it is in scope in.
+// binder and in the children that scope covers only: a match's left side's
+// binder is renamed in its left branch, never in the right.
 function apart(node, scopes, free, fresh) {
-  const tokens = new Map(), renaming = new Map(), copy = { ...node };
-  for (const scope of scopes) for (const binder of scope.binders) if (free.has(binderName(binder))) {
-    const other = renaming.get(binderName(binder)) ?? fresh(binderName(binder));
-    renaming.set(binderName(binder), other);
-    tokens.set(binder, { ...binder, text: other });
+  const tokens = new Map(), copy = { ...node };
+  for (const scope of scopes) {
+    const renaming = new Map();
+    for (const binder of scope.binders) if (free.has(binderName(binder))) {
+      const other = renaming.get(binderName(binder)) ?? fresh(binderName(binder));
+      renaming.set(binderName(binder), other);
+      tokens.set(binder, { ...binder, text: other });
+    }
+    if (renaming.size) for (const key of scope.keys) if (key in copy)
+      copy[key] = renamedFree(copy[key], name => renaming.get(name) ?? null);
   }
-  for (const scope of scopes) for (const key of scope.keys) if (key in copy)
-    copy[key] = renamedFree(copy[key], name => renaming.get(name) ?? null);
   const swap = value => tokens.get(value) ?? (Array.isArray(value) ? value.map(swap) : value);
   for (const [key, value] of Object.entries(copy)) copy[key] = swap(value);
   return copy;
