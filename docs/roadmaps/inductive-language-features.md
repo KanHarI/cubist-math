@@ -7,8 +7,12 @@ default, in the subset the [H1 specification](h1-signature-specification.md)
 admits, with explicit `obligations` (L2.2b). Core theories, section 1's
 models, homomorphisms, isomorphisms, notation, sections and `extends`, were
 implemented on 2026-10-05 (work-plan L2.4, [core theories](core-theories.md)),
-and the library's algebraic hierarchy is written in them. Initial and free
-models, generated identity, cells, relations and bundles, proof-first
+and the library's algebraic hierarchy is written in them. Their syntax
+revision, L2.4c, is decided ([core theories](core-theories.md#revision-l24c)):
+carriers as fields, `M : set U`, the theory's name as its models' type,
+theory families, and relation fields as families of propositions. Initial
+and free models, generated identity, cells, section 3's declared relations
+and bundles, proof-first
 h-levels, per-argument obligations, dependent matching, canonical
 quotients, presentations and derivations remain proposals. The [audit of 2026-09-28](audits/2026-09-28-audit.md) corrected
 three promises here: the universal property of section 1, `Torus2` in
