@@ -2251,6 +2251,10 @@
    "summary": "G5: the rebuilt `CauchySame` and `EventualClose` in U0, computable."
   },
   {
+   "path": "cubist-tests/truncation_readout.cubist",
+   "summary": "`print(witness(t))`: the witness a closed truncation holds, read under maps, squash endpoints and transport along a path of types, with its type and certificate; values that are no truncation."
+  },
+  {
    "path": "cubist-tests/truncation_rebuilt_classical.cubist",
    "summary": "Rebuilt classical assumptions beside the legacy signatures, and a false truncation former refused."
   },

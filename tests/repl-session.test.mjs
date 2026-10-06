@@ -60,6 +60,13 @@ test("imports, declarations with blocks, and errors that leave the session uncha
   assert.deepEqual(texts(await repl.run("typeof four_is_four; evaluate double(3)")).slice(0, 1), ["type: 2 + 2 = 4"]);
 });
 
+test("witness reads a closed truncation's witness, with its type", async t => {
+  const repl = await session(t);
+  assert.deepEqual(texts(await repl.run("import h1_truncation; use nat;")), ["info: Imported h1_truncation.", "info: Selected nat."]);
+  assert.deepEqual(texts(await repl.run("witness merely(U0, Nat, 2 + 1);")), ["value: 3 : Nat"]);
+  assert.match(texts(await repl.run("witness 3;"))[0], /^error: E479: witness reads a closed truncation/);
+});
+
 test("a session over a proof sees its names, and rebases onto a rechecked proof", async t => {
   const repl = await session(t, "import nat; use nat;\ndef double(n : Nat) := n + n;\n");
   assert.deepEqual(texts(await repl.run("evaluate double(21);")), ["value: 42"]);

@@ -86,7 +86,7 @@ export const diagnostics = [
   ["E156", "Give the motive after as: induction v as z return T { … }."],
   ["E157", "Expected '}' to close the induction."],
   ["E158", "Expected '}' to close the …."],
-  ["E159", "print shows evaluate(term), typeof(term) or inspect(term)."],
+  ["E159", "print shows evaluate(term), typeof(term), inspect(term) or witness(term)."],
   ["E162", "A match on several values takes its motive from return T or the type expected of it, without as."],
   ["E163", "The induction statement takes apart one value; take the first, then the next inside each clause."],
   ["E164", "cases was removed: write match value { left(a) => { … } right(b) => { … } }."],
@@ -339,6 +339,9 @@ export const diagnostics = [
   ["E476", "open takes a model of a theory, such as m : Group(U0); this is a value of type ….", "retired"],
   ["E477", "The term evaluates to …, which does not match …: … is not …."],
   ["E478", "A hole in an expected value stands for a pair's component, an injection's value or a constructor's argument; … is none of these, so write it out."],
+  ["E479", "witness reads a closed truncation, a value of a truncated declared type such as Trunc(U, A); this is a value of …."],
+  ["E480", "The truncation evaluates to …, which holds no constructor to read a witness from."],
+  ["E481", "The truncation's witness lies under a composition whose type changes: it is built in …, not …."],
   // Inductive types and matching
   ["E501", "trunc(n) is supported up to n = …."],
   ["E502", "A sort is type, set, prop or trunc(n) for an integer n ≥ -1."],

@@ -1084,8 +1084,8 @@ export function parse(source, typeOnly = false) {
     if (t.text === "print" && peek() === "(") {
       take("(");
       const show = take();
-      if (!["evaluate", "typeof", "inspect"].includes(show.text))
-        throw Object.assign(new Error("print shows evaluate(term), typeof(term) or inspect(term)."), { offset: show.start });
+      if (!["evaluate", "typeof", "inspect", "witness"].includes(show.text))
+        throw Object.assign(new Error("print shows evaluate(term), typeof(term), inspect(term) or witness(term)."), { offset: show.start });
       take("(");
       const value = expr();
       take(")");

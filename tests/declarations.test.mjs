@@ -26,11 +26,11 @@ test("axiom and opaque are not declarations, and imports come first", () => {
 
 // `print(evaluate|typeof|inspect(term));` is a top-level directive; `print`,
 // `typeof` and `inspect` are ordinary names elsewhere.
-test("print directives show evaluate, typeof or inspect of a term", () => {
-  const { directives } = parse("print(evaluate(2));\nprint(typeof(id));\nprint(inspect(id(0)));");
-  assert.deepEqual(directives.map(d => [d.kind, d.show]), [["print", "evaluate"], ["print", "typeof"], ["print", "inspect"]]);
-  assert.deepEqual(directives.map(d => d.start), [0, 20, 39]);
-  assert.throws(() => parse("print(normalize(2));"), /^Error: print shows evaluate\(term\), typeof\(term\) or inspect\(term\)\.$/);
+test("print directives show evaluate, typeof, inspect or witness of a term", () => {
+  const { directives } = parse("print(evaluate(2));\nprint(typeof(id));\nprint(inspect(id(0)));\nprint(witness(t));");
+  assert.deepEqual(directives.map(d => [d.kind, d.show]), [["print", "evaluate"], ["print", "typeof"], ["print", "inspect"], ["print", "witness"]]);
+  assert.deepEqual(directives.map(d => d.start), [0, 20, 39, 62]);
+  assert.throws(() => parse("print(normalize(2));"), /^Error: print shows evaluate\(term\), typeof\(term\), inspect\(term\) or witness\(term\)\.$/);
   assert.throws(() => parse("print(evaluate(2);"), /Expected '\)'/);
   assert.throws(() => parse("print;"), /Expected a declaration or directive: def, computable def, inductive, evaluate, print/);
   assert.equal(parse("def print(typeof : Nat) := typeof;").declarations[0].name.text, "print");

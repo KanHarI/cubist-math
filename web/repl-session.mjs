@@ -12,6 +12,7 @@ export const replHelp = [
   "let NAME := TERM;     define a name (def works too, with any declaration form)",
   "typeof TERM;          the type of a term",
   "evaluate TERM;        the value of a term",
+  "witness TERM;         the witness a closed truncation holds, with its type",
   "TERM;                 a term alone is evaluated",
   "print(inspect(TERM)); the term the kernel checks, in kernel notation",
   "import MODULE;        load a module, such as nat",
@@ -113,6 +114,7 @@ export class ReplSession {
     if ((match = /^import\s+([A-Za-z_][A-Za-z_0-9]*)$/.exec(source))) return this.import(match[1], text);
     if ((match = /^use\s+([\s\S]+)$/.exec(source))) return this.use(match[1], text);
     if (/^evaluate\s/.test(source) && !/\bexpecting\b/.test(source)) return this.evaluate(source.replace(/^evaluate\s+/, ""));
+    if ((match = /^witness\s+([\s\S]+)$/.exec(source))) return this.witness(match[1]);
     if (/^let\s/.test(source)) return this.declare(`def${source.slice(3)};`, text);
     if (/^print\s*\(/.test(source)) return this.declare(`${source};`, text);
     if (/^(def|computable|simp_rule|simp_set|hlevel_rule|evaluate|inductive)\s/.test(source))
@@ -197,6 +199,13 @@ export class ReplSession {
     const result = await this.entry(`def repl_value := ${term};`), failures = this.failures(result);
     if (failures.length) return failures;
     return [{ kind: "type", text: this.typeText(result.declarations[0]) }];
+  }
+
+  // print(witness(…)) reads a closed truncation's witness (L2.9b).
+  async witness(term) {
+    const result = await this.entry(`print(witness(${term}));`), failures = this.failures(result);
+    if (failures.length) return failures;
+    return result.prints.map(print => ({ kind: "value", text: print.text }));
   }
 
   // Both sides are the same term, so the directive reports its normal form;

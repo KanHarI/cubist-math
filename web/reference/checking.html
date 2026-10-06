@@ -108,6 +108,7 @@ evaluate at line 12: 4</code></pre>
                 <tr><td><code>let NAME := TERM;</code>, <code>def …</code></td><td>Define a name for later entries; see <a href="#repl">the REPL</a></td></tr>
                 <tr><td><code>typeof TERM;</code></td><td>Print the type of a term</td></tr>
                 <tr><td><code>evaluate TERM;</code></td><td>Print the normal form of a closed term that uses no assumption, in the scope of the checked module</td></tr>
+                <tr><td><code>witness TERM;</code></td><td>Print the witness a closed truncation holds, with its type (<a href="#print">witness</a>)</td></tr>
                 <tr><td><code>import MODULE;</code></td><td>Load a module for later entries</td></tr>
                 <tr><td><code>use NAME;</code></td><td>Read operators and numerals in a notation, such as <code>nat</code>, in later entries</td></tr>
                 <tr><td><code>/modules [TEXT]</code></td><td>List the modules <code>import</code> can load: the rebuilt library, then the archive of the first library; with <code>TEXT</code>, only those whose names contain it</td></tr>
@@ -185,7 +186,7 @@ E606: Type mismatch: found 7 = 7, expected x = 8.
           </section>
           <section id="print">
             <h2>Printing values, types and terms</h2>
-            <p>Three top-level directives show what the checker makes of a closed term, and define no name. <code>print(evaluate(term));</code> shows the term’s normal form, under the rule of <a href="assumptions.html#evaluate"><code>evaluate</code></a>: the term may use no assumption. <code>print(typeof(term));</code> shows its type. <code>print(inspect(term));</code> shows the term the kernel checked, in the kernel’s notation, as the inspector does: what notation and omitted arguments elaborate to. The name of a definition shows the definition’s checked body. A directive that fails is an error that makes the module incomplete, as a failed <code>evaluate</code> does.</p>
+            <p>Four top-level directives show what the checker makes of a closed term, and define no name. <code>print(evaluate(term));</code> shows the term’s normal form, under the rule of <a href="assumptions.html#evaluate"><code>evaluate</code></a>: the term may use no assumption. <code>print(typeof(term));</code> shows its type. <code>print(inspect(term));</code> shows the term the kernel checked, in the kernel’s notation, as the inspector does: what notation and omitted arguments elaborate to. The name of a definition shows the definition’s checked body. A directive that fails is an error that makes the module incomplete, as a failed <code>evaluate</code> does.</p>
             <pre><code data-check="accept">import nat;
 use nat;
 
@@ -197,7 +198,15 @@ print(evaluate(double(3)));
 print(typeof(double));
 // Output: λ (n : Nat). add(n, n)
 print(inspect(double));</code></pre>
-            <p>An <code>// Output:</code> comment above a directive states what it shows. The test suite checks these comments in the examples of this reference and in the test modules of <code>cubist-tests/</code>, where <code>npm run inline-errors</code> writes them. The command-line checker prints each output as <code>print evaluate at line N: text</code>, and the REPL takes the directives as entries. <code>print</code>, <code>typeof</code> and <code>inspect</code> are keywords only in a directive. Elsewhere they are ordinary names.</p>
+            <p>An <code>// Output:</code> comment above a directive states what it shows. The test suite checks these comments in the examples of this reference and in the test modules of <code>cubist-tests/</code>, where <code>npm run inline-errors</code> writes them. The command-line checker prints each output as <code>print evaluate at line N: text</code>, and the REPL takes the directives as entries. <code>print</code>, <code>typeof</code>, <code>inspect</code> and <code>witness</code> are keywords only in a directive. Elsewhere they are ordinary names.</p>
+            <p><code>print(witness(t));</code> reads the witness a closed truncation holds, with its type. The truncation's normal form is its <code>point(w)</code>, perhaps under formal compositions, and <code>w</code> is shown with the type the kernel gives it. Under a transport along a path of types, the witness is of the type at the path's end. It is no eliminator out of the truncation: like <code>evaluate</code>, it needs a closed term that uses no assumption, and a witness with a certificate, as a number with evidence that it bounds another, carries the certificate the kernel checked. The REPL's <code>witness TERM;</code> does the same.</p>
+            <pre><code data-check="accept">import h1_truncation;
+use nat;
+
+def above_two : Trunc(U0, exists n : Nat. 2 &lt; n) := point((3, tt));
+
+// Output: (3, tt) : exists n : Nat. 2 &lt; n
+print(witness(above_two));</code></pre>
           </section>
           <section id="warnings">
             <h2>Warnings</h2>
