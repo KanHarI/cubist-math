@@ -2047,6 +2047,10 @@
    "summary": "Operators, operand views and derived operations (L2.10b): `-`, `/`, `^`, unary `-`, `>` and `>=`, their grouping, an exponent read in `nat`, a derived subtraction, the integers' negation and subtraction, qualified negation, and the refusals of an operator no selection binds, `-p` as reversal, and an operand with no view."
   },
   {
+   "path": "cubist-tests/notation_pilots.cubist",
+   "summary": "The notation roadmap's pilots (L2.10e): its proposed examples on the integers, rationals and algebra, checked, with a rational equation proved by deciding it, and the refusal of `1/0`."
+  },
+  {
    "path": "cubist-tests/notation_printing.cubist",
    "summary": "Faithful printing (L2.10d): an operation printed with its operator where its notation is selected and qualified elsewhere, a literal printed as written, a numeral rule's application printed as the numeral where selected, and a printed text read back where it was printed."
   },
