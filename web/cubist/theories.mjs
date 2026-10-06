@@ -233,6 +233,7 @@ function theoryFields(theory, lookup) {
         throw located(Error(`${T} extends ${record.name}, whose header has the parameter ${p.name}: give ${T} the parameter ${p.name} with the same type.`), parent.name);
     }
     // Each renaming names a field of the parent, once.
+    // `renotated` gives a parent's field, by its name there, another notation.
     const names = new Map(universes), renotated = new Map();
     for (const { from, to, notation } of parent.renaming) {
       const field = record.fields.find(f => f.name === from.text);
@@ -242,7 +243,7 @@ function theoryFields(theory, lookup) {
       if (notation) {
         if (field.kind !== "operation" || field.arity !== 2)
           throw located(Error(`A notation names an operation's two arguments; ${from.text} is not an operation of two.`), notation);
-        renotated.set(to.text, notation.operator);
+        renotated.set(from.text, notation.operator);
       }
     }
     // A sort's evidence follows the sort's name.
@@ -267,7 +268,7 @@ function theoryFields(theory, lookup) {
   }
   const ambiguous = new Map(), allNames = new Set([...byFinal.keys(), ...theory.fields.map(item => item.name.text)]);
   for (const [n, entries] of byFinal) {
-    if (new Set(entries.map(e => e.p)).size < 2 || entries.every(e => e.field.origin === entries[0].field.origin)) continue;
+    if (new Set(entries.map(e => e.p)).size < 2 || new Set(entries.map(e => e.field.origin)).size === 1) continue;
     const carriers = entries.filter(e => ["sort", "evidence"].includes(e.field.kind));
     if (carriers.length && carriers.length < entries.length)
       throw located(Error(`${T} gets ${n} from ${entries.map(e => e.p.record.name).join(" and ")}, a carrier in one and not in another: rename one, as in ${entries.at(-1).p.record.name}(${n} := …).`), entries.at(-1).p.parent.name);
@@ -278,9 +279,15 @@ function theoryFields(theory, lookup) {
         throw located(Error(`${T} gets the carrier ${n} from ${sorts.map(e => e.p.record.name).join(" and ")} with different kinds or indices: rename one, as in ${sorts.at(-1).p.record.name}(${n} := …).`), sorts.at(-1).p.parent.name);
       continue;
     }
+    // Entries from one ancestor are one field, reached through each of
+    // their parents' labels.
+    const byOrigin = new Map();
     for (const e of entries) {
-      const own = fresh(`${e.p.label}_${n}`, allNames);
-      allNames.add(own);
+      if (!byOrigin.has(e.field.origin)) {
+        byOrigin.set(e.field.origin, fresh(`${e.p.label}_${n}`, allNames));
+        allNames.add(byOrigin.get(e.field.origin));
+      }
+      const own = byOrigin.get(e.field.origin);
       e.p.names.set(e.field.name, own);
       if (!ambiguous.has(n)) ambiguous.set(n, []);
       ambiguous.get(n).push({ label: e.p.label, field: own, parentField: e.field.name });
@@ -301,14 +308,11 @@ function theoryFields(theory, lookup) {
       if (!inherited.has(operator)) inherited.set(operator, []);
       inherited.get(operator).push({ label, field, parentField, at });
     };
-    for (const [operator, field] of Object.entries(record.notations)) {
-      const child = names.get(field) ?? field;
-      if (!renotated.has(child)) bind(operator, child, field);
-    }
+    for (const [operator, field] of Object.entries(record.notations))
+      if (!renotated.has(field)) bind(operator, names.get(field) ?? field, field);
     for (const [operator, list] of Object.entries(record.ambiguousNotations ?? {}))
       for (const entry of list) bind(operator, names.get(entry.field) ?? entry.field, entry.field);
-    for (const [field, operator] of renotated)
-      bind(operator, field, record.fields.find(f => (names.get(f.name) ?? f.name) === field)?.name ?? field);
+    for (const [field, operator] of renotated) bind(operator, names.get(field) ?? field, field);
   }
   for (const [operator, list] of inherited) {
     const distinct = [...new Map(list.map(entry => [entry.field, entry])).values()];
@@ -322,7 +326,7 @@ function theoryFields(theory, lookup) {
   // Inside the theory, label.f is the field the parent labelled label gave
   // as f, and an ambiguous name is refused with the qualified forms.
   const viaLabel = new Map(prepared.map(p => [p.label, p]));
-  const resolved = node => rewritten(node, (n, bound) => {
+  const resolved = (node, scope = new Set()) => rewritten(node, (n, bound) => {
     if (n.kind !== "name" || bound.has(n.name.split(".")[0])) return n;
     const dot = n.name.indexOf(".");
     if (dot > 0) {
@@ -335,9 +339,18 @@ function theoryFields(theory, lookup) {
     if (ambiguous.has(n.name))
       throw located(Error(`${n.name} is ambiguous in ${T}: ${ambiguous.get(n.name).map(e => `${e.label}'s`).join(" and ")}. Write ${ambiguous.get(n.name).map(e => `${e.label}.${e.parentField}`).join(" or ")}, or rename one in extends.`), n);
     return n;
-  });
+  }, scope);
   for (const source of theory.fields) {
-    const item = { ...source, type: source.type && resolved(source.type), params: (source.params ?? []).map(p => ({ ...p, type: resolved(p.type) })) };
+    // A field's parameters are in scope in the later ones' types and in its
+    // own: a parameter named as an ambiguous field is that parameter.
+    const scope = new Set();
+    const item = { ...source, params: (source.params ?? []).map(p => {
+      const param = { ...p, type: resolved(p.type, new Set(scope)) };
+      scope.add(p.name.text);
+      if (p.level) scope.add(`${p.name.text}_is_${p.level}`);
+      return param;
+    }) };
+    if (source.type) item.type = resolved(source.type, scope);
     const origin = `${T}.${item.name.text}`;
     if (item.kind === "sort") {
       const own = universeAt(Math.max(0, headerUniverses.indexOf(item.universe?.text)));
@@ -398,6 +411,10 @@ function theoryFields(theory, lookup) {
     if (header.some(binder => binder.text === field.name))
       throw located(Error(`${T}'s header binds ${field.name}, which names a field too: give each its own name.`), field.at);
   }
+  // A parent's label names its projection, T.label, beside the fields' T.f.
+  for (const p of prepared)
+    if (byName.has(p.label))
+      throw located(Error(`${T}'s parent ${p.record.name} is labelled ${p.label}, which names a field of ${T} too: label it apart, as in base : ${p.record.name}.`), p.parent.label ?? p.parent.name);
   return { fields, notations, parents, universes: headerUniverses, params: params.map(({ at: _, ...p }) => p),
     ambiguous: Object.fromEntries([...ambiguous].map(([n, list]) => [n, list])), ambiguousNotations: Object.fromEntries(ambiguousNotations) };
 }

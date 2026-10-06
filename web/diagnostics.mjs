@@ -499,6 +499,7 @@ export const diagnostics = [
   ["E830", "… is ambiguous in …: …. Write …, or rename one in extends."],
   ["E831", "… is ambiguous in …: it is …. Write …, or give one another notation in extends."],
   ["E832", "… is ambiguous in …: it is …. Write …."],
+  ["E859", "…'s parent … is labelled …, which names a field of … too: label it apart, as in base : …."],
   // Kernel: declared types
   ["K101", "Dimension renaming allocation failed."],
   ["K102", "A boundary is nested too deeply."],
