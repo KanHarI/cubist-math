@@ -58,6 +58,16 @@ theory Inhabited(U < UU0) {
 
 def nat_inhabited : Inhabited(U0) := Inhabited.make(M := Nat, M_is_set := nat_is_set, inhabited := merely(U0, Nat, 0));
 
+// A header parameter that takes a proposition's name is the parameter: its
+// elements are data.
+// Error: E818: The law data must state a proposition: an equation between elements of a sort, Void,
+//   a type declared at prop, or forall, -> or and over those; its statement is none of these. A law
+//   holds no data, and homomorphisms ignore laws: declare data as an operation or a constant.
+theory Shadowed(U < UU0, Trunc : U) {
+  M : set U;
+  law data : Trunc;
+}
+
 // A sort renamed twice takes its evidence's name along each time.
 theory Carrier(U < UU0) extends Monoid(M := R) {
 }

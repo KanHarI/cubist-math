@@ -511,6 +511,7 @@ export const diagnostics = [
   ["E835", "….(…) takes a model of a theory; … is not one."],
   ["E836", "… binds no operation to …."],
   ["E837", "… binds no rule to …."],
+  ["E859", "…'s parent … is labelled …, which names a field of … too: label it apart, as in base : …."],
   // Kernel: declared types
   ["K101", "Dimension renaming allocation failed."],
   ["K102", "A boundary is nested too deeply."],
