@@ -240,20 +240,20 @@ export class InstructionDriver {
     const j = this.statement(id);
     return side === "term" ? j.term : side === "other" ? j.other : j.type;
   }
-  // The focused subterm. A focus keeps it while its judgement is the same,
-  // and a child reads it off its parent's: agree asks for both sides' each
-  // time round, and walking a deep focus's path from the root each time
-  // was a sixth of a congruence-heavy proof's time.
+  // The focused subterm. A focus keeps it while its judgement is the same;
+  // after a step, the graph reads it in one call (InstructionGraph.subterm),
+  // where walking the focus's path read each new node on the way: agree asks
+  // for both sides' each time round, and that was a third of a deep
+  // comparison's time.
   subterm(focus) {
     const id = focus.ref.id;
     if (focus.at === id) return focus.term;
-    const term = focus.parent ? this.node(this.subterm(focus.parent)).children[focus.path.at(-1)]
-      : focus.path.reduce((t, child) => this.node(t).children[child], this.sideOf(id, focus.side));
+    const term = this.graph.subterm(id, focus.side, focus.path);
     focus.at = id; focus.term = term;
     return term;
   }
   focus(id, side, path = []) { return { ref: { id }, side, path }; }
-  child(focus, index) { return { ref: focus.ref, side: focus.side, path: [...focus.path, index], parent: focus }; }
+  child(focus, index) { return { ref: focus.ref, side: focus.side, path: [...focus.path, index] }; }
   reduce(focus, step) {
     focus.ref.id = this.graph.step(focus.ref.id, focus.side, [...focus.path, ...step.path], step.rule);
   }
