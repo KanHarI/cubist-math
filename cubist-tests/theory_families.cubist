@@ -93,6 +93,10 @@ print(typeof(Shifted.Hom.map_shift));
 
 def shifted_iso := Shifted.Iso.compose;
 
+// The constructors still take each field by its name.
+def shifted_by_name(A : Shifted(U0)) : Shifted.Hom(A, A) := Shifted.Hom.make(A, A, map := fun (x : A.M) => x,
+  map_shift := fun (a, b : A.M) => refl(A.shift(a, b)));
+
 theory Lifted(U < UU0) {
   F(to : Nat) : set U;
   lift(to : Nat, x : F(to)) : F(to);
@@ -101,6 +105,10 @@ theory Lifted(U < UU0) {
 def lifted_compose := Lifted.Hom.compose;
 
 def lifted_iso := Lifted.Iso.compose;
+
+def lifted_by_name(A : Lifted(U0)) : Lifted.Iso(A, A) := Lifted.Iso.make(A, A, to := Lifted.Hom.id(A),
+  from := Lifted.Hom.id(A), from_to := fun (n : Nat, x : A.F(n)) => refl(x),
+  to_from := fun (n : Nat, y : A.F(n)) => refl(y));
 
 // A family of sets indexed by a carrier has homomorphisms, but no
 // isomorphisms: its round trips would need a transport.

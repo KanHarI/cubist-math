@@ -4,7 +4,8 @@ Status: roadmap, revised 2026-10-05, with [decisions](#decisions) recorded
 the same day, and revised again that day: one selection form, `use`, and
 qualified operators (decisions 7 and 8). The direction is explicit notation views: select a
 mathematical structure, then elaborate its operations as ordinary
-applications. Nothing here is implemented. What the decisions settle is
+applications. L2.10i, `~` for reversal, is implemented (2026-10-06);
+nothing else here is. What the decisions settle is
 settled; the rest of the syntax below is proposed, and the implementation
 gates at the end still need their contracts and tests. This is an
 elaborator and tooling change, with no kernel rule changes.
@@ -74,8 +75,9 @@ Settled on 2026-10-05:
    `use nat;` at the top of a file leaves its sections' operators to their
    models.
 7. **One selection form, `use`** (revised the same day). It replaces both
-   today's `open G;` and the proposed `using v;`; `using` keeps its one
-   meaning, in `simpa … using h`. `use x;` selects `x`'s notation and, when
+   today's `open G;` and the proposed `using v;`; `using` stays in
+   `simpa … using h`, and two other proposals select with it
+   ([open question 4](#open-questions)). `use x;` selects `x`'s notation and, when
    `x` is a model, binds its field names, to the end of the enclosing
    block, or, at a file's top level, to the end of the file, covering
    statements too. `x` is a model or a named notation such as `nat`, which
@@ -730,6 +732,12 @@ neither feature requires instance search.
 
 ## L2.10i. The reversal token
 
+**Done** on 2026-10-06, in the two commits below: `~p` and `~i` reverse,
+and prefix `-` is refused with a message naming them (E176). The verifier
+compared the library's terms with those of `main`, where `-` reversed:
+273 modules, its dependents included, identical. A historical source is
+read with `~` for each prefix `-` when its revision predates the swap.
+
 `~p` reverses a path, as `sym(p)` does, and `~i` reverses a coordinate, as
 `flip(i)` does, replacing `-p` and `-i`. Cubical Agda writes coordinate
 reversal `~ i`. The two agree: `(~p) @ i` and `p @ ~i` are the same point.
@@ -758,7 +766,9 @@ still parses; then `-` stops reversing, with a message naming `~p` and `~i`.
 The rewrite that reads historical sources in today's syntax
 ([`web/cubist/legacy-syntax.mjs`](../../web/cubist/legacy-syntax.mjs)) may
 turn `-` into `~` only for revisions before the swap, because arithmetic
-`-` returns with L2.10b. Until then, unary `-` is an error.
+`-` returns with L2.10b. Until then, unary `-` is an error. Both are done:
+`historicalSource` takes `minusReverses`, which
+`tools/verify-proof-migration.mjs` sets for a base before the swap.
 
 ## L2.10j. Retiring name-based operators
 
@@ -972,6 +982,10 @@ gate and remains optional. Explicit views are always available.
    eliminator views, `match … using view`, also use it, with `using`.
 3. **Qualified operators' operands:** read where they stand, as decided,
    or in the operator's notation, as in `G.(a + b)`.
+4. **`using` in other proposals.** Computation notation's `do using M` and
+   L2.7's `match … using view` select a structure, as `use` does. Whether
+   they take `use`'s word or keep `using`, beside `simpa … using h`, is
+   undecided; neither is implemented.
 
 ## Roadmap and implementation gates
 
@@ -985,7 +999,7 @@ gate and remains optional. Explicit views are always available.
 | L2.10f | Large numerals: compact binary natural data and its printing contract | L2.10c, L2.10d |
 | L2.10g | Explicit decidability and a checked, bounded `decide` proof statement | Separate proof-statement contract; not required by L2.10a–e |
 | L2.10h | Notation rules: patterns with typed, repeated and binding holes, and side conditions. Proposed, not decided | Separate grammar and tooling contract; L2.10a–d |
-| L2.10i | `~` for path and coordinate reversal, migrated while `-` still parses, then `-` retired as reversal | None: first |
+| L2.10i | `~` for path and coordinate reversal, migrated while `-` still parses, then `-` retired as reversal. **Done** on 2026-10-06 | None: first |
 | L2.10j | Retiring the name-based operator and numeral fallbacks: a `use nat;` migration, a `binary` view for binary literals, then removal | L2.10a–c |
 | L2.10k | `Field` with invertibility as a truncated law and `inv` derived by unique choice; the rationals' model | L2.4, with truncations in laws and a name for a theory's universe; independent of views |
 
