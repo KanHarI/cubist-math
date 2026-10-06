@@ -4,6 +4,58 @@ These describe the intended developments, their limits, and remaining
 obligations. Read the linked checkpoint before resuming work. Do not treat a
 target statement or a supplied theorem parameter as an already proved result.
 
+## At a glance
+
+Revised on 2026-10-05, after PR #164. The [work plan](work-plan.md) is
+the scheduling authority; this summarizes it.
+
+- **Done.**
+  - **Kernel.** The trusted checker is the instruction kernel, with every
+    search decision in an untrusted driver; the term checker is retired.
+    Universe-generic checking (G0) is done.
+  - **Inductive types.** H1, released on 2026-10-02: one-sort and higher
+    inductive declarations, `match`, structural recursion and truncation
+    clauses.
+  - **Proof ergonomics.** `rw`, `calc`, `simp`, `let`, holes, implicit
+    parameters, argument inference, and `hlevel`'s first slice.
+  - **Core theories (L2.4).** Theories, models, `open`, sections,
+    `extends`, `Hom` and `Iso`.
+  - **The library's foundations.** `nat`, effective quotients, the algebraic
+    hierarchy, the integers and the rationals, h-levels and univalence.
+    Every archived declaration still checks.
+- **Decided, not implemented.**
+  - **The theory syntax revision (L2.4c).** `M : set U` in place of
+    `sort`, the universe in the header, `G : Monoid(U0)`, theory families
+    (a monad on sets), relations as families of propositions, homomorphisms
+    only where they compose, and independent theories combined unchanged.
+  - **Notation (L2.10).** `~` for reversal, one selection form `use` in
+    place of `open`, qualified operators `a G.(+) b`, explicit views,
+    literals read by the library's parsers, and a partial field inverse.
+- **Next,** in the work plan's [first actions](work-plan.md#first-actions):
+  1. `~` for reversal (L2.10i);
+  2. the theory syntax revision (L2.4c);
+  3. the partial field inverse (L2.10k);
+  4. the views' pilots (L2.10a–e);
+  5. `use nat;` in place of name-based operators and numerals (L2.10j);
+  6. equivalences, then structure identity (L3.1, L3.2, L2.4b);
+  7. the rest of the h-level solver (L2.5b);
+  8. the order on the numbers, if the maintainer extends the library's
+     scope;
+  9. independent language work, monadic `do` and arrows (N0–N4) among it;
+  10. K2.5's archive remedies;
+  11. H2's indexed families, then the H3 research gate.
+- **Later.**
+  - Indexed declarations (stage 4, H2) and inductive-inductive ones
+    (stage 5, H3).
+  - The rest of HoTT automation: `Path` induction, `ext`, transport rules
+    and identity systems.
+  - Learned search may proceed at any time; nothing waits on it.
+- **Paused.** Galois theory, complex analysis, RH and the reals. The reals
+  need the order on the numbers first, and the Cauchy reals H3 too. The
+  first library in `archive/` is a reference.
+- **Open decisions** are listed in the work plan's
+  [open decisions](work-plan.md#open-decisions).
+
 ## Plan and designs
 
 - [Work plan](work-plan.md): the staged, dependency-ordered plan across all
@@ -11,8 +63,9 @@ target statement or a supplied theorem parameter as an already proved result.
   kernel support, and since 2026-10-05 the library's foundations: the
   natural numbers, quotients, the integers and rationals, and the algebraic
   hierarchy, all done that day. Its first actions suggest what comes next,
-  starting with `~` for reversal and a partial field inverse. Other
-  mathematical development is paused.
+  starting with `~` for reversal and the theory syntax revision, and its
+  open decisions list what waits for the maintainer. Other mathematical
+  development is paused.
 - [Work-plan audit of 2026-09-28](audits/2026-09-28-audit.md): the baseline
   revision (`02a57ef`) and findings behind the current statuses, including
   the instruction-isolation defect, corrected the same day (work-plan I1.2a).
