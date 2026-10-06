@@ -425,7 +425,7 @@ Not in L2.4: generated structure identity, `T.equality : (M = N) ≃
 T.Iso(M, N)`, and displayed models (L2.4b, through HoTT F1); sorts that are
 not sets or propositions, whose homomorphisms need coherence fields; relation
 fields; `initial T` and `free T on A` (L2.6, whose contract is specified
-separately); numerals interpreted in a model; type-directed overloading and
+[below](#initial-and-free-models-l26)); numerals interpreted in a model; type-directed overloading and
 instance search. Structure scope stays explicit: an operator means one thing
 in a scope, chosen by `open` or `section`, never by the types of its operands.
 The [notation roadmap](notation.md), L2.10, adopts explicit model notation
@@ -635,6 +635,104 @@ when it is missing.
 inspector with the projection each stands for. The operator elaboration
 reads an operator's binding before its fallback, the `add` or `mul` in
 scope.
+
+## Initial and free models (L2.6)
+
+**Specified** on 2026-10-06, not implemented. This is the contract the
+audit's finding 4 asks for before any `universal` is generated: separate
+typed results, each stated for a fixed target model, and none of the form
+`(initial T → M) ≃ T.Hom(…)`, which is false (the initial monoid has one
+element, so two functions into a two-element monoid but one homomorphism).
+
+### Which theories
+
+`initial` and `free` take a theory `T` at fixed universes and parameters,
+as `Monoid(U0)`, whose fields are:
+
+1. **One carrier**, `M : set U`, `M : prop U` or `M : U`. Several carriers,
+   families and relations are later work.
+2. **Strictly positive operations.** Each input is the carrier or a type
+   that does not mention it, and each output is the carrier, or a path in
+   the carrier between operation terms, as `Loop`'s
+   `loop : base = base`. An operation that takes the carrier under an arrow,
+   as `iterate(g : M -> M, x : M)`, is refused (theory_variance's `Iterated`).
+3. **Equational laws.** Each law is an equation between terms built from the
+   operations and the law's own variables, which range over the carrier or
+   over types that do not mention it. A conditional law, a truncation, as
+   `Field`'s `inverses`, or a law about another type is refused, naming the
+   law.
+4. Derived operations are definitions over the fields, and are generated for
+   the initial model as for any model; a law may not use one.
+
+Anything else is refused at the declaration, with the first field that fails
+and why.
+
+### What a declaration gives
+
+```text
+initial N : Monoid(U0);
+free W(A : U0) : Monoid(U0) on A;
+```
+
+`initial N : T(…)` declares, with no new kernel rule:
+
+- `N`, a declared type ([L2.1](work-plan.md)) at the carrier's universe and
+  h-level: a constructor for each operation, named as the operation, `N.mul`
+  and `N.one`; a path constructor for each law, `N.mul_assoc`; and the
+  squash of a `set` or `prop` carrier. `free` adds the generator,
+  `W.gen(a : A)`. The declared type is checked as any other: a law whose
+  boundary H1 does not admit is refused with H1's reason.
+- `N.model : T(…)`, the model on `N`: the constructors are its operations,
+  the path constructors its laws, and the squash its h-level evidence.
+- `N.fold(M) : T.Hom(N.model, M)`, for any model `M` of `T` at the same
+  universes and parameters, by recursion: each constructor clause applies
+  `M`'s operation to the recursive results, each law clause is `M`'s law
+  there, and the squash clause is `M`'s carrier evidence. `free` takes the
+  generators' images too: `W.fold(M, g : A -> M.M)`.
+
+Each result below is a separate typed statement, for a fixed target model:
+
+1. **Computation**, by conversion: `N.fold(M).map(N.c(x, …))` is
+   `M.c(N.fold(M).map(x), …)`, and `W.fold(M, g).map(W.gen(a))` is `g(a)`.
+2. **Uniqueness, pointwise:** `N.fold_unique(M, f) : forall x : N.
+   f.map(x) = N.fold(M).map(x)` for every `f : T.Hom(N.model, M)`, by
+   induction into the family of equalities in `M`'s carrier, which are
+   propositions there. For `free`, given `agrees : forall a : A.
+   f.map(W.gen(a)) = g(a)`.
+3. **Initiality:** `N.universal(M) : IsContr(T.Hom(N.model, M))`. It needs
+   `T.Hom.ext`, generated with `T.Hom`: two homomorphisms with equal maps
+   are equal, each preservation field being a proposition in a set.
+4. **The free property:** `W.universal(M) : ContrEquiv(T.Hom(W.model, M),
+   A -> M.M)`, restriction to the generators, whose inverse is `fold`.
+
+A theory whose carrier is untruncated, as `Loop` with the circle for its
+initial model, has no `T.Hom` until path-valued operations' coherence
+fields are specified (L2.4c). Its `initial` gives the declared type and
+`N.fold(M) : N -> M.M` as a function, by the type's recursion, with
+computation on its point and path constructors, and no uniqueness. A
+characterization of plain maps out of a carrier is stated only where the
+constructors give one, as the declared type's own eliminator does.
+
+### Slices
+
+1. The declarations: the theory check, the declared type, `N.model`,
+   `N.fold` and its computation, and the refusals.
+2. `fold_unique`, pointwise.
+3. `T.Hom.ext`, then `universal` for `initial` and for `free`.
+4. Untruncated carriers: `initial` for `Loop`, with recursion only.
+
+### Acceptance
+
+- `initial N : Monoid(U0)`: `N.fold(M).map(N.one)` is `M.one` by `rfl`, and
+  the carrier is contractible: the identity and the constant homomorphism to
+  `N.one` agree, by `fold_unique` into `N.model` itself.
+- `free W(A : U0) : Monoid(U0) on A`: folding into `Nat`'s additive monoid
+  with `g := fun (a : A) => 1` counts generators, and computes on closed
+  words; `fold_unique` against the homomorphism that counts by recursion.
+- `free` groups on `A`, through `Group`'s laws.
+- `initial Circle : Loop(U0)`: the circle, with its recursion.
+- Refusals: `Field` (a truncated law), `Iterated` (the carrier under an
+  arrow), a theory with two carriers, a law that uses a derived operation.
 
 ## Acceptance
 
