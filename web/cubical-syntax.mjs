@@ -49,6 +49,8 @@ export class CubicalSyntax {
     this.encoded = new WeakMap();
     this.decoded = new Map();
     this.free = new Map();
+    // Each term's head normal form, by its node (cubical-elaborator.mjs).
+    this.heads = new Map();
   }
   // The dimensions free in a node, as a bit mask (freeDimensionMask).
   freeDimensions(id) { return freeDimensionMask(this.kernel, id, this.free); }
@@ -230,7 +232,8 @@ export class CubicalSyntax {
     const free = this.freeDimensions(id);
     if ([...dimensions.values()].some(index => !(free & 1n << BigInt(index))))
       dimensions = new Map([...dimensions].filter(([, index]) => free & 1n << BigInt(index)));
-    const cacheKey = JSON.stringify([id,dimensionContextKey(dimensions)]);
+    // In no dimension context, as most nodes are, the node alone.
+    const cacheKey = dimensions.size ? JSON.stringify([id,dimensionContextKey(dimensions)]) : id;
     if (this.decoded.has(cacheKey)) return this.decoded.get(cacheKey);
     const { kind: tag, payload, children: c } = this.kernel.node(id);
     const child = i => this.decode(c[i], dimensions);

@@ -41,6 +41,7 @@ export class CubicalDeclarationTransaction {
         for (const key of this.added(collection)) collection.delete(key);
     }
     checker.syntax.reset();
+    kernel.forgetNodes();
     // Its judgements were truncated with the checkpoint, and handles moved.
     kernel.instructionDriver = null;
     kernel.derivedHandles = null;
