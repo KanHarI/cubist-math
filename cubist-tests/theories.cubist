@@ -166,25 +166,25 @@ theory Pointed(U < UU0) {
   law point : M;
 }
 
-theory Left(U < UU0) {
+theory First(U < UU0) {
   M : set U;
   point : M;
 }
 
-theory Right(U < UU0) {
+theory Second(U < UU0) {
   M : set U;
   point : M;
 }
 
 // Two unrelated parents' points are two fields, each its parent's; their
 // carriers are one (theory_independent).
-theory Clash(U < UU0) extends Left, Right {
+theory Clash(U < UU0) extends First, Second {
 }
 
 // One ancestor's field, reached twice with two types, is refused.
-// Error: E802: Twice2 gets a field named point from both Left and Left: rename one, as in
-//   Left(point := …).
-theory Twice2(U < UU0) extends Left, left2 : Left(M := N) {
+// Error: E802: Twice2 gets a field named point from both First and First: rename one, as in
+//   First(point := …).
+theory Twice2(U < UU0) extends First, first2 : First(M := N) {
 }
 
 // Error: E805: Missing is not a theory here: Unknown extends theories in scope.

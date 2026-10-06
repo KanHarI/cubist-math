@@ -46,9 +46,14 @@ export const reservedNames = new Set([
   "let", "obtain", "exact", "calc", "open", "match", "rfl", "rw", "simp", "simpa", "intro", "ext", "hlevel", "induction",
   "fun", "forall", "exists", "and", "or", "as", "return",
   "Unit", "Void",
+  // A sum's injections, left(a) and right(b), and its patterns, left a =>
+  // and right b =>: no binder shadows them.
+  "left", "right",
 ]);
 
-export function parse(source, typeOnly = false) {
+// `bindable` lists reserved words a historical source may still bind
+// (web/cubist/legacy-syntax.mjs).
+export function parse(source, typeOnly = false, { bindable = [] } = {}) {
   const ts = tokenize(source);
   let i = 0,
     depth = 0;
@@ -84,7 +89,7 @@ export function parse(source, typeOnly = false) {
     // U0, UU3 and the like name universes: they cannot be bound or declared.
     if (/^U+[0-9]+$/.test(t.text))
       throw Object.assign(new Error(`${t.text} is a universe constant; pick another name.`), { offset: t.start });
-    if (reservedNames.has(t.text))
+    if (reservedNames.has(t.text) && !bindable.includes(t.text))
       throw Object.assign(new Error(`${t.text} is reserved, as a keyword or a built-in type of the language; pick another name.`), { offset: t.start });
     return t;
   }
@@ -681,7 +686,9 @@ export function parse(source, typeOnly = false) {
     return { ...first, ...(more.length ? { more } : {}) };
   }
   function clausePattern(nested) {
-    let constructor = name(), qualifiedDot = null;
+    // A sum's patterns are its injections, left and right, which no other
+    // name can be.
+    let constructor = ["left", "right"].includes(peek()) ? take() : name(), qualifiedDot = null;
     if (peek() === "." && ts[i - 1].end === ts[i].start && /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text)
         && ts[i + 1].start === ts[i].end) {
       const dot = take("."), member = take();

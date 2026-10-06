@@ -65,8 +65,8 @@ def first_is_zero : zero_one.first.point = 0 {
   rfl;
 }
 
-// Error: E832: point is ambiguous in Bipointed: it is first's and second's. Write zero_one.first.point
-//   or zero_one.second.point.
+// Error: E832: point is ambiguous in Bipointed: it is first's and second's. Write
+//   zero_one.first.point or zero_one.second.point.
 def which := zero_one.point;
 
 // Homomorphisms name each by its label.
@@ -89,4 +89,18 @@ theory Proposition(U < UU0) {
 // Error: E828: Kinds gets the carrier M from Magma and Proposition with different kinds or indices:
 //   rename one, as in Proposition(M := …).
 theory Kinds(U < UU0) extends Magma, Proposition {
+}
+
+// A parent's label is a field's name, so a theory named Left, whose label
+// would be left, the reserved injection, is labelled.
+theory Left(U < UU0) {
+  M : set U;
+  point : M;
+}
+
+// Error: E848: Left's label would be left, which is reserved: label it, as in other : Left.
+theory Leftmost(U < UU0) extends Left {
+}
+
+theory Labelled(U < UU0) extends start : Left {
 }

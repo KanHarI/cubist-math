@@ -128,14 +128,14 @@ test("native progress identifies the active declaration before it is checked", a
 test("progress totals count a shared import once, including universe-generic definitions", async t => {
   const sources = {
     common: "def generic(U < UU0, A : U, a : A) := a; def shared := tt;",
-    left: "import common; def fromLeft := shared;",
-    right: "import common; def fromRight := shared;",
+    first: "import common; def fromFirst := shared;",
+    second: "import common; def fromSecond := shared;",
   };
   const reads = [];
   const program = new CubicalProgram(module, async name => { reads.push(name); return sources[name]; });
   t.after(() => program.dispose());
   const progress = [];
-  const result = await program.check("import left; import right; def final := fromLeft;", "root", p => progress.push(p));
+  const result = await program.check("import first; import second; def final := fromFirst;", "root", p => progress.push(p));
   assert.equal(result.declarationCount, 5);
   assert.equal(reads.filter(name => name === "common").length, 1);
   assert.ok(progress.filter(p => p.phase !== "loading").every(p => p.total === 5));

@@ -569,7 +569,7 @@ theory Twice(U &lt; UU0) {  // Error: Twice has two fields named one: give each 
             <p>Two parents may give a carrier of one name only with one kind and type:</p>
             <pre><code data-check="reject">import hlevels;
 
-theory Left(U &lt; UU0) {
+theory Pointed(U &lt; UU0) {
   M : set U;
   point : M;
 }
@@ -578,7 +578,7 @@ theory Truth(U &lt; UU0) {
   M : prop U;
 }
 
-theory Clash(U &lt; UU0) extends Left, Truth {  // Error: Clash gets the carrier M from Left and Truth with different kinds or indices: rename one, as in Truth(M := …).
+theory Clash(U &lt; UU0) extends Pointed, Truth {  // Error: Clash gets the carrier M from Pointed and Truth with different kinds or indices: rename one, as in Truth(M := …).
 }</code></pre>
             <p><code>use</code> takes a model, and <code>m.f</code> a field the theory has:</p>
             <pre><code data-check="reject">import nat;

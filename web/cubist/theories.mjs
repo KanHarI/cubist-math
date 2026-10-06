@@ -22,7 +22,7 @@
 // theory's own. A field two parents give is one field when it comes from one
 // ancestor's field, with one name and one type; otherwise it is refused.
 
-import { parse } from "./parser.mjs";
+import { parse, reservedNames } from "./parser.mjs";
 import { morphismSource } from "./morphisms.mjs";
 
 // The universes of a theory's carriers, in the fields a theory records, the
@@ -235,6 +235,9 @@ function theoryFields(theory, lookup, proposition) {
     const record = lookup(parent.name.text);
     if (!record) throw located(Error(`${parent.name.text} is not a theory here: ${T} extends theories in scope.`), parent.name);
     const label = parent.label?.text ?? snake(record.name);
+    // A label is a field's name, so it is none of the reserved words.
+    if (!parent.label && reservedNames.has(label))
+      throw located(Error(`${parent.name.text}'s label would be ${label}, which is reserved: label it, as in other : ${parent.name.text}.`), parent.name);
     if (prepared.some(other => other.label === label))
       throw located(Error(`${T} has two parents labelled ${label}: label one, as in other : ${parent.name.text}.`), parent.label ?? parent.name);
     // The parent's universes are the child's: its one universe the child's

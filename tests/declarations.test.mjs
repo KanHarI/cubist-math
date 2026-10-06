@@ -52,6 +52,17 @@ test("a box lowers to comp or fill, with a face(…) or face_when(…) for each 
   assert.equal(parse("def compose(n : Nat) := compose(n);").declarations[0].name.text, "compose");
 });
 
+test("left and right, a sum's injections, are reserved: no binder takes them, while injections and sum patterns stay", () => {
+  for (const source of ["def h(left : Nat) := left;", "def k(p : Nat) : Nat { let right := p; exact right; }",
+    "def m(f : Nat -> Nat) := fun (left : Nat) => f(left);", "def left := 0;"])
+    assert.throws(() => parse(source), /^Error: (left|right) is reserved, as a keyword or a built-in type of the language; pick another name\.$/);
+  parse("def f(x : Unit or Nat) : Nat := match x { left u => 0; right n => n; };");
+  parse("def g(x : Unit or Nat) : Nat := match x { left(u) => 0; right(n) => n; };");
+  parse("def i : Unit or Nat := left(tt);");
+  // A historical source may still bind them (web/cubist/legacy-syntax.mjs).
+  parse("def h(left : Nat) := left;", false, { bindable: ["left"] });
+});
+
 // The definitions are cubist-tests/declarations_definitions.cubist, whose
 // comments state the refusal (tests/cubist-tests.test.mjs).
 test("definitions expose their checked bodies, and a refused one admits nothing", async t => {

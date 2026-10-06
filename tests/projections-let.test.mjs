@@ -112,6 +112,16 @@ test("a historical nat without a notation is read with the one it had in effect,
   assert.equal(historicalSource(declared, "nat"), declared);
 });
 
+test("a historical module's binders named left or right are renamed, as the injections became reserved on 2026-10-06", () => {
+  const old = "def f(left, right : Nat, p : Unit or Nat) : Nat := match p { left u => left; right n => right(n); };\n"
+    + "def g : Unit or Nat := left(tt);\n";
+  // The binders and what they shadow are renamed; sum patterns and the
+  // injection elsewhere stay.
+  assert.equal(historicalSource(old, "old", { implicitNat: false, minusReverses: false }),
+    "def f(left_, right_ : Nat, p : Unit or Nat) : Nat := match p { left u => left_; right n => right_(n); };\n"
+    + "def g : Unit or Nat := left(tt);\n");
+});
+
 test("a historical module reverses with ~ where it wrote prefix -, as every module did before 2026-10-06", () => {
   // A truncation level's sign stays, and a later revision is read as it is.
   const reversing = "def r(A : U0, x, y : A, p : x = y) : y = x := path i => p @ -i; // left-to-right\n";
