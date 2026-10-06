@@ -80,6 +80,28 @@ theory Kept(U < UU0) {
 // Output: forall U < UU0. forall m : Kept(U). forall z : m.M. z = z
 print(typeof(Kept.same));
 
+// Nor does an induction's hypothesis: z in the step is renamed apart from the
+// argument z, and a model proves the law by reflexivity.
+theory Chosen(U < UU0) {
+  M : set U;
+  c : M;
+  def choose(x : M, n : Nat) : M := induction n return M { zero => c; succ z => x; };
+  law chosen(z : M) : choose(z, succ(zero)) = z;
+}
+
+def nat_chosen : Chosen(U0) := Chosen.make(M := Nat, M_is_set := nat_is_set, c := zero,
+  chosen := fun (z : Nat) => refl(z));
+
+// A pattern's argument may name a constructor, so it is not renamed apart:
+// one an argument names is refused.
+// Error: E860: pick's pattern binds k, which an argument here names: rename it in pick.
+theory Picked(U < UU0) {
+  M : set U;
+  c : M;
+  def pick(x : M, n : Nat) : M := match n return M { zero => c; succ(k) => x; };
+  law picked(k : M) : pick(k, zero) = c;
+}
+
 def negated(A : Ring(U0), x : A.R) : A.R := A.(-) x;
 
 def difference(A : Ring(U0), x : A.R) : A.R := x A.(-) x;
