@@ -134,3 +134,21 @@ def f(set : Nat, prop : Nat) := set;`;
   for (let nth = 1; nth < 5; nth++) assert.equal(style("set", nth), "", `set ${nth}`);
   assert.equal(style("prop", 1), "");
 });
+
+test("notation declares a named notation where an item starts, and use selects one (L2.10a)", () => {
+  const source = `notation nat {
+  x + y := add(x, y);
+}
+def f(notation, use : Nat) : Nat {
+  use nat;
+  exact notation;
+}`;
+  const style = (word, nth = 0) => {
+    const at = [...source.matchAll(new RegExp(`\\b${word}\\b`, "g"))][nth].index;
+    return tokenStyle(word, null, keywordAt(source, at, word));
+  };
+  assert.equal(style("notation"), "keyword");
+  assert.equal(style("notation", 1), "");
+  assert.equal(style("use"), "");
+  assert.equal(style("use", 1), "keyword");
+});

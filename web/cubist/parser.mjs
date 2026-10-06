@@ -1029,6 +1029,30 @@ export function parse(source, typeOnly = false) {
     // notations, and laws. The
     // translator expands it into the definitions of its models
     // (theories.mjs).
+    // `notation v { x + y := add(x, y); … }` declares a named notation
+    // (L2.10a): a rule for each operator it binds, written as the notation
+    // is used, its right side over the pattern's two names.
+    if (t.text === "notation" && /^[A-Za-z_]/.test(peek()) && ts[i + 1].text === "{") {
+      const n = name();
+      take("{");
+      const rules = [];
+      while (peek() !== "}") {
+        if (peek() === "EOF") throw Object.assign(new Error("Expected '}' to close the notation."), { offset: ts[i].start });
+        const start = ts[i].start, left = name(), operator = take(), right = name();
+        if (!notationOperators.includes(operator.text))
+          throw Object.assign(new Error("A notation's rule binds a binary operator: x + y, x * y, x < y or x <= y."), { offset: operator.start });
+        if (left.text === right.text)
+          throw Object.assign(new Error(`A rule's pattern names its two operands apart, as x ${operator.text} y.`), { offset: right.start });
+        if (rules.some(rule => rule.operator === operator.text))
+          throw Object.assign(new Error(`${n.text} binds ${operator.text} twice: a notation has one rule for each operator.`), { offset: operator.start });
+        take(":=");
+        const value = expr();
+        rules.push({ operator: operator.text, left, right, value, operatorToken: operator, start, end: take(";").end });
+      }
+      const end = take("}").end;
+      items.push({ kind: "notation", name: n, rules, start: t.start, end });
+      continue;
+    }
     if (t.text === "theory") {
       const n = name(), parents = [];
       // The header binds the universes of the theory's carriers, and the
@@ -1273,6 +1297,8 @@ export function parse(source, typeOnly = false) {
     });placed(declarations.at(-1));
   }
   if (section) throw Object.assign(new Error("Expected '}' to close the section."), { offset: ts[i].start });
+  // Items in order, when any is no declaration: a directive, a notation or
+  // a file-level use.
   return { module, imports, declarations,
-    ...(directives.length?{directives,items}:{}) };
+    ...(directives.length || items.length !== declarations.length ? { directives, items } : {}) };
 }

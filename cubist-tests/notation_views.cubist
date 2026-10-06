@@ -1,0 +1,127 @@
+// Named notations (L2.10a): notation v { rules } declares one; use v; and
+// v.(e) select it, and a selection is complete, so an operator it does not
+// bind is an error, never an outer selection's or a function named add. A
+// rule's names are read where the notation is declared. Two models on one
+// carrier stay apart, and selections nest.
+import nat;
+import hlevels;
+import algebra;
+
+// The library's nat: 2 + 3 * 4 is add(2, mul(3, 4)).
+def fourteen : nat.(2 + 3 * 4) = 14 {
+  rfl;
+}
+
+// A notation of one's own, binding + to multiplication.
+notation times {
+  x + y := mul(x, y);
+}
+
+// Output: 12
+print(evaluate(times.(3 + 4)));
+
+// A rule's names are read where it was declared: a local add changes nothing.
+def hygienic(add : Nat) : times.(2 + 3) = 6 {
+  rfl;
+}
+
+// A rule's binder captures no name of an operand: z is the caller's here.
+notation first {
+  x + y := (fun (z : Nat) => x)(y);
+}
+
+def keeps(z, w : Nat) : first.(z + w) = z {
+  rfl;
+}
+
+// Nor is an operand's name one the rule binds itself, as an induction's
+// hypothesis: x in the step is the hypothesis, not the left operand.
+notation stepped {
+  x + y := induction y return Nat { zero => zero; succ x => x; };
+}
+
+def steps : stepped.(nat.(7) + nat.(1)) = zero {
+  rfl;
+}
+
+// A name the rule binds is not read where the rule is declared either: z in
+// the step is the hypothesis, not this global z.
+def z : Nat := succ(zero);
+
+notation rebound {
+  x + y := induction y return Nat { zero => zero; succ z => z; };
+}
+
+def rebinds : rebound.(nat.(7) + nat.(1)) = zero {
+  rfl;
+}
+
+// An induction's index is the predecessor in its step too: x there is the
+// predecessor of 1, not the left operand, and z not the global z.
+notation indexed {
+  x + y := induction y as x return Nat { zero => zero; succ h => x; };
+}
+
+def predecessor : indexed.(nat.(7) + nat.(1)) = zero {
+  rfl;
+}
+
+notation reindexed {
+  x + y := induction y as z return Nat { zero => zero; succ h => z; };
+}
+
+def repredecessor : reindexed.(nat.(7) + nat.(1)) = zero {
+  rfl;
+}
+
+// The operation alone.
+def plus := nat.(+);
+
+// Output: 7
+print(evaluate(plus(3, 4)));
+
+// Two models on one carrier: * is addition in one and multiplication in
+// the other.
+def additive : Monoid(U0) := nat_additive.monoid;
+
+def multiplicative : Monoid(U0) := nat_multiplicative.monoid;
+
+// Output: 7
+print(evaluate(additive.(3 * 4)));
+
+// Output: 12
+print(evaluate(multiplicative.(3 * 4)));
+
+// A rule's qualified name is read by its root where the rule is declared:
+// a local additive changes nothing.
+notation summed {
+  x + y := additive.mul(x, y);
+}
+
+def rooted(additive : Monoid(U0), x, y : Nat) : summed.(x + y) = nat.(x + y) {
+  rfl;
+}
+
+// Selections nest, the innermost winning.
+def nested(x : Nat) : Nat := multiplicative.(x * nat.(x + 1));
+
+// Output: 12
+print(evaluate(nested(3)));
+
+// A selection is complete: + is not the additive monoid's, whose
+// operation is *.
+// Error: E397: + is not in additive's notation, which is selected here: select a notation that
+//   binds it, as nat.(x + y), or write the operation.
+def missing(x : Nat) : Nat := additive.(x + x);
+
+// Error: E397: < is not in times's notation, which is selected here: select a notation that binds
+//   it, as nat.(x < y), or write the operation.
+def no_order : times.(1 < 2) := tt;
+
+use nat;
+
+// For the rest of the file, nat's notation.
+def doubled(x : Nat) : Nat := x + x;
+
+// Output: 6
+print(evaluate(doubled(3)));

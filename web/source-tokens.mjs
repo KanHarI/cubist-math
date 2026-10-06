@@ -135,6 +135,8 @@ export function keywordAt(source, start, text) {
   if (headerWordAt(source, start, text)) return true;
   // use selects a model, use m; (L2.4c), and is a name elsewhere.
   if (text === "use") return /^\s+[A-Za-z_][A-Za-z_0-9.]*\s*;/.test(source.slice(start + 3)) || undefined;
+  // notation v { … } declares a named notation (L2.10a).
+  if (text === "notation" && startsLine(source, start) && /^\s+[A-Za-z_][A-Za-z_0-9]*\s*\{/.test(source.slice(start + 8))) return true;
   const role = theoryRoles(source).get(start);
   if (role !== undefined) return role;
   return ["theory", "section"].includes(text) && startsLine(source, start) || undefined;

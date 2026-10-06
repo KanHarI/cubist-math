@@ -108,6 +108,10 @@ export const diagnostics = [
   ["E181", "A theory's universes are below UU0: … < UU0."],
   ["E182", "Expected ':' and the type of …, as in (x, y : M) or (A : set U)."],
   ["E183", "open is now use: write use m; to select a model's fields and notation."],
+  ["E184", "Expected '}' to close the notation."],
+  ["E185", "A notation's rule binds a binary operator: x + y, x * y, x < y or x <= y."],
+  ["E186", "A rule's pattern names its two operands apart, as x … y."],
+  ["E187", "… binds … twice: a notation has one rule for each operator."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
@@ -247,6 +251,8 @@ export const diagnostics = [
   ["E394", "… is a theory: its models are ….Model(U), built with ….make(…).", "retired"],
   ["E395", "A definition in a section has the section's implicit parameters, not its own: add them to the section's {{…}}."],
   ["E396", "….Model is now …: a theory's name is the type of its models, as in …(U0)."],
+  ["E397", "… is not in …'s notation, which is selected here: select a notation that binds it, as nat.(x … y), or write the operation."],
+  ["E398", "….(…) is an operation when its rule applies one to its operands, as x … y := f(x, y)."],
   // Proof statements, rewriting and simplification
   ["E401", "Univalence requires a universe."],
   ["E402", "… takes a universe below UU0."],
@@ -504,6 +510,7 @@ export const diagnostics = [
   ["E834", "use selects a model of a theory, such as m : Group(U0); this is a value of type …."],
   ["E835", "….(…) takes a model of a theory; … is not one."],
   ["E836", "… binds no operation to …."],
+  ["E837", "… binds no rule to …."],
   ["E859", "…'s parent … is labelled …, which names a field of … too: label it apart, as in base : …."],
   // Kernel: declared types
   ["K101", "Dimension renaming allocation failed."],

@@ -3,6 +3,7 @@
 // leaves, by which m.f reads a field of a model m and `open m;` puts a
 // model's fields and notation in scope.
 import {expandTheory} from "../cubist/theories.mjs";
+import {rewritten} from "../cubist/scopes.mjs";
 
 // The scope's key for an operator a model's notation binds: no source name
 // can spell it.
@@ -10,6 +11,14 @@ export const operatorBinding = operator => "\u0000operator " + operator;
 // The environment's key for a theory's record. The theory's name is its type
 // of models (L2.4c), a definition like any other.
 export const theoryBinding = name => "\u0000theory " + name;
+// The environment's key for a named notation's rules (L2.10a), and the
+// scope's key for the selected notation: its name and the operators it
+// binds. A selection is complete: an operator it does not bind is an error,
+// never an earlier selection's or a function named add.
+export const notationBinding = name => "\u0000notation " + name;
+export const SELECTION = "\u0000selection";
+// The extensible operators a notation can bind.
+export const notationOperators = ["+", "*", "<", "<="];
 
 // The record of the theory whose models `value` is one of, from the head of
 // its type, T(U), or null.
@@ -86,12 +95,76 @@ export function opened(t,scope,node) {
   for(const [operator,list] of Object.entries(record.ambiguousNotations??{}))
     inner=inner.alias(operatorBinding(operator),{tag:"Ambiguous",message:`${operator} is ambiguous in ${record.name}: it is ${
       list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>`x ${node.name??"m"}.${e.label}.(${operator}) y`).join(" or ")}.`});
-  return inner;
+  // The model's notation is the selection (L2.10a).
+  return inner.alias(SELECTION,{name:node.name??"this model",
+    operators:new Set([...Object.keys(record.notations),...Object.keys(record.ambiguousNotations??{})])});
+}
+
+// A named notation (L2.10a): each rule's right side, its free names read
+// where the notation is declared, under keys no source name can spell, so
+// that no later binding changes what a rule means. A qualified name, m.f,
+// is read by its root where only the root is bound, so a later local m
+// does not take its place.
+export function notationDeclaration(t,module,d,env) {
+  const rules=new Map();
+  for(const rule of d.rules) {
+    const aliases=new Map(),pattern=new Set([rule.left.text,rule.right.text]);
+    const alias=name=>{
+      const key=`\u0000notation ${d.name.text} ${name}`;
+      aliases.set(key,env.get(name));
+      return key;
+    };
+    const value=renameFree(rule.value,name=>{
+      if(pattern.has(name))return null;
+      if(env.has(name))return alias(name);
+      const dot=name.indexOf("."),root=dot>0?name.slice(0,dot):null;
+      return root&&env.has(root)?`${alias(root)}${name.slice(dot)}`:null;
+    });
+    rules.set(rule.operator,{left:rule.left.text,right:rule.right.text,value,aliases,source:rule.value});
+  }
+  env.set(notationBinding(d.name.text),{tag:"Notation",name:d.name.text,rules});
+}
+
+// A copy of a syntax tree with each free name that `rename` maps renamed,
+// whatever binds it (scopes.mjs).
+const renameFree=(node,rename)=>rewritten(node,(n,bound)=>{
+  if(n.kind!=="name"||bound.has(n.name.split(".")[0]))return n;
+  const renamed=rename(n.name);
+  return renamed?{...n,name:renamed}:n;
+});
+
+// A named notation's rule applied to two operands: its right side, and the
+// scope that resolves its names. Each pattern name stands for its operand
+// under a key no source name can spell, and the operand is elaborated where
+// the rule uses it, in the scope the operator is written in: no binder of
+// the rule captures a name of an operand.
+export function appliedRule(scope,rule,left,right) {
+  let inner=scope;
+  for(const [key,value] of rule.aliases)inner=inner.alias(key,value);
+  const operands=new Map();
+  for(const [name,node] of [[rule.left,left],[rule.right,right]]) {
+    const key=`\u0000operand ${name}`;
+    inner=inner.alias(key,{tag:"Operand",node,scope});
+    operands.set(name,{kind:"name",name:key,start:node.start,end:node.end});
+  }
+  const substituted=substitute(rule.value,operands);
+  return {node:substituted,scope:inner};
+}
+const substitute=(node,operands)=>rewritten(node,(n,bound)=>
+  n.kind==="name"&&operands.has(n.name)&&!bound.has(n.name)?operands.get(n.name):n);
+
+// The scope with a named notation selected: its rules for its operators.
+function notationSelected(scope,notation) {
+  let inner=scope;
+  for(const [operator,rule] of notation.rules)inner=inner.alias(operatorBinding(operator),{tag:"NotationRule",rule});
+  return inner.alias(SELECTION,{name:notation.name,operators:new Set(notation.rules.keys())});
 }
 
 // The scope with the model `node` selected, by use m; or m.(e) (L2.4c):
 // opened, or the error that it is no model.
 export function selected(t,scope,node) {
+  const notation=node.kind==="name"?scope.env.get(notationBinding(node.name)):null;
+  if(notation?.tag==="Notation")return notationSelected(scope,notation);
   const inner=opened(t,scope,node);
   if(inner)return inner;
   throw scope.unit.locate(Error(`use selects a model of a theory, such as m : Group(U0); this is a value of type ${
@@ -101,7 +174,15 @@ export function selected(t,scope,node) {
 // m.(+), a model's operation that its theory's notation binds + to: the
 // node of the field m.f, or the error that says why there is none.
 export function qualifiedOperator(t,scope,n) {
-  const record=recordOf(t,scope,t.term(n.model,scope,null)),at={start:n.operatorStart,end:n.operatorEnd};
+  const at={start:n.operatorStart,end:n.operatorEnd};
+  // A named notation's operator: its rule, applied where it stands.
+  const notation=n.model.kind==="name"?scope.env.get(notationBinding(n.model.name)):null;
+  if(notation?.tag==="Notation") {
+    const rule=notation.rules.get(n.operator);
+    if(!rule)throw scope.unit.locate(Error(`${notation.name} binds no rule to ${n.operator}.`),at);
+    return {kind:"notationRule",rule,start:n.start,end:n.end};
+  }
+  const record=recordOf(t,scope,t.term(n.model,scope,null));
   if(!record)throw scope.unit.locate(Error(`${n.model.name}.(${n.operator}) takes a model of a theory; ${n.model.name} is not one.`),n.model);
   const field=record.notations[n.operator];
   if(!field) {

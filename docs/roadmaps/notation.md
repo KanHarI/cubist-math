@@ -167,6 +167,18 @@ declared division, including its behavior at zero; no field's view binds it
 
 ## L2.10a. Explicit notation views
 
+**Done** on 2026-10-06, for the operators `+`, `*`, `<` and `<=`:
+`notation v { x + y := f(x, y); … }` declares a named notation, and
+`library/nat.cubist` declares `nat`; models have their theory's notation;
+`use v;` (in a block, or at a file's top level), `v.(e)`, `a v.(+) b` and
+`v.(+)` select either, and a selection is complete (E397). A rule is not
+compiled into a function of its own: its right side's free names are
+read where the notation is declared, under keys no source name can spell,
+and a use substitutes its operands for the pattern's names, so a later
+binding changes nothing (`cubist-tests/notation_views.cubist`). L2.10b's
+operators and operand recipes, L2.10c's literal rules, L2.10d's printing
+and inspection of selections, and the file-level shadowing warning remain.
+
 ### What a view contains
 
 A view is elaboration metadata attached to a named declaration or a model.

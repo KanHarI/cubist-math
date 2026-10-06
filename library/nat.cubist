@@ -31,6 +31,14 @@ computable def le(x, y : Nat) : U0 := match x, y {
 // Strict order: n < p is succ(n) <= p.
 computable def isLt(n, p : Nat) : U0 := le(succ(n), p);
 
+// The natural numbers' notation (L2.10a): use nat; or nat.(e) selects it.
+notation nat {
+  x + y := add(x, y);
+  x * y := mul(x, y);
+  x <= y := le(x, y);
+  x < y := isLt(x, y);
+}
+
 // 0 + n = n, by computation.
 computable def nat_zero_add(n : Nat) : 0 + n = n := refl(n);
 
