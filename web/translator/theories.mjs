@@ -111,7 +111,10 @@ export function opened(t,scope,node,{complete=true}={}) {
 // does not take its place.
 // The library's names a literal's lexeme is built from (lexemes.cubist).
 const LEXEME_NAMES=["cons","nil","digit","lower","upper","period","slash","underscore","plus","minus","parsed_value","parse_answer"];
-export const lexemeKey=name=>`\u0000lexeme ${name}`;
+// The key of a lexeme's glyph in a literal rule's scope, which no source
+// name can spell. (A function, not a template: the diagnostics catalogue
+// reads template-returning arrows as messages.)
+export function lexemeKey(name) { return "\u0000lexeme "+name; }
 export function notationDeclaration(t,module,d,env,declared=new Set()) {
   const rules=new Map();
   // A notation named after a model of this module adds literal rules to

@@ -520,7 +520,6 @@ export const diagnostics = [
   ["E838", "The notation of … reads … in the notation selected where it is used, which is …'s; … is no carrier's element: name the notation it is read in, as …."],
   ["E839", "-x names an operation's one argument; … is not an operation of one."],
   ["E840", "-x names an operation's one argument, as in neg(x : M) : M notation -x."],
-  ["E841", "u0000lexeme …"],
   ["E842", "… is declared in another module: only the module that declares a model adds rules to its notation."],
   ["E843", "A model's notation is its theory's; …'s adds only a numeral or a literal rule."],
   ["E844", "A literal rule reads a Lexeme: import lexemes, which defines …."],
