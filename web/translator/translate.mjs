@@ -287,16 +287,17 @@ export class Translator {
     while(queue.length) {
       const d=queue.shift();
       if(d.kind==="theory") { queue.unshift(...theoryDeclarations(this,module,d,env,declarations)); continue; }
-      // A file-level use m; selects m for the definitions after it, which
-      // record it (L2.4c).
+      // A file-level use m; selects m for the definitions and directives
+      // after it, which record it (L2.4c).
       if(d.kind==="use")continue;
       if(d.kind==="evaluate") {
         const line=source.slice(0,d.start).split("\n").length;
         // An evaluation asks the kernel as a declaration does, with fuel of its own.
         const unit=module.declaration(this.declarationFuel);
         try {
+          const scope=(d.uses??[]).reduce((inner,model)=>selected(this,inner,model),new Scope(unit,new Map(),env));
           directives.push({kind:"evaluate",name:`at line ${line}`,status:"checked",start:d.start,
-            normalText:this.evaluate(d,new Scope(unit,new Map(),env))});
+            normalText:this.evaluate(d,scope)});
         } catch(error) {
           directives.push({kind:"evaluate",name:`at line ${line}`,status:"not-translated",
             reason:error.message,start:d.start,failure:error.kind});
@@ -309,8 +310,10 @@ export class Translator {
         const line=source.slice(0,d.start).split("\n").length;
         const unit=module.declaration(this.declarationFuel);
         try {
+          // A file-level use selects for directives too, which print in it.
+          const scope=(d.uses??[]).reduce((inner,model)=>selected(this,inner,model),new Scope(unit,new Map(),env));
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"checked",start:d.start,
-            text:this.printed(d,new Scope(unit,new Map(),env))});
+            text:this.printed(d,scope)});
         } catch(error) {
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"not-translated",
             reason:error.message,start:d.start,failure:error.kind});

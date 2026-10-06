@@ -342,7 +342,8 @@ function theoryFields(theory, lookup) {
   }, scope);
   // Inside the theory, a parent's notation through its label (L2.4c):
   // label.(e) reads e's operators and names as that parent does, and
-  // x label.(*) y and label.(*) its operator.
+  // x label.(*) y and label.(*) its operator. A selection inside label.(e)
+  // is read as it says, not as the outer label's.
   const labelled = (node, scope = new Set()) => rewritten(node, (n, bound) => {
     const qualifier = n.kind === "binary" ? n.qualifier : ["select", "operatorOf"].includes(n.kind) ? n.model : null;
     const p = qualifier?.kind === "name" && !bound.has(qualifier.name) ? viaLabel.get(qualifier.name) : null;
@@ -356,7 +357,9 @@ function theoryFields(theory, lookup) {
     if (n.kind === "binary") return call(fieldFor(n.operator), [labelled(n.left, bound), labelled(n.right, bound)], n);
     const own = new Map(p.record.fields.map(field => [field.name, finalName(p, field)]));
     const inside = node => rewritten(node, (m, inner) => {
-      if (m.kind === "binary" && !m.qualifier && p.record.notations[m.operator])
+      if (["select", "operatorOf"].includes(m.kind)) return labelled(m, inner);
+      if (m.kind === "binary" && m.qualifier) return labelled({ ...m, left: inside(m.left), right: inside(m.right) }, inner);
+      if (m.kind === "binary" && p.record.notations[m.operator])
         return call(fieldFor(m.operator), [inside(m.left), inside(m.right)], m);
       if (m.kind === "name" && own.has(m.name) && !inner.has(m.name)) return { ...m, name: own.get(m.name) };
       return m;
