@@ -19,8 +19,8 @@ import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference,ma
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName} from "./hlevel.mjs";
 import {repeatedName,stem} from "./names.mjs";
-import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation} from "./notations.mjs";
-import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipTheory,sectionScope,selected,qualifiedOperator,notationDeclaration,appliedRule,SELECTION} from "./theories.mjs";
+import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated} from "./notations.mjs";
+import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipTheory,sectionScope,selected,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -238,6 +238,40 @@ export class Translator {
   }
   // `evaluate term expecting value;` normalizes a closed, assumption-free term
   // and requires its normal form to agree with the expected value's.
+  // A literal in a selected notation (L2.10c): its literal rule's parser,
+  // evaluated on the token's lexeme, or, for a plain numeral, its numeral
+  // rule applied to the natural number.
+  literalTerm(n,scope,expected) {
+    const selection=scope.env.get(SELECTION),plain=/^[0-9]+$/.test(n.text);
+    if(!selection?.complete||!(selection.literal||plain&&selection.numeral))
+      throw literalUnread(selection,n.text);
+    if(!selection.literal) {
+      const applied=appliedRule(scope.alias(SELECTION,null),selection.numeral,{kind:"number",value:Number(n.text),start:n.start,end:n.end},null);
+      return this.term(applied.node,applied.scope,expected);
+    }
+    const rule=selection.literal;
+    const lexeme=[...n.text].reduceRight((tail,character)=>{
+      const glyph=/[0-9]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("digit")},args:[{kind:"number",value:Number(character)}]}
+        :/[a-z]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("lower")},args:[{kind:"number",value:character.charCodeAt(0)-97}]}
+        :/[A-Z]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("upper")},args:[{kind:"number",value:character.charCodeAt(0)-65}]}
+        :{kind:"name",name:lexemeKey({".":"period","/":"slash","_":"underscore","+":"plus","-":"minus"}[character])};
+      return {kind:"call",fn:{kind:"name",name:lexemeKey("cons")},args:[glyph,tail]};
+    },{kind:"name",name:lexemeKey("nil")});
+    // The lexeme's glyphs are the rule's, read with no selection.
+    let glyphs=scope.alias(SELECTION,null);
+    for(const [key,value] of rule.aliases)glyphs=glyphs.alias(key,value);
+    const applied=appliedRule(glyphs,rule,lexeme,null);
+    // The parse's answer, evaluated now: 0 when it succeeded, k + 1 when it
+    // refused the character at position k.
+    scope.spend("queries");
+    const answer=this.shown(this.checker.verify(this.term({kind:"call",fn:{kind:"name",name:lexemeKey("parse_answer")},
+      args:[applied.node],start:n.start,end:n.end},applied.scope,null)).normal);
+    if(!/^[0-9]+$/.test(answer))throw literalUnevaluated(selection,n.text,answer);
+    if(answer!=="0")throw scope.unit.locate(literalRefused(selection,n.text,Number(answer)-1),
+      {start:n.start+Number(answer)-1,end:n.start+Number(answer)});
+    return this.term({kind:"call",fn:{kind:"name",name:lexemeKey("parsed_value")},args:[applied.node,{kind:"name",name:"tt"}],
+      start:n.start,end:n.end},applied.scope,expected);
+  }
   evaluate(d,scope) {
     scope.spend("queries");
     const result=this.checker.verify(this.term(d.value,scope));
@@ -292,7 +326,11 @@ export class Translator {
       // record it (L2.4c).
       if(d.kind==="use")continue;
       // A named notation's rules, read where it is declared (L2.10a).
-      if(d.kind==="notation") { notationDeclaration(this,module,d,env); continue; }
+      if(d.kind==="notation") {
+        try { notationDeclaration(this,module,d,env,new Set(declarations.filter(e=>e.status!=="not-translated").map(e=>e.name))); }
+        catch(error) { declarations.push({name:d.name.text,status:"not-translated",reason:error.message,errorStart:error.offset,errorEnd:error.sourceEnd}); }
+        continue;
+      }
       if(d.kind==="evaluate") {
         const line=source.slice(0,d.start).split("\n").length;
         // An evaluation asks the kernel as a declaration does, with fuel of its own.
@@ -787,6 +825,10 @@ export class Translator {
         throw Error(`Untranslated name: ${n.name}`);
       }
       case "number": {
+        // In a selected notation, a numeral is its numeral rule's, or its
+        // literal rule's; a notation with neither reads none (L2.10c).
+        const selection=env.get(SELECTION);
+        if(selection?.complete)return this.literalTerm({...n,kind:"literal",text:String(n.value)},scope,expected);
         const natural=this.naturalConstructors(scope);
         let t=natural.zero;for(let i=0;i<n.value;i++)t=T.app(natural.succ,t);
         this.reference(scope,{...n,name:String(n.value)},t);return t;}
@@ -934,6 +976,10 @@ export class Translator {
       }
       // use m; at a file's top level, and m.(e) for one expression (L2.4c).
       case "useScope": return this.term(n.body,n.uses.reduce((inner,model)=>selected(this,inner,model),scope),expected);
+      // An operand of a notation's rule, read where it stood (L2.10a).
+      case "scoped": return this.term(n.node,n.scope,expected);
+      // A literal, read by the selected notation's literal rule (L2.10c).
+      case "literal": return this.literalTerm(n,scope,expected);
       case "select": return this.term(n.body,selected(this,scope,n.model),expected);
       case "operatorOf": {
         const operation=qualifiedOperator(this,scope,n);

@@ -224,7 +224,7 @@ def multiplicative : Monoid(U0) := nat_multiplicative.monoid;
 
 def mixed : additive.M := 2 multiplicative.(*) 3 additive.(*) 1;
 
-def product : multiplicative.(2 * 3 * 4) = 24 {
+def product : multiplicative.(nat.(2) * nat.(3) * nat.(4)) = 24 {
   rfl;
 }
 
@@ -243,6 +243,7 @@ def squared(x : Nat) : Nat := x * x;</code></pre>
 
 notation times {
   x + y := mul(x, y);
+  numeral(n : Nat) := n;
 }
 
 def fourteen : nat.(2 + 3 * 4) = 14 {
@@ -272,6 +273,16 @@ def grouped(A : Ring(U0), x, y : A.R) : A.(-x^2 * y) = A.mul(A.neg(A.pow(x, 2)),
 }
 
 def subtracted(A : Ring(U0), x, y : A.R) : A.(x - y) = A.sub(x, y) {
+  rfl;
+}</code></pre>
+            <p><strong>Literals</strong> are read by the selected notation. A plain numeral goes to its <code>numeral(n : Nat) := e</code> rule, and any numeric token, <code>1/2</code>, <code>2.3</code>, <code>1_000</code> or <code>5i</code>, to its <code>literal(s : Lexeme) := e</code> rule, a parser over the token's characters from the library's <code>lexemes</code> module, which also reads plain numerals when present; a notation with neither reads none, and <code>nat.(2)</code> gives a natural number inside it. A theory's derived operation marked <code>notation numeral</code> reads numerals in its models, as the library's rings' <code>of_nat</code> does, and the module that declares a model may add a numeral or a literal rule to its notation, as <code>notation rationals { literal(s : Lexeme) := rational_literal(s); }</code> does. A literal's parser is evaluated as the source is checked, and a refusal names the character, as for <code>rationals.(1/0)</code>; the term holds the literal's characters and the evidence that its parse succeeded, which the kernel checks by evaluating the parse:</p>
+            <pre><code data-check="accept">import rationals;
+
+def half : Q := rationals.(1/2);
+
+def three_halves : Q := rationals.(1/2 + 1);
+
+def two : integers.(2) = int(2, 0) {
   rfl;
 }</code></pre>
           </section>

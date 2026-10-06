@@ -38,8 +38,9 @@ def negated(A : Ring(U0), x : A.R) : A.R := A.(-) x;
 
 def difference(A : Ring(U0), x : A.R) : A.R := x A.(-) x;
 
-// The library's rings: negation and subtraction on the integers.
-def three : integers.(int(5, 0) - int(2, 0)) = int(5, 2) {
+// The library's rings: negation and subtraction on the integers, whose
+// numerals the integers' module reads (L2.10c).
+def three : integers.(5 - 2) = int(5, 2) {
   rfl;
 }
 

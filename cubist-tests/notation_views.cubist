@@ -15,6 +15,7 @@ def fourteen : nat.(2 + 3 * 4) = 14 {
 // A notation of one's own, binding + to multiplication.
 notation times {
   x + y := mul(x, y);
+  numeral(n : Nat) := n;
 }
 
 // Output: 12
@@ -38,10 +39,10 @@ def additive : Monoid(U0) := nat_additive.monoid;
 def multiplicative : Monoid(U0) := nat_multiplicative.monoid;
 
 // Output: 7
-print(evaluate(additive.(3 * 4)));
+print(evaluate(3 additive.(*) 4));
 
 // Output: 12
-print(evaluate(multiplicative.(3 * 4)));
+print(evaluate(3 multiplicative.(*) 4));
 
 // Selections nest, the innermost winning.
 def nested(x : Nat) : Nat := multiplicative.(x * nat.(x + 1));

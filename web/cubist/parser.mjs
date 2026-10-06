@@ -4,17 +4,21 @@
 // notation can bind unary -x too. x > y and x >= y are y < x and y <= x.
 export const notationOperators = ["+", "-", "*", "/", "^", "<", "<="];
 
+// A numeric token (L2.10c): a digit, then letters, digits and _, with . or
+// / only before a digit and + or - only after e or E and before a digit, as
+// 42, 1_000, 1/2, 2.3, 6.02e23, 2.5e-3 and 5i. Right after a tight dot a
+// digit is a projection's index, as in p.2.1, never a literal's start.
+const numericToken = String.raw`(?<!\.)[0-9][A-Za-z0-9_]*(?:[./][0-9][A-Za-z0-9_]*|(?<=[eE])[+-][0-9][A-Za-z0-9_]*)*`;
 export function tokenize(source) {
   if (typeof source !== "string" || source.length > 1000000)
     throw new Error("Source exceeds 1 MB.");
   const tokens = [];
-  const re =
-    /\s+|\/\/[^\n]*|(?:<=|>=|=>|->|:=|<-|\+\+)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[\[\](){}:,;.+*\/^<=>@&|~-]|./gy;
+  const re = new RegExp(String.raw`\s+|\/\/[^\n]*|(?:<=|>=|=>|->|:=|<-|\+\+)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|${numericToken}|[0-9]+|[\[\](){}:,;.+*\/^<=>@&|~-]|.`, "gy");
   for (const match of source.matchAll(re)) {
     const text = match[0];
     if (/^\s|^\/\//.test(text)) continue;
     if (
-      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|<=|>=|=>|->|:=|<-|\+\+|[\[\](){}:,;.+*\/^<=>@&|~-])$/.test(text)
+      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9][A-Za-z0-9_.\/+-]*|<=|>=|=>|->|:=|<-|\+\+|[\[\](){}:,;.+*\/^<=>@&|~-])$/.test(text)
     )
       throw Object.assign(new Error(`Unexpected character ${text}`), {
         offset: match.index,
@@ -420,6 +424,10 @@ export function parse(source, typeOnly = false) {
         throw Object.assign(new Error("Binary literals are limited to 256 significant bits."), { offset: t.start });
       return { kind: "binaryNumber", digits, spelling: t.text, start: t.start, end: t.end };
     }
+    // Any other numeric token is a literal, read by the selected notation's
+    // literal rule (L2.10c).
+    if (/^[0-9]/.test(t.text) && !/^[0-9]+$/.test(t.text) && !/^0b[01]+$/.test(t.text))
+      return { kind: "literal", text: t.text, start: t.start, end: t.end };
     if (/^[0-9]+$/.test(t.text)) {
       if (Number(t.text) > 256)
         throw Object.assign(
@@ -1086,6 +1094,22 @@ export function parse(source, typeOnly = false) {
       const rules = [];
       while (peek() !== "}") {
         if (peek() === "EOF") throw Object.assign(new Error("Expected '}' to close the notation."), { offset: ts[i].start });
+        // numeral(n : Nat) := e reads a plain numeral, and literal(s : Lexeme)
+        // := e any numeric token, by its characters (L2.10c).
+        if (["numeral", "literal"].includes(peek()) && ts[i + 1].text === "(") {
+          const start = ts[i].start, word = take();
+          take("(");
+          const param = name();
+          take(":");
+          const type = expr();
+          take(")");
+          if (rules.some(rule => ["numeral", "literal"].includes(rule.kind)))
+            throw Object.assign(new Error(`${n.text} reads literals once: a notation has a numeral rule or a literal rule, not both.`), { offset: word.start });
+          take(":=");
+          const value = expr();
+          rules.push({ kind: word.text, param, type, value, keyword: word, start, end: take(";").end });
+          continue;
+        }
         const start = ts[i].start, pattern = notationPattern(), key = pattern.unary ? "unary -" : pattern.operator;
         if (rules.some(rule => (rule.unary ? "unary -" : rule.operator) === key))
           throw Object.assign(new Error(`${n.text} binds ${pattern.unary ? "-x" : pattern.operator} twice: a notation has one rule for each operator.`),
@@ -1109,7 +1133,14 @@ export function parse(source, typeOnly = false) {
           throw Object.assign(new Error(`A theory's universes are below UU0: ${p.name.text} < UU0.`), { offset: p.bound.start });
       const universes = new Set(header.filter(p => p.bound).map(p => p.name.text));
       const notationAfter = () => {
-        const notationKeyword = take(), pattern = notationPattern();
+        const notationKeyword = take();
+        // notation numeral: a derived operation that reads plain numerals
+        // in the theory's notation (L2.10c).
+        if (peek() === "numeral" && [";", ","].includes(ts[i + 1].text)) {
+          const word = take();
+          return { numeral: true, keyword: notationKeyword, operatorToken: word, start: notationKeyword.start, end: word.end };
+        }
+        const pattern = notationPattern();
         return { ...pattern, keyword: notationKeyword, start: notationKeyword.start };
       };
       if (peek() === "extends") {

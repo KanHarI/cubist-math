@@ -18,7 +18,8 @@ def mixed : additive.M := 2 multiplicative.(*) 3 additive.(*) 1;
 // Output: 7
 print(evaluate(mixed));
 
-def product : multiplicative.(2 * 3 * 4) = 24 {
+// The monoid reads no numerals: they are nat's.
+def product : multiplicative.(nat.(2) * nat.(3) * nat.(4)) = 24 {
   rfl;
 }
 

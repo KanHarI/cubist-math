@@ -37,6 +37,7 @@ notation nat {
   x * y := mul(x, y);
   x <= y := le(x, y);
   x < y := isLt(x, y);
+  numeral(n : Nat) := n;
 }
 
 // 0 + n = n, by computation.

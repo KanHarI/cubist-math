@@ -1,6 +1,8 @@
 import nat;
 import hlevels;
 import h1_truncation;
+import lists;
+import lexemes;
 import quotients;
 import algebra;
 import integers;
@@ -608,3 +610,52 @@ computable def rat(a : Z, k : Nat) : Q := class((a, int(succ(k), 0), int_succ_no
 
 computable def rat_decide(x, y : Q) :
   Decidable(U0, x = y) := q_decide(integers, int_decide, int_mul_nonzero, int_zero_ne_one, x, y);
+
+// The rationals' literals (L2.10c): an integer, n/d with d not zero, or a
+// decimal, a.b, read from their characters, so rationals.(1/2 + 0.75) needs
+// no evidence. 1/0 is refused at its denominator.
+computable def rational_fraction(numerator, at : Nat, s : Lexeme) : Parsed(U0, Q) {
+  let read : (Nat and Nat) and Lexeme := leading_digits(s, 0, 0);
+  exact match read.2 return Parsed(U0, Q) {
+    nil => match read.1.1 return Parsed(U0, Q) {
+      zero => error(at);
+      succ(d) => ok(rat(int(numerator, 0), d));
+    };
+    cons(g, rest) => error(add(at, read.1.2));
+  };
+}
+
+computable def rational_decimal(whole, at : Nat, s : Lexeme) : Parsed(U0, Q) {
+  let read : (Nat and Nat) and Lexeme := leading_digits(s, 0, 0);
+  exact match read.2 return Parsed(U0, Q) {
+    nil => match power_of_ten(read.1.2) return Parsed(U0, Q) {
+      zero => error(at);
+      succ(d) => match read.1.2 return Parsed(U0, Q) {
+        zero => error(at);
+        succ(k) => ok(rat(int(add(mul(whole, power_of_ten(read.1.2)), read.1.1), 0), d));
+      };
+    };
+    cons(g, rest) => error(add(at, read.1.2));
+  };
+}
+
+computable def rational_literal(s : Lexeme) : Parsed(U0, Q) {
+  let read : (Nat and Nat) and Lexeme := leading_digits(s, 0, 0);
+  exact match read.2 return Parsed(U0, Q) {
+    nil => ok(rat(int(read.1.1, 0), 0));
+    cons(g, rest) => match g return Parsed(U0, Q) {
+      slash => rational_fraction(read.1.1, succ(read.1.2), rest);
+      period => rational_decimal(read.1.1, succ(read.1.2), rest);
+      digit(d) => error(read.1.2);
+      lower(n) => error(read.1.2);
+      upper(n) => error(read.1.2);
+      underscore => error(read.1.2);
+      plus => error(read.1.2);
+      minus => error(read.1.2);
+    };
+  };
+}
+
+notation rationals {
+  literal(s : Lexeme) := rational_literal(s);
+}

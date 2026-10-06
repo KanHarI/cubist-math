@@ -47,6 +47,12 @@ theory CommRing(U < UU0) extends additive : AbelianGroup(
 ), multiplicative : CommMonoid(M := R) {
   law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;
   def sub(x, y : R) : R := x + -y notation x - y;
+  // A natural number in the ring, which reads plain numerals in its
+  // notation: one added to itself n times (L2.10c).
+  def of_nat(n : Nat) : R := match n {
+      zero => zero;
+      succ(k) => one + of_nat(k);
+    } notation numeral;
 }
 
 // A field: a commutative ring in which zero is not one and every element

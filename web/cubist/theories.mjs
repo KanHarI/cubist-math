@@ -152,13 +152,14 @@ function theoryFields(theory, lookup, proposition) {
   // Each notation's operand recipes: the notation an operand is read in,
   // other than the current one (L2.10b), as nat for x ^ nat.(n).
   const recipes = new Map();
-  // A notation's key: its operator, or unary - for -x.
-  const keyOf = notation => notation.unary ? "unary -" : notation.operator;
+  // A notation's key: its operator, unary - for -x, or numeral.
+  const keyOf = notation => notation.numeral ? "numeral" : notation.unary ? "unary -" : notation.operator;
   // Derived operations, a theory's own and its parents' (L2.10b): each
   // applied in a later field is its value, its parameters substituted.
   const derived = [], derivedByName = new Map();
   const inlineDerived = node => rewritten(node, (n, bound) => {
     const d = n.kind === "call" && n.fn.kind === "name" && !bound.has(n.fn.name) ? derivedByName.get(n.fn.name) : null;
+    if (d?.recursive) throw located(Error(`${d.name} is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory.`), n);
     if (!d || n.args.length !== d.params.length) return n;
     const args = new Map(d.params.map((p, k) => [p.name, inlineDerived(n.args[k])]));
     return rewritten(d.value, (m, inner) => m.kind === "name" && args.has(m.name) && !inner.has(m.name) ? args.get(m.name) : m);
@@ -413,7 +414,11 @@ function theoryFields(theory, lookup, proposition) {
         origin: `${origin}_is_${item.level}` }, item.name);
       continue;
     }
-    if (item.notation) {
+    if (item.notation?.numeral) {
+      if (item.kind !== "derived" || item.params.length !== 1 || !(item.params[0].type.kind === "name" && item.params[0].type.name === "Nat"))
+        throw located(Error(`notation numeral reads a plain numeral: it marks a derived operation of one natural number, as def of_nat(n : Nat) : R := … notation numeral.`), item.notation);
+      notate("numeral", item.name.text, item.notation);
+    } else if (item.notation) {
       const { operator, left, right, unary, leftView, rightView } = item.notation;
       if (unary) {
         if (!["operation", "derived"].includes(item.kind) || item.params.length !== 1 || left.text !== item.params[0].name.text)
@@ -469,6 +474,8 @@ function theoryFields(theory, lookup, proposition) {
       const process = node => inlineDerived(operatorsAsCalls(inTheoryUniverse(evidenced(node, leveled), item)));
       const entry = { name: item.name.text, params: expanded(item).map(p => ({ name: p.name.text, type: process(p.type) })),
         type: process(item.type), value: process(item.value), origin, at: item.name };
+      // A recursive one, as of_nat, is called, not inlined, in later fields.
+      entry.recursive = [...namesIn(entry.value)].includes(entry.name);
       derived.push(entry);
       derivedByName.set(entry.name, entry);
       continue;
@@ -554,8 +561,13 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
   // derived operation, its fields read through m (L2.10b).
   for (const d of derived) {
     const own = new Set(d.params.map(p => p.name));
-    const through = node => rewritten(inUniverse(node), (n, bound) => n.kind === "name" && projected.has(n.name)
-      && !bound.has(n.name) && !own.has(n.name) ? call(projected.get(n.name), [name(model, n)], n) : n);
+    // Its fields through m; a recursive call to itself, T.d(m, …).
+    const through = node => rewritten(inUniverse(node), (n, bound) => {
+      if (n.kind === "call" && n.fn.kind === "name" && n.fn.name === d.name && !bound.has(d.name))
+        return call(`${T}.${d.name}`, [name(model, n), ...n.args.map(through)], n);
+      return n.kind === "name" && projected.has(n.name) && !bound.has(n.name) && !own.has(n.name)
+        ? call(projected.get(n.name), [name(model, n)], n) : n;
+    });
     out.push(declaration(`${T}.${d.name}`, [...headerParameters({ universe: true, parameter: true }),
       { name: token(model, d.at), type: modelType(d.at), group: nextGroup },
       ...d.params.map((p, k) => ({ name: token(p.name, d.at), type: through(p.type), group: nextGroup + 1 + k }))],
