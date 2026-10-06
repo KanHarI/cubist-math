@@ -31,8 +31,12 @@ const CONSTRUCTORS = new Set(["U", "Pi", "Lam", "LPi", "LLam", "Sigma", "Pair", 
 // The type former a constructor's eta expansion needs. A Glue term's is
 // glue [φ ↦ g] (unglue g), for g of a Glue type.
 const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma", LLam: "LPi", GlueTerm: "Glue" };
-// Steps after which a closed comparison computes normal forms.
-const LONG_COMPUTATION = 64;
+// Steps after which a closed comparison computes normal forms, and the
+// kernel steps each normal form may take. The largest any area of the
+// workspace computes takes 3.5 million (finite fields' arithmetic); one that
+// is not reached by then, as an enormous type's, is not reached within the
+// session's ten million either, which each attempt used to spend.
+const LONG_COMPUTATION = 64, NORMAL_FORM_STEPS = 4000000;
 // The kernel steps the Glue step may take (the glue move). It normalizes its
 // side conditions, and open terms can be large shared graphs, whose normal
 // forms are not.
@@ -43,8 +47,8 @@ const GUIDE_FUEL = 400, GUIDE_HEAD_STEPS = 4000;
 // A comparison's moves (InstructionDriver.agree).
 const FUEL = 20000;
 // The search's fixed limits, for reports that must say what they measured.
-export const searchLimits = Object.freeze({ fuel: FUEL, longComputation: LONG_COMPUTATION, guideFuel: GUIDE_FUEL,
-  guideHeadSteps: GUIDE_HEAD_STEPS, glueSteps: GLUE_STEPS });
+export const searchLimits = Object.freeze({ fuel: FUEL, longComputation: LONG_COMPUTATION, normalFormSteps: NORMAL_FORM_STEPS,
+  guideFuel: GUIDE_FUEL, guideHeadSteps: GUIDE_HEAD_STEPS, glueSteps: GLUE_STEPS });
 // Weak heads that are constructors: two of different kinds never agree.
 // An instance of a declared type is one (H1); so is a list of its parameters.
 const RIGID = new Set(["U", "Pi", "Sigma", "LPi", "Unit", "Point", "Void", "Sum",
@@ -88,7 +92,8 @@ const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: 
 // alpha-equal; each time round, it stops at a branch point, lists the moves
 // open there, and asks a policy which to make. A move is a plain object:
 //   { move: "normalize" }              both sides to normal form: a long closed
-//                                      computation, offered once per comparison
+//                                      computation, offered once per comparison,
+//                                      each within NORMAL_FORM_STEPS
 //   { move: "descend" }                congruence: agree part by part under a
 //                                      common head, offered once per branch point
 //   { move: "step", side, rule, step } a weak-head step on one side ("left" or
@@ -171,6 +176,8 @@ export class InstructionDriver {
     this.policy = policy;
     this.depth = 0;
     this.nodes = new Map();
+    // Terms whose normal form was not reached within NORMAL_FORM_STEPS.
+    this.unnormalizable = new Set();
     // Judgements never change, so reads are cached; so are the scopes of
     // contexts, derivations by term and scope, and terms known to be in weak
     // head normal form.
@@ -236,13 +243,20 @@ export class InstructionDriver {
     const j = this.statement(id);
     return side === "term" ? j.term : side === "other" ? j.other : j.type;
   }
+  // The focused subterm. A focus keeps it while its judgement is the same,
+  // and a child reads it off its parent's: agree asks for both sides' each
+  // time round, and walking a deep focus's path from the root each time
+  // was a sixth of a congruence-heavy proof's time.
   subterm(focus) {
-    let term = this.sideOf(focus.ref.id, focus.side);
-    for (const child of focus.path) term = this.node(term).children[child];
+    const id = focus.ref.id;
+    if (focus.at === id) return focus.term;
+    const term = focus.parent ? this.node(this.subterm(focus.parent)).children[focus.path.at(-1)]
+      : focus.path.reduce((t, child) => this.node(t).children[child], this.sideOf(id, focus.side));
+    focus.at = id; focus.term = term;
     return term;
   }
   focus(id, side, path = []) { return { ref: { id }, side, path }; }
-  child(focus, index) { return { ref: focus.ref, side: focus.side, path: [...focus.path, index] }; }
+  child(focus, index) { return { ref: focus.ref, side: focus.side, path: [...focus.path, index], parent: focus }; }
   reduce(focus, step) {
     focus.ref.id = this.graph.step(focus.ref.id, focus.side, [...focus.path, ...step.path], step.rule);
   }
@@ -1213,9 +1227,18 @@ export class InstructionDriver {
     }
     return true;
   }
+  // Both sides' normal forms, each within NORMAL_FORM_STEPS. Normalization
+  // is deterministic: a term whose normal form was not reached, as an
+  // enormous type's, will not be reached again, and a comparison with it
+  // keeps to lazy steps at once. A declaration comparing a field of
+  // fractions' carrier used to try its normal form again and again.
   normalizeBoth(a, b, terms, dims) {
-    try { for (const focus of [a, b]) this.reduce(focus, { path: [], rule: "normalize" }); }
-    catch { return false; }
+    if ([a, b].some(focus => this.unnormalizable.has(this.subterm(focus)))) return false;
+    for (const focus of [a, b]) {
+      const term = this.subterm(focus);
+      try { this.graph.within(NORMAL_FORM_STEPS, () => this.reduce(focus, { path: [], rule: "normalize" })); }
+      catch { this.unnormalizable.add(term); return false; }
+    }
     return this.alpha(this.subterm(a), this.subterm(b), terms, dims);
   }
   // Whether two compositions' tubes are on the same faces, in order. Their
