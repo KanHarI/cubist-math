@@ -40,7 +40,7 @@ def power_inside(A : Ring(U0), x : A.R, n : Nat) : A.(x * x ^ n) = A.mul(x, A.po
   rfl;
 }
 
-def power(x, n : Nat) : Nat := induction n return Nat { zero => 1; succ h => mul(x, h); };
+def power(x, n : Nat) : Nat := induction n return Nat { zero => nat.(1); succ h => mul(x, h); };
 
 notation arithmetic {
   x * y := mul(x, y);

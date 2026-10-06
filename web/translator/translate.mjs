@@ -823,7 +823,9 @@ export class Translator {
         if(env.has(n.name)) {
           const value=env.get(n.name);
           if(value.tag==="Untranslated") {
-            const error=Error(`Untranslated dependency: ${n.name}`);
+            // A notation rule's name is read under its key: the message
+            // names it as the rule does.
+            const error=Error(`Untranslated dependency: ${n.name.startsWith("\u0000notation ")?n.name.split(" ").slice(2).join(" "):n.name}`);
             error.blockedBy=value.binding??value.name;
             throw error;
           }
