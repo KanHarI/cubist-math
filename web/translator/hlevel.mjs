@@ -11,16 +11,22 @@
 //      lower one, lifted by cumulativity; a proposition, or a contractible
 //      type, has every level, a variable one included;
 //   2. the type being itself an h-level statement, which is a proposition;
-//   3. the type's weak head: Π, Σ and path types reduce to obligations on
+//   3. a rule whose statement's carrier matches the type: quantified
+//      evidence in scope or a quantified hint, then a lemma registered by
+//      hlevel_rule, its parameters read from the match and its premises
+//      proved as obligations of their own;
+//   4. the type's weak head: Π, Σ and path types reduce to obligations on
 //      their parts, and Unit, Void and Nat have their levels by lemmas.
 // Each obligation spends a premise search, and each candidate a candidate,
-// of the tactic's fuel. Every rule makes its obligations on strictly smaller
-// types, so the search ends.
+// of the tactic's fuel. Every structural rule makes its obligations on
+// strictly smaller types; a rule's premise that repeats an obligation it is
+// proving is a cycle, and the rule is passed over.
 import { T, substituteTerm, substituteDimension, freeNames } from "./core.mjs";
 import { freeDimensions } from "./dimension-slots.mjs";
 import { interval as I } from "./lattice.mjs";
 import { transportToDependentPath } from "./path-over.mjs";
 import {naturalSort,numeral,numeralValue} from "./numerals.mjs";
+import { stem } from "./names.mjs";
 export {numeralValue} from "./numerals.mjs";
 
 const LIBRARY = "hlevels";
@@ -79,12 +85,101 @@ export class HLevelUnproved extends Error {
   }
 }
 
+// A rule, read from the type of a registered lemma or of quantified
+// evidence (L2.5b): universe parameters, then parameters, ending in an
+// h-level statement at a numeral level or contractibility. Each parameter is
+// determined by the statement's carrier or universe, or is a premise, an
+// h-level statement under binders of its own, which the search proves.
+// A type that is no rule gives { refusal }, which noRule states; `show`
+// displays a term.
+export function ruleShape(type, show = term => JSON.stringify(term)) {
+  const levels = [], params = [];
+  let body = headBeta(type);
+  for (;;) {
+    if (body?.tag === "LPi") { levels.push(body.name); body = headBeta(body.body); }
+    else if (body?.tag === "Pi") { params.push({ name: body.name, domain: body.domain }); body = headBeta(body.body); }
+    else break;
+  }
+  const conclusion = statement(body);
+  if (!conclusion) return { refusal: `its type ends in ${show(body)}, which states no h-level` };
+  if (typeof conclusion.level === "object") return { refusal: `its statement's level, ${show(conclusion.level.term)}, is no numeral` };
+  const determined = new Set([...freeNames(conclusion.type), ...freeNames({ tag: "U", level: conclusion.universe })]);
+  for (const level of levels)
+    if (!determined.has(level)) return { refusal: `its universe ${stem(level)} is not determined by its statement` };
+  for (const param of params) {
+    if (determined.has(param.name)) continue;
+    param.premise = premiseShape(param.domain);
+    if (!param.premise) return { refusal: `its parameter ${stem(param.name)} is neither read from the carrier ${show(conclusion.type)} nor an h-level premise` };
+  }
+  return { levels, params, conclusion };
+}
+
+// Why a registered lemma, or a hint, is no rule; and a lemma registered
+// twice in one module.
+export const noRule = (what, reason) => Error(`${what} is no h-level rule: ${reason}.`);
+export const ruleTwice = name => Error(`${name} is already an h-level rule in this module.`);
+
+// A premise: an h-level statement at a numeral level or contractibility,
+// under binders, as forall x : A. IsSet(U, B(x)); or null.
+function premiseShape(type) {
+  const binders = [];
+  let body = headBeta(type);
+  for (; body?.tag === "Pi"; body = headBeta(body.body)) binders.push({ name: body.name, domain: body.domain });
+  const stated = statement(body);
+  return stated && typeof stated.level !== "object" ? { binders, ...stated } : null;
+}
+
+// The values that make a rule's statement the obligation's: each universe
+// parameter and determined parameter, read by matching the statement's
+// carrier against the type and its universe against the obligation's; or
+// null. Matching is candidate construction only: the instance is compared
+// with the type, and the proof built from it goes through the kernel.
+function instance(shape, universe, type, scope) {
+  const { conclusion } = shape;
+  const variables = new Set([...shape.levels, ...shape.params.filter(p => !p.premise).map(p => p.name)]);
+  const values = new Map();
+  const match = (pattern, actual) => {
+    pattern = pattern?.tag ? headBeta(pattern) : pattern;
+    actual = actual?.tag ? headBeta(actual) : actual;
+    if (pattern?.tag === "Var" && variables.has(pattern.name)) {
+      if (values.has(pattern.name)) return JSON.stringify(values.get(pattern.name)) === JSON.stringify(actual)
+        || typeof actual === "object" && !!actual?.tag && attempt(() => scope.equal(values.get(pattern.name), actual));
+      values.set(pattern.name, actual); return true;
+    }
+    if (pattern === actual) return true;
+    if (!pattern || !actual || typeof pattern !== "object" || typeof actual !== "object") return false;
+    const keys = Object.keys(pattern).filter(key => key !== "sort");
+    if (keys.length !== Object.keys(actual).filter(key => key !== "sort").length) return false;
+    return keys.every(key => Object.hasOwn(actual, key) && match(pattern[key], actual[key]));
+  };
+  const fits = carrier => {
+    values.clear();
+    if (!match(conclusion.type, carrier)) return false;
+    // The statement's universe is the obligation's, unless the carrier fixed it.
+    const level = conclusion.universe;
+    if (level?.tag === "Var" && variables.has(level.name) && !values.has(level.name)) values.set(level.name, universe);
+    return [...variables].every(name => values.has(name));
+  };
+  if (!fits(type)) {
+    let normal;
+    try { normal = scope.nf(type); } catch { return null; }
+    if (!fits(normal)) return null;
+  }
+  try { if (!scope.equal(substituteAll(conclusion.type, values), type)) return null; }
+  catch { return null; }
+  return values;
+}
+
+const substituteAll = (term, values) => [...values].reduce((t, [name, value]) => substituteTerm(t, name, value), term);
+
 export class HLevelSearch {
   // `scope` carries the tactic's fuel; `hints` are checked terms with their
   // types, and so are `locals`, the evidence that local definitions (let,
-  // obtain) name; `show` displays a term in the goal's names.
-  constructor(scope, hints, show, locals = [], { instantiate = false } = {}) {
-    Object.assign(this, { scope, hints, show, locals, instantiate });
+  // obtain) name; `show` displays a term in the goal's names. `rules` are
+  // the lemmas hlevel_rule registered, each with its term and shape, in
+  // order of priority.
+  constructor(scope, hints, show, locals = [], { instantiate = false, rules = [] } = {}) {
+    Object.assign(this, { scope, hints, show, locals, instantiate, rules, active: [] });
   }
 
   // Evidence that `type` has `level` in `universe`, in `scope`: a term of
@@ -96,9 +191,68 @@ export class HLevelSearch {
     scope.spend("premises");
     const dependent = binder && freeNames(binder.body).has(binder.name);
     chain = [...chain, dependent ? { level, type: binder.body, binder, names } : { level, type: binder ? binder.body : type, names }];
-    return this.evidence(level, universe, type, scope)
-      ?? this.statementRule(level, universe, type, scope)
-      ?? this.structure(level, universe, type, scope, chain, names);
+    const found = this.evidence(level, universe, type, scope)
+      ?? this.statementRule(level, universe, type, scope);
+    if (found) return found;
+    // Where a rule matched but its premise was not proved, and nothing
+    // structural applies either, the premise's chain says why.
+    const failures = [];
+    const ruled = this.ruled(level, universe, type, scope, chain, names, failures);
+    if (ruled) return ruled;
+    try { return this.structure(level, universe, type, scope, chain, names); }
+    catch (error) {
+      if (error instanceof HLevelUnproved && failures.length) throw failures[0];
+      throw error;
+    }
+  }
+
+  // Quantified evidence in scope and quantified hints, then registered
+  // rules, whose statements match the type and whose premises the search
+  // proves. A rule that fails, or whose premise repeats an obligation it is
+  // proving, gives way to the next.
+  ruled(level, universe, type, scope, chain, names, failures = []) {
+    if (typeof level === "object") return null;
+    const proving = this.active.find(obligation => obligation.level === level && attempt(() => scope.equal(obligation.type, type)));
+    if (proving) return null;
+    const quantified = [...[...scope.context].map(([name, stated]) => ({ term: T.variable(name), type: stated })),
+      ...this.locals, ...this.hints].flatMap(evidence => {
+        const body = headBeta(evidence.type);
+        if (body?.tag !== "Pi" && body?.tag !== "LPi") return [];
+        const shape = ruleShape(evidence.type);
+        return shape.refusal ? [] : [{ term: evidence.term, shape }];
+      });
+    this.active.push({ level, type });
+    try {
+      for (const rule of [...quantified, ...this.rules]) {
+        const { conclusion } = rule.shape;
+        if (!below(conclusion.level, level)) continue;
+        scope.spend("candidates");
+        const values = instance(rule.shape, universe, type, scope);
+        if (!values) continue;
+        try {
+          let term = rule.term;
+          for (const name of rule.shape.levels) term = T.levelApply(term, values.get(name));
+          for (const param of rule.shape.params)
+            term = T.app(term, param.premise ? this.premise(param.premise, values, scope, chain, names) : values.get(param.name));
+          return this.lift(conclusion.level, level, universe, type, term);
+        } catch (error) {
+          if (!(error instanceof HLevelUnproved)) throw error;
+          failures.push(error);
+        }
+      }
+      return null;
+    } finally { this.active.pop(); }
+  }
+
+  // Evidence for a rule's premise, its parameters read from the match: under
+  // its binders, at fresh variables, as the structural rules prove a Π's.
+  premise({ binders, level, universe, type }, values, scope, chain, names) {
+    const [first, ...rest] = binders;
+    if (!first) return this.prove(level, substituteLevel(universe, values), substituteAll(type, values), scope, chain, null, names);
+    const domain = substituteAll(first.domain, values), name = scope.fresh(first.name);
+    const inner = new Map(values).set(first.name, T.variable(name));
+    return T.lam(name, domain, this.premise({ binders: rest, level, universe, type }, inner, scope.bind(name, domain), chain,
+      new Map(names).set(name, first.name)));
   }
 
   // Evidence in scope, local or a hint, stating the level or a lower one.
@@ -224,6 +378,10 @@ export class HLevelSearch {
     return unproved("no local evidence, hint or rule gives that");
   }
 }
+
+// A level with the rule's universe parameters given their values.
+const substituteLevel = (level, values) => substituteAll({ tag: "U", level }, values).level;
+const attempt = check => { try { return check(); } catch { return false; } };
 
 // Automatic clauses may use evidence for every fiber of a motive. Match
 // the carrier of a folded h-level statement against the wanted carrier to

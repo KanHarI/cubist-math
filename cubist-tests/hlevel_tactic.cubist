@@ -223,8 +223,7 @@ def not_a_statement(A : U0, a : A) : IsProp(U0, Unit) {
   hlevel with [a];
 }
 
-// Error: E366: hlevel could not prove IsSet(U0, B(a) and Nat): it needs B(a) to be a set; no local
-//   evidence, hint or rule gives that.
+// Quantified evidence in scope is a rule too, so no hint is needed.
 def without_hint(A : U0, B : A -> U0, h : forall x : A. IsProp(U0, B(x)), a : A) :
   IsSet(U0, B(a) and Nat) {
   hlevel;
@@ -237,7 +236,8 @@ def nested_names(A : U0, B : A -> U0) : IsProp(U0, forall x : A. Unit and B(x)) 
   hlevel;
 }
 
-// Error: E362: hlevel does not use quantified hints yet: apply h to its arguments.
+// A quantified hint is a rule: its parameter is read from the goal
+// (hlevel_rules).
 def quantified_hint(A : U0, B : A -> U0, h : forall x : A. IsProp(U0, B(x)), a : A) :
   IsProp(U0, B(a)) {
   hlevel with [h];

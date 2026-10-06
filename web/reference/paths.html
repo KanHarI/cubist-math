@@ -259,9 +259,10 @@ def pairs_of_sets(A : U0, B : A -> U0, hA : IsSet(U0, A), hB : forall a : A. IsS
             <ul>
               <li>evidence in scope, or listed after <code>with</code>, that states the level or a lower one, where a proposition or a contractible type has every level;</li>
               <li>a level statement being itself a proposition;</li>
+              <li>a rule whose statement matches the type: quantified evidence in scope or after <code>with</code>, then a lemma registered with <code>hlevel_rule</code>; its parameters are read from the match, and its premises proved the same way;</li>
               <li>the type's shape, at a numeral level: functions, pairs and paths reduce to their parts, and <code>Unit</code>, <code>Void</code> and <code>Nat</code> have their levels.</li>
             </ul>
-            <p>It needs <code>import hlevels;</code>. A hint must state a level, so apply a quantified one to its arguments, as <code>h(a)</code> below. The search spends counted fuel, and the kernel checks the proof it builds.</p>
+            <p>It needs <code>import hlevels;</code>. A quantified hint is a rule, so <code>h</code> below serves for <code>B(a)</code>, and so would <code>h</code> in scope alone. The search spends counted fuel, and the kernel checks the proof it builds.</p>
             <pre><code data-check="accept">import hlevels;
 
 def functions_into_nat(A : U0) : IsSet(U0, A -> Nat) {
@@ -273,8 +274,35 @@ def equal_in_a_proposition(A : U0, h : IsProp(U0, A), x, y : A) : x = y {
 }
 
 def from_a_hint(A : U0, B : A -> U0, h : forall x : A. IsSet(U0, B(x)), a : A) : IsSet(U0, B(a) and Nat) {
-  hlevel with [h(a)];
+  hlevel with [h];
 }</code></pre>
+            <p><code>hlevel_rule lemma;</code> registers a checked lemma whose type states a level, for every <code>hlevel</code> after it and in the modules that import it. Each of the lemma's parameters must be read from the carrier of its statement, or be a premise, a level statement that the search proves in turn. A type that the shape rules cannot see into, such as a declared type, gets its level this way:</p>
+            <pre><code data-check="accept">import hlevels;
+use nat;
+
+inductive Box(A : U0) : U0 {
+  box(a : A);
+}
+
+def unbox(A : U0, b : Box(A)) : A := match b {
+    box(a) => a;
+  };
+
+def box_unbox(A : U0, b : Box(A)) : typed(Box(A), box(unbox(A, b))) = b := match b {
+    box(a) => refl(typed(Box(A), box(a)));
+  };
+
+// A box is a retract of its contents.
+def box_is_set(A : U0, setA : IsSet(U0, A)) : IsSet(U0, Box(A)) :=
+  retract_has_level(U0, 1)(A, Box(A), fun (b : Box(A)) => unbox(A, b), fun (a : A) => box(a),
+    fun (b : Box(A)) => box_unbox(A, b), setA);
+
+hlevel_rule box_is_set;
+
+def boxes_of_functions : IsSet(U0, Box(Box(Unit -> Unit))) {
+  hlevel;
+}</code></pre>
+            <p>A lemma whose parameter is neither read from its statement nor a premise is no rule, and is refused where it is registered. The library registers <code>prop_type_is_set</code>, so the propositions of a universe are a set. The same search fills a level statement that a call leaves out, such as a carrier's setness field in a model's <a href="theories.html#models"><code>T.make(…)</code></a>.</p>
             <p>A set's evidence never equates two elements: <code>Nat</code> is a set, but not a proposition. A failure names the obligation nothing discharges:</p>
             <pre><code data-check="reject">import hlevels;
 use nat;

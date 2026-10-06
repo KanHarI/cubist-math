@@ -75,3 +75,6 @@ computable def prop_type_is_set(U < UU0) : IsSet(next(U), Prop(U)) {
     )
   );
 }
+
+// hlevel proves it, inside any type built from Prop(U) (L2.5b).
+hlevel_rule prop_type_is_set;

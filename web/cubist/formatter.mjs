@@ -180,7 +180,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
         if (!close && trailing && preceding && declarationEnds.has(preceding.end)) docs.push(hard);
         previous = null; continue;
       }
-      const itemStart = ["def", "construction", "simp_rule", "simp_set", "inductive"].includes(text)
+      const itemStart = ["def", "construction", "simp_rule", "simp_set", "hlevel_rule", "inductive"].includes(text)
         || itemStarts.has(token.start);
       if (items && itemStart && previous && !(previous.text === "computable" && text === "def")) {
         flush(); docs.push(hard, hard); previous = null;

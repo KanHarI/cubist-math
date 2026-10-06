@@ -108,6 +108,7 @@ def additive : Monoid(U0) := Monoid.make(
 def two_plus_three : additive.mul(2, 3) = 5 {
   rfl;
 }</code></pre>
+            <p>A carrier's setness field can be left out where <a href="paths.html#hlevel"><code>hlevel</code></a> proves it, as for <code>Nat</code>, a type built from sets, or a type with a registered <code>hlevel_rule</code>: <code>Monoid.make(M := Nat, mul := add, …)</code> gives <code>M_is_set</code> the evidence it finds.</p>
             <p>For a model <code>m</code>, <code>m.f</code> is its field <code>f</code>: <code>additive.M</code> is <code>Nat</code> and <code>additive.mul(2, 3)</code> computes to <code>5</code>. A field's type is written through the earlier fields of the same model, so <code>m.one_mul</code> has type <code>forall x : m.M. m.mul(m.one, x) = x</code>, and goals and messages show fields this way. <code>m.f</code> is the projection <code>Monoid.f(m)</code>, a definition like any other.</p>
             <p>A parameter whose type is a theory's models makes a statement about every structure of that kind, in a universe of your choice:</p>
             <pre><code data-check="accept">import hlevels;

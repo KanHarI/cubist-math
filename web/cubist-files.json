@@ -1851,6 +1851,10 @@
    "summary": "The library's h-levels at work, from the former `tests/hlevels.test.mjs`: each named level by conversion, the lemmas in a universe above U0, retracts, functions, pairs, products and subtypes, contractible types, Hedberg, and lemmas that prove no more than they state."
   },
   {
+   "path": "cubist-tests/hlevel_rules.cubist",
+   "summary": "`hlevel_rule`: registered lemmas whose statements match a carrier, with parameters read from the match and premises proved in turn; quantified evidence and hints as rules; lemmas that are no rule."
+  },
+  {
    "path": "cubist-tests/hlevel_tactic.cubist",
    "summary": "The hlevel tactic, for `tests/hlevel.test.mjs`: each kind of goal it proves, from evidence, hints and the type's shape, dependent path h-levels, and its refusals, each naming the first obligation nothing discharges."
   },
@@ -2400,7 +2404,7 @@
   },
   {
    "path": "library/propositions.cubist",
-   "summary": "The propositions of a universe as a type one universe up, `Prop(U)`. Propositions that imply each other are equal (`prop_ext`, by [`univalence`](univalence.cubist)'s `glue_path`), and equal as propositions (`prop_path`). The equivalences and the paths into a proposition are propositions, so the propositions form a set (`prop_type_is_set`)."
+   "summary": "The propositions of a universe as a type one universe up, `Prop(U)`. Propositions that imply each other are equal (`prop_ext`, by [`univalence`](univalence.cubist)'s `glue_path`), and equal as propositions (`prop_path`). The equivalences and the paths into a proposition are propositions, so the propositions form a set (`prop_type_is_set`), which `hlevel` uses as a registered rule."
   },
   {
    "path": "library/quotients.cubist",
