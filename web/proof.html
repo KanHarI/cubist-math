@@ -842,7 +842,7 @@ def at_the_start(A : U0, x, y : A, p : x = y) : p @ 0 = x {
 
 def reverse(c : Circle) : Circle := match c {
   base =&gt; base;
-  loop @ i =&gt; loop @ -i;
+  loop @ i =&gt; loop @ ~i;
 };</code></pre>
         </div>
         <div class="quick-entry" id="quick-quotients">

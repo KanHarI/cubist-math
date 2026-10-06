@@ -1,6 +1,6 @@
 # Work plan: language features and their kernel support
 
-Status: revised on 2026-10-05 against `b6aa6e5`, `main` after PR #159. Since
+Status: revised on 2026-10-05 against `066ca77`, `main` after PR #164. Since
 the last full review, the [work-plan audit](audits/2026-09-28-audit.md) of
 2026-09-28 against `02a57ef`, H1 was released (2026-10-02) and merged into
 `main` (#118, 2026-10-03), the term checker was retired (I1.2b), partial
@@ -10,8 +10,11 @@ inference and implicit parameters (L4.1a, L4.1b), the rest of explicit
 matching and the retirement of `cases` (L2.2a), core theories (L2.4), the
 library's foundations (that revision's first actions 1, 2 and 4: `nat`, effective
 quotients, the algebraic hierarchy, the integers and the rationals), and the
-decisions of the notation roadmap (L2.10). The
-[first actions](#first-actions) are current as of this revision.
+decisions of the notation roadmap (L2.10) and of the theory syntax revision
+(L2.4c). The [first actions](#first-actions) are current as of this
+revision, and the [open decisions](#open-decisions) list what waits for
+the maintainer. The roadmaps' [index](README.md#at-a-glance) summarizes
+both.
 This is the scheduling authority for the linked roadmaps. Package IDs from
 the earlier plan are retained; their stage numbers do not impose dependencies.
 Sizes (S < M < L < XL) describe relative scope, not elapsed time.
@@ -61,12 +64,12 @@ between columns.
 | --- | --- | --- |
 | Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default; explicit driver options and cumulative kernel-work counters (learned-search phases 1–2); I1.2a, instruction isolation: no untrusted query can change an instruction's verdict; I1.2b, the term checker and conversion oracle retired (2026-10-02); I1.2c, judgements on a face and partial elements on a face-dependent context, with its two remaining gaps closed (2026-10-04) | Stage-6 performance and certificate work |
 | G0 universes | K1.1–K1.4 and L1.1; `U < UU0`, `next`, `max`, generic builtins and rewriting; all 43 former templates check generically | E1 and E2, deferred proposals |
-| Proof ergonomics | Grouped binders, `let` with a stated type or a proof block (which replaced `have`, `show` and `suffices` on 2026-09-30), `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand; Σ projections `p.1`/`p.2` (L1.5); path-operator notation (`-i`, `&`, `\|`, `path i =>`) and readable path diagnostics (PR #71); `hlevel`, L2.5b's first slice; holes `_` and named arguments (L4.1a); implicit parameters and universe inference (L4.1b); the keywords of terms and statements and the built-in `Unit` and `Void` reserved (E175). `apply` and `refine` (L4.4) withdrawn | L1.4 (folded path rules, constructor descent), B1 (`Path` induction), broader dependent rewriting, L2.5b's remainder; L2.10i, `~` for reversal |
-| Theories and notation | L2.4, complete on 2026-10-05: `theory` declarations of sorts, operations with notation, and laws, which must state propositions (E818); `T.Model`, `open`, sections, `extends` with labels and renaming, `T.Hom` and `T.Iso`. The library's algebraic hierarchy is its first client. L2.10's direction and decisions recorded | L2.4b (structure identity, displayed models), L2.6 (initial and free models), L2.10a–e and i–k, notation views and literals; implementation not started |
+| Proof ergonomics | Grouped binders, `let` with a stated type or a proof block (which replaced `have`, `show` and `suffices` on 2026-09-30), `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand; Σ projections `p.1`/`p.2` (L1.5); path-operator notation (`&`, `\|`, `path i =>`) and readable path diagnostics (PR #71); `~p` and `~i` for reversal, in place of prefix `-` (L2.10i, 2026-10-06); `hlevel`, L2.5b's first slice; holes `_` and named arguments (L4.1a); implicit parameters and universe inference (L4.1b); the keywords of terms and statements and the built-in `Unit` and `Void` reserved (E175). `apply` and `refine` (L4.4) withdrawn | L1.4 (folded path rules, constructor descent), B1 (`Path` induction), broader dependent rewriting, L2.5b's remainder |
+| Theories and notation | L2.4, complete on 2026-10-05: `theory` declarations of sorts, operations with notation, and laws, which must state propositions (E818); `T.Model`, `open`, sections, `extends` with labels and renaming, `T.Hom` and `T.Iso`. The library's algebraic hierarchy is its first client. L2.10's and L2.4c's decisions recorded | L2.4c, the theory syntax revision; L2.4b (structure identity, displayed models), L2.6 (initial and free models), L2.10a–e, j and k, notation views and literals; implementation not started |
 | Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | L1.2r |
 | Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release | L2.9a, L2.9b |
 | Declarations | **Released** on 2026-10-02, on by default with no marker, after K2.1's review (Lemma H2 and the critical pairs approved on 2026-09-30, the model and canonicity on 2026-10-02): K2.2, K2.3, L2.1, L2.2a's first three slices (the expression `match`, the closing statement, and recursion whose other arguments vary), and since 2026-10-04 its fourth (several values and nested patterns), the match statement on sums, which replaced `cases`, and L2.2b's automatic clauses. Nat, W and pushouts are source declarations; sums stay native; the circle's winding number computes in source. K2.4a's differential fixtures and K2.5's ledger verifier are implemented | K2.5's other archive remedies; a review record per K2.2 family; L2.3, L2.3b, L2.6–L2.9; stages 4 and 5 |
-| Computation notation | Design only; N1's prerequisite, L2.4, delivered on 2026-10-05, though its laws cannot yet state a monad's | N0–N5 |
+| Computation notation | Design only; N1's prerequisite, L2.4, delivered on 2026-10-05, though its laws cannot yet state a monad's; L2.4c's theory families, decided, will, for monads on sets | N0–N5 |
 | Reference and library | Checked-reference harness; universe chapter rewritten; induction chapter rewritten for declared types: declarations, `match`, structural recursion, dependent matches, path and truncation clauses (D2.1); quick reference (`proof.html`), with a file explorer over every published source; since 2026-10-05 a chapter on [theories and models](../../web/reference/theories.html) with the library's algebra and numbers, and set quotients, the library's univalence and `propositions` in the cubical chapters (#159). The library's fourteen modules, self-contained since 2026-10-04: `nat`, `lists`, `quotients`, effective since 2026-10-05, `algebra`, the hierarchy as theories, `integers`, `rationals`, `hlevels` (L2.5a), `contractible_maps`, `univalence` (L3.1's start) and `propositions`, `h1_truncation`, `h1_classical`, `classical_axioms` and `universe_automorphisms`. The test suite's Cubist sources are modules in `cubist-tests/` | An H1 chapter on higher constructors, obligations and truncation clauses beyond chapter 6's introduction (D0.2, D2.1); one module for the classical assumptions, which `classical_axioms` and `h1_classical` state over two truncations; the library is foundations, not a rebuild wave |
 
 Evidence lives in `tests/universe-generic.test.mjs`,
@@ -85,7 +88,8 @@ its own explicit or expected motive in `web/translator/match.mjs`.
 archive coverage command, `node tools/instruction-coverage.mjs`, reports
 3,837 of 3,837 declarations in 368 modules checked with no gap and 3,942 of
 3,942 definitions re-derived, at 5,694,660 checking and 2,131,461
-re-derivation instructions, in 44 and 13 seconds. At `551f9f9` (2026-10-04)
+re-derivation instructions, in 44 and 13 seconds; #163 and #164 changed
+only documents, so it holds at `066ca77`. At `551f9f9` (2026-10-04)
 it was 3,794 declarations in 369 modules and 3,899 definitions, at
 5,710,965 and 2,149,815 instructions, before `nat` replaced the archive's
 copies of its arithmetic and `hlevels` its `sets`. The audit's baseline at
@@ -355,7 +359,7 @@ has an explicit spelling.
 | L2.8 | Squares and `cell` face syntax with boundary inspection (HoTT E2) | L2.1; face/source metadata from L1.2r | M |
 | L2.9a | Expected-value patterns for `evaluate` | L0.1; own pattern contract and L4.1a infrastructure | S |
 | L2.9b | Closed truncation witness readout: a closed computable input, a checked error certificate, and the extracted witness's type specified under transported truncations, which its tests include. Native truncation alone supplies no approximation result | Native H1 `Trunc`, K2.5, L0.1 | M |
-| L2.10 | Explicit notation views and literals: select a view before elaborating an operator, use declared operand views for literals and subexpressions, and preserve that meaning when printing. `v.(e)` and `use v;`, now one selection form that also works at a file's top level and replaces today's `open` (decided later the same day, with `using v;` dropped), extend explicit structure scope, with qualified operators `a G.(+) b`; existing `open` and section semantics remain compatible during migration. **Direction adopted** in the [notation roadmap](notation.md), with **decisions** recorded on 2026-10-05: no name-based operators or numerals, so that an operator or literal outside any view is an error (L2.10j); `~` for path and coordinate reversal so that `-` is arithmetic, with `@`, `~`, `&` and `|` binding tighter than any view's operator (L2.10i); notation declared as it is used; sections and `open` selecting their model's view, innermost first; literals read by the library's total parsers from their `Lexeme` and checked by evaluation (L2.10c); and a partial field inverse (L2.10k). **L2.10k done** on 2026-10-06: `Field` states invertibility as a truncated law, which the law check accepts as a declared proposition; `inv` and `mul_inv` are derived by unique choice in any field, and the rationals' inverse computes. Otherwise implementation has not started. L2.10i comes first; L2.10a–e are the primary slices, beginning with small library pilots; type-based automation needs separate evidence later. L2.10f (large numerals), L2.10g (independent `decide`) and L2.10h (notation rules, proposed) stay deferred | L2.4 | L |
+| L2.10 | Explicit notation views and literals: select a view before elaborating an operator, use declared operand views for literals and subexpressions, and preserve that meaning when printing. `v.(e)` and `use v;`, now one selection form that also works at a file's top level and replaces today's `open` (decided later the same day, with `using v;` dropped), extend explicit structure scope, with qualified operators `a G.(+) b`; existing `open` and section semantics remain compatible during migration. **Direction adopted** in the [notation roadmap](notation.md), with **decisions** recorded on 2026-10-05: no name-based operators or numerals, so that an operator or literal outside any view is an error (L2.10j); `~` for path and coordinate reversal so that `-` is arithmetic, with `@`, `~`, `&` and `|` binding tighter than any view's operator (L2.10i); notation declared as it is used; sections and `open` selecting their model's view, innermost first; literals read by the library's total parsers from their `Lexeme` and checked by evaluation (L2.10c); and a partial field inverse (L2.10k). **L2.10i done** on 2026-10-06: `~p` and `~i` reverse, prefix `-` is refused (E176) and kept for arithmetic, and a historical source is read with `~` for its prefix `-`. **L2.10k done** on 2026-10-06: `Field` states invertibility as a truncated law, which the law check accepts as a declared proposition; `inv` and `mul_inv` are derived by unique choice in any field, and the rationals' inverse computes. Otherwise implementation has not started. L2.10i comes first; L2.10a–e are the primary slices, beginning with small library pilots; type-based automation needs separate evidence later. L2.10f (large numerals), L2.10g (independent `decide`) and L2.10h (notation rules, proposed) stay deferred | L2.4 | L |
 | D2.1 | Checked reference, formatter and inspection for each released construct | Corresponding package, including L2.8/L2.9 | L |
 
 L2.2 means both slices when another package needs automatic clauses.
@@ -646,13 +650,13 @@ per scope.
 
 ## First actions
 
-Revised again on 2026-10-05, against `b6aa6e5`. Done since the audit:
+Revised again on 2026-10-05, against `066ca77`. Done since the audit:
 instruction isolation (I1.2a), H1's release scope and integration, with its
 release on 2026-10-02 and its merge into `main`, the checker's retirement
 (I1.2b), face restriction (I1.2c), argument inference (L4.1a, L4.1b,
 2026-10-04), and the rest of explicit matching with the `cases` migration
 (L2.2a, 2026-10-04). On 2026-10-05, the previous revision's first actions
-1–4 and the notation decisions:
+1–4, the notation decisions and the theory syntax revision's:
 
 - **One module for the natural numbers** (#150, #151): `nat`, in today's
   syntax, imported by every module that uses the natural numbers, numerals
@@ -671,17 +675,21 @@ release on 2026-10-02 and its merge into `main`, the checker's retirement
   one, written once in a section and applied to the integers. Every
   operation computes on closed values. The reference documents them (#159).
 - **The notation roadmap's decisions** (#160–#162), listed in L2.10's row.
+- **The roadmaps refreshed** (#163), and **the theory syntax revision
+  decided** (#164), listed in L2.4c's row. Its review made two
+  corrections: a monad's family is indexed by sets, so that the identity
+  monad is a model, and a set family indexed by a carrier gets no `T.Iso`
+  until its round trip, after a transport, is specified.
 
 Suggested next, in order:
 
-1. **L2.10i, `~` for reversal (S).** First, because it changes spelling,
-   not meaning, and frees `-` for arithmetic. It lands in two commits, as
-   the retirement of `cases` did: `~p` and `~i` are accepted beside `-`,
-   and the 26 uses in `library/` and `cubist-tests/` move to them, checked
-   by `node tools/verify-proof-migration.mjs` while `-` still parses; then
-   `-` stops reversing, with a message naming `~`. The goal printer,
-   `tests/path-operators.test.mjs` and the reference's `cubical.html` and
-   `paths.html` move with it.
+1. **L2.10i, `~` for reversal (S). Done** on 2026-10-06, in two commits,
+   as the retirement of `cases` was: `~p` and `~i` accepted beside `-`,
+   and the 25 uses in `library/` and `cubist-tests/` moved, identical by
+   `node tools/verify-proof-migration.mjs` while `-` still parsed; then
+   `-` refused, with a message naming `~` (E176). The goal printer, the
+   tests and the reference's `cubical.html` and `paths.html` moved with
+   it.
 2. **L2.4c, the theory syntax revision (M).** As
    [decided](core-theories.md#revision-l24c): carriers as fields with an
    h-level, the universe named in the header, `Monoid(U)` as the type of
@@ -743,3 +751,40 @@ language sequence. H4, E1/E2, trained
 search, transport regularity (G4) and interval normalization (G5) keep
 their concrete-use and performance gates. Concrete mathematical development
 beyond the library's foundations remains paused.
+
+## Open decisions
+
+These wait for the maintainer. Two are needed before the work they name;
+the rest stay open without blocking any scheduled slice, whose contract
+keeps a conservative behavior until a design is chosen.
+
+**Needed before the named work**
+
+1. **The order on the numbers** (first action 8) extends the resumed
+   library scope: ordered commutative rings and fields, the integers' and
+   rationals' decidable orders, and the positive rationals. The reals
+   roadmap's R1 and R2 need it; no language package does.
+2. **Whether notation keeps the word "view"**
+   ([notation](notation.md#open-questions), question 2), which MMT, OBJ
+   and L2.7 use otherwise: before L2.10a, since renaming costs least while
+   nothing is implemented.
+
+**Open, not blocking**
+
+Each slice ships with the behavior in parentheses until the question is
+decided.
+
+- L2.4c's questions ([core theories](core-theories.md#open-questions)):
+  - whether the header's universe binder is required (a carrier names a
+    universe the header binds);
+  - how a qualified operator's operands are read, also notation's
+    question 3 (where they stand, as decided);
+  - whether a child can drop a parent's notation without giving another
+    (it renames it);
+  - homomorphisms of carriers with no h-level (none, E817);
+  - how an index's evidence is given at a use, as `Nat`'s setness in
+    `G.F(Nat)` (the author writes it);
+  - the round trip of a set family indexed by a carrier (no `T.Iso`).
+- Notation rules, L2.10h, proposed: nothing in L2.10a–e or i–k needs them.
+- Whether `do using M` and `match … using view` take `use`'s word
+  (notation's question 4): before N2 and L2.7 fix their syntax.
