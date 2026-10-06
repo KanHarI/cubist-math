@@ -33,8 +33,8 @@ def subdivision_refinement_sum_join(
   condition : (forall a : C. forall b : C. C -> SampleSubdivision(C, a, b) -> U1), a, b, c : C,
   coarseLeft : SampleSubdivision(C, a, b), coarseRight : SampleSubdivision(C, b, c),
   fineLeft : SampleSubdivision(C, a, b), fineRight : SampleSubdivision(C, b, c),
-  left : SubdivisionRefinementSum(C, G, zero, addG, edge, condition, a, b, coarseLeft, fineLeft),
-  right : SubdivisionRefinementSum(C, G, zero, addG, edge, condition, b, c, coarseRight, fineRight)
+  left_ : SubdivisionRefinementSum(C, G, zero, addG, edge, condition, a, b, coarseLeft, fineLeft),
+  right_ : SubdivisionRefinementSum(C, G, zero, addG, edge, condition, b, c, coarseRight, fineRight)
 ) :
   SubdivisionRefinementSum(
     C, G, zero, addG, edge, condition, a, c, join_subdivisions(C, a, b, c, coarseLeft, coarseRight),
@@ -46,8 +46,8 @@ def subdivision_refinement_sum_join(
   let m := subdivision_count(C, b, c, coarseRight);
   let rightVertices := subdivision_vertices(C, b, c, coarseRight);
   let rightTags := subdivision_tags(C, b, c, coarseRight);
-  obtain (leftPieces, leftValid, leftComputes) := left;
-  obtain (rightPieces, rightValid, rightComputes) := right;
+  obtain (leftPieces, leftValid, leftComputes) := left_;
+  obtain (rightPieces, rightValid, rightComputes) := right_;
   let lastLeft : sample_last(C, n, vertices) = b := field_snd(
     (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
     subdivision_endpoints(C, a, b, coarseLeft)

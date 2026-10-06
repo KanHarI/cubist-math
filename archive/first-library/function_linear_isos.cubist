@@ -28,7 +28,7 @@ def function_linear_map(K : AlgebraicField, I : U0, V, W : VectorSpace(K), h : L
 
 def function_linear_iso(K : AlgebraicField, I : U0, V, W : VectorSpace(K), e : LinearIso(K, V, W)) :
   LinearIso(K, FunctionSpace(K, I, V), FunctionSpace(K, I, W)) {
-  obtain (f, g, left, right) := e;
+  obtain (f, g, left_, right_) := e;
   let F := linear_map(K, V, W, f);
   let G := linear_map(K, W, V, g);
   exact (
@@ -36,13 +36,13 @@ def function_linear_iso(K : AlgebraicField, I : U0, V, W : VectorSpace(K), e : L
     (
       fun (v : I -> vector_carrier(K, V)) => FunExt(
         U0, I, (fun (i : I) => vector_carrier(K, V)), (fun (i : I) => G(F(v(i)))), v,
-        (fun (i : I) => left(v(i)))
+        (fun (i : I) => left_(v(i)))
       )
     ),
     (
       fun (w : I -> vector_carrier(K, W)) => FunExt(
         U0, I, (fun (i : I) => vector_carrier(K, W)), (fun (i : I) => F(G(w(i)))), w,
-        (fun (i : I) => right(w(i)))
+        (fun (i : I) => right_(w(i)))
       )
     )
   );
@@ -129,7 +129,7 @@ def uncurry_linear(K : AlgebraicField, I, J : U0, V : VectorSpace(K)) :
 def curry_linear_iso(K : AlgebraicField, I, J : U0, V : VectorSpace(K)) :
   LinearIso(K, FunctionSpace(K, I and J, V), FunctionSpace(K, I, FunctionSpace(K, J, V))) {
   let X := vector_carrier(K, V);
-  let left :
+  let left_ :
     forall v : (I and J) -> X.
     (fun (p : I and J) => v(typed(I and J, (fst(I, J, p), snd(I, J, p))))) = v {
     intro v;
@@ -140,7 +140,7 @@ def curry_linear_iso(K : AlgebraicField, I, J : U0, V : VectorSpace(K)) :
     );
   }
   exact (
-    curry_linear(K, I, J, V), uncurry_linear(K, I, J, V), left, (fun (v : I -> J -> X) => refl(v))
+    curry_linear(K, I, J, V), uncurry_linear(K, I, J, V), left_, (fun (v : I -> J -> X) => refl(v))
   );
 }
 

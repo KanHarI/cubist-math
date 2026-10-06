@@ -7,7 +7,7 @@ use nat;
 
 inductive Tree {
   leaf;
-  node(left : Tree, right : Tree);
+  node(l : Tree, r : Tree);
 }
 
 inductive List(U < UU0, A : U) : U {
@@ -19,16 +19,16 @@ inductive List(U < UU0, A : U) : U {
 // recursive argument.
 def size(t : Tree) : Nat := match t {
     leaf => 1;
-    node(left, right) => succ(size(left));
+    node(l, r) => succ(size(l));
   };
 
-// Output: fun (x : Tree) => induction x return Nat { leaf => 1; node(left, right, left_rec,
-//   right_rec) => succ(left_rec); }
+// Output: fun (x : Tree) => induction x return Nat { leaf => 1; node(l, r, l_rec, r_rec) =>
+//   succ(l_rec); }
 print(evaluate(size));
 
 def size_again := fun (x : Tree) => induction x return Nat {
     leaf => 1;
-    node(left, right, left_rec, right_rec) => succ(left_rec);
+    node(l, r, l_rec, r_rec) => succ(l_rec);
   };
 
 def size_same : size = size_again {

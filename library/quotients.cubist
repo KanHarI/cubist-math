@@ -129,18 +129,19 @@ computable def descend_unique(
 // agree on classes.
 computable def descend2(
   U, V < UU0, A : U, R : A -> A -> U, B : V, set : IsSet(V, B), f : A -> A -> B,
-  left : (forall a, c, b : A. R(a, c) -> f(a, b) = f(c, b)),
-  right : (forall a, b, d : A. R(b, d) -> f(a, b) = f(a, d)), x, y : Quotient(U, A, R)
+  respects_first : (forall a, c, b : A. R(a, c) -> f(a, b) = f(c, b)),
+  respects_second : (forall a, b, d : A. R(b, d) -> f(a, b) = f(a, d)), x, y : Quotient(U, A, R)
 ) :
   B := descend(
     U, max(U, V), A, R, Quotient(U, A, R) -> B,
     pi_is_set(
       max(U, V), Quotient(U, A, R), fun (z : Quotient(U, A, R)) => B,
       fun (z : Quotient(U, A, R)) => set
-    ), fun (a : A) => descend(U, V, A, R, B, set, f(a), right(a)),
+    ), fun (a : A) => descend(U, V, A, R, B, set, f(a), respects_second(a)),
     fun (a, c : A, r : R(a, c)) => maps_agreeing_on_classes(
-      U, V, A, R, B, set, descend(U, V, A, R, B, set, f(a), right(a)),
-      descend(U, V, A, R, B, set, f(c), right(c)), fun (b : A) => left(a, c, b, r)
+      U, V, A, R, B, set, descend(U, V, A, R, B, set, f(a), respects_second(a)),
+      descend(U, V, A, R, B, set, f(c), respects_second(c)),
+      fun (b : A) => respects_first(a, c, b, r)
     ), x
   )(y);
 

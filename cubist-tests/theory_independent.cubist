@@ -45,34 +45,34 @@ theory Renamed(U < UU0) extends Magma, Action(act := act notation x + y) {
   law both(x : M) : x * x = x + x;
 }
 
-theory Left(U < UU0) {
+theory First(U < UU0) {
   M : set U;
   point : M;
 }
 
-theory Right(U < UU0) {
+theory Second(U < UU0) {
   M : set U;
   point : M;
 }
 
-// Two points of one name: each its parent's, left_point and right_point.
-theory Bipointed(U < UU0) extends Left, Right {
+// Two points of one name: each its parent's, first_point and second_point.
+theory Bipointed(U < UU0) extends First, Second {
 }
 
-def zero_one : Bipointed(U0) := Bipointed.make(M := Nat, M_is_set := nat_is_set, left_point := 0, right_point := 1);
+def zero_one : Bipointed(U0) := Bipointed.make(M := Nat, M_is_set := nat_is_set, first_point := 0, second_point := 1);
 
-def left_is_zero : zero_one.left.point = 0 {
+def first_is_zero : zero_one.first.point = 0 {
   rfl;
 }
 
-// Error: E832: point is ambiguous in Bipointed: it is left's and right's. Write zero_one.left.point
-//   or zero_one.right.point.
+// Error: E832: point is ambiguous in Bipointed: it is first's and second's. Write zero_one.first.point
+//   or zero_one.second.point.
 def which := zero_one.point;
 
 // Homomorphisms name each by its label.
 // Output: forall U < UU0. forall V < UU0. forall A : Bipointed(U). forall B : Bipointed(V). forall
-//   f : Bipointed.Hom{{U, V}}(A, B). f.map(A.left_point) = B.left_point
-print(typeof(Bipointed.Hom.map_left_point));
+//   f : Bipointed.Hom{{U, V}}(A, B). f.map(A.first_point) = B.first_point
+print(typeof(Bipointed.Hom.map_first_point));
 
 // Inside the theory, an ambiguous operator is refused.
 // Error: E831: * is ambiguous in BadUse: it is magma's mul and action's act. Write x magma.(*) y or

@@ -39,7 +39,7 @@ def linear_bijective_iso(
     fun (y : Y) => sigma_first(
       X, (fun (x : X) => F(x) = y), linear_unique_preimage(K, V, W, f, injective, onto, y)
     );
-  let right :=
+  let right_ :=
     fun (y : Y) => sigma_second(
       X, (fun (x : X) => F(x) = y), linear_unique_preimage(K, V, W, f, injective, onto, y)
     );
@@ -49,13 +49,13 @@ def linear_bijective_iso(
     exact injective(
       g(vector_add(K, W, y, z)), vector_add(K, V, g(y), g(z)),
       trans(
-        right(vector_add(K, W, y, z)),
+        right_(vector_add(K, W, y, z)),
         sym(
           trans(
             linear_add(K, V, W, f, g(y), g(z)),
             trans(
-              cong((fun (a : Y) => vector_add(K, W, a, F(g(z)))), right(y)),
-              cong(vector_add(K, W, y), right(z))
+              cong((fun (a : Y) => vector_add(K, W, a, F(g(z)))), right_(y)),
+              cong(vector_add(K, W, y), right_(z))
             )
           )
         )
@@ -69,12 +69,12 @@ def linear_bijective_iso(
     exact injective(
       g(vector_scale(K, W, a, y)), vector_scale(K, V, a, g(y)),
       trans(
-        right(vector_scale(K, W, a, y)),
-        sym(trans(linear_scale(K, V, W, f, a, g(y)), cong(vector_scale(K, W, a), right(y))))
+        right_(vector_scale(K, W, a, y)),
+        sym(trans(linear_scale(K, V, W, f, a, g(y)), cong(vector_scale(K, W, a), right_(y))))
       )
     );
   }
-  exact (f, (g, additive, scalar), (fun (x : X) => injective(g(F(x)), x, right(F(x)))), right);
+  exact (f, (g, additive, scalar), (fun (x : X) => injective(g(F(x)), x, right_(F(x)))), right_);
 }
 
 def linear_empty(K : AlgebraicField, V : VectorSpace(K)) : LinearMap(K, CoordinateSpace(K, 0), V) {

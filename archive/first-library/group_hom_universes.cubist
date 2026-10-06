@@ -29,7 +29,7 @@ def group_hom_multiply_at(U < UU0, G, H : GroupAt(U), h : GroupHomAt(U, G, H)) :
 def group_is_set_at(U < UU0, G : GroupAt(U)) :
   forall x : group_carrier_at(U, G). forall y : group_carrier_at(U, G). forall p : x = y.
   forall q : x = y. p = q {
-  obtain (set, associative, left, right, inverses) := group_laws_at(U, G);
+  obtain (set, associative, left_, right_, inverses) := group_laws_at(U, G);
   exact set;
 }
 

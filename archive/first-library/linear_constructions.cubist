@@ -93,13 +93,13 @@ def scalar_vector_linear(K : AlgebraicField, V : VectorSpace(K), x : vector_carr
 
 def linear_iso_forward(K : AlgebraicField, V, W : VectorSpace(K), e : LinearIso(K, V, W)) :
   LinearMap(K, V, W) {
-  obtain (f, g, left, right) := e;
+  obtain (f, g, left_, right_) := e;
   exact f;
 }
 
 def linear_iso_backward(K : AlgebraicField, V, W : VectorSpace(K), e : LinearIso(K, V, W)) :
   LinearMap(K, W, V) {
-  obtain (f, g, left, right) := e;
+  obtain (f, g, left_, right_) := e;
   exact g;
 }
 
@@ -108,8 +108,8 @@ def linear_iso_left(K : AlgebraicField, V, W : VectorSpace(K), e : LinearIso(K, 
   linear_map(
     K, W, V, linear_iso_backward(K, V, W, e), linear_map(K, V, W, linear_iso_forward(K, V, W, e), x)
   ) = x {
-  obtain (f, g, left, right) := e;
-  exact left;
+  obtain (f, g, left_, right_) := e;
+  exact left_;
 }
 
 def linear_iso_right(K : AlgebraicField, V, W : VectorSpace(K), e : LinearIso(K, V, W)) :
@@ -117,14 +117,14 @@ def linear_iso_right(K : AlgebraicField, V, W : VectorSpace(K), e : LinearIso(K,
   linear_map(
     K, V, W, linear_iso_forward(K, V, W, e), linear_map(K, W, V, linear_iso_backward(K, V, W, e), y)
   ) = y {
-  obtain (f, g, left, right) := e;
-  exact right;
+  obtain (f, g, left_, right_) := e;
+  exact right_;
 }
 
 def linear_iso_inverse(K : AlgebraicField, V, W : VectorSpace(K), e : LinearIso(K, V, W)) :
   LinearIso(K, W, V) {
-  obtain (f, g, left, right) := e;
-  exact (g, f, right, left);
+  obtain (f, g, left_, right_) := e;
+  exact (g, f, right_, left_);
 }
 
 def linear_iso_compose(

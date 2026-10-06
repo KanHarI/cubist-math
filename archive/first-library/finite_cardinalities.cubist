@@ -19,8 +19,8 @@ def bijective_map_bijection(
       (fun (w : fiber(y)) => w), onto(y)
     );
   let g := fun (y : B) => sigma_first(A, (fun (x : A) => f(x) = y), preimage(y));
-  let right := fun (y : B) => sigma_second(A, (fun (x : A) => f(x) = y), preimage(y));
-  exact (f, g, (fun (x : A) => injective(g(f(x)), x, right(f(x)))), right);
+  let right_ := fun (y : B) => sigma_second(A, (fun (x : A) => f(x) = y), preimage(y));
+  exact (f, g, (fun (x : A) => injective(g(f(x)), x, right_(f(x)))), right_);
 }
 
 def cardinality_unique(A : U0, n, m : Nat, hn : HasCardinality(A, n), hm : HasCardinality(A, m)) :

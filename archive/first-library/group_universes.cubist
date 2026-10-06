@@ -76,15 +76,15 @@ def GroupIsoAt(U < UU0, G, H : GroupAt(U)) :=
 def group_iso_object_at(
   U < UU0, A : U, oneA : A, mA : A -> A -> A, lawsA : GroupLawsAt(U, A, oneA, mA), B : U,
   oneB : B, mB : B -> B -> B, lawsB : GroupLawsAt(U, B, oneB, mB), f : A -> B, g : B -> A,
-  left : (forall x : A. g(f(x)) = x), right : (forall y : B. f(g(y)) = y),
+  left_ : (forall x : A. g(f(x)) = x), right_ : (forall y : B. f(g(y)) = y),
   multiply : (forall x : A. forall y : A. f(mA(x, y)) = mB(f(x), f(y)))
 ) :
   GroupIsoAt(U, group_object_at(U, A, oneA, mA, lawsA), group_object_at(U, B, oneB, mB, lawsB)) {
-  exact (f, g, left, right, multiply);
+  exact (f, g, left_, right_, multiply);
 }
 
 def group_unit_right_at(U < UU0, G : GroupAt(U)) :
   GroupRightUnitAt(U, group_carrier_at(U, G), group_unit_at(U, G), group_multiply_at(U, G)) {
-  obtain (set, associative, left, right, inverses) := group_laws_at(U, G);
-  exact right;
+  obtain (set, associative, left_, right_, inverses) := group_laws_at(U, G);
+  exact right_;
 }

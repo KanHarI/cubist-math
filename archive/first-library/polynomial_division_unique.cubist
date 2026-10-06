@@ -42,7 +42,7 @@ def polynomial_difference_of_sums(
 ) :
   polynomial_subtract(K, a, c) = polynomial_subtract(K, d, b) {
   let tail := polynomial_add(K, polynomial_neg(K, c), polynomial_neg(K, b));
-  let left : polynomial_add(K, polynomial_add(K, a, b), tail) = polynomial_subtract(K, a, c) :=
+  let left_ : polynomial_add(K, polynomial_add(K, a, b), tail) = polynomial_subtract(K, a, c) :=
     trans(
       polynomial_add_shuffle(K, a, b, polynomial_neg(K, c), polynomial_neg(K, b)),
       trans(
@@ -50,7 +50,7 @@ def polynomial_difference_of_sums(
         polynomial_add_zero_right(K, polynomial_subtract(K, a, c))
       )
     );
-  let right : polynomial_add(K, polynomial_add(K, c, d), tail) = polynomial_subtract(K, d, b) :=
+  let right_ : polynomial_add(K, polynomial_add(K, c, d), tail) = polynomial_subtract(K, d, b) :=
     trans(
       polynomial_add_shuffle(K, c, d, polynomial_neg(K, c), polynomial_neg(K, b)),
       trans(
@@ -61,7 +61,7 @@ def polynomial_difference_of_sums(
       )
     );
   exact trans(
-    sym(left), trans(cong((fun (p : Polynomial(K)) => polynomial_add(K, p, tail)), same), right)
+    sym(left_), trans(cong((fun (p : Polynomial(K)) => polynomial_add(K, p, tail)), same), right_)
   );
 }
 

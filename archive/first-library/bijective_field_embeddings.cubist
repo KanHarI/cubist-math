@@ -56,29 +56,29 @@ def field_inverse_preserves(
   ) {
   let f := field_embedding_map(K, L, e);
   let g := field_inverse_map(K, L, e, onto);
-  let right := field_inverse_right(K, L, e, onto);
+  let right_ := field_inverse_right(K, L, e, onto);
   let injective := field_embedding_injective(K, L, e);
   obtain (p0, p1, pn, pa, pm) := field_embedding_preserves(K, L, e);
   exact (
-    injective(g(field_zero(L)), field_zero(K), trans(right(field_zero(L)), sym(p0))),
-    injective(g(field_one(L)), field_one(K), trans(right(field_one(L)), sym(p1))),
+    injective(g(field_zero(L)), field_zero(K), trans(right_(field_zero(L)), sym(p0))),
+    injective(g(field_one(L)), field_one(K), trans(right_(field_one(L)), sym(p1))),
     (
       fun (x : af_carrier(L)) => injective(
         g(field_neg(L, x)), field_neg(K, g(x)),
-        trans(right(field_neg(L, x)), sym(trans(pn(g(x)), cong(field_neg(L), right(x)))))
+        trans(right_(field_neg(L, x)), sym(trans(pn(g(x)), cong(field_neg(L), right_(x)))))
       )
     ),
     (
       fun (x, y : af_carrier(L)) => injective(
         g(field_add(L, x, y)), field_add(K, g(x), g(y)),
         trans(
-          right(field_add(L, x, y)),
+          right_(field_add(L, x, y)),
           sym(
             trans(
               pa(g(x), g(y)),
               trans(
-                cong((fun (v : af_carrier(L)) => field_add(L, v, f(g(y)))), right(x)),
-                cong(field_add(L, x), right(y))
+                cong((fun (v : af_carrier(L)) => field_add(L, v, f(g(y)))), right_(x)),
+                cong(field_add(L, x), right_(y))
               )
             )
           )
@@ -89,13 +89,13 @@ def field_inverse_preserves(
       fun (x, y : af_carrier(L)) => injective(
         g(field_mul(L, x, y)), field_mul(K, g(x), g(y)),
         trans(
-          right(field_mul(L, x, y)),
+          right_(field_mul(L, x, y)),
           sym(
             trans(
               pm(g(x), g(y)),
               trans(
-                cong((fun (v : af_carrier(L)) => field_mul(L, v, f(g(y)))), right(x)),
-                cong(field_mul(L, x), right(y))
+                cong((fun (v : af_carrier(L)) => field_mul(L, v, f(g(y)))), right_(x)),
+                cong(field_mul(L, x), right_(y))
               )
             )
           )
@@ -112,12 +112,12 @@ def field_embedding_inverse(
   FieldEmbedding(L, K) {
   let f := field_embedding_map(K, L, e);
   let g := field_inverse_map(K, L, e, onto);
-  let right := field_inverse_right(K, L, e, onto);
+  let right_ := field_inverse_right(K, L, e, onto);
   exact (
     g, field_inverse_preserves(K, L, e, onto),
     (
       fun (x, y : af_carrier(L), same : g(x) = g(y)) => trans(
-        sym(right(x)), trans(cong(f, same), right(y))
+        sym(right_(x)), trans(cong(f, same), right_(y))
       )
     )
   );
