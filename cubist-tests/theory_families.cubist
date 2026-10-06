@@ -80,6 +80,29 @@ def graded_compose := Graded.Hom.compose;
 
 def graded_iso := Graded.Iso.compose;
 
+// An argument or an index keeps its name, even one that the generated
+// declarations use, as map, U and to do here: theirs are named apart.
+theory Shifted(V < UU0) {
+  M : set V;
+  shift(map : M, U : M) : M;
+}
+
+// Output: forall U_1_ < UU0. forall V < UU0. forall A : Shifted(U_1_). forall B : Shifted(V).
+//   forall f : Shifted.Hom{{U_1_, V}}(A, B). forall map : A.M. forall U : A.M. f.map(A.shift(map,
+//   U)) = B.shift(f.map(map), f.map(U))
+print(typeof(Shifted.Hom.map_shift));
+
+def shifted_iso := Shifted.Iso.compose;
+
+theory Lifted(U < UU0) {
+  F(to : Nat) : set U;
+  lift(to : Nat, x : F(to)) : F(to);
+}
+
+def lifted_compose := Lifted.Hom.compose;
+
+def lifted_iso := Lifted.Iso.compose;
+
 // A family of sets indexed by a carrier has homomorphisms, but no
 // isomorphisms: its round trips would need a transport.
 theory Fibred(U < UU0) {
