@@ -183,6 +183,10 @@ do using M {
 }
 ```
 
+The word `using` here is undecided: notation's one selection form is
+`use`, and whether `do` takes it is the notation roadmap's
+[open question 4](notation.md#open-questions).
+
 The block has type `M(B)` for an inferred or explicit result type `B`.
 Here and below, expansions omit inferable type arguments:
 
