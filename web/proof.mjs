@@ -639,6 +639,7 @@ async function inspect(info, remember = true) {
   sourceLink(info);
   $("inspect-axioms").replaceChildren();
   $("inspect-signature").hidden = true;
+  $("inspect-boundary").hidden = true;
   $("locals").replaceChildren();
   $("kernel-details").hidden = info.kind === "goal";
   $("kernel-terms").hidden = info.kind === "goal";
@@ -876,6 +877,14 @@ function renderCubicalKernel(view) {
   $("expand-kernel").textContent = "Show more of the term";
   $("expand-kernel").hidden = raw || !["kernel-expression", "kernel-type", "kernel-context-list", "kernel-axioms-list"].some(id => $(id).textContent.includes("…"));
   renderAxioms($("inspect-axioms"), view.axioms ?? [], view.extensions ?? []);
+  renderBoundary(view.boundary);
+}
+// A square's boundary (L2.8): its four edges and four corners.
+function renderBoundary(boundary) {
+  $("inspect-boundary").hidden = !boundary;
+  if (!boundary) return;
+  for (const [name, text] of [...Object.entries(boundary.corners), ...Object.entries(boundary.edges)])
+    $(`square-${name}`).textContent = text;
 }
 $("toggle-kernel-body").onclick = () => { showKernelBody = !showKernelBody; renderKernel(checkedKernelView); };
 $("widen-inspector").onclick = () => {

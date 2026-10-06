@@ -335,6 +335,22 @@ def filler_by_box(A : U0, x, y, z : A, p : x = y, q : y = z) :
 // Output: fun (A : U0, x, y, z : A, p : x = y, q : y = z) =&gt; path i =&gt; compose j in A from p @ i { on i =
 //   0 =&gt; x; on i = 1 =&gt; q @ j; }
 print(evaluate(fun (A : U0, x, y, z : A, p : x = y, q : y = z) =&gt; join_by_box(A, x, y, z, p, q)));</code></pre>
+            <h3 id="squares">Squares</h3>
+            <p><code>import squares;</code> names a square's edges. <code>Square(left, right, bottom, top)</code> is <code>PathP(fun (i : Interval) =&gt; bottom @ i = top @ i, left, right)</code>: a path from the left edge to the right edge, over the bottom and the top, so that <code>s @ i @ j</code> is its point at <code>i</code> across and <code>j</code> up. The library builds squares by conversion: the reflexive square of a path, the naturality square of a homotopy along a path, transposition and both flips, double composition with its filler, of which <code>trans</code> is the case with a constant first edge, and horizontal and vertical composition. The inspector shows a square's edges and corners.</p>
+            <pre><code data-check="accept">import squares;
+
+def natural{{A, B : U0, x, y : A}}(f, g : A -&gt; B, h : forall a : A. f(a) = g(a), p : x = y) :
+  Square(h(x), h(y), cong(f, p), cong(g, p)) := naturality(f, g, h, p);
+
+def transpose_twice{{A : U0, a00, a01, a10, a11 : A, left : a00 = a01, right : a10 = a11, bottom : a00 = a10,
+  top : a01 = a11}}(s : Square(left, right, bottom, top)) : transpose(transpose(s)) = s {
+  rfl;
+}
+
+def filler_top{{A : U0, w, x, y, z : A}}(p : w = x, q : x = y, r : y = z) :
+  transpose(double_comp_filler(p, q, r)) @ 1 = double_comp(p, q, r) {
+  rfl;
+}</code></pre>
           </section>
           <section id="glue">
             <h2>Glue types</h2>

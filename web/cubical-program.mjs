@@ -605,7 +605,22 @@ export class CubicalProgram {
     };
     view.locals = aliases.filter(alias => alias.term.tag !== "Var" && alias.binding !== binding && alias.binding !== view.sourceBinding)
       .map(({ name, binding }) => ({ name, binding }));
+    view.boundary = this.squareBoundary(view.type);
     return view;
+  }
+  // A square's boundary, for the inspector (L2.8): where a type, under its
+  // parameters, is Square(left, right, bottom, top) of library/squares, its
+  // four edges and four corners, as messages show them; or null.
+  squareBoundary(type) {
+    let body = type;
+    while (body?.tag === "Pi" || body?.tag === "LPi") body = body.body;
+    const args = [];
+    for (; body?.tag === "App"; body = body.fn) args.unshift(body.arg);
+    if (body?.tag !== "LApp" || body.fn?.tag !== "DefRef" || body.fn.name !== "squares__Square" || args.length !== 9) return null;
+    const [, a00, a01, a10, a11, left, right, bottom, top] = args;
+    const [corner00, corner01, corner10, corner11, ...edges] = this.checker.displayTexts([a00, a01, a10, a11, left, right, bottom, top], 120);
+    return { corners: { a00: corner00, a01: corner01, a10: corner10, a11: corner11 },
+      edges: { left: edges[0], right: edges[1], bottom: edges[2], top: edges[3] } };
   }
   export(binding = null, side = "expression") {
     const view = binding ? this.inspect(binding) : null;

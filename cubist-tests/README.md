@@ -115,6 +115,7 @@ workbench's Kernel graph.
 | [`computability_evaluation`](computability_evaluation.cubist) | evaluate checks the normal form of a closed, assumption-free term; each failed evaluation's error is stated above it. |
 | [`evaluate_patterns`](evaluate_patterns.cubist) | `evaluate … expecting` a pattern: holes, pairs, injections and constructors matched part by part, other expressions by normal form, and the part a mismatch names. |
 | [`box_notation`](box_notation.cubist) | The box notation for compositions: `compose j in A from b { on i = 0 => …; }` and `fill … at k`, faces as formulas, printing as boxes, and a face that is no formula. |
+| [`square_constructions`](square_constructions.cubist) | `library/squares.cubist`: squares with named edges, their transposes and flips, naturality, double composition and its filler, and horizontal and vertical composition, each by conversion. |
 | [`truncation_readout`](truncation_readout.cubist) | `print(witness(t))`: the witness a closed truncation holds, read under maps, squash endpoints and transport along a path of types, with its type and certificate; values that are no truncation. |
 | [`computability_unfolding`](computability_unfolding.cubist) | Evaluation unfolds every definition and ignores unfolding hints. |
 | [`induction_printed`](induction_printed.cubist) | How an eliminator prints, for `tests/induction.test.mjs`: as the induction that builds it, with `__U` for an erased universe, and the printed source written back. |

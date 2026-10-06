@@ -382,7 +382,7 @@ export const archiveModules = [
 // which a module imports to use them.
 export const libraryModules = ["nat", "classical_axioms", "universe_automorphisms", "hlevels",
   "h1_truncation", "h1_classical", "contractible_maps", "univalence", "propositions",
-  "lists", "lexemes", "quotients", "algebra", "integers", "rationals"];
+  "lists", "lexemes", "quotients", "algebra", "integers", "rationals", "squares"];
 
 // The Cubist sources the test suite checks (cubist-tests/), each a module the
 // workspace opens as proof.html?proof=NAME. tests/cubist-tests.test.mjs
@@ -401,7 +401,7 @@ export const cubistTestModules = [
   "inductive_no_marker", "inductive_path_lambda", "inductive_projections", "inductive_trunc_minus_one",
   "inductive_inspection", "inductive_inspection_names", "inductive_generated_names",
   "inductive_printed_forms", "inductive_assumptions", "inductive_one_parameter_name", "computability",
-  "computability_evaluation", "evaluate_patterns", "truncation_readout", "box_notation", "computability_unfolding", "induction_printed",
+  "computability_evaluation", "evaluate_patterns", "truncation_readout", "box_notation", "square_constructions", "computability_unfolding", "induction_printed",
   "ergonomics_rewrite_obligations", "ergonomics_simp_rejections", "ergonomics_simpa_reconstruction",
   "ergonomics_type_transport_rejections", "ergonomics_simp_child_order",
   "ergonomics_simp_incompatible_candidate", "ergonomics_grouped_binder_shadowing",

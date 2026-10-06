@@ -293,6 +293,23 @@ pre {
 #inspect-signature:not([hidden]) {
   margin: 10px 0;
 }
+/* A square's boundary (L2.8): its corners at the corners, its edges between. */
+.square-boundary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  align-items: center;
+  justify-items: center;
+  margin: 6px 0 10px;
+}
+.square-boundary code { overflow-wrap: anywhere; text-align: center; }
+.square-boundary .square-edge { color: #346447; }
+.square-boundary .square-face {
+  width: 100%;
+  min-height: 2.5em;
+  border: 1px solid currentColor;
+  opacity: 0.35;
+}
 .signature-list {
   padding: 0;
   margin: 6px 0 14px;
