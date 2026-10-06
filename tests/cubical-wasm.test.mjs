@@ -136,6 +136,16 @@ test("dependent pair induction checks its motive and both branch arguments nativ
   assert.equal(k.definitions.has("wrong"), false);
 });
 
+test("a theory whose type of models fails is reported once, with no observer counting what is taken off", t => {
+  const k = session(t), checker = new NativeCubicalElaborator(k);
+  // Without hlevels, Pointed's sorts have no evidence: the rest of the
+  // theory is not checked, and fails nothing more.
+  const result = new Translator({ normalize: false, checker })
+    .translate("theory Pointed(U < UU0) { M : set U; point : M; } def after := tt;");
+  assert.deepEqual(result.declarations.map(d => [d.name, d.status]), [["Pointed", "not-translated"], ["after", "checked-native-cubical"]]);
+  assert.match(result.declarations[0].reason, /need IsSet, from hlevels/);
+});
+
 test("the kernel computes transport through Glue without a univalence axiom", t => {
   const k = session(t), syntax = new CubicalSyntax(k), e = identityEquivalence(two);
   const ua = T.line("ua", T.universe(0), T.glueType(two, [
