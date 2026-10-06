@@ -1,0 +1,52 @@
+// Faithful printing (L2.10d): an operation prints with its notation's
+// operator only where that notation is selected, and is qualified, as
+// nat.(x + y), elsewhere; a literal read from its characters prints as it
+// was written, in its notation; and a numeral rule's application prints
+// as the numeral where its notation is selected. What a print shows reads
+// back, where it is shown, as the term it shows.
+import nat;
+import algebra;
+import integers;
+import rationals;
+
+notation times {
+  x + y := mul(x, y);
+  numeral(n : Nat) := n;
+}
+
+def doubled(x : Nat) : times.(x + x) = mul(x, x) {
+  rfl;
+}
+
+// With no notation selected, mul prints as nat's *, as name-based reading
+// reads it until L2.10j.
+// Output: forall x : Nat. x * x = x * x
+print(typeof(doubled));
+
+// A literal prints as it was written, qualified by its notation.
+def half : Q := rationals.(1/2);
+
+// Output: rationals.(1/2) = rationals.(1/2)
+print(typeof(refl(typed(Q, rationals.(1/2)))));
+
+use times;
+
+// Where times is selected, mul is its +, and nat's operations are
+// qualified.
+// Output: forall x : Nat. x + x = x + x
+print(typeof(doubled));
+
+// Output: nat.(2 + 3) = nat.(2 + 3)
+print(typeof(refl(nat.(2 + 3))));
+
+use integers;
+
+// Where the integers are selected, their numeral rule prints back as the
+// numeral.
+def five : integers.R := 5;
+
+// Output: 5 = 5
+print(typeof(refl(typed(integers.R, 5))));
+
+// The printed text reads back as the term, where it was printed.
+def again : 5 = 5 := refl(five);

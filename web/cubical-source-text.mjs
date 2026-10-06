@@ -11,14 +11,26 @@ import {numeralValue} from "./translator/numerals.mjs";
 // notation. Parentheses follow the
 // parser's precedence: binders < -> < or < and < = < + < * < @; `->`, `or` and
 // `and` group to the right, `+` and `*` to the left.
-const LEVEL = { binder: 0, arrow: 1, or: 2, and: 3, compare: 4, plus: 5, times: 6, at: 7, atom: 9 };
+const LEVEL = { binder: 0, arrow: 1, or: 2, and: 3, compare: 4, plus: 5, times: 6, power: 6.5, at: 7, atom: 9 };
 const infix = { add: ["+", LEVEL.plus], mul: ["*", LEVEL.times], le: ["<=", LEVEL.compare], isLt: ["<", LEVEL.compare] };
 const arithmetic = /^nat__(add|mul|le|isLt)$/;
+// A notation's operator's level (L2.10b).
+const operatorLevel = { "+": LEVEL.plus, "-": LEVEL.plus, "*": LEVEL.times, "/": LEVEL.times, "^": LEVEL.power,
+  "<": LEVEL.compare, "<=": LEVEL.compare };
+// A lexeme's glyphs, as its term prints, back to its characters (L2.10c).
+const glyphs = { period: ".", slash: "/", underscore: "_", plus: "+", minus: "-" };
+const lexemeText = printed => [...printed.matchAll(/\b(digit|lower|upper)\((\d+)\)|\b(period|slash|underscore|plus|minus)\b/g)]
+  .map(([, kind, value, mark]) => mark ? glyphs[mark] : kind === "digit" ? value
+    : String.fromCharCode((kind === "lower" ? 97 : 65) + Number(value))).join("");
 
 // `symbols` maps kernel names to their display names, as for cubicalText.
 // Without an entry, a definition shows its name without the module prefix.
-export function sourceText(term, symbols = {}, limit = 4000) {
-  let budget = limit;
+// `context.selection` names the notation selected where the text is read
+// (L2.10d): an operation prints with its notation's operator only where
+// that notation is selected, and is qualified, as nat.(x + y), elsewhere.
+// Until name-based operators are retired (L2.10j), nat's are read unselected.
+export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
+  let budget = limit, selection = context.selection ?? null;
   const label = binding => symbols[binding]?.name
     ?? localName(binding);
   // Terms share subterms, so each scan visits a node once.
@@ -247,7 +259,44 @@ export function sourceText(term, symbols = {}, limit = 4000) {
         const args = [];
         let head = t;
         while (head.tag === "App" || head.tag === "LApp") { args.unshift(head.tag === "App" ? head.arg : { tag: "U", level: head.level }); head = head.fn; }
-        const operator = head.tag === "DefRef" && args.length === 2 && arithmetic.exec(head.name)?.[1];
+        // The notation that prints this function: the selected one's
+        // entry, or the first declared (L2.10d).
+        const entries = head.tag === "DefRef" ? symbols[head.name]?.printing : undefined;
+        const printing = entries?.find(entry => entry.notation === selection) ?? entries?.[0];
+        // A notation's operation, in its notation where it is selected, and
+        // qualified elsewhere; its operands are read in it.
+        if (printing?.operator && !printing.model && args.length === 2) {
+          const level = operatorLevel[printing.operator], left = level === LEVEL.compare ? level + 1 : level;
+          const saved = selection;
+          selection = printing.notation;
+          const text = printing.operator === "^" ? `${sub(args[0], level + 1)} ^ ${sub(args[1], level)}`
+            : `${sub(args[0], left)} ${printing.operator} ${sub(args[1], level + 1)}`;
+          selection = saved;
+          const own = selection === printing.notation || selection === null && printing.notation === "nat";
+          return own ? [text, level] : atom(`${printing.notation}.(${text})`);
+        }
+        // A literal read from its characters prints as it was written, in
+        // its notation (L2.10c): parsed_value(parse(lexeme), tt).
+        if (head.tag === "DefRef" && /(?:^|__)parsed_value$/.test(head.name) && args.length >= 2) {
+          let parser = args.at(-2);
+          const parsed = [];
+          while (parser.tag === "App") { parsed.unshift(parser.arg); parser = parser.fn; }
+          const readings = parser.tag === "DefRef" ? symbols[parser.name]?.printing : undefined;
+          const reading = readings?.find(entry => entry.literal && entry.notation === selection) ?? readings?.find(entry => entry.literal);
+          if (reading?.literal && parsed.length) {
+            const text = lexemeText(show(parsed.at(-1)));
+            if (text) return atom(selection === reading.notation ? text : `${reading.notation}.(${text})`);
+          }
+        }
+        // A numeral rule's application to a numeral, as int(3, 0), prints as
+        // the numeral where its notation is selected.
+        if (printing?.numeral && selection === printing.notation && args.length >= printing.numeral.length) {
+          const own = args.slice(args.length - printing.numeral.length);
+          const value = printing.numeral.findIndex(fixed => fixed === null);
+          if (own.every((arg, k) => printing.numeral[k] === null ? numeral(arg) !== null : numeral(arg) === printing.numeral[k]))
+            return atom(String(numeral(own[value])));
+        }
+        const operator = head.tag === "DefRef" && args.length === 2 && !printing && arithmetic.exec(head.name)?.[1];
         if (operator) {
           const [symbol, level] = infix[operator], left = level === LEVEL.compare ? level + 1 : level;
           return [`${sub(args[0], left)} ${symbol} ${sub(args[1], level + 1)}`, level];
@@ -259,6 +308,12 @@ export function sourceText(term, symbols = {}, limit = 4000) {
           const at = (symbols[head.name].assumed ?? 0) + (symbols[head.name].implicit ?? 0), model = args[at];
           if (model) {
             const rest = args.slice(at + 1);
+            // Where the model is selected, its operation prints with its
+            // notation's operator (L2.10d).
+            if (printing?.operator && rest.length === 2 && selection !== null && selection === show(model)) {
+              const level = operatorLevel[printing.operator];
+              return [`${sub(rest[0], level === LEVEL.compare ? level + 1 : level)} ${printing.operator} ${sub(rest[1], level + 1)}`, level];
+            }
             return atom(`${sub(model, LEVEL.atom)}.${projection}${rest.length ? `(${rest.map(show).join(", ")})` : ""}`);
           }
         }

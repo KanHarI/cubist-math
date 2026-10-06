@@ -1060,7 +1060,7 @@ export function parse(source, typeOnly = false) {
       take("expecting");
       const expected = expr();
       const end = take(";").end;
-      const directive = { kind: "evaluate", value, expected, start: t.start, end };
+      const directive = { kind: "evaluate", value, expected, ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end };
       directives.push(directive); items.push(directive); continue;
     }
     // `print(evaluate(term));`, `print(typeof(term));` and
@@ -1076,7 +1076,7 @@ export function parse(source, typeOnly = false) {
       take(")");
       take(")");
       const end = take(";").end;
-      const directive = { kind: "print", show: show.text, value, start: t.start, end };
+      const directive = { kind: "print", show: show.text, value, ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end };
       directives.push(directive); items.push(directive); continue;
     }
     // `theory T(U < UU0) [extends P, label : Q(f := g notation x + y)] {

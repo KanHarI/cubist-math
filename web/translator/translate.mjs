@@ -296,10 +296,10 @@ export class Translator {
       const result=this.checker.verify(this.term(d.value,scope));
       const assumptions=result.native.axioms;
       if(assumptions.length)throw Error(this.nonComputingMessage("The evaluated term",assumptions,result.term,result.type));
-      return this.shown(result.normal);
+      return this.shownIn(result.normal,scope);
     }
     const result=scope.infer(this.term(d.value,scope));
-    if(d.show==="typeof")return this.shown(result.type);
+    if(d.show==="typeof")return this.shownIn(result.type,scope);
     if(d.value.kind==="name") {
       let body=result.term;
       while(body.tag==="Lam"||body.tag==="LLam")body=body.body;
@@ -310,6 +310,11 @@ export class Translator {
   }
   // A term as messages show it: source names, generated suffixes removed.
   shown(term) {return this.checker.displayText?.(term,1000)??sourceText(term);}
+  // A term as read where `scope`'s notation is selected (L2.10d).
+  shownIn(term,scope) {
+    const notation={selection:scope.env.get(SELECTION)?.name??null};
+    return this.checker.displayText?.(term,1000,4000,notation)??sourceText(term,{},4000,notation);
+  }
   // Terms in one scope that a message shows, named together: a variable
   // reads alike in each, apart from every label any of them prints. Closed
   // terms share no variable, and are shown alone.
@@ -336,8 +341,9 @@ export class Translator {
         // An evaluation asks the kernel as a declaration does, with fuel of its own.
         const unit=module.declaration(this.declarationFuel);
         try {
+          const scope=(d.uses??[]).reduce((inner,model)=>selected(this,inner,model),new Scope(unit,new Map(),env));
           directives.push({kind:"evaluate",name:`at line ${line}`,status:"checked",start:d.start,
-            normalText:this.evaluate(d,new Scope(unit,new Map(),env))});
+            normalText:this.evaluate(d,scope)});
         } catch(error) {
           directives.push({kind:"evaluate",name:`at line ${line}`,status:"not-translated",
             reason:error.message,start:d.start,failure:error.kind});
@@ -350,8 +356,10 @@ export class Translator {
         const line=source.slice(0,d.start).split("\n").length;
         const unit=module.declaration(this.declarationFuel);
         try {
+          // A file-level use selects for directives too, which print in it.
+          const scope=(d.uses??[]).reduce((inner,model)=>selected(this,inner,model),new Scope(unit,new Map(),env));
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"checked",start:d.start,
-            text:this.printed(d,new Scope(unit,new Map(),env))});
+            text:this.printed(d,scope)});
         } catch(error) {
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"not-translated",
             reason:error.message,start:d.start,failure:error.kind});
@@ -1258,7 +1266,8 @@ export class Translator {
   // A goal for a diagnostic (HoTT A6): its target in source syntax, bounded
   // in length.
   goalText(goal,width=160) {
-    try {return this.checker.displayGoal?.(goal.scope.shownContext([goal.target]),goal.target,null,width).goal??sourceText(goal.target);}
+    try {return this.checker.displayGoal?.(goal.scope.shownContext([goal.target]),goal.target,null,width,null,true,
+      {selection:goal.scope.env.get(SELECTION)?.name??null}).goal??sourceText(goal.target);}
     catch {return "(too large to show)";}
   }
   // Two goals one diagnostic shows, named together when they share a scope,
@@ -1266,7 +1275,8 @@ export class Translator {
   goalTexts(goal,other,width=160) {
     if(goal.scope!==other.scope||!this.checker.displayGoal)return [this.goalText(goal,width),this.goalText(other,width)];
     try {
-      const shown=this.checker.displayGoal(goal.scope.shownContext([goal.target,other.target]),goal.target,other.target,width);
+      const shown=this.checker.displayGoal(goal.scope.shownContext([goal.target,other.target]),goal.target,other.target,width,null,true,
+        {selection:goal.scope.env.get(SELECTION)?.name??null});
       return [shown.goal,shown.built];
     } catch {return ["(too large to show)","(too large to show)"];}
   }
