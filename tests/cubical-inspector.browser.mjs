@@ -27,7 +27,7 @@ try {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
   const idle = async () => {
     try {
-      await page.waitForFunction(() => !document.querySelector("#check").disabled && document.querySelector("#check-loader").hidden);
+      await page.waitForFunction(() => document.querySelector("#check")?.disabled === false && document.querySelector("#check-loader")?.hidden);
     } catch (error) {
       console.error(await page.locator("#diagnostic").textContent(), errors); throw error;
     }
@@ -70,7 +70,7 @@ try {
   // A declared type has no checked term: the inspector shows its signature
   // and its eliminator's clause types (the H1 specification's 6.5).
   await page.locator('#read-source button[data-name="Wrapped"]').first().click();
-  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "Wrapped"
+  await page.waitForFunction(() => document.querySelector("#inspect-name")?.textContent === "Wrapped"
     && !document.querySelector("#inspect-signature").hidden);
   assert.equal(await page.locator("#inspect-kind").textContent(), "Declared type · prop");
   assert.deepEqual(await page.locator("#inspect-constructors li code").allTextContents(),
@@ -91,7 +91,7 @@ try {
     .locator('button[data-name="Nat"]');
   assert.equal(await naturalUses.count(), 2);
   await naturalUses.first().click();
-  await page.waitForFunction(() => document.querySelector("#inspect-name").textContent === "Nat"
+  await page.waitForFunction(() => document.querySelector("#inspect-name")?.textContent === "Nat"
     && !document.querySelector("#inspect-signature").hidden);
   assert.deepEqual(await page.locator("#inspect-constructors li code").allTextContents(),
     ["zero : Nat", "succ : Nat -> Nat"]);
@@ -162,7 +162,7 @@ try {
   assert.match(await workbench.locator("#expression").textContent(), /prime_divisor_exists/);
   await workbench.locator("#fold-names").check();
   await workbench.locator('#expression [data-name="i"]').click();
-  await workbench.waitForFunction(() => document.querySelector("#name").textContent === "i");
+  await workbench.waitForFunction(() => document.querySelector("#name")?.textContent === "i");
   await workbench.locator("#back").click();
   await workbench.locator("details summary").click();
   // The exported type is itself a U0 term: replace it with Nat and recheck.
@@ -218,7 +218,7 @@ try {
   assert.ok((await assemblyBench.locator("#syntax").inputValue()).length > 0);
   await assemblyBench.locator("#workbench-view").selectOption("assembly");
   await assemblyBench.locator("#source-back").click();
-  await assemblyBench.waitForFunction(() => document.querySelector("#inspect-name").textContent === "hd" && !document.querySelector("#kernel-view").disabled);
+  await assemblyBench.waitForFunction(() => document.querySelector("#inspect-name")?.textContent === "hd" && document.querySelector("#kernel-view")?.disabled === false);
   await assemblyBench.close();
 
   await page.locator('.source-line [data-name="prime_divisor_exists"]').first().click();

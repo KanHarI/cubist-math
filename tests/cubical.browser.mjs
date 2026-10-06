@@ -24,7 +24,7 @@ try {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
   const idle = async () => {
     try {
-      await page.waitForFunction(() => !document.querySelector("#check").disabled && document.querySelector("#check-loader").hidden);
+      await page.waitForFunction(() => document.querySelector("#check")?.disabled === false && document.querySelector("#check-loader")?.hidden);
     } catch (error) {
       console.error(await page.locator("#diagnostic").textContent(), errors); throw error;
     }
@@ -56,7 +56,7 @@ try {
   await page.locator("#open-kernel-type").click();
   const workbench = await opened;
   await workbench.waitForURL(/workbench\.html/);
-  await workbench.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Cubical C checked"));
+  await workbench.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
   assert.equal(await workbench.locator("#workbench-view").inputValue(), "graph");
   await workbench.locator("#workbench-view").selectOption("math");
   assert.ok(await workbench.locator("#context .context-entry").count());
@@ -84,12 +84,12 @@ try {
   const intervalOpened = page.waitForEvent("popup");
   await page.locator("#open-kernel-expression").click();
   const intervalWorkbench = await intervalOpened;
-  await intervalWorkbench.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Cubical C checked"));
+  await intervalWorkbench.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
   await intervalWorkbench.locator("#workbench-view").selectOption("math");
   assert.match(await intervalWorkbench.locator("#context").textContent(), /Interval coordinates/);
   await intervalWorkbench.close();
   await page.goto(`http://127.0.0.1:${port}/benchmark.html`);
-  await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Completed"));
+  await page.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Completed"));
   assert.ok(await page.locator("#entries tr").count() > 2000);
   assert.equal(await page.locator("#limit-ms").inputValue(), "100");
   await page.locator("#run").click();
@@ -98,7 +98,7 @@ try {
   await page.locator("#cancel").click();
   assert.match(await page.locator("#status").textContent(), /Cancelled/);
   await page.locator("#run").click();
-  await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Completed"), null, { timeout: 180000 });
+  await page.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Completed"), null, { timeout: 180000 });
   assert.ok(await page.locator("#entries tr").count() > 2000);
   assert.equal(await page.locator("#run").isDisabled(), false);
   assert.equal(await page.locator("#download").isDisabled(), false);
