@@ -118,7 +118,11 @@ export function qualifiedOperator(t,scope,n) {
 // does not expand fails as a declaration of its name.
 export function theoryDeclarations(t,module,d,env,declarations) {
   try {
-    const generated=expandTheory(d,name=>env.get(theoryBinding(name))?.record??null);
+    // A declared type whose header says it is a proposition, as Trunc's
+    // : prop U does, states a law (L2.10k).
+    const proposition=name=>{const entry=env.get(name);
+      return entry?.tag==="Inductive"&&(entry.modifier==="prop"||entry.modifier?.trunc===-1);};
+    const generated=expandTheory(d,name=>env.get(theoryBinding(name))?.record??null,proposition);
     env.set(theoryBinding(d.name.text),{tag:"Theory",name:d.name.text,record:generated[0].theory});
     return generated;
   } catch(failure) {

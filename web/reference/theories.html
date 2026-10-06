@@ -415,14 +415,15 @@ def no_homs(A, B : Iterate(U0)) := Iterate.Hom(A, B);  // Error: Iterate's model
                 <tr><td><code>Group</code></td><td><code>Monoid</code></td><td><code>inv</code>, <code>inv_mul</code>, <code>mul_inv</code></td></tr>
                 <tr><td><code>AbelianGroup</code></td><td><code>Group</code>, <code>CommMonoid</code></td><td>Nothing: the two parents share their monoid</td></tr>
                 <tr><td><code>CommRing</code></td><td><code>additive : AbelianGroup</code>, renamed to <code>R</code>, <code>add</code> written <code>x + y</code>, <code>zero</code>, <code>neg</code>, <code>add_assoc</code>, <code>zero_add</code>, <code>add_zero</code>, <code>neg_add</code>, <code>add_neg</code>, <code>add_comm</code>; and <code>multiplicative : CommMonoid</code> on <code>R</code></td><td><code>mul_add</code>: <code>x * (y + z) = x * y + x * z</code></td></tr>
-                <tr><td><code>Field</code></td><td><code>CommRing</code></td><td><code>inv</code>; <code>mul_inv</code>, <code>x * inv(x) = one</code> for <code>x</code> other than <code>zero</code>; and <code>zero_ne_one</code></td></tr>
+                <tr><td><code>Field</code></td><td><code>CommRing</code></td><td><code>inverses</code>, <code>Trunc(U, exists y : R. x * y = one)</code> for <code>x</code> other than <code>zero</code>, and <code>zero_ne_one</code>: laws, so being a field is a property of a ring, and a field's homomorphisms are its ring's</td></tr>
               </tbody>
             </table></div>
-            <p>A field's <code>inv</code> is total, with no constraint at <code>zero</code>. The module's sections prove general lemmas, which take a model first:</p>
+            <p>A field's inverse is partial: <code>inv(F, x, nonzero)</code> takes evidence that <code>x</code> is not <code>zero</code>, with <code>mul_inv(F, x, nonzero) : x * inv(F, x, nonzero) = one</code>. It is derived by unique choice: in a commutative ring an element has at most one inverse (<code>inverse_unique</code>), so having one is a proposition (<code>inverse_is_prop</code>), into which the truncated law eliminates. A model that supplies the law as <code>merely</code> of an inverse, as the rationals do, computes its inverse. The module's sections prove general lemmas, which take a model first:</p>
             <ul>
               <li>in any commutative monoid, <code>mul_left_comm</code>, <code>mul_right_comm</code> and <code>mul_interchange</code>, <code>(w * x) * (y * z) = (w * y) * (x * z)</code>;</li>
               <li>in any group, <code>left_cancel</code>, <code>right_cancel</code>, <code>inv_unique</code>, <code>inv_inv</code> and <code>inv_one</code>;</li>
-              <li>in any commutative ring, <code>mul_zero</code>, <code>zero_mul</code>, <code>add_mul</code> and <code>neg_mul</code>, <code>neg(x) * y = neg(x * y)</code>.</li>
+              <li>in any commutative ring, <code>mul_zero</code>, <code>zero_mul</code>, <code>add_mul</code> and <code>neg_mul</code>, <code>neg(x) * y = neg(x * y)</code>, and <code>inverse_unique</code> and <code>inverse_is_prop</code>;</li>
+              <li>in any field, <code>inverse</code>, <code>inv</code> and <code>mul_inv</code>.</li>
             </ul>
             <p>A ring's parts are models too, so a monoid's or a group's lemma applies to them: <code>mul_interchange(A.multiplicative, …)</code>, <code>right_cancel(A.additive.group, …)</code>. The natural numbers are a commutative monoid twice, <code>nat_additive</code> and <code>nat_multiplicative</code>. The library's <code>integers</code> are a commutative ring, <code>integers</code>, and its <code>rationals</code> a field, <code>rationals</code>, both <a href="cubical.html#quotients">quotients</a>. <code>rationals</code> builds the field of fractions once, in a section over any commutative ring with decidable equality, no zero divisors and zero not one (<code>fraction_field</code>), and takes it at the integers. <code>rat(a, k)</code> is <code>a / (k + 1)</code>, and the field's arithmetic, the inverse included, computes:</p>
             <pre><code data-check="accept">import rationals;
@@ -432,9 +433,15 @@ def equal_or_not(x, y : Q) : Nat := match rat_decide(x, y) return Nat {
   right different =&gt; 0;
 };
 
+// The inverse takes evidence that its argument is not zero; the rationals decide it.
+def inverse_or_zero(x : Q) : Q := match rat_decide(x, rationals.zero) return Q {
+  left same =&gt; rationals.zero;
+  right different =&gt; inv(rationals, x, different);
+};
+
 // 1/2 + 1/3 = 5/6, and -2/3 times its inverse is one.
 evaluate equal_or_not(rationals.add(rat(int(1, 0), 1), rat(int(1, 0), 2)), rat(int(5, 0), 5)) expecting 1;
-evaluate equal_or_not(rationals.mul(rat(int(0, 2), 2), rationals.inv(rat(int(0, 2), 2))), rationals.one) expecting 1;
+evaluate equal_or_not(rationals.mul(rat(int(0, 2), 2), inverse_or_zero(rat(int(0, 2), 2))), rationals.one) expecting 1;
 
 // A commutative ring's lemma, at the integers and at the rationals' ring.
 def int_times_zero(x : Z) : int_mul(x, int_zero) = int_zero := mul_zero(integers, x);
