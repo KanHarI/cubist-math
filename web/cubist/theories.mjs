@@ -95,8 +95,11 @@ const sameSyntax = (a, b) => JSON.stringify(a, (key, value) => ["start", "end"].
 // element of a proposition sort, and forall, -> into one, and `and` of two.
 // `byName` holds the fields declared so far.
 function notAProposition(statement, byName) {
+  // A carrier, M, or a family's member, F(A).
   const sortNamed = (node, bound) =>
-    node?.kind === "name" && !bound.has(node.name) && byName.get(node.name)?.kind === "sort" ? node.name : null;
+    node?.kind === "name" && !bound.has(node.name) && byName.get(node.name)?.kind === "sort" ? node.name
+      : node?.kind === "call" && node.fn.kind === "name" && !bound.has(node.fn.name) && byName.get(node.fn.name)?.kind === "sort"
+        ? node.fn.name : null;
   // The sort an operation or a constant returns: its type past the foralls.
   const returns = field => {
     if (field?.kind !== "operation") return null;
@@ -128,6 +131,8 @@ function notAProposition(statement, byName) {
     }
     if (node.kind === "name" && !bound.has(node.name)
       && (["Void", "Unit"].includes(node.name) && !byName.has(node.name) || propositionSort(node.name))) return null;
+    // A member of a family of propositions, as a relation's x <= y.
+    if (node.kind === "call" && sortNamed(node, bound) && propositionSort(node.fn.name)) return null;
     return { node, why: node.kind === "name" && byName.get(node.name)?.kind === "sort"
       ? `${node.name} is a sort, whose elements are data` : "its statement is none of these" };
   };
@@ -170,6 +175,35 @@ function theoryFields(theory, lookup) {
       throw located(Error(`${operator} would stand for both ${notations.get(operator)} and ${field} in ${T}: a notation means one operation; rename one's notation.`), at);
     notations.set(operator, field);
   };
+  // A field's binders: an index (A : set U) holds A and then its evidence,
+  // A_is_set : IsSet(U, A).
+  const expanded = item => item.params.flatMap(p => p.level ? [p, {
+    name: token(`${p.name.text}_is_${p.level}`, p.name),
+    type: call(p.level === "set" ? "IsSet" : "IsProp", [p.type, name(p.name.text, p.name)], p.name), group: p.group }] : [p]);
+  // Inside the theory, a field whose index is a set is applied to that
+  // index alone, F(A), for A bound as one: its evidence follows it. Applied
+  // to its evidence too, F(A, A_is_set), it is left as written.
+  const evidenced = (node, leveled) => {
+    const rewrite = (n, bound) => {
+      if (n.kind !== "call" || n.fn.kind !== "name" || bound.has(n.fn.name)) return n;
+      const target = byName.get(n.fn.name);
+      if (!target?.visible?.some(Boolean) || n.args.length !== target.visible.length) return n;
+      const args = [];
+      n.args.forEach((arg, k) => {
+        args.push(rewritten(arg, rewrite, bound));
+        const level = target.visible[k];
+        if (!level) return;
+        if (arg.kind !== "name" || bound.has(arg.name) || leveled.get(arg.name) !== level)
+          throw located(Error(`${n.fn.name}'s argument ${k + 1} is a ${level === "set" ? "set" : "proposition"} with its evidence: give an index bound as one, (A : ${level} U), or write its evidence after it, ${n.fn.name}(…, A, A_is_${level}, …).`), arg);
+        args.push(name(`${arg.name}_is_${level}`, arg));
+      });
+      return { ...n, args };
+    };
+    return rewritten(node, rewrite);
+  };
+  const leveledOf = item => new Map(item.params.filter(p => p.level).map(p => [p.name.text, p.level]));
+  // forall over binders, innermost last.
+  const quantified = (binders, body, at) => binders.reduceRight((inner, p) => quantifier("forall", p.name, p.type, inner, at), body);
   for (const parent of theory.parents ?? []) {
     const record = lookup(parent.name.text);
     if (!record) throw located(Error(`${parent.name.text} is not a theory here: ${T} extends theories in scope.`), parent.name);
@@ -228,11 +262,22 @@ function theoryFields(theory, lookup) {
     const origin = `${T}.${item.name.text}`;
     if (item.kind === "sort") {
       const own = universeAt(Math.max(0, headerUniverses.indexOf(item.universe?.text)));
-      add({ name: item.name.text, kind: "sort", type: name(own, item.name), origin }, item.name);
+      // A family's indices, each a binder over the earlier ones.
+      const leveled = leveledOf(item), binders = expanded(item).map(p => ({ ...p, type: inTheoryUniverse(evidenced(p.type, leveled), item) }));
+      const family = binders.length > 0;
+      add({ name: item.name.text, kind: "sort", type: quantified(binders, name(own, item.name), item), origin,
+        ...(family ? { family: true, visible: item.params.map(p => p.level ?? null) } : {}) }, item.name);
+      if (item.notation) {
+        const { operator, left, right } = item.notation;
+        if (item.params.length !== 2 || left.text !== item.params[0].name.text || right.text !== item.params[1].name.text)
+          throw located(Error(`A notation names a family's two indices in order, as in le(x, y : M) : prop U notation x <= y.`), item.notation);
+        notate(operator, item.name.text, item.notation);
+      }
       if (!item.level) continue;
       const evidence = item.level === "set" ? "IsSet" : "IsProp";
+      const member = family ? call(item.name.text, binders.map(p => name(p.name.text, item.name)), item.name) : name(item.name.text, item.name);
       add({ name: `${item.name.text}_is_${item.level}`, kind: "evidence", evidence, of: item.name.text,
-        type: call(evidence, [name(own, item.name), name(item.name.text, item.name)], item.name),
+        type: quantified(binders, call(evidence, [name(own, item.name), member], item.name), item),
         origin: `${origin}_is_${item.level}` }, item.name);
       continue;
     }
@@ -244,10 +289,10 @@ function theoryFields(theory, lookup) {
         throw located(Error(`The notation of ${item.name.text} writes its arguments in order: ${item.params[0].name.text} ${operator} ${item.params[1].name.text}.`), item.notation);
       notate(operator, item.name.text, item.notation);
     }
-    // forall over the parameters, innermost last.
-    let type = item.type;
-    for (let j = item.params.length - 1; j >= 0; j--)
-      type = quantifier("forall", item.params[j].name, item.params[j].type, type, item);
+    // forall over the parameters, innermost last, each index's evidence
+    // after it.
+    const leveled = leveledOf(item);
+    let type = quantified(expanded(item).map(p => ({ ...p, type: evidenced(p.type, leveled) })), evidenced(item.type, leveled), item);
     type = inTheoryUniverse(type, item);
     // Inside the theory, a notation means its operation.
     const operatorsAsCalls = node => rewritten(node, (n, bound) =>
@@ -260,7 +305,8 @@ function theoryFields(theory, lookup) {
       if (data)
         throw located(Error(`The law ${item.name.text} must state a proposition: an equation between elements of a sort, Void, or forall, -> or and over those; ${data.why}. A law holds no data, and homomorphisms ignore laws: declare data as an operation or a constant.`), data.node);
     }
-    add({ name: item.name.text, kind: item.kind, arity: item.params.length, type, origin }, item.name);
+    add({ name: item.name.text, kind: item.kind, arity: item.params.length, type, origin,
+      ...(leveled.size ? { visible: item.params.map(p => p.level ?? null) } : {}) }, item.name);
   }
   for (const field of fields) {
     if (field.name.includes(".")) throw located(Error(`A field's name is a plain name; ${field.name} is not.`), field.at);
@@ -345,15 +391,16 @@ export function expandTheory(theory, lookup = () => null) {
   const morphisms = morphismSource(record, other => Boolean(lookup(other)));
   if (morphisms.missing) record.noMorphisms = morphisms.missing;
   else {
+    // Homomorphisms without isomorphisms: the source stops after Hom's.
+    if (morphisms.missingIso) record.noIsomorphisms = morphisms.missingIso;
     // A parameter's type is written in place of its marker, in the
     // homomorphism's universes, and an operation's type in a model's: its
     // carriers that model's, A.M.
     const inUniverses = list => list.map((u, j) => [universeAt(j), u]);
-    const carriers = fields.filter(field => field.kind === "sort").map(field => field.name);
     const parameterType = new Map([
       ...params.map((p, k) => [morphisms.parameterMarker(k), renamed(p.type, new Map(inUniverses(morphisms.universes)), at)]),
       ...[...morphisms.typeMarkers].map(([marker, { type, model, universes }]) => [marker,
-        renamed(type, new Map([...carriers.map(c => [c, `${model}.${c}`]), ...inUniverses(universes)]), at)]),
+        renamed(type, new Map([...fields.map(field => [field.name, `${model}.${field.name}`]), ...inUniverses(universes)]), at)]),
     ]);
     const parsed = parse(morphisms.declarations.map((d, k) => d.source.replace(/^def \S+?(?=[{(:])/, `def generated_${k}`)).join("\n")).declarations
       .map(d => JSON.parse(JSON.stringify(d), (key, value) =>

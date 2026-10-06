@@ -400,6 +400,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E179"><td><code>E179</code></td><td>A theory's header binds the universe of its carriers, as in theory …(U &lt; UU0). (retired)</td></tr>
                 <tr id="E180"><td><code>E180</code></td><td>A carrier is a field: write … : set U; or … : prop U;, with the universe named in the header, theory …(U &lt; UU0).</td></tr>
                 <tr id="E181"><td><code>E181</code></td><td>A theory's universes are below UU0: … &lt; UU0.</td></tr>
+                <tr id="E182"><td><code>E182</code></td><td>Expected ':' and the type of …, as in (x, y : M) or (A : set U).</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -817,6 +818,9 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E820"><td><code>E820</code></td><td>… extends …, whose header binds the universe …: bind … in …'s header too.</td></tr>
                 <tr id="E821"><td><code>E821</code></td><td>… extends …, whose header has the parameter …: give … the parameter … with the same type.</td></tr>
                 <tr id="E822"><td><code>E822</code></td><td>…'s header binds …, which names a field too: give each its own name.</td></tr>
+                <tr id="E823"><td><code>E823</code></td><td>…'s argument … is a … with its evidence: give an index bound as one, (A : … U), or write its evidence after it, …(…, A, A_is_…, …).</td></tr>
+                <tr id="E824"><td><code>E824</code></td><td>A notation names a family's two indices in order, as in le(x, y : M) : prop U notation x &lt;= y.</td></tr>
+                <tr id="E825"><td><code>E825</code></td><td>…'s models have homomorphisms but no isomorphisms: ….</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-k1">Kernel: declared types</h3>

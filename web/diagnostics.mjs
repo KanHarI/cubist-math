@@ -106,6 +106,7 @@ export const diagnostics = [
   ["E179", "A theory's header binds the universe of its carriers, as in theory …(U < UU0).", "retired"],
   ["E180", "A carrier is a field: write … : set U; or … : prop U;, with the universe named in the header, theory …(U < UU0)."],
   ["E181", "A theory's universes are below UU0: … < UU0."],
+  ["E182", "Expected ':' and the type of …, as in (x, y : M) or (A : set U)."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
@@ -488,6 +489,9 @@ export const diagnostics = [
   ["E820", "… extends …, whose header binds the universe …: bind … in …'s header too."],
   ["E821", "… extends …, whose header has the parameter …: give … the parameter … with the same type."],
   ["E822", "…'s header binds …, which names a field too: give each its own name."],
+  ["E823", "…'s argument … is a … with its evidence: give an index bound as one, (A : … U), or write its evidence after it, …(…, A, A_is_…, …)."],
+  ["E824", "A notation names a family's two indices in order, as in le(x, y : M) : prop U notation x <= y."],
+  ["E825", "…'s models have homomorphisms but no isomorphisms: …."],
   // Kernel: declared types
   ["K101", "Dimension renaming allocation failed."],
   ["K102", "A boundary is nested too deeply."],

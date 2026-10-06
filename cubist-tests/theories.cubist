@@ -178,8 +178,7 @@ theory Unknown(U < UU0) extends Missing {
 theory BadRenaming(U < UU0) extends Monoid(unit := one) {
 }
 
-// Error: E476: open takes a model of a theory, such as m : Group(U0); this is a value of type
-//   Nat.
+// Error: E476: open takes a model of a theory, such as m : Group(U0); this is a value of type Nat.
 def open_a_number(n : Nat) : Nat {
   open n;
   exact n;

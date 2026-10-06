@@ -1013,6 +1013,26 @@ export function parse(source, typeOnly = false) {
       take("{");
       const fields = [];
       const word = text => peek() === text && /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text);
+      // A field's parameters, (x, y : M), where an index may be a set or a
+      // proposition of the theory's universe, (A : set U): it holds A and
+      // A_is_set : IsSet(U, A) (L2.4c).
+      const fieldParameters = () => {
+        take("(");
+        const params = [];
+        if (peek() !== ")") while (true) {
+          const names = sharedNames("(x, y : M)");
+          if (peek() !== ":")
+            throw Object.assign(new Error(`Expected ':' and the type of ${names.at(-1).text}, as in (x, y : M) or (A : set U).`), { offset: ts[i].start });
+          take(":");
+          const level = ["set", "prop"].includes(peek()) && universes.has(ts[i + 1].text) && [",", ")"].includes(ts[i + 2].text) ? take() : null;
+          const type = expr(), group = params.length;
+          for (const p of names) params.push({ name: p, type, group, ...(level ? { level: level.text, levelToken: level } : {}) });
+          if (peek() !== ",") break;
+          take(",");
+        }
+        take(")");
+        return params;
+      };
       while (peek() !== "}") {
         if (peek() === "EOF") throw Object.assign(new Error("Expected '}' to close the theory."), { offset: ts[i].start });
         const start = ts[i].start;
@@ -1022,22 +1042,27 @@ export function parse(source, typeOnly = false) {
             { offset: ts[i].start });
         const law = word("law");
         const keyword = law ? take("law") : null;
-        const field = name(), params = peek() === "(" ? parameters("(x, y : M)", false) : [];
+        const field = name(), params = peek() === "(" ? fieldParameters() : [];
         if (peek() !== ":")
           throw Object.assign(new Error(`Expected ':' and the type of ${field.text}, as in ${law ? "law mul_one(x : M) : x * one = x;" : "mul(x, y : M) : M;"}`), { offset: ts[i].start });
         take(":");
         // A carrier: a field whose type is the theory's universe, with an
-        // h-level, M : set U; or P : prop U;, or with none, M : U;. set and
-        // prop are keywords only here, before a name and the field's end.
-        if (!law && !params.length) {
-          const level = ["set", "prop"].includes(peek()) && /^[A-Za-z_]/.test(ts[i + 1].text) && ts[i + 2].text === ";" ? take() : null;
-          if (level || universes.has(peek()) && ts[i + 1].text === ";") {
+        // h-level, M : set U; or P : prop U;, or with none, M : U;. With
+        // indices it is a family, F(A : set U) : set U;, and a relation
+        // among carriers is one of propositions, le(x, y : M) : prop U,
+        // which may have a notation. set and prop are keywords only here,
+        // before a name and the field's end.
+        const ends = at => [";", "notation"].includes(ts[at].text);
+        if (!law) {
+          const level = ["set", "prop"].includes(peek()) && /^[A-Za-z_]/.test(ts[i + 1].text) && ends(i + 2) ? take() : null;
+          if (level || universes.has(peek()) && ends(i + 1)) {
             const universe = name();
             if (!universes.has(universe.text))
               throw Object.assign(new Error(`${universe.text} is not the universe of ${n.text}'s carriers: name it in the header, as in theory ${n.text}(${universe.text} < UU0).`),
                 { offset: universe.start });
-            fields.push({ kind: "sort", name: field, level: level?.text ?? null, ...(level ? { levelToken: level } : {}), universe,
-              start, end: take(";").end });
+            const notation = peek() === "notation" ? notationAfter() : null;
+            fields.push({ kind: "sort", name: field, params, level: level?.text ?? null, ...(level ? { levelToken: level } : {}), universe,
+              notation, start, end: take(";").end });
             continue;
           }
         }

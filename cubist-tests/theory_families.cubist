@@ -1,0 +1,143 @@
+// Theory families (L2.4c): a carrier with indices, F(A : set U) : set U,
+// whose index (A : set U) holds A and its evidence; a relation, a family of
+// propositions indexed by carriers, with a notation; their laws, which are
+// propositions; and their homomorphisms, which map each family at each
+// index and push an index that is an element of a carrier. A family of sets
+// indexed by a carrier has no isomorphisms.
+import nat;
+import hlevels;
+
+// A monad on sets. Inside the theory, F(A) passes A's evidence along.
+theory Monad(U < UU0) {
+  F(A : set U) : set U;
+  pure(A : set U, a : A) : F(A);
+  bind(A, B : set U, m : F(A), k : A -> F(B)) : F(B);
+  law left_unit(A, B : set U, a : A, k : A -> F(B)) : bind(A, B, pure(A, a), k) = k(a);
+  law right_unit(A : set U, m : F(A)) : bind(A, A, m, fun (a : A) => pure(A, a)) = m;
+}
+
+// Output: forall U < UU0. forall m1_ : Monad(U). forall A : U. forall A_is_set : IsSet(U, A). A ->
+//   m1_.F(A, A_is_set)
+print(typeof(Monad.pure));
+
+// The identity monad is a model: F(A) is A, whose setness is A's own.
+def identity : Monad(U0) := Monad.make(
+  F := fun (A : U0, h : IsSet(U0, A)) => A,
+  F_is_set := fun (A : U0, h : IsSet(U0, A)) => h,
+  pure := fun (A : U0, h : IsSet(U0, A), a : A) => a,
+  bind := fun (A : U0, h : IsSet(U0, A), B : U0, k : IsSet(U0, B), m : A, f : A -> B) => f(m),
+  left_unit := fun (A : U0, h : IsSet(U0, A), B : U0, k : IsSet(U0, B), a : A, f : A -> B) => refl(f(a)),
+  right_unit := fun (A : U0, h : IsSet(U0, A), m : A) => refl(m)
+);
+
+// Outside the theory, an index's evidence is written.
+def three : identity.bind(Nat, nat_is_set, Nat, nat_is_set, identity.pure(Nat, nat_is_set, 2), succ) = 3 {
+  rfl;
+}
+
+// A homomorphism maps F at each index and preserves pure and bind; it has
+// no naturality field. Its models share their universe.
+// Output: forall U < UU0. forall A1_ : Monad(U). forall B1_ : Monad(U). forall f :
+//   Monad.Hom{{U}}(A1_, B1_). forall A : U. forall A_is_set : IsSet(U, A). forall a : A. f.map(A,
+//   A_is_set, A1_.pure(A, A_is_set, a)) = B1_.pure(A, A_is_set, a)
+print(typeof(Monad.Hom.map_pure));
+
+def identity_twice : Monad.Hom(identity, identity) := Monad.Hom.compose(Monad.Hom.id(identity), Monad.Hom.id(identity));
+
+// Output: 7
+print(evaluate(identity_twice.map(Nat, nat_is_set, 7)));
+
+def identity_iso : Monad.Iso(identity, identity) := Monad.Iso.compose(Monad.Iso.id(identity), Monad.Iso.id(identity));
+
+// A preorder: le is a family of propositions on M, written x <= y. Its laws
+// are propositions, and its homomorphisms are the monotone maps.
+theory Preorder(U < UU0) {
+  M : set U;
+  le(x, y : M) : prop U notation x <= y;
+  law le_refl(x : M) : x <= x;
+  law le_trans(x, y, z : M) : x <= y -> y <= z -> x <= z;
+}
+
+// Output: forall U < UU0. forall V < UU0. forall A : Preorder(U). forall B : Preorder(V). forall f
+//   : Preorder.Hom{{U, V}}(A, B). forall x : A.M. forall y : A.M. A.le(x, y) -> B.le(f.map_M(x),
+//   f.map_M(y))
+print(typeof(Preorder.Hom.map_le));
+
+def monotone_compose := Preorder.Hom.compose;
+
+// An isomorphism of preorders has round trips on M only: on le they hold of
+// themselves.
+def preorder_iso := Preorder.Iso.compose;
+
+// A graded family: its index is the same on both sides, m + n too.
+theory Graded(U < UU0) {
+  V(n : Nat) : set U;
+  mul(m, n : Nat, x : V(m), y : V(n)) : V(m + n);
+}
+
+def graded_compose := Graded.Hom.compose;
+
+def graded_iso := Graded.Iso.compose;
+
+// An argument or an index keeps its name, even one that the generated
+// declarations use, as map, U and to do here: theirs are named apart.
+theory Shifted(V < UU0) {
+  M : set V;
+  shift(map : M, U : M) : M;
+}
+
+// Output: forall U_1_ < UU0. forall V < UU0. forall A : Shifted(U_1_). forall B : Shifted(V).
+//   forall f : Shifted.Hom{{U_1_, V}}(A, B). forall map : A.M. forall U : A.M. f.map(A.shift(map,
+//   U)) = B.shift(f.map(map), f.map(U))
+print(typeof(Shifted.Hom.map_shift));
+
+def shifted_iso := Shifted.Iso.compose;
+
+// The constructors still take each field by its name.
+def shifted_by_name(A : Shifted(U0)) : Shifted.Hom(A, A) := Shifted.Hom.make(A, A, map := fun (x : A.M) => x,
+  map_shift := fun (a, b : A.M) => refl(A.shift(a, b)));
+
+theory Lifted(U < UU0) {
+  F(to : Nat) : set U;
+  lift(to : Nat, x : F(to)) : F(to);
+}
+
+def lifted_compose := Lifted.Hom.compose;
+
+def lifted_iso := Lifted.Iso.compose;
+
+def lifted_by_name(A : Lifted(U0)) : Lifted.Iso(A, A) := Lifted.Iso.make(A, A, to := Lifted.Hom.id(A),
+  from := Lifted.Hom.id(A), from_to := fun (n : Nat, x : A.F(n)) => refl(x),
+  to_from := fun (n : Nat, y : A.F(n)) => refl(y));
+
+// A family of sets indexed by a carrier has homomorphisms, but no
+// isomorphisms: its round trips would need a transport.
+theory Fibred(U < UU0) {
+  M : set U;
+  Fiber(x : M) : set U;
+}
+
+def fibred_compose := Fibred.Hom.compose;
+
+// Error: E825: Fibred's models have homomorphisms but no isomorphisms: its family of sets Fiber is
+//   indexed by a carrier, and its round trips would need a transport that is not generated.
+def fibred_iso := Fibred.Iso;
+
+// A family with no h-level: its equations are not propositions.
+// Error: E818: The law same must state a proposition: an equation between elements of a sort, Void,
+//   or forall, -> or and over those; P has no h-level, so an equation between its elements is not a
+//   proposition. A law holds no data, and homomorphisms ignore laws: declare data as an operation
+//   or a constant.
+theory Bare(U < UU0) {
+  M : set U;
+  P(x : M) : U;
+  law same(x : M, p, q : P(x)) : p = q;
+}
+
+// An index that is a set is given as one bound so inside the theory.
+// Error: E823: F's argument 1 is a set with its evidence: give an index bound as one, (A : set U),
+//   or write its evidence after it, F(…, A, A_is_set, …).
+theory Unbound(U < UU0) {
+  F(A : set U) : set U;
+  nat_member : F(Nat);
+}
