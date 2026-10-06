@@ -24,6 +24,10 @@
 
 import { parse } from "./parser.mjs";
 import { morphismSource } from "./morphisms.mjs";
+// A copy of a syntax tree with `rewrite(node, bound)` applied to each node,
+// outermost first; `bound` holds the names bound there, by every binding
+// form (scopes.mjs).
+import { rewritten } from "./scopes.mjs";
 
 // The universes of a theory's carriers, in the fields a theory records, the
 // first, UNIVERSE, and the k-th: each expansion names them afresh.
@@ -43,23 +47,6 @@ const quantifier = (kind, binder, domain, body, at) =>
 const projection = (value, index, at) => ({ kind: "projection", value, index, ...place(at) });
 const pair = (left, right, at) => ({ kind: "pair", left, right, ...place(at) });
 
-// A copy of a syntax tree with `rewrite(node, bound)` applied to each node,
-// outermost first; `bound` holds the names its binders bind there.
-function rewritten(node, rewrite, bound = new Set()) {
-  if (Array.isArray(node)) return node.map(item => rewritten(item, rewrite, bound));
-  if (!node || typeof node !== "object" || !node.kind) return node;
-  const replaced = rewrite(node, bound);
-  if (replaced !== node) return replaced;
-  const binders = node.kind === "binderGroup" ? node.names
-    : ["forall", "exists", "lambda"].includes(node.kind) && node.name?.text ? [node.name] : [];
-  const copy = {};
-  for (const [key, value] of Object.entries(node)) {
-    // A binder's own domain is outside its scope; its body is inside.
-    const scope = binders.length && key === "body" ? new Set([...bound, ...binders.map(b => b.text)]) : bound;
-    copy[key] = rewritten(value, rewrite, scope);
-  }
-  return copy;
-}
 // Every position in a tree set to `at`: inherited syntax comes from another
 // theory's text, perhaps another module's.
 const relocated = (node, at) => JSON.parse(JSON.stringify(node), (key, value) =>

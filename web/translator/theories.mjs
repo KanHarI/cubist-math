@@ -3,6 +3,7 @@
 // leaves, by which m.f reads a field of a model m and `open m;` puts a
 // model's fields and notation in scope.
 import {expandTheory} from "../cubist/theories.mjs";
+import {rewritten} from "../cubist/scopes.mjs";
 
 // The scope's key for an operator a model's notation binds: no source name
 // can spell it.
@@ -124,22 +125,13 @@ export function notationDeclaration(t,module,d,env) {
   env.set(notationBinding(d.name.text),{tag:"Notation",name:d.name.text,rules});
 }
 
-// A copy of a syntax tree with each free name that `rename` maps renamed.
-function renameFree(node,rename,bound=new Set()) {
-  if(Array.isArray(node))return node.map(item=>renameFree(item,rename,bound));
-  if(!node||typeof node!=="object")return node;
-  if(node.kind==="name") {
-    if(bound.has(node.name.split(".")[0]))return node;
-    const renamed=rename(node.name);
-    return renamed?{...node,name:renamed}:node;
-  }
-  const binders=node.kind==="binderGroup"?node.names.map(n=>n.text)
-    :["forall","exists","lambda"].includes(node.kind)&&node.name?.text?[node.name.text]:[];
-  const copy={};
-  for(const [key,value] of Object.entries(node))
-    copy[key]=renameFree(value,rename,binders.length&&key==="body"?new Set([...bound,...binders]):bound);
-  return copy;
-}
+// A copy of a syntax tree with each free name that `rename` maps renamed,
+// whatever binds it (scopes.mjs).
+const renameFree=(node,rename)=>rewritten(node,(n,bound)=>{
+  if(n.kind!=="name"||bound.has(n.name.split(".")[0]))return n;
+  const renamed=rename(n.name);
+  return renamed?{...n,name:renamed}:n;
+});
 
 // A named notation's rule applied to two operands: its right side, and the
 // scope that resolves its names. Each pattern name stands for its operand
@@ -158,17 +150,8 @@ export function appliedRule(scope,rule,left,right) {
   const substituted=substitute(rule.value,operands);
   return {node:substituted,scope:inner};
 }
-function substitute(node,operands,bound=new Set()) {
-  if(Array.isArray(node))return node.map(item=>substitute(item,operands,bound));
-  if(!node||typeof node!=="object")return node;
-  if(node.kind==="name"&&operands.has(node.name)&&!bound.has(node.name))return operands.get(node.name);
-  const binders=node.kind==="binderGroup"?node.names.map(n=>n.text)
-    :["forall","exists","lambda"].includes(node.kind)&&node.name?.text?[node.name.text]:[];
-  const copy={};
-  for(const [key,value] of Object.entries(node))
-    copy[key]=substitute(value,operands,binders.length&&key==="body"?new Set([...bound,...binders]):bound);
-  return copy;
-}
+const substitute=(node,operands)=>rewritten(node,(n,bound)=>
+  n.kind==="name"&&operands.has(n.name)&&!bound.has(n.name)?operands.get(n.name):n);
 
 // The scope with a named notation selected: its rules for its operators.
 function notationSelected(scope,notation) {
