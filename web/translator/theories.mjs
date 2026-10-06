@@ -103,16 +103,23 @@ export function opened(t,scope,node,{complete=true}={}) {
 
 // A named notation (L2.10a): each rule's right side, its free names read
 // where the notation is declared, under keys no source name can spell, so
-// that no later binding changes what a rule means.
+// that no later binding changes what a rule means. A qualified name, m.f,
+// is read by its root where only the root is bound, so a later local m
+// does not take its place.
 export function notationDeclaration(t,module,d,env) {
   const rules=new Map();
   for(const rule of d.rules) {
     const aliases=new Map(),pattern=new Set([rule.left.text,rule.right?.text].filter(Boolean));
-    const value=renameFree(rule.value,name=>{
-      if(pattern.has(name)||!env.has(name))return null;
+    const alias=name=>{
       const key=`\u0000notation ${d.name.text} ${name}`;
       aliases.set(key,env.get(name));
       return key;
+    };
+    const value=renameFree(rule.value,name=>{
+      if(pattern.has(name))return null;
+      if(env.has(name))return alias(name);
+      const dot=name.indexOf("."),root=dot>0?name.slice(0,dot):null;
+      return root&&env.has(root)?`${alias(root)}${name.slice(dot)}`:null;
     });
     rules.set(rule.unary?"unary -":rule.operator,{left:rule.left.text,right:rule.right?.text??null,value,aliases,source:rule.value,
       recipe:{left:rule.leftView?.text??null,right:rule.rightView?.text??null}});
@@ -137,12 +144,20 @@ function renameFree(node,rename,bound=new Set()) {
   return copy;
 }
 
-// A named notation's rule applied to two operands: its right side with the
-// pattern's names replaced by them, and the scope that resolves its names.
+// A named notation's rule applied to two operands: its right side, and the
+// scope that resolves its names. Each pattern name stands for its operand
+// under a key no source name can spell, and the operand is elaborated where
+// the rule uses it, in the scope the operator is written in: no binder of
+// the rule captures a name of an operand.
 export function appliedRule(scope,rule,left,right) {
   let inner=scope;
   for(const [key,value] of rule.aliases)inner=inner.alias(key,value);
-  const operands=new Map([[rule.left,left],...(rule.right?[[rule.right,right]]:[])]);
+  const operands=new Map();
+  for(const [name,node] of [[rule.left,left],...(rule.right?[[rule.right,right]]:[])]) {
+    const key=`\u0000operand ${name}`;
+    inner=inner.alias(key,{tag:"Operand",node,scope});
+    operands.set(name,{kind:"name",name:key,start:node.start,end:node.end});
+  }
   const substituted=substitute(rule.value,operands);
   return {node:substituted,scope:inner};
 }

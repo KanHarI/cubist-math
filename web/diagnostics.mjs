@@ -519,6 +519,7 @@ export const diagnostics = [
   ["E838", "The notation of … reads … in the notation selected where it is used, which is …'s; … is no carrier's element: name the notation it is read in, as …."],
   ["E839", "-x names an operation's one argument; … is not an operation of one."],
   ["E840", "-x names an operation's one argument, as in neg(x : M) : M notation -x."],
+  ["E859", "…'s parent … is labelled …, which names a field of … too: label it apart, as in base : …."],
   // Notation and operators
   ["E901", "-x negates in a selected notation that binds it, as integers.(-x); a path's reversal is ~p."],
   ["E902", "-x is not in …'s notation, which is selected here: select a notation that binds it, as integers.(-x)."],
