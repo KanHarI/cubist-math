@@ -121,10 +121,13 @@ export function morphismSource(record, isTheory = () => false) {
   // a homomorphism keeps them fixed (L2.4c). Otherwise each model has its
   // own universes, as many as the theory's header binds.
   const params = record.params ?? [], count = Math.max(1, record.universes?.length ?? 0);
-  // Every binder the source introduces is fresh: a later one cannot
-  // capture a parameter, and none is a universe constant, so a taken U is
-  // followed by U_1, not U1.
-  const taken = new Set(params.map(p => p.name));
+  // Every binder the source introduces is fresh: none captures a parameter
+  // or a name that an operation's type mentions, which the source writes
+  // as it is, apart from the carriers, which it writes as A.M; and none is
+  // a universe constant, so a taken U is followed by U_1, not U1.
+  const carrierNames = new Set(record.fields.filter(field => field.kind === "sort").map(field => field.name));
+  const taken = new Set([...params.map(p => p.name),
+    ...record.fields.flatMap(field => [...freeNames(field.type)]).filter(name => !carrierNames.has(name))]);
   const numbered = (stem, k) => /^U+$/.test(stem) || /[0-9]$/.test(stem) ? `${stem}_${k}` : `${stem}${k}`;
   const own = stem => {
     let name = stem;
@@ -162,8 +165,9 @@ export function morphismSource(record, isTheory = () => false) {
     : field.kind === "operation" ? [{ name: `map_${field.name}`, operation: operations.get(field.name) }] : []);
   if (new Set(homFields.map(field => field.name)).size !== homFields.length)
     return { missing: "two of its homomorphisms' fields would have one name" };
-  // An operation's arguments: x, y, z, then x4, x5, ….
-  const argument = k => ["x", "y", "z"][k] ?? `x${k + 1}`;
+  // An operation's arguments: x, y, z, then x4, x5, …, each fresh.
+  const argumentNames = [];
+  const argument = k => argumentNames[k] ??= own(["x", "y", "z"][k] ?? `x${k + 1}`);
   const applied = (fn, args) => args.length ? `${fn}(${args.join(", ")})` : fn;
   // A type written in a model, as a marker that the expansion replaces by
   // the type, its carriers that model's and its universes the model's.
