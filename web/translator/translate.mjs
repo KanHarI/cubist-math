@@ -515,7 +515,7 @@ export class Translator {
         // Its parameters as the source declares them, for named arguments
         // and implicit parameters.
         const definition=this.checker.define?.(d.name.text,checked.term,checked.type,
-          own.length?own.map(p=>({name:p.name.text,implicit:!!p.implicit})):null)??checked.term;
+          own.length?own.map(p=>({name:p.label??p.name.text,implicit:!!p.implicit})):null)??checked.term;
         this.checker.kernel?.checkDeadline();
         env.set(d.name.text,definition);
         // A theory's type of models, by which m.f reads its fields, and its

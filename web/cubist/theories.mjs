@@ -610,7 +610,10 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
       .map(d => JSON.parse(JSON.stringify(d), (key, value) =>
         value?.kind === "name" && parameterType.has(value.name) ? parameterType.get(value.name) : value));
     parsed.forEach((d, k) => {
-      const { name: declName, role, field, record: morphismRecord } = morphisms.declarations[k];
+      const { name: declName, role, field, record: morphismRecord, labels = {} } = morphisms.declarations[k];
+      // A parameter whose binder is named apart from its field is called
+      // by the field's name.
+      for (const p of d.params ?? []) if (Object.hasOwn(labels, p.name.text)) p.label = labels[p.name.text];
       out.push({ ...relocated(d, at), name: token(declName, at), ...(theory.uses ? { uses: theory.uses } : {}),
         generated: { theory: T, role, ...(field ? { field } : {}) }, ...(morphismRecord ? { theory: morphismRecord } : {}) });
     });
