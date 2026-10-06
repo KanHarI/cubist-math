@@ -27,8 +27,16 @@ export const MAX_QUERY_STEPS = 1280000000n;
 // A mismatch also carries `mismatch`, the handles of the type found and the
 // type expected; they are valid until the next rollback.
 const errorKinds = ["none", "mismatch", "budget", "deadline", "other"];
+// A rejection is an answer the search reads, thousands of times a module;
+// its message says why, and a stack trace, which each would capture, says
+// only where the kernel was asked.
 export class KernelError extends Error {
-  constructor(message, kind = "other") { super(message); this.kind = kind; }
+  constructor(message, kind = "other") {
+    const limit = Error.stackTraceLimit;
+    Error.stackTraceLimit = 0;
+    try { super(message); } finally { Error.stackTraceLimit = limit; }
+    this.kind = kind;
+  }
 }
 
 function uint32(value, label) {
