@@ -357,9 +357,10 @@ export class Translator {
       if(d.kind==="theory") { queue.unshift(...theoryDeclarations(this,module,d,env,declarations)); continue; }
       // An initial or free model is the declarations it expands to (L2.6).
       if(d.kind==="initial"||d.kind==="free") { queue.unshift(...initialDeclarations(this,module,d,env,declarations)); continue; }
-      // A file-level use m; selects m for the definitions after it, which
-      // record it (L2.4c). It is checked where it stands, so one that selects
-      // nothing is refused even with nothing after it, as at a REPL (L2.10j).
+      // A file-level use m; selects m for the definitions and directives
+      // after it, which record it (L2.4c). It is checked where it stands, so
+      // one that selects nothing is refused even with nothing after it, as at
+      // a REPL (L2.10j).
       if(d.kind==="use") {
         const unit=module.declaration(this.declarationFuel);
         try { selected(this,new Scope(unit,new Map(),env),d.model); }
@@ -864,7 +865,9 @@ export class Translator {
         if(env.has(n.name)) {
           const value=env.get(n.name);
           if(value.tag==="Untranslated") {
-            const error=Error(`Untranslated dependency: ${n.name}`);
+            // A notation rule's name is read under its key: the message
+            // names it as the rule does.
+            const error=Error(`Untranslated dependency: ${n.name.startsWith("\u0000notation ")?n.name.split(" ").slice(2).join(" "):n.name}`);
             error.blockedBy=value.binding??value.name;
             throw error;
           }
