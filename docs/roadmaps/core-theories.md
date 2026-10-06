@@ -95,15 +95,29 @@ kinds or indices (E828), or a name that is a carrier in one parent and not
 in another (E827), are refused. Another field of one name from two
 parents stays each parent's, named `label_name` in the child, and the
 name is ambiguous: refused where it is used, in the theory (E830), on a
-model (E832) and under `open`, with the qualified forms. An operator two
+model (E832) and under `use`, with the qualified forms. An operator two
 parents bind to two fields is ambiguous the same way (E831), and a
 child's own notation for it is refused (E826). Inside the theory,
 `label.f` names the field that parent gave as `f` (E829). Renaming in
 `extends` still gives a name or notation of its own. Evidence:
 `cubist-tests/theory_independent.cubist` and the reference's
-[extension](../../web/reference/theories.html#extends) section. The
-qualified operator forms, `magma.(x * x)` and `a G.(+) b`, are the last
-slice.
+[extension](../../web/reference/theories.html#extends) section.
+
+**Sixth slice, done on 2026-10-06:** [qualified operators](#qualified-operators)
+and `use`. `use m;` puts a model's fields and notation in scope for the
+rest of a block, or of the file at its top level, a later `use` switching
+it; `m.(e)` does so for one expression; `a m.(*) b` qualifies one
+operator, with its usual precedence, and `m.(*)` alone is the operation.
+A parent's operator is reached through its label, `x R.additive.(*) y` on
+a model, `magma.(x * x)` and `x magma.(*) y` inside a theory. `open m;`,
+its earlier spelling, migrates in two commits (E834 for a `use` of no
+model; E835, E836 for a qualifier that is no model or an operator its
+theory does not bind); `open` is then refused with a message naming
+`use`, and an earlier revision's `open m;` is read as `use m;`. The unary
+form `G.(-) x` waits for arithmetic `-` (L2.10b), and the file-level
+shadowing warning for L2.10a's named notations. Evidence: `cubist-tests/theory_use.cubist` and the reference's
+[selecting a model](../../web/reference/theories.html#open) section.
+L2.4c is then complete; its open questions remain as recorded.
 
 ### Carriers are fields with an h-level
 
@@ -353,7 +367,7 @@ not in `G`. Whether they should be read in `G`'s notation instead, as in
 `G.(a + b)`, is open. The notation roadmap lists every way to reach another
 notation under a selection, and how a later `use` switches it
 ([switching](notation.md#switching-and-reaching-another-notation)); `use`
-replaces today's `open` (its decision 7).
+replaced `open` (its decision 7).
 
 ### Acceptance
 
@@ -397,7 +411,7 @@ replaces today's `open` (its decision 7).
 L2.4 delivers, in slices:
 
 1. **Notation packs and `open`.** A model's operations bound to operators and
-   names for the rest of a block.
+   names for the rest of a block. `open m;` is now `use m;` (L2.4c).
 2. **`theory`, `T.Model` and `extends`.** Declarations of sorts that are sets
    or propositions, constants, operations with notation, and laws; the record
    type of models, its constructor and its fields; single and multiple
@@ -413,12 +427,12 @@ not sets or propositions, whose homomorphisms need coherence fields; relation
 fields; `initial T` and `free T on A` (L2.6, whose contract is specified
 separately); numerals interpreted in a model; type-directed overloading and
 instance search. Structure scope stays explicit: an operator means one thing
-in a scope, chosen by `open` or `section`, never by the types of its operands.
+in a scope, chosen by `use` or `section`, never by the types of its operands.
 The [notation roadmap](notation.md), L2.10, adopts explicit model notation
 views as the next direction: an expression or block selects its model before
 its operators and literals are elaborated. `v.(expression)` and `use v;`
 are its decided spellings; its remaining grammar and elaboration gates are
-draft. Existing `open` and section semantics remain compatible
+draft. Existing `use` and section semantics remain compatible
 during that migration; type-based automation is optional later work, requiring
 evidence that it preserves the explicit semantics.
 
@@ -499,30 +513,34 @@ def additive : Monoid(U0) := Monoid.make(M := Nat, M_is_set := nat_is_set,
   mul_one := nat_add_zero);
 ```
 
-## Notation and `open`
+## Notation and `use`
 
-`open m;` is a proof statement. For the rest of its block, each field of `m`
-is in scope by its name, as the projection `m.f`, and each notation of `m`'s
-theory means `m`'s operation:
+`use m;` selects the model `m`: in a proof block for the rest of the block,
+and at a file's top level for the definitions and directives after it. Each
+field of `m` is in scope by its name, as the projection `m.f`, and each
+notation of `m`'s theory means `m`'s operation:
 
 ```
 def square(G : Group(U0), x : G.M) : G.M {
-  open G;
+  use G;
   exact x * x;
 }
 ```
 
-A name or operator that `open` binds shadows the one it had, as `let` does,
-until the block ends; a later `open` of another model shadows an earlier
-one. Where no model's notation binds `+` or `*`, they keep their meaning
-today: `add` and `mul` in scope, as for `Nat`. L2.10j retires that
-fallback; an operator then means only what a view, an `open` or a section
-binds, and a section or `open` selects its model's view, innermost first.
+A name or operator that `use` binds shadows the one it had, as `let` does,
+until the block ends; a later `use` of another model shadows an earlier
+one. `m.(e)` selects `m` for one expression, and `x m.(*) y` qualifies one
+operator. Until L2.4c this statement was `open m;`, which is now refused
+with a message naming `use`; an earlier revision's `open m;` is read as
+`use m;`. Where no model's notation binds `+` or `*`, they keep their
+meaning today: `add` and `mul` in scope, as for `Nat`. L2.10j retires that
+fallback; an operator then means only what a view, a `use` or a section
+binds, and a section or `use` selects its model's view, innermost first.
 
 L2.10 extends this explicit selection to expression views, including theorem
 statements, with operand views determining numeral interpretations and a
 printer that retains the model whenever omitting it would change meaning.
-It does not change the behavior of existing `open` declarations or sections
+It does not change the behavior of existing `use` statements or sections
 as an incidental part of introducing that syntax.
 
 ## Sections
@@ -616,7 +634,7 @@ user's own, so every generated definition is inspectable by name. The
 module needs `hlevels` for the sorts' evidence, and the elaborator says so
 when it is missing.
 
-`open` and sections bind names and operators lexically, recorded in the
+`use` and sections bind names and operators lexically, recorded in the
 inspector with the projection each stands for. The operator elaboration
 reads an operator's binding before its fallback, the `add` or `mul` in
 scope.
@@ -635,7 +653,7 @@ the fixtures named in the status above.
 - Refusals: a field whose name two parents give, a law that is not about the
   theory's fields or is not evidently a proposition, an operation whose
   arguments are not sorts (for `Hom`), a notation that is not an operator, an
-  `open` of a value that is not a model.
+  `open` (now `use`) of a value that is not a model.
 
 ## Known limits
 

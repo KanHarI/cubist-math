@@ -32,10 +32,10 @@ def first_of(G : Both(U0), x, y : G.M) : G.M := G.magma.mul(x, y);
 print(evaluate(first_of(both_nat, 5, 6)));
 
 // Under open, * is ambiguous where it is used.
-// Error: E832: * is ambiguous in Both: it is magma's mul and action's act. Write G.magma.mul(…, …)
-//   or G.action.act(…, …).
+// Error: E832: * is ambiguous in Both: it is magma's mul and action's act. Write x G.magma.(*) y or
+//   x G.action.(*) y.
 def square(G : Both(U0), x : G.M) : G.M {
-  open G;
+  use G;
   exact x * x;
 }
 
@@ -74,8 +74,8 @@ def which := zero_one.point;
 print(typeof(Bipointed.Hom.map_left_point));
 
 // Inside the theory, an ambiguous operator is refused.
-// Error: E831: * is ambiguous in BadUse: it is magma's mul and action's act. Write magma.mul(…, …)
-//   or action.act(…, …), or give one another notation in extends.
+// Error: E831: * is ambiguous in BadUse: it is magma's mul and action's act. Write x magma.(*) y or
+//   x action.(*) y, or give one another notation in extends.
 theory BadUse(U < UU0) extends Magma, Action {
   law square(x : M) : x * x = x;
 }

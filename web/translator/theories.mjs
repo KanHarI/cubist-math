@@ -85,8 +85,32 @@ export function opened(t,scope,node) {
     inner=inner.alias(field,{tag:"Ambiguous",message:ambiguousField(record,node.name??"m",field).message});
   for(const [operator,list] of Object.entries(record.ambiguousNotations??{}))
     inner=inner.alias(operatorBinding(operator),{tag:"Ambiguous",message:`${operator} is ambiguous in ${record.name}: it is ${
-      list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>`${node.name??"m"}.${e.label}.${e.parentField}(…, …)`).join(" or ")}.`});
+      list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>`x ${node.name??"m"}.${e.label}.(${operator}) y`).join(" or ")}.`});
   return inner;
+}
+
+// The scope with the model `node` selected, by use m; or m.(e) (L2.4c):
+// opened, or the error that it is no model.
+export function selected(t,scope,node) {
+  const inner=opened(t,scope,node);
+  if(inner)return inner;
+  throw scope.unit.locate(Error(`use selects a model of a theory, such as m : Group(U0); this is a value of type ${
+    t.shown(scope.infer(t.term(node,scope,null)).type)}.`),node);
+}
+
+// m.(+), a model's operation that its theory's notation binds + to: the
+// node of the field m.f, or the error that says why there is none.
+export function qualifiedOperator(t,scope,n) {
+  const record=recordOf(t,scope,t.term(n.model,scope,null)),at={start:n.operatorStart,end:n.operatorEnd};
+  if(!record)throw scope.unit.locate(Error(`${n.model.name}.(${n.operator}) takes a model of a theory; ${n.model.name} is not one.`),n.model);
+  const field=record.notations[n.operator];
+  if(!field) {
+    const list=record.ambiguousNotations?.[n.operator];
+    throw scope.unit.locate(Error(list
+      ?`${n.operator} is ambiguous in ${record.name}: it is ${list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>`${n.model.name}.${e.label}.(${n.operator})`).join(" or ")}.`
+      :`${record.name} binds no operation to ${n.operator}.`),at);
+  }
+  return {kind:"member",value:n.model,field:{text:field,...at},dot:at,start:n.start,end:n.end};
 }
 
 // The declarations a theory expands to, checked in its place; its record

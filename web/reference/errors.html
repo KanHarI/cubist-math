@@ -238,7 +238,7 @@
                 <tr id="E803"><td class="code"><code>E803</code></td><td data-message="has two fields named">“<var>T</var> has two fields named <var>f</var>: give each its own name.”</td><td>A model's fields are read by name, so a theory's fields, its own and its parents', have distinct names. Rename one.</td><td><a href="theories.html#theory-errors">theories</a></td></tr>
                 <tr id="E828"><td class="code"><code>E828</code></td><td data-message="with different kinds or indices">“<var>T</var> gets the carrier <var>M</var> from <var>P</var> and <var>Q</var> with different kinds or indices: rename one, as in <var>Q</var>(<var>M</var> := …).”</td><td>Two parents give a carrier of one name, merged into one carrier of the child only when both are sets, or both propositions, of one type. Rename it in one parent to keep them apart.</td><td><a href="theories.html#extends">extension</a></td></tr>
                 <tr id="E817"><td class="code"><code>E817</code></td><td data-message="models have no homomorphisms">“<var>T</var>'s models have no homomorphisms: …”</td><td>A homomorphism preserves each operation, pushing each argument that holds a carrier forward and pulling one with a carrier left of an arrow back. An argument with a carrier on both sides of an arrow, a carrier with no h-level, and a few other forms leave a theory without homomorphisms; the message names which.</td><td><a href="theories.html#morphisms">homomorphisms</a></td></tr>
-                <tr id="E476"><td class="code"><code>E476</code></td><td data-message="open takes a model of a theory">“open takes a model of a theory, such as m : Group(U0); this is a value of type <var>A</var>.”</td><td><code>open</code> puts a model's fields in scope; the value given is not a model of a theory.</td><td><a href="theories.html#open">open</a></td></tr>
+                <tr id="E834"><td class="code"><code>E834</code></td><td data-message="use selects a model of a theory">“use selects a model of a theory, such as m : Group(U0); this is a value of type <var>A</var>.”</td><td><code>use</code> puts a model's fields and notation in scope; the value given is not a model of a theory.</td><td><a href="theories.html#open">use</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -401,6 +401,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E180"><td><code>E180</code></td><td>A carrier is a field: write … : set U; or … : prop U;, with the universe named in the header, theory …(U &lt; UU0).</td></tr>
                 <tr id="E181"><td><code>E181</code></td><td>A theory's universes are below UU0: … &lt; UU0.</td></tr>
                 <tr id="E182"><td><code>E182</code></td><td>Expected ':' and the type of …, as in (x, y : M) or (A : set U).</td></tr>
+                <tr id="E183"><td><code>E183</code></td><td>open is now use: write use m; to select a model's fields and notation.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -631,7 +632,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E473"><td><code>E473</code></td><td>A face needs an interval coordinate and endpoint 0 or 1.</td></tr>
                 <tr id="E474"><td><code>E474</code></td><td>A Glue piece has syntax face(i, 0 or 1, T, e) or face_when(φ, T, e).</td></tr>
                 <tr id="E475"><td><code>E475</code></td><td>A glue value has syntax face(i, 0 or 1, t) or face_when(φ, t).</td></tr>
-                <tr><td><a href="#E476"><code>E476</code></a></td><td>open takes a model of a theory, such as m : Group(U0); this is a value of type ….</td></tr>
+                <tr id="E476"><td><code>E476</code></td><td>open takes a model of a theory, such as m : Group(U0); this is a value of type …. (retired)</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e5">Inductive types and matching</h3>
@@ -828,6 +829,10 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E830"><td><code>E830</code></td><td>… is ambiguous in …: …. Write …, or rename one in extends.</td></tr>
                 <tr id="E831"><td><code>E831</code></td><td>… is ambiguous in …: it is …. Write …, or give one another notation in extends.</td></tr>
                 <tr id="E832"><td><code>E832</code></td><td>… is ambiguous in …: it is …. Write ….</td></tr>
+                <tr id="E833"><td><code>E833</code></td><td>…, …'s parent …, binds no operation to ….</td></tr>
+                <tr><td><a href="#E834"><code>E834</code></a></td><td>use selects a model of a theory, such as m : Group(U0); this is a value of type ….</td></tr>
+                <tr id="E835"><td><code>E835</code></td><td>….(…) takes a model of a theory; … is not one.</td></tr>
+                <tr id="E836"><td><code>E836</code></td><td>… binds no operation to ….</td></tr>
                 <tr id="E859"><td><code>E859</code></td><td>…'s parent … is labelled …, which names a field of … too: label it apart, as in base : ….</td></tr>
               </tbody>
             </table></div>

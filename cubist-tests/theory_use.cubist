@@ -1,0 +1,101 @@
+// Selecting a model's notation (L2.4c): use m; for the rest of a block, or
+// of the file at its top level, a later use switching it; m.(e) for one
+// expression; and a qualified operator, a m.(*) b, with its usual
+// precedence, or m.(*) alone, the operation. A parent's operator is reached
+// through its label, and inside a theory label.(e) reads a parent's
+// notation.
+import nat;
+import hlevels;
+import algebra;
+
+def additive : Monoid(U0) := nat_additive.monoid;
+
+def multiplicative : Monoid(U0) := nat_multiplicative.monoid;
+
+// * binds tighter than +, whatever its model: 2 * 3, then that and 1.
+def mixed : additive.M := 2 multiplicative.(*) 3 additive.(*) 1;
+
+// Output: 7
+print(evaluate(mixed));
+
+def product : multiplicative.(2 * 3 * 4) = 24 {
+  rfl;
+}
+
+def sum_of := additive.(*);
+
+// Output: 9
+print(evaluate(sum_of(4, 5)));
+
+def cube(x : Nat) : Nat {
+  use multiplicative;
+  exact x * x * x * one;
+}
+
+// Output: 27
+print(evaluate(cube(3)));
+
+// A ring's additive monoid, through its parent's label.
+def doubled(R : CommRing(U0), x : R.R) : R.R := x R.additive.(*) x;
+
+use additive;
+
+def twice(x : Nat) : Nat := x * x;
+
+// Output: 6
+print(evaluate(twice(3)));
+
+// A directive reads the selection too.
+// Output: 6
+print(evaluate(3 * 3));
+
+use multiplicative;
+
+def squared(x : Nat) : Nat := x * x;
+
+// Output: 9
+print(evaluate(squared(3)));
+
+theory Magma(U < UU0) {
+  M : set U;
+  mul(x, y : M) : M notation x * y;
+}
+
+theory Action(U < UU0) {
+  M : set U;
+  act(x, y : M) : M notation x * y;
+}
+
+// Inside a theory, label.(e) and x label.(*) y read a parent's notation.
+theory Both(U < UU0) extends Magma, Action {
+  law mixed(x : M) : magma.(x * x) = action.(x * x);
+  law qualified(x, y : M) : x magma.(*) y = x action.(*) y;
+  // A selection inside another is read as it says: action's * here.
+  law nested(x, y : M) : magma.(action.(x * y)) = action.act(x, y);
+}
+
+// Output: forall U < UU0. forall m : Both(U). forall x : m.M. forall y : m.M. m.act(x, y) =
+//   m.act(x, y)
+print(typeof(Both.nested));
+
+def both_nat : Both(U0) := Both.make(M := Nat, M_is_set := nat_is_set, mul := fun (x, y : Nat) => x,
+  act := fun (x, y : Nat) => x, mixed := fun (x : Nat) => refl(x), qualified := fun (x, y : Nat) => refl(x),
+  nested := fun (x, y : Nat) => refl(x));
+
+def first(x, y : Nat) : Nat := x both_nat.magma.(*) y;
+
+// Error: E832: * is ambiguous in Both: it is magma's mul and action's act. Write both_nat.magma.(*)
+//   or both_nat.action.(*).
+def unqualified(x : Nat) : Nat := x both_nat.(*) x;
+
+// Error: E835: Nat.(*) takes a model of a theory; Nat is not one.
+def not_a_model := 3 Nat.(*) 4;
+
+// Error: E836: Magma binds no operation to +.
+def no_notation(G : Magma(U0), x : G.M) : G.M := x G.(+) x;
+
+// Error: E834: use selects a model of a theory, such as m : Group(U0); this is a value of type Nat.
+def use_a_number(n : Nat) : Nat {
+  use n;
+  exact n;
+}

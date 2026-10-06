@@ -86,17 +86,17 @@ def forget(G : CommGroup(U0)) : Monoid(U0) := G.comm_monoid.monoid;
 
 // open puts the fields and the notation in scope for the rest of the block.
 def square(G : Monoid(U0), x : G.M) : G.M {
-  open G;
+  use G;
   exact x * x;
 }
 
 def square_one(G : Monoid(U0)) : square(G, G.one) = G.one {
-  open G;
+  use G;
   exact one_mul(one);
 }
 
 def twice_plus_square(R : Semiring(U0), x : R.R) : R.R {
-  open R;
+  use R;
   exact x * x + x;
 }
 
@@ -107,14 +107,14 @@ def still_nat(n : Nat) : 0 + n * 1 = n * 1 {
 
 // Models in any universe below UU0.
 def large_square(U < UU0, G : Monoid(U), x : G.M) : G.M {
-  open G;
+  use G;
   exact x * x;
 }
 
 // Refusals. A projection of a model shows as m.f in messages.
 // Error: E606: Type mismatch: found G.mul(G.one, x) = x, expected G.mul(x, G.one) = x.
 def wrong_side(G : Monoid(U0), x : G.M) : G.mul(x, G.one) = x {
-  open G;
+  use G;
   exact one_mul(x);
 }
 
@@ -184,9 +184,9 @@ theory Unknown(U < UU0) extends Missing {
 theory BadRenaming(U < UU0) extends Monoid(unit := one) {
 }
 
-// Error: E476: open takes a model of a theory, such as m : Group(U0); this is a value of type Nat.
+// Error: E834: use selects a model of a theory, such as m : Group(U0); this is a value of type Nat.
 def open_a_number(n : Nat) : Nat {
-  open n;
+  use n;
   exact n;
 }
 

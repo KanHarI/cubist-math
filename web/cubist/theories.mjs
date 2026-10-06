@@ -340,17 +340,44 @@ function theoryFields(theory, lookup) {
       throw located(Error(`${n.name} is ambiguous in ${T}: ${ambiguous.get(n.name).map(e => `${e.label}'s`).join(" and ")}. Write ${ambiguous.get(n.name).map(e => `${e.label}.${e.parentField}`).join(" or ")}, or rename one in extends.`), n);
     return n;
   }, scope);
+  // Inside the theory, a parent's notation through its label (L2.4c):
+  // label.(e) reads e's operators and names as that parent does, and
+  // x label.(*) y and label.(*) its operator. A selection inside label.(e)
+  // is read as it says, not as the outer label's.
+  const labelled = (node, scope = new Set()) => rewritten(node, (n, bound) => {
+    const qualifier = n.kind === "binary" ? n.qualifier : ["select", "operatorOf"].includes(n.kind) ? n.model : null;
+    const p = qualifier?.kind === "name" && !bound.has(qualifier.name) ? viaLabel.get(qualifier.name) : null;
+    if (!p) return n;
+    const fieldFor = operator => {
+      const parentField = p.record.notations[operator];
+      if (!parentField) throw located(Error(`${p.record.name}, ${T}'s parent ${p.label}, binds no operation to ${operator}.`), n);
+      return finalName(p, { name: parentField });
+    };
+    if (n.kind === "operatorOf") return name(fieldFor(n.operator), n);
+    if (n.kind === "binary") return call(fieldFor(n.operator), [labelled(n.left, bound), labelled(n.right, bound)], n);
+    const own = new Map(p.record.fields.map(field => [field.name, finalName(p, field)]));
+    const inside = node => rewritten(node, (m, inner) => {
+      if (["select", "operatorOf"].includes(m.kind)) return labelled(m, inner);
+      if (m.kind === "binary" && m.qualifier) return labelled({ ...m, left: inside(m.left), right: inside(m.right) }, inner);
+      if (m.kind === "binary" && p.record.notations[m.operator])
+        return call(fieldFor(m.operator), [inside(m.left), inside(m.right)], m);
+      if (m.kind === "name" && own.has(m.name) && !inner.has(m.name)) return { ...m, name: own.get(m.name) };
+      return m;
+    }, bound);
+    return labelled(inside(n.body), bound);
+  }, scope);
   for (const source of theory.fields) {
     // A field's parameters are in scope in the later ones' types and in its
     // own: a parameter named as an ambiguous field is that parameter.
     const scope = new Set();
+    const within = (node, bound) => resolved(labelled(node, bound), bound);
     const item = { ...source, params: (source.params ?? []).map(p => {
-      const param = { ...p, type: resolved(p.type, new Set(scope)) };
+      const param = { ...p, type: within(p.type, new Set(scope)) };
       scope.add(p.name.text);
       if (p.level) scope.add(`${p.name.text}_is_${p.level}`);
       return param;
     }) };
-    if (source.type) item.type = resolved(source.type, scope);
+    if (source.type) item.type = within(source.type, scope);
     const origin = `${T}.${item.name.text}`;
     if (item.kind === "sort") {
       const own = universeAt(Math.max(0, headerUniverses.indexOf(item.universe?.text)));
@@ -391,7 +418,7 @@ function theoryFields(theory, lookup) {
       if (n.kind === "binary" && ambiguousNotations.has(n.operator)) {
         const list = ambiguousNotations.get(n.operator);
         throw located(Error(`${n.operator} is ambiguous in ${T}: it is ${list.map(e => `${e.label}'s ${e.parentField}`).join(" and ")}. Write ${
-          list.map(e => `${e.label}.${e.parentField}(…, …)`).join(" or ")}, or give one another notation in extends.`), n);
+          list.map(e => `x ${e.label}.(${n.operator}) y`).join(" or ")}, or give one another notation in extends.`), n);
       }
       return n.kind === "binary" && notations.has(n.operator) && !bound.has(notations.get(n.operator))
         ? call(notations.get(n.operator), [operatorsAsCalls(n.left), operatorsAsCalls(n.right)], n)

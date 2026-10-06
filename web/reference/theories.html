@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Theories of algebraic structures: carriers, operations with notation and laws, their models, extension and open." />
+    <meta name="description" content="Theories of algebraic structures: carriers, operations with notation and laws, their models, extension and use." />
     <title>Cubist · 10. Theories and models</title>
     <link rel="stylesheet" href="../language.css" />
     <link rel="stylesheet" href="../repl.css" />
@@ -24,7 +24,7 @@
       <div class="introduction">
         <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 10</p>
         <h1>Theories and models</h1>
-        <p class="lead">Theories of algebraic structures: carriers, operations with notation and laws, their models, extension and <code>open</code>.</p>
+        <p class="lead">Theories of algebraic structures: carriers, operations with notation and laws, their models, extension and <code>use</code>.</p>
       </div>
       <div class="reference-layout">
         <aside class="contents" aria-label="Chapters and sections">
@@ -51,7 +51,7 @@
             <li><a href="#models">Models</a></li>
             <li><a href="#header">The header: universes and parameters</a></li>
             <li><a href="#families">Families and relations</a></li>
-            <li><a href="#open">Opening a model: <code>open</code></a></li>
+            <li><a href="#open">Selecting a model: <code>use</code></a></li>
             <li><a href="#sections">Sections</a></li>
             <li><a href="#extends">Extension: <code>extends</code></a></li>
             <li><a href="#morphisms">Homomorphisms and isomorphisms</a></li>
@@ -192,8 +192,8 @@ def monotone(A, B : Preorder(U0), f : Preorder.Hom(A, B), x, y : A.M, p : A.le(x
           </section>
 
           <section id="open">
-            <h2>Opening a model: <code>open</code></h2>
-            <p><code>open m;</code> is a proof statement. For the rest of its block, each field of the model <code>m</code> is in scope by its name, and each notation of its theory means <code>m</code>'s operation:</p>
+            <h2>Selecting a model: <code>use</code></h2>
+            <p><code>use m;</code> is a proof statement. For the rest of its block, each field of the model <code>m</code> is in scope by its name, and each notation of its theory means <code>m</code>'s operation:</p>
             <pre><code data-check="accept">import hlevels;
 
 theory Monoid(U &lt; UU0) {
@@ -204,15 +204,35 @@ theory Monoid(U &lt; UU0) {
 }
 
 def square(G : Monoid(U0), x : G.M) : G.M {
-  open G;
+  use G;
   exact x * x;
 }
 
 def square_one(G : Monoid(U0)) : square(G, G.one) = G.one {
-  open G;
+  use G;
   exact one_mul(one);
 }</code></pre>
-            <p>A name that <code>open</code> binds shadows the one it had, as <code>let</code> does, until the block ends, and a later <code>open</code> shadows an earlier one. Elsewhere, and in a declaration's statement, which is outside its block, <code>+</code> and <code>*</code> mean <code>add</code> and <code>mul</code> in scope, as for <code>Nat</code>. An operator means one thing in a scope, chosen by <code>open</code>, never by the types of its operands.</p>
+            <p>A name that <code>use</code> binds shadows the one it had, as <code>let</code> does, until the block ends, and a later <code>use</code> shadows an earlier one: it switches the selection. At a file's top level, <code>use m;</code> selects <code>m</code> for every definition after it, statements included, until a later <code>use</code> switches it. <code>m.(e)</code> selects <code>m</code> for one expression, and an operator can be qualified by its model, with its usual precedence, <code>a m.(*) b</code>; alone, <code>m.(*)</code> is the operation itself. A parent's operator is reached through its label, <code>x R.additive.(*) y</code>:</p>
+            <pre><code data-check="accept">import nat;
+import hlevels;
+import algebra;
+
+def additive : Monoid(U0) := nat_additive.monoid;
+
+def multiplicative : Monoid(U0) := nat_multiplicative.monoid;
+
+def mixed : additive.M := 2 multiplicative.(*) 3 additive.(*) 1;
+
+def product : multiplicative.(2 * 3 * 4) = 24 {
+  rfl;
+}
+
+def doubled(R : CommRing(U0), x : R.R) : R.R := x R.additive.(*) x;
+
+use multiplicative;
+
+def squared(x : Nat) : Nat := x * x;</code></pre>
+            <p>Elsewhere, <code>+</code> and <code>*</code> mean <code>add</code> and <code>mul</code> in scope, as for <code>Nat</code>. An operator means one thing in a scope, chosen by <code>use</code> or a qualifier, never by the types of its operands. <code>open m;</code>, the earlier spelling of <code>use m;</code>, is refused with a message naming it.</p>
           </section>
 
           <section id="sections">
@@ -293,7 +313,7 @@ theory Semiring(U &lt; UU0) extends
 }
 
 def twice_plus(R : Semiring(U0), x : R.R) : R.R {
-  open R;
+  use R;
   exact x * x + x;
 }</code></pre>
             <p>Renaming a carrier to one name in two parents, as <code>M := R</code> twice above, makes it one carrier of the child; its evidence follows it, as <code>R_is_set</code>. An ancestor that arrives renamed is another copy: here each monoid has its own unit, <code>zero</code> and <code>one</code>, and its own law.</p>
@@ -489,11 +509,11 @@ theory Truth(U &lt; UU0) {
 
 theory Clash(U &lt; UU0) extends Left, Truth {  // Error: Clash gets the carrier M from Left and Truth with different kinds or indices: rename one, as in Truth(M := …).
 }</code></pre>
-            <p><code>open</code> takes a model, and <code>m.f</code> a field the theory has:</p>
+            <p><code>use</code> takes a model, and <code>m.f</code> a field the theory has:</p>
             <pre><code data-check="reject">import nat;
 
-def open_a_number(n : Nat) : Nat {
-  open n;  // Error: open takes a model of a theory, such as m : Group(U0); this is a value of type Nat.
+def use_a_number(n : Nat) : Nat {
+  use n;  // Error: use selects a model of a theory, such as m : Group(U0); this is a value of type Nat.
   exact n;
 }</code></pre>
           </section>

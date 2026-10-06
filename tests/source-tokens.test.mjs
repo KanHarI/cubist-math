@@ -39,7 +39,7 @@ theory Ring extends additive : Group(one := zero) {
 
 section (n : Nat) {
   def f(section : Nat) : Nat {
-    open G;
+    use G;
     exact zero;
   }
 }
@@ -57,7 +57,7 @@ def g(sort : Nat) := succ(zero);`;
   // Elsewhere, the words are names: a parameter named section or sort. open
   // is reserved, a keyword everywhere.
   assert.equal(style("section", 1), "");
-  assert.equal(style("open"), "keyword");
+  assert.equal(style("use"), "keyword");
   assert.equal(style("sort"), "");
   // Outside a theory, zero and succ are Nat's constructors, unless they link
   // to a definition, as a ring's zero after open does.
@@ -83,7 +83,7 @@ theory Ring(U < UU0) {
 theory T(U < UU0) { M : set U; law : M; sort : M; notation : M; }
 def f(A : Ring(U0)) : A.R {
   // Select model
-  open A;
+  use A;
   exact zero;
 }`;
   // The word's nth occurrence as a whole word, outside comments.
@@ -95,7 +95,7 @@ def f(A : Ring(U0)) : A.R {
   // A comment before a field or a statement, and a brace in one, change nothing.
   assert.equal(style("set"), "keyword");
   assert.equal(style("law"), "keyword");
-  assert.equal(style("open"), "keyword");
+  assert.equal(style("use"), "keyword");
   // A match's braces in a law are not the theory's: the fields after it are
   // still fields, zero among them.
   assert.equal(style("law", 2), "keyword");

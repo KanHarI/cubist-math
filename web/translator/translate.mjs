@@ -19,7 +19,7 @@ import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference,ma
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName} from "./hlevel.mjs";
 import {repeatedName,stem} from "./names.mjs";
-import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipTheory,sectionScope} from "./theories.mjs";
+import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipTheory,sectionScope,selected,qualifiedOperator} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -287,13 +287,17 @@ export class Translator {
     while(queue.length) {
       const d=queue.shift();
       if(d.kind==="theory") { queue.unshift(...theoryDeclarations(this,module,d,env,declarations)); continue; }
+      // A file-level use m; selects m for the definitions and directives
+      // after it, which record it (L2.4c).
+      if(d.kind==="use")continue;
       if(d.kind==="evaluate") {
         const line=source.slice(0,d.start).split("\n").length;
         // An evaluation asks the kernel as a declaration does, with fuel of its own.
         const unit=module.declaration(this.declarationFuel);
         try {
+          const scope=(d.uses??[]).reduce((inner,model)=>selected(this,inner,model),new Scope(unit,new Map(),env));
           directives.push({kind:"evaluate",name:`at line ${line}`,status:"checked",start:d.start,
-            normalText:this.evaluate(d,new Scope(unit,new Map(),env))});
+            normalText:this.evaluate(d,scope)});
         } catch(error) {
           directives.push({kind:"evaluate",name:`at line ${line}`,status:"not-translated",
             reason:error.message,start:d.start,failure:error.kind});
@@ -306,8 +310,10 @@ export class Translator {
         const line=source.slice(0,d.start).split("\n").length;
         const unit=module.declaration(this.declarationFuel);
         try {
+          // A file-level use selects for directives too, which print in it.
+          const scope=(d.uses??[]).reduce((inner,model)=>selected(this,inner,model),new Scope(unit,new Map(),env));
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"checked",start:d.start,
-            text:this.printed(d,new Scope(unit,new Map(),env))});
+            text:this.printed(d,scope)});
         } catch(error) {
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"not-translated",
             reason:error.message,start:d.start,failure:error.kind});
@@ -363,6 +369,8 @@ export class Translator {
         // applied (L2.4).
         if(d.section)expression=lambdas(d.section.params,{kind:"sectionScope",section:d.section,body:expression,
           start:d.start,end:d.start});
+        // The models a file-level use selected before it, outermost.
+        if(d.uses)expression={kind:"useScope",uses:d.uses,body:expression,start:d.start,end:d.start};
         // A body that is, as a whole, a match on a declared type may call the
         // declaration on a constructor's argument: its own name is a recursive
         // reference there. Only then is that argument's recursive result the
@@ -848,6 +856,8 @@ export class Translator {
       case "binary": {
         if(["&","|"].includes(n.operator))
           throw Error(`${n.operator} combines interval coordinates, as in p @ i ${n.operator} j; it is not an operation on terms.`);
+        // a m.(+) b: m's operation that + names, applied (L2.4c).
+        if(n.qualifier)return tr({kind:"call",fn:qualifiedOperator(this,scope,n.qualifier?{...n,model:n.qualifier}:n),args:[n.left,n.right],start:n.start,end:n.end},expected);
         const left=tr(n.left,null);
         // p ++ q is trans(p, q), whatever the name trans is bound to here.
         if(n.operator==="++")return this.concatenatePaths(scope,left,tr(n.right,null),"++");
@@ -871,6 +881,10 @@ export class Translator {
       // e.f, a field of a model that is not a name (L2.4).
       case "member": return tr(memberField(this,scope,n),expected);
       case "sectionScope": return this.term(n.body,sectionScope(this,scope,n),expected);
+      // use m; at a file's top level, and m.(e) for one expression (L2.4c).
+      case "useScope": return this.term(n.body,n.uses.reduce((inner,model)=>selected(this,inner,model),scope),expected);
+      case "select": return this.term(n.body,selected(this,scope,n.model),expected);
+      case "operatorOf": return tr(qualifiedOperator(this,scope,n),expected);
       case "projection": {
         // p.1 and p.2 are the kernel's projections; the family comes from the
         // checked type of p, so nothing is passed explicitly (HoTT A8).

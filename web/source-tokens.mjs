@@ -133,6 +133,8 @@ const startsLine = (source, start) => /^\n?\s*$/.test(source.slice(Math.max(0, s
 // h-level; theory and section starting an item; and a theory's words, above.
 export function keywordAt(source, start, text) {
   if (headerWordAt(source, start, text)) return true;
+  // use selects a model, use m; (L2.4c), and is a name elsewhere.
+  if (text === "use") return /^\s+[A-Za-z_][A-Za-z_0-9.]*\s*;/.test(source.slice(start + 3)) || undefined;
   const role = theoryRoles(source).get(start);
   if (role !== undefined) return role;
   return ["theory", "section"].includes(text) && startsLine(source, start) || undefined;

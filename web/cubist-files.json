@@ -2199,6 +2199,10 @@
    "summary": "Sections (L2.4): a model opened for each statement and proof, earlier definitions applied to the section's parameters, what they are outside, a section whose parameter is no model, and the refusals: a parameter of the section's name, and an implicit parameter of a definition's own."
   },
   {
+   "path": "cubist-tests/theory_use.cubist",
+   "summary": "Selecting a model's notation (L2.4c): `use` in a block and at a file's top level, switched by a later one; `m.(e)`; qualified operators with their precedence and alone; a parent's operator through its label, inside a theory and on a model; and the refusals of an ambiguous operator, a qualifier that is no model, an operator its theory does not bind, and a `use` of no model."
+  },
+  {
    "path": "cubist-tests/theory_variance.cubist",
    "summary": "Homomorphisms by variance (L2.4c): inputs with no carrier kept, a parameter's elements kept, covariant inputs and results pushed forward, a contravariant input pulled back, identity and composition computing, and the refusals of an input mixed in a carrier and of a contravariant result."
   },
