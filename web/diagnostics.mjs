@@ -526,6 +526,8 @@ export const diagnostics = [
   ["E844", "A literal rule reads a Lexeme: import lexemes, which defines …."],
   ["E845", "… is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory."],
   ["E846", "notation numeral reads a plain numeral: it marks a derived operation of one natural number, as def of_nat(n : Nat) : R := … notation numeral."],
+
+  ["E859", "…'s parent … is labelled …, which names a field of … too: label it apart, as in base : …."],
   // Notation and operators
   ["E901", "-x negates in a selected notation that binds it, as integers.(-x); a path's reversal is ~p."],
   ["E902", "-x is not in …'s notation, which is selected here: select a notation that binds it, as integers.(-x)."],

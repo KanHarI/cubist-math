@@ -322,8 +322,8 @@ export class Translator {
     while(queue.length) {
       const d=queue.shift();
       if(d.kind==="theory") { queue.unshift(...theoryDeclarations(this,module,d,env,declarations)); continue; }
-      // A file-level use m; selects m for the definitions after it, which
-      // record it (L2.4c).
+      // A file-level use m; selects m for the definitions and directives
+      // after it, which record it (L2.4c).
       if(d.kind==="use")continue;
       // A named notation's rules, read where it is declared (L2.10a).
       if(d.kind==="notation") {
@@ -336,8 +336,9 @@ export class Translator {
         // An evaluation asks the kernel as a declaration does, with fuel of its own.
         const unit=module.declaration(this.declarationFuel);
         try {
+          const scope=(d.uses??[]).reduce((inner,model)=>selected(this,inner,model),new Scope(unit,new Map(),env));
           directives.push({kind:"evaluate",name:`at line ${line}`,status:"checked",start:d.start,
-            normalText:this.evaluate(d,new Scope(unit,new Map(),env))});
+            normalText:this.evaluate(d,scope)});
         } catch(error) {
           directives.push({kind:"evaluate",name:`at line ${line}`,status:"not-translated",
             reason:error.message,start:d.start,failure:error.kind});
@@ -350,8 +351,10 @@ export class Translator {
         const line=source.slice(0,d.start).split("\n").length;
         const unit=module.declaration(this.declarationFuel);
         try {
+          // A file-level use selects for directives too, which print in it.
+          const scope=(d.uses??[]).reduce((inner,model)=>selected(this,inner,model),new Scope(unit,new Map(),env));
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"checked",start:d.start,
-            text:this.printed(d,new Scope(unit,new Map(),env))});
+            text:this.printed(d,scope)});
         } catch(error) {
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"not-translated",
             reason:error.message,start:d.start,failure:error.kind});
@@ -908,11 +911,14 @@ export class Translator {
           }
           return tr({kind:"call",fn:operation,args:[n.left,n.right],start:n.start,end:n.end},expected);
         }
-        const left=tr(n.left,null);
+        // The left operand alone, for the operators that read it so; an
+        // arithmetic operator reads its operands where its notation says,
+        // in a recipe's notation first (L2.10b).
+        const alone=()=>tr(n.left,null);
         // p ++ q is trans(p, q), whatever the name trans is bound to here.
-        if(n.operator==="++")return this.concatenatePaths(scope,left,tr(n.right,null),"++");
-        if(["->","and"].includes(n.operator)) return (n.operator==="->"?T.pi:T.sigma)(scope.fresh(),left,tr(n.right,null));
-        if(n.operator==="or")return T.sum(left,tr(n.right,null));
+        if(n.operator==="++") { const left=alone(); return this.concatenatePaths(scope,left,tr(n.right,null),"++"); }
+        if(["->","and"].includes(n.operator)) { const left=alone(); return (n.operator==="->"?T.pi:T.sigma)(scope.fresh(),left,tr(n.right,null)); }
+        if(n.operator==="or") { const left=alone(); return T.sum(left,tr(n.right,null)); }
         // x > y is y < x, and x >= y is y <= x (L2.10b).
         if([">",">="].includes(n.operator))
           return tr({...n,operator:n.operator===">"?"<":"<=",left:n.right,right:n.left},expected);
@@ -938,11 +944,15 @@ export class Translator {
           if(selection&&env.has(operatorBinding(n.operator)))
             return tr({kind:"call",fn:{kind:"name",name:operatorBinding(n.operator),start:n.operatorStart,end:n.operatorEnd},
               args:[left,right],start:n.start,end:n.end},expected);
+          // By name, as before views (until L2.10j): the left operand is
+          // read first, so a numeral without nat says Nat is missing.
+          alone();
           const name=n.operator==="+"?"add":n.operator==="*"?"mul":n.operator==="<"&&env.has("isLt")?"isLt":"le";
           const first=n.operator==="<"&&name==="le"?{kind:"call",fn:{kind:"name",name:"succ"},args:[n.left]}:n.left;
           return tr({kind:"call",fn:{kind:"name",name},args:[first,n.right]},null);
         }
         if(n.operator==="=") {
+          const left=alone();
           const type=n.carrier?tr(n.carrier,null):inferred(left).type;
           return T.path(scope.fresh("i"),type,left,tr(n.right,type));
         }
