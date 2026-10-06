@@ -83,9 +83,9 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
   const domains = [];
   const expressionBlockEnds = new Set();
   const assignmentTokens = new Set(), annotationStarts = new Set(), proofBodyStarts = new Set();
-  // A projection's dot is tight on both sides: p.1, never p. 1. A prefix minus
-  // is tight before its operand: -p, never - p.
-  const projectionDots = new Set(), prefixMinus = new Set();
+  // A projection's dot is tight on both sides: p.1, never p. 1. A prefix ~
+  // is tight before its operand: ~p, never ~ p.
+  const projectionDots = new Set(), prefixOperators = new Set();
   // A declaration's implicit parameters, `{{A : U}}`, are a list like its
   // parameters, not a block, and so are a call's implicit arguments.
   const implicitOpens = new Set(), implicitCloses = new Set();
@@ -101,7 +101,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
     // A qualified name's dot is tight too: T.squash.
     if (node.qualifiedDot) projectionDots.add(node.qualifiedDot.start);
     for (const dot of node.qualifiedDots ?? []) projectionDots.add(dot.start);
-    if (node.kind === "unary") prefixMinus.add(node.operatorStart);
+    if (node.kind === "unary") prefixOperators.add(node.operatorStart);
     // A call's implicit arguments, f{{U0, Nat}}(x), are tight on both sides.
     for (const group of [node.implicitParameters, node.implicitGroup]) if (group) {
       for (const at of group.opens) implicitOpens.add(at);
@@ -183,7 +183,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
         flush(); docs.push(hard, hard); previous = null;
       }
       const space = previous && sectionStarts.has(previous.start) || previous && !punctuation.has(text) && !["(", "["].includes(previous.text)
-        && !prefixMinus.has(previous.start)
+        && !prefixOperators.has(previous.start)
         && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or"].includes(previous.text) || [")", "]"].includes(previous.text) || previous.text === "}" && (expressionBlockEnds.has(previous.end) || implicitCloses.has(previous.end))))
         && !(text === "{" && implicitOpens.has(token.start))
         && !(text === "[" && previous.text === "=");

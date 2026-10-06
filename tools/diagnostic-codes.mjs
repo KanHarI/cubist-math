@@ -17,7 +17,7 @@
 // function that returns a message template, and a kernel failure, ck_fail(k,
 // "…"). A template's `${…}` becomes `…`, which matches any text. A literal
 // counts only when it reads as a sentence: it starts with a letter, … or a
-// minus sign (as -p does), and has a space and at least ten other
+// tilde (as ~p does), and has a space and at least ten other
 // characters, so names and keys are not messages.
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -68,7 +68,7 @@ function literal(source, at) {
   }
   return { text, end: i + 1 };
 }
-const sentence = text => /^[-A-Za-z…]/.test(text) && /\s/.test(text.trim()) && text.replace(/…/g, "").trim().length >= 10;
+const sentence = text => /^[~A-Za-z…]/.test(text) && /\s/.test(text.trim()) && text.replace(/…/g, "").trim().length >= 10;
 
 // Where a JavaScript source reports a message: a call's arguments, or an
 // assigned or returned value up to the end of its statement.
