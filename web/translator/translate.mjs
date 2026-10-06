@@ -750,6 +750,7 @@ export class Translator {
             throw error;
           }
           if(value.tag==="Dimension")throw Error("Interval coordinates can only be used in interval arguments.");
+          if(value.tag==="Ambiguous")throw Error(value.message);
           // A declared type or constructor (L2.1), or the declaration's own name.
           if(INDUCTIVE_TAGS.has(value.tag))return resolveInductive(this,n,value,null,scope,expected);
           if(value.tag==="Recursive")return resolveRecursive(this,n,value,null,scope);

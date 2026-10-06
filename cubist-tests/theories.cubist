@@ -164,9 +164,15 @@ theory Right(U < UU0) {
   point : M;
 }
 
-// Error: E802: Clash gets a field named M from both Left and Right: rename one, as in Right(M :=
-//   …).
+// Two unrelated parents' points are two fields, each its parent's; their
+// carriers are one (theory_independent).
 theory Clash(U < UU0) extends Left, Right {
+}
+
+// One ancestor's field, reached twice with two types, is refused.
+// Error: E802: Twice2 gets a field named point from both Left and Left: rename one, as in
+//   Left(point := …).
+theory Twice2(U < UU0) extends Left, left2 : Left(M := N) {
 }
 
 // Error: E805: Missing is not a theory here: Unknown extends theories in scope.
