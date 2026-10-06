@@ -116,11 +116,15 @@ print(typeof(Sided.picked));
 // the hypothesis, which stays so when both are renamed apart from z.
 theory Shadow(U < UU0) {
   M : set U;
-  def keep(a : M, n : Nat) : M := induction n as z return M { zero => a; succ z => (fun (t : M) => z)(a); };
+  def keep(a : M, n : Nat) : M := induction n as z return M {
+    zero => a;
+    succ z => (fun (t : M) => z)(a);
+  };
   law kept(z : M) : keep(z, succ(zero)) = z;
 }
 
-def nat_shadow : Shadow(U0) := Shadow.make(M := Nat, M_is_set := nat_is_set, kept := fun (z : Nat) => refl(z));
+def nat_shadow :
+  Shadow(U0) := Shadow.make(M := Nat, M_is_set := nat_is_set, kept := fun (z : Nat) => refl(z));
 
 // A pattern's argument may name a constructor, so it is not renamed apart:
 // one an argument names is refused.
