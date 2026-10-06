@@ -1291,6 +1291,10 @@ export class InstructionDriver {
   // universe's level, an instantiation's level and an instance's recorded
   // levels, which sameHead compares.
   parts(n) { return n.kind === "U" ? 0 : n.kind === "PApp" || n.kind === "LApp" || n.kind === "Sort" ? 1 : 4; }
+  leaf(n) {
+    for (let i = this.parts(n) - 1; i >= 0; i--) if (n.children[i]) return false;
+    return true;
+  }
   // Two levels are equal when their normal forms are (G0 §2.4), each variable
   // bound on the way down named by its binder, so that the levels of
   // λ (x < ω). U(max(x, z)) and λ (y < ω). U(max(z, y)) agree though their
@@ -1417,15 +1421,22 @@ export class InstructionDriver {
   // such as refl(refl(… refl(0))) takes time exponential in its depth. The
   // renaming of dimensions is cut to those the two terms mention, so that
   // a subterm met under many binders is still compared once.
+  //
+  // A missing part, and a leaf, a node with no parts compared, are told
+  // apart at once: its head says all, and costs less to compare than its
+  // memo key to build. The renaming need not be cut for them: the pairs a
+  // cut drops are those no lookup reaches.
   alpha(x, y, terms = null, dims = null) {
+    if (!x || !y) return x === y;
+    const nx = this.node(x), ny = this.node(y);
+    if (nx.kind !== ny.kind) return false;
+    if (this.leaf(nx) && this.leaf(ny)) return this.sameHead(nx, ny, terms, dims);
     if (dims) dims = this.prune(dims, freeDimensionMask(this.kernel, x, this.freeDims),
       freeDimensionMask(this.kernel, y, this.freeDims));
     if (x === y && this.unrenamed(terms) && this.unrenamed(dims)) return true;
-    if (!x || !y) return x === y;
     const key = `${x},${y},${this.chainId(terms)},${this.chainId(dims)}`, known = this.alphaMemo.get(key);
     if (known !== undefined) return known;
-    const nx = this.node(x), ny = this.node(y);
-    let equal = nx.kind === ny.kind && this.sameHead(nx, ny, terms, dims);
+    let equal = this.sameHead(nx, ny, terms, dims);
     for (let i = 0; equal && i < this.parts(nx); i++) {
       let innerTerms = terms, innerDims = dims;
       if (TERM_BINDERS.has(nx.kind) && i === 1) innerTerms = { left: nx.payload, right: ny.payload, next: terms };
