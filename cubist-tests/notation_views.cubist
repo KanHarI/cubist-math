@@ -38,7 +38,10 @@ def keeps(z, w : Nat) : first.(z + w) = z {
 // Nor is an operand's name one the rule binds itself, as an induction's
 // hypothesis: x in the step is the hypothesis, not the left operand.
 notation stepped {
-  x + y := induction y return Nat { zero => zero; succ x => x; };
+  x + y := induction y return Nat {
+    zero => zero;
+    succ x => x;
+  };
 }
 
 def steps : stepped.(nat.(7) + nat.(1)) = zero {
@@ -50,7 +53,10 @@ def steps : stepped.(nat.(7) + nat.(1)) = zero {
 def z : Nat := succ(zero);
 
 notation rebound {
-  x + y := induction y return Nat { zero => zero; succ z => z; };
+  x + y := induction y return Nat {
+    zero => zero;
+    succ z => z;
+  };
 }
 
 def rebinds : rebound.(nat.(7) + nat.(1)) = zero {

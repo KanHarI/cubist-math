@@ -85,12 +85,16 @@ print(typeof(Kept.same));
 theory Chosen(U < UU0) {
   M : set U;
   c : M;
-  def choose(x : M, n : Nat) : M := induction n return M { zero => c; succ z => x; };
+  def choose(x : M, n : Nat) : M := induction n return M {
+    zero => c;
+    succ z => x;
+  };
   law chosen(z : M) : choose(z, succ(zero)) = z;
 }
 
-def nat_chosen : Chosen(U0) := Chosen.make(M := Nat, M_is_set := nat_is_set, c := zero,
-  chosen := fun (z : Nat) => refl(z));
+def nat_chosen : Chosen(U0) := Chosen.make(
+  M := Nat, M_is_set := nat_is_set, c := zero, chosen := fun (z : Nat) => refl(z)
+);
 
 // A pattern's argument may name a constructor, so it is not renamed apart:
 // one an argument names is refused.
@@ -98,7 +102,10 @@ def nat_chosen : Chosen(U0) := Chosen.make(M := Nat, M_is_set := nat_is_set, c :
 theory Picked(U < UU0) {
   M : set U;
   c : M;
-  def pick(x : M, n : Nat) : M := match n return M { zero => c; succ(k) => x; };
+  def pick(x : M, n : Nat) : M := match n return M {
+    zero => c;
+    succ(k) => x;
+  };
   law picked(k : M) : pick(k, zero) = c;
 }
 
