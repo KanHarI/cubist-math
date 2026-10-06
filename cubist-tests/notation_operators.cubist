@@ -96,6 +96,19 @@ def nat_chosen : Chosen(U0) := Chosen.make(
   M := Nat, M_is_set := nat_is_set, c := zero, chosen := fun (z : Nat) => refl(z)
 );
 
+// Each side of a match is renamed apart in its own branch: left x's
+// renaming leaves the right branch's x, the argument y here.
+theory Sided(U < UU0) {
+  M : set U;
+  def pick(a, x : M, s : M or M) : M := match s return M { left x => a; right y => x; };
+  law picked(x, y : M, s : M or M) : pick(x, y, s) =[M] pick(x, y, s);
+}
+
+// Output: forall U < UU0. forall m : Sided(U). forall x : m.M. forall y : m.M. forall s : m.M or
+//   m.M. (match s return m.M { left x1_ => x; right y1_ => y; }) = (match s return m.M { left x1_
+//   => x; right y1_ => y; })
+print(typeof(Sided.picked));
+
 // A pattern's argument may name a constructor, so it is not renamed apart:
 // one an argument names is refused.
 // Error: E860: pick's pattern binds k, which an argument here names: rename it in pick.

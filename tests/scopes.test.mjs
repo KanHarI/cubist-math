@@ -55,8 +55,10 @@ test("each binding form binds its names where it says", () => {
     ["forall x : A. P(x)", ["A", "P"]],
     ["exists x : A. P(x, w)", ["A", "P", "w"]],
     ["path i => p @ i", ["p"]],
-    // An induction's index in its motive, its hypothesis in its step.
-    ["induction n as k return P(k) { zero => b; succ h => s(h, k); }", ["P", "b", "k", "n", "s"]],
+    // An induction's index in its motive and, as the predecessor, in its
+    // step, not in its base; its hypothesis in its step.
+    ["induction n as k return P(k) { zero => b(k); succ h => s(h, k); }", ["P", "b", "k", "n", "s"]],
+    ["induction n as k return P(k) { zero => b; succ h => s(h, k); }", ["P", "b", "n", "s"]],
     ["induction n return P { zero => b; succ x => x; }", ["P", "b", "n"]],
     // A sum's sides, and clauses with patterns and coordinates.
     ["match v as k return T(k) { left x => f(x); right y => g(y, k); }", ["T", "f", "g", "k", "v"]],
@@ -84,6 +86,17 @@ test("substitution renames a binder that would capture an argument's name, in ev
     assert.ok(freeNames(result).has("x"), source);
     assert.deepEqual([...freeNames(result)].filter(name => name === "y"), [], source);
   }
+  // Two sides of a match that capture at once are renamed apart each in its
+  // own branch: left x's renaming leaves the right branch's free x, which
+  // the argument y replaces.
+  const sides = substituted(expression("match s return M { left x => a; right y => x; }"),
+    new Map([["a", { kind: "name", name: "x" }], ["x", { kind: "name", name: "y" }]]), refuse);
+  assert.deepEqual([...freeNames(sides)].sort(), ["M", "s", "x", "y"]);
+  assert.deepEqual([sides.leftBody.name, sides.rightBody.name], ["x", "y"]);
+  // An induction's index is renamed apart in its step, as the predecessor.
+  const index = substituted(expression("induction n as x return P { zero => b; succ h => f(x, y); }"), argument, refuse);
+  assert.ok(freeNames(index).has("x"));
+  assert.notEqual(index.step.args[0].name, "x");
   // A pattern's argument may be a constructor: it is refused, never renamed.
   assert.throws(() => substituted(expression("match n { zero => y; succ(x) => f(x, y); }"), argument, refuse), /refused x/);
 });
