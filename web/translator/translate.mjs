@@ -340,8 +340,8 @@ export class Translator {
       // Its messages print in what a file-level use selects for it (L2.10j).
       if(this.checker)this.checker.notation={selection:selectionName(d.uses)};
       if(d.kind==="theory") { queue.unshift(...theoryDeclarations(this,module,d,env,declarations)); continue; }
-      // A file-level use m; selects m for the definitions after it, which
-      // record it (L2.4c). It is checked where it stands, so one that selects
+      // A file-level use m; selects m for the definitions and directives
+      // after it, which record it (L2.4c). It is checked where it stands, so one that selects
       // nothing is refused even with nothing after it, as at a REPL (L2.10j).
       if(d.kind==="use") {
         const unit=module.declaration(this.declarationFuel);
@@ -847,7 +847,9 @@ export class Translator {
         if(env.has(n.name)) {
           const value=env.get(n.name);
           if(value.tag==="Untranslated") {
-            const error=Error(`Untranslated dependency: ${n.name}`);
+            // A notation rule's name is read under its key: the message
+            // names it as the rule does.
+            const error=Error(`Untranslated dependency: ${n.name.startsWith("\u0000notation ")?n.name.split(" ").slice(2).join(" "):n.name}`);
             error.blockedBy=value.binding??value.name;
             throw error;
           }
