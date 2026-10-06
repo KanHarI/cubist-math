@@ -97,6 +97,14 @@ test("substitution renames a binder that would capture an argument's name, in ev
   const index = substituted(expression("induction n as x return P { zero => b; succ h => f(x, y); }"), argument, refuse);
   assert.ok(freeNames(index).has("x"));
   assert.notEqual(index.step.args[0].name, "x");
+  // An index and a hypothesis of one name: the step's z is the hypothesis,
+  // which shadows the index there, and stays the hypothesis renamed apart.
+  const shadowed = substituted(expression("induction n as z return M { zero => a; succ z => (fun (t : M) => z)(a); }"),
+    new Map([["a", { kind: "name", name: "z" }]]), refuse);
+  assert.equal(shadowed.step.fn.body.name, shadowed.hypothesis.text);
+  assert.notEqual(shadowed.hypothesis.text, "z");
+  assert.notEqual(shadowed.index.text, shadowed.hypothesis.text);
+  assert.deepEqual([shadowed.base.name, shadowed.step.args[0].name], ["z", "z"]);
   // A pattern's argument may be a constructor: it is refused, never renamed.
   assert.throws(() => substituted(expression("match n { zero => y; succ(x) => f(x, y); }"), argument, refuse), /refused x/);
 });
