@@ -175,7 +175,6 @@ export class InstructionDriver {
     // comparisons are open, one inside another.
     this.policy = policy;
     this.depth = 0;
-    this.nodes = new Map();
     // Terms whose normal form was not reached within NORMAL_FORM_STEPS.
     this.unnormalizable = new Set();
     // Judgements never change, so reads are cached; so are the scopes of
@@ -231,10 +230,8 @@ export class InstructionDriver {
     return this.contextScopes.get(key);
   }
 
-  node(handle) {
-    if (!this.nodes.has(handle)) this.nodes.set(handle, this.kernel.node(handle));
-    return this.nodes.get(handle);
-  }
+  // The kernel keeps its reads for the declaration (CubicalKernel.node).
+  node(handle) { return this.kernel.node(handle); }
   statement(id) {
     if (!this.statements.has(id)) this.statements.set(id, this.graph.judgement(id));
     return this.statements.get(id);

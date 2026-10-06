@@ -583,7 +583,7 @@ export class NativeCubicalElaborator {
     this.kernel.checkDeadline();
     const node = this.syntax.encode(term, dimensions);
     let head = this.syntax.heads.get(node);
-    if (head === undefined) { head = this.kernel.head(node); this.syntax.heads.set(node, head); }
+    if (head === undefined) { head = this.kernel.head(node); this.syntax.heads.set(node, head, Math.max(node, head)); }
     return this.syntax.decode(head, dimensions);
   }
   equal(left, right, context = new Map(), dimensions = this.dimensions, names = this.names) {

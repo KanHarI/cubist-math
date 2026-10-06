@@ -56,10 +56,19 @@ export class CubicalKernel {
     if (!this.handle) throw new Error("Could not allocate cubical kernel session.");
     this.names = new Map();
     this.symbolNames = new Map();
+    // A node read's name: its payload's symbol's, which symbolName may give
+    // a kernel-made symbol after the node is read.
+    const symbolNames = this.symbolNames;
+    this.nodeName = Object.create(Object.prototype, { name: { get() { return symbolNames.get(this.payload); } } });
     // What node(id) read of each node: nodes do not change, but a
     // declaration's commit or rollback moves them, so the transaction that
     // ends one forgets these (forgetNodes).
-    this.nodes = new Map();
+    this.nodes = new Map(); this.settledNodes = new Map();
+    // Handles below this bound keep their places through a declaration's
+    // commit or rollback, which compacts or drops only the nodes made after
+    // its checkpoint (kernel/src/checkpoint.c): what is read of them is
+    // kept from one declaration to the next (forgetNodes).
+    this.settled = 0;
     this.nextSymbol = 1;
     this.stepBudget = 10000000n;
     // The most steps one query may grow to (withGrowingBudget).
@@ -250,19 +259,25 @@ export class CubicalKernel {
   }
   node(id) {
     this.assertOpen();
-    let read = this.nodes.get(id);
+    let read = id < this.settled ? this.settledNodes.get(id) : this.nodes.get(id);
     if (!read) {
       uint32(id, "Node handle");
       const values = Array.from({ length: 6 }, (_, field) => this.module._cb_node(this.handle, id, field) >>> 0);
       if (!values[0]) throw new Error("Unknown cubical node handle.");
-      read = { kind: cubicalKinds[values[0]], payload: values[1], children: Object.freeze(values.slice(2)) };
-      this.nodes.set(id, read);
+      // The read itself is returned, frozen: a node is read many times a
+      // declaration, and a copy each time was a twentieth of a check's time.
+      // Its name is its payload symbol's as named when asked (nodeName).
+      read = Object.freeze(Object.assign(Object.create(this.nodeName), { id, kind: cubicalKinds[values[0]], payload: values[1],
+        children: Object.freeze(values.slice(2)) }));
+      (id < this.settled ? this.settledNodes : this.nodes).set(id, read);
     }
-    return { id, kind: read.kind, payload: read.payload, children: read.children, name: this.symbolNames.get(read.payload) };
+    return read;
   }
   // Node handles move when a declaration's checkpoint is committed or
   // rolled back.
-  forgetNodes() { this.nodes.clear(); }
+  // At a declaration's end, after its commit or rollback: the nodes there
+  // are now settled until the next checkpoint's commit or rollback.
+  forgetNodes() { this.nodes.clear(); this.settled = this.arena().nodes + 1; }
   inspectFormula(id) {
     this.assertOpen();
     uint32(id, "Formula handle");
