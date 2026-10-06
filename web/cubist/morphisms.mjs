@@ -157,10 +157,17 @@ export function morphismSource(record, isTheory = () => false) {
   // a homomorphism keeps them fixed (L2.4c). Otherwise each model has its
   // own universes, as many as the theory's header binds.
   const params = record.params ?? [], count = Math.max(1, record.universes?.length ?? 0);
-  const taken = new Set([...params.map(p => p.name), ...record.fields.flatMap(field => binders(field.type).list.map(b => b.name))]);
+  // Every binder the source introduces is fresh: none captures a parameter
+  // or a name that a field's type mentions free, which the source writes as
+  // it is (apart from the carriers, which it writes as A.M); and none is a
+  // universe constant, so a taken U is followed by U_1, not U1.
+  const carrierNames = new Set(record.fields.filter(field => field.kind === "sort").map(field => field.name));
+  const taken = new Set([...params.map(p => p.name), ...record.fields.flatMap(field => binders(field.type).list.map(b => b.name)),
+    ...record.fields.flatMap(field => [...freeNames(field.type)]).filter(name => !carrierNames.has(name))]);
+  const numbered = (stem, k) => /^U+$/.test(stem) || /[0-9]$/.test(stem) ? `${stem}_${k}` : `${stem}${k}`;
   const own = stem => {
     let name = stem;
-    for (let k = 1; name === T || isTheory(name) || taken.has(name); k++) name = `${stem}${k}`;
+    for (let k = 1; name === T || isTheory(name) || taken.has(name); k++) name = numbered(stem, k);
     taken.add(name);
     return name;
   };
@@ -284,9 +291,13 @@ export function morphismSource(record, isTheory = () => false) {
     if (field.sort) return families.has(field.sort) ? familyMap(field.sort, step) : `${A}.${field.sort} -> ${B}.${field.sort}`;
     return preservation(field.operation, step);
   };
+  // A field's binder in its record's Σ and in its constructor: its name,
+  // unless a parameter or a name the fields' types bind has that name.
+  const fieldBinders = new Map();
+  const bound = field => fieldBinders.get(field.name) ?? fieldBinders.set(field.name, own(field.name)).get(field.name);
   // A Σ of fields, the last one bare; a tuple of values.
   const sigma = (fields, typeOf) => fields.map((field, k) => k === fields.length - 1 ? typeOf(field)
-    : `exists ${field.name} : (${typeOf(field)}). `).join("");
+    : `exists ${bound(field)} : (${typeOf(field)}). `).join("");
   const tuple = values => values.length === 1 ? values[0] : `(${values.join(", ")})`;
   const headerBinders = (...lists) => {
     const universes = [...new Set(lists.flat())];
@@ -321,11 +332,11 @@ export function morphismSource(record, isTheory = () => false) {
   const mapped = (fn, sort, at, x) => families.has(sort) ? `${fn}(${[...families.get(sort).map((index, k) => indexAt(sort, k, index.name, at)), x].join(", ")})` : `${fn}(${x})`;
 
   // T.Hom(A, B), its constructor and its fields.
-  const ownType = field => fieldType(field, sort => map(sort));
+  const ownType = field => fieldType(field, sort => bound({ name: map(sort) }));
   declare(hom, `${models([])} : ${homUniverse} := ${sigma(homFields, ownType)};`, "hom",
     { record: record_(hom, homFields, record.parents.map(parent => parent.label)) });
-  declare(`${hom}.make`, `${models(homFields.map(field => `${field.name} : ${ownType(field)}`))} : ${hom}(${A}, ${B}) := ${
-    tuple(homFields.map(field => field.name))};`, "make");
+  declare(`${hom}.make`, `${models(homFields.map(field => `${bound(field)} : ${ownType(field)}`))} : ${hom}(${A}, ${B}) := ${
+    tuple(homFields.map(bound))};`, "make");
   projections(hom, homFields, field => fieldType(field, sort => mapping(f, sort)));
   // The identity: each map the identity, preserving by reflexivity.
   declare(`${hom}.id`, `${oneModel} : ${hom}(${A}, ${A}) := ${hom}.make(${A}, ${A}, ${homFields.map(field => {
@@ -389,10 +400,11 @@ export function morphismSource(record, isTheory = () => false) {
     return quantified(memberBinders(field.sort, start, x),
       `${mapped(mapping(second, field.sort), field.sort, start, mapped(mapping(first, field.sort), field.sort, start, x))} = ${x}`);
   };
-  declare(iso, `${models([])} : ${homUniverse} := ${sigma(isoFields, field => isoType(field, "to", "from"))};`, "iso",
+  const [to, from] = isoFields.map(bound);
+  declare(iso, `${models([])} : ${homUniverse} := ${sigma(isoFields, field => isoType(field, to, from))};`, "iso",
     { record: record_(iso, isoFields) });
-  declare(`${iso}.make`, `${models(isoFields.map(field => `${field.name} : ${isoType(field, "to", "from")}`))} : ${iso}(${A}, ${B}) := ${
-    tuple(isoFields.map(field => field.name))};`, "make");
+  declare(`${iso}.make`, `${models(isoFields.map(field => `${bound(field)} : ${isoType(field, to, from)}`))} : ${iso}(${A}, ${B}) := ${
+    tuple(isoFields.map(bound))};`, "make");
   projections(iso, isoFields, field => isoType(field, `${iso}.to(${f})`, `${iso}.from(${f})`));
   declare(`${iso}.id`, `${oneModel} : ${iso}(${A}, ${A}) := ${iso}.make(${A}, ${A}, ${hom}.id(${A}), ${hom}.id(${A})${
     isoFields.slice(2).map(field => `, fun (${memberBinders(field.sort, side(A), X).join(", ")}) => refl(${X})`).join("")});`, "id");
