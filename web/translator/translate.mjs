@@ -446,8 +446,11 @@ export class Translator {
         env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:this.checker.bindingName?.(d.name.text)??d.name.text,reason:declarations.at(-1).reason});
       // Without its type of models, the rest of a theory cannot check: it is
       // unavailable, and its failure is reported once.
-      if (d.generated?.role==="model"&&declarations.at(-1).status==="not-translated")
-        this.onQueued?.(-skipTheory(this,queue,env,d));
+      // The rest is taken off whether or not an observer counts it.
+      if (d.generated?.role==="model"&&declarations.at(-1).status==="not-translated") {
+        const skipped=skipTheory(this,queue,env,d);
+        this.onQueued?.(-skipped);
+      }
     }
     return {declarations,env,directives,simpRegistry:this.simpRegistry,
       normalizationVisits:this.checker.steps};
