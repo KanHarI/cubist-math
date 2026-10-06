@@ -100,3 +100,14 @@ test("a historical module imports nat, as every module did before 2026-10-05", (
   assert.equal(historicalSource("import lists, nat;\ndef two := 2;\n", "old"), "import lists, nat;\ndef two := 2;\n");
   assert.equal(historicalSource("def two := tt;\n", "new", { implicitNat: false }), "def two := tt;\n");
 });
+
+test("a historical module reverses with ~ where it wrote prefix -, as every module did before 2026-10-06", () => {
+  // A truncation level's sign stays, and a later revision is read as it is.
+  const reversing = "def r(A : U0, x, y : A, p : x = y) : y = x := path i => p @ -i; // left-to-right\n";
+  assert.equal(historicalSource(reversing, "old", { implicitNat: false }),
+    "def r(A : U0, x, y : A, p : x = y) : y = x := path i => p @ ~i; // left-to-right\n");
+  assert.equal(historicalSource("def s := -p ++ q;\n", "old", { implicitNat: false }), "def s := ~p ++ q;\n");
+  assert.equal(historicalSource("inductive T(U < UU0, A : U) : trunc(-1) U { c; }\n", "old", { implicitNat: false }),
+    "inductive T(U < UU0, A : U) : trunc(-1) U { c; }\n");
+  assert.equal(historicalSource("def s := -p;\n", "new", { implicitNat: false, minusReverses: false }), "def s := -p;\n");
+});

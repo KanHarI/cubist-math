@@ -138,16 +138,16 @@ def picked : Nat := (fun (x : Nat) => fun (y : Nat) => typed(Nat and Nat, (x, y)
   assert.equal(wrapped.source, "def w := trans(p, q).1;\n");
 });
 
-test("a rewrite under a prefix minus keeps its operand whole", async () => {
+test("a rewrite under a prefix ~ keeps its operand whole", async () => {
   const source = `import nat;
-def reversed_at(A : U0, x, y : A, p, q : x = y, e : p = q) : y = x := -at(e, 0);
-def concatenated_at(A : U0, x, y : A, p, q : x = y, e : p = q) : x = x := at(e, 0) ++ -at(e, 1);
+def reversed_at(A : U0, x, y : A, p, q : x = y, e : p = q) : y = x := ~at(e, 0);
+def concatenated_at(A : U0, x, y : A, p, q : x = y, e : p = q) : x = x := at(e, 0) ++ ~at(e, 1);
 `;
   const identical = rewriteModule(source, { rewrites: identicalRewrites });
   assert.deepEqual(identical.applied, { "path-apply": 3 });
-  // -e @ 0 would read as (-e) @ 0: a path from y to x in the other direction.
-  assert.match(identical.source, /:= -\(e @ 0\);/);
-  assert.match(identical.source, /:= e @ 0 \+\+ -\(e @ 1\);/);
+  // ~e @ 0 would read as (~e) @ 0: a path from y to x in the other direction.
+  assert.match(identical.source, /:= ~\(e @ 0\);/);
+  assert.match(identical.source, /:= e @ 0 \+\+ ~\(e @ 1\);/);
   const [report] = await verifyMigration({ modules: ["prefix_fixture"], level: "identical",
     readOriginal: name => name === "prefix_fixture" ? source : library(name),
     readEdited: async () => formatCubist(identical.source) });
