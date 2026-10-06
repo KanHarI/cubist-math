@@ -48,6 +48,11 @@ def twice(x : Nat) : Nat := x * x;
 // Output: 6
 print(evaluate(twice(nat.(3))));
 
+// An expression in a directive is read in the selection too: * is
+// additive's.
+// Output: 6
+print(evaluate(nat.(3) * nat.(3)));
+
 use multiplicative;
 
 def squared(x : Nat) : Nat := x * x;
@@ -69,10 +74,17 @@ theory Action(U < UU0) {
 theory Both(U < UU0) extends Magma, Action {
   law mixed(x : M) : magma.(x * x) = action.(x * x);
   law qualified(x, y : M) : x magma.(*) y = x action.(*) y;
+  // A selection inside another is read as it says: action's * here.
+  law nested(x, y : M) : magma.(action.(x * y)) = action.act(x, y);
 }
 
+// Output: forall U < UU0. forall m : Both(U). forall x : m.M. forall y : m.M. m.act(x, y) =
+//   m.act(x, y)
+print(typeof(Both.nested));
+
 def both_nat : Both(U0) := Both.make(M := Nat, M_is_set := nat_is_set, mul := fun (x, y : Nat) => x,
-  act := fun (x, y : Nat) => x, mixed := fun (x : Nat) => refl(x), qualified := fun (x, y : Nat) => refl(x));
+  act := fun (x, y : Nat) => x, mixed := fun (x : Nat) => refl(x), qualified := fun (x, y : Nat) => refl(x),
+  nested := fun (x, y : Nat) => refl(x));
 
 def first(x, y : Nat) : Nat := x both_nat.magma.(*) y;
 

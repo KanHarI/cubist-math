@@ -111,10 +111,15 @@ export function opened(t,scope,node,{complete=true}={}) {
 
 // A named notation (L2.10a): each rule's right side, its free names read
 // where the notation is declared, under keys no source name can spell, so
-// that no later binding changes what a rule means.
+// that no later binding changes what a rule means. A qualified name, m.f,
+// is read by its root where only the root is bound, so a later local m
+// does not take its place.
 // The library's names a literal's lexeme is built from (lexemes.cubist).
 const LEXEME_NAMES=["cons","nil","digit","lower","upper","period","slash","underscore","plus","minus","parsed_value","parse_answer"];
-export const lexemeKey=name=>`\u0000lexeme ${name}`;
+// The key of a lexeme's glyph in a literal rule's scope, which no source
+// name can spell. (A function, not a template: the diagnostics catalogue
+// reads template-returning arrows as messages.)
+export function lexemeKey(name) { return "\u0000lexeme "+name; }
 export function notationDeclaration(t,module,d,env,declared=new Set()) {
   const rules=new Map();
   // A notation named after a model of this module adds literal rules to
@@ -126,11 +131,16 @@ export function notationDeclaration(t,module,d,env,declared=new Set()) {
     if(model&&!["numeral","literal"].includes(rule.kind))
       throw module.locate(Error(`A model's notation is its theory's; ${d.name.text}'s adds only a numeral or a literal rule.`),rule.keyword??rule.operatorToken??d.name);
     const aliases=new Map(),pattern=new Set([rule.left?.text,rule.right?.text,rule.param?.text].filter(Boolean));
-    const value=renameFree(rule.value,name=>{
-      if(pattern.has(name)||!env.has(name))return null;
+    const alias=name=>{
       const key=`\u0000notation ${d.name.text} ${name}`;
       aliases.set(key,env.get(name));
       return key;
+    };
+    const value=renameFree(rule.value,name=>{
+      if(pattern.has(name))return null;
+      if(env.has(name))return alias(name);
+      const dot=name.indexOf("."),root=dot>0?name.slice(0,dot):null;
+      return root&&env.has(root)?`${alias(root)}${name.slice(dot)}`:null;
     });
     // A literal rule builds its lexeme from the library's glyphs, read here.
     if(rule.kind==="literal")for(const name of LEXEME_NAMES) {
@@ -182,8 +192,10 @@ function renameFree(node,rename,bound=new Set()) {
   return copy;
 }
 
-// A named notation's rule applied to two operands: its right side with the
-// pattern's names replaced by them, and the scope that resolves its names.
+// A named notation's rule applied to two operands: its right side, and the
+// scope that resolves its names. Each operand is elaborated where the rule
+// uses it, in the scope the operator is written in: no binder of the rule
+// captures a name of an operand.
 export function appliedRule(scope,rule,left,right) {
   // The rule's own names are read in a scope with no selection, where it
   // was declared; its operands where they stand, in the use's scope.

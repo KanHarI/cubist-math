@@ -43,6 +43,18 @@ const quantifier = (kind, binder, domain, body, at) =>
 const projection = (value, index, at) => ({ kind: "projection", value, index, ...place(at) });
 const pair = (left, right, at) => ({ kind: "pair", left, right, ...place(at) });
 
+// The names a node binds, as their tokens, in its body: a lambda's, a
+// quantifier's, a path's coordinate, and a clause's names and coordinates.
+// (A clause's nested patterns are left out: a name there may be a
+// constructor.)
+function bindersOf(node) {
+  if (node.kind === "binderGroup") return node.names;
+  if (["forall", "exists", "lambda"].includes(node.kind) && node.name?.text) return [node.name];
+  if (node.kind === "pathLambda" && node.dimension?.text) return [node.dimension];
+  if (node.kind === "clause") return [...(node.binders ?? []), ...(node.coordinates ?? [])];
+  return [];
+}
+
 // A copy of a syntax tree with `rewrite(node, bound)` applied to each node,
 // outermost first; `bound` holds the names its binders bind there.
 function rewritten(node, rewrite, bound = new Set()) {
@@ -50,8 +62,7 @@ function rewritten(node, rewrite, bound = new Set()) {
   if (!node || typeof node !== "object" || !node.kind) return node;
   const replaced = rewrite(node, bound);
   if (replaced !== node) return replaced;
-  const binders = node.kind === "binderGroup" ? node.names
-    : ["forall", "exists", "lambda"].includes(node.kind) && node.name?.text ? [node.name] : [];
+  const binders = bindersOf(node);
   const copy = {};
   for (const [key, value] of Object.entries(node)) {
     // A binder's own domain is outside its scope; its body is inside.
@@ -59,6 +70,41 @@ function rewritten(node, rewrite, bound = new Set()) {
     copy[key] = rewritten(value, rewrite, scope);
   }
   return copy;
+}
+// The names a syntax tree mentions free; a qualified name, m.f, by its root.
+function freeIn(node) {
+  const free = new Set();
+  rewritten(node, (n, bound) => {
+    if (n.kind === "name" && !bound.has(n.name.split(".")[0])) free.add(n.name.split(".")[0]);
+    return n;
+  });
+  return free;
+}
+// `node` with each free name that `args` maps replaced by its syntax. A
+// binder of `node` that would capture a free name of an argument is renamed
+// first, apart from every name either mentions.
+function substituted(node, args) {
+  const free = new Set([...args.values()].flatMap(arg => [...freeIn(arg)]));
+  const taken = new Set([...free, ...namesIn(node)]);
+  const go = (tree, bound) => rewritten(tree, (n, inner) => {
+    if (n.kind === "name" && args.has(n.name) && !inner.has(n.name)) return args.get(n.name);
+    const clashing = bindersOf(n).filter(binder => free.has(binder.text));
+    if (!clashing.length) return n;
+    const renaming = new Map(clashing.map(binder => {
+      const other = fresh(binder.text, taken);
+      taken.add(other);
+      return [binder.text, other];
+    }));
+    const copy = { ...n };
+    for (const key of Object.keys(n)) if (key === "body") copy.body = renamed(n.body, renaming, n);
+    const rename = token => renaming.has(token?.text) ? { ...token, text: renaming.get(token.text) } : token;
+    if (n.kind === "binderGroup") copy.names = n.names.map(rename);
+    else if (n.kind === "pathLambda") copy.dimension = rename(n.dimension);
+    else if (n.kind === "clause") Object.assign(copy, { binders: (n.binders ?? []).map(rename), coordinates: (n.coordinates ?? []).map(rename) });
+    else copy.name = rename(n.name);
+    return go(copy, inner);
+  }, bound);
+  return go(node, new Set());
 }
 // Every position in a tree set to `at`: inherited syntax comes from another
 // theory's text, perhaps another module's.
@@ -94,9 +140,10 @@ const sameSyntax = (a, b) => JSON.stringify(a, (key, value) => ["start", "end"].
 // proposition, so its equations are propositions), Void and Unit, an
 // element of a proposition sort, a declared type whose header says it is a
 // proposition, as Trunc(U, A) (L2.10k), and forall, -> into one, and `and`
-// of two. `byName` holds the fields declared so far, and `proposition`
-// says whether a name is such a declared type.
-function notAProposition(statement, byName, proposition = () => false) {
+// of two. `byName` holds the fields declared so far, `proposition` says
+// whether a name is such a declared type, and `header` lists the names the
+// theory's header binds.
+function notAProposition(statement, byName, proposition = () => false, header = []) {
   // A carrier, M, or a family's member, F(A).
   const sortNamed = (node, bound) =>
     node?.kind === "name" && !bound.has(node.name) && byName.get(node.name)?.kind === "sort" ? node.name
@@ -141,7 +188,9 @@ function notAProposition(statement, byName, proposition = () => false) {
     return { node, why: node.kind === "name" && byName.get(node.name)?.kind === "sort"
       ? `${node.name} is a sort, whose elements are data` : "its statement is none of these" };
   };
-  return check(statement, new Map());
+  // The header's universes and parameters are bound, with no sort: a
+  // parameter that takes a proposition's name is not that proposition.
+  return check(statement, new Map(header.map(binder => [binder, null])));
 }
 
 // A theory's fields, in order, with types over the earlier fields' names,
@@ -162,7 +211,7 @@ function theoryFields(theory, lookup, proposition) {
     if (d?.recursive) throw located(Error(`${d.name} is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory.`), n);
     if (!d || n.args.length !== d.params.length) return n;
     const args = new Map(d.params.map((p, k) => [p.name, inlineDerived(n.args[k])]));
-    return rewritten(d.value, (m, inner) => m.kind === "name" && args.has(m.name) && !inner.has(m.name) ? args.get(m.name) : m);
+    return substituted(d.value, args);
   });
   // The header's universes are the model's, which each expansion names
   // afresh; a theory without a header has one. Its parameters are every
@@ -253,6 +302,7 @@ function theoryFields(theory, lookup, proposition) {
         throw located(Error(`${T} extends ${record.name}, whose header has the parameter ${p.name}: give ${T} the parameter ${p.name} with the same type.`), parent.name);
     }
     // Each renaming names a field of the parent, once.
+    // `renotated` gives a parent's field, by its name there, another notation.
     const names = new Map(universes), renotated = new Map();
     for (const { from, to, notation } of parent.renaming) {
       const field = record.fields.find(f => f.name === from.text);
@@ -263,7 +313,7 @@ function theoryFields(theory, lookup, proposition) {
         if (field.kind !== "operation" || field.arity !== (notation.unary ? 1 : 2))
           throw located(Error(notation.unary ? `-x names an operation's one argument; ${from.text} is not an operation of one.`
             : `A notation names an operation's two arguments; ${from.text} is not an operation of two.`), notation);
-        renotated.set(to.text, keyOf(notation));
+        renotated.set(from.text, keyOf(notation));
         recipes.set(keyOf(notation), { left: notation.leftView?.text ?? null, right: notation.rightView?.text ?? null });
       }
     }
@@ -289,7 +339,7 @@ function theoryFields(theory, lookup, proposition) {
   }
   const ambiguous = new Map(), allNames = new Set([...byFinal.keys(), ...theory.fields.map(item => item.name.text)]);
   for (const [n, entries] of byFinal) {
-    if (new Set(entries.map(e => e.p)).size < 2 || entries.every(e => e.field.origin === entries[0].field.origin)) continue;
+    if (new Set(entries.map(e => e.p)).size < 2 || new Set(entries.map(e => e.field.origin)).size === 1) continue;
     const carriers = entries.filter(e => ["sort", "evidence"].includes(e.field.kind));
     if (carriers.length && carriers.length < entries.length)
       throw located(Error(`${T} gets ${n} from ${entries.map(e => e.p.record.name).join(" and ")}, a carrier in one and not in another: rename one, as in ${entries.at(-1).p.record.name}(${n} := …).`), entries.at(-1).p.parent.name);
@@ -300,9 +350,15 @@ function theoryFields(theory, lookup, proposition) {
         throw located(Error(`${T} gets the carrier ${n} from ${sorts.map(e => e.p.record.name).join(" and ")} with different kinds or indices: rename one, as in ${sorts.at(-1).p.record.name}(${n} := …).`), sorts.at(-1).p.parent.name);
       continue;
     }
+    // Entries from one ancestor are one field, reached through each of
+    // their parents' labels.
+    const byOrigin = new Map();
     for (const e of entries) {
-      const own = fresh(`${e.p.label}_${n}`, allNames);
-      allNames.add(own);
+      if (!byOrigin.has(e.field.origin)) {
+        byOrigin.set(e.field.origin, fresh(`${e.p.label}_${n}`, allNames));
+        allNames.add(byOrigin.get(e.field.origin));
+      }
+      const own = byOrigin.get(e.field.origin);
       e.p.names.set(e.field.name, own);
       if (!ambiguous.has(n)) ambiguous.set(n, []);
       ambiguous.get(n).push({ label: e.p.label, field: own, parentField: e.field.name });
@@ -331,14 +387,13 @@ function theoryFields(theory, lookup, proposition) {
       inherited.get(operator).push({ label, field, parentField, at });
     };
     for (const [operator, field] of Object.entries(record.notations)) {
-      const child = names.get(field) ?? field;
-      if (!renotated.has(child)) bind(operator, child, field);
-      if (!renotated.has(child) && record.recipes?.[operator]) recipes.set(operator, record.recipes[operator]);
+      if (renotated.has(field)) continue;
+      bind(operator, names.get(field) ?? field, field);
+      if (record.recipes?.[operator]) recipes.set(operator, record.recipes[operator]);
     }
     for (const [operator, list] of Object.entries(record.ambiguousNotations ?? {}))
       for (const entry of list) bind(operator, names.get(entry.field) ?? entry.field, entry.field);
-    for (const [field, operator] of renotated)
-      bind(operator, field, record.fields.find(f => (names.get(f.name) ?? f.name) === field)?.name ?? field);
+    for (const [field, operator] of renotated) bind(operator, names.get(field) ?? field, field);
   }
   for (const [operator, list] of inherited) {
     const distinct = [...new Map(list.map(entry => [entry.field, entry])).values()];
@@ -352,7 +407,7 @@ function theoryFields(theory, lookup, proposition) {
   // Inside the theory, label.f is the field the parent labelled label gave
   // as f, and an ambiguous name is refused with the qualified forms.
   const viaLabel = new Map(prepared.map(p => [p.label, p]));
-  const resolved = node => rewritten(node, (n, bound) => {
+  const resolved = (node, scope = new Set()) => rewritten(node, (n, bound) => {
     if (n.kind !== "name" || bound.has(n.name.split(".")[0])) return n;
     const dot = n.name.indexOf(".");
     if (dot > 0) {
@@ -365,11 +420,12 @@ function theoryFields(theory, lookup, proposition) {
     if (ambiguous.has(n.name))
       throw located(Error(`${n.name} is ambiguous in ${T}: ${ambiguous.get(n.name).map(e => `${e.label}'s`).join(" and ")}. Write ${ambiguous.get(n.name).map(e => `${e.label}.${e.parentField}`).join(" or ")}, or rename one in extends.`), n);
     return n;
-  });
+  }, scope);
   // Inside the theory, a parent's notation through its label (L2.4c):
   // label.(e) reads e's operators and names as that parent does, and
-  // x label.(*) y and label.(*) its operator.
-  const labelled = node => rewritten(node, (n, bound) => {
+  // x label.(*) y and label.(*) its operator. A selection inside label.(e)
+  // is read as it says, not as the outer label's.
+  const labelled = (node, scope = new Set()) => rewritten(node, (n, bound) => {
     const qualifier = n.kind === "binary" ? n.qualifier : ["select", "operatorOf"].includes(n.kind) ? n.model : null;
     const p = qualifier?.kind === "name" && !bound.has(qualifier.name) ? viaLabel.get(qualifier.name) : null;
     if (!p) return n;
@@ -379,19 +435,30 @@ function theoryFields(theory, lookup, proposition) {
       return finalName(p, { name: parentField });
     };
     if (n.kind === "operatorOf") return name(fieldFor(n.operator), n);
-    if (n.kind === "binary") return call(fieldFor(n.operator), [labelled(n.left), labelled(n.right)], n);
+    if (n.kind === "binary") return call(fieldFor(n.operator), [labelled(n.left, bound), labelled(n.right, bound)], n);
     const own = new Map(p.record.fields.map(field => [field.name, finalName(p, field)]));
     const inside = node => rewritten(node, (m, inner) => {
-      if (m.kind === "binary" && !m.qualifier && p.record.notations[m.operator])
+      if (["select", "operatorOf"].includes(m.kind)) return labelled(m, inner);
+      if (m.kind === "binary" && m.qualifier) return labelled({ ...m, left: inside(m.left), right: inside(m.right) }, inner);
+      if (m.kind === "binary" && p.record.notations[m.operator])
         return call(fieldFor(m.operator), [inside(m.left), inside(m.right)], m);
       if (m.kind === "name" && own.has(m.name) && !inner.has(m.name)) return { ...m, name: own.get(m.name) };
       return m;
     }, bound);
-    return labelled(inside(n.body));
-  });
+    return labelled(inside(n.body), bound);
+  }, scope);
   for (const source of theory.fields) {
-    const within = node => node && resolved(labelled(node));
-    const item = { ...source, type: within(source.type), params: (source.params ?? []).map(p => ({ ...p, type: within(p.type) })) };
+    // A field's parameters are in scope in the later ones' types and in its
+    // own: a parameter named as an ambiguous field is that parameter.
+    const scope = new Set();
+    const within = (node, bound) => resolved(labelled(node, bound), bound);
+    const item = { ...source, params: (source.params ?? []).map(p => {
+      const param = { ...p, type: within(p.type, new Set(scope)) };
+      scope.add(p.name.text);
+      if (p.level) scope.add(`${p.name.text}_is_${p.level}`);
+      return param;
+    }) };
+    if (source.type) item.type = within(source.type, scope);
     const origin = `${T}.${item.name.text}`;
     if (item.kind === "sort") {
       const own = universeAt(Math.max(0, headerUniverses.indexOf(item.universe?.text)));
@@ -482,7 +549,7 @@ function theoryFields(theory, lookup, proposition) {
     }
     type = inlineDerived(operatorsAsCalls(type));
     if (item.kind === "law") {
-      const data = notAProposition(type, byName, proposition);
+      const data = notAProposition(type, byName, proposition, header.map(binder => binder.text));
       if (data)
         throw located(Error(`The law ${item.name.text} must state a proposition: an equation between elements of a sort, Void, a type declared at prop, or forall, -> or and over those; ${data.why}. A law holds no data, and homomorphisms ignore laws: declare data as an operation or a constant.`), data.node);
     }
@@ -494,6 +561,10 @@ function theoryFields(theory, lookup, proposition) {
     if (header.some(binder => binder.text === field.name))
       throw located(Error(`${T}'s header binds ${field.name}, which names a field too: give each its own name.`), field.at);
   }
+  // A parent's label names its projection, T.label, beside the fields' T.f.
+  for (const p of prepared)
+    if (byName.has(p.label))
+      throw located(Error(`${T}'s parent ${p.record.name} is labelled ${p.label}, which names a field of ${T} too: label it apart, as in base : ${p.record.name}.`), p.parent.label ?? p.parent.name);
   return { fields, notations, recipes, derived, parents, universes: headerUniverses, params: params.map(({ at: _, ...p }) => p),
     ambiguous: Object.fromEntries([...ambiguous].map(([n, list]) => [n, list])), ambiguousNotations: Object.fromEntries(ambiguousNotations) };
 }
