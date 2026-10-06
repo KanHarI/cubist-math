@@ -47,6 +47,23 @@ def shifting : Acted(U0, nat_magma) := Acted.make(nat_magma, V := Nat, V_is_set 
 // Output: 5
 print(evaluate(Acted.Hom.compose(Acted.Hom.id(shifting), Acted.Hom.id(shifting)).map(5)));
 
+// A fixed argument's type may name a parameter, x here, or any other name:
+// the generated binders are named apart from them.
+def Tagged(n : Nat) : U0 := Nat;
+
+theory Labelled(U < UU0, x : Nat) {
+  M : set U;
+  relabel(a : M, n : Tagged(x)) : M;
+}
+
+// Output: forall U < UU0. forall x : Nat. forall A : Labelled(U, x). forall B : Labelled(U, x).
+//   forall f : Labelled.Hom{{U, x}}(A, B). forall a : A.M. forall n : Tagged(x). f.map(A.relabel(a,
+//   n)) = B.relabel(f.map(a), n)
+print(typeof(Labelled.Hom.map_relabel));
+
+def labelled_iso(m : Labelled(U0, zero)) : Labelled.Iso(m, m) := Labelled.Iso.compose(Labelled.Iso.id(m),
+  Labelled.Iso.inverse(Labelled.Iso.id(m)));
+
 // Covariant: a family of elements, and a pair of them, pushed forward.
 theory Sequences(U < UU0) {
   M : set U;
