@@ -71,7 +71,10 @@ function assign(n, parameters, unit, called) {
     const name = arg.name.text;
     if (!parameters)
       throw unit.locate(Error(`${called} has no named parameters: a named argument gives a parameter that a definition declares.`), arg.name);
-    const index = names.indexOf(name);
+    // A generated constructor may label an implicit parameter and an
+    // explicit one alike: the braces say which is meant.
+    const matching = parameters.findIndex(parameter => parameter.name === name && !!parameter.implicit === braced);
+    const index = matching >= 0 ? matching : names.indexOf(name);
     if (index < 0)
       throw unit.locate(Error(`${called} has no parameter ${name}; its parameters are ${names.join(", ")}.`), arg.name);
     if (named.has(index)) throw unit.locate(Error(`The argument ${name} is given twice.`), arg.name);

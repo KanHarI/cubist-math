@@ -17,8 +17,9 @@ milestone 7 is open. Milestone 5's argument inference and implicit
 parameters were delivered on 2026-10-04 (L4.1a, L4.1b), and its `apply` and
 `refine` withdrawn. Milestone 6's core theories, with their notation and
 sections, were delivered on 2026-10-05 (L2.4); its initial and free models,
-algebraic normalization and structure identity remain open, and its
-notation becomes explicit views (L2.10).
+algebraic normalization and structure identity remain open, its syntax
+revision is decided (L2.4c), and its notation becomes explicit views
+(L2.10).
 
 The remaining dependent, cubical, induction and shared elaboration work moved
 to the [HoTT and cubical automation roadmap](hott-automation-roadmap.md), and
