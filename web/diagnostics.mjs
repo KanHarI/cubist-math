@@ -119,7 +119,7 @@ export const diagnostics = [
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
-  ["E203", "No benchmark report yet. Run npm run benchmark:cubical."],
+  ["E203", "No benchmark report yet. Run npm run benchmark:cubical.", "retired"],
   ["E204", "Syntax display limit"],
   ["E205", "Expected a level, not …."],
   ["E206", "Unsupported cubical notation: …"],
@@ -159,6 +159,8 @@ export const diagnostics = [
   ["E240", "… did not check."],
   ["E241", "Could not load the file index: HTTP …"],
   ["E242", "The prelude option was removed: no module is imported automatically, so a module imports nat itself; bundledNat controls nat's bundled source."],
+  ["E243", "The benchmark area is library, archive or tests, not …."],
+  ["E244", "No saved benchmark of the … yet. Run it in this browser, or run npm run benchmark:cubical -- --area=…."],
   // Terms
   ["E301", "Expected cubical syntax."],
   ["E302", "Expected a dimension binder."],

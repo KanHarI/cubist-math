@@ -6,7 +6,11 @@ import {readFile} from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { InstructionGraph } from "../web/cubical-instructions.mjs";
-import { benchmark, category } from "../web/benchmark-runner.mjs";
+import { benchmark, benchmarkAreas, category } from "../web/benchmark-runner.mjs";
+import { areaLabels, savedReport } from "../web/benchmark-areas.mjs";
+import { moduleListing } from "../web/module-listing.mjs";
+import { parse } from "../web/cubist/parser.mjs";
+import { diagnosticCode } from "../web/diagnostics.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
 import { budget } from "./timing.mjs";
 
@@ -96,6 +100,46 @@ test("benchmark reports the selected deadline and optimizations and rejects inva
   assert.deepEqual(report.optimizations, optimizations);
   assert.equal(report.counts.checked, 1);
   for (const limitMs of [0, -1, NaN, Infinity]) await assert.rejects(benchmark({ limitMs }), /positive number/);
+});
+
+test("benchmark measures an area, the library, the archive or the Cubist tests, as its modules import", async () => {
+  // Each area's modules are those the workspace lists there, and the page
+  // names each and finds its saved report.
+  assert.deepEqual(Object.keys(benchmarkAreas), ["library", "archive", "tests"]);
+  for (const [area, modules] of Object.entries(benchmarkAreas)) assert.deepEqual([...modules], [...moduleListing[area]], area);
+  assert.deepEqual(Object.keys(areaLabels), Object.keys(benchmarkAreas));
+  // The benchmark imports each of an area's modules, so each has a name an
+  // import can write: none is a keyword, as a test named induction was.
+  for (const [area, modules] of Object.entries(benchmarkAreas))
+    for (const name of modules) assert.doesNotThrow(() => parse(`import ${name};`), `${area}: ${name}`);
+  assert.deepEqual(Object.keys(benchmarkAreas).map(savedReport),
+    ["benchmark-results-library.json", "benchmark-results.json", "benchmark-results-tests.json"]);
+  // A Cubist test is checked from cubist-tests/, importing the library.
+  const readSource = sourceReader();
+  readSource.place("benchmark", "tests");
+  const report = await benchmark({ area: "tests", modules: ["let_statements"], limitMs: budget(10000), readSource });
+  assert.equal(report.area, "tests");
+  assert.ok(report.declarations.some(d => d.module === "let_statements" && d.category === "checked"));
+  await assert.rejects(benchmark({ area: "elsewhere" }), /library, archive or tests, not elsewhere/);
+});
+
+test("benchmark lists a failure or block its source's comment states as intended, not as one to fix", async () => {
+  const body = "import nat;\ndef bad : 0 = 1 { exact refl(0); }\ndef dependent := bad;\ndef other : 0 = 1 { exact refl(0); }\n";
+  const read = source => async name => name === "sample" ? source : sourceReader()(name);
+  const first = await benchmark({ modules: ["sample"], readSource: read(body) });
+  // Each comment as tools/inline-errors.mjs writes it: the code and the
+  // reason without its position.
+  const stated = name => {
+    const reason = first.declarations.find(d => d.name === name).reason.replace(/ at \d+:\d+$/, "");
+    return `// Error: ${diagnosticCode(reason)}: ${reason}\n`;
+  };
+  const commented = body.replace("def bad", `${stated("bad")}def bad`).replace("def dependent", `${stated("dependent")}def dependent`)
+    .replace("def other", "// Error: E606: Type mismatch: found something else.\ndef other");
+  const report = await benchmark({ modules: ["sample"], readSource: read(commented) });
+  const category = name => report.declarations.find(d => d.name === name).category;
+  // A failure otherwise than its comment states still needs fixing.
+  assert.deepEqual(["bad", "dependent", "other"].map(category), ["intended", "intended", "failed"]);
+  assert.equal(report.counts.intended, 2);
 });
 
 test("benchmark checks local simp witnesses without collecting inspector references",async()=>{

@@ -23,6 +23,8 @@ td small { display: block; margin-top: 4px; color: #667368; }
 tr[data-category="failed"] td:nth-child(2) { color: #9e3832; }
 tr[data-category="optimize"] td:nth-child(2) { color: #805615; }
 tr[data-category="checked"] td:nth-child(2) { color: #356544; }
+/* An intended failure needs nothing: muted, as a note. */
+tr[data-category="intended"] td { color: #6b6f76; }
 button:focus-visible, a:focus-visible { outline: 3px solid #769c75; }
 .actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 22px 0; }
 .actions button { font: inherit; padding: 10px 16px; border-radius: 6px; border: 1px solid #aebdaf; color: inherit; background: white; cursor: pointer; }

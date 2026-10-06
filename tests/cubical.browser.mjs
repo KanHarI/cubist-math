@@ -89,7 +89,8 @@ try {
   assert.match(await intervalWorkbench.locator("#context").textContent(), /Interval coordinates/);
   await intervalWorkbench.close();
   await page.goto(`http://127.0.0.1:${port}/benchmark.html`);
-  await page.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Completed"));
+  // The status names the area first: the archive, unless the address asks.
+  await page.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Archive · Completed"));
   assert.ok(await page.locator("#entries tr").count() > 2000);
   assert.equal(await page.locator("#limit-ms").inputValue(), "100");
   await page.locator("#run").click();
@@ -98,7 +99,7 @@ try {
   await page.locator("#cancel").click();
   assert.match(await page.locator("#status").textContent(), /Cancelled/);
   await page.locator("#run").click();
-  await page.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Completed"), null, { timeout: 180000 });
+  await page.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Archive · Completed"), null, { timeout: 180000 });
   assert.ok(await page.locator("#entries tr").count() > 2000);
   assert.equal(await page.locator("#run").isDisabled(), false);
   assert.equal(await page.locator("#download").isDisabled(), false);
@@ -110,6 +111,17 @@ try {
   assert.ok(milliseconds.every((time, index) => index === 0 || milliseconds[index - 1] >= time));
   await page.locator("#category").selectOption("failed");
   assert.equal(await page.locator('#entries tr:not([data-category="failed"])').count(), 0);
+  // Another area shows its own saved benchmark, and the address keeps it;
+  // the Cubist tests' stated errors are intended failures, listed apart.
+  await page.locator("#area").selectOption("tests");
+  await page.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubist tests · Completed"));
+  assert.equal(new URL(page.url()).searchParams.get("area"), "tests");
+  await page.locator("#category").selectOption("intended");
+  assert.ok(await page.locator('#entries tr[data-category="intended"]').count() > 0);
+  assert.equal(await page.locator('#entries tr:not([data-category="intended"])').count(), 0);
+  await page.goto(`http://127.0.0.1:${port}/benchmark.html?area=library`);
+  await page.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Library · Completed"));
+  assert.equal(await page.locator("#area").inputValue(), "library");
   assert.deepEqual(errors, []);
   console.log("PASS native proof/workbench flows and browser corpus benchmark with cancellation and live results");
 } finally { await browser?.close(); server.kill(); }
