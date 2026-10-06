@@ -146,12 +146,12 @@ export function substituted(node, args, refuse) {
   const fresh = stem => { let name = stem, k = 1; while (taken.has(name)) name = `${stem}${k++}`; taken.add(name); return name; };
   const go = (tree, bound) => rewritten(tree, (n, inner) => {
     if (n.kind === "name" && args.has(n.name) && !inner.has(n.name)) return args.get(n.name);
-    const clashing = scopesOf(n).filter(scope => scope.binders.some(binder => free.has(binderName(binder))
-      && [...args.keys()].some(name => occursFree(n, scope, name))));
-    if (!clashing.length) return n;
+    const scopes = scopesOf(n), clashing = new Set(scopes.filter(scope => scope.binders.some(binder => free.has(binderName(binder))
+      && [...args.keys()].some(name => occursFree(n, scope, name)))));
+    if (!clashing.size) return n;
     for (const scope of clashing) if (!scope.renamable)
       throw refuse(binderName(scope.binders.find(binder => free.has(binderName(binder)))));
-    return go(apart(n, clashing, free, fresh), inner);
+    return go(apart(n, scopes, clashing, free, fresh), inner);
   }, bound);
   return go(node, new Set());
 }
@@ -160,18 +160,25 @@ export function substituted(node, args, refuse) {
 const occursFree = (node, scope, name) => scope.keys.some(key => freeNames(node[key] ?? null).has(name));
 // The node with each scope's binders that `free` holds renamed fresh, in the
 // binder and in the children that scope covers only: a match's left side's
-// binder is renamed in its left branch, never in the right.
-function apart(node, scopes, free, fresh) {
+// binder is renamed in its left branch, never in the right. A node's scopes
+// are listed outermost first, and in a child that a later scope also covers,
+// a name that scope binds again is that scope's, not an earlier one's: in
+// induction n as z … { succ z => z; }, the step's z is the hypothesis.
+function apart(node, scopes, clashing, free, fresh) {
   const tokens = new Map(), copy = { ...node };
-  for (const scope of scopes) {
+  for (const [index, scope] of scopes.entries()) {
+    if (!clashing.has(scope)) continue;
     const renaming = new Map();
     for (const binder of scope.binders) if (free.has(binderName(binder))) {
       const other = renaming.get(binderName(binder)) ?? fresh(binderName(binder));
       renaming.set(binderName(binder), other);
       tokens.set(binder, { ...binder, text: other });
     }
-    if (renaming.size) for (const key of scope.keys) if (key in copy)
-      copy[key] = renamedFree(copy[key], name => renaming.get(name) ?? null);
+    if (renaming.size) for (const key of scope.keys) if (key in copy) {
+      const inner = scopes.slice(index + 1).filter(later => later.keys.includes(key))
+        .flatMap(later => later.binders.map(binderName));
+      copy[key] = renamedFree(copy[key], name => inner.includes(name) ? null : renaming.get(name) ?? null);
+    }
   }
   const swap = value => tokens.get(value) ?? (Array.isArray(value) ? value.map(swap) : value);
   for (const [key, value] of Object.entries(copy)) copy[key] = swap(value);
