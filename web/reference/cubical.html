@@ -64,7 +64,7 @@
           <section id="cubical">
             <h2>Paths as functions of the interval</h2>
             <p>In cubical type theory, a path <code>p : x = y</code> in <code>A</code> is a function from an abstract interval into <code>A</code>. Its value at <code>0</code> is definitionally <code>x</code> and its value at <code>1</code> is <code>y</code>. Many path proofs can therefore be written directly, as functions of an interval coordinate, instead of by <a href="paths.html#path-induction">path induction</a>. The operations of <a href="paths.html#path-operations">chapter 7</a>, such as <code>sym</code> and <code>trans</code>, are built this way.</p>
-            <p><code>fun (i : Interval) => …</code> binds a coordinate inside the forms below. <code>Interval</code> is not a type: it belongs to no universe and cannot be the domain of an ordinary function. A coordinate can be <code>0</code>, <code>1</code>, a bound coordinate <code>i</code>, or <code>-i</code>, the reversal <span class="math">1 − i</span>, also written <code>flip(i)</code>. Two more operations, meets and joins, are described <a href="#meets-and-joins">below</a>.</p>
+            <p><code>fun (i : Interval) => …</code> binds a coordinate inside the forms below. <code>Interval</code> is not a type: it belongs to no universe and cannot be the domain of an ordinary function. A coordinate can be <code>0</code>, <code>1</code>, a bound coordinate <code>i</code>, or <code>~i</code>, the reversal <span class="math">1 − i</span>, also written <code>flip(i)</code>. Two more operations, meets and joins, are described <a href="#meets-and-joins">below</a>.</p>
             <div class="table-scroll"><table>
               <thead><tr><th>Form</th><th>Meaning</th></tr></thead>
               <tbody>
@@ -74,13 +74,13 @@
                 <tr><td><code>PathP(fun (i : Interval) => A(i), a, b)</code></td><td>The type of dependent paths from <code>a : A(0)</code> to <code>b : A(1)</code>; see <a href="#dependent-paths">dependent paths</a>. <code>x = y</code> is the case of a constant family.</td></tr>
               </tbody>
             </table></div>
-            <p>Reversing a path is reading it backwards: its value at <code>i</code> is <code>p</code>’s value at <code>-i</code>. Written in full, and with the shorthand:</p>
+            <p>Reversing a path is reading it backwards: its value at <code>i</code> is <code>p</code>’s value at <code>~i</code>. Written in full, and with the shorthand:</p>
             <pre><code data-check="accept">def reverse_path(A : U0, x, y : A, p : x = y) : y = x {
   exact path(fun (i : Interval) =&gt; A, fun (i : Interval) =&gt; at(p, flip(i)));
 }
 
 def reverse_again(A : U0, x, y : A, p : x = y) : y = x {
-  exact path i =&gt; p @ -i;
+  exact path i =&gt; p @ ~i;
 }
 
 def constant_path(A : U0, x : A) : x = x {
@@ -97,7 +97,7 @@ def value_at_one(A : U0, x, y : A, p : x = y) : p @ 1 = y {
             <p><code>reverse_again</code> is the same term as <code>reverse_path</code>, with the family <code>A</code> read from the goal <code>y = x</code>. <code>constant_path</code> is <code>refl(x)</code>. A path’s values at <code>0</code> and <code>1</code> are its endpoints by computation, which is how the kernel checks every endpoint:</p>
             <pre><code data-check="reject">def wrong_direction(A : U0, x, y : A, p : x = y) : x = y {
   // Error: Type mismatch: found p @ 1 = p @ 0, expected x = y.
-  exact path i =&gt; p @ -i;
+  exact path i =&gt; p @ ~i;
 }</code></pre>
             <p>The shorthand needs an expected path type to supply the family:</p>
             <pre><code data-check="reject">// Error: path i =&gt; ... needs an expected Path or PathP type.
@@ -124,7 +124,7 @@ def coordinate_as_term(A : U0, x : A) : x = x {
           </section>
           <section id="meets-and-joins">
             <h2>Meets and joins</h2>
-            <p><code>i &amp; j</code> is the smaller of two coordinates, their <strong>meet</strong>, and <code>i | j</code> the larger, their <strong>join</strong>; <code>meet(i, j)</code> and <code>join(i, j)</code> say the same. <code>&amp;</code> binds tighter than <code>|</code>, and both tighter than <code>@</code>: <code>p @ -i &amp; j | k</code> is <code>p @ (((-i) &amp; j) | k)</code>. The kernel inspector prints them as <span class="math">∧</span> and <span class="math">∨</span>. At the corners of the square they are the familiar “and” and “or”:</p>
+            <p><code>i &amp; j</code> is the smaller of two coordinates, their <strong>meet</strong>, and <code>i | j</code> the larger, their <strong>join</strong>; <code>meet(i, j)</code> and <code>join(i, j)</code> say the same. <code>&amp;</code> binds tighter than <code>|</code>, and both tighter than <code>@</code>: <code>p @ ~i &amp; j | k</code> is <code>p @ (((~i) &amp; j) | k)</code>. The kernel inspector prints them as <span class="math">∧</span> and <span class="math">∨</span>. At the corners of the square they are the familiar “and” and “or”:</p>
             <div class="table-scroll"><table>
               <thead><tr><th><code>i</code></th><th><code>j</code></th><th><code>i &amp; j</code></th><th><code>i | j</code></th></tr></thead>
               <tbody>
@@ -192,12 +192,12 @@ def based_path_induction(A : U0, x : A, C : Singleton(A, x) -&gt; U0,
   // Error: Type mismatch: found p @ 0 = p @ i, expected p @ i = y.
   exact path i =&gt; path j =&gt; p @ j &amp; i;
 }</code></pre>
-            <p>Coordinates obey the laws of a De Morgan algebra: <code>&amp;</code> and <code>|</code> are associative, commutative and distribute over each other, and <code>-(i &amp; j)</code> is <code>-i | -j</code>. They are not Boolean: <code>i &amp; -i</code> is not <code>0</code>, since at <code>i = 1/2</code> it is <code>1/2</code>. The checker does not simplify it away:</p>
-            <pre><code data-check="reject">def not_boolean(A : U0, x, y : A, p : x = y) : refl(x) = (path i =&gt; p @ i &amp; -i) {
-  // Error: Type mismatch: found refl(x) = refl(x), expected refl(x) = (path i =&gt; p @ i &amp; -i).
+            <p>Coordinates obey the laws of a De Morgan algebra: <code>&amp;</code> and <code>|</code> are associative, commutative and distribute over each other, and <code>~(i &amp; j)</code> is <code>~i | ~j</code>. They are not Boolean: <code>i &amp; ~i</code> is not <code>0</code>, since at <code>i = 1/2</code> it is <code>1/2</code>. The checker does not simplify it away:</p>
+            <pre><code data-check="reject">def not_boolean(A : U0, x, y : A, p : x = y) : refl(x) = (path i =&gt; p @ i &amp; ~i) {
+  // Error: Type mismatch: found refl(x) = refl(x), expected refl(x) = (path i =&gt; p @ i &amp; ~i).
   exact refl(refl(x));
 }</code></pre>
-            <p>The composition tubes of hand-built proofs use connections in the same way. A tube <code>fun (k : Interval) =&gt; q @ k &amp; i</code> is constant where <code>i = 0</code> and follows <code>q</code> where <code>i = 1</code>, and <code>fun (k : Interval) =&gt; p @ k | -i</code> is constant where <code>i = 0</code> and follows <code>p</code> where <code>i = 1</code>.</p>
+            <p>The composition tubes of hand-built proofs use connections in the same way. A tube <code>fun (k : Interval) =&gt; q @ k &amp; i</code> is constant where <code>i = 0</code> and follows <code>q</code> where <code>i = 1</code>, and <code>fun (k : Interval) =&gt; p @ k | ~i</code> is constant where <code>i = 0</code> and follows <code>p</code> where <code>i = 1</code>.</p>
           </section>
           <section id="dependent-paths">
             <h2>Dependent paths</h2>
@@ -369,11 +369,11 @@ def finish : loop @ 1 = base { rfl; }</code></pre>
 
 def reverse(c : Circle) : Circle := match c {
   base =&gt; base;
-  loop @ i =&gt; loop @ -i;
+  loop @ i =&gt; loop @ ~i;
 };
 
 def reverse_loop : cong(reverse, loop) = sym(loop) { rfl; }</code></pre>
-            <p>At <code>loop @ i</code>, <code>reverse</code> returns <code>loop @ -i</code>, where <code>-i</code> is <span class="math">1 − i</span>. At <code>i = 0</code> and <code>i = 1</code> the point is <code>base</code>, so there the clause must agree with the <code>base</code> clause: <code>loop @ -0</code> is <code>loop @ 1</code>, which is <code>base</code>, and <code>loop @ -1</code> is <code>loop @ 0</code>, also <code>base</code>. Taken over all <code>i</code>, the clause traces a path between the results at <code>base</code>. Applying <code>reverse</code> along the whole loop, <code>cong(reverse, loop)</code>, gives that path, <code>sym(loop)</code>, and <code>rfl</code> checks this by computation.</p>
+            <p>At <code>loop @ i</code>, <code>reverse</code> returns <code>loop @ ~i</code>, where <code>~i</code> is <span class="math">1 − i</span>. At <code>i = 0</code> and <code>i = 1</code> the point is <code>base</code>, so there the clause must agree with the <code>base</code> clause: <code>loop @ ~0</code> is <code>loop @ 1</code>, which is <code>base</code>, and <code>loop @ ~1</code> is <code>loop @ 0</code>, also <code>base</code>. Taken over all <code>i</code>, the clause traces a path between the results at <code>base</code>. Applying <code>reverse</code> along the whole loop, <code>cong(reverse, loop)</code>, gives that path, <code>sym(loop)</code>, and <code>rfl</code> checks this by computation.</p>
             <p>A clause whose ends disagree with the point clause is rejected. Here the loop clause traces a path from <code>1</code> to <code>1</code>, but the <code>base</code> clause requires one from <code>0</code> to <code>0</code>:</p>
             <pre><code data-check="reject">import nat;
 

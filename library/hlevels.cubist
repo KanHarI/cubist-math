@@ -182,7 +182,7 @@ computable def prop_over(U < UU0, A : U, B : A -> U, h : forall a : A. IsProp(U,
     b : B(a), d : B(c)) : PathP(fun (i : Interval) => B(p @ i), b, d) :=
   path i => h(p @ i,
       comp(fun (j : Interval) => B(p @ (i & j)), b, face(i, 0, fun (j : Interval) => b)),
-      comp(fun (j : Interval) => B(p @ (i | -j)), d, face(i, 1, fun (j : Interval) => d))) @ i;
+      comp(fun (j : Interval) => B(p @ (i | ~j)), d, face(i, 1, fun (j : Interval) => d))) @ i;
 
 // Over a path of A, a family whose values have level n + 1 has paths of
 // level n between its elements: carried along the path from its start, as

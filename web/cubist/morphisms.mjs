@@ -213,9 +213,11 @@ export function morphismSource(record, isTheory = () => false) {
   // The type of a homomorphism field over A and B, `mapOf(sort)` the maps.
   const fieldType = (field, mapOf) => field.sort ? `${A}.${field.sort} -> ${B}.${field.sort}` : preservation(field.operation, A, B, mapOf);
   // A field's binder in its record's Σ and in its constructor: its name,
-  // unless a parameter has that name.
+  // unless a parameter has that name. A constructor's parameter keeps the
+  // field's name as its label, by which a call names it.
   const fieldBinders = new Map();
   const bound = field => fieldBinders.get(field.name) ?? fieldBinders.set(field.name, own(field.name)).get(field.name);
+  const labels = fields => Object.fromEntries(fields.filter(field => bound(field) !== field.name).map(field => [bound(field), field.name]));
   // A Σ of fields, the last one bare; a tuple of values.
   const sigma = (fields, typeOf) => fields.map((field, k) => k === fields.length - 1 ? typeOf(field)
     : `exists ${bound(field)} : (${typeOf(field)}). `).join("");
@@ -251,7 +253,7 @@ export function morphismSource(record, isTheory = () => false) {
   declare(hom, `${models([])} : ${homUniverse} := ${sigma(homFields, ownType)};`, "hom",
     { record: record_(hom, homFields, record.parents.map(parent => parent.label)) });
   declare(`${hom}.make`, `${models(homFields.map(field => `${bound(field)} : ${ownType(field)}`))} : ${hom}(${A}, ${B}) := ${
-    tuple(homFields.map(bound))};`, "make");
+    tuple(homFields.map(bound))};`, "make", { labels: labels(homFields) });
   projections(hom, homFields, field => fieldType(field, sort => mapping(f, sort)));
   // The identity: each map the identity, preserving by reflexivity.
   declare(`${hom}.id`, `${oneModel} : ${hom}(${A}, ${A}) := ${hom}.make(${A}, ${A}, ${homFields.map(field => {
@@ -297,7 +299,7 @@ export function morphismSource(record, isTheory = () => false) {
   declare(iso, `${models([])} : ${homUniverse} := ${sigma(isoFields, field => isoType(field, to, from))};`, "iso",
     { record: record_(iso, isoFields) });
   declare(`${iso}.make`, `${models(isoFields.map(field => `${bound(field)} : ${isoType(field, to, from)}`))} : ${iso}(${A}, ${B}) := ${
-    tuple(isoFields.map(bound))};`, "make");
+    tuple(isoFields.map(bound))};`, "make", { labels: labels(isoFields) });
   projections(iso, isoFields, field => isoType(field, `${iso}.to(${f})`, `${iso}.from(${f})`));
   declare(`${iso}.id`, `${oneModel} : ${iso}(${A}, ${A}) := ${iso}.make(${A}, ${A}, ${hom}.id(${A}), ${hom}.id(${A})${
     isoFields.slice(2).map(field => `, fun (x : ${A}.${field.sort}) => refl(x)`).join("")});`, "id");

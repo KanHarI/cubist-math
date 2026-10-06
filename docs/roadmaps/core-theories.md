@@ -432,12 +432,14 @@ Inside the body the theory's own notation, and its parents', is in scope, and
 each field is in scope by its name from its declaration on.
 
 A notation is one of the binary operators the grammar already has, `x + y`
-or `x * y`, or a relation, `x < y` or `x <= y`. Unary minus stays path
-inversion, so negation and inverses are named operations.
+or `x * y`, or a relation, `x < y` or `x <= y`. Unary minus is refused
+until it becomes arithmetic, and `~` inverts a path, so negation and
+inverses are named operations.
 
 This is the implemented L2.4 grammar. L2.10's proposed operators and literals
-are separate work. They move reversal to `~` first (L2.10i), keeping the
-groupings of `-p @ i` and `p @ -i & j`, so that `-` becomes arithmetic.
+are separate work. Reversal moved to `~` first (L2.10i, 2026-10-06),
+keeping the groupings `-p @ i` and `p @ -i & j` had, so that `-` can
+become arithmetic.
 
 ## Models
 
