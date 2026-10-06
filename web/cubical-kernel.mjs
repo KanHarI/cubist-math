@@ -48,6 +48,10 @@ export class CubicalKernel {
     if (!this.handle) throw new Error("Could not allocate cubical kernel session.");
     this.names = new Map();
     this.symbolNames = new Map();
+    // What node(id) read of each node: nodes do not change, but a
+    // declaration's commit or rollback moves them, so the transaction that
+    // ends one forgets these (forgetNodes).
+    this.nodes = new Map();
     this.nextSymbol = 1;
     this.stepBudget = 10000000n;
     // The most steps one query may grow to (withGrowingBudget).
@@ -238,12 +242,19 @@ export class CubicalKernel {
   }
   node(id) {
     this.assertOpen();
-    uint32(id, "Node handle");
-    const values = Array.from({ length: 6 }, (_, field) => this.module._cb_node(this.handle, id, field) >>> 0);
-    if (!values[0]) throw new Error("Unknown cubical node handle.");
-    return { id, kind: cubicalKinds[values[0]], payload: values[1], children: values.slice(2),
-      name: this.symbolNames.get(values[1]) };
+    let read = this.nodes.get(id);
+    if (!read) {
+      uint32(id, "Node handle");
+      const values = Array.from({ length: 6 }, (_, field) => this.module._cb_node(this.handle, id, field) >>> 0);
+      if (!values[0]) throw new Error("Unknown cubical node handle.");
+      read = { kind: cubicalKinds[values[0]], payload: values[1], children: Object.freeze(values.slice(2)) };
+      this.nodes.set(id, read);
+    }
+    return { id, kind: read.kind, payload: read.payload, children: read.children, name: this.symbolNames.get(read.payload) };
   }
+  // Node handles move when a declaration's checkpoint is committed or
+  // rolled back.
+  forgetNodes() { this.nodes.clear(); }
   inspectFormula(id) {
     this.assertOpen();
     uint32(id, "Formula handle");

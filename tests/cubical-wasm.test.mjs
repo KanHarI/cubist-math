@@ -279,13 +279,18 @@ test("kernel rejections are classified by kind, and speculative checks answer wi
   assert.equal(checker.attempt(T.pair(pairs, left, right), pairs).failure, "deadline");
   module._cb_deadline_ms(k.handle, 0);
   // Running out of time is no answer: equal() must not report inequality.
+  // A head computed earlier is served again without the kernel: out of
+  // time, it is refused too.
+  assert.deepEqual(checker.nf(left), checker.nf(left));
   k.setDeadline(0.001);
   until = performance.now() + 2;
   while (performance.now() < until) { /* let the JavaScript deadline expire */ }
   assert.equal(checker.attempt(left, two).failure, "deadline");
   assert.throws(() => checker.equal(left, left), error => error instanceof KernelError && error.kind === "deadline");
+  assert.throws(() => checker.nf(left), error => error instanceof KernelError && error.kind === "deadline");
   k.setDeadline();
   assert.equal(checker.equal(left, left), true);
+  assert.deepEqual(checker.nf(left), left);
 });
 
 test("the native kernel checks an elimination through an abstracted motive", t => {
