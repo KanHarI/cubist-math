@@ -104,3 +104,59 @@ theory Leftmost(U < UU0) extends Left {
 
 theory Labelled(U < UU0) extends start : Left {
 }
+
+// A renamed operator keeps the notation the renaming gives it, though its
+// name clashes too: + is magma_mul's and * is twin_mul's.
+theory Twin(U < UU0) {
+  M : set U;
+  mul(x, y : M) : M notation x * y;
+}
+
+theory Renotated(U < UU0) extends Magma(mul := mul notation x + y), Twin {
+  law agrees(x, y : M) : x + y = x * y;
+}
+
+// Output: forall U < UU0. forall m : Renotated(U). forall x : m.M. forall y : m.M. m.magma_mul(x,
+//   y) = m.twin_mul(x, y)
+print(typeof(Renotated.agrees));
+
+// One ancestor's point, reached through two parents, is one field beside
+// a third parent's point: Mixed.make takes two points.
+theory Base(U < UU0) {
+  M : set U;
+  point : M;
+}
+
+theory Marked(U < UU0) {
+  M : set U;
+  point : M;
+}
+
+theory Via(U < UU0) extends Base {
+}
+
+theory Also(U < UU0) extends Base {
+}
+
+theory Mixed(U < UU0) extends Via, Also, Marked {
+}
+
+// Output: forall U < UU0. forall M : U. IsSet(U, M) -> M -> M -> Mixed(U)
+print(typeof(Mixed.make));
+
+// A field's own parameter may take an ambiguous name: point here is the
+// law's parameter.
+theory Reflexive(U < UU0) extends Base, Marked {
+  law reflex(point : M) : point = point;
+}
+
+// A parent's label names its projection, as a field's name does.
+theory Point(U < UU0) {
+  M : set U;
+  point : M;
+}
+
+// Error: E859: Unlabelled's parent Point is labelled point, which names a field of Unlabelled too:
+//   label it apart, as in base : Point.
+theory Unlabelled(U < UU0) extends Point {
+}

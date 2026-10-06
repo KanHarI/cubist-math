@@ -530,7 +530,6 @@ export const diagnostics = [
   ["E838", "The notation of … reads … in the notation selected where it is used, which is …'s; … is no carrier's element: name the notation it is read in, as …."],
   ["E839", "-x names an operation's one argument; … is not an operation of one."],
   ["E840", "-x names an operation's one argument, as in neg(x : M) : M notation -x."],
-  ["E841", "u0000lexeme …"],
   ["E842", "… is declared in another module: only the module that declares a model adds rules to its notation."],
   ["E843", "A model's notation is its theory's; …'s adds only a numeral or a literal rule."],
   ["E844", "A literal rule reads a Lexeme: import lexemes, which defines …."],
@@ -547,6 +546,7 @@ export const diagnostics = [
   ["E856", "The law … is no equation: an initial model's laws are equations between its operations' terms."],
   ["E857", "The law … uses the derived operation …: an initial model's laws use its operations."],
   ["E858", "…'s field … is neither an operation nor a law: an initial model has only those."],
+  ["E859", "…'s parent … is labelled …, which names a field of … too: label it apart, as in base : …."],
   // Notation and operators
   ["E901", "-x negates in a selected notation that binds it, as integers.(-x); a path's reversal is ~p."],
   ["E902", "-x is not in …'s notation, which is selected here: select a notation that binds it, as integers.(-x)."],
