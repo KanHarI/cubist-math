@@ -32,11 +32,13 @@ const CONSTRUCTORS = new Set(["U", "Pi", "Lam", "LPi", "LLam", "Sigma", "Pair", 
 // glue [φ ↦ g] (unglue g), for g of a Glue type.
 const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma", LLam: "LPi", GlueTerm: "Glue" };
 // Steps after which a closed comparison computes normal forms, and the
-// kernel steps each normal form may take. The largest any area of the
-// workspace computes takes 3.5 million (finite fields' arithmetic); one that
-// is not reached by then, as an enormous type's, is not reached within the
-// session's ten million either, which each attempt used to spend.
-const LONG_COMPUTATION = 64, NORMAL_FORM_STEPS = 4000000;
+// kernel steps each normal form may take. A normal form not reached by then,
+// as an enormous type's, is left to lazy steps, which take a projection's or
+// an eliminator's argument to its weak head at once (scrutineeStep): past a
+// quarter of a million steps they were faster in every area of the workspace,
+// finite fields' arithmetic included, and each attempt beyond spent ~3 ms
+// a hundred thousand steps.
+const LONG_COMPUTATION = 64, NORMAL_FORM_STEPS = 250000;
 // The kernel steps the Glue step may take (the glue move). It normalizes its
 // side conditions, and open terms can be large shared graphs, whose normal
 // forms are not.
@@ -1349,6 +1351,18 @@ export class InstructionDriver {
   // The weak-head redex of a term, as the term checker's reduction finds it:
   // the function of an application first, then the scrutinee of an
   // eliminator. Null for a weak head normal form.
+  // The step a projection or an eliminator takes in its argument, which
+  // computes only once that is a constructor: where the argument would
+  // unfold a definition or contract a lambda, its weak head normal form, in
+  // one instruction, rather than those steps one by one. A model's
+  // projection takes the argument, a make applied to each field, to its
+  // tuple: a step a field, a projection's dozens of steps, each an
+  // instruction and a round of the search.
+  scrutineeStep(term, index) {
+    const step = this.headStep(term);
+    if (step && (step.rule === "beta" || step.rule === "delta")) return { path: [index], rule: "whnf" };
+    return step && { path: [index, ...step.path], rule: step.rule };
+  }
   headStep(term) {
     const n = this.node(term), under = (index, step) => step && { path: [index, ...step.path], rule: step.rule };
     const iota = { path: [], rule: "iota" };
@@ -1362,17 +1376,17 @@ export class InstructionDriver {
       // A declared type's eliminator computes on a constructor applied to
       // its arguments and at its dimensions (H1). A constructor at an
       // endpoint is its boundary first, by the path step inside.
-      if (fn === "Elim") return this.constructed(n.children[1]) ? iota : under(1, this.headStep(n.children[1]));
+      if (fn === "Elim") return this.constructed(n.children[1]) ? iota : this.scrutineeStep(n.children[1], 1);
       return under(0, this.headStep(n.children[0]));
     }
     case "Fst": case "Snd":
-      return this.node(n.children[0]).kind === "Pair" ? iota : under(0, this.headStep(n.children[0]));
+      return this.node(n.children[0]).kind === "Pair" ? iota : this.scrutineeStep(n.children[0], 0);
     case "SumRec": {
       const kind = this.node(n.children[3]).kind;
-      return kind === "Inl" || kind === "Inr" ? iota : under(3, this.headStep(n.children[3]));
+      return kind === "Inl" || kind === "Inr" ? iota : this.scrutineeStep(n.children[3], 3);
     }
     case "UnitRec":
-      return this.node(n.children[2]).kind === "Point" ? iota : under(2, this.headStep(n.children[2]));
+      return this.node(n.children[2]).kind === "Point" ? iota : this.scrutineeStep(n.children[2], 2);
     case "PApp": {
       const fn = this.node(n.children[0]);
       if (fn.kind === "PLam") {
