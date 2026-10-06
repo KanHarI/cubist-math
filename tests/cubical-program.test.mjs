@@ -155,6 +155,19 @@ test("progress totals count the declarations a theory expands to, so that none e
   assert.equal(progress.at(-1).total, result.declarationCount);
   assert.ok(result.outputs.filter(output => output.name.startsWith("Pointed")).length > 2);
 });
+test("progress totals take off the rest of a theory whose type of models fails, and end at what was checked", async t => {
+  const program = new CubicalProgram(module, sourceReader());
+  t.after(() => program.dispose());
+  const progress = [];
+  // Without hlevels, Pointed's sorts have no evidence: its type of models
+  // fails, once, and the rest of its expansion is not checked.
+  const result = await program.check("theory Pointed(U < UU0) { M : set U; point : M; } def after := tt;", "root", p => progress.push(p));
+  assert.deepEqual(result.outputs.map(output => [output.name, output.verified]), [["Pointed", false], ["after", true]]);
+  const counted = progress.filter(p => p.phase !== "loading");
+  assert.ok(counted.every(p => p.completed <= p.total), JSON.stringify(counted.find(p => p.completed > p.total)));
+  assert.equal(result.declarationCount, 2);
+  assert.deepEqual([progress.at(-1).completed, progress.at(-1).total], [2, 2]);
+});
 
 test("native optimization switches preserve path proofs and rejection independently", async () => {
   const name = "program_optimizations", path = testModulePath(name), source = await readFile(path, "utf8");

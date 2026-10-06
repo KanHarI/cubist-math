@@ -80,7 +80,7 @@ function lambdas(params,body) {
 }
 
 export class Translator {
-  constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onExpansion=null,
+  constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
     inspectSignature=null}={}) {
     // A declared type's signature as `print(inspect(T));` shows it, from the
@@ -110,8 +110,10 @@ export class Translator {
       })) : null;
     this.onDeclaration=onDeclaration;
     this.onDeclarationStart=onDeclarationStart;
-    // A theory expanded: how many declarations it adds beyond itself.
-    this.onExpansion=onExpansion;
+    // The declarations to check changed by a number: a theory's expansion
+    // adds the ones beyond itself, and a failed type of models takes the
+    // rest of its theory off.
+    this.onQueued=onQueued;
     this.simpRegistry=copySimpRegistry(simpRegistry);
     this.moduleName=moduleName;
   }
@@ -293,7 +295,7 @@ export class Translator {
         // A theory is checked as the declarations it expands to: the ones
         // beyond its own are declarations to count too.
         const generated=theoryDeclarations(this,module,d,env,declarations);
-        if(generated.length)this.onExpansion?.(generated.length-1);
+        if(generated.length)this.onQueued?.(generated.length-1);
         queue.unshift(...generated); continue;
       }
       // A file-level use m; selects m for the definitions and directives
@@ -445,7 +447,7 @@ export class Translator {
       // Without its type of models, the rest of a theory cannot check: it is
       // unavailable, and its failure is reported once.
       if (d.generated?.role==="model"&&declarations.at(-1).status==="not-translated")
-        skipTheory(this,queue,env,d);
+        this.onQueued?.(-skipTheory(this,queue,env,d));
     }
     return {declarations,env,directives,simpRegistry:this.simpRegistry,
       normalizationVisits:this.checker.steps};
