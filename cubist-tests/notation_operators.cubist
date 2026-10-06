@@ -100,7 +100,10 @@ def nat_chosen : Chosen(U0) := Chosen.make(
 // renaming leaves the right branch's x, the argument y here.
 theory Sided(U < UU0) {
   M : set U;
-  def pick(a, x : M, s : M or M) : M := match s return M { left x => a; right y => x; };
+  def pick(a, x : M, s : M or M) : M := match s return M {
+    left x => a;
+    right y => x;
+  };
   law picked(x, y : M, s : M or M) : pick(x, y, s) =[M] pick(x, y, s);
 }
 
