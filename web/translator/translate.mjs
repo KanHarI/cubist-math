@@ -761,6 +761,8 @@ export class Translator {
           }
           if(value.tag==="Dimension")throw Error("Interval coordinates can only be used in interval arguments.");
           if(value.tag==="Ambiguous")throw Error(value.message);
+          // A notation rule's operand, read where the operator is written.
+          if(value.tag==="Operand")return this.term(value.node,value.scope,expected);
           // A declared type or constructor (L2.1), or the declaration's own name.
           if(INDUCTIVE_TAGS.has(value.tag))return resolveInductive(this,n,value,null,scope,expected);
           if(value.tag==="Recursive")return resolveRecursive(this,n,value,null,scope);

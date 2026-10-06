@@ -25,6 +25,15 @@ def hygienic(add : Nat) : times.(2 + 3) = 6 {
   rfl;
 }
 
+// A rule's binder captures no name of an operand: z is the caller's here.
+notation first {
+  x + y := (fun (z : Nat) => x)(y);
+}
+
+def keeps(z, w : Nat) : first.(z + w) = z {
+  rfl;
+}
+
 // The operation alone.
 def plus := nat.(+);
 
@@ -42,6 +51,16 @@ print(evaluate(additive.(3 * 4)));
 
 // Output: 12
 print(evaluate(multiplicative.(3 * 4)));
+
+// A rule's qualified name is read by its root where the rule is declared:
+// a local additive changes nothing.
+notation summed {
+  x + y := additive.mul(x, y);
+}
+
+def rooted(additive : Monoid(U0), x, y : Nat) : summed.(x + y) = nat.(x + y) {
+  rfl;
+}
 
 // Selections nest, the innermost winning.
 def nested(x : Nat) : Nat := multiplicative.(x * nat.(x + 1));
