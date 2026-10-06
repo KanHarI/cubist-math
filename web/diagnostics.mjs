@@ -530,6 +530,7 @@ export const diagnostics = [
   ["E846", "notation numeral reads a plain numeral: it marks a derived operation of one natural number, as def of_nat(n : Nat) : R := … notation numeral."],
   ["E847", "A numeral rule reads a natural number: import nat."],
   ["E859", "…'s parent … is labelled …, which names a field of … too: label it apart, as in base : …."],
+  ["E860", "…'s pattern binds …, which an argument here names: rename it in …."],
   // Notation and operators
   ["E901", "-x negates in a selected notation that binds it, as integers.(-x); a path's reversal is ~p."],
   ["E902", "-x is not in …'s notation, which is selected here: select a notation that binds it, as integers.(-x)."],
