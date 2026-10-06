@@ -1535,6 +1535,10 @@
    "summary": "For `tests/automatic-clauses.test.mjs`: the generated set squash (E4) of the library's quotients, explicit obligations, missing h-level evidence, automatic clauses in the match statement, trailing proofs, ambiguous whole-clause proofs and hlevel hints."
   },
   {
+   "path": "cubist-tests/box_notation.cubist",
+   "summary": "The box notation for compositions: `compose j in A from b { on i = 0 => …; }` and `fill … at k`, faces as formulas, printing as boxes, and a face that is no formula."
+  },
+  {
    "path": "cubist-tests/computability_evaluation.cubist",
    "summary": "evaluate checks the normal form of a closed, assumption-free term; each failed evaluation's error is stated above it."
   },

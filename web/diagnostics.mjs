@@ -118,6 +118,8 @@ export const diagnostics = [
   ["E190", "A pattern names its two operands apart, as x … y."],
   ["E191", "… reads literals once: a notation has a numeral rule or a literal rule, not both."],
   ["E192", "hlevel_rule priority must be an integer from 0 to 1000."],
+  ["E193", "A wall's face is a formula of equations i = 0 and i = 1, with and and or, as on i = 0 or j = 1 => …."],
+  ["E194", "Expected '}' to close the box."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],

@@ -397,6 +397,47 @@ export function parse(source, typeOnly = false) {
       const body = expr();
       return { kind: "pathLambda", dimension, body, start: t.start, end: body.end };
     }
+    // compose j in A from b { on i = 0 => x; on i = 1 => q @ j; } composes
+    // along j in the family A, from b, with a wall on each face (L2.8, the
+    // implementation plan's box notation); fill j in A from b at k { … } is
+    // its filler at the coordinate k. j is bound in the family and the walls,
+    // not in the base or the faces, and nothing is guessed: the box lowers to
+    // comp, or fill, with a face(…) or face_when(…) for each wall.
+    if ((t.text === "compose" || t.text === "fill") && /^[A-Za-z_]/.test(peek()) && ts[i + 1]?.text === "in") {
+      const dimension = name();
+      take("in");
+      const family = expr();
+      take("from");
+      const base = expr();
+      const level = t.text === "fill" ? (take("at"), expr()) : null;
+      take("{");
+      const along = body => ({ kind: "lambda", name: dimension, binderKind: "lambda",
+        domain: { kind: "name", name: "Interval", start: dimension.start, end: dimension.end },
+        body, start: body.start, end: body.end, generatedBinder: true });
+      const call = (fn, args, at) => ({ kind: "call", fn: { kind: "name", name: fn, start: at.start, end: at.end }, args, start: at.start, end: at.end });
+      // A face: i = 0 and j = 1 or …, read as on(i, 0) and on(j, 1) or ….
+      const face = n => {
+        if (n.kind === "number" && [0, 1].includes(n.value)) return n;
+        if (n.kind === "binary" && ["and", "or"].includes(n.operator)) return { ...n, left: face(n.left), right: face(n.right) };
+        if (n.kind === "binary" && n.operator === "=" && n.left.kind === "name" && n.right.kind === "number" && [0, 1].includes(n.right.value))
+          return call("on", [n.left, n.right], n);
+        throw Object.assign(new Error("A wall's face is a formula of equations i = 0 and i = 1, with and and or, as on i = 0 or j = 1 => …."), { offset: n.start });
+      };
+      const walls = [];
+      while (peek() !== "}") {
+        if (peek() === "EOF") throw Object.assign(new Error("Expected '}' to close the box."), { offset: ts[i].start });
+        take("on");
+        const formula = face(expr());
+        take("=>");
+        const wall = expr();
+        take(";");
+        walls.push(formula.kind === "call" ? call("face", [...formula.args, along(wall)], formula)
+          : call("face_when", [formula, along(wall)], formula));
+      }
+      const close = take("}");
+      return { kind: "call", fn: { kind: "name", name: t.text === "compose" ? "comp" : "fill", start: t.start, end: t.end },
+        args: [along(family), base, ...(level ? [level] : []), ...walls], box: true, start: t.start, end: close.end };
+    }
     if (t.text === "along") {
       const family = expr();
       take("by");
