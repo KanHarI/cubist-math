@@ -7,17 +7,15 @@ use nat;
 
 // Transposing twice, or flipping twice, gives the square back.
 def transpose_twice{{
-  A : U0, a00, a01, a10, a11 : A, left : a00 = a01, right : a10 = a11, bottom : a00 = a10,
-  top : a01 = a11
-}}(s : Square(left, right, bottom, top)) :
+  A : U0, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10, a_1 : a01 = a11
+}}(s : Square(a0_, a1_, a_0, a_1)) :
   transpose(transpose(s)) = s {
   rfl;
 }
 
 def flip_twice{{
-  A : U0, a00, a01, a10, a11 : A, left : a00 = a01, right : a10 = a11, bottom : a00 = a10,
-  top : a01 = a11
-}}(s : Square(left, right, bottom, top)) :
+  A : U0, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10, a_1 : a01 = a11
+}}(s : Square(a0_, a1_, a_0, a_1)) :
   flip_horizontal(flip_horizontal(s)) = s {
   rfl;
 }

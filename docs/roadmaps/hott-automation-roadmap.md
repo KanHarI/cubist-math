@@ -952,7 +952,7 @@ Completion:
     `fill j in A from b at k { … }` lower to `comp` and `fill`, and a
     composition prints as its box.
   - The square view, second, the same day: `library/squares.cubist`'s
-    `Square(left, right, bottom, top)`, with the reflexive and naturality
+    `Square(a0_, a1_, a_0, a_1)`, its edges named by its corners, with the reflexive and naturality
     squares, transposition, both flips, double composition and its filler,
     and horizontal and vertical composition, each by conversion; the
     inspector shows a square's edges and corners. The conversions between a

@@ -1,14 +1,16 @@
 // Squares (L2.8; the HoTT roadmap's E2): a square in A is a path between
 // two paths, over two others, with its four edges named.
-// Square(left, right, bottom, top) is
-// PathP(fun (i : Interval) => bottom @ i = top @ i, left, right): at the
-// coordinate i it is a path from bottom @ i up to top @ i, which is the
-// left edge where i is 0 and the right edge where it is 1. Its corners are
-// the edges' ends. s @ i @ j is its point at i across and j up.
+// Square(a0_, a1_, a_0, a_1) is
+// PathP(fun (i : Interval) => a_0 @ i = a_1 @ i, a0_, a1_): at the
+// coordinate i it is a path from a_0 @ i up to a_1 @ i, which is the left
+// edge a0_ where i is 0 and the right edge a1_ where it is 1, over the
+// bottom edge a_0 and the top edge a_1. s @ i @ j is its point at i across
+// and j up; a00, a01, a10 and a11 are its corners, and an edge is named by
+// its corners, _ standing for the coordinate that varies along it.
 def Square{{U < UU0, A : U, a00, a01, a10, a11 : A}}(
-  left : a00 = a01, right : a10 = a11, bottom : a00 = a10, top : a01 = a11
+  a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10, a_1 : a01 = a11
 ) :
-  U := PathP(fun (i : Interval) => bottom @ i = top @ i, left, right);
+  U := PathP(fun (i : Interval) => a_0 @ i = a_1 @ i, a0_, a1_);
 
 // The square with p on both sides, constant at the bottom and the top.
 computable def refl_square{{U < UU0, A : U, x, y : A}}(p : x = y) :
@@ -23,23 +25,23 @@ computable def naturality{{U < UU0, A, B : U, x, y : A}}(
 
 // A square read with its coordinates swapped.
 computable def transpose{{
-  U < UU0, A : U, a00, a01, a10, a11 : A, left : a00 = a01, right : a10 = a11, bottom : a00 = a10,
-  top : a01 = a11
-}}(s : Square(left, right, bottom, top)) :
-  Square(bottom, top, left, right) := path j => path i => s @ i @ j;
+  U < UU0, A : U, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10,
+  a_1 : a01 = a11
+}}(s : Square(a0_, a1_, a_0, a_1)) :
+  Square(a_0, a_1, a0_, a1_) := path j => path i => s @ i @ j;
 
 // A square read from right to left, and from top to bottom.
 computable def flip_horizontal{{
-  U < UU0, A : U, a00, a01, a10, a11 : A, left : a00 = a01, right : a10 = a11, bottom : a00 = a10,
-  top : a01 = a11
-}}(s : Square(left, right, bottom, top)) :
-  Square(right, left, ~bottom, ~top) := path i => s @ ~i;
+  U < UU0, A : U, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10,
+  a_1 : a01 = a11
+}}(s : Square(a0_, a1_, a_0, a_1)) :
+  Square(a1_, a0_, ~a_0, ~a_1) := path i => s @ ~i;
 
 computable def flip_vertical{{
-  U < UU0, A : U, a00, a01, a10, a11 : A, left : a00 = a01, right : a10 = a11, bottom : a00 = a10,
-  top : a01 = a11
-}}(s : Square(left, right, bottom, top)) :
-  Square(~left, ~right, top, bottom) := path i => ~(s @ i);
+  U < UU0, A : U, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10,
+  a_1 : a01 = a11
+}}(s : Square(a0_, a1_, a_0, a_1)) :
+  Square(~a0_, ~a1_, a_1, a_0) := path i => ~(s @ i);
 
 // Double composition: q, with p before it and r after it. Its filler is a
 // square with q at the bottom, p reversed on the left, r on the right, and
@@ -63,10 +65,10 @@ computable def trans_double_comp{{U < UU0, A : U, x, y, z : A}}(q : x = y, r : y
 // Two squares side by side: at each height j, the composite of their paths
 // across, which their transposes give.
 computable def horizontal{{
-  U < UU0, A : U, a00, a01, a10, a11, a20, a21 : A, left : a00 = a01, middle : a10 = a11,
-  right : a20 = a21, b1 : a00 = a10, b2 : a10 = a20, t1 : a01 = a11, t2 : a11 = a21
-}}(s : Square(left, middle, b1, t1), t : Square(middle, right, b2, t2)) :
-  Square(left, right, trans(b1, b2), trans(t1, t2)) := path i => path j => trans(
+  U < UU0, A : U, a00, a01, a10, a11, a20, a21 : A, a0_ : a00 = a01, a1_ : a10 = a11,
+  a2_ : a20 = a21, b1 : a00 = a10, b2 : a10 = a20, t1 : a01 = a11, t2 : a11 = a21
+}}(s : Square(a0_, a1_, b1, t1), t : Square(a1_, a2_, b2, t2)) :
+  Square(a0_, a2_, trans(b1, b2), trans(t1, t2)) := path i => path j => trans(
     transpose(s) @ j, transpose(t) @ j
   ) @ i;
 
@@ -74,6 +76,6 @@ computable def horizontal{{
 // their paths up.
 computable def vertical{{
   U < UU0, A : U, a00, a01, a02, a10, a11, a12 : A, l1 : a00 = a01, l2 : a01 = a02, r1 : a10 = a11,
-  r2 : a11 = a12, bottom : a00 = a10, middle : a01 = a11, top : a02 = a12
-}}(s : Square(l1, r1, bottom, middle), t : Square(l2, r2, middle, top)) :
-  Square(trans(l1, l2), trans(r1, r2), bottom, top) := path i => trans(s @ i, t @ i);
+  r2 : a11 = a12, a_0 : a00 = a10, a_1 : a01 = a11, a_2 : a02 = a12
+}}(s : Square(l1, r1, a_0, a_1), t : Square(l2, r2, a_1, a_2)) :
+  Square(trans(l1, l2), trans(r1, r2), a_0, a_2) := path i => trans(s @ i, t @ i);
