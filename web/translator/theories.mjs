@@ -44,8 +44,9 @@ export function registerTheoryDeclaration(t,d) {
 // or T.p(m) for a parent labelled p; otherwise null.
 export function modelField(t,scope,n) {
   const dot=n.name.lastIndexOf("."),first=dot>0?n.name.slice(0,n.name.indexOf(".")):null,root=first?scope.env.get(first):null;
-  // A name under a theory's, T.Hom, is a qualified name, not a field.
-  if(!root||scope.env.has(theoryBinding(first)))return null;
+  // A name under a theory's, T.Hom, is a qualified name, not a field. A
+  // local model that shadows the theory's name is a model like any other.
+  if(!root||theoryRoot(t,scope,first,root))return null;
   const owner={...n,name:n.name.slice(0,dot),end:n.start+dot};
   const record=recordOf(t,scope,t.term(owner,scope,null));
   if(!record)return null;
@@ -61,6 +62,12 @@ export function modelField(t,scope,n) {
 // error that names the qualified forms.
 const ambiguousField=(record,model,field)=>Error(`${field} is ambiguous in ${record.name}: it is ${
   record.ambiguous[field].map(e=>`${e.label}'s`).join(" and ")}. Write ${record.ambiguous[field].map(e=>`${model}.${e.label}.${e.parentField}`).join(" or ")}.`);
+
+// Whether `name`, bound to `root`, is the theory of that name: its type of
+// models, or its declaration where that failed.
+function theoryRoot(t,scope,name,root) {
+  return scope.env.has(theoryBinding(name))&&(root.tag==="Untranslated"||root.tag==="DefRef"&&!!t.checker.theories?.has(root.name));
+}
 
 // e.f, for a value e that is not a name: when e is a model, the node of the
 // call T.f(e); otherwise the error that says so.
