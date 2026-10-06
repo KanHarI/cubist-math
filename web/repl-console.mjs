@@ -32,7 +32,7 @@ export function createReplConsole(root, { run, reset, greeting = [], label = "RE
   prompt.setAttribute("aria-hidden", "true");
   const input = element("textarea", "repl-text");
   Object.assign(input, { rows: 1, spellcheck: false, autocapitalize: "off", autocomplete: "off",
-    placeholder: "let x := 7;   typeof x;   evaluate x;   /help" });
+    placeholder: "use nat;   let x := 7;   typeof x;   /help" });
   input.setAttribute("aria-label", label);
   const runButton = element("button", "repl-run", "Run"), clearButton = element("button", "repl-clear", "Clear");
   runButton.type = "submit";

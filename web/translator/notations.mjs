@@ -6,9 +6,12 @@
 export const unboundOperator = (selection, operator) =>
   Error(`${operator} is not in ${selection.name}'s notation, which is selected here: select a notation that binds it, as nat.(x ${operator} y), or write the operation.`);
 
-// An operator that no name-based reading gives, used with no selection.
-export const unselectedOperator = operator =>
-  Error(`x ${operator} y means what a selected notation binds ${operator} to: select one, as integers.(x ${operator} y).`);
+// An operator used with no selection (L2.10j): one that nat binds, as + or
+// x > y, suggests nat.
+const natural = new Set(["+", "*", "<", "<=", ">", ">="]);
+export const unselectedOperator = operator => natural.has(operator)
+  ? Error(`x ${operator} y means what a selected notation binds ${operator} to: for natural numbers, use nat; or write nat.(x ${operator} y).`)
+  : Error(`x ${operator} y means what a selected notation binds ${operator} to: select one, as integers.(x ${operator} y).`);
 
 // -x with no selection, and with one that binds no negation.
 export const unselectedNegation = () =>

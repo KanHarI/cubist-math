@@ -135,6 +135,7 @@
                 <tr id="E351"><td class="code"><code>E351</code></td><td data-message="Expected a Sigma type for pair.">“Expected a Sigma type for pair.”</td><td>A pair is checked against a type that is not a pair type, or a tuple does not match the nesting of its type.</td><td><a href="terms.html#tuples">tuples</a></td></tr>
                 <tr id="E349"><td class="code"><code>E349</code></td><td data-message="requires a dependent pair; found a value of type">“Projection <var>.1</var> requires a dependent pair; found a value of type <var>T</var>.”</td><td>Only a pair has projections. The message shows the type of the projected value.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
                 <tr id="E356"><td class="code"><code>E356</code></td><td data-message="unpack requires a dependent pair.">“unpack requires a dependent pair.”</td><td>Only pairs can be unpacked.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
+                <tr id="E912"><td class="code"><code>E912</code></td><td data-message="for natural numbers, use nat; or write nat.(x">“x + y means what a selected notation binds + to: for natural numbers, use nat; or write nat.(x + y).”</td><td>An operator means only what the selected notation binds, and nothing is selected here: a function named <code>add</code> in scope gives <code>+</code> no meaning. After <code>import nat;</code>, write <code>use nat;</code> at the top of the file, or <code>nat.(2 + 3)</code> for one expression. <code>-</code>, <code>/</code> and <code>^</code> name the integers instead (E399).</td><td><a href="terms.html#numbers">numbers</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -872,6 +873,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E909"><td><code>E909</code></td><td>… is a binary literal, which a selected notation's literal rule reads, as the archive's binary.(…).</td></tr>
                 <tr id="E910"><td><code>E910</code></td><td>…'s notation reads no binary literal …: select one whose literal rule reads it, as the archive's binary.(…).</td></tr>
                 <tr id="E911"><td><code>E911</code></td><td>… means the natural number in a selected notation that reads it: use nat; or write nat.(…).</td></tr>
+                <tr><td><a href="#E912"><code>E912</code></a></td><td>x … y means what a selected notation binds … to: for natural numbers, use nat; or write nat.(x … y).</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-k1">Kernel: declared types</h3>

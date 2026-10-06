@@ -96,9 +96,9 @@ export function opened(t,scope,node,{complete=true}={}) {
   // A theory's numeral rule, its derived operation marked notation numeral.
   const numeral=record.notations.numeral?{left:"n",right:null,aliases:new Map(),recipe:{},
     value:{kind:"call",fn:{kind:"name",name:operatorBinding("numeral"),...at},args:[{kind:"name",name:"n",...at}],...at}}:null;
-  // The model's notation is the selection (L2.10a). A section's is not
-  // complete until L2.10j: an operator it does not bind falls back by name,
-  // as before views.
+  // The model's notation is the selection (L2.10a), complete: an operator
+  // it does not bind is an error, except in a module of a revision before
+  // L2.10j, whose sections read one by name (sectionScope).
   return inner.alias(SELECTION,{name:node.name??"this model",recipes:record.recipes??{},complete,numeral,literal:null,
     operators:new Set([...Object.keys(record.notations),...Object.keys(record.ambiguousNotations??{})])});
 }
@@ -224,6 +224,9 @@ function notationSelected(scope,notation) {
 
 // The scope with the model `node` selected, by use m; or m.(e) (L2.4c):
 // opened, or the error that it is no model.
+// The name of what a list of file-level uses selects last, or null: the
+// notation the declaration after them prints in (L2.10j).
+export const selectionName=uses=>{const model=uses?.at(-1);return model?.kind==="name"?model.name:null;};
 export function selected(t,scope,node) {
   const notation=node.kind==="name"?scope.env.get(notationBinding(node.name)):null;
   if(notation?.tag==="Notation"&&!notation.model)return notationSelected(scope,notation);
@@ -324,6 +327,9 @@ export function sectionScope(t,scope,n) {
     inner=inner.alias(declared,t.term({kind:"call",fn:name(declared),args:explicit.map(p=>name(p.name.text)),
       ...(implicit.length?{implicitArgs:implicit.map(p=>name(p.name.text))}:{}),...at},scope,null));
   }
-  for(const p of n.section.params)if(p.type)inner=opened(t,inner,name(p.name.text),{complete:false})??inner;
+  // A section's selection is complete, as any other (L2.10j); a module of a
+  // revision before then reads what its model's notation does not bind by
+  // name.
+  for(const p of n.section.params)if(p.type)inner=opened(t,inner,name(p.name.text),{complete:!t.nameBased})??inner;
   return inner;
 }

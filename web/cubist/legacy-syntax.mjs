@@ -43,9 +43,11 @@ const reversalsAsTilde = source => {
 };
 
 // Until L2.10a (2026-10-06) nat declared no notation: + and numerals read
-// add and Nat by name. A revision's nat without one is read with the
-// notation it had in effect, so that a module of today that imports it can
-// select it with use nat; it adds no declaration.
+// add and Nat by name, until L2.10j. A revision's nat without one is read
+// with the notation it had in effect, so that a module of today that imports
+// it can select it with use nat; it adds no declaration. The revision's own
+// modules keep reading by name (the Translator's nameBased, which
+// tools/verify-proof-migration.mjs sets for a base before L2.10j).
 const withNatNotation = text => /(?:^|\n)\s*notation\s+nat\b/.test(text) ? text : `${text.replace(/\s*$/, "\n")}
 notation nat {
   x + y := add(x, y);

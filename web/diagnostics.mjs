@@ -539,6 +539,7 @@ export const diagnostics = [
   ["E909", "… is a binary literal, which a selected notation's literal rule reads, as the archive's binary.(…)."],
   ["E910", "…'s notation reads no binary literal …: select one whose literal rule reads it, as the archive's binary.(…)."],
   ["E911", "… means the natural number in a selected notation that reads it: use nat; or write nat.(…)."],
+  ["E912", "x … y means what a selected notation binds … to: for natural numbers, use nat; or write nat.(x … y)."],
   // Kernel: declared types
   ["K101", "Dimension renaming allocation failed."],
   ["K102", "A boundary is nested too deeply."],

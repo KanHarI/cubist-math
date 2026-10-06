@@ -422,7 +422,7 @@ def unit_is_tt(u : Unit) : u = tt {
         </div>
         <div class="quick-entry" id="quick-numbers">
           <h4>Numbers</h4>
-          <p>Decimal literals are unary <code>Nat</code>. With <code>import nat;</code>, <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> compute.
+          <p>Decimal literals are unary <code>Nat</code>. With <code>import nat;</code> and <code>use nat;</code>, numerals, <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> are the naturals' and compute.
             <a href="reference/terms.html#numbers">Functions, pairs and sums →</a></p>
           <pre><code data-check="accept">import nat;
 use nat;
@@ -647,7 +647,7 @@ def length(xs : List(U0, Nat)) : Nat := induction xs return Nat {
         </div>
         <div class="quick-entry" id="quick-binary">
           <h4>Binary literals</h4>
-          <p>Where <code>binary_naturals</code>' notation <code>binary</code> is selected, <code>0b110</code> is six in <code>BinaryNat</code>, one constructor per bit. Hover it to see the expansion. Decimal literals stay unary.
+          <p>Where <code>binary_naturals</code>' notation <code>binary</code> is selected, <code>0b110</code> is six in <code>BinaryNat</code>: its literal rule reads the digits and computes one constructor per bit. Decimal literals stay unary.
             <a href="reference/induction.html#binary">Natural numbers and inductive types →</a></p>
           <pre><code data-check="accept">import binary_naturals;
 use binary;

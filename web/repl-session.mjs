@@ -145,7 +145,7 @@ export class ReplSession {
 
   typeText(info) {
     const view = this.program.checker.definitionViews?.get(info.binding);
-    return view ? this.program.checker.displayText(view.type, 4000) : info.type;
+    return view ? this.program.checker.displayText(view.type, 4000, 4000, { selection: this.uses.at(-1) ?? null }) : info.type;
   }
 
   // Failures of an entry: its declarations, directives, and modules it loaded.

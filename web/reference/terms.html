@@ -402,7 +402,7 @@ def unannotated(impossible : Void) := absurd(impossible);</code></pre>
           </section>
           <section id="numbers">
             <h2>Numbers and arithmetic</h2>
-            <p><code>Nat</code> is built from <code>0</code> and <code>succ</code>. A numeral is notation for repeated <code>succ</code>: <code>3</code> is <code>succ(succ(succ(0)))</code>, not a machine integer. Numerals go up to 256.</p>
+            <p><code>Nat</code> is built from <code>0</code> and <code>succ</code>. A numeral is notation for repeated <code>succ</code>: <code>3</code> is <code>succ(succ(succ(0)))</code>, not a machine integer. Numerals go up to 256. A numeral means what the selected notation reads it as: <code>import nat;</code> loads the arithmetic library, and <code>use nat;</code> selects its notation for the rest of the file.</p>
             <pre><code data-check="accept">import nat;
 use nat;
 
@@ -412,7 +412,7 @@ def three_is_three : three = 3 {
   exact refl(3);
 }</code></pre>
             <pre><code data-check="reject">def too_big := 257;  // Error: Numerals are limited to 256 in this version.</code></pre>
-            <p>The operators <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> are notation for <code>add</code>, <code>mul</code>, <code>isLt</code> and <code>le</code>, which the arithmetic library defines. Import it with <code>import nat;</code>. The operators are not overloaded by the types of their operands: they mean the <code>add</code> and <code>mul</code> in scope, <code>Nat</code>'s here, unless <a href="theories.html#open"><code>open</code></a> binds them to a model's operations for a block.</p>
+            <p>The operators <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> are <code>nat</code>'s notation for <code>add</code>, <code>mul</code>, <code>isLt</code> and <code>le</code>, which the arithmetic library defines; <code>x &gt; y</code> and <code>x &gt;= y</code> are <code>y &lt; x</code> and <code>y &lt;= x</code>. <code>use nat;</code> selects them for the rest of a file, and <code>nat.(2 * 3)</code> for one expression. An operator means only what the selected notation binds: it is not overloaded by the types of its operands, and a function named <code>add</code> in scope gives <code>+</code> no meaning. A <a href="theories.html#open"><code>use</code></a> of a model binds them to its operations instead.</p>
             <pre><code data-check="accept">import nat;
 use nat;
 
@@ -423,8 +423,10 @@ def two_times_three : 2 * 3 = 6 {
 def two_below_three : 2 &lt; 3 {
   exact tt;
 }</code></pre>
-            <p>Closed arithmetic computes, so <code>refl(6)</code> proves <code>2 * 3 = 6</code>. The order is defined by computation too: <code>2 &lt; 3</code> computes to <code>Unit</code>, proved by <code>tt</code>, and <code>3 &lt; 2</code> computes to <code>Void</code>. Without the import, neither the numerals nor the notation have a definition:</p>
-            <pre><code data-check="reject">def four := 2 + 2;  // Error: Untranslated name: Nat</code></pre>
+            <p>Closed arithmetic computes, so <code>refl(6)</code> proves <code>2 * 3 = 6</code>. The order is defined by computation too: <code>2 &lt; 3</code> computes to <code>Unit</code>, proved by <code>tt</code>, and <code>3 &lt; 2</code> computes to <code>Void</code>. Where no notation is selected, neither the operators nor the numerals mean anything:</p>
+            <pre><code data-check="reject">import nat;
+
+def four := 2 + 2;  // Error: x + y means what a selected notation binds + to: for natural numbers, use nat; or write nat.(x + y).</code></pre>
             <p>Addition recurses on its first argument. <code>0 + n</code> computes to <code>n</code>, but <code>n + 0</code> is stuck on the variable <code>n</code>, so it needs a proof by induction. The library proves it as <code>nat_add_zero(n)</code>.</p>
             <pre><code data-check="accept">import nat;
 use nat;

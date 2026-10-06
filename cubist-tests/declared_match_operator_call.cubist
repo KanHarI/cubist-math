@@ -1,6 +1,7 @@
 // From tests/declared-match.test.mjs: recursion whose other arguments vary,
-// with the call spelled with an operator: `+`, which stands for add, calls
-// the declaration as its name does.
+// and the operator spelled for it by a notation of the module's own. An
+// operator means only what a selected notation binds (L2.10j): a function
+// named add in scope gives + no meaning.
 
 inductive N {
   zero;
@@ -9,9 +10,17 @@ inductive N {
 
 def add(n, a : N) : N := match n {
     zero => a;
-    succ(m) => m + succ(a);
+    succ(m) => add(m, succ(a));
   };
 
-def five : add(succ(succ(zero)), succ(succ(succ(zero)))) = succ(succ(succ(succ(succ(zero))))) {
+notation sums {
+  x + y := add(x, y);
+}
+
+def five : sums.(succ(succ(zero)) + succ(succ(succ(zero)))) = succ(succ(succ(succ(succ(zero))))) {
   rfl;
 }
+
+// Error: E912: x + y means what a selected notation binds + to: for natural numbers, use nat; or
+//   write nat.(x + y).
+def unselected(n : N) : N := n + n;

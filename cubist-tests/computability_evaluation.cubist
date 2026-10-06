@@ -11,7 +11,7 @@ evaluate 2 + 2 expecting 4;
 evaluate 2 + 2 expecting 5;
 evaluate binary_mul(binary.(0b1101), binary.(0b1011)) expecting binary.(0b10001111);
 // A binary value prints as a binary literal.
-// Output: 0b10001111
+// Output: binary.(0b10001111)
 print(evaluate(binary_mul(binary.(0b1101), binary.(0b1011))));
 // Error: E324: The evaluated term depends on non-computing assumptions: LEM, Truncate,
 //   TruncateElim. Path to LEM: double_negation (classical) → LEM.

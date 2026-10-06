@@ -89,8 +89,8 @@ def seven_again : Nat {
           <section id="tour-numbers">
             <h2>Natural numbers</h2>
             <p><code>Nat</code> is the type of natural numbers <code>0, 1, 2, …</code>. They are built from <code>0</code> and <code>succ</code>, the successor: <code>succ(n)</code> is <code>n + 1</code>.</p>
-            <p>By default, a numeral is a <code>Nat</code> in this unary form: <code>3</code> is shorthand for <code>succ(succ(succ(0)))</code>. It is not a machine integer, so a numeral’s size is the size of its term; numerals go up to 256. Binary literals such as <code>0b110</code> belong to a separate type, <code>BinaryNat</code>, described with the <a href="induction.html#binary">inductive types</a>.</p>
-            <p>Addition <code>+</code> and multiplication <code>*</code> are defined in the arithmetic library, which a file loads with <code>import nat;</code> at its start. <code>evaluate term expecting value;</code> checks what a term computes to:</p>
+            <p>In the naturals' notation, a numeral is a <code>Nat</code> in this unary form: <code>3</code> is shorthand for <code>succ(succ(succ(0)))</code>. It is not a machine integer, so a numeral’s size is the size of its term; numerals go up to 256. Binary literals such as <code>binary.(0b110)</code> belong to a separate type, <code>BinaryNat</code>, described with the <a href="induction.html#binary">inductive types</a>.</p>
+            <p>Addition <code>+</code> and multiplication <code>*</code> are defined in the arithmetic library, which a file loads with <code>import nat;</code> at its start; <code>use nat;</code> then selects its notation, in which numerals and <code>+</code> mean the naturals'. <code>evaluate term expecting value;</code> checks what a term computes to:</p>
             <pre><code data-check="accept">import nat;
 use nat;
 
@@ -99,8 +99,10 @@ def three := succ(succ(succ(0)));
 evaluate three expecting 3;
 evaluate 2 + 3 expecting 5;
 evaluate 2 * 3 expecting 6;</code></pre>
-            <p>Without the import, neither the numerals nor <code>+</code> have a definition. A wrong expectation is reported with the actual value:</p>
-            <pre><code data-check="reject">def five := 2 + 3;  // Error: Untranslated name: Nat</code></pre>
+            <p>Without <code>use nat;</code>, neither the numerals nor <code>+</code> mean anything. A wrong expectation is reported with the actual value:</p>
+            <pre><code data-check="reject">import nat;
+
+def five := 2 + 3;  // Error: x + y means what a selected notation binds + to: for natural numbers, use nat; or write nat.(x + y).</code></pre>
             <pre><code data-check="reject">import nat;
 use nat;
 

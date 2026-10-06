@@ -532,6 +532,7 @@ one. Where no model's notation binds `+` or `*`, they keep their meaning
 today: `add` and `mul` in scope, as for `Nat`. L2.10j retires that
 fallback; an operator then means only what a view, an `open` or a section
 binds, and a section or `open` selects its model's view, innermost first.
+(L2.10j is done: `open` is now `use`, and every selection is complete.)
 
 L2.10 extends this explicit selection to expression views, including theorem
 statements, with operand views determining numeral interpretations and a

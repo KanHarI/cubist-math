@@ -27,8 +27,8 @@ const lexemeText = printed => [...printed.matchAll(/\b(digit|lower|upper)\((\d+)
 // Without an entry, a definition shows its name without the module prefix.
 // `context.selection` names the notation selected where the text is read
 // (L2.10d): an operation prints with its notation's operator only where
-// that notation is selected, and is qualified, as nat.(x + y), elsewhere.
-// Until name-based operators are retired (L2.10j), nat's are read unselected.
+// that notation is selected, and is qualified, as nat.(x + y), elsewhere,
+// even where nothing is selected (L2.10j).
 export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   let budget = limit, selection = context.selection ?? null;
   const label = binding => symbols[binding]?.name
@@ -82,6 +82,10 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       p = p.arg;
     }
   };
+  // A natural number reads back where a notation is selected, and as nat's
+  // where none is; a binary number, where binary is (L2.10j).
+  const natural = n => atom(selection === null ? `nat.(${n})` : String(n));
+  const bits = text => atom(selection === "binary" ? text : `binary.(${text})`);
   // A motive's variable shown under another name; a binder of the same name
   // inside shadows the renaming.
   const renames = new Map();
@@ -239,9 +243,9 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       }
       case "App": case "LApp": {
         const number=numeral(t);
-        if(number!==null)return atom(String(number));
-        const bits=binary(t);
-        if(bits)return atom(bits);
+        if(number!==null)return natural(number);
+        const digits=binary(t);
+        if(digits)return bits(digits);
         // The standard source Nat's eliminator has the existing induction
         // spelling. Eta reduction may leave its successor clause curried.
         if(t.tag==="App"&&t.fn.tag==="Elim"&&t.fn.signature==="nat__Nat"
@@ -272,7 +276,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
           const text = printing.operator === "^" ? `${sub(args[0], level + 1)} ^ ${sub(args[1], level)}`
             : `${sub(args[0], left)} ${printing.operator} ${sub(args[1], level + 1)}`;
           selection = saved;
-          const own = selection === printing.notation || selection === null && printing.notation === "nat";
+          const own = selection === printing.notation;
           return own ? [text, level] : atom(`${printing.notation}.(${text})`);
         }
         // A literal read from its characters prints as it was written, in
@@ -299,7 +303,11 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         const operator = head.tag === "DefRef" && args.length === 2 && !printing && arithmetic.exec(head.name)?.[1];
         if (operator) {
           const [symbol, level] = infix[operator], left = level === LEVEL.compare ? level + 1 : level;
-          return [`${sub(args[0], left)} ${symbol} ${sub(args[1], level + 1)}`, level];
+          const saved = selection;
+          selection = "nat";
+          const text = `${sub(args[0], left)} ${symbol} ${sub(args[1], level + 1)}`;
+          selection = saved;
+          return selection === "nat" ? [text, level] : atom(`nat.(${text})`);
         }
         // A theory's projection of a model is m.f, and applied further,
         // m.f(x, y), as the source writes it (L2.4).
@@ -359,7 +367,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
           : [...universes, ...parameters];
         return atom(args.length ? `${label(t.signature)}(${args.join(", ")})` : label(t.signature));
       }
-      case "Con": {const n=numeral(t);return n!==null?atom(String(n)):binary(t)?atom(binary(t)):t.name ? atom(t.name) : fallback(t);}
+      case "Con": {const n=numeral(t);return n!==null?natural(n):binary(t)?bits(binary(t)):t.name ? atom(t.name) : fallback(t);}
       case "Path":
         // An equality: a path whose type does not vary along it.
         if (!varies(t.family, t.dim))

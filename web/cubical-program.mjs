@@ -2,6 +2,7 @@ import { sourceStatement } from "./cubical-statement.mjs";
 import { CubicalKernel } from "./cubical-kernel.mjs";
 import { NativeCubicalElaborator, printedLabels } from "./cubical-elaborator.mjs";
 import { Translator } from "./translator/translate.mjs";
+import { selectionName } from "./translator/theories.mjs";
 import {emptySimpRegistry,mergeSimpRegistries} from "./translator/simp-registry.mjs";
 import { substituteTerm, T } from "./translator/core.mjs";
 import { localName, printedForms, printsAsItself } from "./translator/names.mjs";
@@ -225,8 +226,11 @@ export class CubicalProgram {
       let transaction = null;
       const statements = [];
       let current = null;
+      // A module of a revision before L2.10j, as the migration verifier reads
+      // one, keeps its name-based operators and numerals (translate.mjs).
       const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
-        inspectSignature: binding => this.signatureText(binding),
+        nameBased: this.readSource.nameBased?.(name) ?? false,
+        inspectSignature: binding => this.signatureText(binding, checker.notation),
         ...Object.fromEntries(Object.entries(this.fuelLimits).filter(([, limits]) => limits)),
         onStep: step => statements.push({ ...step, declaration: current }),
         onDeclarationStart: declaration => {
@@ -408,13 +412,14 @@ export class CubicalProgram {
   // The same, as display text, for the CLI's inspect and the workbench:
   // whole, as a clause's boundary comes at the end of its type, and with one
   // naming for the whole view, so a parameter has one name in every type.
-  signatureView(binding) {
+  // By default it prints in the selection its module ends with (L2.10j).
+  signatureView(binding, notation = { selection: this.selectionsAfter(binding.split("__")[0]).at(-1) ?? null }) {
     const signature = this.signature(binding);
     if (!signature) return null;
     const { eliminator } = signature;
     const terms = [signature.former, ...signature.constructors.map(c => c.type),
       ...(eliminator ? [eliminator.motiveType, ...eliminator.clauses.map(c => c.type)] : [])];
-    const texts = this.checker.displayTexts(this.qualifyGenerated(terms), Infinity, 1000000);
+    const texts = this.checker.displayTexts(this.qualifyGenerated(terms), Infinity, 1000000, notation);
     let next = 0;
     const text = () => texts[next++];
     return { ...signature, former: text(),
@@ -424,9 +429,10 @@ export class CubicalProgram {
         clauses: eliminator.clauses.map(c => ({ constructor: c.constructor, name: c.name, type: text() })) } };
   }
   // A declared type's signature on one line, as `print(inspect(T));` shows
-  // it: what the CLI's inspect shows, each constructor and clause ended by `;`.
-  signatureText(binding) {
-    const view = this.signatureView(binding);
+  // it: what the CLI's inspect shows, each constructor and clause ended by `;`,
+  // in the notation selected where it is shown.
+  signatureText(binding, notation) {
+    const view = this.signatureView(binding, notation);
     if (!view) return null;
     const counted = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
     const constructors = view.constructors.map(c => `${c.name} : ${c.type} [${c.data} data, `
@@ -491,6 +497,11 @@ export class CubicalProgram {
   // Check one more module on top of the loaded ones, as a REPL entry does,
   // and report only what it added. The program keeps presenting its main
   // module: inspection, export and metadata are unchanged.
+  // The notation a module's declaration prints in: what the file-level uses
+  // before it select (L2.10j).
+  selectionOf(module, name) {
+    return selectionName(this.sourceAsts.get(module)?.declarations.find(d => d.name.text === name)?.uses);
+  }
   // What a module's top-level `use` statements select at its end, as their
   // source text: a REPL entry after the module reads in them (L2.10j).
   selectionsAfter(name) {

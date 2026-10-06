@@ -432,7 +432,10 @@ export class NativeCubicalElaborator {
       name: shapes[c].generated ? `${localName(name)}.${constructor}` : constructor,
       data: shapes[c].data, positions: shapes[c].positions, dimensions: shapes[c].dimensions })) };
   }
-  displayText(term, width = 160, limit = 4000, notation = {}) {
+  // Without a notation, a term prints in the one selected where the message
+  // that shows it arises: the declaration's (`notation`, set as each is
+  // translated, L2.10j).
+  displayText(term, width = 160, limit = 4000, notation = this.notation ?? {}) {
     return this.printed(readableDimensions([displayTerm(term)])[0], width, limit, notation);
   }
   // A term in kernel notation as it was checked, no redex reduced.
@@ -442,11 +445,11 @@ export class NativeCubicalElaborator {
   }
   // Several terms shown with one naming: a variable they share has one name
   // in all of them, apart from every label any of them prints.
-  displayTexts(terms, width = 160, limit = 4000) {
-    return readableDimensions(displayTerm(terms)).map(term => this.printed(term, width, limit));
+  displayTexts(terms, width = 160, limit = 4000, notation = this.notation ?? {}) {
+    return readableDimensions(displayTerm(terms)).map(term => this.printed(term, width, limit, notation));
   }
   // A term whose names are already settled, as source text within a width.
-  printed(term, width = 160, limit = 4000, notation = {}) {
+  printed(term, width = 160, limit = 4000, notation = this.notation ?? {}) {
     const text = sourceText(term, this.displayNames, limit, notation);
     return text.length > width ? `${text.slice(0, width - 1)}…` : text;
   }

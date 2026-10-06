@@ -144,7 +144,7 @@ try {
   assert.deepEqual(await lastResults(3), ["forall x : Nat. forall y : Nat. x + y = y + x", "y : Nat", "5"]);
   console.log("PASS library module in the workspace, with its console");
   await page.goto(new URL("repl.html", base).href);
-  for (const text of ["import nat;", "let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);
+  for (const text of ["import nat;", "use nat;", "let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);
   assert.deepEqual(await lastResults(4), ["x : Nat", "Nat", "7", "E606: Type mismatch: found 7 = 7, expected x = 8."]);
   console.log("PASS REPL page: let, typeof, evaluate, rejected entries");
   // Slash commands: /modules lists what import can load; /clear and /restart
