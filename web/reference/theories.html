@@ -293,16 +293,27 @@ def round : Monoid.Hom(additive, additive) := Monoid.Hom.compose(unit_into(addit
 evaluate round.map(7) expecting 0;</code></pre>
             <p><code>Monoid.Hom.id(A)</code> is the identity and <code>Monoid.Hom.compose(g, f)</code> is <code>g</code> after <code>f</code>; on closed models both compute. A child theory's homomorphisms preserve its parents' operations too, and <code>f.monoid</code> is the homomorphism of the parent's models.</p>
             <p>An <strong>isomorphism</strong>, <code>Monoid.Iso(A, B)</code>, is a homomorphism each way, <code>to</code> and <code>from</code>, with the round trips on each carrier: <code>from_to : forall x : A.M. from.map(to.map(x)) = x</code> and <code>to_from</code>. <code>Monoid.Iso.id(A)</code>, <code>Monoid.Iso.compose(g, f)</code> and <code>Monoid.Iso.inverse(f)</code> are isomorphisms too. A field of a value that is not a name is read the same way: <code>Monoid.Iso.inverse(f).to.map(x)</code>.</p>
-            <p>A theory has homomorphisms when each of its operations and constants takes and returns its carriers:</p>
+            <p>An operation's arguments need not be carriers. A homomorphism's preservation field relates the arguments in <code>A</code> to those in <code>B</code> by where the carriers sit in each argument's type. An argument with no carrier, as <code>n : Nat</code> or a parameter's element, is the same value on both sides. A <strong>covariant</strong> argument, with carriers right of every arrow, as <code>s : Nat -&gt; M</code>, is pushed forward along the maps. A <strong>contravariant</strong> one, with carriers left of an arrow, as <code>k : X -&gt; Nat</code>, is pulled back: <code>B</code>'s function composed with the map. A result is pushed forward. For a measure, preservation says that the map preserves the integral:</p>
+            <pre><code data-check="accept">import nat;
+import hlevels;
+
+theory Measure(U &lt; UU0) {
+  X : set U;
+  integrate(k : X -&gt; Nat) : Nat;
+}
+
+def preserves(A, B : Measure(U0), f : Measure.Hom(A, B), k : B.X -&gt; Nat) :
+  A.integrate(fun (x : A.X) =&gt; k(f.map(x))) = B.integrate(k) := f.map_integrate(k);</code></pre>
+            <p>Pushing and pulling follow the arrows and pairs of the type, so along a composite they are the two maps in turn, and <code>T.Hom.id</code> and <code>T.Hom.compose</code> are generated for every such theory. An argument that mentions a carrier on both sides of an arrow, as <code>g : M -&gt; M</code>, could only be related by a hypothesis, and such homomorphisms need not compose, so the theory has none. A carrier with no h-level leaves a theory without homomorphisms too:</p>
             <pre><code data-check="reject">import nat;
 import hlevels;
 
-theory Indexed(U &lt; UU0) {
+theory Iterate(U &lt; UU0) {
   M : set U;
-  power(x : M, n : Nat) : M;
+  iterate(g : M -&gt; M, x : M) : M;
 }
 
-def no_homs(A, B : Indexed(U0)) := Indexed.Hom(A, B);  // Error: Indexed's models have no homomorphisms: its power takes or returns something other than a sort.</code></pre>
+def no_homs(A, B : Iterate(U0)) := Iterate.Hom(A, B);  // Error: Iterate's models have no homomorphisms: its iterate's argument g mentions a carrier on both sides of an arrow, and such homomorphisms need not compose.</code></pre>
           </section>
 
           <section id="library-algebra">
@@ -380,7 +391,7 @@ evaluate powers_of_two.map(4) expecting 16;</code></pre>
                 <tr><td><code>T.make{{U &lt; UU0}}(…)</code></td><td>The model with the given fields, one parameter for each, so that named arguments build a model field by field</td></tr>
                 <tr><td><code>T.f{{U &lt; UU0}}(m : T(U))</code></td><td>For each field <code>f</code>, its projection, written <code>m.f</code></td></tr>
                 <tr><td><code>T.p{{U &lt; UU0}}(m : T(U))</code></td><td>For each parent labelled <code>p</code>, the model of the parent, written <code>m.p</code></td></tr>
-                <tr><td><code>T.Hom(A, B)</code>, <code>T.Hom.make</code>, <code>f.map</code> …, <code>T.Hom.id</code>, <code>T.Hom.compose</code>, <code>f.p</code></td><td>Homomorphisms, when every operation takes and returns carriers, each a set or a proposition</td></tr>
+                <tr><td><code>T.Hom(A, B)</code>, <code>T.Hom.make</code>, <code>f.map</code> …, <code>T.Hom.id</code>, <code>T.Hom.compose</code>, <code>f.p</code></td><td>Homomorphisms, when every carrier is a set or a proposition and no operation's argument mentions a carrier on both sides of an arrow</td></tr>
                 <tr><td><code>T.Iso(A, B)</code>, <code>T.Iso.make</code>, <code>f.to</code> …, <code>T.Iso.id</code>, <code>T.Iso.compose</code>, <code>T.Iso.inverse</code></td><td>Isomorphisms</td></tr>
               </tbody>
             </table></div>

@@ -2191,6 +2191,10 @@
    "summary": "Sections (L2.4): a model opened for each statement and proof, earlier definitions applied to the section's parameters, what they are outside, a section whose parameter is no model, and the refusals: a parameter of the section's name, and an implicit parameter of a definition's own."
   },
   {
+   "path": "cubist-tests/theory_variance.cubist",
+   "summary": "Homomorphisms by variance (L2.4c): inputs with no carrier kept, a parameter's elements kept, covariant inputs and results pushed forward, a contravariant input pulled back, identity and composition computing, and the refusals of an input mixed in a carrier and of a contravariant result."
+  },
+  {
    "path": "cubist-tests/translation_failed_proofs.cubist",
    "summary": "A failed proof becomes no axiom: a use of it fails, and the rest checks."
   },

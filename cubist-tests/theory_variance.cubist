@@ -1,0 +1,129 @@
+// Homomorphisms by variance (L2.4c): an input with no carrier is the same
+// value on both sides, a covariant input is pushed forward along the maps, a
+// contravariant one pulled back, and a result pushed forward; identity and
+// composition are generated for each, and compute. A theory with an input
+// that mentions a carrier on both sides of an arrow has no homomorphisms.
+import nat;
+import hlevels;
+
+// No carrier: n is the same value on both sides, and size's result too.
+theory Powered(U < UU0) {
+  M : set U;
+  power(x : M, n : Nat) : M;
+  size(x : M) : Nat;
+}
+
+// Output: forall U < UU0. forall V < UU0. forall A : Powered(U). forall B : Powered(V). forall f :
+//   Powered.Hom{{U, V}}(A, B). forall x : A.M. forall y : Nat. f.map(A.power(x, y)) =
+//   B.power(f.map(x), y)
+print(typeof(Powered.Hom.map_power));
+
+// Output: forall U < UU0. forall V < UU0. forall A : Powered(U). forall B : Powered(V). forall f :
+//   Powered.Hom{{U, V}}(A, B). forall x : A.M. A.size(x) = B.size(f.map(x))
+print(typeof(Powered.Hom.map_size));
+
+theory Magma(U < UU0) {
+  M : set U;
+  mul(x, y : M) : M notation x * y;
+}
+
+def nat_magma : Magma(U0) := Magma.make(M := Nat, M_is_set := nat_is_set, mul := add);
+
+// A parameter's elements are no carrier's: a module's homomorphism maps its
+// vectors and keeps the acting magma.
+theory Acted(U < UU0, G : Magma(U)) {
+  V : set U;
+  act(g : G.M, v : V) : V;
+}
+
+// Output: forall U < UU0. forall G : Magma(U). forall A : Acted(U, G). forall B : Acted(U, G).
+//   forall f : Acted.Hom{{U, G}}(A, B). forall x : G.M. forall y : A.V. f.map(A.act(x, y)) =
+//   B.act(x, f.map(y))
+print(typeof(Acted.Hom.map_act));
+
+def shifting : Acted(U0, nat_magma) := Acted.make(nat_magma, V := Nat, V_is_set := nat_is_set, act := add);
+
+// Output: 5
+print(evaluate(Acted.Hom.compose(Acted.Hom.id(shifting), Acted.Hom.id(shifting)).map(5)));
+
+// A fixed argument's type may name a parameter, x here, or any other name:
+// the generated binders are named apart from them.
+def Tagged(n : Nat) : U0 := Nat;
+
+theory Labelled(U < UU0, x : Nat) {
+  M : set U;
+  relabel(a : M, n : Tagged(x)) : M;
+}
+
+// Output: forall U < UU0. forall x : Nat. forall A : Labelled(U, x). forall B : Labelled(U, x).
+//   forall f : Labelled.Hom{{U, x}}(A, B). forall x1_ : A.M. forall y : Tagged(x).
+//   f.map(A.relabel(x1_, y)) = B.relabel(f.map(x1_), y)
+print(typeof(Labelled.Hom.map_relabel));
+
+def labelled_iso(m : Labelled(U0, zero)) : Labelled.Iso(m, m) := Labelled.Iso.compose(Labelled.Iso.id(m),
+  Labelled.Iso.inverse(Labelled.Iso.id(m)));
+
+// A fixed type may name a global map too: the constructor still takes the
+// field map by its name.
+def map(n : Nat) : U0 := Nat;
+
+theory Mapped(U < UU0) {
+  M : set U;
+  tag(a : M, n : map(zero)) : M;
+}
+
+def mapped_identity(A : Mapped(U0)) : Mapped.Hom(A, A) := Mapped.Hom.make(A, A, map := fun (x : A.M) => x,
+  map_tag := fun (a : A.M, n : map(zero)) => refl(A.tag(a, n)));
+
+// Covariant: a family of elements, and a pair of them, pushed forward.
+theory Sequences(U < UU0) {
+  M : set U;
+  first(s : Nat -> M) : M;
+  split(x : M) : M and M;
+}
+
+// Output: forall U < UU0. forall V < UU0. forall A : Sequences(U). forall B : Sequences(V). forall
+//   f : Sequences.Hom{{U, V}}(A, B). forall x : Nat -> A.M. f.map(A.first(x)) = B.first(fun (v3_ :
+//   Nat) => f.map(x(v3_)))
+print(typeof(Sequences.Hom.map_first));
+
+def sequences_compose := Sequences.Hom.compose;
+
+// Contravariant: integrating a function on the carrier. A homomorphism
+// pulls B's function back along its map, so it preserves measure.
+theory Measure(U < UU0) {
+  X : set U;
+  integrate(f : X -> Nat) : Nat;
+}
+
+// Output: forall U < UU0. forall V < UU0. forall A : Measure(U). forall B : Measure(V). forall f :
+//   Measure.Hom{{U, V}}(A, B). forall x : B.X -> Nat. A.integrate(fun (v3_ : A.X) => x(f.map(v3_)))
+//   = B.integrate(x)
+print(typeof(Measure.Hom.map_integrate));
+
+def at_zero : Measure(U0) := Measure.make(X := Nat, X_is_set := nat_is_set, integrate := fun (k : Nat -> Nat) => k(0));
+
+def at_zero_twice : Measure.Hom(at_zero, at_zero) := Measure.Hom.compose(Measure.Hom.id(at_zero), Measure.Hom.id(at_zero));
+
+// Output: 2
+print(evaluate(at_zero_twice.map(2)));
+
+// Mixed: g : M -> M mentions M on both sides of an arrow.
+theory Iterate(U < UU0) {
+  M : set U;
+  iterate(g : M -> M, x : M) : M;
+}
+
+// Error: E817: Iterate's models have no homomorphisms: its iterate's argument g mentions a carrier
+//   on both sides of an arrow, and such homomorphisms need not compose.
+def iterate_hom := Iterate.Hom;
+
+// A result that mentions a carrier left of an arrow has none either.
+theory Dual(U < UU0) {
+  M : set U;
+  functional(x : M) : M -> Nat;
+}
+
+// Error: E817: Dual's models have no homomorphisms: its functional's result mentions a carrier left
+//   of an arrow, which a homomorphism cannot carry forward.
+def dual_hom := Dual.Hom;

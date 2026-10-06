@@ -45,9 +45,9 @@ def unit_into(U < UU0, B : CommMonoid(U)) : CommMonoid.Hom(trivial, B) := CommMo
 
 // The fields of a homomorphism, f.map and the rest, each typed through the
 // earlier ones.
-// Output: forall U < UU0. forall V < UU0. forall A : CommMonoid(U). forall B :
-//   CommMonoid(V). forall f : CommMonoid.Hom{{U, V}}(A, B). forall x : A.M. forall y : A.M.
-//   f.map(A.mul(x, y)) = B.mul(f.map(x), f.map(y))
+// Output: forall U < UU0. forall V < UU0. forall A : CommMonoid(U). forall B : CommMonoid(V).
+//   forall f : CommMonoid.Hom{{U, V}}(A, B). forall x : A.M. forall y : A.M. f.map(A.mul(x, y)) =
+//   B.mul(f.map(x), f.map(y))
 print(typeof(CommMonoid.Hom.map_mul));
 
 // Composition and the identity compute on closed models.
@@ -106,13 +106,13 @@ theory map(U < UU0) {
 
 def map_identity(B : map(U0)) : map.Hom(B, B) := map.Hom.make(B, B, map := fun (x : B.M) => x);
 
-// A theory whose operation takes something other than a sort has models,
-// but no homomorphisms.
-theory Indexed(U < UU0) {
+// A theory whose operation takes a carrier's endomap has models, but no
+// homomorphisms: they would need not compose (theory_variance).
+theory Iterated(U < UU0) {
   M : set U;
-  power(x : M, n : Nat) : M;
+  iterate(g : M -> M, x : M) : M;
 }
 
-// Error: E817: Indexed's models have no homomorphisms: its power takes or returns something other
-//   than a sort.
-def no_homs(A, B : Indexed(U0)) := Indexed.Hom(A, B);
+// Error: E817: Iterated's models have no homomorphisms: its iterate's argument g mentions a carrier
+//   on both sides of an arrow, and such homomorphisms need not compose.
+def no_homs(A, B : Iterated(U0)) := Iterated.Hom(A, B);
