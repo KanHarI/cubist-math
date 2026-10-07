@@ -187,7 +187,8 @@ Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
     that computes.
   - **Algebraic:** modules, exactness, chain complexes over shapes,
     homology and Smith normal form.
-  - **Both:** Ext without the axiom of choice, and cellular cohomology.
+  - **Both:** Ext without the axiom of choice, and cellular cohomology of
+    finite CW complexes.
 - [Core theories](core-theories.md): the contract of work-plan L2.4,
   theory declarations, models, scoped notation, sections, extension,
   homomorphisms and isomorphisms, specified and implemented on 2026-10-05.

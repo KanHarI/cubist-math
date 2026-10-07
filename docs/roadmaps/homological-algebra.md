@@ -54,9 +54,23 @@ decision ([work plan](work-plan.md#open-decisions)).
   - Ext is reached by routes that need no choice:
     - Yoneda extensions, formalised in univalent foundations by Flaten
       (ITP 2023);
-    - free resolutions over ℤ for finitely generated groups, which are
-      constructive because ℤ has decidable equality;
+    - free resolutions over ℤ of groups given with a finite presentation:
+      Smith normal form diagonalizes the relation matrix, because ℤ has
+      decidable equality;
     - the synthetic route.
+  - **A presentation is data, not a property.** Constructively, a finitely
+    generated group need not be finitely presented. For any proposition
+    `P`, `ℤ/{k | k = 0 ∨ P}` is cyclic, and a finite presentation of it
+    would decide `P`: Smith normal form would decide whether `[1] = [0]`
+    ([Julian, Mines and Richman, §1](https://msp.org/pjm/1983/106-1/pjm-v106-n1-p10-s.pdf)).
+    So HA5 takes a presentation, or a resolution, as input, and HA3's
+    complexes are given by their matrices.
+  - **Cellular cohomology is compared on finite complexes.** Buchholtz and
+    Favonia's comparison covers finite CW complexes
+    ([Cellular cohomology in HoTT](https://favonia.org/files/cohomology-lics2018.pdf),
+    Theorem 7.1). Their wedge axiom asks the cells' index sets to satisfy
+    choice, which finite sets provably do (§6). Infinite complexes are
+    open there, and may need countable choice (§9), so HA6 defers them.
 - **Indexing.**
   - The library's integers are a quotient of pairs of naturals, so
     `(n - 1) + 1 = n` holds only up to a path. Complexes indexed by
@@ -91,8 +105,8 @@ decision ([work plan](work-plan.md#open-decisions)).
 | **HA2** Chain complexes | Complex shapes; complexes and chain maps derived from a theory; homology as a quotient module; chain homotopies; functoriality | The long exact sequence in homology of a short exact sequence of complexes; homotopy invariance; `H_1 ≅ ℤ` for a small complex of the circle | HA1 |
 | **HA3** Computing homology | Smith normal form over ℤ, proved correct and `computable` | `evaluate` the homology of finite free complexes; torsion found, as `ℤ/2` for the real projective plane's complex | HA2; binary numerals |
 | **HA4** Synthetic homotopy and cohomology | Library spheres and suspensions; `π_n` as truncated loop spaces; the long exact sequence of a fibration; `K(G, 1)`, then `K(G, n)`; `H^n(X; G)` with its group structure; Mayer–Vietoris from pushouts | `H^1(S^1; ℤ) ≅ ℤ` computes; `H^n(S^m)`; the torus | H1, the library's univalence and squares; mostly not HA0 |
-| **HA5** Ext | Yoneda Ext; Ext and Tor over ℤ for finitely generated groups through free resolutions | Ext¹ classifies extensions; `Ext¹(ℤ/n, ℤ) ≅ ℤ/n` | HA1, HA3 |
-| **HA6** The bridge | Cellular cohomology of CW complexes built from pushouts, agreeing with the synthetic definition, as Buchholtz and Favonia showed in HoTT (LICS 2018) | Agreement on spheres and the torus | HA2, HA4 |
+| **HA5** Ext | Yoneda Ext; Ext and Tor over ℤ for finitely presented groups, given by their presentations, through free resolutions | Ext¹ classifies extensions; `Ext¹(ℤ/n, ℤ) ≅ ℤ/n` | HA1, HA3 |
+| **HA6** The bridge | Cellular cohomology of finite CW complexes built from pushouts, agreeing with the synthetic definition, as Buchholtz and Favonia showed in HoTT (LICS 2018, Theorem 7.1); infinite complexes deferred | Agreement on spheres and the torus | HA2, HA4 |
 
 Spectral sequences are later work. Exact couples are ordinary algebra, but
 formalising spectral sequences is large. The Lean 2 HoTT library's

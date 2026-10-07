@@ -136,8 +136,15 @@ These are proposed, for the maintainer's review.
      did not opt in is an error at the use, naming the clause:
      "Monoid derives no morphisms; add `deriving (morphisms)` to its
      declaration."
-   - **Consumers.** Three features require the opt-in: `initial` and `free`
-     (L2.6's `fold` is a `T.Hom`), L2.4b and L3.3.
+   - **Consumers.**
+     - `initial` and `free` require `morphisms` where L2.6's `fold` is a
+       `T.Hom`, for a carrier that is a set or a proposition.
+     - An untruncated carrier keeps L2.6's recursion only: its `fold` is a
+       function, with no `T.Hom`
+       ([core theories](core-theories.md#initial-and-free-models-l26)). So
+       `initial Circle : Loop(U0)` needs no opt-in.
+     - Structure identity (L2.4b) and transfer (L3.3) require
+       `isomorphisms`.
 
 4. **No standalone derivation.** Only a theory's own declaration opts in:
    two modules deriving `Monoid.Hom` would clash on import. Generation may
@@ -243,9 +250,17 @@ These are proposed, for the maintainer's review.
       category, and merely hold in a precategory.
     - **The opt-in.** `deriving (morphisms, additive)` or `deriving
       (morphisms, abelian)` asks for one level and implies the ones below.
-      It requires a **linear** theory: an abelian group on the carrier,
-      every other operation additive in each carrier input, no constant but
-      zero, and only equational laws.
+      It requires a **linear** theory:
+      - an abelian group on the carrier;
+      - every other operation additive in its carrier inputs jointly,
+        `op(a + a') = op(a) + op(a')` for whole tuples of carrier inputs,
+        its other inputs fixed, as a module's `smul(r, x)` is in `x`;
+      - no constant but zero, and only equational laws.
+
+      Additivity in each input separately is not enough. A sum of
+      homomorphisms preserves a jointly additive operation, but not a
+      bilinear one: on the integers, `h = id + id` gives `h(1·1) = 2`,
+      while `h(1)·h(1) = 4`. So no ring is linear, with a unit or without.
     - **Levels are not inherited.** `CommRing` extends `AbelianGroup`, but
       its multiplication is bilinear, so its category is not preadditive:
 
@@ -345,7 +360,7 @@ Its universal property is refused in both forms (E818):
 
 | Slice | Content | Depends on |
 | --- | --- | --- |
-| L2.4d | `deriving (isomorphisms)` by transport and `deriving (morphisms)` by variance; refusals at the declaration; consumers require the opt-in. A two-commit migration: first opt in every theory whose morphisms are used and verify identical terms, then stop deriving by default | L2.4c; `T.cat` once L3.4 exists |
+| L2.4d | `deriving (isomorphisms)` by transport and `deriving (morphisms)` by variance; refusals at the declaration; consumers require the opt-in, except an untruncated carrier's recursion-only `initial`. A two-commit migration: first opt in every theory whose morphisms are used and verify identical terms, then stop deriving by default | L2.4c; `T.cat` once L3.4 exists |
 | L2.4e | `morphisms where …` with standardness | L2.4d; first metric or topological client |
 | L2.11 | Laws checked by the `hlevel` solver | L2.5b |
 | L2.12 | Implicit arguments in theory operations and derived operations; notation over the explicit ones | L4.1b |
@@ -362,7 +377,10 @@ Its universal property is refused in both forms (E818):
     `is_open`;
   - `deriving (isomorphisms)` on the topology, on `iterate(g : M -> M,
     x : M)` and on a strict precategory checks;
-  - `initial` on a theory without morphisms is refused.
+  - `initial` on a set-level theory without `morphisms` is refused, naming
+    the clause;
+  - `initial Circle : Loop(U0)` still checks without an opt-in, with
+    recursion only.
 - **L2.4e:** continuity accepted; "every function" refused for monoids as
   not standard.
 - **L2.11:** a universal property stated with `IsContrMap`, and equations
@@ -380,7 +398,8 @@ Its universal property is refused in both forms (E818):
   - the pushout as a pullback in `op`.
 - **L3.6:**
   - `AbelianGroup` and `Module(U, R)` derive `abelian`;
-  - `CommRing` is refused with the message of decision 11;
+  - `CommRing` is refused with the message of decision 11, and so is a
+    ring without a unit, its `mul` being bilinear;
   - a kernel, a cokernel and the coimage–image isomorphism evaluate on a
     small module.
 

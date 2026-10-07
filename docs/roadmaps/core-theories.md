@@ -647,7 +647,9 @@ on request ([categories](categories.md)):
   the default category `T.cat` and implies `isomorphisms`.
 
 An opt-in that cannot be honoured refuses the theory, naming the field. The
-library's algebraic hierarchy would opt into `morphisms`.
+library's algebraic hierarchy would opt into `morphisms`. `initial` and
+`free` would require it where `fold` is a `T.Hom`; an untruncated carrier
+keeps the recursion-only `fold` below, with no opt-in.
 
 ## Elaboration
 
