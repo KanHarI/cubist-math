@@ -94,10 +94,18 @@ decision ([work plan](work-plan.md#open-decisions)).
   - Complexes are indexed by a **complex shape** instead: a graph on the
     indices in the categories roadmap's sense
     ([decision 10](categories.md#decisions)), whose edges are
-    propositions, `E(i, j) := next(i) = j`.
+    propositions, with at most one successor and one predecessor at each
+    index.
+    - **Examples.** Cochain complexes over ℤ take `E(i, j) := j = i + 1`.
+      Chain complexes over ℕ take `E(i, j) := i = j + 1`, so `0` has no
+      successor.
+    - **Not a successor function.** A function would put an edge at every
+      index: truncated predecessor on ℕ would add `0 → 0`. Then `X₀ = ℤ²`,
+      with the higher modules zero and `d(a, b) = (b, 0)`, would satisfy
+      `d ∘ d = 0` without being a chain complex.
     - **A complex is a diagram over its shape** in a preadditive category,
       with `d(j, k, e') ∘ d(i, j, e) = 0`. The differential
-      `d(i, j, e) : X(i) → X(j)` takes a proof `e : next(i) = j`, and
+      `d(i, j, e) : X(i) → X(j)` takes a proof `e : E(i, j)`, and
       `X(j)` is indexed by `j` itself, so index arithmetic never meets a
       type.
     - **Chain maps** are morphisms of diagrams, and limits and colimits of
@@ -106,7 +114,9 @@ decision ([work plan](work-plan.md#open-decisions)).
       `d(i, j)` for every `i` and `j`, with a law that it is zero unless the
       indices are related. The graph form needs neither that law nor a
       decidable relation. Where the relation is decidable, as on ℤ and ℕ,
-      mathlib's form is derived from it.
+      mathlib's form is derived from it. mathlib too keeps its relation
+      apart from its convenience function `next`, whose fallback adds no
+      edge.
 - **Truncation levels are literal.**
   - `trunc(n)` needs an integer, not a variable (E114, checked on
     2026-10-07). So `K(G, n)` for every `n` needs the hub-and-spoke

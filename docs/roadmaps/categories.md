@@ -257,6 +257,20 @@ These are proposed, for the maintainer's review.
        types would need coherences at every level; a diagram over a graph
        needs none.
 
+    Point 1 holds in a category, where a cone's conditions are
+    propositions, but not for types. `Colim` and `Lim` of types over a
+    graph are the colimit and limit over the free category on it.
+    - **Free shapes are right.** A span, a parallel pair and the tower of
+      naturals are free categories, so their colimits of types are right.
+    - **A shape with relations is not.** Over the one-element poset, with
+      its identity as an edge, `Colim` of the constant `Unit` is the
+      circle, not `Unit`, and `Lim` of a constant type is its free loop
+      space. Over the triangle `0 < 1 < 2`, the two paths from `0` to `2`
+      stay apart.
+    - **Out of scope.** Colimits of types over such shapes need identity
+      and composition cells, which a graph does not give
+      ([Boulier, Colimits in HoTT](https://homotopytypetheory.org/2016/01/08/colimits-in-hott/)).
+
     The rest of L3.5:
     - **Shapes:** `Terminal`, `Product`, `Equalizer` and `Pullback` as
       concrete theories, with conversions to `Limit` over their graphs. The
@@ -280,8 +294,9 @@ These are proposed, for the maintainer's review.
         edge. Each vertex's elements give a point `inj(i, x)`, and each edge
         a path `glue(i, j, e, x)`.
       - **Instances.** The archive's `Pushout`, coequalizers, suspensions
-        and sequential colimits over `Nat` are its instances. They keep
-        their own types, with conversions, as concrete shapes do.
+        and sequential colimits over `Nat` are its instances, all over free
+        shapes. They keep their own types, with conversions, as concrete
+        shapes do.
       - **Universal property.** Maps out of `Colim` are equivalent to cocones
         into the target. That is an equivalence of types, not of sets.
       - **Limits of types** are Σ types of compatible points.
@@ -302,12 +317,15 @@ These are proposed, for the maintainer's review.
         universe is the usual one anyway. Classically, a small category
         with all small limits is a preorder (Freyd).
     - **Infinite shapes.** Vertices and edges may be any types, so the
-      definitions above serve infinite shapes unchanged:
+      definitions above serve infinite shapes unchanged, with the caveat on
+      shapes with relations above:
       - infinite products and coproducts, over a discrete graph on any type;
       - inverse limits over the tower of naturals, such as the p-adic
         integers as the limit of `ℤ/pⁿ`;
       - sequential colimits over the reversed tower;
-      - directed colimits over a poset, with an edge for each related pair;
+      - directed colimits over a poset, with an edge for each related pair:
+        in a category, and of sets as `Colim` truncated to a set, but not
+        as `Colim` of types;
       - non-wellfounded trees (M-types), as limits of a tower of types
         (Ahrens, Capriotti and Spadotti, TLCA 2015), with no coinduction
         in the kernel.
@@ -355,15 +373,21 @@ These are proposed, for the maintainer's review.
       (morphisms, abelian)` asks for one level and implies the ones below.
       It requires a **linear** theory:
       - an abelian group on the carrier;
-      - every other operation additive in its carrier inputs jointly,
-        `op(a + a') = op(a) + op(a')` for whole tuples of carrier inputs,
-        its other inputs fixed, as a module's `smul(r, x)` is in `x`;
+      - every other operation returning a carrier, and additive in its
+        carrier inputs jointly, `op(a + a') = op(a) + op(a')` for whole
+        tuples of carrier inputs, its other inputs fixed, as a module's
+        `smul(r, x)` is in `x`;
       - no constant but zero, and only equational laws.
 
       Additivity in each input separately is not enough. A sum of
       homomorphisms preserves a jointly additive operation, but not a
       bilinear one: on the integers, `h = id + id` gives `h(1·1) = 2`,
       while `h(1)·h(1) = 4`. So no ring is linear, with a unit or without.
+
+      An operation into a fixed type is excluded, even an additive one. A
+      morphism must preserve `trace : M → ℤ` as `trace(f(x)) = trace(x)`,
+      which neither the zero map nor `f + f` does. A relation on the
+      carrier is excluded for the same reason.
     - **Levels are not inherited.** `CommRing` extends `AbelianGroup`, but
       its multiplication is bilinear, so its category is not preadditive:
 
@@ -597,11 +621,16 @@ def product_of_naturals : U0 := Lim(U0, discrete(Nat), TypeDiagram.make(
     of `Colim` equivalent to cocones into any type;
   - `Lim` and `Colim` over the tower of naturals, and a product indexed by
     the naturals, with elements evaluated index by index;
+  - `Colim` of the constant `Unit` over the one-element poset with its
+    identity edge is the circle, documenting why shapes with relations
+    take their colimits in a category;
   - in a univalent category, the limits of a diagram form a proposition.
 - **L3.6:**
   - `AbelianGroup` and `Module(U, R)` derive `abelian`;
   - `CommRing` is refused with the message of decision 11, and so is a
     ring without a unit, its `mul` being bilinear;
+  - an abelian group with an additive `trace : M → ℤ` is refused, naming
+    `trace`;
   - a kernel, a cokernel and the coimage–image isomorphism evaluate on a
     small module.
 
