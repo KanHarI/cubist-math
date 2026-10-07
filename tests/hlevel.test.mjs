@@ -50,3 +50,19 @@ test("the keyword links to the checked proof, and the formatter keeps hints", as
   assert.equal(statement.hints.length, 1);
   assert.equal(formatCubist(source), source);
 });
+
+// A setness field left out of T.make(…) is filled by the search plain hlevel
+// runs, from evidence a local definition names too. The lint reads syntax
+// only and does not see that use of h, so this case is here rather than in
+// cubist-tests/hlevel_rules.cubist.
+test("a setness field is filled from evidence a local definition names", async t => {
+  const source = `import hlevels;
+theory Pointed(U < UU0) { M : set U; point : M; }
+def local_point(A : U0, a : A, evidence : Unit -> IsSet(U0, A)) : Pointed(U0) {
+  let h := evidence(tt);
+  exact Pointed.make(M := A, point := a);
+}
+`;
+  const { get } = await check(t, source);
+  ok(get("local_point"));
+});

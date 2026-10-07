@@ -73,10 +73,38 @@ def proposition_pairs : IsSet(U1, Prop(U0) and Nat) {
   hlevel;
 }
 
+// A rule's universe may come after a parameter: its arguments are given in
+// the order of its binders.
+def PairType(A : U0, U < UU0, B : U) : max(U0, U) := A and B;
+
+def pair_is_set(A : U0, U < UU0, B : U, setA : IsSet(U0, A), setB : IsSet(U, B)) :
+  IsSet(max(U0, U), PairType(A, U, B)) {
+  hlevel;
+}
+
+hlevel_rule pair_is_set;
+
+def proposition_pair : IsSet(U1, PairType(Nat, U1, Prop(U0))) {
+  hlevel;
+}
+
 // Quantified evidence in scope is a rule: a family of sets, at a fresh
 // element.
 def fibers(A : U0, B : A -> U0, h : forall x : A. IsSet(U0, B(x))) :
   IsSet(U0, forall x : A. Box(B(x))) {
+  hlevel;
+}
+
+// So is quantified evidence that a local definition names.
+def local_fibers(A : U0, B : A -> U0, evidence : Unit -> (forall x : A. IsSet(U0, B(x)))) :
+  IsSet(U0, forall x : A. B(x)) {
+  let h := evidence(tt);
+  hlevel;
+}
+
+// A value read from the carrier must have its parameter's type: U0 -> Unit
+// is too large for A : U0, so h gives way to the structural rules.
+def too_large(h : forall A : U0. IsSet(U0, A)) : IsSet(U1, U0 -> Unit) {
   hlevel;
 }
 
