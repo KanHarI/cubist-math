@@ -58,10 +58,19 @@ test("a box lowers to comp or fill, with a face(…) or face_when(…) for each 
 
 test("left and right, a sum's injections, are reserved: no binder takes them, while injections and sum patterns stay", () => {
   for (const source of ["def h(left : Nat) := left;", "def k(p : Nat) : Nat { let right := p; exact right; }",
-    "def m(f : Nat -> Nat) := fun (left : Nat) => f(left);", "def left := 0;"])
+    "def m(f : Nat -> Nat) := fun (left : Nat) => f(left);", "def left := 0;",
+    // A bare left in a pattern would be a variable, which catches every
+    // value (#186's review): it is refused, alone, beside another value's
+    // pattern, as an argument, with coordinates and in a match statement.
+    "def f(n : Nat) : Nat := match n { left => left; };", "def f(n : Nat) : Nat := match n { right => 0; };",
+    "def f(n, m : Nat) : Nat := match n, m { zero, left => 0; succ(k), _ => k; };",
+    "def f(n : Nat) : Nat := match n { zero => 0; succ(left) => left; };",
+    "def f(x : Unit or Nat) : Nat := match x { left @ i => 0; };",
+    "def f(n : Nat) : Nat { match n { right => { exact right; } } }"])
     assert.throws(() => parse(source), /^Error: (left|right) is reserved, as a keyword or a built-in type of the language; pick another name\.$/);
   parse("def f(x : Unit or Nat) : Nat := match x { left u => 0; right n => n; };");
   parse("def g(x : Unit or Nat) : Nat := match x { left(u) => 0; right(n) => n; };");
+  parse("def g(x : (Unit or Nat) or Unit) : Nat := match x { left(right(n)) => n; left(left(u)) => 0; right(u) => 0; };");
   parse("def i : Unit or Nat := left(tt);");
   // A historical source may still bind them (web/cubist/legacy-syntax.mjs).
   parse("def h(left : Nat) := left;", false, { bindable: ["left"] });
