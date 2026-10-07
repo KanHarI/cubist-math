@@ -123,15 +123,39 @@ test("a historical module's binders named left or right are renamed, as the inje
 });
 
 test("a historical module's binders named typed or evaluate are renamed, as both became reserved on 2026-10-07", () => {
-  const old = "def typed(n, m : Nat) : Nat := n;\ndef f(typed : Nat) : Nat := typed;\ndef g := typed(Nat, 0);\n"
-    + "def h(n : Nat) : Nat {\n  let evaluate : Nat := n;\n  exact evaluate;\n}\n"
+  const old = "def g := typed(Nat, 0);\ndef typed(n, m : Nat) : Nat := n;\ndef f(typed : Nat) : Nat := typed;\n"
+    + "def k := typed(1, 2);\ndef h(n : Nat) : Nat {\n  let evaluate : Nat := n;\n  exact evaluate;\n}\n"
     + "evaluate h(0) expecting 0;\nprint(evaluate(h(0)));\n";
   // The declaration and the binders, and the references they shadow, are
-  // renamed; an ascription, an evaluate directive and a print elsewhere stay.
+  // renamed: a module's own typed holds in the items after it. An
+  // ascription before it, an evaluate directive and a print stay.
   assert.equal(historicalSource(old, "old", { implicitNat: false, minusReverses: false }),
-    "def typed_(n, m : Nat) : Nat := n;\ndef f(typed_ : Nat) : Nat := typed_;\ndef g := typed(Nat, 0);\n"
-    + "def h(n : Nat) : Nat {\n  let evaluate_ : Nat := n;\n  exact evaluate_;\n}\n"
+    "def g := typed(Nat, 0);\ndef typed_(n, m : Nat) : Nat := n;\ndef f(typed_ : Nat) : Nat := typed_;\n"
+    + "def k := typed_(1, 2);\ndef h(n : Nat) : Nat {\n  let evaluate_ : Nat := n;\n  exact evaluate_;\n}\n"
     + "evaluate h(0) expecting 0;\nprint(evaluate(h(0)));\n");
+});
+
+// #186's review: a reference is renamed only where a binder of its name is
+// in scope, as the translator reads scopes; elsewhere it is the injection.
+test("a historical module's references are renamed only within their binder's scope", () => {
+  const read = source => historicalSource(source, "old", { implicitNat: false, minusReverses: false });
+  // A let's own value is outside its scope, and a lambda's ends with its body.
+  assert.equal(read("def f : Unit or Unit {\n  let left : Unit or Unit := left(tt);\n  exact left;\n}\n"),
+    "def f : Unit or Unit {\n  let left_ : Unit or Unit := left(tt);\n  exact left_;\n}\n");
+  assert.equal(read("def g := (fun (left : Unit) => left, left(tt));\n"), "def g := (fun (left_ : Unit) => left_, left(tt));\n");
+  // A clause's variables, a bare one too, hold in their clause only.
+  assert.equal(read("def h(n : Nat) : Unit or Nat := match n { zero => left(tt); succ(left) => right(left); };\n"
+    + "def k(n : Nat) : Unit or Nat := match n { right => left(right); };\n"),
+    "def h(n : Nat) : Unit or Nat := match n { zero => left(tt); succ(left_) => right(left_); };\n"
+    + "def k(n : Nat) : Unit or Nat := match n { right_ => left(right_); };\n");
+  // A declaration holds in itself, where a recursive one calls it.
+  assert.equal(read("def evaluate(n : Nat) : Nat := match n { zero => 0; succ(k) => evaluate(k); };\n"),
+    "def evaluate_(n : Nat) : Nat := match n { zero => 0; succ(k) => evaluate_(k); };\n");
+  // A parameter is named in a call's named argument, and a field after a dot.
+  assert.equal(read("def p(left : Nat) : Nat := left;\ndef q := p(left := 1);\n"
+    + "theory T(U < UU0) {\n  M : set U;\n  right : M;\n  law fixed(x : M) : x = right;\n}\ndef r(m : T(U0)) := m.right;\n"),
+    "def p(left_ : Nat) : Nat := left_;\ndef q := p(left_ := 1);\n"
+    + "theory T(U < UU0) {\n  M : set U;\n  right_ : M;\n  law fixed(x : M) : x = right_;\n}\ndef r(m : T(U0)) := m.right_;\n");
 });
 
 test("a historical module reverses with ~ where it wrote prefix -, as every module did before 2026-10-06", () => {
