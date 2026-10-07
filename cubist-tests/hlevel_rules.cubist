@@ -1,0 +1,144 @@
+// h-level rules (L2.5b): hlevel_rule registers a checked lemma whose type
+// states an h-level, under parameters that its statement's carrier
+// determines and premises that the search proves in turn. Quantified
+// evidence in scope, and quantified hints, are rules too.
+import nat;
+import hlevels;
+import quotients;
+import propositions;
+use nat;
+
+// A carrier the structural rules cannot see into, with a lemma: Box(A) is a
+// set when A is, as a retract of A.
+inductive Box(A : U0) : U0 {
+  box(a : A);
+}
+
+def unbox(A : U0, b : Box(A)) : A := match b {
+    box(a) => a;
+  };
+
+def box_unbox(A : U0, b : Box(A)) : typed(Box(A), box(unbox(A, b))) = b := match b {
+    box(a) => refl(typed(Box(A), box(a)));
+  };
+
+def box_is_set(A : U0, setA : IsSet(U0, A)) :
+  IsSet(U0, Box(A)) := retract_has_level(U0, 1)(
+    A, Box(A), fun (b : Box(A)) => unbox(A, b), fun (a : A) => box(a),
+    fun (b : Box(A)) => box_unbox(A, b), setA
+  );
+
+// Before it is registered, nothing gives a box's level.
+// Error: E366: hlevel could not prove IsSet(U0, Box(Nat)); no local evidence, hint or rule gives
+//   that.
+def unregistered : IsSet(U0, Box(Nat)) {
+  hlevel;
+}
+
+hlevel_rule box_is_set;
+
+// Its premise is an obligation of its own, proved by any rule, this one
+// included.
+def boxed : IsSet(U0, Box(Box(Nat))) {
+  hlevel;
+}
+
+// Rules compose with the structural ones: pairs, functions and paths.
+def boxed_pairs(A : U0, setA : IsSet(U0, A)) : IsSet(U0, Box(A) and Nat -> Box(A)) {
+  hlevel;
+}
+
+def box_paths(x, y : Box(Nat)) : IsProp(U0, x = y) {
+  hlevel;
+}
+
+// A premise nothing proves is named, with the chain that needs it.
+// Error: E366: hlevel could not prove IsSet(U0, Box(A)): it needs A to be a set; no local evidence,
+//   hint or rule gives that.
+def no_premise(A : U0) : IsSet(U0, Box(A)) {
+  hlevel;
+}
+
+// A rule's universe and parameters come from the matched statement: every
+// quotient is a set, whatever its relation.
+hlevel_rule quotient_is_set;
+
+def quotients(A : U0, R : A -> A -> U0) : IsSet(U0, Quotient(U0, A, R) and Box(Nat)) {
+  hlevel;
+}
+
+// The library registers its own: the propositions of a universe form a
+// set (propositions.cubist).
+def proposition_pairs : IsSet(U1, Prop(U0) and Nat) {
+  hlevel;
+}
+
+// A rule's universe may come after a parameter: its arguments are given in
+// the order of its binders.
+def PairType(A : U0, U < UU0, B : U) : max(U0, U) := A and B;
+
+def pair_is_set(A : U0, U < UU0, B : U, setA : IsSet(U0, A), setB : IsSet(U, B)) :
+  IsSet(max(U0, U), PairType(A, U, B)) {
+  hlevel;
+}
+
+hlevel_rule pair_is_set;
+
+def proposition_pair : IsSet(U1, PairType(Nat, U1, Prop(U0))) {
+  hlevel;
+}
+
+// Quantified evidence in scope is a rule: a family of sets, at a fresh
+// element.
+def fibers(A : U0, B : A -> U0, h : forall x : A. IsSet(U0, B(x))) :
+  IsSet(U0, forall x : A. Box(B(x))) {
+  hlevel;
+}
+
+// So is quantified evidence that a local definition names.
+def local_fibers(A : U0, B : A -> U0, evidence : Unit -> (forall x : A. IsSet(U0, B(x)))) :
+  IsSet(U0, forall x : A. B(x)) {
+  let h := evidence(tt);
+  hlevel;
+}
+
+// A value read from the carrier must have its parameter's type: U0 -> Unit
+// is too large for A : U0, so h gives way to the structural rules.
+def too_large(h : forall A : U0. IsSet(U0, A)) : IsSet(U1, U0 -> Unit) {
+  hlevel;
+}
+
+// A quantified hint, with its premises.
+def hinted(A : U0, setA : IsSet(U0, A)) : IsSet(U0, Box(Box(A))) {
+  hlevel with [box_is_set];
+}
+
+// A lemma is a rule only if its statement determines its parameters, and
+// what it does not determine is an h-level premise.
+// Error: E575: nat_add_comm is no h-level rule: its type ends in x + y = y + x, which states no
+//   h-level.
+hlevel_rule nat_add_comm;
+
+// Error: E575: hedberg is no h-level rule: its parameter decide is neither read from the carrier A
+//   nor an h-level premise.
+hlevel_rule hedberg;
+
+// Error: E576: box_is_set is already an h-level rule in this module.
+hlevel_rule box_is_set;
+
+// A hole that states an h-level is filled by the same search: a model's
+// setness field left out of T.make(…).
+theory Pointed(U < UU0) {
+  M : set U;
+  point : M;
+}
+
+def boxed_point : Pointed(U0) := Pointed.make(M := Box(Nat), point := box(0));
+
+// Output: 0
+print(evaluate(unbox(Nat, boxed_point.point)));
+
+// Where the search finds nothing, the field is undetermined, as before.
+// Error: E388: Nothing determines the parameter M_is_set of Pointed.make, of type IsSet(U0,
+//   Box(A)): not the other arguments' types, nor the type expected of the call. Give it explicitly.
+def unboxable(A : U0, a : A) : Pointed(U0) := Pointed.make(M := Box(A), point := box(a));

@@ -810,6 +810,20 @@ Completion:
     detection, quantified hints, Hedberg for registered carriers, one layer
     of unfolding, `Truncate`, the solver's use for premises and truncation
     targets, and the inspector's record of selected witnesses remain.
+  - Second slice on 2026-10-06: `hlevel_rule lemma;` (with an optional
+    priority) registers a lemma whose type states a level. Its universe and
+    parameters are read by matching the statement's carrier, folded or
+    normalized, against an obligation, and its premises, level statements
+    under binders, are obligations of their own; a premise that repeats an
+    obligation being proved is a cycle, and the rule gives way. Quantified
+    evidence in scope and quantified hints are rules too, before registered
+    ones, which go by priority and then by name. A matched rule's failed
+    premise is the chain reported. A lemma that is no rule is refused where
+    it is registered (E575). The argument solver fills a hole whose type
+    states a level with the same search, so a model's setness field can be
+    left out of `T.make(…)`. Hedberg from registered decidable equality,
+    unfolding, `Truncate`, premises and truncation targets, and the
+    inspector's record remain.
 - [ ] **D2. Subtype extensionality.** Add a checked lemma: given `B : A -> U`
   whose fibers are propositions and a path `p : a = a'`, any `b : B(a)` and
   `b' : B(a')` are connected by `PathP(fun (i : Interval) => B(p @ i), b, b')`.

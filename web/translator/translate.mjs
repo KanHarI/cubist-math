@@ -9,7 +9,7 @@ import {interval as I,face as F,latticeBudget} from "./lattice.mjs";
 import {freeDimensions} from "./dimension-slots.mjs";
 import {equalityRule,simplificationRule,findRewrite,SearchLimit} from "./proof-rewrite.mjs";
 import {SearchFuel,SearchFuelExhausted,SEARCH_FUEL,recordSearch,emptySearchRecord} from "./fuel.mjs";
-import {copySimpRegistry,orderedDefaultRules,resolveSimpSet,uniqueSimpRules} from "./simp-registry.mjs";
+import {copySimpRegistry,orderedDefaultRules,orderedHLevelRules,resolveSimpSet,uniqueSimpRules} from "./simp-registry.mjs";
 import {builtinTerm} from "./builtins.mjs";
 import {tacticProof,PREMISE_ATTEMPT_LIMIT,dependentNote} from "./tactics.mjs";
 import {Scope,SourceUnit,emptyRewriteWork} from "./elaboration.mjs";
@@ -17,7 +17,7 @@ import {Goal,Transition,steps,byConversion,composePaths} from "./proof-goals.mjs
 import {INDUCTIVE_TAGS,lowerInductive,resolveInductive} from "./inductive.mjs";
 import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference,matchedType} from "./match.mjs";
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
-import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName} from "./hlevel.mjs";
+import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleShape,noRule,ruleTwice} from "./hlevel.mjs";
 import {repeatedName,stem} from "./names.mjs";
 import {numeralValue} from "./numerals.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
@@ -441,6 +441,30 @@ export class Translator {
         } catch(error) {
           directives.push({kind:d.kind,name:d.rule?.text??d.name.text,status:"not-translated",
             reason:error.message,start:d.start,failure:error.kind});
+        }
+        unit.fuel.close();
+        directives.at(-1).searchFuel=this.fuelRecord(unit);
+        continue;
+      }
+      // hlevel_rule lemma; registers a checked lemma whose type states an
+      // h-level, for the hlevel tactic to use (L2.5b).
+      if(d.kind==="hlevel_rule") {
+        const unit=module.declaration(this.declarationFuel);
+        try {
+          const scope=new Scope(unit.with({references:null}),new Map(),env);
+          const term=this.term({kind:"name",name:d.rule.text,start:d.rule.start,end:d.rule.end},scope,null);
+          const type=scope.infer(term).type;
+          const shape=ruleShape(type,t=>this.shown(t));
+          if(shape.refusal)throw unit.locate(noRule(d.rule.text,shape.refusal),d.rule);
+          const identity=term.tag==="DefRef"?term.name:d.rule.text;
+          if(this.simpRegistry.hlevel.get(identity)?.origin===this.moduleName)
+            throw unit.locate(ruleTwice(d.rule.text),d.rule);
+          const existing=this.simpRegistry.hlevel.get(identity);
+          if(!existing||d.priority>existing.priority)
+            this.simpRegistry.hlevel.set(identity,{term,shape,identity,origin:this.moduleName,priority:d.priority,sourceName:d.rule.text});
+          directives.push({kind:d.kind,name:d.rule.text,status:"checked",start:d.start});
+        } catch(error) {
+          directives.push({kind:d.kind,name:d.rule.text,status:"not-translated",reason:error.message,start:d.start,failure:error.kind});
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
@@ -1247,24 +1271,20 @@ export class Translator {
       if(!/^Unknown checked cubical definition/.test(error.message))throw error;
       throw Error("hlevel uses the library module hlevels: add import hlevels;");
     }
+    // A quantified hint is a rule: its statement's carrier is matched, and
+    // its premises proved (L2.5b).
     const hints=first.hints.map(node=>{
       const term=this.term(node,scope,null),type=scope.infer(term).type;
       if(hlevelStatement(type))return {term,type};
-      if(scope.nf(type).tag==="Pi")
-        throw Error(`hlevel does not use quantified hints yet: apply ${this.shown(term)} to its arguments.`);
-      throw Error(`The hint ${this.shown(term)} has type ${this.shown(type)}, which states no h-level.`);
+      if(!["Pi","LPi"].includes(scope.nf(type).tag))
+        throw Error(`The hint ${this.shown(term)} has type ${this.shown(type)}, which states no h-level.`);
+      const shape=ruleShape(type,t=>this.shown(t));
+      if(shape.refusal)throw noRule(`The hint ${this.shown(term)}`,shape.refusal);
+      return {term,type};
     });
-    // Evidence that local definitions name (let, obtain): source names
-    // bound to terms that are not variables of the context, which the search
-    // enumerates itself.
-    const locals=[];
-    for(const bound of scope.env.values()) {
-      if(!this.localSources.has(bound)||bound.tag==="Var"&&scope.context.has(bound.name))continue;
-      const type=scope.infer(bound).type;
-      if(hlevelStatement(type))locals.push({term:bound,type});
-    }
+    const locals=this.hlevelLocals(scope);
     const proof=this.search(scope,"hlevel",at=>{
-      const search=new HLevelSearch(at,hints,term=>this.shown(term),locals);
+      const search=new HLevelSearch(at,hints,term=>this.shown(term),locals,{rules:orderedHLevelRules(this.simpRegistry)});
       const stated=hlevelStatement(goal.target);
       try {
         if(stated)return search.prove(stated.level,stated.universe,stated.type);
@@ -1286,6 +1306,36 @@ export class Translator {
     });
     return this.conclude(first,new Transition(goal),proof,()=>({
       description:`Checked h-level evidence${hints.length?` with ${hints.length} hint${hints.length===1?"":"s"}`:""}.`}));
+  }
+  // Evidence that local definitions name (let, obtain): source names bound
+  // to terms that are not variables of the context, which the search
+  // enumerates itself. Each states an h-level, or is quantified evidence,
+  // which the search uses as a rule (L2.5b).
+  hlevelLocals(scope) {
+    const locals=[];
+    for(const bound of scope.env.values()) {
+      if(!this.localSources.has(bound)||bound.tag==="Var"&&scope.context.has(bound.name))continue;
+      const type=scope.infer(bound).type;
+      if(hlevelStatement(type)||!ruleShape(type).refusal)locals.push({term:bound,type});
+    }
+    return locals;
+  }
+  // Evidence that a type has the h-level its statement states, by the
+  // hlevel search over the scope's evidence, local definitions included,
+  // and the registered rules, as the kernel checks it; or null, where
+  // hlevels is not loaded or the search finds none (L2.5b).
+  hlevelEvidence(scope,type) {
+    const stated=hlevelStatement(type);
+    if(!stated||!scope.checker.kernel?.definitions.has("hlevels__HasLevel"))return null;
+    const locals=this.hlevelLocals(scope);
+    try {
+      return scope.check(this.search(scope,"hlevel",at=>
+        new HLevelSearch(at,[],term=>this.shown(term),locals,{rules:orderedHLevelRules(this.simpRegistry)})
+          .prove(stated.level,stated.universe,stated.type)),type);
+    } catch(error) {
+      if(error instanceof HLevelUnproved)return null;
+      throw error;
+    }
   }
   // Rebuild a proof of a transition's remaining goal into a checked proof of
   // its goal, which the tactic's keyword links to.

@@ -1,11 +1,12 @@
-// Metadata about already checked equality proofs. Registrations never create
-// a new kernel rule or an assumption; their terms are rechecked when used.
+// Metadata about already checked equality proofs, and the h-level lemmas
+// hlevel_rule registers (L2.5b). Registrations never create a new kernel
+// rule or an assumption; their terms are rechecked when used.
 export function emptySimpRegistry() {
-  return { defaults:new Map(), sets:new Map() };
+  return { defaults:new Map(), sets:new Map(), hlevel:new Map() };
 }
 
 export function copySimpRegistry(registry=emptySimpRegistry()) {
-  return {defaults:new Map(registry.defaults),sets:new Map(registry.sets)};
+  return {defaults:new Map(registry.defaults),sets:new Map(registry.sets),hlevel:new Map(registry.hlevel??[])};
 }
 
 export function mergeSimpRegistries(left,right=emptySimpRegistry()) {
@@ -13,6 +14,10 @@ export function mergeSimpRegistries(left,right=emptySimpRegistry()) {
   for(const [key,rule] of right.defaults) {
     const existing=merged.defaults.get(key);
     if(!existing||rule.priority>existing.priority)merged.defaults.set(key,rule);
+  }
+  for(const [key,rule] of right.hlevel??[]) {
+    const existing=merged.hlevel.get(key);
+    if(!existing||rule.priority>existing.priority)merged.hlevel.set(key,rule);
   }
   for(const [name,set] of right.sets) {
     const existing=merged.sets.get(name);
@@ -26,6 +31,12 @@ export function mergeSimpRegistries(left,right=emptySimpRegistry()) {
 
 export function orderedDefaultRules(registry) {
   return [...registry.defaults.values()].sort((a,b)=>b.priority-a.priority||
+    (a.identity<b.identity?-1:a.identity>b.identity?1:0));
+}
+
+// The registered h-level rules, by priority, then by identity.
+export function orderedHLevelRules(registry) {
+  return [...registry.hlevel?.values()??[]].sort((a,b)=>b.priority-a.priority||
     (a.identity<b.identity?-1:a.identity>b.identity?1:0));
 }
 

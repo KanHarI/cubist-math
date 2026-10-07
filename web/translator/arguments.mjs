@@ -28,6 +28,7 @@ import {T,finiteLevel,substituteTerm,substituteDimension,freeNames,levelNames} f
 import {universeText} from "../cubical-levels.mjs";
 import {interval as I} from "./lattice.mjs";
 import {freeDimensions} from "./dimension-slots.mjs";
+import {statement as hlevelStatement} from "./hlevel.mjs";
 import {INDUCTIVE_TAGS} from "./inductive.mjs";
 import {stem} from "./names.mjs";
 
@@ -354,7 +355,10 @@ class ArgumentSolver {
       if (progress) continue;
       if (complete && this.approximate()) continue;
       // Universes last: once every argument has said what it needs.
-      if (!complete || (!this.solveUniverses() && !this.solveUniverses(true))) break;
+      if (!complete) break;
+      if (this.solveUniverses() || this.solveUniverses(true)) continue;
+      // Then a hole that states an h-level, by the hlevel search.
+      if (!this.fillLevels()) break;
     }
     const open = this.slots.find(slot => slot.variable && !this.solution.has(slot.variable));
     if (open && complete) throw this.undetermined(open);
@@ -567,6 +571,20 @@ class ArgumentSolver {
     if (result.failure !== "mismatch") throw result.error;
     const [shown, typeText] = this.t.shownTogether([value, type]);
     throw this.scope.unit.locate(Error(`The hole for ${this.describe(slot)} of ${this.called} was solved as ${shown}, which does not have its type ${typeText}.`), slot.node ?? this.call.fn);
+  }
+  // A hole whose type states an h-level, as a model's setness field left out
+  // of T.make(…), is proved by the search hlevel; uses (L2.5b): from the
+  // evidence in scope and the registered rules. True when one was filled.
+  fillLevels() {
+    let progress = false;
+    for (const slot of this.slots) {
+      if (!slot.variable || slot.kind === "argument" || slot.universe || this.solution.has(slot.variable)) continue;
+      const domain = this.zonk(slot.domain);
+      if (this.unknowns(domain).length || !hlevelStatement(domain)) continue;
+      const proof = this.t.hlevelEvidence(this.scope, domain);
+      if (proof) { this.solution.set(slot.variable, proof); progress = true; }
+    }
+    return progress;
   }
   undetermined(slot) {
     if (slot.universe)

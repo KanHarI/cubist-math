@@ -1030,6 +1030,21 @@ export function parse(source, typeOnly = false) {
     if (section && t.text !== "def" && !(t.text === "computable" && peek() === "def"))
       throw Object.assign(new Error(peek() === "EOF" && t.text === "EOF" ? "Expected '}' to close the section."
         : "A section holds definitions: def and computable def."), { offset: t.start });
+    // hlevel_rule lemma; registers a lemma for the hlevel tactic (L2.5b).
+    if(t.text==="hlevel_rule") {
+      const rule=name();
+      let priority=0;
+      if(peek()==="priority") {
+        take("priority");
+        const number=take();
+        priority=Number(number.text);
+        if(!Number.isSafeInteger(priority)||priority<0||priority>1000)
+          throw Object.assign(new Error("hlevel_rule priority must be an integer from 0 to 1000."),{offset:number.start});
+      }
+      const end=take(";").end;
+      const directive={kind:"hlevel_rule",rule,priority,...(uses.length?{uses:[...uses]}:{}),start:t.start,end};
+      directives.push(directive);items.push(directive);continue;
+    }
     if(t.text==="simp_rule") {
       const rule=name();
       let priority=0;
@@ -1041,7 +1056,7 @@ export function parse(source, typeOnly = false) {
           throw Object.assign(new Error("simp_rule priority must be an integer from 0 to 1000."),{offset:number.start});
       }
       const end=take(";").end;
-      const directive={kind:"simp_rule",rule,priority,start:t.start,end};
+      const directive={kind:"simp_rule",rule,priority,...(uses.length?{uses:[...uses]}:{}),start:t.start,end};
       directives.push(directive);items.push(directive);continue;
     }
     if(t.text==="simp_set") {
@@ -1054,7 +1069,7 @@ export function parse(source, typeOnly = false) {
       }
       take("]");
       const end=take(";").end;
-      const directive={kind:"simp_set",name:set,rules,start:t.start,end};
+      const directive={kind:"simp_set",name:set,rules,...(uses.length?{uses:[...uses]}:{}),start:t.start,end};
       directives.push(directive);items.push(directive);continue;
     }
     // `evaluate term expecting value;` is a checked computation test.
@@ -1276,7 +1291,7 @@ export function parse(source, typeOnly = false) {
     if (computable) t = take();
     if (t.text !== "def")
       throw Object.assign(new Error(t.text === "import" ? "Imports must come before declarations."
-        : "Expected a declaration or directive: def, computable def, inductive, evaluate, print, simp_rule, simp_set or theory."), {
+        : "Expected a declaration or directive: def, computable def, inductive, evaluate, print, simp_rule, simp_set, hlevel_rule or theory."), {
         offset: t.start,
       });
     const n = name(),

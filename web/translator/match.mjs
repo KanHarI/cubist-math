@@ -17,6 +17,7 @@ import {abstractMotive} from "./motives.mjs";
 import {Goal} from "./proof-goals.mjs";
 import {SearchFuel} from "./fuel.mjs";
 import {HLevelSearch,HLevelUnproved,pathEvidence} from "./hlevel.mjs";
+import {orderedHLevelRules} from "./simp-registry.mjs";
 
 // The keyword a match or an induction was written with, for messages.
 const keyword = n => n.kind === "induction" || n.induction === true ? "induction" : "match";
@@ -499,7 +500,8 @@ function automaticClause(translator, scope, type, name, node, proof, index) {
     const hints = (proof?.body[0].hints ?? []).map(node => {
       const term = translator.term(node, at, null); return {term,type:at.infer(term).type};
     });
-    const search = new HLevelSearch(at, hints, term => translator.shown(term), locals, {instantiate:true});
+    const search = new HLevelSearch(at, hints, term => translator.shown(term), locals,
+      {instantiate:true, rules:orderedHLevelRules(translator.simpRegistry)});
     try { return pathEvidence(search, path, at); }
     catch (error) {
       if (!(error instanceof HLevelUnproved)) throw error;
