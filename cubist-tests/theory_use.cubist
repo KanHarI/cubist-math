@@ -104,3 +104,32 @@ def use_a_number(n : Nat) : Nat {
   use n;
   exact n;
 }
+
+// A file-level use is read in what the uses before it select, as the
+// definitions after it are: 0 is nat's here.
+use nat;
+
+def pick(n : Nat) : Monoid(U0) := multiplicative;
+
+use pick(0);
+
+def picked : Nat := one;
+
+// Output: 1
+print(evaluate(picked));
+
+// And inner is the field that use outer opens.
+theory Wrapper(U < UU0) {
+  inner : Monoid(U);
+}
+
+def outer : Wrapper(U0) := Wrapper.make(inner := additive);
+
+use outer;
+
+use inner;
+
+def wrapped : Nat := one;
+
+// Output: 0
+print(evaluate(wrapped));
