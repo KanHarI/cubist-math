@@ -40,6 +40,7 @@
 // The names a type mentions free, a qualified name R.R by its root, by
 // every binding form (scopes.mjs).
 import { freeNames } from "./scopes.mjs";
+import { reservedNames } from "./parser.mjs";
 
 
 // How a type is mapped: "fixed" when it mentions no carrier; a carrier, or
@@ -149,7 +150,7 @@ export function morphismSource(record, isTheory = () => false) {
   // it is (apart from the carriers, which it writes as A.M); and none is a
   // universe constant, so a taken U is followed by U_1, not U1.
   const carrierNames = new Set(record.fields.filter(field => field.kind === "sort").map(field => field.name));
-  const taken = new Set([...params.map(p => p.name), ...record.fields.flatMap(field => binders(field.type).list.map(b => b.name)),
+  const taken = new Set([...reservedNames, ...params.map(p => p.name), ...record.fields.flatMap(field => binders(field.type).list.map(b => b.name)),
     ...record.fields.flatMap(field => [...freeNames(field.type)]).filter(name => !carrierNames.has(name))]);
   const numbered = (stem, k) => /^U+$/.test(stem) || /[0-9]$/.test(stem) ? `${stem}_${k}` : `${stem}${k}`;
   const own = stem => {

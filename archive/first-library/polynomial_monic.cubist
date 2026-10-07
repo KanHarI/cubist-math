@@ -8,7 +8,7 @@ def PolynomialMonic(K : AlgebraicField, p : Polynomial(K)) :=
   polynomial_coefficients(K, p, polynomial_degree(K, p)) = field_one(K);
 
 def polynomial_scalar_inverse(
-  K : AlgebraicField, a, b : af_carrier(K), inverse : field_mul(K, b, a) = field_one(K),
+  K : AlgebraicField, a, b : af_carrier(K), inverse_ : field_mul(K, b, a) = field_one(K),
   p : Polynomial(K)
 ) :
   polynomial_scale(K, b, polynomial_scale(K, a, p)) = p {
@@ -17,14 +17,14 @@ def polynomial_scalar_inverse(
     trans(
       cong(
         (fun (q : Polynomial(K)) => polynomial_mul(K, q, p)),
-        trans(sym(polynomial_constant_mul(K, b, a)), cong(polynomial_constant(K), inverse))
+        trans(sym(polynomial_constant_mul(K, b, a)), cong(polynomial_constant(K), inverse_))
       ), polynomial_mul_one(K, p)
     )
   );
 }
 
 def polynomial_scale_divides(
-  K : AlgebraicField, a, b : af_carrier(K), inverse : field_mul(K, b, a) = field_one(K),
+  K : AlgebraicField, a, b : af_carrier(K), inverse_ : field_mul(K, b, a) = field_one(K),
   p : Polynomial(K)
 ) :
   PolynomialDivides(K, polynomial_scale(K, a, p), p) {
@@ -36,7 +36,7 @@ def polynomial_scale_divides(
       (
         polynomial_constant(K, b),
         trans(
-          sym(polynomial_scalar_inverse(K, a, b, inverse, p)),
+          sym(polynomial_scalar_inverse(K, a, b, inverse_, p)),
           polynomial_mul_comm(K, polynomial_constant(K, b), q)
         )
       )
@@ -46,14 +46,14 @@ def polynomial_scale_divides(
 
 def polynomial_normalize_degree(
   K : AlgebraicField, p : Polynomial(K), d : Nat, degree : polynomial_cutoff(K, p) = succ(d),
-  a : af_carrier(K), inverse : field_mul(K, polynomial_coefficients(K, p, d), a) = field_one(K)
+  a : af_carrier(K), inverse_ : field_mul(K, polynomial_coefficients(K, p, d), a) = field_one(K)
 ) :
   polynomial_cutoff(K, polynomial_scale(K, a, p)) = succ(d) {
   let q := polynomial_scale(K, a, p);
   let f := polynomial_coefficients(K, p);
   let support := along SeriesSupport(K, f) by degree from polynomial_cutoff_support(K, p);
   let leading :=
-    trans(polynomial_scale_coefficient(K, a, p, d), trans(scalar_mul_comm(K, a, f(d)), inverse));
+    trans(polynomial_scale_coefficient(K, a, p, d), trans(scalar_mul_comm(K, a, f(d)), inverse_));
   let nonzero : FieldNonzero(af_carrier(K), af_operations(K), polynomial_coefficients(K, q, d)) {
     intro zero;
     obtain (ring, nontrivial, inverses) := af_laws(K);
@@ -66,28 +66,28 @@ def polynomial_normalize_degree(
 
 def polynomial_normalize_monic(
   K : AlgebraicField, p : Polynomial(K), d : Nat, degree : polynomial_cutoff(K, p) = succ(d),
-  a : af_carrier(K), inverse : field_mul(K, polynomial_coefficients(K, p, d), a) = field_one(K)
+  a : af_carrier(K), inverse_ : field_mul(K, polynomial_coefficients(K, p, d), a) = field_one(K)
 ) :
   PolynomialMonic(K, polynomial_scale(K, a, p)) {
   let q := polynomial_scale(K, a, p);
   let degreeQ :=
-    cong(natural_predecessor, polynomial_normalize_degree(K, p, d, degree, a, inverse));
+    cong(natural_predecessor, polynomial_normalize_degree(K, p, d, degree, a, inverse_));
   exact trans(
     cong(polynomial_coefficients(K, q), degreeQ),
     trans(
       polynomial_scale_coefficient(K, a, p, d),
-      trans(scalar_mul_comm(K, a, polynomial_coefficients(K, p, d)), inverse)
+      trans(scalar_mul_comm(K, a, polynomial_coefficients(K, p, d)), inverse_)
     )
   );
 }
 
 def polynomial_normalize_nonzero(
   K : AlgebraicField, p : Polynomial(K), d : Nat, degree : polynomial_cutoff(K, p) = succ(d),
-  a : af_carrier(K), inverse : field_mul(K, polynomial_coefficients(K, p, d), a) = field_one(K)
+  a : af_carrier(K), inverse_ : field_mul(K, polynomial_coefficients(K, p, d), a) = field_one(K)
 ) :
   PolynomialNonzero(K, polynomial_scale(K, a, p)) {
   intro zero;
-  let dq := polynomial_normalize_degree(K, p, d, degree, a, inverse);
+  let dq := polynomial_normalize_degree(K, p, d, degree, a, inverse_);
   exact nat_zero_ne_succ(
     d, trans(sym(polynomial_zero_cutoff(K)), trans(cong(polynomial_cutoff(K), sym(zero)), dq))
   );
@@ -102,8 +102,8 @@ def polynomial_divides_cutoff_le(
   let useQuotient :
     (exists r : Polynomial(K). q = polynomial_mul(K, p, r))
     -> le(polynomial_cutoff(K, p), polynomial_cutoff(K, q)) {
-    intro witness;
-    obtain (r, equation) := witness;
+    intro witness_;
+    obtain (r, equation) := witness_;
     let nonzeroR : PolynomialNonzero(K, r) {
       intro zero;
       exact nonzeroQ(

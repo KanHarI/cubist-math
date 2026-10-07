@@ -35,8 +35,8 @@ computable def times_zero(x : Z) : int_mul(x, int_zero) = int_zero := mul_zero(i
 
 // n is the integer n - 0, and addition is preserved.
 computable def naturals_in_integers :
-  CommMonoid.Hom(nat_additive, integers.additive.comm_monoid) := CommMonoid.Hom.make(
-    nat_additive, integers.additive.comm_monoid, map := fun (n : Nat) => int(n, 0),
+  CommMonoid.Hom(nat_additive, integers.additive_.comm_monoid) := CommMonoid.Hom.make(
+    nat_additive, integers.additive_.comm_monoid, map := fun (n : Nat) => int(n, 0),
     map_mul := fun (x, y : Nat) => refl(int(x + y, 0)), map_one := refl(int_zero)
   );
 

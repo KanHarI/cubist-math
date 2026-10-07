@@ -29,31 +29,39 @@ export function tokenize(source) {
   tokens.push({ text: "EOF", start: source.length, end: source.length });
   return tokens;
 }
-// Reserved names: the keywords that begin a term or a statement, or join
-// terms, the built-in types Unit and Void, whose meaning checking relies
-// on (a theory's laws, for one), and Unit's element tt, the evidence a
-// literal's parse succeeded (L2.10c). None can be bound: not by a declaration, a
-// parameter, a binder, a pattern, a field or a constructor. Every binding
-// site reads its name through name(), which refuses them, as it does
-// universe constants. Every other word is a name outside the construct that
-// gives it a meaning, a contextual keyword: those that begin a declaration
-// or a directive at a module's top level, where no name stands (import,
-// def, computable, inductive, theory, section, print, typeof, inspect,
-// simp_rule, simp_set), sort, law, notation and extends in a theory, set,
-// prop, type and trunc in a header, and with, at, by, from, over, along,
-// only, using and the like inside particular statements. The library and
-// the archive bind prop, set and law.
-export const reservedNames = new Set([
-  "let", "obtain", "exact", "calc", "open", "match", "rfl", "rw", "simp", "simpa", "intro", "ext", "hlevel", "induction",
-  "fun", "forall", "exists", "and", "or", "as", "return",
-  "Unit", "Void", "tt",
-  // A sum's injections, left(a) and right(b), and its patterns, left a =>
-  // and right b =>, and the ascription typed(T, e): no binder shadows them.
-  "left", "right", "typed",
-  // `evaluate e expecting v;`, a computation test, and print(evaluate(e)):
-  // evaluate and expecting are always these keywords.
-  "evaluate", "expecting",
+// Every language keyword is reserved at every naming site, including words
+// whose grammar role is confined to a header, directive or proof statement.
+// The source reader uses this same list for highlighting.
+export const builtinNames = new Set([
+  "Interval", "PathP", "comp", "face", "face_when", "flip", "meet", "join", "Glue", "glue", "unglue",
+  "next", "max", "refl", "absurd", "sym", "trans", "cong", "transport", "apd", "apd_path",
+  "pair_induction", "unit_induction", "path_induction", "based_induction", "path_from_transport", "path_to_transport",
+  "Choice", "LEM", "FunExt", "Truncate", "TruncateIntro", "TruncateProp", "TruncateElim", "UnivalenceBeta", "ua",
 ]);
+export const generatedNames = new Set([
+  "Hom", "Iso", "cat", "equality", "make", "map", "id", "inverse", "compose", "to", "from", "from_to", "to_from",
+  "model", "fold", "fold_map", "fold_unique", "universal", "gen", "squash",
+  "IsInitial", "IsTerminal", "IsLimit", "IsColimit",
+]);
+export const languageKeywords = new Set([
+  "import", "def", "computable", "inductive", "theory", "section",
+  "deriving", "morphisms", "free", "initial",
+  "isomorphisms", "limits", "preadditive", "additive", "preabelian", "abelian",
+  "paths", "decidable_equality", "irrelevance", "ind_prop", "rec",
+  "evaluate", "expecting", "print", "typeof", "inspect", "witness",
+  "simp_rule", "simp_set", "hlevel_rule", "priority",
+  "sort", "law", "notation", "extends", "type", "set", "prop", "trunc", "numeral", "literal",
+  "let", "obtain", "exact", "calc", "open", "use", "match", "rfl", "rw", "simp", "simpa", "intro", "ext", "hlevel", "induction",
+  "fun", "forall", "exists", "and", "or", "as", "return",
+  "with", "unfolding", "at", "by", "from", "over", "along", "only", "without", "using", "occurrence", "obligations",
+  "path", "compose", "fill", "in", "on", "unpack",
+  "left", "right", "typed",
+  ...generatedNames,
+  ...builtinNames,
+]);
+// Unit, Void and tt have fixed meanings in law and literal checking.
+// Universe constants are refused separately by name().
+export const reservedNames = new Set([...languageKeywords, "Unit", "Void", "tt"]);
 
 // `bindable` lists reserved words a historical source may still bind
 // (web/cubist/legacy-syntax.mjs).
@@ -86,14 +94,14 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
     if (binds()) return take();
     throw Object.assign(new Error(`Write := to give a value: ${form}`), { offset: ts[i].start });
   }
-  function name() {
+  function name({ generatedReference = false } = {}) {
     const t = take();
     if (t.text === "EOF" || !/^[A-Za-z_][A-Za-z_0-9]*$/.test(t.text))
       throw Object.assign(new Error("Expected a name."), { offset: t.start });
     // U0, UU3 and the like name universes: they cannot be bound or declared.
     if (/^U+[0-9]+$/.test(t.text))
       throw Object.assign(new Error(`${t.text} is a universe constant; pick another name.`), { offset: t.start });
-    if (reservedNames.has(t.text) && !bindable.includes(t.text))
+    if (reservedNames.has(t.text) && !bindable.includes(t.text) && !(generatedReference && generatedNames.has(t.text)))
       throw Object.assign(new Error(`${t.text} is reserved, as a keyword or a built-in type of the language; pick another name.`), { offset: t.start });
     return t;
   }
@@ -270,7 +278,9 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
     // An argument, or a named one, `x := e`, which gives the parameter x.
     const argument = () => {
       if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(peek()) || ts[i + 1]?.text !== ":=") return expr();
-      const parameter = name();
+      // A generated constructor's labels refer to its existing fields;
+      // naming an argument does not introduce a user binding.
+      const parameter = name({ generatedReference: true });
       take(":=");
       const value = expr();
       return { kind: "namedArgument", name: parameter, value, start: parameter.start, end: value.end };
@@ -699,7 +709,8 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
     // binder is.
     const injection = ["left", "right"].includes(peek())
       && (ts[i + 1].text === "(" || !nested && /^[A-Za-z_]/.test(ts[i + 1].text) && ts[i + 1].text !== "EOF");
-    let constructor = injection ? take() : name(), qualifiedDot = null;
+    const generatedConstructor = ["gen", "squash"].includes(peek()) && ["(", "@"].includes(ts[i + 1].text);
+    let constructor = injection || generatedConstructor ? take() : name(), qualifiedDot = null;
     if (peek() === "." && ts[i - 1].end === ts[i].start && /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text)
         && ts[i + 1].start === ts[i].end) {
       const dot = take("."), member = take();

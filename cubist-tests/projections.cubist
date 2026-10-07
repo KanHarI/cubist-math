@@ -9,7 +9,7 @@ def first_of(p : Nat and Unit) : Nat := p.1;
 
 def second_of(p : Nat and Unit) : Unit := p.2;
 
-def witness(A : U0, B : A -> U0, p : exists x : A. B(x)) : A := p.1;
+def witness_(A : U0, B : A -> U0, p : exists x : A. B(x)) : A := p.1;
 
 def evidence(A : U0, B : A -> U0, p : exists x : A. B(x)) : B(p.1) := p.2;
 

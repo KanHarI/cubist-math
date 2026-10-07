@@ -1,6 +1,6 @@
 // From tests/universe-generic.test.mjs.
 
-import paths;
+import paths_;
 
 // S12, D4 and Q10: instantiation, assumptions and builtins take universes
 // below UU0.

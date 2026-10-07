@@ -6,6 +6,6 @@ use nat;
 
 simp_set units := [];
 
-computable def use(n : Nat) : n + 0 = n {
+computable def use_(n : Nat) : n + 0 = n {
   exact generic(U0, n);
 }

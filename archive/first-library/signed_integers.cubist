@@ -1,5 +1,5 @@
 import nat;
-import paths;
+import paths_;
 import hlevels;
 use nat;
 

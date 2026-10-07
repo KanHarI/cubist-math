@@ -256,8 +256,8 @@ try {
     def N := Nat;
     def IdentityType(A : U0) := A;
     def Alias := IdentityType(N);
-    def id(n : Nat) := n;
-    def value := typed(Alias, id(0));`);
+    def id_(n : Nat) := n;
+    def value := typed(Alias, id_(0));`);
   await page.locator("#check").click(); await idle(); await inspected("value");
   const reductionPopup = page.waitForEvent("popup");
   await page.locator("#open-kernel-expression").click();
@@ -297,7 +297,7 @@ try {
   await reductionBench.locator("#normalize").click();
   assert.equal(await reductionBench.locator("#expression").textContent(), "0");
   await reductionBench.locator("details summary").click();
-  const ref = { tag: "DefRef", name: "cubical_paths__id" };
+  const ref = { tag: "DefRef", name: "cubical_paths__id_" };
   const repeated = { tag: "App", fn: ref, arg: { tag: "App", fn: ref, arg: zero } };
   await reductionBench.locator("#syntax").fill(JSON.stringify(repeated));
   await reductionBench.locator("#check").click();

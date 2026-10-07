@@ -5,7 +5,7 @@ use nat;
 // Classical counterexamples are produced only under propositional truncation.
 // No global selection function or axiom of choice is required.
 def classical_counterexample(
-  A : U0, P : A -> U0, prop : (forall x : A. Proposition(P(x))), notAll : (forall x : A. P(x))
+  A : U0, P : A -> U0, prop_ : (forall x : A. Proposition(P(x))), notAll : (forall x : A. P(x))
   -> Void
 ) :
   Mere(exists x : A. P(x) -> Void) {
@@ -16,7 +16,7 @@ def classical_counterexample(
       fun (none : Mere(Witness) -> Void) => notAll(
         (
           fun (x : A) => double_negation(
-            P(x), prop(x),
+            P(x), prop_(x),
             (fun (no : P(x) -> Void) => none(merely(Witness, typed(Witness, (x, no)))))
           )
         )
@@ -61,8 +61,8 @@ def finite_basis_search_step(
   let F := linear_map(K, C, V, f);
   let Image := fun (x : X) => Mere(Fiber(vector_carrier(K, C), X, F, x));
   let extend : (exists x : X. Image(x) -> Void) -> FiniteDimensional(K, V) {
-    intro witness;
-    obtain (x, outside) := witness;
+    intro witness_;
+    obtain (x, outside) := witness_;
     exact previous(
       succ(m), adjoin_linear(K, V, m, f, x),
       adjoin_linear_injective(K, V, m, f, injective, x, outside),
@@ -152,14 +152,14 @@ def finite_dimensional_injection_basis(
 ) :
   FiniteDimensional(K, V) {
   let N := CoordinateSpace(K, n);
-  let inverse := linear_iso_inverse(K, N, W, basis);
-  let coordinates := linear_iso_forward(K, W, N, inverse);
+  let inverse_ := linear_iso_inverse(K, N, W, basis);
+  let coordinates := linear_iso_forward(K, W, N, inverse_);
   let composite : LinearInjective(K, V, N, linear_compose(K, V, W, N, h, coordinates)) {
     intro x, y, same;
     exact injective(
       x, y,
       linear_iso_injective(
-        K, W, N, inverse, linear_map(K, V, W, h, x), linear_map(K, V, W, h, y), same
+        K, W, N, inverse_, linear_map(K, V, W, h, x), linear_map(K, V, W, h, y), same
       )
     );
   }

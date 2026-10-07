@@ -62,7 +62,7 @@ by where it lives:
 - A module of `cubist-tests/`, the Cubist sources the test suite checks,
   imports from `cubist-tests/`, then from `library/`, then from the archive.
   Nothing else imports a test module. Check one by its path:
-  `node cli/repl.mjs check cubist-tests/glue.cubist`.
+  `node cli/repl.mjs check cubist-tests/glue_.cubist`.
 
 A check holds one module per name. When two modules of one check would load a
 name from different places, for example an archive module and a library module

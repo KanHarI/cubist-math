@@ -15,9 +15,9 @@ def MinimumAt(P : Nat -> U0, n : Nat) := P(n) and (forall m : Nat. P(m) -> le(n,
 
 def NaturalMinimum(P : Nat -> U0) := exists n : Nat. MinimumAt(P, n);
 
-def minimum_at_prop(P : Nat -> U0, prop : (forall n : Nat. Proposition(P(n))), n : Nat) :=
+def minimum_at_prop(P : Nat -> U0, prop_ : (forall n : Nat. Proposition(P(n))), n : Nat) :=
   product_prop(
-    P(n), (forall m : Nat. P(m) -> le(n, m)), prop(n),
+    P(n), (forall m : Nat. P(m) -> le(n, m)), prop_(n),
     forall_prop(
       Nat, (fun (m : Nat) => P(m) -> le(n, m)),
       (
@@ -28,7 +28,7 @@ def minimum_at_prop(P : Nat -> U0, prop : (forall n : Nat. Proposition(P(n))), n
     )
   );
 
-def natural_minimum_prop(P : Nat -> U0, prop : (forall n : Nat. Proposition(P(n)))) :
+def natural_minimum_prop(P : Nat -> U0, prop_ : (forall n : Nat. Proposition(P(n)))) :
   Proposition(NaturalMinimum(P)) {
   intro u, v;
   let n := sigma_first(Nat, MinimumAt(P), u);
@@ -36,18 +36,18 @@ def natural_minimum_prop(P : Nat -> U0, prop : (forall n : Nat. Proposition(P(n)
   obtain (pn, ln) := sigma_second(Nat, MinimumAt(P), u);
   obtain (pm, lm) := sigma_second(Nat, MinimumAt(P), v);
   exact subtype_ext(
-    Nat, MinimumAt(P), minimum_at_prop(P, prop), u, v,
+    Nat, MinimumAt(P), minimum_at_prop(P, prop_), u, v,
     dimension_order_antisymmetric(n, m, ln(m, pm), lm(n, pn))
   );
 }
 
 def natural_minimum_from_witness(
-  P : Nat -> U0, prop : (forall n : Nat. Proposition(P(n))), witness : (exists n : Nat. P(n))
+  P : Nat -> U0, prop_ : (forall n : Nat. Proposition(P(n))), witness_ : (exists n : Nat. P(n))
 ) :
   NaturalMinimum(P) {
-  obtain (n, pn) := witness;
+  obtain (n, pn) := witness_;
   obtain (m, bound, pm, noLess) := least_bounded_witness(
-    P, (fun (k : Nat) => excluded_middle(P(k), prop(k))), n, pn
+    P, (fun (k : Nat) => excluded_middle(P(k), prop_(k))), n, pn
   );
   let least : forall k : Nat. P(k) -> le(m, k) {
     intro k, pk;
@@ -60,11 +60,11 @@ def natural_minimum_from_witness(
 }
 
 def natural_minimum(
-  P : Nat -> U0, prop : (forall n : Nat. Proposition(P(n))), inhabited : Mere(exists n : Nat. P(n))
+  P : Nat -> U0, prop_ : (forall n : Nat. Proposition(P(n))), inhabited : Mere(exists n : Nat. P(n))
 ) :
   NaturalMinimum(P) {
   exact mere_eliminate(
-    (exists n : Nat. P(n)), NaturalMinimum(P), natural_minimum_prop(P, prop),
-    natural_minimum_from_witness(P, prop), inhabited
+    (exists n : Nat. P(n)), NaturalMinimum(P), natural_minimum_prop(P, prop_),
+    natural_minimum_from_witness(P, prop_), inhabited
   );
 }

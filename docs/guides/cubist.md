@@ -152,7 +152,7 @@ formation, substitution, and assumption discharge use the existing kernel rules.
 
 `x =[T] y` specifies equality in the carrier `T`, while `x = y` infers it.
 In particular, `A =[U] B` is equality of types `A : U` and `B : U` in the
-universe `U`. With `import paths;`, `sym(p)` reverses
+universe `U`. With `import paths_;`, `sym(p)` reverses
 `p : x =[T] y` to give `y =[T] x`; it also reverses equalities of types.
 `trans(p, q)` composes paths and `cong(f, p)` applies a function to a path.
 These language conveniences call checked library definitions proved by path
@@ -207,7 +207,7 @@ index type and every fiber and returns only a truncated section.
 not separate axioms. All these operations also accept a universe variable.
 A result's assumptions are listed by name, once each: `LEM`, not `LEM(U0)`.
 
-`Equiv(U, A, B)` and `IsEquiv(U, A, B, f)` in `paths.cubist` are ordinary
+`Equiv(U, A, B)` and `IsEquiv(U, A, B, f)` in `paths_.cubist` are ordinary
 universe-parameterized definitions. `x =[T] y` explicitly selects the carrier
 of equality; both endpoints are checked against `T`. Plain `x = y` still
 infers the carrier. Neither notation asserts definitional equality.

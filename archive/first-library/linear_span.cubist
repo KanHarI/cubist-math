@@ -90,8 +90,8 @@ def span_included(
 ) :
   Span(K, V, Q, x) {
   let mapWitness : SpanWitness(K, V, P, x) -> Span(K, V, Q, x) {
-    intro witness;
-    obtain (n, vectors, coefficients, members, sum) := witness;
+    intro witness_;
+    obtain (n, vectors, coefficients, members, sum) := witness_;
     exact TruncateIntro(
       U0, SpanWitness(K, V, Q, x),
       typed(

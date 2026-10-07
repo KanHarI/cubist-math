@@ -40,7 +40,7 @@ test("imported Nat and W use no retired primitive", async () => {
 });
 
 test("a fresh driver replays a level binder after a conflicting term entry",async t=>{
-  const {program,result}=await check(t,`import w; def witness : Unit := tt;
+  const {program,result}=await check(t,`import w; def witness_ : Unit := tt;
 `);
   ok(result);
   const reference=program.kernel.definitions.get("w__wrec");

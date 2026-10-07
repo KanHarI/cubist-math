@@ -1,4 +1,4 @@
-import { tokenize, parse } from "./parser.mjs";
+import { tokenize, parse, languageKeywords, generatedNames } from "./parser.mjs";
 
 // Sources written before 2026-09-30 may use `have`, which `let` replaced with
 // the same forms: have name : T := term; and have name : T { … } elaborate as
@@ -69,26 +69,52 @@ notation nat {
 // it. A name no such binder is in scope for is the builtin, an injection or
 // an ascription, and stays, as evaluate directives do. A name read by its
 // declaration rather than by scope, a parameter's in a named argument, a
-// field's after a dot or a constructor's in a clause, is renamed wherever
-// it is written, as each declaration of it is. But a clause's left x is a
-// sum's, and its left(…) or right(…) is too unless this module declared a
-// constructor so before it. A module reads only its own binders: a name
-// another module declares so, called bare or as left(…) in a clause, is not
-// followed. Only the matched type tells a sum's left(…) in a match
-// statement from a constructor this module declared, which it is read as.
+// field's after a dot or a constructor's in a clause, follows its
+// declaration. When available, the matched value's type distinguishes a
+// sum's injections and a generated squash from user constructors. Types
+// come from telescopes, annotated locals, constructor calls and aliases.
+// Callers migrating several modules can supply their imported names.
 // Bound names change no checked term.
-const renamedReserved = { left: "left_", right: "right_", typed: "typed_", evaluate: "evaluate_" };
-const reservedUnbound = source => {
-  if (!/\b(left|right|typed|evaluate)\b/.test(source)) return source;
+// Contextual keywords could also be bound before all keywords were reserved.
+const historicalRenaming = Object.fromEntries([...languageKeywords].map(word => [word, `${word}_`]));
+// Used by the source migration as well as by the historical source reader.
+// Only binders and their references change; grammar tokens keep their roles.
+export const renameReservedBindings = (source, renamedReserved = historicalRenaming, { importedNames = [] } = {}) => {
   let ast;
-  try { ast = parse(source, false, { bindable: Object.keys(renamedReserved) }); } catch { return source; }
+  try {
+    if (!tokenize(source).some(token => Object.hasOwn(renamedReserved, token.text))) return source;
+    ast = parse(source, false, { bindable: Object.keys(renamedReserved) });
+  } catch { return source; }
   const edits = new Map();
-  const rename = (start, text) => { if (renamedReserved[text]) edits.set(start, [start + text.length, renamedReserved[text]]); };
+  const userMembers = new Set((ast.items ?? ast.declarations).filter(item => item.kind === "theory")
+    .flatMap(item => item.fields.map(field => field.name.text)));
+  const types = new Map((ast.items ?? ast.declarations).filter(item => item.kind === "inductive").map(item => [item.name.text, item]));
+  const aliases = new Map((ast.items ?? ast.declarations).filter(item => item.kind === "def")
+    .map(item => [item.name.text, item.value ?? (item.body?.length === 1 ? item.body[0].value : null)]));
+  const typeName = (type, seen = new Set()) => {
+    if (type?.kind === "binary" && type.operator === "or") return "sum";
+    const name = type?.kind === "name" ? type.name : type?.kind === "call" && type.fn.kind === "name" ? type.fn.name : null;
+    if (aliases.has(name) && !seen.has(name)) return typeName(aliases.get(name), new Set([...seen, name])) ?? name;
+    return name;
+  };
+  const valueType = (value, scope) => {
+    if (value?.kind === "name") return scope.get(value.name);
+    if (value?.kind === "call" && value.fn.kind === "name") {
+      if (value.fn.name === "typed") return value.args[0];
+      const owner = [...types.values()].find(type => type.constructors.some(c => c.name.text === value.fn.name));
+      if (owner) return { kind: "name", name: owner.name.text };
+      let type = scope.get(value.fn.name);
+      for (const arg of value.args) type = type?.body ?? (type?.operator === "->" ? type.right : null);
+      return type;
+    }
+    return null;
+  };
+  const rename = (start, text) => { if (Object.hasOwn(renamedReserved, text)) edits.set(start, [start + text.length, renamedReserved[text]]); };
   // Binder tokens: each is renamed, and the scope they open holds them.
-  const bind = (scope, tokens) => {
-    const named = tokens.filter(token => renamedReserved[token?.text]);
+  const bind = (scope, tokens, type = null) => {
+    const named = tokens.filter(token => token?.text);
     for (const token of named) rename(token.start, token.text);
-    return named.length ? new Set([...scope, ...named.map(token => token.text)]) : scope;
+    return named.length ? new Map([...scope, ...named.map(token => [token.text, type])]) : scope;
   };
   // A name, as its scope reads it, and each part after a dot, a field or a
   // module's member, wherever it is written.
@@ -96,18 +122,29 @@ const reservedUnbound = source => {
     const [head, ...rest] = (token.name ?? token.text).split(".");
     if (scope.has(head)) rename(token.start, head);
     let at = token.start + head.length;
-    for (const part of rest) { rename(at + 1, part); at += 1 + part.length; }
+    for (const [k, part] of rest.entries()) {
+      // Generated interfaces keep their public members. A user field or
+      // an imported module member is renamed with its declaration.
+      const owner = k ? rest[k - 1] : head;
+      if (!generatedNames.has(part) || !["Hom", "Iso"].includes(owner)
+          && (userMembers.has(part) || ast.imports.includes(head))) rename(at + 1, part);
+      at += 1 + part.length;
+    }
   };
   // A clause's constructors, nested and in each of its columns, but a sum's
   // injections: left x, and left(…) where this module has declared no
   // constructor left so far. A bare left is renamed as variables binds it.
   const declared = new Set();
-  const constructors = head => {
+  const constructors = (head, matched = []) => {
     const { constructor } = head;
-    if (!(["left", "right"].includes(constructor.text) && !head.coordinates?.length
+    const owner = typeName(matched[0]), declaration = types.get(owner);
+    const own = declaration?.constructors.find(c => c.name.text === constructor.text);
+    const sum = owner === "sum" && ["left", "right"].includes(constructor.text);
+    const generated = ["gen", "squash"].includes(constructor.text) && (owner ? !own : !declared.has(constructor.text));
+    if (!sum && !generated && !(["left", "right"].includes(constructor.text) && !head.coordinates?.length
         && (!head.args || !declared.has(constructor.text)))) rename(constructor.start, constructor.text);
-    for (const arg of head.args ?? []) if (arg.kind === "pattern") constructors(arg);
-    for (const column of head.more ?? []) constructors(column);
+    for (const [k, arg] of (head.args ?? []).entries()) if (arg.kind === "pattern") constructors(arg, [own?.params[k]?.type]);
+    for (const [k, column] of (head.more ?? []).entries()) constructors(column, [matched[k + 1]]);
   };
   // A clause's variables: its arguments, its legacy binders, its
   // coordinates, and a bare name, which is a variable or a constructor
@@ -126,7 +163,7 @@ const reservedUnbound = source => {
       let j = k;
       while (j < params.length && (params[j].type ?? params[j].bound) === type) j++;
       visit(type, scope);
-      scope = bind(scope, params.slice(k, j).map(p => p.name));
+      scope = bind(scope, params.slice(k, j).map(p => p.name), type);
       k = j;
     }
     return scope;
@@ -142,7 +179,7 @@ const reservedUnbound = source => {
     switch (node?.kind) {
       case "let": case "obtain":
         visit(node.type, scope); visit(node.value, scope); visit(node.body, scope);
-        return bind(scope, targets(node.target));
+        return bind(scope, targets(node.target), node.type ?? valueType(node.value, scope));
       case "intro": return bind(scope, [node.name]);
       case "ext": return bind(scope, [node.variable]);
       case "simpOnly": case "simpaOnly":
@@ -153,14 +190,14 @@ const reservedUnbound = source => {
     visit(node, scope);
     return scope;
   };
-  const visit = (node, scope) => {
+  const visit = (node, scope, matched = []) => {
     if (!node || typeof node !== "object") return;
     if (Array.isArray(node)) { node.reduce((inner, child) => statement(child, inner), scope); return; }
     switch (node.kind) {
       case "name": reference(node, scope); return;
       case "lambda": case "forall": case "exists": case "binderGroup":
         visit(node.domain, scope); visit(node.bound, scope);
-        visit(node.body, bind(scope, node.names ?? [node.name]));
+        visit(node.body, bind(scope, node.names ?? [node.name], node.domain));
         return;
       case "pathLambda": visit(node.body, bind(scope, [node.dimension])); return;
       case "unpack":
@@ -177,18 +214,25 @@ const reservedUnbound = source => {
           return;
         }
         // The legacy match on a sum keeps its clauses unlisted.
-        visit(node.type, bind(scope, [node.motiveName])); visit(node.clauses, scope);
+        visit(node.type, bind(scope, [node.motiveName]));
+        for (const clause of node.clauses ?? []) visit(clause, scope, (node.values ?? [node.value]).map(value => valueType(value, scope)));
         visit(node.obligations, scope); visit(node.obligationProof, scope);
         return;
-      case "clause": constructors(node); visit(node.body, bind(scope, variables(node))); return;
-      case "namedArgument": rename(node.name.start, node.name.text); visit(node.value, scope); return;
-      case "member": rename(node.field.start, node.field.text); visit(node.value, scope); return;
+      case "clause": constructors(node, matched); visit(node.body, bind(scope, variables(node))); return;
+      case "namedArgument":
+        if (!generatedNames.has(node.name.text) || userMembers.has(node.name.text)) rename(node.name.start, node.name.text);
+        visit(node.value, scope); return;
+      case "member":
+        if (!generatedNames.has(node.field.text) || userMembers.has(node.field.text)) rename(node.field.start, node.field.text);
+        visit(node.value, scope); return;
       case "withUnfolding": for (const hint of node.hints) reference(hint, scope); visit(node.body, scope); return;
     }
     for (const [key, child] of Object.entries(node)) if (key !== "uses") visit(child, scope);
   };
   // Items in order: what one declares holds in it and after it.
-  let module = new Set();
+  const tokens = tokenize(source);
+  for (let k = 1; k < tokens.length; k++) if (tokens[k - 1].text === "import") rename(tokens[k].start, tokens[k].text);
+  let module = new Map([...importedNames, ...ast.imports].map(name => [name, null]));
   for (const item of ast.items ?? ast.declarations) {
     if (item.kind === "def") {
       const scope = telescope(item.params, telescope(item.section?.params ?? [], bind(module, [item.name])));
@@ -201,7 +245,7 @@ const reservedUnbound = source => {
       for (const constructor of item.constructors) {
         visit(constructor.type, telescope(constructor.params, scope));
         scope = bind(scope, [constructor.name]);
-        if (renamedReserved[constructor.name.text]) declared.add(constructor.name.text);
+        if (Object.hasOwn(renamedReserved, constructor.name.text)) declared.add(constructor.name.text);
       }
     } else if (item.kind === "theory") {
       // A field holds in the fields after it, a parent's label and its
@@ -226,7 +270,8 @@ const reservedUnbound = source => {
     } else if (["hlevel_rule", "simp_rule"].includes(item.kind)) reference(item.rule, module);
     else if (item.kind === "simp_set") for (const rule of item.rules) reference(rule, module);
     else visit(item, module);
-    module = bind(module, [item.name, ...(item.constructors ?? []).map(constructor => constructor.name)]);
+    module = bind(module, [item.name], item.type);
+    module = bind(module, (item.constructors ?? []).map(constructor => constructor.name));
   }
   let text = source;
   for (const [start, [end, name]] of [...edits].sort((a, b) => b[0] - a[0])) text = text.slice(0, start) + name + text.slice(end);
@@ -236,8 +281,8 @@ const reservedUnbound = source => {
 // Before 2026-10-05 every module imported nat without asking. A module of
 // a revision that did so (implicitNat), read in today's syntax, imports it,
 // unless it is nat or already does: so a baseline sees the names it saw then.
-export const historicalSource = (source, module, { implicitNat = true, minusReverses = true } = {}) => {
-  const rewritten = currentSyntax(source), text = reservedUnbound(minusReverses ? reversalsAsTilde(rewritten) : rewritten);
+export const historicalSource = (source, module, { implicitNat = true, minusReverses = true, importedNames = [] } = {}) => {
+  const rewritten = currentSyntax(source), text = renameReservedBindings(minusReverses ? reversalsAsTilde(rewritten) : rewritten, historicalRenaming, { importedNames });
   if (module === "nat") return withNatNotation(text);
   if (!implicitNat || /(?:^|\n)\s*import\s+(?:[^;]*,\s*)?nat\s*[;,]/.test(text)) return text;
   return `import nat;\n${text}`;

@@ -20,12 +20,12 @@ const selection = [
   ["circle", "code_upper"],
   ["circle", "upper_transition"],
   ["equivalence_from_inverse", "adjoint_triangle"],
-  ["paths", "cancel_left"],
-  ["paths", "transport_concat"],
+  ["paths_", "cancel_left"],
+  ["paths_", "transport_concat"],
   // Raw inferred signatures; folded signatures arrive with A1.
-  ["paths", "right_unit"],
-  ["paths", "transport_constant"],
-  ["paths", "transport_ap"],
+  ["paths_", "right_unit"],
+  ["paths_", "transport_constant"],
+  ["paths_", "transport_ap"],
   // Equivalence construction, and transport along univalence.
   ["equivalence_from_inverse", "equiv_from_inverse"],
   ["binary_univalence_transfer", "univalence_transfer_equality"],

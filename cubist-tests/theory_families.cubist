@@ -84,12 +84,12 @@ def graded_iso := Graded.Iso.compose;
 // declarations use, as map, U and to do here: theirs are named apart.
 theory Shifted(V < UU0) {
   M : set V;
-  shift(map : M, U : M) : M;
+  shift(map_ : M, U : M) : M;
 }
 
 // Output: forall U_1_ < UU0. forall V < UU0. forall A : Shifted(U_1_). forall B : Shifted(V).
-//   forall f : Shifted.Hom{{U_1_, V}}(A, B). forall map : A.M. forall U : A.M. f.map(A.shift(map,
-//   U)) = B.shift(f.map(map), f.map(U))
+//   forall f : Shifted.Hom{{U_1_, V}}(A, B). forall map_ : A.M. forall U : A.M. f.map(A.shift(map_,
+//   U)) = B.shift(f.map(map_), f.map(U))
 print(typeof(Shifted.Hom.map_shift));
 
 def shifted_iso := Shifted.Iso.compose;
@@ -99,8 +99,8 @@ def shifted_by_name(A : Shifted(U0)) : Shifted.Hom(A, A) := Shifted.Hom.make(A, 
   map_shift := fun (a, b : A.M) => refl(A.shift(a, b)));
 
 theory Lifted(U < UU0) {
-  F(to : Nat) : set U;
-  lift(to : Nat, x : F(to)) : F(to);
+  F(to_ : Nat) : set U;
+  lift(to_ : Nat, x : F(to_)) : F(to_);
 }
 
 def lifted_compose := Lifted.Hom.compose;

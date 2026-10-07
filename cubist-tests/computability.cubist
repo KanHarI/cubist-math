@@ -9,13 +9,13 @@ computable def successor(n : Nat) := succ(n);
 
 // Error: E330: This computable declaration depends on non-computing assumptions: LEM, Truncate,
 //   TruncateElim. Path to LEM: double_negation (classical) → LEM.
-computable def uses_lem(P : U0, prop : Proposition(P), nn : (P -> Void) -> Void) : P {
-  exact double_negation(P, prop, nn);
+computable def uses_lem(P : U0, prop_ : Proposition(P), nn : (P -> Void) -> Void) : P {
+  exact double_negation(P, prop_, nn);
 }
 
 // Error: E340: Untranslated dependency: uses_lem
 def after_failure := uses_lem;
 
-def ordinary(P : U0, prop : Proposition(P), nn : (P -> Void) -> Void) : P {
-  exact double_negation(P, prop, nn);
+def ordinary(P : U0, prop_ : Proposition(P), nn : (P -> Void) -> Void) : P {
+  exact double_negation(P, prop_, nn);
 }

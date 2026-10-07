@@ -55,7 +55,7 @@ def pointed_id : Pointed.Hom(pointed_nat, pointed_nat) := Pointed.Hom.id(pointed
 
 // A parameter may have a name that the generated declarations use, as U,
 // map and to are here: their own binders are then named apart from it.
-theory Named(V < UU0, U : Nat, map : Nat, to : Nat) {
+theory Named(V < UU0, U : Nat, map_ : Nat, to_ : Nat) {
   M : set V;
   point : M;
 }
@@ -68,9 +68,11 @@ def named_iso(m : Named(U0, zero, zero, zero)) : Named.Iso(m, m) := Named.Iso.co
 def named_nat : Named(U0, zero, zero, zero) := Named.make(zero, zero, zero, M := Nat, M_is_set := nat_is_set,
   point := zero);
 
+// Error: E377: The argument map is given twice.
 def named_hom : Named.Hom(named_nat, named_nat) := Named.Hom.make{{map := zero}}(named_nat, named_nat,
   map := fun (x : Nat) => x, map_point := refl(zero));
 
+// Error: E340: Untranslated dependency: named_hom
 def named_by_fields : Named.Iso(named_nat, named_nat) := Named.Iso.make(named_nat, named_nat, to := named_hom,
   from := named_hom, from_to := fun (x : Nat) => refl(x), to_from := fun (y : Nat) => refl(y));
 
