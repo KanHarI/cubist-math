@@ -59,15 +59,16 @@ notation nat {
 `;
 
 // Until 2026-10-06 left and right, a sum's injections, could be bound as
-// names. A revision of that time is read with each binder named left or
-// right, and the references after it in its declaration, which it shadows,
-// renamed left_ and right_; its sum patterns and injections stay. Bound
-// names change no checked term.
-const renamedInjections = { left: "left_", right: "right_" };
-const injectionsUnbound = source => {
-  if (!/\b(left|right)\b/.test(source)) return source;
+// names, and until 2026-10-07 typed, the ascription. A revision of that time
+// is read with each binder named left, right or typed, and the references
+// after it in its declaration, which it shadows, renamed left_, right_ and
+// typed_; its sum patterns, injections and ascriptions stay. Bound names
+// change no checked term.
+const renamedReserved = { left: "left_", right: "right_", typed: "typed_" };
+const reservedUnbound = source => {
+  if (!/\b(left|right|typed)\b/.test(source)) return source;
   let ast;
-  try { ast = parse(source, false, { bindable: ["left", "right"] }); } catch { return source; }
+  try { ast = parse(source, false, { bindable: Object.keys(renamedReserved) }); } catch { return source; }
   const edits = new Map();
   for (const item of ast.items ?? ast.declarations) {
     const binders = [], references = [], seen = new Set();
@@ -76,21 +77,21 @@ const injectionsUnbound = source => {
       seen.add(node);
       if (Array.isArray(node)) { node.forEach(child => visit(child, key, target)); return; }
       // A let's or an obtain's target binds its names.
-      if (target && node.kind === "name" && renamedInjections[node.name]) {
+      if (target && node.kind === "name" && renamedReserved[node.name]) {
         binders.push({ text: node.name, start: node.start, end: node.end });
         return;
       }
       // A binder's token; a clause's constructor is the injection's pattern.
-      if (typeof node.text === "string" && renamedInjections[node.text] && !node.kind && key !== "constructor") binders.push(node);
-      if (node.kind === "name" && renamedInjections[node.name]) references.push(node);
+      if (typeof node.text === "string" && renamedReserved[node.text] && !node.kind && key !== "constructor") binders.push(node);
+      if (node.kind === "name" && renamedReserved[node.name]) references.push(node);
       for (const [child, value] of Object.entries(node)) if (child !== "uses") visit(value, child, target || child === "target");
     };
     visit(item);
     for (const binder of binders) {
-      edits.set(binder.start, [binder.end, renamedInjections[binder.text]]);
+      edits.set(binder.start, [binder.end, renamedReserved[binder.text]]);
       for (const reference of references)
         if (reference.name === binder.text && reference.start > binder.start && reference.end <= (item.end ?? Infinity))
-          edits.set(reference.start, [reference.end, renamedInjections[reference.name]]);
+          edits.set(reference.start, [reference.end, renamedReserved[reference.name]]);
     }
   }
   let text = source;
@@ -102,7 +103,7 @@ const injectionsUnbound = source => {
 // a revision that did so (implicitNat), read in today's syntax, imports it,
 // unless it is nat or already does: so a baseline sees the names it saw then.
 export const historicalSource = (source, module, { implicitNat = true, minusReverses = true } = {}) => {
-  const rewritten = currentSyntax(source), text = injectionsUnbound(minusReverses ? reversalsAsTilde(rewritten) : rewritten);
+  const rewritten = currentSyntax(source), text = reservedUnbound(minusReverses ? reversalsAsTilde(rewritten) : rewritten);
   if (module === "nat") return withNatNotation(text);
   if (!implicitNat || /(?:^|\n)\s*import\s+(?:[^;]*,\s*)?nat\s*[;,]/.test(text)) return text;
   return `import nat;\n${text}`;
