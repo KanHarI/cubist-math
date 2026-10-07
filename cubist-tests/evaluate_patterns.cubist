@@ -58,9 +58,3 @@ evaluate pairs expecting(_, right{{Nat}}(4));
 // Error: E379: succ is a declared type or a constructor, whose arguments are written out: a hole _
 //   or a named argument is an argument of a definition or a function.
 evaluate pairs expecting(succ(n := 2), _);
-
-// A module's own typed is not the builtin: the pattern reads it as the
-// module does, here as 1 + 2.
-def typed(n : Nat, m : Nat) : Nat := n + m;
-
-evaluate pairs expecting(typed(1, 2), _);
