@@ -1,7 +1,8 @@
 // Reserved names (web/cubist/parser.mjs, reservedNames): the keywords that
-// begin a term or a statement, or join terms, and the built-in types Unit
-// and Void cannot be bound, at any binding site. A user's own Unit would
-// otherwise pass a theory's law check while holding data. Contextual
+// begin a term or a statement, or join terms, the built-in types Unit and
+// Void, and Unit's element tt cannot be bound, at any binding site. A
+// user's own Unit would otherwise pass a theory's law check while holding
+// data, and a user's own tt would be read as a literal's evidence. Contextual
 // keywords stay names outside their constructs. That the real Unit and Void
 // still state laws is cubist-tests/theories.cubist's Nontrivial.
 import test from "node:test";
@@ -11,8 +12,8 @@ import { parse, reservedNames } from "../web/cubist/parser.mjs";
 const parseError = source => { try { parse(source); return null; } catch (error) { return error.message; } };
 const reserved = word => `${word} is reserved, as a keyword or a built-in type of the language; pick another name.`;
 
-test("Unit and Void cannot be declared or bound at any binding site", () => {
-  for (const word of ["Unit", "Void"]) {
+test("Unit, Void and tt cannot be declared or bound at any binding site", () => {
+  for (const word of ["Unit", "Void", "tt"]) {
     const sites = {
       definition: `def ${word} : U0 := Nat;`,
       parameter: `def f(${word} : U0) : U0 := Nat;`,
