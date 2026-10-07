@@ -15,3 +15,16 @@ export const unselectedNegation = () =>
   Error("-x negates in a selected notation that binds it, as integers.(-x); a path's reversal is ~p.");
 export const unboundNegation = selection =>
   Error(`-x is not in ${selection.name}'s notation, which is selected here: select a notation that binds it, as integers.(-x).`);
+
+// A literal no selected notation reads, one its parser refuses, and one
+// whose parse does not evaluate to an answer (L2.10c).
+export const literalUnread = (selection, text) => {
+  if (!selection?.complete) return Error(`${text} is a literal that a selected notation's literal rule reads, as rationals.(${text}).`);
+  if (/^[0-9]+$/.test(text))
+    return Error(`${selection.name}'s notation reads no numeral ${text}: write nat.(${text}) for a natural number, or select a notation that reads it.`);
+  return Error(`${selection.name}'s notation reads no literal ${text}: select a notation whose literal rule reads it, as rationals.(${text}).`);
+};
+export const literalRefused = (selection, text, position) =>
+  Error(`${selection.name}'s literal rule refuses ${text} at its character ${position + 1}.`);
+export const literalUnevaluated = (selection, text, answer) =>
+  Error(`${selection.name}'s literal rule does not evaluate ${text} to an answer; it gives ${answer}.`);

@@ -166,7 +166,7 @@
               <tbody>
                 <tr id="E342"><td class="code"><code>E342</code></td><td data-message="Universe was removed: bind a universe variable as U &lt; UU0.">“Universe was removed: bind a universe variable as U &lt; UU0.”</td><td>Write <code>U &lt; UU0</code> where the source had <code>U : Universe</code>.</td><td><a href="universes.html#universe-variables">universe variables</a></td></tr>
                 <tr id="E321"><td class="code"><code>E321</code></td><td data-message="A universe variable's bound must be UU0, as in U &lt; UU0.">“A universe variable's bound must be UU0, as in U &lt; UU0.”</td><td>Only <code>UU0</code> bounds a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
-                <tr id="E175"><td class="code"><code>E175</code></td><td data-message="is reserved, as a keyword or a built-in type of the language; pick another name.">“<var>name</var> is reserved, as a keyword or a built-in type of the language; pick another name.”</td><td>Keywords such as <code>fun</code> and <code>let</code>, and the built-in types <code>Unit</code> and <code>Void</code>, cannot be bound.</td><td><a href="terms.html#unit-and-void">Unit and Void</a></td></tr>
+                <tr id="E175"><td class="code"><code>E175</code></td><td data-message="is reserved, as a keyword or a built-in type of the language; pick another name.">“<var>name</var> is reserved, as a keyword or a built-in type of the language; pick another name.”</td><td>Keywords such as <code>fun</code> and <code>let</code>, the built-in types <code>Unit</code> and <code>Void</code>, and <code>Unit</code>'s element <code>tt</code>, cannot be bound.</td><td><a href="terms.html#unit-and-void">Unit and Void</a></td></tr>
                 <tr id="E518"><td class="code"><code>E518</code></td><td data-message="A universe argument must lie below UU0">“A universe argument must lie below UU0: …”</td><td>A generic declaration was used at <code>UU0</code> or above. Use <code>U0</code>, <code>U1</code>, … or a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
                 <tr id="E322"><td class="code"><code>E322</code></td><td data-message="Expected a universe:">“Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).”</td><td>A type or a term stands where a universe is required, such as <code>next(Nat)</code>.</td><td><a href="universes.html#universe-expressions">next and max</a></td></tr>
                 <tr id="E111"><td class="code"><code>E111</code></td><td data-message="is a universe constant; pick another name.">“<var>name</var> is a universe constant; pick another name.”</td><td>Names such as <code>U1</code> and <code>UU2</code> are universes.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
@@ -409,6 +409,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E188"><td><code>E188</code></td><td>x … y is y … x: a notation binds &lt; and &lt;=, and &gt; and &gt;= follow them.</td></tr>
                 <tr id="E189"><td><code>E189</code></td><td>A notation binds an operator: x + y, x - y, x * y, x / y, x ^ y, x &lt; y, x &lt;= y, or -x.</td></tr>
                 <tr id="E190"><td><code>E190</code></td><td>A pattern names its two operands apart, as x … y.</td></tr>
+                <tr id="E191"><td><code>E191</code></td><td>… reads literals once: a notation has a numeral rule or a literal rule, not both.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -849,6 +850,12 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E838"><td><code>E838</code></td><td>The notation of … reads … in the notation selected where it is used, which is …'s; … is no carrier's element: name the notation it is read in, as ….</td></tr>
                 <tr id="E839"><td><code>E839</code></td><td>-x names an operation's one argument; … is not an operation of one.</td></tr>
                 <tr id="E840"><td><code>E840</code></td><td>-x names an operation's one argument, as in neg(x : M) : M notation -x.</td></tr>
+                <tr id="E842"><td><code>E842</code></td><td>… is declared in another module: only the module that declares a model adds rules to its notation.</td></tr>
+                <tr id="E843"><td><code>E843</code></td><td>A model's notation is its theory's; …'s adds only a numeral or a literal rule.</td></tr>
+                <tr id="E844"><td><code>E844</code></td><td>A literal rule reads a Lexeme: import lexemes, which defines ….</td></tr>
+                <tr id="E845"><td><code>E845</code></td><td>… is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory.</td></tr>
+                <tr id="E846"><td><code>E846</code></td><td>notation numeral reads a plain numeral: it marks a derived operation of one natural number, as def of_nat(n : Nat) : R := … notation numeral.</td></tr>
+                <tr id="E847"><td><code>E847</code></td><td>A numeral rule reads a natural number: import nat.</td></tr>
                 <tr id="E859"><td><code>E859</code></td><td>…'s parent … is labelled …, which names a field of … too: label it apart, as in base : ….</td></tr>
                 <tr id="E860"><td><code>E860</code></td><td>…'s pattern binds …, which an argument here names: rename it in ….</td></tr>
               </tbody>
@@ -859,6 +866,12 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
               <tbody>
                 <tr id="E901"><td><code>E901</code></td><td>-x negates in a selected notation that binds it, as integers.(-x); a path's reversal is ~p.</td></tr>
                 <tr id="E902"><td><code>E902</code></td><td>-x is not in …'s notation, which is selected here: select a notation that binds it, as integers.(-x).</td></tr>
+                <tr id="E903"><td><code>E903</code></td><td>…'s notation reads no literal …: write nat.(…) for a natural number, or select a notation that reads it. (retired)</td></tr>
+                <tr id="E904"><td><code>E904</code></td><td>… is a literal that a selected notation's literal rule reads, as rationals.(…).</td></tr>
+                <tr id="E905"><td><code>E905</code></td><td>…'s literal rule refuses … at its character ….</td></tr>
+                <tr id="E906"><td><code>E906</code></td><td>…'s literal rule does not evaluate … to an answer; it gives ….</td></tr>
+                <tr id="E907"><td><code>E907</code></td><td>…'s notation reads no numeral …: write nat.(…) for a natural number, or select a notation that reads it.</td></tr>
+                <tr id="E908"><td><code>E908</code></td><td>…'s notation reads no literal …: select a notation whose literal rule reads it, as rationals.(…).</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-k1">Kernel: declared types</h3>

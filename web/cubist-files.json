@@ -2039,6 +2039,10 @@
    "summary": "Mismatches in source syntax, without module prefixes, generated suffixes or redexes."
   },
   {
+   "path": "cubist-tests/notation_literals.cubist",
+   "summary": "Literals in a selected notation (L2.10c): the rationals' literal rule reading `1/2`, `0.75` and `1_000/4` and refusing `1/0` at its denominator, the integers' numerals, a theory's numeral rule computing, and the refusals of a numeral where no rule reads it and of a literal `nat` cannot read."
+  },
+  {
    "path": "cubist-tests/notation_operators.cubist",
    "summary": "Operators, operand views and derived operations (L2.10b): `-`, `/`, `^`, unary `-`, `>` and `>=`, their grouping, an exponent read in `nat`, a derived subtraction, the integers' negation and subtraction, qualified negation, and the refusals of an operator no selection binds, `-p` as reversal, and an operand with no view."
   },
@@ -2373,6 +2377,10 @@
   {
    "path": "library/integers.cubist",
    "summary": "The integers as a quotient: a pair of naturals `(a, b)` stands for `a - b`, and pairs with the same difference are one integer, `Z`. Negation, addition and multiplication descend to it; it is a commutative ring (`integers`), with no zero divisors (`int_mul_nonzero`) and zero not one, and its equality is decidable (`int_decide`), through the quotient's effectiveness. Every operation computes on closed integers."
+  },
+  {
+   "path": "library/lexemes.cubist",
+   "summary": "Literals' characters (L2.10c): `Glyph`, `Lexeme`, a list of glyphs, and `Parsed(A)`, a parse's value or the position it refuses; `Succeeded`, `parse_answer` and `parsed_value`, by which a literal's term holds `tt` as evidence its parse succeeded; and small parsers, `leading_digits` and `natural_literal`, for notations' literal rules."
   },
   {
    "path": "library/lists.cubist",

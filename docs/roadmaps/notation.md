@@ -492,6 +492,30 @@ definitions use the existing checking and termination requirements.
 
 ## L2.10c. Literals in a selected view
 
+**Done** on 2026-10-06. The lexer reads numeric tokens as below, and no
+source tokenized differently. `library/lexemes.cubist` defines `Glyph`,
+`Lexeme`, `Parsed`, `Succeeded`, `parse_answer` and `parsed_value`, and
+small parsers; a named notation, or a model's own module, gives
+`numeral(n : Nat) := e` or `literal(s : Lexeme) := e`, not both, and a
+theory's derived operation `notation numeral`, as the library's
+`CommRing.of_nat`. Under a selected notation a numeral and a literal go to
+its rules; the translator evaluates `parse_answer` of the parse, refusing
+at the character it names (E905), and emits `parsed_value(parse, tt)`,
+which the kernel checks by evaluation. `rationals` reads `1/2`, `0.5`
+and `1_2/4` and refuses `1/0` at its denominator; `integers` reads
+numerals as `int(n, 0)`; `nat` reads plain numerals. A notation with
+neither rule refuses literals (E907, E908); a section keeps reading
+numerals as before, until L2.10j. A literal rule reads every numeric token
+as written, `007` and `0b101` included; a numeral's limit of 256 and a
+binary literal's of 256 bits apply only where one is built. A rule's
+names, the `Nat` of its numerals included, are read where it is declared,
+and `tt`, the evidence of a parse, is reserved, so no binding at the use
+changes a literal. A model's added rules are that binding's, not its
+name's, and its theory's operators stay its own. Two deviations: `Glyph`'s `.` is
+`period`, since `point` is a truncation's constructor; and decimals with
+many digits exceed the native recursion depth when compared, the
+naturals being unary (L2.10f). Evidence: `cubist-tests/notation_literals.cubist`.
+
 A view reads a literal in one of two ways, each an ordinary checked
 function:
 
