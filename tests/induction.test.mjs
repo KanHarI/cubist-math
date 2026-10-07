@@ -6,7 +6,7 @@ import { expandedSyntax } from "../web/cubist/tuples.mjs";
 import { checkTestModule } from "./check-program.mjs";
 
 // `induction` on any declared type. Its cases, refusals and warning are
-// cubist-tests/induction.cubist, and how an eliminator prints is
+// cubist-tests/declared_induction.cubist, and how an eliminator prints is
 // cubist-tests/induction_printed.cubist, whose comments state each error,
 // warning and output (tests/cubist-tests.test.mjs); here, that the source the
 // module writes back is what its prints show.

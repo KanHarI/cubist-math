@@ -30,7 +30,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
-  const idle = () => page.waitForFunction(() => !document.querySelector("#check").disabled && document.querySelector("#check-loader").hidden);
+  const idle = () => page.waitForFunction(() => document.querySelector("#check")?.disabled === false && document.querySelector("#check-loader")?.hidden);
   const base = `http://127.0.0.1:${port}`;
   const response = await page.goto(`${base}/`);
   assert.equal(response.status(), 200);
@@ -88,7 +88,7 @@ try {
       assert.match(await page.locator("#inspect-type").textContent(), /CyclicTwo/);
     }
     if (proof === "circle_group_identity") {
-      await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
+      await page.waitForFunction(() => document.querySelector("#kernel-view")?.disabled === false);
       assert.match(await page.locator("#inspect-type").textContent(), /GroupIso\(CircleLoopGroup, IntegerGroup\)/);
       for (const name of ["GroupIso", "CircleLoopGroup", "IntegerGroup"])
         assert.equal(await page.locator(`#kernel-type [data-name="${name}"]`).count(), 1);
@@ -118,33 +118,33 @@ try {
     assert.match(await page.locator("#inspect-type").textContent(), /ExcludedMiddle/);
     await page.goto(`${base}/proof.html?proof=group_first_isomorphism&name=group_first_isomorphism`);
     await idle();
-    await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
+    await page.waitForFunction(() => document.querySelector("#kernel-view")?.disabled === false);
     assert.equal(await page.locator("#diagnostic").isVisible(), false);
     assert.match(await page.locator("#result").textContent(), /Verified group_first_isomorphism/);
     assert.match(await page.locator("#kernel-type").textContent(), /KernelQuotientGroup/);
     assert.match(await page.locator("#kernel-type").textContent(), /ImageGroup/);
     await page.goto(`${base}/proof.html?proof=quotient_group_universal&name=quotient_group_universal`);
     await idle();
-    await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
+    await page.waitForFunction(() => document.querySelector("#kernel-view")?.disabled === false);
     assert.equal(await page.locator("#diagnostic").isVisible(), false);
     assert.match(await page.locator("#result").textContent(), /Verified quotient_group_universal/);
     assert.match(await page.locator("#kernel-type").textContent(), /QuotientGroup/);
     assert.match(await page.locator("#kernel-type").textContent(), /GroupHomAt/);
     await page.getByRole("link", { name: "Proof highlights", exact: true }).click();
     await page.getByRole("link", { name: "Kernel workbench", exact: true }).click();
-    await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Cubical C checked"));
+    await page.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
     assert.ok(page.url().endsWith("/workbench.html"));
     assert.equal(await page.locator("#name").textContent(), "example");
     await page.getByRole("link", { name: "Proof highlights", exact: true }).click();
     await page.locator('.proof-card[href*="proof=euclid&"]').click();
     await idle();
     await page.locator('#read-source [data-name="InfinitelyManyPrimes"]').first().click();
-    await page.waitForFunction(() => !document.querySelector("#open-kernel-type").disabled);
+    await page.waitForFunction(() => document.querySelector("#open-kernel-type")?.disabled === false);
     const popupPromise = page.waitForEvent("popup");
     await page.locator("#open-kernel-type").click();
     const popup = await popupPromise;
     await popup.waitForURL("**/workbench.html?transfer=*");
-    await popup.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Cubical C checked"));
+    await popup.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
     assert.equal(await popup.locator("#diagnostic").isVisible(), false);
     assert.notEqual(await popup.locator("#name").textContent(), "example");
     await popup.close();
