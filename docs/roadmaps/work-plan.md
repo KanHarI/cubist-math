@@ -535,11 +535,13 @@ kernel evidence. This track is independent of computation notation N0–N5.
   redundant REPL self-comparison. EVAL2's full-normalization cache can follow
   independently, with exact keys and rollback/compaction coverage.
 - Start NUM0/NUM1 early: define explicit `UNat` and canonical `BNat`, direct
-  binary arithmetic and their checked commutative-semiring isomorphism,
-  with cancellation and no-zero-divisors. NUM2 makes `Z` use pairs of
+  binary arithmetic, their checked commutative-semiring isomorphism and
+  `UNat =[U0] BNat` by computational univalence, with transport agreement,
+  cancellation and no-zero-divisors. NUM2 makes `Z` use pairs of
   `BNat` and `Q` use the resulting binary-backed integer ring, including
   literals and numerical casts. Prove ring/domain agreement of the integer
-  constructions and field agreement of the rationals. Later numerical
+  constructions and field agreement of the rationals, together with their
+  carrier equalities in `U0` and transport/conversion laws. Later numerical
   constructions default to `BNat`; this foundation migration does not wait
   for a new runtime evaluator or packed-integer specialization.
 - Design EVAL3's lazy closure evaluator and EVAL4's explicit stack together.

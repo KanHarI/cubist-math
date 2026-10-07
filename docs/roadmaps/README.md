@@ -132,8 +132,9 @@ the scheduling authority; this summarizes it.
   proposed after the `euclid(4)` syntax-depth failure: one-pass REPL
   evaluation, normalization caches, lazy closures, an explicit evaluation
   stack, typed readback and checked search improvements. Early numerical
-  foundations define `UNat` and `BNat`, prove their semiring isomorphism,
-  and make `Z`, `Q` and later numerical constructions binary-backed.
+  foundations define `UNat` and `BNat`, prove their semiring isomorphism
+  and equality in `U0`, and make `Z`, `Q` and later numerical constructions
+  binary-backed, with checked universe paths and transport laws.
   Separates prime projection, lazy observation and full normalization, with
   semantic review and resource limits governing integration.
 - [Simplification and shorter proofs](proof-ergonomics-roadmap.md):

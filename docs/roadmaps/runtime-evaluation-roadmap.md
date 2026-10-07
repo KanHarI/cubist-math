@@ -168,6 +168,26 @@ isomorphism to the integer constructions as rings, preserving their
 integral-domain properties, and to the rational constructions as fields.
 This supplies the ring/domain comparison at the appropriate level.
 
+Also construct equality of the carriers as members of `U0`, using the
+library's [computational univalence](../../library/univalence.cubist).
+The required paths have the following schematic signatures; the subscripts
+name the two constructions, not new mandatory public API spellings:
+
+```text
+unary_binary : UNat =[U0] BNat
+integers_unary_binary : Z_UNat =[U0] Z_BNat
+rationals_unary_binary : Q_UNat =[U0] Q_BNat
+```
+
+Build each path from the underlying equivalence of the corresponding
+algebraic isomorphism. Prove that transporting an element along the path
+agrees with the forward conversion and transporting along its reversal
+agrees with the inverse. Prove agreement of the transported operations
+with the destination operations. These universe equalities are explicit
+deliverables in addition to the semiring/ring/field isomorphisms. They
+permit checked transport of dependent constructions; they do not make
+unary and binary constructor syntax definitionally equal.
+
 The archive already contains useful source evidence:
 [canonical binary data](../../archive/first-library/binary_naturals.cubist),
 [bitwise arithmetic](../../archive/first-library/binary_arithmetic.cubist),
@@ -187,8 +207,8 @@ All rows are planned. Sizes are relative scope, as in the work plan.
 | EVAL0 | Reproducible workload and phase measurements | Existing CLI, counters and build stamps | S |
 | EVAL1 | One-pass REPL evaluation | EVAL0 | S |
 | NUM0 | Explicit UNat and canonical BNat with direct binary arithmetic | Current inductive declarations; archive evidence | M |
-| NUM1 | Checked semiring isomorphism and natural-number properties | NUM0; semiring model interface | M |
-| NUM2 | Binary-backed Z and Q, default numerical APIs and migration | NUM1; current quotients, rings and fractions | L |
+| NUM1 | Semiring isomorphism, UNat = BNat in U0 and transport laws | NUM0; semiring interface; computational univalence | M |
+| NUM2 | Binary-backed Z and Q, their U0 equalities and default APIs | NUM1; current quotients, rings and fractions | L |
 | EVAL2 | Memoized full normalization | EVAL0; independent of EVAL1 | M |
 | EVAL3 | Closure evaluator for a specified data fragment | EVAL0 and semantic contract | L |
 | EVAL4 | Explicit evaluation stack and bounded runtime | EVAL3 design; implement alongside it | M |
@@ -245,12 +265,18 @@ algebraic hierarchy and construct its two models and their isomorphism.
 Prove or transfer cancellation, nontriviality and no-zero-divisors through
 the checked maps. Also prove comparison/order agreement for the algorithms
 that use it; a bare equivalence of carrier types is not enough. Conversions
-remain explicit computational functions. An isomorphism must not be treated
-as definitional equality by the checker.
+remain explicit computational functions. From this same equivalence,
+construct `UNat =[U0] BNat` through computational univalence and prove its
+forward/reverse transport laws and agreement of transported semiring
+operations. This is a checked path in the universe, not a new definitional
+equality rule. It does not wait for general theory structure-identity
+machinery.
 
 **Acceptance:** both representations and their operations are available
 without the new evaluator; conversion and arithmetic laws check without
-new assumptions; canonical binary boundary/carry cases compute; numerical
+new assumptions; the `U0` path and its transport laws check, including
+closed forward/reverse examples and a dependent family transported along
+the path; canonical binary boundary/carry cases compute; numerical
 operations use bit recursion without a hidden unary round trip. Preserve
 the existing unary induction API through the documented migration policy.
 The archive remains a compatibility corpus, not a library dependency.
@@ -269,8 +295,12 @@ rationals. Prove that they respect quotient relations, round-trip, preserve
 ring/field operations and the integral-domain properties needed by the
 fraction construction. Reuse or state the domain properties explicitly;
 do not assume an `IntegralDomain` theory is already present in the library.
-Use the equivalences to migrate statements and certificates without
-pretending the old and new carriers are definitionally equal.
+Construct the corresponding paths between old and new integer carriers
+and between old and new rational carriers in `U0`, with checked agreement
+of forward/reverse transport and the ring/field conversion maps. Use these
+universe equalities to transport statements and certificates, retaining
+their operation-preservation laws. Do not replace path transport with an
+unchecked cast or a new definitional equality.
 
 Make ordinary numerical APIs, integer magnitudes, rational components and
 future number-system constructions use `BNat` by default. Implement
@@ -285,8 +315,9 @@ before switching aliases; the choice of binary storage for `Z` and `Q`
 does not depend on that spelling decision.
 
 **Acceptance:** the default `Z` representatives contain `BNat` components,
-and default `Q` fractions contain the resulting `Z`; their public laws and
-computability remain checked. Arithmetic, literals and rendering work on
+and default `Q` fractions contain the resulting `Z`; their public laws,
+universe equalities and transport/conversion agreement remain checked.
+Arithmetic, literals and rendering work on
 large binary magnitudes without allocation proportional to their unary
 value. Check existing library consumers, notation selection and archive
 compatibility, with explicit conversions where representations differ.
@@ -421,7 +452,8 @@ earlier under its narrower contract without making that claim.
 ## Suggested implementation order
 
 Start with EVAL0 and EVAL1, and start NUM0/NUM1 alongside them. NUM2's
-binary-backed `Z` and `Q` follow the checked semiring agreement; these are
+binary-backed `Z` and `Q` follow the checked semiring isomorphism and `U0`
+equality; these are
 early numerical foundations, independent of the closure evaluator.
 EVAL2 can proceed independently once its cache contract is clear. Design
 EVAL3/EVAL4 together, then specify EVAL5's observation interface and complete
