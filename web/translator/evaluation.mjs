@@ -107,14 +107,16 @@ export function witnessOf(normal, type, scope, show) {
   const parts = [];
   for (; constructor?.tag === "App"; constructor = constructor.fn) parts.unshift(constructor.arg);
   if (constructor?.tag !== "Con" || info.constructors[constructor.index]?.generated) throw noWitness(show(normal));
-  const built = scope.infer(value).type;
-  if (!scope.equal(built, type)) throw transportedWitness(show(built), show(type));
+  // The kernel checks the constructor's value at the truncation's type: a
+  // base built in another type is refused. Its own inferred type is not
+  // compared, as it may lie in a smaller universe and still be accepted:
+  // point(tt) infers Trunc(U0, Unit) for a Trunc(U1, A) with A := Unit.
+  if (!scope.accepts(value, type)) throw transportedWitness(show(scope.infer(value).type), show(type));
   const witness = parts.length === 1 ? parts[0] : value;
   // A truncation of one type, as Trunc(U, A), states the witness's type as
-  // written, A, once the kernel agrees.
-  const inferred = scope.infer(witness).type, stated = type.tag === "Sort" && type.parameters?.length === 1 && parts.length === 1
-    ? type.parameters[0] : null;
-  return { witness, type: stated && scope.equal(inferred, stated) ? stated : inferred };
+  // written, A, once the kernel accepts the witness at it.
+  const stated = type.tag === "Sort" && type.parameters?.length === 1 && parts.length === 1 ? type.parameters[0] : null;
+  return { witness, type: stated && scope.accepts(witness, stated) ? stated : scope.infer(witness).type };
 }
 
 export const notTruncated = type =>
