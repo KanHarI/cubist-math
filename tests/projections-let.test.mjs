@@ -158,6 +158,24 @@ test("a historical module's references are renamed only within their binder's sc
     + "theory T(U < UU0) {\n  M : set U;\n  right_ : M;\n  law fixed(x : M) : x = right_;\n}\ndef r(m : T(U0)) := m.right_;\n");
 });
 
+// #186's second review: a constructor holds in the constructors after it.
+// A clause's constructor is read by the matched type: a sum's injections
+// are left x, and left(…) where the module has declared no constructor left.
+test("a historical module's constructors are renamed in the constructors after them and in clauses", () => {
+  const read = source => historicalSource(source, "old", { implicitNat: false, minusReverses: false });
+  assert.equal(read("inductive T : U0 {\n  left;\n  loop : left = left;\n}\n"), "inductive T : U0 {\n  left_;\n  loop : left_ = left_;\n}\n");
+  // Each of these checks before the reservation and, read so, after it.
+  const sum = "def g(x : Unit or Nat) : Nat := match x return Nat { left u => zero; right n => n; };\n";
+  assert.equal(read("def s(x : Unit or Nat) : Nat { match x { left(u) => { exact zero; } right(n) => { exact n; } } }\n"
+    + "inductive E { left(n : Nat); typed(b : Unit); }\ninductive W { base; wrap(e : E); right : base = base; }\n"
+    + "def f(x : Unit or Nat, w : W) : Nat := match x, w return Nat { y, base => zero; y, wrap(left(n)) => n; "
+    + "y, wrap(typed(b)) => zero; y, right @ i => zero; };\n" + sum),
+  "def s(x : Unit or Nat) : Nat { match x { left(u) => { exact zero; } right(n) => { exact n; } } }\n"
+    + "inductive E { left_(n : Nat); typed_(b : Unit); }\ninductive W { base; wrap(e : E); right_ : base = base; }\n"
+    + "def f(x : Unit or Nat, w : W) : Nat := match x, w return Nat { y, base => zero; y, wrap(left_(n)) => n; "
+    + "y, wrap(typed_(b)) => zero; y, right_ @ i => zero; };\n" + sum);
+});
+
 test("a historical module reverses with ~ where it wrote prefix -, as every module did before 2026-10-06", () => {
   // A truncation level's sign stays, and a later revision is read as it is.
   const reversing = "def r(A : U0, x, y : A, p : x = y) : y = x := path i => p @ -i; // left-to-right\n";
