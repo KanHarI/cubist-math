@@ -505,7 +505,13 @@ which the kernel checks by evaluation. `rationals` reads `1/2`, `0.5`
 and `1_2/4` and refuses `1/0` at its denominator; `integers` reads
 numerals as `int(n, 0)`; `nat` reads plain numerals. A notation with
 neither rule refuses literals (E907, E908); a section keeps reading
-numerals as before, until L2.10j. Two deviations: `Glyph`'s `.` is
+numerals as before, until L2.10j. A literal rule reads every numeric token
+as written, `007` and `0b101` included; a numeral's limit of 256 and a
+binary literal's of 256 bits apply only where one is built. A rule's
+names, the `Nat` of its numerals included, are read where it is declared,
+and `tt`, the evidence of a parse, is reserved, so no binding at the use
+changes a literal. A model's added rules are that binding's, not its
+name's, and its theory's operators stay its own. Two deviations: `Glyph`'s `.` is
 `period`, since `point` is a truncation's constructor; and decimals with
 many digits exceed the native recursion depth when compared, the
 naturals being unary (L2.10f). Evidence: `cubist-tests/notation_literals.cubist`.
@@ -655,8 +661,12 @@ each. The printer takes the notation selected where its text is read: an
 operation prints with its operator where its notation is selected, and as
 `nat.(x + y)` elsewhere; a model's operation prints infix where the model
 is selected, and as `m.f(x, y)` elsewhere; a literal read from its
-characters prints as written, `rationals.(1/2)`; and a numeral rule's
-application prints as the numeral where its notation is selected. Until
+characters prints as written, `rationals.(1/2)`, where its whole lexeme
+is glyphs and reads back as one token; and a numeral rule's application
+prints as the numeral where its notation is selected and each place of
+the numeral holds the same one. An operator's operands print in the views
+its rule reads them in, as `nat` for `x ^ nat.(n)`, and `^` groups to the
+right, a model's as a named notation's. Until
 L2.10j, nat's operations print unqualified where nothing is selected,
 where name-based reading reads them. Goals show in their scope's
 selection, and a file-level `use` covers the directives after it, which

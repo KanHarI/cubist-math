@@ -30,8 +30,9 @@ export function tokenize(source) {
   return tokens;
 }
 // Reserved names: the keywords that begin a term or a statement, or join
-// terms, and the built-in types Unit and Void, whose meaning checking relies
-// on (a theory's laws, for one). None can be bound: not by a declaration, a
+// terms, the built-in types Unit and Void, whose meaning checking relies
+// on (a theory's laws, for one), and Unit's element tt, the evidence a
+// literal's parse succeeded (L2.10c). None can be bound: not by a declaration, a
 // parameter, a binder, a pattern, a field or a constructor. Every binding
 // site reads its name through name(), which refuses them, as it does
 // universe constants. Every other word is a name outside the construct that
@@ -45,7 +46,7 @@ export function tokenize(source) {
 export const reservedNames = new Set([
   "let", "obtain", "exact", "calc", "open", "match", "rfl", "rw", "simp", "simpa", "intro", "ext", "hlevel", "induction",
   "fun", "forall", "exists", "and", "or", "as", "return",
-  "Unit", "Void",
+  "Unit", "Void", "tt",
 ]);
 
 export function parse(source, typeOnly = false) {
@@ -467,24 +468,17 @@ export function parse(source, typeOnly = false) {
         start: t.start, end: operand.end };
     }
     if (t.text === "(") return tuple(t, expr(), () => expr());
-    if (/^0b[01]+$/.test(t.text)) {
-      const digits = t.text.slice(2).replace(/^0+(?=.)/, "");
-      if (digits.length > 256)
-        throw Object.assign(new Error("Binary literals are limited to 256 significant bits."), { offset: t.start });
-      return { kind: "binaryNumber", digits, spelling: t.text, start: t.start, end: t.end };
-    }
+    // A numeric token keeps its spelling, which a selected notation's
+    // literal rule reads (L2.10c); the limits on a natural or a binary
+    // number apply where one is built from it.
+    if (/^0b[01]+$/.test(t.text))
+      return { kind: "binaryNumber", digits: t.text.slice(2).replace(/^0+(?=.)/, ""), spelling: t.text, start: t.start, end: t.end };
     // Any other numeric token is a literal, read by the selected notation's
     // literal rule (L2.10c).
-    if (/^[0-9]/.test(t.text) && !/^[0-9]+$/.test(t.text) && !/^0b[01]+$/.test(t.text))
+    if (/^[0-9]/.test(t.text) && !/^[0-9]+$/.test(t.text))
       return { kind: "literal", text: t.text, start: t.start, end: t.end };
-    if (/^[0-9]+$/.test(t.text)) {
-      if (Number(t.text) > 256)
-        throw Object.assign(
-          new Error("Numerals are limited to 256 in this version."),
-          { offset: t.start },
-        );
-      return { kind: "number", value: Number(t.text), start: t.start, end: t.end };
-    }
+    if (/^[0-9]+$/.test(t.text))
+      return { kind: "number", value: Number(t.text), text: t.text, start: t.start, end: t.end };
     if (/^[A-Za-z_][A-Za-z_0-9]*$/.test(t.text) && t.text !== "EOF")
       return { kind: "name", name: t.text, start: t.start, end: t.end };
     throw Object.assign(
