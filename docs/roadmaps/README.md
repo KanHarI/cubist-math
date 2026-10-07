@@ -179,7 +179,8 @@ Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
   - **Prerequisites.** Laws proved propositions (L2.11), and implicit
     arguments in theory operations (L2.12).
   - **The library:** categories, functors and natural transformations;
-    universal constructions with colimits by duality; and the abelian tower
+    limits over diagrams that are maps of graphs, with colimits by duality
+    and colimits of types as one higher inductive type; and the abelian tower
     from preadditive to abelian (L3.4–L3.6).
 - [Homological algebra](homological-algebra.md), proposed on 2026-10-07: a
   new mathematical track, HA0–HA6.

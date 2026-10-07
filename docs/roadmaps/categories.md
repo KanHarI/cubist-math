@@ -11,8 +11,9 @@ is implemented. The work plan's packages are:
 - L3.5: universal constructions;
 - L3.6: the abelian tower.
 
-The probes quoted below were checked on 2026-10-07 at `ae94f49`, with
-`node cli/repl.mjs check`. Their files are not fixtures. The
+The probes quoted below were checked on 2026-10-07 with `node cli/repl.mjs
+check`: those of a theory's morphisms and of `Product` at `ae94f49`, and
+those of diagrams at `01da415`. Their files are not fixtures. The
 [homological algebra roadmap](homological-algebra.md) builds on this one.
 
 ## Why
@@ -223,14 +224,74 @@ These are proposed, for the maintainer's review.
       category it makes "has products" a property, and limits unique up to
       equality.
 
+    **A diagram is a map of graphs, not a functor.**
+    - **A shape is a graph.** `Graph(U)` has vertices `V : U` and edges
+      `E(i, j : V) : U`, with no composition and no laws.
+    - **A diagram in `C`,** `Diagram(U, G, C)`, gives an object `ob(i)` for
+      each vertex and an arrow `arr(i, j, e) : C.Arr(ob(i), ob(j))` for each
+      edge. It has no functor laws.
+    - **Cones.** A cone with apex `x` is a leg `C.Arr(x, D.ob(i))` for each
+      vertex, commuting with each edge. `Cones(…, D, x)` is the set of them,
+      a definition.
+    - **`IsLimit(…, a, c)`** says that, for every `x`, precomposing the cone
+      `c` with an arrow `x → a` is a contractible map onto `Cones(…, x)`:
+      arrows into the apex are exactly cones. It checks today.
+    - **The algebraic `Limit(U, G, C, D)`** has `apex`, `leg(i)` and
+      `pair(x, c : Cones(…, x))`, with laws:
+      - `commutes`, `D.arr(i, j, e) ∘ leg(i) = leg(j)`;
+      - `leg(i) ∘ pair(x, c) = c.leg(i)`;
+      - uniqueness: an `h` that agrees with every leg is `pair(x, c)`.
+
+      Its laws are equations in `C.Arr`, which E818 refuses until L2.11.
+
+    Graphs, rather than functors from an index category `J`, are what
+    UniMath and the Coq HoTT library use:
+    1. **Nothing is lost.** A cone over a functor `J → C` commutes with each
+       of `J`'s arrows, so it is a cone over the functor's underlying graph.
+       A functor becomes a diagram by forgetting its laws, with the same
+       cones.
+    2. **Concrete diagrams are cheap.** A cospan is two arrows, with no
+       functor laws to prove about a three-object category.
+    3. **Colimits of types need graphs.** Types do not form a precategory,
+       since the maps between two types need not form a set. A functor into
+       types would need coherences at every level; a diagram over a graph
+       needs none.
+
     The rest of L3.5:
     - **Shapes:** `Terminal`, `Product`, `Equalizer` and `Pullback` as
-      concrete theories, and `Limit(C, D)` over a diagram, with conversions
-      between them. Concrete shapes keep terms small; the generic one
-      states general theorems.
-    - **Colimits by duality.** Colimits are limits in `C.op`, under dual
-      names: `copair`, `in1`, `in2`. `left` and `right` are reserved for
-      the sum's injections, and `Pushout` names the `pushout` module's type.
+      concrete theories, with conversions to `Limit` over their graphs. The
+      graphs are, in order:
+      - no vertices;
+      - two vertices;
+      - two vertices and two parallel edges;
+      - a cospan.
+
+      Concrete shapes keep terms small. The generic one states general
+      theorems, such as right adjoints preserving limits.
+    - **Colimits by duality.** In a category, colimits are limits in `C.op`
+      of the opposite diagram `D.op`, on the graph `G.op` with each edge
+      reversed. Their names are dual: `inj(i)` and `copair`, and `in1` and
+      `in2` for the binary shapes. `left` and `right` are reserved for the
+      sum's injections, and `Pushout` names the `pushout` module's type.
+    - **Colimits of types are one higher inductive type.** Duality does not
+      reach types.
+      - **The type.** `Colim(U, G, D)` takes a diagram of types,
+        `TypeDiagram(U, G)`: a type for each vertex and a function for each
+        edge. Each vertex's elements give a point `inj(i, x)`, and each edge
+        a path `glue(i, j, e, x)`.
+      - **Instances.** The archive's `Pushout`, coequalizers, suspensions
+        and sequential colimits over `Nat` are its instances. They keep
+        their own types, with conversions, as concrete shapes do.
+      - **Universal property.** Maps out of `Colim` are equivalent to cocones
+        into the target. That is an equivalence of types, not of sets.
+      - **Limits of types** are Σ types of compatible points.
+
+      A colimit in the category of sets is `Colim` truncated to a set, or a
+      set quotient.
+    - **Morphisms of diagrams** are library definitions: a diagram has no
+      carriers, so no `T.Hom` is derived. `lim` as a functor uses them.
+    - **Size.** A category has limits of a given size: over shapes whose
+      vertices and edges lie in a given universe.
     - **Equality of maps.** An `ext` for maps into a limit: they are equal
       when they are equal after each projection.
     - **`deriving (limits)`** for theories whose limits are computed carrier
@@ -356,6 +417,69 @@ Its universal property is refused in both forms (E818):
 - `law pr1_pair(…) : C.comp(x, apex, a, pr1, pair(x, f, g)) = f`: the
   sides "are not elements of one of the theory's sorts".
 
+Diagrams over a graph, their cones and `IsLimit` check today: 21
+declarations, with `import contractible_maps;` and the precategory above.
+
+```
+theory Graph(U < UU0) {
+  V : U;
+  E(i, j : V) : U;
+}
+
+theory Diagram(U < UU0, G : Graph(U), C : Precategory(U)) {
+  ob(i : G.V) : C.Ob;
+  arr(i, j : G.V, e : G.E(i, j)) : C.Arr(ob(i), ob(j));
+}
+
+def Cones(U < UU0, G : Graph(U), C : Precategory(U), D : Diagram(U, G, C), x : C.Ob) : U :=
+  exists leg : (forall i : G.V. C.Arr(x, D.ob(i))).
+    forall i : G.V. forall j : G.V. forall e : G.E(i, j).
+      C.comp(x, D.ob(i), D.ob(j), D.arr(i, j, e), leg(i)) = leg(j);
+
+// The cone c with apex a, precomposed with h : x -> a.
+def restrict(
+  U < UU0, G : Graph(U), C : Precategory(U), D : Diagram(U, G, C),
+  a : C.Ob, c : Cones(U, G, C, D, a), x : C.Ob, h : C.Arr(x, a)
+) : Cones(U, G, C, D, x) :=
+  (
+    fun (i : G.V) => C.comp(x, a, D.ob(i), c.1(i), h),
+    fun (i : G.V, j : G.V, e : G.E(i, j)) => trans(
+      sym(C.assoc(x, a, D.ob(i), D.ob(j), D.arr(i, j, e), c.1(i), h)),
+      cong(fun (g : C.Arr(a, D.ob(j))) => C.comp(x, a, D.ob(j), g, h), c.2(i, j, e))
+    )
+  );
+
+// Arrows into the apex are exactly cones.
+def IsLimit(
+  U < UU0, G : Graph(U), C : Precategory(U), D : Diagram(U, G, C),
+  a : C.Ob, c : Cones(U, G, C, D, a)
+) : U :=
+  forall x : C.Ob. IsContrMap(U, C.Arr(x, a), Cones(U, G, C, D, x),
+    fun (h : C.Arr(x, a)) => restrict(U, G, C, D, a, c, x, h));
+```
+
+A cone as a theory, with `commutes` as a law, is refused with E818, as
+`pr1_pair` is.
+
+Colimits and limits of types over any graph check too: 10 declarations,
+with `import hlevels;` and `Graph` above.
+
+```
+theory TypeDiagram(U < UU0, G : Graph(U)) {
+  ob(i : G.V) : U;
+  arr(i, j : G.V, e : G.E(i, j), x : ob(i)) : ob(j);
+}
+
+inductive Colim(U < UU0, G : Graph(U), D : TypeDiagram(U, G)) : U {
+  inj(i : G.V, x : D.ob(i));
+  glue(i, j : G.V, e : G.E(i, j), x : D.ob(i)) : inj(j, D.arr(i, j, e, x)) = inj(i, x);
+}
+
+def Lim(U < UU0, G : Graph(U), D : TypeDiagram(U, G)) : U :=
+  exists x : (forall i : G.V. D.ob(i)).
+    forall i : G.V. forall j : G.V. forall e : G.E(i, j). D.arr(i, j, e, x(i)) = x(j);
+```
+
 ## Slices
 
 | Slice | Content | Depends on |
@@ -365,7 +489,7 @@ Its universal property is refused in both forms (E818):
 | L2.11 | Laws checked by the `hlevel` solver | L2.5b |
 | L2.12 | Implicit arguments in theory operations and derived operations; notation over the explicit ones | L4.1b |
 | L3.4 | `Precategory`, `IsUnivalent`, `Category`, `op`, functors, natural transformations, the `category` simp set; `T.cat` | L2.11, L2.12, L2.4d |
-| L3.5 | Universal constructions, generic limits, colimits by duality, `ext` into limits, `deriving (limits)` | L3.4; L3.1 for the contractibility presentation |
+| L3.5 | Universal constructions; `Graph`, `Diagram`, `Cones`, `IsLimit` and the algebraic `Limit` over diagrams that are maps of graphs; concrete shapes converted to `Limit`; colimits by duality, and of types as the higher inductive `Colim`; `ext` into limits; `deriving (limits)` | L3.4; L3.1 for the contractibility presentation |
 | L3.6 | `Preadditive`, `IsAdditive`, `IsPreabelian`, `IsAbelian`; `deriving (… additive …)` to `abelian`; lifting operations through set quotients; `Module(U, R)` in the library | L3.5; L2.4b for the properties to be propositions |
 
 ## Acceptance
@@ -395,7 +519,11 @@ Its universal property is refused in both forms (E818):
   - products and pullbacks in `Set` and in `Monoid.cat`, with pairing
     computed by `evaluate`;
   - uniqueness of products up to equality in a univalent category;
-  - the pushout as a pullback in `op`.
+  - `Product` and `Pullback` converted to and from `Limit` over their
+    graphs, with the same pairing;
+  - the pushout as a pullback in `op`;
+  - `Colim` over a span equivalent to the archive's `Pushout`, and maps out
+    of `Colim` equivalent to cocones into any type.
 - **L3.6:**
   - `AbelianGroup` and `Module(U, R)` derive `abelian`;
   - `CommRing` is refused with the message of decision 11, and so is a
