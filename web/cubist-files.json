@@ -2436,7 +2436,7 @@
   },
   {
    "path": "library/squares.cubist",
-   "summary": "Squares with named edges (L2.8): `Square(a0_, a1_, a_0, a_1)`, a path from its left edge to its right edge over its bottom and top edges, each edge named by its corners `a00`…`a11`. The reflexive square, the naturality square of a homotopy, transposition and both flips, double composition with its filler (`trans` is its case with a constant first edge), and horizontal and vertical composition, each by conversion."
+   "summary": "Squares with named edges (L2.8): `Square(a0_, a1_, a_0, a_1)`, a path from its left edge to its right edge over its bottom and top edges, each edge named by its corners `a00`…`a11`. The reflexive square, the naturality square of a homotopy, transposition and both flips, double composition with its filler (`trans` is its case with a constant first edge), and horizontal and vertical composition, each by conversion. Two squares on the same three sides have equal tops (`top_unique`); so a square is an equation of composites (`square_to_path`), and back (`path_to_square`), and a homotopy's naturality (`naturality_path`) and a map's action on a composite (`cong_trans`) follow."
   },
   {
    "path": "library/univalence.cubist",

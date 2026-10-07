@@ -635,7 +635,7 @@ export class CubicalProgram {
     return view;
   }
   // A square's boundary, for the inspector (L2.8): where a type, under its
-  // parameters, is Square(left, right, bottom, top) of library/squares, its
+  // parameters, is Square(a0_, a1_, a_0, a_1) of library/squares, its
   // four edges and four corners, as messages show them, with the free
   // variables `names` gives shown by those names; or null.
   squareBoundary(type, names = new Map()) {

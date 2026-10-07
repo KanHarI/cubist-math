@@ -1,4 +1,4 @@
-// Squares (L2.8; library/squares.cubist): Square(left, right, bottom, top),
+// Squares (L2.8; library/squares.cubist): Square(a0_, a1_, a_0, a_1),
 // a path between two paths over two others, and its constructions. Each
 // holds by conversion, as the laws below check by rfl.
 import nat;
@@ -60,3 +60,28 @@ def stacked{{A : U0, x, y, z : A}}(p : x = y, q : y = z) :
 // A closed square computes: its points are numbers.
 // Output: 2
 print(evaluate(refl_square(typed(1 + 1 = 2, refl(2))) @ 1 @ 0));
+
+// Squares and equations of composites (the conversions are inverse only up
+// to a path, not by conversion).
+def to_and_from{{
+  A : U0, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10, a_1 : a01 = a11
+}}(s : Square(a0_, a1_, a_0, a_1)) :
+  Square(a0_, a1_, a_0, a_1) := path_to_square(square_to_path(s));
+
+// A homotopy's naturality as an equation: n + 0 and n agree along any path.
+def natural_path(x, y : Nat, p : x = y) :
+  trans(plus_zero(x), cong(fun (n : Nat) => n, p)) = trans(
+    cong(fun (n : Nat) => n + 0, p), plus_zero(y)
+  ) := naturality_path(fun (n : Nat) => n + 0, fun (n : Nat) => n, plus_zero, p);
+
+// A map takes a composite to the composite of its images.
+def doubled_composite(x, y, z : Nat, p : x = y, q : y = z) :
+  cong(fun (n : Nat) => n + n, trans(p, q)) = trans(
+    cong(fun (n : Nat) => n + n, p), cong(fun (n : Nat) => n + n, q)
+  ) := cong_trans(fun (n : Nat) => n + n, p, q);
+
+// Two fillers of the same three sides have equal tops.
+def tops{{A : U0, x, y, z : A}}(p : x = y, q : y = z) :
+  trans(p, q) = double_comp(refl(x), p, q) := top_unique(
+    trans_filler(p, q), double_comp_filler(refl(x), p, q)
+  );

@@ -955,8 +955,13 @@ Completion:
     `Square(a0_, a1_, a_0, a_1)`, its edges named by its corners, with the reflexive and naturality
     squares, transposition, both flips, double composition and its filler,
     and horizontal and vertical composition, each by conversion; the
-    inspector shows a square's edges and corners. The conversions between a
-    square and an equation of composites, and the re-derivations, remain.
+    inspector shows a square's edges and corners.
+  - The conversions, third, the same day: `top_unique` (two squares on the
+    same three sides have equal tops, by one composition) gives
+    `square_to_path` through the square's diagonal, and `retop` with one
+    more composition gives `path_to_square`; `naturality_path` and
+    `cong_trans` follow. Re-deriving the archive's raw `comp` lemmas
+    through them remains.
 
   Expose the kernel's face-restricted conversion as a read-only adapter query.
   It serves boundary display and locating face mismatches, and is an interface

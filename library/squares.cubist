@@ -79,3 +79,102 @@ computable def vertical{{
   r2 : a11 = a12, a_0 : a00 = a10, a_1 : a01 = a11, a_2 : a02 = a12
 }}(s : Square(l1, r1, a_0, a_1), t : Square(l2, r2, a_1, a_2)) :
   Square(trans(l1, l2), trans(r1, r2), a_0, a_2) := path i => trans(s @ i, t @ i);
+
+// trans(p, q)'s filler: p at the bottom, q on the right, and the composite
+// at the top.
+computable def trans_filler{{U < UU0, A : U, x, y, z : A}}(p : x = y, q : y = z) :
+  Square(refl(x), q, p, trans(p, q)) := double_comp_filler(refl(x), p, q);
+
+// f at each point of a square.
+computable def cong_square{{
+  U < UU0, A, B : U, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10,
+  a_1 : a01 = a11
+}}(f : A -> B, s : Square(a0_, a1_, a_0, a_1)) :
+  Square(cong(f, a0_), cong(f, a1_), cong(f, a_0), cong(f, a_1)) := path i => path j => f(s @ i @ j);
+
+// Two squares with the same left, right and bottom edges have equal tops:
+// the composition up from their common bottom, between their common sides,
+// joins one to the other.
+computable def top_unique{{
+  U < UU0, A : U, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10, t1,
+  t2 : a01 = a11
+}}(s1 : Square(a0_, a1_, a_0, t1), s2 : Square(a0_, a1_, a_0, t2)) :
+  t1 = t2 := path k => path i => compose j in A from a_0 @ i {
+    on i = 0 => a0_ @ j;
+    on i = 1 => a1_ @ j;
+    on k = 0 => s1 @ i @ j;
+    on k = 1 => s2 @ i @ j;
+  };
+
+// A square's diagonal, from its first corner to its last.
+computable def diagonal{{
+  U < UU0, A : U, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10,
+  a_1 : a01 = a11
+}}(s : Square(a0_, a1_, a_0, a_1)) :
+  a00 = a11 := path m => s @ m @ m;
+
+// The two halves of a square under its diagonal, each a square of its own.
+computable def diagonal_square_right{{
+  U < UU0, A : U, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10,
+  a_1 : a01 = a11
+}}(s : Square(a0_, a1_, a_0, a_1)) :
+  Square(refl(a00), a1_, a_0, diagonal(s)) := path i => path j => s @ i @ i & j;
+
+computable def diagonal_square_left{{
+  U < UU0, A : U, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10,
+  a_1 : a01 = a11
+}}(s : Square(a0_, a1_, a_0, a_1)) :
+  Square(refl(a00), a_1, a0_, diagonal(s)) := path i => path j => s @ i & j @ i;
+
+// A square is an equation of composites: both ways round it are its
+// diagonal.
+computable def square_to_path{{
+  U < UU0, A : U, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10,
+  a_1 : a01 = a11
+}}(s : Square(a0_, a1_, a_0, a_1)) :
+  trans(a0_, a_1) = trans(a_0, a1_) := trans(
+    top_unique(trans_filler(a0_, a_1), diagonal_square_left(s)),
+    sym(top_unique(trans_filler(a_0, a1_), diagonal_square_right(s)))
+  );
+
+// A square whose top is replaced by an equal one.
+computable def retop{{
+  U < UU0, A : U, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10, t1,
+  t2 : a01 = a11
+}}(s : Square(a0_, a1_, a_0, t1), e : t1 = t2) :
+  Square(a0_, a1_, a_0, t2) := path i => path j => compose k in A from s @ i @ j {
+    on i = 0 => a0_ @ j;
+    on i = 1 => a1_ @ j;
+    on j = 0 => a_0 @ i;
+    on j = 1 => e @ k @ i;
+  };
+
+// And an equation of composites is a square: trans(bottom, right)'s filler,
+// its top made trans(left, top), is turned at its corner into the square,
+// along trans(left, top)'s filler.
+computable def path_to_square{{
+  U < UU0, A : U, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10,
+  a_1 : a01 = a11
+}}(e : trans(a0_, a_1) = trans(a_0, a1_)) :
+  Square(a0_, a1_, a_0, a_1) {
+  let F : Square(refl(a00), a_1, a0_, trans(a0_, a_1)) := trans_filler(a0_, a_1);
+  let G : Square(refl(a00), a1_, a_0, trans(a0_, a_1)) := retop(trans_filler(a_0, a1_), sym(e));
+  exact path i => path j => compose k in A from G @ i @ j {
+    on i = 0 => F @ (j & k) @ (j & ~k);
+    on i = 1 => a1_ @ j;
+    on j = 0 => a_0 @ i;
+    on j = 1 => F @ (i | k) @ (i | ~k);
+  };
+}
+
+// The naturality of a homotopy, as an equation of composites.
+computable def naturality_path{{U < UU0, A, B : U, x, y : A}}(
+  f, g : A -> B, h : forall a : A. f(a) = g(a), p : x = y
+) :
+  trans(h(x), cong(g, p)) = trans(cong(f, p), h(y)) := square_to_path(naturality(f, g, h, p));
+
+// A map takes a composite to the composite of its images.
+computable def cong_trans{{U < UU0, A, B : U, x, y, z : A}}(f : A -> B, p : x = y, q : y = z) :
+  cong(f, trans(p, q)) = trans(cong(f, p), cong(f, q)) := top_unique{{
+    a00 := f(x), a01 := f(x), a10 := f(y), a11 := f(z)
+  }}(cong_square(f, trans_filler(p, q)), trans_filler(cong(f, p), cong(f, q)));
