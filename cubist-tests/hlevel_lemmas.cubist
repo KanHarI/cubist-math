@@ -4,6 +4,7 @@
 // lemmas hold in every universe below UU0; and none proves more than it
 // states.
 import hlevels;
+use nat;
 
 // Each named level is the recursive definition at a numeral, by conversion.
 def level_zero(U < UU0, A : U) : HasLevel(U, 0, A) = IsProp(U, A) := refl(IsProp(U, A));

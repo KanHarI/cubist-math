@@ -2,6 +2,7 @@
 // squash, with a dependent groupoid motive. From
 // tests/automatic-clauses.test.mjs.
 import hlevels;
+use nat;
 
 inductive Gpd(A : U0) : trunc(1) {
   point(a : A);

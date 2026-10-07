@@ -2,6 +2,7 @@
 // defines again, for program_shadowing.
 
 import nat;
+use nat;
 
 def value := 0;
 

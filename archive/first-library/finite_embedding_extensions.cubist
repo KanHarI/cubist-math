@@ -1,5 +1,6 @@
 import nat;
 import finite_field_generators;
+use nat;
 
 // Algebraic extensions with n specified field generators admit extensions
 // of their base embeddings into any algebraically closed target field.

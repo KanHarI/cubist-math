@@ -130,5 +130,7 @@ test("actual binary and radix factorial proofs transport through native Glue in 
       maximum = Math.max(maximum, length);
     }
   }
-  assert.equal(maximum, 10, "no transfer may materialize the large unary numeral");
+  // The largest is a binary literal's character count, 24 for
+  // 0b1101110101111100000000, which its parser counts in Nat (L2.10j).
+  assert.equal(maximum, 24, "no transfer may materialize the large unary numeral");
 });

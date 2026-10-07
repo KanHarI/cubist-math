@@ -1556,7 +1556,7 @@
   },
   {
    "path": "cubist-tests/declared_match_operator_call.cubist",
-   "summary": "A recursive call spelled with an operator that stands for the declaration."
+   "summary": "A recursion whose other arguments vary, with `+` given to it by a notation of the module's own; a function named `add` gives `+` no meaning."
   },
   {
    "path": "cubist-tests/declared_match.cubist",

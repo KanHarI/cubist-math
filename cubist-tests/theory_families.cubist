@@ -6,6 +6,7 @@
 // indexed by a carrier has no isomorphisms.
 import nat;
 import hlevels;
+use nat;
 
 // A monad on sets. Inside the theory, F(A) passes A's evidence along.
 theory Monad(U < UU0) {

@@ -6,6 +6,7 @@
 // concatenation and laws are proved by induction too.
 import nat;
 import lists;
+use nat;
 
 // An induction expression names its hypotheses after the arguments: the sum
 // of a list of numbers.

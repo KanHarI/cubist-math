@@ -89,6 +89,7 @@ theory Monoid(U &lt; UU0) {
             <p>A <strong>model</strong> of a theory is a structure of its kind: a value for each field. Its type is the theory's name, <code>Monoid(U)</code>, for models whose carriers are in the universe <code>U</code>, and <code>Monoid.make</code> builds one, field by field. The natural numbers with addition are a monoid:</p>
             <pre><code data-check="accept">import nat;
 import hlevels;
+use nat;
 
 theory Monoid(U &lt; UU0) {
   M : set U;
@@ -128,6 +129,7 @@ def one_one(U &lt; UU0, G : Monoid(U)) : G.mul(G.one, G.one) = G.one {
             <p>A theory's header binds the universes of its carriers, one or several, and <strong>parameters</strong> that every model shares. The type of models takes them in order: <code>Arrow(U0, U1)</code> for an arrow from a set in <code>U0</code> to one in <code>U1</code>, and <code>Pointed(U0, G)</code> for a set pointed over the magma <code>G</code>. <code>make</code> takes the parameters first, and a field's projection reads them from the model's type:</p>
             <pre><code data-check="accept">import nat;
 import hlevels;
+use nat;
 
 theory Magma(U &lt; UU0) {
   M : set U;
@@ -156,6 +158,7 @@ def counting_point : counting.point = 0 {
             <p>A carrier may have indices: a <strong>family</strong>, one type for each index. <code>F(A : set U) : set U</code> is a set for each set <code>A</code>, as a monad on sets has. An index <code>(A : set U)</code> holds <code>A</code> and its evidence <code>A_is_set : IsSet(U, A)</code>; inside the theory, <code>F(A)</code> passes that evidence along, and outside it is written, as in <code>m.F(Nat, nat_is_set)</code>. An equation between members of a family of sets is a proposition, so the monad laws are laws, and the identity monad is a model:</p>
             <pre><code data-check="accept">import nat;
 import hlevels;
+use nat;
 
 theory Monad(U &lt; UU0) {
   F(A : set U) : set U;
@@ -217,6 +220,7 @@ def square_one(G : Monoid(U0)) : square(G, G.one) = G.one {
             <pre><code data-check="accept">import nat;
 import hlevels;
 import algebra;
+use nat;
 
 def additive : Monoid(U0) := nat_additive.monoid;
 
@@ -240,6 +244,7 @@ def squared(x : Nat) : Nat := x * x;</code></pre>
             <h2>Named notations</h2>
             <p><code>notation v { x + y := add(x, y); … }</code> declares a <strong>named notation</strong>: a rule for each operator it binds, written as the notation is used. A rule's right side is read where the notation is declared, so a later binding of <code>add</code> changes nothing. <code>use v;</code>, <code>v.(e)</code> and <code>a v.(+) b</code> select it as they select a model. The library's <code>nat</code> module declares <code>nat</code>, whose <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> are <code>add</code>, <code>mul</code>, <code>isLt</code> and <code>le</code>:</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 notation times {
   x + y := mul(x, y);
@@ -257,6 +262,7 @@ def twelve : times.(3 + 4) = 12 {
             <p>A notation binds <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>^</code>, <code>&lt;</code>, <code>&lt;=</code> and unary <code>-x</code>; <code>x &gt; y</code> is <code>y &lt; x</code> and <code>x &gt;= y</code> is <code>y &lt;= x</code>, so no notation declares them. From loosest: <code>+ -</code>, then <code>* /</code>, then unary <code>-</code>, then right-associative <code>^</code>, so <code>-x^2</code> is <code>-(x^2)</code>; the cubical <code>@</code>, <code>~</code>, <code>&amp;</code> and <code>|</code> bind tighter still. An operand that is no carrier's element names the notation it is read in, <code>x ^ nat.(n)</code>, so <code>x ^ (n + 1)</code> adds in <code>nat</code>. A theory may define an operation over its fields, <code>def sub(x, y : R) : R := x + -y notation x - y;</code>, which every model has without giving it, and which homomorphisms ignore:</p>
             <pre><code data-check="accept">import nat;
 import hlevels;
+use nat;
 
 theory Ring(U &lt; UU0) {
   R : set U;
@@ -277,6 +283,7 @@ def subtracted(A : Ring(U0), x, y : A.R) : A.(x - y) = A.sub(x, y) {
 }</code></pre>
             <p><strong>Literals</strong> are read by the selected notation. A plain numeral goes to its <code>numeral(n : Nat) := e</code> rule, and any numeric token, <code>1/2</code>, <code>2.3</code>, <code>1_000</code> or <code>5i</code>, to its <code>literal(s : Lexeme) := e</code> rule, a parser over the token's characters from the library's <code>lexemes</code> module, which also reads plain numerals when present; a notation with neither reads none, and <code>nat.(2)</code> gives a natural number inside it. A theory's derived operation marked <code>notation numeral</code> reads numerals in its models, as the library's rings' <code>of_nat</code> does, and the module that declares a model may add a numeral or a literal rule to its notation, as <code>notation rationals { literal(s : Lexeme) := rational_literal(s); }</code> does. A literal's parser is evaluated as the source is checked, and a refusal names the character, as for <code>rationals.(1/0)</code>; the term holds the literal's characters and the evidence that its parse succeeded, which the kernel checks by evaluating the parse:</p>
             <pre><code data-check="accept">import rationals;
+use nat;
 
 def half : Q := rationals.(1/2);
 
@@ -292,6 +299,7 @@ def two : integers.(2) = int(2, 0) {
             <p>A <strong>section</strong> gives a group of definitions the same first parameters. Each parameter that is a model is opened for each definition's statement and proof, and inside the section a definition of the section is already applied to the section's parameters:</p>
             <pre><code data-check="accept">import nat;
 import hlevels;
+use nat;
 
 theory Monoid(U &lt; UU0) {
   M : set U;
@@ -401,6 +409,7 @@ def first_of(G : Both(U0), x, y : G.M) : G.M := G.magma.mul(x, y);</code></pre>
             <p>A <strong>homomorphism</strong> between two models of a theory, <code>Monoid.Hom(A, B)</code>, is a map of their carrier, <code>map : A.M -&gt; B.M</code>, with, for each operation and constant, a proof that the map preserves it: <code>map_mul</code> and <code>map_one</code>. With several sorts there is a map for each, <code>map_M</code>, <code>map_N</code>. Laws need no field: they are propositions about sets. <code>Monoid.Hom.make</code> builds one, and <code>f.map</code> and the rest read it:</p>
             <pre><code data-check="accept">import nat;
 import hlevels;
+use nat;
 
 theory Monoid(U &lt; UU0) {
   M : set U;
@@ -479,6 +488,7 @@ def no_homs(A, B : Iterate(U0)) := Iterate.Hom(A, B);  // Error: Iterate's model
             </ul>
             <p>A ring's parts are models too, so a monoid's or a group's lemma applies to them: <code>mul_interchange(A.multiplicative, …)</code>, <code>right_cancel(A.additive.group, …)</code>. The natural numbers are a commutative monoid twice, <code>nat_additive</code> and <code>nat_multiplicative</code>. The library's <code>integers</code> are a commutative ring, <code>integers</code>, and its <code>rationals</code> a field, <code>rationals</code>, both <a href="cubical.html#quotients">quotients</a>. <code>rationals</code> builds the field of fractions once, in a section over any commutative ring with decidable equality, no zero divisors and zero not one (<code>fraction_field</code>), and takes it at the integers. <code>rat(a, k)</code> is <code>a / (k + 1)</code>, and the field's arithmetic, the inverse included, computes:</p>
             <pre><code data-check="accept">import rationals;
+use nat;
 
 def equal_or_not(x, y : Q) : Nat := match rat_decide(x, y) return Nat {
   left same =&gt; 1;
@@ -500,6 +510,7 @@ def int_times_zero(x : Z) : int_mul(x, int_zero) = int_zero := mul_zero(integers
 def rat_times_zero(x : Q) : rationals.mul(x, rationals.zero) = rationals.zero := mul_zero(rationals.comm_ring, x);</code></pre>
             <p>A homomorphism between the library's models is built field by field, as any other. Powers of two carry the naturals' addition to their multiplication:</p>
             <pre><code data-check="accept">import algebra;
+use nat;
 
 def two_to(n : Nat) : Nat := match n {
   zero =&gt; 1;

@@ -181,8 +181,8 @@ test("every language reference example declares and passes its check", async t =
 
 test("the harness distinguishes accepted, rejected, excerpted and unmarked examples", async () => {
   const page = `
-<pre><code data-check="accept">import nat; def one := succ(0);</code></pre>
-<pre data-check="reject">import nat; def wrong : 0 = 1 { exact refl(0); }  // Error: Type mismatch: found 0 = 0, expected 0 = 1.</pre>
+<pre><code data-check="accept">import nat; use nat; def one := succ(0);</code></pre>
+<pre data-check="reject">import nat; use nat; def wrong : 0 = 1 { exact refl(0); }  // Error: Type mismatch: found 0 = 0, expected 0 = 1.</pre>
 <pre><code data-check="excerpt" data-module="primes">def Divides(d, n : Nat) :=</code></pre>
 <pre><code>def unmarked := 0;</code></pre>`;
   const [accepted, rejected, excerpt, unmarked] = referenceExamples("sample.html", page);
@@ -191,23 +191,23 @@ test("the harness distinguishes accepted, rejected, excerpted and unmarked examp
   await verify(excerpt, 2);
   await assert.rejects(verify({ ...excerpt, text: "def  Divides(d, n : Nat) :=" }, 10), /should quote primes exactly/);
   await assert.rejects(verify(unmarked, 3), /no declared check/);
-  await assert.rejects(verify({ ...rejected, text: "import nat; def wrong : 0 = 1 { exact refl(0); }  // Error: not this message" }, 4),
+  await assert.rejects(verify({ ...rejected, text: "import nat; use nat; def wrong : 0 = 1 { exact refl(0); }  // Error: not this message" }, 4),
     /should fail with/);
-  await assert.rejects(verify({ ...rejected, text: "import nat; def wrong : 0 = 1 { exact refl(0); }" }, 6), /states its errors/);
-  await assert.rejects(verify({ ...rejected, text: "import nat; def wrong : 0 = 1 { exact refl(0); }  // Error: Type mismatch: found 0 = 0, expected 0 = 1.\ndef later := missing;" }, 7),
+  await assert.rejects(verify({ ...rejected, text: "import nat; use nat; def wrong : 0 = 1 { exact refl(0); }" }, 6), /states its errors/);
+  await assert.rejects(verify({ ...rejected, text: "import nat; use nat; def wrong : 0 = 1 { exact refl(0); }  // Error: Type mismatch: found 0 = 0, expected 0 = 1.\ndef later := missing;" }, 7),
     /is not stated in a comment/);
-  await assert.rejects(verify({ ...accepted, text: "import nat; def one := succ(0);  // Error: Type mismatch: found Nat, expected Unit." }, 8), /states no error/);
+  await assert.rejects(verify({ ...accepted, text: "import nat; use nat; def one := succ(0);  // Error: Type mismatch: found Nat, expected Unit." }, 8), /states no error/);
   await assert.rejects(verify({ ...rejected, attrs: { ...rejected.attrs, "data-error": "Type mismatch" } }, 9), /not data-error/);
   assert.deepEqual(statedErrors("  // Error: first part\n  //   second part\nx;  // Error: other\n  //   not a continuation"),
     ["first part second part", "other"]);
-  await assert.rejects(verify({ ...accepted, text: "import nat; def wrong : 0 = 1 { exact refl(0); }" }, 5), /should check/);
+  await assert.rejects(verify({ ...accepted, text: "import nat; use nat; def wrong : 0 = 1 { exact refl(0); }" }, 5), /should check/);
   // An accepted example states its lint warnings, and only those.
-  const unused = "import nat; def copy(n : Nat) := induction n as k return Nat { zero => 0; succ h => h; };";
+  const unused = "import nat; use nat; def copy(n : Nat) := induction n as k return Nat { zero => 0; succ h => h; };";
   await assert.rejects(verify({ ...accepted, text: unused }, 11), /is not stated in a comment/);
   await verify({ ...accepted, text: `${unused}  // Warning: k is unused` }, 12);
-  await assert.rejects(verify({ ...accepted, text: "import nat; def one := 1;  // Warning: k is unused" }, 13), /should warn/);
+  await assert.rejects(verify({ ...accepted, text: "import nat; use nat; def one := 1;  // Warning: k is unused" }, 13), /should warn/);
   // It states what each print directive shows, and only that.
-  const printed = "import nat; def two := succ(succ(0));\n// Output: 2\nprint(evaluate(two));";
+  const printed = "import nat; use nat; def two := succ(succ(0));\n// Output: 2\nprint(evaluate(two));";
   await verify({ ...accepted, text: printed }, 14);
   await assert.rejects(verify({ ...accepted, text: printed.replace("Output: 2", "Output: 3") }, 15), /Output:/);
   await assert.rejects(verify({ ...accepted, text: printed.replace("// Output: 2\n", "") }, 16), /Output:/);
@@ -215,16 +215,16 @@ test("the harness distinguishes accepted, rejected, excerpted and unmarked examp
 
 test("the harness replays REPL transcripts on the example before them", async () => {
   const transcriptOf = text => ({ label: "sample.html:1", attrs: { "data-check": "repl" }, text });
-  const base = "import nat; def two := succ(succ(0));";
+  const base = "import nat; use nat; def two := succ(succ(0));";
   await verify(transcriptOf("> typeof two;\nNat\n> let three := succ(two);\nthree : Nat\n> three\n3"), 0, new Map(), base);
   await assert.rejects(verify(transcriptOf("> evaluate two;\n3"), 1, new Map(), base), /gives \["2"\]/);
   await assert.rejects(verify(transcriptOf("> evaluate two;"), 2, new Map(), base), /gives \["2"\]/);
   await assert.rejects(verify(transcriptOf("> evaluate two;\n2"), 3), /follows the accepted example/);
-  await verify({ ...transcriptOf("> import nat;\nImported nat.\n> evaluate succ(1);\n2"), attrs: { "data-check": "repl", "data-base": "none" } }, 4);
+  await verify({ ...transcriptOf("> import nat;\nImported nat.\n> use nat;\nSelected nat.\n> evaluate succ(1);\n2"), attrs: { "data-check": "repl", "data-base": "none" } }, 4);
 });
 
 test("the harness runs command-line sessions against named examples", async () => {
-  const named = new Map([["sample", "import nat; def two := succ(succ(0));\nevaluate two expecting 2;\n"]]);
+  const named = new Map([["sample", "import nat; use nat; def two := succ(succ(0));\nevaluate two expecting 2;\n"]]);
   const session = text => ({ label: "sample.html:1", attrs: { "data-check": "cli", "data-files": "sample" }, text });
   await verify(session("$ node cli/repl.mjs check sample.cubist\nChecked 1 declarations · … kernel steps\nevaluate at line 2: 2"), 0, named);
   await verify(session("$ node cli/repl.mjs\n> check sample.cubist\n> inspect two\nChecked …\nAssumptions: none\n> inspect missing\nE211: No checked native definition for this name."), 1, named);

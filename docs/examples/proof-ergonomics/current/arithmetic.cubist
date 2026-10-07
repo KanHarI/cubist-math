@@ -1,4 +1,5 @@
 import primes;
+use nat;
 
 // Current expansion for a two-step calc or simp only [nat_add_zero].
 def add_zero_twice(n : Nat) : (n + 0) + 0 = n {

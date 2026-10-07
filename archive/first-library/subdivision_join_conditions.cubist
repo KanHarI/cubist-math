@@ -1,5 +1,6 @@
 import nat;
 import subdivision_join;
+use nat;
 
 // The condition can depend on the actual fine subdivision, not just on
 // endpoints. Transport along the endpoint path preserves this dependency.

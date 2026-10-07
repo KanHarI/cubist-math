@@ -2,6 +2,7 @@ import nat;
 import permutation_groups;
 import finite_cancellation;
 import permutations;
+use nat;
 
 // S3 acts on the explicitly enumerated three-element set {0, 1, 2}.
 // The stabilizer of 0 contains (1 2), but conjugation by (0 1) moves it out.

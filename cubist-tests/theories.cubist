@@ -6,6 +6,7 @@
 import nat;
 import hlevels;
 import h1_truncation;
+use nat;
 
 theory Semigroup(U < UU0) {
   M : set U;

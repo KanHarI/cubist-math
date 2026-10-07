@@ -3,6 +3,7 @@
 // fails, until this module declares its own.
 import ergonomics_simp_rules_a;
 import ergonomics_simp_rules_b;
+use nat;
 
 def default_ok(n : Nat) : n + 0 = n {
   simp;

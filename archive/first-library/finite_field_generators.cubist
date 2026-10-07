@@ -2,6 +2,7 @@ import nat;
 import basis_generators;
 import simple_algebraic_extensions;
 import algebraic_base_change;
+use nat;
 
 // The list need not be independent or a primitive-element presentation.
 def FieldGeneratedBy(

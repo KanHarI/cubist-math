@@ -2,6 +2,7 @@
 // checks as written; later milestones must keep it checking.
 import primes;
 import paths;
+use nat;
 
 // Sigma extensionality: the second component is a PathP over the first.
 def sigma_line(

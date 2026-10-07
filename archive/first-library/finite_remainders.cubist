@@ -1,6 +1,7 @@
 import nat;
 import vector_arithmetic;
 import vector_subspaces;
+use nat;
 
 // Sum every term except the selected index. This recursion compares only
 // finite indices; it needs no decidable equality on vectors or scalars.

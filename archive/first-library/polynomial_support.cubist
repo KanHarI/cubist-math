@@ -1,6 +1,7 @@
 import nat;
 import formal_series;
 import dimension;
+use nat;
 
 // A support bound says all coefficients from n onward vanish. The bound is
 // not part of polynomial identity; only its mere existence is retained.

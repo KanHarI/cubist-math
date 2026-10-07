@@ -1,6 +1,7 @@
 // From tests/proof-ergonomics.test.mjs: simp freeze preserves a proof later
 // compared with another path: the second simp is offered no frozen form.
 import primes;
+use nat;
 
 // Warning: W702: stable is never used after this let: remove it.
 computable def dependent(

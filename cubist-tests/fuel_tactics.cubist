@@ -3,6 +3,7 @@
 // the same in every session. commuted cycles, and growing reaches the
 // rewrite budget.
 import nat;
+use nat;
 
 def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
   simp only [nat_add_zero];

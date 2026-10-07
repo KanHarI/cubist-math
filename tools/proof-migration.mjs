@@ -82,6 +82,8 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   const readSource = (name, importer) => shadowModule(name) ? editedSource(shadowModule(name)) : readOriginal(name, importer);
   readSource.beginCheck = () => readOriginal.beginCheck?.();
   readSource.checkImports = (importer, imports) => readOriginal.checkImports?.(importer, imports.filter(name => !shadowModule(name)));
+  // An original module of a revision before L2.10j is read as it was then.
+  readSource.nameBased = name => !shadowModule(name) && (readOriginal.nameBased?.(name) ?? false);
   const program = new CubicalProgram(await createCubical(), readSource, { collectReferences: false });
   const checker = program.checker, views = checker.definitionViews;
   // Check dependencies before the modules that import them.
@@ -188,7 +190,9 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
     return type ? `${label}:${snapshotHash(type)}` : label;
   }});
   const readableBindings = mapDefinitions(originalName, originalName);
-  const snapshot = term => ({hash:snapshotHash(term),text:sourceText(displayTerm(readableBindings(term)))});
+  // A pin's text reads numerals and nat's operations as nat's notation does,
+  // as every ledger was recorded (L2.10j); its hash is what is compared.
+  const snapshot = term => ({hash:snapshotHash(term),text:sourceText(displayTerm(readableBindings(term)),{},4000,{selection:"nat"})});
   const localReferences = (module, ...terms) => {
     const found = new Set(), seen = new WeakSet();
     const visit = node => {

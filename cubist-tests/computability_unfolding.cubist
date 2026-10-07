@@ -2,6 +2,7 @@
 // ignores unfolding hints.
 
 import nat;
+use nat;
 
 def boxed(n : Nat) := succ(n);
 

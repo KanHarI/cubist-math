@@ -1,5 +1,6 @@
 import nat;
 import sample_sum_laws;
+use nat;
 
 // One finite subdivision with specified outer endpoints. This is sampling
 // data; it does not assert geometric continuity or homotopy invariance.

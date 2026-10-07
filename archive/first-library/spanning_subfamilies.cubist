@@ -1,5 +1,6 @@
 import nat;
 import finite_family_images;
+use nat;
 
 // A basis extracted from a finite family retains its original indices.
 // Distinct selected indices and both linear inverse laws are checked.

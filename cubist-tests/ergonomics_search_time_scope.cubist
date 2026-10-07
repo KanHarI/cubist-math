@@ -4,6 +4,7 @@
 // later statement were slow. No rewrite search runs while it is checked.
 
 import primes;
+use nat;
 
 def slow_step(n : Nat) : n = n {
   rfl;

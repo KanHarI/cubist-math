@@ -3,6 +3,7 @@
 // admits nothing.
 
 import nat;
+use nat;
 
 def identity(A : U0, x : A) := x;
 

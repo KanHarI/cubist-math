@@ -1,5 +1,6 @@
 import nat;
 import polynomial_roots;
+use nat;
 
 // A nonzero polynomial of degree d cannot have d+1 distinct roots.
 def RootFamily(K : AlgebraicField, p : Polynomial(K), n : Nat) :=

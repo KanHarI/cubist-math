@@ -1,6 +1,7 @@
 import nat;
 import polynomial_evaluation;
 import polynomial_leading;
+use nat;
 
 // Roots may live in an arbitrary extension through its specified embedding.
 def PolynomialRoot(

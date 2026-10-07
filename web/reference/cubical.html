@@ -376,6 +376,7 @@ def reverse_loop : cong(reverse, loop) = sym(loop) { rfl; }</code></pre>
             <p>At <code>loop @ i</code>, <code>reverse</code> returns <code>loop @ ~i</code>, where <code>~i</code> is <span class="math">1 − i</span>. At <code>i = 0</code> and <code>i = 1</code> the point is <code>base</code>, so there the clause must agree with the <code>base</code> clause: <code>loop @ ~0</code> is <code>loop @ 1</code>, which is <code>base</code>, and <code>loop @ ~1</code> is <code>loop @ 0</code>, also <code>base</code>. Taken over all <code>i</code>, the clause traces a path between the results at <code>base</code>. Applying <code>reverse</code> along the whole loop, <code>cong(reverse, loop)</code>, gives that path, <code>sym(loop)</code>, and <code>rfl</code> checks this by computation.</p>
             <p>A clause whose ends disagree with the point clause is rejected. Here the loop clause traces a path from <code>1</code> to <code>1</code>, but the <code>base</code> clause requires one from <code>0</code> to <code>0</code>:</p>
             <pre><code data-check="reject">import nat;
+use nat;
 
 inductive Circle : U0 {
   base;
@@ -388,6 +389,7 @@ def broken(c : Circle) : Nat := match c {  // Error: Type mismatch: found 1 = 1,
 };</code></pre>
             <p>A constant clause traces the constant path. <code>flatten</code> sends every point of the loop to <code>0</code>, so along the loop it gives <code>refl(0)</code>. A path clause can also be omitted and its path proved instead: <code>obligations by rfl</code> proves the path the missing loop clause must give, <code>0 = 0</code>.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 inductive Circle : U0 {
   base;
@@ -468,6 +470,7 @@ def discard(A : U0, x : Mere(A)) : Unit := match x {
             <pre><code data-check="accept">import nat;
 import hlevels;
 import quotients;
+use nat;
 
 def parity(n : Nat) : Nat := match n {
   zero =&gt; 0;
@@ -502,6 +505,7 @@ evaluate parity_of(class(7)) expecting 1;</code></pre>
             <pre><code data-check="accept">import nat;
 import hlevels;
 import quotients;
+use nat;
 
 def parity(n : Nat) : Nat := match n {
   zero =&gt; 0;
@@ -527,6 +531,7 @@ computable def same_parity : SameParity(1, 3) := quotient_effective(
 evaluate same_parity expecting refl(1);</code></pre>
             <p>The library builds number systems this way. <code>integers</code> takes the quotient of pairs of naturals, <code>(a, b)</code> standing for <code>a - b</code>, by having the same difference, <code>a + d = c + b</code>: <code>int(a, b)</code> is that integer, and <code>int_add</code>, <code>int_mul</code> and <code>int_neg</code> descend from pairs. Effectiveness makes its equality decidable (<code>int_decide</code>), since pairs have the same difference or not. <code>rationals</code> takes the quotient of fractions, as the integers' field of fractions. Both are <a href="theories.html#library-algebra">models of the algebraic theories</a>, and their arithmetic computes:</p>
             <pre><code data-check="accept">import integers;
+use nat;
 
 def equal_or_not(x, y : Z) : Nat := match int_decide(x, y) return Nat {
   left same =&gt; 1;

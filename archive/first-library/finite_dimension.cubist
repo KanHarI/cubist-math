@@ -2,6 +2,7 @@ import nat;
 import coordinate_elimination;
 import primes;
 import finite_cancellation;
+use nat;
 
 // Searching for a nonzero coordinate uses LEM only for scalar equality.
 // No choice of a basis or well-ordering of the field is needed.

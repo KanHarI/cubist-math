@@ -1,4 +1,5 @@
 import primes;
+use nat;
 
 // Registrations refer to already checked equality proofs.
 simp_rule nat_add_zero priority 10;

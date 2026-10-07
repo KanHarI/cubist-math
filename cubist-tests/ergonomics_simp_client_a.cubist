@@ -1,6 +1,7 @@
 // From tests/proof-ergonomics.test.mjs: An importer simplifies with the
 // imported registrations.
 import ergonomics_simp_rules_a;
+use nat;
 
 def good(n : Nat) : n + 0 = n {
   simp;

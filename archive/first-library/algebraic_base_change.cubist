@@ -3,6 +3,7 @@ import finite_algebraic_extensions;
 import polynomial_extension_roots;
 import polynomial_eval_embeddings;
 import polynomial_irreducible_factors;
+use nat;
 
 def bounded_eval_base_change(
   K, R, L : AlgebraicField, i : FieldEmbedding(K, R), h : FieldEmbedding(R, L), x : af_carrier(L),

@@ -61,7 +61,7 @@ test("native tuple notation exposes its expansion and a checked inspector bindin
   const { CubicalProgram } = await import("../web/cubical-program.mjs");
   const program = new CubicalProgram(await createCubical(), async () => "");
   t.after(() => program.dispose());
-  const result = await program.check("import nat; def triple : Nat and Nat and Nat { exact (0, 1, 2); }", "tuples");
+  const result = await program.check("import nat; use nat; def triple : Nat and Nat and Nat { exact (0, 1, 2); }", "tuples");
   assert.equal(result.complete, true);
   const links = result.links.filter(x => x.role === "tuple macro");
   assert.equal(links.length, 2);

@@ -1,6 +1,7 @@
 import nat;
 import finite_spanning;
 import scalar_restriction;
+use nat;
 
 // Regard the same finite generating vectors as an L-linear family. The
 // coefficients are extended along K -> L; vectors themselves do not move.

@@ -2,6 +2,7 @@ import nat;
 import polynomial_factor_omission;
 import algebraic_base_change;
 import polynomial_root_existence;
+use nat;
 
 // Cancellation of a common linear factor also cancels divisibility evidence.
 def polynomial_factor_divisibility_cancel(

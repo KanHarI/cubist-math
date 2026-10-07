@@ -1,5 +1,6 @@
 import nat;
 import finite_combinations;
+use nat;
 
 // A subspace is a proposition-valued subset containing zero and closed under
 // addition and scalar multiplication. Membership evidence is not extra data.

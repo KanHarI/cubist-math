@@ -9,7 +9,7 @@ import { formatCubist } from "../web/cubist/formatter.mjs";
 import { migrationSourceReader } from "../tools/migration-sources.mjs";
 
 const library = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
-const original = `import primes;
+const original = `import primes; use nat;
 def moved(C : Nat -> U0, p : 0 + 0 = 0, v : C(0 + 0)) : C(0) {
   exact transport(C, 0 + 0, 0, p, v);
 }
@@ -70,7 +70,7 @@ test("a changed proof passes only the type level, and a changed statement fails"
 });
 
 test("syntax rewrites keep comments and verify at their declared level", async () => {
-  const source = `import paths;
+  const source = `import paths; use nat;
 def moved(C : Nat -> U0, p : 0 = 0, q : 0 = 0, v : C(0)) : forall a, b, c : Nat. C(0) {
   intro a;
   intro b; // kept apart by this comment
@@ -117,7 +117,7 @@ def pointwise(A : U0, f : A -> A) : f = f {
 });
 
 test("a rewrite under a projection keeps the projected operand whole", async () => {
-  const source = `import nat;
+  const source = `import nat; use nat;
 def applied(p, q : Nat and Nat, e : p = q) : Nat := at(e, 0).1;
 def moved(x, y : Nat, e : x = y, v : Nat and Unit) : Nat := transport(fun (n : Nat) => Nat and Unit, x, y, e, v).1;
 def picked : Nat := (fun (x : Nat) => fun (y : Nat) => typed(Nat and Nat, (x, y)))(1, 2).2;
@@ -139,7 +139,7 @@ def picked : Nat := (fun (x : Nat) => fun (y : Nat) => typed(Nat and Nat, (x, y)
 });
 
 test("a rewrite under a prefix ~ keeps its operand whole", async () => {
-  const source = `import nat;
+  const source = `import nat; use nat;
 def reversed_at(A : U0, x, y : A, p, q : x = y, e : p = q) : y = x := ~at(e, 0);
 def concatenated_at(A : U0, x, y : A, p, q : x = y, e : p = q) : x = x := at(e, 0) ++ ~at(e, 1);
 `;
@@ -159,14 +159,14 @@ test("dependents are checked against edited definitions they mention", async () 
   const originals = {
     // n + 0 does not reduce for a variable n, so the edited pick is not
     // convertible with the original.
-    dependency_fixture: `import primes;
+    dependency_fixture: `import primes; use nat;
 def double(n : Nat) := n + n;
 def four : double(2) = 4 {
   exact refl(4);
 }
 def pick(n : Nat) := n + 0;
 `,
-    dependent_fixture: `import dependency_fixture;
+    dependent_fixture: `import dependency_fixture; use nat;
 def same(n : Nat) : pick(n) = pick(n) {
   rfl;
 }
@@ -207,7 +207,7 @@ test("since H1's release, using a declared type adds or removes no kernel extens
   assert.deepEqual((await verify(declared, plain, "types")).failures, []);
   assert.deepEqual((await verify(declared, declared, "identical")).failures, []);
   // Generative copies now compare through their identical admitted schemas.
-  const own = "import nat;\ninductive C { c; }\ndef one : Nat := 1;\n";
+  const own = "import nat; use nat;\ninductive C { c; }\ndef one : Nat := 1;\n";
   const report = (await verifyMigration({ modules: ["h1_fixture"], level: "types",
     readOriginal: name => name === "h1_fixture" ? own : library(name), readEdited: async () => own }))[0];
   assert.deepEqual(report.failures, []);
@@ -258,18 +258,18 @@ test("G4: an exact ledger records removed truncation assumptions, and no marker 
 });
 
 test("a ledger never admits a failed declaration or bypasses identical proof verification", async () => {
-  const original = "import nat;\ndef n : Nat := 0;\n", edited = "import nat;\ndef n : Nat := 1;\n";
+  const original = "import nat; use nat;\ndef n : Nat := 0;\n", edited = "import nat; use nat;\ndef n : Nat := 1;\n";
   const run = async (after,ledger=null) => (await verifyMigration({modules:["pin"],ledger,
     readOriginal:async name => name === "pin" ? original : library(name),readEdited:async () => after}))[0];
   const initial = await run(edited);
   const ledger = {version:2,changes:[{...initial.changes[0],remedyGroup:1}]};
   assert.match((await run(edited,ledger)).failures[0].reason,/ordinary verification for proof changes/);
-  assert.match((await run("import nat;\ndef n : Nat := tt;\n",ledger)).failures[0].reason,/No longer checks/);
+  assert.match((await run("import nat; use nat;\ndef n : Nat := tt;\n",ledger)).failures[0].reason,/No longer checks/);
 });
 
 test("a pinned type construction can change when both versions already use H1",async()=>{
-  const before="import nat;\ndef Carrier(n : Nat) : U0 := Unit;\n";
-  const after="import nat;\ndef Carrier(n : Nat) : U0 := Unit or Unit;\n";
+  const before="import nat; use nat;\ndef Carrier(n : Nat) : U0 := Unit;\n";
+  const after="import nat; use nat;\ndef Carrier(n : Nat) : U0 := Unit or Unit;\n";
   const run=async(edited=after,ledger=null)=>(await verifyMigration({modules:["type_value"],ledger,
     readOriginal:name=>name==="type_value"?before:library(name),readEdited:async()=>edited}))[0];
   const strict=await run();
@@ -349,7 +349,7 @@ test("rebuilt classical assumptions require explicit, pinned replacements", asyn
 });
 
 test("pinned source resolution keeps archive imports isolated from library collisions", async () => {
-  const archive = new Map([["root","import collision;\ndef n : Nat := value;\n"],["collision","import nat;\ndef value : Nat := 1;\n"]]);
+  const archive = new Map([["root","import collision;\ndef n : Nat := value;\n"],["collision","import nat; use nat;\ndef value : Nat := 1;\n"]]);
   const rebuilt = new Map([["collision","inductive H { point; }\n"]]);
   const read = async (place,name) => (place === "archive" ? archive : rebuilt).get(name) ?? null;
   const original = migrationSourceReader(read,["root"]);

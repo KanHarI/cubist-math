@@ -95,10 +95,21 @@ test("projections link to their checked terms", async () => {
 
 test("a historical module imports nat, as every module did before 2026-10-05", () => {
   assert.equal(historicalSource("def two := 2;\n", "old"), "import nat;\ndef two := 2;\n");
-  // nat itself, a module that imports it, and a base that imports it explicitly are left alone.
-  assert.equal(historicalSource("inductive Nat : U0 { zero; succ(n : Nat); }\n", "nat"), "inductive Nat : U0 { zero; succ(n : Nat); }\n");
+  // nat itself, and a base that imports it explicitly, import nothing more.
+  assert.match(historicalSource("inductive Nat : U0 { zero; succ(n : Nat); }\n", "nat"), /^inductive Nat : U0 \{ zero; succ\(n : Nat\); \}\n\n/);
   assert.equal(historicalSource("import lists, nat;\ndef two := 2;\n", "old"), "import lists, nat;\ndef two := 2;\n");
   assert.equal(historicalSource("def two := tt;\n", "new", { implicitNat: false }), "def two := tt;\n");
+});
+
+test("a historical nat without a notation is read with the one it had in effect, before L2.10a", () => {
+  const nat = "inductive Nat : U0 { zero; succ(n : Nat); }\ncomputable def isLt(n, p : Nat) : U0 := le(succ(n), p);\n";
+  const read = historicalSource(nat, "nat", { implicitNat: false });
+  assert.ok(read.startsWith(nat));
+  assert.match(read, /\nnotation nat \{\n  x \+ y := add\(x, y\);\n  x \* y := mul\(x, y\);\n  x <= y := le\(x, y\);\n  x < y := isLt\(x, y\);\n  numeral\(n : Nat\) := n;\n\}\n$/);
+  // Without isLt, x < y was succ(x) <= y; a nat with a notation is read as it is.
+  assert.match(historicalSource("inductive Nat : U0 { zero; succ(n : Nat); }\n", "nat"), /x < y := le\(succ\(x\), y\);/);
+  const declared = "inductive Nat : U0 { zero; succ(n : Nat); }\nnotation nat {\n  numeral(n : Nat) := n;\n}\n";
+  assert.equal(historicalSource(declared, "nat"), declared);
 });
 
 test("a historical module reverses with ~ where it wrote prefix -, as every module did before 2026-10-06", () => {

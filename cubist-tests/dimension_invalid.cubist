@@ -2,6 +2,7 @@
 // linearity, or ignore a tower's embedding.
 
 import extension_degree;
+use nat;
 
 // Error: E606: Type mismatch: found HasDimension(Truncate, K, V, n), expected FiniteBasis(K, V, n).
 def choose_basis(K : AlgebraicField, V : VectorSpace(K), n : Nat, size : HasDimension(K, V, n)) :

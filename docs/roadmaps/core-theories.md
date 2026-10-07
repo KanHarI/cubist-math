@@ -532,10 +532,10 @@ until the block ends; a later `use` of another model shadows an earlier
 one. `m.(e)` selects `m` for one expression, and `x m.(*) y` qualifies one
 operator. Until L2.4c this statement was `open m;`, which is now refused
 with a message naming `use`; an earlier revision's `open m;` is read as
-`use m;`. Where no model's notation binds `+` or `*`, they keep their
-meaning today: `add` and `mul` in scope, as for `Nat`. L2.10j retires that
-fallback; an operator then means only what a view, a `use` or a section
-binds, and a section or `use` selects its model's view, innermost first.
+`use m;`. An operator means only what a view, a `use` or a section binds,
+and a section or `use` selects its model's view, innermost first: L2.10j
+retired the fallback to `add` and `mul` in scope, and every selection is
+complete.
 
 L2.10 extends this explicit selection to expression views, including theorem
 statements, with operand views determining numeral interpretations and a

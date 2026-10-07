@@ -1,6 +1,7 @@
 // Checked arithmetic ergonomics examples.
 // Current checked counterparts: ../current/arithmetic.cubist.
 import primes;
+use nat;
 
 // calc retains the listed witnesses and their composition order.
 def add_zero_twice(n : Nat) : (n + 0) + 0 = n {

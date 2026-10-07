@@ -28,8 +28,10 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // primes' 5 copies; and nat's predecessor, injectivity, cancellation and
   // two rearrangements added 5 and removed hlevels' predecessor and primes'
   // 3 copies; and nat's zero test, multiplicative cancellation and
-  // trichotomy added 5 and removed hlevels' zero test.
+  // trichotomy added 5 and removed hlevels' zero test; the binary
+  // notation's parser added binary_naturals' 4 and the library's lexemes (9)
+  // and lists (7), which it imports.
   assert.deepEqual(report.importErrors, []);
-  assert.equal(report.declarations.length, 3837, "The corpus must not silently lose modules.");
+  assert.equal(report.declarations.length, 3857, "The corpus must not silently lose modules.");
   t.diagnostic(JSON.stringify(report.counts));
 });

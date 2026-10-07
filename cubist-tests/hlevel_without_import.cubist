@@ -2,6 +2,7 @@
 // says to add one. From tests/hlevel.test.mjs.
 
 import nat;
+use nat;
 
 // Error: E361: hlevel uses the library module hlevels: add import hlevels;
 def nat_equal(p, q : 0 = 0) : p = q {

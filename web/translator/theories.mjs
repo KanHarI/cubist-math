@@ -3,6 +3,7 @@
 // leaves, by which m.f reads a field of a model m and `open m;` puts a
 // model's fields and notation in scope.
 import {expandTheory} from "../cubist/theories.mjs";
+import {Scope} from "./elaboration.mjs";
 import {rewritten} from "../cubist/scopes.mjs";
 import {substituteTerm,alphaKey,isTerm} from "./core.mjs";
 
@@ -108,9 +109,9 @@ export function opened(t,scope,node,{complete=true}={}) {
   const numeral=operation?{left:"n",right:null,recipe:{},natural:NUMERAL_NAT,
     aliases:new Map([[NUMERAL_NAT,scope.nf(scope.infer(operation).type).domain]]),
     value:{kind:"call",fn:{kind:"name",name:operatorBinding("numeral"),...at},args:[{kind:"name",name:"n",...at}],...at}}:null;
-  // The model's notation is the selection (L2.10a). A section's is not
-  // complete until L2.10j: an operator it does not bind falls back by name,
-  // as before views.
+  // The model's notation is the selection (L2.10a), complete: an operator
+  // it does not bind is an error, except in a module of a revision before
+  // L2.10j, whose sections read one by name (sectionScope).
   added.push([SELECTION,{name:node.name??"this model",recipes:record.recipes??{},complete,numeral,literal:null,
     operators:new Set([...Object.keys(record.notations),...Object.keys(record.ambiguousNotations??{})])}]);
   return scope.aliases(added);
@@ -131,6 +132,11 @@ const NUMERAL_NAT="\u0000notation Nat";
 export function lexemeKey(name) { return "\u0000lexeme "+name; }
 export function notationDeclaration(t,module,d,env,declared=new Set()) {
   const rules=new Map();
+  // The rules are read in the selection where the notation is declared, a
+  // file-level use's (L2.10j): their names, and their numerals and operators,
+  // wherever they are applied.
+  const at=(d.uses??[]).reduce((inner,model)=>selected(t,inner,model),new Scope(module,new Map(),env)).env;
+  const selection=[...at].filter(([key,value])=>(key===SELECTION||key.startsWith(operatorBinding("")))&&env.get(key)!==value);
   // A notation named after a model of this module adds literal rules to
   // that model's notation (L2.10c); no other module can. They are that
   // binding's: a later binding of the name, a parameter's, has none.
@@ -143,16 +149,16 @@ export function notationDeclaration(t,module,d,env,declared=new Set()) {
     const aliases=new Map(),pattern=new Set([rule.left?.text,rule.right?.text,rule.param?.text].filter(Boolean));
     const alias=name=>{
       const key=`\u0000notation ${d.name.text} ${name}`;
-      aliases.set(key,env.get(name));
+      aliases.set(key,at.get(name));
       return key;
     };
     // Its numerals too are natural numbers of the Nat read here.
-    const natural=env.has("Nat")?alias("Nat"):null;
+    const natural=at.has("Nat")?alias("Nat"):null;
     const value=rewritten(renameFree(rule.value,name=>{
       if(pattern.has(name))return null;
-      if(env.has(name))return alias(name);
+      if(at.has(name))return alias(name);
       const dot=name.indexOf("."),root=dot>0?name.slice(0,dot):null;
-      return root&&env.has(root)?`${alias(root)}${name.slice(dot)}`:null;
+      return root&&at.has(root)?`${alias(root)}${name.slice(dot)}`:null;
     }),n=>n.kind==="number"&&natural?{...n,natural}:n);
     // A literal rule builds its lexeme from the library's glyphs, read here.
     if(rule.kind==="literal")for(const name of LEXEME_NAMES) {
@@ -165,7 +171,7 @@ export function notationDeclaration(t,module,d,env,declared=new Set()) {
       aliases.set(NUMERAL_NAT,env.get("Nat"));
     }
     const key=rule.kind??(rule.unary?"unary -":rule.operator);
-    rules.set(key,{left:rule.left?.text??rule.param?.text,right:rule.right?.text??null,value,aliases,source:rule.value,
+    rules.set(key,{left:rule.left?.text??rule.param?.text,right:rule.right?.text??null,value,aliases,selection,source:rule.value,
       ...(rule.kind==="numeral"?{natural:NUMERAL_NAT}:{}),
       recipe:{left:rule.leftView?.text??null,right:rule.rightView?.text??null}});
   }
@@ -206,10 +212,11 @@ const renameFree=(node,rename)=>rewritten(node,(n,bound)=>{
 // uses it, in the scope the operator is written in: no binder of the rule
 // captures a name of an operand.
 export function appliedRule(scope,rule,left,right) {
-  // The rule's own names are read in a scope with no selection, where it
-  // was declared; its operands where they stand, in the use's scope.
+  // The rule's own names are read as where it was declared, in that
+  // place's selection or none; its operands where they stand, in the use's
+  // scope.
   let inner=scope.alias(SELECTION,null);
-  for(const [key,value] of rule.aliases)inner=inner.alias(key,value);
+  for(const [key,value] of [...rule.aliases,...rule.selection??[]])inner=inner.alias(key,value);
   const scoped=node=>node&&{kind:"scoped",node,scope,start:node.start,end:node.end};
   const operands=new Map([[rule.left,scoped(left)],...(rule.right?[[rule.right,scoped(right)]]:[])]);
   const substituted=substitute(rule.value,operands);
@@ -230,6 +237,9 @@ function notationSelected(scope,notation) {
 
 // The scope with the model `node` selected, by use m; or m.(e) (L2.4c):
 // opened, or the error that it is no model.
+// The name of what a list of file-level uses selects last, or null: the
+// notation the declaration after them prints in (L2.10j).
+export const selectionName=uses=>{const model=uses?.at(-1);return model?.kind==="name"?model.name:null;};
 export function selected(t,scope,node) {
   const notation=node.kind==="name"?scope.env.get(notationBinding(node.name)):null;
   if(notation?.tag==="Notation"&&!notation.model)return notationSelected(scope,notation);
@@ -369,7 +379,10 @@ export function sectionScope(t,scope,n) {
   if(parameters!==null&&opening?.translator===t&&opening.parameters===parameters)
     return inner.aliases(opening.added.map(([key,value])=>[key,isTerm(value)?rename(opening.own,value):value]));
   const before=inner.env;
-  for(const p of n.section.params)if(p.type)inner=opened(t,inner,name(p.name.text),{complete:false})??inner;
+  // A section's selection is complete, as any other (L2.10j); a module of a
+  // revision before then reads what its model's notation does not bind by
+  // name.
+  for(const p of n.section.params)if(p.type)inner=opened(t,inner,name(p.name.text),{complete:!t.nameBased})??inner;
   if(parameters!==null)kept.set(OPENED,{translator:t,parameters,own,added:[...inner.env].filter(([key,value])=>before.get(key)!==value)});
   return inner;
 }

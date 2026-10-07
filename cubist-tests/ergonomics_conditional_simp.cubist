@@ -2,6 +2,7 @@
 // explicitly selected or reflexive premise proof.
 
 import primes;
+use nat;
 
 def zero_if(n : Nat, h : n = 0) : n + 0 = 0 {
   calc {

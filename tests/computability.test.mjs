@@ -15,7 +15,8 @@ test("evaluate reports the normal form, and a failed evaluation makes its module
   const { result } = await evaluation();
   // Only the evaluations that pass have values; each that fails states its
   // error in the module.
-  assert.deepEqual(result.evaluations.map(item => item.value), ["4", "0b10001111"]);
+  // The module selects nat, so the binary value is qualified (L2.10j).
+  assert.deepEqual(result.evaluations.map(item => item.value), ["4", "binary.(0b10001111)"]);
   assert.equal(result.complete, false, "a failed evaluation makes the module incomplete");
 });
 test("computable and evaluate parse, format stably and stay ordinary names elsewhere", () => {

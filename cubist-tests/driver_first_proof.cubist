@@ -4,6 +4,7 @@
 // workbench lists. tests/elaboration.test.mjs shows its proof statements'
 // goals and its elaboration view.
 import nat;
+use nat;
 
 def lt(n, m : Nat) : U0 {
   exact exists k : Nat. succ(k) + n = m;

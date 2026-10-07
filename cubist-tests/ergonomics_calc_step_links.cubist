@@ -3,6 +3,7 @@
 // No other link starts at `by`, so the source view shows this one.
 
 import primes;
+use nat;
 
 def ordinary(B : U0, f : Nat -> B, n : Nat) : f((n + 0) + 0) = f(n) {
   calc {

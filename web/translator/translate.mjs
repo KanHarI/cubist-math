@@ -19,8 +19,9 @@ import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference,ma
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName} from "./hlevel.mjs";
 import {repeatedName,stem} from "./names.mjs";
-import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated} from "./notations.mjs";
-import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipTheory,sectionScope,selected,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION} from "./theories.mjs";
+import {numeralValue} from "./numerals.mjs";
+import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
+import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipTheory,sectionScope,selected,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -82,7 +83,12 @@ function lambdas(params,body) {
 export class Translator {
   constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
-    inspectSignature=null}={}) {
+    inspectSignature=null,nameBased=false}={}) {
+    // A module of a revision before L2.10j reads an operator or a numeral
+    // outside any selection by name, as it did then: x + y as the add in
+    // scope, 3 from the Nat in scope, 0b110 from the binary constructors in
+    // scope. Only the migration verifier reads one (legacy-syntax.mjs).
+    this.nameBased=nameBased;
     // A declared type's signature as `print(inspect(T));` shows it, from the
     // program that admitted it (web/cubical-program.mjs).
     this.inspectSignature=inspectSignature;
@@ -255,16 +261,16 @@ export class Translator {
       let natural=scope.alias(SELECTION,null);
       for(const [key,value] of selection.numeral.aliases)natural=natural.alias(key,value);
       const applied=appliedRule(natural,selection.numeral,
-        {kind:"number",value:Number(n.text),natural:selection.numeral.natural??"Nat",start:n.start,end:n.end},null);
+        {kind:"number",value:Number(n.text),raw:true,natural:selection.numeral.natural??"Nat",start:n.start,end:n.end},null);
       return this.term(applied.node,applied.scope,expected);
     }
     const rule=selection.literal;
     // A glyph's number is built from the library's Nat, as its glyphs are.
     const lexeme=[...n.text].reduceRight((tail,character)=>{
-      const natural=value=>({kind:"number",value,natural:lexemeKey("Nat")});
-      const glyph=/[0-9]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("digit")},args:[natural(Number(character))]}
-        :/[a-z]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("lower")},args:[natural(character.charCodeAt(0)-97)]}
-        :/[A-Z]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("upper")},args:[natural(character.charCodeAt(0)-65)]}
+      const raw=value=>({kind:"number",value,raw:true,natural:lexemeKey("Nat")});
+      const glyph=/[0-9]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("digit")},args:[raw(Number(character))]}
+        :/[a-z]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("lower")},args:[raw(character.charCodeAt(0)-97)]}
+        :/[A-Z]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("upper")},args:[raw(character.charCodeAt(0)-65)]}
         :{kind:"name",name:lexemeKey({".":"period","/":"slash","_":"underscore","+":"plus","-":"minus"}[character])};
       return {kind:"call",fn:{kind:"name",name:lexemeKey("cons")},args:[glyph,tail]};
     },{kind:"name",name:lexemeKey("nil")});
@@ -275,11 +281,12 @@ export class Translator {
     // The parse's answer, evaluated now: 0 when it succeeded, k + 1 when it
     // refused the character at position k.
     scope.spend("queries");
-    const answer=this.shown(this.checker.verify(this.term({kind:"call",fn:{kind:"name",name:lexemeKey("parse_answer")},
-      args:[applied.node],start:n.start,end:n.end},applied.scope,null)).normal);
-    if(!/^[0-9]+$/.test(answer))throw literalUnevaluated(selection,n.text,answer);
-    if(answer!=="0")throw scope.unit.locate(literalRefused(selection,n.text,Number(answer)-1),
-      {start:n.start+Number(answer)-1,end:n.start+Number(answer)});
+    // The answer is read from its normal form, a numeral, not from its text.
+    const normal=this.checker.verify(this.term({kind:"call",fn:{kind:"name",name:lexemeKey("parse_answer")},
+      args:[applied.node],start:n.start,end:n.end},applied.scope,null)).normal,answer=numeralValue(normal);
+    if(answer===null)throw literalUnevaluated(selection,n.text,this.shown(normal));
+    if(answer!==0)throw scope.unit.locate(literalRefused(selection,n.text,answer-1),
+      {start:n.start+answer-1,end:n.start+answer});
     return this.term({kind:"call",fn:{kind:"name",name:lexemeKey("parsed_value")},args:[applied.node,{kind:"name",name:"tt"}],
       start:n.start,end:n.end},applied.scope,expected);
   }
@@ -333,10 +340,14 @@ export class Translator {
   translate(source, imported=new Map()) {
     const module=this.unit({source});
     const ast=parse(source),env=new Map(imported),declarations=[],directives=[];
+    // The models of the file-level uses refused where they stand.
+    const refusedUses=new Set();
     // A theory is checked as the declarations it expands to, in its place.
     const queue=[...(ast.items??ast.declarations)];
     while(queue.length) {
       const d=queue.shift();
+      // Its messages print in what a file-level use selects for it (L2.10j).
+      if(this.checker)this.checker.notation={selection:selectionName(d.uses)};
       if(d.kind==="theory") {
         // A theory is checked as the declarations it expands to: the ones
         // beyond its own are declarations to count too.
@@ -345,8 +356,31 @@ export class Translator {
         queue.unshift(...generated); continue;
       }
       // A file-level use m; selects m for the definitions and directives
-      // after it, which record it (L2.4c).
-      if(d.kind==="use")continue;
+      // after it, which record it (L2.4c). It is checked where it stands, so
+      // one that selects nothing is refused even with nothing after it, as at
+      // a REPL (L2.10j). It is read in what the uses before it select, read
+      // again here as the definitions after it read them. One that fails again
+      // after its own refusal leaves nothing to read this one in, and was
+      // reported where it stands; any other failure is reported here, as a
+      // later definition reports it.
+      if(d.kind==="use") {
+        const unit=module.declaration(this.declarationFuel);
+        try {
+          let scope=new Scope(unit,new Map(),env);
+          for(const model of d.uses??[]) {
+            try { scope=selected(this,scope,model); }
+            catch(error) { if(!refusedUses.has(model))throw error; scope=null; break; }
+          }
+          if(scope)selected(this,scope,d.model);
+        } catch(error) {
+          refusedUses.add(d.model);
+          directives.push({kind:"use",name:`at line ${source.slice(0,d.start).split("\n").length}`,status:"not-translated",
+            reason:error.message,start:d.start,failure:error.kind});
+          directives.at(-1).searchFuel=this.fuelRecord(unit);
+        }
+        unit.fuel.close();
+        continue;
+      }
       // A named notation's rules, read where it is declared (L2.10a).
       if(d.kind==="notation") {
         try { notationDeclaration(this,module,d,env,new Set(declarations.filter(e=>e.status!=="not-translated").map(e=>e.name))); }
@@ -819,7 +853,9 @@ export class Translator {
         if(env.has(n.name)) {
           const value=env.get(n.name);
           if(value.tag==="Untranslated") {
-            const error=Error(`Untranslated dependency: ${n.name}`);
+            // A notation rule's name is read under its key: the message
+            // names it as the rule does.
+            const error=Error(`Untranslated dependency: ${n.name.startsWith("\u0000notation ")?n.name.split(" ").slice(2).join(" "):n.name}`);
             error.blockedBy=value.binding??value.name;
             throw error;
           }
@@ -855,17 +891,21 @@ export class Translator {
       case "number": {
         // In a selected notation, a numeral is its numeral rule's, or its
         // literal rule's, read as it is written; a notation with neither
-        // reads none (L2.10c).
+        // reads none (L2.10c). A numeral rule's own natural number is raw
+        // data, built from the Nat its notation read where it was declared
+        // (L2.10j).
         const selection=env.get(SELECTION);
-        if(selection?.complete)return this.literalTerm({...n,kind:"literal",text:n.text??String(n.value)},scope,expected);
+        if(!n.raw&&selection?.complete)return this.literalTerm({...n,kind:"literal",text:n.text??String(n.value)},scope,expected);
+        if(!n.raw&&!this.nameBased)throw unselectedLiteral(n.text??String(n.value));
         if(n.value>256)throw Error("Numerals are limited to 256 in this version.");
         const natural=this.naturalConstructors(scope,n.natural??"Nat");
         let t=natural.zero;for(let i=0;i<n.value;i++)t=T.app(natural.succ,t);
         this.reference(scope,{...n,name:String(n.value)},t);return t;}
       case "binaryNumber": {
-        // In a selected notation, a binary literal is its literal rule's, as
-        // any numeric token is (L2.10c).
+        // A binary literal is a selected notation's literal rule's, as any
+        // numeric token is (L2.10c), as binary.(0b1101) (L2.10j).
         if(env.get(SELECTION)?.complete)return this.literalTerm({...n,kind:"literal",text:n.spelling??`0b${n.digits}`},scope,expected);
+        if(!this.nameBased)throw unselectedLiteral(n.spelling??`0b${n.digits}`);
         if(n.digits.length>256)throw Error("Binary literals are limited to 256 significant bits.");
         const term=tr(binaryLiteralSyntax(n));
         this.reference(scope,{...n,name:`0b${n.digits}`},term);return term;
@@ -942,24 +982,16 @@ export class Translator {
           }
           return tr({kind:"call",fn:operation,args:[n.left,n.right],start:n.start,end:n.end},expected);
         }
-        // The left operand alone, for the operators that read it so; an
-        // arithmetic operator reads its operands where its notation says,
-        // in a recipe's notation first (L2.10b).
-        const alone=()=>tr(n.left,null);
-        // p ++ q is trans(p, q), whatever the name trans is bound to here.
-        if(n.operator==="++") { const left=alone(); return this.concatenatePaths(scope,left,tr(n.right,null),"++"); }
-        if(["->","and"].includes(n.operator)) { const left=alone(); return (n.operator==="->"?T.pi:T.sigma)(scope.fresh(),left,tr(n.right,null)); }
-        if(n.operator==="or") { const left=alone(); return T.sum(left,tr(n.right,null)); }
         // x > y is y < x, and x >= y is y <= x (L2.10b).
         if([">",">="].includes(n.operator))
-          return tr({...n,operator:n.operator===">"?"<":"<=",left:n.right,right:n.left},expected);
+          return tr({...n,operator:n.operator===">"?"<":"<=",written:n.operator,left:n.right,right:n.left},expected);
         if(["+","-","*","/","^","<=","<"].includes(n.operator)) {
           // A selected notation is complete: an operator it does not bind is
           // an error, never an earlier selection's or add's (L2.10a).
           const found=env.get(SELECTION),bound=found?.operators.has(n.operator);
-          if(found?.complete&&!bound)throw unboundOperator(found,n.operator);
-          // Outside a complete selection, an operator it does not bind is
-          // read by name, as before views (until L2.10j).
+          if(found?.complete&&!bound)throw unboundOperator(found,n.written??n.operator);
+          if(!bound&&!this.nameBased)throw unselectedOperator(n.written??n.operator);
+          // A module of a revision before L2.10j reads one by name.
           const selection=bound?found:null;
           if(!selection&&!["+","*","<=","<"].includes(n.operator))throw unselectedOperator(n.operator);
           // An operand with a recipe is read in its notation (L2.10b).
@@ -975,15 +1007,16 @@ export class Translator {
           if(selection&&env.has(operatorBinding(n.operator)))
             return tr({kind:"call",fn:{kind:"name",name:operatorBinding(n.operator),start:n.operatorStart,end:n.operatorEnd},
               args:[left,right],start:n.start,end:n.end},expected);
-          // By name, as before views (until L2.10j): the left operand is
-          // read first, so a numeral without nat says Nat is missing.
-          alone();
           const name=n.operator==="+"?"add":n.operator==="*"?"mul":n.operator==="<"&&env.has("isLt")?"isLt":"le";
           const first=n.operator==="<"&&name==="le"?{kind:"call",fn:{kind:"name",name:"succ"},args:[n.left]}:n.left;
           return tr({kind:"call",fn:{kind:"name",name},args:[first,n.right]},null);
         }
+        const left=tr(n.left,null);
+        // p ++ q is trans(p, q), whatever the name trans is bound to here.
+        if(n.operator==="++")return this.concatenatePaths(scope,left,tr(n.right,null),"++");
+        if(["->","and"].includes(n.operator)) return (n.operator==="->"?T.pi:T.sigma)(scope.fresh(),left,tr(n.right,null));
+        if(n.operator==="or")return T.sum(left,tr(n.right,null));
         if(n.operator==="=") {
-          const left=alone();
           const type=n.carrier?tr(n.carrier,null):inferred(left).type;
           return T.path(scope.fresh("i"),type,left,tr(n.right,type));
         }

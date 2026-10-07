@@ -233,5 +233,5 @@ workbench's Kernel graph.
 | [`fingerprint_fixture`](fingerprint_fixture.cubist) | Declarations whose elaboration fingerprints `tests/elaboration-fingerprint.test.mjs` takes and compares after edits. |
 | [`documentation_helper`](documentation_helper.cubist) | An imported definition documented by its comment. |
 | [`documentation_use`](documentation_use.cubist) | Documentation from local and imported source: the comment directly above a declaration. |
-| [`declared_match_operator_call`](declared_match_operator_call.cubist) | A recursive call spelled with an operator that stands for the declaration. |
+| [`declared_match_operator_call`](declared_match_operator_call.cubist) | A recursion whose other arguments vary, with `+` given to it by a notation of the module's own; a function named `add` gives `+` no meaning. |
 | [`declarations_definitions`](declarations_definitions.cubist) | Constructions and proofs checked with their bodies exposed, and a false claim refused. |

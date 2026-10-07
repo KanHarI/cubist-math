@@ -261,12 +261,15 @@ older universe-polymorphic library are still in progress. Data types are
 and radix numbers are declared this way. The archive's `w` module still declares
 well-founded trees `W(U, V, A, B)` and `wrec`, but nothing imports it.
 
-With `import binary_naturals;`, `0b110` denotes a binary natural number, expanding
-to `binary_positive(binary_bit0(binary_bit1(binary_one)))`. `0b0` denotes
-`binary_zero`. Leading zeroes are ignored; malformed digits are rejected.
-There is a parser limit of 256 significant bits, subject also to kernel term
-depth limits. No machine-number conversion or unary successor chain is used.
-Decimal literals retain their existing unary `Nat` meaning. Import
+`binary_naturals` declares the notation `binary`, whose literal rule reads
+`0b110` as a binary natural number: `binary.(0b110)`, or `0b110` after
+`use binary;`, computes to `binary_positive(binary_bit0(binary_bit1(binary_one)))`,
+and `binary.(0b0)` to `binary_zero`. Leading zeroes are ignored; malformed
+digits are rejected. There is a parser limit of 256 significant bits, subject
+also to kernel term depth limits. No machine-number conversion is used.
+Decimal literals are unary `Nat` numerals where `use nat;` selects the
+naturals' notation, and an operator or numeral outside any selection is an
+error. Import
 `binary_arithmetic` for `binary_add`, `binary_mul`, `binary_of_nat` and the
 axiom-free proof `binary_factorial_ten`. `radix_factorial` checks the same
 generic radix algorithm at base 2 and base 10; its parameter is radix minus two.

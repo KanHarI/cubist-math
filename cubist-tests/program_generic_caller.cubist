@@ -3,6 +3,7 @@
 
 import nat;
 import program_generic_identity;
+use nat;
 
 def zero := identity(U0, Nat, 0);
 

@@ -1,6 +1,7 @@
 import nat;
 import curve_refinement_estimates;
 import dyadic_refinement_mesh;
+use nat;
 
 // Uniform continuity supplies one mesh controlling every later dyadic level.
 // The bound depends on the outer width, not the number of samples.

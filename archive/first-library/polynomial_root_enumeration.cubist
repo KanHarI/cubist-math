@@ -2,6 +2,7 @@ import nat;
 import polynomial_splitting;
 import simple_extension_embeddings;
 import finite_cardinalities;
+use nat;
 
 // A zero product of linear factors locates a root in the finite list.
 def linear_factor_product_root_step(

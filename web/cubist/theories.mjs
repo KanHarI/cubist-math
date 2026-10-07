@@ -532,8 +532,10 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
   const nextGroup = params.length + 1;
   const modelType = span => call(T, [...universes, ...params.map(p => p.name)].map(text => name(text, span)), span);
   const largest = list => list.length === 1 ? name(list[0], at) : call("max", [name(list[0], at), largest(list.slice(1))], at);
+  // Each declaration reads its operators and numerals in the file's
+  // selection where the theory stands (L2.10j).
   const declaration = (declName, declParams, type, value, span, generated, extra = {}) => ({
-    kind: "def", name: token(declName, span), params: declParams, type,
+    kind: "def", name: token(declName, span), params: declParams, type, ...(theory.uses ? { uses: theory.uses } : {}),
     ...(declParams.some(p => p.implicit) ? { implicitParameters: place(span) } : {}),
     body: [{ kind: "exact", value, ...place(span) }], typedValue: true, ...place(span),
     generated: { theory: T, ...generated }, ...extra,
@@ -624,7 +626,7 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
       // A parameter whose binder is named apart from its field is called
       // by the field's name.
       for (const p of d.params ?? []) if (Object.hasOwn(labels, p.name.text)) p.label = labels[p.name.text];
-      out.push({ ...relocated(d, at), name: token(declName, at),
+      out.push({ ...relocated(d, at), name: token(declName, at), ...(theory.uses ? { uses: theory.uses } : {}),
         generated: { theory: T, role, ...(field ? { field } : {}) }, ...(morphismRecord ? { theory: morphismRecord } : {}) });
     });
   }

@@ -5,6 +5,7 @@
 // case by name.
 
 import nat;
+use nat;
 
 inductive N {
   zero;

@@ -72,12 +72,14 @@
             <h2>Every value has a type</h2>
             <p>A Cubist file is a list of declarations. The simplest names a value:</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def seven := 7;</code></pre>
             <p><code>def seven := 7;</code> names the value <code>7</code>. The checker works out its type, <code>Nat</code>, the type of natural numbers. Read <code>x : T</code> as “<code>x</code> has type <code>T</code>”: here <code>seven : Nat</code>.</p>
             <h3 id="exact-intro">Stating the type: <code>exact</code></h3>
             <p>A declaration can also state its type, after a colon. The value then goes in a <strong>block</strong> between braces, and the statement <code>exact value;</code> gives it:</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def seven_again : Nat {
   exact 7;
@@ -87,18 +89,22 @@ def seven_again : Nat {
           <section id="tour-numbers">
             <h2>Natural numbers</h2>
             <p><code>Nat</code> is the type of natural numbers <code>0, 1, 2, …</code>. They are built from <code>0</code> and <code>succ</code>, the successor: <code>succ(n)</code> is <code>n + 1</code>.</p>
-            <p>By default, a numeral is a <code>Nat</code> in this unary form: <code>3</code> is shorthand for <code>succ(succ(succ(0)))</code>. It is not a machine integer, so a numeral’s size is the size of its term; numerals go up to 256. Binary literals such as <code>0b110</code> belong to a separate type, <code>BinaryNat</code>, described with the <a href="induction.html#binary">inductive types</a>.</p>
-            <p>Addition <code>+</code> and multiplication <code>*</code> are defined in the arithmetic library, which a file loads with <code>import nat;</code> at its start. <code>evaluate term expecting value;</code> checks what a term computes to:</p>
+            <p>In the naturals' notation, a numeral is a <code>Nat</code> in this unary form: <code>3</code> is shorthand for <code>succ(succ(succ(0)))</code>. It is not a machine integer, so a numeral’s size is the size of its term; numerals go up to 256. Binary literals such as <code>binary.(0b110)</code> belong to a separate type, <code>BinaryNat</code>, described with the <a href="induction.html#binary">inductive types</a>.</p>
+            <p>Addition <code>+</code> and multiplication <code>*</code> are defined in the arithmetic library, which a file loads with <code>import nat;</code> at its start; <code>use nat;</code> then selects its notation, in which numerals and <code>+</code> mean the naturals'. <code>evaluate term expecting value;</code> checks what a term computes to:</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def three := succ(succ(succ(0)));
 
 evaluate three expecting 3;
 evaluate 2 + 3 expecting 5;
 evaluate 2 * 3 expecting 6;</code></pre>
-            <p>Without the import, neither the numerals nor <code>+</code> have a definition. A wrong expectation is reported with the actual value:</p>
-            <pre><code data-check="reject">def five := 2 + 3;  // Error: Untranslated name: Nat</code></pre>
+            <p>Without <code>use nat;</code>, neither the numerals nor <code>+</code> mean anything. A wrong expectation is reported with the actual value:</p>
             <pre><code data-check="reject">import nat;
+
+def five := 2 + 3;  // Error: x + y means what a selected notation binds + to: for natural numbers, use nat; or write nat.(x + y).</code></pre>
+            <pre><code data-check="reject">import nat;
+use nat;
 
 evaluate 2 + 2 expecting 5;  // Error: The term evaluates to 4, not 5.</code></pre>
           </section>
@@ -116,6 +122,7 @@ def forget(n : Nat) : Unit {
 }</code></pre>
             <p>If you know C, its <code>void</code> corresponds to <code>Unit</code>, not to <code>Void</code>: a C function returning <code>void</code> does return, just without information, like a Cubist function returning <code>tt</code>. A value of another type is not a <code>Unit</code>:</p>
             <pre><code data-check="reject">import nat;
+use nat;
 
 def not_unit : Unit {
   exact 0;  // Error: Type mismatch: found Nat, expected Unit.
@@ -139,6 +146,7 @@ def from_nothing(v : Void) : Nat {
             <p><code>A and B</code> is the type of pairs <code>(a, b)</code> with <code>a : A</code> and <code>b : B</code>. Three or more components are written in one tuple, <code>(1, 2, 3)</code>, with the type <code>Nat and Nat and Nat</code>.</p>
             <p>A tuple is a pair whose second component holds the rest: <code>(1, 2, 3)</code> is <code>(1, (2, 3))</code>, and <code>Nat and Nat and Nat</code> is <code>Nat and (Nat and Nat)</code>. So <code>(1, (2, 3))</code> also checks as <code>Nat and Nat and Nat</code>, and it is the same value, as the section on <a href="#tour-equality">equality</a> checks. Nesting on the left, <code>((1, 2), 3)</code>, has a different type; see <a href="terms.html#tuples">tuples</a>.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def pair : Nat and Unit {
   exact (3, tt);
@@ -158,6 +166,7 @@ def nested : Nat and Nat and Nat {
             <h2>Alternatives: <code>or</code></h2>
             <p><code>A or B</code> is the type of values that are either a value of <code>A</code>, written <code>left(a)</code>, or a value of <code>B</code>, written <code>right(b)</code>. A value remembers which side it came from. Such a type is also called a <strong>sum</strong>. The chapter on terms shows how to <a href="terms.html#match">take such a value apart</a>.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def a_number : Nat or Unit {
   exact left(3);
@@ -169,6 +178,7 @@ def no_number : Nat or Unit {
             <h3 id="tour-several-alternatives">More than two alternatives</h3>
             <p><code>or</code> groups to the right: <code>Unit or Unit or Nat</code> means <code>Unit or (Unit or Nat)</code>. So <code>left</code> picks the first type, and <code>right</code> steps into the rest, where <code>left</code> and <code>right</code> pick again:</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def first_of_three : Unit or Unit or Nat {
   exact left(tt);
@@ -183,6 +193,7 @@ def third_of_three : Unit or Unit or Nat {
 }</code></pre>
             <p>Each <code>right</code> steps in once, so a value deeper in the list needs every step on the way:</p>
             <pre><code data-check="reject">import nat;
+use nat;
 
 def skipped_step : Unit or Unit or Nat {
   exact right(5);  // Error: Type mismatch: found Nat, expected Unit or Nat.
@@ -190,6 +201,7 @@ def skipped_step : Unit or Unit or Nat {
             <p><code>right(5)</code> offers <code>5</code> as a value of the rest, <code>Unit or Nat</code>, which is itself an <code>or</code>. <code>right(right(5))</code> is the value meant.</p>
             <p>Parentheses make a different type. In <code>(Unit or Unit) or Nat</code>, <code>left</code> first picks between the two units:</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def second_unit : (Unit or Unit) or Nat {
   exact left(right(tt));
@@ -203,6 +215,7 @@ def the_number : (Unit or Unit) or Nat {
             <h2>Functions: <code>-></code></h2>
             <p><code>A -> B</code> is the type of functions from <code>A</code> to <code>B</code>. <code>fun (n : Nat) => n + n</code> is the function that doubles a number, of type <code>Nat -> Nat</code>. A declaration can state its type before <code>:=</code>, as <code>double_again</code> does. A declaration with parameters defines a function in one step, and <code>f(x)</code> applies it:</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def double(n : Nat) := n + n;
 
@@ -211,6 +224,7 @@ def double_again : Nat -&gt; Nat := fun (n : Nat) =&gt; n + n;
 evaluate double(4) expecting 8;
 evaluate double_again(4) expecting 8;</code></pre>
             <pre><code data-check="reject">import nat;
+use nat;
 
 def double(n : Nat) := n + n;
 
@@ -219,6 +233,7 @@ def wrong_argument := double(tt);  // Error: Type mismatch: found Unit, expected
             <h3 id="tour-parameters">Several parameters</h3>
             <p>A function can take several parameters, separated by commas, and <code>f(a, b)</code> applies it to all of them. Consecutive parameters of the same type can share it: <code>(m, n : Nat)</code> means <code>(m : Nat, n : Nat)</code>. The same works in <code>fun</code>:</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def sum(m : Nat, n : Nat) := m + n;
 
@@ -233,6 +248,7 @@ evaluate sum_fun(3, 4) expecting 7;</code></pre>
             <pre><code data-check="reject">def sum_spaced(m n : Nat) := m + n;  // Error: Separate names with commas: (n, m : Nat)</code></pre>
             <p>A function of two numbers has type <code>Nat -> Nat -> Nat</code>: given <code>m</code>, it returns a function that waits for <code>n</code>. So arguments can be supplied a few at a time, and <code>sum(3)</code> is the function that adds <code>3</code>:</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def sum(m, n : Nat) := m + n;
 
@@ -242,6 +258,7 @@ evaluate add_three(4) expecting 7;</code></pre>
             <h3 id="tour-intro">Functions in a block: <code>intro</code></h3>
             <p>A function can also be built in a block, like any other value. When the type to give is a function type <code>A -> B</code>, <code>intro a;</code> takes the input: it names it <code>a</code>, of type <code>A</code>, and what remains to give is a value of <code>B</code>, which can use <code>a</code>. With several names, separated by commas, <code>intro</code> takes several inputs at once:</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def double : Nat -&gt; Nat {
   intro n;        // n : Nat; what remains to give is a Nat
@@ -268,6 +285,7 @@ def seven : Nat {
             <h2>Types are values too</h2>
             <p>A type is itself a value, of a type called a <strong>universe</strong>. <code>Nat</code>, <code>Unit</code> and <code>Nat and Unit</code> have type <code>U0</code>, the universe of small types. <code>U0</code> itself has type <code>U1</code>, the next universe. So types can be named, and functions can build them:</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def Pair := Nat and Unit;
 
@@ -293,6 +311,7 @@ def nat_is_a_type : U0 {
             <h2>Equality: <code>=</code></h2>
             <p>For two values <code>x</code> and <code>y</code> of the same type, <code>x = y</code> is a type: the statement that they are equal. Its values are evidence of that equality. <code>refl(x)</code>, short for <em>reflexivity</em> (every value is equal to itself), is evidence that <code>x = x</code>, and the checker also accepts it as evidence of <code>x = y</code> whenever <code>x</code> and <code>y</code> compute to the same value:</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def two_plus_two : 2 + 2 = 4 {
   exact refl(4);
@@ -303,6 +322,7 @@ def seven_is_seven : 7 = 7 {
 }</code></pre>
             <p><code>2 + 2</code> computes to <code>4</code>, so <code>refl(4)</code> proves <code>2 + 2 = 4</code>. In a block, <code>rfl;</code> says the same without repeating the value: it closes a goal <code>x = y</code> whose two sides compute to the same value. The tuple and the nested pair of the <a href="#tour-pairs">pairs section</a> are equal this way:</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def two_plus_two_again : 2 + 2 = 4 {
   rfl;
@@ -317,6 +337,7 @@ def same_value : triple = nested {
 }</code></pre>
             <p>Values that are not equal have no such evidence:</p>
             <pre><code data-check="reject">import nat;
+use nat;
 
 def wrong_sum : 2 + 2 = 5 {
   exact refl(4);  // Error: Type mismatch: found 4 = 4, expected 2 + 2 = 5.
@@ -327,6 +348,7 @@ def wrong_sum : 2 + 2 = 5 {
             <h2>Dependent types: <code>forall</code> and <code>exists</code></h2>
             <p>A function’s result type can depend on its argument. <code>forall x : A. B</code> is the type of functions that take any <code>x : A</code> and return a value of <code>B</code>, where <code>B</code> may mention <code>x</code>. <code>A -> B</code> is the special case where it does not: the two are the same type, as the chapter on equality <a href="paths.html#exists-and">checks</a>. The dot ends the type of <code>x</code>, and the body follows it. Several names can share the type, as parameters do: <code>forall x, y : A. B</code>.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 // `and` binds tighter than `-&gt;`, so `A -&gt; A and A` means `A -&gt; (A and A)`.
 def duplicate : forall A : U0. A -&gt; A and A {
@@ -342,6 +364,7 @@ def duplicate_again : forall A : U0. A -&gt; A and A {
 def one_one := duplicate(Nat, 1);</code></pre>
             <p><code>duplicate</code> takes a type <code>A</code> and then a value of that type; <code>intro A, a;</code> takes the two inputs of <code>duplicate_again</code> in the same order. Its result type, <code>A and A</code>, depends on which type it was given: <code>duplicate(Nat, 1)</code> is the pair <code>(1, 1)</code>. The chapter on terms lists the full <a href="terms.html#precedence">precedence</a> of the operators. The result must fit the type given as the first argument:</p>
             <pre><code data-check="reject">import nat;
+use nat;
 
 def duplicate : forall A : U0. A -&gt; A and A {
   exact fun (A : U0, a : A) =&gt; (a, 0);  // Error: Type mismatch: found Nat, expected A.
@@ -358,6 +381,7 @@ def AlsoTwice : U1 {
             <p><code>Twice</code> is a function from types to types: <code>Twice(Nat)</code> is <code>Nat and Nat</code>. <code>AlsoTwice</code> is one type: the type of functions that give a pair of values in every type. It quantifies over all of <code>U0</code>, so it lives in the next universe, <code>U1</code>. It has no values, because <code>Void</code> has no pair of values.</p>
             <p><code>exists x : A. B</code> is the type of pairs whose second component’s type depends on the first: a value <code>x : A</code>, together with a value of <code>B</code> for that <code>x</code>. When <code>B</code> does not mention <code>x</code>, nothing depends on the first component, and <code>exists x : A. B</code> is the same type as <code>A and B</code>, just as <code>A -> B</code> is <code>forall x : A. B</code> without the dependency. The chapter on equality <a href="paths.html#exists-and">checks</a> this too.</p>
             <pre><code data-check="accept">import nat;
+use nat;
 
 def pointed : exists A : U0. A {
   exact (Nat, 3);

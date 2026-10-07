@@ -114,14 +114,18 @@ small module that imports the entries before it; after `check`, entries also
 see the checked module's names.
 
 ```text
+import nat;          Imported nat.
+use nat;             Selected nat.
 let x := 7;          x : Nat
 typeof x;            Nat
 evaluate x;          7
-import nat;          Imported nat.
 x + 3 * 4            19
 ```
 
-`let` and `def` define names, and any declaration of a file works. `typeof`
+`let` and `def` define names, and any declaration of a file works. `use`
+selects a notation for the entries after it, as at a file's top level, so
+that numerals and operators mean the naturals'; after `check`, entries read
+in the selections the checked file ends with. `typeof`
 prints a type. `evaluate`, or a term alone, prints the normal form of a closed
 term that uses no assumption; a term that uses one is refused with the chain
 through which it enters. An entry continues on the next line while a bracket
@@ -129,7 +133,7 @@ is open, so a proof block is one entry. A rejected entry changes nothing.
 Entries also work noninteractively:
 
 ```sh
-node cli/repl.mjs "import nat; evaluate 2 + 3;"
+node cli/repl.mjs "import nat; use nat; evaluate 2 + 3;"
 ```
 
 The same REPL runs in the browser, on `repl.html`, under each proof in the

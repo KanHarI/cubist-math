@@ -2,6 +2,7 @@ import nat;
 import complete_fields;
 import set_quotients;
 import primes;
+use nat;
 
 // Ordinary sequences equipped with moduli, followed by an equivalence-class
 // quotient. This is not the higher inductive-inductive Cauchy completion.

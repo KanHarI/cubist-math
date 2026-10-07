@@ -1,6 +1,7 @@
 import nat;
 import finite_cardinalities;
 import function_counting;
+use nat;
 
 // Finite choice is proved by induction. No Choice axiom is needed to select
 // one witness from each member of a supplied finite enumeration.

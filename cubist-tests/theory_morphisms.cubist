@@ -5,6 +5,7 @@
 // On closed models they compute.
 import nat;
 import hlevels;
+use nat;
 
 theory Monoid(U < UU0) {
   M : set U;

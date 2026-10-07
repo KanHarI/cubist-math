@@ -1,6 +1,7 @@
 import circle;
 import field_extensionality;
 import hlevels;
+use nat;
 
 // Evidence for the HoTT and cubical automation roadmap. Each statement below
 // checks by conversion or by one existing lemma. The README lists the laws

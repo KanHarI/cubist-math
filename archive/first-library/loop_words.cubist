@@ -1,6 +1,7 @@
 import nat;
 import path_actions;
 import truncation;
+use nat;
 
 // Finite words are length-indexed snoc lists. Signs distinguish traversal and
 // reverse traversal. No quotient, normal form, or choice is assumed.

@@ -1,6 +1,7 @@
 import nat;
 import field_arithmetic;
 import primes;
+use nat;
 
 // Formal coefficient functions. There is deliberately no equality of
 // evaluation functions here: distinct polynomials may agree on a finite field.

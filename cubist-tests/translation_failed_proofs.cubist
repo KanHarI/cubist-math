@@ -3,6 +3,7 @@
 // module checks.
 
 import nat;
+use nat;
 
 // Error: E606: Type mismatch: found 0 = 0, expected 0 = 1.
 def wrong : 0 = 1 {

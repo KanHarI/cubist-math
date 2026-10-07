@@ -2,6 +2,7 @@
 // delta unfolds one definition, and beta leaves the others intact.
 
 import nat;
+use nat;
 
 def N := Nat;
 

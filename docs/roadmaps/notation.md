@@ -868,11 +868,47 @@ turn `-` into `~` only for revisions before the swap, because arithmetic
 
 ## L2.10j. Retiring name-based operators
 
-Today `x + y` means `add(x, y)` for whatever `add` is in scope, and `*`,
-`<` and `<=` likewise mean `mul`, `isLt` (or `succ(x) <= y` through `le`)
-and `le`; a numeral is built from whatever `Nat` is in scope
+**Done** on 2026-10-06, in the two commits below. An operator or a
+numeral outside any selection is an error: `x + y` and `x > y` suggest
+`use nat;` (E912), `x - y` names the integers (E399), and `3` suggests
+`use nat;` (E911), whatever `add` or `Nat` is in scope. A section's
+selection is complete, as every other is. The printer qualifies nat's
+operations and numerals where nothing is selected, as `nat.(x + 3)`, and
+a binary value where `binary` is not, as `binary.(0b110)`; a message
+prints in what its declaration's file-level uses select, and a REPL's
+types in what its own select. The three test modules with their own
+`add` call it by name, and
+[`declared_match_operator_call`](../../cubist-tests/declared_match_operator_call.cubist)
+gives it `+` with a notation of its own. A module of a revision before
+this one keeps the name-based reading when the migration verifier reads
+it (the translator's `nameBased`), since its nat declared no notation to
+select; nothing else does.
+
+The migration landed first. Every source that read a numeral or an
+operator by name selects `nat`: 7 library modules besides nat, which
+selects its own notation after declaring it, 125 archive modules, 111 test modules, 8 documentation
+examples, about 170 reference examples and the JavaScript tests' inline
+sources. A module whose only `0` and `1` are a path's endpoints, as
+`loop @ 1`, selects nothing. The archive's `binary_naturals` declares
+`binary`, whose literal rule reads `0b` and binary digits with the
+library's lexemes, and its 97 binary literals are written `binary.(0b…)`.
+Three changes support it: a notation's rules are read in the selection
+in force where it is declared, so the integers' `int(n, 0)` reads its `0`
+in nat wherever it is applied; a file-level `use` is checked where it
+stands; and a REPL keeps each `use`, and the selections its base file
+ends with, for the entries after it. Checked against the previous
+revision, every library declaration elaborates to the identical term, and
+so does every archive declaration but the 60 that hold binary literals,
+each of whose 39 distinct literals is proved equal to its old expansion by
+`rfl`. A revision's nat without a notation is read with one
+(`web/cubist/legacy-syntax.mjs`), so today's modules can be compared with
+it.
+
+Before it, `x + y` meant `add(x, y)` for whatever `add` was in scope, and
+`*`, `<` and `<=` likewise meant `mul`, `isLt` (or `succ(x) <= y` through `le`)
+and `le`; a numeral was built from whatever `Nat` was in scope
 ([`web/translator/translate.mjs`](../../web/translator/translate.mjs)).
-Naming a function `add` changes what `+` means without declaring any
+Naming a function `add` changed what `+` meant without declaring any
 notation. After this slice an operator or a literal means only what the
 selected view, a `use` or a section binds. Anywhere else it is an error
 that suggests `use nat;`.
@@ -1109,7 +1145,7 @@ gate and remains optional. Explicit views are always available.
 | L2.10g | Explicit decidability and a checked, bounded `decide` proof statement | Separate proof-statement contract; not required by L2.10a–e |
 | L2.10h | Notation rules: patterns with typed, repeated and binding holes, and side conditions. Proposed, not decided | Separate grammar and tooling contract; L2.10a–d |
 | L2.10i | `~` for path and coordinate reversal, migrated while `-` still parses, then `-` retired as reversal. **Done** on 2026-10-06 | None: first |
-| L2.10j | Retiring the name-based operator and numeral fallbacks: a `use nat;` migration, a `binary` view for binary literals, then removal | L2.10a–c |
+| L2.10j | Retiring the name-based operator and numeral fallbacks: a `use nat;` migration, a `binary` view for binary literals, then removal. **Done** on 2026-10-06 | L2.10a–c |
 | L2.10k | `Field` with invertibility as a truncated law and `inv` derived by unique choice; the rationals' model | L2.4, with truncations in laws and a name for a theory's universe; independent of views |
 
 The explicit-view direction is chosen. Before implementation, settle and

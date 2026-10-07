@@ -1,5 +1,6 @@
 import nat;
 import lists;
+use nat;
 
 // Literals read by the library (L2.10c). A numeric token, as 1/2, 2.3 or
 // 5i, reaches a notation's literal rule as a Lexeme, the list of its

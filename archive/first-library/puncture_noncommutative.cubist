@@ -2,6 +2,7 @@ import nat;
 import bouquet_actions;
 import puncture_winding;
 import finite_cancellation;
+use nat;
 
 // Two generators act as the transpositions (0 1) and (0 2) on three states.
 // A nontrivial action witnesses a nontrivial loop, without a free-group axiom.

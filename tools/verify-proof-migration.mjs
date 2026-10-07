@@ -80,6 +80,11 @@ const implicitNat = (() => { try { return !git(["show",`${base}:web/cubical-prog
 // Until 2026-10-06 prefix - reversed paths and coordinates; a base of that
 // time is read with ~ for it. A later base's legacy rewrite knows minusReverses.
 const minusReverses = (() => { try { return !git(["show",`${base}:web/cubist/legacy-syntax.mjs`]).includes("minusReverses"); } catch { return true; } })();
+// Until L2.10j an operator or numeral outside any selection was read by
+// name. A base of that time is read so: its modules keep the reading, and
+// today's modules select its nat's notation (historicalSource).
+const nameBased = (() => { try { return !git(["show",`${base}:web/translator/translate.mjs`]).includes("nameBased"); } catch { return true; } })();
+const historical = new Set();
 // A module moved from the archive into the library since the base, as nat
 // was, is read from its old path but lives in the library, where
 // today's checks place it, so that a check holds it once.
@@ -94,6 +99,7 @@ const readOriginal = migrationSourceReader(async (place, name) => {
     // A baseline may predate a syntax change, or the implicit import of nat;
     // it is read in today's syntax, with the imports it had then.
     let text = available.has(path) ? historicalSource(git(["show",`${base}:${path}`]), name, { implicitNat, minusReverses }) : null;
+    if (text !== null) historical.add(name);
     // A new shared foundation has no predecessor. It is available only in
     // library resolution; archive importers never see this fallback.
     if (text === null && place === "library" && !modules.includes(name)) {
@@ -104,6 +110,7 @@ const readOriginal = migrationSourceReader(async (place, name) => {
   }
   return originals.get(path);
 }, modules);
+readOriginal.nameBased = name => nameBased && historical.has(name);
 // A stale WASM kernel would run code it does not contain.
 assertFreshBuild();
 const declarations=selected ? {[modules[0]]:selected} : null;

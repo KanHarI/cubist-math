@@ -1019,10 +1019,11 @@ export function parse(source, typeOnly = false) {
       continue;
     }
     // `use m;` at a file's top level selects m for the definitions after it.
+    // It records the uses before it, in whose selections m is read.
     if (!section && t.text === "use" && /^[A-Za-z_]/.test(peek())) {
       const model = expr(), end = take(";").end;
+      const directive = { kind: "use", model, ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end };
       uses = [...uses, model];
-      const directive = { kind: "use", model, start: t.start, end };
       items.push(directive);
       continue;
     }
@@ -1121,7 +1122,7 @@ export function parse(source, typeOnly = false) {
         rules.push({ ...pattern, value, start, end: take(";").end });
       }
       const end = take("}").end;
-      items.push({ kind: "notation", name: n, rules, start: t.start, end });
+      items.push({ kind: "notation", name: n, rules, ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end });
       continue;
     }
     if (t.text === "theory") {
@@ -1243,7 +1244,7 @@ export function parse(source, typeOnly = false) {
           ...(keyword ? { keyword } : {}), start, end: take(";").end });
       }
       const end = take("}").end;
-      declarations.push({ kind: "theory", name: n, universes: header.filter(p => p.bound).map(p => p.name),
+      declarations.push({ kind: "theory", name: n, ...(uses.length ? { uses: [...uses] } : {}), universes: header.filter(p => p.bound).map(p => p.name),
         params: header.filter(p => !p.bound).map(p => ({ name: p.name, type: p.type })), parents, fields, start: t.start, end });
       items.push(declarations.at(-1));
       continue;

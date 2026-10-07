@@ -2,6 +2,7 @@ import nat;
 
 import artin_hom_independence;
 import finite_sums;
+use nat;
 
 def field_add_laws(L : AlgebraicField) :
   AddLaws(af_carrier(L), field_zero(L), field_add(L), field_neg(L)) {

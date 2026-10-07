@@ -4,6 +4,7 @@
 
 import nat;
 import ergonomics_imported_failure_rules;
+use nat;
 
 // Error: E340: Untranslated dependency: broken__rule
 def use := broken__rule(U0, 0);

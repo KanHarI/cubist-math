@@ -22,7 +22,7 @@ theory Ring(U < UU0) {
 }
 
 // -x^2 is -(x^2), -x * y is (-x) * y, and ^ groups to the right.
-def grouped(A : Ring(U0), x, y : A.R) : A.(-x^2 * y) = A.mul(A.neg(A.pow(x, 2)), y) {
+def grouped(A : Ring(U0), x, y : A.R) : A.(-x^2 * y) = A.mul(A.neg(A.pow(x, nat.(2))), y) {
   rfl;
 }
 
@@ -30,7 +30,7 @@ def subtracted(A : Ring(U0), x, y : A.R) : A.(x - y) = A.sub(x, y) {
   rfl;
 }
 
-def exponent(A : Ring(U0), x : A.R, n : Nat) : A.(x ^ (n + 1)) = A.pow(x, add(n, 1)) {
+def exponent(A : Ring(U0), x : A.R, n : Nat) : A.(x ^ (n + 1)) = A.pow(x, nat.(n + 1)) {
   rfl;
 }
 
@@ -40,7 +40,7 @@ def power_inside(A : Ring(U0), x : A.R, n : Nat) : A.(x * x ^ n) = A.mul(x, A.po
   rfl;
 }
 
-def power(x, n : Nat) : Nat := induction n return Nat { zero => 1; succ h => mul(x, h); };
+def power(x, n : Nat) : Nat := induction n return Nat { zero => nat.(1); succ h => mul(x, h); };
 
 notation arithmetic {
   x * y := mul(x, y);
@@ -128,7 +128,7 @@ def difference(A : Ring(U0), x : A.R) : A.R := x A.(-) x;
 
 // The library's rings: negation and subtraction on the integers, whose
 // numerals the integers' module reads (L2.10c).
-def three : integers.(5 - 2) = int(5, 2) {
+def three : integers.(5 - 2) = int(nat.(5), nat.(2)) {
   rfl;
 }
 

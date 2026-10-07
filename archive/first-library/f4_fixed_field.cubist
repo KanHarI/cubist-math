@@ -2,6 +2,7 @@ import nat;
 
 import f4_galois_group;
 import galois_fixing_subgroups;
+use nat;
 
 // The whole automorphism group; no decision about an arbitrary subgroup occurs.
 def F4AllAutomorphisms(e : F4Automorphism) := Unit;

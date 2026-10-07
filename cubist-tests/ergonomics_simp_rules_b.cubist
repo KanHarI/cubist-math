@@ -1,6 +1,7 @@
 // From tests/proof-ergonomics.test.mjs: Imported simp registrations are
 // scoped: nat_add_zero by default at priority 7, and as units.
 import primes;
+use nat;
 
 simp_rule nat_add_zero priority 7;
 simp_set units := [nat_add_zero];

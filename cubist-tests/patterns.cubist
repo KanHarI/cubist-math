@@ -3,6 +3,7 @@
 // from the motive service. Clauses are tried in order, the first that fits
 // taking a case; a missing case and a clause never reached are refused.
 import lists;
+use nat;
 
 // Two values, with _ for either.
 def shorter(xs, ys : List(U0, Nat)) : Nat := match xs, ys {

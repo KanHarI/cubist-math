@@ -1,6 +1,7 @@
 import nat;
 import polynomial_root_embeddings;
 import polynomial_eval_embeddings;
+use nat;
 
 // A residue-ring map is determined by its action on constants and X.
 // Stating this with the raw ring operations avoids imposing field hypotheses.

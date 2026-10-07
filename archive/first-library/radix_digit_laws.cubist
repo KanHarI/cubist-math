@@ -1,6 +1,7 @@
 import nat;
 import radix_naturals;
 import paths;
+use nat;
 
 // Increment either produces the next digit or certifies that the old digit
 // was the maximum. This is constructive, with no decidability axiom.

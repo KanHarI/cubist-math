@@ -1,6 +1,7 @@
 import nat;
 import hlevels;
 import h1_truncation;
+use nat;
 
 // The algebraic hierarchy as theories (L2.4): semigroups, monoids, groups,
 // their commutative kinds, commutative rings and fields, each a theory of

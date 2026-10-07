@@ -2,6 +2,7 @@ import nat;
 
 import finite_fields;
 import galois_paths;
+use nat;
 
 // The extension F4/F2, with its concrete inclusion and Frobenius symmetry.
 def f2_into_f4(x : F2Carrier) := f2_induction((fun (x : F2Carrier) => F4Carrier), f4_0, f4_1, x);

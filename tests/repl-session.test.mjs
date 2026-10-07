@@ -29,6 +29,8 @@ test("statements end at ; outside brackets, and a block declaration at its brace
 test("let binds, typeof shows the type, and evaluate the value", async t => {
   const repl = await session(t);
   assert.deepEqual(texts(await repl.run("import nat;")), ["info: Imported nat."]);
+  // A use selects for every entry after it, as at a file's top level.
+  assert.deepEqual(texts(await repl.run("use nat;")), ["info: Selected nat."]);
   assert.deepEqual(texts(await repl.run("let x := 7;")), ["defined: x : Nat"]);
   assert.deepEqual(texts(await repl.run("typeof x;")), ["type: Nat"]);
   assert.deepEqual(texts(await repl.run("evaluate x;")), ["value: 7"]);
@@ -44,6 +46,9 @@ test("let binds, typeof shows the type, and evaluate the value", async t => {
 test("imports, declarations with blocks, and errors that leave the session unchanged", async t => {
   const repl = await session(t);
   assert.deepEqual(texts(await repl.run("import nat;")), ["info: Imported nat."]);
+  // A use that selects nothing is refused, and changes nothing.
+  assert.deepEqual(texts(await repl.run("use nowhere;")), ["error: E343: Untranslated name: nowhere"]);
+  assert.deepEqual(texts(await repl.run("use nat;")), ["info: Selected nat."]);
   assert.deepEqual(texts(await repl.run("evaluate 2 + 3 * 4;")), ["value: 14"]);
   assert.deepEqual(texts(await repl.run("def four_is_four : 2 + 2 = 4 {\n  exact refl(4);\n}")), ["defined: four_is_four : 2 + 2 = 4"]);
   assert.deepEqual(texts(await repl.run("def wrong : 2 + 2 = 5 {\n  exact refl(4);\n}")),
@@ -56,13 +61,13 @@ test("imports, declarations with blocks, and errors that leave the session uncha
 });
 
 test("a session over a proof sees its names, and rebases onto a rechecked proof", async t => {
-  const repl = await session(t, "import nat;\ndef double(n : Nat) := n + n;\n");
+  const repl = await session(t, "import nat; use nat;\ndef double(n : Nat) := n + n;\n");
   assert.deepEqual(texts(await repl.run("evaluate double(21);")), ["value: 42"]);
   assert.deepEqual(texts(await repl.run("let y := double(2);")), ["defined: y : Nat"]);
   assert.equal(repl.program.main, "proof", "the program still presents the proof");
   const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false });
   t.after(() => program.dispose());
-  await program.check("import nat;\ndef double(n : Nat) := n + n + n;\n", "proof");
+  await program.check("import nat; use nat;\ndef double(n : Nat) := n + n + n;\n", "proof");
   const rebased = await repl.rebase(program);
   assert.deepEqual(texts(await rebased.run("evaluate y")), ["value: 6"]);
 });

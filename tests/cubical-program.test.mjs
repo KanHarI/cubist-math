@@ -56,7 +56,7 @@ test("module shadowing cannot retarget earlier checked native definitions", asyn
 
 test("unsupported foundations and invalid proofs remain explicitly unverified", async t => {
   const program = new CubicalProgram(module, async () => { throw new Error("Source unavailable"); }); t.after(() => program.dispose());
-  const result = await program.check("import nat; import missing; def wrong : 0 = 1 { exact refl(0); } def dependent := wrong; def fine := 0;", "example");
+  const result = await program.check("import nat; import missing; use nat; def wrong : 0 = 1 { exact refl(0); } def dependent := wrong; def fine := 0;", "example");
   assert.equal(result.complete, false);
   assert.deepEqual(result.outputs.map(d => d.verified), [false, false, true]);
   assert.ok(result.gaps.some(g => g.module === "missing"));
@@ -251,7 +251,7 @@ test("a declaration that fails after a failed import names the import", async t 
     throw new Error(`Native source is not available for ${name}.`);
   }, { collectReferences: false });
   t.after(() => program.dispose());
-  const result = await program.check("import nat;\nimport lists;\ndef four := append;\ndef five := 5;\ndef six : Nat {\n  exact length;\n}\n", "imports_missing");
+  const result = await program.check("import nat;\nimport lists; use nat;\ndef four := append;\ndef five := 5;\ndef six : Nat {\n  exact length;\n}\n", "imports_missing");
   const reason = name => result.outputs.find(output => output.name === name).reason;
   assert.equal(reason("four"),
     "Untranslated name: append (import lists failed: Native source is not available for lists.)");

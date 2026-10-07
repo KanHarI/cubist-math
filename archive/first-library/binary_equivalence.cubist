@@ -3,6 +3,7 @@ import binary_arithmetic;
 import binary_induction;
 import primes;
 import equivalence_from_inverse;
+use nat;
 
 // Keep evaluation into unary Nat folded. A compact binary input can denote a
 // huge unary result without materializing that result during proof transport.
@@ -86,14 +87,14 @@ def binary_double_succ(n : BinaryNat) :
   exact match n as x return (
     binary_double(binary_succ(x)) = binary_succ(binary_succ(binary_double(x)))
   ) {
-    binary_zero => refl(0b10);
+    binary_zero => refl(binary.(0b10));
     binary_positive(p) => refl(binary_positive(binary_bit0(binary_positive_succ(p))));
   };
 }
 
 def binary_encode_double(n : Nat) : binary_of_nat(n + n) = binary_double(binary_of_nat(n)) {
   exact induction n as k return (binary_of_nat(k + k) = binary_double(binary_of_nat(k))) {
-    zero => refl(0b0);
+    zero => refl(binary.(0b0));
     succ previous => trans(
       cong((fun (v : Nat) => binary_of_nat(succ(v))), nat_add_succ(k, k)),
       trans(

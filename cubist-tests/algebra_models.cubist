@@ -3,6 +3,7 @@
 // one to the multiplicative one, which computes.
 import nat;
 import algebra;
+use nat;
 
 computable def two_to(n : Nat) : Nat := match n {
     zero => 1;

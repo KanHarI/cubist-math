@@ -1,5 +1,6 @@
 import nat;
 import subdivision_transport;
+use nat;
 
 // Join the per-edge refinements of two coarse sample lists. The endpoint of
 // each left head piece is transported along the checked join endpoint path.

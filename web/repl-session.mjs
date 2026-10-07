@@ -4,6 +4,8 @@
 // entry sees what came before. Declarations and imports that check extend
 // the session; `typeof` and `evaluate` check a scratch module and leave the
 // session as it was. Every result is checked by the kernel like a file.
+// A `use` selects for every entry after it, as at a file's top level, and an
+// entry reads in the selections its base file ends with (L2.10j).
 import { withCode } from "./diagnostics.mjs";
 
 export const replHelp = [
@@ -13,6 +15,7 @@ export const replHelp = [
   "TERM;                 a term alone is evaluated",
   "print(inspect(TERM)); the term the kernel checks, in kernel notation",
   "import MODULE;        load a module, such as nat",
+  "use NAME;             read operators and numerals in a notation, such as nat, from here on",
   "/modules [TEXT]       the modules import can load, or those whose names contain TEXT",
   "/clear                clear the log",
   "/restart              start a new session: forget every name defined here",
@@ -74,6 +77,8 @@ export class ReplSession {
     this.modules = modules;
     this.previous = base;
     this.count = 0;
+    // What the entries read in: the base file's selections, then each use's.
+    this.uses = base ? program.selectionsAfter?.(base) ?? [] : [];
     // Statements that extended the session, replayed by rebase.
     this.accepted = [];
   }
@@ -106,6 +111,7 @@ export class ReplSession {
     if (/^\//.test(source)) return [{ kind: "error", text: withCode(`Unknown command ${source.split(/\s/)[0]}. /help lists the commands.`) }];
     if ((match = /^typeof\s+([\s\S]+)$/.exec(source))) return this.typeOf(match[1]);
     if ((match = /^import\s+([A-Za-z_][A-Za-z_0-9]*)$/.exec(source))) return this.import(match[1], text);
+    if ((match = /^use\s+([\s\S]+)$/.exec(source))) return this.use(match[1], text);
     if (/^evaluate\s/.test(source) && !/\bexpecting\b/.test(source)) return this.evaluate(source.replace(/^evaluate\s+/, ""));
     if (/^let\s/.test(source)) return this.declare(`def${source.slice(3)};`, text);
     if (/^print\s*\(/.test(source)) return this.declare(`${source};`, text);
@@ -127,15 +133,19 @@ export class ReplSession {
     return [{ kind: "info", text: `${lines.join("\n")}\nLoad one with import NAME;` }];
   }
 
-  async entry(body) {
-    const name = `repl_${++this.count}`, header = this.previous ? `import ${this.previous};\n` : "";
-    try { return { name, ...await this.program.checkEntry(header + body, name) }; }
+  async entry(body, { selected = true } = {}) {
+    // One header line, so an entry's own lines keep their numbers. An import
+    // reads no terms, and comes before any use.
+    const name = `repl_${++this.count}`;
+    const header = [...this.previous ? [`import ${this.previous};`] : [], ...selected ? this.uses.map(use => `use ${use};`) : []];
+    const source = (header.length ? `${header.join(" ")}\n` : "") + body;
+    try { return { name, ...await this.program.checkEntry(source, name) }; }
     catch (error) { return { name, error: error.message }; }
   }
 
   typeText(info) {
     const view = this.program.checker.definitionViews?.get(info.binding);
-    return view ? this.program.checker.displayText(view.type, 4000) : info.type;
+    return view ? this.program.checker.displayText(view.type, 4000, 4000, { selection: this.uses.at(-1) ?? null }) : info.type;
   }
 
   // Failures of an entry: its declarations, directives, and modules it loaded.
@@ -168,11 +178,19 @@ export class ReplSession {
   }
 
   async import(name, text) {
-    const result = await this.entry(`import ${name};`), failures = this.failures(result);
+    const result = await this.entry(`import ${name};`, { selected: false }), failures = this.failures(result);
     if (failures.length || !this.program.modules.has(name)) return failures.length ? failures
       : [{ kind: "error", text: withCode(`Module ${name} was not loaded.`) }];
     this.advance(result, text);
     return [{ kind: "info", text: `Imported ${name}.` }];
+  }
+
+  async use(model, text) {
+    const result = await this.entry(`use ${model};`), failures = this.failures(result);
+    if (failures.length) return failures;
+    this.advance(result, text);
+    this.uses.push(model);
+    return [{ kind: "info", text: `Selected ${model}.` }];
   }
 
   async typeOf(term) {

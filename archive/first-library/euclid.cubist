@@ -1,5 +1,6 @@
 import nat;
 import primes;
+use nat;
 
 def InfinitelyManyPrimes := forall n : Nat. exists p : Nat. Prime(p) and n < p;
 

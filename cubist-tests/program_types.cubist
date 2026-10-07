@@ -5,6 +5,7 @@
 // checks.
 import nat;
 import w;
+use nat;
 
 // Imported Nat has generic constructors, literals and elimination.
 def two : Nat := 2;

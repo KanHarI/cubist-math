@@ -2,6 +2,7 @@
 // rule changes conditional premise search.
 
 import primes;
+use nat;
 
 def freeze_case(
   f, g, k : Nat -> Nat, a, b, t : Nat, c : forall n : Nat. g(n) = n -> f(n) = k(n),

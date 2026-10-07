@@ -75,15 +75,15 @@ test("a search out of fuel stops the same way in every session, with the fuel it
 });
 
 test("a declaration's fuel bounds every kernel question it asks, its searches' included", async t => {
-  const outputs = await check(t, "import nat;\ndef reflexive(n : Nat) : n = n {\n  rfl;\n}\n", { declarationFuel: { queries: 1 } });
+  const outputs = await check(t, "import nat; use nat;\ndef reflexive(n : Nat) : n = n {\n  rfl;\n}\n", { declarationFuel: { queries: 1 } });
   assert.equal(outputs.reflexive.failure, "fuel");
   assert.match(outputs.reflexive.reason, /^The declaration's elaboration ran out of search fuel: 1 kernel queries\./);
-  const roomy = await check(t, "import nat;\ndef reflexive(n : Nat) : n = n {\n  rfl;\n}\n");
+  const roomy = await check(t, "import nat; use nat;\ndef reflexive(n : Nat) : n = n {\n  rfl;\n}\n");
   assert.equal(roomy.reflexive.status, "checked-native-cubical");
 });
 
 test("fuel, the kernel's steps and the time limit are three kinds of failure", async t => {
-  const source = "import nat;\n\ndef twice(n : Nat) : (n + 0) + 0 = n {\n  simp only [nat_add_zero];\n}\n";
+  const source = "import nat; use nat;\n\ndef twice(n : Nat) : (n + 0) + 0 = n {\n  simp only [nat_add_zero];\n}\n";
   const fuel = await check(t, source, { searchFuel: { ...SEARCH_FUEL, queries: 1 } });
   assert.equal(fuel.twice.failure, "fuel");
   // The kernel's own budget per operation: every instruction of this
@@ -141,12 +141,12 @@ test("the CLI reports the same residual goals as the checker the browser runs", 
 test("a declaration's closing check and admission, and an evaluation, are on fuel", async t => {
   const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
   t.after(() => program.dispose());
-  const result = await program.check("import nat;\ndef x := 0;\nevaluate x expecting 0;\n", "fuel_example");
+  const result = await program.check("import nat; use nat;\ndef x := 0;\nevaluate x expecting 0;\n", "fuel_example");
   assert.ok(result.outputs[0].searchFuel.queries >= 2, JSON.stringify(result.outputs[0].searchFuel));
   const evaluation = result.directiveFuel.find(directive => directive.kind === "evaluate");
   assert.ok(evaluation.searchFuel.queries >= 2, JSON.stringify(evaluation));
   // A declaration whose fuel cannot cover its admission fails as fuel.
-  const tight = await check(t, "import nat;\ndef x := 0;\n", { declarationFuel: { queries: 1 } });
+  const tight = await check(t, "import nat; use nat;\ndef x := 0;\n", { declarationFuel: { queries: 1 } });
   assert.equal(tight.x.failure, "fuel");
 });
 
@@ -163,7 +163,7 @@ test("a search's own questions and rewrites are on its fuel", async t => {
 test("registering simplification rules is a search, recorded on its directive", async t => {
   const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
   t.after(() => program.dispose());
-  const result = await program.check("import nat;\n\nsimp_rule nat_add_zero priority 10;\nsimp_set units := [nat_add_zero, nat_add_succ];\n", "fuel_example");
+  const result = await program.check("import nat; use nat;\n\nsimp_rule nat_add_zero priority 10;\nsimp_set units := [nat_add_zero, nat_add_succ];\n", "fuel_example");
   const rule = result.directiveFuel.find(directive => directive.kind === "simp_rule");
   const set = result.directiveFuel.find(directive => directive.kind === "simp_set");
   assert.equal(rule.searchFuel.searches, 1);
@@ -175,7 +175,7 @@ test("registering simplification rules is a search, recorded on its directive", 
 });
 
 test("simpa out of fuel names the phase that stopped, where it stopped, and how far the supplied type got", async t => {
-  const source = `import nat;
+  const source = `import nat; use nat;
 
 def stopped(n, m : Nat, h : n + 0 = m) : m + 0 = n {
   simpa only [nat_add_zero] using h;
@@ -189,7 +189,7 @@ def stopped(n, m : Nat, h : n + 0 = m) : m + 0 = n {
   // introduced as add is named apart from the add that + prints in the
   // goal, and so in the supplied type too, where neither it nor the context
   // prints an add of its own.
-  const named = await check(t, `import nat;
+  const named = await check(t, `import nat; use nat;
 
 def stopped : forall n : Nat. forall m : Nat. n = m -> m + 0 = n {
   intro add;
@@ -209,7 +209,7 @@ def stopped : forall n : Nat. forall m : Nat. n = m -> m + 0 = n {
 test("a freeze suggestion's replay spends fuel of its own", async t => {
   // Not `only`, with a selected rule the proof does not use: the inspector
   // replays the simplification without it before suggesting `simp only`.
-  const source = `import nat;
+  const source = `import nat; use nat;
 
 def frozen(n : Nat) : (n + 0) + 0 = n {
   simp [nat_add_zero, nat_add_succ];
@@ -228,7 +228,7 @@ def frozen(n : Nat) : (n + 0) + 0 = n {
 });
 
 test("preparing the rules is part of the tactic's search: out of fuel, it shows the unchanged goal", async t => {
-  const outputs = await check(t, `import nat;
+  const outputs = await check(t, `import nat; use nat;
 def stopped(n, m : Nat, h : n = m) : n = m {
   simp only [h];
 }

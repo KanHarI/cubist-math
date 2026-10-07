@@ -1,5 +1,6 @@
 import nat;
 import finite;
+use nat;
 
 // Swap the first alternative with a given alternative. These maps will also
 // split a permutation into its first image and a permutation of the remainder.

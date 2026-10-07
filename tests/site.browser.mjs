@@ -56,8 +56,8 @@ try {
     assert.doesNotMatch(await page.locator("#kernel-view-note").textContent(), /unavailable/);
     if (proof === "euclid") {
       // A line number shows the goal at that proof statement and the names in scope.
-      await page.locator('.source-line[data-line="9"] .line-number').click();
-      assert.equal(await page.locator("#inspect-name").textContent(), "Goal at line 9");
+      await page.locator('.source-line[data-line="10"] .line-number').click();
+      assert.equal(await page.locator("#inspect-name").textContent(), "Goal at line 10");
       assert.match(await page.locator("#inspect-type").textContent(), /exists p : Nat\. Prime\(p\) and n < p/);
       assert.match(await page.locator("#locals").textContent(), /n\s*Nat/);
     }
@@ -75,7 +75,7 @@ try {
   assert.equal((await inspector.locator("#kernel-type").textContent()).trim(), "Nat");
   await page.locator("#tour-numbers").scrollIntoViewIfNeeded();
   await page.waitForSelector("#tour-numbers .example-token");
-  assert.match(await page.locator("#tour-numbers .example-bar span").first().textContent(), /evaluate at line 7: 6/);
+  assert.match(await page.locator("#tour-numbers .example-bar span").first().textContent(), /evaluate at line 8: 6/);
   // An imported module's name opens the module in the workspace.
   const moduleLink = page.locator("#tour-numbers a.example-module").first();
   assert.equal(await moduleLink.textContent(), "nat");
@@ -144,7 +144,7 @@ try {
   assert.deepEqual(await lastResults(3), ["forall x : Nat. forall y : Nat. x + y = y + x", "y : Nat", "5"]);
   console.log("PASS library module in the workspace, with its console");
   await page.goto(new URL("repl.html", base).href);
-  for (const text of ["import nat;", "let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);
+  for (const text of ["import nat;", "use nat;", "let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);
   assert.deepEqual(await lastResults(4), ["x : Nat", "Nat", "7", "E606: Type mismatch: found 7 = 7, expected x = 8."]);
   console.log("PASS REPL page: let, typeof, evaluate, rejected entries");
   // Slash commands: /modules lists what import can load; /clear and /restart

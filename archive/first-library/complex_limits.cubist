@@ -1,6 +1,7 @@
 import nat;
 import complex_convergence;
 import field_limits;
+use nat;
 
 def complex_converges_coordinates(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : Nat -> Complex(F),

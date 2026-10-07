@@ -33,17 +33,24 @@ test("types print as they are written, with only the parentheses the parser need
   assert.equal(sourceText(pi("_", pi("n", nat, equal(variable("n"), variable("n"))), unit)), "(forall n : Nat. n = n) -> Unit");
 });
 
+// Where nat's notation is selected, as after use nat;.
+const natText = term => sourceText(term, {}, 4000, { selection: "nat" });
+
 test("values and arithmetic print in source syntax", () => {
-  assert.equal(sourceText(equal(add(number(2), number(2)), number(5))), "2 + 2 = 5");
-  assert.equal(sourceText(add(add(number(1), number(2)), number(3))), "1 + 2 + 3");
-  assert.equal(sourceText(add(number(1), add(number(2), number(3)))), "1 + (2 + 3)");
-  assert.equal(sourceText(app({ tag: "DefRef", name: "nat__mul" }, add(number(1), number(2)), number(3))), "(1 + 2) * 3");
-  assert.equal(sourceText(app({ tag: "DefRef", name: "nat__isLt" }, variable("n"), succ(variable("n")))), "n < succ(n)");
-  assert.equal(sourceText({ tag: "Pair", first: number(3), second: { tag: "Pair", first: { tag: "Point" }, second: number(1) } }), "(3, tt, 1)");
+  assert.equal(natText(equal(add(number(2), number(2)), number(5))), "2 + 2 = 5");
+  assert.equal(natText(add(add(number(1), number(2)), number(3))), "1 + 2 + 3");
+  assert.equal(natText(add(number(1), add(number(2), number(3)))), "1 + (2 + 3)");
+  assert.equal(natText(app({ tag: "DefRef", name: "nat__mul" }, add(number(1), number(2)), number(3))), "(1 + 2) * 3");
+  assert.equal(natText(app({ tag: "DefRef", name: "nat__isLt" }, variable("n"), succ(variable("n")))), "n < succ(n)");
+  assert.equal(natText({ tag: "Pair", first: number(3), second: { tag: "Pair", first: { tag: "Point" }, second: number(1) } }), "(3, tt, 1)");
   assert.equal(sourceText({ tag: "Inl", as: sum(unit, nat), value: { tag: "Point" } }), "left(tt)");
-  assert.equal(sourceText({ tag: "Lam", name: "m", domain: nat, body: { tag: "Lam", name: "n", domain: nat,
+  assert.equal(natText({ tag: "Lam", name: "m", domain: nat, body: { tag: "Lam", name: "n", domain: nat,
     body: { tag: "Lam", name: "p", domain: unit, body: add(variable("m"), variable("n")) } } }), "fun (m, n : Nat, p : Unit) => m + n");
-  assert.equal(sourceText(app({ tag: "Lam", name: "x", domain: nat, body: variable("x") }, number(1))), "(fun (x : Nat) => x)(1)");
+  assert.equal(natText(app({ tag: "Lam", name: "x", domain: nat, body: variable("x") }, number(1))), "(fun (x : Nat) => x)(1)");
+  // Where nothing is selected, nat's operations and numerals are qualified,
+  // so the text reads back (L2.10j).
+  assert.equal(sourceText(equal(add(number(2), number(2)), number(5))), "nat.(2 + 2) = nat.(5)");
+  assert.equal(sourceText(add(variable("m"), variable("n"))), "nat.(m + n)");
 });
 
 // Messages, evaluations and prints in source syntax are
@@ -72,8 +79,13 @@ test("binary numbers print as binary literals", () => {
   const zero = constructor("BinaryNat", 0, "binary_zero"), positive = p => ({ tag: "App", fn: constructor("BinaryNat", 1, "binary_positive"), arg: p });
   const one = constructor("BinaryPositive", 0, "binary_one");
   const bit = (digit, p) => ({ tag: "App", fn: constructor("BinaryPositive", digit ? 2 : 1, `binary_bit${digit}`), arg: p });
-  assert.equal(sourceText(zero), "0b0");
-  assert.equal(sourceText(positive(bit(0, bit(1, one)))), "0b110");
+  // Where binary's notation is selected they print as written, and
+  // elsewhere qualified (L2.10j).
+  const binaryText = term => sourceText(term, {}, 4000, { selection: "binary" });
+  assert.equal(binaryText(zero), "0b0");
+  assert.equal(binaryText(positive(bit(0, bit(1, one)))), "0b110");
+  assert.equal(sourceText(positive(bit(0, bit(1, one)))), "binary.(0b110)");
+  assert.equal(sourceText(zero, {}, 4000, { selection: "nat" }), "binary.(0b0)");
   // Anything else in the same type prints as it is built.
   assert.match(sourceText(positive(variable("p"))), /^binary_positive\(p\)$/);
   assert.match(sourceText(positive(bit(1, variable("p")))), /^binary_positive\(binary_bit1\(p\)\)$/);
@@ -97,7 +109,7 @@ test("recursion and case analysis print as induction and match", () => {
   assert.equal(sourceText(cases), "match v return U0 { left a => Nat; right b => Unit; }");
   const dependentCases = { ...cases, motive: { ...cases.motive, body: equal(variable("z"), variable("z")) } };
   assert.match(sourceText(dependentCases), /^match v as z return z = z \{ left a => /);
-  assert.equal(sourceText(add(induction(recursion), number(1))), "(induction m return Nat { zero => n; succ h => succ(h); }) + 1");
+  assert.equal(natText(add(induction(recursion), number(1))), "(induction m return Nat { zero => n; succ h => succ(h); }) + 1");
 });
 
 test("messages name unnamed dimensions once, keep sharing, and avoid the names they show", async () => {

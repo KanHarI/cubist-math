@@ -2,6 +2,7 @@
 // and cubical carrier transport without choice: each case is computable.
 import linear_span;
 import finite_fields;
+use nat;
 computable def f2_basis : FiniteBasis(F2, ScalarSpace(F2), 1) {
   exact scalar_space_basis(F2);
 }

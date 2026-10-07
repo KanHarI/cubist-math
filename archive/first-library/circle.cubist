@@ -3,6 +3,7 @@ import nat;
 import suspension;
 import signed_integers;
 import groups;
+use nat;
 
 // The cover has fiber Z at both poles. Crossing upper applies successor;
 // crossing lower leaves the integer unchanged. Univalence uses the

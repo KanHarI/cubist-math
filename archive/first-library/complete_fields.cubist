@@ -1,6 +1,7 @@
 import nat;
 
 import ordered_fields;
+use nat;
 
 // Natural indices are separate from the field's ordered carrier.
 def IndexLE(n : Nat) := induction n as k return (Nat -> U0) {

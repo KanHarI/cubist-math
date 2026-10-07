@@ -2,6 +2,7 @@
 // universe only where it is a bare variable.
 
 import primes;
+use nat;
 
 def Id(U < UU0, A : U) := A;
 

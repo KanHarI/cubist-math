@@ -1,5 +1,6 @@
 import nat;
 import artin_degree;
+use nat;
 
 def embedding_evaluation_add_at(F : AlgebraicField, map : FieldEmbedding(F, F), x, y : af_carrier(F)) :
   field_embedding_map(F, F, map, field_add(F, x, y)) = field_add(

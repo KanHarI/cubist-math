@@ -48,5 +48,6 @@ test("a variable reads alike on both sides of a mismatch", async t => {
   let message = null;
   try { program.checker.checkView(T.variable("p"), T.path("i", naturalSort, add1, add1), context); }
   catch (error) { message = error.message; }
-  assert.match(message ?? "", /^Type mismatch: found add1 \+ 1 = add1, expected add1 = add1\.$/);
+  // Nothing is selected here, so nat's addition is qualified (L2.10j).
+  assert.match(message ?? "", /^Type mismatch: found nat\.\(add1 \+ 1\) = add1, expected add1 = add1\.$/);
 });

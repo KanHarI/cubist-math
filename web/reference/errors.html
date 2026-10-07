@@ -98,7 +98,6 @@
                 <tr id="E120"><td class="code"><code>E120</code></td><td data-message="A pair has only the projections .1 and .2.">“A pair has only the projections .1 and .2. …”</td><td>A projection is <code>.1</code> or <code>.2</code>. A tuple nests pairs to the right, so the third component of <code>(a, b, c)</code> is <code>.2.2</code>.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
                 <tr id="E131"><td class="code"><code>E131</code></td><td data-message="A pair pattern needs at least two components.">“A pair pattern needs at least two components.”</td><td>Write <code>obtain (a, b) := pair;</code>, or name the whole value with <code>let</code>.</td><td><a href="proof-blocks.html#obtain">obtain</a></td></tr>
                 <tr id="E122"><td class="code"><code>E122</code></td><td data-message="Numerals are limited to 256 in this version.">“Numerals are limited to 256 in this version.”</td><td>Build larger numbers with arithmetic, or use binary literals.</td><td><a href="terms.html#numbers">numbers</a>, <a href="checking.html#limits">limits</a></td></tr>
-                <tr id="E121"><td class="code"><code>E121</code></td><td data-message="Binary literals are limited to 256 significant bits.">“Binary literals are limited to 256 significant bits.”</td><td>A resource limit of the parser.</td><td><a href="checking.html#limits">limits</a></td></tr>
                 <tr id="E144"><td class="code"><code>E144</code></td><td data-message="simp only requires an explicit rule list.">“simp only requires an explicit rule list.”</td><td>Write <code>simp only [rules];</code>, or plain <code>simp;</code> for the default rules.</td><td><a href="rewriting.html#simp">simplification</a></td></tr>
                 <tr id="E145"><td class="code"><code>E145</code></td><td data-message="simp only cannot exclude rules.">“simp only cannot exclude rules.”</td><td><code>without</code> removes default rules; <code>simp only</code> has none. Leave the rule out of the list instead.</td><td><a href="rewriting.html#simp-registration">rule selection</a></td></tr>
                 <tr id="E149"><td class="code"><code>E149</code></td><td data-message="simp_rule priority must be an integer from 0 to 1000.">“simp_rule priority must be an integer from 0 to 1000.”</td><td>Give a priority in range.</td><td><a href="rewriting.html#simp-registration">registration</a></td></tr>
@@ -135,6 +134,7 @@
                 <tr id="E351"><td class="code"><code>E351</code></td><td data-message="Expected a Sigma type for pair.">“Expected a Sigma type for pair.”</td><td>A pair is checked against a type that is not a pair type, or a tuple does not match the nesting of its type.</td><td><a href="terms.html#tuples">tuples</a></td></tr>
                 <tr id="E349"><td class="code"><code>E349</code></td><td data-message="requires a dependent pair; found a value of type">“Projection <var>.1</var> requires a dependent pair; found a value of type <var>T</var>.”</td><td>Only a pair has projections. The message shows the type of the projected value.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
                 <tr id="E356"><td class="code"><code>E356</code></td><td data-message="unpack requires a dependent pair.">“unpack requires a dependent pair.”</td><td>Only pairs can be unpacked.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
+                <tr id="E912"><td class="code"><code>E912</code></td><td data-message="for natural numbers, use nat; or write nat.(x">“x + y means what a selected notation binds + to: for natural numbers, use nat; or write nat.(x + y).”</td><td>An operator means only what the selected notation binds, and nothing is selected here: a function named <code>add</code> in scope gives <code>+</code> no meaning. After <code>import nat;</code>, write <code>use nat;</code> at the top of the file, or <code>nat.(2 + 3)</code> for one expression. <code>-</code>, <code>/</code> and <code>^</code> name the integers instead (E399).</td><td><a href="terms.html#numbers">numbers</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -341,7 +341,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E118"><td><code>E118</code></td><td>Expanded tuple nesting exceeds 128.</td></tr>
                 <tr id="E119"><td><code>E119</code></td><td>Expression nesting exceeds 128.</td></tr>
                 <tr><td><a href="#E120"><code>E120</code></a></td><td>A pair has only the projections .1 and .2. A tuple nests pairs to the right: the third component of (a, b, c) is .2.2.</td></tr>
-                <tr><td><a href="#E121"><code>E121</code></a></td><td>Binary literals are limited to 256 significant bits.</td></tr>
+                <tr id="E121"><td><code>E121</code></td><td>Binary literals are limited to 256 significant bits.</td></tr>
                 <tr><td><a href="#E122"><code>E122</code></a></td><td>Numerals are limited to 256 in this version.</td></tr>
                 <tr><td><a href="#E123"><code>E123</code></a></td><td>Expected an expression, found '…'.</td></tr>
                 <tr id="E124"><td><code>E124</code></td><td>Give the motive after as: match v as z return T { … }.</td></tr>
@@ -872,6 +872,10 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E906"><td><code>E906</code></td><td>…'s literal rule does not evaluate … to an answer; it gives ….</td></tr>
                 <tr id="E907"><td><code>E907</code></td><td>…'s notation reads no numeral …: write nat.(…) for a natural number, or select a notation that reads it.</td></tr>
                 <tr id="E908"><td><code>E908</code></td><td>…'s notation reads no literal …: select a notation whose literal rule reads it, as rationals.(…).</td></tr>
+                <tr id="E909"><td><code>E909</code></td><td>… is a binary literal, which a selected notation's literal rule reads, as the archive's binary.(…).</td></tr>
+                <tr id="E910"><td><code>E910</code></td><td>…'s notation reads no binary literal …: select one whose literal rule reads it, as the archive's binary.(…).</td></tr>
+                <tr id="E911"><td><code>E911</code></td><td>… means the natural number in a selected notation that reads it: use nat; or write nat.(…).</td></tr>
+                <tr><td><a href="#E912"><code>E912</code></a></td><td>x … y means what a selected notation binds … to: for natural numbers, use nat; or write nat.(x … y).</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-k1">Kernel: declared types</h3>

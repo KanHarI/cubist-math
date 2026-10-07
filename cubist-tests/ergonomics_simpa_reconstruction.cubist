@@ -2,6 +2,7 @@
 // equality and rejects a false supplied term.
 
 import primes;
+use nat;
 
 computable def good(n : Nat) : n + 0 = n {
   simpa only [nat_add_zero] using refl(n);

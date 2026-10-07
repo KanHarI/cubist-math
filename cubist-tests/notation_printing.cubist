@@ -10,6 +10,7 @@ import lexemes;
 import algebra;
 import integers;
 import rationals;
+use nat;
 
 notation times {
   x + y := mul(x, y);

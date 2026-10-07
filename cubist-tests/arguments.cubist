@@ -5,6 +5,7 @@
 // checked, with every hole's solution in its place.
 import univalence;
 import hlevels;
+use nat;
 
 def same(U < UU0, A : U, a : A) : A := a;
 

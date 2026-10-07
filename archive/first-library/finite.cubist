@@ -2,6 +2,7 @@ import nat;
 
 import equivalences;
 import hlevels;
+use nat;
 
 // The natural-number-to-type bridge: n distinct alternatives, built from sums.
 // Fin(0) = Void; Fin(n+1) = Unit or Fin(n).

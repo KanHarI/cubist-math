@@ -93,7 +93,8 @@ test("recursion whose other arguments vary: an abandoned attempt spends nothing"
   assert.ok(spent("once")[0] > spent("plain")[0] && spent("once")[1] === spent("plain")[1]);
 });
 
-// An operator that stands for the declaration calls it as its name does:
+// An operator means only what a selected notation binds, so a notation of
+// the module's own gives + to the declaration:
 // cubist-tests/declared_match_operator_call.cubist.
 
 // A clause's goal shows a generalized parameter under its own name, without

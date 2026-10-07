@@ -3,6 +3,7 @@ import finite_family_images;
 import vector_subspaces;
 import root_generated_fields;
 import extension_degree;
+use nat;
 
 // A linear map on finite coordinates lands in a subspace as soon as all of
 // its coordinate-unit images do. This avoids choosing coefficients anew.

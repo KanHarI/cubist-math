@@ -2,6 +2,7 @@ import nat;
 import finite_cancellation;
 import bijection_equality;
 import function_counting;
+use nat;
 
 // Bijection records on sets have unique inverse data, so this counts
 // permutations themselves, without extra multiplicity from proof witnesses.

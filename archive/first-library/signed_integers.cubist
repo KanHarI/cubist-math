@@ -1,6 +1,7 @@
 import nat;
 import paths;
 import hlevels;
+use nat;
 
 // left(n) represents n; right(n) represents -(n+1). There is one zero.
 def Z := Nat or Nat;

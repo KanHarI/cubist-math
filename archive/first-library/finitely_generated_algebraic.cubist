@@ -1,6 +1,7 @@
 import nat;
 import finite_embedding_extensions;
 import polynomial_residue_basis;
+use nat;
 
 // Finite generation plus algebraicity implies finite vector-space dimension.
 // The finite bound is built by adjoining the supplied generators successively.

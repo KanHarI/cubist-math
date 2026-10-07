@@ -258,7 +258,7 @@ try {
   const key = params.get("transfer");
   const payload = key ? await readWorkbenchTransfer(key) : {
     format: "thth-cubical", version: 1, main: "workbench", sources: {},
-    source: "import nat; def identity(n : Nat) := n; def example := identity(2);",
+    source: "import nat; use nat; def identity(n : Nat) := n; def example := identity(2);",
     binding: "workbench__example", side: "expression",
   };
   if (payload.format !== "thth-cubical" || payload.version !== 1) throw new Error("Unsupported cubical transfer format.");

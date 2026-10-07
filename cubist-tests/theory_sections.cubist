@@ -4,6 +4,7 @@
 // applied to the section's parameters already.
 import nat;
 import hlevels;
+use nat;
 
 theory Monoid(U < UU0) {
   M : set U;

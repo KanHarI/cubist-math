@@ -87,8 +87,9 @@ export function elaboration(program, module) {
     const steps = program.steps(module, info.name).map(step => ({ ...step, text: source.slice(step.start, step.end) }));
     try {
       const view = program.inspect(info.binding), checker = program.checker, dimensions = new Map(view.dimensions ?? []);
+      const notation = { selection: program.selectionOf(module, info.name) };
       return { ...result, steps,
-        type: checker.displayText(view.type, 600), term: checker.displayText(view.expression, 600),
+        type: checker.displayText(view.type, 600, 4000, notation), term: checker.displayText(view.expression, 600, 4000, notation),
         derivation: derivation(program, view) };
     } catch (error) {
       return { ...result, steps, reason: error.message };

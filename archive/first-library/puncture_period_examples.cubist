@@ -1,6 +1,7 @@
 import nat;
 import puncture_periods;
 import puncture_noncommutative;
+use nat;
 
 // The noncontractible commutator is invisible to every additive period.
 // This does NOT identify paths having the same winding vector.

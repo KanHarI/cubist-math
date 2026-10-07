@@ -1,5 +1,6 @@
 import nat;
 import contour_refinement;
+use nat;
 
 // Explicit two-edge sampling data, not a replacement for homotopy paths.
 def backtrack_vertices(F : U1, a, b : F) : SampleVertices(F, 2) {

@@ -5,6 +5,7 @@
 // evidence.
 import hlevels;
 import quotients;
+use nat;
 
 // E4: a quotient's dependent eliminator generates its set squash; the motive
 // is a family of sets, here the paths of the quotient, not just a constant

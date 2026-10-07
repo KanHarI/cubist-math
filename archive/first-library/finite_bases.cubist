@@ -2,6 +2,7 @@ import nat;
 import field_vector_spaces;
 import linear_maps;
 import quotient_sets;
+use nat;
 
 // Functions to an additive group form an additive group pointwise. This
 // construction needs no enumeration, decidability, or choice of the index set.

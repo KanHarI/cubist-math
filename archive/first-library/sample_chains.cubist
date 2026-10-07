@@ -1,6 +1,7 @@
 import nat;
 import field_logic;
 import primes;
+use nat;
 
 // Finite quadrature DATA: n edges, n+1 sampled vertices, and n tags.
 // These are not definitions of geometric curves or of homotopy paths.

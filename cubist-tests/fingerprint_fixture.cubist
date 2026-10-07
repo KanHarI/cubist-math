@@ -4,6 +4,7 @@
 // the fingerprints tell.
 
 import nat;
+use nat;
 
 def two : succ(1) = 2 {
   rfl;

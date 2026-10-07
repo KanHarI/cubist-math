@@ -76,5 +76,6 @@ ${cases.map(({ source }) => `print(evaluate(${source}));`).join("\n")}
   const result = await program.check(source, "arithmetic");
   assert.deepEqual(result.gaps ?? [], []);
   assert.equal(result.prints.length, cases.length);
-  result.prints.forEach((print, k) => assert.equal(print.text, String(cases[k].value), cases[k].source));
+  // A natural number prints as nat.(n) where nothing is selected (L2.10j).
+  result.prints.forEach((print, k) => assert.equal(print.text.replace(/^nat\.\((\d+)\)$/, "$1"), String(cases[k].value), cases[k].source));
 });

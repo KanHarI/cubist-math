@@ -1,5 +1,6 @@
 import nat;
 import polynomial_evaluation;
+use nat;
 
 // The Horner equations characterize evaluation. This abstract lemma is also
 // useful when comparing maps into two different representations of a field.

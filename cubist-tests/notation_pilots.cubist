@@ -6,6 +6,7 @@ import hlevels;
 import algebra;
 import integers;
 import rationals;
+use nat;
 
 // The integers, selected for a statement and its proof.
 def add_comm(x, y : Z) : integers.(x + y = y + x) := int_add_comm(x, y);

@@ -3,6 +3,7 @@ import binomial_types;
 import equivalence_from_inverse;
 import finite_cardinalities;
 import classical;
+use nat;
 
 def HasFiniteCardinality(A : U0) := exists n : Nat. HasCardinality(A, n);
 

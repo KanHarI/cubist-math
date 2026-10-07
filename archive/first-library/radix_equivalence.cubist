@@ -1,6 +1,7 @@
 import nat;
 import radix_uniqueness;
 import equivalence_from_inverse;
+use nat;
 
 // Every positive digit tree evaluates to a positive natural number.
 def radix_decode_positive(extra : Nat, p : RadixPositive(extra)) :

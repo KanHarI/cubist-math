@@ -2,6 +2,7 @@
 // leaves the definition and later uses intact.
 
 import nat;
+use nat;
 
 def identity(U < UU0, A : U, x : A) := x;
 

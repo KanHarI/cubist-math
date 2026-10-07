@@ -2,6 +2,7 @@ import nat;
 import artin_evaluation;
 import finite_spanning;
 import spanning_subfamilies;
+use nat;
 
 def coordinate_dot(K : AlgebraicField, n : Nat, coefficients, row : Fin(n) -> af_carrier(K)) :=
   field_sum(K, n, (fun (i : Fin(n)) => field_mul(K, coefficients(i), row(i))));

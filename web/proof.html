@@ -280,6 +280,7 @@
           <p><code>def name(params) := term;</code> infers the type; <code>def name(params) : T := term;</code> states it; <code>def name(params) : T { … }</code> proves <code>T</code> in a block. Use <code>def</code> for constructions and proofs alike.
             <a href="reference/first-proof.html#declarations">A first proof and files →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def four : Nat := 4;
 
@@ -294,6 +295,7 @@ def add_two_to_two : add_two(2) = four {
           <p>Every parameter has a type, and consecutive ones may share it, as in <code>(A, B : U0, x, y : A)</code>. <code>f(a, b)</code> means <code>f(a)(b)</code>, so supplying some arguments gives a function of the rest.
             <a href="reference/first-proof.html#parameters">A first proof and files →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def pick_second(A, B : U0, x, y : A, b : B) := y;
 
@@ -306,6 +308,7 @@ def from_one := pick_second(Nat, Unit, 1);</code></pre>
           <p>Imports come first. Comments start with <code>//</code>; those directly above a declaration become its description in the inspector, and an empty <code>//</code> line separates paragraphs.
             <a href="reference/first-proof.html#files">A first proof and files →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 // Seven, as a sum.
 //
@@ -328,6 +331,7 @@ def add_two := twice(Nat, fun n =&gt; succ(n));</code></pre>
           <p><code>forall x : A. B</code> is a dependent function type (Π): its result type may mention the input. <code>A -&gt; B</code> is the case where it does not.
             <a href="reference/terms.html#dependent-functions">Functions, pairs and sums →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def apply_at_zero(P : Nat -&gt; U0, f : forall n : Nat. P(n)) : P(0) {
   exact f(0);
@@ -360,6 +364,7 @@ def given(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat{{U0, Nat}}(p, q
           <p><code>A and B</code> is a product and <code>exists x : A. B</code> a dependent pair (Σ) with an actual witness. <code>(a, b, c)</code> abbreviates <code>(a, (b, c))</code>; hover the parentheses to see the expansion.
             <a href="reference/terms.html#tuples">Functions, pairs and sums →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def triple : Nat and Unit and Nat {
   exact (1, tt, 2);
@@ -383,6 +388,7 @@ def first_number(pair : Nat and Nat) :=
           <p><code>A or B</code> is a disjoint sum, shown as <code>A + B</code> in kernel notation. <code>left(a)</code> and <code>right(b)</code> inject into it.
             <a href="reference/terms.html#sums">Functions, pairs and sums →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def on_the_left := typed(Unit or Nat, left(tt));
 
@@ -395,6 +401,7 @@ def on_the_right : Unit or Nat {
           <p><code>match value return T { left a =&gt; …; right b =&gt; …; }</code> computes by cases on a sum. With <code>as z</code>, the result type may depend on the value.
             <a href="reference/terms.html#match">Functions, pairs and sums →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def to_number(value : Unit or Nat) := match value return Nat {
   left u =&gt; 0;
@@ -415,9 +422,10 @@ def unit_is_tt(u : Unit) : u = tt {
         </div>
         <div class="quick-entry" id="quick-numbers">
           <h4>Numbers</h4>
-          <p>Decimal literals are unary <code>Nat</code>. With <code>import nat;</code>, <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> compute.
+          <p>Decimal literals are unary <code>Nat</code>. With <code>import nat;</code> and <code>use nat;</code>, numerals, <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> are the naturals' and compute.
             <a href="reference/terms.html#numbers">Functions, pairs and sums →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def two_times_three : 2 * 3 = 6 {
   exact refl(6);
@@ -496,6 +504,7 @@ def witness(t : exists n : Nat. (n = n) and Unit) : Nat {
           <p>Two terms are definitionally equal when they compute to the same normal form: functions apply, definitions unfold, and eliminators compute on constructors. <code>refl</code> and <code>rfl</code> prove exactly these equalities; <code>n + 0 = n</code> for a variable <code>n</code> is not one of them. Older proofs’ <code>with unfolding [name] { expression }</code> is still accepted, and changes nothing.
             <a href="reference/conversion.html#conversion">Computation and conversion →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def double(n : Nat) := n + n;
 
@@ -523,6 +532,7 @@ def every_small_universe : UU0 := U7;</code></pre>
           <p>A parameter <code>U &lt; UU0</code> ranges over the universes below <code>UU0</code>. The definition is checked once, for all of them, and a use such as <code>identity(U0, …)</code> instantiates it.
             <a href="reference/universes.html#universe-variables">Universes →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def identity(U &lt; UU0, A : U, x : A) : A := x;
 
@@ -544,6 +554,7 @@ def both(U, V &lt; UU0, A : U, B : V) : max(U, V) := A and B;</code></pre>
           <p><code>x =[T] y</code> is equality in <code>T</code>, and <code>x = y</code> infers the carrier. <code>refl(x)</code> proves <code>x = x</code>, and any equality whose sides compute to the same value.
             <a href="reference/paths.html#carriers">Equality and paths →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def explicit_carrier(A : U0, x : A) : x =[A] x {
   exact refl(x);
@@ -594,6 +605,7 @@ def functions_into_nat(A : U0) : IsSet(U0, A -> Nat) {
           <p><code>inductive Name(params) : U0 { c; d(x : A, rest : Name(params)); }</code> declares a type by its constructors. A constructor takes only its declared arguments; the type's parameters come from the expected type.
             <a href="reference/induction.html#inductive">Natural numbers and inductive types →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 inductive List(U &lt; UU0, A : U) : U {
   nil;
@@ -607,6 +619,7 @@ def numbers : List(U0, Nat) := cons(2, cons(3, nil));</code></pre>
           <p><code>match n { zero =&gt; …; succ(k) =&gt; …; }</code> gives one branch per constructor. A definition whose body is the match can call itself on a child such as <code>k</code>. In a proof block, <code>match n { zero =&gt; { … } succ(k) =&gt; { … } }</code> proves the goal for each constructor. A match can take apart several values, <code>match m, n { … }</code>, with nested patterns, variables and <code>_</code>; the first clause that fits a case takes it.
             <a href="reference/induction.html#recursion">Natural numbers and inductive types →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def double(n : Nat) : Nat := match n {
   zero =&gt; 0;
@@ -620,6 +633,7 @@ def double_three : double(3) = 6 { rfl; }</code></pre>
           <p><code>induction v [as z] return C { c(xs, hs) =&gt; …; }</code> on any declared type: each clause names the constructor’s arguments, then an induction hypothesis for each recursive argument. In a proof block, <code>induction v { c(xs, hs) =&gt; { … } }</code> takes its motive from the goal. Natural numbers also have <code>zero =&gt; …; succ h =&gt; …;</code>.
             <a href="reference/induction.html#induction">Natural numbers and inductive types →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 inductive List(U &lt; UU0, A : U) : U {
   nil;
@@ -633,9 +647,10 @@ def length(xs : List(U0, Nat)) : Nat := induction xs return Nat {
         </div>
         <div class="quick-entry" id="quick-binary">
           <h4>Binary literals</h4>
-          <p>After <code>import binary_naturals;</code>, <code>0b110</code> is six in <code>BinaryNat</code>, one constructor per bit. Hover it to see the expansion. Decimal literals stay unary.
+          <p>Where <code>binary_naturals</code>' notation <code>binary</code> is selected, <code>0b110</code> is six in <code>BinaryNat</code>: its literal rule reads the digits and computes one constructor per bit. Decimal literals stay unary.
             <a href="reference/induction.html#binary">Natural numbers and inductive types →</a></p>
           <pre><code data-check="accept">import binary_naturals;
+use binary;
 
 def six : BinaryNat := 0b110;</code></pre>
         </div>
@@ -645,6 +660,7 @@ def six : BinaryNat := 0b110;</code></pre>
           <p>Closes an equality whose two sides compute to the same value.
             <a href="reference/rewriting.html#rfl">Equational reasoning →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def successor_first(n, m : Nat) : succ(n) + m = succ(n + m) {
   rfl;
@@ -655,6 +671,7 @@ def successor_first(n, m : Nat) : succ(n) + m = succ(n + m) {
           <p>Chains equalities; <code>_</code> is the previous right side. A step is proved <code>by</code> a term or a nested block.
             <a href="reference/rewriting.html#calc">Equational reasoning →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def through(a, b : Nat, p : a = b) : a + 0 = b {
   calc {
@@ -668,6 +685,7 @@ def through(a, b : Nat, p : a = b) : a + 0 = b {
           <p>Rewrites the goal with instantiated equalities, in order; <code>&lt;-</code> rewrites right to left, and <code>at lhs occurrence 2</code> picks one place. A goal that then holds by computation is closed.
             <a href="reference/rewriting.html#rw">Equational reasoning →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def rewrite_then_finish(n, m : Nat, h : n = m) : n + 0 = m {
   rw [nat_add_zero(n)];   // goal: n = m
@@ -679,6 +697,7 @@ def rewrite_then_finish(n, m : Nat, h : n = m) : n + 0 = m {
           <p>Rewrites with the listed rules everywhere, repeatedly, finding their arguments by matching. Click a <code>simp</code> in the workspace to see its trace.
             <a href="reference/rewriting.html#simp">Equational reasoning →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
   simp only [nat_add_zero];
@@ -689,6 +708,7 @@ def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
           <p>Simplifies both the goal and the type of a hypothesis, then uses the hypothesis.
             <a href="reference/rewriting.html#simpa">Equational reasoning →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def simpa_example(n, m : Nat, h : n + 0 = m) : n = m + 0 {
   simpa only [nat_add_zero] using h;
@@ -699,6 +719,7 @@ def simpa_example(n, m : Nat, h : n + 0 = m) : n = m + 0 {
           <p><code>simp_rule</code> registers a default rule and <code>simp_set</code> names a set; both carry through imports. Then <code>simp;</code> uses the defaults, and <code>simp [set] at h as h2;</code> adds a simplified copy of <code>h</code>.
             <a href="reference/rewriting.html#simp-registration">Equational reasoning →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 simp_rule nat_add_zero priority 10;
 simp_set units := [nat_add_zero];
@@ -717,6 +738,7 @@ def simplified_copy(n, m : Nat, h : n + 0 = m) : n = m {
           <p>A rule with a premise fires when <code>simp with [h];</code> supplies it.
             <a href="reference/rewriting.html#simp-conditional">Equational reasoning →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def zero_if(n : Nat, h : n = 0) : n + 0 = 0 {
   calc {
@@ -738,6 +760,7 @@ def conditional(n : Nat, h : n = 0) : n + 0 = 0 {
             <a href="reference/theories.html#theories">Theories and models →</a></p>
           <pre><code data-check="accept">import nat;
 import hlevels;
+use nat;
 
 theory Pointed(U &lt; UU0) {
   M : set U;
@@ -777,6 +800,7 @@ def times_zero(x : Q) : rationals.mul(x, rationals.zero) = rationals.zero := mul
           <p><code>section {{U &lt; UU0}}(G : Monoid(U)) { def …; }</code> gives each definition in it the section's parameters first, opens each model among them, and applies the section's earlier definitions to them.
             <a href="reference/theories.html#sections">Theories and models →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 section (n : Nat) {
   def twice := n + n;
@@ -914,6 +938,7 @@ def merely(A : U0, a : A) : Truncate(U0, A) {
           <p>Rejects the declaration if it uses an assumption, directly or through a definition.
             <a href="reference/assumptions.html#computable">Excluded middle, choice and computability →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 computable def double(n : Nat) := n + n;</code></pre>
         </div>
@@ -922,6 +947,7 @@ computable def double(n : Nat) := n + n;</code></pre>
           <p><code>evaluate term expecting value;</code> checks what a closed term computes to. The term may use no assumption.
             <a href="reference/assumptions.html#evaluate">Excluded middle, choice and computability →</a></p>
           <pre><code data-check="accept">import nat;
+use nat;
 
 def double(n : Nat) := n + n;
 
