@@ -694,8 +694,12 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
   }
   function clausePattern(nested) {
     // A sum's patterns are its injections, left and right, which no other
-    // name can be.
-    let constructor = ["left", "right"].includes(peek()) ? take() : name(), qualifiedDot = null;
+    // name can be: left(a), or left a in a clause's head. A bare left would
+    // be a variable, or with @ a path constructor, so it is refused as a
+    // binder is.
+    const injection = ["left", "right"].includes(peek())
+      && (ts[i + 1].text === "(" || !nested && /^[A-Za-z_]/.test(ts[i + 1].text) && ts[i + 1].text !== "EOF");
+    let constructor = injection ? take() : name(), qualifiedDot = null;
     if (peek() === "." && ts[i - 1].end === ts[i].start && /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text)
         && ts[i + 1].start === ts[i].end) {
       const dot = take("."), member = take();
