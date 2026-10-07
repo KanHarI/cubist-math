@@ -505,7 +505,13 @@ which the kernel checks by evaluation. `rationals` reads `1/2`, `0.5`
 and `1_2/4` and refuses `1/0` at its denominator; `integers` reads
 numerals as `int(n, 0)`; `nat` reads plain numerals. A notation with
 neither rule refuses literals (E907, E908); a section keeps reading
-numerals as before, until L2.10j. Two deviations: `Glyph`'s `.` is
+numerals as before, until L2.10j. A literal rule reads every numeric token
+as written, `007` and `0b101` included; a numeral's limit of 256 and a
+binary literal's of 256 bits apply only where one is built. A rule's
+names, the `Nat` of its numerals included, are read where it is declared,
+and `tt`, the evidence of a parse, is reserved, so no binding at the use
+changes a literal. A model's added rules are that binding's, not its
+name's, and its theory's operators stay its own. Two deviations: `Glyph`'s `.` is
 `period`, since `point` is a truncation's constructor; and decimals with
 many digits exceed the native recursion depth when compared, the
 naturals being unary (L2.10f). Evidence: `cubist-tests/notation_literals.cubist`.

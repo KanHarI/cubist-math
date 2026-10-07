@@ -102,8 +102,11 @@ export function opened(t,scope,node,{complete=true}={}) {
   for(const [operator,list] of Object.entries(record.ambiguousNotations??{}))
     added.push([operatorBinding(operator),{tag:"Ambiguous",message:`${operator} is ambiguous in ${record.name}: it is ${
       list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>`x ${node.name??"m"}.${e.label}.(${operator}) y`).join(" or ")}.`}]);
-  // A theory's numeral rule, its derived operation marked notation numeral.
-  const numeral=record.notations.numeral?{left:"n",right:null,aliases:new Map(),recipe:{},
+  // A theory's numeral rule, its derived operation marked notation numeral,
+  // whose natural number is built from that operation's own Nat.
+  const operation=record.notations.numeral?values.get(record.notations.numeral):null;
+  const numeral=operation?{left:"n",right:null,recipe:{},natural:NUMERAL_NAT,
+    aliases:new Map([[NUMERAL_NAT,scope.nf(scope.infer(operation).type).domain]]),
     value:{kind:"call",fn:{kind:"name",name:operatorBinding("numeral"),...at},args:[{kind:"name",name:"n",...at}],...at}}:null;
   // The model's notation is the selection (L2.10a), complete: an operator
   // it does not bind is an error, except in a module of a revision before
@@ -120,6 +123,8 @@ export function opened(t,scope,node,{complete=true}={}) {
 // does not take its place.
 // The library's names a literal's lexeme is built from (lexemes.cubist).
 const LEXEME_NAMES=["cons","nil","digit","lower","upper","period","slash","underscore","plus","minus","parsed_value","parse_answer","Nat"];
+// The key of the Nat a numeral rule builds its natural number from.
+const NUMERAL_NAT="\u0000notation Nat";
 // The key of a lexeme's glyph in a literal rule's scope, which no source
 // name can spell. (A function, not a template: the diagnostics catalogue
 // reads template-returning arrows as messages.)
@@ -132,8 +137,9 @@ export function notationDeclaration(t,module,d,env,declared=new Set()) {
   const at=(d.uses??[]).reduce((inner,model)=>selected(t,inner,model),new Scope(module,new Map(),env)).env;
   const selection=[...at].filter(([key,value])=>(key===SELECTION||key.startsWith(operatorBinding("")))&&env.get(key)!==value);
   // A notation named after a model of this module adds literal rules to
-  // that model's notation (L2.10c); no other module can.
-  const model=env.has(d.name.text)&&env.get(d.name.text)?.tag!=="Untranslated";
+  // that model's notation (L2.10c); no other module can. They are that
+  // binding's: a later binding of the name, a parameter's, has none.
+  const model=env.has(d.name.text)&&env.get(d.name.text)?.tag!=="Untranslated"?env.get(d.name.text):null;
   if(model&&!declared.has(d.name.text))
     throw module.locate(Error(`${d.name.text} is declared in another module: only the module that declares a model adds rules to its notation.`),d.name);
   for(const rule of d.rules) {
@@ -145,12 +151,14 @@ export function notationDeclaration(t,module,d,env,declared=new Set()) {
       aliases.set(key,at.get(name));
       return key;
     };
-    const value=renameFree(rule.value,name=>{
+    // Its numerals too are natural numbers of the Nat read here.
+    const natural=at.has("Nat")?alias("Nat"):null;
+    const value=rewritten(renameFree(rule.value,name=>{
       if(pattern.has(name))return null;
       if(at.has(name))return alias(name);
       const dot=name.indexOf("."),root=dot>0?name.slice(0,dot):null;
       return root&&at.has(root)?`${alias(root)}${name.slice(dot)}`:null;
-    });
+    }),n=>n.kind==="number"&&natural?{...n,natural}:n);
     // A literal rule builds its lexeme from the library's glyphs, read here.
     if(rule.kind==="literal")for(const name of LEXEME_NAMES) {
       if(!env.has(name))throw module.locate(Error(`A literal rule reads a Lexeme: import lexemes, which defines ${name}.`),rule.keyword);
@@ -159,11 +167,11 @@ export function notationDeclaration(t,module,d,env,declared=new Set()) {
     // A numeral rule's natural number is built from the Nat read here.
     if(rule.kind==="numeral") {
       if(!env.has("Nat"))throw module.locate(Error("A numeral rule reads a natural number: import nat."),rule.keyword);
-      aliases.set("\u0000notation Nat",env.get("Nat"));
+      aliases.set(NUMERAL_NAT,env.get("Nat"));
     }
     const key=rule.kind??(rule.unary?"unary -":rule.operator);
     rules.set(key,{left:rule.left?.text??rule.param?.text,right:rule.right?.text??null,value,aliases,selection,source:rule.value,
-      ...(rule.kind==="numeral"?{natural:"\u0000notation Nat"}:{}),
+      ...(rule.kind==="numeral"?{natural:NUMERAL_NAT}:{}),
       recipe:{left:rule.leftView?.text??null,right:rule.rightView?.text??null}});
   }
   env.set(notationBinding(d.name.text),{tag:"Notation",name:d.name.text,rules,model});
@@ -235,8 +243,9 @@ export function selected(t,scope,node) {
   const notation=node.kind==="name"?scope.env.get(notationBinding(node.name)):null;
   if(notation?.tag==="Notation"&&!notation.model)return notationSelected(scope,notation);
   const inner=opened(t,scope,node);
-  // A model's notation with the literal rules its module added.
-  if(inner&&notation?.model) {
+  // A model's notation with the literal rules its module added, where the
+  // name is still that model.
+  if(inner&&notation?.model&&scope.env.get(node.name)===notation.model) {
     const selection=inner.env.get(SELECTION);
     return inner.alias(SELECTION,{...selection,numeral:notation.rules.get("numeral")??selection.numeral??null,
       literal:notation.rules.get("literal")??selection.literal??null});
@@ -250,9 +259,11 @@ export function selected(t,scope,node) {
 // node of the field m.f, or the error that says why there is none.
 export function qualifiedOperator(t,scope,n) {
   const at={start:n.operatorStart,end:n.operatorEnd};
-  // A named notation's operator: its rule, applied where it stands.
+  // A named notation's operator: its rule, applied where it stands. A
+  // model's notation, with the literal rules its module added, binds its
+  // theory's operators, read from the model below.
   const notation=n.model.kind==="name"?scope.env.get(notationBinding(n.model.name)):null;
-  if(notation?.tag==="Notation") {
+  if(notation?.tag==="Notation"&&!notation.model) {
     const rule=notation.rules.get(n.operator);
     if(!rule)throw scope.unit.locate(Error(`${notation.name} binds no rule to ${n.operator}.`),at);
     return {kind:"notationRule",rule,start:n.start,end:n.end};
