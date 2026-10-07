@@ -1784,7 +1784,7 @@
   },
   {
    "path": "cubist-tests/evaluate_patterns.cubist",
-   "summary": "`evaluate … expecting` a pattern: holes, pairs, injections and constructors matched part by part, other expressions by normal form, and the part a mismatch names."
+   "summary": "`evaluate … expecting` a pattern: holes, pairs, injections, constructors and `typed` matched part by part, other expressions by normal form, and the part a mismatch names; braces and named arguments refused at a builtin or a constructor, and a module's own `typed` read as the module's."
   },
   {
    "path": "cubist-tests/f4_extension_loops_false.cubist",
