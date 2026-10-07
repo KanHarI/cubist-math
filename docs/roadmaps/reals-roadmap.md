@@ -23,8 +23,9 @@ breakdown and each package's dependencies. The corrections are marked.
 
 The interface stays an **Archimedean ordered field with Cauchy completeness**,
 with Dedekind completeness as a separate property. It becomes the theory
-`CompleteOrderedField` (ergonomics milestone 6), so analysis is written
-against its models and does not depend on which construction supplies them.
+`CompleteOrderedField` (L2.4, which absorbed ergonomics milestone 6), so
+analysis is written against its models and does not depend on which
+construction supplies them.
 The constructive developments assume neither excluded middle nor choice.
 
 **An unproved compatibility obligation (corrected).** The archived interface
@@ -74,10 +75,11 @@ definitions are not claimed to fail to check; the obligation is the bridge.
   the G2 ledger's actual migrations, and that legacy behaviour is kept
   distinct from the new universe-preserving truncation.
 - **Names.** `PosNat` for denominators; `PosRat` for precision.
-- **Readout.** There is no source-level selector `Trunc(A) -> A`; L2.9b is
-  a closed evaluation tool that needs a closed computable input and a
-  checked error certificate. Its later H3 extension must specify the
-  extracted witness's type: under heterogeneous transport a base witness
+- **Readout.** There is no source-level selector `Trunc(A) -> A`. L2.9b,
+  done on 2026-10-06, reads the witness off a closed, computable truncation
+  with `print(witness(t))`; an approximation also needs a checked error
+  certificate. Its later H3 extension must specify the extracted witness's
+  type: under heterogeneous transport a base witness
   has type `A(0)` while the requested result needs `A(1)`, so "read off the
   base" needs that case. H1's homogeneous `hcomp` and computing parameter
   transport show no such defect; L2.9b's tests include transported
@@ -97,19 +99,24 @@ definitions are not claimed to fail to check; the obligation is the bridge.
 
    **Done in part** on 2026-10-05, with the quotients as the primary
    presentations: arithmetic, setness, decidable equality and computing
-   operations for both, and the field laws for the rationals. Open: the
-   order on both, decidable, with the ordered-field laws, the positive
+   operations for both, and the field laws for the rationals. Since
+   2026-10-06 rational literals such as `rationals.(1/2)` and
+   `rationals.(0.5)` read through the rationals' notation (L2.10c).
+   Open: the order on both, decidable, with the ordered-field laws, the positive
    rationals `PosRat` and the Archimedean property, which R2 and R3 need;
    the inductive integers as a presentation; and the canonical, lowest-terms
    rationals.
 2. **R2. The interface** (B4). The theories `OrderedField` and
    `CompleteOrderedField`, with limits, uniqueness and the algebra of limits
-   stated generically, on L2.4's core theories and L2.5a's h-level fields.
-   Settle the precision and modulus types (`PosRat` or `Nat`) and prove the
-   bridge above before porting clients. It needs no H3 and can proceed with
-   any model, even before a concrete reals construction exists. L2.4 was
-   delivered on 2026-10-05, and the library's `Field` is the starting
-   point; its inverse becomes partial with L2.10k.
+   stated generically, on the core theories, with L2.4c's relations for `<`
+   and `<=`, and L2.5a's h-level fields. Settle the precision and modulus
+   types (`PosRat` or `Nat`) and prove the bridge above before porting
+   clients. It needs no H3 and can proceed with any model, even before a
+   concrete reals construction exists. L2.4 was
+   delivered on 2026-10-05 and L2.4c on 2026-10-06. The library's `Field`
+   is the starting point. Since L2.10k (2026-10-06) it states invertibility
+   as a truncated law and derives `inv` by unique choice. The rationals
+   supply that law with `merely`, and their inverse computes.
 3. **R3. Cauchy reals** (B5), scheduled as separate obligations
    (corrected: "field operations by folding" hid most of them):
    - `CauchyStructure` and its initial model at H3;
@@ -140,7 +147,7 @@ complete ordered field.
 | --- | --- |
 | R1 integers | Built as a quotient, with arithmetic, setness and decidable equality (2026-10-05); open: the order; L2.7 for the inductive presentation |
 | R1 rationals | Built as the field of fractions (2026-10-05); open: the order laws and `PosRat`. Canonical rationals: L2.7, with gcd, normalization correctness and uniqueness |
-| R2 field interface | L2.4 core theories and L2.5a h-level fields; the precision and modulus types settled and the sequence/approximation bridge proved before clients are ported; no H3 |
+| R2 field interface | L2.4 and L2.4c core theories, whose relations state `<` and `<=`, and L2.5a h-level fields, all done; the precision and modulus types settled and the sequence/approximation bridge proved before clients are ported; no H3 |
 | R3 Cauchy reals | K5.1/K5.2/L5.1; L2.6 initial models and folds; R1 and R2; the construction proofs listed above; L2.9b for the closed approximation readout |
 | R4 Dedekind fallback | H1 truncation and the cut and field mathematics; canonical rationals in place of a generic quotient; L2.9b for readout |
 

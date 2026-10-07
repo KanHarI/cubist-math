@@ -34,7 +34,7 @@ def first_of(G : Both(U0), x, y : G.M) : G.M := G.magma.mul(x, y);
 // Output: 5
 print(evaluate(first_of(both_nat, 5, 6)));
 
-// Under open, * is ambiguous where it is used.
+// Under use, * is ambiguous where it is used.
 // Error: E832: * is ambiguous in Both: it is magma's mul and action's act. Write x G.magma.(*) y or
 //   x G.action.(*) y.
 def square(G : Both(U0), x : G.M) : G.M {
