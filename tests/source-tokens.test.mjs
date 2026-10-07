@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { numeralAt, numeralExpansion, projectionIndex, tokenStyle, keywordAt, linkedWord } from "../web/source-tokens.mjs";
+import { numeralAt, numeralExpansion, projectionIndex, tokenStyle, keywordAt } from "../web/source-tokens.mjs";
 
 test("numerals from 1 are notation for successors; 0 is the constructor itself", () => {
   assert.equal(numeralExpansion("3"), "succ(succ(succ(0)))");
@@ -27,7 +27,7 @@ test("a projection's index is not a numeral, and the removed have, show and suff
   assert.equal(tokenStyle("let", null), "keyword");
 });
 
-test("a theory's words are keywords where they stand, and its fields zero and succ are names", () => {
+test("a theory's words are keywords where they stand, and zero and succ are names everywhere", () => {
   const source = `theory Field(U < UU0) extends CommRing {
   P : prop U;
   inv(x : R) : R notation x * y;
@@ -59,12 +59,10 @@ def g(sort : Nat) := succ(zero);`;
   assert.equal(style("section", 1), "");
   assert.equal(style("use"), "keyword");
   assert.equal(style("sort"), "");
-  // Outside a theory, zero and succ are Nat's constructors, unless they link
-  // to a definition, as a ring's zero after open does.
-  assert.equal(style("zero", 2), "keyword");
-  assert.equal(style("succ"), "keyword");
-  assert.equal(tokenStyle("zero", null, linkedWord("zero", { role: "definition" })), "");
-  assert.equal(tokenStyle("zero", null, linkedWord("zero", { role: "local" })), "keyword");
+  // Outside a theory too: zero and succ, Nat's constructors, are the
+  // library's names (library/nat.cubist), not the language's.
+  assert.equal(style("zero", 2), "");
+  assert.equal(style("succ"), "");
 });
 
 test("a theory's words keep their roles past comments and nested braces, and are names where the parser reads names", () => {
@@ -106,9 +104,8 @@ def f(A : Ring(U0)) : A.R {
   assert.equal(style("law", 3), "");
   assert.equal(style("sort"), "");
   assert.equal(style("set", 1), "keyword");
-  // After the theories, zero is Nat's constructor, unless it links to a
-  // definition, as the ring's zero after open A does.
-  assert.equal(style("zero", 7), "keyword");
+  // After the theories, zero is a name as well.
+  assert.equal(style("zero", 7), "");
 });
 
 test("a theory's header comes before extends, and a carrier's h-level is a keyword (L2.4c)", () => {
