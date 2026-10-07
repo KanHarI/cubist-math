@@ -209,7 +209,7 @@ All rows are planned. Sizes are relative scope, as in the work plan.
 | EVAL0 | Reproducible workload and phase measurements | Existing CLI, counters and build stamps | S |
 | EVAL1 | One-pass REPL evaluation | EVAL0 | S |
 | NUM0 | Explicit UNat and canonical BNat with direct binary arithmetic | Current inductive declarations; archive evidence | M |
-| NUM1 | Natural semiring isomorphism, U0 path and transport laws; strong induction and recursion over BNat | NUM0; semiring interface; computational univalence | M |
+| NUM1 | Natural semiring isomorphism, U0 path and transport laws; H1 binary Peano view and strong recursion with coherence proofs | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
 | NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs | NUM1; current quotients, rings and fractions | L |
 | EVAL2 | Memoized full normalization | EVAL0; independent of EVAL1 | M |
 | EVAL3 | Closure evaluator for a specified data fragment | EVAL0 and semantic contract | L |
@@ -274,8 +274,42 @@ operations. This is a checked path in the universe, not a new definitional
 equality rule. It does not wait for general theory structure-identity
 machinery.
 
-Prove that the numerical strict order on `BNat` is well-founded and derive
-a dependent strong-induction principle in the library. Its step receives
+Establish well-founded induction for the numerical strict order on `BNat`
+using H1 dependent elimination. Do not declare the usual indexed
+accessibility family `Acc(n)`: its recursive occurrence `Acc(m)` changes a
+parameter, which H1 refuses (E515); that direct declaration needs H2.
+NUM1 instead constructs a binary Peano view and course-of-values induction
+as ordinary definitions, with the following proof obligations:
+
+1. Given `P : BNat -> U` and a successor step, define
+   `advance(k, a) : P(a) -> P(a + k)` by structural recursion on the bits
+   of `k`. Zero does nothing and one takes one successor step; an even
+   digit applies the half's advance twice at successive offsets, and an
+   odd digit takes one further successor step. Prove the index equalities
+   needed for dependent transport. Starting at zero gives a dependent
+   zero/successor eliminator over binary values; prove its zero and
+   successor equations.
+2. Apply this eliminator to the ordinary function type
+   `Below(n) := forall m : BNat. m < n -> P(m)`. Its zero case eliminates
+   `m < 0`. To extend `b : Below(n)` to `Below(succ(n))`, decide whether
+   `m < n` or `m = n`: reuse `b` in the first case and transport
+   `step(n, b)` in the second. Prove this order decomposition and that the
+   order evidence is proposition-valued.
+3. Let `below(n)` be the resulting function and set
+   `F(n) := step(n, below(n))`. Prove coherence:
+   `below(n)(m, smaller) = F(m)` whenever `m < n`, using the Peano view's
+   equations and dependent function extensionality. This supplies the
+   strong recursor's computation law for arbitrary dependent `P`, without
+   restricting it to propositions or assuming the computation law.
+
+This is the planned H1 construction, not an implemented recursor or an
+import from the archive. H2 and archived `W` are not dependencies. The
+bit-constructor clauses unfold by H1 computation; the public successor
+and strong-recursion equations require checked path proofs, including
+their transports and coherence. No new definitional computation rule is
+promised. NUM1's larger size includes these proofs.
+
+The strong-induction step receives
 the result for **every smaller value**, independently of that value's bit
 structure. Make it usable for definitions as well as propositions, with
 the following schematic interface (names are provisional):
@@ -289,9 +323,9 @@ bnat_induction(U < UU0, P : BNat -> U,
 For `F := bnat_induction(U, P, step)`, prove the computation equation
 `F(n) = step(n, fun (m : BNat, smaller : m < n) => F(m))`. State which
 equations compute definitionally and which have checked path proofs.
-Derive ordinary zero/successor induction and recursion as convenient
-special cases. The order and its well-foundedness may be proved using
-the natural equivalence, but executable recursion must keep binary values
+Expose the zero/successor view as a convenient induction and recursion API.
+Order lemmas may be transferred through the natural equivalence, but the
+executable recursor above must keep binary values
 instead of converting the bound to a unary counter. Earlier results are
 available on demand; the interface does not require an eager table of
 every prior value. Recursion through every predecessor can still take
@@ -308,9 +342,11 @@ new assumptions; the `U0` path and its transport laws check, including
 closed forward/reverse examples and a dependent family transported along
 the path; canonical binary boundary/carry cases compute; numerical
 arithmetic operations use bit recursion without a hidden unary round trip;
-strong induction works for a dependent family, its recursion equation
-checks, and binary factorial computes `0! = 1` and `5! = 120`. Check a
-recursive call that skips the immediate predecessor, and require strict
+the H1 Peano view, `Below` construction and coherence proofs check without
+indexed declarations; strong induction works for a dependent family, its
+recursion equation checks, and binary factorial computes `0! = 1` and
+`5! = 120`. Check a recursive call that skips the immediate predecessor,
+and require strict
 decrease evidence for every recursive call. Preserve the existing unary
 induction API through the documented migration policy.
 The archive remains a compatibility corpus, not a library dependency.
@@ -320,9 +356,26 @@ The archive remains a compatibility corpus, not a library dependency.
 Construct `Z` from pairs of `BNat`, using the existing same-difference
 relation and quotient approach with binary addition and multiplication.
 Construct `Q` as fractions over this `Z`, retaining its nonzero-denominator
-evidence and existing quotient semantics. Canonical fraction normalization
-is a separate feature; changing the natural representation does not itself
-put every rational in lowest terms.
+evidence and existing quotient semantics. Reuse the generic field-of-fractions
+construction in [rationals.cubist](../../library/rationals.cubist), instantiated
+at the new integer ring with its checked decidable equality, nontriviality
+and no-zero-divisor proofs. Separate its generic layer from the current
+integer instance and adapt numeral handling to avoid retaining a unary
+arithmetic dependency. Canonical fraction normalization is a separate
+feature; changing the natural representation does not itself put every
+rational in lowest terms.
+
+NUM2 owns these new carriers, arithmetic, algebraic laws and default APIs.
+The [reals roadmap's R1](reals-roadmap.md#milestones) consumes them: it owns
+their decidable orders and ordered-ring/field laws, `PosRat`, the
+Archimedean property and later canonical presentations. R1's order
+work remains proposed under [first action 8](work-plan.md#first-actions);
+NUM2 does not wait for it. R2 and the later real constructions target the
+new `Q`, with positive-rational precision and binary natural bounds. The
+older unary-backed carriers remain compatibility clients, rather than a
+second target for the new order development. No comparison to them is
+required here. The later signed-integer and lowest-terms presentations
+must use binary magnitudes and present these same new carriers.
 
 Prove that the new operations respect their quotient relations. Establish
 `Z`'s commutative-ring laws, decidable equality, nontriviality and absence
@@ -341,7 +394,7 @@ Adapt the current numeral-rule and `CommRing.of_nat` paths with a binary
 entry point and checked agreement; use repeated doubling/bit operations
 where appropriate. Retain explicit `UNat` conversions for compatibility
 and structural arguments. Specify the `Nat` name and notation migration
-before switching aliases; the choice of binary storage for `Z` and `Q`
+before switching aliases; the binary storage of `Z` and `Q`
 does not depend on that spelling decision.
 
 **Acceptance:** the default `Z` representatives contain `BNat` components,
@@ -410,8 +463,17 @@ names, dimensions, dependent field types and the provenance of certificates.
 
 Full normalization still requires a path that reads back annotations and
 proofs correctly. Its cost is measured separately from lazy display.
-Keep the `evaluate ... expecting ...` comparison contract explicit, including
-any separately introduced expected-value patterns.
+Expected-value patterns (L2.9a) and the closed-truncation REPL command
+`witness TERM;` (L2.9b) are implemented in
+[#181](https://github.com/KanHarI/cubist-math/pull/181) and
+[#182](https://github.com/KanHarI/cubist-math/pull/182), after this roadmap's
+measurement baseline. Patterns currently match `result.normal`, after full
+normalization: a `_` hole saves no evaluation work. Thus the existing form
+`evaluate euclid(4) expecting (5, _)` still encounters the normalization
+failure. EVAL5 must specify any observation mode that lets this pattern
+avoid forcing the certificate, including its checking and failure contract,
+before changing evaluation behavior. Preserve exact expected-value checks,
+the distinction from full normalization and witness readout's checked type.
 
 **Acceptance:** users can inspect the number and certificates of a Euclid
 result independently; forcing a retained field after a session operation is
@@ -450,11 +512,17 @@ unwinds and rebuilds witness wrappers after finding an early witness.
 Develop a checked BNat remainder-based divisibility decision and a search
 with tighter bounds and an explicit early-exit structure. Use NUM1's
 numerical recursion for calls justified by a strict decrease.
+EVAL7 owns the small `library/` modules for binary divisibility, primality
+and least-prime-divisor search, and a separate checked binary Euclid pilot
+using NUM1's factorial. Port the required definitions and certificate
+proofs from the archive; these modules depend on the new numerical
+foundations, never on archived `primes`. Keep the archived modules intact
+as the fixed workload for EVAL0–EVAL5 comparisons.
 Candidate-divisor bounds such as the square root require their mathematical
-proof. Preserve the least-divisor behavior if replacing this construction, or expose and
-name a different algorithm separately. Factorial remains the source
-algorithm's growth factor; do not silently replace Euclid's construction
-with an unrelated prime generator to improve its benchmark.
+proof. Preserve the least-divisor behavior if replacing this construction,
+or expose and name a different algorithm separately. Factorial remains
+the source algorithm's growth factor; do not silently replace Euclid's
+construction with an unrelated prime generator to improve its benchmark.
 
 **Acceptance:** checked correctness and certificates, no new assumptions,
 agreement on the small Euclid witnesses `2, 2, 3, 7, 5, 11` for inputs

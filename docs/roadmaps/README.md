@@ -6,8 +6,9 @@ target statement or a supplied theorem parameter as an already proved result.
 
 ## At a glance
 
-Revised on 2026-10-05, after PR #164. The [work plan](work-plan.md) is
-the scheduling authority; this summarizes it.
+Revised on 2026-10-05, after PR #164; the runtime and numerical track was
+added on 2026-10-07. The [work plan](work-plan.md) is the scheduling
+authority; this summarizes it.
 
 - **Done.**
   - **Kernel.** The trusted checker is the instruction kernel, with every
@@ -39,11 +40,13 @@ the scheduling authority; this summarizes it.
   5. `use nat;` in place of name-based operators and numerals (L2.10j);
   6. equivalences, then structure identity (L3.1, L3.2, L2.4b);
   7. the rest of the h-level solver (L2.5b);
-  8. the order on the numbers, if the maintainer extends the library's
+  8. the order on NUM2's new numbers, if the maintainer extends the library's
      scope;
-  9. independent language work, monadic `do` and arrows (N0–N4) among it;
-  10. K2.5's archive remedies;
-  11. H2's indexed families, then the H3 research gate.
+  9. runtime evaluation and binary numerical foundations (EVAL0–EVAL8,
+     NUM0–NUM2), including H1 strong induction and the new `Z` and `Q`;
+  10. independent language work, monadic `do` and arrows (N0–N4) among it;
+  11. K2.5's archive remedies;
+  12. H2's indexed families, then the H3 research gate.
 - **Later.**
   - Indexed declarations (stage 4, H2) and inductive-inductive ones
     (stage 5, H3).
