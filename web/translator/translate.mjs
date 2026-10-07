@@ -350,6 +350,8 @@ export class Translator {
   translate(source, imported=new Map()) {
     const module=this.unit({source});
     const ast=parse(source),env=new Map(imported),declarations=[],directives=[];
+    // The models of the file-level uses refused where they stand.
+    const refusedUses=new Set();
     // A theory is checked as the declarations it expands to, in its place.
     const queue=[...(ast.items??ast.declarations)];
     while(queue.length) {
@@ -366,16 +368,22 @@ export class Translator {
       // A file-level use m; selects m for the definitions and directives
       // after it, which record it (L2.4c). It is checked where it stands, so
       // one that selects nothing is refused even with nothing after it, as at
-      // a REPL (L2.10j). It is read in what the uses before it select, as the
-      // definitions after it are. A refused one among them was reported where
-      // it stands; with nothing to read this one in, it is not reported again.
+      // a REPL (L2.10j). It is read in what the uses before it select, read
+      // again here as the definitions after it read them. One that fails again
+      // after its own refusal leaves nothing to read this one in, and was
+      // reported where it stands; any other failure is reported here, as a
+      // later definition reports it.
       if(d.kind==="use") {
         const unit=module.declaration(this.declarationFuel);
-        let scope=new Scope(unit,new Map(),env);
-        try { scope=(d.uses??[]).reduce((inner,model)=>selected(this,inner,model),scope); }
-        catch { scope=null; }
-        try { if(scope)selected(this,scope,d.model); }
-        catch(error) {
+        try {
+          let scope=new Scope(unit,new Map(),env);
+          for(const model of d.uses??[]) {
+            try { scope=selected(this,scope,model); }
+            catch(error) { if(!refusedUses.has(model))throw error; scope=null; break; }
+          }
+          if(scope)selected(this,scope,d.model);
+        } catch(error) {
+          refusedUses.add(d.model);
           directives.push({kind:"use",name:`at line ${source.slice(0,d.start).split("\n").length}`,status:"not-translated",
             reason:error.message,start:d.start,failure:error.kind});
           directives.at(-1).searchFuel=this.fuelRecord(unit);
