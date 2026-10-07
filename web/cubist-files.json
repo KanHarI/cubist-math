@@ -2011,6 +2011,10 @@
    "summary": "Names that shadow the natural numbers' type, linked to their own declarations."
   },
   {
+   "path": "cubist-tests/inspection_square_boundary.cubist",
+   "summary": "A square's boundary shows its parameters by their source names."
+  },
+  {
    "path": "cubist-tests/integer_examples.cubist",
    "summary": "The library's integers at work: equality decided and arithmetic computed on closed integers, a commutative ring's lemma at the integers, and the natural numbers embedded as a homomorphism of additive monoids."
   },

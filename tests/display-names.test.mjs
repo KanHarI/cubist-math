@@ -94,3 +94,34 @@ test("a bound variable prints as its binder in later domains and in fallback for
   const labelled = shown(T.lam("mod__x42", T.unit, T.pair(null, definition, T.unitrec(T.lam("u", T.unit, T.unit), definition, T.point))));
   assert.equal(labelled, "fun (mod__x : Unit) => (x, UnitRec(λ (u : Unit). Unit, x, ⋆))");
 });
+
+// The first review of #184: an inspection gives free variables their source
+// names, which their stems cannot tell: the source's x1 is x1_4, whose stem
+// is x1_.
+test("a free variable given a name shows it, and every other name keeps apart from it", () => {
+  const given = new Map([["x1_4", "x1"], ["n5", "x"], ["a3", "a"], ["a9", "a"]]);
+  const shown = term => sourceText(displayTerm(term, 256, given));
+  assert.equal(shown(T.variable("x1_4")), "x1");
+  // A binder whose stem is a given name is numbered apart from every one
+  // shown, and a free variable whose stem is one keeps its own name.
+  assert.equal(shown(T.lam("x7", T.unit, T.pair(null, T.variable("x7"), T.pair(null, T.variable("n5"), T.variable("x1_4"))))),
+    "fun (x2 : Unit) => (x2, x, x1)");
+  assert.equal(shown(T.pair(null, T.variable("x9"), T.variable("n5"))), "(x9, x)");
+  // A binder is never given a name: two given the same one would capture.
+  assert.equal(shown(T.lam("a3", T.unit, T.lam("a9", T.unit, T.variable("a3")))), "fun (a, a1 : Unit) => a");
+  // A term too large to name by scope is named globally, with the same rules.
+  let large = T.lam("a3", T.unit, T.lam("a9", T.unit, T.pair(null, T.variable("a3"), T.variable("a9"))));
+  for (let index = 0; index < 1000; index++) large = T.pair(null, large, T.pair(null, T.variable("x1_4"), T.pair(null, T.variable("x9"), T.variable("n5"))));
+  const names = new Set(), binders = [];
+  const collect = t => {
+    if (!t || typeof t !== "object") return;
+    if (t.tag === "Var") names.add(t.name);
+    if (t.tag === "Lam") binders.push(t);
+    Object.values(t).forEach(collect);
+  };
+  collect(displayTerm(large, 256, given));
+  const [outer, inner] = binders;
+  assert.deepEqual([...names].filter(name => !name.startsWith("a")).sort(), ["x", "x1", "x9"]);
+  assert.notEqual(outer.name, inner.name);
+  assert.deepEqual([inner.body.first.name, inner.body.second.name], [outer.name, inner.name]);
+});
