@@ -8,13 +8,17 @@
 //   c(p, …), a constructor of the part's declared type, matches c applied to
 //     parts that match the p's, and a constructor written alone, c, matches
 //     c with no arguments;
-//   typed(T, p) matches what p matches;
+//   typed(T, p) matches what p matches, where T is the part's type;
 //   any other expression, as nat.(2 + 3), is elaborated at the part's type
 //     and matches a part with the same normal form.
+// left, right and typed are the builtins where the module does not bind
+// them, as in elaboration, and a builtin's or a constructor's arguments are
+// written out as elaboration requires, a hole aside: a hole elsewhere in the
+// pattern does not change what any part of it says.
 // The pattern is no term, so nothing about it reaches the kernel but the
 // expressions elaborated at its leaves; the value is the kernel's.
 import {substituteTerm} from "./core.mjs";
-import {isHole} from "./arguments.mjs";
+import {isHole,writtenOut} from "./arguments.mjs";
 
 // Whether an expected value is a pattern: whether a hole is in it.
 export function hasHole(node) {
@@ -42,16 +46,21 @@ export function mismatch(pattern, value, type, scope, elaborate, source) {
   const call = pattern.kind === "call" && pattern.fn?.kind === "name" ? pattern.fn.name
     : pattern.kind === "name" ? pattern.name : null;
   const args = pattern.kind === "call" ? pattern.args : [];
-  // typed(T, p) is p, read at T.
-  if (call === "typed" && args.length === 2) return mismatch(args[1], value, type, scope, elaborate, source);
+  const builtin = call && !scope.env.has(call) ? call : null;
+  if (pattern.kind === "call") writtenOut(pattern, scope, true);
+  // typed(T, p) is p, read at T, which is the part's type.
+  if (builtin === "typed" && args.length === 2) {
+    if (hasHole(args[0])) throw holeInExpression(source(args[0]));
+    return scope.equal(elaborate(args[0], null), type) ? mismatch(args[1], value, type, scope, elaborate, source) : fails;
+  }
   if (pattern.kind === "pair" && head.tag === "Sigma") {
     if (value.tag !== "Pair") return fails;
     return mismatch(pattern.left, value.first, head.domain, scope, elaborate, source)
       ?? mismatch(pattern.right, value.second, substituteTerm(head.body, head.name, value.first), scope, elaborate, source);
   }
-  if ((call === "left" || call === "right") && args.length === 1 && head.tag === "Sum") {
-    if (value.tag !== (call === "left" ? "Inl" : "Inr")) return fails;
-    return mismatch(args[0], value.value, call === "left" ? head.left : head.right, scope, elaborate, source);
+  if ((builtin === "left" || builtin === "right") && args.length === 1 && head.tag === "Sum") {
+    if (value.tag !== (builtin === "left" ? "Inl" : "Inr")) return fails;
+    return mismatch(args[0], value.value, builtin === "left" ? head.left : head.right, scope, elaborate, source);
   }
   const bound = call && scope.env.get(call);
   if (bound?.tag === "InductiveConstructor" && head.tag === "Sort" && bound.inductive?.binding === head.signature) {
