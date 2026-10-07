@@ -167,6 +167,24 @@ test("progress totals count the declarations an initial or free model expands to
   assert.ok(result.outputs.filter(output => output.name.startsWith("W")).length > 2);
   assert.ok(result.outputs.every(output => output.verified), JSON.stringify(result.outputs.find(output => !output.verified)));
 });
+// #188's review: a field named as one of N's other names would be a second
+// constructor of that name, or be replaced by the generated definition.
+test("an initial or free model is refused, with nothing declared, when a field takes one of its other names", async t => {
+  const program = new CubicalProgram(module, sourceReader());
+  t.after(() => program.dispose());
+  const others = { model: "model", fold_map: "recursion", fold: "fold", squash: "squash", gen: "generator" };
+  const source = ["import hlevels;", ...Object.keys(others).map(f => `theory T_${f}(U < UU0) { M : set U; ${f} : M; }`),
+    ...Object.keys(others).map(f => f === "gen" ? `free N_${f}(A : U0) : T_${f}(U0) on A;` : `initial N_${f} : T_${f}(U0);`),
+    // Only a free model has generators.
+    "initial Generated : T_gen(U0);", "def point : Generated := Generated.gen;"].join("\n");
+  const result = await program.check(source, "root");
+  for (const [f, role] of Object.entries(others)) {
+    const refused = result.outputs.filter(output => output.name === `N_${f}` || output.name.startsWith(`N_${f}.`));
+    assert.deepEqual(refused.map(output => [output.name, output.verified]), [[`N_${f}`, false]], f);
+    assert.equal(refused[0].reason.replace(/ at \d+:\d+$/, ""), `T_${f}'s field ${f} would be the constructor N_${f}.${f}, but N_${f}.${f} is N_${f}'s ${role}: an initial model's operations and laws are named apart from model, fold_map, fold and squash, and a free model's from gen too.`);
+  }
+  assert.ok(result.outputs.filter(output => /^(Generated|point)/.test(output.name)).every(output => output.verified));
+});
 test("progress totals take off the rest of a theory whose type of models fails, and end at what was checked", async t => {
   // Without hlevels, Pointed's sorts have no evidence: its type of models
   // fails, once, and the rest of its expansion is not checked. Its

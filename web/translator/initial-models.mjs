@@ -9,11 +9,13 @@
 //   N.fold(target) : T.Hom(N.model, target), whose preservation laws hold by
 //     computation. free's take the generators' images, g : A -> target.M.
 // A theory qualifies with one carrier, a set or a proposition, strictly
-// positive operations and equational laws; anything else is refused, naming
-// the field. The declared type is checked as any other.
+// positive operations and equational laws, none named as N's other names,
+// model, fold_map, fold, squash and free's gen; anything else is refused,
+// naming the field. The declared type is checked as any other.
 import {theoryBinding} from "./theories.mjs";
 import {universeAt} from "../cubist/theories.mjs";
 import {parse} from "../cubist/parser.mjs";
+import {freeNames, substituted} from "../cubist/scopes.mjs";
 
 // The declarations an initial or free model expands to, checked in its
 // place; one that does not expand fails as a declaration of its name.
@@ -41,6 +43,9 @@ function expand(module, d, env) {
   // The theory's universes and parameters, given.
   const given = new Map([...record.universes.map((_, k) => [universeAt(k), args[k]]),
     ...record.params.map((p, k) => [p.name, args[record.universes.length + k]])]);
+  // A field's syntax with names replaced, its binders renamed apart from the
+  // names put there; a pattern's binder, which is not renamed, is refused.
+  const put = (field, node, map) => substituted(node, map, name => module.locate(capturedBy(field, name), d.theory));
 
   // One carrier, a set or a proposition.
   const carriers = record.fields.filter(f => f.kind === "sort");
@@ -49,8 +54,14 @@ function expand(module, d, env) {
   const evidence = record.fields.find(f => f.kind === "evidence" && f.of === carrier);
   if (!evidence) throw module.locate(untruncatedCarrier(T, carrier), d.theory);
   const level = evidence.evidence === "IsSet" ? "set" : "prop";
-  const universe = substituted(carriers[0].type, given);
-  const derived = new Set((record.derived ?? []).map(op => op.name));
+  const universe = put(carrier, carriers[0].type, given);
+  const derived = new Set((record.derived ?? []).map(op => op.name)), free = d.kind === "free";
+  // N's constructors are named as the fields, beside its other names: a
+  // field named as one of those would be both.
+  const others = new Map([["model", "model"], ["fold_map", "recursion"], ["fold", "fold"], ["squash", "squash"],
+    ...(free ? [["gen", "generator"]] : [])]);
+  const clash = record.fields.find(f => ["operation", "law"].includes(f.kind) && others.has(f.name));
+  if (clash) throw module.locate(generatedName(T, clash.name, N, others.get(clash.name)), d.theory);
 
   // The carrier inside the declared type: N, or W(A) for a free model with
   // parameters.
@@ -60,46 +71,57 @@ function expand(module, d, env) {
     : { kind: "name", name: N, ...at };
   const operations = record.fields.filter(f => f.kind === "operation").map(f => f.name);
   const constructor = name => `${N}.${name}`;
-  // A field's binders, each the carrier or a type that does not mention it,
-  // and its body.
-  const shape = field => {
-    const binders = [];
-    let body = field.type;
-    for (; body?.kind === "forall"; body = body.body) {
-      const domain = body.domain;
-      if (!(domain.kind === "name" && domain.name === carrier) && mentions(domain, carrier))
-        throw module.locate(notPositive(field.name, body.name.text, carrier), d.theory);
-      binders.push({ name: body.name.text, carrier: domain.kind === "name" && domain.name === carrier, domain });
-    }
-    return { binders, body };
-  };
-  // A field's term inside the declared type: the carrier is N, each
+  // A field's syntax inside the declared type: the carrier is N, each
   // operation its constructor, and the theory's universes and parameters
   // as given.
-  const inside = node => substituted(node, new Map([...given, [carrier, self],
-    ...operations.map(op => [op, { kind: "name", name: constructor(op), ...at }])]));
+  const inside = new Map([...given, [carrier, self], ...operations.map(op => [op, { kind: "name", name: constructor(op), ...at }])]);
+  // A field's binders, each the carrier or a type that does not mention it,
+  // and its body, as written and inside the declared type. There each binder
+  // holds over the later binders and the body, so law idem(c : M) : c = c
+  // keeps its c, and one that would capture a name put there is renamed: an
+  // argument named A is not W(A)'s A.
+  const shape = field => {
+    const binders = [], bound = new Set();
+    let body = field.type, placed = put(field.name, field.type, inside);
+    for (; body?.kind === "forall"; body = body.body, placed = placed.body) {
+      const domain = body.domain, isCarrier = domain.kind === "name" && domain.name === carrier && !bound.has(carrier);
+      if (!isCarrier && freeNames(domain, bound).has(carrier))
+        throw module.locate(notPositive(field.name, body.name.text, carrier), d.theory);
+      binders.push({ name: placed.name.text, carrier: isCarrier, type: placed.domain });
+      bound.add(body.name.text);
+    }
+    return { binders, body, bound, placed };
+  };
 
   const constructors = [];
-  if (d.kind === "free") constructors.push({ kind: "constructor", name: { text: constructor("gen"), ...at },
-    params: [{ name: { text: "a", ...at }, type: d.on, group: 0 }], type: null, ...at });
   const operationShapes = [], lawShapes = [];
   for (const field of record.fields) {
     if (field.kind === "sort" || field.kind === "evidence") continue;
     if (field.kind !== "operation" && field.kind !== "law") throw module.locate(unsupportedField(T, field.name), d.theory);
-    const { binders, body } = shape(field);
-    const params = binders.map((b, k) => ({ name: { text: b.name, ...at }, type: b.carrier ? self : inside(b.domain), group: k }));
+    const { binders, body, bound, placed } = shape(field);
+    const params = binders.map((b, k) => ({ name: { text: b.name, ...at }, type: b.type, group: k }));
     if (field.kind === "operation") {
-      if (!(body.kind === "name" && body.name === carrier)) throw module.locate(notCarrierValued(field.name, carrier), d.theory);
+      if (!(body.kind === "name" && body.name === carrier && !bound.has(carrier))) throw module.locate(notCarrierValued(field.name, carrier), d.theory);
       operationShapes.push({ name: field.name, binders });
       constructors.push({ kind: "constructor", name: { text: constructor(field.name), ...at }, params, type: null, ...at });
     } else {
       if (!(body.kind === "binary" && body.operator === "=")) throw module.locate(notEquational(field.name), d.theory);
-      const uses = [...derived].find(name => mentions(body, name));
+      const uses = [...derived].find(name => freeNames(body, bound).has(name));
       if (uses) throw module.locate(lawUsesDerived(field.name, uses), d.theory);
       lawShapes.push({ name: field.name, binders });
-      constructors.push({ kind: "constructor", name: { text: constructor(field.name), ...at }, params, type: inside(body), ...at });
+      constructors.push({ kind: "constructor", name: { text: constructor(field.name), ...at }, params, type: placed, ...at });
     }
   }
+  // The generated declarations' own binders, apart from every name the
+  // declaration writes, its parameters among them, and the theory's fields
+  // and their binders: free W(target : U0) folds into a model named target1.
+  const taken = new Set([...[...source.slice(d.start, d.end).matchAll(/[A-Za-z_][A-Za-z0-9_]*/g)].map(m => m[0]),
+    ...record.fields.map(f => f.name), ...[...operationShapes, ...lawShapes].flatMap(f => f.binders.map(b => b.name))]);
+  const fresh = stem => { let name = stem; for (let k = 1; taken.has(name); k++) name = `${stem}${k}`; taken.add(name); return name; };
+  const v = Object.fromEntries(["target", "evidence", "g", "x", "i", "a"].map(stem => [stem, fresh(stem)]));
+  const xs = Array.from({ length: Math.max(0, ...[...operationShapes, ...lawShapes].map(f => f.binders.length)) }, (_, k) => fresh(`x${k}`));
+  if (free) constructors.unshift({ kind: "constructor", name: { text: constructor("gen"), ...at },
+    params: [{ name: { text: v.a, ...at }, type: d.on, group: 0 }], type: null, ...at });
   const inductive = { kind: "inductive", name: d.name, params: d.params, result: { modifier: { kind: level, ...at }, universe },
     constructors, ...at, generated: { initial: N } };
 
@@ -107,48 +129,46 @@ function expand(module, d, env) {
   // declaration is.
   const theoryText = text(d.theory), universeText = text(universe), paramsText = names.length
     ? source.slice(d.name.end, d.theory.start).replace(/:\s*$/, "").trim() : "";
-  const applied = names.length ? `(${names.join(", ")})` : "", leading = names.map(n => `${n}, `).join("");
   const selfText = names.length ? `${N}(${names.join(", ")})` : N;
-  const lambdas = (binders, body) => binders.reduceRight((inner, b) => `fun ${b.name} => ${inner}`, body);
+  // A call, of no arguments a name alone; a declaration's parameters, then
+  // the generated ones; and nested lambdas.
+  const call = (fn, args) => args.length ? `${fn}(${args.join(", ")})` : fn;
+  const signature = extra => `${names.length ? `${paramsText.replace(/\)$/, "")}, ` : "("}${extra.join(", ")})`;
+  const lambdas = (binders, body) => binders.reduceRight((inner, b) => `fun ${b} => ${inner}`, body);
   // A generated declaration's dotted name is a placeholder in its source,
   // which declares no dotted name.
   const own = suffix => `__${N}__${suffix}`;
-  const model = `def ${own("model")}${paramsText} : ${theoryText} := ${T}.make(${carrier} := ${selfText}, ${
-    [...operationShapes, ...lawShapes].map(f => `${f.name} := ${lambdas(f.binders, f.binders.length
-      ? `${constructor(f.name)}(${f.binders.map(b => b.name).join(", ")})` : constructor(f.name))}`).join(", ")});`;
-  const generator = d.kind === "free" ? `, g : ${text(d.on)} -> target.${carrier}` : "";
-  function recurse(x) { return `${own("fold_map")}(${leading}target, evidence${d.kind === "free" ? ", g" : ""}, ${x})`; }
-  const mapped = (b, k) => b.carrier ? recurse(`x${k}`) : `x${k}`;
-  const pattern = (name, binders) => binders.length ? `${constructor(name)}(${binders.map((_, k) => `x${k}`).join(", ")})` : constructor(name);
+  const ownModel = call(own("model"), names);
+  // A field's arguments, the generated variables.
+  const variables = f => xs.slice(0, f.binders.length);
+  // The carrier's evidence, the squash's, is the search's: left out, it would
+  // be the last argument of a carrier-only theory's make, which no later one
+  // gives.
+  const model = `def ${own("model")}${paramsText} : ${theoryText} := ${T}.make(${[`${carrier} := ${selfText}`, `${evidence.name} := _`,
+    ...[...operationShapes, ...lawShapes].map(f => `${f.name} := ${lambdas(variables(f), call(constructor(f.name), variables(f)))}`)].join(", ")});`;
+  const generator = free ? [`${v.g} : ${text(d.on)} -> ${v.target}.${carrier}`] : [];
+  // The recursion at an element, given the target's carrier evidence, and
+  // a field's arguments with each in the carrier mapped.
+  const recurse = (proof, x) => call(own("fold_map"), [...names, v.target, proof, ...(free ? [v.g] : []), x]);
+  const mapped = (proof, f) => f.binders.map((b, k) => b.carrier ? recurse(proof, xs[k]) : xs[k]);
   const clauses = [
-    ...(d.kind === "free" ? [`${constructor("gen")}(a) => g(a);`] : []),
-    ...operationShapes.map(f => `${pattern(f.name, f.binders)} => target.${f.name}${f.binders.length ? `(${f.binders.map(mapped).join(", ")})` : ""};`),
-    ...lawShapes.map(f => `${pattern(f.name, f.binders)} @ i => target.${f.name}${f.binders.length ? `(${f.binders.map(mapped).join(", ")})` : ""} @ i;`),
+    ...(free ? [`${constructor("gen")}(${v.a}) => ${v.g}(${v.a});`] : []),
+    ...operationShapes.map(f => `${call(constructor(f.name), variables(f))} => ${call(`${v.target}.${f.name}`, mapped(v.evidence, f))};`),
+    ...lawShapes.map(f => `${call(constructor(f.name), variables(f))} @ ${v.i} => ${call(`${v.target}.${f.name}`, mapped(v.evidence, f))} @ ${v.i};`),
   ];
-  const foldMap = `def ${own("fold_map")}${names.length ? paramsText.replace(/\)$/, ", ") : "("}target : ${theoryText}, evidence : ${
-    level === "set" ? "IsSet" : "IsProp"}(${universeText}, target.${carrier})${generator}, x : ${selfText}) : target.${carrier} := match x {
+  const foldMap = `def ${own("fold_map")}${signature([`${v.target} : ${theoryText}`,
+    `${v.evidence} : ${level === "set" ? "IsSet" : "IsProp"}(${universeText}, ${v.target}.${carrier})`, ...generator, `${v.x} : ${selfText}`])} : ${v.target}.${carrier} := match ${v.x} {
     ${clauses.join("\n    ")}
   };`;
-  const fold = `def ${own("fold")}${names.length ? paramsText.replace(/\)$/, ", ") : "("}target : ${theoryText}${generator}) : ${T}.Hom(${own("model")}${applied}, target) := ${T}.Hom.make(
-    ${own("model")}${applied}, target, map := fun x => ${recurse("x").replace("evidence", `target.${evidence.name}`)}, ${
-    operationShapes.map(f => `map_${f.name} := ${lambdas(f.binders.map((b, k) => ({ name: `x${k}` })),
-      `refl(target.${f.name}${f.binders.length ? `(${f.binders.map(mapped).join(", ").replaceAll("evidence", `target.${evidence.name}`)})` : ""})`)}`).join(", ")});`;
+  const targetEvidence = `${v.target}.${evidence.name}`;
+  const fold = `def ${own("fold")}${signature([`${v.target} : ${theoryText}`, ...generator])} : ${T}.Hom(${ownModel}, ${v.target}) := ${T}.Hom.make(
+    ${[ownModel, v.target, `map := fun ${v.x} => ${recurse(targetEvidence, v.x)}`,
+      ...operationShapes.map(f => `map_${f.name} := ${lambdas(variables(f), `refl(${call(`${v.target}.${f.name}`, mapped(targetEvidence, f))})`)}`)].join(", ")});`;
   const dotted = new Map(["model", "fold_map", "fold"].map(suffix => [own(suffix), `${N}.${suffix}`]));
   const generated = renamed(parse(`${model}\n${foldMap}\n${fold}\n`).declarations, dotted);
   return [inductive, ...generated.map(g => ({ ...relocated(g, at), ...(d.uses ? { uses: d.uses } : {}), generated: { initial: N } }))];
 }
 
-// A copy of a node with each name the map gives replaced, binders shadowing.
-function substituted(node, map, bound = new Set()) {
-  if (Array.isArray(node)) return node.map(item => substituted(item, map, bound));
-  if (!node || typeof node !== "object") return node;
-  if (node.kind === "name" && map.has(node.name) && !bound.has(node.name)) return map.get(node.name);
-  const binders = ["forall", "exists", "lambda"].includes(node.kind) && node.name?.text ? [node.name.text] : [];
-  const copy = {};
-  for (const [key, value] of Object.entries(node))
-    copy[key] = substituted(value, map, binders.length && key === "body" ? new Set([...bound, ...binders]) : bound);
-  return copy;
-}
 // A copy with each placeholder name, a token's or a reference's, dotted.
 function renamed(node, map) {
   if (Array.isArray(node)) return node.map(item => renamed(item, map));
@@ -159,12 +179,6 @@ function renamed(node, map) {
   if (copy.kind === "name" && map.has(copy.name)) copy.name = map.get(copy.name);
   return copy;
 }
-const mentions = (node, name) => {
-  if (Array.isArray(node)) return node.some(item => mentions(item, name));
-  if (!node || typeof node !== "object") return false;
-  if (node.kind === "name" && node.name === name) return true;
-  return Object.values(node).some(value => mentions(value, name));
-};
 // Generated source's positions are the declaration's.
 function relocated(node, at) {
   if (Array.isArray(node)) return node.map(item => relocated(item, at));
@@ -186,3 +200,5 @@ const notCarrierValued = (field, carrier) => Error(`${field} gives no element of
 const notEquational = field => Error(`The law ${field} is no equation: an initial model's laws are equations between its operations' terms.`);
 const lawUsesDerived = (field, derived) => Error(`The law ${field} uses the derived operation ${derived}: an initial model's laws use its operations.`);
 const unsupportedField = (T, field) => Error(`${T}'s field ${field} is neither an operation nor a law: an initial model has only those.`);
+const generatedName = (T, field, N, role, dotted = `${N}.${field}`) => Error(`${T}'s field ${field} would be the constructor ${dotted}, but ${dotted} is ${N}'s ${role}: an initial model's operations and laws are named apart from model, fold_map, fold and squash, and a free model's from gen too.`);
+const capturedBy = (field, name) => Error(`${field}'s pattern binds ${name}, which an argument here names: rename it in ${field}.`);
