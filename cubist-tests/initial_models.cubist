@@ -29,6 +29,81 @@ print(evaluate(length{{Unit}}(W.mul(W.gen(tt), W.mul(W.gen(tt), W.gen(tt))))));
 // Its laws are paths: one * x is x in the free monoid.
 def unit_left{{A : U0}}(x : W(A)) : W.mul(W.one, x) = x := W.one_mul(x);
 
+// A carrier alone has an initial model, the squash of no constructors, and a
+// free one, the generators' squash; each model's evidence is the squash's,
+// and its fold has no operation to preserve.
+theory Bare(U < UU0) {
+  M : set U;
+}
+
+initial Nothing : Bare(U0);
+
+free Gens(A : U0) : Bare(U0) on A;
+
+def bare_is_set : IsSet(U0, Nothing) := Bare.M_is_set(Nothing.model);
+
+def bare_generators{{A : U0}}(S : Bare(U0), g : A -> S.M, a : A) :
+  Gens.fold(A, S, g).map(Gens.gen(a)) = g(a) {
+  rfl;
+}
+
+// A law's binder holds in the law: idem's c is its argument, not the
+// constant c.
+theory Constant(U < UU0) {
+  M : set U;
+  c : M;
+  law idem(c : M) : c = c;
+}
+
+initial K : Constant(U0);
+
+def idem_at(x : K) : x = x := K.idem(x);
+
+// The generated binders, as fold's target and its recursion's variables,
+// are apart from the declaration's parameters, and a field's binders from
+// the names put in its type: act's A is not AW(A)'s A.
+free Named(target, evidence, g, x, x0, i : U0) : Monoid(U0) on x0;
+
+def named_fold :=
+  Named.fold(Unit, Unit, Unit, Unit, Nat, Unit, nat_additive.monoid, fun (n : Nat) => n);
+
+// Output: 2
+print(evaluate(named_fold.map(Named.gen(2))));
+
+theory Act(U < UU0) {
+  M : set U;
+  act(A, y : M) : M;
+}
+
+free AW(A : U0) : Act(U0) on A;
+
+def acted{{A : U0}}(S : Act(U0), g : A -> S.M, a : A) :
+  AW.fold(A, S, g).map(AW.act(AW.gen(a), AW.gen(a))) = S.act(g(a), g(a)) {
+  rfl;
+}
+
+// An operation or law named as N's other names, model, fold_map, fold and
+// squash, or a free model's gen, would be two constructors of one name.
+theory Folding(U < UU0) {
+  M : set U;
+  fold : M;
+}
+
+// Error: E861: Folding's field fold would be the constructor Fo.fold, but Fo.fold is Fo's fold: an
+//   initial model's operations and laws are named apart from model, fold_map, fold and squash, and
+//   a free model's from gen too.
+initial Fo : Folding(U0);
+
+theory Generating(U < UU0) {
+  M : set U;
+  gen : M;
+}
+
+// Error: E861: Generating's field gen would be the constructor G.gen, but G.gen is G's generator:
+//   an initial model's operations and laws are named apart from model, fold_map, fold and squash,
+//   and a free model's from gen too.
+free G(A : U0) : Generating(U0) on A;
+
 // A field with no presentation as equations, as a truncated law, has no
 // initial model.
 // Error: E856: The law inverses is no equation: an initial model's laws are equations between its
