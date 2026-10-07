@@ -257,8 +257,6 @@ export function morphismSource(record, isTheory = () => false) {
   // end, the others over its start.
   const binder = (input, step) => `${input.name} : ${input.way === "pull" ? typeAt(input.shape, step.to) : typeAt(input.shape, step.from)}`;
   const quantified = (items, body) => items.map(item => `forall ${item}. `).join("") + body;
-  // A homomorphism's map of a carrier, as a function: T.Hom.map(h).
-  const mapping = (h, sort) => `${hom}.${map(sort)}(${h})`;
   // That `step` preserves an operation.
   const preservation = (operation, step) => {
     const { name, inputs, result } = operation;
@@ -300,6 +298,25 @@ export function morphismSource(record, isTheory = () => false) {
   const implicitModels = `{{${headerBinders(uA, uB)}, ${A} : ${modelOf(uA)}, ${B} : ${modelOf(uB)}}}`;
   const threeModels = `{{${headerBinders(uA, uB, uC)}, ${A} : ${modelOf(uA)}, ${B} : ${modelOf(uB)}, ${C} : ${modelOf(uC)}}}`;
   const oneModel = `{{${headerBinders(uA)}}}(${A} : ${modelOf(uA)})`;
+  // Every call the source makes gives its implicit arguments as written:
+  // the universes and parameters of the models it relates, in its header's
+  // order, and, where the header binds them, the models. Left to
+  // unification, they were most of the time a theory's morphisms took to
+  // check, nine tenths of a composite's.
+  const universesAt = model => model === A ? uA : model === B ? uB : uC;
+  const implicitArgs = (models, withModels = true) => `{{${[...(params.length || universal ? uA : models.flatMap(universesAt)),
+    ...params.map(p => p.name), ...withModels ? models : []].join(", ")}}}`;
+  // A homomorphism or an isomorphism, `text`, from one model to another.
+  const sided = (text, from, to) => ({ text, from, to });
+  // T.Hom(X, Y) and T.Iso(X, Y).
+  const homType = (X, Y) => `${hom}${implicitArgs([X, Y], false)}(${X}, ${Y})`;
+  const isoType = (X, Y) => `${iso}${implicitArgs([X, Y], false)}(${X}, ${Y})`;
+  // A field of a sided homomorphism or isomorphism: T.Hom.map{{…, X, Y}}(h).
+  const project = (owner, field, h) => `${owner}.${field}${implicitArgs([h.from, h.to])}(${h.text})`;
+  // A homomorphism's map of a carrier, as a function.
+  const mapping = (h, sort) => project(hom, map(sort), h);
+  // An isomorphism's homomorphism each way.
+  const there = i => sided(project(iso, "to", i), i.from, i.to), back = i => sided(project(iso, "from", i), i.to, i.from);
   const declarations = [];
   const declare = (name, source, role, extra = {}) => declarations.push({ name, source: `def ${name}${source}`, role, ...extra });
   // The projections of a record type, each typed over the earlier ones.
@@ -307,7 +324,7 @@ export function morphismSource(record, isTheory = () => false) {
     let value = f;
     for (let j = 0; j < k; j++) value += ".2";
     if (k < fields.length - 1) value += ".1";
-    declare(`${owner}.${field.name}`, `${implicitModels}(${f} : ${owner}(${A}, ${B})) : ${typeOf(field)} := ${value};`, "projection",
+    declare(`${owner}.${field.name}`, `${implicitModels}(${f} : ${owner}${implicitArgs([A, B], false)}(${A}, ${B})) : ${typeOf(field)} := ${value};`, "projection",
       { field: field.name });
   });
   const record_ = (name, fields, parents = []) => ({ name, model: name, make: `${name}.make`,
@@ -325,11 +342,11 @@ export function morphismSource(record, isTheory = () => false) {
   const ownType = field => fieldType(field, sort => bound({ name: map(sort) }));
   declare(hom, `${models([])} : ${homUniverse} := ${sigma(homFields, ownType)};`, "hom",
     { record: record_(hom, homFields, record.parents.map(parent => parent.label)) });
-  declare(`${hom}.make`, `${models(homFields.map(field => `${bound(field)} : ${ownType(field)}`))} : ${hom}(${A}, ${B}) := ${
+  declare(`${hom}.make`, `${models(homFields.map(field => `${bound(field)} : ${ownType(field)}`))} : ${homType(A, B)} := ${
     tuple(homFields.map(bound))};`, "make", { labels: labels(homFields) });
-  projections(hom, homFields, field => fieldType(field, sort => mapping(f, sort)));
+  projections(hom, homFields, field => fieldType(field, sort => mapping(sided(f, A, B), sort)));
   // The identity: each map the identity, preserving by reflexivity.
-  declare(`${hom}.id`, `${oneModel} : ${hom}(${A}, ${A}) := ${hom}.make(${A}, ${A}, ${homFields.map(field => {
+  declare(`${hom}.id`, `${oneModel} : ${homType(A, A)} := ${hom}.make${implicitArgs([A, A], false)}(${A}, ${A}, ${homFields.map(field => {
     if (field.sort) return `fun (${memberBinders(field.sort, side(A), X).join(", ")}) => ${X}`;
     const { name, inputs } = field.operation, value = `refl(${applied(`${A}.${name}`, inputs.map(input => input.name))})`;
     const step = along(side(A), side(A), () => "");
@@ -337,17 +354,19 @@ export function morphismSource(record, isTheory = () => false) {
   }).join(", ")});`, "id");
   // Composition: g after f, preserving by f's preservation carried along
   // g's map, then g's.
-  declare(`${hom}.compose`, `${threeModels}(${g} : ${hom}(${B}, ${C}), ${f} : ${hom}(${A}, ${B})) : ${hom}(${A}, ${C}) := ${hom}.make(${A}, ${C}, ${homFields.map(field => {
-    const viaF = sort => `${f}.${map(sort)}`, viaG = sort => `${g}.${map(sort)}`;
+  const gHom = sided(g, B, C), fHom = sided(f, A, B);
+  declare(`${hom}.compose`, `${threeModels}(${g} : ${homType(B, C)}, ${f} : ${homType(A, B)}) : ${homType(A, C)} := ${
+    hom}.make${implicitArgs([A, C], false)}(${A}, ${C}, ${homFields.map(field => {
+    const viaF = sort => mapping(fHom, sort), viaG = sort => mapping(gHom, sort);
     const first = along(side(A), side(B), viaF), second = along(first.to, side(C), viaG), whole = along(side(A), side(C), viaF);
     if (field.sort)
-      return `fun (${memberBinders(field.sort, side(A), X).join(", ")}) => ${mapped(`${g}.${field.name}`, field.sort, first.to, mapped(`${f}.${field.name}`, field.sort, side(A), X))}`;
+      return `fun (${memberBinders(field.sort, side(A), X).join(", ")}) => ${mapped(viaG(field.sort), field.sort, first.to, mapped(viaF(field.sort), field.sort, side(A), X))}`;
     const { inputs, result } = field.operation;
     // f's preservation at the inputs g pulls back, carried along g's map of
     // the result; then g's at the inputs f pushes forward.
     const pulledBack = along(side(B), side(C), viaG);
-    const fAt = applied(`${f}.${field.name}`, inputs.map(input => input.way === "pull" ? pull(input.shape, input.name, pulledBack) : input.name));
-    const gAt = applied(`${g}.${field.name}`, inputs.map(input => input.way === "push" ? push(input.shape, input.name, first) : input.name));
+    const fAt = applied(project(hom, field.name, fHom), inputs.map(input => input.way === "pull" ? pull(input.shape, input.name, pulledBack) : input.name));
+    const gAt = applied(project(hom, field.name, gHom), inputs.map(input => input.way === "push" ? push(input.shape, input.name, first) : input.name));
     const image = own("image");
     const carried = result.way === "fixed" ? fAt
       : `cong(fun (${image} : ${typeAt(result.shape, first.to)}) => ${push(result.shape, image, second)}, ${fAt})`;
@@ -360,8 +379,8 @@ export function morphismSource(record, isTheory = () => false) {
   for (const parent of record.parents) {
     const fields = parent.fields.flatMap((child, k) => parent.kinds[k] === "sort" ? [map(child)]
       : parent.kinds[k] === "operation" ? [`map_${child}`] : []);
-    declare(`${hom}.${parent.label}`, `${implicitModels}(${f} : ${hom}(${A}, ${B})) : ${parent.theory}.Hom(${A}.${parent.label}, ${B}.${parent.label}) := ${
-      parent.theory}.Hom.make(${A}.${parent.label}, ${B}.${parent.label}${fields.map(field => `, ${f}.${field}`).join("")});`, "projection",
+    declare(`${hom}.${parent.label}`, `${implicitModels}(${f} : ${homType(A, B)}) : ${parent.theory}.Hom(${A}.${parent.label}, ${B}.${parent.label}) := ${
+      parent.theory}.Hom.make(${A}.${parent.label}, ${B}.${parent.label}${fields.map(field => `, ${project(hom, field, sided(f, A, B))}`).join("")});`, "projection",
     { field: parent.label });
   }
 
@@ -381,41 +400,43 @@ export function morphismSource(record, isTheory = () => false) {
     ...tripped.map(sort => ({ name: single ? "from_to" : `from_to_${sort}`, sort, way: "from_to" })),
     ...tripped.map(sort => ({ name: single ? "to_from" : `to_from_${sort}`, sort, way: "to_from" }))];
   const other = field => isoFields.find(f => f.sort === field.sort && f.way !== field.way).name;
-  // A round trip's type, `to` and `from` the two homomorphisms.
-  const isoType = (field, to, from) => {
-    if (field.name === "to") return `${hom}(${A}, ${B})`;
-    if (field.name === "from") return `${hom}(${B}, ${A})`;
+  // A round trip's type, `to` and `from` the two homomorphisms, sided.
+  const isoFieldType = (field, to, from) => {
+    if (field.name === "to") return homType(A, B);
+    if (field.name === "from") return homType(B, A);
     const [start, x] = field.way === "from_to" ? [side(A), X] : [side(B), Y];
     const [first, second] = field.way === "from_to" ? [to, from] : [from, to];
     return quantified(memberBinders(field.sort, start, x),
       `${mapped(mapping(second, field.sort), field.sort, start, mapped(mapping(first, field.sort), field.sort, start, x))} = ${x}`);
   };
-  const [to, from] = isoFields.map(bound);
-  declare(iso, `${models([])} : ${homUniverse} := ${sigma(isoFields, field => isoType(field, to, from))};`, "iso",
+  const [to, from] = isoFields.map(bound), toHom = sided(to, A, B), fromHom = sided(from, B, A), fIso = sided(f, A, B);
+  declare(iso, `${models([])} : ${homUniverse} := ${sigma(isoFields, field => isoFieldType(field, toHom, fromHom))};`, "iso",
     { record: record_(iso, isoFields) });
-  declare(`${iso}.make`, `${models(isoFields.map(field => `${bound(field)} : ${isoType(field, to, from)}`))} : ${iso}(${A}, ${B}) := ${
+  declare(`${iso}.make`, `${models(isoFields.map(field => `${bound(field)} : ${isoFieldType(field, toHom, fromHom)}`))} : ${isoType(A, B)} := ${
     tuple(isoFields.map(bound))};`, "make", { labels: labels(isoFields) });
-  projections(iso, isoFields, field => isoType(field, `${iso}.to(${f})`, `${iso}.from(${f})`));
-  declare(`${iso}.id`, `${oneModel} : ${iso}(${A}, ${A}) := ${iso}.make(${A}, ${A}, ${hom}.id(${A}), ${hom}.id(${A})${
+  projections(iso, isoFields, field => isoFieldType(field, there(fIso), back(fIso)));
+  const identity = `${hom}.id${implicitArgs([A], false)}(${A})`;
+  declare(`${iso}.id`, `${oneModel} : ${isoType(A, A)} := ${iso}.make${implicitArgs([A, A], false)}(${A}, ${A}, ${identity}, ${identity}${
     isoFields.slice(2).map(field => `, fun (${memberBinders(field.sort, side(A), X).join(", ")}) => refl(${X})`).join("")});`, "id");
   // Composition: each way, the composite of the two homomorphisms; their
   // round trips, the inner one carried along the outer map, then the outer.
+  const gIso = sided(g, B, C);
   const roundTrip = field => {
-    const [start, middle, x, inner, outer] = field.way === "from_to" ? [side(A), side(B), X, g, f] : [side(C), side(B), Y, f, g];
-    const [there, back] = field.way === "from_to" ? ["to", "from"] : ["from", "to"];
+    const [start, middle, x, inner, outer] = field.way === "from_to" ? [side(A), side(B), X, gIso, fIso] : [side(C), side(B), Y, fIso, gIso];
+    const [away, home] = field.way === "from_to" ? [there(outer), back(outer)] : [back(outer), there(outer)];
     const image = own("image");
     const member = families.has(field.sort) ? `${middle.model}.${field.sort}(${families.get(field.sort).map(i => i.name).join(", ")})` : `${middle.model}.${field.sort}`;
-    const inside = mapped(`${outer}.${there}.${map(field.sort)}`, field.sort, start, x);
-    const innerTrip = families.has(field.sort) ? `${inner}.${field.name}(${[...families.get(field.sort).map(i => i.name), inside].join(", ")})` : `${inner}.${field.name}(${inside})`;
-    const outerTrip = families.has(field.sort) ? `${outer}.${field.name}(${[...families.get(field.sort).map(i => i.name), x].join(", ")})` : `${outer}.${field.name}(${x})`;
+    const inside = mapped(mapping(away, field.sort), field.sort, start, x);
+    const trip = (i, at) => families.has(field.sort) ? `${project(iso, field.name, i)}(${[...families.get(field.sort).map(i => i.name), at].join(", ")})` : `${project(iso, field.name, i)}(${at})`;
     return `, fun (${memberBinders(field.sort, start, x).join(", ")}) => trans(cong(fun (${image} : ${member}) => ${
-      mapped(`${outer}.${back}.${map(field.sort)}`, field.sort, start, image)}, ${innerTrip}), ${outerTrip})`;
+      mapped(mapping(home, field.sort), field.sort, start, image)}, ${trip(inner, inside)}), ${trip(outer, x)})`;
   };
-  declare(`${iso}.compose`, `${threeModels}(${g} : ${iso}(${B}, ${C}), ${f} : ${iso}(${A}, ${B})) : ${iso}(${A}, ${C}) := ${iso}.make(${A}, ${C}, ${
-    hom}.compose(${g}.to, ${f}.to), ${hom}.compose(${f}.from, ${g}.from)${isoFields.slice(2).map(roundTrip).join("")});`,
+  declare(`${iso}.compose`, `${threeModels}(${g} : ${isoType(B, C)}, ${f} : ${isoType(A, B)}) : ${isoType(A, C)} := ${iso}.make${implicitArgs([A, C], false)}(${A}, ${C}, ${
+    hom}.compose${implicitArgs([A, B, C])}(${there(gIso).text}, ${there(fIso).text}), ${hom}.compose${implicitArgs([C, B, A])}(${back(fIso).text}, ${back(gIso).text})${
+    isoFields.slice(2).map(roundTrip).join("")});`,
   "compose");
   // The inverse: the two homomorphisms and the two round trips swapped.
-  declare(`${iso}.inverse`, `${implicitModels}(${f} : ${iso}(${A}, ${B})) : ${iso}(${B}, ${A}) := ${iso}.make(${B}, ${A}, ${f}.from, ${f}.to${
-    isoFields.slice(2).map(field => `, ${f}.${other(field)}`).join("")});`, "inverse");
+  declare(`${iso}.inverse`, `${implicitModels}(${f} : ${isoType(A, B)}) : ${isoType(B, A)} := ${iso}.make${implicitArgs([B, A], false)}(${B}, ${A}, ${
+    back(fIso).text}, ${there(fIso).text}${isoFields.slice(2).map(field => `, ${project(iso, other(field), fIso)}`).join("")});`, "inverse");
   return { declarations, universes: uA, parameterMarker, typeMarkers };
 }

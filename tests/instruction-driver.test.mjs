@@ -554,6 +554,28 @@ test("the glue move: no Glue eta redex is no progress, and the move's budget is 
   assert.ok(g.step(g.refl(typing), "other", [], "normalize"), "the session's budget is back");
 });
 
+test("the normalize move runs within its own budget, and a normal form it did not reach is not tried again", async t => {
+  const { KernelError } = await import("../web/cubical-kernel.mjs");
+  const program = new CubicalProgram(await createCubical(), readLibrary);
+  t.after(() => program.dispose());
+  await program.check("import nat;\ndef unit_point : Unit := tt;\n", "normal_forms");
+  const driver = program.checker.driver, g = driver.graph, syntax = program.checker.syntax;
+  // A closed term focused on, as a comparison of two copies focuses on it.
+  const typed = n => driver.check(syntax.encode(numeral(n)), syntax.encode(naturalSort));
+  const two = typed(2), three = typed(3), focus = typing => driver.focus(g.refl(typing), "other");
+  // Its normal form not reached: the comparison keeps to lazy steps, and a
+  // later one with the same term does not try again.
+  const within = g.within, budgets = [];
+  g.within = steps => { budgets.push(steps); throw new KernelError("Kernel checking/reduction budget exhausted.", "budget"); };
+  try {
+    assert.equal(driver.normalizeBoth(focus(two), focus(two)), false);
+    assert.equal(driver.normalizeBoth(focus(two), focus(two)), false);
+  } finally { g.within = within; }
+  assert.deepEqual(budgets, [searchLimits.normalFormSteps]);
+  // A normal form reached within the budget is compared.
+  assert.equal(driver.normalizeBoth(focus(three), focus(three)), true);
+});
+
 test("the glue move rethrows a deadline, and a Glue term needs it at every focus", async t => {
   const { T, program, compare } = await glueSession(t);
   const { KernelError } = await import("../web/cubical-kernel.mjs");

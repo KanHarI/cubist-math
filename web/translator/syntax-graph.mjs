@@ -14,6 +14,7 @@ export function syntaxGraphBudget({checkDeadline,maxVisits=500000}={}) {
 // Cache by the dimension assignment, not by a Map object's identity or
 // insertion order. Callers may pass mutable maps, so compute this afresh.
 export function dimensionContextKey(dimensions) {
+  if(!dimensions.size)return "[]";
   return JSON.stringify([...dimensions].sort(([left],[right])=>
     left<right?-1:left>right?1:0));
 }

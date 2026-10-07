@@ -1551,6 +1551,10 @@
    "summary": "Constructions and proofs checked with their bodies exposed, and a false claim refused."
   },
   {
+   "path": "cubist-tests/declared_induction.cubist",
+   "summary": "`induction` on any declared type, for `tests/induction.test.mjs`: the expression and the statement on the library's lists, Nat's two forms, path constructors and function-typed recursive arguments, and the refusals and the warning."
+  },
+  {
    "path": "cubist-tests/declared_match_operator_call.cubist",
    "summary": "A recursion whose other arguments vary, with `+` given to it by a notation of the module's own; a function named `add` gives `+` no meaning."
   },
@@ -1865,10 +1869,6 @@
   {
    "path": "cubist-tests/induction_printed.cubist",
    "summary": "How an eliminator prints, for `tests/induction.test.mjs`: as the induction that builds it, with `__U` for an erased universe, and the printed source written back."
-  },
-  {
-   "path": "cubist-tests/induction.cubist",
-   "summary": "`induction` on any declared type, for `tests/induction.test.mjs`: the expression and the statement on the library's lists, Nat's two forms, path constructors and function-typed recursive arguments, and the refusals and the warning."
   },
   {
    "path": "cubist-tests/inductive_assumptions.cubist",
