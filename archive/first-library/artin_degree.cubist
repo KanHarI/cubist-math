@@ -18,8 +18,8 @@ def finite_spanning_basis_size_bound(
   let h := basis_expansion(K, V, m, basis);
   let X := FiniteLinearLift(K, C, V, f, m, h);
   let bound : X -> le(m, n) {
-    intro witness;
-    obtain (lift, commute) := witness;
+    intro witness_;
+    obtain (lift, commute) := witness_;
     let injective : CoordinateInjection(K, m, n, lift) {
       intro x, y, same;
       exact linear_iso_injective(
@@ -87,8 +87,8 @@ def finite_subgroup_fixed_degree_upper_bound(
       )
     );
   let fromBasis : Basis -> Result {
-    intro witness;
-    obtain (enumeration, points, basis) := witness;
+    intro witness_;
+    obtain (enumeration, points, basis) := witness_;
     let spanning := subgroup_evaluation_spans_fixed_field(K, E, H, n, enumeration, points, basis);
     let finiteExtension := finite_spanning_dimension(R, V, n, points, spanning);
     let bound :=
@@ -253,15 +253,15 @@ def finite_independent_basis_size_bound(
   let C := CoordinateSpace(K, n);
   let D := CoordinateSpace(K, m);
   let f := family_linear(K, V, n, vectors);
-  let inverse := linear_iso_inverse(K, D, V, basis);
-  let coordinates := linear_iso_forward(K, V, D, inverse);
+  let inverse_ := linear_iso_inverse(K, D, V, basis);
+  let coordinates := linear_iso_forward(K, V, D, inverse_);
   let composite := linear_compose(K, C, V, D, f, coordinates);
   let injective : CoordinateInjection(K, n, m, composite) {
     intro x, y, same;
     exact independent(
       x, y,
       linear_iso_injective(
-        K, V, D, inverse, linear_map(K, C, V, f, x), linear_map(K, C, V, f, y), same
+        K, V, D, inverse_, linear_map(K, C, V, f, x), linear_map(K, C, V, f, y), same
       )
     );
   }
@@ -317,8 +317,8 @@ def finite_subgroup_fixed_degree_lower_bound(
       )
     );
   let fromBasis : Basis -> le(n, d) {
-    intro witness;
-    obtain (enumeration, points, basis) := witness;
+    intro witness_;
+    obtain (enumeration, points, basis) := witness_;
     let independent :=
       subgroup_evaluation_points_independent(K, E, H, n, enumeration, points, basis);
     exact finite_independent_dimension_bound(

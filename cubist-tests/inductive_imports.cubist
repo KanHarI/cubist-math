@@ -13,4 +13,4 @@ def three_again : three = nsucc(nsucc(nsucc(nzero))) {
   rfl;
 }
 
-def use(dummy : Nat, B : U0, A : U0, b : B) := S(B, A, b);
+def use_(dummy : Nat, B : U0, A : U0, b : B) := S(B, A, b);

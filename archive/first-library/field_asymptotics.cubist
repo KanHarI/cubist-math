@@ -16,14 +16,14 @@ def field_close_prop(
   F : U1, addF : F -> F -> F, lt : F -> F -> U0, order : StrictOrder(F, lt), x, y, epsilon : F
 ) :
   FieldProp(FieldClose(F, addF, lt, x, y, epsilon)) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   let upper := lt(x, addF(y, epsilon));
   let lower := lt(y, addF(x, epsilon));
   intro p, q;
   exact field_pair_path(
     upper, lower, p, q,
-    prop(x, addF(y, epsilon), field_fst(upper, lower, p), field_fst(upper, lower, q)),
-    prop(y, addF(x, epsilon), field_snd(upper, lower, p), field_snd(upper, lower, q))
+    prop_(x, addF(y, epsilon), field_fst(upper, lower, p), field_fst(upper, lower, q)),
+    prop_(y, addF(x, epsilon), field_snd(upper, lower, p), field_snd(upper, lower, q))
   );
 }
 

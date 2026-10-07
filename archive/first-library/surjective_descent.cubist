@@ -39,7 +39,7 @@ def descent_data_prop(
     field_exists_elim(
       (exists a : A. present(a) = b), (first = second), setG(first, second),
       (
-        fun (witness : (exists a : A. present(a) = b)) => unpack witness as (a, represents) return (
+        fun (witness_ : (exists a : A. present(a) = b)) => unpack witness_ as (a, represents) return (
           first = second
         ) {
           trans(sym(firstLaw(a, represents)), secondLaw(a, represents));
@@ -62,7 +62,7 @@ def surjective_descent_data(
     (exists a : A. present(a) = b), DescentData(A, B, G, present, value, b),
     descent_data_prop(A, B, G, setG, present, value, b, covered(b)),
     (
-      fun (witness : (exists a : A. present(a) = b)) => unpack witness as (a, represents) return DescentData(
+      fun (witness_ : (exists a : A. present(a) = b)) => unpack witness_ as (a, represents) return DescentData(
         A, B, G, present, value, b
       ) {
         (
@@ -94,9 +94,9 @@ def surjective_descent_beta(
   surjective_descent(A, B, G, setG, present, value, covered, consistent, present(a)) = value(a) {
   let data :=
     surjective_descent_data(A, B, G, setG, present, value, covered, consistent, present(a));
-  let law : forall a2 : A.
+  let law_ : forall a2 : A.
   (present(a2) = present(a))
   -> value(a2) = field_first(G, DescentValue(A, B, G, present, value, present(a)), data) :=
     field_second(G, DescentValue(A, B, G, present, value, present(a)), data);
-  exact sym(law(a, refl(present(a))));
+  exact sym(law_(a, refl(present(a))));
 }

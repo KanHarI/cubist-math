@@ -222,7 +222,7 @@ def fixed_subgroup_distinct_embeddings(
   let F := extension_field(K, E);
   let i := intermediate_ambient_embedding(K, E, M);
   let B := EmbeddingsOver(R, F, i, F, i);
-  let make : Bijection(Fin(n), A) -> DistinctFamily(B, n) {
+  let make_ : Bijection(Fin(n), A) -> DistinctFamily(B, n) {
     intro enumeration;
     let f :=
       fun (index : Fin(n)) => fixed_subgroup_embedding(
@@ -240,5 +240,5 @@ def fixed_subgroup_distinct_embeddings(
     }
     exact (f, injective);
   }
-  exact mere_map(Bijection(Fin(n), A), DistinctFamily(B, n), make, finite);
+  exact mere_map(Bijection(Fin(n), A), DistinctFamily(B, n), make_, finite);
 }

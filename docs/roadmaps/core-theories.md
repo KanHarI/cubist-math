@@ -584,7 +584,7 @@ theory CommMonoid extends Monoid {
 }
 
 theory CommRing extends
-    additive : AbelianGroup(M := R, mul := add notation x + y, one := zero, inv := neg,
+    additive_ : AbelianGroup(M := R, mul := add notation x + y, one := zero, inv := neg,
       mul_assoc := add_assoc, one_mul := zero_add, mul_one := add_zero, inv_mul := neg_add,
       mul_comm := add_comm),
     multiplicative : CommMonoid(M := R) {
@@ -625,6 +625,11 @@ homomorphisms preserve its parents' operations too, and `T.Hom` has the
 forgetful map to each parent's homomorphisms, `f.p`.
 
 ## Elaboration
+
+The [reserved-name policy](../guides/keywords.md) applies to these generated
+interfaces and to the planned deriving vocabulary: fixed generated names
+cannot be used as user fields or binders. Generated members remain callable,
+and dynamically formed names still require collision checks before publication.
 
 A theory expands, before checking, into the definitions above, in the
 module that declares it, in order: the record and its constructor, the

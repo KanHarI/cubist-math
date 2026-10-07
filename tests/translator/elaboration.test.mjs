@@ -40,7 +40,7 @@ test('a derived unit shares its name supply and replaces only the given fields',
 });
 
 test('elaborating a module twice yields the same generated names',()=>{
-  const source='def twice(f : Unit -> Unit, n : Unit) := f(f(n)); def id(A : U0) : A -> A { intro x; exact x; }';
+  const source='def twice(f : Unit -> Unit, n : Unit) := f(f(n)); def id_(A : U0) : A -> A { intro x; exact x; }';
   const translate=()=>new Translator({checker:kernelChecker()}).translate(source);
   const [first,second]=[translate(),translate()];
   assert.ok(first.declarations.every(d=>d.term),JSON.stringify(first.declarations.map(d=>d.reason)));

@@ -96,9 +96,9 @@ def monic_square_root_equation(
   root : monic_eval(F, one, addF, mulF, 2, square_root_coefficients(F, zero, negF, a), z) = zero
 ) :
   mulF(z, z) = a {
-  obtain (setF, additive, multiplicative) := ring;
+  obtain (setF, additive_, multiplicative) := ring;
   exact field_add_cancel(
-    F, zero, addF, negF, additive, negF(a), mulF(z, z), a,
+    F, zero, addF, negF, additive_, negF(a), mulF(z, z), a,
     trans(
       sym(monic_square_eval(F, zero, one, addF, mulF, negF, ring, a, z)),
       trans(root, sym(ring_add_inverse(F, zero, one, addF, mulF, negF, ring, a)))
@@ -118,7 +118,7 @@ def algebraic_closure_implies_square_roots(
   exact field_exists_map(
     MonicRoot(F, zero, one, addF, mulF, 2, coefficients), (exists z : F. mulF(z, z) = a),
     (
-      fun (witness : MonicRoot(F, zero, one, addF, mulF, 2, coefficients)) => unpack witness as (
+      fun (witness_ : MonicRoot(F, zero, one, addF, mulF, 2, coefficients)) => unpack witness_ as (
         z, root
       ) return (exists z : F. mulF(z, z) = a) {
         (z, monic_square_root_equation(F, zero, one, addF, mulF, negF, ring, a, z, root));

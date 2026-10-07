@@ -4,25 +4,25 @@ import classical;
 
 def order_prop(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le)) :
   forall x : A. forall y : A. FieldProp(le(x, y)) {
-  obtain ((prop, reflexive, transitive), antisymmetric) := laws;
-  exact prop;
+  obtain ((prop_, reflexive, transitive), antisymmetric) := laws;
+  exact prop_;
 }
 
 def order_refl(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le)) :
   OrderReflexive(A, le) {
-  obtain ((prop, reflexive, transitive), antisymmetric) := laws;
+  obtain ((prop_, reflexive, transitive), antisymmetric) := laws;
   exact reflexive;
 }
 
 def order_trans(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le)) :
   OrderTransitive(A, le) {
-  obtain ((prop, reflexive, transitive), antisymmetric) := laws;
+  obtain ((prop_, reflexive, transitive), antisymmetric) := laws;
   exact transitive;
 }
 
 def order_antisym(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le)) :
   OrderAntisymmetric(A, le) {
-  obtain ((prop, reflexive, transitive), antisymmetric) := laws;
+  obtain ((prop_, reflexive, transitive), antisymmetric) := laws;
   exact antisymmetric;
 }
 
@@ -83,10 +83,10 @@ def Progressive(A : U1, le : OrderRelation(A), f : A -> A) := forall x : A. le(x
 
 // Binary propositional elimination, allowing a U1 target.
 def field_or_elim(
-  P, Q, R : U1, prop : FieldProp(R), leftCase : P -> R, rightCase : Q -> R, h : FieldOr(P, Q)
+  P, Q, R : U1, prop_ : FieldProp(R), leftCase : P -> R, rightCase : Q -> R, h : FieldOr(P, Q)
 ) :
   R {
-  exact field_exists_elim(P or Q, R, prop, (fun (side : P or Q) => match side return R {
+  exact field_exists_elim(P or Q, R, prop_, (fun (side : P or Q) => match side return R {
         left p => leftCase(p);
         right q => rightCase(q);
       }), h);
@@ -111,7 +111,7 @@ def collapse_path_recovers(
   A : U1, h : (forall x : A. forall y : A. (x = y) -> (x = y)), x, y : A, p : x = y
 ) :
   collapse_path(A, h, x, y, p) = p {
-  exact based_induction(
+  exact based_induction_(
     U1, U1, A, x, (fun (z : A, q : x = z) => collapse_path(A, h, x, z, q) = q),
     inverse_left(A, x, x, h(x, x, refl(x))), y, p
   );
@@ -166,17 +166,17 @@ def partial_order_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(
 }
 
 def field_subtype_is_set(
-  A : U1, P : A -> U1, setA : FieldSet(A), prop : (forall x : A. FieldProp(P(x)))
+  A : U1, P : A -> U1, setA : FieldSet(A), prop_ : (forall x : A. FieldProp(P(x)))
 ) :
   FieldSet(exists x : A. P(x)) {
   let S := exists x : A. P(x);
   let first := field_first(A, P);
-  let h := fun (x, y : S, p : x = y) => field_subtype_ext(A, P, prop, x, y, cong(first, p));
+  let h := fun (x, y : S, p : x = y) => field_subtype_ext(A, P, prop_, x, y, cong(first, p));
   exact weak_path_collapser_set(
     S, h,
     (
       fun (x, y : S, p, q : x = y) => cong(
-        field_subtype_ext(A, P, prop, x, y),
+        field_subtype_ext(A, P, prop_, x, y),
         setA(first(x), first(y), cong(first, p), cong(first, q))
       )
     )

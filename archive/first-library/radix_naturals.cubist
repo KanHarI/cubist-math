@@ -37,7 +37,7 @@ def radix_digit_succ(n : Nat) : RadixDigit(n) -> (RadixDigit(n) or Unit) {
     ) {
       left top => right(tt);
       right lower => match previous(lower) return (RadixDigit(succ(k)) or Unit) {
-        left next => left(radix_digit_weaken(k, next));
+        left next_ => left(radix_digit_weaken(k, next_));
         right carry => left(radix_digit_top(k));
       };
     };
@@ -77,8 +77,8 @@ def radix_positive_rec(
 ) :
   R := match p {
     radix_leading_digit(first) => leading(first);
-    radix_appended_digit(next, child) => digit(
-      next, child, radix_positive_rec(extra, R, leading, digit, child)
+    radix_appended_digit(next_, child) => digit(
+      next_, child, radix_positive_rec(extra, R, leading, digit, child)
     );
   };
 

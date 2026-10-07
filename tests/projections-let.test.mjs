@@ -7,6 +7,8 @@ import { currentSyntax, historicalSource } from "../web/cubist/legacy-syntax.mjs
 import { sourceText } from "../web/cubical-source-text.mjs";
 import { cubicalMathTree, cubicalText } from "../web/cubical-notation.mjs";
 import { testModule } from "./check-program.mjs";
+import { CubicalProgram } from "../web/cubical-program.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 
 // L1.5 (HoTT A8 and B4): projections p.1 and p.2, and let's stated type and
 // proof block, which replaced have, show and suffices on 2026-09-30. Each
@@ -174,6 +176,25 @@ test("a historical module's constructors are renamed in the constructors after t
     + "inductive E { left_(n : Nat); typed_(b : Unit); }\ninductive W { base; wrap(e : E); right_ : base = base; }\n"
     + "def f(x : Unit or Nat, w : W) : Nat := match x, w return Nat { y, base => zero; y, wrap(left_(n)) => n; "
     + "y, wrap(typed_(b)) => zero; y, right_ @ i => zero; };\n" + sum);
+});
+
+test("historical sum patterns and generated squashes keep their matched type after a same-named constructor", async t => {
+  const source = "inductive E { left(x : Unit); right(x : Unit); }\n"
+    + "def Side := Unit or Unit;\n"
+    + "def f(s : Side) : Unit { match s { left(x) => { exact x; } right(y) => { exact y; } } }\n"
+    + "inductive Q : prop { squash; }\n"
+    + "def keep(q : Q) : Q := match q { squash => squash; Q.squash(x, y) @ i => Q.squash(keep(x), keep(y)) @ i; };\n"
+    + "inductive T : prop { point; }\n"
+    + "def g(t : T) : T := match t { point => point; squash(x, y) @ i => T.squash(g(x), g(y)) @ i; };\n";
+  const read = historicalSource(source, "old", { implicitNat: false, minusReverses: false });
+  assert.match(read, /left_\(x : Unit\); right_\(x : Unit\)/);
+  assert.match(read, /match s \{ left\(x\)/);
+  assert.match(read, /match q \{ squash_ => squash_; Q.squash/);
+  assert.match(read, /match t \{ point => point; squash\(x, y\)/);
+  const program = new CubicalProgram(module, sourceReader());
+  t.after(() => program.dispose());
+  const result = await program.check(read, "history_sum");
+  assert.equal(result.complete, true, JSON.stringify(program.gaps));
 });
 
 test("a historical module reverses with ~ where it wrote prefix -, as every module did before 2026-10-06", () => {

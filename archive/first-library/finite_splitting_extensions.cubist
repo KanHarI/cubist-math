@@ -72,8 +72,8 @@ def finite_splitting_step(
     );
   }
   let fromRoot : RootAdjunction(K, p) -> FieldExists(FiniteSplittingExtension(K, p, succ(n))) {
-    intro witness;
-    obtain (L, e, x, finite, root) := witness;
+    intro witness_;
+    obtain (L, e, x, finite, root) := witness_;
     let mapped := polynomial_map(K, L, e, p);
     let mappedDegree := trans(polynomial_map_cutoff(K, L, e, p), degree);
     let mappedNonzero := polynomial_map_nonzero(K, L, e, p, nonzero);

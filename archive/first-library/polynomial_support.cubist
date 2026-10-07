@@ -239,8 +239,8 @@ def polynomial_shift(K : AlgebraicField, p : Polynomial(K)) : Polynomial(K) {
   let f := polynomial_coefficients(K, p);
   let Result := exists k : Nat. SeriesSupport(K, series_shift(K, f), k);
   let convert : (exists n : Nat. SeriesSupport(K, f, n)) -> Result {
-    intro witness;
-    obtain (n, support) := witness;
+    intro witness_;
+    obtain (n, support) := witness_;
     exact (succ(n), support_shift(K, f, n, support));
   }
   exact (
@@ -255,8 +255,8 @@ def polynomial_neg(K : AlgebraicField, p : Polynomial(K)) : Polynomial(K) {
   let f := polynomial_coefficients(K, p);
   let Result := exists k : Nat. SeriesSupport(K, series_neg(K, f), k);
   let convert : (exists n : Nat. SeriesSupport(K, f, n)) -> Result {
-    intro witness;
-    obtain (n, support) := witness;
+    intro witness_;
+    obtain (n, support) := witness_;
     exact (
       n,
       (

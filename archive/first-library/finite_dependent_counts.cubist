@@ -22,7 +22,7 @@ def finite_mere_choice_step(
   let Goal := (forall i : Fin(succ(n)). P(i));
   let fromHead : P(h) -> Mere(Goal) {
     intro first;
-    let join : (forall i : Fin(n). Q(i)) -> Goal {
+    let join_ : (forall i : Fin(n). Q(i)) -> Goal {
       intro rest, i;
       exact match i as j return P(j) {
         left u => (
@@ -32,7 +32,7 @@ def finite_mere_choice_step(
       };
     }
     exact mere_map(
-      (forall i : Fin(n). Q(i)), Goal, join,
+      (forall i : Fin(n). Q(i)), Goal, join_,
       previous(Q, (fun (i : Fin(n)) => inhabited(typed(Fin(succ(n)), right(i)))))
     );
   }
@@ -70,9 +70,9 @@ def finite_uniform_fiber_count(n, m : Nat) : UniformFiberCount(Fin(n), n, m) {
           )
         )
       );
-    let path := cong((fun (F : Fin(n) -> U0) => (exists i : Fin(n). F(i))), same);
+    let path_ := cong((fun (F : Fin(n) -> U0) => (exists i : Fin(n). F(i))), same);
     let product := merely(Bijection(Fin(k), C), reverse_bijection(C, Fin(k), fin_product(n, m)));
-    exact cardinality_path(C, A, sym(path), k, product);
+    exact cardinality_path(C, A, sym(path_), k, product);
   }
   exact mere_eliminate(
     (forall i : Fin(n). P(i)), HasCardinality(A, k), has_cardinality_prop(A, k), enumerate,

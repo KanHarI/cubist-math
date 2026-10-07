@@ -36,7 +36,7 @@ def embedding_generator_root(
   K : AlgebraicField, M : PolynomialModulus(K),
   irreducible : PolynomialIrreducible(K, modulus_polynomial(K, M)), L : AlgebraicField,
   e : FieldEmbedding(K, L), h : FieldEmbedding(PolynomialResidueField(K, M, irreducible), L),
-  over : EmbeddingOverLaw(
+  over_ : EmbeddingOverLaw(
     K, PolynomialResidueField(K, M, irreducible), residue_embedding(K, M, irreducible), L, e, h
   )
 ) :
@@ -50,7 +50,7 @@ def embedding_generator_root(
   let x := adjoined_root(K, M);
   let f := field_embedding_map(R, L, h);
   let c := field_embedding_compose(K, R, L, inclusion, h);
-  let triangle := field_embedding_ext(K, L, c, e, over);
+  let triangle := field_embedding_ext(K, L, c, e, over_);
   obtain (zero, one, neg, add, mul) := field_embedding_preserves(R, L, h);
   exact with unfolding [] {
     trans(
@@ -69,10 +69,10 @@ def embedding_to_root(
   e : FieldEmbedding(K, L), h : AdjoinedEmbeddings(K, M, irreducible, L, e)
 ) :
   PolynomialRoots(K, L, e, modulus_polynomial(K, M)) {
-  obtain (f, over) := h;
+  obtain (f, over_) := h;
   exact (
     field_embedding_map(PolynomialResidueField(K, M, irreducible), L, f, adjoined_root(K, M)),
-    embedding_generator_root(K, M, irreducible, L, e, f, over)
+    embedding_generator_root(K, M, irreducible, L, e, f, over_)
   );
 }
 
@@ -102,9 +102,9 @@ def embedding_root_roundtrip(
   let R := PolynomialResidueField(K, M, irreducible);
   let inclusion := residue_embedding(K, M, irreducible);
   let f := embedding_over(K, R, inclusion, L, e, h);
-  let over := embedding_over_law(K, R, inclusion, L, e, h);
+  let over_ := embedding_over_law(K, R, inclusion, L, e, h);
   let x := field_embedding_map(R, L, f, adjoined_root(K, M));
-  let root := embedding_generator_root(K, M, irreducible, L, e, f, over);
+  let root := embedding_generator_root(K, M, irreducible, L, e, f, over_);
   exact with unfolding [
     root_to_embedding, embedding_to_root, embedding_over, embedding_over_law, sigma_first,
     sigma_second
@@ -112,7 +112,7 @@ def embedding_root_roundtrip(
     embeddings_over_ext(
       K, R, inclusion, L, e,
       root_to_embedding(K, M, irreducible, L, e, embedding_to_root(K, M, irreducible, L, e, h)), h,
-      sym(adjoin_root_embedding_unique(K, M, irreducible, L, e, x, root, f, over, refl(x)))
+      sym(adjoin_root_embedding_unique(K, M, irreducible, L, e, x, root, f, over_, refl(x)))
     )
   };
 }

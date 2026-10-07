@@ -381,23 +381,23 @@ def counted : count(succ(succ(zero))) = 0 {
 // A user constructor named squash and the generated Q.squash are distinct
 // clauses.
 inductive Q : prop {
-  squash;
+  squash_;
 }
 
 def keep(s : Q) : Q := match s {
-    squash => squash;
+    squash_ => squash_;
     Q.squash(x, y) @ i => Q.squash(keep(x), keep(y)) @ i;
   };
 
-def kept : keep(squash) = squash {
+def kept : keep(squash_) = squash_ {
   rfl;
 }
 
 // Refused: squash here is the user's constructor, which takes no arguments.
-// Error: E538: squash takes 0 arguments here: squash(…) with 0 names.
+// Error: E538: squash_ takes 0 arguments here: squash_(…) with 0 names.
 def ambiguous(s : Q) : Q := match s {
-    squash => squash;
-    squash(x, y) @ i => Q.squash(x, y) @ i;
+    squash_ => squash_;
+    squash_(x, y) @ i => Q.squash(x, y) @ i;
   };
 
 def qualified(t : Trunc(U0, N)) : Trunc(U0, N) := match t {
@@ -1043,16 +1043,16 @@ def torn_varying(x : Circle, a : N) : N := match x {
 
 inductive Steps : prop {
   stop;
-  next(s : Steps);
+  next_(s : Steps);
 }
 
 def count_steps(s : Steps, b : N) : Trunc(U0, N) := match s {
     stop => point(b);
-    next(r) => count_steps(r, succ(b));
+    next_(r) => count_steps(r, succ(b));
     squash(x, y) @ i => Trunc.squash(count_steps(x, b), count_steps(y, b)) @ i;
   };
 
-def count_steps_two : count_steps(next(next(stop)), zero) = point(succ(succ(zero))) {
+def count_steps_two : count_steps(next_(next_(stop)), zero) = point(succ(succ(zero))) {
   rfl;
 }
 
@@ -1064,7 +1064,7 @@ def count_steps_two : count_steps(next(next(stop)), zero) = point(succ(succ(zero
 //   N). x2 = x3).
 def skewed(s : Steps, b : N) : Trunc(U0, N) := match s {
     stop => point(b);
-    next(r) => skewed(r, succ(b));
+    next_(r) => skewed(r, succ(b));
     squash(x, y) @ i => Trunc.squash(skewed(x, succ(b)), skewed(y, b)) @ i;
   };
 

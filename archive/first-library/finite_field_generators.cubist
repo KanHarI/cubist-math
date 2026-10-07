@@ -23,7 +23,7 @@ def finite_basis_generates_field(
   let P := RootFieldGenerators(K, L, e, n, roots);
   let Q := subfield_members(L, S);
   let contains : forall x : af_carrier(L). P(x) -> Q(x) {
-    intro x, witness;
+    intro x, witness_;
     let fromBase : (exists a : af_carrier(K). field_embedding_map(K, L, e, a) = x) -> Q(x) {
       intro w;
       obtain (a, same) := w;
@@ -34,7 +34,7 @@ def finite_basis_generates_field(
       obtain (i, same) := w;
       exact along Q by same from members(i);
     }
-    exact match witness return Q(x) {
+    exact match witness_ return Q(x) {
       left w => fromBase(w);
       right w => fromList(w);
     };
@@ -101,7 +101,7 @@ def generated_field_generators(
   let P := RootFieldGenerators(K, L, e, n, roots);
   let Q := subfield_members(L, S);
   let contains : forall x : af_carrier(L). P(x) -> Q(x) {
-    intro x, witness;
+    intro x, witness_;
     let fromBase : (exists a : af_carrier(K). field_embedding_map(K, L, e, a) = x) -> Q(x) {
       intro w;
       obtain (a, same) := w;
@@ -112,7 +112,7 @@ def generated_field_generators(
       obtain (i, same) := w;
       exact along Q by same from members(i);
     }
-    exact match witness return Q(x) {
+    exact match witness_ return Q(x) {
       left w => fromBase(w);
       right w => fromList(w);
     };

@@ -5,11 +5,11 @@ def OrderMaximal(A : U1, le : OrderRelation(A), x : A) := forall y : A. le(x, y)
 def StrictlyAbove(A : U1, le : OrderRelation(A), x : A) :=
   exists y : A. le(x, y) and (le(y, x) -> Void);
 
-def strict_above_point(A : U1, le : OrderRelation(A), x : A, witness : StrictlyAbove(A, le, x)) :=
-  field_first(A, (fun (y : A) => typed(U1, le(x, y) and (le(y, x) -> Void))), witness);
+def strict_above_point(A : U1, le : OrderRelation(A), x : A, witness_ : StrictlyAbove(A, le, x)) :=
+  field_first(A, (fun (y : A) => typed(U1, le(x, y) and (le(y, x) -> Void))), witness_);
 
-def strict_above_laws(A : U1, le : OrderRelation(A), x : A, witness : StrictlyAbove(A, le, x)) :=
-  field_second(A, (fun (y : A) => typed(U1, le(x, y) and (le(y, x) -> Void))), witness);
+def strict_above_laws(A : U1, le : OrderRelation(A), x : A, witness_ : StrictlyAbove(A, le, x)) :=
+  field_second(A, (fun (y : A) => typed(U1, le(x, y) and (le(y, x) -> Void))), witness_);
 
 def strict_above_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), x : A) :
   FieldSet(StrictlyAbove(A, le, x)) {

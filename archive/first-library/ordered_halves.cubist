@@ -42,11 +42,11 @@ def positive_half_from_sum(
   sum : addF(half, half) = epsilon, positive : lt(zero, epsilon)
 ) :
   lt(zero, half) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   let alternatives := splitPositive(half, half, along lt(zero) by sym(sum) from positive);
   exact field_exists_elim(
-    (lt(zero, half) or lt(zero, half)), lt(zero, half), prop(zero, half),
+    (lt(zero, half) or lt(zero, half)), lt(zero, half), prop_(zero, half),
     (fun (side : lt(zero, half) or lt(zero, half)) => match side return lt(zero, half) {
         left first => first;
         right second => second;

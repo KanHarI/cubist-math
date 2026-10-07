@@ -29,11 +29,11 @@ def decision_truth(P : U0, decision : Decidable(U0, P)) :
   };
 }
 
-def classical_truth(P : U0, prop : FieldProp(P)) := truth_of_decision(P, excluded_middle(P, prop));
+def classical_truth(P : U0, prop_ : FieldProp(P)) := truth_of_decision(P, excluded_middle(P, prop_));
 
-def classical_truth_correct(P : U0, prop : FieldProp(P)) :
-  FieldIff(CutTruth(classical_truth(P, prop)), P) {
-  exact decision_truth(P, excluded_middle(P, prop));
+def classical_truth_correct(P : U0, prop_ : FieldProp(P)) :
+  FieldIff(CutTruth(classical_truth(P, prop_)), P) {
+  exact decision_truth(P, excluded_middle(P, prop_));
 }
 
 def decoded_cut_predicate(Q : U0, predicate : Q -> CutBool) : Q -> U0 {
@@ -98,18 +98,18 @@ def boolean_to_dedekind(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) :=
 // Transport the existing cut laws along the proved equality of predicates.
 // No cut law or completeness claim is introduced as an axiom.
 def classical_cut_predicate(
-  Q : U0, predicate : Q -> U0, prop : (forall q : Q. FieldProp(predicate(q)))
+  Q : U0, predicate : Q -> U0, prop_ : (forall q : Q. FieldProp(predicate(q)))
 ) :=
-  fun (q : Q) => classical_truth(predicate(q), prop(q));
+  fun (q : Q) => classical_truth(predicate(q), prop_(q));
 
 def classical_cut_predicate_correct(
-  Q : U0, predicate : Q -> U0, prop : (forall q : Q. FieldProp(predicate(q)))
+  Q : U0, predicate : Q -> U0, prop_ : (forall q : Q. FieldProp(predicate(q)))
 ) :
-  decoded_cut_predicate(Q, classical_cut_predicate(Q, predicate, prop)) = predicate {
+  decoded_cut_predicate(Q, classical_cut_predicate(Q, predicate, prop_)) = predicate {
   exact field_predicate_ext(
-    Q, decoded_cut_predicate(Q, classical_cut_predicate(Q, predicate, prop)), predicate,
-    (fun (q : Q) => cut_truth_prop(classical_truth(predicate(q), prop(q)))), prop,
-    (fun (q : Q) => classical_truth_correct(predicate(q), prop(q)))
+    Q, decoded_cut_predicate(Q, classical_cut_predicate(Q, predicate, prop_)), predicate,
+    (fun (q : Q) => cut_truth_prop(classical_truth(predicate(q), prop_(q)))), prop_,
+    (fun (q : Q) => classical_truth_correct(predicate(q), prop_(q)))
   );
 }
 

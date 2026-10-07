@@ -9,7 +9,7 @@ def quotient_binary_right(
   A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), B : U1,
   setB : FieldSet(B), f : A -> A -> B, respects : RespectsBinaryRelation(A, relation, B, f), a : A
 ) :=
-  unpack laws as (prop, rest) return (SetQuotient(A, relation) -> B) {
+  unpack laws as (prop_, rest) return (SetQuotient(A, relation) -> B) {
     unpack rest as (reflexive, rest2) return (SetQuotient(A, relation) -> B) {
       quotient_rec(
         A, relation, laws, B, setB, f(a), (fun (y, y2 : A) => respects(a, a, y, y2, reflexive(a)))
@@ -24,7 +24,7 @@ def quotient_binary_right_beta(
   quotient_binary_right(A, relation, laws, B, setB, f, respects, a, quotient_class(A, relation, b)) = f(
     a, b
   ) {
-  obtain (prop, reflexive, symmetric, transitive) := laws;
+  obtain (prop_, reflexive, symmetric, transitive) := laws;
   exact quotient_rec_beta(
     A, relation, laws, B, setB, f(a), (fun (y, y2 : A) => respects(a, a, y, y2, reflexive(a))), b
   );
@@ -39,7 +39,7 @@ def quotient_binary_left_respects(
     quotient_binary_right(A, relation, laws, B, setB, f, respects)
   ) {
   intro a, a2, same;
-  obtain (prop, reflexive, symmetric, transitive) := laws;
+  obtain (prop_, reflexive, symmetric, transitive) := laws;
   exact quotient_maps_ext(
     A, relation, B, setB, quotient_binary_right(A, relation, laws, B, setB, f, respects, a),
     quotient_binary_right(A, relation, laws, B, setB, f, respects, a2),

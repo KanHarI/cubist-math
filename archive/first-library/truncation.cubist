@@ -1,4 +1,4 @@
-import paths;
+import paths_;
 
 // Reuse the original library truncation type, unit, and proposition axiom.
 def IsProp(A : U0) := forall x : A. forall y : A. x = y;

@@ -14,12 +14,12 @@ def PropositionsDecidable := forall P : U0. IsProp(U0, P) -> Decidable(U0, P);
 def UnitToVoidAutomorphism := exists e : ContrEquiv(U1, U0, U0). ContrEquiv(U0, e.1(Unit), Void);
 
 // An inhabited proposition is Unit.
-computable def inhabited_is_unit(P : U0, prop : IsProp(U0, P), p : P) : P = Unit {
+computable def inhabited_is_unit(P : U0, prop_ : IsProp(U0, P), p : P) : P = Unit {
   exact glue_path(
     U0,
     e := inverse_equiv(
       U0, f := fun (x : P) => tt, g := fun (u : Unit) => p,
-      sec := fun (u : Unit) => unit_is_prop(tt, u), ret := fun (x : P) => prop(p, x)
+      sec := fun (u : Unit) => unit_is_prop(tt, u), ret := fun (x : P) => prop_(p, x)
     )
   );
 }
@@ -38,10 +38,10 @@ computable def empty_types_equal(A, B : U0, a : A -> Void, b : B -> Void) : A = 
 // From an automorphism to excluded middle. If P holds then P = Unit, so
 // F(P) = F(Unit), which is empty.
 computable def holds_then_image_empty(
-  F : U0 -> U0, empty : F(Unit) -> Void, P : U0, prop : IsProp(U0, P), p : P
+  F : U0 -> U0, empty : F(Unit) -> Void, P : U0, prop_ : IsProp(U0, P), p : P
 ) : F(P) -> Void {
   intro x;
-  exact empty(along((fun (T : U0) => T)) by cong(F, inhabited_is_unit(P, prop, p)) from x);
+  exact empty(along((fun (T : U0) => T)) by cong(F, inhabited_is_unit(P, prop_, p)) from x);
 }
 
 // If F(P) is empty then F(P) = F(Unit); the inverse G gives P = Unit.
@@ -58,20 +58,20 @@ computable def image_empty_then_holds(
 // So P is equivalent to the negation F(P) -> Void, and is stable under
 // double negation.
 computable def stable_from_swap(
-  s : UnitToVoidAutomorphism, P : U0, prop : IsProp(U0, P), nn : (P -> Void) -> Void
+  s : UnitToVoidAutomorphism, P : U0, prop_ : IsProp(U0, P), nn : (P -> Void) -> Void
 ) : P {
   obtain (e, zero) := s;
   exact image_empty_then_holds(
     e.1, equiv_inverse(U1, U0, U0, e), equiv_inverse_retraction(U1, U0, U0, e), zero.1, P,
-    fun (x : e.1(P)) => nn(fun (p : P) => holds_then_image_empty(e.1, zero.1, P, prop, p, x))
+    fun (x : e.1(P)) => nn(fun (p : P) => holds_then_image_empty(e.1, zero.1, P, prop_, p, x))
   );
 }
 
 // Such an automorphism decides every proposition, with no assumption.
 computable def decided_from_swap(s : UnitToVoidAutomorphism) : PropositionsDecidable {
-  intro P, prop;
+  intro P, prop_;
   exact stable_from_swap(
-    s, Decidable(U0, P), decision_is_prop(U0, P, prop),
+    s, Decidable(U0, P), decision_is_prop(U0, P, prop_),
     fun (no : Decidable(U0, P) -> Void) => no(right(fun (p : P) => no(left(p))))
   );
 }
@@ -90,29 +90,29 @@ def excluded_middle_from_swap(t : Truncate(U1, UnitToVoidAutomorphism)) : Exclud
 // From excluded middle to an automorphism: negate every proposition and fix
 // every other type.
 def decided_from_excluded_middle(lem : ExcludedMiddle(U0)) : PropositionsDecidable {
-  intro P, prop;
+  intro P, prop_;
   exact TruncateElim(
-    U0, Decidable(U0, P), Decidable(U0, P), decision_is_prop(U0, P, prop), fun (d : Decidable(U0, P)) => d,
+    U0, Decidable(U0, P), Decidable(U0, P), decision_is_prop(U0, P, prop_), fun (d : Decidable(U0, P)) => d,
     lem(Decidable(U0, P), fun (no : Decidable(U0, P) -> Void) => no(right(fun (p : P) => no(left(p)))))
   );
 }
 
 def NegateProposition(X : U0, decision : Decidable(U0, IsProp(U0, X))) : U0 {
   exact match decision return U0 {
-    left prop => X -> Void;
+    left prop_ => X -> Void;
     right other => X;
   };
 }
 
-computable def double_negation_equiv(decide : PropositionsDecidable, X : U0, prop : IsProp(U0, X)) :
+computable def double_negation_equiv(decide : PropositionsDecidable, X : U0, prop_ : IsProp(U0, X)) :
   ContrEquiv(U0, (X -> Void) -> Void, X) {
-  let forth := fun (nn : (X -> Void) -> Void) => match decide(X, prop) return X {
+  let forth := fun (nn : (X -> Void) -> Void) => match decide(X, prop_) return X {
     left x => x;
     right no => absurd(nn(no));
   };
   let back := fun (x : X) => fun (k : X -> Void) => k(x);
   exact inverse_equiv(
-    U0, f := forth, g := back, sec := fun (x : X) => prop(forth(back(x)), x),
+    U0, f := forth, g := back, sec := fun (x : X) => prop_(forth(back(x)), x),
     ret := fun (nn : (X -> Void) -> Void) => not_is_prop(U0, X -> Void, back(forth(nn)), nn)
   );
 }
@@ -128,16 +128,16 @@ computable def negate_twice_at(
     forall second : Decidable(U0, IsProp(U0, NegateProposition(X, d))).
     NegateProposition(NegateProposition(X, d), second) = X
   ) {
-    left prop => fun (second : Decidable(U0, IsProp(U0, X -> Void))) => match second as s return (
+    left prop_ => fun (second : Decidable(U0, IsProp(U0, X -> Void))) => match second as s return (
       NegateProposition(X -> Void, s) = X
     ) {
-      left negated => glue_path(U0, (X -> Void) -> Void, X, double_negation_equiv(decide, X, prop));
+      left negated => glue_path(U0, (X -> Void) -> Void, X, double_negation_equiv(decide, X, prop_));
       right other => absurd(other(not_is_prop(U0, X)));
     };
     right other => fun (second : Decidable(U0, IsProp(U0, X))) => match second as s return (
       NegateProposition(X, s) = X
     ) {
-      left prop => absurd(other(prop));
+      left prop_ => absurd(other(prop_));
       right same => refl(X);
     };
   };
@@ -176,7 +176,7 @@ computable def negated_unit_empty : ContrEquiv(U0, Unit -> Void, Void) {
 computable def negate_unit_at(decision : Decidable(U0, IsProp(U0, Unit))) :
   ContrEquiv(U0, NegateProposition(Unit, decision), Void) {
   exact match decision as d return ContrEquiv(U0, NegateProposition(Unit, d), Void) {
-    left prop => negated_unit_empty;
+    left prop_ => negated_unit_empty;
     right other => absurd(other(unit_is_prop));
   };
 }

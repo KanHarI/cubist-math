@@ -7,6 +7,6 @@ import ergonomics_imported_failure_rules;
 use nat;
 
 // Error: E340: Untranslated dependency: broken__rule
-def use := broken__rule(U0, 0);
+def use_ := broken__rule(U0, 0);
 
 def good := 0;

@@ -17,7 +17,8 @@ import { assertFreshBuild } from "./build-stamp.mjs";
 import { migrationSourceReader } from "./migration-sources.mjs";
 import { placeOfFile } from "./module-sources.mjs";
 import { moduleRoots } from "../web/module-resolution.mjs";
-import { historicalSource } from "../web/cubist/legacy-syntax.mjs";
+import { historicalSource, currentSyntax } from "../web/cubist/legacy-syntax.mjs";
+import { parse, languageKeywords } from "../web/cubist/parser.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const args = process.argv.slice(2), option = name => {
@@ -72,6 +73,38 @@ if (!noDependents) {
 }
 const originals = new Map();
 const available = new Set(git(["ls-tree","-r","--name-only",base,"--","library","archive/first-library"]).trim().split("\n"));
+// A module name that was a keyword is migrated with its imports. Read its
+// historical file by the old name while checking it in the current namespace.
+const originalModulePath = (place, name) => {
+  const current = `${moduleRoots[place]}${name}.cubist`;
+  if (available.has(current)) return current;
+  const old = name.endsWith("_") && languageKeywords.has(name.slice(0, -1))
+    ? `${moduleRoots[place]}${name.slice(0, -1)}.cubist` : current;
+  return available.has(old) ? old : current;
+};
+const originalSources = new Map(), originalSyntax = new Map();
+const originalSource = path => {
+  if (!originalSources.has(path)) originalSources.set(path, git(["show",`${base}:${path}`]));
+  return originalSources.get(path);
+};
+const importedNamesOf = (path, seen = new Set(), includeOwn = true) => {
+  if (!available.has(path) || seen.has(path)) return [];
+  seen.add(path);
+  if (!originalSyntax.has(path)) {
+    try { originalSyntax.set(path, parse(currentSyntax(originalSource(path)), false, { bindable: [...languageKeywords] })); }
+    catch { originalSyntax.set(path, { declarations: [], imports: [] }); }
+  }
+  const syntax = originalSyntax.get(path), place = path.startsWith(moduleRoots.archive) ? "archive" : "library";
+  const names = includeOwn ? syntax.declarations.flatMap(d => [d.name.text, ...(d.constructors ?? []).map(c => c.name.text)])
+    .filter(name => languageKeywords.has(name)) : [];
+  for (const dependency of syntax.imports) {
+    const paths = place === "archive" ? [originalModulePath("archive", dependency)]
+      : [originalModulePath("library", dependency), originalModulePath("archive", dependency)];
+    const next = paths.find(path => available.has(path));
+    if (next) names.push(...importedNamesOf(next, seen));
+  }
+  return names;
+};
 // Until 2026-10-05 every module had Nat without importing it, from the
 // kernel and then from an implicit import of nat; a base of that time is read
 // with the import (legacy-syntax.mjs, historicalSource). A later base has
@@ -94,11 +127,12 @@ const movedToLibrary = new Set([...available].filter(path => path.startsWith(mod
     && !existsSync(`${root}${moduleRoots.archive}${name}.cubist`)));
 const readOriginal = migrationSourceReader(async (place, name) => {
   if (movedToLibrary.has(name) && place !== "library") return null;
-  const path = movedToLibrary.has(name) ? `${moduleRoots.archive}${name}.cubist` : `${moduleRoots[place]}${name}.cubist`;
+  const path = originalModulePath(movedToLibrary.has(name) ? "archive" : place, name);
   if (!originals.has(path)) {
     // A baseline may predate a syntax change, or the implicit import of nat;
     // it is read in today's syntax, with the imports it had then.
-    let text = available.has(path) ? historicalSource(git(["show",`${base}:${path}`]), name, { implicitNat, minusReverses }) : null;
+    let text = available.has(path) ? historicalSource(originalSource(path), name,
+      { implicitNat, minusReverses, importedNames: importedNamesOf(path, new Set(), false) }) : null;
     if (text !== null) historical.add(name);
     // A new shared foundation has no predecessor. It is available only in
     // library resolution; archive importers never see this fallback.

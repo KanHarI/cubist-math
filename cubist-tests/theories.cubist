@@ -36,7 +36,7 @@ theory CommGroup(U < UU0) extends Group, CommMonoid {
 // Two copies of Monoid on one sort R, the additive one renamed, with + for
 // its operation; * keeps meaning the multiplicative one.
 theory Semiring(U < UU0) extends
-    additive : CommMonoid(M := R, mul := add notation x + y, one := zero, mul_assoc := add_assoc,
+    additive_ : CommMonoid(M := R, mul := add notation x + y, one := zero, mul_assoc := add_assoc,
       one_mul := zero_add, mul_one := add_zero, mul_comm := add_comm),
     multiplicative : Monoid(M := R) {
   law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;

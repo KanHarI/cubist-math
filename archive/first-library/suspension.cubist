@@ -1,5 +1,5 @@
 import suspension_types;
-import paths;
+import paths_;
 
 // The circle is the suspension of the two-point type.
 def S0 := Unit or Unit;

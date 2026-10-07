@@ -8,7 +8,7 @@ def ordered_lt_implies_le(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y : F, less : lt(x, y)
 ) :
   FieldLe(F, lt, x, y) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   intro backward;
   exact irreflexive(x, transitive(x, y, x, less, backward));
 }
@@ -110,9 +110,9 @@ def ordered_square_of_apart(
   apart : FieldApart(F, lt, x, zero)
 ) :
   lt(zero, mulF(x, x)) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   exact field_exists_elim(
-    (lt(x, zero) or lt(zero, x)), lt(zero, mulF(x, x)), prop(zero, mulF(x, x)),
+    (lt(x, zero) or lt(zero, x)), lt(zero, mulF(x, x)), prop_(zero, mulF(x, x)),
     (fun (side : lt(x, zero) or lt(zero, x)) => match side return lt(zero, mulF(x, x)) {
         left belowZero => (
           along lt(zero) by ordered_negative_square(
@@ -154,7 +154,7 @@ def ordered_sum_nonnegative(
   nonnegativeX : FieldLe(F, lt, zero, x), nonnegativeY : FieldLe(F, lt, zero, y)
 ) :
   FieldLe(F, lt, zero, addF(x, y)) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   intro belowZero;
   let nonnegativeSum : FieldLe(F, lt, x, addF(x, y)) {

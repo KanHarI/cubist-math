@@ -13,8 +13,8 @@ def residue_one_not_zero(
   let invert :
     (exists q : Polynomial(K). polynomial_one(K) = polynomial_mul(K, D, q))
     -> (exists q : Polynomial(K). polynomial_mul(K, D, q) = polynomial_one(K)) {
-    intro witness;
-    obtain (q, equation) := witness;
+    intro witness_;
+    obtain (q, equation) := witness_;
     exact (q, sym(equation));
   }
   exact nonunit(
@@ -54,7 +54,7 @@ def residue_bezout_inverse(
   let D := modulus_polynomial(K, M);
   let p := residue_polynomial(K, M, x);
   let reduce := polynomial_remainder(K, M);
-  let inverse : reduce(polynomial_mul(K, p, b)) = reduce(polynomial_one(K)) := with unfolding [] {
+  let inverse_ : reduce(polynomial_mul(K, p, b)) = reduce(polynomial_one(K)) := with unfolding [] {
       trans(
         cong(reduce, polynomial_mul_comm(K, p, b)),
         sym(
@@ -79,7 +79,7 @@ def residue_bezout_inverse(
       y,
       residue_ext(
         K, M, residue_mul(K, M, x, y), residue_one(K, M),
-        trans(sym(polynomial_remainder_mul_right(K, M, p, b)), inverse)
+        trans(sym(polynomial_remainder_mul_right(K, M, p, b)), inverse_)
       )
     )
   };

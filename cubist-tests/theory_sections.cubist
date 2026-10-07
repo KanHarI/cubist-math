@@ -33,17 +33,17 @@ section {{U < UU0}}(G : Monoid(U)) {
 // Output: forall U < UU0. forall G : Monoid(U). fourth{{U}}(G, G.one) = G.one
 print(typeof(fourth_one));
 
-def additive : Monoid(U0) := Monoid.make(
+def additive_ : Monoid(U0) := Monoid.make(
   M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := 0,
   one_mul := nat_zero_add, mul_one := nat_add_zero
 );
 
-def four : square(additive, 2) = 4 {
+def four : square(additive_, 2) = 4 {
   rfl;
 }
 
 // Output: 12
-print(evaluate(fourth(additive, 3)));
+print(evaluate(fourth(additive_, 3)));
 
 // A section's parameters need not be models.
 section (n : Nat) {
@@ -90,7 +90,7 @@ section {{U < UU0}}(G : Monoid(U)) {
 }
 
 // Output: 8
-print(evaluate(power(additive, 2, 4)));
+print(evaluate(power(additive_, 2, 4)));
 
 // Refusals.
 section (n : Nat) {

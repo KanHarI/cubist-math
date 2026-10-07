@@ -201,11 +201,11 @@ test("composition with overlapping faces: each overlap has its equality, and a t
   const readArchive = sourceReader();
   const program = new CubicalProgram(await createCubical(), readArchive);
   t.after(() => program.dispose());
-  await program.check(await readArchive("paths"), "paths");
+  await program.check(await readArchive("paths_"), "paths_");
   const kernel = program.kernel;
   // right_unit composes over [j = 0, j = 1, i = 1]: the last face meets both
   // others. transport_constant's type has a composition on the face 0.
-  for (const [name, rule] of [["paths__right_unit", "systemOverlap"], ["paths__transport_constant", "systemTube"]]) {
+  for (const [name, rule] of [["paths___right_unit", "systemOverlap"], ["paths___transport_constant", "systemTube"]]) {
     const { value, type } = kernel.definition(kernel.definitions.get(name));
     const driver = new InstructionDriver(kernel), counts = new Map();
     const root = driver.graph.judgement(driver.check(value, type));
@@ -220,10 +220,10 @@ test("composition with overlapping faces: each overlap has its equality, and a t
     }
     assert.ok(counts.get(rule) > 0, `${name} uses ${rule}`);
   }
-  const { value } = kernel.definition(kernel.definitions.get("paths__right_unit"));
+  const { value } = kernel.definition(kernel.definitions.get("paths___right_unit"));
   const driver = new InstructionDriver(kernel), graph = driver.graph;
   const overlaps = [];
-  for (const stack = [driver.check(value, kernel.definition(kernel.definitions.get("paths__right_unit")).type)], seen = new Set(); stack.length;) {
+  for (const stack = [driver.check(value, kernel.definition(kernel.definitions.get("paths___right_unit")).type)], seen = new Set(); stack.length;) {
     const id = stack.pop();
     if (seen.has(id)) continue;
     seen.add(id);

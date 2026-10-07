@@ -46,7 +46,7 @@ def identity_system_retraction(
       IdentityTotal(A, R), center, (fun (z : IdentityTotal(A, R)) => sym(contraction(z))), center,
       contraction(center)
     );
-  exact based_induction(
+  exact based_induction_(
     U1, U1, A, a,
     (
       fun (b : A, p : a = b) => identity_system_encode(
@@ -82,7 +82,7 @@ def constant_path_correction(
   A : U1, normalize : (forall x : A. forall y : A. (x = y) -> (x = y)), x, y : A, p : x = y
 ) :
   trans(sym(normalize(x, x, refl(x))), normalize(x, y, p)) = p {
-  exact based_induction(
+  exact based_induction_(
     U1, U1, A, x,
     (fun (y : A, p : x = y) => trans(sym(normalize(x, x, refl(x))), normalize(x, y, p)) = p),
     inverse_left(A, x, x, normalize(x, x, refl(x))), y, p

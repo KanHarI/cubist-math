@@ -11,8 +11,8 @@ inductive N {
 
 def ordinary : N := succ(zero);
 
-def literal : Nat := 2;
+def literal_ : Nat := 2;
 
-def same : literal = 2 {
+def same : literal_ = 2 {
   rfl;
 }

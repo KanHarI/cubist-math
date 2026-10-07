@@ -1,7 +1,7 @@
 # Dependent transport and cancellation
 
 `tests/translator/dependent-transport.mjs` derives the remaining transport
-and cancellation laws from `archive/first-library/paths.cubist`, for the direct cubical
+and cancellation laws from `archive/first-library/paths_.cubist`, for the direct cubical
 operations documented in [path-algebra.md](path-algebra.md). All helpers emit
 inert syntax, checked by the native C kernel. There are no added axioms,
 judgmental regularity assumptions, or changes to reflexivity.

@@ -42,19 +42,19 @@ def subfield_prop(
   F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P), x : af_carrier(F)
 ) :
   Proposition(P(x)) {
-  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
-  exact prop(x);
+  obtain (prop_, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
+  exact prop_(x);
 }
 
 def subfield_zero(F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P)) :
   P(af_zero(af_carrier(F), af_operations(F))) {
-  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
+  obtain (prop_, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
   exact zero;
 }
 
 def subfield_one(F : AlgebraicField, P : af_carrier(F) -> U0, laws : SubfieldLaws(F, P)) :
   P(af_one(af_carrier(F), af_operations(F))) {
-  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
+  obtain (prop_, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
   exact one;
 }
 
@@ -63,7 +63,7 @@ def subfield_neg(
   member : P(x)
 ) :
   P(af_neg(af_carrier(F), af_operations(F), x)) {
-  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
+  obtain (prop_, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
   exact negateLocal(x, member);
 }
 
@@ -72,7 +72,7 @@ def subfield_add(
   px : P(x), py : P(y)
 ) :
   P(af_add(af_carrier(F), af_operations(F), x, y)) {
-  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
+  obtain (prop_, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
   exact addLocal(x, y, px, py);
 }
 
@@ -81,7 +81,7 @@ def subfield_mul(
   px : P(x), py : P(y)
 ) :
   P(af_mul(af_carrier(F), af_operations(F), x, y)) {
-  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
+  obtain (prop_, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
   exact multiplyLocal(x, y, px, py);
 }
 
@@ -93,7 +93,7 @@ def subfield_inverse(
   )
 ) :
   P(y) {
-  obtain (prop, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
+  obtain (prop_, zero, one, negateLocal, addLocal, multiplyLocal, invClosed) := laws;
   exact invClosed(x, y, px, inverseLaw);
 }
 

@@ -43,7 +43,7 @@ def linear_bijective_iso(
     fun (y : Y) => sigma_second(
       X, (fun (x : X) => F(x) = y), linear_unique_preimage(K, V, W, f, injective, onto, y)
     );
-  let additive :
+  let additive_ :
     forall y : Y. forall z : Y. g(vector_add(K, W, y, z)) = vector_add(K, V, g(y), g(z)) {
     intro y, z;
     exact injective(
@@ -74,7 +74,7 @@ def linear_bijective_iso(
       )
     );
   }
-  exact (f, (g, additive, scalar), (fun (x : X) => injective(g(F(x)), x, right_(F(x)))), right_);
+  exact (f, (g, additive_, scalar), (fun (x : X) => injective(g(F(x)), x, right_(F(x)))), right_);
 }
 
 def linear_empty(K : AlgebraicField, V : VectorSpace(K)) : LinearMap(K, CoordinateSpace(K, 0), V) {
@@ -132,8 +132,8 @@ def adjoin_nonzero_impossible(
   let G := vector_group(K, V);
   obtain (ring, nontrivial, inverses) := af_laws(K);
   obtain (addLaws, assoc, comm, one, distribute) := ring;
-  obtain (b, inverse) := inverses(a, nonzero);
-  let leftInverse := trans(comm(b, a), inverse);
+  obtain (b, inverse_) := inverses(a, nonzero);
+  let leftInverse := trans(comm(b, a), inverse_);
   let solve : vector_scale(K, V, a, x) = vector_neg(K, V, y) :=
     group_inverse_unique(
       vector_carrier(K, V), vector_zero(K, V), vector_add(K, V), group_laws(G), y,
