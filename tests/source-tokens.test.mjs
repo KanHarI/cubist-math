@@ -27,7 +27,7 @@ test("a projection's index is not a numeral, and the removed have, show and suff
   assert.equal(tokenStyle("let", null), "keyword");
 });
 
-test("a theory's words are keywords where they stand, and zero and succ are names everywhere", () => {
+test("a theory's words are keywords where they stand, and Nat, zero and succ are names everywhere", () => {
   const source = `theory Field(U < UU0) extends CommRing {
   P : prop U;
   inv(x : R) : R notation x * y;
@@ -59,10 +59,11 @@ def g(sort : Nat) := succ(zero);`;
   assert.equal(style("section", 1), "");
   assert.equal(style("use"), "keyword");
   assert.equal(style("sort"), "");
-  // Outside a theory too: zero and succ, Nat's constructors, are the
+  // Outside a theory too: Nat and its constructors zero and succ are the
   // library's names (library/nat.cubist), not the language's.
   assert.equal(style("zero", 2), "");
   assert.equal(style("succ"), "");
+  assert.equal(style("Nat"), "");
 });
 
 test("a theory's words keep their roles past comments and nested braces, and are names where the parser reads names", () => {
