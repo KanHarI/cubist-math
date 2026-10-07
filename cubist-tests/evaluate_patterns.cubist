@@ -26,6 +26,25 @@ evaluate append(numbers, numbers) expecting cons(1, cons(2, cons(3, cons(1, _)))
 // typed(T, p) states the part's type.
 evaluate pairs expecting (typed(Nat, _), right(4));
 
+// A constructor's argument is read at its field's declared type, with the
+// arguments before it substituted: box's field is at U1, though Unit
+// alone is at U0, and tagged's second field is at its first.
+inductive Box {
+  box(A : U1);
+}
+
+def boxed : Box := box(Unit);
+
+evaluate boxed expecting box(typed(U1, _));
+
+inductive Tagged {
+  tagged(A : U0, a : A);
+}
+
+def tagged_three : Tagged := tagged(Nat, 3);
+
+evaluate tagged_three expecting tagged(_, typed(Nat, _));
+
 // A mismatch names the part that differs.
 // Error: E477: The term evaluates to (3, right(4)), which does not match (4, _): 3 is not 4.
 evaluate pairs expecting (4, _);
@@ -41,6 +60,14 @@ evaluate numbers expecting cons(_, nil);
 // Error: E477: The term evaluates to (3, right(4)), which does not match (typed(Unit, _), _): 3 is
 //   not typed(Unit, _).
 evaluate pairs expecting (typed(Unit, _), _);
+
+// Error: E477: The term evaluates to box(Unit), which does not match box(typed(U0, _)): Unit is not
+//   typed(U0, _).
+evaluate boxed expecting box(typed(U0, _));
+
+// Error: E477: The term evaluates to tagged(Nat, 3), which does not match tagged(_, typed(Unit,
+//   _)): 3 is not typed(Unit, _).
+evaluate tagged_three expecting tagged(_, typed(Unit, _));
 
 // A hole must stand where a part can be read.
 // Error: E478: A hole in an expected value stands for a pair's component, an injection's value or a
