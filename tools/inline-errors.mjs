@@ -26,14 +26,13 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 import { cubistTestModules } from "../web/cubist/modules.mjs";
 import { sourceReader } from "./module-sources.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
+// The comments' syntax and what they state, which the benchmark reads too.
+import { comment, continued, normal, stated } from "../web/cubist/stated-comments.mjs";
+
+export { stated };
 
 export const testModulePath = name => fileURLToPath(new URL(`../cubist-tests/${name}.cubist`, import.meta.url));
 const WIDTH = 100;
-const comment = /^\s*\/\/ (Error|Warning|Output): (.*)$/, continued = /^\s*\/\/ {3}(.*)$/;
-// Text as a comment holds it: its whitespace collapsed, and a message
-// without the position that ends a reason.
-const collapsed = text => text.replace(/\s+/g, " ").trim();
-const normal = (text, label = "Error") => label === "Output" ? collapsed(text) : collapsed(text).replace(/ at \d+:\d+$/, "");
 // Comments above one line come in this order.
 const rank = { Output: 0, Error: 1, Warning: 2 };
 
@@ -71,24 +70,6 @@ export function reported(source, result, main) {
   return items.sort((a, b) => a.line - b.line || rank[a.label] - rank[b.label]);
 }
 
-// What the comments state, each at the line below its comment block.
-export function stated(source) {
-  const lines = source.split("\n"), items = [];
-  let pending = [];
-  for (let i = 0; i < lines.length; i++) {
-    const match = lines[i].match(comment);
-    if (match) {
-      let text = match[2];
-      while (i + 1 < lines.length && continued.test(lines[i + 1])) text += ` ${lines[++i].match(continued)[1]}`;
-      pending.push({ label: match[1], text: normal(text, match[1]) });
-      continue;
-    }
-    if (/^\s*\/\//.test(lines[i])) continue;
-    for (const item of pending) items.push({ line: i, ...item });
-    pending = [];
-  }
-  return items;
-}
 
 // An item as comment lines, wrapped at spaces.
 function commentLines(indent, label, text) {

@@ -88,42 +88,60 @@ const levelShaped = value => typeof value === "number" || ["LConst","LSucc","LMa
 // variables are its names.
 const plainLevel = value => typeof value === "number" || ["LConst","LSucc","LMax"].includes(value?.tag);
 const dimBinder = t => ["Path","PLam","Comp","HComp","Trans"].includes(t.tag);
-function free(t, dimension = false, result = new Set(), memo = new WeakMap()) {
+// A term's free names, and its free dimensions, by the term: terms are
+// never changed once built (every operation copies), so what a term holds
+// free is computed once, however often unification asks. The set is the
+// cache's own: callers read it and never change it. So a part's set is the
+// term's own where it is the only part with names, as for most terms: a
+// set is made only where two parts' names meet, or a binder takes one off.
+// The names keep the order of a walk through the parts, as zonk reads them.
+const freeTerms = new WeakMap(), freeDimensions = new WeakMap(), noNames = new Set();
+function free(t, dimension = false) {
   if (!t || !children[t.tag]) fail("Unknown term constructor.");
-  const cached=memo.get(t);
-  if(cached) {for(const name of cached)result.add(name);return result;}
-  const local=new Set();
-  if (dimension && t.tag === "PApp") for (const n of I.names(t.arg)) local.add(n);
-  if(dimension&&t.tag==="Trans")for(const n of I.names(t.face))local.add(n);
-  if (!dimension && t.tag === "Var") local.add(t.name);
-  if (!dimension && t.tag === "U") levelNames(t.level, local);
-  if (!dimension && t.tag === "LApp") levelNames(t.level, local);
-  if (!dimension && t.tag === "Sort") for (const level of t.levels ?? []) levelNames(level, local);
-  if(["Glue","GlueTerm"].includes(t.tag))for(const piece of t.system) {
-    for(const key of t.tag==="Glue"?["type","equiv"]:["term"])
-      for(const n of free(piece[key],dimension,new Set(),memo))local.add(n);
-    if(dimension)for(const n of I.names(piece.face))local.add(n);
+  const memo = dimension ? freeDimensions : freeTerms, cached = memo.get(t);
+  if (cached) return cached;
+  let local = noNames, owned = false;
+  const own = () => { if (!owned) { local = new Set(local); owned = true; } };
+  const name = n => { if (!local.has(n)) { own(); local.add(n); } };
+  const union = names => {
+    if (!names.size || names === local) return;
+    if (!local.size) { local = names; return; }
+    own();
+    for (const n of names) local.add(n);
+  };
+  const without = (names, n) => {
+    if (!names.has(n)) return names;
+    const rest = new Set(names);
+    rest.delete(n);
+    return rest;
+  };
+  if (dimension && t.tag === "PApp") for (const n of I.names(t.arg)) name(n);
+  if (dimension && t.tag === "Trans") for (const n of I.names(t.face)) name(n);
+  if (!dimension && t.tag === "Var") name(t.name);
+  if (!dimension && (t.tag === "U" || t.tag === "LApp")) for (const n of levelNames(t.level)) name(n);
+  if (!dimension && t.tag === "Sort") for (const level of t.levels ?? []) for (const n of levelNames(level)) name(n);
+  if (t.tag === "Glue" || t.tag === "GlueTerm") for (const piece of t.system) {
+    for (const key of t.tag === "Glue" ? ["type", "equiv"] : ["term"]) union(free(piece[key], dimension));
+    if (dimension) for (const n of I.names(piece.face)) name(n);
   }
-  if(["Comp","HComp"].includes(t.tag))for(const piece of t.system) {
-    const sub=free(piece.term,dimension,new Set(),memo);
-    for(const n of sub)if(!dimension||n!==t.dim)local.add(n);
-    if(dimension)for(const n of I.names(piece.face))local.add(n);
+  if (t.tag === "Comp" || t.tag === "HComp") for (const piece of t.system) {
+    union(dimension ? without(free(piece.term, dimension), t.dim) : free(piece.term, dimension));
+    if (dimension) for (const n of I.names(piece.face)) name(n);
   }
+  const termBound = !dimension && termBinder(t), dimensionBound = dimension && dimBinder(t) && t.tag !== "HComp";
   for (const key of children[t.tag]) if (t[key]) for (const item of items(t[key])) {
-    const sub = free(item, dimension,new Set(),memo);
-    for(const n of sub) {
-      if(!dimension && termBinder(t) && key==="body" && n===t.name)continue;
-      if(dimension && dimBinder(t) && t.tag!=="HComp" && ["family","body"].includes(key) && n===t.dim)continue;
-      local.add(n);
-    }
+    const names = free(item, dimension);
+    union(termBound && key === "body" ? without(names, t.name)
+      : dimensionBound && (key === "family" || key === "body") ? without(names, t.dim) : names);
   }
-  memo.set(t,local);
-  for(const n of local)result.add(n);
-  return result;
+  memo.set(t, local);
+  return local;
 }
 function fresh(n, avoid) { while (avoid.has(n)) n += "_"; return n; }
 // The free term names of a term, universe variables included.
 export function freeNames(t) { return free(t); }
+// Whether a value is a term, as opposed to another kind of entry in scope.
+export const isTerm = t => !!(t && typeof t === "object" && typeof t.tag === "string" && children[t.tag]);
 // A term with its beta redexes contracted, within a budget of substitutions,
 // keeping every name: syntax only, as for display or a normal form's shape.
 export function betaReduce(term, budget = 256) {
@@ -150,6 +168,10 @@ export function betaReduce(term, budget = 256) {
 }
 function substitute(t, n, value, dimension = false, memo = new WeakMap()) {
   if(memo.has(t))return memo.get(t);
+  // A term that does not hold the name free is itself: kept, not copied, so
+  // that its subterms stay shared and what is known of them, as their free
+  // names, stays known.
+  if(!free(t,dimension).has(n)) {memo.set(t,t);return t;}
   if (!dimension && t.tag === "Var" && t.name === n) {memo.set(t,value);return value;}
   let result = {...t};
   // A term argument can contain free dimensions. Avoid capturing them under
@@ -242,6 +264,34 @@ export function withoutEmptyFaces(term,memo=new WeakMap()) {
 // Syntax manipulation only; callers must independently check the result.
 // DefRef denotes a closed definition, so substitution does not enter its body.
 export {substitute as substituteTerm};
+// A key for terms up to the names of their binders, of terms and of
+// dimensions: each renamed, in the order met, to a name no source spells,
+// and `renamed` names written as it gives them. Terms with the same key are
+// the same up to those names.
+export function alphaKey(term, renamed = new Map()) {
+  let count = 0;
+  const canonical = t => {
+    if (!t || typeof t !== "object") return t;
+    if (Array.isArray(t)) return t.map(canonical);
+    let node = t;
+    if (typeof t.tag === "string" && children[t.tag] && termBinder(t)) {
+      const name = `\u0000bound${count++}`;
+      node = {...t, name, body: substitute(t.body, t.name, {tag: "Var", name})};
+    } else if (typeof t.tag === "string" && children[t.tag] && dimBinder(t)) {
+      // The parts a dimension binds, as free counts them: an HComp's family
+      // is outside it.
+      // A dimension's name is an identifier: apart from those free here, so
+      // that terms the same up to bound names choose the same one.
+      const dim = fresh(`dimension${count++}`, free(t, true)), renamedIn = part => dsub(part, t.dim, I.variable(dim));
+      node = {...t, dim};
+      if (t.tag !== "HComp") node.family = renamedIn(t.family);
+      if (t.tag === "PLam") node.body = renamedIn(t.body);
+      if (t.tag === "Comp" || t.tag === "HComp") node.system = t.system.map(piece => ({...piece, term: renamedIn(piece.term)}));
+    }
+    return Object.fromEntries(Object.entries(node).map(([key, value]) => [key, canonical(value)]));
+  };
+  return JSON.stringify(canonical(term), (key, value) => typeof value === "string" && renamed.has(value) ? renamed.get(value) : value);
+}
 
 // Derived filling, CCHM section 4.4. The added r=0 wall keeps the starting lid
 // fixed. This is syntax built from comp, never an additional trusted axiom.

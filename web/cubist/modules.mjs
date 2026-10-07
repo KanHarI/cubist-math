@@ -388,7 +388,7 @@ export const libraryModules = ["nat", "classical_axioms", "universe_automorphism
 // workspace opens as proof.html?proof=NAME. tests/cubist-tests.test.mjs
 // checks that every file is listed.
 export const cubistTestModules = [
-  "arguments", "implicit_parameters", "patterns", "sum_match", "glue", "face_restriction", "declared_match", "induction", "automatic_clauses",
+  "arguments", "implicit_parameters", "patterns", "sum_match", "glue", "face_restriction", "declared_match", "declared_induction", "automatic_clauses",
   "automatic_clauses_groupoid", "automatic_clauses_without_hlevels", "quotient_effectiveness", "theories", "theories_without_hlevels", "theory_morphisms", "theory_sections", "theory_headers", "theory_variance", "theory_families", "theory_independent", "theory_use", "notation_views", "notation_operators", "notation_literals", "notation_printing", "notation_pilots", "algebra_models", "integer_examples", "rational_examples", "hlevel_lemmas", "hlevel_tactic", "hlevel_rules",
   "hlevel_without_import", "h1_acceptance_levels", "h1_acceptance_formers", "h1_acceptance_instances",
   "h1_acceptance_paths", "program_types", "program_types_nat_as_name", "program_types_constructor_shadowing",
