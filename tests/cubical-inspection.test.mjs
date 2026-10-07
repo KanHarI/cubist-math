@@ -170,3 +170,19 @@ test("a let alias preserves the original local's name and does not leak to later
   assert.equal(view.context[0].label, "n");
   assert.equal(result.links.find(link => link.start === source.lastIndexOf("zero")).binding, "inspection_let_alias__zero");
 });
+
+// The first review of #184: a square's boundary showed x1 as x1_, the stem
+// of its kernel name, and squares.transpose's a00 and a_0 as a00_ and a_0_.
+test("a square's boundary shows its parameters by their source names", async t => {
+  const { program } = await cases(t, "square_boundary");
+  const boundary = binding => program.inspect(binding).boundary;
+  assert.deepEqual(boundary("inspection_square_boundary__numbered"), {
+    corners: { a00: "x1", a01: "x2", a10: "x1", a11: "x2" },
+    edges: { left: "p", right: "p", bottom: "refl(x1)", top: "refl(x2)" } });
+  assert.deepEqual(boundary("squares__transpose"), {
+    corners: { a00: "a00", a01: "a10", a10: "a01", a11: "a11" },
+    edges: { left: "a_0", right: "a_1", bottom: "a0_", top: "a1_" } });
+  // The lambda's x is shown apart from the parameter x.
+  assert.equal(boundary("inspection_square_boundary__apart").corners.a00, "f(x, fun (x1 : A) => x1)");
+  assert.equal(boundary("squares__double_comp"), null);
+});
