@@ -41,7 +41,7 @@ test("every keyword is reserved, and contextual keywords stay names", () => {
   for (const word of reservedNames) assert.equal(parseError(`def f(${word} : Nat) : Nat := 0;`), reserved(word), word);
   // Words with a meaning only inside one construct, which the library binds.
   for (const word of ["import", "def", "inductive", "theory", "section",
-    "computable", "evaluate", "expecting", "print", "typeof", "inspect", "simp_rule", "simp_set",
+    "computable", "evaluate", "print", "typeof", "inspect", "simp_rule", "simp_set",
     "prop", "set", "law", "sort", "notation", "extends", "type", "trunc", "with", "at", "by", "from", "over",
     "along", "only", "using", "path", "zero", "succ"])
     assert.equal(parseError(`def f(${word} : Nat) : Nat := 0;`), null, word);
