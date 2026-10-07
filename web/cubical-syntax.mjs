@@ -38,20 +38,40 @@ export function freeDimensionMask(kernel, id, memo) {
   memo.set(id, mask);
   return mask;
 }
+// A cache of what reads nodes, in two tiers by whether the handles it holds
+// are settled (CubicalKernel.settled): those a declaration's commit or
+// rollback leaves where they are. The settled tier is kept from one
+// declaration to the next, and the rest dropped (CubicalSyntax.reset). An
+// entry is settled when every handle in it is: `id` is the largest.
+class NodeCache {
+  constructor(kernel, weak = false) {
+    Object.assign(this, { kernel, weak, settled: weak ? new WeakMap() : new Map() });
+    this.drop();
+  }
+  drop() { this.recent = this.weak ? new WeakMap() : new Map(); }
+  get(key) { return this.recent.get(key) ?? this.settled.get(key); }
+  has(key) { return this.recent.has(key) || this.settled.has(key); }
+  set(key, value, id = key) { (id < this.kernel.settled ? this.settled : this.recent).set(key, value); return this; }
+  // A node by a term and its dimensions' key, for encode.
+  node(term, key) { return this.recent.get(term)?.get(key) ?? this.settled.get(term)?.get(key); }
+  setNode(term, key, id) {
+    const tier = id < this.kernel.settled ? this.settled : this.recent;
+    if (!tier.has(term)) tier.set(term, new Map());
+    tier.get(term).set(key, id);
+  }
+}
 export class CubicalSyntax {
   constructor(kernel) {
     this.kernel = kernel;
-    this.reset();
-  }
-  // Handles move when a checkpoint is committed or rolled back: the caches
-  // keyed by them are dropped then.
-  reset() {
-    this.encoded = new WeakMap();
-    this.decoded = new Map();
-    this.free = new Map();
+    this.encoded = new NodeCache(kernel, true);
+    this.decoded = new NodeCache(kernel);
+    this.free = new NodeCache(kernel);
     // Each term's head normal form, by its node (cubical-elaborator.mjs).
-    this.heads = new Map();
+    this.heads = new NodeCache(kernel);
   }
+  // Handles made since a checkpoint move when it is committed or rolled
+  // back: what was read of them is dropped then.
+  reset() { for (const cache of [this.encoded, this.decoded, this.free, this.heads]) cache.drop(); }
   // The dimensions free in a node, as a bit mask (freeDimensionMask).
   freeDimensions(id) { return freeDimensionMask(this.kernel, id, this.free); }
   formula(value, sort, dimensions) {
@@ -70,12 +90,13 @@ export class CubicalSyntax {
     Object.freeze(value);
     return this.kernel.formula(sort, clauses);
   }
-  encode(term, dimensions = new Map()) {
+  // `key` is the dimensions' context key: the same for each part encoded
+  // in the same dimensions, so computed once for them.
+  encode(term, dimensions = new Map(), key = dimensionContextKey(dimensions)) {
     if (!term || typeof term !== "object") throw new TypeError("Expected cubical syntax.");
-    const key = dimensionContextKey(dimensions);
-    const cached = this.encoded.get(term)?.get(key);
+    const cached = this.encoded.node(term, key);
     if (cached) return cached;
-    const k = this.kernel, child = t => this.encode(t, dimensions);
+    const k = this.kernel, child = t => this.encode(t, dimensions, key);
     const node = (payload = 0, ...children) => k.term(term.tag, payload, ...children);
     let result;
     switch (term.tag) {
@@ -150,8 +171,7 @@ export class CubicalSyntax {
         break;
       default: throw new Error(`Unsupported cubical syntax: ${term.tag}`);
     }
-    if (!this.encoded.has(term)) this.encoded.set(term, new Map());
-    this.encoded.get(term).set(key, result);
+    this.encoded.setNode(term, key, result);
     // Cache keys are immutable syntax, so a later mutation cannot accidentally
     // display new text while reusing the earlier checked term.
     if (term.system) { term.system.forEach(Object.freeze); Object.freeze(term.system); }
@@ -322,7 +342,7 @@ export class CubicalSyntax {
       }
     };
     freeze(result);
-    this.encoded.set(result, new Map([[dimensionContextKey(dimensions), id]]));
-    this.decoded.set(cacheKey, result);
+    this.encoded.setNode(result, dimensionContextKey(dimensions), id);
+    this.decoded.set(cacheKey, result, id);
     return result;
   }}
