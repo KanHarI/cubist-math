@@ -81,6 +81,18 @@ These are proposed, except the decided initial/free capability policy in
 L2.6. The categorical roadmap is consolidated with that contract in #187;
 the homological-algebra track remains in #198.
 
+The [reserved-name policy](../guides/keywords.md) applies across this
+roadmap and #187/#198. `deriving` and its capability words, including
+`isomorphisms`, `morphisms`, `free`, `initial`, `limits`, `preadditive`,
+`additive`, `preabelian` and `abelian`, are globally reserved. So are fixed
+generated interface names, including `Hom`, `Iso`, `cat`, `equality`, `make`,
+`map`, `id`, `inverse`, `compose`, `model`, `fold`, `gen`, `squash`,
+`IsInitial`, `IsTerminal`, `IsLimit` and `IsColimit`. Users can call supplied
+members and prove their predicates, but cannot bind those names. The compiler
+and categorical foundation supply the interfaces through checked terms;
+reserving a name adds no trusted proof principle. Dynamic generated names
+still require collision checks before any declarations are published.
+
 1. **Morphisms are derived only on request, at two levels.**
    - `deriving (isomorphisms)` generates `T.Iso` with `id`, `inverse`
      and `compose`: a groupoid, not a category. Structure identity

@@ -404,7 +404,11 @@ they are computable, and `computable` checks exactly that.
 ## 9. Derived declarations
 
 `deriving (…)` on an `inductive` or `theory` asks the elaborator to generate
-checked declarations:
+checked declarations. The clause's vocabulary and fixed generated names
+are globally reserved under the [reserved-name policy](../guides/keywords.md):
+user declarations, fields, constructors and binders cannot claim them.
+References to generated members, named arguments for their existing fields,
+and ordinary proofs of their predicates remain available.
 
 | Derivation | For | Result |
 | --- | --- | --- |

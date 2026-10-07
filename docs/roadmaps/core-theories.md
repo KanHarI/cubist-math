@@ -701,12 +701,14 @@ free W(A : U0) : Monoid(U0) on A;
 
 Here `Monoid` must request `deriving (morphisms, free)`, or, for the first
 line alone, `deriving (morphisms, initial)`. `free` without the capability
-fails at its use; `initial` accepts either capability. All generated names
-are checked for collisions before publishing declarations. In the first
-strategy below, a field named `model`, `fold`, `fold_unique`, `universal`,
-`squash`, or, for `free`, `gen` would collide with the public interface: the
-refusal names the field and the generated name. These are not globally
-reserved theory field names.
+fails at its use; `initial` accepts either capability. Fixed generated names are globally reserved, including `model`, `fold`,
+`fold_map`, `fold_unique`, `universal`, `squash` and `gen`: no user field,
+constructor, declaration or binder may claim them, whether or not that
+particular theory requests a derivation. The same policy covers the deriving
+vocabulary and the categorical interfaces in the
+[reserved-name policy](../guides/keywords.md). Generated members remain
+callable and their labels remain usable in calls. All dynamically formed
+names are still checked for collisions before publishing declarations.
 
 ### The initiality predicate
 
@@ -730,8 +732,10 @@ and its uniqueness proof.
 Once L3.5 supplies the category library's generic `IsInitial(C, N)`, the
 theory-specific predicate is its specialization at `T.cat`. The direct
 homomorphism-type definition allows the language interface to precede that
-library. Generated-name collisions, including an existing `T.IsInitial`
-field, are diagnosed at the opt-in as with the other generated names.
+library. `IsInitial`, `IsTerminal`, `IsLimit` and `IsColimit` are reserved interface
+names, supplied through ordinary checked definitions. User declarations and
+fields cannot replace them. Reserving the names does not add a trusted proof
+rule or implement an otherwise unsupported construction.
 
 ### What successful derivation proves
 
