@@ -57,12 +57,19 @@ finishing a language milestone does not automatically resume them.
 | Galois theory | [Finite Galois development](roadmaps/galois-roadmap.md) | [Resumption checkpoint](tactical/galois-handoff.md), [symmetries as loops](tactical/galois.md), [polynomial algebra](tactical/polynomial-algebra.md), [finite dimension](tactical/finite-dimension.md) |
 | Complex analysis | [Algebraic closure, residues, and Picard](roadmaps/complex-analysis-roadmap.md) | [Paused-development checkpoint](tactical/complex_analysis_handoff.md), [complex curves](tactical/complex_curves.md), [limits](tactical/analysis_limits.md) |
 | Real numbers | [Number systems for the rebuild](roadmaps/reals-roadmap.md) | The library's integers and rationals, built on 2026-10-05 as quotients; their order, canonical rationals and the Cauchy reals (kernel H3) are open. The first library's constructions are described as archived. |
+| Homological algebra | [Synthetic and algebraic homological algebra](roadmaps/homological-algebra.md) | Proposed on 2026-10-07, not started: Eilenberg–MacLane spaces and cohomology that computes, then modules, chain complexes, homology and Ext without the axiom of choice. |
 | Analytic number theory | [RH and prime-counting error](roadmaps/rh-prime-counting-roadmap.md) | Planning only: precise conditional statement, analytic dependencies, and potential homotopy interpretations. No proof implementation or tactical checkpoint yet. |
 
 ## Language tooling roadmap
 
 - [Language enhancement proposals](roadmaps/language-enhancement-proposals.md):
   deferred features, each kept with what would justify taking it up.
+- [Morphisms, categories and universal constructions](roadmaps/categories.md):
+  proposed on 2026-10-07:
+  - morphisms derived only on request, as isomorphisms or with a default
+    category;
+  - laws proved propositions, and implicit arguments in theory operations;
+  - categories, limits and the abelian tower in the library.
 - [Computation notation: monadic do and arrows](roadmaps/computation-notation-roadmap.md):
   planned blocks for existence proofs, free-algebra substitution and arrow
   composition, with explicit structures and checked elaboration.

@@ -63,25 +63,45 @@ Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
       a shadowed notation's name in printing.
     - Deferred: large numerals (L2.10f) and `decide` (L2.10g).
     - Notation rules (L2.10h) are proposed, not decided.
+- **Proposed on 2026-10-07.**
+  - **[Morphisms, categories and universal constructions](categories.md).**
+    - Theories derive morphisms only on request, at two levels:
+      `deriving (isomorphisms)` by transport, and `deriving (morphisms)`
+      with the default category `T.cat`.
+    - Laws may state what `hlevel` proves a proposition, and theory
+      operations take implicit arguments.
+    - The library gains categories, limits and colimits, and the abelian
+      tower.
+  - **[Homological algebra](homological-algebra.md),** a new mathematical
+    track:
+    - the synthetic route first: spheres, `K(G, n)` and cohomology that
+      computes;
+    - then modules, chain complexes and homology on the categories
+      packages.
 - **Next,** in the work plan's [first actions](work-plan.md#first-actions):
-  1. L2.6's slices 2–4;
-  2. the archive's raw `comp` lemmas re-derived through the squares
+  1. morphisms by opt-in (L2.4d);
+  2. laws proved propositions (L2.11), and implicit arguments in theory
+     operations (L2.12);
+  3. L2.6's slices 2–4;
+  4. the archive's raw `comp` lemmas re-derived through the squares
      (L2.8's last item);
-  3. the rest of the h-level solver (L2.5b):
+  5. the rest of the h-level solver (L2.5b):
      - Hedberg from registered decidable equality;
      - one layer of unfolding;
      - `Truncate`;
      - the inspector's record of witnesses;
-  4. `deriving` (L2.3), and h-levels proved before a squash constructor
+  6. `deriving` (L2.3), and h-levels proved before a squash constructor
      is added (L2.3b);
-  5. equivalences, then structure identity (L3.1, L3.2), before L2.4b and
+  7. equivalences, then structure identity (L3.1, L3.2), before L2.4b and
      L2.7;
-  6. the order on the numbers, if the maintainer extends the library's
+  8. categories, universal constructions and the abelian tower
+     (L3.4–L3.6);
+  9. the order on the numbers, if the maintainer extends the library's
      scope;
-  7. independent language work, among it L1.3's worker cancellation, and
-     monadic `do` and arrows (N0–N4);
-  8. K2.5's archive remedies;
-  9. H2's indexed families, then the H3 research gate.
+  10. independent language work, among it L1.3's worker cancellation, and
+      monadic `do` and arrows (N0–N4);
+  11. K2.5's archive remedies;
+  12. H2's indexed families, then the H3 research gate.
 
   One known defect is waiting. `top_unique` fails with an internal kernel
   error (E604) when its corners are left to inference (#185).
@@ -95,8 +115,11 @@ Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
   need the order on the numbers first, and the Cauchy reals H3 too. The
   first library in `archive/` is a reference.
 - **Open decisions.**
-  - **Needs the maintainer's decision:** the order on the numbers. It
-    waits on that decision.
+  - **Need the maintainer's decision:**
+    - the order on the numbers;
+    - when the homological algebra track starts;
+    - the composition operator, before L3.4;
+    - complex shapes or ℤ-indexing, before the track's chain complexes.
   - **The rest:** these block no scheduled slice and are listed in the
     work plan's [open decisions](work-plan.md#open-decisions).
 
@@ -147,6 +170,24 @@ Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
   every source selects `nat`, and an operator or numeral outside any
   selection is an error. Notation rules (L2.10h), large numerals and
   `decide` remain deferred.
+- [Morphisms, categories and universal constructions](categories.md),
+  proposed on 2026-10-07.
+  - **Morphisms by opt-in.** Theories derive morphisms only on request, at
+    two levels, and an opt-in that fails refuses the theory (L2.4d).
+    User-defined morphisms with the standardness obligation are deferred
+    (L2.4e).
+  - **Prerequisites.** Laws proved propositions (L2.11), and implicit
+    arguments in theory operations (L2.12).
+  - **The library:** categories, functors and natural transformations;
+    universal constructions with colimits by duality; and the abelian tower
+    from preadditive to abelian (L3.4–L3.6).
+- [Homological algebra](homological-algebra.md), proposed on 2026-10-07: a
+  new mathematical track, HA0–HA6.
+  - **Synthetic:** homotopy groups, Eilenberg–MacLane spaces and cohomology
+    that computes.
+  - **Algebraic:** modules, exactness, chain complexes over shapes,
+    homology and Smith normal form.
+  - **Both:** Ext without the axiom of choice, and cellular cohomology.
 - [Core theories](core-theories.md): the contract of work-plan L2.4,
   theory declarations, models, scoped notation, sections, extension,
   homomorphisms and isomorphisms, specified and implemented on 2026-10-05.

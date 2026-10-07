@@ -637,6 +637,18 @@ closed homomorphisms apply and compose by evaluation. A child theory's
 homomorphisms preserve its parents' operations too, and `T.Hom` has the
 forgetful map to each parent's homomorphisms, `f.p`.
 
+**Proposed revision, L2.4d (2026-10-07).** Morphisms would be derived only
+on request ([categories](categories.md)):
+
+- **`deriving (isomorphisms)`** generates `T.Iso` by transport. This
+  covers fields of any variance and families indexed by a carrier, which
+  E817 and E825 refuse today.
+- **`deriving (morphisms)`** generates `T.Hom` as described here. It adds
+  the default category `T.cat` and implies `isomorphisms`.
+
+An opt-in that cannot be honoured refuses the theory, naming the field. The
+library's algebraic hierarchy would opt into `morphisms`.
+
 ## Elaboration
 
 A theory expands, before checking, into the definitions above, in the

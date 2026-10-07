@@ -438,6 +438,11 @@ checked declarations:
   a squash constructor.
 - Every derived declaration is an ordinary term, checked by the kernel. It is
   marked `computable` when its dependencies allow.
+- On a theory, the [categories roadmap](categories.md) proposes:
+  - `isomorphisms` and `morphisms`, the two levels at which a theory's
+    morphisms are derived (L2.4d);
+  - `limits`, and the abelian tower from `additive` to `abelian` (L3.5,
+    L3.6).
 
 ## 10. Smaller conveniences
 
