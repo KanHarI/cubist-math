@@ -24,6 +24,16 @@ def above_two : Trunc(U0, exists n : Nat. 2 < n) := point((3, tt));
 // Output: (3, tt) : exists n : Nat. 2 < n
 print(witness(above_two));
 
+// A truncation in a larger universe: the witness is read at the requested
+// type, which the kernel accepts, though point(tt)'s own type,
+// Trunc(U0, Unit), lies in U0.
+def lifted_unit : U1 := Unit;
+
+def lifted : Trunc(U1, lifted_unit) := point(tt);
+
+// Output: tt : lifted_unit
+print(witness(lifted));
+
 // A transported truncation: along a path of types, the witness is of the
 // type at its end. Swapping a pair's components is an equivalence, and so a
 // path, by univalence.
