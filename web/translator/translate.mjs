@@ -1298,15 +1298,7 @@ export class Translator {
       if(shape.refusal)throw noRule(`The hint ${this.shown(term)}`,shape.refusal);
       return {term,type};
     });
-    // Evidence that local definitions name (let, obtain): source names
-    // bound to terms that are not variables of the context, which the search
-    // enumerates itself.
-    const locals=[];
-    for(const bound of scope.env.values()) {
-      if(!this.localSources.has(bound)||bound.tag==="Var"&&scope.context.has(bound.name))continue;
-      const type=scope.infer(bound).type;
-      if(hlevelStatement(type))locals.push({term:bound,type});
-    }
+    const locals=this.hlevelLocals(scope);
     const proof=this.search(scope,"hlevel",at=>{
       const search=new HLevelSearch(at,hints,term=>this.shown(term),locals,{rules:orderedHLevelRules(this.simpRegistry)});
       const stated=hlevelStatement(goal.target);
@@ -1331,16 +1323,30 @@ export class Translator {
     return this.conclude(first,new Transition(goal),proof,()=>({
       description:`Checked h-level evidence${hints.length?` with ${hints.length} hint${hints.length===1?"":"s"}`:""}.`}));
   }
+  // Evidence that local definitions name (let, obtain): source names bound
+  // to terms that are not variables of the context, which the search
+  // enumerates itself. Each states an h-level, or is quantified evidence,
+  // which the search uses as a rule (L2.5b).
+  hlevelLocals(scope) {
+    const locals=[];
+    for(const bound of scope.env.values()) {
+      if(!this.localSources.has(bound)||bound.tag==="Var"&&scope.context.has(bound.name))continue;
+      const type=scope.infer(bound).type;
+      if(hlevelStatement(type)||!ruleShape(type).refusal)locals.push({term:bound,type});
+    }
+    return locals;
+  }
   // Evidence that a type has the h-level its statement states, by the
-  // hlevel search over the scope's evidence and the registered rules, as
-  // the kernel checks it; or null, where hlevels is not loaded or the
-  // search finds none (L2.5b).
+  // hlevel search over the scope's evidence, local definitions included,
+  // and the registered rules, as the kernel checks it; or null, where
+  // hlevels is not loaded or the search finds none (L2.5b).
   hlevelEvidence(scope,type) {
     const stated=hlevelStatement(type);
     if(!stated||!scope.checker.kernel?.definitions.has("hlevels__HasLevel"))return null;
+    const locals=this.hlevelLocals(scope);
     try {
       return scope.check(this.search(scope,"hlevel",at=>
-        new HLevelSearch(at,[],term=>this.shown(term),[],{rules:orderedHLevelRules(this.simpRegistry)})
+        new HLevelSearch(at,[],term=>this.shown(term),locals,{rules:orderedHLevelRules(this.simpRegistry)})
           .prove(stated.level,stated.universe,stated.type)),type);
     } catch(error) {
       if(error instanceof HLevelUnproved)return null;

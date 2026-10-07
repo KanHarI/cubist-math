@@ -1,0 +1,10 @@
+// From tests/cubical-inspection.test.mjs: a square's boundary shows its
+// parameters by their source names, as the inspection's statement and
+// context do. The kernel's name for x1 is x1_<serial>, whose stem is x1_.
+
+import squares;
+
+def numbered{{A : U0, x1, x2 : A}}(p : x1 = x2) := refl_square(p);
+
+// A binder in a corner keeps apart from the parameter x it shadows.
+def apart{{A : U0, x : A}}(f : A -> (A -> A) -> A) := refl_square(refl(f(x, fun (x : A) => x)));
