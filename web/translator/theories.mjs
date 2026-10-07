@@ -37,10 +37,11 @@ export function registerTheoryDeclaration(t,d) {
   if(d.theory)(t.checker.theories??=new Map()).set(binding,d.theory);
   if(d.generated?.role==="projection")(t.checker.theoryProjections??=new Map()).set(binding,d.generated.field);
   // A projection whose field a notation names prints with that operator
-  // where its model is selected (L2.10d).
+  // where its model is selected (L2.10d), each operand in its view.
   if(d.theory)for(const [operator,field] of Object.entries(d.theory.notations??{}))
     if(!["unary -","numeral"].includes(operator))
-      (t.checker.notationPrinting??=new Map()).set(t.checker.bindingName?.(`${d.theory.name}.${field}`)??`${d.theory.name}.${field}`,[{operator,model:true}]);
+      (t.checker.notationPrinting??=new Map()).set(t.checker.bindingName?.(`${d.theory.name}.${field}`)??`${d.theory.name}.${field}`,
+        [{operator,model:true,recipe:d.theory.recipes?.[operator]??{}}]);
 }
 
 // n.name is m.f: when m is a model of a theory, the node of the call T.f(m),
@@ -194,7 +195,7 @@ export function notationDeclaration(t,module,d,env,declared=new Set()) {
         &&v.args.every(arg=>arg.name===rule.param.text||arg.kind==="number"))
       add({notation:d.name.text,numeral:v.args.map(arg=>arg.kind==="number"?arg.value:null)});
     else if(!rule.kind&&!rule.unary&&v.args.length===2&&v.args[0].name===rule.left.text&&v.args[1].name===rule.right.text)
-      add({notation:d.name.text,operator:rule.operator});
+      add({notation:d.name.text,operator:rule.operator,recipe:{left:rule.leftView?.text??null,right:rule.rightView?.text??null}});
   }
 }
 
