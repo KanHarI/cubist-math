@@ -653,6 +653,27 @@ still meets those limits. Larger numerals belong to L2.10f.
 
 ## L2.10d. Faithful printing
 
+**Done** on 2026-10-06, for named notations' rules of the form
+`x + y := f(x, y)`, literal and numeral rules, and theories' operations.
+Each registers how it prints (`notationPrinting` in
+`web/cubical-elaborator.mjs`), a function several notations use keeping
+each. The printer takes the notation selected where its text is read: an
+operation prints with its operator where its notation is selected, and as
+`nat.(x + y)` elsewhere; a model's operation prints infix where the model
+is selected, and as `m.f(x, y)` elsewhere; a literal read from its
+characters prints as written, `rationals.(1/2)`, where its whole lexeme
+is glyphs and reads back as one token; and a numeral rule's application
+prints as the numeral where its notation is selected and each place of
+the numeral holds the same one. An operator's operands print in the views
+its rule reads them in, as `nat` for `x ^ nat.(n)`, and `^` groups to the
+right, a model's as a named notation's. Until
+L2.10j, nat's operations print unqualified where nothing is selected,
+where name-based reading reads them. Goals show in their scope's
+selection, and a file-level `use` covers the directives after it, which
+print in it. Evidence: `cubist-tests/notation_printing.cubist`, whose
+printed `5 = 5` reads back as the term. A shadowed notation's name is not
+yet qualified further.
+
 A printer needs the current view, operand-view recipes, and binding
 identities, as well as the term and its checking context. It uses notation
 only for structurally recognized applications of the exact selected

@@ -35,6 +35,12 @@ export function registerTheoryDeclaration(t,d) {
   const binding=t.checker.bindingName?.(d.name.text)??d.name.text;
   if(d.theory)(t.checker.theories??=new Map()).set(binding,d.theory);
   if(d.generated?.role==="projection")(t.checker.theoryProjections??=new Map()).set(binding,d.generated.field);
+  // A projection whose field a notation names prints with that operator
+  // where its model is selected (L2.10d), each operand in its view.
+  if(d.theory)for(const [operator,field] of Object.entries(d.theory.notations??{}))
+    if(!["unary -","numeral"].includes(operator))
+      (t.checker.notationPrinting??=new Map()).set(t.checker.bindingName?.(`${d.theory.name}.${field}`)??`${d.theory.name}.${field}`,
+        [{operator,model:true,recipe:d.theory.recipes?.[operator]??{}}]);
 }
 
 // n.name is m.f: when m is a model of a theory, the node of the call T.f(m),
@@ -164,6 +170,27 @@ export function notationDeclaration(t,module,d,env,declared=new Set()) {
       recipe:{left:rule.leftView?.text??null,right:rule.rightView?.text??null}});
   }
   env.set(notationBinding(d.name.text),{tag:"Notation",name:d.name.text,rules,model});
+  // How its rules print (L2.10d): an operator whose rule applies a function
+  // to its operands in order, x + y := add(x, y); a literal rule's parser,
+  // literal(s) := parse(s); and a numeral rule's function of the numeral,
+  // numeral(n) := int(n, 0), with its other arguments fixed numerals.
+  const binding=name=>{const value=env.get(name);return value?.tag==="DefRef"?value.name:null;};
+  for(const rule of d.rules) {
+    const v=rule.value;
+    if(v.kind!=="call"||v.fn.kind!=="name")continue;
+    const f=binding(v.fn.name),printing=t.checker.notationPrinting??=new Map();
+    if(!f)continue;
+    // A function several notations use keeps each, the first declared
+    // printing it where none of them is selected.
+    const add=entry=>printing.set(f,[...(printing.get(f)??[]),entry]);
+    if(rule.kind==="literal"&&v.args.length===1&&v.args[0].name===rule.param.text)
+      add({notation:d.name.text,literal:true});
+    else if(rule.kind==="numeral"&&v.args.some(arg=>arg.name===rule.param.text)
+        &&v.args.every(arg=>arg.name===rule.param.text||arg.kind==="number"))
+      add({notation:d.name.text,numeral:v.args.map(arg=>arg.kind==="number"?arg.value:null)});
+    else if(!rule.kind&&!rule.unary&&v.args.length===2&&v.args[0].name===rule.left.text&&v.args[1].name===rule.right.text)
+      add({notation:d.name.text,operator:rule.operator,recipe:{left:rule.leftView?.text??null,right:rule.rightView?.text??null}});
+  }
 }
 
 // A copy of a syntax tree with each free name that `rename` maps renamed,

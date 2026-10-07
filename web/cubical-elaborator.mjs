@@ -284,6 +284,12 @@ export class NativeCubicalElaborator {
     // imported.
     this.theories = new Map();
     this.theoryProjections = new Map();
+    // How notations print (L2.10d): for an operation a notation's rule
+    // applies, the notation and its operator; for a literal rule's parser
+    // or a numeral rule's function, the notation; for a theory's projection
+    // with a notation, its operator. The printer uses them only where the
+    // notation is selected, or qualified.
+    this.notationPrinting = new Map();
     this.genericDefinitions = new Map();
     this.scopeDefinitions = new Set();
     // Each definition's kernel extensions under review, such as H1: the
@@ -421,7 +427,8 @@ export class NativeCubicalElaborator {
       : this.assumptionLabels.has(name) ? { name: this.assumptionLabels.get(name), kind: "axiom" }
       : this.kernel.signatures?.has(name) ? this.signatureDisplay(name)
       : localName(name) !== name ? { name: localName(name), ...this.implicitDisplay(name),
-        ...(this.theoryProjections?.has(name) ? { projection: this.theoryProjections.get(name) } : {}) } : undefined });
+        ...(this.theoryProjections?.has(name) ? { projection: this.theoryProjections.get(name) } : {}),
+        ...(this.notationPrinting?.has(name) ? { printing: this.notationPrinting.get(name) } : {}) } : undefined });
   }
   implicitDisplay(name) {
     const view = this.definitionViews.get(name), implicit = view?.parameters?.filter(parameter => parameter.implicit).length;
@@ -443,8 +450,8 @@ export class NativeCubicalElaborator {
       name: shapes[c].generated ? `${localName(name)}.${constructor}` : constructor,
       data: shapes[c].data, positions: shapes[c].positions, dimensions: shapes[c].dimensions })) };
   }
-  displayText(term, width = 160, limit = 4000) {
-    return this.printed(readableDimensions([displayTerm(term)])[0], width, limit);
+  displayText(term, width = 160, limit = 4000, notation = {}) {
+    return this.printed(readableDimensions([displayTerm(term)])[0], width, limit, notation);
   }
   // A term in kernel notation as it was checked, no redex reduced.
   kernelText(term, width = 160) {
@@ -457,17 +464,18 @@ export class NativeCubicalElaborator {
     return readableDimensions(displayTerm(terms)).map(term => this.printed(term, width, limit));
   }
   // A term whose names are already settled, as source text within a width.
-  printed(term, width = 160, limit = 4000) {
-    const text = sourceText(term, this.displayNames, limit);
+  printed(term, width = 160, limit = 4000, notation = {}) {
+    const text = sourceText(term, this.displayNames, limit, notation);
     return text.length > width ? `${text.slice(0, width - 1)}…` : text;
   }
   // A goal, and the term a statement built for it, shown with one renaming,
   // so the context's names, the target and the term agree.
   // `print` is sourceText by default; cubicalText gives mathematical notation.
   // A derivation shows its terms as they are: `reduce` false keeps redexes.
-  displayGoal(context, target, built = null, width = 400, print = null, reduce = true) {
+  // `notation.selection` names the notation selected at the goal (L2.10d).
+  displayGoal(context, target, built = null, width = 400, print = null, reduce = true, notation = {}) {
     // Goals can share large terms; the printer stops after `width` nodes too.
-    const printed = term => print ? print(term, this.displayNames) : sourceText(term, this.displayNames, width);
+    const printed = term => print ? print(term, this.displayNames) : sourceText(term, this.displayNames, width, notation);
     const show = term => { const text = printed(term); return text.length > width ? `${text.slice(0, width - 1)}…` : text; };
     let chained = { tag: "Pair", first: target, second: built ?? { tag: "Point" } };
     for (const [name, type] of [...context].reverse()) chained = T.pi(name, type, chained);

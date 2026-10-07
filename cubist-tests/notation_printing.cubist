@@ -1,0 +1,124 @@
+// Faithful printing (L2.10d): an operation prints with its notation's
+// operator only where that notation is selected, and is qualified, as
+// nat.(x + y), elsewhere; a literal read from its characters prints as it
+// was written, in its notation; and a numeral rule's application prints
+// as the numeral where its notation is selected. What a print shows reads
+// back, where it is shown, as the term it shows.
+import nat;
+import lists;
+import lexemes;
+import algebra;
+import integers;
+import rationals;
+
+notation times {
+  x + y := mul(x, y);
+  numeral(n : Nat) := n;
+}
+
+def doubled(x : Nat) : times.(x + x) = mul(x, x) {
+  rfl;
+}
+
+// With no notation selected, mul prints as nat's *, as name-based reading
+// reads it until L2.10j.
+// Output: forall x : Nat. x * x = x * x
+print(typeof(doubled));
+
+// A literal prints as it was written, qualified by its notation.
+def half : Q := rationals.(1/2);
+
+// Output: rationals.(1/2) = rationals.(1/2)
+print(typeof(refl(typed(Q, rationals.(1/2)))));
+
+// Only a whole lexeme prints as a literal: one whose tail is a name prints
+// as the application it is.
+notation decimal {
+  literal(s : Lexeme) := natural_literal(s);
+}
+
+def tail : Lexeme := cons(digit(2), nil);
+
+def partial := refl(parsed_value(natural_literal(cons(digit(1), tail)), tt));
+
+// Output: parsed_value{{U0, Nat}}(natural_literal(cons(digit(1), tail)), tt) = parsed_value{{U0,
+//   Nat}}(natural_literal(cons(digit(1), tail)), tt)
+print(typeof(partial));
+
+use times;
+
+// Where times is selected, mul is its +, and nat's operations are
+// qualified.
+// Output: forall x : Nat. x + x = x + x
+print(typeof(doubled));
+
+// Output: nat.(2 + 3) = nat.(2 + 3)
+print(typeof(refl(nat.(2 + 3))));
+
+// Each operand prints in the view its rule reads it in: powers' exponent is
+// read in nat, where * is mul.
+def combine(x, y : Nat) : Nat := add(x, y);
+
+notation powers {
+  x + y := mul(x, y);
+  x * y := mul(x, y);
+  x ^ nat.(n) := combine(x, n);
+  numeral(n : Nat) := n;
+}
+
+use powers;
+
+def exponent(x, y : Nat) : combine(x, mul(y, y)) = combine(x, mul(y, y)) := refl(combine(x, mul(y, y)));
+
+// Output: forall x : Nat. forall y : Nat. x ^ (y * y) = x ^ (y * y)
+print(typeof(exponent));
+
+def exponent_again : forall x : Nat. forall y : Nat. x ^ (y * y) = x ^ (y * y) := exponent;
+
+// A model's ^ groups to the right, as the parser reads it: a power of a
+// power keeps its parentheses.
+theory Powers(U < UU0) {
+  A : U;
+  power(x, y : A) : A notation x ^ y;
+}
+
+def tower : Powers(U0) := Powers.make(A := Nat, power := fun (x, y : Nat) => succ(x));
+
+use tower;
+
+def nested(x, y, z : Nat) : tower.power(tower.power(x, y), z) = tower.power(tower.power(x, y), z) := refl(
+  tower.power(tower.power(x, y), z)
+);
+
+// Output: forall x : Nat. forall y : Nat. forall z : Nat. (x ^ y) ^ z = (x ^ y) ^ z
+print(typeof(nested));
+
+def nested_again : forall x : Nat. forall y : Nat. forall z : Nat. (x ^ y) ^ z = (x ^ y) ^ z := nested;
+
+// A numeral rule that takes its numeral twice prints as the numeral only
+// where both places hold the same one.
+def pick(a, b : Nat) : Nat := b;
+
+notation diagonal {
+  numeral(n : Nat) := pick(n, n);
+}
+
+use diagonal;
+
+// Output: pick(2, 3) = pick(2, 3)
+print(typeof(refl(pick(nat.(2), nat.(3)))));
+
+// Output: 2 = 2
+print(typeof(refl(pick(nat.(2), nat.(2)))));
+
+use integers;
+
+// Where the integers are selected, their numeral rule prints back as the
+// numeral.
+def five : integers.R := 5;
+
+// Output: 5 = 5
+print(typeof(refl(typed(integers.R, 5))));
+
+// The printed text reads back as the term, where it was printed.
+def again : 5 = 5 := refl(five);
