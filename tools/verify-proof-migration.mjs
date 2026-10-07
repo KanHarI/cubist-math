@@ -17,7 +17,7 @@ import { assertFreshBuild } from "./build-stamp.mjs";
 import { migrationSourceReader } from "./migration-sources.mjs";
 import { placeOfFile } from "./module-sources.mjs";
 import { moduleRoots } from "../web/module-resolution.mjs";
-import { historicalSource, currentSyntax } from "../web/cubist/legacy-syntax.mjs";
+import { historicalSource, currentSyntax, reservedBindingRenaming } from "../web/cubist/legacy-syntax.mjs";
 import { parse, languageKeywords } from "../web/cubist/parser.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -87,7 +87,11 @@ const originalSource = path => {
   if (!originalSources.has(path)) originalSources.set(path, git(["show",`${base}:${path}`]));
   return originalSources.get(path);
 };
-const importedNamesOf = (path, seen = new Set(), includeOwn = true) => {
+// Fresh replacements must agree in a dependency and every importer, even
+// when the conflicting local name occurs in only one of those modules.
+const renaming = reservedBindingRenaming([...available].filter(path => path.endsWith(".cubist"))
+  .map(path => currentSyntax(originalSource(path))));
+const importedDeclarationsOf = (path, seen = new Set(), includeOwn = true) => {
   if (!available.has(path) || seen.has(path)) return [];
   seen.add(path);
   if (!originalSyntax.has(path)) {
@@ -95,15 +99,15 @@ const importedNamesOf = (path, seen = new Set(), includeOwn = true) => {
     catch { originalSyntax.set(path, { declarations: [], imports: [] }); }
   }
   const syntax = originalSyntax.get(path), place = path.startsWith(moduleRoots.archive) ? "archive" : "library";
-  const names = includeOwn ? syntax.declarations.flatMap(d => [d.name.text, ...(d.constructors ?? []).map(c => c.name.text)])
-    .filter(name => languageKeywords.has(name)) : [];
+  const declarations = [];
   for (const dependency of syntax.imports) {
     const paths = place === "archive" ? [originalModulePath("archive", dependency)]
       : [originalModulePath("library", dependency), originalModulePath("archive", dependency)];
     const next = paths.find(path => available.has(path));
-    if (next) names.push(...importedNamesOf(next, seen));
+    if (next) declarations.push(...importedDeclarationsOf(next, seen));
   }
-  return names;
+  if (includeOwn) declarations.push(...syntax.declarations);
+  return declarations;
 };
 // Until 2026-10-05 every module had Nat without importing it, from the
 // kernel and then from an implicit import of nat; a base of that time is read
@@ -132,7 +136,7 @@ const readOriginal = migrationSourceReader(async (place, name) => {
     // A baseline may predate a syntax change, or the implicit import of nat;
     // it is read in today's syntax, with the imports it had then.
     let text = available.has(path) ? historicalSource(originalSource(path), name,
-      { implicitNat, minusReverses, importedNames: importedNamesOf(path, new Set(), false) }) : null;
+      { implicitNat, minusReverses, renaming, importedDeclarations: importedDeclarationsOf(path, new Set(), false) }) : null;
     if (text !== null) historical.add(name);
     // A new shared foundation has no predecessor. It is available only in
     // library resolution; archive importers never see this fallback.
