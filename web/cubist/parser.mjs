@@ -38,11 +38,11 @@ export function tokenize(source) {
 // universe constants. Every other word is a name outside the construct that
 // gives it a meaning, a contextual keyword: those that begin a declaration
 // or a directive at a module's top level, where no name stands (import,
-// def, computable, inductive, theory, section, evaluate, print, typeof,
-// inspect, simp_rule, simp_set), sort, law, notation and extends in a
-// theory, set, prop, type and trunc in a header, and with, at, by, from,
-// over, along, only, using and the like inside particular statements. The
-// library and the archive bind prop, set, law and evaluate.
+// def, computable, inductive, theory, section, print, typeof, inspect,
+// simp_rule, simp_set), sort, law, notation and extends in a theory, set,
+// prop, type and trunc in a header, and with, at, by, from, over, along,
+// only, using and the like inside particular statements. The library and
+// the archive bind prop, set and law.
 export const reservedNames = new Set([
   "let", "obtain", "exact", "calc", "open", "match", "rfl", "rw", "simp", "simpa", "intro", "ext", "hlevel", "induction",
   "fun", "forall", "exists", "and", "or", "as", "return",
@@ -50,9 +50,9 @@ export const reservedNames = new Set([
   // A sum's injections, left(a) and right(b), and its patterns, left a =>
   // and right b =>, and the ascription typed(T, e): no binder shadows them.
   "left", "right", "typed",
-  // `evaluate e expecting v;`: the word after the evaluated term is always
-  // the keyword.
-  "expecting",
+  // `evaluate e expecting v;`, a computation test, and print(evaluate(e)):
+  // evaluate and expecting are always these keywords.
+  "evaluate", "expecting",
 ]);
 
 // `bindable` lists reserved words a historical source may still bind

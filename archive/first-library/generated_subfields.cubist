@@ -187,13 +187,13 @@ def generated_field_least(
   member : GeneratedField(F, P, x)
 ) :
   Q(x) {
-  let evaluate : FieldDerivation(F, P, x) -> Q(x) {
+  let evaluate_ : FieldDerivation(F, P, x) -> Q(x) {
     intro derivation;
     obtain (n, raw) := derivation;
     exact field_closure_stage_least(F, P, Q, laws, included, n, x, raw);
   }
   exact mere_eliminate(
-    FieldDerivation(F, P, x), Q(x), subfield_prop(F, Q, laws, x), evaluate, member
+    FieldDerivation(F, P, x), Q(x), subfield_prop(F, Q, laws, x), evaluate_, member
   );
 }
 

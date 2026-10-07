@@ -2,7 +2,7 @@
 // the browser by the same worker as the proof workspace; every name the
 // checker links becomes clickable and opens the workspace's kernel inspector
 // in a side panel, checked and inspected in the same way as in a proof.
-import { tokenPattern, tokenStyle, numeralAt, keywordAt, linkedWord } from "../source-tokens.mjs";
+import { tokenPattern, tokenStyle, numeralAt, keywordAt } from "../source-tokens.mjs";
 import { enableTokenTips } from "../token-tips.mjs";
 import { archiveModules, libraryModules } from "../cubist/modules.mjs";
 import { replTranscript } from "../repl-session.mjs";
@@ -77,7 +77,7 @@ function render(code, source, links = [], inspect = start => openInspector(sourc
       continue;
     }
     const expansion = numeralAt(source, start, text) ?? linkAt.get(start)?.expansion;
-    const link = linkAt.get(start), style = tokenStyle(text, expansion, keywordAt(source, start, text) ?? linkedWord(text, link));
+    const link = linkAt.get(start), style = tokenStyle(text, expansion, keywordAt(source, start, text));
     if (link) {
       const button = document.createElement("button");
       button.type = "button";
