@@ -2,6 +2,7 @@ import { cubicalText } from "./cubical-notation.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
 import { localName, numberedName } from "./translator/names.mjs";
 import {numeralValue} from "./translator/numerals.mjs";
+import { tokenize } from "./cubist/parser.mjs";
 
 // Print a checked term in Cubist source syntax, for messages and the command
 // line: `A -> B`, `forall x : A. B`, `A and B`, `exists x : A. B`, `A or B`,
@@ -17,11 +18,38 @@ const arithmetic = /^nat__(add|mul|le|isLt)$/;
 // A notation's operator's level (L2.10b).
 const operatorLevel = { "+": LEVEL.plus, "-": LEVEL.plus, "*": LEVEL.times, "/": LEVEL.times, "^": LEVEL.power,
   "<": LEVEL.compare, "<=": LEVEL.compare };
-// A lexeme's glyphs, as its term prints, back to its characters (L2.10c).
+// A lexeme's marks, by their constructors, as characters (L2.10c).
 const glyphs = { period: ".", slash: "/", underscore: "_", plus: "+", minus: "-" };
-const lexemeText = printed => [...printed.matchAll(/\b(digit|lower|upper)\((\d+)\)|\b(period|slash|underscore|plus|minus)\b/g)]
-  .map(([, kind, value, mark]) => mark ? glyphs[mark] : kind === "digit" ? value
-    : String.fromCharCode((kind === "lower" ? 97 : 65) + Number(value))).join("");
+// A constructor of the declared type `signature`, applied to `arity`
+// arguments: its name and arguments, or null.
+const constructed = (t, signature, arity) => {
+  const args = [];
+  while (t?.tag === "App" && args.length < arity) { args.unshift(t.arg); t = t.fn; }
+  return t?.tag === "Con" && t.sort?.tag === "Sort" && t.sort.signature === signature && args.length === arity ? { name: t.name, args } : null;
+};
+// A lexeme's text, from its constructors: a list of lexemes' glyphs, each a
+// digit, a letter or a mark. Null where any part is no such constructor, or
+// the text would not read back as one numeric token, so that only a whole
+// literal prints as one.
+const lexemeText = t => {
+  let text = "";
+  for (;;) {
+    if (constructed(t, "lists__List", 0)?.name === "nil") break;
+    const cell = constructed(t, "lists__List", 2);
+    if (cell?.name !== "cons") return null;
+    const [glyph, rest] = cell.args, mark = constructed(glyph, "lexemes__Glyph", 0), valued = constructed(glyph, "lexemes__Glyph", 1);
+    const value = valued && numeralValue(valued.args[0]);
+    const character = mark ? glyphs[mark.name]
+      : valued?.name === "digit" && value !== null && value < 10 ? String(value)
+      : ["lower", "upper"].includes(valued?.name) && value !== null && value < 26 ? String.fromCharCode((valued.name === "lower" ? 97 : 65) + value)
+      : undefined;
+    if (character === undefined) return null;
+    text += character;
+    t = rest;
+  }
+  try { const tokens = tokenize(text); return tokens.length === 2 && tokens[0].text === text && /^[0-9]/.test(text) ? text : null; }
+  catch { return null; }
+};
 
 // `symbols` maps kernel names to their display names, as for cubicalText.
 // Without an entry, a definition shows its name without the module prefix.
@@ -112,6 +140,20 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   };
   const show = t => print(t)[0];
   const sub = (t, needed) => { const [text, level] = print(t); return level < needed ? `(${text})` : text; };
+  // An operation printed with its notation's operator, at its level: ^
+  // groups to the right, a comparison not at all, the others to the left.
+  // Each operand is read in the view its rule gives it, as nat.(n) in
+  // x ^ nat.(n), and otherwise in the notation `own` (L2.10b).
+  const infixText = (printing, [left, right], own) => {
+    const level = operatorLevel[printing.operator], recipe = printing.recipe ?? {};
+    const levels = printing.operator === "^" ? [level + 1, level] : [level === LEVEL.compare ? level + 1 : level, level + 1];
+    const operand = (arg, view, at) => {
+      const saved = selection;
+      selection = view ?? own;
+      try { return sub(arg, at); } finally { selection = saved; }
+    };
+    return [`${operand(left, recipe.left, levels[0])} ${printing.operator} ${operand(right, recipe.right, levels[1])}`, level];
+  };
   const atom = text => [text, LEVEL.atom];
   // A form without a source spelling is cubicalText's. It is given the
   // variables bound around it, and the renamed ones, as this printer shows
@@ -266,12 +308,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         // A notation's operation, in its notation where it is selected, and
         // qualified elsewhere; its operands are read in it.
         if (printing?.operator && !printing.model && args.length === 2) {
-          const level = operatorLevel[printing.operator], left = level === LEVEL.compare ? level + 1 : level;
-          const saved = selection;
-          selection = printing.notation;
-          const text = printing.operator === "^" ? `${sub(args[0], level + 1)} ^ ${sub(args[1], level)}`
-            : `${sub(args[0], left)} ${printing.operator} ${sub(args[1], level + 1)}`;
-          selection = saved;
+          const [text, level] = infixText(printing, args, printing.notation);
           const own = selection === printing.notation || selection === null && printing.notation === "nat";
           return own ? [text, level] : atom(`${printing.notation}.(${text})`);
         }
@@ -284,17 +321,19 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
           const readings = parser.tag === "DefRef" ? symbols[parser.name]?.printing : undefined;
           const reading = readings?.find(entry => entry.literal && entry.notation === selection) ?? readings?.find(entry => entry.literal);
           if (reading?.literal && parsed.length) {
-            const text = lexemeText(show(parsed.at(-1)));
+            const text = lexemeText(parsed.at(-1));
             if (text) return atom(selection === reading.notation ? text : `${reading.notation}.(${text})`);
           }
         }
         // A numeral rule's application to a numeral, as int(3, 0), prints as
         // the numeral where its notation is selected.
         if (printing?.numeral && selection === printing.notation && args.length >= printing.numeral.length) {
-          const own = args.slice(args.length - printing.numeral.length);
-          const value = printing.numeral.findIndex(fixed => fixed === null);
-          if (own.every((arg, k) => printing.numeral[k] === null ? numeral(arg) !== null : numeral(arg) === printing.numeral[k]))
-            return atom(String(numeral(own[value])));
+          // Each place of the numeral holds the same one, and each fixed
+          // argument its own.
+          const values = args.slice(args.length - printing.numeral.length).map(numeral);
+          const value = values[printing.numeral.indexOf(null)];
+          if (values.every((v, k) => v !== null && v === (printing.numeral[k] ?? value)))
+            return atom(String(value));
         }
         const operator = head.tag === "DefRef" && args.length === 2 && !printing && arithmetic.exec(head.name)?.[1];
         if (operator) {
@@ -310,10 +349,8 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
             const rest = args.slice(at + 1);
             // Where the model is selected, its operation prints with its
             // notation's operator (L2.10d).
-            if (printing?.operator && rest.length === 2 && selection !== null && selection === show(model)) {
-              const level = operatorLevel[printing.operator];
-              return [`${sub(rest[0], level === LEVEL.compare ? level + 1 : level)} ${printing.operator} ${sub(rest[1], level + 1)}`, level];
-            }
+            if (printing?.operator && rest.length === 2 && selection !== null && selection === show(model))
+              return infixText(printing, rest, selection);
             return atom(`${sub(model, LEVEL.atom)}.${projection}${rest.length ? `(${rest.map(show).join(", ")})` : ""}`);
           }
         }

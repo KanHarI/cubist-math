@@ -661,8 +661,12 @@ each. The printer takes the notation selected where its text is read: an
 operation prints with its operator where its notation is selected, and as
 `nat.(x + y)` elsewhere; a model's operation prints infix where the model
 is selected, and as `m.f(x, y)` elsewhere; a literal read from its
-characters prints as written, `rationals.(1/2)`; and a numeral rule's
-application prints as the numeral where its notation is selected. Until
+characters prints as written, `rationals.(1/2)`, where its whole lexeme
+is glyphs and reads back as one token; and a numeral rule's application
+prints as the numeral where its notation is selected and each place of
+the numeral holds the same one. An operator's operands print in the views
+its rule reads them in, as `nat` for `x ^ nat.(n)`, and `^` groups to the
+right, a model's as a named notation's. Until
 L2.10j, nat's operations print unqualified where nothing is selected,
 where name-based reading reads them. Goals show in their scope's
 selection, and a file-level `use` covers the directives after it, which
