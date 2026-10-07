@@ -128,6 +128,14 @@ the scheduling authority; this summarizes it.
 - [Computation notation: monadic do and arrows](computation-notation-roadmap.md):
   planned explicit computation blocks, checked monad and arrow interfaces,
   mathematical examples, and staged elaboration without new kernel rules.
+- [Runtime evaluation and binary numerical foundations](runtime-evaluation-roadmap.md):
+  proposed after the `euclid(4)` syntax-depth failure: one-pass REPL
+  evaluation, normalization caches, lazy closures, an explicit evaluation
+  stack, typed readback and checked search improvements. Early numerical
+  foundations define `UNat` and `BNat`, prove their semiring isomorphism,
+  and make `Z`, `Q` and later numerical constructions binary-backed.
+  Separates prime projection, lazy observation and full normalization, with
+  semantic review and resource limits governing integration.
 - [Simplification and shorter proofs](proof-ergonomics-roadmap.md):
   - Delivered: `rw`, `calc`, `rfl`, `simp`/`simpa` with registered rule sets
     and conditional rules, cubical path shorthand, dependency tracking,

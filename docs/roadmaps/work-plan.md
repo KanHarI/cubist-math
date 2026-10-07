@@ -524,6 +524,35 @@ The exact syntax remains proposed; none is delivered.
 - **N5:** explicit choice and dynamic application after N4 and checked
   capability laws. Probability and partiality instances remain deferred.
 
+## Runtime evaluation track
+
+Added on 2026-10-07. The [runtime evaluation roadmap](runtime-evaluation-roadmap.md)
+owns EVAL0–EVAL8 and the early numerical packages NUM0–NUM2. No package is
+implemented; scratch prime projections are feasibility observations, not full normal forms or
+kernel evidence. This track is independent of computation notation N0–N5.
+
+- Start with EVAL0's reproducible Euclid baseline and EVAL1's removal of
+  redundant REPL self-comparison. EVAL2's full-normalization cache can follow
+  independently, with exact keys and rollback/compaction coverage.
+- Start NUM0/NUM1 early: define explicit `UNat` and canonical `BNat`, direct
+  binary arithmetic and their checked commutative-semiring isomorphism,
+  with cancellation and no-zero-divisors. NUM2 makes `Z` use pairs of
+  `BNat` and `Q` use the resulting binary-backed integer ring, including
+  literals and numerical casts. Prove ring/domain agreement of the integer
+  constructions and field agreement of the rationals. Later numerical
+  constructions default to `BNat`; this foundation migration does not wait
+  for a new runtime evaluator or packed-integer specialization.
+- Design EVAL3's lazy closure evaluator and EVAL4's explicit stack together.
+  EVAL5 specifies observation and typed readback; a successful
+  `euclid(4).1` does not close the failure of full `euclid(4)`.
+- EVAL6's packed binary arithmetic follows NUM0–NUM2 and profiling; EVAL7's
+  checked BNat search improvements are a separate computation pilot, keeping
+  the archived algorithm fixed for evaluator comparisons and broader
+  mathematics paused.
+- EVAL8's applicable semantic review, instruction isolation, canonicity and
+  resource checks gate production integration. A query result does not
+  establish equality merely because its type checks.
+
 ## Release checks and documentation
 
 Every language package includes parser/formatter round trips, original source
@@ -738,6 +767,10 @@ Suggested next, in order:
    N2/N4;
    L2.9a's expected-value patterns. Keep canonical quotient and
    view examples finite and computable.
+   The [runtime evaluation track](#runtime-evaluation-track) starts with
+   EVAL0's baseline, EVAL1's one-pass REPL evaluation and NUM0/NUM1's
+   unary/binary natural foundations, followed by binary-backed `Z` and `Q`
+   in NUM2.
 10. **K2.5's remaining archive remedies,** and in the library one module for
    the classical assumptions over the computing `Trunc`. The two
    H2-dependent tower declarations stay deferred; complete removal of the
