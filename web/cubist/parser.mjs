@@ -30,8 +30,9 @@ export function tokenize(source) {
   return tokens;
 }
 // Reserved names: the keywords that begin a term or a statement, or join
-// terms, and the built-in types Unit and Void, whose meaning checking relies
-// on (a theory's laws, for one). None can be bound: not by a declaration, a
+// terms, the built-in types Unit and Void, whose meaning checking relies
+// on (a theory's laws, for one), and Unit's element tt, the evidence a
+// literal's parse succeeded (L2.10c). None can be bound: not by a declaration, a
 // parameter, a binder, a pattern, a field or a constructor. Every binding
 // site reads its name through name(), which refuses them, as it does
 // universe constants. Every other word is a name outside the construct that
@@ -45,7 +46,7 @@ export function tokenize(source) {
 export const reservedNames = new Set([
   "let", "obtain", "exact", "calc", "open", "match", "rfl", "rw", "simp", "simpa", "intro", "ext", "hlevel", "induction",
   "fun", "forall", "exists", "and", "or", "as", "return",
-  "Unit", "Void",
+  "Unit", "Void", "tt",
 ]);
 
 export function parse(source, typeOnly = false) {
