@@ -50,6 +50,9 @@ export const reservedNames = new Set([
   // A sum's injections, left(a) and right(b), and its patterns, left a =>
   // and right b =>, and the ascription typed(T, e): no binder shadows them.
   "left", "right", "typed",
+  // `evaluate e expecting v;`: the word after the evaluated term is always
+  // the keyword.
+  "expecting",
 ]);
 
 // `bindable` lists reserved words a historical source may still bind
