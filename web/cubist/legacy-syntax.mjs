@@ -64,14 +64,19 @@ notation nat {
 // or evaluate renamed left_, right_, typed_ and evaluate_, and with it each
 // reference in its scope, as the translator reads scopes: a parameter's is
 // the rest of its declaration, a lambda's its body, a let's the statements
-// after it but not its own value, a pattern's its clause, and a
-// declaration's itself and the items after it. A name no such binder is in
-// scope for is the builtin, an injection or an ascription, and stays, as
-// sum patterns and evaluate directives do. A name read by its declaration
-// rather than by scope, a parameter's in a named argument or a field's
-// after a dot, is renamed wherever it is written, as each declaration of it
-// is. A module reads only its own binders: a name another module declares
-// so, called bare, is not followed. Bound names change no checked term.
+// after it but not its own value, a pattern's its clause, a constructor's
+// the constructors after it, and a declaration's itself and the items after
+// it. A name no such binder is in scope for is the builtin, an injection or
+// an ascription, and stays, as evaluate directives do. A name read by its
+// declaration rather than by scope, a parameter's in a named argument, a
+// field's after a dot or a constructor's in a clause, is renamed wherever
+// it is written, as each declaration of it is. But a clause's left x is a
+// sum's, and its left(…) or right(…) is too unless this module declared a
+// constructor so before it. A module reads only its own binders: a name
+// another module declares so, called bare or as left(…) in a clause, is not
+// followed. Only the matched type tells a sum's left(…) in a match
+// statement from a constructor this module declared, which it is read as.
+// Bound names change no checked term.
 const renamedReserved = { left: "left_", right: "right_", typed: "typed_", evaluate: "evaluate_" };
 const reservedUnbound = source => {
   if (!/\b(left|right|typed|evaluate)\b/.test(source)) return source;
@@ -92,6 +97,17 @@ const reservedUnbound = source => {
     if (scope.has(head)) rename(token.start, head);
     let at = token.start + head.length;
     for (const part of rest) { rename(at + 1, part); at += 1 + part.length; }
+  };
+  // A clause's constructors, nested and in each of its columns, but a sum's
+  // injections: left x, and left(…) where this module has declared no
+  // constructor left so far. A bare left is renamed as variables binds it.
+  const declared = new Set();
+  const constructors = head => {
+    const { constructor } = head;
+    if (!(["left", "right"].includes(constructor.text) && !head.coordinates?.length
+        && (!head.args || !declared.has(constructor.text)))) rename(constructor.start, constructor.text);
+    for (const arg of head.args ?? []) if (arg.kind === "pattern") constructors(arg);
+    for (const column of head.more ?? []) constructors(column);
   };
   // A clause's variables: its arguments, its legacy binders, its
   // coordinates, and a bare name, which is a variable or a constructor
@@ -164,7 +180,7 @@ const reservedUnbound = source => {
         visit(node.type, bind(scope, [node.motiveName])); visit(node.clauses, scope);
         visit(node.obligations, scope); visit(node.obligationProof, scope);
         return;
-      case "clause": visit(node.body, bind(scope, variables(node))); return;
+      case "clause": constructors(node); visit(node.body, bind(scope, variables(node))); return;
       case "namedArgument": rename(node.name.start, node.name.text); visit(node.value, scope); return;
       case "member": rename(node.field.start, node.field.text); visit(node.value, scope); return;
       case "withUnfolding": for (const hint of node.hints) reference(hint, scope); visit(node.body, scope); return;
@@ -178,9 +194,15 @@ const reservedUnbound = source => {
       const scope = telescope(item.params, telescope(item.section?.params ?? [], bind(module, [item.name])));
       visit(item.type, scope); visit(item.body, scope); visit(item.value, scope);
     } else if (item.kind === "inductive") {
-      const scope = telescope(item.params, bind(module, [item.name]));
+      // A constructor holds in the constructors after it, as loop : base =
+      // base reads base.
+      let scope = telescope(item.params, bind(module, [item.name]));
       visit(item.result, scope);
-      for (const constructor of item.constructors) visit(constructor.type, telescope(constructor.params, scope));
+      for (const constructor of item.constructors) {
+        visit(constructor.type, telescope(constructor.params, scope));
+        scope = bind(scope, [constructor.name]);
+        if (renamedReserved[constructor.name.text]) declared.add(constructor.name.text);
+      }
     } else if (item.kind === "theory") {
       // A field holds in the fields after it, a parent's label and its
       // renamed fields too; a field of the parent is read by name.
