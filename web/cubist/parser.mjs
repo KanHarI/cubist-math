@@ -433,12 +433,14 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
         body, start: body.start, end: body.end, generatedBinder: true });
       const call = (fn, args, at) => ({ kind: "call", fn: { kind: "name", name: fn, start: at.start, end: at.end }, args, start: at.start, end: at.end });
       // A face: i = 0 and j = 1 or …, read as on(i, 0) and on(j, 1) or ….
+      // Its equations are a coordinate's, so an equality's carrier, i =[T] 0,
+      // is refused rather than dropped.
       const face = n => {
         if (n.kind === "number" && [0, 1].includes(n.value)) return n;
         if (n.kind === "binary" && ["and", "or"].includes(n.operator)) return { ...n, left: face(n.left), right: face(n.right) };
-        if (n.kind === "binary" && n.operator === "=" && n.left.kind === "name" && n.right.kind === "number" && [0, 1].includes(n.right.value))
+        if (n.kind === "binary" && n.operator === "=" && !n.carrier && n.left.kind === "name" && n.right.kind === "number" && [0, 1].includes(n.right.value))
           return call("on", [n.left, n.right], n);
-        throw Object.assign(new Error("A wall's face is a formula of equations i = 0 and i = 1, with and and or, as on i = 0 or j = 1 => …."), { offset: n.start });
+        throw Object.assign(new Error("A wall's face is a formula of equations i = 0 and i = 1, with and and or, as on i = 0 or j = 1 => …."), { offset: n.carrier?.start ?? n.start });
       };
       const walls = [];
       while (peek() !== "}") {
