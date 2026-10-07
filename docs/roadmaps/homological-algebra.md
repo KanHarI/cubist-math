@@ -41,10 +41,12 @@ decision ([work plan](work-plan.md#open-decisions)).
     admits the square torus);
   - truncations: groupoids with `trunc(1)`, and sets;
   - the library's univalence.
-- **Theories fit.** A chain complex is a theory with a family of modules
-  and linear differentials. Its derived morphisms are exactly chain maps
+- **Theories fit.** A chain complex is a theory with a module for each
+  vertex of its shape and a linear differential along each edge, so it is
+  a diagram over the shape. Its derived morphisms are exactly chain maps
   ([categories](categories.md), L2.4d). The abelian tower (L3.6) applies
-  pointwise.
+  pointwise, and limits and colimits of complexes are computed index by
+  index.
 
 ## Constraints
 
@@ -71,14 +73,40 @@ decision ([work plan](work-plan.md#open-decisions)).
     Theorem 7.1). Their wedge axiom asks the cells' index sets to satisfy
     choice, which finite sets provably do (§6). Infinite complexes are
     open there, and may need countable choice (§9), so HA6 defers them.
+  - **Infinite limits need care.** The categories roadmap's diagrams may
+    be infinite ([decision 10](categories.md#decisions)), but some
+    classical facts about them need choice:
+    - a tower of surjections between nonempty sets can have an empty limit
+      without dependent choice. So "Mittag-Leffler implies lim¹ = 0" needs
+      it, which is what makes lim¹ vanish in Milnor's sequence for
+      infinite complexes;
+    - a product of surjections is surjective only with choice, so infinite
+      products of abelian groups are not exact;
+    - set truncation commutes with a product over `I` only when `I`
+      satisfies set-level choice, the wedge axiom's condition above.
+
+    Such results are avoided, or stated with the choice they need as a
+    hypothesis. The definitions do not change.
 - **Indexing.**
   - The library's integers are a quotient of pairs of naturals, so
     `(n - 1) + 1 = n` holds only up to a path. Complexes indexed by
     `C(n - 1)` would need a transport at every differential.
-  - Complexes are indexed by a **shape** instead, as mathlib does with
-    `ComplexShape`. `d(i, j)` exists for every `i` and `j`, and is zero
-    unless the shape's relation `next(i) = j` holds, so index arithmetic
-    never meets a type.
+  - Complexes are indexed by a **complex shape** instead: a graph on the
+    indices in the categories roadmap's sense
+    ([decision 10](categories.md#decisions)), whose edges are
+    propositions, `E(i, j) := next(i) = j`.
+    - **A complex is a diagram over its shape** in a preadditive category,
+      with `d(j, k, e') ∘ d(i, j, e) = 0`. The differential
+      `d(i, j, e) : X(i) → X(j)` takes a proof `e : next(i) = j`, and
+      `X(j)` is indexed by `j` itself, so index arithmetic never meets a
+      type.
+    - **Chain maps** are morphisms of diagrams, and limits and colimits of
+      complexes are computed index by index.
+    - **mathlib's form is derived.** mathlib's `ComplexShape` gives
+      `d(i, j)` for every `i` and `j`, with a law that it is zero unless the
+      indices are related. The graph form needs neither that law nor a
+      decidable relation. Where the relation is decidable, as on ℤ and ℕ,
+      mathlib's form is derived from it.
 - **Truncation levels are literal.**
   - `trunc(n)` needs an integer, not a variable (E114, checked on
     2026-10-07). So `K(G, n)` for every `n` needs the hub-and-spoke
@@ -96,13 +124,32 @@ decision ([work plan](work-plan.md#open-decisions)).
     naturals make them slow.
   - Real computations depend on the kernel's stage-6 performance work.
 
+## Limits and colimits
+
+The categories roadmap's diagrams, maps of graphs
+([decision 10](categories.md#decisions)), serve both sides:
+
+- **Complexes** are diagrams over their shapes, as above.
+- **HA1.** Kernels and cokernels are L3.5's equalizers and coequalizers
+  with the zero map, and an image is the kernel of a cokernel.
+- **HA4.** Suspensions, pushouts, cofibers and wedges are instances of the
+  higher inductive `Colim`, and fibers are limits of types.
+  - `Colim` and `Lim` check with `hlevels` alone, so HA4 still waits for
+    none of the categories packages.
+  - HA4 keeps dedicated types, such as `Pushout` and the suspension, with
+    conversions to `Colim`.
+- **HA5.** The Baer sum, and Ext¹'s functoriality in each argument, use
+  pullbacks and pushouts in the category of modules.
+- **HA6.** Each stage of a CW complex is a pushout. An infinite complex is
+  a sequential `Colim` over `Nat`, which HA6 defers.
+
 ## Milestones
 
 | Milestone | Content | Acceptance | Depends on |
 | --- | --- | --- | --- |
 | **HA0** Prerequisites | Categories roadmap: L2.4d, L2.11, L2.12, L3.4–L3.6, with `Module(U, R)` and lifting operations through set quotients | Theirs | — |
 | **HA1** Modules and exactness | Submodules as predicates; image, kernel, cokernel; `Exact(f, g)`; short exact sequences; the isomorphism theorems | First isomorphism theorem; the five lemma; the snake lemma, its connecting map computed by `evaluate` on a small example | HA0 |
-| **HA2** Chain complexes | Complex shapes; complexes and chain maps derived from a theory; homology as a quotient module; chain homotopies; functoriality | The long exact sequence in homology of a short exact sequence of complexes; homotopy invariance; `H_1 ≅ ℤ` for a small complex of the circle | HA1 |
+| **HA2** Chain complexes | Complex shapes as graphs; complexes, diagrams over them, and chain maps derived from a theory; homology as a quotient module; chain homotopies; functoriality | The long exact sequence in homology of a short exact sequence of complexes; homotopy invariance; `H_1 ≅ ℤ` for a small complex of the circle | HA1 |
 | **HA3** Computing homology | Smith normal form over ℤ, proved correct and `computable` | `evaluate` the homology of finite free complexes; torsion found, as `ℤ/2` for the real projective plane's complex | HA2; binary numerals |
 | **HA4** Synthetic homotopy and cohomology | Library spheres and suspensions; `π_n` as truncated loop spaces; the long exact sequence of a fibration; `K(G, 1)`, then `K(G, n)`; `H^n(X; G)` with its group structure; Mayer–Vietoris from pushouts | `H^1(S^1; ℤ) ≅ ℤ` computes; `H^n(S^m)`; the torus | H1, the library's univalence and squares; mostly not HA0 |
 | **HA5** Ext | Yoneda Ext; Ext and Tor over ℤ for finitely presented groups, given by their presentations, through free resolutions | Ext¹ classifies extensions; `Ext¹(ℤ/n, ℤ) ≅ ℤ/n` | HA1, HA3 |
@@ -129,7 +176,8 @@ HA6 follow both sides.
 
 ## Language work it drives
 
-- Complex shapes and families indexed by a shape's elements (HA2).
+- Complex shapes, graphs whose edges are propositions, and families
+  indexed by their vertices (HA2).
 - Commutative-diagram reasoning: the `category` simp set (L3.4), `ext` into
   limits (L3.5), and perhaps a diagram view in the inspector, like its
   boundary panel for squares.
@@ -141,13 +189,15 @@ HA6 follow both sides.
 
 1. **When the track starts.** HA4 can start independently of the
    categories packages.
-2. **Shapes or ℤ.** Indexing by complex shapes is recommended. The
-   alternative is a second, inductive integer type for indices, whose
-   successor and predecessor are inverse by computation on canonical
-   forms only.
+2. **Shapes or ℤ.** Indexing by complex shapes, graphs whose edges are
+   propositions, is recommended. The alternative is a second, inductive
+   integer type for indices, whose successor and predecessor are inverse
+   by computation on canonical forms only.
 3. **`K(G, n)` for every `n`.** The hub-and-spoke truncation, if H1 admits
    it, or fixed low degrees until a variable-level truncation exists.
 4. **Large categories.** The category of modules over `R : CommRing(U)` has
    objects in `next(U)`. Generic definitions at tier 1 are refused today
    (E1 and E2, deferred), which may limit statements about categories of
-   categories.
+   categories. For the same reason, limits at every size are not one
+   statement, so completeness is stated relative to a universe
+   ([categories](categories.md#decisions), decision 10).

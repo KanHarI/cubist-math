@@ -13,7 +13,7 @@ is implemented. The work plan's packages are:
 
 The probes quoted below were checked on 2026-10-07 with `node cli/repl.mjs
 check`: those of a theory's morphisms and of `Product` at `ae94f49`, and
-those of diagrams at `01da415`. Their files are not fixtures. The
+those of diagrams at `075ec73`. Their files are not fixtures. The
 [homological algebra roadmap](homological-algebra.md) builds on this one.
 
 ## Why
@@ -292,6 +292,48 @@ These are proposed, for the maintainer's review.
       carriers, so no `T.Hom` is derived. `lim` as a functor uses them.
     - **Size.** A category has limits of a given size: over shapes whose
       vertices and edges lie in a given universe.
+      - **Its own parameter.** The graph's universe is a parameter of its
+        own, `Graph(W)`, apart from the category's. The probes below put
+        both in one universe `U`.
+      - **Not every size at once.** Completeness at every size is not one
+        term, since generic definitions at tier 1 are refused today (E1,
+        E2).
+      - **The usual statement.** Completeness relative to a smaller
+        universe is the usual one anyway. Classically, a small category
+        with all small limits is a preorder (Freyd).
+    - **Infinite shapes.** Vertices and edges may be any types, so the
+      definitions above serve infinite shapes unchanged:
+      - infinite products and coproducts, over a discrete graph on any type;
+      - inverse limits over the tower of naturals, such as the p-adic
+        integers as the limit of `ℤ/pⁿ`;
+      - sequential colimits over the reversed tower;
+      - directed colimits over a poset, with an edge for each related pair;
+      - non-wellfounded trees (M-types), as limits of a tower of types
+        (Ahrens, Capriotti and Spadotti, TLCA 2015), with no coinduction
+        in the kernel.
+
+      An element of an infinite limit is a function, so it computes one
+      index at a time: `evaluate` reads its components, not the whole
+      object. The paths between two points of a sequential colimit of
+      types are the sequential colimit of their paths at later stages (van
+      Doorn, Rijke and Sojakova, LICS 2020).
+    - **What infinite shapes need choice for.** The definitions need none,
+      but some classical facts do:
+      - a tower of surjections between nonempty sets can have an empty
+        limit without dependent choice;
+      - a product of surjections is surjective only with choice, so
+        infinite products of abelian groups are not exact (L3.6);
+      - set truncation commutes with a product over `I` only when `I`
+        satisfies set-level choice.
+
+      The [homological algebra roadmap](homological-algebra.md#constraints)
+      meets all three.
+    - **Chosen and merely existing limits.** In a univalent category the
+      limits of a diagram form a proposition. So "every diagram merely has
+      a limit" gives a function choosing them, for infinitely many
+      diagrams too. In a precategory that is not univalent, that function
+      needs choice, so there "has limits" is the algebraic, chosen
+      presentation.
     - **Equality of maps.** An `ext` for maps into a limit: they are equal
       when they are equal after each projection.
     - **`deriving (limits)`** for theories whose limits are computed carrier
@@ -480,6 +522,35 @@ def Lim(U < UU0, G : Graph(U), D : TypeDiagram(U, G)) : U :=
     forall i : G.V. forall j : G.V. forall e : G.E(i, j). D.arr(i, j, e, x(i)) = x(j);
 ```
 
+Infinite shapes check too: those declarations and eight more, 18 in all,
+with `import nat;` and `use nat;`.
+
+```
+// A tower: vertices the naturals, an edge from n + 1 to n.
+def tower : Graph(U0) := Graph.make(V := Nat, E := fun (i : Nat, j : Nat) => i = succ(j));
+
+// Infinite products: any vertices and no edges.
+def discrete(I : U0) : Graph(U0) := Graph.make(V := I, E := fun (i : I, j : I) => Void);
+
+// A diagram down the tower.
+def constant_tower : TypeDiagram(U0, tower) := TypeDiagram.make(
+  ob := fun (n : Nat) => Nat, arr := fun (i : Nat, j : Nat, e : i = succ(j), x : Nat) => x
+);
+
+def tower_limit : U0 := Lim(U0, tower, constant_tower);
+
+def tower_colimit : U0 := Colim(U0, tower, constant_tower);
+
+def five_everywhere : tower_limit :=
+  (fun (n : Nat) => 5, fun (i : Nat, j : Nat, e : i = succ(j)) => refl(5));
+
+def five_at_three : tower_colimit := inj(3, 5);
+
+def product_of_naturals : U0 := Lim(U0, discrete(Nat), TypeDiagram.make(
+  ob := fun (n : Nat) => Nat, arr := fun (i : Nat, j : Nat, e : Void, x : Nat) => x
+));
+```
+
 ## Slices
 
 | Slice | Content | Depends on |
@@ -489,7 +560,7 @@ def Lim(U < UU0, G : Graph(U), D : TypeDiagram(U, G)) : U :=
 | L2.11 | Laws checked by the `hlevel` solver | L2.5b |
 | L2.12 | Implicit arguments in theory operations and derived operations; notation over the explicit ones | L4.1b |
 | L3.4 | `Precategory`, `IsUnivalent`, `Category`, `op`, functors, natural transformations, the `category` simp set; `T.cat` | L2.11, L2.12, L2.4d |
-| L3.5 | Universal constructions; `Graph`, `Diagram`, `Cones`, `IsLimit` and the algebraic `Limit` over diagrams that are maps of graphs; concrete shapes converted to `Limit`; colimits by duality, and of types as the higher inductive `Colim`; `ext` into limits; `deriving (limits)` | L3.4; L3.1 for the contractibility presentation |
+| L3.5 | Universal constructions; `Graph`, `Diagram`, `Cones`, `IsLimit` and the algebraic `Limit` over diagrams that are maps of graphs, finite or infinite; concrete shapes converted to `Limit`; colimits by duality, and of types as the higher inductive `Colim`; `ext` into limits; `deriving (limits)` | L3.4; L3.1 for the contractibility presentation |
 | L3.6 | `Preadditive`, `IsAdditive`, `IsPreabelian`, `IsAbelian`; `deriving (… additive …)` to `abelian`; lifting operations through set quotients; `Module(U, R)` in the library | L3.5; L2.4b for the properties to be propositions |
 
 ## Acceptance
@@ -523,7 +594,10 @@ def Lim(U < UU0, G : Graph(U), D : TypeDiagram(U, G)) : U :=
     graphs, with the same pairing;
   - the pushout as a pullback in `op`;
   - `Colim` over a span equivalent to the archive's `Pushout`, and maps out
-    of `Colim` equivalent to cocones into any type.
+    of `Colim` equivalent to cocones into any type;
+  - `Lim` and `Colim` over the tower of naturals, and a product indexed by
+    the naturals, with elements evaluated index by index;
+  - in a univalent category, the limits of a diagram form a proposition.
 - **L3.6:**
   - `AbelianGroup` and `Module(U, R)` derive `abelian`;
   - `CommRing` is refused with the message of decision 11, and so is a
