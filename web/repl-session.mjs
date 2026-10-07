@@ -34,7 +34,11 @@ export const consoleCommands = new Set(["/clear", "/restart"]);
 // induction and of with unfolding, so what follows one, as in `{}.1`, `{}(x)`
 // or `{} expecting v`, stays in its statement. Nor does a brace after `:=`.
 // `rest` is an unfinished statement, and `depth` its open bracket count.
-const termBrace = /(?:match|induction|with\s+unfolding|(?:compose|fill)\s+[A-Za-z_][A-Za-z_0-9]*\s+in)(?![A-Za-z_0-9])/y;
+// Between a header's words, as between any tokens, may come whitespace and
+// `//` comments; a comment runs to the end of its line, so no word in one
+// counts.
+const gap = String.raw`(?:\s|\/\/[^\n]*(?:\n|$))+`;
+const termBrace = new RegExp(String.raw`(?:match|induction|with${gap}unfolding|(?:compose|fill)${gap}[A-Za-z_][A-Za-z_0-9]*${gap}in)(?![A-Za-z_0-9])`, "y");
 export function replStatements(input) {
   const statements = [];
   let start = 0, depth = 0;
