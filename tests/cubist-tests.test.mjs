@@ -2,9 +2,9 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
-import createCubical from "../web/dist/cubical.mjs";
 import { archiveModules, cubistTestModules, libraryModules } from "../web/cubist/modules.mjs";
-import { checkedModule, inlined, reported, stated, stripped } from "../tools/inline-errors.mjs";
+import { inlined, stated, stripped } from "../tools/inline-errors.mjs";
+import { SHARDS } from "./cubist-tests-inlined.mjs";
 
 // The Cubist tests under cubist-tests/: every module is listed, so that the
 // workspace opens it, and the README's table names each one.
@@ -23,23 +23,14 @@ test("no Cubist test module shares its name with a library or archive module", (
   assert.deepEqual(shadowed, []);
 });
 
-// Each module's comments state every error and warning its check reports,
-// and what each print directive shows, each above the declaration or
-// directive it belongs to, and nothing else: tools/inline-errors.mjs --write
-// writes them.
-test("each Cubist test module's inlined errors, warnings and outputs are the checker's", async () => {
-  const module = await createCubical();
-  for (const name of cubistTestModules) {
-    const { source, result } = await checkedModule(name, module);
-    assert.ok(result.outputs.length || result.evaluations.length || result.prints.length, `${name} declares nothing`);
-    const items = reported(source, result, name);
-    assert.deepEqual(stated(source), items,
-      `${name}: its checked comments differ from the check; run node tools/inline-errors.mjs --write ${name}`);
-    // Each diagnostic has a code (web/diagnostics.mjs): one without is a
-    // message the registry missed.
-    for (const { label, text } of items)
-      if (label !== "Output") assert.match(text, /^[EKW]\d{3}: /, `${name}: no code for "${text}"`);
-  }
+// Each module's inlined errors, warnings and outputs are checked in
+// tests/cubist-tests-inlined-*.test.mjs, its modules shared among them: one
+// file for each share, so that every module is checked.
+test("each share of the Cubist test modules has its test file", async () => {
+  const files = (await readdir(new URL("./", import.meta.url))).filter(name => /^cubist-tests-inlined-\d+\.test\.mjs$/.test(name)).sort();
+  assert.deepEqual(files, Array.from({ length: SHARDS }, (_, k) => `cubist-tests-inlined-${k + 1}.test.mjs`).sort());
+  for (const [k, file] of files.entries())
+    assert.match(await readFile(new URL(file, import.meta.url), "utf8"), new RegExp(`inlinedShard\\(${Number(file.match(/\d+/)[0]) - 1}\\)`), file);
 });
 
 test("checked comments are written above their line, wrapped, and read back", () => {

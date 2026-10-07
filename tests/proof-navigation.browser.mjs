@@ -29,7 +29,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
-  const idle = () => page.waitForFunction(() => !document.querySelector("#check").disabled && document.querySelector("#check-loader").hidden);
+  const idle = () => page.waitForFunction(() => document.querySelector("#check")?.disabled === false && document.querySelector("#check-loader")?.hidden);
   const base = `http://127.0.0.1:${port}`;
   await page.goto(`${base}/proof.html?proof=euclid`);
   await idle();
