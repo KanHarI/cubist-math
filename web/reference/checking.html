@@ -235,10 +235,10 @@ warning W703 at line 4:37 (copy): k is unused: the return type does not mention 
           </section>
           <section id="limits">
             <h2>Limits</h2>
-            <p>The parser accepts at most 1,000,000 source characters and 160,000 tokens, and nests expressions, blocks and patterns at most 128 deep. Decimal numerals go up to 256, binary literals up to 256 significant bits, and a tuple expands to at most 128 nested pairs. Larger numbers can be built by expressions. The kernel also bounds its work per declaration, and each <code>simp</code> has the budgets described in <a href="rewriting.html#simp-traversal">simplification</a>. These are implementation limits, not mathematical assumptions: exceeding one rejects the declaration, and never accepts anything.</p>
-            <pre><code data-check="reject">def too_big := 257;  // Error: Numerals are limited to 256 in this version.</code></pre>
-            <pre><code data-check="reject">// Error: Binary literals are limited to 256 significant bits.
-def too_long := 0b10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;</code></pre>
+            <p>The parser accepts at most 1,000,000 source characters and 160,000 tokens, and nests expressions, blocks and patterns at most 128 deep. A numeral builds a natural number up to 256, while a literal rule reads a numeric token of any length. A tuple expands to at most 128 nested pairs. Larger numbers can be built by expressions. The kernel also bounds its work per declaration, and each <code>simp</code> has the budgets described in <a href="rewriting.html#simp-traversal">simplification</a>. These are implementation limits, not mathematical assumptions: exceeding one rejects the declaration, and never accepts anything.</p>
+            <pre><code data-check="reject">import nat;
+
+def too_big := nat.(257);  // Error: Numerals are limited to 256 in this version.</code></pre>
             <p>The <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/kernel.md">mathematician’s guide to the kernel</a> follows the C implementation as inference rules. It explains contexts, binding, the runtime limits and what must be trusted when a proof is verified.</p>
           </section>
 
