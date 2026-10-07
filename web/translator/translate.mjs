@@ -256,6 +256,8 @@ export class Translator {
     const selection=scope.env.get(SELECTION),plain=/^[0-9]+$/.test(n.text);
     if(!selection?.complete||!(selection.literal||plain&&selection.numeral))
       throw literalUnread(selection,n.text);
+    // The natural number is built from the Nat the rule read where it was
+    // declared, whatever the use's scope binds.
     if(!selection.literal) {
       let natural=scope.alias(SELECTION,null);
       for(const [key,value] of selection.numeral.aliases)natural=natural.alias(key,value);
@@ -264,6 +266,7 @@ export class Translator {
       return this.term(applied.node,applied.scope,expected);
     }
     const rule=selection.literal;
+    // A glyph's number is built from the library's Nat, as its glyphs are.
     const lexeme=[...n.text].reduceRight((tail,character)=>{
       const raw=value=>({kind:"number",value,raw:true,natural:lexemeKey("Nat")});
       const glyph=/[0-9]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("digit")},args:[raw(Number(character))]}
@@ -812,7 +815,7 @@ export class Translator {
   // environment. Its declaration and admission belong to the imported module.
   naturalConstructors(scope,name="Nat") {
     const type=scope.nf(this.term({kind:"name",name},scope,null));
-    const natural=type.tag==="Sort"&&this.checker.inductives?.get(type.signature);
+    const natural=type.tag==="Sort"?this.checker.inductives?.get(type.signature):null;
     const zero=natural?.constructors.findIndex(c=>c.source==="zero"&&c.arity===0&&c.dims===0);
     const succ=natural?.constructors.findIndex(c=>c.source==="succ"&&c.arity===1&&c.dims===0);
     if(!natural||natural.slots.length||natural.constructors.length!==2||zero<0||succ<0)
@@ -908,20 +911,23 @@ export class Translator {
       }
       case "number": {
         // In a selected notation, a numeral is its numeral rule's, or its
-        // literal rule's; a notation with neither reads none (L2.10c). A
-        // numeral rule's own natural number is raw data, built from the Nat
-        // its notation read where it was declared (L2.10j).
+        // literal rule's, read as it is written; a notation with neither
+        // reads none (L2.10c). A numeral rule's own natural number is raw
+        // data, built from the Nat its notation read where it was declared
+        // (L2.10j).
         const selection=env.get(SELECTION);
-        if(!n.raw&&selection?.complete)return this.literalTerm({...n,kind:"literal",text:String(n.value)},scope,expected);
-        if(!n.raw&&!this.nameBased)throw unselectedLiteral(String(n.value));
+        if(!n.raw&&selection?.complete)return this.literalTerm({...n,kind:"literal",text:n.text??String(n.value)},scope,expected);
+        if(!n.raw&&!this.nameBased)throw unselectedLiteral(n.text??String(n.value));
+        if(n.value>256)throw Error("Numerals are limited to 256 in this version.");
         const natural=this.naturalConstructors(scope,n.natural??"Nat");
         let t=natural.zero;for(let i=0;i<n.value;i++)t=T.app(natural.succ,t);
         this.reference(scope,{...n,name:String(n.value)},t);return t;}
       case "binaryNumber": {
-        // A binary literal is a selected notation's literal rule's, as
-        // binary.(0b1101) (L2.10j).
+        // A binary literal is a selected notation's literal rule's, as any
+        // numeric token is (L2.10c), as binary.(0b1101) (L2.10j).
         if(env.get(SELECTION)?.complete)return this.literalTerm({...n,kind:"literal",text:n.spelling??`0b${n.digits}`},scope,expected);
         if(!this.nameBased)throw unselectedLiteral(n.spelling??`0b${n.digits}`);
+        if(n.digits.length>256)throw Error("Binary literals are limited to 256 significant bits.");
         const term=tr(binaryLiteralSyntax(n));
         this.reference(scope,{...n,name:`0b${n.digits}`},term);return term;
       }

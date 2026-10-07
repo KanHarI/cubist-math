@@ -382,7 +382,7 @@ def not_a_sum(n : Nat) := match n return Nat {  // Error: Nat has no constructor
           <section id="unit-and-void">
             <h2>Unit, Void and negation</h2>
             <p><code>tt</code> is the element of <code>Unit</code>. <code>Void</code> has no elements: <code>absurd(impossible)</code> turns <code>impossible : Void</code> into an element of any expected type. Negation is <code>A -> Void</code>; there is no <code>not</code> keyword.</p>
-            <p><code>Unit</code> and <code>Void</code> are reserved, as the keywords that begin a term or a statement are (<code>fun</code>, <code>match</code>, <code>let</code>, <code>exact</code> and the others): no declaration, parameter, binder, pattern or field can take their names, since checking relies on what they mean. A word that means something only in one place stays an ordinary name elsewhere: <code>def</code>, <code>theory</code> and <code>evaluate</code> at the start of a declaration or a directive, <code>sort</code> and <code>law</code> in a theory, <code>prop</code> in a header.</p>
+            <p><code>Unit</code>, <code>Void</code> and <code>tt</code> are reserved, as the keywords that begin a term or a statement are (<code>fun</code>, <code>match</code>, <code>let</code>, <code>exact</code> and the others): no declaration, parameter, binder, pattern or field can take their names, since checking relies on what they mean. A word that means something only in one place stays an ordinary name elsewhere: <code>def</code>, <code>theory</code> and <code>evaluate</code> at the start of a declaration or a directive, <code>sort</code> and <code>law</code> in a theory, <code>prop</code> in a header.</p>
             <pre><code data-check="reject">def Unit : U0 := Nat;  // Error: Unit is reserved, as a keyword or a built-in type of the language; pick another name.</code></pre>
             <pre><code data-check="accept">def anything_from_void(A : U0, impossible : Void) : A {
   exact absurd(impossible);
@@ -411,7 +411,9 @@ def three := succ(succ(succ(0)));
 def three_is_three : three = 3 {
   exact refl(3);
 }</code></pre>
-            <pre><code data-check="reject">def too_big := 257;  // Error: Numerals are limited to 256 in this version.</code></pre>
+            <pre><code data-check="reject">import nat;
+
+def too_big := nat.(257);  // Error: Numerals are limited to 256 in this version.</code></pre>
             <p>The operators <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> are <code>nat</code>'s notation for <code>add</code>, <code>mul</code>, <code>isLt</code> and <code>le</code>, which the arithmetic library defines; <code>x &gt; y</code> and <code>x &gt;= y</code> are <code>y &lt; x</code> and <code>y &lt;= x</code>. <code>use nat;</code> selects them for the rest of a file, and <code>nat.(2 * 3)</code> for one expression. An operator means only what the selected notation binds: it is not overloaded by the types of its operands, and a function named <code>add</code> in scope gives <code>+</code> no meaning. A <a href="theories.html#open"><code>use</code></a> of a model binds them to its operations instead.</p>
             <pre><code data-check="accept">import nat;
 use nat;
