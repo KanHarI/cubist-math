@@ -19,13 +19,13 @@ test("evaluate reports the normal form, and a failed evaluation makes its module
   assert.deepEqual(result.evaluations.map(item => item.value), ["4", "binary.(0b10001111)"]);
   assert.equal(result.complete, false, "a failed evaluation makes the module incomplete");
 });
-test("computable and evaluate parse, format stably and stay ordinary names elsewhere", () => {
+test("computable and evaluate parse, format stably and stay ordinary names elsewhere; expecting is reserved", () => {
   const source = `import primes;
 computable def one := 1;
 computable def two := 2;
 def uses_names(evaluate, computable : Nat) : Nat {
-  let expecting : Nat := evaluate;
-  exact expecting;
+  let value : Nat := evaluate;
+  exact value;
 }
 evaluate one + one expecting two;
 `;
@@ -38,5 +38,7 @@ evaluate one + one expecting two;
   assert.equal(formatCubist(formatted), formatted);
   assert.match(formatted, /\ncomputable def one := 1;\n\ncomputable def two := 2;\n\n/);
   assert.match(formatted, /\n\nevaluate one \+ one expecting two;\n$/);
-  assert.match(formatted, /let expecting : Nat := evaluate;/);
+  assert.match(formatted, /let value : Nat := evaluate;/);
+  assert.throws(() => parse("def f(expecting : Nat) : Nat := expecting;"),
+    /^Error: expecting is reserved, as a keyword or a built-in type of the language; pick another name\.$/);
 });
