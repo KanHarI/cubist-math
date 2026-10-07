@@ -11,10 +11,10 @@
 //   typed(T, p) matches what p matches, where T is the part's type;
 //   any other expression, as nat.(2 + 3), is elaborated at the part's type
 //     and matches a part with the same normal form.
-// left, right and typed are the builtins where the module does not bind
-// them, as in elaboration, and a builtin's or a constructor's arguments are
-// written out as elaboration requires, a hole aside: a hole elsewhere in the
-// pattern does not change what any part of it says.
+// left, right and typed are the builtins, reserved names no module binds,
+// and a builtin's or a constructor's arguments are written out as
+// elaboration requires, a hole aside: a hole elsewhere in the pattern does
+// not change what any part of it says.
 // The pattern is no term, so nothing about it reaches the kernel but the
 // expressions elaborated at its leaves; the value is the kernel's.
 import {substituteTerm} from "./core.mjs";

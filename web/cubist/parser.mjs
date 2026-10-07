@@ -48,8 +48,8 @@ export const reservedNames = new Set([
   "fun", "forall", "exists", "and", "or", "as", "return",
   "Unit", "Void", "tt",
   // A sum's injections, left(a) and right(b), and its patterns, left a =>
-  // and right b =>: no binder shadows them.
-  "left", "right",
+  // and right b =>, and the ascription typed(T, e): no binder shadows them.
+  "left", "right", "typed",
 ]);
 
 // `bindable` lists reserved words a historical source may still bind

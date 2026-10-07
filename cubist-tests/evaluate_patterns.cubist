@@ -9,11 +9,11 @@ use nat;
 
 def pairs : Nat and (Unit or Nat) := (3, right(2 + 2));
 
-evaluate pairs expecting(3, _);
+evaluate pairs expecting (3, _);
 
-evaluate pairs expecting(_, right(4));
+evaluate pairs expecting (_, right(4));
 
-evaluate pairs expecting(1 + 2, right(_));
+evaluate pairs expecting (1 + 2, right(_));
 
 def numbers : List(U0, Nat) := cons(1, cons(2, cons(3, nil)));
 
@@ -24,15 +24,15 @@ evaluate numbers expecting cons(_, cons(2, _));
 evaluate append(numbers, numbers) expecting cons(1, cons(2, cons(3, cons(1, _))));
 
 // typed(T, p) states the part's type.
-evaluate pairs expecting(typed(Nat, _), right(4));
+evaluate pairs expecting (typed(Nat, _), right(4));
 
 // A mismatch names the part that differs.
 // Error: E477: The term evaluates to (3, right(4)), which does not match (4, _): 3 is not 4.
-evaluate pairs expecting(4, _);
+evaluate pairs expecting (4, _);
 
 // Error: E477: The term evaluates to (3, right(4)), which does not match (_, left(_)): right(4) is
 //   not left(_).
-evaluate pairs expecting(_, left(_));
+evaluate pairs expecting (_, left(_));
 
 // Error: E477: The term evaluates to cons(1, cons(2, cons(3, nil))), which does not match cons(_,
 //   nil): cons(2, cons(3, nil)) is not nil.
@@ -40,7 +40,7 @@ evaluate numbers expecting cons(_, nil);
 
 // Error: E477: The term evaluates to (3, right(4)), which does not match (typed(Unit, _), _): 3 is
 //   not typed(Unit, _).
-evaluate pairs expecting(typed(Unit, _), _);
+evaluate pairs expecting (typed(Unit, _), _);
 
 // A hole must stand where a part can be read.
 // Error: E478: A hole in an expected value stands for a pair's component, an injection's value or a
@@ -50,17 +50,11 @@ evaluate numbers expecting append(_, nil);
 // A builtin's or a constructor's arguments are written out, as anywhere else:
 // a hole elsewhere does not make braces or a named argument mean nothing.
 // Error: E701: succ has no implicit parameters: give its arguments in parentheses, as succ(…).
-evaluate pairs expecting(succ{{bogus}}(2), _);
+evaluate pairs expecting (succ{{bogus}}(2), _);
 
 // Error: E701: right has no implicit parameters: give its arguments in parentheses, as right(…).
-evaluate pairs expecting(_, right{{Nat}}(4));
+evaluate pairs expecting (_, right{{Nat}}(4));
 
 // Error: E379: succ is a declared type or a constructor, whose arguments are written out: a hole _
 //   or a named argument is an argument of a definition or a function.
-evaluate pairs expecting(succ(n := 2), _);
-
-// A module's own typed is not the builtin: the pattern reads it as the
-// module does, here as 1 + 2.
-def typed(n : Nat, m : Nat) : Nat := n + m;
-
-evaluate pairs expecting(typed(1, 2), _);
+evaluate pairs expecting (succ(n := 2), _);

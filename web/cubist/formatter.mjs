@@ -110,6 +110,15 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
   const doubleOpens = new Set();
   const tokenBefore = new Map(tokens.map((token, index) => [token.start, tokens[index - 1]]));
   const tokenAfter = new Map(tokens.map((token, index) => [token.end, tokens[index + 1]]));
+  // An evaluate directive's evaluate and expecting are keywords, not names
+  // called: `evaluate (a, b) expecting (a, _);` keeps both spaces. Elsewhere
+  // they are ordinary names, as in expecting(x).
+  const directiveKeywords = new Set();
+  for (const node of syntax?.directives ?? []) if (node.kind === "evaluate") {
+    directiveKeywords.add(node.start);
+    const keyword = tokens.find(token => token.text === "expecting" && token.start >= node.value.end && token.end <= node.expected.start);
+    if (keyword) directiveKeywords.add(keyword.start);
+  }
   function visit(node) {
     if (!node || typeof node !== "object") return;
     if (node.kind === "withUnfolding") expressionBlockEnds.add(node.end);
@@ -207,7 +216,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
       }
       const space = previous && sectionStarts.has(previous.start) || previous && !punctuation.has(text) && !["(", "["].includes(previous.text)
         && !prefixOperators.has(previous.start)
-        && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or"].includes(previous.text) || [")", "]"].includes(previous.text) || previous.text === "}" && (expressionBlockEnds.has(previous.end) || implicitCloses.has(previous.end))))
+        && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or"].includes(previous.text) && !directiveKeywords.has(previous.start) || [")", "]"].includes(previous.text) || previous.text === "}" && (expressionBlockEnds.has(previous.end) || implicitCloses.has(previous.end))))
         && !(text === "{" && implicitOpens.has(token.start))
         && !(text === "[" && previous.text === "=");
       if (space && ![",", "."].includes(previous.text)) {
