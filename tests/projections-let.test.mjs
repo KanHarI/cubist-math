@@ -122,12 +122,16 @@ test("a historical module's binders named left or right are renamed, as the inje
     + "def g : Unit or Nat := left(tt);\n");
 });
 
-test("a historical module's binders named typed are renamed, as the ascription became reserved on 2026-10-07", () => {
-  const old = "def typed(n, m : Nat) : Nat := n;\ndef f(typed : Nat) : Nat := typed;\ndef g := typed(Nat, 0);\n";
-  // The declaration and the parameter, and the reference the parameter
-  // shadows, are renamed; an ascription elsewhere stays.
+test("a historical module's binders named typed or evaluate are renamed, as both became reserved on 2026-10-07", () => {
+  const old = "def typed(n, m : Nat) : Nat := n;\ndef f(typed : Nat) : Nat := typed;\ndef g := typed(Nat, 0);\n"
+    + "def h(n : Nat) : Nat {\n  let evaluate : Nat := n;\n  exact evaluate;\n}\n"
+    + "evaluate h(0) expecting 0;\nprint(evaluate(h(0)));\n";
+  // The declaration and the binders, and the references they shadow, are
+  // renamed; an ascription, an evaluate directive and a print elsewhere stay.
   assert.equal(historicalSource(old, "old", { implicitNat: false, minusReverses: false }),
-    "def typed_(n, m : Nat) : Nat := n;\ndef f(typed_ : Nat) : Nat := typed_;\ndef g := typed(Nat, 0);\n");
+    "def typed_(n, m : Nat) : Nat := n;\ndef f(typed_ : Nat) : Nat := typed_;\ndef g := typed(Nat, 0);\n"
+    + "def h(n : Nat) : Nat {\n  let evaluate_ : Nat := n;\n  exact evaluate_;\n}\n"
+    + "evaluate h(0) expecting 0;\nprint(evaluate(h(0)));\n");
 });
 
 test("a historical module reverses with ~ where it wrote prefix -, as every module did before 2026-10-06", () => {
