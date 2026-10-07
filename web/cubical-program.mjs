@@ -630,20 +630,22 @@ export class CubicalProgram {
     };
     view.locals = aliases.filter(alias => alias.term.tag !== "Var" && alias.binding !== binding && alias.binding !== view.sourceBinding)
       .map(({ name, binding }) => ({ name, binding }));
-    view.boundary = this.squareBoundary(view.type);
+    // A parameter shows its source name, as in the statement and the context.
+    view.boundary = this.squareBoundary(view.type, new Map(Object.entries(variableNames).map(([variable, { name }]) => [variable, name])));
     return view;
   }
   // A square's boundary, for the inspector (L2.8): where a type, under its
   // parameters, is Square(left, right, bottom, top) of library/squares, its
-  // four edges and four corners, as messages show them; or null.
-  squareBoundary(type) {
+  // four edges and four corners, as messages show them, with the free
+  // variables `names` gives shown by those names; or null.
+  squareBoundary(type, names = new Map()) {
     let body = type;
     while (body?.tag === "Pi" || body?.tag === "LPi") body = body.body;
     const args = [];
     for (; body?.tag === "App"; body = body.fn) args.unshift(body.arg);
     if (body?.tag !== "LApp" || body.fn?.tag !== "DefRef" || body.fn.name !== "squares__Square" || args.length !== 9) return null;
     const [, a00, a01, a10, a11, left, right, bottom, top] = args;
-    const [corner00, corner01, corner10, corner11, ...edges] = this.checker.displayTexts([a00, a01, a10, a11, left, right, bottom, top], 120);
+    const [corner00, corner01, corner10, corner11, ...edges] = this.checker.displayTexts([a00, a01, a10, a11, left, right, bottom, top], 120, undefined, undefined, names);
     return { corners: { a00: corner00, a01: corner01, a10: corner10, a11: corner11 },
       edges: { left: edges[0], right: edges[1], bottom: edges[2], top: edges[3] } };
   }
