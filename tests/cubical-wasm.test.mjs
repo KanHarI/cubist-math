@@ -249,6 +249,17 @@ test("a query's growing budget stops at its declared limit and fails as the kern
   assert.ok(k.head(handle));
 });
 
+test("a head the kernel refuses leaves no error behind to refuse the next instruction", t => {
+  const k = session(t), syntax = new CubicalSyntax(k);
+  // A path variable applied, with no type to annotate the application: a
+  // raw head query refuses it, as unification's may, which treats it as
+  // stuck and goes on.
+  const unchecked = syntax.encode(T.at(T.variable("p"), I.zero));
+  assert.throws(() => k.head(unchecked), /Unchecked path application/);
+  assert.equal(k.error(), "");
+  assert.ok(derive(k, syntax.encode(left), syntax.encode(two)).expression);
+});
+
 test("browser dimension allocation reuses slots without capturing outer coordinates", t => {
   const k = session(t), checker = new NativeCubicalElaborator(k);
   let type = T.unit, point = T.point;
