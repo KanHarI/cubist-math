@@ -59,14 +59,15 @@ notation nat {
 `;
 
 // Until 2026-10-06 left and right, a sum's injections, could be bound as
-// names, and until 2026-10-07 typed, the ascription. A revision of that time
-// is read with each binder named left, right or typed, and the references
-// after it in its declaration, which it shadows, renamed left_, right_ and
-// typed_; its sum patterns, injections and ascriptions stay. Bound names
-// change no checked term.
-const renamedReserved = { left: "left_", right: "right_", typed: "typed_" };
+// names, and until 2026-10-07 typed, the ascription, and evaluate. A
+// revision of that time is read with each binder named left, right, typed
+// or evaluate, and the references after it in its declaration, which it
+// shadows, renamed left_, right_, typed_ and evaluate_; its sum patterns,
+// injections, ascriptions and evaluate directives stay. Bound names change
+// no checked term.
+const renamedReserved = { left: "left_", right: "right_", typed: "typed_", evaluate: "evaluate_" };
 const reservedUnbound = source => {
-  if (!/\b(left|right|typed)\b/.test(source)) return source;
+  if (!/\b(left|right|typed|evaluate)\b/.test(source)) return source;
   let ast;
   try { ast = parse(source, false, { bindable: Object.keys(renamedReserved) }); } catch { return source; }
   const edits = new Map();

@@ -274,7 +274,7 @@ use nat;
 def numbers : List(U0, Nat) := cons(1, cons(2, cons(3, nil)));
 
 evaluate numbers expecting cons(_, nil);  // Error: The term evaluates to cons(1, cons(2, cons(3, nil))), which does not match cons(_, nil): cons(2, cons(3, nil)) is not nil.</code></pre>
-            <p>Evaluation computes full normal forms: it unfolds every definition and ignores <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints. <code>computable</code> and <code>evaluate</code> are keywords only in these positions. Elsewhere they are ordinary names. <code>expecting</code> is reserved: no declaration or binder takes its name.</p>
+            <p>Evaluation computes full normal forms: it unfolds every definition and ignores <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints. <code>computable</code> is a keyword only in this position. Elsewhere it is an ordinary name. <code>evaluate</code> and <code>expecting</code> are reserved: no declaration or binder takes their names.</p>
             <p>The command-line checker prints each success as <code>evaluate at line N: value</code>. After <code>check</code>, its <code>evaluate EXPRESSION</code> command prints the normal form of an expression in the scope of the checked module, under the same rule. <code>inspect NAME</code> lists the declaration’s assumptions, or <code>none</code>. See <a href="checking.html#inspection">checking and inspection</a>.</p>
           </section>
 
