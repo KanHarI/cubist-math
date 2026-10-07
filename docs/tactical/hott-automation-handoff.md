@@ -4,10 +4,12 @@
 function. `under_succ` now checks with `simp only [nat_add_zero]` and has moved
 to `cubical-probes.cubist`. Its earlier rejection below is historical.
 
-Current status, 2026-09-27: A7, A5's goal-layer core, A4's deterministic fuel
-and A6's residual-goal diagnostics are delivered. The remaining A5 metadata
-and tactic clients and further automation are scheduled in the
-[work plan](../roadmaps/work-plan.md).
+Current status, 2026-10-07: A4, A6, A7, A8 and A5's goal layer with its
+elaborator replacements are delivered. B4's `show` and `suffices` were
+replaced by `let` on 2026-09-30. D0a is done (2026-09-29). D1 has two slices
+(2026-09-29, 2026-10-06), E2 three (2026-10-06), and D0b started in the
+library (2026-10-04). The [work plan](../roadmaps/work-plan.md) schedules the
+rest.
 G0 removed templates and per-universe specialization, so the measurements
 below describe the 2026-09-25 runtime. A4's fuel defaults were set from a
 fresh baseline instead, `tests/fixtures/search-fuel.json` (2026-09-27; A4 and
@@ -136,12 +138,16 @@ failed or blocked declarations.
 
 ## Next unfinished item
 
-A5, the goal and proof-construction layer, together with the elaborator items
-the roadmap adds to it: one name supply, result values instead of message
-matching, one computation of link sites and an explicit elaboration context.
-A4's deterministic fuel can proceed alongside it, using the session
-dependence recorded above. Library-first items E0 and D0a need no new
-tooling and can start now.
+As of 2026-10-07, in the HoTT roadmap's scope and in the work plan's order:
+re-derive the archive's raw `comp` lemmas through squares (E2, L2.8's last
+item), then the rest of D1 (L2.5b: Hedberg from registered decidable
+equality, one layer of unfolding, `Truncate`, the solver for rule premises
+and truncation targets, and the inspector's record of witnesses), then D0b
+(L3.1).
+
+On 2026-09-25 the next item was A5 with its four elaborator items, A4
+alongside it, and E0 and D0a from the library. A5's core with those four
+items, A4 and D0a have since been delivered; E0 has not.
 
 Update, 2026-09-25: the library is to be archived and rebuilt.
 - B0 is superseded by the kernel's H1 declarations.

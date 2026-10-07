@@ -31,8 +31,9 @@ to `nat.cubist` at the inductive declaration. Declared-type references carry
 their source binding, including parameterized and recursive occurrences;
 shadowed local names retain their own targets.
 
-Numerals resolve the Nat declaration in scope and apply its registered zero
-and successor constructors. The existing `induction` syntax constructs its
+A numeral is read through the selected notation's `numeral(n : Nat)` rule.
+`use nat;` selects `nat`'s, and a numeral outside any selection is an error
+(E911). The existing `induction` syntax constructs its
 generic dependent eliminator. Both produce `Sort`, `Con`, `Elim` and ordinary
 applications. Structurally recursive `match` definitions use the same rules.
 The rebuilt arithmetic library defines addition with `match` on zero and
@@ -46,8 +47,9 @@ proofs. Checked examples also cover path constructors, generated truncation
 clauses and the source W API. The chapter index and introductory function
 and declaration chapters link to that guide, the errors chapter catalogues
 the new refusals, and the quick reference has entries for `inductive` and
-`match`. Excerpts quoted from `nat`, `naturals` and `w` are checked with
-their module in the page, so their names open the kernel inspector.
+`match`. Excerpts quoted from modules such as `nat` and `pushout` are
+checked with their module in the page, so their names open the kernel
+inspector.
 
 Two spellings changed with the chapter. A path clause is written as the
 point it covers, `loop @ i => …`, and `squash(x, y) @ i => …`; the former
@@ -60,7 +62,7 @@ clause, `succ(j)`, instead of `as j`.
 
 A linter, `web/cubist/lint.mjs`, warns about bindings that are never
 used and can be removed: `as` names on `induction` and `match`, `forall`
-and `exists` variables, and `let`, `have` and `obtain` statements. Checking
+and `exists` variables, and `let` and `obtain` bindings. Checking
 reports its warnings in the CLI, the workspace and the reference pages, and
 `npm run lint:cubist` lints files without checking. Required names, such as
 parameters, clause arguments and induction hypotheses, are never reported.
@@ -100,8 +102,8 @@ hypotheses, composition and transport.
 
 Current native suites exercise declared arithmetic and trees, signature
 admission, isolation, conversion, levels, budgets and compact shared syntax.
-The current driver/term-checker differential generator uses sums of Unit.
-Old raw primitive-calculus tests ran against a separate historical oracle,
+The driver/term-checker differential generator, which used sums of Unit,
+was removed with the term checker on 2026-10-02. Old raw primitive-calculus tests ran against a separate historical oracle,
 the kernel at `bfef585cfe09f4b94a658564dff505cd67855368`, until 2026-10-02.
 Then that oracle was removed, and the tests of features the current kernel
 keeps were moved to it: the translator's tests, now in `tests/translator`, check
@@ -154,10 +156,10 @@ from the point's expected type, so a motive's family can say
   and eliminating it computes by `rfl`. The driver test derives the
   suspension from `sortBegin`, `construct` and `eliminator` judgements. The
   retired tags and opcodes are refused, in C and through WASM.
-- **Historical oracle.** The pushout cases of X1, X3 and X6–X8 replay
-  against the pinned pre-migration kernel, as W's do. X8's source-level
-  pushout call is gone, since source pushouts are declared; its sum call
-  remains.
+- **Historical oracle.** Until 2026-10-02 the pushout cases of X1, X3 and
+  X6–X8 replayed against the pinned pre-migration kernel, as W's did. X8's
+  source-level pushout call went away, since source pushouts are declared,
+  and its sum call stayed. That kernel and those tests were then removed.
 
 Checks on the implementation tree, 2026-10-01:
 
@@ -175,12 +177,13 @@ Checks on the implementation tree, 2026-10-01:
 
 ## Migration ledger
 
-Both sides of a historical-source comparison now import declared Nat and
-therefore carry H1. The truncation ledger's 17 exact type and closed-value
+Both sides of a historical-source comparison import declared Nat. Since the
+release no result carries the H1 marker, so every change's extension fields
+are empty. The truncation ledger's 17 exact type and closed-value
 pins have been refreshed for this representation. Their four scopes and
 logical assumption deltas are unchanged. An exactly pinned type-valued
 definition may change its returned type construction when both versions
-already carry H1; ordinary proof changes still require ordinary verification.
+use declared types; ordinary proof changes still require ordinary verification.
 Tampered values and changed private dependency closures are refused.
 
 ## Validation
