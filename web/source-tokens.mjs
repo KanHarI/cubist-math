@@ -33,8 +33,6 @@ export const keywords = new Set([
   "none",
   "intro",
   "induction",
-  "zero",
-  "succ",
   "fun",
   "match",
   "return",
@@ -45,7 +43,7 @@ export const keywords = new Set([
 // user-defined functions retain the green reference style.
 export const builtinForms = new Set([
   "Interval", "path", "PathP", "at", "comp", "face", "flip", "meet", "join", "Glue", "glue", "unglue",
-  "Nat", "Unit", "Void", "next", "max", "tt", "succ", "refl", "absurd",
+  "Nat", "Unit", "Void", "next", "max", "tt", "refl", "absurd",
   "sym", "trans", "cong", "transport", "apd", "apd_path", "Eq", "typed",
   "induct", "unpack", "pair_induction", "unit_induction", "path_induction",
   "Choice", "LEM", "FunExt", "Truncate",
@@ -70,9 +68,6 @@ export const numeralAt = (source, start, text) => projectionIndex(source, start)
 export const tokenStyle = (text, expansion, here) =>
   here === true || here !== false && (keywords.has(text) || builtinForms.has(text) || /^U+[0-9]+$/.test(text)) ? "keyword"
     : expansion && expansion !== text ? "macro" : "";
-// zero and succ that link to a definition, such as a ring's zero after
-// `open A;`, are names; Nat's constructors link to no definition.
-export const linkedWord = (text, link) => ["zero", "succ"].includes(text) && link?.role === "definition" ? false : undefined;
 // The words a theory gives a role, by offset, found once per source from its
 // tokens, so that comments and nested braces do not move them (L2.4). In a
 // theory's header, extends after its name and universe, and notation in a
@@ -80,8 +75,7 @@ export const linkedWord = (text, link) => ["zero", "succ"].includes(text) && lin
 // name, a carrier's h-level, as set in M : set U;, and notation after an
 // operation's type, followed by x + y. Each of these is a keyword, and the
 // words are names elsewhere, as the parser reads them: a field may be named
-// law, set or notation. zero and succ in a theory name its fields, not
-// Nat's constructors.
+// law, set or notation.
 let rolesOf = { source: null, roles: new Map() };
 function theoryRoles(source) {
   if (rolesOf.source === source) return rolesOf.roles;
@@ -90,7 +84,6 @@ function theoryRoles(source) {
   const roles = new Map(), text = at => tokens[at]?.text;
   const isWord = at => /^[A-Za-z_]/.test(text(at) ?? "");
   const notationAt = at => text(at) === "notation" && isWord(at + 1) && notationOperators.includes(text(at + 2)) && isWord(at + 3);
-  const fieldWord = at => { if (["zero", "succ"].includes(text(at))) roles.set(tokens[at].start, false); };
   for (let at = 0; at < tokens.length; at++) {
     if (text(at) !== "theory" || !startsLine(source, tokens[at].start) || !isWord(at + 1)) continue;
     let next = at + 2;
@@ -102,7 +95,6 @@ function theoryRoles(source) {
     if (text(next) === "extends") roles.set(tokens[next].start, true);
     for (; next < tokens.length && !["{", ";", "}"].includes(text(next)); next++) {
       if (notationAt(next)) roles.set(tokens[next].start, true);
-      fieldWord(next);
     }
     if (text(next) !== "{") { at = next; continue; }
     // The body, to its own closing brace: a field's type may hold braces.
@@ -111,7 +103,6 @@ function theoryRoles(source) {
       const word = text(next);
       if (depth === 0 && word === "}") break;
       depth = Math.max(0, depth + (["{", "("].includes(word) ? 1 : ["}", ")"].includes(word) ? -1 : 0));
-      fieldWord(next);
       if (depth === 0 && word === ";") { field = next + 1; law = false; continue; }
       if (next !== field) {
         if (depth === 0 && !law && notationAt(next)) roles.set(tokens[next].start, true);

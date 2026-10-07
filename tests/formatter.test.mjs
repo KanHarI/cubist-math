@@ -130,12 +130,14 @@ test("lambda binder groups are one comma-separated list; separate groups are rej
   assert.throws(() => parse("def f := fun (a : Nat) (b : Nat) => a;"), /Separate binder groups with commas/);
 });
 
-test("an evaluate directive's evaluate and expecting are keywords, spaced before a parenthesis; elsewhere they are names", () => {
+test("a keyword keeps its space before a parenthesis; the reserved words written as calls are tight", () => {
   assert.equal(formatCubist("def p : Nat and Nat := (1, 2);\n\nevaluate(p) expecting(1, _);\n"),
     "def p : Nat and Nat := (1, 2);\n\nevaluate (p) expecting (1, _);\n");
-  // A function named expecting is called tight, in the evaluated term too.
-  assert.equal(formatCubist("def expecting(n : Nat) : Nat := n;\n\nevaluate expecting (1) expecting (1);\n"),
-    "def expecting(n : Nat) : Nat := n;\n\nevaluate expecting(1) expecting (1);\n");
+  assert.match(formatCubist("def m(n : Nat) : Nat := match(n) { zero => n; succ(k) => k; };\n"), /:= match \(n\) \{/);
+  assert.equal(formatCubist("def f := fun(n : Nat) => n;\n"), "def f := fun (n : Nat) => n;\n");
+  // left(a), right(b), typed(T, e) and print's evaluate(e) are calls.
+  assert.equal(formatCubist("def s : Unit or Nat := typed (Unit or Nat, left (tt));\n\nprint(evaluate (s));\n"),
+    "def s : Unit or Nat := typed(Unit or Nat, left(tt));\n\nprint(evaluate(s));\n");
 });
 
 test("an empty block is {} on its declaration's line", () => {
