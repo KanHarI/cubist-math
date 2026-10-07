@@ -1067,10 +1067,11 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
       continue;
     }
     // `use m;` at a file's top level selects m for the definitions after it.
+    // It records the uses before it, in whose selections m is read.
     if (!section && t.text === "use" && /^[A-Za-z_]/.test(peek())) {
       const model = expr(), end = take(";").end;
+      const directive = { kind: "use", model, ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end };
       uses = [...uses, model];
-      const directive = { kind: "use", model, start: t.start, end };
       items.push(directive);
       continue;
     }
