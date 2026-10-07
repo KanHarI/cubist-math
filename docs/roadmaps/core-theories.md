@@ -56,7 +56,7 @@ each, or each by its name when there are several (E820). Evidence:
 [header](../../web/reference/theories.html#header) section.
 
 **Third slice, done on 2026-10-06:** homomorphisms by
-[variance](#variance), replacing E817's rule that every input and result be
+[variance](../../web/reference/theories.html#morphisms), replacing E817's rule that every input and result be
 a carrier. An input with no carrier, as `n : Nat` or a parameter's
 `g : G.M`, is the same value on both sides; a covariant input, with
 carriers right of every arrow, is pushed forward; a contravariant one is
@@ -624,6 +624,15 @@ closed homomorphisms apply and compose by evaluation. A child theory's
 homomorphisms preserve its parents' operations too, and `T.Hom` has the
 forgetful map to each parent's homomorphisms, `f.p`.
 
+**Proposed morphism opt-in, L2.4d (2026-10-07).** The
+[categories roadmap](categories.md) separates `deriving (isomorphisms)` by
+transport from `deriving (morphisms)`, which generates `T.Hom` and its default
+category and implies isomorphisms. Unsupported opt-ins fail at the theory.
+The decided [L2.6 contract](#initial-and-free-models-l26) additionally
+requires `deriving (morphisms, free)`, or the weaker `morphisms, initial`,
+for initial/free instances. These capabilities include their universal
+proofs and can fail; ordinary recursion alone is not an initial capability.
+
 ## Elaboration
 
 A theory expands, before checking, into the definitions above, in the
@@ -641,101 +650,270 @@ scope.
 
 ## Initial and free models (L2.6)
 
-**Specified** on 2026-10-06, not implemented. This is the contract the
-audit's finding 4 asks for before any `universal` is generated: separate
-typed results, each stated for a fixed target model, and none of the form
-`(initial T → M) ≃ T.Hom(…)`, which is false (the initial monoid has one
-element, so two functions into a two-element monoid but one homomorphism).
+**Revised on 2026-10-07, at the maintainer's request.** Initial and free
+objects are checked capabilities requested on a theory. This replaces the
+2026-10-06 contract's automatic construction for a fixed signature fragment
+and its recursion-only use of `initial`. The opt-in and full proof interface
+below are specified, not implemented. Declaration and fold prototypes alone
+do not establish the capability.
 
-### Which theories
+### Opt-in and meaning
 
-`initial` and `free` take a theory `T` at fixed universes and parameters,
-as `Monoid(U0)`, whose fields are:
+The proposed clause is shared with [morphism derivation](categories.md):
 
-1. **One carrier**, `M : set U`, `M : prop U` or `M : U`. Several carriers,
-   families and relations are later work.
-2. **Strictly positive operations.** Each input is the carrier or a type
-   that does not mention it, and each output is the carrier, or a path in
-   the carrier between operation terms, as `Loop`'s
-   `loop : base = base`. An operation that takes the carrier under an arrow,
-   as `iterate(g : M -> M, x : M)`, is refused (theory_variance's `Iterated`).
-3. **Equational laws.** Each law is an equation between terms built from the
-   operations and the law's own variables, which range over the carrier or
-   over types that do not mention it. A conditional law, a truncation, as
-   `Field`'s `inverses`, or a law about another type is refused, naming the
-   law.
-4. Derived operations are definitions over the fields, and are generated for
-   the initial model as for any model; a law may not use one.
+```text
+theory T(...) deriving (morphisms, free) { ... }
+```
 
-Anything else is refused at the declaration, with the first field that fails
-and why.
+`morphisms` selects the theory's homomorphisms. `free` requests a construction
+and a checked universal property relative to those morphisms and the chosen
+forgetful functor. Initially that functor takes a model to its single carrier
+and a homomorphism to its carrier map. Changing the morphisms or the forgetful
+functor changes the obligation; a construction for another category cannot
+be reused without a proof. Several carriers and other forgetful functors
+need a later explicit interface.
 
-### What a declaration gives
+- **`deriving (morphisms, free)`** requests a free model for every generator
+  type in the declared universe range, its generator map, fold, computation,
+  and universal-property proof. It also supplies the initial model by taking
+  the generator type to be `Void`.
+- **`deriving (morphisms, initial)`** requests only an initial model and its
+  universal property. This is a weaker capability: an initial object alone
+  gives no free construction on arbitrary generators.
+- `free` and `initial` require an explicit `morphisms` opt-in. Neither
+  `isomorphisms` alone nor the existence of a model meets that requirement.
+- Theory parameters remain fixed. Derivation must work uniformly under the
+  header's assumptions and for the promised universes. A proof for one
+  parameter value does not establish the generic capability.
+
+After successful derivation, these declarations name instances of the
+registered construction; they do not independently derive it:
 
 ```text
 initial N : Monoid(U0);
 free W(A : U0) : Monoid(U0) on A;
 ```
 
-`initial N : T(…)` declares, with no new kernel rule:
+Here `Monoid` must request `deriving (morphisms, free)`, or, for the first
+line alone, `deriving (morphisms, initial)`. `free` without the capability
+fails at its use; `initial` accepts either capability. All generated names
+are checked for collisions before publishing declarations. In the first
+strategy below, a field named `model`, `fold`, `fold_unique`, `universal`,
+`squash`, or, for `free`, `gen` would collide with the public interface: the
+refusal names the field and the generated name. These are not globally
+reserved theory field names.
 
-- `N`, a declared type ([L2.1](work-plan.md)) at the carrier's universe and
-  h-level: a constructor for each operation, named as the operation, `N.mul`
-  and `N.one`; a path constructor for each law, `N.mul_assoc`; and the
-  squash of a `set` or `prop` carrier. `free` adds the generator,
-  `W.gen(a : A)`. The declared type is checked as any other: a law whose
-  boundary H1 does not admit is refused with H1's reason.
-- `N.model : T(…)`, the model on `N`: the constructors are its operations,
-  the path constructors its laws, and the squash its h-level evidence.
-- `N.fold(M) : T.Hom(N.model, M)`, for any model `M` of `T` at the same
-  universes and parameters, by recursion: each constructor clause applies
-  `M`'s operation to the recursive results, each law clause is `M`'s law
-  there, and the squash clause is `M`'s carrier evidence. `free` takes the
-  generators' images too: `W.fold(M, g : A -> M.M)`.
+### The initiality predicate
 
-Each result below is a separate typed statement, for a fixed target model:
+`deriving (morphisms)` also supplies `T.IsInitial`, independently of any
+request to construct an initial or free object. For fixed universes and
+theory parameters, its definition is, schematically:
 
-1. **Computation**, by conversion: `N.fold(M).map(N.c(x, …))` is
-   `M.c(N.fold(M).map(x), …)`, and `W.fold(M, g).map(W.gen(a))` is `g(a)`.
-2. **Uniqueness, pointwise:** `N.fold_unique(M, f) : forall x : N.
-   f.map(x) = N.fold(M).map(x)` for every `f : T.Hom(N.model, M)`, by
-   induction into the family of equalities in `M`'s carrier, which are
-   propositions there. For `free`, given `agrees : forall a : A.
-   f.map(W.gen(a)) = g(a)`.
-3. **Initiality:** `N.universal(M) : IsContr(T.Hom(N.model, M))`. It needs
-   `T.Hom.ext`, generated with `T.Hom`: two homomorphisms with equal maps
-   are equal, each preservation field being a proposition in a set.
-4. **The free property:** `W.universal(M) : ContrEquiv(T.Hom(W.model, M),
-   A -> M.M)`, restriction to the generators, whose inverse is `fold`.
+```text
+T.IsInitial(N : T(...)) :=
+  forall B : T(...). IsContr(T.Hom(N, B))
+```
 
-A theory whose carrier is untruncated, as `Loop` with the circle for its
-initial model, has no `T.Hom` until path-valued operations' coherence
-fields are specified (L2.4c). Its `initial` gives the declared type and
-`N.fold(M) : N -> M.M` as a function, by the type's recursion, with
-computation on its point and path constructors, and no uniqueness. A
-characterization of plain maps out of a carrier is stated only where the
-constructors give one, as the declared type's own eliminator does.
+It takes a model with its operations and laws. `CommRing.IsInitial(integers)`
+is therefore the type of a theorem about the existing integer ring model.
+`IsContr`'s universe argument is suppressed here. The predicate is an
+ordinary generated definition checked by the kernel, not a new trusted
+primitive, and remains available when `initial` or `free` derivation is
+unsupported. A proof's component at `B` contains the unique homomorphism
+and its uniqueness proof.
+
+Once L3.5 supplies the category library's generic `IsInitial(C, N)`, the
+theory-specific predicate is its specialization at `T.cat`. The direct
+homomorphism-type definition allows the language interface to precede that
+library. Generated-name collisions, including an existing `T.IsInitial`
+field, are diagnosed at the opt-in as with the other generated names.
+
+### What successful derivation proves
+
+For a fixed target model `B`, with carrier `B.M`, the results are separate
+typed statements. The following uses mathematical notation; universe
+arguments to `IsContr` and `ContrEquiv` are suppressed.
+
+| Capability | Checked result |
+| --- | --- |
+| Initial | `N.model : T(...)`, `N.fold(B) : T.Hom(N.model, B)`, and `N.universal : T.IsInitial(N.model)` |
+| Free on `A` | `W.model : T(...)`, `W.gen : A -> W`, and `W.fold(B, g) : T.Hom(W.model, B)` for each `g : A -> B.M` |
+| Free universal property | `W.universal(B) : ContrEquiv(T.Hom(W.model, B), A -> B.M)`, whose forward map restricts to generators and whose inverse is `fold` |
+
+Applying `N.universal` to `B` gives
+`IsContr(T.Hom(N.model, B))`, whose center is `N.fold(B)`. A hand-written
+initiality theorem and the automatic certificate have the same public type.
+
+The carrier projection above is schematic: the generator reads its actual
+name from the theory, not a required field name `M`. The equivalence is for
+the stated restriction map, rather than an arbitrary equivalence of the two
+types. It includes both inverse laws. Initiality from `free` uses the
+contractibility of `Void -> B.M` and this equivalence.
+
+The first strategy's folds compute on point constructors by conversion:
+fixed arguments pass unchanged, recursive carrier arguments are folded,
+and `W.fold(B, g).map(W.gen(a))` is `g(a)`. The generated
+`N.fold_unique(B, f)` proves pointwise equality with `N.fold(B).map`.
+For `free`, `W.fold_unique` additionally takes agreement with `g` on every
+generator. `T.Hom.ext` then promotes pointwise agreement to equality of
+homomorphisms: for this strategy the remaining fields are propositions.
+These checked proofs, not just the recursive function, complete derivation.
+A later strategy must state which computation rules are by conversion and
+which have propositional proofs.
+
+### Construction strategies and laws
+
+A theory declaration may contain every law admitted by the theory language.
+[L2.11](categories.md#decisions) broadens that check to anything the `hlevel`
+solver proves a proposition. That establishes proof irrelevance of the law,
+not that the law holds in a proposed model. Valid theories need not admit
+initial or free objects.
+
+The first automatic strategy is the existing H1 construction for a
+single-carrier equational presentation:
+
+1. The carrier is a set or proposition. Each operation input is the carrier
+   or a fixed type independent of it; the result is the carrier. The stored
+   data, including generators, must fit the declared carrier universe.
+2. Replace carrier occurrences in operations by the new declared type.
+   Each operation becomes a constructor; `free` adds `gen(a : A)`.
+3. Each equation between operation terms becomes a path constructor with
+   the translated boundary. Add the carrier's set or proposition squash.
+   H1 checks the complete signature and its boundaries.
+4. Assemble the model from the constructors, law paths and squash evidence.
+   Fold by recursion: apply the target's operations to the recursive
+   results, use its law proofs for path clauses and its h-level evidence
+   for squash clauses. Prove uniqueness by induction and homomorphism
+   preservation; equality in the target carrier is a proposition.
+
+This is a derivation strategy's supported fragment, not the definition of a
+valid theory or a claim that other theories have no free objects. The first
+strategy does not handle carrier families, multiple carriers, inputs such
+as `M -> M`, or laws using derived operations without a checked translation
+of their boundaries. Path-valued operations on set or proposition carriers
+also wait for a specified homomorphism interface; setness alone does not
+make the current `T.Hom` generator handle them.
+
+**Additional laws become proof obligations.** A strategy can construct a
+candidate from the equational part and then prove its remaining laws. It
+must prove every law before assembling a model of the full theory, and
+check the folds and universal property for the full theory's morphisms.
+An unresolved law leaves the requested derivation failed, with its precise
+goal and context. No law is dropped, assumed or replaced by an axiom.
+The implementation may use proof search or explicitly supplied checked
+evidence; syntax for supplying derivation evidence must be specified before
+that extension ships.
+
+For example, `zero != one`, written `zero = one -> Void`, asks for a
+function from an equality to the empty type. It cannot become an equality
+constructor. One way to discharge this obligation is a known model `B` of
+the equational part with distinct zero and one: fold the candidate into
+`B`, so any equality of its zero and one contradicts `B`'s proof. For a
+free object, sending every generator to `B.zero` supplies the assignment.
+This proves this particular law; it is not a procedure for arbitrary
+propositional laws. A supplied witness or proof remains an explicit
+dependency, with no new hidden assumptions.
+
+### Failure is part of the contract
+
+An explicit derivation request may fail at the theory declaration. No
+partial capability is registered, and the error names the field, unsupported
+construction, or unproved obligation. Removing the failed request leaves
+the underlying theory usable; requesting `morphisms` alone does not request
+initial or free objects. `free` never silently falls back to `initial` or
+to a type with only a recursor. A parent's free capability is not inherited
+automatically: a child's additional laws require its own derivation.
+
+Diagnostics distinguish:
+
+- **Unsupported construction or unproved obligation:** the current strategy
+  cannot supply the requested term or proof. This does not establish
+  mathematical nonexistence.
+- **Proved obstruction:** a checked obstruction can justify nonexistence.
+  No general decision procedure for existence is promised. Failure of
+  proof search alone must never be reported as such an obstruction.
+
+`Field` is a useful mathematical counterexample: all fields, with unital
+field homomorphisms, have no initial object, because a field cannot map to
+fields of different characteristics. Hence they have no free functor on
+all generator types either. `Field` may request `morphisms`; a request for
+`initial` or `free` must fail. An implementation without the checked
+nonexistence proof reports its unsupported construction or outstanding
+obligation, not a theorem it has not proved. Merely allowing `inverses` or
+`zero_ne_one` as propositional law fields changes none of this
+([Stacks Project, characteristic of a field](https://stacks.math.columbia.edu/tag/09FQ)).
+
+### Proving a universal property by hand
+
+These opt-ins control automatic generation, not which theorems can be
+stated or proved. With `CommRing` deriving `morphisms`, the existing integer
+model can be proved initial by constructing, for every target `R`, a term
+of `IsContr(CommRing.Hom(integers, R))`. Together these form a theorem
+`integers_initial : CommRing.IsInitial(integers)` (universe arguments
+suppressed). This requires no `initial` or `free` capability: it is an ordinary theorem
+about an existing model. The same proof restricts to target rings with
+`zero != one`, since the integers satisfy that law too.
+
+If automatic derivation also produces an initial commutative ring, its
+universal property and the integers' theorem give an isomorphism between
+the two models. The generated carrier need not replace the existing
+integer representation. A hand-written theorem does not implicitly
+register a derivation capability; an interface for reusing supplied
+constructions and proofs can be specified separately.
+
+### Higher theories and recursion
+
+An untruncated example such as `Loop` still has a useful declared type, the
+circle, and its eliminator. That is separate from deriving an initial or
+free object for specified morphisms. Until its homomorphisms, coherence
+fields and universal proof are supported, `deriving (morphisms, initial)`
+or `deriving (morphisms, free)` fails. The circle remains available through
+an ordinary `inductive` declaration and recursion. This replaces the old
+exception that allowed `initial Circle : Loop(U0)` with recursion only and
+no morphism opt-in. A later higher-theory strategy must specify its
+homomorphism spaces and the level at which the universal property holds.
 
 ### Slices
 
-1. The declarations: the theory check, the declared type, `N.model`,
-   `N.fold` and its computation, and the refusals.
-2. `fold_unique`, pointwise.
-3. `T.Hom.ext`, then `universal` for `initial` and for `free`.
-4. Untruncated carriers: `initial` for `Loop`, with recursion only.
+1. L2.4d's opt-in and the capability registry: separate theory admission
+   from derivation, specify universes, forgetful functor, collision checks
+   and diagnostic obligations. L2.11 supplies general propositional laws.
+2. The H1 equational strategy: declared type, model and computing fold;
+   preserve existing prototype evidence, but do not advertise a completed
+   `free` or `initial` capability yet.
+3. Pointwise uniqueness, `T.Hom.ext`, the universal equivalence and its
+   inverse laws; then publish successful capabilities and their named
+   instances. Include the weaker `initial`-only derivation.
+4. Additional-law obligations, with checked evidence and a specified way
+   to supply it; `zero != one` is the first non-equational case.
+5. Higher theories only after their morphism and coherence interface is
+   specified. Recursors alone stay ordinary inductive constructions.
 
 ### Acceptance
 
-- `initial N : Monoid(U0)`: `N.fold(M).map(N.one)` is `M.one` by `rfl`, and
-  the carrier is contractible: the identity and the constant homomorphism to
-  `N.one` agree, by `fold_unique` into `N.model` itself.
-- `free W(A : U0) : Monoid(U0) on A`: folding into `Nat`'s additive monoid
-  with `g := fun (a : A) => 1` counts generators, and computes on closed
-  words; `fold_unique` against the homomorphism that counts by recursion.
-- `free` groups on `A`, through `Group`'s laws.
-- `initial Circle : Loop(U0)`: the circle, with its recursion.
-- Refusals: `Field` (a truncated law), `Iterated` (the carrier under an
-  arrow), a theory with two carriers, a law that uses a derived operation.
+- A monoid opts into `morphisms, free`: closed folds compute, pointwise
+  uniqueness checks, and the restriction/fold equivalence has both inverse
+  laws. The initial instance is free on `Void` and has a contractible
+  carrier; counting generators is a free-monoid fold.
+- Groups on `A` use the same strategy and prove their universal property.
+- With only `CommRing`'s morphisms derived, `CommRing.IsInitial` is in
+  scope and a hand-written `integers_initial : CommRing.IsInitial(integers)`
+  checks as an ordinary theorem. It
+  restricts to nontrivial rings and identifies the integers with any
+  separately generated initial ring by an isomorphism.
+- A theory with `morphisms` but no `free` rejects a `free` use. An
+  `initial`-only capability supplies no free capability. Missing morphisms
+  and generated-name collisions produce specific refusals.
+- A theory can state `zero != one` without requesting a construction. A
+  derivation with an outstanding proof of that law fails and displays it;
+  supplied separating-model evidence discharges it when the other
+  obligations are met. A false law is never accepted as an assumption.
+- `Field` remains usable with `morphisms`; `initial` and `free` derivations
+  fail. An unsupported strategy is not reported as a proof of nonexistence.
+- A child's extra laws are checked even if its parent derives `free`.
+- `Iterate`, multiple carriers, and unsupported path-valued operations are
+  reported as strategy limitations. Ordinary circle recursion works while
+  its categorical derivation is refused until coherences are supplied.
 
 ## Acceptance
 
