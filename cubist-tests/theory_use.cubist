@@ -133,3 +133,12 @@ def wrapped : Nat := one;
 
 // Output: 0
 print(evaluate(wrapped));
+
+// A use before it that no longer reads, its model's name taken by a later
+// definition, is refused here, as a definition after it would be.
+use nat_multiplicative.monoid;
+
+def nat_multiplicative : Nat := nat.(1);
+
+// Error: E343: Untranslated name: nat_multiplicative.monoid
+use nat;
