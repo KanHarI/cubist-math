@@ -74,6 +74,13 @@ export class Scope {
     return new Scope(this.unit,new Map([...this.context].map(([name,type])=>[name,onFace(type,face)])),env,this.dimensions);
   }
   alias(name,value) {return this.withEnv(new Map(this.env).set(name,value));}
+  // Several names at once, with one copy of the names in scope.
+  aliases(pairs) {
+    if(!pairs.length)return this;
+    const env=new Map(this.env);
+    for(const [name,value] of pairs)env.set(name,value);
+    return this.withEnv(env);
+  }
   // Binding a name that is already in scope would silently rebind it. With
   // unique generated names this is an elaborator bug, never a user error.
   bind(name,type) {
