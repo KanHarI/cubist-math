@@ -63,6 +63,14 @@ test("left and right, a sum's injections, are reserved: no binder takes them, wh
   parse("def h(left : Nat) := left;", false, { bindable: ["left"] });
 });
 
+test("typed, the ascription, is reserved: no binder takes it, while typed(T, e) stays", () => {
+  for (const source of ["def typed(n, m : Nat) : Nat := n;", "def h(typed : Nat) := typed;",
+    "def k(p : Nat) : Nat { let typed := p; exact typed; }", "def m := fun (typed : Nat) => typed;"])
+    assert.throws(() => parse(source), /^Error: typed is reserved, as a keyword or a built-in type of the language; pick another name\.$/);
+  parse("def n := typed(Nat, 0);");
+  parse("def h(typed : Nat) := typed;", false, { bindable: ["typed"] });
+});
+
 // The definitions are cubist-tests/declarations_definitions.cubist, whose
 // comments state the refusal (tests/cubist-tests.test.mjs).
 test("definitions expose their checked bodies, and a refused one admits nothing", async t => {
