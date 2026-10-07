@@ -465,7 +465,12 @@ CLI and browser agree; every goal and metavariable is solved before acceptance.
 Structures are theories used for their models
 ([proposal §1](inductive-language-features.md#1-theories-one-declaration-for-structures-initial-models-and-universal-properties)).
 Models, homomorphisms, identity, notation and sections need no kernel change.
-Initial and free models need milestone 7 and kernel H.
+Initial and free models need milestone 7 and kernel H. The revised
+[L2.6 contract](core-theories.md#initial-and-free-models-l26) requires
+`deriving (morphisms, free)` or the weaker `morphisms, initial`, including
+checked universal proofs. The first equational strategy is a supported
+fragment of derivation, not a restriction on valid theory laws; extra laws
+require proofs, and a failed derivation reports its obligation.
 
 Release L2.4 covers the core models, homomorphisms, isomorphisms, named fields,
 notation, sections and `extends`. It uses HoTT A8's projections and D0a's

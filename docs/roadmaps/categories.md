@@ -1,10 +1,13 @@
 # Morphisms, categories and universal constructions
 
 Status: proposed on 2026-10-07, at the maintainer's request; nothing here
-is implemented. The work plan's packages are:
+is implemented. The initial/free opt-in contract was decided on 2026-10-07
+and is specified in [L2.6](core-theories.md#initial-and-free-models-l26);
+the other packages remain proposed. The work plan's packages are:
 
 - L2.4d: morphisms by opt-in;
 - L2.4e: user-defined morphisms (deferred);
+- L2.6: checked initial and free derivations, which may fail;
 - L2.11: laws proved propositions;
 - L2.12: implicit arguments in theory operations;
 - L3.4: categories;
@@ -14,7 +17,7 @@ is implemented. The work plan's packages are:
 The probes quoted below were checked on 2026-10-07 with `node cli/repl.mjs
 check`: those of a theory's morphisms and of `Product` at `ae94f49`, and
 those of diagrams at `075ec73`. Their files are not fixtures. The
-[homological algebra roadmap](homological-algebra.md) builds on this one.
+[homological algebra roadmap](https://github.com/KanHarI/cubist-math/blob/fb0273282afb96cdaab393ccf47983b5f44f1b25/docs/roadmaps/homological-algebra.md) builds on this one.
 
 ## Why
 
@@ -74,7 +77,9 @@ None of them has a `T.Iso` today.
 
 ## Decisions
 
-These are proposed, for the maintainer's review.
+These are proposed, except the decided initial/free capability policy in
+L2.6. The categorical roadmap is consolidated with that contract in #187;
+the homological-algebra track remains in #198.
 
 1. **Morphisms are derived only on request, at two levels.**
    - `deriving (isomorphisms)` generates `T.Iso` with `id`, `inverse`
@@ -85,6 +90,11 @@ These are proposed, for the maintainer's review.
      declares the theory's default category, `T.cat`. It implies
      `isomorphisms`. The generator proves that `T.cat`'s invertible
      morphisms are `T.Iso`.
+     It also generates `T.IsInitial(N)`, the ordinary definition
+     `forall B. IsContr(T.Hom(N, B))`, even without an initial/free
+     derivation. This lets users prove initiality of existing models; it
+     later specializes the category library's generic `IsInitial`.
+
 
    The clause is section 9's `deriving (…)` of the
    [language proposal](inductive-language-features.md#9-derived-declarations),
@@ -132,18 +142,24 @@ These are proposed, for the maintainer's review.
      if either part fails.
    - **Parents.** A child's derivation needs its parents' at the same
      level, and the error names the parent. A child whose own fields
-     block derivation fails without affecting its parents.
+     block derivation fails without affecting its parents. This rule is
+     about morphisms and isomorphisms: free and initial capabilities need
+     a fresh derivation for the child's laws and are not inherited.
    - **Use without opting in.** Naming `T.Hom` or `T.Iso` of a theory that
      did not opt in is an error at the use, naming the clause:
      "Monoid derives no morphisms; add `deriving (morphisms)` to its
      declaration."
    - **Consumers.**
-     - `initial` and `free` require `morphisms` where L2.6's `fold` is a
-       `T.Hom`, for a carrier that is a set or a proposition.
-     - An untruncated carrier keeps L2.6's recursion only: its `fold` is a
-       function, with no `T.Hom`
-       ([core theories](core-theories.md#initial-and-free-models-l26)). So
-       `initial Circle : Loop(U0)` needs no opt-in.
+     - `free` requires successful `deriving (morphisms, free)`; `initial`
+       accepts that capability, using no generators, or the weaker
+       `deriving (morphisms, initial)`. Both require checked universal
+       properties for the selected morphisms. Morphisms alone suffice for
+       neither construction.
+     - Untruncated carriers have no recursion-only exception. Until their
+       morphism spaces, coherences and universal proofs are supported, the
+       derivation fails. Ordinary inductive declarations still provide
+       types such as the circle and their recursors
+       ([L2.6](core-theories.md#initial-and-free-models-l26)).
      - Structure identity (L2.4b) and transfer (L3.3) require
        `isomorphisms`.
 
@@ -191,7 +207,10 @@ These are proposed, for the maintainer's review.
    (L2.11).** That includes equations in any set, a parameter's carriers
    among them, and statements such as `IsContrMap(…)`. The syntactic check
    stays as the fast path. The change is generic: modules over a ring
-   parameter, categories and universal constructions all need it.
+   parameter, categories and universal constructions all need it. Proving
+   that a statement is a proposition does not prove that it holds in a
+   generated model. Non-equational laws, including `zero = one -> Void`,
+   remain obligations of any requested initial/free derivation.
 
 8. **Theory operations take implicit arguments (L2.12),** inferred as
    L4.1b infers a definition's, with notation over the explicit arguments:
@@ -216,7 +235,30 @@ These are proposed, for the maintainer's review.
    functors and adjunctions apply to every theory's models.
 
 10. **Universal constructions are parameterized theories (L3.5).** The data
-    already checks, as below. Each has two presentations, proved equivalent
+    already checks, as below. The library exposes generic predicates on
+    supplied objects, cones and cocones, independently of any derivation:
+
+    ```text
+    IsInitial(C, x)  := forall y. IsContr(C.Arr(x, y))
+    IsTerminal(C, x) := forall y. IsContr(C.Arr(y, x))
+    ```
+
+    Universe arguments are suppressed. These are ordinary checked
+    definitions, usable for a precategory as well as a univalent category.
+    `IsTerminal(C, x)` is `IsInitial(C.op, x)`. `T.IsInitial(N)`
+    specializes `IsInitial(T.cat, N)`, so manually proved and generated
+    certificates share a type. An `Initial(C)` or `Terminal(C)` model
+    packages a chosen object with this certificate.
+
+    The same interface includes `IsProduct` and `IsPullback` on specified
+    projections, `IsEqualizer` on its specified arrow, and `IsLimit` on a
+    cone over a diagram. `IsCoproduct`, `IsPushout`, `IsCoequalizer` and
+    `IsColimit` are the dual predicates on their specified cocones. The
+    concrete predicates specialize `IsLimit` or `IsColimit` to their
+    shapes. A predicate states and checks a universal property of supplied
+    data; it does not request that the system construct that data.
+
+    Each universal construction has two presentations, proved equivalent
     once in the library:
     - **Algebraic,** for use: pairing as an operation, with β laws and
       uniqueness. Pairing is data, so it computes.
@@ -344,7 +386,7 @@ These are proposed, for the maintainer's review.
       - set truncation commutes with a product over `I` only when `I`
         satisfies set-level choice.
 
-      The [homological algebra roadmap](homological-algebra.md#constraints)
+      The [homological algebra roadmap](https://github.com/KanHarI/cubist-math/blob/fb0273282afb96cdaab393ccf47983b5f44f1b25/docs/roadmaps/homological-algebra.md#constraints)
       meets all three.
     - **Chosen and merely existing limits.** In a univalent category the
       limits of a diagram form a proposition. So "every diagram merely has
@@ -361,7 +403,15 @@ These are proposed, for the maintainer's review.
 
     L2.6's later slices can then be stated in this vocabulary: an initial
     model is an initial object of `T.cat`, and a free model is a left
-    adjoint to the forgetful functor.
+    adjoint to the selected forgetful functor. These exist only when the
+    requested construction and universal proof check: `deriving
+    (morphisms, free)` is a capability request that may fail. The H1
+    equational construction is its first strategy, with additional laws
+    checked as proof obligations. Failure to prove one does not prove
+    nonexistence. `Field` can derive morphisms but has no initial object
+    across all characteristics, hence no such free functor. The full
+    contract, weaker `initial` opt-in and diagnostics are
+    [L2.6](core-theories.md#initial-and-free-models-l26).
 
 11. **The abelian tower (L3.6).**
     - **Structure and properties.** `Preadditive(C)` is structure, an
@@ -579,12 +629,13 @@ def product_of_naturals : U0 := Lim(U0, discrete(Nat), TypeDiagram.make(
 
 | Slice | Content | Depends on |
 | --- | --- | --- |
-| L2.4d | `deriving (isomorphisms)` by transport and `deriving (morphisms)` by variance; refusals at the declaration; consumers require the opt-in, except an untruncated carrier's recursion-only `initial`. A two-commit migration: first opt in every theory whose morphisms are used and verify identical terms, then stop deriving by default | L2.4c; `T.cat` once L3.4 exists |
+| L2.4d | `deriving (isomorphisms)` by transport and `deriving (morphisms)` by variance; refusals at the declaration; consumers require the corresponding successful capability; there is no recursion-only `initial` exception. A two-commit migration: first opt in every theory whose morphisms are used and verify identical terms, then stop deriving by default | L2.4c; `T.cat` once L3.4 exists |
 | L2.4e | `morphisms where …` with standardness | L2.4d; first metric or topological client |
+| L2.6 | `deriving (morphisms, free)` and weaker `initial`; H1 strategy, checked uniqueness/universal proofs, extra-law obligations and honest failures; see the five slices in core theories | L2.4d; L2.11 for general propositional laws; H1 for the first strategy |
 | L2.11 | Laws checked by the `hlevel` solver | L2.5b |
 | L2.12 | Implicit arguments in theory operations and derived operations; notation over the explicit ones | L4.1b |
 | L3.4 | `Precategory`, `IsUnivalent`, `Category`, `op`, functors, natural transformations, the `category` simp set; `T.cat` | L2.11, L2.12, L2.4d |
-| L3.5 | Universal constructions; `Graph`, `Diagram`, `Cones`, `IsLimit` and the algebraic `Limit` over diagrams that are maps of graphs, finite or infinite; concrete shapes converted to `Limit`; colimits by duality, and of types as the higher inductive `Colim`; `ext` into limits; `deriving (limits)` | L3.4; L3.1 for the contractibility presentation |
+| L3.5 | Generic `IsInitial`, `IsTerminal`, `IsLimit`, `IsColimit` and predicates for the concrete shapes; chosen universal constructions; `Graph`, `Diagram`, `Cones`, `IsLimit` and the algebraic `Limit` over diagrams that are maps of graphs, finite or infinite; concrete shapes converted to `Limit`; colimits by duality, and of types as the higher inductive `Colim`; `ext` into limits; `deriving (limits)` | L3.4; L3.1 for the contractibility presentation |
 | L3.6 | `Preadditive`, `IsAdditive`, `IsPreabelian`, `IsAbelian`; `deriving (… additive …)` to `abelian`; lifting operations through set quotients; `Module(U, R)` in the library | L3.5; L2.4b for the properties to be propositions |
 
 ## Acceptance
@@ -592,14 +643,21 @@ def product_of_naturals : U0 := Lim(U0, discrete(Nat), TypeDiagram.make(
 - **L2.4d:**
   - the algebraic hierarchy opts in, with identical terms;
   - a theory naming `T.Hom` without opting in is refused at the use;
+  - `CommRing.IsInitial(integers)` can be stated and proved with only
+    `morphisms` derived; it needs no `initial` or `free` opt-in;
   - `deriving (morphisms)` on a topology is refused at the theory, naming
     `is_open`;
   - `deriving (isomorphisms)` on the topology, on `iterate(g : M -> M,
     x : M)` and on a strict precategory checks;
-  - `initial` on a set-level theory without `morphisms` is refused, naming
-    the clause;
-  - `initial Circle : Loop(U0)` still checks without an opt-in, with
-    recursion only.
+  - `free` without `morphisms, free`, and `initial` without either
+    `morphisms, free` or `morphisms, initial`, are refused at the use;
+  - untruncated categorical derivation fails until supported; an ordinary
+    declared circle still has its recursor.
+- **L2.6:** a monoid derives `free` with both inverse laws; its initial
+  instance is free on `Void`; `initial` alone supplies no free capability;
+  a non-equational law is proved or reported as an outstanding obligation;
+  `Field` remains usable with morphisms while its requested initial/free
+  derivation fails; no unsupported case is called a proved nonexistence.
 - **L2.4e:** continuity accepted; "every function" refused for monoids as
   not standard.
 - **L2.11:** a universal property stated with `IsContrMap`, and equations
@@ -611,6 +669,11 @@ def product_of_naturals : U0 := Lim(U0, discrete(Nat), TypeDiagram.make(
   - the opposite of the opposite is the category itself;
   - a functor composed with the identity is that functor.
 - **L3.5:**
+  - ordinary proofs of `IsInitial(C, x)` and `IsTerminal(C, x)` need no
+    construction opt-in; their definitions agree by passage to `C.op`;
+  - `CommRing.IsInitial(integers)` specializes the generic predicate;
+  - the concrete `IsProduct`, `IsPullback` and `IsEqualizer` predicates,
+    and their duals, agree with the corresponding `IsLimit`/`IsColimit`;
   - products and pullbacks in `Set` and in `Monoid.cat`, with pairing
     computed by `evaluate`;
   - uniqueness of products up to equality in a univalent category;

@@ -62,14 +62,14 @@ finishing a language milestone does not automatically resume them.
 
 ## Language tooling roadmap
 
+- [Morphisms, categories and universal constructions](roadmaps/categories.md):
+  opt-in morphisms and checked initial/free derivations, which may fail;
+  general propositional laws and the proposed categorical library. The
+  [L2.6 contract](roadmaps/core-theories.md#initial-and-free-models-l26)
+  separates theory admission from constructing and proving a free object.
+
 - [Language enhancement proposals](roadmaps/language-enhancement-proposals.md):
   deferred features, each kept with what would justify taking it up.
-- [Morphisms, categories and universal constructions](roadmaps/categories.md):
-  proposed on 2026-10-07:
-  - morphisms derived only on request, as isomorphisms or with a default
-    category;
-  - laws proved propositions, and implicit arguments in theory operations;
-  - categories, limits and the abelian tower in the library.
 - [Computation notation: monadic do and arrows](roadmaps/computation-notation-roadmap.md):
   planned blocks for existence proofs, free-algebra substitution and arrow
   composition, with explicit structures and checked elaboration.

@@ -34,8 +34,9 @@ Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
     - `Monoid(U)` as the type of models;
     - theory families and relations;
     - independent theories combined unchanged;
-    - initial and free models' first slice (L2.6): `initial`, `free` and
-      `fold`.
+    - the initial/free construction prototype (L2.6): declared carriers,
+      models and computing folds. The revised checked capability is not
+      implemented by this prototype alone.
   - **Notation (L2.10a–e, i–k).**
     - `use` selects a notation, in place of `open`;
     - named notations, qualified operators `a G.(+) b`, operand notations
@@ -50,11 +51,15 @@ Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
     algebraic hierarchy, the integers and the rationals, h-levels,
     univalence and squares. Every archived declaration still checks.
 - **Specified, not implemented.**
-  - **The rest of initial and free models (L2.6, slices 2–4),** as
-    [specified](core-theories.md#initial-and-free-models-l26):
-    - pointwise uniqueness of `fold`;
-    - `T.Hom.ext` and `universal`;
-    - untruncated carriers.
+  - **Checked initial/free capabilities (L2.6), revised on 2026-10-07,**
+    as [specified](core-theories.md#initial-and-free-models-l26):
+    - `deriving (morphisms, free)` with a universal proof, supplying
+      initiality on `Void`; the weaker `morphisms, initial`;
+    - general laws become proof obligations, including `zero != one`;
+    - an unsupported strategy or unproved law fails derivation without
+      claiming mathematical nonexistence;
+    - five slices, including migration of the construction prototype;
+      untruncated recursors alone supply no categorical capability.
   - **Computation notation (N0–N5).** Monadic `do` and arrows; design
     only.
   - **Notation's remainders and deferred slices.**
@@ -82,7 +87,7 @@ Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
   1. morphisms by opt-in (L2.4d);
   2. laws proved propositions (L2.11), and implicit arguments in theory
      operations (L2.12);
-  3. L2.6's slices 2–4;
+  3. L2.6's revised capability, proof and additional-law slices;
   4. the archive's raw `comp` lemmas re-derived through the squares
      (L2.8's last item);
   5. the rest of the h-level solver (L2.5b):
@@ -175,7 +180,8 @@ Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
   - **Morphisms by opt-in.** Theories derive morphisms only on request, at
     two levels, and an opt-in that fails refuses the theory (L2.4d).
     User-defined morphisms with the standardness obligation are deferred
-    (L2.4e).
+    (L2.4e). The categorical roadmap is consolidated in #187 with L2.6's
+    checked `free`/`initial` capabilities; the homological track stays in #198.
   - **Prerequisites.** Laws proved propositions (L2.11), and implicit
     arguments in theory operations (L2.12).
   - **The library:** categories, functors and natural transformations;
