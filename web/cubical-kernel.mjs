@@ -165,7 +165,9 @@ export class CubicalKernel {
   errorKind() {
     return errorKinds[this.module._cb_error_kind(this.handle)] ?? "other";
   }
-  // The last rejection as a typed error. A session-level error has no kernel
+  // The last rejection as a typed error, and cleared: a caller that catches
+  // it, as unification does a head it cannot compute, leaves no error behind
+  // to refuse the next instruction. A session-level error has no kernel
   // error kind.
   failure(fallback = "") {
     const kind = this.errorKind();
@@ -174,6 +176,7 @@ export class CubicalKernel {
       found: this.module._cb_mismatch(this.handle, 0) >>> 0,
       expected: this.module._cb_mismatch(this.handle, 1) >>> 0,
     };
+    this.module._cb_clear_error(this.handle);
     return error;
   }
   dispose() {
