@@ -24,6 +24,21 @@ test("statements end at ; outside brackets, and a block declaration at its brace
     ["def f := match x { left a => 1; right b => 2; };"]);
   assert.equal(replStatements("def a : Nat {\n  exact").depth, 1);
   assert.deepEqual(replStatements("// a comment; with a semicolon\ntypeof 1;").statements, ["// a comment; with a semicolon\ntypeof 1;"]);
+  // A brace within a term ends nothing: what follows a box, a match or
+  // implicit arguments stays in its statement.
+  for (const statement of ["compose i in (Unit and Unit) from (tt, tt) {}.1;", "evaluate compose i in Unit from tt {} expecting tt;",
+    "fill j in Unit from tt at 1 {}(x);", "evaluate match b { yes => tt; no => tt; } expecting tt;", "evaluate id{{Unit}}(tt);",
+    "def f{{A : U0}}(x : A) : A := x;", "def g : rematch(x) {\n  exact tt;\n}", "def h : compose(x) {\n  exact tt;\n}"])
+    assert.deepEqual(replStatements(`${statement} typeof x;`).statements, [statement, "typeof x;"]);
+  // A header's words may be apart by comments, as in a file; a word in a
+  // comment is no header's.
+  for (const statement of ["compose // direction\n  i in (Unit and Unit) from (tt, tt) {}.1;",
+    "evaluate compose i // direction\n in Unit from tt {} expecting tt;", "fill\n// direction\nj in Unit from tt at 1 {}(x);",
+    "def h : compose // i in\n(x) {\n  exact tt;\n}"])
+    assert.deepEqual(replStatements(`${statement} typeof x;`).statements, [statement, "typeof x;"]);
+  // A block still ends its declaration where its type holds a box.
+  assert.deepEqual(replStatements("def t : compose j in U0 from Unit {} {\n  exact tt;\n}\nt").statements,
+    ["def t : compose j in U0 from Unit {} {\n  exact tt;\n}"]);
 });
 
 test("let binds, typeof shows the type, and evaluate the value", async t => {
@@ -58,6 +73,23 @@ test("imports, declarations with blocks, and errors that leave the session uncha
   assert.deepEqual(texts(await repl.run("import nowhere;")).length, 1);
   // Later entries still see everything that checked.
   assert.deepEqual(texts(await repl.run("typeof four_is_four; evaluate double(3)")).slice(0, 1), ["type: 2 + 2 = 4"]);
+});
+
+test("witness reads a closed truncation's witness, with its type", async t => {
+  const repl = await session(t);
+  assert.deepEqual(texts(await repl.run("import h1_truncation; use nat;")), ["info: Imported h1_truncation.", "info: Selected nat."]);
+  assert.deepEqual(texts(await repl.run("witness merely(U0, Nat, 2 + 1);")), ["value: 3 : Nat"]);
+  assert.match(texts(await repl.run("witness 3;"))[0], /^error: E479: witness reads a closed truncation/);
+});
+
+test("a box is a term: its projection, application and expectation stay in the entry", async t => {
+  const repl = await session(t);
+  assert.deepEqual(texts(await repl.run("compose i in (Unit and Unit) from (tt, tt) {}.1;")), ["value: tt"]);
+  assert.deepEqual(texts(await repl.run("compose i in (Unit -> Unit) from fun (x : Unit) => x {}(tt);")), ["value: tt"]);
+  assert.deepEqual(texts(await repl.run("evaluate compose i in Unit from tt {} expecting tt;")), ["value: tt"]);
+  assert.deepEqual(texts(await repl.run("compose // direction\n  i in (Unit and Unit) from (tt, tt) {}.1;")), ["value: tt"]);
+  // A declaration that ends in a box, with its ; omitted, is complete.
+  assert.deepEqual(texts(await repl.run("def moved := compose i in Unit from tt {}")), ["defined: moved : Unit"]);
 });
 
 test("a session over a proof sees its names, and rebases onto a rechecked proof", async t => {

@@ -33,7 +33,7 @@ const fileGroups = [
   [/^web\/cubist\/lint\.mjs$/, "W7"],
   [/^web\/(cubist|translator)\/theories\.mjs$/, "E8"],
   [/^web\/cubist\//, "E1"],
-  [/^web\/translator\/(builtins|tactics|proof-rewrite|proof-goals|motives|simp-registry|fuel)\.mjs$/, "E4"],
+  [/^web\/translator\/(builtins|tactics|proof-rewrite|proof-goals|motives|simp-registry|fuel|evaluation)\.mjs$/, "E4"],
   [/^web\/translator\/(inductive|match|patterns|hlevel)\.mjs$/, "E5"],
   [/^web\/cubical-signatures\.mjs$/, "E5"],
   // Argument inference's earlier messages are E3's, which is full.

@@ -12,6 +12,7 @@ export const replHelp = [
   "let NAME := TERM;     define a name (def works too, with any declaration form)",
   "typeof TERM;          the type of a term",
   "evaluate TERM;        the value of a term",
+  "witness TERM;         the witness a closed truncation holds, with its type",
   "TERM;                 a term alone is evaluated",
   "print(inspect(TERM)); the term the kernel checks, in kernel notation",
   "import MODULE;        load a module, such as nat",
@@ -28,26 +29,49 @@ export const consoleCommands = new Set(["/clear", "/restart"]);
 
 // Split input into statements. A statement ends at `;` outside brackets; a
 // declaration with a block, `def name : T { … }`, ends at its closing brace.
+// Braces within a term end nothing: implicit arguments, f{{A}}(x), and the
+// braces of a box, compose j in A from b { … } or fill …, of match, of
+// induction and of with unfolding, so what follows one, as in `{}.1`, `{}(x)`
+// or `{} expecting v`, stays in its statement. Nor does a brace after `:=`.
 // `rest` is an unfinished statement, and `depth` its open bracket count.
+// Between a header's words, as between any tokens, may come whitespace and
+// `//` comments; a comment runs to the end of its line, so no word in one
+// counts.
+const gap = String.raw`(?:\s|\/\/[^\n]*(?:\n|$))+`;
+const termBrace = new RegExp(String.raw`(?:match|induction|with${gap}unfolding|(?:compose|fill)${gap}[A-Za-z_][A-Za-z_0-9]*${gap}in)(?![A-Za-z_0-9])`, "y");
 export function replStatements(input) {
   const statements = [];
   let start = 0, depth = 0;
+  // In the statement so far, at the top level: the term braces still to
+  // open, whether `:=` was written, and whether the open brace is a block.
+  let terms = 0, assigned = false, block = false;
+  const close = (at, statement) => {
+    if (statement) statements.push(statement);
+    start = at;
+    terms = 0;
+    assigned = block = false;
+  };
   for (let i = 0; i < input.length; i++) {
     const c = input[i];
     if (c === "/" && input[i + 1] === "/") {
       const end = input.indexOf("\n", i);
       i = end < 0 ? input.length : end;
-    } else if ("({[".includes(c)) depth++;
-    else if (")}]".includes(c)) {
-      depth = Math.max(0, depth - 1);
-      const statement = input.slice(start, i + 1);
-      if (c === "}" && depth === 0 && !/:=/.test(statement.slice(0, statement.indexOf("{")))) {
-        statements.push(statement.trim());
-        start = i + 1;
+    } else if ("({[".includes(c)) {
+      if (c === "{" && depth === 0) {
+        const implicit = input[i + 1] === "{";
+        block = !implicit && !terms && !assigned;
+        if (!implicit && terms) terms--;
       }
-    } else if (c === ";" && depth === 0) {
-      if (input.slice(start, i).trim()) statements.push(input.slice(start, i + 1).trim());
-      start = i + 1;
+      depth++;
+    } else if (")}]".includes(c)) {
+      depth = Math.max(0, depth - 1);
+      if (c === "}" && depth === 0 && block) close(i + 1, input.slice(start, i + 1).trim());
+    } else if (depth > 0) continue;
+    else if (c === ";") close(i + 1, /\S/.test(input.slice(start, i)) ? input.slice(start, i + 1).trim() : null);
+    else if (c === ":" && input[i + 1] === "=") assigned = true;
+    else if (/[A-Za-z_]/.test(c) && !/[A-Za-z_0-9.]/.test(input[i - 1] ?? "")) {
+      termBrace.lastIndex = i;
+      if (termBrace.test(input)) terms++;
     }
   }
   return { statements, rest: input.slice(start).trim(), depth };
@@ -113,10 +137,11 @@ export class ReplSession {
     if ((match = /^import\s+([A-Za-z_][A-Za-z_0-9]*)$/.exec(source))) return this.import(match[1], text);
     if ((match = /^use\s+([\s\S]+)$/.exec(source))) return this.use(match[1], text);
     if (/^evaluate\s/.test(source) && !/\bexpecting\b/.test(source)) return this.evaluate(source.replace(/^evaluate\s+/, ""));
+    if ((match = /^witness\s+([\s\S]+)$/.exec(source))) return this.witness(match[1]);
     if (/^let\s/.test(source)) return this.declare(`def${source.slice(3)};`, text);
     if (/^print\s*\(/.test(source)) return this.declare(`${source};`, text);
     if (/^(def|computable|simp_rule|simp_set|hlevel_rule|evaluate|inductive)\s/.test(source))
-      return this.declare(/[;}]$/.test(text.trim()) ? text.trim() : `${source};`, text);
+      return this.declare(replStatements(text).rest ? `${source};` : text, text);
     return this.evaluate(source);
   }
 
@@ -197,6 +222,13 @@ export class ReplSession {
     const result = await this.entry(`def repl_value := ${term};`), failures = this.failures(result);
     if (failures.length) return failures;
     return [{ kind: "type", text: this.typeText(result.declarations[0]) }];
+  }
+
+  // print(witness(…)) reads a closed truncation's witness (L2.9b).
+  async witness(term) {
+    const result = await this.entry(`print(witness(${term}));`), failures = this.failures(result);
+    if (failures.length) return failures;
+    return result.prints.map(print => ({ kind: "value", text: print.text }));
   }
 
   // Both sides are the same term, so the directive reports its normal form;

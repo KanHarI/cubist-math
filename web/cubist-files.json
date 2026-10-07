@@ -1535,6 +1535,10 @@
    "summary": "For `tests/automatic-clauses.test.mjs`: the generated set squash (E4) of the library's quotients, explicit obligations, missing h-level evidence, automatic clauses in the match statement, trailing proofs, ambiguous whole-clause proofs and hlevel hints."
   },
   {
+   "path": "cubist-tests/box_notation.cubist",
+   "summary": "The box notation for compositions: `compose j in A from b { on i = 0 => …; }` and `fill … at k`, faces as formulas, printing as boxes, and a face that is no formula."
+  },
+  {
    "path": "cubist-tests/computability_evaluation.cubist",
    "summary": "evaluate checks the normal form of a closed, assumption-free term; each failed evaluation's error is stated above it."
   },
@@ -1777,6 +1781,10 @@
   {
    "path": "cubist-tests/ergonomics_type_transport_rejections.cubist",
    "summary": "`simpa` transports only along paths of types: no path, functions that are no type path, a nontrivial loop."
+  },
+  {
+   "path": "cubist-tests/evaluate_patterns.cubist",
+   "summary": "`evaluate … expecting` a pattern: holes, pairs, injections, constructors and `typed` matched part by part, other expressions by normal form, and the part a mismatch names; braces and named arguments refused at a builtin or a constructor, and a module's own `typed` read as the module's."
   },
   {
    "path": "cubist-tests/f4_extension_loops_false.cubist",
@@ -2245,6 +2253,10 @@
   {
    "path": "cubist-tests/truncation_cauchy_same.cubist",
    "summary": "G5: the rebuilt `CauchySame` and `EventualClose` in U0, computable."
+  },
+  {
+   "path": "cubist-tests/truncation_readout.cubist",
+   "summary": "`print(witness(t))`: the witness a closed truncation holds, read under maps, squash endpoints and transport along a path of types, with its type and certificate; values that are no truncation."
   },
   {
    "path": "cubist-tests/truncation_rebuilt_classical.cubist",
