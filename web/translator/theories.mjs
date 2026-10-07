@@ -4,6 +4,7 @@
 // model's fields and notation in scope.
 import {expandTheory} from "../cubist/theories.mjs";
 import {rewritten} from "../cubist/scopes.mjs";
+import {substituteTerm,alphaKey,isTerm} from "./core.mjs";
 
 // The scope's key for an operator a model's notation binds: no source name
 // can spell it.
@@ -86,23 +87,24 @@ export function opened(t,scope,node,{complete=true}={}) {
   const at={start:node.start,end:node.end};
   const values=new Map([...record.fields,...record.derived??[]].map(field=>
     [field.name,t.term({kind:"call",fn:{kind:"name",name:field.projection,...at},args:[node],...at},scope,null)]));
-  let inner=scope;
-  for(const [name,value] of values)inner=inner.alias(name,value);
-  for(const [operator,field] of Object.entries(record.notations))inner=inner.alias(operatorBinding(operator),values.get(field));
+  // All of them in scope with one copy of the names there.
+  const added=[...values];
+  for(const [operator,field] of Object.entries(record.notations))added.push([operatorBinding(operator),values.get(field)]);
   // An ambiguous name or operator is refused where it is used.
   for(const field of Object.keys(record.ambiguous??{}))
-    inner=inner.alias(field,{tag:"Ambiguous",message:ambiguousField(record,node.name??"m",field).message});
+    added.push([field,{tag:"Ambiguous",message:ambiguousField(record,node.name??"m",field).message}]);
   for(const [operator,list] of Object.entries(record.ambiguousNotations??{}))
-    inner=inner.alias(operatorBinding(operator),{tag:"Ambiguous",message:`${operator} is ambiguous in ${record.name}: it is ${
-      list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>`x ${node.name??"m"}.${e.label}.(${operator}) y`).join(" or ")}.`});
+    added.push([operatorBinding(operator),{tag:"Ambiguous",message:`${operator} is ambiguous in ${record.name}: it is ${
+      list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>`x ${node.name??"m"}.${e.label}.(${operator}) y`).join(" or ")}.`}]);
   // A theory's numeral rule, its derived operation marked notation numeral.
   const numeral=record.notations.numeral?{left:"n",right:null,aliases:new Map(),recipe:{},
     value:{kind:"call",fn:{kind:"name",name:operatorBinding("numeral"),...at},args:[{kind:"name",name:"n",...at}],...at}}:null;
   // The model's notation is the selection (L2.10a). A section's is not
   // complete until L2.10j: an operator it does not bind falls back by name,
   // as before views.
-  return inner.alias(SELECTION,{name:node.name??"this model",recipes:record.recipes??{},complete,numeral,literal:null,
-    operators:new Set([...Object.keys(record.notations),...Object.keys(record.ambiguousNotations??{})])});
+  added.push([SELECTION,{name:node.name??"this model",recipes:record.recipes??{},complete,numeral,literal:null,
+    operators:new Set([...Object.keys(record.notations),...Object.keys(record.ambiguousNotations??{})])}]);
+  return scope.aliases(added);
 }
 
 // A named notation (L2.10a): each rule's right side, its free names read
@@ -264,29 +266,66 @@ export function missingMorphisms(scope,name) {
 }
 
 // The rest of a theory whose type of models failed, `model`: taken off the
-// queue, each unavailable as a dependency of that type.
+// queue, each unavailable as a dependency of that type. How many were taken.
 export function skipTheory(t,queue,env,model) {
+  let skipped=0;
   for(let k=queue.length-1;k>=0;k--) {
     const d=queue[k];
     if(d.generated?.theory!==model.generated.theory)continue;
-    queue.splice(k,1);
+    queue.splice(k,1); skipped++;
     env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:t.checker.bindingName?.(d.name.text)??d.name.text,
       reason:`Untranslated dependency: ${model.name.text}`});
   }
+  return skipped;
 }
 
 // A section's scope, inside its parameters (L2.4): each earlier definition of
 // the section applied to the section's parameters, as the section writes
 // it, and each parameter that is a model opened.
+//
+// Each definition of a section takes the same parameters, so its earlier
+// definitions, applied, are the same terms but for the parameters' names,
+// fresh for each definition: each is elaborated once for the section, and
+// for a later definition its parameters renamed, where the definition and
+// the parameters' types are the ones it was elaborated with. Each later
+// definition elaborated them all again, a quadratic time: half of
+// rationals' (sectionApplications).
+const sectionApplications=new WeakMap(),OPENED=Symbol("opened");
 export function sectionScope(t,scope,n) {
   const at={start:n.start,end:n.end},name=text=>({kind:"name",name:text,...at});
   const implicit=n.section.params.filter(p=>p.implicit),explicit=n.section.params.filter(p=>!p.implicit);
-  let inner=scope;
+  const kept=sectionApplications.get(n.section.params)??sectionApplications.set(n.section.params,new Map()).get(n.section.params);
+  // Each parameter's own name here, a variable's or a universe's, and the
+  // parameters' types with those names as positions.
+  const own=n.section.params.map(p=>{const bound=scope.env.get(p.name.text);
+    return bound?.tag==="Var"?bound.name:bound?.tag==="U"&&bound.level?.tag==="Var"?bound.level.name:null;});
+  const position=new Map(own.map((x,k)=>[x,`\u0000parameter${k}`]));
+  const parameters=own.includes(null)?null
+    :alphaKey([n.section.params.map(p=>scope.env.get(p.name.text)?.tag??null),own.map(x=>scope.context.get(x)??null)],position);
+  // A kept term with its parameters' names here.
+  const rename=(names,term)=>names.reduce((renamed,x,k)=>x===own[k]?renamed:substituteTerm(renamed,x,scope.env.get(n.section.params[k].name.text)),term);
+  const applied=[];
   for(const declared of n.section.declared) {
-    if(!scope.env.has(declared)||scope.env.get(declared)?.tag==="Untranslated")continue;
-    inner=inner.alias(declared,t.term({kind:"call",fn:name(declared),args:explicit.map(p=>name(p.name.text)),
-      ...(implicit.length?{implicitArgs:implicit.map(p=>name(p.name.text))}:{}),...at},scope,null));
+    const entry=scope.env.get(declared);
+    if(!entry||entry.tag==="Untranslated")continue;
+    let application=kept.get(declared),term;
+    if(parameters!==null&&application?.translator===t&&application.entry===entry&&application.parameters===parameters)
+      term=rename(application.own,application.term);
+    else {
+      term=t.term({kind:"call",fn:name(declared),args:explicit.map(p=>name(p.name.text)),
+        ...(implicit.length?{implicitArgs:implicit.map(p=>name(p.name.text))}:{}),...at},scope,null);
+      if(parameters!==null)kept.set(declared,{translator:t,entry,parameters,own,term});
+    }
+    applied.push([declared,term]);
   }
+  let inner=scope.aliases(applied);
+  // The parameters' models opened: what that puts in scope is kept too, by
+  // the same parameters, its terms renamed, the rest as it is.
+  const opening=kept.get(OPENED);
+  if(parameters!==null&&opening?.translator===t&&opening.parameters===parameters)
+    return inner.aliases(opening.added.map(([key,value])=>[key,isTerm(value)?rename(opening.own,value):value]));
+  const before=inner.env;
   for(const p of n.section.params)if(p.type)inner=opened(t,inner,name(p.name.text),{complete:false})??inner;
+  if(parameters!==null)kept.set(OPENED,{translator:t,parameters,own,added:[...inner.env].filter(([key,value])=>before.get(key)!==value)});
   return inner;
 }

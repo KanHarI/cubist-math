@@ -15,6 +15,13 @@ import { checkReduction, simplifyTypeApplications } from "./cubical-reduction.mj
 import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
 import naturalSource from "./translator/nat-source.mjs";
 
+// A property computed when first read, and then kept as a plain value.
+function whenRead(object, key, compute) {
+  const keep = (target, value) => Object.defineProperty(target, key, { value, writable: true, enumerable: true, configurable: true });
+  return Object.defineProperty(object, key, { enumerable: true, configurable: true,
+    get() { const value = compute(); keep(this, value); return value; }, set(value) { keep(this, value); } });
+}
+
 const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${index}` : "";
 
 // Imports are source, loaded on demand. Every module has its own environment;
@@ -160,12 +167,20 @@ export class CubicalProgram {
         // review since H1's release, so this list is empty.
         extensions: d.native?.extensions ?? [], start: syntax.start, end: syntax.end,
         definitionStart: syntax.start, description: leadingDocumentation(text, syntax.start)?.text ?? "",
-        ...(name === main ? {} : { sourceModule: name, sourceName: d.name }),
+        ...(name === main ? {} : { sourceModule: name, sourceName: d.name }) };
+      // The type's text, written when first read: the pages and the
+      // inspector show it, a check does not. Its names are the program's
+      // symbols' and the declaration's own for its variables; none of the
+      // program's is a local one, so they are read through rather than
+      // copied, which each declaration did, all of them.
+      if (verified) {
         // A universe variable's source name stands for U(x): it names x.
-        type: verified ? cubicalText(d.type, { ...this.symbols, ...Object.fromEntries(
-          (this.declarationBindings.get(binding) ?? []).map(item => [item.term.tag === "Var" ? item.term.name
+        const symbols = this.symbols, variables = Object.fromEntries((this.declarationBindings.get(binding) ?? [])
+          .map(item => [item.term.tag === "Var" ? item.term.name
             : item.term.tag === "U" && item.term.level?.tag === "Var" ? item.term.level.name : null, { name: item.node.name }])
-            .filter(([variable]) => variable)) }) : reason };
+          .filter(([variable]) => variable));
+        whenRead(info, "type", () => cubicalText(d.type, Object.assign(Object.create(symbols), variables)));
+      } else info.type = reason;
       this.symbols[binding] = info;
       if (!verified) this.gaps.push({ module: name, name: d.name,
         reason, code: info.code, start: d.errorStart, end: d.errorEnd });
@@ -229,6 +244,16 @@ export class CubicalProgram {
         inspectSignature: binding => this.signatureText(binding),
         ...Object.fromEntries(Object.entries(this.fuelLimits).filter(([, limits]) => limits)),
         onStep: step => statements.push({ ...step, declaration: current }),
+        // A theory's expansion adds declarations the source does not write,
+        // and a failed type of models takes the rest of its theory off: the
+        // total follows both, so that it is never below what is done and
+        // ends at it. Each change is reported, as the last event may be one,
+        // when a theory whose type of models fails ends the source.
+        onQueued: change => {
+          total += change;
+          onProgress({ completed: this.completed, total, current: current && `${name}.${current}`,
+            phase: "checked", unit: "declarations", instructions: checker.steps });
+        },
         onDeclarationStart: declaration => {
           current = declaration.name.text;
           if (this.manageTransactions) transaction = new CubicalDeclarationTransaction(this.kernel,this.checker);

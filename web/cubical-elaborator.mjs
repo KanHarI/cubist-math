@@ -293,6 +293,21 @@ export class NativeCubicalElaborator {
     // Each declared type's lowering metadata (web/translator/inductive.mjs), by
     // the name its signature was registered under.
     this.inductives = new Map();
+    // The instruction kernel's work, cumulative: how long its derivations
+    // took and how many judgements they added, wherever the elaborator asks
+    // for one: a part's check as it elaborates, a clause's type, a
+    // signature's or a body's admission. The benchmark reads it around each
+    // declaration.
+    this.instructionWork = { ms: 0, judgements: 0, depth: 0 };
+  }
+  // A derivation by the instruction kernel, counted in instructionWork once
+  // however deep, over `graph`, the driver's judgement graph.
+  instructed(graph, derivation) {
+    const work = this.instructionWork;
+    if (work.depth++) try { return derivation(); } finally { work.depth--; }
+    const started = performance.now(), before = graph.count;
+    try { return derivation(); }
+    finally { work.depth--; work.ms += performance.now() - started; work.judgements += graph.count - before; }
   }
   // The kernel extensions a term relies on: a declared type's instance,
   // constructor or eliminator whose signature was admitted experimentally,
@@ -334,7 +349,8 @@ export class NativeCubicalElaborator {
   // Admits a declared type's signature in normal form (web/cubical-signatures.mjs),
   // one instruction at a time, as a declaration's admission is.
   admitSignature(spec) {
-    try { return admitSignature(this.kernel, spec, { syntax: this.syntax, driver: this.driver }); }
+    const driver = this.driver;
+    try { return this.instructed(driver.graph, () => admitSignature(this.kernel, spec, { syntax: this.syntax, driver })); }
     catch (error) {
       const refused = /switched off/.test(error.message)
         ? "Declared types (H1) are switched off in this kernel session."
@@ -360,8 +376,10 @@ export class NativeCubicalElaborator {
   requiredAssumptions(...terms) {
     const names = new Set();
     // Compute free names once per shared subtree. Removing the local binder
-    // after visiting its body keeps this independent of the surrounding scope.
-    const memo = new WeakMap();
+    // after visiting its body keeps this independent of the surrounding scope,
+    // and terms never change: so the names are kept from one check to the
+    // next, which ask about the same parts again and again.
+    const memo = this.requiredNames ??= new WeakMap();
     const free = term => {
       if (!term || typeof term !== "object") return new Set();
       if (memo.has(term)) return memo.get(term);
@@ -482,8 +500,8 @@ export class NativeCubicalElaborator {
     const raw = this.syntax.encode(term, dimensions);
     let judgement;
     try {
-      judgement = expected ? driver.check(raw, this.syntax.encode(expected, dimensions), assumptions, mask)
-        : driver.infer(raw, assumptions, mask);
+      judgement = this.instructed(graph, () => expected ? driver.check(raw, this.syntax.encode(expected, dimensions), assumptions, mask)
+        : driver.infer(raw, assumptions, mask));
     } catch (error) {
       // The kernel's own errors pass as they are: a mismatch, or running out
       // of time or budget. Anything else is the instruction kernel's refusal.
@@ -521,8 +539,9 @@ export class NativeCubicalElaborator {
     let type;
     try {
       const scope = driver.contextScope(assumptions, mask);
-      let eliminator = driver.openEliminator(driver.derive(this.syntax.encode(motive, dimensions), scope));
-      for (const clause of clauses) eliminator = driver.addClause(eliminator, driver.derive(this.syntax.encode(clause, dimensions), scope));
+      const eliminator = this.instructed(graph, () => clauses.reduce((opened, clause) =>
+        driver.addClause(opened, driver.derive(this.syntax.encode(clause, dimensions), scope)),
+      driver.openEliminator(driver.derive(this.syntax.encode(motive, dimensions), scope))));
       type = graph.judgement(eliminator).type;
       for (const [symbol, entry] of scope) {
         if (typeof symbol !== "number") continue;
@@ -576,7 +595,15 @@ export class NativeCubicalElaborator {
   }
   nf(term, dimensions = this.dimensions) {
     // Translator's nf calls ask for Pi/Sigma/Path heads, not full normal forms.
-    return this.syntax.decode(this.kernel.head(this.syntax.encode(term, dimensions)), dimensions);
+    // Unification asks for the same term's head again and again: the kernel
+    // computes it once a declaration, for the term's node. A head served
+    // again is no kernel query, so the deadline is polled here too, as
+    // derived() polls it for a judgement reused.
+    this.kernel.checkDeadline();
+    const node = this.syntax.encode(term, dimensions);
+    let head = this.syntax.heads.get(node);
+    if (head === undefined) { head = this.kernel.head(node); this.syntax.heads.set(node, head, Math.max(node, head)); }
+    return this.syntax.decode(head, dimensions);
   }
   equal(left, right, context = new Map(), dimensions = this.dimensions, names = this.names) {
     const type = this.infer(left, context, dimensions).type;
@@ -644,12 +671,11 @@ export class NativeCubicalElaborator {
   // search and is never evidence; a body the instruction kernel cannot derive
   // is not a definition.
   admit(name, body, signature) {
-    const started = performance.now();
-    const driver = this.driver, graph = driver.graph, before = graph.count;
+    const work = this.instructionWork, { ms, judgements } = work;
+    const driver = this.driver, graph = driver.graph;
     let reference;
     try {
-      const judgement = driver.check(body, signature);
-      reference = graph.judgement(graph.define(name, judgement)).term;
+      reference = this.instructed(graph, () => graph.judgement(graph.define(name, driver.check(body, signature))).term);
     } catch (error) {
       throw Object.assign(new Error(`Instruction kernel: ${error.message}`), { kind: error.kind ?? "other" });
     } finally {
@@ -657,7 +683,7 @@ export class NativeCubicalElaborator {
       this.kernel.instructionDriver = null;
     }
     this.kernel.definitions.set(name, reference);
-    return { reference, admission: { ms: +(performance.now() - started).toFixed(3), judgements: graph.count - before } };
+    return { reference, admission: { ms: +(work.ms - ms).toFixed(3), judgements: work.judgements - judgements } };
   }
   // A universe-generic definition the elaborator builds, such as ua's: checked
   // and named once, and instantiated at each use.
