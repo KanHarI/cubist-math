@@ -722,6 +722,29 @@ presented as replayable source.
 
 ## L2.10e. Library pilots and migration
 
+**Done** on 2026-10-06: the proposed examples below check, in
+`cubist-tests/notation_pilots.cubist`, with the earlier slices' fixtures
+covering the acceptance table's other cases (`notation_views`,
+`notation_operators`, `notation_literals`, `notation_printing`,
+`theory_use`). The qualifiers they need, measured:
+
+| Pilot | Qualifiers |
+| --- | --- |
+| `integers.(x + y = y + x)` | one selection |
+| `integers.(x * int(nat.(n + 1), nat.(0)))` | one selection, and `nat.(…)` for each natural argument of an ordinary function, two |
+| `rationals.(1/2 + 1/3)`, `rationals.(1/2)` | one selection; a literal needs none |
+| `rationals.(1/2 + 1/3 = 5/6)`, proved | one in the statement, two more in the proof's decision, the equation spelled again |
+| `G.(one * one = one)` | one selection; field names need none |
+| `nat_additive.(x * y)`, `nat_multiplicative.(x * y)` | one each |
+
+The cost is one selection per expression, plus one `nat.(…)` per natural
+argument of an ordinary function inside another notation, as the contract
+foresaw; parameter-view annotations for ordinary functions would remove
+the latter, after more use. A rational equation has no `decide` yet
+(L2.10g), so its proof restates its sides. The library's own statements
+precede its models, `integers` and `rationals`, so its migration waits for
+L2.10j's `use nat;`; nothing in L2.10a–e required rewriting it.
+
 First migrate small examples in `integers`, `rationals` and `algebra`,
 including the cases in the acceptance table below. Measure the qualifiers
 needed in mixed arithmetic and in ordinary function arguments. Update the
