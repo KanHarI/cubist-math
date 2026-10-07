@@ -18,11 +18,15 @@ table { border-collapse: collapse; width: 100%; font-size: .9rem; }
 th { text-align: left; }
 th, td { padding: 12px; border-bottom: 1px solid #d7dfd5; vertical-align: top; }
 td:first-child { overflow-wrap: anywhere; min-width: 220px; }
-td:nth-child(3) { white-space: nowrap; font-family: ui-monospace, monospace; }
+/* The times and the judgements: numbers, aligned. */
+td:nth-child(n+3):nth-child(-n+6) { white-space: nowrap; font-family: ui-monospace, monospace; text-align: right; }
+th:nth-child(n+3):nth-child(-n+6) { text-align: right; }
 td small { display: block; margin-top: 4px; color: #667368; }
 tr[data-category="failed"] td:nth-child(2) { color: #9e3832; }
 tr[data-category="optimize"] td:nth-child(2) { color: #805615; }
 tr[data-category="checked"] td:nth-child(2) { color: #356544; }
+/* An intended failure needs nothing: muted, as a note. */
+tr[data-category="intended"] td { color: #6b6f76; }
 button:focus-visible, a:focus-visible { outline: 3px solid #769c75; }
 .actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 22px 0; }
 .actions button { font: inherit; padding: 10px 16px; border-radius: 6px; border: 1px solid #aebdaf; color: inherit; background: white; cursor: pointer; }
