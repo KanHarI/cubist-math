@@ -6,8 +6,9 @@
 //   (p, q) matches a pair whose components match p and q;
 //   left(p) and right(p) match a sum's injections;
 //   c(p, …), a constructor of the part's declared type, matches c applied to
-//     parts that match the p's, and a constructor written alone, c, matches
-//     c with no arguments;
+//     parts that match the p's, each read at its field's type in c's
+//     signature, and a constructor written alone, c, matches c with no
+//     arguments;
 //   typed(T, p) matches what p matches, where T is the part's type;
 //   any other expression, as nat.(2 + 3), is elaborated at the part's type
 //     and matches a part with the same normal form.
@@ -17,7 +18,7 @@
 // not change what any part of it says.
 // The pattern is no term, so nothing about it reaches the kernel but the
 // expressions elaborated at its leaves; the value is the kernel's.
-import {substituteTerm} from "./core.mjs";
+import {T,substituteTerm} from "./core.mjs";
 import {isHole,writtenOut} from "./arguments.mjs";
 
 // Whether an expected value is a pattern: whether a hole is in it.
@@ -69,10 +70,17 @@ export function mismatch(pattern, value, type, scope, elaborate, source) {
     for (; constructor?.tag === "App"; constructor = constructor.fn) parts.unshift(constructor.arg);
     if (constructor?.tag !== "Con" || constructor.index !== bound.index || parts.length !== bound.order.length
       || args.length !== bound.order.length) return fails;
-    // The kernel holds a constructor's arguments in its own order.
+    // The kernel holds a constructor's arguments in its own order. Each is
+    // read at its field's type, from the constructor's type at this
+    // instance with the arguments before it applied, as elaboration reads
+    // it: not at the type its value alone infers, which may be a smaller
+    // universe.
+    let fn = T.constructor(bound.index, head, bound.source);
     for (const [kernelIndex, sourceIndex] of bound.order.entries()) {
-      const found = mismatch(args[sourceIndex], parts[kernelIndex], scope.infer(parts[kernelIndex]).type, scope, elaborate, source);
+      const field = scope.nf(scope.infer(fn).type).domain;
+      const found = mismatch(args[sourceIndex], parts[kernelIndex], field, scope, elaborate, source);
       if (found) return found;
+      fn = T.app(fn, parts[kernelIndex]);
     }
     return null;
   }
