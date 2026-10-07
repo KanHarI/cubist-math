@@ -86,32 +86,33 @@ export class HLevelUnproved extends Error {
 }
 
 // A rule, read from the type of a registered lemma or of quantified
-// evidence (L2.5b): universe parameters, then parameters, ending in an
-// h-level statement at a numeral level or contractibility. Each parameter is
-// determined by the statement's carrier or universe, or is a premise, an
-// h-level statement under binders of its own, which the search proves.
+// evidence (L2.5b): universe parameters and parameters, in any order, ending
+// in an h-level statement at a numeral level or contractibility. Each
+// parameter is determined by the statement's carrier or universe, or is a
+// premise, an h-level statement under binders of its own, which the search
+// proves. `binders` keeps their order, in which the rule is applied.
 // A type that is no rule gives { refusal }, which noRule states; `show`
 // displays a term.
 export function ruleShape(type, show = term => JSON.stringify(term)) {
-  const levels = [], params = [];
+  const binders = [];
   let body = headBeta(type);
   for (;;) {
-    if (body?.tag === "LPi") { levels.push(body.name); body = headBeta(body.body); }
-    else if (body?.tag === "Pi") { params.push({ name: body.name, domain: body.domain }); body = headBeta(body.body); }
+    if (body?.tag === "LPi") { binders.push({ name: body.name, universe: true }); body = headBeta(body.body); }
+    else if (body?.tag === "Pi") { binders.push({ name: body.name, domain: body.domain }); body = headBeta(body.body); }
     else break;
   }
   const conclusion = statement(body);
   if (!conclusion) return { refusal: `its type ends in ${show(body)}, which states no h-level` };
   if (typeof conclusion.level === "object") return { refusal: `its statement's level, ${show(conclusion.level.term)}, is no numeral` };
   const determined = new Set([...freeNames(conclusion.type), ...freeNames({ tag: "U", level: conclusion.universe })]);
-  for (const level of levels)
-    if (!determined.has(level)) return { refusal: `its universe ${stem(level)} is not determined by its statement` };
-  for (const param of params) {
-    if (determined.has(param.name)) continue;
+  for (const binder of binders)
+    if (binder.universe && !determined.has(binder.name)) return { refusal: `its universe ${stem(binder.name)} is not determined by its statement` };
+  for (const param of binders) {
+    if (param.universe || determined.has(param.name)) continue;
     param.premise = premiseShape(param.domain);
     if (!param.premise) return { refusal: `its parameter ${stem(param.name)} is neither read from the carrier ${show(conclusion.type)} nor an h-level premise` };
   }
-  return { levels, params, conclusion };
+  return { binders, conclusion };
 }
 
 // Why a registered lemma, or a hint, is no rule; and a lemma registered
@@ -136,7 +137,7 @@ function premiseShape(type) {
 // with the type, and the proof built from it goes through the kernel.
 function instance(shape, universe, type, scope) {
   const { conclusion } = shape;
-  const variables = new Set([...shape.levels, ...shape.params.filter(p => !p.premise).map(p => p.name)]);
+  const variables = new Set(shape.binders.filter(binder => !binder.premise).map(binder => binder.name));
   const values = new Map();
   const match = (pattern, actual) => {
     pattern = pattern?.tag ? headBeta(pattern) : pattern;
@@ -230,11 +231,8 @@ export class HLevelSearch {
         const values = instance(rule.shape, universe, type, scope);
         if (!values) continue;
         try {
-          let term = rule.term;
-          for (const name of rule.shape.levels) term = T.levelApply(term, values.get(name));
-          for (const param of rule.shape.params)
-            term = T.app(term, param.premise ? this.premise(param.premise, values, scope, chain, names) : values.get(param.name));
-          return this.lift(conclusion.level, level, universe, type, term);
+          const term = this.apply(rule, values, scope, chain, names);
+          if (term) return this.lift(conclusion.level, level, universe, type, term);
         } catch (error) {
           if (!(error instanceof HLevelUnproved)) throw error;
           failures.push(error);
@@ -242,6 +240,23 @@ export class HLevelSearch {
       }
       return null;
     } finally { this.active.pop(); }
+  }
+
+  // A rule applied to its arguments, in the order of its binders: a
+  // universe or a parameter read from the match, or a premise's evidence,
+  // which later binders may mention. Matching the carrier does not make a
+  // parameter's value inhabit its domain, as a type too large for it: the
+  // kernel checks it, and where it does not, null, and the search goes on.
+  apply(rule, values, scope, chain, names) {
+    values = new Map(values);
+    let term = rule.term;
+    for (const binder of rule.shape.binders) {
+      if (binder.universe) { term = T.levelApply(term, values.get(binder.name)); continue; }
+      if (binder.premise) values.set(binder.name, this.premise(binder.premise, values, scope, chain, names));
+      else if (!scope.accepts(values.get(binder.name), substituteAll(binder.domain, values))) return null;
+      term = T.app(term, values.get(binder.name));
+    }
+    return term;
   }
 
   // Evidence for a rule's premise, its parameters read from the match: under
