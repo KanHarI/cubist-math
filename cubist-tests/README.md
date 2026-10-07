@@ -114,6 +114,8 @@ workbench's Kernel graph.
 | [`computability`](computability.cubist) | For `tests/computability.test.mjs`: a computable declaration is refused when it depends on an assumption, naming the path, and its dependents with it. |
 | [`computability_evaluation`](computability_evaluation.cubist) | evaluate checks the normal form of a closed, assumption-free term; each failed evaluation's error is stated above it. |
 | [`evaluate_patterns`](evaluate_patterns.cubist) | `evaluate … expecting` a pattern: holes, pairs, injections, constructors and `typed` matched part by part, other expressions by normal form, and the part a mismatch names; braces and named arguments refused at a builtin or a constructor, and a module's own `typed` read as the module's. |
+| [`box_notation`](box_notation.cubist) | The box notation for compositions: `compose j in A from b { on i = 0 => …; }` and `fill … at k`, faces as formulas, printing as boxes, and a face that is no formula. |
+| [`truncation_readout`](truncation_readout.cubist) | `print(witness(t))`: the witness a closed truncation holds, read under maps, squash endpoints and transport along a path of types, with its type and certificate; values that are no truncation. |
 | [`computability_unfolding`](computability_unfolding.cubist) | Evaluation unfolds every definition and ignores unfolding hints. |
 | [`induction_printed`](induction_printed.cubist) | How an eliminator prints, for `tests/induction.test.mjs`: as the induction that builds it, with `__U` for an erased universe, and the printed source written back. |
 | [`ergonomics_rewrite_obligations`](ergonomics_rewrite_obligations.cubist) | `rw` at an occurrence, in reverse and on either side, and the refusals of a missing occurrence and a dependent position. |

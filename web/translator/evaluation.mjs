@@ -87,3 +87,42 @@ export function mismatch(pattern, value, type, scope, elaborate, source) {
   if (hasHole(pattern)) throw holeInExpression(source(pattern));
   return scope.equal(value, elaborate(pattern, type)) ? null : fails;
 }
+
+// A closed truncation's witness (L2.9b): its normal form is a truncated
+// declared type's constructor, other than the squash, perhaps under formal
+// compositions, whose bases are read. The witness is that constructor's
+// argument, or the constructor applied where it has several; the kernel
+// gives its type. Under a composition whose type changes along it, the base
+// is of the type at its start, which is refused, so that the witness is of
+// the truncated type's own parameter. No eliminator out of the truncation is
+// defined: this reads a closed value. `show` displays a term.
+export function witnessOf(normal, type, scope, show) {
+  const head = scope.nf(type);
+  const record = head.tag === "Sort" ? scope.checker.kernel?.signatures.get(head.signature) : null;
+  const info = record && scope.checker.kernel.signature(record.index);
+  if (!info?.modifier) throw notTruncated(show(type));
+  let value = normal;
+  while (["Comp", "HComp", "Trans"].includes(value?.tag)) value = value.base;
+  let constructor = value;
+  const parts = [];
+  for (; constructor?.tag === "App"; constructor = constructor.fn) parts.unshift(constructor.arg);
+  if (constructor?.tag !== "Con" || info.constructors[constructor.index]?.generated) throw noWitness(show(normal));
+  // The kernel checks the constructor's value at the truncation's type: a
+  // base built in another type is refused. Its own inferred type is not
+  // compared, as it may lie in a smaller universe and still be accepted:
+  // point(tt) infers Trunc(U0, Unit) for a Trunc(U1, A) with A := Unit.
+  if (!scope.accepts(value, type)) throw transportedWitness(show(scope.infer(value).type), show(type));
+  const witness = parts.length === 1 ? parts[0] : value;
+  // A truncation of one type, as Trunc(U, A), states the witness's type as
+  // written, A, once the kernel accepts the witness at it.
+  const stated = type.tag === "Sort" && type.parameters?.length === 1 && parts.length === 1 ? type.parameters[0] : null;
+  return { witness, type: stated && scope.accepts(witness, stated) ? stated : scope.infer(witness).type };
+}
+
+export const notTruncated = type =>
+  Error(`witness reads a closed truncation, a value of a truncated declared type such as Trunc(U, A); this is a value of ${type}.`);
+export const noWitness = normal =>
+  Error(`The truncation evaluates to ${normal}, which holds no constructor to read a witness from.`);
+export const transportedWitness = (built, type) =>
+  Error(`The truncation's witness lies under a composition whose type changes: it is built in ${built}, not ${type}.`);
+

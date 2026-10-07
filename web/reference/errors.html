@@ -379,7 +379,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E156"><td><code>E156</code></td><td>Give the motive after as: induction v as z return T { … }.</td></tr>
                 <tr id="E157"><td><code>E157</code></td><td>Expected '}' to close the induction.</td></tr>
                 <tr id="E158"><td><code>E158</code></td><td>Expected '}' to close the ….</td></tr>
-                <tr id="E159"><td><code>E159</code></td><td>print shows evaluate(term), typeof(term) or inspect(term).</td></tr>
+                <tr id="E159"><td><code>E159</code></td><td>print shows evaluate(term), typeof(term), inspect(term) or witness(term).</td></tr>
                 <tr id="E162"><td><code>E162</code></td><td>A match on several values takes its motive from return T or the type expected of it, without as.</td></tr>
                 <tr id="E163"><td><code>E163</code></td><td>The induction statement takes apart one value; take the first, then the next inside each clause.</td></tr>
                 <tr><td><a href="#E164"><code>E164</code></a></td><td>cases was removed: write match value { left(a) =&gt; { … } right(b) =&gt; { … } }.</td></tr>
@@ -411,6 +411,8 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E190"><td><code>E190</code></td><td>A pattern names its two operands apart, as x … y.</td></tr>
                 <tr id="E191"><td><code>E191</code></td><td>… reads literals once: a notation has a numeral rule or a literal rule, not both.</td></tr>
                 <tr id="E192"><td><code>E192</code></td><td>hlevel_rule priority must be an integer from 0 to 1000.</td></tr>
+                <tr id="E193"><td><code>E193</code></td><td>A wall's face is a formula of equations i = 0 and i = 1, with and and or, as on i = 0 or j = 1 =&gt; ….</td></tr>
+                <tr id="E194"><td><code>E194</code></td><td>Expected '}' to close the box.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -649,6 +651,9 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E476"><td><code>E476</code></td><td>open takes a model of a theory, such as m : Group(U0); this is a value of type …. (retired)</td></tr>
                 <tr id="E477"><td><code>E477</code></td><td>The term evaluates to …, which does not match …: … is not ….</td></tr>
                 <tr id="E478"><td><code>E478</code></td><td>A hole in an expected value stands for a pair's component, an injection's value or a constructor's argument; … is none of these, so write it out.</td></tr>
+                <tr id="E479"><td><code>E479</code></td><td>witness reads a closed truncation, a value of a truncated declared type such as Trunc(U, A); this is a value of ….</td></tr>
+                <tr id="E480"><td><code>E480</code></td><td>The truncation evaluates to …, which holds no constructor to read a witness from.</td></tr>
+                <tr id="E481"><td><code>E481</code></td><td>The truncation's witness lies under a composition whose type changes: it is built in …, not ….</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e5">Inductive types and matching</h3>

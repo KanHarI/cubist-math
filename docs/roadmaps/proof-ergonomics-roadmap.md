@@ -629,9 +629,11 @@ reference's Computability section.
   ([`evaluation.mjs`](../../web/translator/evaluation.mjs)): holes, pairs,
   injections and constructors match part by part, other expressions by
   normal form, and a mismatch names the part that differs.
-- [ ] L2.9b: witness readout from closed normalized truncations in the CLI's
+- [x] L2.9b: witness readout from closed normalized truncations in the CLI's
   `evaluate` command. This needs native H1 truncation and G2's policy;
-  it does not introduce a source eliminator from `Trunc(A)` to `A`.
+  it does not introduce a source eliminator from `Trunc(A)` to `A`. Done on
+  2026-10-06 as `print(witness(t));` and the REPL's (and CLI's)
+  `witness TERM;`.
 - [x] Guarantee that evaluation always unfolds definitions and ignores
   unfolding hints. (`opaque def`, which changed nothing, has been removed.)
 - [x] Recheck every `computable` and `evaluate` in CI. The migration

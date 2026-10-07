@@ -1,0 +1,29 @@
+// The box notation for compositions (L2.8; the implementation plan's
+// cubical language change 4): compose j in A from b { on i = 0 => x; … }
+// composes along j in the family A, from the base b, with a wall on each
+// face, and fill j in A from b at k { … } is its filler at k. The box lowers
+// to comp and fill, and a composition prints as its box.
+
+// Two paths joined: the base is p, the walls hold x fixed and follow q.
+def joined(A : U0, x, y, z : A, p : x = y, q : y = z) :
+  x = z := path i => compose j in A from p @ i {
+    on i = 0 => x;
+    on i = 1 => q @ j;
+  };
+
+// The filler: a square whose top is the composite, at every stage k.
+def filled(A : U0, x, y, z : A, p : x = y, q : y = z) :
+  PathP(fun (k : Interval) => x = q @ k, p, joined(A, x, y, z, p, q)) := path k => path i => fill j in A from p @ i at k {
+    on i = 0 => x;
+    on i = 1 => q @ j;
+  };
+
+// A face may be any formula of equations, with and and or.
+def corners(A : U0, x : A, p : x = x) : x = x := path i => compose j in A from p @ i {
+    on i = 0 or i = 1 => x;
+  };
+
+// A composition that the kernel cannot reduce prints as its box.
+// Output: fun (A : U0, x, y, z : A, p : x = y, q : y = z) => path i => compose j in A from p @ i {
+//   on i = 0 => x; on i = 1 => q @ j; }
+print(evaluate(fun (A : U0, x, y, z : A, p : x = y, q : y = z) => joined(A, x, y, z, p, q)));
