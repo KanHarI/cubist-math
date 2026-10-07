@@ -1,0 +1,81 @@
+// Squares (L2.8; the HoTT roadmap's E2): a square in A is a path between
+// two paths, over two others, with its four edges named.
+// Square(a0_, a1_, a_0, a_1) is
+// PathP(fun (i : Interval) => a_0 @ i = a_1 @ i, a0_, a1_): at the
+// coordinate i it is a path from a_0 @ i up to a_1 @ i, which is the left
+// edge a0_ where i is 0 and the right edge a1_ where it is 1, over the
+// bottom edge a_0 and the top edge a_1. s @ i @ j is its point at i across
+// and j up; a00, a01, a10 and a11 are its corners, and an edge is named by
+// its corners, _ standing for the coordinate that varies along it.
+def Square{{U < UU0, A : U, a00, a01, a10, a11 : A}}(
+  a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10, a_1 : a01 = a11
+) :
+  U := PathP(fun (i : Interval) => a_0 @ i = a_1 @ i, a0_, a1_);
+
+// The square with p on both sides, constant at the bottom and the top.
+computable def refl_square{{U < UU0, A : U, x, y : A}}(p : x = y) :
+  Square(p, p, refl(x), refl(y)) := path i => p;
+
+// A homotopy h along a path p: its sides are h at p's ends, and its bottom
+// and top are f and g along p. It is h at each point of p, by conversion.
+computable def naturality{{U < UU0, A, B : U, x, y : A}}(
+  f, g : A -> B, h : forall a : A. f(a) = g(a), p : x = y
+) :
+  Square(h(x), h(y), cong(f, p), cong(g, p)) := path i => h(p @ i);
+
+// A square read with its coordinates swapped.
+computable def transpose{{
+  U < UU0, A : U, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10,
+  a_1 : a01 = a11
+}}(s : Square(a0_, a1_, a_0, a_1)) :
+  Square(a_0, a_1, a0_, a1_) := path j => path i => s @ i @ j;
+
+// A square read from right to left, and from top to bottom.
+computable def flip_horizontal{{
+  U < UU0, A : U, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10,
+  a_1 : a01 = a11
+}}(s : Square(a0_, a1_, a_0, a_1)) :
+  Square(a1_, a0_, ~a_0, ~a_1) := path i => s @ ~i;
+
+computable def flip_vertical{{
+  U < UU0, A : U, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10,
+  a_1 : a01 = a11
+}}(s : Square(a0_, a1_, a_0, a_1)) :
+  Square(~a0_, ~a1_, a_1, a_0) := path i => ~(s @ i);
+
+// Double composition: q, with p before it and r after it. Its filler is a
+// square with q at the bottom, p reversed on the left, r on the right, and
+// the composite at the top.
+computable def double_comp{{U < UU0, A : U, w, x, y, z : A}}(p : w = x, q : x = y, r : y = z) :
+  w = z := path i => compose j in A from q @ i {
+    on i = 0 => p @ ~j;
+    on i = 1 => r @ j;
+  };
+
+computable def double_comp_filler{{U < UU0, A : U, w, x, y, z : A}}(p : w = x, q : x = y, r : y = z) :
+  Square(~p, r, q, double_comp(p, q, r)) := path i => path j => fill k in A from q @ i at j {
+    on i = 0 => p @ ~k;
+    on i = 1 => r @ k;
+  };
+
+// trans is double composition with a constant first edge.
+computable def trans_double_comp{{U < UU0, A : U, x, y, z : A}}(q : x = y, r : y = z) :
+  trans(q, r) = double_comp(refl(x), q, r) := refl(trans(q, r));
+
+// Two squares side by side: at each height j, the composite of their paths
+// across, which their transposes give.
+computable def horizontal{{
+  U < UU0, A : U, a00, a01, a10, a11, a20, a21 : A, a0_ : a00 = a01, a1_ : a10 = a11,
+  a2_ : a20 = a21, b1 : a00 = a10, b2 : a10 = a20, t1 : a01 = a11, t2 : a11 = a21
+}}(s : Square(a0_, a1_, b1, t1), t : Square(a1_, a2_, b2, t2)) :
+  Square(a0_, a2_, trans(b1, b2), trans(t1, t2)) := path i => path j => trans(
+    transpose(s) @ j, transpose(t) @ j
+  ) @ i;
+
+// Two squares one above the other: at each point across, the composite of
+// their paths up.
+computable def vertical{{
+  U < UU0, A : U, a00, a01, a02, a10, a11, a12 : A, l1 : a00 = a01, l2 : a01 = a02, r1 : a10 = a11,
+  r2 : a11 = a12, a_0 : a00 = a10, a_1 : a01 = a11, a_2 : a02 = a12
+}}(s : Square(l1, r1, a_0, a_1), t : Square(l2, r2, a_1, a_2)) :
+  Square(trans(l1, l2), trans(r1, r2), a_0, a_2) := path i => trans(s @ i, t @ i);

@@ -2011,6 +2011,10 @@
    "summary": "Names that shadow the natural numbers' type, linked to their own declarations."
   },
   {
+   "path": "cubist-tests/inspection_square_boundary.cubist",
+   "summary": "A square's boundary shows its parameters by their source names."
+  },
+  {
    "path": "cubist-tests/integer_examples.cubist",
    "summary": "The library's integers at work: equality decided and arithmetic computed on closed integers, a commutative ring's lemma at the integers, and the natural numbers embedded as a homomorphism of additive monoids."
   },
@@ -2197,6 +2201,10 @@
   {
    "path": "cubist-tests/source_text_messages.cubist",
    "summary": "Messages, evaluations and prints in source syntax."
+  },
+  {
+   "path": "cubist-tests/square_constructions.cubist",
+   "summary": "`library/squares.cubist`: squares with named edges, their transposes and flips, naturality, double composition and its filler, and horizontal and vertical composition, each by conversion."
   },
   {
    "path": "cubist-tests/sum_match.cubist",
@@ -2425,6 +2433,10 @@
   {
    "path": "library/rationals.cubist",
    "summary": "The field of fractions of a commutative ring with decidable equality, no zero divisors and zero not one, in a section over the ring: fractions `x / d` with `d` not zero, equal when `x * d' = x' * d`, a quotient whose operations descend, with the inverse turning a fraction over, and a field (`fraction_field`) with decidable equality (`q_decide`). The rationals are the integers' (`rationals`, `Q`, `rat(a, k)` for `a / (k + 1)`), and their arithmetic computes."
+  },
+  {
+   "path": "library/squares.cubist",
+   "summary": "Squares with named edges (L2.8): `Square(a0_, a1_, a_0, a_1)`, a path from its left edge to its right edge over its bottom and top edges, each edge named by its corners `a00`…`a11`. The reflexive square, the naturality square of a homotopy, transposition and both flips, double composition with its filler (`trans` is its case with a constant first edge), and horizontal and vertical composition, each by conversion."
   },
   {
    "path": "library/univalence.cubist",

@@ -357,6 +357,22 @@ print(evaluate(fun (A : U0, x, y, z : A, p : x = y, q : y = z) =&gt; join_by_box
   compose j in C(p @ j) from v {};</code></pre>
             <p>The box notation expands to the existing <code>comp</code> and <code>fill</code> forms. The first box above is <code>comp(fun (j : Interval) =&gt; A, b, face(i, 0, fun (j : Interval) =&gt; x), face(i, 1, fun (j : Interval) =&gt; q @ j))</code>. A compound face becomes <code>face_when</code>, with each equation <code>i = 0</code> written as <code>on(i, 0)</code>. A composition the kernel cannot reduce prints as a box, as the checked output above shows.</p>
             <p><code>compose</code> remains an ordinary name outside the form <code>compose j in …</code>, so a definition named <code>compose</code> or a qualified name such as <code>T.Hom.compose</code> still works. An invalid face formula reports <a href="errors.html#E193">E193</a>; a box missing its closing brace reports <a href="errors.html#E194">E194</a>.</p>
+            <h3 id="squares">Squares</h3>
+            <p><code>import squares;</code> names a square's edges. <code>Square(a0_, a1_, a_0, a_1)</code> is <code>PathP(fun (i : Interval) =&gt; a_0 @ i = a_1 @ i, a0_, a1_)</code>: a path from the left edge <code>a0_</code> to the right edge <code>a1_</code>, over the bottom edge <code>a_0</code> and the top edge <code>a_1</code>, so that <code>s @ i @ j</code> is its point at <code>i</code> across and <code>j</code> up. The corners are <code>a00</code>, <code>a01</code>, <code>a10</code> and <code>a11</code>, and an edge is named by its corners, <code>_</code> standing for the coordinate that varies along it. The library builds squares by conversion: the reflexive square of a path, the naturality square of a homotopy along a path, transposition and both flips, double composition with its filler, of which <code>trans</code> is the case with a constant first edge, and horizontal and vertical composition. The inspector shows a square's edges and corners.</p>
+            <pre><code data-check="accept">import squares;
+
+def natural{{A, B : U0, x, y : A}}(f, g : A -&gt; B, h : forall a : A. f(a) = g(a), p : x = y) :
+  Square(h(x), h(y), cong(f, p), cong(g, p)) := naturality(f, g, h, p);
+
+def transpose_twice{{A : U0, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10,
+  a_1 : a01 = a11}}(s : Square(a0_, a1_, a_0, a_1)) : transpose(transpose(s)) = s {
+  rfl;
+}
+
+def filler_top{{A : U0, w, x, y, z : A}}(p : w = x, q : x = y, r : y = z) :
+  transpose(double_comp_filler(p, q, r)) @ 1 = double_comp(p, q, r) {
+  rfl;
+}</code></pre>
           </section>
           <section id="glue">
             <h2>Glue types</h2>

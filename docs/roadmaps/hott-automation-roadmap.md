@@ -950,8 +950,13 @@ Completion:
   - The box notation, first, on 2026-10-06 (work plan L2.8):
     `compose j in A from b { on i = 0 => x; on i = 1 => q @ j; }` and
     `fill j in A from b at k { … }` lower to `comp` and `fill`, and a
-    composition prints as its box. The square view and its constructions
-    follow.
+    composition prints as its box.
+  - The square view, second, the same day: `library/squares.cubist`'s
+    `Square(a0_, a1_, a_0, a_1)`, its edges named by its corners, with the reflexive and naturality
+    squares, transposition, both flips, double composition and its filler,
+    and horizontal and vertical composition, each by conversion; the
+    inspector shows a square's edges and corners. The conversions between a
+    square and an equation of composites, and the re-derivations, remain.
 
   Expose the kernel's face-restricted conversion as a read-only adapter query.
   It serves boundary display and locating face mismatches, and is an interface
