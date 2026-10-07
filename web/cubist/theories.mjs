@@ -27,7 +27,7 @@ import { morphismSource } from "./morphisms.mjs";
 // A copy of a syntax tree with `rewrite(node, bound)` applied to each node,
 // outermost first; `bound` holds the names bound there, by every binding
 // form (scopes.mjs).
-import { rewritten, substituted } from "./scopes.mjs";
+import { rewritten, substituted, freeNames } from "./scopes.mjs";
 
 // The universes of a theory's carriers, in the fields a theory records, the
 // first, UNIVERSE, and the k-th: each expansion names them afresh.
@@ -484,8 +484,9 @@ function theoryFields(theory, lookup, proposition) {
       const process = node => inlineDerived(operatorsAsCalls(inTheoryUniverse(evidenced(node, leveled), item)));
       const entry = { name: item.name.text, params: expanded(item).map(p => ({ name: p.name.text, type: process(p.type) })),
         type: process(item.type), value: process(item.value), origin, at: item.name };
-      // A recursive one, as of_nat, is called, not inlined, in later fields.
-      entry.recursive = [...namesIn(entry.value)].includes(entry.name);
+      // A recursive one, as of_nat, is called, not inlined, in later fields:
+      // its value names it free, and no parameter of its takes its name.
+      entry.recursive = !entry.params.some(p => p.name === entry.name) && freeNames(entry.value).has(entry.name);
       derived.push(entry);
       derivedByName.set(entry.name, entry);
       continue;
@@ -575,9 +576,9 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
   // derived operation, its fields read through m (L2.10b).
   for (const d of derived) {
     const own = new Set(d.params.map(p => p.name));
-    // Its fields through m; a recursive call to itself, T.d(m, …).
+    // Its fields through m; a recursive one's call to itself, T.d(m, …).
     const through = node => rewritten(inUniverse(node), (n, bound) => {
-      if (n.kind === "call" && n.fn.kind === "name" && n.fn.name === d.name && !bound.has(d.name))
+      if (d.recursive && n.kind === "call" && n.fn.kind === "name" && n.fn.name === d.name && !bound.has(d.name))
         return call(`${T}.${d.name}`, [name(model, n), ...n.args.map(through)], n);
       return n.kind === "name" && projected.has(n.name) && !bound.has(n.name) && !own.has(n.name)
         ? call(projected.get(n.name), [name(model, n)], n) : n;

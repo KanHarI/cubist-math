@@ -249,15 +249,22 @@ export class Translator {
     const selection=scope.env.get(SELECTION),plain=/^[0-9]+$/.test(n.text);
     if(!selection?.complete||!(selection.literal||plain&&selection.numeral))
       throw literalUnread(selection,n.text);
+    // The natural number is built from the Nat the rule read where it was
+    // declared, whatever the use's scope binds.
     if(!selection.literal) {
-      const applied=appliedRule(scope.alias(SELECTION,null),selection.numeral,{kind:"number",value:Number(n.text),start:n.start,end:n.end},null);
+      let natural=scope.alias(SELECTION,null);
+      for(const [key,value] of selection.numeral.aliases)natural=natural.alias(key,value);
+      const applied=appliedRule(natural,selection.numeral,
+        {kind:"number",value:Number(n.text),natural:selection.numeral.natural??"Nat",start:n.start,end:n.end},null);
       return this.term(applied.node,applied.scope,expected);
     }
     const rule=selection.literal;
+    // A glyph's number is built from the library's Nat, as its glyphs are.
     const lexeme=[...n.text].reduceRight((tail,character)=>{
-      const glyph=/[0-9]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("digit")},args:[{kind:"number",value:Number(character)}]}
-        :/[a-z]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("lower")},args:[{kind:"number",value:character.charCodeAt(0)-97}]}
-        :/[A-Z]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("upper")},args:[{kind:"number",value:character.charCodeAt(0)-65}]}
+      const natural=value=>({kind:"number",value,natural:lexemeKey("Nat")});
+      const glyph=/[0-9]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("digit")},args:[natural(Number(character))]}
+        :/[a-z]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("lower")},args:[natural(character.charCodeAt(0)-97)]}
+        :/[A-Z]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("upper")},args:[natural(character.charCodeAt(0)-65)]}
         :{kind:"name",name:lexemeKey({".":"period","/":"slash","_":"underscore","+":"plus","-":"minus"}[character])};
       return {kind:"call",fn:{kind:"name",name:lexemeKey("cons")},args:[glyph,tail]};
     },{kind:"name",name:lexemeKey("nil")});
@@ -751,9 +758,9 @@ export class Translator {
   }
   // Numerals and the legacy induction syntax use the Nat in the source's
   // environment. Its declaration and admission belong to the imported module.
-  naturalConstructors(scope) {
-    const type=scope.nf(this.term({kind:"name",name:"Nat"},scope,null));
-    const natural=type.tag==="Sort"&&this.checker.inductives?.get(type.signature);
+  naturalConstructors(scope,name="Nat") {
+    const type=scope.nf(this.term({kind:"name",name},scope,null));
+    const natural=type.tag==="Sort"?this.checker.inductives?.get(type.signature):null;
     const zero=natural?.constructors.findIndex(c=>c.source==="zero"&&c.arity===0&&c.dims===0);
     const succ=natural?.constructors.findIndex(c=>c.source==="succ"&&c.arity===1&&c.dims===0);
     if(!natural||natural.slots.length||natural.constructors.length!==2||zero<0||succ<0)
@@ -847,13 +854,19 @@ export class Translator {
       }
       case "number": {
         // In a selected notation, a numeral is its numeral rule's, or its
-        // literal rule's; a notation with neither reads none (L2.10c).
+        // literal rule's, read as it is written; a notation with neither
+        // reads none (L2.10c).
         const selection=env.get(SELECTION);
-        if(selection?.complete)return this.literalTerm({...n,kind:"literal",text:String(n.value)},scope,expected);
-        const natural=this.naturalConstructors(scope);
+        if(selection?.complete)return this.literalTerm({...n,kind:"literal",text:n.text??String(n.value)},scope,expected);
+        if(n.value>256)throw Error("Numerals are limited to 256 in this version.");
+        const natural=this.naturalConstructors(scope,n.natural??"Nat");
         let t=natural.zero;for(let i=0;i<n.value;i++)t=T.app(natural.succ,t);
         this.reference(scope,{...n,name:String(n.value)},t);return t;}
       case "binaryNumber": {
+        // In a selected notation, a binary literal is its literal rule's, as
+        // any numeric token is (L2.10c).
+        if(env.get(SELECTION)?.complete)return this.literalTerm({...n,kind:"literal",text:n.spelling??`0b${n.digits}`},scope,expected);
+        if(n.digits.length>256)throw Error("Binary literals are limited to 256 significant bits.");
         const term=tr(binaryLiteralSyntax(n));
         this.reference(scope,{...n,name:`0b${n.digits}`},term);return term;
       }

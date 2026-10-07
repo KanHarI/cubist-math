@@ -68,3 +68,67 @@ def read : Nat := additive.(nat.(2) * nat.(3));
 // Error: E908: nat's notation reads no literal 1/2: select a notation whose literal rule reads it,
 //   as rationals.(1/2).
 def not_natural : Nat := nat.(1/2);
+
+// A model whose module adds a literal or a numeral rule keeps its theory's
+// operators, by name and between operands.
+def rational_add := rationals.(+);
+
+def int_sum(x, y : Z) : Z := x integers.(+) y;
+
+// A literal rule reads a token as it is written, a numeral or a binary
+// literal too: 007 has three glyphs, and 257 is no natural number here.
+computable def glyph_count(s : Lexeme) : Parsed(U0, Nat) := ok(length(s));
+
+notation count {
+  literal(s : Lexeme) := glyph_count(s);
+}
+
+// Output: 3
+print(evaluate(count.(007)));
+
+// Output: 3
+print(evaluate(count.(257)));
+
+// Output: 5
+print(evaluate(count.(0b101)));
+
+// A literal's and a numeral's names are where their rules are declared: a
+// local Nat changes neither the rationals' parse nor the integers' numeral.
+def half_under(Nat : U0) : Q := rationals.(1/2);
+
+def two_under(Nat : U0) : Z := integers.(2);
+
+// The rules a module adds are its model's: a parameter that takes the
+// model's name reads numerals in its own theory's notation, which has none.
+theory Boxed(U < UU0) {
+  M : U;
+  point : M;
+}
+
+def box : Boxed(U0) := Boxed.make(M := Nat, point := 0);
+
+notation box {
+  numeral(n : Nat) := succ(n);
+}
+
+// Output: 3
+print(evaluate(box.(2)));
+
+// Error: E907: box's notation reads no numeral 2: write nat.(2) for a natural number, or select a
+//   notation that reads it.
+def shadowed(box : Boxed(U0)) : box.M := box.(2);
+
+// A derived operation that names itself free recurs; one whose parameter
+// takes its name does not, and later fields unfold it.
+theory Unfolded(U < UU0) {
+  M : U;
+  point : M;
+  def keep(keep : M) : M := keep;
+  def twice(x : M) : M := keep(keep(x));
+  def apply(apply : M -> M, x : M) : M := apply(x);
+}
+
+def unfolded : Unfolded(U0) := Unfolded.make(M := Nat, point := 0);
+
+// Output: 5
+print(evaluate(Unfolded.apply(unfolded, fun (n : Nat) => succ(n), 4)));
