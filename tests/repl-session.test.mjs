@@ -30,6 +30,12 @@ test("statements end at ; outside brackets, and a block declaration at its brace
     "fill j in Unit from tt at 1 {}(x);", "evaluate match b { yes => tt; no => tt; } expecting tt;", "evaluate id{{Unit}}(tt);",
     "def f{{A : U0}}(x : A) : A := x;", "def g : rematch(x) {\n  exact tt;\n}", "def h : compose(x) {\n  exact tt;\n}"])
     assert.deepEqual(replStatements(`${statement} typeof x;`).statements, [statement, "typeof x;"]);
+  // A header's words may be apart by comments, as in a file; a word in a
+  // comment is no header's.
+  for (const statement of ["compose // direction\n  i in (Unit and Unit) from (tt, tt) {}.1;",
+    "evaluate compose i // direction\n in Unit from tt {} expecting tt;", "fill\n// direction\nj in Unit from tt at 1 {}(x);",
+    "def h : compose // i in\n(x) {\n  exact tt;\n}"])
+    assert.deepEqual(replStatements(`${statement} typeof x;`).statements, [statement, "typeof x;"]);
   // A block still ends its declaration where its type holds a box.
   assert.deepEqual(replStatements("def t : compose j in U0 from Unit {} {\n  exact tt;\n}\nt").statements,
     ["def t : compose j in U0 from Unit {} {\n  exact tt;\n}"]);
@@ -81,6 +87,7 @@ test("a box is a term: its projection, application and expectation stay in the e
   assert.deepEqual(texts(await repl.run("compose i in (Unit and Unit) from (tt, tt) {}.1;")), ["value: tt"]);
   assert.deepEqual(texts(await repl.run("compose i in (Unit -> Unit) from fun (x : Unit) => x {}(tt);")), ["value: tt"]);
   assert.deepEqual(texts(await repl.run("evaluate compose i in Unit from tt {} expecting tt;")), ["value: tt"]);
+  assert.deepEqual(texts(await repl.run("compose // direction\n  i in (Unit and Unit) from (tt, tt) {}.1;")), ["value: tt"]);
   // A declaration that ends in a box, with its ; omitted, is complete.
   assert.deepEqual(texts(await repl.run("def moved := compose i in Unit from tt {}")), ["defined: moved : Unit"]);
 });
