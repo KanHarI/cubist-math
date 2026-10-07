@@ -49,10 +49,10 @@ try {
   console.log("PASS static landing, repository link, mobile layout, build version");
   for (const [proof, name, backend] of [["euclid", "euclid", "cubical"], ["cubical_paths", "reverse_twice", "cubical"], ["f4_galois_correspondence", "f4_galois_correspondence", "cubical"]]) {
     await page.goto(new URL(`proof.html?proof=${proof}&name=${name}&backend=${backend}`, base).href);
-    await page.waitForFunction(() => !document.querySelector("#check").disabled && document.querySelector("#check-loader").hidden);
+    await page.waitForFunction(() => document.querySelector("#check")?.disabled === false && document.querySelector("#check-loader")?.hidden);
     assert.equal(await page.locator("#diagnostic").isVisible(), false);
     assert.equal(await page.locator("#inspect-name").textContent(), name);
-    await page.waitForFunction(() => !document.querySelector("#kernel-view").disabled);
+    await page.waitForFunction(() => document.querySelector("#kernel-view")?.disabled === false);
     assert.doesNotMatch(await page.locator("#kernel-view-note").textContent(), /unavailable/);
     if (proof === "euclid") {
       // A line number shows the goal at that proof statement and the names in scope.
@@ -161,14 +161,14 @@ try {
   // The Files page lists every source by folder, under its four roots, and a
   // documentation example opens in the workspace by its path, and checks.
   await page.goto(new URL(`files.html?path=${encodeURIComponent("docs/examples/h1/winding.cubist")}`, base).href);
-  await page.waitForFunction(() => document.querySelector("#file-source").textContent.includes("inductive"));
+  await page.waitForFunction(() => document.querySelector("#file-source")?.textContent.includes("inductive"));
   assert.deepEqual(await page.locator("#tree > details > summary .folder-name").allTextContents(),
     ["Library", "Cubist tests", "Archive", "Documentation examples"]);
   assert.ok(await page.locator('a[data-path="docs/examples/h1/winding.cubist"][aria-current]').isVisible());
   await page.fill("#file-filter", "glue_printed");
   assert.equal(await page.locator("#tree li.file:not([hidden])").count(), 1);
   await page.locator("#file-open").click();
-  await page.waitForFunction(() => /checked/.test(document.querySelector("#status").textContent) &&
+  await page.waitForFunction(() => /checked/.test(document.querySelector("#status")?.textContent) &&
     !/incomplete/.test(document.querySelector("#status").textContent));
   assert.equal(await page.locator("#proof-title").textContent(), "Documentation example: docs/examples/h1/winding.cubist");
   console.log("PASS Files page: folders, filter, preview, and a documentation example checked in the workspace");
@@ -178,12 +178,12 @@ try {
   assert.ok(await page.locator('#explorer-tree a[data-path="docs/examples/h1/winding.cubist"][aria-current]').isVisible());
   assert.ok(await page.locator('#explorer-tree details[data-path="library"]').evaluate(details => details.open));
   await page.locator('#explorer-tree a[data-path="library/lists.cubist"]').click();
-  await page.waitForFunction(() => document.querySelector("#proof-title").textContent === "Library: lists");
+  await page.waitForFunction(() => document.querySelector("#proof-title")?.textContent === "Library: lists");
   assert.ok(await page.locator('#explorer-tree a[data-path="library/lists.cubist"][aria-current]').isVisible());
   await page.locator("#explorer-toggle").click();
   assert.ok(await page.locator("#explorer-tree").isHidden());
   await page.reload();
-  await page.waitForFunction(() => document.querySelector("#proof-title").textContent === "Library: lists");
+  await page.waitForFunction(() => document.querySelector("#proof-title")?.textContent === "Library: lists");
   assert.equal(await page.locator("#explorer-toggle").getAttribute("aria-expanded"), "false");
   assert.ok(await page.locator("#explorer-tree").isHidden());
   console.log("PASS workspace explorer: current file, opening a file, closing");
@@ -205,7 +205,7 @@ try {
   assert.equal(await page.locator("#opcodes tbody tr").count(), 53);
   console.log("PASS elaboration panel and the kernel reference outline");
   await page.goto(new URL("workbench.html", base).href);
-  await page.waitForFunction(() => document.querySelector("#status").textContent.includes("checked"));
+  await page.waitForFunction(() => document.querySelector("#status")?.textContent.includes("checked"));
   assert.equal(await page.locator("#diagnostic").isVisible(), false);
   assert.equal(await page.locator("#name").textContent(), "example");
   assert.deepEqual(errors, []);

@@ -225,6 +225,7 @@ class ArgumentSolver {
   // The term with every solved unknown replaced by its value. A solution
   // never mentions its own variable, so this ends.
   zonk(term) {
+    if (!this.solution.size) return term;
     for (let round = 0; round <= this.slots.length; round++) {
       const solved = [...freeNames(term)].filter(name => this.solution.has(name));
       if (!solved.length) return term;
@@ -263,8 +264,8 @@ class ArgumentSolver {
     if (!this.levelUnknown(smaller) && !this.levelUnknown(larger)) return "done";
     const below = this.placeholder(smaller), above = this.placeholder(larger);
     if (polarity === "invariant") {
-      if (below && !this.levelUnknown(larger)) this.bounds.get(below.variable).equal ??= larger;
-      else if (above && !this.levelUnknown(smaller)) this.bounds.get(above.variable).equal ??= smaller;
+      if (below && !this.levelUnknown(larger)) this.equalLevel(below, larger);
+      else if (above && !this.levelUnknown(smaller)) this.equalLevel(above, smaller);
       else return "stuck";
       return "done";
     }
@@ -272,6 +273,17 @@ class ArgumentSolver {
     else if (below && !this.levelUnknown(larger)) this.bounds.get(below.variable).upper.push(larger);
     else return "stuck";
     return "done";
+  }
+  // A placeholder an equation determines, as an instance's universe
+  // matched against another's: solved at once, to the level solveUniverses
+  // would give it from that bound, which comes before every other. The rest
+  // of the constraint then reads the level, where it compared, part by part
+  // and unfolded, the types that mention the placeholder. A level not below
+  // ω stays a bound, for solveUniverses to refuse.
+  equalLevel(slot, level) {
+    const bounds = this.bounds.get(slot.variable);
+    bounds.equal ??= level;
+    if (finiteLevel(bounds.equal) && !this.solution.has(slot.variable)) this.solution.set(slot.variable, bounds.equal);
   }
   // Solve the universe placeholders that bounds determine: by an equality,
   // or as the largest lower bound. With `last`, also those nothing bounds
