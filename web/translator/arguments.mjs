@@ -38,6 +38,23 @@ export const isHole = node => node?.kind === "name" && node.name === "_";
 export const determinesArguments = node =>
   node.kind === "call" && (!!node.implicitArgs || node.args.some(arg => arg.kind === "namedArgument" || isHole(arg)));
 
+// A builtin, a name the module does not bind, and a declared type or a
+// constructor take their arguments written out, in parentheses: a call of
+// one with arguments in double braces, a named argument or, unless `holes`
+// (a pattern's, evaluation.mjs), a hole is refused.
+export function writtenOut(n, scope, holes = false) {
+  const {env, unit} = scope;
+  const headName = n.fn.kind === "name" ? n.fn.name : null;
+  const builtin = headName && !env.has(headName);
+  if (!builtin && !INDUCTIVE_TAGS.has(env.get(headName)?.tag)) return;
+  if (n.implicitArgs)
+    throw unit.locate(Error(`${headName} has no implicit parameters: give its arguments in parentheses, as ${headName}(…).`), n.fn);
+  if (!n.args.some(arg => arg.kind === "namedArgument" || !holes && isHole(arg))) return;
+  throw unit.locate(Error(builtin
+    ? `${headName} takes its arguments explicitly: a hole _ or a named argument is an argument of a definition or a function.`
+    : `${headName} is a declared type or a constructor, whose arguments are written out: a hole _ or a named argument is an argument of a definition or a function.`), n.fn);
+}
+
 // Placeholders for parameters' values, numbered apart from every name supply.
 let placeholders = 0;
 
@@ -122,18 +139,11 @@ export function elaborateCall(t, n, scope, expected) {
   const headName = n.fn.kind === "name" ? n.fn.name : null;
   const called = headName ?? "This function";
   const bound = headName ? env.get(headName) : undefined;
-  if (n.implicitArgs) {
-    if (headName && !env.has(headName) || INDUCTIVE_TAGS.has(bound?.tag))
-      throw unit.locate(Error(`${headName} has no implicit parameters: give its arguments in parentheses, as ${headName}(…).`), n.fn);
-    if (bound?.tag === "Recursive")
+  writtenOut(n, scope);
+  if (bound?.tag === "Recursive") {
+    if (n.implicitArgs)
       throw unit.locate(Error(`A recursive call of ${headName} passes its implicit parameters unchanged: give only the others, as ${headName}(…).`), n.fn);
-  }
-  if (determinesArguments(n)) {
-    if (headName && !env.has(headName))
-      throw unit.locate(Error(`${headName} takes its arguments explicitly: a hole _ or a named argument is an argument of a definition or a function.`), n.fn);
-    if (INDUCTIVE_TAGS.has(bound?.tag))
-      throw unit.locate(Error(`${headName} is a declared type or a constructor, whose arguments are written out: a hole _ or a named argument is an argument of a definition or a function.`), n.fn);
-    if (bound?.tag === "Recursive")
+    if (determinesArguments(n))
       throw unit.locate(Error(`A recursive call of ${headName} takes its arguments explicitly.`), n.fn);
   }
   const head = t.term(n.fn, scope, null);
