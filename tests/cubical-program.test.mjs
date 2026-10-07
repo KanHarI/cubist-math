@@ -155,6 +155,18 @@ test("progress totals count the declarations a theory expands to, so that none e
   assert.equal(progress.at(-1).total, result.declarationCount);
   assert.ok(result.outputs.filter(output => output.name.startsWith("Pointed")).length > 2);
 });
+test("progress totals count the declarations an initial or free model expands to", async t => {
+  const program = new CubicalProgram(module, sourceReader());
+  t.after(() => program.dispose());
+  const progress = [];
+  const result = await program.check("import hlevels; import algebra; initial N : Monoid(U0); free W(A : U0) : Monoid(U0) on A; def after := tt;",
+    "root", p => progress.push(p));
+  const counted = progress.filter(p => p.phase !== "loading");
+  assert.ok(counted.every(p => p.completed <= p.total), JSON.stringify(counted.find(p => p.completed > p.total)));
+  assert.deepEqual([progress.at(-1).completed, progress.at(-1).total], [result.declarationCount, result.declarationCount]);
+  assert.ok(result.outputs.filter(output => output.name.startsWith("W")).length > 2);
+  assert.ok(result.outputs.every(output => output.verified), JSON.stringify(result.outputs.find(output => !output.verified)));
+});
 test("progress totals take off the rest of a theory whose type of models fails, and end at what was checked", async t => {
   // Without hlevels, Pointed's sorts have no evidence: its type of models
   // fails, once, and the rest of its expansion is not checked. Its
