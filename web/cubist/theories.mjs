@@ -618,8 +618,8 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
         renamed(type, new Map([...fields.map(field => [field.name, `${model}.${field.name}`]), ...inUniverses(universes)]), at)]),
     ]);
     const parsed = parse(morphisms.declarations.map((d, k) => d.source.replace(/^def \S+?(?=[{(:])/, `def generated_${k}`)).join("\n")).declarations
-      .map(d => JSON.parse(JSON.stringify(d), (key, value) =>
-        value?.kind === "name" && parameterType.has(value.name) ? parameterType.get(value.name) : value));
+      .map(d => parameterType.size ? JSON.parse(JSON.stringify(d), (key, value) =>
+        value?.kind === "name" && parameterType.has(value.name) ? parameterType.get(value.name) : value) : d);
     parsed.forEach((d, k) => {
       const { name: declName, role, field, record: morphismRecord, labels = {} } = morphisms.declarations[k];
       // A parameter whose binder is named apart from its field is called

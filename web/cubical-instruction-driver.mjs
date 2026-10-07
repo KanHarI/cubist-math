@@ -31,8 +31,14 @@ const CONSTRUCTORS = new Set(["U", "Pi", "Lam", "LPi", "LLam", "Sigma", "Pair", 
 // The type former a constructor's eta expansion needs. A Glue term's is
 // glue [φ ↦ g] (unglue g), for g of a Glue type.
 const etaTypes = { Lam: "Pi", PLam: "Path", Pair: "Sigma", LLam: "LPi", GlueTerm: "Glue" };
-// Steps after which a closed comparison computes normal forms.
-const LONG_COMPUTATION = 64;
+// Steps after which a closed comparison computes normal forms, and the
+// kernel steps each normal form may take. A normal form not reached by then,
+// as an enormous type's, is left to lazy steps, which take a projection's or
+// an eliminator's argument to its weak head at once (scrutineeStep): past a
+// quarter of a million steps they were faster in every area of the workspace,
+// finite fields' arithmetic included, and each attempt beyond spent ~3 ms
+// a hundred thousand steps.
+const LONG_COMPUTATION = 64, NORMAL_FORM_STEPS = 250000;
 // The kernel steps the Glue step may take (the glue move). It normalizes its
 // side conditions, and open terms can be large shared graphs, whose normal
 // forms are not.
@@ -43,8 +49,8 @@ const GUIDE_FUEL = 400, GUIDE_HEAD_STEPS = 4000;
 // A comparison's moves (InstructionDriver.agree).
 const FUEL = 20000;
 // The search's fixed limits, for reports that must say what they measured.
-export const searchLimits = Object.freeze({ fuel: FUEL, longComputation: LONG_COMPUTATION, guideFuel: GUIDE_FUEL,
-  guideHeadSteps: GUIDE_HEAD_STEPS, glueSteps: GLUE_STEPS });
+export const searchLimits = Object.freeze({ fuel: FUEL, longComputation: LONG_COMPUTATION, normalFormSteps: NORMAL_FORM_STEPS,
+  guideFuel: GUIDE_FUEL, guideHeadSteps: GUIDE_HEAD_STEPS, glueSteps: GLUE_STEPS });
 // Weak heads that are constructors: two of different kinds never agree.
 // An instance of a declared type is one (H1); so is a list of its parameters.
 const RIGID = new Set(["U", "Pi", "Sigma", "LPi", "Unit", "Point", "Void", "Sum",
@@ -88,7 +94,8 @@ const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: 
 // alpha-equal; each time round, it stops at a branch point, lists the moves
 // open there, and asks a policy which to make. A move is a plain object:
 //   { move: "normalize" }              both sides to normal form: a long closed
-//                                      computation, offered once per comparison
+//                                      computation, offered once per comparison,
+//                                      each within NORMAL_FORM_STEPS
 //   { move: "descend" }                congruence: agree part by part under a
 //                                      common head, offered once per branch point
 //   { move: "step", side, rule, step } a weak-head step on one side ("left" or
@@ -170,7 +177,8 @@ export class InstructionDriver {
     // comparisons are open, one inside another.
     this.policy = policy;
     this.depth = 0;
-    this.nodes = new Map();
+    // Terms whose normal form was not reached within NORMAL_FORM_STEPS.
+    this.unnormalizable = new Set();
     // Judgements never change, so reads are cached; so are the scopes of
     // contexts, derivations by term and scope, and terms known to be in weak
     // head normal form.
@@ -224,10 +232,8 @@ export class InstructionDriver {
     return this.contextScopes.get(key);
   }
 
-  node(handle) {
-    if (!this.nodes.has(handle)) this.nodes.set(handle, this.kernel.node(handle));
-    return this.nodes.get(handle);
-  }
+  // The kernel keeps its reads for the declaration (CubicalKernel.node).
+  node(handle) { return this.kernel.node(handle); }
   statement(id) {
     if (!this.statements.has(id)) this.statements.set(id, this.graph.judgement(id));
     return this.statements.get(id);
@@ -236,9 +242,16 @@ export class InstructionDriver {
     const j = this.statement(id);
     return side === "term" ? j.term : side === "other" ? j.other : j.type;
   }
+  // The focused subterm. A focus keeps it while its judgement is the same;
+  // after a step, the graph reads it in one call (InstructionGraph.subterm),
+  // where walking the focus's path read each new node on the way: agree asks
+  // for both sides' each time round, and that was a third of a deep
+  // comparison's time.
   subterm(focus) {
-    let term = this.sideOf(focus.ref.id, focus.side);
-    for (const child of focus.path) term = this.node(term).children[child];
+    const id = focus.ref.id;
+    if (focus.at === id) return focus.term;
+    const term = this.graph.subterm(id, focus.side, focus.path);
+    focus.at = id; focus.term = term;
     return term;
   }
   focus(id, side, path = []) { return { ref: { id }, side, path }; }
@@ -1213,9 +1226,18 @@ export class InstructionDriver {
     }
     return true;
   }
+  // Both sides' normal forms, each within NORMAL_FORM_STEPS. Normalization
+  // is deterministic: a term whose normal form was not reached, as an
+  // enormous type's, will not be reached again, and a comparison with it
+  // keeps to lazy steps at once. A declaration comparing a field of
+  // fractions' carrier used to try its normal form again and again.
   normalizeBoth(a, b, terms, dims) {
-    try { for (const focus of [a, b]) this.reduce(focus, { path: [], rule: "normalize" }); }
-    catch { return false; }
+    if ([a, b].some(focus => this.unnormalizable.has(this.subterm(focus)))) return false;
+    for (const focus of [a, b]) {
+      const term = this.subterm(focus);
+      try { this.graph.within(NORMAL_FORM_STEPS, () => this.reduce(focus, { path: [], rule: "normalize" })); }
+      catch { this.unnormalizable.add(term); return false; }
+    }
     return this.alpha(this.subterm(a), this.subterm(b), terms, dims);
   }
   // Whether two compositions' tubes are on the same faces, in order. Their
@@ -1271,6 +1293,10 @@ export class InstructionDriver {
   // universe's level, an instantiation's level and an instance's recorded
   // levels, which sameHead compares.
   parts(n) { return n.kind === "U" ? 0 : n.kind === "PApp" || n.kind === "LApp" || n.kind === "Sort" ? 1 : 4; }
+  leaf(n) {
+    for (let i = this.parts(n) - 1; i >= 0; i--) if (n.children[i]) return false;
+    return true;
+  }
   // Two levels are equal when their normal forms are (G0 §2.4), each variable
   // bound on the way down named by its binder, so that the levels of
   // λ (x < ω). U(max(x, z)) and λ (y < ω). U(max(z, y)) agree though their
@@ -1325,6 +1351,18 @@ export class InstructionDriver {
   // The weak-head redex of a term, as the term checker's reduction finds it:
   // the function of an application first, then the scrutinee of an
   // eliminator. Null for a weak head normal form.
+  // The step a projection or an eliminator takes in its argument, which
+  // computes only once that is a constructor: where the argument would
+  // unfold a definition or contract a lambda, its weak head normal form, in
+  // one instruction, rather than those steps one by one. A model's
+  // projection takes the argument, a make applied to each field, to its
+  // tuple: a step a field, a projection's dozens of steps, each an
+  // instruction and a round of the search.
+  scrutineeStep(term, index) {
+    const step = this.headStep(term);
+    if (step && (step.rule === "beta" || step.rule === "delta")) return { path: [index], rule: "whnf" };
+    return step && { path: [index, ...step.path], rule: step.rule };
+  }
   headStep(term) {
     const n = this.node(term), under = (index, step) => step && { path: [index, ...step.path], rule: step.rule };
     const iota = { path: [], rule: "iota" };
@@ -1338,17 +1376,17 @@ export class InstructionDriver {
       // A declared type's eliminator computes on a constructor applied to
       // its arguments and at its dimensions (H1). A constructor at an
       // endpoint is its boundary first, by the path step inside.
-      if (fn === "Elim") return this.constructed(n.children[1]) ? iota : under(1, this.headStep(n.children[1]));
+      if (fn === "Elim") return this.constructed(n.children[1]) ? iota : this.scrutineeStep(n.children[1], 1);
       return under(0, this.headStep(n.children[0]));
     }
     case "Fst": case "Snd":
-      return this.node(n.children[0]).kind === "Pair" ? iota : under(0, this.headStep(n.children[0]));
+      return this.node(n.children[0]).kind === "Pair" ? iota : this.scrutineeStep(n.children[0], 0);
     case "SumRec": {
       const kind = this.node(n.children[3]).kind;
-      return kind === "Inl" || kind === "Inr" ? iota : under(3, this.headStep(n.children[3]));
+      return kind === "Inl" || kind === "Inr" ? iota : this.scrutineeStep(n.children[3], 3);
     }
     case "UnitRec":
-      return this.node(n.children[2]).kind === "Point" ? iota : under(2, this.headStep(n.children[2]));
+      return this.node(n.children[2]).kind === "Point" ? iota : this.scrutineeStep(n.children[2], 2);
     case "PApp": {
       const fn = this.node(n.children[0]);
       if (fn.kind === "PLam") {
@@ -1397,15 +1435,22 @@ export class InstructionDriver {
   // such as refl(refl(… refl(0))) takes time exponential in its depth. The
   // renaming of dimensions is cut to those the two terms mention, so that
   // a subterm met under many binders is still compared once.
+  //
+  // A missing part, and a leaf, a node with no parts compared, are told
+  // apart at once: its head says all, and costs less to compare than its
+  // memo key to build. The renaming need not be cut for them: the pairs a
+  // cut drops are those no lookup reaches.
   alpha(x, y, terms = null, dims = null) {
+    if (!x || !y) return x === y;
+    const nx = this.node(x), ny = this.node(y);
+    if (nx.kind !== ny.kind) return false;
+    if (this.leaf(nx) && this.leaf(ny)) return this.sameHead(nx, ny, terms, dims);
     if (dims) dims = this.prune(dims, freeDimensionMask(this.kernel, x, this.freeDims),
       freeDimensionMask(this.kernel, y, this.freeDims));
     if (x === y && this.unrenamed(terms) && this.unrenamed(dims)) return true;
-    if (!x || !y) return x === y;
     const key = `${x},${y},${this.chainId(terms)},${this.chainId(dims)}`, known = this.alphaMemo.get(key);
     if (known !== undefined) return known;
-    const nx = this.node(x), ny = this.node(y);
-    let equal = nx.kind === ny.kind && this.sameHead(nx, ny, terms, dims);
+    let equal = this.sameHead(nx, ny, terms, dims);
     for (let i = 0; equal && i < this.parts(nx); i++) {
       let innerTerms = terms, innerDims = dims;
       if (TERM_BINDERS.has(nx.kind) && i === 1) innerTerms = { left: nx.payload, right: ny.payload, next: terms };

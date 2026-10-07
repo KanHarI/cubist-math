@@ -232,6 +232,37 @@ int cb_position_push(uint32_t token, uint32_t child) {
     return 1;
 }
 
+/* A position at most 64 children deep in one call, packed two bits a child,
+ * sixteen to a word, the first child lowest: a deep position took a call
+ * for each child. */
+int cb_position_set(uint32_t token, uint32_t depth, uint32_t w0, uint32_t w1, uint32_t w2, uint32_t w3) {
+    browser_session *s = lookup(token);
+    if (!s || depth > 64) return 0;
+    const uint32_t words[] = {w0, w1, w2, w3};
+    for (uint32_t i = 0; i < depth; ++i) s->position[i] = (uint8_t)(words[i / 16] >> (2 * (i % 16)) & 3);
+    s->depth = depth;
+    return 1;
+}
+
+/* The subterm at the position pushed or set in a side of a judgement (0
+ * the term, 1 the other side, 2 the type), or 0 where there is none. A read
+ * for the search, which asks for a focused subterm after each step: one
+ * call, where reading the judgement and each node on the way took many. */
+uint32_t cb_subterm(uint32_t token, uint32_t id, unsigned side) {
+    browser_session *s = lookup(token);
+    cc_judgement_info j;
+    if (!s || side > 2 || !cc_kernel_judgement(s->kernel, id, &j)) return 0;
+    cc_term term = side == 0 ? j.term : side == 1 ? j.other : j.type;
+    for (size_t i = 0; term && i < s->depth; ++i) {
+        cc_term_kind kind;
+        uint32_t payload;
+        cc_term children[4];
+        if (!cc_kernel_node(s->kernel, term, &kind, &payload, children)) return 0;
+        term = children[s->position[i]];
+    }
+    return term;
+}
+
 void cb_clear_error(uint32_t token) {
     browser_session *s = lookup(token);
     if (!s) return;
