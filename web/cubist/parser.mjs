@@ -427,24 +427,17 @@ export function parse(source, typeOnly = false) {
         start: t.start, end: operand.end };
     }
     if (t.text === "(") return tuple(t, expr(), () => expr());
-    if (/^0b[01]+$/.test(t.text)) {
-      const digits = t.text.slice(2).replace(/^0+(?=.)/, "");
-      if (digits.length > 256)
-        throw Object.assign(new Error("Binary literals are limited to 256 significant bits."), { offset: t.start });
-      return { kind: "binaryNumber", digits, spelling: t.text, start: t.start, end: t.end };
-    }
+    // A numeric token keeps its spelling, which a selected notation's
+    // literal rule reads (L2.10c); the limits on a natural or a binary
+    // number apply where one is built from it.
+    if (/^0b[01]+$/.test(t.text))
+      return { kind: "binaryNumber", digits: t.text.slice(2).replace(/^0+(?=.)/, ""), spelling: t.text, start: t.start, end: t.end };
     // Any other numeric token is a literal, read by the selected notation's
     // literal rule (L2.10c).
-    if (/^[0-9]/.test(t.text) && !/^[0-9]+$/.test(t.text) && !/^0b[01]+$/.test(t.text))
+    if (/^[0-9]/.test(t.text) && !/^[0-9]+$/.test(t.text))
       return { kind: "literal", text: t.text, start: t.start, end: t.end };
-    if (/^[0-9]+$/.test(t.text)) {
-      if (Number(t.text) > 256)
-        throw Object.assign(
-          new Error("Numerals are limited to 256 in this version."),
-          { offset: t.start },
-        );
-      return { kind: "number", value: Number(t.text), start: t.start, end: t.end };
-    }
+    if (/^[0-9]+$/.test(t.text))
+      return { kind: "number", value: Number(t.text), text: t.text, start: t.start, end: t.end };
     if (/^[A-Za-z_][A-Za-z_0-9]*$/.test(t.text) && t.text !== "EOF")
       return { kind: "name", name: t.text, start: t.start, end: t.end };
     throw Object.assign(
