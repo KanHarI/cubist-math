@@ -42,7 +42,8 @@ free Gens(A : U0) : Bare(U0) on A;
 
 def bare_is_set : IsSet(U0, Nothing) := Bare.M_is_set(Nothing.model);
 
-def bare_generators{{A : U0}}(S : Bare(U0), g : A -> S.M, a : A) : Gens.fold(A, S, g).map(Gens.gen(a)) = g(a) {
+def bare_generators{{A : U0}}(S : Bare(U0), g : A -> S.M, a : A) :
+  Gens.fold(A, S, g).map(Gens.gen(a)) = g(a) {
   rfl;
 }
 
@@ -63,8 +64,11 @@ def idem_at(x : K) : x = x := K.idem(x);
 // the names put in its type: act's A is not AW(A)'s A.
 free Named(target, evidence, g, x, x0, i : U0) : Monoid(U0) on x0;
 
+def named_fold :=
+  Named.fold(Unit, Unit, Unit, Unit, Nat, Unit, nat_additive.monoid, fun (n : Nat) => n);
+
 // Output: 2
-print(evaluate(Named.fold(Unit, Unit, Unit, Unit, Nat, Unit, nat_additive.monoid, fun (n : Nat) => n).map(Named.gen(2))));
+print(evaluate(named_fold.map(Named.gen(2))));
 
 theory Act(U < UU0) {
   M : set U;
@@ -73,7 +77,8 @@ theory Act(U < UU0) {
 
 free AW(A : U0) : Act(U0) on A;
 
-def acted{{A : U0}}(S : Act(U0), g : A -> S.M, a : A) : AW.fold(A, S, g).map(AW.act(AW.gen(a), AW.gen(a))) = S.act(g(a), g(a)) {
+def acted{{A : U0}}(S : Act(U0), g : A -> S.M, a : A) :
+  AW.fold(A, S, g).map(AW.act(AW.gen(a), AW.gen(a))) = S.act(g(a), g(a)) {
   rfl;
 }
 
