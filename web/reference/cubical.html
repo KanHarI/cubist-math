@@ -319,8 +319,20 @@ def join_by_formulas(A : U0, x, y, z : A, p : x = y, q : y = z) : x = z {
     face_when(on(i, 1), fun (j : Interval) =&gt; q @ j));
 }</code></pre>
             <p>Interval and face formulas are kept in a normal form of joins of meets. Some compact formulas have exponentially large normal forms. Rather than exhaust memory, the checker refuses any expansion beyond 4,096 clauses or a fixed work budget, with a lattice budget error. Split such a proof into smaller named steps.</p>
-            <h3 id="box-notation">The box notation</h3>
-            <p>A composition can also be written as a box, its walls listed by their faces: <code>compose j in A from b { on i = 0 =&gt; x; on i = 1 =&gt; q @ j; }</code> is <code>comp(fun (j : Interval) =&gt; A, b, face(i, 0, fun (j : Interval) =&gt; x), face(i, 1, fun (j : Interval) =&gt; q @ j))</code>, and <code>fill j in A from b at k { … }</code> is the same <code>fill</code>. The direction <code>j</code> is bound in the family and the walls, not in the base or the faces. A face is a formula of equations <code>i = 0</code> and <code>i = 1</code>, with <code>and</code> and <code>or</code>. Nothing is guessed: each wall is written, and the kernel checks the box as it checks <code>comp</code>. A composition the kernel cannot reduce prints as its box.</p>
+            <h3 id="box-notation">Box notation: <code>compose</code> and <code>fill</code></h3>
+            <p><code>compose j in A from b { on i = 0 =&gt; x; on i = 1 =&gt; q @ j; }</code> describes a composition by listing its walls. The direction <code>j</code> runs from 0 to 1. The base <code>b</code> lies at <code>j = 0</code>; the result lies at <code>j = 1</code>. In a square, the base is the bottom edge, the walls are the sides, and the result is the top edge.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Part</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td><code>compose j</code></td><td>Introduce the composition direction <code>j</code>.</td></tr>
+                <tr><td><code>in A</code></td><td>The type along that direction. <code>A</code> may mention <code>j</code>, as in <code>C(p @ j)</code>.</td></tr>
+                <tr><td><code>from b</code></td><td>The base, checked in <code>A</code> with <code>j = 0</code>.</td></tr>
+                <tr><td><code>on face =&gt; wall;</code></td><td>A wall on the stated face, with a value in <code>A</code> at each <code>j</code>. Every wall ends with a semicolon.</td></tr>
+                <tr><td><code>fill j in A from b at k { … }</code></td><td>The same box filled as far as <code>k</code>, with its result in <code>A</code> with <code>j = k</code>. At 0 it gives the base; at 1 it gives the composition.</td></tr>
+              </tbody>
+            </table></div>
+            <p>The new direction <code>j</code> is in scope in the family <code>A</code> and the wall expressions. It is not in scope in the base <code>b</code>, the face conditions or the fill coordinate <code>k</code>. Those use names already in scope. In particular, a wall's equation refers to an outer coordinate, such as the <code>i</code> introduced by <code>path i =&gt;</code> below. The fill coordinate may be 0, 1, an outer coordinate or an <a href="#meets-and-joins">interval expression</a>.</p>
+            <p>Here the bottom follows <code>p</code>, the left wall stays at <code>x</code>, and the right wall follows <code>q</code>. The top therefore joins <code>x</code> to <code>z</code>. The filler gives the intermediate path from <code>x</code> to <code>q @ k</code> at each <code>k</code>:</p>
             <pre><code data-check="accept">def join_by_box(A : U0, x, y, z : A, p : x = y, q : y = z) : x = z := path i =&gt; compose j in A from p @ i {
     on i = 0 =&gt; x;
     on i = 1 =&gt; q @ j;
@@ -335,6 +347,16 @@ def filler_by_box(A : U0, x, y, z : A, p : x = y, q : y = z) :
 // Output: fun (A : U0, x, y, z : A, p : x = y, q : y = z) =&gt; path i =&gt; compose j in A from p @ i { on i =
 //   0 =&gt; x; on i = 1 =&gt; q @ j; }
 print(evaluate(fun (A : U0, x, y, z : A, p : x = y, q : y = z) =&gt; join_by_box(A, x, y, z, p, q)));</code></pre>
+            <p>A face is an equation <code>i = 0</code> or <code>i = 1</code>, or a formula made from these with <code>and</code>, <code>or</code> and parentheses. <code>and</code> binds more tightly than <code>or</code>: <code>i = 0 and k = 1 or i = 1</code> means <code>(i = 0 and k = 1) or i = 1</code>. The constants <code>0</code> and <code>1</code> mean the empty face and the whole face. These are coordinate conditions; they have no equality carrier annotation <code>=[T]</code>. For a loop, one wall can cover both endpoint faces:</p>
+            <pre><code data-check="accept">def loop_by_box(A : U0, x : A, p : x = x) : x = x :=
+  path i =&gt; compose j in A from p @ i {
+    on i = 0 or i = 1 =&gt; x;
+  };</code></pre>
+            <p>The kernel checks that every wall agrees with the base at <code>j = 0</code> and that walls agree wherever their faces overlap. No walls are inferred. Empty braces describe transport along the family:</p>
+            <pre><code data-check="accept">def move_by_box(A : U0, C : A -&gt; U0, x, y : A, p : x = y, v : C(x)) : C(y) :=
+  compose j in C(p @ j) from v {};</code></pre>
+            <p>The box notation expands to the existing <code>comp</code> and <code>fill</code> forms. The first box above is <code>comp(fun (j : Interval) =&gt; A, b, face(i, 0, fun (j : Interval) =&gt; x), face(i, 1, fun (j : Interval) =&gt; q @ j))</code>. A compound face becomes <code>face_when</code>, with each equation <code>i = 0</code> written as <code>on(i, 0)</code>. A composition the kernel cannot reduce prints as a box, as the checked output above shows.</p>
+            <p><code>compose</code> remains an ordinary name outside the form <code>compose j in …</code>, so a definition named <code>compose</code> or a qualified name such as <code>T.Hom.compose</code> still works. An invalid face formula reports <a href="errors.html#E193">E193</a>; a box missing its closing brace reports <a href="errors.html#E194">E194</a>.</p>
             <h3 id="squares">Squares</h3>
             <p><code>import squares;</code> names a square's edges. <code>Square(a0_, a1_, a_0, a_1)</code> is <code>PathP(fun (i : Interval) =&gt; a_0 @ i = a_1 @ i, a0_, a1_)</code>: a path from the left edge <code>a0_</code> to the right edge <code>a1_</code>, over the bottom edge <code>a_0</code> and the top edge <code>a_1</code>, so that <code>s @ i @ j</code> is its point at <code>i</code> across and <code>j</code> up. The corners are <code>a00</code>, <code>a01</code>, <code>a10</code> and <code>a11</code>, and an edge is named by its corners, <code>_</code> standing for the coordinate that varies along it. The library builds squares by conversion: the reflexive square of a path, the naturality square of a homotopy along a path, transposition and both flips, double composition with its filler, of which <code>trans</code> is the case with a constant first edge, and horizontal and vertical composition. Two squares on the same three sides have equal tops, <code>top_unique</code>, so a square is an equation of composites, <code>square_to_path : Square(a0_, a1_, a_0, a_1) -&gt; trans(a0_, a_1) = trans(a_0, a1_)</code>, and <code>path_to_square</code> goes back, though not as its inverse by conversion. The naturality of a homotopy as an equation, <code>naturality_path</code>, and a map's action on a composite, <code>cong_trans</code>, follow. The inspector shows a square's edges and corners.</p>
             <pre><code data-check="accept">import squares;

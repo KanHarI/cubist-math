@@ -48,6 +48,10 @@ test("a box lowers to comp or fill, with a face(…) or face_when(…) for each 
   // A face is a formula of equations, and compose is a name elsewhere.
   assert.throws(() => parse("def j(A : U0, x : A, p : x = x) : x = x := path i => compose k in A from p @ i { on i => x; };"),
     /^Error: A wall's face is a formula of equations i = 0 and i = 1, with and and or, as on i = 0 or j = 1 => …\.$/);
+  // A face's equation is a coordinate's: a carrier, =[T], is refused, not dropped.
+  const carried = "def identity(A : U0, x : A) : x = x := path i => compose j in A from x { on i =[unbound_type] 0 => x; on i = 1 => x; };";
+  assert.throws(() => parse(carried), error => /^A wall's face is a formula of equations/.test(error.message)
+    && error.offset === carried.indexOf("unbound_type"));
   assert.throws(() => parse("def j(A : U0, x : A, p : x = x) : x = x := path i => compose k in A from p @ i { on i = 0 => x;"), /Expected '}' to close the box\./);
   assert.equal(parse("def compose(n : Nat) := compose(n);").declarations[0].name.text, "compose");
 });
