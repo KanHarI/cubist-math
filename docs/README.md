@@ -69,8 +69,8 @@ finishing a language milestone does not automatically resume them.
 - [Runtime evaluation and binary numerical foundations](roadmaps/runtime-evaluation-roadmap.md):
   Euclid failure evidence, evaluator and search improvements, and early
   `UNat`/`BNat` foundations with checked semiring isomorphism, equality in
-  `U0` and binary-backed `Z` and `Q`, with staged correctness and performance
-  gates.
+  `U0`, strong induction over smaller binary values and new binary-backed
+  `Z` and `Q`, with staged correctness and performance gates.
 - [Simplification and shorter proofs](roadmaps/proof-ergonomics-roadmap.md):
   - Delivered: rewriting, calculations, `simp`/`simpa` and cubical path
     syntax, dependency tracking, `computable` and exact-value `evaluate`.

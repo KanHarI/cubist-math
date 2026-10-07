@@ -144,49 +144,51 @@ cooperative deadlines and cancellation, and useful failure diagnostics.
 Define both representations early, independently of the new evaluator:
 
 - `UNat` is the unary natural number type, retaining structural induction
-  and an explicit compatibility path for the existing `Nat` APIs.
+  for mathematical arguments and constructions where unary naturals are
+  convenient.
 - `BNat` is the binary natural number type, with a canonical zero and
   nonzero bit representation. Its arithmetic operates on bits directly.
+  Alongside bit-structural induction, provide strong induction and
+  computation from results at all smaller numerical values.
 - `BNat` is the default foundation for numerical constructions. In
   particular, `Z` is built from pairs of `BNat`, and `Q` is the field of
   fractions of that binary-backed `Z`. They must not implement arithmetic
   by converting magnitudes through `UNat`.
 
-The existing library's [integers](../../library/integers.cubist) use pairs
-of unary `Nat`; its [rationals](../../library/rationals.cubist) use the
-resulting integer ring. Migrating both is an early deliverable, not a
-possible optimization deferred until runtime specialization. Retaining
-unary indices for induction does not make them the representation of
-integer magnitudes or rational numerators and denominators.
+This is a new numerical library. The existing
+[integers](../../library/integers.cubist) and
+[rationals](../../library/rationals.cubist) provide construction evidence;
+comparison maps, isomorphisms and universe paths to those old types are
+outside this track. The unary/binary natural equivalence remains an early
+deliverable because both representations are useful. Here `BNat` names the
+binary carrier explicitly; when it is exposed as the new default `Nat`,
+this is the `UNat` ↔ `Nat` equivalence. Document the name and import
+transition for existing unary clients before switching the public name.
 
 Naturals form commutative **semirings**, not rings: they have no additive
 inverses. The required `UNat`/`BNat` isomorphism therefore preserves zero,
 one, addition and multiplication as a commutative-semiring isomorphism.
 Establish nontriviality, additive cancellation, multiplicative cancellation
-by a nonzero factor, and absence of zero divisors. Extend the induced
-isomorphism to the integer constructions as rings, preserving their
-integral-domain properties, and to the rational constructions as fields.
-This supplies the ring/domain comparison at the appropriate level.
+by a nonzero factor, and absence of zero divisors. Establish the new
+binary-backed integers' ring and integral-domain properties and the new
+rationals' field laws directly from these foundations.
 
-Also construct equality of the carriers as members of `U0`, using the
-library's [computational univalence](../../library/univalence.cubist).
-The required paths have the following schematic signatures; the subscripts
-name the two constructions, not new mandatory public API spellings:
+Also construct equality of the natural carriers as members of `U0`, using
+the library's [computational univalence](../../library/univalence.cubist).
+The required path has the following schematic signature:
 
 ```text
 unary_binary : UNat =[U0] BNat
-integers_unary_binary : Z_UNat =[U0] Z_BNat
-rationals_unary_binary : Q_UNat =[U0] Q_BNat
 ```
 
-Build each path from the underlying equivalence of the corresponding
-algebraic isomorphism. Prove that transporting an element along the path
+Build this path from the underlying equivalence of the natural semiring
+isomorphism. Prove that transporting an element along the path
 agrees with the forward conversion and transporting along its reversal
 agrees with the inverse. Prove agreement of the transported operations
-with the destination operations. These universe equalities are explicit
-deliverables in addition to the semiring/ring/field isomorphisms. They
-permit checked transport of dependent constructions; they do not make
-unary and binary constructor syntax definitionally equal.
+with the destination operations. This universe equality is an explicit
+deliverable alongside the semiring isomorphism. It permits checked
+transport of dependent constructions; it does not make unary and binary
+constructor syntax definitionally equal.
 
 The archive already contains useful source evidence:
 [canonical binary data](../../archive/first-library/binary_naturals.cubist),
@@ -207,8 +209,8 @@ All rows are planned. Sizes are relative scope, as in the work plan.
 | EVAL0 | Reproducible workload and phase measurements | Existing CLI, counters and build stamps | S |
 | EVAL1 | One-pass REPL evaluation | EVAL0 | S |
 | NUM0 | Explicit UNat and canonical BNat with direct binary arithmetic | Current inductive declarations; archive evidence | M |
-| NUM1 | Semiring isomorphism, UNat = BNat in U0 and transport laws | NUM0; semiring interface; computational univalence | M |
-| NUM2 | Binary-backed Z and Q, their U0 equalities and default APIs | NUM1; current quotients, rings and fractions | L |
+| NUM1 | Natural semiring isomorphism, U0 path and transport laws; strong induction and recursion over BNat | NUM0; semiring interface; computational univalence | M |
+| NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs | NUM1; current quotients, rings and fractions | L |
 | EVAL2 | Memoized full normalization | EVAL0; independent of EVAL1 | M |
 | EVAL3 | Closure evaluator for a specified data fragment | EVAL0 and semantic contract | L |
 | EVAL4 | Explicit evaluation stack and bounded runtime | EVAL3 design; implement alongside it | M |
@@ -251,14 +253,14 @@ the same displayed values and assumption refusals; the Euclid self-equality
 instruction overhead disappears. This package does not claim to fix the
 syntax-depth failure.
 
-### NUM0 and NUM1: representations and checked algebraic agreement
+### NUM0 and NUM1: representations, algebraic agreement and numerical induction
 
 Expose the existing unary naturals as `UNat`, with a documented compatibility
 policy for `Nat`, constructor names and imports. Define `BNat` with one
 representation of zero and no redundant leading-zero forms. Implement
-successor, addition, multiplication, equality and comparison directly over
-bits, plus named conversions in both directions. Prove both round trips,
-setness and preservation of zero, one, addition and multiplication.
+successor, predecessor, addition, multiplication, equality and comparison
+directly over bits, plus named conversions in both directions. Prove both
+round trips, setness and preservation of zero, one, addition and multiplication.
 
 Add the necessary commutative-semiring interface alongside the existing
 algebraic hierarchy and construct its two models and their isomorphism.
@@ -272,16 +274,48 @@ operations. This is a checked path in the universe, not a new definitional
 equality rule. It does not wait for general theory structure-identity
 machinery.
 
+Prove that the numerical strict order on `BNat` is well-founded and derive
+a dependent strong-induction principle in the library. Its step receives
+the result for **every smaller value**, independently of that value's bit
+structure. Make it usable for definitions as well as propositions, with
+the following schematic interface (names are provisional):
+
+```text
+bnat_induction(U < UU0, P : BNat -> U,
+  step : (forall n : BNat. (forall m : BNat. m < n -> P(m)) -> P(n))) :
+  forall n : BNat. P(n)
+```
+
+For `F := bnat_induction(U, P, step)`, prove the computation equation
+`F(n) = step(n, fun (m : BNat, smaller : m < n) => F(m))`. State which
+equations compute definitionally and which have checked path proofs.
+Derive ordinary zero/successor induction and recursion as convenient
+special cases. The order and its well-foundedness may be proved using
+the natural equivalence, but executable recursion must keep binary values
+instead of converting the bound to a unary counter. Earlier results are
+available on demand; the interface does not require an eager table of
+every prior value. Recursion through every predecessor can still take
+work proportional to the numerical input.
+
+Define binary factorial through this recursor and prove
+`factorial(0) = 1` and `factorial(succ(n)) = succ(n) * factorial(n)`.
+Also include a definition that requests a smaller value other than the
+immediate predecessor, to exercise the full strong-induction interface.
+
 **Acceptance:** both representations and their operations are available
 without the new evaluator; conversion and arithmetic laws check without
 new assumptions; the `U0` path and its transport laws check, including
 closed forward/reverse examples and a dependent family transported along
 the path; canonical binary boundary/carry cases compute; numerical
-operations use bit recursion without a hidden unary round trip. Preserve
-the existing unary induction API through the documented migration policy.
+arithmetic operations use bit recursion without a hidden unary round trip;
+strong induction works for a dependent family, its recursion equation
+checks, and binary factorial computes `0! = 1` and `5! = 120`. Check a
+recursive call that skips the immediate predecessor, and require strict
+decrease evidence for every recursive call. Preserve the existing unary
+induction API through the documented migration policy.
 The archive remains a compatibility corpus, not a library dependency.
 
-### NUM2: make Z and Q binary-backed by default
+### NUM2: build the new binary-backed integers and rationals
 
 Construct `Z` from pairs of `BNat`, using the existing same-difference
 relation and quotient approach with binary addition and multiplication.
@@ -290,17 +324,13 @@ evidence and existing quotient semantics. Canonical fraction normalization
 is a separate feature; changing the natural representation does not itself
 put every rational in lowest terms.
 
-Build the comparison maps to the former unary-backed integers and
-rationals. Prove that they respect quotient relations, round-trip, preserve
-ring/field operations and the integral-domain properties needed by the
-fraction construction. Reuse or state the domain properties explicitly;
-do not assume an `IntegralDomain` theory is already present in the library.
-Construct the corresponding paths between old and new integer carriers
-and between old and new rational carriers in `U0`, with checked agreement
-of forward/reverse transport and the ring/field conversion maps. Use these
-universe equalities to transport statements and certificates, retaining
-their operation-preservation laws. Do not replace path transport with an
-unchecked cast or a new definitional equality.
+Prove that the new operations respect their quotient relations. Establish
+`Z`'s commutative-ring laws, decidable equality, nontriviality and absence
+of zero divisors, then construct `Q` and prove its field laws. State the
+domain properties explicitly; do not assume an `IntegralDomain` theory
+is already present in the library. Prove the natural-to-integer and
+integer-to-rational embeddings preserve the relevant operations. These
+are embeddings within the new numerical hierarchy.
 
 Make ordinary numerical APIs, integer magnitudes, rational components and
 future number-system constructions use `BNat` by default. Implement
@@ -315,13 +345,14 @@ before switching aliases; the choice of binary storage for `Z` and `Q`
 does not depend on that spelling decision.
 
 **Acceptance:** the default `Z` representatives contain `BNat` components,
-and default `Q` fractions contain the resulting `Z`; their public laws,
-universe equalities and transport/conversion agreement remain checked.
-Arithmetic, literals and rendering work on
-large binary magnitudes without allocation proportional to their unary
-value. Check existing library consumers, notation selection and archive
-compatibility, with explicit conversions where representations differ.
-Record this source-representation migration separately from evaluator gains.
+and default `Q` fractions contain the resulting `Z`; the ring/domain/field
+laws and numerical embeddings check without new assumptions. Arithmetic,
+literals and rendering work on large binary magnitudes without allocation
+proportional to their unary value. Update consumers and notation for the
+new APIs; keep the archive checking under the documented imports and
+unary-natural compatibility policy.
+Record the new library's source-representation gains separately from
+evaluator gains.
 
 ### EVAL2: preserve sharing during full normalization
 
@@ -417,9 +448,10 @@ equality. Prime-divisor search nests these tests. Its bounded search also
 unwinds and rebuilds witness wrappers after finding an early witness.
 
 Develop a checked BNat remainder-based divisibility decision and a search
-with tighter bounds and an explicit early-exit structure. Candidate-divisor
-bounds such as the square root require their mathematical proof. Preserve
-the least-divisor behavior if replacing this construction, or expose and
+with tighter bounds and an explicit early-exit structure. Use NUM1's
+numerical recursion for calls justified by a strict decrease.
+Candidate-divisor bounds such as the square root require their mathematical
+proof. Preserve the least-divisor behavior if replacing this construction, or expose and
 name a different algorithm separately. Factorial remains the source
 algorithm's growth factor; do not silently replace Euclid's construction
 with an unrelated prime generator to improve its benchmark.
@@ -451,16 +483,16 @@ earlier under its narrower contract without making that claim.
 
 ## Suggested implementation order
 
-Start with EVAL0 and EVAL1, and start NUM0/NUM1 alongside them. NUM2's
-binary-backed `Z` and `Q` follow the checked semiring isomorphism and `U0`
-equality; these are
-early numerical foundations, independent of the closure evaluator.
+Start with EVAL0 and EVAL1, and start NUM0/NUM1 alongside them, including
+numerical induction and recursion. NUM2's new binary-backed `Z` and `Q`
+follow the natural semiring foundations. These packages are independent
+of the closure evaluator.
 EVAL2 can proceed independently once its cache contract is clear. Design
 EVAL3/EVAL4 together, then specify EVAL5's observation interface and complete
 the relevant EVAL8 review before a runtime becomes a default path.
 Re-profile the binary-backed constructions before investing in EVAL6.
 EVAL7 follows NUM1 and keeps its measurements separate from both the
-representation migration and the unchanged-source evaluator comparison.
+new numerical library and the unchanged-source evaluator comparison.
 Mathematical coverage, resource behavior and the output contract gate
 promotion; a faster prime projection
 alone does not.

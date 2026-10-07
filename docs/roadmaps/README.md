@@ -133,8 +133,9 @@ the scheduling authority; this summarizes it.
   evaluation, normalization caches, lazy closures, an explicit evaluation
   stack, typed readback and checked search improvements. Early numerical
   foundations define `UNat` and `BNat`, prove their semiring isomorphism
-  and equality in `U0`, and make `Z`, `Q` and later numerical constructions
-  binary-backed, with checked universe paths and transport laws.
+  and equality in `U0` with transport laws, and provide strong induction
+  and recursion over smaller binary values. New `Z`, `Q` and later
+  numerical constructions use binary naturals, with checked algebraic laws.
   Separates prime projection, lazy observation and full normalization, with
   semantic review and resource limits governing integration.
 - [Simplification and shorter proofs](proof-ergonomics-roadmap.md):
