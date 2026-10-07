@@ -61,39 +61,150 @@ notation nat {
 // Until 2026-10-06 left and right, a sum's injections, could be bound as
 // names, and until 2026-10-07 typed, the ascription, and evaluate. A
 // revision of that time is read with each binder named left, right, typed
-// or evaluate, and the references after it in its declaration, which it
-// shadows, renamed left_, right_, typed_ and evaluate_; its sum patterns,
-// injections, ascriptions and evaluate directives stay. Bound names change
-// no checked term.
+// or evaluate renamed left_, right_, typed_ and evaluate_, and with it each
+// reference in its scope, as the translator reads scopes: a parameter's is
+// the rest of its declaration, a lambda's its body, a let's the statements
+// after it but not its own value, a pattern's its clause, and a
+// declaration's itself and the items after it. A name no such binder is in
+// scope for is the builtin, an injection or an ascription, and stays, as
+// sum patterns and evaluate directives do. A name read by its declaration
+// rather than by scope, a parameter's in a named argument or a field's
+// after a dot, is renamed wherever it is written, as each declaration of it
+// is. A module reads only its own binders: a name another module declares
+// so, called bare, is not followed. Bound names change no checked term.
 const renamedReserved = { left: "left_", right: "right_", typed: "typed_", evaluate: "evaluate_" };
 const reservedUnbound = source => {
   if (!/\b(left|right|typed|evaluate)\b/.test(source)) return source;
   let ast;
   try { ast = parse(source, false, { bindable: Object.keys(renamedReserved) }); } catch { return source; }
   const edits = new Map();
-  for (const item of ast.items ?? ast.declarations) {
-    const binders = [], references = [], seen = new Set();
-    const visit = (node, key = null, target = false) => {
-      if (!node || typeof node !== "object" || seen.has(node)) return;
-      seen.add(node);
-      if (Array.isArray(node)) { node.forEach(child => visit(child, key, target)); return; }
-      // A let's or an obtain's target binds its names.
-      if (target && node.kind === "name" && renamedReserved[node.name]) {
-        binders.push({ text: node.name, start: node.start, end: node.end });
-        return;
-      }
-      // A binder's token; a clause's constructor is the injection's pattern.
-      if (typeof node.text === "string" && renamedReserved[node.text] && !node.kind && key !== "constructor") binders.push(node);
-      if (node.kind === "name" && renamedReserved[node.name]) references.push(node);
-      for (const [child, value] of Object.entries(node)) if (child !== "uses") visit(value, child, target || child === "target");
-    };
-    visit(item);
-    for (const binder of binders) {
-      edits.set(binder.start, [binder.end, renamedReserved[binder.text]]);
-      for (const reference of references)
-        if (reference.name === binder.text && reference.start > binder.start && reference.end <= (item.end ?? Infinity))
-          edits.set(reference.start, [reference.end, renamedReserved[reference.name]]);
+  const rename = (start, text) => { if (renamedReserved[text]) edits.set(start, [start + text.length, renamedReserved[text]]); };
+  // Binder tokens: each is renamed, and the scope they open holds them.
+  const bind = (scope, tokens) => {
+    const named = tokens.filter(token => renamedReserved[token?.text]);
+    for (const token of named) rename(token.start, token.text);
+    return named.length ? new Set([...scope, ...named.map(token => token.text)]) : scope;
+  };
+  // A name, as its scope reads it, and each part after a dot, a field or a
+  // module's member, wherever it is written.
+  const reference = (token, scope) => {
+    const [head, ...rest] = (token.name ?? token.text).split(".");
+    if (scope.has(head)) rename(token.start, head);
+    let at = token.start + head.length;
+    for (const part of rest) { rename(at + 1, part); at += 1 + part.length; }
+  };
+  // A clause's variables: its arguments, its legacy binders, its
+  // coordinates, and a bare name, which is a variable or a constructor
+  // without arguments.
+  const variables = head => [...(head.binders ?? []), ...(head.coordinates ?? []),
+    ...(head.args ?? []).flatMap(arg => arg.kind === "pattern" ? variables(arg) : [arg]),
+    ...(!head.args && !head.binders?.length && !head.coordinates?.length ? [head.constructor] : []),
+    ...(head.more ?? []).flatMap(variables)];
+  // A let's or an obtain's target: a name, or a tuple of them.
+  const targets = node => node?.kind === "pair" ? [...targets(node.left), ...targets(node.right)]
+    : node?.kind === "name" ? [{ text: node.name, start: node.start }] : [];
+  // Parameters in order, each group's type read before its names hold.
+  const telescope = (params, scope) => {
+    for (let k = 0; k < params.length;) {
+      const type = params[k].type ?? params[k].bound;
+      let j = k;
+      while (j < params.length && (params[j].type ?? params[j].bound) === type) j++;
+      visit(type, scope);
+      scope = bind(scope, params.slice(k, j).map(p => p.name));
+      k = j;
     }
+    return scope;
+  };
+  // A notation's pattern: its operands bind its right side, and a view
+  // names a notation.
+  const notation = (pattern, scope) => {
+    for (const view of [pattern?.leftView, pattern?.rightView]) if (view) reference(view, scope);
+    return bind(scope, [pattern?.left, pattern?.right]);
+  };
+  // A statement's binders hold in the statements after it.
+  const statement = (node, scope) => {
+    switch (node?.kind) {
+      case "let": case "obtain":
+        visit(node.type, scope); visit(node.value, scope); visit(node.body, scope);
+        return bind(scope, targets(node.target));
+      case "intro": return bind(scope, [node.name]);
+      case "ext": return bind(scope, [node.variable]);
+      case "simpOnly": case "simpaOnly":
+        visit(node.rules, scope); visit(node.using, scope);
+        for (const token of [...node.without, ...node.witnesses, ...(node.at ? [node.at] : [])]) reference(token, scope);
+        return bind(scope, [node.as]);
+    }
+    visit(node, scope);
+    return scope;
+  };
+  const visit = (node, scope) => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) { node.reduce((inner, child) => statement(child, inner), scope); return; }
+    switch (node.kind) {
+      case "name": reference(node, scope); return;
+      case "lambda": case "forall": case "exists": case "binderGroup":
+        visit(node.domain, scope); visit(node.bound, scope);
+        visit(node.body, bind(scope, node.names ?? [node.name]));
+        return;
+      case "pathLambda": visit(node.body, bind(scope, [node.dimension])); return;
+      case "unpack":
+        visit(node.value, scope); visit(node.type, scope);
+        visit(node.body, bind(scope, [node.left, node.right]));
+        return;
+      case "match": case "induction": case "matchStatement":
+        visit(node.values ?? node.value, scope);
+        // induction n as k return C { zero => …; succ h => …; }: k names n in
+        // C and its predecessor in the successor's clause.
+        if ("index" in node) {
+          visit(node.type, bind(scope, [node.index])); visit(node.base, scope);
+          visit(node.step, bind(scope, [node.index, node.hypothesis]));
+          return;
+        }
+        // The legacy match on a sum keeps its clauses unlisted.
+        visit(node.type, bind(scope, [node.motiveName])); visit(node.clauses, scope);
+        visit(node.obligations, scope); visit(node.obligationProof, scope);
+        return;
+      case "clause": visit(node.body, bind(scope, variables(node))); return;
+      case "namedArgument": rename(node.name.start, node.name.text); visit(node.value, scope); return;
+      case "member": rename(node.field.start, node.field.text); visit(node.value, scope); return;
+      case "withUnfolding": for (const hint of node.hints) reference(hint, scope); visit(node.body, scope); return;
+    }
+    for (const [key, child] of Object.entries(node)) if (key !== "uses") visit(child, scope);
+  };
+  // Items in order: what one declares holds in it and after it.
+  let module = new Set();
+  for (const item of ast.items ?? ast.declarations) {
+    if (item.kind === "def") {
+      const scope = telescope(item.params, telescope(item.section?.params ?? [], bind(module, [item.name])));
+      visit(item.type, scope); visit(item.body, scope); visit(item.value, scope);
+    } else if (item.kind === "inductive") {
+      const scope = telescope(item.params, bind(module, [item.name]));
+      visit(item.result, scope);
+      for (const constructor of item.constructors) visit(constructor.type, telescope(constructor.params, scope));
+    } else if (item.kind === "theory") {
+      // A field holds in the fields after it, a parent's label and its
+      // renamed fields too; a field of the parent is read by name.
+      let scope = telescope(item.params, bind(module, item.universes));
+      for (const parent of item.parents) {
+        reference(parent.name, module);
+        for (const { from, to, notation: pattern } of parent.renaming) { rename(from.start, from.text); scope = bind(scope, [to]); notation(pattern, scope); }
+        scope = bind(scope, [parent.label]);
+      }
+      for (const field of item.fields) {
+        const inner = telescope(field.params, scope);
+        if (field.universe) reference(field.universe, scope);
+        visit(field.type, inner); visit(field.value, inner);
+        notation(field.notation, scope);
+        scope = bind(scope, [field.name]);
+      }
+    } else if (item.kind === "notation") {
+      for (const rule of item.rules)
+        if (rule.param) { visit(rule.type, module); visit(rule.value, bind(module, [rule.param])); }
+        else visit(rule.value, notation(rule, module));
+    } else if (["hlevel_rule", "simp_rule"].includes(item.kind)) reference(item.rule, module);
+    else if (item.kind === "simp_set") for (const rule of item.rules) reference(rule, module);
+    else visit(item, module);
+    module = bind(module, [item.name, ...(item.constructors ?? []).map(constructor => constructor.name)]);
   }
   let text = source;
   for (const [start, [end, name]] of [...edits].sort((a, b) => b[0] - a[0])) text = text.slice(0, start) + name + text.slice(end);
