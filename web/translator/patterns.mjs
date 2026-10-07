@@ -216,8 +216,8 @@ function bind(t, scope, token, target) {
     return scope.alias(token.text, node.kind === "name" && scope.env.has(node.name) ? scope.env.get(node.name) : t.term(node, scope, null));
   }
   const {constructor, args, coordinates, instance} = target;
-  let point = args.length ? { kind: "call", fn: { kind: "name", name: constructor.name }, args: args.map(arg => ({ kind: "name", name: arg.text })) }
-    : { kind: "name", name: constructor.name };
+  let point = scope.declared(args.length ? { kind: "call", fn: { kind: "name", name: constructor.name }, args: args.map(arg => ({ kind: "name", name: arg.text })) }
+    : { kind: "name", name: constructor.name });
   for (const coordinate of coordinates) point = { kind: "pathApply", left: point, right: { kind: "name", name: coordinate.text } };
   return scope.alias(token.text, t.term(point, scope, instance));
 }
