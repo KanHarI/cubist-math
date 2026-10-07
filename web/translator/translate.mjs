@@ -82,7 +82,7 @@ function lambdas(params,body) {
 }
 
 export class Translator {
-  constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,
+  constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
     inspectSignature=null,nameBased=false}={}) {
     // A module of a revision before L2.10j reads an operator or a numeral
@@ -117,6 +117,10 @@ export class Translator {
       })) : null;
     this.onDeclaration=onDeclaration;
     this.onDeclarationStart=onDeclarationStart;
+    // The declarations to check changed by a number: a theory's expansion
+    // adds the ones beyond itself, and a failed type of models takes the
+    // rest of its theory off.
+    this.onQueued=onQueued;
     this.simpRegistry=copySimpRegistry(simpRegistry);
     this.moduleName=moduleName;
   }
@@ -353,7 +357,13 @@ export class Translator {
       const d=queue.shift();
       // Its messages print in what a file-level use selects for it (L2.10j).
       if(this.checker)this.checker.notation={selection:selectionName(d.uses)};
-      if(d.kind==="theory") { queue.unshift(...theoryDeclarations(this,module,d,env,declarations)); continue; }
+      if(d.kind==="theory") {
+        // A theory is checked as the declarations it expands to: the ones
+        // beyond its own are declarations to count too.
+        const generated=theoryDeclarations(this,module,d,env,declarations);
+        if(generated.length)this.onQueued?.(generated.length-1);
+        queue.unshift(...generated); continue;
+      }
       // A file-level use m; selects m for the definitions and directives
       // after it, which record it (L2.4c). It is checked where it stands, so
       // one that selects nothing is refused even with nothing after it, as at
@@ -542,8 +552,11 @@ export class Translator {
         env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:this.checker.bindingName?.(d.name.text)??d.name.text,reason:declarations.at(-1).reason});
       // Without its type of models, the rest of a theory cannot check: it is
       // unavailable, and its failure is reported once.
-      if (d.generated?.role==="model"&&declarations.at(-1).status==="not-translated")
-        skipTheory(this,queue,env,d);
+      // The rest is taken off whether or not an observer counts it.
+      if (d.generated?.role==="model"&&declarations.at(-1).status==="not-translated") {
+        const skipped=skipTheory(this,queue,env,d);
+        this.onQueued?.(-skipped);
+      }
     }
     return {declarations,env,directives,simpRegistry:this.simpRegistry,
       normalizationVisits:this.checker.steps};

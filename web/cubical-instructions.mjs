@@ -75,10 +75,22 @@ export class InstructionGraph {
     this.module._cb_clear_error(this.kernel.handle);
     throw error;
   }
+  // A position up to 64 deep is set in one call, packed (cb_position_set);
+  // a deeper one, child by child.
   position(path) {
+    if (path.length <= 64 && path.every(child => child >= 0 && child <= 3)) {
+      const words = [0, 0, 0, 0];
+      path.forEach((child, i) => { words[i >> 4] |= child << 2 * (i & 15); });
+      if (this.module._cb_position_set(this.kernel.handle, path.length, ...words.map(word => word >>> 0))) return;
+    }
     this.module._cb_position_clear(this.kernel.handle);
     for (const child of path)
       if (!this.module._cb_position_push(this.kernel.handle, child)) throw new KernelError("Invalid position.");
+  }
+  // The subterm at `path` in a side of a judgement, read in one call.
+  subterm(judgement, where, path) {
+    this.position(path);
+    return this.module._cb_subterm(this.kernel.handle, judgement, side(where)) >>> 0;
   }
   universe(level) { return this.issue("universe", level); }
   unit() { return this.issue("unit"); }
