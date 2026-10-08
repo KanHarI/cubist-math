@@ -75,6 +75,25 @@ def composite : Pair.Hom.compose(Pair.Hom.id(nat_pair), Pair.Hom.id(nat_pair)).m
   assert.equal(result.complete, true);
 });
 
+test("fresh operation binders avoid theory parameters absent from the field type", async t => {
+  const program = new CubicalProgram(await createCubical(), sourceReader());
+  t.after(() => program.dispose());
+  const result = await program.check(`import hlevels;
+theory T(U < UU0, M_1 : Unit) {
+  M : set U;
+  op(M : M) : Unit;
+}
+def preserved(A, B : T(U0, tt), f : T.Hom(A, B), x : A.M) :
+  A.op(x) = B.op(f.map(x)) := f.map_op(x);
+def composite(S : T(U0, tt), x : S.M) :
+  T.Hom.compose(T.Hom.id(S), T.Hom.id(S)).map(x) = x { rfl; }
+def iso_composite(S : T(U0, tt), x : S.M) :
+  T.Iso.compose(T.Iso.id(S), T.Iso.id(S)).to.map(x) = x { rfl; }
+`, "fresh_parameters");
+  assert.deepEqual(result.gaps, []);
+  assert.equal(result.complete, true);
+});
+
 test("theory syntax parses with its parents, renamings and notations, and formats stably", () => {
   const source = `import hlevels;
 

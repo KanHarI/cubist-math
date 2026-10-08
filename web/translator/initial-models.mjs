@@ -114,9 +114,10 @@ function expand(t, module, d, env) {
   // binds. `dependent` gives what each such name is: "carrier", or a
   // proof's kind.
   const shape = field => {
-    const binders = [], bound = new Set();
+    const binders = [], bound = new Set(), flattened = new Set();
     const dependent = new Map([[carrier, "carrier"], ...operations.map(op => [op, "carrier"]), ...proofs]);
     let body = field.type, placed = relocated(put(field.type, inside), at), dependency = null;
+    for (const n of allNames(placed)) taken.add(n);
     for (let group = 0; body?.kind === "forall" || body?.kind === "binderGroup" && body.binderKind === "forall";
         body = body.body, placed = placed.body, group++) {
       const names = body.kind === "forall" ? [body.name] : body.names;
@@ -125,7 +126,17 @@ function expand(t, module, d, env) {
       const domain = body.domain, isCarrier = domain.kind === "name" && domain.name === carrier && !bound.has(carrier);
       const on = isCarrier ? null : [...freeNames(domain)].find(n => dependent.has(n));
       if (on) dependency ??= {binder: names[0].text, on, kind: dependent.get(on)};
-      for (const n of placedNames) binders.push({name: n.text, carrier: isCarrier, type: placed.domain, group});
+      // Nested quantifiers may shadow each other; a constructor's flat
+      // parameter list may not. Rename in the body only: this group's
+      // domain still reads the preceding binders.
+      const renaming = new Map();
+      for (const n of placedNames) {
+        const name = flattened.has(n.text) ? fresh(n.text) : n.text;
+        if (name !== n.text) renaming.set(n.text, name);
+        flattened.add(name);
+        binders.push({name, carrier: isCarrier, type: placed.domain, group});
+      }
+      if (renaming.size) placed = {...placed, body: renamedFree(placed.body, n => renaming.get(n))};
       for (const n of names) { bound.add(n.text); if (isCarrier) dependent.set(n.text, "carrier"); else dependent.delete(n.text); }
     }
     return {binders, body, bound, placed, dependency};

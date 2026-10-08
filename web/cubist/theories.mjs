@@ -539,8 +539,10 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
     body: [{ kind: "exact", value, ...place(span) }], typedValue: true, ...place(span),
     generated: { theory: T, ...generated }, ...extra,
   });
+  // Record the actual model parameters, including the universe generated
+  // for a headerless inherited theory, so later applications use its name.
   const record = {
-    name: T, model: T, make: `${T}.make`, universes: headerUniverses, params, ambiguous, ambiguousNotations,
+    name: T, model: T, make: `${T}.make`, universes, params, ambiguous, ambiguousNotations,
     fields: fields.map(({ at: _, from: __, ...field }) => ({ ...field, projection: `${T}.${field.name}` })),
     notations: Object.fromEntries(notations), recipes: Object.fromEntries(recipes), parents,
     derived: derived.map(({ at: _, ...d }) => ({ ...d, projection: `${T}.${d.name}` })),

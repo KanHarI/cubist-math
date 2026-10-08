@@ -83,6 +83,59 @@ initial Missing : Pointed(U := U0);
   assert.ok(result.outputs.every(output => !/^(Unknown|Twice|Missing)\./.test(output.name)));
 });
 
+test("inherited theories without universe headers have initial and free models at their generated universe", async t => {
+  await verified(t, `import hlevels;
+theory T(U < UU0) { M : set U; c : M; }
+theory Child extends T {}
+theory Parameterized(n : Unit) extends Child {}
+initial N : Child(U0);
+initial Named : Child(U := U0);
+initial P : Parameterized(n := tt, U := U0);
+free W(V < UU0, A : V) : Child(V) on A;
+free Q(A : U0) : Parameterized(U0, tt) on A;
+def folded(S : Child(U0)) : N.fold(S).map(N.c) = S.c { rfl; }
+def parameter_fold(S : Parameterized(U0, tt)) : P.fold(S).map(P.c) = S.c { rfl; }
+def generator_fold(V < UU0, A : V, S : Child(V), g : A -> S.M, a : A) :
+  W.fold(V, A, S, g).map(W.gen(a)) = g(a) { rfl; }
+def parameter_generator_fold(A : U0, S : Parameterized(U0, tt), g : A -> S.M, a : A) :
+  Q.fold(A, S, g).map(Q.gen(a)) = g(a) { rfl; }
+`);
+});
+
+test("an inherited theory still requires its generated universe argument", async t => {
+  const {result} = await checkProgram(t, `import hlevels;
+theory T(U < UU0) { M : set U; c : M; }
+theory Child extends T {}
+initial N : Child;
+free W(A : U0) : Child on A;`, {module});
+  const failures = result.outputs.filter(o => !o.verified);
+  assert.deepEqual(failures.map(o => [o.name, o.code]), [["N", "E851"], ["W", "E851"]]);
+  assert.ok(failures.every(o => /Child takes 1 argument/.test(o.reason)));
+});
+
+test("shadowed operation and law quantifiers keep their scopes in constructors and folds", async t => {
+  await verified(t, `import hlevels;
+theory T(U < UU0) {
+  M : set U;
+  c : M;
+  op : forall x : M. forall x : M. M;
+  law l : forall x : M. forall x : M. x = x;
+  law grouped : forall x : M. forall x, y : M. op(x, y) = y;
+  law dependent : forall x : Unit. forall x : Unit. forall p : x = x. c = c;
+}
+initial N : T(U0);
+free W(A : U0) : T(U0) on A;
+def inner_scope(x, y : N) : y = y := N.l(x, y);
+def grouped_scope(x, y, z : N) : N.op(y, z) = z := N.grouped(x, y, z);
+def dependent_scope(x, y : Unit, p : y = y) : N.c = N.c := N.dependent(x, y, p);
+def free_scope(A : U0, x, y : W(A)) : y = y := W.l(x, y);
+def initial_fold(S : T(U0), x, y : N) :
+  N.fold(S).map(N.op(x, y)) = S.op(N.fold(S).map(x), N.fold(S).map(y)) { rfl; }
+def free_fold(A : U0, S : T(U0), g : A -> S.M, a, b : A) :
+  W.fold(A, S, g).map(W.op(W.gen(a), W.gen(b))) = S.op(g(a), g(b)) { rfl; }
+`);
+});
+
 test("the equational strategy refuses carrier-dependent domains before declaring a model", async t => {
   for (const field of ["op(x : M, p : x = x) : M;", "law l(x : M, p : x = c) : x = c;", "op(p : c = c) : M;"]) {
     const {result} = await checkProgram(t, `import hlevels;
