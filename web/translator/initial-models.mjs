@@ -7,6 +7,7 @@ import {freeNames, substituted, renamedFree, allNames, relocated} from "../cubis
 import {assignArguments} from "./arguments.mjs";
 import {Scope} from "./elaboration.mjs";
 import {repeatedName} from "./names.mjs";
+import {T as Term} from "./core.mjs";
 
 // The declarations an initial or free model expands to, checked in its
 // place; one that does not expand fails as a declaration of its name.
@@ -90,9 +91,24 @@ function expand(t, module, d, env) {
       ...(members[0].bound ? {bound: members[0].bound} : {domain: members[0].type}), body: checked, ...at};
   }
   const scope = (d.uses ?? []).reduce((inner, model) => selected(t, inner, model), new Scope(module, new Map(), env));
-  scope.infer(t.term(checked, scope));
-  const given = new Map([...record.universes.map((_, k) => [universeAt(k), argument(k)]),
-    ...record.params.map((p, k) => [p.name, argument(record.universes.length + k)])]);
+  const application = t.term(checked, scope);
+  scope.infer(application);
+  // Keep the elaborated arguments: a hole solved by the call is no longer
+  // a hole when substituted into a carrier universe or constructor domain.
+  // Abstract over the free declaration's parameters, then instantiate in
+  // each generated declaration's scope; the checking scope's local names
+  // cannot escape into a later declaration.
+  const telescope = [], values = [];
+  let applied = application;
+  for (let k = 0; k < params.length; k++) { telescope.push(applied); applied = applied.body; }
+  for (let k = parameters.length - 1; k >= 0; k--) {
+    const value = applied.tag === "LApp" ? Term.universe(applied.level) : applied.arg;
+    values[k] = {kind: "instantiated", value: telescope.reduceRight((body, binder) => ({...binder, body}), value),
+      args: params.map(p => name(p.name.text)), ...at};
+    applied = applied.fn;
+  }
+  const given = new Map([...record.universes.map((_, k) => [universeAt(k), values[k]]),
+    ...record.params.map((p, k) => [p.name, values[record.universes.length + k]])]);
 
   const carriers = record.fields.filter(f => f.kind === "sort");
   if (carriers.length !== 1 || carriers[0].family) throw module.locate(notOneCarrier(T, carriers), d.theory);

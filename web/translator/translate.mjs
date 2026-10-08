@@ -1104,6 +1104,15 @@ export class Translator {
       case "useScope": return this.term(n.body,n.uses.reduce((inner,model)=>selected(this,inner,model),scope),expected);
       // An operand of a notation's rule, read where it stood (L2.10a).
       case "scoped": return this.term(n.node,n.scope,expected);
+      // An elaborated argument abstracted over a generated declaration's
+      // parameters. Its arguments are syntax in the current scope; ordinary
+      // substitution reconnects the checked value to those local bindings.
+      case "instantiated": {
+        let value=n.value;
+        for(const arg of n.args)
+          value=substituteTerm(value.body,value.name,value.tag==="LLam"?this.levelOf(arg,scope):tr(arg,null));
+        return value;
+      }
       // A literal, read by the selected notation's literal rule (L2.10c).
       case "literal": return this.literalTerm(n,scope,expected);
       case "select": return this.term(n.body,selected(this,scope,n.model),expected);

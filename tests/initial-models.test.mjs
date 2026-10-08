@@ -83,6 +83,42 @@ initial Missing : Pointed(U := U0);
   assert.ok(result.outputs.every(output => !/^(Unknown|Twice|Missing)\./.test(output.name)));
 });
 
+test("inferred theory universes survive initial and parameterized free expansion", async t => {
+  await verified(t, `import hlevels;
+theory T(U < UU0, A : U) { M : set U; point(a : A) : M; }
+initial N : T(_, Unit);
+initial Named : T(A := Unit, U := _);
+free W(V < UU0, A : V) : T(_, A) on A;
+free Capturing(T : U0) : T(_, T) on T;
+def initial_fold(S : T(U0, Unit)) : N.fold(S).map(N.point(tt)) = S.point(tt) { rfl; }
+def named_fold(S : T(U0, Unit)) : Named.fold(S).map(Named.point(tt)) = S.point(tt) { rfl; }
+def generic_fold(V < UU0, A : V, S : T(V, A), g : A -> S.M, a : A) :
+  W.fold(V, A, S, g).map(W.point(a)) = S.point(a) { rfl; }
+def generic_generator(V < UU0, A : V, S : T(V, A), g : A -> S.M, a : A) :
+  W.fold(V, A, S, g).map(W.gen(a)) = g(a) { rfl; }
+def renamed_parameter(A : U0, S : T(U0, A), g : A -> S.M, a : A) :
+  Capturing.fold(T := A, S, g).map(Capturing.point(a)) = S.point(a) { rfl; }
+`);
+});
+
+test("inferred theory types survive constructor domains and law boundaries", async t => {
+  await verified(t, `import hlevels;
+theory T(U < UU0, A : U, a : A) {
+  M : set U;
+  point(x : A) : M;
+  law at_parameter : point(a) = point(a);
+}
+initial N : T(U0, _, tt);
+free W(V < UU0, A : V, a : A) : T(V, _, a) on A;
+def initial_path : N.point(tt) = N.point(tt) := N.at_parameter;
+def free_path(V < UU0, A : V, a : A) :
+  typed(W(V, A, a), W.point(a)) = W.point(a) := W.at_parameter;
+def initial_fold(S : T(U0, Unit, tt)) : N.fold(S).map(N.point(tt)) = S.point(tt) { rfl; }
+def free_fold(V < UU0, A : V, a : A, S : T(V, A, a), g : A -> S.M, x : A) :
+  W.fold(V, A, a, S, g).map(W.point(x)) = S.point(x) { rfl; }
+`);
+});
+
 test("inherited theories without universe headers have initial and free models at their generated universe", async t => {
   await verified(t, `import hlevels;
 theory T(U < UU0) { M : set U; c : M; }
