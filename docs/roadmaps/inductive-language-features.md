@@ -97,6 +97,13 @@ requires a proof in the candidate model. Unsupported construction or failed
 proof search reports the outstanding obligation, not mathematical
 nonexistence. `Field` can have morphisms while initial/free derivation fails.
 
+Generated types, terms, and functions follow the
+[scope and capture contract](syntax-hygiene.md), including artifacts reused
+by later derivations. The first free-model interface forgets to one carrier;
+several carriers need a generator assignment or dependent diagram, as
+specified in [L2.6](core-theories.md#initial-and-free-models-l26). The current
+`on A` prototype does not implement that generalization.
+
 ```
 theory Monoid deriving (morphisms, free) {
   sort M : set;

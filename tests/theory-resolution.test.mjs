@@ -14,6 +14,63 @@ const checked = async (t, source, fixtures = {}) => {
   return result;
 };
 
+test("family indices carry captured syntax through generated homomorphisms and isomorphisms", async t => {
+  await checked(t, `import fixture;
+def k : Nat := succ(zero);
+theory Child(U < UU0) extends G {}
+def inherited(S : Child(U0)) : S.V(zero) := S.unit;
+def identity(S : Child(U0)) : Child.Hom(S, S) := Child.Hom.id(S);
+def composite(S : Child(U0)) : Child.Hom(S, S) := Child.Hom.compose(Child.Hom.id(S), Child.Hom.id(S));
+def iso(S : Child(U0)) : Child.Iso(S, S) := Child.Iso.compose(Child.Iso.id(S), Child.Iso.id(S));
+`, {fixture: `import hlevels;
+import nat;
+def k : Nat := zero;
+theory G(U < UU0) { V(n : Nat) : set U; unit : V(k); base : V(zero); }
+`});
+});
+
+test("a child may reuse its imported parent's name without redirecting parent references", async t => {
+  await checked(t, `import fixture;
+theory T(U < UU0) extends T { extra : M; }
+def inherited(S : T(U0)) : S.M := original(S.t);
+def parent_map(S : T(U0)) := T.Hom.t(T.Hom.id(S));
+`, {fixture: `import hlevels;
+theory T(U < UU0) { M : set U; point : M; }
+def original(S : T(U0)) : S.M := S.point;
+`});
+});
+
+test("a local model projection stays distinct from the generated declaration of the same spelling", async t => {
+  for (const local of ["T", "other"]) {
+    await checked(t, `import hlevels;
+theory P(U < UU0) { M : set U; x : M; }
+theory T(U < UU0) { M : set U; op(${local} : P(U), y : ${local}.M) : M; }
+def apply(S : T(U0), p : P(U0)) : S.M := S.op(p, p.x);
+`);
+  }
+});
+
+test("template holes cannot capture a user's parameter or family-index names", async t => {
+  for (const binder of ["__theory_type_0", "__theory_parameter_0", "__theory_reference"]) {
+    await checked(t, `import hlevels;
+import nat;
+theory T(U < UU0, ${binder} : Nat) { V(n : Nat) : set U; point : V(${binder}); }
+def identity(S : T(U0, zero)) : T.Hom(S, S) := T.Hom.id(S);
+`);
+  }
+});
+
+test("a captured field global can be shadowed by the generated model's name", async t => {
+  await checked(t, `import hlevels;
+def A : U0 := Unit;
+theory T(U < UU0) { M : set U; point(a : A) : M; }
+initial A : T(U0);
+def use_it : A := A.point(tt);
+free W(A : U0) : T(U0) on A;
+def free_argument : W(Nat) := W.point(tt);
+`);
+});
+
 test("initial and free models retain imported global types and law constants", async t => {
   await checked(t, `import fixture;
 def A : U0 := Nat;

@@ -2,6 +2,7 @@
 // These environment keys cannot be written by source or bound by a local.
 // Their values are ordinary elaboration entries, still checked by the kernel.
 import {rewritten} from "../cubist/scopes.mjs";
+import {reference, members} from "../cubist/references.mjs";
 
 const identities = new WeakMap();
 const contexts = new WeakMap();
@@ -29,7 +30,7 @@ export function capturedName(node, env, namespaces = []) {
   const name = lexicalBinding(identity(value ?? companions[0][1]));
   if (value) env.set(name, value);
   for (const [key, entry] of companions) env.set(key(name), entry);
-  return {...node, name, spelling: node.spelling ?? node.name};
+  return reference(name, node.spelling ?? node.name, node);
 }
 
 // Resolve qualified declarations as a whole; a model projection retains
@@ -38,19 +39,10 @@ export function capturedNames(node, env, bound = new Set(), namespaces = []) {
   return rewritten(node, (n, inner) => {
     if (n.kind !== "name" || n.name.startsWith("\u0000")) return n;
     const [root, ...fields] = n.name.split(".");
-    if (inner.has(root)) return n;
+    const receiver = {...n, name: root, end: n.start + root.length};
+    if (inner.has(root)) return fields.length ? members(n, receiver, fields) : n;
     if (env.has(n.name) || namespaces.some(key => env.has(key(n.name)))) return capturedName(n, env, namespaces);
     if (!env.has(root) && !namespaces.some(key => env.has(key(root)))) return n;
-    const head = capturedName({...n, name: root}, env, namespaces);
-    return {...head, name: [head.name, ...fields].join("."), spelling: n.name};
+    return members(n, capturedName(receiver, env, namespaces), fields);
   }, bound);
-}
-
-export function capturedSpellings(node) {
-  const names = new Set();
-  rewritten(node, n => {
-    if (n.spelling) names.add(n.spelling.split(".")[0]);
-    return n;
-  });
-  return names;
 }

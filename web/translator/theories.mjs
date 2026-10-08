@@ -3,7 +3,8 @@
 // leaves, by which m.f reads a field of a model m and `open m;` puts a
 // model's fields and notation in scope.
 import {expandTheory} from "../cubist/theories.mjs";
-import {capturedNames, lexicalBinding, lexicalNotation} from "./lexical.mjs";
+import {capturedName, capturedNames, lexicalBinding, lexicalNotation} from "./lexical.mjs";
+import {reference as syntaxReference, referenceKey} from "../cubist/references.mjs";
 import {Scope} from "./elaboration.mjs";
 import {rewritten} from "../cubist/scopes.mjs";
 import {substituteTerm,alphaKey,isTerm} from "./core.mjs";
@@ -63,8 +64,11 @@ export function modelField(t,scope,n) {
   if(!known&&record.ambiguous?.[field])throw ambiguousField(record,owner.name,field);
   if(!known)throw Error(`${owner.name} is a model of ${record.name}, which has no field ${field}: it has ${record.fields.map(f=>f.name).join(", ")}${
     record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`);
-  return scope.declared({kind:"call",fn:{...n,name:known.reference??known.projection,spelling:known.projection},args:[owner],start:n.start,end:n.end});
+  return scope.declared({kind:"call",fn:projectionReference(known,n),args:[owner],start:n.start,end:n.end});
 }
+
+const projectionReference=(field,at)=>field.reference?syntaxReference(field.reference,field.projection,at)
+  :{...at,kind:"name",name:field.projection};
 
 // A field that two independent parents give under one name (L2.4c): the
 // error that names the qualified forms.
@@ -86,7 +90,7 @@ export function memberField(t,scope,n) {
   if(!known&&record.ambiguous?.[field])throw ambiguousField(record,"m",field);
   if(!known)throw Error(`This is a model of ${record.name}, which has no field ${field}: it has ${record.fields.map(f=>f.name).join(", ")}${
     record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`);
-  return scope.declared({kind:"call",fn:{kind:"name",name:known.reference??known.projection,spelling:known.projection,start:n.field.start,end:n.field.end},args:[n.value],start:n.start,end:n.end});
+  return scope.declared({kind:"call",fn:projectionReference(known,{start:n.field.start,end:n.field.end}),args:[n.value],start:n.start,end:n.end});
 }
 
 // The scope with the model `node` opened, or null when it is no model: each
@@ -97,7 +101,7 @@ export function opened(t,scope,node,{complete=true}={}) {
   if(!record)return null;
   const at={start:node.start,end:node.end};
   const values=new Map([...record.fields,...record.derived??[]].map(field=>
-    [field.name,t.term(scope.declared({kind:"call",fn:{kind:"name",name:field.reference??field.projection,spelling:field.projection,...at},args:[node],...at}),scope,null)]));
+    [field.name,t.term(scope.declared({kind:"call",fn:projectionReference(field,at),args:[node],...at}),scope,null)]));
   // All of them in scope with one copy of the names there.
   const added=[...values];
   for(const [operator,field] of Object.entries(record.notations))added.push([operatorBinding(operator),values.get(field)]);
@@ -245,12 +249,12 @@ function notationSelected(scope,notation) {
 // notation the declaration after them prints in (L2.10j).
 export const selectionName=uses=>{const model=uses?.at(-1);return model?.kind==="name"?model.name:null;};
 export function selected(t,scope,node) {
-  const notation=node.kind==="name"?scope.env.get(notationBinding(node.name)):null;
+  const key=referenceKey(node),notation=key?scope.env.get(notationBinding(key)):null;
   if(notation?.tag==="Notation"&&!notation.model)return notationSelected(scope,notation);
   const inner=opened(t,scope,node);
   // A model's notation with the literal rules its module added, where the
   // name is still that model.
-  if(inner&&notation?.model&&scope.env.get(node.name)===notation.model) {
+  if(inner&&notation?.model&&scope.env.get(key)===notation.model) {
     const selection=inner.env.get(SELECTION);
     return inner.alias(SELECTION,{...selection,numeral:notation.rules.get("numeral")??selection.numeral??null,
       literal:notation.rules.get("literal")??selection.literal??null});
@@ -267,7 +271,7 @@ export function qualifiedOperator(t,scope,n) {
   // A named notation's operator: its rule, applied where it stands. A
   // model's notation, with the literal rules its module added, binds its
   // theory's operators, read from the model below.
-  const notation=n.model.kind==="name"?scope.env.get(notationBinding(n.model.name)):null;
+  const key=referenceKey(n.model),notation=key?scope.env.get(notationBinding(key)):null;
   if(notation?.tag==="Notation"&&!notation.model) {
     const rule=notation.rules.get(n.operator);
     if(!rule)throw scope.unit.locate(Error(`${notation.name} binds no rule to ${n.operator}.`),at);
@@ -296,8 +300,13 @@ export function theoryDeclarations(t,module,d,env,declarations) {
       return entry?.tag==="Inductive"&&(entry.modifier==="prop"||entry.modifier?.trunc===-1);};
     const notation=capturedNotation(t,module,d,env);
     const capture=capturedTheorySyntax(t,env,notation);
-    const generated=expandTheory(d,name=>env.get(theoryBinding(name))?.record??null,proposition,capture);
     const reference=name=>lexicalBinding(t.checker.bindingName?.(name)??name);
+    const generatedReference=(node,scope)=>{
+      if(scope==="generated")return syntaxReference(reference(node.name),node.name,node);
+      if(scope==="outer")return capturedName(node,env,[notationBinding,theoryBinding]);
+      throw new TypeError("Unknown declaration reference scope: "+scope);
+    };
+    const generated=expandTheory(d,name=>env.get(theoryBinding(name))?.record??null,proposition,capture,generatedReference);
     for(const declaration of generated)if(declaration.theory) {
       const record=declaration.theory;
       record.reference=reference(record.model);
@@ -309,15 +318,7 @@ export function theoryDeclarations(t,module,d,env,declarations) {
     }
     env.set(theoryBinding(d.name.text),{tag:"Theory",name:d.name.text,record:generated[0].theory,
       notation});
-    // References introduced by the expansion refer to these declarations,
-    // even inside a field binder named like the theory. Source globals were
-    // resolved before expansion and are already distinct from these names.
-    const own=new Map(generated.map(declaration=>[declaration.name.text,reference(declaration.name.text)]));
-    // A declaration's own name is its recursive binder, resolved by match
-    // elaboration, rather than a reference to an already checked global.
-    return generated.map(({theory,...syntax})=>({...rewritten(syntax,(n,bound)=>
-      n.kind==="name"&&n.name!==syntax.name.text&&own.has(n.name)&&(n.name.includes(".")||!bound.has(n.name))
-        ?{...n,name:own.get(n.name),spelling:n.name}:n),...(theory?{theory}:{})}));
+    return generated;
   } catch(failure) {
     // The message says where, as an elaboration error does.
     return failedExpansion(t,d,env,declarations,module.locate(Error(failure.message),{start:failure.offset,end:failure.offset}));

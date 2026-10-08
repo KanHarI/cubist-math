@@ -69,7 +69,8 @@ function namesIn(node, names = new Set()) {
 }
 // An unlabelled parent's label: its name in snake case, CommMonoid as comm_monoid.
 export const snake = text => text.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
-const syntaxValue = (key, value) => typeof value === "number" && /^(start|end)$|Start$|End$/.test(key) ? undefined : value;
+const syntaxValue = (key, value) => ["spelling", "synthetic"].includes(key)
+  || typeof value === "number" && /^(start|end)$|Start$|End$/.test(key) ? undefined : value;
 const sameSyntax = (a, b) => JSON.stringify(a, syntaxValue) === JSON.stringify(b, syntaxValue);
 // Keep each written shared domain outside its binders. Generated evidence
 // may share a group number but has a different, dependent domain.
@@ -552,10 +553,14 @@ function theoryFields(theory, lookup, proposition, capture) {
 
 // The declarations a theory expands to, and its record, which a theory
 // that extends it reads (`lookup` gives the record of a theory by name).
-export function expandTheory(theory, lookup = () => null, proposition = () => false, capture = node => node) {
+export function expandTheory(theory, lookup = () => null, proposition = () => false, capture = node => node, reference = node => node) {
   // What the expansion places at the theory's name is generated, and links
   // nowhere there (cubical-program.mjs): the name links to its models' type.
   const T = theory.name.text, at = { ...theory.name, synthetic: true };
+  // Only the expansion's builders introduce declaration references. Reused
+  // source syntax is already resolved and is never searched for matching text.
+  const globalCall = (fn, args, span) => call(reference(name(fn, span), "generated"), args, span);
+  const outerCall = (fn, args, span) => call(reference(name(fn, span), "outer"), args, span);
   const { fields, notations, recipes, derived, parents, universes: headerUniverses, params, ambiguous, ambiguousNotations } = theoryFields(theory, lookup, proposition, capture);
   if (!fields.length) throw located(Error(`${T} has no fields: a theory declares sorts, operations and laws.`), at);
   const taken = new Set([...namesIn(theory), ...fields.map(field => field.name), ...fields.flatMap(field => [...namesIn(field.type)]),
@@ -571,7 +576,7 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
     ...params.map((p, k) => ({ name: token(p.name, at), type: inUniverse(p.type), group: k + 1, ...(parameter ? { implicit: true } : {}) })),
   ];
   const nextGroup = params.length + 1;
-  const modelType = span => call(T, [...universes, ...params.map(p => p.name)].map(text => name(text, span)), span);
+  const modelType = span => globalCall(T, [...universes, ...params.map(p => p.name)].map(text => name(text, span)), span);
   const largest = list => list.length === 1 ? name(list[0], at) : call("max", [name(list[0], at), largest(list.slice(1))], at);
   // Each declaration reads its operators and numerals in the file's
   // selection where the theory stands (L2.10j).
@@ -609,7 +614,7 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
   const projected = new Map();
   fields.forEach((field, k) => {
     const type = rewritten(inUniverse(field.type), (n, bound) => n.kind === "name" && projected.has(n.name) && !bound.has(n.name)
-      ? call(projected.get(n.name), [name(model, n)], n) : n);
+      ? globalCall(projected.get(n.name), [name(model, n)], n) : n);
     let value = name(model, field.at);
     for (let j = 0; j < k; j++) value = projection(value, 2, field.at);
     if (k < fields.length - 1) value = projection(value, 1, field.at);
@@ -627,7 +632,7 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
       if (d.recursive && n.kind === "call" && n.fn.kind === "name" && n.fn.name === d.name && !bound.has(d.name))
         return call(`${T}.${d.name}`, [name(model, n), ...n.args.map(through)], n);
       return n.kind === "name" && projected.has(n.name) && !bound.has(n.name) && !own.has(n.name)
-        ? call(projected.get(n.name), [name(model, n)], n) : n;
+        ? globalCall(projected.get(n.name), [name(model, n)], n) : n;
     });
     const parameters = [];
     for (const members of parameterGroups(d.params)) {
@@ -644,10 +649,10 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
   // each of P's fields from the child's field it became.
   for (const [index, parent] of parents.entries()) {
     const span = theory.parents[index];
-    const parentModel = call(parent.theory, [...parent.universes.map(u => inUniverse(name(u, span))), ...parent.params.map(p => name(p, span))], span);
+    const parentModel = outerCall(parent.theory, [...parent.universes.map(u => inUniverse(name(u, span))), ...parent.params.map(p => name(p, span))], span);
     out.push(declaration(parent.projection, [...headerParameters({ universe: true, parameter: true }),
       { name: token(model, span), type: modelType(span), group: nextGroup }], parentModel,
-    call(parent.make, [...parent.params.map(p => name(p, span)), ...parent.fields.map(field => call(`${T}.${field}`, [name(model, span)], span))], span), span,
+    outerCall(parent.make, [...parent.params.map(p => name(p, span)), ...parent.fields.map(field => globalCall(`${T}.${field}`, [name(model, span)], span))], span), span,
     { role: "projection", field: parent.label }));
   }
   // Homomorphisms and isomorphisms, unless an operation's argument mixes a
@@ -668,9 +673,15 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
       ...[...morphisms.typeMarkers].map(([marker, { type, model, universes }]) => [marker,
         renamed(type, new Map([...fields.map(field => [field.name, `${model}.${field.name}`]), ...inUniverses(universes)]), at)]),
     ]);
+    // Resolve only the template's declaration references, before inserting
+    // source fragments. A splice is an AST, never source to parse or resolve.
     const parsed = parse(morphisms.declarations.map((d, k) => d.source.replace(/^def \S+?(?=[{(:])/, `def generated_${k}`)).join("\n")).declarations
-      .map(d => parameterType.size ? JSON.parse(JSON.stringify(d), (key, value) =>
-        value?.kind === "name" && parameterType.has(value.name) ? parameterType.get(value.name) : value) : d);
+      .map(d => rewritten(d, n => {
+        if (n.kind !== "name") return n;
+        if (parameterType.has(n.name)) return parameterType.get(n.name);
+        const global = morphisms.references.get(n.name);
+        return global ? reference({...n, name: global.name}, global.scope) : n;
+      }));
     parsed.forEach((d, k) => {
       const { name: declName, role, field, record: morphismRecord, labels = {} } = morphisms.declarations[k];
       // A parameter whose binder is named apart from its field is called

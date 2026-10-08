@@ -180,6 +180,12 @@ still require collision checks before any declarations are published.
    be lazy, on first use, as an optimization that does not change what is
    in scope.
 
+   Lazy generation retains the declaration's resolved record and lexical
+   context, following the [scope and capture contract](syntax-hygiene.md).
+   It does not resolve stored spellings in the first caller's environment.
+   The same rule covers every generated type, function, proof, and capability
+   consumed by another derivation.
+
 5. **User-defined morphisms, `morphisms where …` (L2.4e), are deferred.**
    They are for theories whose morphisms are maps of carriers that
    derivation refuses or chooses differently:

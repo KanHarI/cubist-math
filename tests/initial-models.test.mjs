@@ -416,7 +416,7 @@ def kept(A : U0, T : P(U0), h : A -> T.M, y : A) :
 `);
 });
 
-test("a free parameter renamed apart from a field's names shows as primed and keeps its label", async t => {
+test("a free parameter keeps its name when a field's global is already resolved", async t => {
   const source = `import hlevels;
 import nat;
 theory P(U < UU0) { M : set U; point(n : Nat) : M; }
@@ -424,9 +424,9 @@ free W(Nat : U0) : P(U0) on Nat;
 print(typeof(W.fold));
 def folded(A : U0, S : P(U0), h : A -> S.M, a : A) : W.fold(Nat := A, target := S, g := h).map(W.gen(a)) = h(a) { rfl; }`;
   const {result} = await verified(t, source);
-  assert.deepEqual(result.prints.map(p => p.text), ["forall Nat′ : U0. forall target : P(U0). (Nat′ -> target.M) -> P.Hom{{U0, U0}}(W.model(Nat′), target)"]);
+  assert.deepEqual(result.prints.map(p => p.text), ["forall Nat : U0. forall target : P(U0). (Nat -> target.M) -> P.Hom{{U0, U0}}(W.model(Nat), target)"]);
   const written = source.indexOf("Nat : U0");
-  assert.deepEqual([...new Set(result.links.filter(link => link.start === written).map(link => link.name))], ["Nat′"]);
+  assert.deepEqual([...new Set(result.links.filter(link => link.start === written).map(link => link.name))], ["Nat"]);
 });
 
 test("only the kernel's boundary refusals of a law are the strategy's E856", () => {
@@ -592,7 +592,6 @@ free W(A : U0) : T(U0) on A;`, {module});
 test("a model name cannot hide a global required by its expansion", async t => {
   for (const source of [
     "theory T(U < UU0) { M : set U; c : M; } initial T : T(U0);",
-    "def N : U0 := Unit; theory T(U < UU0) { M : set U; c(x : N) : M; } initial N : T(U0);",
     "def N : U0 := Unit; theory T(U < UU0, A : U) { M : set U; c(x : A) : M; } initial N : T(U0, N);",
     "def W : U0 := Unit; theory T(U < UU0) { M : set U; } free W(A : W) : T(U0) on Unit;",
   ]) {
@@ -606,6 +605,12 @@ test("a model name cannot hide a global required by its expansion", async t => {
 theory T(U < UU0) { M : set U; c : M; }
 initial M : T(U0);
 free W(W : U0) : T(U0) on W;`);
+  // A field's global has a declaration identity before N is published.
+  await verified(t, `import hlevels;
+def N : U0 := Unit;
+theory T(U < UU0) { M : set U; c(x : N) : M; }
+initial N : T(U0);
+def use_it : N := N.c(tt);`);
 });
 
 test("an initial or free model's declared type is an inductive to the workbench and the migration verifier", async t => {

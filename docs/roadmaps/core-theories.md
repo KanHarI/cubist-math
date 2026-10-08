@@ -668,6 +668,12 @@ models and computing folds for the equational strategy. That evidence is
 retained; migrating it to this revised capability contract and proving the
 universal properties remain work to do.
 
+Retained and generated syntax follows the
+[scope and capture contract](syntax-hygiene.md). This includes deriving
+requests: fields keep the theory's references and notation, request arguments
+keep the caller's, and generated artifacts carry declaration identities.
+Later derivations must not reconstruct captures by looking up display names.
+
 ### Opt-in and meaning
 
 The proposed clause is shared with [morphism derivation](categories.md):
@@ -683,6 +689,31 @@ and a homomorphism to its carrier map. Changing the morphisms or the forgetful
 functor changes the obligation; a construction for another category cannot
 be reused without a proof. Several carriers and other forgetful functors
 need a later explicit interface.
+
+The current `on A` syntax and construction strategy support exactly one
+non-family carrier. They do not encode generator assignments for several
+carriers. This limit does not establish that those theories lack free models.
+
+For independent carriers, a future interface can name one generator type per
+carrier, schematically `on (Objects := O, Labels := L)`. This is a design
+example, not accepted syntax. The result needs named carriers, an inclusion
+per carrier, and a fold accepting an assignment per carrier. A bare name such
+as the prototype's `W` can no longer mean the only carrier implicitly.
+
+Dependent carriers need a generator diagram, rather than unrelated types.
+For objects `O` and arrows `E(x, y)` indexed by `x, y : O`, an assignment into
+`B` consists of `o : O -> B.Ob` and
+`e : forall x, y : O. E(x, y) -> B.Arr(o(x), o(y))`. General signatures can
+require further dependencies and compatibility data. Generator bindings form
+an ordered telescope, following the capture contract above; their universes
+and h-level requirements must be explicit.
+
+The general obligation is an equivalence between `T.Hom(F(G).model, B)` and
+assignments from the generator diagram `G` into the chosen forgetful image
+of `B`. Restriction and fold must satisfy both inverse laws. This needs a
+suitable simultaneous/dependent construction strategy and explicit forgetful
+functor, beyond extending the parser for `on`. The single-carrier equivalence
+below is the first specialization.
 
 - **`deriving (morphisms, free)`** requests a free model for every generator
   type in the declared universe range, its generator map, fold, computation,

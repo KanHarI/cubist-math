@@ -1,6 +1,7 @@
 // Partial source translator. Unsupported syntax/foundations are explicit errors;
 // no fallback axiom, old-kernel handle, or unchecked term enters this checker.
 import {parse} from "../cubist/parser.mjs";
+import {elaborationSyntax} from "../cubist/references.mjs";
 import {tacticSite,expressionSite} from "../cubist/link-sites.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
 import {binaryLiteralSyntax} from "../cubist/binary-literals.mjs";
@@ -361,7 +362,7 @@ export class Translator {
     // A theory is checked as the declarations it expands to, in its place.
     const queue=[...(ast.items??ast.declarations)];
     while(queue.length) {
-      const d=queue.shift();
+      const queued=queue.shift(),d=queued.generated?elaborationSyntax(queued):queued;
       // Its messages print in what a file-level use selects for it (L2.10j).
       if(this.checker)this.checker.notation={selection:selectionName(d.uses)};
       // A theory, or an initial or free model (L2.6), is checked as the
@@ -832,6 +833,8 @@ export class Translator {
     return this.checker.ascribe && this.checker.kernel?.optimizations?.compactPaths !== false ? scope.ascribe(result,T.path(j,pt.family,pt.left,qt.right)) : result;
   }
   term(n,scope,expected=null) {
+    if(n.kind==="reference")n=elaborationSyntax(n);
+    else if(n.kind==="call"&&n.fn.kind==="reference")n={...n,fn:elaborationSyntax(n.fn)};
     if(n.lexicalNotation)scope=scope.aliases(scope.env.get(n.lexicalNotation));
     const result=this.termBody(n,scope,expected);
     if(scope.unit.references) {
@@ -942,7 +945,7 @@ export class Translator {
           throw Error(`${theory}.Model is now ${theory}: a theory's name is the type of its models, as in ${theory}(U0).`);
         // The printer writes __U where an instance's universe is erased.
         if(/^__U[0-9]*$/.test(n.name))throw Error(`${n.name} stands for a universe that the printer could not show: write the universe in its place, such as U0 or a universe variable.`);
-        throw Error(`Untranslated name: ${n.name}`);
+        throw Error(`Untranslated name: ${n.spelling??n.name}`);
       }
       case "number": {
         // In a selected notation, a numeral is its numeral rule's, or its
