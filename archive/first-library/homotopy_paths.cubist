@@ -1,4 +1,4 @@
-import paths;
+import paths_;
 
 // Naturality tracks the moving basepoint of a homotopy. No funext or
 // classical principle is needed: the first two laws hold by conversion and

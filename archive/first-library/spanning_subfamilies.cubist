@@ -112,8 +112,8 @@ def spanning_subfamily_step(
   let Member := fun (i : Fin(n)) => Mere(Fiber((Fin(m) -> af_carrier(K)), X, F, v(i)));
   let Result := SubfamilyBasis(K, V, n, v);
   let extend : (exists i : Fin(n). Member(i) -> Void) -> Mere(Result) {
-    intro witness;
-    obtain (i, outside) := witness;
+    intro witness_;
+    obtain (i, outside) := witness_;
     let selected := fin_prepend(Fin(n), m, i, indices);
     exact previous(
       succ(m), selected,

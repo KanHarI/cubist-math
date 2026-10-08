@@ -1401,7 +1401,7 @@ references to it elsewhere in this document are to that text.
 inductive Trunc(U < UU0, A : U) : prop { point(a : A); }
 inductive Quotient(U, V < UU0, A : U, R : A -> A -> V) : set {
   class(a : A);
-  glue(a, b : A, r : R(a, b)) : class(a) = class(b);
+  glue_(a, b : A, r : R(a, b)) : class(a) = class(b);
 }
 ```
 

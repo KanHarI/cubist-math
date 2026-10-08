@@ -8,7 +8,7 @@ use nat;
 def generic(U < UU0) := fun x => x;
 
 // Error: E340: Untranslated dependency: generic
-def use := generic(U0);
+def use_ := generic(U0);
 
 def good := 0;
 

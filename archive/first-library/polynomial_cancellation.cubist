@@ -40,8 +40,8 @@ def polynomial_multiple_factor_unit(
   let invert :
     (exists q : Polynomial(K). a = polynomial_mul(K, p, q))
     -> (exists q : Polynomial(K). polynomial_mul(K, b, q) = polynomial_one(K)) {
-    intro witness;
-    obtain (q, factor) := witness;
+    intro witness_;
+    obtain (q, factor) := witness_;
     let product : polynomial_mul(K, p, polynomial_mul(K, q, b)) = polynomial_mul(
       K, p, polynomial_one(K)
     ) :=
@@ -77,8 +77,8 @@ def polynomial_small_divisible_zero(
   p = polynomial_zero(K) {
   let useQuotient :
     (exists q : Polynomial(K). p = polynomial_mul(K, divisor, q)) -> p = polynomial_zero(K) {
-    intro witness;
-    obtain (q, equation) := witness;
+    intro witness_;
+    obtain (q, equation) := witness_;
     let product := trans(equation, polynomial_mul_comm(K, divisor, q));
     let productSupport :=
       along((fun (s : Polynomial(K)) => SeriesSupport(K, polynomial_coefficients(K, s), d))) by product from support;

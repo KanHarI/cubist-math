@@ -135,7 +135,7 @@ def polynomial_evaluation_linear(
       K, L, e, polynomial_from_coordinates(K, n, a), x
     );
   let E := fun (p : Polynomial(K)) => polynomial_eval(K, L, e, p, x);
-  let additive :
+  let additive_ :
     forall a : Fin(n) -> af_carrier(K). forall b : Fin(n) -> af_carrier(K).
     F((fun (i : Fin(n)) => field_add(K, a(i), b(i)))) = field_add(L, F(a), F(b)) {
     intro a, b;
@@ -161,5 +161,5 @@ def polynomial_evaluation_linear(
       )
     };
   }
-  exact (F, additive, scalar);
+  exact (F, additive_, scalar);
 }

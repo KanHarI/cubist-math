@@ -32,8 +32,8 @@ def predicate_union_least(
   PredicateIncluded(A, PredicateUnion(I, A, P), Q) {
   intro x, member;
   let fromMember : (exists i : I. P(i, x)) -> Q(x) {
-    intro witness;
-    obtain (i, hx) := witness;
+    intro witness_;
+    obtain (i, hx) := witness_;
     exact included(i, x, hx);
   }
   exact field_exists_elim((exists i : I. P(i, x)), Q(x), propQ(x), fromMember, member);

@@ -30,13 +30,13 @@ def field_predicate_ext(
 }
 
 def field_subtype_ext(
-  A : U1, P : A -> U1, prop : (forall a : A. FieldProp(P(a))), u, v : (exists x : A. P(x)),
+  A : U1, P : A -> U1, prop_ : (forall a : A. FieldProp(P(a))), u, v : (exists x : A. P(x)),
   p : field_first(A, P, u) = field_first(A, P, v)
 ) :
   u = v {
   let square : PathP(fun (i : Interval) => P(p @ i), field_second(A, P, u), field_second(A, P, v)) {
     over P along p by {
-      exact prop(
+      exact prop_(
         field_first(A, P, v), along P by p from field_second(A, P, u), field_second(A, P, v)
       );
     }

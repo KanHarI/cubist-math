@@ -11,8 +11,8 @@ def polynomial_divisor_root(
   let E := fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
   let useFactor :
     (exists q : Polynomial(K). p = polynomial_mul(K, g, q)) -> PolynomialRoot(K, L, e, p, x) {
-    intro witness;
-    obtain (q, equation) := witness;
+    intro witness_;
+    obtain (q, equation) := witness_;
     exact with unfolding [] {
       trans(
         cong(E, equation),

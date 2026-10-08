@@ -11,7 +11,7 @@ import { benchmark } from "../../../web/benchmark-runner.mjs";
 const root = new URL("../../../", import.meta.url);
 const selection = [
   ["primes", "nat_add_assoc"],
-  ["paths", "right_unit"],
+  ["paths_", "right_unit"],
   ["finite_dependent_counts", "finite_uniform_fiber_count"],
   ["group_operations", "group_conjugate_multiply"],
   ["field_vector_spaces", "field_scalar_laws"],

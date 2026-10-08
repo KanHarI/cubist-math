@@ -983,7 +983,7 @@
    "summary": "Paths · append, map and reconnect"
   },
   {
-   "path": "archive/first-library/paths.cubist",
+   "path": "archive/first-library/paths_.cubist",
    "summary": "Paths · equality reasoning"
   },
   {
@@ -1827,12 +1827,12 @@
    "summary": "Tactics that `tests/search-fuel.test.mjs` checks with the default fuel and with less, in fresh and reused sessions: a cycle and the rewrite budget among them."
   },
   {
-   "path": "cubist-tests/glue_printed.cubist",
-   "summary": "A Glue line as the printer shows it, written back: it checks, and equals the line."
+   "path": "cubist-tests/glue_.cubist",
+   "summary": "Glue types, `glue` and `unglue`, along the library's [`contractible_maps`](../library/contractible_maps.cubist) equivalences: a line of types glued along the identity, unglue of a glue term, a piece on a face of two clauses, and the refusals of a function that is no equivalence, a misplaced value, `glue` with no Glue type and `unglue` of a point."
   },
   {
-   "path": "cubist-tests/glue.cubist",
-   "summary": "Glue types, `glue` and `unglue`, along the library's [`contractible_maps`](../library/contractible_maps.cubist) equivalences: a line of types glued along the identity, unglue of a glue term, a piece on a face of two clauses, and the refusals of a function that is no equivalence, a misplaced value, `glue` with no Glue type and `unglue` of a point."
+   "path": "cubist-tests/glue_printed.cubist",
+   "summary": "A Glue line as the printer shows it, written back: it checks, and equals the line."
   },
   {
    "path": "cubist-tests/h1_acceptance_formers.cubist",
@@ -2444,7 +2444,7 @@
   },
   {
    "path": "library/univalence.cubist",
-   "summary": "Univalence by Glue, for the equivalences of [`contractible_maps`](contractible_maps.cubist). An equivalence glues a path of types (`glue_path`), and a path of types transports the identity to an equivalence (`idtoequiv`). The two are inverse (`glue_path_idtoequiv`, `idtoequiv_glue_path`), so `idtoequiv` is an equivalence (`univalence`). Along every line of Glue types, unglue is an equivalence (`glue_line_equiv`), and the type of types equivalent to a type is contractible (`equivalent_types_contractible`). The `ua` builtin takes the `Equiv` of `import paths;` instead."
+   "summary": "Univalence by Glue, for the equivalences of [`contractible_maps`](contractible_maps.cubist). An equivalence glues a path of types (`glue_path`), and a path of types transports the identity to an equivalence (`idtoequiv`). The two are inverse (`glue_path_idtoequiv`, `idtoequiv_glue_path`), so `idtoequiv` is an equivalence (`univalence`). Along every line of Glue types, unglue is an equivalence (`glue_line_equiv`), and the type of types equivalent to a type is contractible (`equivalent_types_contractible`). The `ua` builtin takes the `Equiv` of `import paths_;` instead."
   },
   {
    "path": "library/universe_automorphisms.cubist",

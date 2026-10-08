@@ -164,12 +164,12 @@ def csb_disjoint(
   same : csb_map(A, B, f, g, embedG, x) = csb_map(A, B, f, g, embedG, z)
 ) :
   Void {
-  let path :=
+  let path_ :=
     trans(
       sym(csb_good(A, B, f, g, embedG, x, good)),
       cong(g, trans(same, csb_bad(A, B, f, g, embedG, z, bad)))
     );
-  exact bad(gpoint_backward(A, B, f, g, z, along GPoint(A, B, f, g) by path from good));
+  exact bad(gpoint_backward(A, B, f, g, z, along GPoint(A, B, f, g) by path_ from good));
 }
 
 def csb_injective(
@@ -245,9 +245,9 @@ def injective_split_bijection(
 ) :
   Bijection(A, B) {
   let k := fun (y : B) => sigma_first(A, (fun (x : A) => h(x) = y), preimages(y));
-  let law :=
+  let law_ :=
     fun (y : B) => typed((h(k(y)) = y), sigma_second(A, (fun (x : A) => h(x) = y), preimages(y)));
-  exact (h, k, (fun (x : A) => injective(k(h(x)), x, law(h(x)))), law);
+  exact (h, k, (fun (x : A) => injective(k(h(x)), x, law_(h(x)))), law_);
 }
 
 def CantorSchroederBernstein :=

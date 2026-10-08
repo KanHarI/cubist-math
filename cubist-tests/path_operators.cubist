@@ -7,7 +7,7 @@
 import nat;
 
 // ~p, p ++ q and ~i elaborate as sym, trans and flip do.
-def inverse(A : U0, x, y : A, p : x = y) : y = x := ~p;
+def inverse_(A : U0, x, y : A, p : x = y) : y = x := ~p;
 
 def concatenation(A : U0, x, y, z : A, p : x = y, q : y = z) : x = z := p ++ q;
 
@@ -45,7 +45,7 @@ def same_square(A : U0, x, y : A, p : x = y) :
 def reversed_meet(A : U0, x, y : A, p : x = y) : y = x := path i => p @ ~(i & 1) | 0;
 
 // The operators do not depend on what the names sym and trans mean here.
-def shadowed(A : U0, x, y : A, p : x = y, sym : Nat, trans : Nat) :
+def shadowed(A : U0, x, y : A, p : x = y, sym_ : Nat, trans_ : Nat) :
   y = x := ~p ++ refl(x) ++ p ++ ~p;
 
 // The operators on a non-path say which operator failed.

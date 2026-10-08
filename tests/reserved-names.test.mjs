@@ -3,11 +3,11 @@
 // Void, and Unit's element tt cannot be bound, at any binding site. A
 // user's own Unit would otherwise pass a theory's law check while holding
 // data, and a user's own tt would be read as a literal's evidence. Contextual
-// keywords stay names outside their constructs. That the real Unit and Void
+// keywords and generated interface names are reserved everywhere. That the real Unit and Void
 // still state laws is cubist-tests/theories.cubist's Nontrivial.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parse, reservedNames } from "../web/cubist/parser.mjs";
+import { parse, reservedNames, languageKeywords, generatedNames } from "../web/cubist/parser.mjs";
 
 const parseError = source => { try { parse(source); return null; } catch (error) { return error.message; } };
 const reserved = word => `${word} is reserved, as a keyword or a built-in type of the language; pick another name.`;
@@ -37,13 +37,38 @@ test("Unit, Void and tt cannot be declared or bound at any binding site", () => 
   }
 });
 
-test("every keyword is reserved, and contextual keywords stay names", () => {
-  for (const word of reservedNames) assert.equal(parseError(`def f(${word} : Nat) : Nat := 0;`), reserved(word), word);
-  // Words with a meaning only inside one construct, which the library binds.
-  for (const word of ["import", "def", "inductive", "theory", "section",
-    "computable", "print", "typeof", "inspect", "simp_rule", "simp_set",
-    "prop", "set", "law", "sort", "notation", "extends", "type", "trunc", "with", "at", "by", "from", "over",
-    "along", "only", "using", "path", "zero", "succ"])
+test("keywords and generated interface names cannot be bound at any naming site", () => {
+  for (const word of languageKeywords) {
+    for (const source of [
+      `def ${word} : Unit := tt;`,
+      `def f(${word} : Unit) : Unit := tt;`,
+      `def f{{${word} : Unit}} : Unit := tt;`,
+      `def f : Unit -> Unit := fun (${word} : Unit) => tt;`,
+      `def P := forall ${word} : Unit. Unit;`,
+      `def P := exists ${word} : Unit. Unit;`,
+      `def f : Unit { let ${word} := tt; exact tt; }`,
+      `def f : Unit -> Unit { intro ${word}; exact tt; }`,
+      `def f : Unit := match tt { ${word} => tt; };`,
+      `def f(n : Nat) := match n { succ(${word}) => tt; };`,
+      `inductive T { ${word}; }`,
+      `theory T(U < UU0) { M : set U; ${word} : M; }`,
+      `section (${word} : Unit) { def f := tt; }`,
+      `import ${word};`,
+      `notation ${word} { x + y := x; }`,
+      `simp_set ${word} := [];`,
+      `theory T(U < UU0) extends ${word} : Parent { M : set U; }`,
+    ]) assert.equal(parseError(source), reserved(word), `${word}: ${source}`);
+  }
+  for (const word of ["Nat", "zero", "succ", "axiom", "opaque"]) {
     assert.equal(parseError(`def f(${word} : Nat) : Nat := 0;`), null, word);
-  assert.equal(parse("theory T { law : Unit; sort : Unit; }").declarations[0].fields.map(f => f.name.text).join(), "law,sort");
+  }
+});
+
+test("generated members remain usable in calls, labels and constructor patterns", () => {
+  for (const word of generatedNames) assert.equal(parseError(`def ${word} := tt;`), reserved(word));
+  assert.equal(parseError("def h := T.Hom.make(map := fun (x : Unit) => x);"), null);
+  assert.equal(parseError("def h := T.Iso.make(to := f, from := g);"), null);
+  assert.equal(parseError("def h := T.Hom.compose(T.Hom.id(m), f);"), null);
+  assert.equal(parseError("def f(t : T) := match t { gen(x) => x; squash(x, y, p, q) @ i @ j => p @ i; };"), null);
+  assert.equal(parseError("def f(t : T) := match t { T.squash(x, y, p, q) @ i @ j => p @ i; };"), null);
 });

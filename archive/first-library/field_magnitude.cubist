@@ -42,7 +42,7 @@ def field_magnitude_radius_nonnegative(
   bound : FieldMagnitudeBound(F, negF, lt, x, radius)
 ) :
   FieldLe(F, lt, zero, radius) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   obtain (upper, lower) := bound;
   intro negativeRadius;

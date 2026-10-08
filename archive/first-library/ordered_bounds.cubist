@@ -3,7 +3,7 @@ import ordered_squares;
 // Weak inequalities derived from the constructive ordered-ring interface.
 def order_le_refl(F : U1, lt : F -> F -> U0, order : StrictOrder(F, lt), x : F) :
   FieldLe(F, lt, x, x) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   exact irreflexive(x);
 }
 

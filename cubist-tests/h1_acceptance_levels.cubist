@@ -36,7 +36,7 @@ inductive PairLow(U, V < UU0, A : U, B : V) : U {
 
 inductive Quotient(U, V < UU0, A : U, R : A -> A -> V) : set {
   class(a : A);
-  glue(a, b : A, r : R(a, b)) : class(a) = class(b);
+  glue_(a, b : A, r : R(a, b)) : class(a) = class(b);
 }
 
 def big_relation(a, b : N) : U1 := U0;

@@ -119,10 +119,10 @@ def predicate_eta(A : U0, p : (Unit or A) -> Bool) : predicate_normal(A, p) = p 
   exact function_join_split_point(A, Bool, p)(x);
 }
 
-def type_path_bijection(A, B : U0, path : A = B) :=
+def type_path_bijection(A, B : U0, path_ : A = B) :=
   path_induction(
     U0, (fun (X, Y : U0, q : X = Y) => Bijection(X, Y)), (fun (X : U0) => identity_bijection(X)), A,
-    B, path
+    B, path_
   );
 
 def selected_normalize(A : U0, p : (Unit or A) -> Bool) :=

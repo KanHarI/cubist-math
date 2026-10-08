@@ -1,4 +1,4 @@
-import paths;
+import paths_;
 
 // This is a higher path between paths; it does not say that p is reflexivity.
 def loop_right_unit(A : U0, x : A, p : x = x) : trans(p, refl(x)) = p {

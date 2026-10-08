@@ -92,11 +92,11 @@ def bouquet_generation_predicate(A : U0, x : Bouquet(A)) :=
 
 def bouquet_encoded_generated(A : U0, x : Bouquet(A), p : bouquet_base(A) = x) :
   bouquet_generation_predicate(A, x, bouquet_encode(A, x, p)) {
-  exact based_induction(
+  exact based_induction_(
     U1, U0, Bouquet(A), bouquet_base(A),
     (
-      fun (point : Bouquet(A), path : bouquet_base(A) = point) => bouquet_generation_predicate(
-        A, point, bouquet_encode(A, point, path)
+      fun (point : Bouquet(A), path_ : bouquet_base(A) = point) => bouquet_generation_predicate(
+        A, point, bouquet_encode(A, point, path_)
       )
     ),
     along BouquetGenerated(A) by sym(

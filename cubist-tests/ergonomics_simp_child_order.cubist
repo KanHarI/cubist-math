@@ -3,7 +3,7 @@
 
 import nat;
 
-computable def equality(f : Nat -> Nat, a, b, c, d : Nat, p : f(a) = c, q : a = b, r : f(b) = d) :
+computable def equality_(f : Nat -> Nat, a, b, c, d : Nat, p : f(a) = c, q : a = b, r : f(b) = d) :
   f(a) = d {
   simp only [p, q, r];
 }
