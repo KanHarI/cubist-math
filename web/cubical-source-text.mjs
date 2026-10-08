@@ -425,9 +425,12 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       case "Unglue": return atom(`unglue(${show(t.value)})`);
       // A composition, as the source writes it: its family and each wall a
       // line along its dimension, the base between them.
+      // A composition prints as its box (L2.8), as the source writes it.
       case "Comp": {
-        const along = `fun (${t.dim} : Interval) => `;
-        return atom(`comp(${[along + show(t.family), show(t.base), ...t.system.map(tube => onFace(tube.face, [along + show(tube.term)]))].join(", ")})`);
+        const face = formula => formula.length ? formula.map(clause => clause.length
+          ? clause.map(text => `${text.slice(0, text.lastIndexOf(":"))} = ${text.slice(-1)}`).join(" and ") : "1").join(" or ") : "0";
+        const walls = t.system.map(tube => `on ${face(tube.face)} => ${show(tube.term)}; `).join("");
+        return atom(`compose ${t.dim} in ${show(t.family)} from ${show(t.base)} { ${walls}}`);
       }
       default: return fallback(t);
     }

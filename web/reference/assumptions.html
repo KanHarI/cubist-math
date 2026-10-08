@@ -258,7 +258,23 @@ use nat;
 // Error: The evaluated term depends on non-computing assumptions: Truncate, TruncateIntro.
 //   Path to Truncate: Truncate.
 evaluate TruncateIntro(U0, Nat, 3) expecting TruncateIntro(U0, Nat, 3);</code></pre>
-            <p>The expected side is normalized too, so it may be any term of the same type. Writing a literal makes the directive state what the term computes to. Evaluation computes full normal forms: it unfolds every definition and ignores <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints. <code>computable</code>, <code>evaluate</code> and <code>expecting</code> are keywords only in these positions. Elsewhere they are ordinary names.</p>
+            <p>The expected side is normalized too, so it may be any term of the same type. Writing a literal makes the directive state what the term computes to.</p>
+            <p>An expected value with a hole <code>_</code> is a <strong>pattern</strong>, matched against the normal form part by part: a hole matches anything; a pair, <code>left(p)</code>, <code>right(p)</code> or a constructor of the part's type applied to patterns matches a value built so; and any other expression is elaborated at the part's type and compared by normal form. A mismatch names the part that differs. A hole stands only where such a part can be read, not inside another function's arguments.</p>
+            <pre><code data-check="accept">import lists;
+use nat;
+
+def numbers : List(U0, Nat) := cons(1, cons(2, cons(3, nil)));
+def tagged : List(U0, Nat) and (Unit or Nat) := (numbers, right(2 + 2));
+
+evaluate numbers expecting cons(1, _);
+evaluate tagged expecting (cons(_, cons(2, _)), right(4));</code></pre>
+            <pre><code data-check="reject">import lists;
+use nat;
+
+def numbers : List(U0, Nat) := cons(1, cons(2, cons(3, nil)));
+
+evaluate numbers expecting cons(_, nil);  // Error: The term evaluates to cons(1, cons(2, cons(3, nil))), which does not match cons(_, nil): cons(2, cons(3, nil)) is not nil.</code></pre>
+            <p>Evaluation computes full normal forms: it unfolds every definition and ignores <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints. <code>computable</code>, <code>evaluate</code> and <code>expecting</code> are keywords only in these positions. Elsewhere they are ordinary names.</p>
             <p>The command-line checker prints each success as <code>evaluate at line N: value</code>. After <code>check</code>, its <code>evaluate EXPRESSION</code> command prints the normal form of an expression in the scope of the checked module, under the same rule. <code>inspect NAME</code> lists the declaration’s assumptions, or <code>none</code>. See <a href="checking.html#inspection">checking and inspection</a>.</p>
           </section>
 

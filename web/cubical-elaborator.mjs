@@ -74,9 +74,12 @@ const namedBinders = new Set(["Var", "Pi", "Lam", "Sigma", "LPi", "LLam"]);
 // For messages only: reduce beta-redexes, within a budget, and give generated
 // names back their source stems (`A3` → `A`, `native10` → `x`) where no two
 // names would clash. The result is never checked or stored.
-export function displayTerm(term, budget = 256) {
+// `names` maps free variables to the names they show, where the caller knows
+// their source names, as an inspection does: a stem cannot tell the source's
+// x1 (x1_4) from x1_ (x1_4 too). Every other name keeps apart from those.
+export function displayTerm(term, budget = 256, names = new Map()) {
   const shown = betaReduce(term, budget);
-  return scopedNames(shown) ?? globalNames(shown);
+  return scopedNames(shown, names) ?? globalNames(shown, names);
 }
 
 // Dimensions a message has no source name for, bound or free, which decoding
@@ -186,7 +189,7 @@ function apartFromLabels(shownAs, labels) {
   return shownAs;
 }
 
-function scopedNames(term, limit = 2000) {
+function scopedNames(term, names, limit = 2000) {
   let work = 0;
   const freeMemo = new WeakMap();
   const free = t => {
@@ -224,30 +227,42 @@ function scopedNames(term, limit = 2000) {
     return result;
   };
   // Free variables, such as a goal's context, show their stems when no two
-  // share one; binders then avoid those names.
+  // share one, and the names given them as given; binders then avoid those
+  // names.
   const outer = [...free(term)], count = new Map(), labels = printedLabels(term);
-  for (const name of outer) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
-  const shownAs = apartFromLabels(new Map(outer.map(name => [name,
-    count.get(stem(name)) === 1 && !(outer.includes(stem(name)) && stem(name) !== name) && !labels.has(stem(name))
-      ? stem(name) : name])), labels);
+  const given = outer.filter(name => names.has(name)), loose = outer.filter(name => !names.has(name));
+  const avoid = new Set([...labels, ...given.map(name => names.get(name))]);
+  for (const name of loose) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
+  const shownAs = apartFromLabels(new Map(loose.map(name => [name,
+    count.get(stem(name)) === 1 && !(outer.includes(stem(name)) && stem(name) !== name) && !avoid.has(stem(name))
+      ? stem(name) : name])), avoid);
+  for (const name of given) shownAs.set(name, names.get(name));
   try { return go(term, shownAs, new Set([...shownAs.values(), ...labels])); }
   catch (error) { if (error === scopedNames) return null; throw error; }
 }
 
-// Every generated name whose stem no other name shares shows its stem.
-function globalNames(shown) {
-  const names = new Set(), seen = new WeakSet();
+// Every generated name whose stem no other name shares shows its stem, and a
+// free variable given a name shows that name. Names are renamed wherever
+// they occur, so a name some binder binds is never given one: two binders
+// given the same name could capture each other's variables.
+function globalNames(shown, given) {
+  const names = new Set(), bound = new Set(), seen = new WeakSet();
   const collect = t => {
     if (!t || typeof t !== "object" || seen.has(t)) return;
     seen.add(t);
-    if (namedBinders.has(t.tag) && typeof t.name === "string") names.add(t.name);
+    if (namedBinders.has(t.tag) && typeof t.name === "string") {
+      names.add(t.name);
+      if (t.tag !== "Var") bound.add(t.name);
+    }
     Object.values(t).forEach(collect);
   };
   collect(shown);
-  const count = new Map(), labels = printedLabels(shown);
-  for (const name of names) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
-  const renames = apartFromLabels(new Map([...names].map(name => [name, count.get(stem(name)) === 1
-    && !(names.has(stem(name)) && stem(name) !== name) && !labels.has(stem(name)) ? stem(name) : name])), labels);
+  const fixed = new Set([...names].filter(name => given.has(name) && !bound.has(name))), loose = [...names].filter(name => !fixed.has(name));
+  const count = new Map(), labels = printedLabels(shown), avoid = new Set([...labels, ...[...fixed].map(name => given.get(name))]);
+  for (const name of loose) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
+  const renames = apartFromLabels(new Map(loose.map(name => [name, count.get(stem(name)) === 1
+    && !(names.has(stem(name)) && stem(name) !== name) && !avoid.has(stem(name)) ? stem(name) : name])), avoid);
+  for (const name of fixed) renames.set(name, given.get(name));
   const rename = name => renames.get(name) ?? name;
   const renamed = new WeakMap();
   const apply = t => {
@@ -462,9 +477,10 @@ export class NativeCubicalElaborator {
     return text.length > width ? `${text.slice(0, width - 1)}…` : text;
   }
   // Several terms shown with one naming: a variable they share has one name
-  // in all of them, apart from every label any of them prints.
-  displayTexts(terms, width = 160, limit = 4000, notation = this.notation ?? {}) {
-    return readableDimensions(displayTerm(terms)).map(term => this.printed(term, width, limit, notation));
+  // in all of them, apart from every label any of them prints. `names` gives
+  // free variables their names, as displayTerm takes them.
+  displayTexts(terms, width = 160, limit = 4000, notation = this.notation ?? {}, names = new Map()) {
+    return readableDimensions(displayTerm(terms, 256, names)).map(term => this.printed(term, width, limit, notation));
   }
   // A term whose names are already settled, as source text within a width.
   printed(term, width = 160, limit = 4000, notation = this.notation ?? {}) {

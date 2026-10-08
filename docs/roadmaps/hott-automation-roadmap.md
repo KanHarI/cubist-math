@@ -947,6 +947,21 @@ Completion:
   its [cubical language changes](proof-ergonomics-implementation-plan.md#cubical-language-changes-worth-prioritizing)).
   The corpus has 248 `face_when(` and 131 `comp(` occurrences, mostly in raw
   terms, and A3 and E2 generate more.
+  - The box notation, first, on 2026-10-06 (work plan L2.8):
+    `compose j in A from b { on i = 0 => x; on i = 1 => q @ j; }` and
+    `fill j in A from b at k { … }` lower to `comp` and `fill`, and a
+    composition prints as its box.
+  - The square view, second, the same day: `library/squares.cubist`'s
+    `Square(a0_, a1_, a_0, a_1)`, its edges named by its corners, with the reflexive and naturality
+    squares, transposition, both flips, double composition and its filler,
+    and horizontal and vertical composition, each by conversion; the
+    inspector shows a square's edges and corners.
+  - The conversions, third, the same day: `top_unique` (two squares on the
+    same three sides have equal tops, by one composition) gives
+    `square_to_path` through the square's diagonal, and `retop` with one
+    more composition gives `path_to_square`; `naturality_path` and
+    `cong_trans` follow. Re-deriving the archive's raw `comp` lemmas
+    through them remains.
 
   Expose the kernel's face-restricted conversion as a read-only adapter query.
   It serves boundary display and locating face mismatches, and is an interface

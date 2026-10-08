@@ -17,6 +17,7 @@ const help = `Cubist Math — cubical C kernel
   let NAME := TERM;        Define a name; def and any other declaration work too
   typeof TERM;             Show the type of a term
   evaluate TERM;           Show the value of a closed term that uses no assumption
+  witness TERM;            Show the witness a closed truncation holds, with its type
   import MODULE;           Load a module into the session
   /modules [TEXT]          List the modules import can load, or those whose names contain TEXT
   /clear                   Clear the terminal
@@ -34,10 +35,10 @@ Each entry is checked by the kernel as a small module on top of the ones
 before it. An entry continues on the next line while a bracket is open.
 
 Noninteractive: node cli/repl.mjs check euclid
-                node cli/repl.mjs "import nat; evaluate 2 + 3;"
+                node cli/repl.mjs "import nat; use nat; evaluate 2 + 3;"
 Optimizations: --[no-]share-syntax, --[no-]reuse-checks, --[no-]compact-paths
-Declared types (H1, inductive) are on by default. Import nat for Nat and its
-numerals, w for W(U,V,A,B), and pushout for Pushout.`;
+Declared types (H1, inductive) are on by default. Import nat for Nat, and use
+nat; for its numerals and operators; w for W(U,V,A,B), and pushout for Pushout.`;
 const args = process.argv.slice(2), optimizations = {};
 const command = [];
 for (const arg of args) {

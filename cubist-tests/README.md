@@ -113,6 +113,10 @@ workbench's Kernel graph.
 | [`inductive_one_parameter_name`](inductive_one_parameter_name.cubist) | Inspection: a parameter has one name in the whole view, and T.squash is distinct from squash. |
 | [`computability`](computability.cubist) | For `tests/computability.test.mjs`: a computable declaration is refused when it depends on an assumption, naming the path, and its dependents with it. |
 | [`computability_evaluation`](computability_evaluation.cubist) | evaluate checks the normal form of a closed, assumption-free term; each failed evaluation's error is stated above it. |
+| [`evaluate_patterns`](evaluate_patterns.cubist) | `evaluate … expecting` a pattern: holes, pairs, injections, constructors and `typed` matched part by part, other expressions by normal form, and the part a mismatch names; braces and named arguments refused at a builtin or a constructor, and a module's own `typed` read as the module's. |
+| [`box_notation`](box_notation.cubist) | The box notation for compositions: `compose j in A from b { on i = 0 => …; }` and `fill … at k`, faces as formulas, printing as boxes, and a face that is no formula. |
+| [`square_constructions`](square_constructions.cubist) | `library/squares.cubist`: squares with named edges, their transposes and flips, naturality, double composition and its filler, and horizontal and vertical composition, each by conversion. |
+| [`truncation_readout`](truncation_readout.cubist) | `print(witness(t))`: the witness a closed truncation holds, read under maps, squash endpoints and transport along a path of types, with its type and certificate; values that are no truncation. |
 | [`computability_unfolding`](computability_unfolding.cubist) | Evaluation unfolds every definition and ignores unfolding hints. |
 | [`induction_printed`](induction_printed.cubist) | How an eliminator prints, for `tests/induction.test.mjs`: as the induction that builds it, with `__U` for an erased universe, and the printed source written back. |
 | [`ergonomics_rewrite_obligations`](ergonomics_rewrite_obligations.cubist) | `rw` at an occurrence, in reverse and on either side, and the refusals of a missing occurrence and a dependent position. |
@@ -224,6 +228,7 @@ workbench's Kernel graph.
 | [`inspection_shadowed_nat`](inspection_shadowed_nat.cubist) | Names that shadow the natural numbers' type, linked to their own declarations. |
 | [`inspection_axiom_labels`](inspection_axiom_labels.cubist) | An assumption's label and a derived helper, inspected. |
 | [`inspection_let_alias`](inspection_let_alias.cubist) | A let alias keeps the original local's name. |
+| [`inspection_square_boundary`](inspection_square_boundary.cubist) | A square's boundary shows its parameters by their source names. |
 | [`assembly_fixture`](assembly_fixture.cubist) | Declarations whose kernel assembly `tests/cubical-assembly.test.mjs` lists. |
 | [`assembly_generic_assumptions`](assembly_generic_assumptions.cubist) | A generic assumption, one kernel entry used at two levels. |
 | [`glue_printed`](glue_printed.cubist) | A Glue line as the printer shows it, written back: it checks, and equals the line. |
