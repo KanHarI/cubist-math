@@ -67,7 +67,7 @@ between columns.
 | Proof ergonomics | Grouped binders, `let` with a stated type or a proof block (which replaced `have`, `show` and `suffices` on 2026-09-30), `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand; Σ projections `p.1`/`p.2` (L1.5); path-operator notation (`&`, `\|`, `path i =>`) and readable path diagnostics (PR #71); `~p` and `~i` for reversal, in place of prefix `-` (L2.10i, 2026-10-06); `hlevel`, L2.5b's first slice; holes `_` and named arguments (L4.1a); implicit parameters and universe inference (L4.1b); the keywords of terms and statements and the built-in `Unit` and `Void` reserved (E175). `apply` and `refine` (L4.4) withdrawn | L1.4 (folded path rules, constructor descent), B1 (`Path` induction), broader dependent rewriting, L2.5b's remainder |
 | Theories and notation | L2.4, complete on 2026-10-05: `theory` declarations of sorts, operations with notation, and laws, which must state propositions (E818); `T.Model`, `open`, sections, `extends` with labels and renaming, `T.Hom` and `T.Iso`. The library's algebraic hierarchy is its first client. L2.10's and L2.4c's decisions recorded | L2.4c, the theory syntax revision; L2.4b (structure identity, displayed models), L2.6 (initial and free models), L2.10a–e, j and k, notation views and literals; implementation not started |
 | Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | L1.2r |
-| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release. L2.9a expected-value patterns and L2.9b closed witness readout delivered in #181/#182 (2026-10-07, after this branch's baseline) | EVAL0–EVAL8 |
+| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release. L2.9a expected-value patterns and L2.9b closed witness readout delivered in #181/#182 (2026-10-07, after this branch's baseline). EVAL0's evaluation baseline recorded on 2026-10-08 | EVAL1–EVAL8 |
 | Declarations | **Released** on 2026-10-02, on by default with no marker, after K2.1's review (Lemma H2 and the critical pairs approved on 2026-09-30, the model and canonicity on 2026-10-02): K2.2, K2.3, L2.1, L2.2a's first three slices (the expression `match`, the closing statement, and recursion whose other arguments vary), and since 2026-10-04 its fourth (several values and nested patterns), the match statement on sums, which replaced `cases`, and L2.2b's automatic clauses. Nat, W and pushouts are source declarations; sums stay native; the circle's winding number computes in source. K2.4a's differential fixtures and K2.5's ledger verifier are implemented | K2.5's other archive remedies; a review record per K2.2 family; L2.3, L2.3b, L2.6–L2.8; stages 4 and 5 |
 | Computation notation | Design only; N1's prerequisite, L2.4, delivered on 2026-10-05, though its laws cannot yet state a monad's; L2.4c's theory families, decided, will, for monads on sets | N0–N5 |
 | Reference and library | Checked-reference harness; universe chapter rewritten; induction chapter rewritten for declared types: declarations, `match`, structural recursion, dependent matches, path and truncation clauses (D2.1); quick reference (`proof.html`), with a file explorer over every published source; since 2026-10-05 a chapter on [theories and models](../../web/reference/theories.html) with the library's algebra and numbers, and set quotients, the library's univalence and `propositions` in the cubical chapters (#159). The library's fourteen modules, self-contained since 2026-10-04: `nat`, `lists`, `quotients`, effective since 2026-10-05, `algebra`, the hierarchy as theories, `integers`, `rationals`, `hlevels` (L2.5a), `contractible_maps`, `univalence` (L3.1's start) and `propositions`, `h1_truncation`, `h1_classical`, `classical_axioms` and `universe_automorphisms`. The test suite's Cubist sources are modules in `cubist-tests/` | An H1 chapter on higher constructors, obligations and truncation clauses beyond chapter 6's introduction (D0.2, D2.1); one module for the classical assumptions, which `classical_axioms` and `h1_classical` state over two truncations; the library is foundations, not a rebuild wave |
@@ -527,16 +527,21 @@ The exact syntax remains proposed; none is delivered.
 ## Runtime evaluation track
 
 Added on 2026-10-07. The [runtime evaluation roadmap](runtime-evaluation-roadmap.md)
-owns EVAL0–EVAL8 and the early numerical packages NUM0–NUM2. No package is
-implemented; scratch prime projections are feasibility observations, not
-full normal forms or kernel evidence. This track is independent of
+owns EVAL0–EVAL8 and the early numerical packages NUM0–NUM2. EVAL0 is
+done (2026-10-08): `tools/evaluation-baseline.mjs` records the
+[baseline](runtime-evaluation-roadmap.md#measurements), which
+`tests/evaluation-baseline.test.mjs` keeps current. No other package is
+implemented. The versioned scratch evaluator's prime projections are
+feasibility observations, not full normal forms or kernel evidence. This
+track is independent of
 computation notation N0–N5. Its planned library scope is NUM0–NUM2 and
 EVAL7's binary divisibility/search pilot; R1's further order and canonical
 presentation work remains deferred.
 
-- Start with EVAL0's reproducible Euclid baseline and EVAL1's removal of
-  redundant REPL self-comparison. EVAL2's full-normalization cache can follow
-  independently, with exact keys and rollback/compaction coverage.
+- EVAL1's removal of redundant REPL self-comparison comes next: in EVAL0's
+  baseline it takes 375 of the 407 ms of `evaluate euclid(3)`. EVAL2's
+  full-normalization cache can follow independently, with exact keys and
+  rollback/compaction coverage.
 - Start NUM0/NUM1 early: define explicit `UNat` and canonical `BNat`, direct
   binary arithmetic, their checked commutative-semiring isomorphism and
   `UNat =[U0] BNat` by computational univalence, with transport agreement,
@@ -781,12 +786,13 @@ Suggested next, in order:
    interface needs them; no language package does. Rationals in lowest
    terms, which print reduced, wait for L2.7's canonical quotients.
 9. **Runtime evaluation and binary numerical foundations.** The
-   [runtime evaluation track](#runtime-evaluation-track) starts with
-   EVAL0's baseline, EVAL1's one-pass REPL evaluation and NUM0/NUM1's
-   unary/binary foundations and H1 strong induction, followed by NUM2's
-   new binary-backed `Z` and `Q`. This includes library work and proceeds
-   independently of action 8's proposed order extension. The `Nat` spelling
-   decision below gates the public-name transition, not these constructions.
+   [runtime evaluation track](#runtime-evaluation-track) has EVAL0's
+   baseline (2026-10-08); it continues with EVAL1's one-pass REPL
+   evaluation and NUM0/NUM1's unary/binary foundations and H1 strong
+   induction, followed by NUM2's new binary-backed `Z` and `Q`. This
+   includes library work and proceeds independently of action 8's proposed
+   order extension. The `Nat` spelling decision below gates the public-name
+   transition, not these constructions.
 10. **Independent language work.** The universal-property contract before
    L2.6 and L2.3's `universal` slice; L1.3's worker cancellation; N0, and
    N1's checked operation and law records on L2.4c's theory families, then
