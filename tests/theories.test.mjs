@@ -279,3 +279,29 @@ test("arithmetic groups as L2.10b says, with the cubical operators tightest", ()
     assert.equal(formatCubist(formatted), formatted);
   }
 });
+
+test("a use refused before a theory fails the theory and its children once, at the use", async t => {
+  const source = `import hlevels;
+use Nat;
+theory T(U < UU0) { M : set U; c : M; }
+theory C extends T {}
+initial N : T(U0);`;
+  const { result } = await checkProgram(t, source, { module });
+  const failures = result.outputs.filter(o => !o.verified);
+  assert.deepEqual(failures.map(o => [o.name, o.code]), [["T", "E834"], ["C", "E834"], ["N", "E340"]]);
+  for (const name of ["T", "C"]) {
+    const failure = failures.find(o => o.name === name);
+    assert.equal(failure.reason.match(/ at \d+:\d+/g).length, 1, failure.reason);
+    assert.equal(failure.errorStart, source.indexOf("Nat"));
+  }
+});
+
+test("a theory's homomorphisms link nowhere at or after its name", async t => {
+  const source = `import hlevels;
+theory Things(U < UU0) { M : set U; op(x, y : M) : M; }`;
+  const { result } = await checkProgram(t, source, { module });
+  assert.deepEqual(result.gaps, []);
+  const name = source.indexOf("Things");
+  assert.deepEqual(result.links.filter(link => link.start === name + "Things".length || link.start >= source.length), []);
+  assert.ok(!result.links.some(link => link.start === name && /^(language expression|tuple macro)$/.test(link.role)));
+});

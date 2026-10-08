@@ -252,3 +252,13 @@ export function relocated(node, at) {
       : typeof value === "number" && (key === "end" || key.endsWith("End")) ? at.end : relocated(value, at)]),
     ...(at.synthetic ? [["synthetic", true]] : [])]);
 }
+
+// A copy of written syntax that a later generated declaration reads again:
+// it keeps its positions, for diagnostics, but is synthetic, so that it links
+// nowhere; the declaration that reads it first links it.
+export function unlinked(node) {
+  if (Array.isArray(node)) return node.map(unlinked);
+  if (!node || typeof node !== "object") return node;
+  return Object.fromEntries([...Object.entries(node).map(([key, value]) => [key, captured(node, key) ? value : unlinked(value)]),
+    ...(Number.isInteger(node.start) ? [["synthetic", true]] : [])]);
+}

@@ -137,7 +137,7 @@ export function notationDeclaration(t,module,d,env,declared=new Set()) {
   // The rules are read in the selection where the notation is declared, a
   // file-level use's (L2.10j): their names, and their numerals and operators,
   // wherever they are applied.
-  const at=(d.uses??[]).reduce((inner,model)=>selected(t,inner,model),new Scope(module,new Map(),env)).env;
+  const at=usesScope(t,new Scope(module,new Map(),env),d.uses).env;
   const selection=[...at].filter(([key,value])=>(key===SELECTION||key.startsWith(operatorBinding("")))&&env.get(key)!==value);
   // A notation named after a model of this module adds literal rules to
   // that model's notation (L2.10c); no other module can. They are that
@@ -293,20 +293,33 @@ export function theoryDeclarations(t,module,d,env,declarations) {
     const proposition=name=>{const entry=env.get(name);
       return entry?.tag==="Inductive"&&(entry.modifier==="prop"||entry.modifier?.trunc===-1);};
     const generated=expandTheory(d,name=>env.get(theoryBinding(name))?.record??null,proposition);
-    // Initial/free constructors reuse field syntax after this declaration's
-    // notation may have changed. Keep the selected rules and model operations,
-    // already resolved here, so later binders cannot capture their names.
-    const scope=(d.uses??[]).reduce((inner,model)=>selected(t,inner,model),
-      new Scope(module.with({references:null}),new Map(),env));
-    const notation=[[SELECTION,scope.env.get(SELECTION)??null],
-      ...[...scope.env].filter(([key])=>key.startsWith(operatorBinding("")))];
-    env.set(theoryBinding(d.name.text),{tag:"Theory",name:d.name.text,record:generated[0].theory,notation});
+    env.set(theoryBinding(d.name.text),{tag:"Theory",name:d.name.text,record:generated[0].theory,
+      notation:capturedNotation(t,module,d,env)});
     return generated;
   } catch(failure) {
     // The message says where, as an elaboration error does.
     return failedExpansion(t,d,env,declarations,module.locate(Error(failure.message),{start:failure.offset,end:failure.offset}));
   }
 }
+
+// The notation a theory's fields are read in, for its initial and free
+// models, which copy field syntax after the module's notation may have
+// changed (initial-models.mjs): its file-level uses' selected rules and
+// model operations, resolved here, so that no later binding captures their
+// names. Without a use there is no selection, and the module's environment
+// binds no operator. A refused use is reported by the theory's own
+// declarations, which read the same uses, as at any declaration; the
+// theory's models then depend on a failed theory: null.
+function capturedNotation(t,module,d,env) {
+  if(!d.uses?.length)return [[SELECTION,null]];
+  let scope;
+  try { scope=usesScope(t,new Scope(module.with({references:null}),new Map(),env),d.uses); }
+  catch { return null; }
+  return [[SELECTION,scope.env.get(SELECTION)??null],...[...scope.env].filter(([key])=>key.startsWith(operatorBinding("")))];
+}
+
+// `scope` with a declaration's file-level uses selected (L2.10j), in order.
+export const usesScope=(t,scope,uses)=>(uses??[]).reduce((inner,model)=>selected(t,inner,model),scope);
 
 // A declaration that does not expand, a theory or an initial or free model,
 // fails as a declaration of its name, with the located `error`; it expands

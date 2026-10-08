@@ -37,8 +37,9 @@ export const universeAt = k => k === 0 ? UNIVERSE : `${UNIVERSE}${k}`;
 // An error at a node of the theory's text.
 const located = (error, node) => Object.assign(error, { offset: node.start });
 
-// Nodes of the source syntax, placed at `at`, the theory text they come from.
-const place = at => ({ start: at.start, end: at.end });
+// Nodes of the source syntax, placed at `at`, the theory text they come from;
+// synthetic where `at` is, as an initial/free expansion's (initial-models.mjs).
+const place = at => ({ start: at.start, end: at.end, ...(at.synthetic ? { synthetic: true } : {}) });
 const token = (text, at) => ({ text, ...place(at) });
 const name = (text, at) => ({ kind: "name", name: text, ...place(at) });
 const call = (fn, args, at) => ({ kind: "call", fn: typeof fn === "string" ? name(fn, at) : fn, args, ...place(at) });
@@ -46,6 +47,7 @@ const quantifier = (kind, binder, domain, body, at) =>
   ({ kind, name: typeof binder === "string" ? token(binder, at) : binder, binderKind: kind, domain, body, ...place(at) });
 const projection = (value, index, at) => ({ kind: "projection", value, index, ...place(at) });
 const pair = (left, right, at) => ({ kind: "pair", left, right, ...place(at) });
+export const nodes = { token, name, call };
 
 // Free names replaced by others: `names` maps a name to its replacement's name.
 const renamed = (node, names, at) => rewritten(node, (n, bound) => {
@@ -630,7 +632,9 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
       // A parameter whose binder is named apart from its field is called
       // by the field's name.
       for (const p of d.params ?? []) if (Object.hasOwn(labels, p.name.text)) p.label = labels[p.name.text];
-      out.push({ ...relocated(d, at), name: token(declName, at), ...(theory.uses ? { uses: theory.uses } : {}),
+      // Generated from text, all of it stands at the theory's name and,
+      // synthetic, links nowhere there (cubical-program.mjs).
+      out.push({ ...relocated(d, { ...at, synthetic: true }), name: token(declName, at), ...(theory.uses ? { uses: theory.uses } : {}),
         generated: { theory: T, role, ...(field ? { field } : {}) }, ...(morphismRecord ? { theory: morphismRecord } : {}) });
     });
   }

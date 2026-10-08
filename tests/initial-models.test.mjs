@@ -5,6 +5,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import { checkProgram } from "./check-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { verifyMigration } from "../tools/proof-migration.mjs";
+import { lawRefusal } from "../web/translator/initial-models.mjs";
 
 const module = await createCubical();
 const verified = async (t, source) => {
@@ -366,10 +367,18 @@ test("generated syntax has local positions, and only names written in the header
   const source = `import hlevels; import algebra;\n${"// padding\n".repeat(100)}${header}`;
   const {result} = await verified(t, source);
   const start = source.lastIndexOf("initial");
-  const linked = [...new Set(result.links.filter(link => link.start >= start)
-    .map(link => `${source.slice(link.start, link.end)}@${link.start - start}`))];
-  // The declared names, and in the headers each name a definition's header would link.
+  const linked = result.links.filter(link => link.start >= start)
+    .map(link => `${source.slice(link.start, link.end)}@${link.start - start}`);
+  // The declared names, and in the headers each name a definition's header
+  // would link, once: later declarations read the header again unlinked.
   assert.deepEqual(linked.sort(), ["N@8", "Monoid@12", "U0@19", "W@29", "A@31", "U0@35", "Monoid@41", "U0@48", "A@55"].sort());
+  // Nothing the expansion or its elaboration marks stands at a declared
+  // name, so the name opens its declared type.
+  for (const [declared, offset] of [["N", 8], ["W", 29]]) {
+    const at = start + offset;
+    assert.deepEqual(result.links.filter(link => link.start >= at && link.start <= at + declared.length).map(link => [link.role, link.name]),
+      [["inductive", declared]]);
+  }
   assert.ok(result.links.every(link => source.slice(link.start, link.end) !== "// padding"));
   for (const suffix of ["model", "fold_map", "fold"]) {
     assert.ok(result.symbols.some(symbol => symbol.name === `N.${suffix}` && symbol.verified));
@@ -383,6 +392,54 @@ test("generated syntax has local positions, and only names written in the header
   assert.ok(failure.errorStart >= invalid.indexOf("free TooLarge"), JSON.stringify(failure));
   assert.ok(failure.errorEnd <= invalid.length, JSON.stringify(failure));
   assert.deepEqual(failed.outputs.map(o => o.name), ["TooLarge"]);
+});
+
+test("fold clauses bind names no constructor in scope can take", async t => {
+  // Constructors without arguments named as a source would name the fold's
+  // clause variables, a, x0, x1 and i, and as its parameters are named,
+  // target, g and x, which shadow a constructor as any binder does.
+  await verified(t, `import hlevels;
+import algebra;
+import nat;
+use nat;
+inductive Letter : set U0 { a; b; }
+inductive Two : set U0 { x0; x1; i; target; g; x; }
+free Words : Monoid(U0) on Letter;
+free W(A : U0) : Monoid(U0) on A;
+theory P(U < UU0) { M : set U; op(t : Two, m : M) : M; law swap(t : Two, m : M) : op(t, m) = op(t, m); }
+initial N : P(U0);
+free F(A : U0) : P(U0) on A;
+def count(w : Words) : Nat := Words.fold(nat_additive.monoid, fun (l : Letter) => 1).map(w);
+def three : count(Words.mul(Words.gen(a), Words.mul(Words.gen(b), Words.gen(a)))) = 3 { rfl; }
+def kept(A : U0, T : P(U0), h : A -> T.M, y : A) :
+  F.fold(A, T, h).map(F.op(x1, F.op(i, F.gen(y)))) = T.op(x1, T.op(i, h(y))) { rfl; }
+`);
+});
+
+test("a free parameter renamed apart from a field's names shows as primed and keeps its label", async t => {
+  const source = `import hlevels;
+import nat;
+theory P(U < UU0) { M : set U; point(n : Nat) : M; }
+free W(Nat : U0) : P(U0) on Nat;
+print(typeof(W.fold));
+def folded(A : U0, S : P(U0), h : A -> S.M, a : A) : W.fold(Nat := A, target := S, g := h).map(W.gen(a)) = h(a) { rfl; }`;
+  const {result} = await verified(t, source);
+  assert.deepEqual(result.prints.map(p => p.text), ["forall Nat′ : U0. forall target : P(U0). (Nat′ -> target.M) -> P.Hom{{U0, U0}}(W.model(Nat′), target)"]);
+  const written = source.indexOf("Nat : U0");
+  assert.deepEqual([...new Set(result.links.filter(link => link.start === written).map(link => link.name))], ["Nat′"]);
+});
+
+test("only the kernel's boundary refusals of a law are the strategy's E856", () => {
+  const d = {generated: {laws: {"N.l": "l"}}}, kernel = text => ({constructor: "N.l", message: `Instruction kernel: Constructor N.l: ${text}`});
+  for (const boundary of ["A boundary must be a constructor expression: a position or an earlier constructor, applied, or a path application or abstraction of one (section 1.4).",
+    "A binder's type in a boundary mentions the sort, a constructor or a position (section 1.4).",
+    "A path abstraction or application in a boundary carries a type that is not a cube over the sort (section 1.4).",
+    "A constructor's boundary names the constructor itself (section 1.5)."])
+    assert.match(lawRefusal(d, kernel(boundary)).message, /^The law l is not an equation between operation terms/);
+  // Any other refusal keeps the kernel's message, even one naming a boundary.
+  for (const other of ["A constructor type is derived in the signature's universe U(ℓ); lift it there first.", "found boundary_ok, expected M"])
+    assert.equal(lawRefusal(d, kernel(other)), null);
+  assert.equal(lawRefusal({generated: {laws: {}}}, kernel("A boundary is nested too deeply.")), null);
 });
 
 test("a theory that failed its own check is an untranslated dependency of its initial and free models", async t => {
@@ -419,6 +476,11 @@ def after := tt;`, "root", p => progress.push(p));
   assert.deepEqual(result.outputs.map(o => [o.name, o.verified]), [["W", false], ["after", true]]);
   assert.ok(progress.filter(p => p.phase !== "loading").every(p => p.completed <= p.total));
   assert.deepEqual([progress.at(-1).completed, progress.at(-1).total], [result.declarationCount, result.declarationCount]);
+  // A failure that skips nothing changes no total and reports nothing more.
+  const events = [];
+  await program.check(`def a : U0 := tt;\ndef b : U0 := tt;\ndef c : U0 := tt;`, "plain", p => events.push(p));
+  const checked = events.filter(p => p.phase === "checked").map(p => JSON.stringify(p));
+  assert.equal(new Set(checked).size, checked.length, checked.join("\n"));
 });
 
 test("arrow operations receive a supported-spelling diagnostic and derived law terms expand", async t => {

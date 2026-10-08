@@ -23,7 +23,7 @@ import {numeralValue} from "./numerals.mjs";
 import {hasHole,mismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,lawRefusal} from "./initial-models.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
-import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipExpansion,sectionScope,selected,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
+import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipExpansion,sectionScope,selected,usesScope,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -408,7 +408,7 @@ export class Translator {
         // An evaluation asks the kernel as a declaration does, with fuel of its own.
         const unit=module.declaration(this.declarationFuel);
         try {
-          const scope=(d.uses??[]).reduce((inner,model)=>selected(this,inner,model),new Scope(unit,new Map(),env));
+          const scope=usesScope(this,new Scope(unit,new Map(),env),d.uses);
           directives.push({kind:"evaluate",name:`at line ${line}`,status:"checked",start:d.start,
             normalText:this.evaluate(d,scope)});
         } catch(error) {
@@ -424,7 +424,7 @@ export class Translator {
         const unit=module.declaration(this.declarationFuel);
         try {
           // A file-level use selects for directives too, which print in it.
-          const scope=(d.uses??[]).reduce((inner,model)=>selected(this,inner,model),new Scope(unit,new Map(),env));
+          const scope=usesScope(this,new Scope(unit,new Map(),env),d.uses);
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"checked",start:d.start,
             text:this.printed(d,scope)});
         } catch(error) {
@@ -582,7 +582,7 @@ export class Translator {
   skipFailedExpansion(d,queue,env,declarations) {
     if(declarations.at(-1).status!=="not-translated")return;
     const skipped=skipExpansion(this,queue,env,d);
-    this.onQueued?.(-skipped);
+    if(skipped)this.onQueued?.(-skipped);
   }
   // A binder of the declaration's own parameter, known by its token: the
   // binding it made, for recursion to recognize (match.mjs).
@@ -600,7 +600,7 @@ export class Translator {
     const untranslated=reason=>{for(const name of names)env.set(name,{tag:"Untranslated",name,
       binding:this.checker.bindingName?.(d.name.text)??d.name.text,reason});};
     try {
-      const scope=(d.uses??[]).reduce((inner,model)=>selected(this,inner,model),new Scope(unit,new Map(),env));
+      const scope=usesScope(this,new Scope(unit,new Map(),env),d.uses);
       const lowered=lowerInductive(this,d,scope);
       for(const [name,value] of lowered.entries)env.set(name,value);
       // An initial/free model's declared type brings its generated syntax,
@@ -611,7 +611,7 @@ export class Translator {
     } catch(failure) {
       // An initial or free model's law refused as a boundary is beyond its
       // strategy: that refusal, at the theory (initial-models.mjs).
-      const law=lawRefusal(d,failure), error=law?unit.locate(law,d.generated.theory):failure;
+      const law=lawRefusal(d,failure), error=law?unit.locate(law,d.generated.theorySpan):failure;
       untranslated(error.message);
       declarations.push({name:d.name.text,status:"not-translated",reason:error.message,
         errorStart:error.offset,errorEnd:error.sourceEnd,blockedBy:error.blockedBy,failure:error.kind,

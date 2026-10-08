@@ -1,9 +1,9 @@
 // L2.6's retained construction-and-fold prototype. This does not register
 // an initial/free capability: deriving and the universal proofs are pending.
 // The expansion is ordinary syntax, checked with no new kernel rule.
-import {theoryBinding, selected, failedExpansion} from "./theories.mjs";
-import {universeAt} from "../cubist/theories.mjs";
-import {freeNames, substituted, renamedFree, allNames, relocated, freshName, fixedBinders} from "../cubist/scopes.mjs";
+import {theoryBinding, usesScope, failedExpansion} from "./theories.mjs";
+import {universeAt, nodes} from "../cubist/theories.mjs";
+import {freeNames, substituted, renamedFree, allNames, relocated, unlinked, freshName, fixedBinders} from "../cubist/scopes.mjs";
 import {assignArguments} from "./arguments.mjs";
 import {Scope} from "./elaboration.mjs";
 import {repeatedName} from "./names.mjs";
@@ -22,22 +22,21 @@ function expand(t, module, d, env) {
   // Generated syntax stands at the declared name and is synthetic: it links
   // nowhere, while the header's own syntax keeps its positions and links.
   const N = d.name.text, at = {start: d.name.start, end: d.name.end, synthetic: true}, free = d.kind === "free";
-  const token = text => ({text, ...at});
-  const name = text => ({kind: "name", name: text, ...at});
-  const call = (fn, args) => args.length ? {kind: "call", fn: typeof fn === "string" ? name(fn) : fn, args, ...at}
-    : typeof fn === "string" ? name(fn) : fn;
+  const token = text => nodes.token(text, at), name = text => nodes.name(text, at);
+  const call = (fn, args) => args.length ? nodes.call(fn, args, at) : typeof fn === "string" ? name(fn) : fn;
   const named = (label, value) => ({kind: "namedArgument", name: token(label), value, ...at});
   const lambda = (binder, body) => ({kind: "lambda", name: token(binder), body, ...at});
   const lambdas = (binders, body) => binders.reduceRight((inner, b) => lambda(b, inner), body);
   const head = d.theory.kind === "call" ? d.theory.fn : d.theory;
   const entry = head.kind === "name" ? env.get(theoryBinding(head.name)) : null;
-  if (entry?.tag !== "Theory") {
-    // A theory that failed its own check is a dependency here, as at its other uses.
-    const failed = head.kind === "name" ? env.get(head.name) : null;
-    if (failed?.tag === "Untranslated")
-      throw module.locate(Object.assign(Error(`Untranslated dependency: ${head.name}`), {blockedBy: failed.binding ?? failed.name}), head);
+  // A theory that failed its own check is a dependency here, as at its
+  // other uses, whether or not it expanded: one whose use was refused has
+  // no notation to read its fields in (theories.mjs, capturedNotation).
+  const failed = head.kind === "name" ? env.get(head.name) : null;
+  if (failed?.tag === "Untranslated" || entry?.tag === "Theory" && !entry.notation)
+    throw module.locate(Object.assign(Error(`Untranslated dependency: ${head.name}`), {blockedBy: failed?.binding ?? head.name}), head);
+  if (entry?.tag !== "Theory")
     throw module.locate(notATheory(d.kind, module.source.slice(d.theory.start, d.theory.end).trim()), d.theory);
-  }
   const record = entry.record, T = record.name;
   // Only copied field expressions read the theory's captured notation.
   // The header, generator type and elaborated arguments keep the caller's.
@@ -47,8 +46,10 @@ function expand(t, module, d, env) {
 
   // Names from a theory's fields retain their meaning under the free
   // declaration's parameters, and a field's pattern, which substitution
-  // cannot rename, never captures one. Rename colliding parameters, keeping
-  // their public labels; later parameter groups and user expressions follow.
+  // cannot rename, never captures one. A colliding parameter is renamed with
+  // a prime, as printing marks a shadowed name, which no source spells: it
+  // keeps its public label, and later parameter groups and user expressions
+  // follow.
   const globals = new Set([N, T, "IsSet", "IsProp", "refl", ...record.fields.flatMap(f => [...freeNames(f.type)])]);
   const fixed = new Set(record.fields.flatMap(f => [...fixedBinders(f.type)]));
   const taken = new Set([...allNames(d), ...record.fields.flatMap(f => [...allNames(f.type)]), ...globals]);
@@ -61,7 +62,7 @@ function expand(t, module, d, env) {
   for (let k = 0; k < d.params.length;) {
     const group = d.params[k].group, members = [];
     while (k < d.params.length && d.params[k].group === group) members.push(d.params[k++]);
-    const changes = members.map(p => [p.name.text, globals.has(p.name.text) || fixed.has(p.name.text) ? fresh(p.name.text) : p.name.text]);
+    const changes = members.map(p => [p.name.text, globals.has(p.name.text) || fixed.has(p.name.text) ? `${p.name.text}′` : p.name.text]);
     for (const [j, p] of members.entries()) params.push({...p, name: {...p.name, text: changes[j][1]}, label: p.name.text,
       ...(p.bound ? {bound: apart(p.bound)} : {type: apart(p.type)})});
     for (const [before, after] of changes) renaming.set(before, after);
@@ -92,7 +93,7 @@ function expand(t, module, d, env) {
     checked = {kind: "binderGroup", binderKind: "lambda", names: members.map(p => p.name),
       ...(members[0].bound ? {bound: members[0].bound} : {domain: members[0].type}), body: checked, ...at};
   }
-  const scope = (d.uses ?? []).reduce((inner, model) => selected(t, inner, model), new Scope(module, new Map(), env));
+  const scope = usesScope(t, new Scope(module, new Map(), env), d.uses);
   const application = t.term(checked, scope);
   scope.infer(application);
   // Keep the elaborated arguments: a hole solved by the call is no longer
@@ -181,7 +182,13 @@ function expand(t, module, d, env) {
     }
   }
   for (const f of [...operationShapes, ...lawShapes]) for (const b of f.binders) taken.add(b.name);
-  const v = Object.fromEntries(["target", "evidence", "g", "x", "i", "a"].map(stem => [stem, fresh(stem)]));
+  const v = Object.fromEntries(["target", "evidence", "g", "x", "a"].map(stem => [stem, fresh(stem)]));
+  // A clause's variables take names no source spells, as the match
+  // compiler's do (patterns.mjs), so that no constructor in scope, of the
+  // generators' type or another, is read for one. A dimension's stem
+  // names it in the kernel.
+  let spelled = 0;
+  const variable = stem => ({text: `${stem}'${++spelled}`, stem, ...at});
   const xs = Array.from({length: Math.max(0, ...[...operationShapes, ...lawShapes].map(f => f.binders.length))}, (_, k) => fresh(`x${k}`));
   if (free) constructors.unshift({kind: "constructor", name: token(constructor("gen")),
     params: [{name: token(v.a), type: on, group: 0}], type: null, ...at});
@@ -190,41 +197,50 @@ function expand(t, module, d, env) {
   // expressions, after beta reduction; `laws` names the law it refuses.
   const laws = Object.fromEntries(lawShapes.map(f => [constructor(f.name), f.name]));
   const inductive = {kind: "inductive", name: d.name, params, result: {modifier: {kind: level, ...at}, universe},
-    constructors, start: d.start, end: d.end, generated: {...generated, laws, theory: {start: d.theory.start, end: d.theory.end}}, ...uses};
+    constructors, start: d.start, end: d.end, generated: {...generated, laws, theorySpan: {start: d.theory.start, end: d.theory.end}}, ...uses};
 
   const ownModel = call(constructor("model"), names.map(name));
   const variables = f => xs.slice(0, f.binders.length);
   const target = field => name(`${v.target}.${field}`);
-  const generator = free ? [[v.g, {kind: "binary", operator: "->", left: on, right: target(carrier), ...at}]] : [];
+  // The header's syntax links in the declaration that first reads it: the
+  // parameters and generator type in the inductive, the theory in the
+  // model. Later declarations read copies that link nowhere.
+  const again = {params: unlinked(params), theory: unlinked(theory), on: free ? unlinked(on) : null};
+  const generator = free ? [[v.g, {kind: "binary", operator: "->", left: again.on, right: target(carrier), ...at}]] : [];
   const recurse = (proof, x) => call(constructor("fold_map"), [...names.map(name), name(v.target), proof, ...(free ? [name(v.g)] : []), x]);
-  const mapped = (proof, f) => f.binders.map((b, k) => b.carrier ? recurse(proof, name(xs[k])) : name(xs[k]));
+  const mapped = (proof, f, vars = variables(f)) => f.binders.map((b, k) => b.carrier ? recurse(proof, name(vars[k])) : name(vars[k]));
   const definition = (suffix, extra, type, value) => ({kind: "def", name: token(constructor(suffix)),
-    params: [...params, ...extra.map(([n, type], k) => ({name: token(n), type, group: d.params.length + k}))],
+    params: [...again.params, ...extra.map(([n, type], k) => ({name: token(n), type, group: d.params.length + k}))],
     type, body: [{kind: "exact", value, ...at}], typedValue: true, ...at, generated, ...uses});
   const model = definition("model", [], theory, call(`${T}.make`, [named(carrier, self), named(evidence.name, name("_")),
     ...[...operationShapes, ...lawShapes].map(f => named(f.name, lambdas(variables(f), call(constructor(f.name), variables(f).map(name)))))]));
-  const clause = (field, args, body, coordinates = []) => ({kind: "clause", constructor: token(constructor(field)),
-    args: args.map(token), binders: [], coordinates: coordinates.map(token), body, ...at});
+  const clause = (field, stems, body, dimension = null) => {
+    const args = stems.map(variable), i = dimension && variable(dimension);
+    return {kind: "clause", constructor: token(constructor(field)), args, binders: [], coordinates: i ? [i] : [],
+      body: body(args.map(a => a.text), i?.text), ...at};
+  };
   const clauses = [
-    ...(free ? [clause("gen", [v.a], call(v.g, [name(v.a)]))] : []),
-    ...operationShapes.map(f => clause(f.name, variables(f), call(target(f.name), mapped(name(v.evidence), f)))),
-    ...lawShapes.map(f => clause(f.name, variables(f), {kind: "pathApply", operator: "@",
-      left: call(target(f.name), mapped(name(v.evidence), f)), right: name(v.i), ...at}, [v.i])),
+    ...(free ? [clause("gen", ["a"], ([a]) => call(v.g, [name(a)]))] : []),
+    ...operationShapes.map(f => clause(f.name, f.binders.map(b => b.name), vars => call(target(f.name), mapped(name(v.evidence), f, vars)))),
+    ...lawShapes.map(f => clause(f.name, f.binders.map(b => b.name), (vars, i) => ({kind: "pathApply", operator: "@",
+      left: call(target(f.name), mapped(name(v.evidence), f, vars)), right: name(i), ...at}), "i")),
   ];
-  const foldMap = definition("fold_map", [[v.target, theory],
+  const foldMap = definition("fold_map", [[v.target, again.theory],
     [v.evidence, call(evidence.evidence, [universe, target(carrier)])], ...generator, [v.x, self]], target(carrier),
     {kind: "match", value: name(v.x), motiveName: null, type: null, clauses, ...at});
-  const fold = definition("fold", [[v.target, theory], ...generator], call(`${T}.Hom`, [ownModel, name(v.target)]),
+  const fold = definition("fold", [[v.target, again.theory], ...generator], call(`${T}.Hom`, [ownModel, name(v.target)]),
     call(`${T}.Hom.make`, [ownModel, name(v.target), named("map", lambda(v.x, recurse(target(evidence.name), name(v.x)))),
       ...operationShapes.map(f => named(`map_${f.name}`, lambdas(variables(f), call("refl", [call(target(f.name), mapped(target(evidence.name), f))]))))]));
   return [inductive, model, foldMap, fold];
 }
 
-// The strategy's refusal of a law whose path constructor the kernel refuses,
-// as one whose side is a match, or null for any other failure.
+// The strategy's refusal of a law whose path constructor the kernel refuses
+// as a boundary (K102-K105, K133-K140), as one whose side is a match, or
+// null for any other failure, which keeps the kernel's own message.
+const BOUNDARY = /: A (?:constructor's boundary|boundary|binder(?:'s type)? in a boundary|path abstraction or application in a boundary)\b/;
 export const lawRefusal = (d, failure) => {
   const law = d.generated?.laws?.[failure.constructor];
-  return law ? notEquational(law) : null;
+  return law && BOUNDARY.test(failure.message ?? "") ? notEquational(law) : null;
 };
 
 // Refusals describe this strategy's limits, not nonexistence of a model.
