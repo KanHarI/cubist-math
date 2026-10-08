@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import { parse, reservedNames, languageKeywords, generatedNames } from "../web/cubist/parser.mjs";
 
 const parseError = source => { try { parse(source); return null; } catch (error) { return error.message; } };
-const reserved = word => `${word} is reserved, as a keyword or a built-in type of the language; pick another name.`;
+const reserved = word => `${word} is reserved${generatedNames.has(word) ? " for the generated interface (docs/guides/keywords.md)" : ", as a keyword or a built-in type of the language"}; pick another name.`;
 
 test("Unit, Void and tt cannot be declared or bound at any binding site", () => {
   for (const word of ["Unit", "Void", "tt"]) {

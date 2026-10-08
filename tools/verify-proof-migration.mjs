@@ -14,11 +14,11 @@ import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { verifyMigration } from "./proof-migration.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
-import { migrationSourceReader } from "./migration-sources.mjs";
+import { migrationSourceReader, historicalModulePaths, historicalMigrationSources } from "./migration-sources.mjs";
 import { placeOfFile } from "./module-sources.mjs";
-import { moduleRoots } from "../web/module-resolution.mjs";
-import { historicalSource, currentSyntax } from "../web/cubist/legacy-syntax.mjs";
-import { parse, languageKeywords } from "../web/cubist/parser.mjs";
+import { moduleRoots, searchOrder } from "../web/module-resolution.mjs";
+import { historicalSource } from "../web/cubist/legacy-syntax.mjs";
+import { parse } from "../web/cubist/parser.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const args = process.argv.slice(2), option = name => {
@@ -47,6 +47,9 @@ if (!modules.length) { console.log("No modified library modules."); process.exit
 if((editedFile || selected) && (modules.length!==1 || !noDependents))
   throw Error("--edited-file and --declarations require one explicit module and --no-dependents.");
 
+// A stale WASM kernel would run code it does not contain.
+assertFreshBuild();
+
 const editedPlaces = new Map();
 const readEdited = async name => {
   const candidates = editedFile && name===modules[0] ? [resolve(root,editedFile)]
@@ -73,38 +76,6 @@ if (!noDependents) {
 }
 const originals = new Map();
 const available = new Set(git(["ls-tree","-r","--name-only",base,"--","library","archive/first-library"]).trim().split("\n"));
-// A module name that was a keyword is migrated with its imports. Read its
-// historical file by the old name while checking it in the current namespace.
-const originalModulePath = (place, name) => {
-  const current = `${moduleRoots[place]}${name}.cubist`;
-  if (available.has(current)) return current;
-  const old = name.endsWith("_") && languageKeywords.has(name.slice(0, -1))
-    ? `${moduleRoots[place]}${name.slice(0, -1)}.cubist` : current;
-  return available.has(old) ? old : current;
-};
-const originalSources = new Map(), originalSyntax = new Map();
-const originalSource = path => {
-  if (!originalSources.has(path)) originalSources.set(path, git(["show",`${base}:${path}`]));
-  return originalSources.get(path);
-};
-const importedNamesOf = (path, seen = new Set(), includeOwn = true) => {
-  if (!available.has(path) || seen.has(path)) return [];
-  seen.add(path);
-  if (!originalSyntax.has(path)) {
-    try { originalSyntax.set(path, parse(currentSyntax(originalSource(path)), false, { bindable: [...languageKeywords] })); }
-    catch { originalSyntax.set(path, { declarations: [], imports: [] }); }
-  }
-  const syntax = originalSyntax.get(path), place = path.startsWith(moduleRoots.archive) ? "archive" : "library";
-  const names = includeOwn ? syntax.declarations.flatMap(d => [d.name.text, ...(d.constructors ?? []).map(c => c.name.text)])
-    .filter(name => languageKeywords.has(name)) : [];
-  for (const dependency of syntax.imports) {
-    const paths = place === "archive" ? [originalModulePath("archive", dependency)]
-      : [originalModulePath("library", dependency), originalModulePath("archive", dependency)];
-    const next = paths.find(path => available.has(path));
-    if (next) names.push(...importedNamesOf(next, seen));
-  }
-  return names;
-};
 // Until 2026-10-05 every module had Nat without importing it, from the
 // kernel and then from an implicit import of nat; a base of that time is read
 // with the import (legacy-syntax.mjs, historicalSource). A later base has
@@ -125,14 +96,32 @@ const movedToLibrary = new Set([...available].filter(path => path.startsWith(mod
   .map(path => path.slice(moduleRoots.archive.length, -".cubist".length))
   .filter(name => existsSync(`${root}${moduleRoots.library}${name}.cubist`)
     && !existsSync(`${root}${moduleRoots.archive}${name}.cubist`)));
+const paths = historicalModulePaths({ available, movedToLibrary });
+const originalModulePath = paths.modulePath;
+const historicalSources = historicalMigrationSources({ available, ...paths, implicitNat,
+  readSource: path => git(["show", `${base}:${path}`]),
+});
+// Build one plan across the selected checks before rewriting any dependency.
+// Also include baseline dependencies introduced by an edited source.
+const selectedPaths = new Set();
+for (const name of modules) {
+  const original = ["archive", "library"].map(place => originalModulePath(place, name)).find(path => available.has(path));
+  if (original) selectedPaths.add(original);
+  const edited = parse(await readEdited(name));
+  for (const dependency of edited.imports) {
+    const path = searchOrder(readEdited.placeOf(name)).map(place => originalModulePath(place, dependency)).find(path => available.has(path));
+    if (path) selectedPaths.add(path);
+  }
+}
+const renaming = historicalSources.renamingFor(selectedPaths);
 const readOriginal = migrationSourceReader(async (place, name) => {
-  if (movedToLibrary.has(name) && place !== "library") return null;
-  const path = originalModulePath(movedToLibrary.has(name) ? "archive" : place, name);
+  const path = originalModulePath(place, name);
+  if (path === null) return null;
   if (!originals.has(path)) {
     // A baseline may predate a syntax change, or the implicit import of nat;
     // it is read in today's syntax, with the imports it had then.
-    let text = available.has(path) ? historicalSource(originalSource(path), name,
-      { implicitNat, minusReverses, importedNames: importedNamesOf(path, new Set(), false) }) : null;
+    let text = available.has(path) ? historicalSource(historicalSources.source(path), name,
+      { implicitNat, minusReverses, renaming, importedDeclarations: historicalSources.importsOf(path) }) : null;
     if (text !== null) historical.add(name);
     // A new shared foundation has no predecessor. It is available only in
     // library resolution; archive importers never see this fallback.
@@ -145,8 +134,6 @@ const readOriginal = migrationSourceReader(async (place, name) => {
   return originals.get(path);
 }, modules);
 readOriginal.nameBased = name => nameBased && historical.has(name);
-// A stale WASM kernel would run code it does not contain.
-assertFreshBuild();
 const declarations=selected ? {[modules[0]]:selected} : null;
 const reports = await verifyMigration({ modules, readOriginal, readEdited, level, ledger, declarations });
 let failures = 0;

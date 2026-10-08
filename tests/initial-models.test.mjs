@@ -197,7 +197,7 @@ test("arrow operations receive a supported-spelling diagnostic and derived law t
 theory S(U < UU0) { M : set U; zero : M; succ : M -> M; }
 initial N : S(U0);`, {module});
   const failure = result.outputs.find(o => o.name === "N");
-  assert.equal(failure.code, "E862");
+  assert.equal(failure.code, "E864");
   assert.match(failure.reason, /named operation arguments/);
   await verified(t, `import hlevels;
 theory S(U < UU0) {

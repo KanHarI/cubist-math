@@ -66,7 +66,7 @@ export const reservedNames = new Set([...languageKeywords, "Unit", "Void", "tt"]
 // `bindable` lists reserved words a historical source may still bind
 // (web/cubist/legacy-syntax.mjs).
 export function parse(source, typeOnly = false, { bindable = [] } = {}) {
-  const ts = tokenize(source);
+  const ts = tokenize(source), bindableNames = new Set(bindable);
   let i = 0,
     depth = 0;
   const peek = () => ts[i].text;
@@ -101,8 +101,8 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
     // U0, UU3 and the like name universes: they cannot be bound or declared.
     if (/^U+[0-9]+$/.test(t.text))
       throw Object.assign(new Error(`${t.text} is a universe constant; pick another name.`), { offset: t.start });
-    if (reservedNames.has(t.text) && !bindable.includes(t.text) && !(generatedReference && generatedNames.has(t.text)))
-      throw Object.assign(new Error(`${t.text} is reserved, as a keyword or a built-in type of the language; pick another name.`), { offset: t.start });
+    if (reservedNames.has(t.text) && !bindableNames.has(t.text) && !(generatedReference && generatedNames.has(t.text)))
+      throw Object.assign(new Error(`${t.text} is reserved${generatedNames.has(t.text) ? " for the generated interface (docs/guides/keywords.md)" : ", as a keyword or a built-in type of the language"}; pick another name.`), { offset: t.start });
     return t;
   }
   // A binder's type, or a universe binder's bound: `x : A` or `U < UU0`.

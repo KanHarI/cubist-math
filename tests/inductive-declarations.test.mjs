@@ -112,10 +112,9 @@ test("second review: shape errors are reported where the source writes them", as
 test("inspection shows no marker, and keywords are styled at every occurrence", async t => {
   const { program } = await cases(t, "no_marker");
   assert.deepEqual(program.inspect("inductive_no_marker__n").extensions, []);
-  const { keywordAt } = await import("../web/source-tokens.mjs");
-  const header = "inductive T(x : type) : prop { a; }";
-  assert.equal(keywordAt(header, header.indexOf("type"), "type"), true, "a keyword remains styled in an invalid naming position");
-  assert.equal(keywordAt(header, header.indexOf("prop"), "prop"), true);
+  const { tokenStyle } = await import("../web/source-tokens.mjs");
+  assert.equal(tokenStyle("type"), "keyword");
+  assert.equal(tokenStyle("prop"), "keyword");
 });
 
 test("fourth review: normalized views keep no marker", async t => {

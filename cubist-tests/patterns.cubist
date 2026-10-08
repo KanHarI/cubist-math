@@ -78,6 +78,33 @@ def constant(c : S1) : Unit := match c {
     _ => tt;
   };
 
+// After base's clause, a variable or _ is loop's clause, at a dimension of
+// its own: the variable names the point loop @ i.
+def flat(c : S1) : Unit := match c {
+    base => tt;
+    _ => tt;
+  };
+
+def same(c : S1) : S1 := match c {
+    base => base;
+    other => other;
+  };
+
+def same_loop : loop = (path i => same(loop @ i)) {
+  rfl;
+}
+
+// So inside a pattern: the head of the list is taken apart.
+def head_or_base(xs : List(U0, S1)) : S1 := match xs {
+    nil => base;
+    cons(base, rest) => base;
+    cons(other, rest) => other;
+  };
+
+def head_loop : loop = (path i => head_or_base(cons(loop @ i, nil))) {
+  rfl;
+}
+
 // An expected type that mentions the value: each clause at its constructor,
 // with a hypothesis about it again.
 def Choice_(n : Nat) : U0 := match n {

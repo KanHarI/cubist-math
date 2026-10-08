@@ -1,4 +1,5 @@
 import { tokenize, parse, languageKeywords, generatedNames } from "./parser.mjs";
+import { snake } from "./theories.mjs";
 
 // Sources written before 2026-09-30 may use `have`, which `let` replaced with
 // the same forms: have name : T := term; and have name : T { … } elaborate as
@@ -73,24 +74,66 @@ notation nat {
 // declaration. When available, the matched value's type distinguishes a
 // sum's injections and a generated squash from user constructors. Types
 // come from telescopes, annotated locals, constructor calls and aliases.
-// Callers migrating several modules can supply their imported names.
+// Callers migrating several modules supply a shared renaming plan and
+// their imported declarations, so selections and calls retain their types.
 // Bound names change no checked term.
 // Contextual keywords could also be bound before all keywords were reserved.
 const historicalRenaming = Object.fromEntries([...languageKeywords].map(word => [word, `${word}_`]));
+// A migration across modules uses one plan for declarations, imported
+// references and argument labels. Include every original source so a local
+// spelling in an importer cannot capture a dependency's renamed export.
+export const reservedBindingRenaming = (sources, preferred = historicalRenaming) => {
+  const taken = new Set(sources.flatMap(source => tokenize(source).map(token => token.text)));
+  return Object.fromEntries(Object.entries(preferred).map(([word, stem]) => {
+    let name = stem;
+    while (taken.has(name)) name += "_";
+    taken.add(name);
+    return [word, name];
+  }));
+};
 // Used by the source migration as well as by the historical source reader.
 // Only binders and their references change; grammar tokens keep their roles.
-export const renameReservedBindings = (source, renamedReserved = historicalRenaming, { importedNames = [] } = {}) => {
-  let ast;
+export const renameReservedBindings = (source, renamedReserved = historicalRenaming, { importedNames = [], importedDeclarations = [] } = {}) => {
+  let ast, tokens;
   try {
-    if (!tokenize(source).some(token => Object.hasOwn(renamedReserved, token.text))) return source;
+    tokens = tokenize(source);
+    if (!tokens.some(token => Object.hasOwn(renamedReserved, token.text))) return source;
     ast = parse(source, false, { bindable: Object.keys(renamedReserved) });
   } catch { return source; }
+  // A replacement must not capture an existing name, even in an inner
+  // scope. Use one fresh spelling throughout this source, including labels.
+  renamedReserved = reservedBindingRenaming([source], renamedReserved);
   const edits = new Map();
-  const userMembers = new Set((ast.items ?? ast.declarations).filter(item => item.kind === "theory")
-    .flatMap(item => item.fields.map(field => field.name.text)));
-  const types = new Map((ast.items ?? ast.declarations).filter(item => item.kind === "inductive").map(item => [item.name.text, item]));
-  const aliases = new Map((ast.items ?? ast.declarations).filter(item => item.kind === "def")
+  const items = ast.items ?? ast.declarations;
+  const declarations = [...importedDeclarations, ...items];
+  const theories = new Map(declarations.filter(item => item.kind === "theory").map(item => [item.name.text, item]));
+  const types = new Map(declarations.filter(item => item.kind === "inductive").map(item => [item.name.text, item]));
+  const constructorOwners = new Map();
+  for (const type of types.values()) for (const constructor of type.constructors)
+    if (!constructorOwners.has(constructor.name.text)) constructorOwners.set(constructor.name.text, type);
+  const aliases = new Map(declarations.filter(item => item.kind === "def")
     .map(item => [item.name.text, item.value ?? (item.body?.length === 1 ? item.body[0].value : null)]));
+  const parentLabel = parent => parent.label?.text ?? snake(parent.name.text);
+  const declarationType = item => (item.params ?? []).reduceRight((body, param) =>
+    ({ kind: "forall", name: param.name, domain: param.type ?? param.bound, body, implicit: param.implicit }), item.type);
+  const fieldCache = new Map();
+  const fieldsOf = theory => {
+    if (!theory) return new Map();
+    if (fieldCache.has(theory)) return fieldCache.get(theory);
+    const fields = new Map();
+    // Install before descending so an invalid cyclic hierarchy terminates too.
+    fieldCache.set(theory, fields);
+    for (const parent of theory.parents) {
+      const renamed = new Map(parent.renaming.map(({ from, to }) => [from.text, to.text]));
+      for (const [name, type] of fieldsOf(theories.get(parent.name.text)))
+        fields.set(renamed.get(name) ?? name, type);
+      const label = parentLabel(parent);
+      fields.set(label, { kind: "name", name: parent.name.text });
+    }
+    for (const field of theory.fields) fields.set(field.name.text, declarationType(field));
+    return fields;
+  };
+  const theoryFields = new Map([...theories].map(([name, theory]) => [name, fieldsOf(theory)]));
   const typeName = (type, seen = new Set()) => {
     if (type?.kind === "binary" && type.operator === "or") return "sum";
     const name = type?.kind === "name" ? type.name : type?.kind === "call" && type.fn.kind === "name" ? type.fn.name : null;
@@ -98,16 +141,35 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
     return name;
   };
   const valueType = (value, scope) => {
-    if (value?.kind === "name") return scope.get(value.name);
-    if (value?.kind === "call" && value.fn.kind === "name") {
-      if (value.fn.name === "typed") return value.args[0];
-      const owner = [...types.values()].find(type => type.constructors.some(c => c.name.text === value.fn.name));
+    if (value?.kind === "name") {
+      if (scope.has(value.name)) return scope.get(value.name);
+      const dot = value.name.lastIndexOf(".");
+      if (dot > 0) return theoryFields.get(typeName(valueType({ kind: "name", name: value.name.slice(0, dot) }, scope)))?.get(value.name.slice(dot + 1));
+    }
+    if (value?.kind === "member") return theoryFields.get(typeName(valueType(value.value, scope)))?.get(value.field.text);
+    if (value?.kind === "call") {
+      if (value.fn.name === "typed" && !scope.has("typed")) return value.args[0];
+      const made = value.fn.name?.match(/^(.+)\.make$/)?.[1];
+      if (theories.has(made)) return { kind: "name", name: made };
+      const owner = constructorOwners.get(value.fn.name);
       if (owner) return { kind: "name", name: owner.name.text };
-      let type = scope.get(value.fn.name);
-      for (const arg of value.args) type = type?.body ?? (type?.operator === "->" ? type.right : null);
+      let type = valueType(value.fn, scope);
+      for (const arg of value.implicitArgs ?? []) if (type?.implicit) type = type.body;
+      for (const arg of value.args) {
+        while (type?.implicit) type = type.body;
+        type = type?.body ?? (type?.operator === "->" ? type.right : null);
+      }
       return type;
     }
     return null;
+  };
+  const renamedMember = (value, field, scope) => {
+    if (!generatedNames.has(field)) return true;
+    const owner = typeName(valueType(value, scope));
+    if (/\.(Hom|Iso)$/.test(owner ?? "") || /\.(Hom|Iso)$/.test(value.name ?? "")) return false;
+    // An unannotated binder can be a generated Hom or Iso. Rename a fixed
+    // interface name only when its owner is known to declare that user field.
+    return theoryFields.get(owner)?.has(field) || theoryFields.get(value.name)?.has(field);
   };
   const rename = (start, text) => { if (Object.hasOwn(renamedReserved, text)) edits.set(start, [start + text.length, renamedReserved[text]]); };
   // Binder tokens: each is renamed, and the scope they open holds them.
@@ -120,21 +182,31 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
   // module's member, wherever it is written.
   const reference = (token, scope) => {
     const [head, ...rest] = (token.name ?? token.text).split(".");
-    if (scope.has(head)) rename(token.start, head);
-    let at = token.start + head.length;
+    // Parentheses widen expression spans. Find the identifier tokens in
+    // that span instead of replacing text at the expression's start.
+    let lo = 0, hi = tokens.length;
+    while (lo < hi) { const mid = (lo + hi) >>> 1; if (tokens[mid].start < token.start) lo = mid + 1; else hi = mid; }
+    const next = text => {
+      while (lo < tokens.length && tokens[lo].start < token.end) {
+        const candidate = tokens[lo++];
+        if (candidate.text === text) return candidate.start;
+      }
+      return null;
+    };
+    const start = next(head);
+    if (start !== null && scope.has(head)) rename(start, head);
     for (const [k, part] of rest.entries()) {
       // Generated interfaces keep their public members. A user field or
       // an imported module member is renamed with its declaration.
-      const owner = k ? rest[k - 1] : head;
-      if (!generatedNames.has(part) || !["Hom", "Iso"].includes(owner)
-          && (userMembers.has(part) || ast.imports.includes(head))) rename(at + 1, part);
-      at += 1 + part.length;
+      const ownerValue = { kind: "name", name: [head, ...rest.slice(0, k)].join(".") };
+      const at = next(part);
+      if (at !== null && (renamedMember(ownerValue, part, scope) || k === 0 && ast.imports.includes(head))) rename(at, part);
     }
   };
   // A clause's constructors, nested and in each of its columns, but a sum's
   // injections: left x, and left(…) where this module has declared no
   // constructor left so far. A bare left is renamed as variables binds it.
-  const declared = new Set();
+  const declared = new Set(importedDeclarations.flatMap(item => (item.constructors ?? []).map(c => c.name.text)));
   const constructors = (head, matched = []) => {
     const { constructor } = head;
     const owner = typeName(matched[0]), declaration = types.get(owner);
@@ -177,6 +249,9 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
   // A statement's binders hold in the statements after it.
   const statement = (node, scope) => {
     switch (node?.kind) {
+      case "use":
+        visit(node.model, scope);
+        return new Map([...scope, ...(theoryFields.get(typeName(valueType(node.model, scope))) ?? [])]);
       case "let": case "obtain":
         visit(node.type, scope); visit(node.value, scope); visit(node.body, scope);
         return bind(scope, targets(node.target), node.type ?? valueType(node.value, scope));
@@ -219,23 +294,43 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
         visit(node.obligations, scope); visit(node.obligationProof, scope);
         return;
       case "clause": constructors(node, matched); visit(node.body, bind(scope, variables(node))); return;
+      case "call": {
+        // Box notation synthesizes the callee from its keyword. It is not a
+        // source reference, even if a historical binder has the same name.
+        if (!node.box) visit(node.fn, scope);
+        // Named arguments refer to the callee's parameters. Only a call
+        // to a generated interface keeps its fixed labels; a user's map
+        // parameter must follow its declaration even in an unrelated theory.
+        const generated = /^.+\.(Hom|Iso)\.[^.]+$/.test(node.fn.name ?? "");
+        for (const arg of [...(node.implicitArgs ?? []), ...node.args]) {
+          if (arg.kind === "namedArgument") {
+            if (!generated || !generatedNames.has(arg.name.text)) rename(arg.name.start, arg.name.text);
+            visit(arg.value, scope);
+          } else visit(arg, scope);
+        }
+        return;
+      }
       case "namedArgument":
-        if (!generatedNames.has(node.name.text) || userMembers.has(node.name.text)) rename(node.name.start, node.name.text);
+        rename(node.name.start, node.name.text);
         visit(node.value, scope); return;
       case "member":
-        if (!generatedNames.has(node.field.text) || userMembers.has(node.field.text)) rename(node.field.start, node.field.text);
+        if (renamedMember(node.value, node.field.text, scope))
+          rename(node.field.start, node.field.text);
         visit(node.value, scope); return;
       case "withUnfolding": for (const hint of node.hints) reference(hint, scope); visit(node.body, scope); return;
     }
     for (const [key, child] of Object.entries(node)) if (key !== "uses") visit(child, scope);
   };
   // Items in order: what one declares holds in it and after it.
-  const tokens = tokenize(source);
   for (let k = 1; k < tokens.length; k++) if (tokens[k - 1].text === "import") rename(tokens[k].start, tokens[k].text);
-  let module = new Map([...importedNames, ...ast.imports].map(name => [name, null]));
-  for (const item of ast.items ?? ast.declarations) {
+  let module = new Map([
+    ...[...importedNames, ...ast.imports].map(name => [name, null]),
+    ...importedDeclarations.flatMap(item => [[item.name.text, declarationType(item)],
+      ...(item.constructors ?? []).map(c => [c.name.text, { kind: "name", name: item.name.text }])]),
+  ]);
+  for (const item of items) {
     if (item.kind === "def") {
-      const scope = telescope(item.params, telescope(item.section?.params ?? [], bind(module, [item.name])));
+      const scope = telescope(item.params, telescope(item.section?.params ?? [], bind(module, [item.name], declarationType(item))));
       visit(item.type, scope); visit(item.body, scope); visit(item.value, scope);
     } else if (item.kind === "inductive") {
       // A constructor holds in the constructors after it, as loop : base =
@@ -253,6 +348,12 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
       let scope = telescope(item.params, bind(module, item.universes));
       for (const parent of item.parents) {
         reference(parent.name, module);
+        const label = parentLabel(parent);
+        if (!parent.label && Object.hasOwn(renamedReserved, label)) {
+          const at = parent.name.start, [end, text] = edits.get(at) ?? [at, ""];
+          edits.set(at, [end, `${renamedReserved[label]} : ${text}`]);
+        }
+        scope = new Map([...scope, ...(theoryFields.get(parent.name.text) ?? []), [label, { kind: "name", name: parent.name.text }]]);
         for (const { from, to, notation: pattern } of parent.renaming) { rename(from.start, from.text); scope = bind(scope, [to]); notation(pattern, scope); }
         scope = bind(scope, [parent.label]);
       }
@@ -269,8 +370,9 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
         else visit(rule.value, notation(rule, module));
     } else if (["hlevel_rule", "simp_rule"].includes(item.kind)) reference(item.rule, module);
     else if (item.kind === "simp_set") for (const rule of item.rules) reference(rule, module);
+    else if (item.kind === "use") module = statement(item, module);
     else visit(item, module);
-    module = bind(module, [item.name], item.type);
+    module = bind(module, [item.name], declarationType(item));
     module = bind(module, (item.constructors ?? []).map(constructor => constructor.name));
   }
   let text = source;
@@ -281,8 +383,11 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
 // Before 2026-10-05 every module imported nat without asking. A module of
 // a revision that did so (implicitNat), read in today's syntax, imports it,
 // unless it is nat or already does: so a baseline sees the names it saw then.
-export const historicalSource = (source, module, { implicitNat = true, minusReverses = true, importedNames = [] } = {}) => {
-  const rewritten = currentSyntax(source), text = renameReservedBindings(minusReverses ? reversalsAsTilde(rewritten) : rewritten, historicalRenaming, { importedNames });
+export const historicalSource = (source, module, {
+  implicitNat = true, minusReverses = true, importedNames = [], importedDeclarations = [], renaming = historicalRenaming,
+} = {}) => {
+  const rewritten = currentSyntax(source), text = renameReservedBindings(minusReverses ? reversalsAsTilde(rewritten) : rewritten,
+    renaming, { importedNames, importedDeclarations });
   if (module === "nat") return withNatNotation(text);
   if (!implicitNat || /(?:^|\n)\s*import\s+(?:[^;]*,\s*)?nat\s*[;,]/.test(text)) return text;
   return `import nat;\n${text}`;

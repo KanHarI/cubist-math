@@ -441,7 +441,7 @@ def broken(c : Circle) : Nat := match c {  // Error: Type mismatch: found 1 = 1,
   base =&gt; 0;
   loop @ i =&gt; 1;
 };</code></pre>
-            <p>A constant clause traces the constant path. <code>flatten</code> sends every point of the loop to <code>0</code>, so along the loop it gives <code>refl(0)</code>. A path clause can also be omitted and its path proved instead: <code>obligations by rfl</code> proves the path the missing loop clause must give, <code>0 = 0</code>.</p>
+            <p>A constant clause traces the constant path. <code>flatten</code> sends every point of the loop to <code>0</code>, so along the loop it gives <code>refl(0)</code>. A variable or <code>_</code> after the <code>base</code> clause covers the points along the loop, as in <code>flatten_rest</code>. A path clause can also be omitted and its path proved instead: <code>obligations by rfl</code> proves the path the missing loop clause must give, <code>0 = 0</code>.</p>
             <pre><code data-check="accept">import nat;
 use nat;
 
@@ -456,6 +456,11 @@ def flatten(c : Circle) : Nat := match c {
 };
 
 def flatten_loop : cong(flatten, loop) = refl(0) { rfl; }
+
+def flatten_rest(c : Circle) : Nat := match c {
+  base =&gt; 0;
+  _ =&gt; 0;
+};
 
 def flatten_again(c : Circle) : Nat := match c {
   base =&gt; 0;
