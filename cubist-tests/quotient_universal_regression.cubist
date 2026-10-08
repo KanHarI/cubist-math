@@ -11,7 +11,8 @@ def projection_descends_to_identity(G : Group, S : Subgroup(G), normal : IsNorma
   let descended :=
     quotient_descend_hom(G, Q, projection, S, normal, quotient_projection_kills(G, S, normal));
   let identity := group_hom_identity_at(U1, Q);
-  let right : group_hom_compose_at(U1, group_lift(G), Q, Q, projection, identity) = projection {
+  let right_identity :
+    group_hom_compose_at(U1, group_lift(G), Q, Q, projection, identity) = projection {
     exact group_hom_ext_at(
       U1, group_lift(G), Q, group_hom_compose_at(U1, group_lift(G), Q, Q, projection, identity),
       projection, (fun (x : group_carrier(G)) => refl(left_coset(G, S, x)))
@@ -22,7 +23,7 @@ def projection_descends_to_identity(G : Group, S : Subgroup(G), normal : IsNorma
     trans(
       quotient_descend_triangle(
         G, Q, projection, S, normal, quotient_projection_kills(G, S, normal)
-      ), sym(right)
+      ), sym(right_identity)
     )
   );
 }

@@ -53,11 +53,11 @@ def principal_cut_laws(
   unbounded : NoEndpoints(Q, ltQ), q : Q
 ) :
   CutLaws(Q, ltQ, (fun (x : Q) => ltQ(x, q)), (fun (x : Q) => ltQ(q, x))) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   obtain (below, above) := unbounded(q);
   let lowerBack :=
     fun (x : Q) => field_exists_elim(
-      (exists y : Q. ltQ(x, y) and ltQ(y, q)), ltQ(x, q), prop(x, q),
+      (exists y : Q. ltQ(x, y) and ltQ(y, q)), ltQ(x, q), prop_(x, q),
       (
         fun (p : (exists y : Q. ltQ(x, y) and ltQ(y, q))) => unpack p as (y, edges) return ltQ(x, q) {
           unpack edges as (xy, yq) return ltQ(x, q) {
@@ -68,7 +68,7 @@ def principal_cut_laws(
     );
   let upperBack :=
     fun (y : Q) => field_exists_elim(
-      (exists x : Q. ltQ(q, x) and ltQ(x, y)), ltQ(q, y), prop(q, y),
+      (exists x : Q. ltQ(q, x) and ltQ(x, y)), ltQ(q, y), prop_(q, y),
       (
         fun (p : (exists x : Q. ltQ(q, x) and ltQ(x, y))) => unpack p as (x, edges) return ltQ(q, y) {
           unpack edges as (qx, xy) return ltQ(q, y) {
@@ -78,7 +78,7 @@ def principal_cut_laws(
       )
     );
   exact (
-    (fun (x : Q) => prop(x, q)), (fun (x : Q) => prop(q, x)), below, above,
+    (fun (x : Q) => prop_(x, q)), (fun (x : Q) => prop_(q, x)), below, above,
     (
       fun (x : Q) => typed(
         FieldIff(ltQ(x, q), FieldExists(exists y : Q. ltQ(x, y) and ltQ(y, q))),
@@ -121,11 +121,11 @@ def principal_cut_order(
       principal_cut(Q, ltQ, order, dense, unbounded, q)
     )
   ) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   exact (
     dense(p, q),
     field_exists_elim(
-      (exists r : Q. ltQ(p, r) and ltQ(r, q)), ltQ(p, q), prop(p, q),
+      (exists r : Q. ltQ(p, r) and ltQ(r, q)), ltQ(p, q), prop_(p, q),
       (
         fun (r : (exists r : Q. ltQ(p, r) and ltQ(r, q))) => unpack r as (point, edges) return ltQ(
           p, q
@@ -193,21 +193,21 @@ def cut_separated(
   lower : cut_lower(Q, ltQ, x, p), upper : cut_upper(Q, ltQ, x, q)
 ) :
   ltQ(p, q) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   obtain (
     lowerProp, upperProp, inhabitedLower, inhabitedUpper, roundedLower, roundedUpper, disjoint,
     located
   ) := cut_laws(Q, ltQ, x);
   obtain (roundForward, roundBack) := roundedLower(p);
   exact field_exists_elim(
-    (exists r : Q. ltQ(p, r) and cut_lower(Q, ltQ, x, r)), ltQ(p, q), prop(p, q),
+    (exists r : Q. ltQ(p, r) and cut_lower(Q, ltQ, x, r)), ltQ(p, q), prop_(p, q),
     (
-      fun (witness : (exists r : Q. ltQ(p, r) and cut_lower(Q, ltQ, x, r))) => unpack witness as (
+      fun (witness_ : (exists r : Q. ltQ(p, r) and cut_lower(Q, ltQ, x, r))) => unpack witness_ as (
         r, evidence
       ) return ltQ(p, q) {
         unpack evidence as (pr, lowerR) return ltQ(p, q) {
           field_exists_elim(
-            (ltQ(p, q) or ltQ(q, r)), ltQ(p, q), prop(p, q),
+            (ltQ(p, q) or ltQ(q, r)), ltQ(p, q), prop_(p, q),
             (fun (split : ltQ(p, q) or ltQ(q, r)) => match split return ltQ(p, q) {
                 left pq => pq;
                 right qr => absurd(
@@ -265,7 +265,7 @@ def principal_cut_injective(
   )
 ) :
   p = q {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   let cutP := principal_cut(Q, ltQ, order, dense, unbounded, p);
   let cutQ := principal_cut(Q, ltQ, order, dense, unbounded, q);
   obtain (forwardPQ, backwardPQ) := principal_cut_order(Q, ltQ, order, dense, unbounded, p, q);

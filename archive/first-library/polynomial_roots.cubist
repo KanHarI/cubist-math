@@ -33,7 +33,7 @@ def polynomial_eval_neg(
 ) :
   polynomial_eval(K, L, e, polynomial_neg(K, p), x) = field_neg(L, polynomial_eval(K, L, e, p, x)) {
   let E := fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
-  let inverse : field_add(L, E(polynomial_neg(K, p)), E(p)) = field_zero(L) := with unfolding [] {
+  let inverse_ : field_add(L, E(polynomial_neg(K, p)), E(p)) = field_zero(L) := with unfolding [] {
       trans(
         sym(polynomial_eval_add(K, L, e, polynomial_neg(K, p), p, x)),
         trans(cong(E, polynomial_add_inverse(K, p)), polynomial_eval_zero(K, L, e, x))
@@ -41,7 +41,7 @@ def polynomial_eval_neg(
     };
   exact group_inverse_unique(
     af_carrier(L), field_zero(L), field_add(L), group_laws(FieldAdditiveGroup(L)), E(p),
-    E(polynomial_neg(K, p)), field_neg(L, E(p)), inverse, scalar_add_inverse_right(L, E(p))
+    E(polynomial_neg(K, p)), field_neg(L, E(p)), inverse_, scalar_add_inverse_right(L, E(p))
   );
 }
 

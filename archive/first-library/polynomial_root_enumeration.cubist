@@ -26,8 +26,8 @@ def linear_factor_product_root_step(
     intro different;
     let rq := root_descends_to_factor_quotient(K, P, h, q, refl(P), x, different, root);
     let lift : (exists i : Fin(n). tail(i) = x) -> Result {
-      intro witness;
-      obtain (i, same) := witness;
+      intro witness_;
+      obtain (i, same) := witness_;
       exact (typed(Fin(succ(n)), right(i)), same);
     }
     exact mere_map((exists i : Fin(n). tail(i) = x), Result, lift, previous(tail, x, rq));
@@ -215,8 +215,8 @@ def distinct_splitting_roots_bijection(
     intro r;
     obtain (x, rx) := r;
     let locate : (exists i : Fin(n). roots(i) = x) -> Fiber(Fin(n), R, f, r) {
-      intro witness;
-      obtain (i, same) := witness;
+      intro witness_;
+      obtain (i, same) := witness_;
       exact (
         i,
         subtype_ext(

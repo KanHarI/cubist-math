@@ -8,7 +8,7 @@ import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proof-navigation.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
-import { numeralAt, tokenStyle, keywordAt, linkedWord } from "./source-tokens.mjs";
+import { numeralAt, tokenStyle } from "./source-tokens.mjs";
 import { archiveModules, cubistTestModules, libraryModules } from "./cubist/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
 import { createReplConsole } from "./repl-console.mjs";
@@ -564,7 +564,7 @@ function renderSource() {
         const info = linkMap.get(start);
         const expansion = (last.mode === "mathematical" ? numeralAt(line, token.index, text) : null) ?? info?.expansion;
         // The whole source: a header's colon and its inductive may be on earlier lines.
-        const style = tokenStyle(text, expansion, keywordAt(last.source, start, text) ?? linkedWord(text, info));
+        const style = tokenStyle(text, expansion);
         if (info) {
           const button = document.createElement("button");
           button.className = `reference${style ? " " + style : ""}`;
@@ -639,6 +639,7 @@ async function inspect(info, remember = true) {
   sourceLink(info);
   $("inspect-axioms").replaceChildren();
   $("inspect-signature").hidden = true;
+  $("inspect-boundary").hidden = true;
   $("locals").replaceChildren();
   $("kernel-details").hidden = info.kind === "goal";
   $("kernel-terms").hidden = info.kind === "goal";
@@ -876,6 +877,14 @@ function renderCubicalKernel(view) {
   $("expand-kernel").textContent = "Show more of the term";
   $("expand-kernel").hidden = raw || !["kernel-expression", "kernel-type", "kernel-context-list", "kernel-axioms-list"].some(id => $(id).textContent.includes("…"));
   renderAxioms($("inspect-axioms"), view.axioms ?? [], view.extensions ?? []);
+  renderBoundary(view.boundary);
+}
+// A square's boundary (L2.8): its four edges and four corners.
+function renderBoundary(boundary) {
+  $("inspect-boundary").hidden = !boundary;
+  if (!boundary) return;
+  for (const [name, text] of [...Object.entries(boundary.corners), ...Object.entries(boundary.edges)])
+    $(`square-${name}`).textContent = text;
 }
 $("toggle-kernel-body").onclick = () => { showKernelBody = !showKernelBody; renderKernel(checkedKernelView); };
 $("widen-inspector").onclick = () => {

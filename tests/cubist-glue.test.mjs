@@ -5,7 +5,7 @@ import { parse } from "../web/cubist/parser.mjs";
 import { expandedSyntax } from "../web/cubist/tuples.mjs";
 import { checkTestModule } from "./check-program.mjs";
 
-// Glue types, glue and unglue in Cubist source (cubist-tests/glue.cubist,
+// Glue types, glue and unglue in Cubist source (cubist-tests/glue_.cubist,
 // whose comments state each refusal: tests/cubist-tests.test.mjs). A Glue
 // line prints as the source writes it, and cubist-tests/glue_printed.cubist
 // writes the print back; here, that its copy is what the print shows.

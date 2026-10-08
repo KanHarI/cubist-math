@@ -1,7 +1,7 @@
 // From tests/truncation-migration.test.mjs: G6: resizing a proposition uses only LEM; a StrictlyAbove witness cannot
 // use set evidence.
 import h1_zorn_step;
-def resized(P : U1, prop : IsProp(U1, P)) : PropResize(P) := resize_prop(P, prop);
+def resized(P : U1, prop_ : IsProp(U1, P)) : PropResize(P) := resize_prop(P, prop_);
 
 // Error: E606: Type mismatch: found forall x1 : StrictlyAbove(A, le, x). forall y :
 //   StrictlyAbove(A, le, x). forall p : x1 = y. forall q : x1 = y. p = q, expected forall x1 :

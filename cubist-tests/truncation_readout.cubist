@@ -3,7 +3,7 @@
 // any formal composition, and states its type. It is no eliminator out of
 // the truncation: it reads a closed value, as evaluate does.
 import h1_truncation;
-import paths;
+import paths_;
 use nat;
 
 // Output: 3 : Nat

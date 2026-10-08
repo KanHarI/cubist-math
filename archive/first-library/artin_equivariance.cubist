@@ -229,8 +229,8 @@ def subgroup_cancel_action(
   let G := GaloisGroup(K, E);
   let hv := subgroup_value(G, H, h);
   let sv := subgroup_value(G, H, s);
-  let inverse := subgroup_carrier_inverse(G, H, s);
-  let shifted := subgroup_carrier_multiply(G, H, h, inverse);
+  let inverse_ := subgroup_carrier_inverse(G, H, s);
+  let shifted := subgroup_carrier_multiply(G, H, h, inverse_);
   let canceled : group_multiply(G, subgroup_value(G, H, shifted), sv) = hv := trans(
     group_associative(G, hv, group_inverse(G, sv), sv),
     trans(cong(group_multiply(G, hv), group_inverse_left(G, sv)), group_unit_right(G, hv))

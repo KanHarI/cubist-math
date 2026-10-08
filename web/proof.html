@@ -206,6 +206,15 @@
             <summary id="inspect-parameters-label">Parameters and hypotheses</summary>
             <div id="inspect-parameters-list"></div>
           </details>
+          <section id="inspect-boundary" aria-label="Square boundary" hidden>
+            <strong>Boundary</strong>
+            <p class="hint">The square's edges, and its corners where they meet.</p>
+            <div class="square-boundary">
+              <code id="square-a01"></code><code id="square-top" class="square-edge"></code><code id="square-a11"></code>
+              <code id="square-left" class="square-edge"></code><span class="square-face" aria-hidden="true"></span><code id="square-right" class="square-edge"></code>
+              <code id="square-a00"></code><code id="square-bottom" class="square-edge"></code><code id="square-a10"></code>
+            </div>
+          </section>
           <section id="inspect-signature" aria-label="Declared type" hidden>
             <p id="inspect-signature-recorded" class="hint" hidden></p>
             <strong>Constructors</strong>
@@ -482,7 +491,7 @@ def three_ways(n : Nat) : n = n {
             <a href="reference/proof-blocks.html#obtain">Proof blocks →</a></p>
           <pre><code data-check="accept">import nat;
 
-def witness(t : exists n : Nat. (n = n) and Unit) : Nat {
+def witness_(t : exists n : Nat. (n = n) and Unit) : Nat {
   obtain (n, same, u) := t;
   exact n;
 }</code></pre>
@@ -849,7 +858,7 @@ def at_the_start(A : U0, x, y : A, p : x = y) : p @ 0 = x {
           <h4>Composition: <code>comp</code></h4>
           <p><code>comp(family, base, walls…)</code> fills from coordinate 0 to 1, starting at the base. A wall <code>face(i, 0, …)</code> fixes the side where another coordinate is 0. With no walls, <code>comp</code> is transport.
             <a href="reference/cubical.html#composition">Cubical paths →</a></p>
-          <pre><code data-check="accept">def join(A : U0, x, y, z : A, p : x = y, q : y = z) : x = z {
+          <pre><code data-check="accept">def join_(A : U0, x, y, z : A, p : x = y, q : y = z) : x = z {
   exact path i =&gt; comp(fun (j : Interval) =&gt; A, p @ i,
     face(i, 0, fun (j : Interval) =&gt; x),
     face(i, 1, fun (j : Interval) =&gt; q @ j));

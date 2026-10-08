@@ -199,8 +199,8 @@ def spanning_family_in_image(
   let FiberF := Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f));
   let C := Fin(n) -> af_carrier(K);
   let descend : (exists a : C. linear_combination(K, W, n, v, a) = x) -> Mere(FiberF(x)) {
-    intro witness;
-    obtain (a, same) := witness;
+    intro witness_;
+    obtain (a, same) := witness_;
     exact along((fun (z : vector_carrier(K, W)) => Mere(FiberF(z)))) by same from family_combination_in_image(
       K, V, W, f, n, v, a, members
     );

@@ -47,8 +47,13 @@ the proof migration:
 
 ## 1. Theories: one declaration for structures, initial models and universal properties
 
-A **theory** declares sorts, operations and laws once. From that one
-declaration the language derives:
+A **theory** declares sorts, operations and laws once. Its model record is
+available independently of optional derivations. The revised
+[categorical roadmap](categories.md) makes morphisms opt-in, and
+[L2.6](core-theories.md#initial-and-free-models-l26) requires checked
+`deriving (morphisms, free)` or the weaker `deriving (morphisms, initial)`.
+These requests may fail; arbitrary propositional laws remain valid theory
+fields and become proof obligations in generated models. The interfaces are:
 
 - **`T.Model`**, the record type of models. Fields are the carriers,
   operations, laws and h-level evidence. It elaborates to a Σ type with
@@ -61,9 +66,10 @@ declaration the language derives:
   structure identity principle, generated once per theory by the structure
   description machinery of HoTT F1.
 - **`T.Displayed(M)`**, displayed models, for induction.
-- **`initial T`**, when the theory is strictly positive: the initial model as
-  a declared type. Its constructors are the operations and laws. It comes
-  with:
+- **`initial T`**, after a successful `initial` or `free` derivation: an
+  initial model for the selected morphisms. A strictly positive equational
+  presentation has an H1 construction strategy; positivity alone does not
+  establish its laws or universal property. The checked capability includes:
   - `fold(M)`, the unique homomorphism into any model, computing on
     constructors;
   - `fold_unique`, its uniqueness;
@@ -79,11 +85,20 @@ declaration the language derives:
     but one homomorphism. Higher theories need their coherence fields in
     `T.Hom` before any such statement. Work-plan L2.6 specifies this
     contract before `universal` is generated.
-- **`free T on A`**: the initial model of `T` extended with generators
-  `gen(a : A)`, whose `fold(M, f)` extends `f : A → M`.
+- **`free T on A`**, after successful `deriving (morphisms, free)`: the
+  registered free construction instantiated at `A`, whose `fold(M, f)`
+  extends `f : A → M.carrier`. Its universal property is relative to the
+  selected carrier-forgetting functor. Taking `A = Void` supplies initiality;
+  an initial-only capability does not supply free models on other types.
+
+The examples below are schematic targets, subject to these derivation
+obligations and the applicable kernel stage. A law such as `zero != one`
+requires a proof in the candidate model. Unsupported construction or failed
+proof search reports the outstanding obligation, not mathematical
+nonexistence. `Field` can have morphisms while initial/free derivation fails.
 
 ```
-theory Monoid {
+theory Monoid deriving (morphisms, free) {
   sort M : set;
   unit : M;
   mul(x, y : M) : M                        notation x * y;
@@ -92,7 +107,7 @@ theory Monoid {
   law assoc(x, y, z : M) : (x * y) * z = x * (y * z);
 }
 
-theory Group extends Monoid {
+theory Group extends Monoid deriving (morphisms, free) {
   inv(x : M) : M;
   law inv_left(x : M) : inv(x) * x = unit;
 }
@@ -105,10 +120,10 @@ computable def exponent_sum(A : U) : Group.Hom(FreeGroup(A).model, IntAdd) =
   FreeGroup(A).fold(IntAdd, fun a => 1);
 ```
 
-- **One source for records and data types.** A structure declaration and an
-  inductive declaration become one form. A plain structure is a theory used
-  only for its models; a plain inductive type is a theory used only for its
-  initial model. `inductive` remains shorthand for the second.
+- **Shared construction machinery.** The H1 strategy builds a theory's
+  free carrier using an ordinary inductive declaration. An ordinary
+  `inductive` still supplies its own eliminator without requesting or
+  establishing a categorical initial/free capability.
 - **The repetition disappears.** A ring lemma takes `(R : CommRing.Model)` and
   writes `x * (y + z)` in `R`'s notation, instead of seven arguments per
   lemma.
@@ -123,11 +138,12 @@ computable def exponent_sum(A : U) : Group.Hom(FreeGroup(A).model, IntAdd) =
 The surrounding constructions compose in the same way:
 
 ```
-theory Loop { sort S : type; base : S; law loop : base = base; }
-inductive Circle = initial Loop;          // Loop.Model on X is a point with a loop
-// generated: Circle.universal : (Circle -> X) ≃ Loop.Model on X
+theory Loop(U < UU0) { S : U; base : S; loop : base = base; }
+// Available through an ordinary inductive declaration and its recursor.
+// Categorical initiality for Loop waits for checked morphism coherences.
+inductive Circle { base; loop : base = base; }
 
-theory CauchyStructure {
+theory CauchyStructure deriving (morphisms, initial) { // later strategy
   sort R : set;
   relation Close(ε : Pos) on R : prop     notation u ≈[ε] v;
   bundle Approx = (x : Pos -> R, cauchy : forall δ, ε : Pos. x(δ) ≈[δ + ε] x(ε));
@@ -141,7 +157,7 @@ theory CauchyStructure {
 }
 inductive Real = initial CauchyStructure;                  // stage H3
 
-theory CwF {                                               // the syntax of type theory
+theory CwF deriving (morphisms, initial) {                 // later H3 strategy
   sort Con : set;  sort Ty(g : Con) : set;  sort Sub(d, g : Con) : set;
   sort Tm(g : Con) : Ty(g) -> set;
   empty : Con;  extend(g : Con, a : Ty(g)) : Con;
@@ -153,8 +169,8 @@ computable def interpret : CwF.Hom(Syntax.model, SetModel) = Syntax.fold(SetMode
 
 **Elaboration.** `T.Model`, `T.Hom`, `T.Displayed` and the fold are generic
 constructions over the theory, which the elaborator computes and the kernel
-checks. `initial T` is the kernel signature whose constructors are `T`'s
-operations and laws; `fold` is its eliminator with constant motives.
+checks. In the first equational derivation strategy, `initial T` uses a
+kernel signature whose constructors are `T`'s operations and laws; `fold` is its eliminator with constant motives.
 
 **Stages.**
 - H1 (one sort, no indices): `Monoid`, `Group`, `Loop`.
@@ -388,13 +404,19 @@ they are computable, and `computable` checks exactly that.
 ## 9. Derived declarations
 
 `deriving (…)` on an `inductive` or `theory` asks the elaborator to generate
-checked declarations:
+checked declarations. The clause's vocabulary and fixed generated names
+are globally reserved under the [reserved-name policy](../guides/keywords.md):
+user declarations, fields, constructors and binders cannot claim them.
+References to generated members, named arguments for their existing fields,
+and ordinary proofs of their predicates remain available.
 
 | Derivation | For | Result |
 | --- | --- | --- |
 | `paths` | Types without path constructors | Encode–decode characterization `x = y ≃ Code(x, y)`, with injectivity and disjointness of constructors as corollaries |
 | `decidable_equality` | Types without path constructors whose arguments have decidable equality | A computable decision procedure |
-| `universal` | Every declaration | The universal property in section 1's corrected form: a contractible homomorphism type, the free-model property, and a maps-out characterization only where the constructor and clause data give one; its contract is specified (L2.6) before it is generated |
+| `free` | A theory explicitly requesting `morphisms` | A generic free model, fold and checked restriction/fold equivalence; initiality on `Void`; may fail (L2.6) |
+| `initial` | A theory explicitly requesting `morphisms` | An initial model, fold and checked contractibility of each outgoing homomorphism type; may fail (L2.6) |
+| `universal` | A supported construction with its proof obligations discharged | The universal property in section 1's corrected form: a contractible homomorphism type, the free-model property, and a maps-out characterization only where the constructor and clause data give one; its contract is specified (L2.6) before it is generated |
 | `irrelevance` | Constructors with proposition-valued arguments | `lim(x, c) = lim(x, c')` without writing the proof |
 | `ind_prop`, `rec` | Every declaration | Induction into propositions and non-dependent recursion, as views |
 
@@ -403,6 +425,17 @@ checked declarations:
   a squash constructor.
 - Every derived declaration is an ordinary term, checked by the kernel. It is
   marked `computable` when its dependencies allow.
+
+On theories, the [categories roadmap](categories.md) adds `isomorphisms`
+and `morphisms`, and proposes `limits` and the additive/abelian tower.
+The decided L2.6 clause `deriving (morphisms, free)` requests both the free
+construction and its universal proof; `morphisms, initial` is weaker.
+`morphisms` also generates `T.IsInitial(N) := forall B. IsContr(T.Hom(N, B))`
+(schematic universes), so initiality of an existing model can be proved
+without requesting its automatic construction. The initial derivation
+supplies a certificate of this same predicate.
+Neither capability is advertised after generating only a type and a fold.
+A law's propositionhood is separate from proving it in the constructed model.
 
 ## 10. Smaller conveniences
 
@@ -471,8 +504,9 @@ is required; particular instances depend on H1 or H3.
    visible in signatures.
 2. **Coherence for untruncated theories.** For theories like `Loop`, `T.Hom`
    needs cells up to the laws' dimension. Beyond two dimensions the generated
-   fields grow quickly. Decide where to stop, and whether to generate only
-   `universal` there.
+   fields grow quickly. Specify the supported homomorphism spaces and
+   universal proofs before offering `initial` or `free`; a recursor alone
+   does not establish either capability.
 3. **Choice of initial-model presentation.** A theory law can be stated as an
    equation between composites or as a square; the two give equivalent but
    different signatures. The first form written is the one used, and the

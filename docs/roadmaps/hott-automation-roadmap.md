@@ -950,8 +950,18 @@ Completion:
   - The box notation, first, on 2026-10-06 (work plan L2.8):
     `compose j in A from b { on i = 0 => x; on i = 1 => q @ j; }` and
     `fill j in A from b at k { … }` lower to `comp` and `fill`, and a
-    composition prints as its box. The square view and its constructions
-    follow.
+    composition prints as its box.
+  - The square view, second, the same day: `library/squares.cubist`'s
+    `Square(a0_, a1_, a_0, a_1)`, its edges named by its corners, with the reflexive and naturality
+    squares, transposition, both flips, double composition and its filler,
+    and horizontal and vertical composition, each by conversion; the
+    inspector shows a square's edges and corners.
+  - The conversions, third, the same day: `top_unique` (two squares on the
+    same three sides have equal tops, by one composition) gives
+    `square_to_path` through the square's diagonal, and `retop` with one
+    more composition gives `path_to_square`; `naturality_path` and
+    `cong_trans` follow. Re-deriving the archive's raw `comp` lemmas
+    through them remains.
 
   Expose the kernel's face-restricted conversion as a read-only adapter query.
   It serves boundary display and locating face mismatches, and is an interface
@@ -1125,13 +1135,13 @@ The matcher, resource limits and witness reconstruction must support it first.
 | --- | --- |
 | [translator](../../web/translator/translate.mjs) | Builtin lowering (A1), goal/scope plans (A5), projections (A8), canonical `ua` input (D0b), new statements; `match` and views are ergonomics milestone 7 |
 | [proof-rewrite.mjs](../../web/translator/proof-rewrite.mjs) | Traversal (A2), congruence lines (A3), alias and view matching (A1), fillers (E1) |
-| [path-algebra.mjs](../../web/translator/path-algebra.mjs), [paths](../../archive/first-library/paths.cubist), [path_actions](../../archive/first-library/path_actions.cubist) | Prelude bodies, C3 laws, dependent path operations (E0), double composition and squares (E2), missing lemmas |
+| [path-algebra.mjs](../../web/translator/path-algebra.mjs), [paths](../../archive/first-library/paths_.cubist), [path_actions](../../archive/first-library/path_actions.cubist) | Prelude bodies, C3 laws, dependent path operations (E0), double composition and squares (E2), missing lemmas |
 | [suspension_types](../../archive/first-library/suspension_types.cubist), [suspension](../../archive/first-library/suspension.cubist), [circle](../../archive/first-library/circle.cubist) | Evidence only (archived): replaced by H1 declarations in the rebuild |
 | [homotopy_paths](../../archive/first-library/homotopy_paths.cubist), [field_extensionality](../../archive/first-library/field_extensionality.cubist), [primes](../../archive/first-library/primes.cubist) | Conversion audit of proofs by induction (A7) |
 | [loop_words](../../archive/first-library/loop_words.cubist) | Reflective loop normalizer (C4) |
 | [simp-registry.mjs](../../web/translator/simp-registry.mjs) | Aliases, distinct conversion/equality entries, bounded `hlevel_rule` and `ext_rule` registries |
 | [hlevels](../../library/hlevels.cubist), [truncation](../../archive/first-library/truncation.cubist), [bijection_equality](../../archive/first-library/bijection_equality.cubist) | Numeric h-level templates and their aliases (D0a) |
-| [equivalence.mjs](../../web/translator/equivalence.mjs), [public-equivalence.mjs](../../web/translator/public-equivalence.mjs), [paths](../../archive/first-library/paths.cubist), [maps](../../archive/first-library/maps.cubist) | Canonical public equivalences, `Fiber` orientation and checked univalence API (D0b) |
+| [equivalence.mjs](../../web/translator/equivalence.mjs), [public-equivalence.mjs](../../web/translator/public-equivalence.mjs), [paths](../../archive/first-library/paths_.cubist), [maps](../../archive/first-library/maps.cubist) | Canonical public equivalences, `Fiber` orientation and checked univalence API (D0b) |
 | [identity_systems](../../archive/first-library/identity_systems.cubist) | Eliminator, computation law and universe templates (D3); contraction combinators (D4) |
 | [fundamental_groups](../../archive/first-library/fundamental_groups.cubist) | Pointed types and loop spaces (F4) |
 | [structured_sets](../../archive/first-library/structured_sets.cubist), [algebraic_fields](../../archive/first-library/algebraic_fields.cubist), [field_embedding_spaces](../../archive/first-library/field_embedding_spaces.cubist) | Compositional descriptions, property fields and derived identity (F1) |
@@ -1244,7 +1254,7 @@ Representative proofs:
   transport, univalence computation and path re-bracketing written by hand.
 - `adjoint_triangle` and `homotopy_natural` ([equivalence_from_inverse](../../archive/first-library/equivalence_from_inverse.cubist)):
   whiskering and naturality; the latter is a large raw `comp` term.
-- `cancel_left` and `transport_concat` ([paths](../../archive/first-library/paths.cubist)).
+- `cancel_left` and `transport_concat` ([paths](../../archive/first-library/paths_.cubist)).
 - `suspension_rec_beta` ([suspension](../../archive/first-library/suspension.cubist)) and
   `transport_path_roundtrip` ([suspension_types](../../archive/first-library/suspension_types.cubist)):
   25 and 31 lines proving path computation laws, because the eliminators take
@@ -1267,7 +1277,7 @@ def under_succ(n : Nat) : succ(n + 0) = succ(n) {
 ```
 
 ```text
-import paths;
+import paths_;
 
 def ru(A : U1, x, y : A, p : x = y) : trans(p, refl(y)) = p {
   exact right_unit(A, x, y, p);
@@ -1333,7 +1343,7 @@ A second file checks three further constructions:
 
 The library also proves some path laws by `refl`: `map_inverse` and
 `inverse_twice` in [path_actions](../../archive/first-library/path_actions.cubist), and
-`transport_ap` in [paths](../../archive/first-library/paths.cubist).
+`transport_ap` in [paths](../../archive/first-library/paths_.cubist).
 
 ### What the kernel computes that the library does not use
 
@@ -1470,7 +1480,7 @@ the same way. There, the ergonomic forms of its arithmetic examples use 1.7 to
 - The kernel adapter's [withGrowingBudget](../../web/cubical-kernel.mjs)
   doubles an exhausted native step budget up to the unsigned 64-bit maximum.
   Frontend fuel alone therefore does not bound native work.
-- Public [Equiv](../../archive/first-library/paths.cubist) uses half-adjoint data;
+- Public [Equiv](../../archive/first-library/paths_.cubist) uses half-adjoint data;
   [native equivalences](../../web/translator/equivalence.mjs) use contractible
   fibers. The native total-space univalence theorem cannot simply be published
   at the existing public type: the reverse public roundtrip remains an

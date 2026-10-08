@@ -1,7 +1,7 @@
 // Accepted probes from the HoTT roadmap's evidence sections. Each construction
 // checks as written; later milestones must keep it checking.
 import primes;
-import paths;
+import paths_;
 use nat;
 
 // Sigma extensionality: the second component is a PathP over the first.

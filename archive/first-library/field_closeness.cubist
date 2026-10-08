@@ -25,7 +25,7 @@ def order_lt_add_pair(
   uv : lt(u, v)
 ) :
   lt(addF(x, u), addF(y, v)) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   obtain (forward, backward) := translate(x, y, u);
   exact transitive(
@@ -81,7 +81,7 @@ def field_close_triangle(
   xy : FieldClose(F, addF, lt, x, y, epsilon), yz : FieldClose(F, addF, lt, y, z, delta)
 ) :
   FieldClose(F, addF, lt, x, z, addF(epsilon, delta)) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   obtain (xyUpper, xyLower) := xy;
   obtain (yzUpper, yzLower) := yz;
@@ -132,7 +132,7 @@ def field_close_all_le(
   close : (forall epsilon : F. lt(zero, epsilon) -> FieldClose(F, addF, lt, x, y, epsilon))
 ) :
   FieldLe(F, lt, x, y) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   intro reversed;
   let gap := addF(x, negF(y));
   let positive :=
@@ -157,7 +157,7 @@ def field_close_separated(
   close : (forall epsilon : F. lt(zero, epsilon) -> FieldClose(F, addF, lt, x, y, epsilon))
 ) :
   x = y {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   exact antisymmetric(
     x, y,
     field_close_all_le(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, close),

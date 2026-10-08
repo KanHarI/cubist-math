@@ -89,27 +89,28 @@ def SubdivisionTaggedValid(
   );
 
 def subdivision_tagged_valid_join(
-  C : U1, condition : C -> C -> C -> U0, a, b, c : C, left : SampleSubdivision(C, a, b),
-  right : SampleSubdivision(C, b, c), validLeft : SubdivisionTaggedValid(C, condition, a, b, left),
-  validRight : SubdivisionTaggedValid(C, condition, b, c, right)
+  C : U1, condition : C -> C -> C -> U0, a, b, c : C, left_ : SampleSubdivision(C, a, b),
+  right_ : SampleSubdivision(C, b, c),
+  validLeft : SubdivisionTaggedValid(C, condition, a, b, left_),
+  validRight : SubdivisionTaggedValid(C, condition, b, c, right_)
 ) :
-  SubdivisionTaggedValid(C, condition, a, c, join_subdivisions(C, a, b, c, left, right)) {
-  let n := subdivision_count(C, a, b, left);
-  let vertices := subdivision_vertices(C, a, b, left);
-  let m := subdivision_count(C, b, c, right);
-  let rightVertices := subdivision_vertices(C, b, c, right);
+  SubdivisionTaggedValid(C, condition, a, c, join_subdivisions(C, a, b, c, left_, right_)) {
+  let n := subdivision_count(C, a, b, left_);
+  let vertices := subdivision_vertices(C, a, b, left_);
+  let m := subdivision_count(C, b, c, right_);
+  let rightVertices := subdivision_vertices(C, b, c, right_);
   let lastLeft : sample_last(C, n, vertices) = b :=
     field_snd(
       (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
-      subdivision_endpoints(C, a, b, left)
+      subdivision_endpoints(C, a, b, left_)
     );
   let firstRight : sample_first(C, m, rightVertices) = b :=
     field_fst(
       (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
-      subdivision_endpoints(C, b, c, right)
+      subdivision_endpoints(C, b, c, right_)
     );
   exact sample_tagged_join(
-    C, condition, n, vertices, subdivision_tags(C, a, b, left), m, rightVertices,
-    subdivision_tags(C, b, c, right), trans(lastLeft, sym(firstRight)), validLeft, validRight
+    C, condition, n, vertices, subdivision_tags(C, a, b, left_), m, rightVertices,
+    subdivision_tags(C, b, c, right_), trans(lastLeft, sym(firstRight)), validLeft, validRight
   );
 }

@@ -53,7 +53,7 @@ def dyadic_refinement_zero(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, extra, a, b,
       ordered
     );
-  let initial :=
+  let initial_ :=
     subdivision_refinement_sum_single(
       FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, rightUnit, edge,
       IntervalRefinementAdmissible(F, zero, one, lt), a, b, fine, valid
@@ -69,7 +69,7 @@ def dyadic_refinement_zero(
     dyadic_piece_zero(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     )
-  ) from initial;
+  ) from initial_;
 }
 
 def dyadic_refinement_step(
@@ -131,8 +131,8 @@ def dyadic_refinement_step(
     interval_midpoint_right_order(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     );
-  let left := previous(extra, a, midpoint, leftOrdered);
-  let right := previous(extra, midpoint, b, rightOrdered);
+  let left_ := previous(extra, a, midpoint, leftOrdered);
+  let right_ := previous(extra, midpoint, b, rightOrdered);
   let joined :=
     subdivision_refinement_sum_join(
       I, G, zeroG, addG, leftUnit, assoc, edge, IntervalRefinementAdmissible(F, zero, one, lt), a,
@@ -152,7 +152,7 @@ def dyadic_refinement_step(
       dyadic_piece(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth + extra,
         midpoint, b, rightOrdered
-      ), left, right
+      ), left_, right_
     );
   let coarsePath :=
     dyadic_piece_succ(

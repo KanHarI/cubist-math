@@ -95,7 +95,7 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
   }
   // Library wrappers whose bodies are the builtins: name -> [arity, builtin, kept arguments].
   const wrappers = { concatenate: [7, "trans", [5, 6]], append_path: [6, "trans", [4, 5]],
-    inverse: [5, "sym", [4]], ap: [7, "cong", [3, 6]] };
+    inverse_: [5, "sym", [4]], ap: [7, "cong", [3, 6]] };
   function rewriteNode(node, context) {
     if (node.kind === "exact" && node.value.kind === "call" && node.value.fn.kind === "name"
       && !comment(node.start, node.end)) {

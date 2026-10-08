@@ -47,15 +47,15 @@ def root_not_unit(
   Void {
   let E := fun (q : Polynomial(K)) => polynomial_eval(K, L, e, q, x);
   let impossible : (exists q : Polynomial(K). polynomial_mul(K, p, q) = polynomial_one(K)) -> Void {
-    intro witness;
-    obtain (q, inverse) := witness;
+    intro witness_;
+    obtain (q, inverse_) := witness_;
     obtain (ring, nontrivial, inverses) := af_laws(L);
     exact with unfolding [] {
       nontrivial(
         trans(
           sym(polynomial_eval_one(K, L, e, x)),
           trans(
-            cong(E, sym(inverse)),
+            cong(E, sym(inverse_)),
             trans(
               polynomial_eval_mul(K, L, e, p, q, x),
               trans(
@@ -134,8 +134,8 @@ def algebraic_annihilator_generator(
   let rearrange :
     (exists p : Polynomial(K). PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x))
     -> (exists p : Polynomial(K). polynomial_ideal_members(K, I, p) and PolynomialNonzero(K, p)) {
-    intro witness;
-    obtain (p, nonzero, root) := witness;
+    intro witness_;
+    obtain (p, nonzero, root) := witness_;
     exact (p, root, nonzero);
   }
   exact polynomial_ideal_principal(

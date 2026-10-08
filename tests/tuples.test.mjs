@@ -42,7 +42,7 @@ test("AST linearization preserves comments, grouping, left components and applic
       exact ((0, 1), (2, // keep the tail note
         ((3, 4))));
     }
-    def use : Nat { obtain ((a, b), (c, (d, e))) := build; exact e; }
+    def use_ : Nat { obtain ((a, b), (c, (d, e))) := build; exact e; }
     def call := f(a, b, c);
   `;
   const raw = linearizeTuples(source);

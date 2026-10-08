@@ -133,10 +133,10 @@ def linear_identity_iso(K : AlgebraicField, V : VectorSpace(K)) : LinearIso(K, V
 
 def linear_iso_equiv(K : AlgebraicField, V, W : VectorSpace(K), iso : LinearIso(K, V, W)) :
   Equiv(U0, vector_carrier(K, V), vector_carrier(K, W)) {
-  obtain (f, g, left, right) := iso;
+  obtain (f, g, left_, right_) := iso;
   exact equiv_from_inverse_into_set(
     U0, vector_carrier(K, V), vector_carrier(K, W), group_is_set(vector_group(K, W)),
-    linear_map(K, V, W, f), linear_map(K, W, V, g), left, right
+    linear_map(K, V, W, f), linear_map(K, W, V, g), left_, right_
   );
 }
 

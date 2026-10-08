@@ -9,12 +9,12 @@ import hlevels;
 import algebra;
 use nat;
 
-def additive : Monoid(U0) := nat_additive.monoid;
+def additive_ : Monoid(U0) := nat_additive.monoid;
 
 def multiplicative : Monoid(U0) := nat_multiplicative.monoid;
 
 // * binds tighter than +, whatever its model: 2 * 3, then that and 1.
-def mixed : additive.M := 2 multiplicative.(*) 3 additive.(*) 1;
+def mixed : additive_.M := 2 multiplicative.(*) 3 additive_.(*) 1;
 
 // Output: 7
 print(evaluate(mixed));
@@ -24,7 +24,7 @@ def product : multiplicative.(nat.(2) * nat.(3) * nat.(4)) = 24 {
   rfl;
 }
 
-def sum_of := additive.(*);
+def sum_of := additive_.(*);
 
 // Output: 9
 print(evaluate(sum_of(4, 5)));
@@ -38,11 +38,11 @@ def cube(x : Nat) : Nat {
 print(evaluate(cube(3)));
 
 // A ring's additive monoid, through its parent's label.
-def doubled(R : CommRing(U0), x : R.R) : R.R := x R.additive.(*) x;
+def doubled(R : CommRing(U0), x : R.R) : R.R := x R.additive_.(*) x;
 
 // A file-level use covers the directives after it too, so a natural
 // numeral there is nat.(3) (L2.10c).
-use additive;
+use additive_;
 
 def twice(x : Nat) : Nat := x * x;
 
@@ -123,7 +123,7 @@ theory Wrapper(U < UU0) {
   inner : Monoid(U);
 }
 
-def outer : Wrapper(U0) := Wrapper.make(inner := additive);
+def outer : Wrapper(U0) := Wrapper.make(inner := additive_);
 
 use outer;
 

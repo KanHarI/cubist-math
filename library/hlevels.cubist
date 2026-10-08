@@ -162,11 +162,11 @@ def Decidable(U < UU0, A : U) : U := A or (A -> Void);
 // The decision of a proposition is a proposition: two decisions on the same
 // side agree, by the proposition or since negations are propositions, and
 // decisions on opposite sides contradict each other.
-computable def decision_is_prop(U < UU0, P : U, prop : IsProp(U, P)) : IsProp(U, Decidable(U, P)) {
+computable def decision_is_prop(U < UU0, P : U, prop_ : IsProp(U, P)) : IsProp(U, Decidable(U, P)) {
   intro x, y;
   exact match x as v return (v = y) {
     left p => match y as w return (typed(P or (P -> Void), left(p)) = w) {
-      left q => cong(fun (a : P) => typed(P or (P -> Void), left(a)), prop(p, q));
+      left q => cong(fun (a : P) => typed(P or (P -> Void), left(a)), prop_(p, q));
       right no => absurd(no(p));
     };
     right no => match y as w return (typed(P or (P -> Void), right(no)) = w) {

@@ -221,7 +221,7 @@ export const archiveModules = [
   "binomial_types",
   "binomial_pascal",
   "binomial_counting",
-  "paths",
+  "paths_",
   "groups",
   "group_universes",
   "signed_integers",
@@ -382,13 +382,13 @@ export const archiveModules = [
 // which a module imports to use them.
 export const libraryModules = ["nat", "classical_axioms", "universe_automorphisms", "hlevels",
   "h1_truncation", "h1_classical", "contractible_maps", "univalence", "propositions",
-  "lists", "lexemes", "quotients", "algebra", "integers", "rationals"];
+  "lists", "lexemes", "quotients", "algebra", "integers", "rationals", "squares"];
 
 // The Cubist sources the test suite checks (cubist-tests/), each a module the
 // workspace opens as proof.html?proof=NAME. tests/cubist-tests.test.mjs
 // checks that every file is listed.
 export const cubistTestModules = [
-  "arguments", "implicit_parameters", "patterns", "sum_match", "glue", "face_restriction", "declared_match", "declared_induction", "automatic_clauses",
+  "arguments", "implicit_parameters", "patterns", "sum_match", "glue_", "face_restriction", "declared_match", "declared_induction", "automatic_clauses",
   "automatic_clauses_groupoid", "automatic_clauses_without_hlevels", "quotient_effectiveness", "theories", "theories_without_hlevels", "theory_morphisms", "theory_sections", "theory_headers", "theory_variance", "theory_families", "theory_independent", "theory_use", "notation_views", "notation_operators", "notation_literals", "notation_printing", "notation_pilots", "algebra_models", "integer_examples", "rational_examples", "hlevel_lemmas", "hlevel_tactic", "hlevel_rules",
   "hlevel_without_import", "h1_acceptance_levels", "h1_acceptance_formers", "h1_acceptance_instances",
   "h1_acceptance_paths", "program_types", "program_types_nat_as_name", "program_types_constructor_shadowing",
@@ -401,7 +401,7 @@ export const cubistTestModules = [
   "inductive_no_marker", "inductive_path_lambda", "inductive_projections", "inductive_trunc_minus_one",
   "inductive_inspection", "inductive_inspection_names", "inductive_generated_names",
   "inductive_printed_forms", "inductive_assumptions", "inductive_one_parameter_name", "computability",
-  "computability_evaluation", "evaluate_patterns", "truncation_readout", "box_notation", "computability_unfolding", "induction_printed",
+  "computability_evaluation", "evaluate_patterns", "truncation_readout", "box_notation", "square_constructions", "computability_unfolding", "induction_printed",
   "ergonomics_rewrite_obligations", "ergonomics_simp_rejections", "ergonomics_simpa_reconstruction",
   "ergonomics_type_transport_rejections", "ergonomics_simp_child_order",
   "ergonomics_simp_incompatible_candidate", "ergonomics_grouped_binder_shadowing",
@@ -438,7 +438,7 @@ export const cubistTestModules = [
   "truncation_rebuilt_classical", "printer_lint", "translation_failed_proofs", "translation_path_induction",
   "translation_weak_j", "mismatch_source_syntax", "mismatch_calc_naming", "source_text_messages",
   "inspection_declared_types", "inspection_shadowed_nat", "inspection_axiom_labels", "inspection_let_alias",
-  "assembly_fixture", "assembly_generic_assumptions", "glue_printed", "admission_two", "reduction_demo",
-  "f4_extension_loops", "f4_extension_loops_false", "fingerprint_fixture", "documentation_helper",
-  "documentation_use", "declared_match_operator_call", "declarations_definitions"
+  "inspection_square_boundary", "assembly_fixture", "assembly_generic_assumptions", "glue_printed",
+  "admission_two", "reduction_demo", "f4_extension_loops", "f4_extension_loops_false", "fingerprint_fixture",
+  "documentation_helper", "documentation_use", "declared_match_operator_call", "declarations_definitions"
 ];

@@ -169,7 +169,7 @@ proofs are propositions, so this presentation has the intended identity type.
 isomorphisms. No inverse witness is selected from a truncation.
 
 For general homotopy types, quasi-inverse data alone is not our equivalence
-representation. `IsEquiv(U, A, B, f)` in `paths.cubist` is a half-adjoint
+representation. `IsEquiv(U, A, B, f)` in `paths_.cubist` is a half-adjoint
 equivalence with the explicit triangle law
 `ap(U, A, B, f, g(f(x)), x, eta(x)) = epsilon(f(x))`.
 `Equiv` bundles the map with that evidence. Univalence uses exactly this type.

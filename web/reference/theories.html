@@ -81,7 +81,7 @@ theory Monoid(U &lt; UU0) {
               <li>an <strong>operation</strong>, <code>mul(x, y : M) : M</code>, or a <strong>constant</strong>, <code>one : M</code>, may have a <strong>notation</strong>: one of the operators <code>x + y</code>, <code>x * y</code>, <code>x &lt; y</code> and <code>x &lt;= y</code>, written with the operation's two arguments in order;</li>
               <li>a <strong>law</strong>, <code>law name(binders) : statement;</code>, states a property of the earlier fields. A law must be a proposition: an equation between elements of a carrier that is a set or a proposition, <code>Void</code>, or <code>forall</code>, <code>-&gt;</code> and <code>and</code> over those, such as <code>zero = one -&gt; Void</code>. A law holds no data, so <code>law point : M;</code> is refused: declare it as a constant.</li>
             </ul>
-            <p>Each field is in scope by its name after it is declared, and inside the theory a notation means its operation: <code>x * y</code> there is <code>mul(x, y)</code>. The words <code>law</code> and <code>notation</code>, and <code>set</code> and <code>prop</code> in a carrier, are keywords only in a theory's body.</p>
+            <p>Each field is in scope by its name after it is declared, and inside the theory a notation means its operation: <code>x * y</code> there is <code>mul(x, y)</code>. The words <code>law</code>, <code>notation</code>, <code>set</code> and <code>prop</code> are reserved keywords: they cannot name fields or binders.</p>
           </section>
 
           <section id="models">
@@ -100,16 +100,16 @@ theory Monoid(U &lt; UU0) {
   law mul_one(x : M) : x * one = x;
 }
 
-def additive : Monoid(U0) := Monoid.make(
+def additive_ : Monoid(U0) := Monoid.make(
   M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := 0,
   one_mul := nat_zero_add, mul_one := nat_add_zero
 );
 
-def two_plus_three : additive.mul(2, 3) = 5 {
+def two_plus_three : additive_.mul(2, 3) = 5 {
   rfl;
 }</code></pre>
             <p>A carrier's setness field can be left out where <a href="paths.html#hlevel"><code>hlevel</code></a> proves it, as for <code>Nat</code>, a type built from sets, or a type with a registered <code>hlevel_rule</code>: <code>Monoid.make(M := Nat, mul := add, …)</code> gives <code>M_is_set</code> the evidence it finds.</p>
-            <p>For a model <code>m</code>, <code>m.f</code> is its field <code>f</code>: <code>additive.M</code> is <code>Nat</code> and <code>additive.mul(2, 3)</code> computes to <code>5</code>. A field's type is written through the earlier fields of the same model, so <code>m.one_mul</code> has type <code>forall x : m.M. m.mul(m.one, x) = x</code>, and goals and messages show fields this way. <code>m.f</code> is the projection <code>Monoid.f(m)</code>, a definition like any other. A binding of <code>m</code> hides the declarations named <code>m.…</code>: in <code>def f(Monoid : Monoid(U0))</code>, <code>Monoid.one</code> is the parameter's field, and beside a theory <code>B</code>, a model bound as <code>B</code> reads its own <code>B.one</code>.</p>
+            <p>For a model <code>m</code>, <code>m.f</code> is its field <code>f</code>: <code>additive_.M</code> is <code>Nat</code> and <code>additive_.mul(2, 3)</code> computes to <code>5</code>. A field's type is written through the earlier fields of the same model, so <code>m.one_mul</code> has type <code>forall x : m.M. m.mul(m.one, x) = x</code>, and goals and messages show fields this way. <code>m.f</code> is the projection <code>Monoid.f(m)</code>, a definition like any other. A binding of <code>m</code> hides the declarations named <code>m.…</code>: in <code>def f(Monoid : Monoid(U0))</code>, <code>Monoid.one</code> is the parameter's field, and beside a theory <code>B</code>, a model bound as <code>B</code> reads its own <code>B.one</code>.</p>
             <p>A parameter whose type is a theory's models makes a statement about every structure of that kind, in a universe of your choice:</p>
             <pre><code data-check="accept">import hlevels;
 
@@ -217,23 +217,23 @@ def square_one(G : Monoid(U0)) : square(G, G.one) = G.one {
   use G;
   exact one_mul(one);
 }</code></pre>
-            <p>A name that <code>use</code> binds shadows the one it had, as <code>let</code> does, until the block ends, and a later <code>use</code> shadows an earlier one: it switches the selection. At a file's top level, <code>use m;</code> selects <code>m</code> for every definition after it, statements included, until a later <code>use</code> switches it. <code>m.(e)</code> selects <code>m</code> for one expression, and an operator can be qualified by its model, with its usual precedence, <code>a m.(*) b</code>; alone, <code>m.(*)</code> is the operation itself. A parent's operator is reached through its label, <code>x R.additive.(*) y</code>:</p>
+            <p>A name that <code>use</code> binds shadows the one it had, as <code>let</code> does, until the block ends, and a later <code>use</code> shadows an earlier one: it switches the selection. At a file's top level, <code>use m;</code> selects <code>m</code> for every definition after it, statements included, until a later <code>use</code> switches it. <code>m.(e)</code> selects <code>m</code> for one expression, and an operator can be qualified by its model, with its usual precedence, <code>a m.(*) b</code>; alone, <code>m.(*)</code> is the operation itself. A parent's operator is reached through its label, <code>x R.additive_.(*) y</code>:</p>
             <pre><code data-check="accept">import nat;
 import hlevels;
 import algebra;
 use nat;
 
-def additive : Monoid(U0) := nat_additive.monoid;
+def additive_ : Monoid(U0) := nat_additive.monoid;
 
 def multiplicative : Monoid(U0) := nat_multiplicative.monoid;
 
-def mixed : additive.M := 2 multiplicative.(*) 3 additive.(*) 1;
+def mixed : additive_.M := 2 multiplicative.(*) 3 additive_.(*) 1;
 
 def product : multiplicative.(nat.(2) * nat.(3) * nat.(4)) = 24 {
   rfl;
 }
 
-def doubled(R : CommRing(U0), x : R.R) : R.R := x R.additive.(*) x;
+def doubled(R : CommRing(U0), x : R.R) : R.R := x R.additive_.(*) x;
 
 use multiplicative;
 
@@ -317,11 +317,11 @@ section {{U &lt; UU0}}(G : Monoid(U)) {
   }
 }
 
-def additive : Monoid(U0) := Monoid.make(
+def additive_ : Monoid(U0) := Monoid.make(
   M := Nat, M_is_set := nat_is_set, mul := add, one := 0, one_mul := nat_zero_add
 );
 
-def four : square(additive, 2) = 4 {
+def four : square(additive_, 2) = 4 {
   rfl;
 }</code></pre>
             <p>Inside the section, <code>square(one)</code> is <code>square{{U}}(G, G.one)</code>; outside, <code>square</code> takes <code>G</code> first, and <code>U</code> in braces, and <code>square_one</code> states <code>forall U &lt; UU0. forall G : Monoid(U). square{{U}}(G, G.one) = G.one</code>. A recursive call passes the section's parameters unchanged too: in a section over <code>G</code>, <code>power(x, k)</code> inside <code>power</code>'s own definition is <code>power{{U}}(G, x, k)</code>. A section's parameters, in braces or not, come before each definition's own, so a definition in a section has no implicit parameters of its own, and no parameter of a section's name. A section holds definitions only, and sections do not nest.</p>
@@ -368,7 +368,7 @@ theory Monoid(U &lt; UU0) {
 }
 
 theory Semiring(U &lt; UU0) extends
-    additive : Monoid(M := R, mul := add notation x + y, one := zero, one_mul := zero_add),
+    additive_ : Monoid(M := R, mul := add notation x + y, one := zero, one_mul := zero_add),
     multiplicative : Monoid(M := R) {
   law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;
 }
@@ -419,7 +419,7 @@ theory Monoid(U &lt; UU0) {
   law one_mul(x : M) : one * x = x;
 }
 
-def additive : Monoid(U0) := Monoid.make(
+def additive_ : Monoid(U0) := Monoid.make(
   M := Nat, M_is_set := nat_is_set, mul := add, one := 0, one_mul := nat_zero_add
 );
 
@@ -428,8 +428,8 @@ def trivial : Monoid(U0) := Monoid.make(
   one := tt, one_mul := fun (x : Unit) =&gt; unit_is_prop(tt, x)
 );
 
-def collapse : Monoid.Hom(additive, trivial) := Monoid.Hom.make(
-  additive, trivial, map := fun (n : Nat) =&gt; tt, map_mul := fun (x, y : Nat) =&gt; refl(tt), map_one := refl(tt)
+def collapse : Monoid.Hom(additive_, trivial) := Monoid.Hom.make(
+  additive_, trivial, map := fun (n : Nat) =&gt; tt, map_mul := fun (x, y : Nat) =&gt; refl(tt), map_one := refl(tt)
 );
 
 def unit_into(B : Monoid(U0)) : Monoid.Hom(trivial, B) := Monoid.Hom.make(
@@ -437,7 +437,7 @@ def unit_into(B : Monoid(U0)) : Monoid.Hom(trivial, B) := Monoid.Hom.make(
   map_one := refl(B.one)
 );
 
-def round : Monoid.Hom(additive, additive) := Monoid.Hom.compose(unit_into(additive), collapse);
+def round : Monoid.Hom(additive_, additive_) := Monoid.Hom.compose(unit_into(additive_), collapse);
 
 evaluate round.map(7) expecting 0;</code></pre>
             <p><code>Monoid.Hom.id(A)</code> is the identity and <code>Monoid.Hom.compose(g, f)</code> is <code>g</code> after <code>f</code>; on closed models both compute. A child theory's homomorphisms preserve its parents' operations too, and <code>f.monoid</code> is the homomorphism of the parent's models.</p>
@@ -487,7 +487,7 @@ def no_homs(A, B : Iterate(U0)) := Iterate.Hom(A, B);  // Error: Iterate's model
               <li>in any commutative ring, <code>mul_zero</code>, <code>zero_mul</code>, <code>add_mul</code> and <code>neg_mul</code>, <code>neg(x) * y = neg(x * y)</code>, and <code>inverse_unique</code> and <code>inverse_is_prop</code>;</li>
               <li>in any field, <code>inverse</code>, <code>inv</code> and <code>mul_inv</code>.</li>
             </ul>
-            <p>A ring's parts are models too, so a monoid's or a group's lemma applies to them: <code>mul_interchange(A.multiplicative, …)</code>, <code>right_cancel(A.additive.group, …)</code>. The natural numbers are a commutative monoid twice, <code>nat_additive</code> and <code>nat_multiplicative</code>. The library's <code>integers</code> are a commutative ring, <code>integers</code>, and its <code>rationals</code> a field, <code>rationals</code>, both <a href="cubical.html#quotients">quotients</a>. <code>rationals</code> builds the field of fractions once, in a section over any commutative ring with decidable equality, no zero divisors and zero not one (<code>fraction_field</code>), and takes it at the integers. <code>rat(a, k)</code> is <code>a / (k + 1)</code>, and the field's arithmetic, the inverse included, computes:</p>
+            <p>A ring's parts are models too, so a monoid's or a group's lemma applies to them: <code>mul_interchange(A.multiplicative, …)</code>, <code>right_cancel(A.additive_.group, …)</code>. The natural numbers are a commutative monoid twice, <code>nat_additive</code> and <code>nat_multiplicative</code>. The library's <code>integers</code> are a commutative ring, <code>integers</code>, and its <code>rationals</code> a field, <code>rationals</code>, both <a href="cubical.html#quotients">quotients</a>. <code>rationals</code> builds the field of fractions once, in a section over any commutative ring with decidable equality, no zero divisors and zero not one (<code>fraction_field</code>), and takes it at the integers. <code>rat(a, k)</code> is <code>a / (k + 1)</code>, and the field's arithmetic, the inverse included, computes:</p>
             <pre><code data-check="accept">import rationals;
 use nat;
 
@@ -569,7 +569,7 @@ theory Twice(U &lt; UU0) {  // Error: Twice has two fields named one: give each 
             <p>Two parents may give a carrier of one name only with one kind and type:</p>
             <pre><code data-check="reject">import hlevels;
 
-theory Left(U &lt; UU0) {
+theory Pointed(U &lt; UU0) {
   M : set U;
   point : M;
 }
@@ -578,7 +578,7 @@ theory Truth(U &lt; UU0) {
   M : prop U;
 }
 
-theory Clash(U &lt; UU0) extends Left, Truth {  // Error: Clash gets the carrier M from Left and Truth with different kinds or indices: rename one, as in Truth(M := …).
+theory Clash(U &lt; UU0) extends Pointed, Truth {  // Error: Clash gets the carrier M from Pointed and Truth with different kinds or indices: rename one, as in Truth(M := …).
 }</code></pre>
             <p><code>use</code> takes a model, and <code>m.f</code> a field the theory has:</p>
             <pre><code data-check="reject">import nat;

@@ -22,7 +22,7 @@
 // theory's own. A field two parents give is one field when it comes from one
 // ancestor's field, with one name and one type; otherwise it is refused.
 
-import { parse } from "./parser.mjs";
+import { parse, reservedNames } from "./parser.mjs";
 import { morphismSource } from "./morphisms.mjs";
 // A copy of a syntax tree with `rewrite(node, bound)` applied to each node,
 // outermost first; `bound` holds the names bound there, by every binding
@@ -71,7 +71,7 @@ function namesIn(node, names = new Set()) {
 }
 const fresh = (stem, taken) => { let candidate = stem, k = 1; while (taken.has(candidate)) candidate = `${stem}${k++}`; return candidate; };
 // An unlabelled parent's label: its name in snake case, CommMonoid as comm_monoid.
-const snake = text => text.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+export const snake = text => text.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
 const sameSyntax = (a, b) => JSON.stringify(a, (key, value) => ["start", "end"].includes(key) ? undefined : value)
   === JSON.stringify(b, (key, value) => ["start", "end"].includes(key) ? undefined : value);
 
@@ -227,6 +227,9 @@ function theoryFields(theory, lookup, proposition) {
     const record = lookup(parent.name.text);
     if (!record) throw located(Error(`${parent.name.text} is not a theory here: ${T} extends theories in scope.`), parent.name);
     const label = parent.label?.text ?? snake(record.name);
+    // A label is a field's name, so it is none of the reserved words.
+    if (!parent.label && reservedNames.has(label))
+      throw located(Error(`${parent.name.text}'s label would be ${label}, which is reserved: label it, as in other : ${parent.name.text}.`), parent.name);
     if (prepared.some(other => other.label === label))
       throw located(Error(`${T} has two parents labelled ${label}: label one, as in other : ${parent.name.text}.`), parent.label ?? parent.name);
     // The parent's universes are the child's: its one universe the child's

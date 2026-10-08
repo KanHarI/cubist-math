@@ -6,6 +6,6 @@ use nat;
 
 def N := Nat;
 
-def id(n : Nat) := n;
+def id_(n : Nat) := n;
 
-def value := typed(N, id(0));
+def value := typed(N, id_(0));

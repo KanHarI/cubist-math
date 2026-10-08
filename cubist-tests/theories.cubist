@@ -36,7 +36,7 @@ theory CommGroup(U < UU0) extends Group, CommMonoid {
 // Two copies of Monoid on one sort R, the additive one renamed, with + for
 // its operation; * keeps meaning the multiplicative one.
 theory Semiring(U < UU0) extends
-    additive : CommMonoid(M := R, mul := add notation x + y, one := zero, mul_assoc := add_assoc,
+    additive_ : CommMonoid(M := R, mul := add notation x + y, one := zero, mul_assoc := add_assoc,
       one_mul := zero_add, mul_one := add_zero, mul_comm := add_comm),
     multiplicative : Monoid(M := R) {
   law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;
@@ -234,25 +234,25 @@ theory Pointed(U < UU0) {
   law point : M;
 }
 
-theory Left(U < UU0) {
+theory First(U < UU0) {
   M : set U;
   point : M;
 }
 
-theory Right(U < UU0) {
+theory Second(U < UU0) {
   M : set U;
   point : M;
 }
 
 // Two unrelated parents' points are two fields, each its parent's; their
 // carriers are one (theory_independent).
-theory Clash(U < UU0) extends Left, Right {
+theory Clash(U < UU0) extends First, Second {
 }
 
 // One ancestor's field, reached twice with two types, is refused.
-// Error: E802: Twice2 gets a field named point from both Left and Left: rename one, as in
-//   Left(point := …).
-theory Twice2(U < UU0) extends Left, left2 : Left(M := N) {
+// Error: E802: Twice2 gets a field named point from both First and First: rename one, as in
+//   First(point := …).
+theory Twice2(U < UU0) extends First, first2 : First(M := N) {
 }
 
 // Error: E805: Missing is not a theory here: Unknown extends theories in scope.
@@ -270,10 +270,10 @@ def open_a_number(n : Nat) : Nat {
   exact n;
 }
 
-// A local model may take a theory's name, as Left does here; its fields
+// A local model may take a theory's name, as First does here; its fields
 // are then the model's.
-def shadowing_model(Left : Monoid(U0)) : Left.mul(Left.one, Left.one) = Left.one :=
-  Left.one_mul(Left.one);
+def shadowing_model(First : Monoid(U0)) : First.mul(First.one, First.one) = First.one :=
+  First.one_mul(First.one);
 
 // Error: E815: G is a model of Monoid, which has no field zero: it has M, M_is_set, mul, mul_assoc,
 //   one, one_mul, mul_one, and the parents semigroup.

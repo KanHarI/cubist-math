@@ -1,0 +1,727 @@
+# Morphisms, categories and universal constructions
+
+Status: proposed on 2026-10-07, at the maintainer's request; nothing here
+is implemented. The initial/free opt-in contract was decided on 2026-10-07
+and is specified in [L2.6](core-theories.md#initial-and-free-models-l26);
+the other packages remain proposed. The work plan's packages are:
+
+- L2.4d: morphisms by opt-in;
+- L2.4e: user-defined morphisms (deferred);
+- L2.6: checked initial and free derivations, which may fail;
+- L2.11: laws proved propositions;
+- L2.12: implicit arguments in theory operations;
+- L3.4: categories;
+- L3.5: universal constructions;
+- L3.6: the abelian tower.
+
+The probes quoted below were checked on 2026-10-07 with `node cli/repl.mjs
+check`: those of a theory's morphisms and of `Product` at `ae94f49`, and
+those of diagrams at `075ec73`. Their files are not fixtures. The
+[homological algebra roadmap](https://github.com/KanHarI/cubist-math/blob/fb0273282afb96cdaab393ccf47983b5f44f1b25/docs/roadmaps/homological-algebra.md) builds on this one.
+
+## Why
+
+**Every theory derives its morphisms, whether it uses them or not.** A
+theory's `T.Hom`, `T.Iso`, their operations and their projections are
+generated with it ([core theories](core-theories.md#homomorphisms-and-isomorphisms)).
+
+- **Usage.** `library/` declares 7 theories and never uses `T.Hom` or
+  `T.Iso`. `cubist-tests/` declares 95, and 8 files use them.
+- **Cost.** Before #196, the generated morphisms were the costliest
+  declarations: about 27 s of 96 s. Making their arguments explicit cut
+  the Cubist tests' share from 25.1 s to 3.9 s, but every theory still
+  pays it.
+- **Late refusals.** Where derivation fails, the theory checks and the
+  refusal waits for the first use. A theory with a topology's open sets
+  checks, then fails where `Space.Hom` is first named:
+
+  > E817: Space's models have no homomorphisms: its family is_open's index
+  > S is neither the same on both sides nor an element of a carrier.
+
+**Derivation decides the morphisms from the signature's shape.**
+
+- A distance `d(x, y : M) : Nat` derives isometries,
+  `d(map x, map y) = d(x, y)`. Short maps or Lipschitz maps cannot be
+  chosen instead.
+- Writing a field as a relation rather than an operation changes the
+  morphisms without saying so.
+
+**Isomorphisms exist only where homomorphisms do.** `T.Iso` is "a
+homomorphism each way". Some theories have no homomorphisms, but their
+isomorphisms are well defined, because an isomorphism can push and pull
+every field:
+
+- a topology;
+- an operation with carriers on both sides of an arrow,
+  `iterate(g : M -> M, x : M)`;
+- a set family indexed by a carrier.
+
+None of them has a `T.Iso` today.
+
+**Categories can be written as theories, but not used conveniently.**
+
+- A precategory checks as a theory, with an indexed family of arrows.
+- With set-level objects, its derived homomorphisms are exactly functors:
+  an object map and an arrow map that preserve `id` and `comp`. Their
+  isomorphisms are refused (E825).
+- With untruncated objects, which univalent categories need, there are no
+  homomorphisms (E817).
+- Composition cannot have an operator notation. A notation names exactly
+  two arguments (E810), and theory operations take no implicit arguments
+  (E170; a derived operation, E108).
+- A universal property cannot be stated as a law (E818), in either form:
+  - as `IsContrMap(…)`, because the law check does not know it is a
+    proposition;
+  - as equations in `C.Arr(x, a)`, because an equation must be between
+    elements of the theory's own carriers.
+
+## Decisions
+
+These are proposed, except the decided initial/free capability policy in
+L2.6. The categorical roadmap is consolidated with that contract in #187;
+the homological-algebra track remains in #198.
+
+The [reserved-name policy](../guides/keywords.md) applies across this
+roadmap and #187/#198. `deriving` and its capability words, including
+`isomorphisms`, `morphisms`, `free`, `initial`, `limits`, `preadditive`,
+`additive`, `preabelian` and `abelian`, are globally reserved. So are fixed
+generated interface names, including `Hom`, `Iso`, `cat`, `equality`, `make`,
+`map`, `id`, `inverse`, `compose`, `model`, `fold`, `gen`, `squash`,
+`IsInitial`, `IsTerminal`, `IsLimit` and `IsColimit`. Users can call supplied
+members and prove their predicates, but cannot bind those names. The compiler
+and categorical foundation supply the interfaces through checked terms;
+reserving a name adds no trusted proof principle. Dynamic generated names
+still require collision checks before any declarations are published.
+
+1. **Morphisms are derived only on request, at two levels.**
+   - `deriving (isomorphisms)` generates `T.Iso` with `id`, `inverse`
+     and `compose`: a groupoid, not a category. Structure identity
+     (L2.4b, `T.equality : (M = N) ≃ T.Iso(M, N)`) and transfer (L3.3)
+     need only this level.
+   - `deriving (morphisms)` generates `T.Hom` with `id` and `compose`, and
+     declares the theory's default category, `T.cat`. It implies
+     `isomorphisms`. The generator proves that `T.cat`'s invertible
+     morphisms are `T.Iso`.
+     It also generates `T.IsInitial(N)`, the ordinary definition
+     `forall B. IsContr(T.Hom(N, B))`, even without an initial/free
+     derivation. This lets users prove initiality of existing models; it
+     later specializes the category library's generic `IsInitial`.
+
+
+   The clause is section 9's `deriving (…)` of the
+   [language proposal](inductive-language-features.md#9-derived-declarations),
+   which already names theories:
+
+   ```
+   theory Monoid(U < UU0) extends Semigroup deriving (morphisms) {   // proposed
+     one : M;
+     law one_mul(x : M) : one * x = x;
+     law mul_one(x : M) : x * one = x;
+   }
+   ```
+
+   A derived `Monoid.Hom` preserves the unit as it preserves `mul`:
+   `map(A.one) = B.one`. Laws get no field. The library's algebraic
+   hierarchy, from `Semigroup` to `Field`, opts into `morphisms`. `Field`
+   gets `CommRing`'s homomorphisms, since its inverse is a law, not an
+   operation.
+
+2. **The isomorphism level is generated by transport.** An isomorphism
+   has an inverse, so each field moves across whatever its variance:
+   - a covariant input is pushed along `to`;
+   - a contravariant one is pulled back along `from`;
+   - an input with carriers on both sides of an arrow is conjugated,
+     `to ∘ g ∘ from`;
+   - a family indexed by a carrier is transported along the round trips.
+     This is the transport E825 says is not generated today.
+
+   So `isomorphisms` covers strictly more theories than `morphisms`,
+   including topologies.
+
+   Untruncated carriers are the limit. On a set, a pair of inverse maps is
+   an equivalence, and the round trips are propositions. On an untruncated
+   carrier it is not: an isomorphism needs L3.1's `ContrEquiv` there.
+   Until then, the opt-in is refused, as in decision 3.
+
+3. **An opt-in that cannot be honoured refuses the declaration.**
+   - **Where.** The refusal is reported at the theory and names the field
+     responsible, with E817's or E825's reasons. The whole declaration is
+     refused, so its dependents are reported blocked.
+   - **No silent fallback.** `morphisms` never falls back to
+     `isomorphisms`. The message suggests what would work: `deriving
+     (isomorphisms)`, or user-defined morphisms (decision 5).
+   - **Implied levels.** `morphisms` implies `isomorphisms`, so it fails
+     if either part fails.
+   - **Parents.** A child's derivation needs its parents' at the same
+     level, and the error names the parent. A child whose own fields
+     block derivation fails without affecting its parents. This rule is
+     about morphisms and isomorphisms: free and initial capabilities need
+     a fresh derivation for the child's laws and are not inherited.
+   - **Use without opting in.** Naming `T.Hom` or `T.Iso` of a theory that
+     did not opt in is an error at the use, naming the clause:
+     "Monoid derives no morphisms; add `deriving (morphisms)` to its
+     declaration."
+   - **Consumers.**
+     - `free` requires successful `deriving (morphisms, free)`; `initial`
+       accepts that capability, using no generators, or the weaker
+       `deriving (morphisms, initial)`. Both require checked universal
+       properties for the selected morphisms. Morphisms alone suffice for
+       neither construction.
+     - Untruncated carriers have no recursion-only exception. Until their
+       morphism spaces, coherences and universal proofs are supported, the
+       derivation fails. Ordinary inductive declarations still provide
+       types such as the circle and their recursors
+       ([L2.6](core-theories.md#initial-and-free-models-l26)).
+     - Structure identity (L2.4b) and transfer (L3.3) require
+       `isomorphisms`.
+
+4. **No standalone derivation.** Only a theory's own declaration opts in:
+   two modules deriving `Monoid.Hom` would clash on import. Generation may
+   be lazy, on first use, as an optimization that does not change what is
+   in scope.
+
+5. **User-defined morphisms, `morphisms where …` (L2.4e), are deferred.**
+   They are for theories whose morphisms are maps of carriers that
+   derivation refuses or chooses differently:
+
+   | Theory | Derived | Usual morphisms |
+   | --- | --- | --- |
+   | Topological spaces | Refused (E817) | Continuous maps: the preimage of an open set is open |
+   | Measurable, uniform and closure spaces; filters | Refused: structure on subsets | Measurable, uniformly continuous, closure-preserving maps |
+   | Metric spaces | Isometries | Short maps by default; Lipschitz maps as another category |
+
+   The author writes a proposition about a map of carriers and proves
+   that identities and composites satisfy it. That gives a category with
+   hom-sets and its laws. The generator also states one obligation,
+   *standardness*: if the identity is a morphism from one structure on a
+   carrier to another and back, the two structures are equal.
+
+   Standardness is the HoTT book's condition (§9.8) for the structure
+   identity principle. With it, `T.cat` is univalent, and its invertible
+   morphisms are `T.Iso` and so equalities. Without it, the declaration is
+   refused:
+   - **Continuity is standard.** If the identity is continuous both ways,
+     the two topologies have the same open sets.
+   - **"Every function" is not standard for monoids.** That category
+     exists, but only as an ordinary library value, never as
+     `Monoid.cat`.
+
+   Morphisms that carry data beyond a map of carriers, such as functors
+   between univalent categories, are not covered. They are library
+   values. Nothing in today's library needs this level; its first users
+   are metric and topological structures.
+
+6. **Any other category of a theory's models is an ordinary value.** Short
+   maps and Lipschitz maps of metric spaces are two `Precategory` values.
+   Only one is the theory's `T.cat`.
+
+7. **A law may state anything the `hlevel` solver proves a proposition
+   (L2.11).** That includes equations in any set, a parameter's carriers
+   among them, and statements such as `IsContrMap(…)`. The syntactic check
+   stays as the fast path. The change is generic: modules over a ring
+   parameter, categories and universal constructions all need it. Proving
+   that a statement is a proposition does not prove that it holds in a
+   generated model. Non-equational laws, including `zero = one -> Void`,
+   remain obligations of any requested initial/free derivation.
+
+8. **Theory operations take implicit arguments (L2.12),** inferred as
+   L4.1b infers a definition's, with notation over the explicit arguments:
+
+   ```
+   comp{{x, y, z : Ob}}(g : Arr(y, z), f : Arr(x, y)) : Arr(x, z) notation g ∘ f;   // proposed
+   ```
+
+   Monads (`bind{{A, B}}`) and indexed families gain the same way.
+
+9. **Categories are library theories (L3.4):**
+   - `Precategory(U, V)`, with objects in `U` and hom-sets in `V`;
+   - `IsUnivalent(C)`, a proposition, and `Category` as a univalent
+     precategory;
+   - the opposite category `C.op`;
+   - functors, `F.ob(x)` and `F.map(f)`, with implicit objects;
+   - natural transformations, `α.at(x)`, with naturality as a law;
+   - a `category` simp set: associativity and the identity laws.
+
+   `deriving (morphisms)` packages `T.Hom` as `T.cat`, with its laws proved
+   once by the generator. So `use Monoid.cat;` composes homomorphisms, and
+   functors and adjunctions apply to every theory's models.
+
+10. **Universal constructions are parameterized theories (L3.5).** The data
+    already checks, as below. The library exposes generic predicates on
+    supplied objects, cones and cocones, independently of any derivation:
+
+    ```text
+    IsInitial(C, x)  := forall y. IsContr(C.Arr(x, y))
+    IsTerminal(C, x) := forall y. IsContr(C.Arr(y, x))
+    ```
+
+    Universe arguments are suppressed. These are ordinary checked
+    definitions, usable for a precategory as well as a univalent category.
+    `IsTerminal(C, x)` is `IsInitial(C.op, x)`. `T.IsInitial(N)`
+    specializes `IsInitial(T.cat, N)`, so manually proved and generated
+    certificates share a type. An `Initial(C)` or `Terminal(C)` model
+    packages a chosen object with this certificate.
+
+    The same interface includes `IsProduct` and `IsPullback` on specified
+    projections, `IsEqualizer` on its specified arrow, and `IsLimit` on a
+    cone over a diagram. `IsCoproduct`, `IsPushout`, `IsCoequalizer` and
+    `IsColimit` are the dual predicates on their specified cocones. The
+    concrete predicates specialize `IsLimit` or `IsColimit` to their
+    shapes. A predicate states and checks a universal property of supplied
+    data; it does not request that the system construct that data.
+
+    Each universal construction has two presentations, proved equivalent
+    once in the library:
+    - **Algebraic,** for use: pairing as an operation, with β laws and
+      uniqueness. Pairing is data, so it computes.
+    - **By contractibility,** `IsLimit`, a proposition. In a univalent
+      category it makes "has products" a property, and limits unique up to
+      equality.
+
+    **A diagram is a map of graphs, not a functor.**
+    - **A shape is a graph.** `Graph(U)` has vertices `V : U` and edges
+      `E(i, j : V) : U`, with no composition and no laws.
+    - **A diagram in `C`,** `Diagram(U, G, C)`, gives an object `ob(i)` for
+      each vertex and an arrow `arr(i, j, e) : C.Arr(ob(i), ob(j))` for each
+      edge. It has no functor laws.
+    - **Cones.** A cone with apex `x` is a leg `C.Arr(x, D.ob(i))` for each
+      vertex, commuting with each edge. `Cones(…, D, x)` is the set of them,
+      a definition.
+    - **`IsLimit(…, a, c)`** says that, for every `x`, precomposing the cone
+      `c` with an arrow `x → a` is a contractible map onto `Cones(…, x)`:
+      arrows into the apex are exactly cones. It checks today.
+    - **The algebraic `Limit(U, G, C, D)`** has `apex`, `leg(i)` and
+      `pair(x, c : Cones(…, x))`, with laws:
+      - `commutes`, `D.arr(i, j, e) ∘ leg(i) = leg(j)`;
+      - `leg(i) ∘ pair(x, c) = c.leg(i)`;
+      - uniqueness: an `h` that agrees with every leg is `pair(x, c)`.
+
+      Its laws are equations in `C.Arr`, which E818 refuses until L2.11.
+
+    Graphs, rather than functors from an index category `J`, are what
+    UniMath and the Coq HoTT library use:
+    1. **Nothing is lost.** A cone over a functor `J → C` commutes with each
+       of `J`'s arrows, so it is a cone over the functor's underlying graph.
+       A functor becomes a diagram by forgetting its laws, with the same
+       cones.
+    2. **Concrete diagrams are cheap.** A cospan is two arrows, with no
+       functor laws to prove about a three-object category.
+    3. **Colimits of types need graphs.** Types do not form a precategory,
+       since the maps between two types need not form a set. A functor into
+       types would need coherences at every level; a diagram over a graph
+       needs none.
+
+    Point 1 holds in a category, where a cone's conditions are
+    propositions, but not for types. `Colim` and `Lim` of types over a
+    graph are the colimit and limit over the free category on it.
+    - **Free shapes are right.** A span, a parallel pair and the tower of
+      naturals are free categories, so their colimits of types are right.
+    - **A shape with relations is not.** Over the one-element poset, with
+      its identity as an edge, `Colim` of the constant `Unit` is the
+      circle, not `Unit`, and `Lim` of a constant type is its free loop
+      space. Over the triangle `0 < 1 < 2`, the two paths from `0` to `2`
+      stay apart.
+    - **Out of scope.** Colimits of types over such shapes need identity
+      and composition cells, which a graph does not give
+      ([Boulier, Colimits in HoTT](https://homotopytypetheory.org/2016/01/08/colimits-in-hott/)).
+
+    The rest of L3.5:
+    - **Shapes:** `Terminal`, `Product`, `Equalizer` and `Pullback` as
+      concrete theories, with conversions to `Limit` over their graphs. The
+      graphs are, in order:
+      - no vertices;
+      - two vertices;
+      - two vertices and two parallel edges;
+      - a cospan.
+
+      Concrete shapes keep terms small. The generic one states general
+      theorems, such as right adjoints preserving limits.
+    - **Colimits by duality.** In a category, colimits are limits in `C.op`
+      of the opposite diagram `D.op`, on the graph `G.op` with each edge
+      reversed. Their names are dual: `inj(i)` and `copair`, and `in1` and
+      `in2` for the binary shapes. `left` and `right` are reserved for the
+      sum's injections, and `Pushout` names the `pushout` module's type.
+    - **Colimits of types are one higher inductive type.** Duality does not
+      reach types.
+      - **The type.** `Colim(U, G, D)` takes a diagram of types,
+        `TypeDiagram(U, G)`: a type for each vertex and a function for each
+        edge. Each vertex's elements give a point `inj(i, x)`, and each edge
+        a path `glue(i, j, e, x)`.
+      - **Instances.** The archive's `Pushout`, coequalizers, suspensions
+        and sequential colimits over `Nat` are its instances, all over free
+        shapes. They keep their own types, with conversions, as concrete
+        shapes do.
+      - **Universal property.** Maps out of `Colim` are equivalent to cocones
+        into the target. That is an equivalence of types, not of sets.
+      - **Limits of types** are Σ types of compatible points.
+
+      A colimit in the category of sets is `Colim` truncated to a set, or a
+      set quotient.
+    - **Morphisms of diagrams** are library definitions: a diagram has no
+      carriers, so no `T.Hom` is derived. `lim` as a functor uses them.
+    - **Size.** A category has limits of a given size: over shapes whose
+      vertices and edges lie in a given universe.
+      - **Its own parameter.** The graph's universe is a parameter of its
+        own, `Graph(W)`, apart from the category's. The probes below put
+        both in one universe `U`.
+      - **Not every size at once.** Completeness at every size is not one
+        term, since generic definitions at tier 1 are refused today (E1,
+        E2).
+      - **The usual statement.** Completeness relative to a smaller
+        universe is the usual one anyway. Classically, a small category
+        with all small limits is a preorder (Freyd).
+    - **Infinite shapes.** Vertices and edges may be any types, so the
+      definitions above serve infinite shapes unchanged, with the caveat on
+      shapes with relations above:
+      - infinite products and coproducts, over a discrete graph on any type;
+      - inverse limits over the tower of naturals, such as the p-adic
+        integers as the limit of `ℤ/pⁿ`;
+      - sequential colimits over the reversed tower;
+      - directed colimits over a poset, with an edge for each related pair:
+        in a category, and of sets as `Colim` truncated to a set, but not
+        as `Colim` of types;
+      - non-wellfounded trees (M-types), as limits of a tower of types
+        (Ahrens, Capriotti and Spadotti, TLCA 2015), with no coinduction
+        in the kernel.
+
+      An element of an infinite limit is a function, so it computes one
+      index at a time: `evaluate` reads its components, not the whole
+      object. The paths between two points of a sequential colimit of
+      types are the sequential colimit of their paths at later stages (van
+      Doorn, Rijke and Sojakova, LICS 2020).
+    - **What infinite shapes need choice for.** The definitions need none,
+      but some classical facts do:
+      - a tower of surjections between nonempty sets can have an empty
+        limit without dependent choice;
+      - a product of surjections is surjective only with choice, so
+        infinite products of abelian groups are not exact (L3.6);
+      - set truncation commutes with a product over `I` only when `I`
+        satisfies set-level choice.
+
+      The [homological algebra roadmap](https://github.com/KanHarI/cubist-math/blob/fb0273282afb96cdaab393ccf47983b5f44f1b25/docs/roadmaps/homological-algebra.md#constraints)
+      meets all three.
+    - **Chosen and merely existing limits.** In a univalent category the
+      limits of a diagram form a proposition. So "every diagram merely has
+      a limit" gives a function choosing them, for infinitely many
+      diagrams too. In a precategory that is not univalent, that function
+      needs choice, so there "has limits" is the algebraic, chosen
+      presentation.
+    - **Equality of maps.** An `ext` for maps into a limit: they are equal
+      when they are equal after each projection.
+    - **`deriving (limits)`** for theories whose limits are computed carrier
+      by carrier, products and equalizers of algebraic models among them.
+      Colimits of models need free models and quotients, so they come after
+      L2.6.
+
+    L2.6's later slices can then be stated in this vocabulary: an initial
+    model is an initial object of `T.cat`, and a free model is a left
+    adjoint to the selected forgetful functor. These exist only when the
+    requested construction and universal proof check: `deriving
+    (morphisms, free)` is a capability request that may fail. The H1
+    equational construction is its first strategy, with additional laws
+    checked as proof obligations. Failure to prove one does not prove
+    nonexistence. `Field` can derive morphisms but has no initial object
+    across all characteristics, hence no such free functor. The full
+    contract, weaker `initial` opt-in and diagnostics are
+    [L2.6](core-theories.md#initial-and-free-models-l26).
+
+11. **The abelian tower (L3.6).**
+    - **Structure and properties.** `Preadditive(C)` is structure, an
+      abelian group on each hom-set with composition bilinear. Additive,
+      preabelian and abelian are properties of a category: `IsAdditive`,
+      `IsPreabelian` and `IsAbelian` are propositions in a univalent
+      category, and merely hold in a precategory.
+    - **The opt-in.** `deriving (morphisms, additive)` or `deriving
+      (morphisms, abelian)` asks for one level and implies the ones below.
+      It requires a **linear** theory:
+      - an abelian group on the carrier;
+      - every other operation returning a carrier, and additive in its
+        carrier inputs jointly, `op(a + a') = op(a) + op(a')` for whole
+        tuples of carrier inputs, its other inputs fixed, as a module's
+        `smul(r, x)` is in `x`;
+      - no constant but zero, and only equational laws.
+
+      Additivity in each input separately is not enough. A sum of
+      homomorphisms preserves a jointly additive operation, but not a
+      bilinear one: on the integers, `h = id + id` gives `h(1·1) = 2`,
+      while `h(1)·h(1) = 4`. So no ring is linear, with a unit or without.
+
+      An operation into a fixed type is excluded, even an additive one. A
+      morphism must preserve `trace : M → ℤ` as `trace(f(x)) = trace(x)`,
+      which neither the zero map nor `f + f` does. A relation on the
+      carrier is excluded for the same reason.
+    - **Levels are not inherited.** `CommRing` extends `AbelianGroup`, but
+      its multiplication is bilinear, so its category is not preadditive:
+
+      > CommRing's category is not preadditive: `mul` is bilinear, so a
+      > sum of homomorphisms is not a homomorphism.
+
+    What the generator derives, level by level:
+    1. **Preadditive:** pointwise `+`, `0` and negation of homomorphisms.
+       Each is a homomorphism by the theory's additivity laws, found field
+       by field, or the derivation names the operation that lacks one.
+    2. **Additive:** the zero model on `Unit`, and biproducts as product
+       models with injections `x ↦ (x, 0)`.
+    3. **Preabelian:**
+       - kernels, the submodel `{x | f x = 0}`;
+       - cokernels, the quotient by the image, with the operations lifted
+         through the set quotient. Lifting operations with several
+         arguments is new library work.
+    4. **Abelian:** the first isomorphism theorem, field by field.
+       - **No axiom of choice.** An epimorphism is merely surjective, and
+         the map back sends `b` to the class of any preimage. That class is
+         unique, so it can be extracted from mere existence.
+       - **It computes,** because H1's quotients compute.
+
+    Abelian-ness is proved once for `Module(U, R)` in the library, and the
+    per-theory proofs are generated from the same template.
+
+## Which theories reach which level
+
+| Theory | Isomorphisms | Morphisms | Abelian tower |
+| --- | --- | --- | --- |
+| `Semigroup` … `Group`, `CommRing`, `Field` | Yes | Yes | None: no addition of homomorphisms, or a bilinear operation |
+| `AbelianGroup`, `Module(U, R)` | Yes | Yes | Abelian |
+| Chain complexes over a shape | Yes | Yes, chain maps | Abelian, pointwise |
+| Preorders, ordered rings | Yes | Yes, monotone maps | None |
+| Strict categories (`Ob : set U`) | Yes, by transport | Yes, functors | None |
+| Univalent categories (`Ob : U`) | After L3.1: needs `ContrEquiv` on `Ob` | No: functors are library values | None |
+| Topological spaces | Yes, homeomorphisms | Only by L2.4e | None |
+| Metric spaces (`d : M → M → R`) | Yes, isometric bijections | Isometries; short maps by L2.4e | None |
+
+## Evidence
+
+This checks today: 11 declarations, with `import hlevels;`.
+
+```
+theory Precategory(U < UU0) {
+  Ob : U;
+  Arr(x, y : Ob) : set U;
+  id(x : Ob) : Arr(x, x);
+  comp(x, y, z : Ob, g : Arr(y, z), f : Arr(x, y)) : Arr(x, z);
+  law id_left(x, y : Ob, f : Arr(x, y)) : comp(x, y, y, id(y), f) = f;
+  law id_right(x, y : Ob, f : Arr(x, y)) : comp(x, x, y, f, id(x)) = f;
+  law assoc(w, x, y, z : Ob, h : Arr(y, z), g : Arr(x, y), f : Arr(w, x)) :
+    comp(w, x, z, comp(x, y, z, h, g), f) = comp(w, y, z, h, comp(w, x, y, g, f));
+}
+```
+
+With `Ob : set U`, `Precategory.Hom(C, D)` is a functor:
+
+```
+Σ (map_Ob : C.Ob → D.Ob),
+Σ (map_Arr : Π x y. C.Arr(x, y) → D.Arr(map_Ob(x), map_Ob(y))),
+  (Π x. map_Arr(x, x, C.id(x)) = D.id(map_Ob(x)))
+  × (Π x y z g f. map_Arr(x, z, C.comp(x, y, z, g, f))
+                  = D.comp(map_Ob(x), map_Ob(y), map_Ob(z), map_Arr(y, z, g), map_Arr(x, y, f)))
+```
+
+`Precategory.Iso` is refused:
+
+> E825: Precategory's models have homomorphisms but no isomorphisms: its
+> family of sets Arr is indexed by a carrier, and its round trips would
+> need a transport that is not generated.
+
+With `Ob : U`, homomorphisms are refused:
+
+> E817: Precategory's models have no homomorphisms: its carrier Ob has no
+> h-level, and homomorphisms of such a carrier need coherences that are
+> not generated.
+
+A product cone checks as a parameterized theory:
+
+```
+theory Product(U < UU0, C : Precategory(U), a, b : C.Ob) {
+  apex : C.Ob;
+  pr1 : C.Arr(apex, a);
+  pr2 : C.Arr(apex, b);
+}
+```
+
+Its universal property is refused in both forms (E818):
+
+- `law universal(x : C.Ob) : IsContrMap(…)`: the statement is none of the
+  forms the law check accepts.
+- `law pr1_pair(…) : C.comp(x, apex, a, pr1, pair(x, f, g)) = f`: the
+  sides "are not elements of one of the theory's sorts".
+
+Diagrams over a graph, their cones and `IsLimit` check today: 21
+declarations, with `import contractible_maps;` and the precategory above.
+
+```
+theory Graph(U < UU0) {
+  V : U;
+  E(i, j : V) : U;
+}
+
+theory Diagram(U < UU0, G : Graph(U), C : Precategory(U)) {
+  ob(i : G.V) : C.Ob;
+  arr(i, j : G.V, e : G.E(i, j)) : C.Arr(ob(i), ob(j));
+}
+
+def Cones(U < UU0, G : Graph(U), C : Precategory(U), D : Diagram(U, G, C), x : C.Ob) : U :=
+  exists leg : (forall i : G.V. C.Arr(x, D.ob(i))).
+    forall i : G.V. forall j : G.V. forall e : G.E(i, j).
+      C.comp(x, D.ob(i), D.ob(j), D.arr(i, j, e), leg(i)) = leg(j);
+
+// The cone c with apex a, precomposed with h : x -> a.
+def restrict(
+  U < UU0, G : Graph(U), C : Precategory(U), D : Diagram(U, G, C),
+  a : C.Ob, c : Cones(U, G, C, D, a), x : C.Ob, h : C.Arr(x, a)
+) : Cones(U, G, C, D, x) :=
+  (
+    fun (i : G.V) => C.comp(x, a, D.ob(i), c.1(i), h),
+    fun (i : G.V, j : G.V, e : G.E(i, j)) => trans(
+      sym(C.assoc(x, a, D.ob(i), D.ob(j), D.arr(i, j, e), c.1(i), h)),
+      cong(fun (g : C.Arr(a, D.ob(j))) => C.comp(x, a, D.ob(j), g, h), c.2(i, j, e))
+    )
+  );
+
+// Arrows into the apex are exactly cones.
+def IsLimit(
+  U < UU0, G : Graph(U), C : Precategory(U), D : Diagram(U, G, C),
+  a : C.Ob, c : Cones(U, G, C, D, a)
+) : U :=
+  forall x : C.Ob. IsContrMap(U, C.Arr(x, a), Cones(U, G, C, D, x),
+    fun (h : C.Arr(x, a)) => restrict(U, G, C, D, a, c, x, h));
+```
+
+A cone as a theory, with `commutes` as a law, is refused with E818, as
+`pr1_pair` is.
+
+Colimits and limits of types over any graph check too: 10 declarations,
+with `import hlevels;` and `Graph` above.
+
+```
+theory TypeDiagram(U < UU0, G : Graph(U)) {
+  ob(i : G.V) : U;
+  arr(i, j : G.V, e : G.E(i, j), x : ob(i)) : ob(j);
+}
+
+inductive Colim(U < UU0, G : Graph(U), D : TypeDiagram(U, G)) : U {
+  inj(i : G.V, x : D.ob(i));
+  glue(i, j : G.V, e : G.E(i, j), x : D.ob(i)) : inj(j, D.arr(i, j, e, x)) = inj(i, x);
+}
+
+def Lim(U < UU0, G : Graph(U), D : TypeDiagram(U, G)) : U :=
+  exists x : (forall i : G.V. D.ob(i)).
+    forall i : G.V. forall j : G.V. forall e : G.E(i, j). D.arr(i, j, e, x(i)) = x(j);
+```
+
+Infinite shapes check too: those declarations and eight more, 18 in all,
+with `import nat;` and `use nat;`.
+
+```
+// A tower: vertices the naturals, an edge from n + 1 to n.
+def tower : Graph(U0) := Graph.make(V := Nat, E := fun (i : Nat, j : Nat) => i = succ(j));
+
+// Infinite products: any vertices and no edges.
+def discrete(I : U0) : Graph(U0) := Graph.make(V := I, E := fun (i : I, j : I) => Void);
+
+// A diagram down the tower.
+def constant_tower : TypeDiagram(U0, tower) := TypeDiagram.make(
+  ob := fun (n : Nat) => Nat, arr := fun (i : Nat, j : Nat, e : i = succ(j), x : Nat) => x
+);
+
+def tower_limit : U0 := Lim(U0, tower, constant_tower);
+
+def tower_colimit : U0 := Colim(U0, tower, constant_tower);
+
+def five_everywhere : tower_limit :=
+  (fun (n : Nat) => 5, fun (i : Nat, j : Nat, e : i = succ(j)) => refl(5));
+
+def five_at_three : tower_colimit := inj(3, 5);
+
+def product_of_naturals : U0 := Lim(U0, discrete(Nat), TypeDiagram.make(
+  ob := fun (n : Nat) => Nat, arr := fun (i : Nat, j : Nat, e : Void, x : Nat) => x
+));
+```
+
+## Slices
+
+| Slice | Content | Depends on |
+| --- | --- | --- |
+| L2.4d | `deriving (isomorphisms)` by transport and `deriving (morphisms)` by variance; refusals at the declaration; consumers require the corresponding successful capability; there is no recursion-only `initial` exception. A two-commit migration: first opt in every theory whose morphisms are used and verify identical terms, then stop deriving by default | L2.4c; `T.cat` once L3.4 exists |
+| L2.4e | `morphisms where …` with standardness | L2.4d; first metric or topological client |
+| L2.6 | `deriving (morphisms, free)` and weaker `initial`; H1 strategy, checked uniqueness/universal proofs, extra-law obligations and honest failures; see the five slices in core theories | L2.4d; L2.11 for general propositional laws; H1 for the first strategy |
+| L2.11 | Laws checked by the `hlevel` solver | L2.5b |
+| L2.12 | Implicit arguments in theory operations and derived operations; notation over the explicit ones | L4.1b |
+| L3.4 | `Precategory`, `IsUnivalent`, `Category`, `op`, functors, natural transformations, the `category` simp set; `T.cat` | L2.11, L2.12, L2.4d |
+| L3.5 | Generic `IsInitial`, `IsTerminal`, `IsLimit`, `IsColimit` and predicates for the concrete shapes; chosen universal constructions; `Graph`, `Diagram`, `Cones`, `IsLimit` and the algebraic `Limit` over diagrams that are maps of graphs, finite or infinite; concrete shapes converted to `Limit`; colimits by duality, and of types as the higher inductive `Colim`; `ext` into limits; `deriving (limits)` | L3.4; L3.1 for the contractibility presentation |
+| L3.6 | `Preadditive`, `IsAdditive`, `IsPreabelian`, `IsAbelian`; `deriving (… additive …)` to `abelian`; lifting operations through set quotients; `Module(U, R)` in the library | L3.5; L2.4b for the properties to be propositions |
+
+## Acceptance
+
+- **L2.4d:**
+  - the algebraic hierarchy opts in, with identical terms;
+  - a theory naming `T.Hom` without opting in is refused at the use;
+  - `CommRing.IsInitial(integers)` can be stated and proved with only
+    `morphisms` derived; it needs no `initial` or `free` opt-in;
+  - `deriving (morphisms)` on a topology is refused at the theory, naming
+    `is_open`;
+  - `deriving (isomorphisms)` on the topology, on `iterate(g : M -> M,
+    x : M)` and on a strict precategory checks;
+  - `free` without `morphisms, free`, and `initial` without either
+    `morphisms, free` or `morphisms, initial`, are refused at the use;
+  - untruncated categorical derivation fails until supported; an ordinary
+    declared circle still has its recursor.
+- **L2.6:** a monoid derives `free` with both inverse laws; its initial
+  instance is free on `Void`; `initial` alone supplies no free capability;
+  a non-equational law is proved or reported as an outstanding obligation;
+  `Field` remains usable with morphisms while its requested initial/free
+  derivation fails; no unsupported case is called a proved nonexistence.
+- **L2.4e:** continuity accepted; "every function" refused for monoids as
+  not standard.
+- **L2.11:** a universal property stated with `IsContrMap`, and equations
+  in a parameter's carrier, check as laws.
+- **L2.12:** composition written `g ∘ f` with inferred objects, and a
+  monad's `bind` with inferred types.
+- **L3.4:**
+  - `Monoid.cat` with associativity by the `category` simp set;
+  - the opposite of the opposite is the category itself;
+  - a functor composed with the identity is that functor.
+- **L3.5:**
+  - ordinary proofs of `IsInitial(C, x)` and `IsTerminal(C, x)` need no
+    construction opt-in; their definitions agree by passage to `C.op`;
+  - `CommRing.IsInitial(integers)` specializes the generic predicate;
+  - the concrete `IsProduct`, `IsPullback` and `IsEqualizer` predicates,
+    and their duals, agree with the corresponding `IsLimit`/`IsColimit`;
+  - products and pullbacks in `Set` and in `Monoid.cat`, with pairing
+    computed by `evaluate`;
+  - uniqueness of products up to equality in a univalent category;
+  - `Product` and `Pullback` converted to and from `Limit` over their
+    graphs, with the same pairing;
+  - the pushout as a pullback in `op`;
+  - `Colim` over a span equivalent to the archive's `Pushout`, and maps out
+    of `Colim` equivalent to cocones into any type;
+  - `Lim` and `Colim` over the tower of naturals, and a product indexed by
+    the naturals, with elements evaluated index by index;
+  - `Colim` of the constant `Unit` over the one-element poset with its
+    identity edge is the circle, documenting why shapes with relations
+    take their colimits in a category;
+  - in a univalent category, the limits of a diagram form a proposition.
+- **L3.6:**
+  - `AbelianGroup` and `Module(U, R)` derive `abelian`;
+  - `CommRing` is refused with the message of decision 11, and so is a
+    ring without a unit, its `mul` being bilinear;
+  - an abelian group with an additive `trace : M → ℤ` is refused, naming
+    `trace`;
+  - a kernel, a cokernel and the coimage–image isomorphism evaluate on a
+    small module.
+
+## Open questions
+
+1. **The composition operator.**
+   - **Not `*`:** it is the product type former, `A * B`, so `g * f` would
+     be ambiguous under `use C;`.
+   - **Candidates:** `∘` with an ASCII alias, or diagrammatic `f >> g`.
+   - **Grammar:** either is a new token in L2.10b's fixed grammar.
+
+   Needed before L2.12's acceptance and L3.4.
+2. **Names of the dual constructions.** The injections and the
+   categorical pushout need names: `left`, `right` and `Pushout` are taken.
+   Needed before L3.5.
+3. **Where the clause goes.** `theory T(…) extends P deriving (…) { … }` or
+   after the body. This is shared with L2.3.
+4. **Limits of models.** Is `deriving (limits)` its own opt-in, or part of
+   `morphisms` for theories whose limits are computed carrier by carrier?

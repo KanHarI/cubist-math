@@ -34,8 +34,8 @@ def polynomial_map_divides(
   let send :
     (exists w : Polynomial(K). p = polynomial_mul(K, q, w))
     -> (exists w : Polynomial(L). P = polynomial_mul(L, Q, w)) {
-    intro witness;
-    obtain (w, eq) := witness;
+    intro witness_;
+    obtain (w, eq) := witness_;
     exact (
       polynomial_map(K, L, e, w),
       trans(cong(polynomial_map(K, L, e), eq), polynomial_map_mul(K, L, e, q, w))

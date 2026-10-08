@@ -89,8 +89,8 @@ use nat;
 // Twice a number.
 def double(n : Nat) := n + n;
 
-def recover(P : U0, prop : Proposition(P), nn : (P -&gt; Void) -&gt; Void) : P {
-  exact double_negation(P, prop, nn);
+def recover(P : U0, prop_ : Proposition(P), nn : (P -&gt; Void) -&gt; Void) : P {
+  exact double_negation(P, prop_, nn);
 }
 
 evaluate double(2) expecting 4;</code></pre>
@@ -198,7 +198,7 @@ print(evaluate(double(3)));
 print(typeof(double));
 // Output: λ (n : Nat). add(n, n)
 print(inspect(double));</code></pre>
-            <p>An <code>// Output:</code> comment above a directive states what it shows. The test suite checks these comments in the examples of this reference and in the test modules of <code>cubist-tests/</code>, where <code>npm run inline-errors</code> writes them. The command-line checker prints each output as <code>print evaluate at line N: text</code>, and the REPL takes the directives as entries. <code>print</code>, <code>typeof</code>, <code>inspect</code> and <code>witness</code> are keywords only in a directive. Elsewhere they are ordinary names.</p>
+            <p>An <code>// Output:</code> comment above a directive states what it shows. The test suite checks these comments in the examples of this reference and in the test modules of <code>cubist-tests/</code>, where <code>npm run inline-errors</code> writes them. The command-line checker prints each output as <code>print evaluate at line N: text</code>, and the REPL takes the directives as entries. <code>print</code>, <code>typeof</code>, <code>inspect</code> and <code>witness</code> are reserved keywords and cannot name declarations or binders.</p>
             <p><code>print(witness(t));</code> reads the witness a closed truncation holds, with its type. The truncation's normal form is its <code>point(w)</code>, perhaps under formal compositions, and <code>w</code> is shown with the type the kernel gives it. Under a transport along a path of types, the witness is of the type at the path's end. It is no eliminator out of the truncation: like <code>evaluate</code>, it needs a closed term that uses no assumption, and a witness with a certificate, as a number with evidence that it bounds another, carries the certificate the kernel checked. The REPL's <code>witness TERM;</code> does the same.</p>
             <pre><code data-check="accept">import h1_truncation;
 use nat;

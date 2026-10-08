@@ -9,9 +9,9 @@ def descended_loop_map_laws(
   covered : (forall p : point = point. FieldExists(exists c : C. present(c) = p)), value : C -> G,
   period : (point = point) -> G, computes : (forall c : C. period(present(c)) = value(c)),
   constant : C, constantPath : present(constant) = refl(point),
-  constantValue : value(constant) = unit, join : C -> C -> C,
-  joinPath : (forall c : C. forall d : C. present(join(c, d)) = trans(present(c), present(d))),
-  joinValue : (forall c : C. forall d : C. value(join(c, d)) = multiply(value(c), value(d)))
+  constantValue : value(constant) = unit, join_ : C -> C -> C,
+  joinPath : (forall c : C. forall d : C. present(join_(c, d)) = trans(present(c), present(d))),
+  joinValue : (forall c : C. forall d : C. value(join_(c, d)) = multiply(value(c), value(d)))
 ) :
   LoopMapLaws(X, point, G, unit, multiply, period) {
   let unitLaw : period(refl(point)) = unit :=
@@ -28,7 +28,7 @@ def descended_loop_map_laws(
       let useRight : (exists d : C. present(d) = q) -> result {
         intro rightRepresentative;
         obtain (d, pathD) := rightRepresentative;
-        let joined : present(join(c, d)) = trans(p, q) :=
+        let joined : present(join_(c, d)) = trans(p, q) :=
           trans(
             joinPath(c, d),
             trans(
@@ -41,7 +41,7 @@ def descended_loop_map_laws(
         exact trans(
           sym(cong(period, joined)),
           trans(
-            computes(join(c, d)),
+            computes(join_(c, d)),
             trans(
               joinValue(c, d),
               trans(

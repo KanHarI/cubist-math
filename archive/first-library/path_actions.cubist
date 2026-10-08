@@ -1,4 +1,4 @@
-import paths;
+import paths_;
 import equivalences;
 import equivalence_from_inverse;
 
