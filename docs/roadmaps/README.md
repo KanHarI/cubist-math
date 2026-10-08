@@ -146,7 +146,8 @@ authority; this summarizes it.
 - [Runtime evaluation and binary numerical foundations](runtime-evaluation-roadmap.md):
   proposed after the `euclid(4)` syntax-depth failure: one-pass REPL
   evaluation, normalization caches, lazy closures, an explicit evaluation
-  stack, typed readback and checked search improvements. Early numerical
+  stack, typed readback and checked search improvements, measured against
+  EVAL0's recorded baseline, which is done. Early numerical
   foundations define `UNat` and `BNat`, prove their semiring isomorphism
   and equality in `U0` with transport laws, and provide strong induction
   and recursion over smaller binary values. New `Z`, `Q` and later
