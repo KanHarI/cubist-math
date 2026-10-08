@@ -146,6 +146,20 @@ def own_name_used(Monoid : Monoid(U0), x : Monoid.M) : Monoid.M {
   exact x * one;
 }
 
+// So does a model e in e.f or in use e, as counted(Counted.count).
+theory Counted(U < UU0) {
+  count : Nat;
+}
+
+def counted(n : Nat) : Counted(U0) := Counted.make{{U0}}(count := n);
+
+def own_name_inner(Counted : Counted(U0)) : Nat := counted(Counted.count).count;
+
+def own_name_inner_used(Counted : Counted(U0)) : Nat {
+  use counted(Counted.count);
+  exact count;
+}
+
 theory Acted(U < UU0, Monoid : Monoid(U)) {
   X : set U;
   act(g : Monoid.M, x : X) : X;

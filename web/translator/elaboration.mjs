@@ -104,11 +104,15 @@ export class Scope {
   // The source name bound here that hides the declaration `name`, or null.
   hiding(name) {return this.env.get(HIDDEN)?.has(name)&&!this.env.has(name)?name.slice(0,name.indexOf(".")):null;}
   // A node naming a declaration, m.f, as the translator refers to it: where
-  // a binding of m hides it, in a scope where it is visible again.
+  // a binding of m hides it, in a scope where it is visible again. Only the
+  // declaration is: a call's arguments are read here, where m.f is m's
+  // field, as in rebuild(m.f).f.
   declared(node) {
     const name=node.kind==="call"?node.fn.name:node.name;
     if(!this.hiding(name))return node;
-    return {kind:"scoped",node,scope:this.withEnv(new Map(this.env).set(name,this.env.get(HIDDEN).get(name))),start:node.start,end:node.end};
+    const here=arg=>({kind:"scoped",node:arg,scope:this,start:arg.start,end:arg.end});
+    const callee=node.kind==="call"?{...node,args:node.args.map(here)}:node;
+    return {kind:"scoped",node:callee,scope:this.withEnv(new Map(this.env).set(name,this.env.get(HIDDEN).get(name))),start:node.start,end:node.end};
   }
   // Binding a name that is already in scope would silently rebind it. With
   // unique generated names this is an elaborator bug, never a user error.
