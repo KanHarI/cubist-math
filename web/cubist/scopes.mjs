@@ -75,7 +75,7 @@ export const UNBINDING = new Set([
   "pair", "pathApply", "pattern", "print", "projection", "prop", "rfl", "rw", "select", "set", "simp_rule", "simp_set",
   "simpaOnly", "tactic", "term", "theory", "trunc", "unary", "use", "withUnfolding",
   // Built by the translator and the theory expansion.
-  "useScope", "sectionScope", "scoped", "instantiated", "typed",
+  "useScope", "notationScope", "sectionScope", "scoped", "instantiated", "typed",
   // Not syntax: a theory's field records and the shapes of a homomorphism's
   // types, which carry syntax but are never walked as it.
   "evidence", "morphism", "fixed", "carrier", "arrow", "other",
@@ -86,6 +86,10 @@ export const scopesOf = node => SCOPES[node.kind]?.(node) ?? [];
 export const statementBinders = node => STATEMENTS[node.kind]?.(node) ?? [];
 const root = name => name.split(".")[0];
 const isToken = value => typeof value?.text === "string" && !value.kind;
+// Captured elaboration values are not source syntax: neither core binders
+// nor a notation rule's closed aliases participate in syntax substitution.
+const captured = (node, key) => node.kind === "instantiated" && key === "value"
+  || node.kind === "notationScope" && key === "aliases";
 
 // A copy of a syntax tree with `rewrite(node, bound)` applied to each node,
 // outermost first; `bound` holds the names bound there. A node `rewrite`
@@ -109,9 +113,7 @@ export function rewritten(node, rewrite, bound = new Set()) {
   const scopes = node.kind ? scopesOf(node) : [];
   const copy = {};
   for (const [key, value] of Object.entries(node)) {
-    // An instantiated argument carries a core term, abstracted over its
-    // syntax arguments. Its core binders are not source-syntax names.
-    if (node.kind === "instantiated" && key === "value") { copy[key] = value; continue; }
+    if (captured(node, key)) { copy[key] = value; continue; }
     // A statement's target is where it binds, not a use.
     if (key === "target" && STATEMENTS[node.kind]) { copy[key] = value; continue; }
     const names = scopes.filter(scope => scope.keys.includes(key)).flatMap(scope => scope.binders.map(binderName));
@@ -233,7 +235,7 @@ export function allNames(node, names = new Set()) {
   if (node.kind === "name") names.add(root(node.name));
   if (typeof node.text === "string") names.add(node.text);
   for (const [key, value] of Object.entries(node))
-    if (!(node.kind === "instantiated" && key === "value") && value && typeof value === "object") allNames(value, names);
+    if (!captured(node, key) && value && typeof value === "object") allNames(value, names);
   return names;
 }
 
@@ -245,7 +247,7 @@ export function relocated(node, at) {
   if (Array.isArray(node)) return node.map(item => relocated(item, at));
   if (!node || typeof node !== "object") return node;
   return Object.fromEntries([...Object.entries(node).map(([key, value]) => [key,
-    node.kind === "instantiated" && key === "value" ? value
+    captured(node, key) ? value
       : typeof value === "number" && (key === "start" || key.endsWith("Start")) ? at.start
       : typeof value === "number" && (key === "end" || key.endsWith("End")) ? at.end : relocated(value, at)]),
     ...(at.synthetic ? [["synthetic", true]] : [])]);

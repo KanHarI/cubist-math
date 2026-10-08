@@ -39,6 +39,9 @@ function expand(t, module, d, env) {
     throw module.locate(notATheory(d.kind, module.source.slice(d.theory.start, d.theory.end).trim()), d.theory);
   }
   const record = entry.record, T = record.name;
+  // Only copied field expressions read the theory's captured notation.
+  // The header, generator type and elaborated arguments keep the caller's.
+  const inTheory = body => ({kind: "notationScope", aliases: entry.notation, body, ...at});
   const repeated = repeatedName(d.params);
   if (repeated) throw module.locate(Error(`${N} has two parameters named ${repeated.name.text}: give each its own name.`), repeated.name);
 
@@ -166,7 +169,7 @@ function expand(t, module, d, env) {
       throw module.locate(notEquational(field.name), d.theory);
     if (dependency) throw module.locate(dependency.kind === "carrier" ? notPositive(field.name, dependency.binder, carrier)
       : onProof(field.name, dependency.binder, dependency.kind, dependency.on), d.theory);
-    const params = binders.map(b => ({name: token(b.name), type: b.type, group: b.group}));
+    const params = binders.map(b => ({name: token(b.name), type: inTheory(b.type), group: b.group}));
     if (field.kind === "operation") {
       if (body.kind === "binary" && body.operator === "->") throw module.locate(arrowOperation(field.name), d.theory);
       if (!(body.kind === "name" && body.name === carrier && !bound.has(carrier))) throw module.locate(notCarrierValued(field.name, carrier), d.theory);
@@ -174,7 +177,7 @@ function expand(t, module, d, env) {
       constructors.push({kind: "constructor", name: token(constructor(field.name)), params, type: null, ...at});
     } else {
       lawShapes.push({name: field.name, binders});
-      constructors.push({kind: "constructor", name: token(constructor(field.name)), params, type: placed, ...at});
+      constructors.push({kind: "constructor", name: token(constructor(field.name)), params, type: inTheory(placed), ...at});
     }
   }
   for (const f of [...operationShapes, ...lawShapes]) for (const b of f.binders) taken.add(b.name);

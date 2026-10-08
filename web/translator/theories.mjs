@@ -293,7 +293,14 @@ export function theoryDeclarations(t,module,d,env,declarations) {
     const proposition=name=>{const entry=env.get(name);
       return entry?.tag==="Inductive"&&(entry.modifier==="prop"||entry.modifier?.trunc===-1);};
     const generated=expandTheory(d,name=>env.get(theoryBinding(name))?.record??null,proposition);
-    env.set(theoryBinding(d.name.text),{tag:"Theory",name:d.name.text,record:generated[0].theory});
+    // Initial/free constructors reuse field syntax after this declaration's
+    // notation may have changed. Keep the selected rules and model operations,
+    // already resolved here, so later binders cannot capture their names.
+    const scope=(d.uses??[]).reduce((inner,model)=>selected(t,inner,model),
+      new Scope(module.with({references:null}),new Map(),env));
+    const notation=[[SELECTION,scope.env.get(SELECTION)??null],
+      ...[...scope.env].filter(([key])=>key.startsWith(operatorBinding("")))];
+    env.set(theoryBinding(d.name.text),{tag:"Theory",name:d.name.text,record:generated[0].theory,notation});
     return generated;
   } catch(failure) {
     // The message says where, as an elaboration error does.

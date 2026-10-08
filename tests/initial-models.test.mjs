@@ -226,6 +226,87 @@ def folded(S : P(U0, 3), p : 3 = 3) : N.fold(S).map(N.point(p)) = S.point(p) { r
 `);
 });
 
+const notationTheory = `import hlevels;
+import nat;
+use nat;
+theory T(U < UU0, k : Nat) {
+  M : set U;
+  op(n : Nat, p : n = 0) : M;
+  point(n : Nat) : M;
+  law base : point(0 + 0) = point(0);
+  law index : point(k) = point(k);
+}`;
+const notationReader = (source = notationTheory) => {
+  const library = sourceReader();
+  return (name, importer) => name === "notation_theory" ? source : library(name, importer);
+};
+
+test("imported initial and free fields keep the theory's notation without a caller selection", async t => {
+  const source = `import notation_theory;
+initial N : T(U0, zero);
+free W(A : U0) : T(U0, zero) on A;
+def operation : N := N.op(zero, refl(zero));
+def boundary : N.point(zero) = N.point(zero) := N.base;
+def free_boundary(A : U0) : typed(W(A), W.point(zero)) = W.point(zero) := W.base;
+def folded(S : T(U0, zero)) : N.fold(S).map(N.op(zero, refl(zero))) = S.op(zero, refl(zero)) { rfl; }
+`;
+  const {result} = await checkProgram(t, source, {module, reader: notationReader()});
+  assert.deepEqual(result.gaps, []);
+  // A copied rule's source offsets belong to the imported module, never here.
+  assert.ok(result.links.every(link => link.start >= 0 && link.end <= source.length));
+});
+
+test("copied fields keep theory notation while free parameters, theory arguments and generators keep caller notation", async t => {
+  const {result} = await checkProgram(t, `import notation_theory;
+notation shifted { numeral(n : Nat) := succ(n); }
+use shifted;
+initial N : T(U0, 0);
+free W(p : 0 = 0) : T(U0, 0) on 0 = 0;
+def operation : N := N.op(zero, refl(zero));
+def boundary : N.point(zero) = N.point(zero) := N.base;
+def argument : N.point(succ(zero)) = N.point(succ(zero)) := N.index;
+def generator(p : succ(zero) = succ(zero), a : succ(zero) = succ(zero)) : W(p) := W.gen(a);
+def model_type(p : succ(zero) = succ(zero)) : T(U0, succ(zero)) := W.model(p);
+def folded(p : succ(zero) = succ(zero), S : T(U0, succ(zero)), g : (succ(zero) = succ(zero)) -> S.M) :
+  W.fold(p, S, g).map(W.gen(p)) = g(p) { rfl; }
+`, {module, reader: notationReader()});
+  assert.deepEqual(result.gaps, []);
+});
+
+test("a caller rebinding a notation name cannot change an imported theory's captured rules", async t => {
+  const {result} = await checkProgram(t, `import notation_theory;
+notation nat { numeral(n : Nat) := succ(n); }
+use nat;
+initial N : T(U0, 0);
+free W(nat : U0) : T(U0, 0) on nat;
+def operation : N := N.op(zero, refl(zero));
+def boundary : N.point(zero) = N.point(zero) := N.base;
+def argument : N.point(succ(zero)) = N.point(succ(zero)) := N.index;
+def free_boundary(A : U0) : typed(W(A), W.point(zero)) = W.point(zero) := W.base;
+`, {module, reader: notationReader()});
+  assert.deepEqual(result.gaps, []);
+});
+
+test("captured model notation survives a model or free parameter taking its name", async t => {
+  const reader = notationReader(`import hlevels;
+import nat;
+theory Arithmetic(U < UU0) { K : set U; plus(x, y : K) : K notation x + y; }
+def arithmetic : Arithmetic(U0) := Arithmetic.make(Nat, nat_is_set, add);
+use arithmetic;
+theory T(U < UU0) {
+  M : set U;
+  point(n : Nat) : M;
+  law base : point(zero + zero) = point(zero);
+}`);
+  const {result} = await checkProgram(t, `import notation_theory;
+initial arithmetic : T(U0);
+free W(arithmetic : U0) : T(U0) on arithmetic;
+def boundary : arithmetic.point(zero) = arithmetic.point(zero) := arithmetic.base;
+def free_boundary(A : U0) : typed(W(A), W.point(zero)) = W.point(zero) := W.base;
+`, {module, reader});
+  assert.deepEqual(result.gaps, []);
+});
+
 test("ill-typed theory arguments fail once at the argument before expansion", async t => {
   for (const application of ["Action(U0, Nat)", "Action(R := Nat, U := U0)", "Action(U0, tt)"]) {
     const source = `import hlevels; import algebra; import nat;
