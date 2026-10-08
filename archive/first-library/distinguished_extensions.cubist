@@ -25,10 +25,10 @@ def extension_class_iso_iff(
   C : ExtensionClass, K : AlgebraicField, E, F : FieldExt(K), e : ExtensionIso(K, E, F)
 ) :
   FieldIff(C(K, E), C(K, F)) {
-  let path := extension_iso_path(K, E, F, e);
+  let path_ := extension_iso_path(K, E, F, e);
   exact (
-    (fun (member : C(K, E)) => along C(K) by path from member),
-    (fun (member : C(K, F)) => along C(K) by sym(path) from member)
+    (fun (member : C(K, E)) => along C(K) by path_ from member),
+    (fun (member : C(K, F)) => along C(K) by sym(path_) from member)
   );
 }
 
@@ -92,12 +92,12 @@ def distinguished_composita_from_tower_base_change(
 }
 
 def distinguished_from_tower_base_change(
-  C : ExtensionClass, prop : ExtensionClassProp(C), towerLaw : DistinguishedTower(C),
+  C : ExtensionClass, prop_ : ExtensionClassProp(C), towerLaw : DistinguishedTower(C),
   baseChange : DistinguishedBaseChange(C)
 ) :
   Distinguished(C) {
   exact (
-    prop, towerLaw, baseChange,
+    prop_, towerLaw, baseChange,
     distinguished_composita_from_tower_base_change(C, towerLaw, baseChange)
   );
 }

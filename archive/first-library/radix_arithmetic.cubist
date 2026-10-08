@@ -1,6 +1,6 @@
 import nat;
 import radix_naturals;
-import paths;
+import paths_;
 use nat;
 
 // The carry cases use structural finite-digit increment, at any radix >= 2.
@@ -10,13 +10,13 @@ def radix_positive_succ(extra : Nat, p : RadixPositive(extra)) :=
     fun (first : RadixDigit(succ(extra))) => match radix_digit_succ(succ(extra), first) return RadixPositive(
       extra
     ) {
-      left next => radix_leading(extra, next);
+      left next_ => radix_leading(extra, next_);
       right carry => radix_append(extra, radix_digit_zero(succ(extra)), radix_one(extra));
     },
     fun (digit : RadixDigit(succ(succ(extra))), child, ih : RadixPositive(extra)) => match radix_digit_succ(
       succ(succ(extra)), digit
     ) return RadixPositive(extra) {
-      left next => radix_append(extra, next, child);
+      left next_ => radix_append(extra, next_, child);
       right carry => radix_append(extra, radix_digit_zero(succ(extra)), ih);
     }, p
   );
@@ -48,8 +48,8 @@ def radix_positive_add(extra : Nat, a : RadixPositive(extra)) :
       fun (first : RadixDigit(succ(extra))) => radix_add_small(
         extra, succ(radix_digit_value(succ(extra), first)), radix_append(extra, digit, child)
       ),
-      fun (next : RadixDigit(succ(succ(extra))), tail : RadixPositive(extra)) => radix_add_small(
-        extra, radix_digit_value(succ(succ(extra)), next), radix_append(extra, digit, ih(tail))
+      fun (next_ : RadixDigit(succ(succ(extra))), tail : RadixPositive(extra)) => radix_add_small(
+        extra, radix_digit_value(succ(succ(extra)), next_), radix_append(extra, digit, ih(tail))
       ), other
     ), a
   );

@@ -33,7 +33,7 @@ def contour_sum_add(
     contour_sum(F, zero, addF, mulF, negF, f, n, vertices, tags),
     contour_sum(F, zero, addF, mulF, negF, g, n, vertices, tags)
   ) {
-  obtain (setF, additive, multiplicative) := ring;
+  obtain (setF, additive_, multiplicative) := ring;
   let edgeF := contour_edge(F, addF, mulF, negF, f);
   let edgeG := contour_edge(F, addF, mulF, negF, g);
   let sumEdge := fun (a, b, tag : F) => addF(edgeF(a, b, tag), edgeG(a, b, tag));
@@ -47,7 +47,7 @@ def contour_sum_add(
           coordinate_difference(F, addF, negF, a, b)
         )
       ), n, vertices, tags
-    ), sample_sum_add(F, F, zero, addF, negF, additive, edgeF, edgeG, n, vertices, tags)
+    ), sample_sum_add(F, F, zero, addF, negF, additive_, edgeF, edgeG, n, vertices, tags)
   );
 }
 

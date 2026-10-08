@@ -55,7 +55,7 @@ def polynomial_from_coordinates_add(K : AlgebraicField, n : Nat, a, b : Fin(n) -
     series_coordinates(K, n, series_from_coordinates(K, n, sum)) = series_coordinates(
       K, n, series_add(K, f, g)
     ) {
-    let right : series_coordinates(K, n, series_add(K, f, g)) = sum :=
+    let right_ : series_coordinates(K, n, series_add(K, f, g)) = sum :=
       trans(
         series_coordinates_add(K, n, f, g),
         trans(
@@ -72,7 +72,7 @@ def polynomial_from_coordinates_add(K : AlgebraicField, n : Nat, a, b : Fin(n) -
           )
         )
       );
-    exact trans(series_coordinates_roundtrip(K, n, sum), sym(right));
+    exact trans(series_coordinates_roundtrip(K, n, sum), sym(right_));
   }
   exact polynomial_ext(
     K, polynomial_from_coordinates(K, n, sum),
@@ -135,7 +135,7 @@ def polynomial_evaluation_linear(
       K, L, e, polynomial_from_coordinates(K, n, a), x
     );
   let E := fun (p : Polynomial(K)) => polynomial_eval(K, L, e, p, x);
-  let additive :
+  let additive_ :
     forall a : Fin(n) -> af_carrier(K). forall b : Fin(n) -> af_carrier(K).
     F((fun (i : Fin(n)) => field_add(K, a(i), b(i)))) = field_add(L, F(a), F(b)) {
     intro a, b;
@@ -161,5 +161,5 @@ def polynomial_evaluation_linear(
       )
     };
   }
-  exact (F, additive, scalar);
+  exact (F, additive_, scalar);
 }

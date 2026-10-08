@@ -388,7 +388,7 @@ export const proofCatalog = [
   { id: "group_universes", topic: "algebra", title: "Groups · structures across universes" },
   { id: "circle", topic: "homotopy", title: "Circle · fundamental group is Z" },
   { id: "signed_integers", topic: "arithmetic", title: "Signed integers · successor equivalence" },
-  { id: "paths", topic: "homotopy", title: "Paths · equality reasoning" },
+  { id: "paths_", topic: "homotopy", title: "Paths · equality reasoning" },
   { id: "fundamental_groups", topic: "homotopy", title: "Fundamental groups · set-valued loop spaces" },
   { id: "suspension_types", topic: "homotopy", title: "Suspension · definitions from the declared pushout" },
   { id: "suspension", topic: "homotopy", title: "Suspension & the circle · foundations" },

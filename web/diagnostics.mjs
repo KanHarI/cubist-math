@@ -100,7 +100,7 @@ export const diagnostics = [
   ["E172", "A section gives its definitions parameters: section (G : Group(U0)) { … }."],
   ["E173", "Expected '}' to close the section."],
   ["E174", "A section holds definitions: def and computable def."],
-  ["E175", "… is reserved, as a keyword or a built-in type of the language; pick another name."],
+  ["E175", "… is reserved…; pick another name."],
   ["E176", "Reversal is written ~: ~p reverses a path and ~i a coordinate. Prefix - is kept for arithmetic.", "retired"],
   ["E177", "… binds … universes; a theory binds one, the universe of its carriers.", "retired"],
   ["E178", "… is not the universe of …'s carriers: name it in the header, as in theory …(… < UU0)."],
@@ -354,7 +354,6 @@ export const diagnostics = [
   ["E505", "The path's fiber must live in a universe."],
   ["E506", "Declared types need the instruction kernel."],
   ["E507", "… uses the assumption …: a declared type's parameters and constructors cannot use assumptions, since its signature is closed."],
-  ["E508", "A universe parameter cannot be named …: in a declaration's result position that word is an h-level."],
   ["E509", "… is already a constructor of …."],
   ["E510", "A constructor cannot be named …, as its type is."],
   ["E511", "… occurs in a negative position: …'s argument … takes an argument that mentions … or another argument of …."],
@@ -538,6 +537,8 @@ export const diagnostics = [
   ["E845", "… is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory."],
   ["E846", "notation numeral reads a plain numeral: it marks a derived operation of one natural number, as def of_nat(n : Nat) : R := … notation numeral."],
   ["E847", "A numeral rule reads a natural number: import nat."],
+  ["E848", "…'s label would be …, which is reserved: label it, as in other : …."],
+
   ["E859", "…'s parent … is labelled …, which names a field of … too: label it apart, as in base : …."],
   ["E860", "…'s pattern binds …, which an argument here names: rename it in …."],
   // Notation and operators

@@ -70,34 +70,34 @@ def empty_subdivision(C : U1, a : C) : SampleSubdivision(C, a, a) {
 }
 
 def join_subdivisions(
-  C : U1, a, b, c : C, left : SampleSubdivision(C, a, b), right : SampleSubdivision(C, b, c)
+  C : U1, a, b, c : C, left_ : SampleSubdivision(C, a, b), right_ : SampleSubdivision(C, b, c)
 ) :
   SampleSubdivision(C, a, c) {
-  let n := subdivision_count(C, a, b, left);
-  let vertices := subdivision_vertices(C, a, b, left);
-  let tags := subdivision_tags(C, a, b, left);
-  let m := subdivision_count(C, b, c, right);
-  let rightVertices := subdivision_vertices(C, b, c, right);
-  let rightTags := subdivision_tags(C, b, c, right);
+  let n := subdivision_count(C, a, b, left_);
+  let vertices := subdivision_vertices(C, a, b, left_);
+  let tags := subdivision_tags(C, a, b, left_);
+  let m := subdivision_count(C, b, c, right_);
+  let rightVertices := subdivision_vertices(C, b, c, right_);
+  let rightTags := subdivision_tags(C, b, c, right_);
   let firstLeft : sample_first(C, n, vertices) = a :=
     field_fst(
       (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
-      subdivision_endpoints(C, a, b, left)
+      subdivision_endpoints(C, a, b, left_)
     );
   let lastLeft : sample_last(C, n, vertices) = b :=
     field_snd(
       (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
-      subdivision_endpoints(C, a, b, left)
+      subdivision_endpoints(C, a, b, left_)
     );
   let firstRight : sample_first(C, m, rightVertices) = b :=
     field_fst(
       (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
-      subdivision_endpoints(C, b, c, right)
+      subdivision_endpoints(C, b, c, right_)
     );
   let lastRight : sample_last(C, m, rightVertices) = c :=
     field_snd(
       (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
-      subdivision_endpoints(C, b, c, right)
+      subdivision_endpoints(C, b, c, right_)
     );
   let same := trans(lastLeft, sym(firstRight));
   exact (
@@ -110,28 +110,28 @@ def join_subdivisions(
 def subdivision_sum_join(
   C, G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G. addG(zero, x) = x),
   assoc : (forall x : G. forall y : G. forall z : G. addG(addG(x, y), z) = addG(x, addG(y, z))),
-  edge : C -> C -> C -> G, a, b, c : C, left : SampleSubdivision(C, a, b),
-  right : SampleSubdivision(C, b, c)
+  edge : C -> C -> C -> G, a, b, c : C, left_ : SampleSubdivision(C, a, b),
+  right_ : SampleSubdivision(C, b, c)
 ) :
-  subdivision_sum(C, G, zero, addG, edge, a, c, join_subdivisions(C, a, b, c, left, right)) = addG(
-    subdivision_sum(C, G, zero, addG, edge, a, b, left),
-    subdivision_sum(C, G, zero, addG, edge, b, c, right)
+  subdivision_sum(C, G, zero, addG, edge, a, c, join_subdivisions(C, a, b, c, left_, right_)) = addG(
+    subdivision_sum(C, G, zero, addG, edge, a, b, left_),
+    subdivision_sum(C, G, zero, addG, edge, b, c, right_)
   ) {
-  let n := subdivision_count(C, a, b, left);
-  let vertices := subdivision_vertices(C, a, b, left);
-  let tags := subdivision_tags(C, a, b, left);
-  let m := subdivision_count(C, b, c, right);
-  let rightVertices := subdivision_vertices(C, b, c, right);
-  let rightTags := subdivision_tags(C, b, c, right);
+  let n := subdivision_count(C, a, b, left_);
+  let vertices := subdivision_vertices(C, a, b, left_);
+  let tags := subdivision_tags(C, a, b, left_);
+  let m := subdivision_count(C, b, c, right_);
+  let rightVertices := subdivision_vertices(C, b, c, right_);
+  let rightTags := subdivision_tags(C, b, c, right_);
   let lastLeft : sample_last(C, n, vertices) = b :=
     field_snd(
       (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
-      subdivision_endpoints(C, a, b, left)
+      subdivision_endpoints(C, a, b, left_)
     );
   let firstRight : sample_first(C, m, rightVertices) = b :=
     field_fst(
       (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
-      subdivision_endpoints(C, b, c, right)
+      subdivision_endpoints(C, b, c, right_)
     );
   exact sample_sum_join(
     C, G, zero, addG, unitLaw, assoc, edge, n, vertices, tags, m, rightVertices, rightTags,

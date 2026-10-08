@@ -87,40 +87,40 @@ def Respects(U, V < UU0, A : U, R : A -> A -> U, B : V, f : A -> B) :
 // descends to the quotient, computes on classes, and is the only map that
 // does.
 computable def descend(
-  U, V < UU0, A : U, R : A -> A -> U, B : V, set : IsSet(V, B), f : A -> B,
+  U, V < UU0, A : U, R : A -> A -> U, B : V, set_ : IsSet(V, B), f : A -> B,
   respects : Respects(U, V, A, R, B, f), q : Quotient(U, A, R)
 ) :
   B := quotient_induction(
-    U, V, A, R, fun (z : Quotient(U, A, R)) => B, fun (z : Quotient(U, A, R)) => set, f, respects, q
+    U, V, A, R, fun (z : Quotient(U, A, R)) => B, fun (z : Quotient(U, A, R)) => set_, f, respects, q
   );
 
 computable def descend_class(
-  U, V < UU0, A : U, R : A -> A -> U, B : V, set : IsSet(V, B), f : A -> B,
+  U, V < UU0, A : U, R : A -> A -> U, B : V, set_ : IsSet(V, B), f : A -> B,
   respects : Respects(U, V, A, R, B, f), a : A
 ) :
-  descend(U, V, A, R, B, set, f, respects, class(a)) = f(a) := refl(f(a));
+  descend(U, V, A, R, B, set_, f, respects, class(a)) = f(a) := refl(f(a));
 
 // Two maps into a set that agree on classes are equal: equality in a set is
 // a proposition, so their agreement carries along every relation.
 computable def maps_agreeing_on_classes(
-  U, V < UU0, A : U, R : A -> A -> U, B : V, set : IsSet(V, B), g, h : Quotient(U, A, R) -> B,
+  U, V < UU0, A : U, R : A -> A -> U, B : V, set_ : IsSet(V, B), g, h : Quotient(U, A, R) -> B,
   agree : (forall a : A. g(class(a)) = h(class(a)))
 ) :
   g = h {
   ext q;
   exact quotient_induction_prop(
     U, V, A, R, fun (z : Quotient(U, A, R)) => g(z) = h(z),
-    fun (z : Quotient(U, A, R)) => set(g(z), h(z)), agree, q
+    fun (z : Quotient(U, A, R)) => set_(g(z), h(z)), agree, q
   );
 }
 
 computable def descend_unique(
-  U, V < UU0, A : U, R : A -> A -> U, B : V, set : IsSet(V, B), f : A -> B,
+  U, V < UU0, A : U, R : A -> A -> U, B : V, set_ : IsSet(V, B), f : A -> B,
   respects : Respects(U, V, A, R, B, f), g : Quotient(U, A, R) -> B,
   agree : (forall a : A. g(class(a)) = f(a))
 ) :
-  g = descend(U, V, A, R, B, set, f, respects) := maps_agreeing_on_classes(
-    U, V, A, R, B, set, g, descend(U, V, A, R, B, set, f, respects), agree
+  g = descend(U, V, A, R, B, set_, f, respects) := maps_agreeing_on_classes(
+    U, V, A, R, B, set_, g, descend(U, V, A, R, B, set_, f, respects), agree
   );
 
 // A map of two arguments into a set that respects the relation in each
@@ -128,19 +128,20 @@ computable def descend_unique(
 // descends; and these maps agree on related a, being maps into a set that
 // agree on classes.
 computable def descend2(
-  U, V < UU0, A : U, R : A -> A -> U, B : V, set : IsSet(V, B), f : A -> A -> B,
-  left : (forall a, c, b : A. R(a, c) -> f(a, b) = f(c, b)),
-  right : (forall a, b, d : A. R(b, d) -> f(a, b) = f(a, d)), x, y : Quotient(U, A, R)
+  U, V < UU0, A : U, R : A -> A -> U, B : V, set_ : IsSet(V, B), f : A -> A -> B,
+  respects_first : (forall a, c, b : A. R(a, c) -> f(a, b) = f(c, b)),
+  respects_second : (forall a, b, d : A. R(b, d) -> f(a, b) = f(a, d)), x, y : Quotient(U, A, R)
 ) :
   B := descend(
     U, max(U, V), A, R, Quotient(U, A, R) -> B,
     pi_is_set(
       max(U, V), Quotient(U, A, R), fun (z : Quotient(U, A, R)) => B,
-      fun (z : Quotient(U, A, R)) => set
-    ), fun (a : A) => descend(U, V, A, R, B, set, f(a), right(a)),
+      fun (z : Quotient(U, A, R)) => set_
+    ), fun (a : A) => descend(U, V, A, R, B, set_, f(a), respects_second(a)),
     fun (a, c : A, r : R(a, c)) => maps_agreeing_on_classes(
-      U, V, A, R, B, set, descend(U, V, A, R, B, set, f(a), right(a)),
-      descend(U, V, A, R, B, set, f(c), right(c)), fun (b : A) => left(a, c, b, r)
+      U, V, A, R, B, set_, descend(U, V, A, R, B, set_, f(a), respects_second(a)),
+      descend(U, V, A, R, B, set_, f(c), respects_second(c)),
+      fun (b : A) => respects_first(a, c, b, r)
     ), x
   )(y);
 

@@ -24,7 +24,7 @@ def homotopy_limit_descent(
   period(present(c)) = field_sequence_limit(
     F, zero, addF, lt, complete, approximations(c), cauchy(c)
   ) {
-  obtain (setF, additive, multiplicative) := ring;
+  obtain (setF, additive_, multiplicative) := ring;
   let halving :=
     ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);
   let value :=
@@ -59,12 +59,12 @@ def homotopy_limit_period(
   ), constant : C, constantPath : present(constant) = refl(point),
   constantError : FieldAsymptotic(
     F, zero, addF, lt, approximations(constant), (fun (n : Nat) => zero)
-  ), join : C -> C -> C,
-  joinPath : (forall c : C. forall d : C. present(join(c, d)) = trans(present(c), present(d))),
+  ), join_ : C -> C -> C,
+  joinPath : (forall c : C. forall d : C. present(join_(c, d)) = trans(present(c), present(d))),
   joinError : (
     forall c : C. forall d : C.
     FieldAsymptotic(
-      F, zero, addF, lt, approximations(join(c, d)),
+      F, zero, addF, lt, approximations(join_(c, d)),
       (fun (n : Nat) => addF(approximations(c, n), approximations(d, n)))
     )
   )
@@ -76,7 +76,7 @@ def homotopy_limit_period(
       F, zero, addF, lt, complete, approximations(c), cauchy(c)
     )
   ) {
-  obtain (setF, additive, multiplicative) := ring;
+  obtain (setF, additive_, multiplicative) := ring;
   let halving :=
     ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);
   let value :=
@@ -93,15 +93,15 @@ def homotopy_limit_period(
         F, zero, addF, lt, complete, approximations(constant), cauchy(constant)
       ), field_converges_constant(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero)
     );
-  let joinValue : forall c : C. forall d : C. value(join(c, d)) = addF(value(c), value(d)) {
+  let joinValue : forall c : C. forall d : C. value(join_(c, d)) = addF(value(c), value(d)) {
     intro c, d;
     exact field_asymptotic_limits_equal(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving,
-      approximations(join(c, d)),
+      approximations(join_(c, d)),
       (fun (n : Nat) => addF(approximations(c, n), approximations(d, n))), joinError(c, d),
-      value(join(c, d)), addF(value(c), value(d)),
+      value(join_(c, d)), addF(value(c), value(d)),
       field_sequence_limit_converges(
-        F, zero, addF, lt, complete, approximations(join(c, d)), cauchy(join(c, d))
+        F, zero, addF, lt, complete, approximations(join_(c, d)), cauchy(join_(c, d))
       ),
       field_converges_add(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, approximations(c),
@@ -115,7 +115,7 @@ def homotopy_limit_period(
     period,
     descended_loop_map_laws(
       C, X, point, F, setF, zero, addF, present, covered, value, period, computes, constant,
-      constantPath, constantValue, join, joinPath, joinValue
+      constantPath, constantValue, join_, joinPath, joinValue
     ), computes
   );
 }

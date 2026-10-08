@@ -78,12 +78,12 @@ def excluded_middle_here(A : U0, nn : (A -&gt; Void) -&gt; Void) : Truncate(U0, 
             <p>For a <strong>proposition</strong>, a type whose elements are all equal, merely holding and holding are the same, so excluded middle gives the statement itself. The first library’s <code>classical</code> module proves both familiar forms, for a proposition <code>P</code>:</p>
             <pre><code data-check="accept">import classical;
 
-def not_not(P : U0, prop : Proposition(P), nn : (P -&gt; Void) -&gt; Void) : P {
-  exact double_negation(P, prop, nn);
+def not_not(P : U0, prop_ : Proposition(P), nn : (P -&gt; Void) -&gt; Void) : P {
+  exact double_negation(P, prop_, nn);
 }
 
-def decide(P : U0, prop : Proposition(P)) : P or (P -&gt; Void) {
-  exact excluded_middle(P, prop);
+def decide(P : U0, prop_ : Proposition(P)) : P or (P -&gt; Void) {
+  exact excluded_middle(P, prop_);
 }</code></pre>
             <p><code>Proposition(P)</code> is <code>forall x, y : P. x = y</code>. <code>decide</code> is excluded middle as it is usually stated: every proposition holds or fails. Both use <code>LEM</code>, and the inspector lists it.</p>
             <h3 id="choice">The axiom of choice</h3>
@@ -115,8 +115,8 @@ def all_equal(A : U0, x, y : Truncate(U0, A)) : x = y {
 }
 
 def into_a_proposition(A, P : U0, proposition : forall x : P. forall y : P. x = y,
-    map : A -&gt; P, t : Truncate(U0, A)) : P {
-  exact TruncateElim(U0, A, P, proposition, map, t);
+    map_ : A -&gt; P, t : Truncate(U0, A)) : P {
+  exact TruncateElim(U0, A, P, proposition, map_, t);
 }</code></pre>
             <p><code>TruncateElim</code> is the only way to use a truncation, and only to prove a proposition: a merely existing element can be used in a proof whose result does not depend on which element it is. So the function that choice merely provides can be used to prove that a right inverse merely exists, but never to compute one.</p>
             <p class="note">This <code>Truncate</code> is itself an assumption, so <a href="#evaluate"><code>evaluate</code></a> refuses its terms. A truncation that computes can be declared instead: an <a href="cubical.html#higher-constructors">inductive type declared with <code>: prop</code></a>. Its point constructor computes, and a function out of it must respect the generated squash constructor, so it gives no unrestricted way to extract a witness. The library’s <code>h1_truncation</code> and <code>h1_classical</code> modules state excluded middle and choice over it.</p>
@@ -158,12 +158,12 @@ def merely_assumed(A : U0, nn : (A -&gt; Void) -&gt; Void) : Truncate(U0, A) {
               <dt><code>FunExt(U, A, B, f, g, pointwise)</code></dt>
               <dd>For <code>B : A -> U</code>, dependent functions <code>f</code> and <code>g</code>, and <code>pointwise : forall x : A. f(x) = g(x)</code>, the path <code>f = g</code>. It builds the same term as <a href="cubical.html#ext"><code>ext</code></a>, which is usually shorter.</dd>
               <dt><code>ua(U, A, B, equivalence)</code></dt>
-              <dd>A path <code>A = B</code> from an equivalence <code>equivalence : Equiv(U, A, B)</code>, defined by <code>import paths;</code>. An equivalence is a function with an inverse, two homotopies and the triangle law; a pair of maps is not enough.</dd>
+              <dd>A path <code>A = B</code> from an equivalence <code>equivalence : Equiv(U, A, B)</code>, defined by <code>import paths_;</code>. An equivalence is a function with an inverse, two homotopies and the triangle law; a pair of maps is not enough.</dd>
               <dt><code>UnivalenceBeta(U, A, B, equivalence, x)</code></dt>
               <dd>Transport of <code>x : A</code> along <code>ua(U, A, B, equivalence)</code> equals the image of <code>x</code> under the equivalence.</dd>
             </dl>
             <p>All three need every argument; there is no separate univalence axiom. Because they use no assumption, results built on them can be marked <a href="#computable"><code>computable</code></a>, and transport along <code>ua</code> computes:</p>
-            <pre><code data-check="accept">import paths;
+            <pre><code data-check="accept">import paths_;
 use nat;
 
 def swap(p : Unit and Nat) := unpack p as (u, n) return Nat and Unit { typed(Nat and Unit, (n, u)); };
@@ -187,7 +187,7 @@ evaluate along (fun (T : U0) =&gt; T) by swapped from typed(Unit and Nat, (tt, 3
 }</code></pre>
             <h3 id="generic-library">One definition for every universe</h3>
             <p>Like the assumptions, <code>ua</code>, <code>UnivalenceBeta</code> and <code>FunExt</code> are each one definition, used at any universe below <code>UU0</code> through their first argument, as a <a href="universes.html#universe-variables">universe variable</a> would be:</p>
-            <pre><code data-check="accept">import paths;
+            <pre><code data-check="accept">import paths_;
 def small_path(A, B : U0, e : Equiv(U0, A, B)) : A = B := ua(U0, A, B, e);
 def large_path(A, B : U1, e : Equiv(U1, A, B)) : A = B := ua(U1, A, B, e);</code></pre>
             <p><code>Equiv(U, A, B)</code>, like <code>IsProp</code> and <code>IsSet</code>, is a library definition, not a new sort or a keyword. <code>hlevels</code> defines the levels, <code>IsProp(U, A)</code> and <code>IsSet(U, A)</code>, for a type in any universe below <code>UU0</code>, as <code>Choice</code> above uses them (<a href="paths.html#hlevels">propositions and sets</a>).</p>
@@ -224,11 +224,11 @@ computable def double_two : double(2) = 4 {
             <p>A computable declaration may take parameters, like <code>double</code>. The requirement is about assumptions, not about closed terms: every application of <code>double</code> to a numeral computes. The library’s <code>double_negation</code> is proved with excluded middle, so a declaration that uses it cannot be computable:</p>
             <pre><code data-check="reject">import classical;
 
-computable def recover(P : U0, prop : Proposition(P), nn : (P -&gt; Void) -&gt; Void) : P {
+computable def recover(P : U0, prop_ : Proposition(P), nn : (P -&gt; Void) -&gt; Void) : P {
   // Error: This computable declaration depends on non-computing assumptions:
   //   LEM, Truncate, TruncateElim.
   //   Path to LEM: double_negation (classical) → LEM.
-  exact double_negation(P, prop, nn);
+  exact double_negation(P, prop_, nn);
 }</code></pre>
             <p>The error lists every assumption the proof uses, and the chain of definitions through which the first one enters: here the library’s <code>double_negation</code>. When the assumption is used directly, the chain is just its name:</p>
             <pre><code data-check="reject">computable def merely(A : U0, a : A) : Truncate(U0, A) {
@@ -274,7 +274,7 @@ use nat;
 def numbers : List(U0, Nat) := cons(1, cons(2, cons(3, nil)));
 
 evaluate numbers expecting cons(_, nil);  // Error: The term evaluates to cons(1, cons(2, cons(3, nil))), which does not match cons(_, nil): cons(2, cons(3, nil)) is not nil.</code></pre>
-            <p>Evaluation computes full normal forms: it unfolds every definition and ignores <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints. <code>computable</code>, <code>evaluate</code> and <code>expecting</code> are keywords only in these positions. Elsewhere they are ordinary names.</p>
+            <p>Evaluation computes full normal forms: it unfolds every definition and ignores <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints. <code>computable</code>, <code>evaluate</code> and <code>expecting</code> are reserved keywords: no declaration or binder takes their names.</p>
             <p>The command-line checker prints each success as <code>evaluate at line N: value</code>. After <code>check</code>, its <code>evaluate EXPRESSION</code> command prints the normal form of an expression in the scope of the checked module, under the same rule. <code>inspect NAME</code> lists the declaration’s assumptions, or <code>none</code>. See <a href="checking.html#inspection">checking and inspection</a>.</p>
           </section>
 

@@ -7,11 +7,11 @@ use nat;
 
 def N := Nat;
 
-def id(n : Nat) := n;
+def id_(n : Nat) := n;
 
-def twice := id(id(0));
+def twice := id_(id_(0));
 
 def annotated := typed(N, 0);
 
-def along(A : U0, x : A, y : A, p : x = y) :=
+def along_(A : U0, x : A, y : A, p : x = y) :=
   path(fun (i : Interval) => A, fun (i : Interval) => at(p, i));

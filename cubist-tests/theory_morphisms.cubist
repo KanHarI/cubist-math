@@ -101,11 +101,11 @@ print(evaluate(A.Hom.compose(A.Hom.id(nat_point), A.Hom.id(nat_point)).map(3)));
 
 // Or map, as its homomorphisms' field is: the constructor still takes that
 // field by its name.
-theory map(U < UU0) {
+theory map_(U < UU0) {
   M : set U;
 }
 
-def map_identity(B : map(U0)) : map.Hom(B, B) := map.Hom.make(B, B, map := fun (x : B.M) => x);
+def map_identity(B : map_(U0)) : map_.Hom(B, B) := map_.Hom.make(B, B, map := fun (x : B.M) => x);
 
 // A theory whose operation takes a carrier's endomap has models, but no
 // homomorphisms: they would need not compose (theory_variance).

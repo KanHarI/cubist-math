@@ -10,10 +10,10 @@ def classical_complex_nonzero_apart(
   nonzero : (z = complex_zero(F, zero)) -> Void
 ) :
   ComplexApartZero(F, zero, addF, mulF, lt, z) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   exact double_negation(
     ComplexApartZero(F, zero, addF, mulF, lt, z),
-    prop(zero, complex_norm_squared(F, addF, mulF, z)),
+    prop_(zero, complex_norm_squared(F, addF, mulF, z)),
     (
       fun (notApart : ComplexApartZero(F, zero, addF, mulF, lt, z) -> Void) => nonzero(
         complex_apart_tight(

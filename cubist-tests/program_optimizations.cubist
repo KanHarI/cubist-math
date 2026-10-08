@@ -4,7 +4,7 @@
 import nat;
 use nat;
 
-def compose(x : Nat, y : Nat, z : Nat, p : x = y, q : y = z) : succ(x) = succ(z) {
+def compose_(x : Nat, y : Nat, z : Nat, p : x = y, q : y = z) : succ(x) = succ(z) {
   exact cong(succ, trans(p, q));
 }
 

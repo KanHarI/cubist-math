@@ -20,10 +20,10 @@ def decision_implies(P, Q : U0, decideP : Decidable(U0, P), decideQ : Decidable(
   };
 
 // A proposition has at most one decision, including the negative evidence.
-def decision_prop(P : U0, prop : Proposition(P), d, e : Decidable(U0, P)) :=
+def decision_prop(P : U0, prop_ : Proposition(P), d, e : Decidable(U0, P)) :=
   match d as v return (v = e) {
     left p => match e as w return (typed(Decidable(U0, P), left(p)) = w) {
-      left q => cong((fun (r : P) => typed(Decidable(U0, P), left(r))), prop(p, q));
+      left q => cong((fun (r : P) => typed(Decidable(U0, P), left(r))), prop_(p, q));
       right noP => typed(
         (typed(Decidable(U0, P), left(p)) = typed(Decidable(U0, P), right(noP))), absurd(noP(p))
       );

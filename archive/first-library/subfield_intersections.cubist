@@ -10,7 +10,7 @@ def subfield_intersection_laws(F : AlgebraicField, I : U0, family : I -> Subfiel
   SubfieldLaws(F, SubfieldIntersection(F, I, family)) {
   let A := af_carrier(F);
   let ops := af_operations(F);
-  let prop : forall x : A. Proposition(SubfieldIntersection(F, I, family, x)) {
+  let prop_ : forall x : A. Proposition(SubfieldIntersection(F, I, family, x)) {
     intro x;
     exact forall_prop(
       I, (fun (i : I) => subfield_members(F, family(i), x)),
@@ -22,7 +22,7 @@ def subfield_intersection_laws(F : AlgebraicField, I : U0, family : I -> Subfiel
     );
   }
   exact (
-    prop,
+    prop_,
     (fun (i : I) => subfield_zero(F, subfield_members(F, family(i)), subfield_laws(F, family(i)))),
     (fun (i : I) => subfield_one(F, subfield_members(F, family(i)), subfield_laws(F, family(i)))),
     (

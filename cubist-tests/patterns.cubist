@@ -107,12 +107,12 @@ def head_loop : loop = (path i => head_or_base(cons(loop @ i, nil))) {
 
 // An expected type that mentions the value: each clause at its constructor,
 // with a hypothesis about it again.
-def Choice(n : Nat) : U0 := match n {
+def Choice_(n : Nat) : U0 := match n {
     zero => Unit;
     succ(m) => Nat;
   };
 
-def pick(n : Nat) : Choice(n) := match n {
+def pick(n : Nat) : Choice_(n) := match n {
     zero => tt;
     succ(m) => m;
   };
@@ -120,7 +120,7 @@ def pick(n : Nat) : Choice(n) := match n {
 // Output: 2
 print(evaluate(pick(3)));
 
-def kept(n : Nat, h : Choice(n)) : Choice(n) := match n {
+def kept(n : Nat, h : Choice_(n)) : Choice_(n) := match n {
     zero => h;
     succ(m) => h;
   };

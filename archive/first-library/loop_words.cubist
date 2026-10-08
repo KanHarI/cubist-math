@@ -108,7 +108,7 @@ def generated_snoc(
       )
     ),
     (
-      fun (witness : (exists word : Word(A). eval_word(A, X, basepoint, generators, word) = p)) => unpack witness as (
+      fun (witness_ : (exists word : Word(A). eval_word(A, X, basepoint, generators, word) = p)) => unpack witness_ as (
         word, same
       ) return (
         exists word : Word(A).

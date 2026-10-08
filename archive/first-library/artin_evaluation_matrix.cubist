@@ -296,8 +296,8 @@ def coordinate_map_nonzero_kernel(
   let X := Fin(n) -> af_carrier(K);
   let notKernelTrivial := coordinate_map_not_kernel_trivial(K, n, m, f, too_small);
   let convert : (exists a : X. (P(a) -> Q(a)) -> Void) -> (exists a : X. P(a) and (Q(a) -> Void)) {
-    intro witness;
-    obtain (a, fails) := witness;
+    intro witness_;
+    obtain (a, fails) := witness_;
     obtain (vanishes, nonzero) := coordinate_nontrivial_implication_witness(K, n, m, f, a, fails);
     exact (a, vanishes, nonzero);
   }
@@ -345,8 +345,8 @@ def embedding_evaluation_rank_step(
       exists a : A. (linear_map(L, C, D, h, a) = vector_zero(L, D))
       and ((a = vector_zero(L, C)) -> Void)
     ) -> Mere(Result) {
-    intro witness;
-    obtain (a, vanishes, nonzero) := witness;
+    intro witness_;
+    obtain (a, vanishes, nonzero) := witness_;
     let allRows : forall j : Fin(m). coordinate_dot(L, n, a, rows(j)) = field_zero(L) {
       intro j;
       exact cong((fun (v : Fin(m) -> af_carrier(L)) => v(j)), vanishes);
@@ -438,8 +438,8 @@ def embedding_evaluation_outside_span(
       and (forall j : Fin(m). coordinate_dot(L, n, a, rows(j)) = field_zero(L))
       and ((embedding_evaluation_dot(K, L, n, maps, a, x) = field_zero(L)) -> Void)
     ) -> Result {
-    intro witness;
-    obtain (a, x, nonzero, allRows, detected) := witness;
+    intro witness_;
+    obtain (a, x, nonzero, allRows, detected) := witness_;
     let y := embedding_evaluation_vector(K, L, n, maps, x);
     let FiberF := Fiber(Fin(m) -> af_carrier(L), Fin(n) -> af_carrier(L), F, y);
     let reject : FiberF -> Void {
@@ -485,12 +485,12 @@ def embedding_evaluation_extend_independent(
   ), too_small : le(n, m) -> Void
 ) :
   Mere(
-    exists next : Fin(succ(m)) -> af_carrier(K).
+    exists next_ : Fin(succ(m)) -> af_carrier(K).
     LinearInjective(
       L, CoordinateSpace(L, succ(m)), CoordinateSpace(L, n),
       family_linear(
         L, CoordinateSpace(L, n), succ(m),
-        (fun (j : Fin(succ(m))) => embedding_evaluation_vector(K, L, n, maps, next(j)))
+        (fun (j : Fin(succ(m))) => embedding_evaluation_vector(K, L, n, maps, next_(j)))
       )
     )
   ) {
@@ -498,12 +498,12 @@ def embedding_evaluation_extend_independent(
   let rows := fun (j : Fin(m)) => embedding_evaluation_vector(K, L, n, maps, points(j));
   let old := family_linear(L, C, m, rows);
   let Result :=
-    exists next : Fin(succ(m)) -> af_carrier(K).
+    exists next_ : Fin(succ(m)) -> af_carrier(K).
     LinearInjective(
       L, CoordinateSpace(L, succ(m)), C,
       family_linear(
         L, C, succ(m),
-        (fun (j : Fin(succ(m))) => embedding_evaluation_vector(K, L, n, maps, next(j)))
+        (fun (j : Fin(succ(m))) => embedding_evaluation_vector(K, L, n, maps, next_(j)))
       )
     );
   let extend :
@@ -517,11 +517,11 @@ def embedding_evaluation_extend_independent(
         )
       ) -> Void
     ) -> Result {
-    intro witness;
-    obtain (x, outside) := witness;
-    let next := fun (j : Fin(succ(m))) => fin_prepend(af_carrier(K), m, x, points, j);
+    intro witness_;
+    obtain (x, outside) := witness_;
+    let next_ := fun (j : Fin(succ(m))) => fin_prepend(af_carrier(K), m, x, points, j);
     exact (
-      next,
+      next_,
       adjoin_linear_injective(
         L, C, m, old, independent, embedding_evaluation_vector(K, L, n, maps, x), outside
       )
@@ -554,8 +554,8 @@ def coordinate_square_injective_surjective(
   let F := linear_map(K, C, C, f);
   let Image := fun (x : X) => Mere(Fiber(X, X, F, x));
   let impossible : (exists x : X. Image(x) -> Void) -> Void {
-    intro witness;
-    obtain (x, outside) := witness;
+    intro witness_;
+    obtain (x, outside) := witness_;
     let h := adjoin_linear(K, C, n, f, x);
     let independent := adjoin_linear_injective(K, C, n, f, injective, x, outside);
     exact successor_not_le_self(n, coordinate_injection_bound(K, n, succ(n), h, independent));

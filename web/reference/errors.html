@@ -166,7 +166,7 @@
               <tbody>
                 <tr id="E342"><td class="code"><code>E342</code></td><td data-message="Universe was removed: bind a universe variable as U &lt; UU0.">“Universe was removed: bind a universe variable as U &lt; UU0.”</td><td>Write <code>U &lt; UU0</code> where the source had <code>U : Universe</code>.</td><td><a href="universes.html#universe-variables">universe variables</a></td></tr>
                 <tr id="E321"><td class="code"><code>E321</code></td><td data-message="A universe variable's bound must be UU0, as in U &lt; UU0.">“A universe variable's bound must be UU0, as in U &lt; UU0.”</td><td>Only <code>UU0</code> bounds a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
-                <tr id="E175"><td class="code"><code>E175</code></td><td data-message="is reserved, as a keyword or a built-in type of the language; pick another name.">“<var>name</var> is reserved, as a keyword or a built-in type of the language; pick another name.”</td><td>Keywords such as <code>fun</code> and <code>let</code>, the built-in types <code>Unit</code> and <code>Void</code>, and <code>Unit</code>'s element <code>tt</code>, cannot be bound.</td><td><a href="terms.html#unit-and-void">Unit and Void</a></td></tr>
+                <tr id="E175"><td class="code"><code>E175</code></td><td data-message="is reserved">“<var>name</var> is reserved…; pick another name.”</td><td>Keywords such as <code>fun</code> and <code>let</code>, the built-in types <code>Unit</code> and <code>Void</code>, <code>Unit</code>'s element <code>tt</code>, and generated interface names such as <code>map</code> and <code>model</code>, cannot be bound. The message identifies generated interface names and points to <code>docs/guides/keywords.md</code>.</td><td><a href="terms.html#unit-and-void">Reserved names</a></td></tr>
                 <tr id="E518"><td class="code"><code>E518</code></td><td data-message="A universe argument must lie below UU0">“A universe argument must lie below UU0: …”</td><td>A generic declaration was used at <code>UU0</code> or above. Use <code>U0</code>, <code>U1</code>, … or a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
                 <tr id="E322"><td class="code"><code>E322</code></td><td data-message="Expected a universe:">“Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).”</td><td>A type or a term stands where a universe is required, such as <code>next(Nat)</code>.</td><td><a href="universes.html#universe-expressions">next and max</a></td></tr>
                 <tr id="E111"><td class="code"><code>E111</code></td><td data-message="is a universe constant; pick another name.">“<var>name</var> is a universe constant; pick another name.”</td><td>Names such as <code>U1</code> and <code>UU2</code> are universes.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
@@ -393,7 +393,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E172"><td><code>E172</code></td><td>A section gives its definitions parameters: section (G : Group(U0)) { … }.</td></tr>
                 <tr id="E173"><td><code>E173</code></td><td>Expected '}' to close the section.</td></tr>
                 <tr id="E174"><td><code>E174</code></td><td>A section holds definitions: def and computable def.</td></tr>
-                <tr><td><a href="#E175"><code>E175</code></a></td><td>… is reserved, as a keyword or a built-in type of the language; pick another name.</td></tr>
+                <tr><td><a href="#E175"><code>E175</code></a></td><td>… is reserved…; pick another name.</td></tr>
                 <tr id="E176"><td><code>E176</code></td><td>Reversal is written ~: ~p reverses a path and ~i a coordinate. Prefix - is kept for arithmetic. (retired)</td></tr>
                 <tr id="E177"><td><code>E177</code></td><td>… binds … universes; a theory binds one, the universe of its carriers. (retired)</td></tr>
                 <tr id="E178"><td><code>E178</code></td><td>… is not the universe of …'s carriers: name it in the header, as in theory …(… &lt; UU0).</td></tr>
@@ -667,7 +667,6 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E505"><td><code>E505</code></td><td>The path's fiber must live in a universe.</td></tr>
                 <tr id="E506"><td><code>E506</code></td><td>Declared types need the instruction kernel.</td></tr>
                 <tr id="E507"><td><code>E507</code></td><td>… uses the assumption …: a declared type's parameters and constructors cannot use assumptions, since its signature is closed.</td></tr>
-                <tr id="E508"><td><code>E508</code></td><td>A universe parameter cannot be named …: in a declaration's result position that word is an h-level.</td></tr>
                 <tr id="E509"><td><code>E509</code></td><td>… is already a constructor of ….</td></tr>
                 <tr id="E510"><td><code>E510</code></td><td>A constructor cannot be named …, as its type is.</td></tr>
                 <tr id="E511"><td><code>E511</code></td><td>… occurs in a negative position: …'s argument … takes an argument that mentions … or another argument of ….</td></tr>
@@ -866,6 +865,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E845"><td><code>E845</code></td><td>… is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory.</td></tr>
                 <tr id="E846"><td><code>E846</code></td><td>notation numeral reads a plain numeral: it marks a derived operation of one natural number, as def of_nat(n : Nat) : R := … notation numeral.</td></tr>
                 <tr id="E847"><td><code>E847</code></td><td>A numeral rule reads a natural number: import nat.</td></tr>
+                <tr id="E848"><td><code>E848</code></td><td>…'s label would be …, which is reserved: label it, as in other : ….</td></tr>
                 <tr id="E859"><td><code>E859</code></td><td>…'s parent … is labelled …, which names a field of … too: label it apart, as in base : ….</td></tr>
                 <tr id="E860"><td><code>E860</code></td><td>…'s pattern binds …, which an argument here names: rename it in ….</td></tr>
               </tbody>

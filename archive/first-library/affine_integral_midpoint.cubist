@@ -54,12 +54,12 @@ def affine_dyadic_sum_successor(
     interval_midpoint_right_order(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     );
-  let left :=
+  let left_ :=
     dyadic_piece(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a,
       midpoint, leftOrdered
     );
-  let right :=
+  let right_ :=
     dyadic_piece(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, midpoint,
       b, rightOrdered
@@ -75,7 +75,7 @@ def affine_dyadic_sum_successor(
       )
     ),
     curve_subdivision_samples_join(
-      F, zero, one, addF, mulF, negF, lt, ring, curve, integrand, a, midpoint, b, left, right
+      F, zero, one, addF, mulF, negF, lt, ring, curve, integrand, a, midpoint, b, left_, right_
     )
   );
 }
@@ -146,12 +146,12 @@ def affine_dyadic_integral_midpoint(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
       integrand, a, b, ordered
     );
-  let left :=
+  let left_ :=
     affine_dyadic_sum(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
       integrand, a, midpoint, leftOrdered
     );
-  let right :=
+  let right_ :=
     affine_dyadic_sum(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
       integrand, midpoint, b, rightOrdered
@@ -188,12 +188,12 @@ def affine_dyadic_integral_midpoint(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
       bounds, half, halfSum, z, slope, integrand, uniform, midpoint, b, rightOrdered, complete
     );
-  let total := (fun (n : Nat) => complex_add(F, addF, left(n), right(n)));
+  let total := (fun (n : Nat) => complex_add(F, addF, left_(n), right_(n)));
   let shifted := (fun (n : Nat) => whole(succ(n)));
   let sumValue := complex_add(F, addF, leftValue, rightValue);
   let totalConverges :=
     complex_converges_add(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, left, right, leftValue,
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, left_, right_, leftValue,
       rightValue, leftConverges, rightConverges
     );
   let computes : forall n : Nat. total(n) = shifted(n) {

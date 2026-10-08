@@ -70,8 +70,8 @@ def vector_space_has_basis(K : AlgebraicField, V : VectorSpace(K)) : FieldExists
   let le := IndependentIncluded(K, V);
   let Maximal := exists S : A. OrderMaximal(A, le, S);
   let toBasis : Maximal -> VectorBasis(K, V) {
-    intro witness;
-    obtain (S, maximal) := witness;
+    intro witness_;
+    obtain (S, maximal) := witness_;
     exact maximal_independent_basis(K, V, S, maximal);
   }
   exact field_exists_map(

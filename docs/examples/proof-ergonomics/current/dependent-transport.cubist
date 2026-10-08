@@ -1,4 +1,4 @@
-import paths;
+import paths_;
 
 // A rewrite of the index changes the fiber and therefore carries transport.
 def move_in_fiber(A : U0, C : A -> U0, x : A, y : A, p : x = y, v : C(x)) : C(y) {

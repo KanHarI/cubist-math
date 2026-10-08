@@ -24,7 +24,7 @@ test("nested pairs, equality carriers and line comments keep their boundaries", 
   const source = `// Header
 def copy(A:U0,x:A):A and A{exact (x, // first component
 x);}
-def equality := 0 =[Nat] 0; // keep this comment
+def equality_ := 0 =[Nat] 0; // keep this comment
 `;
   const formatted = formatCubist(source, { printWidth: 40 });
   assert.match(formatted, /x, \/\/ first component\n\s+x/);

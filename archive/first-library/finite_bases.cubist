@@ -127,13 +127,13 @@ def standard_basis(K : AlgebraicField, n : Nat) : FiniteBasis(K, CoordinateSpace
 
 def basis_expansion(K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n)) :
   LinearMap(K, CoordinateSpace(K, n), V) {
-  obtain (expand, coordinates, left, right) := basis;
+  obtain (expand, coordinates, left_, right_) := basis;
   exact expand;
 }
 
 def basis_coordinates(K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n)) :
   LinearMap(K, V, CoordinateSpace(K, n)) {
-  obtain (expand, coordinates, left, right) := basis;
+  obtain (expand, coordinates, left_, right_) := basis;
   exact coordinates;
 }
 
@@ -145,8 +145,8 @@ def basis_expansion_coordinates(
     K, CoordinateSpace(K, n), V, basis_expansion(K, V, n, basis),
     linear_map(K, V, CoordinateSpace(K, n), basis_coordinates(K, V, n, basis), x)
   ) = x {
-  obtain (expand, coordinates, left, right) := basis;
-  exact right(x);
+  obtain (expand, coordinates, left_, right_) := basis;
+  exact right_(x);
 }
 
 def basis_coordinates_expansion(
@@ -157,8 +157,8 @@ def basis_coordinates_expansion(
     K, V, CoordinateSpace(K, n), basis_coordinates(K, V, n, basis),
     linear_map(K, CoordinateSpace(K, n), V, basis_expansion(K, V, n, basis), c)
   ) = c {
-  obtain (expand, coordinates, left, right) := basis;
-  exact left(c);
+  obtain (expand, coordinates, left_, right_) := basis;
+  exact left_(c);
 }
 
 def basis_coordinates_unique(

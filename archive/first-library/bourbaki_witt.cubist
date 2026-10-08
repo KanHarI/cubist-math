@@ -224,11 +224,11 @@ def bourbaki_witt(
   let chain := tower_is_chain(A, le, laws, complete, f, progressive);
   let s := chain_sup(A, le, complete, T, chain);
   let member := tower_sup(A, le, complete, f, T, chain, (fun (x : A, tx : T(x)) => tx));
-  let next := tower_step(A, le, complete, f, s, member);
+  let next_ := tower_step(A, le, complete, f, s, member);
   exact (
     s,
     order_antisym(
-      A, le, laws, f(s), s, chain_sup_upper(A, le, complete, T, chain, f(s), next), progressive(s)
+      A, le, laws, f(s), s, chain_sup_upper(A, le, complete, T, chain, f(s), next_), progressive(s)
     )
   );
 }

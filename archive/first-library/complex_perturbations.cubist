@@ -28,15 +28,15 @@ def complex_perturbation_add(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   oldLeft, freshLeft, oldRight, freshRight : Complex(F), r, s : F,
-  left : ComplexPerturbation(F, addF, negF, lt, oldLeft, freshLeft, r),
-  right : ComplexPerturbation(F, addF, negF, lt, oldRight, freshRight, s)
+  left_ : ComplexPerturbation(F, addF, negF, lt, oldLeft, freshLeft, r),
+  right_ : ComplexPerturbation(F, addF, negF, lt, oldRight, freshRight, s)
 ) :
   ComplexPerturbation(
     F, addF, negF, lt, complex_add(F, addF, oldLeft, oldRight),
     complex_add(F, addF, freshLeft, freshRight), addF(r, s)
   ) {
-  obtain (e, leftPath, leftBound) := left;
-  obtain (f, rightPath, rightBound) := right;
+  obtain (e, leftPath, leftBound) := left_;
+  obtain (f, rightPath, rightBound) := right_;
   let addC := complex_add(F, addF);
   let ringC := complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
   let rewriteLeft := cong((fun (v : Complex(F)) => addC(v, freshRight)), leftPath);

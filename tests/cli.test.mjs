@@ -27,8 +27,8 @@ test("CLI reports assumptions and evaluates closed terms", async t => {
   await writeFile(join(directory, "sample.cubist"), `import primes;
 import classical; use nat;
 def double(n : Nat) := n + n;
-def recover(P : U0, prop : Proposition(P), nn : (P -> Void) -> Void) : P {
-  exact double_negation(P, prop, nn);
+def recover(P : U0, prop_ : Proposition(P), nn : (P -> Void) -> Void) : P {
+  exact double_negation(P, prop_, nn);
 }
 evaluate double(2) expecting 4;
 `);

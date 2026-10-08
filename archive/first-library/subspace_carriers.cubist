@@ -11,10 +11,10 @@ def subspace_as_subgroup(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K,
   let P := subspace_members(K, V, S);
   let inverseClosed :
     forall x : X. forall y : X. P(x) -> vector_add(K, V, y, x) = vector_zero(K, V) -> P(y) {
-    intro x, y, member, inverse;
+    intro x, y, member, inverse_;
     let same :=
       group_inverse_unique(
-        X, vector_zero(K, V), vector_add(K, V), group_laws(G), x, y, vector_neg(K, V, x), inverse,
+        X, vector_zero(K, V), vector_add(K, V), group_laws(G), x, y, vector_neg(K, V, x), inverse_,
         group_inverse_right(G, x)
       );
     exact along P by sym(same) from subspace_neg(K, V, S, x, member);

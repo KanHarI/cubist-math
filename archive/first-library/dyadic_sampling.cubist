@@ -191,9 +191,9 @@ def dyadic_interval_samples_step(
   );
   let leftData := previous(a, midpoint, leftOrdered);
   let rightData := previous(midpoint, b, rightOrdered);
-  let left :=
+  let left_ :=
     dyadic_samples_piece(F, zero, one, addF, negF, lt, half, depth, a, midpoint, leftData);
-  let right :=
+  let right_ :=
     dyadic_samples_piece(F, zero, one, addF, negF, lt, half, depth, midpoint, b, rightData);
   let leftCount :=
     dyadic_samples_count(F, zero, one, addF, negF, lt, half, depth, a, midpoint, leftData);
@@ -211,7 +211,7 @@ def dyadic_interval_samples_step(
     along(
       (
         fun (r : F) => SubdivisionTaggedValid(
-          I, IntervalTaggedWidth(F, zero, one, addF, negF, lt, r), a, midpoint, left
+          I, IntervalTaggedWidth(F, zero, one, addF, negF, lt, r), a, midpoint, left_
         )
       )
     ) by cong(dyadic_width(F, half, depth), leftWidth) from leftValid;
@@ -219,20 +219,20 @@ def dyadic_interval_samples_step(
     along(
       (
         fun (r : F) => SubdivisionTaggedValid(
-          I, IntervalTaggedWidth(F, zero, one, addF, negF, lt, r), midpoint, b, right
+          I, IntervalTaggedWidth(F, zero, one, addF, negF, lt, r), midpoint, b, right_
         )
       )
     ) by cong(dyadic_width(F, half, depth), rightWidth) from rightValid;
   let valid :=
     subdivision_tagged_valid_join(
-      I, condition, a, midpoint, b, left, right, leftBounds, rightBounds
+      I, condition, a, midpoint, b, left_, right_, leftBounds, rightBounds
     );
   let count :=
     trans(
-      cong((fun (n : Nat) => n + subdivision_count(I, midpoint, b, right)), leftCount),
+      cong((fun (n : Nat) => n + subdivision_count(I, midpoint, b, right_)), leftCount),
       cong((fun (n : Nat) => dyadic_count(depth) + n), rightCount)
     );
-  exact (join_subdivisions(I, a, midpoint, b, left, right), count, valid);
+  exact (join_subdivisions(I, a, midpoint, b, left_, right_), count, valid);
 }
 
 // Recursively construct all sampling data, rather than assume a fine partition.

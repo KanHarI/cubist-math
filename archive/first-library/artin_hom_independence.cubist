@@ -10,14 +10,14 @@ def field_mul_left_cancel_nonzero(
 ) :
   x = y {
   obtain (ring, nontrivial, inverses) := af_laws(L);
-  obtain (b, inverse) := inverses(a, nonzero);
+  obtain (b, inverse_) := inverses(a, nonzero);
   let reduce : forall z : af_carrier(L). field_mul(L, b, field_mul(L, a, z)) = z {
     intro z;
     exact trans(
       sym(scalar_mul_assoc(L, b, a, z)),
       trans(
         cong((fun (c : af_carrier(L)) => field_mul(L, c, z)), scalar_mul_comm(L, b, a)),
-        trans(cong((fun (c : af_carrier(L)) => field_mul(L, c, z)), inverse), scalar_mul_one(L, z))
+        trans(cong((fun (c : af_carrier(L)) => field_mul(L, c, z)), inverse_), scalar_mul_one(L, z))
       )
     );
   }

@@ -36,10 +36,10 @@ def splitting_root_image(
   let ch := field_embedding_compose(K, L, T, e, h);
   let factor :
     s = polynomial_mul(T, polynomial_constant(T, scalar), linear_factor_product(T, n, rootsT)) {
-    obtain (rs, b, equality) := polynomial_splitting_map(
+    obtain (rs, b, equality_) := polynomial_splitting_map(
       L, T, j, q, n, typed(PolynomialSplitting(L, q, n), (roots, a, equation))
     );
-    exact equality;
+    exact equality_;
   }
   let rootLocal := splitting_listed_root(L, q, n, roots, a, equation, i);
   let rootBase := trans(sym(polynomial_eval_mapped(K, L, e, p, roots(i))), rootLocal);
@@ -57,8 +57,8 @@ def splitting_root_image(
   let nonzeroS := polynomial_map_nonzero(L, T, j, q, polynomial_map_nonzero(K, L, e, p, nonzero));
   let located := splitting_root_index(T, s, n, rootsT, scalar, factor, nonzeroS, y, rootS);
   let include : (exists k : Fin(n). rootsT(k) = y) -> SubfieldImage(L, T, j, subfield_top(L), y) {
-    intro witness;
-    obtain (k, same) := witness;
+    intro witness_;
+    obtain (k, same) := witness_;
     exact (roots(k), tt, same);
   }
   exact mere_eliminate(
@@ -88,16 +88,16 @@ def splitting_field_embedding_normal(
   let included : forall z : af_carrier(L). P(z) -> Q(z) {
     intro z, member;
     let base : (exists a : af_carrier(K). field_embedding_map(K, L, e, a) = z) -> Q(z) {
-      intro witness;
-      obtain (c, same) := witness;
+      intro witness_;
+      obtain (c, same) := witness_;
       let u := field_embedding_map(K, L, e, c);
       let commutes :=
         cong((fun (d : FieldEmbedding(K, T)) => field_embedding_map(K, T, d, c)), triangle);
       exact (u, tt, trans(sym(commutes), cong(g, same)));
     }
     let root : (exists i : Fin(n). roots(i) = z) -> Q(z) {
-      intro witness;
-      obtain (i, same) := witness;
+      intro witness_;
+      obtain (i, same) := witness_;
       exact along Q by same from splitting_root_image(
         K, L, T, e, j, h, triangle, p, nonzero, n, roots, a, equation, i
       );

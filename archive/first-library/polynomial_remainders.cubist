@@ -218,7 +218,7 @@ def polynomial_remainder_neg(K : AlgebraicField, M : PolynomialModulus(K), p : P
   ) {
   let r := polynomial_remainder(K, M, p);
   let rn := polynomial_remainder(K, M, polynomial_neg(K, p));
-  let inverse : polynomial_add(K, rn, r) = polynomial_zero(K) := with unfolding [] {
+  let inverse_ : polynomial_add(K, rn, r) = polynomial_zero(K) := with unfolding [] {
     trans(
       sym(polynomial_remainder_add(K, M, polynomial_neg(K, p), p)),
       trans(
@@ -230,7 +230,7 @@ def polynomial_remainder_neg(K : AlgebraicField, M : PolynomialModulus(K), p : P
   exact with unfolding [] {
     group_cancel_right(
       PolynomialAdditiveGroup(K), rn, polynomial_neg(K, r), r,
-      trans(inverse, sym(polynomial_add_inverse(K, r)))
+      trans(inverse_, sym(polynomial_add_inverse(K, r)))
     )
   };
 }
@@ -271,8 +271,8 @@ def polynomial_divides_remainder_zero(
   let useQuotient :
     (exists q : Polynomial(K). p = polynomial_mul(K, D, q))
     -> polynomial_remainder(K, M, p) = polynomial_zero(K) {
-    intro witness;
-    obtain (q, equation) := witness;
+    intro witness_;
+    obtain (q, equation) := witness_;
     exact with unfolding [] {
       trans(
         cong(polynomial_remainder(K, M), trans(equation, polynomial_mul_comm(K, D, q))),

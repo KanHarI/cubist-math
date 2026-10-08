@@ -13,13 +13,13 @@ inductive Pushout(U < UU0, V < UU0, W < UU0, C : U, A : V, B : W, f : C -> A, g 
 // side and, over each push(c), a dependent path between the two cases.
 def pushout_induction(
   U < UU0, V < UU0, W < UU0, R < UU0, C : U, A : V, B : W, f : C -> A, g : C -> B,
-  P : Pushout(U, V, W, C, A, B, f, g) -> R, left : forall a : A. P(inl(a)), right : forall b : B.
+  P : Pushout(U, V, W, C, A, B, f, g) -> R, left_ : forall a : A. P(inl(a)), right_ : forall b : B.
   P(inr(b)), bridge : forall c : C.
-  PathP(fun (i : Interval) => P(push(c) @ i), left(f(c)), right(g(c))),
+  PathP(fun (i : Interval) => P(push(c) @ i), left_(f(c)), right_(g(c))),
   z : Pushout(U, V, W, C, A, B, f, g)
 ) :
   P(z) := match z as t return P(t) {
-    inl(a) => left(a);
-    inr(b) => right(b);
+    inl(a) => left_(a);
+    inr(b) => right_(b);
     push(c) @ i => bridge(c) @ i;
   };

@@ -155,10 +155,10 @@ def IsAbelian(G : Group) :=
   forall x : group_carrier(G). forall y : group_carrier(G).
   group_multiply(G, x, y) = group_multiply(G, y, x);
 
-def abelian_conjugation_trivial(G : Group, abelian : IsAbelian(G), g, x : group_carrier(G)) :
+def abelian_conjugation_trivial(G : Group, abelian_ : IsAbelian(G), g, x : group_carrier(G)) :
   group_conjugate(G, g, x) = x {
   exact trans(
-    cong((fun (z : group_carrier(G)) => group_multiply(G, z, group_inverse(G, g))), abelian(g, x)),
+    cong((fun (z : group_carrier(G)) => group_multiply(G, z, group_inverse(G, g))), abelian_(g, x)),
     group_cancel_right_value(G, x, g)
   );
 }

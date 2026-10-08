@@ -3,16 +3,16 @@
 
 import nat;
 
-def id(n : Nat) := n;
+def id_(n : Nat) := n;
 
-def local(n : Nat) : id(n) = n {
-  exact with unfolding [id] {
+def local(n : Nat) : id_(n) = n {
+  exact with unfolding [id_] {
     refl(n)
   };
 }
 
 def scoped_path(n : Nat, p : n = n) :=
-  path(fun (i : Interval) => Nat, fun (i : Interval) => with unfolding [id] {
+  path(fun (i : Interval) => Nat, fun (i : Interval) => with unfolding [id_] {
       at(p, i)
     });
 

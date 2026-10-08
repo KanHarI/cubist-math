@@ -108,7 +108,7 @@ and `use`. `use m;` puts a model's fields and notation in scope for the
 rest of a block, or of the file at its top level, a later `use` switching
 it; `m.(e)` does so for one expression; `a m.(*) b` qualifies one
 operator, with its usual precedence, and `m.(*)` alone is the operation.
-A parent's operator is reached through its label, `x R.additive.(*) y` on
+A parent's operator is reached through its label, `x R.additive_.(*) y` on
 a model, `magma.(x * x)` and `x magma.(*) y` inside a theory. `open m;`,
 its earlier spelling, migrates in two commits (E834 for a `use` of no
 model; E835, E836 for a qualifier that is no model or an operator its
@@ -361,7 +361,7 @@ precedence and associativity, so `a G.(+) b G.(+) c` is
 `(a G.(+) b) G.(+) c`. `G.(-) x` is the unary form, and `G.(+)` alone is
 the operation as a function, as an argument to a fold. Parentheses that
 hold a lone operator are this form; anything else in them is `G.(e)`. A
-parent's operator is reached through its label, `x R.additive.(*) y`.
+parent's operator is reached through its label, `x R.additive_.(*) y`.
 Only the operator is qualified: `a` and `b` are read where they stand,
 not in `G`. Whether they should be read in `G`'s notation instead, as in
 `G.(a + b)`, is open. The notation roadmap lists every way to reach another
@@ -584,7 +584,7 @@ theory CommMonoid extends Monoid {
 }
 
 theory CommRing extends
-    additive : AbelianGroup(M := R, mul := add notation x + y, one := zero, inv := neg,
+    additive_ : AbelianGroup(M := R, mul := add notation x + y, one := zero, inv := neg,
       mul_assoc := add_assoc, one_mul := zero_add, mul_one := add_zero, inv_mul := neg_add,
       mul_comm := add_comm),
     multiplicative : CommMonoid(M := R) {
@@ -625,6 +625,11 @@ homomorphisms preserve its parents' operations too, and `T.Hom` has the
 forgetful map to each parent's homomorphisms, `f.p`.
 
 ## Elaboration
+
+The [reserved-name policy](../guides/keywords.md) applies to these generated
+interfaces and to the planned deriving vocabulary: fixed generated names
+cannot be used as user fields or binders. Generated members remain callable,
+and dynamically formed names still require collision checks before publication.
 
 A theory expands, before checking, into the definitions above, in the
 module that declares it, in order: the record and its constructor, the

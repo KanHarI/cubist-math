@@ -7,6 +7,8 @@ import { currentSyntax, historicalSource } from "../web/cubist/legacy-syntax.mjs
 import { sourceText } from "../web/cubical-source-text.mjs";
 import { cubicalMathTree, cubicalText } from "../web/cubical-notation.mjs";
 import { testModule } from "./check-program.mjs";
+import { CubicalProgram } from "../web/cubical-program.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 
 // L1.5 (HoTT A8 and B4): projections p.1 and p.2, and let's stated type and
 // proof block, which replaced have, show and suffices on 2026-09-30. Each
@@ -110,6 +112,89 @@ test("a historical nat without a notation is read with the one it had in effect,
   assert.match(historicalSource("inductive Nat : U0 { zero; succ(n : Nat); }\n", "nat"), /x < y := le\(succ\(x\), y\);/);
   const declared = "inductive Nat : U0 { zero; succ(n : Nat); }\nnotation nat {\n  numeral(n : Nat) := n;\n}\n";
   assert.equal(historicalSource(declared, "nat"), declared);
+});
+
+test("a historical module's binders named left or right are renamed, as the injections became reserved on 2026-10-06", () => {
+  const old = "def f(left, right : Nat, p : Unit or Nat) : Nat := match p { left u => left; right n => right(n); };\n"
+    + "def g : Unit or Nat := left(tt);\n";
+  // The binders and what they shadow are renamed; sum patterns and the
+  // injection elsewhere stay.
+  assert.equal(historicalSource(old, "old", { implicitNat: false, minusReverses: false }),
+    "def f(left_, right_ : Nat, p : Unit or Nat) : Nat := match p { left u => left_; right n => right_(n); };\n"
+    + "def g : Unit or Nat := left(tt);\n");
+});
+
+test("a historical module's binders named typed or evaluate are renamed, as both became reserved on 2026-10-07", () => {
+  const old = "def g := typed(Nat, 0);\ndef typed(n, m : Nat) : Nat := n;\ndef f(typed : Nat) : Nat := typed;\n"
+    + "def k := typed(1, 2);\ndef h(n : Nat) : Nat {\n  let evaluate : Nat := n;\n  exact evaluate;\n}\n"
+    + "evaluate h(0) expecting 0;\nprint(evaluate(h(0)));\n";
+  // The declaration and the binders, and the references they shadow, are
+  // renamed: a module's own typed holds in the items after it. An
+  // ascription before it, an evaluate directive and a print stay.
+  assert.equal(historicalSource(old, "old", { implicitNat: false, minusReverses: false }),
+    "def g := typed(Nat, 0);\ndef typed_(n, m : Nat) : Nat := n;\ndef f(typed_ : Nat) : Nat := typed_;\n"
+    + "def k := typed_(1, 2);\ndef h(n : Nat) : Nat {\n  let evaluate_ : Nat := n;\n  exact evaluate_;\n}\n"
+    + "evaluate h(0) expecting 0;\nprint(evaluate(h(0)));\n");
+});
+
+// #186's review: a reference is renamed only where a binder of its name is
+// in scope, as the translator reads scopes; elsewhere it is the injection.
+test("a historical module's references are renamed only within their binder's scope", () => {
+  const read = source => historicalSource(source, "old", { implicitNat: false, minusReverses: false });
+  // A let's own value is outside its scope, and a lambda's ends with its body.
+  assert.equal(read("def f : Unit or Unit {\n  let left : Unit or Unit := left(tt);\n  exact left;\n}\n"),
+    "def f : Unit or Unit {\n  let left_ : Unit or Unit := left(tt);\n  exact left_;\n}\n");
+  assert.equal(read("def g := (fun (left : Unit) => left, left(tt));\n"), "def g := (fun (left_ : Unit) => left_, left(tt));\n");
+  // A clause's variables, a bare one too, hold in their clause only.
+  assert.equal(read("def h(n : Nat) : Unit or Nat := match n { zero => left(tt); succ(left) => right(left); };\n"
+    + "def k(n : Nat) : Unit or Nat := match n { right => left(right); };\n"),
+    "def h(n : Nat) : Unit or Nat := match n { zero => left(tt); succ(left_) => right(left_); };\n"
+    + "def k(n : Nat) : Unit or Nat := match n { right_ => left(right_); };\n");
+  // A declaration holds in itself, where a recursive one calls it.
+  assert.equal(read("def evaluate(n : Nat) : Nat := match n { zero => 0; succ(k) => evaluate(k); };\n"),
+    "def evaluate_(n : Nat) : Nat := match n { zero => 0; succ(k) => evaluate_(k); };\n");
+  // A parameter is named in a call's named argument, and a field after a dot.
+  assert.equal(read("def p(left : Nat) : Nat := left;\ndef q := p(left := 1);\n"
+    + "theory T(U < UU0) {\n  M : set U;\n  right : M;\n  law fixed(x : M) : x = right;\n}\ndef r(m : T(U0)) := m.right;\n"),
+    "def p(left_ : Nat) : Nat := left_;\ndef q := p(left_ := 1);\n"
+    + "theory T(U < UU0) {\n  M : set U;\n  right_ : M;\n  law fixed(x : M) : x = right_;\n}\ndef r(m : T(U0)) := m.right_;\n");
+});
+
+// #186's second review: a constructor holds in the constructors after it.
+// A clause's constructor is read by the matched type: a sum's injections
+// are left x, and left(…) where the module has declared no constructor left.
+test("a historical module's constructors are renamed in the constructors after them and in clauses", () => {
+  const read = source => historicalSource(source, "old", { implicitNat: false, minusReverses: false });
+  assert.equal(read("inductive T : U0 {\n  left;\n  loop : left = left;\n}\n"), "inductive T : U0 {\n  left_;\n  loop : left_ = left_;\n}\n");
+  // Each of these checks before the reservation and, read so, after it.
+  const sum = "def g(x : Unit or Nat) : Nat := match x return Nat { left u => zero; right n => n; };\n";
+  assert.equal(read("def s(x : Unit or Nat) : Nat { match x { left(u) => { exact zero; } right(n) => { exact n; } } }\n"
+    + "inductive E { left(n : Nat); typed(b : Unit); }\ninductive W { base; wrap(e : E); right : base = base; }\n"
+    + "def f(x : Unit or Nat, w : W) : Nat := match x, w return Nat { y, base => zero; y, wrap(left(n)) => n; "
+    + "y, wrap(typed(b)) => zero; y, right @ i => zero; };\n" + sum),
+  "def s(x : Unit or Nat) : Nat { match x { left(u) => { exact zero; } right(n) => { exact n; } } }\n"
+    + "inductive E { left_(n : Nat); typed_(b : Unit); }\ninductive W { base; wrap(e : E); right_ : base = base; }\n"
+    + "def f(x : Unit or Nat, w : W) : Nat := match x, w return Nat { y, base => zero; y, wrap(left_(n)) => n; "
+    + "y, wrap(typed_(b)) => zero; y, right_ @ i => zero; };\n" + sum);
+});
+
+test("historical sum patterns and generated squashes keep their matched type after a same-named constructor", async t => {
+  const source = "inductive E { left(x : Unit); right(x : Unit); }\n"
+    + "def Side := Unit or Unit;\n"
+    + "def f(s : Side) : Unit { match s { left(x) => { exact x; } right(y) => { exact y; } } }\n"
+    + "inductive Q : prop { squash; }\n"
+    + "def keep(q : Q) : Q := match q { squash => squash; Q.squash(x, y) @ i => Q.squash(keep(x), keep(y)) @ i; };\n"
+    + "inductive T : prop { point; }\n"
+    + "def g(t : T) : T := match t { point => point; squash(x, y) @ i => T.squash(g(x), g(y)) @ i; };\n";
+  const read = historicalSource(source, "old", { implicitNat: false, minusReverses: false });
+  assert.match(read, /left_\(x : Unit\); right_\(x : Unit\)/);
+  assert.match(read, /match s \{ left\(x\)/);
+  assert.match(read, /match q \{ squash_ => squash_; Q.squash/);
+  assert.match(read, /match t \{ point => point; squash\(x, y\)/);
+  const program = new CubicalProgram(module, sourceReader());
+  t.after(() => program.dispose());
+  const result = await program.check(read, "history_sum");
+  assert.equal(result.complete, true, JSON.stringify(program.gaps));
 });
 
 test("a historical module reverses with ~ where it wrote prefix -, as every module did before 2026-10-06", () => {

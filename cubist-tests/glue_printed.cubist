@@ -2,7 +2,7 @@
 // checks. A printed path carries no type: the declaration gives it.
 // tests/cubist-glue.test.mjs checks that the copy below is what the print
 // shows.
-import glue;
+import glue_;
 
 // Output: fun (A : U0) => path i => Glue(A, face(i, 0, A, (fun (x : A) => x, fun (y : A) => ((y,
 //   refl(y)), fun (p : exists x : A. y = x) => path i => (p.2 @ i, path j => p.2 @ i & j)))),
