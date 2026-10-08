@@ -41,7 +41,7 @@ const root = new URL("../", import.meta.url);
 export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // Bumped when a workload, a phase or the report's meaning changes: a
 // recorded baseline of another version is not comparable.
-export const version = 1;
+export const version = 2;
 
 const euclid = "import euclid; use nat;", circle = "import circle; use nat;";
 // The archived Euclid construction and its prerequisites stay fixed for
@@ -153,11 +153,68 @@ function syntaxDepth(kernel, first, last) {
     kinds: Object.fromEntries([...kinds].sort((a, b) => b[1] - a[1]).slice(0, 8)) };
 }
 
+// A digest of a normal form as checker.verify decodes it
+// (web/cubical-syntax.mjs): the whole term, where a display is cut at 1000
+// characters. Bound variables and dimensions are numbered by binding depth,
+// so renaming them leaves it unchanged, and a formula's clauses are sorted.
+const termBinders = new Set(["Pi", "Lam", "Sigma", "LPi", "LLam"]);
+// The fields a dimension binder binds; a composition's system binds its
+// tubes' terms, not their faces.
+const dimensionBinders = { Path: ["family"], PLam: ["family", "body"], Trans: ["family"], Comp: ["family", "system"], HComp: ["system"] };
+export function normalDigest(term) {
+  const hash = createHash("sha256"), parts = [], terms = { names: new Map(), depth: 0 }, dims = { names: new Map(), depth: 0 };
+  const write = part => { parts.push(part); if (parts.length >= 65536) hash.update(`${parts.splice(0).join("\0")}\0`); };
+  // `visit` under a binder of `name`, numbered by the binders of its sort around it.
+  const under = (scope, name, visit) => {
+    const had = scope.names.has(name), outer = scope.names.get(name);
+    scope.names.set(name, scope.depth++);
+    visit();
+    scope.depth--;
+    if (had) scope.names.set(name, outer); else scope.names.delete(name);
+  };
+  const named = (scope, name) => scope.names.has(name) ? `#${scope.names.get(name)}` : `free ${JSON.stringify(name)}`;
+  const literal = text => { const at = text.lastIndexOf(":"); return `${named(dims, text.slice(0, at))}:${text.slice(at + 1)}`; };
+  const walk = value => {
+    if (value === null || typeof value !== "object") return write(JSON.stringify(value) ?? "undefined");
+    if (Array.isArray(value)) {
+      // A formula: clauses of literals such as `d3:1`.
+      if (value.length && value.every(Array.isArray))
+        return write(`formula ${value.map(clause => clause.map(literal).sort().join("&")).sort().join("|")}`);
+      write("[");
+      value.forEach(walk);
+      return write("]");
+    }
+    // A level variable decodes as a term variable does.
+    if (value.tag === "Var") return write(`Var ${named(terms, value.name)}`);
+    const binds = termBinders.has(value.tag) ? ["body"] : dimensionBinders[value.tag] ?? [];
+    const binder = termBinders.has(value.tag) ? "name" : binds.length ? "dim" : null;
+    write(`{${value.tag ?? ""}`);
+    for (const [key, item] of Object.entries(value)) {
+      if (key === "tag" || key === binder) continue;
+      write(key);
+      if (!binds.includes(key)) walk(item);
+      else if (binder === "name") under(terms, value.name, () => walk(item));
+      else if (key !== "system") under(dims, value.dim, () => walk(item));
+      else {
+        write("[");
+        for (const tube of item) { write("face"); walk(tube.face); write("term"); under(dims, value.dim, () => walk(tube.term)); }
+        write("]");
+      }
+    }
+    write("}");
+  };
+  walk(term);
+  hash.update(parts.join("\0"));
+  return hash.digest("hex").slice(0, 16);
+}
+
 // Observe a program's phases while `run` runs: each phase's own calls,
-// failures, time, kernel work and arena growth, and the run's peak arena.
+// failures, time, kernel work and arena growth, the run's peak arena, and
+// the normal form of the term it evaluated: the first verified at the
+// entry's top level, before any expected value or pattern.
 async function profiled(program, run, { depth = false } = {}) {
   const kernel = program.kernel, checker = program.checker, totals = {}, stack = [], restore = [], depths = {};
-  let peakNodes = 0, peakBytes = 0, normal = null;
+  let peakNodes = 0, peakBytes = 0, normal = null, evaluated = null;
   const read = () => { const r = reading(kernel); peakNodes = Math.max(peakNodes, r.nodes); peakBytes = Math.max(peakBytes, r.bytes); return r; };
   const open = name => { const frame = { name, start: read(), inner: zero }; stack.push(frame); return frame; };
   const close = (frame, failed) => {
@@ -191,7 +248,7 @@ async function profiled(program, run, { depth = false } = {}) {
     restore.push(() => { if (own) owner[method] = original; else delete owner[method]; });
   };
   wrap(Translator.prototype, "term", "elaborate", () => top() === "other");
-  wrap(checker, "verify", "inventory", () => true);
+  wrap(checker, "verify", "inventory", () => true, result => { if (!evaluated && top() === "other") evaluated = result.normal; });
   wrap(checker, "checkSyntax", "check", () => top() === "inventory");
   wrap(kernel, "normalize", "normalize", () => top() !== "normalize", result => { normal = result; });
   wrap(checker.syntax, "decode", "decode", id => top() === "inventory" && id === normal);
@@ -205,17 +262,22 @@ async function profiled(program, run, { depth = false } = {}) {
     for (const undo of restore.reverse()) undo();
     restore.length = 0;
     const entry = Object.values(totals).reduce((sum, total) => plus(sum, total), zero);
-    return { totals, entry, peakNodes, peakBytes, ...(depth ? { depths } : {}) };
+    return { totals, entry, peakNodes, peakBytes, evaluated, ...(depth ? { depths } : {}) };
   }
 }
 
-// What an entry gave: a value, or its first error, with its code.
-const outcomeOf = results => {
+// An outcome: a value or an error, with its code; its text, a preview past
+// 160 characters, with the whole text's length and hash; and the digest of
+// the normal form evaluated, when the entry reached one. The REPL displays
+// at most 1000 characters of a value, so only the digest covers a large one.
+const outcomeFor = (failed, text, normal = null) => ({ status: failed ? "error" : "value",
+  ...(failed ? { code: /^([EKW]\d+):/.exec(text)?.[1] ?? null } : {}),
+  text: text.length > 160 ? `${text.slice(0, 159)}…` : text, length: text.length,
+  sha256: createHash("sha256").update(text).digest("hex").slice(0, 16), ...(normal ? { normal: normalDigest(normal) } : {}) });
+// What an entry gave: its values, or its first error.
+const outcomeOf = (results, normal = null) => {
   const error = results.find(result => result.kind === "error");
-  const text = error ? error.text : results.map(result => result.text).join("\n");
-  return { status: error ? "error" : "value", ...(error ? { code: /^([EKW]\d+):/.exec(text)?.[1] ?? null } : {}),
-    text: text.length > 160 ? `${text.slice(0, 159)}…` : text, length: text.length,
-    sha256: createHash("sha256").update(text).digest("hex").slice(0, 16) };
+  return outcomeFor(Boolean(error), error ? error.text : results.map(result => result.text).join("\n"), normal);
 };
 const rounded = run => Object.fromEntries(Object.entries(run).map(([key, value]) =>
   [key, typeof value === "number" && key === "ms" ? Number(value.toFixed(3)) : value]));
@@ -225,7 +287,7 @@ const rounded = run => Object.fromEntries(Object.entries(run).map(([key, value])
 async function runEntry(program, session, workload, { depth = false } = {}) {
   const measured = await profiled(program, () => session.run(workload.entry), { depth });
   if (measured.error) throw measured.error;
-  const run = { outcome: outcomeOf(measured.result), phases: Object.fromEntries(Object.entries(measured.totals).map(([name, total]) => [name, rounded(total)])),
+  const run = { outcome: outcomeOf(measured.result, measured.evaluated), phases: Object.fromEntries(Object.entries(measured.totals).map(([name, total]) => [name, rounded(total)])),
     entry: rounded(measured.entry), peakNodes: measured.peakNodes, peakBytes: measured.peakBytes, ...(depth ? { depths: measured.depths } : {}) };
   if (workload.series !== "scratch") return run;
   if (run.outcome.status === "error") throw new Error(`${workload.id}: ${run.outcome.text}`);
@@ -246,7 +308,7 @@ async function runEntry(program, session, workload, { depth = false } = {}) {
   const end = reading(program.kernel), ms = end.ms - started;
   scratch.executeMs ??= ms;
   Object.assign(scratch, { readbackMs: ms - scratch.executeMs, stage,
-    outcome: failure ? { status: "error", code: null, text: failure.message } : { status: "value", text: String(value) },
+    outcome: failure ? outcomeFor(true, failure.message) : outcomeFor(false, String(value)),
     stats: { ...evaluator.stats }, kernel: rounded(minus(end, before)) });
   scratch.executeMs = Number(scratch.executeMs.toFixed(3)); scratch.readbackMs = Number(scratch.readbackMs.toFixed(3));
   return scratch;
@@ -376,7 +438,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       settings: { samples, warm, depth: !args.includes("--no-depth"), optimizations: "the CLI's defaults", stack: "Node's default" },
       method: "Each sample is a new Node process that loads the kernel, runs the workload's setup entries in a new REPL session "
         + "(web/repl-session.mjs, as the CLI does) and its entry once cold, then the warm runs in the same session. A further "
-        + "process times the cold entry with no phase observed, for the observation's cost. Phases are observed by wrapping the methods named in `phases`; a phase's figures exclude the "
+        + "process times the cold entry with no phase observed, for the observation's cost. An outcome's text is a preview past 160 "
+        + "characters, with the whole text's length and hash; the REPL displays at most 1000 characters of a value, so a kernel "
+        + "outcome also digests the whole normal form evaluated, its bound variables and dimensions numbered by binding depth. "
+        + "Phases are observed by wrapping the methods named in `phases`; a phase's figures exclude the "
         + "phases nested in it. Counters are the kernel's cumulative work and the arena's net growth, compared across the cold "
         + "samples; times are medians over samples on this machine, and include the observation's wrappers. Failed entries count "
         + "the work and time spent before they failed. The depth sample repeats the cold entry, measuring the syntax depth "

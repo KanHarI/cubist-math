@@ -10,7 +10,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
-import { workloads, measureWorkload, deterministic, fixture, version, contractOf, phases } from "../tools/evaluation-baseline.mjs";
+import { workloads, measureWorkload, deterministic, fixture, version, contractOf, phases, normalDigest } from "../tools/evaluation-baseline.mjs";
 
 const recorded = JSON.parse(await readFile(fixture, "utf8"));
 const module = await createCubical();
@@ -21,16 +21,22 @@ const cold = async id => {
   return runs.get(id);
 };
 const recordOf = id => recorded.workloads.find(workload => workload.id === id);
+// Recorded by the harness, not run here: the experiment takes a second and
+// 1.2 GiB for euclid(5), and how deep it gets on euclid(6) before the host's
+// stack overflows depends on how far the JIT has compiled it.
+const recordedOnly = new Set(["scratch-euclid-5-prime", "scratch-euclid-6-prime"]);
 // Growth allowed in a deterministic counter: a quarter, and a little for small counts.
 const bound = value => Math.ceil(value * 1.25) + 64;
 const counters = ["instructions", "instructionSteps", "queries", "querySteps", "failedQueries", "nodes"];
-// Kernel outcomes retain the full rendered length and hash even when text is
-// only a preview. Also compare text directly when the report holds it whole.
+// An outcome keeps the whole text's length and hash when its text is only a
+// preview, and the REPL displays at most 1000 characters of a value: the
+// digest of the normal form evaluated covers the rest.
 const sameOutcome = (live, record, label) => {
   assert.equal(live.status, record.status, label);
   assert.equal(live.code, record.code, label);
   assert.equal(live.length, record.length, `${label}: rendered length`);
   assert.equal(live.sha256, record.sha256, `${label}: rendered hash`);
+  assert.equal(live.normal, record.normal, `${label}: normal form`);
   if (record.text.length === record.length) assert.equal(live.text, record.text, label);
 };
 
@@ -44,7 +50,7 @@ test("the recorded baseline covers every workload, at this version, each determi
 });
 
 test("each workload's outcome, normalizations and comparisons are the recorded ones; its work grows by at most a quarter", async () => {
-  for (const workload of workloads) {
+  for (const workload of workloads.filter(workload => !recordedOnly.has(workload.id))) {
     const live = await cold(workload.id), record = recordOf(workload.id), label = workload.id;
     if (workload.series === "scratch") {
       sameOutcome(live.outcome, record.outcome, label);
@@ -69,6 +75,10 @@ test("each workload's outcome, normalizations and comparisons are the recorded o
 test("plain REPL evaluation normalizes and compares twice; print normalizes once and shows the same value", async () => {
   const repl = await cold("euclid-3"), print = await cold("euclid-3-print");
   assert.equal(repl.outcome.sha256, print.outcome.sha256);
+  assert.ok(repl.outcome.normal);
+  assert.equal(repl.outcome.normal, print.outcome.normal);
+  // Shown, the value is cut; its normal form is far larger.
+  assert.equal(repl.outcome.length, 1000);
   assert.match(repl.outcome.text, /^\(7, /);
   assert.equal(repl.phases.normalize.calls, 2);
   assert.equal(repl.phases.compare.calls, 2);
@@ -94,6 +104,7 @@ test("the depth failures are reproduced, with the work done before them", async 
   assert.equal(compared.outcome.code, "K344");
   assert.equal(compared.phases.normalize.failures, 0);
   assert.equal(compared.phases.compare.failures, 1);
+  assert.equal(compared.outcome.normal, printed.outcome.normal);
   assert.equal((await cold("multiply-2-254")).outcome.text, "508");
   assert.equal((await cold("multiply-2-256-print")).outcome.code, "K344");
 });
@@ -106,16 +117,38 @@ test("counters are deterministic: a new program repeats a run's", async () => {
 });
 
 test("the closure experiment is a separate, untrusted series that asks the kernel nothing", async () => {
-  const expected = { 3: "7", 4: "5", 5: "11" };
+  const expected = { 3: "7", 4: "5" };
   for (const [n, prime] of Object.entries(expected)) {
     const id = `scratch-euclid-${n}-prime`, run = await cold(id);
     assert.equal(contractOf(workloads.find(workload => workload.id === id)), "scratch");
-    assert.deepEqual(run.outcome, { status: "value", text: prime }, id);
+    assert.deepEqual([run.outcome.status, run.outcome.text], ["value", prime], id);
     assert.deepEqual([run.kernel.instructions, run.kernel.queries, run.kernel.nodes], [0, 0, 0], id);
     assert.ok(run.stats.forces > 0 && run.stats.hits > 0, id);
   }
+  assert.equal(recordOf("scratch-euclid-5-prime").outcome.text, "11");
   // It recurses on the host's stack, and overflows it: no controlled diagnostic yet (EVAL4).
-  const overflow = await cold("scratch-euclid-6-prime");
+  const overflow = recordOf("scratch-euclid-6-prime");
   assert.equal(overflow.outcome.status, "error");
   assert.match(overflow.outcome.text, /call stack/);
+});
+
+test("the normal-form digest covers the whole term, up to renaming", () => {
+  const v = name => ({ tag: "Var", name }), lam = (name, body) => ({ tag: "Lam", name, domain: { tag: "Unit" }, body });
+  const plam = (dim, body) => ({ tag: "PLam", dim, family: { tag: "Unit" }, body });
+  const at = (path, ...clauses) => ({ tag: "PApp", path, arg: clauses });
+  const same = (a, b) => normalDigest(a) === normalDigest(b);
+  assert.ok(same(lam("x", lam("y", v("x"))), lam("a", lam("x", v("a")))));
+  assert.ok(!same(lam("x", lam("y", v("x"))), lam("x", lam("y", v("y")))));
+  assert.ok(!same(lam("x", v("z")), lam("x", v("x"))), "a free variable is not a bound one");
+  assert.ok(same(plam("d1", plam("d2", at(v("p"), ["d1:1", "d2:0"]))), plam("d5", plam("d3", at(v("p"), ["d3:0", "d5:1"])))));
+  assert.ok(!same(plam("d1", plam("d2", at(v("p"), ["d1:1"]))), plam("d1", plam("d2", at(v("p"), ["d2:1"])))));
+  assert.ok(!same(plam("d1", at(v("p"), ["d1:1"])), plam("d1", at(v("p"), ["d1:0"]))));
+  // A composition binds its tubes' terms, not their faces.
+  const comp = (dim, face, term) => ({ tag: "Comp", dim, family: { tag: "Unit" }, system: [{ face, term }], base: { tag: "Point" } });
+  assert.ok(same(plam("d1", comp("d2", [["d1:1"]], at(v("p"), ["d2:1"]))), plam("d4", comp("d9", [["d4:1"]], at(v("p"), ["d9:1"])))));
+  assert.ok(!same(plam("d1", comp("d2", [["d1:1"]], at(v("p"), ["d2:1"]))), plam("d1", comp("d2", [["d1:1"]], at(v("p"), ["d1:1"])))));
+  // A difference anywhere in the term, however deep.
+  let deep = { tag: "Con", index: 0 }, other = { tag: "Con", index: 1 };
+  for (let i = 0; i < 2000; i++) { deep = { tag: "Inl", as: { tag: "Unit" }, value: deep }; other = { tag: "Inl", as: { tag: "Unit" }, value: other }; }
+  assert.ok(!same(deep, other));
 });
