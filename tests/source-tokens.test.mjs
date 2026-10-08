@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { numeralAt, numeralExpansion, projectionIndex, tokenStyle, keywordAt } from "../web/source-tokens.mjs";
+import { numeralAt, numeralExpansion, projectionIndex, tokenStyle } from "../web/source-tokens.mjs";
 
 test("numerals from 1 are notation for successors; 0 is the constructor itself", () => {
   assert.equal(numeralExpansion("3"), "succ(succ(succ(0)))");
@@ -28,25 +28,14 @@ test("a projection's index is not a numeral, and the removed have, show and suff
 });
 
 test("keywords and generated members keep their style at every occurrence", () => {
-  const source = `theory Ring(U < UU0) extends addition : Group(one := zero) {
-  R : set U;
-  law identity(x : R) : x = x;
-  mul(x, y : R) : R notation x * y;
-}
-section (n : Nat) { def f := n; }
-def invalid(set : Nat, model : Nat) := model;
-def square(h : T.Hom(A, B)) := h.map;
-`;
-  for (const word of ["theory", "extends", "set", "law", "notation", "section", "def", "model", "Hom", "map"]) {
-    for (const match of source.matchAll(new RegExp(`\\b${word}\\b`, "g")))
-      assert.equal(tokenStyle(word, null, keywordAt(source, match.index, word)), "keyword", word);
-  }
+  for (const word of ["theory", "extends", "set", "law", "notation", "section", "def", "model", "Hom", "map"])
+    assert.equal(tokenStyle(word, null), "keyword", word);
   for (const word of ["deriving", "isomorphisms", "morphisms", "free", "initial", "limits", "additive", "abelian",
     "fold", "gen", "squash", "IsInitial", "IsTerminal"])
-    assert.equal(tokenStyle(word, null, keywordAt(word, 0, word)), "keyword", word);
+    assert.equal(tokenStyle(word, null), "keyword", word);
 });
 
 test("renamed bindings and ordinary library names retain the reference style", () => {
   for (const word of ["law_", "set_", "model_", "inverse_", "Nat", "zero", "succ"])
-    assert.equal(tokenStyle(word, null, keywordAt(word, 0, word)), "", word);
+    assert.equal(tokenStyle(word, null), "", word);
 });

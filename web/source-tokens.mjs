@@ -18,13 +18,8 @@ export const numeralExpansion = text => /^[0-9]+$/.test(text) && Number(text) >=
 export const projectionIndex = (source, start) => source[start - 1] === "." && /\S/.test(source[start - 2] ?? " ");
 // The expansion of the numeral at `start` in `source`, if it is one.
 export const numeralAt = (source, start, text) => projectionIndex(source, start) ? null : numeralExpansion(text);
-// Keywords and language-provided forms share one palette; notation is a
-// macro, unless it stands for itself. `here` is what keywordAt says of the
-// word where it stands: true, a keyword there; false, a name there; otherwise
-// the word's usual style.
-export const tokenStyle = (text, expansion, here) =>
-  here === true || here !== false && (keywords.has(text) || builtinForms.has(text) || /^U+[0-9]+$/.test(text)) ? "keyword"
+// Keywords keep their style wherever written. Notation uses the macro
+// palette unless it expands to itself.
+export const tokenStyle = (text, expansion) =>
+  keywords.has(text) || builtinForms.has(text) || /^U+[0-9]+$/.test(text) ? "keyword"
     : expansion && expansion !== text ? "macro" : "";
-// Keywords keep their style wherever written, including invalid attempts
-// to use one as a name. Library names are styled through their references.
-export const keywordAt = (source, start, text) => languageKeywords.has(text) || undefined;

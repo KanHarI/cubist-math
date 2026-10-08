@@ -94,7 +94,7 @@ Settled on 2026-10-05:
 8. **Qualified operators.** `a G.(+) b` applies `G`'s binding of `+`,
    with `+`'s precedence and associativity; `G.(-) x` is the unary form,
    and `G.(+)` alone the operation as a function. A parent's operator is
-   reached through its label, `x R.additive.(*) y`. The operator is
+   reached through its label, `x R.additive_.(*) y`. The operator is
    qualified, not its operands
    ([core theories](core-theories.md#qualified-operators)).
 
@@ -234,7 +234,7 @@ block, or, at a file's top level, for every later declaration's statement
 and body to the end of the file (decision 7). A section groups the
 declarations a selection should cover, so there is no separate block form.
 The view selector may name a model parameter or a qualified model member,
-such as `A.additive.group`. Its binding is resolved normally and recorded;
+such as `A.additive_.group`. Its binding is resolved normally and recorded;
 the parser does not need to know whether the name denotes a view or a
 model.
 
@@ -290,7 +290,7 @@ operator or an operand:
 | `a G.(+) b` | `G`'s `+` alone; `a` and `b` are read where they stand | `x G.(*) y` |
 | `G.(-) x` | `G`'s unary operator | `R.(-) x`, a ring's negation |
 | `G.(+)` | `G`'s operation as a function | `fold(R.(+), R.zero, xs)` |
-| `p.(+)`, `p.(e)` for a parent's label | the parent's notation, as `R.additive.(*)` | `x R.additive.(*) y`, `R.add(x, y)` |
+| `p.(+)`, `p.(e)` for a parent's label | the parent's notation, as `R.additive_.(*)` | `x R.additive_.(*) y`, `R.add(x, y)` |
 | `nat.(e)` inside another notation | back to `nat` for an operand | `G.(x ^ nat.(n + 1))` |
 
 - Selections nest, and the innermost wins: in `G.(x * H.(y * z))` the
@@ -467,7 +467,7 @@ example, a ring's subtraction is derived from addition and negation, and
 its numerals from zero, one and addition:
 
 ```
-theory CommRing extends additive : AbelianGroup(
+theory CommRing extends additive_ : AbelianGroup(
   M := R, mul := add notation x + y, inv := neg notation -x, ...
 ), multiplicative : CommMonoid(M := R) {
   law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;

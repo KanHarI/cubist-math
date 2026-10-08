@@ -81,7 +81,7 @@ def nat_multiplicative :
 
 // In any commutative monoid, products regroup freely; for a ring, at its
 // multiplicative monoid, A.multiplicative, and its additive one,
-// A.additive.comm_monoid.
+// A.additive_.comm_monoid.
 section {{U < UU0}}(G : CommMonoid(U)) {
   computable def mul_left_comm(x, y, z : M) : x * (y * z) = y * (x * z) {
     calc {

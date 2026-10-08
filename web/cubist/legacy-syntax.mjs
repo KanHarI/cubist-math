@@ -1,4 +1,5 @@
 import { tokenize, parse, languageKeywords, generatedNames } from "./parser.mjs";
+import { snake } from "./theories.mjs";
 
 // Sources written before 2026-09-30 may use `have`, which `let` replaced with
 // the same forms: have name : T := term; and have name : T { … } elaborate as
@@ -106,24 +107,28 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
   const items = ast.items ?? ast.declarations;
   const declarations = [...importedDeclarations, ...items];
   const theories = new Map(declarations.filter(item => item.kind === "theory").map(item => [item.name.text, item]));
-  const userMembers = new Set(declarations.filter(item => item.kind === "theory")
-    .flatMap(item => item.fields.map(field => field.name.text)));
   const types = new Map(declarations.filter(item => item.kind === "inductive").map(item => [item.name.text, item]));
+  const constructorOwners = new Map();
+  for (const type of types.values()) for (const constructor of type.constructors)
+    if (!constructorOwners.has(constructor.name.text)) constructorOwners.set(constructor.name.text, type);
   const aliases = new Map(declarations.filter(item => item.kind === "def")
     .map(item => [item.name.text, item.value ?? (item.body?.length === 1 ? item.body[0].value : null)]));
-  const parentLabel = parent => parent.label?.text ?? parent.name.text.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+  const parentLabel = parent => parent.label?.text ?? snake(parent.name.text);
   const declarationType = item => (item.params ?? []).reduceRight((body, param) =>
     ({ kind: "forall", name: param.name, domain: param.type ?? param.bound, body, implicit: param.implicit }), item.type);
-  const fieldsOf = (theory, seen = new Set()) => {
-    if (!theory || seen.has(theory)) return new Map();
+  const fieldCache = new Map();
+  const fieldsOf = theory => {
+    if (!theory) return new Map();
+    if (fieldCache.has(theory)) return fieldCache.get(theory);
     const fields = new Map();
+    // Install before descending so an invalid cyclic hierarchy terminates too.
+    fieldCache.set(theory, fields);
     for (const parent of theory.parents) {
       const renamed = new Map(parent.renaming.map(({ from, to }) => [from.text, to.text]));
-      for (const [name, type] of fieldsOf(theories.get(parent.name.text), new Set([...seen, theory])))
+      for (const [name, type] of fieldsOf(theories.get(parent.name.text)))
         fields.set(renamed.get(name) ?? name, type);
       const label = parentLabel(parent);
       fields.set(label, { kind: "name", name: parent.name.text });
-      userMembers.add(label);
     }
     for (const field of theory.fields) fields.set(field.name.text, declarationType(field));
     return fields;
@@ -146,7 +151,7 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
       if (value.fn.name === "typed" && !scope.has("typed")) return value.args[0];
       const made = value.fn.name?.match(/^(.+)\.make$/)?.[1];
       if (theories.has(made)) return { kind: "name", name: made };
-      const owner = [...types.values()].find(type => type.constructors.some(c => c.name.text === value.fn.name));
+      const owner = constructorOwners.get(value.fn.name);
       if (owner) return { kind: "name", name: owner.name.text };
       let type = valueType(value.fn, scope);
       for (const arg of value.implicitArgs ?? []) if (type?.implicit) type = type.body;
@@ -158,7 +163,14 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
     }
     return null;
   };
-  const generatedOwner = (value, scope) => /\.(Hom|Iso)$/.test(typeName(valueType(value, scope)) ?? "");
+  const renamedMember = (value, field, scope) => {
+    if (!generatedNames.has(field)) return true;
+    const owner = typeName(valueType(value, scope));
+    if (/\.(Hom|Iso)$/.test(owner ?? "") || /\.(Hom|Iso)$/.test(value.name ?? "")) return false;
+    // An unannotated binder can be a generated Hom or Iso. Rename a fixed
+    // interface name only when its owner is known to declare that user field.
+    return theoryFields.get(owner)?.has(field) || theoryFields.get(value.name)?.has(field);
+  };
   const rename = (start, text) => { if (Object.hasOwn(renamedReserved, text)) edits.set(start, [start + text.length, renamedReserved[text]]); };
   // Binder tokens: each is renamed, and the scope they open holds them.
   const bind = (scope, tokens, type = null) => {
@@ -186,11 +198,9 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
     for (const [k, part] of rest.entries()) {
       // Generated interfaces keep their public members. A user field or
       // an imported module member is renamed with its declaration.
-      const owner = k ? rest[k - 1] : head;
       const ownerValue = { kind: "name", name: [head, ...rest.slice(0, k)].join(".") };
       const at = next(part);
-      if (at !== null && (!generatedNames.has(part) || !["Hom", "Iso"].includes(owner)
-          && !generatedOwner(ownerValue, scope) && (userMembers.has(part) || ast.imports.includes(head)))) rename(at, part);
+      if (at !== null && (renamedMember(ownerValue, part, scope) || k === 0 && ast.imports.includes(head))) rename(at, part);
     }
   };
   // A clause's constructors, nested and in each of its columns, but a sum's
@@ -285,7 +295,9 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
         return;
       case "clause": constructors(node, matched); visit(node.body, bind(scope, variables(node))); return;
       case "call": {
-        visit(node.fn, scope);
+        // Box notation synthesizes the callee from its keyword. It is not a
+        // source reference, even if a historical binder has the same name.
+        if (!node.box) visit(node.fn, scope);
         // Named arguments refer to the callee's parameters. Only a call
         // to a generated interface keeps its fixed labels; a user's map
         // parameter must follow its declaration even in an unrelated theory.
@@ -302,7 +314,7 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
         rename(node.name.start, node.name.text);
         visit(node.value, scope); return;
       case "member":
-        if (!generatedNames.has(node.field.text) || !generatedOwner(node.value, scope) && userMembers.has(node.field.text))
+        if (renamedMember(node.value, node.field.text, scope))
           rename(node.field.start, node.field.text);
         visit(node.value, scope); return;
       case "withUnfolding": for (const hint of node.hints) reference(hint, scope); visit(node.body, scope); return;

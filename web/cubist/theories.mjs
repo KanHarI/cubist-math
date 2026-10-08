@@ -71,7 +71,7 @@ function namesIn(node, names = new Set()) {
 }
 const fresh = (stem, taken) => { let candidate = stem, k = 1; while (taken.has(candidate)) candidate = `${stem}${k++}`; return candidate; };
 // An unlabelled parent's label: its name in snake case, CommMonoid as comm_monoid.
-const snake = text => text.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+export const snake = text => text.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
 const sameSyntax = (a, b) => JSON.stringify(a, (key, value) => ["start", "end"].includes(key) ? undefined : value)
   === JSON.stringify(b, (key, value) => ["start", "end"].includes(key) ? undefined : value);
 

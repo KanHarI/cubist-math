@@ -8,8 +8,6 @@ import {interval as I} from "./lattice.mjs";
 import {repeatedName} from "./names.mjs";
 
 export const INDUCTIVE_TAGS = new Set(["Inductive","InductiveSelf","InductiveConstructor"]);
-// Words that are h-levels in a header's result position (section 9).
-const MODIFIER_WORDS = new Set(["type","set","prop","trunc"]);
 
 // A parameter list's binder groups, in order: (a, b : A) is one group.
 function groups(params) {
@@ -57,8 +55,6 @@ export function lowerInductive(translator, d, scope) {
   for (const group of groups(d.params)) {
     if (group[0].bound) {
       for (const p of group) {
-        if (MODIFIER_WORDS.has(p.name.text))
-          throw locate(Error(`A universe parameter cannot be named ${p.name.text}: in a declaration's result position that word is an h-level.`), p.name);
         const { name, inner } = translator.universeBinder(p.name, p.bound, at);
         at = inner;
         slots.push({ source: p.name.text, level: levels.length, name });

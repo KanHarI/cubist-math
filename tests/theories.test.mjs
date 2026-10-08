@@ -15,6 +15,12 @@ import { testModule } from "./check-program.mjs";
 
 const theories = testModule("theories", { module: await createCubical() });
 
+test("theory constructors keep header parameters apart from generated field binders", async () => {
+  const { get } = await testModule("theory_headers")();
+  for (const name of ["named_nat", "named_hom", "named_iso", "named_by_fields"])
+    assert.equal(get(name).verified, true, name);
+});
+
 test("a theory checks as its model type, constructor, projections, parents' models, homomorphisms and isomorphisms", async () => {
   const { program } = await theories();
   const generated = Object.values(program.symbols)
