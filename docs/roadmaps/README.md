@@ -31,6 +31,13 @@ the scheduling authority; this summarizes it.
   - **Notation (L2.10).** `~` for reversal, one selection form `use` in
     place of `open`, qualified operators `a G.(+) b`, explicit views,
     literals read by the library's parsers, and a partial field inverse.
+- **Decided on 2026-10-07: initial/free opt-in (L2.6).**
+  `deriving (morphisms, free)` requests a construction and checked universal
+  property and supplies initiality on `Void`; `morphisms, initial` is
+  weaker. Derivation may fail on an unsupported construction or a law it
+  cannot prove. The [categorical roadmap](categories.md) supplies the
+  morphism opt-in and general propositional laws; these precede publication
+  of the checked capabilities. Its other packages remain proposed.
 - **Next,** in the work plan's [first actions](work-plan.md#first-actions):
   1. `~` for reversal (L2.10i);
   2. the theory syntax revision (L2.4c);
@@ -97,6 +104,11 @@ the scheduling authority; this summarizes it.
   qualified operators such as `a G.(+) b`, `Lexeme` literals and a partial
   field inverse. Notation rules remain open, and the remaining grammar and
   elaboration contracts are draft.
+- [Morphisms, categories and universal constructions](categories.md):
+  morphism and isomorphism opt-ins, checked initial/free derivations,
+  propositional laws, implicit operation arguments, categorical library
+  constructions and the abelian tower. Consolidated with L2.6 in #187;
+  the separate homological-algebra track remains in #198.
 - [Core theories](core-theories.md): the contract of work-plan L2.4,
   theory declarations, models, scoped notation, sections, extension,
   homomorphisms and isomorphisms, specified and implemented on 2026-10-05.
