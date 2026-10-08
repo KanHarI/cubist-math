@@ -555,6 +555,7 @@ export const diagnostics = [
   ["E865", "… binds a universe argument: the equational strategy supports term arguments only; bind universes in the theory header."],
   ["E866", "… hides a declaration used by its expansion: rename the initial or free model."],
   ["E867", "… takes … with a type depending on the … …: the equational strategy supports arguments independent of the theory's laws and carrier evidence."],
+  ["E868", "… extends …, whose header binds no universe: bind …, the name its universe is given, in …'s header, or name that universe in …'s header."],
   // Notation and operators
   ["E901", "-x negates in a selected notation that binds it, as integers.(-x); a path's reversal is ~p."],
   ["E902", "-x is not in …'s notation, which is selected here: select a notation that binds it, as integers.(-x)."],

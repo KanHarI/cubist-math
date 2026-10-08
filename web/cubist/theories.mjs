@@ -229,13 +229,16 @@ function theoryFields(theory, lookup, proposition) {
     if (prepared.some(other => other.label === label))
       throw located(Error(`${T} has two parents labelled ${label}: label one, as in other : ${parent.name.text}.`), parent.label ?? parent.name);
     // The parent's universes are the child's: its one universe the child's
-    // one, or each by its name. Its parameters are the child's of the same
-    // names and types.
+    // one, or each by its name. A parent whose header binds no universe has
+    // one, by the name its expansion gives it. Its parameters are the
+    // child's of the same names and types.
     const universes = new Map(), parentCount = Math.max(1, record.universes.length);
     if (parentCount === 1 && universeCount === 1) universes.set(UNIVERSE, UNIVERSE);
     else record.universes.forEach((u, k) => {
       const own = headerUniverses.indexOf(u);
-      if (own < 0) throw located(Error(`${T} extends ${record.name}, whose header binds the universe ${u}: bind ${u} in ${T}'s header too.`), parent.name);
+      if (own < 0) throw located(record.generatedUniverse
+        ? Error(`${T} extends ${record.name}, whose header binds no universe: bind ${u}, the name its universe is given, in ${T}'s header, or name that universe in ${record.name}'s header.`)
+        : Error(`${T} extends ${record.name}, whose header binds the universe ${u}: bind ${u} in ${T}'s header too.`), parent.name);
       universes.set(universeAt(k), universeAt(own));
     });
     for (const p of record.params) {
@@ -540,9 +543,10 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
     generated: { theory: T, ...generated }, ...extra,
   });
   // Record the actual model parameters, including the universe generated
-  // for a headerless inherited theory, so later applications use its name.
+  // for a headerless inherited theory, so later applications use its name,
+  // and whether its header named none.
   const record = {
-    name: T, model: T, make: `${T}.make`, universes, params, ambiguous, ambiguousNotations,
+    name: T, model: T, make: `${T}.make`, universes, ...(headerUniverses.length ? {} : { generatedUniverse: true }), params, ambiguous, ambiguousNotations,
     fields: fields.map(({ at: _, from: __, ...field }) => ({ ...field, projection: `${T}.${field.name}` })),
     notations: Object.fromEntries(notations), recipes: Object.fromEntries(recipes), parents,
     derived: derived.map(({ at: _, ...d }) => ({ ...d, projection: `${T}.${d.name}` })),

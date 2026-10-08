@@ -93,8 +93,32 @@ theory Fixed(U < UU0, G : Magma(U)) extends Pointed {
 
 def forget_fixed(F : Fixed(U0, nat_magma)) : Pointed(U0, nat_magma) := F.pointed;
 
+// A theory whose header binds no universe has one, which its expansion
+// names U. A child with several universes binds it by that name.
+theory Based(U < UU0) {
+  M : set U;
+  c : M;
+}
+
+theory Unheaded extends Based {
+
+}
+
+theory Widened(V, U < UU0) extends Unheaded {
+  N : set V;
+  d : N;
+}
+
+def widened_carrier(W : Widened(U0, U1)) : U1 := W.M;
+
 // Error: E820: Lost extends Arrow, whose header binds the universe U: bind U in Lost's header too.
 theory Lost(V < UU0) extends Arrow {
+
+}
+
+// Error: E868: Unnamed extends Unheaded, whose header binds no universe: bind U, the name its
+//   universe is given, in Unnamed's header, or name that universe in Unheaded's header.
+theory Unnamed(A, B < UU0) extends Unheaded {
 
 }
 
