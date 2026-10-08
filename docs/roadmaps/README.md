@@ -6,8 +6,9 @@ target statement or a supplied theorem parameter as an already proved result.
 
 ## At a glance
 
-Revised on 2026-10-05, after PR #164. The [work plan](work-plan.md) is
-the scheduling authority; this summarizes it.
+Revised on 2026-10-05, after PR #164; the runtime and numerical track was
+added on 2026-10-07. The [work plan](work-plan.md) is the scheduling
+authority; this summarizes it.
 
 - **Done.**
   - **Kernel.** The trusted checker is the instruction kernel, with every
@@ -46,11 +47,13 @@ the scheduling authority; this summarizes it.
   5. `use nat;` in place of name-based operators and numerals (L2.10j);
   6. equivalences, then structure identity (L3.1, L3.2, L2.4b);
   7. the rest of the h-level solver (L2.5b);
-  8. the order on the numbers, if the maintainer extends the library's
+  8. the order on NUM2's new numbers, if the maintainer extends the library's
      scope;
-  9. independent language work, monadic `do` and arrows (N0–N4) among it;
-  10. K2.5's archive remedies;
-  11. H2's indexed families, then the H3 research gate.
+  9. runtime evaluation and binary numerical foundations (EVAL0–EVAL8,
+     NUM0–NUM2), including H1 strong induction and the new `Z` and `Q`;
+  10. independent language work, monadic `do` and arrows (N0–N4) among it;
+  11. K2.5's archive remedies;
+  12. H2's indexed families, then the H3 research gate.
 - **Later.**
   - Indexed declarations (stage 4, H2) and inductive-inductive ones
     (stage 5, H3).
@@ -140,6 +143,16 @@ the scheduling authority; this summarizes it.
 - [Computation notation: monadic do and arrows](computation-notation-roadmap.md):
   planned explicit computation blocks, checked monad and arrow interfaces,
   mathematical examples, and staged elaboration without new kernel rules.
+- [Runtime evaluation and binary numerical foundations](runtime-evaluation-roadmap.md):
+  proposed after the `euclid(4)` syntax-depth failure: one-pass REPL
+  evaluation, normalization caches, lazy closures, an explicit evaluation
+  stack, typed readback and checked search improvements. Early numerical
+  foundations define `UNat` and `BNat`, prove their semiring isomorphism
+  and equality in `U0` with transport laws, and provide strong induction
+  and recursion over smaller binary values. New `Z`, `Q` and later
+  numerical constructions use binary naturals, with checked algebraic laws.
+  Separates prime projection, lazy observation and full normalization, with
+  semantic review and resource limits governing integration.
 - [Simplification and shorter proofs](proof-ergonomics-roadmap.md):
   - Delivered: `rw`, `calc`, `rfl`, `simp`/`simpa` with registered rule sets
     and conditional rules, cubical path shorthand, dependency tracking,

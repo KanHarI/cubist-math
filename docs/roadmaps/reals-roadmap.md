@@ -6,20 +6,26 @@ the [work-plan audit](audits/2026-09-28-audit.md) (previously reviewed
 2026-09-27); restructured on 2026-09-25 for the rebuild of the library. The
 first library's development is described below, under "The first library's
 development", and is archived with that library. Its results are summarized in
-[library-results.md](../library-results.md#analysis). This roadmap owns the
-rebuilt number systems; they are deferred in the
+[library-results.md](../library-results.md#analysis). Revised on 2026-10-07:
+the [runtime evaluation roadmap](runtime-evaluation-roadmap.md) owns the
+new binary numerical foundations (NUM0–NUM2), including the default `Z`
+and `Q`. This roadmap owns their order, additional presentations and the
+real-number constructions; those remaining packages are deferred in the
 [work plan](work-plan.md#deferred-library-backlog) as B3 (integers), B4
 (rationals and the field interface) and B5 (reals), and no language
 milestone resumes them automatically. On 2026-10-05 the library's
 foundations resumed, and R1's integers and rationals were built, as
-quotients rather than as planned below: see R1. Their order, and the rest
-of this roadmap, stay deferred.
+quotients rather than the earlier signed/canonical plan. R1's remaining
+work now targets NUM2's binary-backed replacements. Their order, and the
+rest of this roadmap, stay deferred; NUM0–NUM2 do not wait for them.
 
 ## Plan for the rebuilt library
 
-The audit confirmed the construction choice and revised the promises around
-it: the precision type, the normal-form and approximation claims, R3's
-breakdown and each package's dependencies. The corrections are marked.
+The audit revised the precision type, the normal-form and approximation
+claims, R3's breakdown and each package's dependencies. The 2026-10-07
+alignment with NUM2 makes binary-backed quotients the primary integer
+and rational carriers; signed and lowest-terms forms are later
+presentations of those carriers.
 
 The interface stays an **Archimedean ordered field with Cauchy completeness**,
 with Dedekind completeness as a separate property. It becomes the theory
@@ -42,8 +48,8 @@ definitions are not claimed to fail to check; the obligation is the bridge.
 
 | Carrier | Construction | Needs | Computation |
 | --- | --- | --- | --- |
-| Integers | **Built** on 2026-10-05 as the quotient of `Nat and Nat` by the same difference (`library/integers.cubist`): a commutative ring with no zero divisors. Planned: `inductive Int { pos(n : Nat); negsucc(n : Nat); }`, with "difference of naturals" and "point with an equivalence" as presentations; the archive's `signed_integers` is `Nat or Nat` | The library's effective quotients; L2.7 for the presentations | Operations compute on closed integers; equality decidable through effectiveness. Closed integers are classes of pairs, not constructor normal forms |
-| Rationals | **Built** on 2026-10-05 as the field of fractions (`library/rationals.cubist`): fractions `x / d`, `d` not zero, by cross-multiplication, over any commutative ring with decidable equality, no zero divisors and zero not one, at the integers. Planned: the canonical quotient of `Int and PosNat`, in lowest terms | The built field: L2.4's theories and effective quotients. In lowest terms: L2.7 (canonical quotients), with gcd, normalization correctness and uniqueness | Operations and equality compute. Closed rationals are classes of fractions and do not print reduced until the canonical form exists |
+| Integers | **Built** on 2026-10-05 from unary `Nat and Nat` in `library/integers.cubist`. NUM2 owns the new default `Z`, the same-difference quotient of `BNat and BNat`, with ring/domain laws. R1 adds order; a later `inductive Int { pos(n : BNat); negsucc(n : BNat); }` presents this new `Z` | NUM1/NUM2 and effective quotients; L2.7 for the later presentation interface | Binary operations on the new quotient; decidable equality. A class of pairs need not be a signed constructor normal form |
+| Rationals | **Built** on 2026-10-05 in `library/rationals.cubist`. NUM2 reuses its generic field-of-fractions construction at the new `Z` to supply the new default `Q`. R1 adds order and a later lowest-terms presentation using binary-backed `Z` and positive `BNat` denominators | NUM2 for the field; L2.7, binary gcd, normalization correctness and uniqueness for the canonical presentation | Binary fraction operations and decidable equality; quotient semantics alone do not give reduced output |
 | Reals (primary) | `Real = initial CauchyStructure`: the book's Cauchy completion, a higher inductive-inductive type with its closeness relation, at precision `PosRat` | Kernel H3 (K5.1, K5.2, L5.1); L2.6 initial models and folds; the rational prerequisites | Closed reals normalize to the constructors `rat`/`lim` or to the stage's formal Kan forms; a closed rational approximation comes from a proved approximation theorem, read out through L2.9b |
 | Reals (fallback) | Dedekind reals: located two-sided cuts of the rationals, in `next(U0)` | Kernel H1 (`Trunc`) and the cut and field mathematics; with canonical rationals, no generic quotient is needed for cuts | Approximations through locatedness, given a proved approximation result, a closed computable input and L2.9b's checked readout; native truncation alone supplies none of these |
 
@@ -73,7 +79,10 @@ definitions are not claimed to fail to check; the obligation is the bridge.
   describe the archive: its universe-lowering `FieldExists` remains until
   the G2 ledger's actual migrations, and that legacy behaviour is kept
   distinct from the new universe-preserving truncation.
-- **Names.** `PosNat` for denominators; `PosRat` for precision.
+- **Names.** `PosNat` is positive `BNat` for canonical denominators;
+  `PosRat` is positive NUM2 `Q` for precision. Numerical sequence indices
+  and modulus bounds use `BNat`, whatever public spelling is adopted for
+  the new default `Nat`.
 - **Readout.** There is no source-level selector `Trunc(A) -> A`; L2.9b is
   a closed evaluation tool that needs a closed computable input and a
   checked error certificate. Its later H3 extension must specify the
@@ -86,27 +95,33 @@ definitions are not claimed to fail to check; the obligation is the bridge.
 
 ### Milestones
 
-1. **R1. Integers and rationals** (B3 for the integers, B4 for the
-   rationals). The inductive integers with their presentations, with
-   arithmetic, setness and decidable equality proved; rationals as a
-   canonical quotient, with gcd, normalization correctness and uniqueness;
-   the ordered-field laws and the Archimedean property; `computable`
-   arithmetic, with `evaluate` tests. A generic H1 set quotient is a
-   separate presentation: the quotient constructor does not supply the
-   fixed-point canonical representation.
+1. **R1. Order and presentations of the new integers and rationals**
+   (B3 for the integers, B4 for the rationals). Consume NUM2's `Z` and `Q`,
+   their arithmetic, setness, decidable equality and algebraic laws.
+   Prove their decidable orders, ordered-ring/field laws and the
+   Archimedean property with binary natural bounds; define `PosRat` and
+   check closed order and bound examples. These are the prerequisites
+   for R2/R3 on the new hierarchy. This order development still awaits
+   the scope decision in [first action 8](work-plan.md#first-actions).
 
-   **Done in part** on 2026-10-05, with the quotients as the primary
-   presentations: arithmetic, setness, decidable equality and computing
-   operations for both, and the field laws for the rationals. Open: the
-   order on both, decidable, with the ordered-field laws, the positive
-   rationals `PosRat` and the Archimedean property, which R2 and R3 need;
-   the inductive integers as a presentation; and the canonical, lowest-terms
-   rationals.
+   Later presentations are signed integers with binary
+   magnitudes and canonical lowest-terms rationals, with binary gcd,
+   normalization correctness and uniqueness. Prove agreement with NUM2's
+   quotient carriers. These are not replacements for NUM2's construction
+   or prerequisites for the quotient field's order; its constructors alone
+   do not supply canonical representatives.
+
+   **Historical completion:** the 2026-10-05 unary-backed carriers have
+   arithmetic, setness, decidable equality and field laws, but no order.
+   They remain compatibility clients. NUM2 and R1's new targets are
+   planned, not implemented; neither requires comparison maps to the old
+   carriers.
 2. **R2. The interface** (B4). The theories `OrderedField` and
    `CompleteOrderedField`, with limits, uniqueness and the algebra of limits
    stated generically, on L2.4's core theories and L2.5a's h-level fields.
-   Settle the precision and modulus types (`PosRat` or `Nat`) and prove the
-   bridge above before porting clients. It needs no H3 and can proceed with
+   Use R1's `PosRat` over the new `Q` for precision and `BNat` for numerical
+   bounds; settle the modulus API and prove the bridge above before
+   porting clients. It needs no H3 and can proceed with
    any model, even before a concrete reals construction exists. L2.4 was
    delivered on 2026-10-05, and the library's `Field` is the starting
    point; its inverse becomes partial with L2.10k.
@@ -138,9 +153,9 @@ complete ordered field.
 
 | Package | Explicit dependencies and acceptance |
 | --- | --- |
-| R1 integers | Built as a quotient, with arithmetic, setness and decidable equality (2026-10-05); open: the order; L2.7 for the inductive presentation |
-| R1 rationals | Built as the field of fractions (2026-10-05); open: the order laws and `PosRat`. Canonical rationals: L2.7, with gcd, normalization correctness and uniqueness |
-| R2 field interface | L2.4 core theories and L2.5a h-level fields; the precision and modulus types settled and the sequence/approximation bridge proved before clients are ported; no H3 |
+| R1 integers | NUM2's new `Z`; scope decision before decidable order and ordered-ring laws. Later signed presentation: binary magnitudes, L2.7 and agreement with this `Z` |
+| R1 rationals | NUM2's new `Q`; R1 integer order and the scope decision before rational order laws, `PosRat` and Archimedean bounds in `BNat`. Later canonical presentation: L2.7, binary gcd, correctness, uniqueness and agreement with this `Q` |
+| R2 field interface | L2.4 core theories, L2.5a h-level fields and R1's ordered new `Q`/`PosRat` for rational precision; modulus API with binary bounds and the sequence/approximation bridge proved before clients are ported; no H3 |
 | R3 Cauchy reals | K5.1/K5.2/L5.1; L2.6 initial models and folds; R1 and R2; the construction proofs listed above; L2.9b for the closed approximation readout |
 | R4 Dedekind fallback | H1 truncation and the cut and field mathematics; canonical rationals in place of a generic quotient; L2.9b for readout |
 
