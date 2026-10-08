@@ -39,7 +39,7 @@
 
 // The names a type mentions free, a qualified name R.R by its root, by
 // every binding form (scopes.mjs).
-import { freeNames, allNames, renamedFree } from "./scopes.mjs";
+import { freeNames, allNames, renamedFree, freshName } from "./scopes.mjs";
 import { reservedNames } from "./parser.mjs";
 
 
@@ -76,15 +76,21 @@ function occurrences(shape, positive = true, out = new Set()) {
 // A field's binders, from its type's foralls, and the type under them.
 function binders(type, parameters) {
   const list = [], bound = new Set([...freeNames(type), ...parameters]), taken = new Set([...allNames(type), ...parameters]);
-  const fresh = stem => { let name = stem, k = 1; while (taken.has(name)) name = `${stem}_${k++}`; taken.add(name); return name; };
+  const fresh = stem => freshName(stem, taken);
   while (type.kind === "forall" || type.kind === "binderGroup" && type.binderKind === "forall") {
     const names = type.kind === "forall" ? [type.name] : type.names;
     // Each grouped domain is read before any of the names binds. Splitting
     // it into generated foralls must not let a binder capture that domain,
     // or a theory parameter passed by generated calls, even when this field
-    // does not mention it.
-    const renaming = new Map(names.map(n => [n.text, bound.has(n.text) ? fresh(n.text) : n.text]));
-    for (const name of renaming.values()) { list.push({ name, type: type.domain }); bound.add(name); }
+    // does not mention it. A name the group repeats, as in forall x, x : M,
+    // is still an argument; its last occurrence is the one the body reads.
+    const renaming = new Map();
+    for (const [k, n] of names.entries()) {
+      const shadowed = names.slice(k + 1).some(later => later.text === n.text);
+      const name = bound.has(n.text) || shadowed ? fresh(n.text) : n.text;
+      list.push({ name, type: type.domain }); bound.add(name);
+      if (!shadowed) renaming.set(n.text, name);
+    }
     type = [...renaming].some(([before, after]) => before !== after)
       ? renamedFree(type.body, name => renaming.get(name)) : type.body;
   }
@@ -164,13 +170,8 @@ export function morphismSource(record, isTheory = () => false) {
   const carrierNames = new Set(record.fields.filter(field => field.kind === "sort").map(field => field.name));
   const taken = new Set([...reservedNames, ...parameters, ...record.fields.flatMap(field => binders(field.type, parameters).list.map(b => b.name)),
     ...record.fields.flatMap(field => [...freeNames(field.type)]).filter(name => !carrierNames.has(name))]);
-  const numbered = (stem, k) => /^U+$/.test(stem) || /[0-9]$/.test(stem) ? `${stem}_${k}` : `${stem}${k}`;
-  const own = stem => {
-    let name = stem;
-    for (let k = 1; name === T || isTheory(name) || taken.has(name); k++) name = numbered(stem, k);
-    taken.add(name);
-    return name;
-  };
+  const avoided = { has: name => name === T || isTheory(name) || taken.has(name), add: name => taken.add(name) };
+  const own = stem => freshName(stem, avoided);
   const A = own("A"), B = own("B"), C = own("C"), f = own("f"), g = own("g"), X = own("x"), Y = own("y");
   const carrierFields = record.fields.filter(field => field.kind === "sort"), sorts = carrierFields.map(field => field.name);
   if (!sorts.length) return { missing: `${T} has no sorts` };

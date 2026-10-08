@@ -27,7 +27,7 @@ import { morphismSource } from "./morphisms.mjs";
 // A copy of a syntax tree with `rewrite(node, bound)` applied to each node,
 // outermost first; `bound` holds the names bound there, by every binding
 // form (scopes.mjs).
-import { rewritten, substituted, freeNames, relocated } from "./scopes.mjs";
+import { rewritten, substituted, freeNames, relocated, freshName } from "./scopes.mjs";
 
 // The universes of a theory's carriers, in the fields a theory records, the
 // first, UNIVERSE, and the k-th: each expansion names them afresh.
@@ -65,7 +65,6 @@ function namesIn(node, names = new Set()) {
   for (const value of Object.values(node)) if (value && typeof value === "object") namesIn(value, names);
   return names;
 }
-const fresh = (stem, taken) => { let candidate = stem, k = 1; while (taken.has(candidate)) candidate = `${stem}${k++}`; return candidate; };
 // An unlabelled parent's label: its name in snake case, CommMonoid as comm_monoid.
 export const snake = text => text.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
 const syntaxValue = (key, value) => typeof value === "number" && /^(start|end)$|Start$|End$/.test(key) ? undefined : value;
@@ -300,8 +299,7 @@ function theoryFields(theory, lookup, proposition) {
     const byOrigin = new Map();
     for (const e of entries) {
       if (!byOrigin.has(e.field.origin)) {
-        byOrigin.set(e.field.origin, fresh(`${e.p.label}_${n}`, allNames));
-        allNames.add(byOrigin.get(e.field.origin));
+        byOrigin.set(e.field.origin, freshName(`${e.p.label}_${n}`, allNames));
       }
       const own = byOrigin.get(e.field.origin);
       e.p.names.set(e.field.name, own);
@@ -522,8 +520,9 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
   const { fields, notations, recipes, derived, parents, universes: headerUniverses, params, ambiguous, ambiguousNotations } = theoryFields(theory, lookup, proposition);
   if (!fields.length) throw located(Error(`${T} has no fields: a theory declares sorts, operations and laws.`), at);
   const taken = new Set([...namesIn(theory), ...fields.map(field => field.name), ...fields.flatMap(field => [...namesIn(field.type)])]);
-  // The header's names for the universes, or fresh ones without a header.
-  const universes = headerUniverses.length ? headerUniverses : [fresh("U", taken)], model = fresh("m", taken);
+  // The header's names for the universes, or fresh ones without a header:
+  // U, or U_1 when U is taken, which a header can bind and an argument name.
+  const universes = headerUniverses.length ? headerUniverses : [freshName("U", taken)], model = freshName("m", taken);
   const inUniverse = node => renamed(node, new Map(universes.map((u, k) => [universeAt(k), u])), at);
   // The header's binders, the universes in one group and then each
   // parameter; `implicit` says which are implicit.

@@ -125,12 +125,10 @@ export class CubicalProgram {
         expansion: item.node.expansion, description: item.node.description,
         definitionStart: source?.start ?? item.node.start,
         ...(name === main ? {} : { sourceModule: name, sourceName: declaration.name.text }) };
-      // An initial/free expansion's synthetic nodes start at the declared
+      // An initial/free expansion's synthetic nodes stand at the declared
       // name, and their links would hide the name's own. The header's
-      // parameters, theory and generator type keep their written positions.
-      const synthetic = declaration.generated?.initial
-        && item.node.start === declaration.name.start;
-      if (name === main && !synthetic) {
+      // parameters, theory and generator type link as written.
+      if (name === main && !item.node.synthetic) {
         const link={ name: item.node.name, binding, start: item.node.start,
         end: item.node.end, definitionStart: source?.start, role: item.node.role ?? (declared ? "inductive" : definition ? "definition" : "local"),
         expansion: item.node.expansion, description: item.node.description,
@@ -191,8 +189,9 @@ export class CubicalProgram {
       if (!verified) this.gaps.push({ module: name, name: d.name,
         reason, code: info.code, start: d.errorStart, end: d.errorEnd });
       // A theory's name links to its models' type, a field's to its projection.
-      // An initial/free name links to its carrier. The generated definitions
-      // remain symbols, inspectable by name and at their written uses.
+      // An initial/free name links to its declared type, whose generated
+      // syntax this is. The generated definitions remain symbols, inspectable
+      // by name and at their written uses.
       if (name === main && syntax.generated?.role !== "make" && !(syntax.generated?.initial && syntax.kind !== "inductive"))
         this.links.push({ ...info, start: syntax.name.start, end: syntax.name.end });
     }

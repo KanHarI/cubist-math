@@ -140,14 +140,15 @@ export const renamedFree = (node, rename) => rewritten(node, (n, bound) => {
 
 // `node` with each free name that `args` maps replaced by its syntax (a
 // qualified name's root too, as R.M becomes a member of R's argument), and a
-// binder that would capture a free name of an argument renamed first, apart
-// from every name either mentions. A binder that may not be renamed (a
-// pattern's or a parameter's) and would capture one is refused with the
-// error `refuse(name)` gives.
+// binder that would capture a free name of an argument substituted under it
+// renamed first, apart from every name either mentions. A binder that may not
+// be renamed (a pattern's or a parameter's) and would capture one is refused
+// with the error `refuse(name)` gives.
 export function substituted(node, args, refuse) {
-  const free = new Set([...args.values()].flatMap(arg => [...freeNames(arg)]));
+  const freeIn = new Map([...args].map(([name, arg]) => [name, freeNames(arg)]));
+  const free = new Set([...freeIn.values()].flatMap(names => [...names]));
   const taken = new Set([...free, ...allNames(node)]);
-  const fresh = stem => { let name = stem, k = 1; while (taken.has(name)) name = `${stem}${k++}`; taken.add(name); return name; };
+  const fresh = stem => freshName(stem, taken);
   const go = (tree, bound) => rewritten(tree, (n, inner) => {
     if (n.kind === "name" && !inner.has(root(n.name))) {
       if (args.has(n.name)) return args.get(n.name);
@@ -163,11 +164,12 @@ export function substituted(node, args, refuse) {
         return value;
       }
     }
-    const scopes = scopesOf(n), clashing = new Set(scopes.filter(scope => scope.binders.some(binder => free.has(binderName(binder))
-      && [...args.keys()].some(name => occursFree(n, scope, name)))));
+    // A binder captures when an argument substituted under it names it.
+    const captures = (scope, binder) => [...args.keys()].some(name => freeIn.get(name).has(binderName(binder)) && occursFree(n, scope, name));
+    const scopes = scopesOf(n), clashing = new Set(scopes.filter(scope => scope.binders.some(binder => captures(scope, binder))));
     if (!clashing.size) return n;
     for (const scope of clashing) if (!scope.renamable)
-      throw refuse(binderName(scope.binders.find(binder => free.has(binderName(binder)))));
+      throw refuse(binderName(scope.binders.find(binder => captures(scope, binder))));
     return go(apart(n, scopes, clashing, free, fresh), inner);
   }, bound);
   return go(node, new Set());
@@ -201,6 +203,29 @@ function apart(node, scopes, clashing, free, fresh) {
   for (const [key, value] of Object.entries(copy)) copy[key] = swap(value);
   return copy;
 }
+// A name for generated syntax that `taken` does not hold, added to it: the
+// stem, or the stem numbered from 1. A stem of U's, or one ending in a
+// digit, takes a separator, U_1: U1 and UU0 spell universe constants, and a1
+// numbered 1 would be a11, which a numbered 11 is too.
+export function freshName(stem, taken) {
+  const numbered = k => /^U+$/.test(stem) || /[0-9]$/.test(stem) ? `${stem}_${k}` : `${stem}${k}`;
+  let name = stem;
+  for (let k = 1; taken.has(name); k++) name = numbered(k);
+  taken.add(name);
+  return name;
+}
+
+// The names a tree binds where a substitution may not rename them apart: a
+// pattern's arguments and a declaration's parameters.
+export function fixedBinders(node) {
+  const names = new Set();
+  rewritten(node, n => {
+    for (const scope of scopesOf(n)) if (!scope.renamable) for (const binder of scope.binders) names.add(binderName(binder));
+    return n;
+  });
+  return names;
+}
+
 // Every name a tree uses, bound or free.
 export function allNames(node, names = new Set()) {
   if (Array.isArray(node)) { for (const item of node) allNames(item, names); return names; }
@@ -213,12 +238,15 @@ export function allNames(node, names = new Set()) {
 }
 
 // Inherited or generated syntax belongs to its expansion site, including
-// operator and punctuation spans used by diagnostics and source links.
+// operator and punctuation spans used by diagnostics and source links. With
+// `at.synthetic`, each node is marked as written by no one there, so that it
+// links nowhere in the source.
 export function relocated(node, at) {
   if (Array.isArray(node)) return node.map(item => relocated(item, at));
   if (!node || typeof node !== "object") return node;
-  return Object.fromEntries(Object.entries(node).map(([key, value]) => [key,
+  return Object.fromEntries([...Object.entries(node).map(([key, value]) => [key,
     node.kind === "instantiated" && key === "value" ? value
       : typeof value === "number" && (key === "start" || key.endsWith("Start")) ? at.start
-      : typeof value === "number" && (key === "end" || key.endsWith("End")) ? at.end : relocated(value, at)]));
+      : typeof value === "number" && (key === "end" || key.endsWith("End")) ? at.end : relocated(value, at)]),
+    ...(at.synthetic ? [["synthetic", true]] : [])]);
 }

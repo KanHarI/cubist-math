@@ -111,6 +111,18 @@ theory Widened(V, U < UU0) extends Unheaded {
 
 def widened_carrier(W : Widened(U0, U1)) : U1 := W.M;
 
+// With U taken, as by op's argument, the universe is U_1: U1 would be a
+// universe constant, which no header could bind.
+theory Numbered extends Based {
+  op(U : M) : M;
+}
+
+theory Renumbered(V, U_1 < UU0) extends Numbered {
+
+}
+
+def renumbered_carrier(R : Renumbered(U0, U1)) : U1 := R.M;
+
 // Error: E820: Lost extends Arrow, whose header binds the universe U: bind U in Lost's header too.
 theory Lost(V < UU0) extends Arrow {
 

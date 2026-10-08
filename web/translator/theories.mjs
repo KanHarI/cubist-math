@@ -297,13 +297,20 @@ export function theoryDeclarations(t,module,d,env,declarations) {
     return generated;
   } catch(failure) {
     // The message says where, as an elaboration error does.
-    const error=module.locate(Error(failure.message),{start:failure.offset,end:failure.offset});
-    t.onDeclarationStart?.(d);
-    declarations.push({name:d.name.text,status:"not-translated",reason:error.message,errorStart:error.offset,errorEnd:error.sourceEnd});
-    env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:t.checker.bindingName?.(d.name.text)??d.name.text,reason:error.message});
-    t.onDeclaration?.(d,declarations.at(-1));
-    return [];
+    return failedExpansion(t,d,env,declarations,module.locate(Error(failure.message),{start:failure.offset,end:failure.offset}));
   }
+}
+
+// A declaration that does not expand, a theory or an initial or free model,
+// fails as a declaration of its name, with the located `error`; it expands
+// to nothing.
+export function failedExpansion(t,d,env,declarations,error) {
+  t.onDeclarationStart?.(d);
+  declarations.push({name:d.name.text,status:"not-translated",reason:error.message,errorStart:error.offset,errorEnd:error.sourceEnd,
+    ...(error.blockedBy?{blockedBy:error.blockedBy}:{})});
+  env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:t.checker.bindingName?.(d.name.text)??d.name.text,reason:error.message});
+  t.onDeclaration?.(d,declarations.at(-1));
+  return [];
 }
 
 // A theory's sorts need their evidence's definitions, from hlevels.
@@ -321,17 +328,21 @@ export function missingMorphisms(scope,name) {
     ?Error(`${theory}'s models have homomorphisms but no isomorphisms: ${entry.record.noIsomorphisms}.`):null;
 }
 
-// The rest of a failed theory or initial/free expansion: taken off the
-// queue, each unavailable as a dependency of the failed declaration.
-// Return how many were taken, even when no progress observer is installed.
-export function skipExpansion(t,queue,env,model,kind="theory") {
+// The rest of an expansion after its declaration `failed`: a theory's after
+// its type of models, an initial or free model's after any of its own.
+// Without it the rest cannot check, so it is taken off the queue, each
+// unavailable as a dependency of the failed declaration, and the failure is
+// reported once. Return how many were taken, even when no progress observer
+// is installed.
+export function skipExpansion(t,queue,env,failed) {
+  const kind=failed.generated?.role==="model"?"theory":failed.generated?.initial?"initial":null;
   let skipped=0;
-  for(let k=queue.length-1;k>=0;k--) {
+  for(let k=queue.length-1;kind&&k>=0;k--) {
     const d=queue[k];
-    if(d.generated?.[kind]!==model.generated[kind])continue;
+    if(d.generated?.[kind]!==failed.generated[kind])continue;
     queue.splice(k,1); skipped++;
     env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:t.checker.bindingName?.(d.name.text)??d.name.text,
-      reason:`Untranslated dependency: ${model.name.text}`});
+      reason:`Untranslated dependency: ${failed.name.text}`});
   }
   return skipped;
 }

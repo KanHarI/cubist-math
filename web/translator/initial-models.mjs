@@ -1,9 +1,9 @@
 // L2.6's retained construction-and-fold prototype. This does not register
 // an initial/free capability: deriving and the universal proofs are pending.
 // The expansion is ordinary syntax, checked with no new kernel rule.
-import {theoryBinding, selected} from "./theories.mjs";
+import {theoryBinding, selected, failedExpansion} from "./theories.mjs";
 import {universeAt} from "../cubist/theories.mjs";
-import {freeNames, substituted, renamedFree, allNames, relocated} from "../cubist/scopes.mjs";
+import {freeNames, substituted, renamedFree, allNames, relocated, freshName, fixedBinders} from "../cubist/scopes.mjs";
 import {assignArguments} from "./arguments.mjs";
 import {Scope} from "./elaboration.mjs";
 import {repeatedName} from "./names.mjs";
@@ -14,19 +14,14 @@ import {T as Term} from "./core.mjs";
 export function initialDeclarations(t, module, d, env, declarations) {
   const unit = module.declaration(t.declarationFuel).with({references: null});
   try { return expand(t, unit, d, env); }
-  catch (failure) {
-    const error = unit.locate(failure, d.name);
-    t.onDeclarationStart?.(d);
-    declarations.push({ name: d.name.text, status: "not-translated", reason: error.message, errorStart: error.offset, errorEnd: error.sourceEnd,
-      blockedBy: error.blockedBy });
-    env.set(d.name.text, { tag: "Untranslated", name: d.name.text, binding: t.checker.bindingName?.(d.name.text) ?? d.name.text, reason: error.message });
-    t.onDeclaration?.(d, declarations.at(-1));
-    return [];
-  } finally { unit.fuel.close(); }
+  catch (failure) { return failedExpansion(t, d, env, declarations, unit.locate(failure, d.name)); }
+  finally { unit.fuel.close(); }
 }
 
 function expand(t, module, d, env) {
-  const N = d.name.text, at = {start: d.name.start, end: d.name.end}, free = d.kind === "free";
+  // Generated syntax stands at the declared name and is synthetic: it links
+  // nowhere, while the header's own syntax keeps its positions and links.
+  const N = d.name.text, at = {start: d.name.start, end: d.name.end, synthetic: true}, free = d.kind === "free";
   const token = text => ({text, ...at});
   const name = text => ({kind: "name", name: text, ...at});
   const call = (fn, args) => args.length ? {kind: "call", fn: typeof fn === "string" ? name(fn) : fn, args, ...at}
@@ -48,18 +43,22 @@ function expand(t, module, d, env) {
   if (repeated) throw module.locate(Error(`${N} has two parameters named ${repeated.name.text}: give each its own name.`), repeated.name);
 
   // Names from a theory's fields retain their meaning under the free
-  // declaration's parameters. Rename colliding parameters, keeping their
-  // public labels; later parameter groups and user expressions follow them.
+  // declaration's parameters, and a field's pattern, which substitution
+  // cannot rename, never captures one. Rename colliding parameters, keeping
+  // their public labels; later parameter groups and user expressions follow.
   const globals = new Set([N, T, "IsSet", "IsProp", "refl", ...record.fields.flatMap(f => [...freeNames(f.type)])]);
+  const fixed = new Set(record.fields.flatMap(f => [...fixedBinders(f.type)]));
   const taken = new Set([...allNames(d), ...record.fields.flatMap(f => [...allNames(f.type)]), ...globals]);
-  const fresh = stem => { let n = stem, k = 1; while (taken.has(n)) n = `${stem}${k++}`; taken.add(n); return n; };
-  const put = (node, map) => substituted(node, map, n => module.locate(capturedBy(N, n), d.theory));
+  const fresh = stem => freshName(stem, taken);
+  // Only the model's own name can then be captured, where a field's pattern
+  // binds it and the expansion writes the model or an operation under it.
+  const put = (node, map, field) => substituted(node, map, n => module.locate(capturedModel(T, field, n), d.theory));
   const renaming = new Map(), params = [];
   const apart = node => renamedFree(node, n => renaming.get(n));
   for (let k = 0; k < d.params.length;) {
     const group = d.params[k].group, members = [];
     while (k < d.params.length && d.params[k].group === group) members.push(d.params[k++]);
-    const changes = members.map(p => [p.name.text, globals.has(p.name.text) ? fresh(p.name.text) : p.name.text]);
+    const changes = members.map(p => [p.name.text, globals.has(p.name.text) || fixed.has(p.name.text) ? fresh(p.name.text) : p.name.text]);
     for (const [j, p] of members.entries()) params.push({...p, name: {...p.name, text: changes[j][1]}, label: p.name.text,
       ...(p.bound ? {bound: apart(p.bound)} : {type: apart(p.type)})});
     for (const [before, after] of changes) renaming.set(before, after);
@@ -116,7 +115,7 @@ function expand(t, module, d, env) {
   const evidence = record.fields.find(f => f.kind === "evidence" && f.of === carrier);
   if (!evidence) throw module.locate(untruncatedCarrier(T, carrier), d.theory);
   const level = evidence.evidence === "IsSet" ? "set" : "prop";
-  const universe = relocated(put(carriers[0].type, given), at);
+  const universe = relocated(put(carriers[0].type, given, carrier), at);
   const names = params.map(p => p.name.text), self = call(N, names.map(name));
   const operations = record.fields.filter(f => f.kind === "operation").map(f => f.name);
   // The proofs: each law's name and the carrier evidence's, to "law" or "evidence".
@@ -132,7 +131,7 @@ function expand(t, module, d, env) {
   const shape = field => {
     const binders = [], bound = new Set(), flattened = new Set();
     const dependent = new Map([[carrier, "carrier"], ...operations.map(op => [op, "carrier"]), ...proofs]);
-    let body = field.type, placed = relocated(put(field.type, inside), at), dependency = null;
+    let body = field.type, placed = relocated(put(field.type, inside, field.name), at), dependency = null;
     for (const n of allNames(placed)) taken.add(n);
     for (let group = 0; body?.kind === "forall" || body?.kind === "binderGroup" && body.binderKind === "forall";
         body = body.body, placed = placed.body, group++) {
@@ -184,8 +183,11 @@ function expand(t, module, d, env) {
   if (free) constructors.unshift({kind: "constructor", name: token(constructor("gen")),
     params: [{name: token(v.a), type: on, group: 0}], type: null, ...at});
   const generated = {initial: N}, uses = d.uses ? {uses: d.uses} : {};
+  // The kernel decides whether each law's sides are constructor
+  // expressions, after beta reduction; `laws` names the law it refuses.
+  const laws = Object.fromEntries(lawShapes.map(f => [constructor(f.name), f.name]));
   const inductive = {kind: "inductive", name: d.name, params, result: {modifier: {kind: level, ...at}, universe},
-    constructors, start: d.start, end: d.end, generated, ...uses};
+    constructors, start: d.start, end: d.end, generated: {...generated, laws, theory: {start: d.theory.start, end: d.theory.end}}, ...uses};
 
   const ownModel = call(constructor("model"), names.map(name));
   const variables = f => xs.slice(0, f.binders.length);
@@ -215,6 +217,13 @@ function expand(t, module, d, env) {
   return [inductive, model, foldMap, fold];
 }
 
+// The strategy's refusal of a law whose path constructor the kernel refuses,
+// as one whose side is a match, or null for any other failure.
+export const lawRefusal = (d, failure) => {
+  const law = d.generated?.laws?.[failure.constructor];
+  return law ? notEquational(law) : null;
+};
+
 // Refusals describe this strategy's limits, not nonexistence of a model.
 const notATheory = (kind, given) => Error(`${kind} takes a theory at its universes and parameters, as ${
   kind === "free" ? "free W(A : U0) : Monoid(U0) on A" : "initial N : Monoid(U0)"}; ${given} is none.`);
@@ -228,6 +237,6 @@ const notCarrierValued = (field, carrier) => Error(`${field} does not return the
 const notEquational = field => Error(`The law ${field} is not an equation between operation terms: the equational strategy does not support this law.`);
 const arrowOperation = field => Error(`${field} uses an arrow type: the equational strategy requires named operation arguments, as in succ(x : M) : M.`);
 const recursiveGenerators = N => Error(`The generator type of ${N} mentions ${N} or one of its generated names: free requires a type given independently of the declared model.`);
-const capturedBy = (field, name) => Error(`${field}'s pattern binds ${name}, which an argument here names: rename it in ${field}.`);
+const capturedModel = (T, field, N) => Error(`${T}'s ${field} binds ${N} in a pattern, under which the expansion names the model ${N}: rename the initial or free model.`);
 const universeArguments = field => Error(`${field} binds a universe argument: the equational strategy supports term arguments only; bind universes in the theory header.`);
 const hiddenDependency = N => Error(`${N} hides a declaration used by its expansion: rename the initial or free model.`);

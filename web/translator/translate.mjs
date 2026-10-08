@@ -21,7 +21,7 @@ import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleS
 import {repeatedName,stem} from "./names.mjs";
 import {numeralValue} from "./numerals.mjs";
 import {hasHole,mismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
-import {initialDeclarations} from "./initial-models.mjs";
+import {initialDeclarations,lawRefusal} from "./initial-models.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
 import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipExpansion,sectionScope,selected,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
@@ -488,10 +488,7 @@ export class Translator {
       }
       if(d.kind==="inductive") {
         this.inductiveDeclaration(d,module,env,declarations);
-        if(d.generated?.initial&&declarations.at(-1).status==="not-translated") {
-          const skipped=skipExpansion(this,queue,env,d,"initial");
-          this.onQueued?.(-skipped);
-        }
+        this.skipFailedExpansion(d,queue,env,declarations);
         continue;
       }
       // Each declaration counts its own rewriting work and spends its own fuel.
@@ -575,20 +572,17 @@ export class Translator {
       // result must not remain available to subsequent declarations.
       if (declarations.at(-1).status === "not-translated")
         env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:this.checker.bindingName?.(d.name.text)??d.name.text,reason:declarations.at(-1).reason});
-      // Without its type of models, the rest of a theory cannot check: it is
-      // unavailable, and its failure is reported once.
-      // The rest is taken off whether or not an observer counts it.
-      if (d.generated?.role==="model"&&declarations.at(-1).status==="not-translated") {
-        const skipped=skipExpansion(this,queue,env,d);
-        this.onQueued?.(-skipped);
-      }
-      if (d.generated?.initial&&declarations.at(-1).status==="not-translated") {
-        const skipped=skipExpansion(this,queue,env,d,"initial");
-        this.onQueued?.(-skipped);
-      }
+      this.skipFailedExpansion(d,queue,env,declarations);
     }
     return {declarations,env,directives,simpRegistry:this.simpRegistry,
       normalizationVisits:this.checker.steps};
+  }
+  // After a failed declaration, the rest of its expansion (theories.mjs),
+  // taken off whether or not an observer counts it.
+  skipFailedExpansion(d,queue,env,declarations) {
+    if(declarations.at(-1).status!=="not-translated")return;
+    const skipped=skipExpansion(this,queue,env,d);
+    this.onQueued?.(-skipped);
   }
   // A binder of the declaration's own parameter, known by its token: the
   // binding it made, for recursion to recognize (match.mjs).
@@ -609,12 +603,19 @@ export class Translator {
       const scope=(d.uses??[]).reduce((inner,model)=>selected(this,inner,model),new Scope(unit,new Map(),env));
       const lowered=lowerInductive(this,d,scope);
       for(const [name,value] of lowered.entries)env.set(name,value);
+      // An initial/free model's declared type brings its generated syntax,
+      // so that it is recorded as the inductive it is.
       declarations.push({name:d.name.text,status:"checked-native-cubical",inductive:lowered.record,
-        term:lowered.former,type:lowered.former,native:{ok:true,axioms:[],extensions:lowered.extensions}});
-    } catch(error) {
+        term:lowered.former,type:lowered.former,native:{ok:true,axioms:[],extensions:lowered.extensions},
+        ...(d.generated?{syntax:d}:{})});
+    } catch(failure) {
+      // An initial or free model's law refused as a boundary is beyond its
+      // strategy: that refusal, at the theory (initial-models.mjs).
+      const law=lawRefusal(d,failure), error=law?unit.locate(law,d.generated.theory):failure;
       untranslated(error.message);
       declarations.push({name:d.name.text,status:"not-translated",reason:error.message,
-        errorStart:error.offset,errorEnd:error.sourceEnd,blockedBy:error.blockedBy,failure:error.kind});
+        errorStart:error.offset,errorEnd:error.sourceEnd,blockedBy:error.blockedBy,failure:error.kind,
+        ...(d.generated?{syntax:d}:{})});
     }
     declarations.at(-1).rewriteWork={...unit.work};
     unit.fuel.close();

@@ -11,9 +11,10 @@ import { formatCubist } from "../web/cubist/formatter.mjs";
 import { currentSyntax, historicalSource } from "../web/cubist/legacy-syntax.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
-import { testModule } from "./check-program.mjs";
+import { checkProgram, testModule } from "./check-program.mjs";
 
-const theories = testModule("theories", { module: await createCubical() });
+const module = await createCubical();
+const theories = testModule("theories", { module });
 
 test("theory constructors keep header parameters apart from generated field binders", async () => {
   const { get } = await testModule("theory_headers")();
@@ -51,9 +52,7 @@ test("a theory checks as its model type, constructor, projections, parents' mode
 // pair written M -> M -> M, whose carrier on both sides of an arrow has no
 // homomorphisms.
 test("an operation whose arguments share one domain has homomorphisms, preserving it and computing", async t => {
-  const program = new CubicalProgram(await createCubical(), sourceReader());
-  t.after(() => program.dispose());
-  const result = await program.check(`import nat;
+  const { result } = await checkProgram(t, `import nat;
 import hlevels;
 use nat;
 
@@ -70,15 +69,38 @@ def preserved(A, B : Pair(U0), f : Pair.Hom(A, B), x, y : A.M) :
 def composite : Pair.Hom.compose(Pair.Hom.id(nat_pair), Pair.Hom.id(nat_pair)).map(5) = 5 {
   rfl;
 }
-`, "grouped");
+`, { module, name: "grouped" });
+  assert.deepEqual(result.gaps, []);
+  assert.equal(result.complete, true);
+});
+
+// A group that repeats a name still takes an argument for each occurrence;
+// the body reads the last.
+test("an operation whose group repeats a name has homomorphisms for each argument", async t => {
+  const { result } = await checkProgram(t, `import nat;
+import hlevels;
+use nat;
+
+theory T(U < UU0) {
+  M : set U;
+  op : forall x, x : M. M;
+}
+
+def second : T(U0) := T.make(Nat, nat_is_set, fun x => fun y => y);
+
+def preserved(A, B : T(U0), f : T.Hom(A, B), x, y : A.M) :
+  f.map(A.op(x, y)) = B.op(f.map(x), f.map(y)) := f.map_op(x, y);
+
+def composite : T.Hom.compose(T.Hom.id(second), T.Hom.id(second)).map(second.op(3, 5)) = 5 {
+  rfl;
+}
+`, { module, name: "repeated" });
   assert.deepEqual(result.gaps, []);
   assert.equal(result.complete, true);
 });
 
 test("fresh operation binders avoid theory parameters absent from the field type", async t => {
-  const program = new CubicalProgram(await createCubical(), sourceReader());
-  t.after(() => program.dispose());
-  const result = await program.check(`import hlevels;
+  const { result } = await checkProgram(t, `import hlevels;
 theory T(U < UU0, M_1 : Unit) {
   M : set U;
   op(M : M) : Unit;
@@ -89,7 +111,7 @@ def composite(S : T(U0, tt), x : S.M) :
   T.Hom.compose(T.Hom.id(S), T.Hom.id(S)).map(x) = x { rfl; }
 def iso_composite(S : T(U0, tt), x : S.M) :
   T.Iso.compose(T.Iso.id(S), T.Iso.id(S)).to.map(x) = x { rfl; }
-`, "fresh_parameters");
+`, { module, name: "fresh_parameters" });
   assert.deepEqual(result.gaps, []);
   assert.equal(result.complete, true);
 });

@@ -3,6 +3,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import { checkProgram } from "./check-program.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
+import { verifyMigration } from "../tools/proof-migration.mjs";
 
 const module = await createCubical();
 const verified = async (t, source) => {
@@ -129,6 +131,8 @@ initial Named : Child(U := U0);
 initial P : Parameterized(n := tt, U := U0);
 free W(V < UU0, A : V) : Child(V) on A;
 free Q(A : U0) : Parameterized(U0, tt) on A;
+theory Numbered extends T { op(U : M) : M; }
+initial K : Numbered(U_1 := U0);
 def folded(S : Child(U0)) : N.fold(S).map(N.c) = S.c { rfl; }
 def parameter_fold(S : Parameterized(U0, tt)) : P.fold(S).map(P.c) = S.c { rfl; }
 def generator_fold(V < UU0, A : V, S : Child(V), g : A -> S.M, a : A) :
@@ -249,6 +253,33 @@ def folded(V < UU0, A : V, S : Monoid(V), g : A -> S.M, a : A) :
 `);
 });
 
+test("a theory's pattern names leave free parameters and the model's name usable, refusing only a capture", async t => {
+  await verified(t, `import nat;
+import hlevels;
+theory T(U < UU0, A : U) {
+  M : set U;
+  op(n : Nat, b : (match n return U { zero => A; succ(k) => A; })) : M;
+}
+free W(k : U0) : T(U0, Unit) on k;
+initial k : T(U0, Unit);
+def generator_fold(A : U0, S : T(U0, Unit), g : A -> S.M, a : A) :
+  W.fold(k := A, S, g).map(W.gen(a)) = g(a) { rfl; }`);
+  // The expansion writes the model, as k.c, under the pattern's k.
+  const source = `import nat;
+import hlevels;
+theory P(U < UU0) {
+  M : set U;
+  c : M;
+  law l(n : Nat) : c = (match n return M { zero => c; succ(k) => c; });
+}
+initial k : P(U0);`;
+  const {result} = await checkProgram(t, source, {module});
+  const failure = result.outputs.find(o => o.name === "k");
+  assert.deepEqual(result.outputs.filter(o => !o.verified).map(o => [o.name, o.code]), [["k", "E869"]]);
+  assert.match(failure.reason, /^P's l binds k in a pattern, under which the expansion names the model k: rename the initial or free model\./);
+  assert.equal(failure.errorStart, source.indexOf("P(U0)", source.indexOf("initial")));
+});
+
 test("generated syntax has local positions, and only names written in the header link from its source", async t => {
   const header = "initial N : Monoid(U0);\nfree W(A : U0) : Monoid(U0) on A;";
   const source = `import hlevels; import algebra;\n${"// padding\n".repeat(100)}${header}`;
@@ -355,6 +386,38 @@ free W(A : U0) : T(U0) on A;`, {module});
   assert.ok(result.outputs.every(o => !/^(N|W)\./.test(o.name)));
 });
 
+test("a law the kernel refuses as a boundary gets the strategy's refusal, and a law's redexes reduce", async t => {
+  const source = `import nat;
+import hlevels;
+use nat;
+theory P(U < UU0) {
+  M : set U;
+  c : M;
+  op(n : Nat) : M;
+  law l(n : Nat) : c = (match n return M { zero => c; succ(k) => op(k); });
+}
+initial N : P(U0);
+free W(j : U0) : P(U0) on j;`;
+  const {result} = await checkProgram(t, source, {module});
+  assert.deepEqual(result.outputs.filter(o => !o.verified).map(o => [o.name, o.code]), [["N", "E856"], ["W", "E856"]]);
+  assert.ok(result.outputs.every(o => !/^(N|W)\./.test(o.name)));
+  for (const keyword of ["initial", "free"])
+    assert.equal(result.outputs.find(o => o.name === (keyword === "free" ? "W" : "N")).errorStart, source.indexOf("P(U0)", source.indexOf(keyword)));
+  // The kernel reads a boundary beta-reduced, and a data argument as data.
+  await verified(t, `import nat;
+import hlevels;
+use nat;
+theory R(U < UU0) {
+  M : set U;
+  c : M;
+  op(n : Nat, x : M) : M;
+  law redex : op(0, c) = (fun (y : M) => y)(c);
+  law data(n : Nat, x : M) : op(match n return Nat { zero => 0; succ(k) => k; }, x) = x;
+}
+initial N : R(U0);
+free W(A : U0) : R(U0) on A;`);
+});
+
 test("domains depending on laws or carrier evidence are refused, naming the proof, before publishing a model", async t => {
   for (const [dependency, kind] of [["l", "law"], ["M_is_set", "evidence"]]) {
     const {result} = await checkProgram(t, `import hlevels;
@@ -400,4 +463,26 @@ test("a model name cannot hide a global required by its expansion", async t => {
 theory T(U < UU0) { M : set U; c : M; }
 initial M : T(U0);
 free W(W : U0) : T(U0) on W;`);
+});
+
+test("an initial or free model's declared type is an inductive to the workbench and the migration verifier", async t => {
+  const source = `import hlevels;
+import algebra;
+initial N : Monoid(U0);
+free W(A : U0) : Monoid(U0) on A;
+`;
+  const {program, get} = await verified(t, source);
+  // The workbench shows a declared type's signature, never a checked term.
+  for (const name of ["N", "W"]) {
+    assert.deepEqual([get(name).kind, get(name).role], ["inductive", "inductive"]);
+    assert.ok(program.signatureView(get(name).binding).constructors.length);
+  }
+  // The verifier matches the declared types' signatures, through which the
+  // generated definitions compare as identical.
+  const library = sourceReader();
+  const [report] = await verifyMigration({ modules: ["initial_fixture"], level: "identical",
+    readOriginal: (name, importer) => name === "initial_fixture" ? source : library(name, importer),
+    readEdited: async () => source.replace("initial N : Monoid(U0);", "initial N : Monoid(U := U0);") });
+  assert.deepEqual(report.failures, []);
+  assert.equal(report.identical, 8);
 });
