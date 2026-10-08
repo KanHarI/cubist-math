@@ -24,10 +24,13 @@ const recordOf = id => recorded.workloads.find(workload => workload.id === id);
 // Growth allowed in a deterministic counter: a quarter, and a little for small counts.
 const bound = value => Math.ceil(value * 1.25) + 64;
 const counters = ["instructions", "instructionSteps", "queries", "querySteps", "failedQueries", "nodes"];
-// A rendered value is compared when the report holds it whole.
+// Kernel outcomes retain the full rendered length and hash even when text is
+// only a preview. Also compare text directly when the report holds it whole.
 const sameOutcome = (live, record, label) => {
   assert.equal(live.status, record.status, label);
   assert.equal(live.code, record.code, label);
+  assert.equal(live.length, record.length, `${label}: rendered length`);
+  assert.equal(live.sha256, record.sha256, `${label}: rendered hash`);
   if (record.text.length === record.length) assert.equal(live.text, record.text, label);
 };
 
