@@ -116,6 +116,8 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
     const valueStart = node.valueStart ?? (node.kind === "let" ? node.value?.start : undefined);
     if (valueStart !== undefined && tokenBefore.get(valueStart)?.text === ":=")
       assignmentTokens.add(tokenBefore.get(valueStart).start);
+    // An initial or free model's theory breaks after its colon, as a type does.
+    if (["initial", "free"].includes(node.kind) && node.theory) annotationStarts.add(node.theory.start);
     // A declaration's type, or a let's stated type before its proof block.
     if (node.type && (node.kind === "def" || node.kind === "let" && node.body)) {
       annotationStarts.add(node.type.start);

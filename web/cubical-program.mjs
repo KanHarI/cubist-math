@@ -125,9 +125,12 @@ export class CubicalProgram {
         expansion: item.node.expansion, description: item.node.description,
         definitionStart: source?.start ?? item.node.start,
         ...(name === main ? {} : { sourceModule: name, sourceName: declaration.name.text }) };
-      // Initial/free expansion nodes have diagnostic spans but no written
-      // references: their synthetic links would hide the declared name.
-      if (name === main && !declaration.generated?.initial) {
+      // An initial/free expansion's synthetic nodes start at the declared
+      // name, and their links would hide the name's own. The header's
+      // parameters, theory and generator type keep their written positions.
+      const synthetic = declaration.generated?.initial
+        && item.node.start === declaration.name.start;
+      if (name === main && !synthetic) {
         const link={ name: item.node.name, binding, start: item.node.start,
         end: item.node.end, definitionStart: source?.start, role: item.node.role ?? (declared ? "inductive" : definition ? "definition" : "local"),
         expansion: item.node.expansion, description: item.node.description,

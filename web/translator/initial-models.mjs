@@ -16,7 +16,8 @@ export function initialDeclarations(t, module, d, env, declarations) {
   catch (failure) {
     const error = unit.locate(failure, d.name);
     t.onDeclarationStart?.(d);
-    declarations.push({ name: d.name.text, status: "not-translated", reason: error.message, errorStart: error.offset, errorEnd: error.sourceEnd });
+    declarations.push({ name: d.name.text, status: "not-translated", reason: error.message, errorStart: error.offset, errorEnd: error.sourceEnd,
+      blockedBy: error.blockedBy });
     env.set(d.name.text, { tag: "Untranslated", name: d.name.text, binding: t.checker.bindingName?.(d.name.text) ?? d.name.text, reason: error.message });
     t.onDeclaration?.(d, declarations.at(-1));
     return [];
@@ -34,8 +35,13 @@ function expand(t, module, d, env) {
   const lambdas = (binders, body) => binders.reduceRight((inner, b) => lambda(b, inner), body);
   const head = d.theory.kind === "call" ? d.theory.fn : d.theory;
   const entry = head.kind === "name" ? env.get(theoryBinding(head.name)) : null;
-  if (entry?.tag !== "Theory")
+  if (entry?.tag !== "Theory") {
+    // A theory that failed its own check is a dependency here, as at its other uses.
+    const failed = head.kind === "name" ? env.get(head.name) : null;
+    if (failed?.tag === "Untranslated")
+      throw module.locate(Object.assign(Error(`Untranslated dependency: ${head.name}`), {blockedBy: failed.binding ?? failed.name}), head);
     throw module.locate(notATheory(d.kind, module.source.slice(d.theory.start, d.theory.end).trim()), d.theory);
+  }
   const record = entry.record, T = record.name;
   const repeated = repeatedName(d.params);
   if (repeated) throw module.locate(Error(`${N} has two parameters named ${repeated.name.text}: give each its own name.`), repeated.name);
@@ -82,7 +88,7 @@ function expand(t, module, d, env) {
     ...record.params.map((p, k) => [p.name, argument(record.universes.length + k)])]);
 
   const carriers = record.fields.filter(f => f.kind === "sort");
-  if (carriers.length !== 1 || carriers[0].family) throw module.locate(notOneCarrier(T, carriers.map(f => f.name)), d.theory);
+  if (carriers.length !== 1 || carriers[0].family) throw module.locate(notOneCarrier(T, carriers), d.theory);
   const carrier = carriers[0].name;
   const evidence = record.fields.find(f => f.kind === "evidence" && f.of === carrier);
   if (!evidence) throw module.locate(untruncatedCarrier(T, carrier), d.theory);
@@ -168,9 +174,11 @@ function expand(t, module, d, env) {
 }
 
 // Refusals describe this strategy's limits, not nonexistence of a model.
-const notATheory = (kind, given) => Error(`${kind} takes a theory at its universes and parameters, as ${kind} N : Monoid(U0); ${given} is none.`);
+const notATheory = (kind, given) => Error(`${kind} takes a theory at its universes and parameters, as ${
+  kind === "free" ? "free W(A : U0) : Monoid(U0) on A" : "initial N : Monoid(U0)"}; ${given} is none.`);
 const theoryArguments = (T, wanted, given) => Error(`${T} takes ${wanted} argument${wanted === 1 ? "" : "s"}, its universes and parameters; this gives ${given}.`);
-const notOneCarrier = (T, carriers) => Error(`The equational strategy supports one carrier, not a family; ${T} has ${carriers.length ? carriers.join(", ") : "none"}.`);
+const notOneCarrier = (T, carriers) => Error(`The equational strategy supports one carrier that is not a family; ${T} has ${
+  carriers.length ? carriers.map(f => f.family ? `the family ${f.name}` : f.name).join(", ") : "none"}.`);
 const untruncatedCarrier = (T, carrier) => Error(`${T}'s carrier ${carrier} is neither a set nor a proposition: the equational strategy requires a truncated carrier.`);
 const notPositive = (field, binder, carrier) => Error(`${field} takes ${binder} with a type depending on the carrier ${carrier}: the equational strategy supports carrier arguments or types independent of the carrier.`);
 const notCarrierValued = (field, carrier) => Error(`${field} does not return the carrier ${carrier}: the equational strategy supports carrier-valued operations.`);

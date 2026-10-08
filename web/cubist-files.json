@@ -1996,7 +1996,7 @@
   },
   {
    "path": "cubist-tests/initial_models.cubist",
-   "summary": "`initial` and `free` models of a theory: the declared type, its model and `fold`, computing on constructors and generators; theories with no such model."
+   "summary": "`initial` and `free` models of a theory: the declared type, its model and `fold`, computing on constructors and generators; theories outside the equational strategy, refused without a claim of nonexistence."
   },
   {
    "path": "cubist-tests/inspection_axiom_labels.cubist",

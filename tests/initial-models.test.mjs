@@ -160,12 +160,15 @@ def folded(V < UU0, A : V, S : Monoid(V), g : A -> S.M, a : A) :
 `);
 });
 
-test("generated syntax has local positions and only the declared name links from its source", async t => {
-  const source = `import hlevels; import algebra;\n${"// padding\n".repeat(100)}initial N : Monoid(U0);`;
+test("generated syntax has local positions, and only names written in the header link from its source", async t => {
+  const header = "initial N : Monoid(U0);\nfree W(A : U0) : Monoid(U0) on A;";
+  const source = `import hlevels; import algebra;\n${"// padding\n".repeat(100)}${header}`;
   const {result} = await verified(t, source);
-  const start = source.lastIndexOf("initial"), nameAt = source.lastIndexOf("N :");
-  const links = result.links.filter(link => link.start >= start);
-  assert.deepEqual(links.map(link => [link.name, link.start, link.end]), [["N", nameAt, nameAt + 1]]);
+  const start = source.lastIndexOf("initial");
+  const linked = [...new Set(result.links.filter(link => link.start >= start)
+    .map(link => `${source.slice(link.start, link.end)}@${link.start - start}`))];
+  // The declared names, and in the headers each name a definition's header would link.
+  assert.deepEqual(linked.sort(), ["N@8", "Monoid@12", "U0@19", "W@29", "A@31", "U0@35", "Monoid@41", "U0@48", "A@55"].sort());
   assert.ok(result.links.every(link => source.slice(link.start, link.end) !== "// padding"));
   for (const suffix of ["model", "fold_map", "fold"]) {
     assert.ok(result.symbols.some(symbol => symbol.name === `N.${suffix}` && symbol.verified));
@@ -179,6 +182,31 @@ test("generated syntax has local positions and only the declared name links from
   assert.ok(failure.errorStart >= invalid.indexOf("free TooLarge"), JSON.stringify(failure));
   assert.ok(failure.errorEnd <= invalid.length, JSON.stringify(failure));
   assert.deepEqual(failed.outputs.map(o => o.name), ["TooLarge"]);
+});
+
+test("a theory that failed its own check is an untranslated dependency of its initial and free models", async t => {
+  const source = `import hlevels;
+theory T(U < UU0) { M : set U; c : M; law bad(x : M) : M; }
+initial N : T(U0);
+free W(A : U0) : T(U0) on A;
+def use_it(m : T(U0)) : T(U0) := m;`;
+  const {result} = await checkProgram(t, source, {module});
+  assert.deepEqual(result.outputs.map(o => [o.name, o.code]), [["T", "E818"], ["N", "E340"], ["W", "E340"], ["use_it", "E340"]]);
+  for (const [name, keyword] of [["N", "initial"], ["W", "free"]]) {
+    const failure = result.outputs.find(o => o.name === name);
+    assert.match(failure.reason, /^Untranslated dependency: T /);
+    assert.equal(failure.errorStart, source.indexOf("T(U0)", source.indexOf(keyword)));
+  }
+});
+
+test("refusals of a theory name the declaration's own spelling and the carriers given", async t => {
+  const {result} = await checkProgram(t, `import hlevels;
+theory Two(U < UU0) { M : set U; P : set U; c : M; }
+initial N : Two(U0);
+free X : Nat on Unit;`, {module});
+  assert.deepEqual(result.outputs.filter(o => !o.verified).map(o => [o.name, o.code]), [["N", "E852"], ["X", "E850"]]);
+  assert.match(result.outputs.find(o => o.name === "N").reason, /one carrier that is not a family; Two has M, P\./);
+  assert.match(result.outputs.find(o => o.name === "X").reason, /as free W\(A : U0\) : Monoid\(U0\) on A; Nat is none\./);
 });
 
 test("a failed generated declaration skips its dependents and keeps progress totals accurate", async t => {

@@ -99,6 +99,20 @@ test("annotated definition equalities indent the type without indenting the proo
   }
 });
 
+test("a long initial or free header breaks after its colon, as a definition's does", () => {
+  const source = `free LongGeneratedModelName(A : U0, B : U0) : Action(U0, nat_additive.monoid) on A * B;
+initial TheInitialModelOfAVeryLongTheoryName : SomeVeryLongTheoryName(U0, nat_additive.monoid);`;
+  const formatted = formatCubist(source, { printWidth: 80 });
+  assert.equal(formatted, `free LongGeneratedModelName(A : U0, B : U0) :
+  Action(U0, nat_additive.monoid) on A * B;
+
+initial TheInitialModelOfAVeryLongTheoryName :
+  SomeVeryLongTheoryName(U0, nat_additive.monoid);
+`);
+  assert.equal(formatCubist(formatted, { printWidth: 80 }), formatted);
+  assert.deepEqual(semantic(parse(formatted)), semantic(parse(source)));
+});
+
 test("long quantified statements pack short binders and preserve function domains", () => {
   const source = "def CantorSchroederBernstein := forall A : U0. forall B : U0. IsSet(A) -> IsSet(B) -> forall f : A -> B. forall g : B -> A. Injective(A, B, f) -> Injective(B, A, g) -> Equiv(U0, A, B);";
   const formatted = formatCubist(source);
