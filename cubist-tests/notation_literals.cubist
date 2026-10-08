@@ -83,7 +83,7 @@ def int_sum(x, y : Z) : Z := x integers.(+) y;
 computable def glyph_count(s : Lexeme) : Parsed(U0, Nat) := ok(length(s));
 
 notation count {
-  literal (s : Lexeme) := glyph_count(s);
+  literal(s : Lexeme) := glyph_count(s);
 }
 
 // Output: 3
@@ -111,7 +111,7 @@ theory Boxed(U < UU0) {
 def box : Boxed(U0) := Boxed.make(M := Nat, point := 0);
 
 notation box {
-  numeral (n : Nat) := succ(n);
+  numeral(n : Nat) := succ(n);
 }
 
 // Output: 3

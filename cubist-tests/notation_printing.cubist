@@ -14,7 +14,7 @@ use nat;
 
 notation times {
   x + y := mul(x, y);
-  numeral (n : Nat) := n;
+  numeral(n : Nat) := n;
 }
 
 def doubled(x : Nat) : times.(x + x) = mul(x, x) {
@@ -35,7 +35,7 @@ print(typeof(refl(typed(Q, rationals.(1/2)))));
 // Only a whole lexeme prints as a literal: one whose tail is a name prints
 // as the application it is.
 notation decimal {
-  literal (s : Lexeme) := natural_literal(s);
+  literal(s : Lexeme) := natural_literal(s);
 }
 
 def tail : Lexeme := cons(digit(2), nil);
@@ -64,7 +64,7 @@ notation powers {
   x + y := mul(x, y);
   x * y := mul(x, y);
   x ^ nat. (n) := combine(x, n);
-  numeral (n : Nat) := n;
+  numeral(n : Nat) := n;
 }
 
 use powers;
@@ -104,7 +104,7 @@ def nested_again :
 def pick(a, b : Nat) : Nat := b;
 
 notation diagonal {
-  numeral (n : Nat) := pick(n, n);
+  numeral(n : Nat) := pick(n, n);
 }
 
 use diagonal;

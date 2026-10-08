@@ -157,6 +157,14 @@ test("a keyword keeps its space before a parenthesis; the reserved words written
     "def same(n : Nat) : n = n := refl(n);\n");
   assert.equal(formatCubist("def m := Monoid.make (M := Nat);\n"),
     "def m := Monoid.make(M := Nat);\n");
+  // So are print's forms, a notation's numeral and literal rules, and an
+  // inductive's trunc level, as the reference and the printer write them.
+  assert.equal(formatCubist("def t : Nat := 3;\n\nprint (witness (t));\n\nprint(typeof (t));\n"),
+    "def t : Nat := 3;\n\nprint(witness(t));\n\nprint(typeof(t));\n");
+  assert.match(formatCubist("notation counts {\n  x + y := add(x, y);\n  numeral (n : Nat) := n;\n}\n"), /\n  numeral\(n : Nat\) := n;\n/);
+  assert.match(formatCubist("notation digits {\n  literal (s : Lexeme) := read(s);\n}\n"), /\n  literal\(s : Lexeme\) := read\(s\);\n/);
+  assert.equal(formatCubist("inductive G : trunc (1) {\n  g;\n}\n"), "inductive G : trunc(1) {\n  g;\n}\n");
+  assert.equal(formatCubist("inductive P : trunc (- 1) {\n  p;\n}\n"), "inductive P : trunc(-1) {\n  p;\n}\n");
 });
 
 test("an empty block is {} on its declaration's line", () => {
@@ -174,4 +182,7 @@ test("a long value ending in brackets breaks inside them, its definition on one 
   // A value that fits on a line of its own goes there, whole.
   assert.equal(formatCubist("computable def same_ratio_props(f, g : Fraction) : IsProp(U, SameRatio(f, g)) := R_is_set(f.1 * g.2.1, g.1);\n"),
     "computable def same_ratio_props(f, g : Fraction) :\n  IsProp(U, SameRatio(f, g)) := R_is_set(f.1 * g.2.1, g.1);\n");
+  // A comment after the value leaves the layout as it is without one.
+  assert.equal(formatCubist(`def additive_nat : Monoid(U0) := Monoid.make(${fields}, one_mul := nat_zero_add); // note\n`),
+    `def additive_nat : Monoid(U0) := Monoid.make(\n  ${fields},\n  one_mul := nat_zero_add\n); // note\n`);
 });

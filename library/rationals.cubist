@@ -642,5 +642,5 @@ computable def rational_literal(s : Lexeme) : Parsed(U0, Q) {
 }
 
 notation rationals {
-  literal (s : Lexeme) := rational_literal(s);
+  literal(s : Lexeme) := rational_literal(s);
 }

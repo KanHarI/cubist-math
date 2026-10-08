@@ -5,7 +5,7 @@ import { cubistSources } from "./cubist-sources.mjs";
 
 const args = process.argv.slice(2), check = args.includes("--check");
 if (args.includes("--help")) {
-  console.log("Usage: npm run format:cubist -- [--check] [file.cubist ...]\nWith no files, format every .cubist source git tracks, including AST-checked tuple linearization. --check reports changes without writing.");
+  console.log("Usage: npm run format:cubist -- [--check] [file.cubist ...]\nWith no files, format every .cubist source git does not ignore, including AST-checked tuple linearization. --check reports changes without writing.");
 } else {
   const files = args.filter(a => a !== "--check");
   if (files.some(a => a.startsWith("--"))) throw new Error("Unknown formatter option.");

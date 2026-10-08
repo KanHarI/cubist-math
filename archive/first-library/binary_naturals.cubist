@@ -61,7 +61,7 @@ computable def binary_literal(s : Lexeme) : Parsed(U0, BinaryNat) := match s {
   };
 
 notation binary {
-  literal (s : Lexeme) := binary_literal(s);
+  literal(s : Lexeme) := binary_literal(s);
 }
 
 // These examples reduce by constructor computation alone.
