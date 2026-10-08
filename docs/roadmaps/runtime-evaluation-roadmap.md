@@ -55,7 +55,7 @@ EVAL0's [harness](../../tools/evaluation-baseline.mjs) repeats the
 investigation's observations as a versioned baseline. Each sample is a new
 Node process that checks the workload's imports and runs its entry as the
 CLI REPL does, once cold and three times warm. Five samples per workload
-were recorded on 2026-10-08 at `e81d352b` with Node 24.13.0 on
+were recorded on 2026-10-08 at `b5a261c8` with Node 24.13.0 on
 macOS/arm64, Apple M3 Pro, in the
 [baseline record](../../tests/fixtures/evaluation-baseline.json). Its kernel
 work and arena counters are deterministic; every workload's five cold
@@ -69,24 +69,24 @@ node tools/evaluation-baseline.mjs --only=euclid-3,euclid-3-print --samples=3
 
 | Workload | Result | Normalizations | Comparisons | Instructions | Cold |
 | --- | --- | --- | --- | --- | --- |
-| `evaluate euclid(3);` | `(7, …)` | 2 | 2 | 258,730 | 407 ms |
-| `print(evaluate(euclid(3)));` | `(7, …)` | 1 | none | 12 | 30 ms |
-| `evaluate euclid(3).1;` | `7` | 2 | 2 | 42 | 7 ms |
+| `evaluate euclid(3);` | `(7, …)` | 2 | 2 | 258,730 | 435 ms |
+| `print(evaluate(euclid(3)));` | `(7, …)` | 1 | none | 12 | 32 ms |
+| `evaluate euclid(3).1;` | `7` | 2 | 2 | 42 | 8 ms |
 | `evaluate euclid(4);` | K344 | 1, failed | none | 13 | 31 ms |
-| `evaluate euclid(4) expecting (5, _);` | K344 | 1, failed | none | 13 | 30 ms |
-| `evaluate euclid(4).1;` | K344 | 1, failed | none | 14 | 32 ms |
-| `evaluate euclid(5).1;` | K344 | 1, failed | none | 15 | 43 ms |
-| `evaluate 2 * 255;` | K344 | 2 | 2, one failed | 529 | 12 ms |
-| `print(evaluate(2 * 255));` | `510` | 1 | none | 264 | 7 ms |
+| `evaluate euclid(4) expecting (5, _);` | K344 | 1, failed | none | 13 | 32 ms |
+| `evaluate euclid(4).1;` | K344 | 1, failed | none | 14 | 31 ms |
+| `evaluate euclid(5).1;` | K344 | 1, failed | none | 15 | 44 ms |
+| `evaluate 2 * 255;` | K344 | 2 | 2, one failed | 529 | 14 ms |
+| `print(evaluate(2 * 255));` | `510` | 1 | none | 264 | 9 ms |
 | `evaluate winding(integer_loop(negative(2)));` | `right(2)` | 2 | 2 | 59 | 36 ms |
 
 The REPL's [evaluate method](../../web/repl-session.mjs) builds
 `evaluate e expecting e`. The [translator](../../web/translator/translate.mjs)
 then verifies and normalizes both sides, and asks for checked equality of
-their types and normal forms. That comparison takes 375 of the 407 ms of
+their types and normal forms. That comparison takes 400 of the 435 ms of
 `evaluate euclid(3)` and 258,718 of its 258,730 instructions: the instruction
 kernel derives the expanded certificate's equality with itself. Its two
-normalizations take 15 ms. The print path checks and normalizes once,
+normalizations take 16 ms. The print path checks and normalizes once,
 without the self-comparison.
 
 The record also shows:
@@ -103,7 +103,7 @@ The record also shows:
   the failed `euclid(4).1` leaves its 136,150 nodes there, and a successful
   `evaluate euclid(3)` leaves 95,592.
 - Warm runs of the same entry reuse the session's kernel caches: the failed
-  `euclid(4).1` takes under 1 ms warm, and `evaluate euclid(3)` 56 ms.
+  `euclid(4).1` takes under 1 ms warm, and `evaluate euclid(3)` 58 ms.
 
 A separate JavaScript experiment, now
 [versioned](../../tools/closure-evaluation-experiment.mjs), evaluates checked
@@ -116,14 +116,14 @@ definition `probe := euclid(n)`:
 
 | Prime component requested | Scratch result | Evaluation time | Thunks forced | Deepest forcing | Peak memory |
 | --- | --- | --- | --- | --- | --- |
-| `euclid(3).1` | `7` | 5 ms | 13,210 | 120 | 157 MiB |
-| `euclid(4).1` | `5` | 21 ms | 75,342 | 352 | 183 MiB |
-| `euclid(5).1` | `11` | 1.2 s | 4,561,663 | 1,648 | 1,383 MiB |
-| `euclid(6).1` | JavaScript call-stack overflow | 10 ms before failure | about 13,000 | about 3,500 | 157 MiB |
+| `euclid(3).1` | `7` | 6 ms | 13,210 | 120 | 156 MiB |
+| `euclid(4).1` | `5` | 20 ms | 75,342 | 352 | 179 MiB |
+| `euclid(5).1` | `11` | 1.2 s | 4,561,663 | 1,648 | 1,340 MiB |
+| `euclid(6).1` | JavaScript call-stack overflow | 10 ms before failure | about 13,000 | about 3,500 | 154 MiB |
 
 These runs ask the kernel nothing and allocate no kernel syntax. They do not
 normalize or certify the returned proof fields. Peak memory is the sample
-process's, about 145 MiB of which loading and checking the imports already
+process's, about 140 MiB of which loading and checking the imports already
 use. Where the stack overflows depends on how far the JIT has compiled the
 evaluator, so the failed run's counts are observations, not counters.
 
@@ -298,12 +298,17 @@ times execution and readback apart. Thunk forces, memo hits and the
 deepest force nesting are the scratch evaluator's. For the kernel, whose
 C stack is not observable, the harness reports the syntax depth that each
 normalization, comparison and check allocates, with the deepest chain.
+The REPL displays at most 1000 characters of a value, so an outcome also
+records a digest of the whole normal form evaluated, with bound variables
+and dimensions numbered by binding depth: `euclid(3)`'s normal form prints
+as about 340,000 characters.
 [Its test](../../tests/evaluation-baseline.test.mjs) keeps the recorded
-outcomes and normalization and comparison counts exact, and lets the
-deterministic counters fall but grow by at most a quarter. It asserts the
-REPL/print discrepancy and the K344 failures directly and compares no times.
-A change past those bounds records the baseline again with `--write`, and
-its reason.
+outcomes, normal forms included, and normalization and comparison counts
+exact, and lets the deterministic counters fall but grow by at most a
+quarter. It asserts the REPL/print discrepancy and the K344 failures
+directly and compares no times. It runs the scratch series on `euclid(3)`
+and `euclid(4)` and reads the larger two from the record. A change past
+those bounds records the baseline again with `--write`, and its reason.
 
 ### EVAL1: remove redundant REPL work
 
@@ -315,8 +320,8 @@ failed-entry recovery and browser/CLI agreement.
 
 **Acceptance:** one normalization for a successful plain evaluation;
 the same displayed values and assumption refusals; the Euclid self-equality
-instruction overhead disappears. In the baseline that comparison takes 375
-of the 407 ms of `evaluate euclid(3)`, and plain `evaluate 2 * 255` fails
+instruction overhead disappears. In the baseline that comparison takes 400
+of the 435 ms of `evaluate euclid(3)`, and plain `evaluate 2 * 255` fails
 in it where printing shows `510`; both workloads measure the change. This
 package does not claim to fix the syntax-depth failure.
 
@@ -534,7 +539,7 @@ Expected-value patterns (L2.9a) and the closed-truncation REPL command
 `witness TERM;` (L2.9b) are implemented in
 [#181](https://github.com/KanHarI/cubist-math/pull/181) and
 [#182](https://github.com/KanHarI/cubist-math/pull/182), after this roadmap's
-measurement baseline. Patterns currently match `result.normal`, after full
+investigation. Patterns currently match `result.normal`, after full
 normalization: a `_` hole saves no evaluation work. Thus the existing form
 `evaluate euclid(4) expecting (5, _)` still encounters the normalization
 failure, with the same counters as plain `euclid(4)` in the baseline.

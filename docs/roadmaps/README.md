@@ -144,10 +144,10 @@ authority; this summarizes it.
   planned explicit computation blocks, checked monad and arrow interfaces,
   mathematical examples, and staged elaboration without new kernel rules.
 - [Runtime evaluation and binary numerical foundations](runtime-evaluation-roadmap.md):
-  proposed after the `euclid(4)` syntax-depth failure, with EVAL0's
-  recorded measurement baseline done: one-pass REPL evaluation,
-  normalization caches, lazy closures, an explicit evaluation stack, typed
-  readback and checked search improvements. Early numerical
+  proposed after the `euclid(4)` syntax-depth failure: one-pass REPL
+  evaluation, normalization caches, lazy closures, an explicit evaluation
+  stack, typed readback and checked search improvements, measured against
+  EVAL0's recorded baseline, which is done. Early numerical
   foundations define `UNat` and `BNat`, prove their semiring isomorphism
   and equality in `U0` with transport laws, and provide strong induction
   and recursion over smaller binary values. New `Z`, `Q` and later
