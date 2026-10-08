@@ -22,6 +22,7 @@ import {repeatedName,stem} from "./names.mjs";
 import {numeralValue} from "./numerals.mjs";
 import {hasHole,mismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,lawRefusal} from "./initial-models.mjs";
+import {lexicalBinding} from "./lexical.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
 import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipExpansion,sectionScope,selected,usesScope,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
@@ -130,7 +131,7 @@ export class Translator {
     return new SourceUnit({checker:this.checker,moduleName:this.moduleName,simpRegistry:this.simpRegistry,
       references:this.references,freezeSuggestions:this.freezeSuggestions,...options});
   }
-  reference(scope,node,term,env=scope.env) {scope.unit.references?.(node,term,scope,env);}
+  reference(scope,node,term,env=scope.env) {scope.unit.references?.(node.spelling?{...node,name:node.spelling}:node,term,scope,env);}
   // Run a tactic search at a scope whose unit carries the search's own fuel,
   // shared by everything it does, premise searches included; `name` names it
   // in a message. A search already running at the scope is joined instead.
@@ -572,6 +573,7 @@ export class Translator {
       // result must not remain available to subsequent declarations.
       if (declarations.at(-1).status === "not-translated")
         env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:this.checker.bindingName?.(d.name.text)??d.name.text,reason:declarations.at(-1).reason});
+      if(d.generated)env.set(lexicalBinding(this.checker.bindingName?.(d.name.text)??d.name.text),env.get(d.name.text));
       this.skipFailedExpansion(d,queue,env,declarations);
     }
     return {declarations,env,directives,simpRegistry:this.simpRegistry,
@@ -830,6 +832,7 @@ export class Translator {
     return this.checker.ascribe && this.checker.kernel?.optimizations?.compactPaths !== false ? scope.ascribe(result,T.path(j,pt.family,pt.left,qt.right)) : result;
   }
   term(n,scope,expected=null) {
+    if(n.lexicalNotation)scope=scope.aliases(scope.env.get(n.lexicalNotation));
     const result=this.termBody(n,scope,expected);
     if(scope.unit.references) {
       const {env,unit}=scope;
@@ -908,7 +911,7 @@ export class Translator {
           if(value.tag==="Untranslated") {
             // A notation rule's name is read under its key: the message
             // names it as the rule does.
-            const error=Error(`Untranslated dependency: ${n.name.startsWith("\u0000notation ")?n.name.split(" ").slice(2).join(" "):n.name}`);
+            const error=Error(`Untranslated dependency: ${n.spelling??(n.name.startsWith("\u0000notation ")?n.name.split(" ").slice(2).join(" "):n.name)}`);
             error.blockedBy=value.binding??value.name;
             throw error;
           }

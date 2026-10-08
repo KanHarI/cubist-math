@@ -3,6 +3,7 @@
 // leaves, by which m.f reads a field of a model m and `open m;` puts a
 // model's fields and notation in scope.
 import {expandTheory} from "../cubist/theories.mjs";
+import {capturedNames, lexicalBinding, lexicalNotation} from "./lexical.mjs";
 import {Scope} from "./elaboration.mjs";
 import {rewritten} from "../cubist/scopes.mjs";
 import {substituteTerm,alphaKey,isTerm} from "./core.mjs";
@@ -52,7 +53,8 @@ export function modelField(t,scope,n) {
   // A name under a theory's, T.Hom, is a qualified name, not a field. A
   // local model that shadows the theory's name is a model like any other.
   if(!root||theoryRoot(t,scope,first,root))return null;
-  const owner={...n,name:n.name.slice(0,dot),end:n.start+dot};
+  const spelling=n.spelling??n.name,writtenDot=spelling.lastIndexOf(".");
+  const owner={...n,name:n.name.slice(0,dot),...(n.spelling?{spelling:spelling.slice(0,writtenDot)}:{}),end:n.start+writtenDot};
   const record=recordOf(t,scope,t.term(owner,scope,null));
   if(!record&&scope.hiding(n.name))throw Error(`${first} is bound here, which hides the declaration ${n.name}: rename the binding to refer to it.`);
   if(!record)return null;
@@ -61,7 +63,7 @@ export function modelField(t,scope,n) {
   if(!known&&record.ambiguous?.[field])throw ambiguousField(record,owner.name,field);
   if(!known)throw Error(`${owner.name} is a model of ${record.name}, which has no field ${field}: it has ${record.fields.map(f=>f.name).join(", ")}${
     record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`);
-  return scope.declared({kind:"call",fn:{...n,name:known.projection},args:[owner],start:n.start,end:n.end});
+  return scope.declared({kind:"call",fn:{...n,name:known.reference??known.projection,spelling:known.projection},args:[owner],start:n.start,end:n.end});
 }
 
 // A field that two independent parents give under one name (L2.4c): the
@@ -84,7 +86,7 @@ export function memberField(t,scope,n) {
   if(!known&&record.ambiguous?.[field])throw ambiguousField(record,"m",field);
   if(!known)throw Error(`This is a model of ${record.name}, which has no field ${field}: it has ${record.fields.map(f=>f.name).join(", ")}${
     record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`);
-  return scope.declared({kind:"call",fn:{kind:"name",name:known.projection,start:n.field.start,end:n.field.end},args:[n.value],start:n.start,end:n.end});
+  return scope.declared({kind:"call",fn:{kind:"name",name:known.reference??known.projection,spelling:known.projection,start:n.field.start,end:n.field.end},args:[n.value],start:n.start,end:n.end});
 }
 
 // The scope with the model `node` opened, or null when it is no model: each
@@ -95,7 +97,7 @@ export function opened(t,scope,node,{complete=true}={}) {
   if(!record)return null;
   const at={start:node.start,end:node.end};
   const values=new Map([...record.fields,...record.derived??[]].map(field=>
-    [field.name,t.term(scope.declared({kind:"call",fn:{kind:"name",name:field.projection,...at},args:[node],...at}),scope,null)]));
+    [field.name,t.term(scope.declared({kind:"call",fn:{kind:"name",name:field.reference??field.projection,spelling:field.projection,...at},args:[node],...at}),scope,null)]));
   // All of them in scope with one copy of the names there.
   const added=[...values];
   for(const [operator,field] of Object.entries(record.notations))added.push([operatorBinding(operator),values.get(field)]);
@@ -292,14 +294,53 @@ export function theoryDeclarations(t,module,d,env,declarations) {
     // : prop U does, states a law (L2.10k).
     const proposition=name=>{const entry=env.get(name);
       return entry?.tag==="Inductive"&&(entry.modifier==="prop"||entry.modifier?.trunc===-1);};
-    const generated=expandTheory(d,name=>env.get(theoryBinding(name))?.record??null,proposition);
+    const notation=capturedNotation(t,module,d,env);
+    const capture=capturedTheorySyntax(t,env,notation);
+    const generated=expandTheory(d,name=>env.get(theoryBinding(name))?.record??null,proposition,capture);
+    const reference=name=>lexicalBinding(t.checker.bindingName?.(name)??name);
+    for(const declaration of generated)if(declaration.theory) {
+      const record=declaration.theory;
+      record.reference=reference(record.model);
+      record.makeReference=reference(record.make);
+      record.homReference=reference(`${record.name}.Hom`);
+      record.homMakeReference=reference(`${record.name}.Hom.make`);
+      for(const field of [...record.fields,...record.derived??[],...record.parents])
+        field.reference=reference(field.projection);
+    }
     env.set(theoryBinding(d.name.text),{tag:"Theory",name:d.name.text,record:generated[0].theory,
-      notation:capturedNotation(t,module,d,env)});
-    return generated;
+      notation});
+    // References introduced by the expansion refer to these declarations,
+    // even inside a field binder named like the theory. Source globals were
+    // resolved before expansion and are already distinct from these names.
+    const own=new Map(generated.map(declaration=>[declaration.name.text,reference(declaration.name.text)]));
+    // A declaration's own name is its recursive binder, resolved by match
+    // elaboration, rather than a reference to an already checked global.
+    return generated.map(({theory,...syntax})=>({...rewritten(syntax,(n,bound)=>
+      n.kind==="name"&&n.name!==syntax.name.text&&own.has(n.name)&&(n.name.includes(".")||!bound.has(n.name))
+        ?{...n,name:own.get(n.name),spelling:n.name}:n),...(theory?{theory}:{})}));
   } catch(failure) {
     // The message says where, as an elaboration error does.
     return failedExpansion(t,d,env,declarations,module.locate(Error(failure.message),{start:failure.offset,end:failure.offset}));
   }
+}
+
+// Resolve source globals before retaining or inlining a field. Notation is
+// attached at the expression that uses it, so inherited fields from several
+// parents retain their own selections without hiding the child's binders.
+function capturedTheorySyntax(t,env,notation) {
+  const binding=notation&&lexicalNotation(t.checker,notation);
+  if(notation)env.set(binding,notation);
+  return (node,bound)=>{
+    const named=capturedNames(node,env,bound,[notationBinding,theoryBinding]);
+    return rewritten(named,n=>{
+      if(n.kind==="select")return {...n};
+      if(n.lexicalNotation)return n;
+      const operator=n.kind==="binary"&&!n.qualifier&&notationOperators.includes(n.operator)
+        ||n.kind==="negation"&&!n.qualifier;
+      return notation&&(operator||["number","binaryNumber","literal"].includes(n.kind))
+        ?{...n,lexicalNotation:binding}:n;
+    });
+  };
 }
 
 // The notation a theory's fields are read in, for its initial and free

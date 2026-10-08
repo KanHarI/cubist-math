@@ -71,6 +71,18 @@ function namesIn(node, names = new Set()) {
 export const snake = text => text.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
 const syntaxValue = (key, value) => typeof value === "number" && /^(start|end)$|Start$|End$/.test(key) ? undefined : value;
 const sameSyntax = (a, b) => JSON.stringify(a, syntaxValue) === JSON.stringify(b, syntaxValue);
+// Keep each written shared domain outside its binders. Generated evidence
+// may share a group number but has a different, dependent domain.
+function parameterGroups(params) {
+  const groups = [];
+  for (let k = 0; k < params.length;) {
+    const first = params[k++], members = [first];
+    while (first.group !== undefined && k < params.length && params[k].group === first.group && sameSyntax(params[k].type, first.type))
+      members.push(params[k++]);
+    groups.push(members);
+  }
+  return groups;
+}
 
 // Why a law's statement is not evidently a proposition, or null when it is.
 // Laws are propositions: homomorphisms ignore them (L2.4). Accepted are an
@@ -134,7 +146,7 @@ function notAProposition(statement, byName, proposition = () => false, header = 
 // A theory's fields, in order, with types over the earlier fields' names,
 // its notations and its parents, as the theory records them (`lookup` gives
 // a parent's record by name).
-function theoryFields(theory, lookup, proposition) {
+function theoryFields(theory, lookup, proposition, capture) {
   const T = theory.name.text, fields = [], notations = new Map(), parents = [], byName = new Map();
   // Each notation's operand recipes: the notation an operand is read in,
   // other than the current one (L2.10b), as nat for x ^ nat.(n).
@@ -160,7 +172,16 @@ function theoryFields(theory, lookup, proposition) {
   const universeCount = Math.max(1, headerUniverses.length);
   const universe = new Map(headerUniverses.map((u, k) => [u, universeAt(k)]));
   const inTheoryUniverse = (node, at) => universe.size ? renamed(node, universe, at) : node;
-  const params = (theory.params ?? []).map(p => ({ name: p.name.text, type: inTheoryUniverse(p.type, p.name), at: p.name }));
+  const parameterScope = new Set(headerUniverses);
+  const params = [];
+  for (const members of parameterGroups(theory.params ?? [])) {
+    const first = members[0];
+    // A group's domain is outside all of its binders, even when one takes
+    // the name of a global mentioned by that domain.
+    const type = capture(inTheoryUniverse(first.type, first.name), parameterScope);
+    for (const p of members) params.push({name: p.name.text, type, at: p.name});
+    for (const p of members) parameterScope.add(p.name.text);
+  }
   const header = [...(theory.universes ?? []), ...(theory.params ?? []).map(p => p.name)];
   header.forEach((binder, k) => {
     if (header.slice(0, k).some(other => other.text === binder.text))
@@ -178,7 +199,8 @@ function theoryFields(theory, lookup, proposition) {
         ? `${T} gets a field named ${field.name} from both ${existing.from} and ${from}: rename one, as in ${from}(${field.name} := …).`
         : `${T} has two fields named ${field.name}: give each its own name.`), at);
     }
-    const entry = { ...field, at, ...(from ? { from } : {}) };
+    const entry = { ...field, type: capture(field.type, new Set([...header.map(b => b.text), ...byName.keys()])),
+      at, ...(from ? { from } : {}) };
     byName.set(field.name, entry);
     fields.push(entry);
   };
@@ -216,8 +238,10 @@ function theoryFields(theory, lookup, proposition) {
     return rewritten(node, rewrite);
   };
   const leveledOf = item => new Map(item.params.filter(p => p.level).map(p => [p.name.text, p.level]));
-  // forall over binders, innermost last.
-  const quantified = (binders, body, at) => binders.reduceRight((inner, p) => quantifier("forall", p.name, p.type, inner, at), body);
+  // A group's shared domain is outside every name the group binds.
+  const quantified = (binders, body, at) => parameterGroups(binders).reduceRight((inner, members) =>
+    members.length === 1 ? quantifier("forall", members[0].name, members[0].type, inner, at)
+      : {kind: "binderGroup", binderKind: "forall", names: members.map(p => p.name), domain: members[0].type, body: inner, ...place(at)}, body);
   // Each parent prepared: its record, label, universes and renamings.
   const prepared = [];
   for (const parent of theory.parents ?? []) {
@@ -397,12 +421,15 @@ function theoryFields(theory, lookup, proposition) {
     // own: a parameter named as an ambiguous field is that parameter.
     const scope = new Set();
     const within = (node, bound) => resolved(labelled(node, bound), bound);
-    const item = { ...source, params: (source.params ?? []).map(p => {
-      const param = { ...p, type: within(p.type, new Set(scope)) };
-      scope.add(p.name.text);
-      if (p.level) scope.add(`${p.name.text}_is_${p.level}`);
-      return param;
-    }) };
+    const item = { ...source, params: [] };
+    for (const members of parameterGroups(source.params ?? [])) {
+      const type = within(members[0].type, scope);
+      for (const p of members) item.params.push({...p, type});
+      for (const p of members) {
+        scope.add(p.name.text);
+        if (p.level) scope.add(`${p.name.text}_is_${p.level}`);
+      }
+    }
     if (source.type) item.type = within(source.type, scope);
     const origin = `${T}.${item.name.text}`;
     if (item.kind === "sort") {
@@ -484,11 +511,19 @@ function theoryFields(theory, lookup, proposition) {
       if (byName.has(item.name.text) || derivedByName.has(item.name.text))
         throw located(Error(`${T} has two fields named ${item.name.text}: give each its own name.`), item.name);
       const process = node => inlineDerived(operatorsAsCalls(inTheoryUniverse(evidenced(node, leveled), item)));
-      const entry = { name: item.name.text, params: expanded(item).map(p => ({ name: p.name.text, type: process(p.type) })),
+      const entry = { name: item.name.text, params: expanded(item).map(p => ({ name: p.name.text, type: process(p.type), group: p.group })),
         type: process(item.type), value: process(item.value), origin, at: item.name };
       // A recursive one, as of_nat, is called, not inlined, in later fields:
       // its value names it free, and no parameter of its takes its name.
       entry.recursive = !entry.params.some(p => p.name === entry.name) && freeNames(entry.value).has(entry.name);
+      const scope = new Set([...header.map(b => b.text), ...byName.keys(), entry.name]);
+      for (const members of parameterGroups(entry.params)) {
+        const type = capture(members[0].type, scope);
+        for (const p of members) p.type = type;
+        for (const p of members) scope.add(p.name);
+      }
+      entry.type = capture(entry.type, scope);
+      entry.value = capture(entry.value, scope);
       derived.push(entry);
       derivedByName.set(entry.name, entry);
       continue;
@@ -517,13 +552,14 @@ function theoryFields(theory, lookup, proposition) {
 
 // The declarations a theory expands to, and its record, which a theory
 // that extends it reads (`lookup` gives the record of a theory by name).
-export function expandTheory(theory, lookup = () => null, proposition = () => false) {
+export function expandTheory(theory, lookup = () => null, proposition = () => false, capture = node => node) {
   // What the expansion places at the theory's name is generated, and links
   // nowhere there (cubical-program.mjs): the name links to its models' type.
   const T = theory.name.text, at = { ...theory.name, synthetic: true };
-  const { fields, notations, recipes, derived, parents, universes: headerUniverses, params, ambiguous, ambiguousNotations } = theoryFields(theory, lookup, proposition);
+  const { fields, notations, recipes, derived, parents, universes: headerUniverses, params, ambiguous, ambiguousNotations } = theoryFields(theory, lookup, proposition, capture);
   if (!fields.length) throw located(Error(`${T} has no fields: a theory declares sorts, operations and laws.`), at);
-  const taken = new Set([...namesIn(theory), ...fields.map(field => field.name), ...fields.flatMap(field => [...namesIn(field.type)])]);
+  const taken = new Set([...namesIn(theory), ...fields.map(field => field.name), ...fields.flatMap(field => [...namesIn(field.type)]),
+    ...derived.flatMap(operation => [...namesIn(operation)])]);
   // The header's names for the universes, or fresh ones without a header:
   // U, or U_1 when U is taken, which a header can bind and an argument name.
   const universes = headerUniverses.length ? headerUniverses : [freshName("U", taken)], model = freshName("m", taken);
@@ -585,7 +621,7 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
   // T.d{{U < UU0, params}}(m : T(U, params), args…) : A := value, for each
   // derived operation, its fields read through m (L2.10b).
   for (const d of derived) {
-    const own = new Set(d.params.map(p => p.name));
+    const own = new Set();
     // Its fields through m; a recursive one's call to itself, T.d(m, …).
     const through = node => rewritten(inUniverse(node), (n, bound) => {
       if (d.recursive && n.kind === "call" && n.fn.kind === "name" && n.fn.name === d.name && !bound.has(d.name))
@@ -593,9 +629,15 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
       return n.kind === "name" && projected.has(n.name) && !bound.has(n.name) && !own.has(n.name)
         ? call(projected.get(n.name), [name(model, n)], n) : n;
     });
+    const parameters = [];
+    for (const members of parameterGroups(d.params)) {
+      const group = nextGroup + 1 + parameters.length, type = through(members[0].type);
+      for (const p of members) parameters.push({name: token(p.name, d.at), type, group});
+      for (const p of members) own.add(p.name);
+    }
     out.push(declaration(`${T}.${d.name}`, [...headerParameters({ universe: true, parameter: true }),
       { name: token(model, d.at), type: modelType(d.at), group: nextGroup },
-      ...d.params.map((p, k) => ({ name: token(p.name, d.at), type: through(p.type), group: nextGroup + 1 + k }))],
+      ...parameters],
     through(d.type), through(d.value), d.at, { role: "derived", field: d.name }));
   }
   // T.p{{U < UU0, params}}(m : T(U, params)) : P(U, params) := P.make(params, T.f(m), …),

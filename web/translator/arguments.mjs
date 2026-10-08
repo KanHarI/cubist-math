@@ -137,7 +137,7 @@ export function assignArguments(n, parameters, unit, called) {
 export function elaborateCall(t, n, scope, expected) {
   const {env, unit} = scope;
   const headName = n.fn.kind === "name" ? n.fn.name : null;
-  const called = headName ?? "This function";
+  const called = n.fn.spelling ?? headName ?? "This function";
   const bound = headName ? env.get(headName) : undefined;
   writtenOut(n, scope);
   if (bound?.tag === "Recursive") {

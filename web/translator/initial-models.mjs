@@ -8,6 +8,7 @@ import {assignArguments} from "./arguments.mjs";
 import {Scope} from "./elaboration.mjs";
 import {repeatedName} from "./names.mjs";
 import {T as Term} from "./core.mjs";
+import {capturedSpellings} from "./lexical.mjs";
 
 // The declarations an initial or free model expands to, checked in its
 // place; one that does not expand fails as a declaration of its name.
@@ -50,7 +51,7 @@ function expand(t, module, d, env) {
   // a prime, as printing marks a shadowed name, which no source spells: it
   // keeps its public label, and later parameter groups and user expressions
   // follow.
-  const globals = new Set([N, T, "IsSet", "IsProp", "refl", ...record.fields.flatMap(f => [...freeNames(f.type)])]);
+  const globals = new Set([N, T, "IsSet", "IsProp", "refl", ...record.fields.flatMap(f => [...freeNames(f.type), ...capturedSpellings(f.type)])]);
   const fixed = new Set(record.fields.flatMap(f => [...fixedBinders(f.type)]));
   const taken = new Set([...allNames(d), ...record.fields.flatMap(f => [...allNames(f.type)]), ...globals]);
   const fresh = stem => freshName(stem, taken);
@@ -75,7 +76,7 @@ function expand(t, module, d, env) {
   const fieldScope = new Set([...record.fields.map(f => f.name), ...record.params.map(p => p.name),
     ...record.universes.map((_, k) => universeAt(k))]);
   if (env.has(N) && (freeNames([theory, ...params.map(p => p.bound ?? p.type), ...(d.uses ?? [])], new Set(params.map(p => p.name.text))).has(N)
-      || record.fields.some(f => freeNames(f.type, fieldScope).has(N))))
+      || record.fields.some(f => freeNames(f.type, fieldScope).has(N) || capturedSpellings(f.type).has(N))))
     throw module.locate(hiddenDependency(N), d.name);
   const args = theory.kind === "call" ? theory.args : [];
   const parameters = [...record.universes.map(name => ({name})), ...record.params];
@@ -212,7 +213,7 @@ function expand(t, module, d, env) {
   const definition = (suffix, extra, type, value) => ({kind: "def", name: token(constructor(suffix)),
     params: [...again.params, ...extra.map(([n, type], k) => ({name: token(n), type, group: d.params.length + k}))],
     type, body: [{kind: "exact", value, ...at}], typedValue: true, ...at, generated, ...uses});
-  const model = definition("model", [], theory, call(`${T}.make`, [named(carrier, self), named(evidence.name, name("_")),
+  const model = definition("model", [], theory, call(name(record.makeReference), [named(carrier, self), named(evidence.name, name("_")),
     ...[...operationShapes, ...lawShapes].map(f => named(f.name, lambdas(variables(f), call(constructor(f.name), variables(f).map(name)))))]));
   const clause = (field, stems, body, dimension = null) => {
     const args = stems.map(variable), i = dimension && variable(dimension);
@@ -226,10 +227,10 @@ function expand(t, module, d, env) {
       left: call(target(f.name), mapped(name(v.evidence), f, vars)), right: name(i), ...at}), "i")),
   ];
   const foldMap = definition("fold_map", [[v.target, again.theory],
-    [v.evidence, call(evidence.evidence, [universe, target(carrier)])], ...generator, [v.x, self]], target(carrier),
+    [v.evidence, call(evidence.type.fn, [universe, target(carrier)])], ...generator, [v.x, self]], target(carrier),
     {kind: "match", value: name(v.x), motiveName: null, type: null, clauses, ...at});
-  const fold = definition("fold", [[v.target, again.theory], ...generator], call(`${T}.Hom`, [ownModel, name(v.target)]),
-    call(`${T}.Hom.make`, [ownModel, name(v.target), named("map", lambda(v.x, recurse(target(evidence.name), name(v.x)))),
+  const fold = definition("fold", [[v.target, again.theory], ...generator], call(name(record.homReference), [ownModel, name(v.target)]),
+    call(name(record.homMakeReference), [ownModel, name(v.target), named("map", lambda(v.x, recurse(target(evidence.name), name(v.x)))),
       ...operationShapes.map(f => named(`map_${f.name}`, lambdas(variables(f), call("refl", [call(target(f.name), mapped(target(evidence.name), f))]))))]));
   return [inductive, model, foldMap, fold];
 }
