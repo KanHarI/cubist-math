@@ -27,7 +27,7 @@ import { morphismSource } from "./morphisms.mjs";
 // A copy of a syntax tree with `rewrite(node, bound)` applied to each node,
 // outermost first; `bound` holds the names bound there, by every binding
 // form (scopes.mjs).
-import { rewritten, substituted, freeNames } from "./scopes.mjs";
+import { rewritten, substituted, freeNames, relocated } from "./scopes.mjs";
 
 // The universes of a theory's carriers, in the fields a theory records, the
 // first, UNIVERSE, and the k-th: each expansion names them afresh.
@@ -47,10 +47,6 @@ const quantifier = (kind, binder, domain, body, at) =>
 const projection = (value, index, at) => ({ kind: "projection", value, index, ...place(at) });
 const pair = (left, right, at) => ({ kind: "pair", left, right, ...place(at) });
 
-// Every position in a tree set to `at`: inherited syntax comes from another
-// theory's text, perhaps another module's.
-const relocated = (node, at) => JSON.parse(JSON.stringify(node), (key, value) =>
-  key === "start" ? at.start : key === "end" ? at.end : value);
 // Free names replaced by others: `names` maps a name to its replacement's name.
 const renamed = (node, names, at) => rewritten(node, (n, bound) => {
   if (n.kind !== "name" || !names.has(n.name) || bound.has(n.name)) return n;
@@ -72,8 +68,8 @@ function namesIn(node, names = new Set()) {
 const fresh = (stem, taken) => { let candidate = stem, k = 1; while (taken.has(candidate)) candidate = `${stem}${k++}`; return candidate; };
 // An unlabelled parent's label: its name in snake case, CommMonoid as comm_monoid.
 const snake = text => text.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
-const sameSyntax = (a, b) => JSON.stringify(a, (key, value) => ["start", "end"].includes(key) ? undefined : value)
-  === JSON.stringify(b, (key, value) => ["start", "end"].includes(key) ? undefined : value);
+const syntaxValue = (key, value) => typeof value === "number" && /^(start|end)$|Start$|End$/.test(key) ? undefined : value;
+const sameSyntax = (a, b) => JSON.stringify(a, syntaxValue) === JSON.stringify(b, syntaxValue);
 
 // Why a law's statement is not evidently a proposition, or null when it is.
 // Laws are propositions: homomorphisms ignore them (L2.4). Accepted are an

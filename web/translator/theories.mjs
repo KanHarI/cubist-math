@@ -319,13 +319,14 @@ export function missingMorphisms(scope,name) {
     ?Error(`${theory}'s models have homomorphisms but no isomorphisms: ${entry.record.noIsomorphisms}.`):null;
 }
 
-// The rest of a theory whose type of models failed, `model`: taken off the
-// queue, each unavailable as a dependency of that type. How many were taken.
-export function skipTheory(t,queue,env,model) {
+// The rest of a failed theory or initial/free expansion: taken off the
+// queue, each unavailable as a dependency of the failed declaration.
+// Return how many were taken, even when no progress observer is installed.
+export function skipExpansion(t,queue,env,model,kind="theory") {
   let skipped=0;
   for(let k=queue.length-1;k>=0;k--) {
     const d=queue[k];
-    if(d.generated?.theory!==model.generated.theory)continue;
+    if(d.generated?.[kind]!==model.generated[kind])continue;
     queue.splice(k,1); skipped++;
     env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:t.checker.bindingName?.(d.name.text)??d.name.text,
       reason:`Untranslated dependency: ${model.name.text}`});

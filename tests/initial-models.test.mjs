@@ -82,3 +82,130 @@ initial Missing : Pointed(U := U0);
   assert.deepEqual(failures.map(output => [output.name, output.code]), [["Unknown", "E375"], ["Twice", "E377"], ["Missing", "E851"]]);
   assert.ok(result.outputs.every(output => !/^(Unknown|Twice|Missing)\./.test(output.name)));
 });
+
+test("the equational strategy refuses carrier-dependent domains before declaring a model", async t => {
+  for (const field of ["op(x : M, p : x = x) : M;", "law l(x : M, p : x = c) : x = c;", "op(p : c = c) : M;"]) {
+    const {result} = await checkProgram(t, `import hlevels;
+theory D(U < UU0) { M : set U; c : M; ${field} }
+initial N : D(U0);
+def after := tt;`, {module});
+    assert.deepEqual(result.outputs.filter(o => o.name === "N" || o.name.startsWith("N.")).map(o => [o.name, o.code]), [["N", "E854"]]);
+    assert.ok(result.outputs.at(-1).verified);
+  }
+  // Dependence on an independent argument stays supported.
+  await verified(t, `import hlevels;
+theory P(U < UU0) { M : set U; op(x : Unit, p : x = x) : M; }
+initial N : P(U0);`);
+});
+
+test("free generators are independent of the new type and its generated namespace", async t => {
+  for (const on of ["W", "W.model.M", "W.fold", "W.gen", "W.squash", "W -> Unit"]) {
+    const source = `import hlevels; import algebra; free W : Monoid(U0) on ${on};`;
+    const {result} = await checkProgram(t, source, {module});
+    assert.deepEqual(result.outputs.map(o => [o.name, o.code]), [["W", "E863"]]);
+    assert.equal(result.outputs[0].errorStart, source.indexOf(on, source.indexOf(" on ")));
+  }
+  // A bound name in the generator type does not refer to the new type.
+  await verified(t, `import hlevels; import algebra;
+free W : Monoid(U0) on forall W : Unit. Unit;
+free V(V : U0) : Monoid(U0) on V;`);
+});
+
+test("free parameters cannot capture globals used by theory fields or generated definitions", async t => {
+  await verified(t, `import hlevels; import algebra; import nat; use nat;
+theory P(U < UU0) { M : set U; point(n : Nat) : M; }
+free W(Nat : U0) : P(U0) on Nat;
+free H(IsSet, IsProp, P : U0) : P(U0) on IsSet;
+def global_argument(A : U0, S : P(U0), g : A -> S.M, n : Nat) :
+  W.fold(Nat := A, S, g).map(W.point(n)) = S.point(n) { rfl; }
+def generator_argument(A : U0, S : P(U0), g : A -> S.M, a : A) :
+  W.fold(A, S, g).map(W.gen(a)) = g(a) { rfl; }
+free Dep(Nat : U0, A : Nat -> U0) : P(U0) on exists n : Nat. A(n);
+`);
+});
+
+test("initial and free constructors and folds share file-level notation", async t => {
+  await verified(t, `import hlevels; import nat; use nat;
+theory P(U < UU0, n : Nat) { M : set U; point(p : n = n) : M; }
+initial N : P(U0, 3);
+free W(A : U0) : P(U0, 3) on A;
+def folded(S : P(U0, 3), p : 3 = 3) : N.fold(S).map(N.point(p)) = S.point(p) { rfl; }
+`);
+});
+
+test("ill-typed theory arguments fail once at the argument before expansion", async t => {
+  for (const application of ["Action(U0, Nat)", "Action(R := Nat, U := U0)", "Action(U0, tt)"]) {
+    const source = `import hlevels; import algebra; import nat;
+theory Action(U < UU0, R : Monoid(U)) { M : set U; act(r : R.M, x : M) : M; }
+initial N : ${application};`;
+    const {result} = await checkProgram(t, source, {module});
+    const outputs = result.outputs.filter(o => o.name === "N" || o.name.startsWith("N."));
+    assert.equal(outputs.length, 1);
+    assert.equal(outputs[0].verified, false);
+    assert.ok(outputs[0].code, outputs[0].reason);
+    const arg = application.includes("Nat") ? "Nat" : "tt";
+    assert.equal(outputs[0].errorStart, source.lastIndexOf(arg), outputs[0].reason);
+  }
+});
+
+test("free expansion preserves syntax across comments and supports universe parameters", async t => {
+  await verified(t, `import hlevels; import algebra;
+free W(V < UU0, A : // parameter type
+  V) // after header
+  : Monoid( // theory argument
+  V) on // generator type
+  A;
+def folded(V < UU0, A : V, S : Monoid(V), g : A -> S.M, a : A) :
+  W.fold(V, A, S, g).map(W.gen(a)) = g(a) { rfl; }
+`);
+});
+
+test("generated syntax has local positions and only the declared name links from its source", async t => {
+  const source = `import hlevels; import algebra;\n${"// padding\n".repeat(100)}initial N : Monoid(U0);`;
+  const {result} = await verified(t, source);
+  const start = source.lastIndexOf("initial"), nameAt = source.lastIndexOf("N :");
+  const links = result.links.filter(link => link.start >= start);
+  assert.deepEqual(links.map(link => [link.name, link.start, link.end]), [["N", nameAt, nameAt + 1]]);
+  assert.ok(result.links.every(link => source.slice(link.start, link.end) !== "// padding"));
+  for (const suffix of ["model", "fold_map", "fold"]) {
+    assert.ok(result.symbols.some(symbol => symbol.name === `N.${suffix}` && symbol.verified));
+  }
+  // A constructor's bad argument reports inside this declaration, never at
+  // the imported theory's source offset; dependent declarations are skipped.
+  const invalid = `import hlevels; import algebra;\n${"// padding\n".repeat(100)}free TooLarge : Monoid(U0) on U0;`;
+  const {result: failed} = await checkProgram(t, invalid, {module});
+  const failure = failed.outputs.find(o => !o.verified);
+  assert.ok(failure);
+  assert.ok(failure.errorStart >= invalid.indexOf("free TooLarge"), JSON.stringify(failure));
+  assert.ok(failure.errorEnd <= invalid.length, JSON.stringify(failure));
+  assert.deepEqual(failed.outputs.map(o => o.name), ["TooLarge"]);
+});
+
+test("a failed generated declaration skips its dependents and keeps progress totals accurate", async t => {
+  const {program} = await checkProgram(t, "", {module});
+  const progress = [];
+  const result = await program.check(`import hlevels; import algebra;
+free W : Monoid(U0) on U0;
+def after := tt;`, "root", p => progress.push(p));
+  assert.deepEqual(result.outputs.map(o => [o.name, o.verified]), [["W", false], ["after", true]]);
+  assert.ok(progress.filter(p => p.phase !== "loading").every(p => p.completed <= p.total));
+  assert.deepEqual([progress.at(-1).completed, progress.at(-1).total], [result.declarationCount, result.declarationCount]);
+});
+
+test("arrow operations receive a supported-spelling diagnostic and derived law terms expand", async t => {
+  const {result} = await checkProgram(t, `import hlevels;
+theory S(U < UU0) { M : set U; zero : M; succ : M -> M; }
+initial N : S(U0);`, {module});
+  const failure = result.outputs.find(o => o.name === "N");
+  assert.equal(failure.code, "E862");
+  assert.match(failure.reason, /named operation arguments/);
+  await verified(t, `import hlevels;
+theory S(U < UU0) {
+  M : set U;
+  mul(x, y : M) : M;
+  def sq(x : M) : M := mul(x, x);
+  law idem(x : M) : sq(x) = x;
+}
+initial N : S(U0);
+def square(x : N) : N.mul(x, x) = x := N.idem(x);`);
+});

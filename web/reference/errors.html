@@ -239,7 +239,7 @@
                 <tr id="E828"><td class="code"><code>E828</code></td><td data-message="with different kinds or indices">“<var>T</var> gets the carrier <var>M</var> from <var>P</var> and <var>Q</var> with different kinds or indices: rename one, as in <var>Q</var>(<var>M</var> := …).”</td><td>Two parents give a carrier of one name, merged into one carrier of the child only when both are sets, or both propositions, of one type. Rename it in one parent to keep them apart.</td><td><a href="theories.html#extends">extension</a></td></tr>
                 <tr id="E817"><td class="code"><code>E817</code></td><td data-message="models have no homomorphisms">“<var>T</var>'s models have no homomorphisms: …”</td><td>A homomorphism preserves each operation, pushing each argument that holds a carrier forward and pulling one with a carrier left of an arrow back. An argument with a carrier on both sides of an arrow, a carrier with no h-level, and a few other forms leave a theory without homomorphisms; the message names which.</td><td><a href="theories.html#morphisms">homomorphisms</a></td></tr>
                 <tr id="E834"><td class="code"><code>E834</code></td><td data-message="use selects a model of a theory">“use selects a model of a theory, such as m : Group(U0); this is a value of type <var>A</var>.”</td><td><code>use</code> puts a model's fields and notation in scope; the value given is not a model of a theory.</td><td><a href="theories.html#open">use</a></td></tr>
-                <tr id="E856"><td class="code"><code>E856</code></td><td data-message="is no equation: an initial model's laws are equations">“The law <var>l</var> is no equation: an initial model's laws are equations between its operations' terms.”</td><td><code>initial</code> and <code>free</code> present a theory by its operations and laws, each law a path constructor; a law that is a truncation or another proposition has no such presentation.</td><td><a href="theories.html#initial-models">initial models</a></td></tr>
+                <tr id="E856"><td class="code"><code>E856</code></td><td data-message="is not an equation between operation terms">“The law <var>l</var> is not an equation between operation terms: the equational strategy does not support this law.”</td><td><code>initial</code> and <code>free</code> present a theory by its operations and laws, each law a path constructor; the current equational strategy does not support a law that is a truncation or another proposition. This refusal does not establish nonexistence of an initial model.</td><td><a href="theories.html#initial-models">initial models</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -414,6 +414,8 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E192"><td><code>E192</code></td><td>hlevel_rule priority must be an integer from 0 to 1000.</td></tr>
                 <tr id="E193"><td><code>E193</code></td><td>A wall's face is a formula of equations i = 0 and i = 1, with and and or, as on i = 0 or j = 1 =&gt; ….</td></tr>
                 <tr id="E194"><td><code>E194</code></td><td>Expected '}' to close the box.</td></tr>
+                <tr id="E195"><td><code>E195</code></td><td>initial takes no parameters; use free for a parameterized model.</td></tr>
+                <tr id="E196"><td><code>E196</code></td><td>free takes explicit parameters in parentheses, as free W(A : U0) : T(U0) on A; implicit parameters are not supported.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -870,16 +872,18 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E848"><td><code>E848</code></td><td>…'s label would be …, which is reserved: label it, as in other : ….</td></tr>
                 <tr id="E850"><td><code>E850</code></td><td>… takes a theory at its universes and parameters, as … N : Monoid(U0); … is none.</td></tr>
                 <tr id="E851"><td><code>E851</code></td><td>… takes … argument…, its universes and parameters; this gives ….</td></tr>
-                <tr id="E852"><td><code>E852</code></td><td>An initial model needs one carrier, not a family; … has ….</td></tr>
-                <tr id="E853"><td><code>E853</code></td><td>…'s carrier … is neither a set nor a proposition: its models have no homomorphisms yet, so it has no initial model here.</td></tr>
-                <tr id="E854"><td><code>E854</code></td><td>… takes … with the carrier … inside its type: an initial model's operations take the carrier, or types without it.</td></tr>
-                <tr id="E855"><td><code>E855</code></td><td>… gives no element of the carrier …: an initial model's operations do.</td></tr>
-                <tr><td><a href="#E856"><code>E856</code></a></td><td>The law … is no equation: an initial model's laws are equations between its operations' terms.</td></tr>
-                <tr id="E857"><td><code>E857</code></td><td>The law … uses the derived operation …: an initial model's laws use its operations.</td></tr>
-                <tr id="E858"><td><code>E858</code></td><td>…'s field … is neither an operation nor a law: an initial model has only those.</td></tr>
+                <tr id="E852"><td><code>E852</code></td><td>The equational strategy supports one carrier, not a family; … has ….</td></tr>
+                <tr id="E853"><td><code>E853</code></td><td>…'s carrier … is neither a set nor a proposition: the equational strategy requires a truncated carrier.</td></tr>
+                <tr id="E854"><td><code>E854</code></td><td>… takes … with a type depending on the carrier …: the equational strategy supports carrier arguments or types independent of the carrier.</td></tr>
+                <tr id="E855"><td><code>E855</code></td><td>… does not return the carrier …: the equational strategy supports carrier-valued operations.</td></tr>
+                <tr><td><a href="#E856"><code>E856</code></a></td><td>The law … is not an equation between operation terms: the equational strategy does not support this law.</td></tr>
+                <tr id="E857"><td><code>E857</code></td><td>The law … uses the derived operation …: an initial model's laws use its operations. (retired)</td></tr>
+                <tr id="E858"><td><code>E858</code></td><td>…'s field … is neither an operation nor a law: an initial model has only those. (retired)</td></tr>
                 <tr id="E859"><td><code>E859</code></td><td>…'s parent … is labelled …, which names a field of … too: label it apart, as in base : ….</td></tr>
                 <tr id="E860"><td><code>E860</code></td><td>…'s pattern binds …, which an argument here names: rename it in ….</td></tr>
-                <tr id="E861"><td><code>E861</code></td><td>…'s field … would be the constructor …, but … is …'s …: an initial model's operations and laws are named apart from model, fold_map, fold and squash, and a free model's from gen too.</td></tr>
+                <tr id="E861"><td><code>E861</code></td><td>…'s field … would be the constructor …, but … is …'s …: an initial model's operations and laws are named apart from model, fold_map, fold and squash, and a free model's from gen too. (retired)</td></tr>
+                <tr id="E862"><td><code>E862</code></td><td>… uses an arrow type: the equational strategy requires named operation arguments, as in succ(x : M) : M.</td></tr>
+                <tr id="E863"><td><code>E863</code></td><td>The generator type of … mentions … or one of its generated names: free requires a type given independently of the declared model.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e9">Notation and operators</h3>

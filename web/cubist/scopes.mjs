@@ -199,11 +199,21 @@ function apart(node, scopes, clashing, free, fresh) {
   return copy;
 }
 // Every name a tree uses, bound or free.
-function allNames(node, names = new Set()) {
+export function allNames(node, names = new Set()) {
   if (Array.isArray(node)) { for (const item of node) allNames(item, names); return names; }
   if (!node || typeof node !== "object") return names;
   if (node.kind === "name") names.add(root(node.name));
   if (typeof node.text === "string") names.add(node.text);
   for (const value of Object.values(node)) if (value && typeof value === "object") allNames(value, names);
   return names;
+}
+
+// Inherited or generated syntax belongs to its expansion site, including
+// operator and punctuation spans used by diagnostics and source links.
+export function relocated(node, at) {
+  if (Array.isArray(node)) return node.map(item => relocated(item, at));
+  if (!node || typeof node !== "object") return node;
+  return Object.fromEntries(Object.entries(node).map(([key, value]) => [key,
+    typeof value === "number" && (key === "start" || key.endsWith("Start")) ? at.start
+      : typeof value === "number" && (key === "end" || key.endsWith("End")) ? at.end : relocated(value, at)]));
 }

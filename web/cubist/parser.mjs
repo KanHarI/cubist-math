@@ -1357,9 +1357,13 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
     // `free W(A : U0) : T(…) on A;` its free model on A (L2.6): a declared
     // type with a constructor for each operation and a path constructor for
     // each law, its model, and fold (web/translator/initial-models.mjs).
-    if ((t.text === "initial" || t.text === "free") && /^[A-Za-z_]/.test(peek())
-        && [":", "("].includes(ts[i + 1].text)) {
-      const n = name(), params = t.text === "free" && peek() === "(" ? parameters("(A : U0)", false) : [];
+    if (t.text === "initial" || t.text === "free") {
+      const n = name();
+      if (t.text === "initial" && ["(", "{"].includes(peek()))
+        throw Object.assign(new Error("initial takes no parameters; use free for a parameterized model."), {offset: ts[i].start});
+      if (t.text === "free" && peek() === "{")
+        throw Object.assign(new Error("free takes explicit parameters in parentheses, as free W(A : U0) : T(U0) on A; implicit parameters are not supported."), {offset: ts[i].start});
+      const params = t.text === "free" && peek() === "(" ? parameters("(V < UU0, A : V)", true) : [];
       take(":");
       const theory = expr();
       const on = t.text === "free" ? (take("on"), expr()) : null;
