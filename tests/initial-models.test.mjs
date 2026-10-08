@@ -237,3 +237,69 @@ theory S(U < UU0) {
 initial N : S(U0);
 def square(x : N) : N.mul(x, x) = x := N.idem(x);`);
 });
+
+test("grouped operation arguments generate homomorphisms and computing initial and free folds", async t => {
+  await verified(t, `import hlevels;
+theory T(U < UU0) {
+  M : set U;
+  c : M;
+  op : forall x, y : M. M;
+}
+initial N : T(U0);
+free W(A : U0) : T(U0) on A;
+def initial_fold(S : T(U0), x, y : N) :
+  N.fold(S).map(N.op(x, y)) = S.op(N.fold(S).map(x), N.fold(S).map(y)) { rfl; }
+def free_fold(A : U0, S : T(U0), g : A -> S.M, a, b : A) :
+  W.fold(A, S, g).map(W.op(W.gen(a), W.gen(b))) = S.op(g(a), g(b)) { rfl; }
+theory P(U < UU0, A : U) { M : set U; point : forall A, y : A. M; }
+initial Q : P(U0, Unit);
+def shared_domain(S : P(U0, Unit)) : Q.fold(S).map(Q.point(tt, tt)) = S.point(tt, tt) { rfl; }
+`);
+});
+
+test("laws using other laws are refused before publishing a model", async t => {
+  const {result} = await checkProgram(t, `import hlevels;
+theory T(U < UU0) { M : set U; c : M; law l : c = c; law m : l @ 0 = c; }
+initial N : T(U0);
+free W(A : U0) : T(U0) on A;`, {module});
+  assert.deepEqual(result.outputs.filter(o => !o.verified).map(o => [o.name, o.code]), [["N", "E856"], ["W", "E856"]]);
+  assert.ok(result.outputs.every(o => !/^(N|W)\./.test(o.name)));
+});
+
+test("domains depending on laws or carrier evidence are refused before publishing a model", async t => {
+  for (const dependency of ["l", "M_is_set"]) {
+    const {result} = await checkProgram(t, `import hlevels;
+theory T(U < UU0) { M : set U; c : M; law l : c = c; law m(p : ${dependency} = ${dependency}) : c = c; }
+initial N : T(U0);`, {module});
+    assert.deepEqual(result.outputs.filter(o => !o.verified).map(o => [o.name, o.code]), [["N", "E854"]]);
+    assert.ok(result.outputs.every(o => !o.name.startsWith("N.")));
+  }
+});
+
+test("universe-quantified laws receive a coded strategy refusal", async t => {
+  const {result} = await checkProgram(t, `import hlevels;
+theory T(U < UU0) { M : set U; c : M; law l : forall V < UU0. c = c; }
+initial N : T(U0);
+free W(A : U0) : T(U0) on A;`, {module});
+  assert.deepEqual(result.outputs.filter(o => !o.verified).map(o => [o.name, o.code]), [["N", "E865"], ["W", "E865"]]);
+  assert.ok(result.outputs.every(o => !/^(N|W)\./.test(o.name)));
+});
+
+test("a model name cannot hide a global required by its expansion", async t => {
+  for (const source of [
+    "theory T(U < UU0) { M : set U; c : M; } initial T : T(U0);",
+    "def N : U0 := Unit; theory T(U < UU0) { M : set U; c(x : N) : M; } initial N : T(U0);",
+    "def N : U0 := Unit; theory T(U < UU0, A : U) { M : set U; c(x : A) : M; } initial N : T(U0, N);",
+    "def W : U0 := Unit; theory T(U < UU0) { M : set U; } free W(A : W) : T(U0) on Unit;",
+  ]) {
+    const {result} = await checkProgram(t, `import hlevels; ${source}`, {module});
+    const failures = result.outputs.filter(o => !o.verified);
+    assert.deepEqual(failures.map(o => o.code), ["E866"]);
+    assert.match(failures[0].reason, /hides a declaration used by its expansion/);
+  }
+  // A field with the declared type's name is substituted, not a global.
+  await verified(t, `import hlevels;
+theory T(U < UU0) { M : set U; c : M; }
+initial M : T(U0);
+free W(W : U0) : T(U0) on W;`);
+});

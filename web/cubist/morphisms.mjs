@@ -39,7 +39,7 @@
 
 // The names a type mentions free, a qualified name R.R by its root, by
 // every binding form (scopes.mjs).
-import { freeNames } from "./scopes.mjs";
+import { freeNames, allNames, renamedFree } from "./scopes.mjs";
 import { reservedNames } from "./parser.mjs";
 
 
@@ -75,8 +75,18 @@ function occurrences(shape, positive = true, out = new Set()) {
 }
 // A field's binders, from its type's foralls, and the type under them.
 function binders(type) {
-  const list = [];
-  while (type.kind === "forall") { list.push({ name: type.name.text, type: type.domain }); type = type.body; }
+  const list = [], bound = new Set(freeNames(type)), taken = allNames(type);
+  const fresh = stem => { let name = stem, k = 1; while (taken.has(name)) name = `${stem}_${k++}`; taken.add(name); return name; };
+  while (type.kind === "forall" || type.kind === "binderGroup" && type.binderKind === "forall") {
+    const names = type.kind === "forall" ? [type.name] : type.names;
+    // Each grouped domain is read before any of the names binds. Splitting
+    // it into generated foralls must not let a binder capture that domain,
+    // or a theory parameter used by the other generated field types.
+    const renaming = new Map(names.map(n => [n.text, bound.has(n.text) ? fresh(n.text) : n.text]));
+    for (const name of renaming.values()) { list.push({ name, type: type.domain }); bound.add(name); }
+    type = [...renaming].some(([before, after]) => before !== after)
+      ? renamedFree(type.body, name => renaming.get(name)) : type.body;
+  }
   return { list, body: type };
 }
 // An operation's inputs and result, each with its shape and way, "fixed",

@@ -552,6 +552,8 @@ export const diagnostics = [
   ["E862", "… is bound here, which hides the declaration …: rename the binding to refer to it."],
   ["E863", "The generator type of … mentions … or one of its generated names: free requires a type given independently of the declared model."],
   ["E864", "… uses an arrow type: the equational strategy requires named operation arguments, as in succ(x : M) : M."],
+  ["E865", "… binds a universe argument: the equational strategy supports term arguments only; bind universes in the theory header."],
+  ["E866", "… hides a declaration used by its expansion: choose another name for the initial or free model."],
   // Notation and operators
   ["E901", "-x negates in a selected notation that binds it, as integers.(-x); a path's reversal is ~p."],
   ["E902", "-x is not in …'s notation, which is selected here: select a notation that binds it, as integers.(-x)."],

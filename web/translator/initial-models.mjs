@@ -66,6 +66,13 @@ function expand(t, module, d, env) {
   const theory = d.theory.kind === "call" ? {...d.theory, args: d.theory.args.map(apart)} : d.theory;
   const on = free ? apart(d.on) : null;
   if (free && freeNames(on).has(N)) throw module.locate(recursiveGenerators(N), d.on);
+  // The carrier is published before its model and folds. It must not
+  // replace a global those declarations still need to read by name.
+  const fieldScope = new Set([...record.fields.map(f => f.name), ...record.params.map(p => p.name),
+    ...record.universes.map((_, k) => universeAt(k))]);
+  if (env.has(N) && (freeNames([theory, ...params.map(p => p.bound ?? p.type), ...(d.uses ?? [])], new Set(params.map(p => p.name.text))).has(N)
+      || record.fields.some(f => freeNames(f.type, fieldScope).has(N))))
+    throw module.locate(hiddenDependency(N), d.name);
   const args = theory.kind === "call" ? theory.args : [];
   const parameters = [...record.universes.map(name => ({name})), ...record.params];
   const argument = assignArguments({...theory, args}, parameters, module, T);
@@ -96,6 +103,7 @@ function expand(t, module, d, env) {
   const universe = relocated(put(carriers[0].type, given), at);
   const names = params.map(p => p.name.text), self = call(N, names.map(name));
   const operations = record.fields.filter(f => f.kind === "operation").map(f => f.name);
+  const proofs = new Set(record.fields.filter(f => f.kind === "law" || f.kind === "evidence").map(f => f.name));
   const constructor = field => `${N}.${field}`;
   const inside = new Map([...given, [carrier, self], ...operations.map(op => [op, name(constructor(op))])]);
 
@@ -103,12 +111,13 @@ function expand(t, module, d, env) {
   // earlier carrier-typed variables and carrier-valued operations. Shared
   // domains are read before any of their group's names binds.
   const shape = field => {
-    const binders = [], bound = new Set(), dependent = new Set([carrier, ...operations]);
+    const binders = [], bound = new Set(), dependent = new Set([carrier, ...operations, ...proofs]);
     let body = field.type, placed = relocated(put(field.type, inside), at), dependentBinder = null;
     for (let group = 0; body?.kind === "forall" || body?.kind === "binderGroup" && body.binderKind === "forall";
         body = body.body, placed = placed.body, group++) {
       const names = body.kind === "forall" ? [body.name] : body.names;
       const placedNames = placed.kind === "forall" ? [placed.name] : placed.names;
+      if (body.bound) throw module.locate(universeArguments(field.name), d.theory);
       const domain = body.domain, isCarrier = domain.kind === "name" && domain.name === carrier && !bound.has(carrier);
       if (!isCarrier && [...freeNames(domain)].some(n => dependent.has(n)))
         dependentBinder ??= names[0].text;
@@ -122,7 +131,8 @@ function expand(t, module, d, env) {
   for (const field of record.fields) {
     if (field.kind === "sort" || field.kind === "evidence") continue;
     const {binders, body, bound, placed, dependentBinder} = shape(field);
-    if (field.kind === "law" && !(body.kind === "binary" && body.operator === "="))
+    if (field.kind === "law" && (!(body.kind === "binary" && body.operator === "=")
+        || [...freeNames(body, bound)].some(n => proofs.has(n))))
       throw module.locate(notEquational(field.name), d.theory);
     if (dependentBinder) throw module.locate(notPositive(field.name, dependentBinder, carrier), d.theory);
     const params = binders.map(b => ({name: token(b.name), type: b.type, group: b.group}));
@@ -186,3 +196,5 @@ const notEquational = field => Error(`The law ${field} is not an equation betwee
 const arrowOperation = field => Error(`${field} uses an arrow type: the equational strategy requires named operation arguments, as in succ(x : M) : M.`);
 const recursiveGenerators = N => Error(`The generator type of ${N} mentions ${N} or one of its generated names: free requires a type given independently of the declared model.`);
 const capturedBy = (field, name) => Error(`${field}'s pattern binds ${name}, which an argument here names: rename it in ${field}.`);
+const universeArguments = field => Error(`${field} binds a universe argument: the equational strategy supports term arguments only; bind universes in the theory header.`);
+const hiddenDependency = N => Error(`${N} hides a declaration used by its expansion: choose another name for the initial or free model.`);
