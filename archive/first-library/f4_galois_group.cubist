@@ -285,7 +285,7 @@ def f4_extension_loops_equal_cyclic_two :
 
 // Transport along the displayed equality is the explicit symmetry-bit map.
 def f4_extension_loop_equality_action(p : F4ExtensionLoops) :
-  (along((fun (A : U1) => A)) by f4_extension_loops_equal_cyclic_two from p) = f4_loop_bit(p) {
+  (along ((fun (A : U1) => A)) by f4_extension_loops_equal_cyclic_two from p) = f4_loop_bit(p) {
   exact with unfolding [f4_extension_loops_equal_cyclic_two, f4_extension_loop_equivalence] {
     UnivalenceBeta(U1, F4ExtensionLoops, group_carrier(CyclicTwo), f4_extension_loop_equivalence, p)
   };
@@ -301,7 +301,7 @@ def f4_extension_loop_multiply(p, q : F4ExtensionLoops) := trans(p, q);
 def f4_extension_loops_are_set :
   forall p : F4ExtensionLoops. forall q : F4ExtensionLoops. forall r : p = q. forall s : p = q.
   r = s {
-  exact along(
+  exact along (
     (fun (A : U1) => forall x : A. forall y : A. forall p : x = y. forall q : x = y. p = q)
   ) by sym(f4_extension_loops_equal_cyclic_two) from fin_is_set(2);
 }

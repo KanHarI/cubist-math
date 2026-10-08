@@ -34,8 +34,8 @@ def polynomial_map_divides(
   let send :
     (exists w : Polynomial(K). p = polynomial_mul(K, q, w))
     -> (exists w : Polynomial(L). P = polynomial_mul(L, Q, w)) {
-    intro witness;
-    obtain (w, eq) := witness;
+    intro witness_;
+    obtain (w, eq) := witness_;
     exact (
       polynomial_map(K, L, e, w),
       trans(cong(polynomial_map(K, L, e), eq), polynomial_map_mul(K, L, e, q, w))
@@ -75,7 +75,7 @@ def separable_elements_enlarge_base(
   let n := polynomial_degree(K, p);
   let same := polynomial_map_composition(K, R, T, i, j, p);
   let splitP :=
-    along((fun (s : Polynomial(T)) => Mere(DistinctPolynomialSplitting(T, s, n)))) by sym(same) from separable(
+    along ((fun (s : Polynomial(T)) => Mere(DistinctPolynomialSplitting(T, s, n)))) by sym(same) from separable(
       c, x, alg
     );
   let nonzeroP := polynomial_map_nonzero(R, T, j, mapped, polynomial_map_nonzero(K, R, i, p, nzP));
@@ -84,7 +84,7 @@ def separable_elements_enlarge_base(
     intro splitting;
     let result :=
       distinct_splitting_divisor(T, closed, n, P, nonzeroP, splitting, Q, nonzeroQ, divides);
-    exact along((fun (m : Nat) => Mere(DistinctPolynomialSplitting(T, Q, m)))) by cong(
+    exact along ((fun (m : Nat) => Mere(DistinctPolynomialSplitting(T, Q, m)))) by cong(
       natural_predecessor, polynomial_map_cutoff(R, T, j, q)
     ) from result;
   }

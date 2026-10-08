@@ -14,8 +14,8 @@ def polynomial_factor_divisibility_cancel(
   let send :
     (exists w : Polynomial(K). p = polynomial_mul(K, q, w))
     -> (exists w : Polynomial(K). a = polynomial_mul(K, b, w)) {
-    intro witness;
-    obtain (w, same) := witness;
+    intro witness_;
+    obtain (w, same) := witness_;
     exact (
       w,
       polynomial_cancel_nonzero(
@@ -206,8 +206,8 @@ def distinct_splitting_divisor_step(
       obtain (x, root) := w;
       let rp := polynomial_divisor_root(K, K, field_embedding_identity(K), p, q, divides, x, root);
       let locate : (exists i : Fin(succ(n)). roots(i) = x) -> Mere(Goal) {
-        intro witness;
-        obtain (i, same) := witness;
+        intro witness_;
+        obtain (i, same) := witness_;
         exact distinct_splitting_divisor_at_root(
           K, n, previous, p, nonzero, roots, a, equation, distinct, q, nonzeroQ, divides, i,
           along PolynomialRoot(K, K, field_embedding_identity(K), q) by sym(same) from root

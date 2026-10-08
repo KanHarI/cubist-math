@@ -158,7 +158,7 @@ def adjoined_embeddings_upper_bound(
   let H := AdjoinedEmbeddings(K, M, irreducible, L, e);
   let R := PolynomialRoots(K, L, e, p);
   let roots :=
-    along((fun (A : U0) => DistinctFamily(A, n))) by adjoined_embeddings_are_roots(
+    along ((fun (A : U0) => DistinctFamily(A, n))) by adjoined_embeddings_are_roots(
       K, M, irreducible, L, e
     ) from family;
   let degree :=

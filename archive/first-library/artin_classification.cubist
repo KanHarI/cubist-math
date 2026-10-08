@@ -101,8 +101,8 @@ def artin_fixed_field_automorphism_classification(
   let contradiction : (subgroup_members(G, H, g) -> Void) -> Void {
     intro outside;
     let reject : Basis -> Void {
-      intro witness;
-      obtain (enumeration, points, basis) := witness;
+      intro witness_;
+      obtain (enumeration, points, basis) := witness_;
       let maps := fin_prepend(
         FieldEmbedding(F, F), n, galois_field_embedding(K, E, g),
         subgroup_evaluation_maps(K, E, H, n, enumeration)

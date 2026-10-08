@@ -40,7 +40,7 @@ def embedding_evaluation_frame_build_step(
   obtain (points, independent) := frame;
   let tooSmall : le(n, m) -> Void {
     intro small;
-    let bound := along((fun (v : Nat) => le(v, m))) by total from small;
+    let bound := along ((fun (v : Nat) => le(v, m))) by total from small;
     exact successor_not_le_self(
       m, nat_le_trans(succ(m), add_count(succ(k), m), m, nat_le_add(k, m), bound)
     );
@@ -48,13 +48,13 @@ def embedding_evaluation_frame_build_step(
   let Next := EmbeddingEvaluationFrame(K, L, n, succ(m), maps);
   let Final := EmbeddingEvaluationFrame(K, L, n, add_count(succ(k), m), maps);
   let continue : Next -> Mere(Final) {
-    intro next;
+    intro next_;
     let done :=
-      previous(K, L, n, succ(m), maps, distinct, trans(total, sym(nat_add_succ(k, m))), next);
+      previous(K, L, n, succ(m), maps, distinct, trans(total, sym(nat_add_succ(k, m))), next_);
     exact mere_map(
       EmbeddingEvaluationFrame(K, L, n, add_count(k, succ(m)), maps), Final,
       (
-        fun (f : EmbeddingEvaluationFrame(K, L, n, add_count(k, succ(m)), maps)) => along(
+        fun (f : EmbeddingEvaluationFrame(K, L, n, add_count(k, succ(m)), maps)) => along (
           (fun (index : Nat) => EmbeddingEvaluationFrame(K, L, n, index, maps))
         ) by nat_add_succ(k, m) from f
       ), done
@@ -106,7 +106,7 @@ def distinct_embeddings_evaluation_basis(
     Frame(add_count(n, 0)), Frame(n),
     (fun (f : Frame(add_count(n, 0))) => along Frame by nat_add_zero(n) from f), atSum
   );
-  let make :
+  let make_ :
     Frame(n)
     -> (
       exists points : Fin(n) -> af_carrier(K).
@@ -130,7 +130,7 @@ def distinct_embeddings_evaluation_basis(
         L, CoordinateSpace(L, n), n,
         (fun (j : Fin(n)) => embedding_evaluation_vector(K, L, n, maps, points(j)))
       )
-    ), make, atN
+    ), make_, atN
   );
 }
 
@@ -171,8 +171,8 @@ def distinct_extension_loops_evaluation_basis(
     F, C, n, (fun (j : Fin(n)) => loop_evaluation_vector(K, E, n, loops, points(j)))
   );
   let convert : Source -> Target {
-    intro witness;
-    obtain (points, basis) := witness;
+    intro witness_;
+    obtain (points, basis) := witness_;
     let embeddingRows := fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j));
     let loopRows := fun (j : Fin(n)) => loop_evaluation_vector(K, E, n, loops, points(j));
     let sameRows : embeddingRows = loopRows := FunExt(
@@ -186,7 +186,7 @@ def distinct_extension_loops_evaluation_basis(
     );
     exact (
       points,
-      along((fun (rows : Fin(n) -> (Fin(n) -> af_carrier(F))) => FamilyBasis(F, C, n, rows))) by sameRows from basis
+      along ((fun (rows : Fin(n) -> (Fin(n) -> af_carrier(F))) => FamilyBasis(F, C, n, rows))) by sameRows from basis
     );
   }
   exact mere_map(

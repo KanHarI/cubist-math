@@ -32,16 +32,16 @@ const at = (source, text, anchor = "") => {
   return `${before.split("\n").length}:${before.length - before.lastIndexOf("\n")}`;
 };
 
-// V31: the contextual words are h-levels only in a header's result
-// position: Gpd's trunc(1), and prop as a definition's name; trunc(-2) is
+// V31: h-level keywords have their grammar role in a header's result
+// position: Gpd's trunc(1); binding those words and trunc(-2) are
 // refused, stating the allowed levels.
 test("the parser reads each header form, and the formatter keeps them", () => {
   const source = `inductive N { zero; succ(n : N); }
 inductive Trunc(U < UU0, A : U) : prop U { point(a : A); }
-inductive Flag : U1 { on; off; }
+inductive Flag : U1 { enabled; disabled; }
 inductive Gpd(U < UU0, A : U) : trunc(1) { point(a : A); }
 inductive Circle { base; loop : base = base; }
-def prop(set : N) := set;
+def preserve(n : N) := n;
 `;
   const { declarations } = parse(source);
   assert.deepEqual(declarations.map(d => d.kind), ["inductive", "inductive", "inductive", "inductive", "inductive", "def"]);
@@ -109,13 +109,12 @@ test("second review: shape errors are reported where the source writes them", as
   assert.equal(get("Composed").errorStart, source.indexOf("s : trans"));
 });
 
-test("second review: inspection shows no marker, and only the result position's words are keywords", async t => {
+test("inspection shows no marker, and keywords are styled at every occurrence", async t => {
   const { program } = await cases(t, "no_marker");
   assert.deepEqual(program.inspect("inductive_no_marker__n").extensions, []);
-  const { headerWordAt } = await import("../web/source-tokens.mjs");
-  const header = "inductive T(x : type) : prop { a; }";
-  assert.equal(headerWordAt(header, header.indexOf("type"), "type"), false, "a parameter's type is a name");
-  assert.equal(headerWordAt(header, header.indexOf("prop"), "prop"), true);
+  const { tokenStyle } = await import("../web/source-tokens.mjs");
+  assert.equal(tokenStyle("type"), "keyword");
+  assert.equal(tokenStyle("prop"), "keyword");
 });
 
 test("fourth review: normalized views keep no marker", async t => {

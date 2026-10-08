@@ -92,7 +92,7 @@ def field_constant_converges(
 ) :
   FieldConverges(F, zero, addF, lt, (fun (n : Nat) => x), x) {
   intro epsilon, positive;
-  let step := along((fun (a : F) => lt(a, addF(x, epsilon)))) by unit(x) from translate(
+  let step := along ((fun (a : F) => lt(a, addF(x, epsilon)))) by unit(x) from translate(
     zero, epsilon, x, positive
   );
   exact (

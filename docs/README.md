@@ -61,11 +61,22 @@ finishing a language milestone does not automatically resume them.
 
 ## Language tooling roadmap
 
+- [Morphisms, categories and universal constructions](roadmaps/categories.md):
+  opt-in morphisms and checked initial/free derivations, which may fail;
+  general propositional laws and the proposed categorical library. The
+  [L2.6 contract](roadmaps/core-theories.md#initial-and-free-models-l26)
+  separates theory admission from constructing and proving a free object.
+
 - [Language enhancement proposals](roadmaps/language-enhancement-proposals.md):
   deferred features, each kept with what would justify taking it up.
 - [Computation notation: monadic do and arrows](roadmaps/computation-notation-roadmap.md):
   planned blocks for existence proofs, free-algebra substitution and arrow
   composition, with explicit structures and checked elaboration.
+- [Runtime evaluation and binary numerical foundations](roadmaps/runtime-evaluation-roadmap.md):
+  Euclid failure evidence, evaluator and search improvements, and early
+  `UNat`/`BNat` foundations with checked semiring isomorphism, equality in
+  `U0`, strong induction over smaller binary values and new binary-backed
+  `Z` and `Q`, with staged correctness and performance gates.
 - [Simplification and shorter proofs](roadmaps/proof-ergonomics-roadmap.md):
   - Delivered: rewriting, calculations, `simp`/`simpa`, cubical path
     syntax, dependency tracking, `computable` and `evaluate` with patterns

@@ -3,26 +3,26 @@
 // any formal composition, and states its type. It is no eliminator out of
 // the truncation: it reads a closed value, as evaluate does.
 import h1_truncation;
-import paths;
+import paths_;
 use nat;
 
 // Output: 3 : Nat
-print(witness(merely(U0, Nat, 3)));
+print(witness (merely(U0, Nat, 3)));
 
 // A map under the truncation computes first.
 // Output: 4 : Nat
-print(witness(mere_map(U0, U0, Nat, Nat, fun (n : Nat) => n + 1, point(3))));
+print(witness (mere_map(U0, U0, Nat, Nat, fun (n : Nat) => n + 1, point(3))));
 
 // An end of the squash path is the truncation there.
 // Output: 1 : Nat
-print(witness(typed(Trunc(U0, Nat), Trunc.squash(point(1), point(2)) @ 0)));
+print(witness (typed(Trunc(U0, Nat), Trunc.squash(point(1), point(2)) @ 0)));
 
 // A witness with its certificate: a number above 2, and the evidence,
 // which the kernel checked with the rest of the term.
 def above_two : Trunc(U0, exists n : Nat. 2 < n) := point((3, tt));
 
 // Output: (3, tt) : exists n : Nat. 2 < n
-print(witness(above_two));
+print(witness (above_two));
 
 // A truncation in a larger universe: the witness is read at the requested
 // type, which the kernel accepts, though point(tt)'s own type,
@@ -32,7 +32,7 @@ def lifted_unit : U1 := Unit;
 def lifted : Trunc(U1, lifted_unit) := point(tt);
 
 // Output: tt : lifted_unit
-print(witness(lifted));
+print(witness (lifted));
 
 // A transported truncation: along a path of types, the witness is of the
 // type at its end. Swapping a pair's components is an equivalence, and so a
@@ -58,8 +58,8 @@ computable def swapped : (Unit and Nat) = (Nat and Unit) {
 
 // Output: (5, tt) : Nat and Unit
 print(
-  witness(
-    along(fun (T : U0) => Trunc(U0, T)) by swapped from typed(
+  witness (
+    along (fun (T : U0) => Trunc(U0, T)) by swapped from typed(
       Trunc(U0, Unit and Nat), point((tt, 5))
     )
   )
@@ -68,4 +68,4 @@ print(
 // Only a truncation has a witness to read.
 // Error: E479: witness reads a closed truncation, a value of a truncated declared type such as
 //   Trunc(U, A); this is a value of Nat.
-print(witness(3));
+print(witness (3));

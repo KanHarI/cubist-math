@@ -18,7 +18,7 @@ def tower_separation_step(
         exact field_exists_intro(
           le(f(b), a) or le(f(a), f(b)),
           right(
-            along((fun (y : A) => le(f(a), f(y)))) by sym(same) from order_refl(A, le, laws, f(a))
+            along ((fun (y : A) => le(f(a), f(y)))) by sym(same) from order_refl(A, le, laws, f(a))
           )
         );
       }
@@ -115,7 +115,9 @@ def tower_stable_step(
     match excluded_middle(le(a, b), order_prop(A, le, laws, a, b)) {
       left(ab) => {
         let same := order_antisym(A, le, laws, b, a, ba, ab);
-        exact along((fun (y : A) => le(f(y), f(a)))) by sym(same) from order_refl(A, le, laws, f(a));
+        exact along ((fun (y : A) => le(f(y), f(a)))) by sym(same) from order_refl(
+          A, le, laws, f(a)
+        );
       }
       right(notab) => {
         exact order_trans(A, le, laws, f(b), a, f(a), stable(b, tb, ba, notab), progressive(a));
@@ -224,11 +226,11 @@ def bourbaki_witt(
   let chain := tower_is_chain(A, le, laws, complete, f, progressive);
   let s := chain_sup(A, le, complete, T, chain);
   let member := tower_sup(A, le, complete, f, T, chain, (fun (x : A, tx : T(x)) => tx));
-  let next := tower_step(A, le, complete, f, s, member);
+  let next_ := tower_step(A, le, complete, f, s, member);
   exact (
     s,
     order_antisym(
-      A, le, laws, f(s), s, chain_sup_upper(A, le, complete, T, chain, f(s), next), progressive(s)
+      A, le, laws, f(s), s, chain_sup_upper(A, le, complete, T, chain, f(s), next_), progressive(s)
     )
   );
 }

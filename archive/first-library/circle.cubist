@@ -22,12 +22,12 @@ def winding(p : base = base) := encode(base, p);
 def code_meridian(a : S0) := suspension_rec_beta(S0, U0, Z, Z, code_meridians, a);
 
 def successor_transport(z : Z) :
-  (along((fun (T : U0) => T)) by ua(U0, Z, Z, successor_equivalence) from z) = successorZ(z) {
+  (along ((fun (T : U0) => T)) by ua(U0, Z, Z, successor_equivalence) from z) = successorZ(z) {
   exact UnivalenceBeta(U0, Z, Z, successor_equivalence, z);
 }
 
 def code_upper(z : Z) : (along code by upper from z) = successorZ(z) {
-  let change_path := fun (p : Z = Z) => along((fun (T : U0) => T)) by p from z;
+  let change_path := fun (p : Z = Z) => along ((fun (T : U0) => T)) by p from z;
   exact trans(
     transport_ap(S1, code, base, south_pole, upper, z),
     trans(cong(change_path, code_meridian(typed(S0, left(tt)))), successor_transport(z))
@@ -35,7 +35,7 @@ def code_upper(z : Z) : (along code by upper from z) = successorZ(z) {
 }
 
 def code_lower(z : Z) : (along code by lower from z) = z {
-  let change_path := fun (p : Z = Z) => along((fun (T : U0) => T)) by p from z;
+  let change_path := fun (p : Z = Z) => along ((fun (T : U0) => T)) by p from z;
   exact trans(
     transport_ap(S1, code, base, south_pole, lower, z),
     trans(
@@ -213,9 +213,9 @@ def decode(x : S1) :=
   suspension_induction(S0, decoder_family, integer_loop, south_decoder, decoder_meridians, x);
 
 def decode_encode(x : S1, p : base = x) : decode(x, encode(x, p)) = p {
-  exact based_induction(
+  exact based_induction_(
     U1, U0, S1, base,
-    (fun (point : S1, path : base = point) => decode(point, encode(point, path)) = path),
+    (fun (point : S1, path_ : base = point) => decode(point, encode(point, path_)) = path_),
     refl(refl(base)), x, p
   );
 }

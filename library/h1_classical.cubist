@@ -11,11 +11,11 @@ def excluded_middle_assumed(U < UU0) : ExcludedMiddle(U) := LEM(Trunc, U);
 
 def axiom_of_choice_assumed(U < UU0) : AxiomOfChoice(U) := Choice(Trunc, U);
 
-def double_negation(U < UU0, P : U, prop : IsProp(U, P), h : (P -> Void) -> Void) :
-  P := mere_eliminate(U, U, P, P, prop, fun (p : P) => p, LEM(Trunc, U, P, h));
+def double_negation(U < UU0, P : U, prop_ : IsProp(U, P), h : (P -> Void) -> Void) :
+  P := mere_eliminate(U, U, P, P, prop_, fun (p : P) => p, LEM(Trunc, U, P, h));
 
-def decide_prop(U < UU0, P : U, prop : IsProp(U, P)) : P or (P -> Void) := double_negation(
-  U, P or (P -> Void), decision_is_prop(U, P, prop),
+def decide_prop(U < UU0, P : U, prop_ : IsProp(U, P)) : P or (P -> Void) := double_negation(
+  U, P or (P -> Void), decision_is_prop(U, P, prop_),
   fun (no : (P or (P -> Void)) -> Void) => no(
     typed(P or (P -> Void), right(fun (p : P) => no(typed(P or (P -> Void), left(p)))))
   )
@@ -25,8 +25,8 @@ def decide_prop(U < UU0, P : U, prop : IsProp(U, P)) : P or (P -> Void) := doubl
 // The hypothesis prop prevents its use on an arbitrary witness type.
 def PropResize(P : U1) := exists Q : U0. IsProp(U0, Q) and (P -> Q) and (Q -> P);
 
-def resize_prop(P : U1, prop : IsProp(U1, P)) :
-  PropResize(P) := match decide_prop(U1, P, prop) return PropResize(P) {
+def resize_prop(P : U1, prop_ : IsProp(U1, P)) :
+  PropResize(P) := match decide_prop(U1, P, prop_) return PropResize(P) {
     left p => (Unit, unit_is_prop, fun (q : P) => tt, fun (u : Unit) => p);
     right no => (Void, void_is_prop, no, fun (v : Void) => typed(P, absurd(v)));
   };

@@ -32,7 +32,7 @@ test("assembly rows expose actual C opcodes, payloads, and all four operand slot
     assert.deepEqual(node.operands.map(operand => operand.handle), native.children);
   }
   const ref = listing.nodes.find(node => node.kind === "DefRef");
-  assert.ok(ref.annotation.includes("assembly_fixture__id"));
+  assert.ok(ref.annotation.includes("assembly_fixture__id_"));
   assert.equal(listing.nodes.some(node => node.id === ref.definition.value), false);
   const expanded = kernelAssembly(program, view, checked, { expanded: [ref.id] });
   assert.equal(expanded.nodes.some(node => node.id === ref.definition.value), true);

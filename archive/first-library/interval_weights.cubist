@@ -25,7 +25,7 @@ def field_difference_nonnegative(
   ordered : FieldLe(F, lt, s, t)
 ) :
   FieldLe(F, lt, zero, coordinate_difference(F, addF, negF, s, t)) {
-  exact along((fun (v : F) => FieldLe(F, lt, v, coordinate_difference(F, addF, negF, s, t)))) by ring_add_inverse_right(
+  exact along ((fun (v : F) => FieldLe(F, lt, v, coordinate_difference(F, addF, negF, s, t)))) by ring_add_inverse_right(
     F, zero, one, addF, mulF, negF, ring, s
   ) from order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, s, t, negF(s), ordered);
 }
@@ -44,7 +44,7 @@ def interval_difference_le_one(
   let shifted :=
     order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, zero, x, negF(x), lowerS);
   let removeZero :=
-    along((fun (v : F) => FieldLe(F, lt, v, addF(x, negF(x))))) by ring_add_zero(
+    along ((fun (v : F) => FieldLe(F, lt, v, addF(x, negF(x))))) by ring_add_zero(
       F, zero, one, addF, mulF, negF, ring, negF(x)
     ) from shifted;
   let negativeBelowZero :=
@@ -129,7 +129,7 @@ def interval_weight_sum_bound(
     along FieldLe(F, lt, mulF(delta, length)) by ring_mul_one(
       F, zero, one, addF, mulF, negF, ring, length
     ) from bounded;
-  exact along((fun (v : F) => FieldLe(F, lt, v, length))) by sym(
+  exact along ((fun (v : F) => FieldLe(F, lt, v, length))) by sym(
     interval_weight_sum(F, zero, one, addF, mulF, negF, lt, ring, length, n, vertices, tags)
   ) from removeOne;
 }

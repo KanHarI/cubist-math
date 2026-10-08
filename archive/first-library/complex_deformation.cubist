@@ -32,7 +32,7 @@ def ordered_unit_interval_square(
   FieldLe(F, lt, mulF(t, t), one) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   let step :=
-    along((fun (v : F) => FieldLe(F, lt, mulF(t, t), v))) by ring_mul_one(
+    along ((fun (v : F) => FieldLe(F, lt, mulF(t, t), v))) by ring_mul_one(
       F, zero, one, addF, mulF, negF, ring, t
     ) from weakScale(t, one, t, upper, lower);
   exact ordered_le_transitive(
@@ -137,10 +137,10 @@ def complex_scale_norm_bound(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, lower, upper
   );
   let step :=
-    along((fun (v : F) => FieldLe(F, lt, mulF(mulF(t, t), n), v))) by ring_mul_one(
+    along ((fun (v : F) => FieldLe(F, lt, mulF(mulF(t, t), n), v))) by ring_mul_one(
       F, zero, one, addF, mulF, negF, ring, n
     ) from weakScale(mulF(t, t), one, n, upperSquare, nonnegativeNorm);
-  exact along((fun (v : F) => FieldLe(F, lt, v, n))) by sym(
+  exact along ((fun (v : F) => FieldLe(F, lt, v, n))) by sym(
     complex_scaled_norm(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, z)
   ) from step;
 }

@@ -82,7 +82,7 @@ function sourceParameters(t, head) {
 // double braces fill the implicit parameters no name gives, in order; those
 // in parentheses fill the explicit parameters no name gives, in order, and
 // then whatever the result takes.
-function assign(n, parameters, unit, called) {
+export function assignArguments(n, parameters, unit, called) {
   const positional = [], named = new Map(), names = parameters?.map(parameter => parameter.name);
   const name = (arg, braced) => {
     const name = arg.name.text;
@@ -148,7 +148,7 @@ export function elaborateCall(t, n, scope, expected) {
   }
   const head = t.term(n.fn, scope, null);
   const parameters = sourceParameters(t, head);
-  const given = assign(n, parameters, unit, called);
+  const given = assignArguments(n, parameters, unit, called);
   // Each parameter in turn, from the head's type, with the earlier ones
   // replaced by variables that stand for their values: no argument's type is
   // inferred again from the growing application.

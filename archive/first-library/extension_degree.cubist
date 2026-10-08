@@ -71,7 +71,7 @@ def field_tower_basis_triangle(
   upper : FiniteBasis(L, field_vector_space(L, M, d), n)
 ) :
   FiniteBasis(K, field_vector_space(K, M, c), multiply_count(n, m)) {
-  exact along(
+  exact along (
     (
       fun (embedding : FieldEmbedding(K, M)) => FiniteBasis(
         K, field_vector_space(K, M, embedding), multiply_count(n, m)

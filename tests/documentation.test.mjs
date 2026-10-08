@@ -15,7 +15,7 @@ def documented := 0;
 // Detached comment.
 
 def detached := 0; // Trailing comment belongs to this line.
-def next := 0;
+def next_ := 0;
 // Proof documentation.
 def proof : Nat { exact 0; }
 `;
@@ -25,7 +25,7 @@ def proof : Nat { exact 0; }
       [d.name.text, leadingDocumentation(text, d.start)?.text ?? ""]));
     assert.deepEqual(docs, {
       documented: "First paragraph wraps across two lines.\n\nSecond paragraph: <b>plain text</b>.",
-      detached: "", next: "", proof: "Proof documentation.",
+      detached: "", next_: "", proof: "Proof documentation.",
     });
   }
   const inline = "// Header\ndef first := 0; def second := 0;";

@@ -49,11 +49,11 @@ def dyadic_refinement_zero(
   let valid := dyadic_piece_admissible(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, extra, a, b, ordered
   );
-  let initial := subdivision_refinement_sum_single(
+  let initial_ := subdivision_refinement_sum_single(
     FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, rightUnit, edge,
     IntervalRefinementAdmissible(F, zero, one, lt), a, b, fine, valid
   );
-  exact along(
+  exact along (
     (
       fun (coarse : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)) => SubdivisionRefinementSum(
         FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, edge,
@@ -64,7 +64,7 @@ def dyadic_refinement_zero(
     dyadic_piece_zero(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     )
-  ) from initial;
+  ) from initial_;
 }
 
 def dyadic_refinement_step(
@@ -153,7 +153,7 @@ def dyadic_refinement_step(
     ordered
   );
   let withCoarse :=
-    along(
+    along (
       (
         fun (coarse : SampleSubdivision(I, a, b)) => SubdivisionRefinementSum(
           FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, edge,
@@ -165,7 +165,7 @@ def dyadic_refinement_step(
         )
       )
     ) by sym(coarsePath) from joined;
-  exact along(
+  exact along (
     (
       fun (fine : SampleSubdivision(I, a, b)) => SubdivisionRefinementSum(
         FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, edge,

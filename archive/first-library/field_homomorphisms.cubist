@@ -13,13 +13,13 @@ def field_hom_kernel_zero(
   let impossible : FieldNonzero(af_carrier(K), af_operations(K), a) -> Void {
     intro nonzero;
     obtain (ring, nontrivial, inverses) := af_laws(K);
-    obtain (b, inverse) := inverses(a, nonzero);
+    obtain (b, inverse_) := inverses(a, nonzero);
     obtain (ringL, nontrivialL, inversesL) := af_laws(L);
     exact nontrivialL(
       trans(
         sym(f1),
         trans(
-          cong(f, sym(inverse)),
+          cong(f, sym(inverse_)),
           trans(
             fm(a, b),
             trans(

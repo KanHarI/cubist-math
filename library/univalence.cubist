@@ -6,7 +6,7 @@ import contractible_maps;
 // two are inverse, so idtoequiv is an equivalence. Unglue is an equivalence
 // along every line of Glue types, and the type of types equivalent to a type
 // is contractible. The equivalences are those of contractible_maps, the
-// kernel's own form; the `ua` builtin takes the Equiv of `import paths;`,
+// kernel's own form; the `ua` builtin takes the Equiv of `import paths_;`,
 // with an inverse and its laws.
 
 // The path of types an equivalence gives: A glued along it at 0, and B along

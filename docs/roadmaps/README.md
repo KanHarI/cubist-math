@@ -6,7 +6,8 @@ target statement or a supplied theorem parameter as an already proved result.
 
 ## At a glance
 
-Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
+Revised on 2026-10-07, including the work plan's record of 2026-10-06
+and the runtime/numerical track and revised initial/free contract. The
 [work plan](work-plan.md) is the scheduling authority; this summarizes it.
 
 - **Done.**
@@ -34,8 +35,8 @@ Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
     - `Monoid(U)` as the type of models;
     - theory families and relations;
     - independent theories combined unchanged;
-    - initial and free models' first slice (L2.6): `initial`, `free` and
-      `fold`.
+    - initial and free models' construction prototype (L2.6): `initial`,
+      `free` and `fold`, without checked universal properties.
   - **Notation (L2.10a–e, i–k).**
     - `use` selects a notation, in place of `open`;
     - named notations, qualified operators `a G.(+) b`, operand notations
@@ -50,11 +51,15 @@ Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
     algebraic hierarchy, the integers and the rationals, h-levels,
     univalence and squares. Every archived declaration still checks.
 - **Specified, not implemented.**
-  - **The rest of initial and free models (L2.6, slices 2–4),** as
-    [specified](core-theories.md#initial-and-free-models-l26):
-    - pointwise uniqueness of `fold`;
-    - `T.Hom.ext` and `universal`;
-    - untruncated carriers.
+  - **Initial and free objects as checked capabilities (L2.6),** as
+    [revised on 2026-10-07](core-theories.md#initial-and-free-models-l26):
+    `deriving (morphisms, free)` requests a construction and checked
+    universal property and supplies initiality on `Void`;
+    `deriving (morphisms, initial)` is weaker. Either may fail on an
+    unsupported construction or an unproved law. The
+    [categorical roadmap](categories.md)'s morphism opt-in and general
+    propositional-law check precede publication of these capabilities;
+    its other packages remain proposed.
   - **Computation notation (N0–N5).** Monadic `do` and arrows; design
     only.
   - **Notation's remainders and deferred slices.**
@@ -64,7 +69,8 @@ Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
     - Deferred: large numerals (L2.10f) and `decide` (L2.10g).
     - Notation rules (L2.10h) are proposed, not decided.
 - **Next,** in the work plan's [first actions](work-plan.md#first-actions):
-  1. L2.6's slices 2–4;
+  1. L2.6's revised capability contract, including the opt-in, uniqueness
+     and universal proofs, then additional laws and higher theories;
   2. the archive's raw `comp` lemmas re-derived through the squares
      (L2.8's last item);
   3. the rest of the h-level solver (L2.5b):
@@ -76,12 +82,14 @@ Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
      is added (L2.3b);
   5. equivalences, then structure identity (L3.1, L3.2), before L2.4b and
      L2.7;
-  6. the order on the numbers, if the maintainer extends the library's
-     scope;
-  7. independent language work, among it L1.3's worker cancellation, and
+  6. the order on NUM2's new numbers, if the maintainer extends the
+     library's scope;
+  7. runtime evaluation and binary numerical foundations (EVAL0–EVAL8,
+     NUM0–NUM2), including H1 strong induction and the new `Z` and `Q`;
+  8. independent language work, among it L1.3's worker cancellation, and
      monadic `do` and arrows (N0–N4);
-  8. K2.5's archive remedies;
-  9. H2's indexed families, then the H3 research gate.
+  9. K2.5's archive remedies;
+  10. H2's indexed families, then the H3 research gate.
 
   One known defect is waiting. `top_unique` fails with an internal kernel
   error (E604) when its corners are left to inference (#185).
@@ -133,9 +141,9 @@ Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
   canonical quotients, presentations and derived declarations. One-sort
   `inductive`, explicit `match` and `obligations` are released with H1 on
   2026-10-02, core theories (L2.4) on 2026-10-05, and their syntax revision
-  (L2.4c) and the first slice of initial and free models (L2.6) on
-  2026-10-06; the rest is proposed, with three promises corrected by the
-  audit.
+  (L2.4c) and the initial/free construction prototype (L2.6) on
+  2026-10-06. L2.6's revised checked-capability contract and the rest remain
+  proposed, with three promises corrected by the audit.
 - [Notation views and literals](notation.md): work-plan L2.10's roadmap for explicit
   notation views, declared operand views, literals read by the library's
   parsers and faithful printing, without instance search. The direction and
@@ -147,6 +155,11 @@ Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
   every source selects `nat`, and an operator or numeral outside any
   selection is an error. Notation rules (L2.10h), large numerals and
   `decide` remain deferred.
+- [Morphisms, categories and universal constructions](categories.md):
+  morphism and isomorphism opt-ins, checked initial/free derivations,
+  propositional laws, implicit operation arguments, categorical library
+  constructions and the abelian tower. Consolidated with L2.6 in #187;
+  the separate homological-algebra track remains in #198.
 - [Core theories](core-theories.md): the contract of work-plan L2.4,
   theory declarations, models, scoped notation, sections, extension,
   homomorphisms and isomorphisms, specified and implemented on 2026-10-05.
@@ -154,8 +167,8 @@ Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
   is done (2026-10-06): `M : set U` in place of `sort`, the universe named
   in the header, `Monoid(U)` as the type of models, theory families, and
   independent theories combined without changing either. Initial and free
-  models (L2.6) are specified, and their first slice, `initial` and `free`
-  with `fold`, is done.
+  models (L2.6) have a working `initial`/`free`/`fold` prototype; the revised
+  opt-in and checked universal-property contract is specified, not implemented.
 - [Results of the first library](../library-results.md): what the archived
   library established, in mathematical English.
 - [Kernel instructions](kernel-instructions.md): the trusted kernel since
@@ -180,6 +193,16 @@ Revised on 2026-10-07, after the work plan's record of 2026-10-06. The
 - [Computation notation: monadic do and arrows](computation-notation-roadmap.md):
   planned explicit computation blocks, checked monad and arrow interfaces,
   mathematical examples, and staged elaboration without new kernel rules.
+- [Runtime evaluation and binary numerical foundations](runtime-evaluation-roadmap.md):
+  proposed after the `euclid(4)` syntax-depth failure: one-pass REPL
+  evaluation, normalization caches, lazy closures, an explicit evaluation
+  stack, typed readback and checked search improvements. Early numerical
+  foundations define `UNat` and `BNat`, prove their semiring isomorphism
+  and equality in `U0` with transport laws, and provide strong induction
+  and recursion over smaller binary values. New `Z`, `Q` and later
+  numerical constructions use binary naturals, with checked algebraic laws.
+  Separates prime projection, lazy observation and full normalization, with
+  semantic review and resource limits governing integration.
 - [Simplification and shorter proofs](proof-ergonomics-roadmap.md):
   - Delivered: `rw`, `calc`, `rfl`, `simp`/`simpa` with registered rule sets
     and conditional rules, cubical path shorthand, dependency tracking,

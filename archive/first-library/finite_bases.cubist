@@ -241,5 +241,5 @@ def transport_finite_basis(
   K : AlgebraicField, V, W : VectorSpace(K), p : V = W, n : Nat, basis : FiniteBasis(K, V, n)
 ) :
   FiniteBasis(K, W, n) {
-  exact along((fun (X : VectorSpace(K)) => FiniteBasis(K, X, n))) by p from basis;
+  exact along ((fun (X : VectorSpace(K)) => FiniteBasis(K, X, n))) by p from basis;
 }

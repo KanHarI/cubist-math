@@ -113,12 +113,18 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
   // A keyword is no name called: a reserved word keeps its space before a
   // parenthesis, as in `forall (x : A)` and `evaluate (a, b) expecting
   // (a, _);`. The reserved words written as calls, left(a), right(b),
-  // typed(T, e) and print's evaluate(e), are tight.
+  // typed(T, e) and print's evaluate(e), are tight. The parser also reserves
+  // built-ins and generated names: actual calls and constructor patterns
+  // keep their parentheses tight regardless of their names.
+  const calledNameEnds = new Set();
   const evaluateStarts = new Set((syntax?.directives ?? []).filter(node => node.kind === "evaluate").map(node => node.start));
   const keyword = token => reservedNames.has(token.text)
-    && (!["left", "right", "typed", "evaluate"].includes(token.text) || evaluateStarts.has(token.start));
+    && !calledNameEnds.has(token.end)
+    && (!["left", "right", "typed", "evaluate", "print", "typeof", "inspect"].includes(token.text) || evaluateStarts.has(token.start));
   function visit(node) {
     if (!node || typeof node !== "object") return;
+    if (node.kind === "call") calledNameEnds.add(node.fn.end);
+    if (node.constructor?.end !== undefined) calledNameEnds.add(node.constructor.end);
     if (node.kind === "withUnfolding") expressionBlockEnds.add(node.end);
     if (node.kind === "projection" || node.kind === "member") projectionDots.add(node.dot.start);
     // A qualified name's dot is tight too: T.squash.
@@ -139,6 +145,8 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
     const valueStart = node.valueStart ?? (node.kind === "let" ? node.value?.start : undefined);
     if (valueStart !== undefined && tokenBefore.get(valueStart)?.text === ":=")
       assignmentTokens.add(tokenBefore.get(valueStart).start);
+    // An initial or free model's theory breaks after its colon, as a type does.
+    if (["initial", "free"].includes(node.kind) && node.theory) annotationStarts.add(node.theory.start);
     // A declaration's type, or a let's stated type before its proof block.
     if (node.type && (node.kind === "def" || node.kind === "let" && node.body)) {
       annotationStarts.add(node.type.start);

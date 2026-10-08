@@ -24,11 +24,11 @@ inductive P : U0 {
 inductive H {
   b;
   s(n : H);
-  law(n : H) : s(n) = n;
+  law_(n : H) : s(n) = n;
 }
 
 def fired : s(b) = b {
-  simp only [law];
+  simp only [law_];
 }
 
 inductive Stack(U < UU0, A : U) : U {

@@ -26,7 +26,7 @@ def coordinate_search_step(
           A, n, v, vector_zero(K, CoordinateSpace(K, succ(n))), firstZero, restZero
         )
       );
-      right witness => right(
+      right witness_ => right(
         (
           typed(
             Fin(succ(n)),
@@ -37,7 +37,7 @@ def coordinate_search_step(
                   fun (i : Fin(n)) => FieldNonzero(
                     A, af_operations(K), v(typed(Fin(succ(n)), right(i)))
                   )
-                ), witness
+                ), witness_
               )
             )
           ),
@@ -47,7 +47,7 @@ def coordinate_search_step(
               fun (i : Fin(n)) => FieldNonzero(
                 A, af_operations(K), v(typed(Fin(succ(n)), right(i)))
               )
-            ), witness
+            ), witness_
           )
         )
       );
@@ -267,14 +267,14 @@ def coordinate_dimension_invariant(
   m = n {
   let S := CoordinateSpace(K, m);
   let T := CoordinateSpace(K, n);
-  let inverse := linear_iso_inverse(K, S, T, e);
+  let inverse_ := linear_iso_inverse(K, S, T, e);
   exact dimension_order_antisymmetric(
     m, n,
     coordinate_injection_bound(
       K, n, m, linear_iso_forward(K, S, T, e), linear_iso_injective(K, S, T, e)
     ),
     coordinate_injection_bound(
-      K, m, n, linear_iso_forward(K, T, S, inverse), linear_iso_injective(K, T, S, inverse)
+      K, m, n, linear_iso_forward(K, T, S, inverse_), linear_iso_injective(K, T, S, inverse_)
     )
   );
 }

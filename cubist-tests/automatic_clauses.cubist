@@ -122,7 +122,7 @@ obligations by {
 def by_term(A : U0, R : A -> A -> U0, q : Quotient(U0, A, R)) : Nat := match q {
     class(a) => 0;
   }
-obligations by(fun (a, b : A, r : R(a, b)) => path i => 0);
+obligations by (fun (a, b : A, r : R(a, b)) => path i => 0);
 
 def statement_block(A : U0, R : A -> A -> U0, q : Quotient(U0, A, R)) : Nat {
   match q {
@@ -142,7 +142,7 @@ def statement_term(A : U0, R : A -> A -> U0, q : Quotient(U0, A, R)) : Nat {
       exact 0;
     }
   }
-  obligations by(fun (a, b : A, r : R(a, b)) => path i => 0);
+  obligations by (fun (a, b : A, r : R(a, b)) => path i => 0);
 }
 
 def computes : by_term(Unit, fun (a, b : Unit) => Unit, class(tt)) = 0 {
@@ -175,7 +175,7 @@ obligations by {
 def ambiguous_term(x : TwoLoops) : Nat := match x {
     hub => 0;
   }
-obligations by(path i => 0);
+obligations by (path i => 0);
 
 // hlevel hints supply evidence unavailable to automatic squash without the
 // hint.

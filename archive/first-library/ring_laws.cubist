@@ -112,9 +112,9 @@ def ring_neg_unique(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x, y : F, cancels : addF(x, y) = zero
 ) :
   y = negF(x) {
-  obtain (setF, additive, multiplicative) := ring;
+  obtain (setF, additive_, multiplicative) := ring;
   exact field_add_cancel(
-    F, zero, addF, negF, additive, x, y, negF(x),
+    F, zero, addF, negF, additive_, x, y, negF(x),
     trans(cancels, sym(ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, x)))
   );
 }
@@ -203,7 +203,7 @@ def ring_mul_zero(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x : F
 ) :
   mulF(x, zero) = zero {
-  obtain (setF, additive, multiplicative) := ring;
+  obtain (setF, additive_, multiplicative) := ring;
   let twice : addF(mulF(x, zero), mulF(x, zero)) = addF(mulF(x, zero), zero) := trans(
     sym(ring_distribute(F, zero, one, addF, mulF, negF, ring, x, zero, zero)),
     trans(
@@ -211,7 +211,7 @@ def ring_mul_zero(
       sym(ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, mulF(x, zero)))
     )
   );
-  exact field_add_cancel(F, zero, addF, negF, additive, mulF(x, zero), mulF(x, zero), zero, twice);
+  exact field_add_cancel(F, zero, addF, negF, additive_, mulF(x, zero), mulF(x, zero), zero, twice);
 }
 
 def ring_zero_mul(

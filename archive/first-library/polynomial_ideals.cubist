@@ -19,27 +19,27 @@ def polynomial_ideal_laws(K : AlgebraicField, I : PolynomialIdeal(K)) :=
 
 def polynomial_ideal_prop(K : AlgebraicField, I : PolynomialIdeal(K)) :
   forall p : Polynomial(K). Proposition(polynomial_ideal_members(K, I, p)) {
-  obtain (prop, zero, add, mul) := polynomial_ideal_laws(K, I);
-  exact prop;
+  obtain (prop_, zero, add, mul) := polynomial_ideal_laws(K, I);
+  exact prop_;
 }
 
 def polynomial_ideal_zero(K : AlgebraicField, I : PolynomialIdeal(K)) :
   polynomial_ideal_members(K, I, polynomial_zero(K)) {
-  obtain (prop, zero, add, mul) := polynomial_ideal_laws(K, I);
+  obtain (prop_, zero, add, mul) := polynomial_ideal_laws(K, I);
   exact zero;
 }
 
 def polynomial_ideal_add(K : AlgebraicField, I : PolynomialIdeal(K)) :
   forall p : Polynomial(K). forall q : Polynomial(K). polynomial_ideal_members(K, I, p)
   -> polynomial_ideal_members(K, I, q) -> polynomial_ideal_members(K, I, polynomial_add(K, p, q)) {
-  obtain (prop, zero, add, mul) := polynomial_ideal_laws(K, I);
+  obtain (prop_, zero, add, mul) := polynomial_ideal_laws(K, I);
   exact add;
 }
 
 def polynomial_ideal_mul(K : AlgebraicField, I : PolynomialIdeal(K)) :
   forall a : Polynomial(K). forall p : Polynomial(K). polynomial_ideal_members(K, I, p)
   -> polynomial_ideal_members(K, I, polynomial_mul(K, a, p)) {
-  obtain (prop, zero, add, mul) := polynomial_ideal_laws(K, I);
+  obtain (prop_, zero, add, mul) := polynomial_ideal_laws(K, I);
   exact mul;
 }
 
@@ -102,7 +102,7 @@ def ideal_minimal_divides(
         polynomial_cutoff(K, g), polynomial_cutoff(K, r), d, minimal(r, memberR, nr),
         polynomial_cutoff_least(K, r, d, support)
       );
-      exact successor_not_le_self(d, along((fun (n : Nat) => le(n, d))) by degree from below);
+      exact successor_not_le_self(d, along ((fun (n : Nat) => le(n, d))) by degree from below);
     }
     exact double_negation(
       r = polynomial_zero(K), polynomial_set(K, r, polynomial_zero(K)), impossible
@@ -149,8 +149,8 @@ def polynomial_ideal_principal(
   let candidate :
     (exists g : Polynomial(K). polynomial_ideal_members(K, I, g) and PolynomialNonzero(K, g))
     -> (exists n : Nat. P(n)) {
-    intro witness;
-    obtain (g, member, nonzero) := witness;
+    intro witness_;
+    obtain (g, member, nonzero) := witness_;
     exact (
       polynomial_cutoff(K, g),
       merely(
@@ -171,8 +171,8 @@ def polynomial_ideal_principal(
   );
   obtain (n, pn, least) := minima;
   let generate : IdealCutoffWitness(K, I, n) -> IdealPrincipalGenerator(K, I) {
-    intro witness;
-    obtain (g, member, nonzero, same) := witness;
+    intro witness_;
+    obtain (g, member, nonzero, same) := witness_;
     let minimal :
       forall r : Polynomial(K). polynomial_ideal_members(K, I, r) -> PolynomialNonzero(K, r)
       -> le(polynomial_cutoff(K, g), polynomial_cutoff(K, r)) {
@@ -181,7 +181,7 @@ def polynomial_ideal_principal(
       let candidateR := merely(
         IdealCutoffWitness(K, I, cr), typed(IdealCutoffWitness(K, I, cr), (r, mr, nr, refl(cr)))
       );
-      exact along((fun (k : Nat) => le(k, cr))) by sym(same) from least(cr, candidateR);
+      exact along ((fun (k : Nat) => le(k, cr))) by sym(same) from least(cr, candidateR);
     }
     exact (g, member, nonzero, ideal_minimal_divides(K, I, g, member, nonzero, minimal));
   }

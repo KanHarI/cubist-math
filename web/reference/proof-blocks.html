@@ -292,7 +292,7 @@ def plus_zero(n : Nat) : n + 0 = n {  // Error: Type mismatch: found n = n, expe
             <p><code>obtain (a, b) := pair;</code> names the components of a pair or dependent pair. Patterns can be tuples and can nest, following the shape of the type.</p>
             <pre><code data-check="accept">import nat;
 
-def witness(t : exists n : Nat. (n = n) and Unit) : Nat {
+def witness_(t : exists n : Nat. (n = n) and Unit) : Nat {
   obtain (n, same, u) := t;
   exact n;
 }

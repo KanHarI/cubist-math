@@ -70,7 +70,7 @@ test("a changed proof passes only the type level, and a changed statement fails"
 });
 
 test("syntax rewrites keep comments and verify at their declared level", async () => {
-  const source = `import paths; use nat;
+  const source = `import paths_; use nat;
 def moved(C : Nat -> U0, p : 0 = 0, q : 0 = 0, v : C(0)) : forall a, b, c : Nat. C(0) {
   intro a;
   intro b; // kept apart by this comment
@@ -82,7 +82,7 @@ def moved(C : Nat -> U0, p : 0 = 0, q : 0 = 0, v : C(0)) : forall a, b, c : Nat.
 }
 def pick(A : U0, x, y : A, p : x = y) := (fun (a : A) => fun (b : A) => a)(at(p, 0), y);
 def loop(A : U0, x, y : A, p : x = y) : x = x {
-  exact concatenate(U0, A, x, y, x, p, inverse(U0, A, x, y, p));
+  exact concatenate(U0, A, x, y, x, p, inverse_(U0, A, x, y, p));
 }
 def still(A : U0, x : A) : x = x {
   exact path(fun (i : Interval) => A, fun (i : Interval) => x);
@@ -322,16 +322,16 @@ test("value pins close over a folded helper even when the public type and displa
 
 test("ledgered public dependencies cannot be hidden outside a declaration scope", async () => {
   const types = "inductive Tr(A : U0) : prop { point(a : A); }\n";
-  const before = "import trunc_types;\ndef Predicate(A : U0) := Truncate(U0, A);\ndef witness(A : U0, a : A) : Predicate(A) := TruncateIntro(U0, A, a);\n";
-  const after = "import trunc_types;\ndef Predicate(A : U0) := Tr(A);\ndef witness(A : U0, a : A) : Predicate(A) := point(a);\n";
+  const before = "import trunc_types;\ndef Predicate(A : U0) := Truncate(U0, A);\ndef witness_(A : U0, a : A) : Predicate(A) := TruncateIntro(U0, A, a);\n";
+  const after = "import trunc_types;\ndef Predicate(A : U0) := Tr(A);\ndef witness_(A : U0, a : A) : Predicate(A) := point(a);\n";
   const run = async (ledger=null,declarations=null) => (await verifyMigration({modules:["scope"],ledger,declarations,
     readOriginal:async name => name === "trunc_types" ? types : name === "scope" ? before : library(name),readEdited:async () => after}))[0];
   const entries = (await run()).changes.map(change => ({...change,remedyGroup:1}));
   assert.deepEqual((await run({version:2,changes:entries})).failures,[]);
-  const scoped = await run({version:2,changes:[entries[1]]},{scope:["witness"]});
+  const scoped = await run({version:2,changes:[entries[1]]},{scope:["witness_"]});
   assert.match(scoped.failures[0].reason,/Ledger dependency scope__Predicate is outside.*scope/);
   const unpinned = await run({version:2,changes:[entries[1]]});
-  assert.match(unpinned.failures.find(item => item.name === "witness").reason,/must be identical or have its own verified ledger entry/);
+  assert.match(unpinned.failures.find(item => item.name === "witness_").reason,/must be identical or have its own verified ledger entry/);
 });
 
 test("rebuilt classical assumptions require explicit, pinned replacements", async () => {

@@ -40,7 +40,7 @@ theory AbelianGroup(U < UU0) extends Group, CommMonoid {}
 // and neg, written -x, and a commutative monoid for multiplication on the
 // same set, over which multiplication distributes. Subtraction, x - y, is
 // derived: x + -y.
-theory CommRing(U < UU0) extends additive : AbelianGroup(
+theory CommRing(U < UU0) extends additive_ : AbelianGroup(
   M := R, mul := add notation x + y, mul_assoc := add_assoc, one := zero, one_mul := zero_add,
   mul_one := add_zero, inv := neg notation - x, inv_mul := neg_add, mul_inv := add_neg,
   mul_comm := add_comm
@@ -79,7 +79,7 @@ def nat_multiplicative : CommMonoid(U0) := CommMonoid.make(
 
 // In any commutative monoid, products regroup freely; for a ring, at its
 // multiplicative monoid, A.multiplicative, and its additive one,
-// A.additive.comm_monoid.
+// A.additive_.comm_monoid.
 section {{U < UU0}}(G : CommMonoid(U)) {
   computable def mul_left_comm(x, y, z : M) : x * (y * z) = y * (x * z) {
     calc {
@@ -153,7 +153,7 @@ section {{U < UU0}}(A : CommRing(U)) {
         _ = zero + (x * zero) by sym(zero_add(x * zero));
       }
     }
-    exact right_cancel(A.additive.group, x * zero, x * zero, zero, doubled);
+    exact right_cancel(A.additive_.group, x * zero, x * zero, zero, doubled);
   }
 
   computable def zero_mul(x : R) : zero * x = zero := trans(mul_comm(zero, x), mul_zero(x));
@@ -170,14 +170,14 @@ section {{U < UU0}}(A : CommRing(U)) {
 
   // neg(x) * y is the additive inverse of x * y.
   computable def neg_mul(x, y : R) : neg(x) * y = neg(x * y) {
-    let inverse : neg(x) * y + x * y = zero {
+    let inverse_ : neg(x) * y + x * y = zero {
       calc {
         neg(x) * y + x * y = (neg(x) + x) * y by sym(add_mul(neg(x), x, y));
         _ = zero * y by cong(fun (w : R) => w * y, neg_add(x));
         _ = zero by zero_mul(y);
       }
     }
-    exact inv_unique(A.additive.group, x * y, neg(x) * y, inverse);
+    exact inv_unique(A.additive_.group, x * y, neg(x) * y, inverse_);
   }
 }
 
@@ -210,15 +210,15 @@ section {{U < UU0}}(A : CommRing(U)) {
 // truncated law eliminates into the proposition of having an inverse. On a
 // model whose law is merely of an inverse, as the rationals', it computes.
 section {{U < UU0}}(F : Field(U)) {
-  computable def inverse(x : R, nonzero : x = zero -> Void) :
+  computable def inverse_(x : R, nonzero : x = zero -> Void) :
     exists y : R.
     x * y = one := mere_eliminate(
       U, U, exists y : R. x * y = one, exists y : R. x * y = one, inverse_is_prop(F.comm_ring, x),
       fun (w : exists y : R. x * y = one) => w, inverses(x, nonzero)
     );
 
-  computable def inv(x : R, nonzero : x = zero -> Void) : R := inverse(x, nonzero).1;
+  computable def inv(x : R, nonzero : x = zero -> Void) : R := inverse_(x, nonzero).1;
 
   computable def mul_inv(x : R, nonzero : x = zero -> Void) :
-    x * inv(x, nonzero) = one := inverse(x, nonzero).2;
+    x * inv(x, nonzero) = one := inverse_(x, nonzero).2;
 }

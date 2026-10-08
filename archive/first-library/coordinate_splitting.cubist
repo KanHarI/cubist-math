@@ -44,7 +44,7 @@ def coordinate_insert_linear(K : AlgebraicField, n : Nat) :
   LinearMap(K, CoordinateSpace(K, n), CoordinateSpace(K, succ(n))) {
   let A := af_carrier(K);
   let zero := af_zero(A, af_operations(K));
-  let additive :
+  let additive_ :
     forall v : Fin(n) -> A. forall w : Fin(n) -> A.
     coordinate_insert(K, n, vector_add(K, CoordinateSpace(K, n), v, w)) = vector_add(
       K, CoordinateSpace(K, succ(n)), coordinate_insert(K, n, v), coordinate_insert(K, n, w)
@@ -71,7 +71,7 @@ def coordinate_insert_linear(K : AlgebraicField, n : Nat) :
       refl(vector_scale(K, CoordinateSpace(K, n), a, v))
     );
   }
-  exact (coordinate_insert(K, n), additive, scalar);
+  exact (coordinate_insert(K, n), additive_, scalar);
 }
 
 def coordinate_tail_linear(K : AlgebraicField, n : Nat) :

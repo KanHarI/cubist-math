@@ -26,6 +26,6 @@ computable def mere_map(U, V < UU0, A : U, B : V, f : A -> B, h : Trunc(U, A)) :
 
 // G2: a small truncation eliminates directly into a large proposition.
 computable def small_mere_eliminate(
-  A : U0, P : U1, prop : IsProp(U1, P), f : A -> P, h : Trunc(U0, A)
+  A : U0, P : U1, prop_ : IsProp(U1, P), f : A -> P, h : Trunc(U0, A)
 ) :
-  P := mere_eliminate(U0, U1, A, P, prop, f, h);
+  P := mere_eliminate(U0, U1, A, P, prop_, f, h);

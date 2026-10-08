@@ -53,10 +53,10 @@ def span_add(
 
 def span_scale_witness(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, a : af_carrier(K),
-  x : vector_carrier(K, V), witness : SpanWitness(K, V, P, x)
+  x : vector_carrier(K, V), witness_ : SpanWitness(K, V, P, x)
 ) :
   Span(K, V, P, vector_scale(K, V, a, x)) {
-  obtain (n, vectors, coefficients, members, sum) := witness;
+  obtain (n, vectors, coefficients, members, sum) := witness_;
   exact TruncateIntro(
     U0, SpanWitness(K, V, P, vector_scale(K, V, a, x)),
     typed(

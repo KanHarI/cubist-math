@@ -2,7 +2,7 @@
 // sign, trunc(-1) is prop.
 // V31: trunc(-1) is prop.
 
-inductive Tr(U < UU0, A : U) : trunc(- 1) {
+inductive Tr(U < UU0, A : U) : trunc (- 1) {
   point(a : A);
 }
 

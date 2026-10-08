@@ -471,7 +471,7 @@ def hom_family_independent_step(n : Nat, previous : HomFamilyIndependent(n)) :
   intro K, L, maps, distinct, coefficients, relation, index;
   exact match index as i return coefficients(i) = field_zero(L) {
     left u => (
-      along((fun (j : Fin(succ(n))) => coefficients(j) = field_zero(L))) by cong(
+      along ((fun (j : Fin(succ(n))) => coefficients(j) = field_zero(L))) by cong(
         (fun (v : Unit) => typed(Fin(succ(n)), left(v))), unit_equal(u)
       ) from hom_family_head_coefficient_zero(
         n, previous, K, L, maps, distinct, coefficients, relation

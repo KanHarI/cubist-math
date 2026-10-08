@@ -1,7 +1,7 @@
 // Checked dependent path and transport conveniences.
 // Current checked counterparts: ../current/dependent-transport.cubist
 // and ../current/path-coherence.cubist.
-import paths;
+import paths_;
 
 // Only the endpoints are inferred. The family and path are selected explicitly.
 def move_in_fiber(A : U0, C : A -> U0, x, y : A, p : x = y, v : C(x)) : C(y) {

@@ -20,7 +20,7 @@ inductive E(P, Q, M, R, P_ : U0) {
   e;
 }
 
-inductive G : trunc(1) {
+inductive G : trunc (1) {
   g;
 }
 

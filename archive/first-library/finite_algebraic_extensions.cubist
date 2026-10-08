@@ -42,10 +42,10 @@ def finite_basis_element_algebraic(
       }
       exact polynomial_from_coordinates_zero(K, succ(n), a, zero);
     }
-    let inverse := linear_iso_inverse(K, CoordinateSpace(K, n), V, basis);
+    let inverse_ := linear_iso_inverse(K, CoordinateSpace(K, n), V, basis);
     exact coordinate_embedding_bound(
-      K, V, n, linear_iso_forward(K, V, CoordinateSpace(K, n), inverse),
-      linear_iso_injective(K, V, CoordinateSpace(K, n), inverse), evaluation,
+      K, V, n, linear_iso_forward(K, V, CoordinateSpace(K, n), inverse_),
+      linear_iso_injective(K, V, CoordinateSpace(K, n), inverse_), evaluation,
       linear_kernel_injective(K, C, V, evaluation, kernel)
     );
   }

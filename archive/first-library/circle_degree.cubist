@@ -33,7 +33,7 @@ def circle_map_generator(X : U0, point : X, p : point = point) :
           (fun (q : point = point) => trans(p, q)),
           trans(
             map_inverse(S1, X, f, base, south_pole, lower),
-            cong(inverse(U1, X, point, point), lowerLaw)
+            cong(inverse_(U1, X, point, point), lowerLaw)
           )
         ), right_unit(X, point, point, p)
       )

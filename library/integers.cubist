@@ -530,5 +530,5 @@ computable def int_zero_ne_one(p : int_zero = int_one) : Void := nat_zero_ne_suc
 
 // The integers' numerals (L2.10c): integers.(2) is int(2, 0).
 notation integers {
-  numeral(n : Nat) := int(n, 0);
+  numeral (n : Nat) := int(n, 0);
 }

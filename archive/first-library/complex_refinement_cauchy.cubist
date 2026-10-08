@@ -104,12 +104,12 @@ def complex_cauchy_from_refinements(
     intro m, n, largeM, largeN;
     let first := close(m, n, largeM);
     let second :=
-      along((fun (k : Nat) => ComplexClose(F, addF, lt, sequence(n), sequence(k), half(epsilon)))) by nat_add_comm(
+      along ((fun (k : Nat) => ComplexClose(F, addF, lt, sequence(n), sequence(k), half(epsilon)))) by nat_add_comm(
         n, m
       ) from close(n, m, largeN);
     let reversed :=
       complex_close_symmetry(F, addF, lt, sequence(n), sequence(m + n), half(epsilon), second);
-    exact along((fun (r : F) => ComplexClose(F, addF, lt, sequence(m), sequence(n), r))) by halfSum(
+    exact along ((fun (r : F) => ComplexClose(F, addF, lt, sequence(m), sequence(n), r))) by halfSum(
       epsilon
     ) from complex_close_triangle(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, sequence(m), sequence(m + n),

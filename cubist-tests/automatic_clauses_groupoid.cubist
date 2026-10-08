@@ -4,7 +4,7 @@
 import hlevels;
 use nat;
 
-inductive Gpd(A : U0) : trunc(1) {
+inductive Gpd(A : U0) : trunc (1) {
   point(a : A);
 }
 

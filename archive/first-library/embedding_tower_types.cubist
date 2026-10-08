@@ -5,7 +5,7 @@ import finite_dependent_counts;
 def transported_subtype_value(
   I, A : U0, P : I -> A -> U0, i, j : I, same : i = j, u : (exists a : A. P(i, a))
 ) :
-  sigma_first(A, P(j), along((fun (k : I) => (exists a : A. P(k, a)))) by same from u) = sigma_first(
+  sigma_first(A, P(j), along ((fun (k : I) => (exists a : A. P(k, a)))) by same from u) = sigma_first(
     A, P(i), u
   ) {
   exact transport_constant(I, A, i, j, same, sigma_first(A, P(i), u));
@@ -17,10 +17,10 @@ def embedding_tower_restrict(
   extension : EmbeddingsOver(K, L, e, T, j)
 ) :
   EmbeddingsOver(K, R, i, T, j) {
-  obtain (f, over) := extension;
+  obtain (f, over_) := extension;
   exact (
     field_embedding_compose(R, L, T, h, f),
-    (fun (a : af_carrier(K)) => trans(cong(field_embedding_map(L, T, f), triangle(a)), over(a)))
+    (fun (a : af_carrier(K)) => trans(cong(field_embedding_map(L, T, f), triangle(a)), over_(a)))
   );
 }
 
@@ -99,11 +99,11 @@ def embedding_tower_pair_roundtrip(
   let d2 := sigma_first(A, B, back);
   let u := sigma_second(A, B, back);
   let v := sigma_second(A, B, tower);
-  let over := embedding_over_law(R, L, h, T, embedding_over(K, R, i, T, j, d), v);
+  let over_ := embedding_over_law(R, L, h, T, embedding_over(K, R, i, T, j, d), v);
   let same := embeddings_over_ext(
     K, R, i, T, j, d2, d,
     field_embedding_ext(
-      R, T, embedding_over(K, R, i, T, j, d2), embedding_over(K, R, i, T, j, d), over
+      R, T, embedding_over(K, R, i, T, j, d2), embedding_over(K, R, i, T, j, d), over_
     )
   );
   let P := fun (d : A) => EmbeddingOverLaw(R, L, h, T, embedding_over(K, R, i, T, j, d));

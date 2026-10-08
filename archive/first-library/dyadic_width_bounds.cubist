@@ -29,7 +29,7 @@ def field_natural_successor_ge_one(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : Nat
 ) :
   FieldLe(F, lt, one, field_natural(F, zero, one, addF)(succ(n))) {
-  exact along((fun (v : F) => FieldLe(F, lt, v, field_natural(F, zero, one, addF)(succ(n))))) by ring_add_zero(
+  exact along ((fun (v : F) => FieldLe(F, lt, v, field_natural(F, zero, one, addF)(succ(n))))) by ring_add_zero(
     F, zero, one, addF, mulF, negF, ring, one
   ) from order_le_translate(
     F, zero, one, addF, mulF, lt, arithmetic, zero, field_natural(F, zero, one, addF)(n), one,
@@ -84,7 +84,7 @@ def dyadic_width_growth_step(
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   let factor := field_natural(F, zero, one, addF)(succ(depth));
   let h := half(width);
-  let next := dyadic_width(F, half, depth, h);
+  let next_ := dyadic_width(F, half, depth, h);
   let nonnegativeHalf := nonnegative_half_from_sum(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, h, halfSum(width),
     nonnegativeWidth
@@ -95,28 +95,28 @@ def dyadic_width_growth_step(
   );
   let oldBound := previous(h, nonnegativeHalf);
   let unitBound :=
-    along((fun (v : F) => FieldLe(F, lt, v, mulF(factor, next)))) by ring_mul_one(
-      F, zero, one, addF, mulF, negF, ring, next
+    along ((fun (v : F) => FieldLe(F, lt, v, mulF(factor, next_)))) by ring_mul_one(
+      F, zero, one, addF, mulF, negF, ring, next_
     ) from weakScale(
-      one, factor, next,
+      one, factor, next_,
       field_natural_successor_ge_one(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, depth
       ), nonnegativeNext
     );
   let nextBound := order_le_trans(
-    F, zero, one, addF, mulF, lt, arithmetic, next, mulF(factor, next), h, unitBound, oldBound
+    F, zero, one, addF, mulF, lt, arithmetic, next_, mulF(factor, next_), h, unitBound, oldBound
   );
   let doubledBound := order_le_add(
-    F, zero, one, addF, mulF, negF, lt, ring, arithmetic, mulF(factor, next), h, next, h, oldBound,
-    nextBound
+    F, zero, one, addF, mulF, negF, lt, ring, arithmetic, mulF(factor, next_), h, next_, h,
+    oldBound, nextBound
   );
-  let distribute : mulF(addF(factor, one), next) = addF(mulF(factor, next), next) := trans(
-    ring_distribute_left(F, zero, one, addF, mulF, negF, ring, factor, one, next),
-    cong(addF(mulF(factor, next)), ring_mul_one(F, zero, one, addF, mulF, negF, ring, next))
+  let distribute : mulF(addF(factor, one), next_) = addF(mulF(factor, next_), next_) := trans(
+    ring_distribute_left(F, zero, one, addF, mulF, negF, ring, factor, one, next_),
+    cong(addF(mulF(factor, next_)), ring_mul_one(F, zero, one, addF, mulF, negF, ring, next_))
   );
   let productBound :=
-    along((fun (v : F) => FieldLe(F, lt, v, addF(h, h)))) by sym(distribute) from doubledBound;
-  exact along FieldLe(F, lt, mulF(addF(factor, one), next)) by halfSum(width) from productBound;
+    along ((fun (v : F) => FieldLe(F, lt, v, addF(h, h)))) by sym(distribute) from doubledBound;
+  exact along FieldLe(F, lt, mulF(addF(factor, one), next_)) by halfSum(width) from productBound;
 }
 
 // (depth + 1) * width_after_depth_halvings <= original_width.
@@ -144,7 +144,7 @@ def dyadic_width_growth_bound(
         (fun (v : F) => mulF(v, width)), ring_add_zero(F, zero, one, addF, mulF, negF, ring, one)
       ), ring_mul_one(F, zero, one, addF, mulF, negF, ring, width)
     );
-    exact along((fun (v : F) => FieldLe(F, lt, v, width))) by sym(identity) from order_le_refl(
+    exact along ((fun (v : F) => FieldLe(F, lt, v, width))) by sym(identity) from order_le_refl(
       F, lt, order, width
     );
   }
