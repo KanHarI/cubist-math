@@ -52,7 +52,9 @@ const wildcard = { kind: "name", token: { text: "_" } };
 
 // A name no source spells, for an argument the compiled match binds,
 // numbered within the match, so that an elaboration names alike every time.
-const generatedToken = (names, stem, at) => ({ text: `${stem}'${++names.next}`, start: at.start, end: at.end });
+// Its stem names what it binds in the kernel, where a dimension's name is an
+// identifier (match.mjs).
+const generatedToken = (names, stem, at) => ({ text: `${stem}'${++names.next}`, stem, start: at.start, end: at.end });
 
 // Compile and elaborate the match `n`: an expression at its expected type,
 // or a statement for its goal. `typeOf(value, scope)` gives the declared
