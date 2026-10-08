@@ -16,6 +16,7 @@ import {theoryBinding} from "./theories.mjs";
 import {universeAt} from "../cubist/theories.mjs";
 import {parse} from "../cubist/parser.mjs";
 import {freeNames, substituted} from "../cubist/scopes.mjs";
+import {assignArguments} from "./arguments.mjs";
 
 // The declarations an initial or free model expands to, checked in its
 // place; one that does not expand fails as a declaration of its name.
@@ -38,11 +39,14 @@ function expand(module, d, env) {
   if (entry?.tag !== "Theory")
     throw module.locate(notATheory(d.kind, text(d.theory)), d.theory);
   const record = entry.record, T = record.name, args = d.theory.kind === "call" ? d.theory.args : [];
+  const parameters = [...record.universes.map(name => ({ name })), ...record.params];
+  const argument = assignArguments({ ...d.theory, args }, parameters, module, T);
   if (args.length !== record.universes.length + record.params.length)
     throw module.locate(theoryArguments(T, record.universes.length + record.params.length, args.length), d.theory);
-  // The theory's universes and parameters, given.
-  const given = new Map([...record.universes.map((_, k) => [universeAt(k), args[k]]),
-    ...record.params.map((p, k) => [p.name, args[record.universes.length + k]])]);
+  // Named arguments give their parameter; positional ones fill the rest,
+  // just as in an ordinary application of the theory's type of models.
+  const given = new Map([...record.universes.map((_, k) => [universeAt(k), argument(k)]),
+    ...record.params.map((p, k) => [p.name, argument(record.universes.length + k)])]);
   // A field's syntax with names replaced, its binders renamed apart from the
   // names put there; a pattern's binder, which is not renamed, is refused.
   const put = (field, node, map) => substituted(node, map, name => module.locate(capturedBy(field, name), d.theory));
@@ -83,12 +87,16 @@ function expand(module, d, env) {
   const shape = field => {
     const binders = [], bound = new Set();
     let body = field.type, placed = put(field.name, field.type, inside);
-    for (; body?.kind === "forall"; body = body.body, placed = placed.body) {
+    for (let group = 0; body?.kind === "forall" || body?.kind === "binderGroup" && body.binderKind === "forall";
+        body = body.body, placed = placed.body, group++) {
+      const names = body.kind === "forall" ? [body.name] : body.names;
+      const placedNames = placed.kind === "forall" ? [placed.name] : placed.names;
       const domain = body.domain, isCarrier = domain.kind === "name" && domain.name === carrier && !bound.has(carrier);
       if (!isCarrier && freeNames(domain, bound).has(carrier))
-        throw module.locate(notPositive(field.name, body.name.text, carrier), d.theory);
-      binders.push({ name: placed.name.text, carrier: isCarrier, type: placed.domain });
-      bound.add(body.name.text);
+        throw module.locate(notPositive(field.name, names[0].text, carrier), d.theory);
+      // All names in a group share the domain read before any of them binds.
+      for (const name of placedNames) binders.push({ name: name.text, carrier: isCarrier, type: placed.domain, group });
+      for (const name of names) bound.add(name.text);
     }
     return { binders, body, bound, placed };
   };
@@ -99,7 +107,7 @@ function expand(module, d, env) {
     if (field.kind === "sort" || field.kind === "evidence") continue;
     if (field.kind !== "operation" && field.kind !== "law") throw module.locate(unsupportedField(T, field.name), d.theory);
     const { binders, body, bound, placed } = shape(field);
-    const params = binders.map((b, k) => ({ name: { text: b.name, ...at }, type: b.type, group: k }));
+    const params = binders.map(b => ({ name: { text: b.name, ...at }, type: b.type, group: b.group }));
     if (field.kind === "operation") {
       if (!(body.kind === "name" && body.name === carrier && !bound.has(carrier))) throw module.locate(notCarrierValued(field.name, carrier), d.theory);
       operationShapes.push({ name: field.name, binders });
@@ -146,7 +154,7 @@ function expand(module, d, env) {
   // gives.
   const model = `def ${own("model")}${paramsText} : ${theoryText} := ${T}.make(${[`${carrier} := ${selfText}`, `${evidence.name} := _`,
     ...[...operationShapes, ...lawShapes].map(f => `${f.name} := ${lambdas(variables(f), call(constructor(f.name), variables(f)))}`)].join(", ")});`;
-  const generator = free ? [`${v.g} : ${text(d.on)} -> ${v.target}.${carrier}`] : [];
+  const generator = free ? [`${v.g} : (${text(d.on)}) -> ${v.target}.${carrier}`] : [];
   // The recursion at an element, given the target's carrier evidence, and
   // a field's arguments with each in the carrier mapped.
   const recurse = (proof, x) => call(own("fold_map"), [...names, v.target, proof, ...(free ? [v.g] : []), x]);

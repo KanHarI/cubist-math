@@ -135,7 +135,8 @@ export const renamedFree = (node, rename) => rewritten(node, (n, bound) => {
   return renamed ? { ...n, name: renamed + n.name.slice(root(n.name).length) } : n;
 });
 
-// `node` with each free name that `args` maps replaced by its syntax, and a
+// `node` with each free name that `args` maps replaced by its syntax (a
+// qualified name's root too, as R.M becomes a member of R's argument), and a
 // binder that would capture a free name of an argument renamed first, apart
 // from every name either mentions. A binder that may not be renamed (a
 // pattern's or a parameter's) and would capture one is refused with the
@@ -145,7 +146,20 @@ export function substituted(node, args, refuse) {
   const taken = new Set([...free, ...allNames(node)]);
   const fresh = stem => { let name = stem, k = 1; while (taken.has(name)) name = `${stem}${k++}`; taken.add(name); return name; };
   const go = (tree, bound) => rewritten(tree, (n, inner) => {
-    if (n.kind === "name" && args.has(n.name) && !inner.has(n.name)) return args.get(n.name);
+    if (n.kind === "name" && !inner.has(root(n.name))) {
+      if (args.has(n.name)) return args.get(n.name);
+      const [head, ...fields] = n.name.split(".");
+      if (args.has(head)) {
+        const dots = n.qualifiedDots ?? (n.qualifiedDot ? [n.qualifiedDot] : []);
+        let value = args.get(head), end = n.start + head.length;
+        for (const [index, text] of fields.entries()) {
+          const start = dots[index]?.end ?? end + 1;
+          end = start + text.length;
+          value = { kind: "member", value, field: { text, start, end }, start: n.start, end };
+        }
+        return value;
+      }
+    }
     const scopes = scopesOf(n), clashing = new Set(scopes.filter(scope => scope.binders.some(binder => free.has(binderName(binder))
       && [...args.keys()].some(name => occursFree(n, scope, name)))));
     if (!clashing.size) return n;
