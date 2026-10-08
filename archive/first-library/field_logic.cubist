@@ -1,4 +1,4 @@
-import paths;
+import paths_;
 
 // Carriers in U1 include proposition-valued Dedekind cuts over small Q.
 // Universe arguments to the original library axioms remain explicit here.
@@ -12,7 +12,7 @@ def field_exists_intro(A : U1, a : A) := TruncateIntro(U1, A, a);
 
 def field_exists_prop(A : U1) := TruncateProp(U1, A);
 
-def field_exists_elim(A, P : U1, prop : FieldProp(P), f : A -> P) := TruncateElim(U1, A, P, prop, f);
+def field_exists_elim(A, P : U1, prop_ : FieldProp(P), f : A -> P) := TruncateElim(U1, A, P, prop_, f);
 
 def field_exists_map(A, B : U1, f : A -> B, h : FieldExists(A)) :=
   field_exists_elim(
@@ -38,9 +38,9 @@ def field_fst(A, B : U1, pair : A and B) := field_first(A, (fun (a : A) => B), p
 def field_snd(A, B : U1, pair : A and B) := field_second(A, (fun (a : A) => B), pair);
 
 def field_forall_prop(
-  A : U1, P : A -> U1, prop : (forall a : A. FieldProp(P(a))), f, g : (forall a : A. P(a))
+  A : U1, P : A -> U1, prop_ : (forall a : A. FieldProp(P(a))), f, g : (forall a : A. P(a))
 ) :=
-  FunExt(U1, A, P, f, g, (fun (a : A) => prop(a, f(a), g(a))));
+  FunExt(U1, A, P, f, g, (fun (a : A) => prop_(a, f(a), g(a))));
 
 def field_not_prop(A : U1, f, g : A -> Void) :=
   FunExt(
@@ -51,10 +51,10 @@ def field_not_prop(A : U1, f, g : A -> Void) :=
 // Eliminate a small truncation into a proposition in U1. The intermediate
 // FieldExists(P) is small by the existing universe-lowering Trunc signature.
 // Both eliminations require proposition evidence; no witness is selected.
-def small_mere_eliminate(A : U0, P : U1, prop : FieldProp(P), f : A -> P, h : Truncate(U0, A)) : P {
+def small_mere_eliminate(A : U0, P : U1, prop_ : FieldProp(P), f : A -> P, h : Truncate(U0, A)) : P {
   let resize :=
     TruncateElim(
       U0, A, FieldExists(P), field_exists_prop(P), (fun (a : A) => field_exists_intro(P, f(a)))
     );
-  exact field_exists_elim(P, P, prop, (fun (p : P) => p), resize(h));
+  exact field_exists_elim(P, P, prop_, (fun (p : P) => p), resize(h));
 }

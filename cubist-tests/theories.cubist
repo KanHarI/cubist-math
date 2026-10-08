@@ -36,7 +36,7 @@ theory CommGroup(U < UU0) extends Group, CommMonoid {
 // Two copies of Monoid on one sort R, the additive one renamed, with + for
 // its operation; * keeps meaning the multiplicative one.
 theory Semiring(U < UU0) extends
-    additive : CommMonoid(M := R, mul := add notation x + y, one := zero, mul_assoc := add_assoc,
+    additive_ : CommMonoid(M := R, mul := add notation x + y, one := zero, mul_assoc := add_assoc,
       one_mul := zero_add, mul_one := add_zero, mul_comm := add_comm),
     multiplicative : Monoid(M := R) {
   law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;
@@ -130,6 +130,64 @@ def still_nat(n : Nat) : 0 + n * 1 = n * 1 {
 def large_square(U < UU0, G : Monoid(U), x : G.M) : G.M {
   use G;
   exact x * x;
+}
+
+// A binding hides the declarations under its name. A model named as its
+// theory reads its own fields, as m.f, as e.f for a model e, in a use and
+// in a theory's header; and beside a theory B, which declares B.one, a model
+// B's B.one is its field.
+def own_name(Monoid : Monoid(U0)) :
+  Monoid.mul(Monoid.one, Monoid.one) = Monoid.one := Monoid.one_mul(Monoid.one);
+
+def own_name_member(Monoid : CommGroup(U0)) : forget(Monoid).M := forget(Monoid).one;
+
+def own_name_used(Monoid : Monoid(U0), x : Monoid.M) : Monoid.M {
+  use Monoid;
+  exact x * one;
+}
+
+// So does a model e in e.f or in use e, as counted(Counted.count).
+theory Counted(U < UU0) {
+  count : Nat;
+}
+
+def counted(n : Nat) : Counted(U0) := Counted.make{{U0}}(count := n);
+
+def own_name_inner(Counted : Counted(U0)) : Nat := counted(Counted.count).count;
+
+def own_name_inner_used(Counted : Counted(U0)) : Nat {
+  use counted(Counted.count);
+  exact count;
+}
+
+theory Acted(U < UU0, Monoid : Monoid(U)) {
+  X : set U;
+  act(g : Monoid.M, x : X) : X;
+}
+
+theory B(U < UU0) {
+  M : set U;
+  one : M;
+}
+
+def field_of_b(B : Monoid(U0), x : B.M) : B.M := B.mul(B.one, x);
+
+// A binding that is no model hides them all the same, and a use binds its
+// model's fields.
+// Error: E862: B is bound here, which hides the declaration B.one: rename the binding to refer to
+//   it.
+def hidden_declaration(B : Nat) := B.one;
+
+theory Lettered(U < UU0) {
+  B : set U;
+  b : B;
+}
+
+// Error: E862: B is bound here, which hides the declaration B.one: rename the binding to refer to
+//   it.
+def hidden_by_use(L : Lettered(U0)) : L.B {
+  use L;
+  exact B.one;
 }
 
 // Refusals. A projection of a model shows as m.f in messages.

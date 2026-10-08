@@ -14,21 +14,21 @@ def directed_union_independent(
   let A := vector_carrier(K, V);
   let zero := af_zero(af_carrier(K), af_operations(K));
   let Goal := coefficients(i) = zero;
-  let prop := af_set(K, coefficients(i), zero);
+  let prop_ := af_set(K, coefficients(i), zero);
   let fromSeed : (exists j : I. P(j, vectors(i))) -> Goal {
     intro seedWitness;
     obtain (seed, member) := seedWitness;
     let fromCover : FiniteFamilyCover(I, A, P, n, vectors) -> Goal {
-      intro witness;
-      obtain (j, allMembers) := witness;
+      intro witness_;
+      obtain (j, allMembers) := witness_;
       exact independent(j, n, vectors, distinct, allMembers, coefficients, vanishes, i);
     }
     exact field_exists_elim(
-      FiniteFamilyCover(I, A, P, n, vectors), Goal, prop, fromCover,
+      FiniteFamilyCover(I, A, P, n, vectors), Goal, prop_, fromCover,
       finite_directed_union_cover(I, A, P, directed, seed, n, vectors, members)
     );
   }
-  exact field_exists_elim((exists j : I. P(j, vectors(i))), Goal, prop, fromSeed, members(i));
+  exact field_exists_elim((exists j : I. P(j, vectors(i))), Goal, prop_, fromSeed, members(i));
 }
 
 def chain_union_independent(
@@ -68,8 +68,8 @@ def independent_evidence(K : AlgebraicField, V : VectorSpace(K), S : Independent
 
 def independent_law(K : AlgebraicField, V : VectorSpace(K), S : IndependentSubset(K, V)) :
   LinearlyIndependent(K, V, independent_members(K, V, S)) {
-  obtain (prop, law) := independent_evidence(K, V, S);
-  exact law;
+  obtain (prop_, law_) := independent_evidence(K, V, S);
+  exact law_;
 }
 
 def EmptyIndependentSubset(K : AlgebraicField, V : VectorSpace(K)) :=

@@ -53,8 +53,8 @@ def family_linear_surjective(
   let X := vector_carrier(K, V);
   let f := linear_map(K, CoordinateSpace(K, n), V, family_linear(K, V, n, vectors));
   let convert : (exists a : C. linear_combination(K, V, n, vectors, a) = x) -> Fiber(C, X, f, x) {
-    intro witness;
-    obtain (a, sum) := witness;
+    intro witness_;
+    obtain (a, sum) := witness_;
     exact (a, trans(family_linear_evaluation(K, V, n, vectors, a), sum));
   }
   exact mere_map(

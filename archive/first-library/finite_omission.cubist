@@ -138,7 +138,7 @@ def fin_omit_cover(n : Nat) :=
           left same => left(
             cong((fun (w : Fin(succ(k))) => typed(Fin(succ(succ(k))), right(w))), same)
           );
-          right witness => unpack witness as (s, same) return OmitCover(
+          right witness_ => unpack witness_ as (s, same) return OmitCover(
             succ(k), typed(Fin(succ(succ(k))), right(tail)), typed(Fin(succ(succ(k))), right(t))
           ) {
             right(

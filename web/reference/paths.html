@@ -221,11 +221,11 @@ def not_a_universe(A : U0, x, y : A, p : x = y,
           </section>
           <section id="paths-library">
             <h2>The paths library</h2>
-            <p><code>import paths;</code> provides named forms and laws: <code>inverse</code>, <code>concatenate</code> and <code>ap</code> for <code>sym</code>, <code>trans</code> and <code>cong</code>, and laws such as <code>inverse_left</code>, <code>right_unit</code> and <code>path_associative</code>. Some take a <a href="universes.html#universes">universe argument</a> first.</p>
-            <pre><code data-check="accept">import paths;
+            <p><code>import paths_;</code> provides named forms and laws: <code>inverse_</code>, <code>concatenate</code> and <code>ap</code> for <code>sym</code>, <code>trans</code> and <code>cong</code>, and laws such as <code>inverse_left</code>, <code>right_unit</code> and <code>path_associative</code>. Some take a <a href="universes.html#universes">universe argument</a> first.</p>
+            <pre><code data-check="accept">import paths_;
 
 def reversed(A : U0, x, y : A, p : x = y) : y = x {
-  exact inverse(U0, A, x, y, p);
+  exact inverse_(U0, A, x, y, p);
 }
 
 def cancel(A : U0, x, y : A, p : x = y) : trans(sym(p), p) = refl(y) {

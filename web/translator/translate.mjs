@@ -23,7 +23,7 @@ import {numeralValue} from "./numerals.mjs";
 import {hasHole,mismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations} from "./initial-models.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
-import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipTheory,sectionScope,selected,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
+import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipExpansion,sectionScope,selected,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -486,7 +486,14 @@ export class Translator {
         directives.at(-1).searchFuel=this.fuelRecord(unit);
         continue;
       }
-      if(d.kind==="inductive") { this.inductiveDeclaration(d,module,env,declarations);continue; }
+      if(d.kind==="inductive") {
+        this.inductiveDeclaration(d,module,env,declarations);
+        if(d.generated?.initial&&declarations.at(-1).status==="not-translated") {
+          const skipped=skipExpansion(this,queue,env,d,"initial");
+          this.onQueued?.(-skipped);
+        }
+        continue;
+      }
       // Each declaration counts its own rewriting work and spends its own fuel.
       const unit=module.declaration(this.declarationFuel).with({declaring:d.name.text});
       this.onDeclarationStart?.(d);
@@ -572,7 +579,11 @@ export class Translator {
       // unavailable, and its failure is reported once.
       // The rest is taken off whether or not an observer counts it.
       if (d.generated?.role==="model"&&declarations.at(-1).status==="not-translated") {
-        const skipped=skipTheory(this,queue,env,d);
+        const skipped=skipExpansion(this,queue,env,d);
+        this.onQueued?.(-skipped);
+      }
+      if (d.generated?.initial&&declarations.at(-1).status==="not-translated") {
+        const skipped=skipExpansion(this,queue,env,d,"initial");
         this.onQueued?.(-skipped);
       }
     }
@@ -595,7 +606,8 @@ export class Translator {
     const untranslated=reason=>{for(const name of names)env.set(name,{tag:"Untranslated",name,
       binding:this.checker.bindingName?.(d.name.text)??d.name.text,reason});};
     try {
-      const lowered=lowerInductive(this,d,new Scope(unit,new Map(),env));
+      const scope=(d.uses??[]).reduce((inner,model)=>selected(this,inner,model),new Scope(unit,new Map(),env));
+      const lowered=lowerInductive(this,d,scope);
       for(const [name,value] of lowered.entries)env.set(name,value);
       declarations.push({name:d.name.text,status:"checked-native-cubical",inductive:lowered.record,
         term:lowered.former,type:lowered.former,native:{ok:true,axioms:[],extensions:lowered.extensions}});

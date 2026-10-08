@@ -47,6 +47,22 @@ export class SourceUnit {
 // The environment key of the superseded hypotheses (Scope.supersede): a key
 // no source name can spell.
 const SUPERSEDED="\u0000superseded";
+// A name bound here hides the declarations under that name elsewhere: in
+// def f(B : Monoid(U0)), B.one is the field of the parameter B, not a
+// declaration B.one, as of a theory or an initial model named B. Hidden,
+// each is kept by its name for the translator's own references to it
+// (declared).
+const HIDDEN="\u0000hidden",identifier=/^[A-Za-z_][A-Za-z0-9_]*$/;
+function hide(env,name) {
+  if(!identifier.test(name))return;
+  const prefix=`${name}.`;
+  let hidden=null;
+  for(const [key,entry] of env)if(key.startsWith(prefix)) {
+    (hidden??=new Map(env.get(HIDDEN))).set(key,entry);
+    env.delete(key);
+  }
+  if(hidden)env.set(HIDDEN,hidden);
+}
 
 // A lexical scope: the term telescope (`context`, name to type), the source
 // names (`env`, source name to term) and the live interval dimensions
@@ -73,13 +89,30 @@ export class Scope {
       [name,value?.tag==="Dimension"&&ends.has(value.name)?{...value,endpoint:ends.get(value.name)}:value]));
     return new Scope(this.unit,new Map([...this.context].map(([name,type])=>[name,onFace(type,face)])),env,this.dimensions);
   }
-  alias(name,value) {return this.withEnv(new Map(this.env).set(name,value));}
+  alias(name,value) {
+    const env=new Map(this.env);
+    hide(env,name);
+    return this.withEnv(env.set(name,value));
+  }
   // Several names at once, with one copy of the names in scope.
   aliases(pairs) {
     if(!pairs.length)return this;
     const env=new Map(this.env);
-    for(const [name,value] of pairs)env.set(name,value);
+    for(const [name,value] of pairs){hide(env,name);env.set(name,value);}
     return this.withEnv(env);
+  }
+  // The source name bound here that hides the declaration `name`, or null.
+  hiding(name) {return this.env.get(HIDDEN)?.has(name)&&!this.env.has(name)?name.slice(0,name.indexOf(".")):null;}
+  // A node naming a declaration, m.f, as the translator refers to it: where
+  // a binding of m hides it, in a scope where it is visible again. Only the
+  // declaration is: a call's arguments are read here, where m.f is m's
+  // field, as in rebuild(m.f).f.
+  declared(node) {
+    const name=node.kind==="call"?node.fn.name:node.name;
+    if(!this.hiding(name))return node;
+    const here=arg=>({kind:"scoped",node:arg,scope:this,start:arg.start,end:arg.end});
+    const callee=node.kind==="call"?{...node,args:node.args.map(here)}:node;
+    return {kind:"scoped",node:callee,scope:this.withEnv(new Map(this.env).set(name,this.env.get(HIDDEN).get(name))),start:node.start,end:node.end};
   }
   // Binding a name that is already in scope would silently rebind it. With
   // unique generated names this is an elaborator bug, never a user error.

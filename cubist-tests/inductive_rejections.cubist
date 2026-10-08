@@ -27,9 +27,7 @@ inductive Index(U < UU0, A : U) {
   mk(x : Index(U, N));
 }
 
-// Error: E508: A universe parameter cannot be named prop: in a declaration's result position that
-//   word is an h-level.
-inductive Word(prop < UU0) {
+inductive Word(prop_ < UU0) {
   mk;
 }
 

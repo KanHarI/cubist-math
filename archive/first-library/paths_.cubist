@@ -2,7 +2,7 @@ import nat;
 
 // Cubical path foundations. Reversal and function action are pointwise;
 // composition and its laws use checked square and cube fillings.
-def inverse(U < UU0, A : U, x, y : A, p : x = y) := sym(p);
+def inverse_(U < UU0, A : U, x, y : A, p : x = y) := sym(p);
 
 def concatenate(U < UU0, A : U, x, y, z : A, p : x = y, q : y = z) := trans(p, q);
 
@@ -358,7 +358,7 @@ def transport_decoder(
 
 // Based path induction, with explicit universes for the carrier and motive.
 // This one principle covers both small and higher identity systems.
-def based_induction(
+def based_induction_(
   U, V < UU0, A : U, origin : A, C : (forall x : A. (origin = x) -> V),
   c : C(origin, refl(origin)), x : A, p : origin = x
 ) :=

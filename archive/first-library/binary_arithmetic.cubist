@@ -1,7 +1,7 @@
 import nat;
 
 import binary_naturals;
-import paths;
+import paths_;
 use nat;
 
 // Increment follows a carry only through trailing one bits.

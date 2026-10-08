@@ -13,7 +13,7 @@ def polynomial_degree_zero_unit(
   let constant :=
     polynomial_ext(K, p, polynomial_constant(K, a), series_support_one(K, f, support));
   obtain (ring, nontrivial, inverses) := af_laws(K);
-  obtain (b, inverse) := inverses(a, polynomial_leading_nonzero(K, p, 0, degree));
+  obtain (b, inverse_) := inverses(a, polynomial_leading_nonzero(K, p, 0, degree));
   exact merely(
     (exists q : Polynomial(K). polynomial_mul(K, p, q) = polynomial_one(K)),
     typed(
@@ -23,7 +23,7 @@ def polynomial_degree_zero_unit(
         trans(
           cong(
             (fun (q : Polynomial(K)) => polynomial_mul(K, q, polynomial_constant(K, b))), constant
-          ), trans(sym(polynomial_constant_mul(K, a, b)), cong(polynomial_constant(K), inverse))
+          ), trans(sym(polynomial_constant_mul(K, a, b)), cong(polynomial_constant(K), inverse_))
         )
       )
     )
@@ -132,9 +132,9 @@ def polynomial_irreducible_factor(
   let P := fun (n : Nat) => Mere(NonunitDivisorAt(K, p, n));
   let self := typed(NonunitDivisor(K, p, p), (nonzero, nonunit, polynomial_divides_refl(K, p)));
   let cp := polynomial_cutoff(K, p);
-  let witness :=
+  let witness_ :=
     merely(NonunitDivisorAt(K, p, cp), typed(NonunitDivisorAt(K, p, cp), (p, self, refl(cp))));
-  let inhabited := merely((exists n : Nat. P(n)), typed((exists n : Nat. P(n)), (cp, witness)));
+  let inhabited := merely((exists n : Nat. P(n)), typed((exists n : Nat. P(n)), (cp, witness_)));
   obtain (n, candidate, least) := natural_minimum(
     P, (fun (i : Nat) => mere_is_prop(NonunitDivisorAt(K, p, i))), inhabited
   );
@@ -171,9 +171,9 @@ def polynomial_unit_cutoff(
   let divideOne :
     (exists q : Polynomial(K). polynomial_mul(K, p, q) = polynomial_one(K))
     -> (exists q : Polynomial(K). polynomial_one(K) = polynomial_mul(K, p, q)) {
-    intro witness;
-    obtain (q, inverse) := witness;
-    exact (q, sym(inverse));
+    intro witness_;
+    obtain (q, inverse_) := witness_;
+    exact (q, sym(inverse_));
   }
   let divides :=
     mere_map(

@@ -17,13 +17,13 @@ def quotient_predicate_prop(
   q : SetQuotient(A, relation), a : A
 ) :
   FieldProp(quotient_predicate(A, relation, q, a)) {
-  obtain (prop, reflexive, symmetric, transitive) := laws;
+  obtain (prop_, reflexive, symmetric, transitive) := laws;
   let atRepresentative :
     (exists b : A. forall x : A. quotient_predicate(A, relation, q, x) = relation(b, x))
     -> FieldProp(quotient_predicate(A, relation, q, a)) {
-    intro witness;
-    obtain (b, same) := witness;
-    exact along((fun (P : U0) => FieldProp(P))) by sym(same(a)) from prop(b, a);
+    intro witness_;
+    obtain (b, same) := witness_;
+    exact along((fun (P : U0) => FieldProp(P))) by sym(same(a)) from prop_(b, a);
   }
   exact field_exists_elim(
     (exists b : A. forall x : A. quotient_predicate(A, relation, q, x) = relation(b, x)),
@@ -58,8 +58,8 @@ def quotient_induction_prop(
 ) :
   P(q) {
   let descend : (exists a : A. quotient_class(A, relation, a) = q) -> P(q) {
-    intro witness;
-    obtain (a, same) := witness;
+    intro witness_;
+    obtain (a, same) := witness_;
     exact along P by same from atClass(a);
   }
   exact field_exists_elim(
@@ -74,11 +74,11 @@ def quotient_value_unique(
   pb : QuotientValue(A, relation, B, f, q, b), pc : QuotientValue(A, relation, B, f, q, c)
 ) :
   b = c {
-  obtain (prop, reflexive, symmetric, transitive) := laws;
+  obtain (prop_, reflexive, symmetric, transitive) := laws;
   let atRepresentative :
     (exists a : A. forall x : A. quotient_predicate(A, relation, q, x) = relation(a, x)) -> b = c {
-    intro witness;
-    obtain (a, same) := witness;
+    intro witness_;
+    obtain (a, same) := witness_;
     let member := along((fun (P : U0) => P)) by sym(same(a)) from reflexive(a);
     exact trans(sym(pb(a, member)), pc(a, member));
   }
@@ -113,8 +113,8 @@ def quotient_value(
   let atRepresentative :
     (exists a : A. forall x : A. quotient_predicate(A, relation, q, x) = relation(a, x))
     -> (exists b : B. QuotientValue(A, relation, B, f, q, b)) {
-    intro witness;
-    obtain (a, same) := witness;
+    intro witness_;
+    obtain (a, same) := witness_;
     exact (
       f(a),
       (
@@ -167,7 +167,7 @@ def quotient_rec_beta(
   setB : FieldSet(B), f : A -> B, respects : RespectsRelation(A, relation, B, f), a : A
 ) :
   quotient_rec(A, relation, laws, B, setB, f, respects, quotient_class(A, relation, a)) = f(a) {
-  obtain (prop, reflexive, symmetric, transitive) := laws;
+  obtain (prop_, reflexive, symmetric, transitive) := laws;
   exact sym(
     quotient_rec_member(
       A, relation, laws, B, setB, f, respects, quotient_class(A, relation, a), a, reflexive(a)

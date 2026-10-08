@@ -24,7 +24,7 @@ test("nested pairs, equality carriers and line comments keep their boundaries", 
   const source = `// Header
 def copy(A:U0,x:A):A and A{exact (x, // first component
 x);}
-def equality := 0 =[Nat] 0; // keep this comment
+def equality_ := 0 =[Nat] 0; // keep this comment
 `;
   const formatted = formatCubist(source, { printWidth: 40 });
   assert.match(formatted, /x, \/\/ first component\n\s+x/);
@@ -97,6 +97,20 @@ test("annotated definition equalities indent the type without indenting the proo
     assert.equal(formatCubist(formatted, { printWidth: width }), formatted);
     assert.deepEqual(semantic(parse(formatted)), semantic(parse(source)));
   }
+});
+
+test("a long initial or free header breaks after its colon, as a definition's does", () => {
+  const source = `free LongGeneratedModelName(A : U0, B : U0) : Action(U0, nat_additive.monoid) on A * B;
+initial TheInitialModelOfAVeryLongTheoryName : SomeVeryLongTheoryName(U0, nat_additive.monoid);`;
+  const formatted = formatCubist(source, { printWidth: 80 });
+  assert.equal(formatted, `free LongGeneratedModelName(A : U0, B : U0) :
+  Action(U0, nat_additive.monoid) on A * B;
+
+initial TheInitialModelOfAVeryLongTheoryName :
+  SomeVeryLongTheoryName(U0, nat_additive.monoid);
+`);
+  assert.equal(formatCubist(formatted, { printWidth: 80 }), formatted);
+  assert.deepEqual(semantic(parse(formatted)), semantic(parse(source)));
 });
 
 test("long quantified statements pack short binders and preserve function domains", () => {

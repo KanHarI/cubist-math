@@ -14,10 +14,11 @@ import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { verifyMigration } from "./proof-migration.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
-import { migrationSourceReader } from "./migration-sources.mjs";
+import { migrationSourceReader, historicalModulePaths, historicalMigrationSources } from "./migration-sources.mjs";
 import { placeOfFile } from "./module-sources.mjs";
-import { moduleRoots } from "../web/module-resolution.mjs";
+import { moduleRoots, searchOrder } from "../web/module-resolution.mjs";
 import { historicalSource } from "../web/cubist/legacy-syntax.mjs";
+import { parse } from "../web/cubist/parser.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const args = process.argv.slice(2), option = name => {
@@ -45,6 +46,9 @@ const modules = args.length ? args : git(["diff", "--name-only", base, "--", "ar
 if (!modules.length) { console.log("No modified library modules."); process.exit(0); }
 if((editedFile || selected) && (modules.length!==1 || !noDependents))
   throw Error("--edited-file and --declarations require one explicit module and --no-dependents.");
+
+// A stale WASM kernel would run code it does not contain.
+assertFreshBuild();
 
 const editedPlaces = new Map();
 const readEdited = async name => {
@@ -92,13 +96,32 @@ const movedToLibrary = new Set([...available].filter(path => path.startsWith(mod
   .map(path => path.slice(moduleRoots.archive.length, -".cubist".length))
   .filter(name => existsSync(`${root}${moduleRoots.library}${name}.cubist`)
     && !existsSync(`${root}${moduleRoots.archive}${name}.cubist`)));
+const paths = historicalModulePaths({ available, movedToLibrary });
+const originalModulePath = paths.modulePath;
+const historicalSources = historicalMigrationSources({ available, ...paths, implicitNat,
+  readSource: path => git(["show", `${base}:${path}`]),
+});
+// Build one plan across the selected checks before rewriting any dependency.
+// Also include baseline dependencies introduced by an edited source.
+const selectedPaths = new Set();
+for (const name of modules) {
+  const original = ["archive", "library"].map(place => originalModulePath(place, name)).find(path => available.has(path));
+  if (original) selectedPaths.add(original);
+  const edited = parse(await readEdited(name));
+  for (const dependency of edited.imports) {
+    const path = searchOrder(readEdited.placeOf(name)).map(place => originalModulePath(place, dependency)).find(path => available.has(path));
+    if (path) selectedPaths.add(path);
+  }
+}
+const renaming = historicalSources.renamingFor(selectedPaths);
 const readOriginal = migrationSourceReader(async (place, name) => {
-  if (movedToLibrary.has(name) && place !== "library") return null;
-  const path = movedToLibrary.has(name) ? `${moduleRoots.archive}${name}.cubist` : `${moduleRoots[place]}${name}.cubist`;
+  const path = originalModulePath(place, name);
+  if (path === null) return null;
   if (!originals.has(path)) {
     // A baseline may predate a syntax change, or the implicit import of nat;
     // it is read in today's syntax, with the imports it had then.
-    let text = available.has(path) ? historicalSource(git(["show",`${base}:${path}`]), name, { implicitNat, minusReverses }) : null;
+    let text = available.has(path) ? historicalSource(historicalSources.source(path), name,
+      { implicitNat, minusReverses, renaming, importedDeclarations: historicalSources.importsOf(path) }) : null;
     if (text !== null) historical.add(name);
     // A new shared foundation has no predecessor. It is available only in
     // library resolution; archive importers never see this fallback.
@@ -111,8 +134,6 @@ const readOriginal = migrationSourceReader(async (place, name) => {
   return originals.get(path);
 }, modules);
 readOriginal.nameBased = name => nameBased && historical.has(name);
-// A stale WASM kernel would run code it does not contain.
-assertFreshBuild();
 const declarations=selected ? {[modules[0]]:selected} : null;
 const reports = await verifyMigration({ modules, readOriginal, readEdited, level, ledger, declarations });
 let failures = 0;

@@ -428,7 +428,7 @@ function clause(translator, scope, { source, name, index, constructor, shape, ob
   const lines = [];
   for (const token of source.coordinates) {
     if (type?.tag !== "Path") throw locate(Error(`The clause type of ${name} has fewer dimensions than expected.`), token);
-    const dim = inner.fresh(token.text);
+    const dim = inner.fresh(token.stem ?? token.text);
     inner = inner.bindDimension(dim).alias(token.text, { tag: "Dimension", name: dim });
     const family = substituteDimension(type.family, type.dim, I.variable(dim));
     lines.push({ dim, family });

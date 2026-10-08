@@ -53,7 +53,7 @@ def dyadic_refinement_zero(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, extra, a, b,
       ordered
     );
-  let initial :=
+  let initial_ :=
     subdivision_refinement_sum_single(
       FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, rightUnit, edge,
       IntervalRefinementAdmissible(F, zero, one, lt), a, b, fine, valid
@@ -69,7 +69,7 @@ def dyadic_refinement_zero(
     dyadic_piece_zero(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     )
-  ) from initial;
+  ) from initial_;
 }
 
 def dyadic_refinement_step(

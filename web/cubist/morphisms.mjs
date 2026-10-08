@@ -39,7 +39,8 @@
 
 // The names a type mentions free, a qualified name R.R by its root, by
 // every binding form (scopes.mjs).
-import { freeNames } from "./scopes.mjs";
+import { freeNames, allNames, renamedFree } from "./scopes.mjs";
+import { reservedNames } from "./parser.mjs";
 
 
 // How a type is mapped: "fixed" when it mentions no carrier; a carrier, or
@@ -73,15 +74,26 @@ function occurrences(shape, positive = true, out = new Set()) {
   return out;
 }
 // A field's binders, from its type's foralls, and the type under them.
-function binders(type) {
-  const list = [];
-  while (type.kind === "forall") { list.push({ name: type.name.text, type: type.domain }); type = type.body; }
+function binders(type, parameters) {
+  const list = [], bound = new Set([...freeNames(type), ...parameters]), taken = new Set([...allNames(type), ...parameters]);
+  const fresh = stem => { let name = stem, k = 1; while (taken.has(name)) name = `${stem}_${k++}`; taken.add(name); return name; };
+  while (type.kind === "forall" || type.kind === "binderGroup" && type.binderKind === "forall") {
+    const names = type.kind === "forall" ? [type.name] : type.names;
+    // Each grouped domain is read before any of the names binds. Splitting
+    // it into generated foralls must not let a binder capture that domain,
+    // or a theory parameter passed by generated calls, even when this field
+    // does not mention it.
+    const renaming = new Map(names.map(n => [n.text, bound.has(n.text) ? fresh(n.text) : n.text]));
+    for (const name of renaming.values()) { list.push({ name, type: type.domain }); bound.add(name); }
+    type = [...renaming].some(([before, after]) => before !== after)
+      ? renamedFree(type.body, name => renaming.get(name)) : type.body;
+  }
   return { list, body: type };
 }
 // An operation's inputs and result, each with its shape and way, "fixed",
 // "push" or "pull"; or, as `why`, why its homomorphisms are not generated.
 function operationShape(field, context) {
-  const { list: inputs, body: type } = binders(field.type);
+  const { list: inputs, body: type } = binders(field.type, context.parameters);
   const way = (shape, place) => {
     const where = occurrences(shape);
     if (where.has("other")) return { why: `its ${field.name}'s ${place} has a type that the maps do not follow` };
@@ -144,12 +156,13 @@ export function morphismSource(record, isTheory = () => false) {
   // a homomorphism keeps them fixed (L2.4c). Otherwise each model has its
   // own universes, as many as the theory's header binds.
   const params = record.params ?? [], count = Math.max(1, record.universes?.length ?? 0);
+  const parameters = params.map(p => p.name);
   // Every binder the source introduces is fresh: none captures a parameter
   // or a name that a field's type mentions free, which the source writes as
   // it is (apart from the carriers, which it writes as A.M); and none is a
   // universe constant, so a taken U is followed by U_1, not U1.
   const carrierNames = new Set(record.fields.filter(field => field.kind === "sort").map(field => field.name));
-  const taken = new Set([...params.map(p => p.name), ...record.fields.flatMap(field => binders(field.type).list.map(b => b.name)),
+  const taken = new Set([...reservedNames, ...parameters, ...record.fields.flatMap(field => binders(field.type, parameters).list.map(b => b.name)),
     ...record.fields.flatMap(field => [...freeNames(field.type)]).filter(name => !carrierNames.has(name))]);
   const numbered = (stem, k) => /^U+$/.test(stem) || /[0-9]$/.test(stem) ? `${stem}_${k}` : `${stem}${k}`;
   const own = stem => {
@@ -171,7 +184,7 @@ export function morphismSource(record, isTheory = () => false) {
   // carrier, pushed forward.
   const families = new Map();
   for (const field of carrierFields.filter(field => field.family)) {
-    const indices = binders(field.type).list;
+    const indices = binders(field.type, parameters).list;
     for (const index of indices) {
       index.shape = shapeOf(index.type, { carriers, families, fields });
       if (!["fixed", "carrier"].includes(index.shape.kind) || index.shape.args)
@@ -179,7 +192,7 @@ export function morphismSource(record, isTheory = () => false) {
     }
     families.set(field.name, indices);
   }
-  const context = { carriers, families, fields }, operations = new Map();
+  const context = { carriers, families, fields, parameters }, operations = new Map();
   for (const field of record.fields.filter(field => field.kind === "operation")) {
     const shape = operationShape(field, context);
     if (shape.why) return { missing: shape.why };

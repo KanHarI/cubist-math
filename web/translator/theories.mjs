@@ -45,7 +45,8 @@ export function registerTheoryDeclaration(t,d) {
 }
 
 // n.name is m.f: when m is a model of a theory, the node of the call T.f(m),
-// or T.p(m) for a parent labelled p; otherwise null.
+// or T.p(m) for a parent labelled p; otherwise null, or, where m is bound
+// here and hides a declaration m.f, the error that says so.
 export function modelField(t,scope,n) {
   const dot=n.name.lastIndexOf("."),first=dot>0?n.name.slice(0,n.name.indexOf(".")):null,root=first?scope.env.get(first):null;
   // A name under a theory's, T.Hom, is a qualified name, not a field. A
@@ -53,13 +54,14 @@ export function modelField(t,scope,n) {
   if(!root||theoryRoot(t,scope,first,root))return null;
   const owner={...n,name:n.name.slice(0,dot),end:n.start+dot};
   const record=recordOf(t,scope,t.term(owner,scope,null));
+  if(!record&&scope.hiding(n.name))throw Error(`${first} is bound here, which hides the declaration ${n.name}: rename the binding to refer to it.`);
   if(!record)return null;
   const field=n.name.slice(dot+1);
   const known=record.fields.find(f=>f.name===field)??record.derived?.find(d=>d.name===field)??record.parents.find(p=>p.label===field);
   if(!known&&record.ambiguous?.[field])throw ambiguousField(record,owner.name,field);
   if(!known)throw Error(`${owner.name} is a model of ${record.name}, which has no field ${field}: it has ${record.fields.map(f=>f.name).join(", ")}${
     record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`);
-  return {kind:"call",fn:{...n,name:known.projection},args:[owner],start:n.start,end:n.end};
+  return scope.declared({kind:"call",fn:{...n,name:known.projection},args:[owner],start:n.start,end:n.end});
 }
 
 // A field that two independent parents give under one name (L2.4c): the
@@ -82,7 +84,7 @@ export function memberField(t,scope,n) {
   if(!known&&record.ambiguous?.[field])throw ambiguousField(record,"m",field);
   if(!known)throw Error(`This is a model of ${record.name}, which has no field ${field}: it has ${record.fields.map(f=>f.name).join(", ")}${
     record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`);
-  return {kind:"call",fn:{kind:"name",name:known.projection,start:n.field.start,end:n.field.end},args:[n.value],start:n.start,end:n.end};
+  return scope.declared({kind:"call",fn:{kind:"name",name:known.projection,start:n.field.start,end:n.field.end},args:[n.value],start:n.start,end:n.end});
 }
 
 // The scope with the model `node` opened, or null when it is no model: each
@@ -93,7 +95,7 @@ export function opened(t,scope,node,{complete=true}={}) {
   if(!record)return null;
   const at={start:node.start,end:node.end};
   const values=new Map([...record.fields,...record.derived??[]].map(field=>
-    [field.name,t.term({kind:"call",fn:{kind:"name",name:field.projection,...at},args:[node],...at},scope,null)]));
+    [field.name,t.term(scope.declared({kind:"call",fn:{kind:"name",name:field.projection,...at},args:[node],...at}),scope,null)]));
   // All of them in scope with one copy of the names there.
   const added=[...values];
   for(const [operator,field] of Object.entries(record.notations))added.push([operatorBinding(operator),values.get(field)]);
@@ -319,13 +321,14 @@ export function missingMorphisms(scope,name) {
     ?Error(`${theory}'s models have homomorphisms but no isomorphisms: ${entry.record.noIsomorphisms}.`):null;
 }
 
-// The rest of a theory whose type of models failed, `model`: taken off the
-// queue, each unavailable as a dependency of that type. How many were taken.
-export function skipTheory(t,queue,env,model) {
+// The rest of a failed theory or initial/free expansion: taken off the
+// queue, each unavailable as a dependency of the failed declaration.
+// Return how many were taken, even when no progress observer is installed.
+export function skipExpansion(t,queue,env,model,kind="theory") {
   let skipped=0;
   for(let k=queue.length-1;k>=0;k--) {
     const d=queue[k];
-    if(d.generated?.theory!==model.generated.theory)continue;
+    if(d.generated?.[kind]!==model.generated[kind])continue;
     queue.splice(k,1); skipped++;
     env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:t.checker.bindingName?.(d.name.text)??d.name.text,
       reason:`Untranslated dependency: ${model.name.text}`});

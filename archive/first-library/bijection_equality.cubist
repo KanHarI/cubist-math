@@ -23,13 +23,13 @@ def sigma_eta(A : U0, P : A -> U0, u : (exists x : A. P(x))) :=
   );
 
 def subtype_pair_path(
-  A : U0, P : A -> U0, prop : (forall x : A. forall h : P(x). forall k : P(x). h = k), x, y : A,
+  A : U0, P : A -> U0, prop_ : (forall x : A. forall h : P(x). forall k : P(x). h = k), x, y : A,
   p : x = y, u : P(x), v : P(y)
 ) :=
-  dependent_pair_path(A, P, x, y, p, u, v, prop(y, along P by p from u, v));
+  dependent_pair_path(A, P, x, y, p, u, v, prop_(y, along P by p from u, v));
 
 def subtype_ext(
-  A : U0, P : A -> U0, prop : (forall x : A. forall h : P(x). forall k : P(x). h = k),
+  A : U0, P : A -> U0, prop_ : (forall x : A. forall h : P(x). forall k : P(x). h = k),
   u, v : (exists x : A. P(x)), p : sigma_first(A, P, u) = sigma_first(A, P, v)
 ) :
   u = v {
@@ -37,7 +37,7 @@ def subtype_ext(
     sym(sigma_eta(A, P, u)),
     trans(
       subtype_pair_path(
-        A, P, prop, sigma_first(A, P, u), sigma_first(A, P, v), p, sigma_second(A, P, u),
+        A, P, prop_, sigma_first(A, P, u), sigma_first(A, P, v), p, sigma_second(A, P, u),
         sigma_second(A, P, v)
       ), sigma_eta(A, P, v)
     )
@@ -101,14 +101,14 @@ def bijection_ext(
 // These proposition lemmas use only function extensionality and path induction.
 def Proposition(A : U0) := forall x : A. forall y : A. x = y;
 
-def proposition_is_set(A : U0, prop : Proposition(A)) : IsSet(U0, A) {
-  exact hedberg(U0, A, (fun (x, y : A) => typed(Decidable(U0, x = y), left(prop(x, y)))));
+def proposition_is_set(A : U0, prop_ : Proposition(A)) : IsSet(U0, A) {
+  exact hedberg(U0, A, (fun (x, y : A) => typed(Decidable(U0, x = y), left(prop_(x, y)))));
 }
 
 def forall_prop(
-  A : U0, P : A -> U0, prop : (forall x : A. Proposition(P(x))), f, g : (forall x : A. P(x))
+  A : U0, P : A -> U0, prop_ : (forall x : A. Proposition(P(x))), f, g : (forall x : A. P(x))
 ) :=
-  FunExt(U0, A, P, f, g, (fun (x : A) => prop(x, f(x), g(x))));
+  FunExt(U0, A, P, f, g, (fun (x : A) => prop_(x, f(x), g(x))));
 
 def sigma_prop(
   A : U0, P : A -> U0, propA : Proposition(A), propP : (forall x : A. Proposition(P(x))),
@@ -234,38 +234,38 @@ def is_prop_prop(P : U0, p, q : Proposition(P)) : p = q {
 // setness of A makes this operation constant on paths. Correct its value at
 // reflexivity, then path induction identifies the corrected path with p.
 def subtype_path(
-  A : U0, P : A -> U0, prop : (forall x : A. Proposition(P(x))), u, v : (exists x : A. P(x)),
+  A : U0, P : A -> U0, prop_ : (forall x : A. Proposition(P(x))), u, v : (exists x : A. P(x)),
   p : u = v
 ) :=
-  subtype_ext(A, P, prop, u, v, cong(sigma_first(A, P), p));
+  subtype_ext(A, P, prop_, u, v, cong(sigma_first(A, P), p));
 
 def subtype_path_correction(
-  A : U0, P : A -> U0, prop : (forall x : A. Proposition(P(x))), u, v : (exists x : A. P(x)),
+  A : U0, P : A -> U0, prop_ : (forall x : A. Proposition(P(x))), u, v : (exists x : A. P(x)),
   p : u = v
 ) :
-  trans(sym(subtype_path(A, P, prop, u, u, refl(u))), subtype_path(A, P, prop, u, v, p)) = p {
-  exact based_induction(
+  trans(sym(subtype_path(A, P, prop_, u, u, refl(u))), subtype_path(A, P, prop_, u, v, p)) = p {
+  exact based_induction_(
     U1, U0, (exists x : A. P(x)), u,
     (
       fun (v : (exists x : A. P(x)), p : u = v) => trans(
-        sym(subtype_path(A, P, prop, u, u, refl(u))), subtype_path(A, P, prop, u, v, p)
+        sym(subtype_path(A, P, prop_, u, u, refl(u))), subtype_path(A, P, prop_, u, v, p)
       ) = p
-    ), inverse_left((exists x : A. P(x)), u, u, subtype_path(A, P, prop, u, u, refl(u))), v, p
+    ), inverse_left((exists x : A. P(x)), u, u, subtype_path(A, P, prop_, u, u, refl(u))), v, p
   );
 }
 
-def subtype_is_set(A : U0, P : A -> U0, setA : IsSet(U0, A), prop : (forall x : A. Proposition(P(x)))) :
+def subtype_is_set(A : U0, P : A -> U0, setA : IsSet(U0, A), prop_ : (forall x : A. Proposition(P(x)))) :
   IsSet(U0, exists x : A. P(x)) {
   intro u, v, p, q;
   let project := sigma_first(A, P);
-  let first := sym(subtype_path(A, P, prop, u, u, refl(u)));
-  let rebuild := fun (r : project(u) = project(v)) => subtype_ext(A, P, prop, u, v, r);
+  let first := sym(subtype_path(A, P, prop_, u, u, refl(u)));
+  let rebuild := fun (r : project(u) = project(v)) => subtype_ext(A, P, prop_, u, v, r);
   let prepend := fun (r : u = v) => trans(first, r);
   exact trans(
-    sym(subtype_path_correction(A, P, prop, u, v, p)),
+    sym(subtype_path_correction(A, P, prop_, u, v, p)),
     trans(
       cong(prepend, cong(rebuild, setA(project(u), project(v), cong(project, p), cong(project, q)))),
-      subtype_path_correction(A, P, prop, u, v, q)
+      subtype_path_correction(A, P, prop_, u, v, q)
     )
   );
 }

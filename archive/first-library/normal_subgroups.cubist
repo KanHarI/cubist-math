@@ -44,9 +44,9 @@ def subgroup_bottom_normal(G : Group) : IsNormal(G, subgroup_bottom(G)) {
   );
 }
 
-def abelian_subgroups_normal(G : Group, abelian : IsAbelian(G), S : Subgroup(G)) : IsNormal(G, S) {
+def abelian_subgroups_normal(G : Group, abelian_ : IsAbelian(G), S : Subgroup(G)) : IsNormal(G, S) {
   intro g, x, member;
-  exact along subgroup_members(G, S) by sym(abelian_conjugation_trivial(G, abelian, g, x)) from member;
+  exact along subgroup_members(G, S) by sym(abelian_conjugation_trivial(G, abelian_, g, x)) from member;
 }
 
 def subgroup_preimage_normal(
@@ -140,17 +140,17 @@ def normal_subgroup_conjugation_invariant(
   );
 }
 
-def subgroup_transport(G, H : Group, path : G =[Group] H, S : Subgroup(G)) :=
-  along Subgroup by path from S;
+def subgroup_transport(G, H : Group, path_ : G =[Group] H, S : Subgroup(G)) :=
+  along Subgroup by path_ from S;
 
 // Path induction transports normality across equality of groups. Univalence
 // then gives invariance under group isomorphism without re-proving the laws.
 def normal_subgroup_transport(
-  G, H : Group, path : G =[Group] H, S : Subgroup(G), normal : IsNormal(G, S)
+  G, H : Group, path_ : G =[Group] H, S : Subgroup(G), normal : IsNormal(G, S)
 ) :
-  IsNormal(H, subgroup_transport(G, H, path, S)) {
+  IsNormal(H, subgroup_transport(G, H, path_, S)) {
   exact comp(
-    fun (i : Interval) => IsNormal(path @ i, fill(fun (j : Interval) => Subgroup(path @ j), S, i)),
+    fun (i : Interval) => IsNormal(path_ @ i, fill(fun (j : Interval) => Subgroup(path_ @ j), S, i)),
     normal
   );
 }

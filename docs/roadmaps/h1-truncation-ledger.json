@@ -41,11 +41,11 @@
       },
       "oldValue": {
         "hash": "705c50bf9c5e96f18b5dbbbabfe7e95c17d0aaf3",
-        "text": "fun (A : U0, P : U1, prop : FieldProp(P), f : A -> P, h : __assumption_Truncate(U0, A)) => field_exists_elim(__assumption_Truncate, __assumption_TruncateElim, P, P, prop, fun (p : P) => p, __assumption_TruncateElim(U0, A, FieldExists(__assumption_Truncate, P), field_exists_prop(__assumption_Truncate, __assumption_TruncateProp, P), fun (a : A) => field_exists_intro(__assumption_Truncate, __assumption_TruncateIntro, P, f(a)), h))"
+        "text": "fun (A : U0, P : U1, prop_ : FieldProp(P), f : A -> P, h : __assumption_Truncate(U0, A)) => field_exists_elim(__assumption_Truncate, __assumption_TruncateElim, P, P, prop_, fun (p : P) => p, __assumption_TruncateElim(U0, A, FieldExists(__assumption_Truncate, P), field_exists_prop(__assumption_Truncate, __assumption_TruncateProp, P), fun (a : A) => field_exists_intro(__assumption_Truncate, __assumption_TruncateIntro, P, f(a)), h))"
       },
       "newValue": {
         "hash": "ce17221d33bec108af6a670f62d127061e998531",
-        "text": "fun (A : U0, P : U1, prop : IsProp(U1, P), f : A -> P, h : Trunc(A)) => mere_eliminate(U0, U1, A, P, prop, f, h)"
+        "text": "fun (A : U0, P : U1, prop_ : IsProp(U1, P), f : A -> P, h : Trunc(A)) => mere_eliminate(U0, U1, A, P, prop_, f, h)"
       },
       "assumptionsReplaced": [],
       "hypothesesAdded": [],

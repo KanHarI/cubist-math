@@ -290,7 +290,7 @@ def not_functions(n : Nat) : n = n {
           <section id="composition">
             <h2>Composition</h2>
             <p><code>comp(family, base, walls…)</code> fills from coordinate 0 to coordinate 1, starting at <code>base</code>. Picture a square with the base as its bottom edge and the walls as its sides: <code>comp</code> produces the top edge. A wall <code>face(i, 0, fun (j : Interval) => …)</code> gives the side where the outer coordinate <code>i</code> is 0, and likewise for 1. The kernel checks that each wall starts on the base and that walls agree where they meet. With no walls, <code>comp</code> is transport.</p>
-            <pre><code data-check="accept">def join(A : U0, x, y, z : A, p : x = y, q : y = z) : x = z {
+            <pre><code data-check="accept">def join_(A : U0, x, y, z : A, p : x = y, q : y = z) : x = z {
   exact path i =&gt; comp(fun (j : Interval) =&gt; A, p @ i,
     face(i, 0, fun (j : Interval) =&gt; x),
     face(i, 1, fun (j : Interval) =&gt; q @ j));
@@ -356,7 +356,7 @@ print(evaluate(fun (A : U0, x, y, z : A, p : x = y, q : y = z) =&gt; join_by_box
             <pre><code data-check="accept">def move_by_box(A : U0, C : A -&gt; U0, x, y : A, p : x = y, v : C(x)) : C(y) :=
   compose j in C(p @ j) from v {};</code></pre>
             <p>The box notation expands to the existing <code>comp</code> and <code>fill</code> forms. The first box above is <code>comp(fun (j : Interval) =&gt; A, b, face(i, 0, fun (j : Interval) =&gt; x), face(i, 1, fun (j : Interval) =&gt; q @ j))</code>. A compound face becomes <code>face_when</code>, with each equation <code>i = 0</code> written as <code>on(i, 0)</code>. A composition the kernel cannot reduce prints as a box, as the checked output above shows.</p>
-            <p><code>compose</code> remains an ordinary name outside the form <code>compose j in …</code>, so a definition named <code>compose</code> or a qualified name such as <code>T.Hom.compose</code> still works. An invalid face formula reports <a href="errors.html#E193">E193</a>; a box missing its closing brace reports <a href="errors.html#E194">E194</a>.</p>
+            <p><code>compose</code> is reserved and cannot name a user definition or binder. The generated member <code>T.Hom.compose</code> remains callable. An invalid face formula reports <a href="errors.html#E193">E193</a>; a box missing its closing brace reports <a href="errors.html#E194">E194</a>.</p>
             <h3 id="squares">Squares</h3>
             <p><code>import squares;</code> names a square's edges. <code>Square(a0_, a1_, a_0, a_1)</code> is <code>PathP(fun (i : Interval) =&gt; a_0 @ i = a_1 @ i, a0_, a1_)</code>: a path from the left edge <code>a0_</code> to the right edge <code>a1_</code>, over the bottom edge <code>a_0</code> and the top edge <code>a_1</code>, so that <code>s @ i @ j</code> is its point at <code>i</code> across and <code>j</code> up. The corners are <code>a00</code>, <code>a01</code>, <code>a10</code> and <code>a11</code>, and an edge is named by its corners, <code>_</code> standing for the coordinate that varies along it. The library builds squares by conversion: the reflexive square of a path, the naturality square of a homotopy along a path, transposition and both flips, double composition with its filler, of which <code>trans</code> is the case with a constant first edge, and horizontal and vertical composition. Two squares on the same three sides have equal tops, <code>top_unique</code>, so a square is an equation of composites, <code>square_to_path : Square(a0_, a1_, a_0, a_1) -&gt; trans(a0_, a_1) = trans(a_0, a1_)</code>, and <code>path_to_square</code> goes back, though not as its inverse by conversion. The naturality of a homotopy as an equation, <code>naturality_path</code>, and a map's action on a composite, <code>cong_trans</code>, follow. The inspector shows a square's edges and corners.</p>
             <pre><code data-check="accept">import squares;
@@ -376,7 +376,7 @@ def filler_top{{A : U0, w, x, y, z : A}}(p : w = x, q : x = y, r : y = z) :
           </section>
           <section id="glue">
             <h2>Glue types</h2>
-            <p><code>Glue(A, face(i, 0, T, e), …)</code> is the type <code>A</code>, except that on each face it is <code>T</code>, glued to <code>A</code> along an equivalence <code>e</code> from <code>T</code> to <code>A</code> there. On a face that holds it is <code>T</code>, so a line of Glue types connects the types at its ends: this is how <a href="assumptions.html#univalence"><code>ua</code></a> turns an equivalence into a path. Here <code>e</code> is an equivalence in the form the kernel checks, a function whose fibers are contractible: <code>ContrEquiv(U, T, A)</code> of the library’s <code>import contractible_maps;</code>, not the <code>Equiv</code> of <code>import paths;</code>. The library’s <code>univalence</code> module builds univalence this way. <code>face_when(formula, T, e)</code> states a face as in <a href="#composition">composition</a>.</p>
+            <p><code>Glue(A, face(i, 0, T, e), …)</code> is the type <code>A</code>, except that on each face it is <code>T</code>, glued to <code>A</code> along an equivalence <code>e</code> from <code>T</code> to <code>A</code> there. On a face that holds it is <code>T</code>, so a line of Glue types connects the types at its ends: this is how <a href="assumptions.html#univalence"><code>ua</code></a> turns an equivalence into a path. Here <code>e</code> is an equivalence in the form the kernel checks, a function whose fibers are contractible: <code>ContrEquiv(U, T, A)</code> of the library’s <code>import contractible_maps;</code>, not the <code>Equiv</code> of <code>import paths_;</code>. The library’s <code>univalence</code> module builds univalence this way. <code>face_when(formula, T, e)</code> states a face as in <a href="#composition">composition</a>.</p>
             <p><code>glue(a, face(i, 0, t), …)</code> is an element of a Glue type: <code>a</code> in <code>A</code>, and on each face, for each piece in order, a value <code>t</code> of that piece’s type whose image under its equivalence is <code>a</code> there. Its Glue type is the one it is checked at, given here by <code>typed</code>. <code>unglue(g)</code> is the base of <code>g</code>, so <code>unglue</code> of a <code>glue</code> term is its base. Composition through a line of Glue types transports along it:</p>
             <pre><code data-check="accept">import contractible_maps;
 
@@ -441,7 +441,7 @@ def broken(c : Circle) : Nat := match c {  // Error: Type mismatch: found 1 = 1,
   base =&gt; 0;
   loop @ i =&gt; 1;
 };</code></pre>
-            <p>A constant clause traces the constant path. <code>flatten</code> sends every point of the loop to <code>0</code>, so along the loop it gives <code>refl(0)</code>. A path clause can also be omitted and its path proved instead: <code>obligations by rfl</code> proves the path the missing loop clause must give, <code>0 = 0</code>.</p>
+            <p>A constant clause traces the constant path. <code>flatten</code> sends every point of the loop to <code>0</code>, so along the loop it gives <code>refl(0)</code>. A variable or <code>_</code> after the <code>base</code> clause covers the points along the loop, as in <code>flatten_rest</code>. A path clause can also be omitted and its path proved instead: <code>obligations by rfl</code> proves the path the missing loop clause must give, <code>0 = 0</code>.</p>
             <pre><code data-check="accept">import nat;
 use nat;
 
@@ -456,6 +456,11 @@ def flatten(c : Circle) : Nat := match c {
 };
 
 def flatten_loop : cong(flatten, loop) = refl(0) { rfl; }
+
+def flatten_rest(c : Circle) : Nat := match c {
+  base =&gt; 0;
+  _ =&gt; 0;
+};
 
 def flatten_again(c : Circle) : Nat := match c {
   base =&gt; 0;
