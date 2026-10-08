@@ -7,6 +7,8 @@ import { parse, languageKeywords } from "../web/cubist/parser.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { verifyMigration } from "../tools/proof-migration.mjs";
+import { importedDeclarationsReader, migrationSourceReader } from "../tools/migration-sources.mjs";
+import { moduleRoots } from "../web/module-resolution.mjs";
 
 const module = await createCubical();
 const read = source => historicalSource(source, "history", { implicitNat: false, minusReverses: false });
@@ -40,6 +42,47 @@ test("historical importers share fresh names with the declarations they import",
   const result = await program.check(historicalSource(source, "history", { ...options, importedNames: ["map"] }), "history");
   assert.equal(result.complete, true, JSON.stringify(program.gaps));
   assert.deepEqual(program.prints.map(print => print.text), ["left(tt)"]);
+});
+
+test("historical archive imports find library declarations and keep their checked meaning", async () => {
+  const sources = new Map([
+    ["library/provider.cubist", "def map(x : Unit) : Unit := x;"],
+    ["library/bridge.cubist", "import provider;"],
+    ["archive/first-library/history.cubist", "import bridge;\ndef f : Unit := map(tt);"],
+  ]);
+  const modulePath = (place, name) => `${moduleRoots[place]}${name}.cubist`;
+  const importedDeclarationsOf = importedDeclarationsReader({
+    available: new Set(sources.keys()), modulePath,
+    readSyntax: path => parse(sources.get(path), false, { bindable: [...languageKeywords] }),
+  });
+  const options = { implicitNat: false, minusReverses: false, renaming: reservedBindingRenaming([...sources.values()]) };
+  const readOriginal = migrationSourceReader(async (place, name) => {
+    const path = modulePath(place, name), source = sources.get(path);
+    return source === undefined ? null : historicalSource(source, name,
+      { ...options, importedDeclarations: importedDeclarationsOf(path) });
+  }, ["history"]);
+  const [report] = await verifyMigration({ modules: ["history"], readOriginal,
+    readEdited: async () => "import bridge;\ndef f : Unit := map_(tt);" });
+  assert.deepEqual(report.failures, []);
+  assert.equal(report.identical, 1);
+});
+
+test("historical imports respect archive precedence and library isolation transitively", () => {
+  const sources = new Map([
+    ["archive/first-library/history.cubist", "import provider; import bridge;\ndef own := tt;"],
+    ["archive/first-library/provider.cubist", "def archiveProvider := tt;"],
+    ["library/provider.cubist", "def libraryProvider := tt;"],
+    ["library/bridge.cubist", "import provider; import archive_only;\ndef bridgeValue := tt;"],
+    ["archive/first-library/archive_only.cubist", "def hidden := tt;"],
+  ]);
+  const importedDeclarationsOf = importedDeclarationsReader({
+    available: new Set(sources.keys()),
+    modulePath: (place, name) => `${moduleRoots[place]}${name}.cubist`,
+    readSyntax: path => parse(sources.get(path)),
+  });
+  assert.deepEqual(importedDeclarationsOf("archive/first-library/history.cubist").map(item => item.name.text),
+    ["archiveProvider", "libraryProvider", "bridgeValue"]);
+  assert.deepEqual(importedDeclarationsOf("library/bridge.cubist").map(item => item.name.text), ["libraryProvider"]);
 });
 
 test("historical imported theories and functions supply selection and match types", async t => {

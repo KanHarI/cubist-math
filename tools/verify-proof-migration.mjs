@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { verifyMigration } from "./proof-migration.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
-import { migrationSourceReader } from "./migration-sources.mjs";
+import { migrationSourceReader, importedDeclarationsReader } from "./migration-sources.mjs";
 import { placeOfFile } from "./module-sources.mjs";
 import { moduleRoots } from "../web/module-resolution.mjs";
 import { historicalSource, currentSyntax, reservedBindingRenaming } from "../web/cubist/legacy-syntax.mjs";
@@ -91,24 +91,14 @@ const originalSource = path => {
 // when the conflicting local name occurs in only one of those modules.
 const renaming = reservedBindingRenaming([...available].filter(path => path.endsWith(".cubist"))
   .map(path => currentSyntax(originalSource(path))));
-const importedDeclarationsOf = (path, seen = new Set(), includeOwn = true) => {
-  if (!available.has(path) || seen.has(path)) return [];
-  seen.add(path);
+const originalAST = path => {
   if (!originalSyntax.has(path)) {
     try { originalSyntax.set(path, parse(currentSyntax(originalSource(path)), false, { bindable: [...languageKeywords] })); }
     catch { originalSyntax.set(path, { declarations: [], imports: [] }); }
   }
-  const syntax = originalSyntax.get(path), place = path.startsWith(moduleRoots.archive) ? "archive" : "library";
-  const declarations = [];
-  for (const dependency of syntax.imports) {
-    const paths = place === "archive" ? [originalModulePath("archive", dependency)]
-      : [originalModulePath("library", dependency), originalModulePath("archive", dependency)];
-    const next = paths.find(path => available.has(path));
-    if (next) declarations.push(...importedDeclarationsOf(next, seen));
-  }
-  if (includeOwn) declarations.push(...syntax.declarations);
-  return declarations;
+  return originalSyntax.get(path);
 };
+const importedDeclarationsOf = importedDeclarationsReader({ available, readSyntax: originalAST, modulePath: originalModulePath });
 // Until 2026-10-05 every module had Nat without importing it, from the
 // kernel and then from an implicit import of nat; a base of that time is read
 // with the import (legacy-syntax.mjs, historicalSource). A later base has
@@ -136,7 +126,7 @@ const readOriginal = migrationSourceReader(async (place, name) => {
     // A baseline may predate a syntax change, or the implicit import of nat;
     // it is read in today's syntax, with the imports it had then.
     let text = available.has(path) ? historicalSource(originalSource(path), name,
-      { implicitNat, minusReverses, renaming, importedDeclarations: importedDeclarationsOf(path, new Set(), false) }) : null;
+      { implicitNat, minusReverses, renaming, importedDeclarations: importedDeclarationsOf(path) }) : null;
     if (text !== null) historical.add(name);
     // A new shared foundation has no predecessor. It is available only in
     // library resolution; archive importers never see this fallback.
