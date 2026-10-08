@@ -266,14 +266,23 @@ free W(A : U0) : T(U0) on A;`, {module});
   assert.ok(result.outputs.every(o => !/^(N|W)\./.test(o.name)));
 });
 
-test("domains depending on laws or carrier evidence are refused before publishing a model", async t => {
-  for (const dependency of ["l", "M_is_set"]) {
+test("domains depending on laws or carrier evidence are refused, naming the proof, before publishing a model", async t => {
+  for (const [dependency, kind] of [["l", "law"], ["M_is_set", "evidence"]]) {
     const {result} = await checkProgram(t, `import hlevels;
 theory T(U < UU0) { M : set U; c : M; law l : c = c; law m(p : ${dependency} = ${dependency}) : c = c; }
 initial N : T(U0);`, {module});
-    assert.deepEqual(result.outputs.filter(o => !o.verified).map(o => [o.name, o.code]), [["N", "E854"]]);
+    const failures = result.outputs.filter(o => !o.verified);
+    assert.deepEqual(failures.map(o => [o.name, o.code]), [["N", "E867"]]);
+    assert.match(failures[0].reason, new RegExp(`^m takes p with a type depending on the ${kind} ${dependency}: `));
     assert.ok(result.outputs.every(o => !o.name.startsWith("N.")));
   }
+  // A carrier-typed binder of a law's name is the binder: the carrier's refusal.
+  const {result} = await checkProgram(t, `import hlevels;
+theory T(U < UU0) { M : set U; c : M; law l : c = c; law m(l : M, p : l = l) : c = c; }
+initial N : T(U0);`, {module});
+  const failure = result.outputs.find(o => o.name === "N");
+  assert.equal(failure.code, "E854");
+  assert.match(failure.reason, /^m takes p with a type depending on the carrier M: /);
 });
 
 test("universe-quantified laws receive a coded strategy refusal", async t => {
@@ -295,7 +304,7 @@ test("a model name cannot hide a global required by its expansion", async t => {
     const {result} = await checkProgram(t, `import hlevels; ${source}`, {module});
     const failures = result.outputs.filter(o => !o.verified);
     assert.deepEqual(failures.map(o => o.code), ["E866"]);
-    assert.match(failures[0].reason, /hides a declaration used by its expansion/);
+    assert.match(failures[0].reason, /hides a declaration used by its expansion: rename the initial or free model\./);
   }
   // A field with the declared type's name is substituted, not a global.
   await verified(t, `import hlevels;

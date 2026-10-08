@@ -47,6 +47,34 @@ test("a theory checks as its model type, constructor, projections, parents' mode
   assert.ok(semiring.includes("Semiring.additive_") && semiring.includes("Semiring.multiplicative"));
 });
 
+// Here rather than in theory_morphisms.cubist: the linter (W706) would have
+// pair written M -> M -> M, whose carrier on both sides of an arrow has no
+// homomorphisms.
+test("an operation whose arguments share one domain has homomorphisms, preserving it and computing", async t => {
+  const program = new CubicalProgram(await createCubical(), sourceReader());
+  t.after(() => program.dispose());
+  const result = await program.check(`import nat;
+import hlevels;
+use nat;
+
+theory Pair(U < UU0) {
+  M : set U;
+  pair : forall x, y : M. M;
+}
+
+def nat_pair : Pair(U0) := Pair.make(Nat, nat_is_set, add);
+
+def preserved(A, B : Pair(U0), f : Pair.Hom(A, B), x, y : A.M) :
+  f.map(A.pair(x, y)) = B.pair(f.map(x), f.map(y)) := f.map_pair(x, y);
+
+def composite : Pair.Hom.compose(Pair.Hom.id(nat_pair), Pair.Hom.id(nat_pair)).map(5) = 5 {
+  rfl;
+}
+`, "grouped");
+  assert.deepEqual(result.gaps, []);
+  assert.equal(result.complete, true);
+});
+
 test("theory syntax parses with its parents, renamings and notations, and formats stably", () => {
   const source = `import hlevels;
 

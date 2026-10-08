@@ -2236,7 +2236,7 @@
   },
   {
    "path": "cubist-tests/theory_morphisms.cubist",
-   "summary": "Homomorphisms and isomorphisms (L2.4): built field by field, their fields' types, identity, composition and a parent's homomorphism computing on closed models, isomorphisms' identity, composition and inverse, and a theory whose operation takes a non-sort, which has none."
+   "summary": "Homomorphisms and isomorphisms (L2.4): built field by field, their fields' types, identity, composition and a parent's homomorphism computing on closed models, isomorphisms' identity, composition and inverse, an operation's argument that takes the name of a parameter its type reads, and a theory whose operation takes a non-sort, which has none."
   },
   {
    "path": "cubist-tests/theory_sections.cubist",

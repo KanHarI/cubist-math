@@ -103,38 +103,43 @@ function expand(t, module, d, env) {
   const universe = relocated(put(carriers[0].type, given), at);
   const names = params.map(p => p.name.text), self = call(N, names.map(name));
   const operations = record.fields.filter(f => f.kind === "operation").map(f => f.name);
-  const proofs = new Set(record.fields.filter(f => f.kind === "law" || f.kind === "evidence").map(f => f.name));
+  // The proofs: each law's name and the carrier evidence's, to "law" or "evidence".
+  const proofs = new Map(record.fields.filter(f => f.kind === "law" || f.kind === "evidence").map(f => [f.name, f.kind]));
   const constructor = field => `${N}.${field}`;
   const inside = new Map([...given, [carrier, self], ...operations.map(op => [op, name(constructor(op))])]);
 
   // A domain must be the carrier or independent of it, including the
-  // earlier carrier-typed variables and carrier-valued operations. Shared
-  // domains are read before any of their group's names binds.
+  // earlier carrier-typed variables and carrier-valued operations, and of
+  // the proofs. Shared domains are read before any of their group's names
+  // binds. `dependent` gives what each such name is: "carrier", or a
+  // proof's kind.
   const shape = field => {
-    const binders = [], bound = new Set(), dependent = new Set([carrier, ...operations, ...proofs]);
-    let body = field.type, placed = relocated(put(field.type, inside), at), dependentBinder = null;
+    const binders = [], bound = new Set();
+    const dependent = new Map([[carrier, "carrier"], ...operations.map(op => [op, "carrier"]), ...proofs]);
+    let body = field.type, placed = relocated(put(field.type, inside), at), dependency = null;
     for (let group = 0; body?.kind === "forall" || body?.kind === "binderGroup" && body.binderKind === "forall";
         body = body.body, placed = placed.body, group++) {
       const names = body.kind === "forall" ? [body.name] : body.names;
       const placedNames = placed.kind === "forall" ? [placed.name] : placed.names;
       if (body.bound) throw module.locate(universeArguments(field.name), d.theory);
       const domain = body.domain, isCarrier = domain.kind === "name" && domain.name === carrier && !bound.has(carrier);
-      if (!isCarrier && [...freeNames(domain)].some(n => dependent.has(n)))
-        dependentBinder ??= names[0].text;
+      const on = isCarrier ? null : [...freeNames(domain)].find(n => dependent.has(n));
+      if (on) dependency ??= {binder: names[0].text, on, kind: dependent.get(on)};
       for (const n of placedNames) binders.push({name: n.text, carrier: isCarrier, type: placed.domain, group});
-      for (const n of names) { bound.add(n.text); if (isCarrier) dependent.add(n.text); else dependent.delete(n.text); }
+      for (const n of names) { bound.add(n.text); if (isCarrier) dependent.set(n.text, "carrier"); else dependent.delete(n.text); }
     }
-    return {binders, body, bound, placed, dependentBinder};
+    return {binders, body, bound, placed, dependency};
   };
 
   const constructors = [], operationShapes = [], lawShapes = [];
   for (const field of record.fields) {
     if (field.kind === "sort" || field.kind === "evidence") continue;
-    const {binders, body, bound, placed, dependentBinder} = shape(field);
+    const {binders, body, bound, placed, dependency} = shape(field);
     if (field.kind === "law" && (!(body.kind === "binary" && body.operator === "=")
         || [...freeNames(body, bound)].some(n => proofs.has(n))))
       throw module.locate(notEquational(field.name), d.theory);
-    if (dependentBinder) throw module.locate(notPositive(field.name, dependentBinder, carrier), d.theory);
+    if (dependency) throw module.locate(dependency.kind === "carrier" ? notPositive(field.name, dependency.binder, carrier)
+      : onProof(field.name, dependency.binder, dependency.kind, dependency.on), d.theory);
     const params = binders.map(b => ({name: token(b.name), type: b.type, group: b.group}));
     if (field.kind === "operation") {
       if (body.kind === "binary" && body.operator === "->") throw module.locate(arrowOperation(field.name), d.theory);
@@ -191,10 +196,11 @@ const notOneCarrier = (T, carriers) => Error(`The equational strategy supports o
   carriers.length ? carriers.map(f => f.family ? `the family ${f.name}` : f.name).join(", ") : "none"}.`);
 const untruncatedCarrier = (T, carrier) => Error(`${T}'s carrier ${carrier} is neither a set nor a proposition: the equational strategy requires a truncated carrier.`);
 const notPositive = (field, binder, carrier) => Error(`${field} takes ${binder} with a type depending on the carrier ${carrier}: the equational strategy supports carrier arguments or types independent of the carrier.`);
+const onProof = (field, binder, kind, proof) => Error(`${field} takes ${binder} with a type depending on the ${kind} ${proof}: the equational strategy supports arguments independent of the theory's laws and carrier evidence.`);
 const notCarrierValued = (field, carrier) => Error(`${field} does not return the carrier ${carrier}: the equational strategy supports carrier-valued operations.`);
 const notEquational = field => Error(`The law ${field} is not an equation between operation terms: the equational strategy does not support this law.`);
 const arrowOperation = field => Error(`${field} uses an arrow type: the equational strategy requires named operation arguments, as in succ(x : M) : M.`);
 const recursiveGenerators = N => Error(`The generator type of ${N} mentions ${N} or one of its generated names: free requires a type given independently of the declared model.`);
 const capturedBy = (field, name) => Error(`${field}'s pattern binds ${name}, which an argument here names: rename it in ${field}.`);
 const universeArguments = field => Error(`${field} binds a universe argument: the equational strategy supports term arguments only; bind universes in the theory header.`);
-const hiddenDependency = N => Error(`${N} hides a declaration used by its expansion: choose another name for the initial or free model.`);
+const hiddenDependency = N => Error(`${N} hides a declaration used by its expansion: rename the initial or free model.`);
