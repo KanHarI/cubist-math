@@ -296,12 +296,14 @@ initial N : T(U0);`;
   }
 });
 
-test("a theory's homomorphisms link nowhere at or after its name", async t => {
+test("a theory's name links to its declarations, its type of models first, and its generated syntax nowhere", async t => {
   const source = `import hlevels;
 theory Things(U < UU0) { M : set U; op(x, y : M) : M; }`;
   const { result } = await checkProgram(t, source, { module });
   assert.deepEqual(result.gaps, []);
   const name = source.indexOf("Things");
   assert.deepEqual(result.links.filter(link => link.start === name + "Things".length || link.start >= source.length), []);
-  assert.ok(!result.links.some(link => link.start === name && /^(language expression|tuple macro)$/.test(link.role)));
+  const atName = result.links.filter(link => link.start >= name && link.start < name + "Things".length);
+  assert.deepEqual([...new Set(atName.map(link => link.role))], ["def"]);
+  assert.equal(atName[0].name, "Things");
 });

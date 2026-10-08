@@ -114,7 +114,8 @@ export class CubicalProgram {
     // initial/free model's, and its links, and the marks elaboration builds
     // for it, would hide the name's own. Syntax written elsewhere, as an
     // initial/free header's parameters, theory and generator type, links as
-    // written; synthetic syntax, as a theory's homomorphisms', links nowhere.
+    // written; synthetic syntax, as what a theory's expansion places at its
+    // name, links nowhere.
     const generated = declaration.generated ? declaration.name : null;
     const written = node => !node.synthetic && !(generated && node.start >= generated.start && node.start < generated.end);
     for (const item of pending) {

@@ -518,7 +518,9 @@ function theoryFields(theory, lookup, proposition) {
 // The declarations a theory expands to, and its record, which a theory
 // that extends it reads (`lookup` gives the record of a theory by name).
 export function expandTheory(theory, lookup = () => null, proposition = () => false) {
-  const T = theory.name.text, at = theory.name;
+  // What the expansion places at the theory's name is generated, and links
+  // nowhere there (cubical-program.mjs): the name links to its models' type.
+  const T = theory.name.text, at = { ...theory.name, synthetic: true };
   const { fields, notations, recipes, derived, parents, universes: headerUniverses, params, ambiguous, ambiguousNotations } = theoryFields(theory, lookup, proposition);
   if (!fields.length) throw located(Error(`${T} has no fields: a theory declares sorts, operations and laws.`), at);
   const taken = new Set([...namesIn(theory), ...fields.map(field => field.name), ...fields.flatMap(field => [...namesIn(field.type)])]);
@@ -632,9 +634,8 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
       // A parameter whose binder is named apart from its field is called
       // by the field's name.
       for (const p of d.params ?? []) if (Object.hasOwn(labels, p.name.text)) p.label = labels[p.name.text];
-      // Generated from text, all of it stands at the theory's name and,
-      // synthetic, links nowhere there (cubical-program.mjs).
-      out.push({ ...relocated(d, { ...at, synthetic: true }), name: token(declName, at), ...(theory.uses ? { uses: theory.uses } : {}),
+      // Generated from text, all of it stands at the theory's name.
+      out.push({ ...relocated(d, at), name: token(declName, at), ...(theory.uses ? { uses: theory.uses } : {}),
         generated: { theory: T, role, ...(field ? { field } : {}) }, ...(morphismRecord ? { theory: morphismRecord } : {}) });
     });
   }
