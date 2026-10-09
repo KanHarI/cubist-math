@@ -47,8 +47,9 @@ their meaning:
 | G10 source range, G11 telescope capture, G12 earlier value calls | `f70699fe`, [FG2 report](frontend-generation-fg2.md) | Active G10–G12 contracts; opposite intended/captured equations, renamed inheritance, computation and focused type-unfolding refusal |
 | G2 full generated universes | `91b3f5bd`, [FG3 report](frontend-generation-fg3.md) | Active G2 contract; fixed U0/U1 inputs, generic universes, inherited operations, dependent indices and genuine lowering refusals in `frontend-universes.test.mjs` |
 | G4 contextual evidence, G8 wildcard diagnostics | `d0abfe5a`, [FG4 report](frontend-generation-fg4.md) | Active G4/G8 contracts; nested/dependent model evidence, wrong-model refusal, charged failed fallback and checked successful coherence in `frontend-evidence.test.mjs` |
+| G5 public lint interfaces, G9 labels/navigation | `4bb87c0d`, [FG5 report](frontend-generation-fg5.md) | Active G5/G9 contracts; direct/imported source observations, named Hom constructors and generated clients, CLI and browser navigation |
 
-G5 and G9 remain open in this stack at FG4. The notation-alias
+All eleven executable gaps are active regressions at FG5. The notation-alias
 audit's removal and its provenance distinction are documented in the FG2
 report. None of these changes registers the separate C1 deriving capability.
 
