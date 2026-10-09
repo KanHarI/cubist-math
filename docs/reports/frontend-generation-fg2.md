@@ -98,6 +98,33 @@ depend on FG1's publication lifecycle rather than on absence of an alias list.
 
 ## Validation and resource measurements
 
-Validation results and measurements are recorded below after checking the
-completed implementation revision. The implementation does not change
-kernel rules, declaration/search fuel, or the initial/free capability boundary.
+Implementation commits: `f70699fe` (telescopes/call purpose/source sites) and
+`908fcd60` (dependency/support analysis and notation consolidation).
+The implementation does not change kernel rules, declaration/search fuel,
+or the initial/free capability boundary.
+
+The final full suite at the completed implementation has 808 tests:
+803 pass, five explicitly tracked later-phase TODOs, zero failures, zero
+skips (122.4 seconds). This includes all ten focused dependency tests,
+source/library checks, native-kernel tests, publication/CLI regressions and
+the semantic capture controls. Inspector browser and final built static-site
+browser checks pass, as do the diagnostic catalog and diff checks. No corpus
+timeouts required retries and no resource limit was increased.
+
+Measurements compare FG1's clean `fe05ea5e` with clean `908fcd60`. Raw
+[FG1](frontend-generation-metrics/fg1.json) and
+[FG2](frontend-generation-metrics/fg2.json) reports contain frontend/source
+digests, the same WASM build stamp, default limits and three fresh kernel
+sessions per workload. FG2 was measured without concurrent test load.
+
+| Workload | Median ms, FG1 → FG2 | Instructions | Queries | Peak arena bytes |
+| --- | ---: | ---: | ---: | ---: |
+| Algebra import | 1286.9 → 1206.6 | 118,850 | 14,495 | 4,593,664 |
+| Captured inheritance chain | 320.0 → 299.8 | 51,732 | 3,883 | 2,624,512 |
+| Generated free fold | 1310.5 → 1206.0 | 125,859 | 14,990 | 4,593,664 |
+
+Instructions, queries, instruction/query steps and arena peaks are unchanged
+in all three workloads. The recovered kernel exhaustion counters remain
+6/0/6, with no deadline failures or gaps. Arena memory is sampled after
+declarations, not whole-process or JavaScript graph memory. Timings are
+observations on this host, not a speedup guarantee or a regression budget.
