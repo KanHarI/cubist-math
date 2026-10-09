@@ -29,8 +29,10 @@ const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${
 // closed native definitions have qualified names so shadowing cannot retarget
 // an earlier checked reference. Unsupported declarations never become axioms.
 export class CubicalProgram {
-  constructor(module, readSource, { onDeclarationStart, onDeclaration, collectReferences = true, optimizations = {}, manageTransactions = true,
-    searchFuel, declarationFuel, experimental, representation, bundledNat = true, prelude } = {}) {
+  constructor(module, readSource, options = {}) {
+    const {onDeclarationStart,onDeclaration,collectReferences=true,optimizations={},manageTransactions=true,
+      searchFuel,declarationFuel,experimental,representation,bundledNat=true,prelude}=options;
+    this.options={...options};
     // The representation map τ to declared counterparts was the differential
     // fixtures' (H1 specification, 7.4), retired with them.
     if (representation !== undefined)
@@ -57,6 +59,7 @@ export class CubicalProgram {
     this.localSymbols = {}; this.declarationBindings = new Map();
     this.declarationReferences = new Map();
     this.modules = new Map(); this.symbols = {}; this.views = new Map();
+    this.publications = new Map(); this.declarationOwnership = new Map();
     this.sourceAsts = new Map();
     this.simpRegistries = new Map();
     this.gaps = []; this.evaluations = []; this.prints = []; this.links = []; this.sources = {}; this.completed = 0;
@@ -83,7 +86,7 @@ export class CubicalProgram {
   // so a failed read is retried.
   async discover(discovery, name, text, importer, onProgress) {
     const { prepared } = discovery;
-    if (this.modules.has(name) || prepared.has(name)) return;
+    if (prepared.has(name) || discovery.reuseModules && this.modules.has(name)) return;
     try {
       if(text===null) {
         try { text=await this.readSource(name,importer); }
@@ -94,7 +97,7 @@ export class CubicalProgram {
       }
       const ast = parse(text);
       prepared.set(name, { text, ast });
-      discovery.total += ast.declarations.length;
+      if(!this.modules.has(name))discovery.total += ast.declarations.length;
       onProgress({ completed: this.completed, total: null, current: name,
         phase: "loading", unit: "declarations", instructions: this.checker.steps });
       for (const dependency of ast.imports) await this.discover(discovery, dependency, null, name, onProgress);
@@ -151,6 +154,8 @@ export class CubicalProgram {
   // `failure` adds a failed import's note to a reason.
   recordModule(name, main, text, ast, result, failure) {
     this.simpRegistries.set(name,result.simpRegistry);
+    this.publications.set(name,result.publications??[]);
+    this.declarationOwnership.set(name,result.ownership??new Map());
     for(const directive of result.directives??[]) {
       this.directiveFuel.push({ module: name, kind: directive.kind, name: directive.name, searchFuel: directive.searchFuel ?? null });
       if(directive.status!=="checked")
@@ -163,6 +168,11 @@ export class CubicalProgram {
     }
     const byName = new Map(ast.declarations.map(d => [d.name.text, d]));
     for (const d of result.declarations) {
+      if (d.duplicate) {
+        this.gaps.push({module:name,name:d.name,duplicate:true,reason:d.reason,code:diagnosticCode(d.reason),
+          start:d.errorStart,end:d.errorEnd,declarationStart:d.syntax.start,declarationEnd:d.syntax.end});
+        continue; // The original symbol and its inspection data still own the name.
+      }
       // A theory's declarations bring their generated syntax (theories.mjs).
       const syntax = d.syntax ?? byName.get(d.name), binding = `${name}__${d.name}`;
       const verified = d.status === "checked-native-cubical";
@@ -170,6 +180,7 @@ export class CubicalProgram {
       const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified,
         status: d.status, reason, ...(verified ? {} : { code: diagnosticCode(reason) }), errorStart: d.errorStart, errorEnd: d.errorEnd,
         rewriteWork: d.rewriteWork, searchFuel: d.searchFuel, failure: d.failure ?? null,
+        ...(d.blockedBy?{blockedBy:d.blockedBy}:{}),...(d.failedMember?{failedMember:d.failedMember}:{}),...(d.cause?{cause:d.cause}:{}),
         axioms: d.native?.axioms ?? [],
         // Kernel extensions under review that the result relies on, shown
         // apart from assumptions; computable accepts them. None is under
@@ -201,14 +212,29 @@ export class CubicalProgram {
         this.links.push({ ...info, start: syntax.name.start, end: syntax.name.end });
     }
   }
-  async check(source, main = "current", onProgress = () => {}) {
+  async check(source, main = "current", onProgress = () => {}, {reuseModules=false} = {}) {
     // Discover the source graph before checking. This only reads and parses
     // source; it does not run the mathematical library or count repeated
     // imports twice.
     this.readSource.beginCheck?.();
-    const discovery = { prepared: new Map(), total: this.completed };
+    const discovery = { prepared: new Map(), total: this.completed, reuseModules };
     await this.discover(discovery, main, source, null, onProgress);
     const { prepared } = discovery;
+    // Rechecking an edited module invalidates every dependent artifact and
+    // native handle. The discovered source graph, rather than aliases or a
+    // cached successful module, determines whether the session is reusable.
+    const invalidated=[...prepared].some(([name,entry])=>{
+      if(this.modules.has(name))return entry.error||entry.text!==this.sources[name];
+      // A failed read must be retried through its importers. An interrupted
+      // load may also have committed declarations before the active group.
+      return !reuseModules&&(this.failedImports.has(name)||this.sources[name]!==undefined);
+    });
+    if(invalidated) {
+      const replacement=new CubicalProgram(this.kernel.module,this.readSource,this.options);
+      this.dispose(); Object.assign(this,replacement);
+      discovery.total=[...prepared.values()].reduce((sum,entry)=>sum+(entry.ast?.declarations.length??0),0);
+      onProgress({completed:0,total:discovery.total,current:main,phase:"loading",unit:"declarations",instructions:0});
+    }
     let total = discovery.total;
     // Imports that failed in this check, used or not: any makes it incomplete.
     const failedHere = new Set();
@@ -232,6 +258,7 @@ export class CubicalProgram {
         visiting.delete(name); return new Map();
       }
       this.sources[name] = text;
+      this.failedImports.delete(name);
       this.sourceAsts.set(name, ast);
       let env = new Map(),simpRegistry=emptySimpRegistry();
       for (const dependency of ast.imports) {
@@ -249,8 +276,21 @@ export class CubicalProgram {
       checker.bindingName = local => `${name}__${local}`;
       checker.define = (local, term, type, parameters) => define(`${name}__${local}`, term, type, parameters);
       let pending = [];
-      let transaction = null;
+      let transaction = null,publication=null;
       const statements = [];
+      const finishPublication=accept=>{
+        transaction?.finish(accept); transaction=null;
+        if(!accept&&publication) {
+          for(const [target,snapshot] of publication.maps) {
+            target.clear();for(const [key,value] of snapshot)target.set(key,value);
+          }
+          this.localSymbols=publication.localSymbols;
+          this.links.length=publication.links;
+          statements.length=publication.statements;
+          pending=[];
+        }
+        publication=null;
+      };
       let current = null;
       // A module of a revision before L2.10j, as the migration verifier reads
       // one, keeps its name-based operators and numerals (translate.mjs).
@@ -259,6 +299,12 @@ export class CubicalProgram {
         inspectSignature: binding => this.signatureText(binding, checker.notation),
         ...Object.fromEntries(Object.entries(this.fuelLimits).filter(([, limits]) => limits)),
         onStep: step => statements.push({ ...step, declaration: current }),
+        onPublicationStart: () => {
+          publication={maps:[this.views,this.declarationBindings,this.declarationReferences].map(target=>[target,new Map(target)]),
+            localSymbols:{...this.localSymbols},links:this.links.length,statements:statements.length};
+          transaction=new CubicalDeclarationTransaction(this.kernel,this.checker);
+        },
+        onPublicationEnd: (_group,accept) => finishPublication(accept),
         // A theory's expansion adds declarations the source does not write,
         // and a failed type of models takes the rest of its theory off: the
         // total follows both, so that it is never below what is done and
@@ -271,14 +317,14 @@ export class CubicalProgram {
         },
         onDeclarationStart: declaration => {
           current = declaration.name.text;
-          if (this.manageTransactions) transaction = new CubicalDeclarationTransaction(this.kernel,this.checker);
+          if (this.manageTransactions&&!publication) transaction = new CubicalDeclarationTransaction(this.kernel,this.checker);
           try {
             this.onDeclarationStart?.(name, declaration, checker);
             onProgress({ completed: this.completed, total,
               current: `${name}.${declaration.name.text}`, phase: "checking", unit: "declarations", instructions: checker.steps });
           } catch(error) {
-            transaction?.finish(false);
-            transaction=null;
+            if(publication)finishPublication(false);
+            else {transaction?.finish(false);transaction=null;}
             throw error;
           }
         },
@@ -286,11 +332,11 @@ export class CubicalProgram {
         onDeclaration: (declaration, result) => {
           try {this.onDeclaration?.(name, declaration, result, checker);}
           catch(error) {
-            transaction?.finish(false);
-            transaction=null;
+            if(publication)finishPublication(false);
+            else {transaction?.finish(false);transaction=null;}
             throw error;
           }
-          if (transaction) {
+          if (transaction&&!publication) {
             transaction.finish(result.status === "checked-native-cubical");
             transaction = null;
           }
@@ -301,7 +347,13 @@ export class CubicalProgram {
             current: `${name}.${result.name}`, phase: "checked", unit: "declarations", instructions: checker.steps });
         },
       });
-      const result = translator.translate(text, env);
+      let result;
+      try {result=translator.translate(text,env);}
+      catch(error) {
+        if(publication)finishPublication(false);
+        else {transaction?.finish(false);transaction=null;}
+        throw error;
+      }
       this.checker.steps = checker.steps;
       this.recordModule(name, main, text, ast, result, failure);
       this.moduleSteps.set(name, statements);
@@ -319,11 +371,12 @@ export class CubicalProgram {
       imports: all.filter(d => d.sourceModule), symbols: [...all, ...Object.values(this.assumptionSymbols())], assumptionLabels: Object.fromEntries(this.checker.assumptionLabels), declarations: outputs, links: this.links,
       declarationCount: total, instructionCount: this.checker.steps, axiomCount: new Set(outputs.flatMap(d => d.axioms)).size, gaps: this.gaps,
       evaluations: this.evaluations, prints: this.prints, directiveFuel: this.directiveFuel,
+      publications:Object.fromEntries(this.publications),
       // Unused bindings that can be removed, in the checked module only; a
       // fresh parse, since elaboration annotates the syntax it checks.
       warnings: lint(source),
       complete: outputs.length > 0 && outputs.every(d => d.verified)
-        && !this.gaps.some(gap=>gap.directive) && failedHere.size === 0, sources: this.sources };
+        && !this.gaps.some(gap=>gap.directive||gap.duplicate) && failedHere.size === 0, sources: this.sources };
   }
   // A declared type's signature as the kernel admitted it (the H1
   // specification's 6.5): its former, h-level, recorded universe parameters,
@@ -548,7 +601,9 @@ export class CubicalProgram {
     const kept = { main: this.main, metadata: this.metadata, links: this.links.length,
       gaps: this.gaps.length, evaluations: this.evaluations.length, prints: this.prints.length };
     try {
-      await this.check(source, name);
+      // A REPL entry extends its immutable session snapshot; its previous
+      // entries are in-memory modules, not files to reload from the reader.
+      await this.check(source, name, () => {}, {reuseModules:true});
       const declarations = Object.values(this.symbols).filter(info => !info.sourceModule && info.binding.startsWith(`${name}__`));
       for (const info of declarations) Object.assign(info, { sourceModule: name, sourceName: info.name });
       return { declarations, evaluations: this.evaluations.slice(kept.evaluations), prints: this.prints.slice(kept.prints),

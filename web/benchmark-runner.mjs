@@ -9,7 +9,6 @@ import { CubicalProgram } from "./cubical-program.mjs";
 import { archiveModules, cubistTestModules, libraryModules } from "./cubist/modules.mjs";
 import { moduleListing } from "./module-listing.mjs";
 import { listedReader } from "./module-resolution.mjs";
-import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
 import { normal, stated } from "./cubist/stated-comments.mjs";
 import { diagnosticCode } from "./diagnostics.mjs";
 
@@ -54,11 +53,10 @@ export async function benchmark({ area = "archive", modules = benchmarkAreas[kno
     }
     return intended.get(module);
   };
-  let declarationStart, declarationStartSteps, kernelStart, transaction;
+  let declarationStart, declarationStartSteps, kernelStart;
   const program = new CubicalProgram(await createCubical(), readSource, {
-    collectReferences: false, optimizations, manageTransactions: false,
+    collectReferences: false, optimizations,
     onDeclarationStart(_module,_syntax,checker) {
-      transaction = new CubicalDeclarationTransaction(program.kernel,program.checker);
       declarationStart = performance.now();
       declarationStartSteps = checker.steps;
       kernelStart = { ...program.checker.instructionWork };
@@ -92,8 +90,6 @@ export async function benchmark({ area = "archive", modules = benchmarkAreas[kno
         result.status = "not-translated";
         result.reason = "Declaration time limit exceeded.";
       }
-      transaction.finish(row.category === "checked");
-      transaction = null;
       declarations.push(row); onResult(row);
     },
   });
@@ -101,6 +97,14 @@ export async function benchmark({ area = "archive", modules = benchmarkAreas[kno
     await program.check([...new Set(modules)].map(name => `import ${name};`).join("\n"), "benchmark",
       progress => { if (progress.phase === "checked") onSnapshot({ declarations, total: progress.total, current: progress.current, elapsedSeconds: (performance.now() - started) / 1000 }); });
     const byName = new Map(declarations.map(d => [d.binding, d]));
+    // Work on an earlier member is real, but a later family failure means
+    // its checked term was rolled back and must not be reported as published.
+    for(const [module,groups] of program.publications)for(const group of groups)if(group.state!=="checked")
+      for(const member of group.members) {
+        const row=byName.get(`${module}__${member}`);
+        if(row?.category==="checked")Object.assign(row,{category:"blocked",blockedBy:group.cause.binding,
+          reason:`Untranslated dependency: ${group.cause.name}`});
+      }
     for (const row of declarations) {
       const seen = new Set(); let next = row;
       while (next.blockedBy && !seen.has(next.blockedBy)) {

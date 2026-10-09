@@ -35,7 +35,8 @@ function expand(t, module, d, env) {
   // no notation to read its fields in (theories.mjs, capturedNotation).
   const binding = head.kind === "name" ? env.get(head.name) : null;
   if (binding?.tag === "Untranslated" || entry?.tag === "Theory" && !entry.notation)
-    throw module.locate(Object.assign(Error(`Untranslated dependency: ${head.name}`), {blockedBy: binding?.binding ?? head.name}), head);
+    throw module.locate(Object.assign(Error(`Untranslated dependency: ${head.name}`),
+      {blockedBy: binding?.blockedBy ?? binding?.binding ?? head.name, cause:binding?.cause ?? binding?.reason}), head);
   // A retained theory record can outlive the name that denoted its model
   // type. Do not apply that record to an ordinary definition shadowing it.
   if (entry?.tag !== "Theory" || binding?.tag !== "DefRef" || binding !== env.get(entry.record.reference))
