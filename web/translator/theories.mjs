@@ -112,8 +112,9 @@ export function memberField(t,scope,n) {
 // field by its name, as its projection T.f(m), and each notation of the
 // theory as m's operation. A later binding of a name or operator shadows it.
 export function opened(t,scope,node,{complete=true}={}) {
-  const record=recordOf(t,scope,t.term(node,scope,null));
+  const model=t.term(node,scope,null),record=recordOf(t,scope,model);
   if(!record)return null;
+  scope=scope.modelEvidence(model);
   const at={start:node.start,end:node.end};
   const values=new Map([...record.fields,...record.derived??[]].map(field=>{
     const unavailable=field.reference&&scope.env.get(field.reference);

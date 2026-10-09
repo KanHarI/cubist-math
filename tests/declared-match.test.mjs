@@ -79,18 +79,19 @@ test("recursion whose other arguments vary: the accumulator, computed and proved
   assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["succ(succ(zero))", "succ(succ(succ(zero)))"]);
 });
 
-// An abandoned first attempt spends nothing of the declaration's. The two
+// An abandoned first attempt still spends the declaration's shared fuel. The two
 // proofs are the same but for their type's constructor order: once's first
 // attempt checks its simp before reaching the call that changes a, and
-// abandons it; again's reaches that call first. Both record what their kept
-// attempt spent, and only that.
-test("recursion whose other arguments vary: an abandoned attempt spends nothing", async () => {
+// abandons it; again's reaches that call first. Both publish only their kept
+// inspection records, but once pays for both searches.
+test("recursion whose other arguments vary: abandoned work is charged once", async () => {
   const { get } = await cases();
   for (const name of ["once", "again", "plain"]) ok(get(name));
   const spent = name => [get(name).searchFuel.queries, get(name).searchFuel.searches];
-  assert.deepEqual(spent("once"), spent("again"));
-  // What the kept attempt spent is the declaration's: more than its simp alone.
-  assert.ok(spent("once")[0] > spent("plain")[0] && spent("once")[1] === spent("plain")[1]);
+  assert.ok(spent("once")[0] > spent("again")[0]);
+  assert.ok(spent("again")[0] > spent("plain")[0]);
+  assert.equal(spent("again")[1],spent("plain")[1]);
+  assert.equal(spent("once")[1],spent("again")[1]+spent("plain")[1]);
 });
 
 // An operator means only what a selected notation binds, so a notation of

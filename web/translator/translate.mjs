@@ -166,7 +166,7 @@ export class Translator {
     term={...term};scope=scope.alias(name,term);
     this.localSources.set(term,{name:node.label??name,start:node.start,end:node.end});
     this.reference(scope,{...node,name:node.label??name,isBinding:true},term);
-    return scope;
+    return ["Var","U"].includes(term.tag)?scope:scope.modelEvidence(term);
   }
   // Interval names are cubical coordinates, never terms of a fabricated type.
   interval(n,env,budget=latticeBudget(()=>this.checker.kernel?.checkDeadline())) {
