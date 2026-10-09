@@ -135,6 +135,9 @@ function notAProposition(statement, byName, proposition = () => false, header = 
     if (node.kind === "call" && sortNamed(node, bound) && propositionSort(node.fn.name)) return null;
     // A declared proposition, as a truncation.
     const head = node.kind === "call" ? node.fn : node;
+    // Inlining a retained helper can expose a resolved declaration. Its
+    // spelling may now be bound to something else; ask about its identity.
+    if (head.kind === "reference" && proposition(head.binding)) return null;
     if (head.kind === "name" && !bound.has(head.name) && !byName.has(head.name) && proposition(head.name)) return null;
     return { node, why: node.kind === "name" && byName.get(node.name)?.kind === "sort"
       ? `${node.name} is a sort, whose elements are data` : "its statement is none of these" };
@@ -260,10 +263,10 @@ function theoryFields(theory, lookup, proposition, capture) {
     // child's of the same names and types.
     const universes = new Map(), parentCount = Math.max(1, record.universes.length);
     if (parentCount === 1 && universeCount === 1) universes.set(UNIVERSE, UNIVERSE);
-    else record.universes.forEach((u, k) => {
+    else (record.universeLabels ?? record.universes).forEach((u, k) => {
       const own = headerUniverses.indexOf(u);
       if (own < 0) throw located(record.generatedUniverse
-        ? Error(`${T} extends ${record.name}, whose header binds no universe: bind ${u}, the name its universe is given, in ${T}'s header, or name that universe in ${record.name}'s header.`)
+        ? Error(`${T} extends ${record.name}, whose header binds no universe: bind ${u}, its public universe parameter, in ${T}'s header, or name that universe in ${record.name}'s header.`)
         : Error(`${T} extends ${record.name}, whose header binds the universe ${u}: bind ${u} in ${T}'s header too.`), parent.name);
       universes.set(universeAt(k), universeAt(own));
     });
@@ -566,13 +569,15 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
   const taken = new Set([...namesIn(theory), ...fields.map(field => field.name), ...fields.flatMap(field => [...namesIn(field.type)]),
     ...derived.flatMap(operation => [...namesIn(operation)])]);
   // The header's names for the universes, or fresh ones without a header:
-  // U, or U_1 when U is taken, which a header can bind and an argument name.
+  // U, or U_1 when U is taken. The public label depends only on the header,
+  // never on an internal binder that makes this generated name fresh.
   const universes = headerUniverses.length ? headerUniverses : [freshName("U", taken)], model = freshName("m", taken);
+  const universeLabels = headerUniverses.length ? headerUniverses : [freshName("U", new Set(params.map(p => p.name)))];
   const inUniverse = node => renamed(node, new Map(universes.map((u, k) => [universeAt(k), u])), at);
   // The header's binders, the universes in one group and then each
   // parameter; `implicit` says which are implicit.
   const headerParameters = ({ universe = false, parameter = false } = {}) => [
-    ...universes.map(u => ({ name: token(u, at), bound: name("UU0", at), group: 0, ...(universe ? { implicit: true } : {}) })),
+    ...universes.map((u, k) => ({ name: token(u, at), label: universeLabels[k], bound: name("UU0", at), group: 0, ...(universe ? { implicit: true } : {}) })),
     ...params.map((p, k) => ({ name: token(p.name, at), type: inUniverse(p.type), group: k + 1, ...(parameter ? { implicit: true } : {}) })),
   ];
   const nextGroup = params.length + 1;
@@ -586,11 +591,10 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
     body: [{ kind: "exact", value, ...place(span) }], typedValue: true, ...place(span),
     generated: { theory: T, ...generated }, ...extra,
   });
-  // Record the actual model parameters, including the universe generated
-  // for a headerless inherited theory, so later applications use its name,
-  // and whether its header named none.
+  // Retain both internal universe names and public labels. Inheritance and
+  // named arguments use the labels; fresh internal binders are not an API.
   const record = {
-    name: T, model: T, make: `${T}.make`, universes, ...(headerUniverses.length ? {} : { generatedUniverse: true }), params, ambiguous, ambiguousNotations,
+    name: T, model: T, make: `${T}.make`, universes, universeLabels, ...(headerUniverses.length ? {} : { generatedUniverse: true }), params, ambiguous, ambiguousNotations,
     fields: fields.map(({ at: _, from: __, ...field }) => ({ ...field, projection: `${T}.${field.name}` })),
     notations: Object.fromEntries(notations), recipes: Object.fromEntries(recipes), parents,
     derived: derived.map(({ at: _, ...d }) => ({ ...d, projection: `${T}.${d.name}` })),

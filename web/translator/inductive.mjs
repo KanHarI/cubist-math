@@ -182,7 +182,8 @@ export function lowerInductive(translator, d, scope) {
     // A declared universe below a data type's is lowering: name the argument.
     if (declared !== null && (error.kind === "mismatch" || /universe|cumulative|not included/i.test(error.message))) {
       const lowered = sizes.find(size => !checker.levelWithin?.(size.level, declared));
-      if (lowered) throw locate(Object.assign(Error(`${lowered.constructor}'s argument ${lowered.argument} lives in a universe above ${d.name.text}'s declared one: a declared type cannot lower its data (K2.5).`), { kind: error.kind }), d.name);
+      if (lowered) throw locate(Object.assign(Error(`${lowered.constructor}'s argument ${lowered.argument} lives in a universe above ${d.name.text}'s declared one: a declared type cannot lower its data (K2.5).`),
+        { kind: error.kind, dataUniverse: { constructor: lowered.constructor, argument: lowered.argument } }), d.name);
     }
     const constructor = d.constructors.find(c => c.name.text === error.constructor);
     throw locate(error, constructor?.name ?? d.name);

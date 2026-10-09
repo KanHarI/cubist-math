@@ -33,10 +33,12 @@ function expand(t, module, d, env) {
   // A theory that failed its own check is a dependency here, as at its
   // other uses, whether or not it expanded: one whose use was refused has
   // no notation to read its fields in (theories.mjs, capturedNotation).
-  const failed = head.kind === "name" ? env.get(head.name) : null;
-  if (failed?.tag === "Untranslated" || entry?.tag === "Theory" && !entry.notation)
-    throw module.locate(Object.assign(Error(`Untranslated dependency: ${head.name}`), {blockedBy: failed?.binding ?? head.name}), head);
-  if (entry?.tag !== "Theory")
+  const binding = head.kind === "name" ? env.get(head.name) : null;
+  if (binding?.tag === "Untranslated" || entry?.tag === "Theory" && !entry.notation)
+    throw module.locate(Object.assign(Error(`Untranslated dependency: ${head.name}`), {blockedBy: binding?.binding ?? head.name}), head);
+  // A retained theory record can outlive the name that denoted its model
+  // type. Do not apply that record to an ordinary definition shadowing it.
+  if (entry?.tag !== "Theory" || binding?.tag !== "DefRef" || binding !== env.get(entry.record.reference))
     throw module.locate(notATheory(d.kind, module.source.slice(d.theory.start, d.theory.end).trim()), d.theory);
   const record = entry.record, T = record.name;
   // Only copied field expressions read the theory's captured notation.
@@ -79,7 +81,7 @@ function expand(t, module, d, env) {
       || record.fields.some(f => freeNames(f.type, fieldScope).has(N))))
     throw module.locate(hiddenDependency(N), d.name);
   const args = theory.kind === "call" ? theory.args : [];
-  const parameters = [...record.universes.map(name => ({name})), ...record.params];
+  const parameters = [...(record.universeLabels ?? record.universes).map(name => ({name})), ...record.params];
   const argument = assignArguments({...theory, args}, parameters, module, T);
   if (args.length !== parameters.length)
     throw module.locate(theoryArguments(T, parameters.length, args.length), d.theory);
@@ -198,7 +200,8 @@ function expand(t, module, d, env) {
   // expressions, after beta reduction; `laws` names the law it refuses.
   const laws = Object.fromEntries(lawShapes.map(f => [constructor(f.name), f.name]));
   const inductive = {kind: "inductive", name: d.name, params, result: {modifier: {kind: level, ...at}, universe},
-    constructors, start: d.start, end: d.end, generated: {...generated, laws, theorySpan: {start: d.theory.start, end: d.theory.end}}, ...uses};
+    constructors, start: d.start, end: d.end, generated: {...generated, laws, theorySpan: {start: d.theory.start, end: d.theory.end},
+      ...(free ? {generatorSpan: {start: d.on.start, end: d.on.end}} : {})}, ...uses};
 
   const ownModel = call(constructor("model"), names.map(name));
   const variables = f => xs.slice(0, f.binders.length);
@@ -244,6 +247,16 @@ export const lawRefusal = (d, failure) => {
   return law && BOUNDARY.test(failure.message ?? "") ? notEquational(law) : null;
 };
 
+// Explain failures of generated constructors at the expression the user
+// wrote, without exposing the generator constructor's synthetic argument.
+export function initialRefusal(d, failure) {
+  const N = d.generated?.initial;
+  if (d.generated?.generatorSpan && failure.dataUniverse?.constructor === `${N}.gen`)
+    return {error: Object.assign(generatorUniverse(N), {kind: failure.kind}), at: d.generated.generatorSpan};
+  const law = lawRefusal(d, failure);
+  return law ? {error: law, at: d.generated.theorySpan} : null;
+}
+
 // Refusals describe this strategy's limits, not nonexistence of a model.
 const notATheory = (kind, given) => Error(`${kind} takes a theory at its universes and parameters, as ${
   kind === "free" ? "free W(A : U0) : Monoid(U0) on A" : "initial N : Monoid(U0)"}; ${given} is none.`);
@@ -257,6 +270,7 @@ const notCarrierValued = (field, carrier) => Error(`${field} does not return the
 const notEquational = field => Error(`The law ${field} is not an equation between operation terms: the equational strategy does not support this law.`);
 const arrowOperation = field => Error(`${field} uses an arrow type: the equational strategy requires named operation arguments, as in succ(x : M) : M.`);
 const recursiveGenerators = N => Error(`The generator type of ${N} mentions ${N} or one of its generated names: free requires a type given independently of the declared model.`);
+const generatorUniverse = N => Error(`The generator type of ${N} lives in a universe above its carrier's declared one: a free model cannot lower its generators. Choose a larger carrier universe or a smaller generator type.`);
 const capturedModel = (T, field, N) => Error(`${T}'s ${field} binds ${N} in a pattern, under which the expansion names the model ${N}: rename the initial or free model.`);
 const universeArguments = field => Error(`${field} binds a universe argument: the equational strategy supports term arguments only; bind universes in the theory header.`);
 const hiddenDependency = N => Error(`${N} hides a declaration used by its expansion: rename the initial or free model.`);

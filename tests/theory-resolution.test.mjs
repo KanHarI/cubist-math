@@ -283,3 +283,58 @@ theory Item(U < UU0) { M : set U; c : M; }
 def source : Item(U0) := Item.make(Unit, prop_is_set(U0, Unit, unit_is_prop), tt);
 theory P(U < UU0) { M : set U; point(a : source.M) : M; law at_source : point(source.c) = point(source.c); }`});
 });
+
+test("inlined proposition helpers retain declared proposition identities", async t => {
+  await checked(t, `import hlevels;
+import h1_truncation;
+inductive P : prop U0 { proof_point; }
+theory T(U < UU0) {
+  M : set U;
+  def Q(a : Unit) : U0 := P;
+  def merely(A : U) : U := Trunc(U, A);
+  law ok : Q(tt);
+  law inhabited : merely(M);
+}
+`);
+  await checked(t, `import fixture;
+inductive P : set U0 { replacement; }
+theory Child(U < UU0) extends Parent { law ok : Q(tt); }
+`, {fixture: `import hlevels;
+inductive P : prop U0 { proof_point; }
+theory Parent(U < UU0) { M : set U; def Q(a : Unit) : U0 := P; }
+`});
+});
+
+test("a captured data type cannot become a proposition through a rebound spelling", async t => {
+  const library = sourceReader();
+  const fixture = `import hlevels;
+inductive P : set U0 { data_point; }
+theory Parent(U < UU0) { M : set U; def Q(a : Unit) : U0 := P; }
+`;
+  const {result} = await checkProgram(t, `import fixture;
+inductive P : prop U0 { replacement; }
+theory Child(U < UU0) extends Parent { law invalid : Q(tt); }
+`, {module, reader: (name, importer) => name === "fixture" ? fixture : library(name, importer)});
+  assert.deepEqual(result.gaps.map(gap => [gap.name, gap.code]), [["Child", "E818"]]);
+});
+
+test("inherited notation keeps the complete operand tree in its original selection", async t => {
+  for (const [crossModule, selected] of [[false, true], [true, true], [true, false]]) for (const operand of ["0 + 0", "0"]) {
+    const parent = `import hlevels;
+import nat;
+use nat;
+theory P(U < UU0) { M : set U; point(n : Nat) : M; law base : point(${operand}) = point(0); }
+`;
+    const child = `${selected ? "notation shifted { numeral(n : Nat) := succ(n); }\nuse shifted;" : ""}
+theory Q(U < UU0) extends P { law own : point(${selected ? "0" : "succ(zero)"}) = point(${selected ? "0" : "succ(zero)"}); }
+initial N : Q(U0);
+free W(A : U0) : Q(U0) on A;
+def original : N.point(zero) = N.point(zero) := N.base;
+def free_original(A : U0) : typed(W(A), W.point(zero)) = W.point(zero) := W.base;
+def local : N.point(succ(zero)) = N.point(succ(zero)) := N.own;
+def parent(S : Q(U0)) : P(U0) := S.p;
+def parent_hom(S : Q(U0)) : P.Hom(S.p, S.p) := Q.Hom.p(Q.Hom.id(S));
+`;
+    await checked(t, crossModule ? `import fixture;\n${child}` : parent + child, {fixture: parent});
+  }
+});

@@ -22,7 +22,7 @@ import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleS
 import {repeatedName,stem} from "./names.mjs";
 import {numeralValue} from "./numerals.mjs";
 import {hasHole,mismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
-import {initialDeclarations,lawRefusal} from "./initial-models.mjs";
+import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {lexicalBinding} from "./lexical.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
 import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipExpansion,sectionScope,selected,usesScope,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
@@ -612,9 +612,9 @@ export class Translator {
         term:lowered.former,type:lowered.former,native:{ok:true,axioms:[],extensions:lowered.extensions},
         ...(d.generated?{syntax:d}:{})});
     } catch(failure) {
-      // An initial or free model's law refused as a boundary is beyond its
-      // strategy: that refusal, at the theory (initial-models.mjs).
-      const law=lawRefusal(d,failure), error=law?unit.locate(law,d.generated.theorySpan):failure;
+      // An expansion's constructor failure belongs to its written theory
+      // or generator type (initial-models.mjs).
+      const refusal=initialRefusal(d,failure), error=refusal?unit.locate(refusal.error,refusal.at):failure;
       untranslated(error.message);
       declarations.push({name:d.name.text,status:"not-translated",reason:error.message,
         errorStart:error.offset,errorEnd:error.sourceEnd,blockedBy:error.blockedBy,failure:error.kind,

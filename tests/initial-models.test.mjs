@@ -133,7 +133,7 @@ initial P : Parameterized(n := tt, U := U0);
 free W(V < UU0, A : V) : Child(V) on A;
 free Q(A : U0) : Parameterized(U0, tt) on A;
 theory Numbered extends T { op(U : M) : M; }
-initial K : Numbered(U_1 := U0);
+initial K : Numbered(U := U0);
 def folded(S : Child(U0)) : N.fold(S).map(N.c) = S.c { rfl; }
 def parameter_fold(S : Parameterized(U0, tt)) : P.fold(S).map(P.c) = S.c { rfl; }
 def generator_fold(V < UU0, A : V, S : Child(V), g : A -> S.M, a : A) :
@@ -633,4 +633,55 @@ free W(A : U0) : Monoid(U0) on A;
     readEdited: async () => source.replace("initial N : Monoid(U0);", "initial N : Monoid(U := U0);") });
   assert.deepEqual(report.failures, []);
   assert.equal(report.identical, 8);
+});
+
+test("initial and free reject a theory name shadowed by an ordinary definition", async t => {
+  for (const named of [false, true]) {
+    const source = `import hlevels;
+import algebra;
+def Monoid : U0 := Unit;
+initial N : Monoid(${named ? "U := " : ""}U0);
+free W(A : U0) : Monoid(${named ? "U := " : ""}U0) on A;
+`;
+    const {result} = await checkProgram(t, source, {module});
+    assert.deepEqual(result.gaps.map(gap => [gap.name, gap.code]), [["N", "E850"], ["W", "E850"]]);
+    for (const gap of result.gaps) assert.equal(source.slice(gap.start, gap.end), `Monoid(${named ? "U := " : ""}U0)`);
+    assert.ok(result.outputs.every(output => !/^(N|W)\./.test(output.name)));
+  }
+});
+
+test("an oversized generator is diagnosed at the written generator type", async t => {
+  const source = `import hlevels;
+theory T(U < UU0) { M : set U; }
+free W(A : U1) : T(U0) on A;
+`;
+  const {result} = await checkProgram(t, source, {module});
+  assert.deepEqual(result.gaps.map(gap => gap.name), ["W"]);
+  const gap = result.gaps[0];
+  assert.equal(gap.code, "E870");
+  assert.match(gap.reason, /generator type of W.*universe above/);
+  assert.equal(source.slice(gap.start, gap.end), "A");
+  assert.ok(!gap.reason.includes("argument a"));
+  const ordinary = await checkProgram(t, `inductive Plain(A : U1) : set U0 { point(a : A); }`, {module});
+  assert.deepEqual(ordinary.result.gaps.map(gap => [gap.name, gap.code]), [["Plain", "E514"]]);
+});
+
+test("headerless theories keep public universe labels independent of operation binders", async t => {
+  for (const binder of ["x", "U", "U_1"]) {
+    await verified(t, `import hlevels;
+theory T(U < UU0) { M : set U; c : M; }
+theory Child extends T { op(${binder} : M) : M; }
+def example : Child(U := U0) := Child.make{{U := U0}}(Unit, prop_is_set(U0, Unit, unit_is_prop), tt, fun x => x);
+initial N : Child(U := U0);
+free W(A : U0) : Child(U := U0) on A;
+theory Wide(V, U < UU0) extends Child { N : set V; }
+def carrier(S : Wide(U0, U1)) : U1 := S.M;
+`);
+  }
+  await verified(t, `import hlevels;
+theory T(U < UU0) { M : set U; c : M; }
+theory Child(U : Unit) extends T { op(U_1 : M) : M; }
+initial N : Child(U_1 := U0, U := tt);
+free W(A : U0) : Child(U := tt, U_1 := U0) on A;
+`);
 });

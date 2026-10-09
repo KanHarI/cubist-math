@@ -41,6 +41,10 @@ Caller substitution and relocation cannot enter its contents. `instantiated`
 retains an elaborated term abstracted over parameters; explicit arguments
 reconnect it to the destination's locals. Notation is retained at the
 expressions that use it, so different parents can carry different selections.
+A captured operator retains its whole operand tree: a later capture must
+not walk into it and attach the child's notation to its numerals. A resolved
+proposition used by an inlined helper is classified by declaration identity,
+even when its display spelling is now bound to a different declaration.
 
 ## Generation boundary
 

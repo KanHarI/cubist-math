@@ -335,7 +335,9 @@ function capturedTheorySyntax(t,env,notation) {
     const named=capturedNames(node,env,bound,[notationBinding,theoryBinding]);
     return rewritten(named,n=>{
       if(n.kind==="select")return {...n};
-      if(n.lexicalNotation)return n;
+      // A captured operator owns its operands' selection too. Returning a
+      // copy stops traversal, so a child cannot recapture those operands.
+      if(n.lexicalNotation)return {...n};
       const operator=n.kind==="binary"&&!n.qualifier&&notationOperators.includes(n.operator)
         ||n.kind==="negation"&&!n.qualifier;
       return notation&&(operator||["number","binaryNumber","literal"].includes(n.kind))

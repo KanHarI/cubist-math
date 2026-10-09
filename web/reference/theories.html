@@ -153,6 +153,7 @@ def counting_point : counting.point = 0 {
   rfl;
 }</code></pre>
             <p>A parameter is not a carrier: a homomorphism maps the carriers and keeps the parameters, so <code>Pointed.Hom(A, B)</code> relates two models pointed over one <code>G</code>, in one universe. A child takes its parents' parameters by name, with the same types, <code>theory Fixed(U &lt; UU0, G : Magma(U)) extends Pointed</code>, and their universes: the one universe of each, or each by its name when there are several.</p>
+            <p>An inherited theory without a universe in its header still takes one universe argument. Its public label is <code>U</code>, as in <code>Child(U := U0)</code>; if a term parameter in that header already uses <code>U</code>, the label is the first available <code>U_1</code>, <code>U_2</code>, and so on. Renaming an operation's argument does not change this label. A child with several universes matches this public label in its header.</p>
           </section>
 
           <section id="families">
@@ -486,6 +487,7 @@ print(evaluate(length{{Unit}}(W.mul(W.gen(tt), W.mul(W.gen(tt), W.gen(tt))))));
 
 def unit_left{{A : U0}}(x : W(A)) : W.mul(W.one, x) = x := W.one_mul(x);</code></pre>
             <p>The strategy refuses <code>Field</code> because its inverse law is truncated rather than equational. This is a limitation of the strategy, not a proof that an initial model does not exist. Untruncated carriers are also unsupported; the circle remains an ordinary <code>inductive</code> declaration.</p>
+            <p>The generator type must fit the carrier's universe. E870 marks the expression after <code>on</code> when it does not: choose a larger carrier universe or a smaller generator type.</p>
             <pre><code data-check="reject">import hlevels;
 import algebra;
 
