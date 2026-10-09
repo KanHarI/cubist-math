@@ -4,6 +4,12 @@ Expansion must preserve binding, not spelling. Moving an expression,
 renaming a surrounding binder, or importing it into a different module must
 not change which declarations and local variables it refers to.
 
+The [frontend generation roadmap](frontend-generation.md) turns this
+contract and PR #188's failures into implementation slices for declaration
+ownership, dependency analysis, universes, evidence, provenance and semantic
+tests. Its [gap inventory](../reports/frontend-generation-gaps.md) separates
+remaining failures from the capture bugs already fixed here.
+
 The frontend uses nominal syntax. The JavaScript core has named `Var`, `Pi`,
 and `Lam` nodes; the C kernel uses symbols, capture-avoiding substitution,
 and alpha comparison. It does not use de Bruijn indices for all bindings.

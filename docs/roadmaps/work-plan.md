@@ -582,6 +582,34 @@ presentation work remains deferred.
   resource checks gate production integration. A query result does not
   establish equality merely because its type checks.
 
+## Frontend generation track
+
+**2026-10-09 addition, planned on top of PR #188 at `00d4ecce`.** The
+[frontend generation roadmap](frontend-generation.md) uses that PR's
+failures as evidence for shared contracts. The
+[gap inventory](../reports/frontend-generation-gaps.md) pins six remaining
+reproducible bug classes and distinguishes them from fixed capture errors,
+historical symptoms and L2.6's incomplete planned capabilities. These
+packages do not mark implementation complete or resume paused mathematics.
+
+| ID | Package and exit evidence | Depends on | Size |
+| --- | --- | --- | --- |
+| FG0 | Reproductions, public-interface manifests and independent meaning checks; every open gap has an expected outcome | #188's captured-syntax baseline | S |
+| FG1 | Shared declaration ownership, dependency state and publication groups; collisions and failures preserve existing checked state | FG0 | L |
+| FG2 | Identity-based dependency/support analysis and validated generation boundaries; unsupported dependencies fail before malformed artifacts are published | FG0; FG1 for publication | L |
+| FG3 | Universe inference from complete generated telescopes; Hom/Iso clients and genuine lowering refusals | FG1, FG2 | M |
+| FG4 | Checked evidence and recursion state follow scope refinements; nested matches check without new assumptions | FG1, FG2 | M |
+| FG5 | Public labels, origins and interface-preserving lint; checked clients survive suggested rewrites | FG0, FG2; FG1 for publication metadata | M |
+| FG6 | Deterministic cross-transformation tests, distinguishing mutations and measured resource costs | Starts with FG0; complete gate needs FG1–FG5 | L |
+
+Implement FG0 and the FG1 ownership fix first, then the shared dependency
+and publication contracts. FG3 and FG4 follow those contracts; FG5's
+focused lint fix can land earlier with its checked-client regression.
+FG6 accumulates alongside every slice. The complete gate precedes
+publication of new deriving capabilities under L2.4d/L2.6 and extensions
+of generated interfaces. It supplements their proof obligations; it does
+not delay unrelated fixes or replace uniqueness and universal proofs.
+
 ## Release checks and documentation
 
 Every language package includes parser/formatter round trips, original source
@@ -589,6 +617,12 @@ spans, generated-term inspection, native acceptance/rejection, and browser/CLI
 agreement. Transactions discard failed generated declarations, rules and
 signature registrations; import changes invalidate affected caches. Complete
 terms contain no unresolved goals or metavariables.
+
+For frontend generation, apply the [FG6 semantic gate](frontend-generation.md#fg6-make-preservation-tests-and-measurements-a-release-gate):
+renaming, imports, inheritance, inlining and supported lint rewrites must
+preserve the specified interface and meaning. Kernel acceptance alone
+does not discharge this obligation. Migrate and review every consumer of a
+changed syntax representation, including diagnostics and inspection.
 
 Use the existing canonicity and false-equality fixtures, archive coverage and
 strict migration checks as applicable. Kernel/ABI changes also require native
@@ -746,6 +780,12 @@ operation arguments precede the categorical library L3.4–L3.6. The first
 H1 construction may be developed separately, but a type and fold alone
 must not register `free` or `initial`. This supplements the ordering below;
 the other categorical and homological proposals do not resume paused work.
+
+**2026-10-09 addition:** start [FG0 and FG1](#frontend-generation-track)
+from PR #188's remaining failures before extending its generators. The
+track's shared contracts and semantic gate precede publication of new
+deriving capabilities. This supplements the ordering below; L2.6's
+universal-property work remains separately required.
 
 Suggested next, in order:
 

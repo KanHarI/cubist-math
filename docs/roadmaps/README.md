@@ -134,6 +134,12 @@ authority; this summarizes it.
 
 ## Language tooling
 
+- [Frontend generation](frontend-generation.md): planned design work after
+  PR #188, with its failures as evidence. Unifies declaration ownership,
+  supported dependency analysis, universe calculation, contextual evidence
+  and public provenance, with semantic preservation tests. The
+  [gap inventory](../reports/frontend-generation-gaps.md) pins current
+  reproductions and separates them from fixed bugs and prototype limits.
 - [Mathematical proof concision](vision/mathematical-proof-concision.md): the
   eventual language goal, Galois and contour evidence, and proposed
   acceptance criteria for expressing complete mathematical arguments.

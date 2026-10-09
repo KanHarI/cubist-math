@@ -61,6 +61,10 @@ finishing a language milestone does not automatically resume them.
 
 ## Language tooling roadmap
 
+- [Frontend generation](roadmaps/frontend-generation.md): design changes
+  motivated by PR #188's review failures, with phased implementation and
+  semantic acceptance criteria. The [current gap inventory](reports/frontend-generation-gaps.md)
+  records reproducible failures separately from planned functionality.
 - [Morphisms, categories and universal constructions](roadmaps/categories.md):
   opt-in morphisms and checked initial/free derivations, which may fail;
   general propositional laws and the proposed categorical library. The

@@ -1,5 +1,12 @@
 # TODO: PR #188 review findings and failures shared with main
 
+For the inventory at `00d4ecce`, including refreshed reproductions and the
+distinction between open defects and fixed historical triggers, see
+[frontend generation gaps](frontend-generation-gaps.md). The linked
+[design roadmap](../roadmaps/frontend-generation.md) assigns the remaining
+work and uses this PR's review failures as evidence. This file retains the
+review chronology and its original baseline comparisons.
+
 Reviewed on 2026-10-09 against main `cb525f07796348d8bc806cd8cda11663a6544f0e`
 and PR #188 head `68f1bf35d82a9a7065c4a42a25671212418ed888`, with the same
 WASM kernel. The first part lists defects this PR introduces, to fix in it.
