@@ -44,3 +44,20 @@ not add named model-member or inductive-constructor calls.
 link/hover checks, checked lint clients and CLI observations. The inspector
 browser test puts G9's binder and uses on different lines, checks all four
 labels and expressions, and navigates each use to the written binder line.
+
+## Validation and resources
+
+The full suite at `4bb87c0d` passes 823/823, with no failures, skips or
+TODOs (122.2 seconds). Inspector and built static-site browser suites pass,
+as do the diagnostic catalog and diff checks. No corpus timeouts occurred.
+
+Measurements at clean `2ae5ed22` use the same build, workloads, three fresh
+sessions and default limits as FG4. The [raw report](frontend-generation-metrics/fg5.json)
+records revision/frontend/source stamps. Every deterministic kernel work
+counter and arena peak is identical to FG4: 118,890 / 51,844 / 125,893
+instructions, 14,471 / 3,879 / 14,964 queries, and 36,214 / 17,625 / 36,214
+arena nodes for algebra / inheritance / fold. Byte peaks remain 4,593,664 /
+2,624,512 / 4,593,664; recovered exhaustions are 5/0/5, with no deadlines or
+gaps. Median milliseconds are 1182.6 / 301.7 / 1188.9 versus FG4's 1112.8 /
+295.4 / 1159.7. This timing variation is recorded without setting a budget
+or changing limits. Arena samples exclude JavaScript memory.
