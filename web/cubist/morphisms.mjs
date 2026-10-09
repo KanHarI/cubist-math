@@ -253,8 +253,8 @@ function planMorphisms(record, isTheory) {
     operations:[...operations].map(([name,shape])=>({identity:record.fields.find(field=>field.name===name).identity,...shape}))};
   // A type that names the theory's universe, as an index A : U does, is
   // the same on both sides only in one universe: such a theory's
-  // homomorphisms relate models in the same universes, as a parameter's
-  // do, and lie one universe up.
+  // homomorphisms relate models in the same universes, as a parameter's do.
+  // Their resulting universe is inferred from the complete field telescope.
   const universal = [...[...operations.values()].flatMap(op => [...op.inputs.map(i => i.type), op.result.type]),
     ...[...families.values()].flat().map(index => index.type)]
     .some(type => [...freeNames(type)].some(name => name.startsWith("\u0000universe")));
@@ -359,8 +359,6 @@ function planMorphisms(record, isTheory) {
     return [`${universes.join(", ")} < UU0`, ...params.map((p, k) => `${p.name} : ${parameterMarker(k)}`)].join(", ");
   };
   const modelOf = universes => `${global(T)}(${[...universes, ...params.map(p => p.name)].join(", ")})`;
-  const largest = list => list.length === 1 ? list[0] : `max(${list[0]}, ${largest(list.slice(1))})`;
-  const homUniverse = universal ? `next(${largest(uA)})` : largest([...new Set([...uA, ...uB])]);
   const models = more => `{{${headerBinders(uA, uB)}}}(${[`${A} : ${modelOf(uA)}`, `${B} : ${modelOf(uB)}`, ...more].join(", ")})`;
   const implicitModels = `{{${headerBinders(uA, uB)}, ${A} : ${modelOf(uA)}, ${B} : ${modelOf(uB)}}}`;
   const threeModels = `{{${headerBinders(uA, uB, uC)}, ${A} : ${modelOf(uA)}, ${B} : ${modelOf(uB)}, ${C} : ${modelOf(uC)}}}`;
@@ -411,7 +409,10 @@ function planMorphisms(record, isTheory) {
 
   // T.Hom(A, B), its constructor and its fields.
   const ownType = field => fieldType(field, sort => bound({ name: map(sort) }));
-  declare(hom, `${models([])} : ${homUniverse} := ${sigma(homFields, ownType)};`, "hom",
+  // Ordinary elaboration infers the universe of this entire dependent
+  // telescope inside the publication group. Fixed inputs, family indices
+  // and preservation fields contribute through the usual Pi/Sigma rules.
+  declare(hom, `${models([])} := ${sigma(homFields, ownType)};`, "hom",
     { record: record_(hom, homFields, record.parents.map(parent => parent.label)) });
   declare(`${hom}.make`, `${models(homFields.map(field => `${bound(field)} : ${ownType(field)}`))} : ${homType(A, B)} := ${
     tuple(homFields.map(bound))};`, "make", { labels: labels(homFields) });
@@ -483,7 +484,7 @@ function planMorphisms(record, isTheory) {
       `${mapped(mapping(second, field.sort), field.sort, start, mapped(mapping(first, field.sort), field.sort, start, x))} = ${x}`);
   };
   const [to, from] = isoFields.map(bound), toHom = sided(to, A, B), fromHom = sided(from, B, A), fIso = sided(f, A, B);
-  declare(iso, `${models([])} : ${homUniverse} := ${sigma(isoFields, field => isoFieldType(field, toHom, fromHom))};`, "iso",
+  declare(iso, `${models([])} := ${sigma(isoFields, field => isoFieldType(field, toHom, fromHom))};`, "iso",
     { record: record_(iso, isoFields) });
   declare(`${iso}.make`, `${models(isoFields.map(field => `${bound(field)} : ${isoFieldType(field, toHom, fromHom)}`))} : ${isoType(A, B)} := ${
     tuple(isoFields.map(bound))};`, "make", { labels: labels(isoFields) });
