@@ -45,4 +45,29 @@ and dependent family indices at U1. Clients check Hom identity/composition,
 preservation fields, Iso inverse computations, public types and absence of
 new assumptions. Universe lowering remains E606. Related integration tests
 pass 103/103, including initial/free generation, capture, publication and
-source observations. Full-suite, browser and resource results follow below.
+source observations. The completed implementation at `71e460ce` passes the
+full suite: 812 tests, 808 pass, four explicitly tracked FG4/FG5 TODOs,
+zero failures/skips (125.3 seconds). Inspector and built static-site browser
+suites pass. Diagnostic catalog, build stamp and diff checks pass. There
+were no unexpected corpus timeouts or limit increases.
+
+## Resources
+
+The same workloads and default limits compare FG2's clean `908fcd60` with
+FG3's clean `71e460ce`. Each workload has three fresh sessions, the same
+WASM build and source digest, with no concurrent test load. Raw
+[FG2](frontend-generation-metrics/fg2.json) and
+[FG3](frontend-generation-metrics/fg3.json) reports include revision/frontend
+digests, instruction/query steps and sampled arena sizes.
+
+| Workload | Median ms, FG2 → FG3 | Instructions, before → after | Queries, before → after | Peak arena nodes, before → after |
+| --- | ---: | ---: | ---: | ---: |
+| Algebra import | 1206.6 → 1157.8 | 118,850 → 117,745 | 14,495 → 14,471 | 37,166 → 36,087 |
+| Captured inheritance chain | 299.8 → 296.7 | 51,732 → 51,455 | 3,883 → 3,879 | 17,954 → 17,538 |
+| Generated free fold | 1206.0 → 1169.8 | 125,859 → 124,742 | 14,990 → 14,964 | 37,166 → 36,087 |
+
+Allocated arena byte peaks remain 4,593,664 / 2,624,512 / 4,593,664.
+Recovered kernel exhaustion counters decrease from 6/0/6 to 5/0/5, with no
+deadline failures or gaps. No limits changed. These sampled arena measures
+do not include JavaScript memory; timings are observations, not a guaranteed
+speedup or a new regression budget.
