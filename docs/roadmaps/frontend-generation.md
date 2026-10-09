@@ -17,9 +17,11 @@ source the user wrote.
 
 ## What PR #188 teaches
 
-The evidence identifiers below refer to the inventory's
-[fixed failures](../reports/frontend-generation-gaps.md#fixed-failures-that-motivate-the-design).
-They justify the contracts, including where the immediate bug is fixed.
+The H identifiers below refer to the inventory's
+[fixed examples](../reports/frontend-generation-gaps.md#fixed-failures-that-motivate-the-design);
+the G identifiers are open findings. The [follow-up review at `00d4ecce`](../reports/pr-188-review-00d4ecce.md)
+shows that the earlier fixes did not establish the complete contracts.
+It supplies G8–G12 and the mutation/compatibility evidence below.
 
 | Evidence from #188 | Prevention requirement | Work |
 | --- | --- | --- |
@@ -28,6 +30,10 @@ They justify the contracts, including where the immediate bug is fixed.
 | H3: a private captured key was reparsed as source | Migrate producers and consumers together; builders accept structured payloads, with validation at phase boundaries. | FG2, FG5, FG6 |
 | H4: opening a model changed which global a law captured | Capture the complete lexical context; verify intended law types independently of elaboration success. | FG2, FG4, FG6 |
 | H5: internal names and generated locations escaped into the UI | Keep identity, public label, origin and compiler control state separate. | FG1, FG4, FG5 |
+| G8: an overbroad wildcard fallback replaces an endpoint error with a generation error | Separate fallback eligibility, proof search and diagnostic ownership; unsuccessful speculation preserves the primary error. | FG0, FG4, FG6 |
+| G9/G10: freshened law uses lose their links; E871 has an empty range | Preserve lookup keys, display labels and exact source origins through all consumers, including failure paths. | FG0, FG2, FG5, FG6 |
+| G11: derived-operation parameters are missing from the inlining scope | Transform complete declaration telescopes; capture avoidance cannot recover a binder omitted at the call site. | FG0, FG2, FG6 |
+| G12: a value call to an earlier recursive operation is treated as type unfolding | Classify elaboration purpose and dependency kind explicitly; earlier calls and structural self-calls are different operations. | FG0, FG2, FG4, FG5 |
 | G2/G3: invalid Hom declarations emerged late | Analyze dependencies and supported transport before generation; calculate universes from complete generated types. | FG2, FG3 |
 | G4/G5: evidence and interfaces were lost by otherwise local transformations | Pass evidence explicitly and make tooling consume declaration semantics. | FG4, FG5 |
 
@@ -36,8 +42,10 @@ syntax, scope-aware substitution, closures, explicit generated recursive
 calls, and public-label/source-origin separation. Retain and consolidate
 those mechanisms according to [the existing contract](syntax-hygiene.md).
 This plan does not require a new kernel rule or a switch to de Bruijn
-indices. The failures occurred while transforming frontend syntax, before
-kernel binder representation could repair the lost meaning.
+indices. G9 and G11 show that introducing the representations alone does
+not migrate every caller and consumer. The failures occurred while
+transforming frontend syntax, before kernel binder representation could
+repair the lost meaning.
 
 ## Shared contracts
 
@@ -48,10 +56,11 @@ existing modules first; extract a shared service when its consumers agree.
 | Boundary | Information it must retain | Forbidden shortcut |
 | --- | --- | --- |
 | Declaration ownership | Module, namespace, declaration kind, stable identity, source origin, reservation/check status | Using separate duplicate-name rules for definitions, inductives and generated declarations |
-| Retained expression | Syntax, resolved external dependencies, open binder interface, selected notation, source origin | Resolving a captured occurrence again from its display spelling |
+| Retained declaration/expression | Complete parameter telescope and scoped result/body, resolved external dependencies, open binder interface, selected notation, source origin | Resolving a captured occurrence from display spelling, or transforming a body after discarding its binders |
 | Generation request | Captured theory record, caller-scoped arguments, parameter interface, requested artifact family, support result | Reading a later theory or `use` selection because its name matches |
 | Artifact plan | Declared identities, dependency edges, public labels, origins, checked publication groups, obligations | Inferring dependencies from dotted names or retrying arbitrary failed templates |
-| Elaboration context | Term/level/dimension scope, refinements, checked evidence, recursion state, resource accounting | Reconstructing evidence or compiler state by searching visible source names |
+| Elaboration context | Term/level/dimension scope, refinements, checked evidence, recursion state, value/type purpose, primary diagnostic, resource accounting | Reconstructing compiler state from source names or replacing a written mismatch with a failed speculative fallback |
+| Source reference | Lookup identity/key, written label, binder definition origin, occurrence origin | Comparing a public label with an internal environment key to find the binding |
 | Published interface | Checked artifacts, argument labels, supported derivations, diagnostic/provenance metadata | Presenting an unchecked reservation or unsupported capability as a usable declaration |
 
 Raw local names remain valid in nominal syntax. Before retaining an
@@ -72,7 +81,7 @@ planner must not claim to have inferred types or discharged obligations.
 Depends on #188's scope fixes. Start this before the implementation slices
 and extend it in every slice. Initial change: a small test-only PR.
 
-- Turn G1–G6 into durable fixtures with explicit current failures and
+- Turn G1–G6 and G8–G12 into durable fixtures with explicit current failures and
   expected outcomes. Prefer a focused test for a complete behavior over
   assertions that merely mirror a helper's implementation.
 - Map H1–H5 to existing regressions rather than duplicating them. Add the
@@ -87,8 +96,22 @@ and extend it in every slice. Initial change: a small test-only PR.
   independently of the generator. H4's selected identity must be verified
   against the selected model's value, not against another output of the
   same expansion. Alpha comparison alone can share the generator's bug.
+- Add a source-observation manifest for G8–G10: diagnostic code and
+  endpoints, nonempty original source range, written binder/use labels and
+  definition targets. Test every occurrence after freshening. Acceptance
+  alone, or merely finding a gap named `bad`, cannot establish these facts.
+- For G11, require the intended `op(x, S.c)` equation to check and the
+  accidentally captured `op(x, x)` equation to fail in a theory with no
+  law identifying them. Cover helper chains and complete grouped/dependent
+  telescopes, not only law binders. For G12, include both supported value
+  calls and legitimate type-unfolding refusals with their source sites.
+- Preserve the follow-up review's passing controls: inherited helpers under
+  law binders, bare/partial helper uses, non-enclosing pattern binders,
+  inherited recursion, `N.model.iter`, and explicit path bodies. Record
+  B1's file-level `use` precedence as an intentional compatibility rule,
+  with tests against a later same-spelled global and changed selections.
 
-Exit: each confirmed open G1–G6 item has a reproducible fixture, an
+Exit: each confirmed open G1–G6 and G8–G12 item has a reproducible fixture, an
 independent expected outcome, a responsible slice below, and a named
 regression that demonstrates the failure. G7 remains a separate test
 requirement until a source reproduction or failure-injection test exists.
@@ -135,8 +158,8 @@ artifacts gives the same result.
 
 ## FG2: describe dependencies and supported generation explicitly
 
-Depends on FG0; uses FG1 for artifact publication. Addresses G3 and guards
-H1–H4. Primary consumers: `cubist/theories.mjs`, `morphisms.mjs`,
+Depends on FG0; uses FG1 for artifact publication. Addresses G3, G10–G12
+and B1, and guards H1–H4. Primary consumers: `cubist/theories.mjs`, `morphisms.mjs`,
 `scopes.mjs`, `references.mjs`, and `translator/initial-models.mjs`.
 
 1. Retain a field dependency graph over binding identities and its open
@@ -158,12 +181,37 @@ H1–H4. Primary consumers: `cubist/theories.mjs`, `morphisms.mjs`,
    from source binders. Audit every AST consumer when adding a node kind,
    including free-variable analysis, substitution, serialization,
    relocation, display, diagnostics and elaboration lowering.
+5. Give inlining a complete scoped declaration interface: parameter groups,
+   their domains, result type and body. Each group's binders are outside
+   its domain and inside subsequent domains/result/body. Preserve public
+   labels when freshening locals; describe this once in the shared scope
+   traversal, then migrate every transformation caller. Do not fix G11 by
+   adding another list of forbidden parameter spellings. Carry the actual
+   conflicting binder/occurrence when a fixed pattern or statement capture
+   must be refused (G10).
+6. Distinguish expansion in a field type/law from elaboration of a derived
+   value. Nonrecursive helper expansion, calls to checked earlier derived
+   operations, and the current operation's structural self-calls need
+   explicit, separate support rules. Preserve an earlier recursive call in
+   a value body without recursively unfolding it (G12). This must not
+   permit nonstructural self-recursion or silently widen supported types.
+7. Audit `notationScope` and the aliases installed by initial-model
+   generation against the now-complete lexical captures. Retain the layer
+   only with a concrete behavior and distinguishing test; otherwise remove
+   it with its redundant plumbing after checking all producers/consumers.
+   Do not maintain two implicit sources of notation scope. Preserve B1's
+   documented precedence during that consolidation.
 
 Exit: G3 receives the intended refusal without type-error cascades; the
 same check catches dependencies hidden behind aliases/helpers. Supported
 fixed arguments still work. Imported, inherited and renamed variants have
 the same support result after the explicit interface correspondence.
 Existing sources that no longer need collision refusals remain accepted.
+G11's intended and captured equations have opposite, correct outcomes
+through helper chains, inheritance and generated clients. G12's ordinary
+value call checks and computes, while actual unsupported unfolding retains
+its focused refusal. G10 supplies the original conflict range to FG5.
+The notation-alias survivor has a recorded test-or-removal disposition.
 
 ## FG3: infer universes from the generated telescope
 
@@ -193,8 +241,8 @@ absence of E606.
 ## FG4: carry evidence and compiler state with the context
 
 Depends on FG2's interfaces; uses FG1's checked artifact identities.
-Addresses G4 and protects #188's recursion and capture fixes. Primary
-consumers: `translator/elaboration.mjs`, `match.mjs`, `patterns.mjs`,
+Addresses G4, G8 and G12 and protects #188's recursion and capture fixes.
+Primary consumers: `translator/elaboration.mjs`, `match.mjs`, `patterns.mjs`,
 `hlevel.mjs`, and generated derived-operation builders.
 
 - Make available checked evidence an explicit part of the elaboration
@@ -210,29 +258,60 @@ consumers: `translator/elaboration.mjs`, `match.mjs`, `patterns.mjs`,
   not source-name aliases. Nested matches update recursive results and
   evidence consistently. Retain ordinary lexical shadowing for written
   source calls.
-- Require all automatic path clauses to check against their actual
-  boundaries. Preserve explicit user clauses and the existing restriction
-  on wildcard coherence. Failure to find evidence must not become a
-  fabricated axiom or a stronger eliminator.
+- Separate written-body checking from optional coherence construction.
+  A failing wildcard is eligible for the recursive-boundary fallback only
+  when its constructor has recursive positions. Try it against the actual
+  clause type; retain the original mismatch if it cannot construct checked
+  coherence. A successful fallback commits its checked term and inspection
+  evidence; unsuccessful speculation must not replace the source error or
+  publish a generated-obligation view. Keep resource-limit failures distinct
+  from ordinary proof-search failure and account for all work attempted.
+- Preserve explicit path bodies. Independently requested or omitted
+  generated obligations still use their own diagnostics. Failure to find
+  evidence must not become a fabricated axiom or a stronger eliminator.
+- Use FG2's call classification to elaborate earlier recursive operations
+  as checked value calls, without confusing them with the current
+  declaration's recursion hypotheses or its type-unfolding restrictions.
 
 Exit: G4 and inherited/imported variants check and compute with no new
 assumptions. Tests include nested matches under shadowed model names,
 dependent motives and generalized parameters. Wrong-model evidence,
 incompatible path endpoints, unsupported elimination and nonstructural
-recursive calls remain refused. Fuel is charged once to the elaboration
-that is retained.
+recursive calls remain refused. All attempted elaboration work, including
+unsuccessful fallback, is charged once to shared fuel. G8's no-recursion example and
+recursive fallback failures retain E606, their actual endpoints and original
+body range; successful Unit-valued recursive coherence and initial-model
+cases still check. Explicit path clauses remain untouched. G12 computes
+through ordinary, inherited and initial-model clients.
 
 ## FG5: preserve public interfaces and source provenance
 
 Depends on FG2's field/interface information. Uses FG1 for published
-metadata. Addresses G5 and protects H5. Primary consumers: the source
-linter, signature/inspection formatting, diagnostic builders and link sites.
+metadata. Addresses G5, G9, G10 and G12's diagnostic, and protects H5.
+Primary consumers: the source linter, signature/inspection formatting,
+diagnostic builders and link sites.
 
 Define one provenance contract for written nodes, copied written syntax,
 and synthetic nodes. Written public labels survive alpha renaming. A
 diagnostic uses the label and the appropriate origin; resolution uses
 identity. Synthetic artifacts can expose their generated signature through
 inspection without claiming tokens or links that the user never wrote.
+
+Audit the full source-alias pipeline: binding registration, freshening,
+environment filtering, use-site reference recording, hover formatting and
+definition navigation. Store resolution identity/key independently of the
+public label; neither may substitute for the other's equality test. Keep
+both the occurrence's written span and its binder's definition span. For
+G9, all three law uses and the binder must display `c`, link to that written
+binder, and reveal no internal `c1`. Inspect these observations directly and
+through the browser, alongside the independently checked law meaning.
+
+Refusals use an explicit source origin carried from the transformation that
+found the conflict. G10 points at the enclosing pattern/statement binding or
+helper call; G12 names a value-call limitation only if that is the actual
+unsupported context. Assert diagnostic category and a nonempty range over
+the responsible original token. An arbitrary law-start marker is not a
+valid replacement for a discarded origin.
 
 Make unused-binder advice aware of theory-field roles and public argument
 labels. Initially suppress arrow-form advice where it changes a generated
@@ -262,7 +341,10 @@ following transformations and explicit side conditions:
 | Add an unrelated declaration or choose colliding generated-name stems | Existing references and laws retain their identities; valid generated locals are freshened. An actual duplicate public declaration is refused instead. |
 | Move a theory to an imported module with an explicit export correspondence | Same public types, laws, assumptions and computations after mapping module identities. |
 | Inherit under a different caller `use` selection | Inherited expressions retain the parent's selection; newly written expressions use the child's. |
-| Inline a supported helper under nested binders | Equivalent result and law boundaries; a fixed capture is refused at the proper source site. |
+| Inline a supported helper under nested binders, including a derived declaration's full telescope | Equivalent result and law boundaries; intended equations check and captured equations fail; fixed captures point to their original source site. |
+| Freshen a binder while preserving its source interface | Written labels, hover values and every definition target still identify the original binder, with no internal names exposed. |
+| Try optional coherence after a wildcard mismatch | Only eligible recursive boundaries are tried; success yields a checked term and failure preserves the primary mismatch and source range. |
+| Call an earlier recursive operation from a derived value | The call checks and computes without unfolding recursion into the caller; type restrictions and structural self-call checks remain effective. |
 | Apply a proposed lint rewrite | Checked clients and generated capabilities remain available with the same public calling conventions. |
 
 Compose transformations, especially import + inheritance + inlining +
@@ -279,6 +361,16 @@ publish a failed group, or ignore synthetic provenance. A mutation must
 have a named distinguishing test; a surviving mutant calls for analysis,
 not an automatically weakened assertion. Keep a small deterministic CI
 set and a larger repeatable audit set with explicit resource budgets.
+
+Start with the reviewer's 20-mutation audit (13 killed, one skipped, six
+surviving). Kill the two label-removal mutants using G9's observation tests.
+Resolve the notation-alias mutant via FG2's distinguishing test or removal.
+For each remaining or skipped case, record the changed contract, whether it
+is reachable in supported source, a distinguishing test if one exists, and
+why an equivalent/defensive mutation is excluded if none exists. Include
+the separately reported explicit-head guard probe; preserve the checked
+explicit-path controls. A survival count is neither proof of dead code nor
+a requirement to manufacture an implementation-shaped test.
 
 Before and after each implementation slice, record revision/build stamps,
 workload, limits, kernel queries/instructions, syntax allocation or another
@@ -297,14 +389,20 @@ successful retries do not replace direct tests of known gaps.
 
 Deliver small changes with explicit behavioral contracts:
 
-1. FG0 fixtures and comparison manifests.
-2. FG1 ownership, then dependency state and publication groups.
-3. FG2 dependency/support analysis and boundary validation.
-4. FG3 universes and FG4 contextual evidence; each builds on the shared
+1. FG0 fixtures and comparison manifests, including G8–G12 and B1.
+2. Fix G11's silent capture with the complete-telescope interface from FG2;
+   fix G8–G10 with focused FG4/FG5 contracts and regression tests. These
+   corrections can land on #188 and remain evidence for the longer work;
+   they do not wait for the publication redesign. Update the inventory's
+   status with the fixing commit and distinguishing test when each lands.
+3. FG1 ownership, then dependency state and publication groups.
+4. Complete FG2 dependency/support analysis and boundary validation,
+   including G12's value-call classification and the notation-scope audit.
+5. FG3 universes and FG4 contextual evidence; each builds on the shared
    interfaces and can be implemented as separate reviewed slices.
-5. FG5 tooling/interface preservation; its focused lint fix can land
+6. FG5 tooling/interface preservation; its focused lint fix can land
    earlier once FG0 provides the checked-client regression.
-6. FG6's complete cross-transformation gate, accumulated throughout.
+7. FG6's complete cross-transformation gate, accumulated throughout.
 
 Resolve implementation choices for publication groups and context
 ownership in those slices' design reviews. Passing the current examples

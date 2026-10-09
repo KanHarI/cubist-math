@@ -587,8 +587,8 @@ presentation work remains deferred.
 **2026-10-09 addition, planned on top of PR #188 at `00d4ecce`.** The
 [frontend generation roadmap](frontend-generation.md) uses that PR's
 failures as evidence for shared contracts. The
-[gap inventory](../reports/frontend-generation-gaps.md) pins six remaining
-reproducible bug classes and distinguishes them from fixed capture errors,
+[gap inventory](../reports/frontend-generation-gaps.md) pins eleven remaining
+findings (G1–G6 and G8–G12) and distinguishes them from fixed examples,
 historical symptoms and L2.6's incomplete planned capabilities. These
 packages do not mark implementation complete or resume paused mathematics.
 
@@ -596,14 +596,17 @@ packages do not mark implementation complete or resume paused mathematics.
 | --- | --- | --- | --- |
 | FG0 | Reproductions, public-interface manifests and independent meaning checks; every open gap has an expected outcome | #188's captured-syntax baseline | S |
 | FG1 | Shared declaration ownership, dependency state and publication groups; collisions and failures preserve existing checked state | FG0 | L |
-| FG2 | Identity-based dependency/support analysis and validated generation boundaries; unsupported dependencies fail before malformed artifacts are published | FG0; FG1 for publication | L |
+| FG2 | Complete declaration telescopes, dependency/support analysis, value/type call classification and notation-scope consolidation; meaning and supported calls survive expansion | FG0; FG1 for publication | L |
 | FG3 | Universe inference from complete generated telescopes; Hom/Iso clients and genuine lowering refusals | FG1, FG2 | M |
-| FG4 | Checked evidence and recursion state follow scope refinements; nested matches check without new assumptions | FG1, FG2 | M |
-| FG5 | Public labels, origins and interface-preserving lint; checked clients survive suggested rewrites | FG0, FG2; FG1 for publication metadata | M |
+| FG4 | Checked evidence and recursion state follow scope refinements; eligible wildcard fallback preserves primary errors on failure; nested matches check without new assumptions | FG1, FG2; focused fallback fix can land after FG0 | M |
+| FG5 | Separate alias keys, labels and exact source origins; binder/use links, refusal ranges and public interfaces survive transformation | FG0, FG2; FG1 for publication metadata | M |
 | FG6 | Deterministic cross-transformation tests, distinguishing mutations and measured resource costs | Starts with FG0; complete gate needs FG1–FG5 | L |
 
-Implement FG0 and the FG1 ownership fix first, then the shared dependency
-and publication contracts. FG3 and FG4 follow those contracts; FG5's
+Start FG0 and prioritize G11's silent capture alongside FG1's ownership
+fix. G8–G10's focused fixes and regression checks can land on #188 before
+the broader dependency/publication work; update their evidence status when
+fixed. Complete FG2's call classification (G12) and notation-alias audit.
+FG3 and the broader FG4 work follow those contracts; FG5's
 focused lint fix can land earlier with its checked-client regression.
 FG6 accumulates alongside every slice. The complete gate precedes
 publication of new deriving capabilities under L2.4d/L2.6 and extensions
