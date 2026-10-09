@@ -45,14 +45,15 @@ export const determinesArguments = node =>
 export function writtenOut(n, scope, holes = false) {
   const {env, unit} = scope;
   const headName = n.fn.kind === "name" ? n.fn.name : null;
+  const spelling = n.fn.spelling ?? headName;
   const builtin = headName && !env.has(headName);
   if (!builtin && !INDUCTIVE_TAGS.has(env.get(headName)?.tag)) return;
   if (n.implicitArgs)
-    throw unit.locate(Error(`${headName} has no implicit parameters: give its arguments in parentheses, as ${headName}(…).`), n.fn);
+    throw unit.locate(Error(`${spelling} has no implicit parameters: give its arguments in parentheses, as ${spelling}(…).`), n.fn);
   if (!n.args.some(arg => arg.kind === "namedArgument" || !holes && isHole(arg))) return;
   throw unit.locate(Error(builtin
-    ? `${headName} takes its arguments explicitly: a hole _ or a named argument is an argument of a definition or a function.`
-    : `${headName} is a declared type or a constructor, whose arguments are written out: a hole _ or a named argument is an argument of a definition or a function.`), n.fn);
+    ? `${spelling} takes its arguments explicitly: a hole _ or a named argument is an argument of a definition or a function.`
+    : `${spelling} is a declared type or a constructor, whose arguments are written out: a hole _ or a named argument is an argument of a definition or a function.`), n.fn);
 }
 
 // Placeholders for parameters' values, numbered apart from every name supply.

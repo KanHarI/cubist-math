@@ -22,6 +22,7 @@ test("declaration identities survive every syntax transformation independently o
     const renamed = renamedFree(captured, () => spelling);
     const inserted = substituted(expression(`fun (${spelling} : Unit) => hole`), new Map([["hole", renamed]]), assert.fail);
     assert.deepEqual(refs(inserted), identities);
+    assert.equal(inserted.name.label, spelling, "freshening preserves the written binder's label");
     assert.ok(freeNames(inserted).has(spelling), "the inserted free variable must not become bound");
     assert.deepEqual(refs(relocated(inserted, {start: 100, end: 101, synthetic: true})), identities);
     assert.deepEqual(refs(JSON.parse(JSON.stringify(inserted))), identities);

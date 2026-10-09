@@ -1,7 +1,7 @@
 // Partial source translator. Unsupported syntax/foundations are explicit errors;
 // no fallback axiom, old-kernel handle, or unchecked term enters this checker.
 import {parse} from "../cubist/parser.mjs";
-import {elaborationSyntax} from "../cubist/references.mjs";
+import {elaborationSyntax,sourceName} from "../cubist/references.mjs";
 import {tacticSite,expressionSite} from "../cubist/link-sites.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
 import {binaryLiteralSyntax} from "../cubist/binary-literals.mjs";
@@ -161,8 +161,8 @@ export class Translator {
     // A source alias gets its own syntax object, even for `let y = x`.
     // This keeps lexical labels from overwriting x or leaking into siblings.
     term={...term};scope=scope.alias(name,term);
-    this.localSources.set(term,{name,start:node.start,end:node.end});
-    this.reference(scope,{...node,name,isBinding:true},term);
+    this.localSources.set(term,{name:node.label??name,start:node.start,end:node.end});
+    this.reference(scope,{...node,name:node.label??name,isBinding:true},term);
     return scope;
   }
   // Interval names are cubical coordinates, never terms of a fabricated type.
@@ -201,7 +201,7 @@ export class Translator {
   universeBinder(token,bound,scope) {
     if(bound?.kind!=="name"||bound.name!=="UU0")
       throw scope.unit.locate(Error("A universe variable's bound must be UU0, as in U < UU0."),bound);
-    const name=scope.fresh(token.text);
+    const name=scope.fresh(token.label??token.text);
     return {name,inner:this.sourceBinding(token,T.universe(T.variable(name)),scope.bind(name,T.bound))};
   }
   // The level of a universe expression: U3, UU0, a universe variable,
@@ -976,7 +976,7 @@ export class Translator {
         let inner=scope,bodyExpected=expected;
         const names=[];
         for(const token of n.names) {
-          const name=scope.fresh(token.text),variable=T.variable(name);
+          const name=scope.fresh(token.label??token.text),variable=T.variable(name);
           if(kind==="lambda"&&bodyExpected) {
             const pi=inner.nf(bodyExpected);
             if(pi.tag!=="Pi")throw Error("Too many lambda binders for the expected type.");
@@ -1013,7 +1013,7 @@ export class Translator {
           if(pi.tag!=="Pi")throw Error("Untyped lambda requires an expected function type.");
           domain=pi.domain;
         }
-        const name=scope.fresh(n.name.text);
+        const name=scope.fresh(n.name.label??n.name.text);
         const inner=this.sourceBinding(n.name,T.variable(name),scope.bind(name,domain));
         this.ownParameter(n.name,inner);
         let bodyExpected=null;
@@ -1134,10 +1134,17 @@ export class Translator {
         // to the pattern's names, x + y := add(x, y).
         const {value,left,right,aliases}=operation.rule;
         if(value.kind!=="call"||value.args.length!==2||value.args[0].name!==left||value.args[1].name!==right||value.fn.kind!=="name")
-          throw Error(`${n.model.name}.(${n.operator}) is an operation when its rule applies one to its operands, as x ${n.operator} y := f(x, y).`);
+          throw Error(`${sourceName(n.model)??"this value"}.(${n.operator}) is an operation when its rule applies one to its operands, as x ${n.operator} y := f(x, y).`);
         let inner=scope;
         for(const [key,alias] of aliases)inner=inner.alias(key,alias);
         return this.term(value.fn,inner,expected);
+      }
+      // A generated recursive call names this declaration's recursion
+      // directly, independently of a source binder hiding its namespace.
+      case "recursiveCall": {
+        const recursive=env.get(RECURSIVE);
+        if(recursive?.source!==n.fn.name)throw Error(selfReference(n.fn.name));
+        return resolveRecursive(this,n.fn,recursive,n.args,scope);
       }
       case "projection": {
         // p.1 and p.2 are the kernel's projections; the family comes from the

@@ -4,8 +4,9 @@ Reviewed on 2026-10-09 against main `cb525f07796348d8bc806cd8cda11663a6544f0e`
 and PR #188 head `68f1bf35d82a9a7065c4a42a25671212418ed888`, with the same
 WASM kernel. The first part lists defects this PR introduces, to fix in it.
 The second part lists failures reproduced on both revisions: they are
-follow-up work, not regressions attributed to this PR, and are not fixed
-here. No fixes for these shared failures are included in the PR review follow-up.
+follow-up work, not regressions attributed to this PR. The later review of
+`9c93220d` and its fixes are recorded below; remaining historical follow-ups
+are still unchecked.
 
 At the reviewed PR head, `npm test -- --test-concurrency=4` passed (735/735)
 in a fresh worktree. The review follow-up passes 741/741 tests, including six
@@ -15,6 +16,45 @@ the reported regressions fail at `68f1bf35`; the additional negative test
 guards against treating a captured data type as a proposition. The final
 expanded cases also pass separately, covering absent caller notation,
 public header-label collisions and ordinary E514 errors.
+
+## Follow-up to the review of `9c93220d`
+
+- [x] Capture a theory's fields against its file-level `use` scope. Opened
+  fields shadow outer globals, retain their meaning under inheritance and
+  initial/free expansion, and have stable identities when projections are
+  reconstructed. Tests include imported parents, changed selections,
+  header parameters, and integer ring zero versus natural zero.
+- [x] Preserve the diagnostic categories and written receiver names for
+  qualified syntax (E343, E396, E815, E817, E862), including unsupported
+  morphisms and non-model receivers.
+- [x] Keep private binding keys out of E379, E398 and E835.
+- [x] Relocate generated evidence references, and suppress every synthetic
+  expression link. Written arrow/existential headers link once.
+- [x] Keep original argument labels through alpha renaming, inductive
+  lowering and morphism analysis. E514, E517, E522, E817 and inspection use
+  source names. IsSet/IsProp do not needlessly freshen free parameters.
+- [x] Correct the recursive-operation classification below and fix both
+  binder-collision variants, including checked computation.
+- [x] Add #200's three initial-model shadowing cases to
+  `cubist-tests/initial_models.cubist`, E853/E855 refusals for both initial
+  and free models, and the enclosing-binder substitution regression.
+- [x] Fix the latest review's shared failures: caller binders capturing
+  inlined helper fields, inherited opened fields, inherited `>`/`>=`
+  notation, ordinary inductives discarding file-level uses, and catch-all
+  clauses over recursive path constructors. Path coherence is constructed
+  from checked evidence when necessary; incompatible endpoints remain
+  refused.
+
+The new behavioral coverage is in `tests/theory-hygiene.test.mjs`, alongside
+scope invariants in `tests/references.test.mjs`. Earlier review findings and
+historical follow-ups below retain their original baseline information.
+
+Validation: 12 of the 14 new tests fail at `9c93220d` and all 14 pass with
+the fixes; the other two guard previously untested supported/refused cases.
+The full suite passed 754/755 with one corpus wall-clock timeout. The corpus
+rerun passed all 3,857 declarations in 21 seconds with unchanged limits.
+The site build and browser checks, Cubist lint, diagnostic-code checks and
+`git diff --check` pass.
 
 # Introduced by PR #188
 
@@ -111,6 +151,34 @@ The fix checks that the current binding is the retained theory's model type
 before expanding arguments. Positional and named initial/free applications
 now receive E850 at their written theory expression.
 
+## Recursive derived operations with a binder named after the theory
+
+- [x] Preserve recursive calls when a derived operation's parameter or match
+  variable has the theory's name.
+
+```cubist
+import hlevels;
+import nat;
+theory T(U < UU0) {
+  M : set U;
+  c : M;
+  op(x : M) : M;
+  def iter(T : Nat) : M := match T {
+    zero => c;
+    succ(n) => op(iter(n));
+  };
+}
+```
+
+Main rejects `T.iter` with E862: `T` hides `T.M`. The PR rejects it
+with E547, treating the recursive call as an unsupported self-reference.
+The variant `iter(n : Nat)` with `succ(T) => op(iter(T))` also fails on
+both: main reports that `T` hides `T.op`; the PR reports E547.
+The rejection exists on main, but the misleading E547 is introduced by this
+PR. Generated recursive calls now use the current declaration's private
+recursion state, independent of source namespace shadowing. Both variants
+check, with regression tests proving their one-step computation by `rfl`.
+
 ## Minor
 
 - [x] E514 names a binder the expansion generated. `free W(A : U1) :
@@ -164,31 +232,6 @@ reachable only from theory, notation-rule and generated syntax. Every kind
 built there is registered.
 
 # Shared by main and PR #188
-
-## Recursive derived operations with a binder named after the theory
-
-- [ ] Preserve recursive calls when a derived operation's parameter or match
-  variable has the theory's name.
-
-```cubist
-import hlevels;
-import nat;
-theory T(U < UU0) {
-  M : set U;
-  c : M;
-  op(x : M) : M;
-  def iter(T : Nat) : M := match T {
-    zero => c;
-    succ(n) => op(iter(n));
-  };
-}
-```
-
-Main rejects `T.iter` with E862: `T` hides `T.M`. The PR rejects it
-with E547, treating the recursive call as an unsupported self-reference.
-The variant `iter(n : Nat)` with `succ(T) => op(iter(T))` also fails on
-both: main reports that `T` hides `T.op`; the PR reports E547.
-Track both variants when adding regression coverage.
 
 ## Homomorphism arguments depending on laws
 
@@ -328,8 +371,12 @@ use shifted;
 theory Q(U < UU0) extends P {}
 ```
 
-On main, `Q.p` fails with E606 because the inherited numeral is read in
-`shifted`; the PR fixes that trigger, but reaches the same state through
-inherited operator operands (`point(0 + 0)`). In both cases, once `Q.p`
-fails, `Q.Hom.p` reports E391 (`Nothing determines the universe U of
-P.Hom`) instead of E340 `Untranslated dependency: Q.p`.
+Historically, `Q.p` failed with E606 because the inherited numeral or
+operator operands were read in `shifted`; `Q.Hom.p` then reported E391
+(`Nothing determines the universe U of P.Hom`) instead of E340
+`Untranslated dependency: Q.p`. The numeral and operator triggers were
+fixed before `9c93220d`. The later review found another trigger through
+opened fields (`one` under multiplicative versus additive selections);
+that is fixed by capturing the complete selected scope. All those sources
+now check. General dependency-error propagation remains a follow-up; these
+examples no longer demonstrate an outstanding failure.

@@ -83,7 +83,7 @@ export const UNBINDING = new Set([
   "pair", "pathApply", "pattern", "print", "projection", "prop", "reference", "rfl", "rw", "select", "set", "simp_rule", "simp_set",
   "simpaOnly", "tactic", "term", "theory", "trunc", "unary", "use", "withUnfolding",
   // Built by the translator and the theory expansion.
-  "useScope", "notationScope", "sectionScope", "scoped", "instantiated", "typed",
+  "useScope", "notationScope", "sectionScope", "scoped", "instantiated", "typed", "recursiveCall",
   // Not syntax: a theory's field records and the shapes of a homomorphism's
   // types, which carry syntax but are never walked as it.
   "evidence", "morphism", "fixed", "carrier", "arrow", "other",
@@ -227,7 +227,7 @@ function apart(node, scopes, clashing, free, fresh) {
     for (const binder of scope.binders) if (free.has(binderName(binder))) {
       const other = renaming.get(binderName(binder)) ?? fresh(binderName(binder));
       renaming.set(binderName(binder), other);
-      tokens.set(binder, { ...binder, text: other });
+      tokens.set(binder, { ...binder, text: other, label: binder.label ?? binderName(binder) });
     }
     if (renaming.size) for (const key of scope.keys) if (key in copy) {
       const inner = scopes.slice(index + 1).filter(later => later.keys.includes(key))

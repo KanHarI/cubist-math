@@ -101,3 +101,20 @@ initial I : Iterated(U0);
 // Error: E850: initial takes a theory at its universes and parameters, as initial N : Monoid(U0);
 //   Nat is none.
 initial X : Nat;
+
+// Local models still own their dotted fields when a declared initial model
+// has the same name. A catch-all likewise follows the checked scrutinee type.
+initial B : Monoid(U0);
+
+def local_model(B : Monoid(U0)) : B.M := B.one;
+
+initial A : Monoid(U0);
+
+theory HasOne(U < UU0) {
+  M : set U;
+  one : M;
+}
+
+def has_one_identity(S : HasOne(U0)) : HasOne.Hom(S, S) := HasOne.Hom.id(S);
+
+def local_catch_all(A : A) : Unit := match A { _ => tt; };

@@ -27,6 +27,11 @@ repair a capture that already occurred during source expansion.
 A retained expression can be open over an explicit interface: a theory's
 universes, term parameters, and earlier fields. Instantiation substitutes
 these. Other globals are resolved before inheritance, inlining, or generation.
+Resolution uses the complete lexical scope, including fields opened by
+file-level `use` declarations. Captured entries are retained in the module's
+environment for later elaboration; that storage environment must not be
+mistaken for the scope where source names were written. Reconstructed
+projections of the same selected model retain the same identity.
 
 Local binding uses capture-avoiding nominal substitution. `scopes.mjs`
 describes each binder once. A telescope's group is outside its shared domain
@@ -35,6 +40,11 @@ statements, outside its own initializer. Substitution renames a binder when
 necessary; for pattern, statement, and parameter binders that cannot safely
 be renamed before elaboration, it refuses a capture. Unknown syntax kinds fail scope traversal
 rather than silently being treated as having no binders.
+Inlining substitutes the helper as a lambda through the caller's whole
+expression before reducing its application. This protects the helper's free
+fields from enclosing caller binders as well as protecting its arguments
+from the helper's binders. A fixed enclosing pattern or statement binding
+that would capture a field is refused with E871.
 
 `scoped` is a closure: syntax paired with its original elaboration scope.
 Caller substitution and relocation cannot enter its contents. `instantiated`
@@ -45,6 +55,14 @@ A captured operator retains its whole operand tree: a later capture must
 not walk into it and attach the child's notation to its numerals. A resolved
 proposition used by an inlined helper is classified by declaration identity,
 even when its display spelling is now bound to a different declaration.
+Both directions of comparisons (`<`, `<=`, `>`, `>=`) retain that context.
+
+Fresh internal binder names and written labels are separate. Alpha renaming
+preserves the original label through constructor lowering, diagnostics, and
+inspection. Named structural selections preserve their receiver spelling
+for diagnostics while resolution continues to use its identity. Synthetic
+syntax, including relocated evidence and repeated header expressions, emits
+no source links.
 
 ## Generation boundary
 
@@ -69,6 +87,12 @@ homomorphisms, isomorphisms, and initial/free-model folds:
 6. Check every generated declaration through ordinary elaboration and the
    kernel. Typing alone does not establish preservation of intended bindings;
    hygiene is a separate obligation.
+
+Generated recursive calls use an explicit `recursiveCall` node. Elaboration
+resolves it against the current declaration's private recursion state;
+source parameters and pattern binders can hide a namespace without hiding
+the recursive results. Ordinary source calls still obey lexical shadowing
+and the same structural recursion checks.
 
 Homomorphism generation uses separate hole maps for declaration references,
 parameter types, and expressions. Holes cannot collide with source binders.
@@ -104,6 +128,13 @@ closures; structural selections; telescope and statement scopes; and unregistere
 `tests/theory-resolution.test.mjs` covers imports, inheritance, derived
 operations, notation, initial/free models, families, homomorphisms, and
 isomorphisms with colliding source and template names.
+`tests/theory-hygiene.test.mjs` checks selected-scope capture, helper inlining,
+recursive calls under namespace collisions, diagnostic and display
+provenance, and source-link ownership. It also checks catch-all clauses
+over recursive path constructors: a wildcard's coherence must either fit
+the recursive boundaries or be constructed from checked h-level evidence.
+Incompatible endpoints remain refused; explicit path clauses are not
+replaced by generated coherence.
 
 Extend these invariants for every new binder or derivation. A transformation
 must state which bindings it preserves and which explicit interface it

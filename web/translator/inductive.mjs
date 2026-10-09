@@ -57,8 +57,8 @@ export function lowerInductive(translator, d, scope) {
       for (const p of group) {
         const { name, inner } = translator.universeBinder(p.name, p.bound, at);
         at = inner;
-        slots.push({ source: p.name.text, level: levels.length, name });
-        levels.push({ source: p.name.text, name });
+        slots.push({ source: p.label ?? p.name.text, level: levels.length, name });
+        levels.push({ source: p.label ?? p.name.text, name });
       }
       continue;
     }
@@ -66,10 +66,10 @@ export function lowerInductive(translator, d, scope) {
     const type = tr(group[0].type, at, null);
     closed(type, `${d.name.text}'s parameter ${group[0].name.text}`, group[0].name);
     for (const p of group) {
-      const name = at.fresh(p.name.text);
+      const name = at.fresh(p.label ?? p.name.text);
       at = translator.sourceBinding(p.name, T.variable(name), at.bind(name, type));
-      slots.push({ source: p.name.text, parameter: parameters.length, name });
-      parameters.push({ source: p.name.text, name, type });
+      slots.push({ source: p.label ?? p.name.text, parameter: parameters.length, name });
+      parameters.push({ source: p.label ?? p.name.text, name, type });
     }
   }
   const header = d.result?.modifier;
@@ -99,9 +99,9 @@ export function lowerInductive(translator, d, scope) {
       const type = reduced(group[0].type, cs);
       closed(type, `${c.name.text}'s argument ${group[0].name.text}`, group[0].name);
       for (const p of group) {
-        const name = cs.fresh(p.name.text);
+        const name = cs.fresh(p.label ?? p.name.text);
         cs = translator.sourceBinding(p.name, T.variable(name), cs.bind(name, type));
-        args.push({ source: p.name.text, name, type, node: p.name });
+        args.push({ source: p.label ?? p.name.text, name, type, node: p.name });
       }
     }
     let result = c.type ? reduced(c.type, cs) : sortVariable;

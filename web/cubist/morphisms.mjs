@@ -88,7 +88,7 @@ function binders(type, parameters) {
     for (const [k, n] of names.entries()) {
       const shadowed = names.slice(k + 1).some(later => later.text === n.text);
       const name = bound.has(n.text) || shadowed ? fresh(n.text) : n.text;
-      list.push({ name, type: type.domain }); bound.add(name);
+      list.push({ name, label: n.label ?? n.text, type: type.domain }); bound.add(name);
       if (!shadowed) renaming.set(n.text, name);
     }
     type = [...renaming].some(([before, after]) => before !== after)
@@ -109,7 +109,7 @@ function operationShape(field, context) {
   };
   for (const input of inputs) {
     input.shape = shapeOf(input.type, context);
-    const { why, way: inputWay } = way(input.shape, `argument ${input.name}`);
+    const { why, way: inputWay } = way(input.shape, `argument ${input.label}`);
     if (why) return { why };
     input.way = inputWay;
   }
@@ -139,7 +139,7 @@ function operationShape(field, context) {
     const later = [...inputs.slice(k + 1).map(other => other.type), type];
     if (input.way === "pull" && (later.some(t => freeNames(t).has(input.name))
       || inputs.slice(0, k).some(earlier => freeNames(input.type).has(earlier.name))))
-      return { why: `its ${field.name}'s argument ${input.name} is pulled back and depends on, or is named by, another argument` };
+      return { why: `its ${field.name}'s argument ${input.label} is pulled back and depends on, or is named by, another argument` };
   }
   return { inputs, result };
 }

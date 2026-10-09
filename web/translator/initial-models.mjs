@@ -53,7 +53,7 @@ function expand(t, module, d, env) {
   // a prime, as printing marks a shadowed name, which no source spells: it
   // keeps its public label, and later parameter groups and user expressions
   // follow.
-  const globals = new Set([N, T, "IsSet", "IsProp", "refl", ...record.fields.flatMap(f => [...freeNames(f.type)])]);
+  const globals = new Set([N, T, "refl", ...record.fields.flatMap(f => [...freeNames(f.type)])]);
   const fixed = new Set(record.fields.flatMap(f => [...fixedBinders(f.type)]));
   const taken = new Set([...allNames(d), ...record.fields.flatMap(f => [...allNames(f.type)]), ...globals]);
   const fresh = stem => freshName(stem, taken);
@@ -66,7 +66,7 @@ function expand(t, module, d, env) {
     const group = d.params[k].group, members = [];
     while (k < d.params.length && d.params[k].group === group) members.push(d.params[k++]);
     const changes = members.map(p => [p.name.text, globals.has(p.name.text) || fixed.has(p.name.text) ? `${p.name.text}′` : p.name.text]);
-    for (const [j, p] of members.entries()) params.push({...p, name: {...p.name, text: changes[j][1]}, label: p.name.text,
+    for (const [j, p] of members.entries()) params.push({...p, name: {...p.name, text: changes[j][1], label: p.name.text}, label: p.name.text,
       ...(p.bound ? {bound: apart(p.bound)} : {type: apart(p.type)})});
     for (const [before, after] of changes) renaming.set(before, after);
   }
@@ -152,11 +152,11 @@ function expand(t, module, d, env) {
       // parameter list may not. Rename in the body only: this group's
       // domain still reads the preceding binders.
       const renaming = new Map();
-      for (const n of placedNames) {
+      for (const [index, n] of placedNames.entries()) {
         const name = flattened.has(n.text) ? fresh(n.text) : n.text;
         if (name !== n.text) renaming.set(n.text, name);
         flattened.add(name);
-        binders.push({name, carrier: isCarrier, type: placed.domain, group});
+        binders.push({name, label: names[index].label ?? names[index].text, carrier: isCarrier, type: placed.domain, group});
       }
       if (renaming.size) placed = {...placed, body: renamedFree(placed.body, n => renaming.get(n))};
       for (const n of names) { bound.add(n.text); if (isCarrier) dependent.set(n.text, "carrier"); else dependent.delete(n.text); }
@@ -173,7 +173,7 @@ function expand(t, module, d, env) {
       throw module.locate(notEquational(field.name), d.theory);
     if (dependency) throw module.locate(dependency.kind === "carrier" ? notPositive(field.name, dependency.binder, carrier)
       : onProof(field.name, dependency.binder, dependency.kind, dependency.on), d.theory);
-    const params = binders.map(b => ({name: token(b.name), type: inTheory(b.type), group: b.group}));
+    const params = binders.map(b => ({name: {...token(b.name), label: b.label}, label: b.label, type: inTheory(b.type), group: b.group}));
     if (field.kind === "operation") {
       if (body.kind === "binary" && body.operator === "->") throw module.locate(arrowOperation(field.name), d.theory);
       if (!(body.kind === "name" && body.name === carrier && !bound.has(carrier))) throw module.locate(notCarrierValued(field.name, carrier), d.theory);
@@ -230,7 +230,7 @@ function expand(t, module, d, env) {
       left: call(target(f.name), mapped(name(v.evidence), f, vars)), right: name(i), ...at}), "i")),
   ];
   const foldMap = definition("fold_map", [[v.target, again.theory],
-    [v.evidence, call(evidence.type.fn, [universe, target(carrier)])], ...generator, [v.x, self]], target(carrier),
+    [v.evidence, call(relocated(evidence.type.fn, at), [universe, target(carrier)])], ...generator, [v.x, self]], target(carrier),
     {kind: "match", value: name(v.x), motiveName: null, type: null, clauses, ...at});
   const fold = definition("fold", [[v.target, again.theory], ...generator], call(reference(record.homReference, `${T}.Hom`, at), [ownModel, name(v.target)]),
     call(reference(record.homMakeReference, `${T}.Hom.make`, at), [ownModel, name(v.target), named("map", lambda(v.x, recurse(target(evidence.name), name(v.x)))),

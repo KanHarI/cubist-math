@@ -10,6 +10,11 @@ export function reference(binding, spelling, at = {}) {
 
 export const referenceKey = node => node.kind === "reference" ? node.binding : node.kind === "name" ? node.name : null;
 
+// Display provenance is independent of resolution. A structural selection
+// can still name its written receiver in diagnostics after it is moved.
+export const sourceName = node => node.spelling ?? (node.kind === "name" ? node.name
+  : node.kind === "member" && sourceName(node.value) ? `${sourceName(node.value)}.${node.field.text}` : null);
+
 // A field selection keeps its receiver as syntax. In particular, a local
 // T's T.M cannot be confused with the declaration whose qualified name is T.M.
 export function members(node, receiver, fields) {

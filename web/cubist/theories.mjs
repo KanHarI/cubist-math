@@ -69,7 +69,7 @@ function namesIn(node, names = new Set()) {
 }
 // An unlabelled parent's label: its name in snake case, CommMonoid as comm_monoid.
 export const snake = text => text.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
-const syntaxValue = (key, value) => ["spelling", "synthetic"].includes(key)
+const syntaxValue = (key, value) => ["spelling", "label", "synthetic"].includes(key)
   || typeof value === "number" && /^(start|end)$|Start$|End$/.test(key) ? undefined : value;
 const sameSyntax = (a, b) => JSON.stringify(a, syntaxValue) === JSON.stringify(b, syntaxValue);
 // Keep each written shared domain outside its binders. Generated evidence
@@ -160,15 +160,35 @@ function theoryFields(theory, lookup, proposition, capture) {
   // Derived operations, a theory's own and its parents' (L2.10b): each
   // applied in a later field is its value, its parameters substituted.
   const derived = [], derivedByName = new Map();
-  const inlineDerived = node => rewritten(node, (n, bound) => {
-    const d = n.kind === "call" && n.fn.kind === "name" && !bound.has(n.fn.name) ? derivedByName.get(n.fn.name) : null;
-    if (d?.recursive) throw located(Error(`${d.name} is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory.`), n);
-    if (!d || n.args.length !== d.params.length) return n;
-    const args = new Map(d.params.map((p, k) => [p.name, inlineDerived(n.args[k])]));
-    // A binder of the operation that would capture an argument's name is
-    // renamed apart; a pattern's, which may name a constructor, is refused.
-    return substituted(d.value, args, name => located(Error(`${d.name}'s pattern binds ${name}, which an argument here names: rename it in ${d.name}.`), n));
-  });
+  const inlineDerived = node => {
+    // Substitute the helper as a lambda through the entire enclosing tree
+    // before beta reduction. This freshens the caller's binders as well as
+    // the helper's: a law parameter c must not capture the helper's field c.
+    const used = freeNames(node);
+    const helpers = new Map(derived.filter(d => !d.recursive && used.has(d.name)).map(d => {
+      const value = parameterGroups(d.params).reduceRight((body, group) => ({kind: "binderGroup", binderKind: "lambda",
+        names: group.map(p => token(p.name, d.at)), domain: group[0].type, body, ...place(d.at)}), d.value);
+      return [d.name, {...value, inlineName: d.name, inlineArity: d.params.length}];
+    }));
+    const expanded = helpers.size ? substituted(node, helpers, binder => {
+      const helper = [...helpers].find(([, value]) => freeNames(value).has(binder))?.[0];
+      return located(Error(`Inlining ${helper} here would capture its field ${binder}: rename the enclosing pattern or statement binding.`), node);
+    }) : node;
+    return rewritten(expanded, (n, bound) => {
+      if (n.kind === "call" && n.fn.inlineName && n.args.length === n.fn.inlineArity) {
+        const args = new Map();
+        let body = n.fn, index = 0;
+        while (index < n.args.length && body.kind === "binderGroup") {
+          for (const parameter of body.names) args.set(parameter.text, inlineDerived(n.args[index++]));
+          body = body.body;
+        }
+        return substituted(body, args, binder => located(Error(`${n.fn.inlineName}'s pattern binds ${binder}, which an argument here names: rename it in ${n.fn.inlineName}.`), n));
+      }
+      const d = n.kind === "call" && n.fn.kind === "name" && !bound.has(n.fn.name) ? derivedByName.get(n.fn.name) : null;
+      if (d?.recursive) throw located(Error(`${d.name} is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory.`), n);
+      return n;
+    });
+  };
   // The header's universes are the model's, which each expansion names
   // afresh; a theory without a header has one. Its parameters are every
   // model's, as the header writes them (L2.4c).
@@ -634,7 +654,7 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
     // Its fields through m; a recursive one's call to itself, T.d(m, …).
     const through = node => rewritten(inUniverse(node), (n, bound) => {
       if (d.recursive && n.kind === "call" && n.fn.kind === "name" && n.fn.name === d.name && !bound.has(d.name))
-        return call(`${T}.${d.name}`, [name(model, n), ...n.args.map(through)], n);
+        return {...call(`${T}.${d.name}`, [name(model, n), ...n.args.map(through)], n), kind: "recursiveCall"};
       return n.kind === "name" && projected.has(n.name) && !bound.has(n.name) && !own.has(n.name)
         ? globalCall(projected.get(n.name), [name(model, n)], n) : n;
     });
