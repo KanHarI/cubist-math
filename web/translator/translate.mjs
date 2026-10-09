@@ -914,6 +914,10 @@ export class Translator {
     return this.checker.ascribe && this.checker.kernel?.optimizations?.compactPaths !== false ? scope.ascribe(result,T.path(j,pt.family,pt.left,qt.right)) : result;
   }
   term(n,scope,expected=null) {
+    // Copied syntax can expand a captured notation rule whose offsets belong
+    // to another module. Suppress links for the whole synthetic evaluation,
+    // including that rule, independently of how its notation was selected.
+    if(n.synthetic&&scope.unit.references)scope=scope.withUnit(scope.unit.with({references:null}));
     if(n.kind==="reference")n=elaborationSyntax(n);
     else if(n.kind==="call"&&n.fn.kind==="reference")n={...n,fn:elaborationSyntax(n.fn)};
     if(n.lexicalNotation)scope=scope.aliases(scope.env.get(n.lexicalNotation));
@@ -1191,10 +1195,6 @@ export class Translator {
       }
       // use m; at a file's top level, and m.(e) for one expression (L2.4c).
       case "useScope": return this.term(n.body,n.uses.reduce((inner,model)=>selected(this,inner,model),scope),expected);
-      // Copied theory syntax keeps its selected notation, while term and
-      // universe binders come from the generated declaration's current scope.
-      // It has no source links here, including syntax a captured rule expands.
-      case "notationScope": return this.term(n.body,scope.withUnit(scope.unit.with({references:null})).aliases(n.aliases),expected);
       // An operand of a notation's rule, read where it stood (L2.10a).
       case "scoped": return this.term(n.node,n.scope,expected);
       // An elaborated argument abstracted over a generated declaration's

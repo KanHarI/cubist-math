@@ -24,6 +24,7 @@
 
 import { parse, reservedNames } from "./parser.mjs";
 import { morphismSource } from "./morphisms.mjs";
+import {dependencyGraph} from "./dependencies.mjs";
 // A copy of a syntax tree with `rewrite(node, bound)` applied to each node,
 // outermost first; `bound` holds the names bound there, by every binding
 // form (scopes.mjs).
@@ -628,6 +629,20 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
     notations: Object.fromEntries(notations), recipes: Object.fromEntries(recipes), parents,
     derived: derived.map(({ at: _, ...d }) => ({ ...d, projection: `${T}.${d.name}` })),
   };
+  const identity = field => reference(name(`${T}.${field.name}`,field.at??at),"generated").binding??`${T}.${field.name}`;
+  for(const field of [...record.fields,...record.derived]) {
+    field.identity=identity(field);
+    field.originIdentity??=field.identity;
+  }
+  const owner = reference(name(T,at),"generated").binding??T;
+  record.dependencies=dependencyGraph(owner,[
+    ...universes.map((_,k)=>({identity:`${owner}:universe:${k}`,name:universeAt(k),label:universeLabels[k],category:"universe"})),
+    ...params.map((p,k)=>({identity:`${owner}:parameter:${k}`,name:p.name,category:"parameter",type:p.type,at:p.at})),
+  ],[
+    ...fields.map((field,k)=>({...field,identity:record.fields[k].identity,signature:field.type})),
+    ...derived.map((field,k)=>({...field,kind:"derived",identity:record.derived[k].identity,
+      signature:{...derivedSyntax(field),value:null},value:derivedSyntax(field)})),
+  ]);
   // The sorts' evidence comes from hlevels.
   const requires = [...new Set(fields.filter(field => field.evidence).map(field => field.evidence))];
   const out = [];
@@ -694,6 +709,7 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
   // name. A generated definition's name is dotted, which a def cannot
   // spell, so each is parsed under a placeholder and then renamed.
   const morphisms = morphismSource(record, knownTheory);
+  record.support={hom:morphisms.support,iso:morphisms.isoSupport};
   if (morphisms.missing) record.noMorphisms = morphisms.missing;
   else {
     // Homomorphisms without isomorphisms: the source stops after Hom's.
