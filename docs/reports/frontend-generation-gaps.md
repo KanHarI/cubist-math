@@ -53,6 +53,11 @@ All eleven executable gaps are active regressions at FG5. The notation-alias
 audit's removal and its provenance distinction are documented in the FG2
 report. None of these changes registers the separate C1 deriving capability.
 
+The [FG6 release-gate report](frontend-generation-fg6.md) records composed
+transformation tests, exact mutation patches, the newly distinguished
+multi-value explicit-path probe and measured validation. The historical
+audit's unidentified skipped mutation remains an explicit evidence gap.
+
 These specific examples are fixed at `00d4ecce`. They are evidence for
 prevention work, not proof that the surrounding invariant holds everywhere:
 G8–G12 demonstrate remaining failures in the same contracts.

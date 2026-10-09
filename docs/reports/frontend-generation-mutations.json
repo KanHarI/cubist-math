@@ -1,0 +1,349 @@
+{
+  "version": 1,
+  "revision": "deff52a0dc84bc2aee9a88d292205286bd6d0ca0",
+  "limits": {
+    "processMs": 60000,
+    "testMs": 45000,
+    "maxBufferBytes": 8388608,
+    "checker": "unchanged defaults",
+    "cases": 8
+  },
+  "mutations": [
+    {
+      "id": "binding-label",
+      "file": "web/translator/translate.mjs",
+      "from": "{key:name,name:node.label??name,start:node.start,end:node.end}",
+      "to": "{key:name,name,start:node.start,end:node.end}",
+      "test": "frontend-provenance",
+      "pattern": "FG5: freshened law",
+      "expected": "killed",
+      "sourceDigest": "5c2e7870f3d75a1cf02cf2eb5e979356cf384dc14647c314445bf7560c1223f5",
+      "outcome": "killed",
+      "status": 1,
+      "failedTests": [
+        "FG5: freshened law and derived parameters preserve every written link and hover"
+      ],
+      "reducedCases": [],
+      "log": "TAP version 13\n# Subtest: FG5: freshened law and derived parameters preserve every written link and hover\nnot ok 1 - FG5: freshened law and derived parameters preserve every written link and hover\n  ---\n  duration_ms: 287.9165\n  type: 'test'\n  location: '/private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-provenance.test.mjs:22:1'\n  failureType: 'testCodeFailure'\n  error: |-\n    Expected values to be strictly equal:\n    \n    'c1' !== 'c'\n    \n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: 'c'\n  actual: 'c1'\n  operator: 'strictEqual'\n  stack: |-\n    TestContext.<anonymous> (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-provenance.test.mjs:38:18)\n    async Test.run (node:internal/test_runner/test:1113:7)\n    async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 346.2565\n"
+    },
+    {
+      "id": "alpha-label",
+      "file": "web/cubist/scopes.mjs",
+      "from": "{ ...binder, text: other, label: binder.label ?? binderName(binder) }",
+      "to": "{ ...binder, text: other }",
+      "test": "frontend-provenance",
+      "pattern": "FG5: freshened law",
+      "expected": "killed",
+      "sourceDigest": "d9fb27f1fba1f6ec99993c824093341713b9023a3be844a387caae5c657bab68",
+      "outcome": "killed",
+      "status": 1,
+      "failedTests": [
+        "FG5: freshened law and derived parameters preserve every written link and hover"
+      ],
+      "reducedCases": [],
+      "log": "TAP version 13\n# Subtest: FG5: freshened law and derived parameters preserve every written link and hover\nnot ok 1 - FG5: freshened law and derived parameters preserve every written link and hover\n  ---\n  duration_ms: 280.561334\n  type: 'test'\n  location: '/private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-provenance.test.mjs:22:1'\n  failureType: 'testCodeFailure'\n  error: |-\n    Expected values to be strictly equal:\n    \n    'c1' !== 'c'\n    \n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: 'c'\n  actual: 'c1'\n  operator: 'strictEqual'\n  stack: |-\n    TestContext.<anonymous> (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-provenance.test.mjs:38:18)\n    async Test.run (node:internal/test_runner/test:1113:7)\n    async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 339.682041\n"
+    },
+    {
+      "id": "lexical-use",
+      "file": "web/translator/theories.mjs",
+      "from": "if(!d.uses?.length)return {env,notation:[[SELECTION,null]]};",
+      "to": "if(true)return {env,notation:[[SELECTION,null]]};",
+      "test": "frontend-invariants",
+      "pattern": "seed 3$",
+      "expected": "killed",
+      "sourceDigest": "99e37ee5b2edba9c6a71033abc16b9b2ea22d5d36517b3e0362d9184a35d9552",
+      "outcome": "killed",
+      "status": 1,
+      "failedTests": [
+        "FG6: preservation under composed transformations, seed 3"
+      ],
+      "reducedCases": [
+        {
+          "seed": 3,
+          "error": "diagnostic contract\n+ actual - expected\n\n  [\n    [\n+     'T',\n+     'E911'\n+   ],\n+   [\n+     'Child',\n+     'E340'\n+   ],\n+   [\n+     'intended',\n+     'E340'\n+   ],\n+   [\n+     'named',\n+     'E340'\n+   ],\n+   [\n      'captured',\n+     'E340'\n-     'E606'\n    ],\n    [\n+     'law_meaning',\n+     'E340'\n+   ],\n+   [\n+     'identity',\n+     'E340'\n+   ],\n+   [\n+     'child_selection',\n+     'E340'\n+   ],\n+   [\n+     'earlier_call',\n+     'E340'\n+   ],\n+   [\n+     'N',\n+     'E340'\n+   ],\n+   [\n+     'generated',\n+     'E340'\n+   ],\n+   [\n+     'forget',\n+     'E340'\n+   ],\n+   [\n+     'forgotten',\n+     'E340'\n+   ],\n+   [\n+     'W',\n+     'E340'\n+   ],\n+   [\n+     'fold_computes',\n+     'E340'\n+   ],\n+   [\n      'mismatch',\n      'E606'\n    ]\n  ]\n",
+          "config": {
+            "seed": 3,
+            "imported": false,
+            "inherited": true,
+            "renamed": false,
+            "depth": 1,
+            "binder": "x",
+            "noise": false,
+            "recursive": true,
+            "paths": true
+          },
+          "attempts": 6,
+          "source": "import hlevels; import nat;\nnotation lexical { numeral(n : Nat) := n; }\nuse lexical;\n\ntheory T(U < UU0) { M : set U; c : M; op(n : Nat, x, y : M) : M;\n  def helper0(x : M) : M := op(0,x,c);\n  def wrapped(c : M, proof_ : c = c) : M := (fun (x : M) => helper0(x))(c);\n  law same(c : M) : helper0(c) = op(0,c,c);\n  def iter(n : Nat) : M := match n { zero => c; succ(k) => op(0,iter(k),c); };\ndef twice(n : Nat) : M := op(0,iter(n),c);\n}\nnotation shifted { numeral(n : Nat) := succ(n); }\nuse shifted;\ntheory Child(U < UU0) extends T {\n  def fresh(x : M) : M := op(0,x,c);\n}\ndef intended(S : Child(U0), x : S.M) : S.wrapped(x,refl(x)) = S.op(zero,x,S.c) := refl(S.op(zero,x,S.c));\ndef named(S : Child(U0), x : S.M) : S.M := Child.wrapped(S,c := x,proof_ := refl(x));\ndef captured(S : Child(U0), x : S.M) : S.wrapped(x,refl(x)) = S.op(zero,x,x) := refl(S.op(zero,x,x));\ndef law_meaning(S : Child(U0), x : S.M) : S.op(zero,x,S.c) = S.op(zero,x,x) := S.same(x);\ndef identity(S : Child(U0), x : S.M) : Child.Hom.compose(Child.Hom.id(S),Child.Hom.id(S)).map(x) = x { rfl; }\ndef child_selection(S : Child(U0), x : S.M) : S.fresh(x) = S.op(succ(zero),x,S.c) { rfl; }\ndef earlier_call(S : Child(U0)) : S.twice(zero) = S.op(zero,S.c,S.c) { rfl; }\ninitial N : Child(U0);\ndef generated(x : N) : N.model.wrapped(x,refl(x)) = N.op(zero,x,N.c) { rfl; }\ndef forget(x : N) : Unit := match x { N.c => tt; _ => tt; };\ndef forgotten : forget(N.op(zero,N.c,N.c)) = tt { rfl; }\nfree W(A : U0) : Child(U0) on A;\ndef fold_computes(S : Child(U0), x : S.M) : W.fold(S.M,S,fun (a : S.M) => a).map(W.gen(x)) = x { rfl; }\ndef ordinary : U0 := forall unused : Unit. Unit;\ninductive Boundary : set U0 { left_; right_; path_ : left_ = right_; }\ndef mismatch(x : Boundary) : Boundary := match x { left_ => left_; _ => right_; };",
+          "fixtures": {},
+          "parent": "import hlevels; import nat;\nnotation lexical { numeral(n : Nat) := n; }\nuse lexical;\n\ntheory T(U < UU0) { M : set U; c : M; op(n : Nat, x, y : M) : M;\n  def helper0(x : M) : M := op(0,x,c);\n  def wrapped(c : M, proof_ : c = c) : M := (fun (x : M) => helper0(x))(c);\n  law same(c : M) : helper0(c) = op(0,c,c);\n  def iter(n : Nat) : M := match n { zero => c; succ(k) => op(0,iter(k),c); };\ndef twice(n : Nat) : M := op(0,iter(n),c);\n}",
+          "model": "Child",
+          "names": {
+            "M": "M",
+            "c": "c",
+            "op": "op"
+          },
+          "accepted": [
+            "intended",
+            "named",
+            "law_meaning",
+            "identity",
+            "generated",
+            "forgotten",
+            "fold_computes",
+            "child_selection",
+            "earlier_call"
+          ],
+          "expectedGaps": [
+            "captured",
+            "mismatch"
+          ],
+          "labelScope": "law same(c : M) : helper0(c) = op(0,c,c);"
+        }
+      ],
+      "log": "TAP version 13\n# Subtest: FG6: preservation under composed transformations, seed 3\nnot ok 1 - FG6: preservation under composed transformations, seed 3\n  ---\n  duration_ms: 1002.572708\n  type: 'test'\n  location: '/private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-invariants.test.mjs:61:34'\n  failureType: 'testCodeFailure'\n  error: |-\n    seed 3; reduced case in build/frontend-generation-failures/seed-3.json: diagnostic contract\n    + actual - expected\n    \n      [\n        [\n    +     'T',\n    +     'E911'\n    +   ],\n    +   [\n    +     'Child',\n    +     'E340'\n    +   ],\n    +   [\n    +     'intended',\n    +     'E340'\n    +   ],\n    +   [\n    +     'named',\n    +     'E340'\n    +   ],\n    +   [\n          'captured',\n    +     'E340'\n    -     'E606'\n        ],\n        [\n    +     'law_meaning',\n    +     'E340'\n    +   ],\n    +   [\n    +     'identity',\n    +     'E340'\n    +   ],\n    +   [\n    +     'child_selection',\n    +     'E340'\n    +   ],\n    +   [\n    +     'earlier_call',\n    +     'E340'\n    +   ],\n    +   [\n    +     'N',\n    +     'E340'\n    +   ],\n    +   [\n    +     'generated',\n    +     'E340'\n    +   ],\n    +   [\n    +     'forget',\n    +     'E340'\n    +   ],\n    +   [\n    +     'forgotten',\n    +     'E340'\n    +   ],\n    +   [\n    +     'W',\n    +     'E340'\n    +   ],\n    +   [\n    +     'fold_computes',\n    +     'E340'\n    +   ],\n    +   [\n          'mismatch',\n          'E606'\n        ]\n      ]\n    \n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected:\n    0:\n      0: 'captured'\n      1: 'E606'\n    1:\n      0: 'mismatch'\n      1: 'E606'\n  actual:\n    0:\n      0: 'T'\n      1: 'E911'\n    1:\n      0: 'Child'\n      1: 'E340'\n    2:\n      0: 'intended'\n      1: 'E340'\n    3:\n      0: 'named'\n      1: 'E340'\n    4:\n      0: 'captured'\n      1: 'E340'\n    5:\n      0: 'law_meaning'\n      1: 'E340'\n    6:\n      0: 'identity'\n      1: 'E340'\n    7:\n      0: 'child_selection'\n      1: 'E340'\n    8:\n      0: 'earlier_call'\n      1: 'E340'\n    9:\n      0: 'N'\n      1: 'E340'\n    10:\n      0: 'generated'\n      1: 'E340'\n    11:\n      0: 'forget'\n      1: 'E340'\n    12:\n      0: 'forgotten'\n      1: 'E340'\n    13:\n      0: 'W'\n      1: 'E340'\n    14:\n      0: 'fold_computes'\n      1: 'E340'\n    15:\n      0: 'mismatch'\n      1: 'E606'\n  operator: 'deepStrictEqual'\n  stack: |-\n    verify (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-invariants.test.mjs:19:12)\n    async TestContext.<anonymous> (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-invariants.test.mjs:63:8)\n    async Test.run (node:internal/test_runner/test:1113:7)\n    async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 1061.208625\n"
+    },
+    {
+      "id": "reference-spelling",
+      "file": "web/cubist/references.mjs",
+      "from": "? {...n, kind: \"name\", name: n.binding}",
+      "to": "? {...n, kind: \"name\", name: n.spelling}",
+      "test": "references",
+      "pattern": "lowering references",
+      "expected": "killed",
+      "sourceDigest": "75577b9aa4774c26c76229224b0daab0e674990c9d4f38f3a26945d92d7e1481",
+      "outcome": "killed",
+      "status": 1,
+      "failedTests": [
+        "lowering references for elaboration leaves the retained theory closure resolved"
+      ],
+      "reducedCases": [],
+      "log": "TAP version 13\n# Subtest: lowering references for elaboration leaves the retained theory closure resolved\nnot ok 1 - lowering references for elaboration leaves the retained theory closure resolved\n  ---\n  duration_ms: 0.998792\n  type: 'test'\n  location: '/private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/references.test.mjs:46:1'\n  failureType: 'testCodeFailure'\n  error: |-\n    Expected values to be strictly equal:\n    + actual - expected\n    \n    + 'f'\n    - '\\x00binding module__f'\n    \n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: '\\x00binding module__f'\n  actual: 'f'\n  operator: 'strictEqual'\n  stack: |-\n    TestContext.<anonymous> (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/references.test.mjs:51:10)\n    Test.runInAsyncScope (node:async_hooks:214:14)\n    Test.run (node:internal/test_runner/test:1106:25)\n    Test.start (node:internal/test_runner/test:1003:17)\n    startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17)\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 37.485208\n"
+    },
+    {
+      "id": "derived-telescope",
+      "file": "web/cubist/scopes.mjs",
+      "from": "derived: n => parameterScopes(n, [\"type\", \"value\"], true)",
+      "to": "derived: n => []",
+      "test": "frontend-generation",
+      "pattern": "G11:",
+      "expected": "killed",
+      "sourceDigest": "d9fb27f1fba1f6ec99993c824093341713b9023a3be844a387caae5c657bab68",
+      "outcome": "killed",
+      "status": 1,
+      "failedTests": [
+        "G11: complete declaration telescopes protect helper fields from caller parameters",
+        "G11: helper chain with grouped/dependent parameters",
+        "G11: inherited helper chain",
+        "G11: initial-model client"
+      ],
+      "reducedCases": [],
+      "log": "TAP version 13\n# Subtest: G11: complete declaration telescopes protect helper fields from caller parameters\nnot ok 1 - G11: complete declaration telescopes protect helper fields from caller parameters\n  ---\n  duration_ms: 282.420417\n  type: 'test'\n  location: '/private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:109:64'\n  failureType: 'testCodeFailure'\n  error: |-\n    intended: Type mismatch: found S.op(x, S.c) = S.op(x, S.c), expected T.kk{{U0}}(S, x) = S.op(x, S.c).\n    \n    false !== true\n    \n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: true\n  actual: false\n  operator: 'strictEqual'\n  stack: |-\n    accepted (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:19:12)\n    Object.G11 (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:102:5)\n    TestContext.<anonymous> (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:111:102)\n    async Test.run (node:internal/test_runner/test:1113:7)\n    async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)\n  ...\n# Subtest: G11: helper chain with grouped/dependent parameters\nnot ok 2 - G11: helper chain with grouped/dependent parameters\n  ---\n  duration_ms: 194.539875\n  type: 'test'\n  location: '/private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:109:64'\n  failureType: 'testCodeFailure'\n  error: |-\n    intended: Type mismatch: found S.op(x, S.c) = S.op(x, S.c), expected T.kk{{U0}}(S, x, x, refl(x)) = S.op(x, S.c).\n    \n    false !== true\n    \n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: true\n  actual: false\n  operator: 'strictEqual'\n  stack: |-\n    accepted (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:19:12)\n    Object.G11 (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:102:5)\n    TestContext.<anonymous> (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:111:102)\n    async Test.run (node:internal/test_runner/test:1113:7)\n    async Test.processPendingSubtests (node:internal/test_runner/test:788:7)\n  ...\n# Subtest: G11: inherited helper chain\nnot ok 3 - G11: inherited helper chain\n  ---\n  duration_ms: 269.285542\n  type: 'test'\n  location: '/private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:109:64'\n  failureType: 'testCodeFailure'\n  error: |-\n    intended: Type mismatch: found S.op(x, S.c) = S.op(x, S.c), expected Child.kk{{U0}}(S, x) = S.op(x, S.c).\n    \n    false !== true\n    \n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: true\n  actual: false\n  operator: 'strictEqual'\n  stack: |-\n    accepted (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:19:12)\n    Object.G11 (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:102:5)\n    TestContext.<anonymous> (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:111:102)\n    async Test.run (node:internal/test_runner/test:1113:7)\n    async Test.processPendingSubtests (node:internal/test_runner/test:788:7)\n  ...\n# Subtest: G11: initial-model client\nnot ok 4 - G11: initial-model client\n  ---\n  duration_ms: 183.440875\n  type: 'test'\n  location: '/private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:109:64'\n  failureType: 'testCodeFailure'\n  error: |-\n    intended: Type mismatch: found N.op(x, N.c) = N.op(x, N.c), expected T.kk{{U0}}(N.model, x) = N.op(x, N.c).\n    \n    false !== true\n    \n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: true\n  actual: false\n  operator: 'strictEqual'\n  stack: |-\n    accepted (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:19:12)\n    Object.G11 (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:102:5)\n    TestContext.<anonymous> (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:111:102)\n    async Test.run (node:internal/test_runner/test:1113:7)\n    async Test.processPendingSubtests (node:internal/test_runner/test:788:7)\n  ...\n1..4\n# tests 4\n# suites 0\n# pass 0\n# fail 4\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 990.576\n"
+    },
+    {
+      "id": "hom-universe",
+      "file": "web/cubist/morphisms.mjs",
+      "from": "declare(hom, `${models([])} :=",
+      "to": "declare(hom, `${models([])} : U0 :=",
+      "test": "frontend-generation",
+      "pattern": "G2:",
+      "expected": "killed",
+      "sourceDigest": "24e1f09af16ece6731aeb46cc793d76287a2ecdaca7131a0d14f5342350faeaa",
+      "outcome": "killed",
+      "status": 1,
+      "failedTests": [
+        "G2: fixed argument domains contribute to generated universes"
+      ],
+      "reducedCases": [],
+      "log": "TAP version 13\n# Subtest: G2: fixed argument domains contribute to generated universes\nnot ok 1 - G2: fixed argument domains contribute to generated universes\n  ---\n  duration_ms: 234.547792\n  type: 'test'\n  location: '/private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:109:64'\n  failureType: 'testCodeFailure'\n  error: |-\n    Expected values to be strictly deep-equal:\n    + actual - expected\n    \n    + [\n    +   {\n    +     code: 'E606',\n    +     end: undefined,\n    +     module: 'main',\n    +     name: 'T.Hom',\n    +     reason: 'Type mismatch: found max(U, max(V, U1)), expected U0.',\n    +     start: undefined\n    +   },\n    +   {\n    +     code: 'E340',\n    +     end: undefined,\n    +     module: 'main',\n    +     name: 'identity',\n    +     reason: 'Untranslated dependency: T.Hom',\n    +     start: undefined\n    +   },\n    +   {\n    +     code: 'E340',\n    +     end: undefined,\n    +     module: 'main',\n    +     name: 'computation',\n    +     reason: 'Untranslated dependency: T.Hom.compose',\n    +     start: undefined\n    +   },\n    +   {\n    +     code: 'E340',\n    +     end: undefined,\n    +     module: 'main',\n    +     name: 'iso',\n    +     reason: 'Untranslated dependency: T.Iso',\n    +     start: undefined\n    +   }\n    + ]\n    - []\n    \n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected:\n  actual:\n    0:\n      module: 'main'\n      name: 'T.Hom'\n      reason: 'Type mismatch: found max(U, max(V, U1)), expected U0.'\n      code: 'E606'\n    1:\n      module: 'main'\n      name: 'identity'\n      reason: 'Untranslated dependency: T.Hom'\n      code: 'E340'\n    2:\n      module: 'main'\n      name: 'computation'\n      reason: 'Untranslated dependency: T.Hom.compose'\n      code: 'E340'\n    3:\n      module: 'main'\n      name: 'iso'\n      reason: 'Untranslated dependency: T.Iso'\n      code: 'E340'\n  operator: 'deepStrictEqual'\n  stack: |-\n    complete (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:23:36)\n    Object.G2 (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:37:17)\n    TestContext.<anonymous> (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:111:102)\n    async Test.run (node:internal/test_runner/test:1113:7)\n    async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 291.971959\n"
+    },
+    {
+      "id": "refined-evidence",
+      "file": "web/translator/elaboration.mjs",
+      "from": "if(!values.size||!this.evidence.length)return this;",
+      "to": "return this;",
+      "test": "frontend-evidence",
+      "pattern": "contextual model evidence remains checked",
+      "expected": "killed",
+      "sourceDigest": "f1596ffa83842b64a75798f25644f47f381d567d2b61dd2e95828f6f2c1a419e",
+      "outcome": "killed",
+      "status": 1,
+      "failedTests": [
+        "FG4: contextual model evidence remains checked after refinement and dimension restriction"
+      ],
+      "reducedCases": [],
+      "log": "TAP version 13\n# Subtest: FG4: contextual model evidence remains checked after refinement and dimension restriction\nnot ok 1 - FG4: contextual model evidence remains checked after refinement and dimension restriction\n  ---\n  duration_ms: 261.107583\n  type: 'test'\n  location: '/private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-evidence.test.mjs:82:1'\n  failureType: 'testCodeFailure'\n  error: |-\n    The expression evaluated to a falsy value:\n    \n      assert.ok(refined.equal(refined.evidence[0].model,T.variable(\"R\")))\n    \n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: true\n  actual: false\n  operator: '=='\n  stack: |-\n    TestContext.<anonymous> (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-evidence.test.mjs:95:10)\n    async Test.run (node:internal/test_runner/test:1113:7)\n    async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 317.87375\n"
+    },
+    {
+      "id": "reservation",
+      "file": "web/translator/declarations.mjs",
+      "from": "if (previous && previous.owner !== owner || seen.has(entry.name) && seen.get(entry.name) !== entry.declaration) return entry;",
+      "to": "if (false) return entry;",
+      "test": "frontend-publication",
+      "pattern": "definition then inductive",
+      "expected": "killed",
+      "sourceDigest": "270f4d8294b37c0f109770d61094a028b73fa1978914fb5daa432c319233c5bd",
+      "outcome": "killed",
+      "status": 1,
+      "failedTests": [
+        "FG1 ownership: definition then inductive keeps the original binding and source"
+      ],
+      "reducedCases": [],
+      "log": "TAP version 13\n# Subtest: FG1 ownership: definition then inductive keeps the original binding and source\nnot ok 1 - FG1 ownership: definition then inductive keeps the original binding and source\n  ---\n  duration_ms: 228.664917\n  type: 'test'\n  location: '/private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-publication.test.mjs:26:4'\n  failureType: 'testCodeFailure'\n  error: |-\n    [{\"module\":\"main\",\"name\":\"client\",\"reason\":\"Type mismatch: found U0, expected Unit.\",\"code\":\"E606\"}]\n    \n    false !== true\n    \n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: true\n  actual: false\n  operator: 'strictEqual'\n  stack: |-\n    TestContext.<anonymous> (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-publication.test.mjs:29:10)\n    async Test.run (node:internal/test_runner/test:1113:7)\n    async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 288.408042\n"
+    },
+    {
+      "id": "failed-publication",
+      "file": "web/cubical-program.mjs",
+      "from": "transaction?.finish(accept); transaction=null;",
+      "to": "transaction?.finish(true); transaction=null;",
+      "test": "frontend-publication",
+      "pattern": "G7:",
+      "expected": "killed",
+      "sourceDigest": "0188d68c2715f0300d7a0951478564eb7c81432323ac9615359863b6ef1b059a",
+      "outcome": "killed",
+      "status": 1,
+      "failedTests": [
+        "G7: an injected parent projection failure rolls back its base group and blocks descendants once"
+      ],
+      "reducedCases": [],
+      "log": "TAP version 13\n# Subtest: G7: an injected parent projection failure rolls back its base group and blocks descendants once\nnot ok 1 - G7: an injected parent projection failure rolls back its base group and blocks descendants once\n  ---\n  duration_ms: 278.095708\n  type: 'test'\n  location: '/private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-publication.test.mjs:144:1'\n  failureType: 'testCodeFailure'\n  error: 'main__Q'\n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: true\n  actual: false\n  operator: '=='\n  stack: |-\n    absentNative (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-publication.test.mjs:139:12)\n    TestContext.<anonymous> (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-publication.test.mjs:157:3)\n    async Test.run (node:internal/test_runner/test:1113:7)\n    async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 335.801167\n"
+    },
+    {
+      "id": "synthetic-provenance",
+      "file": "web/translator/translate.mjs",
+      "from": "if(n.synthetic&&scope.unit.references)scope=scope.withUnit(scope.unit.with({references:null}));",
+      "to": "// mutant: keep synthetic reference sink",
+      "test": "initial-models",
+      "pattern": "notation without a caller selection",
+      "expected": "killed",
+      "sourceDigest": "5c2e7870f3d75a1cf02cf2eb5e979356cf384dc14647c314445bf7560c1223f5",
+      "outcome": "killed",
+      "status": 1,
+      "failedTests": [
+        "imported initial and free fields keep the theory's notation without a caller selection"
+      ],
+      "reducedCases": [],
+      "log": "TAP version 13\n# Subtest: imported initial and free fields keep the theory's notation without a caller selection\nnot ok 1 - imported initial and free fields keep the theory's notation without a caller selection\n  ---\n  duration_ms: 350.721209\n  type: 'test'\n  location: '/private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/initial-models.test.mjs:245:1'\n  failureType: 'testCodeFailure'\n  error: |-\n    The expression evaluated to a falsy value:\n    \n      assert.ok(result.links.every(link => link.start >= 0 && link.end <= source.length))\n    \n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: true\n  actual: false\n  operator: '=='\n  stack: |-\n    TestContext.<anonymous> (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/initial-models.test.mjs:257:10)\n    async Test.run (node:internal/test_runner/test:1113:7)\n    async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 411.118125\n"
+    },
+    {
+      "id": "fallback-eligibility",
+      "file": "web/translator/match.mjs",
+      "from": "if(!shape.positions)throw primary;",
+      "to": "// mutant: try coherence for a nonrecursive boundary",
+      "test": "frontend-generation",
+      "pattern": "G8:",
+      "expected": "killed",
+      "sourceDigest": "1f748a1e0c2cecd182b381447da7042e91d4b4bd935ce4795b2eadec7ae2b96c",
+      "outcome": "killed",
+      "status": 1,
+      "failedTests": [
+        "G8: a wildcard mismatch retains its endpoints and written body range"
+      ],
+      "reducedCases": [],
+      "log": "TAP version 13\n# Subtest: G8: a wildcard mismatch retains its endpoints and written body range\nnot ok 1 - G8: a wildcard mismatch retains its endpoints and written body range\n  ---\n  duration_ms: 212.809833\n  type: 'test'\n  location: '/private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:109:64'\n  failureType: 'testCodeFailure'\n  error: |-\n    a nonrecursive boundary must not start coherence search\n    \n    1 !== 0\n    \n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: 0\n  actual: 1\n  operator: 'strictEqual'\n  stack: |-\n    Object.G8 (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:75:12)\n    TestContext.<anonymous> (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:111:102)\n    async Test.run (node:internal/test_runner/test:1113:7)\n    async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 268.773167\n"
+    },
+    {
+      "id": "lint-interface",
+      "file": "web/cubist/lint.mjs",
+      "from": "&& !publicTelescopes.has(node)",
+      "to": "",
+      "test": "frontend-generation",
+      "pattern": "G5:",
+      "expected": "killed",
+      "sourceDigest": "56102c9424469e1de3cfbcc90a6bd90ab08e32698d9721db9d9b546abb5f1e83",
+      "outcome": "killed",
+      "status": 1,
+      "failedTests": [
+        "G5: unused-binder advice preserves named arguments and generated interfaces"
+      ],
+      "reducedCases": [],
+      "log": "TAP version 13\n# Subtest: G5: unused-binder advice preserves named arguments and generated interfaces\nnot ok 1 - G5: unused-binder advice preserves named arguments and generated interfaces\n  ---\n  duration_ms: 448.467875\n  type: 'test'\n  location: '/private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:109:64'\n  failureType: 'testCodeFailure'\n  error: |-\n    Expected values to be strictly deep-equal:\n    + actual - expected\n    \n    + [\n    +   {\n    +     code: 'E817',\n    +     end: undefined,\n    +     module: 'main',\n    +     name: 'identity',\n    +     reason: \"T's models have no homomorphisms: its op's result mentions a carrier on both sides of an arrow, and such homomorphisms need not compose.\",\n    +     start: undefined\n    +   },\n    +   {\n    +     code: 'E378',\n    +     end: 158,\n    +     module: 'main',\n    +     name: 'named',\n    +     reason: 'T.Hom.make takes its arguments explicitly: a hole _ or a named argument is an argument of a definition or a function. at 5:3',\n    +     start: 148\n    +   },\n    +   {\n    +     code: 'E864',\n    +     end: 269,\n    +     module: 'main',\n    +     name: 'N',\n    +     reason: 'op uses an arrow type: the equational strategy requires named operation arguments, as in succ(x : M) : M. at 7:13',\n    +     start: 264\n    +   }\n    + ]\n    - []\n    \n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected:\n  actual:\n    0:\n      module: 'main'\n      name: 'identity'\n      reason: \"T's models have no homomorphisms: its op's result mentions a carrier on both sides of an arrow, and such homomorphisms need not compose.\"\n      code: 'E817'\n    1:\n      module: 'main'\n      name: 'named'\n      reason: 'T.Hom.make takes its arguments explicitly: a hole _ or a named argument is an argument of a definition or a function. at 5:3'\n      code: 'E378'\n      start: 148\n      end: 158\n    2:\n      module: 'main'\n      name: 'N'\n      reason: 'op uses an arrow type: the equational strategy requires named operation arguments, as in succ(x : M) : M. at 7:13'\n      code: 'E864'\n      start: 264\n      end: 269\n  operator: 'deepStrictEqual'\n  stack: |-\n    complete (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:23:36)\n    Object.G5 (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:59:7)\n    async Test.run (node:internal/test_runner/test:1113:7)\n    async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 514.091333\n"
+    },
+    {
+      "id": "fresh-label",
+      "file": "web/translator/translate.mjs",
+      "from": "scope.fresh(n.name.label??n.name.text)",
+      "to": "scope.fresh(n.name.text)",
+      "test": "frontend-provenance",
+      "pattern": "FG5:",
+      "expected": "survived",
+      "sourceDigest": "5c2e7870f3d75a1cf02cf2eb5e979356cf384dc14647c314445bf7560c1223f5",
+      "outcome": "survived",
+      "status": 0,
+      "failedTests": [],
+      "reducedCases": [],
+      "log": "TAP version 13\n# Subtest: FG5: freshened law and derived parameters preserve every written link and hover\nok 1 - FG5: freshened law and derived parameters preserve every written link and hover\n  ---\n  duration_ms: 564.222875\n  type: 'test'\n  ...\n# Subtest: FG5: safe lint preserves named constructors, Hom/Iso and initial/free clients\nok 2 - FG5: safe lint preserves named constructors, Hom/Iso and initial/free clients\n  ---\n  duration_ms: 845.412416\n  type: 'test'\n  ...\n# Subtest: FG5: the original arrow rewrite loses generated capability despite equal function types\nok 3 - FG5: the original arrow rewrite loses generated capability despite equal function types\n  ---\n  duration_ms: 282.097208\n  type: 'test'\n  ...\n# Subtest: FG5: CLI keeps public labels and the focused refusal category\nok 4 - FG5: CLI keeps public labels and the focused refusal category\n  ---\n  duration_ms: 588.586667\n  type: 'test'\n  ...\n1..4\n# tests 4\n# suites 0\n# pass 4\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 2340.96675\n"
+    },
+    {
+      "id": "recursive-update",
+      "file": "web/translator/match.mjs",
+      "from": "at = at.alias(RECURSIVE, updated);",
+      "to": "// mutant: keep previous private recursion entry",
+      "test": [
+        "declared-match",
+        "frontend-evidence",
+        "theory-hygiene",
+        "frontend-generation"
+      ],
+      "pattern": "recurs|FG4:|generalized",
+      "expected": "survived",
+      "sourceDigest": "1f748a1e0c2cecd182b381447da7042e91d4b4bd935ce4795b2eadec7ae2b96c",
+      "outcome": "survived",
+      "status": 0,
+      "failedTests": [],
+      "reducedCases": [],
+      "log": "TAP version 13\n# Subtest: recursion whose other arguments vary: the accumulator, computed and proved\nok 1 - recursion whose other arguments vary: the accumulator, computed and proved\n  ---\n  duration_ms: 334.979875\n  type: 'test'\n  ...\n# Subtest: recursion whose other arguments vary: abandoned work is charged once\nok 2 - recursion whose other arguments vary: abandoned work is charged once\n  ---\n  duration_ms: 0.250833\n  type: 'test'\n  ...\n# Subtest: a clause's goal shows a generalized parameter under its source name\nok 3 - a clause's goal shows a generalized parameter under its source name\n  ---\n  duration_ms: 50.41025\n  type: 'test'\n  ...\n# Subtest: FG4: nested matches retain model evidence through imported renamed inheritance and shadowing\nok 4 - FG4: nested matches retain model evidence through imported renamed inheritance and shadowing\n  ---\n  duration_ms: 726.71975\n  type: 'test'\n  ...\n# Subtest: FG4: dependent motives rebuild evidence for generalized model parameters\nok 5 - FG4: dependent motives rebuild evidence for generalized model parameters\n  ---\n  duration_ms: 218.138917\n  type: 'test'\n  ...\n# Subtest: FG4: nested matches specialize checked evidence for a dependent carrier family\nok 6 - FG4: nested matches specialize checked evidence for a dependent carrier family\n  ---\n  duration_ms: 219.481667\n  type: 'test'\n  ...\n# Subtest: FG4: checked evidence for one model cannot justify elimination into another model\nok 7 - FG4: checked evidence for one model cannot justify elimination into another model\n  ---\n  duration_ms: 188.632208\n  type: 'test'\n  ...\n# Subtest: FG4: contextual model evidence remains checked after refinement and dimension restriction\nok 8 - FG4: contextual model evidence remains checked after refinement and dimension restriction\n  ---\n  duration_ms: 167.138583\n  type: 'test'\n  ...\n# Subtest: FG4: failed recursive wildcard coherence preserves the primary mismatch and body site\nok 9 - FG4: failed recursive wildcard coherence preserves the primary mismatch and body site\n  ---\n  duration_ms: 250.727958\n  type: 'test'\n  ...\n# Subtest: FG4: successful recursive wildcard coherence publishes its checked inspection witness\nok 10 - FG4: successful recursive wildcard coherence publishes its checked inspection witness\n  ---\n  duration_ms: 121.791958\n  type: 'test'\n  ...\n# Subtest: G12: ordinary calls to earlier recursive values check and compute\nok 11 - G12: ordinary calls to earlier recursive values check and compute\n  ---\n  duration_ms: 336.638792\n  type: 'test'\n  ...\n# Subtest: FG0 controls: inherited recursive operations and initial-model clients compute\nok 12 - FG0 controls: inherited recursive operations and initial-model clients compute\n  ---\n  duration_ms: 335.220833\n  type: 'test'\n  ...\n# Subtest: FG0 controls: explicit path bodies remain checked and recursive type unfolding remains refused\nok 13 - FG0 controls: explicit path bodies remain checked and recursive type unfolding remains refused\n  ---\n  duration_ms: 551.491375\n  type: 'test'\n  ...\n# Subtest: FG6: generated recursive calls retain a predecessor after a nested match destructs it\nok 14 - FG6: generated recursive calls retain a predecessor after a nested match destructs it\n  ---\n  duration_ms: 369.957542\n  type: 'test'\n  ...\n# Subtest: generated recursive calls retain their declaration under same-named parameters and patterns\nok 15 - generated recursive calls retain their declaration under same-named parameters and patterns\n  ---\n  duration_ms: 556.871792\n  type: 'test'\n  ...\n# Subtest: catch-all path clauses respect recursive boundaries and require coherence\nok 16 - catch-all path clauses respect recursive boundaries and require coherence\n  ---\n  duration_ms: 1471.611958\n  type: 'test'\n  ...\n1..16\n# tests 16\n# suites 0\n# pass 16\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 2149.702958\n"
+    },
+    {
+      "id": "recursive-source-guard",
+      "file": "web/translator/translate.mjs",
+      "from": "if(recursive?.source!==n.fn.name)throw Error(selfReference(n.fn.name));",
+      "to": "// mutant: omit generated source guard",
+      "test": [
+        "declared-match",
+        "frontend-evidence",
+        "theory-hygiene",
+        "frontend-generation"
+      ],
+      "pattern": "recurs|FG4:|generalized",
+      "expected": "survived",
+      "sourceDigest": "5c2e7870f3d75a1cf02cf2eb5e979356cf384dc14647c314445bf7560c1223f5",
+      "outcome": "survived",
+      "status": 0,
+      "failedTests": [],
+      "reducedCases": [],
+      "log": "TAP version 13\n# Subtest: recursion whose other arguments vary: the accumulator, computed and proved\nok 1 - recursion whose other arguments vary: the accumulator, computed and proved\n  ---\n  duration_ms: 331.507333\n  type: 'test'\n  ...\n# Subtest: recursion whose other arguments vary: abandoned work is charged once\nok 2 - recursion whose other arguments vary: abandoned work is charged once\n  ---\n  duration_ms: 0.235708\n  type: 'test'\n  ...\n# Subtest: a clause's goal shows a generalized parameter under its source name\nok 3 - a clause's goal shows a generalized parameter under its source name\n  ---\n  duration_ms: 54.790959\n  type: 'test'\n  ...\n# Subtest: FG4: nested matches retain model evidence through imported renamed inheritance and shadowing\nok 4 - FG4: nested matches retain model evidence through imported renamed inheritance and shadowing\n  ---\n  duration_ms: 726.871875\n  type: 'test'\n  ...\n# Subtest: FG4: dependent motives rebuild evidence for generalized model parameters\nok 5 - FG4: dependent motives rebuild evidence for generalized model parameters\n  ---\n  duration_ms: 223.929708\n  type: 'test'\n  ...\n# Subtest: FG4: nested matches specialize checked evidence for a dependent carrier family\nok 6 - FG4: nested matches specialize checked evidence for a dependent carrier family\n  ---\n  duration_ms: 211.864042\n  type: 'test'\n  ...\n# Subtest: FG4: checked evidence for one model cannot justify elimination into another model\nok 7 - FG4: checked evidence for one model cannot justify elimination into another model\n  ---\n  duration_ms: 190.711167\n  type: 'test'\n  ...\n# Subtest: FG4: contextual model evidence remains checked after refinement and dimension restriction\nok 8 - FG4: contextual model evidence remains checked after refinement and dimension restriction\n  ---\n  duration_ms: 167.957833\n  type: 'test'\n  ...\n# Subtest: FG4: failed recursive wildcard coherence preserves the primary mismatch and body site\nok 9 - FG4: failed recursive wildcard coherence preserves the primary mismatch and body site\n  ---\n  duration_ms: 254.9975\n  type: 'test'\n  ...\n# Subtest: FG4: successful recursive wildcard coherence publishes its checked inspection witness\nok 10 - FG4: successful recursive wildcard coherence publishes its checked inspection witness\n  ---\n  duration_ms: 122.939792\n  type: 'test'\n  ...\n# Subtest: G12: ordinary calls to earlier recursive values check and compute\nok 11 - G12: ordinary calls to earlier recursive values check and compute\n  ---\n  duration_ms: 328.969292\n  type: 'test'\n  ...\n# Subtest: FG0 controls: inherited recursive operations and initial-model clients compute\nok 12 - FG0 controls: inherited recursive operations and initial-model clients compute\n  ---\n  duration_ms: 336.171292\n  type: 'test'\n  ...\n# Subtest: FG0 controls: explicit path bodies remain checked and recursive type unfolding remains refused\nok 13 - FG0 controls: explicit path bodies remain checked and recursive type unfolding remains refused\n  ---\n  duration_ms: 597.521709\n  type: 'test'\n  ...\n# Subtest: FG6: generated recursive calls retain a predecessor after a nested match destructs it\nok 14 - FG6: generated recursive calls retain a predecessor after a nested match destructs it\n  ---\n  duration_ms: 367.587792\n  type: 'test'\n  ...\n# Subtest: generated recursive calls retain their declaration under same-named parameters and patterns\nok 15 - generated recursive calls retain their declaration under same-named parameters and patterns\n  ---\n  duration_ms: 560.84825\n  type: 'test'\n  ...\n# Subtest: catch-all path clauses respect recursive boundaries and require coherence\nok 16 - catch-all path clauses respect recursive boundaries and require coherence\n  ---\n  duration_ms: 1507.736792\n  type: 'test'\n  ...\n1..16\n# tests 16\n# suites 0\n# pass 16\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 2135.613541\n"
+    },
+    {
+      "id": "hlevel-globals",
+      "file": "web/translator/initial-models.mjs",
+      "from": "new Set([N, T, \"refl\",",
+      "to": "new Set([N, T, \"refl\", \"IsSet\", \"IsProp\",",
+      "test": "theory-hygiene",
+      "pattern": "freshened parameters",
+      "expected": "survived",
+      "sourceDigest": "b5c28e4cdad78b874cc062f20424a54d7d5bf200af160a52b27fb5dba3d8ad28",
+      "outcome": "survived",
+      "status": 0,
+      "failedTests": [],
+      "reducedCases": [],
+      "log": "TAP version 13\n# Subtest: freshened parameters and operation arguments keep their public names in diagnostics and inspection\nok 1 - freshened parameters and operation arguments keep their public names in diagnostics and inspection\n  ---\n  duration_ms: 2539.210458\n  type: 'test'\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 1\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 2602.537916\n"
+    },
+    {
+      "id": "explicit-head",
+      "file": "web/translator/patterns.mjs",
+      "from": "implicitPath=constructor.dims&&fitting[0].head.kind===\"name\"",
+      "to": "implicitPath=constructor.dims",
+      "test": "frontend-generation",
+      "pattern": "explicit path bodies",
+      "expected": "killed",
+      "sourceDigest": "561b47bda05e18fa5ffcf96d471632bd70756ba3f19b71c142f305ffbe58c456",
+      "outcome": "killed",
+      "status": 1,
+      "failedTests": [
+        "FG0 controls: explicit path bodies remain checked and recursive type unfolding remains refused"
+      ],
+      "reducedCases": [],
+      "log": "TAP version 13\n# Subtest: FG0 controls: explicit path bodies remain checked and recursive type unfolding remains refused\nnot ok 1 - FG0 controls: explicit path bodies remain checked and recursive type unfolding remains refused\n  ---\n  duration_ms: 478.936834\n  type: 'test'\n  location: '/private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:194:1'\n  failureType: 'testCodeFailure'\n  error: |-\n    Expected values to be strictly equal:\n    + actual - expected\n    \n    + undefined\n    - 'E606'\n    \n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: 'E606'\n  operator: 'strictEqual'\n  stack: |-\n    TestContext.<anonymous> (file:///private/var/folders/2t/ytcynn_9371570hg59yj63qh0000gn/T/cubist-generation-mutations-OwZ1yF/tests/frontend-generation.test.mjs:210:10)\n    async Test.run (node:internal/test_runner/test:1113:7)\n    async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 544.45075\n"
+    }
+  ]
+}

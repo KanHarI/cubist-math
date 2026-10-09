@@ -104,3 +104,44 @@ an isolated copy. Counterexample/report consumers preserve seeds, limits,
 patches and source digests. This phase adds no AST kind, proof axiom, kernel
 rule or language capability. FG1–FG5 reports contain their corresponding
 production producer/consumer audits and before/after measurements.
+
+## Validation and resources
+
+The 32-case audit passes (18.8 seconds). The isolated seventeen-mutation
+run at `deff52a0` has thirteen assertion kills and the four documented
+survivors, with no invalid or unclassified outcomes. Its [raw report](frontend-generation-mutations.json)
+contains exact patches, source digests, named failing tests, process limits,
+logs and the reduced lexical-capture counterexample.
+
+An initial full-suite run alongside the mutation audit passed 831/832 tests
+but timed out on `bouquet_generation_edge`; the mutation audit also stopped
+on an incomplete unmodified recursion-test subprocess (only its TAP header
+was captured). The earlier runner did not retain its status/signal details,
+so that audit attempt is inconclusive; baseline errors now include those
+details. Neither event counts as a semantic finding or mutant kill. Rerunning the complete
+canonical corpus alone with unchanged limits passed all 3,857 declarations
+in 18.9 seconds. Rerunning the mutation audit alone produced the results
+above. No checker or process limit was increased.
+
+Clean `deff52a0` measurements use the same WASM build, default limits and
+three fresh sessions per workload as clean FG5 `2ae5ed22`, without other
+checks running. The [raw FG6 report](frontend-generation-metrics/fg6.json)
+records revision/build/frontend/source stamps. All deterministic work and
+arena measures exactly match FG5: instructions 118,890 / 51,844 / 125,893;
+queries 14,471 / 3,879 / 14,964; arena nodes 36,214 / 17,625 / 36,214; bytes
+4,593,664 / 2,624,512 / 4,593,664 for algebra / inheritance / fold. Recovered
+kernel exhaustions remain 5/0/5, with no deadline failures or gaps. Medians
+are 1082.5 / 290.6 / 1103.0 ms versus FG5's 1182.6 / 301.7 / 1188.9 ms.
+These timings do not establish a regression budget or speedup, and arena
+samples exclude JavaScript memory.
+
+A fresh full-suite run without the simultaneous audit passes all 832 tests,
+with zero failures, skips or TODOs (119.2 seconds). This includes the
+canonical corpus, library/source fixtures, CLI, inspection and direct gap
+contracts. The earlier timed-out run remains reported above.
+
+Inspector and built static-site browser suites pass, including G9's four
+written labels and definition navigation, REPL diagnostics, file browsing
+and elaboration panels. Diagnostic catalog, changed-report links, stamped
+build and diff checks pass. No production sources changed after the clean
+revision measured and tested above.

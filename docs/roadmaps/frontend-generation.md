@@ -8,6 +8,12 @@ failures. This document proposes implementation work; it does not mark
 those defects fixed. The [work plan](work-plan.md#frontend-generation-track)
 records its scheduling dependencies.
 
+Follow-up implementation evidence is maintained in the inventory's
+[fixing-commit table](../reports/frontend-generation-gaps.md) and the
+[FG6 gate report](../reports/frontend-generation-fg6.md). The planned
+contracts below remain the reference; the report records the unresolved
+historical skipped-mutation evidence rather than declaring it completed.
+
 The goal is to preserve the meaning and interface of a declaration through
 capture, inheritance, substitution, generation and elaboration. The
 generator must also refuse unsupported constructions before publishing
