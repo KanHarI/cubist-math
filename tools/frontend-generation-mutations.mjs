@@ -1,6 +1,6 @@
 // Repeatable contract mutations in an isolated copy, never the working tree.
 // node tools/frontend-generation-mutations.mjs REPORT.json [--audit] [ID...]
-import {mkdtemp,cp,readFile,writeFile,rm,mkdir} from "node:fs/promises";
+import {mkdtemp,cp,readFile,writeFile,rm,mkdir,readdir} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join,resolve} from "node:path";
 import {fileURLToPath} from "node:url";
@@ -88,15 +88,21 @@ try {
     const occurrences=original.split(m.from).length-1;
     if(occurrences!==1)throw Error(`${m.id}: expected one mutation site, found ${occurrences}`);
     const baseline=run(m);
-    if(baseline.status!==0||!/# pass [1-9]/.test(baseline.log))throw Error(`${m.id}: baseline failed or no tests ran\n${baseline.log}`);
+    if(baseline.status!==0||!/# pass [1-9]/.test(baseline.log))
+      throw Error(`${m.id}: baseline failed or no tests ran (status ${baseline.status}, signal ${baseline.signal}, error ${baseline.error??"none"})\n${baseline.log}`);
     let result;
     try {await writeFile(path,original.replace(m.from,m.to));result=run(m);}
     finally {await writeFile(path,original);}
     const invalid=result.error||result.signal||/SyntaxError:|ERR_MODULE_NOT_FOUND|ENOENT|testTimeoutFailure/.test(result.log);
     const outcome=invalid?"invalid":result.status===0?"survived":result.log.includes("ERR_ASSERTION")?"killed":"unclassified";
+    const failures=join(directory,"build/frontend-generation-failures");
+    const reducedCases=await Promise.all((await readdir(failures).catch(error=>{
+      if(error.code==="ENOENT")return [];throw error;
+    })).map(async name=>JSON.parse(await readFile(join(failures,name),"utf8"))));
     const entry={...m,sourceDigest:hash(original),outcome,status:result.status,error:result.error,
-      failedTests:[...result.log.matchAll(/not ok \d+ - (.+)/g)].map(match=>match[1]),log:result.log};
+      failedTests:[...result.log.matchAll(/not ok \d+ - (.+)/g)].map(match=>match[1]),reducedCases,log:result.log};
     report.mutations.push(entry);
+    await rm(failures,{recursive:true,force:true});
     console.log(`${m.id}: ${outcome} (expected ${m.expected})`);
     if(outcome!==m.expected)process.exitCode=1;
     await mkdir(resolve(destination,".."),{recursive:true});
