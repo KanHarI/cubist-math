@@ -1,0 +1,208 @@
+{
+  "revision": "ed276a03227c72b882969299400ba96548f29085",
+  "runtime": "v24.13.0",
+  "cpu": "Apple M3 Pro",
+  "build": {
+    "runtime": {
+      "sources": "247d7ff10f0a92a2846a2d4a37dbed8a7a325a6e52aac19c84fc17208493dfa8",
+      "outputs": "2ea69eeb5f665465efb9fa1bd38486b67bb1fed10460f2fb804b057b6284c254"
+    },
+    "kernel": {
+      "sources": "56d99ac4e3806287a564f1586ed36c2f41cafd13e9616d5db59d5baed0381d29",
+      "configuration": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)\n.tools/emsdk/upstream/emscripten/emcc -O3 -std=c11 -Wall -Wextra -Wpedantic -Werror -Ikernel/include -Ikernel/src --no-entry -sMODULARIZE -sEXPORT_ES6 -sENVIRONMENT=web,worker,node -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=16777216 -sMAXIMUM_MEMORY=4294967296 -sSTACK_SIZE=2097152 -sABORTING_MALLOC=0 -sFILESYSTEM=0 -sEXPORTED_FUNCTIONS=[\"_cb_abi_version\",\"_cb_new\",\"_cb_optimizations\",\"_cb_step_budget\",\"_cb_work\",\"_cb_deadline_ms\",\"_cb_checkpoint\",\"_cb_rollback\",\"_cb_commit_checkpoint\",\"_cb_relocated\",\"_cb_free\",\"_cb_error\",\"_cb_error_kind\",\"_cb_mismatch\",\"_cb_term\",\"_cb_formula_begin\",\"_cb_formula_clause\",\"_cb_formula_end\",\"_cb_normalize\",\"_cb_node\",\"_cb_formula_view\",\"_cb_definition\",\"_cb_head\",\"_cb_position_clear\",\"_cb_position_push\",\"_cb_position_set\",\"_cb_subterm\",\"_cb_clear_error\",\"_cb_instr\",\"_cb_judgement_count\",\"_cb_judgement\",\"_cb_judgement_context\",\"_cb_entry_count\",\"_cb_entry\",\"_cb_rename\",\"_cb_equiv_type\",\"_cb_fresh_symbol\",\"_cb_endpoint_term\",\"_cb_arena\",\"_cb_extensions\",\"_cb_signature\",\"_cb_signature_constructor\"] -sEXPORTED_RUNTIME_METHODS=[\"UTF8ToString\"]",
+      "outputs": "e59eea474843a1f7217ae93554155d935b0389e506fb70ae1f7c717efe84aa65"
+    }
+  },
+  "limits": "default declaration/search fuel and kernel budgets",
+  "samples": [
+    {
+      "name": "algebra",
+      "repeat": 0,
+      "source": "import hlevels; import algebra;",
+      "elapsedMs": 1357.614875,
+      "work": {
+        "instructions": 118781,
+        "rejected": 1211,
+        "instructionSteps": 376314,
+        "queries": 14411,
+        "failedQueries": 5,
+        "querySteps": 566945,
+        "exhausted": 5,
+        "deadlines": 0
+      },
+      "peakDeclarationArena": {
+        "nodes": 25377,
+        "bytes": 2889728
+      },
+      "gaps": []
+    },
+    {
+      "name": "algebra",
+      "repeat": 1,
+      "source": "import hlevels; import algebra;",
+      "elapsedMs": 1251.877458,
+      "work": {
+        "instructions": 118781,
+        "rejected": 1211,
+        "instructionSteps": 376314,
+        "queries": 14411,
+        "failedQueries": 5,
+        "querySteps": 566945,
+        "exhausted": 5,
+        "deadlines": 0
+      },
+      "peakDeclarationArena": {
+        "nodes": 25377,
+        "bytes": 2889728
+      },
+      "gaps": []
+    },
+    {
+      "name": "algebra",
+      "repeat": 2,
+      "source": "import hlevels; import algebra;",
+      "elapsedMs": 1235.302916,
+      "work": {
+        "instructions": 118781,
+        "rejected": 1211,
+        "instructionSteps": 376314,
+        "queries": 14411,
+        "failedQueries": 5,
+        "querySteps": 566945,
+        "exhausted": 5,
+        "deadlines": 0
+      },
+      "peakDeclarationArena": {
+        "nodes": 25377,
+        "bytes": 2889728
+      },
+      "gaps": []
+    },
+    {
+      "name": "inheritance",
+      "repeat": 0,
+      "source": "import hlevels; import nat;\ndef outside : Nat := zero;\ntheory P(U < UU0) { M : set U; c : M; op(x : Nat, y : M) : M; def helper(y : M) : M := op(outside, y); law l(y : M) : helper(y) = y; }\ntheory Q(U < UU0) extends P {}\ntheory R(U < UU0) extends Q {}\ndef meaning(S : R(U0), y : S.M) : S.op(zero, y) = y := S.l(y);",
+      "elapsedMs": 404.24729200000047,
+      "work": {
+        "instructions": 53172,
+        "rejected": 142,
+        "instructionSteps": 146186,
+        "queries": 3735,
+        "failedQueries": 0,
+        "querySteps": 131118,
+        "exhausted": 0,
+        "deadlines": 0
+      },
+      "peakDeclarationArena": {
+        "nodes": 14525,
+        "bytes": 1772544
+      },
+      "gaps": []
+    },
+    {
+      "name": "inheritance",
+      "repeat": 1,
+      "source": "import hlevels; import nat;\ndef outside : Nat := zero;\ntheory P(U < UU0) { M : set U; c : M; op(x : Nat, y : M) : M; def helper(y : M) : M := op(outside, y); law l(y : M) : helper(y) = y; }\ntheory Q(U < UU0) extends P {}\ntheory R(U < UU0) extends Q {}\ndef meaning(S : R(U0), y : S.M) : S.op(zero, y) = y := S.l(y);",
+      "elapsedMs": 346.1551250000002,
+      "work": {
+        "instructions": 53172,
+        "rejected": 142,
+        "instructionSteps": 146186,
+        "queries": 3735,
+        "failedQueries": 0,
+        "querySteps": 131118,
+        "exhausted": 0,
+        "deadlines": 0
+      },
+      "peakDeclarationArena": {
+        "nodes": 14525,
+        "bytes": 1772544
+      },
+      "gaps": []
+    },
+    {
+      "name": "inheritance",
+      "repeat": 2,
+      "source": "import hlevels; import nat;\ndef outside : Nat := zero;\ntheory P(U < UU0) { M : set U; c : M; op(x : Nat, y : M) : M; def helper(y : M) : M := op(outside, y); law l(y : M) : helper(y) = y; }\ntheory Q(U < UU0) extends P {}\ntheory R(U < UU0) extends Q {}\ndef meaning(S : R(U0), y : S.M) : S.op(zero, y) = y := S.l(y);",
+      "elapsedMs": 323.3208340000001,
+      "work": {
+        "instructions": 53172,
+        "rejected": 142,
+        "instructionSteps": 146186,
+        "queries": 3735,
+        "failedQueries": 0,
+        "querySteps": 131118,
+        "exhausted": 0,
+        "deadlines": 0
+      },
+      "peakDeclarationArena": {
+        "nodes": 14525,
+        "bytes": 1772544
+      },
+      "gaps": []
+    },
+    {
+      "name": "fold",
+      "repeat": 0,
+      "source": "import hlevels; import algebra; import nat;\nfree W(A : U0) : Monoid(U0) on A;\ndef computation : W.fold(Nat, nat_additive.monoid, fun (x : Nat) => x).map(W.gen(succ(zero))) = succ(zero) { rfl; }",
+      "elapsedMs": 1311.0315,
+      "work": {
+        "instructions": 128166,
+        "rejected": 1216,
+        "instructionSteps": 398737,
+        "queries": 14927,
+        "failedQueries": 5,
+        "querySteps": 582977,
+        "exhausted": 5,
+        "deadlines": 0
+      },
+      "peakDeclarationArena": {
+        "nodes": 25377,
+        "bytes": 2889728
+      },
+      "gaps": []
+    },
+    {
+      "name": "fold",
+      "repeat": 1,
+      "source": "import hlevels; import algebra; import nat;\nfree W(A : U0) : Monoid(U0) on A;\ndef computation : W.fold(Nat, nat_additive.monoid, fun (x : Nat) => x).map(W.gen(succ(zero))) = succ(zero) { rfl; }",
+      "elapsedMs": 1367.4175419999992,
+      "work": {
+        "instructions": 128166,
+        "rejected": 1216,
+        "instructionSteps": 398737,
+        "queries": 14927,
+        "failedQueries": 5,
+        "querySteps": 582977,
+        "exhausted": 5,
+        "deadlines": 0
+      },
+      "peakDeclarationArena": {
+        "nodes": 25377,
+        "bytes": 2889728
+      },
+      "gaps": []
+    },
+    {
+      "name": "fold",
+      "repeat": 2,
+      "source": "import hlevels; import algebra; import nat;\nfree W(A : U0) : Monoid(U0) on A;\ndef computation : W.fold(Nat, nat_additive.monoid, fun (x : Nat) => x).map(W.gen(succ(zero))) = succ(zero) { rfl; }",
+      "elapsedMs": 1316.1136660000002,
+      "work": {
+        "instructions": 128166,
+        "rejected": 1216,
+        "instructionSteps": 398737,
+        "queries": 14927,
+        "failedQueries": 5,
+        "querySteps": 582977,
+        "exhausted": 5,
+        "deadlines": 0
+      },
+      "peakDeclarationArena": {
+        "nodes": 25377,
+        "bytes": 2889728
+      },
+      "gaps": []
+    }
+  ]
+}

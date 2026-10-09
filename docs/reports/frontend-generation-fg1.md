@@ -96,6 +96,28 @@ declaration-boundary peak arena size and each wall time. Arena size is an
 available memory measure, not a whole-process memory peak. No performance
 budget is inferred from a single measurement.
 
+Measured on Node v24.13.0 / Apple M3 Pro, three fresh sessions per workload,
+with the same kernel build and default limits. The before report is
+[`ed276a03`](frontend-generation-metrics/fg0.json); the after report is the
+clean implementation commit [`fe05ea5e`](frontend-generation-metrics/fg1.json).
+The baseline used the same source/measurement loop before the reusable
+tool and frontend digests were added. Its raw build stamp and revision
+are retained rather than retroactively filling missing provenance.
+
+| Workload | Median wall ms, before → after | Instructions | Queries | Peak arena bytes |
+| --- | --- | --- | --- | --- |
+| Algebra import | 1251.9 → 1286.9 | 118781 → 118850 | 14411 → 14495 | 2889728 → 4593664 |
+| Captured inheritance | 346.2 → 320.0 | 53172 → 51732 | 3735 → 3883 | 1772544 → 2624512 |
+| Generated fold | 1316.1 → 1310.5 | 128166 → 125859 | 14927 → 14990 | 2889728 → 4593664 |
+
+All samples checked without gaps or deadlines. Algebra/fold each had six
+kernel budget-growth events after the change, versus five before;
+inheritance had none. No limit was increased. The wider atomic checkpoints
+retain more intermediate arena data until a family commits: observed peak
+arena bytes rose about 59% for algebra/fold and 48% for inheritance. These
+are costs to track in subsequent slices; the timings do not establish a
+performance improvement or a regression budget.
+
 Validation: `npm test -- --test-concurrency=4` reports 798 tests, 786 passed,
 12 expected TODOs assigned to later phases, and no failures. The inspector
 browser suite, built-site browser suite, diagnostic catalogue audit and
