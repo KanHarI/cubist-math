@@ -198,10 +198,36 @@ def k(x : H) : Unit := match x { first => tt; p(y) @ i => k(y); };
 def computation : k(first) = tt { rfl; }
 `);
   complete(explicit); accepted(explicit, ["k", "computation"]);
+  const wrongPath = await check(t, `import hlevels;
+inductive H : set U0 { first; p(y : H) : y = y; }
+def bad(x : H) : Unit := match x { first => tt; p(y) @ i => tt; };`);
+  assert.equal(wrongPath.result.gaps[0]?.code, "E606");
+  assert.ok(!wrongPath.program.steps("main").some(step => step.declaration === "bad" && step.kind === "obligation"));
+  const multiPath = await check(t, `import hlevels;
+inductive H : set U0 { first; p(y : H) : y = y; }
+inductive Bit : set U0 { off; yes; }
+def bad(x : H, b : Bit) : Unit := match x, b { first, _ => tt; p(y) @ i, _ => tt; };`);
+  assert.equal(multiPath.result.gaps[0]?.code, "E606");
+  assert.ok(!multiPath.program.steps("main").some(step => step.declaration === "bad" && step.kind === "obligation"));
   const refused = await check(t, `import hlevels; import nat;
 theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
   def iter(n : Nat) : M := match n { zero => c; succ(k) => op(iter(k)); };
   law nope(n : Nat) : iter(n) = c;
 }`);
   assert.equal(refused.result.gaps[0]?.code, "E845");
+});
+
+test("FG6: generated recursive calls retain a predecessor after a nested match destructs it", async t => {
+  for (const predecessor of ["k", "T"]) {
+    const checked = await check(t, `import hlevels; import nat;
+theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
+  def iter(n : Nat) : M := match n { zero => c;
+    succ(${predecessor}) => match ${predecessor} {
+      zero => op(iter(${predecessor})); succ(j) => op(iter(${predecessor}));
+    };
+  };
+}
+def computes(S : T(U0)) : S.iter(succ(succ(zero))) = S.op(S.op(S.c)) { rfl; }`);
+    complete(checked); accepted(checked, ["T.iter", "computes"]);
+  }
 });

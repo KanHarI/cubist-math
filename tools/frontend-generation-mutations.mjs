@@ -56,16 +56,16 @@ export const mutations=[
     "frontend-provenance","FG5:","survived"),
   mutation("recursive-update","web/translator/match.mjs",
     "at = at.alias(RECURSIVE, updated);", "// mutant: keep previous private recursion entry",
-    "theory-hygiene","generated recursive calls","survived"),
+    ["declared-match","frontend-evidence","theory-hygiene","frontend-generation"],"recurs|FG4:|generalized","survived"),
   mutation("recursive-source-guard","web/translator/translate.mjs",
     "if(recursive?.source!==n.fn.name)throw Error(selfReference(n.fn.name));", "// mutant: omit generated source guard",
-    "theory-hygiene","generated recursive calls","survived"),
+    ["declared-match","frontend-evidence","theory-hygiene","frontend-generation"],"recurs|FG4:|generalized","survived"),
   mutation("hlevel-globals","web/translator/initial-models.mjs",
     'new Set([N, T, "refl",', 'new Set([N, T, "refl", "IsSet", "IsProp",',
     "theory-hygiene","freshened parameters","survived"),
   mutation("explicit-head","web/translator/patterns.mjs",
     'implicitPath=constructor.dims&&fitting[0].head.kind==="name"', 'implicitPath=constructor.dims',
-    "frontend-generation","explicit path bodies","survived"),
+    "frontend-generation","explicit path bodies"),
 ];
 for(const id of selected)if(!mutations.some(m=>m.id===id))throw Error(`Unknown mutation ${id}`);
 const chosen=mutations.filter(m=>(audit||m.expected==="killed")&&(!selected.length||selected.includes(m.id)));
@@ -75,7 +75,8 @@ const report={version:1,revision:execFileSync("git",["rev-parse","HEAD"],{cwd:ro
 const hash=source=>createHash("sha256").update(source).digest("hex");
 const run=m=>{
   const env={...process.env,CUBIST_GENERATION_CASES:"8"};delete env.NODE_TEST_CONTEXT;
-  const result=spawnSync(process.execPath,["--test","--test-reporter=tap","--test-timeout=45000",`--test-name-pattern=${m.pattern}`,`tests/${m.test}.test.mjs`],
+  const result=spawnSync(process.execPath,["--test","--test-reporter=tap","--test-timeout=45000",`--test-name-pattern=${m.pattern}`,
+    ...[m.test].flat().map(name=>`tests/${name}.test.mjs`)],
     {cwd:directory,env,encoding:"utf8",timeout:60000,maxBuffer:8*1024*1024});
   return {status:result.status,error:result.error?.message,signal:result.signal,log:(result.stdout??"")+(result.stderr??"")};
 };

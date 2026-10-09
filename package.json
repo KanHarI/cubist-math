@@ -7,6 +7,8 @@
     "test:site": "node tests/site.browser.mjs",
     "test": "node tools/test.mjs",
     "test:browser": "node tests/cubical-inspector.browser.mjs",
+    "test:generation:mutations": "node tools/frontend-generation-mutations.mjs build/frontend-generation-mutations.json",
+    "test:generation:audit": "CUBIST_GENERATION_CASES=32 node --test tests/frontend-invariants.test.mjs && node tools/frontend-generation-mutations.mjs build/frontend-generation-mutation-audit.json --audit",
     "benchmark:cubical": "make wasm && node tools/benchmark-cubical.mjs",
     "baseline:evaluation": "make wasm && node tools/evaluation-baseline.mjs",
     "format:cubist": "node tools/format-cubist.mjs",

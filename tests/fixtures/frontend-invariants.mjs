@@ -19,7 +19,7 @@ ${noise?"def f : Unit := tt; def result : Unit := tt; def c1 : Unit := tt;":""}`
   const parent=`${header}
 theory T(U < UU0) { M : set U; c : M; op(n : Nat, x, y : M) : M;
   ${helpers}
-  def wrapped(${binder} : M, proof_ : ${binder} = ${binder}) : M := helper${depth-1}(${binder});
+  def wrapped(c : M, proof_ : c = c) : M := (fun (${binder} : M) => helper${depth-1}(${binder}))(c);
   law same(c : M) : helper${depth-1}(c) = op(0,c,c);
   ${recursive?"def iter(n : Nat) : M := match n { zero => c; succ(k) => op(0,iter(k),c); };\ndef twice(n : Nat) : M := op(0,iter(n),c);":""}
 }`;
@@ -31,6 +31,7 @@ use shifted;`;
   const setup=`${imported?"import fixture;":parent}\n${shifted}\n${child}`;
   const clients=`
 def intended(S : ${model}(U0), x : S.${M}) : S.wrapped(x,refl(x)) = S.${op}(zero,x,S.${c}) := refl(S.${op}(zero,x,S.${c}));
+def named(S : ${model}(U0), x : S.${M}) : S.${M} := ${model}.wrapped(S,c := x,proof_ := refl(x));
 def captured(S : ${model}(U0), x : S.${M}) : S.wrapped(x,refl(x)) = S.${op}(zero,x,x) := refl(S.${op}(zero,x,x));
 def law_meaning(S : ${model}(U0), x : S.${M}) : S.${op}(zero,x,S.${c}) = S.${op}(zero,x,x) := S.same(x);
 def identity(S : ${model}(U0), x : S.${M}) : ${model}.Hom.compose(${model}.Hom.id(S),${model}.Hom.id(S)).map(x) = x { rfl; }
@@ -46,7 +47,7 @@ def ordinary : U0 := forall unused : Unit. Unit;
 ${paths?`inductive Boundary : set U0 { left_; right_; path_ : left_ = right_; }
 def mismatch(x : Boundary) : Boundary := match x { left_ => left_; _ => right_; };`:""}`;
   return {source:setup+clients,fixtures:imported?{fixture:parent}:{},parent,model,names,
-    accepted:["intended","law_meaning","identity","generated","forgotten","fold_computes",...(inherited?["child_selection"]:[]),...(recursive?["earlier_call"]:[])],
+    accepted:["intended","named","law_meaning","identity","generated","forgotten","fold_computes",...(inherited?["child_selection"]:[]),...(recursive?["earlier_call"]:[])],
     expectedGaps:["captured",...(paths?["mismatch"]:[])],
     labelScope:`law same(c : M) : helper${depth-1}(c) = op(0,c,c);`};
 }
