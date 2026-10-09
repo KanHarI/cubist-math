@@ -691,7 +691,7 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
     const parameters = [];
     for (const members of parameterGroups(d.params)) {
       const group = nextGroup + 1 + parameters.length, type = through(members[0].type);
-      for (const p of members) parameters.push({name: token(p.name, p.at??d.at),label:p.label??p.name,type,group});
+      for (const p of members) parameters.push({name: {...token(p.name, p.at??d.at),label:p.label??p.name},label:p.label??p.name,type,group});
       for (const p of members) own.add(p.name);
     }
     out.push(declaration(`${T}.${d.name}`, [...headerParameters({ universe: true, parameter: true }),

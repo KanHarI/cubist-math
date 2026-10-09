@@ -1,7 +1,7 @@
 // Sources are independent clients, not snapshots of generated syntax. Keep
 // expected failures here until the responsible implementation slice lands.
 export const baseline = "00d4ecce016f7e18d13eedeced07dc098a2277cb";
-export const expectedFailures = new Set(["G5", "G9"]);
+export const expectedFailures = new Set();
 export const gaps = {
   G1: {
     phase: "FG1", contract: "a duplicate declaration preserves the first binding and its clients",
@@ -46,7 +46,9 @@ def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.c { rfl; }`,
     source: `import hlevels;
 theory T(U < UU0) { M : set U; op : forall x, y : M. M; }
 def identity(S : T(U0)) := T.Hom.id(S);
-def named(S : T(U0), a : S.M) : S.M := S.op(x := a, y := a);
+def named(S : T(U0), a : S.M) : S.M :=
+  T.Hom.make(S, S, map := fun (x : S.M) => x,
+    map_op := fun (x, y : S.M) => refl(S.op(x, y))).map(a);
 initial N : T(U0);`,
     clients: ["identity", "named", "N", "N.model", "N.fold"],
   },

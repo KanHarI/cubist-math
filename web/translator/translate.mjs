@@ -117,7 +117,7 @@ export class Translator {
     this.references=onReference ? (node,term,scope,env)=>onReference(node,term,new Map(scope.context),
       new Map(scope.dimensions),[...(env??[])].flatMap(([name,value])=>{
         const source=this.localSources.get(value);
-        return source?.name===name ? [{...source,term:value}] : [];
+        return source?.key===name ? [{...source,term:value}] : [];
       })) : null;
     this.onPublicationStart=onPublicationStart;
     this.onPublicationEnd=onPublicationEnd;
@@ -135,7 +135,12 @@ export class Translator {
     return new SourceUnit({checker:this.checker,moduleName:this.moduleName,simpRegistry:this.simpRegistry,
       references:this.references,freezeSuggestions:this.freezeSuggestions,...options});
   }
-  reference(scope,node,term,env=scope.env) {scope.unit.references?.(node.spelling?{...node,name:node.spelling}:node,term,scope,env);}
+  reference(scope,node,term,env=scope.env) {
+    const lookupKey=node.lookupKey??node.name;
+    const source=this.localSources.get(term);
+    const local=source?.key===lookupKey&&env?.get(lookupKey)===term;
+    scope.unit.references?.({...node,lookupKey,name:local?source.name:node.spelling??node.name},term,scope,env);
+  }
   // Run a tactic search at a scope whose unit carries the search's own fuel,
   // shared by everything it does, premise searches included; `name` names it
   // in a message. A search already running at the scope is joined instead.
@@ -164,8 +169,8 @@ export class Translator {
     // A source alias gets its own syntax object, even for `let y = x`.
     // This keeps lexical labels from overwriting x or leaking into siblings.
     term={...term};scope=scope.alias(name,term);
-    this.localSources.set(term,{name:node.label??name,start:node.start,end:node.end});
-    this.reference(scope,{...node,name:node.label??name,isBinding:true},term);
+    this.localSources.set(term,{key:name,name:node.label??name,start:node.start,end:node.end});
+    this.reference(scope,{...node,name:node.label??name,lookupKey:name,isBinding:true},term);
     return ["Var","U"].includes(term.tag)?scope:scope.modelEvidence(term);
   }
   // Interval names are cubical coordinates, never terms of a fabricated type.
