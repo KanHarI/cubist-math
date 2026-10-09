@@ -46,8 +46,9 @@ their meaning:
 | G3 unsupported law transport | `908fcd60`, [FG2 report](frontend-generation-fg2.md) | Active G3 contract; hidden law/evidence dependencies and fixed external controls in `frontend-dependencies.test.mjs` |
 | G10 source range, G11 telescope capture, G12 earlier value calls | `f70699fe`, [FG2 report](frontend-generation-fg2.md) | Active G10–G12 contracts; opposite intended/captured equations, renamed inheritance, computation and focused type-unfolding refusal |
 | G2 full generated universes | `91b3f5bd`, [FG3 report](frontend-generation-fg3.md) | Active G2 contract; fixed U0/U1 inputs, generic universes, inherited operations, dependent indices and genuine lowering refusals in `frontend-universes.test.mjs` |
+| G4 contextual evidence, G8 wildcard diagnostics | `d0abfe5a`, [FG4 report](frontend-generation-fg4.md) | Active G4/G8 contracts; nested/dependent model evidence, wrong-model refusal, charged failed fallback and checked successful coherence in `frontend-evidence.test.mjs` |
 
-G4, G5, G8 and G9 remain open in this stack at FG3. The notation-alias
+G5 and G9 remain open in this stack at FG4. The notation-alias
 audit's removal and its provenance distinction are documented in the FG2
 report. None of these changes registers the separate C1 deriving capability.
 
