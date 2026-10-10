@@ -1,5 +1,8 @@
 # Kernel instructions: a THTH-style forward kernel
 
+Progress reconciled on 2026-10-10 against main `cb525f07`. Open branch
+work is recorded separately in the [work plan](work-plan.md#branch-work).
+
 2026-09-30 update: Nat and W are now source-defined H1 inductives. Their
 primitive formation, constructor and elimination instructions have been
 removed; their ABI numbers remain reserved and are refused. The primitive
@@ -14,17 +17,17 @@ only; the term checker has no rule for them. Sums stay native.
 
 Status: merged into `proof-ergonomics-roadmap` on 2026-09-26 (PR #38). The
 instruction kernel is the trusted kernel, and elaboration checks every term
-through it. Since K1.4 on 2026-09-27 the driver uses its own guide by
-default. The term checker and its conversion oracle were retired on
+through it. Since K1.4 on 2026-09-27 the driver uses its own guide. The
+term checker and its conversion oracle were retired on
 2026-10-02 (work plan I1.2b; see
-[what remained of it](#what-remains-of-the-term-checker)); conditional
-stage 6 remains open. The
-[audit of 2026-09-28](audits/2026-09-28-audit.md) found that separation
+[what remained of it](#what-remains-of-the-term-checker)); stage 6 is
+started (see [Stages](#stages)). The
+[audit of 2026-09-28](historical/audits/2026-09-28-audit.md) found that separation
 incomplete: reduction called the old conversion, and its memo could change
 an instruction's acceptance. Work-plan I1.2a corrected both the same day,
 and enforces the boundary at run time; that section records how.
-H1's signature instructions (K2.2) are implemented behind the
-`CC_EXTENSION_H1` gate, with ABI version 3.
+H1's signature instructions (K2.2) are on by default since H1's release on
+2026-10-02; `CC_EXTENSION_H1` can switch them off. The ABI version is 3.
 Every later kernel item (G0, H) is a set of instructions; the
 [work plan](work-plan.md#the-instruction-kernel-and-this-plan) records how
 that changes the plan.
@@ -56,7 +59,7 @@ that changes the plan.
   (`node tools/instruction-coverage.mjs`): 30.7 s for the archive check and
   10.7 s for the second derivation. These are one run's observations.
   Every derived term is its source syntax, annotations included. The
-  first proof and `library/naturals` also use this admission path.
+  first proof and the library also use this admission path.
   Since I1.3 the command fails, with exit status 1, unless every import
   checks, no gap remains and every definition derives again; its report
   also gives the kernel work each phase cost (see [the driver](#the-driver)).
@@ -161,8 +164,8 @@ p    = Conv(pair, Symm(u))             // {n : Nat} ⊢ (0, <i> succ(n)) : lt(n,
   dimension or an endpoint). `Domain` and `Family` give the parts of a `Π` or
   `Σ` type as types in its universe.
 - **Definitions:** `Define` admits a closed judgement under a symbol and
-  returns its lookup; `Lookup` recalls an admitted definition, and refuses the
-  term checker's own (`cc_kernel_define`).
+  returns its lookup; `Lookup` recalls an admitted definition, and nothing
+  else.
 - **Equality judgements** `Γ ⊢ a ≡ b : T`, from `Refl`:
   - `Step(eq, side, position, rule)` contracts the highlighted redex, and only
     it: `Beta`, `Delta` (unfold the highlighted definition), `Iota` (an
@@ -296,15 +299,14 @@ The trusted base is the instructions and what they call: the single-step
 contractions, substitution, alpha equality, the normalizer and weak head
 normal form (for `Normalize` and `Whnf`), the interval and face algebra, and
 the metatheory the typing rules rely on (subject reduction, uniqueness of
-types up to conversion, cumulativity). The kernel's weak head normal form of
-a Glue element consults conversion for Glue's eta rule; that is a reduction
-rule's side condition, and any answer yields a convertible term. The term
-checker's typing rules and its conversion strategy are not in it, nor are the
-unfolding hints. The judgement graph is truncated with the syntax arena on
-rollback and commit. `test_instructions.c` derives `add`, `lt` and `lt_succ`
-forward and has the term checker accept the definitions, and checks the
-rejections: capture, dependency, mismatched binder types, open definitions,
-misplaced steps, and lookups of definitions `Define` did not admit.
+types up to conversion, cumulativity). Since I1.2a, the pair and Glue eta
+side conditions in reduction use syntax, not conversion search; the old
+conversion checker was deleted with I1.2b. The driver's search is untrusted:
+each proposed equality step must be admitted by the instructions. The judgement graph is truncated with the syntax arena on
+rollback and commit. `test_instructions.c` derives addition and trees
+forward over source-shaped Nat and W, and refuses the retired primitive
+syntax; `test_kernel_api.c` checks that `Lookup` recalls only admitted
+definitions and that `Define` refuses an open judgement.
 
 The interval and face algebra keeps its decision procedure in the kernel: it
 decides equality of De Morgan formulas, with no strategy to select.
@@ -327,7 +329,7 @@ context holds none holds on the whole cube.
   defined.
 - **Conversion search.** Where a rule needs two types to agree, or a type in a
   particular shape, the driver searches for the steps — the strategy
-  `term_conversion.c` uses today — and emits them as equality instructions.
+  `term_conversion.c` used then — and emits them as equality instructions.
 - **Unfolding hints** do not move with it: the search finds its own order,
   so that proofs need no hints. A notion of opacity, if it returns, would be
   the search never emitting `Delta` for a definition.
@@ -337,7 +339,8 @@ context holds none holds on the whole cube.
 The typing rules as instructions, the single-step contractions, alpha
 equality, the interval and face algebra, deterministic normalization, the two
 hash graphs, budgets and deadlines. The conversion strategy, the hints and
-every implicit reduction are now the untrusted term checker's alone.
+the implicit reductions were the term checker's, and were deleted with it on
+2026-10-02.
 
 ## The driver
 
@@ -352,7 +355,10 @@ trust:
   definitions lazily. The one defined later is unfolded first, and both when
   they are the same (lazy delta reduction, as in Lean). A face step takes a
   composition whose face holds to its tube, where `Whnf` would go on to
-  compute the tube's head, perhaps a large number in unary;
+  compute the tube's head, perhaps a large number in unary. A projection's
+  or an eliminator's argument whose next step would unfold a definition or
+  contract a lambda goes to its weak head in one `Whnf` step
+  (`scrutineeStep`), where single steps took dozens of instructions;
 - by `Whnf`, the kernel's own weak head normal form, for heads the steps do
   not take: composition, transport, Glue, pushouts;
 - by eta, expanding a neutral term against a lambda, path lambda, pair or
@@ -371,9 +377,10 @@ rewritten in place, toward a common form.
 or nothing when it or a nested computation runs out; `cc_kernel_rename`
 renames a free name; `cc_kernel_equiv_type` builds `Equiv(A, B)` as syntax;
 and `cc_kernel_fresh_symbol` allocates symbols, so the driver's names and the
-kernel's never share an id. `cc_kernel_convertible`, the term checker's
-conversion within a budget of 20,000 steps, is asked only with the `oracle`
-option, for comparison.
+kernel's never share an id. Two bridge reads, outside the trusted kernel,
+serve the search: `cb_position_set` sets a position up to 64 children deep
+in one call, and `cb_subterm` reads the subterm at it in a side of a
+judgement. Neither changes the graph.
 
 **The guide.** Whether two terms are equal, the driver answers itself (K1.4,
 2026-09-27): it compares them lazily through their weak head normal forms,
@@ -394,8 +401,8 @@ The K1.4 measurement before L1.1 recorded 37 s for the archive check and
 13.9 s for re-derivation; with the old conversion oracle, 34.9 s and 10.1 s.
 In that comparison, the oracle run failed one second derivation,
 `group_homomorphisms.group_hom_laws_prop`, with "The argument has the wrong
-type". The current default-guide observation is recorded above; this
-review did not rerun the optional oracle comparison.
+type". The current guide's observation is recorded above. The oracle
+comparison can no longer be rerun; the option was removed on 2026-10-02.
 
 After 64 steps in one comparison, two closed subterms the guide does not
 find different, such as a numeral's arithmetic, are normalized, one
@@ -404,7 +411,10 @@ factorial's took 1.1M arena nodes where 58k now do. Steps are counted over the
 whole comparison, since congruence splits a computation into many short
 ones, often under a binder. Past the limit, a comparison of open subterms
 inside a closed one gives up, and the closed one tries normal forms, once;
-if that fails, the steps go on. Open terms keep to lazy steps, since their
+if that fails, the steps go on. Each normal form may take 250,000 kernel
+steps (`NORMAL_FORM_STEPS`). A term whose normal form was not reached is
+remembered, and later comparisons with it keep to lazy steps at once, since
+normalization is deterministic. Open terms keep to lazy steps, since their
 normal forms can be enormous. A path lambda applied at a compound interval
 formula contracts its body's computing head first, before the formula is
 substituted; the driver's alpha comparison is memoized over the shared term
@@ -426,6 +436,9 @@ mention it differ for ever.
 
 The driver caches judgement reads, scopes and derivations; the kernel indexes
 entries by symbol. Together, these took the archive from 457 s to 14 s.
+Since 2026-10-06 the kernel wrapper also keeps each node read and each weak
+head for the declaration, and keeps reads of settled nodes from one
+declaration to the next.
 
 A learned policy for this search, trained against the kernel with the
 heuristic as its teacher and derivation cost as its objective, is designed
@@ -546,9 +559,19 @@ there is no term checker's trace to fall back to.
 6. **Performance:** an untrusted native search module if JavaScript is too
    slow; certificate compaction; content hashes for exported certificates;
    a learned search policy for cheaper derivations
-   ([learned-search.md](learned-search.md)).
+   ([learned-search.md](learned-search.md)). Started on 2026-10-06
+   (#194–#197): the bridge reads a focused subterm in one call; the kernel
+   wrapper keeps node reads and weak heads; normal forms are bounded and not
+   retried; and a projection's argument goes to its weak head in one step.
+   The recorded library measurement was about four times faster than
+   before #194; this reconciliation did not rerun that benchmark. The native search module, certificate compaction, content
+   hashes and a learned policy remain.
 
 ## Stage 4: the trusted kernel
+
+Historical migration stage, completed before the term checker was removed.
+Its checker/oracle descriptions below record that intermediate architecture;
+[current retirement status](#what-remains-of-the-term-checker) governs today.
 
 **Admission.** Every definition, whatever its source (a declaration, a
 universe specialization, a `with unfolding` helper, a builtin such as `ua`),
@@ -587,6 +610,9 @@ takes 61 s, up from 34 s.
 derived its output. Stage 5 removes it.
 
 ## Stage 5: the term checker leaves elaboration
+
+Historical migration evidence. Stage 5 completed; I1.2b subsequently removed
+the remaining checker APIs and oracle on 2026-10-02.
 
 **Raw syntax.** The elaborator hands the driver the source syntax, not the
 term checker's output, and the driver does what the term checker did before
@@ -740,14 +766,14 @@ against 33 s, three declarations ran out of kernel budget
 `f2_embedded_compositum_is_f2`) and five dependents went untranslated, and
 deriving every definition again took 34 s against 10 s. The driver's own
 guide (above) closed that gap on 2026-09-27 (work plan K1.4), and is now the
-default: the driver no longer asks the term checker anything. What remains
-is its retirement, a separate change (I1.2b): the folded comparison, with
-the level, formula and scope helpers it uses, and the pushout bridge
-builder move to their own files, and `check_*.c`, the rest of
-`term_conversion.c` and `unfolding_hints.c` are deleted, together with
-`cc_kernel_check`, `cc_kernel_convertible` and `cc_kernel_define`. The
-call graph above lists what must move. Stage 6 stays conditional on
-JavaScript being too slow.
+default: the driver no longer asks the term checker anything. It retired
+on 2026-10-02 (I1.2b), as recorded above: the folded comparison, with the
+level, formula and scope helpers it uses, and the pushout bridge builder
+moved to their own files, and `check_*.c`, the rest of
+`term_conversion.c` and `unfolding_hints.c` were deleted, together with
+`cc_kernel_check`, `cc_kernel_convertible` and `cc_kernel_define`. Stage 6
+was conditional on JavaScript being too slow; its first performance work
+landed on 2026-10-06 (see [Stages](#stages)).
 
 ## Decisions
 

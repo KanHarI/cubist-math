@@ -3,7 +3,7 @@
 Status: design direction and proposed acceptance criteria, recorded on
 2026-09-28. Archive evidence was inspected on `h1-signatures` at `e7bdae5`;
 the implementation baseline is the one reviewed in the
-[work-plan audit](../audits/2026-09-28-audit.md). The
+[work-plan audit](../historical/audits/2026-09-28-audit.md). The
 [work plan](../work-plan.md) remains the scheduling authority.
 
 ## Goal
@@ -255,7 +255,7 @@ proof examples and fill the remaining contracts:
 | Domain proof methods | Specify supported algebraic/logical methods and a library extension mechanism; the planned path-algebra normalizers address a different class of goals. |
 
 The [proof ergonomics roadmap](../proof-ergonomics-roadmap.md), its
-[implementation plan](../proof-ergonomics-implementation-plan.md), and the
+[implementation plan](../historical/proof-ergonomics-implementation-plan.md), and the
 [HoTT automation roadmap](../hott-automation-roadmap.md) remain the homes of
 their implementation details. This document proposes a common success
 criterion for their eventual result. Focused archive fixtures fit the

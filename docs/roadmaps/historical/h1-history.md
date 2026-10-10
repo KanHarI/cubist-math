@@ -1,6 +1,6 @@
 # H1 specification: history
 
-The [H1 specification](h1-signature-specification.md) states H1 as it is.
+The [H1 specification](../h1-signature-specification.md) states H1 as it is.
 This file keeps the parts of it that recorded how H1 got there, moved here
 on 2026-10-02 as they stood: its status and release record, its review
 rounds and decisions, the marker contract of the experimental mode, and
@@ -32,7 +32,7 @@ source-defined; both primitive C implementations have been retired. This
 changes the deployment default while the mathematical release review below
 remains pending. It does not discharge the release checklist. Statements
 below about retaining primitive W refer to the earlier implementation; the
-[migration record](h1-program-types.md) describes the current universe limits.
+[migration record](../h1-program-types.md) describes the current universe limits.
 
 2026-10-01 decisions and update, by the maintainer:
 
@@ -41,13 +41,13 @@ below about retaining primitive W refer to the earlier implementation; the
   no longer covers sums, even if the tier-parametric proposal is adopted.
 - **Pushouts are a declared type.** `Pushout` is an ordinary H1 declaration
   with the path constructor `push(c) : inl(f(c)) = inr(g(c))`, in
-  [`pushout.cubist`](../../archive/first-library/pushout.cubist). Its
+  [`pushout.cubist`](../../../archive/first-library/pushout.cubist). Its
   primitive formation, constructors, eliminator and computation rules have
   been retired, and their tags and ABI slots reserved, as for Nat and W. So
   the assumed baseline of 4.1 no longer contains pushouts: they are covered
   by the H1 model and canonicity arguments instead. Statements below about
   the native pushout describe the earlier implementation; the
-  [migration record](h1-program-types.md) describes the current API.
+  [migration record](../h1-program-types.md) describes the current API.
 
 Status: approved on 2026-09-27 for experimental implementation; reviewed
 against `02a57ef` on 2026-09-28 by the
@@ -74,7 +74,7 @@ on the `h1-signatures` branch. Its statuses are distinct:
   are implemented, historical evidence since 2026-10-02 rather than a
   release gate (checklist item 6), with the X2 remainder in the
   [differential record](h1-differential-evidence.md). K2.5 has an exact
-  ledger verifier and [scoped migrations](h1-truncation-migration.md).
+  ledger verifier and [scoped migrations](../h1-truncation-migration.md).
 
 **Release checklist for finite-level H1.** The experimental option is
 removed, and default admission granted, only when every item has evidence
@@ -83,16 +83,16 @@ both were done on 2026-10-02, and item 5's run was repeated at that
 revision the same day:
 
 1. D1, D4 and D5 written out and reviewed (4.2, 4.3).
-   **Approved on 2026-10-02:** the [model construction](h1-model.md);
+   **Approved on 2026-10-02:** the [model construction](../h1-model.md);
 2. Lemma H2's full case analysis, and the critical-pair check of 3.7.
    **Approved on 2026-09-30:** the [case analysis and overlap
    table](h1-critical-pairs.md);
 3. canonicity (4.4) reviewed, relative to the assumed baseline of 4.1.
-   **Approved on 2026-10-02:** the [canonicity argument](h1-canonicity.md);
+   **Approved on 2026-10-02:** the [canonicity argument](../h1-canonicity.md);
 4. the acceptance matrix of 10.10 complete, K10 and K11 included. Every
    case is now traced; X2 retains the remainder listed below;
    `tests/acceptance-matrix.test.mjs` checks the matrix against the tests.
-   **Approved on 2026-10-02:** the [matrix](h1-signature-specification.md#1010-coverage-of-the-acceptance-cases)
+   **Approved on 2026-10-02:** the [matrix](../h1-signature-specification.md#1010-coverage-of-the-acceptance-cases)
    as traced; its X2 remainder belongs to item 6;
 5. a recorded run of the whole suite at a pinned revision, repeated at
    the release's own. The first was CI run 36472206548, at `bef00e3` on
@@ -117,8 +117,8 @@ revision the same day:
 The evidence for items 1–3, the mathematical ones, and what a review
 decision on each still needs are gathered in the
 [review evidence](h1-review-evidence.md) (2026-09-29). Review drafts of the
-three arguments followed on 2026-09-30: the [model](h1-model.md), the
-[critical pairs](h1-critical-pairs.md) and [canonicity](h1-canonicity.md).
+three arguments followed on 2026-09-30: the [model](../h1-model.md), the
+[critical pairs](../h1-critical-pairs.md) and [canonicity](../h1-canonicity.md).
 The model and canonicity drafts were revised the same day after their
 first review, which found three substantive issues, and again after the
 second, on 2026-10-01. The maintainer approved both on 2026-10-02.

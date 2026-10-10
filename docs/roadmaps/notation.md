@@ -1,18 +1,23 @@
 # Notation views and literals (L2.10)
 
+Progress reconciled on 2026-10-10 against main `cb525f07`. Open branch
+work is recorded separately in the [work plan](work-plan.md#branch-work).
+
 Status: roadmap, revised 2026-10-05, with [decisions](#decisions) recorded
 the same day, and revised again that day: one selection form, `use`, and
 qualified operators (decisions 7 and 8). The direction is explicit notation views: select a
 mathematical structure, then elaborate its operations as ordinary
-applications. L2.10i, `~` for reversal, is implemented (2026-10-06);
-nothing else here is. What the decisions settle is
-settled; the rest of the syntax below is proposed, and the implementation
-gates at the end still need their contracts and tests. This is an
-elaborator and tooling change, with no kernel rule changes.
+applications. L2.10a–e and L2.10i–k are implemented (2026-10-06). What
+remains of them is the file-level shadowing warning, inspection of
+selections and operand recipes, and qualifying a shadowed notation's name
+in printing. L2.10f–h are later work. This is an elaborator and tooling
+change, with no kernel rule changes.
 
 ## Why now
 
-Building the integers and rationals exposed these limitations:
+Before L2.10, building the integers and rationals exposed these
+limitations. L2.10a–e and L2.10i–k removed them on 2026-10-06, except the
+unary size of numerals (L2.10f):
 
 - Numerals mean natural numbers only, in unary. A rational half is
   `rat(int(1, 0), 1)`, decimals such as `2.3` and numbers such as `5i` in
@@ -41,9 +46,9 @@ inferring a mathematical structure from an operand's type.
 Settled on 2026-10-05:
 
 1. **No name-based operators or numerals.** An operator or a literal means
-   what the selected view binds, and nothing else. Today `+`, `*`, `<` and
-   `<=` fall back to whatever `add`, `mul`, `isLt` and `le` are in scope,
-   and a numeral to whatever `Nat` is. Both fallbacks are retired
+   what the selected view binds, and nothing else. Until L2.10j, `+`, `*`,
+   `<` and `<=` fell back to whatever `add`, `mul`, `isLt` and `le` were in
+   scope, and a numeral to whatever `Nat` was. Both fallbacks are retired
    ([L2.10j](#l210j-retiring-name-based-operators)): an operator or literal
    outside any view is an error. A file that uses natural numbers starts
    with `use nat;`. Where that does not fit, it is explicit:
@@ -74,8 +79,8 @@ Settled on 2026-10-05:
    `use` select their model's view, and the innermost selection wins. So
    `use nat;` at the top of a file leaves its sections' operators to their
    models.
-7. **One selection form, `use`** (revised the same day). It replaces both
-   today's `open G;` and the proposed `using v;`; `using` stays in
+7. **One selection form, `use`** (revised the same day). It replaced both
+   `open G;` and the proposed `using v;`; `using` stays in
    `simpa … using h`, and two other proposals select with it
    ([open question 4](#open-questions)). `use x;` selects `x`'s notation and, when
    `x` is a model, binds its field names, to the end of the enclosing
@@ -89,8 +94,8 @@ Settled on 2026-10-05:
    that the file goes on to use, and the qualified forms stay available.
    `open` moved to `use` in two commits on 2026-10-06, as `cases` did
    (L2.4c's sixth slice): `use` and `x.(e)` of a model, and qualified
-   operators, are implemented; named notations such as `nat`, and the
-   shadowing warning, come with L2.10a.
+   operators, are implemented; named notations such as `nat` came with
+   L2.10a. The shadowing warning is not implemented yet.
 8. **Qualified operators.** `a G.(+) b` applies `G`'s binding of `+`,
    with `+`'s precedence and associativity; `G.(-) x` is the unary form,
    and `G.(+)` alone the operation as a function. A parent's operator is
@@ -176,8 +181,10 @@ compiled into a function of its own: its right side's free names are
 read where the notation is declared, under keys no source name can spell,
 and a use substitutes its operands for the pattern's names, so a later
 binding changes nothing (`cubist-tests/notation_views.cubist`). L2.10b's
-operators and operand recipes, L2.10c's literal rules, L2.10d's printing
-and inspection of selections, and the file-level shadowing warning remain.
+operators and operand recipes, L2.10c's literal rules and L2.10d's
+printing followed the same day. Two parts remain: the file-level shadowing
+warning, and inspection of selections, since the inspector shows no
+notation selection and no operand recipe.
 
 ### What a view contains
 
@@ -203,9 +210,10 @@ notation nat {
 }
 ```
 
-Each rule is compiled once, when the view is declared, into an ordinary
-checked function, so a use is an application of that function and the
-printer recognizes exactly those applications. `>` and `>=` have no rules:
+A rule is not compiled into a function of its own. Its right side's names
+are read where the notation is declared, and a use substitutes its
+operands for the pattern's names, so a use elaborates to the rule's right
+side. The printer recognizes those right sides (L2.10d). `>` and `>=` have no rules:
 `x > y` is `y < x`, and `x >= y` is `y <= x`.
 
 A view has at most one binding for an operator. Conflicting bindings in a
@@ -217,8 +225,8 @@ the theory has the view, and `integers.(x - y)` needs no declaration of its
 own. A child's view does not combine competing meanings by testing operand
 types.
 
-`integers` and `rationals` name existing models. `nat` will export the named
-view above. This does not add a primitive natural-number type or require
+`integers` and `rationals` name existing models. `library/nat.cubist`
+exports the named view above. This does not add a primitive natural-number type or require
 constructing an algebraic model for the prelude. A named view and a model's
 view have the same contract.
 
@@ -403,8 +411,7 @@ def pow(x : M, n : Nat) : M := … notation x ^ nat.(n);
 An operand whose type is the theory's sort is read in the current view
 without saying so. Any other operand must name its view, or the declaration
 is refused. The sort is a variable when the theory is declared, so this
-never compares carriers. How recipes are inspected remains an
-implementation gate.
+never compares carriers. The inspector does not show recipes yet.
 
 Ordinary function calls have no new parameter-view inference in this
 release: their arguments inherit the surrounding view unless explicitly
@@ -421,20 +428,20 @@ is `y <= x`; a view cannot declare them, so they never disagree with `<`
 and `<=`. Keep every precedence and associativity relationship between
 existing operators.
 
-Reversal first moves to its own token, `~` (L2.10i), so `-` never has to
-mean both arithmetic and reversal. `~` keeps the grouping that `-` has for
-reversal today:
+Reversal moved first to its own token, `~` (L2.10i), so `-` never has to
+mean both arithmetic and reversal. `~` kept the grouping that `-` had for
+reversal:
 
 ```
-~p @ i       means (~p) @ i, as -p @ i does today
-p @ ~i & j   means p @ ((~i) & j), as p @ -i & j does today
+~p @ i       means (~p) @ i, as -p @ i did before L2.10i
+p @ ~i & j   means p @ ((~i) & j), as p @ -i & j did
 ```
 
 `~` is a fixed language form, as `++`, `&` and `|` are; no view binds it.
 The existing evidence,
 [`tests/path-operators.test.mjs`](../../tests/path-operators.test.mjs) and
 [`cubist-tests/path_operators.cubist`](../../cubist-tests/path_operators.cubist),
-moves to `~` with L2.10i and keeps its groupings.
+moved to `~` with L2.10i and kept its groupings.
 
 Binary `-` shares addition's precedence and left associativity; `/` shares
 multiplication's. The new comparisons join the existing comparison level.
@@ -504,8 +511,9 @@ at the character it names (E905), and emits `parsed_value(parse, tt)`,
 which the kernel checks by evaluation. `rationals` reads `1/2`, `0.5`
 and `1_2/4` and refuses `1/0` at its denominator; `integers` reads
 numerals as `int(n, 0)`; `nat` reads plain numerals. A notation with
-neither rule refuses literals (E907, E908); a section keeps reading
-numerals as before, until L2.10j. A literal rule reads every numeric token
+neither rule refuses literals (E907, E908). A section read numerals by
+name until L2.10j; since then its selection reads them as any other
+does. A literal rule reads every numeric token
 as written, `007` and `0b101` included; a numeral's limit of 256 and a
 binary literal's of 256 bits apply only where one is built. A rule's
 names, the `Nat` of its numerals included, are read where it is declared,
@@ -629,9 +637,8 @@ Expected types check the resulting term; they do not choose a different
 literal rule when two carriers happen to agree. An explicit `nat.(3)`
 always uses natural numerals, including inside another view.
 
-Until L2.10j, a numeral outside any view keeps today's reading as the
-`Nat` in scope; after it, a literal outside any view is an error. Within the
-explicit `nat`
+Since L2.10j, a literal outside any view is an error; for a plain
+numeral it suggests `use nat;` (E911). Within the explicit `nat`
 view, both operators and numerals are fixed by that view. It has no division
 binding and no lexeme rule, so `nat.(1/2)` is an error. There is no rule
 that defaults by examining all surrounding operators and no retry in
@@ -666,9 +673,8 @@ is glyphs and reads back as one token; and a numeral rule's application
 prints as the numeral where its notation is selected and each place of
 the numeral holds the same one. An operator's operands print in the views
 its rule reads them in, as `nat` for `x ^ nat.(n)`, and `^` groups to the
-right, a model's as a named notation's. Until
-L2.10j, nat's operations print unqualified where nothing is selected,
-where name-based reading reads them. Goals show in their scope's
+right, a model's as a named notation's. Since L2.10j, nat's operations
+print qualified, `nat.(x + 3)`, where nothing is selected. Goals show in their scope's
 selection, and a file-level `use` covers the directives after it, which
 print in it. Evidence: `cubist-tests/notation_printing.cubist`, whose
 printed `5 = 5` reads back as the term. A shadowed notation's name is not
@@ -742,16 +748,16 @@ argument of an ordinary function inside another notation, as the contract
 foresaw; parameter-view annotations for ordinary functions would remove
 the latter, after more use. A rational equation has no `decide` yet
 (L2.10g), so its proof restates its sides. The library's own statements
-precede its models, `integers` and `rationals`, so its migration waits for
-L2.10j's `use nat;`; nothing in L2.10a–e required rewriting it.
+precede its models, `integers` and `rationals`, and select `nat` since
+L2.10j; nothing in L2.10a–e required rewriting them.
 
-First migrate small examples in `integers`, `rationals` and `algebra`,
-including the cases in the acceptance table below. Measure the qualifiers
-needed in mixed arithmetic and in ordinary function arguments. Update the
-reference and inspector examples with each released slice. A library-wide
-rewrite is not a prerequisite for evaluating the design.
+The pilots migrated small examples in `integers`, `rationals` and
+`algebra` and measured the qualifiers (above). A library-wide rewrite was
+not a prerequisite for evaluating the design.
 
-Proposed examples, to become checked acceptance fixtures when implemented:
+The examples below check as written. `cubist-tests/notation_pilots.cubist`
+holds them, with the integers selected for each statement and the rational
+equation proved:
 
 ```
 import integers;
@@ -775,8 +781,7 @@ def sum_value : Q := rationals.(1/2 + 1/3);
 ```
 import algebra;
 
-def square_one{{U < UU0}}(G : Group.Model(U)) :
-  G.(G.one * G.one = G.one) := G.one_mul(G.one);
+def square_one(U < UU0, G : Group(U)) : G.(one * one = one) := G.one_mul(G.one);
 
 // Same carrier, different operations, with no competing registrations.
 def additive_product(x, y : Nat) : Nat := nat_additive.(x * y);
@@ -787,39 +792,35 @@ For a future ordinal model whose view declares natural powers and a
 numeral interpretation:
 
 ```
-def cantor(O : Ordinal.Model(U0)) : O.M := O.(O.w^2 + O.w + 1);
-def power(O : Ordinal.Model(U0), n : Nat) : O.M := O.(2 ^ n);
-def next_power(O : Ordinal.Model(U0), n : Nat) : O.M := O.(2 ^ (n + 1));
+def cantor(O : Ordinal(U0)) : O.M := O.(O.w^2 + O.w + 1);
+def power(O : Ordinal(U0), n : Nat) : O.M := O.(2 ^ n);
+def next_power(O : Ordinal(U0), n : Nat) : O.M := O.(2 ^ (n + 1));
 ```
 
-`Ordinal` is schematic, not an existing library declaration. The first
-implementation uses a small suitable model fixture to test the power
-recipe; it does not depend on completing an ordinal library.
+`Ordinal` is schematic, not an existing library declaration.
+`cubist-tests/notation_operators.cubist` tests the power recipe on a small
+ring fixture, `x ^ nat.(n)`, without an ordinal library.
 
 ### Existing source keeps its meaning
 
-Until L2.10j, existing `open`, model-parameter sections, natural literals
-and the name-based operator fallback keep their released behavior outside
-the new explicit regions. Path and coordinate reversal change spelling with
-L2.10i, not meaning. In particular, adding derived negation or numeral
-metadata to a theory must not silently activate arithmetic `-` or model
-numerals in old `open` blocks or sections. New view metadata is consumed
-only at explicit view sites during this transition.
+Until L2.10j, existing `open` blocks, model-parameter sections, natural
+literals and the name-based operator fallback kept their released behavior
+outside the new explicit regions, and new view metadata was read only at
+explicit view sites. Path and coordinate reversal changed spelling with
+L2.10i, not meaning. L2.10j ended that transition on 2026-10-06: `open` is
+now `use`, and every selection, a section's included, is complete.
 
 A section's model parameter and a `use` select their model's view, and
 the innermost selection wins. Inside `use nat;`, a section over a group
 reads `*` as the group's, and a nested `nat.(…)` reads it as the naturals'
-again. Entering a model's view opens its names (decision 7). Before L2.10j, outside
-any explicit region, a section or `open` keeps its released behavior,
-falling back by name for an operator it does not bind; inside a region,
-every selected view is complete. These interactions need fixtures covering
-both directions of nesting.
+again. Entering a model's view opens its names (decision 7). The library's
+`algebra` checks the first direction, sections inside `use nat;`; no
+fixture yet has `nat.(…)` inside a section.
 
-The view slices force no migration: the archive and other released sources
-keep checking unchanged. Retiring the name-based fallback is decided, and is
-its own slice, L2.10j, with its own migration; it is not hidden in the view
-slices. Sections and `use`, today's `open`, keep binding operators, as view selections.
-New examples should teach explicit views.
+The view slices forced no migration: the archive and other released
+sources kept checking unchanged. Retiring the name-based fallback was its
+own slice, L2.10j, with its own migration. Sections and `use` bind
+operators as view selections. New examples should teach explicit views.
 
 This extends the [core theories](core-theories.md) principle that scope
 chooses operations. It also agrees with the explicit structure selection
@@ -837,11 +838,11 @@ read with `~` for each prefix `-` when its revision predates the swap.
 `~p` reverses a path, as `sym(p)` does, and `~i` reverses a coordinate, as
 `flip(i)` does, replacing `-p` and `-i`. Cubical Agda writes coordinate
 reversal `~ i`. The two agree: `(~p) @ i` and `p @ ~i` are the same point.
-`~` takes unary `-`'s present precedence, tighter than `@`, and the lexer
-does not use `~` today.
+`~` took the precedence that unary `-` had for reversal, tighter than `@`;
+the lexer did not use `~` before.
 
-This slice comes first, before any view: it changes spelling, not meaning,
-and it frees `-` for L2.10b. The change is small:
+This slice came first, before any view: it changed spelling, not meaning,
+and it freed `-` for L2.10b. The change was small:
 
 | Where | Coordinates, `-i` | Paths, `-p` |
 | --- | --- | --- |
@@ -849,20 +850,19 @@ and it frees `-` for L2.10b. The change is small:
 | `cubist-tests/` | `path_operators`, `printer_lint` | `path_operators` |
 | `archive/` | none | none |
 
-That is 17 coordinate and 9 path uses, against 55 uses of `flip` and 904
-of `sym`. Beyond them, the reference pages `cubical.html` and `paths.html`
-describe `-`, `tests/path-operators.test.mjs` tests its parses, the goal
-printer writes a reversed coordinate as `-i`
-([`web/cubical-source-text.mjs`](../../web/cubical-source-text.mjs)), and
-the translator's messages name `-i`.
+That was 17 coordinate and 9 path uses, against 55 uses of `flip` and 904
+of `sym`. Beyond them, the reference pages `cubical.html` and `paths.html`,
+`tests/path-operators.test.mjs`, the goal printer
+([`web/cubical-source-text.mjs`](../../web/cubical-source-text.mjs)) and
+the translator's messages named `-`; all moved to `~`.
 
-It lands in two commits, as the retirement of `cases` did: first `~` is
-accepted beside `-`, and every source moves to it and is checked while `-`
-still parses; then `-` stops reversing, with a message naming `~p` and `~i`.
+It landed in two commits, as the retirement of `cases` did: first `~` was
+accepted beside `-`, and every source moved to it and was checked while `-`
+still parsed; then `-` stopped reversing, with a message naming `~p` and `~i`.
 The rewrite that reads historical sources in today's syntax
 ([`web/cubist/legacy-syntax.mjs`](../../web/cubist/legacy-syntax.mjs)) may
 turn `-` into `~` only for revisions before the swap, because arithmetic
-`-` returns with L2.10b. Until then, unary `-` is an error. Both are done:
+`-` returned with L2.10b. Both are done:
 `historicalSource` takes `minusReverses`, which
 `tools/verify-proof-migration.mjs` sets for a base before the swap.
 
@@ -913,29 +913,29 @@ notation. After this slice an operator or a literal means only what the
 selected view, a `use` or a section binds. Anywhere else it is an error
 that suggests `use nat;`.
 
-Once the `nat` view exists (L2.10a–c), the slice lands in two commits, as
-L2.10i does:
+Once the `nat` view existed (L2.10a–c), the slice landed in two commits,
+as L2.10i did:
 
-1. Every module that relies on the fallback gains `use nat;` after its
-   imports. Where that does not fit, a use becomes explicit, `nat.(a + b)`
-   or `add(a, b)`. The migration is checked while the fallback still
-   exists, so every declaration elaborates to the same term.
-2. The fallback is removed.
+1. Every module that relied on the fallback gained `use nat;` after its
+   imports. Where that did not fit, a use became explicit, `nat.(a + b)`
+   or `add(a, b)`. The migration was checked while the fallback still
+   existed, so every declaration elaborated to the same term.
+2. The fallback was removed.
 
 The three test modules that declare their own `add`
 ([`patterns`](../../cubist-tests/patterns.cubist),
 [`declared_match`](../../cubist-tests/declared_match.cubist) and
 [`declared_match_operator_call`](../../cubist-tests/declared_match_operator_call.cubist))
-move to explicit calls or a view of their own. A section or `use` inside
+moved to explicit calls or a view of their own. A section or `use` inside
 the `use nat;` region selects its own model's view, innermost first, so
 the sections of [`library/algebra.cubist`](../../library/algebra.cubist)
-keep their operators.
+kept their operators.
 
-Binary literals need the same treatment. `0b110` is a `BinaryNat` today,
-built from whatever `binary_zero`, `binary_one`, `binary_bit0`,
-`binary_bit1` and `binary_positive` are in scope
+Binary literals needed the same treatment. Before this slice, `0b110` was
+a `BinaryNat` built from whatever `binary_zero`, `binary_one`,
+`binary_bit0`, `binary_bit1` and `binary_positive` were in scope
 ([`web/cubist/binary-literals.mjs`](../../web/cubist/binary-literals.mjs)),
-the same name-based reading. There are 117 such literals in 9 files: three
+the same name-based reading. There were 117 such literals in 9 files: three
 test modules and six archive modules. The `nat` view has no `literal` rule,
 so `use nat;` alone would refuse them, and after this slice a literal
 outside any view is an error. So the module that declares `BinaryNat`,
@@ -952,9 +952,9 @@ evaluate 2 + 2 expecting 4;
 evaluate binary_mul(binary.(0b1101), binary.(0b1011)) expecting binary.(0b10001111);
 ```
 
-A binary literal's parse computes to today's expansion, so the migration
-checks that each elaborates to a definitionally equal term rather than an
-identical one. The printer qualifies a binary value wherever the
+A binary literal's parse computes to the earlier expansion, so the
+migration checked that each elaborates to a definitionally equal term
+rather than an identical one. The printer qualifies a binary value wherever the
 surrounding view is not `binary`.
 
 ## L2.10k. Fields with a partial inverse
@@ -972,22 +972,23 @@ inverse, so `inv(rationals, x, nonzero)` computes. `Field.Hom` has only
 `cubist-tests/theories.cubist`'s `Inhabited`, and the reference's
 library-algebra section.
 
-`Field`'s inverse is total today, `inv(x : R) : R`: `mul_inv` assumes `x`
-is not zero, and nothing is said of `inv(zero)`. It becomes partial. A
-generated `Hom` requires every operation to take and return sorts
-([`web/cubist/morphisms.mjs`](../../web/cubist/morphisms.mjs)), so an
-operation `inv(x : R, nonzero : x = zero -> Void) : R` would cost `Field`
-its homomorphisms. Invertibility becomes a law instead, and `inv` is
-derived from it.
+Before L2.10k, `Field`'s inverse was total, `inv(x : R) : R`: `mul_inv`
+assumed `x` was not zero, and nothing was said of `inv(zero)`. It is now
+partial. An operation `inv(x : R, nonzero : x = zero -> Void) : R` would
+cost `Field` its homomorphisms: the type of `nonzero` names `x`, which a
+homomorphism pushes forward (E817,
+[`web/cubist/morphisms.mjs`](../../web/cubist/morphisms.mjs)).
+Invertibility is a law instead, and `inv` is derived from it.
 
-A law must state an evident proposition (L2.4's check, E818): an equation
-between elements of a sort, `Void`, or `forall`, `->` and `and` over those.
+A law must state an evident proposition (L2.4's check, E818): before
+L2.10k, an equation between elements of a sort, `Void`, or `forall`, `->`
+and `and` over those.
 `exists y : R. x * y = one` is a proposition, since inverses in a
 commutative ring are unique and `R` is a set, but not by its form, so the
 check refuses it. The law states the truncated existence instead:
 
 ```
-theory Field extends CommRing {
+theory Field(U < UU0) extends CommRing {
   law inverses(x : R, nonzero : x = zero -> Void) : Trunc(U, exists y : R. x * y = one);
   law zero_ne_one : zero = one -> Void;
 }
@@ -1001,25 +1002,28 @@ theory Field extends CommRing {
   the rationals the elimination computes, and so does `inv`.
 - Being a field becomes a property of a ring, so `Field.Hom` is
   `CommRing`'s, which is the right notion.
-- Division between variables is `div(x, y, nonzero)`, and no field's view
-  binds `/`. The rationals' literals (L2.10c) write `1/2` without evidence,
-  because their parser checks the denominator.
+- Division between variables would be `div(x, y, nonzero)`, which the
+  library does not define yet; no field's view binds `/`. The rationals'
+  literals (L2.10c) write `1/2` without evidence, because their parser
+  checks the denominator.
 
-This changes [`library/algebra.cubist`](../../library/algebra.cubist) and
+This changed [`library/algebra.cubist`](../../library/algebra.cubist) and
 the rationals' model in
-[`library/rationals.cubist`](../../library/rationals.cubist). It does not
-depend on views and can land before them, once two gaps in theories close:
+[`library/rationals.cubist`](../../library/rationals.cubist). It did not
+depend on views. It needed two gaps in theories closed, and both are:
 
-- The law check must accept a truncation: an application of an inductive
+- The law check accepts a truncation: an application of an inductive
   declared at `prop`, as `Trunc` is
   ([`library/h1_truncation.cubist`](../../library/h1_truncation.cubist)).
-- A law must be able to name the theory's universe, which `Trunc` takes
-  first; today the universe of a theory's sorts has no name in its body.
+- A law can name the theory's universe, which `Trunc` takes first:
+  L2.4c's header names it.
 
 ## Acceptance cases
 
-These are implementation requirements, not claims that this documentation
-change implements or passes them.
+These are the implementation's requirements. The notation fixtures check
+them (L2.10e), with two exceptions: printing does not yet qualify a
+shadowed notation's name (L2.10d), and no fixture yet has `nat.(…)`
+inside a section.
 
 | Case | Required result |
 | --- | --- |
@@ -1039,9 +1043,9 @@ change implements or passes them.
 | Model identity in printing | Terms using different operations on the same carrier remain distinct after print/re-elaborate; shadowed view names are qualified. |
 | Natural data in printer fallbacks | An ordinary call containing natural numeral data round-trips inside a different numeral view even when that view's carrier equals `Nat`; print `f(nat.(3))` when required. |
 | Reversal | After L2.10i, `~p @ i` and `p @ ~i & j` group as `-p @ i` and `p @ -i & j` did, and check to the same terms. `-x^2`, `-x * y`, `-p @ i`, `p @ i^2` and `x * p @ i` follow L2.10b's order, with the cubical operators tightest; `-p` on a path is an error, not reversal. |
-| Scope compatibility | Existing `open`/section fixtures keep their meanings. Inside `use nat;`, a section over a group reads `*` as the group's, and a nested `nat.(…)` reads it as the naturals' again. |
+| Scope compatibility | Section fixtures keep their meanings; `open` is now `use`. Inside `use nat;`, a section over a group reads `*` as the group's, and a nested `nat.(…)` reads it as the naturals' again. |
 | No name-based operators | After L2.10j, `x + y` or `3` outside any view, `use` or section is an error that suggests `use nat;`, even where a function named `add` or a type named `Nat` is in scope. |
-| Mixed decimal and binary literals | Under `use nat;`, `binary.(0b1101)` is the `BinaryNat` today's `0b1101` is, definitionally; a bare `0b1101` there is refused; a printed binary value is qualified outside the `binary` view. |
+| Mixed decimal and binary literals | Under `use nat;`, `binary.(0b1101)` is the `BinaryNat` that `0b1101` was before L2.10j, definitionally; a bare `0b1101` there is refused; a printed binary value is qualified outside the `binary` view. |
 | Partial inverse | A field's `inv` requires evidence that its argument is not zero; the `inverses` law passes the law check as a truncation; `Field.Hom` is generated as before; the rationals' literals need no evidence. |
 
 ## Deferred work
@@ -1125,6 +1129,15 @@ gate and remains optional. Explicit views are always available.
    the word, those need another name; or notation's views are renamed while
    nothing is implemented. The word is taken twice already: L2.7's
    eliminator views, `match … using view`, also use it, with `using`.
+
+   **Status (2026-10-07).** L2.10a–e shipped without the word.
+   - **The language and reference:** the keyword is `notation`, and the
+     reference's [theories chapter](../../web/reference/theories.html)
+     says "notation" and "selection".
+   - **Still "view":** this roadmap's prose and some of the translator's
+     internal names.
+   - **Still open:** whether the prose follows, and what L2.7's eliminator
+     views and theory interpretations are called.
 3. **Qualified operators' operands:** read where they stand, as decided,
    or in the operator's notation, as in `G.(a + b)`.
 4. **`using` in other proposals.** Computation notation's `do using M` and
@@ -1136,36 +1149,22 @@ gate and remains optional. Explicit views are always available.
 
 | Slice | Content | Depends on |
 | --- | --- | --- |
-| L2.10a | Named views (`notation v { … }`) and model views, `v.(e)` and `use v;` at a file's top level and in blocks, qualified operators `a G.(+) b`, immutable bindings, scope/import rules and inspection; existing source unchanged | L2.4 |
-| L2.10b | Binary `-`, `/`, `^`, and `>`, `>=` derived from `<`, `<=`; arithmetic unary `-`; operand views named in patterns; derived operations without new model fields | L2.10a, L2.10i |
-| L2.10c | Literal rules, `numeral(n : Nat)` and `literal(s : Lexeme)`; the numeric token's shape; `Glyph`, `Lexeme`, `Parsed` and shared parsers; evidence checked by evaluation; role-preserving elaboration and equality checking | L2.10a, L2.10b |
-| L2.10d | Context-aware source printing, lexemes included, qualified fallback and round-trip checks preserving operations and model arguments | L2.10a–c |
-| L2.10e | Small integer, rational and abstract-model pilots; all acceptance cases, reference updates and measurement of qualification costs | L2.10a–d |
+| L2.10a | Named views (`notation v { … }`) and model views, `v.(e)` and `use v;` at a file's top level and in blocks, qualified operators `a G.(+) b`, immutable bindings, scope/import rules and inspection; existing source unchanged. **Done** on 2026-10-06, but for the file-level shadowing warning and inspection of selections | L2.4 |
+| L2.10b | Binary `-`, `/`, `^`, and `>`, `>=` derived from `<`, `<=`; arithmetic unary `-`; operand views named in patterns; derived operations without new model fields. **Done** on 2026-10-06 | L2.10a, L2.10i |
+| L2.10c | Literal rules, `numeral(n : Nat)` and `literal(s : Lexeme)`; the numeric token's shape; `Glyph`, `Lexeme`, `Parsed` and shared parsers; evidence checked by evaluation; role-preserving elaboration and equality checking. **Done** on 2026-10-06 | L2.10a, L2.10b |
+| L2.10d | Context-aware source printing, lexemes included, qualified fallback and round-trip checks preserving operations and model arguments. **Done** on 2026-10-06, but for qualifying a shadowed notation's name | L2.10a–c |
+| L2.10e | Small integer, rational and abstract-model pilots; all acceptance cases, reference updates and measurement of qualification costs. **Done** on 2026-10-06, but for the two acceptance gaps noted there | L2.10a–d |
 | L2.10f | Large numerals: compact binary natural data and its printing contract | L2.10c, L2.10d |
 | L2.10g | Explicit decidability and a checked, bounded `decide` proof statement | Separate proof-statement contract; not required by L2.10a–e |
 | L2.10h | Notation rules: patterns with typed, repeated and binding holes, and side conditions. Proposed, not decided | Separate grammar and tooling contract; L2.10a–d |
 | L2.10i | `~` for path and coordinate reversal, migrated while `-` still parses, then `-` retired as reversal. **Done** on 2026-10-06 | None: first |
 | L2.10j | Retiring the name-based operator and numeral fallbacks: a `use nat;` migration, a `binary` view for binary literals, then removal. **Done** on 2026-10-06 | L2.10a–c |
-| L2.10k | `Field` with invertibility as a truncated law and `inv` derived by unique choice; the rationals' model | L2.4, with truncations in laws and a name for a theory's universe; independent of views |
+| L2.10k | `Field` with invertibility as a truncated law and `inv` derived by unique choice; the rationals' model. **Done** on 2026-10-06 | L2.4, with truncations in laws and a name for a theory's universe; independent of views |
 
-The explicit-view direction is chosen. Before implementation, settle and
-review these concrete contracts without reopening it by default:
-
-1. The grammar's remaining details: nested qualifiers and member
-   selectors. The forms of `v.(e)`, `use v;`, `a G.(+) b`, `notation v { … }`, operand
-   views in patterns and the operator order are decided.
-2. The representation of model-specific view metadata, inherited recipes,
-   derived definitions and literal rules; no recovery by carrier equality
-   and no change to old `open`/section behavior before L2.10j.
-3. Diagnostics for missing operators, absent literal rules, a lexeme
-   parser's errors, wrong argument types and qualifications needed at
-   ordinary function calls.
-4. The printer's supported source forms and context data, and checked
-   fixtures for every acceptance case, before presenting generated goals in
-   the new notation.
-
-L2.10i can land first, on its own, and L2.10k independently of views.
-L2.10a–e form the first coherent delivery, developed through the small
-pilots with tests and reference updates at each slice, and L2.10j follows
-them. L2.10f–h and any automatic selection are later work; none is required
-to validate the explicit-view design.
+The explicit-view direction is chosen and delivered: L2.10i landed first,
+then L2.10a–e, L2.10j and L2.10k, all on 2026-10-06, each with its
+contracts settled in its section. What remains of them is the file-level
+shadowing warning (decision 7), inspection of selections and operand
+recipes, and qualifying a shadowed notation's name in printing (L2.10d).
+L2.10f–h and any automatic selection are later work; none is required to
+validate the explicit-view design.
