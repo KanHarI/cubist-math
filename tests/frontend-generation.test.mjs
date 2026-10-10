@@ -8,175 +8,26 @@ import {parse} from "../web/cubist/parser.mjs";
 import {cubistTestModules} from "../web/cubist/modules.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
 import {checkProgram} from "./check-program.mjs";
-import {gaps, expectedFailures, historicalCoverage, passingCoverage, collisionVariants, matchVariants, lintVariants, captureVariants, captureSource} from "./fixtures/frontend-generation.mjs";
+import {cases, historicalCoverage, passingCoverage} from "./fixtures/frontend-generation.mjs";
+import {accepted, complete, observeCase, recordCase, validateFixture} from "./frontend-generation-contracts.mjs";
 
 const module = await createCubical();
 const check = (t, source, fixtures = {}) => {
   const library = sourceReader();
   return checkProgram(t, source, {module, reader: (name, importer) => fixtures[name] ?? library(name, importer)});
 };
-const accepted = (checked, names) => {
-  for (const name of names) {
-    const output = checked.get(name);
-    assert.equal(output.verified, true, `${name}: ${output.reason}`);
-    assert.deepEqual(output.axioms, [], `${name} must not introduce assumptions`);
-  }
-};
-const complete = checked => assert.deepEqual(checked.result.gaps, []);
-const gap = (checked, name) => {
-  const found = checked.result.gaps.find(item => item.name === name);
-  assert.ok(found, `missing refusal for ${name}`);
-  return found;
-};
-const observationPositions = ({source, observations}) => {
-  const start = source.indexOf(observations.scope);
-  return [...observations.scope.matchAll(/\b\w+\b/g)]
-    .filter(match => match[0] === observations.label).map(match => start + match.index);
-};
-const validateFixture = ({source, diagnostic, observations, rewrite}) => {
-  const contains = (text, fragment, label) => {
-    assert.ok(typeof fragment === "string" && fragment.length > 0, `${label} must be nonempty`);
-    assert.ok(text.includes(fragment), `${label} must exist in its source`);
-  };
-  if (diagnostic && ("scope" in diagnostic || "token" in diagnostic)) {
-    contains(source, diagnostic.scope, "diagnostic scope");
-    contains(diagnostic.scope, diagnostic.token, "diagnostic token");
-  }
-  if (diagnostic && "conflict" in diagnostic) {
-    contains(source, diagnostic.conflict, "diagnostic conflict");
-    contains(diagnostic.conflict, "succ(c)", "conflicting binder");
-    contains(diagnostic.conflict, "k(c)", "conflicting helper call");
-  }
-  if (observations) {
-    contains(source, observations.scope, "observation scope");
-    contains(observations.scope, observations.label, "observation label");
-    assert.ok(Number.isInteger(observations.sites) && observations.sites > 0, "observation count must be positive");
-    assert.equal(observationPositions({source, observations}).length, observations.sites, "observation sites must match the fixture");
-  }
-  if (rewrite) {
-    contains(source, rewrite.from, "lint rewrite target");
-    assert.ok(typeof rewrite.to === "string" && rewrite.to.length > 0, "lint replacement must be nonempty");
-    assert.notEqual(rewrite.from, rewrite.to, "lint rewrite must change the source");
-  }
-};
-const coversOriginalToken = (actual, {source, diagnostic}) => {
-  const scope = source.indexOf(diagnostic.scope);
-  const token = scope + diagnostic.scope.lastIndexOf(diagnostic.token);
-  assert.ok(actual.end > actual.start, "diagnostic range must be nonempty");
-  assert.ok(actual.start >= scope && actual.end <= scope + diagnostic.scope.length,
-    "diagnostic range must stay within the original body or law");
-  assert.ok(actual.start <= token && actual.end >= token + diagnostic.token.length,
-    `diagnostic range must cover ${diagnostic.token}`);
-};
-
-const contracts = {
-  G1(checked, t, fixture) {
-    accepted(checked, fixture.clients);
-    assert.equal(checked.get("N").type, fixture.originalType);
-    assert.equal(checked.result.gaps.length, 1);
-    assert.match(gap(checked, "N").reason, /already|duplicate/i);
-  },
-  G2(checked) { complete(checked); accepted(checked, gaps.G2.clients); },
-  G3(checked) {
-    accepted(checked, gaps.G3.clients);
-    for (const prefix of gaps.G3.absentFamilies)
-      assert.ok(!checked.result.outputs.some(o => o.name === prefix || o.name.startsWith(prefix + ".")), `${prefix} must not publish a partial family`);
-    assert.ok(!checked.result.gaps.some(g => ["E606", "E340"].includes(g.code)), "unsupported transport must not cascade into type errors");
-    // Query the refused family through an actual client, including the field,
-    // binder and dependency in the diagnostic, without breaking the base T.
-    const refusal = gap(checked, "unsupported");
-    assert.equal(refusal.code, "E817");
-    for (const name of ["op", "p", "l"]) assert.match(refusal.reason, new RegExp(`\\b${name}\\b`));
-    assert.match(refusal.reason, /depend|transport|unsupported/i);
-  },
-  G4(checked, t, fixture) { complete(checked); accepted(checked, fixture.clients); },
-  async G5(checked, t, fixture) {
-    complete(checked); accepted(checked, fixture.clients);
-    const advice = lint(fixture.source).filter(w => ["W705", "W706"].includes(w.code));
-    if (advice.length) {
-      // This is the rewrite the warning actually recommends. A standalone
-      // function type remaining equivalent is insufficient: recheck clients.
-      const rewritten = fixture.source.replace(fixture.rewrite.from, fixture.rewrite.to);
-      const result = await check(t, rewritten);
-      complete(result); accepted(result, fixture.clients);
-    }
-  },
-  G6(checked) {
-    accepted(checked, gaps.G6.clients);
-    assert.equal(gap(checked, "P").code, "E343");
-    assert.equal(gap(checked, "C").code, "E340");
-    assert.equal(checked.result.gaps.length, 2);
-    assert.match(gap(checked, "C").reason, /\bP\b/);
-  },
-  G8(checked) {
-    const actual = gap(checked, "h"), expected = gaps.G8.diagnostic;
-    assert.equal(actual.code, expected.code);
-    assert.ok(actual.reason.includes(expected.found)); assert.ok(actual.reason.includes(expected.expected));
-    coversOriginalToken(actual, gaps.G8);
-  },
-  G9(checked) {
-    complete(checked); accepted(checked, gaps.G9.clients);
-    const {observations} = gaps.G9;
-    const positions = observationPositions(gaps.G9), binder = positions[0];
-    for (const position of positions) {
-      const links = checked.result.links.filter(link => link.start === position && link.end === position + observations.label.length);
-      assert.ok(links.length, `missing link at ${position}`);
-      for (const link of links) {
-        assert.equal(link.name, observations.label);
-        assert.equal(link.definitionStart, binder, `definition target at ${position}`);
-      }
-    }
-  },
-  G10(checked) {
-    const actual = checked.result.gaps[0], {source, diagnostic} = gaps.G10;
-    assert.equal(actual?.code, diagnostic.code);
-    const conflict = source.indexOf(diagnostic.conflict);
-    const binder = conflict + "succ(".length, call = conflict + diagnostic.conflict.indexOf("k(c)");
-    assert.ok(actual.end > actual.start, "capture range must be nonempty");
-    assert.ok(actual.start >= conflict && actual.end <= conflict + diagnostic.conflict.length);
-    assert.ok([binder, call].some(site => actual.start <= site && actual.end > site), "range must cover the conflicting binder or helper call");
-  },
-  G11(checked) {
-    accepted(checked, gaps.G11.clients);
-    assert.equal(gap(checked, "captured").code, "E606");
-    assert.equal(checked.result.gaps.length, 1);
-  },
-  G12(checked) { complete(checked); accepted(checked, gaps.G12.clients); },
-  "G12-range"(checked) {
-    assert.equal(checked.result.gaps.length, 1);
-    const actual = gap(checked, "T");
-    assert.equal(actual.code, gaps["G12-range"].diagnostic.code);
-    coversOriginalToken(actual, gaps["G12-range"]);
-  },
-};
-
-function contractTest(id, fixture, label = fixture.contract) { test(`${id}: ${label}`, async t => {
-  // Fixture mistakes are setup failures, outside the expected-defect catch.
-  validateFixture(fixture);
-  const checked = await check(t, fixture.source);
-  if (!expectedFailures.has(id) || process.env.CUBIST_GENERATION_STRICT === "1") return contracts[id](checked, t, fixture);
-  let failure;
-  try { await contracts[id](checked, t, fixture); } catch (error) {
-    // Infrastructure errors are never an expected compiler defect.
-    if (error.code !== "ERR_ASSERTION") throw error;
-    failure = error;
-  }
-  assert.ok(failure, `${id} unexpectedly passed: remove it from expectedFailures and activate its regression`);
-  t.todo(`${fixture.phase}: documented open contract; never counts as completion`);
-  throw failure;
-}); }
-const fixtures = [
-  ...Object.entries(gaps),
-  ...collisionVariants.map(variant => ["G1", {...gaps.G1, ...variant}]),
-  ...matchVariants.map(variant => ["G4", {...gaps.G4, ...variant}]),
-  ...lintVariants.map(variant => ["G5", {...gaps.G5, ...variant}]),
-  ...captureVariants.map(variant => ["G11", {...gaps.G11, source: captureSource(variant), contract: variant.name}]),
-];
-for (const [id, fixture] of fixtures) contractTest(id, fixture);
+// Keep group prefixes selectable by the downstream FG6 mutation gate.
+for (const fixture of cases) test(`${fixture.group}: [${fixture.id}] ${fixture.contract}`, async t => {
+  const observation = await observeCase(t, fixture, check);
+  recordCase(t, fixture, observation, {strict: process.env.CUBIST_GENERATION_STRICT === "1"});
+});
 
 test("FG0 maps historical fixes and passing controls to existing executable tests", async () => {
-  assert.deepEqual(Object.keys(contracts), Object.keys(gaps));
-  for (const [, fixture] of fixtures) validateFixture(fixture);
+  assert.equal(new Set(cases.map(fixture => fixture.id)).size, cases.length, "case IDs must be unique");
+  for (const fixture of cases) validateFixture(fixture);
+  const manifest = await readFile(new URL("./fixtures/frontend-generation.md", import.meta.url), "utf8");
+  const documented = [...manifest.matchAll(/^\| `([^`]+)` \| G\d+ \|/gm)].map(match => match[1]);
+  assert.deepEqual(documented.sort(), cases.map(fixture => fixture.id).sort(), "the coverage matrix must name every executable case once");
   for (const [file, name] of [...Object.values(historicalCoverage), ...passingCoverage]) {
     const source = await readFile(new URL(file, import.meta.url), "utf8");
     if (file.endsWith(".cubist")) {
@@ -269,6 +120,6 @@ def k(x : H) : Unit := match x { first => tt; p(y) @ i => k(y); };
 def computation : k(first) = tt { rfl; }
 `);
   complete(explicit); accepted(explicit, ["k", "computation"]);
-  const refused = await check(t, gaps["G12-range"].source);
+  const refused = await check(t, cases.find(fixture => fixture.id === "G12-range").source);
   assert.equal(refused.result.gaps[0]?.code, "E845");
 });

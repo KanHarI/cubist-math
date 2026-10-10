@@ -1,8 +1,10 @@
 # Frontend generation comparison manifest
 
-`frontend-generation.mjs` pins FG0's evidence at `00d4ecce`. Each G1–G6
-and G8–G12 entry names its source, responsible phase, intended contract,
-and checked clients.
+`00d4ecce` is the historical revision where the inventory's defects were
+observed, not a runtime pin or a compatibility promise for future compiler
+revisions. The suite always checks this checkout with its fresh WASM build.
+Each exported case in `frontend-generation.mjs` has its own ID, finding group,
+source, responsible phase, intended contract and explicit known-defect record.
 [frontend-generation.test.mjs](../frontend-generation.test.mjs) implements
 the comparison, including independent equations rather than generated-output
 snapshots. Run it with `npm test -- tests/frontend-generation.test.mjs`.
@@ -20,7 +22,8 @@ W705 and W706 for ordinary safe unused binders and check their arrow-form
 rewrites.
 G11 requires opposite outcomes for intended and captured
 equations, including helper chains, grouped/dependent binders, inheritance
-and generated clients. G12 checks a computing call and keeps a passing
+and generated clients. G12 checks `twice` computation directly, through
+inheritance, and through an initial model. It keeps a passing
 E845 refusal control for recursive unfolding in a law. `G12-range` tracks
 that refusal's nonempty range over the original `iter(n)` call as a
 separate FG5 expected failure, so it can be activated independently of the
@@ -41,14 +44,81 @@ declarations and the module's inclusion in that suite. Further controls
 exercise inherited, bare/partial helpers with free fields under colliding
 law binders, initial-model recursion and explicit path bodies.
 
-`expectedFailures` is temporary, executable debt. Each listed contract is
-run, must fail an assertion, and is reported as TODO. Crashes and setup
-errors fail the suite. Every fixture's source sites, observation counts and
-lint rewrite targets are validated outside the expected-failure handler and
-in the always-running mapping test. An unexpected pass fails too: remove that
-ID from the set in the fixing PR. `CUBIST_GENERATION_STRICT=1` runs every contract
-as an ordinary assertion, useful to expose the complete unresolved list.
-TODO tests never count as evidence that an implementation phase is done.
+The [design decision on #205](https://github.com/KanHarI/cubist-math/pull/205#issuecomment-6096591882)
+replaces the catch-any-assertion handler. `frontend-generation-contracts.mjs`
+collects compact diagnostic name/code pairs, client verdicts, publication
+and source observations, and evaluates the independent desired requirements.
+Every contract consumes its supplied case; group labels never select another
+fixture's data. The derived `gaps` lookup shares those same case objects by ID
+for the existing downstream FG5 provenance/browser consumers. Accepted clients must be assumption-free.
+
+Prerequisites are ordinary assertions: metadata must be valid, unaffected
+clients must check, and G5's original interface must check before any rewrite.
+Missing clients are represented explicitly in observations, so a misspelled
+client cannot match a recorded defect. The whole diagnostic set is compared,
+including dependent failures; an unrelated or changed error cannot hide behind
+the first known failure. Labels and missing/wrong targets are retained at every
+written occurrence. Repeated identical links at one occurrence are equivalent.
+
+Only an exact match for the case's `knownDefect` facts is reported as TODO.
+No exception or assertion message is classified as a defect. A different
+observation fails normally and requires investigation; never regenerate these
+records just to accept a new failure. A desired outcome with an outstanding
+record is an unexpected pass. Remove only that case's entry from `knownDefects`
+in the fixing PR to activate it. Sibling cases retain their own status.
+`CUBIST_GENERATION_STRICT=1` checks all desired requirements as ordinary
+assertions, allowing defect-free controls to pass before activation. TODOs
+remain implementation debt and never count as completion.
+
+The harness's own regressions exercise missing imports, misspelled clients,
+unrelated type errors, invalid metadata, changed/extra diagnostics, missing or
+wrong navigation, strict mode and independent activation. Supported controls
+prove that flat matches, renamed navigation and all three G12 clients can pass.
+
+## Coverage by executable case
+
+Group prefixes such as `G2:` and `G11:` remain in test names for the FG6
+mutation selectors. The bracketed case ID selects an individual variant with
+`--test-name-pattern`, for example `\[G12-inherited\]`.
+
+| Case ID | Finding | Behavior and context |
+| --- | --- | --- |
+| `G1` | G1 | Definition followed by inductive; preserve the first binding |
+| `G1-initial` | G1 | Definition followed by initial model |
+| `G1-reverse` | G1 | Inductive followed by definition, including the original constructor |
+| `G1-same-kind` | G1 | Definition followed by definition |
+| `G2` | G2 | Fixed argument domains; Hom/Iso and computation at U0/U1 |
+| `G3` | G3 | Law-dependent transport; usable base and no partial families |
+| `G4` | G4 | Nested derived match and computation |
+| `G4-flat` | G4 | Flat derived match and computation |
+| `G5` | G5 | Grouped operation binder; supported call, Hom and initial-model clients |
+| `G5-single` | G5 | Single operation binder with the same interface checks |
+| `G6` | G6 | Parent cause, child dependency and unrelated recovery |
+| `G8` | G8 | Wildcard diagnostic endpoints and original body range |
+| `G9` | G9 | Freshened binder and every use: public labels and navigation |
+| `G10` | G10 | Capture refusal over the written binder or helper call |
+| `G11` | G11 | Direct intended and captured equations |
+| `G11-grouped-dependent` | G11 | Helper chain with grouped/dependent parameters |
+| `G11-inherited` | G11 | Inherited helper chain |
+| `G11-initial` | G11 | Initial-model helper client |
+| `G12` | G12 | Direct `twice` computation with recursive `iter` |
+| `G12-inherited` | G12 | Inherited `twice` computation |
+| `G12-initial` | G12 | Initial-model `twice` computation |
+| `G12-range` | G12 | Legitimate type-unfolding refusal over the original call |
+
+## Downstream lifecycle
+
+[#204](https://github.com/KanHarI/cubist-math/pull/204) supplies the FG0–FG6
+contracts. This harness is evidence at FG0, not an implementation of those fixes.
+The FG1–FG6 implementation stack inherited by
+[#212](https://github.com/KanHarI/cubist-math/pull/212) activates fixed cases.
+Its RC0 cleanup may remove the known-defect records, TODO/strict-mode handling,
+and tests specific to that temporary lifecycle once all cases are active.
+Keep the desired observations, stable case IDs and group selectors. Active
+semantic mismatches must still produce assertions for the mutation gate.
+RC1/RC2 can migrate the clients and observations to Cubist's existing runner;
+this helper introduces no pragma syntax, module loader or production diagnostic
+representation. Historical provenance remains documentation.
 
 G7 is a historical symptom, not a currently reproduced defect. FG1 must
 inject a genuine failed parent projection and verify its dependents,

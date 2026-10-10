@@ -21,8 +21,9 @@ contracts in [frontend-generation.test.mjs](../../tests/frontend-generation.test
 with fixtures and comparison rules in the
 [manifest](../../tests/fixtures/frontend-generation.md). They run in the
 normal `npm test` suite. Open contracts are explicit expected failures:
-they must fail assertions, unexpected passes are errors, and TODOs do not
-count as completed implementation. G12's E845 source range is tracked
+their structured observations must match the recorded defect, unexpected
+outcomes or passes are errors, and TODOs do not count as completed
+implementation. Each variant has its own activation state. G12's E845 source range is tracked
 independently from its value-call contract.
 
 For the follow-up review, G8–G12 were also independently reproduced at
