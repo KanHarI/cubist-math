@@ -1,6 +1,9 @@
 # Core theories (L2.4)
 
-Status: design, 2026-10-05; all four slices implemented the same day
+Status: reconciled on 2026-10-10 against main `cb525f07`. L2.4's four
+slices were implemented on 2026-10-05; all six L2.4c slices followed on
+2026-10-06. This document remains the current theory contract and the plan
+for its unfinished extensions. Original L2.4 evidence:
 (`web/cubist/theories.mjs`, `web/cubist/morphisms.mjs`,
 `web/translator/theories.mjs`; evidence `cubist-tests/theories.cubist`,
 `cubist-tests/theory_morphisms.cubist`, `cubist-tests/theory_sections.cubist`,
