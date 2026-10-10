@@ -72,6 +72,12 @@ EVAL1 and NUM0/NUM1 can advance independently. See
 
 ## Language tooling
 
+- [Frontend generation](frontend-generation.md): planned design work after
+  PR #188, with its failures as evidence. Unifies declaration ownership,
+  supported dependency analysis, universe calculation, contextual evidence
+  and public provenance, with semantic preservation tests. The
+  [gap inventory](../reports/frontend-generation-gaps.md) pins current
+  reproductions and separates them from fixed bugs and prototype limits.
 - [Proof ergonomics](proof-ergonomics-roadmap.md): shipped proof tools and
   remaining theory/declaration/automation work. Its
   [remaining implementation contracts](proof-ergonomics-roadmap.md#remaining-implementation-contracts)

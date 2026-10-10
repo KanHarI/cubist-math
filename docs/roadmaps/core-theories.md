@@ -692,6 +692,12 @@ requests: fields keep the theory's references and notation, request arguments
 keep the caller's, and generated artifacts carry declaration identities.
 Later derivations must not reconstruct captures by looking up display names.
 
+The [frontend generation roadmap](frontend-generation.md), motivated by
+PR #188's review failures, adds the declaration-publication, dependency,
+universe, evidence and semantic-test gates for extending these generators.
+Those gates supplement this capability contract; passing them does not
+prove uniqueness or the universal property.
+
 ### Opt-in and meaning
 
 The proposed clause is shared with [morphism derivation](categories.md):

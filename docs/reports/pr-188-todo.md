@@ -1,5 +1,12 @@
 # TODO: PR #188 review findings and failures shared with main
 
+For the inventory at `00d4ecce`, including refreshed reproductions and the
+distinction between open defects and fixed historical triggers, see
+[frontend generation gaps](frontend-generation-gaps.md). The linked
+[design roadmap](../roadmaps/frontend-generation.md) assigns the remaining
+work and uses this PR's review failures as evidence. This file retains the
+review chronology and its original baseline comparisons.
+
 Reviewed on 2026-10-09 against main `cb525f07796348d8bc806cd8cda11663a6544f0e`
 and PR #188 head `68f1bf35d82a9a7065c4a42a25671212418ed888`, with the same
 WASM kernel. The first part lists defects this PR introduces, to fix in it.
@@ -18,6 +25,12 @@ expanded cases also pass separately, covering absent caller notation,
 public header-label collisions and ordinary E514 errors.
 
 ## Follow-up to the review of `9c93220d`
+
+The entries in this section describe the cases fixed at `00d4ecce`, not a
+complete proof of the invariants. The [subsequent review](pr-188-review-00d4ecce.md)
+found three new regressions and two remaining shared cases. They are open
+in [G8–G12](frontend-generation-gaps.md#open-inventory) and assigned to
+FG0/FG2/FG4/FG5/FG6 in the [roadmap](../roadmaps/frontend-generation.md).
 
 - [x] Capture a theory's fields against its file-level `use` scope. Opened
   fields shadow outer globals, retain their meaning under inheritance and
@@ -38,12 +51,47 @@ public header-label collisions and ordinary E514 errors.
 - [x] Add #200's three initial-model shadowing cases to
   `cubist-tests/initial_models.cubist`, E853/E855 refusals for both initial
   and free models, and the enclosing-binder substitution regression.
-- [x] Fix the latest review's shared failures: caller binders capturing
-  inlined helper fields, inherited opened fields, inherited `>`/`>=`
+- [x] Fix helper-field capture under law binders, including inherited
+  helpers in child laws; derived-operation parameters are still open below.
+  Also fix inherited opened fields, inherited `>`/`>=`
   notation, ordinary inductives discarding file-level uses, and catch-all
   clauses over recursive path constructors. Path coherence is constructed
   from checked evidence when necessary; incompatible endpoints remain
   refused.
+
+## Follow-up to the review of `00d4ecce`
+
+These items are still open at that head; this documentation PR schedules
+their fixes and does not implement them.
+
+- [ ] G8 (introduced): restrict wildcard coherence fallback to recursive
+  positions and preserve the original mismatch when fallback fails. Assert
+  E606, its endpoints and body range, not merely a gap named `bad`.
+- [ ] G9 (introduced): keep freshened law binders and all uses labeled with
+  their written name and linked to the original binder. Separate alias keys
+  from display labels; kill the two label-removal mutants with these checks.
+- [ ] G10 (introduced): give E871 a nonempty range at the conflicting
+  pattern/statement binder or helper call, retaining non-enclosing controls.
+- [ ] G11 (shared): process a derived operation's complete parameter
+  telescope, result and value during inlining. `kk(c) := k(c)` must keep
+  `k`'s free field `c`; the intended equation must check and the accidentally
+  captured equation must fail. The law-binder fix above does not cover this.
+- [ ] G12 (shared): separate calling an earlier recursive derived operation
+  in a value from unfolding it in a field type. Preserve legitimate
+  type restrictions, structural self-recursion checks and useful source spans.
+- [ ] Resolve the surviving `notationScope`-alias mutation with a
+  distinguishing source test or removal after a consumer audit. Record
+  equivalent/defensive and skipped mutation cases with reasons.
+- [ ] Document and test ordinary inductives' file-level `use` precedence
+  against later same-spelled globals. Retain the passing helper, recursion
+  and explicit-path controls and the reviewer's performance observation.
+
+The original checkout's untracked older copy of this TODO must be archived
+or moved before pulling a merge that starts tracking this path. It is not
+superseded by deleting local work; this documentation update uses a separate
+worktree and leaves that file intact.
+
+## Validation of the `9c93220d` follow-up
 
 The new behavioral coverage is in `tests/theory-hygiene.test.mjs`, alongside
 scope invariants in `tests/references.test.mjs`. Earlier review findings and
