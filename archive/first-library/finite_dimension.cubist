@@ -93,17 +93,15 @@ def first_image_nonzero(
   let S := CoordinateSpace(K, succ(m));
   let T := CoordinateSpace(K, n);
   obtain (ring, nontrivial, inverses) := af_laws(K);
-  let same :=
-    injective(
-      coordinate_first(K, m), vector_zero(K, S), trans(zeroImage, sym(linear_zero(K, S, T, f)))
-    );
+  let same := injective(
+    coordinate_first(K, m), vector_zero(K, S), trans(zeroImage, sym(linear_zero(K, S, T, f)))
+  );
   exact nontrivial(cong(finite_head(A, m), same));
 }
 
-def coordinate_swap_iso(K : AlgebraicField, n : Nat, i : Fin(succ(n))) :=
-  reindex_linear_iso(
-    K, Fin(succ(n)), Fin(succ(n)), ScalarSpace(K), swap_bijection(Fin(n), fin_decidable(n), i)
-  );
+def coordinate_swap_iso(K : AlgebraicField, n : Nat, i : Fin(succ(n))) := reindex_linear_iso(
+  K, Fin(succ(n)), Fin(succ(n)), ScalarSpace(K), swap_bijection(Fin(n), fin_decidable(n), i)
+);
 
 def coordinate_pivot_map(
   K : AlgebraicField, m, n : Nat,
@@ -177,10 +175,9 @@ def coordinate_injection_step(
 ) :
   le(m, n) {
   let A := af_carrier(K);
-  let u :=
-    linear_map(
-      K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n)), f, coordinate_first(K, m)
-    );
+  let u := linear_map(
+    K, CoordinateSpace(K, succ(m)), CoordinateSpace(K, succ(n)), f, coordinate_first(K, m)
+  );
   exact match coordinate_search(K, succ(n), u) return le(m, n) {
     left zero => absurd(first_image_nonzero(K, m, succ(n), f, injective, zero));
     right pivot => coordinate_injection_pivot_bound(

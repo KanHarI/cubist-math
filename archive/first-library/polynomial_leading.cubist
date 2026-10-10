@@ -27,7 +27,8 @@ def convolution_top(K : AlgebraicField, m : Nat) :=
     -> convolution(K, add_count(k, n), f, g) = field_mul(K, f(k), g(n))
   ) {
     zero => fun (
-      f, g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, 1), sg : SeriesSupport(K, g, succ(n))
+      f, g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, 1),
+      sg : SeriesSupport(K, g, succ(n))
     ) => trans(
       cong((fun (s : FormalSeries(K)) => convolution(K, n, s, g)), series_support_one(K, f, sf)),
       convolution_constant_left(K, f(0), n, g)
@@ -159,8 +160,7 @@ def polynomial_product_degree(
   let g := polynomial_coefficients(K, q);
   let sf := along SeriesSupport(K, f) by dp from polynomial_cutoff_support(K, p);
   let sg := along SeriesSupport(K, g) by dq from polynomial_cutoff_support(K, q);
-  let nonzero :
-    FieldNonzero(af_carrier(K), af_operations(K), convolution(K, add_count(m, n), f, g)) {
+  let nonzero : FieldNonzero(af_carrier(K), af_operations(K), convolution(K, add_count(m, n), f, g)) {
     intro zero;
     exact scalar_product_nonzero(
       K, f(m), g(n), polynomial_leading_nonzero(K, p, m, dp),
@@ -200,10 +200,9 @@ def polynomial_product_nonzero(
   Void {
   obtain (m, dp) := polynomial_nonzero_degree(K, p, np);
   obtain (n, dq) := polynomial_nonzero_degree(K, q, nq);
-  let same :=
-    trans(
-      sym(polynomial_product_degree(K, p, q, m, n, dp, dq)),
-      trans(cong(polynomial_cutoff(K), zero), polynomial_zero_cutoff(K))
-    );
+  let same := trans(
+    sym(polynomial_product_degree(K, p, q, m, n, dp, dq)),
+    trans(cong(polynomial_cutoff(K), zero), polynomial_zero_cutoff(K))
+  );
   exact nat_zero_ne_succ(add_count(m, n), sym(same));
 }

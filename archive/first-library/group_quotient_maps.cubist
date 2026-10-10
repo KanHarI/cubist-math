@@ -59,8 +59,8 @@ def group_quotient_map_unit(
 // Multiplicativity on classes of representatives. An operation on arbitrary
 // quotient elements is a separate construction, not implicit in this statement.
 def group_quotient_map_multiply(
-  G, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S),
-  x, y : group_carrier(G)
+  G, H : Group, h : GroupHom(G, H), S : Subgroup(G), kills : KillsSubgroup(G, H, h, S), x,
+  y : group_carrier(G)
 ) :
   group_quotient_map(G, H, h, S, kills, left_coset(G, S, group_multiply(G, x, y))) = group_multiply(
     H, group_quotient_map(G, H, h, S, kills, left_coset(G, S, x)),

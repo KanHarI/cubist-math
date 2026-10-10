@@ -268,12 +268,11 @@ The migration verifier (`tools/proof-migration.mjs` and
 `tools/verify-proof-migration.mjs`) compares each declaration's
 `extensions` apart from its `axioms`, and refuses a migration that adds or
 removes one (`Kernel extensions changed: none -> H1`, before the release);
-until K2.3 it compared `axioms` only (audit of 2026-09-28, finding 7). It
-does not yet compare a module that declares a type: the edited copy's
-signature is another one, since signatures are generative (Q10), so such a
-declaration is refused by name. Comparing signatures, and mapping the edited
-copy's onto the original's when their normal forms agree, is K2.4a's
-tooling. `tests/proof-migration.test.mjs` covers both.
+until K2.3 it compared `axioms` only (audit of 2026-09-28, finding 7).
+Signatures are generative (Q10), so the edited copy's signature is another
+one. Since 2026-09-30 the verifier compares the admitted signatures'
+schemas, and only an identical schema grants a renaming between the copies
+(specification 6.4). `tests/proof-migration.test.mjs` covers both.
 
 ## Before the release: the open obligations (4.5)
 

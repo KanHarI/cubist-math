@@ -51,8 +51,10 @@ infinitary positions.
 **Argument now.** Section 4.2 gives the construction in seven steps. Its
 only signature-specific inputs are the constructor order (for restriction),
 the cube boundary's typing (for overlapping faces) and positivity (for the
-inductive definition). Section 4.3 marks D1, D4 and D5 "Argued", each with
-an open obligation to write it out. Consistency is relative to the baseline
+inductive definition). The [model construction](h1-model.md) writes these
+steps out for every signature, and 4.3 marks D1, D4 and D5 written out and
+approved on 2026-10-02. Before it, 4.3 marked them "Argued", each with an
+open obligation to write it out. Consistency is relative to the baseline
 model (step 7).
 
 **Reviews so far.** The specification had four reviews before its approval
@@ -239,8 +241,8 @@ conversion queries, which the audit found broken; I1.2a corrected it on
 - K1: with no tubes, and with a tube of `succ`, a composition in `N` pushes
   into `succ`.
 - E5: the eliminator on `hcomp` computes, as composition in the motive.
-- T3 and T4: `computable` accepts the H1 marker, and a declaration that also
-  uses `LEM` is refused, naming `LEM` only.
+- T3 and T4: `computable` accepts a definition using `S1`, and a
+  declaration that also uses `LEM` is refused, naming `LEM` only.
 
 Normalization, and with it decidable conversion, is not claimed; the kernel
 relies on budgets (4.5). A canonicity fixture is not a proof of canonicity.
@@ -249,10 +251,9 @@ relies on budgets (4.5). A canonicity fixture is not a proof of canonicity.
 for the new cases and the items its section 6 lists for review, with the
 baseline's canonicity and premise P1 as explicit assumptions.
 
-## What can be added as evidence
+## What was added as evidence
 
-These strengthen the record without discharging an obligation:
-- a table of 3.7's critical pairs, each with a kernel test of a
-  representative instance;
-- drafts of the written arguments, for a reviewer to check: Lemma H2's case
-  analysis, the critical pairs, and the canonicity argument's new cases.
+This record once listed two additions that would strengthen it without
+discharging an obligation. Both were added: the table of 3.7's critical
+pairs with a kernel test per pair (CP01–CP10), approved on 2026-09-30, and
+the written arguments, the last of them approved on 2026-10-02.

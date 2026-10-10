@@ -32,7 +32,7 @@ def ordered_unit_interval_square(
   FieldLe(F, lt, mulF(t, t), one) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   let step :=
-    along((fun (v : F) => FieldLe(F, lt, mulF(t, t), v))) by ring_mul_one(
+    along ((fun (v : F) => FieldLe(F, lt, mulF(t, t), v))) by ring_mul_one(
       F, zero, one, addF, mulF, negF, ring, t
     ) from weakScale(t, one, t, upper, lower);
   exact ordered_le_transitive(
@@ -123,26 +123,24 @@ def complex_scale_norm_bound(
   ) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   let n := complex_norm_squared(F, addF, mulF, z);
-  let nonnegativeNorm :=
-    ordered_sum_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
-      mulF(complex_real(F, z), complex_real(F, z)), mulF(complex_imag(F, z), complex_imag(F, z)),
-      ordered_square_nonnegative(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z)
-      ),
-      ordered_square_nonnegative(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, z)
-      )
-    );
-  let upperSquare :=
-    ordered_unit_interval_square(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, lower, upper
-    );
+  let nonnegativeNorm := ordered_sum_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
+    mulF(complex_real(F, z), complex_real(F, z)), mulF(complex_imag(F, z), complex_imag(F, z)),
+    ordered_square_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z)
+    ),
+    ordered_square_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, z)
+    )
+  );
+  let upperSquare := ordered_unit_interval_square(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, lower, upper
+  );
   let step :=
-    along((fun (v : F) => FieldLe(F, lt, mulF(mulF(t, t), n), v))) by ring_mul_one(
+    along ((fun (v : F) => FieldLe(F, lt, mulF(mulF(t, t), n), v))) by ring_mul_one(
       F, zero, one, addF, mulF, negF, ring, n
     ) from weakScale(mulF(t, t), one, n, upperSquare, nonnegativeNorm);
-  exact along((fun (v : F) => FieldLe(F, lt, v, n))) by sym(
+  exact along ((fun (v : F) => FieldLe(F, lt, v, n))) by sym(
     complex_scaled_norm(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, z)
   ) from step;
 }
@@ -163,11 +161,10 @@ def complex_linear_deformation_nonzero(
   let zeroC := complex_zero(F, zero);
   let oneC := complex_one(F, zero, one);
   let ringC := complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
-  let opposite :=
-    ring_neg_unique(
-      Complex(F), zeroC, oneC, addC, mulC, negC, ringC, scaled, z,
-      trans(complex_add_comm(F, zero, one, addF, mulF, negF, ring, scaled, z), vanishes)
-    );
+  let opposite := ring_neg_unique(
+    Complex(F), zeroC, oneC, addC, mulC, negC, ringC, scaled, z,
+    trans(complex_add_comm(F, zero, one, addF, mulF, negF, ring, scaled, z), vanishes)
+  );
   let sameNorm : complex_norm_squared(F, addF, mulF, z) = complex_norm_squared(
     F, addF, mulF, scaled
   ) :=

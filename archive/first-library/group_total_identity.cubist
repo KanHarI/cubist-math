@@ -270,13 +270,12 @@ def group_objects_iso_total_path(
     intro x;
     exact UnivalenceBeta(U0, A, B, equivalence, x);
   }
-  let unitPath : group_carrier_transport(A, B, carrierPath, unitA) = unitB :=
-    trans(
-      computes(unitA),
-      group_isomorphism_preserves_unit(
-        A, unitA, multiplyA, lawsA, B, unitB, multiplyB, lawsB, f, g, rightLaw, preserves
-      )
-    );
+  let unitPath : group_carrier_transport(A, B, carrierPath, unitA) = unitB := trans(
+    computes(unitA),
+    group_isomorphism_preserves_unit(
+      A, unitA, multiplyA, lawsA, B, unitB, multiplyB, lawsB, f, g, rightLaw, preserves
+    )
+  );
   let multiplicationPath :
     forall x : A. forall y : A.
     group_carrier_transport(A, B, carrierPath, multiplyA(x, y)) = multiplyB(

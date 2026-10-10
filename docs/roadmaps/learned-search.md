@@ -40,9 +40,9 @@ has two objectives:
    types (decision 4 of the instruction kernel), where measurements show a
    lower total cost than the current heuristic.
 2. **Cheaper guidance.** Compare a learned policy with the driver's own
-   guide, including the cost of inference. The optional
-   `cc_kernel_convertible` guide remains a historical comparison while it is
-   available; replacing it is no longer an outstanding prerequisite.
+   guide, including the cost of inference. The `cc_kernel_convertible`
+   guide was deleted on 2026-10-02; its 2026-09-27 timings remain the only
+   comparison.
 
 **The cost must be kernel effort, not instruction count.** Priced by
 instructions, a policy can prefer `Normalize` solely because it takes one
@@ -272,12 +272,14 @@ same edges, and the same heads, with message passing in place of attention.
    147M steps of deriving again, 47%, in seven definitions, each of which
    then agreed by other moves. A policy, or a smaller budget for a
    speculative normalization, that avoided them would save more than any
-   ranking of the cheap moves could.
+   ranking of the cheap moves could. Since 2026-10-06 a normalize move takes
+   at most 250,000 steps, and a term whose normal form was not reached is not
+   tried again, so these seven no longer cost their budget.
 3. **Imitation and ablations.** Train the network on the logs; measure
    agreement with the heuristic on validation modules. Run the ablation
    table below and select the architecture before final test evaluation.
 4. **Expert iteration** on derivation cost, measured on the held-out modules
-   against the heuristic, with the oracle switched off.
+   against the heuristic.
 5. **Deployment.** The policy in the driver, the options in the workbench,
    and the offline certificate mode.
 
@@ -373,11 +375,11 @@ accidents. Results go into the table as they arrive.
 
 **Baselines**, without which no ablation means anything:
 
-- the heuristic driver as it stands, with its own guide and with the
-  term checker's conversion as the guide (`node tools/instruction-coverage.mjs`
-  and `--oracle`; on 2026-09-27 the archive checked in 37 s and 34.9 s,
-  and without any guide on 2026-09-26 in 62 s, with three declarations out
-  of kernel budget);
+- the heuristic driver as it stands, with its own guide
+  (`node tools/instruction-coverage.mjs`). The term checker's guide, deleted
+  on 2026-10-02, measured 34.9 s against the own guide's 37 s on
+  2026-09-27, and no guide 62 s on 2026-09-26, with three declarations out
+  of kernel budget;
 - a uniform random policy under the same search, to measure how much the
   search alone does;
 - a linear policy over the syntactic features with no attention, the
@@ -406,7 +408,7 @@ labels and budget failures separately.
 | Random-walk data | the corpus alone | pretraining the subtree stage | |
 | Width and depth | 32 against 64; two layers against four | everything, at cost | |
 
-The main deployment gate is improvement over the default heuristic with
-the old oracle off: held-out coverage must hold, and measured total cost
+The main deployment gate is improvement over the default heuristic:
+held-out coverage must hold, and measured total cost
 must improve after inference and failed search are included. Otherwise keep
 the heuristic; phases 1 and 2 remain useful independently.
