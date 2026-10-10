@@ -582,11 +582,11 @@ def by_computation : succ(succ(0)) = 2 {
 }</code></pre>
         </div>
         <div class="quick-entry" id="quick-transport">
-          <h4><code>transport</code> and <code>along</code></h4>
-          <p><code>transport(C, x, y, p, v)</code> moves <code>v : C(x)</code> along <code>p : x = y</code> into <code>C(y)</code>. <code>along C by p from v</code> is the same, with the endpoints read from <code>p</code>.
+          <h4><code>transport</code></h4>
+          <p><code>transport v along p in C</code> moves <code>v : C(x)</code> along <code>p : x = y</code> into <code>C(y)</code>, with the endpoints read from <code>p</code>. The explicit call <code>transport(C, x, y, p, v)</code> is also available.
             <a href="reference/paths.html#transport">Equality and paths →</a></p>
           <pre><code data-check="accept">def move(A : U0, C : A -&gt; U0, x, y : A, p : x = y, v : C(x)) : C(y) {
-  exact along C by p from v;
+  exact transport v along p in C;
 }</code></pre>
         </div>
         <div class="quick-entry" id="quick-path-induction">

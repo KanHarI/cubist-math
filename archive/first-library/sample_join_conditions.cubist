@@ -44,7 +44,7 @@ def sample_tagged_join_step(
       and SampleTagged(C, condition, n + m, joined, joinedTags)
     ),
     (
-      along((fun (b : C) => condition(a, b, tag))) by sym(firstPath) from headValid,
+      transport headValid along sym(firstPath) in ((fun (b : C) => condition(a, b, tag))),
       previous(tail, tailTags, m, rightVertices, rightTags, same, tailValid, rightValid)
     )
   );

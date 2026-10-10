@@ -275,16 +275,16 @@ def principal_cut_injective(
     (
       fun (qp : ltQ(q, p)) => cut_less_irreflexive(
         Q, ltQ, cutQ,
-        along((fun (cut : DedekindCut(Q, ltQ)) => CutLess(Q, ltQ, cutQ, cut))) by same from forwardQP(
-          qp
+        transport forwardQP(qp) along same in (
+          (fun (cut : DedekindCut(Q, ltQ)) => CutLess(Q, ltQ, cutQ, cut))
         )
       )
     ),
     (
       fun (pq : ltQ(p, q)) => cut_less_irreflexive(
         Q, ltQ, cutQ,
-        along((fun (cut : DedekindCut(Q, ltQ)) => CutLess(Q, ltQ, cut, cutQ))) by same from forwardPQ(
-          pq
+        transport forwardPQ(pq) along same in (
+          (fun (cut : DedekindCut(Q, ltQ)) => CutLess(Q, ltQ, cut, cutQ))
         )
       )
     )

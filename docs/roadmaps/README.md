@@ -72,6 +72,8 @@ EVAL1 and NUM0/NUM1 can advance independently. See
 
 ## Language tooling
 
+- [Induction hypothesis syntax](induction-hypothesis-syntax.md): adopted
+  `constructor(fields) with hypotheses` clause design; not implemented.
 - [Proof ergonomics](proof-ergonomics-roadmap.md): shipped proof tools and
   remaining theory/declaration/automation work. Its
   [remaining implementation contracts](proof-ergonomics-roadmap.md#remaining-implementation-contracts)

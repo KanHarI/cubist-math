@@ -24,12 +24,12 @@ def coordinates_in_subspace_zero(K : AlgebraicField, V : VectorSpace(K), S : Sub
       U0, Fin(0), (fun (i : Fin(0)) => af_carrier(K)), a, z,
       (fun (i : Fin(0)) => typed((a(i) = z(i)), absurd(i)))
     );
-  exact along subspace_members(K, V, S) by sym(
+  exact transport subspace_zero(K, V, S) along sym(
     trans(
       cong(linear_map(K, CoordinateSpace(K, 0), V, h), same),
       linear_zero(K, CoordinateSpace(K, 0), V, h)
     )
-  ) from subspace_zero(K, V, S);
+  ) in subspace_members(K, V, S);
 }
 
 def coordinates_in_subspace_step(
@@ -58,7 +58,7 @@ def coordinates_in_subspace_step(
       (fun (x : vector_carrier(K, V)) => vector_add(K, V, x, f(v))),
       sym(linear_scale(K, C, V, h, b, u))
     );
-  exact along subspace_members(K, V, S) by trans(scaled, same) from contained;
+  exact transport contained along trans(scaled, same) in subspace_members(K, V, S);
 }
 
 def coordinates_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) :=
@@ -79,9 +79,9 @@ def basis_columns_span(
 ) :
   subspace_members(K, V, S, y) {
   let a := linear_map(K, V, CoordinateSpace(K, n), basis_coordinates(K, V, n, basis), y);
-  exact along subspace_members(K, V, S) by basis_expansion_coordinates(K, V, n, basis, y) from coordinates_in_subspace(
+  exact transport coordinates_in_subspace(
     K, V, S, n, linear_iso_forward(K, CoordinateSpace(K, n), V, basis), contains, a
-  );
+  ) along basis_expansion_coordinates(K, V, n, basis, y) in subspace_members(K, V, S);
 }
 
 // A subfield containing the base is a vector subspace over that base.

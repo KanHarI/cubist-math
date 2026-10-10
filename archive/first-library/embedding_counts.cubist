@@ -101,7 +101,7 @@ def embedding_tower_count(
       S, H, embedding_tower_type_equality(K, R, L, T, i, h, e, triangle, j), multiply_count(n, m),
       count
     );
-  exact along HasCardinality(H) by count_multiply_comm(n, m) from mapped;
+  exact transport mapped along count_multiply_comm(n, m) in HasCardinality(H);
 }
 
 // Count a finite tower using extension degrees. Keep this transport generic:
@@ -132,9 +132,9 @@ def embedding_tower_degree_count(
   let tower := field_embedding_ext(K, L, field_embedding_compose(K, R, L, i, h), e, triangle);
   let count :=
     embedding_tower_count(K, R, L, T, i, h, e, triangle, j, degreeR, degreeL, countR, countL);
-  exact along HasCardinality(EmbeddingsOver(K, L, e, T, j)) by sym(
-    tower_law(K, R, L, i, h, e, tower, lower, upper, whole)
-  ) from count;
+  exact transport count along sym(tower_law(K, R, L, i, h, e, tower, lower, upper, whole)) in HasCardinality(
+    EmbeddingsOver(K, L, e, T, j)
+  );
 }
 
 def FiniteSeparableEmbeddingCount(n : Nat) :=
@@ -152,9 +152,9 @@ def finite_separable_count_zero : FiniteSeparableEmbeddingCount(0) {
   let onto := field_generated_empty_surjective(K, L, e, generators, generates);
   let H := EmbeddingsOver(K, L, e, T, j);
   let d := extension_degree(K, embedding_as_extension(K, L, e), finite);
-  exact along HasCardinality(H) by sym(surjective_embedding_degree(K, L, e, onto, finite)) from embeddings_over_surjective_count(
-    K, L, e, onto, T, j
-  );
+  exact transport embeddings_over_surjective_count(K, L, e, onto, T, j) along sym(
+    surjective_embedding_degree(K, L, e, onto, finite)
+  ) in HasCardinality(H);
 }
 
 def finite_separable_count_step(n : Nat, previous : FiniteSeparableEmbeddingCount(n)) :
@@ -183,9 +183,9 @@ def finite_separable_count_step(n : Nat, previous : FiniteSeparableEmbeddingCoun
     );
   let degreeR := extension_degree(K, adjoined_extension(K, M, irr), lower);
   let countR := with unfolding [AdjoinedEmbeddings] {
-      along HasCardinality(EmbeddingsOver(K, R, i, T, j)) by sym(
+      transport separable_adjoined_embedding_count(K, M, irr, T, j, separable(j, x, alg)) along sym(
         adjoined_extension_degree(K, M, irr, lower)
-      ) from separable_adjoined_embedding_count(K, M, irr, T, j, separable(j, x, alg))
+      ) in HasCardinality(EmbeddingsOver(K, R, i, T, j))
     };
   let countL :=
     (

@@ -74,7 +74,7 @@ def contractible_loops_are_null(
 
 // Rebase a loop along a specified path, with its effect on constant loops.
 def rebase_loop(A : U1, x, y : A, connector : x = y, p : x = x) :=
-  along(fun (a : A) => a = a) by connector from p;
+  transport p along connector in (fun (a : A) => a = a);
 
 def rebase_constant_loop(A : U1, x, y : A, connector : x = y) :=
   apd((fun (a : A) => refl(a)), x, y, connector);

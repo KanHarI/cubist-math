@@ -77,12 +77,12 @@ def complex_box_mul_rectangle(
       mulF(delta, s), mulF(delta, r), ad, bc
     );
   exact (
-    along FieldMagnitudeBound(F, negF, lt, addF(mulF(a, c), negF(mulF(b, d)))) by sym(
+    transport realBound along sym(
       ring_distribute(F, zero, one, addF, mulF, negF, ring, delta, r, s)
-    ) from realBound,
-    along FieldMagnitudeBound(F, negF, lt, addF(mulF(a, d), mulF(b, c))) by trans(
+    ) in FieldMagnitudeBound(F, negF, lt, addF(mulF(a, c), negF(mulF(b, d)))),
+    transport imagBound along trans(
       ring_add_comm(F, zero, one, addF, mulF, negF, ring, mulF(delta, s), mulF(delta, r)),
       sym(ring_distribute(F, zero, one, addF, mulF, negF, ring, delta, r, s))
-    ) from imagBound
+    ) in FieldMagnitudeBound(F, negF, lt, addF(mulF(a, d), mulF(b, c)))
   );
 }

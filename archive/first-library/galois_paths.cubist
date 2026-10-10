@@ -61,14 +61,14 @@ def extension_iso_compose(
 // Transport in the carrier family is exactly the forward algebraic map.
 def extension_transport_forward(K : AlgebraicField, E, F : FieldExt(K), p : E = F) :
   forall x : extension_carrier(K, E).
-  (along extension_carrier(K) by p from x) = extension_iso_forward(
+  (transport x along p in extension_carrier(K)) = extension_iso_forward(
     K, E, F, extension_path_iso(K, E, F, p), x
   ) {
   exact path_induction(
     FieldExt(K),
     (
       fun (E, F : FieldExt(K), p : E = F) => forall x : extension_carrier(K, E).
-      (along extension_carrier(K) by p from x) = extension_iso_forward(
+      (transport x along p in extension_carrier(K)) = extension_iso_forward(
         K, E, F, extension_path_iso(K, E, F, p), x
       )
     ),
@@ -91,7 +91,7 @@ def extension_transport_forward(K : AlgebraicField, E, F : FieldExt(K), p : E = 
 def galois_loop_action(
   K : AlgebraicField, E : FieldExt(K), e : Galois(K, E), x : extension_carrier(K, E)
 ) :
-  (along extension_carrier(K) by extension_iso_path(K, E, E, e) from x) = extension_iso_forward(
+  (transport x along extension_iso_path(K, E, E, e) in extension_carrier(K)) = extension_iso_forward(
     K, E, E, e, x
   ) {
   exact trans(
@@ -116,7 +116,7 @@ def extension_concat_forward(K : AlgebraicField, E, F : FieldExt(K), p : E = F) 
       transport_concat(FieldExt(K), extension_carrier(K), E, F, G, p, q, x),
       trans(
         cong(
-          (fun (y : extension_carrier(K, F)) => along extension_carrier(K) by q from y),
+          (fun (y : extension_carrier(K, F)) => transport y along q in extension_carrier(K)),
           extension_transport_forward(K, E, F, p, x)
         ),
         extension_transport_forward(
@@ -201,7 +201,7 @@ def galois_moving_loop_nontrivial(
     trans(
       sym(galois_loop_action(K, E, e, x)),
       trans(
-        cong((fun (p : E = E) => along extension_carrier(K) by p from x), trivial),
+        cong((fun (p : E = E) => transport x along p in extension_carrier(K)), trivial),
         transport_constant(FieldExt(K), extension_carrier(K, E), E, E, refl(E), x)
       )
     )

@@ -10,7 +10,9 @@ def embedded_compositum_subfield(
     O, subfield_image(K, O, ko, subfield_top(K)), subfield_image(L, O, lo, subfield_top(L))
   );
 
-def EmbeddedCompositum(K, L, O : AlgebraicField, ko : FieldEmbedding(K, O), lo : FieldEmbedding(L, O)) :=
+def EmbeddedCompositum(
+  K, L, O : AlgebraicField, ko : FieldEmbedding(K, O), lo : FieldEmbedding(L, O)
+) :=
   subfield_as_field(O, embedded_compositum_subfield(K, L, O, ko, lo));
 
 def embedded_compositum_left_lands(
@@ -154,12 +156,12 @@ def embedded_compositum_least(
   let imageK : SubfieldIncluded(O, subfield_image(K, O, ko, subfield_top(K)), S) {
     intro y, member;
     obtain (x, inTop, same) := typed(SubfieldImage(K, O, ko, subfield_top(K), y), member);
-    exact along subfield_members(O, S) by same from containsK(x);
+    exact transport containsK(x) along same in subfield_members(O, S);
   }
   let imageL : SubfieldIncluded(O, subfield_image(L, O, lo, subfield_top(L)), S) {
     intro y, member;
     obtain (x, inTop, same) := typed(SubfieldImage(L, O, lo, subfield_top(L), y), member);
-    exact along subfield_members(O, S) by same from containsL(x);
+    exact transport containsL(x) along same in subfield_members(O, S);
   }
   exact compositum_least(
     O, subfield_image(K, O, ko, subfield_top(K)), subfield_image(L, O, lo, subfield_top(L)), S,

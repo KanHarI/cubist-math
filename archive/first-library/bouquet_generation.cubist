@@ -16,18 +16,18 @@ def bouquet_generated_unappend(
 ) :
   BouquetGenerated(A, p) {
   let before := trans(p, sym(bouquet_generator(A, a)));
-  exact along BouquetGenerated(A) by append_path_right_inverse(
-    Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a), p
-  ) from generated_snoc(
+  exact transport generated_snoc(
     A, Bouquet(A), bouquet_base(A), bouquet_generator(A), before, represented,
     typed(Signed(A), left(a))
-  );
+  ) along append_path_right_inverse(
+    Bouquet(A), bouquet_base(A), bouquet_base(A), bouquet_base(A), bouquet_generator(A, a), p
+  ) in BouquetGenerated(A);
 }
 
 def bouquet_generation_family(A : U0, x : Bouquet(A)) := bouquet_code(A, x) -> U0;
 
 def bouquet_generation_spoke(A : U0) :
-  (along bouquet_generation_family(A) by bouquet_spoke(A) from BouquetGenerated(A)) = BouquetGenerated(
+  (transport BouquetGenerated(A) along bouquet_spoke(A) in bouquet_generation_family(A)) = BouquetGenerated(
     A
   ) {
   ext p;
@@ -40,7 +40,7 @@ def bouquet_generation_spoke(A : U0) :
 }
 
 def bouquet_generation_edge(A : U0, a : A) :
-  (along bouquet_generation_family(A) by bouquet_edge(A, a) from BouquetGenerated(A)) = BouquetGenerated(
+  (transport BouquetGenerated(A) along bouquet_edge(A, a) in bouquet_generation_family(A)) = BouquetGenerated(
     A
   ) {
   ext p;
@@ -68,14 +68,14 @@ def bouquet_generation_edge(A : U0, a : A) :
 
 def bouquet_generation_edges(A : U0, label : Unit or A) :=
   match label as e return (
-    (along bouquet_generation_family(A) by meridian(Unit or A, e) from BouquetGenerated(A)) = BouquetGenerated(
+    (transport BouquetGenerated(A) along meridian(Unit or A, e) in bouquet_generation_family(A)) = BouquetGenerated(
       A
     )
   ) {
     left u => unit_induction(
       (
         fun (v : Unit) => (
-          along bouquet_generation_family(A) by meridian(Unit or A, typed(Unit or A, left(v))) from BouquetGenerated(
+          transport BouquetGenerated(A) along meridian(Unit or A, typed(Unit or A, left(v))) in bouquet_generation_family(
             A
           )
         ) = BouquetGenerated(A)
@@ -99,12 +99,12 @@ def bouquet_encoded_generated(A : U0, x : Bouquet(A), p : bouquet_base(A) = x) :
         A, point, bouquet_encode(A, point, path_)
       )
     ),
-    along BouquetGenerated(A) by sym(
+    transport generated_identity(A, Bouquet(A), bouquet_base(A), bouquet_generator(A)) along sym(
       transport_constant(
         Bouquet(A), BouquetLoops(A), bouquet_base(A), bouquet_base(A), refl(bouquet_base(A)),
         refl(bouquet_base(A))
       )
-    ) from generated_identity(A, Bouquet(A), bouquet_base(A), bouquet_generator(A)), x, p
+    ) in BouquetGenerated(A), x, p
   );
 }
 
@@ -115,9 +115,9 @@ def every_bouquet_loop_generated(A : U0, p : BouquetLoops(A)) :
   Mere(
     exists word : Word(A). eval_word(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), word) = p
   ) {
-  exact along BouquetGenerated(A) by bouquet_decode_encode(A, bouquet_base(A), p) from bouquet_encoded_generated(
+  exact transport bouquet_encoded_generated(A, bouquet_base(A), p) along bouquet_decode_encode(
     A, bouquet_base(A), p
-  );
+  ) in BouquetGenerated(A);
 }
 
 def every_puncture_loop_generated(n : Nat, p : bouquet_base(Fin(n)) = bouquet_base(Fin(n))) :
@@ -135,9 +135,9 @@ def bouquet_connection_family(A : U0, x : Bouquet(A)) := Mere(bouquet_base(A) = 
 def bouquet_connection_edges(A : U0, label : Unit or A) :=
   mere_is_prop(
     (bouquet_base(A) = bouquet_tip(A)),
-    along bouquet_connection_family(A) by meridian(Unit or A, label) from merely(
-      (bouquet_base(A) = bouquet_base(A)), refl(bouquet_base(A))
-    ), merely((bouquet_base(A) = bouquet_tip(A)), bouquet_spoke(A))
+    transport merely((bouquet_base(A) = bouquet_base(A)), refl(bouquet_base(A))) along meridian(
+      Unit or A, label
+    ) in bouquet_connection_family(A), merely((bouquet_base(A) = bouquet_tip(A)), bouquet_spoke(A))
   );
 
 def bouquet_connected(A : U0, x : Bouquet(A)) : Mere(bouquet_base(A) = x) {

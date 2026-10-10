@@ -34,8 +34,8 @@ def complex_close_symmetry(
 def complex_close_triangle(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y, z : Complex(F),
-  epsilon, delta : F, xy : ComplexClose(F, addF, lt, x, y, epsilon),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y, z : Complex(F), epsilon,
+  delta : F, xy : ComplexClose(F, addF, lt, x, y, epsilon),
   yz : ComplexClose(F, addF, lt, y, z, delta)
 ) :
   ComplexClose(F, addF, lt, x, z, addF(epsilon, delta)) {
@@ -58,8 +58,8 @@ def complex_close_triangle(
 def complex_perturbation_close(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), old, fresh : Complex(F),
-  radius, epsilon : F, perturbation : ComplexPerturbation(F, addF, negF, lt, old, fresh, radius),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), old, fresh : Complex(F), radius,
+  epsilon : F, perturbation : ComplexPerturbation(F, addF, negF, lt, old, fresh, radius),
   small : lt(radius, epsilon)
 ) :
   ComplexClose(F, addF, lt, old, fresh, epsilon) {
@@ -105,16 +105,16 @@ def complex_cauchy_from_refinements(
     intro m, n, largeM, largeN;
     let first := close(m, n, largeM);
     let second :=
-      along((fun (k : Nat) => ComplexClose(F, addF, lt, sequence(n), sequence(k), half(epsilon)))) by nat_add_comm(
-        n, m
-      ) from close(n, m, largeN);
+      transport close(n, m, largeN) along nat_add_comm(n, m) in (
+        (fun (k : Nat) => ComplexClose(F, addF, lt, sequence(n), sequence(k), half(epsilon)))
+      );
     let reversed :=
       complex_close_symmetry(F, addF, lt, sequence(n), sequence(m + n), half(epsilon), second);
-    exact along((fun (r : F) => ComplexClose(F, addF, lt, sequence(m), sequence(n), r))) by halfSum(
-      epsilon
-    ) from complex_close_triangle(
+    exact transport complex_close_triangle(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, sequence(m), sequence(m + n),
       sequence(n), half(epsilon), half(epsilon), first, reversed
+    ) along halfSum(epsilon) in (
+      (fun (r : F) => ComplexClose(F, addF, lt, sequence(m), sequence(n), r))
     );
   }
   exact (bound, tail);

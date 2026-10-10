@@ -23,7 +23,7 @@ def quotient_predicate_prop(
     -> FieldProp(quotient_predicate(A, relation, q, a)) {
     intro witness_;
     obtain (b, same) := witness_;
-    exact along((fun (P : U0) => FieldProp(P))) by sym(same(a)) from prop_(b, a);
+    exact transport prop_(b, a) along sym(same(a)) in ((fun (P : U0) => FieldProp(P)));
   }
   exact field_exists_elim(
     (exists b : A. forall x : A. quotient_predicate(A, relation, q, x) = relation(b, x)),
@@ -60,7 +60,7 @@ def quotient_induction_prop(
   let descend : (exists a : A. quotient_class(A, relation, a) = q) -> P(q) {
     intro witness_;
     obtain (a, same) := witness_;
-    exact along P by same from atClass(a);
+    exact transport atClass(a) along same in P;
   }
   exact field_exists_elim(
     (exists a : A. quotient_class(A, relation, a) = q), P(q), propP(q), descend,
@@ -79,7 +79,7 @@ def quotient_value_unique(
     (exists a : A. forall x : A. quotient_predicate(A, relation, q, x) = relation(a, x)) -> b = c {
     intro witness_;
     obtain (a, same) := witness_;
-    let member := along((fun (P : U0) => P)) by sym(same(a)) from reflexive(a);
+    let member := transport reflexive(a) along sym(same(a)) in ((fun (P : U0) => P));
     exact trans(sym(pb(a, member)), pc(a, member));
   }
   exact field_exists_elim(
@@ -119,7 +119,7 @@ def quotient_value(
       f(a),
       (
         fun (x : A, member : quotient_predicate(A, relation, q, x)) => sym(
-          respects(a, x, along((fun (P : U0) => P)) by same(x) from member)
+          respects(a, x, transport member along same(x) in ((fun (P : U0) => P)))
         )
       )
     );

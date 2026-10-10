@@ -32,6 +32,7 @@ export function tokenize(source) {
 // Every language keyword is reserved at every naming site, including words
 // whose grammar role is confined to a header, directive or proof statement.
 // The source reader uses this same list for highlighting.
+// `along` is a contextual separator in transport/over, not a reserved name.
 export const builtinNames = new Set([
   "Interval", "PathP", "comp", "face", "face_when", "flip", "meet", "join", "Glue", "glue", "unglue",
   "next", "max", "refl", "absurd", "sym", "trans", "cong", "transport", "apd", "apd_path",
@@ -53,7 +54,7 @@ export const languageKeywords = new Set([
   "sort", "law", "notation", "extends", "type", "set", "prop", "trunc", "numeral", "literal",
   "let", "obtain", "exact", "calc", "open", "use", "match", "rfl", "rw", "simp", "simpa", "intro", "ext", "hlevel", "induction",
   "fun", "forall", "exists", "and", "or", "as", "return",
-  "with", "unfolding", "at", "by", "from", "over", "along", "only", "without", "using", "occurrence", "obligations",
+  "with", "unfolding", "at", "by", "from", "over", "only", "without", "using", "occurrence", "obligations",
   "path", "compose", "fill", "in", "on", "unpack",
   "left", "right", "typed",
   ...generatedNames,
@@ -65,7 +66,7 @@ export const reservedNames = new Set([...languageKeywords, "Unit", "Void", "tt"]
 
 // `bindable` lists reserved words a historical source may still bind
 // (web/cubist/legacy-syntax.mjs).
-export function parse(source, typeOnly = false, { bindable = [] } = {}) {
+export function parse(source, typeOnly = false, { bindable = [], historicalTransport = false } = {}) {
   const ts = tokenize(source), bindableNames = new Set(bindable);
   let i = 0,
     depth = 0;
@@ -411,6 +412,28 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
     depth--;
     return a;
   }
+  // `transport (value) along p in C` starts with the same tokens as a
+  // built-in call. Look beyond the whole group (and its calls/projections)
+  // for `along`, without speculatively parsing nested transport calls.
+  function groupedTransportValue() {
+    let at = i;
+    const group = () => {
+      const closes = { "(": ")", "[": "]", "{": "}" }, stack = [];
+      do {
+        const word = ts[at++]?.text;
+        if (!word || word === "EOF") return false;
+        if (Object.hasOwn(closes, word)) stack.push(closes[word]);
+        else if ([")", "]", "}"].includes(word) && stack.pop() !== word) return false;
+      } while (stack.length);
+      return true;
+    };
+    if (!group()) return false;
+    while (true) {
+      if (ts[at]?.text === "(") { if (!group()) return false; }
+      else if (ts[at]?.text === "." && /^(?:[A-Za-z_][A-Za-z_0-9]*|[12])$/.test(ts[at + 1]?.text ?? "")) at += 2;
+      else return ts[at]?.text === "along";
+    }
+  }
   // The expression a token starts: a keyword form, a negation, a tuple, a
   // literal or a name.
   function prefix(t) {
@@ -467,13 +490,24 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
       return { kind: "call", fn: { kind: "name", name: t.text === "compose" ? "comp" : "fill", start: t.start, end: t.end },
         args: [along(family), base, ...(level ? [level] : []), ...walls], box: true, start: t.start, end: close.end };
     }
-    if (t.text === "along") {
+    if (t.text === "transport" && (peek() !== "(" || groupedTransportValue())) {
+      const value = expr();
+      take("along");
+      const path = expr();
+      take("in");
+      const family = expr();
+      return { kind: "transport", family, path, value, start: t.start, end: family.end };
+    }
+    // Only the historical-source migration reader accepts this retired
+    // prefix. In current source, `along` is an ordinary name except for
+    // its delimiter position in transport expressions and over statements.
+    if (historicalTransport && t.text === "along") {
       const family = expr();
       take("by");
       const path = expr();
       take("from");
       const value = expr();
-      return { kind:"along", family, path, value, start:t.start, end:value.end };
+      return { kind:"transport", family, path, value, start:t.start, end:value.end };
     }
     if (t.text === "fun") return lambdaExpr(t);
     if (t.text === "forall" || t.text === "exists") return quantifierExpr(t);

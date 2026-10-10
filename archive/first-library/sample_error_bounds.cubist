@@ -55,36 +55,16 @@ def sample_sum_error_bound(
       addF(sample_sum(C, F, zero, addF, radius, k, vertices, tags), epsilon)
     )
   ) {
-    zero => fun (vertices : C, tags, bounds : Unit, epsilon : F, positive : lt(zero, epsilon)) => along(
-      (fun (r : F) => FieldClose(F, addF, lt, zero, zero, r))
-    ) by sym(ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon)) from field_close_self(
+    zero => fun (vertices : C, tags, bounds : Unit, epsilon : F, positive : lt(zero, epsilon)) => transport field_close_self(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, epsilon, positive
+    ) along sym(ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon)) in (
+      (fun (r : F) => FieldClose(F, addF, lt, zero, zero, r))
     );
     succ previous => fun (
       vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k)),
       bounds : SampleCloseBounds(C, F, addF, lt, edge, other, radius, succ(k), vertices, tags),
       epsilon : F, positive : lt(zero, epsilon)
-    ) => along(
-      (
-        fun (r : F) => FieldClose(
-          F, addF, lt, sample_sum(C, F, zero, addF, edge, succ(k), vertices, tags),
-          sample_sum(C, F, zero, addF, other, succ(k), vertices, tags), r
-        )
-      )
-    ) by sym(
-      ring_add_assoc(
-        F, zero, one, addF, mulF, negF, ring,
-        radius(
-          field_fst(C, SampleVertices(C, k), vertices),
-          sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
-          field_fst(C, SampleTags(C, k), tags)
-        ),
-        sample_sum(
-          C, F, zero, addF, radius, k, field_snd(C, SampleVertices(C, k), vertices),
-          field_snd(C, SampleTags(C, k), tags)
-        ), epsilon
-      )
-    ) from field_close_add(
+    ) => transport field_close_add(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
       edge(
         field_fst(C, SampleVertices(C, k), vertices),
@@ -165,6 +145,26 @@ def sample_sum_error_bound(
             field_snd(C, SampleTags(C, k), tags)
           ), bounds
         ), epsilon, positive
+      )
+    ) along sym(
+      ring_add_assoc(
+        F, zero, one, addF, mulF, negF, ring,
+        radius(
+          field_fst(C, SampleVertices(C, k), vertices),
+          sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+          field_fst(C, SampleTags(C, k), tags)
+        ),
+        sample_sum(
+          C, F, zero, addF, radius, k, field_snd(C, SampleVertices(C, k), vertices),
+          field_snd(C, SampleTags(C, k), tags)
+        ), epsilon
+      )
+    ) in (
+      (
+        fun (r : F) => FieldClose(
+          F, addF, lt, sample_sum(C, F, zero, addF, edge, succ(k), vertices, tags),
+          sample_sum(C, F, zero, addF, other, succ(k), vertices, tags), r
+        )
       )
     );
   };

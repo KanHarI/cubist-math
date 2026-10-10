@@ -58,7 +58,7 @@ the C/WASM cubical kernel and report no axiom dependencies.
   to the theorem. Premise rules appear in the inspector trace and frozen
   `simp only` list. Arbitrary proposition-premise solving remains open.
 - Expected-type `path i => body`, path application `p @ i`, `ext x;` for equality
-  of functions with a fixed Pi carrier, `along C by p from v`, `apd_path(f,p)`,
+  of functions with a fixed Pi carrier, `transport v along p in C`, `apd_path(f,p)`,
   and `over C along p by { ... }`. The last form requires an explicitly given
   family and checks its transport-equality proof before applying the existing
   PathP bridge. Existing `apd` keeps its transported-equality result.
@@ -298,7 +298,7 @@ arithmetic results remain; `nat_add_shuffle` and `nat_double_add` use `calc`. Ex
 function-extensionality proofs in the binary and radix inductions use `ext`,
 and two path-algebra proofs use nested `path` abstraction and `@` in place of
 explicit interval families. Direct transport expressions in cardinality and
-loop rebasing use `along`. Concrete binary examples use `rfl`, and the
+loop rebasing use `transport`. Concrete binary examples use `rfl`, and the
 factorial step uses `rw`. These edits preserve theorem statements and reported
 assumptions for the retained results. The inferred types of `nat_add_shuffle`,
 `cardinality_path`, and `rebase_loop` were compared with their old types by
@@ -310,7 +310,7 @@ same reported assumptions as before the three helper declarations were removed.
 Run `node tools/audit-proof-ergonomics-usage.mjs` to count AST occurrences in
 the canonical corpus, excluding comments and design fixtures. Current counts
 are 7 `rfl`, 5 `rw`, 7 `ext`, 6 `path` abstractions, 12 `@` applications, 3
-grouped introductions, 2 grouped binder uses, 4 `along`, 2 `calc`, and two
+grouped introductions, 2 grouped binder uses, 4 `transport`, 2 `calc`, and two
 uses each of `simp only`, `simpa only`, `over`, and `apd_path`.
 Rule registrations, untyped expected lambdas, and value-style `have` remain
 exercised in checked examples and regressions but have no corpus use yet.
@@ -461,7 +461,7 @@ see this.
 [proof-rewrites.mjs](../../tools/proof-rewrites.mjs) and formats the result.
 The rewrites splice the recognized spans only, keep all other text, and skip
 any span whose rewrite would drop a comment. Six rewrites elaborate to the
-same checked terms (`params`, `fun`, `intro`, `have`, `along`, `path-apply`).
+same checked terms (`params`, `fun`, `intro`, `have`, `transport`, `path-apply`).
 Four keep public types but change proof terms: library path wrappers to
 builtins (`wrappers`), `exact refl(x)` to `rfl` (`rfl`), `path` with two
 interval lambdas to `path i =>` (`path-lambda`), and `exact FunExt(...)` to
@@ -474,7 +474,7 @@ formatter now separates adjacent lambda binder groups with a space.
 
 The six identical rewrites were applied to the whole corpus. They changed 354
 of 367 modules: 1,757 merged parameter lists, 654 merged lambda binder chains,
-264 grouped introductions, 209 value-style `have` statements, 424 `along`
+264 grouped introductions, 209 value-style `have` statements, 424 `transport`
 transports, and 336 `@` applications. Source size fell from 679,184 to
 650,845 tokens (-4.2%) and from 66,404 to 63,262 lines (-4.7%).
 `node tools/verify-proof-migration.mjs --base migration-tools` reports all 354
@@ -528,7 +528,7 @@ other modules' public types (see the verifier notes above).
    whole endpoint only up to conversion.
 2. **No descent into cubical forms.** `rw` cannot reach under `succ` (a
    separate core node), under let-bound function heads, or into `trans`,
-   `sym`, `along` and `cong`. `simp` does not match quantified rules whose
+   `sym`, `transport` and `cong`. `simp` does not match quantified rules whose
    pattern contains them.
 3. **Beta-redexes survive a full-context `cong` rule**, blocking later rules.
 4. **No term-level tactics.** Chains inside induction and match branches,

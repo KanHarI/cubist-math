@@ -8,10 +8,10 @@ def complex_parameter_tag_errors_converge(
   C, F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), curve, values : C -> Complex(F),
-  realWeight, imagWeight : C -> C -> C -> F, count : Nat -> Nat,
-  vertices : (forall n : Nat. SampleVertices(C, count(n))),
-  oldTags, newTags : (forall n : Nat. SampleTags(C, count(n))), delta : Nat -> F, length : F,
+  inverses : FieldInverses(F, zero, one, mulF, lt), curve, values : C -> Complex(F), realWeight,
+  imagWeight : C -> C -> C -> F, count : Nat -> Nat,
+  vertices : (forall n : Nat. SampleVertices(C, count(n))), oldTags,
+  newTags : (forall n : Nat. SampleTags(C, count(n))), delta : Nat -> F, length : F,
   nonnegativeLength : FieldLe(F, lt, zero, length),
   nonnegativeDelta : (forall n : Nat. FieldLe(F, lt, zero, delta(n))),
   errors : (
@@ -73,10 +73,10 @@ def complex_parameter_tag_independent_limit(
   C, F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), curve, values : C -> Complex(F),
-  realWeight, imagWeight : C -> C -> C -> F, count : Nat -> Nat,
-  vertices : (forall n : Nat. SampleVertices(C, count(n))),
-  oldTags, newTags : (forall n : Nat. SampleTags(C, count(n))), delta : Nat -> F, length : F,
+  inverses : FieldInverses(F, zero, one, mulF, lt), curve, values : C -> Complex(F), realWeight,
+  imagWeight : C -> C -> C -> F, count : Nat -> Nat,
+  vertices : (forall n : Nat. SampleVertices(C, count(n))), oldTags,
+  newTags : (forall n : Nat. SampleTags(C, count(n))), delta : Nat -> F, length : F,
   nonnegativeLength : FieldLe(F, lt, zero, length),
   nonnegativeDelta : (forall n : Nat. FieldLe(F, lt, zero, delta(n))),
   errors : (
@@ -156,7 +156,7 @@ def complex_parameter_tag_independent_limit(
       complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, value
     );
   let total := fun (n : Nat) => complex_add(F, addF, oldSums(n), errorSums(n));
-  let sameLimit := along ComplexConverges(F, zero, addF, lt, total) by unit from added;
+  let sameLimit := transport added along unit in ComplexConverges(F, zero, addF, lt, total);
   let pointwise : forall n : Nat. total(n) = newSums(n) {
     intro n;
     exact sym(

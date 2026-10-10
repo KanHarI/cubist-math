@@ -5,7 +5,7 @@ import paths_;
 
 // Only the endpoints are inferred. The family and path are selected explicitly.
 def move_in_fiber(A : U0, C : A -> U0, x, y : A, p : x = y, v : C(x)) : C(y) {
-  exact along C by p from v;
+  exact transport v along p in C;
 }
 
 def section_path(A : U0, C : A -> U0, f : (forall a : A. C(a)), x, y : A, p : x = y) :

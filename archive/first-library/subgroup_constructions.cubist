@@ -93,9 +93,9 @@ def subgroup_bottom(G : Group) : Subgroup(G) {
 
 def subgroup_bottom_least(G : Group, S : Subgroup(G)) : SubgroupIncluded(G, subgroup_bottom(G), S) {
   intro x, same;
-  exact along subgroup_members(G, S) by sym(typed((x = group_unit(G)), same)) from subgroup_unit(
-    G, subgroup_members(G, S), subgroup_laws(G, S)
-  );
+  exact transport subgroup_unit(G, subgroup_members(G, S), subgroup_laws(G, S)) along sym(
+    typed((x = group_unit(G)), same)
+  ) in subgroup_members(G, S);
 }
 
 def subgroup_top_greatest(G : Group, S : Subgroup(G)) : SubgroupIncluded(G, S, subgroup_top(G)) {
@@ -115,11 +115,11 @@ def subgroup_preimage_laws(G, H : Group, h : GroupHom(G, H), S : Subgroup(H)) :
   let laws := subgroup_laws(H, S);
   exact (
     (fun (x : A) => subgroup_prop(H, P, laws, f(x))),
-    along P by sym(group_hom_unit(G, H, h)) from subgroup_unit(H, P, laws),
+    transport subgroup_unit(H, P, laws) along sym(group_hom_unit(G, H, h)) in P,
     (
-      fun (x, y : A, hx : P(f(x)), hy : P(f(y))) => along P by sym(group_hom_multiply(G, H, h, x, y)) from subgroup_multiply(
+      fun (x, y : A, hx : P(f(x)), hy : P(f(y))) => transport subgroup_multiply(
         H, P, laws, f(x), f(y), hx, hy
-      )
+      ) along sym(group_hom_multiply(G, H, h, x, y)) in P
     ),
     (
       fun (x, y : A, hx : P(f(x)), same : group_multiply(G, y, x) = group_unit(G)) => subgroup_inverse(

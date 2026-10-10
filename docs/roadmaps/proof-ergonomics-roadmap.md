@@ -9,7 +9,7 @@ the native kernel: grouped binders and introductions, both `have` forms
 `rfl`, `calc`, `rw`, `simp` and `simpa` with explicit, registered and named rule
 sets, `simp at h as h2`, bounded conditional equality rules, checked type-path
 transport, and the "Replace with simp only" action. Milestone 4's cubical
-shorthand (`path i =>`, `p @ i`, `ext`, `along`, `apd_path`, `over`) shipped
+shorthand (`path i =>`, `p @ i`, `ext`, `transport`, `apd_path`, `over`) shipped
 early. A review on 2026-09-25 fixed four elaborator bugs and an older
 name-capture bug; see the [implementation checkpoint](../tactical/proof-ergonomics-handoff.md).
 
@@ -444,7 +444,7 @@ library laws. Its requirements and completion criteria still apply there.
 | Cubical constructors | E2 squares and bounded boundary-filling experiments |
 
 Delivered here ahead of that work: `path i =>`, `p @ i`, `ext x;`,
-`along C by p from v`, `apd_path(f, p)`, `over C along p by { … }`, and
+`transport v along p in C`, `apd_path(f, p)`, `over C along p by { … }`, and
 `simp`/`simpa` transport along checked paths of types.
 
 ### 5. Inferred arguments and goal-directed proof construction

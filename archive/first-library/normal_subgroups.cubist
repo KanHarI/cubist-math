@@ -46,7 +46,9 @@ def subgroup_bottom_normal(G : Group) : IsNormal(G, subgroup_bottom(G)) {
 
 def abelian_subgroups_normal(G : Group, abelian_ : IsAbelian(G), S : Subgroup(G)) : IsNormal(G, S) {
   intro g, x, member;
-  exact along subgroup_members(G, S) by sym(abelian_conjugation_trivial(G, abelian_, g, x)) from member;
+  exact transport member along sym(abelian_conjugation_trivial(G, abelian_, g, x)) in subgroup_members(
+    G, S
+  );
 }
 
 def subgroup_preimage_normal(
@@ -56,11 +58,12 @@ def subgroup_preimage_normal(
   intro g, x, member;
   let f := group_hom_map(G, H, h);
   let P := subgroup_members(H, S);
-  exact along P by sym(group_hom_conjugate(G, H, h, g, x)) from normal(f(g), f(x), member);
+  exact transport normal(f(g), f(x), member) along sym(group_hom_conjugate(G, H, h, g, x)) in P;
 }
 
 // The kernel is the inverse image of the identity subgroup, hence normal.
-def group_kernel(G, H : Group, h : GroupHom(G, H)) := subgroup_preimage(G, H, h, subgroup_bottom(H));
+def group_kernel(G, H : Group, h : GroupHom(G, H)) :=
+  subgroup_preimage(G, H, h, subgroup_bottom(H));
 
 def group_kernel_normal(G, H : Group, h : GroupHom(G, H)) : IsNormal(G, group_kernel(G, H, h)) {
   exact subgroup_preimage_normal(G, H, h, subgroup_bottom(H), subgroup_bottom_normal(H));
@@ -108,9 +111,9 @@ def normal_members_conjugate(
   let P := subgroup_members(G, S);
   exact (
     (
-      fun (member : P(group_conjugate(G, g, x))) => along P by group_conjugate_undo(G, g, x) from normal(
+      fun (member : P(group_conjugate(G, g, x))) => transport normal(
         group_inverse(G, g), group_conjugate(G, g, x), member
-      )
+      ) along group_conjugate_undo(G, g, x) in P
     ), normal(g, x)
   );
 }
@@ -141,7 +144,7 @@ def normal_subgroup_conjugation_invariant(
 }
 
 def subgroup_transport(G, H : Group, path_ : G =[Group] H, S : Subgroup(G)) :=
-  along Subgroup by path_ from S;
+  transport S along path_ in Subgroup;
 
 // Path induction transports normality across equality of groups. Univalence
 // then gives invariance under group isomorphism without re-proving the laws.

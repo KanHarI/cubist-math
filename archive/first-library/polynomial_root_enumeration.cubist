@@ -94,9 +94,9 @@ def linear_factor_product_listed_step(
   }
   exact match i as index return PolynomialRoot(K, K, e, P, roots(index)) {
     left u => (
-      along PolynomialRoot(K, K, e, P) by cong(
+      transport headRoot along cong(
         (fun (v : Unit) => roots(typed(Fin(succ(n)), left(v)))), unit_equal(u)
-      ) from headRoot
+      ) in PolynomialRoot(K, K, e, P)
     );
     right j => tailRoot(j);
   };

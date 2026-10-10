@@ -66,7 +66,7 @@ def finite_basis_search_step(
     exact previous(
       succ(m), adjoin_linear(K, V, m, f, x),
       adjoin_linear_injective(K, V, m, f, injective, x, outside),
-      along NoIndependent(K, V) by sym(nat_add_succ(fuel, m)) from bound
+      transport bound along sym(nat_add_succ(fuel, m)) in NoIndependent(K, V)
     );
   }
   exact match excluded_middle(
@@ -110,7 +110,7 @@ def finite_dimensional_from_bound(
   FiniteDimensional(K, V) {
   exact finite_basis_search(
     K, V, n, 0, linear_empty(K, V), linear_empty_injective(K, V),
-    along NoIndependent(K, V) by sym(nat_add_zero(n)) from bound
+    transport bound along sym(nat_add_zero(n)) in NoIndependent(K, V)
   );
 }
 

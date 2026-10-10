@@ -115,7 +115,9 @@ def f_preimage(
   );
 }
 
-def csb_map_at(A, B : U0, f : A -> B, g : B -> A, x : A, decision : Decidable(U0, GPoint(A, B, f, g, x))) :=
+def csb_map_at(
+  A, B : U0, f : A -> B, g : B -> A, x : A, decision : Decidable(U0, GPoint(A, B, f, g, x))
+) :=
   match decision return B {
     left good => g_preimage(A, B, f, g, x, good);
     right bad => f(x);
@@ -136,7 +138,8 @@ def csb_good_at(
 }
 
 def csb_good(
-  A, B : U0, f : A -> B, g : B -> A, embedG : Embedding(B, A, g), x : A, good : GPoint(A, B, f, g, x)
+  A, B : U0, f : A -> B, g : B -> A, embedG : Embedding(B, A, g), x : A,
+  good : GPoint(A, B, f, g, x)
 ) :=
   csb_good_at(A, B, f, g, x, good, decide_gpoint(A, B, f, g, embedG, x));
 
@@ -169,7 +172,7 @@ def csb_disjoint(
       sym(csb_good(A, B, f, g, embedG, x, good)),
       cong(g, trans(same, csb_bad(A, B, f, g, embedG, z, bad)))
     );
-  exact bad(gpoint_backward(A, B, f, g, z, along GPoint(A, B, f, g) by path_ from good));
+  exact bad(gpoint_backward(A, B, f, g, z, transport good along path_ in GPoint(A, B, f, g)));
 }
 
 def csb_injective(
@@ -228,8 +231,8 @@ def csb_preimages(
       let badX : GPoint(A, B, f, g, x) -> Void {
         intro goodX;
         exact bad(
-          along GPoint(A, B, f, g) by cong(g, p) from gpoint_forward(
-            A, B, f, g, injF, injG, x, goodX
+          transport gpoint_forward(A, B, f, g, injF, injG, x, goodX) along cong(g, p) in GPoint(
+            A, B, f, g
           )
         );
       }
@@ -251,8 +254,8 @@ def injective_split_bijection(
 }
 
 def CantorSchroederBernstein :=
-  forall A : U0. forall B : U0. IsSet(U0, A) -> IsSet(U0, B) -> forall f : A -> B. forall g : B -> A.
-  Injective(A, B, f) -> Injective(B, A, g) -> Equiv(U0, A, B);
+  forall A : U0. forall B : U0. IsSet(U0, A) -> IsSet(U0, B) -> forall f : A -> B.
+  forall g : B -> A. Injective(A, B, f) -> Injective(B, A, g) -> Equiv(U0, A, B);
 
 def cantor_schroeder_bernstein : CantorSchroederBernstein {
   intro A, B, setA, setB, f, g, injF, injG;

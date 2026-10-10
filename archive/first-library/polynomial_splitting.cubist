@@ -134,7 +134,7 @@ def polynomial_splitting_zero_degree(
   PolynomialSplitting(K, p, 0) {
   let f := polynomial_coefficients(K, p);
   let a := f(0);
-  let support := along SeriesSupport(K, f) by degree from polynomial_cutoff_support(K, p);
+  let support := transport polynomial_cutoff_support(K, p) along degree in SeriesSupport(K, f);
   exact (
     (fun (i : Fin(0)) => typed(af_carrier(K), absurd(i))), a,
     trans(

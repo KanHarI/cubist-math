@@ -47,7 +47,9 @@ def dyadic_width_small_from_natural_bound(
       )
     );
   let aboveWidth :=
-    along((fun (v : F) => lt(v, mulF(factor, epsilon)))) by restores from multiply(largeFactor);
+    transport multiply(largeFactor) along restores in (
+      (fun (v : F) => lt(v, mulF(factor, epsilon)))
+    );
   let bounded :=
     dyadic_width_growth_bound(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, n, width,
@@ -56,13 +58,13 @@ def dyadic_width_small_from_natural_bound(
   let productLess :=
     leLt(mulF(factor, sampledWidth), width, mulF(factor, epsilon), bounded, aboveWidth);
   let leftCommutes :=
-    along((fun (v : F) => lt(v, mulF(factor, epsilon)))) by ring_mul_comm(
+    transport productLess along ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, factor, sampledWidth
-    ) from productLess;
+    ) in ((fun (v : F) => lt(v, mulF(factor, epsilon))));
   let rightCommutes :=
-    along lt(mulF(sampledWidth, factor)) by ring_mul_comm(
+    transport leftCommutes along ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, factor, epsilon
-    ) from leftCommutes;
+    ) in lt(mulF(sampledWidth, factor));
   obtain (preserve, reflect) := scale(sampledWidth, epsilon, factor, positiveFactor);
   exact reflect(rightCommutes);
 }

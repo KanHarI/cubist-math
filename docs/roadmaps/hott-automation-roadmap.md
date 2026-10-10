@@ -273,7 +273,7 @@ on 2026-10-05 (L4.4).
     injections, `sup` and user constructors alike. The stopped curated
     migration found `rw` blocked at `succ`
     ([findings](../tactical/proof-ergonomics-handoff.md#curated-rwcalcsimp-pass-findings-stopped)).
-    Descent into cubical forms (`trans`, `sym`, `along`) and a statement-level
+    Descent into cubical forms (`trans`, `sym`, `transport`) and a statement-level
     `with unfolding` are further gaps it found; they remain for A2 and C1.
 - [ ] **A3. Congruence lines instead of composition chains.** Use a bottom-up
   traversal with local resimplification of subterms introduced by a rewrite.
@@ -1018,7 +1018,7 @@ Completion:
 - [ ] **E4. Paths as named results.** `normalize [rules] (e)` is a term: the
   checked simplification path from `e` to its simplified form, usable wherever
   a path is data, for example as a transport argument. A lint flags `simp`
-  without `only` when its path later reaches a transport, `along`, `over` or a
+  without `only` when its path later reaches `transport`, `over` or a
   PathP family, since a change to the rule set would change that path.
   `only` fixes rule selection, not future elaboration strategies. Persistent
   freezing follows invariant 7 and retains the checked construction or its

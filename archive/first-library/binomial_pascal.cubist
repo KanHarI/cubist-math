@@ -94,7 +94,7 @@ def change_head_card(
   n, k : Nat, p : Fin(n) -> Bool, b, c : Bool, q : b = c,
   h : BinCard(succ(n), k, predicate_join(Fin(n), b, p))
 ) :=
-  along((fun (v : Bool) => BinCard(succ(n), k, predicate_join(Fin(n), v, p)))) by q from h;
+  transport h along q in ((fun (v : Bool) => BinCard(succ(n), k, predicate_join(Fin(n), v, p))));
 
 def pascal_on_head(n, k : Nat, p : Fin(n) -> Bool, b : Bool) :=
   match b as c return (

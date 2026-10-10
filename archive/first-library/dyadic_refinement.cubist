@@ -25,8 +25,8 @@ def dyadic_refinement_zero(
   leftUnit : (forall x : G. addG(zeroG, x) = x), rightUnit : (forall x : G. addG(x, zeroG) = x),
   assoc : (forall x : G. forall y : G. forall z : G. addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
-  -> FieldUnitInterval(F, zero, one, lt) -> G, extra : Nat,
-  a, b : FieldUnitInterval(F, zero, one, lt),
+  -> FieldUnitInterval(F, zero, one, lt) -> G, extra : Nat, a,
+  b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -58,18 +58,18 @@ def dyadic_refinement_zero(
       FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, rightUnit, edge,
       IntervalRefinementAdmissible(F, zero, one, lt), a, b, fine, valid
     );
-  exact along(
+  exact transport initial_ along sym(
+    dyadic_piece_zero(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+    )
+  ) in (
     (
       fun (coarse : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)) => SubdivisionRefinementSum(
         FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, edge,
         IntervalRefinementAdmissible(F, zero, one, lt), a, b, coarse, fine
       )
     )
-  ) by sym(
-    dyadic_piece_zero(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
-    )
-  ) from initial_;
+  );
 }
 
 def dyadic_refinement_step(
@@ -165,7 +165,7 @@ def dyadic_refinement_step(
       b, ordered
     );
   let withCoarse :=
-    along(
+    transport joined along sym(coarsePath) in (
       (
         fun (coarse : SampleSubdivision(I, a, b)) => SubdivisionRefinementSum(
           FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, edge,
@@ -176,8 +176,8 @@ def dyadic_refinement_step(
           )
         )
       )
-    ) by sym(coarsePath) from joined;
-  exact along(
+    );
+  exact transport withCoarse along sym(finePath) in (
     (
       fun (fine : SampleSubdivision(I, a, b)) => SubdivisionRefinementSum(
         FieldUnitInterval(F, zero, one, lt), G, zeroG, addG, edge,
@@ -188,7 +188,7 @@ def dyadic_refinement_step(
         ), fine
       )
     )
-  ) by sym(finePath) from withCoarse;
+  );
 }
 
 // Any later level is an actual admissible per-edge refinement of this one.

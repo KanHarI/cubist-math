@@ -27,8 +27,8 @@ def monic_linear_product_step(
   let da := linear_factor_degree(K, x);
   let fa := polynomial_coefficients(K, A);
   let fb := polynomial_coefficients(K, B);
-  let sa := along SeriesSupport(K, fa) by da from polynomial_cutoff_support(K, A);
-  let sb := along SeriesSupport(K, fb) by db from polynomial_cutoff_support(K, B);
+  let sa := transport polynomial_cutoff_support(K, A) along da in SeriesSupport(K, fa);
+  let sb := transport polynomial_cutoff_support(K, B) along db in SeriesSupport(K, fb);
   let leading : polynomial_coefficients(K, polynomial_mul(K, A, B), succ(n)) = field_one(K) :=
     trans(
       convolution_top(K, 1, fa, fb, n, sa, sb),

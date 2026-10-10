@@ -20,18 +20,20 @@ def subfield_preimage_laws(K, L : AlgebraicField, e : FieldEmbedding(K, L), S : 
   obtain (p0, p1, pn, pa, pm) := field_embedding_preserves(K, L, e);
   exact (
     (fun (x : A) => subfield_prop(L, Q, laws, f(x))),
-    along Q by sym(p0) from subfield_zero(L, Q, laws),
-    along Q by sym(p1) from subfield_one(L, Q, laws),
-    (fun (x : A, px : Q(f(x))) => along Q by sym(pn(x)) from subfield_neg(L, Q, laws, f(x), px)),
+    transport subfield_zero(L, Q, laws) along sym(p0) in Q,
+    transport subfield_one(L, Q, laws) along sym(p1) in Q,
     (
-      fun (x, y : A, px : Q(f(x)), py : Q(f(y))) => along Q by sym(pa(x, y)) from subfield_add(
-        L, Q, laws, f(x), f(y), px, py
-      )
+      fun (x : A, px : Q(f(x))) => transport subfield_neg(L, Q, laws, f(x), px) along sym(pn(x)) in Q
     ),
     (
-      fun (x, y : A, px : Q(f(x)), py : Q(f(y))) => along Q by sym(pm(x, y)) from subfield_mul(
+      fun (x, y : A, px : Q(f(x)), py : Q(f(y))) => transport subfield_add(
         L, Q, laws, f(x), f(y), px, py
-      )
+      ) along sym(pa(x, y)) in Q
+    ),
+    (
+      fun (x, y : A, px : Q(f(x)), py : Q(f(y))) => transport subfield_mul(
+        L, Q, laws, f(x), f(y), px, py
+      ) along sym(pm(x, y)) in Q
     ),
     (
       fun (x, y : A, px : Q(f(x)), inverseLaw : af_mul(A, opsA, x, y) = af_one(A, opsA)) => subfield_inverse(
@@ -41,7 +43,8 @@ def subfield_preimage_laws(K, L : AlgebraicField, e : FieldEmbedding(K, L), S : 
   );
 }
 
-def subfield_preimage(K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L)) : Subfield(K) {
+def subfield_preimage(K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(L)) :
+  Subfield(K) {
   exact (SubfieldPreimage(K, L, e, S), subfield_preimage_laws(K, L, e, S));
 }
 

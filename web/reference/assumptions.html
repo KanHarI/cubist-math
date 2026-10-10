@@ -179,7 +179,7 @@ computable def swapped : (Unit and Nat) = (Nat and Unit) {
   exact ua(U0, Unit and Nat, Nat and Unit, swap_equivalence);
 }
 
-evaluate along (fun (T : U0) =&gt; T) by swapped from typed(Unit and Nat, (tt, 3))
+evaluate transport typed(Unit and Nat, (tt, 3)) along swapped in (fun (T : U0) =&gt; T)
   expecting typed(Nat and Unit, (3, tt));</code></pre>
             <pre><code data-check="accept">computable def extensional(A : U0, B : A -&gt; U0, f, g : forall a : A. B(a),
     h : forall a : A. f(a) = g(a)) : f = g {

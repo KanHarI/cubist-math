@@ -117,7 +117,7 @@ def inhabited_cardinality_positive(A : U0, n : Nat, count : HasCardinality(A, n)
   exists k : Nat. n = succ(k) {
   let nonzero : (n = 0) -> Void {
     intro zero;
-    let countZero := along HasCardinality(A) by zero from count;
+    let countZero := transport count along zero in HasCardinality(A);
     exact mere_eliminate(
       Bijection(Fin(0), A), Void, (fun (u, v : Void) => absurd(u)),
       (fun (e : Bijection(Fin(0), A)) => absurd(backward(Fin(0), A, e, a))), countZero
@@ -136,8 +136,8 @@ def degree_one_embedding_surjective(
   let C := ScalarSpace(K);
   let h := field_embedding_linear(K, F, e);
   let dimensionF :=
-    along HasDimension(K, V) by degreeOne from extension_degree_specification(
-      K, embedding_as_extension(K, F, e), finite
+    transport extension_degree_specification(K, embedding_as_extension(K, F, e), finite) along degreeOne in HasDimension(
+      K, V
     );
   exact equal_dimension_injective_surjective(
     K, C, V, 1, basis_has_dimension(K, C, 1, scalar_space_basis(K)), dimensionF, h,

@@ -303,11 +303,11 @@ computable def nat_decide(m : Nat) := induction m as k return (forall n : Nat. (
     zero => (fun (n : Nat) => induction n as j return ((0 = j) or ((0 = j) -> Void)) {
       zero => typed((0 = 0) or ((0 = 0) -> Void), left(refl(0)));
       succ unused => typed((0 = succ(j)) or ((0 = succ(j)) -> Void),
-        right(fun (p : 0 = succ(j)) => along nat_is_zero by p from tt));
+        right(fun (p : 0 = succ(j)) => transport tt along p in nat_is_zero));
     });
     succ previous => (fun (n : Nat) => induction n as j return ((succ(k) = j) or ((succ(k) = j) -> Void)) {
       zero => typed((succ(k) = 0) or ((succ(k) = 0) -> Void),
-        right(fun (p : succ(k) = 0) => along nat_is_zero by sym(p) from tt));
+        right(fun (p : succ(k) = 0) => transport tt along sym(p) in nat_is_zero));
       succ unused => match previous(j) return ((succ(k) = succ(j)) or ((succ(k) = succ(j)) -> Void)) {
         left p => typed((succ(k) = succ(j)) or ((succ(k) = succ(j)) -> Void), left(cong(succ, typed((k = j), p))));
         right no => typed((succ(k) = succ(j)) or ((succ(k) = succ(j)) -> Void),

@@ -12,10 +12,12 @@ def order_lt_add_left(
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   obtain (forward, backward) := translate(x, y, z);
   let first :=
-    along((fun (v : F) => lt(v, addF(y, z)))) by ring_add_comm(
-      F, zero, one, addF, mulF, negF, ring, x, z
-    ) from forward(less);
-  exact along lt(addF(z, x)) by ring_add_comm(F, zero, one, addF, mulF, negF, ring, y, z) from first;
+    transport forward(less) along ring_add_comm(F, zero, one, addF, mulF, negF, ring, x, z) in (
+      (fun (v : F) => lt(v, addF(y, z)))
+    );
+  exact transport first along ring_add_comm(F, zero, one, addF, mulF, negF, ring, y, z) in lt(
+    addF(z, x)
+  );
 }
 
 def order_lt_add_pair(
@@ -42,9 +44,9 @@ def order_difference_positive(
   lt(zero, addF(y, negF(x))) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   obtain (forward, backward) := translate(x, y, negF(x));
-  exact along((fun (v : F) => lt(v, addF(y, negF(x))))) by ring_add_inverse_right(
+  exact transport forward(less) along ring_add_inverse_right(
     F, zero, one, addF, mulF, negF, ring, x
-  ) from forward(less);
+  ) in ((fun (v : F) => lt(v, addF(y, negF(x)))));
 }
 
 def field_close_self(
@@ -59,9 +61,9 @@ def field_close_self(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, epsilon, x, positive
     );
   let bound :=
-    along((fun (v : F) => lt(v, addF(x, epsilon)))) by ring_add_zero_right(
-      F, zero, one, addF, mulF, negF, ring, x
-    ) from shifted;
+    transport shifted along ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, x) in (
+      (fun (v : F) => lt(v, addF(x, epsilon)))
+    );
   exact (bound, bound);
 }
 
@@ -92,11 +94,13 @@ def field_close_triangle(
   let lower :=
     transitive(z, addF(y, delta), addF(addF(x, epsilon), delta), yzLower, shiftLower(xyLower));
   exact (
-    along lt(x) by trans(
+    transport upper along trans(
       ring_add_assoc(F, zero, one, addF, mulF, negF, ring, z, delta, epsilon),
       cong(addF(z), ring_add_comm(F, zero, one, addF, mulF, negF, ring, delta, epsilon))
-    ) from upper,
-    along lt(z) by ring_add_assoc(F, zero, one, addF, mulF, negF, ring, x, epsilon, delta) from lower
+    ) in lt(x),
+    transport lower along ring_add_assoc(F, zero, one, addF, mulF, negF, ring, x, epsilon, delta) in lt(
+      z
+    )
   );
 }
 
@@ -110,17 +114,17 @@ def field_close_add(
   obtain (xyUpper, xyLower) := xy;
   obtain (uvUpper, uvLower) := uv;
   exact (
-    along lt(addF(x, u)) by ring_add_shuffle(
-      F, zero, one, addF, mulF, negF, ring, y, epsilon, v, delta
-    ) from order_lt_add_pair(
+    transport order_lt_add_pair(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, addF(y, epsilon), u,
       addF(v, delta), xyUpper, uvUpper
+    ) along ring_add_shuffle(F, zero, one, addF, mulF, negF, ring, y, epsilon, v, delta) in lt(
+      addF(x, u)
     ),
-    along lt(addF(y, v)) by ring_add_shuffle(
-      F, zero, one, addF, mulF, negF, ring, x, epsilon, u, delta
-    ) from order_lt_add_pair(
+    transport order_lt_add_pair(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, y, addF(x, epsilon), v,
       addF(u, delta), xyLower, uvLower
+    ) along ring_add_shuffle(F, zero, one, addF, mulF, negF, ring, x, epsilon, u, delta) in lt(
+      addF(y, v)
     )
   );
 }
@@ -140,14 +144,15 @@ def field_close_all_le(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, y, x, reversed
     );
   obtain (upper, lower) := close(gap, positive);
-  let recovers : addF(y, gap) = x := trans(
-    ring_add_swap(F, zero, one, addF, mulF, negF, ring, y, x, negF(y)),
+  let recovers : addF(y, gap) = x :=
     trans(
-      cong(addF(x), ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, y)),
-      ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, x)
-    )
-  );
-  exact irreflexive(x, along lt(x) by recovers from upper);
+      ring_add_swap(F, zero, one, addF, mulF, negF, ring, y, x, negF(y)),
+      trans(
+        cong(addF(x), ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, y)),
+        ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, x)
+      )
+    );
+  exact irreflexive(x, transport upper along recovers in lt(x));
 }
 
 def field_close_separated(
@@ -176,13 +181,13 @@ def field_close_halved_triangle(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall epsilon : F. addF(half(epsilon), half(epsilon)) = epsilon), x, y, z, epsilon : F,
-  xy : FieldClose(F, addF, lt, x, y, half(epsilon)),
+  halfSum : (forall epsilon : F. addF(half(epsilon), half(epsilon)) = epsilon), x, y, z,
+  epsilon : F, xy : FieldClose(F, addF, lt, x, y, half(epsilon)),
   yz : FieldClose(F, addF, lt, y, z, half(epsilon))
 ) :
   FieldClose(F, addF, lt, x, z, epsilon) {
-  exact along((fun (radius : F) => FieldClose(F, addF, lt, x, z, radius))) by halfSum(epsilon) from field_close_triangle(
+  exact transport field_close_triangle(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, z, half(epsilon),
     half(epsilon), xy, yz
-  );
+  ) along halfSum(epsilon) in ((fun (radius : F) => FieldClose(F, addF, lt, x, z, radius)));
 }

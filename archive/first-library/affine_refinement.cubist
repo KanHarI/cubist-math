@@ -125,12 +125,12 @@ def affine_refinement_error_bound(
       I, F, zero, addF, (fun (a, b, tag : I) => addF(realWeight(a, b, tag), imagWeight(a, b, tag))),
       n, vertices, oldTags
     );
-  exact along ComplexBoxBound(F, negF, lt, errorSum) by cong(
+  exact transport localBound along cong(
     mulF(delta),
     affine_sample_variation_sum(
       F, zero, one, addF, mulF, negF, lt, ring, r, s, n, vertices, oldTags
     )
-  ) from localBound;
+  ) in ComplexBoxBound(F, negF, lt, errorSum);
 }
 
 def curve_coarse_contribution(

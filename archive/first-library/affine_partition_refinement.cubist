@@ -171,12 +171,16 @@ def affine_partition_piece_estimate(
     let lastPath : last = b :=
       field_snd((first = a), (last = b), subdivision_endpoints(I, a, b, piece));
     let withinFirst :=
-      along((fun (v : I) => IntervalTagWithin(F, zero, one, lt, v, b, tag))) by sym(firstPath) from within;
+      transport within along sym(firstPath) in (
+        (fun (v : I) => IntervalTagWithin(F, zero, one, lt, v, b, tag))
+      );
     let withinSamples :=
-      along((fun (v : I) => IntervalTagWithin(F, zero, one, lt, first, v, tag))) by sym(lastPath) from withinFirst;
+      transport withinFirst along sym(lastPath) in (
+        (fun (v : I) => IntervalTagWithin(F, zero, one, lt, first, v, tag))
+      );
     let widthPath :=
       trans(cong((fun (v : I) => width(v, last)), firstPath), cong(width(a), lastPath));
-    let smallSamples := along((fun (v : F) => lt(v, mesh))) by sym(widthPath) from small;
+    let smallSamples := transport small along sym(widthPath) in ((fun (v : F) => lt(v, mesh)));
     obtain (error, identity, bounded) := localEstimates(
       count, samples, tag, fineTags, fineValid, withinSamples, smallSamples
     );
@@ -193,7 +197,7 @@ def affine_partition_piece_estimate(
     exact (
       error,
       trans(mapped, trans(identity, cong((fun (v : Complex(F)) => addC(v, error)), edgePath))),
-      along ComplexBoxBound(F, negF, lt, error) by radiusPath from bounded
+      transport bounded along radiusPath in ComplexBoxBound(F, negF, lt, error)
     );
   }
   exact mapEstimates;
@@ -337,7 +341,7 @@ def affine_partition_from_local_estimates(
       trans(
         sym(mappedFine),
         trans(identity, cong((fun (v : Complex(F)) => addC(v, error)), mappedCoarse))
-      ), along ComplexBoxBound(F, negF, lt, error) by radiusPath from bounded
+      ), transport bounded along radiusPath in ComplexBoxBound(F, negF, lt, error)
     );
   }
   exact estimates;

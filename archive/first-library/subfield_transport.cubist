@@ -3,7 +3,7 @@ import subfield_composita;
 // Change presentation by transporting the entire subfield bundle along a
 // field equality. All membership and closure evidence moves together.
 def subfield_transport(F, G : AlgebraicField, p : F =[AlgebraicField] G, S : Subfield(F)) :=
-  along Subfield by p from S;
+  transport S along p in Subfield;
 
 def compositum_transport(F, G : AlgebraicField, p : F =[AlgebraicField] G) :=
   fun (S, T : Subfield(F)) => path_to_transport(
