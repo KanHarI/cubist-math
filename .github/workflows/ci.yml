@@ -30,6 +30,15 @@ jobs:
       - run: npm ci && npx playwright install --with-deps chromium
       - run: make EMCC=.tools/emsdk/upstream/emscripten/emcc wasm-test
       - run: npm run test:browser
+      - run: npm run test:generation:mutations
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-generation-evidence
+          path: |
+            build/frontend-generation-mutations.json
+            build/frontend-generation-failures/
+          if-no-files-found: ignore
   lint:
     runs-on: ubuntu-latest
     steps:

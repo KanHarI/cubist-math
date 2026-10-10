@@ -625,6 +625,12 @@ findings (G1–G6 and G8–G12) and distinguishes them from fixed examples,
 historical symptoms and L2.6's incomplete planned capabilities. These
 packages do not mark implementation complete or resume paused mathematics.
 
+Follow-up FG0–FG5 fixing commits and distinguishing tests are recorded in
+the inventory. The [FG6 report](../reports/frontend-generation-fg6.md)
+records the implemented deterministic/mutation gate, validation and the
+remaining unidentified historical skipped-mutation evidence. No new L2.6
+deriving capability is implied by those frontend changes.
+
 | ID | Package and exit evidence | Depends on | Size |
 | --- | --- | --- | --- |
 | FG0 | Evidence harness implemented in [frontend-generation.test.mjs](../../tests/frontend-generation.test.mjs), with a [comparison manifest](../../tests/fixtures/frontend-generation.md); every open gap has an expected outcome and explicit TODO, including G12's separately tracked refusal range | #188's captured-syntax baseline | S |
