@@ -125,4 +125,9 @@ test("substitution renames a binder that would capture an argument's name, in ev
   assert.deepEqual([shadowed.base.name, shadowed.step.args[0].name], ["z", "z"]);
   // A pattern's argument may be a constructor: it is refused, never renamed.
   assert.throws(() => substituted(expression("match n { zero => y; succ(x) => f(x, y); }"), argument, refuse), /refused x/);
+  // It captures only an argument substituted under it: one naming x at the
+  // scrutinee is no capture, though another is substituted under x.
+  const outside = substituted(expression("match n { zero => y; succ(x) => f(x, y); }"),
+    new Map([["n", { kind: "name", name: "x" }], ["y", { kind: "name", name: "w" }]]), refuse);
+  assert.deepEqual([...freeNames(outside)].sort(), ["f", "w", "x"]);
 });

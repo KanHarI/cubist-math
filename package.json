@@ -8,6 +8,7 @@
     "test": "node tools/test.mjs",
     "test:browser": "node tests/cubical-inspector.browser.mjs",
     "benchmark:cubical": "make wasm && node tools/benchmark-cubical.mjs",
+    "baseline:evaluation": "make wasm && node tools/evaluation-baseline.mjs",
     "format:cubist": "node tools/format-cubist.mjs",
     "lint:cubist": "node tools/lint-cubist.mjs",
     "inline-errors": "node tools/inline-errors.mjs --write",

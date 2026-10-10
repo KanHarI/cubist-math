@@ -1328,7 +1328,7 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
       }
       const end = take("}").end;
       declarations.push({ kind: "theory", name: n, ...(uses.length ? { uses: [...uses] } : {}), universes: header.filter(p => p.bound).map(p => p.name),
-        params: header.filter(p => !p.bound).map(p => ({ name: p.name, type: p.type })), parents, fields, start: t.start, end });
+        params: header.filter(p => !p.bound).map(p => ({ name: p.name, type: p.type, group: p.group })), parents, fields, start: t.start, end });
       items.push(declarations.at(-1));
       continue;
     }
@@ -1349,7 +1349,8 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
         constructors.push({ kind: "constructor", name: c, params: args, type, start: c.start, end });
       }
       const end = take("}").end;
-      declarations.push({ kind: "inductive", name: n, params, result, constructors, start: t.start, end });
+      declarations.push({ kind: "inductive", name: n, params, result, constructors,
+        ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end });
       items.push(declarations.at(-1));
       continue;
     }

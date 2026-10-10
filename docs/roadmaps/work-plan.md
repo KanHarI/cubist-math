@@ -70,7 +70,7 @@ between columns.
 | Proof ergonomics | Grouped binders, `let` with a stated type or a proof block (which replaced `have`, `show` and `suffices` on 2026-09-30), `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand; Σ projections `p.1`/`p.2` (L1.5); path-operator notation (`&`, `\|`, `path i =>`) and readable path diagnostics (PR #71); `~p` and `~i` for reversal, in place of prefix `-` (L2.10i, 2026-10-06); `hlevel`, L2.5b's first two slices (the second, 2026-10-06: `hlevel_rule`, quantified hints and evidence as rules, setness fields filled by the search); holes `_` and named arguments (L4.1a); implicit parameters and universe inference (L4.1b); the keywords of terms and statements and the built-in `Unit` and `Void` reserved (E175), and on 2026-10-06 a sum's injections, `left` and `right`; the box notation for compositions and `library/squares.cubist` (L2.8's first three slices, 2026-10-06). `apply` and `refine` (L4.4) withdrawn | L1.4 (folded path rules, constructor descent), B1 (`Path` induction), broader dependent rewriting, L2.5b's remainder, L2.8's last item (the archive's raw `comp` lemmas through squares) |
 | Theories and notation | L2.4, complete on 2026-10-05: theories with carriers, operations with notation, and laws, which must state propositions (E818); models, sections, `extends` with labels and renaming, `T.Hom` and `T.Iso`. The library's algebraic hierarchy is its first client. On 2026-10-06 L2.4c (#167–#172) replaced `sort` with carriers as fields, `T.Model` with `Monoid(U)` and `open` with `use` (E180, E396, E183); L2.10a–e and i–k (#166, #173–#179) and L2.6's first slice, initial and free models (#188), are done | L2.4b (structure identity, displayed models, after L3.1/L3.2); L2.6's revised checked capabilities (opt-in, uniqueness and universal proofs, additional-law evidence, higher-theory coherences); L2.10f–h, deferred |
 | Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | L1.2r |
-| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection; on 2026-10-06, L2.9a's expected-value patterns (`evaluate e expecting (3, _)`) and L2.9b's closed truncation readout (`print(witness(t))`). The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release | EVAL0–EVAL8; L2.9 patterns and readout delivered on 2026-10-06 |
+| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release. L2.9a expected-value patterns and L2.9b closed witness readout delivered in #181/#182 (2026-10-07, after the runtime evaluation investigation at `825c8b88`). EVAL0's evaluation baseline recorded on 2026-10-08 | EVAL1–EVAL8 |
 | Declarations | **Released** on 2026-10-02, on by default with no marker, after K2.1's review (Lemma H2 and the critical pairs approved on 2026-09-30, the model and canonicity on 2026-10-02): K2.2, K2.3, L2.1, L2.2a's first three slices (the expression `match`, the closing statement, and recursion whose other arguments vary), and since 2026-10-04 its fourth (several values and nested patterns), the match statement on sums, which replaced `cases`, and L2.2b's automatic clauses. Nat, W and pushouts are source declarations; sums stay native; the circle's winding number computes in source. K2.4a's differential fixtures and K2.5's ledger verifier are implemented | K2.5's other archive remedies; a review record per K2.2 family; L2.3, L2.3b and L2.7; stages 4 and 5 |
 | Computation notation | Design only. N1's prerequisites are delivered: L2.4 on 2026-10-05, and on 2026-10-06 L2.4c's theory families, whose laws state a monad's on sets (the identity monad is a `Monad`) | N0–N5 |
 | Reference and library | Checked-reference harness; universe chapter rewritten; induction chapter rewritten for declared types: declarations, `match`, structural recursion, dependent matches, path and truncation clauses (D2.1); quick reference (`proof.html`), with a file explorer over every published source; since 2026-10-05 a chapter on [theories and models](../../web/reference/theories.html) with the library's algebra and numbers, and set quotients, the library's univalence and `propositions` in the cubical chapters (#159); since 2026-10-06 the theories chapter covers headers, families, `use`, named notations and initial and free models, and the cubical chapter the box notation and squares. The library's sixteen modules, self-contained since 2026-10-04: `nat`, `lists`, `quotients`, effective since 2026-10-05, `algebra`, the hierarchy as theories, `integers`, `rationals`, `lexemes` (L2.10c's literals), `hlevels` (L2.5a), `squares` (L2.8), `contractible_maps`, `univalence` (L3.1's start) and `propositions`, `h1_truncation`, `h1_classical`, `classical_axioms` and `universe_automorphisms`. The test suite's Cubist sources are modules in `cubist-tests/` | An H1 chapter on higher constructors, obligations and truncation clauses beyond chapter 6's introduction (D0.2, D2.1); one module for the classical assumptions, which `classical_axioms` and `h1_classical` state over two truncations; the library is foundations, not a rebuild wave |
@@ -541,16 +541,21 @@ The exact syntax remains proposed; none is delivered.
 ## Runtime evaluation track
 
 Added on 2026-10-07. The [runtime evaluation roadmap](runtime-evaluation-roadmap.md)
-owns EVAL0–EVAL8 and the early numerical packages NUM0–NUM2. No package is
-implemented; scratch prime projections are feasibility observations, not
-full normal forms or kernel evidence. This track is independent of
+owns EVAL0–EVAL8 and the early numerical packages NUM0–NUM2. EVAL0 is
+done (2026-10-08): `tools/evaluation-baseline.mjs` records the
+[baseline](runtime-evaluation-roadmap.md#measurements), which
+`tests/evaluation-baseline.test.mjs` keeps current. No other package is
+implemented. The versioned scratch evaluator's prime projections are
+feasibility observations, not full normal forms or kernel evidence. This
+track is independent of
 computation notation N0–N5. Its planned library scope is NUM0–NUM2 and
 EVAL7's binary divisibility/search pilot; R1's further order and canonical
 presentation work remains deferred.
 
-- Start with EVAL0's reproducible Euclid baseline and EVAL1's removal of
-  redundant REPL self-comparison. EVAL2's full-normalization cache can follow
-  independently, with exact keys and rollback/compaction coverage.
+- EVAL1's removal of redundant REPL self-comparison comes next: in EVAL0's
+  baseline it takes 400 of the 435 ms of `evaluate euclid(3)`. EVAL2's
+  full-normalization cache can follow independently, with exact keys and
+  rollback/compaction coverage.
 - Start NUM0/NUM1 early: define explicit `UNat` and canonical `BNat`, direct
   binary arithmetic, their checked commutative-semiring isomorphism and
   `UNat =[U0] BNat` by computational univalence, with transport agreement,
@@ -849,12 +854,13 @@ order above replaces it, and continues with items 8–12.
    interface needs them; no language package does. Rationals in lowest
    terms, which print reduced, wait for L2.7's canonical quotients.
 9. **Runtime evaluation and binary numerical foundations.** The
-   [runtime evaluation track](#runtime-evaluation-track) starts with
-   EVAL0's baseline, EVAL1's one-pass REPL evaluation and NUM0/NUM1's
-   unary/binary foundations and H1 strong induction, followed by NUM2's
-   new binary-backed `Z` and `Q`. This includes library work and proceeds
-   independently of action 8's proposed order extension. The `Nat` spelling
-   decision below gates the public-name transition, not these constructions.
+   [runtime evaluation track](#runtime-evaluation-track) has EVAL0's
+   baseline (2026-10-08); it continues with EVAL1's one-pass REPL
+   evaluation and NUM0/NUM1's unary/binary foundations and H1 strong
+   induction, followed by NUM2's new binary-backed `Z` and `Q`. This
+   includes library work and proceeds independently of action 8's proposed
+   order extension. The `Nat` spelling decision below gates the public-name
+   transition, not these constructions.
 10. **Independent language work.** The revised universal-property contract
    governs L2.6 and L2.3's `universal` slice; L1.3's worker cancellation; N0, and
    N1's checked operation and law records on L2.4c's theory families, then
