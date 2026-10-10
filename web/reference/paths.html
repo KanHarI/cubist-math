@@ -169,13 +169,14 @@ def not_a_path(f : Nat -&gt; Nat, n : Nat) : f(n) = f(n) {
           </section>
           <section id="transport">
             <h2>Transport</h2>
-            <p><code>transport(C, x, y, p, value)</code> moves <code>value : C(x)</code> along <code>p : x = y</code> to an element of <code>C(y)</code>. The shorter <code>along C by p from value</code> reads <code>x</code> and <code>y</code> from the type of <code>p</code>. In both forms the family <code>C</code> is written explicitly; it is never inferred.</p>
+            <p><code>transport value along p in C</code> moves <code>value : C(x)</code> along <code>p : x = y</code> to an element of <code>C(y)</code>. It reads the endpoints from the type of <code>p</code>; the family <code>C</code> is written explicitly. The built-in call <code>transport(C, x, y, p, value)</code> remains available, as does the older spelling <code>along C by p from value</code>.</p>
+            <p>A parenthesized value is allowed: <code>transport (f(x)) along p in C</code>. Parenthesize a whole compound value or nested transport, and parenthesize the whole transport before projecting from it or using it in an equality.</p>
             <pre><code data-check="accept">def move(A : U0, C : A -&gt; U0, x, y : A, p : x = y, v : C(x)) : C(y) {
   exact transport(C, x, y, p, v);
 }
 
 def move_along(A : U0, C : A -&gt; U0, x, y : A, p : x = y, v : C(x)) : C(y) {
-  exact along C by p from v;
+  exact transport v along p in C;
 }
 
 def respects(A : U0, C : A -&gt; U0, f : forall a : A. C(a), x, y : A, p : x = y) :

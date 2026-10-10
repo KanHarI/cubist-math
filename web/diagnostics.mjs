@@ -204,7 +204,7 @@ export const diagnostics = [
   ["E336", "Missing source expression."],
   ["E337", "No checked definition to unfold: …"],
   ["E338", "path i => ... needs an expected Path or PathP type."],
-  ["E339", "along requires a homogeneous base path."],
+  ["E339", "transport requires a homogeneous base path."],
   ["E340", "Untranslated dependency: …"],
   ["E341", "Interval coordinates can only be used in interval arguments."],
   ["E342", "Universe was removed: bind a universe variable as U < UU0."],

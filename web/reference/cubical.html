@@ -177,7 +177,7 @@ def singletons_contractible(A : U0, x : A) :
 // the center and transport along the contraction.
 def based_path_induction(A : U0, x : A, C : Singleton(A, x) -&gt; U0,
     base : C((x, refl(x))), w : Singleton(A, x)) : C(w) {
-  exact along C by singletons_contractible(A, x).2(w) from base;
+  exact transport base along singletons_contractible(A, x).2(w) in C;
 }</code></pre>
             <figure class="diagram" id="singleton-figure">
               <svg viewBox="0 0 560 186" role="img" aria-label="Three stages of the singleton's contraction: at j = 0 the point x with no path; at j = 1/2 the point halfway along p with the first half of p; at j = 1 the point y with all of p.">

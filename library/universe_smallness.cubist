@@ -22,7 +22,7 @@ computable def no_self_member(U < UU0, A : U, B : A -> U, t : Tree(U, A, B)) :
   member(U, A, B, t, t) -> Void := induction t as z return (member(U, A, B, z, z) -> Void) {
     node(a, children, ih) => fun (
       m : member(U, A, B, typed(Tree(U, A, B), node(a, children)), node(a, children))
-    ) => ih(m.1)(along(fun (w : Tree(U, A, B)) => member(U, A, B, w, w)) by m.2 from m);
+    ) => ih(m.1)(transport m along m.2 in (fun (w : Tree(U, A, B)) => member(U, A, B, w, w)));
   };
 
 // No small family of small types contains a representative of every small
@@ -50,7 +50,7 @@ computable def universe_not_small(U < UU0) : IsUSmall(U, U) -> Void {
   intro small;
   obtain (A, p) := small;
   let family : UniverseFamily(U, A) :=
-    along(fun (I : next(U)) => UniverseFamily(U, I)) by p from identity_universe_family(U);
+    transport identity_universe_family(U) along p in UniverseFamily(U);
   exact no_small_universe_family(U, A, family.1, family.2);
 }
 

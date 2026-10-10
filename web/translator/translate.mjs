@@ -881,7 +881,7 @@ export class Translator {
         const family=tr(n.family,null),path=tr(n.path,null),value=tr(n.value,null);
         const type=scope.nf(inferred(path).type);
         if(type.tag!=="Path"||freeDimensions(type.family).has(type.dim))
-          throw Error("along requires a homogeneous base path.");
+          throw Error("transport requires a homogeneous base path.");
         const dim=scope.fresh("i");
         return T.comp(dim,T.app(family,T.at(path,I.variable(dim))),[],value);
       }

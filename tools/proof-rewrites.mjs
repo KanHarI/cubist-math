@@ -145,7 +145,10 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
         && !comment(args[1].start, args[2].end)) {
         count("along");
         const family = ["name", "call"].includes(args[0].kind) ? render(args[0], "operand") : `(${render(args[0], "delimited")})`;
-        const text = `along ${family} by ${render(args[3], "delimited")} from ${render(args[4], "delimited")}`;
+        const value = ["name", "number", "binaryNumber"].includes(args[4].kind)
+          || (args[4].kind === "call" && args[4].fn.kind === "name" && args[4].fn.name !== "transport")
+          ? render(args[4], "delimited") : `(${render(args[4], "delimited")})`;
+        const text = `transport ${value} along ${render(args[3], "delimited")} in ${family}`;
         return ["delimited", "statement"].includes(context) ? text : `(${text})`;
       }
     }

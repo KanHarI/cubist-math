@@ -411,6 +411,28 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
     depth--;
     return a;
   }
+  // `transport (value) along p in C` starts with the same tokens as a
+  // built-in call. Look beyond the whole group (and its calls/projections)
+  // for `along`, without speculatively parsing nested transport calls.
+  function groupedTransportValue() {
+    let at = i;
+    const group = () => {
+      const closes = { "(": ")", "[": "]", "{": "}" }, stack = [];
+      do {
+        const word = ts[at++]?.text;
+        if (!word || word === "EOF") return false;
+        if (Object.hasOwn(closes, word)) stack.push(closes[word]);
+        else if ([")", "]", "}"].includes(word) && stack.pop() !== word) return false;
+      } while (stack.length);
+      return true;
+    };
+    if (!group()) return false;
+    while (true) {
+      if (ts[at]?.text === "(") { if (!group()) return false; }
+      else if (ts[at]?.text === "." && /^(?:[A-Za-z_][A-Za-z_0-9]*|[12])$/.test(ts[at + 1]?.text ?? "")) at += 2;
+      else return ts[at]?.text === "along";
+    }
+  }
   // The expression a token starts: a keyword form, a negation, a tuple, a
   // literal or a name.
   function prefix(t) {
@@ -466,6 +488,14 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
       const close = take("}");
       return { kind: "call", fn: { kind: "name", name: t.text === "compose" ? "comp" : "fill", start: t.start, end: t.end },
         args: [along(family), base, ...(level ? [level] : []), ...walls], box: true, start: t.start, end: close.end };
+    }
+    if (t.text === "transport" && (peek() !== "(" || groupedTransportValue())) {
+      const value = expr();
+      take("along");
+      const path = expr();
+      take("in");
+      const family = expr();
+      return { kind: "along", family, path, value, start: t.start, end: family.end };
     }
     if (t.text === "along") {
       const family = expr();
