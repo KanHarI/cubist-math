@@ -98,9 +98,13 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
     if (!node || typeof node !== "object") return;
     // The keyword form keeps `transport (value)` apart; the explicit
     // built-in call remains `transport(C, x, y, p, value)`.
-    if (node.kind === "along") {
+    if (node.kind === "transport") {
       const beforeValue = tokenBefore.get(node.value.start);
       if (beforeValue?.text === "transport") transportKeywords.add(beforeValue.start);
+    }
+    if (["transport", "over"].includes(node.kind)) {
+      const separator = tokenBefore.get(node.path.start);
+      if (separator?.text === "along") transportKeywords.add(separator.start);
     }
     if (node.kind === "withUnfolding") expressionBlockEnds.add(node.end);
     if (node.kind === "projection" || node.kind === "member") projectionDots.add(node.dot.start);
@@ -193,7 +197,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
       }
       const space = previous && sectionStarts.has(previous.start) || previous && !punctuation.has(text) && !["(", "["].includes(previous.text)
         && !prefixOperators.has(previous.start)
-        && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or", "along", "in"].includes(previous.text) && !transportKeywords.has(previous.start) || [")", "]"].includes(previous.text) || previous.text === "}" && (expressionBlockEnds.has(previous.end) || implicitCloses.has(previous.end))))
+        && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or", "in"].includes(previous.text) && !transportKeywords.has(previous.start) || [")", "]"].includes(previous.text) || previous.text === "}" && (expressionBlockEnds.has(previous.end) || implicitCloses.has(previous.end))))
         && !(text === "{" && implicitOpens.has(token.start))
         && !(text === "[" && previous.text === "=");
       if (space && ![",", "."].includes(previous.text)) {

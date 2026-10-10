@@ -47,11 +47,11 @@ def affine_coordinate_length_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, imag, s,
       field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, imag)
     );
-  exact along((fun (v : F) => FieldLe(F, lt, v, addF(r, s)))) by ring_add_zero(
-    F, zero, one, addF, mulF, negF, ring, zero
-  ) from order_le_add(
+  exact transport order_le_add(
     F, zero, one, addF, mulF, negF, lt, ring, arithmetic, zero, r, zero, s, nonnegativeR,
     nonnegativeS
+  ) along ring_add_zero(F, zero, one, addF, mulF, negF, ring, zero) in (
+    (fun (v : F) => FieldLe(F, lt, v, addF(r, s)))
   );
 }
 
@@ -63,8 +63,8 @@ def affine_dyadic_cauchy(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
   bounds : ArchimedeanBounds(F, zero, one, addF, lt), half : F -> F,
-  halfSum : (forall x : F. addF(half(x), half(x)) = x), z, slope : Complex(F), integrand : Complex(F)
-  -> Complex(F),
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), z, slope : Complex(F),
+  integrand : Complex(F) -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
     (
@@ -132,9 +132,9 @@ def affine_dyadic_cauchy(
       intro n, extra, later;
       obtain (upper, lower) := closeWidths(n, later);
       let smallMesh :=
-        along lt(dyadic_width(F, half, n, width)) by ring_add_zero(
-          F, zero, one, addF, mulF, negF, ring, mesh
-        ) from upper;
+        transport upper along ring_add_zero(F, zero, one, addF, mulF, negF, ring, mesh) in lt(
+          dyadic_width(F, half, n, width)
+        );
       let perturbation := estimates(n, extra, a, b, ordered, smallMesh);
       exact complex_perturbation_close(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, sequence(n),

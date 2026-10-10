@@ -112,9 +112,9 @@ def equal_classes_related(
 ) :
   relation(x, y) {
   obtain (prop_, reflexive, symmetric, transitive) := laws;
-  exact along((fun (q : SetQuotient(A, relation)) => quotient_predicate(A, relation, q, y))) by sym(
-    same
-  ) from reflexive(y);
+  exact transport reflexive(y) along sym(same) in (
+    (fun (q : SetQuotient(A, relation)) => quotient_predicate(A, relation, q, y))
+  );
 }
 
 // The exact countable choice instance used to lift a sequence of classes.

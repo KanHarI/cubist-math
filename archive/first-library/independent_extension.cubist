@@ -8,18 +8,20 @@ use nat;
 // Adjoining one vector gives a proposition-valued subset. Membership is
 // truncated; it does not expose a particular side of the disjunction.
 def AdjoinVector(
-  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x, y : vector_carrier(K, V)
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x,
+  y : vector_carrier(K, V)
 ) :=
   Truncate(U0, P(y) or (y = x));
 
 def adjoin_vector_prop(
-  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x, y : vector_carrier(K, V)
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x,
+  y : vector_carrier(K, V)
 ) :=
   TruncateProp(U0, P(y) or (y = x));
 
 def adjoin_vector_old(
-  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
-  x, y : vector_carrier(K, V), member : P(y)
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x,
+  y : vector_carrier(K, V), member : P(y)
 ) :
   AdjoinVector(K, V, P, x, y) {
   exact TruncateIntro(U0, P(y) or (y = x), left(member));
@@ -61,29 +63,32 @@ def independent_zero_omission(
   let X := vector_carrier(K, V);
   let omit := fin_omit(n, i);
   let rest := linear_remainder(K, V, succ(n), v, a, i);
-  let headZero : vector_scale(K, V, a(i), v(i)) = vector_zero(K, V) := trans(
-    cong((fun (b : af_carrier(K)) => vector_scale(K, V, b, v(i))), zero),
-    vector_zero_scale(K, V, v(i))
-  );
-  let restZero : rest = vector_zero(K, V) := trans(
-    sym(group_unit_left(vector_group(K, V), rest)),
+  let headZero : vector_scale(K, V, a(i), v(i)) = vector_zero(K, V) :=
     trans(
-      cong((fun (z : X) => vector_add(K, V, z, rest)), sym(headZero)),
-      trans(sym(linear_combination_split(K, V, succ(n), v, a, i)), vanishes)
-    )
-  );
+      cong((fun (b : af_carrier(K)) => vector_scale(K, V, b, v(i))), zero),
+      vector_zero_scale(K, V, v(i))
+    );
+  let restZero : rest = vector_zero(K, V) :=
+    trans(
+      sym(group_unit_left(vector_group(K, V), rest)),
+      trans(
+        cong((fun (z : X) => vector_add(K, V, z, rest)), sym(headZero)),
+        trans(sym(linear_combination_split(K, V, succ(n), v, a, i)), vanishes)
+      )
+    );
   let omittedV := fun (t : Fin(n)) => v(omit(t));
   let omittedA := fun (t : Fin(n)) => a(omit(t));
   let omittedZero : forall t : Fin(n).
-  omittedA(t) = af_zero(af_carrier(K), af_operations(K)) := independent(
-    n, omittedV,
-    (
-      fun (s, t : Fin(n), same : omittedV(s) = omittedV(t)) => fin_omit_injective(
-        n, i, s, t, distinct(omit(s), omit(t), same)
-      )
-    ), (fun (t : Fin(n)) => others(omit(t), fin_omit_avoids(n, i, t))), omittedA,
-    trans(linear_combination_omit(K, V, n, v, a, i), restZero)
-  );
+  omittedA(t) = af_zero(af_carrier(K), af_operations(K)) :=
+    independent(
+      n, omittedV,
+      (
+        fun (s, t : Fin(n), same : omittedV(s) = omittedV(t)) => fin_omit_injective(
+          n, i, s, t, distinct(omit(s), omit(t), same)
+        )
+      ), (fun (t : Fin(n)) => others(omit(t), fin_omit_avoids(n, i, t))), omittedA,
+      trans(linear_combination_omit(K, V, n, v, a, i), restZero)
+    );
   match fin_omit_cover(n, i, j) {
     left(same) => {
       exact trans(cong(a, same), zero);
@@ -134,7 +139,7 @@ def adjoin_dependence_at_new(
     );
   }
   let outsideHere :=
-    fun (member : Span(K, V, P, v(i))) => outside(along Span(K, V, P) by same from member);
+    fun (member : Span(K, V, P, v(i))) => outside(transport member along same in Span(K, V, P));
   exact independent_zero_omission(
     K, V, P, independent, n, v, distinct, a, i,
     outside_span_coefficient_zero(K, V, P, succ(n), v, a, i, outsideHere, others, vanishes), others,

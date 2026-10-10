@@ -12,7 +12,8 @@ def BezoutCombination(K : AlgebraicField, p, q, r : Polynomial(K)) :=
   exists a : Polynomial(K). exists b : Polynomial(K).
   r = polynomial_add(K, polynomial_mul(K, a, p), polynomial_mul(K, b, q));
 
-def GeneratedPair(K : AlgebraicField, p, q, r : Polynomial(K)) := Mere(BezoutCombination(K, p, q, r));
+def GeneratedPair(K : AlgebraicField, p, q, r : Polynomial(K)) :=
+  Mere(BezoutCombination(K, p, q, r));
 
 def polynomial_zero_mul(K : AlgebraicField, p : Polynomial(K)) :=
   trans(polynomial_mul_comm(K, polynomial_zero(K), p), polynomial_mul_zero(K, p));
@@ -207,9 +208,9 @@ def polynomial_bezout(
       intro inverse_;
       obtain (u, equation) := inverse_;
       let ug := polynomial_mul(K, u, g);
-      exact along GeneratedPair(K, p, q) by trans(polynomial_mul_comm(K, u, g), equation) from polynomial_ideal_mul(
-        K, I, u, g, member
-      );
+      exact transport polynomial_ideal_mul(K, I, u, g, member) along trans(
+        polynomial_mul_comm(K, u, g), equation
+      ) in GeneratedPair(K, p, q);
     }
     exact mere_eliminate(
       (exists u : Polynomial(K). polynomial_mul(K, g, u) = polynomial_one(K)), Result,

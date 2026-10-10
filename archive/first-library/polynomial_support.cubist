@@ -92,7 +92,7 @@ def support_shift(
 }
 
 def natural_le_add_left(m, n : Nat) : le(m, add_count(m, n)) {
-  exact along((fun (k : Nat) => le(m, k))) by nat_add_comm(n, m) from nat_le_add(n, m);
+  exact transport nat_le_add(n, m) along nat_add_comm(n, m) in ((fun (k : Nat) => le(m, k)));
 }
 
 def support_add(

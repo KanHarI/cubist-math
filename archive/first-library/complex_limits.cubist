@@ -398,9 +398,9 @@ def complex_converges_pointwise(
   exact (
     bound,
     (
-      fun (n : Nat, large : IndexLE(bound, n)) => along(
+      fun (n : Nat, large : IndexLE(bound, n)) => transport close(n, large) along same(n) in (
         (fun (term : Complex(F)) => ComplexClose(F, addF, lt, term, value, epsilon))
-      ) by same(n) from close(n, large)
+      )
     )
   );
 }

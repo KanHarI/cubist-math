@@ -877,7 +877,7 @@ export class Translator {
         const body=this.term(n.body,inner.alias(n.dimension.text,{tag:"Dimension",name:dim}),family);
         return T.line(dim,family,body);
       }
-      case "along": {
+      case "transport": {
         const family=tr(n.family,null),path=tr(n.path,null),value=tr(n.value,null);
         const type=scope.nf(inferred(path).type);
         if(type.tag!=="Path"||freeDimensions(type.family).has(type.dim))

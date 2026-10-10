@@ -56,7 +56,8 @@ def unit_family(p : Suspension(Unit)) := Unit;
 
 def unit_unique(u : Unit) := unit_induction(fun (x : Unit) => x = tt, refl(tt), u);
 
-def transported_meridian(a : Unit) := unit_unique(along unit_family by meridian(Unit, a) from tt);
+def transported_meridian(a : Unit) :=
+  unit_unique(transport tt along meridian(Unit, a) in unit_family);
 
 def collapse_with_transport(p : Suspension(Unit)) :=
   suspension_induction(Unit, unit_family, tt, tt, transported_meridian, p);

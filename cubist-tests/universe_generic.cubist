@@ -81,7 +81,7 @@ def congruence(U < UU0, A, B : U, f : A -> B, x, y : A, p : x = y) : f(x) = f(y)
 }
 
 def moved(U < UU0, A : U, C : A -> U, x, y : A, p : x = y, c : C(x)) : C(y) {
-  exact along C by p from c;
+  exact transport c along p in C;
 }
 
 // D6: a generic assumption is named once, whatever universes it is used at.

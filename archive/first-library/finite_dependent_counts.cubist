@@ -26,7 +26,9 @@ def finite_mere_choice_step(
       intro rest, i;
       exact match i as j return P(j) {
         left u => (
-          along((fun (v : Unit) => P(typed(Fin(succ(n)), left(v))))) by unit_equal(u) from first
+          transport first along unit_equal(u) in (
+            (fun (v : Unit) => P(typed(Fin(succ(n)), left(v))))
+          )
         );
         right k => rest(k);
       };
@@ -88,8 +90,8 @@ def uniform_fiber_count(A : U0, setA : IsSet(U0, A), n, m : Nat, countA : HasCar
     intro e;
     let same := ua(U0, Fin(n), A, bijection_equiv(Fin(n), A, setA, e));
     exact (
-      along((fun (X : U0) => UniformFiberCount(X, n, m))) by same from finite_uniform_fiber_count(
-        n, m
+      transport finite_uniform_fiber_count(n, m) along same in (
+        (fun (X : U0) => UniformFiberCount(X, n, m))
       )
     )(B, sets, counts);
   }

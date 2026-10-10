@@ -97,18 +97,18 @@ def root_generated_generates(
           Q(u),
           left(typed((exists b : af_carrier(K). field_embedding_map(K, T, d, b) = u), (a, refl(u))))
         );
-      exact along subfield_members(T, H) by subfield_value_ext(L, S, u, target, same) from generated_field_contains(
-        T, Q, u, generator
-      );
+      exact transport generated_field_contains(T, Q, u, generator) along subfield_value_ext(
+        L, S, u, target, same
+      ) in subfield_members(T, H);
     }
     let rootCase : (exists i : Fin(n). roots(i) = y) -> subfield_members(T, H, target) {
       intro witness_;
       obtain (i, same) := witness_;
       let u := rs(i);
       let generator := typed(Q(u), right(typed((exists j : Fin(n). rs(j) = u), (i, refl(u)))));
-      exact along subfield_members(T, H) by subfield_value_ext(L, S, u, target, same) from generated_field_contains(
-        T, Q, u, generator
-      );
+      exact transport generated_field_contains(T, Q, u, generator) along subfield_value_ext(
+        L, S, u, target, same
+      ) in subfield_members(T, H);
     }
     exact match member as which return subfield_members(T, H, target) {
       left base => baseCase(base);

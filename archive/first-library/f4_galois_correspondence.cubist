@@ -15,9 +15,9 @@ def f4_fixed_from_representatives(
 ) :
   GaloisFixed(F2, F4OverF2, H, x) {
   intro e;
-  exact along((fun (d : F4Automorphism) => H(d) -> (f4_auto_apply(d, x) = x))) by f4_symmetry_classify(
-    e
-  ) from tested(f4_symmetry_bit(e));
+  exact transport tested(f4_symmetry_bit(e)) along f4_symmetry_classify(e) in (
+    (fun (d : F4Automorphism) => H(d) -> (f4_auto_apply(d, x) = x))
+  );
 }
 
 def f4_fixed_decision(

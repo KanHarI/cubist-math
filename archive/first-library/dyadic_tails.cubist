@@ -15,9 +15,9 @@ def nonnegative_half_le(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, halfWidth, sum,
       nonnegativeWidth
     );
-  exact along FieldLe(F, lt, halfWidth) by sum from order_le_add_nonnegative(
+  exact transport order_le_add_nonnegative(
     F, zero, one, addF, mulF, negF, lt, ring, arithmetic, halfWidth, halfWidth, nonnegativeHalf
-  );
+  ) along sum in FieldLe(F, lt, halfWidth);
 }
 
 // The recursive width applies one halving to the input before the previous
@@ -66,8 +66,8 @@ def field_sequence_antitone_step(
       );
     }
     right(same) => {
-      exact along((fun (k : Nat) => FieldLe(F, lt, sequence(succ(n)), sequence(k)))) by sym(same) from order_le_refl(
-        F, lt, order, sequence(succ(n))
+      exact transport order_le_refl(F, lt, order, sequence(succ(n))) along sym(same) in (
+        (fun (k : Nat) => FieldLe(F, lt, sequence(succ(n)), sequence(k)))
       );
     }
   }
@@ -81,9 +81,9 @@ def field_sequence_antitone(
   forall m : Nat. IndexLE(m, n) -> FieldLe(F, lt, sequence(n), sequence(m)) {
   let base : forall m : Nat. IndexLE(m, 0) -> FieldLe(F, lt, sequence(0), sequence(m)) {
     intro m, ordered;
-    exact along((fun (k : Nat) => FieldLe(F, lt, sequence(0), sequence(k)))) by sym(
-      nat_le_zero(m, ordered)
-    ) from order_le_refl(F, lt, order, sequence(0));
+    exact transport order_le_refl(F, lt, order, sequence(0)) along sym(nat_le_zero(m, ordered)) in (
+      (fun (k : Nat) => FieldLe(F, lt, sequence(0), sequence(k)))
+    );
   }
   exact induction n as k return (
     forall m : Nat. IndexLE(m, k) -> FieldLe(F, lt, sequence(k), sequence(m))

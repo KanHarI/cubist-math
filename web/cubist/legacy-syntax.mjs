@@ -1,5 +1,6 @@
 import { tokenize, parse, languageKeywords, generatedNames } from "./parser.mjs";
 import { snake } from "./theories.mjs";
+import { currentTransportSyntax } from "./legacy-transport.mjs";
 
 // Sources written before 2026-09-30 may use `have`, which `let` replaced with
 // the same forms: have name : T := term; and have name : T { … } elaborate as
@@ -21,13 +22,15 @@ import { snake } from "./theories.mjs";
 // theory T { sort M : set; }, and name its type of models T.Model. They are
 // read as theory T(U < UU0) { M : set U; } and T, which elaborate the same
 // (L2.4c): U is the theory's universe, which no field of those theories took.
-export const currentSyntax = source => source
+// The standalone transport prefix was retired on 2026-10-11. Only this
+// historical reader migrates it; normal source must use transport.
+export const currentSyntax = source => currentTransportSyntax(source
   .replace(/(?<![A-Za-z0-9_'])have(\s+[A-Za-z_][A-Za-z0-9_]*\s*:)/g, "let$1")
   .replace(/(?<![A-Za-z0-9_'])cases(?=\s+[^{};]*\{\s*left\s+[A-Za-z_][A-Za-z0-9_']*\s*=>)/g, "match")
   .replace(/(?<![A-Za-z0-9_'.])(theory\s+[A-Z][A-Za-z0-9_]*)(?=\s+(?:extends\b|\{))/g, "$1(U < UU0)")
   .replace(/(?<![A-Za-z0-9_'.])sort\s+([A-Za-z_][A-Za-z0-9_]*\s*:\s*)(set|prop)(\s*;)/g, "$1$2 U$3")
   .replace(/(?<![A-Za-z0-9_'.])([A-Z][A-Za-z0-9_]*)\.Model(?![A-Za-z0-9_])/g, "$1")
-  .replace(/(?<![A-Za-z0-9_'.])open(\s+[A-Za-z_][A-Za-z0-9_.]*\s*;)/g, "use$1");
+  .replace(/(?<![A-Za-z0-9_'.])open(\s+[A-Za-z_][A-Za-z0-9_.]*\s*;)/g, "use$1"));
 
 // Until 2026-10-06 prefix - reversed, as ~ does now: -p a path and -i a
 // coordinate. A revision of that time (minusReverses) is read with ~ for each

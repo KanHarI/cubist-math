@@ -48,8 +48,8 @@ def polynomial_cutoff_zero(
   p = polynomial_zero(K) {
   exact support_zero_polynomial(
     K, p,
-    along SeriesSupport(K, polynomial_coefficients(K, p)) by zero from polynomial_cutoff_support(
-      K, p
+    transport polynomial_cutoff_support(K, p) along zero in SeriesSupport(
+      K, polynomial_coefficients(K, p)
     )
   );
 }
@@ -81,12 +81,15 @@ def polynomial_leading_nonzero(
   FieldNonzero(af_carrier(K), af_operations(K), polynomial_coefficients(K, p, n)) {
   intro zero;
   let support :=
-    along SeriesSupport(K, polynomial_coefficients(K, p)) by degree from polynomial_cutoff_support(
-      K, p
+    transport polynomial_cutoff_support(K, p) along degree in SeriesSupport(
+      K, polynomial_coefficients(K, p)
     );
   let lowered := support_predecessor(K, polynomial_coefficients(K, p), n, support, zero);
   exact successor_not_le_self(
-    n, along((fun (k : Nat) => le(k, n))) by degree from polynomial_cutoff_least(K, p, n, lowered)
+    n,
+    transport polynomial_cutoff_least(K, p, n, lowered) along degree in (
+      (fun (k : Nat) => le(k, n))
+    )
   );
 }
 

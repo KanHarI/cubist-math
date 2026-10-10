@@ -5,8 +5,8 @@ import complex_limits;
 def complex_close_add(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y, u, v : Complex(F),
-  epsilon, delta : F, xy : ComplexClose(F, addF, lt, x, y, epsilon),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), x, y, u, v : Complex(F), epsilon,
+  delta : F, xy : ComplexClose(F, addF, lt, x, y, epsilon),
   uv : ComplexClose(F, addF, lt, u, v, delta)
 ) :
   ComplexClose(
@@ -80,15 +80,15 @@ def complex_uniform_curve_add(
           nearby
         )
       );
-    exact along(
+    exact transport complex_close_add(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f(a), f(b), g(a), g(b), smaller,
+      smaller, first, second
+    ) along halfSum(epsilon) in (
       (
         fun (radius : F) => ComplexClose(
           F, addF, lt, complex_add(F, addF, f(a), g(a)), complex_add(F, addF, f(b), g(b)), radius
         )
       )
-    ) by halfSum(epsilon) from complex_close_add(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f(a), f(b), g(a), g(b), smaller,
-      smaller, first, second
     );
   }
   exact (delta, positiveDelta, close);

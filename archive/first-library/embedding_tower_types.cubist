@@ -5,7 +5,7 @@ import finite_dependent_counts;
 def transported_subtype_value(
   I, A : U0, P : I -> A -> U0, i, j : I, same : i = j, u : (exists a : A. P(i, a))
 ) :
-  sigma_first(A, P(j), along((fun (k : I) => (exists a : A. P(k, a)))) by same from u) = sigma_first(
+  sigma_first(A, P(j), transport u along same in ((fun (k : I) => (exists a : A. P(k, a))))) = sigma_first(
     A, P(i), u
   ) {
   exact transport_constant(I, A, i, j, same, sigma_first(A, P(i), u));
@@ -112,7 +112,7 @@ def embedding_tower_pair_roundtrip(
   let value := transported_subtype_value(A, FieldEmbedding(L, T), P, d2, d, same, u);
   let tail :=
     embeddings_over_ext(
-      R, L, h, T, embedding_over(K, R, i, T, j, d), along B by same from u, v, value
+      R, L, h, T, embedding_over(K, R, i, T, j, d), transport u along same in B, v, value
     );
   exact trans(
     sym(sigma_eta(A, B, back)),

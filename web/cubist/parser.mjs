@@ -32,6 +32,7 @@ export function tokenize(source) {
 // Every language keyword is reserved at every naming site, including words
 // whose grammar role is confined to a header, directive or proof statement.
 // The source reader uses this same list for highlighting.
+// `along` is a contextual separator in transport/over, not a reserved name.
 export const builtinNames = new Set([
   "Interval", "PathP", "comp", "face", "face_when", "flip", "meet", "join", "Glue", "glue", "unglue",
   "next", "max", "refl", "absurd", "sym", "trans", "cong", "transport", "apd", "apd_path",
@@ -53,7 +54,7 @@ export const languageKeywords = new Set([
   "sort", "law", "notation", "extends", "type", "set", "prop", "trunc", "numeral", "literal",
   "let", "obtain", "exact", "calc", "open", "use", "match", "rfl", "rw", "simp", "simpa", "intro", "ext", "hlevel", "induction",
   "fun", "forall", "exists", "and", "or", "as", "return",
-  "with", "unfolding", "at", "by", "from", "over", "along", "only", "without", "using", "occurrence", "obligations",
+  "with", "unfolding", "at", "by", "from", "over", "only", "without", "using", "occurrence", "obligations",
   "path", "compose", "fill", "in", "on", "unpack",
   "left", "right", "typed",
   ...generatedNames,
@@ -65,7 +66,7 @@ export const reservedNames = new Set([...languageKeywords, "Unit", "Void", "tt"]
 
 // `bindable` lists reserved words a historical source may still bind
 // (web/cubist/legacy-syntax.mjs).
-export function parse(source, typeOnly = false, { bindable = [] } = {}) {
+export function parse(source, typeOnly = false, { bindable = [], historicalTransport = false } = {}) {
   const ts = tokenize(source), bindableNames = new Set(bindable);
   let i = 0,
     depth = 0;
@@ -495,15 +496,18 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
       const path = expr();
       take("in");
       const family = expr();
-      return { kind: "along", family, path, value, start: t.start, end: family.end };
+      return { kind: "transport", family, path, value, start: t.start, end: family.end };
     }
-    if (t.text === "along") {
+    // Only the historical-source migration reader accepts this retired
+    // prefix. In current source, `along` is an ordinary name except for
+    // its delimiter position in transport expressions and over statements.
+    if (historicalTransport && t.text === "along") {
       const family = expr();
       take("by");
       const path = expr();
       take("from");
       const value = expr();
-      return { kind:"along", family, path, value, start:t.start, end:value.end };
+      return { kind:"transport", family, path, value, start:t.start, end:value.end };
     }
     if (t.text === "fun") return lambdaExpr(t);
     if (t.text === "forall" || t.text === "exists") return quantifierExpr(t);

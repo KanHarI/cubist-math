@@ -104,16 +104,16 @@ def complex_parameter_tag_error_variation_bound(
       mulF(
         delta,
         sample_sum(
-          C, F, zero, addF, (fun (a, b, t : C) => addF(realWeight(a, b, t), imagWeight(a, b, t))), k,
-          vertices, oldTags
+          C, F, zero, addF, (fun (a, b, t : C) => addF(realWeight(a, b, t), imagWeight(a, b, t))),
+          k, vertices, oldTags
         )
       )
     )
   ) {
-    zero => fun (vertices : C, oldTags, newTags, errors, increments : Unit) => along ComplexBoxBound(
-      F, negF, lt, complex_zero(F, zero)
-    ) by sym(ring_mul_zero(F, zero, one, addF, mulF, negF, ring, delta)) from complex_box_zero(
+    zero => fun (vertices : C, oldTags, newTags, errors, increments : Unit) => transport complex_box_zero(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic
+    ) along sym(ring_mul_zero(F, zero, one, addF, mulF, negF, ring, delta)) in ComplexBoxBound(
+      F, negF, lt, complex_zero(F, zero)
     );
     succ previous => fun (
       vertices : SampleVertices(C, succ(k)), oldTags, newTags : SampleTags(C, succ(k)),
@@ -123,32 +123,7 @@ def complex_parameter_tag_error_variation_bound(
       increments : ComplexParameterIncrementBounds(
         C, F, addF, negF, lt, curve, realWeight, imagWeight, succ(k), vertices, oldTags
       )
-    ) => along ComplexBoxBound(
-      F, negF, lt,
-      complex_parameter_tag_error_sum(
-        C, F, zero, addF, mulF, negF, curve, values, succ(k), vertices, oldTags, newTags
-      )
-    ) by sym(
-      ring_distribute(
-        F, zero, one, addF, mulF, negF, ring, delta,
-        addF(
-          realWeight(
-            field_fst(C, SampleVertices(C, k), vertices),
-            sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
-            field_fst(C, SampleTags(C, k), oldTags)
-          ),
-          imagWeight(
-            field_fst(C, SampleVertices(C, k), vertices),
-            sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
-            field_fst(C, SampleTags(C, k), oldTags)
-          )
-        ),
-        sample_sum(
-          C, F, zero, addF, (fun (a, b, t : C) => addF(realWeight(a, b, t), imagWeight(a, b, t))), k,
-          field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), oldTags)
-        )
-      )
-    ) from complex_box_add(
+    ) => transport complex_box_add(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
       parameter_contour_tag_error(
         C, Complex(F), complex_add(F, addF), complex_mul(F, addF, mulF, negF), complex_neg(F, negF),
@@ -179,8 +154,8 @@ def complex_parameter_tag_error_variation_bound(
       mulF(
         delta,
         sample_sum(
-          C, F, zero, addF, (fun (a, b, t : C) => addF(realWeight(a, b, t), imagWeight(a, b, t))), k,
-          field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), oldTags)
+          C, F, zero, addF, (fun (a, b, t : C) => addF(realWeight(a, b, t), imagWeight(a, b, t))),
+          k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), oldTags)
         )
       ),
       complex_box_mul_rectangle(
@@ -286,6 +261,31 @@ def complex_parameter_tag_error_variation_bound(
           ), increments
         )
       )
+    ) along sym(
+      ring_distribute(
+        F, zero, one, addF, mulF, negF, ring, delta,
+        addF(
+          realWeight(
+            field_fst(C, SampleVertices(C, k), vertices),
+            sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+            field_fst(C, SampleTags(C, k), oldTags)
+          ),
+          imagWeight(
+            field_fst(C, SampleVertices(C, k), vertices),
+            sample_first(C, k, field_snd(C, SampleVertices(C, k), vertices)),
+            field_fst(C, SampleTags(C, k), oldTags)
+          )
+        ),
+        sample_sum(
+          C, F, zero, addF, (fun (a, b, t : C) => addF(realWeight(a, b, t), imagWeight(a, b, t))),
+          k, field_snd(C, SampleVertices(C, k), vertices), field_snd(C, SampleTags(C, k), oldTags)
+        )
+      )
+    ) in ComplexBoxBound(
+      F, negF, lt,
+      complex_parameter_tag_error_sum(
+        C, F, zero, addF, mulF, negF, curve, values, succ(k), vertices, oldTags, newTags
+      )
     );
   };
 }
@@ -295,8 +295,8 @@ def complex_parameter_tag_error_length_bound(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), curve, values : C -> Complex(F),
   realWeight, imagWeight : C -> C -> C -> F, delta, length : F,
-  nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat, vertices : SampleVertices(C, n),
-  oldTags, newTags : SampleTags(C, n),
+  nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat, vertices : SampleVertices(C, n), oldTags,
+  newTags : SampleTags(C, n),
   errors : ComplexParameterTagBounds(
     C, F, addF, negF, lt, values, delta, n, vertices, oldTags, newTags
   ),
@@ -330,13 +330,13 @@ def complex_parameter_tag_error_length_bound(
     );
   let rightScaled := weakScale(totalWeight, length, delta, variation, nonnegativeDelta);
   let leftScaled :=
-    along((fun (v : F) => FieldLe(F, lt, v, mulF(length, delta)))) by ring_mul_comm(
+    transport rightScaled along ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, totalWeight, delta
-    ) from rightScaled;
+    ) in ((fun (v : F) => FieldLe(F, lt, v, mulF(length, delta))));
   let grows :=
-    along FieldLe(F, lt, mulF(delta, totalWeight)) by ring_mul_comm(
-      F, zero, one, addF, mulF, negF, ring, length, delta
-    ) from leftScaled;
+    transport leftScaled along ring_mul_comm(F, zero, one, addF, mulF, negF, ring, length, delta) in FieldLe(
+      F, lt, mulF(delta, totalWeight)
+    );
   exact complex_box_enlarge(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
     complex_parameter_tag_error_sum(

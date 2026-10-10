@@ -9,7 +9,8 @@ def HasCardinality(A : U0, n : Nat) := Mere(Bijection(Fin(n), A));
 def has_cardinality_prop(A : U0, n : Nat) := mere_is_prop(Bijection(Fin(n), A));
 
 def bijective_map_bijection(
-  A, B : U0, setB : IsSet(U0, B), f : A -> B, injective : Injective(A, B, f), onto : Surjective(A, B, f)
+  A, B : U0, setB : IsSet(U0, B), f : A -> B, injective : Injective(A, B, f),
+  onto : Surjective(A, B, f)
 ) :
   Bijection(A, B) {
   let fiber := Fiber(A, B, f);
@@ -43,7 +44,7 @@ def cardinality_unique(A : U0, n, m : Nat, hn : HasCardinality(A, n), hm : HasCa
 
 // Transport finite counts along a type equality, including one built by ua.
 def cardinality_path(A, B : U0, same : A =[U0] B, n : Nat, count : HasCardinality(A, n)) :=
-  along(fun (X : U0) => HasCardinality(X, n)) by same from count;
+  transport count along same in (fun (X : U0) => HasCardinality(X, n));
 
 // An indexed family of pairwise different elements, without an exhaustion claim.
 def DistinctFamily(A : U0, n : Nat) := exists f : Fin(n) -> A. Injective(Fin(n), A, f);

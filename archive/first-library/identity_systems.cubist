@@ -8,7 +8,7 @@ def identity_total_point(A : U1, R : A -> U1, b : A, r : R(b)) :=
   typed(IdentityTotal(A, R), (b, r));
 
 def identity_system_decode(A : U1, a : A, R : A -> U1, r0 : R(a), b : A, p : a = b) :=
-  along R by p from r0;
+  transport r0 along p in R;
 
 def identity_system_encode(
   A : U1, a : A, R : A -> U1, r0 : R(a),
@@ -18,7 +18,7 @@ def identity_system_encode(
   cong(field_first(A, R), contraction(identity_total_point(A, R, b, r)));
 
 def identity_total_second_path(A : U1, R : A -> U1, x, y : IdentityTotal(A, R), p : x = y) :
-  (along R by cong(field_first(A, R), p) from field_second(A, R, x)) = field_second(A, R, y) {
+  (transport field_second(A, R, x) along cong(field_first(A, R), p) in R) = field_second(A, R, y) {
   exact apd(field_second(A, R), x, y, p);
 }
 

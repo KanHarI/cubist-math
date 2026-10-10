@@ -17,7 +17,7 @@ def subspace_as_subgroup(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K,
         X, vector_zero(K, V), vector_add(K, V), group_laws(G), x, y, vector_neg(K, V, x), inverse_,
         group_inverse_right(G, x)
       );
-    exact along P by sym(same) from subspace_neg(K, V, S, x, member);
+    exact transport subspace_neg(K, V, S, x, member) along sym(same) in P;
   }
   exact (P, subspace_prop(K, V, S), subspace_zero(K, V, S), subspace_add(K, V, S), inverseClosed);
 }

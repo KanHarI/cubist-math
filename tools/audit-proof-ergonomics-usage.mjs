@@ -21,7 +21,7 @@ for(const file of readdirSync(root).filter(name=>name.endsWith('.cubist'))) {
     seen.add(node);
     if(node.kind) {
       if(['binderGroup','calc','rw','rfl','ext','pathLambda','pathApply',
-        'along','over','simp','simpOnly','simpa','simpaOnly','simp_rule',
+        'transport','over','simp','simpOnly','simpa','simpaOnly','simp_rule',
         'simp_set'].includes(node.kind))record(node.kind,file);
       if(node.kind==='let'&&node.value&&node.type)record('typed let',file);
       if(node.kind==='call'&&node.fn?.kind==='name'&&node.fn.name==='apd_path')
@@ -36,7 +36,7 @@ for(const file of readdirSync(root).filter(name=>name.endsWith('.cubist'))) {
 
 for(const name of ['grouped intro','binderGroup','untyped lambda','typed let',
   'calc','rfl','rw','simp','simpOnly','simpa','simpaOnly','simp_rule','simp_set',
-  'pathLambda','pathApply','ext','along','over','apd_path']) {
+  'pathLambda','pathApply','ext','transport','over','apd_path']) {
   const entry=features.get(name)??{uses:0,files:new Set()};
   console.log(`${name.padEnd(17)} ${String(entry.uses).padStart(3)} uses in ${String(entry.files.size).padStart(3)} files`);
 }

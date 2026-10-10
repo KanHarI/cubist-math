@@ -37,7 +37,7 @@ def field_subtype_ext(
   let square : PathP(fun (i : Interval) => P(p @ i), field_second(A, P, u), field_second(A, P, v)) {
     over P along p by {
       exact prop_(
-        field_first(A, P, v), along P by p from field_second(A, P, u), field_second(A, P, v)
+        field_first(A, P, v), transport field_second(A, P, u) along p in P, field_second(A, P, v)
       );
     }
   }
@@ -45,8 +45,8 @@ def field_subtype_ext(
 }
 
 def field_sigma_prop(
-  A : U1, P : A -> U1, propA : FieldProp(A), propP : (forall a : A. FieldProp(P(a))),
-  u, v : (exists a : A. P(a))
+  A : U1, P : A -> U1, propA : FieldProp(A), propP : (forall a : A. FieldProp(P(a))), u,
+  v : (exists a : A. P(a))
 ) :
   u = v {
   exact field_subtype_ext(A, P, propP, u, v, propA(field_first(A, P, u), field_first(A, P, v)));

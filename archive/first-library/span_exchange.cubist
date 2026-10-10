@@ -9,8 +9,8 @@ def subspace_neg(
 ) :
   subspace_members(K, V, S, vector_neg(K, V, x)) {
   let minusOne := af_neg(af_carrier(K), af_operations(K), af_one(af_carrier(K), af_operations(K)));
-  exact along subspace_members(K, V, S) by vector_minus_one_scale(K, V, x) from subspace_scale(
-    K, V, S, minusOne, x, member
+  exact transport subspace_scale(K, V, S, minusOne, x, member) along vector_minus_one_scale(K, V, x) in subspace_members(
+    K, V, S
   );
 }
 
@@ -38,8 +38,8 @@ def subspace_solve_nonzero(
     );
   let unscaled : vector_scale(K, V, b, vector_neg(K, V, y)) = x :=
     trans(sym(cong(vector_scale(K, V, b), solve)), vector_scale_undo(K, V, a, b, leftInverse, x));
-  exact along subspace_members(K, V, S) by unscaled from subspace_scale(
-    K, V, S, b, vector_neg(K, V, y), subspace_neg(K, V, S, y, member)
+  exact transport subspace_scale(K, V, S, b, vector_neg(K, V, y), subspace_neg(K, V, S, y, member)) along unscaled in subspace_members(
+    K, V, S
   );
 }
 

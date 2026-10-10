@@ -71,13 +71,13 @@ def field_tower_basis_triangle(
   upper : FiniteBasis(L, field_vector_space(L, M, d), n)
 ) :
   FiniteBasis(K, field_vector_space(K, M, c), multiply_count(n, m)) {
-  exact along(
+  exact transport field_tower_basis(K, L, M, e, d, m, n, lower, upper) along triangle in (
     (
       fun (embedding : FieldEmbedding(K, M)) => FiniteBasis(
         K, field_vector_space(K, M, embedding), multiply_count(n, m)
       )
     )
-  ) by triangle from field_tower_basis(K, L, M, e, d, m, n, lower, upper);
+  );
 }
 
 // The tower law first holds as a proposition about degrees. Truncated basis
@@ -178,10 +178,11 @@ def extension_degree_iso(
 }
 
 def finite_extension_iso(
-  K : AlgebraicField, E, F : FieldExt(K), iso : ExtensionIso(K, E, F), finite : FiniteExtension(K, E)
+  K : AlgebraicField, E, F : FieldExt(K), iso : ExtensionIso(K, E, F),
+  finite : FiniteExtension(K, E)
 ) :
   FiniteExtension(K, F) {
-  exact along FiniteExtension(K) by extension_iso_path(K, E, F, iso) from finite;
+  exact transport finite along extension_iso_path(K, E, F, iso) in FiniteExtension(K);
 }
 
 def field_embedding_linear(K, L : AlgebraicField, e : FieldEmbedding(K, L)) :

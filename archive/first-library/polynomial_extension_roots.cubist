@@ -81,6 +81,6 @@ def polynomial_extension_root_bound(
     cong((fun (k : Nat) => succ(natural_predecessor(k))), polynomial_map_cutoff(K, L, e, p));
   exact polynomial_root_bound(
     L, q, polynomial_map_nonzero(K, L, e, p, nonzero),
-    along RootFamily(L, q) by sym(degree) from local
+    transport local along sym(degree) in RootFamily(L, q)
   );
 }
