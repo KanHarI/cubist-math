@@ -1,5 +1,8 @@
 # Simplification and shorter proofs in Cubist
 
+Progress reconciled on 2026-10-10 against main `cb525f07`. Open branch
+work is recorded separately in the [work plan](work-plan.md#branch-work).
+
 Status reviewed 2026-10-07: first release delivered on 2026-09-25. Milestones 0–3 check through
 the native kernel: grouped binders and introductions, both `have` forms
 (since 2026-09-30, `let`),
@@ -57,12 +60,28 @@ proposals.
   [design](higher-inductive-types-design.md)).
 - The [work plan](work-plan.md) sequences all roadmaps.
 
-Continue with the [PR-sized implementation plan](proof-ergonomics-implementation-plan.md)
-and its [checked and exploratory sample files](../examples/proof-ergonomics/README.md).
-That plan specifies reconstruction APIs, matching/occurrence semantics,
-transactions, measurements, and cubical notation priorities. It brings
-expected-type paths and pointwise equality forward without requiring general
-argument inference.
+The original [PR-sized implementation plan](historical/proof-ergonomics-implementation-plan.md)
+is archived as a superseded sequence. Its checked examples and detailed
+lowering contracts remain evidence; current scheduling is in the
+[work plan](work-plan.md#first-actions).
+
+## Remaining implementation contracts
+
+Archiving the old sequence does not complete its unfinished work. These
+active owners retain its requirements and acceptance cases:
+
+| Remaining obligation from the old plan | Active owner and contract |
+| --- | --- |
+| Worker cancellation and remaining goal metadata, filling, face contexts and source spans | Work-plan L1.3/L1.2r; HoTT A4–A6. Preserve deterministic fuel, scoped reconstruction, rollback and browser/CLI agreement. |
+| General proposition premises and map-based proposition simplification (old PR 8) | HoTT D1 and this roadmap's milestone 3. Construct checked witnesses, count premise search, reject cycles and false premises, and preserve inspection/freeze evidence. |
+| Dependent context replacement and motive reconstruction (old PR 10) | HoTT A5/B1/E1 and work-plan L1.4/L3.2. Recheck downstream hypotheses, transport proof-dependent indices and reject unsupported boundaries. `apply`/`refine` are withdrawn, not pending. |
+| Generated structure identity and transfer (old PR 11) | Core theories L2.4b and HoTT F1/F2, after L3.1/L3.2. Specify a supported grammar and prove preservation for nonidentity equivalences. |
+| Certified algebraic normalization | This roadmap's milestone 6, separately scoped from the completed core-theory release. |
+
+The old plan's [lowering and reconstruction contracts](historical/proof-ergonomics-implementation-plan.md#freeze-these-semantics-before-implementation)
+and [measurement criteria](historical/proof-ergonomics-implementation-plan.md#measurement-and-release-checks)
+remain linked requirements where the active owner has not replaced them.
+Its obsolete feature order and implementation snapshots are historical.
 
 The subsequent [HoTT and cubical automation roadmap](hott-automation-roadmap.md)
 records why the current simplifier cannot reach path operations. It now owns
@@ -87,12 +106,11 @@ premise solver; `apply` was withdrawn (L4.4). Since G0, a universe variable
 term. Since L4.1b, implicit parameters in double braces and universe
 arguments are inferred where constraints determine them.
 
-The checker already computes and unfolds definitions on demand, and
-`with unfolding [names] { expression }` supplies a selective conversion
-strategy. (An explicit `unfold(term)` existed before the cubical kernel and
-was removed with it.) Neither uses arbitrary equality lemmas as rewrite rules. Preserve this
-distinction: theorem simplification constructs paths; conversion remains the
-kernel's existing judgment of computational equality.
+The instruction driver unfolds definitions on demand while deriving
+computational equality. The old `with unfolding` hints were removed with
+the term checker on 2026-10-02. Theorem simplification constructs checked
+paths from equality lemmas; conversion follows the kernel's computation
+rules.
 
 For example, addition recurses on its first argument, so `0 + n` computes to
 `n`. The proof that `n + 0 = n` is the existing
@@ -147,7 +165,7 @@ checking. Computability is expressible and preserved (milestone 8):
 
 - no convenience adds a non-computing dependency;
 - automatic clauses use proved h-level evidence;
-- unfolding hints never hide computational content from evaluation.
+- the driver's unfolding strategy never hides computational content from evaluation.
 
 Keep automatic computation demand-driven. Preserve named references and shared
 subterms; do not fully unfold the library to discover matches. Specify which
@@ -642,8 +660,8 @@ are documented in the language reference's Computability section.
   checked dependency graph, and show them in the inspector and CLI. These are
   the existing assumption lists; the CLI's `inspect` now prints them.
 - [x] `computable def …`. The checker rejects the declaration unless the set
-  is empty, and names the dependency chain. A `kernel extension: Hn` marker is
-  shown but is not a non-computing dependency. The marker arrives with H1.
+  is empty, and names the dependency chain. The experimental H1 marker
+  was tracked separately and removed at H1's release on 2026-10-02.
 - [x] `evaluate term expecting value;`, a checked normal-form test, and the
   CLI's `evaluate EXPRESSION` command.
 - [x] L2.9a: patterns with holes on the expected side of `evaluate`, with
@@ -657,8 +675,8 @@ are documented in the language reference's Computability section.
   it does not introduce a source eliminator from `Trunc(A)` to `A`. Done on
   2026-10-06 as `print(witness(t));` and the REPL's (and CLI's)
   `witness TERM;`.
-- [x] Guarantee that evaluation always unfolds definitions and ignores
-  unfolding hints. (`opaque def`, which changed nothing, has been removed.)
+- [x] Guarantee that evaluation unfolds definitions. The former unfolding
+  hints were removed with the term checker. (`opaque def`, which changed nothing, has been removed.)
 - [x] Recheck every `computable` and `evaluate` in CI. The migration
   verifier compares non-computing dependencies.
 

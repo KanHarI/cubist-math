@@ -21,13 +21,19 @@ implemented. Squares have the box notation and `library/squares.cubist`
 `cell` face syntax for constructors, relations on declared types and
 bundles, proof-first h-levels, per-argument obligations, dependent
 matching, canonical quotients, presentations and derivations remain
-proposals. Code blocks are proposed syntax unless they say they check. The [audit of 2026-09-28](audits/2026-09-28-audit.md) corrected
+proposals. Code blocks are proposed syntax unless they say they check. The [audit of 2026-09-28](historical/audits/2026-09-28-audit.md) corrected
 three promises here: the universal property of section 1, `Torus2` in
 section 2 and proof-first h-levels in section 4.
 G0 and the shared goal-layer core are delivered as of 2026-09-27. It builds on
 [the higher inductive-inductive type design](higher-inductive-types-design.md)
 (kernel roadmap item H, stages H1–H4) and on
 [G0](cubical-kernel-roadmap.md) (universe-generic checking).
+
+Progress reconciled on 2026-10-10 against main `cb525f07`. This is an
+adopted design with proposed examples, not the syntax reference. Some old
+sketches retain `sort` and `T.Model`; the implemented spellings are
+`M : set U` and `T(U)`. The [core-theory contract](core-theories.md) and
+[language reference](../../web/language.html) describe accepted source.
 
 Examples write `A : U` with `U` unbound. They presuppose the implicit
 universe binders of ergonomics milestone 5; under L1.1 each reads
