@@ -1,7 +1,7 @@
 # Kernel extensions for computation in Cubist
 
 Status: reviewed on 2026-09-28 against `02a57ef`, after the
-[work-plan audit](audits/2026-09-28-audit.md); H1's status updated on
+[work-plan audit](historical/audits/2026-09-28-audit.md); H1's status updated on
 2026-10-04. G0 is delivered. H1 was released on 2026-10-02 after review of
 its model, critical pairs and canonicity: its six instruction families,
 ABI version 3, admit declarations by default, with no experimental option
@@ -228,7 +228,7 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
       2026-09-30 and 2026-10-02. The differential fixtures X1–X8 and G2's
       ledger verifier are implemented; K2.5's other archive remedies are
       pending. The
-      specification's [history](h1-history.md#status-and-release-record) holds
+      specification's [history](historical/h1-history.md#status-and-release-record) holds
       the release checklist and its record.
     - **Specification.** [H1 specification](h1-signature-specification.md)
       (K2.1 and K2.5; reviewed, approved and released on 2026-10-02): the

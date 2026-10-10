@@ -4,11 +4,10 @@ Expansion must preserve binding, not spelling. Moving an expression,
 renaming a surrounding binder, or importing it into a different module must
 not change which declarations and local variables it refers to.
 
-The [frontend generation roadmap](frontend-generation.md) turns this
-contract and PR #188's failures into implementation slices for declaration
-ownership, dependency analysis, universes, evidence, provenance and semantic
-tests. Its [gap inventory](../reports/frontend-generation-gaps.md) separates
-remaining failures from the capture bugs already fixed here.
+The [frontend contracts](frontend-generation.md#shared-contracts) cover
+declaration ownership, dependencies, universes, evidence and publication.
+The [gap inventory](../reports/frontend-generation-gaps.md#current-status-and-fixing-evidence)
+owns implementation status and regression evidence.
 
 The frontend uses nominal syntax. The JavaScript core has named `Var`, `Pi`,
 and `Lam` nodes; the C kernel uses symbols, capture-avoiding substitution,
@@ -52,8 +51,7 @@ can be freshened with their later domains, result and value while retaining
 public argument labels. This protects free fields under both law binders
 and derived parameters, including inherited and renamed helpers. A fixed
 enclosing pattern or statement binding that would capture a field is
-refused with E871 at the conflicting source token. The FG2 regressions
-check the intended equation and reject the accidentally captured equation.
+refused with E871 at the conflicting source token.
 
 `scoped` is a closure: syntax paired with its original elaboration scope.
 Caller substitution and relocation cannot enter its contents. `instantiated`
@@ -69,8 +67,9 @@ Both directions of comparisons (`<`, `<=`, `>`, `>=`) retain that context.
 Initial/free generation reads these same lexical captures. It installs no
 second notation alias scope. Synthetic evaluation suppresses links through
 its whole expansion, including copied rules whose offsets belong to another
-module. B1's file-level `use` precedence over same-spelled globals remains
-intentional and is checked across imports and changed selections.
+module. File-level `use` takes precedence over same-spelled globals,
+including later declarations, in ordinary and generated declarations alike.
+Imports and changed selections must preserve the scope of retained syntax.
 
 The retained theory also records a dependency graph over field identities,
 with an explicit ordered universe/parameter interface. Edges classify
@@ -94,8 +93,7 @@ no source links.
 Source-alias records keep internal lookup keys, public labels and binder
 origins separately. Environment filtering and use-site matching compare the
 key and term identity; display reads the label, and navigation reads the
-binder origin. Each occurrence keeps its written range. FG5's direct,
-imported, CLI and browser observations guard all four G9 sites.
+binder origin. Each occurrence keeps its written range.
 
 ## Generation boundary
 
@@ -128,9 +126,8 @@ the recursive results. Ordinary source calls still obey lexical shadowing
 and the same structural recursion checks.
 
 Calls to an earlier recursive derived operation are a separate case. They
-are retained as checked projection calls in a later derived value. FG2
-distinguishes these from structural self-calls and unsupported type
-unfolding; G12's ordinary/inherited/initial clients check and compute.
+are retained as checked projection calls in a later derived value, distinct
+from structural self-calls and unsupported type unfolding.
 
 Checked model evidence belongs to the elaboration context. Binding/opening
 a model acquires checked projections; match refinement and dimension
@@ -141,14 +138,14 @@ the primary located mismatch on failure and charges all attempted work.
 
 Homomorphism generation uses separate hole maps for declaration references,
 parameter types, and expressions. Holes cannot collide with source binders.
-The blanket name rewrite is removed. Closed references do not require callers
-to avoid their display names; E866 remains for headers still read by name.
+Closed references do not require callers to avoid their display names;
+E866 applies to headers still read by name.
 
 ## Deriving requests and generated artifacts
 
-The `deriving (...)` opt-in and capability registry are specified but not
-implemented in this branch. Existing generators use the boundary above.
-Future deriving machinery must preserve it:
+The [L2.6 capability contract](core-theories.md#initial-and-free-models-l26)
+owns deriving syntax, support and implementation scope. Any deriving
+machinery must preserve these invariants:
 
 - A request retains the resolved theory record, lexical context, and explicit
   parameter interface, rather than a name to look up later.
@@ -167,29 +164,18 @@ Future deriving machinery must preserve it:
 
 ## Enforcement
 
-`tests/references.test.mjs` checks identity preservation under substitution,
-alpha renaming, relocation, serialization, and elaboration lowering; opaque
-closures; structural selections; telescope and statement scopes; and unregistered syntax.
-`tests/theory-resolution.test.mjs` covers imports, inheritance, derived
-operations, notation, initial/free models, families, homomorphisms, and
-isomorphisms with colliding source and template names.
-`tests/theory-hygiene.test.mjs` checks selected-scope capture, helper inlining,
-recursive calls under namespace collisions, diagnostic and display
-provenance, and source-link ownership. It also checks catch-all clauses
-over recursive path constructors: a wildcard's coherence must either fit
-the recursive boundaries or be constructed from checked h-level evidence.
-Incompatible endpoints remain refused; explicit path clauses are not
-replaced by generated coherence.
+A transformation must state which bindings it preserves and which explicit
+interface it substitutes. Extend these invariants for every new binder or
+derivation; checking a few example names is insufficient.
 
-The fallback currently also runs for nonrecursive path constructors and
-overwrites useful mismatch diagnostics
-([G8](../reports/frontend-generation-gaps.md#g8-wildcard-fallback-replaces-an-endpoint-mismatch)).
-FG4 narrows eligibility and preserves the original error on failed fallback;
-FG0/FG6 require endpoint, source-range and code assertions. A gap merely
-named `bad` does not establish this contract. The follow-up mutation audit
-also requires direct source-label/link checks and a distinguishing test or
-removal for potentially redundant `notationScope` aliases.
+Semantic checks must distinguish intended from captured equations, verify
+source labels and navigation, and inspect refusal codes and nonempty ranges.
+Wildcard coherence must fit the recursive boundaries or come from checked
+h-level evidence. Incompatible endpoints remain refused; explicit path
+clauses keep their written bodies. Failed optional coherence preserves the
+original mismatch, and nonrecursive clauses do not enter that fallback.
 
-Extend these invariants for every new binder or derivation. A transformation
-must state which bindings it preserves and which explicit interface it
-substitutes; checking a few example names is insufficient.
+The [inventory](../reports/frontend-generation-gaps.md#current-status-and-fixing-evidence)
+maps these obligations to distinguishing tests and fixing evidence; the
+[FG6 contract](frontend-generation.md#fg6-make-preservation-tests-and-measurements-a-release-gate)
+specifies the cross-transformation gate.
