@@ -42,5 +42,5 @@ cubical source before building on it.
 Current cubical implementation notes remain in [../cubical/](../cubical/).
 # Language tooling
 
-- [Proof ergonomics implementation checkpoint](proof-ergonomics-handoff.md): checked `rw`, `calc`, registered `simp`/`simpa`, and cubical path conveniences; inference and theories remain open.
+- [Proof ergonomics implementation checkpoint](proof-ergonomics-handoff.md): checked `rw`, `calc`, registered `simp`/`simpa`, and cubical path conveniences; historical first-release evidence; inference and core theories have since shipped. The [active roadmap](../roadmaps/proof-ergonomics-roadmap.md) owns remaining work.
 - [HoTT automation implementation checkpoint](hott-automation-handoff.md): A7 regressions, canonicity fixture and historical measurements; A5 core is delivered, with remaining goal-layer work scheduled in the active plan.

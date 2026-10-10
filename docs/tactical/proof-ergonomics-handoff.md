@@ -2,7 +2,7 @@
 
 Date: 2026-09-24. This is the implementation handoff for the
 [roadmap](../roadmaps/proof-ergonomics-roadmap.md) and
-[implementation plan](../roadmaps/proof-ergonomics-implementation-plan.md).
+[implementation plan](../roadmaps/historical/proof-ergonomics-implementation-plan.md).
 All accepted example declarations are checked by the C/WASM cubical kernel
 and report no axiom dependencies.
 
