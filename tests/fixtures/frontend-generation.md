@@ -12,9 +12,11 @@ snapshots. Run it with `npm test -- tests/frontend-generation.test.mjs`.
 All listed clients must be verified without assumptions. G1 covers both
 orders of definition/inductive collisions, definition/initial-model
 collisions, and same-kind duplicates, preserving the first binding and its
-clients. G2's clients fix the public Hom/Iso types and composition
+clients. Collision cases also forbid publication of the refused constructor or
+model/fold members. G2's clients fix the public Hom/Iso types and composition
 computation at U0 and U1. G3 preserves the base theory while withholding
-both unsupported artifact families. G4 covers both flat and nested matches.
+both unsupported artifact families. G4 covers flat and nested matches with distinct results, every written branch,
+and a refused constant-result equation.
 G5 uses positional operation calls, identity and a generated model/fold to
 test the lint rewrite for both single and grouped operation binders. The case
 records each warning's code, declaration and message and verifies its location
@@ -26,7 +28,10 @@ rewrites.
 G11 requires opposite outcomes for intended and captured
 equations, including helper chains, grouped/dependent binders, inheritance
 and generated clients. G12 checks `twice` computation directly, through
-inheritance, and through an initial model. It keeps a passing
+inheritance, and through an initial model, with both base and recursive-step
+equations and a refused base-only result. G12-shadowed pairs intended/local
+and captured/field equations; a passing field-type control keeps a local
+recursive name free of E845. It keeps a passing
 E845 refusal control for recursive unfolding in a law. `G12-range` tracks
 that refusal's nonempty range over the original `iter` reference as a
 separate FG5 expected failure, so it can be activated independently of the
@@ -65,6 +70,13 @@ Every contract consumes its supplied case; group labels never select another
 fixture's data. The derived `gaps` lookup shares those same case objects by ID
 for the existing downstream FG5 provenance/browser consumers. Accepted clients must be assumption-free.
 
+The independent [requirement map](frontend-generation-requirements.mjs) names
+behavioral obligations and the cases that witness them. Removing a case and its
+manifest row together still fails if an obligation loses its witness. Minimum
+publication and rejected-equation requirements are checked independently too.
+Source scopes, conflicts and rewrite targets must occur exactly once; repeated
+inner references require an explicit occurrence. Observers use resolved spans.
+
 Prerequisites are ordinary assertions: metadata must be valid, unaffected
 clients must check, and G5's original interface must check before any rewrite.
 Missing clients are represented explicitly in observations, so a misspelled
@@ -92,7 +104,9 @@ prove that flat matches, renamed navigation and all three G12 clients can pass.
 extends these controls to every case: the known defect is recognized, a different
 primary cause fails, and a supported source or explicitly injected valid outcome
 satisfies the desired requirements. It checks permitted diagnostic alternatives,
-swapped mismatch endpoints, changed advice and ID-to-finding ownership. See the
+swapped mismatch endpoints, changed advice and ID-to-finding ownership.
+Semantic mutants also replace matches/recursion by constants or capture a local
+recursive name. Injected publication leaks and ambiguous anchors must fail. See the
 [audit](../../docs/reports/frontend-generation-contract-audit.md) for each case's
 scope and the distinction between observer controls and compiler integration.
 
@@ -110,8 +124,8 @@ mutation selectors. The bracketed case ID selects an individual variant with
 | `G1-same-kind` | G1 | Definition followed by definition |
 | `G2` | G2 | Fixed argument domains; Hom/Iso and computation at U0/U1 |
 | `G3` | G3 | Law-dependent transport; usable base and no partial families |
-| `G4` | G4 | Nested derived match and computation |
-| `G4-flat` | G4 | Flat derived match and computation |
+| `G4` | G4 | Nested derived match; distinct nil/off/yes results and refused constant result |
+| `G4-flat` | G4 | Flat derived match; distinct nil/cons results and refused constant result |
 | `G5` | G5 | Grouped operation binder; supported call, Hom and initial-model clients |
 | `G5-single` | G5 | Single operation binder with the same interface checks |
 | `G6` | G6 | Parent cause, child dependency and unrelated recovery |
@@ -122,9 +136,10 @@ mutation selectors. The bracketed case ID selects an individual variant with
 | `G11-grouped-dependent` | G11 | Helper chain with grouped/dependent parameters |
 | `G11-inherited` | G11 | Inherited helper chain |
 | `G11-initial` | G11 | Initial-model helper client |
-| `G12` | G12 | Direct `twice` computation with recursive `iter` |
-| `G12-inherited` | G12 | Inherited `twice` computation |
-| `G12-initial` | G12 | Initial-model `twice` computation |
+| `G12` | G12 | Direct `twice` base/step computations and refused base-only result |
+| `G12-inherited` | G12 | Inherited `twice` base/step computations and refused base-only result |
+| `G12-initial` | G12 | Initial-model `twice` base/step computations and refused base-only result |
+| `G12-shadowed` | G12 | Local recursive-name shadowing; intended/captured equations |
 | `G12-range` | G12 | Legitimate type-unfolding refusal over the original reference |
 
 ## Downstream lifecycle

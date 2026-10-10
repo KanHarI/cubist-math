@@ -122,3 +122,15 @@ def computation : k(first) = tt { rfl; }
   const refused = await check(t, cases.find(fixture => fixture.id === "G12-range").source);
   assert.equal(refused.result.gaps[0]?.code, "E845");
 });
+
+
+test("FG0 controls: a local recursive name remains local in a field type", async t => {
+  const checked = await check(t, `import hlevels; import nat;
+theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
+  def iter(n : Nat) : M := match n { zero => c; succ(k) => op(iter(k)); };
+  law ok(iter : Nat -> M) : op(iter(zero)) = op(iter(zero));
+}
+def local(S : T(U0), f : Nat -> S.M) : S.op(f(zero)) = S.op(f(zero)) := S.ok(f);
+`);
+  complete(checked); accepted(checked, ["T.ok", "local"]);
+});

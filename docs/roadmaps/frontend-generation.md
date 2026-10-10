@@ -97,7 +97,7 @@ records the cases, including direct, inherited and initial-model G12 clients.
 This roadmap is the authority for desired FG behavior; the inventory records
 defects and the manifest maps executable evidence to these requirements.
 Apply the [regression contract checklist](../guides/regression-contracts.md)
-when extending that evidence. The [22-case contract audit](../reports/frontend-generation-contract-audit.md)
+when extending that evidence. The [contract audit](../reports/frontend-generation-contract-audit.md)
 records permitted alternatives and distinguishing controls. A new review finding
 requires checking the same failure mechanism across sibling contracts.
 

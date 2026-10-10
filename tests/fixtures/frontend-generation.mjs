@@ -8,7 +8,7 @@ inductive N : U0 { c; }
 def original : Unit := N;
 def independent : Unit := tt;`,
     clients: ["original", "independent"],
-    originalType: "Unit", symbol: "N", invariantClients: ["independent"],
+    originalType: "Unit", symbol: "N", invariantClients: ["independent"], absentMembers: ["c"],
   },
   G2: {
     phase: "FG3", contract: "fixed argument domains contribute to generated universes",
@@ -39,11 +39,14 @@ def unsupported(S : T(U0)) := T.Hom.id(S);`,
     source: `import hlevels;
 inductive Bit : set U0 { off; yes; }
 inductive Bits : set U0 { nil; cons(b : Bit, rest : Bits); }
-theory T(U < UU0) { M : set U; c : M;
-  def value(n : Bits) : M := match n { nil => c; cons(off, rest) => c; cons(yes, rest) => c; };
+theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
+  def value(n : Bits) : M := match n { nil => c; cons(off, rest) => op(c); cons(yes, rest) => op(op(c)); };
 }
-def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.c { rfl; }`,
-    clients: ["T.value", "computation"],
+def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.op(S.op(S.c)) { rfl; }
+def off_computation(S : T(U0)) : S.value(cons(off, nil)) = S.op(S.c) { rfl; }
+def empty_computation(S : T(U0)) : S.value(nil) = S.c { rfl; }
+def wrong(S : T(U0)) : S.value(cons(yes, nil)) = S.c { rfl; }`,
+    clients: ["T.value", "computation", "empty_computation", "off_computation"], refusedClients: ["wrong"],
   },
   G5: {
     phase: "FG5", contract: "grouped-binder advice preserves supported calls and generated interfaces",
@@ -92,7 +95,7 @@ theory T(U < UU0) { M : set U; c : M;
   def k(n : Nat) : M := c;
   law l(n : Nat) : (match n return M { zero => c; succ(c) => k(c); }) = c;
 }`,
-    diagnostic: {name: "T", code: "E871", conflict: "succ(c) => k(c)", binder: "c", call: "k(c)"},
+    diagnostic: {name: "T", code: "E871", conflict: "succ(c) => k(c)", binder: "c", binderOccurrence: 0, call: "k(c)"},
   },
   G11: {
     phase: "FG2", contract: "complete declaration telescopes protect helper fields from caller parameters",
@@ -112,8 +115,10 @@ theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
   def iter(n : Nat) : M := match n { zero => c; succ(k) => op(iter(k)); };
   def twice(n : Nat) : M := op(iter(n));
 }
-def computation(S : T(U0)) : S.twice(zero) = S.op(S.c) { rfl; }`,
-    clients: ["T.iter", "T.twice", "computation"],
+def computation(S : T(U0)) : S.twice(succ(zero)) = S.op(S.op(S.c)) { rfl; }
+def base(S : T(U0)) : S.twice(zero) = S.op(S.c) { rfl; }
+def wrong(S : T(U0)) : S.twice(succ(zero)) = S.op(S.c) { rfl; }`,
+    clients: ["T.iter", "T.twice", "computation", "base"], refusedClients: ["wrong"],
   },
   "G12-range": {
     phase: "FG5", contract: "recursive type-unfolding refusals cover the responsible original reference",
@@ -128,7 +133,7 @@ theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
 
 const collisionVariants = [
   {
-    id: "G1-initial", contract: "an initial-model duplicate preserves the first definition",
+    id: "G1-initial", absentMembers: ["N.model", "N.fold_map", "N.fold"], contract: "an initial-model duplicate preserves the first definition",
     source: `import hlevels; import algebra;
 def N : Unit := tt;
 initial N : Monoid(U0);
@@ -136,7 +141,7 @@ def original : Unit := N;
 def independent : Unit := tt;`,
   },
   {
-    id: "G1-reverse", contract: "a definition duplicate preserves the first inductive",
+    id: "G1-reverse", absentMembers: [], contract: "a definition duplicate preserves the first inductive",
     source: `inductive N : U0 { c; }
 def N : Unit := tt;
 def original : U0 := N;
@@ -145,7 +150,7 @@ def independent : Unit := tt;`,
     originalType: "U0", clients: ["original", "constructor", "independent"],
   },
   {
-    id: "G1-same-kind", contract: "a same-kind duplicate preserves the first definition",
+    id: "G1-same-kind", absentMembers: [], contract: "a same-kind duplicate preserves the first definition",
     source: `def N : Unit := tt;
 def N : U0 := Unit;
 def original : Unit := N;
@@ -159,10 +164,13 @@ const matchVariants = [
     source: `import hlevels;
 inductive Bit : set U0 { off; yes; }
 inductive Bits : set U0 { nil; cons(b : Bit, rest : Bits); }
-theory T(U < UU0) { M : set U; c : M;
-  def value(n : Bits) : M := match n { nil => c; cons(b, rest) => c; };
+theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
+  def value(n : Bits) : M := match n { nil => c; cons(b, rest) => op(op(c)); };
 }
-def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.c { rfl; }`,
+def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.op(S.op(S.c)) { rfl; }
+def empty_computation(S : T(U0)) : S.value(nil) = S.c { rfl; }
+def wrong(S : T(U0)) : S.value(cons(yes, nil)) = S.c { rfl; }`,
+    clients: ["T.value", "computation", "empty_computation"],
   },
 ];
 
@@ -231,8 +239,10 @@ theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
   def twice(n : Nat) : M := op(iter(n));
 }
 theory Child(U < UU0) extends T {}
-def computation(S : Child(U0)) : S.twice(zero) = S.op(S.c) { rfl; }`,
-    clients: ["Child.iter", "Child.twice", "computation"],
+def computation(S : Child(U0)) : S.twice(succ(zero)) = S.op(S.op(S.c)) { rfl; }
+def base(S : Child(U0)) : S.twice(zero) = S.op(S.c) { rfl; }
+def wrong(S : Child(U0)) : S.twice(succ(zero)) = S.op(S.c) { rfl; }`,
+    clients: ["Child.iter", "Child.twice", "computation", "base"],
   },
   {
     id: "G12-initial", contract: "initial-model calls to earlier recursive values check and compute",
@@ -242,10 +252,24 @@ theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
   def twice(n : Nat) : M := op(iter(n));
 }
 initial N : T(U0);
-def computation : N.model.twice(zero) = N.op(N.c) { rfl; }`,
-    clients: ["N", "N.model", "computation"],
+def computation : N.model.twice(succ(zero)) = N.op(N.op(N.c)) { rfl; }
+def base : N.model.twice(zero) = N.op(N.c) { rfl; }
+def wrong : N.model.twice(succ(zero)) = N.op(N.c) { rfl; }`,
+    clients: ["N", "N.model", "computation", "base"],
   },
 ];
+
+const shadowed = {
+  id: "G12-shadowed", kind: "capture", contract: "a local parameter shadows an earlier recursive operation",
+  source: `import hlevels; import nat;
+theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
+  def iter(n : Nat) : M := match n { zero => c; succ(k) => op(iter(k)); };
+  def twice(iter : Nat -> M, n : Nat) : M := op(iter(n));
+}
+def intended(S : T(U0), f : Nat -> S.M) : S.twice(f, zero) = S.op(f(zero)) { rfl; }
+def captured(S : T(U0), f : Nat -> S.M) : S.twice(f, zero) = S.op(S.c) { rfl; }`,
+  clients: ["intended"], refusedClients: ["captured"],
+};
 
 const kinds = {
   G1: "collision", G2: "completion", G3: "unsupported-family", G4: "evidence",
@@ -263,7 +287,8 @@ const knownDefects = {
     "gaps": ["original E606"],
     "clients": {"original": "refused", "independent": "checked"},
     "originalType": "U0",
-    "duplicateRefused": false
+    "duplicateRefused": false,
+    "published": []
   },
   "G2": {
     "dependencies": [["T.Hom", ["T.Hom.compose", "T.Hom.id", "T.Hom.make", "T.Hom.map", "T.Hom.map_op", "T.Iso", "T.Iso.make", "identity", "identity_u1"]], ["T.Hom.compose", ["computation", "computation_u1"]], ["T.Iso", ["T.Iso.compose", "T.Iso.from", "T.Iso.from_to", "T.Iso.id", "T.Iso.inverse", "T.Iso.to", "T.Iso.to_from", "iso", "iso_u1"]]],
@@ -345,10 +370,10 @@ const knownDefects = {
     "refusals": [{"name": "unsupported", "code": "E340", "words": [false, false, false], "unsupported": true}]
   },
   "G4": {
-    "dependencies": [["T.value", ["computation"]]],
+    "dependencies": [["T.value", ["computation", "empty_computation", "off_computation", "wrong"]]],
     "rootCauses": [["T.value", {"obligation": "Bit.squash", "requirement": "m.M must be of h-level 1"}]],
-    "gaps": ["T.value E546", "computation E340"],
-    "clients": {"T.value": "refused", "computation": "refused"},
+    "gaps": ["T.value E546", "computation E340", "empty_computation E340", "off_computation E340", "wrong E340"],
+    "clients": {"T.value": "refused", "computation": "refused", "wrong": "refused", "empty_computation": "refused", "off_computation": "refused"},
     "generation": [["T.value", "Bit.squash"]]
   },
   "G5": {
@@ -396,10 +421,10 @@ const knownDefects = {
     "clients": {"intended": "refused", "captured": "checked"}
   },
   "G12": {
-    "dependencies": [["T", ["computation"]]],
+    "dependencies": [["T", ["base", "computation", "wrong"]]],
     "rootCauses": [["T", {"recursive": "iter", "context": "field type"}]],
-    "gaps": ["T E845", "computation E340"],
-    "clients": {"T.iter": "missing", "T.twice": "missing", "computation": "refused"}
+    "gaps": ["T E845", "base E340", "computation E340", "wrong E340"],
+    "clients": {"T.iter": "missing", "T.twice": "missing", "computation": "refused", "wrong": "refused", "base": "refused"}
   },
   "G12-range": {
     "dependencies": [],
@@ -414,7 +439,8 @@ const knownDefects = {
     "gaps": ["original E606"],
     "clients": {"original": "refused", "independent": "checked"},
     "originalType": "U0",
-    "duplicateRefused": false
+    "duplicateRefused": false,
+    "published": ["N.fold", "N.fold_map", "N.model"]
   },
   "G1-reverse": {
     "dependencies": [],
@@ -422,7 +448,8 @@ const knownDefects = {
     "gaps": ["constructor E604", "original E606"],
     "clients": {"original": "refused", "constructor": "refused", "independent": "checked"},
     "originalType": "Unit",
-    "duplicateRefused": false
+    "duplicateRefused": false,
+    "published": []
   },
   "G1-same-kind": {
     "dependencies": [["N", ["original"]]],
@@ -430,13 +457,14 @@ const knownDefects = {
     "gaps": ["N E604", "original E340"],
     "clients": {"original": "refused", "independent": "checked"},
     "originalType": null,
-    "duplicateRefused": true
+    "duplicateRefused": true,
+    "published": []
   },
   "G4-flat": {
-    "dependencies": [["T.value", ["computation"]]],
+    "dependencies": [["T.value", ["computation", "empty_computation", "wrong"]]],
     "rootCauses": [["T.value", {"obligation": "Bits.squash", "requirement": "m.M must be of h-level 1"}]],
-    "gaps": ["T.value E546", "computation E340"],
-    "clients": {"T.value": "refused", "computation": "refused"},
+    "gaps": ["T.value E546", "computation E340", "empty_computation E340", "wrong E340"],
+    "clients": {"T.value": "refused", "computation": "refused", "wrong": "refused", "empty_computation": "refused"},
     "generation": [["T.value", "Bits.squash"]]
   },
   "G5-single": {
@@ -465,17 +493,24 @@ const knownDefects = {
     "clients": {"intended": "refused", "captured": "checked"}
   },
   "G12-inherited": {
-    "dependencies": [["Child", ["computation"]]],
+    "dependencies": [["Child", ["base", "computation", "wrong"]]],
     "rootCauses": [["Child", {"reason": "T is not a theory here: Child extends theories in scope."}], ["T", {"recursive": "iter", "context": "field type"}]],
-    "gaps": ["Child E805", "T E845", "computation E340"],
-    "clients": {"Child.iter": "missing", "Child.twice": "missing", "computation": "refused"}
+    "gaps": ["Child E805", "T E845", "base E340", "computation E340", "wrong E340"],
+    "clients": {"Child.iter": "missing", "Child.twice": "missing", "computation": "refused", "wrong": "refused", "base": "refused"}
   },
   "G12-initial": {
-    "dependencies": [["N", ["computation"]], ["T", ["N"]]],
+    "dependencies": [["N", ["base", "computation", "wrong"]], ["T", ["N"]]],
     "rootCauses": [["T", {"recursive": "iter", "context": "field type"}]],
-    "gaps": ["N E340", "T E845", "computation E340"],
-    "clients": {"N": "refused", "N.model": "missing", "computation": "refused"}
+    "gaps": ["N E340", "T E845", "base E340", "computation E340", "wrong E340"],
+    "clients": {"N": "refused", "N.model": "missing", "computation": "refused", "wrong": "refused", "base": "refused"}
+  },
+  "G12-shadowed": {
+    "dependencies": [["T", ["captured", "intended"]]],
+    "rootCauses": [["T", {"recursive": "iter", "context": "field type"}]],
+    "gaps": ["T E845", "captured E340", "intended E340"],
+    "clients": {"intended": "refused", "captured": "refused"}
   }
+
 };
 const caseOf = (group, variant = {}) => {
   const id = variant.id ?? group;
@@ -489,6 +524,7 @@ export const cases = [
   ...lintVariants.map(variant => caseOf("G5", variant)),
   ...captureVariants.map(variant => caseOf("G11", {id: variant.id, contract: variant.name, source: captureSource(variant)})),
   ...recursiveVariants.map(variant => caseOf("G12", variant)),
+  caseOf("G12", shadowed),
 ];
 
 // Downstream FG5 provenance/browser consumers look up source fixtures by ID.

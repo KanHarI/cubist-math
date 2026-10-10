@@ -6,7 +6,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import {lint} from "../web/cubist/lint.mjs";
 import {checkProgram} from "./check-program.mjs";
 import {cases} from "./fixtures/frontend-generation.mjs";
-import {observeCase, classifyCase, validateCoverage} from "./frontend-generation-contracts.mjs";
+import {observeCase, classifyCase, validateCoverage, validateFixture, sourceAnchor, validateObligations} from "./frontend-generation-contracts.mjs";
 
 const module = await createCubical();
 const check = (t, source) => checkProgram(t, source, {module});
@@ -60,8 +60,8 @@ for (const original of cases) test(`FG0 audit: ${original.id} recognizes debt an
 // acceptance predicate is reachable, without claiming to fix the original bug.
 const supported = {
   G2: c => { c.source = c.source.replace("op(A : U0, x : A) : M", "op(x : M) : M"); },
-  G4: unitMotive,
-  "G4-flat": unitMotive,
+  G4: natMotive,
+  "G4-flat": natMotive,
   G9: c => {
     const scope = "law l(z : M) : k(z) = op(z, z);";
     c.source = c.source.replace(c.observations.scope, scope);
@@ -74,16 +74,19 @@ const supported = {
   G12: nonrecursive,
   "G12-inherited": nonrecursive,
   "G12-initial": nonrecursive,
+  "G12-shadowed": c => { c.source = c.source.replace("twice(iter : Nat -> M, n : Nat) : M := op(iter(n))", "twice(local : Nat -> M, n : Nat) : M := op(local(n))"); },
 };
-function unitMotive(c) {
-  c.source = c.source.replace("def value(n : Bits) : M", "def value(n : Bits) : Unit")
-    .replaceAll("=> c;", "=> tt;").replace("= S.c { rfl; }", "= tt { rfl; }");
+function natMotive(c) {
+  c.source = c.source.replace("import hlevels;", "import hlevels; import nat;")
+    .replace(/def value[^;]+(?:;[^}]+)*?};/, declaration => declaration
+      .replace(": M :=", ": Nat :=").replace(/\bop\(/g, "succ(").replace(/\bc\b/g, "zero"))
+    .replaceAll("S.op(S.op(S.c))", "succ(succ(zero))").replaceAll("S.op(S.c)", "succ(zero)").replaceAll("= S.c {", "= zero {");
 }
 function renameParameter(c) {
   c.source = c.source.replace(/def kk\([^;]+;/, declaration => declaration.replace(/\bc\b/g, "z"));
 }
 function nonrecursive(c) {
-  c.source = c.source.replace("match n { zero => c; succ(k) => op(iter(k)); }", "c");
+  c.source = c.source.replace("match n { zero => c; succ(k) => op(iter(k)); }", "match n { zero => c; succ(k) => op(c); }");
 }
 for (const [id, transform] of Object.entries(supported)) test(`FG0 audit: ${id} accepts a supported source control`, async t => {
   const c = fixture(id); transform(c);
@@ -106,6 +109,11 @@ for (const [id, duplicate] of Object.entries(duplicates)) test(`FG0 audit: ${id}
   passes(c, await observeCase(t, c, async () => corrected));
   const lost = changed(corrected, result => { result.outputs = result.outputs.filter(o => o.name !== c.clients[0]); });
   refuses(c, await observeCase(t, c, async () => lost));
+  const forbidden = {G1: ["c"], "G1-initial": ["N.model", "N.fold_map", "N.fold"]}[id] ?? [];
+  for (const name of forbidden) {
+    const leaked = changed(corrected, result => result.outputs.push({...original.get("independent"), name}));
+    refuses(c, await observeCase(t, c, async () => leaked));
+  }
 });
 
 test("FG0 audit: G3 accepts focused refusals and rejects a leaked family", async t => {
@@ -188,4 +196,52 @@ test("FG0 audit: every case has an acceptance control and the manifest preserves
   const manifest = await readFile(new URL("./fixtures/frontend-generation.md", import.meta.url), "utf8");
   validateCoverage(manifest, cases);
   assert.throws(() => validateCoverage(manifest.replace("| `G12-range` | G12 |", "| `G12-range` | G11 |"), cases), /coverage matrix/);
+});
+
+// These are semantic mutants of supported source controls. They keep the
+// program well formed, but make a plausible wrong equation true. This is a
+// different boundary from changing a diagnostic on an already-failing case.
+for (const id of ["G4", "G4-flat", "G12", "G12-inherited", "G12-initial", "G12-shadowed"])
+  test(`FG0 audit: ${id} rejects a well-typed wrong computation`, async t => {
+    const c = fixture(id); supported[id](c);
+    passes(c, await observeCase(t, c, check));
+    if (id.startsWith("G4")) c.source = c.source.replace(/match n \{[^}]+\}/, "zero");
+    else if (id === "G12-shadowed") c.source = c.source.replace("op(local(n))", "op(c)");
+    else c.source = c.source.replace("match n { zero => c; succ(k) => op(c); }", "c");
+    const observation = await observeCase(t, c, check);
+    assert.equal(observation.facts.clients[id === "G12-shadowed" ? "captured" : "wrong"], "checked");
+    assert.deepEqual(observation.facts.gaps, id === "G4" ? ["computation E606", "off_computation E606"] : [`${id === "G12-shadowed" ? "intended" : "computation"} E606`]);
+    refuses(c, observation);
+  });
+
+for (const [id, field, label] of [
+  ["G8", "diagnostic.scope", "diagnostic scope"],
+  ["G10", "diagnostic.conflict", "diagnostic conflict"],
+  ["G9", "observations.scope", "observation scope"],
+  ["G5", "rewrite.from", "lint rewrite target"],
+]) test(`FG0 audit: ${field} rejects ambiguous anchors before checking`, async t => {
+  const c = fixture(id), [parent, key] = field.split(".");
+  c.source += `\n// duplicate: ${c[parent][key]}`;
+  let checks = 0;
+  await assert.rejects(observeCase(t, c, async () => { checks++; }), new RegExp(`${label} must occur once`));
+  assert.equal(checks, 0);
+});
+
+test("FG0 audit: repeated inner tokens require an explicit occurrence", () => {
+  assert.throws(() => sourceAnchor("x x", "x", "token"), /must occur once/);
+  assert.deepEqual(sourceAnchor("x x", "x", "token", 1), {start: 2, end: 3});
+  assert.throws(() => sourceAnchor("x x", "x", "token", 2), /existing site/);
+  const c = fixture("G8"); c.diagnostic.token = "t0";
+  assert.throws(() => validateFixture(c), /diagnostic token must occur once/);
+});
+
+test("FG0 audit: requirements survive deletion of both a case and its manifest row", async () => {
+  const manifest = await readFile(new URL("./fixtures/frontend-generation.md", import.meta.url), "utf8");
+  const removed = cases.filter(c => c.id !== "G12-shadowed");
+  const matchingManifest = manifest.replace(/^\| `G12-shadowed`[^\n]*\n/m, "");
+  assert.throws(() => validateCoverage(matchingManifest, removed), /lexical-shadowing: missing witness G12-shadowed/);
+  for (const [id, field, error] of [["G1", "absentMembers", /publication requirement/], ["G12", "refusedClients", /wrong-equation witness/]]) {
+    const weakened = structuredClone(cases); delete weakened.find(c => c.id === id)[field];
+    assert.throws(() => validateObligations(weakened), error);
+  }
 });

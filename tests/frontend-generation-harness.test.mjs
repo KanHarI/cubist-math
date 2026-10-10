@@ -69,9 +69,11 @@ test("FG0 harness: only a recognized defect can set TODO; strict and active fail
 test("FG0 harness: a corrected flat case activates independently of the nested case", async t => {
   const flat = fixture("G4-flat");
   // A supported motive proves this case can pass; it does not claim to fix G4.
-  flat.source = flat.source.replace("def value(n : Bits) : M", "def value(n : Bits) : Unit")
-    .replace("nil => c; cons(b, rest) => c;", "nil => tt; cons(b, rest) => tt;")
-    .replace("= S.c { rfl; }", "= tt { rfl; }");
+  flat.source = flat.source.replace("import hlevels;", "import hlevels; import nat;")
+    .replace("def value(n : Bits) : M", "def value(n : Bits) : Nat")
+    .replace("nil => c; cons(b, rest) => op(op(c));", "nil => zero; cons(b, rest) => succ(succ(zero));")
+    .replace("= S.op(S.op(S.c)) { rfl; }", "= succ(succ(zero)) { rfl; }")
+    .replace("= S.c { rfl; }", "= zero { rfl; }");
   const observation = await observeCase(t, flat, check);
   assert.equal(classifyCase(flat, observation, {strict: true}), "pass");
   assert.throws(() => classifyCase(flat, observation), /G4-flat unexpectedly passed/);
@@ -103,7 +105,7 @@ test("FG0 harness: grouped-only lint suppression leaves the single-binder defect
 
 for (const id of ["G12", "G12-inherited", "G12-initial"]) test(`FG0 harness: ${id} twice clients pass with a nonrecursive iter`, async t => {
   const c = fixture(id);
-  c.source = c.source.replace("match n { zero => c; succ(k) => op(iter(k)); }", "c");
+  c.source = c.source.replace("match n { zero => c; succ(k) => op(iter(k)); }", "match n { zero => c; succ(k) => op(c); }");
   const observation = await observeCase(t, c, check);
   assert.equal(classifyCase(c, observation, {strict: true}), "pass");
   assert.throws(() => classifyCase(c, observation), /unexpectedly passed/);
