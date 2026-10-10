@@ -85,7 +85,7 @@ planner must not claim to have inferred types or discharged obligations.
 ## FG0: establish evidence and semantic comparisons
 
 Depends on #188's scope fixes. The initial harness is implemented by
-[PR #205](https://github.com/KanHarI/cubist-math/pull/205) and runs in the
+[PR #217](https://github.com/KanHarI/cubist-math/pull/217) and runs in the
 normal `npm test` suite. Extend it in every implementation slice; its TODOs
 record implementation debt, not passing behavior. Each executable variant
 has an independent case ID and activation state. Prerequisites fail normally;
@@ -99,7 +99,9 @@ defects and the manifest maps executable evidence to these requirements.
 Apply the [regression contract checklist](../guides/regression-contracts.md)
 when extending that evidence. The [contract audit](../reports/frontend-generation-contract-audit.md)
 records permitted alternatives and distinguishing controls. A new review finding
-requires checking the same failure mechanism across sibling contracts.
+requires checking the same failure mechanism across sibling contracts. Each
+contract requirement carries counterexamples that the audit applies to an
+accepted observation, which makes that check executable.
 
 - Turn G1–G6 and G8–G12 into durable fixtures with explicit current failures and
   expected outcomes. Prefer a focused test for a complete behavior over

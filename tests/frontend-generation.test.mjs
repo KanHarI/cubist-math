@@ -10,6 +10,7 @@ import {sourceReader} from "../tools/module-sources.mjs";
 import {checkProgram} from "./check-program.mjs";
 import {cases, historicalCoverage, passingCoverage} from "./fixtures/frontend-generation.mjs";
 import {accepted, complete, observeCase, recordCase, validateFixture, validateCoverage} from "./frontend-generation-contracts.mjs";
+import {matchesDiagnostics} from "./frontend-generation-diagnostics.mjs";
 
 const module = await createCubical();
 const check = (t, source, fixtures = {}) => {
@@ -120,7 +121,8 @@ def computation : k(first) = tt { rfl; }
 `);
   complete(explicit); accepted(explicit, ["k", "computation"]);
   const refused = await check(t, cases.find(fixture => fixture.id === "G12-range").source);
-  assert.equal(refused.result.gaps[0]?.code, "E845");
+  assert.ok(matchesDiagnostics(refused.result.gaps, [{name: "T", code: "E845", cause: {recursive: "iter", context: "field type"}}]),
+    "unfolding iter in a law's type must remain refused");
 });
 
 

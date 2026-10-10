@@ -9,10 +9,11 @@ revision notes and superseded first-action list; the
 [2026-09-28 audit](historical/audits/2026-09-28-audit.md) retains its dated findings.
 
 The initial/free construction prototype in
-[PR #188](https://github.com/KanHarI/cubist-math/pull/188) and frontend
-fixes in [#204–#211](https://github.com/KanHarI/cubist-math/pull/211) are
-on an unmerged stack. [#212](https://github.com/KanHarI/cubist-math/pull/212)
-adds a refactoring plan and reconciles that stack's evidence. They are
+[PR #215](https://github.com/KanHarI/cubist-math/pull/215) and frontend
+fixes in [#216–#223](https://github.com/KanHarI/cubist-math/pull/223) are
+on an unmerged stack. [#224](https://github.com/KanHarI/cubist-math/pull/224)
+adds a refactoring plan and reconciles that stack's evidence. They replace
+#188 and #204–#212, whose mistaken merges were undone on 2026-10-10. They are
 reported under [branch work](#branch-work), not counted as delivered here.
 
 This is the scheduling authority for the linked roadmaps. Package IDs from
@@ -758,16 +759,15 @@ Snapshot on 2026-10-10; these are open PRs, not main's delivered packages.
 
 | Track | Branch progress | Remaining obligation |
 | --- | --- | --- |
-| [L2.6 prototype, #188](https://github.com/KanHarI/cubist-math/pull/188) | Declared carriers, models and computing folds; seven reported CI checks pass | Review/merge, opt-ins, uniqueness, universal properties and additional laws |
-| [Frontend generation, #204–#211](https://github.com/KanHarI/cubist-math/pull/211) | FG0–FG6 implementation present; the [inventory](https://github.com/KanHarI/cubist-math/blob/fd0bc11bcd657f9c113e952e360ab2971ed3ec02/docs/reports/frontend-generation-gaps.md) owns finding status | Integrate revised #205 cases through the stack; review/merge; recover the historical mutation manifest and justify a performance budget |
-| [Refactoring/testing, #212](https://github.com/KanHarI/cubist-math/pull/212) | RC0–RC11 roadmap and documentation reconciliation; no RC implementation package completed | RC0 cleanup, then the plan's independently scoped refactors and test migration |
+| [L2.6 prototype, #215](https://github.com/KanHarI/cubist-math/pull/215) | Declared carriers, models and computing folds; seven reported CI checks pass | Review/merge, opt-ins, uniqueness, universal properties and additional laws |
+| [Frontend generation, #216–#223](https://github.com/KanHarI/cubist-math/pull/223) | FG0–FG6 implementation present; the [inventory](https://github.com/KanHarI/cubist-math/blob/fd0bc11bcd657f9c113e952e360ab2971ed3ec02/docs/reports/frontend-generation-gaps.md) owns finding status | Integrate revised #217 cases through the stack; review/merge; recover the historical mutation manifest and justify a performance budget |
+| [Refactoring/testing, #224](https://github.com/KanHarI/cubist-math/pull/224) | RC0–RC11 roadmap and documentation reconciliation; no RC implementation package completed | RC0 cleanup, then the plan's independently scoped refactors and test migration |
 | [Homological algebra, #198](https://github.com/KanHarI/cubist-math/pull/198) | Proposal merged into the #188 stack; no HA implementation | Maintainer's start decision; HA4 can begin largely from H1/univalence/squares, while the algebraic route needs categories |
 
-The revised #205 records 22 independent known-defect cases at its baseline.
-Its isolated integration check against the fixing compiler passed 36
-contract/control/provenance tests and all 13 required mutation checks.
-That is integration evidence, not a claim that its files have already
-been incorporated through every branch. The frontend roadmap remains active
+The revised FG0 harness in #217 records 23 independent known-defect cases at
+its baseline. With those records removed, its 31 contract and control tests
+pass against the fixing compiler `d4a5ecf3`. That is integration evidence, not
+a claim that its files have already been incorporated through every branch. The frontend roadmap remains active
 until the evidence follow-ups are disposed of. Historical test reports are
 not fresh validation of a later PR head.
 

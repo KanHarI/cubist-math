@@ -6,19 +6,19 @@ import createCubical from "../web/dist/cubical.mjs";
 import {lint} from "../web/cubist/lint.mjs";
 import {checkProgram} from "./check-program.mjs";
 import {cases} from "./fixtures/frontend-generation.mjs";
-import {observeCase, classifyCase, validateCoverage, validateFixture, sourceAnchor, validateObligations} from "./frontend-generation-contracts.mjs";
+import {supportedSources} from "./fixtures/frontend-generation-supported.mjs";
+import {classifyCase, collectEvidence, counterexamples, observeCase, observeEvidence, sourceAnchor,
+  validateCoverage, validateFixture, validateObligations} from "./frontend-generation-contracts.mjs";
+import {causeFields, diagnosticCause, encodeCause, matchesDiagnostics} from "./frontend-generation-diagnostics.mjs";
 
 const module = await createCubical();
 const check = (t, source) => checkProgram(t, source, {module});
 const fixture = id => structuredClone(cases.find(c => c.id === id));
-const changed = (checked, modify) => {
-  const result = structuredClone(checked.result);
-  modify(result);
-  return {...checked, result, get: name => {
-    const output = result.outputs.find(o => o.name === name);
-    assert.ok(output, `missing declaration ${name}`);
-    return output;
-  }};
+// Evidence edits replace part of a compiler result; judgments read only evidence.
+const observe = (c, evidence, edit) => {
+  const changed = structuredClone(evidence);
+  edit(changed.result);
+  return observeEvidence(c, changed);
 };
 const passes = (c, observation) => {
   assert.equal(classifyCase(c, observation, {strict: true}), "pass");
@@ -29,105 +29,132 @@ const refuses = (c, observation) => {
   assert.throws(() => classifyCase({...c, knownDefect: undefined}, observation), {code: "ERR_ASSERTION"});
   assert.throws(() => classifyCase(c, observation, {strict: true}), {code: "ERR_ASSERTION"});
 };
-// Mutate accepted results, independently of historical defect records. Every
-// other requirement must still pass, so the diagnostic meaning is the witness.
-const refusesReasons = async (t, c, corrected, name, reasons) => {
-  for (const reason of reasons) {
-    const wrong = changed(corrected, result => { result.gaps.find(g => g.name === name).reason = reason; });
-    const observation = await observeCase(t, c, async () => wrong);
-    assert.equal(observation.requirements.diagnostics, false, `${c.id}: ${reason}`);
-    for (const [requirement, met] of Object.entries(observation.requirements))
-      if (requirement !== "diagnostics") assert.equal(met, true, `${c.id}: ${requirement}`);
-    refuses(c, observation);
-  }
-};
 
-// Every case must distinguish its recorded debt from a different primary cause
-// with the SAME diagnostic code (or a different target for the link-only case).
-// Synthetic result edits test the observer boundary, not compiler correctness.
-for (const original of cases) test(`FG0 audit: ${original.id} recognizes debt and rejects a different cause`, async t => {
-  const c = structuredClone(original), cache = new Map();
-  const cachedCheck = async (t, source) => {
-    if (!cache.has(source)) cache.set(source, await check(t, source));
-    return cache.get(source);
-  };
-  assert.equal(classifyCase(c, await observeCase(t, c, cachedCheck)), "known-defect");
-  const otherCause = async (t, source) => changed(await cachedCheck(t, source), result => {
-    const primary = result.gaps.find(g => g.code !== "E340");
-    if (primary) primary.reason = primary.code === "E606"
-      ? "Type mismatch: found Bool, expected Unit."
-      : "An unrelated failure with the same diagnostic code";
-    else result.links = result.links.map(link => ({...link, definitionStart: c.source.length}));
+// Historical debt recognition: each primary cause and each dependency target
+// changes in turn (navigation for the link-only case). Any other observation,
+// including one with the same diagnostic codes, is not the recorded debt.
+for (const original of cases) test(`FG0 audit: ${original.id} recognizes its debt and no different cause`, async t => {
+  const c = structuredClone(original), evidence = await collectEvidence(t, c, check);
+  assert.equal(classifyCase(c, observeEvidence(c, evidence)), "known-defect");
+  const observed = changed => changed.rewritten ?? changed.result;
+  const edits = observed(evidence).gaps.map(({code}, index) => result => {
+    result.gaps[index].reason = code === "E340" ? "Untranslated dependency: Other"
+      : code === "E606" ? "Type mismatch: found Bool, expected Unit." : "An unrelated failure with the same diagnostic code";
   });
-  await assert.rejects(async () => classifyCase(c, await observeCase(t, c, otherCause)),
-    error => error.code === "ERR_ASSERTION" || /Unrecognized defect observation/.test(error.message));
-  if ([...cache.values()].some(checked => checked.result.gaps.some(g => g.code === "E340"))) {
-    const otherDependency = async (t, source) => changed(await cachedCheck(t, source), result => {
-      const dependency = result.gaps.find(g => g.code === "E340");
-      if (dependency) dependency.reason = "Untranslated dependency: Other";
-    });
-    await assert.rejects(async () => classifyCase(c, await observeCase(t, c, otherDependency)), /Unrecognized defect observation/);
+  if (!edits.length) edits.push(result => { result.links = result.links.map(link => ({...link, definitionStart: c.source.length})); });
+  for (const edit of edits) {
+    const changed = structuredClone(evidence);
+    edit(observed(changed));
+    assert.throws(() => classifyCase(c, observeEvidence(c, changed)), /Unrecognized defect observation/);
   }
 });
 
-// Supported source variants check real clients. They establish that the
-// acceptance predicate is reachable, without claiming to fix the original bug.
-const supported = {
-  G2: c => { c.source = c.source.replace("op(A : U0, x : A) : M", "op(x : M) : M"); },
-  G4: natMotive,
-  "G4-flat": natMotive,
-  G9: c => {
-    const scope = "law l(z : M) : k(z) = op(z, z);";
-    c.source = c.source.replace(c.observations.scope, scope);
-    c.observations = {...c.observations, scope, label: "z"};
-  },
-  G11: renameParameter,
-  "G11-grouped-dependent": renameParameter,
-  "G11-inherited": renameParameter,
-  "G11-initial": renameParameter,
-  G12: nonrecursive,
-  "G12-inherited": nonrecursive,
-  "G12-initial": nonrecursive,
-  "G12-shadowed": c => { c.source = c.source.replace("twice(iter : Nat -> M, n : Nat) : M := op(iter(n))", "twice(local : Nat -> M, n : Nat) : M := op(local(n))"); },
-};
-function natMotive(c) {
-  c.source = c.source.replace("import hlevels;", "import hlevels; import nat;")
-    .replace(/def value[^;]+(?:;[^}]+)*?};/, declaration => declaration
-      .replace(": M :=", ": Nat :=").replace(/\bop\(/g, "succ(").replace(/\bc\b/g, "zero"))
-    .replaceAll("S.op(S.op(S.c))", "succ(succ(zero))").replaceAll("S.op(S.c)", "succ(zero)").replaceAll("= S.c {", "= zero {");
-}
-function renameParameter(c) {
-  c.source = c.source.replace(/def kk\([^;]+;/, declaration => declaration.replace(/\bc\b/g, "z"));
-}
-function nonrecursive(c) {
-  c.source = c.source.replace("match n { zero => c; succ(k) => op(iter(k)); }", "match n { zero => c; succ(k) => match k { zero => op(c); succ(j) => op(op(c)); }; }");
-}
-for (const [id, transform] of Object.entries(supported)) test(`FG0 audit: ${id} accepts a supported source control`, async t => {
-  const c = fixture(id); transform(c);
-  passes(c, await observeCase(t, c, check));
-});
-
+// Each case's accepted observation: a supported source checked by the compiler,
+// or an observer result layered over real checked outputs. Observer edits test
+// the acceptance boundary; they do not establish that the compiler is fixed.
 const duplicates = {
   G1: "inductive N : U0 { c; }\n",
   "G1-initial": "initial N : Monoid(U0);\n",
   "G1-reverse": "def N : Unit := tt;\n",
   "G1-same-kind": "def N : U0 := Unit;\n",
 };
-for (const [id, duplicate] of Object.entries(duplicates)) test(`FG0 audit: ${id} accepts preserved bindings and rejects a lost client`, async t => {
-  const c = fixture(id);
-  const original = await check(t, c.source.replace(duplicate, ""));
-  const clientGaps = Object.entries(c.refusedClients ?? {}).map(([name, {code}]) => `${name} ${code}`).sort();
-  assert.deepEqual(original.result.gaps.map(g => `${g.name} ${g.code}`).sort(), clientGaps);
-  // The refusal is synthetic; original bindings and every client verdict are
-  // real compiler results. Negative clients compose with the duplicate itself.
-  const corrected = changed(original, result => result.gaps.push({name: "N", code: "E604", reason: "Duplicate declaration: N"}));
-  passes(c, await observeCase(t, c, async () => corrected));
-  for (const client of Object.keys(c.refusedClients ?? {})) await refusesReasons(t, c, corrected, client, [
-    "Untranslated name: Unrelated",
-    "An unrelated failure with the same diagnostic code",
-  ]);
-  const lost = changed(corrected, result => { result.outputs = result.outputs.filter(o => o.name !== c.clients[0]); });
-  refuses(c, await observeCase(t, c, async () => lost));
+async function preservedBinding(t, c) {
+  const {result} = await check(t, c.source.replace(duplicates[c.id], ""));
+  // Without the duplicate only the refused clients fail. The duplicate's
+  // refusal is synthetic; bindings and client verdicts are real.
+  assert.deepEqual(result.gaps.map(g => `${g.name} ${g.code}`).sort(),
+    Object.entries(c.refusedClients ?? {}).map(([name, {code}]) => `${name} ${code}`).sort());
+  result.gaps.push({name: "N", code: "E604", reason: "Duplicate declaration: N"});
+  return {result};
+}
+// Spans state the specification independently of the fixture's anchors.
+const reference = (source, scope, text) => {
+  const start = source.indexOf(scope) + scope.lastIndexOf(text);
+  return {start, end: start + text.length};
+};
+const acceptedEvidence = {
+  ...Object.fromEntries(Object.entries(supportedSources).map(([id, transform]) =>
+    [id, (t, c) => { transform(c); return collectEvidence(t, c, check); }])),
+  ...Object.fromEntries(Object.keys(duplicates).map(id => [id, preservedBinding])),
+  G3: async (t, c) => {
+    const {result} = await check(t, c.source);
+    result.outputs = result.outputs.filter(o => !/^T\.(Hom|Iso)(\.|$)/.test(o.name));
+    // The fixing compiler's wording; other focused wordings are tested below.
+    result.gaps = [{name: "unsupported", code: "E817",
+      reason: "T's models have no homomorphisms: its op's argument p depends on law l, whose transport and composition are not generated."}];
+    return {result};
+  },
+  G5: (t, c) => collectEvidence(t, c, check, () => []),
+  "G5-single": (t, c) => collectEvidence(t, c, check, () => []),
+  G6: async (t, c) => {
+    const {result} = await check(t, c.source);
+    Object.assign(result.gaps.find(g => g.name === "C"), {code: "E340", reason: "Untranslated dependency: P at 3:8"});
+    return {result};
+  },
+  G8: async (t, c) => {
+    const {result} = await check(t, c.source);
+    Object.assign(result.gaps[0], {code: "E606", reason: "Type mismatch: found t1 = t1, expected t0 = t1.",
+      ...reference(c.source, c.diagnostic.scope, "t1")});
+    return {result};
+  },
+  G10: async (t, c) => {
+    const {result} = await check(t, c.source), start = c.source.indexOf("succ(c) =>") + "succ(".length;
+    Object.assign(result.gaps[0], {start, end: start + 1});
+    return {result};
+  },
+  "G12-range": async (t, c) => {
+    const {result} = await check(t, c.source);
+    Object.assign(result.gaps[0], reference(c.source, c.diagnostic.scope, "iter"));
+    return {result};
+  },
+};
+test("FG0 audit: every case has an accepted observation", () => {
+  assert.deepEqual(Object.keys(acceptedEvidence).sort(), cases.map(c => c.id).sort());
+});
+// Every requirement carries its own plausible wrong results. Each must violate
+// that requirement and be refused once the defect record is removed and in
+// strict mode, so a deleted or weakened check fails here after activation.
+for (const original of cases) test(`FG0 audit: ${original.id} accepts its supported observation and rejects each requirement's counterexamples`, async t => {
+  const c = structuredClone(original), evidence = await acceptedEvidence[c.id](t, c);
+  passes(c, observeEvidence(c, evidence));
+  for (const [requirement, breaks] of counterexamples(c, evidence)) {
+    assert.ok(breaks.length, `${c.id}: ${requirement} needs a counterexample`);
+    for (const {name, apply} of breaks) {
+      const broken = structuredClone(evidence);
+      apply(broken);
+      const observation = observeEvidence(c, broken);
+      assert.equal(observation.requirements[requirement], false, `${c.id}: ${name} must violate ${requirement}`);
+      refuses(c, observation);
+    }
+  }
+});
+
+// Permitted alternatives and reported counterexamples beyond the generic ones.
+test("FG0 audit: G3 accepts other focused refusal wordings", async t => {
+  const c = fixture("G3"), evidence = await acceptedEvidence.G3(t, c);
+  for (const reason of ["op parameter p has unsupported transport through law l", "Cannot derive op: p depends on l"])
+    passes(c, observe(c, evidence, result => { result.gaps[0].reason = reason; }));
+});
+test("FG0 audit: G6 permits an attached cause but requires the actual parent", async t => {
+  const c = fixture("G6"), evidence = await acceptedEvidence.G6(t, c);
+  const child = reason => result => { result.gaps.find(g => g.name === "C").reason = reason; };
+  passes(c, observe(c, evidence, child("Untranslated dependency: P (P failed: Untranslated name: Undefined at 2:8) at 3:8")));
+  for (const reason of ["Untranslated dependency: Q (Q failed: P at 2:8) at 3:8", "Untranslated name: P at 3:8"])
+    refuses(c, observe(c, evidence, child(reason)));
+  refuses(c, observe(c, evidence, result => { result.gaps.find(g => g.name === "P").reason = "Untranslated name: Other (mentions Undefined)"; }));
+});
+for (const id of ["G8", "G12-range"]) test(`FG0 audit: ${id} accepts the reference and wider spans within its scope`, async t => {
+  const c = fixture(id), evidence = await acceptedEvidence[id](t, c), {scope} = c.diagnostic;
+  const text = id === "G8" ? "t1" : "iter", token = reference(c.source, scope, text), start = c.source.indexOf(scope);
+  const valid = [[token.start, token.end], [start, start + scope.length]];
+  if (id === "G12-range") valid.push([token.start, token.start + "iter(n)".length]);
+  for (const [start, end] of valid) passes(c, observe(c, evidence, result => Object.assign(result.gaps[0], {start, end})));
+});
+test("FG0 audit: G10 accepts the binder, the helper call or the whole conflicting clause", async t => {
+  const c = fixture("G10"), evidence = await acceptedEvidence.G10(t, c), {conflict} = c.diagnostic;
+  const at = c.source.indexOf(conflict), binder = at + "succ(".length, call = at + conflict.indexOf("k(c)");
+  for (const [start, end] of [[binder, binder + 1], [call, call + "k(c)".length], [at, at + conflict.length]])
+    passes(c, observe(c, evidence, result => Object.assign(result.gaps[0], {start, end})));
 });
 
 // These programs establish the observable API independently of absentOutputs.
@@ -144,163 +171,90 @@ for (const [id, declaration, clients, outputs] of [
     assert.deepEqual(positive.get(client).axioms, []);
     assert.ok(!positive.result.outputs.some(output => output.name === name), `${name} is not an output`);
   }
-  const c = fixture(id), original = await check(t, c.source.replace(duplicates[id], ""));
-  const corrected = changed(original, result => result.gaps.push({name: "N", code: "E604", reason: "Duplicate declaration: N"}));
-  passes(c, await observeCase(t, c, async () => corrected));
+  const c = fixture(id), evidence = await preservedBinding(t, c);
+  passes(c, observeEvidence(c, evidence));
   // Replay each real client verdict into the observer control. This represents
   // a leaked binding without inventing an output for the constructor itself.
   for (const client of Object.keys(clients)) {
-    const leaked = changed(corrected, result => {
+    const observation = observe(c, evidence, result => {
       result.outputs = result.outputs.map(output => output.name === client ? positive.get(client) : output);
       result.gaps = result.gaps.filter(gap => gap.name !== client);
     });
-    const observation = await observeCase(t, c, async () => leaked);
     assert.equal(observation.facts.clients[client], "checked");
-    assert.equal(observation.requirements.outputsAbsent, true, "name availability has its own observer");
+    assert.equal(observation.requirements.outputsAbsent ?? true, true, "name availability has its own observer");
     refuses(c, observation);
   }
   for (const name of outputs) {
-    const leaked = changed(corrected, result => result.outputs.push(positive.get(name)));
-    const observation = await observeCase(t, c, async () => leaked);
+    const observation = observe(c, evidence, result => { result.outputs.push(positive.get(name)); });
     assert.equal(observation.requirements.refusedClients, true, "output absence has its own observer");
     refuses(c, observation);
   }
 });
-
 test("FG0 audit: collision, name and equation refusals compose with per-client codes", async t => {
   const c = fixture("G1");
   c.source += "\ndef wrong : Unit := Unit;";
   c.refusedClients.wrong = {code: "E606"};
-  const original = await check(t, c.source.replace(duplicates.G1, ""));
-  const corrected = changed(original, result => result.gaps.push({name: "N", code: "E604", reason: "Duplicate declaration: N"}));
-  passes(c, await observeCase(t, c, async () => corrected));
-  for (const modify of [
+  const evidence = await preservedBinding(t, c);
+  passes(c, observeEvidence(c, evidence));
+  for (const edit of [
     result => { for (const gap of result.gaps) if (gap.name !== "N") gap.code = gap.code === "E343" ? "E606" : "E343"; },
-    result => result.gaps.push({name: "unrelated", code: "E343", reason: "Untranslated name: absent"}),
-    result => result.gaps.push({...result.gaps.find(g => g.name === "leaked_c")}),
+    result => { result.gaps.push({name: "unrelated", code: "E343", reason: "Untranslated name: absent"}); },
+    result => { result.gaps.push({...result.gaps.find(g => g.name === "leaked_c")}); },
     result => { result.gaps = result.gaps.filter(g => g.name !== "leaked_c"); },
     result => { result.outputs = result.outputs.filter(output => output.name !== "leaked_c"); },
-  ]) refuses(c, await observeCase(t, c, async () => changed(corrected, modify)));
+  ]) refuses(c, observe(c, evidence, edit));
 });
-
-test("FG0 audit: G3 accepts focused refusals and rejects a leaked family", async t => {
-  const c = fixture("G3"), original = await check(t, c.source);
-  for (const reason of ["op parameter p has unsupported transport through law l", "Cannot derive op: p depends on l"]) {
-    const corrected = changed(original, result => {
-      result.outputs = result.outputs.filter(o => !/^T\.(Hom|Iso)(\.|$)/.test(o.name));
-      result.gaps = [{name: "unsupported", code: "E817", reason}];
-    });
-    passes(c, await observeCase(t, c, async () => corrected));
-    const leaked = changed(corrected, result => result.outputs.push(original.get("T.Hom")));
-    refuses(c, await observeCase(t, c, async () => leaked));
-  }
-});
-
-for (const id of ["G5", "G5-single"]) test(`FG0 audit: ${id} binds its rewrite to actual advice`, async t => {
+for (const id of ["G5", "G5-single"]) test(`FG0 audit: ${id} applies its rewrite only for identified advice`, async t => {
   const c = fixture(id), original = await check(t, c.source);
-  passes(c, await observeCase(t, c, async () => original, () => []));
-  for (const mutate of [
+  const changes = [
     warning => ({...warning, message: "x is unused in the body: rename it _x."}),
     warning => ({...warning, declaration: "unrelated"}),
     warning => ({...warning, start: 0, end: 1}),
-  ]) {
+  ];
+  const lints = [...changes.map(change => source => lint(source).map(change)), ...id === "G5" ? [source => lint(source).slice(0, 1)] : []];
+  for (const lintSource of lints) {
     let checks = 0;
-    const observation = await observeCase(t, c, async () => { checks++; return original; }, source => lint(source).map(mutate));
+    const evidence = await collectEvidence(t, c, async () => { checks++; return original; }, lintSource);
     assert.equal(checks, 1, "unrecognized advice must not apply the assumed rewrite");
+    const observation = observeEvidence(c, evidence);
     assert.throws(() => classifyCase(c, observation), /Unrecognized defect observation/);
     refuses(c, observation);
   }
-  if (id === "G5") {
-    const partial = await observeCase(t, c, async () => original, source => lint(source).slice(0, 1));
-    assert.throws(() => classifyCase(c, partial), /Unrecognized defect observation/);
-  }
 });
 
-test("FG0 audit: G6 permits an attached cause but requires the actual parent", async t => {
-  const c = fixture("G6"), original = await check(t, c.source);
-  for (const reason of ["Untranslated dependency: P at 3:8",
-    "Untranslated dependency: P (P failed: Untranslated name: Undefined at 2:8) at 3:8"]) {
-    const corrected = changed(original, result => Object.assign(result.gaps.find(g => g.name === "C"), {code: "E340", reason}));
-    passes(c, await observeCase(t, c, async () => corrected));
-    await refusesReasons(t, c, corrected, "C", [
-      "Untranslated dependency: Parent",
-      "Untranslated dependency: Q (Q failed: P at 2:8) at 3:8",
-      "Untranslated name: P at 3:8",
-      "An unrelated failure with the same diagnostic code",
-    ]);
-    const wrongParent = changed(corrected, result => {
-      result.gaps.find(g => g.name === "P").reason = "Untranslated name: Other (mentions Undefined)";
-    });
-    await assert.rejects(observeCase(t, c, async () => wrongParent), /parent must report its original cause/);
-  }
-});
-
-for (const id of ["G8", "G12-range"]) test(`FG0 audit: ${id} accepts token and wider spans and rejects a nearby token`, async t => {
-  const c = fixture(id), original = await check(t, c.source), {diagnostic: d} = c;
-  // These examples state the specification independently of the fixture's
-  // token/endpoint expectations, so a wrong fixture cannot redefine success.
-  const reference = id === "G8" ? "t1" : "iter";
-  const scope = c.source.indexOf(d.scope), token = scope + d.scope.lastIndexOf(reference);
-  const valid = [[token, token + reference.length], [scope, scope + d.scope.length]];
-  if (id === "G12-range") valid.push([token, token + "iter(n)".length]);
-  const at = (start, end, swapped = false) => changed(original, result => Object.assign(result.gaps[0], {
-    code: d.code, start, end,
-    ...(id === "G8" ? {reason: swapped
-      ? "Type mismatch: found t0 = t1, expected t1 = t1."
-      : "Type mismatch: found t1 = t1, expected t0 = t1."} : {}),
-  }));
-  for (const [start, end] of valid) passes(c, await observeCase(t, c, async () => at(start, end)));
-  await refusesReasons(t, c, at(token, token + reference.length), d.name, [
-    "An unrelated failure with the same diagnostic code",
-    ...(id === "G8" ? [
-      "Type mismatch: found t0 = t1, expected t1 = t1.",
-      "Type mismatch: found Bool, expected t0 = t1.",
-      "Type mismatch: found t1 = t1, expected Unit.",
-    ] : [
-      "other is recursive, and a field's type cannot unfold it: forbidden",
-      "iter is recursive, but this is an unrelated context",
-    ]),
-  ]);
-  for (const [start, end] of [[token, token], [scope, scope + 1], [0, c.source.length]])
-    refuses(c, await observeCase(t, c, async () => at(start, end)));
-  if (id === "G8") refuses(c, await observeCase(t, c, async () => at(token, token + reference.length, true)));
-});
-
-test("FG0 audit: G10 accepts either conflict origin and rejects an unrelated origin", async t => {
-  const c = fixture("G10"), original = await check(t, c.source), {diagnostic: d} = c;
-  const conflict = c.source.indexOf(d.conflict), binder = conflict + "succ(".length;
-  const call = conflict + d.conflict.indexOf(d.call);
-  const at = (start, end) => changed(original, result => Object.assign(result.gaps[0], {start, end}));
-  for (const [start, end] of [[binder, binder + 1], [call, call + d.call.length], [conflict, conflict + d.conflict.length]])
-    passes(c, await observeCase(t, c, async () => at(start, end)));
-  refuses(c, await observeCase(t, c, async () => at(conflict, conflict + 1)));
-  await refusesReasons(t, c, at(binder, binder + 1), "T", [
-    "An unrelated failure with the same diagnostic code",
-    "Inlining other here would capture its field c: conflict",
-    "Inlining k here would capture its field other: conflict",
-  ]);
-});
-
-for (const [id, mutate] of [
-  ["G10", c => { delete c.diagnostic.cause; }],
-  ["G10", c => { delete c.diagnostic.cause.field; }],
-  ["G12-range", c => { delete c.diagnostic.cause; }],
-  ["G12-range", c => { c.diagnostic.cause = {recursive: "iter", contex: "field type"}; }],
-  ["G1", c => { delete c.refusedClients.leaked_c.cause; }],
-  ["G1-initial", c => { c.refusedClients.leaked_one = "E343"; }],
-]) test(`FG0 audit: ${id} rejects incomplete diagnostic expectations before checking`, async t => {
+for (const [id, mutation, mutate] of [
+  ["G10", "without its cause", c => { delete c.diagnostic.cause; }],
+  ["G10", "without its captured field", c => { delete c.diagnostic.cause.field; }],
+  ["G12-range", "without its cause", c => { delete c.diagnostic.cause; }],
+  ["G12-range", "with a misspelled cause field", c => { c.diagnostic.cause = {recursive: "iter", contex: "field type"}; }],
+  ["G1", "without its constructor's cause", c => { delete c.refusedClients.leaked_c.cause; }],
+  ["G1-initial", "with a bare refusal code", c => { c.refusedClients.leaked_one = "E343"; }],
+  ["G3", "without its refusal words", c => { delete c.refusalWords; }],
+]) test(`FG0 audit: ${id} ${mutation} is rejected before checking`, async t => {
   const c = fixture(id); mutate(c);
   let checks = 0;
   await assert.rejects(observeCase(t, c, async () => { checks++; }), {code: "ERR_ASSERTION"});
   assert.equal(checks, 0);
 });
 
-test("FG0 audit: every case has an acceptance control and the manifest preserves group ownership", async () => {
-  const ids = [...Object.keys(supported), ...Object.keys(duplicates), "G3", "G5", "G5-single", "G6", "G8", "G10", "G12-range"];
-  assert.deepEqual(ids.sort(), cases.map(c => c.id).sort());
-  const manifest = await readFile(new URL("./fixtures/frontend-generation.md", import.meta.url), "utf8");
-  validateCoverage(manifest, cases);
-  assert.throws(() => validateCoverage(manifest.replace("| `G12-range` | G12 |", "| `G12-range` | G11 |"), cases), /coverage matrix/);
+test("FG0 audit: diagnostic matching is complete and independent of expectation order", () => {
+  const actual = [{name: "x", code: "E606", reason: "Type mismatch: found A, expected B."},
+    {name: "x", code: "E606", reason: "Type mismatch: found C, expected D."}];
+  const any = {name: "x", code: "E606"}, exact = {name: "x", code: "E606", cause: {found: "A", expected: "B"}};
+  assert.ok(matchesDiagnostics(actual, [any, exact]));
+  assert.ok(matchesDiagnostics(actual, [exact, any]));
+  assert.ok(!matchesDiagnostics(actual, [exact, exact]));
+  assert.ok(!matchesDiagnostics(actual, [any]));
+  assert.ok(!matchesDiagnostics(actual.slice(0, 1), [any, exact]));
+});
+test("FG0 audit: encoded causes decode to the same cause", () => {
+  for (const [code, fields] of Object.entries(causeFields)) {
+    const cause = Object.fromEntries(fields.map(field => [field, field === "context" ? "field type" : `some_${field}`]));
+    assert.deepEqual(diagnosticCause({code, reason: encodeCause(code, cause)}), cause, code);
+    assert.deepEqual(diagnosticCause({code, reason: `${encodeCause(code, cause)} at 3:8`}), cause, `${code} with a location`);
+  }
+  const other = {recursive: "iter", context: "a law's body"};
+  assert.deepEqual(diagnosticCause({code: "E845", reason: encodeCause("E845", other)}), other);
 });
 
 // These are semantic mutants of supported source controls. They keep the
@@ -308,10 +262,10 @@ test("FG0 audit: every case has an acceptance control and the manifest preserves
 // different boundary from changing a diagnostic on an already-failing case.
 for (const id of ["G4", "G4-flat", "G12-shadowed"])
   test(`FG0 audit: ${id} rejects a well-typed wrong computation`, async t => {
-    const c = fixture(id); supported[id](c);
+    const c = fixture(id); supportedSources[id](c);
     passes(c, await observeCase(t, c, check));
     if (id.startsWith("G4")) c.source = c.source.replace(/match n \{[^}]+\}/, "zero");
-    else if (id === "G12-shadowed") c.source = c.source.replace("op(local(n))", "op(c)");
+    else c.source = c.source.replace("op(local(n))", "op(c)");
     const observation = await observeCase(t, c, check);
     assert.equal(observation.facts.clients[id === "G12-shadowed" ? "captured" : "wrong"], "checked");
     assert.deepEqual(observation.facts.gaps, id === "G4" ? ["computation E606", "off_computation E606"] : [`${id === "G12-shadowed" ? "intended" : "computation"} E606`]);
@@ -331,8 +285,6 @@ for (const id of ["G12", "G12-inherited", "G12-initial"])
   ]) test(`FG0 audit: ${id} rejects ${name}`, async t => {
     const c = fixture(id), recursive = "match n { zero => c; succ(k) => op(iter(k)); }";
     sourceAnchor(c.source, recursive, "recursive body");
-    const control = structuredClone(c); nonrecursive(control);
-    passes(control, await observeCase(t, control, check));
     c.source = c.source.replace(recursive, body);
     const observation = await observeCase(t, c, check);
     assert.deepEqual(observation.facts.gaps, gaps);
@@ -361,18 +313,33 @@ test("FG0 audit: repeated inner tokens require an explicit occurrence", () => {
   assert.throws(() => validateFixture(c), /diagnostic token must occur once/);
 });
 
-test("FG0 audit: requirements survive deletion of both a case and its manifest row", async () => {
+test("FG0 audit: the manifest preserves group ownership", async () => {
+  const manifest = await readFile(new URL("./fixtures/frontend-generation.md", import.meta.url), "utf8");
+  validateCoverage(manifest, cases);
+  assert.throws(() => validateCoverage(manifest.replace("| `G12-range` | G12 |", "| `G12-range` | G11 |"), cases), /coverage matrix/);
+});
+test("FG0 audit: requirements survive deletion of a case, its manifest row or its requirement", async () => {
   const manifest = await readFile(new URL("./fixtures/frontend-generation.md", import.meta.url), "utf8");
   const removed = cases.filter(c => c.id !== "G12-shadowed");
   const matchingManifest = manifest.replace(/^\| `G12-shadowed`[^\n]*\n/m, "");
   assert.throws(() => validateCoverage(matchingManifest, removed), /lexical-shadowing: missing witness G12-shadowed/);
-  for (const [id, field, error] of [["G1-initial", "absentOutputs", /output requirement/], ["G1", "refusedClients", /name-availability witness/], ["G12", "refusedClients", /wrong-equation witness/]]) {
-    const weakened = structuredClone(cases); delete weakened.find(c => c.id === id)[field];
+  const weakens = (id, edit, error) => {
+    const weakened = structuredClone(cases);
+    edit(weakened.find(c => c.id === id));
     assert.throws(() => validateObligations(weakened), error);
-  }
-  for (const id of ["G12", "G12-inherited", "G12-initial"]) {
-    const weakened = structuredClone(cases), c = weakened.find(c => c.id === id);
-    c.clients = c.clients.filter(name => name !== "computation2");
-    assert.throws(() => validateObligations(weakened), /recursive-result witness computation2/);
-  }
+  };
+  // A witness whose requirement no longer applies fails the mapping check.
+  weakens("G1-initial", c => { delete c.absentOutputs; }, /atomic-publication: G1-initial must check outputsAbsent/);
+  weakens("G1", c => { delete c.refusedClients; }, /name-availability: G1 must check refusedClients/);
+  weakens("G12", c => { delete c.refusedClients; }, /recursive-step: G12 must check refusedClients/);
+  for (const [id, error] of [["G9", /G9 must check links/], ["G8", /G8 must check range/], ["G3", /G3 must check refusals/], ["G5", /G5 must check advice/]])
+    weakens(id, c => { c.kind = "completion"; }, error);
+  // Independently stated witnesses survive a weakened but applicable requirement.
+  weakens("G1-initial", c => { c.absentOutputs = ["N.model", "N.fold_map"]; }, /G1-initial: missing output requirement N.fold/);
+  weakens("G1-initial", c => { delete c.refusedClients.leaked_mul; }, /G1-initial: missing name-availability witness leaked_mul/);
+  weakens("G2", c => { c.refusedClients.lowered = {code: "E606"}; }, /G2: missing universe-lowering witness/);
+  weakens("G2", c => { c.clients = c.clients.filter(name => name !== "preserves"); }, /G2: missing public-type witness preserves/);
+  weakens("G12", c => { c.refusedClients.wrong.code = "E604"; }, /G12: missing wrong-equation witness/);
+  for (const id of ["G12", "G12-inherited", "G12-initial"])
+    weakens(id, c => { c.clients = c.clients.filter(name => name !== "computation2"); }, new RegExp(`${id}: missing recursive-result witness computation2`));
 });

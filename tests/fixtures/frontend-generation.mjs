@@ -9,7 +9,7 @@ def leaked_c := c;
 def original : Unit := N;
 def independent : Unit := tt;`,
     clients: ["original", "independent"],
-    originalType: "Unit", symbol: "N", invariantClients: ["independent"], absentOutputs: [],
+    originalType: "Unit", symbol: "N", absentOutputs: [],
     refusedClients: {leaked_c: {code: "E343", cause: {untranslated: "c"}}},
   },
   G2: {
@@ -20,11 +20,22 @@ def identity(S : T(U0)) : T.Hom(S, S) := T.Hom.id(S);
 def computation(S : T(U0), x : S.M) :
   T.Hom.compose(identity(S), identity(S)).map(x) = x { rfl; }
 def iso(S : T(U0)) : T.Iso(S, S) := T.Iso.id(S);
+def preserves(S, R : T(U0), f : T.Hom(S, R), A : U0, x : A) :
+  f.map(S.op(A, x)) = R.op(A, x) := f.map_op(A, x);
+def level(S : T(U0)) : U1 := T.Hom(S, S);
+def lowered(S : T(U0)) : U0 := T.Hom(S, S);
 def identity_u1(S : T(U1)) : T.Hom(S, S) := T.Hom.id(S);
 def computation_u1(S : T(U1), x : S.M) :
   T.Hom.compose(identity_u1(S), identity_u1(S)).map(x) = x { rfl; }
-def iso_u1(S : T(U1)) : T.Iso(S, S) := T.Iso.id(S);`,
-    clients: ["T.Hom", "identity", "computation", "iso", "identity_u1", "computation_u1", "iso_u1"],
+def iso_u1(S : T(U1)) : T.Iso(S, S) := T.Iso.id(S);
+def preserves_u1(S, R : T(U1), f : T.Hom(S, R), A : U0, x : A) :
+  f.map(S.op(A, x)) = R.op(A, x) := f.map_op(A, x);
+def level_u1(S : T(U1)) : U1 := T.Hom(S, S);`,
+    // The fixed domain's operation keeps its preservation field, and the
+    // public Hom type lives in U1: a blanket larger universe or lowering fails.
+    clients: ["T.Hom", "identity", "computation", "iso", "preserves", "level",
+      "identity_u1", "computation_u1", "iso_u1", "preserves_u1", "level_u1"],
+    refusedClients: {lowered: {code: "E606", cause: {found: "U1", expected: "U0"}}},
   },
   G3: {
     phase: "FG2", contract: "unsupported law-dependent transport leaves a usable theory and no partial Hom family",
@@ -298,7 +309,7 @@ const knownDefects = {
     "forbiddenOutputs": []
   },
   "G2": {
-    "dependencies": [["T.Hom", ["T.Hom.compose", "T.Hom.id", "T.Hom.make", "T.Hom.map", "T.Hom.map_op", "T.Iso", "T.Iso.make", "identity", "identity_u1"]], ["T.Hom.compose", ["computation", "computation_u1"]], ["T.Iso", ["T.Iso.compose", "T.Iso.from", "T.Iso.from_to", "T.Iso.id", "T.Iso.inverse", "T.Iso.to", "T.Iso.to_from", "iso", "iso_u1"]]],
+    "dependencies": [["T.Hom", ["T.Hom.compose", "T.Hom.id", "T.Hom.make", "T.Hom.map", "T.Hom.map_op", "T.Iso", "T.Iso.make", "identity", "identity_u1", "level", "level_u1", "lowered", "preserves", "preserves_u1"]], ["T.Hom.compose", ["computation", "computation_u1"]], ["T.Iso", ["T.Iso.compose", "T.Iso.from", "T.Iso.from_to", "T.Iso.id", "T.Iso.inverse", "T.Iso.to", "T.Iso.to_from", "iso", "iso_u1"]]],
     "rootCauses": [["T.Hom", {"found": "max(U, max(V, U1))", "expected": "max(U, V)"}]],
     "gaps": [
       "T.Hom E606",
@@ -321,16 +332,26 @@ const knownDefects = {
       "identity E340",
       "identity_u1 E340",
       "iso E340",
-      "iso_u1 E340"
+      "iso_u1 E340",
+      "level E340",
+      "level_u1 E340",
+      "lowered E340",
+      "preserves E340",
+      "preserves_u1 E340"
     ],
     "clients": {
       "T.Hom": "refused",
       "identity": "refused",
       "computation": "refused",
       "iso": "refused",
+      "preserves": "refused",
+      "level": "refused",
       "identity_u1": "refused",
       "computation_u1": "refused",
-      "iso_u1": "refused"
+      "iso_u1": "refused",
+      "preserves_u1": "refused",
+      "level_u1": "refused",
+      "lowered": "refused"
     }
   },
   "G3": {
@@ -517,12 +538,12 @@ const knownDefects = {
     "gaps": ["T E845", "captured E340", "intended E340"],
     "clients": {"intended": "refused", "captured": "refused"}
   }
-
 };
+// Variants never share nested expectations with their group or each other.
 const caseOf = (group, variant = {}) => {
   const id = variant.id ?? group;
-  return {id, group: group === "G12-range" ? "G12" : group, kind: kinds[group],
-    ...definitions[group], ...variant, knownDefect: knownDefects[id]};
+  return structuredClone({id, group: group === "G12-range" ? "G12" : group, kind: kinds[group],
+    ...definitions[group], ...variant, knownDefect: knownDefects[id]});
 };
 export const cases = [
   ...Object.keys(definitions).map(group => caseOf(group)),
