@@ -86,21 +86,19 @@ def least_nonunit_divisor_irreducible(
       intro nonunitA;
       let na := polynomial_factor_nonzero_left(K, g, a, b, nonzero, equation);
       let nb := polynomial_factor_nonzero_right(K, g, a, b, nonzero, equation);
-      let ag :=
-        merely(
-          (exists q : Polynomial(K). g = polynomial_mul(K, a, q)),
-          typed((exists q : Polynomial(K). g = polynomial_mul(K, a, q)), (b, equation))
-        );
+      let ag := merely(
+        (exists q : Polynomial(K). g = polynomial_mul(K, a, q)),
+        typed((exists q : Polynomial(K). g = polynomial_mul(K, a, q)), (b, equation))
+      );
       let ap := polynomial_divides_trans(K, a, g, p, ag, divides);
       obtain (m, da) := polynomial_nonzero_degree(K, a, na);
       obtain (n, db) := polynomial_nonzero_degree(K, b, nb);
-      let dg :=
-        trans(
-          cong(polynomial_cutoff(K), equation), polynomial_product_degree(K, a, b, m, n, da, db)
-        );
+      let dg := trans(
+        cong(polynomial_cutoff(K), equation), polynomial_product_degree(K, a, b, m, n, da, db)
+      );
       let bound := least(a, typed(NonunitDivisor(K, p, a), (na, nonunitA, ap)));
       let numerical :=
-        along((fun (j : Nat) => le(succ(add_count(m, n)), j))) by da from along(
+        along ((fun (j : Nat) => le(succ(add_count(m, n)), j))) by da from along (
           (fun (j : Nat) => le(j, polynomial_cutoff(K, a)))
         ) by dg from bound;
       let zero := natural_sum_le_left_zero(m, n, numerical);
@@ -148,7 +146,7 @@ def polynomial_irreducible_factor(
       let ca := polynomial_cutoff(K, a);
       let wa :=
         merely(NonunitDivisorAt(K, p, ca), typed(NonunitDivisorAt(K, p, ca), (a, da, refl(ca))));
-      exact along((fun (j : Nat) => le(j, ca))) by sym(degree) from least(ca, wa);
+      exact along ((fun (j : Nat) => le(j, ca))) by sym(degree) from least(ca, wa);
     }
     obtain (nz, nu, divides) := divisor;
     exact (g, least_nonunit_divisor_irreducible(K, p, g, divisor, minimum), divides);
@@ -175,18 +173,16 @@ def polynomial_unit_cutoff(
     obtain (q, inverse_) := witness_;
     exact (q, sym(inverse_));
   }
-  let divides :=
-    mere_map(
-      (exists q : Polynomial(K). polynomial_mul(K, p, q) = polynomial_one(K)),
-      (exists q : Polynomial(K). polynomial_one(K) = polynomial_mul(K, p, q)), divideOne, unit
-    );
-  let bound :=
-    polynomial_divides_cutoff_le(
-      K, p, polynomial_one(K), nonzero, polynomial_one_not_zero(K), divides
-    );
+  let divides := mere_map(
+    (exists q : Polynomial(K). polynomial_mul(K, p, q) = polynomial_one(K)),
+    (exists q : Polynomial(K). polynomial_one(K) = polynomial_mul(K, p, q)), divideOne, unit
+  );
+  let bound := polynomial_divides_cutoff_le(
+    K, p, polynomial_one(K), nonzero, polynomial_one_not_zero(K), divides
+  );
   obtain (d, degree) := polynomial_nonzero_degree(K, p, nonzero);
   let numerical :=
-    along((fun (j : Nat) => le(succ(d), j))) by polynomial_one_cutoff(K) from along(
+    along ((fun (j : Nat) => le(succ(d), j))) by polynomial_one_cutoff(K) from along (
       (fun (j : Nat) => le(j, polynomial_cutoff(K, polynomial_one(K))))
     ) by degree from bound;
   let zero := dimension_order_antisymmetric(d, 0, numerical, tt);

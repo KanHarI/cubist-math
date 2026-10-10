@@ -46,36 +46,29 @@ def complex_box_mul_rectangle(
   let b := complex_imag(F, z);
   let c := complex_real(F, w);
   let d := complex_imag(F, w);
-  let ac :=
-    field_magnitude_mul(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, a, c, delta, r, zr, wr
-    );
-  let bd :=
-    field_magnitude_mul(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, b, d, delta, s, zi, wi
-    );
-  let ad :=
-    field_magnitude_mul(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, a, d, delta, s, zr, wi
-    );
-  let bc :=
-    field_magnitude_mul(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, b, c, delta, r, zi, wr
-    );
-  let minusBd :=
-    field_magnitude_neg(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, mulF(b, d), mulF(delta, s), bd
-    );
-  let realBound :=
-    field_magnitude_add(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, mulF(a, c), negF(mulF(b, d)),
-      mulF(delta, r), mulF(delta, s), ac, minusBd
-    );
-  let imagBound :=
-    field_magnitude_add(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, mulF(a, d), mulF(b, c),
-      mulF(delta, s), mulF(delta, r), ad, bc
-    );
+  let ac := field_magnitude_mul(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, a, c, delta, r, zr, wr
+  );
+  let bd := field_magnitude_mul(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, b, d, delta, s, zi, wi
+  );
+  let ad := field_magnitude_mul(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, a, d, delta, s, zr, wi
+  );
+  let bc := field_magnitude_mul(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, b, c, delta, r, zi, wr
+  );
+  let minusBd := field_magnitude_neg(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, mulF(b, d), mulF(delta, s), bd
+  );
+  let realBound := field_magnitude_add(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, mulF(a, c), negF(mulF(b, d)),
+    mulF(delta, r), mulF(delta, s), ac, minusBd
+  );
+  let imagBound := field_magnitude_add(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, mulF(a, d), mulF(b, c),
+    mulF(delta, s), mulF(delta, r), ad, bc
+  );
   exact (
     along FieldMagnitudeBound(F, negF, lt, addF(mulF(a, c), negF(mulF(b, d)))) by sym(
       ring_distribute(F, zero, one, addF, mulF, negF, ring, delta, r, s)

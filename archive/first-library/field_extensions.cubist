@@ -88,7 +88,9 @@ def extension_preserved_identity(K : AlgebraicField, A : U0, a : ExtensionData(K
   );
 }
 
-def extension_data_path(K : AlgebraicField, A : U0, setA : IsSet(U0, A), a, b : FieldData(A), p : a = b) :
+def extension_data_path(
+  K : AlgebraicField, A : U0, setA : IsSet(U0, A), a, b : FieldData(A), p : a = b
+) :
   forall e : FieldEmbeddingData(K, A, a). forall d : FieldEmbeddingData(K, A, b).
   (
     forall k : af_carrier(K).
@@ -132,10 +134,9 @@ def extension_preserved_reflect(
 ) :
   a = b {
   obtain (fieldMap, fixesBase) := preserves;
-  let firstPath :=
-    field_preserved_reflect(
-      A, setA, extension_field_data(K, A, a), extension_field_data(K, A, b), fieldMap
-    );
+  let firstPath := field_preserved_reflect(
+    A, setA, extension_field_data(K, A, a), extension_field_data(K, A, b), fieldMap
+  );
   exact trans(
     sym(sigma_eta(FieldData(A), FieldEmbeddingData(K, A), a)),
     trans(
@@ -165,10 +166,9 @@ def extension_iso_forward(K : AlgebraicField, E, F : FieldExt(K), e : ExtensionI
   exact structure_iso_forward(ExtensionData(K), ExtensionPreserved(K), E, F, e);
 }
 
-def extension_identity_iso(K : AlgebraicField, E : FieldExt(K)) :=
-  structure_identity_iso(
-    ExtensionData(K), ExtensionPreserved(K), extension_preserved_identity(K), E
-  );
+def extension_identity_iso(K : AlgebraicField, E : FieldExt(K)) := structure_identity_iso(
+  ExtensionData(K), ExtensionPreserved(K), extension_preserved_identity(K), E
+);
 
 def extension_path_iso(K : AlgebraicField, E, F : FieldExt(K), p : E = F) : ExtensionIso(K, E, F) {
   exact structure_equality_iso(
@@ -228,9 +228,8 @@ def galois_automorphisms_are_loops(K : AlgebraicField, E : FieldExt(K)) :
 }
 
 // Forget the embedding, retaining the complete ambient field structure.
-def extension_field(K : AlgebraicField, E : FieldExt(K)) :=
-  structure_object(
-    FieldData, extension_carrier(K, E),
-    extension_field_data(K, extension_carrier(K, E), structure_data(ExtensionData(K), E)),
-    structure_set(ExtensionData(K), E)
-  );
+def extension_field(K : AlgebraicField, E : FieldExt(K)) := structure_object(
+  FieldData, extension_carrier(K, E),
+  extension_field_data(K, extension_carrier(K, E), structure_data(ExtensionData(K), E)),
+  structure_set(ExtensionData(K), E)
+);

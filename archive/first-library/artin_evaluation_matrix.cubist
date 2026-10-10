@@ -264,11 +264,10 @@ def coordinate_nontrivial_implication_witness(
   let F := linear_map(K, C, D, f);
   let P := F(a) = vector_zero(K, D);
   let Q := a = vector_zero(K, C);
-  let vanishes : P :=
-    double_negation(
-      P, group_is_set(vector_group(K, D), F(a), vector_zero(K, D)),
-      (fun (no : P -> Void) => fails((fun (p : P) => absurd(no(p)))))
-    );
+  let vanishes : P := double_negation(
+    P, group_is_set(vector_group(K, D), F(a), vector_zero(K, D)),
+    (fun (no : P -> Void) => fails((fun (p : P) => absurd(no(p)))))
+  );
   let nonzero : Q -> Void {
     intro zero;
     exact fails((fun (p : P) => zero));
@@ -497,15 +496,13 @@ def embedding_evaluation_extend_independent(
   let C := CoordinateSpace(L, n);
   let rows := fun (j : Fin(m)) => embedding_evaluation_vector(K, L, n, maps, points(j));
   let old := family_linear(L, C, m, rows);
-  let Result :=
-    exists next_ : Fin(succ(m)) -> af_carrier(K).
-    LinearInjective(
-      L, CoordinateSpace(L, succ(m)), C,
-      family_linear(
-        L, C, succ(m),
-        (fun (j : Fin(succ(m))) => embedding_evaluation_vector(K, L, n, maps, next_(j)))
-      )
-    );
+  let Result := exists next_ : Fin(succ(m)) -> af_carrier(K). LinearInjective(
+    L, CoordinateSpace(L, succ(m)), C,
+    family_linear(
+      L, C, succ(m),
+      (fun (j : Fin(succ(m))) => embedding_evaluation_vector(K, L, n, maps, next_(j)))
+    )
+  );
   let extend :
     (
       exists x : af_carrier(K).

@@ -2,7 +2,9 @@ import nat;
 import artin_evaluation_matrix;
 use nat;
 
-def EmbeddingEvaluationFrame(K, L : AlgebraicField, n, m : Nat, maps : Fin(n) -> FieldEmbedding(K, L)) :=
+def EmbeddingEvaluationFrame(
+  K, L : AlgebraicField, n, m : Nat, maps : Fin(n) -> FieldEmbedding(K, L)
+) :=
   exists points : Fin(m) -> af_carrier(K).
   LinearInjective(
     L, CoordinateSpace(L, m), CoordinateSpace(L, n),
@@ -29,8 +31,8 @@ def embedding_evaluation_frame_build_step(
   forall m : Nat. forall maps : Fin(n) -> FieldEmbedding(K, L).
   PairwiseDistinctEmbeddings(K, L, n, maps) -> n = add_count(k, m)
   -> EmbeddingEvaluationFrame(K, L, n, m, maps)
-  -> Mere(EmbeddingEvaluationFrame(K, L, n, add_count(k, m), maps)), K, L : AlgebraicField,
-  n, m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+  -> Mere(EmbeddingEvaluationFrame(K, L, n, add_count(k, m), maps)), K, L : AlgebraicField, n,
+  m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
   distinct : PairwiseDistinctEmbeddings(K, L, n, maps), total : n = add_count(succ(k), m),
   frame : EmbeddingEvaluationFrame(K, L, n, m, maps)
 ) :
@@ -38,7 +40,7 @@ def embedding_evaluation_frame_build_step(
   obtain (points, independent) := frame;
   let tooSmall : le(n, m) -> Void {
     intro small;
-    let bound := along((fun (v : Nat) => le(v, m))) by total from small;
+    let bound := along ((fun (v : Nat) => le(v, m))) by total from small;
     exact successor_not_le_self(
       m, nat_le_trans(succ(m), add_count(succ(k), m), m, nat_le_add(k, m), bound)
     );
@@ -52,7 +54,7 @@ def embedding_evaluation_frame_build_step(
     exact mere_map(
       EmbeddingEvaluationFrame(K, L, n, add_count(k, succ(m)), maps), Final,
       (
-        fun (f : EmbeddingEvaluationFrame(K, L, n, add_count(k, succ(m)), maps)) => along(
+        fun (f : EmbeddingEvaluationFrame(K, L, n, add_count(k, succ(m)), maps)) => along (
           (fun (index : Nat) => EmbeddingEvaluationFrame(K, L, n, index, maps))
         ) by nat_add_succ(k, m) from f
       ), done
@@ -96,16 +98,14 @@ def distinct_embeddings_evaluation_basis(
     )
   ) {
   let Frame := fun (m : Nat) => EmbeddingEvaluationFrame(K, L, n, m, maps);
-  let atSum :=
-    embedding_evaluation_frame_build(
-      n, K, L, n, 0, maps, distinct, sym(nat_add_zero(n)),
-      embedding_evaluation_frame_zero(K, L, n, maps)
-    );
-  let atN :=
-    mere_map(
-      Frame(add_count(n, 0)), Frame(n),
-      (fun (f : Frame(add_count(n, 0))) => along Frame by nat_add_zero(n) from f), atSum
-    );
+  let atSum := embedding_evaluation_frame_build(
+    n, K, L, n, 0, maps, distinct, sym(nat_add_zero(n)),
+    embedding_evaluation_frame_zero(K, L, n, maps)
+  );
+  let atN := mere_map(
+    Frame(add_count(n, 0)), Frame(n),
+    (fun (f : Frame(add_count(n, 0))) => along Frame by nat_add_zero(n) from f), atSum
+  );
   let make_ :
     Frame(n)
     -> (
@@ -164,14 +164,12 @@ def distinct_extension_loops_evaluation_basis(
     intro i, j, same;
     exact distinct(i, j, extension_loop_embedding_injective(K, E, loops(i), loops(j), same));
   }
-  let Source :=
-    exists points : Fin(n) -> extension_carrier(K, E).
-    FamilyBasis(
-      F, C, n, (fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j)))
-    );
-  let Target :=
-    exists points : Fin(n) -> extension_carrier(K, E).
-    FamilyBasis(F, C, n, (fun (j : Fin(n)) => loop_evaluation_vector(K, E, n, loops, points(j))));
+  let Source := exists points : Fin(n) -> extension_carrier(K, E). FamilyBasis(
+    F, C, n, (fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j)))
+  );
+  let Target := exists points : Fin(n) -> extension_carrier(K, E). FamilyBasis(
+    F, C, n, (fun (j : Fin(n)) => loop_evaluation_vector(K, E, n, loops, points(j)))
+  );
   let convert : Source -> Target {
     intro witness_;
     obtain (points, basis) := witness_;
@@ -188,7 +186,7 @@ def distinct_extension_loops_evaluation_basis(
     );
     exact (
       points,
-      along((fun (rows : Fin(n) -> (Fin(n) -> af_carrier(F))) => FamilyBasis(F, C, n, rows))) by sameRows from basis
+      along ((fun (rows : Fin(n) -> (Fin(n) -> af_carrier(F))) => FamilyBasis(F, C, n, rows))) by sameRows from basis
     );
   }
   exact mere_map(

@@ -67,8 +67,8 @@ def DedekindComplete(F : U1, lt : F -> F -> U0) :=
   RealizesCut(F, lt, lower, upper, point);
 
 def complete_field_ordered(
-  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, minF, maxF : F -> F -> F, lt : F -> F
-  -> U0, complete : CompleteOrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt)
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, minF, maxF : F -> F -> F, lt : F
+  -> F -> U0, complete : CompleteOrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt)
 ) :
   OrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt) {
   obtain (ordered, archimedean, cauchy) := complete;
@@ -76,8 +76,8 @@ def complete_field_ordered(
 }
 
 def complete_field_limit(
-  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, minF, maxF : F -> F -> F, lt : F -> F
-  -> U0, complete : CompleteOrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt),
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, minF, maxF : F -> F -> F, lt : F
+  -> F -> U0, complete : CompleteOrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt),
   sequence : Nat -> F, cauchySequence : FieldCauchy(F, zero, addF, lt, sequence)
 ) :
   exists limit : F. FieldConverges(F, zero, addF, lt, sequence, limit) {
@@ -92,10 +92,9 @@ def field_constant_converges(
 ) :
   FieldConverges(F, zero, addF, lt, (fun (n : Nat) => x), x) {
   intro epsilon, positive;
-  let step :=
-    along((fun (a : F) => lt(a, addF(x, epsilon)))) by unit(x) from translate(
-      zero, epsilon, x, positive
-    );
+  let step := along ((fun (a : F) => lt(a, addF(x, epsilon)))) by unit(x) from translate(
+    zero, epsilon, x, positive
+  );
   exact (
     0,
     (
