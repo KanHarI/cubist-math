@@ -232,6 +232,10 @@ and the runtime/numerical track and revised initial/free contract. The
   and public provenance, with semantic preservation tests. The
   [gap inventory](../reports/frontend-generation-gaps.md) pins current
   reproductions and separates them from fixed bugs and prototype limits.
+- [Refactoring and Cubist tests](refactoring-and-testing.md): proposed
+  follow-up to FG6, covering both the FG stack and earlier code. Identifies
+  obsolete and duplicate tests, runner primitives for moving behavioral
+  tests into Cubist, and staged generation, publication and tooling cleanup.
 - [Mathematical proof concision](vision/mathematical-proof-concision.md): the
   eventual language goal, Galois and contour evidence, and proposed
   acceptance criteria for expressing complete mathematical arguments.
