@@ -2,7 +2,7 @@
 
 Status: paused during language development, but for R1's integers and
 rationals, built on 2026-10-05; corrected on 2026-09-28 after
-the [work-plan audit](audits/2026-09-28-audit.md) (previously reviewed
+the [work-plan audit](historical/audits/2026-09-28-audit.md) (previously reviewed
 2026-09-27); restructured on 2026-09-25 for the rebuild of the library. The
 first library's development is described below, under "The first library's
 development", and is archived with that library. Its results are summarized in
@@ -104,7 +104,7 @@ definitions are not claimed to fail to check; the obligation is the bridge.
    Archimedean property with binary natural bounds; define `PosRat` and
    check closed order and bound examples. These are the prerequisites
    for R2/R3 on the new hierarchy. This order development still awaits
-   the scope decision in [first action 8](work-plan.md#first-actions).
+   the scope decision in [number-order decision](work-plan.md#open-decisions).
 
    Later presentations are signed integers with binary
    magnitudes and canonical lowest-terms rationals, with binary gcd,

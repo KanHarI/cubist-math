@@ -1,5 +1,8 @@
 # Notation views and literals (L2.10)
 
+Progress reconciled on 2026-10-10 against main `cb525f07`. Open branch
+work is recorded separately in the [work plan](work-plan.md#branch-work).
+
 Status: roadmap, revised 2026-10-05, with [decisions](#decisions) recorded
 the same day, and revised again that day: one selection form, `use`, and
 qualified operators (decisions 7 and 8). The direction is explicit notation views: select a

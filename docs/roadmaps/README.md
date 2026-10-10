@@ -1,228 +1,74 @@
 # Development roadmaps
 
-These describe the intended developments, their limits, and remaining
-obligations. Read the linked checkpoint before resuming work. Do not treat a
-target statement or a supplied theorem parameter as an already proved result.
+These describe current contracts, unfinished work and its limits. The
+[work plan](work-plan.md) owns scheduling. A target statement or supplied
+theorem parameter is not an already proved result. Paused mathematics does
+not resume when a language milestone ships.
 
 ## At a glance
 
-Revised on 2026-10-07, including the work plan's record of 2026-10-06
-and the runtime/numerical track and revised initial/free contract. The
-[work plan](work-plan.md) is the scheduling authority; this summarizes it.
+Reconciled on 2026-10-10 against main `cb525f07` (2026-10-08). Delivered
+means merged into main; the open PR stack is identified separately.
 
-- **Done.**
-  - **Kernel.** The trusted checker is the instruction kernel, with every
-    search decision in an untrusted driver. The term checker is retired.
-    Universe-generic checking (G0) is done. Since #194–#197 (2026-10-06):
-    - the library checks in about a quarter of the time it took;
-    - `npm test` takes about two minutes.
-  - **Inductive types.** H1 was released on 2026-10-02, with:
-    - one-sort and higher inductive declarations;
-    - `match` and structural recursion;
-    - truncation clauses.
-  - **Proof ergonomics.**
-    - `rw`, `calc`, `simp`, `let` and holes;
-    - implicit parameters and argument inference;
-    - `~` for reversal;
-    - `hlevel` with registered rules and quantified hints;
-    - expected-value patterns for `evaluate`, and a closed truncation's
-      witness;
-    - the box notation for compositions, and squares (L2.8's first three
-      slices).
-  - **Theories (L2.4, L2.4c).** Theories, models, sections, `extends`,
-    `Hom` and `Iso`. Since 2026-10-06:
-    - carriers as fields (`M : set U`), with the universe in the header;
-    - `Monoid(U)` as the type of models;
-    - theory families and relations;
-    - independent theories combined unchanged;
-    - the initial/free construction prototype (L2.6): declared carriers,
-      models and computing folds. The revised checked capability is not
-      implemented by this prototype alone.
-  - **Notation (L2.10a–e, i–k).**
-    - `use` selects a notation, in place of `open`;
-    - named notations, qualified operators `a G.(+) b`, operand notations
-      and derived operations;
-    - literals read by the library's parsers;
-    - printing in the selected notation;
-    - a partial field inverse.
+| Track | Delivered on main | Still open |
+| --- | --- | --- |
+| Kernel and universes | Instruction-kernel stages 1–5; checker retirement; G0; face restriction; checking/bridge optimizations #194–#197 | Remaining stage-6 performance/certificate work; optional E1/E2 |
+| Inductive declarations | H1 released: one-sort data and higher types, matching, structural recursion and automatic clauses | Derivations/views; H2 indexed families; H3 companion sorts; H4 on demand; archive truncation remedies |
+| Proof ergonomics | Rewriting, simplification, `let`, holes, inference, implicit parameters, cubical shorthand, two h-level solver slices, evaluation patterns/readout, box notation and squares | Folded path rules, constructor descent, induction tooling, broader dependent rewriting, solver and square-migration remainders |
+| Theories | L2.4 and all six L2.4c slices: models, families/relations, inheritance, `Hom`/`Iso`, `use` and qualified operators | Morphism opt-ins, general proposition laws, implicit operation arguments, checked initial/free capabilities, structure identity |
+| Notation | L2.10a–e and i–k: named notation, operands, literals, printing, reversal, explicit selection and partial inverse | Shadowing/inspection/printing details; deferred large numerals and `decide`; proposed general notation rules |
+| Evaluation/numbers | EVAL0 measurement harness and recorded outcomes | EVAL1–EVAL8; NUM0–NUM2 binary foundations. Existing `Z`/`Q` use unary naturals |
+| Library/reference | Sixteen self-contained foundation modules; checked reference, explorer and quick reference | Higher-constructor chapter, classical-assumption consolidation and later mathematical coverage |
+| Computation notation | Prerequisites: inference, matching, core theories and set-indexed theory families | N0–N5: checked interfaces, monadic `do` and arrows; design only |
+| Learned search | Phases 1–2: explicit driver choices and work/trajectory measurement | Phases 3–5, conditional on demonstrated benefit |
 
-    Every source selects `nat`, and an operator or numeral outside any
-    selection is an error.
-  - **The library's foundations.** `nat`, effective quotients, the
-    algebraic hierarchy, the integers and the rationals, h-levels,
-    univalence and squares. Every archived declaration still checks.
-- **Specified, not implemented.**
-  - **Checked initial/free capabilities (L2.6), revised on 2026-10-07,**
-    as [specified](core-theories.md#initial-and-free-models-l26):
-    - `deriving (morphisms, free)` with a universal proof, supplying
-      initiality on `Void`; the weaker `morphisms, initial`;
-    - general laws become proof obligations, including `zero != one`;
-    - an unsupported strategy or unproved law fails derivation without
-      claiming mathematical nonexistence;
-    - five slices, including migration of the construction prototype;
-      untruncated recursors alone supply no categorical capability;
-    - the [categorical roadmap](categories.md)'s morphism opt-in and
-      propositional-law check precede publication of these capabilities.
-  - **Computation notation (N0–N5).** Monadic `do` and arrows; design
-    only.
-  - **Notation's remainders and deferred slices.**
-    - What L2.10a–e left: the file-level shadowing warning, the
-      inspector's view of selections and operand recipes, and qualifying
-      a shadowed notation's name in printing.
-    - Deferred: large numerals (L2.10f) and `decide` (L2.10g).
-    - Notation rules (L2.10h) are proposed, not decided.
-- **Proposed on 2026-10-07.**
-  - **[Morphisms, categories and universal constructions](categories.md).**
-    - Theories derive morphisms only on request, at two levels:
-      `deriving (isomorphisms)` by transport, and `deriving (morphisms)`
-      with the default category `T.cat`.
-    - Laws may state what `hlevel` proves a proposition, and theory
-      operations take implicit arguments.
-    - The library gains categories, limits and colimits, and the abelian
-      tower.
-  - **[Homological algebra](homological-algebra.md),** a new mathematical
-    track:
-    - the synthetic route first: spheres, `K(G, n)` and cohomology that
-      computes;
-    - then modules, chain complexes and homology on the categories
-      packages.
-- **Next,** in the work plan's [first actions](work-plan.md#first-actions):
-  1. morphisms by opt-in (L2.4d);
-  2. laws proved propositions (L2.11), and implicit arguments in theory
-     operations (L2.12);
-  3. L2.6's revised capability, proof and additional-law slices;
-  4. the archive's raw `comp` lemmas re-derived through the squares
-     (L2.8's last item);
-  5. the rest of the h-level solver (L2.5b):
-     - Hedberg from registered decidable equality;
-     - one layer of unfolding;
-     - `Truncate`;
-     - the inspector's record of witnesses;
-  6. `deriving` (L2.3), and h-levels proved before a squash constructor
-     is added (L2.3b);
-  7. equivalences, then structure identity (L3.1, L3.2), before L2.4b and
-     L2.7;
-  8. categories, universal constructions and the abelian tower
-     (L3.4–L3.6);
-  9. the order on NUM2's new numbers, if the maintainer extends the
-     library's scope;
-  10. runtime evaluation and binary numerical foundations (EVAL0–EVAL8,
-      NUM0–NUM2), including H1 strong induction and the new `Z` and `Q`;
-  11. independent language work, among it L1.3's worker cancellation, and
-      monadic `do` and arrows (N0–N4);
-  12. K2.5's archive remedies;
-  13. H2's indexed families, then the H3 research gate.
+**Branch work, not delivered on main:** [#188](https://github.com/KanHarI/cubist-math/pull/188)
+has the initial/free construction-and-fold prototype; [#204–#211](https://github.com/KanHarI/cubist-math/pull/211)
+have the frontend-generation roadmap and FG0–FG6 implementation;
+[#212](https://github.com/KanHarI/cubist-math/pull/212) proposes RC0–RC11
+refactoring and test migration. The homological-algebra proposal in
+[#198](https://github.com/KanHarI/cubist-math/pull/198) merged into that
+stack, not main. The [branch record](work-plan.md#branch-work) distinguishes
+implementation, integration evidence and unfinished obligations.
 
-  One known defect is waiting. `top_unique` fails with an internal kernel
-  error (E604) when its corners are left to inference (#185).
-- **Later.**
-  - Indexed declarations (stage 4, H2) and inductive-inductive ones
-    (stage 5, H3).
-  - The rest of HoTT automation: `Path` induction, `ext`, transport rules
-    and identity systems.
-  - Learned search may proceed at any time; nothing waits on it.
-- **Paused.** Galois theory, complex analysis, RH and the reals. The reals
-  need the order on the numbers first, and the Cauchy reals H3 too. The
-  first library in `archive/` is a reference.
-- **Open decisions.**
-  - **Need the maintainer's decision:**
-    - the order on the numbers;
-    - when the homological algebra track starts;
-    - the composition operator, before L3.4;
-    - complex shapes or ℤ-indexing, before the track's chain complexes.
-    - the public `Nat` alias/import transition, after the binary foundations.
-  - **The rest:** these block no scheduled slice and are listed in the
-    work plan's [open decisions](work-plan.md#open-decisions).
+Next language work: morphism opt-ins (L2.4d), general proposition laws
+(L2.11), implicit operation arguments (L2.12), then L2.6's checked
+capabilities and universal proofs. Squares/h-level remainders, derivations,
+equivalences, structure identity and categories follow their dependencies.
+EVAL1 and NUM0/NUM1 can advance independently. See
+[first actions](work-plan.md#first-actions) and
+[open decisions](work-plan.md#open-decisions).
 
 ## Plan and designs
 
-- [Work plan](work-plan.md): the staged, dependency-ordered plan across all
-  roadmaps. Start here. The active scope is language features and their
-  kernel support, and since 2026-10-05 the library's foundations: the
-  natural numbers, quotients, the integers and rationals, and the algebraic
-  hierarchy, all done that day.
-  - Its first actions suggest what comes next, starting with initial and
-    free models' remaining slices.
-  - Its open decisions list what waits for the maintainer.
-
-  Other mathematical development is paused.
-- [Work-plan audit of 2026-09-28](audits/2026-09-28-audit.md): the baseline
-  revision (`02a57ef`) and findings behind the current statuses, including
-  the instruction-isolation defect, corrected the same day (work-plan I1.2a).
-- [Historical plans and specifications](historical/README.md): completed
-  work, currently G0. Its specification remains linked as a contract.
-- [Higher inductive-inductive types](higher-inductive-types-design.md): the
-  adopted kernel design. One signature format covers data, indexed, higher
-  and inductive-inductive types, with computability expressible and
-  preserved.
-- [H1 specification](h1-signature-specification.md): the design's first
-  stage, one-sort data and higher inductive types (K2.1), with G2's
-  truncation and resizing policy and its migration ledger (K2.5).
-  Implemented (K2.2, K2.3, L2.1, L2.2a) and released on 2026-10-02 after
-  review of its model, critical pairs and canonicity. Its
-  [history](h1-history.md) holds the release checklist and its record, the
-  review rounds and the retired differential contract.
-- [Language features for theories and inductive declarations](inductive-language-features.md):
-  the adopted language proposal: theories, cells, relations and bundles,
-  canonical quotients, presentations and derived declarations. One-sort
-  `inductive`, explicit `match` and `obligations` are released with H1 on
-  2026-10-02, core theories (L2.4) on 2026-10-05, and their syntax revision
-  (L2.4c) and the initial/free construction prototype (L2.6) on
-  2026-10-06. L2.6's revised checked-capability contract and the rest remain
-  proposed, with three promises corrected by the audit.
-- [Notation views and literals](notation.md): work-plan L2.10's roadmap for explicit
-  notation views, declared operand views, literals read by the library's
-  parsers and faithful printing, without instance search. The direction and
-  its decisions are recorded: no name-based operators or numerals, `~` for
-  reversal with the cubical operators tightest, notation declared as used,
-  one selection form, `use`, which replaces `open`, with sections, and
-  qualified operators such as `a G.(+) b`, `Lexeme` literals and a partial
-  field inverse. L2.10a–e and i–k are done, and with L2.10j (2026-10-06)
-  every source selects `nat`, and an operator or numeral outside any
-  selection is an error. Notation rules (L2.10h), large numerals and
-  `decide` remain deferred.
-- [Morphisms, categories and universal constructions](categories.md),
-  proposed on 2026-10-07.
-  - **Morphisms by opt-in.** Theories derive morphisms only on request, at
-    two levels, and an opt-in that fails refuses the theory (L2.4d).
-    User-defined morphisms with the standardness obligation are deferred
-    (L2.4e). The categorical roadmap is consolidated in #187 with L2.6's
-    checked `free`/`initial` capabilities; the homological track stays in #198.
-  - **Prerequisites.** Laws proved propositions (L2.11), and implicit
-    arguments in theory operations (L2.12).
-  - **The library:** categories, functors and natural transformations;
-    limits over diagrams that are maps of graphs, with colimits by duality
-    and colimits of types as one higher inductive type; and the abelian tower
-    from preadditive to abelian (L3.4–L3.6).
-- [Homological algebra](homological-algebra.md), proposed on 2026-10-07: a
-  new mathematical track, HA0–HA6.
-  - **Synthetic:** homotopy groups, Eilenberg–MacLane spaces and cohomology
-    that computes.
-  - **Algebraic:** modules, exactness, chain complexes over shapes,
-    homology and Smith normal form.
-  - **Both:** Ext without the axiom of choice, and cellular cohomology of
-    finite CW complexes.
-- [Core theories](core-theories.md): the contract of work-plan L2.4,
-  theory declarations, models, scoped notation, sections, extension,
-  homomorphisms and isomorphisms, specified and implemented on 2026-10-05.
-  The library's algebraic hierarchy is written in it. Its revision, L2.4c,
-  is done (2026-10-06): `M : set U` in place of `sort`, the universe named
-  in the header, `Monoid(U)` as the type of models, theory families, and
-  independent theories combined without changing either. Initial and free
-  models (L2.6) have a working `initial`/`free`/`fold` prototype; the revised
-  opt-in and checked universal-property contract is specified, not implemented.
-- [Results of the first library](../library-results.md): what the archived
-  library established, in mathematical English.
-- [Kernel instructions](kernel-instructions.md): the trusted kernel since
-  2026-09-26, a THTH-style forward kernel whose rules are instructions.
-  Every search decision is in an untrusted driver, and the kernel's state is
-  two hash graphs, explorable in the workbench. Every later kernel item is a
-  set of instructions. The audit of 2026-09-28 found the separation from
-  the old conversion checker incomplete; work-plan I1.2a corrected it the same
-  day.
-- [Learned search](learned-search.md): a design for a small policy and value
-  network over the kernel's graphs, trained against the instruction kernel,
-  that steers the driver's conversion search toward cheaper derivations.
+- [Work plan](work-plan.md): active package status, dependencies and decisions.
+- [Historical index](historical/README.md): completed G0, closed H1 history,
+  release/review and differential evidence, the dated work-plan audit,
+  and superseded scheduling/ergonomics sequences. Historical commands and
+  timings describe their recorded revisions.
+- [Higher inductive-inductive types](higher-inductive-types-design.md):
+  adopted H1–H4 design. H1 is released; H2–H4 remain unimplemented.
+- [H1 specification](h1-signature-specification.md),
+  [model](h1-model.md), [canonicity](h1-canonicity.md) and
+  [critical pairs](h1-critical-pairs.md): current rules and approved
+  mathematical arguments. Release does not make these contracts obsolete.
+- [Source-defined Nat, W and pushouts](h1-program-types.md): current source
+  API and the migration's limits; sums remain native.
+- [Truncation migrations](h1-truncation-migration.md): implemented ledger
+  verifier and 17 pinned changes; the rest of K2.5 remains unfinished.
+- [Language features](inductive-language-features.md): theories,
+  declarations, relations, bundles, presentations and derived interfaces.
+- [Core theories](core-theories.md): implemented L2.4/L2.4c contract and
+  the unfinished checked initial/free capability contract.
+- [Notation](notation.md): delivered explicit notation/literal slices,
+  remaining tooling details and deferred extensions.
+- [Categories](categories.md): proposed morphism opt-ins, general laws,
+  categorical library, universal constructions and the abelian tower.
+- [Kernel instructions](kernel-instructions.md): current trusted checker,
+  driver boundary and remaining performance/certificate work. Its dated
+  migration stages record earlier APIs.
+- [Learned search](learned-search.md): delivered instrumentation and optional
+  learning/deployment phases.
 
 ## Language tooling
 
@@ -232,94 +78,35 @@ and the runtime/numerical track and revised initial/free contract. The
   and public provenance, with semantic preservation tests. The
   [gap inventory](../reports/frontend-generation-gaps.md) pins current
   reproductions and separates them from fixed bugs and prototype limits.
-- [Mathematical proof concision](vision/mathematical-proof-concision.md): the
-  eventual language goal, Galois and contour evidence, and proposed
-  acceptance criteria for expressing complete mathematical arguments.
-- [Language enhancement proposals](language-enhancement-proposals.md):
-  considered and deferred features, each with what would justify it: level
-  constraints (E1) and generic definitions at tier 1 (E2).
-- [Computation notation: monadic do and arrows](computation-notation-roadmap.md):
-  planned explicit computation blocks, checked monad and arrow interfaces,
-  mathematical examples, and staged elaboration without new kernel rules.
-- [Runtime evaluation and binary numerical foundations](runtime-evaluation-roadmap.md):
-  proposed after the `euclid(4)` syntax-depth failure: one-pass REPL
-  evaluation, normalization caches, lazy closures, an explicit evaluation
-  stack, typed readback and checked search improvements, measured against
-  EVAL0's recorded baseline, which is done. Early numerical
-  foundations define `UNat` and `BNat`, prove their semiring isomorphism
-  and equality in `U0` with transport laws, and provide strong induction
-  and recursion over smaller binary values. New `Z`, `Q` and later
-  numerical constructions use binary naturals, with checked algebraic laws.
-  Separates prime projection, lazy observation and full normalization, with
-  semantic review and resource limits governing integration.
-- [Simplification and shorter proofs](proof-ergonomics-roadmap.md):
-  - Delivered: `rw`, `calc`, `rfl`, `simp`/`simpa` with registered rule sets
-    and conditional rules, cubical path shorthand, dependency tracking,
-    `computable` and exact-value `evaluate`.
-  - Delivered since: argument inference and implicit parameters (5,
-    2026-10-04; `apply` and `refine` withdrawn), explicit `match` with
-    several values and nested patterns (7), and core theories, notation and
-    sections (6, 2026-10-05).
-  - Delivered on 2026-10-06: expected-value patterns and closed truncation
-    readout (milestone 8), `hlevel_rule` and quantified hints, the box
-    notation for compositions and the squares library (HoTT E2), the theory
-    syntax revision with `use` (L2.4c), named notations, literals and
-    printing in the selected notation (L2.10), and the first slice of
-    initial and free models.
-  - Remaining: the rest of initial and free models, algebraic normalization
-    and structure identity (6), and the rest of inductive declarations and
-    pattern matching (7).
-  - The [concrete implementation plan](proof-ergonomics-implementation-plan.md)
-    adds PR-sized steps, lowering contracts, cubical notation proposals, and
-    checked current-language sample expansions.
-- [HoTT and cubical proof automation](hott-automation-roadmap.md):
-  - Delivered: A7 (baseline, regressions and canonicity fixture), the A5
-    goal-layer core, A4/A6 deterministic fuel with residual-goal
-    diagnostics, D0a's h-level definitions, D1's `hlevel` solver with
-    registered rules and quantified hints, and E2's box notation and squares
-    library; D0b is started (`contractible_maps`, `univalence`). See the
-    [checkpoint](../tactical/hott-automation-handoff.md).
-  - Planned: remaining goal-layer metadata/clients; folded path operations;
-    `Path` induction; type-directed `ext`; transport and path-algebra rules;
-    the rest of the h-level solver; identity systems; dependent paths; the
-    archive's `comp` lemmas through squares; structure identity and
-    transfer.
-  - B0, B2, B5, F3 and A9 are superseded by the kernel's item H and
-    ergonomics milestone 7.
-- [Kernel extensions for computation](cubical-kernel-roadmap.md): G0 delivered;
-  H1 released on 2026-10-02 after its review; H2–H4 and the other
-  extensions planned. Each is a set of instructions, governed by the
-  requirement that computability is expressible and preserved:
-  - G0, universe-generic checking over tiered universes (done: K1.2–K1.4 and
-    L1.1);
-  - H1–H4, one signature mechanism for inductive, indexed, higher and
-    inductive-inductive types;
-  - G2's resizing policy, certified interval normalization and optional
-    transport regularity.
+- [Proof ergonomics](proof-ergonomics-roadmap.md): shipped proof tools and
+  remaining theory/declaration/automation work. Its
+  [remaining implementation contracts](proof-ergonomics-roadmap.md#remaining-implementation-contracts)
+  own the unfinished work from the archived implementation sequence.
+- [HoTT automation](hott-automation-roadmap.md): remaining goals, paths,
+  induction, equivalences, transport, h-levels and structure identity.
+  [Checkpoint](../tactical/hott-automation-handoff.md).
+- [Runtime evaluation and binary foundations](runtime-evaluation-roadmap.md):
+  EVAL0 is complete; EVAL1–EVAL8 and NUM0–NUM2 remain planned.
+- [Computation notation](computation-notation-roadmap.md): N0–N5, no
+  implementation yet; its core theory/inference prerequisites are available.
+- [Kernel extensions](cubical-kernel-roadmap.md): G0 and H1 delivered;
+  H2–H4, remaining resizing migrations and optional computation extensions.
+- [Language proposals](language-enhancement-proposals.md): deferred E1/E2,
+  each requiring a concrete use case.
+- [Proof-concision vision](vision/mathematical-proof-concision.md): eventual
+  goals and acceptance evidence, not a list of implemented features.
 
 ## Mathematics
 
-The first library is archived. The Galois, complex-analysis and RH roadmaps
-describe unfinished developments in it. They and the broad library rebuild
-remain paused while language work proceeds. Language milestones do not
-automatically resume mathematics; the [work plan](work-plan.md) retains the
-deferred backlog.
+The first library is archived. Its checked results remain regression
+evidence, not a claim that the new library has rebuilt those areas.
 
-- [Galois theory](galois-roadmap.md): Artin's theorem and the core finite
-  correspondence were checked in the first library. The correspondence takes
-  a supplied algebraically closed target and embedding. Read the
-  [Galois checkpoint](../tactical/galois-handoff.md).
-- [Complex analysis](complex-analysis-roadmap.md): algebraic closure, the
-  residue theorem, and Great Picard. Read the
-  [complex-analysis checkpoint](../tactical/complex_analysis_handoff.md).
-- [Real numbers](reals-roadmap.md): the rebuild's number systems. The
-  library's integers and rationals, done on 2026-10-05, are quotients: pairs
-  of naturals by their difference, and the field of fractions. Reals are the
-  Cauchy completion (kernel H3), with Dedekind reals as the fallback; both
-  need the rationals' order first. The first library's constructions are
-  described as archived.
-- [RH and the prime-counting error](rh-prime-counting-roadmap.md): a planned
-  proof that RH for zeta implies a prime-counting error of
-  \(O(\sqrt{x}\log x)\) relative to the logarithmic integral. Planning only.
+| Roadmap | Checked progress | Remaining scope |
+| --- | --- | --- |
+| [Galois](galois-roadmap.md) | Finite linear algebra, Artin's theorem and the core finite correspondence with a supplied algebraically closed target | Finite index/normality/quotient theorems and the full target; paused. [Checkpoint](../tactical/galois-handoff.md) |
+| [Reals](reals-roadmap.md) | Current quotient integers/rationals | NUM owns binary replacements; this plan owns order, presentations, completeness interfaces and real constructions. Cauchy reals need H3; paused beyond existing foundations |
+| [Complex analysis](complex-analysis-roadmap.md) | Algebra, limits, contour estimates and affine dyadic integral laws over supplied scalars | Topology and general integration bridges; FTA, residue theorem and Great Picard unproved; paused. [Checkpoint](../tactical/complex_analysis_handoff.md) |
+| [RH and prime counting](rh-prime-counting-roadmap.md) | Statement and dependency plan only | All analytic-number-theory milestones; not started |
 
-See the [documentation index](../README.md) for supporting notes and guides.
+See the [results catalog](../library-results.md) and
+[documentation index](../README.md) for supporting evidence and guides.
