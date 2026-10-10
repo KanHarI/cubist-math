@@ -180,6 +180,7 @@ export class CubicalProgram {
       const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified,
         status: d.status, reason, ...(verified ? {} : { code: diagnosticCode(reason) }), errorStart: d.errorStart, errorEnd: d.errorEnd,
         rewriteWork: d.rewriteWork, searchFuel: d.searchFuel, failure: d.failure ?? null,
+        ...(d.support||syntax.generated?.support?{support:d.support??syntax.generated.support}:{}),
         ...(d.blockedBy?{blockedBy:d.blockedBy}:{}),...(d.failedMember?{failedMember:d.failedMember}:{}),...(d.cause?{cause:d.cause}:{}),
         axioms: d.native?.axioms ?? [],
         // Kernel extensions under review that the result relies on, shown

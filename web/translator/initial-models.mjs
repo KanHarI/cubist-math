@@ -9,6 +9,55 @@ import {Scope} from "./elaboration.mjs";
 import {repeatedName} from "./names.mjs";
 import {T as Term} from "./core.mjs";
 import {reference} from "../cubist/references.mjs";
+import {DependencyAnalysis,unsupported,conditional} from "../cubist/dependencies.mjs";
+
+// This strategy shares dependency facts with morphisms, not their support
+// predicate. Equational constructors have only carrier or fixed arguments.
+export function equationalSupport(record) {
+  const carriers=record.fields.filter(field=>field.kind==="sort");
+  const origin=record.dependencies?.fields[0]?.at;
+  const refuse=(error,at=origin,detail={})=>unsupported(error.message,at,{strategy:"equational",...detail});
+  if(carriers.length!==1||carriers[0].family)return refuse(notOneCarrier(record.name,carriers));
+  const carrier=carriers[0].name,evidence=record.fields.find(field=>field.kind==="evidence"&&field.of===carrier);
+  if(!evidence)return refuse(untruncatedCarrier(record.name,carrier));
+  const analysis=new DependencyAnalysis(record.dependencies),mapping=[];
+  for(const field of record.fields) {
+    if(field.kind==="sort"||field.kind==="evidence")continue;
+    const bound=new Set(),recursive=new Set(),arguments_=[];
+    let body=field.type,dependency=null;
+    while(body.kind==="forall"||body.kind==="binderGroup"&&body.binderKind==="forall") {
+      const names=body.kind==="forall"?[body.name]:body.names;
+      if(body.bound)return refuse(universeArguments(field.name),{start:body.start,end:body.end},{field:field.identity});
+      const domain=body.domain,isCarrier=domain.kind==="name"&&domain.name===carrier&&!bound.has(carrier);
+      if(!isCarrier&&!dependency) {
+        const dependencies=analysis.dependencies(domain,bound);
+        const proof=dependencies.find(use=>["law","evidence"].includes(use.category));
+        const varying=dependencies.find(use=>["carrier","operation","helper"].includes(use.category));
+        const local=[...freeNames(domain)].find(name=>recursive.has(name));
+        const on=proof??varying;
+        if(on||local)dependency={binder:names[0].label??names[0].text,on:on?.name??local,
+          kind:proof?.category??"carrier",at:on?.at??{start:domain.start,end:domain.end},identity:on?.identity};
+      }
+      for(const name of names) {
+        arguments_.push({name:name.label??name.text,action:isCarrier?"recurse":"fixed"});
+        bound.add(name.text);if(isCarrier)recursive.add(name.text);else recursive.delete(name.text);
+      }
+      body=body.body;
+    }
+    const at={start:body.start,end:body.end};
+    if(field.kind==="law"&&(!(body.kind==="binary"&&body.operator==="=")||analysis.first(body,bound,["law","evidence"])))
+      return refuse(notEquational(field.name),at,{field:field.identity});
+    if(dependency)return refuse(dependency.kind==="carrier"?notPositive(field.name,dependency.binder,carrier)
+      :onProof(field.name,dependency.binder,dependency.kind,dependency.on),dependency.at,{field:field.identity,dependency});
+    if(field.kind==="operation") {
+      if(body.kind==="binary"&&body.operator==="->")return refuse(arrowOperation(field.name),at,{field:field.identity});
+      if(!(body.kind==="name"&&body.name===carrier&&!bound.has(carrier)))return refuse(notCarrierValued(field.name,carrier),at,{field:field.identity});
+    }
+    mapping.push({identity:field.identity,kind:field.kind,arguments:arguments_});
+  }
+  return {...conditional({carrier:carriers[0].identity,evidence:evidence.identity,constructors:mapping},
+    ["constructor universes","positive constructor domains","law boundaries","model","fold map","fold preservation"]),strategy:"equational"};
+}
 
 // The declarations an initial or free model expands to, checked in its
 // place; one that does not expand fails as a declaration of its name.
@@ -30,11 +79,9 @@ function expand(t, module, d, env) {
   const lambdas = (binders, body) => binders.reduceRight((inner, b) => lambda(b, inner), body);
   const head = d.theory.kind === "call" ? d.theory.fn : d.theory;
   const entry = head.kind === "name" ? env.get(theoryBinding(head.name)) : null;
-  // A theory that failed its own check is a dependency here, as at its
-  // other uses, whether or not it expanded: one whose use was refused has
-  // no notation to read its fields in (theories.mjs, capturedNotation).
+  // Failed theory publication retains its dependency identity and cause.
   const binding = head.kind === "name" ? env.get(head.name) : null;
-  if (binding?.tag === "Untranslated" || entry?.tag === "Theory" && !entry.notation)
+  if (binding?.tag === "Untranslated")
     throw module.locate(Object.assign(Error(`Untranslated dependency: ${head.name}`),
       {blockedBy: binding?.blockedBy ?? binding?.binding ?? head.name, cause:binding?.cause ?? binding?.reason}), head);
   // A retained theory record can outlive the name that denoted its model
@@ -42,9 +89,6 @@ function expand(t, module, d, env) {
   if (entry?.tag !== "Theory" || binding?.tag !== "DefRef" || binding !== env.get(entry.record.reference))
     throw module.locate(notATheory(d.kind, module.source.slice(d.theory.start, d.theory.end).trim()), d.theory);
   const record = entry.record, T = record.name;
-  // Only copied field expressions read the theory's captured notation.
-  // The header, generator type and elaborated arguments keep the caller's.
-  const inTheory = body => ({kind: "notationScope", aliases: entry.notation, body, ...at});
   const repeated = repeatedName(d.params);
   if (repeated) throw module.locate(Error(`${N} has two parameters named ${repeated.name.text}: give each its own name.`), repeated.name);
 
@@ -117,38 +161,30 @@ function expand(t, module, d, env) {
   const given = new Map([...record.universes.map((_, k) => [universeAt(k), values[k]]),
     ...record.params.map((p, k) => [p.name, values[record.universes.length + k]])]);
 
+  const support=equationalSupport(record);
+  if(support.status==="unsupported")throw module.locate(Object.assign(Error(support.reason),{support}),d.theory);
+  const carrier=record.fields.find(field=>field.identity===support.mapping.carrier).name;
   const carriers = record.fields.filter(f => f.kind === "sort");
-  if (carriers.length !== 1 || carriers[0].family) throw module.locate(notOneCarrier(T, carriers), d.theory);
-  const carrier = carriers[0].name;
   const evidence = record.fields.find(f => f.kind === "evidence" && f.of === carrier);
-  if (!evidence) throw module.locate(untruncatedCarrier(T, carrier), d.theory);
   const level = evidence.evidence === "IsSet" ? "set" : "prop";
   const universe = relocated(put(carriers[0].type, given, carrier), at);
   const names = params.map(p => p.name.text), self = call(N, names.map(name));
   const operations = record.fields.filter(f => f.kind === "operation").map(f => f.name);
-  // The proofs: each law's name and the carrier evidence's, to "law" or "evidence".
-  const proofs = new Map(record.fields.filter(f => f.kind === "law" || f.kind === "evidence").map(f => [f.name, f.kind]));
   const constructor = field => `${N}.${field}`;
   const inside = new Map([...given, [carrier, self], ...operations.map(op => [op, name(constructor(op))])]);
 
-  // A domain must be the carrier or independent of it, including the
-  // earlier carrier-typed variables and carrier-valued operations, and of
-  // the proofs. Shared domains are read before any of their group's names
-  // binds. `dependent` gives what each such name is: "carrier", or a
-  // proof's kind.
+  // Instantiate and flatten the analyzed telescope. Shared domains are
+  // read before any of their group's names binds. Support was decided
+  // above; this step only builds the source-scoped constructor interface.
   const shape = field => {
-    const binders = [], bound = new Set(), flattened = new Set();
-    const dependent = new Map([[carrier, "carrier"], ...operations.map(op => [op, "carrier"]), ...proofs]);
-    let body = field.type, placed = relocated(put(field.type, inside, field.name), at), dependency = null;
+    const binders = [], flattened = new Set();
+    const plan=support.mapping.constructors.find(item=>item.identity===field.identity);
+    let body = field.type, placed = relocated(put(field.type, inside, field.name), at);
     for (const n of allNames(placed)) taken.add(n);
     for (let group = 0; body?.kind === "forall" || body?.kind === "binderGroup" && body.binderKind === "forall";
         body = body.body, placed = placed.body, group++) {
       const names = body.kind === "forall" ? [body.name] : body.names;
       const placedNames = placed.kind === "forall" ? [placed.name] : placed.names;
-      if (body.bound) throw module.locate(universeArguments(field.name), d.theory);
-      const domain = body.domain, isCarrier = domain.kind === "name" && domain.name === carrier && !bound.has(carrier);
-      const on = isCarrier ? null : [...freeNames(domain)].find(n => dependent.has(n));
-      if (on) dependency ??= {binder: names[0].text, on, kind: dependent.get(on)};
       // Nested quantifiers may shadow each other; a constructor's flat
       // parameter list may not. Rename in the body only: this group's
       // domain still reads the preceding binders.
@@ -157,32 +193,25 @@ function expand(t, module, d, env) {
         const name = flattened.has(n.text) ? fresh(n.text) : n.text;
         if (name !== n.text) renaming.set(n.text, name);
         flattened.add(name);
-        binders.push({name, label: names[index].label ?? names[index].text, carrier: isCarrier, type: placed.domain, group});
+        const argument=plan.arguments[binders.length];
+        binders.push({name, label: argument.name, carrier: argument.action==="recurse", type: placed.domain, group});
       }
       if (renaming.size) placed = {...placed, body: renamedFree(placed.body, n => renaming.get(n))};
-      for (const n of names) { bound.add(n.text); if (isCarrier) dependent.set(n.text, "carrier"); else dependent.delete(n.text); }
     }
-    return {binders, body, bound, placed, dependency};
+    return {binders, placed};
   };
 
   const constructors = [], operationShapes = [], lawShapes = [];
   for (const field of record.fields) {
     if (field.kind === "sort" || field.kind === "evidence") continue;
-    const {binders, body, bound, placed, dependency} = shape(field);
-    if (field.kind === "law" && (!(body.kind === "binary" && body.operator === "=")
-        || [...freeNames(body, bound)].some(n => proofs.has(n))))
-      throw module.locate(notEquational(field.name), d.theory);
-    if (dependency) throw module.locate(dependency.kind === "carrier" ? notPositive(field.name, dependency.binder, carrier)
-      : onProof(field.name, dependency.binder, dependency.kind, dependency.on), d.theory);
-    const params = binders.map(b => ({name: {...token(b.name), label: b.label}, label: b.label, type: inTheory(b.type), group: b.group}));
+    const {binders, placed} = shape(field);
+    const params = binders.map(b => ({name: {...token(b.name), label: b.label}, label: b.label, type: b.type, group: b.group}));
     if (field.kind === "operation") {
-      if (body.kind === "binary" && body.operator === "->") throw module.locate(arrowOperation(field.name), d.theory);
-      if (!(body.kind === "name" && body.name === carrier && !bound.has(carrier))) throw module.locate(notCarrierValued(field.name, carrier), d.theory);
       operationShapes.push({name: field.name, binders});
       constructors.push({kind: "constructor", name: token(constructor(field.name)), params, type: null, ...at});
     } else {
       lawShapes.push({name: field.name, binders});
-      constructors.push({kind: "constructor", name: token(constructor(field.name)), params, type: inTheory(placed), ...at});
+      constructors.push({kind: "constructor", name: token(constructor(field.name)), params, type: placed, ...at});
     }
   }
   for (const f of [...operationShapes, ...lawShapes]) for (const b of f.binders) taken.add(b.name);
@@ -196,7 +225,7 @@ function expand(t, module, d, env) {
   const xs = Array.from({length: Math.max(0, ...[...operationShapes, ...lawShapes].map(f => f.binders.length))}, (_, k) => fresh(`x${k}`));
   if (free) constructors.unshift({kind: "constructor", name: token(constructor("gen")),
     params: [{name: token(v.a), type: on, group: 0}], type: null, ...at});
-  const generated = {initial: N}, uses = d.uses ? {uses: d.uses} : {};
+  const generated = {initial: N,support}, uses = d.uses ? {uses: d.uses} : {};
   // The kernel decides whether each law's sides are constructor
   // expressions, after beta reduction; `laws` names the law it refuses.
   const laws = Object.fromEntries(lawShapes.map(f => [constructor(f.name), f.name]));

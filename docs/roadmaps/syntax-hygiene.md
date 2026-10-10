@@ -43,20 +43,17 @@ Local binding uses capture-avoiding nominal substitution. `scopes.mjs`
 describes each binder once. A telescope's group is outside its shared domain
 and inside later groups and the body. A proof statement binds in subsequent
 statements, outside its own initializer. Substitution renames a binder when
-necessary; for pattern, statement, and parameter binders that cannot safely
+necessary; for pattern, statement, and declaration parameter binders that cannot safely
 be renamed before elaboration, it refuses a capture. Unknown syntax kinds fail scope traversal
 rather than silently being treated as having no binders.
-At `00d4ecce`, inlining substitutes the helper as a lambda through a law's
-whole expression before reducing its application. This protects its free
-fields from law binders, including when the helper is inherited, as well as
-protecting arguments from helper binders. This is not yet a general
-declaration invariant: derived-operation bodies are still processed without
-their parameter telescope and can silently capture a helper field
-([G11](../reports/frontend-generation-gaps.md#g11-derived-bodies-are-transformed-outside-their-parameter-telescope)).
-FG2 requires the complete telescope, result type and body to participate in
-the transformation. A fixed enclosing pattern or statement binding that
-would capture a field is refused with E871; its empty source range is still
-open as [G10](../reports/frontend-generation-gaps.md#g10-the-capture-refusal-loses-the-conflicting-source-site).
+Inlining substitutes a helper through the complete declaration telescope,
+result type and body before reducing its application. Derived parameters
+can be freshened with their later domains, result and value while retaining
+public argument labels. This protects free fields under both law binders
+and derived parameters, including inherited and renamed helpers. A fixed
+enclosing pattern or statement binding that would capture a field is
+refused with E871 at the conflicting source token. The FG2 regressions
+check the intended equation and reject the accidentally captured equation.
 
 `scoped` is a closure: syntax paired with its original elaboration scope.
 Caller substitution and relocation cannot enter its contents. `instantiated`
@@ -68,6 +65,24 @@ not walk into it and attach the child's notation to its numerals. A resolved
 proposition used by an inlined helper is classified by declaration identity,
 even when its display spelling is now bound to a different declaration.
 Both directions of comparisons (`<`, `<=`, `>`, `>=`) retain that context.
+
+Initial/free generation reads these same lexical captures. It installs no
+second notation alias scope. Synthetic evaluation suppresses links through
+its whole expansion, including copied rules whose offsets belong to another
+module. B1's file-level `use` precedence over same-spelled globals remains
+intentional and is checked across imports and changed selections.
+
+The retained theory also records a dependency graph over field identities,
+with an explicit ordered universe/parameter interface. Edges classify
+carriers, operations, laws, evidence, helpers, fixed external references
+(including selected notation), builtins, holes and unresolved occurrences.
+Traversal follows complete helper telescopes and values. Inheritance rebuilds
+the graph through its field correspondence and preserves origin identities.
+Morphism and equational generation share these facts while keeping separate
+admissibility rules. Their syntax support results list mapping operations
+and outstanding checking obligations; they do not infer universes or prove
+preservation. Unsupported model-dependent domains are refused before Hom/Iso
+emission while the base theory remains usable.
 
 Fresh internal binder names and written labels are separate. Alpha renaming
 preserves the original label through constructor lowering, diagnostics, and

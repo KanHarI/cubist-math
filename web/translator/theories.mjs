@@ -350,8 +350,7 @@ export function theoryDeclarations(t,module,d,env,declarations) {
       for(const field of [...record.fields,...record.derived??[],...record.parents])
         field.reference=reference(field.projection);
     }
-    env.set(theoryBinding(d.name.text),{tag:"Theory",name:d.name.text,record:generated[0].theory,
-      notation});
+    env.set(theoryBinding(d.name.text),{tag:"Theory",name:d.name.text,record:generated[0].theory});
     return generated;
   } catch(failure) {
     // The message says where, as an elaboration error does.
@@ -380,16 +379,10 @@ function capturedTheorySyntax(t,env,notation,lexical) {
   };
 }
 
-// The lexical scope a theory's fields are read in, for its initial and free
-// models, which copy field syntax after the module's notation may have
-// changed (initial-models.mjs): its file-level uses' selected rules and
-// model fields, resolved here, so that no later binding captures their
-// names. Retained references are published in the module's environment;
-// source names are resolved in this selected scope. Without a use there is
-// no selection, and the module's environment binds no operator. A refused
-// use is reported by the theory's own
-// declarations, which read the same uses, as at any declaration; the
-// theory's models then depend on a failed theory: null.
+// Resolve the file-level selection once for lexical capture. Each retained
+// operator/literal owns that selection; initial/free generation needs no
+// second alias scope. A refused use is reported by ordinary theory checking
+// and its publication group records the failure for dependent requests.
 function capturedScope(t,module,d,env) {
   if(!d.uses?.length)return {env,notation:[[SELECTION,null]]};
   let scope;
@@ -408,6 +401,7 @@ export const usesScope=(t,scope,uses)=>(uses??[]).reduce((inner,model)=>selected
 export function failedExpansion(t,d,env,declarations,error) {
   t.onDeclarationStart?.(d);
   declarations.push({name:d.name.text,syntax:d,status:"not-translated",reason:error.message,errorStart:error.offset,errorEnd:error.sourceEnd,
+    ...(error.support?{support:error.support}:{}),
     ...(error.blockedBy?{blockedBy:error.blockedBy}:{}),...(error.cause?{cause:error.cause}:{})});
   env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:t.checker.bindingName?.(d.name.text)??d.name.text,reason:error.message,
     blockedBy:error.blockedBy,cause:error.cause??error.message});
