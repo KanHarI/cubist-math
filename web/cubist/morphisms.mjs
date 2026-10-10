@@ -41,6 +41,7 @@
 // every binding form (scopes.mjs).
 import { freeNames, allNames, renamedFree, freshName } from "./scopes.mjs";
 import { reservedNames } from "./parser.mjs";
+import {DependencyAnalysis,unsupported,conditional} from "./dependencies.mjs";
 
 
 // How a type is mapped: "fixed" when it mentions no carrier; a carrier, or
@@ -100,6 +101,14 @@ function binders(type, parameters) {
 // "push" or "pull"; or, as `why`, why its homomorphisms are not generated.
 function operationShape(field, context) {
   const { list: inputs, body: type } = binders(field.type, context.parameters);
+  const bound = new Set();
+  for(const input of inputs) {
+    const refusal=transportRefusal(context.dependencies,field,input.type,bound,`argument ${input.label}`);
+    if(refusal)return {why:refusal.reason,refusal};
+    bound.add(input.name);
+  }
+  const refusal=transportRefusal(context.dependencies,field,type,bound,"result");
+  if(refusal)return {why:refusal.reason,refusal};
   const way = (shape, place) => {
     const where = occurrences(shape);
     if (where.has("other")) return { why: `its ${field.name}'s ${place} has a type that the maps do not follow` };
@@ -144,12 +153,36 @@ function operationShape(field, context) {
   return { inputs, result };
 }
 
+// Preservation of a law/operation does not make a type mentioning its value
+// literally the same at both models. Such inputs need a transport and its
+// composition proof, neither of which this strategy currently constructs.
+function transportRefusal(dependencies, field, type, bound, place) {
+  const uses=dependencies.dependencies(type,bound);
+  const dependency=uses.find(use=>["law","evidence"].includes(use.category))
+    ??uses.find(use=>["operation","helper"].includes(use.category));
+  return dependency ? unsupported(
+    `its ${field.name}'s ${place} depends on ${dependency.category} ${dependency.name}, whose transport and composition are not generated`,
+    dependency.at,{field:field.identity,place,dependency}) : null;
+}
+
 // The declarations of T's homomorphisms and isomorphisms, each {name,
 // source, role}, or, as `missing`, why T's models have none. `isTheory`
 // says whether a name is a theory in scope. `universes` are the models'
 // universes, or the first model's, in which a parameter's type is written.
 export function morphismSource(record, isTheory = () => false) {
+  const result=planMorphisms(record,isTheory);
+  const at=record.dependencies.fields[0]?.at;
+  result.support=result.refusal??(result.missing ? unsupported(result.missing,at)
+    : conditional(result.mapping,["generated telescope universes","preservation","identity","composition"]));
+  result.isoSupport=result.missing ? result.support : result.isoRefusal??(result.missingIso ? unsupported(result.missingIso,at)
+    : conditional(result.mapping,["checked Hom family","inverse","inverse identities","inverse composition"]));
+  return result;
+}
+
+function planMorphisms(record, isTheory) {
   const T = record.name, hom = `${T}.Hom`, iso = `${T}.Iso`;
+  const refused = (reason,field,at=field?.type) => ({missing:reason,refusal:unsupported(reason,
+    at ? {start:at.start,end:at.end} : record.dependencies.fields[0]?.at,{field:field?.identity})});
   // The source's models, A, B and C, and homomorphisms, f and g. A theory's
   // name begins its qualified names, as A.M, which a binder of that name
   // would not shadow, so each avoids every theory in scope, T included, and
@@ -191,26 +224,33 @@ export function morphismSource(record, isTheory = () => false) {
   // would need coherence fields, which are not specified (L2.4c).
   const levelOf = sort => record.fields.find(field => field.kind === "evidence" && field.of === sort)?.evidence ?? null;
   const untruncated = sorts.find(sort => !levelOf(sort));
-  if (untruncated) return { missing: `its carrier ${untruncated} has no h-level, and homomorphisms of such a carrier need coherences that are not generated` };
+  if (untruncated) return refused(`its carrier ${untruncated} has no h-level, and homomorphisms of such a carrier need coherences that are not generated`,carrierFields.find(field=>field.name===untruncated));
   const carriers = new Set(sorts), fields = new Set(record.fields.map(field => field.name));
+  const dependencies=new DependencyAnalysis(record.dependencies);
   // A family's indices, each the same on both sides or an element of a
   // carrier, pushed forward.
   const families = new Map();
   for (const field of carrierFields.filter(field => field.family)) {
     const indices = binders(field.type, parameters).list;
+    const bound=new Set();
     for (const index of indices) {
+      const refusal=transportRefusal(dependencies,field,index.type,bound,`index ${index.label}`);
+      if(refusal)return {missing:refusal.reason,refusal};
       index.shape = shapeOf(index.type, { carriers, families, fields });
       if (!["fixed", "carrier"].includes(index.shape.kind) || index.shape.args)
-        return { missing: `its family ${field.name}'s index ${index.name} is neither the same on both sides nor an element of a carrier` };
+        return refused(`its family ${field.name}'s index ${index.name} is neither the same on both sides nor an element of a carrier`,field,index.type);
+      bound.add(index.name);
     }
     families.set(field.name, indices);
   }
-  const context = { carriers, families, fields, parameters }, operations = new Map();
+  const context = { carriers, families, fields, parameters, dependencies }, operations = new Map();
   for (const field of record.fields.filter(field => field.kind === "operation")) {
     const shape = operationShape(field, context);
-    if (shape.why) return { missing: shape.why };
+    if (shape.why) return shape.refusal ? {missing:shape.why,refusal:shape.refusal} : refused(shape.why,field);
     operations.set(field.name, { name: field.name, ...shape });
   }
+  const mappingPlan={carriers:carrierFields.map(field=>({identity:field.identity,indices:families.get(field.name)??[]})),
+    operations:[...operations].map(([name,shape])=>({identity:record.fields.find(field=>field.name===name).identity,...shape}))};
   // A type that names the theory's universe, as an index A : U does, is
   // the same on both sides only in one universe: such a theory's
   // homomorphisms relate models in the same universes, as a parameter's
@@ -422,9 +462,11 @@ export function morphismSource(record, isTheory = () => false) {
   // a theory has no isomorphisms (L2.4c).
   const indexedSet = carrierFields.find(field => families.has(field.name) && levelOf(field.name) === "IsSet"
     && families.get(field.name).some(index => index.shape.kind === "carrier"));
-  if (indexedSet)
-    return { declarations, universes: uA, parameterMarker, typeMarkers, references,
-      missingIso: `its family of sets ${indexedSet.name} is indexed by a carrier, and its round trips would need a transport that is not generated` };
+  if (indexedSet) {
+    const reason=`its family of sets ${indexedSet.name} is indexed by a carrier, and its round trips would need a transport that is not generated`;
+    return { declarations, universes: uA, parameterMarker, typeMarkers, references, mapping:mappingPlan,
+      missingIso:reason,isoRefusal:unsupported(reason,record.dependencies.fields.find(field=>field.identity===indexedSet.identity).at,{field:indexedSet.identity}) };
+  }
   const tripped = sorts.filter(sort => !(families.has(sort) && levelOf(sort) === "IsProp"));
   const single = sorts.length === 1;
   const isoFields = [{ name: "to" }, { name: "from" },
@@ -469,5 +511,5 @@ export function morphismSource(record, isTheory = () => false) {
   // The inverse: the two homomorphisms and the two round trips swapped.
   declare(`${iso}.inverse`, `${implicitModels}(${f} : ${isoType(A, B)}) : ${isoType(B, A)} := ${global(`${iso}.make`)}${implicitArgs([B, A], false)}(${B}, ${A}, ${
     back(fIso).text}, ${there(fIso).text}${isoFields.slice(2).map(field => `, ${project(iso, other(field), fIso)}`).join("")});`, "inverse");
-  return { declarations, universes: uA, parameterMarker, typeMarkers, references };
+  return { declarations, universes: uA, parameterMarker, typeMarkers, references, mapping:mappingPlan };
 }

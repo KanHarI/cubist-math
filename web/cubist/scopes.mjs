@@ -19,12 +19,12 @@ function patternArguments(pattern) {
 }
 // Parameters form a telescope. Each group's domain is outside that group's
 // binders, and every subsequent group is inside them.
-const parameterScopes = (node, keys) => {
+const parameterScopes = (node, keys, renamable = false) => {
   const params = node.params ?? [], scopes = [];
   for (let k = 0; k < params.length;) {
     const first = params[k++], group = [first];
     while (first.group !== undefined && k < params.length && params[k].group === first.group) group.push(params[k++]);
-    scopes.push({binders: present(group.map(p => p.name)), keys, paramsAfter: k, renamable: false});
+    scopes.push({binders: present(group.map(p => p.name)), keys, paramsAfter: k, renamable});
   }
   return scopes;
 };
@@ -56,7 +56,7 @@ const SCOPES = {
   unpack: n => [{ binders: present([n.left, n.right]), keys: ["body"], renamable: true }],
   // Declarations and a theory's items: their parameters.
   def: n => parameterScopes(n, ["type", "body", "value"]),
-  derived: n => parameterScopes(n, ["type", "value"]),
+  derived: n => parameterScopes(n, ["type", "value"], true),
   law: n => parameterScopes(n, ["type"]),
   operation: n => parameterScopes(n, ["type"]),
   sort: n => parameterScopes(n, []),
@@ -83,7 +83,7 @@ export const UNBINDING = new Set([
   "pair", "pathApply", "pattern", "print", "projection", "prop", "reference", "rfl", "rw", "select", "set", "simp_rule", "simp_set",
   "simpaOnly", "tactic", "term", "theory", "trunc", "unary", "use", "withUnfolding",
   // Built by the translator and the theory expansion.
-  "useScope", "notationScope", "sectionScope", "scoped", "instantiated", "typed", "recursiveCall",
+  "useScope", "sectionScope", "scoped", "instantiated", "typed", "recursiveCall",
   // Not syntax: a theory's field records and the shapes of a homomorphism's
   // types, which carry syntax but are never walked as it.
   "evidence", "morphism", "fixed", "carrier", "arrow", "other",
@@ -108,7 +108,6 @@ const isToken = value => typeof value?.text === "string" && !value.kind;
 // Captured elaboration values are not source syntax: neither core binders
 // nor a notation rule's closed aliases participate in syntax substitution.
 const captured = (node, key) => node.kind === "instantiated" && key === "value"
-  || node.kind === "notationScope" && key === "aliases"
   || node.kind === "scoped" && ["node", "scope"].includes(key);
 
 // A copy of a syntax tree with `rewrite(node, bound)` applied to each node
@@ -172,14 +171,26 @@ export const renamedFree = (node, rename) => rewritten(node, (n, bound) => {
 // binder that would capture a free name of an argument substituted under it
 // renamed first, apart from every name either mentions. A binder that may not
 // be renamed (a pattern's or a parameter's) and would capture one is refused
-// with the error `refuse(name)` gives.
-export function substituted(node, args, refuse) {
+// with the error `refuse(name, binder)` gives, retaining its original site.
+export function substituted(node, args, refuse) { return substitute(node,args,refuse,false); }
+
+// A capture-avoiding rename keeps each occurrence's source site. Replacing
+// it with the site of a shared name template would erase its provenance.
+export function renamedApart(node, names, refuse) {
+  const args = new Map([...names].filter(([before,after])=>before!==after)
+    .map(([before,after])=>[before,{kind:"name",name:after}]));
+  return substitute(node,args,refuse,true);
+}
+
+function substitute(node, args, refuse, renaming) {
   const freeIn = new Map([...args].map(([name, arg]) => [name, freeNames(arg)]));
   const free = new Set([...freeIn.values()].flatMap(names => [...names]));
   const taken = new Set([...free, ...allNames(node)]);
   const fresh = stem => freshName(stem, taken);
   const go = (tree, bound) => rewritten(tree, (n, inner) => {
     if (n.kind === "name" && !inner.has(root(n.name))) {
+      if (renaming && args.has(root(n.name)))
+        return {...n,name:args.get(root(n.name)).name+n.name.slice(root(n.name).length)};
       if (args.has(n.name)) return args.get(n.name);
       const [head, ...fields] = n.name.split(".");
       if (args.has(head)) {
@@ -197,8 +208,10 @@ export function substituted(node, args, refuse) {
     const captures = (scope, binder) => [...args.keys()].some(name => freeIn.get(name).has(binderName(binder)) && occursFree(n, scope, name, inner));
     const scopes = scopesOf(n), clashing = new Set(scopes.filter(scope => scope.binders.some(binder => captures(scope, binder))));
     if (!clashing.size) return n;
-    for (const scope of clashing) if (!scope.renamable)
-      throw refuse(binderName(scope.binders.find(binder => captures(scope, binder))));
+    for (const scope of clashing) if (!scope.renamable) {
+      const binder = scope.binders.find(binder => captures(scope, binder));
+      throw refuse(binderName(binder), binder);
+    }
     return go(apart(n, scopes, clashing, free, fresh), inner);
   }, bound);
   return go(node, new Set());
@@ -234,9 +247,17 @@ function apart(node, scopes, clashing, free, fresh) {
         .flatMap(later => later.binders.map(binderName));
       copy[key] = renamedFree(copy[key], name => inner.includes(name) ? null : renaming.get(name) ?? null);
     }
+    if (renaming.size && scope.paramsAfter !== undefined) copy.params = copy.params.map((param, at) => {
+      if (at < scope.paramsAfter) return param;
+      const inner = scopes.slice(index + 1).filter(later => later.paramsAfter <= at)
+        .flatMap(later => later.binders.map(binderName));
+      const rename = name => inner.includes(name) ? null : renaming.get(name) ?? null;
+      return {...param, ...(param.bound ? {bound:renamedFree(param.bound,rename)} : {type:renamedFree(param.type,rename)})};
+    });
   }
   const swap = value => tokens.get(value) ?? (Array.isArray(value) ? value.map(swap) : value);
   for (const [key, value] of Object.entries(copy)) copy[key] = swap(value);
+  if (copy.params) copy.params = copy.params.map(param => ({...param, name:swap(param.name)}));
   return copy;
 }
 // A name for generated syntax that `taken` does not hold, added to it: the

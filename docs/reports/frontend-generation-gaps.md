@@ -42,6 +42,21 @@ test, not merely a resolved discussion or a passing corpus run.
 
 ## Fixed failures that motivate the design
 
+The inventory below remains pinned to `00d4ecce`. Follow-up implementation
+evidence is tracked separately so that the original reproductions retain
+their meaning:
+
+| Follow-up | Fixing implementation | Distinguishing regression |
+| --- | --- | --- |
+| FG0 executable evidence | `ed276a03` | `frontend-generation.test.mjs`: independent expected outcomes, with later-phase debt explicit |
+| G1/G6 and injected G7 | `fe05ea5e`, [FG1 report](frontend-generation-fg1.md) | Mixed ownership collisions, dependency failures and native/frontend rollback in `frontend-publication.test.mjs` |
+| G3 unsupported law transport | `908fcd60`, [FG2 report](frontend-generation-fg2.md) | Active G3 contract; hidden law/evidence dependencies and fixed external controls in `frontend-dependencies.test.mjs` |
+| G10 source range, G11 telescope capture, G12 earlier value calls | `f70699fe`, [FG2 report](frontend-generation-fg2.md) | Active G10–G12 contracts; opposite intended/captured equations, renamed inheritance, computation and focused type-unfolding refusal |
+
+G2, G4, G5, G8 and G9 remain open in this stack at FG2. The notation-alias
+audit's removal and its provenance distinction are documented in the FG2
+report. None of these changes registers the separate C1 deriving capability.
+
 These specific examples are fixed at `00d4ecce`. They are evidence for
 prevention work, not proof that the surrounding invariant holds everywhere:
 G8–G12 demonstrate remaining failures in the same contracts.
