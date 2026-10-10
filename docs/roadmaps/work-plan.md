@@ -14,7 +14,13 @@ decisions of the notation roadmap (L2.10) and of the theory syntax revision
 (L2.4c). Since the revision of 2026-10-05, against `066ca77` (`main` after
 PR #164), all on 2026-10-06: L2.4c, L2.10a–e and i–k, L2.5b's second
 slice, L2.9a and L2.9b, L2.8's first three slices, and L2.6's contract and
-first slice. The [first actions](#first-actions) are current as of this
+first slice. Proposed on 2026-10-07: the [categories](categories.md) and
+[homological algebra](homological-algebra.md) roadmaps.
+- **Packages:** L2.4d, L2.4e, L2.11, L2.12 and L3.4–L3.6.
+- **A new track:** the
+  [homological algebra track](#homological-algebra-track).
+
+The [first actions](#first-actions) are current as of this
 revision, and the [open decisions](#open-decisions) list what waits for
 the maintainer. The roadmaps' [index](README.md#at-a-glance) summarizes
 both.
@@ -68,7 +74,7 @@ between columns.
 | Instruction kernel | Stages 1–5; every elaboration check is derived; K1.4's own conversion guide is the default; explicit driver options and cumulative kernel-work counters (learned-search phases 1–2); I1.2a, instruction isolation: no untrusted query can change an instruction's verdict; I1.2b, the term checker and conversion oracle retired (2026-10-02); I1.2c, judgements on a face and partial elements on a face-dependent context, with its two remaining gaps closed (2026-10-04) | Stage-6 performance and certificate work |
 | G0 universes | K1.1–K1.4 and L1.1; `U < UU0`, `next`, `max`, generic builtins and rewriting; all 43 former templates check generically | E1 and E2, deferred proposals |
 | Proof ergonomics | Grouped binders, `let` with a stated type or a proof block (which replaced `have`, `show` and `suffices` on 2026-09-30), `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand; Σ projections `p.1`/`p.2` (L1.5); path-operator notation (`&`, `\|`, `path i =>`) and readable path diagnostics (PR #71); `~p` and `~i` for reversal, in place of prefix `-` (L2.10i, 2026-10-06); `hlevel`, L2.5b's first two slices (the second, 2026-10-06: `hlevel_rule`, quantified hints and evidence as rules, setness fields filled by the search); holes `_` and named arguments (L4.1a); implicit parameters and universe inference (L4.1b); the keywords of terms and statements and the built-in `Unit` and `Void` reserved (E175), and on 2026-10-06 a sum's injections, `left` and `right`; the box notation for compositions and `library/squares.cubist` (L2.8's first three slices, 2026-10-06). `apply` and `refine` (L4.4) withdrawn | L1.4 (folded path rules, constructor descent), B1 (`Path` induction), broader dependent rewriting, L2.5b's remainder, L2.8's last item (the archive's raw `comp` lemmas through squares) |
-| Theories and notation | L2.4, complete on 2026-10-05: theories with carriers, operations with notation, and laws, which must state propositions (E818); models, sections, `extends` with labels and renaming, `T.Hom` and `T.Iso`. The library's algebraic hierarchy is its first client. On 2026-10-06 L2.4c (#167–#172) replaced `sort` with carriers as fields, `T.Model` with `Monoid(U)` and `open` with `use` (E180, E396, E183); L2.10a–e and i–k (#166, #173–#179) and L2.6's first slice, initial and free models (#188), are done | L2.4b (structure identity, displayed models, after L3.1/L3.2); L2.6's revised checked capabilities (opt-in, uniqueness and universal proofs, additional-law evidence, higher-theory coherences); L2.10f–h, deferred |
+| Theories and notation | L2.4, complete on 2026-10-05: theories with carriers, operations with notation, and laws, which must state propositions (E818); models, sections, `extends` with labels and renaming, `T.Hom` and `T.Iso`. The library's algebraic hierarchy is its first client. On 2026-10-06 L2.4c (#167–#172) replaced `sort` with carriers as fields, `T.Model` with `Monoid(U)` and `open` with `use` (E180, E396, E183); L2.10a–e and i–k (#166, #173–#179) and L2.6's first slice, initial and free models (#188), are done | L2.4b (structure identity, displayed models, after L3.1/L3.2); L2.6's revised checked capabilities, universal proofs, additional-law obligations and higher coherences; L2.10f–h, deferred. Proposed on 2026-10-07 ([categories](categories.md)): morphisms by opt-in (L2.4d), user-defined morphisms (L2.4e, deferred), laws proved propositions (L2.11), implicit arguments in theory operations (L2.12), then categories, universal constructions and the abelian tower (L3.4–L3.6) |
 | Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | L1.2r |
 | Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release. L2.9a expected-value patterns and L2.9b closed witness readout delivered in #181/#182 (2026-10-07, after the runtime evaluation investigation at `825c8b88`). EVAL0's evaluation baseline recorded on 2026-10-08 | EVAL1–EVAL8 |
 | Declarations | **Released** on 2026-10-02, on by default with no marker, after K2.1's review (Lemma H2 and the critical pairs approved on 2026-09-30, the model and canonicity on 2026-10-02): K2.2, K2.3, L2.1, L2.2a's first three slices (the expression `match`, the closing statement, and recursion whose other arguments vary), and since 2026-10-04 its fourth (several values and nested patterns), the match statement on sums, which replaced `cases`, and L2.2b's automatic clauses. Nat, W and pushouts are source declarations; sums stay native; the circle's winding number computes in source. K2.4a's differential fixtures and K2.5's ledger verifier are implemented | K2.5's other archive remedies; a review record per K2.2 family; L2.3, L2.3b and L2.7; stages 4 and 5 |
@@ -126,7 +132,7 @@ conditional stage 6.
 Stage 2's H1 part passed its gate with the release of 2026-10-02: reviewed
 rules, explicit and automatic clauses, and the differential and canonicity
 fixtures. Its theories (L2.4, L2.4c) and the rest of explicit matching
-(L2.2a) are done; L2.3, L2.3b, L2.6's checked-capability work and L2.8's last item
+(L2.2a) are done; L2.3, L2.3b, L2.6's revised capability/proof slices and L2.8's last item
 remain. L4.1
 inference is scheduled in stage 1 despite its retained ID.
 Core theories can progress alongside H1: records need no new kernel rule.
@@ -538,6 +544,31 @@ The exact syntax remains proposed; none is delivered.
 - **N5:** explicit choice and dynamic application after N4 and checked
   capability laws. Probability and partiality instances remain deferred.
 
+## Homological algebra track
+
+The [homological algebra roadmap](homological-algebra.md) owns HA0–HA6.
+It was proposed on 2026-10-07 at the maintainer's request. It is a new
+mathematical track, and when it starts is an
+[open decision](#open-decisions). It has two routes:
+
+- **Synthetic (HA4).** Spheres and suspensions in the library, homotopy
+  groups, `K(G, 1)` and `K(G, n)`, and cohomology as truncated maps into
+  them. It needs only H1, the library's univalence and squares, so it can
+  start first.
+- **Algebraic (HA1–HA3).**
+  - Modules and exactness, up to the snake lemma with a computable
+    connecting map.
+  - Chain complexes over a shape, and homology with its long exact
+    sequence.
+  - Homology computed by Smith normal form.
+
+  They need the categories packages (HA0: L2.4d, L2.11, L2.12, L3.4–L3.6)
+  and, for HA3, binary numerals.
+- **Both (HA5, HA6).** HA5, Ext without the axiom of choice: Yoneda
+  extensions, or free resolutions over ℤ of finitely presented groups,
+  given by their presentations. HA6, cellular cohomology of finite CW
+  complexes agreeing with the synthetic definition.
+
 ## Runtime evaluation track
 
 Added on 2026-10-07. The [runtime evaluation roadmap](runtime-evaluation-roadmap.md)
@@ -648,6 +679,19 @@ results from the corresponding library area.
 - Move the word "view" to the decisions that block nothing: L2.10a
   shipped with the keyword `notation`, and whether the roadmaps' prose
   follows stays open.
+- Propose the [categories](categories.md) roadmap, adding these packages:
+  - L2.4d: morphisms by opt-in, at two levels;
+  - L2.4e: user-defined morphisms, deferred;
+  - L2.11: laws proved propositions;
+  - L2.12: implicit arguments in theory operations;
+  - L3.4–L3.6: categories, universal constructions and the abelian tower.
+
+  Move L2.4d, L2.11 and L2.12 ahead of L2.6's revised checked-capability
+  and proof slices. The equational construction prototype is retained as
+  evidence; its type and fold alone do not complete `free` or `initial`.
+- Propose the [homological algebra](homological-algebra.md) track,
+  HA0–HA6, with three new open decisions: when it starts, the composition
+  operator, and complex shapes or ℤ-indexing.
 
 **Second revision of 2026-10-05** (against `b6aa6e5`):
 
@@ -725,6 +769,11 @@ per scope.
   of matching and the `cases` migration. The same day L4.1a and both
   gaps were delivered.
 
+The L2.6 construction prototype remains implemented in
+`web/translator/initial-models.mjs`, with `cubist-tests/initial_models.cubist`
+as evidence. The revised opt-in and universal-property obligations are
+not implemented; no prototype-only result counts as the checked capability.
+
 ## First actions
 
 **Done on 2026-10-06** (#165–#188, each a small stacked pull request
@@ -750,15 +799,26 @@ previous revision's where sources moved):
 - **L2.6** (#187, #188): its contract, and the first slice, `initial` and
   `free` models with `fold`.
 
-Next, in order: L2.6's revised checked-capability contract (L2.4d's
-opt-in and L2.11's law check, the existing H1 construction, pointwise
-`fold_unique`, `T.Hom.ext` and `universal`; then additional-law evidence
-and higher theories after their coherence interface is specified); the
-archive's raw `comp` lemmas
-re-derived through the squares (L2.8's last item, a migration of archive
-proofs); the rest of L2.5b (Hedberg from registered decidable equality,
-one layer of unfolding, `Truncate`, the inspector's record of witnesses);
-L2.3's `deriving` and L2.3b; then L3.1/L3.2 before L2.4b and L2.7. One
+Next, in order (revised on 2026-10-07 with the
+[categories](categories.md) proposal):
+
+1. L2.4d, morphisms by opt-in, with its two-commit migration;
+2. L2.11, laws proved propositions;
+3. L2.12, implicit arguments in theory operations;
+4. L2.6's revised five slices: migrate the prototype to explicit
+   capabilities; prove pointwise uniqueness, `T.Hom.ext` and the universal
+   property before publishing a capability; discharge additional laws;
+   higher theories wait for their morphism/coherence interface;
+5. the archive's raw `comp` lemmas re-derived through the squares (L2.8's
+   last item, a migration of archive proofs);
+6. the rest of L2.5b: Hedberg from registered decidable equality, one layer
+   of unfolding, `Truncate`, and the inspector's record of witnesses;
+7. L2.3's `deriving` and L2.3b;
+8. L3.1 and L3.2, before L2.4b and L2.7;
+9. L3.4–L3.6, after the composition operator is decided.
+
+The [homological algebra track](#homological-algebra-track) starts when
+the maintainer decides. Its HA4 needs none of the above. One
 follow-up: `top_unique` with corners left to inference fails with an
 internal instruction-kernel error (E604, "Unchecked path application
 reached reduction") where giving them checks (#185).
@@ -887,7 +947,7 @@ beyond the library's foundations remains paused.
 
 ## Open decisions
 
-These wait for the maintainer. Three are needed before the work they name;
+These wait for the maintainer. Five are needed before the work they name;
 the rest stay open without blocking any scheduled slice, whose contract
 keeps a conservative behavior until a design is chosen.
 
@@ -898,16 +958,24 @@ keeps a conservative behavior until a design is chosen.
    and rationals' decidable orders, positive rationals and the Archimedean
    property. The reals roadmap's R1 and R2 need it; NUM0–NUM2 and the
    language packages do not.
-2. **The public `Nat` transition.** Decide when the binary carrier becomes
+2. **When the homological algebra track starts**
+   ([homological algebra](homological-algebra.md#open-questions),
+   question 1). It is a new mathematical track. HA4, the synthetic route,
+   can start now; HA1–HA3 follow L3.6.
+3. **The composition operator** ([categories](categories.md#open-questions),
+   question 1). `*` is the product type former, so `g * f` would be
+   ambiguous under `use C;`. The candidates are `∘` with an ASCII alias,
+   or diagrammatic `f >> g`; either is a new token in L2.10b's fixed
+   grammar. Needed before L2.12's acceptance and L3.4.
+4. **Complex shapes or ℤ-indexing**
+   ([homological algebra](homological-algebra.md#open-questions),
+   question 2). Shapes are recommended, because the library's integers make
+   `(n - 1) + 1 = n` a path. Needed before HA2.
+5. **The public `Nat` transition.** Decide when the binary carrier becomes
    `Nat`, and specify constructor names, notation and imports for existing
    unary clients. Until then, expose explicit `UNat` and `BNat`; new `Z`
    and `Q` use `BNat` regardless of the public spelling. This decision gates
    the alias/import switch, not NUM0–NUM2's construction work.
-
-3. **The composition operator**
-   ([categories](categories.md#open-questions), question 1): before
-   L2.12's notation acceptance and L3.4. The categorical roadmap's other
-   open questions stay with the packages they constrain.
 
 **Open, not blocking**
 
@@ -936,5 +1004,11 @@ decided.
     `G.F(Nat)` (the author writes it);
   - the round trip of a set family indexed by a carrier (no `T.Iso`).
 - Notation rules, L2.10h, proposed: nothing in L2.10a–e or i–k needs them.
+- The categories roadmap's other questions
+  ([categories](categories.md#open-questions)):
+  - names for the dual constructions, since `left`, `right` and `Pushout`
+    are taken;
+  - where the `deriving` clause goes, shared with L2.3;
+  - whether `deriving (limits)` is its own opt-in.
 - Whether `do using M` and `match … using view` take `use`'s word
   (notation's question 4): before N2 and L2.7 fix their syntax.

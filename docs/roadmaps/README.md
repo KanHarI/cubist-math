@@ -35,8 +35,9 @@ and the runtime/numerical track and revised initial/free contract. The
     - `Monoid(U)` as the type of models;
     - theory families and relations;
     - independent theories combined unchanged;
-    - initial and free models' construction prototype (L2.6): `initial`,
-      `free` and `fold`, without checked universal properties.
+    - the initial/free construction prototype (L2.6): declared carriers,
+      models and computing folds. The revised checked capability is not
+      implemented by this prototype alone.
   - **Notation (L2.10a–e, i–k).**
     - `use` selects a notation, in place of `open`;
     - named notations, qualified operators `a G.(+) b`, operand notations
@@ -51,15 +52,17 @@ and the runtime/numerical track and revised initial/free contract. The
     algebraic hierarchy, the integers and the rationals, h-levels,
     univalence and squares. Every archived declaration still checks.
 - **Specified, not implemented.**
-  - **Initial and free objects as checked capabilities (L2.6),** as
-    [revised on 2026-10-07](core-theories.md#initial-and-free-models-l26):
-    `deriving (morphisms, free)` requests a construction and checked
-    universal property and supplies initiality on `Void`;
-    `deriving (morphisms, initial)` is weaker. Either may fail on an
-    unsupported construction or an unproved law. The
-    [categorical roadmap](categories.md)'s morphism opt-in and general
-    propositional-law check precede publication of these capabilities;
-    its other packages remain proposed.
+  - **Checked initial/free capabilities (L2.6), revised on 2026-10-07,**
+    as [specified](core-theories.md#initial-and-free-models-l26):
+    - `deriving (morphisms, free)` with a universal proof, supplying
+      initiality on `Void`; the weaker `morphisms, initial`;
+    - general laws become proof obligations, including `zero != one`;
+    - an unsupported strategy or unproved law fails derivation without
+      claiming mathematical nonexistence;
+    - five slices, including migration of the construction prototype;
+      untruncated recursors alone supply no categorical capability;
+    - the [categorical roadmap](categories.md)'s morphism opt-in and
+      propositional-law check precede publication of these capabilities.
   - **Computation notation (N0–N5).** Monadic `do` and arrows; design
     only.
   - **Notation's remainders and deferred slices.**
@@ -68,28 +71,47 @@ and the runtime/numerical track and revised initial/free contract. The
       a shadowed notation's name in printing.
     - Deferred: large numerals (L2.10f) and `decide` (L2.10g).
     - Notation rules (L2.10h) are proposed, not decided.
+- **Proposed on 2026-10-07.**
+  - **[Morphisms, categories and universal constructions](categories.md).**
+    - Theories derive morphisms only on request, at two levels:
+      `deriving (isomorphisms)` by transport, and `deriving (morphisms)`
+      with the default category `T.cat`.
+    - Laws may state what `hlevel` proves a proposition, and theory
+      operations take implicit arguments.
+    - The library gains categories, limits and colimits, and the abelian
+      tower.
+  - **[Homological algebra](homological-algebra.md),** a new mathematical
+    track:
+    - the synthetic route first: spheres, `K(G, n)` and cohomology that
+      computes;
+    - then modules, chain complexes and homology on the categories
+      packages.
 - **Next,** in the work plan's [first actions](work-plan.md#first-actions):
-  1. L2.6's revised capability contract, including the opt-in, uniqueness
-     and universal proofs, then additional laws and higher theories;
-  2. the archive's raw `comp` lemmas re-derived through the squares
+  1. morphisms by opt-in (L2.4d);
+  2. laws proved propositions (L2.11), and implicit arguments in theory
+     operations (L2.12);
+  3. L2.6's revised capability, proof and additional-law slices;
+  4. the archive's raw `comp` lemmas re-derived through the squares
      (L2.8's last item);
-  3. the rest of the h-level solver (L2.5b):
+  5. the rest of the h-level solver (L2.5b):
      - Hedberg from registered decidable equality;
      - one layer of unfolding;
      - `Truncate`;
      - the inspector's record of witnesses;
-  4. `deriving` (L2.3), and h-levels proved before a squash constructor
+  6. `deriving` (L2.3), and h-levels proved before a squash constructor
      is added (L2.3b);
-  5. equivalences, then structure identity (L3.1, L3.2), before L2.4b and
+  7. equivalences, then structure identity (L3.1, L3.2), before L2.4b and
      L2.7;
-  6. the order on NUM2's new numbers, if the maintainer extends the
+  8. categories, universal constructions and the abelian tower
+     (L3.4–L3.6);
+  9. the order on NUM2's new numbers, if the maintainer extends the
      library's scope;
-  7. runtime evaluation and binary numerical foundations (EVAL0–EVAL8,
-     NUM0–NUM2), including H1 strong induction and the new `Z` and `Q`;
-  8. independent language work, among it L1.3's worker cancellation, and
-     monadic `do` and arrows (N0–N4);
-  9. K2.5's archive remedies;
-  10. H2's indexed families, then the H3 research gate.
+  10. runtime evaluation and binary numerical foundations (EVAL0–EVAL8,
+      NUM0–NUM2), including H1 strong induction and the new `Z` and `Q`;
+  11. independent language work, among it L1.3's worker cancellation, and
+      monadic `do` and arrows (N0–N4);
+  12. K2.5's archive remedies;
+  13. H2's indexed families, then the H3 research gate.
 
   One known defect is waiting. `top_unique` fails with an internal kernel
   error (E604) when its corners are left to inference (#185).
@@ -103,8 +125,12 @@ and the runtime/numerical track and revised initial/free contract. The
   need the order on the numbers first, and the Cauchy reals H3 too. The
   first library in `archive/` is a reference.
 - **Open decisions.**
-  - **Needs the maintainer's decision:** the order on the numbers. It
-    waits on that decision.
+  - **Need the maintainer's decision:**
+    - the order on the numbers;
+    - when the homological algebra track starts;
+    - the composition operator, before L3.4;
+    - complex shapes or ℤ-indexing, before the track's chain complexes.
+    - the public `Nat` alias/import transition, after the binary foundations.
   - **The rest:** these block no scheduled slice and are listed in the
     work plan's [open decisions](work-plan.md#open-decisions).
 
@@ -155,11 +181,27 @@ and the runtime/numerical track and revised initial/free contract. The
   every source selects `nat`, and an operator or numeral outside any
   selection is an error. Notation rules (L2.10h), large numerals and
   `decide` remain deferred.
-- [Morphisms, categories and universal constructions](categories.md):
-  morphism and isomorphism opt-ins, checked initial/free derivations,
-  propositional laws, implicit operation arguments, categorical library
-  constructions and the abelian tower. Consolidated with L2.6 in #187;
-  the separate homological-algebra track remains in #198.
+- [Morphisms, categories and universal constructions](categories.md),
+  proposed on 2026-10-07.
+  - **Morphisms by opt-in.** Theories derive morphisms only on request, at
+    two levels, and an opt-in that fails refuses the theory (L2.4d).
+    User-defined morphisms with the standardness obligation are deferred
+    (L2.4e). The categorical roadmap is consolidated in #187 with L2.6's
+    checked `free`/`initial` capabilities; the homological track stays in #198.
+  - **Prerequisites.** Laws proved propositions (L2.11), and implicit
+    arguments in theory operations (L2.12).
+  - **The library:** categories, functors and natural transformations;
+    limits over diagrams that are maps of graphs, with colimits by duality
+    and colimits of types as one higher inductive type; and the abelian tower
+    from preadditive to abelian (L3.4–L3.6).
+- [Homological algebra](homological-algebra.md), proposed on 2026-10-07: a
+  new mathematical track, HA0–HA6.
+  - **Synthetic:** homotopy groups, Eilenberg–MacLane spaces and cohomology
+    that computes.
+  - **Algebraic:** modules, exactness, chain complexes over shapes,
+    homology and Smith normal form.
+  - **Both:** Ext without the axiom of choice, and cellular cohomology of
+    finite CW complexes.
 - [Core theories](core-theories.md): the contract of work-plan L2.4,
   theory declarations, models, scoped notation, sections, extension,
   homomorphisms and isomorphisms, specified and implemented on 2026-10-05.

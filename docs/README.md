@@ -57,6 +57,7 @@ finishing a language milestone does not automatically resume them.
 | Galois theory | [Finite Galois development](roadmaps/galois-roadmap.md) | [Resumption checkpoint](tactical/galois-handoff.md), [symmetries as loops](tactical/galois.md), [polynomial algebra](tactical/polynomial-algebra.md), [finite dimension](tactical/finite-dimension.md) |
 | Complex analysis | [Algebraic closure, residues, and Picard](roadmaps/complex-analysis-roadmap.md) | [Paused-development checkpoint](tactical/complex_analysis_handoff.md), [complex curves](tactical/complex_curves.md), [limits](tactical/analysis_limits.md) |
 | Real numbers | [Number systems for the rebuild](roadmaps/reals-roadmap.md) | The library's integers and rationals, built on 2026-10-05 as quotients; their order, canonical rationals and the Cauchy reals (kernel H3) are open. The first library's constructions are described as archived. |
+| Homological algebra | [Synthetic and algebraic homological algebra](roadmaps/homological-algebra.md) | Proposed on 2026-10-07, not started: Eilenberg–MacLane spaces and cohomology that computes, then modules, chain complexes, homology and Ext without the axiom of choice. |
 | Analytic number theory | [RH and prime-counting error](roadmaps/rh-prime-counting-roadmap.md) | Planning only: precise conditional statement, analytic dependencies, and potential homotopy interpretations. No proof implementation or tactical checkpoint yet. |
 
 ## Language tooling roadmap
