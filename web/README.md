@@ -11,6 +11,22 @@ option; raw syntax and native opcode assembly remain available. Beta and delta
 buttons highlight applicable occurrences, and every selected reduction is
 checked for definitional equality. **Un-highlight** clears visual selection.
 
+In `proof.html`, **Generated Cubist** beside Read and Edit shows a read-only
+frontend expansion from the last check. Select the current file or an imported
+module to see its generated theory, initial and free-model declarations in
+Cubist syntax. Each family is labeled checked, failed or blocked. Editing keeps
+the previous expansion until **Check proof** runs again; a parse failure keeps
+the previous snapshot. Modules without expansions say so explicitly.
+
+The view retains the frontend's syntax before reference lowering, including
+families that did not publish. Captured references use display names and
+internal pattern binders get readable names. Generated dotted declaration names
+and capability metadata are not ordinary source declarations, so this is an
+inspection view, not a standalone module or an alternative to **Export checked
+proof**. A syntax form beyond the display's coverage or budget is identified
+by declaration name instead of silently omitted. Rendering runs on demand in
+the worker and does not recheck or regenerate the source.
+
 `npm run build:site` creates a static artifact in `build/site`. GitHub Pages
 publishes it at https://cubist.kanhar.art. `npm run test:site` exercises that
 artifact, including workers, imports, WASM, source links, and the workbench.

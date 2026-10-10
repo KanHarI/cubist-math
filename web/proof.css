@@ -361,7 +361,7 @@ pre {
   border-radius: 6px;
   margin-bottom: 16px;
 }
-#editor {
+#editor, #generated-source {
   width: 100%;
   min-height: 650px;
   resize: vertical;
@@ -374,6 +374,8 @@ pre {
   white-space: pre;
   overflow: auto;
 }
+#generated-source { min-height: 450px; max-height: 78vh; }
+#generated-panel .source-options { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
 #read-source {
   overflow: auto;
   padding: 8px 0;

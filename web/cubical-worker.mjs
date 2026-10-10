@@ -4,6 +4,7 @@ import { listedReader } from "./module-resolution.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
 import { ReplSession } from "./repl-session.mjs";
 import { elaboration } from "./cubical-elaboration.mjs";
+import { generatedCubist } from "./generated-cubist.mjs";
 const module = await createCubical();
 // What import can load, for the REPL's /modules.
 const importable = async () => moduleListing;
@@ -48,7 +49,7 @@ self.onmessage = async ({ data: { id, command, args } }) => {
       const replBefore = replQueue;
       const run = (async () => {
         const next = new CubicalProgram(module, readSource(args.module, args.place),
-          { optimizations: args.optimizations });
+          { optimizations: args.optimizations, collectGeneration: true });
         let checked;
         try { checked = await next.check(args.source, args.module ?? "current", progress => self.postMessage({ id, progress })); }
         catch (error) { next.dispose(); throw error; }
@@ -75,6 +76,7 @@ self.onmessage = async ({ data: { id, command, args } }) => {
       result = await run;
     } else if (!program) throw new Error("Check a proof first.");
     else if (command === "inspect") result = program.inspect(args.binding, args);
+    else if (command === "generation") result = generatedCubist(program, args.module ?? programMain);
     // A declared type has no checked definition: its signature and eliminator.
     else if (command === "signature") result = program.signatureView(args.binding);
     else if (command === "export-inspection") result = program.export(args.binding, args.side);

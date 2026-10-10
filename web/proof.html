@@ -125,7 +125,8 @@
               <h2>Proof source</h2>
               <div role="group" aria-label="Source mode">
                 <button id="read-mode" aria-pressed="true">Read</button
-                ><button id="edit-mode" aria-pressed="false">Edit</button>
+                ><button id="edit-mode" aria-pressed="false">Edit</button
+                ><button id="generated-mode" aria-pressed="false" disabled>Generated Cubist</button>
               </div>
             </div>
             <p id="source-hint" class="hint">
@@ -150,6 +151,14 @@
               <p id="source-count" class="hint"></p>
             </div>
             <div id="read-source" aria-label="Checked proof source"></div>
+            <div id="generated-panel" hidden>
+              <div class="source-options">
+                <label for="generated-module">Module</label>
+                <select id="generated-module"></select>
+                <span id="generated-status" role="status"></span>
+              </div>
+              <textarea id="generated-source" aria-label="Generated Cubist source" readonly spellcheck="false"></textarea>
+            </div>
           </section>
           <section id="repl-panel" class="panel repl-panel" aria-labelledby="repl-title">
             <div class="panel-head">

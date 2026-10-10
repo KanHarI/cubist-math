@@ -57,6 +57,61 @@ try {
   assert.equal(new URL(page.url()).hash, `#source=${example}`);
   await page.reload(); await idle();
   assert.match(await page.locator("#editor").inputValue(), /kept_after_reload/);
+  // Frontend generation is a read-only snapshot of the last check, including
+  // imported modules. Editing never changes that snapshot until a recheck.
+  const generatedExample = `import hlevels;
+theory Generated(U < UU0) { M : set U; c : M; }
+initial N : Generated(U0);`;
+  await page.locator("#edit-mode").click();
+  await page.locator("#editor").fill(generatedExample);
+  await page.locator("#check").click(); await idle();
+  await page.locator("#generated-mode").click(); await idle();
+  const generatedSource = page.locator("#generated-source");
+  assert.equal(await generatedSource.getAttribute("readonly"), "");
+  assert.equal(await page.locator("#generated-mode").getAttribute("aria-pressed"), "true");
+  assert.equal(await page.locator("#editor").isVisible(), false);
+  assert.equal(await page.locator("#read-source").isVisible(), false);
+  const generatedText = await generatedSource.inputValue();
+  assert.match(generatedText, /def Generated\.Hom\.id/);
+  assert.match(generatedText, /inductive N : set U0/);
+  assert.doesNotMatch(generatedText, /display unavailable/);
+  await page.locator("#generated-module").selectOption("hlevels"); await idle();
+  assert.match(await generatedSource.inputValue(), /Frontend generation · hlevels/);
+  assert.match(await generatedSource.inputValue(), /No frontend-generated declarations/);
+  await page.locator("#generated-module").selectOption("reference_example"); await idle();
+  assert.equal(await generatedSource.inputValue(), generatedText);
+  await page.locator("#edit-mode").click();
+  await page.locator("#editor").fill(generatedExample.replaceAll("Generated", "Replacement"));
+  await page.locator("#generated-mode").click(); await idle();
+  assert.equal(await generatedSource.inputValue(), generatedText);
+  assert.match(await page.locator("#dirty").textContent(), /Generated Cubist show the last checked version/);
+  await page.locator("#check").click(); await idle();
+  assert.equal(await generatedSource.isVisible(), true);
+  assert.match(await generatedSource.inputValue(), /def Replacement\.Hom\.id/);
+  assert.doesNotMatch(await generatedSource.inputValue(), /def Generated\./);
+  const replacementText = await generatedSource.inputValue();
+  // A parse failure preserves the previous program and its generation.
+  await page.locator("#edit-mode").click();
+  await page.locator("#editor").fill("theory Broken {");
+  await page.locator("#check").click(); await idle();
+  assert.equal(await page.locator("#diagnostic").isVisible(), true);
+  await page.locator("#generated-mode").click(); await idle();
+  assert.equal(await generatedSource.inputValue(), replacementText);
+  await page.locator("#edit-mode").click();
+  await page.locator("#editor").fill(`import hlevels;
+theory Failed(U < UU0) { M : set U; c : M; law bad : c = Missing; }`);
+  await page.locator("#check").click(); await idle();
+  await page.locator("#generated-mode").click(); await idle();
+  assert.match(await generatedSource.inputValue(), /Failed:base · failed/);
+  assert.match(await generatedSource.inputValue(), /Failed:hom · blocked/);
+  assert.match(await page.locator("#generated-status").textContent(), /check incomplete/);
+  await page.locator("#edit-mode").click();
+  await page.locator("#editor").fill("def plain : Unit := tt;");
+  await page.locator("#check").click(); await idle();
+  await page.locator("#generated-mode").click(); await idle();
+  assert.match(await generatedSource.inputValue(), /No frontend-generated declarations/);
+  assert.equal(await page.locator("#generated-module option").count(), 1);
+  assert.equal(await page.locator("#editor").inputValue(), "def plain : Unit := tt;");
   // The original remains inspectable after a duplicate is refused, and the
   // separate diagnostic points to the second declaration rather than it.
   const duplicate = Buffer.from("def kept : Unit := tt;\ndef kept : U0 := Unit;\ndef client : Unit := kept;").toString("base64url");
