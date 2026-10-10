@@ -1,5 +1,8 @@
 # Kernel instructions: a THTH-style forward kernel
 
+Progress reconciled on 2026-10-10 against main `cb525f07`. Open branch
+work is recorded separately in the [work plan](work-plan.md#branch-work).
+
 2026-09-30 update: Nat and W are now source-defined H1 inductives. Their
 primitive formation, constructor and elimination instructions have been
 removed; their ABI numbers remain reserved and are refused. The primitive
@@ -19,7 +22,7 @@ term checker and its conversion oracle were retired on
 2026-10-02 (work plan I1.2b; see
 [what remained of it](#what-remains-of-the-term-checker)); stage 6 is
 started (see [Stages](#stages)). The
-[audit of 2026-09-28](audits/2026-09-28-audit.md) found that separation
+[audit of 2026-09-28](historical/audits/2026-09-28-audit.md) found that separation
 incomplete: reduction called the old conversion, and its memo could change
 an instruction's acceptance. Work-plan I1.2a corrected both the same day,
 and enforces the boundary at run time; that section records how.
@@ -296,11 +299,10 @@ The trusted base is the instructions and what they call: the single-step
 contractions, substitution, alpha equality, the normalizer and weak head
 normal form (for `Normalize` and `Whnf`), the interval and face algebra, and
 the metatheory the typing rules rely on (subject reduction, uniqueness of
-types up to conversion, cumulativity). The kernel's weak head normal form of
-a Glue element consults conversion for Glue's eta rule; that is a reduction
-rule's side condition, and any answer yields a convertible term. The term
-checker's typing rules and its conversion strategy are not in it, nor are the
-unfolding hints. The judgement graph is truncated with the syntax arena on
+types up to conversion, cumulativity). Since I1.2a, the pair and Glue eta
+side conditions in reduction use syntax, not conversion search; the old
+conversion checker was deleted with I1.2b. The driver's search is untrusted:
+each proposed equality step must be admitted by the instructions. The judgement graph is truncated with the syntax arena on
 rollback and commit. `test_instructions.c` derives addition and trees
 forward over source-shaped Nat and W, and refuses the retired primitive
 syntax; `test_kernel_api.c` checks that `Lookup` recalls only admitted
@@ -561,11 +563,15 @@ there is no term checker's trace to fall back to.
    (#194–#197): the bridge reads a focused subterm in one call; the kernel
    wrapper keeps node reads and weak heads; normal forms are bounded and not
    retried; and a projection's argument goes to its weak head in one step.
-   The library's summed checking time is about four times smaller than
-   before #194. The native search module, certificate compaction, content
+   The recorded library measurement was about four times faster than
+   before #194; this reconciliation did not rerun that benchmark. The native search module, certificate compaction, content
    hashes and a learned policy remain.
 
 ## Stage 4: the trusted kernel
+
+Historical migration stage, completed before the term checker was removed.
+Its checker/oracle descriptions below record that intermediate architecture;
+[current retirement status](#what-remains-of-the-term-checker) governs today.
 
 **Admission.** Every definition, whatever its source (a declaration, a
 universe specialization, a `with unfolding` helper, a builtin such as `ua`),
@@ -604,6 +610,9 @@ takes 61 s, up from 34 s.
 derived its output. Stage 5 removes it.
 
 ## Stage 5: the term checker leaves elaboration
+
+Historical migration evidence. Stage 5 completed; I1.2b subsequently removed
+the remaining checker APIs and oracle on 2026-10-02.
 
 **Raw syntax.** The elaborator hands the driver the source syntax, not the
 term checker's output, and the driver does what the term checker did before

@@ -2,7 +2,7 @@
  * are syntactic, and so are the reducers that Step, HComp and Trans call: a
  * query made before an instruction cannot change whether it is accepted, and
  * no comparison by computation decides a reduction step. The work-plan audit
- * of 2026-09-28 (docs/roadmaps/audits/2026-09-28-audit.md, finding 1) found
+ * of 2026-09-28 (docs/roadmaps/historical/audits/2026-09-28-audit.md, finding 1) found
  * both broken; these are its regressions. Since I1.2b there is no conversion
  * search to ask at all. */
 #include "cubical_kernel.h"

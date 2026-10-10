@@ -8,13 +8,19 @@ Moving these documents does not change their recorded status or resume paused wo
 
 ## Plan
 
+Progress reconciled on 2026-10-10 against main `cb525f07`. The
+[roadmap overview](roadmaps/README.md#at-a-glance) separates delivered work
+from remaining obligations in the [integrated stack](roadmaps/work-plan.md#branch-work).
+
 - [Work plan](roadmaps/work-plan.md): staged, dependency-ordered work across the
   language, its kernel support and the language reference. Broad mathematical
   rebuilding is deferred.
-- [Work-plan audit of 2026-09-28](roadmaps/audits/2026-09-28-audit.md): the
+- [Work-plan audit of 2026-09-28](roadmaps/historical/audits/2026-09-28-audit.md): the
   baseline revision and findings behind the current statuses.
 - [Historical plans and specifications](roadmaps/historical/README.md):
-  completed work, including the implemented G0 universe specification.
+  completed and superseded plans, the G0 specification, closed H1 release
+  evidence and dated audits. Current specifications and unfinished work
+  remain in the active roadmap directory.
 - [Reports and historical evidence](reports/README.md): revision-specific
   validation and progress snapshots, with their current status owners.
 - [Results of the first library](library-results.md): the frontier and iconic
@@ -33,7 +39,7 @@ Moving these documents does not change their recorded status or resume paused wo
     experimental option or marker. Nat, W and pushouts are source
     declarations; see the [migration record](roadmaps/h1-program-types.md)
     for the current behavior, validation and limits of the historical
-    comparison fixtures, and the [history](roadmaps/h1-history.md) for the
+    comparison fixtures, and the [history](roadmaps/historical/h1-history.md) for the
     release checklist, the review rounds and the retired differential
     contract.
 - The trusted kernel:
@@ -85,21 +91,22 @@ finishing a language milestone does not automatically resume them.
   binary values and new binary-backed `Z` and `Q`, with staged correctness
   and performance gates.
 - [Simplification and shorter proofs](roadmaps/proof-ergonomics-roadmap.md):
-  - Delivered: rewriting, calculations, `simp`/`simpa`, cubical path
-    syntax, dependency tracking, `computable` and `evaluate` with patterns
-    and truncation readout, argument inference and implicit parameters,
-    explicit `match`, theories and explicit notation.
-  - Remaining: the rest of initial and free models, algebraic
-    normalization and structure identity, and the rest of inductive
-    declarations (`deriving`, proof-first h-levels).
-  - See the [implementation plan](roadmaps/proof-ergonomics-implementation-plan.md)
-    and [checked/proposed examples](examples/proof-ergonomics/README.md).
+  - Delivered: rewriting, calculations, `simp`/`simpa` and cubical path
+    syntax, dependency tracking, `computable` and exact-value `evaluate`.
+  - Also delivered: argument/level inference, implicit parameters, core
+    theories and their syntax revision, named notation, H1 matching,
+    evaluation patterns and closed truncation readout, box notation and squares.
+  - Remaining: checked initial/free capabilities, structure identity,
+    advanced rewriting and declaration interfaces. The construction prototype
+    is integrated from #188.
+  - The old [implementation sequence](roadmaps/historical/proof-ergonomics-implementation-plan.md)
+    is historical; its [remaining contracts](roadmaps/proof-ergonomics-roadmap.md#remaining-implementation-contracts)
+    have active owners. Keep the [checked/proposed examples](examples/proof-ergonomics/README.md).
 - [HoTT and cubical proof automation](roadmaps/hott-automation-roadmap.md):
   - Delivered: A7 (baseline, regressions and canonicity fixture), the A5
     goal-layer core, A4/A6 deterministic fuel with residual-goal
-    diagnostics, D0a's h-level definitions, D1's `hlevel` solver with
-    registered rules and quantified hints, and E2's box notation and squares
-    library; D0b is started. See the
+    diagnostics, D0a's h-level definitions, two slices of D1's
+    `hlevel` solver and three square/box-notation slices; see the
     [checkpoint](tactical/hott-automation-handoff.md).
   - Planned: remaining goal-layer work, path operations,
     path induction, transport, the rest of the h-level solver, dependent
@@ -116,7 +123,7 @@ finishing a language milestone does not automatically resume them.
 - [Roadmaps](roadmaps/README.md): intended scope and unfinished mathematical and language-tooling goals.
 - [Tactical notes](tactical/README.md): handoffs, implementation details, and checked proof developments.
 - Guides: [CLI](guides/cli.md), [kernel](guides/kernel.md), and [deployment](guides/deployment.md).
-- [Cubical implementation notes](cubical/): kernel constructions, performance, browser integration, and migration history. Start with the [benchmark](cubical/benchmark.md) and [checking optimizations](cubical/checking-optimizations.md) for performance work.
+- [Cubical implementation notes](cubical): kernel constructions, performance, browser integration, and migration history. Start with the [benchmark](cubical/benchmark.md) and [checking optimizations](cubical/checking-optimizations.md) for performance work.
 - [Language reference](../web/language.html): current user-facing syntax. The [older language design notes](guides/cubist.md) are historical.
 
 When handing off work, record what was checked, its assumptions and limitations,
