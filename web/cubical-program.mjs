@@ -60,6 +60,7 @@ export class CubicalProgram {
     this.declarationReferences = new Map();
     this.modules = new Map(); this.symbols = {}; this.views = new Map();
     this.publications = new Map(); this.declarationOwnership = new Map();
+    this.generation = new Map();
     this.sourceAsts = new Map();
     this.simpRegistries = new Map();
     this.gaps = []; this.evaluations = []; this.prints = []; this.links = []; this.sources = {}; this.completed = 0;
@@ -155,6 +156,7 @@ export class CubicalProgram {
   recordModule(name, main, text, ast, result, failure) {
     this.simpRegistries.set(name,result.simpRegistry);
     this.publications.set(name,result.publications??[]);
+    if (result.generation) this.generation.set(name, result.generation);
     this.declarationOwnership.set(name,result.ownership??new Map());
     for(const directive of result.directives??[]) {
       this.directiveFuel.push({ module: name, kind: directive.kind, name: directive.name, searchFuel: directive.searchFuel ?? null });
@@ -296,6 +298,7 @@ export class CubicalProgram {
       // A module of a revision before L2.10j, as the migration verifier reads
       // one, keeps its name-based operators and numerals (translate.mjs).
       const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
+        collectGeneration: this.options.collectGeneration ?? false,
         nameBased: this.readSource.nameBased?.(name) ?? false,
         inspectSignature: binding => this.signatureText(binding, checker.notation),
         ...Object.fromEntries(Object.entries(this.fuelLimits).filter(([, limits]) => limits)),

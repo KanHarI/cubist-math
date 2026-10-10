@@ -88,7 +88,8 @@ function lambdas(params,body) {
 export class Translator {
   constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
-    inspectSignature=null,nameBased=false}={}) {
+    inspectSignature=null,nameBased=false,collectGeneration=false}={}) {
+    this.collectGeneration=collectGeneration;
     // A module of a revision before L2.10j reads an operator or a numeral
     // outside any selection by name, as it did then: x + y as the add in
     // scope, 3 from the Nat in scope, 0b110 from the binary constructors in
@@ -669,7 +670,11 @@ export class Translator {
       if(d.generated)env.set(lexicalBinding(this.checker.bindingName?.(d.name.text)??d.name.text),env.get(d.name.text));
       settle(d,queue);
     }
-    return {declarations,env,directives,publications:publications.map(group=>({id:group.id,owner:group.owner,family:group.family,
+    // Inspection optionally retains the original expansion, including members
+    // rolled back or blocked by a failed family. It grants no bindings.
+    return {declarations,env,directives,
+      ...(this.collectGeneration ? {generation:publications.map(({id,members})=>({id,declarations:members}))} : {}),
+      publications:publications.map(group=>({id:group.id,owner:group.owner,family:group.family,
       members:group.members.flatMap(declaredNames).map(entry=>entry.name),dependencies:group.dependencies.map(d=>d.id),state:group.state,cause:group.cause})),ownership:ownership.entries,simpRegistry:this.simpRegistry,
       normalizationVisits:this.checker.steps};
   }
