@@ -105,7 +105,7 @@ test("FG0 harness: grouped-only lint suppression leaves the single-binder defect
 
 for (const id of ["G12", "G12-inherited", "G12-initial"]) test(`FG0 harness: ${id} twice clients pass with a nonrecursive iter`, async t => {
   const c = fixture(id);
-  c.source = c.source.replace("match n { zero => c; succ(k) => op(iter(k)); }", "match n { zero => c; succ(k) => op(c); }");
+  c.source = c.source.replace("match n { zero => c; succ(k) => op(iter(k)); }", "match n { zero => c; succ(k) => match k { zero => op(c); succ(j) => op(op(c)); }; }");
   const observation = await observeCase(t, c, check);
   assert.equal(classifyCase(c, observation, {strict: true}), "pass");
   assert.throws(() => classifyCase(c, observation), /unexpectedly passed/);

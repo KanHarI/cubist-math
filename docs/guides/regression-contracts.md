@@ -32,11 +32,22 @@ composable across diagnostic kinds. Resolve source anchors before observation;
 ambiguous occurrences are fixture errors unless explicitly selected.
 
 Use real programs and independently stated clients for semantic evidence.
-Exercise distinct branch results and both base and recursive-step computations.
+Exercise distinct branch results and inputs that distinguish dependence on a
+recursive result. A first successor can coincide with a step that substitutes
+the base value; add a second successor and explicitly reject that wrong source.
 Pair intended equations with plausible incorrect equations that must be refused;
 check that a constant or incorrectly resolved implementation cannot satisfy both.
 A supported control that avoids the old compiler defect still needs these
 semantic distinctions.
+Keep the observation's guarantee precise. An absent reported output does not
+imply an unavailable name: constructors can be available without being outputs.
+Test name availability with real clients, including accepted clients when the
+binding should survive. Assign refusal codes per client, and compose them with
+declaration diagnostics before comparing the complete expected diagnostic set.
+An observer audit must use results possible at that interface; obtain positive
+controls from real programs before injecting a leak or refusal. A supported
+finite unrolling proves only the selected computation witnesses.
+
 Small injected diagnostic/link observations can test a contract's acceptance
 boundary before a compiler fix exists; label them as such. They do not prove
 that the compiler produces the desired result. Keep actual integration checks

@@ -77,10 +77,18 @@ export function validateFixture(fixture) {
   const anchors = {};
   for (const key of ["id", "group", "kind", "phase", "contract", "source"])
     assert.ok(typeof fixture[key] === "string" && fixture[key].length, `missing case ${key}`);
-  const names = [...fixture.clients ?? [], ...fixture.refusedClients ?? []];
+  const names = [...fixture.clients ?? [], ...Object.keys(fixture.refusedClients ?? {})];
   assert.equal(new Set(names).size, names.length, "client names must be distinct");
-  for (const field of ["clients", "refusedClients", "absentMembers", "absentFamilies"])
+  for (const field of ["clients", "absentOutputs", "absentOutputFamilies"])
     if (fixture[field]) assert.ok(Array.isArray(fixture[field]) && fixture[field].every(name => typeof name === "string" && name.length), `invalid ${field}`);
+  if (fixture.refusedClients) {
+    assert.ok(typeof fixture.refusedClients === "object" && !Array.isArray(fixture.refusedClients), "invalid refusedClients");
+    for (const [name, code] of Object.entries(fixture.refusedClients))
+      assert.ok(name.length > 0 && /^E\d+$/.test(code), "each refused client needs its diagnostic code");
+  }
+  // Old names confused reported outputs with names available to later source.
+  for (const field of ["absentMembers", "absentFamilies", "refusalCode"])
+    assert.ok(!(field in fixture), `obsolete expectation ${field}`);
   if (diagnostic && ("scope" in diagnostic || "token" in diagnostic)) {
     anchors.scope = sourceAnchor(source, diagnostic.scope, "diagnostic scope");
     anchors.token = relativeAnchor(source, anchors.scope, diagnostic.token, "diagnostic token", diagnostic.tokenOccurrence);
@@ -115,11 +123,18 @@ export function validateObligations(fixtures) {
   for (const fixture of fixtures) assert.ok(witnessed.has(fixture.id), `${fixture.id}: no requirement mapping`);
   // These are independently stated minimum obligations, so deleting a check
   // from the fixture cannot silently redefine success in the observer audit.
-  for (const [id, members] of [["G1", ["c"]], ["G1-initial", ["N.model", "N.fold_map", "N.fold"]]])
-    for (const name of members) assert.ok(byId.get(id).absentMembers?.includes(name), `${id}: missing publication requirement ${name}`);
+  for (const name of ["N.model", "N.fold_map", "N.fold"])
+    assert.ok(byId.get("G1-initial").absentOutputs?.includes(name), `G1-initial: missing output requirement ${name}`);
+  for (const [id, clients] of [["G1", ["leaked_c"]], ["G1-initial", ["leaked_one", "leaked_mul"]]])
+    for (const name of clients)
+      assert.equal(byId.get(id).refusedClients?.[name], "E343", `${id}: missing name-availability witness ${name}`);
+  assert.ok(byId.get("G1-reverse").clients.includes("constructor"), "G1-reverse: missing original constructor witness");
   for (const id of ["G4", "G4-flat", "G12", "G12-inherited", "G12-initial"])
-    assert.ok(byId.get(id).refusedClients?.includes("wrong"), `${id}: missing wrong-equation witness`);
-  assert.ok(byId.get("G12-shadowed").refusedClients?.includes("captured"), "G12-shadowed: missing captured-equation witness");
+    assert.equal(byId.get(id).refusedClients?.wrong, "E606", `${id}: missing wrong-equation witness`);
+  for (const id of ["G12", "G12-inherited", "G12-initial"])
+    for (const name of ["base", "computation", "computation2"])
+      assert.ok(byId.get(id).clients.includes(name), `${id}: missing recursive-result witness ${name}`);
+  assert.equal(byId.get("G12-shadowed").refusedClients?.captured, "E606", "G12-shadowed: missing captured-equation witness");
 }
 export function validateCoverage(manifest, fixtures) {
   validateObligations(fixtures);
@@ -137,16 +152,17 @@ export const rangeFacts = (actual, {scope, token}) => ({
 // A semantic case can require both checked equations and refused alternatives.
 const clientRequirements = (fixture, facts) => ({
   clients: (fixture.clients ?? []).every(name => facts.clients[name] === "checked"),
-  refusedClients: (fixture.refusedClients ?? []).every(name => facts.clients[name] === "refused"),
+  refusedClients: Object.keys(fixture.refusedClients ?? {}).every(name => facts.clients[name] === "refused"),
 });
-const expectedClientDiagnostics = fixture => (fixture.refusedClients ?? [])
-  .map(name => `${name} ${fixture.refusalCode ?? "E606"}`).sort();
-function observePublication(checked, fixture, facts, requirements) {
-  if (!fixture.absentMembers && !fixture.absentFamilies) return;
-  facts.published = checked.result.outputs.filter(({name}) =>
-    fixture.absentMembers?.includes(name) || fixture.absentFamilies?.some(prefix => name === prefix || name.startsWith(prefix + ".")))
+const expectedClientDiagnostics = fixture => Object.entries(fixture.refusedClients ?? {})
+  .map(([name, code]) => `${name} ${code}`);
+// Outputs report declarations; constructors must instead be tested by source clients.
+function observeOutputAbsence(checked, fixture, facts, requirements) {
+  if (!fixture.absentOutputs && !fixture.absentOutputFamilies) return;
+  facts.forbiddenOutputs = checked.result.outputs.filter(({name}) =>
+    fixture.absentOutputs?.includes(name) || fixture.absentOutputFamilies?.some(prefix => name === prefix || name.startsWith(prefix + ".")))
     .map(o => o.name).sort();
-  requirements.publication = facts.published.length === 0;
+  requirements.outputsAbsent = facts.forbiddenOutputs.length === 0;
 }
 
 // `check` uses the existing program/module reader and test-owned disposal.
@@ -168,22 +184,20 @@ export async function observeCase(t, fixture, check, lintSource = lint) {
     // advice must be investigated before assigning it a replacement source.
     if (recognizedAdvice) checked = await check(t, fixture.source.replace(fixture.rewrite.from, fixture.rewrite.to));
   }
-  const facts = {gaps: diagnostics(checked), clients: states(checked, [...fixture.clients ?? [], ...fixture.refusedClients ?? []]),
+  const facts = {gaps: diagnostics(checked), clients: states(checked, [...fixture.clients ?? [], ...Object.keys(fixture.refusedClients ?? {})]),
     rootCauses: rootCauses(checked), dependencies: dependencies(checked)};
   const requirements = clientRequirements(fixture, facts);
-  observePublication(checked, fixture, facts, requirements);
+  observeOutputAbsence(checked, fixture, facts, requirements);
+  const expectedDiagnostics = expectedClientDiagnostics(fixture);
   switch (fixture.kind) {
     case "completion":
-      requirements.diagnostics = isDeepStrictEqual(facts.gaps, expectedClientDiagnostics(fixture));
       break;
     case "lint":
       facts.advice = advice;
       requirements.advice = advice.length === 0 || recognizedAdvice;
-      requirements.diagnostics = isDeepStrictEqual(facts.gaps, expectedClientDiagnostics(fixture));
       break;
     case "evidence":
       facts.generation = generation(checked);
-      requirements.diagnostics = isDeepStrictEqual(facts.gaps, expectedClientDiagnostics(fixture));
       break;
     case "collision": {
       const output = checked.get(fixture.symbol), refusal = gap(checked, fixture.symbol);
@@ -191,18 +205,17 @@ export async function observeCase(t, fixture, check, lintSource = lint) {
       facts.duplicateRefused = !!refusal && /already|duplicate/i.test(refusal.reason);
       requirements.originalType = facts.originalType === fixture.originalType;
       requirements.duplicateRefused = facts.duplicateRefused;
-      requirements.diagnostics = checked.result.gaps.length === 1 && !!refusal;
+      expectedDiagnostics.push(`${fixture.symbol} ${refusal?.code}`);
       break;
     }
     case "unsupported-family": {
       accepted(checked, fixture.clients);
-      facts.refusals = fixture.refusedClients.map(name => {
+      facts.refusals = Object.keys(fixture.refusedClients).map(name => {
         const refusal = gap(checked, name);
         return {name, code: refusal?.code ?? null,
           words: fixture.refusalWords.map(word => hasWord(refusal?.reason ?? "", word)),
           unsupported: /depend|transport|unsupported/i.test(refusal?.reason ?? "")};
       });
-      requirements.diagnostics = isDeepStrictEqual(facts.gaps, fixture.refusedClients.map(name => `${name} E817`).sort());
       requirements.refusals = facts.refusals.every(r => r.code === "E817" && r.words.every(Boolean) && r.unsupported);
       break;
     }
@@ -212,7 +225,7 @@ export async function observeCase(t, fixture, check, lintSource = lint) {
       assert.ok(hasWord(gap(checked, fixture.parent).reason, fixture.cause), "the parent must report its original cause");
       facts.childNamesParent = hasWord(gap(checked, fixture.child)?.reason ?? "", fixture.parent);
       facts.childRepeatsCause = hasWord(gap(checked, fixture.child)?.reason ?? "", fixture.cause);
-      requirements.diagnostics = isDeepStrictEqual(facts.gaps, [`${fixture.parent} E343`, `${fixture.child} E340`].sort());
+      expectedDiagnostics.push(`${fixture.parent} E343`, `${fixture.child} E340`);
       requirements.dependency = facts.childNamesParent;
       break;
     }
@@ -223,7 +236,7 @@ export async function observeCase(t, fixture, check, lintSource = lint) {
       const mismatch = actual.reason.match(/^Type mismatch: found (.*), expected (.*)\.(?: at \d+:\d+)?$/);
       facts.endpoints = [mismatch?.[1] === fixture.diagnostic.found, mismatch?.[2] === fixture.diagnostic.expected];
       facts.range = rangeFacts(actual, anchors);
-      requirements.diagnostics = isDeepStrictEqual(facts.gaps, [`${fixture.diagnostic.name} ${fixture.diagnostic.code}`]);
+      expectedDiagnostics.push(`${fixture.diagnostic.name} ${fixture.diagnostic.code}`);
       requirements.endpoints = facts.endpoints.every(Boolean);
       requirements.range = Object.values(facts.range).every(Boolean);
       break;
@@ -241,7 +254,7 @@ export async function observeCase(t, fixture, check, lintSource = lint) {
     }
     case "capture-range": {
       const {diagnostic, source} = fixture, actual = gap(checked, diagnostic.name);
-      assert.deepEqual(facts.gaps, [`${diagnostic.name} ${diagnostic.code}`]);
+      expectedDiagnostics.push(`${diagnostic.name} ${diagnostic.code}`);
       const {conflict, binder, call} = anchors;
       facts.range = {nonempty: actual.end > actual.start,
         withinConflict: actual.start >= conflict.start && actual.end <= conflict.end,
@@ -250,17 +263,17 @@ export async function observeCase(t, fixture, check, lintSource = lint) {
       break;
     }
     case "capture":
-      requirements.diagnostics = isDeepStrictEqual(facts.gaps, expectedClientDiagnostics(fixture));
       break;
     case "refusal-range": {
       const actual = gap(checked, fixture.diagnostic.name);
-      assert.deepEqual(facts.gaps, [`${fixture.diagnostic.name} ${fixture.diagnostic.code}`]);
+      expectedDiagnostics.push(`${fixture.diagnostic.name} ${fixture.diagnostic.code}`);
       facts.range = rangeFacts(actual, anchors);
       requirements.range = Object.values(facts.range).every(Boolean);
       break;
     }
     default: throw Error(`Unknown observation kind: ${fixture.kind}`);
   }
+  requirements.diagnostics = isDeepStrictEqual(facts.gaps, expectedDiagnostics.sort());
   return {facts, requirements};
 }
 

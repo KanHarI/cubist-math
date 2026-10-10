@@ -5,10 +5,12 @@ const definitions = {
     phase: "FG1", contract: "a duplicate declaration preserves the first binding and its clients",
     source: `def N : Unit := tt;
 inductive N : U0 { c; }
+def leaked_c := c;
 def original : Unit := N;
 def independent : Unit := tt;`,
     clients: ["original", "independent"],
-    originalType: "Unit", symbol: "N", invariantClients: ["independent"], absentMembers: ["c"],
+    originalType: "Unit", symbol: "N", invariantClients: ["independent"], absentOutputs: [],
+    refusedClients: {leaked_c: "E343"},
   },
   G2: {
     phase: "FG3", contract: "fixed argument domains contribute to generated universes",
@@ -31,7 +33,7 @@ theory T(U < UU0) { M : set U; c : M; law l : c = c; op(p : l = l) : M; }
 def usable(S : T(U0)) : S.M := S.op(refl(S.l));
 def unsupported(S : T(U0)) := T.Hom.id(S);`,
     clients: ["T", "T.make", "T.op", "usable"],
-    absentFamilies: ["T.Hom", "T.Iso"], refusedClients: ["unsupported"],
+    absentOutputFamilies: ["T.Hom", "T.Iso"], refusedClients: {unsupported: "E817"},
     refusalWords: ["op", "p", "l"],
   },
   G4: {
@@ -46,7 +48,7 @@ def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.op(S.op(S.c)) { rfl; }
 def off_computation(S : T(U0)) : S.value(cons(off, nil)) = S.op(S.c) { rfl; }
 def empty_computation(S : T(U0)) : S.value(nil) = S.c { rfl; }
 def wrong(S : T(U0)) : S.value(cons(yes, nil)) = S.c { rfl; }`,
-    clients: ["T.value", "computation", "empty_computation", "off_computation"], refusedClients: ["wrong"],
+    clients: ["T.value", "computation", "empty_computation", "off_computation"], refusedClients: {wrong: "E606"},
   },
   G5: {
     phase: "FG5", contract: "grouped-binder advice preserves supported calls and generated interfaces",
@@ -106,7 +108,7 @@ theory T(U < UU0) { M : set U; c : M; op(x, y : M) : M;
 }
 def intended(S : T(U0), x : S.M) : S.kk(x) = S.op(x, S.c) := refl(S.op(x, S.c));
 def captured(S : T(U0), x : S.M) : S.kk(x) = S.op(x, x) := refl(S.op(x, x));`,
-    clients: ["intended"], refusedClients: ["captured"],
+    clients: ["intended"], refusedClients: {captured: "E606"},
   },
   G12: {
     phase: "FG2/FG4/FG5", contract: "ordinary calls to earlier recursive values check and compute",
@@ -116,9 +118,10 @@ theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
   def twice(n : Nat) : M := op(iter(n));
 }
 def computation(S : T(U0)) : S.twice(succ(zero)) = S.op(S.op(S.c)) { rfl; }
+def computation2(S : T(U0)) : S.twice(succ(succ(zero))) = S.op(S.op(S.op(S.c))) { rfl; }
 def base(S : T(U0)) : S.twice(zero) = S.op(S.c) { rfl; }
 def wrong(S : T(U0)) : S.twice(succ(zero)) = S.op(S.c) { rfl; }`,
-    clients: ["T.iter", "T.twice", "computation", "base"], refusedClients: ["wrong"],
+    clients: ["T.iter", "T.twice", "computation", "computation2", "base"], refusedClients: {wrong: "E606"},
   },
   "G12-range": {
     phase: "FG5", contract: "recursive type-unfolding refusals cover the responsible original reference",
@@ -133,15 +136,17 @@ theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
 
 const collisionVariants = [
   {
-    id: "G1-initial", absentMembers: ["N.model", "N.fold_map", "N.fold"], contract: "an initial-model duplicate preserves the first definition",
+    id: "G1-initial", refusedClients: {leaked_one: "E343", leaked_mul: "E343"}, absentOutputs: ["N.model", "N.fold_map", "N.fold"], contract: "an initial-model duplicate preserves the first definition",
     source: `import hlevels; import algebra;
 def N : Unit := tt;
 initial N : Monoid(U0);
+def leaked_one := N.one;
+def leaked_mul := N.mul;
 def original : Unit := N;
 def independent : Unit := tt;`,
   },
   {
-    id: "G1-reverse", absentMembers: [], contract: "a definition duplicate preserves the first inductive",
+    id: "G1-reverse", refusedClients: {}, absentOutputs: [], contract: "a definition duplicate preserves the first inductive",
     source: `inductive N : U0 { c; }
 def N : Unit := tt;
 def original : U0 := N;
@@ -150,7 +155,7 @@ def independent : Unit := tt;`,
     originalType: "U0", clients: ["original", "constructor", "independent"],
   },
   {
-    id: "G1-same-kind", absentMembers: [], contract: "a same-kind duplicate preserves the first definition",
+    id: "G1-same-kind", refusedClients: {}, absentOutputs: [], contract: "a same-kind duplicate preserves the first definition",
     source: `def N : Unit := tt;
 def N : U0 := Unit;
 def original : Unit := N;
@@ -240,9 +245,10 @@ theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
 }
 theory Child(U < UU0) extends T {}
 def computation(S : Child(U0)) : S.twice(succ(zero)) = S.op(S.op(S.c)) { rfl; }
+def computation2(S : Child(U0)) : S.twice(succ(succ(zero))) = S.op(S.op(S.op(S.c))) { rfl; }
 def base(S : Child(U0)) : S.twice(zero) = S.op(S.c) { rfl; }
 def wrong(S : Child(U0)) : S.twice(succ(zero)) = S.op(S.c) { rfl; }`,
-    clients: ["Child.iter", "Child.twice", "computation", "base"],
+    clients: ["Child.iter", "Child.twice", "computation", "computation2", "base"],
   },
   {
     id: "G12-initial", contract: "initial-model calls to earlier recursive values check and compute",
@@ -253,9 +259,10 @@ theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
 }
 initial N : T(U0);
 def computation : N.model.twice(succ(zero)) = N.op(N.op(N.c)) { rfl; }
+def computation2 : N.model.twice(succ(succ(zero))) = N.op(N.op(N.op(N.c))) { rfl; }
 def base : N.model.twice(zero) = N.op(N.c) { rfl; }
 def wrong : N.model.twice(succ(zero)) = N.op(N.c) { rfl; }`,
-    clients: ["N", "N.model", "computation", "base"],
+    clients: ["N", "N.model", "computation", "computation2", "base"],
   },
 ];
 
@@ -268,7 +275,7 @@ theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
 }
 def intended(S : T(U0), f : Nat -> S.M) : S.twice(f, zero) = S.op(f(zero)) { rfl; }
 def captured(S : T(U0), f : Nat -> S.M) : S.twice(f, zero) = S.op(S.c) { rfl; }`,
-  clients: ["intended"], refusedClients: ["captured"],
+  clients: ["intended"], refusedClients: {captured: "E606"},
 };
 
 const kinds = {
@@ -285,10 +292,10 @@ const knownDefects = {
     "dependencies": [],
     "rootCauses": [["original", {"found": "U0", "expected": "Unit"}]],
     "gaps": ["original E606"],
-    "clients": {"original": "refused", "independent": "checked"},
+    "clients": {"original": "refused", "independent": "checked", "leaked_c": "checked"},
     "originalType": "U0",
     "duplicateRefused": false,
-    "published": []
+    "forbiddenOutputs": []
   },
   "G2": {
     "dependencies": [["T.Hom", ["T.Hom.compose", "T.Hom.id", "T.Hom.make", "T.Hom.map", "T.Hom.map_op", "T.Iso", "T.Iso.make", "identity", "identity_u1"]], ["T.Hom.compose", ["computation", "computation_u1"]], ["T.Iso", ["T.Iso.compose", "T.Iso.from", "T.Iso.from_to", "T.Iso.id", "T.Iso.inverse", "T.Iso.to", "T.Iso.to_from", "iso", "iso_u1"]]],
@@ -349,7 +356,7 @@ const knownDefects = {
       "unsupported E340"
     ],
     "clients": {"T": "checked", "T.make": "checked", "T.op": "checked", "usable": "checked", "unsupported": "refused"},
-    "published": [
+    "forbiddenOutputs": [
       "T.Hom",
       "T.Hom.compose",
       "T.Hom.id",
@@ -421,10 +428,10 @@ const knownDefects = {
     "clients": {"intended": "refused", "captured": "checked"}
   },
   "G12": {
-    "dependencies": [["T", ["base", "computation", "wrong"]]],
+    "dependencies": [["T", ["base", "computation", "computation2", "wrong"]]],
     "rootCauses": [["T", {"recursive": "iter", "context": "field type"}]],
-    "gaps": ["T E845", "base E340", "computation E340", "wrong E340"],
-    "clients": {"T.iter": "missing", "T.twice": "missing", "computation": "refused", "wrong": "refused", "base": "refused"}
+    "gaps": ["T E845", "base E340", "computation E340", "computation2 E340", "wrong E340"],
+    "clients": {"T.iter": "missing", "T.twice": "missing", "computation": "refused", "computation2": "refused", "wrong": "refused", "base": "refused"}
   },
   "G12-range": {
     "dependencies": [],
@@ -437,10 +444,10 @@ const knownDefects = {
     "dependencies": [],
     "rootCauses": [["original", {"found": "U0", "expected": "Unit"}]],
     "gaps": ["original E606"],
-    "clients": {"original": "refused", "independent": "checked"},
+    "clients": {"original": "refused", "independent": "checked", "leaked_one": "checked", "leaked_mul": "checked"},
     "originalType": "U0",
     "duplicateRefused": false,
-    "published": ["N.fold", "N.fold_map", "N.model"]
+    "forbiddenOutputs": ["N.fold", "N.fold_map", "N.model"]
   },
   "G1-reverse": {
     "dependencies": [],
@@ -449,7 +456,7 @@ const knownDefects = {
     "clients": {"original": "refused", "constructor": "refused", "independent": "checked"},
     "originalType": "Unit",
     "duplicateRefused": false,
-    "published": []
+    "forbiddenOutputs": []
   },
   "G1-same-kind": {
     "dependencies": [["N", ["original"]]],
@@ -458,7 +465,7 @@ const knownDefects = {
     "clients": {"original": "refused", "independent": "checked"},
     "originalType": null,
     "duplicateRefused": true,
-    "published": []
+    "forbiddenOutputs": []
   },
   "G4-flat": {
     "dependencies": [["T.value", ["computation", "empty_computation", "wrong"]]],
@@ -493,16 +500,16 @@ const knownDefects = {
     "clients": {"intended": "refused", "captured": "checked"}
   },
   "G12-inherited": {
-    "dependencies": [["Child", ["base", "computation", "wrong"]]],
+    "dependencies": [["Child", ["base", "computation", "computation2", "wrong"]]],
     "rootCauses": [["Child", {"reason": "T is not a theory here: Child extends theories in scope."}], ["T", {"recursive": "iter", "context": "field type"}]],
-    "gaps": ["Child E805", "T E845", "base E340", "computation E340", "wrong E340"],
-    "clients": {"Child.iter": "missing", "Child.twice": "missing", "computation": "refused", "wrong": "refused", "base": "refused"}
+    "gaps": ["Child E805", "T E845", "base E340", "computation E340", "computation2 E340", "wrong E340"],
+    "clients": {"Child.iter": "missing", "Child.twice": "missing", "computation": "refused", "computation2": "refused", "wrong": "refused", "base": "refused"}
   },
   "G12-initial": {
-    "dependencies": [["N", ["base", "computation", "wrong"]], ["T", ["N"]]],
+    "dependencies": [["N", ["base", "computation", "computation2", "wrong"]], ["T", ["N"]]],
     "rootCauses": [["T", {"recursive": "iter", "context": "field type"}]],
-    "gaps": ["N E340", "T E845", "base E340", "computation E340", "wrong E340"],
-    "clients": {"N": "refused", "N.model": "missing", "computation": "refused", "wrong": "refused", "base": "refused"}
+    "gaps": ["N E340", "T E845", "base E340", "computation E340", "computation2 E340", "wrong E340"],
+    "clients": {"N": "refused", "N.model": "missing", "computation": "refused", "computation2": "refused", "wrong": "refused", "base": "refused"}
   },
   "G12-shadowed": {
     "dependencies": [["T", ["captured", "intended"]]],
