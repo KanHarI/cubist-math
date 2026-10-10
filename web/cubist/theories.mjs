@@ -612,13 +612,17 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
   ];
   const nextGroup = params.length + 1;
   const modelType = span => globalCall(T, [...universes, ...params.map(p => p.name)].map(text => name(text, span)), span);
-  const largest = list => list.length === 1 ? name(list[0], at) : call("max", [name(list[0], at), largest(list.slice(1))], at);
   // Each declaration reads its operators and numerals in the file's
   // selection where the theory stands (L2.10j).
   const declaration = (declName, declParams, type, value, span, generated, extra = {}) => ({
     kind: "def", name: token(declName, span), params: declParams, type, ...(theory.uses ? { uses: theory.uses } : {}),
     ...(declParams.some(p => p.implicit) ? { implicitParameters: place(span) } : {}),
-    body: [{ kind: "exact", value, ...place(span) }], typedValue: true, ...place(span),
+    ...(type ? {body: [{ kind: "exact", value, ...place(span) }], typedValue: true} : {
+      params:[],valueParameters:declParams,
+      value:parameterGroups(declParams).reduceRight((body,group)=>({kind:"binderGroup",binderKind:"lambda",
+        names:group.map(p=>p.name),...(group[0].bound?{bound:group[0].bound}:{domain:group[0].type}),body,...place(span)}),value),
+      valueStart:value.start,valueEnd:value.end,
+    }), ...place(span),
     generated: { theory: T, family: generated.role === "derived" ? `derived:${generated.field}` : "base", ...generated }, ...extra,
   });
   // Retain both internal universe names and public labels. Inheritance and
@@ -646,11 +650,13 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
   // The sorts' evidence comes from hlevels.
   const requires = [...new Set(fields.filter(field => field.evidence).map(field => field.evidence))];
   const out = [];
-  // T(U < UU0, params) : next(U) := exists f1 : A1. … An;
+  // Infer the model type's universe from its entire telescope, including
+  // fixed domains above the carrier universe. Hom/Iso use the same ordinary
+  // inference rather than guessing a level from the header alone.
   let modelBody = inUniverse(fields.at(-1).type);
   for (let k = fields.length - 2; k >= 0; k--)
     modelBody = quantifier("exists", token(fields[k].name, fields[k].at), inUniverse(fields[k].type), modelBody, fields[k].at);
-  out.push(declaration(T, headerParameters(), call("next", [largest(universes)], at), modelBody, at,
+  out.push(declaration(T, headerParameters(), null, modelBody, at,
     { role: "model" }, { theory: record, requires }));
   // T.make{{U < UU0}}(params, f1 : A1, …) : T(U, params) := (f1, …, fn);
   let tuple = name(fields.at(-1).name, fields.at(-1).at);
