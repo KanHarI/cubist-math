@@ -8,7 +8,7 @@ Status: gathered on 2026-09-29 at `0b775b1`, for work-plan K2.1's review;
 K1 with tubes and K6 along `ua` traced since (PR #94), and K10 and K11
 (PR #95).
 Updated on 2026-09-30 with the [H2 case analysis and critical-pair
-draft](h1-critical-pairs.md), including representative joins CP01–CP10
+draft](../h1-critical-pairs.md), including representative joins CP01–CP10
 in the kernel. The maintainer approved it on 2026-09-30, after the CP01 and
 CP07 regressions were strengthened (PR #103). The same day, the
 [model construction](../h1-model.md) and the [canonicity argument](../h1-canonicity.md)
@@ -55,7 +55,7 @@ infinitary positions.
 **Argument now.** Section 4.2 gives the construction in seven steps. Its
 only signature-specific inputs are the constructor order (for restriction),
 the cube boundary's typing (for overlapping faces) and positivity (for the
-inductive definition). The [model construction](h1-model.md) writes these
+inductive definition). The [model construction](../h1-model.md) writes these
 steps out for every signature, and 4.3 marks D1, D4 and D5 written out and
 approved on 2026-10-02. Before it, 4.3 marked them "Argued", each with an
 open obligation to write it out. Consistency is relative to the baseline

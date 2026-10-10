@@ -1,19 +1,15 @@
 # Work plan: language features and their kernel support
 
-Status: reconciled on 2026-10-10 against main `cb525f07` (2026-10-08).
-Delivered means present on main. The current tables include L2.4c's six
+Status: reconciled on 2026-10-10 with the integrated #188–#212 stack. The current tables include L2.4c's six
 slices, notation L2.10a–e and i–k, h-level registration, evaluation patterns
 and closed truncation readout, squares, and EVAL0's recorded baseline.
 The [historical work-plan record](historical/work-plan-history.md) retains the earlier
 revision notes and superseded first-action list; the
 [2026-09-28 audit](historical/audits/2026-09-28-audit.md) retains its dated findings.
 
-The initial/free construction prototype in
-[PR #188](https://github.com/KanHarI/cubist-math/pull/188) and frontend
-fixes in [#204–#211](https://github.com/KanHarI/cubist-math/pull/211) are
-on an unmerged stack. [#212](https://github.com/KanHarI/cubist-math/pull/212)
-adds a refactoring plan and reconciles that stack's evidence. They are
-reported under [branch work](#branch-work), not counted as delivered here.
+The initial/free construction prototype, FG0–FG6 fixes and active frontend
+contracts are integrated. The [stack record](#branch-work) separates these
+implementations from capability proofs, remaining evidence and planned refactors.
 
 This is the scheduling authority for the linked roadmaps. Package IDs from
 the earlier plan are retained; their stage numbers do not impose dependencies.
@@ -45,7 +41,7 @@ the library instead; the archive keeps checking completely. So far `nat`'s
 arithmetic (from `primes`) and `sets` (for `hlevels`) are gone. What the
 library builds differently stays until it is migrated: the archive's
 `truncation` and `classical` rest on the legacy `Truncate` assumptions
-(K2.5's remaining remedies), its `set_quotients` are predicate
+(K2.5's remedies), its `set_quotients` are predicate
 quotients over them, and its `equivalences` are bijections and half-adjoint
 equivalences, where the library has contractible maps.
 
@@ -367,7 +363,7 @@ has an explicit spelling.
 | L2.4e | User-defined morphisms, `morphisms where …`, **proposed and deferred**: a proposition on maps of carriers closed under identities and composites, with the standardness obligation (HoTT book §9.8) that keeps `T.cat`'s invertible morphisms equal to `T.Iso`. Continuous, measurable and short maps; no current library client | L2.4d; a first metric or topological client | M |
 | L2.11 | Laws proved propositions, **proposed** on 2026-10-07: the law check accepts a statement the `hlevel` solver proves a proposition, equations in a parameter's carriers and `IsContrMap(…)` among them; the syntactic check stays the fast path. Universal properties (L3.5) and theories over parameters need it. Propositionhood does not prove the law in a generated model: initial/free derivation must discharge it separately | L2.5b | S |
 | L2.12 | Implicit arguments in theory operations and derived operations, **proposed** on 2026-10-07: `comp{{x, y, z : Ob}}(g : Arr(y, z), f : Arr(x, y)) : Arr(x, z) notation g ∘ f`, inferred as L4.1b infers a definition's, with notation over the explicit arguments (E810 and E170 refuse both today) | L4.1b | M |
-| L2.6 | Initial/free capabilities. **Specified, not delivered on main.** The [revised contract](core-theories.md#initial-and-free-models-l26) requires opt-ins, a checked construction, uniqueness, universal equivalence and additional-law obligations. [PR #188](https://github.com/KanHarI/cubist-math/pull/188) implements a construction-and-fold prototype on a branch; it registers no checked capability. Higher theories need a supported morphism/coherence interface | L2.4d; L2.11 for general propositional laws; H1 for the first strategy | L |
+| L2.6 | Initial/free capabilities. **Specified, not delivered on main.** The [revised contract](core-theories.md#initial-and-free-models-l26) requires opt-ins, a checked construction, uniqueness, universal equivalence and additional-law obligations. [PR #188](https://github.com/KanHarI/cubist-math/pull/188) supplies the integrated construction-and-fold prototype; it registers no checked capability. Higher theories need a supported morphism/coherence interface | L2.4d; L2.11 for general propositional laws; H1 for the first strategy | L |
 | L2.8 | Squares and `cell` face syntax with boundary inspection (HoTT E2). **First slice** done on 2026-10-06: the implementation plan's box notation, `compose j in A from b { on i = 0 => x; on i = 1 => q @ j; }` and `fill j in A from b at k { … }`, lowers to `comp` and `fill`, faces being formulas of equations with `and` and `or`; a composition prints as its box. Evidence: `cubist-tests/box_notation.cubist`. **Second slice** done the same day: `library/squares.cubist` names a square's edges by its corners, `Square(a0_, a1_, a_0, a_1)`, and builds by conversion the reflexive and naturality squares, transposition and both flips, double composition and its filler (`trans` its case with a constant first edge), and horizontal and vertical composition; the inspector shows a square's edges and corners. Evidence: `cubist-tests/square_constructions.cubist`. **Third slice** done the same day: two squares on the same three sides have equal tops (`top_unique`), which gives the conversions between a square and an equation of composites both ways (`square_to_path`, `path_to_square`, through the diagonal and `retop`), and the library's `naturality_path` and `cong_trans`, the statements of the archive's `homotopy_naturality` and `map_concat`. Open: the archive's raw `comp` lemmas (`homotopy_natural`, `map_concat`, `transport_concat`) re-derived through them, a migration of archive proofs | L2.1; face/source metadata from L1.2r | M |
 | L2.9a | Expected-value patterns for `evaluate`. **Done** on 2026-10-06: an expected value with a hole `_` is a pattern, matched against the normal form part by part (`web/translator/evaluation.mjs`): a hole matches anything; a pair, an injection or a constructor of the part's declared type applied to patterns matches a value built so, in the kernel's argument order; `typed(T, p)` matches as `p` where `T` is the part's type; any other expression is elaborated at the part's type and compared by normal form. `left`, `right` and `typed` are the builtins only where the module does not bind them, and a builtin's or a constructor's arguments are written out as elaboration requires, a hole aside (E701, E378, E379). A mismatch names the differing part (E477), and a hole inside another function's arguments is refused (E478). Evidence: `cubist-tests/evaluate_patterns.cubist` | L0.1; own pattern contract and L4.1a infrastructure | S |
 | L2.9b | Closed truncation witness readout: a closed computable input, a checked error certificate, and the extracted witness's type specified under transported truncations, which its tests include. Native truncation alone supplies no approximation result. **Done** on 2026-10-06: `print(witness(t));`, and the REPL's `witness TERM;`, read the witness off a closed, computable truncation's normal form, `point(w)` under formal compositions, with its type (`web/translator/evaluation.mjs`). A witness under a composition whose type changes is refused (E481), so the witness has the truncated type's own parameter; transported along a path of types, it is of the type at the path's end. A certificate is part of the witness the kernel checked. Evidence: `cubist-tests/truncation_readout.cubist` | Native H1 `Trunc`, K2.5, L0.1 | M |
@@ -406,7 +402,10 @@ between a sort's universe and its parameter telescope's universe.
 legacy assumptions available to archive checks until each intentional
 migration is justified. Record changed public universes, removed assumptions
 and affected consumers; do not add resizing to the rebuilt foundation.
-The ordinary migration check stays strict for unrelated changes. The [ledger verifier and scoped migrations](h1-truncation-migration.md) are implemented since 2026-09-30; the archive keeps its legacy assumptions.
+The library still needs one module for classical assumptions over computing
+`Trunc`. The two H2-dependent tower declarations stay deferred; removing
+every legacy truncation assumption is not required. The ordinary migration
+check stays strict for unrelated changes. The [ledger verifier and scoped migrations](h1-truncation-migration.md) are implemented since 2026-09-30; the archive keeps its legacy assumptions.
 
 **Release fixtures,** updated 2026-09-30: declared Nat, sum, W
 and pushout comparisons (K2.4a implemented, with the X2 remainder in its evidence record); a circle with computed winding
@@ -602,7 +601,7 @@ presentation work remains deferred.
   [reals roadmap's R1](reals-roadmap.md#milestones) owns their further
   decidable orders, ordered-ring/field laws, `PosRat` and Archimedean
   property. That work targets the new `Z` and `Q` and still awaits first
-  action 8's scope decision; it is not a NUM2 prerequisite.
+  the number-order scope decision below; it is not a NUM2 prerequisite.
 - Design EVAL3's lazy closure evaluator and EVAL4's explicit stack together.
   EVAL5 specifies observation and typed readback; a successful
   `euclid(4).1` does not close the failure of full `euclid(4)`.
@@ -617,40 +616,34 @@ presentation work remains deferred.
 
 ## Frontend generation track
 
-**2026-10-09 addition, planned on top of PR #188 at `00d4ecce`.** The
-[frontend generation roadmap](frontend-generation.md) uses that PR's
-failures as evidence for shared contracts. The
-[gap inventory](../reports/frontend-generation-gaps.md) pins eleven remaining
-findings (G1–G6 and G8–G12) and distinguishes them from fixed examples,
-historical symptoms and L2.6's incomplete planned capabilities. These
-packages do not mark implementation complete or resume paused mathematics.
+The FG0–FG6 implementation sequence is present in the stack through
+[PR #211](https://github.com/KanHarI/cubist-math/pull/211), inherited by #212;
+this records delivery on the branch, not a merge into main. The
+[gap inventory](../reports/frontend-generation-gaps.md#current-status-and-fixing-evidence)
+owns individual finding status, fixes and distinguishing regressions.
+The [frontend roadmap](frontend-generation.md) retains normative contracts
+and the remaining evidence work; the [phase reports](../reports/README.md#frontend-generation-evidence)
+retain revision-specific validation.
 
-Follow-up FG0–FG5 fixing commits and distinguishing tests are recorded in
-the inventory. The [FG6 report](../reports/frontend-generation-fg6.md)
-records the implemented deterministic/mutation gate, validation and the
-remaining unidentified historical skipped-mutation evidence. No new L2.6
-deriving capability is implied by those frontend changes.
+| ID | Delivered package | Implementation dependency |
+| --- | --- | --- |
+| FG0 | Executable reproductions, interface manifests and independent meaning checks | #188's captured-syntax baseline |
+| FG1 | Shared declaration ownership, dependency state and publication groups | FG0 |
+| FG2 | Complete telescopes, dependency/support analysis, call classification and notation consolidation | FG0; FG1 for publication |
+| FG3 | Universe inference from complete generated telescopes | FG1, FG2 |
+| FG4 | Checked contextual evidence and diagnostic-preserving optional coherence | FG1, FG2 |
+| FG5 | Public interfaces, labels and source provenance | FG0, FG2; FG1 for publication metadata |
+| FG6 | Bounded composition/mutation gate and resource measurements | FG0–FG5 |
 
-| ID | Package and exit evidence | Depends on | Size |
-| --- | --- | --- | --- |
-| FG0 | Evidence harness implemented in [frontend-generation.test.mjs](../../tests/frontend-generation.test.mjs), with a [comparison manifest](../../tests/fixtures/frontend-generation.md); every open gap has an expected outcome and explicit TODO, including G12's separately tracked refusal range | #188's captured-syntax baseline | S |
-| FG1 | Shared declaration ownership, dependency state and publication groups; collisions and failures preserve existing checked state | FG0 | L |
-| FG2 | Complete declaration telescopes, dependency/support analysis, value/type call classification and notation-scope consolidation; meaning and supported calls survive expansion | FG0; FG1 for publication | L |
-| FG3 | Universe inference from complete generated telescopes; Hom/Iso clients and genuine lowering refusals | FG1, FG2 | M |
-| FG4 | Checked evidence and recursion state follow scope refinements; eligible wildcard fallback preserves primary errors on failure; nested matches check without new assumptions | FG1, FG2; focused fallback fix can land after FG0 | M |
-| FG5 | Separate alias keys, labels and exact source origins; binder/use links, refusal ranges and public interfaces survive transformation | FG0, FG2; FG1 for publication metadata | M |
-| FG6 | Deterministic cross-transformation tests, distinguishing mutations and measured resource costs | Starts with FG0; complete gate needs FG1–FG5 | L |
-
-Extend FG0's installed harness and prioritize G11's silent capture alongside
-FG1's ownership fix. G8–G10's focused fixes and regression checks can land on #188 before
-the broader dependency/publication work; update their evidence status when
-fixed. Complete FG2's call classification (G12) and notation-alias audit.
-FG3 and the broader FG4 work follow those contracts; FG5's
-focused lint fix can land earlier with its checked-client regression.
-FG6 accumulates alongside every slice. The complete gate precedes
-publication of new deriving capabilities under L2.4d/L2.6 and extensions
-of generated interfaces. It supplements their proof obligations; it does
-not delay unrelated fixes or replace uniqueness and universal proofs.
+Next, recover the original mutation manifest for the inventory's
+[audit evidence request](../reports/frontend-generation-gaps.md#mutation-audit-and-remaining-evidence),
+and investigate [P1's resource cost](../reports/frontend-generation-gaps.md#performance-observations-p1)
+before setting a performance budget. These evidence follow-ups do not
+restart the implementation slices. Apply the existing semantic gate to
+[RC0–RC11's refactoring](refactoring-and-testing.md) and to future generator
+extensions. L2.4d/L2.6 still require their own checked capability and universal
+proofs; preservation tests neither replace those proofs nor resume paused
+mathematics.
 
 ## Release checks and documentation
 
@@ -726,14 +719,13 @@ Reconciled against main on 2026-10-10. L2.4c, L2.10a–e and i–k,
 L2.5b's second slice, L2.9a/b and L2.8's first three slices are delivered.
 Do not repeat their implementation or the completed G0/H1 releases.
 
-Before extending the generators, start [FG0 and FG1](#frontend-generation-track)
-from #188's remaining failures. The shared contracts and semantic gate
-precede new deriving capabilities; L2.6's universal proofs remain separate.
+For generator changes, preserve the active [FG0–FG6 contracts](#frontend-generation-track).
+L2.6's capability and universal-property proofs remain separate.
 
 1. L2.4d: morphisms by explicit opt-in, with its two-commit migration.
 2. L2.11: laws proved propositions; L2.12: implicit theory-operation
    arguments, with composition notation decided before its acceptance.
-3. L2.6: review and integrate the branch prototype, migrate it to explicit
+3. L2.6: migrate the construction prototype to explicit
    capabilities, prove uniqueness and universal equivalence, and discharge
    additional laws before publishing a capability. Frontend preservation
    tests do not supply these proofs.
@@ -760,22 +752,28 @@ where supplying them checks.
 
 ## Branch work
 
-Snapshot on 2026-10-10; these are open PRs, not main's delivered packages.
+Integration record on 2026-10-10. Implementation and remaining obligations
+are separate; historical validation belongs to the revisions it names.
 
 | Track | Branch progress | Remaining obligation |
 | --- | --- | --- |
-| [L2.6 prototype, #188](https://github.com/KanHarI/cubist-math/pull/188) | Declared carriers, models and computing folds; seven reported CI checks pass | Review/merge, opt-ins, uniqueness, universal properties and additional laws |
-| [Frontend generation, #204–#211](https://github.com/KanHarI/cubist-math/pull/211) | FG0–FG6 implementation present; the [inventory](https://github.com/KanHarI/cubist-math/blob/fd0bc11bcd657f9c113e952e360ab2971ed3ec02/docs/reports/frontend-generation-gaps.md) owns finding status | Integrate revised #205 cases through the stack; review/merge; recover the historical mutation manifest and justify a performance budget |
-| [Refactoring/testing, #212](https://github.com/KanHarI/cubist-math/pull/212) | RC0–RC11 roadmap and documentation reconciliation; no RC implementation package completed | RC0 cleanup, then the plan's independently scoped refactors and test migration |
-| [Homological algebra, #198](https://github.com/KanHarI/cubist-math/pull/198) | Proposal merged into the #188 stack; no HA implementation | Maintainer's start decision; HA4 can begin largely from H1/univalence/squares, while the algebraic route needs categories |
+| [L2.6 prototype, #188](https://github.com/KanHarI/cubist-math/pull/188) | Declared carriers, models and computing folds integrated | Opt-ins, uniqueness, universal properties and additional laws |
+| [Frontend generation, #204–#211](https://github.com/KanHarI/cubist-math/pull/211) | FG0–FG6 implementation present; the [inventory](../reports/frontend-generation-gaps.md#current-status-and-fixing-evidence) owns finding status | Revised #205 cases are active via #212; recover the historical mutation manifest and justify a performance budget |
+| [Refactoring/testing, #212](https://github.com/KanHarI/cubist-math/pull/212) | RC0–RC11 roadmap, documentation reconciliation and FG0 contract activation integrated | Remaining RC0 cleanup, then the plan's independently scoped refactors and test migration |
+| [Homological algebra, #198](https://github.com/KanHarI/cubist-math/pull/198) | Proposal integrated; no HA implementation | Maintainer's start decision; HA4 can begin largely from H1/univalence/squares, while the algebraic route needs categories |
 
-The revised #205 records 22 independent known-defect cases at its baseline.
-Its isolated integration check against the fixing compiler passed 36
-contract/control/provenance tests and all 13 required mutation checks.
-That is integration evidence, not a claim that its files have already
-been incorporated through every branch. The frontend roadmap remains active
-until the evidence follow-ups are disposed of. Historical test reports are
-not fresh validation of a later PR head.
+For generator changes, use the current [frontend generation track](#frontend-generation-track).
+Independent work continues in the [runtime evaluation track](#runtime-evaluation-track),
+K2.5's archive remedies, the H2/H3 research gates and the package tables
+above. The [open decisions](#open-decisions) retain the proposed number-order
+extension and public `Nat` transition; neither is implicitly approved by
+this sequence.
+
+Learned-search phases 3–5 may proceed separately; they do not block this
+language sequence. H4, E1/E2, trained
+search, transport regularity (G4) and interval normalization (G5) keep
+their concrete-use and performance gates. Concrete mathematical development
+beyond the library's foundations remains paused.
 
 ## Open decisions
 
@@ -784,17 +782,29 @@ scheduled packages from advancing.
 
 **Needed before the named work**
 
-1. **Number order:** whether to extend library scope to ordered rings and
-   fields, decidable orders on NUM2's `Z`/`Q`, `PosRat` and Archimedean
-   bounds. R1/R2 need this; NUM0–NUM2 do not.
-2. **Public `Nat`:** when binary naturals become the default, with constructor
-   names, imports and compatibility for unary clients. Explicit `UNat` and
-   `BNat` and the new `Z`/`Q` can be built before this naming decision.
-3. **Composition notation:** `∘` with an ASCII alias or diagrammatic
-   `f >> g`; needed before L2.12's notation acceptance and L3.4.
-4. **Proposed homological track:** when to start it, and its complex-shape
-   versus integer-indexing choice before HA2. The proposal is still in the
-   [branch stack](#branch-work), and mathematics remains paused.
+1. **The order on the numbers** extends the resumed
+   library scope: ordered commutative rings and fields, NUM2's new integers'
+   and rationals' decidable orders, positive rationals and the Archimedean
+   property. The reals roadmap's R1 and R2 need it; NUM0–NUM2 and the
+   language packages do not.
+2. **When the homological algebra track starts**
+   ([homological algebra](homological-algebra.md#open-questions),
+   question 1). It is a new mathematical track. HA4, the synthetic route,
+   can start now; HA1–HA3 follow L3.6.
+3. **The composition operator** ([categories](categories.md#open-questions),
+   question 1). `*` is the product type former, so `g * f` would be
+   ambiguous under `use C;`. The candidates are `∘` with an ASCII alias,
+   or diagrammatic `f >> g`; either is a new token in L2.10b's fixed
+   grammar. Needed before L2.12's acceptance and L3.4.
+4. **Complex shapes or ℤ-indexing**
+   ([homological algebra](homological-algebra.md#open-questions),
+   question 2). Shapes are recommended, because the library's integers make
+   `(n - 1) + 1 = n` a path. Needed before HA2.
+5. **The public `Nat` transition.** Decide when the binary carrier becomes
+   `Nat`, and specify constructor names, notation and imports for existing
+   unary clients. Until then, expose explicit `UNat` and `BNat`; new `Z`
+   and `Q` use `BNat` regardless of the public spelling. This decision gates
+   the alias/import switch, not NUM0–NUM2's construction work.
 
 **Open, not blocking**
 

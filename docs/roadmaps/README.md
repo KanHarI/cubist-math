@@ -7,8 +7,8 @@ not resume when a language milestone ships.
 
 ## At a glance
 
-Reconciled on 2026-10-10 against main `cb525f07` (2026-10-08). Delivered
-means merged into main; the open PR stack is identified separately.
+Reconciled on 2026-10-10 with the integrated #188–#212 stack. Implemented
+features and remaining obligations are identified separately.
 
 | Track | Delivered on main | Still open |
 | --- | --- | --- |
@@ -22,13 +22,12 @@ means merged into main; the open PR stack is identified separately.
 | Computation notation | Prerequisites: inference, matching, core theories and set-indexed theory families | N0–N5: checked interfaces, monadic `do` and arrows; design only |
 | Learned search | Phases 1–2: explicit driver choices and work/trajectory measurement | Phases 3–5, conditional on demonstrated benefit |
 
-**Branch work, not delivered on main:** [#188](https://github.com/KanHarI/cubist-math/pull/188)
+**Integrated stack:** [#188](https://github.com/KanHarI/cubist-math/pull/188)
 has the initial/free construction-and-fold prototype; [#204–#211](https://github.com/KanHarI/cubist-math/pull/211)
 have the frontend-generation roadmap and FG0–FG6 implementation;
 [#212](https://github.com/KanHarI/cubist-math/pull/212) proposes RC0–RC11
 refactoring and test migration. The homological-algebra proposal in
-[#198](https://github.com/KanHarI/cubist-math/pull/198) merged into that
-stack, not main. The [branch record](work-plan.md#branch-work) distinguishes
+[#198](https://github.com/KanHarI/cubist-math/pull/198) is integrated as a proposal; no HA implementation is claimed. The [branch record](work-plan.md#branch-work) distinguishes
 implementation, integration evidence and unfinished obligations.
 
 Next language work: morphism opt-ins (L2.4d), general proposition laws
@@ -72,12 +71,14 @@ EVAL1 and NUM0/NUM1 can advance independently. See
 
 ## Language tooling
 
-- [Frontend generation](frontend-generation.md): planned design work after
-  PR #188, with its failures as evidence. Unifies declaration ownership,
-  supported dependency analysis, universe calculation, contextual evidence
-  and public provenance, with semantic preservation tests. The
-  [gap inventory](../reports/frontend-generation-gaps.md) pins current
-  reproductions and separates them from fixed bugs and prototype limits.
+- [Frontend generation](frontend-generation.md): normative generation contracts
+  and remaining audit/measurement work. The [gap inventory](../reports/frontend-generation-gaps.md#current-status-and-fixing-evidence)
+  owns finding status and regression evidence; the [work plan](work-plan.md#frontend-generation-track)
+  owns delivery and scheduling.
+- [Refactoring and Cubist tests](refactoring-and-testing.md): proposed
+  follow-up to FG6, covering both the FG stack and earlier code. Identifies
+  obsolete and duplicate tests, runner primitives for moving behavioral
+  tests into Cubist, and staged generation, publication and tooling cleanup.
 - [Proof ergonomics](proof-ergonomics-roadmap.md): shipped proof tools and
   remaining theory/declaration/automation work. Its
   [remaining implementation contracts](proof-ergonomics-roadmap.md#remaining-implementation-contracts)

@@ -1,73 +1,66 @@
-# Frontend generation gaps after PR #188
+# Frontend generation gap inventory
 
-Recorded on 2026-10-09 at PR #188 commit
-[`00d4ecce`](https://github.com/KanHarI/cubist-math/commit/00d4ecce016f7e18d13eedeced07dc098a2277cb).
-The comparison main revision is
-[`cb525f07`](https://github.com/KanHarI/cubist-math/commit/cb525f07796348d8bc806cd8cda11663a6544f0e).
-This inventory accompanies the [frontend generation roadmap](../roadmaps/frontend-generation.md).
-It records observed behavior separately from proposed explanations and fixes.
-The documentation change is stacked on #188; it implements none of the
-remaining fixes. Closing #188's review threads did not close its documented
-historical follow-ups. The subsequent [review of this same head](pr-188-review-00d4ecce.md)
-adds three regressions and two shared defects, recorded as G8–G12 below.
+This is the single current status record for PR #188's frontend findings,
+including fixing commits and distinguishing regressions. Status below is
+for the FG6 stack at `c1780211`, inherited by PR #212; it does not claim
+that the stack has merged into main. Scheduling belongs to the
+[work plan](../roadmaps/work-plan.md#frontend-generation-track), and invariants
+to the [frontend contracts](../roadmaps/frontend-generation.md#shared-contracts)
+and [scope contract](../roadmaps/syntax-hygiene.md).
 
 ## Evidence and scope
 
-The standalone Cubist examples below were checked with `CubicalProgram`,
-the matching WASM kernel and the library module reader. G5 also runs the
-source linter before checking its suggested rewrite. Each example is a
-separate program. FG0 now installs these reproductions as executable
-contracts in [frontend-generation.test.mjs](../../tests/frontend-generation.test.mjs),
-with fixtures and comparison rules in the
-[manifest](../../tests/fixtures/frontend-generation.md). They run in the
-normal `npm test` suite. Open contracts are explicit expected failures:
-their structured observations must match the recorded defect, unexpected
-outcomes or passes are errors, and TODOs do not count as completed
-implementation. Each variant has its own activation state. G12's E845 source range is tracked
-independently from its value-call contract.
+The reproductions below record the original baseline,
+[`00d4ecce`](https://github.com/KanHarI/cubist-math/commit/00d4ecce016f7e18d13eedeced07dc098a2277cb),
+compared with main
+[`cb525f07`](https://github.com/KanHarI/cubist-math/commit/cb525f07796348d8bc806cd8cda11663a6544f0e).
+Their failure descriptions are historical observations, not current status.
+G8–G12 came from the [follow-up review](https://github.com/KanHarI/cubist-math/pull/188#issuecomment-6095711362)
+and were independently reproduced at both revisions and `9c93220d`.
+G11 checks both the wrongly accepted and rejected intended equations;
+G9 inspects labels and definition targets. The reviewer's mutation counts,
+full-suite results and timings are attributed observations, not a reproduced
+run by this documentation cleanup.
 
-For the follow-up review, G8–G12 were also independently reproduced at
-`00d4ecce`, main `cb525f07`, and the earlier #188 head `9c93220d` with the
-same kernel. The G11 comparison checks both the wrongly accepted equation
-and the rejected intended equation. G9 inspects reference labels and
-definition targets, not just acceptance. The reviewer's broader mutation
-run, full-suite results and performance measurement are attributed below;
-this documentation change does not claim to have repeated them.
+FG0 (`ed276a03`) installed the standalone examples as executable contracts in
+[frontend-generation.test.mjs](../../tests/frontend-generation.test.mjs).
+The original review chronology and earlier baseline comparisons remain in
+[the pinned checklist](https://github.com/KanHarI/cubist-math/blob/c65bd1533b5295359c6f1bf62911e96b29dba76e/docs/reports/pr-188-todo.md)
+and [the review of `9c93220d`](https://github.com/KanHarI/cubist-math/pull/188#issuecomment-6081397127).
+The [remaining shared follow-ups](pr-188-todo.md) link here rather than
+repeating reproductions. This is not an exhaustive frontend audit.
 
-The [PR review history](pr-188-todo.md) retains the earlier comparisons.
-This document is the current inventory at the pinned revision; it does not
-claim an exhaustive audit. Recheck and repin it when the implementation
-changes. An item is closed only with the expected behavior and a regression
-test, not merely a resolved discussion or a passing corpus run.
+## Current status and fixing evidence
+
+Each G row owns its disposition. The named `G1:`–`G6:` and `G8:`–`G12:`
+contracts in [frontend-generation.test.mjs](../../tests/frontend-generation.test.mjs)
+are active regressions, with the additional distinguishing coverage below.
+G7 has an injected failure test rather than an outstanding source reproduction.
+The phase reports record evidence at their own revisions.
+
+| ID | Current disposition | Fixing commit and report | Distinguishing regression |
+| --- | --- | --- | --- |
+| [G1](#g1-declaration-ownership-differs-by-declaration-kind) | Fixed: mixed declaration kinds preserve the original owner | `fe05ea5e`, [FG1](frontend-generation-fg1.md) | Both collision orders and generated namespace reservations in [frontend-publication.test.mjs](../../tests/frontend-publication.test.mjs) |
+| [G2](#g2-universe-calculation-ignores-fixed-operation-domains) | Fixed: generated universes include fixed domains | `91b3f5bd`, [FG3](frontend-generation-fg3.md) | Fixed U0/U1, generic domains, inherited operations, dependent indices and genuine lowering refusals in [frontend-universes.test.mjs](../../tests/frontend-universes.test.mjs) |
+| [G3](#g3-dependence-on-laws-is-mistaken-for-a-fixed-argument) | Fixed by focused refusal of unsupported transport; the checked base theory remains usable | `908fcd60`, [FG2](frontend-generation-fg2.md) | Hidden law/evidence dependencies and fixed external controls in [frontend-dependencies.test.mjs](../../tests/frontend-dependencies.test.mjs) |
+| [G4](#g4-nested-derived-matches-lose-access-to-evidence) | Fixed: nested matches retain checked contextual evidence | `d0abfe5a`, [FG4](frontend-generation-fg4.md) | Imported/renamed inheritance, dependent model evidence and wrong-model refusal in [frontend-evidence.test.mjs](../../tests/frontend-evidence.test.mjs) |
+| [G5](#g5-a-local-simplification-changes-the-generated-interface) | Fixed: lint preserves public interfaces | `4bb87c0d`, [FG5](frontend-generation-fg5.md) | Safe lint and destructive-arrow controls with named Hom/Iso and initial/free clients in [frontend-provenance.test.mjs](../../tests/frontend-provenance.test.mjs) |
+| [G6](#g6-an-invalid-parent-is-re-expanded-as-a-childs-own-error) | Fixed: failed parents remain dependency errors | `fe05ea5e`, [FG1](frontend-generation-fg1.md) | Imported inheritance chains and recovery in [frontend-publication.test.mjs](../../tests/frontend-publication.test.mjs) |
+| [G7](#g7-historical-parent-projection-cascade) | Historical source triggers already passed at the baseline; dependency protection is covered by injection | `fe05ea5e`, [FG1](frontend-generation-fg1.md) | `G7: an injected parent projection failure rolls back its base group and blocks descendants once` in [frontend-publication.test.mjs](../../tests/frontend-publication.test.mjs), including native/frontend rollback |
+| [G8](#g8-wildcard-fallback-replaces-an-endpoint-mismatch) | Fixed: optional coherence preserves the primary located mismatch | `d0abfe5a`, [FG4](frontend-generation-fg4.md) | Nonrecursive E606 endpoints/range and zero search calls; charged failed fallback and checked successful coherence in [frontend-evidence.test.mjs](../../tests/frontend-evidence.test.mjs) |
+| [G9](#g9-source-aliases-conflate-internal-keys-and-public-labels) | Fixed: freshened binders retain public labels and navigation | `4bb87c0d`, [FG5](frontend-generation-fg5.md) | All four binder/use sites, direct/imported observations and CLI checks in [frontend-provenance.test.mjs](../../tests/frontend-provenance.test.mjs), plus browser navigation |
+| [G10](#g10-the-capture-refusal-loses-the-conflicting-source-site) | Fixed: E871 identifies the actual conflict range | `f70699fe`, [FG2](frontend-generation-fg2.md) | G10's nonempty pattern/statement conflict ranges and non-enclosing controls in [frontend-generation.test.mjs](../../tests/frontend-generation.test.mjs) |
+| [G11](#g11-derived-bodies-are-transformed-outside-their-parameter-telescope) | Fixed: inlining transforms complete declaration telescopes | `f70699fe`, [FG2](frontend-generation-fg2.md) | Opposite intended/captured equations, grouped dependent parameters and renamed inheritance in [frontend-dependencies.test.mjs](../../tests/frontend-dependencies.test.mjs) |
+| [G12](#g12-value-calls-are-subjected-to-a-type-unfolding-restriction) | Fixed: earlier recursive value calls remain checked calls | `f70699fe`, [FG2](frontend-generation-fg2.md) | Computing imported/inherited/generated clients, nonstructural self-call and type-unfolding refusals in [frontend-dependencies.test.mjs](../../tests/frontend-dependencies.test.mjs) |
+| B1 | Compatibility decision documented and covered | `ed276a03`, `908fcd60`, [FG2](frontend-generation-fg2.md) | `B1: opened fields precede later globals in ordinary and generated declarations across imports` in [frontend-generation.test.mjs](../../tests/frontend-generation.test.mjs) |
+| V1 | Bounded composition/mutation gate implemented; original skipped audit case remains unidentified | `deff52a0`, [FG6](frontend-generation-fg6.md) | Eight CI seeds, 32 audit seeds, thirteen required kills and four classified probes; see [audit limits](#mutation-audit-and-remaining-evidence) |
+| P1 | Measurements recorded; attribution of the historical overhead and a regression budget remain open | [FG1–FG6 evidence](README.md#frontend-generation-evidence) | Stamped work/time/arena observations; see [performance](#performance-observations-p1) |
+| C1 | Planned capability work; no deriving registration or universal proofs supplied by FG | [L2.6](../roadmaps/core-theories.md#initial-and-free-models-l26) | Requires checked uniqueness, universal equivalence and the capability contract's other obligations |
 
 ## Fixed failures that motivate the design
 
-The inventory below remains pinned to `00d4ecce`. Follow-up implementation
-evidence is tracked separately so that the original reproductions retain
-their meaning:
-
-| Follow-up | Fixing implementation | Distinguishing regression |
-| --- | --- | --- |
-| FG0 executable evidence | `ed276a03` | `frontend-generation.test.mjs`: independent expected outcomes, with later-phase debt explicit |
-| G1/G6 and injected G7 | `fe05ea5e`, [FG1 report](frontend-generation-fg1.md) | Mixed ownership collisions, dependency failures and native/frontend rollback in `frontend-publication.test.mjs` |
-| G3 unsupported law transport | `908fcd60`, [FG2 report](frontend-generation-fg2.md) | Active G3 contract; hidden law/evidence dependencies and fixed external controls in `frontend-dependencies.test.mjs` |
-| G10 source range, G11 telescope capture, G12 earlier value calls | `f70699fe`, [FG2 report](frontend-generation-fg2.md) | Active G10–G12 contracts; opposite intended/captured equations, renamed inheritance, computation and focused type-unfolding refusal |
-| G2 full generated universes | `91b3f5bd`, [FG3 report](frontend-generation-fg3.md) | Active G2 contract; fixed U0/U1 inputs, generic universes, inherited operations, dependent indices and genuine lowering refusals in `frontend-universes.test.mjs` |
-| G4 contextual evidence, G8 wildcard diagnostics | `d0abfe5a`, [FG4 report](frontend-generation-fg4.md) | Active G4/G8 contracts; nested/dependent model evidence, wrong-model refusal, charged failed fallback and checked successful coherence in `frontend-evidence.test.mjs` |
-| G5 public lint interfaces, G9 labels/navigation | `4bb87c0d`, [FG5 report](frontend-generation-fg5.md) | Active G5/G9 contracts; direct/imported source observations, named Hom constructors and generated clients, CLI and browser navigation |
-
-All eleven executable gaps are active regressions at FG5. The notation-alias
-audit's removal and its provenance distinction are documented in the FG2
-report. None of these changes registers the separate C1 deriving capability.
-
-The [FG6 release-gate report](frontend-generation-fg6.md) records composed
-transformation tests, exact mutation patches, the newly distinguished
-multi-value explicit-path probe and measured validation. The historical
-audit's unidentified skipped mutation remains an explicit evidence gap.
-
-These specific examples are fixed at `00d4ecce`. They are evidence for
-prevention work, not proof that the surrounding invariant holds everywhere:
-G8–G12 demonstrate remaining failures in the same contracts.
+These examples were already fixed at `00d4ecce`. They motivate the
+contracts without asserting that an invariant holds for every source.
 
 | Evidence | Observed failure in #188 | Design lesson | Existing protection |
 | --- | --- | --- | --- |
@@ -75,7 +68,7 @@ G8–G12 demonstrate remaining failures in the same contracts.
 | H2: [imported-global review](https://github.com/KanHarI/cubist-math/pull/188#discussion_r4221947053) | A retained field's imported `A` was looked up again in the caller, where it named another type. | Capture declaration identity before moving syntax; distinguish the definition's scope from the request's scope. | Resolved references and import/inheritance tests. |
 | H3: [family-index regression](https://github.com/KanHarI/cubist-math/pull/188#discussion_r4222631286) | A fix encoded captured identities as ordinary names; a template printed a private binding key as source and failed with E106. | A representation change must migrate every consumer. Source text is not a serialization format for resolved syntax. | Structural references and AST payloads in template holes. |
 | H4: [opened-field review](https://github.com/KanHarI/cubist-math/pull/188#discussion_r4230363214) and [meaning-change example](https://github.com/KanHarI/cubist-math/pull/188#issuecomment-6081397127) | Capture used the storage environment rather than the complete `use` scope. An outer natural `one = zero` replaced a selected monoid's identity; the altered law could still type-check. | Kernel acceptance and preservation of source meaning are separate obligations. Capture must include opened fields and notation. | Selected-scope capture; tests check independently written law boundaries. |
-| H5: [review fixes at `00d4ecce`](https://github.com/KanHarI/cubist-math/pull/188#issuecomment-6082304276) | Internal names appeared in messages; generated evidence linked outside the file; law binders captured inlined helper fields; generated recursion depended on source namespace visibility. | Identity, public labels, source provenance, and compiler control state need distinct representations. | Selected diagnostic labels, synthetic-link suppression, helper substitution through law expressions (including inherited helpers), explicit generated self-calls. Derived-operation parameters (G11), law reference links (G9) and calls to earlier recursive operations (G12) are still open. |
+| H5: [review fixes at `00d4ecce`](https://github.com/KanHarI/cubist-math/pull/188#issuecomment-6082304276) | Internal names appeared in messages; generated evidence linked outside the file; law binders captured inlined helper fields; generated recursion depended on source namespace visibility. | Identity, public labels, source provenance, and compiler control state need distinct representations. | Selected diagnostic labels, synthetic-link suppression, helper substitution through law expressions (including inherited helpers), explicit generated self-calls. The later baseline reproductions below cover derived-operation parameters (G11), law reference links (G9) and calls to earlier recursive operations (G12). |
 
 The twelve new behavioral tests that fail at `9c93220d` and pass at
 `00d4ecce` include both PR regressions and previously shared failures.
@@ -84,34 +77,11 @@ See [theory-hygiene.test.mjs](../../tests/theory-hygiene.test.mjs),
 [theory-resolution.test.mjs](../../tests/theory-resolution.test.mjs), and
 [references.test.mjs](../../tests/references.test.mjs).
 
-## Open inventory
+## Baseline reproductions
 
-Priority here orders the follow-up work, rather than assigning GitHub
-severity. G1 and G11 come first because they silently change meaning.
-G2 and G4 reject useful programs; G3 needs an honest support boundary.
-G5 and G6 affect interface stability and error recovery. G1–G6's bug classes
-are shared with the comparison main revision; G1's initial-model variant
-is specific to the new prototype. G5 uses a single-binder control on main,
-as explained below, rather than claiming its grouped example worked there.
-
-| ID | Status at the pinned revision | Work package | Completion condition |
-| --- | --- | --- | --- |
-| G1 | Open: mixed declaration kinds silently replace a name; same-kind refusals also lose the first binding | FG1 | Refuse the conflicting declaration before publication and preserve the original binding. |
-| G2 | Open: generated Hom universes omit fixed argument domains | FG3 | Infer a sufficient universe from all generated fields and check identity/composition at multiple levels. |
-| G3 | Open: law-dependent arguments enter an unsupported Hom expansion | FG2 | Either construct checked transport or refuse the requested derivation before publishing its artifacts. |
-| G4 | Open: flat and nested generated matches cannot find carrier evidence | FG4 | Carry checked evidence through flat, nested and dependent scopes without adding assumptions. |
-| G5 | Open: unused-binder advice removes generated interfaces | FG5 | Suggested rewrites preserve supported calls and derivations, or are suppressed; safe ordinary advice remains available. |
-| G6 | Open: failed-parent diagnostics are repeated as fresh child failures | FG1 | Report the child's failed dependency once, with the original cause retained. |
-| G7 | Historical symptom; no remaining reproduction in this inventory | FG1, FG6 | Exercise an actual failed parent projection and its dependents; do not reuse a now-passing capture example as a bug. |
-| G8 | Open regression in `00d4ecce`: wildcard path failures report unwanted generation | FG4 | Restrict fallback to recursive positions and retain the original mismatch when fallback cannot supply checked coherence. |
-| G9 | Open regression in `00d4ecce`: freshened law binders lose public labels and definition links | FG5 | Binder and every use display the written label and resolve to the original binder span. |
-| G10 | Open regression in `00d4ecce`: E871 has an empty source range | FG2, FG5 | Report the actual conflicting pattern/statement binding or helper call, with a nonempty source range. |
-| G11 | Open, shared with main: a derived parameter captures an inlined helper's field | FG2 | Transform the complete parameter telescope, result type and body; accept the intended equation and reject the captured one. |
-| G12 | Open, shared with main: calls to an earlier recursive derived operation are treated as forbidden type unfolding | FG2, FG4, FG5 | Distinguish ordinary value calls, recursive self-calls and type unfolding; retain legitimate refusal codes and source sites. |
-| C1 | Planned functionality: deriving registration and universal proofs | L2.4d, L2.6; FG6 is a prerequisite for publication | Follow the existing capability contract and register only checked complete evidence. |
-| V1 | Coverage gap: combinations of transformations are not systematically explored | FG0, FG6 throughout implementation | Deterministic generated cases, independent meaning checks, and targeted mutation checks run in CI. |
-| P1 | Reviewer measured current algebra slowdown; no established resource budget | FG6 | Record pinned work, time and memory measurements and investigate regressions. |
-| B1 | Compatibility change: ordinary inductives now honor file-level `use` | FG0, FG2, FG6 | Document and test resolution precedence consistently across ordinary and generated declarations. |
+Every failure description in G1–G12 below refers to `00d4ecce` and its
+comparison revisions. Use the [status table](#current-status-and-fixing-evidence)
+for fixes and current regression coverage.
 
 ## G1: declaration ownership differs by declaration kind
 
@@ -132,14 +102,6 @@ def N : Unit := tt;
 initial N : Monoid(U0);
 def u : Unit := N;
 ```
-
-The reverse mixed-kind order also replaces the first binding:
-`inductive N : U0 { c; } def N : Unit := tt; def u : U0 := N;`
-refuses `u` with E606 (`found Unit, expected U0`). Same-kind duplicates
-also lose the first binding: `def N : Unit := tt; def N : U0 := Unit;`
-reports E604 ("Definition symbol is already registered") on the second
-definition, but a subsequent `def original : Unit := N;` fails with E340.
-The FG0 G1 variants cover all four cases.
 
 Expected: refuse the second same-module declaration with the duplicate-name
 diagnostic before replacing `N`; recovery can still check `u` against the
@@ -201,7 +163,7 @@ two argument types definitionally equal. Review shape analysis in
 [morphisms.mjs](../../web/cubist/morphisms.mjs) alongside the separate
 initial/free admissibility analysis.
 
-## G4: flat and nested derived matches lose access to evidence
+## G4: nested derived matches lose access to evidence
 
 ```cubist
 import hlevels;
@@ -221,12 +183,9 @@ theory T(U < UU0) {
 `T.value` fails with E546: it cannot generate `Bit.squash` because it
 cannot find evidence that `m.M` is a set. That evidence is already a
 checked field of the model. An inherited copy has the same failure.
-Nesting is not required: replacing both `cons` clauses with the flat
-`cons(b, rest) => c` also fails with E546, for `Bits.squash`. Both forms
-are pinned as separate G4 expected failures.
 
-Expected: flat and nested clause elaboration receives the applicable checked
-model evidence, transformed with its context. The required proof is still
+Expected: nested clause elaboration receives the applicable checked model
+evidence, transformed with its context. The required proof is still
 checked against the actual motive and boundaries. This does not authorize
 arbitrary missing path clauses, false equalities, or a broader elimination
 principle. Audit evidence discovery in
@@ -262,12 +221,7 @@ generated interface, even when their names are unused in the result type.
 Advice must preserve supported derivations and public calling conventions,
 or explain the interface change rather than present it as a simplification.
 Start in [lint.mjs](../../web/cubist/lint.mjs); acceptance includes checking
-the suggested replacement through actual clients. The executable G5 covers
-both single and grouped binders through the supported positional calls
-`S.op(a)` and `S.op(a, a)`: named operation calls such as
-`S.op(x := a, y := a)` are independently unsupported (E378) and would mask
-this lint failure. Passing controls retain W705 and W706 for ordinary safe
-unused binders and check both arrow-form rewrites.
+the suggested replacement through actual clients.
 
 ## G6: an invalid parent is re-expanded as a child's own error
 
@@ -293,9 +247,9 @@ Earlier capture failures made `Q.p` fail, then made `Q.Hom.p` report E391
 about an undetermined universe rather than the failed dependency. The
 recorded numeral, operator-operand and opened-field triggers now check.
 They are evidence for the dependency contract, not current reproductions.
-FG1 should test a genuine upstream projection failure through controlled
-failure injection; a source reproduction, if found, must be recorded
-separately before this is called a confirmed remaining defect.
+This symptom requires a genuine upstream projection failure through controlled
+failure injection; a source reproduction must be recorded separately before
+calling it a confirmed source defect. The current evidence is in the status table.
 
 ## G8: wildcard fallback replaces an endpoint mismatch
 
@@ -318,7 +272,7 @@ is handling recursive boundaries. `seg` has no recursive positions.
 Expected: use that fallback only for constructors with recursive positions;
 when an eligible fallback also fails, retain the written body's original
 mismatch. Explicit path clauses keep their bodies. Test the error code,
-endpoints and source range, plus successful checked coherence; the current
+endpoints and source range, plus successful checked coherence; the baseline
 test only asks whether a gap is named `bad`.
 
 ## G9: source aliases conflate internal keys and public labels
@@ -383,8 +337,8 @@ The [derived-operation builder](https://github.com/KanHarI/cubist-math/blob/00d4
 processes `item.value` without its parameter binders. Scope-aware
 substitution cannot protect a scope omitted by its caller. The earlier
 fix covers law expressions and inherited helpers under law binders, not
-this declaration boundary. The [review TODO](pr-188-todo.md) and
-[scope contract](../roadmaps/syntax-hygiene.md) are qualified accordingly.
+this declaration boundary. The [scope contract](../roadmaps/syntax-hygiene.md)
+requires a complete declaration interface.
 
 Expected: transform a complete declaration interface, including grouped and
 dependent parameter domains, result type and body. Preserve public parameter
@@ -418,62 +372,68 @@ point to a nonempty range at the responsible call.
 
 ## Limits and confidence
 
-**C1 is incomplete planned functionality, not a newly discovered bug.**
+### Capability boundary (C1)
+
 The construction-and-fold prototype registers no initial/free capability.
-The deriving opt-in, uniqueness and universal-property proofs remain in
+The deriving opt-in, uniqueness and universal-property proofs belong to
 [L2.6](../roadmaps/core-theories.md#initial-and-free-models-l26). Broader
 carrier/family strategies and higher coherences remain in that contract;
-the frontend work must not silently extend the supported mathematical
-fragment or advertise those proofs as complete.
+frontend preservation checks cannot supply those mathematical proofs.
 
-**V1 concerns preservation of meaning.** Existing tests include useful
-scope invariants and independently stated law types, but no systematic
-matrix covers combinations of imports, inheritance, notation, inlining,
-dependent binders and generation. H4 demonstrates why merely checking that
-both versions are accepted is too weak. FG6 defines the comparison oracle
-and transformations rather than promising exhaustive testing.
+### Mutation audit and remaining evidence
 
-The follow-up reviewer ran 20 mutations against targeted theory, scope,
-match and corpus tests: 13 killed, one skipped and six surviving. Two
-survivors remove public labels and expose G9's missing observation checks.
-One bypasses `notationScope` aliases: now that lexical capture covers the
-comparison operands and numerals, the wrapper built in
-[initial-models.mjs](../../web/translator/initial-models.mjs) may be redundant.
-FG2/FG6 must either identify a distinguishing source behavior and test it,
-or remove the redundant layer after auditing consumers. Survival alone
-does not prove that code is dead.
+The reviewer reported 20 mutations at `00d4ecce`: 13 killed, one skipped
+and six surviving, plus a separate explicit-head probe. FG2 removed the
+redundant initial-model `notationScope` aliases after auditing their
+producers and consumers; captured notation is the single source of scope.
+[FG2's audit](frontend-generation-fg2.md) records the removal and the
+synthetic-provenance distinction that remains testable.
 
-The other three concern the branch recursion-state update, a generated
-recursive-call source guard, and unnecessary IsSet/IsProp freshening. The
-reviewer considered them equivalent or defensive; record each disposition
-with its reasoning rather than counting all survivors as bugs or inventing
-tests that mirror implementation. The separate explicit-head guard probe
-also survived; top-level explicit path clauses do not reach it. The skipped
-mutant remains unassessed. Preserve the controls for explicit path bodies,
-bare/partial helpers, non-enclosing patterns, inherited recursion, and
-`N.model.iter` while strengthening the tests.
+[FG6's historical dispositions](frontend-generation-fg6.md#historical-audit-disposition-and-limitations)
+record the exact repeatable probes and their limits. The multi-value
+explicit-path probe is distinguished; single-value controls alone did not
+reach it. The branch recursion-state update, recursive-call producer guard,
+extra IsSet/IsProp freshening and historical `scope.fresh` label preference
+have documented defensive/equivalent dispositions, separate from the
+thirteen required kills. The alpha-freshening label-loss mutation and the
+historical fresh-name preference are different probes.
 
-**B1 is a compatibility decision, not a reported corpus failure.** File-level
-`use` now applies to ordinary inductives as it already did to definitions.
-After `use multiplicative;`, even a later `inductive M` does not change the
-opened meaning of `M` in `inductive Box : U0 { box(n : M); }`: the argument
-is `multiplicative.M`. The reviewer found no affected corpus source.
-FG0/FG2 must document this precedence and test it deliberately, including
-changed selections, imports and generated declarations; passing today's
-corpus does not establish source compatibility.
+The original manifest, individual thirteen kills and identity/reason for
+the skipped case were not supplied. Recover that evidence before claiming
+to reproduce or close the historical audit. The bounded transformation
+matrix in [frontend-invariants.test.mjs](../../tests/frontend-invariants.test.mjs)
+is preventive coverage, not an exhaustive proof of preservation.
 
-**P1 has observations, not an established budget.** The previous interleaved algebra probe
-reported medians of 1.125 s on main, 1.186 s at `68f1bf35`, and 1.183 s at
-`9c93220d`. The follow-up reviewer reports seven interleaved checks of
-`import hlevels; import algebra;`, with medians of 1.32 s on main and
-1.41 s at `00d4ecce` (about 6.8% slower). These machine-dependent samples
-are consistent with the earlier 5–9% range, not evidence for a particular
-cause or permission to adopt that range as a performance budget.
+### File-level selection (B1)
 
-At `00d4ecce` the full run passed 754/755 with one corpus wall-clock
-timeout; its unchanged-limit rerun checked all 3,857 declarations in
-21 seconds. That evidence, and the passing final 53-test theory run, do
-not negate the small failing programs above. The follow-up reviewer also
-reports a clean 755/755 run, site build/site tests, browser tests, lint and
-diff checks at this same head. The roadmap requires both
-compatibility checks and direct semantic evidence for each design change.
+File-level `use` applies to ordinary inductives as to definitions. After
+`use multiplicative;`, a later same-spelled global does not replace an
+opened field in a constructor domain. The normative rule is in the
+[scope contract](../roadmaps/syntax-hygiene.md#resolved-syntax-and-closures).
+The reviewer found no affected corpus source; that observation alone would
+not establish source compatibility.
+
+### Performance observations (P1)
+
+The earlier interleaved algebra probe reported medians of 1.125 s on main,
+1.186 s at `68f1bf35`, and 1.183 s at `9c93220d`. The follow-up reviewer
+reported seven interleaved checks of `import hlevels; import algebra;`,
+with medians of 1.32 s on main and 1.41 s at `00d4ecce` (about 6.8% slower).
+These samples support the historical 5–9% observation, not its proposed
+cause or a performance budget.
+
+The [FG reports and cited snapshots](README.md#frontend-generation-evidence)
+retain subsequent measurements with revisions, workload/build stamps and
+unchanged limits. They do not establish that the original overhead was
+removed. Attribute the work/memory cost with comparable runs before setting
+a budget; do not convert machine-dependent medians into a speedup claim.
+
+### Baseline validation
+
+At `00d4ecce` the full run passed 754/755 with one corpus wall-clock timeout;
+its unchanged-limit rerun checked all 3,857 declarations in 21 seconds.
+The follow-up reviewer also reported a clean 755/755 run, site build/site
+tests, browser tests, lint and diff checks at that head. These historical
+runs did not negate the small failing programs reproduced above. Later
+validation belongs to each FG report; no implementation tests were rerun
+for this documentation-only reconciliation.

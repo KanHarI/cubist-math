@@ -1,19 +1,18 @@
-# FG0 contract audit
+# Frontend generation contract acceptance audit
 
-Scope: the executable cases in PR #205, including the follow-up review of
-`1029bed2`.
-The [frontend generation roadmap](../roadmaps/frontend-generation.md) supplies
-the behavioral requirements. The [inventory](frontend-generation-gaps.md)
-describes defects; the [manifest](../../tests/fixtures/frontend-generation.md)
-maps cases to evidence. This audit checks those mappings and acceptance
-boundaries without declaring the compiler defects fixed.
+The contracts from [#205](https://github.com/KanHarI/cubist-math/pull/205)
+are integrated and active on this branch. The
+[roadmap](../roadmaps/frontend-generation.md) defines desired behavior; the
+[independent requirement map](../../tests/fixtures/frontend-generation-requirements.mjs)
+assigns executable witnesses. The [manifest](../../tests/fixtures/frontend-generation.md)
+records each case and the surviving downstream controls.
 
-The procedure is the [regression contract checklist](../guides/regression-contracts.md).
-Each case now has a known-defect control, a different-cause control with unchanged
-diagnostic codes (changed navigation for G9), and an acceptance control in
+The old compiler's defect records and classification-only tests have been
+retired. The following acceptance boundaries remain in
 [frontend-generation-audit.test.mjs](../../tests/frontend-generation-audit.test.mjs).
-Existing harness regressions retain prerequisite, fixture, strict-mode and
-independent-activation checks. W705 and W706 safe-advice controls remain active.
+Real original cases run separately against the fixed compiler. Source controls
+and injected observations exercise the predicates without substituting for
+those integration checks. See the [contributor checklist](../guides/regression-contracts.md).
 
 ## Requirements and controls
 
@@ -39,77 +38,35 @@ and likewise do not establish that its original source is fixed.
 | G12-shadowed | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly) | Source: rename only the local iter parameter; intended/local and captured/field equations retain opposite verdicts. A separate field-type control checks today. | Replacing the local call by the earlier field result makes the captured equation check. |
 | G12-range | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Observer: range over iter, iter(n), or a wider span within the written law. | Empty/off-reference/out-of-law span, or a different E845 cause. |
 
-## Findings and dispositions
+## Distinguishing controls
 
-- G6 rejected root-cause retention that FG1 permits. Removed that prohibition;
-  retained the parent-cause prerequisite and the child's E340/parent checks.
-- G5 inferred an edit from a warning code. Recorded code/declaration/message and
-  required matching advice within the edit target before applying the replacement.
-  Unknown advice fails for investigation; it is never silently treated as the
-  same edit. This mapping can be retired with temporary defect tracking.
-- G12-range overconstrained the span to a whole call. The required reference is
-  now `iter`; controls accept both narrow and wider valid origins.
-- The same-code audit confirmed that G2's previous name/code observation could
-  hide an unrelated mismatch. All cases now retain primary cause payloads.
-  E340 cascade membership and dependency targets are also checked; repeated
-  attached cause wording is not a cause fingerprint. Location and navigation requirements keep
-  their own source checks rather than depending on diagnostic formatting.
-- The range audit found G8 could accept reversed found/expected endpoints because
-  it searched for both strings anywhere. It now compares their respective roles.
-- The coverage check compared IDs alone. It now also verifies finding ownership;
-  a G12-range row incorrectly assigned to G11 fails. The fixture comment now
-  correctly describes downstream provenance/browser consumers.
+- Output-absence checks (`absentOutputs`/`absentOutputFamilies`) describe reported
+  declarations. Real positive programs prove constructors can be usable without
+  appearing in that list. Constructor leaks are observed through E343 clients;
+  observer controls replay real client verdicts and actual model/fold outputs
+  alongside a synthetic duplicate refusal, preserving the original binding.
+- Refused clients carry individual codes, composed with declaration diagnostics
+  into one complete set. A control combines E343 and E606 clients with the
+  duplicate refusal and rejects swapped codes, extra gaps and missing clients.
+- Semantic controls use distinct branches, zero/one/two recursive steps, and
+  independent intended/incorrect equations. Executable constant and step-ignoring
+  sources state their separating client verdicts and E606 failures. The supported
+  two-step unrolling establishes those finite witnesses, not general recursion.
+  Capturing a local recursive parameter makes the incorrect equation check.
+- Source scopes, conflicts and rewrites resolve before checking; duplicate
+  anchors fail without invoking the compiler. Inner-token occurrences are
+  explicit, including the conflicting binder rather than a letter in `succ`.
+- Removing both a case and its manifest row still fails the independent
+  requirement map. Removing constructor, output, wrong-equation or second-step
+  expectations also fails. Metadata coverage does not itself prove semantic sensitivity.
+- Diagnostic controls retain permitted alternatives: attached parent causes,
+  narrow or wider valid spans, and correctly ordered found/expected endpoints.
+- Lint observer controls inject a proposed unsafe edit because the fixed linter
+  now suppresses it. Changed/partial advice cannot silently authorize the edit;
+  real safe W705/W706 controls and downstream generated clients remain active.
 
-- The constructor audit used an impossible output shape. Output absence is now
-  named explicitly (`absentOutputs`/`absentOutputFamilies`); constructor availability
-  is observed through real clients that must receive E343. Positive programs prove
-  each constructor is usable while absent from outputs. Observer leak controls
-  replay those real client verdicts and actual model/fold outputs alongside a
-  synthetic duplicate refusal. They establish predicate sensitivity, not a
-  compiler-generated partial-publication bug. Downstream original cases establish
-  the actual refusal and preservation behavior.
-- Collision diagnostics previously allowed exactly one gap. Refused clients now
-  carry individual codes, and their expected diagnostics compose with the
-  declaration refusal. A control combines E343 and E606 clients with the duplicate
-  diagnostic, and rejects swapped codes, missing clients and extra diagnostics.
-- G12's first successor could not distinguish using the recursive result from
-  substituting `c`. Every context now requires `computation2`. Executable constant
-  and step-ignoring counterexamples independently specify the client verdicts and
-  E606 failures that must reject them. Removing a second-step witness fails the
-  minimum-obligation check.
-
-## Validation and lifecycle
-
-Run the contracts, harness and audit together:
-
-```sh
-npm test -- tests/frontend-generation.test.mjs tests/frontend-generation-harness.test.mjs tests/frontend-generation-audit.test.mjs
-```
-
-The audit's case-list check requires an acceptance control for every executable
-case, and its different-cause loop runs every case. These checks establish
-coverage of the stated controls; the contents still require semantic review.
-Use the contributor checklist on new cases and audit siblings after findings.
-
-Controlled reversions cover cause retention, reference width, endpoint roles,
-advice observation, primary causes, dependency targets and coverage ownership.
-The reference-span control states `iter` independently of fixture metadata.
-The follow-up adds constructor-availability, output-absence, source-anchor
-ambiguity and missing-obligation controls, plus semantic mutants for constant
-computations, ignored recursive results and capture of a shadowing parameter.
-An incorrect implementation that still checks clients is a separate audit
-boundary from an unrelated diagnostic.
-
-The [independent requirement map](../../tests/fixtures/frontend-generation-requirements.mjs)
-records obligations and their witnesses. Removing both a fixture and its
-manifest row cannot erase an obligation. This check establishes mapping
-completeness; semantic sensitivity comes from the real equation pairs and
-explicit counterexamples, not from metadata agreement.
-
-Keep the roadmap as the behavioral authority when integrating downstream fixes.
-Activate each fixed original case and preserve downstream search-eligibility,
-explicit-path, provenance, named-constructor and recursive-predecessor controls.
-Once all original cases pass, retire known-defect records and tests specific to
-that lifecycle. Retain the acceptance boundaries and distinguishing controls
-that still protect active behavior. Integration and full-suite results belong
-in the PR's validation record at the tested revision.
+Run the commands in the manifest and the normal full suite. Preserve all
+required compiler mutation checks, including recursive lexical shadowing.
+The preexisting reservation/failed-publication mutations complement the
+observer leak controls; neither replaces the other. Keep commit-specific
+suite and integration results on the PR, alongside the exact tested revision.

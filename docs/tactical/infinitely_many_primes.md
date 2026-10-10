@@ -1,5 +1,9 @@
 # Infinitely many primes
 
+Historical proof-export example for [the retired engine at `7dbb8766`](https://github.com/KanHarI/cubist-math/blob/7dbb8766582c575bc3501dd1fab5bc4aca3bab7b).
+The commands, instruction counts and artifacts below describe that revision;
+current scheduling belongs to the [work plan](../roadmaps/work-plan.md).
+
 Open **Infinitely many primes (Euclid)** in the workbench, or use the CLI:
 
 ```text
@@ -66,11 +70,11 @@ The final object displays its verified type, `InfinitelyManyPrimes`.
 
 The proof-producing sources are:
 
-- [`arithmetic.mjs`](../../tools/proofs/arithmetic.mjs): arithmetic and order.
-- [`number_theory.mjs`](../../tools/proofs/number_theory.mjs): bounded search and divisibility.
-- [`euclid.mjs`](../../tools/proofs/euclid.mjs): prime divisors and the final argument.
-- [`check_primes.mjs`](../../tools/proofs/check_primes.mjs): independent boundary checks.
-- [`primes.mjs`](../../tools/proofs/primes.mjs): dependency pruning and artifact export.
+- [`arithmetic.mjs`](https://github.com/KanHarI/cubist-math/blob/7dbb8766582c575bc3501dd1fab5bc4aca3bab7b/tools/proofs/arithmetic.mjs): arithmetic and order.
+- [`number_theory.mjs`](https://github.com/KanHarI/cubist-math/blob/7dbb8766582c575bc3501dd1fab5bc4aca3bab7b/tools/proofs/number_theory.mjs): bounded search and divisibility.
+- [`euclid.mjs`](https://github.com/KanHarI/cubist-math/blob/7dbb8766582c575bc3501dd1fab5bc4aca3bab7b/tools/proofs/euclid.mjs): prime divisors and the final argument.
+- [`check_primes.mjs`](https://github.com/KanHarI/cubist-math/blob/7dbb8766582c575bc3501dd1fab5bc4aca3bab7b/tools/proofs/check_primes.mjs): independent boundary checks.
+- [`primes.mjs`](https://github.com/KanHarI/cubist-math/blob/7dbb8766582c575bc3501dd1fab5bc4aca3bab7b/tools/proofs/primes.mjs): dependency pruning and artifact export.
 
 Run `make proof-export` to regenerate. The generator replays the optimized proof
 in a fresh axiom-disabled engine before saving it. JSON and `.math` source both
