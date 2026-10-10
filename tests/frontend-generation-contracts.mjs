@@ -23,6 +23,34 @@ const generation = checked => checked.result.gaps.flatMap(g => {
   const match = g.reason.match(/Cannot generate ([^:]+):/);
   return match ? [[g.name, match[1]]] : [];
 });
+// Codes identify categories, not causes. Retain the distinguishing payload of
+// primary failures. Dependency identities are recorded separately below.
+// This is temporary defect evidence, never the desired acceptance predicate.
+const rootCauses = checked => checked.result.gaps.filter(g => g.code !== "E340").map(g => {
+  const reason = g.reason.replace(/ at \d+:\d+$/, "");
+  let match, detail;
+  if (g.code === "E606" && (match = reason.match(/^Type mismatch: found (.*), expected (.*)\.$/)))
+    detail = {found: match[1], expected: match[2]};
+  else if (g.code === "E546" && (match = reason.match(/^Cannot generate ([^:]+): ([^;]+);/)))
+    detail = {obligation: match[1], requirement: match[2]};
+  else if (g.code === "E343" && (match = reason.match(/^Untranslated name: (.+)$/)))
+    detail = {untranslated: match[1]};
+  else if (g.code === "E871" && (match = reason.match(/^Inlining (\w+) here would capture its field (\w+):/)))
+    detail = {helper: match[1], field: match[2]};
+  else if (g.code === "E845" && (match = reason.match(/^(\w+) is recursive, and a field's type cannot unfold it:/)))
+    detail = {recursive: match[1], context: "field type"};
+  else detail = {reason};
+  return [g.name, detail];
+}).sort(([a], [b]) => a.localeCompare(b));
+const dependencies = checked => {
+  const targets = new Map();
+  for (const g of checked.result.gaps.filter(g => g.code === "E340")) {
+    const target = g.reason.match(/^Untranslated dependency: ([^\s(]+)/)?.[1] ?? g.reason;
+    if (!targets.has(target)) targets.set(target, []);
+    targets.get(target).push(g.name);
+  }
+  return [...targets].map(([target, names]) => [target, names.sort()]).sort(([a], [b]) => a.localeCompare(b));
+};
 const hasWord = (text, word) => (text.match(/\b\w+\b/g) ?? []).includes(word);
 const observationPositions = ({source, observations}) => {
   const start = source.indexOf(observations.scope);
@@ -60,7 +88,13 @@ export function validateFixture(fixture) {
     assert.equal(source.split(rewrite.from).length, 2, "lint rewrite target must occur once");
     assert.ok(typeof rewrite.to === "string" && rewrite.to.length > 0, "lint replacement must be nonempty");
     assert.notEqual(rewrite.from, rewrite.to, "lint rewrite must change the source");
+    assert.ok(rewrite.advice?.length, "lint rewrite must identify the advice it implements");
   }
+}
+export function validateCoverage(manifest, fixtures) {
+  const documented = [...manifest.matchAll(/^\| `([^`]+)` \| (G\d+) \|/gm)].map(match => [match[1], match[2]]);
+  assert.deepEqual(documented.sort(), fixtures.map(({id, group}) => [id, group]).sort(),
+    "the coverage matrix must map every executable case to its finding once");
 }
 const rangeFacts = (actual, fixture) => {
   const {source, diagnostic} = fixture;
@@ -79,17 +113,29 @@ export async function observeCase(t, fixture, check, lintSource = lint) {
   validateFixture(fixture);
   let checked = await check(t, fixture.source);
   accepted(checked, fixture.invariantClients ?? []);
+  let advice, recognizedAdvice;
   if (fixture.kind === "lint") {
     // A valid original interface is a prerequisite, never the lint defect.
     complete(checked); accepted(checked, fixture.clients);
-    const advice = lintSource(fixture.source).filter(w => ["W705", "W706"].includes(w.code));
-    if (advice.length) checked = await check(t, fixture.source.replace(fixture.rewrite.from, fixture.rewrite.to));
+    const warnings = lintSource(fixture.source).filter(w => ["W705", "W706"].includes(w.code));
+    advice = warnings.map(({code, declaration, message}) => ({code, declaration, message}));
+    const start = fixture.source.indexOf(fixture.rewrite.from);
+    recognizedAdvice = isDeepStrictEqual(advice, fixture.rewrite.advice)
+      && warnings.every(w => w.start >= start && w.end > w.start && w.end <= start + fixture.rewrite.from.length);
+    // A warning code alone cannot authorize this particular edit. Changed
+    // advice must be investigated before assigning it a replacement source.
+    if (recognizedAdvice) checked = await check(t, fixture.source.replace(fixture.rewrite.from, fixture.rewrite.to));
   }
-  const facts = {gaps: diagnostics(checked), clients: states(checked, [...fixture.clients ?? [], ...fixture.refusedClients ?? []])};
+  const facts = {gaps: diagnostics(checked), clients: states(checked, [...fixture.clients ?? [], ...fixture.refusedClients ?? []]),
+    rootCauses: rootCauses(checked), dependencies: dependencies(checked)};
   const requirements = {clients: (fixture.clients ?? []).every(name => facts.clients[name] === "checked")};
   switch (fixture.kind) {
     case "completion":
+      requirements.diagnostics = facts.gaps.length === 0;
+      break;
     case "lint":
+      facts.advice = advice;
+      requirements.advice = advice.length === 0 || recognizedAdvice;
       requirements.diagnostics = facts.gaps.length === 0;
       break;
     case "evidence":
@@ -126,14 +172,15 @@ export async function observeCase(t, fixture, check, lintSource = lint) {
       facts.childNamesParent = hasWord(gap(checked, fixture.child)?.reason ?? "", fixture.parent);
       facts.childRepeatsCause = hasWord(gap(checked, fixture.child)?.reason ?? "", fixture.cause);
       requirements.diagnostics = isDeepStrictEqual(facts.gaps, [`${fixture.parent} E343`, `${fixture.child} E340`].sort());
-      requirements.dependency = facts.childNamesParent && !facts.childRepeatsCause;
+      requirements.dependency = facts.childNamesParent;
       break;
     }
     case "wildcard": {
       const actual = gap(checked, fixture.diagnostic.name);
       assert.ok(actual, "the wildcard must be refused");
       facts.generation = generation(checked);
-      facts.endpoints = [fixture.diagnostic.found, fixture.diagnostic.expected].map(text => actual.reason.includes(text));
+      const mismatch = actual.reason.match(/^Type mismatch: found (.*), expected (.*)\.(?: at \d+:\d+)?$/);
+      facts.endpoints = [mismatch?.[1] === fixture.diagnostic.found, mismatch?.[2] === fixture.diagnostic.expected];
       facts.range = rangeFacts(actual, fixture);
       requirements.diagnostics = isDeepStrictEqual(facts.gaps, [`${fixture.diagnostic.name} ${fixture.diagnostic.code}`]);
       requirements.endpoints = facts.endpoints.every(Boolean);

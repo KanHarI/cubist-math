@@ -53,10 +53,13 @@ def identity(S : T(U0)) := T.Hom.id(S);
 def applied(S : T(U0), a : S.M) : S.M := S.op(a, a);
 initial N : T(U0);`,
     clients: ["identity", "applied", "N", "N.model", "N.fold"],
-    rewrite: {from: "forall x, y : M. M", to: "M -> M -> M"},
+    rewrite: {from: "forall x, y : M. M", to: "M -> M -> M", advice: [
+      {code: "W706", declaration: "T", message: "x is unused in the body: take it out of the group and write M -> … for it."},
+      {code: "W706", declaration: "T", message: "y is unused in the body: take it out of the group and write M -> … for it."},
+    ]},
   },
   G6: {
-    phase: "FG1", contract: "a child reports the failed parent once without repeating its root error",
+    phase: "FG1", contract: "a child reports its failed dependency while the parent's cause remains inspectable",
     source: `import hlevels;
 theory P(U < UU0) { M : set U; e : M; law bad : e = Undefined; }
 theory C(U < UU0) extends P { law again : e = e; }
@@ -113,13 +116,13 @@ def computation(S : T(U0)) : S.twice(zero) = S.op(S.c) { rfl; }`,
     clients: ["T.iter", "T.twice", "computation"],
   },
   "G12-range": {
-    phase: "FG5", contract: "recursive type-unfolding refusals cover the responsible original call",
+    phase: "FG5", contract: "recursive type-unfolding refusals cover the responsible original reference",
     source: `import hlevels; import nat;
 theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
   def iter(n : Nat) : M := match n { zero => c; succ(k) => op(iter(k)); };
   law nope(n : Nat) : iter(n) = c;
 }`,
-    diagnostic: {name: "T", code: "E845", scope: "law nope(n : Nat) : iter(n) = c;", token: "iter(n)"},
+    diagnostic: {name: "T", code: "E845", scope: "law nope(n : Nat) : iter(n) = c;", token: "iter"},
   },
 };
 
@@ -171,7 +174,9 @@ theory T(U < UU0) { M : set U; op : forall x : M. M; }
 def identity(S : T(U0)) := T.Hom.id(S);
 def applied(S : T(U0), a : S.M) : S.M := S.op(a);
 initial N : T(U0);`,
-    rewrite: {from: "forall x : M. M", to: "M -> M"},
+    rewrite: {from: "forall x : M. M", to: "M -> M", advice: [
+      {code: "W705", declaration: "T", message: "x is unused in the body: write M -> … instead of forall x : M. …."},
+    ]},
   },
 ];
 
@@ -253,12 +258,16 @@ const kinds = {
 // A changed diagnostic, client verdict or link must be investigated, not rerecorded.
 const knownDefects = {
   "G1": {
+    "dependencies": [],
+    "rootCauses": [["original", {"found": "U0", "expected": "Unit"}]],
     "gaps": ["original E606"],
     "clients": {"original": "refused", "independent": "checked"},
     "originalType": "U0",
     "duplicateRefused": false
   },
   "G2": {
+    "dependencies": [["T.Hom", ["T.Hom.compose", "T.Hom.id", "T.Hom.make", "T.Hom.map", "T.Hom.map_op", "T.Iso", "T.Iso.make", "identity", "identity_u1"]], ["T.Hom.compose", ["computation", "computation_u1"]], ["T.Iso", ["T.Iso.compose", "T.Iso.from", "T.Iso.from_to", "T.Iso.id", "T.Iso.inverse", "T.Iso.to", "T.Iso.to_from", "iso", "iso_u1"]]],
+    "rootCauses": [["T.Hom", {"found": "max(U, max(V, U1))", "expected": "max(U, V)"}]],
     "gaps": [
       "T.Hom E606",
       "T.Hom.compose E340",
@@ -293,6 +302,8 @@ const knownDefects = {
     }
   },
   "G3": {
+    "dependencies": [["T.Hom", ["T.Hom.compose", "T.Hom.id", "T.Hom.make", "T.Hom.map", "T.Hom.map_c", "T.Hom.map_op", "T.Iso", "T.Iso.make"]], ["T.Hom.id", ["unsupported"]], ["T.Iso", ["T.Iso.compose", "T.Iso.from", "T.Iso.from_to", "T.Iso.id", "T.Iso.inverse", "T.Iso.to", "T.Iso.to_from"]]],
+    "rootCauses": [["T.Hom", {"found": "A.l = A.l", "expected": "B.l = B.l"}]],
     "gaps": [
       "T.Hom E606",
       "T.Hom.compose E340",
@@ -334,21 +345,30 @@ const knownDefects = {
     "refusals": [{"name": "unsupported", "code": "E340", "words": [false, false, false], "unsupported": true}]
   },
   "G4": {
+    "dependencies": [["T.value", ["computation"]]],
+    "rootCauses": [["T.value", {"obligation": "Bit.squash", "requirement": "m.M must be of h-level 1"}]],
     "gaps": ["T.value E546", "computation E340"],
     "clients": {"T.value": "refused", "computation": "refused"},
     "generation": [["T.value", "Bit.squash"]]
   },
   "G5": {
+    "dependencies": [],
+    "rootCauses": [["identity", {"reason": "T's models have no homomorphisms: its op's result mentions a carrier on both sides of an arrow, and such homomorphisms need not compose."}], ["N", {"reason": "op uses an arrow type: the equational strategy requires named operation arguments, as in succ(x : M) : M."}]],
+    "advice": [{"code": "W706", "declaration": "T", "message": "x is unused in the body: take it out of the group and write M -> … for it."}, {"code": "W706", "declaration": "T", "message": "y is unused in the body: take it out of the group and write M -> … for it."}],
     "gaps": ["N E864", "identity E817"],
     "clients": {"identity": "refused", "applied": "checked", "N": "refused", "N.model": "missing", "N.fold": "missing"}
   },
   "G6": {
+    "dependencies": [],
+    "rootCauses": [["C", {"untranslated": "Undefined"}], ["P", {"untranslated": "Undefined"}]],
     "gaps": ["C E343", "P E343"],
     "clients": {"independent": "checked"},
     "childNamesParent": false,
     "childRepeatsCause": true
   },
   "G8": {
+    "dependencies": [],
+    "rootCauses": [["h", {"obligation": "seg", "requirement": "T must be a proposition"}]],
     "gaps": ["h E546"],
     "clients": {},
     "generation": [["h", "seg"]],
@@ -356,52 +376,103 @@ const knownDefects = {
     "range": {"nonempty": true, "withinScope": true, "coversToken": false}
   },
   "G9": {
+    "dependencies": [],
+    "rootCauses": [],
     "gaps": [],
     "clients": {"meaning": "checked"},
     "links": [[["c", null]], [["c1", null]], [["c1", null]], [["c1", null]]]
   },
-  "G10": {"gaps": ["T E871"], "clients": {}, "range": {"nonempty": false, "withinConflict": false, "coversConflict": false}},
-  "G11": {"gaps": ["intended E606"], "clients": {"intended": "refused", "captured": "checked"}},
+  "G10": {
+    "dependencies": [],
+    "rootCauses": [["T", {"helper": "k", "field": "c"}]],
+    "gaps": ["T E871"],
+    "clients": {},
+    "range": {"nonempty": false, "withinConflict": false, "coversConflict": false}
+  },
+  "G11": {
+    "dependencies": [],
+    "rootCauses": [["intended", {"found": "S.op(x, S.c) = S.op(x, S.c)", "expected": "T.kk{{U0}}(S, x) = S.op(x, S.c)"}]],
+    "gaps": ["intended E606"],
+    "clients": {"intended": "refused", "captured": "checked"}
+  },
   "G12": {
+    "dependencies": [["T", ["computation"]]],
+    "rootCauses": [["T", {"recursive": "iter", "context": "field type"}]],
     "gaps": ["T E845", "computation E340"],
     "clients": {"T.iter": "missing", "T.twice": "missing", "computation": "refused"}
   },
-  "G12-range": {"gaps": ["T E845"], "clients": {}, "range": {"nonempty": false, "withinScope": true, "coversToken": false}},
+  "G12-range": {
+    "dependencies": [],
+    "rootCauses": [["T", {"recursive": "iter", "context": "field type"}]],
+    "gaps": ["T E845"],
+    "clients": {},
+    "range": {"nonempty": false, "withinScope": true, "coversToken": false}
+  },
   "G1-initial": {
+    "dependencies": [],
+    "rootCauses": [["original", {"found": "U0", "expected": "Unit"}]],
     "gaps": ["original E606"],
     "clients": {"original": "refused", "independent": "checked"},
     "originalType": "U0",
     "duplicateRefused": false
   },
   "G1-reverse": {
+    "dependencies": [],
+    "rootCauses": [["constructor", {"reason": "Instruction kernel: Expected U, found Unit."}], ["original", {"found": "Unit", "expected": "U0"}]],
     "gaps": ["constructor E604", "original E606"],
     "clients": {"original": "refused", "constructor": "refused", "independent": "checked"},
     "originalType": "Unit",
     "duplicateRefused": false
   },
   "G1-same-kind": {
+    "dependencies": [["N", ["original"]]],
+    "rootCauses": [["N", {"reason": "Instruction kernel: Definition symbol is already registered."}]],
     "gaps": ["N E604", "original E340"],
     "clients": {"original": "refused", "independent": "checked"},
     "originalType": null,
     "duplicateRefused": true
   },
   "G4-flat": {
+    "dependencies": [["T.value", ["computation"]]],
+    "rootCauses": [["T.value", {"obligation": "Bits.squash", "requirement": "m.M must be of h-level 1"}]],
     "gaps": ["T.value E546", "computation E340"],
     "clients": {"T.value": "refused", "computation": "refused"},
     "generation": [["T.value", "Bits.squash"]]
   },
   "G5-single": {
+    "dependencies": [],
+    "rootCauses": [["identity", {"reason": "T's models have no homomorphisms: its op's result mentions a carrier on both sides of an arrow, and such homomorphisms need not compose."}], ["N", {"reason": "op uses an arrow type: the equational strategy requires named operation arguments, as in succ(x : M) : M."}]],
+    "advice": [{"code": "W705", "declaration": "T", "message": "x is unused in the body: write M -> … instead of forall x : M. …."}],
     "gaps": ["N E864", "identity E817"],
     "clients": {"identity": "refused", "applied": "checked", "N": "refused", "N.model": "missing", "N.fold": "missing"}
   },
-  "G11-grouped-dependent": {"gaps": ["intended E606"], "clients": {"intended": "refused", "captured": "checked"}},
-  "G11-inherited": {"gaps": ["intended E606"], "clients": {"intended": "refused", "captured": "checked"}},
-  "G11-initial": {"gaps": ["intended E606"], "clients": {"intended": "refused", "captured": "checked"}},
+  "G11-grouped-dependent": {
+    "dependencies": [],
+    "rootCauses": [["intended", {"found": "S.op(x, S.c) = S.op(x, S.c)", "expected": "T.kk{{U0}}(S, x, x, refl(x)) = S.op(x, S.c)"}]],
+    "gaps": ["intended E606"],
+    "clients": {"intended": "refused", "captured": "checked"}
+  },
+  "G11-inherited": {
+    "dependencies": [],
+    "rootCauses": [["intended", {"found": "S.op(x, S.c) = S.op(x, S.c)", "expected": "Child.kk{{U0}}(S, x) = S.op(x, S.c)"}]],
+    "gaps": ["intended E606"],
+    "clients": {"intended": "refused", "captured": "checked"}
+  },
+  "G11-initial": {
+    "dependencies": [],
+    "rootCauses": [["intended", {"found": "N.op(x, N.c) = N.op(x, N.c)", "expected": "T.kk{{U0}}(N.model, x) = N.op(x, N.c)"}]],
+    "gaps": ["intended E606"],
+    "clients": {"intended": "refused", "captured": "checked"}
+  },
   "G12-inherited": {
+    "dependencies": [["Child", ["computation"]]],
+    "rootCauses": [["Child", {"reason": "T is not a theory here: Child extends theories in scope."}], ["T", {"recursive": "iter", "context": "field type"}]],
     "gaps": ["Child E805", "T E845", "computation E340"],
     "clients": {"Child.iter": "missing", "Child.twice": "missing", "computation": "refused"}
   },
   "G12-initial": {
+    "dependencies": [["N", ["computation"]], ["T", ["N"]]],
+    "rootCauses": [["T", {"recursive": "iter", "context": "field type"}]],
     "gaps": ["N E340", "T E845", "computation E340"],
     "clients": {"N": "refused", "N.model": "missing", "computation": "refused"}
   }
@@ -420,6 +491,6 @@ export const cases = [
   ...recursiveVariants.map(variant => caseOf("G12", variant)),
 ];
 
-// Existing FG5 provenance/browser consumers look up source fixtures by ID.
+// Downstream FG5 provenance/browser consumers look up source fixtures by ID.
 // This derived view contains the same case objects, never separate group state.
 export const gaps = Object.fromEntries(cases.map(fixture => [fixture.id, fixture]));

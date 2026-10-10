@@ -9,7 +9,7 @@ import {cubistTestModules} from "../web/cubist/modules.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
 import {checkProgram} from "./check-program.mjs";
 import {cases, historicalCoverage, passingCoverage} from "./fixtures/frontend-generation.mjs";
-import {accepted, complete, observeCase, recordCase, validateFixture} from "./frontend-generation-contracts.mjs";
+import {accepted, complete, observeCase, recordCase, validateFixture, validateCoverage} from "./frontend-generation-contracts.mjs";
 
 const module = await createCubical();
 const check = (t, source, fixtures = {}) => {
@@ -26,8 +26,7 @@ test("FG0 maps historical fixes and passing controls to existing executable test
   assert.equal(new Set(cases.map(fixture => fixture.id)).size, cases.length, "case IDs must be unique");
   for (const fixture of cases) validateFixture(fixture);
   const manifest = await readFile(new URL("./fixtures/frontend-generation.md", import.meta.url), "utf8");
-  const documented = [...manifest.matchAll(/^\| `([^`]+)` \| G\d+ \|/gm)].map(match => match[1]);
-  assert.deepEqual(documented.sort(), cases.map(fixture => fixture.id).sort(), "the coverage matrix must name every executable case once");
+  validateCoverage(manifest, cases);
   for (const [file, name] of [...Object.values(historicalCoverage), ...passingCoverage]) {
     const source = await readFile(new URL(file, import.meta.url), "utf8");
     if (file.endsWith(".cubist")) {

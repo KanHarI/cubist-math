@@ -16,7 +16,10 @@ clients. G2's clients fix the public Hom/Iso types and composition
 computation at U0 and U1. G3 preserves the base theory while withholding
 both unsupported artifact families. G4 covers both flat and nested matches.
 G5 uses positional operation calls, identity and a generated model/fold to
-test the actual lint rewrite for both single and grouped operation binders.
+test the lint rewrite for both single and grouped operation binders. The case
+records each warning's code, declaration and message and verifies its location
+within the rewrite target before applying the associated replacement. Changed
+or partial advice is an unrecognized observation until its edit is reviewed.
 Named operation calls are not currently supported. Passing controls require
 W705 and W706 for ordinary safe unused binders and check their arrow-form
 rewrites.
@@ -25,9 +28,12 @@ equations, including helper chains, grouped/dependent binders, inheritance
 and generated clients. G12 checks `twice` computation directly, through
 inheritance, and through an initial model. It keeps a passing
 E845 refusal control for recursive unfolding in a law. `G12-range` tracks
-that refusal's nonempty range over the original `iter(n)` call as a
+that refusal's nonempty range over the original `iter` reference as a
 separate FG5 expected failure, so it can be activated independently of the
-FG2/FG4 value-call fix.
+FG2/FG4 value-call fix. The range may cover the reference, the call or a wider
+part of the written law. G6 requires the child's E340 to identify its failed
+parent. The parent retains the original cause; the child's message may also
+attach it for inspection.
 
 G8–G10 additionally compare diagnostic codes, endpoints, original source
 ranges, every written binder/use label and definition target. These
@@ -46,8 +52,15 @@ law binders, initial-model recursion and explicit path bodies.
 
 The [design decision on #205](https://github.com/KanHarI/cubist-math/pull/205#issuecomment-6096591882)
 replaces the catch-any-assertion handler. `frontend-generation-contracts.mjs`
-collects compact diagnostic name/code pairs, client verdicts, publication
-and source observations, and evaluates the independent desired requirements.
+collects diagnostic name/code pairs, primary cause payloads, client verdicts,
+lint advice, publication and source observations, and evaluates independent
+desired requirements. Type mismatch evidence retains found/expected types;
+generation evidence retains the obligation and required evidence; capture and
+recursion evidence retain the responsible references. Terminal line/column text
+and remediation prose are omitted from those extracted payloads. Other primary
+failures retain their reason without the terminal location. E340 cascades retain
+their declaration/code entries and dependency targets; attached cause wording
+does not replace the independently retained primary cause.
 Every contract consumes its supplied case; group labels never select another
 fixture's data. The derived `gaps` lookup shares those same case objects by ID
 for the existing downstream FG5 provenance/browser consumers. Accepted clients must be assumption-free.
@@ -55,10 +68,10 @@ for the existing downstream FG5 provenance/browser consumers. Accepted clients m
 Prerequisites are ordinary assertions: metadata must be valid, unaffected
 clients must check, and G5's original interface must check before any rewrite.
 Missing clients are represented explicitly in observations, so a misspelled
-client cannot match a recorded defect. The whole diagnostic set is compared,
-including dependent failures; an unrelated or changed error cannot hide behind
-the first known failure. Labels and missing/wrong targets are retained at every
-written occurrence. Repeated identical links at one occurrence are equivalent.
+client cannot match a recorded defect. The whole diagnostic name/code set is
+compared, including dependent failures; primary failure payloads distinguish
+different causes with the same code. Labels and missing/wrong targets are
+retained at every written occurrence. Repeated identical links at one occurrence are equivalent.
 
 Only an exact match for the case's `knownDefect` facts is reported as TODO.
 No exception or assertion message is classified as a defect. A different
@@ -74,6 +87,14 @@ The harness's own regressions exercise missing imports, misspelled clients,
 unrelated type errors, invalid metadata, changed/extra diagnostics, missing or
 wrong navigation, strict mode and independent activation. Supported controls
 prove that flat matches, renamed navigation and all three G12 clients can pass.
+
+[frontend-generation-audit.test.mjs](../frontend-generation-audit.test.mjs)
+extends these controls to every case: the known defect is recognized, a different
+primary cause fails, and a supported source or explicitly injected valid outcome
+satisfies the desired requirements. It checks permitted diagnostic alternatives,
+swapped mismatch endpoints, changed advice and ID-to-finding ownership. See the
+[audit](../../docs/reports/frontend-generation-contract-audit.md) for each case's
+scope and the distinction between observer controls and compiler integration.
 
 ## Coverage by executable case
 
@@ -104,7 +125,7 @@ mutation selectors. The bracketed case ID selects an individual variant with
 | `G12` | G12 | Direct `twice` computation with recursive `iter` |
 | `G12-inherited` | G12 | Inherited `twice` computation |
 | `G12-initial` | G12 | Initial-model `twice` computation |
-| `G12-range` | G12 | Legitimate type-unfolding refusal over the original call |
+| `G12-range` | G12 | Legitimate type-unfolding refusal over the original reference |
 
 ## Downstream lifecycle
 
