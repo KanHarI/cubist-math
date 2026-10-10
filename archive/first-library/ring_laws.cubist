@@ -178,20 +178,19 @@ def ring_neg_add(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), x, y : F
 ) :
   negF(addF(x, y)) = addF(negF(x), negF(y)) {
-  let cancels : addF(addF(x, y), addF(negF(x), negF(y))) = zero :=
+  let cancels : addF(addF(x, y), addF(negF(x), negF(y))) = zero := trans(
+    ring_add_shuffle(F, zero, one, addF, mulF, negF, ring, x, y, negF(x), negF(y)),
     trans(
-      ring_add_shuffle(F, zero, one, addF, mulF, negF, ring, x, y, negF(x), negF(y)),
+      cong(
+        (fun (v : F) => addF(v, addF(y, negF(y)))),
+        ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, x)
+      ),
       trans(
-        cong(
-          (fun (v : F) => addF(v, addF(y, negF(y)))),
-          ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, x)
-        ),
-        trans(
-          ring_add_zero(F, zero, one, addF, mulF, negF, ring, addF(y, negF(y))),
-          ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, y)
-        )
+        ring_add_zero(F, zero, one, addF, mulF, negF, ring, addF(y, negF(y))),
+        ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, y)
       )
-    );
+    )
+  );
   exact sym(
     ring_neg_unique(
       F, zero, one, addF, mulF, negF, ring, addF(x, y), addF(negF(x), negF(y)), cancels
@@ -205,14 +204,13 @@ def ring_mul_zero(
 ) :
   mulF(x, zero) = zero {
   obtain (setF, additive_, multiplicative) := ring;
-  let twice : addF(mulF(x, zero), mulF(x, zero)) = addF(mulF(x, zero), zero) :=
+  let twice : addF(mulF(x, zero), mulF(x, zero)) = addF(mulF(x, zero), zero) := trans(
+    sym(ring_distribute(F, zero, one, addF, mulF, negF, ring, x, zero, zero)),
     trans(
-      sym(ring_distribute(F, zero, one, addF, mulF, negF, ring, x, zero, zero)),
-      trans(
-        cong(mulF(x), ring_add_zero(F, zero, one, addF, mulF, negF, ring, zero)),
-        sym(ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, mulF(x, zero)))
-      )
-    );
+      cong(mulF(x), ring_add_zero(F, zero, one, addF, mulF, negF, ring, zero)),
+      sym(ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, mulF(x, zero)))
+    )
+  );
   exact field_add_cancel(F, zero, addF, negF, additive_, mulF(x, zero), mulF(x, zero), zero, twice);
 }
 

@@ -26,20 +26,16 @@ def residue_support(K : AlgebraicField, M : PolynomialModulus(K), r : Polynomial
     ), r
   );
 
-def residue_set(K : AlgebraicField, M : PolynomialModulus(K)) :=
-  subtype_is_set(
-    Polynomial(K),
-    (
-      fun (p : Polynomial(K)) => SeriesSupport(
-        K, polynomial_coefficients(K, p), modulus_degree(K, M)
-      )
-    ), polynomial_set(K),
-    (
-      fun (p : Polynomial(K)) => series_support_prop(
-        K, polynomial_coefficients(K, p), modulus_degree(K, M)
-      )
+def residue_set(K : AlgebraicField, M : PolynomialModulus(K)) := subtype_is_set(
+  Polynomial(K),
+  (fun (p : Polynomial(K)) => SeriesSupport(K, polynomial_coefficients(K, p), modulus_degree(K, M))),
+  polynomial_set(K),
+  (
+    fun (p : Polynomial(K)) => series_support_prop(
+      K, polynomial_coefficients(K, p), modulus_degree(K, M)
     )
-  );
+  )
+);
 
 def residue_ext(
   K : AlgebraicField, M : PolynomialModulus(K), x, y : PolynomialResidue(K, M),
@@ -108,7 +104,9 @@ def residue_reduce_value(K : AlgebraicField, M : PolynomialModulus(K), x : Polyn
   );
 }
 
-def residue_add_assoc(K : AlgebraicField, M : PolynomialModulus(K), x, y, z : PolynomialResidue(K, M)) :
+def residue_add_assoc(
+  K : AlgebraicField, M : PolynomialModulus(K), x, y, z : PolynomialResidue(K, M)
+) :
   residue_add(K, M, residue_add(K, M, x, y), z) = residue_add(K, M, x, residue_add(K, M, y, z)) {
   exact residue_ext(
     K, M, residue_add(K, M, residue_add(K, M, x, y), z),
@@ -143,7 +141,9 @@ def residue_add_inverse(K : AlgebraicField, M : PolynomialModulus(K), x : Polyno
   );
 }
 
-def residue_mul_assoc(K : AlgebraicField, M : PolynomialModulus(K), x, y, z : PolynomialResidue(K, M)) :
+def residue_mul_assoc(
+  K : AlgebraicField, M : PolynomialModulus(K), x, y, z : PolynomialResidue(K, M)
+) :
   residue_mul(K, M, residue_mul(K, M, x, y), z) = residue_mul(K, M, x, residue_mul(K, M, y, z)) {
   let p := residue_polynomial(K, M, x);
   let q := residue_polynomial(K, M, y);
@@ -214,11 +214,10 @@ def residue_distribute(
   };
 }
 
-def residue_ops(K : AlgebraicField, M : PolynomialModulus(K)) :=
-  field_ops(
-    PolynomialResidue(K, M), residue_zero(K, M), residue_one(K, M), residue_neg(K, M),
-    residue_add(K, M), residue_mul(K, M)
-  );
+def residue_ops(K : AlgebraicField, M : PolynomialModulus(K)) := field_ops(
+  PolynomialResidue(K, M), residue_zero(K, M), residue_one(K, M), residue_neg(K, M),
+  residue_add(K, M), residue_mul(K, M)
+);
 
 // Package ring laws before specializing the field-operation projections.
 def field_ring_from_commutative_ring(

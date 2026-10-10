@@ -85,14 +85,13 @@ def homotopy_limit_period(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, complete, C, X, point,
     present, covered, approximations, cauchy, homotopyError
   );
-  let constantValue : value(constant) = zero :=
-    field_asymptotic_limits_equal(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving,
-      approximations(constant), (fun (n : Nat) => zero), constantError, value(constant), zero,
-      field_sequence_limit_converges(
-        F, zero, addF, lt, complete, approximations(constant), cauchy(constant)
-      ), field_converges_constant(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero)
-    );
+  let constantValue : value(constant) = zero := field_asymptotic_limits_equal(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, approximations(constant),
+    (fun (n : Nat) => zero), constantError, value(constant), zero,
+    field_sequence_limit_converges(
+      F, zero, addF, lt, complete, approximations(constant), cauchy(constant)
+    ), field_converges_constant(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero)
+  );
   let joinValue : forall c : C. forall d : C. value(join_(c, d)) = addF(value(c), value(d)) {
     intro c, d;
     exact field_asymptotic_limits_equal(

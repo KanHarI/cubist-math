@@ -13,14 +13,13 @@ def dependent_pair_path(
     )
   );
 
-def sigma_eta(A : U0, P : A -> U0, u : (exists x : A. P(x))) :=
-  pair_induction(
-    (
-      fun (v : (exists x : A. P(x))) => typed(
-        (exists x : A. P(x)), (sigma_first(A, P, v), sigma_second(A, P, v))
-      ) = v
-    ), (fun (x : A, h : P(x)) => refl(typed((exists z : A. P(z)), (x, h)))), u
-  );
+def sigma_eta(A : U0, P : A -> U0, u : (exists x : A. P(x))) := pair_induction(
+  (
+    fun (v : (exists x : A. P(x))) => typed(
+      (exists x : A. P(x)), (sigma_first(A, P, v), sigma_second(A, P, v))
+    ) = v
+  ), (fun (x : A, h : P(x)) => refl(typed((exists z : A. P(z)), (x, h)))), u
+);
 
 def subtype_pair_path(
   A : U0, P : A -> U0, prop_ : (forall x : A. forall h : P(x). forall k : P(x). h = k), x, y : A,
@@ -29,8 +28,8 @@ def subtype_pair_path(
   dependent_pair_path(A, P, x, y, p, u, v, prop_(y, along P by p from u, v));
 
 def subtype_ext(
-  A : U0, P : A -> U0, prop_ : (forall x : A. forall h : P(x). forall k : P(x). h = k),
-  u, v : (exists x : A. P(x)), p : sigma_first(A, P, u) = sigma_first(A, P, v)
+  A : U0, P : A -> U0, prop_ : (forall x : A. forall h : P(x). forall k : P(x). h = k), u,
+  v : (exists x : A. P(x)), p : sigma_first(A, P, u) = sigma_first(A, P, v)
 ) :
   u = v {
   exact trans(
@@ -50,7 +49,8 @@ def InverseLaws(A, B : U0, f : A -> B, g : B -> A) :=
 def InverseData(A, B : U0, f : A -> B) := exists g : B -> A. InverseLaws(A, B, f, g);
 
 def inverse_laws_prop(
-  A, B : U0, setA : IsSet(U0, A), setB : IsSet(U0, B), f : A -> B, g : B -> A, p, q : InverseLaws(A, B, f, g)
+  A, B : U0, setA : IsSet(U0, A), setB : IsSet(U0, B), f : A -> B, g : B -> A, p,
+  q : InverseLaws(A, B, f, g)
 ) :
   p = q {
   let L := forall x : A. g(f(x)) = x;
@@ -111,8 +111,8 @@ def forall_prop(
   FunExt(U0, A, P, f, g, (fun (x : A) => prop_(x, f(x), g(x))));
 
 def sigma_prop(
-  A : U0, P : A -> U0, propA : Proposition(A), propP : (forall x : A. Proposition(P(x))),
-  u, v : (exists x : A. P(x))
+  A : U0, P : A -> U0, propA : Proposition(A), propP : (forall x : A. Proposition(P(x))), u,
+  v : (exists x : A. P(x))
 ) :
   u = v {
   exact subtype_ext(A, P, propP, u, v, propA(sigma_first(A, P, u), sigma_first(A, P, v)));
@@ -159,7 +159,9 @@ def coherence_prop(
   );
 }
 
-def half_adjoint_laws_prop(A, B : U0, setA : IsSet(U0, A), setB : IsSet(U0, B), f : A -> B, g : B -> A) :
+def half_adjoint_laws_prop(
+  A, B : U0, setA : IsSet(U0, A), setB : IsSet(U0, B), f : A -> B, g : B -> A
+) :
   Proposition(HalfAdjointLaws(A, B, f, g)) {
   let L := LeftLaw(A, B, f, g);
   let R := RightLaw(A, B, f, g);
@@ -254,7 +256,9 @@ def subtype_path_correction(
   );
 }
 
-def subtype_is_set(A : U0, P : A -> U0, setA : IsSet(U0, A), prop_ : (forall x : A. Proposition(P(x)))) :
+def subtype_is_set(
+  A : U0, P : A -> U0, setA : IsSet(U0, A), prop_ : (forall x : A. Proposition(P(x)))
+) :
   IsSet(U0, exists x : A. P(x)) {
   intro u, v, p, q;
   let project := sigma_first(A, P);

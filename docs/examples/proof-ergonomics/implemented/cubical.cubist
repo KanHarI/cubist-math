@@ -23,7 +23,9 @@ def pointwise_evaluation(A, B : U0, f, g : A -> B, h : (forall x : A. f(x) = g(x
 
 // The expected PathP supplies the outer family; the inner expected equality
 // supplies B. All four edges must still check in the native kernel.
-def naturality_square(A, B : U0, f, g : A -> B, H : (forall a : A. f(a) = g(a)), x, y : A, p : x = y) :
+def naturality_square(
+  A, B : U0, f, g : A -> B, H : (forall a : A. f(a) = g(a)), x, y : A, p : x = y
+) :
   PathP(fun (j : Interval) => H(x) @ j = H(y) @ j, cong(f, p), cong(g, p)) {
   exact path j => path i => H(p @ i) @ j;
 }

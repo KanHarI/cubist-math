@@ -55,7 +55,7 @@ def sample_sum_error_bound(
       addF(sample_sum(C, F, zero, addF, radius, k, vertices, tags), epsilon)
     )
   ) {
-    zero => fun (vertices : C, tags, bounds : Unit, epsilon : F, positive : lt(zero, epsilon)) => along(
+    zero => fun (vertices : C, tags, bounds : Unit, epsilon : F, positive : lt(zero, epsilon)) => along (
       (fun (r : F) => FieldClose(F, addF, lt, zero, zero, r))
     ) by sym(ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon)) from field_close_self(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, epsilon, positive
@@ -64,7 +64,7 @@ def sample_sum_error_bound(
       vertices : SampleVertices(C, succ(k)), tags : SampleTags(C, succ(k)),
       bounds : SampleCloseBounds(C, F, addF, lt, edge, other, radius, succ(k), vertices, tags),
       epsilon : F, positive : lt(zero, epsilon)
-    ) => along(
+    ) => along (
       (
         fun (r : F) => FieldClose(
           F, addF, lt, sample_sum(C, F, zero, addF, edge, succ(k), vertices, tags),

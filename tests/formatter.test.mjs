@@ -143,3 +143,46 @@ test("lambda binder groups are one comma-separated list; separate groups are rej
   assert.match(formatted, /fun \(a : Nat, b : F\(0\)\(1\)\) => a;/);
   assert.throws(() => parse("def f := fun (a : Nat) (b : Nat) => a;"), /Separate binder groups with commas/);
 });
+
+test("a keyword keeps its space before a parenthesis; the reserved words written as calls are tight", () => {
+  assert.equal(formatCubist("def p : Nat and Nat := (1, 2);\n\nevaluate(p) expecting(1, _);\n"),
+    "def p : Nat and Nat := (1, 2);\n\nevaluate (p) expecting (1, _);\n");
+  assert.match(formatCubist("def m(n : Nat) : Nat := match(n) { zero => n; succ(k) => k; };\n"), /:= match \(n\) \{/);
+  assert.equal(formatCubist("def f := fun(n : Nat) => n;\n"), "def f := fun (n : Nat) => n;\n");
+  // left(a), right(b), typed(T, e) and print's evaluate(e) are calls.
+  assert.equal(formatCubist("def s : Unit or Nat := typed (Unit or Nat, left (tt));\n\nprint(evaluate (s));\n"),
+    "def s : Unit or Nat := typed(Unit or Nat, left(tt));\n\nprint(evaluate(s));\n");
+  // Built-ins and generated names are reserved too, but remain calls.
+  assert.equal(formatCubist("def same(n : Nat) : n = n := refl (n);\n"),
+    "def same(n : Nat) : n = n := refl(n);\n");
+  assert.equal(formatCubist("def m := Monoid.make (M := Nat);\n"),
+    "def m := Monoid.make(M := Nat);\n");
+  // So are print's forms, a notation's numeral and literal rules, and an
+  // inductive's trunc level, as the reference and the printer write them.
+  assert.equal(formatCubist("def t : Nat := 3;\n\nprint (witness (t));\n\nprint(typeof (t));\n"),
+    "def t : Nat := 3;\n\nprint(witness(t));\n\nprint(typeof(t));\n");
+  assert.match(formatCubist("notation counts {\n  x + y := add(x, y);\n  numeral (n : Nat) := n;\n}\n"), /\n  numeral\(n : Nat\) := n;\n/);
+  assert.match(formatCubist("notation digits {\n  literal (s : Lexeme) := read(s);\n}\n"), /\n  literal\(s : Lexeme\) := read\(s\);\n/);
+  assert.equal(formatCubist("inductive G : trunc (1) {\n  g;\n}\n"), "inductive G : trunc(1) {\n  g;\n}\n");
+  assert.equal(formatCubist("inductive P : trunc (- 1) {\n  p;\n}\n"), "inductive P : trunc(-1) {\n  p;\n}\n");
+});
+
+test("an empty block is {} on its declaration's line", () => {
+  assert.equal(formatCubist("theory AbelianGroup(U < UU0) extends Group, CommMonoid {\n\n}\n"),
+    "theory AbelianGroup(U < UU0) extends Group, CommMonoid {}\n");
+  // A comment is no empty body.
+  assert.equal(formatCubist("theory Later(U < UU0) extends Group {\n  // nothing yet\n}\n"),
+    "theory Later(U < UU0) extends Group {\n  // nothing yet\n}\n");
+});
+
+test("a long value ending in brackets breaks inside them, its definition on one line", () => {
+  const fields = "M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := zero";
+  assert.equal(formatCubist(`def additive_nat : Monoid(U0) := Monoid.make(${fields}, one_mul := nat_zero_add);\n`),
+    `def additive_nat : Monoid(U0) := Monoid.make(\n  ${fields},\n  one_mul := nat_zero_add\n);\n`);
+  // A value that fits on a line of its own goes there, whole.
+  assert.equal(formatCubist("computable def same_ratio_props(f, g : Fraction) : IsProp(U, SameRatio(f, g)) := R_is_set(f.1 * g.2.1, g.1);\n"),
+    "computable def same_ratio_props(f, g : Fraction) :\n  IsProp(U, SameRatio(f, g)) := R_is_set(f.1 * g.2.1, g.1);\n");
+  // A comment after the value leaves the layout as it is without one.
+  assert.equal(formatCubist(`def additive_nat : Monoid(U0) := Monoid.make(${fields}, one_mul := nat_zero_add); // note\n`),
+    `def additive_nat : Monoid(U0) := Monoid.make(\n  ${fields},\n  one_mul := nat_zero_add\n); // note\n`);
+});

@@ -69,14 +69,13 @@ def polynomial_extension_root_bound(
   obtain (roots, distinct, vanishes) := family;
   let q := polynomial_map(K, L, e, p);
   let n := succ(polynomial_degree(K, p));
-  let local :=
-    typed(
-      RootFamily(L, q, n),
-      (
-        roots, distinct,
-        (fun (i : Fin(n)) => trans(polynomial_eval_mapped(K, L, e, p, roots(i)), vanishes(i)))
-      )
-    );
+  let local := typed(
+    RootFamily(L, q, n),
+    (
+      roots, distinct,
+      (fun (i : Fin(n)) => trans(polynomial_eval_mapped(K, L, e, p, roots(i)), vanishes(i)))
+    )
+  );
   let degree :=
     cong((fun (k : Nat) => succ(natural_predecessor(k))), polynomial_map_cutoff(K, L, e, p));
   exact polynomial_root_bound(

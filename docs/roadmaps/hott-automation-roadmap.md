@@ -1,9 +1,10 @@
 # HoTT and cubical abstractions and automation in Cubist
 
-Status reviewed 2026-09-27: A7 and A5's core goal, scope and reconstruction
-layer are delivered, including motive abstraction for several scrutinees.
-A8 (projections) and B4 (`show`, `suffices`) were delivered the same day.
-A5's remaining work and the other milestones are open. On 2026-09-28 the
+Status reviewed 2026-10-07: A4, A6, A7, A8, A5's goal layer with its four
+elaborator replacements, and D0a are delivered. B4's `show` and `suffices`
+were delivered on 2026-09-27 and replaced by `let` on 2026-09-30. D1 has two
+slices (2026-09-29, 2026-10-06), E2 three (2026-10-06), and D0b started in
+the library on 2026-10-04. The other milestones are open. On 2026-09-28 the
 (H)-marked prerequisites were re-scoped after the
 [work-plan audit](audits/2026-09-28-audit.md): only the single-sort motive
 and clause services gate H1's explicit `match` (see A5 and D0a). The
@@ -169,20 +170,20 @@ and D0b together:
 
 | Slice | Dependencies and purpose |
 | --- | --- |
-| Library first | E0, D0a and A7's conversion audit need no new tactic and can start now, alongside A5. B0 is superseded by H1; in the rebuild its benefit comes with the declarations. |
+| Library first | E0 needs no new tactic and can start now; D0a and A7's conversion audit are done. B0 is superseded by H1; in the rebuild its benefit comes with the declarations. |
 | Baseline and shared machinery | A7 first; A5/A6 extract goal, scope and diagnostics; A4 uses the baseline to set hard fuel limits. |
 | Path vocabulary and library foundations | A1a–A1c, A2 and A8 use the shared machinery. D0b defines the public equivalence type in the rebuild. |
 | First useful automation | B1 follows A5 alone: it needs neither folded heads nor search fuel. B4 also follows A5. D1 uses D0a without waiting for D0b. Basic Σ ext in B3 precedes D2's automatic property-field closure; universe ext follows D0b. These do not wait for C3 or all of E. |
 | Induction | `match` (ergonomics milestone 7; released with H1 on 2026-10-02) uses H1's generated eliminators. The expression has an explicit or expected motive; the closing statement's is the goal, through A5's motive abstraction (L2.2a's second slice, 2026-09-29). A recursive match of either form whose calls change another parameter generalizes the declaration's other parameters through it, so that a call may pass values of its own for them (the third slice). D3's library eliminator uses D0b and D4; its interface is a milestone 7 view, with B1 for `Path`. |
-| Path optimization and dependent geometry | A3/C1 change proof construction explicitly; C3 uses their checked reconstruction. C4 needs only A5 and its library soundness lemma. E1 uses A1/A2/A5/E0, with optional C2 cleanup. E2's square library can start independently of C; E3 follows E0/E2/A5 and E4 follows the simplifier witness interface. C2 adds B1's computation law when available. |
+| Path optimization and dependent geometry | A3/C1 change proof construction explicitly; C3 uses their checked reconstruction. C4 needs only A5 and its library soundness lemma. E1 uses A1/A2/A5/E0, with optional C2 cleanup. E2's square library started independently of C (L2.8, 2026-10-06); E3 follows E0/E2/A5 and E4 follows the simplifier witness interface. C2 adds B1's computation law when available. |
 | Structure descriptions and transfer | F1 can start after D0, D4, B3 and D1/D2; F4 uses D0a's h-level definitions. Theories (ergonomics milestone 6) supply record syntax; transfer builds on that evidence. |
 | Kernel work | The [kernel roadmap](cubical-kernel-roadmap.md) ranks G0, then H1–H3. A–F releases do not wait for them, except the (H)-marked requirements, which the [work plan](work-plan.md) sequences. |
 
-The library-first slice can ship before any tooling. The first tooling release
-is A7, A5 and B1, with inspection and tests; the next adds A4, A6, A1/A2 and
-B4. A3 is independently gated. D1/D2 and Σ extensionality form the next small
-release. Argument inference retained the ergonomics plan's
-scoped-metavariable prerequisites and was delivered on 2026-10-04 (work-plan
+A7, A4, A6 and B4 are delivered, as are A5's core and D1's first two
+slices. A1/A2 and B1 remain, and A3 is independently gated. D1/D2 and Σ
+extensionality form the next small release. Argument inference retained the
+ergonomics plan's scoped-metavariable prerequisites and was delivered on
+2026-10-04 (work-plan
 L4.1a, L4.1b) without waiting for D–F; `apply` and `refine` were withdrawn
 on 2026-10-05 (L4.4).
 
@@ -329,8 +330,8 @@ on 2026-10-05 (L4.4).
   `Translator.blockBody`.
   `rw`, `simp`, `ext`, `induction` and `hlevel` then share reconstruction,
   source spans and inspector records. Keep the continuation model:
-  - a tactic that produces several goals takes one block per goal, as `cases`
-    already does;
+  - a tactic that produces several goals takes one block per goal, as `match`
+    on a sum does;
   - a goal whose statement depends on an earlier goal's proof receives that
     proof as a named local.
 
@@ -357,11 +358,10 @@ on 2026-10-05 (L4.4).
     Since 2026-09-29 `match` (L2.2a) uses it: the closing
     statement always, and the expression in a recursive definition whose
     calls change another parameter, which generalizes the declaration's other
-    parameters. `cases` keeps its constant motive, and any other expression
-    its own. Filling
-    steps, face restrictions, source
-    spans in the plan, index generalization, companion motives, and
-    `induction` and `hlevel` as tactics remain.
+    parameters. Any other expression keeps its own. Filling steps, face
+    restrictions, source spans in the plan, index generalization, companion
+    motives, and `induction` as a tactic remain; `hlevel` has used the layer
+    since 2026-09-29.
   - Also replace these elaborator mechanisms, found in the 2026-09-25 review:
     - [x] One name supply for every generated binder. About a dozen generators
       share one string namespace with kernel symbols. A generated-name
@@ -563,11 +563,14 @@ expression forms such as `induction n as k return C { … }`.
 
   Equality of paths remains a nested `path` or an E2 square.
 - [x] **B4. `show` and `suffices`.** Delivered on 2026-09-27 (work plan
-  L1.5). `show T;` replaces the goal by a convertible type, checked by
-  conversion. `suffices h : T by term;` (or a block) proves the goal from `h`,
-  then continues with goal `T`. Reconstruction uses only conversion or
-  application: `show` adds no step, and `suffices` applies the checked
+  L1.5). `show T;` replaced the goal by a convertible type, checked by
+  conversion. `suffices h : T by term;` (or a block) proved the goal from `h`,
+  then continued with goal `T`. Reconstruction used only conversion or
+  application: `show` added no step, and `suffices` applied the checked
   function `fun (h : T) => term` to the proof of `T` through A5's lemma step.
+  Both were removed on 2026-09-30: a block `let h : T { … }` proves a
+  restated goal or a claim, and the parser refuses `show` and `suffices`
+  with that advice.
 - [ ] **B5. Superseded by H1 and ergonomics milestone 7.** Generated
   eliminators need no registry, because the kernel signature is the
   description. What remains of B5 is views, which milestone 7 owns: checked
@@ -740,11 +743,23 @@ Completion:
     once B1 and E2 exist. Printing their raw terms would repeat the generated
     `comp` text that fills most of
     [equivalence_from_inverse](../../archive/first-library/equivalence_from_inverse.cubist)
-    (1,893 lines).
+    (1,893 lines). The library chose source proofs on 2026-10-04, below.
   - Before removing an old representation, record its migration map and
     changed computation/assumption behavior. Proving uniqueness of arbitrary
     public half-adjoint witnesses remains an alternative if the old public
     representation is retained; it is not a prerequisite for the selected redesign.
+  - Started on 2026-10-04 (work-plan L3.1):
+    [`library/contractible_maps.cubist`](../../library/contractible_maps.cubist)
+    defines `Fiber` in the native orientation `y = f(x)`, `IsContrMap` and
+    `ContrEquiv`. It gives the identity, the inverse with both its laws
+    (`equiv_inverse`), equivalences from inverses (`inverse_equiv`), and
+    equality of two equivalences with one forward map.
+    [`library/univalence.cubist`](../../library/univalence.cubist) proves
+    `glue_path`, `idtoequiv`, univalence and its total-space form
+    (`equivalent_types_contractible`) in source, all computable. So these
+    constructions are source proofs, not builtins. Composition, the
+    Π/Σ/product equivalences, `equiv_eq` for pointwise-equal maps, and moving
+    the `ua` builtin to `ContrEquiv` remain.
 
 - [ ] **D1. h-level solver.** `hlevel;` closes goals of these kinds:
   - `IsContr(T)`, `IsProp(T)`, `IsSet(T)` and the aliases that D0a identifies
@@ -783,7 +798,7 @@ Completion:
   ```text
   def group_laws_prop(A : U0, unit : A, multiply : A -> A -> A,
       p, q : GroupLaws(A, unit, multiply)) : p = q {
-    have setA := group_set_law(A, unit, multiply, p);
+    let setA := group_set_law(A, unit, multiply, p);
     hlevel with [setA, group_inverse_evidence_prop(A, unit, multiply, p)];
   }
   ```
@@ -848,10 +863,13 @@ Completion:
     - based paths;
     - group isomorphisms, from `group_isomorphism_total_contractible`;
     - structured sets, from `structure_total_contractible`;
-    - equivalences, from the total-space form of univalence. That form is
-      checked in `web/translator/equivalence.mjs` ([derived univalence milestone](../cubical/experiment.md#derived-univalence-milestone))
-      and published at D0b's canonical public representation. Do not assume the
-      native contraction already has the old half-adjoint public type.
+    - equivalences, from the total-space form of univalence. Since
+      2026-10-04 that form is `equivalent_types_contractible` in
+      [`library/univalence.cubist`](../../library/univalence.cubist), at
+      `ContrEquiv`, D0b's canonical representation. It was first checked in
+      `web/translator/equivalence.mjs` ([derived univalence milestone](../cubical/experiment.md#derived-univalence-milestone)).
+      Do not assume the native contraction already has the old half-adjoint
+      public type.
 - [ ] **D4. Total-space contraction combinators.** Identity systems (D3) and
   structure identity (F1) both reduce to showing that a total space is
   contractible. Provide checked combinators for the standard steps:
@@ -861,8 +879,9 @@ Completion:
   - reassociation and reordering of Σ components;
   - the singleton given by function extensionality: the maps `g` with
     `forall x, f(x) = g(x)`;
-  - the singleton given by univalence: the types `B` with `Equiv(U, A, B)`,
-    from D0b;
+  - the singleton given by univalence: the types `X` with
+    `ContrEquiv(U, X, A)`, which is `equivalent_types_contractible` in
+    `library/univalence.cubist` since 2026-10-04;
   - fibers that are propositions, from D0a.
   - Target: `group_isomorphism_total_contractible`, then F1's generated
     contractions.
@@ -1121,7 +1140,7 @@ them, except where marked (H).
 | Milestone 5: universe specialization inference | Level-argument inference after G0; A9 superseded |
 | Milestone 6: `ext` with selected lemmas | B3 and D2 |
 | Milestone 6: records, notation, sections, algebra normalization | Ergonomics milestone 6 (theories) supplies records, notation and sections; A8 projections and F1 identity serve it |
-| Implementation plan: box notation (cubical language change 4) | Retained; E2 writes and displays cells with it |
+| Implementation plan: box notation (cubical language change 4) | Delivered on 2026-10-06 (L2.8); E2 writes and displays cells with it |
 | Library foundations supporting tactics | D0a h-level definitions, D0b canonical equivalences, D3 general identity systems and D4 contraction combinators; B0's eliminators come from H1 |
 | Existing-kernel scope | A–F retain it except where marked (H); the [kernel roadmap](cubical-kernel-roadmap.md) owns G0, H1–H4, G2, G4 and G5 |
 | Architecture: large interval expressions | [G5](cubical-kernel-roadmap.md#items), certified interval normalization |
@@ -1469,17 +1488,19 @@ the same way. There, the ergonomic forms of its arithmetic examples use 1.7 to
   rewrites, 512 traversal visits, 8,192 candidates, premise depth two, 64
   premise attempts) were fixed before the measurements that the ergonomics
   plan requires first.
-- The ergonomics roadmap's goal/transition layer was not extracted.
-  Reconstruction lives in closures inside `Translator.blockBody`.
-- The `cases` statement uses a constant motive. Its branch goals do not replace
-  the scrutinee by `left(x)` or `right(y)`.
+- Before A5 the ergonomics roadmap's goal/transition layer was not
+  extracted, and reconstruction lived in closures inside
+  `Translator.blockBody`; `proof-goals.mjs` now holds it.
+- The retired `cases` statement used a constant motive. Its branch goals did
+  not replace the scrutinee by `left(x)` or `right(y)`.
 - The kernel has no regularity. Transport along a constant family need not
   compute for a neutral type ([path-algebra.mjs](../../web/translator/path-algebra.mjs),
   [kernel overview](../../kernel/README.md)). Consequently, `based_induction`
   at `refl` need not reduce to its base case.
 - The kernel adapter's [withGrowingBudget](../../web/cubical-kernel.mjs)
-  doubles an exhausted native step budget up to the unsigned 64-bit maximum.
-  Frontend fuel alone therefore does not bound native work.
+  doubled an exhausted native step budget up to the unsigned 64-bit maximum,
+  so frontend fuel alone did not bound native work. Since A4 it stops at
+  1.28G steps (`MAX_QUERY_STEPS`).
 - Public [Equiv](../../archive/first-library/paths_.cubist) uses half-adjoint data;
   [native equivalences](../../web/translator/equivalence.mjs) use contractible
   fibers. The native total-space univalence theorem cannot simply be published

@@ -23,11 +23,10 @@ def F4AlphaGenerator(x : F4Carrier) := x = f4_2;
 def f4_alpha_generates_field :
   generated_subfield(F4, F4AlphaGenerator) =[Subfield(F4)] subfield_top(F4) {
   let P := GeneratedField(F4, F4AlphaGenerator);
-  let every :=
-    f4_intermediate_with_alpha(
-      P, intermediate_laws(F2, F4OverF2, f4_generated_intermediate(F4AlphaGenerator)),
-      generated_field_contains(F4, F4AlphaGenerator, f4_2, refl(f4_2))
-    );
+  let every := f4_intermediate_with_alpha(
+    P, intermediate_laws(F2, F4OverF2, f4_generated_intermediate(F4AlphaGenerator)),
+    generated_field_contains(F4, F4AlphaGenerator, f4_2, refl(f4_2))
+  );
   exact subfield_inclusion_antisymmetric(
     F4, generated_subfield(F4, F4AlphaGenerator), subfield_top(F4),
     (fun (x : F4Carrier, member : P(x)) => tt), (fun (x : F4Carrier, member : Unit) => every(x))
@@ -65,10 +64,9 @@ def f4_alpha_derivation := field_derivation_generator(F4, F4AlphaGenerator, f4_2
 def f4_neg_alpha_derivation :=
   field_derivation_neg(F4, F4AlphaGenerator, f4_2, f4_alpha_derivation);
 
-def f4_add_derivation :=
-  field_derivation_add(
-    F4, F4AlphaGenerator, f4_2, f4_2, f4_alpha_derivation, f4_neg_alpha_derivation
-  );
+def f4_add_derivation := field_derivation_add(
+  F4, F4AlphaGenerator, f4_2, f4_2, f4_alpha_derivation, f4_neg_alpha_derivation
+);
 
 def f4_add_derivation_rank :
   sigma_first(

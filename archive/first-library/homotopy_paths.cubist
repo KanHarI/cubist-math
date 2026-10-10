@@ -27,35 +27,32 @@ def homotopy_naturality(
     ), x, y, p
   );
 
-def cancel_right_path(A : U1, y, z : A, r : y = z) :=
-  path_induction(
-    A,
-    (
-      fun (a, b : A, s : a = b) => forall x : A. forall p : x = a. forall q : x = a.
-      (trans(p, s) = trans(q, s)) -> (p = q)
-    ),
-    (
-      fun (a, x : A, p, q : x = a, same : trans(p, refl(a)) = trans(q, refl(a))) => trans(
-        sym(right_unit(A, x, a, p)), trans(same, right_unit(A, x, a, q))
-      )
-    ), y, z, r
-  );
+def cancel_right_path(A : U1, y, z : A, r : y = z) := path_induction(
+  A,
+  (
+    fun (a, b : A, s : a = b) => forall x : A. forall p : x = a. forall q : x = a.
+    (trans(p, s) = trans(q, s)) -> (p = q)
+  ),
+  (
+    fun (a, x : A, p, q : x = a, same : trans(p, refl(a)) = trans(q, refl(a))) => trans(
+      sym(right_unit(A, x, a, p)), trans(same, right_unit(A, x, a, q))
+    )
+  ), y, z, r
+);
 
 def null_homotopy_kills_loops(
   A, B : U1, f : A -> B, point : B, homotopy : (forall a : A. f(a) = point), x : A, p : x = x
 ) :
   cong(f, p) = refl(f(x)) {
   let image := cong(f, p);
-  let natural : trans(image, homotopy(x)) = homotopy(x) :=
+  let natural : trans(image, homotopy(x)) = homotopy(x) := trans(
+    homotopy_naturality(A, B, f, (fun (a : A) => point), homotopy, x, x, p),
     trans(
-      homotopy_naturality(A, B, f, (fun (a : A) => point), homotopy, x, x, p),
-      trans(
-        cong(
-          (fun (q : point = point) => trans(homotopy(x), q)),
-          path_map_constant(A, B, point, x, x, p)
-        ), right_unit(B, f(x), point, homotopy(x))
-      )
-    );
+      cong(
+        (fun (q : point = point) => trans(homotopy(x), q)), path_map_constant(A, B, point, x, x, p)
+      ), right_unit(B, f(x), point, homotopy(x))
+    )
+  );
   exact cancel_right_path(
     B, f(x), point, homotopy(x), f(x), image, refl(f(x)),
     trans(natural, sym(left_unit(B, f(x), point, homotopy(x))))
@@ -74,7 +71,7 @@ def contractible_loops_are_null(
 
 // Rebase a loop along a specified path, with its effect on constant loops.
 def rebase_loop(A : U1, x, y : A, connector : x = y, p : x = x) :=
-  along(fun (a : A) => a = a) by connector from p;
+  along (fun (a : A) => a = a) by connector from p;
 
 def rebase_constant_loop(A : U1, x, y : A, connector : x = y) :=
   apd((fun (a : A) => refl(a)), x, y, connector);
