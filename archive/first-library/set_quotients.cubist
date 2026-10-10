@@ -20,20 +20,19 @@ def quotient_predicate(A : U1, relation : A -> A -> U0, q : SetQuotient(A, relat
 def quotient_witness(A : U1, relation : A -> A -> U0, q : SetQuotient(A, relation)) :=
   field_second(A -> U0, class_witness_family(A, relation), q);
 
-def quotient_class(A : U1, relation : A -> A -> U0, a : A) :=
-  typed(
-    SetQuotient(A, relation),
-    (
-      relation(a),
-      field_exists_intro(
+def quotient_class(A : U1, relation : A -> A -> U0, a : A) := typed(
+  SetQuotient(A, relation),
+  (
+    relation(a),
+    field_exists_intro(
+      (exists representative : A. forall x : A. relation(a, x) = relation(representative, x)),
+      typed(
         (exists representative : A. forall x : A. relation(a, x) = relation(representative, x)),
-        typed(
-          (exists representative : A. forall x : A. relation(a, x) = relation(representative, x)),
-          (a, (fun (x : A) => refl(relation(a, x))))
-        )
+        (a, (fun (x : A) => refl(relation(a, x))))
       )
     )
-  );
+  )
+);
 
 def quotient_ext(
   A : U1, relation : A -> A -> U0, x, y : SetQuotient(A, relation),
@@ -112,7 +111,7 @@ def equal_classes_related(
 ) :
   relation(x, y) {
   obtain (prop_, reflexive, symmetric, transitive) := laws;
-  exact along((fun (q : SetQuotient(A, relation)) => quotient_predicate(A, relation, q, y))) by sym(
+  exact along ((fun (q : SetQuotient(A, relation)) => quotient_predicate(A, relation, q, y))) by sym(
     same
   ) from reflexive(y);
 }

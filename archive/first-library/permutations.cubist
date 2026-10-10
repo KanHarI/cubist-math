@@ -11,16 +11,14 @@ def Permutations(n : Nat) := Bijection(Fin(n), Fin(n));
 def permutation_image(n : Nat, e : Permutations(succ(n))) :=
   forward(Fin(succ(n)), Fin(succ(n)), e, head(Fin(n)));
 
-def adjust_permutation(n : Nat, c : Fin(succ(n)), e : Permutations(succ(n))) :=
-  compose_bijection(
-    Fin(succ(n)), Fin(succ(n)), Fin(succ(n)), e, swap_bijection(Fin(n), fin_decidable(n), c)
-  );
+def adjust_permutation(n : Nat, c : Fin(succ(n)), e : Permutations(succ(n))) := compose_bijection(
+  Fin(succ(n)), Fin(succ(n)), Fin(succ(n)), e, swap_bijection(Fin(n), fin_decidable(n), c)
+);
 
-def permutation_tail(n : Nat, e : Permutations(succ(n))) :=
-  restrict_bijection(
-    Fin(n), Fin(n), adjust_permutation(n, permutation_image(n, e), e),
-    swap_target(Fin(n), fin_decidable(n), permutation_image(n, e))
-  );
+def permutation_tail(n : Nat, e : Permutations(succ(n))) := restrict_bijection(
+  Fin(n), Fin(n), adjust_permutation(n, permutation_image(n, e), e),
+  swap_target(Fin(n), fin_decidable(n), permutation_image(n, e))
+);
 
 def permutation_extend(n : Nat, d : Permutations(n)) :=
   sum_bijection(Unit, Fin(n), Unit, Fin(n), identity_bijection(Unit), d);
@@ -31,10 +29,9 @@ def permutation_join_at(n : Nat, y : Fin(succ(n)), d : Permutations(n)) :=
 def permutation_split(n : Nat, e : Permutations(succ(n))) :=
   typed(Fin(succ(n)) and Permutations(n), (permutation_image(n, e), permutation_tail(n, e)));
 
-def permutation_join(n : Nat, p : Fin(succ(n)) and Permutations(n)) :=
-  permutation_join_at(
-    n, fst(Fin(succ(n)), Permutations(n), p), snd(Fin(succ(n)), Permutations(n), p)
-  );
+def permutation_join(n : Nat, p : Fin(succ(n)) and Permutations(n)) := permutation_join_at(
+  n, fst(Fin(succ(n)), Permutations(n), p), snd(Fin(succ(n)), Permutations(n), p)
+);
 
 def extension_restriction_point(
   A, B : U0, e : Bijection(Unit or A, Unit or B),
@@ -168,14 +165,13 @@ def empty_permutation_unique(e : Permutations(0)) : identity_bijection(Fin(0)) =
   );
 }
 
-def empty_permutation_bijection :=
-  typed(
-    Bijection(Permutations(0), Unit),
-    (
-      (fun (e : Permutations(0)) => tt), (fun (u : Unit) => identity_bijection(Fin(0))),
-      empty_permutation_unique, unit_equal
-    )
-  );
+def empty_permutation_bijection := typed(
+  Bijection(Permutations(0), Unit),
+  (
+    (fun (e : Permutations(0)) => tt), (fun (u : Unit) => identity_bijection(Fin(0))),
+    empty_permutation_unique, unit_equal
+  )
+);
 
 def factorial_count(n : Nat) := induction n as k return Nat {
     zero => 1;

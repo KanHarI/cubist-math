@@ -3,8 +3,9 @@
 Released on 2026-10-02. The kernel admits declared types by default (5.7):
 one sort per signature, with uniform parameters, constructors with data,
 positions and dimensions, and truncation at any level `n ≥ -1`. Nat, W and
-pushouts are declarations in source, in `archive/first-library/`; `Unit`,
-`Void` and sums stay kernel primitives. This document states the rules
+pushouts are declarations in source: Nat in `library/nat.cubist`, W and
+pushouts in `archive/first-library/`. `Unit`, `Void` and sums stay kernel
+primitives. This document states the rules
 (sections 1–3), the soundness note (4), the instructions that implement them
 (5), the driver and bridges (6), the truncation policy (8), the lowering of
 `inductive` declarations (9), the acceptance cases (10) and the decided
@@ -17,8 +18,10 @@ and the [model construction](h1-model.md) (D1, D4, D5) and
 assumed baseline of 4.1 and to premise P1 of the model; 4.5 lists what is
 proved, argued and assumed. Normalization and decidable conversion are not
 claimed, and a canonicity fixture is not a proof of them. The
-[release evidence](h1-release-evidence.md) records every check at the
-release revision, `8229181`.
+[release evidence](h1-release-evidence.md) records every check at `8229181`,
+the revision merged into `main`, run again on 2026-10-03. The first run, at
+the release's own revision `581e03c`, is that file as commit `cb0b0dd`
+wrote it ([history](h1-history.md#status-and-release-record)).
 
 The [history](h1-history.md) keeps what this document said along the way:
 the release checklist and its record, the experimental mode and its
@@ -408,7 +411,7 @@ counts index types too (G0 2.12).
 
   ```text
   def sum_id(U < UU0, A : U, x : A or A) : A or A := x;
-  def small : Nat or Nat := left(0);
+  def small : Nat or Nat := left(zero);
   def lifted : Nat or Nat := sum_id(U1, Nat, small);
   ```
 
@@ -1011,7 +1014,7 @@ none since. `computable` accepted the marker.
 | Canonicity for H1 | Written out ([canonicity](h1-canonicity.md)); approved on 2026-10-02, relative to the assumed baseline and premise P1 |
 | Consistency and canonicity of the baseline: Π, Σ, Path, Glue, universes, unit, empty type and sums | **Assumed**, as in G0 3.6 |
 | Normalization, for decidable conversion | **Not established**; the kernel relies on budgets, as today |
-| The baseline's isolation of instruction acceptance from untrusted conversion queries | **Corrected** on 2026-09-28 (work-plan I1.2a). The audit's finding 1: the reducers behind `Whnf` and `Normalize` called `ck_convertible`, and a successful public conversion query entered the memo that folded alpha equality read, so one `Apply` was refused, then accepted, with no equality judgement among its premises. Valid beta equality, so no false equality. Now the folded comparison reads only its own results, reduction decides eta by syntax, and conversion refuses to run inside an instruction (`kernel/tests/test_isolation.c`) |
+| The baseline's isolation of instruction acceptance from untrusted conversion queries | **Corrected** on 2026-09-28 (work-plan I1.2a). The audit's finding 1: the reducers behind `Whnf` and `Normalize` called `ck_convertible`, and a successful public conversion query entered the memo that folded alpha equality read, so one `Apply` was refused, then accepted, with no equality judgement among its premises. Valid beta equality, so no false equality. Now the folded comparison reads only its own results, reduction decides eta by syntax, and since I1.2b (2026-10-02) the kernel has no conversion search at all (`kernel/tests/test_isolation.c`) |
 
 The implementation's tests are evidence for the specified behaviour, not
 for these claims.
@@ -1326,9 +1329,10 @@ its constructor names, the generated squash named `squash`. The driver
 their names. The kernel wrapper's `signatures` map holds the records, and a
 declaration's transaction removes those a rollback frees. The renderers
 print an instance as its name applied to its recorded levels and
-parameters, `Pointed(U0)` or `List(N)`, a constructor by its name, and an
-eliminator as `N.elim(motive, clauses…)` until `match` gives it a source
-form.
+parameters, `Pointed(U0)` or `List(N)`, and a constructor by its name.
+Since 2026-10-03 the source text prints an eliminator as the `match` that
+applies it, `fun (x : T) => match x { … }`; the notation renderer prints it
+as `N.elim(motive, clauses…)`.
 
 ### 6.3 Transactions and caches
 
@@ -1425,8 +1429,8 @@ inductive Quotient(U, V < UU0, A : U, R : A -> A -> V) : set {
   restricts to propositions in the argument's universe. The largest group of
   the archive's resizing, 22 of 47 declarations, works around that
   restriction (8.3, 8.4).
-- Truncation readout by `evaluate` (L2.9b) reads the witness off `point(w)`
-  under formal compositions. It is a closed evaluation tool, not an
+- Truncation readout (L2.9b, done on 2026-10-06), `print(witness(t));`,
+  reads the witness off `point(w)` under formal compositions. It is a closed evaluation tool, not an
   eliminator into `A`.
 
 ### 8.2 Policy
@@ -1626,8 +1630,9 @@ form. It is untrusted; the kernel checks the result.
     `inductive Gpd(U < UU0, A : U) : trunc(1) U { point(a : A); }` is the
     groupoid truncation.
   - **Contextual words.** `type`, `set`, `prop` and `trunc` are keywords
-    only as the first word of the result position, and ordinary names
-    everywhere else. The archive uses `prop` 226 times, `set` 37 times and
+    as the first word of the result position. Since L2.4c, `set` and `prop`
+    are also keywords before a universe in a theory's carrier field,
+    `M : set U`. Everywhere else they are ordinary names. The archive uses `prop` 226 times, `set` 37 times and
     `type` 47 times as names, and the library 19, 1 and 3 times, so they are
     not reserved. In the result position they always mean the modifier, so a
     universe parameter may not be named `type`, `set`, `prop` or `trunc`; the
@@ -1675,8 +1680,9 @@ option the error named it. Decisions this section left open:
   recorded levels takes its instance from the expected type, as a sum's
   injection does. Without one, it reads the instance from an argument of
   that type, which only a position can have: `cons(zero, xs)` for
-  `xs : List(U0, N)`. Otherwise it asks for `typed(T(…), c(…))`. Inferring
-  the instance from data arguments waits for L4.1a.
+  `xs : List(U0, N)`. Otherwise it asks for `typed(T(…), c(…))`. L4.1a,
+  done on 2026-10-04, gives constructors no holes, so inferring the
+  instance from data arguments is still open.
 - **Types as written.** Argument and result types are checked by the kernel
   as written, then beta-reduced, level redexes included, before they are
   classified and admitted, so `l : typed(C, b) = b` has a constructor
@@ -1695,8 +1701,9 @@ option the error named it. Decisions this section left open:
   exactly its own parameters, `List(U, A)`. Any other argument is refused
   as an index.
 
-`T.squash` names the generated constructor (L2.2a), and `trunc(-1)`, the
-same as `prop`, is written with the minus sign of the path notation.
+`T.squash` names the generated constructor (L2.2a). `trunc(-1)`, the same
+as `prop`, takes its minus sign in the header itself; path reversal is
+`~p`.
 
 **Automatic clauses (L2.2b).** With `import hlevels`, a missing generated
 squash clause is filled from checked h-level evidence for the motive. For a
@@ -1867,7 +1874,7 @@ The work plan's H1 release fixtures, each in the canonicity fixture or its
 support module where it computes:
 
 - the declared `N`, `List`, `Tree` and `Push` compared with the native forms
-  (X1–X4, X6–X8);
+  (X1–X4, X6–X8; retired as a gate on 2026-10-02);
 - a declared circle with winding number 1, by `rfl` and by `evaluate` (E1);
 - `code_meridian` by `rfl` (E2);
 - `Trunc` and `Quotient` with checked dependent elimination (E3, E4);
@@ -1880,8 +1887,11 @@ univalence. It gives 1 for `loop`, 2 for `loop · loop` and -1 for its
 inverse, by `rfl`, and closed `evaluate` directives read the normal forms.
 `cong(code, loop)` is `ua(succ)` by `rfl`, the E2 fixture's
 `code_meridian` in this form. `tests/declared-match.test.mjs` checks the
-example. Its results carry no assumption and, since the release, no marker. The native comparisons (X1–X8) are K2.4a's, with X2's
-remaining criterion issue recorded in the differential evidence.
+example. Its results carry no assumption and, since the release, no marker.
+The native comparisons (X1–X8) were K2.4a's. They were retired as a gate on
+2026-10-02 and their tests removed; the
+[differential evidence](h1-differential-evidence.md) keeps what they
+showed, X2's criterion issue included.
 `tests/automatic-clauses.test.mjs` checks `Quotient`'s dependent elimination
 into sets and `Gpd`'s into groupoids, using L2.2b's generated clauses.
 
@@ -1923,8 +1933,8 @@ refuse.
 | Kan K1–K11 | Kernel: K1 (with no tubes, and with a tube of `succ`: a composition pushes into `succ`), K2 in substance (in `N` rather than `Plus`), K3, K4 in substance (in `Susp` rather than `S1`, with a tube from `north` to `south`), K5 in substance (the argument of `merid`, not a point constructor's), K6 in substance (transport of `merid` along a line of types `e : A = B`), K7 in substance (a set truncation's squash rather than `Quotient`'s), K8, K9 in substance (in `Susp` rather than `S1`: along a constant line, an `hcomp` of the base moved), K10 in substance (96 random constructor terms of `Susp`, `Torus` and `Quotient`, the path constructors at random formulas over two dimensions, `Quotient`'s `cls` and `eq` without its squash, moved along lines of the parameter drawn from `e @ i`, its reversal and a constant; each restricted to every face of the two dimensions, as it is and as its weak head), K11 (along the constant lines: at φ = 1 the term, and where φ is a face, the generated rules' weak head restricted to it is the term there). Driver: K6 (the kernel's transport along `ua` of the integers' successor, from the checked definitions of `docs/examples/h1/winding.cubist`) | — | — |
 | Elimination E1–E11 | Source: E1 (`docs/examples/h1/winding.cubist`), E2 (as `cong(code, loop)` equal to `ua(succ)` by `rfl`), E3 (`T.squash`), E4 (dependent family of sets, with explicit glue obligation and automatic squash), E8 (a missing clause, a duplicate clause, an unknown constructor), E11 (dependent groupoid family, automatic three-dimensional squash). Kernel: E3 (the `prop` squash clause), E5–E7, E9, E10, and a motive over no declared type refused. Driver: E5 | — | — |
 | Trust T1–T7 | Kernel: T1, T5, T6, T7. Driver: T5, T6. Source: T1 (H1 switched off in the kernel session, and the refusal says so), T2 (no marker since the release: direct, through a definition, through an import), T3, T4. Verifier: kernel extensions compared apart from assumptions (6.4) | — | — |
-| Truncation policy G1–G7 | Source: G1 (`Tr(U1, U0)` is not in `U0`), G2 (small truncation into a proposition in U1), G3 (the archive checks in full; 3,788 declarations, 0 gaps), G5 (rebuilt `CauchySame` and `EventualClose` in U0 without assumptions), G6 (proposition resized through LEM, witness with set evidence refused), G7 (large double-negation elimination, LEM retained). Verifier: G4 (exact ledger change accepted, unlisted or altered pin refused) | — | — |
-| Resources R1–R5 | Kernel: R1 (a sort, constructor and eliminator whose indices are out of range, and a list whose next cell is no list, built as raw syntax: inspected, reduced or refused with an error, and refused by the term checker and the instructions), R2, R3; a former of the wrong shape and a truncation level above the maximum are refused. Driver: R1 in part (an operand that is not a 32-bit unsigned integer is refused), R5 (the codec round trip); `tests/h1-admission.test.mjs` checks ABI version 3. Source: R4 (a module of ABI version 2 refused by the loader) | — | — |
+| Truncation policy G1–G7 | Source: G1 (`Tr(U1, U0)` is not in `U0`), G2 (small truncation into a proposition in U1), G3 (the archive checks in full with the library modules it imports, 0 gaps; `tests/corpus.test.mjs` pins the count), G5 (rebuilt `CauchySame` and `EventualClose` in U0 without assumptions), G6 (proposition resized through LEM, witness with set evidence refused), G7 (large double-negation elimination, LEM retained). Verifier: G4 (exact ledger change accepted, unlisted or altered pin refused) | — | — |
+| Resources R1–R5 | Kernel: R1 (a sort, constructor and eliminator whose indices are out of range, and a list whose next cell is no list, built as raw syntax: inspected, reduced or refused with an error, and refused by the instructions), R2, R3; a former of the wrong shape and a truncation level above the maximum are refused. Driver: R1 in part (an operand that is not a 32-bit unsigned integer is refused), R5 (the codec round trip); `tests/h1-admission.test.mjs` checks ABI version 3. Source: R4 (a module of ABI version 2 refused by the loader) | — | — |
 | Differential X1–X8 | — | — | All: retired as a gate on 2026-10-02 (checklist item 6). The tests that traced X1, X3 and X6–X8, and X2, X4 and X5 in part, ran against the pinned historical kernel and were removed with it the same day; the [differential record](h1-differential-evidence.md) keeps what they showed |
 
 ## 11. Decided questions

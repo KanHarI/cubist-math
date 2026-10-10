@@ -26,12 +26,12 @@ def field_between_close(
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   let delta := coordinate_difference(F, addF, negF, a, b);
   obtain (forward, backward) := translate(delta, radius, a);
-  let leftIdentity :=
-    trans(
-      ring_add_comm(F, zero, one, addF, mulF, negF, ring, delta, a),
-      difference_add_back(F, zero, one, addF, mulF, negF, ring, a, b)
-    );
-  let shifted := along((fun (v : F) => lt(v, addF(radius, a)))) by leftIdentity from forward(small);
+  let leftIdentity := trans(
+    ring_add_comm(F, zero, one, addF, mulF, negF, ring, delta, a),
+    difference_add_back(F, zero, one, addF, mulF, negF, ring, a, b)
+  );
+  let shifted :=
+    along ((fun (v : F) => lt(v, addF(radius, a)))) by leftIdentity from forward(small);
   let gap :=
     along lt(b) by ring_add_comm(F, zero, one, addF, mulF, negF, ring, radius, a) from shifted;
   let xBelow := leLt(x, b, addF(a, radius), upperX, gap);
@@ -51,9 +51,8 @@ def field_between_close(
 def interval_tags_close(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  a, b, x, y : FieldUnitInterval(F, zero, one, lt),
-  withinX : IntervalTagWithin(F, zero, one, lt, a, b, x),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), a, b, x,
+  y : FieldUnitInterval(F, zero, one, lt), withinX : IntervalTagWithin(F, zero, one, lt, a, b, x),
   withinY : IntervalTagWithin(F, zero, one, lt, a, b, y), radius : F,
   small : lt(interval_difference(F, zero, one, addF, negF, lt, a, b), radius)
 ) :

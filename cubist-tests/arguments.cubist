@@ -39,25 +39,23 @@ def untyped_lambda(n : Nat) : Nat := apply(U0, _, _, fun x => succ(x), n);
 
 // Holes inside an argument, solved from the type the outer call expects of
 // it: an equivalence from inverses, glued to a path of types.
-computable def inhabited_is_unit(P : U0, prop_ : IsProp(U0, P), p : P) :
-  P = Unit := glue_path(
-    U0, _, _,
-    inverse_equiv(
-      U0, _, _, fun (x : P) => tt, fun (u : Unit) => p, fun (u : Unit) => unit_is_prop(tt, u),
-      fun (x : P) => prop_(p, x)
-    )
-  );
+computable def inhabited_is_unit(P : U0, prop_ : IsProp(U0, P), p : P) : P = Unit := glue_path(
+  U0, _, _,
+  inverse_equiv(
+    U0, _, _, fun (x : P) => tt, fun (u : Unit) => p, fun (u : Unit) => unit_is_prop(tt, u),
+    fun (x : P) => prop_(p, x)
+  )
+);
 
 // Named arguments: the parameters before the last one named are holes, in
 // any order of the names, and a universe can be named too.
-computable def named(P : U0, prop_ : IsProp(U0, P), p : P) :
-  P = Unit := glue_path(
-    U := U0,
-    e := inverse_equiv(
-      U0, g := fun (u : Unit) => p, f := fun (x : P) => tt,
-      sec := fun (u : Unit) => unit_is_prop(tt, u), ret := fun (x : P) => prop_(p, x)
-    )
-  );
+computable def named(P : U0, prop_ : IsProp(U0, P), p : P) : P = Unit := glue_path(
+  U := U0,
+  e := inverse_equiv(
+    U0, g := fun (u : Unit) => p, f := fun (x : P) => tt,
+    sec := fun (u : Unit) => unit_is_prop(tt, u), ret := fun (x : P) => prop_(p, x)
+  )
+);
 
 def named_after_positional(n : Nat) : Nat := apply(U0, Nat, a := n, f := fun x => succ(x));
 

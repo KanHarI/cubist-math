@@ -150,8 +150,9 @@ def contour_tag_error_variation_bound(
             )
           ),
           SampleMagnitudeBounds(
-            F, F, negF, lt, (fun (a, b, t : F) => coordinate_difference(F, addF, negF, a, b)), weight,
-            k, field_snd(F, SampleVertices(F, k), vertices), field_snd(F, SampleTags(F, k), oldTags)
+            F, F, negF, lt, (fun (a, b, t : F) => coordinate_difference(F, addF, negF, a, b)),
+            weight, k, field_snd(F, SampleVertices(F, k), vertices),
+            field_snd(F, SampleTags(F, k), oldTags)
           ), increments
         )
       ),
@@ -185,8 +186,9 @@ def contour_tag_error_variation_bound(
             )
           ),
           SampleMagnitudeBounds(
-            F, F, negF, lt, (fun (a, b, t : F) => coordinate_difference(F, addF, negF, a, b)), weight,
-            k, field_snd(F, SampleVertices(F, k), vertices), field_snd(F, SampleTags(F, k), oldTags)
+            F, F, negF, lt, (fun (a, b, t : F) => coordinate_difference(F, addF, negF, a, b)),
+            weight, k, field_snd(F, SampleVertices(F, k), vertices),
+            field_snd(F, SampleTags(F, k), oldTags)
           ), increments
         )
       )
@@ -212,14 +214,13 @@ def contour_tag_error_length_bound(
   ) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   let totalWeight := sample_sum(F, F, zero, addF, weight, n, vertices, oldTags);
-  let bounded :=
-    contour_tag_error_variation_bound(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f, weight, delta, n, vertices,
-      oldTags, newTags, errors, increments
-    );
+  let bounded := contour_tag_error_variation_bound(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f, weight, delta, n, vertices,
+    oldTags, newTags, errors, increments
+  );
   let rightScaled := weakScale(totalWeight, length, delta, variation, nonnegativeDelta);
   let leftScaled :=
-    along((fun (v : F) => FieldLe(F, lt, v, mulF(length, delta)))) by ring_mul_comm(
+    along ((fun (v : F) => FieldLe(F, lt, v, mulF(length, delta)))) by ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, totalWeight, delta
     ) from rightScaled;
   let grows :=

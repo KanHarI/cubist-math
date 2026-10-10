@@ -127,15 +127,14 @@ def loop_evaluations_detect_nonzero(
     ) -> Void
   ) {
   let F := extension_field(K, E);
-  let dot :=
-    fun (x : extension_carrier(K, E)) => field_sum(
-      F, n,
-      (
-        fun (j : Fin(n)) => field_mul(
-          F, coefficients(j), along extension_carrier(K) by loops(j) from x
-        )
+  let dot := fun (x : extension_carrier(K, E)) => field_sum(
+    F, n,
+    (
+      fun (j : Fin(n)) => field_mul(
+        F, coefficients(j), along extension_carrier(K) by loops(j) from x
       )
-    );
+    )
+  );
   exact classical_counterexample(
     extension_carrier(K, E), (fun (x : extension_carrier(K, E)) => dot(x) = field_zero(F)),
     (fun (x : extension_carrier(K, E)) => af_set(F, dot(x), field_zero(F))),

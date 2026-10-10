@@ -16,11 +16,10 @@ def point2 := tail(Fin(2), tail(Fin(1), head(Fin(0))));
 
 def swap01 := swap_bijection(Fin(2), fin_decidable(2), point1);
 
-def swap12 :=
-  sum_bijection(
-    Unit, Fin(2), Unit, Fin(2), identity_bijection(Unit),
-    swap_bijection(Fin(1), fin_decidable(1), tail(Fin(1), head(Fin(0))))
-  );
+def swap12 := sum_bijection(
+  Unit, Fin(2), Unit, Fin(2), identity_bijection(Unit),
+  swap_bijection(Fin(1), fin_decidable(1), tail(Fin(1), head(Fin(0))))
+);
 
 def S3PointStabilizer := PointStabilizer(Fin(3), fin_is_set(3), point0);
 

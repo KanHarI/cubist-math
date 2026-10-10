@@ -14,14 +14,13 @@ def IsContrMap(U < UU0, A, B : U, f : A -> B) : U := forall y : B. IsContr(U, Fi
 def ContrEquiv(U < UU0, A, B : U) : U := exists f : A -> B. IsContrMap(U, A, B, f);
 
 // The identity: the fiber over y contracts onto (y, refl(y)) along its path.
-computable def id_contr_equiv(U < UU0, A : U) :
-  ContrEquiv(U, A, A) := (
-    fun (x : A) => x,
-    fun (y : A) => (
-      (y, refl(y)),
-      fun (p : Fiber(U, A, A, fun (x : A) => x, y)) => path i => (p.2 @ i, path j => p.2 @ (i & j))
-    )
-  );
+computable def id_contr_equiv(U < UU0, A : U) : ContrEquiv(U, A, A) := (
+  fun (x : A) => x,
+  fun (y : A) => (
+    (y, refl(y)),
+    fun (p : Fiber(U, A, A, fun (x : A) => x, y)) => path i => (p.2 @ i, path j => p.2 @ (i & j))
+  )
+);
 
 // Two equivalences with one forward map are equal: their witnesses that the
 // fibers are contractible are, since being contractible is a proposition.

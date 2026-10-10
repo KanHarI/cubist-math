@@ -12,14 +12,12 @@ def compositum_image_forward(K, L : AlgebraicField, e : FieldEmbedding(K, L), S,
   let imageT := subfield_image(K, L, e, T);
   let target := compositum(L, imageS, imageT);
   let preimage := subfield_preimage(K, L, e, target);
-  let includesS :=
-    subfield_image_inclusion_to_preimage(
-      K, L, e, S, target, compositum_contains_left(L, imageS, imageT)
-    );
-  let includesT :=
-    subfield_image_inclusion_to_preimage(
-      K, L, e, T, target, compositum_contains_right(L, imageS, imageT)
-    );
+  let includesS := subfield_image_inclusion_to_preimage(
+    K, L, e, S, target, compositum_contains_left(L, imageS, imageT)
+  );
+  let includesT := subfield_image_inclusion_to_preimage(
+    K, L, e, T, target, compositum_contains_right(L, imageS, imageT)
+  );
   exact subfield_image_inclusion_from_preimage(
     K, L, e, compositum(K, S, T), target, compositum_least(K, S, T, preimage, includesS, includesT)
   );

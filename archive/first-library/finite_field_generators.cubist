@@ -82,7 +82,7 @@ def field_generated_adjoin_tail(
     intro j;
     exact match j as v return P(generators(v)) {
       left u => (
-        along((fun (w : Unit) => P(generators(typed(Fin(succ(n)), left(w)))))) by unit_equal(u) from head
+        along ((fun (w : Unit) => P(generators(typed(Fin(succ(n)), left(w)))))) by unit_equal(u) from head
       );
       right k => members(k);
     };

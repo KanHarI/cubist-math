@@ -51,7 +51,8 @@ Since 2026-09-25 it has two halves:
   computation.
 
 The current kernel has composition and transport rules for every type former:
-`Nat`, `Unit`, sums, W types, pushouts, Glue, universes, Σ, Π and paths. Derived
+`Unit`, sums, Glue, universes, Σ, Π and paths, and every declared type (H1),
+which now includes `Nat`, W types and pushouts. Derived
 path induction therefore computes on closed data, including along a closed
 nonreflexive path. Its computation at `refl` is only propositional for open
 terms, which the requirement permits.
@@ -230,20 +231,18 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
       specification's [history](h1-history.md#status-and-release-record) holds
       the release checklist and its record.
     - **Specification.** [H1 specification](h1-signature-specification.md)
-      (K2.1 and K2.5, approved for experimental implementation): the
+      (K2.1 and K2.5; reviewed, approved and released on 2026-10-02): the
       admitted signatures, generated rules, soundness note, instruction
       families, the K2.4 representation map, and G2's truncation policy
       with its measured migration ledger.
     - Instructions first: the signature checker and every generated rule
       are instructions, and the driver issues them.
-    - The hand-coded natural-number, sum, W and pushout instructions are
-      the differential oracle (K2.4a, fixtures X1–X8). By the
-      specification's 7.4 (Q16) only the `Nat` instructions retire, after
-      typing, reduction and composition agree on the kernel tests and on
-      the archived library (K2.4b); sum, W and pushout stay trusted for
-      tier-1 arguments until the tier-parametric proposal is adopted
-      (K2.4c). A mixed-tier call has no image under the translation and is
-      reported, not migrated in part.
+    - The hand-coded instructions were the differential oracle (K2.4a,
+      fixtures X1–X8). Nat and W retired on 2026-09-30 and pushouts on
+      2026-10-01, all now H1 declarations in source; sums stay native at
+      every level (K2.4c). The differential contract retired as a gate on
+      2026-10-02. A mixed-tier call has no image under the translation and
+      is reported, not migrated in part.
     - Main obligation: transport along parameter lines with boundary
       correction.
   - **H2. One indexed sort.** Vectors, finite sets, well-typed syntax, and the
@@ -309,9 +308,10 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
   - Acceptance: implicit downward resizing is rejected. For each archive
     result that used resizing, the rebuild records the universe changes and
     the assumptions removed or retained, separately from LEM and choice.
-  - Status (2026-09-28): the policy is approved (specification Q12, Q17);
-    the ledger file and verifier of its 8.5 are not implemented, and no
-    archive migration is claimed. The archive keeps its legacy assumptions.
+  - Status (2026-10-07): the policy is approved (specification Q12, Q17).
+    The exact ledger verifier, 17 pinned changes and the G2/G4–G7 fixtures
+    are implemented (K2.5). The rest of the archive remedies is pending, and
+    the archive keeps its other legacy assumptions.
 - [ ] **G3. Superseded by H2.** An identity type with strict J computation is
   the declared family `Id(A, a) : A -> type { refl }` at H2. Its J computes on
   `refl` because transport along a varying index stays a formal composition,

@@ -15,7 +15,7 @@ def f4_fixed_from_representatives(
 ) :
   GaloisFixed(F2, F4OverF2, H, x) {
   intro e;
-  exact along((fun (d : F4Automorphism) => H(d) -> (f4_auto_apply(d, x) = x))) by f4_symmetry_classify(
+  exact along ((fun (d : F4Automorphism) => H(d) -> (f4_auto_apply(d, x) = x))) by f4_symmetry_classify(
     e
   ) from tested(f4_symmetry_bit(e));
 }
@@ -24,16 +24,15 @@ def f4_fixed_decision(
   H : F4Automorphism -> U0, decide : (forall e : F4Automorphism. Decidable(U0, H(e))), x : F4Carrier
 ) :
   Decidable(U0, GaloisFixed(F2, F4OverF2, H, x)) {
-  let tested :=
-    finite_forall_decidable(
-      2, (fun (b : F2Carrier) => H(f4_symmetry(b)) -> (f4_auto_apply(f4_symmetry(b), x) = x)),
-      (
-        fun (b : F2Carrier) => decision_implies(
-          H(f4_symmetry(b)), (f4_auto_apply(f4_symmetry(b), x) = x), decide(f4_symmetry(b)),
-          fin_decidable(4, f4_auto_apply(f4_symmetry(b), x), x)
-        )
+  let tested := finite_forall_decidable(
+    2, (fun (b : F2Carrier) => H(f4_symmetry(b)) -> (f4_auto_apply(f4_symmetry(b), x) = x)),
+    (
+      fun (b : F2Carrier) => decision_implies(
+        H(f4_symmetry(b)), (f4_auto_apply(f4_symmetry(b), x) = x), decide(f4_symmetry(b)),
+        fin_decidable(4, f4_auto_apply(f4_symmetry(b), x), x)
       )
-    );
+    )
+  );
   exact decision_transfer(
     F4FixedOnRepresentatives(H, x), GaloisFixed(F2, F4OverF2, H, x),
     f4_fixed_from_representatives(H, x),
@@ -110,10 +109,9 @@ def f4_galois_correspondence :
   );
 }
 
-def F4DecidableSubgroupIncluded(D, E : DecidableSubgroup(F4GaloisGroup)) :=
-  SubgroupIncluded(
-    F4GaloisGroup, decidable_subgroup(F4GaloisGroup, D), decidable_subgroup(F4GaloisGroup, E)
-  );
+def F4DecidableSubgroupIncluded(D, E : DecidableSubgroup(F4GaloisGroup)) := SubgroupIncluded(
+  F4GaloisGroup, decidable_subgroup(F4GaloisGroup, D), decidable_subgroup(F4GaloisGroup, E)
+);
 
 def F4DecidableIntermediateIncluded(D, E : DecidableIntermediateField(F2, F4OverF2)) :=
   IntermediateIncluded(

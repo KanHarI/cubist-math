@@ -18,9 +18,9 @@ def sum(xs : List(U0, Nat)) : Nat := induction xs return Nat {
 // The motive may depend on the value, so the hypothesis is the statement for
 // the tail.
 def sum_append(xs, ys : List(U0, Nat)) :
-  sum(append(xs, ys)) = sum(xs) + sum(ys) := induction xs as v return sum(
-    append(v, ys)
-  ) = sum(v) + sum(ys) {
+  sum(append(xs, ys)) = sum(xs) + sum(ys) := induction xs as v return sum(append(v, ys)) = sum(v) + sum(
+    ys
+  ) {
     nil => refl(sum(ys));
     cons(head, tail, ih) => trans(
       cong(fun (m : Nat) => head + m, ih), sym(nat_add_assoc(head, sum(tail), sum(ys)))
@@ -43,8 +43,7 @@ def joined_sum : sum(append(cons(1, nil), cons(2, nil))) = 3 {
 
 // The induction statement proves a goal with a hypothesis for each recursive
 // argument.
-def length_append_nil(xs : List(U0, Nat)) :
-  length(append(xs, nil)) = length(xs) {
+def length_append_nil(xs : List(U0, Nat)) : length(append(xs, nil)) = length(xs) {
   induction xs {
     nil => {
       rfl;

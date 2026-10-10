@@ -8,13 +8,13 @@ use nat;
 // itself large. The union uses the existing U1 truncation signature explicitly.
 def PredicateUnion(I : U1, A : U0, P : I -> A -> U0, x : A) := FieldExists(exists i : I. P(i, x));
 
-def PredicateChain(I : U1, A : U0, P : I -> A -> U0) :=
-  forall i : I. forall j : I.
-  FieldOr(PredicateIncluded(A, P(i), P(j)), PredicateIncluded(A, P(j), P(i)));
+def PredicateChain(I : U1, A : U0, P : I -> A -> U0) := forall i : I. forall j : I. FieldOr(
+  PredicateIncluded(A, P(i), P(j)), PredicateIncluded(A, P(j), P(i))
+);
 
-def PredicateDirected(I : U1, A : U0, P : I -> A -> U0) :=
-  forall i : I. forall j : I.
-  FieldExists(exists k : I. PredicateIncluded(A, P(i), P(k)) and PredicateIncluded(A, P(j), P(k)));
+def PredicateDirected(I : U1, A : U0, P : I -> A -> U0) := forall i : I. forall j : I. FieldExists(
+  exists k : I. PredicateIncluded(A, P(i), P(k)) and PredicateIncluded(A, P(j), P(k))
+);
 
 def predicate_union_prop(I : U1, A : U0, P : I -> A -> U0, x : A) :=
   field_exists_prop(exists i : I. P(i, x));
@@ -88,7 +88,7 @@ def finite_cover_step(
           intro index;
           exact match index as z return P(k, v(z)) {
             left u => (
-              along((fun (w : Unit) => P(k, v(typed(Fin(succ(n)), left(w)))))) by unit_equal(u) from ik(
+              along ((fun (w : Unit) => P(k, v(typed(Fin(succ(n)), left(w)))))) by unit_equal(u) from ik(
                 h, headInI
               )
             );
