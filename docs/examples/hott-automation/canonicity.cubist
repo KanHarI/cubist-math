@@ -72,16 +72,18 @@ computable def unit_square_computes :
 }
 
 computable def retract_path_computes :
-  retract_has_level(U0, 0, Unit, Unit, fun (u : Unit) => u, fun (u : Unit) => u, fun (u : Unit) => refl(u),
-    unit_is_prop, tt, tt) = refl(tt) {
+  retract_has_level(
+    U0, 0, Unit, Unit, fun (u : Unit) => u, fun (u : Unit) => u, fun (u : Unit) => refl(u),
+    unit_is_prop, tt, tt
+  ) = refl(tt) {
   rfl;
 }
 
-computable def nat_decision_computes :
-  match nat_decide(2, 3) return Nat {
+computable def nat_decision_computes : match nat_decide(2, 3) return Nat {
     left p => 1;
     right n => 0;
-  } = 0 {
+  }
+= 0{
   rfl;
 }
 
@@ -98,8 +100,9 @@ computable def unit_paths_contract : path_is_contr(U0, Unit, unit_is_contr, tt, 
 // univalence's Glue types.
 computable def effective_class_computes :
   quotient_effective(
-    U0, Nat, fun (m, n : Nat) => m = n, fun (m, n : Nat) => nat_is_set(m, n), fun (n : Nat) => refl(n),
-    fun (m, n : Nat, r : m = n) => sym(r), fun (k, m, n : Nat, r : k = m, s : m = n) => trans(r, s), 2, 2,
+    U0, Nat, fun (m, n : Nat) => m = n, fun (m, n : Nat) => nat_is_set(m, n),
+    fun (n : Nat) => refl(n), fun (m, n : Nat, r : m = n) => sym(r),
+    fun (k, m, n : Nat, r : k = m, s : m = n) => trans(r, s), 2, 2,
     class_path(U0, Nat, fun (m, n : Nat) => m = n, 2, 2, refl(2))
   ) = refl(2) {
   rfl;

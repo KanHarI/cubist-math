@@ -12,10 +12,9 @@ def ExcludedMiddle(U < UU0) := forall A : U. ((A -> Void) -> Void) -> Truncate(U
 // B(x) is merely inhabited, then there is merely a function selecting an
 // element of each.
 def AxiomOfChoice(U < UU0) :=
-  forall A : U. forall B : A -> U.
-  (forall x, y : A. forall p, q : x = y. p = q) ->
-  (forall a : A. forall x, y : B(a). forall p, q : x = y. p = q) ->
-  (forall a : A. Truncate(U, B(a))) -> Truncate(U, forall a : A. B(a));
+  forall A : U. forall B : A -> U. (forall x, y : A. forall p, q : x = y. p = q)
+  -> (forall a : A. forall x, y : B(a). forall p, q : x = y. p = q)
+  -> (forall a : A. Truncate(U, B(a))) -> Truncate(U, forall a : A. B(a));
 
 // The constants have exactly these types.
 def excluded_middle_assumed(U < UU0) : ExcludedMiddle(U) := LEM(U);

@@ -33,15 +33,14 @@ def embeddings_over_surjective_count(
 ) :
   HasCardinality(EmbeddingsOver(K, L, e, T, j), 1) {
   let H := EmbeddingsOver(K, L, e, T, j);
-  let center :=
-    embedding_over_surjective_source(
-      K, K, L, field_embedding_identity(K), e, e,
-      (fun (a : af_carrier(K)) => refl(field_embedding_map(K, L, e, a))), onto, T, j,
-      typed(
-        EmbeddingsOver(K, K, field_embedding_identity(K), T, j),
-        (j, (fun (a : af_carrier(K)) => refl(field_embedding_map(K, T, j, a))))
-      )
-    );
+  let center := embedding_over_surjective_source(
+    K, K, L, field_embedding_identity(K), e, e,
+    (fun (a : af_carrier(K)) => refl(field_embedding_map(K, L, e, a))), onto, T, j,
+    typed(
+      EmbeddingsOver(K, K, field_embedding_identity(K), T, j),
+      (j, (fun (a : af_carrier(K)) => refl(field_embedding_map(K, T, j, a))))
+    )
+  );
   exact merely(
     Bijection(Fin(1), H),
     typed(
@@ -61,11 +60,9 @@ def surjective_embedding_degree(
 ) :
   extension_degree(K, embedding_as_extension(K, L, e), finite) = 1 {
   let V := field_vector_space(K, L, e);
-  let iso :=
-    linear_bijective_iso(
-      K, ScalarSpace(K), V, field_embedding_linear(K, L, e), field_embedding_injective(K, L, e),
-      onto
-    );
+  let iso := linear_bijective_iso(
+    K, ScalarSpace(K), V, field_embedding_linear(K, L, e), field_embedding_injective(K, L, e), onto
+  );
   let basis :=
     linear_iso_compose(K, CoordinateSpace(K, 1), ScalarSpace(K), V, scalar_space_basis(K), iso);
   exact extension_degree_of_basis(K, embedding_as_extension(K, L, e), finite, 1, basis);
@@ -91,16 +88,14 @@ def embedding_tower_count(
   let B := EmbeddingTowerFiber(K, R, L, T, i, h, j);
   let S := EmbeddingTower(K, R, L, T, i, h, j);
   let H := EmbeddingsOver(K, L, e, T, j);
-  let count :=
-    uniform_fiber_count(
-      A, embeddings_over_are_set(K, R, i, T, j), n, m, lower, B,
-      (fun (d : A) => embeddings_over_are_set(R, L, h, T, embedding_over(K, R, i, T, j, d))), upper
-    );
-  let mapped :=
-    cardinality_path(
-      S, H, embedding_tower_type_equality(K, R, L, T, i, h, e, triangle, j), multiply_count(n, m),
-      count
-    );
+  let count := uniform_fiber_count(
+    A, embeddings_over_are_set(K, R, i, T, j), n, m, lower, B,
+    (fun (d : A) => embeddings_over_are_set(R, L, h, T, embedding_over(K, R, i, T, j, d))), upper
+  );
+  let mapped := cardinality_path(
+    S, H, embedding_tower_type_equality(K, R, L, T, i, h, e, triangle, j), multiply_count(n, m),
+    count
+  );
   exact along HasCardinality(H) by count_multiply_comm(n, m) from mapped;
 }
 
@@ -176,23 +171,21 @@ def finite_separable_count_step(n : Nat, previous : FiniteSeparableEmbeddingCoun
   let sepR :=
     separable_elements_enlarge_base(K, R, L, i, h, e, tower, algebraic, T, closed, separable);
   let tail := finite_tail(af_carrier(L), n, generators);
-  let genR :=
-    field_generated_adjoin_tail(
-      K, R, L, i, h, e, triangle, n, generators, generates, adjoined_root(K, M),
-      residue_evaluate_generator(K, M, L, e, x, root)
-    );
+  let genR := field_generated_adjoin_tail(
+    K, R, L, i, h, e, triangle, n, generators, generates, adjoined_root(K, M),
+    residue_evaluate_generator(K, M, L, e, x, root)
+  );
   let degreeR := extension_degree(K, adjoined_extension(K, M, irr), lower);
   let countR := with unfolding [AdjoinedEmbeddings] {
       along HasCardinality(EmbeddingsOver(K, R, i, T, j)) by sym(
         adjoined_extension_degree(K, M, irr, lower)
       ) from separable_adjoined_embedding_count(K, M, irr, T, j, separable(j, x, alg))
     };
-  let countL :=
-    (
-      fun (d : EmbeddingsOver(K, R, i, T, j)) => previous(
-        R, L, h, upper, tail, genR, T, closed, sepR, embedding_over(K, R, i, T, j, d)
-      )
-    );
+  let countL := (
+    fun (d : EmbeddingsOver(K, R, i, T, j)) => previous(
+      R, L, h, upper, tail, genR, T, closed, sepR, embedding_over(K, R, i, T, j, d)
+    )
+  );
   exact with unfolding [adjoined_extension, EmbeddingTowerFiber] {
     embedding_tower_degree_count(
       K, R, L, T, i, h, e, triangle, j, lower, upper, finite, countR, countL

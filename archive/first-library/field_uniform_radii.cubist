@@ -10,16 +10,14 @@ def field_close_enlarge(
   FieldClose(F, addF, lt, x, y, epsilon) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, rest) := arithmetic;
   obtain (upper, lower) := close;
-  let upperRadius :=
-    order_le_add(
-      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, y, y, delta, epsilon,
-      order_le_refl(F, lt, order, y), smaller
-    );
-  let lowerRadius :=
-    order_le_add(
-      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, x, x, delta, epsilon,
-      order_le_refl(F, lt, order, x), smaller
-    );
+  let upperRadius := order_le_add(
+    F, zero, one, addF, mulF, negF, lt, ring, arithmetic, y, y, delta, epsilon,
+    order_le_refl(F, lt, order, y), smaller
+  );
+  let lowerRadius := order_le_add(
+    F, zero, one, addF, mulF, negF, lt, ring, arithmetic, x, x, delta, epsilon,
+    order_le_refl(F, lt, order, x), smaller
+  );
   exact (
     ltLe(x, addF(y, delta), addF(y, epsilon), upper, upperRadius),
     ltLe(y, addF(x, delta), addF(x, epsilon), lower, lowerRadius)
@@ -37,42 +35,36 @@ def field_common_positive_radius(
 ) :
   exists delta : F. lt(zero, delta) and FieldLe(F, lt, delta, r) and FieldLe(F, lt, delta, s) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, rest) := arithmetic;
-  let nonnegativeR :=
-    ordered_lt_implies_le(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, r, positiveR
-    );
-  let nonnegativeS :=
-    ordered_lt_implies_le(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, s, positiveS
-    );
+  let nonnegativeR := ordered_lt_implies_le(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, r, positiveR
+  );
+  let nonnegativeS := ordered_lt_implies_le(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, s, positiveS
+  );
   let total := addF(r, s);
-  let positiveTotal :=
-    ordered_positive_plus_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, r, s, positiveR, nonnegativeS
-    );
-  let nonnegativeTotal :=
-    ordered_lt_implies_le(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, total, positiveTotal
-    );
+  let positiveTotal := ordered_positive_plus_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, r, s, positiveR, nonnegativeS
+  );
+  let nonnegativeTotal := ordered_lt_implies_le(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, total, positiveTotal
+  );
   let product := mulF(r, s);
-  let positiveProduct :=
-    field_positive_product(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, r, s, positiveR, positiveS
-    );
+  let positiveProduct := field_positive_product(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, r, s, positiveR, positiveS
+  );
   obtain (delta, positiveDelta, small) := field_small_scaled_radius(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, total, nonnegativeTotal,
     product, positiveProduct
   );
-  let rBelow :=
-    order_le_add_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, r, s, nonnegativeS
-    );
+  let rBelow := order_le_add_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, arithmetic, r, s, nonnegativeS
+  );
   let sBelow :=
     along FieldLe(F, lt, s) by ring_add_comm(F, zero, one, addF, mulF, negF, ring, s, r) from order_le_add_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic, s, r, nonnegativeR
     );
   let belowR :=
-    along((fun (v : F) => FieldLe(F, lt, v, mulF(total, r)))) by ring_mul_comm(
+    along ((fun (v : F) => FieldLe(F, lt, v, mulF(total, r)))) by ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, s, r
     ) from weakScale(s, total, r, sBelow, nonnegativeR);
   let boundR :=

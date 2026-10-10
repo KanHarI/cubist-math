@@ -45,10 +45,9 @@ def extension_iso_compose(
   let C := extension_carrier(K, G);
   let f := extension_iso_forward(K, E, F, e);
   let g := extension_iso_forward(K, F, G, d);
-  let bijection :=
-    compose_bijection(
-      A, B, C, structure_iso_bijection(S, R, E, F, e), structure_iso_bijection(S, R, F, G, d)
-    );
+  let bijection := compose_bijection(
+    A, B, C, structure_iso_bijection(S, R, E, F, e), structure_iso_bijection(S, R, F, G, d)
+  );
   exact (
     (fun (x : A) => g(f(x))), sigma_second((A -> C), InverseData(A, C), bijection),
     extension_preserved_compose(
@@ -296,7 +295,6 @@ def galois_group_laws(K : AlgebraicField, E : FieldExt(K)) :
   );
 }
 
-def GaloisGroup(K : AlgebraicField, E : FieldExt(K)) :=
-  group_object(
-    Galois(K, E), extension_identity_iso(K, E), galois_compose(K, E), galois_group_laws(K, E)
-  );
+def GaloisGroup(K : AlgebraicField, E : FieldExt(K)) := group_object(
+  Galois(K, E), extension_identity_iso(K, E), galois_compose(K, E), galois_group_laws(K, E)
+);

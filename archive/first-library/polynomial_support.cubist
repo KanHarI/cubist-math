@@ -22,16 +22,15 @@ def polynomial_support(K : AlgebraicField, p : Polynomial(K)) :=
 def finite_support_prop(K : AlgebraicField, f : FormalSeries(K)) :=
   mere_is_prop(exists n : Nat. SeriesSupport(K, f, n));
 
-def series_support_prop(K : AlgebraicField, f : FormalSeries(K), n : Nat) :=
-  forall_prop(
-    Nat, (fun (k : Nat) => le(n, k) -> f(k) = field_zero(K)),
-    (
-      fun (k : Nat) => forall_prop(
-        le(n, k), (fun (bound : le(n, k)) => f(k) = field_zero(K)),
-        (fun (bound : le(n, k)) => af_set(K, f(k), field_zero(K)))
-      )
+def series_support_prop(K : AlgebraicField, f : FormalSeries(K), n : Nat) := forall_prop(
+  Nat, (fun (k : Nat) => le(n, k) -> f(k) = field_zero(K)),
+  (
+    fun (k : Nat) => forall_prop(
+      le(n, k), (fun (bound : le(n, k)) => f(k) = field_zero(K)),
+      (fun (bound : le(n, k)) => af_set(K, f(k), field_zero(K)))
     )
-  );
+  )
+);
 
 def polynomial_ext(
   K : AlgebraicField, p, q : Polynomial(K),
@@ -41,11 +40,10 @@ def polynomial_ext(
   exact subtype_ext(FormalSeries(K), FiniteSupport(K), finite_support_prop(K), p, q, same);
 }
 
-def polynomial_set(K : AlgebraicField) :=
-  subtype_is_set(
-    FormalSeries(K), FiniteSupport(K),
-    group_is_set(vector_group(K, FunctionSpace(K, Nat, ScalarSpace(K)))), finite_support_prop(K)
-  );
+def polynomial_set(K : AlgebraicField) := subtype_is_set(
+  FormalSeries(K), FiniteSupport(K),
+  group_is_set(vector_group(K, FunctionSpace(K, Nat, ScalarSpace(K)))), finite_support_prop(K)
+);
 
 def polynomial_of_support(
   K : AlgebraicField, f : FormalSeries(K), n : Nat, support : SeriesSupport(K, f, n)
@@ -92,7 +90,7 @@ def support_shift(
 }
 
 def natural_le_add_left(m, n : Nat) : le(m, add_count(m, n)) {
-  exact along((fun (k : Nat) => le(m, k))) by nat_add_comm(n, m) from nat_le_add(n, m);
+  exact along ((fun (k : Nat) => le(m, k))) by nat_add_comm(n, m) from nat_le_add(n, m);
 }
 
 def support_add(
@@ -184,10 +182,9 @@ def support_mul(K : AlgebraicField, m : Nat) :=
     succ previous => support_mul_step(K, k, previous);
   };
 
-def polynomial_zero(K : AlgebraicField) :=
-  polynomial_of_support(
-    K, series_zero(K), 0, (fun (k : Nat, above : le(0, k)) => refl(field_zero(K)))
-  );
+def polynomial_zero(K : AlgebraicField) := polynomial_of_support(
+  K, series_zero(K), 0, (fun (k : Nat, above : le(0, k)) => refl(field_zero(K)))
+);
 
 def polynomial_constant(K : AlgebraicField, a : af_carrier(K)) :=
   polynomial_of_support(K, series_constant(K, a), 1, support_constant(K, a));
@@ -228,10 +225,9 @@ def finite_support_binary(
   );
 }
 
-def polynomial_add(K : AlgebraicField) :=
-  finite_support_binary(
-    K, series_add(K), (fun (m : Nat, f, g : FormalSeries(K), n : Nat) => support_add(K, f, g, m, n))
-  );
+def polynomial_add(K : AlgebraicField) := finite_support_binary(
+  K, series_add(K), (fun (m : Nat, f, g : FormalSeries(K), n : Nat) => support_add(K, f, g, m, n))
+);
 
 def polynomial_mul(K : AlgebraicField) := finite_support_binary(K, series_mul(K), support_mul(K));
 

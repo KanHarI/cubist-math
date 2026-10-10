@@ -7,8 +7,9 @@
 import pushout;
 import suspension_types;
 
-def Glued(p : Suspension(Unit)) :
-  U0 := Pushout(U0, U0, U0, Unit, Suspension(Unit), Unit, fun (x : Unit) => p, fun (x : Unit) => tt);
+def Glued(p : Suspension(Unit)) : U0 := Pushout(
+  U0, U0, U0, Unit, Suspension(Unit), Unit, fun (x : Unit) => p, fun (x : Unit) => tt
+);
 
 def Edge(p : Suspension(Unit)) : U0 := typed(Glued(p), inl(p)) = typed(Glued(p), inr(tt));
 

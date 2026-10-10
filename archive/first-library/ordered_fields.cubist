@@ -74,8 +74,8 @@ def field_add_right_unit(
 }
 
 def field_add_cancel(
-  F : U1, zero : F, addF : F -> F -> F, negF : F -> F, laws : AddLaws(F, zero, addF, negF),
-  x, y, z : F, same : addF(x, y) = addF(x, z)
+  F : U1, zero : F, addF : F -> F -> F, negF : F -> F, laws : AddLaws(F, zero, addF, negF), x, y,
+  z : F, same : addF(x, y) = addF(x, z)
 ) :
   y = z {
   obtain (assoc, comm, unit, additiveInverse) := laws;
@@ -97,5 +97,5 @@ def field_zero_not_one(
   (zero = one) -> Void {
   obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   intro same;
-  exact irreflexive(zero, along((fun (x : F) => lt(zero, x))) by sym(same) from positive);
+  exact irreflexive(zero, along ((fun (x : F) => lt(zero, x))) by sym(same) from positive);
 }

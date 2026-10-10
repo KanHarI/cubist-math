@@ -139,7 +139,7 @@ def order_path_collapse(
 ) :=
   order_antisym(
     A, le, laws, x, y, along le(x) by p from order_refl(A, le, laws, x),
-    along((fun (z : A) => le(z, x))) by p from order_refl(A, le, laws, x)
+    along ((fun (z : A) => le(z, x))) by p from order_refl(A, le, laws, x)
   );
 
 def partial_order_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le)) :
@@ -150,7 +150,7 @@ def partial_order_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(
     intro x, y, p, q;
     let forward := fun (r : x = y) => along le(x) by r from order_refl(A, le, laws, x);
     let backward :=
-      fun (r : x = y) => along((fun (z : A) => le(z, x))) by r from order_refl(A, le, laws, x);
+      fun (r : x = y) => along ((fun (z : A) => le(z, x))) by r from order_refl(A, le, laws, x);
     exact trans(
       cong(
         (fun (a : le(x, y)) => order_antisym(A, le, laws, x, y, a, backward(p))),

@@ -29,8 +29,8 @@ no longer exists; its sum call remains. Replaying a native constructor whose
 annotation is not its former now meets the retired-syntax refusal for
 pushouts as for W.
 
-Status: experimental implementation, 2026-09-30. The representation option
-and archive replay are implemented. X2, X4 and X5 remain partially traced.
+Status: historical. On 2026-09-30 the representation option and archive
+replay were implemented, and X2, X4 and X5 were partly traced.
 On 2026-10-02 the maintainer retired the differential fixtures as a release
 gate (specification checklist item 6, and its 7.4): Nat, W and pushouts were
 retired by source declaration rather than through τ, and sums stay native.
@@ -40,8 +40,8 @@ criterion are not pursued.
 
 ## The checked representation option
 
-`CubicalProgram` accepts `representation: "declared"`. The CLI accepts the
-equivalent option:
+Until 2026-10-02, `CubicalProgram` accepted `representation: "declared"`,
+and the CLI accepted the equivalent option. Both now refuse it:
 
 ```sh
 node cli/repl.mjs --representation=declared check archive/first-library/primes.cubist
@@ -73,7 +73,7 @@ between native and declared sorts.
 | X6, X7 | Finite-universe calls for Nat, sum, W and pushout; tier-1 formers remain native |
 | X8 | All three mixed-tier calls check natively and fail after translation; the verifier names each failed call |
 
-`tests/h1-differential.test.mjs` checks these fixtures. The pinned historical native test emits
+`tests/h1-differential.test.mjs` checked these fixtures until its removal on 2026-10-02. The pinned historical native test emitted
 snapshots with `--fixtures FILE`; snapshots expand definition references
 before their checkpoint disappears. `tools/h1-instruction-replay.mjs`
 reconstructs the checked contexts and formulas, then independently derives
@@ -154,9 +154,10 @@ Both checked 365 modules, all 3,804 declarations and all 3,916 stored
 definitions, with zero gaps and zero deadlines. This pins the corrected
 PR implementation, rather than the earlier development tree at
 `cc6b50fff248dd152cbb7051cf542dabb22c370d` (modified tree: true).
-X4 and X5 remain partly traced: the whole-archive runs are manual evidence.
-Before counting either release case, rerun these two commands sequentially
-at the merged release head on a clean tree and record that revision.
+X4 and X5 stayed partly traced: the whole-archive runs are manual evidence.
+A rerun at the merged release head was planned before counting either
+release case; it lapsed when the fixtures were retired as a gate on
+2026-10-02.
 
 | Observation | Native | Declared |
 | --- | ---: | ---: |

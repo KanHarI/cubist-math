@@ -90,11 +90,10 @@ def subdivision_total_join_step(
   let headSum := subdivision_sum(C, G, zero, addG, edge, a, b, headPiece);
   let tailSum := subdivision_total(C, G, zero, addG, edge, n, tail, tailPieces);
   let rightSum := subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces);
-  let joinedTailSum :=
-    subdivision_total(
-      C, G, zero, addG, edge, n + m, joined,
-      join_subdivision_families(C, n, tail, tailPieces, m, rightVertices, rightPieces, same)
-    );
+  let joinedTailSum := subdivision_total(
+    C, G, zero, addG, edge, n + m, joined,
+    join_subdivision_families(C, n, tail, tailPieces, m, rightVertices, rightPieces, same)
+  );
   let headPath :=
     subdivision_sum_move_end(C, G, zero, addG, edge, a, b, joinedFirst, firstPath, headPiece);
   exact trans(

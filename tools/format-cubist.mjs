@@ -1,14 +1,15 @@
-import { readFile, writeFile, readdir } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { formatCubist } from "../web/cubist/formatter.mjs";
+import { cubistSources } from "./cubist-sources.mjs";
 
 const args = process.argv.slice(2), check = args.includes("--check");
 if (args.includes("--help")) {
-  console.log("Usage: npm run format:cubist -- [--check] [file.cubist ...]\nWith no files, format every archive/first-library/*.cubist source, including AST-checked tuple linearization. --check reports changes without writing.");
+  console.log("Usage: npm run format:cubist -- [--check] [file.cubist ...]\nWith no files, format every .cubist source git does not ignore, including AST-checked tuple linearization. --check reports changes without writing.");
 } else {
   const files = args.filter(a => a !== "--check");
   if (files.some(a => a.startsWith("--"))) throw new Error("Unknown formatter option.");
-  if (!files.length) files.push(...(await readdir(new URL("../archive/first-library/", import.meta.url))).filter(n => n.endsWith(".cubist")).sort().map(n => new URL("../archive/first-library/" + n, import.meta.url)));
+  if (!files.length) files.push(...cubistSources());
   let changed = 0;
   for (const file of files) {
     const path = file instanceof URL ? file : resolve(file);

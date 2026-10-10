@@ -1,6 +1,7 @@
 # H1 truncation migration evidence
 
-Status: experimental implementation and review draft, 2026-09-30. The
+Status: implemented on 2026-09-30, and H1 released on 2026-10-02. The
+ledger remains a review draft. The
 [ledger](h1-truncation-ledger.json) pins 17 checked public changes against
 `f4d1961`, rebased from `cc6b50f` on 2026-10-05. Its acceptance permits the listed changes; it does not certify
 that the old and new proofs are identical or that all 47 declarations of
@@ -61,7 +62,7 @@ proposition evidence.
 
 ## Reproduce the scoped comparisons
 
-All four commands enable H1 explicitly. Each accepted change is checked
+H1 is on by default, so the commands need no option for it. Each accepted change is checked
 against the ledger; removing `--ledger` rejects it. A selected declaration
 scope is printed in the report and does not imply whole-module migration.
 All ledger entries for a compared module must be inside that run's scope.
@@ -108,5 +109,5 @@ its own baseline. `tests/proof-migration.test.mjs` checks listed/unlisted G4 cha
 changed pins, forbidden removals, duplicate entries, failed declarations,
 scope escapes, body substitution, explicit assumption replacements,
 archive/library collisions and refusal to bypass proof-identity checking.
-The rebuilt module's `h1_` prefix preserves the legacy `cauchy_quotient` CLI,
-REPL and page lookup when H1 is disabled.
+The rebuilt module's `h1_` prefix keeps it apart from the archive's
+`cauchy_quotient` in CLI, REPL and page lookup.
