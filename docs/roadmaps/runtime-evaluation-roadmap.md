@@ -1,10 +1,12 @@
 # Runtime evaluation and binary numerical foundations
 
 Status: planned on 2026-10-07, following a local investigation at
-`825c8b8896e02364e9d5cd53f5079014362738ab`. The early numerical foundation
-is `UNat` and `BNat`, with binary naturals underlying `Z`, `Q` and later
-numerical constructions. None of the NUM or EVAL packages below is
-implemented. A scratch evaluator supplies feasibility evidence only.
+`825c8b8896e02364e9d5cd53f5079014362738ab`. EVAL0 is implemented: its
+[baseline](#measurements) was recorded on 2026-10-08. The early numerical
+foundation is `UNat` and `BNat`, with binary naturals underlying `Z`, `Q`
+and later numerical constructions. None of the NUM packages or the other
+EVAL packages is implemented. A versioned scratch evaluator supplies
+feasibility evidence only.
 The [work plan](work-plan.md#runtime-evaluation-track) schedules this track;
 the [computation notation roadmap](computation-notation-roadmap.md) owns
 `do` and arrows, which are independent of these evaluator changes.
@@ -47,43 +49,83 @@ node cli/repl.mjs 'import euclid; use nat; evaluate factorial(4);'
 Read the reported result or diagnostic, not just the process exit status:
 the REPL currently reports evaluation errors without failing the process.
 
-## Preliminary measurements
+## Measurements
 
-The investigation used Node 24.13.0 on macOS/arm64, Apple M3 Pro. Each
-expression used a fresh program with its imports already checked. These
-are individual observations, not benchmark medians or portable targets.
+EVAL0's [harness](../../tools/evaluation-baseline.mjs) repeats the
+investigation's observations as a versioned baseline. Each sample is a new
+Node process that checks the workload's imports and runs its entry as the
+CLI REPL does, once cold and three times warm. Five samples per workload
+were recorded on 2026-10-08 at `b5a261c8` with Node 24.13.0 on
+macOS/arm64, Apple M3 Pro, in the
+[baseline record](../../tests/fixtures/evaluation-baseline.json). Its kernel
+work and arena counters are deterministic; every workload's five cold
+samples agree on them. Times are medians on that machine, not portable
+targets. Repeat it after `make wasm`:
 
-| Existing evaluation path | Observation |
-| --- | --- |
-| REPL `evaluate euclid(3)` | About 450 ms; two normalizations and 258,730 kernel instructions during the entry |
-| `print(evaluate(euclid(3)))` | About 30 ms; one normalization and 12 kernel instructions during the entry |
-| REPL `evaluate euclid(3).1` | About 6 ms; result `7` |
-| REPL `evaluate euclid(4).1` | Normalization fails at syntax depth 512; about 136,000 new syntax nodes |
+```sh
+npm run baseline:evaluation
+node tools/evaluation-baseline.mjs --only=euclid-3,euclid-3-print --samples=3
+```
+
+| Workload | Result | Normalizations | Comparisons | Instructions | Cold |
+| --- | --- | --- | --- | --- | --- |
+| `evaluate euclid(3);` | `(7, …)` | 2 | 2 | 258,730 | 435 ms |
+| `print(evaluate(euclid(3)));` | `(7, …)` | 1 | none | 12 | 32 ms |
+| `evaluate euclid(3).1;` | `7` | 2 | 2 | 42 | 8 ms |
+| `evaluate euclid(4);` | K344 | 1, failed | none | 13 | 31 ms |
+| `evaluate euclid(4) expecting (5, _);` | K344 | 1, failed | none | 13 | 32 ms |
+| `evaluate euclid(4).1;` | K344 | 1, failed | none | 14 | 31 ms |
+| `evaluate euclid(5).1;` | K344 | 1, failed | none | 15 | 44 ms |
+| `evaluate 2 * 255;` | K344 | 2 | 2, one failed | 529 | 14 ms |
+| `print(evaluate(2 * 255));` | `510` | 1 | none | 264 | 9 ms |
+| `evaluate winding(integer_loop(negative(2)));` | `right(2)` | 2 | 2 | 59 | 36 ms |
 
 The REPL's [evaluate method](../../web/repl-session.mjs) builds
 `evaluate e expecting e`. The [translator](../../web/translator/translate.mjs)
 then verifies and normalizes both sides, and asks for checked equality of
-their types and normal forms. Rechecking the expanded certificate accounts
-for much more work than computing its first normal form. The print path
-already checks and normalizes once, without the self-comparison.
+their types and normal forms. That comparison takes 400 of the 435 ms of
+`evaluate euclid(3)` and 258,718 of its 258,730 instructions: the instruction
+kernel derives the expanded certificate's equality with itself. Its two
+normalizations take 16 ms. The print path checks and normalizes once,
+without the self-comparison.
 
-A separate, uncommitted JavaScript experiment evaluated checked syntax
-with environments and memoized thunks. It kept lambda domains, pair types,
-eliminator motives and unused fields suspended. It supported the ordinary
-data operations used by this workload and refused unsupported operations;
-it did not implement general H1 elimination or cubical computation.
+The record also shows:
 
-| Prime component requested | Scratch result | Evaluation time |
-| --- | --- | --- |
-| `euclid(3).1` | `7` | About 3 ms |
-| `euclid(4).1` | `5` | About 17 ms |
-| `euclid(5).1` | `11` | About 1 s |
-| `euclid(6).1` | JavaScript call-stack overflow | No successful result |
+- Each Euclid failure happens in the first normalization, before any
+  comparison: `euclid(4).1` allocates 136,134 nodes and 571,099 steps
+  before K344, `euclid(5).1` 231,033 nodes. Printing fails identically.
+  The pattern `(5, _)` repeats plain `euclid(4)`'s counters exactly.
+- A unary natural is a successor chain, so its normal form's syntax depth
+  grows with its value: printed, `2 * 255` reaches depth 512, the limit,
+  and `2 * 256` fails. The REPL's self-comparison wraps the normal form
+  once more, so plain `evaluate 2 * 255` fails where printing succeeds.
+- A REPL entry leaves the session's names as they were, but not its arena:
+  the failed `euclid(4).1` leaves its 136,150 nodes there, and a successful
+  `evaluate euclid(3)` leaves 95,592.
+- Warm runs of the same entry reuse the session's kernel caches: the failed
+  `euclid(4).1` takes under 1 ms warm, and `evaluate euclid(3)` 58 ms.
 
-The successful runs allocated runtime closures but no new kernel syntax
-nodes. They did not normalize or certify the returned proof fields.
-Preserve a versioned experiment and repeat the measurements in EVAL0
-before treating these observations as a reproducible performance baseline.
+A separate JavaScript experiment, now
+[versioned](../../tools/closure-evaluation-experiment.mjs), evaluates checked
+syntax with environments and memoized thunks. It keeps lambda domains, pair
+types, eliminator motives and unused fields suspended. It supports the
+ordinary data operations used by this workload and refuses unsupported
+operations; it does not implement general H1 elimination or cubical
+computation. The baseline runs it as a separate series on the checked
+definition `probe := euclid(n)`:
+
+| Prime component requested | Scratch result | Evaluation time | Thunks forced | Deepest forcing | Peak memory |
+| --- | --- | --- | --- | --- | --- |
+| `euclid(3).1` | `7` | 6 ms | 13,210 | 120 | 156 MiB |
+| `euclid(4).1` | `5` | 20 ms | 75,342 | 352 | 179 MiB |
+| `euclid(5).1` | `11` | 1.2 s | 4,561,663 | 1,648 | 1,340 MiB |
+| `euclid(6).1` | JavaScript call-stack overflow | 10 ms before failure | about 13,000 | about 3,500 | 154 MiB |
+
+These runs ask the kernel nothing and allocate no kernel syntax. They do not
+normalize or certify the returned proof fields. Peak memory is the sample
+process's, about 140 MiB of which loading and checking the imports already
+use. Where the stack overflows depends on how far the JIT has compiled the
+evaluator, so the failed run's counts are observations, not counters.
 
 ## Contracts to preserve
 
@@ -202,11 +244,12 @@ below the algebraic model layer to avoid an import cycle through `algebra`.
 
 ## Milestones
 
-All rows are planned. Sizes are relative scope, as in the work plan.
+EVAL0 is done; the other rows are planned. Sizes are relative scope, as in
+the work plan.
 
 | Package | Deliverable | Dependencies | Size |
 | --- | --- | --- | --- |
-| EVAL0 | Reproducible workload and phase measurements | Existing CLI, counters and build stamps | S |
+| EVAL0 | Reproducible workload and phase measurements. **Done** on 2026-10-08 | Existing CLI, counters and build stamps | S |
 | EVAL1 | One-pass REPL evaluation | EVAL0 | S |
 | NUM0 | Explicit UNat and canonical BNat with direct binary arithmetic | Current inductive declarations; archive evidence | M |
 | NUM1 | Natural semiring isomorphism, U0 path and transport laws; H1 binary Peano view and strong recursion with coherence proofs | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
@@ -240,6 +283,33 @@ and publish enough commands and artifacts to repeat both. Use deterministic
 work/allocation regressions where practical; avoid hardware-specific CI
 time thresholds.
 
+**Implemented** on 2026-10-08. The
+[harness](../../tools/evaluation-baseline.mjs) runs 22 kernel workloads:
+full Euclid results, their prime projections under the REPL, print,
+exact-value and pattern contracts, factorial, divisibility decisions, unary
+arithmetic at the depth limit, closed transport and winding numbers.
+Eight of them fail. It also runs the four scratch projections as a separate
+series. Each sample is a new process; one more times the cold entry
+unobserved, and another measures syntax depth. The phases are elaboration,
+checking, normalization, normal-form decoding, the assumption inventory,
+comparison, rendering and the rest. The kernel's normalizer returns
+syntax, so readback has no phase of its own there; the scratch series
+times execution and readback apart. Thunk forces, memo hits and the
+deepest force nesting are the scratch evaluator's. For the kernel, whose
+C stack is not observable, the harness reports the syntax depth that each
+normalization, comparison and check allocates, with the deepest chain.
+The REPL displays at most 1000 characters of a value, so an outcome also
+records a digest of the whole normal form evaluated, with bound variables
+and dimensions numbered by binding depth: `euclid(3)`'s normal form prints
+as about 340,000 characters.
+[Its test](../../tests/evaluation-baseline.test.mjs) keeps the recorded
+outcomes, normal forms included, and normalization and comparison counts
+exact, and lets the deterministic counters fall but grow by at most a
+quarter. It asserts the REPL/print discrepancy and the K344 failures
+directly and compares no times. It runs the scratch series on `euclid(3)`
+and `euclid(4)` and reads the larger two from the record. A change past
+those bounds records the baseline again with `--write`, and its reason.
+
 ### EVAL1: remove redundant REPL work
 
 Route plain REPL evaluation through one checked normalization and display,
@@ -250,8 +320,10 @@ failed-entry recovery and browser/CLI agreement.
 
 **Acceptance:** one normalization for a successful plain evaluation;
 the same displayed values and assumption refusals; the Euclid self-equality
-instruction overhead disappears. This package does not claim to fix the
-syntax-depth failure.
+instruction overhead disappears. In the baseline that comparison takes 400
+of the 435 ms of `evaluate euclid(3)`, and plain `evaluate 2 * 255` fails
+in it where printing shows `510`; both workloads measure the change. This
+package does not claim to fix the syntax-depth failure.
 
 ### NUM0 and NUM1: representations, algebraic agreement and numerical induction
 
@@ -467,10 +539,11 @@ Expected-value patterns (L2.9a) and the closed-truncation REPL command
 `witness TERM;` (L2.9b) are implemented in
 [#181](https://github.com/KanHarI/cubist-math/pull/181) and
 [#182](https://github.com/KanHarI/cubist-math/pull/182), after this roadmap's
-measurement baseline. Patterns currently match `result.normal`, after full
+investigation. Patterns currently match `result.normal`, after full
 normalization: a `_` hole saves no evaluation work. Thus the existing form
 `evaluate euclid(4) expecting (5, _)` still encounters the normalization
-failure. EVAL5 must specify any observation mode that lets this pattern
+failure, with the same counters as plain `euclid(4)` in the baseline.
+EVAL5 must specify any observation mode that lets this pattern
 avoid forcing the certificate, including its checking and failure contract,
 before changing evaluation behavior. Preserve exact expected-value checks,
 the distinction from full normalization and witness readout's checked type.
